@@ -1573,32 +1573,32 @@ declare tex_array_line{'l}
 declare tex_array_ln
 
 dform array_df1 : mode[tex] :: math_array[tags:s]{'t} =
-   izone `"\\begin{array}{" slot[tags:s] `"}" ezone
+   izone `"\\begin{array}{@{}" slot[tags:s] `"@{}}" ezone
    tex_strip_white{nil; 't; tex_array_lns}
    izone `"\\end{array}" ezone
 
 dform tabular_df1 : mode[tex] :: math_tabular[tags:s]{'t} =
-   izone `"\\begin{tabular}{" slot[tags:s] `"}" ezone
+   izone `"\\begin{tabular}{@{}" slot[tags:s] `"@{}}" ezone
    tex_strip_white{nil; 't; tex_array_lns}
    izone `"\\end{tabular}" ezone
 
 dform tabular_df2 : mode[tex] :: tabular[tags:s]{'t} =
-   izone `"\\begin{tabular}{" slot[tags:s] `"}" ezone
+   izone `"\\begin{tabular}{@{}" slot[tags:s] `"@{}}" ezone
    tex_strip_white{nil; 't; tex_array_lns}
    izone `"\\end{tabular}" ezone
 
 dform array_place_df1 : mode[tex] :: math_array[placement:s,tags:s]{'t} =
-   izone `"\\begin{array}[" slot[placement:s] `"]{" slot[tags:s] `"}" ezone
+   izone `"\\begin{array}[" slot[placement:s] `"]{@{}" slot[tags:s] `"@{}}" ezone
    tex_strip_white{nil; 't; tex_array_lns}
    izone `"\\end{array}" ezone
 
 dform tabular_place_df1 : mode[tex] :: math_tabular[placement:s,tags:s]{'t} =
-   izone `"\\begin{tabular}[" slot[placement:s] `"]{" slot[tags:s] `"}" ezone
+   izone `"\\begin{tabular}[" slot[placement:s] `"]{@{}" slot[tags:s] `"@{}}" ezone
    tex_strip_white{nil; 't; tex_array_lns}
    izone `"\\end{tabular}" ezone
 
 dform tabular_place_df2 : mode[tex] :: tabular[placement:s,tags:s]{'t} =
-   izone `"\\begin{tabular}[" slot[placement:s] `"]{" slot[tags:s] `"}" ezone
+   izone `"\\begin{tabular}[" slot[placement:s] `"]{@{}" slot[tags:s] `"@{}}" ezone
    tex_strip_white{nil; 't; tex_array_lns}
    izone `"\\end{tabular}" ezone
 
