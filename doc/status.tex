@@ -41,7 +41,7 @@ arbitrary interleaving of formal statements and program code.
 Inheritance of formal properties and tactics.  Nuprl-Light is a
 tactic-based theorem prover like Nuprl, but tactics are defined
 relative to the module system.  The ITT theory defines a collection of
-standard taactics that are specific to ITT.  These tactics are
+standard tactics that are specific to ITT.  These tactics are
 available in CZF, but CZF also defines new tactics that are available
 only in CZF.
 \end{itemize}
@@ -49,7 +49,7 @@ only in CZF.
 \section{Long Term Goals}
 
 \subsection{Proof Procedures}
-Incorporation of proof procedures, especially thos that generate
+Incorporation of proof procedures, especially those that generate
 proofs for their results.  These include:
 \begin{description}
 \item[Arithmetic]
@@ -60,7 +60,7 @@ software checker like Holtzman's SPIN.
 \item[Symbolic manipulation].
 \end{description}
 
-Currently there is a framework for incorporating arithemtic into ITT,
+Currently there is a framework for incorporating arithmetic into ITT,
 in the itt\_arith module.  This module provides a normalized
 representation of a sequent.  This representation can be used to
 implement procedures like SupInf.
@@ -80,7 +80,7 @@ restrictions.
 
 \subsection{Relations between theories}
 We already have a relation to CZF.  Other interesting relations are to
-other systems, like HOL, PVS, Coq, and Isabelle.  Sophisticaated
+other systems, like HOL, PVS, Coq, and Isabelle.  Sophisticated
 relations like these would allow us to import results from these
 systems into Nuprl-Light.
 
@@ -122,7 +122,7 @@ eventually the problem of reflection.
 
 \subsection{Proof automation}
 In general we need more sophisticated tactics to automate proofs
-search.  Specific problems are proof automation for (intutionistic)
+search.  Specific problems are proof automation for (intuitionistic)
 propositional logic, first-order logic, which we may be able to extend
 to higher-order logics.
 
@@ -147,7 +147,7 @@ in the CZF theory.
 The problem is figure out and implement a forward chaining mechanism.
 
 \subsection{Theory redundancy}
-Figure out howmuch of the ITT theory is redundant and derive proofs
+Figure out how much of the ITT theory is redundant and derive proofs
 for the redundant parts.  For example, and the rules for non-dependent
 functions are derivable from dependent functions.
 

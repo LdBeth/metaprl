@@ -1,7 +1,9 @@
 To compile Nuprl-Light for the first time:
+
    0. Make sure that you have ocaml and camlp4 installed. 
       If you are using RedHat Linux, you can download 
-      ocaml and camlp4 RPMs from ftp.redhat.com
+      ocaml and camlp4 RPMs from 
+      ftp://ftp.redhat.com/pub/contrib/hurricane/
 
    1. You need to set the environment variables for
       CAMLLIB and CAMLP4LIB directories:
