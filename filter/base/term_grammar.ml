@@ -881,7 +881,7 @@ struct
          [[ "+" -> "union" ]];
 
       sl_minus:
-         [[ "-" -> "sub" ]];
+         [[ "-" -> "minus" ]];
 
       sl_star:
          [[ "*" -> "prod" ]];
