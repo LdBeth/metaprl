@@ -415,11 +415,11 @@ struct
            "ite" LEFTA
             [ "if"; e1 = noncommaterm; "then"; e2 = noncommaterm; "else"; e3 = noncommaterm ->
                { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc "ifthenelse") e1.aterm e2.aterm e3.aterm }
-            | "let"; x = word_or_string; sl_equal; e1 = noncommaterm; "in"; e2 = noncommaterm ->
+            | "let"; x = word_or_string; sl_equal; e1 = applyterm; "in"; e2 = noncommaterm ->
                { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") x e1.aterm e2.aterm }
             | e2 = noncommaterm; "where";  x = word_or_string; sl_equal; e1 = noncommaterm ->
                { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") x e1.aterm e2.aterm }
-            | "open";  e1 = noncommaterm; "in"; e2 = noncommaterm ->
+            | "open";  e1 =  applyterm; "in"; e2 = noncommaterm ->
                { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") "self" e1.aterm e2.aterm }
             ]
 
