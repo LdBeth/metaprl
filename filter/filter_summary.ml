@@ -2044,10 +2044,10 @@ let copy_rule_proof copy_proof rule info2 =
                   if !debug_match then
                      begin
                         eprintf "Term 1:\n\t";
-                        Simple_print.prerr_simple_mterm stmt1;
+                        prerr_simple_mterm stmt1;
                         eflush stderr;
                         eprintf "Term 2:\n\t";
-                        Simple_print.prerr_simple_mterm stmt2;
+                        prerr_simple_mterm stmt2;
                         eflush stderr
                      end
                end;
