@@ -68,12 +68,13 @@ in their <TT>.mli</TT> file - see <A HREF="#note1">Note 1</A>.
 
 <H3>Notes</H3>
 <OL>
-<LI><A NAME="note1"> If you run <TT>create_debug</TT> more that once with the same <TT>debug_name</TT> (for example, in several modules or in several instances of the same module), you'll
+<LI><A NAME="note1">If</A> you run <TT>create_debug</TT> more that once with the same <TT>debug_name</TT> (for example, in several modules or in several instances of the same module), you'll
 get the pointer to the same boolean. If you are sure that the debug with that name is already
 created, you can use a shorter <TT>load_debug "&lt;name&gt;"</TT> instead of
-<TT>create_debug { ... }</TT> to get a reference to that debug variable.
+<TT>create_debug { ... }</TT> to get a reference to that debug variable.</LI>
 <LI>If you are creating lots of debugging code, you may want to create several debug variables
-with different names to have finer control over what pieces of debugging code are active.
+with different names to have finer control over what pieces of debugging code
+are active.</LI>
 </OL>
 
 <H3>Debug variables</H3>

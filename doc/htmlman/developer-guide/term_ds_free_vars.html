@@ -10,41 +10,43 @@ type</A> has a field for storing the set of free
 variables. This field is supposed to be either <TT>VarsDelayed</TT> if the set
 was not computed yet or <TT>(Vars s)</TT> where <TT>s</TT> is the set variable names
 (strings) of
-all first-order variables occurring free in the term. 
+all first-order variables occurring free in the term.
 
 <P>The rules for calculating free variables sets are simple:<UL>
 <LI>Free variables set of an ordinary term is a union of the free variables of
 its <TT>term_terms</TT>
 <LI>Free variables set of an ordinary <A HREF="term_ds_types.html#bound_term"><TT>bound_term</TT></A>
-contains all variables of 
+contains all variables of
 its <TT>bterm</TT> excepts for those that become bound in this <TT>bound_term</TT> (its <TT>bvars</TT>).
 <LI>Free variables set of a <TT>(FOVar v)</TT> is a singleton set consisting of <TT>v</TT>.
 <LI>Free variables set of a substitution is equal to the free variables set
 of the result of this substitution (see also <A HREF="#note2">Note 2</A>)
+</UL>
 
 <P><B>Example</B>:
 
-<PRE><IMG WIDTH=10 HEIGHT=15 ALT="exists" ALIGN=top SRC="../chars/CHAR217.gif">x.(x=y)" :</PRE>
+<TT><IMG WIDTH=10 HEIGHT=15 ALT="exists" ALIGN=top
+SRC="../chars/CHAR217.gif">x.(x=y)" :</TT>
 
 <PRE>{ free_vars = {"y"}; core = Term
     { opname = "exists"; term_terms =
          [ { bvars = "x"; bterm =
              { free_vars={"x","y"}; core = Term
                  { opname = "equal"; term_terms =
-                    [ { bvars = []; bterm = 
+                    [ { bvars = []; bterm =
                           { free_vars = {"x"}; core = FOVar "x" } } };
-                      { bvars = []; bterm = 
+                      { bvars = []; bterm =
                           { free_vars = {"y"}; core = FOVar "y" } } ] } } } ] } }</PRE>
 
-(Here "<TT>opname = ...</TT>" is used as an abbreviation for 
+(Here "<TT>opname = ...</TT>" is used as an abbreviation for
    "<TT>term_op = {op_opname = ...; op_params = []}</TT>" )
 
 <P>Notes:<OL>
 
 <LI><P><TT>Term_ds</TT> tries to distinguish a first-order variable "x" (has a free occurrence
 of "x") and 0-ary second-order variable "x" (does not have any free variables).
-FO variable "x" is represented as a "special" term (<TT>core = FOVar </TT>"x") while 
-SO variable "x" is represented as a "usual" term (<TT>core = Term t</TT>, where <TT>t</TT> 
+FO variable "x" is represented as a "special" term (<TT>core = FOVar </TT>"x") while
+SO variable "x" is represented as a "usual" term (<TT>core = Term t</TT>, where <TT>t</TT>
 is a term with <TT>opname</TT> "var", parameter (<TT>Var </TT>"x") and no subterms)
 
 <P>Since both are indistinguishable in the <TT>Term_std</TT>, sometimes <TT>Term_ds</TT> would use
