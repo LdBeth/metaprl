@@ -57,7 +57,8 @@ TERM_DS_MLFILES := $(addprefix term_ds/, $(addsuffix .ml, $(TERM_DS_FILES))\
 					 $(addsuffix .mli, $(TERM_DS_FILES)))
 
 REFINER_MLFILES := $(addprefix refiner/, $(addsuffix .ml, $(REFINER_FILES))\
-					 $(addsuffix .mli, $(REFINER_FILES)))
+					 $(addsuffix .mli, $(REFINER_FILES)))\
+			$(TERM_STD_MLFILES) $(TERM_GEN_MLFILES) $(TERM_DS_MLFILES)
 
 REFLIB_MLFILES := $(addprefix reflib/,  $(addsuffix .ml, $(REFLIB_FILES))\
 					$(addsuffix .mli, $(REFLIB_FILES)))
