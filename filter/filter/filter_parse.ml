@@ -1294,8 +1294,9 @@ EXTEND
            in
               print_exn f ("ml_rw " ^ name) loc;
               empty_str_item loc
-        | "prim"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm; "="; extract = term ->
+        | "prim"; name = LIDENT; res = optresources; params = optarglist; ":"; body = rule_body ->
            let f () =
+              let mt, extract = body in
               let mt, params, res, extract = parse_mtlre mt params res extract in
               define_prim (StrFilter.get_proc loc) loc name params mt extract res
            in
@@ -1476,6 +1477,13 @@ EXTEND
 
    mlrule_keyword:
       [[ "ml_rule" | "ml_axiom" -> () ]];
+
+   rule_body:
+      [[ mt = bmterm; "="; extract = term ->
+            mt, extract
+       | mt = bmterm ->
+            mt, mk_simple_term (mk_opname loc ["default_extract"] [] []) []
+      ]];
 
    (*
     * DISPLAY FORMS.
