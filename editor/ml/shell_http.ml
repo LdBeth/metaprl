@@ -100,6 +100,7 @@ struct
     * Start the web server.
     *)
    let main () =
+(*
       let host = Http_server.start_http http_connect !http_port in
       let _ =
          try
@@ -114,6 +115,7 @@ struct
             Not_found ->
                ()
       in
+*)
          Shell.main ()
 end
 
