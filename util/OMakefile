@@ -1,7 +1,9 @@
 #
-# Don't try to scan files in this directory
+# Don't try to scan files in this directory.
+# List the dependencies explicitly.
 #
-.SCANNER: %
+.SCANNER: %.cmx %.cmo %.cmi
+	echo ""
 
 misc.cmo: misc.cmi
 misc.cmx: misc.cmi
