@@ -1268,11 +1268,13 @@ let html_escape_string s =
                collect_escape i j "&lt;"
           | '>' ->
                collect_escape i j "&gt;"
+          | '&' ->
+               collect_escape i j "&amp;"
           | _ ->
                collect i (succ j)
    and collect_escape i j s' =
       if i < pred j then
-         String.sub s i (pred j) ^ s' ^ collect (succ j) (succ j)
+         String.sub s i (j-i) ^ s' ^ collect (succ j) (succ j)
       else
          s' ^ collect (succ j) (succ j)
    in
@@ -1292,8 +1294,9 @@ let html_print_invis buf s =
  *)
 let html_line buf =
    let rec collect line = function
-      (_, h) :: t ->
-         collect (h ^ line) t
+      (vis, h) :: t ->
+         let h = if vis then html_escape_string h else h
+         in collect (h ^ line) t
     | [] ->
          line
    in

@@ -235,12 +235,8 @@ extends JScrollPane
                         endpoint.Send(NuprlConstants.CONTROL_NAME, 1, new NuprlCommandToken(filename.substring(1)));
                     }
                     else {
-                        try {
-                            pane.setPage(e.getURL());
-                        }
-                        catch (Throwable t) {
-                            t.printStackTrace();
-                        }
+                        Thread load_url = new LoadURLThread(e.getURL());
+                        load_url.start();
                     }
                 }
             }
