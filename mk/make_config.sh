@@ -1,6 +1,5 @@
 #!/bin/sh
 
-# If you want to add a new variable to this file (mk/make_config.sh),
 # make sure you add a default value to mk/preface
 # and add this value to the mk/config target in the top-level Makefile
 
