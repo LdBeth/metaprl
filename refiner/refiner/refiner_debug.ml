@@ -137,6 +137,9 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          PrimRW of rw
        | CondRW of (int array -> term list -> cond_rewrite)
 
+      let sequent_shape = TermShape1.sequent_shape, TermShape2.sequent_shape
+      let var_shape = TermShape1.var_shape, TermShape2.var_shape
+
    end
 
    open TermType
@@ -561,9 +564,9 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          report_error x "Integers mismatch";
       i1
 
-   let merge_var x (v1:var) v2 =
+   let merge_var x v1 v2 =
       if v1 <> v2 then
-         report_error x "Variable mismatch";
+         report_error x ("Variable mismatch: \"" ^ (string_of_symbol v1) ^ "\" vs \"" ^ (string_of_symbol v2) ^ "\"");
       v1
 
    let merge_string x s1 s2 =
@@ -709,7 +712,11 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       if not (Opname.eq (TermShape1.opname_of_shape s1) (TermShape2.opname_of_shape s2)) then
          report_error x "term shape opname mismatch"
       else
-         (s1, s2)
+      match s1 == TermShape1.sequent_shape, s2 == TermShape2.sequent_shape, s1 == TermShape1.var_shape, s2 == TermShape2.var_shape with
+         true, true, false, false -> sequent_shape
+       | false, false, true, true -> var_shape
+       | false, false, false, false -> (s1, s2)
+       | _ -> report_error x "Shape pointer equality mismatch"
 
    let merge_tsub x (v1, t1) (v2, t2) =
       (merge_var x v1 v2), (merge_term x t1 t2)
@@ -2298,12 +2305,6 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       let opname_of_shape (p0 : shape) =
          let p0_1, p0_2 = p0 in
          merge merge_opname "TermShape.opname_of_shape" (wrap1 TermShape1.opname_of_shape p0_1) (wrap1 TermShape2.opname_of_shape p0_2)
-
-      let sequent_shape =
-         merge_shape "TermShape.sequent_shape" (TermShape1.sequent_shape) (TermShape2.sequent_shape)
-
-      let var_shape =
-         merge_shape "TermShape.var_shape" (TermShape1.var_shape) (TermShape2.var_shape)
 
       let print_shape (p0 : out_channel) (p1 : shape) =
          let p1_1, p1_2 = p1 in

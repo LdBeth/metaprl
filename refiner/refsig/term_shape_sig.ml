@@ -49,6 +49,10 @@ sig
    type param
    type shape
 
+   (*
+    * shape_of_term will be == to sequent_shape on any sequent and == to
+    * var_shape on any FO variable
+    *)
    val shape_of_term : term -> shape
    val eq : shape -> shape -> bool
    val param_type : param -> shape_param
