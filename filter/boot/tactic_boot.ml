@@ -154,8 +154,8 @@ struct
     | ShareTactic of tactic
     | ShareIntTactic of (int -> tactic)
     | ShareArgTactic of (tactic_arg -> tactic)
-    | ShareTSubst of (term_subst -> (string option * term) -> term_subst)
-    | ShareTypeinf of (eqnlist -> term -> eqnlist * term)
+    | ShareTSubst of typeinf_subst_fun
+    | ShareTypeinf of typeinf_func
     | ShareSentinal of Refine.sentinal
 
    and shared_key = shared_object ThreadRefiner.key

@@ -50,6 +50,23 @@ open Refiner_io
 open Rformat
 open Dform
 
+(* Types for the type inference algorithm *)
+
+(*
+ * A function that analyzes the sequent to gather type info.
+ * It gets a clause from the current sequent or its assumptions.
+ *)
+type typeinf_subst_fun = term_subst -> (string option * term) -> term_subst
+
+(*
+ * A type inference is performed in a type context,
+ * which maps variables to type.
+ *
+ * The inference infers the type for a term in the given context,
+ * or it throws the RefineError exception
+ *)
+type typeinf_func = eqnlist -> term -> eqnlist * term
+
 (*
  * Visible types.
  *)
@@ -296,8 +313,8 @@ sig
    val tactic_attribute : string -> (unit -> tactic) -> raw_attribute
    val int_tactic_attribute : string -> (unit -> int -> tactic) -> raw_attribute
    val arg_tactic_attribute : string -> (unit -> tactic_arg -> tactic) -> raw_attribute
-   val tsubst_attribute : string -> (unit -> term_subst -> (string option * term) -> term_subst) -> raw_attribute
-   val typeinf_attribute : string -> (unit -> eqnlist -> term -> eqnlist * term) -> raw_attribute
+   val tsubst_attribute : string -> (unit -> typeinf_subst_fun) -> raw_attribute
+   val typeinf_attribute : string -> (unit -> typeinf_func) -> raw_attribute
 
    (*
     * Lift refiner tactics into our tactic type.
@@ -390,8 +407,8 @@ sig
    val get_tactic     : tactic_arg -> string -> tactic
    val get_int_tactic : tactic_arg -> string -> (int -> tactic)
    val get_arg_tactic : tactic_arg -> string -> (tactic_arg -> tactic)
-   val get_tsubst     : tactic_arg -> string -> (term_subst -> (string option * term) -> term_subst)
-   val get_typeinf    : tactic_arg -> string -> (eqnlist -> term -> eqnlist * term)
+   val get_tsubst     : tactic_arg -> string -> typeinf_subst_fun
+   val get_typeinf    : tactic_arg -> string -> typeinf_func
 
    (*
     * Basic tactics.
@@ -804,8 +821,8 @@ sig
    val get_tactic_arg     : tactic_arg -> string -> tactic
    val get_int_tactic_arg : tactic_arg -> string -> (int -> tactic)
    val get_arg_tactic_arg : tactic_arg -> string -> tactic_arg -> tactic
-   val get_tsubst_arg     : tactic_arg -> string -> (term_subst -> (string option * term) -> term_subst)
-   val get_typeinf_arg    : tactic_arg -> string -> (eqnlist -> term -> eqnlist * term)
+   val get_tsubst_arg     : tactic_arg -> string -> typeinf_subst_fun
+   val get_typeinf_arg    : tactic_arg -> string -> typeinf_func
 end
 
 (*
