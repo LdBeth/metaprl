@@ -1,9 +1,10 @@
 #
 # This directory contains only generated files.
 # The files are generated in their specified directories,
-# so if you want the documentation, run "omake tex" in the
-# MetaPRL root directory.
+# so if you want the documentation, run "omake tex" or "omake doc"
+# in the MetaPRL root directory.
 #
+doc: theories.ps theories.pdf
 
 #
 # Clean up

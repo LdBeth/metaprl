@@ -174,7 +174,7 @@ INCLUDES += -I$(CAMLLIB)
 #
 # Generic phony targets
 #
-.PHONY: all opt install clean realclean depend tex
+.PHONY: all opt install clean realclean depend tex doc
 
 #
 # Default clean line
@@ -405,4 +405,4 @@ CLEAN += *.log *.aux *.idx *.ilg *.ind *.pdf *.ps *.dvi *.blg *.bbl *.out *.toc
 ########################################################################
 # Subdirectories to build
 #
-.SUBDIRS: $(MP_DIRS) editor/ml doc/latex/theories doc/ps/theories
+.SUBDIRS: $(MP_DIRS) editor/ml doc

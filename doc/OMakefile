@@ -1,0 +1,32 @@
+HTMLDOC = htmldoc
+HTMLDOCFLAGS = --no-title --size letter --bodycolor white --toclevel 4
+GEN-PS = $'(HTMLDOC) -t ps2 $'(HTMLDOCFLAGS)
+GEN-PDF = $'(HTMLDOC) -t pdf $'(HTMLDOCFLAGS)
+
+HtmlDoc(name, dir, files) =
+   doc: $(name).ps $(name).pdf
+   
+   FILES = $(addprefix $(dir)/, $(addsuffix .html, $(files)))
+
+   $(name).ps: $(FILES)
+      $(GEN-PS) $(FILES) -f $@
+
+   $(name).pdf: $(FILES)
+      $(GEN-PDF) $(FILES) -f $@
+
+.INCLUDE: Files
+
+HtmlDoc(introduction, htmlman, $(WELCOME))
+HtmlDoc(user-guide, htmlman/user-guide, $(USER-GUIDE))
+HtmlDoc(system, htmlman/system, $(SYSTEM))
+HtmlDoc(developer-guide, htmlman/developer-guide, $(DEVELOPER-GUIDE))
+
+clean:
+   $(CLEAN)
+
+.PHONY: check
+
+check:
+   WEBLINTRC=weblintrc weblint .
+
+.SUBDIRS: latex/theories ps/theories

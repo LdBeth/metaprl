@@ -145,18 +145,23 @@ mk/config.local:
 	@cp -f mk/config.local.empty mk/config.local
 
 check_omake::
+	@echo '!!!'
 	@if [ -e .omakedb ]; then \
-		echo '!!!';\
 		echo '!!! This directory was previously built using omake.';\
 		echo '!!! Mixing omake builds with make ones is probably not a good idea.';\
 		echo '!!!';\
 		echo '!!! You have several choices:';\
-        echo '!!!  - continue using omake';\
+        echo '!!!  - (recommended) continue using omake';\
         echo '!!!  - run "make realclean" and switch to using make';\
         echo '!!!  - (not recommended) remove the .omakedb file, run "make depend"';\
         echo '!!!    and switch to using make';\
 		echo '!!!';\
 		exit 1;\
+	else\
+		echo '!!! Warning: using make for building MetaPRL is not recommended';\
+		echo '!!!          Please consider using omake instead.';\
+		echo '!!!';\
+		sleep 1;\
 	fi
 
 check_versions:: mk/config mk/config.local check_omake
