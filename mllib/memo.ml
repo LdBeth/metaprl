@@ -74,7 +74,7 @@ struct
    (*
     * Empty tables.
     *)
-   let create size _ _ f convert compare g _ =
+   let create size _ _ f convert compare g =
       { memo_f = f;
         memo_g = g;
         memo_convert = convert;

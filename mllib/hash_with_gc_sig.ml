@@ -92,6 +92,8 @@ sig
    val gc_iter : (('key * 'value) -> bool) -> ('key, 'value) t -> ('key * 'value) option
 
    val gc_all : (('key * 'value) -> bool) -> ('key, 'value) t -> ('key * 'value) list
+
+   val size : ('key, 'value) t -> int
 end
 
 (*

@@ -205,6 +205,8 @@ struct
    let gc_all test info = collect_for_release test info 0 []
 
    let is_gc info = info.gc_on
+
+   let size info = info.count
 end
 
 (*

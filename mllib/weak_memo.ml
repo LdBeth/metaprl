@@ -62,6 +62,29 @@ let debug_weak_memo =
         debug_value = false
       }
 
+let debug_weak_memo2 =
+   create_debug (**)
+      { debug_name = "debug_weak_memo2";
+        debug_description = "Print ids of tables that are GCed";
+        debug_value = false
+      }
+
+open Weak_memo_sig
+
+(*
+ * Data used for garbage collection
+ *)
+type gc_info = Weak_memo.gc_info
+
+(*
+ * Empty instance of gc_info
+ *)
+let empty_gci = {counters = []; gcollectors = []}
+
+(*
+ * Total number of weak tables.
+ *)
+let counter = ref 0
 
 module WeakMemo (Hash : Hash_with_gc_sig.HashWithGCSig) =
 struct
@@ -122,7 +145,7 @@ ENDIF
    	 * because there may be recursive references between different tables
 	    * and we want to clean recursive structures completely.
    	 *)
-	     mutable gcollectors : (unit -> unit) list;
+	     mutable gcinfo : gc_info;
 
 
         (*
@@ -148,11 +171,6 @@ ENDIF
     *)
    let weaken d =
       d.descriptor
-
-   (*
-    * Total number of weak tables.
-    *)
-   let counter = ref 0
 
    (*
     * Don't understand/remember what's the point in global is_gc
@@ -191,17 +209,27 @@ ENDIF
     *)
    let collect info () =
       let hash_table = info.index_table in
+      let old_size = (Hash.size hash_table) in
       let found = Hash.gc_all (gc_tst info.id info.image_array) hash_table in
       let strip (a,b) = b in
          info.vacant <- List.map strip found;
-         ()
+	     	if !debug_weak_memo2 then
+   	     	eprintf " id=%i found=%i/%i %t" info.id (List.length info.vacant) old_size eflush
+
+	let get_counter info _ = info.count
+
+	let total_count gci =
+		List.fold_left (fun s c -> s + (c ())) 0 gci.counters
 
    (*
     * Create a new table.
     *)
-   let create halfsize critical_level name make_header header_weaken compare_header make_result cc =
+   let create halfsize critical_level name make_header header_weaken compare_header make_result gci =
       incr counter;
-      let image_array = Weak.create (2 * halfsize) in
+(*     	if !debug_weak_memo2 then
+  	     	eprintf "Creating %i%t" !counter eflush;*)
+      let array_length = (2 * halfsize) in
+      let image_array = Weak.create array_length in
       let id = !counter in
       let info : ('param, 'arg, 'header, 'weak_header, 'image) t =
          { make_header = make_header;
@@ -213,29 +241,31 @@ ENDIF
            count = 0;
            burst_gc=true;
            vacant = [];
-           gcollectors=cc;
+           gcinfo=gci;
            gc_on = false;
            name = name;
            id = id
          } in
          begin
-            info.gcollectors <- (collect info)::cc;
+            info.gcinfo <- {counters=(get_counter info)::gci.counters; gcollectors=(collect info)::gci.gcollectors};
             info
          end
 
-   let create_default name weaken compare make cc =
+   let create_default name weaken compare make gci =
       let fail _ _ =
          raise (Invalid_argument "Weak_memo.create_default: applications are not allowed")
       in
-         create 17 17 name fail weaken compare make cc
+         create 17 17 name fail weaken compare make gci
 
 	let union eq l1 l2 =
 		List.rev_append l1 (List.filter (fun i -> not (List.exists (eq i) l1)) l2)
 
-	let add_cc info cc =
-		info.gcollectors <- union (fun x y -> x==y) info.gcollectors cc
+	let add_gci info gci =
+		let gci0=info.gcinfo in
+		info.gcinfo <- {counters=union (==) gci0.counters gci.counters; 
+		                gcollectors=union (==) gci0.gcollectors gci.gcollectors}
 		
-	let get_cc info = info.gcollectors
+	let get_gci info = info.gcinfo
 
    let make_descriptor info i item =
 IFDEF VERBOSE_EXN THEN
@@ -274,6 +304,101 @@ ENDIF
 
    let run f = f ()
 
+   let expand info weak_header hash result =
+		let length = Weak.length info.image_array in
+		let new_length = ((length * 2) + 1) in
+     	if !debug_weak_memo then
+        	eprintf "\nexpanding %s from %i to %i%t" info.name length new_length eflush;
+      Hash.insert info.index_table hash weak_header length;
+      info.image_array <- expand_weak_array info.image_array info.id new_length;
+      info.count <- succ length;
+      set info length result
+
+   let threshold = 2
+
+   let do_burst_gc info weak_header hash result =
+		let count=info.count in
+      if count=Weak.length info.image_array then
+      	match info.vacant with
+         	index::tl ->
+         		begin
+	            	info.vacant <- tl;
+   	            Hash.insert info.index_table hash weak_header index;
+      	         set info index result
+      	      end
+          | [] ->
+          		let gci=info.gcinfo in
+          		let total_count=total_count gci in
+            	if count * (List.length gci.gcollectors) > threshold * total_count then
+            		begin
+					     	if !debug_weak_memo2 then
+					        	eprintf "\nGC %s.%i start count=%i/%i%t" info.name info.id count total_count eflush;
+		            	List.iter run gci.gcollectors;
+					     	if !debug_weak_memo2 then
+					        	eprintf "GC %s.%i end%t" info.name info.id eflush;
+   		            match info.vacant with
+      		         	index::tl ->
+      		         		begin
+	         		         	info.vacant <- tl;
+   	         		         Hash.insert info.index_table hash weak_header index;
+      	         		      set info index result
+      	         		   end
+                 		 | [] ->
+                  			expand info weak_header hash result
+                  end
+               else
+               	expand info weak_header hash result
+   	else
+      	let count' = succ count in
+      		begin
+	         	info.count <- count';
+   	         Hash.insert info.index_table hash weak_header count;
+      	      set info count result
+      	   end
+
+	let do_incremental_gc info weak_header hash result =
+	   if info.gc_on then
+	      begin
+   	      (* GC is only triggered when the weak table gets full *)
+               if Weak.length info.image_array <> info.count then
+	               raise (Inconsistency "weak table length does not match expected value");
+            (* Search for a free location in the hash table *)
+               match Hash.gc_iter (gc_tst info.id info.image_array) info.index_table with
+   	            Some (_, weak_index) ->
+      	            (* Found a free entry in the hash table *)
+                     Hash.insert info.index_table hash weak_header weak_index;
+                     set info weak_index result
+                | None ->
+         	         (*
+                      * The weak array is totally full.
+                      * Double the array size, and store the entry
+                      * at the first free entry that was created.
+                      *)
+                     let length = Weak.length info.image_array in
+            	         if !debug_weak_memo then
+               	         eprintf "\nexpanding %s from %i to %i%t" info.name length ((length * 2) + 1) eflush
+                        else
+                           ();
+                  	   info.gc_on <- false;
+                        Hash.insert info.index_table hash weak_header length;
+                        info.image_array <- expand_weak_array info.image_array info.id ((length * 2) + 1);
+                        info.count <- succ length;
+                        set info length result
+			end
+      else
+         (* Store the entry in the next free position in the array *)
+         let count = info.count in
+         let count' = succ count in
+         info.count <- count';
+         if count' = Weak.length info.image_array then
+	         begin
+   	         (* Table looks full, so trigger GC analysis on the next allocation *)
+               Hash.gc_start info.index_table;
+               info.gc_on <- true
+            end;
+         Hash.insert info.index_table hash weak_header count;
+         set info count result
+
    (*
     * Find a value in the table.
     *)
@@ -298,78 +423,9 @@ ENDIF
                (* This is a new call to the function *)
                let result = info.make_result param header in
                   if info.burst_gc then
-                     let count=info.count in
-                     if count=Weak.length info.image_array then
-                        match info.vacant with
-                           index::tl ->
-                              info.vacant <- tl;
-                              Hash.insert info.index_table hash weak_header index;
-                              set info index result;
-                         | [] ->
-                              List.iter run info.gcollectors;
-                              match info.vacant with
-                                 index::tl ->
-                                    info.vacant <- tl;
-                                    Hash.insert info.index_table hash weak_header index;
-                                    set info index result;
-                               | [] ->
-                                    let length = Weak.length info.image_array in
-                                       if !debug_weak_memo then
-                                          eprintf "\nexpanding %s from %i to %i%t" info.name length ((length * 2) + 1) eflush
-                                       else
-                                          ();
-                                       Hash.insert info.index_table hash weak_header length;
-                                       info.image_array <- expand_weak_array info.image_array info.id ((length * 2) + 1);
-                                       info.count <- succ length;
-                                       set info length result
-                     else
-                        let count' = succ count in
-                           info.count <- count';
-                           Hash.insert info.index_table hash weak_header count;
-                           set info count result
+                  	do_burst_gc info weak_header hash result
                   else
-                     if info.gc_on then
-                        begin
-                           (* GC is only triggered when the weak table gets full *)
-                           if Weak.length info.image_array <> info.count then
-                              raise (Inconsistency "weak table length does not match expected value");
-                  
-                           (* Search for a free location in the hash table *)
-                           match Hash.gc_iter (gc_tst info.id info.image_array) info.index_table with
-                              Some (_, weak_index) ->
-                                 (* Found a free entry in the hash table *)
-                                 Hash.insert info.index_table hash weak_header weak_index;
-                                 set info weak_index result
-                            | None ->
-                                 (*
-                                  * The weak array is totally full.
-                                  * Double the array size, and store the entry
-                                  * at the first free entry that was created.
-                                  *)
-                                 let length = Weak.length info.image_array in
-                                    if !debug_weak_memo then
-                                       eprintf "\nexpanding %s from %i to %i%t" info.name length ((length * 2) + 1) eflush
-                                    else
-                                       ();
-                                    info.gc_on <- false;
-                                    Hash.insert info.index_table hash weak_header length;
-                                    info.image_array <- expand_weak_array info.image_array info.id ((length * 2) + 1);
-                                    info.count <- succ length;
-                                    set info length result
-                        end
-                     else
-                        (* Store the entry in the next free position in the array *)
-                        let count = info.count in
-                        let count' = succ count in
-                           info.count <- count';
-                           if count' = Weak.length info.image_array then
-                              begin
-                                 (* Table looks full, so trigger GC analysis on the next allocation *)
-                                 Hash.gc_start table;
-                                 info.gc_on <- true
-                              end;
-                           Hash.insert info.index_table hash weak_header count;
-                           set info count result
+                  	do_incremental_gc info weak_header hash result
 
    (*
     * Lookup a value that was previously stored in the table.

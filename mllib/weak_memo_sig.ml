@@ -31,6 +31,15 @@
  * Author: Yegor Bryukhov
  *)
 
+(*
+ * Data used for garbage collection
+ *)
+type gc_info =
+	{
+		counters: (unit -> int) list;
+		gcollectors : (unit -> unit) list;
+  	}
+
 module type WeakMemoSig =
 sig
    (*
@@ -85,7 +94,7 @@ sig
       ('param -> 'header -> 'weak_header) ->         (* Convert 'header to 'weak_header *)
       ('weak_header -> 'weak_header -> bool) ->      (* Headers' comparision function *)
       ('param -> 'header -> 'image) ->               (* Converter from header to result *)
-      (unit -> unit) list ->								  (* Connected component - list of GCors for all weak tables that might have mutually recursive data *)
+      gc_info ->								  				  (* Data used for garbage collection *)
       ('param, 'arg, 'header, 'weak_header, 'image) t
 
    (*
@@ -97,11 +106,11 @@ sig
       ('param -> 'header -> 'weak_header) ->         (* Convert 'header to 'weak_header *)
       ('weak_header -> 'weak_header -> bool) ->      (* Headers' comparision function *)
       ('param -> 'header -> 'image) ->               (* Converter from header to result *)
-      (unit -> unit) list ->								  (* Connected component - list of GCors for all weak tables that might have mutually recursive data *)
+      gc_info ->								  				  (* Data used for garbage collection *)
       ('param, 'arg, 'header, 'weak_header, 'image) t
 
-	val add_cc : ('param, 'arg, 'header, 'weak_header, 'image) t -> (unit -> unit) list -> unit
-	val get_cc : ('param, 'arg, 'header, 'weak_header, 'image) t -> (unit -> unit) list
+	val add_gci : ('param, 'arg, 'header, 'weak_header, 'image) t -> gc_info -> unit
+	val get_gci : ('param, 'arg, 'header, 'weak_header, 'image) t -> gc_info
 
    (*
     * Looks for header and returns result's descriptor if succeed otherwise evaluate the result

@@ -31,13 +31,23 @@
 open Memo_sig
 open Weak_memo_sig
 
+(*
+ * Data used for garbage collection
+ *)
+type gc_info = Weak_memo_sig.gc_info
+
+(*
+ * Empty instance of gc_info
+ *)
+val empty_gci : gc_info
+
 module WeakMemo (Hash : Hash_with_gc_sig.HashWithGCSig) : WeakMemoSig
 
-module MakeMemo (Hash : Hash_with_gc_sig.HashWithGCSig) : MemoSig
+module MakeMemo (Hash : Hash_with_gc_sig.HashWithGCSig) : WeakMemoSig
 
 module TheWeakMemo : WeakMemoSig
 
-module TheMemo : MemoSig
+module TheMemo : WeakMemoSig
 
 (*
  * -*-
