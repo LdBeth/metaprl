@@ -36,6 +36,8 @@ module type TermSubstSig =
 sig
    type term
    type param
+   type bound_term
+   type bound_term'
 
    (*
     * Substitution, matching, unification.
@@ -62,6 +64,15 @@ sig
    val subst : term -> string list -> term list -> term
    val subst1 : term -> string -> term -> term
    val apply_subst : term -> term_subst -> term
+
+   (*
+    * dest_bterm_and_rename is the same as dest_bterm, except it will also
+    * do alpha-renaming to avoid reusing the specified variables
+    *
+    * TODO: need to also make sure that all bvars in rerurned bound_term'
+    * are distinct
+    *)
+   val dest_bterm_and_rename : bound_term -> String_set.StringSet.t -> bound_term'
 
    (*
     * var_subst: subst of var for a term.

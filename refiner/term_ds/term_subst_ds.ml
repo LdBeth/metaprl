@@ -96,6 +96,8 @@ struct
 
    type term = TermType.term
    type param = TermType.param
+   type bound_term = TermType.bound_term
+   type bound_term' = TermType.bound_term'
 
    type term_subst = TermType.term_subst
 
@@ -149,6 +151,20 @@ struct
 
    let free_vars_list t = StringSet.elements (free_vars_set t)
    let free_vars_set = free_vars_set
+
+   let dest_bterm_and_rename bt avoid =
+      let renames = List.filter (StringSet.mem avoid) bt.bvars in
+         if renames <> [] then
+            let avoid =
+               List.fold_left StringSet.add (**)
+                  (StringSet.union avoid (free_vars_set bt.bterm))
+                  bt.bvars
+            in let (vs,ts) = new_vars avoid renames in
+            {
+               bvars = rename_bvars vs bt.bvars;
+               bterm = apply_subst bt.bterm ts
+            }
+         else bt
 
    (*
     * Collect all binding vars.

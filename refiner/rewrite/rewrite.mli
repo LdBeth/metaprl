@@ -68,7 +68,9 @@ module Rewrite (**)
    (TermAddr : TermAddrSig
     with type term = TermType.term)
    (TermSubst : TermSubstSig
-    with type term = TermType.term)
+    with type term = TermType.term
+    with type bound_term = TermType.bound_term
+    with type bound_term' = TermType.bound_term')
    (RefineError : RefineErrorSig
     with type level_exp = TermType.level_exp
     with type param = TermType.param

@@ -87,6 +87,8 @@ sig
    module TermSubst : TermSubstSig
                       with type term = TermType.term
                       with type param = TermType.param
+                      with type bound_term = TermType.bound_term
+                      with type bound_term' = TermType.bound_term'
    module TermShape : TermShapeSig
                       with type term = TermType.term
                       with type param = TermType.param

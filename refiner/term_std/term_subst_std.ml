@@ -86,6 +86,8 @@ struct
 
    type term = TermType.term
    type param = TermType.param
+   type bound_term = TermType.bound_term
+   type bound_term' = TermType.bound_term'
 
    type term_subst = (string * term) list
 
@@ -507,6 +509,18 @@ struct
    let apply_subst t s =
       let vs,ts = List.split s in
       subst t vs ts
+
+   let dest_bterm_and_rename bt avoid =
+      let renames = List.filter (StringSet.mem avoid) bt.bvars in
+         if renames <> [] then
+            let avoid =
+               [ free_vars_list bt.bterm; bt.bvars; StringSet.elements avoid ]
+            in let renames' = new_vars avoid renames in
+            {
+               bvars = subst_bvars renames' renames bt.bvars;
+               bterm = subst bt.bterm renames (List.map mk_var_term renames')
+            }
+         else bt
 
    (*
     * Inverse substitution.

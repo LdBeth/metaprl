@@ -170,10 +170,13 @@ sig
    val free_vars_set: term -> StringSet.t
    val bterm_free_vars: bound_term -> StringSet.t
 
+   val new_vars : StringSet.t -> string list -> (string * string) list * (string * term) list
+   val rename_bvars : (string * string) list -> string list -> string list
+
    (*
     * Simultaneous delayed substitution.
     * These two functions would behave incorrectly if the term_subst mentions
-    * the same variable more than once. Use term_subst_ds.subst when there is
+    * the same variable more than once. Use Term_subst_ds.subst when there is
     * a possibility of duplicates.
     *)
    val do_term_subst : term_subst -> term -> term
