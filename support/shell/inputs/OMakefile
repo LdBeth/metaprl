@@ -36,3 +36,6 @@ $(LIBINPUTS): $(LIB)$(SLASH)%: %
         $(symlink $<, $@)
 
 $(MPINSTALL): $(LIBINPUTS)
+
+clean:
+   $(CLEAN) *.pem
