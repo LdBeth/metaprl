@@ -1,2 +1,2 @@
 clean:
-	$(RM) prlc ocamldep
+	$(RM) prlc ocamldep convert
