@@ -227,17 +227,28 @@ struct
        | _ ->
             List.exists (StringSet.mem (terms_free_vars_set terms)) vars
 
-   let context_vars t =
+   let rec terms_context_vars = function
+      [] -> []
+    | t::ts -> (context_vars t) @ (terms_context_vars ts)
+
+   and context_vars t =
       match get_core t with
          Sequent seq ->
             let hyps = seq.sequent_hyps in
             let len = SeqHyp.length hyps in
-            let rec context_vars i =
+            let rec hyp_context_vars i =
                if i = len then [] else
                match SeqHyp.get hyps i with
-                  Hypothesis _ -> context_vars (succ i)
-                | Context (v,_) -> v::context_vars (succ i)
-            in context_vars 0
+                  Hypothesis (_, h) -> context_vars h @ hyp_context_vars (succ i)
+                | Context (v,ts) -> v :: (terms_context_vars ts @ hyp_context_vars (succ i))
+            in let goals = seq.sequent_goals in
+            let len = SeqGoal.length goals in
+            let rec goals_context_vars i =
+               if i = len then [] else
+                  (context_vars (SeqGoal.get goals i) @ goals_context_vars (succ i))
+            in (context_vars seq.sequent_args) @ (hyp_context_vars 0) @ (goals_context_vars 0)
+       | Term { term_terms = bts } -> 
+            terms_context_vars (List.map (fun bt -> bt.bterm ) bts) 
        | _ -> []
 
    (************************************************************************
