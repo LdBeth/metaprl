@@ -375,7 +375,7 @@ doc <:doc<
    @begin[doc]
    @resources
 
-   @bf{The @Comment!resource[reduce_resource]}
+   @bf{The @Comment!resource[reduce] resource}
 
    The @tt{reduce} resource provides a generic method for
    defining @emph{evaluation}.  The @conv[reduceTopC] conversion
@@ -395,7 +395,7 @@ doc <:doc<
 
    Each of the modules for functions (Section @refmodule[Itt_rfun]),
    tuples (Section @refmodule[Itt_dprod]), and union (Section @refmodule[Itt_union]),
-   defines an addition to the @hrefresource[reduce_resource]: the @hrefmodule[Itt_rfun] adds
+   defines an addition to the @hrefresource[reduce] resource: the @hrefmodule[Itt_rfun] adds
    the @hrefrewrite[reduce_beta] rewrite with redex $(@lambda v. b[v])@space a$@; the
    @hrefmodule[Itt_dprod] adds the @hrefrewrite[reduceSpread] rewrite with redex
    $(@bf{match}@space (a, b)@space @bf{with}@space u, v @rightarrow c[u, v])$@; and the
@@ -408,7 +408,7 @@ doc <:doc<
    conversion will recursively search for applications of these three
    rewrites in an attempt to fully reduce the term.
 
-   The implementation of the @tt{reduce_resource} and the @tt[reduceC]
+   The implementation of the @tt[reduce] resource and the @tt[reduceC]
    conversion relies on tables to store the shape of redices, together with the
    conversions for the reduction.
 

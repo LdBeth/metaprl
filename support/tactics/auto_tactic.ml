@@ -15,7 +15,7 @@ doc <:doc<
    @hreftactic[autoT] and @hreftactic[trivialT] tactics.  They are implemented
    using a resource
    containing collections of tactics that are added by descendent theories.
-   The @Comment!resource[auto_resource] builds collections of tactics specified by
+   The @Comment!resource[auto] resource builds collections of tactics specified by
    a data structure with the following type:
 
    @begin[center]
