@@ -1033,7 +1033,19 @@ let _ =
 let operator = Pa_o.operator_rparen
 
 EXTEND
-   GLOBAL: interf implem sig_item str_item expr;
+   GLOBAL: term interf implem sig_item str_item expr;
+
+   term: LAST
+      [[ "$"; s = STRING; "$" ->
+            let grammar_filename =
+               try
+                  Sys.getenv "LANG_FILE"
+               with
+                  Not_found ->
+                     !Phobos_state.mp_grammar_filename
+            in
+               Phobos_compile.term_of_string [] grammar_filename s
+      ]];
 
    interf:
       [[ interf_opening; st = LIST0 interf_item; EOI ->
