@@ -65,7 +65,8 @@ sig
    val explode_sequent : term -> esequent
    val args_of_sequent : term -> term
 
-   val nth_hyp : term -> int -> string * term
+   val nth_hyp : term -> int -> term
+   val nth_binding : term -> int -> string
    val nth_concl : term -> int -> term
    val num_hyps : term -> int
    val declared_vars : term -> string list

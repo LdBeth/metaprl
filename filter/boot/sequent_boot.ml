@@ -112,8 +112,8 @@ struct
       else
          i
 
-   let nth_hyp p i =
-      TacticInternal.nth_hyp p (get_pos_hyp_num p i)
+   let nth_hyp p i = TacticInternal.nth_hyp p (get_pos_hyp_num p i)
+   let nth_binding p i = TacticInternal.nth_binding p (get_pos_hyp_num p i)
 
    let num_assums = TacticInternal.num_assums
    let nth_assum = TacticInternal.nth_assum

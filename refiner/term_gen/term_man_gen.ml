@@ -653,7 +653,29 @@ struct
             if Opname.eq opname hyp_opname then
                let t, x, term = match_hyp_all nth_hyp_name t bterms in
                   if i = 0 then
-                     x, t
+                     t
+                  else
+                     aux (i - 1) term
+            else if Opname.eq opname context_opname then
+               let term = match_context nth_hyp_name t bterms in
+                  if i = 0 then
+                     REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "nth hyp is a context var")))
+                  else
+                     aux (i - 1) term
+            else if Opname.eq opname concl_opname then
+               REF_RAISE(RefineError ("nth_hyp", StringError "hyp is out of range"))
+            else
+               REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "malformed sequent")))
+      in
+         aux (pred i) (goal_of_sequent t)
+
+   let nth_binding t i =
+      let rec aux i term =
+         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
+            if Opname.eq opname hyp_opname then
+               let t, x, term = match_hyp_all nth_hyp_name t bterms in
+                  if i = 0 then
+                     x
                   else
                      aux (i - 1) term
             else if Opname.eq opname context_opname then

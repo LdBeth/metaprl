@@ -460,8 +460,7 @@ struct
                let i = pred i in
                   if i < SeqHyp.length s.sequent_hyps then
                      match SeqHyp.get s.sequent_hyps i with
-                        Hypothesis (v, t) ->
-                           (v, t)
+                        Hypothesis (v, t) -> t
                       | Context _ ->
                            REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "it's a context")))
                   else
@@ -469,6 +468,26 @@ struct
        | Subst _ ->
             let _ = get_core t in
             nth_hyp t i
+       | _ ->
+            REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "not a sequent")))
+
+   let rec nth_binding t i =
+      match t.core with
+         Sequent s ->
+            if i <= 0 then
+               REF_RAISE(RefineError (nth_hyp_name, StringError "negative address"))
+            else
+               let i = pred i in
+                  if i < SeqHyp.length s.sequent_hyps then
+                     match SeqHyp.get s.sequent_hyps i with
+                        Hypothesis (v, t) -> v
+                      | Context _ ->
+                           REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "it's a context")))
+                  else
+                     REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "not enough hyps")))
+       | Subst _ ->
+            let _ = get_core t in
+            nth_binding t i
        | _ ->
             REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "not a sequent")))
 

@@ -286,7 +286,7 @@ struct
       ifT (function p -> pred (Sequent.concl p))
 
    let ifOnHypT pred tac1 tac2 i p =
-      (if pred (snd (Sequent.nth_hyp p i)) then
+      (if pred (Sequent.nth_hyp p i) then
           tac1
        else
           tac2) i p

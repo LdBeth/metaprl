@@ -381,8 +381,8 @@ struct
    let goal arg =
       msequent_goal arg.ref_goal
 
-   let nth_hyp arg i =
-      TermMan.nth_hyp (msequent_goal arg.ref_goal) i
+   let nth_hyp arg i = TermMan.nth_hyp (msequent_goal arg.ref_goal) i
+   let nth_binding arg i = TermMan.nth_binding (msequent_goal arg.ref_goal) i
 
    let nth_concl arg i =
       TermMan.nth_concl (msequent_goal arg.ref_goal) i

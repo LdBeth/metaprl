@@ -154,7 +154,7 @@ struct
     type addr = int
 
     let get_cmp (h,m) a =
-       let (_,t)=TermMan.nth_hyp h m.(a) in
+       let t=TermMan.nth_hyp h m.(a) in
        let v1, v_and_c = two_subterms t in
        let c, v2 = two_subterms v_and_c in
 (*       let t' : TermType.term' = Term.dest_term c in
