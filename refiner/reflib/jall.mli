@@ -1,14 +1,3 @@
-open Refiner.Refiner
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermType
-open Refiner.Refiner.TermSubst
-
-open Jlogic_sig
-
-val ruletable : rule -> string
-
-
-
 (* JProver provides an efficient refiner for first-order classical
    and first-order intuitionistic logic. It consists of two main parts:
    a proof search procedure and a proof reconstruction procedure.
@@ -59,6 +48,23 @@ val ruletable : rule -> string
 
    Literature:
    ==========
+
+   JProver system description was presented at CADE 2001:
+   @InProceedings{inp:Schmitt+01a,
+     author          = "Stephan Schmitt and Lori Lorigo and Christoph Kreitz and
+                        Alexey Nogin",
+     title           = "{{\sf JProver}}: Integrating Connection-based Theorem
+                        Proving into Interactive Proof Assistants",
+     booktitle       = "International Joint Conference on Automated Reasoning",
+     year            = "2001",
+     editor          = "R. Gore and A. Leitsch and T. Nipkow",
+     volume          = 2083,
+     series          = LNAI,
+     pages           = "421--426",
+     publisher       = SPRINGER,
+     language        = English,
+     where           = OWN,
+   }
 
    The implementation of JProver is based on the following publications:
 
@@ -260,8 +266,14 @@ val ruletable : rule -> string
    }
 *)
 
+open Refiner.Refiner
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
+open Refiner.Refiner.TermSubst
 
+open Jlogic_sig
 
+val ruletable : rule -> string
 
 module JProver(JLogic: JLogicSig) :
 sig
@@ -320,6 +332,3 @@ sig
      The result is a sequent proof in the single-conclusioned calculus "LJ".
   *)
 end
-
-
-

@@ -136,6 +136,9 @@ check_config::check_versions mk/config mk/config.local
 		exit 1; \
 	fi
 
+complete:
+	@cvs update && $(MAKE) filter filter_opt && $(MAKE) all opt
+
 realclean::
 	@MAKE="$(MAKE)" MAKEFLAGS="$(MAKEFLAGS)" mk/cvs_realclean.sh
 
