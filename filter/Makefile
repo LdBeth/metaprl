@@ -267,37 +267,37 @@ install:: $(MAIN).cma $(LCMIFILES) $(CAMLP4N).run $(CAMLP4O).run $(PRLCN).run $(
 # Compile a special camlp4 to run Nuprl.
 #
 $(CAMLP4N).run: $(CAMLP4N_CMOBJS)
-	$(OCAMLC) -o $@ -linkall -custom $(CAMLP4N_CMOBJS) $(CAMLP4X_CCLIBS)
+	$(OCAMLC) $(PROFILE) -o $@ -linkall -custom $(CAMLP4N_CMOBJS) $(CAMLP4X_CCLIBS)
 
 $(CAMLP4O).run: $(CAMLP4O_CMOBJS)
-	$(OCAMLC) -o $@ -linkall -custom $(CAMLP4O_CMOBJS) $(CAMLP4X_CCLIBS)
+	$(OCAMLC) $(PROFILE) -o $@ -linkall -custom $(CAMLP4O_CMOBJS) $(CAMLP4X_CCLIBS)
 
 #
 # Binary compiler
 #
 $(PRLCN).run: $(PRLCN_CMOBJS)
-	$(OCAMLC) -o $@ -custom $(PRLCN_CMOBJS) $(PRLCX_CCLIBS)
+	$(OCAMLC) $(PROFILE) -o $@ -custom $(PRLCN_CMOBJS) $(PRLCX_CCLIBS)
 
 $(PRLCO).run: $(PRLCO_CMOBJS)
-	$(OCAMLC) -o $@ -custom $(PRLCO_CMOBJS) $(PRLCX_CCLIBS)
+	$(OCAMLC) $(PROFILE) -o $@ -custom $(PRLCO_CMOBJS) $(PRLCX_CCLIBS)
 
 #
 # Compile a special camlp4 to run Nuprl.
 #
 $(CAMLP4N).opt: $(CAMLP4N_CMXOBJS)
-	$(OCAMLOPT) -o $@ -linkall $(CAMLP4N_CMXOBJS) $(CAMLP4X_CCLIBS)
+	$(OCAMLOPT) $(PROFILE) -o $@ -linkall $(CAMLP4N_CMXOBJS) $(CAMLP4X_CCLIBS)
 
 $(CAMLP4O).opt: $(CAMLP4O_CMXOBJS)
-	$(OCAMLOPT) -o $@ -linkall -custom $(CAMLP4O_CMXOBJS) $(CAMLP4X_CCLIBS)
+	$(OCAMLOPT) $(PROFILE) -o $@ -linkall -custom $(CAMLP4O_CMXOBJS) $(CAMLP4X_CCLIBS)
 
 #
 # Binary compiler
 #
 $(PRLCN).opt: $(PRLCN_CMXOBJS)
-	$(OCAMLOPT) -o $@ -custom $(PRLCN_CMXOBJS) $(PRLCX_CCLIBS)
+	$(OCAMLOPT) $(PROFILE) -o $@ -custom $(PRLCN_CMXOBJS) $(PRLCX_CCLIBS)
 
 $(PRLCO).opt: $(PRLCO_CMXOBJS)
-	$(OCAMLOPT) -o $@ -custom $(PRLCO_CMXOBJS) $(PRLCX_CCLIBS)
+	$(OCAMLOPT) $(PROFILE) -o $@ -custom $(PRLCO_CMXOBJS) $(PRLCX_CCLIBS)
 
 #
 # Infix file is preprocessed.

@@ -1093,6 +1093,14 @@ struct
          rr_namer = namer;
          rr_gstacksize = gstacksize
        } (addrs, names) terms =
+      let _ =
+         match redex, terms with
+            (RWComposite { rw_op = { rw_name = opname1 } } :: _, t :: _) ->
+               if not (opname1 == opname_of_term t) then
+                  raise (RewriteError (BadMatch (TermMatch t)))
+          | _ ->
+               ()
+      in
       let gstack = Array.create gstacksize StackVoid in
          match_redex addrs gstack redex terms;
          let names' = namer gstack names in
@@ -1326,6 +1334,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.7  1998/06/17 19:38:57  jyh
+ * Did some profiling.
+ *
  * Revision 1.6  1998/06/14 21:55:54  nogin
  * Speed improvements - do not create functions inside other functions
  *

@@ -49,9 +49,10 @@ ifndef PRLC
    PRLC = $(ROOT)/bin/prlc$(EXE) -lib $(ROOT)/lib
 endif
 
+# PROFILE = -ccopt -p
 OCAMLDEP = $(ROOT)/bin/ocamldep
-OCAMLCFLAGS = $(INCLUDE) $(OCAMLFLAGS)
-OCAMLOPTFLAGS = $(INCLUDE) $(OCAMLFLAGS)
+OCAMLCFLAGS = $(INCLUDE) $(OCAMLFLAGS) $(PROFILE)
+OCAMLOPTFLAGS = $(INCLUDE) $(OCAMLFLAGS) $(PROFILE)
 CAMLP4OFLAGS = $(INCLUDE)
 CFLAGS = -g -I$(CAMLLIB)
 CC = gcc
@@ -215,7 +216,7 @@ depend:: $(MLFILES) $(MLIFILES)
 	rm -f Makefile.tmp
 	touch Makefile.tmp
 ifneq ($(MLFILES),)
-	$(OCAMLDEP) $(OCAMLDEPFLAGS) $(INCLUDE) $(MLFILES) $(MLIFILES) >> Makefile.tmp
+	$(OCAMLDEP) -I $(CAMLLIB) $(OCAMLDEPFLAGS) $(INCLUDE) $(MLFILES) $(MLIFILES) >> Makefile.tmp
 endif
 ifneq ($(CFILES),)
 	$(CC) $(CFLAGS) -MM $(CFILES) >> Makefile.tmp
