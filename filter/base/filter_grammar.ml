@@ -422,6 +422,56 @@ let union gram1 gram2 =
       }
 
 (*
+ * Parse a string.
+ *)
+let zero = Char.code '0'
+
+let is_decimal_escape s i =
+   match s.[i], s.[i + 1], s.[i + 2] with
+      '0'..'9', '0'..'9', '0'..'9' ->
+         true
+    | _ ->
+         false
+
+let string_of_lexeme lexeme =
+   let len = String.length lexeme in
+      if len >= 2 && lexeme.[0] = '"' && lexeme.[len - 1] = '"' then
+         (* This is a real string *)
+         let buf = Buffer.create len in
+         let bound = len - 1 in
+         let rec parse i =
+            if i = bound then
+               Buffer.contents buf
+            else if lexeme.[i] = '\\' && i <= bound - 2 then
+               let j = i + 1 in
+               let c, j =
+                  match lexeme.[j] with
+                     'n' ->
+                        '\n', j + 1
+                   | 'r' ->
+                        '\r', j + 1
+                   | 't' ->
+                        '\t', j + 1
+                   | '0'..'9' as c1 when j <= bound - 3 && is_decimal_escape lexeme j ->
+                        let c2 = lexeme.[i + 2] in
+                        let c3 = lexeme.[i + 3] in
+                        let c = Char.chr ((Char.code c1 - zero) * 100 + (Char.code c2 - zero) * 10 + (Char.code c3 - zero)) in
+                           c, j + 3
+                   | _ ->
+                        '\\', j
+               in
+                  Buffer.add_char buf c;
+                  parse j
+            else
+               let c = lexeme.[i] in
+                  Buffer.add_char buf c;
+                  parse (succ i)
+         in
+            parse 1
+      else
+         lexeme
+
+(*
  * Redex patterns and values for the lexer.
  *)
 let mk_mstring_term opname s =
@@ -430,7 +480,7 @@ let mk_mstring_term opname s =
 let mk_lexer_redex i =
    let rec collect redex i =
       if i = 0 then
-         mk_mstring_term lexer_arg_opname "lexeme" :: redex
+         mk_mstring_term lexer_arg_opname "lexeme" :: mk_mstring_term lexer_arg_opname "string" :: redex
       else
          collect (mk_mstring_term lexer_arg_opname ("arg" ^ string_of_int i) :: redex) (pred i)
    in
@@ -438,8 +488,9 @@ let mk_lexer_redex i =
       mk_simple_term lexer_arg_opname args
 
 let mk_lexer_term lexeme args =
+   let str = string_of_lexeme lexeme in
    let args = List.map (mk_string_term lexer_arg_opname) args in
-   let args = mk_string_term lexer_arg_opname lexeme :: args in
+   let args = mk_string_term lexer_arg_opname lexeme :: mk_string_term lexer_arg_opname str :: args in
       mk_simple_term lexer_arg_opname args
 
 (*
