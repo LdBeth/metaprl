@@ -21,6 +21,7 @@ sig
    val fst_mem_filt : t -> (elt * 'a) list -> (elt * 'a) list
    val not_mem_filt : t -> elt list -> elt list
    val intersectp : t -> t -> bool
+   val of_list : elt list -> t
 end
 
 (*

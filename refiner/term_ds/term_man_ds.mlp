@@ -169,7 +169,7 @@ struct
    let xcons_opname = mk_opname "cons" xperv
 
    let xnil_term = mk_simple_term xnil_opname []
-   let is_xnil_term t = t = xnil_term
+   let is_xnil_term = is_no_subterms_term xnil_opname
 
    let is_xcons_term = is_dep0_dep0_term xcons_opname
    let mk_xcons_term = mk_dep0_dep0_term xcons_opname

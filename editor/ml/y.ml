@@ -31,33 +31,10 @@ open Tptp_prove
 
 open Nl
 
-(*
- * Proof saving.
- *)
-let zT, z =
-   let pf = ref None in
-   let zT p =
-      pf := Some p;
-      idT p
-   in
-   let z () =
-      match !pf with
-         Some p ->
-            p
-       | None ->
-            raise Not_found
-   in
-      zT, z
-
-let _ = load "tptp_prove"
-let _ = cd "tptp_prove"
-let _ = set_writeable ()
-let _ = create_tptp "GEN"
-let _ = cd "GEN"
-(*
-let _ = create_tptp "ALG001-1"
-let _ = cd "ALG001-1"
-*)
+load "tptp_prove";;
+cd "tptp_prove";;
+create_tptp "BOO008-3";;
+cd "BOO008-3";;
 
 (*
  * -*-

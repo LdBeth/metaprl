@@ -393,7 +393,7 @@ struct
             else if size1 = 1 then
                add_list arg s2 key1 data1
             else
-               match splay arg key1 [] s1 with
+               match splay arg key2 [] s1 with
                   SplayFound (Node (key1, data1, left1, right1, _)) ->
                      let left3 = union_aux arg append left1 left2 in
                      let right3 = union_aux arg append right1 right2 in

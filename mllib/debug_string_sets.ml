@@ -1,6 +1,6 @@
 open Printf
 
-module MakeDebugSet 
+module MakeDebugSet
    (Set1: Splay_set.S with type elt = string)
    (Set2: Splay_set.S with type elt = string) =
 
@@ -8,7 +8,7 @@ struct
 
    type t = Set1.t * Set2.t
    type elt = string
-   
+
    let rec print_list_aux = function
       [] -> ()
     | h::t -> eprintf ";%s" h; print_list_aux t
@@ -28,14 +28,14 @@ struct
       print_sets s1 s2;
       eprintf "%t" flush;
       raise (Invalid_argument "DebugSet")
-   
+
    let empty = Set1.empty, Set2.empty
-   
+
    let is_empty (s1,s2) =
       match Set1.is_empty s1, Set2.is_empty s2 with
          (true,true) -> true
        | (false,false) -> false
-       | _ -> 
+       | _ ->
             eprintf "is_empty_set mismatch:\n"; error_sets s1 s2
 
    let mem (s1,s2) v =
@@ -45,12 +45,12 @@ struct
        | _ ->
             eprintf "is_empty_set mismatch:\n"; error_sets s1 s2
 
-   let make v = 
-      let s1 = Set1.make v in 
+   let make v =
+      let s1 = Set1.make v in
       let s2 = Set2.make v in
       match Set1.cardinal s1, Set2.cardinal s2 with
          (1,1) -> (s1,s2)
-       | _ -> 
+       | _ ->
             eprintf "(make %s) cardinality is wrong:\n" v; error_sets s1 s2
 
    let remove v (s1,s2) =
@@ -88,7 +88,7 @@ struct
          error_sets s1' s2'
       end
 
-   let iter f (s1,s2) = Set1.iter f s1 
+   let iter f (s1,s2) = Set1.iter f s1
 
    let cardinal (s1,s2) =
       let c1 = Set1.cardinal s1 in
@@ -136,7 +136,9 @@ struct
             print_sets s1_1 s2_1;
             eprintf "Second arg:\n";
             error_sets s1_2 s2_2
-   
+
    let elements (s1,s2) = Set1.elements s1
 
+   let of_list l =
+      Set1.of_list l, Set2.of_list l
 end

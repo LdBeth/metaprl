@@ -118,6 +118,12 @@ struct
     | Set s ->
          BigSet.elements s
 
+   let of_list l =
+      if List.length l <= max_size then
+         List l
+      else
+         Set (BigSet.of_list l)
+
    let iter f = function
       List l ->
          List.iter f l

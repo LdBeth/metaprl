@@ -233,7 +233,7 @@ struct
 #ifdef VERBOSE_EXN
                if !debug_subst then
                    begin
-                      eprintf "RWSOSubst: %a%t" debug_print term eflush;
+                      eprintf "RWSOSubst2: %a%t" debug_print term eflush;
                       iter2 (fun name term ->
                             eprintf "\t%s: %a%t" name debug_print term eflush) (**)
                          vars terms
@@ -250,13 +250,13 @@ struct
                   StackBTerm(term, vars) ->
 #ifdef VERBOSE_EXN
                      if !debug_subst then
-                        eprintf "RWSOSubst: BTerm: %a\n\t%a%t" debug_print term print_string_list vars eflush;
+                        eprintf "RWSOSubst: BTerm: %a: %a%t" debug_print term print_string_list vars eflush;
 #endif
                      subst term vars
                 | StackITerm ((term, vars, _, _) :: _) ->
 #ifdef VERBOSE_EXN
                      if !debug_subst then
-                        eprintf "RWSOSubst: ITerm: %a\n\t%a%t" debug_print term print_string_list vars eflush;
+                        eprintf "RWSOSubst: ITerm: %a: %a%t" debug_print term print_string_list vars eflush;
 #endif
                      subst term vars
                 | _ ->
@@ -484,17 +484,17 @@ struct
                   if !debug_rewrite then
                      eprintf "RWSeqHyp: (%a)%t" print_varname v eflush;
 #endif
+                  let hyp = build_contractum_term names bnames stack bvars hyp in
                   let v = build_bname names bnames stack v in
                   let bnames = [v] :: bnames in
                   let bvars = append_vars bvars [v] in
-                  let hyp = build_contractum_term names bnames stack bvars hyp in
                   let part = Array_util.ArrayElement (Hypothesis (v, hyp)) in
                      build_contractum_sequent_hyps names bnames stack bvars (part :: parts) hyps
              | RWSeqContext _ ->
                   ref_raise(RefineError ("build_contractum_sequent_hyps", StringError "found a sequent context"))
 
-   let build_contractum names bnames stack =
-      build_contractum_term names bnames stack [||]
+   let build_contractum names bnames stack prog =
+      build_contractum_term names bnames stack [||] prog
 
    (*
     * Compute names for the new variables in the contractum.

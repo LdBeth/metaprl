@@ -27,11 +27,6 @@ struct
     * However, we all splay operations are functional,
     * and we assume that the rearranged tree can be
     * assigned atomically to this field.
-    *
-    * The timer is used to count splay operations.
-    * When the timer goes off, we assume that the
-    * tree is balanced, and membership does not
-    * splay the tree any more.
     *)
    type t =
       { mutable splay_tree : tree }
@@ -81,18 +76,19 @@ struct
       [] ->
          new_node key left right
     | [Left (Node (key', _, right', _))] ->
-            new_node key left (new_node key' right right')
+         new_node key left (new_node key' right right')
     | [Right (Node (key', left', _, _))] ->
-            new_node key (new_node key' left' left) right
+         new_node key (new_node key' left' left) right
     | Left (Node (key_left, _, left_right, _)) :: Left (Node (key', _, right', _)) :: ancestors ->
-            lift key left (new_node key_left right (new_node key' left_right right')) ancestors
+         lift key left (new_node key_left right (new_node key' left_right right')) ancestors
     | Right (Node (key_right, right_left, _, _)) :: Right (Node (key', left', _, _)) :: ancestors ->
-            lift key (new_node key_right (new_node key' left' right_left) left) right ancestors
+         lift key (new_node key_right (new_node key' left' right_left) left) right ancestors
     | Left (Node (key_right, _, right_right, _)) :: Right (Node (key', left', _, _)) :: ancestors ->
-            lift key (new_node key' left' left) (new_node key_right right right_right) ancestors
+         lift key (new_node key' left' left) (new_node key_right right right_right) ancestors
     | Right (Node (key_left, left_left, _, _)) :: Left (Node (key', _, right', _)) :: ancestors ->
-            lift key (new_node key_left left_left left) (new_node key' right right') ancestors
-    | _ -> raise (Invalid_argument "lift")
+         lift key (new_node key_left left_left left) (new_node key' right right') ancestors
+    | _ ->
+         raise (Invalid_argument "lift")
 
    (*
     * Find an entry in the tree.
@@ -203,7 +199,22 @@ struct
             end
 
    let add key t =
-      { splay_tree = add_aux t.splay_tree key }
+      match splay key [] t.splay_tree with
+         SplayFound tree ->
+            t
+       | SplayNotFound tree ->
+            let tree =
+               match tree with
+                  Node (key', left, right, size) ->
+                     if Ord.compare key key' < 0 then
+                        new_node key left (new_node key' Leaf right)
+                     else
+                        new_node key (new_node key' left Leaf) right
+                | Leaf ->
+                     (* Tree is empty, so make a new root *)
+                     new_node key Leaf Leaf
+            in
+               { splay_tree = tree }
 
    (*
     * Remove the first entry from the hashtable.
@@ -359,6 +370,17 @@ struct
 
    let elements t =
       elements_aux [] t.splay_tree
+
+   (*
+    * Create the set from a list.
+    *)
+   let rec of_list_aux set = function
+      s :: t ->
+         of_list_aux (add s set) t
+    | [] ->
+         set
+
+   let of_list = of_list_aux empty
 
    (*
     * Intersection.

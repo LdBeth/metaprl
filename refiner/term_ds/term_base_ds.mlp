@@ -206,11 +206,12 @@ struct
 #ifdef VERBOSE_EXN
       if !debug_subst then
          begin
-            eprintf "do_term_subst: %a%t" debug_print t eflush;
+            eprintf "do_term_subst: { %a\n" debug_print t;
             eprintf "\tfree_vars:";
             List.iter (fun name -> eprintf " %s" name) (StringSet.elements (term_free_vars t));
             eflush stderr;
-            List.iter (fun (v, t) -> eprintf "\t%s: %a%t" v debug_print t eflush) sub
+            List.iter (fun (v, t) -> eprintf "\t%s: %a\n" v debug_print t) sub;
+            eprintf "}%t" eflush;
          end;
 #endif
       match StringSet.fst_mem_filt (term_free_vars t) sub with

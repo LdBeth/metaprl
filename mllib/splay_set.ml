@@ -21,6 +21,7 @@ sig
    val fst_mem_filt : t -> (elt * 'a) list -> (elt * 'a) list
    val not_mem_filt : t -> elt list -> elt list
    val intersectp : t -> t -> bool
+   val of_list : elt list -> t
 end
 
 (*
@@ -34,13 +35,13 @@ struct
       Leaf
     | Node of node * int
    and node = (elt * t * t) ref
-   and t = tree 
+   and t = tree
 
    type direction = Left of node | Right of node
 
    let cardinal = function
       Leaf -> 0
-    | Node (_,i) -> i 
+    | Node (_,i) -> i
 
    let new_node k l r =
       Node(ref(k,l,r),succ(cardinal(l)+cardinal(r)))
@@ -230,6 +231,14 @@ struct
          x::(elements_aux (elements_aux coll l) r)
 
    let elements = elements_aux []
+
+   let rec of_list_aux set = function
+      s :: t ->
+         of_list_aux (add s set) t
+    | [] ->
+         set
+
+   let of_list = of_list_aux empty
 
    let rec iter f = function
       Leaf -> ()
