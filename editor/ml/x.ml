@@ -37,8 +37,8 @@ open Refiner.Refiner.Term
 open Refiner.Refiner.TermAddr
 open Refiner.Refiner.Refine
 
-open Tacticals
-open Conversionals
+open Tactic_type.Tacticals
+open Tactic_type.Conversionals
 
 open Base_rewrite
 open Base_dtactic
