@@ -230,8 +230,54 @@ let pushm = function
  | _ -> raise (Invalid_argument "Dform.pushm")
 
 let popm df = format_popm df.dform_buffer
-let pushfont _ = ()
-let popfont _ = ()
+
+(*
+ * BUG: how do we get terminfo?
+ *)
+let can_control_font =
+   try
+      match Sys.getenv "TERM" with
+         "xterm"
+       | "eterm"
+       | "vt100"
+       | "vt102" ->
+            true
+       | _ ->
+            false
+   with
+      Not_found ->
+         false
+
+let translate_font s =
+   match s with
+      "bf" ->
+         "[1m"
+    | "it"
+    | "em" ->
+         "[2m"
+    | _ ->
+         "[0m"
+
+let changefont buf s =
+   if can_control_font then
+      let s' = translate_font s in
+         eprintf "Changing font to %s%t" s eflush;
+         format_izone buf;
+         format_raw_string buf s';
+         format_ezone buf
+
+let pushfont df =
+   let font, buf =
+      match df with
+         { dform_items = [RewriteString font]; dform_buffer = buf } ->
+            font, buf
+       | { dform_buffer = buf } ->
+            "rm", buf
+   in
+      changefont buf font
+
+let popfont { dform_buffer = buf } =
+   changefont buf "rm"
 
 (************************************************************************
  * FORMATTERS                                                           *
@@ -617,7 +663,7 @@ let init_list =
     "slot", [MLevel (mk_var_level_exp "l")], slot;
     "slot", [MToken "t"], slot;
     "slot", [MNumber "n"], slot;
-    "slot", [MVar "v"], slot;
+    "slot", [MVar "v"], slot
    ]
 
 let null_list =

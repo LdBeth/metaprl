@@ -225,6 +225,11 @@ type 'tag printer =
 let empty_info = Unformatted { unformatted_commands = []; unformatted_index = 0 }
 
 (*
+ * Aleksey's hack to limit the left margin.
+ *)
+let lcol_const = 3
+
+(*
  * Create a new empty buffer.
  *)
 let new_buffer () =
@@ -290,17 +295,8 @@ let flush_formatting buf =
                buf.buf_info <- Unformatted { unformatted_commands = List.rev commands;
                                              unformatted_index = index
                                }
-          | { formatting_commands = commands;
-              formatting_index = index;
-              formatting_buf = buf
-            } :: tl ->
-               eprintf "Unbalanced buffer%t" eflush;
-               buf.buf_info <- Unformatted { unformatted_commands = List.rev commands;
-                                             unformatted_index = index
-                               };
-               flush tl
-          | [] ->
-               raise (Invalid_argument "Rformat.flush_formatting")
+          | _ ->
+               raise (Invalid_argument "Rformat.flush_formatting: unballanced buffer (use debug_dform_depth to debug)")
          in
             flush stack.formatting_stack
 
@@ -894,6 +890,11 @@ and search_zone buf stack lmargin rmargin col maxx breaks search =
          (* Tag doesn't affect the breaking *)
          search_tzone buf stack lmargin rmargin col maxx breaks search
     | MZoneTag (off, str) ->
+         (* Adjust the offset, so we don't go too far right *)
+         let col' = col + off in
+         let col' = min col' (rmargin / lcol_const) in
+         let off = col' - col in
+
          (* Adjust the left margin *)
          let lmargin, str' = lmargin in
          let space = col - lmargin in
@@ -1123,7 +1124,7 @@ let make_channel_printer out =
       output_string out str
    in
       { print_string = print_string;
-        print_invis = print_arg1_invis;
+        print_invis = print_string;
         print_tab = print_tab;
         print_begin_block = print_arg2_invis;
         print_end_block = print_arg2_invis;
