@@ -29,27 +29,31 @@
 open Printf
 open Proxyedit_lex
 
-(*
- * Divert input and output channels.
- *)
-let () =
-   let file = "/tmp/medit.out" in
-   let fd = Unix.openfile file [Unix.O_RDWR; Unix.O_CREAT; Unix.O_TRUNC] 0o600 in
-      Unix.dup2 fd Unix.stdout;
-      Unix.dup2 fd Unix.stderr;
-      Unix.close Unix.stdin
-
 let eflush out =
    output_char out '\n';
    flush out
 
+(*
+ * Divert input and output channels.
+ *)
+let () =
+   if Sys.os_type = "Win32" then
+      eprintf "Don't worry about this window.\nIt is an artifact of Win32 that displays error messages.\nIt will go away when you finish editing your file.%t" eflush
+   else
+      let fd = Unix.openfile "/tmp/medit.out" [Unix.O_RDWR; Unix.O_CREAT; Unix.O_TRUNC] 0o600 in
+         Unix.dup2 fd Unix.stdout;
+         Unix.dup2 fd Unix.stderr;
+         Unix.close Unix.stdin;
+         eprintf "Hello%t" eflush
+
 exception SigPipe = Lm_ssl.SSLSigPipe
 
 let catch_sigpipe () =
-   let handle_sigpipe _ =
-      raise SigPipe
-   in
-      Sys.set_signal Sys.sigpipe (Sys.Signal_handle handle_sigpipe)
+   if Sys.os_type <> "Win32" then
+      let handle_sigpipe _ =
+         raise SigPipe
+      in
+         Sys.set_signal Sys.sigpipe (Sys.Signal_handle handle_sigpipe)
 
 (*
  * Read the editor from the $HOME/.metaprl/editor file.
@@ -244,11 +248,13 @@ let () =
    match Sys.argv with
       [|_; filename|] ->
          let args = parse_file filename in
+(*
          let () =
             try Unix.unlink filename with
                Unix.Unix_error _ ->
                   ()
          in
+*)
 
          (* Choose a filename *)
          let name = List.assoc "name" args in
