@@ -45,7 +45,7 @@ if [ "$2" = "update" ]; then
    echo ""
 fi
 # cvs -q update 2>&1
-if [ "$3" <> "nomake" ]; then
+if [ "$3" != "nomake" ]; then
    rm -f editor/ml/mp.opt
    unset OMAKEFLAGS
    omake VERBOSE=1 -S editor/ml/mp.opt
