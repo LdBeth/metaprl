@@ -211,31 +211,24 @@ struct
           | _ -> \
                DO_FAIL
 
-#ifdef VERBOSE_EXN
-#  define APPLY_FUN_MAIN \
-   let rec apply_fun_arg_at_addr_aux fail f addr BVARS term = \
+#define APPLY_FUN_AUX\
+   let rec apply_fun_arg_at_addr_aux FAIL f addr BVARS term = \
       match addr with \
          Path addr -> \
-            path_replace_term fail f BVARS term addr \
+            path_replace_term FAIL f BVARS term addr \
        | NthClause (addr, flag) -> \
-            nthpath_replace_term fail flag f BVARS term addr \
+            nthpath_replace_term FAIL flag f BVARS term addr \
        | Compose (addr1, addr2) -> \
-            apply_fun_arg_at_addr_aux fail (**) \
-               (apply_fun_arg_at_addr_aux fail f addr2) addr1 BVARS term \
-\
+            apply_fun_arg_at_addr_aux FAIL (**) \
+               (apply_fun_arg_at_addr_aux FAIL f addr2) addr1 BVARS term
+
+#ifdef VERBOSE_EXN
+#  define APPLY_FUN_MAIN APPLY_FUN_AUX\
    let apply_fun_arg_at_addr f addr BVARS term = \
       apply_fun_arg_at_addr_aux (addr, term) f addr BVARS term
 #else
-#  define APPLY_FUN_MAIN \
-   let rec apply_fun_arg_at_addr f addr BVARS term = \
-      match addr with \
-         Path addr -> \
-            path_replace_term f BVARS term addr \
-       | NthClause (addr, flag) -> \
-            nthpath_replace_term flag f BVARS term addr \
-       | Compose (addr1, addr2) -> \
-            apply_fun_arg_at_addr \
-            (apply_fun_arg_at_addr f addr2) addr1 BVARS term
+#  define apply_fun_arg_at_addr_aux apply_fun_arg_at_addr
+#  define APPLY_FUN_MAIN APPLY_FUN_AUX
 #endif
 
 #define APPLY_FUN_NOARG \
@@ -257,7 +250,9 @@ struct
 #define path_replace_term path_var_replace_term
 #define path_replace_bterm path_var_replace_bterm
 #define nthpath_replace_term nthpath_var_replace_term
-#define apply_fun_arg_at_addr_aux apply_var_fun_at_addr_aux
+#ifdef VERBOSE_EXN
+#  define apply_fun_arg_at_addr_aux apply_var_fun_at_addr_aux
+#endif
 #define apply_fun_arg_at_addr apply_var_fun_arg_at_addr
 #define add_unit_arg add_var_unit_arg
 #define apply_fun_at_addr apply_var_fun_at_addr
