@@ -157,7 +157,7 @@ struct
                            (term_free_vars t))
                         (subst_free_vars sub);
             in t.free_vars <- Vars vars; vars
-   
+
    and bterm_free_vars bt =
       match bt.bfree_vars with
          Vars vars -> vars
@@ -206,24 +206,30 @@ struct
 #ifdef VERBOSE_EXN
       if !debug_subst then
          begin
+            debug_subst := false;
             eprintf "do_term_subst: { %a\n" debug_print t;
             eprintf "\tfree_vars:";
             List.iter (fun name -> eprintf " %s" name) (StringSet.elements (term_free_vars t));
             eflush stderr;
             List.iter (fun (v, t) -> eprintf "\t%s: %a\n" v debug_print t) sub;
             eprintf "}%t" eflush;
+            debug_subst := true
          end;
 #endif
       match StringSet.fst_mem_filt (term_free_vars t) sub with
          [] -> t
        | sub' ->
-            {free_vars = VarsDelayed; core = Subst (t,sub')}
+            let t = {free_vars = VarsDelayed; core = Subst (t,sub')} in
+               term_free_vars t;
+               t
 
    let do_bterm_subst sub bt =
       match StringSet.fst_mem_filt (bterm_free_vars bt) sub with
          [] -> bt
        | sub' ->
-            {bfree_vars = VarsDelayed; bcore = BSubst (bt,sub')}
+            let bt = {bfree_vars = VarsDelayed; bcore = BSubst (bt,sub')} in
+               bterm_free_vars bt;
+               bt
 
    (************************************************************************
     * De/Constructors                                                 *

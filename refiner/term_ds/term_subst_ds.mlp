@@ -381,37 +381,69 @@ struct
        | _ ->
             raise unify_exn
 
-   let rec find_closure subst v v2 =
-      try mem_any v (List.assoc v2 subst) subst with
-         Not_found ->
-            ()
+   (*
+    * Substitution is managed as a DAG.
+    *)
+   let make_subst subst =
+      let dag = Cycle_dag.create () in
+      let insert (v, term) =
+         Cycle_dag.insert dag v term (free_vars term)
+      in
+         List.iter insert subst;
+         dag
 
-   and mem_any v term2 subst =
-      let fvs = term_free_vars term2 in
-         if StringSet.mem fvs v then
+   let equate_vars subst v1 v2 =
+      try
+         Cycle_dag.equate subst v1 v2;
+         subst
+      with
+         Cycle_dag.Cycle ->
             raise unify_exn
-         else
-            StringSet.iter (find_closure subst v) fvs
 
-   let rec occurs_check v term2 subst =
-      if is_var_term term2 then
-         let v2 = dest_var term2 in
-            (if v <> v2 then
-                try occurs_check v (List.assoc v2 subst) subst with
-                   Not_found ->
-                      ())
-      else
-         mem_any v term2 subst
-
-   let rec bvars_occurs_check fvars = function
-      [] ->
-         ()
-    | (v, _)::tl ->
-         if StringSet.mem fvars v then
+   let subst_add subst v term =
+      try
+         Cycle_dag.insert subst v term (free_vars term);
+         subst
+      with
+         Cycle_dag.Cycle ->
             raise unify_exn
-         else
-            bvars_occurs_check fvars tl
 
+   let subst_assoc = Cycle_dag.find
+
+   let get_subst subst =
+      let rec flatten = function
+         (nodes, term) :: terms ->
+            begin
+               match term with
+                  Some term ->
+                     flatten_nodes nodes term terms
+                | None ->
+                     flatten_vars nodes terms
+            end
+       | [] ->
+            []
+      and flatten_vars vars terms =
+         match vars with
+            [_] ->
+               flatten terms
+          | v1 :: ((v2 :: _) as vars) ->
+               (v1, mk_var_term v2) :: flatten_vars vars terms
+          | [] ->
+               raise (Invalid_argument "Term_subst_ds.get_subst")
+      and flatten_nodes nodes term terms =
+         match nodes with
+            [node] ->
+               (node, term) :: flatten terms
+          | node1 :: ((node2 :: _) as nodes) ->
+               (node1, mk_var_term node2) :: flatten_nodes nodes term terms
+          | [] ->
+               raise (Invalid_argument "Term_subst_ds.get_subst")
+      in
+         flatten (Cycle_dag.sort subst)
+
+   (*
+    * The unification works over the subst.
+    *)
    let rec unify_terms subst constants bvars term1 term2 =
 #ifdef VERBOSE_EXN
       if !debug_unify then
@@ -427,19 +459,7 @@ struct
                      raise unify_exn
             with
                Not_found ->
-                  if String_set.StringSet.mem constants v then
-                     if is_var_term term2 then
-                        let v' = dest_var term2 in
-                           if v = v' then
-                              subst
-                           else if String_set.StringSet.mem constants v' then
-                              raise unify_exn
-                           else
-                              unify_var_term subst constants bvars v' term1
-                     else
-                        raise unify_exn
-                  else
-                     unify_var_term subst constants bvars v term2
+                  unify_var_term subst constants bvars v term1 term2
 
       else if is_var_term term2 then
          let v = dest_var term2 in
@@ -451,19 +471,7 @@ struct
                      raise unify_exn
             with
                Not_found ->
-                  if String_set.StringSet.mem constants v then
-                     if is_var_term term1 then
-                        let v' = dest_var term1 in
-                           if v = v' then
-                              subst
-                           else if String_set.StringSet.mem constants v' then
-                              raise unify_exn
-                           else
-                              unify_var_term subst constants bvars v' term2
-                     else
-                        raise unify_exn
-                  else
-                     unify_var_term subst constants bvars v term1
+                  unify_var_term subst constants bvars v term2 term1
       else
          let trm1 = dest_term term1 in
          let trm2 = dest_term term2 in
@@ -474,15 +482,34 @@ struct
             else
                raise unify_exn
 
-   and unify_var_term subst constants bvars v term =
-      try unify_terms subst constants bvars (List.assoc v subst) term with
-         Not_found ->
-            occurs_check v term subst;
-            bvars_occurs_check (term_free_vars term) subst;
-            if is_var_term term && dest_var term = v then
+   and unify_var_term subst constants bvars v term1 term2 =
+      if String_set.StringSet.mem constants v then
+         if is_var_term term2 then
+            let v' = dest_var term2 in
+               if v = v' then
+                  subst
+               else if String_set.StringSet.mem constants v' then
+                  raise unify_exn
+               else
+                  try unify_terms subst constants bvars (subst_assoc subst v') term1 with
+                     Not_found ->
+                        subst_add subst v' term1
+         else
+            raise unify_exn
+      else if is_var_term term2 then
+         let v' = dest_var term2 in
+            if v' = v then
                subst
+            else if String_set.StringSet.mem constants v' then
+               try unify_terms subst constants bvars (subst_assoc subst v) term2 with
+                  Not_found ->
+                     subst_add subst v term2
             else
-               (v, term) :: subst
+               equate_vars subst v v'
+      else
+         try unify_terms subst constants bvars (subst_assoc subst v) term2 with
+            Not_found ->
+               subst_add subst v term2
 
    and unify_bterms subst constants bvars bterms1 bterms2 =
       match bterms1, bterms2 with
@@ -499,7 +526,7 @@ struct
             raise unify_exn
 
    let unify subst constants term1 term2 =
-      unify_terms subst constants [] term1 term2
+      get_subst (unify_terms (make_subst subst) constants [] term1 term2)
 
    (*
     * Matching is like unification, but variable matches

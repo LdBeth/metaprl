@@ -33,6 +33,7 @@ open Nl
 
 load "tptp_prove";;
 cd "tptp_prove";;
+set_writeable ();;
 create_tptp "BOO008-3";;
 cd "BOO008-3";;
 

@@ -399,7 +399,7 @@ struct
             ref_raise(RefineError ("dest_token_term", TermMatchError (t, "bad arity")))
 
    let mk_token_simple_term opname n terms =
-      { free_vars = Vars StringSet.empty;
+      { free_vars = VarsDelayed;
         core = Term { term_op = { op_name = opname; op_params = [Token n] };
                       term_terms = List.map mk_simple_bterm terms
                }

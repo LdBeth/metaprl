@@ -36,6 +36,7 @@ LMFILES :=\
 	string_set\
 	flist\
 	debug_string_sets\
+	cycle_dag\
 	memo
 
 # Name of library
