@@ -423,7 +423,7 @@ struct
          FilterCache.add_command proc.cache (cmd, loc)
 
    let declare_rewrite proc loc name params args pf res =
-      print_exn (declare_rewrite_error proc loc name params args) pf res
+      print_exn (declare_rewrite_error proc loc name params args pf) res
 
    (*
     * Declare a term, and define a rewrite in one step.
@@ -873,8 +873,8 @@ let define_rule_error proc loc name
    let cmd = StrFilter.axiom_command proc name params mterm extract res in
       StrFilter.add_command proc (cmd, loc)
 
-let define_rule proc loc name params args goal extract =
-   print_exn (define_rule_error proc loc name params args goal) extract
+let define_rule proc loc name params args goal extract res =
+   print_exn (define_rule_error proc loc name params args goal extract) res
 
 let define_prim proc loc name params args goal extract =
    define_rule proc loc name params args goal (Primitive extract)
