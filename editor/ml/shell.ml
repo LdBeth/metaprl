@@ -777,7 +777,7 @@ struct
     * Create a new thm.
     *)
    let edit_cd_thm mname name =
-      cd ("/" ^ "mname" ^ "/" ^ "name");
+      cd ("/" ^ mname ^ "/" ^ name);
       ()
 
    let edit_create_thm mname name seq =
@@ -854,3 +854,4 @@ end
  * End:
  * -*-
  *)
+<
