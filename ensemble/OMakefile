@@ -125,4 +125,4 @@ else
 # Clean up
 #
 clean:
-    $(CLEAN)
+    $(CLEAN) thread_refiner.ml

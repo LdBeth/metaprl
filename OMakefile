@@ -104,7 +104,7 @@ INCLUDES += -I$(CAMLLIB)
 #
 # Default clean line
 #
-CLEAN = $'(RM) *.opt *.run *.o *.cm* *~ .\#*
+CLEAN = $'(RM) *.opt *.run *.o *.cm* *.a *~ .\#*
 REALCLEAN = $(CLEAN) *.prlb
 
 clean:
