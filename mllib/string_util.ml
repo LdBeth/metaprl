@@ -362,10 +362,19 @@ let unhexify_int s =
       unhexify 0 0;
 
 (*
+ * Locale functions
+ *)
+external set_locale: unit -> unit = "set_locale"
+external is_print: char -> bool = "is_print"
+external is_digit: char -> bool = "is_digit"
+external is_alnum: char -> bool = "is_alnum"
+external is_graph: char -> bool = "is_graph"
+
+let _ = set_locale ()
+
+(*
  * Functions to quote and unquote strings.
  *)
-external is_printable: char -> bool = "is_printable"
-
 let rec is_simple l i s =
    if i = l then
       true
@@ -373,7 +382,7 @@ let rec is_simple l i s =
       match String.unsafe_get s i with
          '"' | '\\' | '\r' | '\n' | '\t' | ' ' -> false
        | c ->
-         is_printable c && is_simple l (succ i) s
+         is_print c && is_simple l (succ i) s
 
 let quote s =
    if s <> "" && is_simple (String.length s) 0 s then

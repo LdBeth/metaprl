@@ -19,7 +19,8 @@ LCFILES :=\
 	register\
 	mmap\
 	readline\
-	termsize
+	termsize\
+	locale
 
 # Name of library
 MAIN := clib

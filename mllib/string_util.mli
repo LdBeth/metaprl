@@ -99,6 +99,15 @@ val quote: string -> string
 val vnewname : string -> (string -> bool) -> string
 
 (*
+ * Locale queries.
+ * See man pages for isdigit, isprint, isalnum and isgraph for more information.
+ *)
+val is_digit : char -> bool
+val is_print : char -> bool
+val is_alnum : char -> bool
+val is_graph : char -> bool
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "refiner"
