@@ -602,6 +602,16 @@ struct
       in
          print_exn set ()
 
+   (*
+    * Get the current goal.
+    *)
+   let goal () =
+      let get () =
+         touch ();
+         info.proof.edit_goal ()
+      in
+         print_exn get ()
+
    let undo () =
       let set () =
          touch ();

@@ -19,6 +19,7 @@ sig
    val cardinal : t -> int
    val mem_filt : t -> elt list -> elt list
    val fst_mem_filt : t -> (elt * 'a) list -> (elt * 'a) list
+   val not_mem_filt : t -> elt list -> elt list
    val intersectp : t -> t -> bool
 end
 

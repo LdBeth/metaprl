@@ -63,6 +63,7 @@ let expand = expand
 let root = root
 let up = up
 let down = down
+let goal = goal
 let refine = refine
 let undo = undo
 let fold = fold

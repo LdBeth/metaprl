@@ -240,33 +240,36 @@ let edit pack sentinal arg name obj =
    let edit_fold_all () =
       Proof_edit.fold_all_ped (get_ped obj)
    in
-   let edit_refine text ast tac =
-      let ped =
-         match obj.rule_ped with
-            Primitive _
-          | Derived _
-          | Incomplete ->
+   let get_ped () =
+      match obj.rule_ped with
+         Primitive _
+       | Derived _
+       | Incomplete ->
                (* Convert to a ped *)
-               let { rule_params = params;
-                     rule_assums = assums;
-                     rule_goal = goal
-                   } = obj
-               in
-               let proof = Package.new_proof pack name assums goal in
-               let ped = Package.ped_of_proof pack proof in
-                  obj.rule_proof <- Interactive proof;
-                  obj.rule_ped <- Interactive ped;
-                  Proof_edit.set_params ped params;
-                  save_ped ();
-                  ped
-          | Interactive ped ->
+            let { rule_params = params;
+                  rule_assums = assums;
+                  rule_goal = goal
+                } = obj
+            in
+            let proof = Package.new_proof pack name assums goal in
+            let ped = Package.ped_of_proof pack proof in
+               obj.rule_proof <- Interactive proof;
+               obj.rule_ped <- Interactive ped;
+               Proof_edit.set_params ped params;
+               save_ped ();
                ped
-      in
-         if !debug_refine then
-            eprintf "Shell_rule.edit_refine: starting refinement%t" eflush;
-         Proof_edit.refine_ped ped text ast tac;
-         if !debug_refine then
-            eprintf "Shell_rule.edit_refine: refinement done%t" eflush
+       | Interactive ped ->
+            ped
+   in
+   let edit_goal () =
+      Proof_edit.ped_arg (get_ped ())
+   in
+   let edit_refine text ast tac =
+      if !debug_refine then
+         eprintf "Shell_rule.edit_refine: starting refinement%t" eflush;
+      Proof_edit.refine_ped (get_ped ()) text ast tac;
+      if !debug_refine then
+         eprintf "Shell_rule.edit_refine: refinement done%t" eflush
    in
       { edit_format = edit_format;
         edit_set_goal = edit_set_goal;
@@ -280,6 +283,7 @@ let edit pack sentinal arg name obj =
         edit_root = edit_root;
         edit_up = edit_up;
         edit_down = edit_down;
+        edit_goal = edit_goal;
         edit_refine = edit_refine;
         edit_undo = edit_undo;
         edit_fold = edit_fold;

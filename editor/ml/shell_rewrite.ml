@@ -256,26 +256,29 @@ let edit pack sentinal arg name obj =
    let edit_fold_all () =
       Proof_edit.fold_all_ped (get_ped obj)
    in
-   let edit_refine text ast tac =
-      let ped =
-         match obj.rw_ped with
-            Primitive _
-          | Derived _
-          | Incomplete ->
+   let get_ped () =
+      match obj.rw_ped with
+         Primitive _
+       | Derived _
+       | Incomplete ->
                (* Convert to a ped *)
-               let { rw_params = params;
-                     rw_assums = assums;
-                     rw_redex = redex;
-                     rw_contractum = contractum
-                   } = obj
-               in
-               let ped = mk_ped arg sentinal params assums redex contractum in
-                  save_ped ped;
-                  ped
-          | Interactive ped ->
+            let { rw_params = params;
+                  rw_assums = assums;
+                  rw_redex = redex;
+                  rw_contractum = contractum
+                } = obj
+            in
+            let ped = mk_ped arg sentinal params assums redex contractum in
+               save_ped ped;
                ped
-      in
-         Proof_edit.refine_ped ped text ast tac
+       | Interactive ped ->
+            ped
+   in
+   let edit_goal () =
+      Proof_edit.ped_arg (get_ped ())
+   in
+   let edit_refine text ast tac =
+      Proof_edit.refine_ped (get_ped ()) text ast tac
    in
       { edit_format = edit_format;
         edit_set_goal = edit_set_goal;
@@ -289,6 +292,7 @@ let edit pack sentinal arg name obj =
         edit_root = edit_root;
         edit_up = edit_up;
         edit_down = edit_down;
+        edit_goal = edit_goal;
         edit_refine = edit_refine;
         edit_undo = edit_undo;
         edit_fold = edit_fold;

@@ -548,11 +548,11 @@ struct
       if bvars == [] && term1 == term2 then subst else
       if is_var_term term1 then
          let v = dest_var term1 in
-            if List.mem v constants then
+            if String_set.StringSet.mem constants v then
                let v' = dest_var term2 in
                   if v = v' then
                      subst
-                  else if List.mem v' constants then
+                  else if String_set.StringSet.mem constants v' then
                      raise unify_exn
                   else
                      (v', term1) :: subst
@@ -575,11 +575,11 @@ struct
                               (v, term2) :: subst
       else if is_var_term term2 then
          let v = dest_var term2 in
-            if List.mem v constants then
+            if String_set.StringSet.mem constants v then
                let v' = dest_var term1 in
                   if v = v' then
                      subst
-                  else if List.mem v' constants then
+                  else if String_set.StringSet.mem constants v' then
                      raise unify_exn
                   else
                      (v', term2) :: subst

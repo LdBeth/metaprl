@@ -27,6 +27,7 @@ type edit_object =
      edit_root : unit -> unit;
      edit_up : int -> unit;
      edit_down : int -> unit;
+     edit_goal : unit -> tactic_arg;
      edit_refine : string -> MLast.expr -> tactic -> unit;
      edit_undo : unit -> unit;
      edit_fold : unit -> unit;

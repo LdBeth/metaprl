@@ -19,6 +19,7 @@ sig
    val cardinal : t -> int
    val mem_filt : t -> elt list -> elt list
    val fst_mem_filt : t -> (elt * 'a) list -> (elt * 'a) list
+   val not_mem_filt : t -> elt list -> elt list
    val intersectp : t -> t -> bool
 end
 
@@ -242,6 +243,18 @@ struct
          then let rem = mem_filt s t in
                  if rem == t then l else h::rem
          else mem_filt s t
+
+   let rec not_mem_filt s = function
+      [] -> []
+    | (h::t) as l ->
+         if mem s h then
+            not_mem_filt s t
+         else
+            let rem = not_mem_filt s t in
+               if rem == t then
+                  l
+               else
+                  h::rem
 
    let rec fst_mem_filt s = function
       [] -> []

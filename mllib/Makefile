@@ -33,6 +33,7 @@ LMFILES :=\
 	splay_table\
 	fun_splay_set\
 	small_set\
+	string_set\
 	flist\
 	memo
 

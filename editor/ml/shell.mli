@@ -78,6 +78,7 @@ sig
    val root : unit -> unit
    val up : int -> unit
    val down : int -> unit
+   val goal : unit -> Tactic_type.tactic_arg
    val refine : tactic -> unit
    val undo : unit -> unit
    val fold : unit -> unit

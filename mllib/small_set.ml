@@ -140,6 +140,13 @@ struct
        | Set s ->
             BigSet.mem_filt s elements
 
+   let not_mem_filt set elements =
+      match set with
+         List l ->
+            List_util.subtract elements l
+       | Set s ->
+            BigSet.not_mem_filt s elements
+
    let rec collect l = function
       (x, v) :: tl ->
          if List.mem x l then

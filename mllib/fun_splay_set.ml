@@ -437,6 +437,19 @@ struct
          else
             mem_filt s t
 
+   let rec not_mem_filt s = function
+      [] ->
+         []
+    | (h :: t) as l ->
+         if mem s h then
+            not_mem_filt s t
+         else
+            let rem = not_mem_filt s t in
+               if rem == t then
+                  l
+               else
+                  h :: rem
+
    let rec fst_mem_filt s = function
       [] ->
          []

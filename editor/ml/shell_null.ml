@@ -41,6 +41,7 @@ let null_object =
         edit_root = one_error;
         edit_up = one_error;
         edit_down = one_error;
+        edit_goal = one_error;
         edit_refine = three_errors;
         edit_undo = one_error;
         edit_fold = one_error;
