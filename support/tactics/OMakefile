@@ -18,8 +18,7 @@ MPFILES =\
 	auto_tactic\
 	dtactic\
 
-.DEFAULT: $(addsuffix .cmoz, $(MPFILES))
-
+PRLFiles($(MPFILES))
 OCamlLibrary(theory, $(MPFILES) basic_tactics)
 
 

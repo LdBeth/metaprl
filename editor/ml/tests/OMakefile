@@ -1,3 +1,5 @@
+PRLFiles($(TESTFILES))
+
 MPFILES =\
    test\
    prop-pigeon

@@ -29,8 +29,6 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-extends Shell_sig
-extends Package_info
 extends Nuprl_font
 extends Base_dform
 extends Summary

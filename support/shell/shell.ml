@@ -33,13 +33,9 @@
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 extends Mptop
-extends Package_info
-extends Shell_util
-extends Shell_rule
 extends Shell_package
 extends Shell_root
 extends Shell_fs
-extends Shell_p4_sig
 
 open Exn_boot
 

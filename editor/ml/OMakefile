@@ -49,16 +49,18 @@ TOPFILES =\
 
 OCAML_LINK_FLAGS += -linkall
 
-TESTFILES =
+PRLFiles($(MP2FILES))
+
+TESTFILES[] =
 
 if $(TESTS_ENABLED)
-   TheorySubDirs(tests)
    TESTFILES[] =
    if $(mem itt, $(THEORIES))
       TESTFILES[] +=
-         tests/test
-         tests/prop-pigeon
+         $(file tests/test)
+         $(file tests/prop-pigeon)
       export
+   TheorySubDirs(tests)
    export
 
 MP2FILES = $(TESTFILES) $(MP2FILES)

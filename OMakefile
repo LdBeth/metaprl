@@ -509,15 +509,6 @@ CAMLP4OFLAGS = $`(PREFIXED_OCAMLINCLUDES)
 MPTIME =
 
 #
-# Add dependency scanning for .ppo files
-#
-.SCANNER: %.ppo %.cmoz: %.ml $(OCAMLDEP)
-    $(OCAMLDEP) $(OCAMLDEPFLAGS) $(PREFIXED_OCAMLINCLUDES) $<
-
-.SCANNER: %.cmi %.cmiz: %.mli $(OCAMLDEP)
-    $(OCAMLDEP) $(OCAMLDEPFLAGS) $(PREFIXED_OCAMLINCLUDES) $<
-
-#
 # OCamlGeneratedFiles need to be redefined to include .ppo
 #
 OCamlGeneratedFiles(files) =
@@ -526,26 +517,51 @@ OCamlGeneratedFiles(files) =
    .SCANNER: %.cmo %.cmx: $(files)
    export
 
-#
-# For theory files, generate intermediate .ppo files
-#
-%.ppo %.cmoz: %.ml %.cmiz :optional: %.prla :effects: %.prlb
-        $(WrapC $(CAMLP4N)) $(CAMLP4NFLAGS) -o $*.ppo $*.ml
+PRLFiles(files) =
+   # Dependency analysis uses -prl flag by default
+   OCAMLDEPFLAGS += -prl
 
-%.cmi %.cmiz: %.mli
-        $(PrlC $(OCAMLC)) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(OCAMLPPFLAGS) $(PREFIXED_OCAMLINCLUDES) -c $<
+   #
+   # Add dependency scanning for .ppo files
+   #
+   .SCANNER: %.ppo %.cmoz: %.ml $(OCAMLDEP)
+       $(OCAMLDEP) $(OCAMLDEPFLAGS) $(PREFIXED_OCAMLINCLUDES) $<
 
-%.cmo: %.ppo
-        $(OCAMLC) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
+   .SCANNER: %.cmi %.cmiz: %.mli $(OCAMLDEP)
+       $(OCAMLDEP) $(OCAMLDEPFLAGS) $(PREFIXED_OCAMLINCLUDES) $<
 
-%.cmx %$(EXT_OBJ): %.ppo
-        $(OCAMLOPT) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
+   #
+   # For theory files, generate intermediate .ppo files
+   #
+   %.ppo %.cmoz: %.ml %.cmiz :optional: %.prla :effects: %.prlb
+      $(WrapC $(CAMLP4N)) $(CAMLP4NFLAGS) -o $*.ppo $*.ml
 
-%.p4i: %.mli $(CAMLP4O)
-        $(WrapC $(CAMLP4O)) $(PREFIXED_OCAMLINCLUDES) $*.mli > $@
+   %.cmi %.cmiz: %.mli
+      $(PrlC $(OCAMLC)) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(OCAMLPPFLAGS) $(PREFIXED_OCAMLINCLUDES) -c $<
 
-%.p4: %.ml $(CAMLP4O)
-        $(WrapC $(CAMLP4O)) $(PREFIXED_OCAMLINCLUDES) $*.ml > $@
+   %.cmo: %.ppo
+      $(OCAMLC) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
+
+   %.cmx %$(EXT_OBJ): %.ppo
+      $(OCAMLOPT) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
+
+   if $(SLOPPY_DEPENDENCIES)
+      %.cmi %.cmiz:  :sloppy: $(CAMLP4N)
+      %.ppo %.cmoz:  :sloppy: $(CAMLP4N)
+
+   else
+      %.cmi %.cmiz: $(CAMLP4N)
+      %.ppo %.cmoz: $(CAMLP4N)
+
+   %.p4i: %.mli $(CAMLP4O)
+      $(WrapC $(CAMLP4O)) $(PREFIXED_OCAMLINCLUDES) $*.mli > $@
+
+   %.p4: %.ml $(CAMLP4O)
+      $(WrapC $(CAMLP4O)) $(PREFIXED_OCAMLINCLUDES) $*.ml > $@
+
+   $(addsuffixes .ppo .cmoz .cmiz .cmi .cmo .cmx $(EXT_OBJ) .p4i .p4, $(files)):
+
+   .DEFAULT: $(addsuffix .cmoz, $(files))
 
 #
 # Support directories
@@ -573,9 +589,6 @@ else
    export
 
 
-# Dependency analysis uses -prl flag by default
-OCAMLDEPFLAGS += -prl
-
 # These directories use prlc
 THEORIES = $(split ' ', $(THEORIES))
 THEORIES = $(if $(mem all, $(THEORIES)), $(THEORIES_ALL) $(filter-out all, $(THEORIES)), $(THEORIES))
@@ -585,7 +598,7 @@ MP_DIRS[] =
    $(THEORY_DIRS)
 
 Theory(files) =
-    .DEFAULT: $(addsuffix .cmoz, $(files))
+    PRLFiles($(files))
     OCamlLibrary(theory, $(files))
 
 ########################################################################

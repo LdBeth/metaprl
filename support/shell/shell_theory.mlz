@@ -26,7 +26,6 @@
  *)
 extends Browser_resource
 extends Mptop
-extends Package_info
 extends Shell_command
 extends Shell_fs
 extends Shell_root

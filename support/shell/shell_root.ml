@@ -29,8 +29,6 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-extends Shell_sig
-extends Package_info
 extends Summary
 
 open Refiner.Refiner.TermMan

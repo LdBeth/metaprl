@@ -30,11 +30,8 @@
  * Modifed By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 extends Mptop
-extends Package_info
-extends Shell_rule
 extends Shell_package
 extends Shell_root
-extends Shell_p4_sig
 
 open Shell_sig
 open Shell_p4_sig
