@@ -280,7 +280,7 @@ struct
    let is_simple_term_opname name = function
       { term_op = { imp_op_name = name'; imp_op_params = [] };
         term_terms = bterms
-      } when name' = name ->
+      } when name' == name ->
          let rec aux = function
             { bvars = []; bterm = _ }::t -> aux t
           | _::t -> false
@@ -352,6 +352,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.10  1998/06/15 22:53:56  nogin
+ * Use == for comparing opnames
+ *
  * Revision 1.9  1998/06/15 21:57:21  jyh
  * Added a few new functions.
  *

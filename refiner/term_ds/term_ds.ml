@@ -444,7 +444,7 @@ struct
    let is_simple_term_opname name t = match dest_term t with
       { term_op = { imp_op_name = name'; imp_op_params = [] };
         term_terms = bterms
-      } when name' = name -> no_bvars bterms
+      } when name' == name -> no_bvars bterms
     | _ -> false
 
    let mk_any_term op terms = mk_term op (List.map mk_simple_bterm terms)

@@ -156,7 +156,7 @@ struct
     | { term_op = { imp_op_name = name1; imp_op_params = params1 }; term_terms = bterms1 } ->
          (function
             { term_op = { imp_op_name = name2; imp_op_params = params2 }; term_terms = bterms2 } ->
-            name1 = name2 & params1 = params2 & equal_comp_bterms vars' vars bterms1 bterms2)
+            name1 == name2 & params1 = params2 & equal_comp_bterms vars' vars bterms1 bterms2)
          (dest_term t')
 
    and equal_comp_bterms vars' vars bterms1 bterms2 =
@@ -309,7 +309,7 @@ struct
             let { term_op = op2; term_terms = bterms2 } = dest_term t2 in
             let { op_name = name1; op_params = params1 } = dest_op op1 in
             let { op_name = name2; op_params = params2 } = dest_op op2 in
-               if name1 = name2 then
+               if name1 == name2 then
                   try
                      List_util.iter2 generalizes_param params1 params2;
                      List_util.fold_left2 generalizes_bterm vars bterms1 bterms2

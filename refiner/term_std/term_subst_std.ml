@@ -145,7 +145,7 @@ struct
             end
        | { term_op = { imp_op_name = name1; imp_op_params = params1 }; term_terms = bterms1 },
          { term_op = { imp_op_name = name2; imp_op_params = params2 }; term_terms = bterms2 } ->
-            name1 = name2
+            name1 == name2
                     & List_util.for_all2 equal_params params1 params2
                     & equal_bterms vars bterms1 bterms2
 
@@ -187,7 +187,7 @@ struct
             end
        | { term_op = { imp_op_name = name1; imp_op_params = params1 }; term_terms = bterms1 },
          { term_op = { imp_op_name = name2; imp_op_params = params2 }; term_terms = bterms2 } ->
-            name1 = name2 & params1 = params2 & equal_comp_bterms vars bterms1 bterms2
+            name1 == name2 & params1 = params2 & equal_comp_bterms vars bterms1 bterms2
 
       and equal_comp_bterms vars bterms1 bterms2 =
          let equal_comp_bterm = fun
@@ -479,7 +479,7 @@ struct
             let { term_op = op2; term_terms = bterms2 } = dest_term t2 in
             let { op_name = name1; op_params = params1 } = dest_op op1 in
             let { op_name = name2; op_params = params2 } = dest_op op2 in
-               if name1 = name2 then
+               if name1 == name2 then
                   try
                      List_util.iter2 generalizes_param params1 params2;
                      List_util.fold_left2 generalizes_bterm vars bterms1 bterms2
@@ -520,6 +520,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.5  1998/06/15 22:53:56  nogin
+ * Use == for comparing opnames
+ *
  * Revision 1.4  1998/06/15 21:57:23  jyh
  * Added a few new functions.
  *
