@@ -815,9 +815,9 @@ let create
                               (*
                                *     key0:b                   key2:b
                                *     /    \                   /    \
-                               *  left:bb key2:r           key4:b right2:b
+                               *  left:bb key2:r           key4:r right2:b
                                *          /    \           /     \
-                               *        key3:b right2:b  key0:r   key3:r
+                               *        key3:b right2:b  key0:b   key3:b
                                *        /   \           /   \    /     \
                                *     key4:r  d     left:b left4 right4 d
                                *     /   \
@@ -826,9 +826,9 @@ let create
                               lift key path (**)
                                  (Black (key2,
                                          data2,
-                                         new_black key4 data4 (**)
-                                            (new_red key0 data0 left left4)
-                                            (new_red key3 data3 right4 d),
+                                         new_red key4 data4 (**)
+                                            (new_black key0 data0 left left4)
+                                            (new_black key3 data3 right4 d),
                                          right2,
                                          pred size0))
 
@@ -939,9 +939,9 @@ let create
                               (*
                                *        key0:b                key1:b
                                *        /     \               /    \
-                               *    key1:r   right:bb    left1:b  key4:b
+                               *    key1:r   right:bb    left1:b  key4:r
                                *    /    \                        /    \
-                               * left1:b key3:b              key3:r    key0:r
+                               * left1:b key3:b              key3:b    key0:b
                                *         /   \               /   \     /    \
                                *        d    key4:r         d  left4 right4 right:b
                                *             /   \
@@ -951,9 +951,9 @@ let create
                                  (Black (key1,
                                          data1,
                                          left1,
-                                         new_black key4 data4 (**)
-                                            (new_red key3 data3 d left4)
-                                            (new_red key0 data0 right4 right),
+                                         new_red key4 data4 (**)
+                                            (new_black key3 data3 d left4)
+                                            (new_black key0 data0 right4 right),
                                             pred size0))
 
                          | Black (key3, data3, Red (key4, data4, left4, right4, size4), c, _) ->
