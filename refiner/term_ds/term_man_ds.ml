@@ -403,6 +403,7 @@ struct
        | _ ->
             REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "not a sequent")))
 
+   let v_sym = Lm_symbol.add "v"
    let rec nth_binding t i =
       match t.core with
          Sequent s ->
@@ -413,7 +414,7 @@ struct
                   if i < SeqHyp.length s.sequent_hyps then
                      match SeqHyp.get s.sequent_hyps i with
                         HypBinding (v, _) -> v
-                      | Hypothesis _ -> Lm_symbol.add "v"
+                      | Hypothesis _ -> v_sym
                       | Context _ ->
                            REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "it's a context")))
                   else

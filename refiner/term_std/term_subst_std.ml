@@ -611,7 +611,7 @@ struct
                   Not_found ->
                      v_str
             in
-            let v' = Lm_symbol.add (v' ^ "_" ^ string_of_int index) in
+            let v' = Lm_symbol.make v' index in
             let t = mk_var_term v' in
             let bvars = v' :: bvars in
             let subst = (v, t) :: subst in
