@@ -1168,7 +1168,7 @@ struct
          node
 
    let index_exn = RefineError ("Proof_boot.index", StringError "there is no proof node with such address")
-   
+
    let index proof path =
       let { pf_root = root;
             pf_address = addr;
@@ -1411,7 +1411,12 @@ struct
       let _ = List.iter set_cache extras in
       let subgoals = wrap 1 subgoals in
       let extras = wrap (succ (List.length subgoals)) extras in
-      let subgoals = List.map (fun subgoal -> subgoal :: if cache then get_cache subgoal else []) subgoals in
+      let subgoals =
+(*
+ * BUG BUG BUG: get_cache is generating illegal addresses --jyh 8/13/03
+ *)
+         List.map (fun subgoal -> subgoal :: if false && cache then get_cache subgoal else []) subgoals
+      in
          subgoals, extras
 
    (*
@@ -1774,7 +1779,7 @@ struct
             let t = goal_ext goal in
             let new_goal =
                try Filter_exn.print dforms (fun () -> snd (TacticInternal.refine (tac ()) t)) ()
-               with _ -> goal
+               with RefineError _ -> goal
             in
             let leaves = leaves_ext new_goal in
             let subgoals, extras = update_subgoals leaves subgoals extras in
