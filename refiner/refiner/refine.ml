@@ -2085,7 +2085,7 @@ struct
          let args' = mk_xlist_term args in
          let rec aux j =
             if j < l then
-               mk_xlambda_term vars.(j) (aux (j + 1))
+               mk_xbind_term vars.(j) (aux (j + 1))
             else
                args'
          in

@@ -328,11 +328,12 @@ struct
          mk_term op [mk_bterm [] t]
 
    (****************************************
-    * LAMBDA                               *
+    * Binging                              *
     ****************************************)
 
-   let xlambda_opname = mk_opname "lambda" xperv
-   let mk_xlambda_term = mk_dep1_term xlambda_opname
+   let xbind_opname = mk_opname "bind" xperv
+   let is_xbind_term = is_dep1_term xbind_opname
+   let mk_xbind_term = mk_dep1_term xbind_opname
 
    (*************************
     * Sequents              *                                              *
@@ -799,7 +800,7 @@ struct
       let l = Array.length vars in
       let rec aux i =
          if i < l then
-            mk_xlambda_term vars.(i) (aux (i + 1))
+            mk_xbind_term vars.(i) (aux (i + 1))
          else
             t
       in

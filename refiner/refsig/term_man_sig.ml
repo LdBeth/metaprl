@@ -125,7 +125,8 @@ sig
    (*
     * Primitive abstractions.
     *)
-   val mk_xlambda_term : string -> term -> term
+   val is_xbind_term : term -> bool
+   val mk_xbind_term : string -> term -> term
 
    (*
     * Construct a redex out of some vars, params, and other terms.
