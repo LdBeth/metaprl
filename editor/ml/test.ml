@@ -6,38 +6,22 @@ include Base_theory
 
 include Package_info
 
-type t1 = { l1 : int; l2 : float }
+declare lambda{x. 'b['x]}
+declare apply{'f; 'a}
 
-type t2 =
-   Hello of string * string
- | World of int
+dform lambda_df : lambda{x. 'b} =
+   Nuprl_font!lambda slot{'x} `"." slot{'b}
 
-let f x = x
+dform apply_df : apply{'f; 'a} =
+   slot{'f} hspace slot{'a}
 
-let g x y = x
-
-let h { l1 = x; l2 = f } = x, f
-
-let m = function
-   Some x ->
-      x
- | None ->
-      0
-
-let k x =
-   match x with
-      Some x ->
-         x
-    | None ->
-         0
-
-let z f x =
-   try f x with
-      Failure x ->
-         0
+primrw beta : apply{lambda{x. 'b['x]}; 'a} <--> 'b['a]
 
 (*
  * $Log$
+ * Revision 1.5  1998/05/04 23:46:08  jyh
+ * Most display forms now work.
+ *
  * Revision 1.4  1998/05/04 13:01:01  jyh
  * Ocaml display without let rec.
  *

@@ -252,9 +252,12 @@ let set_window_width i =
  *)
 let pwd () =
    let rec aux = function
-      [h] -> h
-    | h::t -> h ^ "/" ^ (aux t)
-    | [] -> ""
+      [h] ->
+         h
+    | h::t ->
+         h ^ "/" ^ (aux t)
+    | [] ->
+         ""
    in
       aux info.dir
 
@@ -557,6 +560,9 @@ let init () =
 (*
  *
  * $Log$
+ * Revision 1.8  1998/05/04 23:46:06  jyh
+ * Most display forms now work.
+ *
  * Revision 1.7  1998/04/28 18:29:52  jyh
  * ls() works, adding display.
  *

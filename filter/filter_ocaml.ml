@@ -204,6 +204,8 @@ let patt_and_op 		= mk_ocaml_op "patt_and"
 let patt_arg_op 		= mk_ocaml_op "patt_arg"
 let patt_end_op 		= mk_ocaml_op "patt_end"
 let patt_var_op 		= mk_ocaml_op "patt_var"
+let patt_fix_arg_op             = mk_ocaml_op "patt_fix_arg"
+let patt_fix_and_op 		= mk_ocaml_op "patt_fix_and"
 
 (*
  * Conversion between pattern and expression identifiers.
@@ -1029,7 +1031,7 @@ let expr_upto_op                = add_expr "for_upto"           dest_upto_expr
 let expr_downto_op              = add_expr "for_downto"         dest_downto_expr
 let expr_fun_op                 = add_expr "fun"                dest_fun_expr
 let expr_if_op                  = add_expr "ifthenelse"         dest_if_expr
-let expr_letrec_op              = add_expr "letrec"             dest_fix_expr
+let expr_fix_op                 = add_expr "fix"                dest_fix_expr
 let expr_let_op                 = add_expr "let"                dest_let_expr
 let expr_match_op               = add_expr "match"              dest_match_expr
 let expr_new_op                 = add_expr "new"                dest_new_expr
@@ -1093,7 +1095,7 @@ let str_module_op               = add_str "str_module"          dest_module_str
 let str_module_type_op          = add_str "str_module_type"     dest_module_type_str
 let str_open_op                 = add_str "str_open"            dest_open_str
 let str_type_op                 = add_str "str_type"            dest_type_str
-let str_letrec_op               = add_str "str_letrec"          dest_fix_str
+let str_fix_op                  = add_str "str_fix"             dest_fix_str
 let str_let_op                  = add_str "str_let"             dest_let_str
 
 let mt_lid_op                   = add_mt "mt_lid"               dest_lid_mt
@@ -1392,15 +1394,23 @@ and mk_patt_record vars comment loc ppl tailf =
       mk_simple_term patt_record_op loc [make ppl vars]
 
 and mk_patt_list vars comment loc op1 op2 op3 pl tailf =
-   let tailf vars = mk_simple_term op3 loc [tailf vars] in
+   let tailf vars =
+      mk_simple_term op3 loc [tailf vars]
+   in
    let rec make pl vars =
       match pl with
          p::pl ->
-            mk_simple_term op2 loc [mk_patt vars comment p (make pl)]
+            let tailf' vars =
+               if pl = [] then
+                  tailf vars
+               else
+                  mk_simple_term op2 loc [make pl vars]
+            in
+               mk_patt vars comment p tailf'
        | [] ->
             tailf vars
    in
-      make pl vars
+      mk_simple_term op1 loc [make pl vars]
       
 and mk_type comment t =
    let loc = loc_of_ctyp t in
@@ -1633,9 +1643,38 @@ and mk_cf comment cf =
 (*
  * Make a fix expression.
  *)
+and mk_fix_aux vars comment loc pel tailf =
+   let pl, el = List.split pel in
+   let pl = List.rev pl in
+   let el = List.rev el in
+   let rec tailf' el vars =
+      match el with
+        e::el ->
+           mk_simple_term patt_fix_arg_op loc [mk_expr vars comment e; tailf' el vars]
+       | [] ->
+           tailf vars
+   in
+   let rec make pl vars =
+      match pl with
+         p::pl ->
+            let tailf'' vars =
+               if pl = [] then
+                  tailf' el vars
+               else
+                  mk_simple_term patt_fix_and_op loc [make pl vars]
+            in
+               mk_patt vars comment p tailf''
+       | [] ->
+          tailf' el vars
+   in
+      make pl vars
+
 and mk_fix vars comment loc pel e =
-   raise (Failure "Filter_ocaml.mk_fix: not implemented")
-   
+   let tailf vars =
+      mk_simple_term patt_in_op loc [mk_expr vars comment e]
+   in
+      mk_simple_term expr_fix_op loc [mk_fix_aux vars comment loc pel tailf]
+
 and mk_let vars comment loc pel e =
    let pl, el = List.split pel in
    let el = List.map (mk_expr vars comment) el in
@@ -1658,7 +1697,10 @@ and mk_let vars comment loc pel e =
       mk_simple_term expr_let_op loc [make pl vars; mk_xlist_term el]
 
 and mk_str_fix comment loc pel =
-   raise (Failure "Filter_ocaml.mk_str_fix: not implemented")
+   let tailf vars =
+      mk_simple_term patt_done_op loc []
+   in
+      mk_simple_term str_fix_op loc [mk_fix_aux [] comment loc pel tailf]
 
 and mk_str_let comment loc pel =
    let make (p, e) =
@@ -1764,6 +1806,9 @@ let term_of_class = mk_class
 
 (*
  * $Log$
+ * Revision 1.13  1998/05/04 23:46:12  jyh
+ * Most display forms now work.
+ *
  * Revision 1.12  1998/05/04 13:01:10  jyh
  * Ocaml display without let rec.
  *
