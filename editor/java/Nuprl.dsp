@@ -66,99 +66,11 @@ JAVA=jvc.exe
 # Name "Nuprl - Java Virtual Machine Debug"
 # Begin Source File
 
-SOURCE=.\BlockingQueue.java
-# End Source File
-# Begin Source File
-
-SOURCE=.\Context.java
-# End Source File
-# Begin Source File
-
-SOURCE=.\Debug.java
-# End Source File
-# Begin Source File
-
-SOURCE=.\DebugFlags.java
-# End Source File
-# Begin Source File
-
-SOURCE=.\Editor.java
-# End Source File
-# Begin Source File
-
-SOURCE=.\Filename.java
-# End Source File
-# Begin Source File
-
-SOURCE=.\GrayButton.java
-# End Source File
-# Begin Source File
-
-SOURCE=.\HTMLTerm.java
-# End Source File
-# Begin Source File
-
-SOURCE=.\Icon.java
-# End Source File
-# Begin Source File
-
-SOURCE=.\IconWindow.java
-# End Source File
-# Begin Source File
-
-SOURCE=.\ImageLabel.java
-# End Source File
-# Begin Source File
-
-SOURCE=.\Marshalable.java
-# End Source File
-# Begin Source File
-
-SOURCE=.\MarshalInfo.java
-# End Source File
-# Begin Source File
-
-SOURCE=.\ModeLine.java
-# End Source File
-# Begin Source File
-
-SOURCE=.\Navigate.java
-# End Source File
-# Begin Source File
-
 SOURCE=.\NetscapeApplet.java
 # End Source File
 # Begin Source File
 
 SOURCE=.\Nuprl.java
-# End Source File
-# Begin Source File
-
-SOURCE=.\Pathname.java
-# End Source File
-# Begin Source File
-
-SOURCE=.\Queue.java
-# End Source File
-# Begin Source File
-
-SOURCE=.\Semaphore.java
-# End Source File
-# Begin Source File
-
-SOURCE=.\Status.java
-# End Source File
-# Begin Source File
-
-SOURCE=.\StringTokenizer.java
-# End Source File
-# Begin Source File
-
-SOURCE=.\TtyArea.java
-# End Source File
-# Begin Source File
-
-SOURCE=.\WinAlert.java
 # End Source File
 # End Target
 # End Project
