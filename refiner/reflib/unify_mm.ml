@@ -925,7 +925,7 @@ let multieq2term meq consts var_hashtbl multeq_hashtbl =
                  in
                  let trm_w_sub = match sub with
                                    [] -> trm
-                                 | _  -> apply_subst trm sub
+                                 | _  -> apply_subst sub trm
                  in
                  Hashtbl_multeq.add multeq_hashtbl meq trm_w_sub;
                  trm_w_sub
@@ -1016,7 +1016,7 @@ let update_subst varstringl terml sigma =
     | [], v::h ->
          (List.map (function x -> x, mk_var_term v) h) @ sigma
     | [t], li ->
-         (List.map (function x -> x, apply_subst t sigma) li) @ sigma
+         (List.map (function x -> x, apply_subst sigma t) li) @ sigma
     | _ -> raise impossible
 
 let rec multiterm_list2term m consts var_hashtbl=

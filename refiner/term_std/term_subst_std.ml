@@ -445,7 +445,7 @@ struct
       else
          t
 
-   let apply_subst t s =
+   let apply_subst s t =
       let vs,ts = List.split s in
       subst t vs ts
 
@@ -607,7 +607,7 @@ struct
                bvars, subst, index) ([], [], index) bvars
       in
       let bvars = List.rev bvars in
-      let t = apply_subst t subst in
+      let t = apply_subst subst t in
       let t, index = standardize_term index t in
          { bvars = bvars; bterm = t }, index
 

@@ -227,7 +227,7 @@ let typeinf_final consts eqs opt_eqs defs t =
    let eqs = unify_eqnl_eqnl eqs consts in
    let all_eqs,opt_eqs = try_append_eqs eqs consts opt_eqs in
    let subst = unify_eqnl all_eqs consts in
-   eqs, opt_eqs, subst, apply_subst (apply_subst t subst) defs
+   eqs, opt_eqs, subst, apply_subst defs (apply_subst subst t)
 
 let infer_type p t =
    let decls = collect_decls p in

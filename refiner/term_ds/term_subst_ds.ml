@@ -132,13 +132,11 @@ struct
     | _ ->
             raise (Invalid_argument "Term_subst_ds.fst_flt_nodups")
 
-   let apply_subst t = function
-      [] -> t
-    | s ->
-         begin match fst_flt_nodups (free_vars_set t) s with
-            [] -> t
-          | sub -> core_term (Subst (t,sub))
-         end
+   let apply_subst sub t =
+      if sub == [] then t else
+      match fst_flt_nodups (free_vars_set t) sub with
+         [] -> t
+       | sub -> core_term (Subst (t,sub))
 
    let subst1 term v t =
       if SymbolSet.mem (free_vars_set term) v then
@@ -183,7 +181,7 @@ struct
          let bvars, ts = compute_renames avoid avoid' bt.bvars in
          {
             bvars = bvars;
-            bterm = apply_subst bt.bterm ts
+            bterm = apply_subst ts bt.bterm
          }
       else bt
 
@@ -620,7 +618,7 @@ struct
                bvars, subst, index) ([], [], index) bvars
       in
       let bvars = List.rev bvars in
-      let t = apply_subst t subst in
+      let t = apply_subst subst t in
       let t, index = standardize_term index t in
          { bvars = bvars; bterm = t }, index
 

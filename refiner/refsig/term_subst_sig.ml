@@ -62,7 +62,7 @@ sig
     *)
    val subst : term -> var list -> term list -> term
    val subst1 : term -> var -> term -> term
-   val apply_subst : term -> term_subst -> term
+   val apply_subst : term_subst -> term -> term
 
    (*
     * dest_bterm_and_rename is the same as dest_bterm, except it will also

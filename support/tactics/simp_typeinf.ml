@@ -133,7 +133,7 @@ let resource simp_typeinf =
 
 let typeinf_final consts eqs t ty =
    let subst = unify_eqnl eqs consts in
-      apply_subst t subst, apply_subst ty subst
+      apply_subst subst t, apply_subst subst ty
 
 let simp_infer_type p t =
    let consts = free_vars_set t in
