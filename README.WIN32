@@ -3,10 +3,10 @@ To install MetaPRL on Windows, you will need the following:
 1. OCaml (for native Win32), available at http://www.ocaml.org
 
 2. The Omake build system, available at
-     http://mojave.caltech.edu/omake
+     http://mojave.caltech.edu/download.html
 
-3. Some OCaml patches for Win32, available at
-     http://mojave.caltech.edu/ocaml-3.06-win32-patch.zip
+3. Some OCaml patches for Win32, also available at
+     http://mojave.caltech.edu/download.html
 
 4. GNU emacs for Windows (optional, but recommended), available at
      http://www.gnu.org

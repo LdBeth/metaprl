@@ -50,6 +50,7 @@ value prl_readline(value prompt_arg)
     /* Get the line (make sure string is terminated) */
     bufp[MAX_LINE_LENGTH - 1] = 0;
     fputs(String_val(prompt_arg), stdout);
+    fflush(stdout);
     line = fgets(bufp, MAX_LINE_LENGTH - 1, stdin);
 
     /* Readline returns null on EOF */
