@@ -2,6 +2,8 @@
 DIR := ensemble
 ROOT := ..
 
+include $(ROOT)/mk/preface
+
 INCLUDE :=\
 	-I .\
 	-I $(ENSROOT)/lib\
@@ -60,7 +62,7 @@ ifdef ENSROOT
 ENS_LIB = $(LIB)_ens.cma
 OPT_ENS_LIB = $(LIB)_ens.cmxa
 RENS_LIB = $(ROOT)/lib/$(ENS_LIB)
-ROPT_ENS_LIB = $(ROOT)/lib/$(OPT_ENS_LIB) $(ROOT)/lib/$(LIB)_ens.a
+ROPT_ENS_LIB = $(ROOT)/lib/$(OPT_ENS_LIB) $(ROOT)/lib/$(LIB)_ens$(EXT_LIB)
 
 $(RENS_LIB): $(ENS_LIB)
 	ln -sf $(ROOT)/$(DIR)/$(ENS_LIB) $@
@@ -68,10 +70,10 @@ $(RENS_LIB): $(ENS_LIB)
 $(ROOT)/lib/$(OPT_ENS_LIB): $(OPT_ENS_LIB)
 	ln -sf $(ROOT)/$(DIR)/$(OPT_ENS_LIB) $@
 
-$(ROOT)/lib/$(LIB)_ens.a: $(LIB)_ens.a
-	ln -s $(ROOT)/$(DIR)/$(LIB)_ens.a $@
+$(ROOT)/lib/$(LIB)_ens$(EXT_LIB): $(LIB)_ens$(EXT_LIB)
+	ln -s $(ROOT)/$(DIR)/$(LIB)_ens$(EXT_LIB) $@
 
-$(LIB)_ens.a: $(OPT_ENS_LIB)
+$(LIB)_ens$(EXT_LIB): $(OPT_ENS_LIB)
 
 $(ENS_LIB): $(CMOFILES_ens) thread_refiner.cmi thread_refiner_ens_mod.ml
 	rm -f thread_refiner.ml
@@ -91,7 +93,7 @@ endif
 #
 NULL_LIB = $(LIB)_null.cma
 OPT_NULL_LIB = $(LIB)_null.cmxa
-OPT_NULL_LIBA = $(LIB)_null.a
+OPT_NULL_LIBA = $(LIB)_null$(EXT_LIB)
 RNULL_LIB = $(ROOT)/lib/$(NULL_LIB)
 ROPT_NULL_LIB = $(ROOT)/lib/$(OPT_NULL_LIB)
 ROPT_NULL_LIBA = $(ROOT)/lib/$(OPT_NULL_LIBA)

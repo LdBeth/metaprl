@@ -217,7 +217,7 @@ CMXOBJS =\
 	$(CMXALIBS)
 
 CCLIBS =\
-	-cclib $(ROOT)/lib/clib.a\
+	-cclib $(ROOT)/lib/clib$(EXT_LIB)\
 	$(CCLIBS_ens)
 
 # Name of main libraris
@@ -232,15 +232,15 @@ install:: all
 
 $(NL).run: $(CMOBJS) $(RCMOFILES) $(CMADEPS)
 	rm -f $@
-	$(OCAMLMKTOP) -o $@ -custom -linkall $(THREADS) $(CMOBJS) $(RCMOFILES) $(CCLIBS) $(LIBTHREADS)
+	$(OCAMLMKTOP) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(CMOBJS) $(RCMOFILES) $(CCLIBS) $(LIBTHREADS)
 
 $(NL).top: $(TCMOBJS) $(TCMOFILES) $(TCMADEPS)
 	rm -f $@
-	$(OCAMLC) -o $@ -custom -linkall $(THREADS) $(TCMOBJS) $(TCMOFILES) $(CCLIBS) $(LIBTHREADS)
+	$(OCAMLC) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(TCMOBJS) $(TCMOFILES) $(CCLIBS) $(LIBTHREADS)
 
 $(NL).opt: $(CMXOBJS) $(TCMXFILES)
 	rm -f $@
-	$(OCAMLOPT) -o $@ -linkall $(THREADS) $(CMXOBJS) $(TCMXFILES) $(CCLIBS) $(OPTTHREADS)
+	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ -linkall $(THREADS) $(CMXOBJS) $(TCMXFILES) $(CCLIBS) $(OPTTHREADS)
 
 clean::
 	$(RM) -f *.p4* *.pp*

@@ -101,7 +101,7 @@ CMALIBS =\
 
 CCLIBS =\
 	-cclib -lunix\
-	-cclib $(ROOT)/clib/clib.a
+	-cclib $(ROOT)/clib/clib$(EXT_LIB)
 
 #
 # Libraries for camlp4n

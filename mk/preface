@@ -57,3 +57,12 @@ endif
 ifndef INLINE
    INLINE=5
 endif
+ifdef PROFILE
+   EXT_LIB=.p.a
+   EXT_OBJ=.p.o
+   EXT_PROF=.p
+else
+   EXT_LIB=.a
+   EXT_OBJ=.o
+   EXT_PROF=
+endif

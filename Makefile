@@ -26,7 +26,7 @@ NL_DIRS :=\
 
 DIRS := $(REFINER_DIRS) filter $(NL_DIRS) editor/ml
 
-.PHONY: all opt install depend clean profile_all profile_clean profile_byte profile profile_opt
+.PHONY: all opt install depend clean filter profile_all profile_clean profile_byte profile profile_opt
 
 all:
 	@for i in $(DIRS); do\
@@ -38,9 +38,14 @@ opt:
 		if (echo Making $$i...; cd $$i; $(MAKE) $@); then true; else exit 1; fi;\
 	done
 
+filter:
+	@for i in $(REFINER_DIRS) filter; do\
+		if (echo Making $$i...; cd $$i; $(MAKE) all); then true; else exit 1; fi;\
+	done
+
 profile_clean: 
 	@for i in $(REFINER_DIRS) editor/ml; do\
-		if (echo Making $$i...; cd $$i; make clean); then true; else exit 1; fi;\
+		if (echo Making $$i...; cd $$i; $(MAKE) clean); then true; else exit 1; fi;\
 	done
 
 profile_all: 
@@ -51,7 +56,7 @@ profile_all:
 profile_byte: clean all profile_clean profile_all
 
 profile: 
-	@$(MAKE) all 
+	@$(MAKE) filter
 	@$(MAKE) profile_opt
 
 profile_opt:
@@ -74,7 +79,7 @@ clean:
 	done
 
 depend:
-	(cd util; make)
+	(cd util; $(MAKE))
 	@for i in $(DIRS); do\
 		if (echo Making $$i...; cd $$i; touch Makefile.dep; $(MAKE) $@); then true; else exit 1; fi;\
 	done

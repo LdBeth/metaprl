@@ -18,14 +18,15 @@ THREADS = -thread
 THREADSLIB = $(CAMLLIB)/threads/threads.cma
 OPTTHREADSLIB = $(CAMLLIB)/threads/threads.cmxa
 LIBTHREADS = -ccopt -L$(ROOT)/lib -cclib -lthreads -cclib -lunix -cclib -lpthread
-OPTTHREADS = -ccopt -L$(ROOT)/lib -cclib -lthreadsnat -cclib -lunix -cclib -lpthread
+OPTTHREADS = -ccopt -L$(ROOT)/lib -cclib -lthreadsnat$(EXT_PROF) -cclib -lunix$(EXT_PROF) -cclib -lpthread
 
 #
 # Configuration
 #
 OCAMLDEP = $(ROOT)/bin/ocamldep
-OCAMLCFLAGS = $(INCLUDE) $(OCAMLFLAGS) $(NOASSERT) $(THREADS)
-OCAMLOPTFLAGS = $(INCLUDE) $(OCAMLFLAGS) $(PROFILE) -inline $(INLINE) -noassert $(THREADS)
+OCAMLCFLAGS = -I $(ROOT)/lib $(INCLUDE) $(OCAMLFLAGS) $(NOASSERT) $(THREADS)
+OCAMLDEPFLAGS = -I $(ROOT)/lib $(INCLUDE) 
+OCAMLOPTFLAGS = -I $(ROOT)/lib $(INCLUDE) $(OCAMLFLAGS) $(PROFILE) -inline $(INLINE) -noassert $(THREADS)
 CAMLP4NFLAGS = $(INCLUDE) $(OCAMLFLAGS)
 CAMLP4OFLAGS = $(INCLUDE)
 CFLAGS = -g -I$(CAMLLIB) -D_REENTRANT $(PROFILE)
@@ -90,14 +91,14 @@ CMXFILES     = $(sort $(NL_CMXFILES) $(NL2_CMXFILES) $(LCMXFILES) $(MCMXFILES))
 CMAFILES     = $(addsuffix .cma,  $(MLLIBS))
 CMXAFILES    = $(addsuffix .cmxa, $(MLLIBS))
 
-OFILES       = $(addsuffix .o, $(LCFILES))
+OFILES       = $(addsuffix $(EXT_OBJ), $(LCFILES))
 CFILES       = $(addsuffix .c, $(LCFILES))
 
 RMLIFILES    = $(addprefix $(ROOT)/lib/, $(LMLIFILES))
 RCMIFILES    = $(addprefix $(ROOT)/lib/, $(CMIFILES))
 RCMAFILES    = $(addprefix $(ROOT)/lib/, $(addsuffix .cma, $(INSTALL_LIBS)))
 RCMXAFILES   = $(addprefix $(ROOT)/lib/, $(addsuffix .cmxa, $(INSTALL_LIBS)))
-RAFILES      = $(addprefix $(ROOT)/lib/, $(addsuffix .a, $(INSTALL_LIBS)))
+RAFILES      = $(addprefix $(ROOT)/lib/, $(addsuffix $(EXT_LIB), $(INSTALL_LIBS)))
 
 ZMLFILES     = $(addsuffix .ml, $(MLZFILES))
 ZMLIFILES    = $(addsuffix .mli, $(MLZFILES))
@@ -110,7 +111,7 @@ PMLIFILES    = $(addsuffix _verb.mli, $(MLPFILES)) $(addsuffix _simp.mli, $(MLPF
 
 .SUFFIXES: .cma .cmx .cmo .cmi .ml .mli .mll .mly
 
-$(MAIN).a: $(OFILES)
+$(MAIN)$(EXT_LIB): $(OFILES)
 	ar r $@ $?
 	ranlib $@
 
@@ -150,10 +151,10 @@ $(RCMAFILES): $(ROOT)/lib/%.cma: %.cma
 
 $(RCMXAFILES): $(ROOT)/lib/%.cmxa: %.cmxa
 	$(LN) ../$(DIR)/$*.cmxa $(ROOT)/lib
-	$(LN) ../$(DIR)/$*.a $(ROOT)/lib
+	$(LN) ../$(DIR)/$*$(EXT_LIB) $(ROOT)/lib
 
-$(RAFILES): $(ROOT)/lib/%.a: %.a
-	$(LN) ../$(DIR)/$*.a $(ROOT)/lib
+$(RAFILES): $(ROOT)/lib/%$(EXT_LIB): %$(EXT_LIB)
+	$(LN) ../$(DIR)/$*$(EXT_LIB) $(ROOT)/lib
 
 $(NL_CMIFILES) $(NL2_CMIFILES): %.cmi: %.mli
 	NLLIB=$(NLLIB) $(PRLC) $(OCAMLCFLAGS) -c $*.mli
@@ -220,6 +221,9 @@ $(REG_CMXFILES): %.cmx: %.ml %.cmi
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $*.c
+
+%.p.o: %.c
+	$(CC) -p $(CFLAGS) -c $*.c -o $@
 
 #
 clean::

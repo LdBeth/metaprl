@@ -4,6 +4,8 @@
 DIR := refiner
 ROOT := ..
 
+include $(ROOT)/mk/preface
+
 INCLUDE :=
 
 DIRS :=\
@@ -32,7 +34,7 @@ all: lib
 
 opt: optlib 
 	@ $(MAKE) $(ROOT)/lib/$(MAINLIB).cmxa 
-	@ $(MAKE) $(ROOT)/lib/$(MAINLIB).a
+	@ $(MAKE) $(ROOT)/lib/$(MAINLIB)$(EXT_LIB)
 
 #
 # The real Makefile
@@ -78,7 +80,7 @@ CMXFILES :=\
 $(MAINLIB).cma: $(CMALIBS)
 	$(OCAMLC) $(OCAMLCFLAGS) -a -o $(MAINLIB).cma $(CMALIBS)
 
-$(MAINLIB).a: $(MAINLIB).cmxa
+$(MAINLIB)$(EXT_LIB): $(MAINLIB).cmxa
 
 $(MAINLIB).cmxa: $(CMXFILES)
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -a -o $(MAINLIB).cmxa $(CMXFILES)
