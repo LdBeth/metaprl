@@ -257,9 +257,6 @@ let rec edit pack parse_arg name window obj =
    let edit_redo () =
       Proof_edit.redo_ped (get_ped obj)
    in
-   let edit_nop () =
-      Proof_edit.nop_ped (get_ped obj)
-   in
    let edit_get_contents () =
       let goal =
          match obj.rule_goal with

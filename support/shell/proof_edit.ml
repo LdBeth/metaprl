@@ -315,9 +315,6 @@ let ped_status = function
             let (c1,c2)=node_count_of_ped ped in ObjComplete(c1,c2)
       end
 
-let goal_of_ped ped =
-   Proof.goal (proof_of_ped ped)
-
 let item_of_ped ped =
    Proof.info (proof_of_ped ped)
 
