@@ -34,13 +34,9 @@ open Shell_util
 (*
  * Mount descriptions.
  *)
-type shell_mount =
-   MountRoot
- | MountModule of string
- | MountProof of string * string
-
 type shell_dir =
    DirRoot
+ | DirFS of string list
  | DirModule of string
  | DirProof of string * string * string list
 

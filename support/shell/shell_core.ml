@@ -465,16 +465,32 @@ let interpret shell command =
  *)
 
 (*
- * Get the string version of the current directory.
+ * This is the critical function that decides mount points!!!
  *)
-let string_of_dir dir =
+let dir_of_path path =
+   match path with
+      [] ->
+         DirRoot
+    | "fs" :: rest ->
+         DirFS rest
+    | [modname] ->
+         DirModule modname
+    | modname :: itemname :: subdir ->
+         DirProof (modname, itemname, subdir)
+
+(*
+ * Turn the directory into a simple string path.
+ *)
+let path_of_dir dir =
    match dir with
       DirRoot ->
-         "/"
+         []
+    | DirFS rest ->
+         "fs" :: rest
     | DirModule modname ->
-         "/" ^ modname
-    | DirProof (modname, itemname, rest) ->
-         Lm_string_util.prepend "/" (modname :: itemname :: rest)
+         [modname]
+    | DirProof (modname, itemname, subdir) ->
+         modname :: itemname :: subdir
 
 (*
  * Home directory for the current directory.
@@ -484,29 +500,35 @@ let home_of_dir dir =
       DirRoot
     | DirModule _ ->
          dir
+    | DirFS _ ->
+         DirFS []
     | DirProof (modname, _, _) ->
          DirModule modname
 
+let root_of_dir dir =
+   match dir with
+      DirRoot
+    | DirFS []
+    | DirModule _ ->
+         dir
+    | DirFS (name :: _) ->
+         DirFS [name]
+    | DirProof (modname, itemname, _) ->
+         DirProof (modname, itemname, [])
+
 (*
- * Turn the directory into a simple string path.
+ * Get the string version of the current directory.
  *)
-let path_of_dir dir =
+let string_of_dir dir =
    match dir with
       DirRoot ->
-         []
+         "/"
+    | DirFS rest ->
+         Lm_string_util.prepend "/" ("fs" :: rest)
     | DirModule modname ->
-         [modname]
-    | DirProof (modname, itemname, subdir) ->
-         modname :: itemname :: subdir
-
-let dir_of_path path =
-   match path with
-      [] ->
-         DirRoot
-    | [modname] ->
-         DirModule modname
-    | modname :: itemname :: subdir ->
-         DirProof (modname, itemname, subdir)
+         "/" ^ modname
+    | DirProof (modname, itemname, rest) ->
+         Lm_string_util.prepend "/" (modname :: itemname :: rest)
 
 (*
  * Turn a string into a path, relative to the current directory.
@@ -565,12 +587,25 @@ let mount_root parse_arg shell need_shell verbose =
    Shell_state.set_module "shell"
 
 (*
+ * Mount the FS directory.
+ *)
+let mount_fs parse_arg shell need_shell verbose =
+   shell.shell_package <- None;
+   set_packages shell;
+   Shell_state.set_dfbase None;
+   Shell_state.set_mk_opname None;
+   Shell_state.set_so_var_context None;
+   Shell_state.set_infixes None;
+   Shell_state.set_module "shell"
+
+(*
  * Helper for mounting a module.
  *)
 let mount_current_module modname parse_arg shell need_shell verbose =
    let update =
       match shell.shell_dir with
-         DirRoot ->
+         DirRoot
+       | DirFS _ ->
             true
        | DirModule modname'
        | DirProof (modname', _, _) ->
@@ -620,6 +655,16 @@ let mount_proof modname itemname parse_arg shell need_shell verbose =
       shell.shell_proof <- proof
 
 (*
+ * We use mount points as abstract names to do not include
+ * the subdirectory.
+ *)
+type shell_mount =
+   MountRoot
+ | MountFS
+ | MountModule of string
+ | MountProof of string * string
+
+(*
  * We use "mount" points to decide what to edit.
  * The mount function returns a description of the
  * mount point, and the mount function.
@@ -628,6 +673,8 @@ let mount_of_dir dir =
    match dir with
       DirRoot ->
          MountRoot, mount_root, []
+    | DirFS rest ->
+         MountFS, mount_fs, rest
     | DirModule modname ->
          MountModule modname, mount_module modname, []
     | DirProof (modname, itemname, rest) ->
@@ -642,7 +689,8 @@ let umount shell mount =
       MountProof (modname, itemname) ->
          shell.shell_proof.edit_addr []
     | MountModule _
-    | MountRoot ->
+    | MountRoot
+    | MountFS ->
          ()
 
 (*
@@ -690,15 +738,7 @@ let cd parse_arg shell name =
    string_of_dir shell.shell_dir
 
 let root parse_arg shell =
-   let dir = shell.shell_dir in
-   let dir =
-      match dir with
-         DirRoot
-       | DirModule _ ->
-            dir
-       | DirProof (modname, itemname, _) ->
-            DirProof (modname, itemname, [])
-   in
+   let dir = root_of_dir shell.shell_dir in
       chdir parse_arg shell true true dir;
       string_of_dir shell.shell_dir
 
@@ -763,6 +803,13 @@ let view_packages info options =
       display_proof info proof options
 
 (*
+ * Display a filesystem directory.
+ *)
+let view_fs info options subdir =
+   let proof = Shell_fs.view packages (get_display_mode info) in
+      display_proof info proof options
+
+(*
  * Display a particular package.
  *)
 let view_package parse_arg info name options =
@@ -785,6 +832,8 @@ let view parse_arg shell options name =
       match dir with
          DirRoot ->
             view_packages shell options
+       | DirFS subdir ->
+            view_fs shell options subdir
        | DirModule modname ->
             view_package parse_arg shell modname options
        | DirProof (modname, item, _) ->
@@ -925,6 +974,8 @@ let create_pkg parse_arg shell name =
             view parse_arg shell LsOptionSet.empty name
     | DirRoot ->
          raise (Failure "Shell.create_package: can't create root package")
+    | DirFS _ ->
+         raise (Failure "Shell.create_package: can't create a filesystem package")
     | DirProof _ ->
          raise (Failure "Shell.create_package: packages can't be nested right now")
 
