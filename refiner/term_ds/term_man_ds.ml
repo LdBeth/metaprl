@@ -64,8 +64,8 @@ module TermMan (**)
    (TermOp : TermOpSig with module OpTypes = TermType)
    (TermSubst : TermSubstSig with module SubstTypes = TermType)
    (RefineError : RefineErrorSig
-    with type term = TermType.term
-    with type level_exp = TermType.level_exp) =
+    with type ErrTypes.Types.term = TermType.term
+    with type ErrTypes.Types.level_exp = TermType.level_exp) =
 struct
    open Term
    open TermType

@@ -45,9 +45,7 @@ module TermMeta (**)
    (Term : TermBaseSig with module TermTypes = TermType)
    (TermSubst : TermSubstSig with module SubstTypes = TermType)
    (TermMan : TermManSig with module ManTypes = TermType)
-   (RefineError : RefineErrorSig
-    with type term = TermType.term
-    with type meta_term = TermType.meta_term) =
+   (RefineError : RefineErrorSig with module ErrTypes.Types = TermType) =
 struct
    open TermType
    open Term

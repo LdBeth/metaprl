@@ -10,6 +10,7 @@ include Refiner.Refiner.TermMan
 include Refiner.Refiner.TermMeta
 include Refiner.Refiner.TermOp
 include Refiner.Refiner.TermSubst
+include Refiner.Refiner.RefineError
 include Mp_resource
 include Top_tacticals
 include Top_conversionals

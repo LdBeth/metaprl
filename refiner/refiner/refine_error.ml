@@ -43,17 +43,16 @@ module MakeRefineError (**)
    (TermType : TermSig)
    (AddressType : TypeSig) =
 struct
+
    (*
     * Types.
     *)
-   type level_exp = TermType.level_exp
-   type param = TermType.param
-   type term = TermType.term
-   type bound_term = TermType.bound_term
-   type meta_term = TermType.meta_term
-   type address = AddressType.t
-   type seq_hyps = TermType.seq_hyps
-   type seq_goals = TermType.seq_goals
+   module ErrTypes = struct
+      module Types = TermType
+      type address = AddressType.t
+   end
+   open ErrTypes
+   open Types
 
    (*
     * Match errors in the rewriter.

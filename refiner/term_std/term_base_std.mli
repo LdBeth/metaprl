@@ -35,11 +35,7 @@ open Term_std_sig
 open Term_std
 
 module Term (**)
-   (RefineError : RefineErrorSig
-    with type level_exp = TermType.level_exp
-    with type param = TermType.param
-    with type term = TermType.term
-    with type bound_term = TermType.bound_term)
+   (RefineError : RefineErrorSig with module ErrTypes.Types = TermType)
 : (TermStdSig with module TermTypes = TermType)
 
 (*

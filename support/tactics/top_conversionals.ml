@@ -75,6 +75,7 @@ doc <:doc< @docoff >>
 open Lm_debug
 open Lm_printf
 
+open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.RefineError
 

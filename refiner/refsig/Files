@@ -1,6 +1,6 @@
 REFSIG_FILES =\
-	refine_error_sig\
 	term_sig\
+	refine_error_sig\
 	term_base_sig\
 	term_op_sig\
 	term_man_sig\

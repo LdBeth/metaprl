@@ -62,13 +62,7 @@ module MakeRewriteMatchRedex
    (TermMan : TermManSig with module ManTypes = TermType)
    (TermAddr : TermAddrSig with module AddrTypes = TermType)
    (TermSubst : TermSubstSig with module SubstTypes = TermType)
-   (RefineError : RefineErrorSig
-    with type level_exp = TermType.level_exp
-    with type param = TermType.param
-    with type term = TermType.term
-    with type bound_term = TermType.bound_term
-    with type seq_hyps = TermType.seq_hyps
-    with type seq_goals = TermType.seq_goals)
+   (RefineError : RefineErrorSig with module ErrTypes.Types = TermType)
    (RewriteUtil : RewriteUtilSig
     with type term = TermType.term
     with type rstack = MakeRewriteTypes(TermType)(TermAddr).rstack)

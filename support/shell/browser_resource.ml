@@ -27,6 +27,7 @@
 open Lm_string_set
 open Printf
 
+open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.RefineError

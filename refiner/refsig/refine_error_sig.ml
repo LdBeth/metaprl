@@ -35,11 +35,17 @@ open Lm_symbol
 open Opname
 
 (*
- * We use this module to express sharing constraints.
+ * We use these modules to express sharing constraints.
  *)
 module type TypeSig =
 sig
    type t
+end
+
+module type ErrTypesSig =
+sig
+   module Types : Term_sig.TermSig
+   type address
 end
 
 (*
@@ -47,21 +53,9 @@ end
  *)
 module type RefineErrorSig =
 sig
-   (*
-    * Regular term parts.
-    *)
-   type level_exp
-   type param
-   type term
-   type bound_term
-
-   (*
-    * Types over terms.
-    *)
-   type meta_term
-   type address
-   type seq_hyps
-   type seq_goals
+   module ErrTypes: ErrTypesSig
+   open ErrTypes
+   open Types
 
    (*
     * Match errors in the rewriter.

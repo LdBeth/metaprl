@@ -41,7 +41,7 @@ module TermMan (**)
    (TermBase : TermBaseSig with module TermTypes = Term)
    (TermOp : TermOpSig with module OpTypes = Term)
    (TermSubst : TermSubstSig with module SubstTypes = Term)
-   (RefineError : RefineErrorSig with type term = Term.term)
+   (RefineError : RefineErrorSig with module ErrTypes.Types = Term)
 : (TermManGenSig with module ManTypes = Term)
 
 (*

@@ -47,6 +47,7 @@ open Lm_debug
 open Lm_symbol
 open Lm_printf
 
+open Refiner.Refiner.TermType
 open Refiner.Refiner.TermSubst
 open Refiner.Refiner.RefineError
 open Term_match_table

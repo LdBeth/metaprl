@@ -373,6 +373,8 @@ if $(NCURSES_ENABLED)
 
 OCAMLDEP = $(file bin/ocamldep$(EXE))
 
+OCAMLDEPFLAGS += -omake
+
 .SCANNER: %.cmi: %.mli $(OCAMLDEP)
 .SCANNER: %.cmo %.cmx: %.ml $(OCAMLDEP) :exists: %.mli
 
@@ -545,7 +547,7 @@ else
 
 
 # Dependency analysis uses -prl flag by default
-OCAMLDEPFLAGS = -prl -omake
+OCAMLDEPFLAGS += -prl
 
 # These directories use prlc
 THEORIES = $(if $(mem all, $(THEORIES)), $(THEORIES_ALL) $(filter-out all%, $(THEORIES)), $(THEORIES))

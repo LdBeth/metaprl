@@ -37,7 +37,6 @@ open Lm_thread
 
 open Pcaml
 
-open Refiner.Refiner.RefineError
 open Basic_tactics
 
 (*

@@ -47,11 +47,7 @@ open Term_std
 
 module TermEval
    (Term : TermStdSig with module TermTypes = TermType)
-   (RefineError : RefineErrorSig
-    with type level_exp = TermType.level_exp
-    with type param = TermType.param
-    with type term = TermType.term
-    with type bound_term = TermType.bound_term)
+   (RefineError : RefineErrorSig with module ErrTypes.Types = TermType)
 =
 struct
    open RefineError

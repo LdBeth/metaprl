@@ -58,8 +58,8 @@ module TermAddr (**)
    (TermOp : TermOpSig with module OpTypes = TermType)
    (TermMan : TermManSig with module ManTypes = TermType)
    (RefineError : RefineErrorSig
-    with type term = TermType.term
-    with type address = addr) =
+    with type ErrTypes.Types.term = TermType.term
+    with type ErrTypes.address = addr) =
 struct
    open TermMan
    open TermType

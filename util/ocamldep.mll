@@ -294,13 +294,13 @@ let file_dependencies source_file =
          else cmo_deps, cmx_deps
       in
       print_dependencies (basename ^ ".cmo") cmo_deps;
-      print_dependencies (basename ^ ".ppo") ppo_deps;
+      if !prl_flag then print_dependencies (basename ^ ".ppo") ppo_deps;
       print_dependencies (basename ^ ".cmx") cmx_deps
     end else
     if Filename.check_suffix source_file ".mli" then begin
       let basename = Filename.chop_suffix source_file ".mli" in
       print_dependencies (basename ^ ".cmi") (StringSet.fold find_dependency_cmi !free_structures []);
-      if !omake_flag then
+      if !omake_flag && !prl_flag then
          print_dependencies (basename ^ ".cmiz") (StringSet.fold find_dependency_cmiz !prl_structures [])
     end else
       raise(Invalid_argument("Unknown suffix in a file " ^ source_file))

@@ -35,6 +35,7 @@ open Lm_symbol
 open Lm_printf
 
 open Opname
+open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
