@@ -956,6 +956,10 @@ struct
             raise (RefineError (name, AddressError (addr, t)))
        | TermMeta.MetaTermMatch t ->
             raise (RefineError (name, MetaTermMatchError t))
+       | Invalid_argument s ->
+            raise (RefineError (name, StringStringError ("Invalid_argument", s)))
+       | Failure s ->
+            raise (RefineError (name, StringStringError ("Failure", s)))
 
    (*
     * An theorem is a special case of a rule, where to
@@ -1526,6 +1530,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.7  1998/06/23 22:12:13  jyh
+ * Improved rewriter speed with conversion tree and flist.
+ *
  * Revision 1.6  1998/06/22 19:45:37  jyh
  * Rewriting in contexts.  This required a change in addressing,
  * and the body of the context is the _last_ subterm, not the first.

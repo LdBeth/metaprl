@@ -27,6 +27,12 @@ open Czf_itt_wf
 open Czf_itt_true
 open Czf_itt_false
 open Czf_itt_or
+open Czf_itt_and
+open Czf_itt_implies
+open Czf_itt_all
+open Czf_itt_exists
+open Czf_itt_dall
+open Czf_itt_dexists
 
 (*
  * Proof saving.
@@ -46,12 +52,19 @@ let zT, z =
    in
       zT, z
 
-let _ = load "czf_itt_or"
-let _ = cd "czf_itt_or.or_elim"
+let _ = load "czf_itt_split"
+let _ = cd "czf_itt_split"
+(*
+let _ = load "czf_itt_axioms"
+let _ = cd "czf_itt_axioms.set_induction"
+*)
 let _ = set_writeable ()
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/23 22:12:08  jyh
+ * Improved rewriter speed with conversion tree and flist.
+ *
  * Revision 1.1  1998/06/22 19:45:15  jyh
  * Rewriting in contexts.  This required a change in addressing,
  * and the body of the context is the _last_ subterm, not the first.

@@ -706,8 +706,7 @@ struct
          <:expr< $prim_rewrite_expr loc$ $lid:local_refiner_id$ $str:name$ (**)
             $lid:"redex"$ $lid:"contractum"$ >>
       in
-      let rw_body_expr = <:expr< $rewrite_of_rewrite_expr loc$ $lid:rw_id$ $lid:"x"$ >> in
-      let rw_fun_expr = <:expr< fun [ $list:[ x_patt, None, rw_body_expr ]$ ] >> in
+      let rw_body_expr = <:expr< $rewrite_of_rewrite_expr loc$ $lid:rw_id$ >> in
 
       (* Let expressions *)
       let body =
@@ -723,7 +722,7 @@ struct
           <:str_item< value $rec:false$ $list:[ rw_patt, wrap_exn loc rw_id body ]$ >>
        in
        let name_let =
-          <:str_item< value $rec:false$ $list:[ name_patt, rw_fun_expr ]$ >>
+          <:str_item< value $rec:false$ $list:[ name_patt, rw_body_expr ]$ >>
        in
           [name_rewrite_let; name_let]
 
@@ -1615,6 +1614,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.22  1998/06/23 22:12:09  jyh
+ * Improved rewriter speed with conversion tree and flist.
+ *
  * Revision 1.21  1998/06/17 13:19:43  jyh
  * Using marshaler for terms.
  *

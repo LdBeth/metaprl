@@ -27,7 +27,8 @@ LMFILES :=\
 	file_base_type\
 	file_base\
 	file_type_base\
-	splay_set
+	splay_set\
+	flist
 
 # Name of library
 MAIN := util

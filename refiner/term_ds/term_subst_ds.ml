@@ -26,7 +26,19 @@ struct
 
    type term_subst = (string * term) list
 
-   let subst t tl vl = do_term_subst (List.combine vl tl) t
+   let subst t tl vl =
+      assert (if List.length tl = List.length vl then
+                 true
+              else
+                 begin
+                    eprintf "subst: %a (%a) (%a)%t" (**)
+                       debug_print t
+                       print_string_list vl
+                       (print_any_list debug_print) tl
+                       eflush;
+                    true
+                 end);
+      do_term_subst (List.combine vl tl) t
 
    let is_free_var v t = StringSet.mem v t.free_vars
 

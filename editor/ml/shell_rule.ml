@@ -322,8 +322,8 @@ let view_rule pack
       Filter_summary.rule_stmt = stmt;
       Filter_summary.rule_proof = proof
     } =
-   let assums = unzip_mimplies stmt in
-   let assums, goal = List_util.split_last assums in
+   let assums, goal = unzip_mfunction stmt in
+   let assums = List.map snd assums in
    let obj =
       { rule_assums = assums;
         rule_params = params;
@@ -337,6 +337,9 @@ let view_rule pack
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/23 22:12:07  jyh
+ * Improved rewriter speed with conversion tree and flist.
+ *
  * Revision 1.1  1998/06/15 22:31:54  jyh
  * Added CZF.
  *

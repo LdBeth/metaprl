@@ -124,11 +124,12 @@ struct
    (*
     * During redex compilation, we keep track of
     * second order variables and binding variables.
+    * We keep the so arg length for checking.
     *)
    type rstack =
       FOVarPattern of string
-    | SOVarPattern of string
-    | SOVarInstance of string
+    | SOVarPattern of string * int
+    | SOVarInstance of string * int
     | FOVar of string
     | CVar of string
     | PIVar of string
@@ -237,24 +238,59 @@ struct
     * Upgrade a second-order instance to a pattern
     *)
    let rec rstack_upgrade v = function
-      (SOVarInstance v')::t when v' = v ->
-         (SOVarPattern v)::t
-    | ((SOVarPattern v')::t as stack) when v' = v ->
+      (SOVarInstance (v', i))::t when v' = v ->
+         (SOVarPattern (v, i))::t
+    | ((SOVarPattern (v', _))::t as stack) when v' = v ->
          stack
     | (FOVarPattern v')::t when v' = v ->
-         (SOVarPattern v)::t
+         (SOVarPattern (v, 0))::t
     | h::t ->
          h::(rstack_upgrade v t)
     | [] ->
          raise (Invalid_argument "rstack_upgrade")
 
    (*
+    * Check the arity of a variable.
+    *)
+   let rec rstack_check_arity v arity = function
+      [] ->
+         raise (Failure "Rewrite.rstack_check_arity")
+    | h::t ->
+         match h with
+            FOVarPattern v' ->
+               if v' = v then
+                  if arity = 0 then
+                     ()
+                  else
+                     raise (RewriteError (BoundSOVar v))
+               else
+                  rstack_check_arity v arity t
+          | SOVarPattern (v', i) ->
+               if v' = v then
+                  if i = arity then
+                     ()
+                  else
+                     raise (RewriteError (BoundSOVar v))
+               else
+                  rstack_check_arity v arity t
+          | SOVarInstance (v', i) ->
+               if v' = v then
+                  if i = arity then
+                     ()
+                  else
+                     raise (RewriteError (BoundSOVar v))
+               else
+                  rstack_check_arity v arity t
+          | _ ->
+               rstack_check_arity v arity t
+
+   (*
     * Membership functions.
     *)
    let rstack_mem_prop v = function
       FOVarPattern v' -> v = v'
-    | SOVarPattern v' -> v = v'
-    | SOVarInstance v' -> v = v'
+    | SOVarPattern (v', _) -> v = v'
+    | SOVarInstance (v', _) -> v = v'
     | FOVar v' -> v = v'
     | CVar v' -> v = v'
     | PIVar v' -> v = v'
@@ -263,8 +299,8 @@ struct
 
    let rstack_so_mem_prop v = function
       FOVarPattern v' -> v = v'
-    | SOVarPattern v' -> v = v'
-    | SOVarInstance v' -> v = v'
+    | SOVarPattern (v', _) -> v = v'
+    | SOVarInstance (v', _) -> v = v'
     | _ -> false
 
    let rstack_fo_mem_prop v = function
@@ -408,10 +444,10 @@ struct
    let print_rstack_item out = function
       FOVarPattern s ->
          fprintf out "FOVarPattern %s" s
-    | SOVarPattern s ->
-         fprintf out "SOVarPatterm %s" s
-    | SOVarInstance s ->
-         fprintf out "SOVarInstance %s" s
+    | SOVarPattern (s, i) ->
+         fprintf out "SOVarPatterm %s[%d]" s i
+    | SOVarInstance (s, i) ->
+         fprintf out "SOVarInstance %s[%d]" s i
     | FOVar s ->
          fprintf out "FOVar %s" s
     | CVar s ->
@@ -605,18 +641,24 @@ struct
                (* This is a second order variable, and all subterms are vars *)
                if rstack_so_mem v stack then
                   (* Treat this as an instance, but record that a pattern was found *)
-                  rstack_upgrade v stack, RWSOMatch(rstack_so_index v stack, gen_subterms bvars subterms)
+                  let _ = rstack_check_arity v (List.length subterms) stack in
+                     (rstack_upgrade v stack),
+                     RWSOMatch(rstack_so_index v stack, gen_subterms bvars subterms)
                else if subterms = [] then
-                  stack @ [FOVarPattern v], RWSOVar(List.length stack, List.map (var_index bvars) subterms)
+                  (stack @ [FOVarPattern v]),
+                  RWSOVar(List.length stack, List.map (var_index bvars) subterms)
                else
-                  stack @ [SOVarPattern v], RWSOVar(List.length stack, List.map (var_index bvars) subterms)
+                  (stack @ [SOVarPattern (v, List.length subterms)]),
+                  RWSOVar(List.length stack, List.map (var_index bvars) subterms)
 
-            else
-               (* This is a second order variable instance *)
-               if rstack_so_mem v stack then
+
+            (* This is a second order variable instance *)
+            else if rstack_so_mem v stack then
+               let _ = rstack_check_arity v (List.length subterms) stack in
                   stack, RWSOMatch(rstack_so_index v stack, gen_subterms bvars subterms)
-               else
-                  stack @ [SOVarInstance v], RWSOMatch(List.length stack, gen_subterms bvars subterms)
+            else
+               (stack @ [SOVarInstance (v, List.length subterms)]),
+               RWSOMatch(List.length stack, gen_subterms bvars subterms)
 
       else if is_context_term term then
          let v, term, vars = dest_context term in
@@ -711,7 +753,7 @@ struct
             stack'', term'::terms'
 
    let check_stack = function
-      SOVarInstance n ->
+      SOVarInstance (n, _) ->
          raise (RewriteError (AllSOInstances n))
     | _ -> ()
 
@@ -747,8 +789,12 @@ struct
                (*
                 * This is a second order variable.
                 * The variable v should be bound, and we generate a
-                * a substitution instance.
+                * a substitution instance.  Check that the subterm counts
+                * match.
                 *)
+               let index = array_rstack_so_index v stack in
+               let v' = stack.(index) in
+               let _ = v' = FOVar "x" in
                RWSOSubst(array_rstack_so_index v stack,
                          List.map (compile_so_contractum_term names stack bvars) subterms)
 
@@ -1415,8 +1461,8 @@ struct
     *)
    let extract_redex_type = function
       FOVarPattern s -> RewriteTermType s
-    | SOVarPattern s -> RewriteFunType s
-    | SOVarInstance s -> RewriteFunType s
+    | SOVarPattern (s, _) -> RewriteFunType s
+    | SOVarInstance (s, _) -> RewriteFunType s
     | FOVar s -> RewriteStringType s
     | CVar s -> RewriteContextType s
     | PIVar s -> RewriteIntType s
@@ -1632,6 +1678,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.9  1998/06/23 22:12:14  jyh
+ * Improved rewriter speed with conversion tree and flist.
+ *
  * Revision 1.8  1998/06/22 19:45:39  jyh
  * Rewriting in contexts.  This required a change in addressing,
  * and the body of the context is the _last_ subterm, not the first.
