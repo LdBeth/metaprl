@@ -40,16 +40,19 @@ DIRS := $(LIBDIRS)\
 SUB_CMALIBS := $(addsuffix /filterlib.cma, $(LIBDIRS))
 SUB_CMXALIBS := $(addsuffix /filterlib.cmxa, $(LIBDIRS))
 
-all: lib 
-	@ $(MAKE) $(ROOT)/lib/$(MAINLIB).cma
+.PHONY: allbin optbin
 
-opt: optlib 
-	@ $(MAKE) $(ROOT)/lib/$(MAINLIB).cmxa 
+all: lib
+	@ $(MAKE) $(ROOT)/lib/$(MAINLIB).cma
+	@ $(MAKE) allbin
+
+opt: optlib
+	@ $(MAKE) $(ROOT)/lib/$(MAINLIB).cmxa
 	@ $(MAKE) $(ROOT)/lib/$(MAINLIB)$(EXT_LIB)
 	@ $(MAKE) optbin
 
 profile: optlib
-	@ $(MAKE) $(ROOT)/lib/$(MAINLIB).cmxa 
+	@ $(MAKE) $(ROOT)/lib/$(MAINLIB).cmxa
 	@ $(MAKE) $(ROOT)/lib/$(MAINLIB)$(EXT_LIB)
 
 include base/Files
@@ -273,7 +276,7 @@ include $(ROOT)/mk/rules
 #
 # Rules
 #
-lib::	$(ROOT)/lib/$(CAMLP4N)$(EXE)\
+allbin:	$(ROOT)/lib/$(CAMLP4N)$(EXE)\
 	$(ROOT)/lib/$(CAMLP4O)$(EXE)\
 	$(ROOT)/lib/$(PRLCN)$(EXE)\
 	$(ROOT)/lib/$(PRLCO)$(EXE)\
@@ -281,10 +284,6 @@ lib::	$(ROOT)/lib/$(CAMLP4N)$(EXE)\
 	$(ROOT)/bin/$(CONVERT)$(EXE)\
 	$(RMLIFILES) $(RCMIFILES) $(RCMAFILES)
 
-
-#
-# More rules
-#
 $(ROOT)/lib/$(CAMLP4N)$(EXE): $(CAMLP4N).run
 	$(LN) ../$(DIR)/$(CAMLP4N).run $@
 

@@ -415,18 +415,23 @@ let rec union l = function
 
 (*
  * Union of lists by physical equality.
+ * The semantics are important:
+ *    all the elements in the first argument that do not
+ *    exist in the second argument are consed _in order_ onto
+ *    the first argument.
  *)
-let rec unionq l = function
-   h::t ->
-      if List.memq h l then
-         unionq l t
-      else
-         h::(unionq l t)
- | [] ->
-      l
+let rec unionq h l =
+   match h with
+      h :: t ->
+         if List.memq h l then
+            unionq t l
+         else
+            h :: unionq t l
+    | [] ->
+         l
 
 (*
- * The first list is a subset of the second one )base of structural equality
+ * The first list is a subset of the second one (based on structural equality)
  *)
 let rec subset l1 l2 =
    match l1 with
@@ -450,7 +455,7 @@ let rec zip a b = match (a,b) with
       (h1, h2) :: zip t1 t2
  | [], [] ->
       []
- | 
+ |
    _ -> raise (Failure "List_util.zip")
 
 (*

@@ -62,7 +62,7 @@ ifeq ($(OSTYPE),linux)
 endif
 ifeq ($(OSTYPE),solaris)
    OSTYPE=Solaris
-endif 
+endif
 
 #
 # Use readline by default on Linux
@@ -134,8 +134,9 @@ ifndef MPLIB
    MPLIB=$(ROOT)/lib
 endif
 
+.PHONY: default check_versions all lib opt optlib clean depend install export import profile
+
 default: all
-.PHONY: default check_versions
 check_versions::
 
 #

@@ -1,17 +1,23 @@
-Note - some non-critical bugs may be documented as TODO items. 
+Note - some non-critical bugs may be documented as TODO items.
 (You need to have MetaPRL CVS account to be able to access the TODO file.)
+
+Note - some files have small bugs documented in their comments, these can be found
+by rgrep'ing for string "BUG".
 
 DOCUMENTATION:
 
 1.1) Documentation suggests to use mp and x.mp
-while mpopt and mptop should be used instead
+while mpopt and mptop should be used instead.
+Use Guide and Tutorial should mention the difference,
+and suggest using mptop or mpopt. After that all examples should use mpopt.
+1.1.1) In the mptop/mpopt vs mp discussion, the documentation should also mention readline
+and give some pointers (info+man pages or readline homepage) to more information on customizing it.
 
-1.2) Make system is not documented
+1.2) Make system is not documented (see TODO 7.02 for more information).
 
 1.3) (Created on 1999.11.11 by nogin)
 Resources and resource annotations are not documented
-
-The dT tactic section (doc/htmlman/system/mp-d-tactic.html) is not written.
+1.3.1) The dT tactic section (doc/htmlman/system/mp-d-tactic.html) is not written.
 
 1.4) (Created on 1999.11.11 by nogin)
 MetaPRL Tutorial is very outdated.
@@ -20,48 +26,7 @@ EDITOR
 
 2.1) Shell.cd function tries to expand proofs, it should not
 
-2.2) (1999.10.16, nogin - I believe this problem is already fixed, but I am not sure)
-Currently there is no way to change the statement of a theorem once
-you started proving it. We need to be able to do it without 
-erasing the proof. 
-
-2.3) (Confirmed on 1999.10.08 by nogin)
-Loading two theories that both include the same theory produces unexpected results.
-For example,
-
-        Objective Caml version 2.02
-
-        MetaPRL 0.6.0:
-                build [Fri Oct  8 18:20:11 EDT 1999]
-                on tulare.cs.cornell.edu
-                Uses VERBOSE Refiner_ds
-
-        Camlp4 Parsing version 2.02
-
-# #use "x.ml";;
-# cd "itt_dfun";;
-- : string = "/itt_dfun"
-# ls "";;
-[...]
-# <<'a->'b>>;;
-- : Refiner.Refiner.Term.term = a -> b
-# cd "/itt_list";;
-- : string = "/itt_list"
-# ls "";;
-[...]
-# <<'a->'b>>;;
-# While expanding quotation "term":
-Failure: undeclared name: fun
-
-(Running this example in mpopt produces similar result).
-
-(Updated on 1999.11.21 by nogin)
-Loading the same theory twice produces similar problems.
-
-As a result, `load'ing a theory and then `cd'ing into it
-(which attempts to load the theory again) does not quite work.
-As a temporary workaround, the "load" function was removed from
-toploop.
+2.2-2.3 are fixed
 
 2.4) (Confirmed on 1999.09.02 by jyh and nogin)
 There is no way to override display forms right now.
@@ -73,7 +38,7 @@ Could be that term_match_table listing needs to be reversed.
 When a list of subgoals is too big, displaying used to take a while. The current
 workaround is to only display subgoals when there are <20 of them. We need to
 find a better solution - in particular we should take into account subgoal sizes, not only
-the number of subgoals. 
+the number of subgoals.
 
 It may be a good idea to implement a generic display-form mechanism to allow limiting
 the number of lines a certain term would occupy. On the other hand, such an approach
@@ -91,7 +56,7 @@ specification because of two-way rewrites.
 it incorrectly.
 
 Example:
-test{x.test{y.'C['x; 'y]}} <--> 'C[1; 2] 
+test{x.test{y.'C['x; 'y]}} <--> 'C[1; 2]
 rewrites <<test{x.test{x.'x}}>> to 1 instead of 2.
 
 (3.4-3.5 - fixed)
@@ -111,7 +76,7 @@ and some variable appears more than once, rewriter may handle it incorrectly.
 Example: <<lambda{x.lambda{y.'S['x;'x] +@ 'S['x;'y]}}>> should match
 <<lambda{x.lambda{y.'x *@ 'x +@ 'x *@ 'y}}>>
 
-3.10) (nogin) When the same variable appears twice in the same bvars list 
+3.10) (nogin) When the same variable appears twice in the same bvars list
 (e.g., spread{p; x,x.x}), Nuprl upderstands it as y,x.x and MetaPRL - as x,y.x.
 Nuprl's way is more natural and we should convert. I already wrote the new type
 inference (only for spread) with Nuprl's understanding in mind.
@@ -170,7 +135,7 @@ MetaPRL crashes with segmentation fault!
 
 PARSER & FILTER
 
-5.1) Rules and rewrites should be added to toploop. 
+5.1) Rules and rewrites should be added to toploop.
 (updated 2000.04.24 by nogin) I believe this is fixed, but I am not sure.
 
 5.2) When rule is added, the appropriate tactic should be added automatically
@@ -205,7 +170,7 @@ After the membership rule is postulated, the corresponding ext rule can often
 be proven using Itt_struct.introduction rule. There is no need to postulate
 the ext rule and it should be actually proven only when it's useful.
 
-Example: After <<'H >- univ[i:l] in int>> is postulated, there is no need 
+Example: After <<'H >- univ[i:l] in int>> is postulated, there is no need
 to postulate <<'H >- univ[i:l]>> with <<int>> extract since it can always
 be proven in the unlikely event that it is actually needed.
 

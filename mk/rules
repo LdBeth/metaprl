@@ -46,7 +46,7 @@ endif
 #
 OCAMLDEP = $(ROOT)/bin/ocamldep
 OCAMLCFLAGS = $(INCLUDE) -I $(ROOT)/lib $(OCAMLFLAGS) $(NOASSERT) $(THREADS)
-OCAMLDEPFLAGS := $(OCAMLDEPFLAGS) $(INCLUDE) -I $(ROOT)/lib 
+OCAMLDEPFLAGS := $(OCAMLDEPFLAGS) $(INCLUDE) -I $(ROOT)/lib
 OCAMLOPTFLAGS = $(INCLUDE) -I $(ROOT)/lib $(OCAMLFLAGS) $(PROFILE) -inline $(INLINE) -noassert $(THREADS)
 CAMLP4NFLAGS = $(INCLUDE) $(OCAMLFLAGS)
 CAMLP4OFLAGS = $(INCLUDE)
@@ -148,13 +148,7 @@ RAFILES      = $(addprefix $(ROOT)/lib/, $(addsuffix $(EXT_LIB), $(INSTALL_LIBS)
 ZMLFILES     = $(addsuffix .ml, $(MLZFILES))
 ZMLIFILES    = $(addsuffix .mli, $(MLZFILES))
 
-#
-# verb and simp variations
-#
-.PHONY:
-
 # Instructions to make
-.PHONY: all lib opt clean depend install export import
 .PRECIOUS: %.cmo %.cmi %.cmx %.ml %.mli
 
 .SUFFIXES: .cma .cmx .cmo .cmi .ml .mli .mll .mly
@@ -256,7 +250,7 @@ $(REG_CMXFILES): %.cmx: %.ml %.cmi $(ROOT)/mk/config
 	$(RM) $@
 	$(LN) $*.mlz $@
 
-%.mli: %.mlz 
+%.mli: %.mlz
 	$(RM) $@
 	$(LN) $*.mlz $@
 

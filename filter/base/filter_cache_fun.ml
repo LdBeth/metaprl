@@ -1,5 +1,5 @@
 (*
- * We add a layer to filterSummry, to allow inlined modules
+ * We add a layer to filter Summary, to allow inlined modules
  * and cached info about opnames, axioms, and precedences.
  *
  *
@@ -117,11 +117,15 @@ struct
     *
     * This is a "compressed" version of the complete info
     * for the file.
+    *
+    * The includes has the list of the summaries for all the immediate parents
+    * of a given module, with the last included parent first in the list.
     *)
    type sig_summary =
       { sig_summary : Base.info;
         sig_resources : sig_ctyp resource_info list;
-        sig_opnames : (string, opname) Hashtbl.t
+        sig_opnames : (string * opname) list;
+        sig_includes : sig_summary list
       }
 
    (*
@@ -521,7 +525,7 @@ struct
       let opprefix = make_opname path in
 
       (* Get all the sub-summaries *)
-      let inline_component resources_opnames (item, _) =
+      let inline_component resources_opnames_includes (item, _) =
          match item with
             Module (n, _) ->
                (*
@@ -531,50 +535,57 @@ struct
                 *)
                let base = cache.base in
                let info = Base.sub_info base.lib self n in
-               let info = { sig_summary = info; sig_resources = []; sig_opnames = Hashtbl.create 1 } in
+               let info =
+                  { sig_summary = info;
+                    sig_resources = [];
+                    sig_opnames = [];
+                    sig_includes = []
+                  }
+               in
                   base.sig_summaries <- info :: base.sig_summaries;
-                  resources_opnames
+                  resources_opnames_includes
 
           | Opname { opname_name = str; opname_term = t } ->
                (* Hash this name to the full opname *)
                let opname = Opname.mk_opname str opprefix in
-               let resources, opnames = resources_opnames in
+               let resources, opnames, includes = resources_opnames_includes in
                   if !debug_opname then
                      eprintf "Filter_cache_fun.inline_sig_components: add opname %s%t" (**)
                         (SimplePrint.string_of_opname opname) eflush;
                   Hashtbl.add cache.optable str opname;
-                  Hashtbl.add opnames str opname;
-                  resources_opnames
+                  resources, (str, opname) :: opnames, includes
 
           | Parent { parent_name = path } ->
                (* Recursive inline of all ancestors *)
-               let { sig_resources = resources'; sig_opnames = opnames' } = inline_sig_module barg arg path in
-               let resources, opnames = resources_opnames in
+               let info' = inline_sig_module barg arg path in
+               let resources, opnames, includes = resources_opnames_includes in
                let this_resources, par_resources = resources in
-                  Hashtbl_util.add_hashtbl opnames opnames';
-                  (this_resources, merge_resources resources' par_resources), opnames
+               let includes = info' :: includes in
+                  (this_resources, merge_resources info'.sig_resources par_resources),
+                  opnames, includes
 
           | Resource rsrc ->
-               let resources, opnames = resources_opnames in
+               let resources, opnames, includes = resources_opnames_includes in
                let this_resources, par_resources = resources in
                   if not (resource_member rsrc cache.resources) then
                      cache.resources <- (path, rsrc) :: cache.resources;
-                  (rsrc :: this_resources, par_resources), opnames
+                  (rsrc :: this_resources, par_resources), opnames, includes
 
           | Prec p ->
                let precs = cache.precs in
                   if not (List.mem p precs) then
                      cache.precs <- p :: precs;
-                  resources_opnames
+                  resources_opnames_includes
 
           | _ ->
-               resources_opnames
+               resources_opnames_includes
       in
-      let (this_resources, par_resources), opnames = List.fold_left inline_component (([], []), Hashtbl.create 17) items in
+      let (this_resources, par_resources), opnames, includes = List.fold_left inline_component (([], []), [], []) items in
       let this_resources = Sort.list compare_resources this_resources in
          { sig_summary = self;
            sig_resources = merge_resources this_resources par_resources;
-           sig_opnames = opnames
+           sig_opnames = opnames;
+           sig_includes = includes
          }
 
    and inline_str_components barg arg path self (items : (term, meta_term, str_proof, str_ctyp, str_expr, str_item) summary_item_loc list) =
@@ -593,7 +604,12 @@ struct
                 *)
                let base = cache.base in
                let info = Base.sub_info base.lib self n in
-               let info = { sig_summary = info; sig_resources = []; sig_opnames = Hashtbl.create 1 } in
+               let info = {
+                  sig_summary = info;
+                  sig_resources = [];
+                  sig_opnames = [];
+                  sig_includes = []
+               } in
                   base.sig_summaries <- info :: base.sig_summaries
 
           | Opname { opname_name = str; opname_term = t } ->
@@ -629,11 +645,7 @@ struct
             let info = find_summarized_sig_module cache path in
                if !debug_filter_cache then
                   eprintf "FilterCache.inline_module': %s: already loaded%t" (string_of_path path) eflush;
-               if not (List.memq info cache.summaries) then
-                  begin
-                     Hashtbl_util.add_hashtbl cache.optable info.sig_opnames;
-                     cache.summaries <- info :: cache.summaries
-                  end;
+               collect_opnames cache info;
                info
          with
             Not_found ->
@@ -657,6 +669,14 @@ struct
                   vals := inline_hook cache (path, info') !vals;
 
                   info
+
+   and collect_opnames cache info =
+      if not (List.memq info cache.summaries) then begin
+         List_util.rev_iter (collect_opnames cache) info.sig_includes;
+         let optable = cache.optable in
+         List_util.rev_iter (fun (str, op) -> Hashtbl.add optable str op) info.sig_opnames;
+         cache.summaries <- info :: cache.summaries
+      end
 
    let inline_module cache barg path inline_hook arg =
       try
@@ -739,15 +759,12 @@ struct
       let info =
          try (find_summarized_sig_module cache [name]).sig_summary with
             Not_found ->
-               let info = Base.find_match lib barg self alt_select AnySuffix in
-               let sum =
-                  { sig_summary = info;
-                    sig_resources = List.map snd cache.resources;
-                    sig_opnames = optable
-                  }
-               in
-                  base.sig_summaries <- sum :: summaries;
-                  info
+               (*
+                * nogin: This used to also create a sig_summary and add it
+                * to base.sig_summaries, but we no longer have enough information
+                * to do that (BUG?)
+                *)
+               Base.find_match lib barg self alt_select AnySuffix
       in
          SigMarshal.unmarshal (Base.info lib info)
 
