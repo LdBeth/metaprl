@@ -37,6 +37,7 @@ type ls_option =
  | LsInformal
  | LsParent
  | LsAll
+ | LsDocumentation
 
    (*
     * Browser-only modes:

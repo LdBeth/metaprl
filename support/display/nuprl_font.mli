@@ -78,6 +78,8 @@ declare atomic[text:s]
 declare html[content:s]
 declare cd_begin[command:s]
 declare cd_end
+declare html_anchor[name:s]{'body}
+declare html_head[l:n]{'body}
 
 (*
  * TeX control.

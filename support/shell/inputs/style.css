@@ -90,6 +90,14 @@ SUB {
 }
 
 /*
+ * $$ ... $$ in comments
+ */
+P.centermath {
+   font-style: italic;
+   text-align: center;
+}
+
+/*
  * Anchors, or hypertext links.
  */
 A {

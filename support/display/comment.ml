@@ -212,16 +212,7 @@ dform tex_comment_white_df2 : mode[tex] :: cons{comment_white; cons{comment_whit
 (*
  * Plain version.
  *)
-dform normal_comment_white_df1 : except_mode[tex] :: comment_white =
-   com_cbreak
-
-dform normal_comment_white_df2 : except_mode[tex] :: cons{comment_white; cons{comment_white; 't}} =
-   com_hbreak 't
-
-dform normal_doc_df2 : except_mode[tex] :: except_mode[src] :: "doc"{'t} =
-   info["@begin[doc]"] com_hbreak 't com_hbreak info["@end[doc]"]
-
-dform normal_license_df2 : except_mode[tex] :: license{'t} =
+dform normal_license_df2 : except_mode[tex] :: except_mode[prl] :: license{'t} =
    `"@begin[license]" com_hbreak 't com_hbreak `"@end[license]"
 
 (*
@@ -238,8 +229,28 @@ dform misspelled_df1 : misspelled{'t} =
  *)
 declare prl_comment{'t}
 
-dform prl_comment_df1 : except_mode[tex] :: except_mode[src] :: prl_comment{'t} =
-   szone pushm[" * "] pushfont["bf"] `"(*" popfont["bf"] 't popm pushfont["bf"] hbreak[" *)", "*)"] popfont["bf"] ezone
+dform prl_comment_df1 : mode[prl] :: prl_comment{'t} =
+   newline 't newline
+
+dform prl_comment_df2 : mode[prl] :: prl_comment{cons{comment_white;'t}} =
+   prl_comment{'t}
+
+dform prl_comment_df3 : mode[prl] :: prl_comment{comment_term{'t}} =
+   prl_comment{'t}
+
+dform normal_doc_df2 : mode[prl] :: "doc"{'t} =
+   pushm[3] info["@begin[doc]"] newline szone 't ezone popm newline info["@end[doc]"]
+
+dform normal_doc_df4 : mode[html] :: mode[prl] :: "doc"{cons{comment_white; 't}} =
+   "doc"{'t}
+
+dform normal_license_df3 : mode[prl] :: license{'t} = `""
+
+dform prl_paragraph_df : mode[prl] :: cons{comment_white; cons{comment_white; 't}} =
+   newline 't
+
+dform prl_comment_white_df1 : mode[prl] :: comment_white =
+   com_cbreak
 
 (*
  * HTML comments.
@@ -247,7 +258,16 @@ dform prl_comment_df1 : except_mode[tex] :: except_mode[src] :: prl_comment{'t} 
 declare html_comment{'t}
 
 dform html_comment_df1 : mode[html] :: html_comment{'t} =
-   szone pushm[" * "] izone `"<b>" ezone `"(*" izone `"</b>" ezone izone `"<i>" ezone 't izone `"</i>" ezone popm izone `"<b>" ezone hbreak[" *)", "*)"] izone `"</b>" ezone ezone
+   izone `"<!-- " ezone 't izone `" -->" ezone
+
+dform normal_doc_df3 : mode[html] :: "doc"{'t} =
+   izone `" -->" ezone 't izone `"<!-- " ezone
+
+dform html_paragraph_df : mode[html] :: cons{comment_white; cons{comment_white; 't}} =
+   izone slot["raw","\n<p style=\"doc\">"] ezone 't
+
+dform html_comment_white_df1 : mode[html] :: comment_white =
+   izone slot["raw", " "] ezone
 
 (************************************************************************
  * COMMENT ITEMS                                                        *
@@ -268,19 +288,28 @@ doc <:doc< @docoff >>
 dform theory_df1 : mode[tex] :: "theory"{'t} =
    izone `"\\theory{" ezone 't izone `"}" ezone
 
+dform theory_df2 : mode[html] :: "theory"{'t} =
+   html_head[1]{'t}
+
 dform theory_df2 : except_mode[tex] :: "theory"{'t} =
    com_hbreak bf{'t} com_hbreak com_hbreak
 
 dform module_df1 : mode[tex] :: "module"[name:s] =
    izone `"\\labelmodule{" slot[name:s] `"}{" ezone slot[name:s] izone `"}" ezone
 
-dform module_df2 : except_mode[tex] :: "module"[name:s] =
+dform module_df2 : mode[html] :: "module"[name:s] =
+   html_anchor[name:s]{html_head[2]{slot[name:s]}}
+
+dform module_df3 : except_mode[tex] :: except_mode[html] :: "module"[name:s] =
    com_hbreak bf[name:s] com_hbreak com_hbreak
 
-dform module_df3 : mode[tex] :: "module"{'name} =
+dform module_df4 : mode[tex] :: "module"{'name} =
    izone `"\\module{" ezone 'name izone `"}" ezone
 
-dform module_df4 : except_mode[tex] :: "module"{'name} =
+dform module_df5 : mode[html] :: "module"{'name} =
+   html_head[2]{'name}
+
+dform module_df6 : except_mode[tex] :: except_mode[html] :: "module"{'name} =
    com_hbreak bf{'name} com_hbreak com_hbreak
 
 doc <:doc<
@@ -297,25 +326,37 @@ doc <:doc< @docoff >>
 dform chapter_df1 : mode[tex] :: "chapter"[name:s]{'t} =
    izone `"\\labelchapter{" slot[name:s] `"}{" ezone 't izone `"}" ezone
 
-dform chapter_df2 : except_mode[tex] :: "chapter"[name:s]{'t} =
+dform chapter_df2 : mode[html] :: "chapter"[name:s]{'t} =
+   html_anchor[name:s]{html_head[1]{'t}}
+
+dform chapter_df3 : except_mode[tex] :: except_mode[html] :: "chapter"[name:s]{'t} =
    com_hbreak bf{'t} com_hbreak com_hbreak
 
 dform section_df1 : mode[tex] :: "section"[name:s]{'t} =
    izone `"\\labelsection{" slot[name:s] `"}{" ezone 't izone `"}" ezone
 
-dform section_df2 : except_mode[tex] :: "section"[name:s]{'t} =
+dform section_df2 : mode[html] :: "section"[name:s]{'t} =
+   html_anchor[name:s]{html_head[2]{'t}}
+
+dform section_df3 : except_mode[tex] :: except_mode[html] :: "section"[name:s]{'t} =
    com_hbreak bf{'t} com_hbreak com_hbreak
 
 dform subsection_df1 : mode[tex] :: "subsection"[name:s]{'t} =
    izone `"\\labelsubsection{" slot[name:s] `"}{" ezone 't izone `"}" ezone
 
-dform subsection_df2 : except_mode[tex] :: "subsection"[name:s]{'t} =
+dform subsection_df2 : mode[html] :: "subsection"[name:s]{'t} =
+   html_anchor[name:s]{html_head[3]{'t}}
+
+dform subsection_df3 : except_mode[tex] :: except_mode[html] :: "subsection"[name:s]{'t} =
    com_hbreak bf{'t} com_hbreak com_hbreak
 
 dform subsubsection_df1 : mode[tex] :: "subsubsection"[name:s]{'t} =
    izone `"\\labelsubsubsection{" slot[name:s] `"}{" ezone 't izone `"}" ezone
 
-dform subsubsection_df2 : except_mode[tex] :: "subsubsection"[name:s]{'t} =
+dform subsubsection_df2 : mode[html] :: "subsubsection"[name:s]{'t} =
+   html_anchor[name:s]{html_head[4]{'t}}
+
+dform subsubsection_df3 : except_mode[tex] :: except_mode[html] :: "subsubsection"[name:s]{'t} =
    com_hbreak bf{'t} com_hbreak com_hbreak
 
 doc <:doc<
@@ -329,7 +370,10 @@ doc <:doc< @docoff >>
 dform modsection_df1 : mode[tex] :: modsection{'t} =
    izone `"\\modsection{" ezone 't izone `"}" ezone
 
-dform modsection_df2 : except_mode[tex] :: modsection{'t} =
+dform modsection_df2 : mode[html] :: modsection{'t} =
+   html_head[3]{'t}
+
+dform modsection_df3 : except_mode[tex] :: except_mode[html] :: modsection{'t} =
    com_hbreak bf{'t} com_hbreak com_hbreak
 
 doc <:doc<
@@ -343,7 +387,10 @@ doc <:doc< @docoff >>
 dform modsubsection_df1 : mode[tex] :: modsubsection{'t} =
    izone `"\\modsubsection{" ezone 't izone `"}" ezone
 
-dform modsubsection_df2 : except_mode[tex] :: modsubsection{'t} =
+dform modsubsection_df2 : mode[html] :: modsubsection{'t} =
+   html_head[4]{'t}
+
+dform modsubsection_df3 : except_mode[tex] :: except_mode[html] :: modsubsection{'t} =
    com_hbreak bf{'t} com_hbreak
 
 doc <:doc<
@@ -686,15 +733,18 @@ dform math_df2 : mode[tex] :: math{'t} =
    lzone ensuremath{'t} ezone
 
 dform math_df3 : except_mode[tex] :: math{'t} =
-   `"$" it{'t} `"$"
+   it{'t}
 
 dform centermath_df1 : centermath[s:s] = centermath{slot[s:s]}
 
 dform centermath_df2 : mode[tex] :: centermath{'t} =
    izone `"$$" ezone lzone 't ezone izone `"$$" ezone
 
-dform centermath_df3 : except_mode[tex] :: centermath{'t} =
-   com_hbreak `"$$" it{'t} `"$$" com_hbreak
+dform centermath_df3 : mode[prl] :: centermath{'t} =
+   newline slot["raw", "    "] pushm[0] it{'t} popm newline
+
+dform centermath_df4 : mode[html] :: centermath{'t} =
+   izone `"<p class=\"centermath\">" ezone 't izone `"</p>" ezone
 
 doc <:doc<
    @begin[doc]

@@ -360,11 +360,12 @@ let add_edit state info =
  *)
 let view_table =
    ['H', "",  "Show Term Handles",              "Hide Term Handles";
-    'u', "",  "Show Only Unjustified Content",  "Hide Everything";
-    'f', "",  "Show Formal Content",            "Hide Formal Content";
+    'u', "",  "Show Only Unjustified Content",  "Show Default Set of Items";
+    'f', "",  "Show All Formal Content",        "Hide All Formal Content";
     'R', "-", "Show Rules",                     "Hide Rules";
     'r', "-", "Show Rewrites",                  "Hide Rewrites";
-    'i', "",  "Show Informal Content",          "Hide Informal Content";
+    'i', "",  "Show All Informal Content",      "Hide All Informal Content";
+    'D', "-", "Show Documentation",             "Hide Documentation";
     'p', "-", "Show Parents",                   "Hide Parents";
     'd', "-", "Show Display Forms",             "Hide Display Forms"]
 

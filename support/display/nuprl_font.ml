@@ -131,6 +131,8 @@ declare atomic[text:s]
 declare html[content:s]
 declare cd_begin[command:s]
 declare cd_end
+declare html_anchor[name:s]{'body}
+declare html_head[l:n]{'body}
 
 (* Displays *)
 declare mathbbA
@@ -323,6 +325,16 @@ dform cd_end_df1 : except_mode[html] :: cd_end =
 
 dform cd_end_df2 : mode[html] :: cd_end =
    izone `"</a>" ezone
+
+(*
+ * Anchor. XXX BUG (nogin): the anchor name is invisible, but need to be quoted.
+ * Currently, there is no way (?) to specify this naturally.
+ *)
+dform html_anchor_df : mode[html] :: html_anchor[name:s]{'body} =
+   izone `"<a name=\"" ezone slot[name:s] izone `"\">" ezone 'body izone `"</a>" ezone
+
+dform html_head_df : mode[html] :: html_head[l:n]{'body} =
+   izone `"<h" slot[l:n] `">" ezone 'body izone `"</h" slot[l:n] `">" ezone
 
 (************************************************************************
  * DISPLAY FORMS                                                        *

@@ -389,18 +389,10 @@ dform lines_cons_df : lines{cons{'e1; 'e2}} =
    newline szone{'e1} lines{'e2}
 
 dform interface_df : "interface"{'body} =
-   szone pushm[0]
-   info["Interface:"] newline
-   pushm[4] info["begin"] lines{'body} popm newline
-   info["end"] newline
-   popm ezone
+   szone pushm[0] lines{'body} popm ezone
 
 dform implementation_df : "implementation"{'body} =
-   szone pushm[0]
-   info["Implementation:"] newline
-   pushm[4] info["begin"] lines{'body} popm newline
-   info["end"] newline
-   popm ezone
+   szone pushm[0] lines{'body} popm ezone
 
 dform location_df : "location"[start:n, finish:n]{'body} =
    'body
@@ -439,9 +431,9 @@ dform rewrite_df : "rewrite"[name:s]{'redex; 'contractum; 'v; 'res} =
    szone pushm[4]
    ensuremath{'v} info[" rewrite"] " " szone rewrite_name[name:s] resources{'res} keyword[":"] ezone hspace
    szone pushm[0]
-   szone ensuremath{'redex} ezone
+   szone ensuremath{slot{'redex}} ezone
    hbreak["   ", " "] ensuremath{longleftrightarrow} hspace
-   szone ensuremath{'contractum} ezone
+   szone ensuremath{slot{'contractum}} ezone
    popm ezone
    popm ezone
 

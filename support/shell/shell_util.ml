@@ -39,6 +39,7 @@ type ls_option =
  | LsInformal
  | LsParent
  | LsAll
+ | LsDocumentation
 
    (*
     * Browser-only modes:
@@ -92,6 +93,8 @@ let option_of_char c =
          LsParent
     | 'a' ->
          LsAll
+    | 'D' ->
+         LsDocumentation
     | 'H' ->
          LsHandles
     | 'E' ->
@@ -112,6 +115,7 @@ let char_of_option option =
     | LsAll -> 'a'
     | LsDisplay -> 'd'
     | LsParent -> 'p'
+    | LsDocumentation -> 'D'
     | LsHandles -> 'H'
     | LsExternalEditor -> 'E'
 
@@ -121,6 +125,14 @@ let char_of_option option =
 let ls_options_of_string s =
    string_fold (fun options c ->
          LsOptionSet.add options (option_of_char c)) LsOptionSet.empty s
+
+(*
+ * Default options.
+ *)
+let ls_default_list = [LsFormal; LsParent; LsRules; LsRewrites; LsDocumentation]
+
+let ls_options_default =
+   LsOptionSet.of_list ls_default_list
 
 let string_of_ls_options options =
    let buf = Buffer.create 10 in
@@ -137,28 +149,22 @@ let ls_options_add options s =
          let option = option_of_char c in
             match option with
                LsFormal ->
-                  let options = LsOptionSet.add options LsRules in
-                  let options = LsOptionSet.add options LsRewrites in
                   let options = LsOptionSet.remove options LsUnjustified in
-                     LsOptionSet.add options option
+                     LsOptionSet.add_list options [ option; LsRules; LsRewrites ]
              | LsRules
              | LsRewrites ->
                   let options = LsOptionSet.remove options LsUnjustified in
                      LsOptionSet.add options option
              | LsUnjustified ->
-                  let options = LsOptionSet.remove options LsFormal in
-                  let options = LsOptionSet.remove options LsRules in
-                  let options = LsOptionSet.remove options LsRewrites in
-                  let options = LsOptionSet.remove options LsInformal in
-                  let options = LsOptionSet.remove options LsDisplay in
-                  let options = LsOptionSet.remove options LsParent in
+                  let options = LsOptionSet.subtract_list options (**)
+                     [ LsFormal; LsRules; LsRewrites; LsInformal; LsDisplay; LsParent; LsDocumentation ]
+                  in
                      LsOptionSet.add options option
              | LsInformal ->
-                  let options = LsOptionSet.add options LsParent in
-                  let options = LsOptionSet.add options LsDisplay in
                   let options = LsOptionSet.remove options LsUnjustified in
-                     LsOptionSet.add options option
+                     LsOptionSet.add_list options [ option; LsParent; LsDisplay; LsDocumentation ]
              | LsDisplay
+             | LsDocumentation
              | LsParent ->
                   let options = LsOptionSet.remove options LsUnjustified in
                      LsOptionSet.add options option
@@ -172,6 +178,7 @@ let ls_options_add options s =
  * Clear some additional options.
  * Make sure the set is consistent.
  *)
+
 let ls_options_clear options s =
    string_fold (fun options c ->
          let option = option_of_char c in
@@ -181,6 +188,7 @@ let ls_options_clear options s =
                   let options = LsOptionSet.remove options LsFormal in
                      LsOptionSet.remove options option
              | LsDisplay
+             | LsDocumentation
              | LsParent ->
                   let options = LsOptionSet.remove options LsInformal in
                      LsOptionSet.remove options option
@@ -189,21 +197,15 @@ let ls_options_clear options s =
                   let options = LsOptionSet.remove options LsRewrites in
                      LsOptionSet.remove options LsFormal
              | LsInformal ->
-                  let options = LsOptionSet.remove options LsParent in
-                  let options = LsOptionSet.remove options LsDisplay in
-                     LsOptionSet.remove options LsInformal
-             | LsUnjustified
+                  LsOptionSet.subtract_list options [ LsParent; LsDisplay; LsDocumentation; LsInformal ]
+             | LsUnjustified ->
+                  let options = LsOptionSet.add_list options ls_default_list in
+                     LsOptionSet.remove options option
              | LsHandles
              | LsExternalEditor ->
                   LsOptionSet.remove options option
              | LsAll ->
                   options) options s
-
-(*
- * Default options.
- *)
-let ls_options_default =
-   List.fold_left LsOptionSet.add LsOptionSet.empty [LsParent; LsRules; LsRewrites]
 
 (*!
  * @docoff

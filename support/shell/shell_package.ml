@@ -269,6 +269,10 @@ let is_display_item = function
  | _ ->
       false
 
+let is_documentation = function
+   Comment _ -> true
+ | _ -> false
+
 let is_unjustified_item = function
    Rewrite { rw_proof = proof }
  | CondRewrite { crw_proof = proof }
@@ -315,6 +319,8 @@ let mk_ls_filter options =
                   is_display_item :: predicate
              | LsInformal ->
                   is_informal_item :: predicate
+             | LsDocumentation ->
+                  is_documentation :: predicate
              | LsHandles
              | LsExternalEditor ->
                   predicate) [] options
