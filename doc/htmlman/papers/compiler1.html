@@ -1,0 +1,41 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+<title>Jason Hickey, Aleksey Nogin, Adam Granicz, and Brian Aydemir ---
+Compiler Implementation in a Formal Logical Framework</title>
+</head>
+
+<body>
+
+<h1>Compiler Implementation in a Formal Logical Framework.</h1>
+
+<p>Jason Hickey, Aleksey Nogin, Adam Granicz, and Brian Aydemir.
+<br><b>Compiler Implementation in a Formal Logical Framework.</b>
+<br>Accepted to <a href="http://merlin.dimi.uniud.it/">MERLIN 2003
+Workshop</a>, "Category A".
+<br><a href="http://files.metaprl.org/papers/compiler1.pdf">PDF (278 KB)</a>
+
+<h2>Abstract</h2>
+<blockquote>
+The task of designing and implementing a compiler can be a difficult and
+error-prone process.  In this paper, we present a new approach based on the
+use of higher-order abstract syntax and term rewriting in a logical framework.
+All program transformations, from parsing to code generation, are cleanly
+isolated and specified as term rewrites.  This has several advantages.  The
+correctness of the compiler depends solely on a small set of rewrite rules
+that are written in the language of formal mathematics.  In addition, the
+logical framework guarantees the preservation of scoping, and it automates
+many frequently-occurring tasks including substitution and rewriting
+strategies.  As we show, compiler development in a logical framework can be
+<em>easier</em> than in a general-purpose language like ML, in part because of
+automation, and also because the framework provides extensive support for
+examination, validation, and debugging of the compiler transformations.  The
+paper is organized around a case study, using the <a
+href="http://metaprl.org">MetaPRL logical framework</a> to compile an ML-like
+language to Intel x86 assembly.  We also present a scoped formalization of x86
+assembly in which all registers are immutable.
+</blockquote>
+
+</body>
+</html>
