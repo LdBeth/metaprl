@@ -13,6 +13,7 @@ Added statements:
      IFDEF <uident> THEN <structure_items> ELSE <structure_items> ENDIF
      IFNDEF <uident> THEN <structure_items> ENDIF
      IFNDEF <uident> THEN <structure_items> ELSE <structure_items> ENDIF
+     INCLUDE <string>
 
   In expressions:
 
