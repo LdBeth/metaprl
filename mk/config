@@ -46,6 +46,7 @@ CFLAGS = -g -I$(CAMLLIB)
 CC = gcc
 RM = rm
 INSTALL = /bin/cp -pf
+CP = /bin/cp -pf
 
 # Library file names
 MLFILES      := $(addsuffix .ml,   $(NLFILES) $(LMFILES) $(MFILES) $(PFILES))
@@ -159,12 +160,12 @@ $(REG_CMXFILES): %.cmx: %.ml $.mli
 
 %.ml: %.mlz
 	rm -f $@
-	cp $*.mlz $@
+	$(CP) $*.mlz $@
 	chmod 444 $@
 
 %.mli: %.mlz
 	rm -f $@
-	cp $*.mlz $@
+	$(CP) $*.mlz $@
 	chmod 444 $@
 
 %.o: %.c
