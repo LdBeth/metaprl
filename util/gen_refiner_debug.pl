@@ -12,7 +12,7 @@ $merges{"operator"}="merge_op";
 $merges{"operator'"}="merge_op'";
 $merges{"bound_term"}="merge_bterm";
 $merges{"bound_term'"}="merge_bterm'";
-foreach my $ty ("bool", "unit", "param", "term", "var", "int", "level_exp", "level_exp_var", "opname", "string") {
+foreach my $ty ("bool", "unit", "param", "term", "var", "int", "level_exp", "level_exp_var", "opname", "string", "address") {
     $merges{$ty}="merge_$ty";
     $merges{"$ty list"}="merge_" . $ty . "s";
 };
@@ -22,11 +22,14 @@ foreach my $ty ("term", "param", "level_exp", "level_exp_var") {
     $merges{"$ty2 list"} = "merge_$ty" . "s'";
 }
 $merges{"Lm_num.num"} = "merge_num";
+$merges{"SymbolSet.t"} = "merge_ss";
+$merges{"'a"} = "merge_poly";
+$merges{"'a list"} = "merge_poly";
 
-foreach my $ty ("bool", "int", "var", "opname", "out_channel", "string", "Lm_num.num") {
+foreach my $ty ("bool", "int", "var", "opname", "out_channel", "string", "Lm_num.num", "SymbolSet.t") {
     $splits{$ty} = $splits{"$ty list"}="";
 };
-foreach my $ty ("term", "bound_term", "param", "operator", "level_exp", "level_exp_var") {
+foreach my $ty ("term", "bound_term", "param", "operator", "level_exp", "level_exp_var", "address") {
     $splits{$ty} = "identity";
     $splits{"$ty list"} = "split";
 };
@@ -36,12 +39,18 @@ foreach my $ty ("term", "param", "level_exp", "level_exp_var") {
 }
 $splits{"bound_term'"} = "split_bterm'";
 $splits{"operator'"} = "split_op'";
+$splits{"term -> term"} = "split_ttf";
+$splits{"SymbolSet.t -> term"} = "split_atf";
+$splits{"SymbolSet.t -> term -> term"} = "split_attf";
+$splits{"term -> term * 'a"} = "split_ttaf";
+$splits{"SymbolSet.t -> term -> term * 'a"} = "split_attaf";
 
 $merges{"object_id"} = $merges{"param list"};
 $splits{"object_id"} = $splits{"param list"};
 
 sub do_split($$) {
     my ($type, $arg) = @_;
+    if ($type =~ /^\([^()]*\)$/) { $type =~ s/[()]//g };
     if (not(defined $splits{$type})) { die "\n\nDo not know how to split $type" };
     my $split = $splits{$type};
     if ($split eq "") {
@@ -75,7 +84,9 @@ sub process ($) {
     };
     $line=~s/[[:space:]]+/ /g;
     my ($name, $rest) = split(/[[:space:]]*:[[:space:]]*/, $line);
+    while ($rest=~/\([^()]*->/) { $rest =~ s/(\([^()]*)->/$1>>/g };
     my @types = split(/[[:space:]]*->[[:space:]]*/, $rest);
+    grep { s/>>/->/g } @types;
     my $tyres = pop(@types);
     print "      let $name ";
     for (my $i=0; $i<=$#types; $i++) { print "(p$i : $types[$i]) " };
