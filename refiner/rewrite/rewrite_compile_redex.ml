@@ -59,20 +59,20 @@ open Rewrite_types
 let _ =
    show_loading "Loading Rewrite_compile_redex%t"
 
-module MakeRewriteCompileRedex
-(TermType : TermSig)
-(Term : TermBaseSig with module TermTypes = TermType)
-(TermMan : TermManSig with module ManTypes = TermType)
-(TermAddr : TermAddrSig with module AddrTypes = TermType)
-(TermSubst : TermSubstSig with module SubstTypes = TermType)
-(RefineError : RefineErrorSig with module ErrTypes.Types = TermType)
-(RewriteUtil : RewriteUtilSig
-               with type term = TermType.term
-               with type rstack = MakeRewriteTypes(TermType)(TermAddr).rstack)
-(RewriteDebug : RewriteDebugSig
-                with type rwterm = MakeRewriteTypes(TermType)(TermAddr).rwterm
-                with type rstack = MakeRewriteTypes(TermType)(TermAddr).rstack
-                with type varname = MakeRewriteTypes(TermType)(TermAddr).varname)
+module MakeRewriteCompileRedex (**)
+   (TermType : TermSig)
+   (Term : TermBaseSig with module TermTypes = TermType)
+   (TermMan : TermManSig with module ManTypes = TermType)
+   (TermAddr : TermAddrSig with module AddrTypes = TermType)
+   (TermSubst : TermSubstSig with module SubstTypes = TermType)
+   (RefineError : RefineErrorSig with module ErrTypes.Types = TermType)
+   (RewriteUtil : RewriteUtilSig
+    with type term = TermType.term
+    with type rstack = MakeRewriteTypes(TermType)(TermAddr).rstack)
+   (RewriteDebug : RewriteDebugSig
+    with type rwterm = MakeRewriteTypes(TermType)(TermAddr).rwterm
+    with type rstack = MakeRewriteTypes(TermType)(TermAddr).rstack
+    with type varname = MakeRewriteTypes(TermType)(TermAddr).varname)
 =
 struct
    module RewriteTypes = MakeRewriteTypes(TermType)(TermAddr);;
@@ -85,6 +85,7 @@ struct
    open RewriteUtil
 
    type strict = RewriteTypes.strict
+   type capture_args = RewriteTypes.capture_args
 
    type state =
       { st_addrs : var array;
@@ -127,7 +128,7 @@ struct
     | t -> RWFreeVars(t, [], [v])
 
    let rec restrict_cont c v = function
-      [] -> REF_RAISE(RefineError ("rewrite_compile_redex", RewriteFreeContextVar(v,c)))
+      [] -> REF_RAISE(RefineError ("rewrite_compile_redex", RewriteFreeContextVar (v, c)))
     | ((v', _) as hd) :: tl ->
          if Lm_symbol.eq v v' then
             tl
@@ -216,7 +217,7 @@ struct
                   if restrict_free = [] && restrict_conts = [] then
                      term
                   else
-                     RWFreeVars (term, restrict_conts,restrict_free)
+                     RWFreeVars (term, restrict_conts, restrict_free)
                in
                   stack, t
 
@@ -249,7 +250,7 @@ struct
                let vars' = List.map (var_index st.st_bvars) vars in
                let index = List.length stack in
                let stack = stack @ [CVar (v, conts, List.length vars)] in
-               let stack, term = compile_so_redex_term { st with st_bconts = (v,index)::st.st_bconts } stack term in
+               let stack, term = compile_so_redex_term { st with st_bconts = (v, index) :: st.st_bconts } stack term in
                let term = RWSOContext(Lm_array_util.index v st.st_addrs, index, term, vars') in
                let restrict_free = if st.st_strict then Lm_list_util.subtract (List.map bvar_ind st.st_bvars) vars' else [] in
                let restrict_conts = if st.st_strict then restricted_conts v st.st_bconts conts else [] in
@@ -421,7 +422,7 @@ struct
                         stack, term, stack_ind
                in
                let stack, hyps, goals =
-                  compile_so_redex_sequent_inner { st with st_bconts = (v, ind)::st.st_bconts } stack (i + 1) len mc hyps goals
+                  compile_so_redex_sequent_inner { st with st_bconts = (v, ind) :: st.st_bconts } stack (i + 1) len mc hyps goals
                in
                   stack, term :: hyps, goals
 
@@ -465,12 +466,12 @@ struct
     | _ :: tl -> stack_cvars (i + 1) tl
     | [] -> []
 
-   let compile_so_redex strict addrs = function
+   let compile_so_redex strict capture_arg addrs = function
       [] -> [||], []
     | (goal :: args) as allargs ->
          let st =
             { st_patterns = true;
-              st_strict = (strict=Strict);
+              st_strict = (strict = Strict);
               st_addrs = addrs;
               st_svars = free_vars_terms allargs;
               st_bvars = [];
@@ -478,7 +479,14 @@ struct
             }
          in
          let stack, goal = compile_so_redex_term st [] goal in
-         let stack, args = compile_so_redex_terms { st with st_bconts = stack_cvars 0 stack } stack args in
+         let st =
+            match capture_arg with
+               CaptureArgs ->
+                  { st with st_bconts = stack_cvars 0 stack }
+             | ClosedArgs ->
+                  st
+         in
+         let stack, args = compile_so_redex_terms st stack args in
             List.iter check_stack stack;
             Array.of_list stack, goal :: args
 end

@@ -213,7 +213,7 @@ let add_dform tbl df =
    let printer' =
       match df.dform_print with
          DFormExpansion e ->
-            DFExpansion (term_rewrite Relaxed empty_args_spec [df.dform_pattern] [e])
+            DFExpansion (term_rewrite Relaxed CaptureArgs empty_args_spec [df.dform_pattern] [e])
        | DFormPrinter f ->
             DFPrinter f
    in

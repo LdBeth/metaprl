@@ -1075,7 +1075,7 @@ let define_ml_rewrite proc loc mlrw rewrite_expr =
    let body = <:expr<
       let $lid:redex_id$ = $expr_of_term proc loc mlrw.mlterm_term$ in
       let $lid:rewrite_id$ =
-         Refiner.Refiner.Rewrite.compile_redices $strict_expr loc$ $addrs$ (**)
+         Refiner.Refiner.Rewrite.compile_redices $strict_expr loc$ Refiner.Refiner.Rewrite.ClosedArgs $addrs$ (**)
             [ $redex_id_expr$ :: $params_expr$ ]
       in
       let $lid:rewrite_id$ = $bindings_let proc loc rewrite_expr (fun_expr loc args_ids rewrite_body)$ in
@@ -1222,7 +1222,7 @@ let define_ml_rule want_checkpoint proc loc
    >> in
    let body = <:expr<
       let $lid:redex_id$ =
-         Refiner.Refiner.Rewrite.compile_redices $strict_expr loc$ $cvars_expr$
+         Refiner.Refiner.Rewrite.compile_redices $strict_expr loc$ Refiner.Refiner.Rewrite.ClosedArgs $cvars_expr$
             [ $expr_of_term proc loc redex$ :: $params_expr$ ]
       in
          $bindings_let proc loc code rule_let$
@@ -1326,7 +1326,7 @@ let define_ml_dform proc loc
       dform_ml_buffer = buffer;
       dform_ml_code = code
     } =
-   let items = extract_redex_types (compile_redex Relaxed [||] t) in
+   let items = extract_redex_types (compile_redex Relaxed ClosedArgs [||] t) in
    let dform_expr = create_dform_expr loc name modes options <:expr< $lid:term_id$ >> <:expr<
       Dform.DFormPrinter
          (fun [
@@ -1341,7 +1341,7 @@ let define_ml_dform proc loc
    >> in
       [<:str_item<
          let $lid:term_id$ = $expr_of_term proc loc t$ in
-         let $lid:redex_id$ = Refiner.Refiner.Rewrite.compile_redices ($rewriter_expr loc$ . Relaxed) [||] [ $lid:term_id$ ] in
+         let $lid:redex_id$ = Refiner.Refiner.Rewrite.compile_redices ($rewriter_expr loc$ . Relaxed) Refiner.Refiner.Rewrite.ClosedArgs [||] [ $lid:term_id$ ] in
             $bindings_let proc loc code dform_expr$
        >>]
 

@@ -340,12 +340,13 @@ struct
     | [] ->
          ()
 
-    (*
-     * Match a term against the redex.
-     *)
+   (*
+    * Match a term against the redex.
+    *)
    and match_redex_term addrs stack all_bvars t' t =
       match t' with
          RWFreeVars (t'', conts, vars) ->
+            eprintf "RWFreeVars: %a@." print_prog t';
             check_term_free_vars (extract_stack_bvars stack conts vars) t;
             match_redex_term addrs stack all_bvars t'' t
        | RWComposite { rw_op = op'; rw_bterms = bterms' } ->
@@ -406,6 +407,7 @@ struct
        | RWMatchFreeFOVar (i, cs, vs) ->
             begin
                let v = dest_var t in
+                  eprintf "RWMatchFreeFOVar@.";
                   if List.mem v (extract_stack_bvars stack cs vs) then
                      (* XXX: Abusing RewriteBoundSOVar a bit *)
                      REF_RAISE(RefineError("match_redex_term", RewriteBoundSOVar v));
@@ -539,7 +541,7 @@ struct
                         REF_RAISE(RefineError ("match_redex_sequent_hyps", RewriteBadMatch (HypMatch hyps)))
                else
                   let count = addrs.(addr) in
-                     if (count > 0 ) then
+                     if count > 0 then
                         count - 1
                      else
                         len - i + count
@@ -553,8 +555,10 @@ struct
                begin
                   match hyp' with
                      RWSeqFreeVarsContext (rconts, rvars, _, _, _) ->
+                        eprintf "RWSeqContext@.";
                         check_hyp_free_vars (extract_stack_bvars stack rconts rvars) hyps i (i+count)
-                   | _ -> ()
+                   | _ ->
+                        ()
                end;
                let bvars = extract_bvars stack l in
                   stack.(j) <- StackSeqContext (bvars, (i, count, hyps));

@@ -134,7 +134,7 @@ let compile_pattern from_terms contractum =
       let from_terms = List.map fst from_terms in
       let contractum = fst contractum in
       let redex = prod_term from_terms in
-         term_rewrite Relaxed empty_args_spec [redex] [contractum]
+         term_rewrite Relaxed ClosedArgs empty_args_spec [redex] [contractum]
    with
       _ ->
          raise (RewriteException (snd contractum, "unable to rewrite this pattern"))

@@ -61,8 +61,9 @@ module MakeRewriteCompileRedex
    open RewriteDebug
 
    type strict = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr).strict
+   type capture_args = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr).capture_args
 
-   val compile_so_redex : strict -> var array -> term list -> rstack array * rwterm list
+   val compile_so_redex : strict -> capture_args -> var array -> term list -> rstack array * rwterm list
 end
 
 (*

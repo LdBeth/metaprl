@@ -54,6 +54,24 @@ struct
     | Relaxed
 
    (*
+    * The capture_arg_contexts is normally used in rules.
+    * For example, in the following rule, the argument
+    * is intended to be interpreted as being
+    * within the sequent context.
+    *
+    *    prim concl_subst TyEqual{'t1; 't2} :
+    *       sequent { <H> >- TyEqual{'t1; 't2} } -->
+    *       sequent { <H> >- 'e in 't2 } -->
+    *       sequent { <H> >- 'e in 't1 }
+    *
+    * Rewrites are different--the args are intended to
+    * be closed, so this flag should be false.
+    *)
+   type capture_args =
+      CaptureArgs
+    | ClosedArgs
+
+   (*
     * For matching level expressions.
     *)
    (* %%MAGICBEGIN%% *)

@@ -878,7 +878,7 @@ struct
          if !debug_dform && modes = Dform.AllModes then
             eprintf "Warning: display form %s - no modes specified%t" name eflush;
          begin try
-            ignore (term_rewrite Relaxed empty_args_spec [t] [expansion])
+            ignore (term_rewrite Relaxed ClosedArgs empty_args_spec [t] [expansion])
          with
             exn ->
                Stdpp.raise_with_loc loc exn
