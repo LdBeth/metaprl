@@ -74,7 +74,6 @@ and orb =
 
 let resource env string = assoc string env.resources
 
-
 let orb_open name =
 	{ lo_address =	[  "nuprl_light"
 			; name
@@ -305,8 +304,10 @@ let rec bus_wait c tid ehook =
 	| _ -> t)
 
 (* presence of tid has connatation to lib. mainly that 
- the lib eval is non-local. But evals to join lib env are lo
+ the lib eval is non-local. But evals to join lib env are local
   thus it needs to be optional
+ another connotation might be that there is a transaction.
+ could be a good place to check for liveness.
  *)
 let bus_eval c addr expr tid ehook =
   let link = c.link in
