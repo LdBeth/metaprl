@@ -952,14 +952,6 @@ struct
       let _ = infer_term loc t in
          t
 
-   (*
-    * XXX: JYH: this should probably be made more general.
-    * When a meta_term is parsed, it will usually be enclosed
-    * in a wrapper.  Discard the wrapper.
-    *)
-   let unwrap_meta_term_of_term t =
-      meta_term_of_term (one_subterm t)
-
    (************************************************************************
     * GRAMMAR                                                              *
     ************************************************************************)
@@ -984,19 +976,11 @@ struct
       mterm:
          [[ t = amterm ->
              t.vterm
-          | "`"; x = QUOTATION ->
-             let name, s = dest_quot x in
-             let t = parse_quotation loc "term" name s in
-                unwrap_meta_term_of_term t
           ]];
 
       bmterm:
          [[ t = bbmterm ->
              t.vterm
-          | "`"; x = QUOTATION ->
-             let name, s = dest_quot x in
-             let t = parse_quotation loc "term" name s in
-                unwrap_meta_term_of_term t
           ]];
 
       amterm:

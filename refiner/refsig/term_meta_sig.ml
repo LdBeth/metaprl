@@ -91,6 +91,7 @@ sig
    (*
     * Conversion to terms.
     *)
+   val is_meta_term : term -> bool
    val meta_term_of_term : term -> meta_term
    val term_of_meta_term : meta_term -> term
 end

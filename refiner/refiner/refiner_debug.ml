@@ -2836,6 +2836,10 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p0_1, p0_2 = p0 in
          merge merge_var "TermMeta.decode_free_var" (wrap1 TermMeta1.decode_free_var p0_1) (wrap1 TermMeta2.decode_free_var p0_2)
 
+      let is_meta_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge merge_bool "TermMeta.is_meta_term" (wrap1 TermMeta1.is_meta_term p0_1) (wrap1 TermMeta2.is_meta_term p0_2)
+
       let meta_term_of_term (p0 : term) =
          let p0_1, p0_2 = p0 in
          merge merge_meta_term "TermMeta.meta_term_of_term" (wrap1 TermMeta1.meta_term_of_term p0_1) (wrap1 TermMeta2.meta_term_of_term p0_2)

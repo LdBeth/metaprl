@@ -64,6 +64,67 @@ struct
     ************************************************************************)
 
    (*
+    * Term representation of meta-terms.
+    *)
+   let mk_opname =
+      let op = Opname.mk_opname "Summary" Opname.nil_opname in
+         fun s -> Opname.mk_opname s op
+
+   let meta_theorem_op     = mk_opname "meta_theorem"
+   let meta_implies_op     = mk_opname "meta_implies"
+   let meta_function_op    = mk_opname "meta_function"
+   let meta_iff_op         = mk_opname "meta_iff"
+   let meta_labeled_op     = mk_opname "meta_labeled"
+
+   (*
+    * Check the structure recursively.
+    * We want to make sure that if this function returns
+    * true, then meta_term_of_term will succeed.
+    *)
+   let rec is_meta_term t =
+      if is_dep0_dep0_term meta_implies_op t || is_dep0_dep0_term meta_iff_op t then
+         let a, b = two_subterms t in
+            is_meta_term a && is_meta_term b
+      else if is_dep0_dep0_dep0_term meta_function_op t then
+         let _, a, b = three_subterms t in
+            is_meta_term a && is_meta_term b
+      else if is_string_dep0_term meta_labeled_op t then
+         let _, t = dest_string_dep0_term meta_labeled_op t in
+            is_meta_term t
+      else
+         is_dep0_term meta_theorem_op t
+
+   let rec meta_term_of_term t =
+      if is_dep0_term meta_theorem_op t then
+         MetaTheorem (one_subterm t)
+      else if is_dep0_dep0_term meta_implies_op t then
+         let a, b = two_subterms t in
+            MetaImplies (meta_term_of_term a, meta_term_of_term b)
+      else if is_dep0_dep0_dep0_term meta_function_op t then
+         let v, a, b = three_subterms t in
+            MetaFunction (v, meta_term_of_term a, meta_term_of_term b)
+      else if is_dep0_dep0_term meta_iff_op t then
+         let a, b = two_subterms t in
+            MetaIff (meta_term_of_term a, meta_term_of_term b)
+      else if is_string_dep0_term meta_labeled_op t then
+         let s, t = dest_string_dep0_term meta_labeled_op t in
+            MetaLabeled (s, meta_term_of_term t)
+      else
+         REF_RAISE(RefineError ("meta_term_of_term", StringTermError ("not a meta term", t)))
+
+   let rec term_of_meta_term = function
+      MetaTheorem t ->
+         mk_simple_term meta_theorem_op [t]
+    | MetaImplies (a, b) ->
+         mk_simple_term meta_implies_op [term_of_meta_term a; term_of_meta_term b]
+    | MetaFunction (v, a, b) ->
+         mk_simple_term meta_function_op [v; term_of_meta_term a; term_of_meta_term b]
+    | MetaIff (a, b) ->
+         mk_simple_term meta_iff_op [term_of_meta_term a; term_of_meta_term b]
+    | MetaLabeled (l, t) ->
+         mk_term (make_op { op_name = meta_labeled_op; op_params = [ make_param (String l) ]}) [mk_simple_bterm (term_of_meta_term t)]
+
+   (*
     * Unzip a metaimplication into a list of terms.
     *)
    let rec unfold_mlabeled name = function
@@ -357,9 +418,16 @@ let () = ();;
       in
          fun t -> convert_term SymbolSet.empty (free_vars_set t) [] t
 
+   (*
+    * XXX: JYH: we detect term representations for meta-terms here.
+    * Note that this will never be called on display forms or iforms.
+    *)
    let rec convert_mterm f = function
       (MetaTheorem t) as mt ->
-         let t' = f t in if t' == t then mt else MetaTheorem t'
+         if is_meta_term t then
+            convert_mterm f (meta_term_of_term t)
+         else
+            let t' = f t in if t' == t then mt else MetaTheorem t'
     | (MetaImplies(mt1, mt2)) as mt ->
          let mt2' = convert_mterm f mt2 in let mt1' = convert_mterm f mt1 in
             if mt1' == mt1 && mt2' == mt2 then mt else MetaImplies(mt1',mt2')
@@ -520,61 +588,6 @@ let () = ();;
             MetaFunction (f t, map_mterm f mt1, map_mterm f mt2)
        | MetaLabeled (l, mt) ->
             MetaLabeled (l, map_mterm f mt)
-
-   (*
-    * Term representation of meta-terms.
-    *)
-   let mk_opname =
-      let op = Opname.mk_opname "Summary" Opname.nil_opname in
-         fun s -> Opname.mk_opname s op
-
-   let meta_theorem_op     = mk_opname "meta_theorem"
-   let meta_implies_op     = mk_opname "meta_implies"
-   let meta_function_op    = mk_opname "meta_function"
-   let meta_iff_op         = mk_opname "meta_iff"
-   let meta_labeled_op     = mk_opname "meta_labeled"
-
-   let rec meta_term_of_term t =
-      let opname = opname_of_term t in
-         if Opname.eq opname meta_theorem_op then
-            MetaTheorem (one_subterm t)
-         else if Opname.eq opname meta_implies_op then
-            let a, b = two_subterms t in
-               MetaImplies (meta_term_of_term a, meta_term_of_term b)
-         else if Opname.eq opname meta_function_op then
-            let v, a, b = three_subterms t in
-               MetaFunction (v, meta_term_of_term a, meta_term_of_term b)
-         else if Opname.eq opname meta_iff_op then
-            let a, b = two_subterms t in
-               MetaIff (meta_term_of_term a, meta_term_of_term b)
-         else if Opname.eq opname meta_labeled_op then
-            let t' = dest_term t in
-            let o' = dest_op t'.term_op in
-            match o'.op_params, t'.term_terms with
-               [p], [t'] ->
-                  begin match dest_param p, dest_bterm t' with
-                     String l, { bvars = []; bterm = t' } ->
-                        MetaLabeled (l, meta_term_of_term t')
-                   | Var l, { bvars = []; bterm = t' } ->
-                        MetaLabeled (string_of_symbol l, meta_term_of_term t')
-                   | _ -> REF_RAISE(RefineError ("meta_term_of_term", StringTermError ("not a meta term", t)))
-                  end
-             | _ ->
-                  REF_RAISE(RefineError ("meta_term_of_term", StringTermError ("not a meta term", t)))
-         else
-            REF_RAISE(RefineError ("meta_term_of_term", StringTermError ("not a meta term", t)))
-
-   let rec term_of_meta_term = function
-      MetaTheorem t ->
-         mk_simple_term meta_theorem_op [t]
-    | MetaImplies (a, b) ->
-         mk_simple_term meta_implies_op [term_of_meta_term a; term_of_meta_term b]
-    | MetaFunction (v, a, b) ->
-         mk_simple_term meta_function_op [v; term_of_meta_term a; term_of_meta_term b]
-    | MetaIff (a, b) ->
-         mk_simple_term meta_iff_op [term_of_meta_term a; term_of_meta_term b]
-    | MetaLabeled (l, t) ->
-         mk_term (make_op { op_name = meta_labeled_op; op_params = [ make_param (String l) ]}) [mk_simple_bterm (term_of_meta_term t)]
 end
 
 (*
