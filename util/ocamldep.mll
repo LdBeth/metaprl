@@ -42,7 +42,7 @@ let prl_init_names =
     "Dform";
     "Dform_print";
     "Tactic";
-    "Nl_resource";
+    "Mp_resource";
     "Precedence";
     "Filter_summary"]
 
