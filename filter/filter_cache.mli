@@ -7,7 +7,6 @@
 open Refiner.Refiner.Term
 
 open Filter_summary_type
-open Filter_proof_type
 
 (*
  * For this compiler, we only use two summaries.
@@ -25,7 +24,7 @@ type select_type =
 type 'a proof_type =
    Primitive of term
  | Derived of MLast.expr
- | Interactive of proof * 'a
+ | Interactive of 'a
 
 (*
  * Proof conversion.
@@ -33,11 +32,14 @@ type 'a proof_type =
 module type ConvertProofSig =
 sig
    type t
-   val to_expr : t -> proof -> MLast.expr
-   val to_term : t -> proof -> term
-   val of_term : proof -> term -> t
+   val to_expr : string -> t -> MLast.expr
+   val to_term : string -> t -> term
+   val of_term : string -> term -> t
 end
-   
+
+(*
+ * Build a cache with a particular proof type.
+ *)
 module MakeCaches (Convert : ConvertProofSig) :
 sig
    (*
@@ -70,6 +72,10 @@ end
 
 (*
  * $Log$
+ * Revision 1.10  1998/05/28 13:46:13  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.9  1998/05/27 15:12:42  jyh
  * Functorized the refiner over the Term module.
  *

@@ -12,11 +12,10 @@
 
 include Proof
 
-open Term
+open Refiner.Refiner.Term
+open Refiner.Refiner.Refine
 open Rformat
 open Dform
-open Refine_sig
-open Refine
 open Tactic_type
 
 (*
@@ -30,6 +29,7 @@ type t
 val create : Filter_summary.param list -> tactic_arg -> t
 val ped_of_proof : Proof.t -> t
 val set_params : t -> Filter_summary.param list -> unit
+val ped_arg : t -> tactic_arg
 
 (*
  * Destructors.
@@ -71,11 +71,15 @@ val root_ped : t -> unit
  *    expand_proof: check as much of the proof as possible,
  *       no exceptions are raised
  *)
-val check_ped : t -> Refiner.extract
+val check_ped : t -> extract
 val expand_ped : dform_base -> t -> unit
 
 (*
  * $Log$
+ * Revision 1.5  1998/05/28 13:45:52  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.4  1998/04/28 18:29:48  jyh
  * ls() works, adding display.
  *

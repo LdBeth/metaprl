@@ -18,8 +18,6 @@ open File_type_base
 open Filter_type
 open Filter_util
 open Filter_ocaml
-open Filter_proof_type
-open Filter_proof
 open Filter_summary
 open Filter_summary_type
 open Filter_summary_io
@@ -51,7 +49,7 @@ type select_type =
 type 'a proof_type =
    Primitive of term
  | Derived of MLast.expr
- | Interactive of proof * 'a
+ | Interactive of 'a
 
 (*
  * This is the common summary type for interface between IO
@@ -67,9 +65,9 @@ type 'a summary_type =
 module type ConvertProofSig =
 sig
    type t
-   val to_expr : t -> proof -> MLast.expr
-   val to_term : t -> proof -> term
-   val of_term : proof -> term -> t
+   val to_expr : string -> t -> MLast.expr
+   val to_term : string -> t -> term
+   val of_term : string -> term -> t
 end
    
 (************************************************************************
@@ -139,7 +137,7 @@ let unit_term = mk_simple_term nil_opname []
 let normalize info =
    let convert =
       { term_f  = normalize_term;
-        proof_f = identity;
+        proof_f = (fun _ pf -> pf);
         ctyp_f  = identity;
         expr_f  = identity;
         item_f  = identity
@@ -166,15 +164,15 @@ let prim_op        = mk_opname "prim"        summary_opname
 let derived_op     = mk_opname "derived"     summary_opname
 let interactive_op = mk_opname "interactive" summary_opname
 
-let marshal_proof to_term = function
+let marshal_proof name to_term = function
    Primitive t ->
       mk_simple_term prim_op [t]
  | Derived expr ->
       mk_simple_term derived_op [term_of_expr expr]
- | Interactive (pf, expr) ->
-      mk_simple_term interactive_op [term_of_proof pf; to_term expr pf]
+ | Interactive expr ->
+      mk_simple_term interactive_op [to_term name expr]
 
-let unmarshal_proof of_term t =
+let unmarshal_proof name of_term t =
    let opname = opname_of_term t in
    let expr = one_subterm t in
       if opname == prim_op then
@@ -182,9 +180,7 @@ let unmarshal_proof of_term t =
       else if opname == derived_op then
          Derived (expr_of_term expr)
       else if opname == interactive_op then
-         let proof, expr = two_subterms t in
-         let proof = proof_of_term proof in
-            Interactive (proof, of_term proof expr)
+         Interactive (of_term name (one_subterm t))
       else
          raise (Failure "Filter_cache.unmarshal")
 
@@ -206,7 +202,7 @@ struct
       Interface info ->
          let convert =
             { term_f = identity;
-              proof_f = (fun t -> unit_term);
+              proof_f = (fun _ t -> unit_term);
               ctyp_f = term_of_type;
               expr_f = term_of_expr;
               item_f = term_of_sig_item
@@ -219,7 +215,7 @@ struct
    let unmarshal info =
       let convert =
          { term_f = identity;
-           proof_f = (fun t -> ());
+           proof_f = (fun _ t -> ());
            ctyp_f = type_of_term;
            expr_f = expr_of_term;
            item_f = sig_item_of_term
@@ -269,7 +265,7 @@ struct
       Implementation info ->
          let convert =
             { term_f = identity;
-              proof_f = marshal_proof Convert.to_term;
+              proof_f = (fun name pf -> marshal_proof name Convert.to_term pf);
               ctyp_f = term_of_type;
               expr_f = term_of_expr;
               item_f = term_of_str_item
@@ -282,7 +278,7 @@ struct
    let unmarshal info =
       let convert =
          { term_f = identity;
-           proof_f = unmarshal_proof Convert.of_term;
+           proof_f = (fun name pf -> unmarshal_proof name Convert.of_term pf);
            ctyp_f = type_of_term;
            expr_f = expr_of_term;
            item_f = str_item_of_term
@@ -332,7 +328,7 @@ struct
       Interface info ->
          let convert =
             { term_f = identity;
-              proof_f = (fun t -> unit_term);
+              proof_f = (fun _ _ -> unit_term);
               ctyp_f = term_of_type;
               expr_f = term_of_expr;
               item_f = term_of_sig_item
@@ -344,7 +340,7 @@ struct
    let unmarshal info =
       let convert =
          { term_f = identity;
-           proof_f = (fun t -> ());
+           proof_f = (fun _ t -> ());
            ctyp_f = type_of_term;
            expr_f = expr_of_term;
            item_f = sig_item_of_term
@@ -371,7 +367,7 @@ struct
       Implementation info ->
          let convert =
             { term_f = identity;
-              proof_f = marshal_proof Convert.to_term;
+              proof_f = (fun name pf -> marshal_proof name Convert.to_term pf);
               ctyp_f = term_of_type;
               expr_f = term_of_expr;
               item_f = term_of_str_item
@@ -384,7 +380,7 @@ struct
    let unmarshal info =
       let convert =
          { term_f = identity;
-           proof_f = unmarshal_proof Convert.of_term;
+           proof_f = (fun name pf -> unmarshal_proof name Convert.of_term pf);
            ctyp_f = type_of_term;
            expr_f = expr_of_term;
            item_f = str_item_of_term
@@ -492,6 +488,10 @@ end
 
 (*
  * $Log$
+ * Revision 1.21  1998/05/28 13:46:11  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.20  1998/05/27 15:12:40  jyh
  * Functorized the refiner over the Term module.
  *

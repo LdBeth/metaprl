@@ -16,11 +16,11 @@ include Proof
 open Printf
 open Debug
 
-open Term
+open Refiner.Refiner
+open Refiner.Refiner.Term
+open Refiner.Refiner.Refine
 open Rformat
 open Dform
-open Refine_sig
-open Refine
 
 open Tactic_type
 open Proof_step
@@ -118,6 +118,12 @@ let ped_goal { ped_proof = pf; ped_select = select } =
          with
             Failure "nth" ->
                raise (Failure "Proof_edit.ped_goal: no such child")
+
+(*
+ * Get the argument.
+ *)
+let ped_arg { ped_goal = goal } =
+   goal
             
 (************************************************************************
  * DISPLAY                                                              *
@@ -261,7 +267,7 @@ let format db buffer { ped_goal = goal; ped_undo = undo } =
  *)
 let refine_ped ped text ast tac =
    let { ped_goal = goal; ped_undo = undo; ped_stack = stack } = ped in
-   let subgoals, _ = Refiner.refine tac goal in
+   let subgoals, _ = Refine.refine tac goal in
    let step = Proof_step.create goal subgoals text ast tac in
    let pf' =
       match undo with
@@ -440,6 +446,10 @@ let expand_ped df ped =
 
 (*
  * $Log$
+ * Revision 1.6  1998/05/28 13:45:50  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.5  1998/04/28 18:29:47  jyh
  * ls() works, adding display.
  *

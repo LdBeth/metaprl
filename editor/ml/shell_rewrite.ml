@@ -9,11 +9,16 @@ include Package_df
 open Printf
 open Debug
 
-open Term
+open Rformat
+open Dform
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermMan
+open Refiner.Refiner.Refine
 open Opname
-open Refine_sig
 
 open Filter_summary
+open Filter_cache
+open Filter_ocaml
 
 open Tactic_type
 open Tactic_cache
@@ -34,7 +39,7 @@ type rw =
      mutable rw_assums : term list;
      mutable rw_redex : term;
      mutable rw_contractum : term;
-     mutable rw_ped : Proof_edit.t
+     mutable rw_ped : Proof_edit.t proof_type
    }
 
 (*
@@ -43,69 +48,87 @@ type rw =
  *)
 let seq = << sequent { 'H >- 'rw } >>
 
-let mk_goal resources cache redex contractum =
+let mk_goal arg redex contractum =
    let rw = replace_goal seq (mk_xrewrite_term redex contractum) in
-   let arg =
-      { ref_label = "main";
-        ref_args = [];
-        ref_fcache = extract cache;
-        ref_rsrc = resources
-      }
-   in
       { tac_goal = rw;
         tac_hyps = [];
         tac_arg = arg
       }
 
-let mk_cond_goal resources cache assums redex contractum =
+let mk_cond_goal arg assums redex contractum =
    let rw = replace_goal seq (mk_xrewrite_term redex contractum) in
    let assums = List.map (replace_goal seq) assums in
-   let arg =
-      { ref_label = "main";
-        ref_args = [];
-        ref_fcache = extract cache;
-        ref_rsrc = resources
-      }
-   in
       { tac_goal = rw;
         tac_hyps = assums;
         tac_arg = arg
       }
 
-let mk_ped resources cache params assums redex contractum =
-   let goal =
-      if assums = [] then
-         mk_goal resources cache redex contractum
-      else
-         mk_cond_goal resources cache assums redex contractum
-   in
-      Proof_edit.create params goal
-   
+let mk_rw_goal arg assums redex contractum =
+   if assums = [] then
+      mk_goal arg redex contractum
+   else
+      mk_cond_goal arg assums redex contractum
+
+let mk_ped arg params assums redex contractum =
+   Proof_edit.create params (mk_rw_goal arg assums redex contractum)
+
+(************************************************************************
+ * FORMATTING                                                           *
+ ************************************************************************)
+
+(*
+ * Commenting function.
+ *)
+let comment loc t =
+   t
+
+(*
+ * Format the tactic text.
+ *)
+let format_tac db buf tac =
+   ()
+
+(*
+ * A primtive rewrite.
+ *)
+let format_prim_rewrite db buf arg params assums redex contractum =
+   let tac = mk_rw_goal arg assums redex contractum in
+      format_tac db buf tac;
+      format_newline buf;
+      format_string buf "Primitive"
+
+let format_cond_rewrite db buf arg params assums redex contractum expr =
+   let tac = mk_rw_goal arg assums redex contractum in
+      format_tac db buf tac;
+      format_newline buf;
+      format_string buf "Derived> ";
+      format_term db buf (term_of_expr [] comment expr)
+
 (*
  * The object has a package in scope.
  *)
 let unit_term = mk_simple_term nil_opname []
 
-let edit pack prog resources name obj =
+let edit pack prog arg name obj =
    let update_ped () =
-      let { rw_params = params;
-            rw_assums = assums;
-            rw_redex = redex;
-            rw_contractum = contractum
-          } = obj
-      in
-         obj.rw_ped <- mk_ped resources params assums redex contractum;
-   in
-   let extractf () =
-      let { rw_ped = ped } = obj in
-         try Proof_edit.check_ped ped with
-            RefineError err ->
-               raise (RefineError (GoalError (name, err)))
+      obj.rw_ped <- Primitive unit_term
    in
    let edit_format db buf =
       (* Convert to a term *)
-      let { rw_ped = ped } = obj in
-         Proof_edit.format db buf ped
+      let { rw_params = params;
+            rw_assums = assums;
+            rw_redex = redex;
+            rw_contractum = contractum;
+            rw_ped = ped
+          } = obj
+      in
+         match ped with
+            Primitive t ->
+               format_prim_rewrite db buf arg params assums redex contractum
+          | Derived expr ->
+               format_cond_rewrite db buf arg params assums redex contractum expr
+          | Interactive ped ->
+               Proof_edit.format db buf ped
    in
    let edit_set_goal t =
       raise (Failure "Shell_rewrite.edit_set_goal: bogus edit")
@@ -126,33 +149,68 @@ let edit pack prog resources name obj =
       obj.rw_params <- pl;
       update_ped ()
    in
-   let edit_check = extractf in
+   let edit_check () =
+      match obj.rw_ped with
+         Primitive _ ->
+            raise (RefineError (StringError "Shell_rewrite.check: can't check primitive rules"))
+       | Derived _ ->
+            raise (RefineError (StringError "Shell_rewrite.check: can't check noninteractive proofs"))
+       | Interactive ped ->
+            try Proof_edit.check_ped ped with
+               RefineError err ->
+                  raise (RefineError (GoalError (name, err)))
+   in
+   let get_ped obj =
+      match obj.rw_ped with
+         Primitive _
+       | Derived _ ->
+            raise (RefineError (StringError "Shell_rewrite: proof is not interactive"))
+       | Interactive ped ->
+            ped
+   in
    let edit_expand df =
-      Proof_edit.expand_ped df obj.rw_ped
+      Proof_edit.expand_ped df (get_ped obj)
    in
    let edit_root () =
-      Proof_edit.root_ped obj.rw_ped
+      Proof_edit.root_ped (get_ped obj)
    in
    let edit_up () =
-      Proof_edit.up_ped obj.rw_ped
+      Proof_edit.up_ped (get_ped obj)
    in
    let edit_down i =
-      Proof_edit.down_ped obj.rw_ped i
-   in
-   let edit_refine text ast tac =
-      Proof_edit.refine_ped obj.rw_ped text ast tac
+      Proof_edit.down_ped (get_ped obj) i
    in
    let edit_undo () =
-      Proof_edit.undo_ped obj.rw_ped
+      Proof_edit.undo_ped (get_ped obj)
    in
    let edit_nop () =
-      Proof_edit.nop_ped obj.rw_ped
+      Proof_edit.nop_ped (get_ped obj)
    in
    let edit_fold () =
-      Proof_edit.fold_ped obj.rw_ped
+      Proof_edit.fold_ped (get_ped obj)
    in
    let edit_fold_all () =
-      Proof_edit.fold_all_ped obj.rw_ped
+      Proof_edit.fold_all_ped (get_ped obj)
+   in
+   let edit_refine text ast tac =
+      let ped =
+         match obj.rw_ped with
+            Primitive _
+          | Derived _ ->
+               (* Convert to a ped *)
+               let { rw_params = params;
+                     rw_assums = assums;
+                     rw_redex = redex;
+                     rw_contractum = contractum
+                   } = obj
+               in
+               let ped = mk_ped arg params assums redex contractum in
+                  obj.rw_ped <- Interactive ped;
+                  ped
+          | Interactive ped ->
+               ped
+      in
+         Proof_edit.refine_ped ped text ast tac
    in
       { edit_format = edit_format;
         edit_set_goal = edit_set_goal;
@@ -171,36 +229,34 @@ let edit pack prog resources name obj =
         edit_fold_all = edit_fold_all
       }
 
-let create pack prog resources cache name =
+let create pack prog arg name =
    let obj =
       { rw_assums = [];
         rw_params = [];
         rw_redex = unit_term;
         rw_contractum = unit_term;
-        rw_ped = mk_ped resources cache [] [] unit_term unit_term
+        rw_ped = Primitive unit_term
       }
    in
-      edit pack prog resources name obj
+      edit pack prog arg name obj
 
-let view_rw pack prog resources cache tactics
+let view_rw pack prog arg
     { Filter_summary.rw_name = name;
       Filter_summary.rw_redex = redex;
       Filter_summary.rw_contractum = contractum;
       Filter_summary.rw_proof = proof
     } =
-   let proof = Proof.proof_of_io_proof resources cache tactics proof in
-   let ped = ped_of_proof proof in
    let obj =
       { rw_assums = [];
         rw_params = [];
         rw_redex = redex;
         rw_contractum = contractum;
-        rw_ped = ped
+        rw_ped = proof
       }
    in
-      edit pack prog resources name obj
+      edit pack prog arg name obj
 
-let view_crw pack prog resources cache tactics
+let view_crw pack prog arg
     { crw_name = name;
       crw_params = params;
       crw_args = args;
@@ -208,20 +264,22 @@ let view_crw pack prog resources cache tactics
       crw_contractum = contractum;
       crw_proof = proof
     } =
-   let proof = Proof.proof_of_io_proof resources cache tactics proof in
-   let ped = ped_of_proof proof in
    let obj =
       { rw_assums = args;
         rw_params = params;
         rw_redex = redex;
         rw_contractum = contractum;
-        rw_ped = ped
+        rw_ped = proof
       }
    in
-      edit pack prog resources name obj
+      edit pack prog arg name obj
 
 (*
  * $Log$
+ * Revision 1.8  1998/05/28 13:46:02  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.7  1998/05/07 16:02:26  jyh
  * Adding interactive proofs.
  *

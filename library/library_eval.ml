@@ -11,6 +11,10 @@ open Library
 open Printf
 open Debug
 
+let _ =
+   if !debug_load then
+      eprintf "Loading Library_eval%t" eflush
+
 
 
 let library = null_oref()

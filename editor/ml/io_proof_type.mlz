@@ -1,21 +1,18 @@
 (*
- * This defines raw proof that is saved in the file.
+ * This defines raw proof that is saved in a file.
+ * The main difference between this proof and Proof.t
+ * is that these proofs do not contains tactics, so
+ * they can be marshaled.
+ *
+ * A real proof can be obtained by combining
+ * a list of tactics and an io_proof that uses the list
+ * to look up the tactics.
  *)
+
+include Tactic_type
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.Refine
-
-(*
- * Many tactics wish to examine their argument, so
- * the real type of tactic includes an argument.
- *)
-type attribute =
-   VarArgs of string list
- | TermArgs of term list
- | TypeArg of term 
- | IntArgs of int list
- | ThinArg of bool 
- | SubstArg of (string * term) list
 
 (*
  * An IO step does not save the tactic,
@@ -23,7 +20,7 @@ type attribute =
  *)
 type aterm =
    { aterm_label : string;              (* Label describes the step in the proof *)
-     aterm_args : attribute list        (* Proof annotations *)
+     aterm_args : Tactic_type.attribute list        (* Proof annotations *)
    }
 
 type proof_step =
@@ -61,8 +58,9 @@ and proof_child =
    
 (*
  * $Log$
- * Revision 1.3  1998/05/27 15:12:59  jyh
- * Functorized the refiner over the Term module.
+ * Revision 1.1  1998/05/28 13:45:38  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
  *
  * Revision 1.2  1998/04/21 20:58:04  jyh
  * Fixed typing problems introduced by refiner msequents.

@@ -1,3 +1,10 @@
+open Printf
+open Debug
+
+let _ =
+   if !debug_load then
+      eprintf "Loading Int32%t" eflush
+
  (*module type BigIntSig =
 sig
 (************************************************************************

@@ -33,8 +33,6 @@ LMFILES :=\
 	filter_comment\
 	filter_ocaml\
 	filter_exn\
-	filter_proof_type\
-	filter_proof\
 	filter_summary\
 	filter_summary_type\
 	filter_summary_io\

@@ -32,3 +32,4 @@ clean:
 depend:
 
 ocamldep.cmo: misc.cmi
+misc.cmo: misc.cmi

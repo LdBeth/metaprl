@@ -7,7 +7,7 @@ include Package_info
 include Package_df
 include Shell_rewrite
 
-open Term
+open Refiner.Refiner.Term
 
 open Tactic_type
 
@@ -82,6 +82,10 @@ val fold_all : unit -> unit
                                   
 (*
  * $Log$
+ * Revision 1.6  1998/05/28 13:45:57  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.5  1998/04/28 18:29:54  jyh
  * ls() works, adding display.
  *

@@ -2,7 +2,7 @@
  * Define the additional grammar for the shell.
  *)
 
-open Term
+open Refiner.Refiner.Term
 open Dform
 open Opname
 
@@ -23,6 +23,10 @@ val print_term : term -> unit
 
 (*
  * $Log$
+ * Revision 1.3  1998/05/28 13:46:01  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.2  1998/04/28 18:29:57  jyh
  * ls() works, adding display.
  *

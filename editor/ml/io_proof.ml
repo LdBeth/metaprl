@@ -2,6 +2,8 @@
  * Marshal proofs to terms.
  *)
 
+include Io_proof_type
+
 open Printf
 open Debug
 
@@ -11,8 +13,10 @@ open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.Refine
 
-open Filter_proof_type
 open Filter_ocaml
+
+open Tactic_type
+open Io_proof_type
 
 (*
  * Show the file loading.
@@ -263,18 +267,23 @@ let tactics_of_proof proof =
     | ChildProof proof ->
          collect_proof proof
    in
+   
+   let loc = (0, 0) in
    let entries = ref [] in
    let collect name tac =
-      entries := (name, tac) :: !entries
+      let name = <:expr< $str: name$ >> in
+      let pair = <:expr< ( $list: [ name; tac ]$ ) >> in
+         entries := pair :: !entries
    in
-      collect_proof proof;
-      Hashtbl.iter collect hash;
-      Array.of_list !entries
+   let _ = collect_proof proof in
+   let _ = Hashtbl.iter collect hash in
+      <:expr< [| $list: !entries$ |] >>
 
 (*
  * $Log$
- * Revision 1.8  1998/05/27 15:12:57  jyh
- * Functorized the refiner over the Term module.
+ * Revision 1.1  1998/05/28 13:45:34  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
  *
  * Revision 1.7  1998/05/04 13:01:13  jyh
  * Ocaml display without let rec.

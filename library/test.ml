@@ -8,8 +8,8 @@
  *	
  *)
 
-exception NoTest
-exception Test of string
+open Printf
+open Debug
 
 open Utils
 open Basic
@@ -18,6 +18,13 @@ open Library
 open Ascii_scan
 
 open Library_type_base
+
+let _ =
+   if !debug_load then
+      eprintf "Loading Test%t" eflush
+
+exception NoTest
+exception Test of string
 
 exception Testfailed of int
 

@@ -40,6 +40,11 @@ prlc:
 		if (echo Making $$i...; cd $$i; $(MAKE) all); then true; else exit 1; fi;\
 	done
 
+prlc_install:
+	@for i in $(PRLC); do\
+		if (echo Making $$i...; cd $$i; $(MAKE) install); then true; else exit 1; fi;\
+	done
+
 install:
 	@for i in $(DIRS); do\
 		if (echo Making $$i...; cd $$i; $(MAKE) $@); then true; else exit 1; fi;\

@@ -457,7 +457,12 @@ struct
                if !debug_filter_cache then
                   eprintf "FilterCache.inline_module': finding: %s%t" (string_of_path path) eflush;
                let { base = { lib = base; sig_summaries = summaries } } = cache in
-               let info = Base.find base path SigMarshal.select in
+               let info =
+                  try Base.find base path SigMarshal.select with
+                     Not_found ->
+                        eprintf "Can't find module %s%t" (string_of_path path) eflush;
+                        raise Not_found
+               in
                let info' = SigMarshal.unmarshal (Base.info base info) in
                   (* This module gets listed in the inline stack *)
                   cache.base.sig_summaries <- info :: summaries;
@@ -581,6 +586,10 @@ end
    
 (*
  * $Log$
+ * Revision 1.12  1998/05/28 13:46:14  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.11  1998/05/27 15:12:43  jyh
  * Functorized the refiner over the Term module.
  *

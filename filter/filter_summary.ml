@@ -198,7 +198,7 @@ and ('proof, 'ctyp, 'expr, 'item) module_info =
  *)
 type ('proof1, 'ctyp1, 'expr1, 'item1, 'proof2, 'ctyp2, 'expr2, 'item2) convert =
    { term_f : term -> term;
-     proof_f : 'proof1 -> 'proof2;
+     proof_f : string -> 'proof1 -> 'proof2;
      ctyp_f  : 'ctyp1  -> 'ctyp2;
      expr_f  : 'expr1  -> 'expr2;
      item_f  : 'item1  -> 'item2
@@ -578,7 +578,7 @@ let summary_map convert =
                Rewrite { rw_name = name;
                          rw_redex = convert.term_f redex;
                          rw_contractum = convert.term_f con;
-                         rw_proof = convert.proof_f pf
+                         rw_proof = convert.proof_f name pf
                }
 
           | CondRewrite { crw_name = name;
@@ -593,13 +593,13 @@ let summary_map convert =
                              crw_args = List.map convert.term_f args;
                              crw_redex = convert.term_f redex;
                              crw_contractum = convert.term_f con;
-                             crw_proof = convert.proof_f pf
+                             crw_proof = convert.proof_f name pf
                }
 
           | Axiom { axiom_name = name; axiom_stmt = t; axiom_proof = pf } ->
                Axiom { axiom_name = name;
                        axiom_stmt = convert.term_f t;
-                       axiom_proof = convert.proof_f pf
+                       axiom_proof = convert.proof_f name pf
                }
 
           | Rule { rule_name = name;
@@ -610,7 +610,7 @@ let summary_map convert =
                Rule { rule_name = name;
                       rule_params = List.map param_map params;
                       rule_stmt = mterm_map t;
-                      rule_proof = convert.proof_f pf
+                      rule_proof = convert.proof_f name pf
                }
       
           | Opname { opname_name = name; opname_term = t } ->
@@ -903,7 +903,7 @@ let rec dest_rewrite convert t =
       Rewrite { rw_name = name;
                 rw_redex = redex;
                 rw_contractum = contractum;
-                rw_proof = convert.proof_f proof
+                rw_proof = convert.proof_f name proof
       }
 
 (*
@@ -917,7 +917,7 @@ and dest_cond_rewrite convert t =
                     crw_args = dest_xlist args;
                     crw_redex = redex;
                     crw_contractum = contractum;
-                    crw_proof = convert.proof_f proof
+                    crw_proof = convert.proof_f name proof
       }
 
 (*
@@ -928,7 +928,7 @@ and dest_axiom convert t =
    let stmt, proof = two_subterms t in
       Axiom { axiom_name = name;
               axiom_stmt = stmt;
-              axiom_proof = convert.proof_f proof
+              axiom_proof = convert.proof_f name proof
       }
 
 (*
@@ -940,7 +940,7 @@ and dest_rule convert t =
       Rule { rule_name = name;
              rule_params = dest_params params;
              rule_stmt = dest_meta_term stmt;
-             rule_proof = convert.proof_f proof
+             rule_proof = convert.proof_f name proof
       }
 
 (*
@@ -1269,7 +1269,7 @@ let rec term_of_summary_item convert t =
    mk_simple_term summary_item_op [convert.item_f t]
 
 and term_of_rewrite convert { rw_name = name; rw_redex = redex; rw_contractum = con; rw_proof = pf } =
-   mk_string_param_term rewrite_op name [redex; con; convert.proof_f pf]
+   mk_string_param_term rewrite_op name [redex; con; convert.proof_f name pf]
 
 and term_of_cond_rewrite convert { crw_name = name;
                                    crw_params = params;
@@ -1282,17 +1282,17 @@ and term_of_cond_rewrite convert { crw_name = name;
                                               mk_xlist_term args;
                                               redex;
                                               con;
-                                              convert.proof_f pf]
+                                              convert.proof_f name pf]
 
 and term_of_axiom convert { axiom_name = name; axiom_stmt = t; axiom_proof = pf } =
-   mk_string_param_term axiom_op name [t; convert.proof_f pf]
+   mk_string_param_term axiom_op name [t; convert.proof_f name pf]
 
 and term_of_rule convert { rule_name = name;
-                              rule_params = params;
-                              rule_stmt = t;
-                              rule_proof = pf
+                           rule_params = params;
+                           rule_stmt = t;
+                           rule_proof = pf
     } =
-   mk_string_param_term rule_op name [mk_params params; mk_meta_term t; convert.proof_f pf]
+   mk_string_param_term rule_op name [mk_params params; mk_meta_term t; convert.proof_f name pf]
 
 and term_of_opname { opname_name = name; opname_term = term } =
    mk_string_param_term opname_op name [term]
@@ -1810,6 +1810,10 @@ and check_implementation { info_list = implem } { info_list = interf } =
 
 (*
  * $Log$
+ * Revision 1.23  1998/05/28 13:46:29  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.22  1998/05/27 15:13:01  jyh
  * Functorized the refiner over the Term module.
  *

@@ -35,17 +35,17 @@ ifndef OCAMLOPT
    OCAMLOPT := ocamlopt
 endif
 ifndef PRLC
-   PRLC := $(LOCALBIN)/prlc
+   PRLC := prlc
 endif
 
-OCAMLDEP := $(LOCALBIN)/ocamldep
+OCAMLDEP := ocamldep
 OCAMLCFLAGS := $(INCLUDE) $(OCAMLFLAGS)
 OCAMLOPTFLAGS := $(INCLUDE) $(OCAMLFLAGS)
 CAMLP4OFLAGS := $(INCLUDE)
 CFLAGS = -g -I$(CAMLLIB)
 CC = gcc
 RM = rm
-INSTALL = cp -pf
+INSTALL = /bin/cp -pf
 
 # Library file names
 MLFILES      := $(addsuffix .ml,   $(NLFILES) $(LMFILES) $(MFILES) $(PFILES))

@@ -6,11 +6,14 @@ OCAMLDEPFLAGS := -prl
 
 # Common files
 MLZFILES :=\
+	io_proof_type\
 	package_type\
 	shell_type
 
 # Library files
 NLFILES :=\
+	io_proof_type\
+	io_proof\
 	proof_step\
 	proof\
 	proof_edit\

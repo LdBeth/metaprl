@@ -4,13 +4,15 @@
 
 include Base_theory
 
+include Io_proof
 include Package_info
 
 open Printf
 open Debug
 
 open Opname
-open Term
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermMan
 open Rformat
 open Dform_print
 open Dform
@@ -18,8 +20,8 @@ open Dform
 open Filter_summary
 open Filter_ocaml
 open Filter_cache
-open Filter_proof
 
+open Io_proof
 open Package_info
 open Package
 
@@ -55,14 +57,14 @@ let term_of_str_item = term_of_str_item comment
 
 let convert_intf =
       { term_f  = identity;
-        proof_f = (fun t -> null_term);
+        proof_f = (fun _ _ -> null_term);
         ctyp_f  = term_of_type;
         expr_f  = term_of_expr;
         item_f  = term_of_sig_item
       }
 
 let convert_impl =
-   let convert_proof = function
+   let convert_proof _ = function
       Primitive t ->
          t
     | Derived expr ->
@@ -124,6 +126,10 @@ let format_packages buf pack =
 
 (*
  * $Log$
+ * Revision 1.6  1998/05/28 13:45:39  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.5  1998/05/04 13:00:58  jyh
  * Ocaml display without let rec.
  *

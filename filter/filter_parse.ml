@@ -669,11 +669,11 @@ end
 module Convert : ConvertProofSig =
 struct
    type t = unit
-   let to_expr expr proof =
+   let to_expr expr =
       raise (Failure "Filter_parse.Convert.to_expr: interactive proofs can't be compiled")
-   let to_term expr proof =
+   let to_term expr =
       raise (Failure "Filter_parse.Convert.to_term: interactive proofs can't be compiled")
-   let of_term proof term =
+   let of_term term =
       raise (Failure "Filter_parse.Convert.of_term: interactive proofs can't be compiled")
 end
 
@@ -1042,6 +1042,10 @@ END
 
 (*
  * $Log$
+ * Revision 1.24  1998/05/28 13:46:17  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.23  1998/05/27 15:12:51  jyh
  * Functorized the refiner over the Term module.
  *

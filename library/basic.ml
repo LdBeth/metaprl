@@ -1,3 +1,5 @@
+open Printf
+open Debug
 
 open Unix
 open List
@@ -6,6 +8,10 @@ open Opname
 open Num
 open Refiner.Refiner.Term
 open Nuprl5
+
+let _ =
+   if !debug_load then
+      eprintf "Loading Basic%t" eflush
 
 let inteq i j = (i = j)
 let nullp l = l = []

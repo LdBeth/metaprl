@@ -7,14 +7,18 @@
  * and may contain interactivly generated proofs.
  *)
 
+include Tactic_type
 include Summary
+include Proof_edit
 
 open Opname
-open Refine
+open Refiner.Refiner
 open Dform_print
 
 open Filter_summary
 open Filter_cache
+
+open Tactic_type
 
 (*
  * Save status of a module.
@@ -48,6 +52,11 @@ sig
    type package
    
    (*
+    * Proofs are abstract.
+    *)
+   type proof
+   
+   (*
     * Create a database.  The argument is the search path.
     *)
    val create : string list -> t
@@ -64,7 +73,7 @@ sig
    (*
     * Access.
     *)
-   val refiner  : package -> Refiner.refiner
+   val refiner  : package -> Refine.refiner
    val dforms   : package -> dform_mode_base
    val name     : package -> string
    val filename : t -> package -> string
@@ -91,12 +100,22 @@ sig
    (*
     * Collection of objects in the module.
     *)
-   val info : package -> (proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
+   val info : package -> (proof proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
    val sig_info : package -> (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
+   
+   (*
+    * This is the starting info for new proofs.
+    *)
+   val argument : package -> tactic_argument
+   val ped_of_proof : package -> proof -> Proof_edit.t
 end
    
 (*
  * $Log$
+ * Revision 1.7  1998/05/28 13:45:45  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.6  1998/05/04 13:01:00  jyh
  * Ocaml display without let rec.
  *

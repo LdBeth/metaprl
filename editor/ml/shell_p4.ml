@@ -7,8 +7,10 @@ open Debug
 
 open Toploop
 
-open Term_grammar
+open Refiner.Refiner.Term
+
 open Filter_ast
+open Term_grammar
 
 (* Force Dynlink to load *)
 let _ = Dynlink.init
@@ -115,6 +117,10 @@ let _ = Quotation.default := "term"
 
 (*
  * $Log$
+ * Revision 1.3  1998/05/28 13:46:00  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.2  1998/04/28 18:29:56  jyh
  * ls() works, adding display.
  *

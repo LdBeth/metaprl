@@ -19,11 +19,11 @@ open Parsetree
 open Printf
 open Debug
 
-open Term
+open Refiner.Refiner.Term
+open Refiner.Refiner.Refine
 open Dform
 open Dform_print
 open Rformat
-open Refine_sig
 
 open Package_type
 open Package_info
@@ -223,10 +223,7 @@ let view_item modname name =
    let buf = new_buffer () in
    let mod_info = get_current_package info in
    let db = get_mode_base (Package.dforms mod_info) info.df_mode in
-      match item with
-         Rewrite rw ->
-            
-         
+      ()
 
 (*
  * General purpose displayer.
@@ -243,7 +240,8 @@ let view name =
        | modname :: item1 :: item2 :: _ ->
             raise (Failure ("Shell.view: illegal module name " ^ string_of_path dir))
 
-let ls () = view "."
+let ls () =
+   view "."
 
 (*
  * Window width.
@@ -564,6 +562,10 @@ let init () =
 (*
  *
  * $Log$
+ * Revision 1.10  1998/05/28 13:45:56  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.9  1998/05/07 16:02:24  jyh
  * Adding interactive proofs.
  *

@@ -1,4 +1,11 @@
 
+open Printf
+open Debug
+
+let _ =
+   if !debug_load then
+      eprintf "Loading Utils%t" eflush
+
 type 'a oref = {mutable ocontents : 'a option}
 
 let null_oref ()  = {ocontents = None}

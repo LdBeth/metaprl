@@ -182,7 +182,7 @@ type ('proof, 'ctyp, 'expr, 'item) summary_item_loc =
  *)
 type ('proof1, 'ctyp1, 'expr1, 'item1, 'proof2, 'ctyp2, 'expr2, 'item2) convert =
    { term_f  : term -> term;
-     proof_f : 'proof1 -> 'proof2;
+     proof_f : string -> 'proof1 -> 'proof2;
      ctyp_f  : 'ctyp1  -> 'ctyp2;
      expr_f  : 'expr1  -> 'expr2;
      item_f  : 'item1  -> 'item2
@@ -335,6 +335,10 @@ val eprint_info : ('proof, 'ctyp, 'expr, 'item) module_info -> unit
 
 (*
  * $Log$
+ * Revision 1.14  1998/05/28 13:46:32  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.13  1998/05/27 15:13:03  jyh
  * Functorized the refiner over the Term module.
  *

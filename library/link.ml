@@ -3,11 +3,18 @@
  * Link module: provides nuprl/nuprl-light link functionality
  *)
 
+open Printf
+open Debug
+
 open Refiner.Refiner.Term
 open MathBus
 open SocketIo
 open Mbterm
 open Nuprl5
+
+let _ =
+   if !debug_load then
+      eprintf "Loading Link%t" eflush
 
 (* old mapping method    
  * type hook = (term -> term -> bool) ref * (term -> term) ref

@@ -1,3 +1,10 @@
+open Printf
+open Debug
+
+let _ =
+   if !debug_load then
+      eprintf "Loading SocketIo%t" eflush
+
 
 let open_client port host = 
   let {Unix.h_name = name; Unix.h_aliases = a; Unix.h_addrtype = atype; Unix.h_addr_list = l} =

@@ -33,16 +33,17 @@
 
 include Tactic_type
 
+include Io_proof_type
 include Proof_step
 
 open Printf
 open Debug
 
-open Term
-open Refine_sig
-open Refine_util
+open Refiner.Refiner
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermSubst
+open Refiner.Refiner.Refine
 open Refine_exn
-open Refine
 open Tactic_type
 
 (*
@@ -836,7 +837,7 @@ let check { pf_root = root; pf_address = addr; pf_node = node } =
             []
       in
       let extl = fold_child 1 children in
-         try Refiner.compose ext extl with
+         try Refine.compose ext extl with
             RefineError err ->
                raise (ProofRefineError (mk_pf addr' node, err))
 
@@ -896,33 +897,33 @@ let expand df pf =
  *)
 let io_status_of_status = function
    Bad ->
-      Filter_proof_type.StatusBad
+      Io_proof_type.StatusBad
  | Partial ->
-      Filter_proof_type.StatusPartial
+      Io_proof_type.StatusPartial
  | Asserted ->
-      Filter_proof_type.StatusAsserted
+      Io_proof_type.StatusAsserted
  | Complete ->
-      Filter_proof_type.StatusComplete
+      Io_proof_type.StatusComplete
 
 let rec io_child_of_child = function
    ChildGoal { tac_goal = t;
                tac_hyps = hyps;
                tac_arg = { ref_label = label; ref_args = args } } ->
-      Filter_proof_type.ChildGoal (**)
+      Io_proof_type.ChildGoal (**)
          { tac_goal = t;
            tac_hyps = hyps;
-           tac_arg = { Filter_proof_type.aterm_label = label;
-                       Filter_proof_type.aterm_args = args
+           tac_arg = { Io_proof_type.aterm_label = label;
+                       Io_proof_type.aterm_args = args
                      }
          }
  | ChildNode node ->
-      Filter_proof_type.ChildProof (io_proof_of_node node)
+      Io_proof_type.ChildProof (io_proof_of_node node)
 
 and io_node_of_item = function
    Step step ->
-      Filter_proof_type.ProofStep (Proof_step.io_step_of_step step)
+      Io_proof_type.ProofStep (Proof_step.io_step_of_step step)
  | Node node ->
-      Filter_proof_type.ProofNode (io_proof_of_node node)
+      Io_proof_type.ProofNode (io_proof_of_node node)
       
 and io_proof_of_node
     { node_status = status;
@@ -930,10 +931,10 @@ and io_proof_of_node
       node_children = children;
       node_extras = extras
     } =
-   { Filter_proof_type.proof_status = io_status_of_status status;
-     Filter_proof_type.proof_step = io_node_of_item item;
-     Filter_proof_type.proof_children = List.map io_child_of_child children;
-     Filter_proof_type.proof_extras = List.map io_proof_of_node extras
+   { Io_proof_type.proof_status = io_status_of_status status;
+     Io_proof_type.proof_step = io_node_of_item item;
+     Io_proof_type.proof_children = List.map io_child_of_child children;
+     Io_proof_type.proof_extras = List.map io_proof_of_node extras
    }
 
 let io_proof_of_proof { pf_node = node } =
@@ -943,24 +944,25 @@ let io_proof_of_proof { pf_node = node } =
  * Restore an io proof.
  *)
 let status_of_io_status = function
-   Filter_proof_type.StatusBad ->
+   Io_proof_type.StatusBad ->
       Bad
- | Filter_proof_type.StatusPartial ->
+ | Io_proof_type.StatusPartial ->
       Partial
- | Filter_proof_type.StatusAsserted ->
+ | Io_proof_type.StatusAsserted ->
       Asserted
- | Filter_proof_type.StatusComplete ->
+ | Io_proof_type.StatusComplete ->
       Complete
 
-let proof_of_io_proof resources fcache tacs pf =
+let proof_of_io_proof arg tacs pf =
+   let { ref_rsrc = resources; ref_fcache = fcache } = arg in
    let hash = Hashtbl.create (Array.length tacs) in
    let _ = Array.iter (function (name, tac) -> Hashtbl.add hash name tac) tacs in
    let rec child_of_io_child = function
-      Filter_proof_type.ChildGoal (**)
+      Io_proof_type.ChildGoal (**)
          { tac_goal = goal;
            tac_hyps = hyps;
-           tac_arg = { Filter_proof_type.aterm_label = label;
-                       Filter_proof_type.aterm_args = args
+           tac_arg = { Io_proof_type.aterm_label = label;
+                       Io_proof_type.aterm_args = args
                      }
          } ->
          ChildGoal { tac_goal = goal;
@@ -971,20 +973,20 @@ let proof_of_io_proof resources fcache tacs pf =
                                  ref_rsrc = resources
                                }
          }
-    | Filter_proof_type.ChildProof pf ->
+    | Io_proof_type.ChildProof pf ->
          ChildNode (node_of_io_proof pf)
 
    and item_of_io_node = function
-      Filter_proof_type.ProofStep step ->
-         Step (Proof_step.step_of_io_step resources fcache hash step)
-    | Filter_proof_type.ProofNode node ->
+      Io_proof_type.ProofStep step ->
+         Step (Proof_step.step_of_io_step arg hash step)
+    | Io_proof_type.ProofNode node ->
          Node (node_of_io_proof node)
 
    and node_of_io_proof
-       { Filter_proof_type.proof_status = status;
-         Filter_proof_type.proof_step = item;
-         Filter_proof_type.proof_children = children;
-         Filter_proof_type.proof_extras = extras
+       { Io_proof_type.proof_status = status;
+         Io_proof_type.proof_step = item;
+         Io_proof_type.proof_children = children;
+         Io_proof_type.proof_extras = extras
        } =
       { node_status = status_of_io_status status;
         node_item = item_of_io_node item;
@@ -1000,6 +1002,10 @@ let proof_of_io_proof resources fcache tacs pf =
 
 (*
  * $Log$
+ * Revision 1.9  1998/05/28 13:45:46  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.8  1998/04/28 18:29:44  jyh
  * ls() works, adding display.
  *

@@ -1,5 +1,12 @@
 (*34567890123456789012345678901234567890123456789012345 *)
 
+open Printf
+open Debug
+
+let _ =
+   if !debug_load then
+      eprintf "Loading TentFunctor%t" eflush
+
 module type OID_TYPE =
  sig
   type t

@@ -28,16 +28,16 @@
  *
  *)
 
+include Io_proof_type
 include Tactic_type
 
 include Proof_step
 
-open Term
+open Refiner.Refiner.Term
+open Refiner.Refiner.Refine
 open Dform
-open Refine_sig
-open Refine
 
-open Filter_proof_type
+open Io_proof_type
 open Tactic_type
 
 (* Abstract type *)
@@ -151,17 +151,21 @@ val remove_children : t -> t
  *    expand_proof: check as much of the proof as possible,
  *       no exceptions are raised
  *)
-val check : t -> Refiner.extract
+val check : t -> extract
 val expand : dform_base -> t -> t
 
 (*
  * IO
  *)
 val io_proof_of_proof : t -> proof
-val proof_of_io_proof : tactic_resources -> cache -> (string * tactic) array -> proof -> t
+val proof_of_io_proof : tactic_argument -> (string * tactic) array -> proof -> t
 
 (*
  * $Log$
+ * Revision 1.9  1998/05/28 13:45:49  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.8  1998/04/28 18:29:45  jyh
  * ls() works, adding display.
  *

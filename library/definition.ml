@@ -1,9 +1,16 @@
+open Printf
+open Debug
+
 
 open Basic 
 open Refiner.Refiner.Term
 open Nuprl5
 open List
 open Db
+
+let _ =
+   if !debug_load then
+      eprintf "Loading Definition%t" eflush
 
 let idescription_parameter = make_param (Token "!description")
 let idescription_op sys = mk_nuprl5_op [idescription_parameter; sys]

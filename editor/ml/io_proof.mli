@@ -2,10 +2,12 @@
  * Convert between proofs and terms.
  *)
 
+include Io_proof_type
+
 open Opname
 open Refiner.Refiner.Term
 
-open Filter_proof_type
+open Io_proof_type
 
 val interface_op : opname
 val implementation_op : opname
@@ -17,12 +19,17 @@ val implementation_op : opname
 val term_of_proof : proof -> term
 val proof_of_term : term -> proof
 
-val tactics_of_proof : proof -> (string * MLast.expr) array
+(*
+ * This function extracts an expression that
+ * evaluates to a (string * tactic) array.
+ *)
+val tactics_of_proof : proof -> MLast.expr
 
 (*
  * $Log$
- * Revision 1.3  1998/05/27 15:12:58  jyh
- * Functorized the refiner over the Term module.
+ * Revision 1.1  1998/05/28 13:45:36  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
  *
  * Revision 1.2  1998/04/22 22:44:28  jyh
  * *** empty log message ***

@@ -45,13 +45,13 @@ LMFILES :=\
 	refiner_std\
 	refiner\
 	term_ds\
-	term_addr_ds\
 	term_op_ds\
+	term_addr_ds\
 	term_subst_ds\
 	term_man_ds\
 	term_shape_ds\
-	refiner_ds\
 	term_eval_ds\
+	refiner_ds\
 	simple_print\
 	ml_format_sig\
 	ml_format\

@@ -14,10 +14,10 @@ open Rewrite
 open Simple_print
 
 open Free_vars
+open Filter_type
 open Filter_util
 open Filter_ast
 open Filter_cache
-open Filter_proof_type
 open Filter_summary_type
 open Filter_summary_util
 open Filter_summary
@@ -28,6 +28,59 @@ open Filter_summary
 let _ =
    if !debug_load then
       eprintf "Loading Filter_prog%t" eflush
+
+(************************************************************************
+ * TYPES                                                                *
+ ************************************************************************)
+
+(*
+ * Signature for extract module.
+ *)
+module type ExtractSig =
+sig
+   type proof
+
+   val extract_sig :
+      (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info ->
+      (module_path * MLast.ctyp resource_info) list ->
+      string -> (MLast.sig_item * (int * int)) list
+   
+   val extract_str :
+      (proof proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info ->
+      (module_path * MLast.ctyp resource_info) list ->
+      string -> (MLast.str_item * (int * int)) list
+
+   (*
+    * Defining implementations.
+    *)
+   type t
+
+   val prim_axiom : t -> loc -> 'proof axiom_info -> term -> MLast.str_item list
+   val derived_axiom : t -> loc -> 'proof axiom_info -> MLast.expr -> MLast.str_item list
+
+   val prim_rule : t -> loc -> 'proof rule_info -> term -> MLast.str_item list
+   val derived_rule : t -> loc -> 'proof rule_info -> MLast.expr -> MLast.str_item list
+
+   val prim_rewrite : t -> loc -> 'proof rewrite_info -> MLast.str_item list
+   val derived_rewrite : t -> loc -> 'proof rewrite_info -> MLast.expr -> MLast.str_item list
+
+   val prim_cond_rewrite : t -> loc -> 'proof cond_rewrite_info -> MLast.str_item list
+   val derived_cond_rewrite : t -> loc -> 'proof cond_rewrite_info -> MLast.expr -> MLast.str_item list
+
+   val define_dform : t -> loc -> MLast.expr dform_info -> term -> MLast.str_item list
+   val define_prec : t -> loc -> string -> MLast.str_item list
+   val define_prec_rel : t -> loc -> prec_rel_info -> MLast.str_item list
+   val define_resource : t -> loc -> MLast.ctyp resource_info -> MLast.str_item list
+   val define_parent : t -> loc -> MLast.ctyp parent_info -> MLast.str_item list
+   val define_magic_block : t -> loc -> MLast.str_item magic_info -> MLast.str_item list
+
+   val implem_prolog : t -> loc -> MLast.str_item list
+   val implem_postlog : t -> loc -> string -> MLast.str_item list
+end
+
+(************************************************************************
+ * SYNTAX                                                               *
+ ************************************************************************)
 
 (*
  * Axiom.
@@ -40,6 +93,9 @@ let refiner_ctyp loc =
 
 let rewriter_expr loc =
    <:expr< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"Rewrite"$ >>
+
+let rewriter_patt loc =
+   <:patt< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"Rewrite"$ >>
 
 let create_axiom_expr loc =
    <:expr< $refiner_expr loc$ . $lid:"create_axiom"$ >>
@@ -110,7 +166,7 @@ let rewrite_of_rewrite_expr loc =
 let cond_rewrite_ctyp loc =
    let result = <:ctyp< $refiner_ctyp loc$ . $lid:"cond_rewrite"$ '$"a"$ >> in
    let sarray = <:ctyp< $lid:"array"$ $lid:"string"$ >> in
-   let term = <:ctyp< $lid:"list"$ ($uid:"Term"$ . $lid:"term"$) >> in
+   let term = <:ctyp< $lid:"list"$ ($uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"Term"$ . $lid:"term"$) >> in
    let arg = <:ctyp< ($sarray$ * $term$) >> in
       <:ctyp< $arg$ -> $result$ >>
 
@@ -145,7 +201,7 @@ let compile_contractum_expr loc =
  * Other expressions.
  *)
 let make_seq_addr_expr loc =
-   <:expr< $uid:"Term"$ . $lid:"make_seq_address"$ >>
+   <:expr< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"TermMan"$ . $lid:"make_seq_address"$ >>
 
 let thy_name_expr loc =
    <:expr< $uid:"Theory"$ . $lid:"thy_name"$ >>
@@ -327,7 +383,7 @@ let params_ctyp loc ctyp params =
              | VarParam _ ->
                   <:ctyp< $lid:"string"$ >>
              | TermParam _ ->
-                  <:ctyp< $uid:"Term"$ . $lid:"term"$ >>
+                  <:ctyp< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"Term"$ . $lid:"term"$ >>
          in
             <:ctyp< $arg_type$ -> $ctyp'$ >>
    in
@@ -576,6 +632,11 @@ struct
       }
    
    (*
+    * Proof is from convertor.
+    *)
+   type proof = Convert.t
+   
+   (*
     * A primitive rewrite is assumed true by fiat.
     *
     * let name_rewrite =
@@ -765,11 +826,11 @@ struct
          rw_redex = redex;
          rw_contractum = contractum
        }
-       proof expr =
+       expr =
       (* Check that this tactic actually works *)
       let redex_expr = build_ml_term loc redex in
       let con_expr = build_ml_term loc contractum in
-      let expr = Convert.to_expr expr proof in
+      let expr = Convert.to_expr name expr in
       let expr = <:expr< $delayed_rewrite_expr loc$ $lid:local_refiner_id$ (**)
                          $str:name$ $redex_expr$ $con_expr$ $expr$
                  >>
@@ -783,13 +844,13 @@ struct
          crw_redex = redex;
          crw_contractum = contractum
        }
-       proof expr =
+       expr =
       let params_expr = List.map (param_expr loc) params in
       let args_expr = list_expr loc (build_ml_term loc) args in
       let redex_expr = build_ml_term loc redex in
       let con_expr = build_ml_term loc contractum in
       let params_expr' = <:expr< [| $list:params_expr$ |] >> in
-      let expr = Convert.to_expr expr proof in
+      let expr = Convert.to_expr name expr in
       let expr = <:expr< $delayed_cond_rewrite_expr loc$ $lid:local_refiner_id$ (**)
                          $str:name$ $params_expr'$
                          $args_expr$ $redex_expr$ $con_expr$ $expr$ >>
@@ -824,9 +885,9 @@ struct
       let code = derived_axiom_expr loc in
          define_axiom code proc loc ax tac
    
-   let interactive_axiom proc loc ax proof expr =
+   let interactive_axiom proc loc ax expr =
       let code = delayed_axiom_expr loc in
-         define_axiom code proc loc ax (Convert.to_expr expr proof)
+         define_axiom code proc loc ax (Convert.to_expr ax.axiom_name expr)
    
    let () = ()
    
@@ -922,9 +983,9 @@ struct
       let code = derived_rule_expr loc in
          define_rule code proc loc ax tac
    
-   let interactive_rule proc loc ax proof expr =
+   let interactive_rule proc loc ax expr =
       let code = delayed_rule_expr loc in
-         define_rule code proc loc ax (Convert.to_expr expr proof)
+         define_rule code proc loc ax (Convert.to_expr ax.rule_name expr)
    
    let () = ()
    
@@ -1125,17 +1186,17 @@ struct
     *)
    let rewrite_type_patt loc = function
       RewriteTermType name ->
-         <:patt< $uid:"Rewrite"$ . $uid:"RewriteTerm"$ $lid:name$ >>
+         <:patt< $rewriter_patt loc$ . $uid:"RewriteTerm"$ $lid:name$ >>
     | RewriteFunType name ->
-         <:patt< $uid:"Rewrite"$ . $uid:"RewriteFun"$ $lid:name$ >>
+         <:patt< $rewriter_patt loc$ . $uid:"RewriteFun"$ $lid:name$ >>
     | RewriteContextType name ->
-         <:patt< $uid:"Rewrite"$ . $uid:"RewriteContext"$ $lid:name$ >>
+         <:patt< $rewriter_patt loc$ . $uid:"RewriteContext"$ $lid:name$ >>
     | RewriteStringType name ->
-         <:patt< $uid:"Rewrite"$ . $uid:"RewriteString"$ $lid:name$ >>
+         <:patt< $rewriter_patt loc$ . $uid:"RewriteString"$ $lid:name$ >>
     | RewriteIntType name ->
-         <:patt< $uid:"Rewrite"$ . $uid:"RewriteInt"$ $lid:name$ >>
+         <:patt< $rewriter_patt loc$ . $uid:"RewriteInt"$ $lid:name$ >>
     | RewriteLevelType name ->
-         <:patt< $uid:"Rewrite"$ . $uid:"RewriteLevel"$ $lid:name$ >>
+         <:patt< $rewriter_patt loc$ . $uid:"RewriteLevel"$ $lid:name$ >>
    
    (*
     * An ml dterm is a display form that is computed in ML.
@@ -1361,10 +1422,10 @@ struct
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: rwthm: %s%t" name eflush;
             derived_rewrite proc loc rw tac
-       | Rewrite ({ rw_name = name; rw_proof = Interactive (pf, arg) } as rw) ->
+       | Rewrite ({ rw_name = name; rw_proof = Interactive pf } as rw) ->
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: rwinteractive: %s%t" name eflush;
-            interactive_rewrite proc loc rw pf arg
+            interactive_rewrite proc loc rw pf
        | CondRewrite ({ crw_name = name; crw_proof = Primitive _ } as crw) ->
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: prim condrw: %s%t" name eflush;
@@ -1373,10 +1434,10 @@ struct
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: thm condrw: %s%t" name eflush;
             derived_cond_rewrite proc loc crw tac
-       | CondRewrite ({ crw_name = name; crw_proof = Interactive (pf, arg) } as crw) ->
+       | CondRewrite ({ crw_name = name; crw_proof = Interactive pf } as crw) ->
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: interactive condrw: %s%t" name eflush;
-            raise (Failure "Filter_prog.extract_str_item.CondRewrite(Interactive _): not implemented")
+            interactive_cond_rewrite proc loc crw pf
        | Axiom ({ axiom_name = name; axiom_proof = Primitive t } as ax) ->
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: prim axiom: %s%t" name eflush;
@@ -1385,10 +1446,10 @@ struct
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: thm axiom: %s%t" name eflush;
             derived_axiom proc loc ax tac
-       | Axiom ({ axiom_name = name; axiom_proof = Interactive (pf, arg) } as ax) ->
+       | Axiom ({ axiom_name = name; axiom_proof = Interactive pf } as ax) ->
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: interactive axiom: %s%t" name eflush;
-            raise (Failure "Filter_prog.extract_str_item.Axiom(Interactive _): not implemented") 
+            interactive_axiom proc loc ax pf
        | Rule ({ rule_name = name; rule_proof = Primitive t } as rule) ->
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: prim rule: %s%t" name eflush;
@@ -1397,10 +1458,10 @@ struct
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: thm rule: %s%t" name eflush;
             derived_rule proc loc rule tac
-       | Rule ({ rule_name = name; rule_proof = Interactive (pf, arg) } as rule) ->
+       | Rule ({ rule_name = name; rule_proof = Interactive pf } as rule) ->
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: interactive rule: %s%t" name eflush;
-            raise (Failure "Filter_prog.extract_str_item.Rule(Interactive _): not implemented") 
+            interactive_rule proc loc rule pf
        | MLTerm { mlterm_term = term; mlterm_contracta = cons; mlterm_def = Some def } ->
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: mlterm%t" eflush;
@@ -1479,6 +1540,10 @@ end
    
 (*
  * $Log$
+ * Revision 1.15  1998/05/28 13:46:20  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.14  1998/05/27 15:12:55  jyh
  * Functorized the refiner over the Term module.
  *

@@ -8,7 +8,7 @@ open Printf
 open Debug
 
 open Rformat
-open Refine_sig
+open Refiner.Refiner.Refine
 
 open Shell_type
 
@@ -48,6 +48,10 @@ let null_object =
 
 (*
  * $Log$
+ * Revision 1.3  1998/05/28 13:45:59  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.2  1998/04/24 02:41:36  jyh
  * Added more extensive debugging capabilities.
  *

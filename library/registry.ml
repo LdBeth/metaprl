@@ -9,6 +9,10 @@ open Debug
  
 open Int32
 
+let _ =
+   if !debug_load then
+      eprintf "Loading Registry%t" eflush
+
 (*
  * jyh: we need documentation for these types.
  *)
@@ -207,6 +211,10 @@ let generate_registry_declarations ofile file =
 
 (*
  * $Log$
+ * Revision 1.11  1998/05/28 13:46:55  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.10  1998/04/14 19:29:42  lolorigo
  * text filename
  *

@@ -1,7 +1,14 @@
 (*ocaml mathbus implementation*)
+open Printf
+open Debug
+
 open Num
 open Registry
 open Int32
+
+let _ =
+   if !debug_load then
+      eprintf "Loading MathBus%t" eflush
 
 type mbnode = Mbint of int32 | Mnode of mbterm
  and mbterm = mbnode array ;;

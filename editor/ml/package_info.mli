@@ -7,14 +7,31 @@
  * and may contain interactivly generated proofs.
  *)
 
+include Tactic_type
 include Package_type
 
+open Refiner.Refiner.Refine
+
+open Filter_prog
+
+open Tactic_type
 open Package_type
 
-module Package : PackageSig
+module Extract : ExtractSig
+module Package : PackageSig with type proof = Extract.proof
+                 
+(*
+ * Auxiliary functions for managing resources and proofs.
+ *)
+val install_tactic_argument : tactic_argument -> unit
+val prove : string -> (string * tactic) array -> unit -> extract
 
 (*
  * $Log$
+ * Revision 1.5  1998/05/28 13:45:43  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.4  1998/04/23 20:03:44  jyh
  * Initial rebuilt editor.
  *

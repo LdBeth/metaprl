@@ -7,20 +7,24 @@ open Refine
 open Refiner
 
 open Filter_type
-open Filter_proof_type
 open Filter_summary_type
 open Filter_summary
 open Filter_cache
 
-module MakeExtract (Convert : ConvertProofSig) :
+(*
+ * Signature for extract module.
+ *)
+module type ExtractSig =
 sig
+   type proof
+
    val extract_sig :
       (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info ->
       (module_path * MLast.ctyp resource_info) list ->
       string -> (MLast.sig_item * (int * int)) list
    
    val extract_str :
-      (Convert.t proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info ->
+      (proof proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info ->
       (module_path * MLast.ctyp resource_info) list ->
       string -> (MLast.str_item * (int * int)) list
 
@@ -52,8 +56,15 @@ sig
    val implem_postlog : t -> loc -> string -> MLast.str_item list
 end
 
+module MakeExtract (Convert : ConvertProofSig) :
+   ExtractSig with type proof = Convert.t
+
 (*
  * $Log$
+ * Revision 1.10  1998/05/28 13:46:23  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.9  1998/05/27 15:12:56  jyh
  * Functorized the refiner over the Term module.
  *

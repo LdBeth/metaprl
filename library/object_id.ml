@@ -1,5 +1,12 @@
+open Printf
+open Debug
+
 
 open Basic
+
+let _ =
+   if !debug_load then
+      eprintf "Loading Object_id%t" eflush
 
 type object_id = param list
 

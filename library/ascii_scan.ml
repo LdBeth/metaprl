@@ -1,4 +1,5 @@
-
+open Printf
+open Debug
 
 open Num
 open Char
@@ -7,6 +8,10 @@ open List
 open Stream
 
 open Basic
+
+let _ =
+   if !debug_load then
+      eprintf "Loading Ascii_scan%t" eflush
 
 let isemicolon	= code ';'
 let icolon	= code ':'

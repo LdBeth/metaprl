@@ -5,21 +5,21 @@
  *
  *)
 
+include Io_proof_type
 include Tactic_type
 
 open Printf
 open Debug
-
-open Term
+open Refiner.Refiner
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermOp
 open Opname
 open Dform
 open Rformat
-open Refine_sig
-open Refine_util
 open Refine_exn
 open Refine
 
-open Filter_proof_type
+open Io_proof_type
 
 open Tactic_type
 
@@ -99,7 +99,7 @@ let expand db step =
        } = step
    in
       try
-         let subgoals', _ = Refiner.refine tac goal in
+         let subgoals', _ = Refine.refine tac goal in
             if List_util.for_all2 tactic_arg_alpha_equal subgoals' subgoals then
                step
             else
@@ -124,7 +124,7 @@ let check step =
          step_subgoals = subgoals
        } = step
    in
-   let subgoals', ext = Refiner.refine tac goal in
+   let subgoals', ext = Refine.refine tac goal in
       if List_util.for_all2 tactic_arg_alpha_equal subgoals' subgoals then
          ext
       else
@@ -170,20 +170,20 @@ let io_step_of_step
       step_text = text;
       step_ast = ast
     } =
-   { Filter_proof_type.step_goal = aterm_tactic_arg_of_goal goal;
-     Filter_proof_type.step_subgoals = List.map aterm_tactic_arg_of_goal subgoals;
-     Filter_proof_type.step_text = text;
-     Filter_proof_type.step_ast = ast
+   { Io_proof_type.step_goal = aterm_tactic_arg_of_goal goal;
+     Io_proof_type.step_subgoals = List.map aterm_tactic_arg_of_goal subgoals;
+     Io_proof_type.step_text = text;
+     Io_proof_type.step_ast = ast
    }
 
 (*
  * Add the resource information.
  *)
-let step_of_io_step resources fcache tactics
-    { Filter_proof_type.step_goal = goal;
-      Filter_proof_type.step_subgoals = subgoals;
-      Filter_proof_type.step_text = text;
-      Filter_proof_type.step_ast = ast
+let step_of_io_step { ref_fcache = fcache; ref_rsrc = resources } tactics
+    { Io_proof_type.step_goal = goal;
+      Io_proof_type.step_subgoals = subgoals;
+      Io_proof_type.step_text = text;
+      Io_proof_type.step_ast = ast
     } =
    { step_goal = goal_of_aterm_tactic_arg resources fcache goal;
      step_subgoals = List.map (goal_of_aterm_tactic_arg resources fcache) subgoals;
@@ -194,6 +194,10 @@ let step_of_io_step resources fcache tactics
 
 (*
  * $Log$
+ * Revision 1.11  1998/05/28 13:45:53  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.10  1998/04/28 18:29:50  jyh
  * ls() works, adding display.
  *

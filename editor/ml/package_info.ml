@@ -3,6 +3,10 @@
  * Its really derived from Filter_cache
  *)
 
+include Tactic_cache
+include Tactic_type
+
+include Io_proof
 include Package_type
 
 open Parsetree
@@ -22,6 +26,11 @@ open Filter_util
 open Filter_prog
 open Infix
 
+open Tactic_cache
+open Tactic_type
+
+open Io_proof_type
+open Io_proof
 open Package_type
 
 (*
@@ -31,7 +40,271 @@ let _ =
    if !debug_load then
       eprintf "Loading Package_info%t" eflush
 
-module Package : PackageSig =
+(************************************************************************
+ * TYPES                                                                *
+ ************************************************************************)
+
+(*
+ * The proofs are saved in the summary as Io_proof.proof,
+ * but we also construct Proof_edit.t structures on demand.
+ *)
+type proof_info =
+   ProofRaw of string * proof
+ | ProofEdit of Proof_edit.t
+
+(************************************************************************
+ * REFERENCES                                                           *
+ ************************************************************************)
+
+(*
+ * Make a dummy tactic_argument.
+ *)
+let null_tactic_argument =
+   { ref_label = "main";
+     ref_args = [];
+     ref_fcache = extract (new_cache ());
+     ref_rsrc =
+        { ref_d =       (fun _ _ -> raise (Failure "d tactic is not implemented"));
+          ref_eqcd =    (fun _ ->   raise (Failure "eqcd tactic is not implemented"));
+          ref_typeinf = (fun _ _ -> raise (Failure "typeinf tactic is not implemented"));
+          ref_squash =  (fun _ ->   raise (Failure "squash tactic is not implemented"));
+          ref_subtype = (fun _ ->   raise (Failure "subtype tactic is not implemented"))
+        }
+   }
+
+(*
+ * References:
+ *   tactic_argument: double pointer for a reference to the tactic_argument.
+ *   io_proofs: a hashtable of all the proofs in the module being evaluated
+ *   tactics: a hashtable of the tactic arrays for each of the proofs
+ *)
+let tactic_argument = ref (ref null_tactic_argument)
+let io_proofs = Hashtbl.create 97
+let tactics = Hashtbl.create 97
+
+(*
+ * Clear the current tactic argument.
+ *)
+let clear_tactic_argument () =
+   tactic_argument := ref null_tactic_argument
+
+(*
+ * Install a new argument (called when a theory is evaluated).
+ *)
+let install_tactic_argument arg =
+   (!tactic_argument) := arg
+
+(*
+ * Remove all the proofs.
+ *)
+let clear_proofs () =
+   Hashtbl.clear io_proofs
+
+(*
+ * Remove all the tactics.
+ *)
+let clear_tactics () =
+   Hashtbl.clear tactics
+
+(*
+ * Prove an theorem.
+ * This dereferences the tactic_argument to get at the resources.
+ *)
+let prove name tactics' =
+   let argument = !tactic_argument in
+   let proof = Hashtbl.find io_proofs name in
+   let _ = Hashtbl.add tactics name tactics' in
+   let prove () =
+      Proof.check (Proof.proof_of_io_proof (!argument) tactics' proof)
+   in
+      prove
+
+(*
+ * Labels.
+ *)
+let loc = 0, 0
+
+let tt             = <:expr< $uid: "Tactic_type"$ >>
+let ref_label_id   = <:expr< $tt$ . $lid: "ref_label"$ >>
+let ref_args_id    = <:expr< $tt$ . $lid: "ref_args"$ >>
+let ref_fcache_id  = <:expr< $tt$ . $lid: "ref_fcache"$ >>
+let ref_rsrc_id    = <:expr< $tt$ . $lid: "ref_rsrc"$ >>
+let ref_d_id       = <:expr< $tt$ . $lid: "ref_d"$ >>
+let ref_eqcd_id    = <:expr< $tt$ . $lid: "ref_eqcd"$ >>
+let ref_typeinf_id = <:expr< $tt$ . $lid: "ref_typeinf"$ >>
+let ref_squash_id  = <:expr< $tt$ . $lid: "ref_squash"$ >>
+let ref_subtype_id = <:expr< $tt$ . $lid: "ref_subtype"$ >>
+
+let cache_default =
+   let extract_expr =
+      <:expr< $uid: "Tactic_cache"$ . $lid: "extract"$ >>
+   in
+   let new_expr =
+      <:expr< $uid: "Tactic_cache"$ . $lid: "new_cache"$ () >>
+   in
+      <:expr< $extract_expr$ $new_expr$ >>
+
+let wild_patt = <:patt< _ >>
+
+let fail_expr msg =
+   let fail_expr = <:expr< $uid: "Failure"$ $str: msg$ >> in
+      <:expr< raise $fail_expr$ >>
+
+let wild_fun_expr e =
+   <:expr< fun [$list: [wild_patt, None, e]$] >>
+
+let d_default =
+   let fail_expr = fail_expr "d tactic is not implemented" in
+      wild_fun_expr (wild_fun_expr fail_expr)
+
+let eqcd_default =
+   let fail_expr = fail_expr "eqcd tactic is not implemented" in
+      wild_fun_expr fail_expr
+
+let typeinf_default =
+   let fail_expr = fail_expr "typeinf is not implemented" in
+      wild_fun_expr (wild_fun_expr fail_expr)
+
+let squash_default =
+   let fail_expr = fail_expr "squash tactic is not implemented" in
+      wild_fun_expr fail_expr
+
+let subtype_default =
+   let fail_expr = fail_expr "subtype tactic is not implemented" in
+      wild_fun_expr fail_expr
+   
+(*
+ * After the entire module has been evaluated,
+ * build a tactic_argument, and eval the following:
+ *
+ * let _ = Package_info.install_tactic_argument args
+ *
+ * where args : Tactic_type.tactic_argument is the following expression:
+ *    { Tactic_type.ref_label = "main";
+ *      Tactic_type.ref_args = [];
+ *      Tactic_type.ref_fcache = cache_resource.resource_extract cache_resource;
+ *      Tactic_type.ref_rsrc =
+ *         { ref_d = d_resource.Resource.resource_extract d_resource;
+ *           ref_eqcd = eqcd_resource.Resource.resource_extract eqcd_resource;
+ *           ref_typeinf = typeinf_resource.Resource.resource_extract typeinf_resource;
+ *           ref_squash = squash_resource.Resource.resource_extract squash_resource;
+ *           ref_subtype = subtype_resource.Resource.resource_extract subtype_resource
+ *         }
+ *     }
+ *
+ * The resources are checked first to see if they exist, and if they
+ * don't, then dummy values are plugged in.
+ *)
+let install_tactic_arg_expr info =
+   let resources = get_resources info in
+   let rec get_resource name default =
+      let rec search = function
+         { resource_name = name' } :: t ->
+            if name = name' then
+               (<:expr< $lid: name$ . $uid: "Resource"$ . $lid: "resource_extract"$ $lid: name$ >>)
+            else
+               search t
+       | [] ->
+            default
+      in
+         search resources
+   in
+   let loc = 0, 0 in
+   let label_expr = <:expr< $str: "main"$ >> in
+   let args_expr  = <:expr< [] >> in
+   let cache_expr = get_resource "cache_resource" cache_default in
+   let d_expr = get_resource "d_resource" d_default in
+   let eqcd_expr = get_resource "eqcd_resource" eqcd_default in
+   let typeinf_expr = get_resource "typeinf_resource" typeinf_default in
+   let squash_expr = get_resource "squash_resource" squash_default in
+   let subtype_expr = get_resource "subtype_resource" subtype_default in
+   let rsrc_expr =
+      (<:expr< { $list: [ ref_d_id, d_expr;
+                          ref_eqcd_id, eqcd_expr;
+                          ref_typeinf_id, typeinf_expr;
+                          ref_squash_id, squash_expr;
+                          ref_subtype_id, subtype_expr
+                        ]$
+               } >>)
+   in
+   let arg_expr =
+      (<:expr< { $list: [ ref_label_id, label_expr;
+                          ref_args_id, args_expr;
+                          ref_fcache_id, cache_expr;
+                          ref_rsrc_id, rsrc_expr
+                        ]$
+               } >>)
+   in
+   let install_expr =
+      <:expr< $uid: "Package_info"$ . $lid: "install_tactic_arg"$ $arg_expr$ >>
+   in
+      <:str_item< $exp: arg_expr$ >>
+
+(************************************************************************
+ * IMPLEMENTATION                                                       *
+ ************************************************************************)
+
+(*
+ * The proofs are marshaled into the file as IO_proof.proof.
+ *)
+module Convert =
+struct
+   (*
+    * The type of proofs.
+    *)
+   type t = proof_info ref
+   
+   (*
+    * Get a raw proof from the proof.
+    *)
+   let raw_proof proof =
+      match !proof with
+         ProofRaw (_, proof) ->
+            proof
+       | ProofEdit ped ->
+            Proof.io_proof_of_proof (Proof_edit.proof_of_ped ped)
+    
+   (*
+    * Convert the proof to a term.
+    * We just save the io representation.
+    *)
+   let to_term _ proof =
+      term_of_proof (raw_proof proof)
+   
+   (*
+    * Convert back to a proof.
+    *)
+   let of_term name proof =
+      ref (ProofRaw (name, proof_of_term proof))
+
+   (*
+    * When we compile, we extract the tactics into a separate array
+    * so that they can be compiled with the theory.  The term we produce
+    * has type (unit -> extract).  Expands to:
+    *
+    *    (Package_info.prove name tactics)
+    *)
+   let to_expr name proof =
+      let loc = 0, 0 in
+      let proof = raw_proof proof in
+      let tactics = tactics_of_proof proof in
+         <:expr< $lid: "Package_info"$ . $lid: "prove"$ $str: name$ $tactics$ >>
+end
+
+(*
+ * Extraction functions.
+ *)
+module Extract = MakeExtract (Convert)
+
+(*
+ * Build the cache from the converter.
+ *)
+module Cache = MakeCaches (Convert)
+               
+(*
+ * Now build the package.
+ *)
+module Package =
 struct
    (*
     * A package may have a signature, and an implementation
@@ -40,34 +313,40 @@ struct
    type package =
       { mutable pack_status : status;
         pack_name : string;
-        mutable pack_sig  : StrFilterCache.sig_info option;
-        mutable pack_info : StrFilterCache.info option
+        mutable pack_sig  : Cache.StrFilterCache.sig_info option;
+        mutable pack_info : Cache.StrFilterCache.info option;
+        pack_tactics : (string * ((string * tactic) array)) list;
+        pack_arg : tactic_argument
       }
    
    (*
     * Built from a filter cache.
     *)
    type t =
-      { pack_cache : StrFilterCache.t;
+      { pack_cache : Cache.StrFilterCache.t;
         pack_dag : package ImpDag.t;
         mutable pack_packages : package ImpDag.node list
       }
+   
+   (*
+    * Proof is either in raw form, or it is editable.
+    *)
+   type proof = proof_info ref
    
    (*
     * Create the cache.
     * Add placeholders for all the theories.
     *)
    let create path =
-      let _ =
-         List.iter (fun s -> eprintf "Include: %s%t" s eflush) path
-      in
       let dag = ImpDag.create () in
       let hash = Hashtbl.create 17 in
       let mk_package name =
          { pack_status = Incomplete;
            pack_name = name;
            pack_sig = None;
-           pack_info = None
+           pack_info = None;
+           pack_tactics = [];
+           pack_arg = null_tactic_argument
          }
       in
       let find_or_create name =
@@ -87,7 +366,7 @@ struct
             List.iter add_parent (Theory.get_parents thy);
             node
       in
-         { pack_cache = StrFilterCache.create path;
+         { pack_cache = Cache.StrFilterCache.create path;
            pack_dag = dag;
            pack_packages = List.map add_theory (get_theories ())
          }
@@ -145,7 +424,7 @@ struct
     *)
    let filename pack = function
       { pack_info = Some info } ->
-         StrFilterCache.filename pack.pack_cache info
+         Cache.StrFilterCache.filename pack.pack_cache info
     | { pack_info = None } ->
          raise (Failure "Package_info.filename: package is not loaded")
    
@@ -166,7 +445,7 @@ struct
     *)
    let info = function
       { pack_info = Some info } ->
-         StrFilterCache.info info
+         Cache.StrFilterCache.info info
     | { pack_info = None; pack_name = name } ->
          raise (NotLoaded name)
    
@@ -174,7 +453,7 @@ struct
       { pack_sig = Some info } ->
          info
     | { pack_sig = None; pack_info = Some info } as pack ->
-         let info = StrFilterCache.sig_info info InterfaceType in
+         let info = Cache.StrFilterCache.sig_info info InterfaceType in
             pack.pack_sig <- Some info;
             info
     | { pack_sig = None; pack_info = None; pack_name = name } ->
@@ -231,7 +510,7 @@ struct
    let mk_opname pack opname =
       match pack.pack_info with
          Some info ->
-            StrFilterCache.mk_opname info opname
+            Cache.StrFilterCache.mk_opname info opname
        | None ->
             raise (Failure (sprintf "Package_info.mk_opname: %s not initialized" pack.pack_name))
 
@@ -277,7 +556,7 @@ struct
       let parents =
          match info' with
             Some info ->
-               StrFilterCache.parents info
+               Cache.StrFilterCache.parents info
           | None ->
                raise (Invalid_argument "Package_info.add_implementation")
       in
@@ -307,7 +586,9 @@ struct
                         { pack_status = ReadOnly;
                           pack_sig = Some sig_info;
                           pack_info = None;
-                          pack_name = name
+                          pack_name = name;
+                          pack_tactics = [];
+                          pack_arg = null_tactic_argument
                         }
                      in
                      let node = ImpDag.insert dag pinfo in
@@ -331,7 +612,7 @@ struct
       let add_resource rsrc =
          if !debug_resource then
             eprintf "Adding resource: %s.%s%t" (string_of_path path) rsrc.resource_name eflush;
-         StrFilterCache.add_resource cache path rsrc
+         Cache.StrFilterCache.add_resource cache path rsrc
       in
       let nresources, nresources' =
          (*
@@ -379,7 +660,7 @@ struct
     | { pack_status = Incomplete; pack_name = name } ->
          raise (Failure (sprintf "Package_info.save: package '%s' is incomplete" name))
     | { pack_status = Modified; pack_info = Some info } ->
-         StrFilterCache.save info
+         Cache.StrFilterCache.save info
     | { pack_status = Modified; pack_info = None } ->
          raise (Invalid_argument "Package_info.save")
 
@@ -390,14 +671,57 @@ struct
       let info =
          { pack_status = Modified;
            pack_sig = None;
-           pack_info = Some (StrFilterCache.create_cache pack.pack_cache (**)
+           pack_info = Some (Cache.StrFilterCache.create_cache pack.pack_cache (**)
                                 name ImplementationType InterfaceType);
-           pack_name = name
+           pack_name = name;
+           pack_tactics = [];
+           pack_arg = null_tactic_argument
          }
       in
          add_implementation pack info;
          info
    
+   (*
+    * tactic_argument for the package.
+    *)
+   let argument { pack_arg = arg } =
+      arg
+   
+   (*
+    * Convert a proof on demand.
+    *)
+   let ped_of_proof { pack_tactics = tactics; pack_arg = arg } proof =
+      match !proof with
+         ProofEdit ped ->
+            ped
+       | ProofRaw (name, proof') ->
+            let tactics = List.assoc name tactics in
+            let proof' = Proof.proof_of_io_proof arg tactics proof' in
+            let ped = Proof_edit.ped_of_proof proof' in
+               proof := ProofEdit ped;
+               ped
+
+   (*
+    * Build the package from its info.
+    *)
+   let build_package pack name status info =
+      let tacl = ref [] in
+      let add name tactics =
+         Ref_util.push (name, tactics) tacl
+      in
+      let _ = Hashtbl.iter add tactics in
+      let info =
+         { pack_status = status;
+           pack_sig = None;
+           pack_info = Some info;
+           pack_name = name;
+           pack_tactics = !tacl;
+           pack_arg = !(!tactic_argument)
+         }
+      in
+         add_implementation pack info;
+         info
+
    (*
     * Load a package.
     * We search for the description, and load it.
@@ -411,33 +735,35 @@ struct
          let { pack_cache = cache } = pack in
          let path = [name] in
          let info, _ =
-            StrFilterCache.load cache name ImplementationType InterfaceType (inline_hook pack path) ([], [])
+            clear_proofs ();
+            clear_tactics ();
+            Cache.StrFilterCache.load cache name ImplementationType InterfaceType (inline_hook pack path) ([], [])
          in
-         let mlexists =
-            let filename = StrFilterCache.filename cache info in
+         let status =
+            let filename = Cache.StrFilterCache.filename cache info in
             let filename = (Filename_util.root filename) ^ ".ml" in
-               Sys.file_exists filename
+               if Sys.file_exists filename then
+                  ReadOnly
+               else
+                  Unmodified
          in
-         let info' =
-            { pack_status = if mlexists then ReadOnly else Unmodified;
-              pack_sig = None;
-              pack_info = Some info;
-              pack_name = name
-            }
-         in
-            add_implementation pack info';
             if is_theory_loaded name then
-               info'
+               build_package pack name status info
             else
                let item =
-                  let items = extract_str (StrFilterCache.info info) (StrFilterCache.resources info) name in
+                  let info' = Cache.StrFilterCache.info info in
+                  let items = Extract.extract_str info' (Cache.StrFilterCache.resources info) name in
+                  let items = (List.map fst items) @ [install_tactic_arg_expr info'] in
                   let mn = String.capitalize name in
-                  let me = (<:module_expr< struct $list:List.map fst items$ end >>) in
-                     (<:str_item< module $mn$ = $me$ >>)
+                  let me = (<:module_expr< struct $list: items$ end >>) in
+                      (<:str_item< module $mn$ = $me$ >>)
                in
                let pt_item = Ast2pt.str_item item [] in
                   if Toploop.execute_phrase false (Ptop_def pt_item) then
-                     info'
+                     let info = build_package pack name status info in
+                        clear_proofs ();   (* so these can be garbage collected *)
+                        clear_tactics ();
+                        info
                   else
                      raise (Failure "Package_info.load: evaluation failed")
       with
@@ -448,6 +774,10 @@ end
 
 (*
  * $Log$
+ * Revision 1.10  1998/05/28 13:45:42  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.9  1998/04/28 18:29:41  jyh
  * ls() works, adding display.
  *

@@ -18,32 +18,31 @@ open Package_info
  *)
 val create :
    Package.package ->
-   Filter_prog.t ->
-   tactic_resources ->
-   cache ->
+   Extract.t ->
+   tactic_argument ->
    string ->
    edit_object
 
 val view_rw :
    Package.package ->
-   Filter_prog.t ->
-   tactic_resources ->
-   cache ->
-   (string * tactic) array ->
-   proof_type rewrite_info ->
+   Extract.t ->
+   tactic_argument ->
+   Proof_edit.t proof_type rewrite_info ->
    edit_object
 
 val view_crw :
    Package.package ->
-   Filter_prog.t ->
-   tactic_resources ->
-   cache ->
-   (string * tactic) array ->
-   proof_type cond_rewrite_info ->
+   Extract.t ->
+   tactic_argument ->
+   Proof_edit.t proof_type cond_rewrite_info ->
    edit_object
 
 (*
  * $Log$
+ * Revision 1.4  1998/05/28 13:46:04  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.3  1998/05/07 16:02:27  jyh
  * Adding interactive proofs.
  *

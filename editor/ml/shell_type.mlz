@@ -4,9 +4,9 @@
 
 include Tactic_type
 
-open Term
+open Refiner.Refiner.Term
+open Refiner.Refiner.Refine
 open Rformat
-open Refine
 open Dform
 
 open Tactic_type
@@ -19,7 +19,7 @@ type edit_object =
      edit_set_contractum : term -> unit;
      edit_set_assumptions : term list -> unit;
      edit_set_params : Filter_summary.param list -> unit;
-     edit_check : unit -> Refiner.extract;
+     edit_check : unit -> extract;
      edit_expand : dform_base -> unit;
      
      (* Navigation of there is a proof *)
@@ -34,6 +34,10 @@ type edit_object =
 
 (*
  * $Log$
+ * Revision 1.4  1998/05/28 13:46:05  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.3  1998/04/28 18:30:00  jyh
  * ls() works, adding display.
  *

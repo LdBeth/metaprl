@@ -1,3 +1,10 @@
+open Printf
+open Debug
+
+let _ =
+   if !debug_load then
+      eprintf "Loading Oidtable%t" eflush
+
 
  open Basic
  open Refiner.Refiner.Term

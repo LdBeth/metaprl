@@ -1,3 +1,6 @@
+open Printf
+open Debug
+
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMan
@@ -16,6 +19,10 @@ open Array
 open List
 
 open Opname
+
+let _ =
+   if !debug_load then
+      eprintf "Loading Db%t" eflush
 
 let mask_p mask code  = (((land) code mask) = mask)
 

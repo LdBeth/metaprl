@@ -1,3 +1,6 @@
+open Printf
+open Debug
+
 
 open Utils
 open List
@@ -7,6 +10,10 @@ open Basic
 (*open Tent *)
 open Orb
 open Definition
+
+let _ =
+   if !debug_load then
+      eprintf "Loading Library%t" eflush
 
 type transaction_type = SAVE | RESTORE | LOCAL | REMOTE
 

@@ -2,6 +2,9 @@
  * This implements a filesystem interface to the library.
  *)
 
+open Printf
+open Debug
+
 open File_base_type
 
 open Refiner.Refiner.Term
@@ -9,6 +12,10 @@ open Basic
 
 open Utils
 open Library
+
+let _ =
+   if !debug_load then
+      eprintf "Loading Library_type_base%t" eflush
 
 
 
@@ -112,6 +119,10 @@ end
 
 (*
  * $Log$
+ * Revision 1.8  1998/05/28 13:46:45  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.7  1998/05/27 15:13:26  jyh
  * Functorized the refiner over the Term module.
  *

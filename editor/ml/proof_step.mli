@@ -6,14 +6,13 @@
  *)
 
 include Tactic_type
+include Io_proof_type
 
-open Term
+open Refiner.Refiner.Term
+open Refiner.Refiner.Refine
 open Dform
-open Refine_sig
-open Refine
 
-open Filter_proof_type
-
+open Io_proof_type
 open Tactic_type
 
 (* Abstract type for steps *)
@@ -40,15 +39,19 @@ val tactic : t -> tactic
  *   check: raises RefineError if the refinement changes
  *   expand: allow arbitrary changes in the refinement
  *)
-val check : t -> Refiner.extract
+val check : t -> extract
 val expand : dform_base -> t -> t
 
 (* IO *)
 val io_step_of_step : t -> proof_step
-val step_of_io_step : tactic_resources -> cache -> (string, tactic) Hashtbl.t -> proof_step -> t
+val step_of_io_step : tactic_argument -> (string, tactic) Hashtbl.t -> proof_step -> t
 
 (*
  * $Log$
+ * Revision 1.9  1998/05/28 13:45:55  jyh
+ * Updated the editor to use new Refiner structure.
+ * ITT needs dform names.
+ *
  * Revision 1.8  1998/04/28 18:29:51  jyh
  * ls() works, adding display.
  *

@@ -1,10 +1,17 @@
 (*conversion between nuprl-light terms and mathbus terms*)
 
+open Printf
+open Debug
+
 open Int32
 open Num
 open MathBus
 open Refiner.Refiner.Term
 open Opname
+
+let _ =
+   if !debug_load then
+      eprintf "Loading Mbterm%t" eflush
 
 exception InvalidMathBusLabel of (int32 * int32)
 
@@ -14,7 +21,7 @@ let mbs_Token = numeric_label "Token"
 let mbs_Bindings = numeric_label "Bindings"
 let mbs_Level = numeric_label "Level"
 let mbs_ObjectId = numeric_label "ObjectId"
-let mbs_ParamList = numeric_label "ParamList"
+let mbs_ParamList = numeric_label "ParmList"
 let mbs_TermIndex = numeric_label "TermIndex"
 let mbs_MString = numeric_label "MString"
 let mbs_MLongInteger = numeric_label "MLongInteger"
@@ -22,7 +29,6 @@ let mbs_MVariable = numeric_label "MVariable"
 let mbs_MLevel = numeric_label "MLevel"
 let mbs_MToken = numeric_label "MToken"
 
-	
 (* nuprl-light -> mathbus*)
 
 let param_of_opname opname =

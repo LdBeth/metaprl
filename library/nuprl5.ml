@@ -1,6 +1,13 @@
+open Printf
+open Debug
+
 open Refiner.Refiner.Term
 open Opname
 open Num
+
+let _ =
+   if !debug_load then
+      eprintf "Loading Nuprl5%t" eflush
 
 let nuprl5_opname = mk_opname "!nuprl5_implementation!" nil_opname
 

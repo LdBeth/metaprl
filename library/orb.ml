@@ -1,3 +1,6 @@
+open Printf
+open Debug
+
 
 open Unix
 open List
@@ -14,6 +17,10 @@ open Opname
 
 open Db
 open Definition
+
+let _ =
+   if !debug_load then
+      eprintf "Loading Orb%t" eflush
 
 
 (*
