@@ -505,6 +505,12 @@ let undo_is_enabled () =
 let redo_is_enabled () =
    Shell_command.is_enabled MethodRedo
 
+let apply_all_is_enabled () =
+   Shell_command.is_enabled MethodApplyAll
+
+let expand_is_enabled () =
+   Shell_command.is_enabled MethodExpand
+
 let menubar_init =
    [<< menu["file", "File"] >>,                                            always_enabled;
     << menuitem["file", "Rebuild",    "Command('!omake')"] >>,             always_enabled;
@@ -530,7 +536,15 @@ let menubar_init =
     << menu["dir", "Directory"] >>,                                        always_enabled;
     << menuitem["dir", "Refresh", "Command('ls \"\"')"] >>,                always_enabled;
     << menu["proof", "Proof"] >>,                                          always_enabled;
+    << menuitem["proof", "Expand All", "Command('expand_all ()')"] >>,     apply_all_is_enabled;
+    << menuitem["proof", "Status All", "Command('status_all ()')"] >>,     apply_all_is_enabled;
+    << menuitem["proof", "Check All",  "Command('check_all ()')"] >>,      apply_all_is_enabled;
+    << menuitem["proof", "-", ""] >>,                                      always_enabled;
+    << menuitem["proof", "Expand", "Command('expand ()')"] >>,             expand_is_enabled;
+    << menuitem["proof", "Check", "Command('check ()')"] >>,               refine_is_enabled;
     << menu["refine", "Refine"] >>,                                        always_enabled;
+    << menuitem["refine", "autoT", "Command('autoT')"] >>,                 refine_is_enabled;
+    << menuitem["refine", "dT 0", "Command('dT 0')"] >>,                   refine_is_enabled;
     << menu["help", "Help"] >>,                                            always_enabled;
     << menuitem["help", "MetaPRL Home", "URL('http://www.metaprl.org/')"] >>, always_enabled]
 

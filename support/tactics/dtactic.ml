@@ -543,13 +543,13 @@ let elim_univ_arg = ElimArgsOption (univ_arg_fun, None)
 let intro_univ_arg = IntroArgsOption (univ_arg_fun, None)
 
 (*
- * Add autoT to the browser.
- *)
+ * Add dT 0 to the browser.
 let refine_is_enabled () =
    Shell_command.is_enabled MethodRefine
 
 let resource commandbar +=
     [<< button["dT 0", "Command('refine dT 0')"] >>, refine_is_enabled]
+ *)
 
 (*
  * -*-
