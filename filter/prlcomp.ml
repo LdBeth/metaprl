@@ -224,6 +224,7 @@ let spec =
     "-c", Unit (add_argv "-c"), "produce object file";
     "-o", String (add_string_argv "-o"), "specify output file";
     "-a", Unit (add_argv "-a"), "produce archive file";
+    "-S", Unit (add_argv "-S"), "do not remove the assembly file";
     "-compact", Unit (add_argv "-compact"), "produce a smaller but slower code";
     "-custom", Unit (add_argv "-custom"), "generate custom executable";
     "-ccopt", String (add_string_argv "-ccopt"), "C option";
@@ -285,6 +286,9 @@ let _ = Printexc.catch (Unix.handle_unix_error main) ()
 
 (*
  * $Log$
+ * Revision 1.20  1998/07/03 22:58:40  nogin
+ * Added -S option
+ *
  * Revision 1.19  1998/07/02 18:35:01  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises
