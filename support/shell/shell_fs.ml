@@ -228,14 +228,8 @@ let refresh_dir_entries dir =
  * Display the listing.
  *)
 let edit_display get_dfm dir options =
-   let { dir_root    = root;
-         dir_subdir  = subdir;
-         dir_entries = entries;
-         dir_ignore  = ignore
-       } = dir
-   in
    let nametest =
-      match ignore with
+      match dir.dir_ignore with
          Some ignore ->
             if LsOptionSet.mem options LsFileAll then
                (fun _ -> true)
@@ -259,18 +253,10 @@ let edit_display get_dfm dir options =
                   else
                      terms
              | EntryUnreadable ->
-                  mk_unreadable_term :: terms) [] entries
+                  mk_unreadable_term :: terms) [] dir.dir_entries
    in
-   let term = mk_listing_term subdir (List.rev terms) in
+   let term = mk_listing_term dir.dir_subdir (List.rev terms) in
       Proof_edit.display_term (get_dfm ()) term
-
-(*
- * Set a new address.
- *)
-let edit_addr dir addr =
-   let path = Lm_filename_util.simplify_path addr in
-   let path = Lm_filename_util.concat_path path in
-      load_dir_entries dir path
 
 (*
  * Error handler.
@@ -282,17 +268,15 @@ let raise_edit_error s =
  * Build the shell interface.
  *)
 let rec edit get_dfm dir =
-   let edit_display options =
+   let edit_check_addr addr =
+      let path = Lm_filename_util.simplify_path addr in
+      let path = Lm_filename_util.concat_path path in
+         if dir.dir_subdir <> path then
+            load_dir_entries dir path
+   in
+   let edit_display addr options =
+      edit_check_addr addr;
       edit_display get_dfm dir options
-   in
-   let edit_addr addr =
-      edit_addr dir addr
-   in
-   let edit_fs_cwd () =
-      dir.dir_subdir
-   in
-   let edit_int_addr addr =
-      edit_addr (List.map string_of_int addr)
    in
    let edit_copy () =
       edit get_dfm { dir with dir_root = dir.dir_root }
@@ -306,19 +290,19 @@ let rec edit get_dfm dir =
    let edit_check _ =
       raise_edit_error "files can't be checked"
    in
-   let edit_undo () =
-      ()
+   let edit_undo addr =
+      addr
    in
-   let edit_redo () =
-      ()
+   let edit_redo addr =
+      addr
    in
-   let edit_info () =
+   let edit_info addr =
       raise_edit_error "no info for the files"
    in
    let edit_interpret command =
       raise_edit_error "this is not a proof"
    in
-   let edit_get_contents () =
+   let edit_get_contents addr =
       raise_edit_error "can only retrieve contents of an individual item, not of a file"
    in
       { edit_display = edit_display;
@@ -333,14 +317,12 @@ let rec edit get_dfm dir =
         edit_get_extract = not_a_rule;
         edit_save = edit_save;
         edit_check = edit_check;
-        edit_addr = edit_addr;
-        edit_int_addr = edit_int_addr;
+        edit_check_addr = edit_check_addr;
         edit_info = edit_info;
         edit_undo = edit_undo;
         edit_redo = edit_redo;
         edit_interpret = edit_interpret;
         edit_find = not_a_rule;
-        edit_fs_cwd = edit_fs_cwd
       }
 
 let create get_dfm =

@@ -54,7 +54,7 @@ topval abort : unit -> unit
 topval cd : string -> string
 topval refresh : unit -> unit
 topval pwd : unit -> string
-topval fs_cwd : unit -> string
+topval relative_pwd : unit -> string
 topval root : unit -> string
 topval up : int -> unit
 topval down : int -> unit
@@ -70,7 +70,6 @@ topval squash : unit -> unit
 topval squash_all : unit -> unit
 topval undo : unit -> unit
 topval redo : unit -> unit
-topval nop : unit -> unit
 topval copy : string -> unit
 topval paste : string -> unit
 topval make_assum : unit -> unit

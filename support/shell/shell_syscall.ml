@@ -114,7 +114,7 @@ let rec prune_relname path =
          path
 
 let absname s =
-   let cwd = Shell.fs_cwd () in
+   let cwd = Shell.relative_pwd () in
    let s = Filename.concat cwd s in
    let s = Lm_filename_util.split_path s in
    let s = Lm_filename_util.simplify_path s in

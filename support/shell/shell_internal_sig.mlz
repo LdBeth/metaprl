@@ -34,11 +34,13 @@ open Shell_util
 (*
  * Mount descriptions.
  *)
-type shell_dir =
+type shell_fs =
    DirRoot
- | DirFS of string list
+ | DirFS
  | DirModule of string
- | DirProof of string * string * string list
+ | DirProof of string * string
+
+type shell_dir = shell_fs * string list (* mount point + relative path *)
 
 (*
  * This is the info we need for each subshell.
@@ -56,7 +58,8 @@ type shell =
      mutable shell_df_method     : display_method;
 
      (* Current module and path and proof *)
-     mutable shell_dir           : shell_dir;
+     mutable shell_fs            : shell_fs;
+     mutable shell_subdir        : string list;
      mutable shell_package       : Package_info.package option;
      mutable shell_proof         : edit_object
    }

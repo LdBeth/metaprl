@@ -169,7 +169,8 @@ let default_shell =
    let proof = Shell_root.create packages get_dfm in
    let rec info =
       { shell_debug          = "root";
-        shell_dir            = DirRoot;
+        shell_fs             = DirRoot;
+        shell_subdir         = [];
         shell_package        = None;
         shell_proof          = proof;
         shell_needs_refresh  = false;
@@ -206,21 +207,15 @@ let shell_entry = State.private_val "Shell_current.shell_entry" default_shell fo
 let set_current_session session_info =
    State.write shell_entry (fun shell ->
    State.write session_entry (fun session ->
-         let { session_info_dir      = dir;
-               session_info_options  = options;
-               session_info_history  = history;
-               session_info_edit     = edit;
-               session_info_dirs     = dirs;
-               session_info_messages = messages
-             } = session_info
-         in
-            shell.shell_dir             <- dir_of_path dir;
-            shell.shell_needs_refresh   <- true;
-            add_linebuffer_strings session.session_history history;
-            add_linebuffer_buffers session.session_messages messages;
-            session.session_directories <- linetable_of_strings dirs;
-            session.session_files       <- linetable_of_strings edit;
-            session.session_options     <- ls_options_of_string options))
+      let (fs, subdir) = dir_of_path session_info.session_info_dir in
+         shell.shell_fs              <- fs;
+         shell.shell_subdir          <- subdir;
+         shell.shell_needs_refresh   <- true;
+         add_linebuffer_strings session.session_history session_info.session_info_history;
+         add_linebuffer_buffers session.session_messages session_info.session_info_messages;
+         session.session_directories <- linetable_of_strings session_info.session_info_dirs;
+         session.session_files       <- linetable_of_strings session_info.session_info_edit;
+         session.session_options     <- ls_options_of_string session_info.session_info_options))
 
 (*
  * Load all the shells.
@@ -244,26 +239,18 @@ let () =
 let flush () =
    State.read shell_entry (fun shell ->
    State.read session_entry (fun session ->
-         let { shell_dir = dir } = shell in
-         let { session_history     = history;
-               session_directories = dirs;
-               session_files       = files;
-               session_options     = options;
-               session_messages    = messages
-             } = session
-         in
-         let pid = string_of_pid (Lm_thread_shell.get_pid ()) in
-         let session =
-            { session_info_id       = pid;
-              session_info_dir      = path_of_dir dir;
-              session_info_options  = string_of_ls_options options;
-              session_info_history  = strings_of_linebuffer history;
-              session_info_edit     = strings_of_linetable files;
-              session_info_dirs     = strings_of_linetable dirs;
-              session_info_messages = strings_of_linebuffer_buffers messages
-            }
-         in
-            write_session session))
+      let pid = string_of_pid (Lm_thread_shell.get_pid ()) in
+      let session =
+         { session_info_id       = pid;
+           session_info_dir      = path_of_dir (shell.shell_fs, shell.shell_subdir);
+           session_info_options  = string_of_ls_options session.session_options;
+           session_info_history  = strings_of_linebuffer session.session_history;
+           session_info_edit     = strings_of_linetable session.session_files;
+           session_info_dirs     = strings_of_linetable session.session_directories;
+           session_info_messages = strings_of_linebuffer_buffers session.session_messages;
+         }
+      in
+         write_session session))
 
 (*!
  * @docoff

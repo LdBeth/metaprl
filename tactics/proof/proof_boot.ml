@@ -141,15 +141,7 @@ struct
     *)
    type address = int list
 
-   (*
-    * The proof is just an address into an extract.
-    * Invariant: pf_node = index pf_root pf_address
-    *)
-   type proof =
-      { pf_root : extract;
-        pf_address : address;
-        pf_node : extract
-      }
+   type proof = extract
 
    (*
     * Description of the refinement.
@@ -185,7 +177,7 @@ struct
     * the error.
     *)
    exception ExtRefineError of string * extract * refine_error
-   exception ProofRefineError of string * proof * refine_error
+   exception ProofRefineError of string * proof * address * refine_error
 
    (*
     * Unchanged exception for some operations that want to
@@ -227,25 +219,9 @@ struct
     * This function is really only used for debugging.
     *)
    let format_proof db buf proof =
-      let rec format_addr buf = function
-         [i] ->
-            format_int buf i
-       | i :: tl ->
-            format_int buf i;
-            format_char buf ';';
-            format_addr buf tl
-       | [] ->
-            ()
-      in
-         format_string buf "Proof: [";
-         format_addr buf proof.pf_address;
-         format_string buf "]";
-         format_hspace buf;
-         format_extract db buf proof.pf_root;
-         format_hspace buf;
-         format_string buf "Node:";
-         format_hspace buf;
-         format_extract db buf proof.pf_node
+      format_string buf "Proof:";
+      format_hspace buf;
+      format_extract db buf proof
 
    (*
     * BUG JYH: we should probably make the db type abstract,
@@ -485,20 +461,71 @@ struct
     * Make a proof of an extract term.
     *)
    let create goal =
-      let ext = Goal goal in
-         { pf_root = ext;
-           pf_address = [];
-           pf_node = ext
-         }
+      Goal goal
 
    (*
-    * Main proof node.
+    * Raise an error because the address is invalid.
     *)
-   let root { pf_root = root } =
-      { pf_root = root;
-        pf_address = [];
-        pf_node = root
-      }
+   let raise_select_error proof node raddr i =
+      raise (ProofRefineError ("select", proof, List.rev raddr, StringIntError ("illegal address", i)))
+
+   (*
+    * Choose a child by address.
+    *)
+   let select_subgoal proof node raddr goal subgoals extras i =
+      if i < 0 then
+         raise_select_error proof node raddr i
+      else if i = 0 then
+         goal
+      else
+         let i' = pred i in
+         let len = List.length subgoals in
+            if i' < len then
+               List.nth subgoals i'
+            else
+               let i' = i' - len in
+                  if i' < List.length extras then
+                     List.nth extras i'
+                  else
+                     raise_select_error proof node raddr i
+
+   let rec select_child proof node raddr i =
+      match node with
+         Goal _
+       | Extract _
+       | Identity _
+       | Unjustified _ ->
+            raise_select_error proof node raddr i
+       | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } ->
+            if i = 0 then select_child proof goal raddr 0
+            else select_subgoal proof node raddr goal subgoals extras i
+       | Wrapped (_, goal) ->
+            if i = 0 then
+               goal
+            else
+               raise_select_error proof node raddr i
+       | RuleBox ri ->
+            if (i=0) && (not ri.rule_extract_normalized) then ignore(normalize node);
+            select_subgoal proof node raddr ri.rule_extract ri.rule_subgoals ri.rule_extras i
+       | Pending f ->
+            select_child proof (f ()) raddr i
+       | Locked ext ->
+            select_child proof ext raddr i
+
+   (*
+    * Go the a particular path.
+    *)
+   let rec index_ext proof node raddr = function
+      i :: tl ->
+         index_ext proof (select_child proof node raddr i) (i :: raddr) tl
+    | [] ->
+         node
+
+   let index_exn = RefineError ("Proof_boot.index", StringError "there is no proof node with such address")
+
+   let index proof path =
+      try index_ext proof proof [] path with
+         ProofRefineError _ -> raise index_exn
 
    (************************************************************************
     * DESTRUCTORS                                                          *
@@ -515,8 +542,8 @@ struct
     | _ ->
          false
 
-   let is_leaf pf =
-      is_leaf_ext pf.pf_node
+   let is_leaf pf addr =
+      is_leaf_ext (index pf addr)
 
    (*
     * Get the goal of the extract.
@@ -535,8 +562,8 @@ struct
     | Pending f ->
          goal_ext (f ())
 
-   let goal proof =
-      goal_ext proof.pf_node
+   let goal pf addr =
+      goal_ext (index pf addr)
 
    (*
     * Remove duplicates in a list of tactic args.
@@ -628,9 +655,6 @@ struct
     | [] ->
          []
 
-   let leaves proof =
-      leaves_ext proof.pf_node
-
    (*
     * Get the status of the current step.
     *)
@@ -698,79 +722,18 @@ struct
     | [] ->
          status
 
-   let status proof =
-      translate_status (status_ext proof.pf_node)
+   let status pf addr =
+      translate_status (status_ext (index pf addr))
 
    (**********************************************************************
     * MAP FUNCTIONS                                                        *
     ************************************************************************)
 
    (*
-    * Raise an error because the address is invalid.
-    *)
-   let raise_select_error { pf_root = root; pf_address = address } node raddr i =
-      let proof =
-         { pf_root = root;
-           pf_address = address @ List.rev raddr;
-           pf_node = node
-         }
-      in
-         raise (ProofRefineError ("select", proof, StringIntError ("illegal address", i)))
-
-   (*
-    * Choose a child by address.
-    *)
-   let select_subgoal proof node raddr goal subgoals extras i =
-      if i < 0 then
-         raise_select_error proof node raddr i
-      else if i = 0 then
-         goal
-      else
-         let i' = pred i in
-         let len = List.length subgoals in
-            if i' < len then
-               List.nth subgoals i'
-            else
-               let i' = i' - len in
-                  if i' < List.length extras then
-                     List.nth extras i'
-                  else
-                     raise_select_error proof node raddr i
-
-   let rec select_child proof node raddr i =
-      match node with
-         Goal _
-       | Extract _
-       | Identity _
-       | Unjustified _ ->
-            raise_select_error proof node raddr i
-       | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } ->
-            if i = 0 then select_child proof goal raddr 0
-            else select_subgoal proof node raddr goal subgoals extras i
-       | Wrapped (_, goal) ->
-            if i = 0 then
-               goal
-            else
-               raise_select_error proof node raddr i
-       | RuleBox ri ->
-            if (i=0) && (not ri.rule_extract_normalized) then ignore(normalize node);
-            select_subgoal proof node raddr ri.rule_extract ri.rule_subgoals ri.rule_extras i
-       | Pending f ->
-            select_child proof (f ()) raddr i
-       | Locked ext ->
-            select_child proof ext raddr i
-
-   (*
     * Address error during replacement.
     *)
-   let raise_replace_error { pf_root = root; pf_address = address } node raddr i =
-      let proof =
-         { pf_root = root;
-           pf_address = address @ List.rev raddr;
-           pf_node = node
-         }
-      in
-         raise (ProofRefineError ("replace", proof, StringIntError ("illegal address", i)))
+   let raise_replace_error proof node raddr i =
+      raise (ProofRefineError ("replace", proof, List.rev raddr, StringIntError ("illegal address", i)))
 
    let norm_goal goal =
       let mseq = TermNorm.normalize_msequent goal.ref_goal in
@@ -1000,28 +963,13 @@ struct
          List.rev (f proof node :: results)
 
    let map_path f proof path =
-      map_path_ext proof proof.pf_node [] [] f path
-
-   (*
-    * Fold a function along the path from outermost to innermost.
-    *)
-   let rec fold_down_ext proof node raddr arg f = function
-      i :: t ->
-         fold_down_ext proof (select_child proof node raddr i) (i :: raddr) (f proof node arg) f t
-    | [] ->
-         arg
-
-   let fold_down f arg proof path =
-      fold_down_ext proof proof.pf_node [] arg f path
-
-   let fold_down_root f arg proof =
-      fold_down f arg (root proof) proof.pf_address
+      map_path_ext proof proof [] [] f path
 
    (*
     * Fold a function along the path from innermost to outermost,
     * recomputing the proof.
     *)
-   let rec fold_up_proof_ext (proof : proof) (node : extract) (raddr : int list) (arg : extract) = function
+   let rec fold_up_proof_ext (proof : proof) (node : extract) (raddr : address) (arg : extract) = function
       i :: t ->
          let locked, post, node' = fold_up_proof_ext proof (select_child proof node raddr i) (i :: raddr) arg t in
          let locked', post', node = replace_child proof node raddr i node' in
@@ -1029,19 +977,13 @@ struct
     | [] ->
          false, false, arg
 
-   let fold_up_proof node proof =
-      fold_up_proof_ext (root proof) proof.pf_root [] node proof.pf_address
+   let fold_up_proof node pf addr =
+      fold_up_proof_ext pf pf [] node addr
 
-   let fold_proof postf proof node =
+   let fold_proof postf pf addr node =
       if !debug_proof then
-         eprintf "Proof_boot.fold_proof [%a]%t" print_int_list proof.pf_address eflush;
-      let locked_flag, post_flag, root = fold_up_proof node proof in
-      let proof =
-         { pf_root = root;
-           pf_address = proof.pf_address;
-           pf_node = node
-         }
-      in
+         eprintf "Proof_boot.fold_proof [%a]%t" print_int_list addr eflush;
+      let locked_flag, post_flag, proof = fold_up_proof node pf addr in
          if !debug_proof then
             eprintf "Proof_boot.fold_proof: post=%b locked=%b%t" post_flag locked_flag eflush;
          if post_flag || not locked_flag then
@@ -1100,66 +1042,16 @@ struct
     ************************************************************************)
 
    (*
-    * Return the absolute address of the current proof.
-    *)
-   let address proof =
-      proof.pf_address
-
-   (*
     * Get the status along the path from the root.
     * The last component of the path may not be valid.
     *)
-   let path_status proof =
-      let addr = proof.pf_address in
-      let proof = root proof in
-         try map_path (fun proof node -> translate_status (status_ext node)) proof addr with
-            (ProofRefineError _) as exn ->
-               if addr = [] then
-                  raise exn;
-               let addr, _ = Lm_list_util.split_last addr in
-                  map_path (fun proof node -> translate_status (status_ext node)) proof addr
-
-   (*
-    * Go the a particular path.
-    *)
-   let rec index_ext proof node raddr = function
-      i :: tl ->
-         index_ext proof (select_child proof node raddr i) (i :: raddr) tl
-    | [] ->
-         node
-
-   let index_exn = RefineError ("Proof_boot.index", StringError "there is no proof node with such address")
-
-   let index proof path =
-      let { pf_root = root;
-            pf_address = addr;
-            pf_node = node
-          } = proof
-      in
-         try
-            let node = index_ext proof node [] path in
-               { pf_root = root;
-                 pf_address = addr @ path;
-                 pf_node = node
-               }
-         with ProofRefineError _ -> raise index_exn
-
-   (*
-    * Child operation is a simplified index.
-    *)
-   let child proof i =
-      index proof [i]
-
-   (*
-    * Parent of node performs search from the root.
-    *)
-   let parent proof =
-      match proof.pf_address with
-         [] ->
-            raise (Invalid_argument "Proof_boot.parent")
-       | addr ->
+   let path_status pf addr =
+      try map_path (fun proof node -> translate_status (status_ext node)) pf addr with
+         (ProofRefineError _) as exn ->
+            if addr = [] then
+               raise exn;
             let addr, _ = Lm_list_util.split_last addr in
-               index (root proof) addr
+               map_path (fun proof node -> translate_status (status_ext node)) pf addr
 
    (*
     * Set the goal of the current node.
@@ -1167,32 +1059,23 @@ struct
    let set_goal_ext node mseq =
       replace_goal_ext { (goal_ext node) with ref_goal = mseq } node
 
-   let set_goal postf proof mseq =
-      let node = set_goal_ext proof.pf_node mseq in
-         fold_proof postf proof node
-
-   (*
-    * Copy a proof from one location to another.
-    *)
-   let copy postf proof from_addr to_addr =
-      let { pf_address = address;
-            pf_node = node
-          } = proof
-      in
-      let from_node = index_ext proof node [] from_addr in
-      let to_proof = index proof to_addr in
-      let goal = goal proof in
-      let from_node = set_goal_ext from_node goal.ref_goal in
-      let to_proof = fold_proof postf to_proof from_node in
-         index to_proof address
+   let set_goal postf pf addr mseq =
+      let node = set_goal_ext (index pf addr) mseq in
+         fold_proof postf pf addr node
 
    (*
     * Paste an alternate proof at this location.
     *)
-   let paste postf to_proof from_proof =
-      let goal = goal to_proof in
-      let from_node = set_goal_ext from_proof.pf_node goal.ref_goal in
-         fold_proof postf to_proof from_node
+   let paste postf to_proof addr from_proof =
+      let to_node = index to_proof addr in
+      let from_node = set_goal_ext from_proof (goal_ext to_node).ref_goal in
+         fold_proof postf to_proof addr from_node
+
+   (*
+    * Copy a proof from one location to another.
+    *)
+   let copy postf pf from_addr to_addr =
+      paste postf pf to_addr (index pf from_addr)
 
    (*
     * Make the current subgoal an assumption.
@@ -1202,24 +1085,14 @@ struct
       let hyps = Lm_list_util.insert_nth i goal hyps in
         { arg with ref_goal = Refine.mk_msequent goal hyps }
 
-   let make_assum postf proof =
+   let make_assum postf pf addr =
       (* Add the goal as an assumption to all proof nodes *)
-      let mseq = (goal proof).ref_goal in
-      let goal, _ = Refine.dest_msequent mseq in
-      let mseq = (goal_ext proof.pf_root).ref_goal in
-      let _, hyps = Refine.dest_msequent mseq in
+      let goal, _ = Refine.dest_msequent (goal pf addr).ref_goal in
+      let _, hyps = Refine.dest_msequent (goal_ext pf).ref_goal in
       let len = List.length hyps in
-      let root = map_tactic_arg_ext (make_assum_arg goal len) proof.pf_root in
-
-      let address = proof.pf_address in
-      let node = index_ext proof root [] address in
-      let proof =
-         { pf_root = root;
-           pf_address = address;
-           pf_node = node
-         }
-      in
-         fold_proof postf proof node
+      let pf = map_tactic_arg_ext (make_assum_arg goal len) pf in
+      let node = index_ext pf pf [] addr in
+         fold_proof postf pf addr node
 
    (************************************************************************
     * CACHE & CACHED NAVIGATION                                            *
@@ -1237,145 +1110,87 @@ struct
     * Add a new Pending node to the cache.
     * Remember the proof in case the goal changes.
     *)
-   let post f =
+   let post f addr =
       if !debug_proof then
          eprintf "Posting proof%t" eflush;
       let proof = f () in
-      let addr = proof.pf_address in
-      let old_goal = (goal proof).ref_goal in
+      let node = index proof addr in
+      let old_goal = (goal_ext node).ref_goal in
       let old_proof = ref proof in
+      let old_node = ref node in
       let compute_ext () =
          try
             let new_proof = f () in
-            let proof =
-               if !old_proof.pf_root==new_proof.pf_root then !old_proof else
-                  let new_proof = index (root new_proof) addr in
-                  if msequent_alpha_equal (goal new_proof).ref_goal old_goal then
-                     begin
-                        if !debug_proof_pending then begin
-                           eprintf "Replacing old :\n";
-                           print_ext !old_proof.pf_node;
-                           eprintf "with new :\n";
-                           print_ext new_proof.pf_node
-                        end;
-                        old_proof := new_proof;
-                        new_proof
-                     end
-                  else
-                     !old_proof
-            in
-               proof.pf_node
+            if !old_proof==new_proof then !old_node else
+               let new_node = index new_proof addr in
+               if msequent_alpha_equal (goal_ext new_node).ref_goal old_goal then
+                  begin
+                     if !debug_proof_pending then begin
+                        eprintf "Replacing old :\n";
+                        print_ext !old_node;
+                        eprintf "with new :\n";
+                        print_ext new_node
+                     end;
+                     old_node := new_node;
+                     old_proof := new_proof;
+                     new_node
+                  end
+               else
+                  !old_node
          with
             ProofRefineError _
           | ExtRefineError _ ->
-               (!old_proof).pf_node
+               !old_node
       in
       let ext = Pending compute_ext in
          set_cache ext;
 
          (* Eliminate all enclosing Pending nodes *)
-         fold_proof (fun proof -> proof) proof (Locked proof.pf_node)
-
-   (*
-    * Compute all the extracts along the path to the root.
-    * This is slow, so don't do this very often.
-    *)
-   let compute_path_set proof =
-      let add_extract proof ext set =
-         let goal = goal_ext ext in
-            Cache.add set goal.ref_goal ext
-      in
-         fold_down_root add_extract Cache.empty proof
-
-   (*
-    * Remove extracts that occur in the parent set.
-    *)
-   let rec prune_cycles parents found = function
-      ext :: tl ->
-         let goal = goal_ext ext in
-         let possible = Cache.find_all parents goal.ref_goal in
-            if List.memq ext possible || List.memq ext found then
-               prune_cycles parents found tl
-            else
-               prune_cycles parents (ext :: found) tl
-    | [] ->
-         found
+         fold_proof (fun proof -> proof) proof addr (Locked node)
 
    (*
     * Fetch all the entries in the cache that are possible for this
-    * tactic_arg.  We have to check that the extracs do not cause
-    * cycles in the proof.
+    * tactic_arg.
     *)
-   let get_cache proof =
+   let get_cache_ext proof =
       try
-         let goal = goal proof in
-         let exts = State.read cache_entry (fun cache -> Cache.find_all !cache goal.ref_goal) in
-         let parents = compute_path_set proof in
-         let nodes = prune_cycles parents [] exts in
-            List.map (fold_proof (fun proof -> proof) proof) nodes
+         State.read cache_entry (fun cache -> Cache.find_all !cache (goal_ext proof).ref_goal)
       with
          Not_found ->
             []
 
+   let get_cache pf addr =
+      get_cache_ext (index pf addr)
+
    (*
     * For the goal, append all cached proofs.
     *)
-   let proof_goal cache proof goal =
-      let { pf_root = root; pf_address = address } = proof in
-         { pf_root = root;
-           pf_address = address @ [0];
-           pf_node = goal
-         } :: if cache then get_cache proof else []
+   let proof_goal cache goal =
+      goal :: if cache then get_cache_ext goal else []
 
    (*
     * Remove duplicates in the subgoals, and append cached proofs.
     *)
-   let proof_subgoals proof subgoals =
-      let { pf_root = root; pf_address = address } = proof in
-      let rec collect i found = function
+   let proof_subgoals =
+      let rec collect found = function
          subgoal :: subgoals ->
             if search_arg subgoal found then
-               collect (succ i) found subgoals
+               collect found subgoals
             else
-               let proof =
-                  { pf_root = root;
-                    pf_address = address @ [i];
-                    pf_node = Goal subgoal
-                  }
-               in
-                  proof :: collect (succ i) (subgoal :: found) subgoals
+               [Goal subgoal] :: collect (subgoal :: found) subgoals
        | [] ->
             []
       in
-      let subgoals = collect 1 [] subgoals in
-         List.map (fun subgoal -> [subgoal]) subgoals
+         collect []
 
    (*
     * Get the list of subgoals with cached entries.
     * Make sure extras are in the cache.
     *)
-   let proof_subgoals_extras cache proof subgoals extras =
-      let { pf_root = root; pf_address = address } = proof in
-      let rec wrap i = function
-         subgoal :: subgoals ->
-            let proof =
-               { pf_root = root;
-                 pf_address = address @ [i];
-                 pf_node = subgoal
-               }
-            in
-               proof :: wrap (succ i) subgoals
-       | [] ->
-            []
-      in
+   let proof_subgoals_extras cache subgoals extras =
       let _ = List.iter set_cache extras in
-      let subgoals = wrap 1 subgoals in
-      let extras = wrap (succ (List.length subgoals)) extras in
       let subgoals =
-(*
- * BUG BUG BUG: get_cache is generating illegal addresses --jyh 8/13/03
- *)
-         List.map (fun subgoal -> subgoal :: if false && cache then get_cache subgoal else []) subgoals
+         List.map (fun subgoal -> subgoal :: if false && cache then get_cache_ext subgoal else []) subgoals
       in
          subgoals, extras
 
@@ -1420,89 +1235,92 @@ struct
    (*
     * Describe all the parts of this step.
     *)
-   let rec info_ext compose_flag proof node =
-      match node with
-         Goal goal ->
-            { step_goal = proof :: get_cache proof;
-              step_status = StatusPartial;
-              step_expr = ExprGoal;
-              step_subgoals = [];
-              step_extras = []
-            }
-       | Identity goal ->
-            let proofs = proof_goal false proof (Goal goal) in
-               { step_goal = proofs;
-                 step_status = StatusComplete;
-                 step_expr = ExprIdentity;
-                 step_subgoals = [proofs];
-                 step_extras = []
-               }
-       | Unjustified (goal, subgoals) ->
-            { step_goal = proof_goal false proof (Goal goal);
-              step_status = StatusIncomplete;
-              step_expr = ExprUnjustified;
-              step_subgoals = proof_subgoals proof subgoals;
-              step_extras = []
-            }
-       | Extract (goal, subgoals, ext) ->
-            { step_goal = proof_goal false proof (Goal goal);
+   let rec info_ext compose_flag = function
+      Goal goal as node ->
+         { step_goal = node :: get_cache_ext node;
+           step_status = StatusPartial;
+           step_expr = ExprGoal;
+           step_subgoals = [];
+           step_extras = []
+         }
+    | Identity goal ->
+         let proofs = proof_goal false (Goal goal) in
+            { step_goal = proofs;
               step_status = StatusComplete;
-              step_expr = make_extract_expr ext;
-              step_subgoals = proof_subgoals proof subgoals;
+              step_expr = ExprIdentity;
+              step_subgoals = [proofs];
               step_extras = []
             }
-       | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } ->
-            let new_subgoals, extras = proof_subgoals_extras false proof subgoals extras in
-            let status = translate_status (status_ext goal) in
-            if compose_flag then
-               let goal = info_ext false proof goal in
-                  { step_goal = goal.step_goal;
-                    step_status = status;
-                    step_expr = ExprCompose goal.step_expr;
-                    step_subgoals = new_subgoals;
-                    step_extras = extras
-                  }
-            else
-               { step_goal = proof_goal false proof goal;
+    | Unjustified (goal, subgoals) ->
+         { step_goal = proof_goal false (Goal goal);
+           step_status = StatusIncomplete;
+           step_expr = ExprUnjustified;
+           step_subgoals = proof_subgoals subgoals;
+           step_extras = []
+         }
+    | Extract (goal, subgoals, ext) ->
+         { step_goal = proof_goal false (Goal goal);
+           step_status = StatusComplete;
+           step_expr = make_extract_expr ext;
+           step_subgoals = proof_subgoals subgoals;
+           step_extras = []
+         }
+    | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } ->
+         let new_subgoals, extras = proof_subgoals_extras false subgoals extras in
+         let status = translate_status (status_ext goal) in
+         if compose_flag then
+            let goal = info_ext false goal in
+               { step_goal = goal.step_goal;
                  step_status = status;
-                 step_expr = ExprCompose ExprIdentity;
-                 step_subgoals = List.flatten (List.map (fun goal -> (info_ext false proof goal).step_subgoals) subgoals);
+                 step_expr = ExprCompose goal.step_expr;
+                 step_subgoals = new_subgoals;
                  step_extras = extras
                }
-       | Wrapped (label, ext) ->
-            let info = info_ext false proof ext in
-               { info with step_expr = ExprWrapped label }
-       | RuleBox { rule_extract_normalized = false } ->
-            info_ext compose_flag proof (normalize node)
-       | RuleBox { rule_expr = expr;
-                   rule_string = text;
-                   rule_extract_normalized = true;
-                   rule_extract = goal;
-                   rule_subgoals = subgoals;
-                   rule_extras = extras
-         } ->
-            let subgoals, extras = proof_subgoals_extras true proof subgoals extras in
-               { step_goal = proof_goal true proof goal;
-                 step_status = translate_status (status_ext goal);
-                 step_expr = ExprRule (text, expr ());
-                 step_subgoals = subgoals;
-                 step_extras = extras
-               }
-       | Pending f ->
-            info_ext compose_flag proof (f ())
-       | Locked ext ->
-            info_ext compose_flag proof ext
+         else
+            { step_goal = proof_goal false goal;
+              step_status = status;
+              step_expr = ExprCompose ExprIdentity;
+              step_subgoals = List.flatten (List.map (fun goal -> (info_ext false goal).step_subgoals) subgoals);
+              step_extras = extras
+            }
+    | Wrapped (label, ext) ->
+         let info = info_ext false ext in
+            { info with step_expr = ExprWrapped label }
+    | RuleBox { rule_extract_normalized = false } as node ->
+         info_ext compose_flag (normalize node)
+    | RuleBox { rule_expr = expr;
+                rule_string = text;
+                rule_extract_normalized = true;
+                rule_extract = goal;
+                rule_subgoals = subgoals;
+                rule_extras = extras
+      } ->
+         let subgoals, extras = proof_subgoals_extras true subgoals extras in
+            { step_goal = proof_goal true goal;
+              step_status = translate_status (status_ext goal);
+              step_expr = ExprRule (text, expr ());
+              step_subgoals = subgoals;
+              step_extras = extras
+            }
+    | Pending f ->
+         info_ext compose_flag (f ())
+    | Locked ext ->
+         info_ext compose_flag ext
 
-   let info proof =
-      let info = info_ext true proof proof.pf_node in
+   let info pf addr =
+      let info = info_ext true (index pf addr) in
          if !debug_proof then
             eprintf "Got info_ext%t" eflush;
          info
 
-   let rec find_subgoal_aux p arg =
+   let rec find_subgoal_aux p addr node arg =
       let test ext = tactic_arg_alpha_equal arg (goal_ext ext) in
-      if test p.pf_node then
-         if p.pf_address = [] then p else find_subgoal_aux (parent p) arg
+      if test node then
+         if addr = [] then
+            []
+         else
+            let addr = fst (Lm_list_util.split_last addr) in
+               find_subgoal_aux p addr (index p addr) arg
       else
          let test_subgoal ext = List.exists (tactic_arg_alpha_equal arg) (leaves_ext ext) in
          let rec comp_aux rb addr goal subgoals =
@@ -1516,7 +1334,7 @@ struct
           | Extract _
           | Identity _
           | Unjustified _  as ext ->
-               if addr = [] then p else index p (List.rev (List.tl addr))
+               if addr = [] then [] else (List.rev (List.tl addr))
           | Wrapped (_, ext) ->
                aux (0::addr) ext
           | Pending f ->
@@ -1529,18 +1347,19 @@ struct
           | Compose ci ->
                comp_aux false addr ci.comp_goal ci.comp_subgoals
          in
-            aux [] p.pf_node
+            aux [] node
 
-   let find_subgoal p = function
-      0 ->
-         find_subgoal_aux p (goal p)
-    | i ->
-         let l =
-            try List.nth (info p).step_subgoals (i - 1)
-            with Failure _ ->
-               raise (Invalid_argument "Proof_boot.find_subgoal")
-         in
-            find_subgoal_aux p (goal (List.hd l))
+   let find_subgoal p addr i =
+      let node = index p addr in
+         if i = 0 then
+            find_subgoal_aux p addr node (goal_ext node)
+         else
+            let l =
+               try List.nth (info_ext true node).step_subgoals (i - 1)
+               with Failure _ ->
+                  raise (Invalid_argument "Proof_boot.find_subgoal")
+            in
+               find_subgoal_aux p addr node (goal_ext (List.hd l))
 
    (************************************************************************
     * UPDATES                                                              *
@@ -1559,7 +1378,7 @@ struct
            rule_extras = extras
          }
 
-   let rec replace_step_rule proof node step =
+   let rec replace_step_rule node step =
       match node with
          Goal _
        | Identity _
@@ -1570,14 +1389,15 @@ struct
        | RuleBox { rule_subgoals = subgoals'; rule_extras = extras' } ->
             replace_step_subgoals step subgoals' extras'
        | Wrapped (label, node') ->
-            replace_step_rule proof node' step
+            replace_step_rule node' step
        | Pending f ->
-            replace_step_rule proof (f ()) step
+            replace_step_rule (f ()) step
        | Locked ext ->
-            replace_step_rule proof ext step
+            replace_step_rule ext step
 
-   let refine postf proof text expr tac =
-      let subgoals, ext = TacticInternal.refine tac (goal proof) in
+   let refine postf pf addr text expr tac =
+      let node = index pf addr in
+      let subgoals, ext = TacticInternal.refine tac (goal_ext node) in
       let info =
          { rule_status = LazyStatusDelayed;
            rule_expr = (fun () -> expr);
@@ -1590,22 +1410,14 @@ struct
            rule_extras = []
          }
       in
-      let info = replace_step_rule proof.pf_node proof.pf_node info in
+      let info = replace_step_rule node info in
       let ext = RuleBox info in
          set_cache ext;
-         fold_proof postf proof ext
+         fold_proof postf pf addr ext
 
    (************************************************************************
     * GLOBAL PROOF OPERATIONS                                              *
     ************************************************************************)
-
-   (*
-    * "Update" the proof by forcing computation of status and
-    * leaf nodes.
-    *)
-   let update proof =
-      ignore (status_ext proof.pf_root);
-      ignore (leaves_ext proof.pf_root)
 
    (*
     * "Clean" up the proof by removing all extras.
@@ -1642,8 +1454,8 @@ struct
        | Locked node ->
             Locked (clean_extras_ext node)
 
-   let clean postf proof =
-      fold_proof postf proof (clean_extras_ext proof.pf_node)
+   let clean postf pf addr =
+      fold_proof postf pf addr (clean_extras_ext (index pf addr))
 
    (*
     * Squash the proof by removing all extracts.
@@ -1716,8 +1528,8 @@ struct
     | [] ->
          flag, []
 
-   let squash postf proof =
-      fold_proof postf proof (snd (squash_ext proof.pf_node))
+   let squash postf pf addr =
+      fold_proof postf pf addr (snd (squash_ext (index pf addr)))
 
    (************************************************************************
     * PROOF CHECKING                                                       *
@@ -1778,24 +1590,24 @@ struct
        | Locked ext ->
             expand_ext exn_wrapper ext
 
-   let expand postf exn_wrapper proof =
-      fold_proof postf proof (expand_ext exn_wrapper proof.pf_node)
+   let expand postf exn_wrapper pf addr =
+      fold_proof postf pf addr (expand_ext exn_wrapper (index pf addr))
 
-   let rec refiner_extract_of_proof_ext = function
+   let rec refiner_extract_of_proof = function
       Goal _ | Unjustified _ ->
-         raise(RefineError("Proof_boot.refiner_extract_of_proof_ext", StringError "The proof is incomplete or unexpanded"))
-    | Wrapped(_,ext) | Locked ext -> refiner_extract_of_proof_ext ext
+         raise(RefineError("Proof_boot.refiner_extract_of_proof", StringError "The proof is incomplete or unexpanded"))
+    | Wrapped(_,ext) | Locked ext -> refiner_extract_of_proof ext
     | Extract(_,_,re) -> re
     | Compose{ comp_goal = goal; comp_subgoals = subgoals } ->
-         Refine.compose (refiner_extract_of_proof_ext goal) (List.map refiner_extract_of_proof_ext subgoals)
+         Refine.compose (refiner_extract_of_proof goal) (List.map refiner_extract_of_proof subgoals)
     | RuleBox{ rule_extract = goal; rule_subgoals = subgoals } ->
          (* In a RuleBox, several identical subgoals could be compressed into one, *)
          (* so we need to be careful.                                              *)
-         let ext = refiner_extract_of_proof_ext goal in
+         let ext = refiner_extract_of_proof goal in
          let real_subgoals = subgoals_of_extract ext in
             Refine.compose ext (List.map (find_mseq_extract subgoals) real_subgoals)
     | Pending f ->
-         refiner_extract_of_proof_ext (f ())
+         refiner_extract_of_proof (f ())
     | Identity goal ->
          TacticInternal.identity goal
 
@@ -1803,13 +1615,11 @@ struct
       match subgoals with
        | hd::tl ->
             if msequent_alpha_equal mseq (goal_ext hd).ref_goal then
-               refiner_extract_of_proof_ext hd
+               refiner_extract_of_proof hd
             else
                find_mseq_extract tl mseq
        | [] ->
-            raise(RefineError("Proof_boot.refiner_extract_of_proof_ext", StringError "Invalide rule box"))
-
-   let refiner_extract_of_proof proof = refiner_extract_of_proof_ext proof.pf_root
+            raise(RefineError("Proof_boot.refiner_extract_of_proof", StringError "Invalide rule box"))
 
    (************************************************************************
     * CONVERSIONS                                                          *
@@ -1931,8 +1741,10 @@ struct
                eprintf "\\__ IO convertion done.\n%t" eflush;
             res
       in
-         update proof;
-         convert (if squash then snd (squash_ext proof.pf_node) else proof.pf_node)
+         (* "Update" the proof by forcing computation of status and leaf nodes. *)
+         ignore (status_ext proof);
+         ignore (leaves_ext proof);
+         convert (if squash then snd (squash_ext proof) else proof)
 
    (*
     * Convert from an io proof.
@@ -2011,11 +1823,7 @@ struct
        | IOIdentity arg ->
             Identity (make_tactic_arg arg)
       in
-      let node = convert node in
-         { pf_root = node;
-           pf_address = [];
-           pf_node = node
-         }
+         convert node
 
    (*
     * Some simple operations on IO proofs.
@@ -2070,14 +1878,10 @@ struct
       module Convert = Proof_term_boot.ProofTerm (ToTerm);;
 
       let to_term parse eval proof =
-         Convert.to_term parse eval (goal proof) (proof.pf_node)
+         Convert.to_term parse eval (goal_ext proof) proof
 
       let of_term args sentinal bookmark parse eval t =
-         let ext = Convert.of_term args sentinal bookmark parse eval t in
-            { pf_root = ext;
-              pf_address = [];
-              pf_node = ext
-            }
+         Convert.of_term args sentinal bookmark parse eval t
 
       let convert = Convert.convert
       let revert = Convert.revert
@@ -2146,8 +1950,7 @@ struct
     | [] ->
          counts
 
-   let node_count pf =
-      node_count_ext (0, 0) pf.pf_node
+   let node_count = node_count_ext (0, 0)
 
    (*
     * Kreitz the tree into a single node.
@@ -2199,21 +2002,22 @@ struct
             let subgoals = concat_subgoals subnodes in
                text, expr, tac, subgoals
 
-   let kreitz postf proof =
-      let text, expr, tac, subgoals = kreitz_ext proof.pf_node in
+   let kreitz postf pf addr =
+      let node = index pf addr in
+      let text, expr, tac, subgoals = kreitz_ext node in
       let info =
          { rule_status = LazyStatusDelayed;
            rule_expr = (fun () -> expr);
            rule_string = text;
            rule_tactic = (fun () -> tac);
            rule_extract_normalized = true;
-           rule_extract = Unjustified (goal_ext proof.pf_node, subgoals);
+           rule_extract = Unjustified (goal_ext node, subgoals);
            rule_subgoals = List.map (fun t -> Goal t) subgoals;
            rule_leaves = LazyLeavesDelayed;
            rule_extras = []
          }
       in
-         fold_proof postf proof (RuleBox info)
+         fold_proof postf pf addr (RuleBox info)
 
 end
 

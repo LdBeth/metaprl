@@ -59,13 +59,13 @@ val create : tactic_arg -> ped
 val ped_of_proof : Proof.proof -> ped
 val set_goal : ped -> Refine.msequent -> unit
 
-val edit_info_of_ped : ped -> edit_info
+val edit_info_of_ped : ped -> Proof.address -> edit_info
 
 (*
  * Destructors.
  *)
 val proof_of_ped : ped -> Proof.proof
-val status_of_ped : ped -> Proof.status
+val status_of_ped : ped -> Proof.address -> Proof.status
 val node_count_of_ped : ped -> int * int
 
 (*
@@ -77,18 +77,13 @@ val node_count_of_ped : ped -> int * int
  * After a refine_ped or nop_ped, the undo stack gets reset.
  * The nop_ped does nothing but reset the undo stack.
  *)
-val undo_ped : ped -> unit
-val redo_ped : ped -> unit
-val nop_ped : ped -> unit
+val undo_ped : ped -> Proof.address -> Proof.address
+val redo_ped : ped -> Proof.address -> Proof.address
 
 (*
  * Navigation.
  *)
-val up_ped : ped -> int -> unit
-val down_ped : ped -> int -> unit
-val root_ped : ped -> unit
-val addr_ped : ped -> int list -> unit
-val rotate_ped : ped -> int -> unit
+val check_addr_ped : ped -> Proof.address -> unit
 
 (*
  * Get the status of the proof.
@@ -103,7 +98,7 @@ type incomplete_ped =
  | Incomplete of tactic_arg
  | Derived of tactic_arg * MLast.expr
 
-val interpret : display_fun -> ped -> proof_command -> unit
+val interpret : display_fun -> ped -> Proof.address -> proof_command -> unit
 
 (*
  * Check the proof and return its extract.
@@ -127,7 +122,7 @@ val display_term_newline : display_method -> term -> unit
  * Display the goals.
  *)
 val format_incomplete : display_fun -> incomplete_ped -> unit
-val format : display_fun -> ped -> unit
+val format : display_fun -> ped -> Proof.address -> unit
 
 (*
  * -*-

@@ -153,6 +153,11 @@ let item_of_obj pack name
  *)
 let unit_term = mk_simple_term nil_opname []
 
+let mk_addr addr =
+   try List.map int_of_string addr with
+      Failure _ ->
+         raise (Failure "Invalid proof node address (contains non-numerical elements)")
+
 let rec edit pack parse_arg name window obj =
    let edit_copy () =
       edit pack parse_arg name window { obj with rule_name = obj.rule_name }
@@ -164,14 +169,11 @@ let rec edit pack parse_arg name window obj =
       let item = item_of_obj pack name obj in
          Package_info.set pack parse_arg item
    in
-   let edit_display _ =
+   let edit_display addr _ =
       (* Convert to a term *)
-      let { rule_assums = assums;
-            rule_goal = goal;
-            rule_ped = ped
-          } = obj
-      in
-         match ped with
+      let addr = mk_addr addr in
+      let { rule_assums = assums; rule_goal = goal } = obj in
+         match obj.rule_ped with
             Primitive t ->
                let goal = mk_bare_goal assums goal in
                   Proof_edit.format_incomplete window (Proof_edit.Primitive goal)
@@ -182,7 +184,7 @@ let rec edit pack parse_arg name window obj =
                let goal = mk_bare_goal assums goal in
                   Proof_edit.format_incomplete window (Proof_edit.Incomplete goal)
           | Interactive ped ->
-               Proof_edit.format window ped
+               Proof_edit.format window ped addr
    in
    let edit_get_terms () =
       match obj.rule_goal with
@@ -251,13 +253,15 @@ let rec edit pack parse_arg name window obj =
        | Interactive ped ->
             ped
    in
-   let edit_undo () =
-      Proof_edit.undo_ped (get_ped obj)
+   let edit_undo addr =
+      List.map string_of_int (Proof_edit.undo_ped (get_ped obj) (mk_addr addr))
    in
-   let edit_redo () =
-      Proof_edit.redo_ped (get_ped obj)
+   let edit_redo addr =
+      List.map string_of_int (Proof_edit.redo_ped (get_ped obj) (mk_addr addr))
    in
-   let edit_get_contents () =
+   let edit_get_contents addr =
+      if addr <> [] then
+         raise (Invalid_argument "Shell_rule.edit_get_contents: only implemented for the root of the proof");
       let goal =
          match obj.rule_goal with
             GRule goal -> MetaTheorem goal
@@ -290,26 +294,17 @@ let rec edit pack parse_arg name window obj =
        | Interactive ped ->
             ped
    in
-   let edit_info () =
-      Proof_edit.edit_info_of_ped (get_ped ())
+   let edit_info addr =
+      Proof_edit.edit_info_of_ped (get_ped ()) (mk_addr addr)
    in
-   let edit_int_addr addr =
-      Proof_edit.addr_ped (get_ped ()) addr
+   let edit_check_addr addr =
+      Proof_edit.check_addr_ped (get_ped ()) (mk_addr addr)
    in
-   let edit_addr addr =
-      edit_int_addr (List.map int_of_string addr)
+   let edit_interpret addr command =
+      Proof_edit.interpret window (get_ped ()) (mk_addr addr) command
    in
-   let edit_interpret command =
-      Proof_edit.interpret window (get_ped ()) command
-   in
-   let edit_find i =
-      let ped = get_ped () in
-      let addr = Proof.address (Proof.find_subgoal (Proof_edit.proof_of_ped ped) i) in
-         Proof_edit.addr_ped ped addr;
-         addr
-   in
-   let edit_fs_cwd () =
-      "."
+   let edit_find addr i =
+      List.map string_of_int (Proof.find_subgoal (Proof_edit.proof_of_ped (get_ped ())) (mk_addr addr) i)
    in
       { edit_display = edit_display;
         edit_get_contents = edit_get_contents;
@@ -323,14 +318,12 @@ let rec edit pack parse_arg name window obj =
         edit_get_extract = edit_get_extract;
         edit_save = save_ped;
         edit_check = edit_check;
-        edit_int_addr = edit_int_addr;
-        edit_addr = edit_addr;
+        edit_check_addr = edit_check_addr;
         edit_info = edit_info;
         edit_undo = edit_undo;
         edit_redo = edit_redo;
         edit_interpret = edit_interpret;
         edit_find = edit_find;
-        edit_fs_cwd = edit_fs_cwd
       }
 
 let create pack parse_arg window name =

@@ -121,15 +121,7 @@ type obj_contents = string * obj_status * meta_term * term Filter_type.param lis
  *)
 type proof_command =
    ProofRefine of string * MLast.expr * tactic
- | ProofUndo
- | ProofRedo
- | ProofNop
  | ProofKreitz
- | ProofUp of int
- | ProofDown of int
- | ProofRoot
- | ProofAddr of int list
- | ProofRotate of int
  | ProofCopy of string
  | ProofPaste of string
  | ProofCp of int list * int list
@@ -173,8 +165,8 @@ type edit_info =
  *)
 type edit_object =
    { (* Display the object to the screen *)
-     edit_display      : LsOptionSet.t -> unit;
-     edit_get_contents : unit -> obj_contents;
+     edit_display      : string list -> LsOptionSet.t -> unit;
+     edit_get_contents : string list -> obj_contents;
      edit_get_terms    : unit -> term list;
 
      (* Copy the object *)
@@ -190,17 +182,13 @@ type edit_object =
      edit_get_extract     : unit -> Refine.extract;
      edit_check           : unit -> ref_status;
 
-     (* Navigation if there is a proof *)
-     edit_interpret : proof_command -> unit;
-     edit_undo      : unit -> unit;
-     edit_redo      : unit -> unit;
-     edit_addr      : string list -> unit; (* This operation must be atomic: if it fails, the address is not modified *)
-     edit_int_addr  : int list -> unit; (* This is the same as the operation above, but with integer address *)
-     edit_info      : unit -> edit_info;
-     edit_find      : int -> int list; (* find a subgoal; edit_addr is a side-effect *)
-
-     (* Filesystem directory *)
-     edit_fs_cwd    : unit -> string
+     (* Navigation if there is a proof; the first arg is the cwd relative to the "mount point" *)
+     edit_interpret : string list -> proof_command -> unit;
+     edit_undo      : string list -> string list; (* Returns the new (old, actually) relative path *)
+     edit_redo      : string list -> string list; (* Returns the new relative path *)
+     edit_check_addr: string list -> unit; (* Raise exn if the address is not found; must accept an empty list *)
+     edit_info      : string list -> edit_info;
+     edit_find      : string list -> int -> string list; (* find a subgoal; edit_addr is a side-effect *)
    }
 
 (*

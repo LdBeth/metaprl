@@ -479,7 +479,7 @@ sig
     * the error.
     *)
    exception ExtRefineError of string * extract * refine_error
-   exception ProofRefineError of string * proof * refine_error
+   exception ProofRefineError of string * proof * address * refine_error
 
    (************************************************************************
     * IMPLEMENTATION                                                       *
@@ -505,24 +505,24 @@ sig
     * The proof may be just a goal term,
     * or it may have subgoals too.
     *)
-   val is_leaf : proof -> bool
+   val is_leaf : proof -> address -> bool
 
    (*
     * Get the goal term of the current proof.
     * Always succeeds.
     *)
-   val goal : proof -> tactic_arg
+   val goal : proof -> address -> tactic_arg
 
    (*
     * Get the complete info for the current proof.
     * This will retirn a normalized info or raise ProofRefineError if extract is atomic.
     *)
-   val info : proof -> step_info
+   val info : proof -> address -> step_info
 
    (*
     * Return the status of the current step of the proof.
     *)
-   val status : proof -> status
+   val status : proof -> address -> status
 
    (*
     * Return the total number of rule boxes and nodes.
@@ -532,23 +532,18 @@ sig
    (*
     * Check for possible proofs in the cache.
     *)
-   val get_cache : proof -> proof list
+   val get_cache : proof -> address -> proof list
 
    (********************************
     * NAVIGATION
     *)
 
    (*
-    * Return the absolute address of the current step.
-    *)
-   val address : proof -> address
-
-   (*
     * Return the status line, which is a combination
     * if address and status of the proof along every
     * step of the address.
     *)
-   val path_status : proof -> status list
+   val path_status : proof -> address -> status list
 
    (*
     * Addressed subgoal.  The address is the
@@ -556,19 +551,6 @@ sig
     * at the longest address if the address is bad.
     *)
    val index : proof -> address -> proof
-   val child : proof -> int -> proof
-
-   (*
-    * Go up the proof.
-    * This is the same as removing the last index from the
-    * current address.
-    *)
-   val parent : proof -> proof
-
-   (*
-    * Return the outermost proof step.
-    *)
-   val root : proof -> proof
 
    (********************************
     * MODIFICATION
@@ -578,12 +560,12 @@ sig
     * Post a new proof in the cache so it will be picked up by the
     * other navigators.
     *)
-   val post : (unit -> proof) -> proof
+   val post : (unit -> proof) -> address -> proof
 
    (*
     * Set the goal of the proof.
     *)
-   val set_goal : update_fun -> proof -> msequent -> proof
+   val set_goal : update_fun -> proof -> address -> msequent -> proof
 
    (*
     * Copy a proof node from one location to another.
@@ -593,34 +575,34 @@ sig
    (*
     * Paste a proof in at the current location.
     *)
-   val paste : update_fun -> proof -> proof -> proof
+   val paste : update_fun -> proof -> address -> proof -> proof
 
    (*
     * Make the current goal an assumption of the entire proof.
     *)
-   val make_assum : update_fun -> proof -> proof
+   val make_assum : update_fun -> proof -> address -> proof
 
    (*
     * Refine the current proof.
     *)
-   val refine : update_fun -> proof -> string -> MLast.expr -> tactic -> proof
+   val refine : update_fun -> proof -> address -> string -> MLast.expr -> tactic -> proof
 
    (*
     * Remove all extras from the current proof.
     *)
-   val clean : update_fun -> proof -> proof
+   val clean : update_fun -> proof -> address -> proof
 
    (*
     * Remove all extracts from the proof.
     *)
-   val squash : update_fun -> proof -> proof
+   val squash : update_fun -> proof -> address -> proof
 
    (*
     * "Kreitz" a proof:
     * Take the entire subtree and reduce it to a single node with
     * a sequence of tactics composed with thenLT.
     *)
-   val kreitz : update_fun -> proof -> proof
+   val kreitz : update_fun -> proof -> address -> proof
 
    val format_proof : Dform.dform_base -> Lm_rformat.buffer -> proof -> unit
 
@@ -629,7 +611,7 @@ sig
     * numbers refer to positions (starting with 1) in the corresponding step_subgoals
     * list (step_subgoals is used for consistency with ls "")
     *)
-   val find_subgoal : proof -> int -> proof
+   val find_subgoal : proof -> address -> int -> address
 
    (********************************
     * EXPANSION
@@ -641,7 +623,7 @@ sig
     * The second argument should be Refine_exn.print or a
     * similar wrapper.
     *)
-   val expand : update_fun -> ((unit -> extract) -> unit -> extract) -> proof -> proof
+   val expand : update_fun -> ((unit -> extract) -> unit -> extract) -> proof -> address -> proof
 
    (*
     * Get the low-level Refiner format of the proof

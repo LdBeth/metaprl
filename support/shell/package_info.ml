@@ -100,7 +100,7 @@ struct
          ProofRaw (_, proof) ->
             arg, proof
        | ProofEdit ((parse, eval) as arg, ped) ->
-            let proof = Proof.io_proof_of_proof true parse eval (Proof.root (Proof_edit.proof_of_ped ped)) in
+            let proof = Proof.io_proof_of_proof true parse eval (Proof_edit.proof_of_ped ped) in
                if !debug_package_info then
                   eprintf "Converting the ped back to a regular proof: %s%t" name eflush;
                arg, proof
@@ -592,7 +592,7 @@ let new_proof pack_info arg name hyps goal =
 let status_of_proof proof =
    match !proof with
       ProofEdit (_, ped) ->
-         Proof_edit.status_of_ped ped
+         Proof_edit.status_of_ped ped []
     | ProofRaw (_, proof) ->
          Proof.status_of_io_proof proof
 

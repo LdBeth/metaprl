@@ -261,15 +261,16 @@ let raise_edit_error s =
 
 let raise_edit_error_fun s _ = raise_edit_error s
 
-let edit_addr = function
+let edit_check_addr = function
    [] -> ()
- | _ -> raise (Invalid_argument "Shell_package.edit_addr")
+ | _ -> raise (Invalid_argument "Shell_package.edit_check_addr")
 
 (*
  * Build the shell interface.
  *)
 let rec edit pack_info parse_arg get_dfm =
-   let edit_display options =
+   let edit_display addr options =
+      edit_check_addr addr;
       Proof_edit.display_term (get_dfm ()) (term_of_implementation pack_info (mk_ls_filter options) parse_arg)
    in
    let edit_copy () =
@@ -277,9 +278,6 @@ let rec edit pack_info parse_arg get_dfm =
    in
    let edit_save () =
       Package_info.save parse_arg pack_info
-   in
-   let edit_fs_cwd () =
-      "."
    in
    let not_a_rule _ =
       raise_edit_error "this is not a rule or rewrite"
@@ -296,14 +294,12 @@ let rec edit pack_info parse_arg get_dfm =
         edit_get_extract = not_a_rule;
         edit_save = edit_save;
         edit_check = raise_edit_error_fun "check the entire package? Use check_all.";
-        edit_addr = edit_addr;
-        edit_int_addr = edit_addr;
+        edit_check_addr = edit_check_addr;
         edit_info = raise_edit_error_fun "no info for the package";
         edit_undo = not_a_rule;
         edit_redo = not_a_rule;
         edit_interpret = raise_edit_error_fun "this is not a proof";
         edit_find = not_a_rule;
-        edit_fs_cwd = edit_fs_cwd
       }
 
 let create = edit

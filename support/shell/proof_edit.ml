@@ -87,16 +87,13 @@ let debug_show_all_subgoals =
 
 (*
  * The is the state of the current proof.
- *    ped_undo: current undo stack, modified by undo operations
- *    ped_stack: global undo stack, not modified by undo operations
- *
- * Current proof is at top of undo stack.
  *)
 type ped_proof = Proof.proof
 
 type ped =
-   { mutable ped_undo : ped_proof list;
-     mutable ped_stack : ped_proof list
+   { mutable ped_proof : ped_proof;
+     mutable ped_undo : (ped_proof * Proof.address) list;
+     mutable ped_redo : (ped_proof * Proof.address) list;
    }
 
 type incomplete_ped =
@@ -134,8 +131,8 @@ let term_of_tactic_arg status goal =
    let label = mk_goal_label_term label in
       mk_goal_term status label assums goal
 
-let term_of_proof_arg proof =
-   term_of_tactic_arg (Proof.path_status proof) (Proof.goal proof)
+let term_of_proof_arg addr pf =
+   term_of_tactic_arg (Proof.path_status pf addr) (Proof.goal pf addr)
 
 (*
  * Turn an arglist into a string.
@@ -174,11 +171,11 @@ let rec rule_term_of_text = function
 (*
  * Display a proof with an inference.
  *)
-let term_of_proof proof =
+let term_of_proof pf addr =
    if !debug_edit then
       begin
          let buf = Lm_rformat.new_buffer () in
-         let () = Proof.format_proof Dform.null_base buf proof in
+         let () = Proof.format_proof Dform.null_base buf pf in
          let prf = Lm_rformat_text.print_text_string 80 buf in
             eprintf "Proof_edit.term_of_proof: begin:\n%s%t" prf eflush
       end;
@@ -188,12 +185,12 @@ let term_of_proof proof =
          Proof.step_expr = expr;
          Proof.step_subgoals = subgoals;
          Proof.step_extras = extras
-       } = Proof.info proof
+       } = Proof.info pf addr
    in
-   let main = term_of_proof_arg proof in
-   let goal = mk_goal_list_term (List.map term_of_proof_arg goal) in
-   let subgoals = List.map (fun l -> mk_goal_list_term (List.map term_of_proof_arg l)) subgoals in
-   let extras = List.map term_of_proof_arg extras in
+   let main = term_of_proof_arg addr pf in
+   let goal = mk_goal_list_term (List.map (term_of_proof_arg []) goal) in
+   let subgoals = List.map (fun l -> mk_goal_list_term (List.map (term_of_proof_arg []) l)) subgoals in
+   let extras = List.map (term_of_proof_arg []) extras in
    let subgoals =
       (* HACK!!! *)
       let l = List.length subgoals in
@@ -252,11 +249,11 @@ let print_exn get_dfm f x =
  * Constructors.
  *)
 let ped_of_proof proof =
-   let stack = [proof] in
-      {
-        ped_undo = stack;
-        ped_stack = stack
-      }
+   {
+     ped_undo = [];
+     ped_redo = [];
+     ped_proof = proof;
+   }
 
 let create t =
    ped_of_proof (Proof.create t)
@@ -264,32 +261,34 @@ let create t =
 (*
  * Push a new proof into the ped.
  *)
-let push_proof ped proof =
-   let stack = proof :: ped.ped_stack in
-      ped.ped_undo <- stack;
-      ped.ped_stack <- stack
+let push_proof ped pf addr =
+   if ped.ped_proof != pf then begin
+      ped.ped_undo <- (ped.ped_proof, addr) :: ped.ped_undo;
+      ped.ped_redo <- [];
+      ped.ped_proof <- pf
+   end
 
 (*
  * This is the function we pass to the proof module to track updates.
  *)
-let update_fun ped proof =
-   push_proof ped proof;
+let update_fun ped addr pf =
+   push_proof ped pf addr;
    let post () =
-      List.hd ped.ped_undo
+      ped.ped_proof
    in
-      Proof.post post
+      Proof.post post addr
 
 (*
  * Replace the current proof.
  *)
 let set_proof ped proof =
-   ped.ped_undo <- proof :: List.tl ped.ped_undo
+   ped.ped_proof <- proof
 
 (*
  * Destructors.
  *)
-let proof_of_ped { ped_undo = undo } =
-   List.hd undo
+let proof_of_ped ped =
+   ped.ped_proof
 
 let status_of_ped ped =
    Proof.status (proof_of_ped ped)
@@ -305,7 +304,7 @@ let ped_status = function
  | Filter_summary_type.Incomplete ->
       ObjIncomplete(0,0)
  | Filter_summary_type.Interactive ped ->
-      begin match status_of_ped ped with
+      begin match status_of_ped ped [] with
          Proof.StatusBad ->
             ObjBad
        | Proof.StatusIncomplete
@@ -314,16 +313,6 @@ let ped_status = function
        | Proof.StatusComplete ->
             let (c1,c2)=node_count_of_ped ped in ObjComplete(c1,c2)
       end
-
-let item_of_ped ped =
-   Proof.info (proof_of_ped ped)
-
-let rotate_ped ped i =
-   let { Proof.step_goal = goals } = Proof.info (proof_of_ped ped) in
-   let len = List.length goals in
-      if i < 1 || i > len then
-         raise (RefineError ("rotate_ped", StringIntError ("argument is out of range", i)));
-      push_proof ped (List.nth goals i)
 
 let rec str_expr = function
    Proof.ExprGoal ->
@@ -341,19 +330,20 @@ let rec str_expr = function
  | Proof.ExprRule (text, _) ->
       text
 
-let edit_info_of_ped ped =
+let edit_info_of_ped ped addr =
    let { Proof.step_goal = goal;
          Proof.step_expr = expr;
          Proof.step_subgoals = subgoals;
          Proof.step_extras = extras
-       } = item_of_ped ped
+       } = Proof.info (proof_of_ped ped) addr
    in
    let goal = List.hd goal in
    let subgoals = List.map List.hd subgoals in
-      { edit_goal = Proof.goal goal;
+   let get_goal node = Proof.goal node [] in
+      { edit_goal = get_goal goal;
         edit_expr = str_expr expr;
-        edit_subgoals = List.map Proof.goal subgoals;
-        edit_extras = List.map Proof.goal extras
+        edit_subgoals = List.map get_goal subgoals;
+        edit_extras = List.map get_goal extras
       }
 
 (*
@@ -361,60 +351,33 @@ let edit_info_of_ped ped =
  *)
 let set_goal ped mseq =
    let proof = proof_of_ped ped in
-      push_proof ped (Proof.set_goal (update_fun ped) proof mseq)
+      push_proof ped (Proof.set_goal (update_fun ped []) proof [] mseq) []
 
 (*
  * Move down the undo stack.
  *)
-let undo_ped ped =
-   let { ped_undo = undo } = ped in
-      match undo with
-         _ :: ((_ :: _) as proofs) ->
-            ped.ped_undo <- proofs
-       | _ ->
-            raise (RefineError ("undo_ped", StringError "undo stack is empty"))
+let undo_ped ped addr =
+   match ped.ped_undo with
+      (proof, addr') :: proofs ->
+         ped.ped_redo <- (ped.ped_proof, addr) :: ped.ped_redo;
+         ped.ped_undo <- proofs;
+         ped.ped_proof <- proof;
+         addr'
+    | [] ->
+         raise (RefineError ("undo_ped", StringError "undo stack is empty"))
 
-let redo_ped ped =
-   let { ped_undo = undo; ped_stack = stack } = ped in
-   let undo_length = List.length undo in
-   let stack_length = List.length stack in
-      if undo_length = stack_length then
-         raise (RefineError ("redo_ped", StringError "all steps are already redone"));
-      push_proof ped (List.nth stack (pred (stack_length - undo_length)))
+let redo_ped ped addr =
+   match ped.ped_redo with
+      (proof, addr') :: proofs ->
+         ped.ped_undo <- (ped.ped_proof, addr) :: ped.ped_undo;
+         ped.ped_redo <- proofs;
+         ped.ped_proof <- proof;
+         addr'
+    | [] ->
+         raise (RefineError ("redo_ped", StringError "all steps are already redone"))
 
-(*
- * Reset the undo stack.
- *)
-let nop_ped ped =
-   ped.ped_undo <- ped.ped_stack
-
-(*
- * Move to the `root' goal.
- *)
-let root_ped ped =
-   set_proof ped (Proof.root (proof_of_ped ped))
-
-(*
- * Move to the parent goal.
- *)
-let up_ped ped i =
-   if i > 0 then
-      let rec parent proof i =
-         if i = 0 then
-            proof
-         else
-            parent (Proof.parent proof) (pred i)
-      in
-         set_proof ped (parent (proof_of_ped ped) i)
-
-(*
- * Move to a child.
- *)
-let down_ped ped i =
-   set_proof ped (Proof.child (proof_of_ped ped) i)
-
-let addr_ped ped addr =
-   set_proof ped (Proof.index (Proof.root (proof_of_ped ped)) addr)
+let check_addr_ped ped addr =
+   ignore (Proof.index (proof_of_ped ped) addr)
 
 (*
  * Refinement, and undo lists.
@@ -422,16 +385,15 @@ let addr_ped ped addr =
  * After a refine_ped or nop_ped, the undo stack gets reset.
  * The nop_ped does nothing but reset the undo stack.
  *)
-let refine_ped ped text ast tac =
-   let proof = proof_of_ped ped in
-   let proof = Proof.refine (update_fun ped) proof text ast tac in
-      push_proof ped proof
+let refine_ped ped addr text ast tac =
+   let proof = Proof.refine (update_fun ped addr) (proof_of_ped ped) addr text ast tac in
+      push_proof ped proof addr
 
 (*
  * Fold the current subgoals into a new proof node.
  *)
-let kreitz_ped ped =
-   push_proof ped (Proof.kreitz (update_fun ped) (proof_of_ped ped))
+let kreitz_ped ped addr =
+   push_proof ped (Proof.kreitz (update_fun ped addr) (proof_of_ped ped) addr) addr
 
 (*
  * We keep a global copy/paste buffer.
@@ -441,16 +403,16 @@ let copy_entry =
    let fork l = ref !l in
       State.private_val "Proof_edit.copy" default fork
 
-let copy_ped ped s =
+let copy_ped ped addr s =
    State.write copy_entry (fun copy_buffer ->
-         let proof = proof_of_ped ped in
+         let proof = Proof.index (proof_of_ped ped) addr in
             begin
                try copy_buffer := Lm_list_util.assoc_replace !copy_buffer s proof with
                   Not_found ->
                      copy_buffer := (s, proof) :: !copy_buffer
             end)
 
-let paste_ped ped s =
+let paste_ped ped addr s =
    let proof2 =
       State.read copy_entry (fun copy_buffer ->
             try List.assoc s !copy_buffer with
@@ -458,22 +420,22 @@ let paste_ped ped s =
                   raise (RefineError ("paste", StringStringError ("no proof in buffer", s))))
    in
    let proof1 = proof_of_ped ped in
-   let proof = Proof.paste (update_fun ped) proof1 proof2 in
-      push_proof ped proof
+   let proof = Proof.paste (update_fun ped addr) proof1 addr proof2 in
+      push_proof ped proof addr
 
-let cp_ped ped from_addr to_addr =
+let cp_ped ped addr from_addr to_addr =
    let proof = proof_of_ped ped in
-   let proof = Proof.copy (update_fun ped) proof from_addr to_addr in
-      push_proof ped proof
+   let proof = Proof.copy (update_fun ped addr) proof from_addr to_addr in
+      push_proof ped proof addr
 
-let make_assum_ped ped =
-   push_proof ped (Proof.make_assum (update_fun ped) (proof_of_ped ped))
+let make_assum_ped ped addr =
+   push_proof ped (Proof.make_assum (update_fun ped addr) (proof_of_ped ped) addr) addr
 
-let clean_ped ped =
-   push_proof ped (Proof.clean (update_fun ped) (proof_of_ped ped))
+let clean_ped ped addr =
+   push_proof ped (Proof.clean (update_fun ped addr) (proof_of_ped ped) addr) addr
 
-let squash_ped ped =
-   push_proof ped (Proof.squash (update_fun ped) (proof_of_ped ped))
+let squash_ped ped addr =
+   push_proof ped (Proof.squash (update_fun ped addr) (proof_of_ped ped) addr) addr
 
 (************************************************************************
  * Windowed operations.
@@ -483,21 +445,21 @@ let squash_ped ped =
  * When the proof is expanded, we make a dulicate.
  * Expansion never fails, but it may change the status of the proof.
  *)
-let expand_ped window ped =
-   push_proof ped (Proof.expand (update_fun ped) (print_exn window) (proof_of_ped ped))
+let expand_ped window ped addr =
+   push_proof ped (Proof.expand (update_fun ped addr) (print_exn window) (proof_of_ped ped) addr) addr
 
 (*
  * Check a proof.
  *)
 let refiner_extract_of_ped window ped =
-   if status_of_ped ped <> Proof.StatusComplete then
-      expand_ped window ped;
+   if status_of_ped ped [] <> Proof.StatusComplete then
+      expand_ped window ped [];
    Proof.refiner_extract_of_proof (proof_of_ped ped)
 
 let check_ped window refiner opname ped =
-   if status_of_ped ped <> Proof.StatusComplete then
-      expand_ped window ped;
-   match status_of_ped ped with
+   if status_of_ped ped [] <> Proof.StatusComplete then
+      expand_ped window ped [];
+   match status_of_ped ped [] with
       Proof.StatusBad
     | Proof.StatusIncomplete
     | Proof.StatusPartial ->
@@ -517,42 +479,25 @@ let check_ped window refiner opname ped =
 (*
  * Command interpretation.
  *)
-let interpret window ped item =
-   match item with
-      ProofRefine (text, expr, tac) ->
-         refine_ped ped text expr tac
-    | ProofUndo ->
-         undo_ped ped
-    | ProofRedo ->
-         redo_ped ped
-    | ProofNop ->
-         nop_ped ped
-    | ProofKreitz ->
-         kreitz_ped ped
-    | ProofUp i ->
-         up_ped ped i
-    | ProofDown i ->
-         down_ped ped i
-    | ProofRoot ->
-         root_ped ped
-    | ProofAddr addr ->
-         addr_ped ped addr
-    | ProofRotate i ->
-         rotate_ped ped i
-    | ProofCopy s ->
-         copy_ped ped s
-    | ProofPaste s ->
-         paste_ped ped s
-    | ProofCp (from_addr, to_addr) ->
-         cp_ped ped from_addr to_addr
-    | ProofExpand ->
-         expand_ped window ped
-    | ProofMakeAssum ->
-         make_assum_ped ped
-    | ProofClean ->
-         clean_ped ped
-    | ProofSquash ->
-         squash_ped ped
+let interpret window ped addr = function
+   ProofRefine (text, expr, tac) ->
+      refine_ped ped addr text expr tac
+ | ProofKreitz ->
+      kreitz_ped ped addr
+ | ProofCopy s ->
+      copy_ped ped addr s
+ | ProofPaste s ->
+      paste_ped ped addr s
+ | ProofCp (from_addr, to_addr) ->
+      cp_ped ped addr from_addr to_addr
+ | ProofExpand ->
+      expand_ped window ped addr
+ | ProofMakeAssum ->
+      make_assum_ped ped addr
+ | ProofClean ->
+      clean_ped ped addr
+ | ProofSquash ->
+      squash_ped ped addr
 
 (************************************************************************
  * Display.
@@ -583,8 +528,8 @@ let display_term_aux newline dfm term =
 let display_term = display_term_aux false
 let display_term_newline = display_term_aux true
 
-let format get_dfm ped =
-   display_term_newline (get_dfm()) (term_of_proof (proof_of_ped ped))
+let format get_dfm ped addr =
+   display_term_newline (get_dfm()) (term_of_proof (proof_of_ped ped) addr)
 
 let format_incomplete get_dfm proof =
    display_term_newline (get_dfm()) (term_of_incomplete proof)

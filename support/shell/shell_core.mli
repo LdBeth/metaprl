@@ -64,7 +64,7 @@ val string_of_dir : shell_dir -> string
 val path_of_dir : shell_dir -> string list
 val dir_of_path : string list -> shell_dir
 val pwd : shell -> string
-val fs_cwd : shell -> string
+val relative_pwd : shell -> string
 
 val get_ls_options : shell -> LsOptionSet.t
 val get_view_options : shell -> string

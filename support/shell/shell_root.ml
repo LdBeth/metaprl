@@ -53,7 +53,12 @@ let raise_edit_error s =
  * Build the shell interface.
  *)
 let rec edit pack get_dfm =
-   let edit_display _ =
+   let edit_check_addr addr =
+      if addr <> [] then
+         raise (Failure "Shell_root.edit_check_addr: internal error")
+   in
+   let edit_display addr _ =
+      edit_check_addr addr;
       (* Display the roots of the package *)
       let packs = Package_info.packages pack in
       let term = mk_packages_term (List.map (fun root -> mk_package_term (Package_info.name root)) packs) in
@@ -71,26 +76,20 @@ let rec edit pack get_dfm =
    let edit_check _ =
       raise_edit_error "check the complete set of packages? Use check_all."
    in
-   let edit_undo () =
-      ()
+   let edit_undo addr =
+      []
    in
-   let edit_redo () =
-      ()
+   let edit_redo addr =
+      []
    in
-   let edit_addr addr =
-      ()
-   in
-   let edit_info () =
+   let edit_info addr =
       raise_edit_error "no info for the root packages"
    in
    let edit_interpret command =
       raise_edit_error "this is not a proof"
    in
-   let edit_get_contents () =
+   let edit_get_contents addr =
       raise_edit_error "can only retrieve contents of an individual item, not of a root package"
-   in
-   let edit_fs_cwd () =
-      "."
    in
       { edit_display = edit_display;
         edit_get_contents = edit_get_contents;
@@ -104,14 +103,12 @@ let rec edit pack get_dfm =
         edit_get_extract = not_a_rule;
         edit_save = edit_save;
         edit_check = edit_check;
-        edit_addr = edit_addr;
-        edit_int_addr = edit_addr;
+        edit_check_addr = edit_check_addr;
         edit_info = edit_info;
         edit_undo = edit_undo;
         edit_redo = edit_redo;
         edit_interpret = edit_interpret;
         edit_find = not_a_rule;
-        edit_fs_cwd = edit_fs_cwd
       }
 
 let create = edit

@@ -53,14 +53,14 @@ let format_exn db buf = function
       format_extract db buf proof;
       format_popm buf;
       format_ezone buf
- | ProofRefineError (name, proof, ref_error) ->
+ | ProofRefineError (name, proof, address, ref_error) ->
       format_szone buf;
       format_pushm buf 4;
       format_string buf "ProofError:";
       format_hspace buf;
       Refine_exn.format_refine_error db buf name ref_error;
       format_newline buf;
-      format_proof db buf proof;
+      format_proof db buf (index proof address);
       format_popm buf;
       format_ezone buf
  | Unix.Unix_error (errno, funinfo, arginfo) ->

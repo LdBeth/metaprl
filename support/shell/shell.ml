@@ -83,6 +83,7 @@ type commands =
      mutable root : unit -> string;
      mutable refresh : unit -> unit;
      mutable pwd : unit -> string;
+     mutable relative_pwd : unit -> string;
      mutable set_dfmode : string -> unit;
      mutable set_dftype : display_type -> unit;
      mutable create_pkg : string -> unit;
@@ -111,7 +112,6 @@ type commands =
      mutable set_view_options : string -> unit;
      mutable clear_view_options : string -> unit;
      mutable find_subgoal : int -> string;
-     mutable fs_cwd : unit -> string
    }
 
 let uninitialized _ = raise (Invalid_argument "The Shell module has not been instantiated")
@@ -122,6 +122,7 @@ let commands =
      root = uninitialized;
      refresh = uninitialized;
      pwd = uninitialized;
+     relative_pwd = uninitialized;
      set_dfmode = uninitialized;
      set_dftype = uninitialized;
      create_pkg = uninitialized;
@@ -150,7 +151,6 @@ let commands =
      set_view_options = uninitialized;
      clear_view_options = uninitialized;
      find_subgoal = uninitialized;
-     fs_cwd = uninitialized
    }
 
 (*
@@ -376,9 +376,9 @@ struct
          synchronize (fun shell ->
                let objs = ref [] in
                let f obj _ =
-                  objs := obj.edit_get_contents () :: !objs
+                  objs := obj.edit_get_contents shell.shell_subdir:: !objs
                in
-                  chdir parse_arg shell false false (DirModule mname);
+                  chdir parse_arg shell false false (DirModule mname, []);
                   apply_all parse_arg shell f false false false;
                   List.rev !objs)
 
@@ -398,13 +398,13 @@ struct
                            collect t
                in
                let opens = collect (info_items (get_info shell mname)) in
-                  chdir parse_arg shell false false (DirProof (mname, name, []));
+                  chdir parse_arg shell false false (DirProof (mname, name), []);
                   ignore (ShellP4.eval_opens opens))
 
       let create_thm mname name =
          synchronize (fun shell ->
                ignore (get_info shell mname);
-               chdir parse_arg shell false false (DirModule mname);
+               chdir parse_arg shell false false (DirModule mname, []);
                let package = get_current_package shell in
                let item = Shell_rule.create package parse_arg (get_display_mode shell) name in
                   item.edit_save ();
@@ -414,7 +414,7 @@ struct
       let create_rw mname name =
          synchronize (fun shell ->
                ignore (get_info shell mname);
-               chdir parse_arg shell false false (DirModule mname);
+               chdir parse_arg shell false false (DirModule mname, []);
                let package = get_current_package shell in
                let item = Shell_rule.create package parse_arg (get_display_mode shell) name in
                   item.edit_save ();
@@ -463,12 +463,11 @@ struct
       let node addr =
          synchronize (fun shell ->
                let proof = shell.shell_proof in
-                  proof.edit_int_addr addr;
                   let { edit_goal = goal;
                         edit_expr = tac;
                         edit_subgoals = subgoals;
                         edit_extras = extras
-                      } = proof.edit_info ()
+                      } = proof.edit_info (List.map string_of_int addr)
                   in
                   let goal = Sequent.msequent goal in
                   let children = List.map Sequent.msequent subgoals in
@@ -480,12 +479,12 @@ struct
                let proof = shell.shell_proof in
                let expr = ShellP4.parse_string str in
                let tac = ShellP4.eval_tactic expr in
-                  proof.edit_int_addr addr;
-                  proof.edit_interpret (ProofRefine (str, expr, tac));
+               let addr = List.map string_of_int addr in
+                  proof.edit_interpret addr (ProofRefine (str, expr, tac));
                   let { edit_goal = goal;
                         edit_subgoals = subgoals;
                         edit_extras = extras
-                      } = proof.edit_info ()
+                      } = proof.edit_info addr
                   in
                   let goal = Sequent.msequent goal in
                   let children = List.map Sequent.msequent subgoals in
@@ -493,8 +492,7 @@ struct
                      goal, children, extras)
 
       let undo () =
-         synchronize (fun shell ->
-               shell.shell_proof.edit_undo ())
+         synchronize undo
    end
 
    (************************************************************************
@@ -597,7 +595,7 @@ struct
          refresh_packages ();
          Shell_state.set_module "shell_theory";
          synchronize (fun shell ->
-               eprintf "Current directory: %s@." (string_of_dir shell.shell_dir))
+               eprintf "Current directory: %s@." (string_of_dir (shell.shell_fs, shell.shell_subdir)))
 
       (*
        * External toploop.
@@ -610,6 +608,7 @@ struct
          commands.root                <- wrap_unit_arg root;
          commands.refresh             <- refresh;
          commands.pwd                 <- pwd;
+         commands.relative_pwd        <- wrap_unit relative_pwd;
          commands.set_dfmode          <- set_dfmode;
          commands.create_pkg          <- wrap_arg create_pkg;
          commands.backup              <- backup;
@@ -637,7 +636,6 @@ struct
          commands.set_view_options    <- set_view_options;
          commands.clear_view_options  <- clear_view_options;
          commands.find_subgoal        <- wrap edit_find;
-         commands.fs_cwd              <- wrap_unit fs_cwd;
          ()
    end
 
@@ -685,7 +683,7 @@ let init () = commands.init ()
 let cd s = commands.cd s
 let refresh () = commands.refresh ()
 let pwd () = commands.pwd ()
-let fs_cwd () = commands.fs_cwd ()
+let relative_pwd () = commands.relative_pwd ()
 let set_dfmode s = commands.set_dfmode s
 let create_pkg s = commands.create_pkg s
 let backup _ = commands.backup ()
@@ -710,7 +708,6 @@ let set_view_options s = commands.set_view_options s
 let clear_view_options s = commands.clear_view_options s
 let find_subgoal i = commands.find_subgoal i
 
-let nop _ = commands.interpret ProofNop
 let kreitz _ = commands.interpret ProofKreitz
 let clean _ = commands.interpret ProofClean
 let squash _ = commands.interpret ProofSquash
@@ -720,7 +717,7 @@ let make_assum _ = commands.interpret ProofMakeAssum
 
 let interpret_all command modifies =
    let f item db =
-      item.edit_interpret command
+      item.edit_interpret [] command
    in
       apply_all f (interpret_modifies command) true false
 
@@ -750,7 +747,7 @@ let down i =
 let root () = commands.root ()
 
 let status item =
-   let name, status, _, _ = item.edit_get_contents () in
+   let name, status, _, _ = item.edit_get_contents [] in
    let str_status = match status with
       ObjPrimitive ->
          "is a primitive axiom"
@@ -769,8 +766,8 @@ let status item =
 
 let status_all () =
    let f item db =
-      eprintf "Expanding `%s':%t" (let name, _, _, _ = item.edit_get_contents () in name) eflush;
-      begin try item.edit_interpret ProofExpand with Invalid_argument _ | _ -> () end;
+      eprintf "Expanding `%s':%t" (let name, _, _, _ = item.edit_get_contents [] in name) eflush;
+      begin try item.edit_interpret [] ProofExpand with Invalid_argument _ | _ -> () end;
       status item;
    in
       apply_all f false true true
@@ -783,7 +780,7 @@ let check_all () =
        | _ -> "*", "*", "`", "'"
    in
    let check item =
-      let name, _, _, _ = item.edit_get_contents () in
+      let name, _, _, _ = item.edit_get_contents [] in
       let status =
          match item.edit_check () with
             RefPrimitive ->

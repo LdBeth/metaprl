@@ -196,7 +196,6 @@ let fg shell pid =
  *)
 let set_package parse_arg info modname =
    let pack = Package_info.get packages modname in
-      info.shell_proof.edit_addr [];
       info.shell_proof <- Shell_package.view pack parse_arg (get_display_mode info)
 
 let get_item parse_arg info modname name =
@@ -285,8 +284,8 @@ let filename parse_arg shell =
 (*
  * Display the current proof.
  *)
-let display_proof info proof options =
-   proof.edit_display options
+let display_proof info options =
+   info.shell_proof.edit_display info.shell_subdir options
 
 (************************************************************************
  * Objects.
@@ -357,31 +356,31 @@ let create_ml shell name =
 let set_goal shell t =
    touch shell;
    shell.shell_proof.edit_set_goal t;
-   display_proof shell shell.shell_proof LsOptionSet.empty
+   display_proof shell LsOptionSet.empty
 
 let set_redex shell t =
    touch shell;
    shell.shell_proof.edit_set_redex t;
-   display_proof shell shell.shell_proof LsOptionSet.empty
+   display_proof shell LsOptionSet.empty
 
 let set_contractum shell t =
    touch shell;
    shell.shell_proof.edit_set_contractum t;
-   display_proof shell shell.shell_proof LsOptionSet.empty
+   display_proof shell LsOptionSet.empty
 
 let set_assumptions shell tl =
    touch shell;
    shell.shell_proof.edit_set_assumptions tl;
-   display_proof shell shell.shell_proof LsOptionSet.empty
+   display_proof shell LsOptionSet.empty
 
 let set_params shell pl =
    touch shell;
    shell.shell_proof.edit_set_params pl;
-   display_proof shell shell.shell_proof LsOptionSet.empty
+   display_proof shell LsOptionSet.empty
 
 let check shell =
    match shell with
-      { shell_package = Some pack; shell_dir = DirProof (mod_name, name, _) } ->
+      { shell_package = Some pack; shell_fs = DirProof (mod_name, name) } ->
          begin
             try
                let deps = Refine.compute_dependencies (Package_info.get_refiner pack) (make_opname [name; mod_name]) in
@@ -407,10 +406,10 @@ let check shell =
 let expand shell =
    let start = Unix.times () in
    let start_time = Unix.gettimeofday () in
-   let () = shell.shell_proof.edit_interpret ProofExpand in
+   let () = shell.shell_proof.edit_interpret shell.shell_subdir ProofExpand in
    let finish = Unix.times () in
    let finish_time = Unix.gettimeofday () in
-      display_proof shell shell.shell_proof LsOptionSet.empty;
+      display_proof shell LsOptionSet.empty;
       eprintf "User time %f; System time %f; Real time %f%t" (**)
          ((finish.Unix.tms_utime +. finish.Unix.tms_cutime)
           -. (start.Unix.tms_utime +. start.Unix.tms_cstime))
@@ -424,11 +423,11 @@ let refine shell tac =
       touch shell;
       if !debug_refine then
          eprintf "Starting refinement%t" eflush;
-      shell.shell_proof.edit_interpret (ProofRefine(str, ast, tac));
+      shell.shell_proof.edit_interpret shell.shell_subdir (ProofRefine(str, ast, tac));
       if !debug_refine then
          eprintf "Displaying proof%t" eflush;
       if Shell_state.is_interactive () then
-         display_proof shell shell.shell_proof LsOptionSet.empty;
+         display_proof shell LsOptionSet.empty;
       if !debug_refine then
          eprintf "Proof displayed%t" eflush
 
@@ -436,45 +435,26 @@ let refine shell tac =
  * Get the current goal.
  *)
 let goal shell =
-   touch shell;
-   (shell.shell_proof.edit_info ()).edit_goal
-
-let undo shell =
-   touch shell;
-   shell.shell_proof.edit_undo ();
-   display_proof shell shell.shell_proof LsOptionSet.empty
-
-let redo shell =
-   touch shell;
-   shell.shell_proof.edit_redo ();
-   display_proof shell shell.shell_proof LsOptionSet.empty
+   (shell.shell_proof.edit_info shell.shell_subdir).edit_goal
 
 let interpret_modifies = function
    ProofRefine _
- | ProofUndo
- | ProofRedo
  | ProofKreitz
- | ProofRotate _
  | ProofPaste _
  | ProofMakeAssum
  | ProofExpand
  | ProofClean
- | ProofSquash ->
+ | ProofSquash
+ | ProofCp _ ->
       true
- | ProofCp _
- | ProofCopy _
- | ProofAddr _
- | ProofUp _
- | ProofDown _
- | ProofRoot
- | ProofNop ->
+ | ProofCopy _ ->
       false
 
 let interpret shell command =
    if interpret_modifies command then
       touch shell;
-   shell.shell_proof.edit_interpret command;
-   display_proof shell shell.shell_proof LsOptionSet.empty
+   shell.shell_proof.edit_interpret shell.shell_subdir command;
+   display_proof shell LsOptionSet.empty
 
 (************************************************************************
  * Directories and mounting.
@@ -486,65 +466,66 @@ let interpret shell command =
 let dir_of_path path =
    match path with
       [] ->
-         DirRoot
+         DirRoot, []
     | "fs" :: rest ->
-         DirFS rest
+         DirFS, rest
     | [modname] ->
-         DirModule modname
+         DirModule modname, []
     | modname :: itemname :: subdir ->
-         DirProof (modname, itemname, subdir)
+         DirProof (modname, itemname), subdir
 
 (*
  * Turn the directory into a simple string path.
  *)
-let path_of_dir dir =
-   match dir with
-      DirRoot ->
-         []
-    | DirFS rest ->
-         "fs" :: rest
-    | DirModule modname ->
-         [modname]
-    | DirProof (modname, itemname, subdir) ->
-         modname :: itemname :: subdir
+let path_of_dir = function
+   DirRoot, [] ->
+      []
+ | DirFS, rest ->
+      "fs" :: rest
+ | DirModule modname, [] ->
+      [modname]
+ | DirProof (modname, itemname), rest ->
+      modname :: itemname :: rest
+ | _ ->
+      raise (Invalid_argument "Shell_core.path_of_dir: internal error")
 
 (*
  * Home directory for the current directory.
  *)
-let home_of_dir dir =
-   match dir with
-      DirRoot
-    | DirModule _ ->
-         dir
-    | DirFS _ ->
-         DirFS []
-    | DirProof (modname, _, _) ->
-         DirModule modname
+let home_of_fs = function
+   DirRoot
+ | DirModule _
+ | DirFS as fs ->
+      fs
+ | DirProof (modname, _) ->
+      DirModule modname
 
-let root_of_dir dir =
-   match dir with
-      DirRoot
-    | DirFS []
-    | DirModule _ ->
-         dir
-    | DirFS (name :: _) ->
-         DirFS [name]
-    | DirProof (modname, itemname, _) ->
-         DirProof (modname, itemname, [])
+let root_of_dir = function
+   DirRoot, []
+ | DirFS, []
+ | DirModule _, [] as dir ->
+      dir
+ | DirFS, (name :: _) ->
+      DirFS, [name]
+ | DirProof (modname, itemname), _ ->
+      DirProof (modname, itemname), []
+ | _ ->
+      raise (Invalid_argument "Shell_core.root_of_dir: internal error")
 
 (*
  * Get the string version of the current directory.
  *)
-let string_of_dir dir =
-   match dir with
-      DirRoot ->
-         "/"
-    | DirFS rest ->
-         Lm_string_util.prepend "/" ("fs" :: rest)
-    | DirModule modname ->
-         "/" ^ modname
-    | DirProof (modname, itemname, rest) ->
-         Lm_string_util.prepend "/" (modname :: itemname :: rest)
+let string_of_dir = function
+   DirRoot, [] ->
+      "/"
+ | DirFS, rest ->
+      Lm_string_util.prepend "/" ("fs" :: rest)
+ | DirModule modname, [] ->
+      "/" ^ modname
+ | DirProof (modname, itemname), rest ->
+      Lm_string_util.prepend "/" (modname :: itemname :: rest)
+ | _ ->
+      raise (Invalid_argument "Shell_core.string_of_dir: internal error")
 
 (*
  * Turn a string into a path, relative to the current directory.
@@ -557,7 +538,6 @@ let string_of_dir dir =
  * "~" refers to the second level from top.
  *)
 let parse_path shell name =
-   let home_dir = path_of_dir (home_of_dir shell.shell_dir) in
    let updir rev_dir count =
       let length = List.length rev_dir in
          if count >= List.length rev_dir then
@@ -572,7 +552,7 @@ let parse_path shell name =
        | "" :: ns ->
             collect rev_dir ns
        | "~" :: ns ->
-            collect home_dir ns
+            collect (path_of_dir ((home_of_fs shell.shell_fs), [])) ns
        | n :: ns ->
             if (Lm_string_util.for_all (fun c -> c = '.') n) then
                let count = String.length n in
@@ -585,7 +565,7 @@ let parse_path shell name =
       if String.length name <> 0 && name.[0] = '/' then
          []
       else
-         List.rev (path_of_dir shell.shell_dir)
+         List.rev (path_of_dir (shell.shell_fs, shell.shell_subdir))
    in
    let path = Lm_string_util.split "/" name in
       dir_of_path (List.rev (collect rev_dir path))
@@ -621,12 +601,12 @@ let mount_fs parse_arg shell force_flag need_shell verbose =
  *)
 let mount_current_module modname parse_arg shell force_flag need_shell verbose =
    let update =
-      match shell.shell_dir with
+      match shell.shell_fs with
          DirRoot
-       | DirFS _ ->
+       | DirFS ->
             true
        | DirModule modname'
-       | DirProof (modname', _, _) ->
+       | DirProof (modname', _) ->
             modname' <> modname
    in
       if force_flag || update then
@@ -680,71 +660,39 @@ let mount_proof modname itemname parse_arg shell force_flag need_shell verbose =
       shell.shell_proof <- proof
 
 (*
- * We use mount points as abstract names to do not include
- * the subdirectory.
- *)
-type shell_mount =
-   MountRoot
- | MountFS
- | MountModule of string
- | MountProof of string * string
-
-(*
  * We use "mount" points to decide what to edit.
  * The mount function returns a description of the
  * mount point, and the mount function.
  *)
-let mount_of_dir dir =
-   match dir with
-      DirRoot ->
-         MountRoot, mount_root, []
-    | DirFS rest ->
-         MountFS, mount_fs, rest
-    | DirModule modname ->
-         MountModule modname, mount_module modname, []
-    | DirProof (modname, itemname, rest) ->
-         MountProof (modname, itemname), mount_proof modname itemname, rest
-
-(*
- * When the mount point changes,
- * the old mount point may need to be unmounted.
- *)
-let umount shell mount =
-   match mount with
-      MountProof (modname, itemname) ->
-         shell.shell_proof.edit_addr []
-    | MountModule _
-    | MountRoot
-    | MountFS ->
-         ()
+let mount_of_fs = function
+   DirRoot -> mount_root
+ | DirFS -> mount_fs
+ | DirModule modname -> mount_module modname
+ | DirProof (modname, itemname) -> mount_proof modname itemname
 
 (*
  * Change directory.
  *)
-let rec chdir_full parse_arg shell force_flag need_shell verbose path =
-   let dir = shell.shell_dir in
-   let old_mount_name, _, _ = mount_of_dir dir in
-   let new_mount_name, mount, subdir = mount_of_dir path in
+let rec chdir_full parse_arg shell force_flag need_shell verbose (new_fs, new_subdir) =
+   let need_mount = force_flag || (new_fs <> shell.shell_fs) in
+      if need_mount then begin
+         try
+            mount_of_fs new_fs parse_arg shell force_flag need_shell verbose;
+            shell.shell_fs <- new_fs
+         with
+            exn ->
+               mount_of_fs shell.shell_fs parse_arg shell false false false;
+               raise exn
+      end;
       try
-         (* Change the mount point if needed *)
-         if force_flag || new_mount_name <> old_mount_name then
-            begin
-               umount shell old_mount_name;
-               mount parse_arg shell force_flag need_shell verbose
-            end;
-
-         (* Save the directory *)
-         shell.shell_dir <- path;
-
-         (* Change to the subdirectory *)
-         shell.shell_proof.edit_addr subdir
+         shell.shell_proof.edit_check_addr new_subdir;
+         shell.shell_subdir <- new_subdir
       with
          exn ->
-            (* Some kind of failure happened, so change back to where we came from *)
-            shell.shell_dir <- DirRoot;
-            eprintf "Chdir to \"%s\" failed@." (string_of_dir path);
-            eprintf "Going back to \"%s\"@." (string_of_dir dir);
-            chdir_full parse_arg shell false false verbose dir;
+            if need_mount then begin
+               eprintf "Warning: chdir partially successful%t" eflush;
+               shell.shell_subdir <- []
+            end;
             raise exn
 
 (*
@@ -757,22 +705,36 @@ let chdir parse_arg shell need_shell verbose path =
  * Refresh the current directory.
  *)
 let refresh parse_arg shell =
-   chdir_full parse_arg shell true true true shell.shell_dir
+   chdir_full parse_arg shell true true true (shell.shell_fs, shell.shell_subdir)
+
+let pwd shell =
+   string_of_dir (shell.shell_fs, shell.shell_subdir)
 
 let cd parse_arg shell name =
    chdir parse_arg shell true true (parse_path shell name);
-   string_of_dir shell.shell_dir
+   pwd shell
 
 let root parse_arg shell =
-   let dir = root_of_dir shell.shell_dir in
-      chdir parse_arg shell true true dir;
-      string_of_dir shell.shell_dir
+   chdir parse_arg shell true true (root_of_dir (shell.shell_fs, shell.shell_subdir));
+   pwd shell
 
-let pwd shell =
-   string_of_dir shell.shell_dir
+let unredo unredo_fun shell =
+   touch shell;
+   let dir = unredo_fun shell.shell_subdir in
+      if dir <> shell.shell_subdir then begin
+         shell.shell_subdir <- dir;
+         eprintf "CWD now: %s%t" (pwd shell) eflush
+      end;
+      display_proof shell LsOptionSet.empty
 
-let fs_cwd shell =
-   shell.shell_proof.edit_fs_cwd ()
+let undo shell =
+   unredo shell.shell_proof.edit_undo shell
+
+let redo shell =
+   unredo shell.shell_proof.edit_redo shell
+
+let relative_pwd shell =
+   String.concat "/" shell.shell_subdir
 
 (************************************************************************
  * Viewing.
@@ -827,7 +789,7 @@ let get_shortener shell =
  * General purpose displayer.
  *)
 let view parse_arg shell options =
-   display_proof shell shell.shell_proof options
+   display_proof shell options
 
 (************************************************************************
  * Proof operations.
@@ -837,7 +799,7 @@ let view parse_arg shell options =
  * Apply a function to all elements.
  *)
 let rec apply_all parse_arg shell f (modifies : bool) (time : bool) (clean_res : bool) =
-   let dir = shell.shell_dir in
+   let dir = shell.shell_fs, shell.shell_subdir in
    let apply_it item mod_name name =
       (*
        * Here we indeed want to ignore absolutely any kind of error.
@@ -893,35 +855,35 @@ let rec apply_all parse_arg shell f (modifies : bool) (time : bool) (clean_res :
                let expand pack =
                   let name = Package_info.name pack in
                      eprintf "Entering %s%t" name eflush;
-                     chdir parse_arg shell false true (DirModule name);
+                     chdir parse_arg shell false true (DirModule name, []);
                      apply_all_exn false
                in
                   List.iter expand (all_packages ())
    in
       apply_all_exn time;
-      refresh parse_arg shell
+      chdir_full parse_arg shell true false false dir
 
 let expand_all parse_arg shell =
    let f item db =
-      item.edit_interpret ProofExpand
+      item.edit_interpret [] ProofExpand
    in
-      apply_all parse_arg shell f false true true
+      apply_all parse_arg shell f true true true
 
 (*
  * TeX functions.
  *)
 let print_theory parse_arg shell name =
    let dfm = shell.shell_df_method in
-   let dir = shell.shell_dir in
+   let dir = shell.shell_fs, shell.shell_subdir in
       shell.shell_df_method <- { dfm with df_type = DisplayTex; df_width = 60; df_mode = "tex" };
-      chdir parse_arg shell false true (DirModule name);
+      chdir parse_arg shell false true (DirModule name, []);
       expand_all parse_arg shell;
       view parse_arg shell (LsOptionSet.singleton LsAll);
       shell.shell_df_method <- dfm;
       chdir parse_arg shell false false dir
 
 let extract parse_arg shell path () =
-   let dir = shell.shell_dir in
+   let dir = shell.shell_fs, shell.shell_subdir in
       try
          chdir parse_arg shell false false path;
          let res = shell.shell_proof.edit_get_extract () in
@@ -934,17 +896,16 @@ let extract parse_arg shell path () =
 
 let term_of_extract shell terms =
    match shell with
-      { shell_package = Some pack; shell_dir = DirProof (mod_name, name, _) } ->
+      { shell_package = Some pack; shell_fs = DirProof (mod_name, name) } ->
          Refine.extract_term (Package_info.get_refiner pack) (make_opname [name; mod_name]) terms
     | _ ->
          raise (Failure "Shell.term_of_extract only works inside a proof")
 
 let edit_find info i =
-   match info.shell_dir with
-      DirProof (modname, name, _) ->
-         let dir = DirProof (modname, name, List.map string_of_int (info.shell_proof.edit_find i)) in
-            info.shell_dir <- dir;
-            string_of_dir dir
+   match info.shell_fs with
+      DirProof (modname, name) ->
+         info.shell_subdir <- info.shell_proof.edit_find info.shell_subdir i;
+         pwd info
    | _ ->
          raise (Invalid_argument "Shell.find_subgoal: not in a proof")
 
@@ -958,15 +919,16 @@ let edit_find info i =
  *)
 let create_pkg parse_arg shell name =
    match parse_path shell name with
-      DirModule modname ->
+      DirModule modname, [] ->
          (* Top level *)
          let _ = Package_info.create_package packages parse_arg modname in
             view parse_arg shell LsOptionSet.empty
-    | DirRoot ->
+    | DirRoot, _ ->
          raise (Failure "Shell.create_package: can't create root package")
-    | DirFS _ ->
+    | DirFS, _ ->
          raise (Failure "Shell.create_package: can't create a filesystem package")
-    | DirProof _ ->
+    | DirProof _, _
+    | DirModule _, _ :: _ ->
          raise (Failure "Shell.create_package: packages can't be nested right now")
 
 (*
