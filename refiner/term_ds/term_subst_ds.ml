@@ -244,16 +244,13 @@ struct
    let add_vars vars term =
       StringSet.union vars (free_vars_set term)
 
-   let terms_free_vars_set = function
+   let free_vars_terms = function
       [hd] ->
          free_vars_set hd
     | hd :: tl ->
          List.fold_left add_vars (free_vars_set hd) tl
     | [] ->
          StringSet.empty
-
-   let free_vars_terms terms =
-      StringSet.elements (terms_free_vars_set terms)
 
    let is_some_var_free vars term =
       match vars with
@@ -267,7 +264,7 @@ struct
          [] ->
             false
        | _ ->
-            List.exists (StringSet.mem (terms_free_vars_set terms)) vars
+            List.exists (StringSet.mem (free_vars_terms terms)) vars
 
    let rec terms_context_vars = function
       [] -> []

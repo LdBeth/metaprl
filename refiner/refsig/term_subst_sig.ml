@@ -68,9 +68,6 @@ sig
    (*
     * dest_bterm_and_rename is the same as dest_bterm, except it will also
     * do alpha-renaming to avoid reusing the specified variables
-    *
-    * TODO: need to also make sure that all bvars in rerurned bound_term'
-    * are distinct
     *)
    val dest_bterm_and_rename : bound_term -> String_set.StringSet.t -> bound_term'
 
@@ -111,7 +108,7 @@ sig
    val is_some_var_free_list : string list -> term list -> bool
    val free_vars_list : term -> string list
    val free_vars_set : term -> StringSet.t
-   val free_vars_terms : term list -> string list
+   val free_vars_terms : term list -> StringSet.t
    val context_vars : term -> string list
    val binding_vars : term -> string list
 

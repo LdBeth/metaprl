@@ -131,9 +131,9 @@ struct
    let free_vars_terms =
       let rec aux gvars = function
          [] -> gvars
-       | t::r -> aux (free_vars_term gvars [] t) r
+       | t::r -> aux (List.fold_left StringSet.add gvars (free_vars_list t)) r
       in
-         aux []
+         aux StringSet.empty
 
    let free_vars_equal t1 t2 =
       (Sort.list (<) (free_vars_list t1)) = (Sort.list (<) (free_vars_list t2))

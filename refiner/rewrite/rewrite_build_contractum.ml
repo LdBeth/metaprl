@@ -204,7 +204,7 @@ struct
                   if !debug_rewrite then
                      eprintf "avoid_capture: capture occurred: %a/%a%t" (**)
                         print_string_list hyp_vars
-                        print_string_list (free_vars_terms terms)
+                        print_string_list (String_set.StringSet.elements (free_vars_terms terms))
                         eflush
                ENDIF;
                REF_RAISE(RefineError ("avoid_capture", StringError "invalid substituion"))

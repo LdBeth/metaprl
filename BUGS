@@ -113,9 +113,7 @@ When dT is ran on hypothesys x: exists i:'T..., y is used as a name of the new h
 variable instead of i. I am not sure whether it's a rewriter problem or a bad tactic.
 In particular, this breaks lots of proofs in itt_collection.
 
-3.12) (kopylov; 2001.19.06)
-(rwhc assum clause)  does not work when clause > number of hypothsis in
-the goal (not in the assum).
+3.12) (fixed)
 
 3.13) (kopylov; 2001.19.06)
 RewriteInternal.rw intentional rewrite should apply conv the whole sequent.
@@ -144,7 +142,6 @@ REFINER
 handled incorrectly. For example, thinning rule does not check if the variable
 is bound only once (which may be used to prove incorrect results). This is probably the
 same bug as 3.3 (see also 4.11)
-
 
 4.3) rwh does not do matching correctly - for example, it allows to use reduceEta
 on <<lambda{x.('x 'x)}>>. This may be already fixed by the "strict" rewriter mode.
@@ -187,25 +184,11 @@ or
 
 See also BUGS #4.4
 
-4.11) (2001.06 kopylov)
-If the goal sequent has a second-order variable with two repated variables then
-it cannot be applied correctly.
-E.g. dintersectionElimination should be as folloing:
-   prim dintersectionElimination {| elim_resource [] |} 'H 'J  bind{a,b.'T['a;'b]}:
-      [main] ('t['a; 'b] :
-      sequent ['ext] { 'H; x: disect{'A; y.'B['y]}; 'J['x];  a:'A; b: 'B['a]  >- 'T['a;'b] }) -->
-      sequent ['ext] { 'H; x: disect{'A; y.'B['y]}; 'J['x] >- 'T['x;'x] } = 't['x; 'x]
-
+4.11) (fixed)
 
 PARSER & FILTER
 
-5.1) Rules and rewrites should be added to toploop.
-(updated 2000.04.24 by nogin) I believe this is fixed, but I am not sure.
-
-5.2) When rule is added, the appropriate tactic should be added automatically
-(assuming sequent calculus).
-
-  --jyh: the tactic _is_ defined, but not (yet) added to Mptop toploop.
+5.1-5.2) (fixed)
 
 5.3) Some times parser requires too many brackets.
 

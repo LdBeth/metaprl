@@ -129,9 +129,14 @@ struct
    let new_bvar_item i v =
       (v, i)
 
-   (* Determine if a term is a bound variable *)
-   let is_bound_var bvars v =
-      is_var_term v & List.mem_assoc (dest_var v) bvars
+   (* Determine if all terms in a list are distinct bound vars *)
+   let rec are_bound_vars bvars = function
+      [] ->
+         true
+    | v::ts ->
+         is_var_term v
+            && let v = dest_var v in 
+               List.mem_assoc v bvars && are_bound_vars (List.remove_assoc v bvars) ts
 
    let bvar_ind ((_:string),(i:int)) = i
 
@@ -147,7 +152,7 @@ struct
                else
                   stack, RWCheckVar(svar_index bvars v)
 
-            else if allow_so_patterns && List.for_all (is_bound_var bvars) subterms && not (rstack_pattern_mem v stack) then
+            else if allow_so_patterns && are_bound_vars bvars subterms && not (rstack_pattern_mem v stack) then
                (* This is a second order variable, all subterms are vars *
                 * and we do not have a pattern yet                       *)
                let so_mem = rstack_so_mem v stack in

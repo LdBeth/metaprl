@@ -529,7 +529,7 @@ struct
             vars
        | FreeVarsDelayed ->
             let { mseq_goal = goal; mseq_hyps = hyps } = mseq in
-            let vars = free_vars_terms (goal :: hyps) in
+            let vars = String_set.StringSet.elements (free_vars_terms (goal :: hyps)) in
                mseq.mseq_vars <- FreeVars vars;
                vars
 

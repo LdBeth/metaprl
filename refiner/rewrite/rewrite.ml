@@ -232,7 +232,7 @@ struct
                      if Array.length enames = 0 then
                         names
                      else
-                        let vars = free_vars_terms (goal::params) in
+                        let vars = String_set.StringSet.elements (free_vars_terms (goal::params)) in
                         let enames = contracta_enames vars bnames enames in
                            Array.append names enames
                   in
