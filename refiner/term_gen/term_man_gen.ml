@@ -583,6 +583,7 @@ struct
     *)
    let nth_hyp_name = "nth_hyp"
    let nth_hyp t i =
+      if i <= 0 then REF_RAISE(RefineError (nth_hyp_name, StringError "hyp number is not positive"));
       let rec aux i term =
          let { term_op = op; term_terms = bterms } = dest_term term in
          let opname = (dest_op op).op_name in
@@ -599,7 +600,7 @@ struct
                   else
                      aux (i - 1) term
             else if Opname.eq opname concl_opname then
-               REF_RAISE(RefineError ("nth_hyp", StringError "hyp is out of range"))
+               REF_RAISE(RefineError (nth_hyp_name, StringError "hyp is out of range"))
             else
                REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "malformed sequent")))
       in
@@ -622,7 +623,7 @@ struct
                   else
                      aux (i - 1) term
             else if Opname.eq opname concl_opname then
-               REF_RAISE(RefineError ("nth_hyp", StringError "hyp is out of range"))
+               REF_RAISE(RefineError (nth_hyp_name, StringError "hyp is out of range"))
             else
                REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "malformed sequent")))
       in

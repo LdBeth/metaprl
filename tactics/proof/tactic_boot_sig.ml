@@ -709,11 +709,6 @@ sig
 
    (* All numbering in hypotheses and assumptions starts with 1 *)
 
-   (*
-    * Get the address of a part of the sequent.
-    *)
-   val clause_addr : tactic_arg -> int -> address
-   val assum_clause_addr : tactic_arg -> int -> int -> address
    val get_decl_number : tactic_arg -> var -> int
    val get_hyp_number : tactic_arg -> term -> int
    val hyp_count : tactic_arg -> int
@@ -961,7 +956,7 @@ sig
    (*
     * Apply a conversion at an address.
     *)
-   val addrC : int list -> conv -> conv
+   val addrC : Term_addr_sig.addr_item list -> conv -> conv
    val addrLiteralC : address -> conv -> conv
 
    (*
@@ -1053,8 +1048,7 @@ sig
 
    val prefix_thenC : conv -> conv -> conv
    val prefix_orelseC : conv -> conv -> conv
-   val addrC : int list -> conv -> conv
-   val addrLiteralC : address -> conv -> conv
+   val addrC : Term_addr_sig.addr_item list -> conv -> conv
    val idC : conv
    val foldC : term -> conv -> conv
    val makeFoldC : term -> conv -> conv

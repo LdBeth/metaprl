@@ -29,6 +29,7 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
+open Term_addr_sig
 open Opname
 open Refiner.Refiner.Refine
 open Refiner.Refiner
@@ -53,6 +54,7 @@ type top_expr =
  | TacticExpr of tactic
  | ConvExpr of conv
  | AddressExpr of address
+ | Addr_itemExpr of addr_item
 
    (* Uptyped tuples and functions *)
  | ListExpr of top_expr list
@@ -74,6 +76,7 @@ type top_expr =
  | TermListFunExpr of (term list -> top_expr)
  | TacticListFunExpr of (tactic list -> top_expr)
  | ConvListFunExpr of (conv list -> top_expr)
+ | Addr_itemListFunExpr of (addr_item list -> top_expr)
 
    (* Internal use only *)
  | FunExpr of (top_expr -> top_expr)
@@ -93,9 +96,11 @@ type top_type =
  | TacticType
  | ConvType
  | AddressType
+ | Addr_itemType
  | ListType of top_type
  | NilType  (* 'a list *)
  | ConsType (* 'a -> 'a list -> 'a list *)
+ | ConsFunType of top_type (* t list -> t list, with some hacks for address auto-coersions *)
  | FunType of top_type * top_type
 
 type obj_status =

@@ -12,7 +12,7 @@ $merges{"operator"}="merge_op";
 $merges{"operator'"}="merge_op'";
 $merges{"bound_term"}="merge_bterm";
 $merges{"bound_term'"}="merge_bterm'";
-foreach my $ty ("bool", "unit", "param", "term", "var", "int", "level_exp", "level_exp_var", "opname", "string", "address", "match_param", "match_term", "esequent", "term_subst", "shape", "shape_param", "meta_term", "rewrite_item", "msequent", "extract_description", "prim_tactic", "prim_rewrite") {
+foreach my $ty ("bool", "unit", "param", "term", "var", "int", "level_exp", "level_exp_var", "opname", "string", "address", "match_param", "match_term", "esequent", "term_subst", "shape", "shape_param", "meta_term", "rewrite_item", "msequent", "extract_description", "prim_tactic", "prim_rewrite", "addr_item") {
     $merges{$ty}="merge_$ty";
     $merges{"$ty list"}="merge_" . $ty . "s";
     $merges{"$ty array"}="merge_" . $ty . "_arr";
@@ -41,7 +41,7 @@ $merges{"'a list"} = "merge_poly";
 $merges{"term -> term"} = $merges{"ml_rewrite"} = "merge_ttf";
 
 # Non-refiner types
-foreach my $ty ("bool", "int", "var", "opname", "out_channel", "formatter", "string", "Lm_num.num", "SymbolSet.t", "'a", "unit", "strict", "rewrite_args", "rewrite_args_spec") {
+foreach my $ty ("bool", "int", "var", "opname", "out_channel", "formatter", "string", "Lm_num.num", "SymbolSet.t", "'a", "unit", "strict", "rewrite_args", "rewrite_args_spec", "addr_item") {
     $splits{$ty} = $splits{"$ty list"} = $splits{"$ty array"} = "";
 };
 # Fully abstract types

@@ -57,6 +57,7 @@ open MLast
 
 open Lm_string_set
 
+open Term_addr_sig
 open Refiner.Refiner.TermAddr
 open Refiner.Refiner.RefineError
 open Mp_resource
@@ -277,15 +278,21 @@ let rec str_typ = function
  | TermType -> "term"
  | TacticType -> "tactic"
  | ConvType -> "conv"
+ | ListType Addr_itemType (* We do not really distinguish between the "address" and the "addr_item list" *)
  | AddressType -> "address"
+ | Addr_itemType -> "addr_item"
  | ListType t -> (par_str_type t) ^ " list"
  | NilType -> "'a list"
  | ConsType -> "'a -> 'a list -> 'a list"
  | FunType (t1, t2) -> (par_str_type t1) ^ " -> " ^ (str_typ t2)
+ | ConsFunType t -> str_typ (FunType (ListType t, ListType t))
 
 and par_str_type = function
    (ListType _ | FunType _ | ConsType) as t -> "(" ^ (str_typ t) ^ ")"
  | t -> str_typ t
+
+let type_mismatch loc typ typ' =
+   type_error loc ("Expression has type\n   " ^ (str_typ typ') ^ "\nbut is used here as type\n   " ^ (str_typ typ))
 
 let find_proj_expr base loc names v =
    let rec search modname v = function
@@ -302,10 +309,13 @@ let find_proj_expr base loc names v =
        | _ ->
             not_supported loc "nested modules"
 
-let subtyp sub sup =
+let rec subtyp sub sup =
    match sub, sup with
-      NilType, ListType _ -> true
-    | (ListType IntType | NilType), AddressType -> true
+      NilType, ListType _
+    | (ListType (IntType | Addr_itemType) | NilType), AddressType
+    | AddressType, ListType Addr_itemType
+    | IntType, Addr_itemType -> true
+    | ListType sub, ListType sup -> subtyp sub sup
     | _ -> sub = sup
 
 (* Returns the type of the input expression *)
@@ -318,6 +328,7 @@ let rec expr_tp base loc = function
  | TacticExpr _ -> TacticType
  | ConvExpr _ -> ConvType
  | AddressExpr _ -> AddressType
+ | Addr_itemExpr _ -> Addr_itemType
  | ListExpr [] -> NilType
  | ListExpr (hd::tl) ->
       let typ = expr_tp base loc hd in
@@ -337,8 +348,13 @@ let rec expr_tp base loc = function
             expr_typechk base loca t1 a;
             t2
        | ConsType ->
-            let t = ListType(expr_tp base loca a) in
-               FunType(t,t)
+            ConsFunType (expr_tp base loca a)
+       | ConsFunType t ->
+            let t1 = ListType t in
+            let t2 = expr_tp base loca a in
+               if subtyp t1 t2 then t2
+               else if subtyp t2 t1 then t1
+               else type_mismatch loca t1 t2
        | _ ->
             begin match f with
                _, ApplyExpr _ ->
@@ -350,15 +366,14 @@ let rec expr_tp base loc = function
  | UnitFunExpr _ | BoolFunExpr _ | IntFunExpr _ | StringFunExpr _ | TermFunExpr _
  | TacticFunExpr _ | IntTacticFunExpr _ | ConvFunExpr _ | AddressFunExpr _
  | IntListFunExpr _ | StringListFunExpr _ | TermListFunExpr _ | TacticListFunExpr _
- | ConvListFunExpr _ | FunExpr _ ->
+ | ConvListFunExpr _ | FunExpr _ | Addr_itemListFunExpr _ ->
       Stdpp.raise_with_loc loc (Invalid_argument "Mptop: function expression without an explicit type")
 
 and expr_type base (loc, expr) = expr_tp base loc expr
 
 and expr_typechk base loc typ expr =
    let typ' = expr_tp base loc expr in
-      if not (subtyp typ' typ) then
-         type_error loc ("Expression has type\n   " ^ (str_typ typ') ^ "\nbut is used here as type\n   " ^ (str_typ typ))
+      if not (subtyp typ' typ) then type_mismatch loc typ typ'
 
 (************************************************************************
  * EVALUATING                                                           *
@@ -396,6 +411,16 @@ let conv_expr loc = function
    ConvExpr t -> t
  | _ -> runtime_error loc
 
+let addr_item_expr loc = function
+   Addr_itemExpr i -> i
+ | IntExpr i ->
+      if i = 0 then
+         Stdpp.raise_with_loc loc (**)
+            (Invalid_argument "Subterm address can not be 0.\n\tSubterms are numbered 1..n left-to-right and -1..-n right-to-left")
+      else
+         Subterm i
+ | _ -> runtime_error loc
+
 (*
  * For an application, we lookup the function and try to
  * specialize the argument.
@@ -418,6 +443,8 @@ let rec eval_apply_expr base loc f a =
          f a
     | AddressFunExpr f, AddressExpr a ->
          f a
+    | Addr_itemListFunExpr f, AddressExpr a ->
+         f (dest_address a)
     | UnitFunExpr f, UnitExpr _ ->
          f ()
     | IntTacticFunExpr f, IntFunExpr f' ->
@@ -428,7 +455,9 @@ let rec eval_apply_expr base loc f a =
          in
             f tac
     | AddressFunExpr f, ListExpr l ->
-         f (make_address (List.map (int_expr loc) l))
+         f (make_address (List.map (addr_item_expr loc) l))
+    | Addr_itemListFunExpr f, ListExpr l ->
+         f (List.map (addr_item_expr loc) l)
     | IntListFunExpr f, ListExpr l ->
          f (List.map (int_expr loc) l)
     | StringListFunExpr f, ListExpr l ->
@@ -505,19 +534,28 @@ let cons_expr =
                match e2 with
                   ListExpr e2 ->
                      ListExpr (e1 :: e2)
+                | AddressExpr e2 ->
+                     ListExpr (e1 :: (List.map (fun a -> Addr_itemExpr a) (dest_address e2)))
                 | _ ->
                      raise (RefineError ("cons_expr", StringError "type mismatch"))))
 
+let clause_addr_expr i =
+   Addr_itemExpr (ClauseAddr i)
+
 let resource toploop +=
-   ["Pervasives", "+",     int_int_fun_int_expr ( + ), int_int_fun_typ;
-    "Pervasives", "-",     int_int_fun_int_expr ( - ), int_int_fun_typ;
-    "Pervasives", "*",     int_int_fun_int_expr ( * ), int_int_fun_typ;
-    "Pervasives", "/",     int_int_fun_int_expr ( / ), int_int_fun_typ;
-    "Pervasives", "::",    cons_expr,                  ConsType;
-    "Pervasives", "()",    UnitExpr (),                UnitType;
-    "Pervasives", "[]",    ListExpr [],                NilType;
-    "Pervasives", "True",  BoolExpr true,              BoolType;
-    "Pervasives", "False", BoolExpr false,             BoolType]
+   ["Pervasives", "+",      int_int_fun_int_expr ( + ),  int_int_fun_typ;
+    "Pervasives", "-",      int_int_fun_int_expr ( - ),  int_int_fun_typ;
+    "Pervasives", "*",      int_int_fun_int_expr ( * ),  int_int_fun_typ;
+    "Pervasives", "/",      int_int_fun_int_expr ( / ),  int_int_fun_typ;
+    "Pervasives", "::",     cons_expr,                   ConsType;
+    "Pervasives", "()",     UnitExpr (),                 UnitType;
+    "Pervasives", "[]",     ListExpr [],                 NilType;
+    "Pervasives", "True",   BoolExpr true,               BoolType;
+    "Pervasives", "False",  BoolExpr false,              BoolType;
+    "Pervasives", "Arg",    Addr_itemExpr (ArgAddr),     Addr_itemType;
+    "Pervasives", "Concl",  clause_addr_expr 0,          Addr_itemType;
+    "Pervasives", "Hyp",    IntFunExpr clause_addr_expr, FunType(IntType, Addr_itemType);
+    "Pervasives", "Clause", IntFunExpr clause_addr_expr, FunType(IntType, Addr_itemType)]
 
 let tactic_of_ocaml_expr base expr =
    let (loc, expr) as lexpr = mk_expr expr in

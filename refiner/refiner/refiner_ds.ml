@@ -35,7 +35,7 @@ open Termmod_sig
 module Refiner =
 struct
    module TermType = Term_ds.TermType
-   module RefineError = Refine_error.MakeRefineError (TermType) (struct type t = Term_addr_ds.addr end)
+   module RefineError = Refine_error.MakeRefineError (TermType) (struct type t = Term_addr_sig.addr_item list end)
    module Term = Term_base_ds.Term (RefineError)
    module TermOp = Term_op_ds.TermOp (Term) (RefineError)
    module TermSubst = Term_subst_ds.TermSubst (Term) (RefineError)

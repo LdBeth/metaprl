@@ -33,6 +33,7 @@
 
 extends Mptop
 
+open Term_addr_sig
 open Refiner.Refiner.Refine
 open Mp_resource
 
@@ -62,7 +63,7 @@ topval rwaAllAll : conv list -> tactic
 
 topval prefix_thenC : conv -> conv -> conv
 topval prefix_orelseC : conv -> conv -> conv
-topval addrC : int list -> conv -> conv
+topval addrC : addr_item list -> conv -> conv
 topval idC : conv
 topval foldC : term -> conv -> conv
 val makeFoldC : term -> conv -> conv

@@ -1,5 +1,6 @@
 include Lm_symbol
 include Term_sig
+include Term_addr_sig
 include Opname
 include Term_match_table
 include Refiner.Refiner

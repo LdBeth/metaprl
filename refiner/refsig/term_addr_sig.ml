@@ -31,6 +31,56 @@
  *)
 open Lm_symbol
 
+(*
+ * Sequent addresses - conclusion is clause 0; hyps are clauses 1 through n
+ * (numbering starts at the left), or -n through -1, with -1 referring to the
+ * last one. ArgAddr is the sequent_arg.
+ * Term addresses - Subterm i is i-th immediate subterm (numbering starts at 1).
+ * Negative numbers are allowed in Subterm as well (counting starts from the
+ * right). "Subterm 0" is illegal.
+ *)
+type addr_item =
+   Subterm of int
+ | ArgAddr
+ | ClauseAddr of int
+
+let compose_addr = (( @ ) : (addr_item list -> addr_item list -> addr_item list))
+
+(*
+ * Format address as a string.
+ *)
+let string_of_addr =
+   let rec aux = function
+      [] -> ""
+    | [Subterm i] -> string_of_int i
+    | [ArgAddr] -> "Arg"
+    | [ClauseAddr i] -> "Clause(" ^ string_of_int (i+1) ^ ")"
+    | addr1 :: ( (_ :: _) as addr2) -> (aux [addr1]) ^ "; " ^ (aux addr2)
+in
+   (fun addr -> "[" ^ aux addr ^ "]")
+
+let nth_clause_addr i = [ ClauseAddr i ]
+let concl_addr = [ ClauseAddr 0 ]
+let nth_hyp_addr = nth_clause_addr
+
+(*
+ * Traslate a [-lenght..-1]U[1..length] index into a [0..length-1] one.
+ *)
+let make_index_opt i length =
+   if i = 0 then
+      raise (Invalid_argument "Term_addr_ds.make_index_opt: got Subterm 0")
+   else if i > 0 then
+      if i > length then
+         None
+      else
+         Some (i - 1)
+   else
+      let i = length + i in
+         if i < 0 then
+            None
+         else
+            Some i
+
 module type TermAddrSig =
 sig
    module AddrTypes : Term_sig.TermSig
@@ -39,9 +89,10 @@ sig
    type address
 
    (*
-    * Constructors.
+    * Constructors/destructors
     *)
-   val make_address : int list -> address
+   val make_address : addr_item list -> address
+   val dest_address : address -> addr_item list
    val compose_address : address -> address -> address
 
    (* Works only on sequent addresses and their subaddresses. *)
@@ -55,7 +106,11 @@ sig
 
    (*
     * Addressed operations.
+    * All functions (including apply*fun_higher), except for subterm_exists,
+    * when given an address that does not exist in a term, may chose to pick
+    * a "random" existing address or to raise a RefineError.
     *)
+   val subterm_exists : term -> address -> bool
    val find_subterm : term -> term -> address
    val term_subterm :  term -> address -> term
    val replace_subterm : term -> address -> term -> term
@@ -77,16 +132,6 @@ sig
    val apply_var_fun_higher : (SymbolSet.t -> term -> term * 'a) ->
       SymbolSet.t -> term -> term * 'a list
 
-   (*
-    * The nth_*_addr functions are used to
-    * compute addreses for parts of a sequent.
-    * The indexing starts from 1.  Clause 0
-    * refers to the conclusion. Negative numbers in nth_clause_addr
-    * count hypotheses from the end of the list.
-    *)
-   val nth_hyp_addr : term -> int -> address
-   val concl_addr : term -> address
-   val nth_clause_addr : term -> int -> address
 end
 
 (*

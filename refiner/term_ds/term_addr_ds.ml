@@ -26,13 +26,14 @@
  *)
 
 (************************************************************************
- * Subterm addressing                                                   *
+ * Subterm' addressing                                                   *
  ************************************************************************)
 
 INCLUDE "refine_error.mlh"
 
 open Lm_symbol
 
+open Term_addr_sig
 open Refine_error_sig
 open Term_sig
 open Term_ds_sig
@@ -41,17 +42,6 @@ open Term_subst_sig
 open Term_op_sig
 open Term_man_sig
 
-(*
- * Address of a subterm.
- *)
-type addr_item =
-   Subterm of int
- | ArgAddr
- | HypAddr of int
- | ConclAddr
-
-type addr = addr_item list
-
 module TermAddr (**)
    (Term : TermDsSig with module TermTypes = TermType)
    (TermSubst : TermSubstSig with module SubstTypes = TermType)
@@ -59,7 +49,7 @@ module TermAddr (**)
    (TermMan : TermManSig with module ManTypes = TermType)
    (RefineError : RefineErrorSig
     with type ErrTypes.Types.term = TermType.term
-    with type ErrTypes.address = addr) =
+    with type ErrTypes.address = addr_item list) =
 struct
    open TermMan
    open TermType
@@ -69,19 +59,16 @@ struct
 
    module AddrTypes = TermType
 
-   type address = addr
+   type address = addr_item list
 
-   (*
-    * Constructor.
-    *)
-   let make_address =
-      List.map (fun i -> Subterm i)
+   let compose_address = compose_addr
+   let string_of_address = string_of_addr
 
-   let compose_address path1 path2 =
-      path1 @ path2
+   external make_address : address -> address = "%identity"
+   external dest_address : address -> address = "%identity"
 
    let rec split_clause_address = function
-      (HypAddr _ | ConclAddr) as addr :: rest ->
+      ClauseAddr _ as addr :: rest ->
          [addr], rest
     | _ ->
          REF_RAISE (RefineError ("Term_addr_ds.split_clause_address", StringError "address is not a sequent address"))
@@ -92,13 +79,52 @@ struct
       DEFINE ATERM = NOTHING
    ENDIF
 
+   let rec subterm_exists t addr =
+      (addr = []) ||
+      match get_core t, addr with
+         SOVar(_, _, terms), (Subterm i) :: addr ->
+            begin match make_index_opt i (List.length terms) with
+               None -> false
+             | Some i  -> subterm_exists (List.nth terms i) addr
+            end
+       | Term t, (Subterm i) :: addr ->
+            begin match make_index_opt i (List.length t.term_terms) with
+               None -> false
+             | Some i  -> subterm_exists (List.nth t.term_terms i).bterm addr
+            end
+       | Sequent s, ArgAddr :: addr ->
+            subterm_exists s.sequent_args addr
+       | Sequent s, ClauseAddr 0 :: addr ->
+            subterm_exists s.sequent_concl addr
+       | Sequent s, ClauseAddr i :: addr ->
+            begin match make_index_opt i (SeqHyp.length s.sequent_hyps) with
+               None -> false
+             | Some i -> subterm_exists_hyp addr (SeqHyp.get s.sequent_hyps i)
+            end
+       | _ ->
+            false
+
+   and subterm_exists_hyp addr = function
+      Hypothesis (_, t) -> subterm_exists t addr
+    | Context (_, _, ts) ->
+         begin match addr with
+            [] -> true
+          | Subterm i :: addr ->
+               begin match make_index_opt i (List.length ts) with
+                  None -> false
+                | Some i ->
+                     subterm_exists (List.nth ts i) addr
+               end
+          | _ -> false
+         end
+
    let rec find_subterm_term addr arg t =
       if alpha_equal t arg then
          Some (List.rev addr)
       else match get_core t with
          FOVar _ -> None
-       | SOVar(_,_,terms) -> find_subterm_terms addr arg 0 terms
-       | Term t -> find_subterm_bterms addr arg 0 t.term_terms
+       | SOVar(_,_,terms) -> find_subterm_terms addr arg 1 terms
+       | Term t -> find_subterm_bterms addr arg 1 t.term_terms
        | Sequent s ->
             begin match
                find_subterm_term (ArgAddr :: addr) arg s.sequent_args with
@@ -125,12 +151,12 @@ struct
          end
 
    and find_subterm_hyps addr arg s i len =
-      if i = len then find_subterm_term (ConclAddr :: addr) arg s.sequent_concl
+      if i = len then find_subterm_term (ClauseAddr 0 :: addr) arg s.sequent_concl
       else match
-         let addr = HypAddr i :: addr in
+         let addr = ClauseAddr (i + 1) :: addr in
          match SeqHyp.get s.sequent_hyps i with
             Hypothesis (_, t) -> find_subterm_term addr arg t
-          | Context(_, _, ts) -> find_subterm_terms addr arg 0 ts
+          | Context(_, _, ts) -> find_subterm_terms addr arg 1 ts
       with
          None -> find_subterm_hyps addr arg s (succ i) len
        | found -> found
@@ -142,16 +168,29 @@ struct
             REF_RAISE(RefineError ("Term_addr_gen.find_subterm", StringTermError ("subterm can't be found",arg)))
 
    (*
+    * Traslate a [-lenght..-1]U[1..length] index into a [0..length-1] one.
+    *)
+   let make_index_name = "getnth"
+   let make_index ATERM i length =
+      if i > 0 then
+         if i > length then
+            REF_RAISE(RefineError (make_index_name, AddressError (a, term)))
+         else
+            (i - 1)
+      else
+         let i = length + i in
+            if i < 0 then
+               REF_RAISE(RefineError (make_index_name, AddressError (a, term)))
+            else
+               i
+   (*
     * Get a subterm.
     *)
-   let rec getnth ATERM terms i =
-      match (terms, i) with
-         (hd::_, 0) ->
-            hd
-       | (hd::tl, _) ->
-            getnth ATERM tl (pred i)
-       | ([], _) ->
-            REF_RAISE(RefineError ("getnth", AddressError (a, term)))
+   let getnth ATERM terms i =
+      if i = 0 then
+         raise (Invalid_argument "Term_addr_ds.getnth: got Subterm 0")
+      else
+         List.nth terms (make_index ATERM i (List.length terms))
 
    (*
     * Follow an explicit path.
@@ -168,14 +207,14 @@ struct
                   getnth ATERM ts i
              | Sequent s, ArgAddr ->
                   s.sequent_args
-             | Sequent s, HypAddr i ->
-                  if i >= 0 && i < SeqHyp.length s.sequent_hyps then
-                     match SeqHyp.get s.sequent_hyps i with
+             | Sequent s, ClauseAddr 0 ->
+                  s.sequent_concl
+             | Sequent s, ClauseAddr i ->
+                  let i = make_index ATERM i (SeqHyp.length s.sequent_hyps) in
+                     begin match SeqHyp.get s.sequent_hyps i with
                         Hypothesis (_, t) -> t
                       | Context (v, conts, ts) -> core_term (SOVar(v, conts, ts))
-                  else REF_RAISE(RefineError (term_subterm_name, AddressError (a, term)))
-             | Sequent s, ConclAddr ->
-                  s.sequent_concl
+                     end
              | _ -> REF_RAISE(RefineError (term_subterm_name, AddressError (a, term)))
          in
             term_subterm t rest
@@ -185,15 +224,15 @@ struct
     *)
    let subterm_addresses =
       let rec make_path_list i =
-         if i = 0 then [] else let i = pred i in [Subterm i] :: (make_path_list i)
+         if i = 0 then [] else [Subterm i] :: (make_path_list (pred i))
       in let rec make_hyppath_list i addr addrs =
-         if i = 0 then addrs else let i = pred i in make_hyppath_list i addr ([addr; Subterm i] :: addrs)
+         if i = 0 then addrs else make_hyppath_list (pred i) addr ([addr; Subterm i] :: addrs)
       in let rec make_hyp_list i hyps addrs =
-         if i = 0 then addrs else let i = pred i in
-            make_hyp_list i hyps (
-               match SeqHyp.get hyps i with
-                  Hypothesis _ -> [HypAddr i] :: addrs
-                | Context(_,_,ts) -> make_hyppath_list (List.length ts) (HypAddr i) addrs
+         if i = 0 then addrs else let i' = pred i in
+            make_hyp_list i' hyps (
+               match SeqHyp.get hyps i' with
+                  Hypothesis _ -> [ClauseAddr i] :: addrs
+                | Context(_,_,ts) -> make_hyppath_list (List.length ts) (ClauseAddr i) addrs
             )
       in fun t -> match get_core t with
          Term t ->
@@ -201,7 +240,7 @@ struct
        | FOVar _ -> []
        | SOVar (_, _, ts) -> make_path_list (List.length ts)
        | Sequent s ->
-               [ConclAddr] :: (make_hyp_list (SeqHyp.length s.sequent_hyps) s.sequent_hyps [[ArgAddr]])
+            concl_addr :: (make_hyp_list (SeqHyp.length s.sequent_hyps) s.sequent_hyps [[ArgAddr]])
        | Hashed _ | Subst _ -> fail_core "subterm_addresses"
 
    (*
@@ -228,28 +267,28 @@ struct
       REF_RAISE(RefineError ("Term_addr_ds.apply_*_fun_*", AddressError (addr, term)))
 
    DEFINE MAKE_PATH_REPLACE_TERMS(bvars, path_replace_terms) =
-      fun FAIL f i bvars ts ->
+      fun f i bvars ts ->
          match i, ts with
             0, (t::ts) ->
                let t, arg = f bvars t
                   in (t::ts), arg
           | _, (t::ts) ->
-               let ts, arg = path_replace_terms FAIL f (pred i) bvars ts in
+               let ts, arg = path_replace_terms f (pred i) bvars ts in
                   (t::ts), arg
           | _, [] ->
-               DO_FAIL
+               raise (Invalid_argument "Term_addr_ds.path_replace_terms: internal error")
 
    DEFINE MAKE_PATH_REPLACE_BTERM(bvars, vars_bvars, path_replace_bterm) =
-      fun FAIL f i bvars bterms ->
+      fun f i bvars bterms ->
          match i, bterms with
             (0, { bvars = vars; bterm = term } :: bterms) ->
                let term, arg = f vars_bvars term in
                   mk_bterm vars term :: bterms, arg
           | (_, bterm :: bterms) ->
-               let bterms, arg = path_replace_bterm FAIL f (pred i) bvars bterms in
+               let bterms, arg = path_replace_bterm f (pred i) bvars bterms in
                   bterm :: bterms, arg
           | _, [] ->
-               DO_FAIL
+               raise (Invalid_argument "Term_addr_ds.path_replace_bterm: internal error")
 
    DEFINE APPLY_FUN_AUX(my_name, path_replace_terms, path_replace_bterm, bvars, hyp_bvars) =
       fun FAIL f addr bvars term ->
@@ -259,32 +298,33 @@ struct
           | Sequent s, [ArgAddr] ->
                let term, arg = f bvars s.sequent_args in
                   mk_sequent_term {s with sequent_args = term}, arg
-          | Sequent s, [HypAddr i] ->
-               if i>=0 && i < SeqHyp.length s.sequent_hyps then
-                  let hyp, arg = match SeqHyp.get s.sequent_hyps i with
-                     Hypothesis (v,t) as hyp ->
-                        let term, arg = f hyp_bvars t in
-                           Hypothesis (v,term), arg
-                   | Context (v, conts, ts) ->
-                        let t, arg = f bvars (core_term (SOVar(v, conts, ts))) in
-                        let v1, conts, subterms = dest_so_var t in
-                           if v1 = v then
-                              Context (v, conts, subterms), arg
-                           else DO_FAIL
-                  in
-                  let aux i' hyp' =
-                     if i' = i then hyp else hyp'
-                  in
-                     mk_sequent_term {s with sequent_hyps = SeqHyp.mapi aux s.sequent_hyps}, arg
-               else DO_FAIL
-          | (Sequent s, [ConclAddr]) ->
+          | Sequent s, [ClauseAddr 0] ->
                   let term, arg = f bvars s.sequent_concl in
                      mk_sequent_term {s with sequent_concl = term}, arg
+          | Sequent s, [ClauseAddr i] ->
+               let i = make_index FAIL i (SeqHyp.length s.sequent_hyps) in
+               let hyp, arg = match SeqHyp.get s.sequent_hyps i with
+                  Hypothesis (v,t) as hyp ->
+                     let term, arg = f hyp_bvars t in
+                        Hypothesis (v,term), arg
+                | Context (v, conts, ts) ->
+                     let t, arg = f bvars (core_term (SOVar(v, conts, ts))) in
+                     let v1, conts, subterms = dest_so_var t in
+                        if v1 = v then
+                           Context (v, conts, subterms), arg
+                        else DO_FAIL
+               in
+               let aux i' hyp' =
+                  if i' = i then hyp else hyp'
+               in
+                  mk_sequent_term {s with sequent_hyps = SeqHyp.mapi aux s.sequent_hyps}, arg
           | Term t, [Subterm i] ->
-               let bterms, arg = path_replace_bterm FAIL f i bvars t.term_terms in
+               let i = make_index FAIL i (List.length t.term_terms) in
+               let bterms, arg = path_replace_bterm f i bvars t.term_terms in
                   mk_term t.term_op bterms, arg
           | SOVar(v, conts, ts), [Subterm i] ->
-               let ts, arg = path_replace_terms FAIL f i bvars ts in
+               let i = make_index FAIL i (List.length ts) in
+               let ts, arg = path_replace_terms f i bvars ts in
                   core_term (SOVar(v, conts, ts)), arg
           | (_, addr1 :: ( (_::_) as addr2)) ->
                my_name FAIL (my_name FAIL f addr2) [addr1] bvars term
@@ -344,21 +384,6 @@ struct
 
    let replace_bound_subterm term addr bvars f =
       apply_var_fun_at_addr (replace_bound_subterm_aux f) addr bvars term
-
-   (*
-    * Print address as a string.
-    *)
-   let rec collect_string_of_address = function
-      [] -> ""
-    | [Subterm i] -> string_of_int i
-    | [ArgAddr] -> "Arg"
-    | [HypAddr i] -> "Hyp(" ^ string_of_int (i+1) ^ ")"
-    | [ConclAddr] -> "Concl"
-    | addr1 :: ( (_ :: _) as addr2) ->
-         (collect_string_of_address [addr1]) ^ "; " ^ (collect_string_of_address addr2)
-
-   let string_of_address addr =
-      "[" ^ collect_string_of_address addr ^ "]"
 
    (*
     * Apply the function to the outermost terms where it does not fail.
@@ -490,55 +515,4 @@ struct
    let apply_var_fun_higher f bvars term =
       apply_var_fun_higher_term f bvars [] term
 
-   (*
-    * Find the address of the hyp. Numbers start with 1
-    * We just check to make sure the address is valid.
-    *)
-   let nth_hyp_addr_name = "Term_addr_ds.nth_hyp_addr"
-   let nth_hyp_addr t n =
-      if n <= 0 then
-         REF_RAISE(RefineError (nth_hyp_addr_name, StringError "negative address"))
-      else
-         match get_core t with
-            Sequent s ->
-               if n <= SeqHyp.length s.sequent_hyps then
-                  [HypAddr (pred n)]
-               else
-                  REF_RAISE(RefineError (nth_hyp_addr_name, TermMatchError (t, "not enough hyps")))
-          | _ ->
-               REF_RAISE(RefineError (nth_hyp_addr_name, TermMatchError (t, "not a sequent")))
-
-   (*
-    * Find the address of the conclusion. Numbers start with 1
-    *)
-   let concl_addr_name = "Term_addr_ds.concl_addr"
-   let concl_addr t =
-      match get_core t with
-         Sequent s ->
-            [ConclAddr]
-       | _ ->
-            REF_RAISE(RefineError (concl_addr_name, TermMatchError (t, "not a sequent")))
-
-   (*
-    * Conclusion is number 0,
-    * negative numbers index from last hyp towards first.
-    *)
-   let nth_clause_addr_name = "Term_man_ds.nth_clause_addr"
-   let nth_clause_addr t i =
-      match get_core t with
-         Sequent s ->
-            let hlen = SeqHyp.length s.sequent_hyps in
-               if (i = 0) then
-                  [ConclAddr]
-               else if (i > 0) then
-                  if i <= hlen then
-                     [HypAddr (pred i)]
-                  else
-                     REF_RAISE(RefineError (nth_clause_addr_name, TermMatchError (t, "not enough hyps")))
-               else if (-i) <= hlen then
-                  [HypAddr (hlen + i)]
-               else
-                  REF_RAISE(RefineError (nth_clause_addr_name, TermMatchError (t, "not enough hyps for a negative addressing")))
-       | _ ->
-            REF_RAISE(RefineError (nth_clause_addr_name, TermMatchError (t, "not a sequent")))
 end

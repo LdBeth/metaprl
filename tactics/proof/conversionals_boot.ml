@@ -37,6 +37,7 @@
 open Lm_debug
 open Lm_printf
 
+open Term_addr_sig
 open Refiner.Refiner
 open Refiner.Refiner.TermAddr
 open Refiner.Refiner.TermSubst
@@ -255,11 +256,14 @@ struct
          in
             funC repeatForCE
 
-
-
    let rwc conv assum clause =
+      let addr = TermAddr.make_address [ClauseAddr clause] in
       Tacticals.funT
-      (fun p -> Rewrite.rw conv assum (Sequent.assum_clause_addr p assum clause))
+      (fun p ->
+         let a = Sequent.nth_assum p assum in
+         if not (TermAddr.subterm_exists a addr) then
+            raise (RefineError("rwc", AddressError (addr, a)));
+         Rewrite.rw conv assum addr)
 
    let empty_addr = TermAddr.make_address []
 

@@ -428,7 +428,7 @@ for the list of allowed types."))
 let toploop_item_expr loc name ctyp =
    let str_lid s =
       match s with
-         "unit" | "bool" |  "int" | "string" | "term" | "tactic" | "conv" | "address" ->
+         "unit" | "bool" |  "int" | "string" | "term" | "tactic" | "conv" | "address" | "addr_item" ->
             String.capitalize s
        | _ ->
             raise_toploop_exn loc

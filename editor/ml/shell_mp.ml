@@ -31,14 +31,11 @@
  *)
 open Lm_debug
 open Lm_rprintf
+open Lm_rformat
 
 open Pcaml
 
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermAddr
-open Refiner.Refiner.RefineError
-open Lm_rformat
-
+open Basic_tactics
 open Mptop
 
 open Exn_boot
@@ -103,6 +100,15 @@ struct
          format_int buf i;
     | AddressExpr a ->
          format_string buf (string_of_address a);
+    | Addr_itemExpr (Subterm i) ->
+         format_int buf i;
+    | Addr_itemExpr (ArgAddr) ->
+         format_string buf "Arg"
+    | Addr_itemExpr (ClauseAddr 0) ->
+         format_string buf "Concl"
+    | Addr_itemExpr (ClauseAddr i) ->
+         format_string buf "Hyp ";
+         format_int buf i
     | StringExpr s ->
          format_string buf s;
     | TermExpr t ->

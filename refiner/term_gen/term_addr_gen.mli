@@ -37,8 +37,6 @@ open Term_op_sig
 open Term_addr_sig
 open Term_man_gen_sig
 
-type addr
-
 module TermAddr (**)
    (TermType : TermSig)
    (Term : TermBaseSig with module TermTypes = TermType)
@@ -47,10 +45,10 @@ module TermAddr (**)
    (TermMan: TermManGenSig with module ManTypes = TermType)
    (RefineError : RefineErrorSig
     with module ErrTypes.Types = TermType
-    with type ErrTypes.address = addr)
+    with type ErrTypes.address = addr_item list)
 : (TermAddrSig
   with module AddrTypes = TermType
-  with type address = addr)
+  with type address = addr_item list)
 
 (*
  * -*-

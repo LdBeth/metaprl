@@ -33,25 +33,15 @@
 extends Itt_theory
 
 open Lm_debug
-
 open Lm_printf
-
 open Lm_symbol
 
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermAddr
-open Refiner.Refiner.TermSubst
-open Refiner.Refiner.RefineError
-
-open Tactic_type
-open Tacticals
-open Conversionals
-open Dtactic
-open Auto_tactic
+open Basic_tactics
 
 open Itt_equal
 open Itt_logic
 open Itt_struct
+open Itt_prop_decide
 
 (************************************************************************
  * SPECIALIZED DECISION PROCEDURE                                       *
@@ -213,16 +203,6 @@ let is_hyp_term p t =
    in
       search 1 (Sequent.hyp_count p)
 
-(* Term classes *)
-let is_imp_and_term term =
-   is_implies_term term & is_and_term (term_subterm term (make_address [0]))
-
-let is_imp_or_term term =
-   is_implies_term term & is_or_term (term_subterm term (make_address [0]))
-
-let is_imp_imp_term term =
-   is_implies_term term & is_implies_term (term_subterm term (make_address [0]))
-
 interactive imp_and_rule 'H :
    sequent { <H>; x: "and"{'C; 'D} => 'B; <J['x]> >- "type"{'C} } -->
    sequent { <H>; x: "and"{'C; 'D} => 'B; <J['x]> >- "type"{'D} } -->
@@ -336,7 +316,7 @@ and internalPropDecideT max_depth count =
 
 (* Convert all "not X" terms to "X => False" *)
 let notToImpliesFalseC =
-   sweepUpC (unfold_not thenC fold_implies thenC (addrC [1] fold_false))
+   sweepUpC (unfold_not thenC fold_implies thenC (addrC [Subterm 2] fold_false))
 
 (*
  * Toplevel tactic:

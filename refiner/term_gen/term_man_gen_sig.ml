@@ -43,4 +43,6 @@ sig
    val match_hyp : string -> term -> bound_term list -> term
    val match_context : operator -> string -> term -> bound_term list -> term
    val body_of_sequent : term -> term
+   val dest_sequent_outer_term : term -> term * term
+   val mk_sequent_outer_term : term -> term -> term
 end
