@@ -258,10 +258,6 @@ assumptions), taking the first success.
 Tries to apply the argument to [n..1] (where n is the number of
 hypotheses), taking the first success.
 
-* onVarT : string -> (int -> tactic) -> tactic
-Apply the tactic on the hypothesis which binds the given variable.
-Fails if the variable is not found.
-
 * withTermT : string -> term -> tactic -> tactic
 * withTypeT : string -> term -> tactic -> tactic
 * withBoolT : string -> bool -> tactic -> tactic

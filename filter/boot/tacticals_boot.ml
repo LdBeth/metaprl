@@ -688,17 +688,6 @@ struct
    let onSomeHypT tac p =
       onSomeHypAux tac (Sequent.hyp_count p) p
 
-   (*
-    * Variable name addressing.
-    *)
-   let onVarT v tac p =
-      let i =
-         try Sequent.get_decl_number p v with
-            Not_found ->
-               raise (RefineError ("onVarT", StringStringError (v, "variable not found")))
-      in
-         tac i p
-
    (************************************************************************
     * ARGUMENTS                                                            *
     ************************************************************************)

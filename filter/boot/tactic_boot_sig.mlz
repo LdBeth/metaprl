@@ -973,7 +973,6 @@ sig
 
    val onSomeAssumT : (int -> tactic) -> tactic
    val onSomeHypT : (int -> tactic) -> tactic
-   val onVarT : string -> (int -> tactic) -> tactic
 
    (*
     * Proof annotation.
