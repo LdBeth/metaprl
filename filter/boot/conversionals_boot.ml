@@ -78,13 +78,11 @@ struct
    type tactic = TacticInternalType.tactic
 
    let env_term = RewriteInternal.env_term
-   let env_goal = RewriteInternal.env_goal
    let env_arg = RewriteInternal.env_arg
 
    let prefix_thenC = RewriteInternal.prefix_thenC
    let prefix_orelseC = RewriteInternal.prefix_orelseC
    let addrC = RewriteInternal.addrC
-   let clauseC = RewriteInternal.clauseC
    let idC = RewriteInternal.idC
    let foldC = RewriteInternal.foldC
    let makeFoldC = RewriteInternal.makeFoldC
@@ -238,12 +236,12 @@ struct
 
 
    let rwc conv assum clause p =
-      let addr = Sequent.clause_addr p clause in
+      let addr = Sequent.assum_clause_addr p assum clause in
          RewriteInternal.rw conv assum addr p
 
    let rwcAll conv assum  =
 (*    RewriteInternal.rw conv assum (TermAddr.make_address []) *)
-      Tacticals.onAllMClausesT (rwc conv assum)
+      Tacticals.onAllMClausesOfAssumT (rwc conv) assum
 
    let rw conv clause =
       rwc conv 0 clause

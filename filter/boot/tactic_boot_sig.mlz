@@ -230,7 +230,7 @@ sig
    (*
     * Conversions are used by the rewrite module.
     *)
-   and env = tactic_arg * address
+   and env = tactic_arg * int * address
 
    and conv =
       RewriteConv of rw
@@ -238,7 +238,6 @@ sig
     | ComposeConv of conv Flist.t
     | ChooseConv of conv Flist.t
     | AddressConv of address * conv
-    | ClauseConv of int * conv
     | FoldConv of term * conv
     | CutConv of term
     | FunConv of (env -> conv)
@@ -806,8 +805,10 @@ sig
     * Get the address of a part of the sequent.
     *)
    val clause_addr : tactic_arg -> int -> address
+   val assum_clause_addr : tactic_arg -> int -> int -> address
    val get_decl_number : tactic_arg -> string -> int
    val hyp_count : tactic_arg -> int
+   val assum_hyp_count : tactic_arg -> int -> int
    val get_pos_hyp_num : tactic_arg -> int -> int
 
    (*
@@ -961,7 +962,7 @@ sig
    val tryOnAllClausesT : (int -> tactic) -> tactic
 
    val onAllMHypsT : (int -> tactic) -> tactic
-   val onAllMClausesT : (int -> tactic) -> tactic
+   val onAllMClausesOfAssumT : (int -> int -> tactic) -> int -> tactic
    val tryOnAllMHypsT : (int -> tactic) -> tactic
    val tryOnAllMClausesT : (int -> tactic) -> tactic
    val onAllAssumT : (int -> tactic) -> tactic
@@ -1039,7 +1040,6 @@ sig
     * Operations on the environment mirror operations from Sequent.
     *)
    val env_term : env -> term
-   val env_goal : env -> term
    val env_arg : env -> tactic_arg
 
    (*
@@ -1071,12 +1071,7 @@ sig
    val addrC : int list -> conv -> conv
 
    (*
-    * Apply the rewrite to a particular clause.
-    *)
-   val clauseC : int -> conv -> conv
-
-   (*
-    * Apply at conversion at the outermost terms where it does not fail.
+    * Apply a conversion at the outermost terms where it does not fail.
     *)
    val higherC : conv -> conv
 
@@ -1121,7 +1116,6 @@ sig
     * Environment.
     *)
    val env_term : env -> term
-   val env_goal : env -> term
    val env_arg : env -> tactic_arg
 
    (*
@@ -1150,7 +1144,6 @@ sig
    val prefix_thenC : conv -> conv -> conv
    val prefix_orelseC : conv -> conv -> conv
    val addrC : int list -> conv -> conv
-   val clauseC : int -> conv -> conv
    val idC : conv
    val foldC : term -> conv -> conv
    val makeFoldC : term -> conv -> conv

@@ -82,6 +82,9 @@ struct
       let { sequent_args = args } = TermMan.explode_sequent (goal p) in
          TermMan.dest_xlist args
 
+   let num_assums = TacticInternal.num_assums
+   let nth_assum = TacticInternal.nth_assum
+
    (*
     * Sequent parts.
     *)
@@ -94,14 +97,17 @@ struct
       else
          i
 
+   let assum_hyp_count arg i =
+      TermMan.num_hyps (nth_assum arg i)      
+
    let nth_hyp p i = TacticInternal.nth_hyp p (get_pos_hyp_num p i)
    let nth_binding p i = TacticInternal.nth_binding p (get_pos_hyp_num p i)
 
-   let num_assums = TacticInternal.num_assums
-   let nth_assum = TacticInternal.nth_assum
-
    let clause_addr p i =
-      TermMan.nth_clause_addr (goal p) (get_pos_hyp_num p i)
+      TermMan.nth_clause_addr (goal p) i
+
+   let assum_clause_addr p i j =
+      TermMan.nth_clause_addr (nth_assum p i) j
 
    let get_decl_number arg v =
       TermMan.get_decl_number (goal arg) v

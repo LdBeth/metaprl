@@ -269,7 +269,7 @@ struct
    (*
     * Conversions are used by the rewrite module.
     *)
-   and env = tactic_arg * address
+   and env = tactic_arg * int * address
 
    and conv =
       RewriteConv of rw
@@ -277,7 +277,6 @@ struct
     | ComposeConv of conv Flist.t
     | ChooseConv of conv Flist.t
     | AddressConv of address * conv
-    | ClauseConv of int * conv
     | FoldConv of term * conv
     | CutConv of term
     | FunConv of (env -> conv)
@@ -391,7 +390,7 @@ struct
       msequent_num_assums arg.ref_goal
 
    let nth_assum arg i =
-      msequent_nth_assum arg.ref_goal i
+      if i == 0 then goal arg else msequent_nth_assum arg.ref_goal i
 
    let label arg = arg.ref_label
 

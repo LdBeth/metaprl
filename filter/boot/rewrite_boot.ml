@@ -69,20 +69,14 @@ struct
    (*
     * Get the term of the environment.
     *)
-   let env_term (arg, addr) =
-      term_subterm (Sequent.goal arg) addr
+   let env_term (arg, i, addr) =
+      term_subterm (Sequent.nth_assum arg i) addr
 
-   let env_term_subterm_count (arg, addr) =
-      term_subterm_count (Sequent.goal arg) addr
+   let env_term_subterm_count (arg, i, addr) =
+      term_subterm_count (Sequent.nth_assum arg i) addr
 
-   let env_arg (arg, addr) =
+   let env_arg (arg, i, addr) =
       arg
-
-   (*
-    * Get the sequent that we are matching against.
-    *)
-   let env_goal (arg, _) =
-      Sequent.goal arg
 
    (*
     * Create a conversion from a basic rewrite.
@@ -185,9 +179,6 @@ struct
           | conv ->
                AddressConv (addr, conv))
 
-   let clauseC clause rw =
-      ClauseConv (clause, rw)
-
    (*
     * Apply the conversion at the highest addresses.
     *)
@@ -263,36 +254,29 @@ struct
    let cutC t =
       CutConv t
 
-   (*
-    * root: address of the clause
-    * rel: offset into the term
-    * addr: compose_addrress root rel
-    *)
-   let rec apply clause addr conv p =
+   let rec apply assum addr conv p =
       match conv with
          RewriteConv rw ->
             if !debug_rewrite then
                eprintf "Rewrite_type.apply: Rewrite%t" eflush;
-            Tactic.tactic_of_rewrite clause (rwaddr addr rw) p
+            Tactic.tactic_of_rewrite assum (rwaddr addr rw) p
        | CondRewriteConv crw ->
             if !debug_rewrite then
                eprintf "Rewrite_type.apply: CondRewrite%t" eflush;
-            Tactic.tactic_of_cond_rewrite clause (crwaddr addr crw) p
+            Tactic.tactic_of_cond_rewrite assum (crwaddr addr crw) p
        | ComposeConv clist ->
             if !debug_rewrite then
                eprintf "Rewrite_type.apply: Compose%t" eflush;
-            composeT clause addr (Flist.tree_of_list clist) p
+            composeT assum addr (Flist.tree_of_list clist) p
        | ChooseConv clist ->
             if !debug_rewrite then
                eprintf "Rewrite_type.apply: Choose%t" eflush;
-            chooseT clause addr (Flist.tree_of_list clist) p
+            chooseT assum addr (Flist.tree_of_list clist) p
        | AddressConv (addr', conv) ->
             let addr = compose_address addr addr' in
                if !debug_rewrite then
                   eprintf "Rewrite_type.apply: Address %s%t" (string_of_address addr') eflush;
-               apply clause addr conv p
-       | ClauseConv (clause, conv) ->
-            apply clause addr conv p
+               apply assum addr conv p
        | IdentityConv ->
             if !debug_rewrite then
                eprintf "Rewrite_type.apply: Identity%t" eflush;
@@ -300,47 +284,47 @@ struct
        | FunConv f ->
             if !debug_rewrite then
                eprintf "Rewrite_type.apply: Fun%t" eflush;
-            apply clause addr (f (p, addr)) p
+            apply assum addr (f (p, assum, addr)) p
        | HigherConv conv ->
             if !debug_rewrite then
                eprintf "Rewrite_type.apply: Higher%t" eflush;
-            apply clause addr (higherLC conv) p
+            apply assum addr (higherLC conv) p
        | FoldConv (t, conv) ->
             if !debug_rewrite then
                eprintf "Rewrite_type.apply: Fold%t" eflush;
-            (prefix_thenLT (rwcutT clause addr t) [addHiddenLabelT "main"; solveCutT addr conv]) p
+            (prefix_thenLT (rwcutT assum addr t) [addHiddenLabelT "main"; solveCutT addr conv]) p
        | CutConv t ->
             if !debug_rewrite then
                eprintf "Rewrite_type.apply: Cut%t" eflush;
-            rwcutT clause addr t p
+            rwcutT assum addr t p
 
-   and composeT clause addr tree p =
+   and composeT assum addr tree p =
       match tree with
          Flist.Empty ->
             idT p
        | Flist.Leaf conv ->
-            apply clause addr conv p
+            apply assum addr conv p
        | Flist.Append (tree1, tree2) ->
-            (prefix_then_OnFirstT (composeT clause addr tree1) (composeT clause addr tree2)) p
+            (prefix_then_OnFirstT (composeT assum addr tree1) (composeT assum addr tree2)) p
 
-   and chooseT clause addr tree p =
+   and chooseT assum addr tree p =
       match tree with
          Flist.Empty ->
             idT p
        | Flist.Leaf conv ->
-            apply clause addr conv p
+            apply assum addr conv p
        | Flist.Append (tree1, tree2) ->
-            (prefix_orelseT (chooseT clause addr tree1) (chooseT clause addr tree2)) p
+            (prefix_orelseT (chooseT assum addr tree1) (chooseT assum addr tree2)) p
 
-   and rwcutT clause addr t p =
+   and rwcutT assum addr t p =
       let goal, hyps = Refine.dest_msequent (Sequent.msequent p) in
       let t' =
-         if clause = 0 then
+         if assum = 0 then
             goal
-         else if clause > 0 && clause <= List.length hyps then
-            List.nth hyps (pred clause)
+         else if assum > 0 && assum <= List.length hyps then
+            List.nth hyps (pred assum)
          else
-            raise (RefineError ("rwcutT", StringIntError ("clause number is out of range", clause)))
+            raise (RefineError ("rwcutT", StringIntError ("assum number is out of range", assum)))
       in
       let t' = TermAddr.replace_subterm t' addr t in
          cutT t' p

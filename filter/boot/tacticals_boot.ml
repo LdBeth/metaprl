@@ -472,8 +472,6 @@ struct
       in
          aux
 
-
-
    (*
     * Repeat a fixed number of times on main subgoals.
     *)
@@ -578,19 +576,19 @@ struct
 
    let onMHypsT = onMClausesT
 
+   let rec onAllT thenT tac count =
+      if count > 1 then
+         thenT (tac count) (onAllT thenT tac (count - 1))
+      else if count = 1 then
+         tac 1
+      else
+         idT
+
    (*
     * Work on all hyps.
     *)
    let onAllHypsT tac p =
-      let rec aux i =
-         if i = 1 then
-            tac i
-         else if i > 1 then
-            prefix_thenT (tac i) (aux (pred i))
-         else
-            idT
-      in
-         aux (Sequent.hyp_count p) p
+      onAllT prefix_thenT tac (Sequent.hyp_count p) p
 
    (*
     * Include conclusion.
@@ -616,25 +614,13 @@ struct
     * Labelled forms.
     *)
    let onAllMHypsT tac p =
-      let rec aux i =
-         if i = 1 then
-            tac i
-         else if i > 1 then
-            prefix_thenMT (tac i) (aux (pred i))
-         else
-            idT
-      in
-         aux (Sequent.hyp_count p) p
-
-   let onAllMClausesT tac =
-      prefix_thenMT (onAllMHypsT tac) (onConclT tac)
+      onAllT prefix_thenMT tac (Sequent.hyp_count p) p
 
    let tryOnAllMHypsT tac =
       onAllMHypsT (function i -> tryT (tac i))
 
-   let tryOnAllMClausesT tac =
-      onAllMClausesT (function i -> tryT (tac i))
-
+   let tryOnAllMClausesT tac p =
+      prefix_thenMT (onAllT prefix_thenMT (function i -> tryT (tac i)) (Sequent.hyp_count p)) (tryT (onConclT tac)) p
 
    (*
     * These tactics work with assumptions.
@@ -649,6 +635,9 @@ struct
       in
       let _, assums = dest_msequent (Sequent.msequent p) in
          all 1 assums p
+
+   let onAllMClausesOfAssumT tac assum p =
+      prefix_thenMT (onAllT prefix_thenMT (tac assum) (Sequent.assum_hyp_count p assum)) (onConclT (tac assum)) p
 
    (*
     * Labeled form
@@ -680,16 +669,8 @@ struct
    (*
     * Make sure one of the hyps works.
     *)
-   let rec onSomeHypAux tac i p =
-      if i = 1 then
-         tac 1 p
-      else if i > 1 then
-         prefix_orelseT (tac i) (onSomeHypAux tac (pred i)) p
-      else
-         idT p
-
    let onSomeHypT tac p =
-      onSomeHypAux tac (Sequent.hyp_count p) p
+      onAllT prefix_orelseT tac (Sequent.hyp_count p) p
 
    (************************************************************************
     * ARGUMENTS                                                            *
