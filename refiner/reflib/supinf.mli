@@ -1,12 +1,4 @@
-open Printf
-open Lm_debug
-open Opname
-open Term_sig
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermMan
-open Refiner.Refiner.TermSubst
 open Refiner.Refiner.TermType
-open Refiner.Refiner.RefineError
 
 module type BoundFieldSig =
 sig

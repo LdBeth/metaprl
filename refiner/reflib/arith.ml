@@ -33,7 +33,6 @@
  *)
 open Printf
 open Lm_debug
-open Term_sig
 open Lm_num
 
 module type HypsSig = sig
@@ -245,11 +244,8 @@ functor (Hyps : HypsSig) -> struct
 end
 
 open Refiner.Refiner
-open TermType
 open Term
-open TermOp
 open TermSubst
-open TermMan
 
 type 'a inequality =
    term * term * num * 'a (* represents  t1 >= t2 + n *)

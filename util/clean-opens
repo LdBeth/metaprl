@@ -8,11 +8,12 @@ cvs update
 IFS=::::::
 TMP=`mktemp /tmp/clop.XXXXXX`
 TMP2=`mktemp /tmp/clop2.XXXXXX`
+TMP3=`mktemp /tmp/clop3.XXXXXX`
 grep -r -l --include=\*.ml --include=\*.mli --include=\*.mlz --include=\*.mll --include=\*.mly '^ *open ' . > $TMP
 omake || exit 1
 while read FILE; do
    BINFILE=`echo $FILE|sed -e 's/\.mli$/.cmi/' -e 's/\.mlz$/.cmi/' -e 's/\.ml.*$/.cmo/'`
-   if [ "$BINFILE" == "$FILE" ]; then 
+   if [ "$BINFILE" == "$FILE" ]; then
       echo "$FILE" "???"
       exit 1
    fi
@@ -46,16 +47,18 @@ while read FILE; do
                rm -f "$BINFILE" "$PPO"
             fi
          fi
-      done < $TMP2 
+      done < $TMP2
    fi
 done < $TMP
+echo "Removed $YES out of $[$YES + $NO]" > $TMP3
 rm -f $TMP $TMP2
 ) > $OUT
 if [ -z "$LOGNAME" ]; then
    LOGNAME=`whoami`
 fi
 (
-   echo "Removed $YES out of $[$YES + $NO]"
+   cat $TMP3
+   rm -f $TPM3
    echo " "
    echo "The full log is in $OUT on `hostname -s`; ends with"
    echo ...
