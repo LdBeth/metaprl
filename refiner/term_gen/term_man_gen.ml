@@ -605,7 +605,7 @@ struct
     *)
    let explode_sequent_name = "explode_sequent"
 
-   let explode_sequent t =
+   let explode_sequent_aux t =
       let rec collect (args : term) hyps concls term =
          let { term_op = op; term_terms = bterms } = dest_term term in
          let opname = (dest_op op).op_name in
@@ -627,11 +627,7 @@ struct
                   let hyps =
                      if SymbolSet.mem vars fake_var then hyps
                      else fst (remove_redundant_hbs (SymbolSet.remove (hyp_vars vars hyps) fake_var) hyps)
-                  in {
-                     sequent_args = args;
-                     sequent_hyps = SeqHyp.of_list hyps;
-                     sequent_goals = SeqGoal.of_list (List.rev concls);
-                  }
+                  in args, hyps, concls
                else
                   let goal, term = match_concl_all explode_sequent_name t bterms in
                      collect args hyps (goal :: concls) term
@@ -640,6 +636,40 @@ struct
       in
       let goal, args = dest_sequent_outer_term t in
          collect args [] [] goal
+
+   let explode_sequent t =
+      let args, hyps, concls = explode_sequent_aux t in {
+         sequent_args = args;
+         sequent_hyps = SeqHyp.of_list hyps;
+         sequent_goals = SeqGoal.of_list concls;
+      }
+
+   let explode_sequent_and_rename t vars =
+      let args, hyps, concls = explode_sequent_aux t in
+      let rec collect vars sub = function
+         [] -> [], sub
+       | Context(c, cts, ts) :: hyps ->
+            if SymbolSet.mem vars c then invalid_arg "Bound context in explode_sequent_and_rename";
+            let hyps', sub' = collect (SymbolSet.add vars c) sub hyps in
+               Context(c, cts, List.map (apply_subst sub) ts) :: hyps', sub'
+       | Hypothesis t :: hyps ->
+            let hyps', sub' = collect vars sub hyps in
+               Hypothesis (apply_subst sub t) :: hyps', sub'
+       | HypBinding (v,t) :: hyps ->
+            let v', sub' =
+               if SymbolSet.mem vars v then
+                  let v' = new_name v (SymbolSet.mem vars) in
+                     v', (v, mk_var_term v') :: sub
+               else v, sub
+            in
+            let hyps', sub' = collect (SymbolSet.add vars v') sub' hyps in
+               HypBinding(v', apply_subst sub t) :: hyps', sub'
+      in
+      let hyps, sub = collect vars [] hyps in {
+         sequent_args = args;
+         sequent_hyps = SeqHyp.of_list hyps;
+         sequent_goals = SeqGoal.of_list (List.map (apply_subst sub) concls);
+      }
 
    (*
     * Count the hyps.

@@ -320,28 +320,6 @@ struct
          REF_RAISE(RefineError ("check_simple_match", RewriteBadMatch (TermMatch t)))
 
    (*
-    * XXX: Checks whether we can assume hyp vars are always OK.
-    *)
-   let rec check_sequent_hyps hyps all_bvars len i =
-      if i < len then
-         let all_bvars =
-            match SeqHyp.get hyps i with
-               HypBinding (v, _) ->
-                  if SymbolSet.mem all_bvars v then
-                     begin
-                        eprintf "Sequent vars: %a in { %a }%t" print_symbol v print_symbol_set all_bvars eflush;
-                        (* XXX TODO: Error message should be better *)
-                        raise(Invalid_argument("Rewrite_match_redex.check_sequent_hyps: binding clash in a sequent. Please let Aleksey Nogin know if this happens to you."))
-                     end;
-                  SymbolSet.add all_bvars v
-             | Context (v, _, _) ->
-                  SymbolSet.add all_bvars v
-             | Hypothesis _ ->
-                  all_bvars
-         in
-            check_sequent_hyps hyps all_bvars len (i + 1)
-
-   (*
     * Check that the terms are all equivalent under the given instantiations
     *)
    let rec check_match addrs stack all_bvars t' vs = function
@@ -389,9 +367,8 @@ struct
             let { sequent_args = arg;
                   sequent_hyps = hyps;
                   sequent_goals = goals
-                } = explode_sequent t
+                } = explode_sequent_and_rename t all_bvars
             in
-               check_sequent_hyps hyps all_bvars (SeqHyp.length hyps) 0;
                match_redex_term addrs stack all_bvars arg' arg;
                match_redex_sequent_hyps addrs stack goals' goals all_bvars hyps' hyps 0 (SeqHyp.length hyps)
 

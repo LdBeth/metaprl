@@ -307,6 +307,34 @@ struct
        | _ ->
             REF_RAISE(RefineError ("Term_man_ds.explode_sequent", TermMatchError (t, "not a sequent")))
 
+   let rec rename_hyps vars sub = function
+      [] -> [], sub
+    | Context(c, _,_) :: _ when SymbolSet.mem vars c ->
+         invalid_arg "Term_man_ds.explode_sequent_and_rename: bound context encountered"
+    | Context(c, cts, ts) :: hyps ->
+         let hyps', sub' = rename_hyps (SymbolSet.add vars c) sub hyps in
+            Context(c, cts, List.map (apply_subst sub) ts) :: hyps', sub'
+    | Hypothesis t :: hyps ->
+         let hyps', sub' = rename_hyps vars sub hyps in
+            Hypothesis (apply_subst sub t) :: hyps', sub'
+    | HypBinding (v,t) :: hyps when SymbolSet.mem vars v ->
+         let v' = new_name v (SymbolSet.mem vars) in
+         let sub' = (v, mk_var_term v') :: sub in
+         let hyps', sub' = rename_hyps (SymbolSet.add vars v') sub' hyps in
+            HypBinding(v', apply_subst sub t) :: hyps', sub'
+    | HypBinding (v,t) :: hyps ->
+         let hyps', sub' = rename_hyps (SymbolSet.add vars v) sub hyps in
+            HypBinding(v, apply_subst sub t) :: hyps', sub'
+   
+   let explode_sequent_and_rename t vars =
+      let s = explode_sequent t in
+         let hyps, subst = rename_hyps vars [] (SeqHyp.to_list s.sequent_hyps) in
+            if subst == [] then s else {
+               s with
+               sequent_hyps = SeqHyp.of_list hyps;
+               sequent_goals = SeqGoal.lazy_apply (apply_subst subst) s.sequent_goals
+            }
+
    let rec remove_redundant_hbs vars = function
       [] -> [], vars
     | (Context (_, _, ts) as hyp :: hyps) as ohyps ->

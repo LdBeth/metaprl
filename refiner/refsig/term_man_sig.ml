@@ -88,6 +88,8 @@ sig
    val is_sequent_term : term -> bool
    val mk_sequent_term : esequent -> term
    val explode_sequent : term -> esequent
+   (* explode_sequent_and_rename is analoguos to dest_bterm_and_rename *)
+   val explode_sequent_and_rename : term -> SymbolSet.t -> esequent
    val remove_redundant_hypbindings : hypothesis list -> term list -> hypothesis list
 
    (* Indexing starts at 1 *)
