@@ -207,6 +207,11 @@ let certs_dir =
       delay "Setup.certs_dir" writer
 
 let execute_openssl args =
+   eprintf "+ openssl";
+   for i = 1 to pred (Array.length args) do
+      eprintf " %s" args.(i)
+   done;
+   eflush stderr;
    let pid = Unix.create_process "openssl" args Unix.stdin Unix.stdout Unix.stderr in
    let _, status = Unix.waitpid [] pid in
       if status <> Unix.WEXITED 0 then
@@ -223,7 +228,7 @@ let create_cert name =
          (* Make sure the MP_BROWSER_HOSTNAME environ variable is set - we refer to it in the config file *)
          sethostname (gethostname ());
          eprintf "Creating certificate file %s%t" name eflush;
-         execute_openssl [|"req"; "-x509"; "-newkey"; "rsa:1024"; "-keyout"; name; "-out"; name; "-days"; "360"; "-config"; conf |]
+         execute_openssl [|"openssl"; "req"; "-x509"; "-newkey"; "rsa:1024"; "-keyout"; name; "-out"; name; "-days"; "360"; "-config"; conf|]
    end;
    try access name [F_OK;R_OK] with
       Unix.Unix_error (err, _, _) ->
@@ -250,7 +255,7 @@ let dh_pem =
       let name = Filename.concat (certs_dir ()) "dh.pem" in
          if not (Sys.file_exists name) then begin
             eprintf "Creating certificate file %s%t" name eflush;
-            execute_openssl [| "dhparam"; "-2"; "-out"; name |];
+            execute_openssl [|"openssl"; "dhparam"; "-2"; "-out"; name|];
          end;
          try access name [F_OK;R_OK]; name with
             Unix.Unix_error (err, _, _) ->

@@ -13,26 +13,6 @@ OMakeVersion(0.7.15, 0.7.30)
 # needs.
 #
 
-#
-# Requires version 0.7.14
-#
-if $(not $(defined SYSNAME))
-    if $(equal $(OSTYPE), Win32)
-        SYSNAME  = "Win32"
-        NODENAME = "unknown"
-        VERSION  = "unknown"
-        RELEASE  = "unknown"
-        MACHINE  = i386
-        export
-    else
-        SYSNAME  = $(OS)
-        NODENAME = "unknown"
-        VERSION  = "unknown"
-        RELEASE  = "release"
-        MACHINE  = $(shell uname -m)
-        export
-    export
-
 ########################################################################
 # Begin real makefile.
 #
@@ -101,8 +81,6 @@ if $(equal $(OSTYPE), Win32)
    #
    # No native-code version of camlp4 on windows
    #
-   NATIVE_ENABLED = false
-   BYTE_ENABLED = true
    READLINE_ENABLED = false
    NCURSES_ENABLED = false
    NATIVE_PROFILING_ENABLED = false
@@ -364,7 +342,7 @@ OCAML_LIB_FLAGS += -linkall
 if $(SSL_ENABLED)
     if $(equal $(OSTYPE), Win32)
         OCAML_LINK_FLAGS += -cclib c:/OpenSSL/lib/VC/ssleay32.lib -cclib c:/OpenSSL/lib/VC/libeay32.lib
-        CFLAGS += -DSSL_ENABLED -Ic:/OpenSSL/include
+        CFLAGS += /DSSL_ENABLED -Ic:/OpenSSL/include
         export
     else
         OCAML_LINK_FLAGS += -cclib -lcrypto -cclib -lssl

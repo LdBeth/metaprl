@@ -4,6 +4,12 @@
 include $(STDROOT)
 
 #
+# We use a version of OCaml that has native-code compilers
+#
+OCAMLC = ocamlc.opt
+OCAMLOPT = ocamlopt.opt
+
+#
 # A MetaPRL theory is always named "theory"
 #
 Theory(files) =
