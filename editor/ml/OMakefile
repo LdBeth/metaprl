@@ -3,7 +3,7 @@
 #
 OCAMLINCLUDES +=\
         -I $(ROOT)/$(ENSEMBLE_DIR)\
-        $(addprefix -I , $(MP_DIRS))
+        $'(addprefix -I , $(MP_DIRS))
 
 # Name of main librariws
 MAIN = metaprl
@@ -234,7 +234,7 @@ make_mp_version$(EXE): make_mp_version.ml
 	$(OCAMLC) -o $@ unix.cma $<
 
 mp_version.ml: make_mp_version$(EXE) $(ALL_DEPS)
-	make_mp_version -version $(MP_VERSION) -refiner $(REFINER) -terms $(TERMS) > $@
+	./make_mp_version -version $(MP_VERSION) -refiner $(REFINER) -terms $(TERMS) > $@
 
 #
 # Phony targets
@@ -250,7 +250,6 @@ if $(BYTE_ENABLED)
 #
 clean:
     $(CLEAN) mp_version.ml make_mp_version
-    cd tests && $(RM) -f *.p4* *.pp* *.cmx *.cmi* *.cmo* *.o
 
 #
 # All defaults
