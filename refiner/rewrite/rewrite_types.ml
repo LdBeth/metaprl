@@ -193,24 +193,6 @@ struct
         con_new_vars : string array
       }
 
-   (*
-    * Types for redex matching.
-    *)
-   type rewrite_type =
-      RewriteTermType of string
-    | RewriteFunType of string
-    | RewriteContextType of string
-    | RewriteStringType of string
-    | RewriteIntType of string
-    | RewriteLevelType of string
-
-   type rewrite_item =
-      RewriteTerm of term
-    | RewriteFun of (term list -> term)
-    | RewriteContext of (term -> term list -> term)
-    | RewriteString of string
-    | RewriteInt of int
-    | RewriteLevel of level_exp
 end
 
 (*
