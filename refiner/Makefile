@@ -39,7 +39,7 @@ opt: optlib
 #
 # The real Makefile
 #
-include $(ROOT)/mk/config
+include $(ROOT)/mk/rules
 
 #
 # Sub-dependencies

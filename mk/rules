@@ -112,19 +112,7 @@ ZMLIFILES    = $(addsuffix .mli, $(MLZFILES))
 #
 # verb and simp variations
 #
-.PHONY: simp verb opt_simp opt_verb
-
-verb:
-	$(VERB_ENV) $(MAKE) all
-
-simp:
-	$(SIMP_ENV) $(MAKE) all
-
-opt_verb:
-	$(VERB_ENV) $(MAKE) opt
-
-opt_simp:
-	$(SIMP_ENV) $(MAKE) opt
+.PHONY:
 
 # Instructions to make
 .PHONY: all lib opt clean depend install
@@ -140,20 +128,20 @@ $(MAIN)-native$(EXT_LIB): $(NOFILES)
 	ar r $@ $?
 	ranlib $@
 
-$(MAIN).cma: $(LCMOFILES) $(MP_CMOFILES)
+$(MAIN).cma: $(LCMOFILES) $(MP_CMOFILES) $(ROOT)/mk/config
 	$(OCAMLC) $(OCAMLCFLAGS) -a -o $@ $(LCMOFILES) $(MP_CMOFILES)
 
-$(MAIN).cmxa: $(LCMXFILES) $(MP_CMXFILES)
+$(MAIN).cmxa: $(LCMXFILES) $(MP_CMXFILES) $(ROOT)/mk/config
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -a -o $@ $(LCMXFILES) $(MP_CMXFILES)
 
-$(MAIN).run: $(CMAFILES) $(CMADEPS)
+$(MAIN).run: $(CMAFILES) $(CMADEPS) $(ROOT)/mk/config
 	$(OCAMLCP) -custom $(OCAMLCFLAGS) -o $@ $(OCAMLCPOPT) $(CMALIBS) $(CMAFILES) $(BYTE_CCLIBS) $(LIBTHREADS)
 	if [ -f $(MAIN).run.exe ]; then\
 		mv $(MAIN).run.exe $(MAIN).run.bak;\
 		mv $(MAIN).run.bak $(MAIN).run;\
 	fi
 
-$(MAIN).opt: $(CMXAFILES) $(CMXDEPS)
+$(MAIN).opt: $(CMXAFILES) $(CMXDEPS) $(ROOT)/mk/config
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ $(CMXAFILES) $(CMXLIBS) $(NATIVE_CCLIBS) $(OPTTHREADS)
 	if [ -f $(MAIN).exe ]; then\
 		mv $(MAIN).exe $(MAIN).bak;\
@@ -181,38 +169,38 @@ $(RCMXAFILES): $(ROOT)/lib/%.cmxa: %.cmxa
 $(RAFILES): $(ROOT)/lib/%$(EXT_LIB): %$(EXT_LIB)
 	$(LN) ../$(DIR)/$*$(EXT_LIB) $(ROOT)/lib
 
-$(MP_CMIFILES) $(MP2_CMIFILES): %.cmi: %.mli
+$(MP_CMIFILES) $(MP2_CMIFILES): %.cmi: %.mli $(ROOT)/mk/config
 	MPLIB=$(MPLIB) $(PRLC) $(OCAMLCFLAGS) -c $*.mli
 
-$(MP_PPOFILES) $(MP2_PPOFILES): %.ppo: %.cmi %.ml
+$(MP_PPOFILES) $(MP2_PPOFILES): %.ppo: %.cmi %.ml $(ROOT)/mk/config
 	$(CAMLP4N) $(CAMLP4NFLAGS) $*.ml -o $*.ppo
 
-$(MP_CMOFILES) $(MP2_CMOFILES): %.cmo: %.ppo %.cmi
+$(MP_CMOFILES) $(MP2_CMOFILES): %.cmo: %.ppo %.cmi $(ROOT)/mk/config
 	$(OCAMLC) $(OCAMLCFLAGS) -c -impl $*.ppo
 
-$(MP_CMXFILES) $(MP2_CMXFILES): %.cmx: %.ppo %.cmi
+$(MP_CMXFILES) $(MP2_CMXFILES): %.cmx: %.ppo %.cmi $(ROOT)/mk/config
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -c -impl $*.ppo
 
-$(REG_CMOFILES): %.cmo: %.ml %.cmi
+$(REG_CMOFILES): %.cmo: %.ml %.cmi $(ROOT)/mk/config
 	$(OCAMLCP) $(OCAMLCFLAGS) -c $(OCAMLCPOPT) $*.ml
 
-$(REG_CMIFILES): %.cmi: %.mli
+$(REG_CMIFILES): %.cmi: %.mli $(ROOT)/mk/config
 	$(OCAMLC) $(OCAMLCFLAGS) -c $*.mli
 
-$(REG_CMXFILES): %.cmx: %.ml %.cmi
+$(REG_CMXFILES): %.cmx: %.ml %.cmi $(ROOT)/mk/config
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -c $*.ml
 
-%.p4i: %.mli
+%.p4i: %.mli $(ROOT)/mk/config
 	MPLIB=$(MPLIB) $(PRLC) $(INCLUDE) -E $*.mli > $*.p4i
 
-%.p4: %.ml
+%.p4: %.ml $(ROOT)/mk/config
 	MPLIB=$(MPLIB) $(PRLC) $(INCLUDE) -E $*.ml > $*.p4
 
-%.ml: %.mll
+%.ml: %.mll $(ROOT)/mk/config
 	$(RM) $@
 	$(OCAMLLEX) $*.mll
 
-%.ml %.mli: %.mly
+%.ml %.mli: %.mly $(ROOT)/mk/config
 	$(RM) $*.ml $*.mli
 	$(OCAMLYACC) $*.mly
 
@@ -220,41 +208,24 @@ $(REG_CMXFILES): %.cmx: %.ml %.cmi
 	$(RM) $@
 	$(LN) $*.mlz $@
 
-%.mli: %.mlz
+%.mli: %.mlz 
 	$(RM) $@
 	$(LN) $*.mlz $@
 
-# %_verb.ml: %.mlp $(ROOT)/refiner/refsig/refine_error.h
-# 	$(RM) $@
-# 	$(CPP) $(INCLUDE) -DVERBOSE_EXN $*.mlp > $@
-# 	chmod 444 $@
-# 
-# %_verb.mli: %.mlip
-# 	$(RM) $@
-# 	$(CPP) $(INCLUDE) -DVERBOSE_EXN $*.mlip > $@
-# 	chmod 444 $@
-# 
-# %_simp.ml: %.mlp $(ROOT)/refiner/refsig/refine_error.h
-# 	$(RM) $@
-# 	$(CPP) $(INCLUDE) $*.mlp > $@
-# 	chmod 444 $@
-# 
-# %_simp.mli: %.mlip
-# 	$(RM) $@
-# 	$(CPP) $(INCLUDE) $*.mlip > $@
-# 	chmod 444 $@
-
-%-byte.o: %.c
+%-byte.o: %.c $(ROOT)/mk/config
 	$(CC) $(BYTE_CFLAGS) $(CFLAGS) -c $*.c -o $@
 
-%-native.o: %.c
+%-native.o: %.c $(ROOT)/mk/config
 	$(CC) $(NATIVE_CFLAGS) $(CFLAGS) -c $*.c -o $@
 
-%-byte.p.o: %.c
+%-byte.p.o: %.c $(ROOT)/mk/config
 	$(CC) -p $(BYTE_CFLAGS) $(CFLAGS) -c $*.c -o $@
 
-%-native.p.o: %.c
+%-native.p.o: %.c $(ROOT)/mk/config
 	$(CC) -p $(NATIVE_CFLAGS) $(CFLAGS) -c $*.c -o $@
+
+$(ROOT)/mk/config: $(ROOT)/mk/config.init
+	cat $(ROOT)/mk/config.init >> $(ROOT)/mk/config
 
 #
 clean::

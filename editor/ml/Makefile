@@ -245,5 +245,5 @@ mp_version.cmi: mp_version.mli
 	$(OCAMLC) $(OCAMLCFLAGS) mp_version.mli
 
 # Real makefile
-include $(ROOT)/mk/config
+include $(ROOT)/mk/rules
 include Makefile.dep

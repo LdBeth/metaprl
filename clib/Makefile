@@ -61,5 +61,5 @@ patch:
 	patch -o intern.c $(OCAMLSRC)/byterun/intern.c intern.patch
 
 # Actual makefile
-include ../mk/config
+include ../mk/rules
 include Makefile.dep

@@ -5,7 +5,7 @@ DIR = filter
 ROOT = ..
 
 #
-# Common config
+# Common Config
 #
 include $(ROOT)/mk/preface
 
@@ -202,7 +202,7 @@ all: lib
 #
 # Included files
 #
-include $(ROOT)/mk/config
+include $(ROOT)/mk/rules
 include Makefile.dep
 
 #

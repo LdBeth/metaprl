@@ -5,15 +5,24 @@
 #
 
 #
-# General properties
+# User definitions - TERMS, REFINER, MAKE_JOBS
 #
-MAKE=make -j3
+include $(ROOT)/mk/config
+
+ifndef TERMS
+   TERMS=undefined
+endif
+ifndef REFINER
+   REFINER=undefined
+endif
+ifndef MAKE_JOBS
+   MAKE_JOBS=undefined
+endif
 
 #
-# Environment options for simp and verb variations
+# Options for simp and verb variations
 #
-SIMP_ENV=CPPFLAGS=-DSIMPLE_EXN
-VERB_ENV=CPPFLAGS=-DVERBOSE_EXN
+CPPFLAGS=-D$(REFINER)_EXN
 
 #
 # Parameters
@@ -21,6 +30,8 @@ VERB_ENV=CPPFLAGS=-DVERBOSE_EXN
 ifndef INLINE
    INLINE=5
 endif
+
+MAKE:=$(MAKE) -j$(MAKE_JOBS)
 
 #
 # Config

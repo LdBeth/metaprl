@@ -65,7 +65,7 @@ $(ROOT)/lib/mbs-mpl.txt: mbs-mpl.txt
 #
 # Real makefile
 #
-include $(ROOT)/mk/config
+include $(ROOT)/mk/rules
 include Makefile.dep
 
 #

@@ -21,7 +21,7 @@ all: lib
 #
 # Actual makefile
 #
-include $(ROOT)/mk/config
+include $(ROOT)/mk/rules
 include Makefile.dep
 
 #

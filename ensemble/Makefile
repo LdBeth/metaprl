@@ -202,7 +202,7 @@ thread_refiner.ml: thread_refiner_null.ml
 #
 # Actual makefile
 #
-include $(ROOT)/mk/config
+include $(ROOT)/mk/rules
 include Makefile.dep
 
 lib: $(RMLIFILES) $(RCMIFILES) $(RMLIFILES2) $(RCMIFILES2) $(RCMAFILES) $(RNULL_LIB) $(RENS_LIB)

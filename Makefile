@@ -1,10 +1,8 @@
-#
-# General options
-#
-MAKE = make -j3
+DIR:=
+ROOT:=.
 
 #
-# Environment for simp and verb variations
+# Various variables 
 #
 include mk/preface
 
@@ -40,63 +38,50 @@ MP_DIRS =\
 
 DIRS = $(REFINER_DIRS) $(MP_DIRS) editor/ml
 
-.PHONY: all opt simp verb opt_simp opt_verb
+.PHONY: all opt
 .PHONY: profile_all profile_clean profile_byte profile profile_opt
-.PHONY: install depend clean
+.PHONY: install depend clean check_config
 
-all: verb
-opt: opt_verb
-
-simp:
+all: check_config
 	@for i in $(DIRS); do\
-		if (echo Making $$i...; $(SIMP_ENV) $(MAKE) -C $$i all); then true; else exit 1; fi;\
+		if (echo Making $$i...; $(MAKE) -C $$i all); then true; else exit 1; fi;\
 	done
 
-verb:
+opt: check_config
 	@for i in $(DIRS); do\
-		if (echo Making $$i...; $(VERB_ENV) $(MAKE) -C $$i all); then true; else exit 1; fi;\
+		if (echo Making $$i...; $(MAKE) -C $$i opt); then true; else exit 1; fi;\
 	done
 
-opt_simp:
-	@for i in $(DIRS); do\
-		if (echo Making $$i...; $(SIMP_ENV) $(MAKE) -C $$i opt); then true; else exit 1; fi;\
-	done
-
-opt_verb:
-	@for i in $(DIRS); do\
-		if (echo Making $$i...; $(VERB_ENV) $(MAKE) -C $$i opt); then true; else exit 1; fi;\
-	done
-
-profile_clean: 
+profile_clean: check_config
 	@for i in $(REFINER_DIRS) editor/ml; do\
-		if (echo Making $$i...; $(SIMP_ENV) $(MAKE) -C $$i clean); then true; else exit 1; fi;\
+		if (echo Making $$i...; $(MAKE) -C $$i clean); then true; else exit 1; fi;\
 	done
 
-profile_all: 
+profile_all: check_config
 	@for i in $(REFINER_DIRS) editor/ml; do\
-		if (echo Making $$i...; OCAMLCP=ocamlcp OCAMLCPOPT="-p a" $(SIMP_ENV) $(MAKE) -C $$i all); then true; else exit 1; fi;\
+		if (echo Making $$i...; OCAMLCP=ocamlcp OCAMLCPOPT="-p a" $(MAKE) -C $$i all); then true; else exit 1; fi;\
 	done
 
-profile_byte:
+profile_byte: check_config
 	@$(MAKE) profile_clean
 	@$(MAKE) all
 	@$(MAKE) profile_clean
 	@$(MAKE) profile_all
 
-profile: 
+profile: check_config
 	@$(MAKE) filter
 	@$(MAKE) profile_opt
 
-profile_opt:
+profile_opt: check_config
 	@for i in $(REFINER_DIRS); do\
-		if (echo Making $$i...; $(SIMP_ENV) $(MAKE) -C $$i PROFILE=-p INLINE=0 opt); then true; else exit 1; fi;\
+		if (echo Making $$i...; $(MAKE) -C $$i PROFILE=-p INLINE=0 opt); then true; else exit 1; fi;\
 	done
 	@if (echo Making filter...; $(MAKE) -C filter PROFILE=-p INLINE=0 profile); then true; else exit 1; fi
 	@for i in $(MP_DIRS) editor/ml; do\
-		if (echo Making $$i...; $(SIMP_ENV) $(MAKE) -C $$i PROFILE=-p INLINE=0 opt); then true; else exit 1; fi;\
+		if (echo Making $$i...; $(MAKE) -C $$i PROFILE=-p INLINE=0 opt); then true; else exit 1; fi;\
 	done
 
-install:
+install: check_config
 	@for i in $(DIRS); do\
 		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	done
@@ -111,3 +96,22 @@ depend:
 	@for i in $(DIRS); do\
 		if (echo Making $$i...; cd $$i && touch Makefile.dep && $(MAKE) $@); then true; else exit 1; fi;\
 	done
+
+mk/config: mk/config.init
+	cat mk/config.init >> mk/config
+
+check_config::
+	@if [ $(TERMS) != ds -a $(TERMS) != std ]; then\
+		echo "ERROR: Invalid TERMS variable, check mk/config file"; \
+		exit 1; \
+	fi
+	@if [ $(REFINER) != SIMPLE -a $(REFINER) != VERBOSE ]; then\
+		echo "ERROR: Invalid REFINER variable, check mk/config file"; \
+		exit 1; \
+	fi
+	@if [ $(MAKE_JOBS) = undefined ]; then\
+		echo "ERROR: Undefined MAKE_JOBS variable, check mk/config file"; \
+		exit 1; \
+	fi
+
+
