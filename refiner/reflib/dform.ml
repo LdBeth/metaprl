@@ -448,12 +448,14 @@ and format_term buf shortener printer term =
 (*
  * Sequents and variables are handled specially.
  *)
+let base_opname = mk_opname "Base_dform" nil_opname
+
 let sequent_term =
-   let opname = mk_opname "sequent" nil_opname in
+   let opname = mk_opname "sequent" base_opname in
       mk_simple_term opname [mk_var_term (Lm_symbol.add "ext"); mk_var_term (Lm_symbol.add "hyps")]
 
 let dvar_opname =
-   mk_opname "display_var" nil_opname
+   mk_opname "display_var" base_opname
 
 (*
  * Print a term to a buffer.

@@ -73,6 +73,8 @@ let _ =
 let debug_dform = load_debug "dform"
 
 (* @terms *)
+declare display_var[ver:v]{'termlist}
+declare "sequent"{'arg; 'seq}
 declare bvar{'v}
 declare " "
 declare "^"

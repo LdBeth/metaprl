@@ -345,8 +345,6 @@ struct
       "sbreak", [ShapeString; ShapeString], [];
       "mode", [ShapeString], []; "except_mode", [ShapeString], [];
       "prec", [ShapeString], []; "tzone", [ShapeString], [];
-      (* Some subterms *)
-      "display_var", [ShapeVar], [0]; "sequent", [], [0;0];
       (* Multi-shape operators *)
       "slot", [ShapeString], []; "slot", [ShapeVar], []; "slot", [ShapeToken], [];
       "slot", [ShapeLevel] , []; "slot", [ShapeNumber], [];
