@@ -665,8 +665,8 @@ struct
               t = noncommaterm; op = sl_in; ty = NEXT ->
                (* XXX HACK - this is to support ad-hoc I/O form "member" - see TODO 2.14 -2.15 *)
                   let t =
-                     try mk_dep0_dep0_term (mk_dep0_dep0_opname loc "member_of") t.aterm ty.aterm
-                     with _ -> mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc "equal") ty.aterm t.aterm t.aterm
+                     try mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc "equal") ty.aterm t.aterm t.aterm
+                     with _ -> mk_dep0_dep0_term (mk_dep0_dep0_opname loc "member") t.aterm ty.aterm
                   in 
                      { aname = None; aterm = t }
             | (* t1 in t2 subset t3 *)
