@@ -412,50 +412,6 @@ struct
             { free_vars = VarsDelayed;
               core = Term { term_op = op; term_terms = bterms }}
 
-   (*
-    * Second order context, contains a context term, plus
-    * binding variables like so vars.
-    *)
-   let context_opname = make_opname ["context"]
-
-   let is_context_term t =
-      match dest_term t with
-         { term_op = { op_name = opname; op_params = [Var _] };
-           term_terms = bterms
-         } when Opname.eq opname context_opname ->
-            bterms <> [] & no_bvars bterms
-       | _ ->
-            false
-
-   let dest_context term =
-      match dest_term term with
-         { term_op = { op_name = opname; op_params = [Var v] };
-           term_terms = bterms
-         } when Opname.eq opname context_opname ->
-            let rec collect term = function
-               [bterm] ->
-                  [], dest_simple_bterm bterm
-             | bterm::bterms ->
-                  let args, term = collect term bterms in
-                     dest_simple_bterm bterm :: args, term
-             | _ ->
-                  ref_raise(RefineError ("dest_context", TermMatchError (term, "not a context")))
-            in
-            let args, term = collect term bterms in
-               v, term, args
-       | _ ->
-            ref_raise(RefineError ("dest_context", TermMatchError (term, "not a context")))
-
-   let mk_context_term v term terms =
-      let rec collect term = function
-         [] ->
-            [mk_simple_bterm term]
-       | h::t ->
-            mk_simple_bterm h :: collect term t
-      in
-      let op = { op_name = context_opname; op_params = [Var v] } in
-         mk_term op (collect term terms)
-
    let mk_level_var v i =
       { le_var = v; le_offset = i }
 
