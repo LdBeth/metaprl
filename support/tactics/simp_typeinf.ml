@@ -80,7 +80,8 @@ let _ =
  *)
 type ty_var = var
 type ty_var_set = SymbolSet.t
-type tenv = term SymbolTable.t
+type tenv = ty_var_set
+type venv = term SymbolTable.t
 
 (*
  * A type inference is performed in a type context,
@@ -89,10 +90,11 @@ type tenv = term SymbolTable.t
  * An inference function takes as arguments :
  * 1) consts - a set of variables that should be treated as
  * constants when we use unification to figure things out.
- * 2) env - a table of variable names and
+ * 2) tenv - set of all bound type variables
+ * 3) venv - a table of variable names and
  * the types these variables were declared with.
- * 3) eqs - a list of equations we have on our type variables
- * 4) t - a term whoose type we want to infer
+ * 4) eqs - a list of equations we have on our type variables
+ * 5) t - a term whoose type we want to infer
  *
  * An inference function returns:
  * 1) A new term constructed by the type inference function;
@@ -101,7 +103,7 @@ type tenv = term SymbolTable.t
  * 2) Updated eqs,
  * 3) a type for the term (that can contain new type variables)
  *)
-type simp_typeinf_func = ty_var_set -> tenv -> eqnlist -> term -> term * eqnlist * term
+type simp_typeinf_func = ty_var_set -> tenv -> venv -> eqnlist -> term -> term * eqnlist * term
 
 (*
  * Modular components also get a recursive instance of
@@ -124,13 +126,13 @@ type simp_typeinf_resource_info = term * simp_typeinf_comp
 let identity x = x
 
 let infer tbl =
-   let rec infer_term consts tenv eqs t =
+   let rec infer_term consts tenv venv eqs t =
       let inf =
          try snd (lookup tbl t) with
             Not_found ->
                raise (RefineError ("simp_typeinf", StringTermError ("Don't know how to infer type for", t)))
       in
-         inf infer_term consts tenv eqs t
+         inf infer_term consts tenv venv eqs t
    in
       infer_term
 
@@ -147,7 +149,7 @@ let typeinf_final consts eqs t ty =
 let simp_infer_type p t =
    let consts = free_vars_set t in
    let inf = get_resource_arg p get_simp_typeinf_resource in
-   let t, eqs, ty = inf consts SymbolTable.empty eqnlist_empty t in
+   let t, eqs, ty = inf consts SymbolSet.empty SymbolTable.empty eqnlist_empty t in
       typeinf_final consts eqs t ty
 
 let simp_infer_type_args p t =
