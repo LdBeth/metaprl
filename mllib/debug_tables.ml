@@ -52,18 +52,14 @@ struct
 
    let print (_,t1,t2) =
       force_newline ();
-      open_vbox 0;
+      open_box 3;
       print_string "Table1:";
-      print_break 0 3;
-      open_hvbox 0;
       Table1.print t1;
       close_box ();
       force_newline ();
+      open_box 3;
       print_string "Table2:";
-      print_break 0 3;
-      open_hvbox 0;
       Table2.print t2;
-      close_box ();
       close_box ();
       force_newline ()
 
@@ -71,15 +67,6 @@ struct
       print t;
       print_flush ();
       raise (Invalid_argument "DebugTables")
-
-   let create s =
-      s, Table1.create s, Table2.create s
-
-   let add (s, t1, t2) key data =
-      s, Table1.add t1 key data, Table2.add t2 key data
-
-   let union (s, t1, t2) (s', t1', t2') =
-      Base.union s s', Table1.union t1 t1', Table2.union t2 t2'
 
    let mem (_, t1,t2 as t) key =
       match Table1.mem t1 key, Table2.mem t2 key with
@@ -118,23 +105,19 @@ struct
       and d2 = Table2.find_all t2 key in
       if List.length d1 = List.length d2 then
          if d1 = d2 then d1 else begin
-            open_vbox 0;
-            print_string "DebugTables.find_all mismatch: found different data";
-            print_break 0 3;
-            open_hvbox 0;
+            open_hvbox 3;
+            print_string "DebugTables.find_all mismatch: found different data:";
+            print_space ();
+            open_hvbox 3;
             print_string "In table1:";
-            print_break 1 3;
-            open_hvbox 0;
             print_space ();
             Base.print s key d1;
             close_box ();
-            force_newline ();
+            print_space ();
+            open_hvbox 3;
             print_string "In table2:";
-            print_break 0 3;
-            open_hvbox 0;
             print_space ();
             Base.print s key d2;
-            close_box ();
             close_box ();
             close_box ();
             error t
@@ -144,13 +127,84 @@ struct
          error t
       end
 
+   exception Mismatch of t * elt
+
+   let check_it (_,t1,t2 as t) key _ =
+      if Table1.find_all t1 key <> Table2.find_all t2 key
+      then raise (Mismatch (t,key))
+
+   let check (_,t1,t2 as t) =
+      Table1.iter (check_it t) t1;
+      Table2.iter (check_it t) t2;
+      t
+
+   let create s =
+      try
+         check (s, Table1.create s, Table2.create s)
+      with
+         Mismatch (t,key) ->
+            open_vbox 3;
+            print_string "Create made non-empty tables:";
+            print_space ();
+            ignore(find_all t key);
+            raise(Invalid_argument "DebugTables.create - something funny")
+
+   let add (s, t1, t2 as t) key data =
+      try 
+         check (s, Table1.add t1 key data, Table2.add t2 key data)
+      with
+         Mismatch (t',key') ->
+            open_vbox 3;
+            print_string "Add made different tables:";
+            print_space ();
+            open_vbox 3;
+            print_string "Old table:";
+            print t;
+            close_box ();
+            open_hvbox 3;
+            print_string "Added data:";
+            print_space ();
+            Base.print s key [data];
+            close_box ();
+            print_cut();
+            ignore(find_all t' key');
+            raise(Invalid_argument "DebugTables.add - something funny")
+
+   let union (s, t1, t2 as t) (s', t1', t2' as t') =
+      try
+         check(Base.union s s', Table1.union t1 t1', Table2.union t2 t2')
+      with
+         Mismatch (t'',key) ->
+            open_vbox 3;
+            print_string "Union made different tables:";
+            print_space ();
+            ignore(find_all t'' key);
+            raise(Invalid_argument "DebugTables.union - something funny")
+
    let remove (s,t1,t2) key =
-      s, Table1.remove t1 key, Table2.remove t2 key
+      try
+         check(s, Table1.remove t1 key, Table2.remove t2 key)
+      with
+         Mismatch (t',key') ->
+            open_vbox 3;
+            print_string "Remove made different tables:";
+            print_space ();
+            ignore(find_all t' key');
+            raise(Invalid_argument "DebugTables.remove - something funny")
 
    let iter f (_, t1, t2) =
       Table1.iter f t1
 
    let map f (s, t1, t2) =
-      s, Table1.map f t1, Table2.map f t2
+      try
+         check(s, Table1.map f t1, Table2.map f t2)
+      with
+         Mismatch (t',key) ->
+            open_vbox 3;
+            print_string "Map made different tables:";
+            print_space ();
+            ignore(find_all t' key);
+            raise(Invalid_argument "DebugTables.map - something funny")
+
 
 end

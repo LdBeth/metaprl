@@ -278,7 +278,7 @@ let create
                   Node (_, data :: _, _, _, _) ->
                      data
                 | _ ->
-                     raise (Failure "Splay_table.find")
+                     raise (Invalid_argument "Splay_table.find")
             end
        | SplayNotFound tree ->
             t.splay_tree <- tree;
@@ -294,7 +294,7 @@ let create
                   Node (_, data, _, _, _) ->
                      data
                 | _ ->
-                     raise (Failure "Splay_table.find_all")
+                     raise (Invalid_argument "Splay_table.find_all")
             end
        | SplayNotFound tree ->
             t.splay_tree <- tree;
@@ -314,7 +314,7 @@ let create
                   Node (key, data', left, right, size) ->
                      Node (key, ord_append data data', left, right, size)
                 | Leaf ->
-                     raise (Failure "Splay_table.add_list")
+                     raise (Invalid_argument "Splay_table.add_list")
             end
        | SplayNotFound tree ->
             begin
@@ -325,7 +325,7 @@ let create
                         new_node key data left (new_node key' data' empty right)
                      else
                         (* Root should become left child *)
-                        new_node key data (new_node key' data left empty) right
+                        new_node key data (new_node key' data' left empty) right
                 | Leaf ->
                         (* Tree is empty, so make a new root *)
                      new_node key data empty empty
@@ -358,7 +358,7 @@ let create
                 | Node (key, _ :: data, left, right, size) ->
                      { splay_tree = Node (key, data, left, right, size); splay_arg = arg }
                 | _ ->
-                     raise (Failure "Splay_table.remove")
+                     raise (Invalid_argument "Splay_table.remove")
             end
        | SplayNotFound tree ->
             t.splay_tree <- tree;
@@ -396,7 +396,7 @@ let create
                            let right3 = union_aux arg right1 right2 in
                               new_node key1 data1 left3 right3
                    | _ ->
-                        raise (Failure "Splay_table.union")
+                        raise (Invalid_argument "Splay_table.union")
             else if size1 = 1 then
                add_list arg s2 key1 data1
             else
@@ -415,7 +415,7 @@ let create
                         let right3 = union_aux arg right1 right2 in
                            new_node key2 data2 left3 right3
                 | _ ->
-                     raise (Failure "Splay_table.union")
+                     raise (Invalid_argument "Splay_table.union")
    in
 
    let union s1 s2 =
