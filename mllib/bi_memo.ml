@@ -161,7 +161,7 @@ let invert info par arg =
                        eprintf "forward_value G: failed%t" eflush;
 *)
                     Hash.insert info.memo_i2d_ref hash arg value;
-                    Hash.insert info.memo_i2d_value hash i2d_arg value;
+                    Hash.insert info.memo_i2d_value i2d_hash i2d_arg value;
                     Hash.insert info.memo_d2i_ref domain_hash value arg;
 (* ??? *)                    Hash.insert info.memo_d2i_value d2i_hash d2i_value arg;
                     value

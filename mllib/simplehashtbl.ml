@@ -88,8 +88,8 @@ let rec assoc compare x = function
 let seek info hash key =
    let len = Array.length info.table in
    let index = hash mod len in
-   let backet = info.table.(index) in
-      assoc info.compare key backet
+   let bucket = info.table.(index) in
+      assoc info.compare key bucket
 
 let insert info hash key value =
    let count = info.count and table = info.table in

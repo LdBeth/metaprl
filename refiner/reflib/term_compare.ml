@@ -94,14 +94,14 @@ struct
        | CType.MVar      s1,         CType.MVar      s2         -> s1 = s2
        | CType.ObId      oid1,       CType.ObId      oid2       -> list_mem_eq oid1 oid2
        | CType.ParamList params1,    CType.ParamList params2    -> list_mem_eq params1 params2
-       | CType.MSum      (p11, p12), CType.MSum      (p21, p22) -> p11 == p12 & p21 == p22
-       | CType.MDiff     (p11, p12), CType.MDiff     (p21, p22) -> p11 == p12 & p21 == p22
-       | CType.MProduct  (p11, p12), CType.MProduct  (p21, p22) -> p11 == p12 & p21 == p22
-       | CType.MQuotient (p11, p12), CType.MQuotient (p21, p22) -> p11 == p12 & p21 == p22
-       | CType.MRem      (p11, p12), CType.MRem      (p21, p22) -> p11 == p12 & p21 == p22
-       | CType.MLessThan (p11, p12), CType.MLessThan (p21, p22) -> p11 == p12 & p21 == p22
-       | CType.MEqual    (p11, p12), CType.MEqual    (p21, p22) -> p11 == p12 & p21 == p22
-       | CType.MNotEqual (p11, p12), CType.MNotEqual (p21, p22) -> p11 == p12 & p21 == p22
+       | CType.MSum      (p11, p12), CType.MSum      (p21, p22) -> p11 == p21 & p12 == p22
+       | CType.MDiff     (p11, p12), CType.MDiff     (p21, p22) -> p11 == p21 & p12 == p22
+       | CType.MProduct  (p11, p12), CType.MProduct  (p21, p22) -> p11 == p21 & p12 == p22
+       | CType.MQuotient (p11, p12), CType.MQuotient (p21, p22) -> p11 == p21 & p12 == p22
+       | CType.MRem      (p11, p12), CType.MRem      (p21, p22) -> p11 == p21 & p12 == p22
+       | CType.MLessThan (p11, p12), CType.MLessThan (p21, p22) -> p11 == p21 & p12 == p22
+       | CType.MEqual    (p11, p12), CType.MEqual    (p21, p22) -> p11 == p21 & p12 == p22
+       | CType.MNotEqual (p11, p12), CType.MNotEqual (p21, p22) -> p11 == p21 & p12 == p22
        | _ -> false
 
    let compare_operator { CType.op_name = opname1; CType.op_params = params1 }
@@ -110,7 +110,7 @@ struct
 
    let compare_term { CType.term_op = op1; CType.term_terms = bterms1 }
                     { CType.term_op = op2; CType.term_terms = bterms2 } =
-      op1 == op2 & list_mem_eq bterms1 bterms2
+      (op1 == op2) & list_mem_eq bterms1 bterms2
 
    let rec compare_hyps hyp1 hyp2 i =
       (i < 0) ||
