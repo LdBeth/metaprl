@@ -35,29 +35,7 @@ open Phobos_token_inheritance
 
 (*****************************************************
  * Associativity and precedence list.
- *
- * Check that it contains only valid terminals.
- *****************************************************)
-let rec check_terminals terminals = function
-   (s, pos) :: rest ->
-      if string_set_mem terminals s then
-         check_terminals terminals rest
-      else
-         begin
-            print_warning pos (string_format "undeclared terminal %s" s);
-            check_terminals terminals rest
-         end
- | [] ->
-      ()
-
-let check_assocs gst =
-   List.iter (fun assoc ->
-      match assoc with
-         Dir_nonassoc lst
-       | Dir_leftassoc lst
-       | Dir_rightassoc lst ->
-            check_terminals gst.grammar_terminals lst) gst.grammar_assocs
-
+ * *****************************************************)
 let rec assoc_list_mem lst s =
    match lst with
       (s1, pos) :: rest ->
@@ -74,24 +52,24 @@ let rec assoc_list_mem lst s =
  *)
 let rec priority_of_aux s level = function
    assoc :: rest ->
-   (match assoc with
-      Dir_nonassoc lst ->
-         if assoc_list_mem lst s then
-            level, Some NonAssoc
-         else
-            priority_of_aux s (level+1) rest
-    | Dir_leftassoc lst ->
-         if assoc_list_mem lst s then
-            level, Some LeftAssoc
-         else
-            priority_of_aux s (level+1) rest
-    | Dir_rightassoc lst ->
-         if assoc_list_mem lst s then
-            level, Some RightAssoc
-         else
-            priority_of_aux s (level+1) rest)
+      (match assoc with
+         Dir_nonassoc lst ->
+            if assoc_list_mem lst s then
+               level, Some NonAssoc
+            else
+               priority_of_aux s (level+1) rest
+       | Dir_leftassoc lst ->
+            if assoc_list_mem lst s then
+               level, Some LeftAssoc
+            else
+               priority_of_aux s (level+1) rest
+       | Dir_rightassoc lst ->
+            if assoc_list_mem lst s then
+               level, Some RightAssoc
+            else
+               priority_of_aux s (level+1) rest)
  | [] ->
-   -1, None
+      -1, None
 
 let priority_of s assocs =
    priority_of_aux s 1 assocs
@@ -100,11 +78,11 @@ let rec get_start_symbol = function
    opt :: rest ->
       (match opt with
          Go_start s ->
-         NonTerminal s
+            NonTerminal s
        | _ ->
-         get_start_symbol rest)
+            get_start_symbol rest)
  | [] ->
-   raise (PhobosException (bogus_pos, "no start symbol declared"))
+      raise (PhobosException (bogus_pos, "no start symbol declared"))
 
 (*
  * Convert from pre-grammar to grammar, and do some
@@ -357,9 +335,6 @@ let compile paths
 
    (* Augment grammar with new start production *)
    let gst = augment_grammar gst in
-
-   (* Check associativity list *)
-   check_assocs gst;
 
    (* Do sanity-check on grammar *)
    check_grammar gst;

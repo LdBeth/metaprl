@@ -87,27 +87,32 @@ let term_of_string paths gfile s =
       (* If both the source and binary grammar file exists, use the
          more recent one. *)
          true, true ->
-            let header, _ = load_grammar cgfile in
-            let time1 = timestamp_of gfile in
-            let size1 = size_of gfile in
-            let time2 = timestamp_of_header header in
-            let size2 = sizestamp_of_header header in
-               (* Both are of the same size and date: use binary grammar *)
-               if time1 = time2 && size1 = size2 then
-                  compile_with_saved_grammar paths cgfile s
-               (* The source file is more recent, use it only if it has really changed *)
-               else if time1 > time2 then
-                  begin
-                     let digest1 = create_digest (string_of_file gfile) in
-                     let digest2 = digest_of_header header in
-                        if digest1 = digest2 then
-                           compile_with_saved_grammar paths cgfile s
-                        else
-                           compile_with_source_grammar [] gfile s
-                  end
-               (* Otherwise, use the binary grammar *)
-               else
-                  compile_with_saved_grammar paths cgfile s
+            (try
+               let header, _ = load_grammar cgfile in
+               let time1 = timestamp_of gfile in
+               let size1 = size_of gfile in
+               let time2 = timestamp_of_header header in
+               let size2 = sizestamp_of_header header in
+                  (* Both are of the same size and date: use binary grammar *)
+                  if time1 = time2 && size1 = size2 then
+                     compile_with_saved_grammar paths cgfile s
+                  (* The source file is more recent, use it only if it has really changed *)
+                  else if time1 > time2 then
+                     begin
+                        let digest1 = create_digest (string_of_file gfile) in
+                        let digest2 = digest_of_header header in
+                           if digest1 = digest2 then
+                              compile_with_saved_grammar paths cgfile s
+                           else
+                              compile_with_source_grammar [] gfile s
+                     end
+                  (* Otherwise, use the binary grammar *)
+                  else
+                     compile_with_saved_grammar paths cgfile s
+            with
+               File_type_base.Bad_version _
+             | End_of_file ->
+                  compile_with_source_grammar [] gfile s)
       (* Only the .pho file exists, so use it *)
        | true, false ->
             compile_with_source_grammar [] gfile s

@@ -22,6 +22,7 @@
  * Email: granicz@cs.caltech.edu
  *)
 
+open Rformat
 open Phobos_constants
 open Phobos_parse_state
 open Phobos_type
@@ -47,8 +48,8 @@ exception ConvertException of conv_loc * conv_exn
 exception SyntaxError of pos
 exception SourceAccepted
 
-let print_term term =
-   print_string (string_of_bterm term)
+let format term buf term =
+   format_string buf (string_of_bterm term)
 
 let loc_of_string loc term s =
    LocString (s, term, loc)
@@ -56,113 +57,113 @@ let loc_of_string loc term s =
 let loc_start term s =
    LocStart (s, term)
 
-let rec print_loc = function
+let rec format_loc buf = function
    LocString (s, term, loc) ->
       let opname, _, _ = breakup_bterm term in
       let term_string = string_of_opname opname in
-      print_loc loc;
-      print_string "\\";
-      print_string s;
-      print_string " (";
-      print_string term_string;
-      print_string ")\n"
+      format_loc buf loc;
+      format_string buf "\\";
+      format_string buf s;
+      format_string buf " (";
+      format_string buf term_string;
+      format_string buf ")\n"
  | LocStart (s, term) ->
       let opname, _, _ = breakup_bterm term in
       let term_string = string_of_opname opname in
-      print_string "\\";
-      print_string s;
-      print_string " (";
-      print_string term_string;
-      print_string ")\n"
+      format_string buf "\\";
+      format_string buf s;
+      format_string buf " (";
+      format_string buf term_string;
+      format_string buf ")\n"
 
-let print_loc_last = function
+let format_loc_last buf = function
    LocString (s, term, loc) ->
-      print_string " (";
-      print_term term;
-      print_string ")\n"
+      format_string buf " (";
+      format term buf term;
+      format_string buf ")\n"
  | LocStart (s, term) ->
-      print_string " (";
-      print_term term;
-      print_string ")\n"
+      format_string buf " (";
+      format term buf term;
+      format_string buf ")\n"
 
-let print_exn = function
+let format_exn buf = function
    PhobosException (pos, s) ->
-      print_string "*** Phobos error:\n";
-      print_string "*** Error: ";
-      print_string s;
-      print_string "\n";
-      print_pos pos
+      format_string buf "*** Phobos error:\n";
+      format_string buf "*** Error: ";
+      format_string buf s;
+      format_string buf "\n";
+      format_pos buf pos
  | PhobosError s ->
-      print_string "*** Phobos error:\n";
-      print_string "*** Error: ";
-      print_string s
+      format_string buf "*** Phobos error:\n";
+      format_string buf "*** Error: ";
+      format_string buf s
  | LexerException s ->
-      print_string "*** Phobos lexer error:\n";
-      print_string "*** Error: ";
-      print_string s
+      format_string buf "*** Phobos lexer error:\n";
+      format_string buf "*** Error: ";
+      format_string buf s
  | LexerPosException (pos, s) ->
-      print_string "*** Phobos lexer error:\n";
-      print_string "*** Error: ";
-      print_string s;
-      print_string "\n";
-      print_pos pos
+      format_string buf "*** Phobos lexer error:\n";
+      format_string buf "*** Error: ";
+      format_string buf s;
+      format_string buf "\n";
+      format_pos buf pos
  | RewriteException (pos, s) ->
-      print_string "*** Phobos rewrite error:\n";
-      print_string "*** Error: ";
-      print_string s;
-      print_string "\n";
-      print_pos pos
+      format_string buf "*** Phobos rewrite error:\n";
+      format_string buf "*** Error: ";
+      format_string buf s;
+      format_string buf "\n";
+      format_pos buf pos
  | ConvertException (loc, ParamError (param, s)) ->
-      print_string "*** Phobos convert error:\n";
-      print_string "*** Error: ";
-      print_string s;
-      print_string "\n";
-      print_loc loc
+      format_string buf "*** Phobos convert error:\n";
+      format_string buf "*** Error: ";
+      format_string buf s;
+      format_string buf "\n";
+      format_loc buf loc
  | ConvertException (loc, ParamError2 (param1, param2, s)) ->
-      print_string "*** Phobos convert error:\n";
-      print_string "*** Error: ";
-      print_string s;
-      print_string "\n";
-      print_loc loc
+      format_string buf "*** Phobos convert error:\n";
+      format_string buf "*** Error: ";
+      format_string buf s;
+      format_string buf "\n";
+      format_loc buf loc
  | ConvertException (loc, TermError (term, opname, s)) ->
-      print_string "*** Phobos convert error:\n";
-      print_string "*** Error: ";
-      print_string s;
-      print_string " - [";
-      print_string opname;
-      print_string "]\n";
-      print_loc loc;
-      print_string "Error in\n";
-      print_loc_last loc
+      format_string buf "*** Phobos convert error:\n";
+      format_string buf "*** Error: ";
+      format_string buf s;
+      format_string buf " - [";
+      format_string buf opname;
+      format_string buf "]\n";
+      format_loc buf loc;
+      format_string buf "Error in\n";
+      format_loc_last buf loc
  | ParseError (pos, s) ->
-      print_string "*** Parse error:\n";
-      print_string "*** Error: ";
-      print_string s;
-      print_string "\n";
-      print_pos pos
+      format_string buf "*** Parse error:\n";
+      format_string buf "*** Error: ";
+      format_string buf s;
+      format_string buf "\n";
+      format_pos buf pos
  | Parsing.Parse_error ->
-      print_string "*** Phobos syntax error:\n";
-      print_pos (current_position ())
+      format_string buf "*** Phobos syntax error:\n";
+      format_pos buf (current_position ())
  | SyntaxError pos ->
-      print_string "*** Syntax error:\n";
-      print_pos pos
+      format_string buf "*** Syntax error:\n";
+      format_pos buf pos
  | (Refiner.Refiner.RefineError.RefineError _) as exn ->
       Refine_exn.print_exn Dform_print.null_mode_base stderr "*** MetaPRL error:" exn  
  | exn ->
-(*      Fc_ir_exn_print.pp_print_exn err_formatter exn*)
-      raise exn
+      Filter_exn.format_exn Dform.null_base buf exn
 
-let print_exn_chan out exn =
-   flush stdout;
-   flush out;
-   print_string "\n";
-   print_exn exn;
-   print_string "\n"
+
+let format_exn_chan out exn =
+   let buf = new_buffer () in
+      format_exn buf exn;
+      format_newline buf;
+      print_to_channel default_width buf out;
+      flush out
 
 let catch f x =
    try
       f x
    with
       exn ->
-         print_exn_chan stderr exn;
+         format_exn_chan stderr exn;
          exit 2

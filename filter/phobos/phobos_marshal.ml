@@ -25,6 +25,9 @@
 open Phobos_type
 open Phobos_header
 
+let int_cph_magic = 0x89ac12bd
+let int_cph_version = 1
+
 let marshal_write channel data options =
    let s = Marshal.to_string data options in
    let digest = Digest.string s in
@@ -44,6 +47,8 @@ let marshal_read channel =
 
 let save_grammar header gst lenv penv ptable fname =
    let outx = open_out_bin fname in
+      output_binary_int outx int_cph_magic;
+      output_binary_int outx int_cph_version;
       marshal_write outx header [];
       marshal_write outx gst [];
       marshal_write outx lenv [];
@@ -53,6 +58,12 @@ let save_grammar header gst lenv penv ptable fname =
 
 let load_grammar fname =
    let inx = open_in_bin fname in
+   let magic = input_binary_int inx in
+   if magic <> int_cph_magic then
+      raise (File_type_base.Bad_magic fname);
+   let version = input_binary_int inx in
+   if version <> int_cph_version then
+      raise (File_type_base.Bad_version (fname, [int_cph_version], version));
    let (header: header) = marshal_read inx in
    let (gst: grammar_state) = marshal_read inx in
    let (lenv: lexer_env) = marshal_read inx in

@@ -22,6 +22,8 @@
  * Email: granicz@cs.caltech.edu
  *)
 
+open Rformat
+
 let tabstop = 8
 
 (*
@@ -44,6 +46,9 @@ let string_of_pos (name, i1, i2, i3, i4) =
 
 let print_pos pos =
    Printf.printf "%s" (string_of_pos pos)
+
+let format_pos buf pos =
+   format_string buf (string_of_pos pos)
 
 (*
  * Generic parser position.
