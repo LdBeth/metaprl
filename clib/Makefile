@@ -3,8 +3,7 @@ INCLUDE :=
 
 # Library files
 LCFILES :=\
-	putenv\
-	truncate
+	putenv
 
 LMFILES :=\
 	punix

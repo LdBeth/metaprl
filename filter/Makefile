@@ -32,7 +32,8 @@ MFILES_COMMON :=\
 	filter_summary_util\
 	filter_cache_fun\
 	filter_cache\
-	filter_prog
+	filter_prog\
+	filter_html
 
 MFILES_CAMLP4 :=\
 	$(MFILES_COMMON)\

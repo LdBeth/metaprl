@@ -1,7 +1,7 @@
 (*
  * We add a layer to filterSummry, to allow inlined modules
  * and cached info about opnames, axioms, and precedences.
- * Can write to library, raw marshaled files, or marhaled term files.
+ *  Can write to library, raw marshaled files, or marhaled term files.
  *)
 
 open Printf
@@ -441,6 +441,9 @@ module StrFilterCache = MakeFilterCache (SigMarshal) (StrMarshal) (SummaryBase)
 
 (*
  * $Log$
+ * Revision 1.9  1998/03/12 00:27:02  jyh
+ * Added filter_html, but its not finished yet.
+ *
  * Revision 1.8  1998/03/06 17:05:08  jyh
  * Fixed library choice.
  *
