@@ -141,6 +141,14 @@ and 'term opname_info =
      opname_term : 'term
    }
 
+and ('term, 'expr) opname_definition = {
+   opdef_name : string;
+   opdef_opname : string;
+   opdef_term : 'term;
+   opdef_definition : 'term;
+   opdef_resources : 'expr resource_def
+}
+
 and dform_modes =
    Modes of string list       (* include these modes *)
  | ExceptModes of string list (* exclude these modes *)
@@ -260,6 +268,7 @@ type ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, 'module_info) s
  | MagicBlock of 'item magic_info
  | Comment of 'term
  | InputForm of ('term, 'proof, 'expr) rewrite_info
+ | Definition of ('term, 'expr) opname_definition
 
 (*
  * This type defines what info do we need during parsing to identify an opname

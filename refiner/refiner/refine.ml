@@ -73,6 +73,7 @@ open Term_man_sig
 open Term_subst_sig
 open Term_addr_sig
 open Term_meta_sig
+open Term_shape_sig
 open Refine_error_sig
 open Rewrite_sig
 open Refine_sig
@@ -107,7 +108,10 @@ let debug_rewrites =
 module Refine (**)
    (TermType : TermSig)
    (Term : TermBaseSig
-    with type term = TermType.term)
+    with type term' = TermType.term'
+    with type term = TermType.term
+    with type bound_term' = TermType.bound_term'
+    with type bound_term = TermType.bound_term)
    (TermMan : TermManSig
     with type term = TermType.term)
    (TermSubst : TermSubstSig
@@ -115,6 +119,8 @@ module Refine (**)
    (TermAddr : TermAddrSig
     with type term = TermType.term)
    (TermMeta : TermMetaSig
+    with type term = TermType.term)
+   (TermShape : TermShapeSig
     with type term = TermType.term)
    (Rewrite : RewriteSig
     with type term = TermType.term
@@ -130,6 +136,7 @@ struct
    open TermSubst
    open TermAddr
    open TermMeta
+   open TermShape
    open Rewrite
    open RefineError
 
@@ -187,6 +194,7 @@ struct
     *)
    type 'a proof =
       Extracted of 'a
+    | Defined
     | Delayed of (unit -> 'a)
 
    (*
@@ -319,6 +327,7 @@ struct
     | RewriteRefiner of rewrite_refiner
     | PrimRewriteRefiner of prim_rewrite_refiner
     | MLRewriteRefiner of ml_rewrite_refiner
+    | DefinitionalRewriteRefiner of rewrite_refiner
 
     | CondRewriteRefiner of cond_rewrite_refiner
     | PrimCondRewriteRefiner of prim_cond_rewrite_refiner
@@ -467,6 +476,7 @@ struct
     | RIMLRule of ri_ml_rule
 
     | RIRewrite of ri_rewrite
+    | RIDefRewrite of ri_rewrite
     | RIMLRewrite of ri_ml_rewrite
     | RICondRewrite of ri_cond_rewrite
     | RIPrimRewrite of ri_prim_rewrite
@@ -1038,15 +1048,16 @@ struct
                   refiners, Some r
                else
                   search refiners next
+          | DefinitionalRewriteRefiner { rw_refiner = next } 
           | PrimRuleRefiner { prule_refiner = next }
-          | MLRuleRefiner { ml_rule_refiner = next }
           | PrimRewriteRefiner { prw_refiner = next }
           | PrimCondRewriteRefiner { pcrw_refiner = next } ->
                search refiners next
+          | MLRuleRefiner { ml_rule_name = n; ml_rule_refiner = next }
           | MLRewriteRefiner { ml_rw_name = n; ml_rw_refiner = next }
           | MLCondRewriteRefiner { ml_crw_name = n; ml_crw_refiner = next } ->
                if n = name then
-                  REF_RAISE(RefineError (string_of_opname n, StringError "ML rewrites can't be justified"))
+                  REF_RAISE(RefineError (string_of_opname n, StringError "ML rules/rewrites can't be justified"))
                else
                   search refiners next
           | LabelRefiner (_, next) as r ->
@@ -1328,33 +1339,47 @@ struct
     * in a hashtable by their names and their types.
     *)
    let hash_refiner refiner =
+      let def_shapes = Hashtbl.create 19 in
       let rewrites = Hashtbl.create 19 in
       let cond_rewrites = Hashtbl.create 19 in
       let axioms = Hashtbl.create 19 in
       let rules = Hashtbl.create 19 in
       let refiners = Hashtbl.create 19 in
       let maybe_add hash name info =
-         try Hashtbl.find hash name; () with
-            Not_found ->
-               Hashtbl.add hash name info
+         if not (Hashtbl.mem hash name) then
+            Hashtbl.add hash name info
       in
       let rec insert refiners' refiner =
          match refiner with
             PrimRuleRefiner prule ->
-               let { prule_rule = { rule_name = name }; prule_refiner = next } = prule in
+               let name = prule.prule_rule.rule_name in
                   maybe_add rules name prule;
                   maybe_add refiners name refiner;
-                  insert refiners' next
+                  insert refiners' prule.prule_refiner
           | PrimRewriteRefiner prw ->
-               let { prw_rewrite = { rw_name = name }; prw_refiner = next  } = prw in
+               let name = prw.prw_rewrite.rw_name in
                   maybe_add rewrites name prw;
                   maybe_add refiners name refiner;
-                  insert refiners' next
+                  insert refiners' prw.prw_refiner
+          | DefinitionalRewriteRefiner rw ->
+               let redex, contractum = rw.rw_rewrite in
+               let shape = shape_of_term redex in
+               if Hashtbl.mem def_shapes shape then
+                  REF_RAISE(RefineError("definitional rewrite",StringTermError("shape is already defined",redex)));
+               Hashtbl.add def_shapes shape rw;
+               let name = rw.rw_name in
+                  maybe_add rewrites name {
+                     prw_rewrite = rw;
+                     prw_refiner = refiner;
+                     prw_proof = Defined;
+                  };
+                  maybe_add refiners name refiner;
+                  insert refiners' rw.rw_refiner
           | PrimCondRewriteRefiner pcrw ->
-               let { pcrw_rewrite = { crw_name = name }; pcrw_refiner = next  } = pcrw in
+               let name = pcrw.pcrw_rewrite.crw_name in
                   maybe_add cond_rewrites name pcrw;
                   maybe_add refiners name refiner;
-                  insert refiners' next
+                  insert refiners' pcrw.pcrw_refiner
           | RuleRefiner { rule_refiner = next }
           | RewriteRefiner { rw_refiner = next }
           | CondRewriteRefiner { crw_refiner = next }
@@ -1458,6 +1483,8 @@ struct
       match prule.prule_proof with
          Extracted t ->
             t
+       | Defined ->
+            raise(Invalid_argument "Refine.rule_proof")
        | Delayed f ->
             let t = f () in
                prule.prule_proof <- Extracted t;
@@ -1465,7 +1492,7 @@ struct
 
    let rewrite_proof prw =
       match prw.prw_proof with
-         Extracted () ->
+         Extracted _ | Defined ->
             ()
        | Delayed f ->
             prw.prw_proof <- Extracted (f ())
@@ -1474,6 +1501,8 @@ struct
       match pcrw.pcrw_proof with
          Extracted () ->
             ()
+       | Defined ->
+            raise(Invalid_argument "Refine.rule_proof")
        | Delayed f ->
             pcrw.pcrw_proof <- Extracted (f ())
 
@@ -1685,7 +1714,7 @@ struct
                ENDIF;
                Hashtbl.add rules name r;
                insert refiners next
-       | RewriteRefiner rw ->
+       | RewriteRefiner rw | DefinitionalRewriteRefiner rw ->
             let { rw_name = name; rw_refiner = next } = rw in
                IFDEF VERBOSE_EXN THEN
                   if !debug_sentinal then
@@ -2057,7 +2086,40 @@ struct
                                           prw_proof = Extracted ()
                      }
                   else
-                     REF_RAISE(RefineError (name, StringError "not a rewrite"))
+                     REF_RAISE(RefineError (name, StringError "rewrite mismatch"))
+          | _ ->
+               REF_RAISE(RefineError (name, StringError "not a rewrite"))
+
+   let rec check_bound_vars bvars = function
+      [] ->
+         ()
+    | v::ts ->
+         let v = dest_var v in
+            if List.mem v bvars then
+                check_bound_vars (List_util.remove v bvars) ts
+            else
+               REF_RAISE(RefineError ("definitional rewrite", RewriteFreeSOVar v))
+   
+   let check_def_bterm bt =
+      let bt = dest_bterm bt in
+         check_bound_vars bt.bvars (snd (dest_so_var bt.bterm))
+
+   let add_def_rewrite build name redex contractum =
+      IFDEF VERBOSE_EXN THEN
+         if !debug_refiner then
+            eprintf "Refiner.add_def_rewrite: %s%t" name eflush
+      ENDIF;
+      let _ = List.iter check_def_bterm (dest_term redex).term_terms in
+      let { build_opname = opname; build_refiner = refiner } = build in
+         match find_refiner refiner (mk_opname name opname) with
+            RewriteRefiner rw ->
+               let { rw_rewrite = redex', contractum' } = rw in
+               let term1 = mk_xlist_term [redex; contractum] in
+               let term2 = mk_xlist_term [redex'; contractum'] in
+                  if alpha_equal term1 term2 then
+                     DefinitionalRewriteRefiner rw
+                  else
+                     REF_RAISE(RefineError (name, StringError "rewrite mismatch"))
           | _ ->
                REF_RAISE(RefineError (name, StringError "not a rewrite"))
 
@@ -2286,6 +2348,9 @@ struct
    let prim_rewrite build name redex contractum =
       build.build_refiner <- add_prim_rewrite build name redex contractum
 
+   let definitional_rewrite build name redex contractum =
+      build.build_refiner <- add_def_rewrite build name redex contractum
+
    let delayed_rewrite build name redex contractum extf =
       build.build_refiner <- add_delayed_rewrite build name redex contractum extf
 
@@ -2356,6 +2421,11 @@ struct
          RIRewrite { ri_rw_name = n;
                      ri_rw_redex = redex;
                      ri_rw_contractum = con
+         }, r
+    | DefinitionalRewriteRefiner { rw_name = n; rw_rewrite = redex, con; rw_refiner = r } ->
+         RIDefRewrite { ri_rw_name = n;
+                        ri_rw_redex = redex;
+                        ri_rw_contractum = con
          }, r
     | MLRewriteRefiner { ml_rw_name = n; ml_rw_refiner = r } ->
          RIMLRewrite { ri_ml_rw_name = n }, r

@@ -45,6 +45,7 @@ open Term_man_sig
 open Term_subst_sig
 open Term_addr_sig
 open Term_meta_sig
+open Term_shape_sig
 open Refine_error_sig
 open Rewrite_sig
 open Refine_sig
@@ -52,7 +53,10 @@ open Refine_sig
 module Refine (**)
    (TermType : TermSig)
    (Term : TermBaseSig
-    with type term = TermType.term)
+    with type term' = TermType.term'
+    with type term = TermType.term
+    with type bound_term' = TermType.bound_term'
+    with type bound_term = TermType.bound_term)
    (TermMan : TermManSig
     with type term = TermType.term)
    (TermSubst : TermSubstSig
@@ -60,6 +64,8 @@ module Refine (**)
    (TermAddr : TermAddrSig
     with type term = TermType.term)
    (TermMeta : TermMetaSig
+    with type term = TermType.term)
+   (TermShape : TermShapeSig
     with type term = TermType.term)
    (Rewrite : RewriteSig
     with type term = TermType.term

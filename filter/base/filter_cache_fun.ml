@@ -237,7 +237,7 @@ struct
          [modname] ->
             (* If only one name left, it should name a term *)
             let rec search = function
-               ((Opname { opname_name = str }, _)::tl) when str = modname ->
+               (((Opname { opname_name = str } | Definition { opdef_opname = str }), _)::tl) when str = modname ->
                   modname :: path
              | _::tl ->
                   search tl
@@ -593,7 +593,8 @@ struct
                   base.sig_summaries <- info :: base.sig_summaries;
                   resources_opnames_includes
 
-          | Opname { opname_name = str; opname_term = t } ->
+          | Opname { opname_name = str; opname_term = t }
+          | Definition { opdef_opname = str; opdef_term = t } ->
                (* Hash this name to the full opname *)
                let opname = Term.opname_of_term t in
                let resources, opnames, includes = resources_opnames_includes in
@@ -661,7 +662,8 @@ struct
                } in
                   base.sig_summaries <- info :: base.sig_summaries
 
-          | Opname { opname_name = str; opname_term = t } ->
+          | Opname { opname_name = str; opname_term = t }
+          | Definition { opdef_opname = str; opdef_term = t } ->
                (* Hash this name to the full opname *)
                let opname = Term.opname_of_term t in
                   if !debug_opname then

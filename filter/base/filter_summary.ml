@@ -163,6 +163,8 @@ let eprint_entry print_info = function
       eprintf "Magic: %s\n" name
  | Comment t ->
       eprintf "Comment\n"
+ | Definition { opdef_name = name } ->
+      eprintf "Definition: %s\n" name
 
 (*
  * Non-recursive print.
@@ -542,21 +544,14 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
                            rw_resources = res_map res;
                }
 
-          | CondRewrite { crw_name = name;
-                          crw_params = params;
-                          crw_args = args;
-                          crw_redex = redex;
-                          crw_contractum = con;
-                          crw_proof = pf;
-                          crw_resources = res
-            } ->
-               CondRewrite { crw_name = name;
-                             crw_params = List.map param_map params;
-                             crw_args = List.map convert.term_f args;
-                             crw_redex = convert.term_f redex;
-                             crw_contractum = convert.term_f con;
-                             crw_proof = convert.proof_f name pf;
-                             crw_resources = res_map res
+          | CondRewrite crw ->
+               CondRewrite { crw_name = crw.crw_name;
+                             crw_params = List.map param_map crw.crw_params;
+                             crw_args = List.map convert.term_f crw.crw_args;
+                             crw_redex = convert.term_f crw.crw_redex;
+                             crw_contractum = convert.term_f crw.crw_contractum;
+                             crw_proof = convert.proof_f crw.crw_name crw.crw_proof;
+                             crw_resources = res_map crw.crw_resources;
                }
 
           | Rule { rule_name = name;
@@ -576,92 +571,50 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
                Opname { opname_name = name; opname_term = convert.term_f t }
 
           | MLRewrite t ->
-               let { mlterm_name = name;
-                     mlterm_params = params;
-                     mlterm_term = term;
-                     mlterm_def = def;
-                     mlterm_resources = res
-                   } = t
-               in
-                  MLRewrite { mlterm_name = name;
-                              mlterm_params = List.map param_map params;
-                              mlterm_term = convert.term_f term;
-                              mlterm_def = opt_apply convert.expr_f def;
-                              mlterm_resources = res_map res
-                  }
+               MLRewrite { t with
+                           mlterm_params = List.map param_map t.mlterm_params;
+                           mlterm_term = convert.term_f t.mlterm_term;
+                           mlterm_def = opt_apply convert.expr_f t.mlterm_def;
+                           mlterm_resources = res_map t.mlterm_resources;
+               }
 
           | MLAxiom t ->
-               let { mlterm_name = name;
-                     mlterm_params = params;
-                     mlterm_term = term;
-                     mlterm_def = def;
-                     mlterm_resources = res
-                   } = t
-               in
-                  MLAxiom { mlterm_name = name;
-                            mlterm_params = List.map param_map params;
-                            mlterm_term = convert.term_f term;
-                            mlterm_def = opt_apply convert.expr_f def;
-                            mlterm_resources = res_map res
-                  }
-
-          | Parent { parent_name = path;
-                     parent_opens = opens;
-                     parent_resources = resources
-            } ->
-               Parent { parent_name = path;
-                        parent_opens = opens;
-                        parent_resources = List.map (convert_resource convert) resources
+               MLAxiom { t with
+                         mlterm_params = List.map param_map t.mlterm_params;
+                         mlterm_term = convert.term_f t.mlterm_term;
+                         mlterm_def = opt_apply convert.expr_f t.mlterm_def;
+                         mlterm_resources = res_map t.mlterm_resources;
                }
+
+          | Parent par ->
+               Parent { par with parent_resources = List.map (convert_resource convert) par.parent_resources }
 
           | Module (name, info) ->
                Module (name, map info)
 
-          | DForm { dform_name = name;
-                    dform_modes = modes;
-                    dform_options = options;
-                    dform_redex = redex;
-                    dform_def = def
-            } ->
-               let def' =
-                  match def with
+          | DForm df ->
+               let def =
+                  match df.dform_def with
                      NoDForm ->
                         NoDForm
                    | TermDForm t ->
                         TermDForm (convert.term_f t)
-                   | MLDForm { dform_ml_printer = printer;
-                               dform_ml_buffer = buffer;
-                               dform_ml_code = code
-                     } ->
-                        MLDForm { dform_ml_printer = printer;
-                                  dform_ml_buffer = buffer;
-                                  dform_ml_code = convert.expr_f code
-                        }
+                   | MLDForm mldf ->
+                        MLDForm { mldf with dform_ml_code = convert.expr_f mldf.dform_ml_code }
                in
-                  DForm { dform_name = name;
-                          dform_modes = modes;
-                          dform_options = options;
-                          dform_redex = convert.term_f redex;
-                          dform_def = def'
+                  DForm { df with
+                     dform_redex = convert.term_f df.dform_redex;
+                     dform_def = def
                   }
 
-          | Prec x ->
-               Prec x
-
-          | PrecRel rel ->
-               PrecRel rel
-
-          | Id id ->
-               Id id
+          | (Prec _ | PrecRel _ | Id _ | Infix _) as item ->
+               item
 
           | Resource (name, r) ->
                Resource (name, convert.resource_f r)
 
           | Improve { improve_name = name; improve_expr = expr } ->
                Improve { improve_name = name; improve_expr = convert.expr_f expr }
-
-          | Infix name ->
-               Infix name
 
           | MagicBlock { magic_name = name;
                          magic_code = items
@@ -672,6 +625,13 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
 
           | Comment t ->
                Comment (convert.term_f t)
+
+          | Definition def ->
+               Definition { def with
+                  opdef_term = convert.term_f def.opdef_term;
+                  opdef_definition = convert.term_f def.opdef_definition;
+                  opdef_resources = res_map def.opdef_resources;
+               }
       in
          item, loc
 
@@ -718,6 +678,7 @@ let magic_block_op             = mk_opname "magic_block"
 let summary_item_op            = mk_opname "summary_item"
 let toploop_item_op            = mk_opname "toploop_item"
 let improve_op                 = mk_opname "improve"
+let definition_op              = mk_opname "definition"
 
 (*
  * Meta term conversions.
@@ -925,8 +886,8 @@ struct
 
    (*
     * Get the parameter list.
-    * XXX HACK: the try part is only there for backwards compativility with
-    * old files (ASCII formats v. 1.0.0 and 1.0.0)
+    * XXX HACK: the try wrapper is only there for backwards compativility with
+    * old files (ASCII formats v. 1.0.0 and 1.0.1)
     *)
    let dest_params convert t =
       try
@@ -948,7 +909,7 @@ struct
    (*
     * Collect a rewrite.
     *)
-   let rec dest_rewrite_aux convert t =
+   let rec dest_rewrite convert t =
       let name = dest_string_param t in
       let redex, contractum, proof, res = four_subterms t in
          { rw_name = name;
@@ -957,12 +918,6 @@ struct
            rw_proof = convert.proof_f name proof;
            rw_resources = dest_res convert res
          }
-
-   and dest_rewrite convert t =
-      Rewrite (dest_rewrite_aux convert t)
-
-   and dest_iform convert t =
-      InputForm (dest_rewrite_aux convert t)
 
    (*
     * Conditional rewrite.
@@ -1095,12 +1050,6 @@ struct
          else raise (Invalid_argument "Filter_summary.dest_id: not an int")
 
    (*
-    * Documentation.
-    *)
-   and dest_comment convert t =
-      Comment (convert.term_f (one_subterm t))
-
-   (*
     * Resources.
     *)
    and dest_resource_sig convert t =
@@ -1121,12 +1070,6 @@ struct
       }
 
    (*
-    * Infix.
-    *)
-   and dest_infix convert t =
-      Infix (dest_string_param t)
-
-   (*
     * Magic block of items.
     *)
    and dest_magic_block convert t =
@@ -1134,14 +1077,15 @@ struct
                    magic_code = List.map convert.item_f (dest_xlist (one_subterm t))
       }
 
-   (*
-    * SummaryItem.
-    *)
-   and dest_summary_item convert t =
-      SummaryItem (convert.item_f (one_subterm t))
-
-   and dest_toploop_item convert t =
-      ToploopItem (convert.item_f (one_subterm t))
+   and dest_definition convert t =
+      let redex, contractum, res = three_subterms t in
+         Definition {
+            opdef_name = dest_string_param t;
+            opdef_opname = fst(dst_opname(opname_of_term redex));
+            opdef_term = convert.term_f redex;
+            opdef_definition = convert.term_f contractum;
+            opdef_resources = dest_res convert res;
+         }
 
    and dest_term_aux
        (convert : (term, term, term, term, term, term, term,
@@ -1151,23 +1095,21 @@ struct
          try
             let info =
                if Opname.eq opname rewrite_op then
-                  dest_rewrite convert t
+                  Rewrite (dest_rewrite convert t)
                else if Opname.eq opname cond_rewrite_op then
                   dest_cond_rewrite convert t
                else if Opname.eq opname rule_op then
                   dest_rule convert t
-               else if Opname.eq opname opname_op then
-                  dest_opname convert t
-               else if Opname.eq opname mlrewrite_op then
-                  dest_mlrewrite convert t
-               else if Opname.eq opname mlaxiom_op then
-                  dest_mlaxiom convert t
-               else if Opname.eq opname parent_op then
-                  dest_parent convert t
-               else if Opname.eq opname module_op then
-                  dest_module convert t
                else if Opname.eq opname dform_op then
                   dest_dform convert t
+               else if Opname.eq opname opname_op then
+                  dest_opname convert t
+               else if Opname.eq opname definition_op then
+                  dest_definition convert t
+               else if Opname.eq opname mlrewrite_op then
+                  dest_mlrewrite convert t
+               else if Opname.eq opname parent_op then
+                  dest_parent convert t
                else if Opname.eq opname prec_op then
                   dest_prec convert t
                else if Opname.eq opname prec_rel_op then
@@ -1175,19 +1117,25 @@ struct
                else if Opname.eq opname id_op then
                   dest_id convert t
                else if Opname.eq opname comment_op then
-                  dest_comment convert t
+                  Comment (convert.term_f (one_subterm t))
                else if Opname.eq opname resource_op then
                   dest_resource convert t
                else if Opname.eq opname improve_op then
                   dest_improve convert t
                else if Opname.eq opname infix_op then
-                  dest_infix convert t
+                  Infix (dest_string_param t)
                else if Opname.eq opname magic_block_op then
                   dest_magic_block convert t
                else if Opname.eq opname summary_item_op then
-                  dest_summary_item convert t
+                  SummaryItem (convert.item_f (one_subterm t))
                else if Opname.eq opname toploop_item_op then
-                  dest_toploop_item convert t
+                  ToploopItem (convert.item_f (one_subterm t))
+               else if Opname.eq opname module_op then
+                  dest_module convert t
+               else if Opname.eq opname mlaxiom_op then
+                  dest_mlaxiom convert t
+               else if Opname.eq opname input_form_op then
+                  InputForm (dest_rewrite convert t)
                else
                   raise (Failure "term is not found")
             in
@@ -1330,34 +1278,22 @@ struct
    (*
     * Term conversions.
     *)
-   let rec term_of_summary_item convert t =
-      mk_simple_term summary_item_op [convert.item_f t]
-
-   and term_of_toploop_item convert t =
-      mk_simple_term toploop_item_op [convert.item_f t]
-
-   and term_of_res expr_f (loc, name, args) =
+   let rec term_of_res expr_f (loc, name, args) =
       mk_loc_string_term res_op loc name (mk_xlist_term (List.map expr_f args))
 
    and term_of_resources convert res =
       mk_xlist_term (List.map (term_of_res convert.expr_f) res)
 
-   and term_of_rewrite_aux op convert { rw_name = name;
-                                        rw_redex = redex;
-                                        rw_contractum = con;
-                                        rw_proof = pf;
-                                        rw_resources = res
+   and term_of_rewrite op convert { rw_name = name;
+                                    rw_redex = redex;
+                                    rw_contractum = con;
+                                    rw_proof = pf;
+                                    rw_resources = res
        } =
       mk_string_param_term op name [convert.term_f redex;
                                     convert.term_f con;
                                     convert.proof_f name pf;
                                     term_of_resources convert res]
-
-   and term_of_rewrite convert rw =
-      term_of_rewrite_aux rewrite_op convert rw
-
-   and term_of_input_form convert rw =
-      term_of_rewrite_aux input_form_op convert rw
 
    and term_of_cond_rewrite convert { crw_name = name;
                                       crw_params = params;
@@ -1384,9 +1320,6 @@ struct
                                          convert.meta_term_f t;
                                          convert.proof_f name pf;
                                          term_of_resources convert res]
-
-   and term_of_opname convert { opname_name = name; opname_term = term } =
-      mk_string_param_term opname_op name [convert.term_f term]
 
    and term_of_mlrewrite convert { mlterm_name = name;
                                    mlterm_params = params;
@@ -1421,9 +1354,6 @@ struct
           mk_xlist_term (List.map (mk_strings_term parent_op) opens);
           mk_xlist_term (List.map (term_of_resource_sig convert) resources)]
 
-   and term_of_module convert name info =
-      mk_string_param_term module_op name [mk_xlist_term (term_list convert info)]
-
    and term_of_dform convert { dform_name = name;
                                dform_modes = modes;
                                dform_options = options;
@@ -1440,18 +1370,6 @@ struct
                                              convert.term_f redex;
                                              mk_dform_def convert def]
 
-   and term_of_prec p =
-      mk_string_param_term prec_op p []
-
-   and term_of_prec_rel { prec_rel = rel; prec_left = left; prec_right = right } =
-      mk_prec_rel_term rel left right
-
-   and term_of_id id =
-      mk_number_term id_op (Mp_num.num_of_int id)
-
-   and term_of_comment convert t =
-      mk_simple_term comment_op [convert.term_f t]
-
    and term_of_resource_sig convert
       (name, {
          resource_input = input;
@@ -1462,17 +1380,16 @@ struct
          convert.ctyp_f output
       ]
 
-   and term_of_resource convert name r =
-      mk_string_param_term resource_op name [convert.resource_f r]
-
-   and term_of_improve convert { improve_name = name; improve_expr = expr } =
-      mk_string_param_term improve_op name [convert.expr_f expr]
-
-   and term_of_infix op =
-      mk_string_param_term infix_op op []
-
-   and term_of_magic_block convert { magic_name = name; magic_code = items } =
-      mk_string_param_term magic_block_op name [mk_xlist_term (List.map convert.item_f items)]
+   and term_of_definition convert {
+      opdef_name = name;
+      opdef_term = redex;
+      opdef_definition = contractum;
+      opdef_resources = res;
+   } = mk_string_param_term definition_op name [
+      convert.term_f redex;
+      convert.term_f contractum;
+      term_of_resources convert res
+   ]
 
    (*
     * Convert the items to a term.
@@ -1480,19 +1397,19 @@ struct
    and term_list_aux (convert : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, term,
                                  term, term, term, term, term, term) convert) = function
       SummaryItem t ->
-         term_of_summary_item convert t
+         mk_simple_term summary_item_op [convert.item_f t]
     | ToploopItem t ->
-         term_of_toploop_item convert t
+         mk_simple_term toploop_item_op [convert.item_f t]
     | Rewrite rw ->
-         term_of_rewrite convert rw
+         term_of_rewrite rewrite_op convert rw
     | InputForm rw ->
-         term_of_input_form convert rw
+         term_of_rewrite input_form_op convert rw
     | CondRewrite crw ->
          term_of_cond_rewrite convert crw
     | Rule rw ->
          term_of_rule convert rw
-    | Opname opname ->
-         term_of_opname convert opname
+    | Opname { opname_name = name; opname_term = term } ->
+         mk_string_param_term opname_op name [convert.term_f term]
     | MLRewrite t ->
          term_of_mlrewrite convert t
     | MLAxiom cond ->
@@ -1500,25 +1417,27 @@ struct
     | Parent par ->
          term_of_parent convert par
     | Module (name, info) ->
-         term_of_module convert name info
+         mk_string_param_term module_op name [mk_xlist_term (term_list convert info)]
     | DForm df ->
          term_of_dform convert df
     | Prec p ->
-         term_of_prec p
-    | PrecRel rel ->
-         term_of_prec_rel rel
+         mk_string_param_term prec_op p []
+    | PrecRel { prec_rel = rel; prec_left = left; prec_right = right } ->
+         mk_prec_rel_term rel left right
     | Id id ->
-         term_of_id id
+         mk_number_term id_op (Mp_num.num_of_int id)
     | Resource (name, r) ->
-         term_of_resource convert name r
-    | Improve i ->
-         term_of_improve convert i
+         mk_string_param_term resource_op name [convert.resource_f r]
+    | Improve { improve_name = name; improve_expr = expr } ->
+         mk_string_param_term improve_op name [convert.expr_f expr]
     | Infix op ->
-         term_of_infix op
-    | MagicBlock magic ->
-         term_of_magic_block convert magic
+         mk_string_param_term infix_op op []
+    | MagicBlock { magic_name = name; magic_code = items } ->
+         mk_string_param_term magic_block_op name [mk_xlist_term (List.map convert.item_f items)]
     | Comment t ->
-         term_of_comment convert t
+         mk_simple_term comment_op [convert.term_f t]
+    | Definition d ->
+         term_of_definition convert d
 
    and term_list_loc convert (t, loc) =
       mk_loc loc (term_list_aux convert t)
@@ -1568,23 +1487,20 @@ struct
       let rec search = function
          [] ->
             implem_error (sprintf "Rewrite %s: not implemented" name)
-       | h::t ->
-            match h with
-               Rewrite { rw_name = name'; rw_redex = redex'; rw_contractum = con' } ->
-                  if name = name' then
-                     if alpha_equal redex' redex then
-                        if alpha_equal con' con then
-                           ()
-                        else
-                           implem_error (sprintf "Rewrite %s: contractum mismatch:\n%s\nshould be\n%s\n" (**)
-                                            name (string_of_term con') (string_of_term con))
-                     else
-                        implem_error (sprintf "Rewrite %s: redex mismatch:\n%s\nshould be\n%s\n" (**)
-                                         name (string_of_term redex') (string_of_term redex))
-                  else
-                     search t
-             | _ ->
-                  search t
+       | ( Rewrite { rw_name = name'; rw_redex = redex'; rw_contractum = con' }
+         | Definition { opdef_name = name'; opdef_term = redex'; opdef_definition = con' } 
+         ) :: _ when name = name' ->
+            if alpha_equal redex' redex then
+               if alpha_equal con' con then
+                  ()
+               else
+                  implem_error (sprintf "Rewrite %s: contractum mismatch:\n%s\nshould be\n%s\n" (**)
+                                   name (string_of_term con') (string_of_term con))
+            else
+               implem_error (sprintf "Rewrite %s: redex mismatch:\n%s\nshould be\n%s\n" (**)
+                                name (string_of_term redex') (string_of_term redex))
+       | _ :: t ->
+            search t
       in
          search implem
 
@@ -1595,23 +1511,18 @@ struct
       let rec search = function
          [] ->
             implem_error (sprintf "Rewrite %s: not implemented" name)
-       | h::t ->
-            match h with
-               InputForm { rw_name = name'; rw_redex = redex'; rw_contractum = con' } ->
-                  if name = name' then
-                     if alpha_equal redex' redex then
-                        if alpha_equal con' con then
-                           ()
-                        else
-                           implem_error (sprintf "InputForm %s: contractum mismatch:\n%s\nshould be\n%s\n" (**)
-                                            name (string_of_term con') (string_of_term con))
-                     else
-                        implem_error (sprintf "InputForm %s: redex mismatch:\n%s\nshould be\n%s\n" (**)
-                                         name (string_of_term redex') (string_of_term redex))
-                  else
-                     search t
-             | _ ->
-                  search t
+       | InputForm { rw_name = name'; rw_redex = redex'; rw_contractum = con' } :: _ when name = name' ->
+            if alpha_equal redex' redex then
+               if alpha_equal con' con then
+                  ()
+               else
+                  implem_error (sprintf "InputForm %s: contractum mismatch:\n%s\nshould be\n%s\n" (**)
+                                   name (string_of_term con') (string_of_term con))
+            else
+               implem_error (sprintf "InputForm %s: redex mismatch:\n%s\nshould be\n%s\n" (**)
+                                name (string_of_term redex') (string_of_term redex))
+       | _ :: t ->
+            search t
       in
          search implem
 
@@ -1665,24 +1576,22 @@ struct
       let rec search = function
          [] ->
             implem_error (sprintf "Rule %s: not implemented" name)
-       | h::t ->
-            match h with
-               Rule { rule_name = name'; rule_params = params'; rule_stmt = stmt' } ->
-                  let stmt' = strip_mfunction stmt' in
-                     if name' = name then
-                        if not (check_params params' params) then
-                           implem_error (sprintf "Rule %s: argument lists do not match" name)
-                        else if not (meta_alpha_equal stmt' stmt) then
-                           let s' = string_of_mterm stmt' in
-                           let s = string_of_mterm stmt in
-                              implem_error (sprintf "Rule %s: specification mismatch:\n%s\nis not equal to\n%s\n" (**)
-                                               name s' s)
-                        else
-                           ()
-                     else
-                        search t
-             | _ ->
+       | Rule { rule_name = name'; rule_params = params'; rule_stmt = stmt' } :: t ->
+            let stmt' = strip_mfunction stmt' in
+               if name' = name then
+                  if not (check_params params' params) then
+                     implem_error (sprintf "Rule %s: argument lists do not match" name)
+                  else if not (meta_alpha_equal stmt' stmt) then
+                     let s' = string_of_mterm stmt' in
+                     let s = string_of_mterm stmt in
+                        implem_error (sprintf "Rule %s: specification mismatch:\n%s\nis not equal to\n%s\n" (**)
+                                         name s' s)
+                  else
+                     ()
+               else
                   search t
+       | _ :: t ->
+            search t
       in
          search implem
 
@@ -1698,18 +1607,15 @@ struct
             implem_error
                (sprintf "Opname %s: %s" name
                   (if mismatch then "specification(s) mismatch" else "not implemented"))
-       | h::t ->
-            match h with
-               Opname { opname_name = name'; opname_term = term' } ->
-                  if name' = name then
-                     if alpha_equal term' term then
-                        ()
-                     else
-                        search true t
-                  else
-                     search mismatch t
-             | _ ->
-                  search mismatch t
+       | ( Opname { opname_name = name'; opname_term = term' }
+         | Definition { opdef_opname = name'; opdef_term = term' }
+         ) :: t when name' = name ->
+            if alpha_equal term' term then
+               ()
+            else
+               search true t
+       | _ :: t ->
+            search mismatch t
       in
          search false implem
 
@@ -1722,13 +1628,11 @@ struct
       let rec search = function
          [] ->
             implem_error (sprintf "MLRewrite %s: not implemented" name)
-       | h::t ->
-            match h with
-               MLRewrite { mlterm_name = name'; mlterm_term = term' } when name' = name ->
-                  if not (alpha_equal term' term) then
-                     implem_error (sprintf "MLRewrite %s: definition does not match" name)
-             | _ ->
-                  search t
+       | MLRewrite { mlterm_name = name'; mlterm_term = term' } :: _ when name' = name ->
+            if not (alpha_equal term' term) then
+               implem_error (sprintf "MLRewrite %s: definition does not match" name)
+       | _ :: t ->
+            search t
       in
          search implem
 
@@ -1738,13 +1642,11 @@ struct
       let rec search = function
          [] ->
             implem_error (sprintf "MLAxiom %s: not implemented" name)
-       | h::t ->
-            match h with
-               MLAxiom { mlterm_name = name'; mlterm_term = term' } when name' = name ->
-                  if not (alpha_equal term' term) then
-                     implem_error (sprintf "MLAxiom %s: definition does not match" name)
-             | _ ->
-                  search t
+       | MLAxiom { mlterm_name = name'; mlterm_term = term' } :: _ when name' = name ->
+            if not (alpha_equal term' term) then
+               implem_error (sprintf "MLAxiom %s: definition does not match" name)
+       | _ :: t ->
+            search t
       in
          search implem
 
@@ -1757,13 +1659,10 @@ struct
       let rec search = function
          [] ->
             implem_error (sprintf "Include %s: not implemented" (string_of_path path))
-       | h::t ->
-            match h with
-               Parent { parent_name = path' } ->
-                  if path' <> path then
-                     search t
-             | _ ->
-                  search t
+       | Parent { parent_name = path' } :: _ when path = path' ->
+            ()
+       | _ :: t ->
+            search t
       in
          search implem
 
@@ -1777,18 +1676,14 @@ struct
       let rec search = function
          [] ->
             implem_error (sprintf "DForm %s: not implemented" (string_of_term term))
-       | h::t ->
-            match h with
-               DForm { dform_options = tags'; dform_redex =  term' } ->
-                  if alpha_equal term' term then
-                     if tags' = tags then
-                        ()
-                     else
-                        implem_error (sprintf "DForm %s: tag mismatch" (string_of_term term))
-                  else
-                     search t
-             | _ ->
-                  search t
+       | DForm { dform_options = tags'; dform_redex =  term' } :: _
+         when alpha_equal term' term ->
+            if tags' = tags then
+               ()
+            else
+               implem_error (sprintf "DForm %s: tag mismatch" (string_of_term term))
+       | _ :: t ->
+            search t
       in
          search implem
 
@@ -1813,19 +1708,13 @@ struct
    (*
     * Resource checking.
     *)
-   let check_resource name
-       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
-      let rec search = function
-         [] ->
-            implem_error (sprintf "Resource %s: not implemented" name)
-       | h::t ->
-            match h with
-               Resource ( name', _ )  when name = name' ->
-                  ()
-             | _ ->
-                  search t
-      in
-         search implem
+   let rec check_resource name = function
+      [] ->
+         implem_error (sprintf "Resource %s: not implemented" name)
+    | Resource ( name', _ ) :: _  when name = name' ->
+         ()
+    | _ :: t ->
+         check_resource name t
 
    (*
     * Infix declarations.
@@ -1835,33 +1724,36 @@ struct
       let rec search = function
          [] ->
             implem_error (sprintf "Infix %s: not implemented" name)
-       | h::t ->
-            match h with
-               Infix name' ->
-                  if name' <> name then
-                     search t
-             | _ ->
-                  search t
+       | (Infix name')::_ when name = name' ->
+            ()
+       | _ :: t ->
+            search t
       in
          search implem
 
    (*
     * Match the ids.
     *)
-   let check_id (id : int)
-       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
-      let rec search = function
-         [] ->
-            implem_error "Id: not implemented"
-       | h::t ->
-            match h with
-               Id id' ->
-                  if id' <> id then
-                     implem_error (sprintf "Implementation is out of date (recompile)")
-             | _ ->
-                  search t
-      in
-         search implem
+   let rec check_id id = function
+      [] ->
+         implem_error "Id: not implemented"
+    | Id id'::_ ->
+         if id' <> id then
+            implem_error (sprintf "Implementation is out of date (recompile)")
+    | _ :: t ->
+         check_id id t
+
+   let rec check_definition def = function
+      [] ->
+         implem_error ("Definition " ^ def.opdef_name ^": not implemented")
+    | Definition def' :: _ when def.opdef_name = def'.opdef_name ->
+         if not (alpha_equal def.opdef_term def'.opdef_term) then
+            implem_error ("Definition " ^ def.opdef_name ^": LHS mismatch")
+         else if not (alpha_equal def.opdef_definition def'.opdef_definition) then
+            implem_error ("Definition " ^ def.opdef_name ^": RHS mismatch")
+    | _ :: t ->
+         check_definition def t
+
 
    (*
     * Module definitions.
@@ -1922,6 +1814,8 @@ struct
             check_infix name implem
        | Id id ->
             check_id id implem
+       | Definition def ->
+            check_definition def implem
        | SummaryItem _
        | ToploopItem _
        | PrecRel _
@@ -2075,7 +1969,7 @@ struct
              | Opname _ | MLRewrite _ | MLAxiom _ | Parent _ | DForm _
              | Prec _ | PrecRel _ | Id _ | Comment _ | Resource _
              | Improve _ | Infix _ | SummaryItem _ | ToploopItem _
-             | MagicBlock _ | InputForm _ ->
+             | MagicBlock _ | InputForm _ | Definition _ ->
                   item
          in
             item, loc

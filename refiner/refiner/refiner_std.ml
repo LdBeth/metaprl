@@ -46,7 +46,7 @@ struct
    module TermEval = Term_eval_std.TermEval (Term) (RefineError)
    module TermMeta = Term_meta_gen.TermMeta (TermType) (Term) (TermSubst) (RefineError)
    module Rewrite = Rewrite.Rewrite (TermType) (Term) (TermMan) (TermAddr) (TermSubst) (RefineError)
-   module Refine = Refine.Refine (TermType) (Term) (TermMan) (TermSubst) (TermAddr) (TermMeta) (Rewrite) (RefineError)
+   module Refine = Refine.Refine (TermType) (Term) (TermMan) (TermSubst) (TermAddr) (TermMeta) (TermShape) (Rewrite) (RefineError)
    module TermMod =
    struct
       module TermType = TermType

@@ -35,6 +35,7 @@ open Printf
 open Mp_debug
 
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
@@ -151,6 +152,9 @@ let rewrite_ctyp loc =
 
 let prim_rewrite_expr loc =
    <:expr< $refiner_expr loc$ . prim_rewrite >>
+
+let def_rewrite_expr loc =
+   <:expr< $refiner_expr loc$ . definitional_rewrite >>
 
 let derived_rewrite_expr loc =
    <:expr< $refiner_expr loc$ . derived_rewrite >>
@@ -428,38 +432,28 @@ let toploop_item_expr loc name ctyp =
 (*
  * Rewrites.
  *)
-let declare_rewrite loc { rw_name = name } =
-   let ctyp = rewrite_ctyp loc in
-      [<:sig_item< value $name$ : $ctyp$ >>]
-      (* <:sig_item< value $refiner_name name$ : $refiner_ctyp loc$ >> *)
+let declare_rewrite loc rw =
+   [<:sig_item< value $rw.rw_name$ : $rewrite_ctyp loc$ >>]
 
-let declare_input_form loc { rw_name = name } =
-   let ctyp = rewrite_ctyp loc in
-      [<:sig_item< value $name$ : $ctyp$ >>]
-      (* <:sig_item< value $refiner_name name$ : $refiner_ctyp loc$ >> *)
+let declare_input_form = declare_rewrite
+
+let declare_definition loc def =
+   [<:sig_item< value $def.opdef_name$ : $rewrite_ctyp loc$ >>]
 
 let declare_cond_rewrite loc { crw_name = name; crw_params = params } =
-   let ctyp = params_ctyp loc (cond_rewrite_ctyp loc) params in
-      [<:sig_item< value $name$ : $ctyp$ >>]
-      (* <:sig_item< value $refiner_name name$ : $refiner_ctyp loc$ >>] *)
+   [<:sig_item< value $name$ : $params_ctyp loc (cond_rewrite_ctyp loc) params$ >>]
 
 let declare_ml_rewrite loc { mlterm_name = name; mlterm_params = params } =
-   let ctyp = params_ctyp loc (cond_rewrite_ctyp loc) params in
-      [<:sig_item< value $name$ : $ctyp$ >>]
-      (* <:sig_item< value $refiner_name name$ : $refiner_ctyp loc$ >>] *)
+   [<:sig_item< value $name$ : $params_ctyp loc (cond_rewrite_ctyp loc) params$ >>]
 
 (*
  * Rules.
  *)
 let declare_rule loc { rule_name = name; rule_params = params } =
-   let ctyp = params_ctyp loc (tactic_ctyp loc) params in
-      [<:sig_item< value $name$ : $ctyp$ >>]
-      (* <:sig_item< value $refiner_name name$ : $refiner_ctyp loc$ >>] *)
+   [<:sig_item< value $name$ : $params_ctyp loc (tactic_ctyp loc) params$ >>]
 
 let declare_ml_axiom loc { mlterm_name = name; mlterm_params = params } =
-   let ctyp = params_ctyp loc (tactic_ctyp loc) params in
-      [<:sig_item< value $name$ : $ctyp$ >>]
-      (* <:sig_item< value $refiner_name name$ : $refiner_ctyp loc$ >>] *)
+   [<:sig_item< value $name$ : $params_ctyp loc (tactic_ctyp loc) params$ >>]
 
 (*
  * Precedence.
@@ -559,9 +553,7 @@ let extract_sig_item (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: magic block%t" eflush;
          declare_magic_block loc block
-    | Opname _ ->
-         if !debug_filter_prog then
-            eprintf "Filter_prog.extract_sig_item: opname%t" eflush;
+    | Opname _ | DForm _ | PrecRel _ | Id _ | Comment _ | Infix _ ->
          []
     | MLRewrite item ->
          if !debug_filter_prog then
@@ -571,31 +563,11 @@ let extract_sig_item (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: mlaxiom%t" eflush;
          declare_ml_axiom loc item
-    | DForm _ ->
-         if !debug_filter_prog then
-            eprintf "Filter_prog.extract_sig_item: dform%t" eflush;
-         []
-    | PrecRel _ ->
-         if !debug_filter_prog then
-            eprintf "Filter_prog.extract_sig_item: prec rel%t" eflush;
-         []
-    | Id id ->
-         if !debug_filter_prog then
-            eprintf "Filter_prog.extract_sig_item: id: 0x%08x%t" id eflush;
-         []
-    | Comment e ->
-         if !debug_filter_prog then
-            eprintf "Filter_prog.extract_sig_item: comment%t" eflush;
-         []
-    | Infix name ->
-         if !debug_filter_prog then
-            eprintf "Filter_prog.extract_sig_item: infix: %s%t" name eflush;
-         []
     | Module (name, _) ->
-         if !debug_filter_prog then
-            eprintf "Filter_prog.extract_sig_item: module: %s%t" name eflush;
-         raise (Failure "Filter_sig.extract_sig_item: nested modules are not implemented")
-
+         Stdpp.raise_with_loc loc (Failure "Filter_sig.extract_sig_item: nested modules are not implemented")
+    | Definition def ->
+         declare_definition loc def
+         
 (*
  * Extract a signature.
  *)
@@ -972,6 +944,16 @@ let define_cond_rewrite want_checkpoint code proc loc crw expr =
 
 let prim_rewrite proc loc rw =
    define_rewrite false (prim_rewrite_expr loc) proc loc rw None
+
+let definition proc loc def =
+   let rw = {
+      rw_name = def.opdef_name;
+      rw_redex = def.opdef_term;
+      rw_contractum = def.opdef_definition;
+      rw_proof = xnil_term;
+      rw_resources = def.opdef_resources;
+   } in
+      define_rewrite false (def_rewrite_expr loc) proc loc rw None
 
 let prim_cond_rewrite proc loc crw =
    define_cond_rewrite false (prim_cond_rewrite_expr loc) proc loc crw None
@@ -1593,26 +1575,14 @@ let extract_str_item proc (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: magic block%t" eflush;
          define_magic_block proc loc block
-    | Opname _ ->
-         if !debug_filter_prog then
-            eprintf "Filter_prog.extract_str_item: opname%t" eflush;
-         []
-    | Id _ ->
-         if !debug_filter_prog then
-            eprintf "Filter_prog.extract_str_item: id%t" eflush;
-         []
-    | Comment _ ->
-         if !debug_filter_prog then
-            eprintf "Filter_prog.extract_str_item: comment%t" eflush;
-         []
-    | Infix _ ->
-         if !debug_filter_prog then
-            eprintf "Filter_prog.extract_str_item: infix%t" eflush;
+    | Opname _ | Id _ | Comment _ | Infix _ ->
          []
     | Module _ ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: infix%t" eflush;
          raise (Failure "Filter_prog.extract_str_item: nested modules are not implemented")
+    | Definition def ->
+         definition proc loc def
 
 (*
  * Extract a signature.

@@ -153,11 +153,6 @@ sig
    val term_of_meta_term : meta_term -> term
    val meta_term_of_term : term -> meta_term
 
-   val term_of_rewrite :
-      ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item,
-       term, term, term, term, term, term, term) convert ->
-      ('term, 'proof, 'expr) rewrite_info ->
-      term
    val term_of_cond_rewrite :
       ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item,
        term, term, term, term, term, term, term) convert ->
@@ -168,10 +163,6 @@ sig
        term, term, term, term, term, term, term) convert ->
       ('term, 'meta_term, 'proof, 'expr) rule_info ->
       term
-   val term_of_opname :
-      ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item,
-       term, term, term, term, term, term, term) convert ->
-      'term opname_info -> term
    val term_of_mlrewrite :
       ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item,
        term, term, term, term, term, term, term) convert ->
@@ -191,20 +182,6 @@ sig
       ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item,
        term, term, term, term, term, term, term) convert ->
       ('term, 'expr) dform_info ->
-      term
-   val term_of_prec : string -> term
-   val term_of_prec_rel : prec_rel_info -> term
-   val term_of_id : int -> term
-   val term_of_infix : string -> term
-   val term_of_summary_item :
-      ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item,
-       term, term, term, term, term, term, term) convert ->
-      'item ->
-      term
-   val term_of_magic_block :
-      ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item,
-       term, term, term, term, term, term, term) convert ->
-      'item magic_info ->
       term
    val term_list :
       ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item,

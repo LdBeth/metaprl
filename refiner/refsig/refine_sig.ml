@@ -367,6 +367,11 @@ sig
       term ->              (* redex *)
       term ->              (* contractum *)
       unit
+   val definitional_rewrite : build ->
+      string ->            (* name *)
+      term ->              (* redex *)
+      term ->              (* contractum *)
+      unit
    val derived_rewrite : build ->
       string ->            (* name *)
       term ->              (* redex *)
@@ -503,6 +508,7 @@ sig
     | RIMLRule of ri_ml_rule
 
     | RIRewrite of ri_rewrite
+    | RIDefRewrite of ri_rewrite
     | RIMLRewrite of ri_ml_rewrite
     | RICondRewrite of ri_cond_rewrite
     | RIPrimRewrite of ri_prim_rewrite

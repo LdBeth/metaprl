@@ -449,7 +449,15 @@ struct
 
    let ascii_major = 1
    let ascii_minor = 0
-   let ascii_revs  = [2;1;0] (* Filter_summary has a HACK needed to read some rev 0-1 files *)
+   (*
+    * Rev 0: original syntax
+    * Rev 1: added new hypothesis syntax (hyps with and w/o bindings)
+    * Rev 2: removed support for variable name (string) arguments to rules/rewrites
+    * Rev 3: added a real summary item for "define" directives (instead of declare + prim_rw implementation)
+    *
+    * Filter_summary has a HACK needed to read some rev 0-1 files
+    *)
+   let ascii_revs  = [3;2;1;0]
 
    let sig_magics = List.map (magic_of_version ascii_major ascii_minor) ascii_revs
    let str_magics = List.map (magic_of_version ascii_major ascii_minor) ascii_revs

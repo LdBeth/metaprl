@@ -328,12 +328,15 @@ struct
     * This command is used both for signature items
     * as well as structure items.
     *)
-   let declare_term proc loc (s, params, bterms) =
+   let declare_term_opname proc loc (s, params, bterms) =
       let opname' = Opname.mk_opname s (FilterCache.op_prefix proc.cache) in
       let t = mk_term (mk_op opname' params) bterms in
          FilterCache.update_opname proc.cache s t;
-         FilterCache.add_command proc.cache (Opname { opname_name = s; opname_term = t }, loc);
          t
+
+   let declare_term proc loc ((s, _, _) as term_spec) =
+      let t = declare_term_opname proc loc term_spec in
+         FilterCache.add_command proc.cache (Opname { opname_name = s; opname_term = t }, loc)
 
    (*
     * Define a rewrite in an interface.
@@ -432,9 +435,15 @@ struct
    (*
     * Declare a term, and define a rewrite in one step.
     *)
-   let define_term proc loc name redex contractum pf res =
-      let redex' = declare_term proc loc redex in
-         declare_rewrite proc loc name [] (MetaIff (MetaTheorem redex', MetaTheorem contractum)) pf res
+   let define_term proc loc name ((s,_,_) as term_spec) contractum res =
+      let t = declare_term_opname proc loc term_spec in
+         FilterCache.add_command proc.cache (Definition {
+            opdef_name = name;
+            opdef_opname = s;
+            opdef_term = t;
+            opdef_definition = contractum;
+            opdef_resources = res;
+         }, loc)
 
    let rec print_terms out = function
       h::t ->
@@ -946,13 +955,13 @@ EXTEND
              empty_sig_item loc
         | "declare"; t = quote_term ->
           let f () =
-             ignore (SigFilter.declare_term (SigFilter.get_proc loc) loc t)
+             SigFilter.declare_term (SigFilter.get_proc loc) loc t
           in
              print_exn f "declare" loc;
              empty_sig_item loc
         | "define"; name = LIDENT; ":"; t = quote_term; "<-->"; def = term ->
            let f () =
-             SigFilter.define_term (SigFilter.get_proc loc) loc name t def () []
+             SigFilter.define_term (SigFilter.get_proc loc) loc name t def []
            in
              print_exn f "define" loc;
              empty_sig_item loc
@@ -1055,13 +1064,13 @@ EXTEND
              empty_str_item loc
         | "declare"; t = quote_term ->
           let f () =
-             ignore (StrFilter.declare_term (StrFilter.get_proc loc) loc t)
+             StrFilter.declare_term (StrFilter.get_proc loc) loc t
           in
              print_exn f "declare" loc;
              empty_str_item loc
         | "define"; name = LIDENT; res = optresources; ":"; t = quote_term; "<-->"; def = term ->
            let f () =
-             StrFilter.define_term (StrFilter.get_proc loc) loc name t def (Primitive xnil_term) res
+             StrFilter.define_term (StrFilter.get_proc loc) loc name t def res
            in
              print_exn f "define" loc;
              empty_str_item loc

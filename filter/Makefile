@@ -116,10 +116,12 @@ MFILES_CAMLP4 =\
 	filter/filter_parse\
 	filter/filter_main\
 
-PFILES =\
+MFILES_PRLC =\
+	base/filter_magic\
 	filter/prlcomp\
 
-MFILES_PRLC = $(PFILES)\
+MFILES_PRLCX =\
+	filter/prlcomp\
 	filter/filter_prog\
 	filter/filter_bin\
 
@@ -130,6 +132,8 @@ CMOFILES_CAMLP4 = $(addsuffix .cmo, $(MFILES_CAMLP4))
 CMXFILES_CAMLP4 = $(addsuffix .cmx, $(MFILES_CAMLP4))
 CMOFILES_PRLC = $(addsuffix .cmo, $(MFILES_PRLC))
 CMXFILES_PRLC = $(addsuffix .cmx, $(MFILES_PRLC))
+CMOFILES_PRLCX = $(addsuffix .cmo, $(MFILES_PRLCX))
+CMXFILES_PRLCX = $(addsuffix .cmx, $(MFILES_PRLCX))
 CMOFILES_CONVERT = $(addsuffix .cmo, $(MFILES_CONVERT))
 CMXFILES_CONVERT = $(addsuffix .cmx, $(MFILES_CONVERT))
 
@@ -254,22 +258,22 @@ PRLCO = prlco
 PRLCN_CMOBJS =\
 	$(STANDARD_LIBS)\
 	$(CAMLP4LIB)/pr_dump.cmo\
-	$(CMOFILES_PRLC)
+	$(CMOFILES_PRLCX)
 
 PRLCN_CMXOBJS =\
 	$(STANDARDX_LIBS)\
 	$(CAMLP4LIB)/pr_dump.cmx\
-	$(CMXFILES_PRLC)
+	$(CMXFILES_PRLCX)
 
 PRLCO_CMOBJS =\
 	$(STANDARD_LIBS)\
 	$(CAMLP4LIB)/pr_o.cmo\
-	$(CMOFILES_PRLC)
+	$(CMOFILES_PRLCX)
 
 PRLCO_CMXOBJS =\
 	$(STANDARDX_LIBS)\
 	$(CAMLP4LIB)/pr_o.cmx\
-	$(CMXFILES_PRLC)
+	$(CMXFILES_PRLCX)
 
 PRLCX_BYTE_CCLIBS = $(BYTE_CCLIBS)
 PRLCX_NATIVE_CCLIBS = $(NATIVE_CCLIBS)
@@ -396,8 +400,8 @@ $(CONVERT).opt: $(CONVERT_CMXOBJS) $(THREADSLIB)
 #
 # Wrapper program
 #
-$(MAINPROG).run: $(CMAFILES) $(CMADEPS) $(PCMOFILES) $(ROOT)/mk/config $(THREADSLIB) $(MAINLIB).cma
-	$(OCAMLCP) -custom $(OCAMLCFLAGS) -o $@ $(OCAMLCPOPT) $(CMALIBS) $(CMAFILES) base/filter_magic.cmo $(PCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS)
+$(MAINPROG).run: $(CMAFILES) $(CMADEPS) $(ROOT)/mk/config $(THREADSLIB) $(MAINLIB).cma $(CMOFILES_PRLC)
+	$(OCAMLCP) -custom $(OCAMLCFLAGS) -o $@ $(OCAMLCPOPT) $(CMALIBS) $(CMAFILES) $(CMOFILES_PRLC) $(BYTE_CCLIBS) $(LIBTHREADS)
 
-$(MAINPROG).opt: $(CMXAFILES) $(CMXDEPS) $(PCMXFILES) $(ROOT)/mk/config $(OPTTHREADSLIB) $(MAINLIB).cmxa
-	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ $(CMXAFILES) $(CMXLIBS) base/filter_magic.cmx $(PCMXFILES) $(NATIVE_CCLIBS) $(OPTTHREADS)
+$(MAINPROG).opt: $(CMXAFILES) $(CMXDEPS) $(ROOT)/mk/config $(OPTTHREADSLIB) $(MAINLIB).cmxa $(CMXFILES_PRLC)
+	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ $(CMXAFILES) $(CMXLIBS) $(CMXFILES_PRLC) $(PCMXFILES) $(NATIVE_CCLIBS) $(OPTTHREADS)
