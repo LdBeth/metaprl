@@ -392,24 +392,18 @@ and merge_multiterms m0 m1 current_ts =
 
      (* val mm_unify : system -> system *)
 
-let mm_unify =
-        let mult = ref init_multeq in
-     let rec mm_unify_with_global_mult r =
-          if r.u.multeq_number =0 then r
-          else ( mult:= select_multeq r.u;
-                (
-                  (match (!mult).m with
-                      [] -> ()
-                    | [multit] -> (r.u <- compact (reduce multit) r.u)
-                    | _ -> raise Mm_unif_error
-                      (* Field_m_in_multeq_must_be_single_element_or_empty_list *)
-                   );
-                  r.t <- (!mult)::(r.t)
-                 );
-                 mm_unify_with_global_mult r
-               )
-                  in
-    mm_unify_with_global_mult
+let rec mm_unify r =
+   if r.u.multeq_number = 0 then r
+   else begin
+      let mult = select_multeq r.u in
+      begin match mult.m with
+         [] -> ()
+       | [multit] -> (r.u <- compact (reduce multit) r.u)
+       | _ -> raise Mm_unif_error (* Field_m_in_multeq_must_be_single_element_or_empty_list *)
+      end;
+      r.t <- mult :: (r.t);
+      mm_unify r
+   end
 
 (***********************
  * INTERFACE FUNCTIONS *
@@ -770,6 +764,10 @@ let rec extract_varstrl l =
 (* extracts the string list of variable names from meq; deletes Vinit  *)
 let mulieq2varstringl meq = extract_varstrl meq.s
 
+let get_name = function
+   V v -> v
+ | _ -> raise impossible
+
 let pick_name bv consts var_hashtbl =
    let oldname=
      (List.hd
@@ -779,137 +777,74 @@ let pick_name bv consts var_hashtbl =
      (((bv.fsymb_bv.renamings).(bv.arg_numb)).(bv.binding_numb))
      in
    if ( newname = (V null_var) ) then
-         ( let namestr = match oldname with
-             V oldnamestr ->
-                let avoid v = SymbolSet.mem consts v || Hashtbl.mem var_hashtbl v in
-                new_name oldnamestr avoid        (* ??? or hash(bv) *)
-           | _ -> raise (Invalid_argument "Bug in Unify_mm.pick_name!")
-         in
-          (
-          ((bv.fsymb_bv.renamings).(bv.arg_numb)).(bv.binding_numb) <-
-           (V namestr)
-          ); (V namestr)
-         )
+      let avoid v = SymbolSet.mem consts v || Hashtbl.mem var_hashtbl v in
+      let newname = V (new_name (get_name oldname) avoid) in        (* ??? or hash(bv) *)
+      begin
+         ((bv.fsymb_bv.renamings).(bv.arg_numb)).(bv.binding_numb) <- newname;
+         newname
+      end
    else newname
 
 let rec multiterm_list2term m consts var_hashtbl sub_hashtbl multeq_hashtbl =
- ( match m with
-       [multit] ->
-      ( match multit.fsymb with
-          Op op_w_b ->( my_mk_term op_w_b.opsymb
-                                  (List.map2
-                                   (function x -> function y ->
-                                      (temp_multieq2bterm x y consts var_hashtbl sub_hashtbl multeq_hashtbl ))
-                                   multit.args
-                                   (List.map Array.to_list (Array.to_list op_w_b.opbinding)))
-                      )
-       | Bvar bv -> (match (pick_name bv consts var_hashtbl) with
-                       (V v) -> mk_var_term v
-                      |  _ -> raise impossible
-                     )
-       | Cnst x -> (match x with
-                          (V v) -> mk_var_term v
-                         |  _ -> raise impossible
-                     )
-      )
-     | _ -> raise impossible
- )
+   match m with
+      [{ fsymb = Op op_w_b; args = args}] ->
+         my_mk_term op_w_b.opsymb
+            (List.map2
+               (fun x y -> (temp_multieq2bterm x y consts var_hashtbl sub_hashtbl multeq_hashtbl ))
+               args
+               (List.map Array.to_list (Array.to_list op_w_b.opbinding)))
+    | [{ fsymb = Bvar bv }] ->
+         mk_var_term (get_name (pick_name bv consts var_hashtbl))
+    | [{ fsymb = Cnst x }] ->
+         mk_var_term (get_name x)
+    | _ -> raise impossible
 
 (* given temp_multeq and external bound_variable list constructs bterm *)
 
 and temp_multieq2bterm t_meq b_v_list consts var_hashtbl sub_hashtbl multeq_hashtbl =
-   ( make_bterm
-      (
-           if ( (Queue.length t_meq.s_t) = 0 ) then
-                   {bvars=(List.map
-                           (function l ->(
-                            match
-                            (pick_name (List.hd l) consts var_hashtbl)
-                            with
-                               (V v) -> v
-                              | _ -> raise impossible
-                                          )
-                           )
-                           b_v_list
-                          );
-                    bterm = (multiterm_list2term t_meq.m_t consts var_hashtbl sub_hashtbl multeq_hashtbl )
-                   }
-           else
-                   {bvars=(List.map
-                           (function l ->(
-                            match
-                            (pick_name (List.hd l) consts var_hashtbl )
-                            with
-                               (V v) -> v
-                              | _ -> raise impossible
-                                          )
-                           )
-                           b_v_list
-                           );
-                    bterm = mk_var_term ( let vari=(Queue.peek t_meq.s_t) in
-                                          match vari.name with
-                                           (V v) ->(if (not (Hashtbl.mem sub_hashtbl v))
-                                                    then
-                                                     begin
-                                                      try
-                                                       let trm= (Hashtbl_multeq.find
-                                                                 multeq_hashtbl
-                                                                 vari.m_v
-                                                                )
-                                                       in
-                                                       Hashtbl.add sub_hashtbl v trm
-                                                      with _ ->()
-                                                     end; v
-                                                   )                           (* !!!!! tut  *)
-                                          | _ -> raise impossible
-                                        )
-                   }
-      )
-   )
+   let bvar_name l = get_name (pick_name (List.hd l) consts var_hashtbl) in
+      make_bterm {
+         bvars = List.map bvar_name b_v_list;
+         bterm =
+            if (Queue.length t_meq.s_t) = 0 then
+               multiterm_list2term t_meq.m_t consts var_hashtbl sub_hashtbl multeq_hashtbl
+            else begin
+               let vari = Queue.peek t_meq.s_t in
+               let v = get_name vari.name in
+                  if not (Hashtbl.mem sub_hashtbl v) then begin
+                     try
+                        Hashtbl.add sub_hashtbl v (Hashtbl_multeq.find multeq_hashtbl vari.m_v)
+                     with _ -> ()     (* !!!!! tut  *)
+                  end;
+                  mk_var_term v
+            end
+      }
 
 (* returnes the complete term for substitution
  * and stores it in  multeq_hashtbl  as a side effect
  *)
 
 let multieq2term meq consts var_hashtbl multeq_hashtbl =
-       ( match meq.m with
-          [] -> (let trm = mk_var_term (match meq.s with
-                                           hd::tl ->(match hd.name with
-                                                       (V v) -> v
-                                                     | Vinit -> (match (List.hd tl).name with
-                                                                   (V v) -> v
-                                                                 | _ -> raise impossible
-                                                                )
-                                                    )
-                                         | [] -> raise impossible
-                                        )
-                  in
-                  Hashtbl_multeq.add multeq_hashtbl meq trm;
-                  trm
-                 )
-        | [t] ->(let sub_hashtbl = Hashtbl.create 23
-                 in
-                 let trm= multiterm_list2term meq.m consts var_hashtbl sub_hashtbl multeq_hashtbl
-                 and sub_hashtbl2sub tab=(let subref = ref [] in
-                                          Hashtbl.iter
-                                          (function x ->
-                                           (function y ->
-                                            subref:=(x,y)::(!subref)
-                                          )) tab ;
-                                          !subref
-                                         )
-                 in
-                 let sub = (sub_hashtbl2sub sub_hashtbl)
-                 in
-                 let trm_w_sub = match sub with
-                                   [] -> trm
-                                 | _  -> apply_subst sub trm
-                 in
-                 Hashtbl_multeq.add multeq_hashtbl meq trm_w_sub;
-                 trm_w_sub
-                )
-        | _ -> raise impossible
-       )
+   match meq with
+      { m = []; s = hd::tl } ->
+         let trm = mk_var_term
+            (match hd.name with
+               (V v) -> v
+             | Vinit -> get_name (List.hd tl).name)
+         in
+            Hashtbl_multeq.add multeq_hashtbl meq trm;
+            trm
+    | { m = [t] } ->
+         let sub_hashtbl = Hashtbl.create 23 in
+         let trm = multiterm_list2term meq.m consts var_hashtbl sub_hashtbl multeq_hashtbl in
+         let sub = Hashtbl.fold (fun a b coll -> (a,b)::coll) sub_hashtbl [] in
+         let trm_w_sub = match sub with
+            [] -> trm
+          | _  -> apply_subst sub trm
+         in
+            Hashtbl_multeq.add multeq_hashtbl meq trm_w_sub;
+            trm_w_sub
+    | _ -> raise impossible
 
 let rec upd_subst varstringl trm sigma =
    match varstringl with
@@ -923,26 +858,15 @@ let rec upd_subst varstringl trm sigma =
             (x,trm)::( upd_subst tl trm sigma)
 
 let solvedpart2subst slvdpt consts var_hashtbl =
-   let multeq_hashtbl = (Hashtbl_multeq.create 23)
+   let multeq_hashtbl = (Hashtbl_multeq.create 23) in
+   let rec sp2s sigma consts var_hashtbl multeq_hashtbl = function
+      [] -> sigma
+    | hd::tl ->
+         let varstringl= mulieq2varstringl hd in
+         let trm = multieq2term hd consts var_hashtbl multeq_hashtbl in
+            sp2s (upd_subst varstringl trm sigma) consts var_hashtbl multeq_hashtbl tl
    in
-   (
-   let rec sp2s l sigma consts var_hashtbl multeq_hashtbl =
-    ( match l with
-       [] -> sigma
-     | hd::tl -> (let varstringl= (mulieq2varstringl hd)
-                  and trm = (multieq2term hd consts var_hashtbl multeq_hashtbl)
-                  in
-                   sp2s
-                    tl
-                    (upd_subst varstringl trm sigma)
-                    consts
-                    var_hashtbl
-                    multeq_hashtbl
-                 )
-    )
-   in
-   sp2s slvdpt [] consts var_hashtbl multeq_hashtbl
-   )
+   sp2s [] consts var_hashtbl multeq_hashtbl slvdpt
 
 let unify t0 t1 consts=
    if is_var_term t0 then
@@ -997,125 +921,66 @@ let update_subst varstringl terml sigma =
          (List.map (function x -> x, apply_subst sigma t) li) @ sigma
     | _ -> raise impossible
 
-let rec multiterm_list2term m consts var_hashtbl=
- ( match m with
-       [multit] ->
-      ( match multit.fsymb with
-          Op op_w_b ->( my_mk_term op_w_b.opsymb
-                           (List.map2
-                            (function x -> function y -> (temp_multieq2bterm x y consts var_hashtbl))
-                            multit.args
-                            (List.map Array.to_list (Array.to_list op_w_b.opbinding)))
-                      )
-       | Bvar bv -> (match (pick_name bv consts var_hashtbl) with
-                       (V v) -> mk_var_term v
-                      | _ -> raise impossible
-                     )
-       | Cnst x -> (match x with
-                          (V v) -> mk_var_term v
-                         | _ -> raise impossible
-                     )
-      )
-     | _ -> raise impossible
- )
+let rec multiterm_list2term m consts var_hashtbl =
+   match m with
+      [{ fsymb = Op op_w_b; args = args }] ->
+         my_mk_term op_w_b.opsymb
+            (List.map2 (**)
+               (fun x y -> (temp_multieq2bterm x y consts var_hashtbl))
+               args
+               (List.map Array.to_list (Array.to_list op_w_b.opbinding)))
+    | [{ fsymb = Bvar bv }] ->
+         mk_var_term (get_name (pick_name bv consts var_hashtbl))
+    | [{ fsymb = Cnst x }] ->
+         mk_var_term (get_name x)
+    | _ -> raise impossible
 
 (* given temp_multeq and external bound_variable list constructs bterm *)
 
 and temp_multieq2bterm t_meq b_v_list consts var_hashtbl =
-   ( make_bterm
-      (
-           if ( (Queue.length t_meq.s_t) = 0 ) then
-                   {bvars=(List.map
-                           (function l ->(
-                            match
-                            (pick_name (List.hd l) consts var_hashtbl)
-                            with
-                               (V v) -> v
-                              | _ -> raise impossible
-                                          )
-                           )
-                           b_v_list
-                          );
-                    bterm = (multiterm_list2term t_meq.m_t consts var_hashtbl)
-                   }
-           else
-                   {bvars=(List.map
-                           (function l ->(
-                            match
-                            (pick_name (List.hd l) consts var_hashtbl )
-                            with
-                               (V v) -> v
-                              | _ -> raise impossible
-                                          )
-                           )
-                           b_v_list
-                           );
-                    bterm = mk_var_term (match (Queue.peek t_meq.s_t).name with
-                                           (V v) -> v                                 (* !!!!! tut  *)
-                                          | _ -> raise impossible
-                                        )
-                   }
-      )
-   )
+   let bvar_name l = get_name (pick_name (List.hd l) consts var_hashtbl) in
+      make_bterm {
+         bvars = List.map bvar_name b_v_list;
+         bterm =
+            if (Queue.length t_meq.s_t) = 0 then
+               multiterm_list2term t_meq.m_t consts var_hashtbl
+            else
+               mk_var_term (get_name (Queue.peek t_meq.s_t).name)   (* !!!!! tut  *)
+      }
 
 let multieq2terms meq consts var_hashtbl =
-       ( match meq.m with
-          []  -> []
-        | [t] -> [multiterm_list2term meq.m consts var_hashtbl]
-        | _   -> raise impossible
-       )
+   match meq.m with
+      []  -> []
+    | [t] -> [multiterm_list2term meq.m consts var_hashtbl]
+    | _   -> raise impossible
 
 let update_eqnlist varstringl terml eqnl =
-       match terml with
-         [] -> ( match varstringl with
-                  []   -> eqnl
-                | v::h -> (let vt = mk_var_term v
-                            in
-                            List.map
-                            (function x -> ((mk_var_term x), vt) )
-                            h
-                           )@ eqnl
-               )
-       | [t] ->( match varstringl with
-                  [] -> eqnl
-                | li -> (List.map
-                        (function x -> ((mk_var_term x), t ) )
-                        li
-                        )@ eqnl
-                )
-       | _ -> raise impossible
+   match terml, varstringl with
+      [], []
+    | [_], [] -> eqnl
+    | [], v::h ->
+         let vt = mk_var_term v in
+            (List.map (fun x -> (mk_var_term x), vt) h) @ eqnl
+    | [t], li ->
+         (List.map (fun x -> (mk_var_term x), t) li) @ eqnl
+    | _ -> raise impossible
 
-let solvedpart2eqnlist slvdpt consts var_hashtbl =
-   let rec sp2el l consts var_hashtbl =
-    ( match l with
-       [] -> []
-     | hd::tl -> ( update_eqnlist
-                     (mulieq2varstringl hd)
-                     (multieq2terms hd consts var_hashtbl)
-                     (sp2el
-                      tl
-                      consts
-                      var_hashtbl
-                     )
-                 )
-    )
-   in
-   sp2el slvdpt consts var_hashtbl
+let rec solvedpart2eqnlist consts var_hashtbl = function
+   [] -> []
+ | hd::tl ->
+      update_eqnlist (**)
+         (mulieq2varstringl hd)
+         (multieq2terms hd consts var_hashtbl)
+         (solvedpart2eqnlist consts var_hashtbl tl)
 
 let opL = mk_op (Opname.make_opname ["L"]) []
 
 let unify_eqnl_eqnl l1 consts =
-        let l = List.rev l1
-        in
-        let t_0={term_op = opL; term_terms =(fofeqnlist l)}
-        and t_1={term_op = opL; term_terms =(sofeqnlist l)}
-        in
-         let var_hashtbl = (Hashtbl.create 23)
-         in
-            solvedpart2eqnlist
-             (mm_unify (cterms2system t_0 t_1 consts var_hashtbl)).t
-             consts
-             var_hashtbl
+   let l = List.rev l1 in
+   let t_0 = {term_op = opL; term_terms =(fofeqnlist l)} in
+   let t_1={term_op = opL; term_terms =(sofeqnlist l)} in
+   let var_hashtbl = (Hashtbl.create 23) in
+      solvedpart2eqnlist consts var_hashtbl (mm_unify (cterms2system t_0 t_1 consts var_hashtbl)).t
 
 (*********************
  * WRAPPER FUNCTIONS *
