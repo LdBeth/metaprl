@@ -1,5 +1,5 @@
 (*
- * Translation table for HTML files.
+ * System commands.
  *
  * ----------------------------------------------------------------
  *
@@ -24,24 +24,35 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_symbol
 
-(*
- * Table for translating HTML files.
- *)
-module type BrowserTableSig =
-sig
-   type t
+type syscall =
+   (*
+    * Rebuild the system.
+    *)
+   SyscallOMake of string
 
    (*
-    * Table operations.
+    * Restart the system.
     *)
-   val empty      : t
-   val add_string : t -> symbol -> string -> t
-   val add_buffer : t -> symbol -> Buffer.t -> t
-   val add_file   : t -> symbol -> string -> t
-   val add_fun    : t -> symbol -> (Buffer.t -> unit) -> t
-end
+ | SyscallRestart
+
+   (*
+    * CVS operations.
+    *)
+ | SyscallCVS of string * string
+
+   (*
+    * Edit a file (root, name)
+    *)
+ | SyscallEdit of string * string
+
+   (*
+    * Be careful using generic calls to the shell.
+    * If you use this code, you should make sure it
+    * does not expose files outside the MetaPRL
+    * tree unless absolutely necessary.
+    *)
+ | SyscallShell of string
 
 (*!
  * @docoff

@@ -1,5 +1,5 @@
 (*
- * Translation table for HTML files.
+ * Buffered subprocesses.
  *
  * ----------------------------------------------------------------
  *
@@ -24,24 +24,23 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_symbol
+
+type t
+type buffer
 
 (*
- * Table for translating HTML files.
+ * Processes.
  *)
-module type BrowserTableSig =
-sig
-   type t
+val create : string -> t
+val flush : t -> unit
+val contents : t -> string
+val close : t -> unit
 
-   (*
-    * Table operations.
-    *)
-   val empty      : t
-   val add_string : t -> symbol -> string -> t
-   val add_buffer : t -> symbol -> Buffer.t -> t
-   val add_file   : t -> symbol -> string -> t
-   val add_fun    : t -> symbol -> (Buffer.t -> unit) -> t
-end
+(*
+ * Buffered input.
+ *)
+val open_in : t -> buffer
+val get_char : buffer -> char
 
 (*!
  * @docoff

@@ -54,6 +54,7 @@ val set_main        : Lm_rformat.buffer -> term StringTable.t -> unit
 val add_prompt      : t -> string -> unit
 val add_directory   : t -> string -> unit
 val add_file        : t -> string option -> unit
+val add_edit        : t -> string -> unit
 
 (*
  * Get the output for display.
@@ -84,6 +85,12 @@ val synchronize : t -> ('a -> 'b) -> 'a -> 'b
  * Flush the session before the program exits.
  *)
 val flush : t -> unit
+
+(*
+ * Perform a shell command and add the output to the message
+ * window.
+ *)
+val add_command : t -> Browser_syscall.t -> unit
 
 (*
  * -*-

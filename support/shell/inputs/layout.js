@@ -124,6 +124,15 @@ function Update(session)
         parent.buttonsframe.location.reload();
     if(version['rule'] != session['rule'])
         parent.ruleframe.location.reload();
+    if(session['io'] && version['io'] != session['io']) {
+        version['io'] = session['io'];
+        parent.window.open('/session/' + session['id'] + '/frame/system/');
+    }
+    if(session['edit'] && version['edit'] != session['edit']) {
+        version['edit'] = session['edit'];
+        var filename = '/session/' + session['id'] + '/edit/' + session['file'] + '/info.prl';
+        Edit(session['external'], filename);
+    }
 }
 
 /*

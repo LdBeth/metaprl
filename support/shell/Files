@@ -10,6 +10,7 @@ MPFILES =\
 	shell_util\
 	java_mux_channel\
 	java_display_term\
+	browser_syscall\
 	browser_copy\
 	browser_state\
 	browser_resource\
@@ -23,6 +24,7 @@ MPFILES =\
 	shell_root\
 	recursive_lock\
 	mptop\
+	shell_syscall\
 	shell_java\
 	shell_browser\
 	shell_state\

@@ -40,6 +40,7 @@ extends Shell_rule
 extends Shell_package
 extends Shell_root
 extends Shell_p4_sig
+extends Shell_syscall
 
 open Lm_debug
 open Lm_rprintf
@@ -718,7 +719,7 @@ struct
        | None ->
             None
 
-  (************************************************************************
+   (************************************************************************
     * MODULES                                                              *
     ************************************************************************)
 

@@ -159,7 +159,11 @@ let rec mk_proj_expr loc top_expr =
          (<:expr< $uid: name$ . $e2$ >>) ->
             collect (name :: names) e2
        | (<:expr< $lid: v$ >>) ->
-            VarProjExpr(names, v)
+            VarProjExpr (names, v)
+       | (<:expr< $lid: v$ . val >>) ->
+            let f = loc, VarExpr ("deref_" ^ v) in
+            let x = loc, UnitExpr () in
+               ApplyExpr (f, x)
        | _ ->
             not_supported loc "expr projection"
    in

@@ -37,10 +37,22 @@ open Http_server_type
 type t
 
 (*
- * Output channel is abstract.
+ * Channels.
  *)
-type input
-type output
+module Input :
+sig
+   type t
+end
+
+module Output :
+sig
+   type t
+
+   val close : t -> unit
+   val output_char : t -> char -> unit
+   val output_string : t -> string -> unit
+   val flush : t -> unit
+end
 
 (*
  * Info about the local connection.
@@ -72,9 +84,14 @@ val parse_post_body : content_type -> string -> (string * string) list
  * version is synchronous, and not threaded.
  *)
 type 'a start_handler   = t -> 'a -> 'a
-type 'a connect_handler = t -> 'a -> output -> input -> string list -> request_header_entry list -> string -> 'a
+type 'a connect_handler = t -> 'a -> Output.t -> Input.t -> string list -> request_header_entry list -> string -> 'a
 
 val serve_http : 'a start_handler -> 'a connect_handler -> 'a -> int -> unit
+
+(*
+ * Close the HTTP socket.
+ *)
+val close_http : t -> unit
 
 (*
  * Get the info for the server.
@@ -84,13 +101,13 @@ val http_info : t -> http_info
 (*
  * Responses.
  *)
-val print_success_page    : output -> response_code -> Buffer.t -> unit
-val print_content_page    : output -> response_code -> string -> Buffer.t -> unit
-val print_multipart_page  : output -> response_code -> (string * Buffer.t) list -> unit
-val print_success_channel : output -> response_code -> in_channel -> unit
-val print_content_channel : output -> response_code -> string -> in_channel -> unit
-val print_error_page      : output -> response_code -> unit
-val print_redirect_page   : output -> response_code -> string -> unit
+val print_success_header  : Output.t -> response_code -> unit
+val print_success_page    : Output.t -> response_code -> Buffer.t -> unit
+val print_content_page    : Output.t -> response_code -> string -> Buffer.t -> unit
+val print_success_channel : Output.t -> response_code -> in_channel -> unit
+val print_content_channel : Output.t -> response_code -> string -> in_channel -> unit
+val print_error_page      : Output.t -> response_code -> unit
+val print_redirect_page   : Output.t -> response_code -> string -> unit
 
 (*
  * -*-

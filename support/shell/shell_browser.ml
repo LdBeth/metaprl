@@ -45,6 +45,7 @@ open Browser_resource
 open Shell_sig
 open Package_info
 open Shell_util
+open Shell_syscall_sig
 
 let _ =
    show_loading "Loading Shell Browser%t"
@@ -122,7 +123,21 @@ struct
         (*
          * Styles are computed from browser_info.
          *)
-        mutable session_styles          : Buffer.t option
+        mutable session_styles          : Buffer.t option;
+
+        (*
+         * Is a command running for this session?
+         *)
+        mutable session_io_command      : string;
+        mutable session_io              : Browser_syscall.t option;
+        mutable session_io_version      : int;
+
+        (*
+         * Edit files.
+         *)
+        mutable session_edit            : string;
+        mutable session_edit_flag       : bool;
+        mutable session_edit_version    : int
       }
 
    (*
@@ -149,16 +164,18 @@ struct
     * Types of URIs.
     *)
    type uri =
-      ContentURI of session * string * bool  (* bool states whether the URL ends with a / *)
-    | FrameURI of session * string
-    | CloneURI of session
-    | InputURI of string
-    | LoginURI of string
+      InputURI   of string
+    | LoginURI   of string
     | UnknownURI of string
-    | SessionURI of session * session
-    | EditURI of session * string
+    | FileURI    of string
+
+    | ContentURI  of session * string * bool  (* bool states whether the URL ends with a / *)
+    | FrameURI    of session * string
+    | SessionURI  of session * session
+    | EditURI     of session * string
     | RedirectURI of session * string
-    | FileURI of string
+    | OutputURI   of session
+    | CloneURI    of session
 
    (*
     * Decode the URI.
@@ -231,6 +248,14 @@ struct
                 Not_found ->
                    eprintf "Bad session: %s@." id;
                    UnknownURI (Lm_string_util.prepend "/" rest))
+       | ["session"; id; "output"] ->
+            (try
+                let session = IntTable.find state.state_sessions (int_of_string id) in
+                   OutputURI session
+             with
+                Not_found ->
+                   eprintf "Bad session: %s@." id;
+                   UnknownURI "/output")
        | "inputs" :: rest ->
             InputURI (Lm_string_util.prepend "/" rest)
        | ["login"; key] ->
@@ -562,7 +587,11 @@ struct
             session_content_version = content_version;
             session_message_version = message_version;
             session_buttons_version = buttons_version;
-            session_rule_version    = rule_version
+            session_rule_version    = rule_version;
+            session_io_version      = io_version;
+            session_edit            = edit;
+            session_edit_flag       = edit_flag;
+            session_edit_version    = edit_version
           } = session
       in
          Printf.bprintf buf "\tvar session = new Array();\n";
@@ -572,6 +601,10 @@ struct
          Printf.bprintf buf "\tsession['message']  = %d;\n" message_version;
          Printf.bprintf buf "\tsession['buttons']  = %d;\n" buttons_version;
          Printf.bprintf buf "\tsession['rule']     = %d;\n" rule_version;
+         Printf.bprintf buf "\tsession['io']       = %d;\n" io_version;
+         Printf.bprintf buf "\tsession['file']     = '%s';\n" edit;
+         Printf.bprintf buf "\tsession['edit']     = %d;\n" edit_version;
+         Printf.bprintf buf "\tsession['external'] = %b;\n" edit_flag;
          Printf.bprintf buf "\tsession['id']       = %d;\n" id
 
    (*
@@ -583,7 +616,8 @@ struct
             session_menu            = menu;
             session_buttons         = buttons;
             session_styles          = styles;
-            session_shell           = shell
+            session_shell           = shell;
+            session_io_command      = command
           } = session
       in
       let table = table_of_state state in
@@ -600,6 +634,9 @@ struct
          let { menu_macros = macros } = flush state session in
             Buffer.add_buffer buf macros
       in
+
+      (* Current command *)
+      let table = BrowserTable.add_string table command_sym        command in
 
       (* General info *)
       let table = BrowserTable.add_string table title_sym          "MetaPRL" in
@@ -760,6 +797,99 @@ struct
       in
          Browser_state.synchronize buffer ShellArg.flush shell
 
+   (************************************************************************
+    * System calls.
+    *)
+
+   (*
+    * Print the output page.
+    *)
+   let print_output_page state session outx =
+      match session.session_io with
+         Some io ->
+            let table = table_of_state state in
+            let table = BrowserTable.add_string table title_sym "MetaPRL output window" in
+            let table = BrowserTable.add_string table command_sym session.session_io_command in
+               print_translated_io_buffer_to_http outx table "output.html" io
+       | None ->
+            print_error_page outx NotFoundCode
+
+   (*
+    * Perform a command.
+    *)
+   let start_inline_command session state outx command =
+      if !debug_http then
+         eprintf "Executing inline command %s@." command;
+      try
+         let io = Browser_syscall.create command in
+            session.session_io <- Some io;
+            session.session_io_command <- command;
+            Browser_state.add_command session.session_buffer io;
+            Browser_syscall.close io
+      with
+         Unix.Unix_error _ ->
+            Lm_format.eprintf "%s: failed\n" command
+
+   let start_windowed_command session state outx command =
+      if !debug_http then
+         eprintf "Executing inline command %s@." command;
+      let table = table_of_state state in
+      let table = BrowserTable.add_string table title_sym "MetaPRL Command" in
+         try
+            session.session_io <- Some (Browser_syscall.create command);
+            session.session_io_version <- succ session.session_io_version;
+            session.session_io_command <- command
+         with
+            Unix.Unix_error _ ->
+               Lm_format.eprintf "%s: failed\n" command
+
+   (*
+    * For the editor, just set the info in the session.
+    *)
+   let start_edit_command session state outx target =
+      let { session_shell = shell;
+            session_buffer = buffer;
+            session_edit_version = edit_version
+          } = session
+      in
+      let flag = LsOptionSet.mem (ShellArg.get_ls_options shell) LsExternalEditor in
+         Browser_state.add_edit buffer target;
+         session.session_edit <- target;
+         session.session_edit_flag <- flag;
+         session.session_edit_version <- succ edit_version
+
+   (*
+    * Generic handler.
+    * Some of the commands can be executed immediately.
+    *)
+   let handle_syscall server state session outx command =
+      let () =
+         match command with
+            SyscallRestart ->
+               print_page server state session outx 100 "reload";
+               Http_simple.Output.close outx;
+               close_http server;
+               let _ =
+                  try Unix.execv Sys.argv.(0) Sys.argv; -1 with
+                     Unix.Unix_error _ ->
+                        -1
+               in
+                  Lm_format.eprintf "System restart failed@."
+          | SyscallOMake target ->
+               start_windowed_command session state outx (sprintf "omake %s" target)
+          | SyscallCVS (cwd, command) ->
+               start_windowed_command session state outx (sprintf "cd %s && cvs %s" cwd command)
+          | SyscallEdit (_, target) ->
+               start_edit_command session state outx target
+          | SyscallShell s ->
+               start_inline_command session state outx s
+      in
+         0
+
+   (************************************************************************
+    * Commands.
+    *)
+
    (*
     * Clone the current command.
     *)
@@ -790,7 +920,13 @@ struct
            session_commandbar_info = None;
            session_menu            = None;
            session_buttons         = None;
-           session_styles          = None
+           session_styles          = None;
+           session_io              = None;
+           session_io_command      = "No command";
+           session_io_version      = 0;
+           session_edit            = "No File";
+           session_edit_flag       = false;
+           session_edit_version    = 0
          }
       in
          state.state_id               <- id;
@@ -805,11 +941,12 @@ struct
     * Evaluate a command.
     * Send it to the shell, and get the result.
     *)
-   let eval state session outx command =
+   let eval server state session outx command =
       let { session_shell = shell;
             session_buffer = buffer
           } = session
       in
+         Shell_syscall.set_syscall_handler (handle_syscall server state session outx);
          Browser_state.add_prompt  buffer command;
          Browser_state.synchronize buffer (ShellArg.eval_top shell) (command ^ ";;");
          Browser_state.set_options buffer (ShellArg.get_ls_options shell);
@@ -926,6 +1063,11 @@ struct
                print_file_page server state filename outx
             else
                print_error_page outx ForbiddenCode
+       | OutputURI session ->
+            if is_valid_response state header then
+               print_output_page state session outx
+            else
+               print_login_page outx state None
        | RedirectURI (session, uri) ->
             if is_valid_response state header then
                print_redisplay_page (fun _ -> uri) server state session outx
@@ -952,6 +1094,7 @@ struct
        | ContentURI _
        | FrameURI _
        | CloneURI _
+       | OutputURI _
        | SessionURI _
        | EditURI _
        | RedirectURI _ ->
@@ -993,7 +1136,7 @@ struct
                              paste server state session outx command term
                         | None ->
                              try
-                                eval state session outx command;
+                                eval server state session outx command;
                                 print_redisplay_page rule_uri server state session outx
                              with
                                 End_of_file ->
@@ -1018,6 +1161,7 @@ struct
           | ContentURI _
           | FrameURI _
           | CloneURI _
+          | OutputURI _
           | SessionURI _
           | FileURI _
           | RedirectURI _ ->
@@ -1204,7 +1348,8 @@ struct
                output_string out password;
                close_out out;
 
-               eprintf "@[<v 3>*** Note ***@ \
+               eprintf "@[<v 3>\
+*** Note ***@ \
 *** This is the first time you are using the browser service.@ \
 *** A new password has been created for you in the file %s@ \
 *** You will need this password to connect to MetaPRL from your browser.@ \
@@ -1238,7 +1383,13 @@ struct
               session_commandbar_info = None;
               session_menu            = None;
               session_buttons         = None;
-              session_styles          = None
+              session_styles          = None;
+              session_io              = None;
+              session_io_command      = "No Command";
+              session_io_version      = 0;
+              session_edit            = "No File";
+              session_edit_flag       = false;
+              session_edit_version    = 0
             }
          in
          let state =
@@ -1257,7 +1408,8 @@ struct
             ShellArg.set_view_options shell options;
             ShellArg.refresh_packages ();
             ShellArg.set_dfmode shell "html";
-            serve_http http_start http_connect state !browser_port
+            serve_http http_start http_connect state !browser_port;
+            eprintf "Browser service finished@."
 end
 
 (*

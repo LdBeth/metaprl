@@ -55,6 +55,7 @@ val buttons_macros_sym : symbol
 val file_sym        : symbol
 val content_sym     : symbol
 val basename_sym    : symbol
+val command_sym     : symbol
 
 (*
  * Get files.
@@ -66,11 +67,11 @@ val save_root_file                   : string -> string -> bool
 (*
  * Translate a file.
  *)
-val print_raw_file_to_http           : Http_simple.output -> string -> unit
-val print_metaprl_file_to_http       : Http_simple.output -> string -> unit
-val print_translated_file_to_http    : Http_simple.output -> BrowserTable.t -> string -> unit
-val print_translated_file_to_channel : out_channel -> BrowserTable.t -> string -> unit
-val print_multipart_file_to_http     : Http_simple.output -> BrowserTable.t -> string -> (string * Buffer.t) list -> unit
+val print_raw_file_to_http             : Http_simple.Output.t -> string -> unit
+val print_metaprl_file_to_http         : Http_simple.Output.t -> string -> unit
+val print_translated_file_to_http      : Http_simple.Output.t -> BrowserTable.t -> string -> unit
+val print_translated_file_to_channel   : out_channel -> BrowserTable.t -> string -> unit
+val print_translated_io_buffer_to_http : Http_simple.Output.t -> BrowserTable.t -> string -> Browser_syscall.t -> unit
 
 (*!
  * @docoff

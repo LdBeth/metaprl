@@ -33,4 +33,8 @@ INPUTS =\
 	message.html\
 	buttons.html\
 	rule.html\
-	empty.html
+	empty.html\
+	system.html\
+	system.js\
+	output.html\
+	reload.html

@@ -1,5 +1,5 @@
 (*
- * Translation table for HTML files.
+ * System commands.
  *
  * ----------------------------------------------------------------
  *
@@ -24,24 +24,27 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_symbol
+extends Mptop
+
+open Shell_syscall_sig
 
 (*
- * Table for translating HTML files.
+ * Register a system handler.
  *)
-module type BrowserTableSig =
-sig
-   type t
+val set_syscall_handler : (syscall -> int) -> unit
 
-   (*
-    * Table operations.
-    *)
-   val empty      : t
-   val add_string : t -> symbol -> string -> t
-   val add_buffer : t -> symbol -> Buffer.t -> t
-   val add_file   : t -> symbol -> string -> t
-   val add_fun    : t -> symbol -> (Buffer.t -> unit) -> t
-end
+(*
+ * Shell commands.
+ *)
+topval deref_ls      : unit -> int
+topval deref_cd      : unit -> string -> int
+topval deref_pwd     : unit -> string
+topval deref_mkdir   : unit -> string -> int
+topval deref_rm      : unit -> string -> int
+topval deref_edit    : unit -> string -> int
+topval deref_omake   : unit -> int
+topval deref_restart : unit -> int
+topval deref_cvs     : unit -> string -> int
 
 (*!
  * @docoff

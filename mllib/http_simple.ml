@@ -57,8 +57,20 @@ type t = Lm_ssl.t
 (*
  * The output is a SSL channel.
  *)
-type input  = Lm_ssl.ssl_in
-type output = Lm_ssl.ssl_out
+module Input =
+struct
+   type t = Lm_ssl.ssl_in
+end
+
+module Output =
+struct
+   type t = Lm_ssl.ssl_out
+
+   let close = Lm_ssl.close_out
+   let output_char = Lm_ssl.output_char
+   let output_string = Lm_ssl.output_string
+   let flush = Lm_ssl.flush
+end
 
 (*
  * Info about the local connection.
@@ -72,7 +84,7 @@ type http_info =
  * Handler types.
  *)
 type 'a start_handler = t -> 'a -> 'a
-type 'a connect_handler = t -> 'a -> output -> input -> string list -> request_header_entry list -> string -> 'a
+type 'a connect_handler = t -> 'a -> Output.t -> Input.t -> string list -> request_header_entry list -> string -> 'a
 
 (************************************************************************
  * CONSTANTS                                                            *
@@ -132,29 +144,14 @@ let print_success_page_err out code buf =
       Lm_ssl.fprintf out "Content-Length: %d\r\n\r\n" (Buffer.length buf);
       Lm_ssl.output_buffer out buf
 
+let print_success_header_err out code =
+   let code, msg = get_code code in
+      Lm_ssl.fprintf out "%s %d %s\r\n\r\n" http_protocol code msg
+
 let print_content_page_err out code content_type buf =
    let code, msg = get_code code in
       Lm_ssl.fprintf out "%s %d %s\r\n" http_protocol code msg;
       Lm_ssl.fprintf out "Content-Type: %s\r\n" content_type;
-      Lm_ssl.fprintf out "Content-Length: %d\r\n\r\n" (Buffer.length buf);
-      Lm_ssl.output_buffer out buf
-
-let print_multipart_page_err out code pages =
-   let code, msg = get_code code in
-   let boundary = sprintf "%08x%08x%08x%08x" (Random.bits ()) (Random.bits ()) (Random.bits ()) (Random.bits ()) in
-   let buf = Buffer.create 100 in
-      (* Multipart body *)
-      List.iter (fun (content_type, buf') ->
-            bprintf buf "--%s\r\n" boundary;
-            bprintf buf "Content-type: %s\r\n" content_type;
-            bprintf buf "Content-length: %d\r\n\r\n" (Buffer.length buf');
-            Buffer.add_buffer buf buf';
-            Buffer.add_string buf "\r\n") pages;
-      bprintf buf "--%s--\r\n" boundary;
-
-      (* Print the entries as alternatives *)
-      Lm_ssl.fprintf out "%s %d %s\r\n" http_protocol code msg;
-      Lm_ssl.fprintf out "Content-Type: multipart/alternative; boundary=%s\r\n" boundary;
       Lm_ssl.fprintf out "Content-Length: %d\r\n\r\n" (Buffer.length buf);
       Lm_ssl.output_buffer out buf
 
@@ -253,6 +250,11 @@ You are being redirected to <a href=\"%s\"><tt>%s</tt></a>
  *)
 exception SigPipe = Lm_ssl.SSLSigPipe
 
+let print_success_header out code =
+   try print_success_header_err out code with
+      SigPipe ->
+         ()
+
 let print_success_page out code buf =
    try print_success_page_err out code buf with
       SigPipe ->
@@ -260,11 +262,6 @@ let print_success_page out code buf =
 
 let print_content_page out code content_type buf =
    try print_content_page_err out code content_type buf with
-      SigPipe ->
-         ()
-
-let print_multipart_page out code pages =
-   try print_multipart_page_err out code pages with
       SigPipe ->
          ()
 
@@ -823,6 +820,12 @@ let rec read_body inx header =
  *)
 
 (*
+ * Shutdown the server.
+ *)
+let close_http server =
+   Lm_ssl.close server
+
+(*
  * Handle a connection to the server.
  *)
 let handle server client connect info =
@@ -862,36 +865,48 @@ let serve connect server info =
 
    (* Serve as a secure connection *)
    let rec serve info =
-      let client = Lm_ssl.accept server in
-      let info =
-         (* Ignore errors when the connection is handled *)
-         try handle server client connect info with
+      let client =
+         try Some (Lm_ssl.accept server) with
             Unix.Unix_error _
           | Sys_error _
           | Failure _
-          | End_of_file
           | SigPipe as exn ->
-               eprintf "Httpd_simple: %s: error during web service%t" (Printexc.to_string exn) eflush;
-               info
+               eprintf "Http_simple: %s: accept failed%t" (Printexc.to_string exn) eflush;
+               None
       in
       let () =
-         try Lm_ssl.shutdown client with
-            Failure _ ->
+         match client with
+            None ->
                ()
-      in
-      let () =
-         try Lm_ssl.close client with
-            Failure _ ->
-               ()
+          | Some client ->
+               let info =
+                  (* Ignore errors when the connection is handled *)
+                  try handle server client connect info with
+                     Unix.Unix_error _
+                   | Sys_error _
+                   | Failure _
+                   | End_of_file
+                   | SigPipe as exn ->
+                        eprintf "Httpd_simple: %s: error during web service%t" (Printexc.to_string exn) eflush;
+                        info
+               in
+               let () =
+                  try Lm_ssl.shutdown client with
+                     Failure _
+                   | SigPipe as exn ->
+                        eprintf "Http_simple: %s: shutdown failed%t" (Printexc.to_string exn) eflush
+               in
+                  try Lm_ssl.close client with
+                      Failure _
+                    | SigPipe as exn ->
+                         eprintf "Http_simple: %s: close failed%t" (Printexc.to_string exn) eflush
       in
          serve info
    in
       try serve info with
-         Unix.Unix_error _
-       | Sys_error _
-       | Failure _ ->
-            if !debug_http then
-               eprintf "Httpd_simple: service closed%t" eflush
+         exn ->
+            eprintf "Httpd_simple: %s: service closed%t" (Printexc.to_string exn) eflush;
+            raise exn
 
 (*
  * Server without threads.
@@ -917,7 +932,8 @@ let serve_http start connect info port =
       Lm_ssl.listen ssl dh_name 10
    in
    let info = start ssl info in
-      serve connect ssl info
+      serve connect ssl info;
+      close_http ssl
 
 (*
  * Get the string name of an addr.

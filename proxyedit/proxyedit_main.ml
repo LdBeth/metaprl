@@ -194,10 +194,21 @@ let put_file info =
          End_of_file ->
             ()
    in
+   let () =
       close_in in_file;
-      Lm_ssl.flush out;
+      Lm_ssl.flush out
+   in
+
+   (* Read the result *)
+   let inx = Lm_ssl.in_channel_of_ssl fd in
+   let line = Lm_ssl.input_line inx in
+   let code = Scanf.sscanf line "%s %d" (fun _ code -> code) in
+   let () =
       Lm_ssl.shutdown fd;
       Lm_ssl.close fd
+   in
+      if code < 200 || code >= 300 then
+         raise (Failure "put failed")
 
 (*
  * Edit a file.
