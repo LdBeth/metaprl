@@ -116,15 +116,15 @@ let unzip_rewrite name =
  * Split the function into var names and a simple mterm.
  *)
 let split_mfunction =
-   let collect (labels', ext, t) (i, labels, exts, terms) =
+   let collect (labels', ext, t) (labels, exts, terms) =
       let ext = match ext with
          Some ext -> ext
-       | None -> Refine.make_wildcard_ext_arg i t
+       | None -> Refine.dummy_ext
       in
-         succ i, labels' :: labels, ext :: exts, t :: terms
+         labels' :: labels, ext :: exts, t :: terms
    in fun mterm ->
       let subgoals, goal = unzip_mfunction mterm in
-      let _, labels, exts, terms = List.fold_right collect subgoals (1, [], [], []) in
+      let labels, exts, terms = List.fold_right collect subgoals ([], [], []) in
          labels, exts, zip_mimplies terms goal
 
 (************************************************************************

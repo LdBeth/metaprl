@@ -293,10 +293,9 @@ sig
    val compute_dependencies : refiner -> opname -> (dependency * opname) list
 
    (*
-    * Helper function - create an extract arg for an assum for which we do not care about extract
-    * int arg is the number of the assum (used to create a unique variable name).
+    * Dummy extract for an assum for which we do not care about extract.
     *)
-   val make_wildcard_ext_arg : int -> term -> term
+   val dummy_ext: term
 
    (*
     * Get a checker from the refiner.

@@ -1174,28 +1174,6 @@ struct
     * RULE                                                                 *
     ************************************************************************)
 
-   let make_wildcard_ext_arg =
-      let fold (vars, conts, hyps) = function
-         Context (c, _, _) as hyp ->
-            (vars, c::conts, hyp::hyps)
-       | Hypothesis (v,t) as hyp ->
-            (mk_var_term v :: vars , conts, hyp::hyps)
-      in fun i t ->
-         let v = Lm_symbol.make "ext_arg" i in
-            if is_sequent_term t then
-               let eseq = explode_sequent t in
-               let vars, conts, hyps = List.fold_left fold ([],[],[]) (SeqHyp.to_list eseq.sequent_hyps) in
-               let goal = mk_so_var_term v conts vars in
-                  mk_sequent_term { eseq with sequent_hyps = SeqHyp.of_list (List.rev hyps); sequent_goals = SeqGoal.of_list [goal] }
-            else mk_so_var_term v [] []
-
-   let make_wildcard_ext_args =
-      let rec aux i = function
-         [] -> []
-       | t :: ts -> (make_wildcard_ext_arg i t) :: aux (succ i) ts
-      in
-         aux 1
-
    (*
     * Create a rule from a meta-term.
     * We allow first-order rules (T -> ... -> T)
@@ -1365,6 +1343,21 @@ struct
     | ECRestart
 
    (*
+    * XXX: HACK (nogin 2004/09/02): The ProgDummy/dummy_ext is a HACKish workaround
+    * for bug 175. The bug 175 is caused by the HACKish way we do extracts for sequents,
+    * so this is a hack to work around deficiencies of another hack :-(((
+    *
+    * The underlying problem (for which we do not yet have a good solution yet) is that
+    * it is not clear how to come up with a concise way of pecifying extraction "in general".
+    *)
+   type ext_prog =
+      ProgReal of ext_cmd list
+    | ProgDummy
+
+   let dummy_ext =
+      mk_simple_term (make_opname ["dummy_ext"; "Refine"]) []
+
+   (*
     * Extract for a previous theorem or rule.
     * We once again use the rewriter to compute the
     * extract.
@@ -1417,8 +1410,11 @@ struct
          SeqHyp.to_list (explode_sequent t).sequent_hyps
       in
       let mk_arg_prog addrs goal arg =
-         let ghyps = get_hyps goal in
-            prog_of_hyps addrs ghyps ghyps (get_hyps arg)
+         if alpha_equal arg dummy_ext then
+            ProgDummy
+         else
+            let ghyps = get_hyps goal in
+               ProgReal (prog_of_hyps addrs ghyps ghyps (get_hyps arg))
       in
       let simple_combine _ goal args =
          mk_xlist_term (goal :: args)
@@ -1432,50 +1428,53 @@ struct
        | ECRenameLast i -> "RenameLast(" ^ (string_of_int i) ^ ")"
        | ECRestart -> "Restart"
       in
-      let apply_arg_prog addrs goal arg prog =
-         let goalh = (explode_sequent goal).sequent_hyps in
-         let glen = SeqHyp.length goalh in
-         let argh = (explode_sequent arg).sequent_hyps in
-         let alen = SeqHyp.length argh in
-         let rec aux goal_ind t arg_ind = function
-            [] -> t
-          | ECBind :: rest ->
-               if arg_ind >= alen then REF_RAISE(RefineError("compute_rule_ext", StringError("not enough hyps")));
-               begin match SeqHyp.get argh arg_ind with
-                  Hypothesis(v, _) -> aux goal_ind (mk_xbind_term v t) (arg_ind + 1) rest
-                | Context _ -> REF_RAISE(RefineError("compute_rule_ext", StringError("expected hyp, got context")))
-               end
-          | ECSkip i :: rest ->
-               aux (goal_ind + i) t arg_ind rest
-          | ECSkipCont i :: rest ->
-               let count = addrs.(i) in
-               let count = if (count > 0 ) then count - 1 else glen - goal_ind + count in
-                  aux (goal_ind + count) t arg_ind rest
-          | ECRename i :: rest ->
-               let count = addrs.(i) in
-               let count = if (count > 0 ) then count - 1 else glen - goal_ind + count in
-                  rename goal_ind t arg_ind rest count
-          | ECRenameLast i :: rest ->
-               let count = glen - goal_ind - i in
-                  if count >= 0 then
+      let apply_arg_prog addrs goal arg = function
+         ProgDummy ->
+            dummy_ext
+       | ProgReal prog ->
+            let goalh = (explode_sequent goal).sequent_hyps in
+            let glen = SeqHyp.length goalh in
+            let argh = (explode_sequent arg).sequent_hyps in
+            let alen = SeqHyp.length argh in
+            let rec aux goal_ind t arg_ind = function
+               [] -> t
+             | ECBind :: rest ->
+                  if arg_ind >= alen then REF_RAISE(RefineError("compute_rule_ext", StringError("not enough hyps")));
+                  begin match SeqHyp.get argh arg_ind with
+                     Hypothesis(v, _) -> aux goal_ind (mk_xbind_term v t) (arg_ind + 1) rest
+                   | Context _ -> REF_RAISE(RefineError("compute_rule_ext", StringError("expected hyp, got context")))
+                  end
+             | ECSkip i :: rest ->
+                  aux (goal_ind + i) t arg_ind rest
+             | ECSkipCont i :: rest ->
+                  let count = addrs.(i) in
+                  let count = if (count > 0 ) then count - 1 else glen - goal_ind + count in
+                     aux (goal_ind + count) t arg_ind rest
+             | ECRename i :: rest ->
+                  let count = addrs.(i) in
+                  let count = if (count > 0 ) then count - 1 else glen - goal_ind + count in
                      rename goal_ind t arg_ind rest count
-                  else
-                     REF_RAISE(RefineError("compute_rule_ext", StringError("not enough hyps")))
-          | ECRestart :: rest ->
-               aux 0 t arg_ind rest
-         and rename goal_ind t arg_ind prog count =
-            if count = 0 then aux goal_ind t arg_ind prog else
-            let t =
-               if arg_ind >= alen || goal_ind >= glen then
-                  REF_RAISE(RefineError("compute_rule_ext", StringError("not enough hyps")));
-               match SeqHyp.get goalh goal_ind, SeqHyp.get argh arg_ind with
-                  Hypothesis(vh, _), Hypothesis(ah, _) ->
-                     subst1 t ah (mk_var_term vh)
-                | Context(c1, _, _), Context(c2, _, _) when c1=c2 -> t
-                | _ -> REF_RAISE(RefineError("compute_rule_ext", StringError("expected hyps, got something wrong")))
-            in
-               rename (goal_ind + 1) t (arg_ind + 1) prog (count - 1)
-         in aux 0 (nth_concl arg 1) 0 prog
+             | ECRenameLast i :: rest ->
+                  let count = glen - goal_ind - i in
+                     if count >= 0 then
+                        rename goal_ind t arg_ind rest count
+                     else
+                        REF_RAISE(RefineError("compute_rule_ext", StringError("not enough hyps")))
+             | ECRestart :: rest ->
+                  aux 0 t arg_ind rest
+            and rename goal_ind t arg_ind prog count =
+               if count = 0 then aux goal_ind t arg_ind prog else
+               let t =
+                  if arg_ind >= alen || goal_ind >= glen then
+                     REF_RAISE(RefineError("compute_rule_ext", StringError("not enough hyps")));
+                  match SeqHyp.get goalh goal_ind, SeqHyp.get argh arg_ind with
+                     Hypothesis(vh, _), Hypothesis(ah, _) ->
+                        subst1 t ah (mk_var_term vh)
+                   | Context(c1, _, _), Context(c2, _, _) when c1=c2 -> t
+                   | _ -> REF_RAISE(RefineError("compute_rule_ext", StringError("expected hyps, got something wrong")))
+               in
+                  rename (goal_ind + 1) t (arg_ind + 1) prog (count - 1)
+            in aux 0 (nth_concl arg 1) 0 prog
       in
       let id_combine _ goal _ = goal in
       fun name addrs params goal args result ->
@@ -1540,7 +1539,9 @@ struct
                SymbolSet.mem vars v && check_vars (SymbolSet.remove vars v) ts
       in
       let rec aux conts vars sub arg =
-         if is_so_var_term arg then begin
+         if alpha_equal arg dummy_ext then
+            ()
+         else if is_so_var_term arg then begin
             let _, conts', ts = dest_so_var arg in
                if not (check_conts conts conts' && check_vars vars ts) then
                   raise (RefineError("Refine.check_subgoal_arg",
@@ -1607,6 +1608,23 @@ struct
                   raise (Incomplete opname);
                check_ext ext;
                ext
+
+   let make_wildcard_ext_args =
+      let fold (vars, conts, hyps) = function
+         Context (c, _, _) as hyp ->
+            (vars, c::conts, hyp::hyps)
+       | Hypothesis (v,t) as hyp ->
+            (mk_var_term v :: vars , conts, hyp::hyps)
+      in
+      let make_wildcard_ext_arg t =
+         let v = Lm_symbol.new_symbol_string "ext_arg" in
+            if is_sequent_term t then
+               let eseq = explode_sequent t in
+               let vars, conts, hyps = List.fold_left fold ([],[],[]) (SeqHyp.to_list eseq.sequent_hyps) in
+               let goal = mk_so_var_term v conts vars in
+                  mk_sequent_term { eseq with sequent_hyps = SeqHyp.of_list (List.rev hyps); sequent_goals = SeqGoal.of_list [goal] }
+            else mk_so_var_term v [] []
+      in List.map make_wildcard_ext_arg
 
    let delayed_rule build name addrs params mterm _ extf =
       IFDEF VERBOSE_EXN THEN
