@@ -14,6 +14,26 @@ The rules for calculating free variables sets are simple:
  - Free variables set of a substitution is equal to the free variables set
    of the result of this substitution (cf. also Note 2)
 
+Example:
+
+"exists x . (x = y)" :
+
+{ free_vars = {"y"}; core = Term
+    { opname = "exists"; term_terms =
+        [{ bfree_vars = ["y"]; bcore = BTerm
+            { bvars = "x"; bterm =
+                { free_vars={"x","y"}; core = Term
+                    { opname = "equal"; term_terms =
+                        [ { bfree_vars = {"x"}; bcore = BTerm
+                            { bvars = []; bterm = 
+                                { free_vars = {"x"}; core = TVar "x" } } };
+                          { bfree_vars = {"y"}; bcore = BTerm
+                            { bvars = []; bterm = 
+                                { free_vars = {"y"}; core = TVar "y" } } } ] } } } } ] } }
+
+(Here ``opaname = "..."'' is used as an abbrevation for 
+   ``term_op = {op_opname = "..."; op_params = []}'' )
+
 Notes:
 
 1) Term_ds tries to distinguish a first-order variable "x" (has a free occurrence
