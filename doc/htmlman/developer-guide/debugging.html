@@ -37,8 +37,7 @@ code on and off:
 <LI>In the code you want to debug you add, for example:
 <PRE>  if !debug_&lt;name&gt; then begin
       some_debugging_code...;
-      eprintf "Integer i is %d and term t is %a" i print_term t;
-      eflush ();
+      eprintf "Integer i is %d and term t is %a%t" i print_term t eflush;
    end;</PRE>
 
 It is important that you do not forget to flush the output, otherwise if you code later
