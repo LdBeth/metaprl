@@ -38,8 +38,8 @@ open Refiner.Refiner.Term
 open Refiner.Refiner.TermAddr
 open Refiner.Refiner.Refine
 
-open Tacticals
-open Conversionals
+open Tactic_type.Tacticals
+open Tactic_type.Conversionals
 
 open Base_rewrite
 open Base_dtactic
@@ -47,6 +47,7 @@ open Base_auto_tactic
 
 open Mp
 
+printf "Warning: This tutorial is very outdated. Many things would not probably work exactly as described. Additionally, we have implemented several mechanisms (such as resource annotations) that are much easier to use than the mechanisms used in this tutorial."
 (*
  * -*-
  * Local Variables:
