@@ -1295,6 +1295,9 @@ struct
       in
          refiner', (tac : prim_tactic)
 
+   let ar0_ar0_null = ([||], [||], [])
+   let ar0_ar0 = ([||], [||])
+
    (*
     * Theorem for a previous theorem or rule.
     * We once again use the rewriter to compute the
@@ -1315,9 +1318,9 @@ struct
          in
             aux 0
       in
-      let rw = Rewrite.term_rewrite ([||], [||]) (create_redex vars args :: params) [result] in
+      let rw = Rewrite.term_rewrite ar0_ar0 (create_redex vars args :: params) [result] in
       let compute_ext vars params args =
-         match apply_rewrite rw ([||], [||], []) (create_redex vars args) params with
+         match apply_rewrite rw ar0_ar0_null (create_redex vars args) params with
             [c], x when Array.length x = 0 ->
                c
           | _ ->
@@ -1426,7 +1429,7 @@ struct
       if !debug_refiner then
          eprintf "Refiner.add_rewrite: %s%t" name eflush;
 #endif
-      let rw = Rewrite.term_rewrite ([||], [||]) [redex] [contractum] in
+      let rw = Rewrite.term_rewrite ar0_ar0 [redex] [contractum] in
       let ref_rewrite =
          { rw_name = name;
            rw_rewrite = redex, contractum;
@@ -1435,7 +1438,7 @@ struct
       in
       let refiner' = RewriteRefiner ref_rewrite in
       let rw sent t =
-         match apply_rewrite rw ([||], [||], []) t [] with
+         match apply_rewrite rw ar0_ar0_null t [] with
             [t'], _ ->
                sent.sent_rewrite ref_rewrite;
                t', refiner'
