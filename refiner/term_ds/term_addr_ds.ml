@@ -118,8 +118,7 @@ struct
     * Turn the address back into a term count.
     *)
    let depth_of_address = function
-      HypAddr i ->
-         i
+      HypAddr i
     | GoalAddr i ->
          i
     | _ ->

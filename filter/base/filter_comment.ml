@@ -190,62 +190,45 @@ let fold_module_type locs mt =
    loc_of_module_type mt :: locs
 
 let fold_with_constr locs = function
-   WcTyp (loc, _, _, _) ->
-      loc :: locs
+   WcTyp (loc, _, _, _)
  | WcMod (loc, _, _) ->
       loc :: locs
 
 let fold_class_any_infos locs { ciLoc = loc } =
    loc :: locs
 
-let fold_class_expr locs ce =
-   let loc =
-      match ce with
-         MLast.CeApp (loc, ce, el) -> loc
-       | MLast.CeCon (loc, sl, tl) -> loc
-       | MLast.CeFun (loc, p, ce) -> loc
-       | MLast.CeLet (loc, b, pel, ce) -> loc
-       | MLast.CeStr (loc, p, cfl) -> loc
-       | MLast.CeTyc (loc, ce, ct) -> loc
-(*ifdef 2.02*)
-       | MLast.CeXnd (loc, s, ce) -> loc
-(*endif 2.02*)
-   in
+let fold_class_expr locs = function
+   MLast.CeApp (loc, _, _)
+ | MLast.CeCon (loc, _, _)
+ | MLast.CeFun (loc, _, _)
+ | MLast.CeLet (loc, _, _, _)
+ | MLast.CeStr (loc, _, _)
+ | MLast.CeTyc (loc, _, _)
+ | MLast.CeXnd (loc, _, _) ->
       loc :: locs
 
-let fold_class_type locs ct =
-   let loc =
-      match ct with
-         MLast.CtCon (loc, sl, tl) -> loc
-       | MLast.CtFun (loc, t, ct) -> loc
-       | MLast.CtSig (loc, t, ctfl) -> loc
-(*ifdef 2.02*)
-       | MLast.CtXnd (loc, s, ct) -> loc
-(*endif 2.02*)
-   in
+let fold_class_type locs = function
+   MLast.CtCon (loc, _, _)
+ | MLast.CtFun (loc, _, _)
+ | MLast.CtSig (loc, _, _)
+ | MLast.CtXnd (loc, _, _) ->
+    loc :: locs
+
+let fold_class_sig_item locs = function
+   CgCtr (loc, _, _)
+ | CgInh (loc, _)
+ | CgMth (loc, _, _, _)
+ | CgVal (loc, _, _, _)
+ | CgVir (loc, _, _, _) ->
       loc :: locs
 
-let fold_class_sig_item locs field =
-   let loc =
-      match field with
-         CgCtr (loc, _, _) -> loc
-       | CgInh (loc, _) -> loc
-       | CgMth (loc, _, _, _) -> loc
-       | CgVal (loc, _, _, _) -> loc
-       | CgVir (loc, _, _, _) -> loc
-   in
-      loc :: locs
-
-let fold_class_str_item locs field =
-   let loc =
-      match field with
-         CrCtr (loc, _, _) -> loc
-       | CrInh (loc, _, _) -> loc
-       | CrIni (loc, _) -> loc
-       | CrMth (loc, _, _, _) -> loc
-       | CrVal (loc, _, _, _) -> loc
-       | CrVir (loc, _, _, _) -> loc
-   in
+let fold_class_str_item locs = function
+   CrCtr (loc, _, _)
+ | CrInh (loc, _, _)
+ | CrIni (loc, _)
+ | CrMth (loc, _, _, _)
+ | CrVal (loc, _, _, _)
+ | CrVir (loc, _, _, _) ->
       loc :: locs
 
 (*

@@ -102,8 +102,7 @@ struct
    let rec strip_mfunction = function
       (MetaTheorem _) as t ->
          t
-    | MetaImplies (a, t) ->
-         MetaImplies (a, strip_mfunction t)
+    | MetaImplies (a, t)
     | MetaFunction (_, a, t) ->
          MetaImplies (a, strip_mfunction t)
     | MetaIff (t1, t2) ->
@@ -157,10 +156,8 @@ struct
    let rec binding_vars = function
       MetaTheorem t ->
          TermSubst.binding_vars t
-    | MetaImplies (a, b) ->
-         List_util.union (binding_vars a) (binding_vars b)
-    | MetaFunction (v, a, b) ->
-         List_util.union (binding_vars a) (binding_vars b)
+    | MetaImplies (a, b)
+    | MetaFunction (_, a, b)
     | MetaIff (a, b) ->
          List_util.union (binding_vars a) (binding_vars b)
     | MetaLabeled (_, t) ->
@@ -169,10 +166,8 @@ struct
    let rec context_vars = function
       MetaTheorem t ->
          TermSubst.context_vars t
-    | MetaImplies (a, b) ->
-         List_util.union (context_vars a) (context_vars b)
-    | MetaFunction (v, a, b) ->
-         List_util.union (context_vars a) (context_vars b)
+    | MetaImplies (a, b)
+    | MetaFunction (_, a, b)
     | MetaIff (a, b) ->
          List_util.union (context_vars a) (context_vars b)
     | MetaLabeled (_, t) ->
@@ -184,10 +179,8 @@ struct
    let rec meta_for_all f = function
       MetaTheorem t ->
          f t
-    | MetaImplies (a, b) ->
-         meta_for_all f a & meta_for_all f b
-    | MetaFunction (v, a, b) ->
-         meta_for_all f a & meta_for_all f b
+    | MetaImplies (a, b)
+    | MetaFunction (_, a, b)
     | MetaIff (a, b) ->
          meta_for_all f a & meta_for_all f b
     | MetaLabeled (_, t) ->
@@ -197,10 +190,8 @@ struct
       match t1, t2 with
          MetaTheorem a1, MetaTheorem a2 ->
             f a1 a2
-       | MetaImplies (a1, b1), MetaImplies (a2, b2) ->
-            meta_for_all2 f a1 a2 & meta_for_all2 f b1 b2
-       | MetaFunction (_, a1, b1), MetaFunction (_, a2, b2) ->
-            meta_for_all2 f a1 a2 & meta_for_all2 f b1 b2
+       | MetaImplies (a1, b1), MetaImplies (a2, b2)
+       | MetaFunction (_, a1, b1), MetaFunction (_, a2, b2)
        | MetaIff (a1, b1), MetaIff (a2, b2) ->
             meta_for_all2 f a1 a2 & meta_for_all2 f b1 b2
        | MetaLabeled (_, t), _ ->

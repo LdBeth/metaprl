@@ -422,8 +422,7 @@ let create
    in
 
    let key_of_path = function
-      Left (Node (key, _, _, _, _)) :: _ ->
-         key
+      Left (Node (key, _, _, _, _)) :: _
     | Right (Node (key, _, _, _, _)) :: _ ->
          key
     | _ ->
@@ -431,12 +430,11 @@ let create
    in
 
    let rec next_path = function
-      Left (Node (_, _, _, Leaf, _)) :: path ->
+      Left (Node (_, _, _, Leaf, _)) :: path
+    | Right  _ :: path ->
          next_path path
     | Left (Node (_, _, _, right, _)) :: path ->
          initial_path path right
-    | Right  _ :: path ->
-         next_path path
     | [] ->
          raise Not_found
     | _ ->

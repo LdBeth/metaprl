@@ -90,8 +90,7 @@ let create
     * Size of a table.
     *)
    let cardinal = function
-      Red (_, _, _, _, size) ->
-         size
+      Red (_, _, _, _, size)
     | Black (_, _, _, _, size) ->
          size
     | Leaf ->
@@ -117,16 +116,11 @@ let create
     * Check the size of the set.
     *)
    let rec check_size = function
-      Black (_, _, left, right, size) ->
-         if size <> check_size left + check_size right then
-            raise (Invalid_argument "check_size");
-         size
-
+      Black (_, _, left, right, size)
     | Red (_, _, left, right, size) ->
          if size <> check_size left + check_size right then
             raise (Invalid_argument "check_size");
          size
-
     | Leaf ->
          1
    in
@@ -140,7 +134,7 @@ let create
             match left, right with
                Red _, _
              | _, Red _ ->
-                  raise (Failure "Red_black_tableed_black_set.check_red")
+                  raise (Invalid_argument "Red_black_tableed_black_set.check_red")
 
              | _ ->
                   check_red left;
@@ -175,7 +169,7 @@ let create
          check_black_aux i j right
     | Leaf ->
          if j <> i then
-            raise (Failure "Red_black_table.check_black")
+            raise (Invalid_argument "Red_black_table.check_black")
    in
 
    let check_black tree =
@@ -186,50 +180,32 @@ let create
     * Check that all the nodes are sorted.
     *)
    let rec check_sort_lt key = function
-      Black (key', _, left, right, _) ->
-         if ord_compare key' key >= 0 then
-            raise (Failure "Red_black_table.check_sort");
-         check_sort_lt key' left;
-         check_sort_gt_lt key' key right
-
+      Black (key', _, left, right, _)
     | Red (key', _, left, right, _) ->
          if ord_compare key' key >= 0 then
-            raise (Failure "Red_black_table.check_sort");
+            raise (Invalid_argument "Red_black_table.check_sort");
          check_sort_lt key' left;
          check_sort_gt_lt key' key right
-
     | Leaf ->
          ()
 
    and check_sort_gt key = function
-      Black (key', _, left, right, _) ->
-         if ord_compare key' key <= 0 then
-            raise (Failure "Red_black_table.check_sort");
-         check_sort_gt_lt key key' left;
-         check_sort_gt key right
-
+      Black (key', _, left, right, _)
     | Red (key', _, left, right, _) ->
          if ord_compare key' key <= 0 then
-            raise (Failure "Red_black_table.check_sort");
+            raise (Invalid_argument "Red_black_table.check_sort");
          check_sort_gt_lt key key' left;
          check_sort_gt key right
-
     | Leaf ->
          ()
 
    and check_sort_gt_lt key key' = function
-      Black (key'', _, left, right, _) ->
-         if ord_compare key'' key <= 0 || ord_compare key'' key' >= 0 then
-            raise (Failure "Red_black_table.check_sort");
-         check_sort_gt_lt key key'' left;
-         check_sort_gt_lt key'' key' right
-
+      Black (key'', _, left, right, _)
     | Red (key'', _, left, right, _) ->
          if ord_compare key'' key <= 0 || ord_compare key'' key' >= 0 then
-            raise (Failure "Red_black_table.check_sort");
+            raise (Invalid_argument "Red_black_table.check_sort");
          check_sort_gt_lt key key'' left;
          check_sort_gt_lt key'' key' right
-
     | Leaf ->
          ()
    in
@@ -239,7 +215,7 @@ let create
          check_sort_lt key left;
          check_sort_gt key right
     | Red _ ->
-         raise (Failure "Red_black_table.check_sort: root is red")
+         raise (Invalid_argument "Red_black_table.check_sort: root is red")
     | Leaf ->
          ()
    in
@@ -606,14 +582,7 @@ let create
     * Return the data for the entry.
     *)
    let rec find_aux key = function
-      Black (key0, data0, left0, right0, _) ->
-         let comp = ord_compare key key0 in
-            if comp = 0 then
-               data0
-            else if comp < 0 then
-               find_aux key left0
-            else
-               find_aux key right0
+      Black (key0, data0, left0, right0, _)
     | Red (key0, data0, left0, right0, _) ->
          let comp = ord_compare key key0 in
             if comp = 0 then
@@ -713,8 +682,7 @@ let create
             lift key0 path (Black (key2, data2, left2, right2, size2))
        | Red (key0, _, Leaf, Leaf, _) ->
             lift key0 path Leaf
-       | Black (_, _, left0, _, _) ->
-            delete_min (Left node :: path) left0
+       | Black (_, _, left0, _, _)
        | Red (_, _, left0, _, _) ->
             delete_min (Left node :: path) left0
        | Leaf ->
@@ -1150,8 +1118,7 @@ let create
     * Get the elements of the list.
     *)
    let rec to_list_aux elements = function
-      Black (key, data, left, right, _) ->
-         to_list_aux ((key, data) :: to_list_aux elements right) left
+      Black (key, data, left, right, _)
     | Red (key, data, left, right, _) ->
          to_list_aux ((key, data) :: to_list_aux elements right) left
     | Leaf ->
@@ -1250,8 +1217,7 @@ let create
     *)
    let rec union_aux (s1 : ('elt, 'data) tree) (s2 : ('elt, 'data) tree) =
       match s2 with
-         Black (key, data, left, right, _) ->
-            union_aux (add_list_aux key data (union_aux s1 left)) right
+         Black (key, data, left, right, _)
        | Red (key, data, left, right, _) ->
             union_aux (add_list_aux key data (union_aux s1 left)) right
        | Leaf ->
@@ -1275,12 +1241,10 @@ let create
     *)
    let rec initial_path path node =
       match node with
-         Black (_, _, Leaf, _, _) ->
-            Left node :: path
+         Black (_, _, Leaf, _, _)
        | Red (_, _, Leaf, _, _) ->
             Left node :: path
-       | Black (_, _, left, _, _) ->
-            initial_path (Left node :: path) left
+       | Black (_, _, left, _, _)
        | Red (_, _, left, _, _) ->
             initial_path (Left node :: path) left
        | Leaf ->
@@ -1288,12 +1252,9 @@ let create
    in
 
    let key_of_path = function
-      Left (Black (key, _, _, _, _)) :: _ ->
-         key
-    | Left (Red (key, _, _, _, _)) :: _ ->
-         key
-    | Right (Black (key, _, _, _, _)) :: _ ->
-         key
+      Left (Black (key, _, _, _, _)) :: _
+    | Left (Red (key, _, _, _, _)) :: _
+    | Right (Black (key, _, _, _, _)) :: _
     | Right (Red (key, _, _, _, _)) :: _ ->
          key
     | _ ->
@@ -1301,16 +1262,13 @@ let create
    in
 
    let rec next_path = function
-      Left (Black (_, _, _, Leaf, _)) :: path ->
-         next_path path
-    | Left (Red (_, _, _, Leaf, _)) :: path ->
-         next_path path
-    | Left (Black (_, _, _, right, _)) :: path ->
-         initial_path path right
-    | Left (Red (_, _, _, right, _)) :: path ->
-         initial_path path right
+      Left (Black (_, _, _, Leaf, _)) :: path
+    | Left (Red (_, _, _, Leaf, _)) :: path
     | Right  _ :: path ->
          next_path path
+    | Left (Black (_, _, _, right, _)) :: path
+    | Left (Red (_, _, _, right, _)) :: path ->
+         initial_path path right
     | [] ->
          raise Not_found
     | _ ->
@@ -1354,15 +1312,7 @@ let create
     *)
    let rec mem_aux tree key =
       match tree with
-         Black (key', _, left, right, _) ->
-            let comp = ord_compare key key' in
-               if comp = 0 then
-                  true
-               else if comp < 0 then
-                  mem_aux left key
-               else
-                  mem_aux right key
-
+         Black (key', _, left, right, _)
        | Red (key', _, left, right, _) ->
             let comp = ord_compare key key' in
                if comp = 0 then
@@ -1401,10 +1351,7 @@ let create
     * Iterate a function over the hashtable.
     *)
    let rec iter f = function
-      Black (key, data, left, right, _) ->
-         iter f left;
-         List.iter (f key) data;
-         iter f right
+      Black (key, data, left, right, _)
     | Red (key, data, left, right, _) ->
          iter f left;
          List.iter (f key) data;

@@ -1054,50 +1054,26 @@ struct
          match refiner with
             NullRefiner ->
                refiners, None
-          | AxiomRefiner { axiom_name = n; axiom_refiner = next } as r ->
-               if n = name then
-                  refiners, Some r
-               else
-                  search refiners next
-          | PrimAxiomRefiner { pax_refiner = next } ->
-               search refiners next
-
-          | RuleRefiner { rule_name = n; rule_refiner = next } as r ->
-               if n = name then
-                  refiners, Some r
-               else
-                  search refiners next
-          | PrimRuleRefiner { prule_refiner = next } ->
-               search refiners next
-          | MLRuleRefiner { ml_rule_refiner = next } ->
-               search refiners next
-
-          | RewriteRefiner { rw_name = n; rw_refiner = next } as r ->
-               if n = name then
-                  refiners, Some r
-               else
-                  search refiners next
-          | PrimRewriteRefiner { prw_refiner = next } ->
-               search refiners next
-          | MLRewriteRefiner { ml_rw_name = n; ml_rw_refiner = next } as r ->
-               if n = name then
-                  REF_RAISE(RefineError (string_of_opname n, StringError "ML rewrites can't be justified"))
-               else
-                  search refiners next
-
+          | AxiomRefiner { axiom_name = n; axiom_refiner = next }
+          | RuleRefiner { rule_name = n; rule_refiner = next }
+          | RewriteRefiner { rw_name = n; rw_refiner = next }
           | CondRewriteRefiner { crw_name = n; crw_refiner = next } as r ->
                if n = name then
                   refiners, Some r
                else
                   search refiners next
+          | PrimAxiomRefiner { pax_refiner = next }
+          | PrimRuleRefiner { prule_refiner = next }
+          | MLRuleRefiner { ml_rule_refiner = next }
+          | PrimRewriteRefiner { prw_refiner = next }
           | PrimCondRewriteRefiner { pcrw_refiner = next } ->
                search refiners next
-          | MLCondRewriteRefiner { ml_crw_name = n; ml_crw_refiner = next } as r ->
+          | MLRewriteRefiner { ml_rw_name = n; ml_rw_refiner = next }
+          | MLCondRewriteRefiner { ml_crw_name = n; ml_crw_refiner = next } ->
                if n = name then
                   REF_RAISE(RefineError (string_of_opname n, StringError "ML rewrites can't be justified"))
                else
                   search refiners next
-
           | LabelRefiner (_, next) as r ->
                if List.memq r refiners then
                   refiners, None
@@ -1140,32 +1116,26 @@ struct
     * Build a rewrite extract out of a justification.
     *)
    let rec goal_of_rewrite_just = function
-      RewriteHere (goal, _, _) ->
-         goal
-    | RewriteML (goal, _, _) ->
+      RewriteHere (goal, _, _)
+    | RewriteML (goal, _, _)
+    | RewriteAddress (goal, _, _, _)
+    | RewriteHigher (goal, _, _) ->
          goal
     | RewriteReverse just ->
          subgoal_of_rewrite_just just
     | RewriteCompose (just, _) ->
          goal_of_rewrite_just just
-    | RewriteAddress (goal, _, _, _) ->
-         goal
-    | RewriteHigher (goal, _, _) ->
-         goal
 
    and subgoal_of_rewrite_just = function
-      RewriteHere (_, _, subgoal) ->
-         subgoal
-    | RewriteML (_, _, subgoal) ->
+      RewriteHere (_, _, subgoal)
+    | RewriteML (_, _, subgoal)
+    | RewriteAddress (_, _, _, subgoal)
+    | RewriteHigher (_, _, subgoal) ->
          subgoal
     | RewriteReverse just ->
          goal_of_rewrite_just just
     | RewriteCompose (_, just) ->
          subgoal_of_rewrite_just just
-    | RewriteAddress (_, _, _, subgoal) ->
-         subgoal
-    | RewriteHigher (_, _, subgoal) ->
-         subgoal
 
    let rewrite_extract_of_rewrite_just just =
       { rw_goal = goal_of_rewrite_just just;
@@ -1177,36 +1147,29 @@ struct
     * Build a conditional rewrite extract from a justification.
     *)
    let rec goal_of_cond_rewrite_just = function
-      CondRewriteHere { cjust_goal = goal } ->
-         goal
-    | CondRewriteML ({ cjust_goal = goal }, _) ->
+      CondRewriteHere { cjust_goal = goal }
+    | CondRewriteML ({ cjust_goal = goal }, _)
+    | CondRewriteAddress (goal, _, _, _)
+    | CondRewriteHigher (goal, _, _) ->
          goal
     | CondRewriteReverse just ->
          subgoal_of_cond_rewrite_just just
     | CondRewriteCompose (just, _) ->
          goal_of_cond_rewrite_just just
-    | CondRewriteAddress (goal, _, _, _) ->
-         goal
-    | CondRewriteHigher (goal, _, _) ->
-         goal
 
    and subgoal_of_cond_rewrite_just = function
-      CondRewriteHere { cjust_subgoal_term = subgoal } ->
-         subgoal
-    | CondRewriteML ({ cjust_subgoal_term = subgoal }, _) ->
+      CondRewriteHere { cjust_subgoal_term = subgoal }
+    | CondRewriteML ({ cjust_subgoal_term = subgoal }, _)
+    | CondRewriteAddress (_, _, _, subgoal)
+    | CondRewriteHigher (_, _, subgoal) ->
          subgoal
     | CondRewriteReverse just ->
          goal_of_cond_rewrite_just just
     | CondRewriteCompose (_, just) ->
          subgoal_of_cond_rewrite_just just
-    | CondRewriteAddress (_, _, _, subgoal) ->
-         subgoal
-    | CondRewriteHigher (_, _, subgoal) ->
-         subgoal
 
    let rec subgoals_of_cond_rewrite_just = function
-      CondRewriteHere { cjust_subgoals = subgoals } ->
-         CondRewriteSubgoals subgoals
+      CondRewriteHere { cjust_subgoals = subgoals }
     | CondRewriteML ({ cjust_subgoals = subgoals }, _) ->
          CondRewriteSubgoals subgoals
     | CondRewriteReverse just ->
@@ -1229,30 +1192,23 @@ struct
     * Turn a justification into an extract.
     *)
    let rec goal_of_just = function
-      SingleJust { just_goal = goal } ->
-         goal
-    | MLJust ({ just_goal = goal }, _) ->
-         goal
-    | RewriteJust (goal, _, _) ->
-         goal
-    | CondRewriteJust (goal, _, _) ->
+      SingleJust { just_goal = goal }
+    | MLJust ({ just_goal = goal }, _)
+    | RewriteJust (goal, _, _)
+    | CondRewriteJust (goal, _, _)
+    | NthHypJust (goal, _)
+    | CutJust { cut_goal = goal } ->
          goal
     | ComposeJust (just, _) ->
          goal_of_just just
-    | NthHypJust (goal, _) ->
-         goal
-    | CutJust { cut_goal = goal } ->
-         goal
 
    let rec subgoals_of_just = function
-      SingleJust { just_subgoals = subgoals } ->
-         subgoals
-    | MLJust ({ just_subgoals = subgoals }, _) ->
+      SingleJust { just_subgoals = subgoals }
+    | MLJust ({ just_subgoals = subgoals }, _)
+    | CondRewriteJust (_, _, subgoals) ->
          subgoals
     | RewriteJust (_, _, subgoal) ->
          [subgoal]
-    | CondRewriteJust (_, _, subgoals) ->
-         subgoals
     | ComposeJust (_, justl) ->
          List.flatten (List.map subgoals_of_just justl)
     | NthHypJust _ ->
@@ -1273,8 +1229,7 @@ struct
     *)
    let dest_extract { ext_just = just } =
       match just with
-         SingleJust info ->
-            AtomicExtract info
+         SingleJust info
        | MLJust (info, _) ->
             AtomicExtract info
        | RewriteJust (goal, info, subgoal) ->
@@ -1331,8 +1286,7 @@ struct
 
    let dest_rw_extract { rw_just = just } =
       match just with
-         RewriteHere (goal, opname, subgoal) ->
-            AtomicRewriteExtract (goal, opname, subgoal)
+         RewriteHere (goal, opname, subgoal)
        | RewriteML (goal, opname, subgoal) ->
             AtomicRewriteExtract (goal, opname, subgoal)
        | RewriteReverse just ->
@@ -1363,8 +1317,7 @@ struct
 
    let dest_crw_extract { crw_just = just } =
       match just with
-         CondRewriteHere info ->
-            AtomicCondRewriteExtract info
+         CondRewriteHere info
        | CondRewriteML (info, _) ->
             AtomicCondRewriteExtract info
        | CondRewriteReverse just ->
@@ -1432,18 +1385,12 @@ struct
                   maybe_add cond_rewrites name pcrw;
                   maybe_add refiners name refiner;
                   insert refiners' next
-          | AxiomRefiner { axiom_refiner = next } ->
-               insert refiners' next
-          | RuleRefiner { rule_refiner = next } ->
-               insert refiners' next
-          | RewriteRefiner { rw_refiner = next } ->
-               insert refiners' next
-          | CondRewriteRefiner { crw_refiner = next } ->
-               insert refiners' next
-          | MLRewriteRefiner { ml_rw_refiner = next } ->
-               insert refiners' next
-          | MLCondRewriteRefiner { ml_crw_refiner = next } ->
-               insert refiners' next
+          | AxiomRefiner { axiom_refiner = next }
+          | RuleRefiner { rule_refiner = next }
+          | RewriteRefiner { rw_refiner = next }
+          | CondRewriteRefiner { crw_refiner = next }
+          | MLRewriteRefiner { ml_rw_refiner = next }
+          | MLCondRewriteRefiner { ml_crw_refiner = next }
           | MLRuleRefiner { ml_rule_refiner = next } ->
                insert refiners' next
           | LabelRefiner (_, next) as r ->
@@ -1607,17 +1554,15 @@ struct
     * Check for a valid rewrite justification.
     *)
    let rec check_rewrite_just check = function
-      RewriteHere (_, op, _) ->
-         check op
+      RewriteHere (_, op, _)
     | RewriteML (_, op, _) ->
          check op
-    | RewriteReverse just ->
+    | RewriteReverse just
+    | RewriteAddress (_, _, just, _) ->
          check_rewrite_just check just
     | RewriteCompose (just1, just2) ->
          check_rewrite_just check just1;
          check_rewrite_just check just2
-    | RewriteAddress (_, _, just, _) ->
-         check_rewrite_just check just
     | RewriteHigher (_, justs, _) ->
          List.iter (check_rewrite_just check) justs
 
@@ -1625,8 +1570,7 @@ struct
     * Get the subgoal count of a step in the extract.
     *)
    let rec just_subgoal_count = function
-      SingleJust { just_subgoals = subgoals } ->
-         List.length subgoals
+      SingleJust { just_subgoals = subgoals }
     | MLJust ({ just_subgoals = subgoals }, _) ->
          List.length subgoals
     | RewriteJust _ ->
@@ -1641,14 +1585,11 @@ struct
          2
 
    and cond_rewrite_just_subgoal_count = function
-      CondRewriteHere { cjust_subgoals = subgoals } ->
-         List.length subgoals
+      CondRewriteHere { cjust_subgoals = subgoals }
     | CondRewriteML ({ cjust_subgoals = subgoals }, _) ->
          List.length subgoals
-    | CondRewriteReverse just ->
-         cond_rewrite_just_subgoal_count just
-    | CondRewriteCompose (_, just) ->
-         cond_rewrite_just_subgoal_count just
+    | CondRewriteReverse just
+    | CondRewriteCompose (_, just)
     | CondRewriteAddress (_, _, just, _) ->
          cond_rewrite_just_subgoal_count just
     | CondRewriteHigher (_, justs, _) ->
@@ -1797,12 +1738,9 @@ struct
       let rules = Hashtbl.create 19 in
       let ml_rules = Hashtbl.create 19 in
       let rec insert refiners = function
-         PrimAxiomRefiner { pax_refiner = next } ->
-            insert refiners next
-       | PrimRuleRefiner { prule_refiner = next } ->
-            insert refiners next
-       | PrimRewriteRefiner { prw_refiner = next } ->
-            insert refiners next
+         PrimAxiomRefiner { pax_refiner = next }
+       | PrimRuleRefiner { prule_refiner = next }
+       | PrimRewriteRefiner { prw_refiner = next }
        | PrimCondRewriteRefiner { pcrw_refiner = next } ->
             insert refiners next
        | AxiomRefiner ax ->
@@ -2549,7 +2487,9 @@ struct
     * Get the next item from a refiner.
     *)
    let dest_refiner = function
-      NullRefiner ->
+      NullRefiner
+    | ListRefiner _ ->
+         (* List are never constructed by the user *)
          raise (Invalid_argument "dest_refiner")
 
     | AxiomRefiner { axiom_name = n; axiom_term = t; axiom_refiner = r } ->
@@ -2588,9 +2528,6 @@ struct
 
     | PairRefiner (r, par) ->
          RIParent par, r
-    | ListRefiner refs ->
-         (* List are never constructed by the user *)
-         raise (Invalid_argument "dest_refiner")
     | LabelRefiner (name, r) ->
          RILabel name, r
 end

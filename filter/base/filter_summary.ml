@@ -242,8 +242,7 @@ let parents { info_list = summary } =
  *)
 let test_axiom name (item, _) =
    match item with
-      Axiom { axiom_name = n } ->
-         n = name
+      Axiom { axiom_name = n }
     | Rule { rule_name = n } ->
          n = name
     | _ ->
@@ -259,8 +258,7 @@ let find_axiom { info_list = summary } name =
  *)
 let test_rewrite name (item, _) =
    match item with
-      Rewrite { rw_name = n } ->
-         n = name
+      Rewrite { rw_name = n }
     | CondRewrite { crw_name = n } ->
          n = name
     | _ ->
@@ -393,12 +391,9 @@ let get_proofs { info_list = summary } =
       (h, _)::t ->
          let proofs =
             match h with
-               Axiom { axiom_name = name; axiom_proof = pf } ->
-                  (name, pf) :: proofs
-             | Rule { rule_name = name; rule_proof = pf } ->
-                  (name, pf) :: proofs
-             | Rewrite { rw_name = name; rw_proof = pf } ->
-                  (name, pf) :: proofs
+               Axiom { axiom_name = name; axiom_proof = pf }
+             | Rule { rule_name = name; rule_proof = pf }
+             | Rewrite { rw_name = name; rw_proof = pf }
              | CondRewrite { crw_name = name; crw_proof = pf } ->
                   (name, pf) :: proofs
              | _ ->
@@ -416,22 +411,15 @@ let get_proofs { info_list = summary } =
 let find { info_list = summary } name =
    let test (item, _) =
       match item with
-         Axiom { axiom_name = n } ->
+         Axiom { axiom_name = n }
+       | Rule { rule_name = n }
+       | Rewrite { rw_name = n }
+       | CondRewrite { crw_name = n }
+       | MLRewrite { mlterm_name = n }
+       | MLAxiom { mlterm_name = n }
+       | DForm { dform_name = n }
+       | Prec n ->
             n = name
-       | Rule { rule_name = n } ->
-            n = name
-       | Rewrite { rw_name = n } ->
-            n = name
-       | CondRewrite { crw_name = n } ->
-            n = name
-       | MLRewrite { mlterm_name = n } ->
-            n = name
-       | MLAxiom { mlterm_name = n } ->
-            n = name
-       | DForm { dform_name = n } ->
-            n = name
-       | Prec s ->
-            s = name
        | _ ->
             false
    in
@@ -443,12 +431,10 @@ let find { info_list = summary } name =
 let set_command info item =
    let test =
       match fst item with
-         Axiom { axiom_name = name } ->
-            test_axiom name
+         Axiom { axiom_name = name }
        | Rule { rule_name = name } ->
             test_axiom name
-       | Rewrite { rw_name = name } ->
-            test_rewrite name
+       | Rewrite { rw_name = name }
        | CondRewrite { crw_name = name } ->
             test_rewrite name
        | MLRewrite { mlterm_name = name } ->
@@ -1954,10 +1940,7 @@ struct
        (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
        ((interf : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'expr1, 'item1) summary_item), _) =
       match interf with
-         SummaryItem _
-       | ToploopItem _ ->
-            ()
-       | Rewrite info ->
+         Rewrite info ->
             check_rewrite info implem
        | CondRewrite info ->
             check_cond_rewrite info implem
@@ -1979,8 +1962,6 @@ struct
             check_dform flags term implem
        | Prec name ->
             check_prec name implem
-       | PrecRel _ ->
-            ()
        | Resource (name, _) ->
             check_resource name implem
        | Improve _ ->
@@ -1989,6 +1970,9 @@ struct
             check_infix name implem
        | Id id ->
             check_id id implem
+       | SummaryItem _
+       | ToploopItem _
+       | PrecRel _
        | MagicBlock _
        | Comment _ ->
             ()

@@ -196,9 +196,7 @@ let decode_uri uri =
    let simplified = Filename_util.simplify_path (Filename_util.split (decode_hex uri)) in
    let simplified =
       match simplified with
-         "nocache" :: _ :: simplified ->
-            simplified
-       | simplified ->
+         "nocache" :: _ :: simplified | simplified ->
             simplified
    in
       String.concat "/" simplified

@@ -982,12 +982,9 @@ struct
                in
                let sync_item (item, _) =
                   match item with
-                     Rewrite { rw_proof = proof } ->
-                        ped_of_proof proof
-                   | CondRewrite { crw_proof = proof } ->
-                        ped_of_proof proof
-                   | Axiom { axiom_proof = proof } ->
-                        ped_of_proof proof
+                     Rewrite { rw_proof = proof }
+                   | CondRewrite { crw_proof = proof }
+                   | Axiom { axiom_proof = proof }
                    | Rule { rule_proof = proof } ->
                         ped_of_proof proof
                    | _ ->
@@ -1311,10 +1308,11 @@ struct
        | (h, _) :: t ->
             let names = collect t in
                match h with
-                  Rewrite { rw_name = name } -> name :: names
-                | CondRewrite { crw_name = name } -> name :: names
-                | Axiom { axiom_name = name } -> name :: names
-                | Rule { rule_name = name } -> name :: names
+                  Rewrite { rw_name = name }
+                | CondRewrite { crw_name = name }
+                | Axiom { axiom_name = name }
+                | Rule { rule_name = name } ->
+                     name :: names
                 | _ -> names
       in
          collect (info_items info)

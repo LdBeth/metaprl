@@ -201,8 +201,7 @@ let ped_status = function
       begin match status_of_ped ped with
          Proof.StatusBad ->
             ObjBad
-       | Proof.StatusIncomplete ->
-            ObjIncomplete
+       | Proof.StatusIncomplete
        | Proof.StatusPartial ->
             ObjIncomplete
        | Proof.StatusComplete ->
@@ -569,12 +568,11 @@ let rec rule_term_of_text = function
       mk_rule_box_string_term "<identity>"
  | Proof.ExprUnjustified ->
       mk_rule_box_string_term "<unjustified>"
- | Proof.ExprExtract args ->
+ | Proof.ExprExtract args
+ | Proof.ExprWrapped args ->
       mk_rule_box_term (term_of_arglist args)
  | Proof.ExprCompose expr ->
       append_rule_box (rule_term_of_text expr) "<then...>"
- | Proof.ExprWrapped args ->
-      mk_rule_box_term (term_of_arglist args)
  | Proof.ExprRule (text, _) ->
       mk_rule_box_string_term text
 (*

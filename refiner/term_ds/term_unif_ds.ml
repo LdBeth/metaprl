@@ -1048,8 +1048,7 @@ let unify term0 term1 consts=
                                   else raise Clash
                           )
         | true,false -> [(y,term0)]
-        | false,true -> [(x,term1)]
-        | false,false -> [(x,term1)]
+        | false,_ -> [(x,term1)]
       )
   | FOVar x, Term _ -> if StringSet.mem consts x then raise Clash
                        else if (is_free x term1) then raise Cycle

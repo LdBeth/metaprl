@@ -1064,6 +1064,23 @@ and handle_macstuff_sig loc =
       (fun l -> <:sig_item< declare $list:l$ end >>)
       loc
 
+let test_expr =
+   let take_expr (_, _, e) =
+      Codewalk.changeloc (0,0) Codewalk.expr e
+   in let rec dups loc i = function
+      h :: t ->
+         if List.mem h t then
+            Stdpp.raise_with_loc loc (Failure (Printf.sprintf "Duplicates in the match - %i" i));
+         dups loc (succ i) t
+    | [] -> ()
+   in function
+      ExMat (loc, _, peel) |
+      ExFun (loc, peel) as expr ->
+         dups loc 1 (List.map take_expr peel); expr
+    | expr -> expr
+
+let test_str = Codewalk.walkwith (Some test_expr) None None None None None Codewalk.str_item
+
 EXTEND
    GLOBAL: str_item sig_item expr patt ctyp module_expr module_type;
    (* Note: macstuff is macro definitions etc, in these cases, there is no
@@ -1075,8 +1092,9 @@ EXTEND
        | "declare"; sis = LIST0 str_item; "end" ->
             <:str_item< declare $list:sis$ end >>
        | si = NEXT -> (* expand macros etc *)
-            remove_nothings Codewalk.str_item
-                            (macros_codewalk Codewalk.str_item si)
+            (* Apply test_str to the expression below to test it for duplicated code
+               if pattern branching expressions (match and function) *)
+            remove_nothings Codewalk.str_item (macros_codewalk Codewalk.str_item si)
        ]];
    sig_item: FIRST
       [[ "NOTHING" -> <:sig_item< declare end >>

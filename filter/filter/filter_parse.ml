@@ -298,8 +298,7 @@ let get_string_param loc t =
          { op_params = [param] } ->
             begin
                match dest_param param with
-                  String s -> s
-                | MString s -> s
+                  String s | MString s -> s
                 | _ -> Stdpp.raise_with_loc loc (RefineError ("Filter_parse.get_string_param", TermMatchError (t, "param type")))
             end
        | { op_params = [] } ->
@@ -743,12 +742,11 @@ struct
             begin
                let modes, except_modes, options = compile_options tl in
                   match Opname.dest_opname (opname_of_term hd) with
-                     "parens" :: _ ->
+                     "parens" :: _
+                   | "inherit" :: _ ->
                         modes, except_modes, DFormParens :: options
                    | "prec" :: _ ->
                         modes, except_modes, (DFormPrec (get_string_param loc hd)) :: options
-                   | "inherit" :: _ ->
-                        modes, except_modes, DFormParens :: options
                    | "internal" :: _ ->
                         modes, except_modes, DFormInternal :: options
                    | "mode" :: _ ->

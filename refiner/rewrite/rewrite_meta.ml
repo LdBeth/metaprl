@@ -106,20 +106,24 @@ struct
 
    let compare_params p rwp =
       match dest_param p, rwp with
-         Number a, RWNumber b -> a = b
-       | String a, RWString b -> a = b
-       | Token a, RWToken b -> a = b
-       | Var a, RWVar b -> a = b
-       | MNumber a, RWNumber b -> true
-       | MNumber a, RWMNumber b -> true
-       | MString a, RWString b -> true
-       | MString a, RWMString b -> true
-       | MToken a, RWToken b -> true
-       | MToken a, RWMToken b -> true
-       | MLevel a, RWMLevel1 b -> true
-       | MLevel a, RWMLevel2 b -> compare_levels a b
-       | MVar a, RWVar b -> true
-       | MVar a, RWMVar b -> true
+         Number n, RWNumber rn ->
+            n = rn
+       | String s, RWString rs
+       | Token s, RWToken rs
+       | Var s, RWVar rs ->
+            s = rs
+       | MNumber _, RWNumber _
+       | MNumber _, RWMNumber _
+       | MString _, RWString _
+       | MString _, RWMString _
+       | MToken _, RWToken _
+       | MToken _, RWMToken _
+       | MLevel _, RWMLevel1 _
+       | MVar _, RWVar _
+       | MVar _, RWMVar _ ->
+            true
+       | MLevel a, RWMLevel2 b ->
+            compare_levels a b
        | _ -> false
 
    let compare_param_lists = List_util.for_all2 compare_params

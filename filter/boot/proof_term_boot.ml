@@ -394,9 +394,9 @@ struct
 
    let compare_attribute arg1 arg2 =
       match arg1, arg2 with
-         HeadTermArg t1, HeadTermArg t2 ->
-            compare_terms t1 t2
-       | HeadTypeArg t1, HeadTypeArg t2 ->
+         HeadTermArg t1, HeadTermArg t2
+       | HeadTypeArg t1, HeadTypeArg t2
+       | HeadSubstArg t1, HeadSubstArg t2 ->
             compare_terms t1 t2
        | HeadIntArg i1, HeadIntArg i2 ->
             i1 = i2
@@ -404,8 +404,6 @@ struct
             b1 = b2
        | HeadStringArg s1, HeadStringArg s2 ->
             s1 = s2
-       | HeadSubstArg t1, HeadSubstArg t2 ->
-            compare_terms t1 t2
        | HeadTermListArg tl1, HeadTermListArg tl2 ->
             term_list_eq tl1 tl2
        | _ ->
@@ -500,8 +498,7 @@ struct
    and ext_make_tactic_parent_header info = function
       ParentNone ->
          HeadParentNone
-    | ParentLazy arg ->
-         HeadParentCons (ext_add_tactic_arg info arg)
+    | ParentLazy arg
     | ParentSet (arg, _) ->
          HeadParentCons (ext_add_tactic_arg info arg)
 
@@ -515,14 +512,12 @@ struct
    and ext_make_extract_header info = function
       Goal arg ->
          HeadGoal (ext_add_tactic_arg info arg)
-    | Unjustified (goal, subgoals) ->
-         HeadUnjustified (ext_add_tactic_arg info goal, List.map (ext_add_tactic_arg info) subgoals)
-    | Extract (goal, subgoals, _) ->
+    | Unjustified (goal, subgoals)
+    | Extract (goal, subgoals, _)
+    | ExtractCondRewrite (goal, subgoals, _, _) ->
          HeadUnjustified (ext_add_tactic_arg info goal, List.map (ext_add_tactic_arg info) subgoals)
     | ExtractRewrite (goal, subgoal, _, _) ->
          HeadUnjustified (ext_add_tactic_arg info goal, [ext_add_tactic_arg info subgoal])
-    | ExtractCondRewrite (goal, subgoals, _, _) ->
-         HeadUnjustified (ext_add_tactic_arg info goal, List.map (ext_add_tactic_arg info) subgoals)
     | ExtractNthHyp (goal, _) ->
          HeadUnjustified (ext_add_tactic_arg info goal, [])
     | ExtractCut (goal, _, subgoal1, subgoal2) ->

@@ -182,8 +182,7 @@ struct
     *)
    let cast_number p =
       match dest_param p with
-         Number _ -> p
-       | MNumber _ -> p
+         Number _ | MNumber _ -> p
        | MString s -> make_param (MNumber s)
        | _ -> raise (BadParamCast (p, "n"))
 
@@ -196,8 +195,7 @@ struct
          begin
             match dest_param p with
                Number(n) -> make_param (String (Mp_num.string_of_num n))
-             | String(s) -> p
-             | MString(v) -> p
+             | String _ | MString _ -> p
              | _ -> raise (BadParamCast (p, "s"))
          end
     | "t" ->

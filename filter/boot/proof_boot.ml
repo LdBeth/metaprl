@@ -260,8 +260,8 @@ struct
 
    let rec count_leaves = function
       Goal _ | Identity _ | ExtractRewrite _ -> 1
-    | Unjustified (_, leaves) -> List.length leaves
-    | Extract (_, leaves, _) -> List.length leaves
+    | Unjustified (_, leaves)
+    | Extract (_, leaves, _)
     | ExtractCondRewrite (_, leaves, _, _) -> List.length leaves
     | ExtractNthHyp _ -> 0
     | ExtractCut _ -> 2
@@ -545,32 +545,22 @@ struct
     * Get the goal of the extract.
     *)
    let rec goal_ext = function
-      Goal t ->
-         t
-    | Identity t ->
-         t
-    | Unjustified (t, _) ->
-         t
-    | Extract (t, _, _) ->
-         t
-    | ExtractRewrite (t, _, _, _) ->
-         t
-    | ExtractCondRewrite (t, _, _, _) ->
-         t
-    | ExtractNthHyp (t, _) ->
-         t
+      Goal t
+    | Identity t
+    | Unjustified (t, _)
+    | Extract (t, _, _)
+    | ExtractRewrite (t, _, _, _)
+    | ExtractCondRewrite (t, _, _, _)
+    | ExtractNthHyp (t, _)
     | ExtractCut (t, _, _, _) ->
          t
-    | Compose { comp_goal = ext } ->
-         goal_ext ext
-    | Wrapped (_, ext) ->
-         goal_ext ext
-    | RuleBox { rule_extract = ext } ->
+    | Compose { comp_goal = ext }
+    | Wrapped (_, ext)
+    | RuleBox { rule_extract = ext }
+    | Locked ext ->
          goal_ext ext
     | Pending f ->
          goal_ext (f ())
-    | Locked ext ->
-         goal_ext ext
 
    let goal proof =
       goal_ext proof.pf_node
@@ -618,18 +608,15 @@ struct
    let rec leaves_ext goal =
       let leaves =
          match goal with
-            Goal t ->
-               [t]
+            Goal t
           | Identity t ->
                [t]
-          | Unjustified (_, leaves) ->
-               leaves
-          | Extract (_, leaves, _) ->
+          | Unjustified (_, leaves)
+          | Extract (_, leaves, _)
+          | ExtractCondRewrite (_, leaves, _, _) ->
                leaves
           | ExtractRewrite (_, leaf, _, _) ->
                [leaf]
-          | ExtractCondRewrite (_, leaves, _, _) ->
-               leaves
           | ExtractNthHyp _ ->
                []
           | ExtractCut (_, _, leaf1, leaf2) ->
@@ -725,7 +712,8 @@ struct
                status
          else
             status
-    | Wrapped (_, ext) ->
+    | Wrapped (_, ext)
+    | Locked ext ->
          status_ext ext
     | RuleBox ({ rule_status = status; rule_extract = goal; rule_subgoals = subgoals } as info) ->
          if status = LazyStatusDelayed then
@@ -736,8 +724,6 @@ struct
             status
     | Pending f ->
          status_ext (f ())
-    | Locked ext ->
-         status_ext ext
 
    and compute_status goal subgoals =
       compute_status_subgoals (status_ext goal) subgoals
@@ -981,7 +967,9 @@ struct
          Goal _
        | Identity _ ->
             raise_replace_error proof node raddr i
-       | Extract (goal, subgoals, ext) ->
+       | Extract (goal, subgoals, _)
+       | ExtractCondRewrite (goal, subgoals, _, _)
+       | Unjustified (goal, subgoals) ->
             let goal, subgoals, unchanged = replace_subterm proof node raddr goal subgoals i node' in
             let node =
                if unchanged then
@@ -992,15 +980,6 @@ struct
                false, false, node
        | ExtractRewrite (goal, subgoal, _, _) ->
             let goal, subgoals, unchanged = replace_subterm proof node raddr goal [subgoal] i node' in
-            let node =
-               if unchanged then
-                  node
-               else
-                  Unjustified (goal, subgoals)
-            in
-               false, false, node
-       | ExtractCondRewrite (goal, subgoals, _, _) ->
-            let goal, subgoals, unchanged = replace_subterm proof node raddr goal subgoals i node' in
             let node =
                if unchanged then
                   node
@@ -1019,15 +998,6 @@ struct
                false, false, node
        | ExtractCut (goal, _, leaf1, leaf2) ->
             let goal, subgoals, unchanged = replace_subterm proof node raddr goal [leaf1; leaf2] i node' in
-            let node =
-               if unchanged then
-                  node
-               else
-                  Unjustified (goal, subgoals)
-            in
-               false, false, node
-       | Unjustified (goal, subgoals) ->
-            let goal, subgoals, unchanged = replace_subterm proof node raddr goal subgoals i node' in
             let node =
                if unchanged then
                   node
@@ -1248,14 +1218,12 @@ struct
             Goal (f arg)
        | Identity arg ->
             Identity (f arg)
-       | Unjustified (goal, subgoals) ->
+       | Unjustified (goal, subgoals)
+       | Extract (goal, subgoals, _)
+       | ExtractCondRewrite (goal, subgoals, _, _) ->
             Unjustified (f goal, List.map f subgoals)
-       | Extract (goal, subgoals, ext) ->
-            Unjustified (f goal, List.map f subgoals)
-       | ExtractRewrite (goal, subgoal, addr, ext) ->
+       | ExtractRewrite (goal, subgoal, _, _) ->
             Unjustified (f goal, [f subgoal])
-       | ExtractCondRewrite (goal, subgoals, addr, ext) ->
-            Unjustified (f goal, List.map f subgoals)
        | ExtractNthHyp (arg, i) ->
             ExtractNthHyp (f arg, i)
        | ExtractCut (goal, hyp, cut_lemma, cut_then) ->
@@ -2138,7 +2106,8 @@ struct
        | ExtractNthHyp _
        | ExtractCut _ ->
             step
-       | Compose { comp_subgoals = subgoals'; comp_extras = extras' } ->
+       | Compose { comp_subgoals = subgoals'; comp_extras = extras' }
+       | RuleBox { rule_subgoals = subgoals'; rule_extras = extras' } ->
             replace_step_subgoals step subgoals' extras'
        | Wrapped (label, node') ->
             replace_step_rule proof node' step
@@ -2146,8 +2115,6 @@ struct
             replace_step_rule proof (f ()) step
        | Locked ext ->
             replace_step_rule proof ext step
-       | RuleBox { rule_subgoals = subgoals'; rule_extras = extras' } ->
-            replace_step_subgoals step subgoals' extras'
 
    let refine postf proof text expr tac =
       let subgoals, ext = TacticInternal.refine tac (goal proof) in
@@ -2247,12 +2214,11 @@ struct
        | ExtractNthHyp _
        | ExtractCut _ ->
             false, node
-       | Extract (goal, subgoals, _) ->
+       | Extract (goal, subgoals, _)
+       | ExtractCondRewrite (goal, subgoals, _, _) ->
             false, Unjustified (goal, subgoals)
        | ExtractRewrite (goal, subgoal, _, _) ->
             false, Unjustified (goal, [subgoal])
-       | ExtractCondRewrite (goal, subgoals, _, _) ->
-            false, Unjustified (goal, subgoals)
        | Wrapped (label, node) ->
             let (flag, node') as res = squash_ext node in
                if flag then flag, Wrapped (label, node')
@@ -2451,8 +2417,7 @@ struct
                   match parent with
                      ParentNone ->
                         None
-                   | ParentLazy parent ->
-                        Some (make_tactic_arg parent)
+                   | ParentLazy parent
                    | ParentSet (parent, _) ->
                         Some (make_tactic_arg parent)
                in
@@ -2489,12 +2454,11 @@ struct
                IOGoal (make_tactic_arg arg)
           | Unjustified (goal, subgoals) ->
                IOUnjustified (make_tactic_arg_squash goal, List.map make_tactic_arg_squash subgoals)
-          | Extract (goal, subgoals, _) ->
+          | Extract (goal, subgoals, _)
+          | ExtractCondRewrite (goal, subgoals, _, _) ->
                IOUnjustified (make_tactic_arg goal, List.map make_tactic_arg subgoals)
           | ExtractRewrite (goal, subgoal, _, _) ->
                IOUnjustified (make_tactic_arg goal, [make_tactic_arg subgoal])
-          | ExtractCondRewrite (goal, subgoals, _, _) ->
-               IOUnjustified (make_tactic_arg goal, List.map make_tactic_arg subgoals)
           | ExtractNthHyp (goal, i) ->
                IOExtractNthHyp (make_tactic_arg goal, i)
           | ExtractCut (goal, term, cut_lemma, cut_then) ->
@@ -2648,8 +2612,7 @@ struct
          StatusPartial
     | IOWrapped (_, node) ->
          status_of_io_proof node
-    | IOCompose { io_comp_status = status } ->
-         translate_status status
+    | IOCompose { io_comp_status = status }
     | IORuleBox { io_rule_status = status } ->
          translate_status status
 

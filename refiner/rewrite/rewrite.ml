@@ -254,12 +254,12 @@ struct
     * Compute the redex types.
     *)
    let extract_redex_type = function
-      FOVarPattern s -> RewriteTermType s
-    | SOVarPattern (s, _) -> RewriteFunType s
+      FOVarPattern s
+    | SOVarPattern (s, _)
     | SOVarInstance (s, _) -> RewriteFunType s
-    | FOVar s -> RewriteStringType s
     | CVar s -> RewriteContextType s
     | PVar (s, ShapeNumber) -> RewriteNumType s
+    | FOVar s
     | PVar (s, (ShapeString | ShapeToken | ShapeVar)) -> RewriteStringType s
     | PVar (s, ShapeLevel) -> RewriteLevelType s
 
@@ -302,13 +302,6 @@ struct
          end
     | SOVarInstance _ ->
          failwith "extract_redex_values: SOVarInstance"
-    | FOVar _ ->
-         begin
-            match gstack with
-               StackString s -> RewriteString s
-             | StackMString s -> RewriteString s
-             | _ -> REF_RAISE(extract_exn)
-         end
     | CVar _ ->
          begin
             match gstack with
@@ -323,11 +316,11 @@ struct
              | StackMString s -> RewriteString s
              | _ -> REF_RAISE(extract_exn)
          end
+    | FOVar _
     | PVar (_, (ShapeString | ShapeToken | ShapeVar)) ->
          begin
             match gstack with
-               StackString s -> RewriteString s
-             | StackMString s -> RewriteString s
+               StackString s | StackMString s -> RewriteString s
              | _ -> REF_RAISE(extract_exn)
          end
     | PVar (_, ShapeLevel) ->

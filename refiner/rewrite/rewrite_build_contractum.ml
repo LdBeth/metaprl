@@ -342,8 +342,7 @@ struct
                   eprintf "RWStackVar: %d%t" i eflush
             ENDIF;
             match stack.(i) with
-               StackString s ->
-                  mk_var_term s
+               StackString s
              | StackMString s ->
                   mk_var_term s
              | _ ->

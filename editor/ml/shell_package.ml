@@ -262,12 +262,9 @@ let is_rule_item = function
 let is_unjustified_item item =
    let proof =
       match item with
-         Rewrite { rw_proof = proof } ->
-            proof
-       | CondRewrite { crw_proof = proof } ->
-            proof
-       | Axiom { axiom_proof = proof } ->
-            proof
+         Rewrite { rw_proof = proof }
+       | CondRewrite { crw_proof = proof }
+       | Axiom { axiom_proof = proof }
        | Rule { rule_proof = proof } ->
             proof
        | _ ->

@@ -175,9 +175,9 @@ struct
     | TermFunExpr _ ->     ": term -> expr"
     | TacticFunExpr _ ->   ": tactic -> expr"
     | IntTacticFunExpr _ -> ": (int -> tactic) -> expr"
-    | AddressFunExpr _ ->  ": address -> expr"
-    | ConvFunExpr _ ->     ": conv -> expr"
+    | AddressFunExpr _
     | AddrFunExpr _ ->     ": address -> expr"
+    | ConvFunExpr _ ->     ": conv -> expr"
     | StringListFunExpr _ -> ": string list -> expr"
     | TermListFunExpr _ -> ": term list -> expr"
     | TacticListFunExpr _ -> ": tactic list -> expr"
@@ -294,8 +294,7 @@ struct
                         format_string buf ": ";
                         begin
                            match exn with
-                              Pcaml.Qerror (_, _, exn) ->
-                                 Filter_exn.format_exn df buf exn
+                              Pcaml.Qerror (_, _, exn)
                             | exn ->
                                  Filter_exn.format_exn df buf exn
                         end;

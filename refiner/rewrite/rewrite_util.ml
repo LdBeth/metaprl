@@ -147,14 +147,7 @@ struct
                REF_RAISE(RefineError ("Rewrite_util.check_arity", RewriteSOVarArity v))
          else
             true
-    | SOVarPattern (v', i) ->
-         if v' = v then
-            if i = arity then
-               false
-            else
-               REF_RAISE(RefineError ("Rewrite_util.check_arity", RewriteSOVarArity v))
-         else
-            true
+    | SOVarPattern (v', i)
     | SOVarInstance (v', i) ->
          if v' = v then
             if i = arity then
@@ -176,22 +169,23 @@ struct
     * Membership functions.
     *)
    let rstack_mem_prop v = function
-      FOVarPattern v' -> v = v'
-    | SOVarPattern (v', _) -> v = v'
-    | SOVarInstance (v', _) -> v = v'
-    | FOVar v' -> v = v'
-    | CVar v' -> v = v'
-    | PVar (v', _) -> v = v'
+      FOVarPattern v'
+    | SOVarPattern (v', _)
+    | SOVarInstance (v', _)
+    | FOVar v'
+    | CVar v'
+    | PVar (v', _) ->
+         v = v'
 
    let rstack_so_mem_prop v = function
-      FOVarPattern v' -> v = v'
-    | SOVarPattern (v', _) -> v = v'
-    | SOVarInstance (v', _) -> v = v'
+      FOVarPattern v'
+    | SOVarPattern (v', _)
+    | SOVarInstance (v', _) ->
+         v = v'
     | _ -> false
 
    let rstack_pattern_mem_prop v = function
-      FOVarPattern v' -> v = v'
-    | SOVarPattern (v', _) -> v = v'
+      FOVarPattern v' | SOVarPattern (v', _) -> v = v'
     | _ -> false
 
    let rstack_fo_mem_prop v = function

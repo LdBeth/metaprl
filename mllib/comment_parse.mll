@@ -243,7 +243,6 @@ let special = ['[' ']' ';' ',' '_' '^' '!']
 rule main = parse
    (* White space *)
    '\n' optwhite '*'
-   { TokWhite true }
  | '\n'
    { TokWhite true }
  | white
@@ -287,9 +286,7 @@ rule main = parse
    { TokSpecial (Lexing.lexeme_char lexbuf 0) }
 
    (* Alphanumeric names *)
- | name
-   { TokString (true, Lexing.lexeme lexbuf) }
- | number
+ | name | number
    { TokString (true, Lexing.lexeme lexbuf) }
  | _
    { TokString (false, Lexing.lexeme lexbuf) }
@@ -672,9 +669,7 @@ and parse_opname mode s buf =
 and parse_opname_name mode buffer opname buf =
    let token = parse_token buf in
       match token with
-         TokString (true, s) ->
-            add_opname_string mode buffer opname s buf
-       | TokQString s ->
+         TokString (true, s) | TokQString s ->
             add_opname_string mode buffer opname s buf
        | TokSpecial '_' ->
             if is_math_mode mode then

@@ -68,15 +68,11 @@ struct
     *)
    let param_type p =
       match dest_param p with
-         Number _ -> ShapeNumber
-       | String _ -> ShapeString
-       | Token _ -> ShapeToken
-       | Var _ -> ShapeVar
-       | MNumber _ -> ShapeNumber
-       | MString _ -> ShapeString
-       | MToken _ -> ShapeToken
+         Number _ | MNumber _ -> ShapeNumber
+       | String _ | MString _ -> ShapeString
+       | Token _ | MToken _ -> ShapeToken
+       | Var _ | MVar _ -> ShapeVar
        | MLevel _ -> ShapeLevel
-       | MVar _ -> ShapeVar
        | _ ->
             raise (Invalid_argument "Term.shape_of_term")
 
