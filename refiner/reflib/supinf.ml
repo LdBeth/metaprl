@@ -315,6 +315,7 @@ sig
    val mk_var: vars -> af
    val scale: bfield -> af -> af
    val add: af -> af -> af
+	val sub: af -> af -> af
 
    val coef: af -> vars -> bfield
    val remove: af -> vars -> af
@@ -438,6 +439,10 @@ struct
 					Signore, s -> s,f
 				 | s,Signore -> s,f
 				 | _ -> (Ssum(s1,s2),f)
+
+	let sub f1 f2 =
+		let neg_f2 = scale (BField.neg BField.fieldUnit) f2 in
+		add f1 neg_f2
 
    let remove (s,f) vs = s,Table.remove f vs
 

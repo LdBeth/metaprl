@@ -101,6 +101,7 @@ sig
    val mk_var: vars -> af
    val scale: bfield -> af -> af
    val add: af -> af -> af
+   val sub: af -> af -> af
 
    val coef: af -> vars -> bfield
    val remove: af -> vars -> af
