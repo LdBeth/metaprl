@@ -82,7 +82,7 @@ ifndef READLINE
 endif
 ifneq (,$(findstring $(READLINE),$(YESFLAGS)))
    READLINE=YES
-   OTHER_CCLIBS := $(OTHER_CCLIBS) -cclib -lreadline -cclib -ltermcap
+   OTHER_CCLIBS := $(OTHER_CCLIBS) -cclib -lreadline -cclib -lncurses
 else
    READLINE=no
 endif
