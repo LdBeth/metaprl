@@ -362,7 +362,7 @@ let propDecideT =
  * PROBLEMS                                                             *
  ************************************************************************)
 
-interactive pigeon2 'H :
+interactive pigeon2 :
    sequent { <H>;
 	x0_1: univ[1:l];
 	x0_2: univ[1:l];
@@ -382,7 +382,7 @@ interactive pigeon2 'H :
 	>- void
 }
 
-interactive pigeon3 'H :
+interactive pigeon3 :
    sequent { <H>;
 	x0_1: univ[1:l];
 	x0_2: univ[1:l];
@@ -415,7 +415,7 @@ interactive pigeon3 'H :
 	>- void
 }
 
-interactive pigeon4 'H :
+interactive pigeon4 :
    sequent { <H>;
 	x0_1: univ[1:l];
 	x0_2: univ[1:l];
@@ -466,7 +466,7 @@ interactive pigeon4 'H :
 }
 
 (*
-interactive pigeon5 'H :
+interactive pigeon5 :
    sequent { <H>;
 	x0_1: univ[1:l];
 	x0_2: univ[1:l];
@@ -537,7 +537,7 @@ interactive pigeon5 'H :
 	>- void
 }
 
-interactive pigeon6 'H :
+interactive pigeon6 :
    sequent { <H>;
 	x0_1: univ[1:l];
 	x0_2: univ[1:l];
@@ -633,7 +633,7 @@ interactive pigeon6 'H :
 	>- void
 }
 
-interactive pigeon7 'H :
+interactive pigeon7 :
    sequent { <H>;
 	x0_1: univ[1:l];
 	x0_2: univ[1:l];
@@ -758,7 +758,7 @@ interactive pigeon7 'H :
 	>- void
 }
 
-interactive pigeon8 'H :
+interactive pigeon8 :
    sequent { <H>;
 	x0_1: univ[1:l];
 	x0_2: univ[1:l];
@@ -916,7 +916,7 @@ interactive pigeon8 'H :
 	>- void
 }
 
-interactive pigeon9 'H :
+interactive pigeon9 :
    sequent { <H>;
 	x0_1: univ[1:l];
 	x0_2: univ[1:l];

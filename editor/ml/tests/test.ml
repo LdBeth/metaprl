@@ -32,7 +32,7 @@
 
 extends Itt_theory
 
-interactive qq 'H :
+interactive qq :
    sequent { <H>; x: int; y: int >- decidable{equal{int;'x;'y}} }
 
 (*

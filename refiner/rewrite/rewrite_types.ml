@@ -119,6 +119,9 @@ struct
 
    (*
     * Special forms for sequents.
+    *
+    * In RWSeqContext, the first int is an index in the addr array, if non-negative,
+    * or the number of hyps to leave at the end (-1 - 0 hyps, -2 - 1 hyps, etc).
     *)
    and rw_seq_term =
       RWSeqHypBnd of varname * rwterm

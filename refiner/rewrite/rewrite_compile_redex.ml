@@ -158,6 +158,13 @@ struct
       [] -> List.map bvar_ind bconts
     | v :: tl -> restricted_conts c (restrict_cont c v bconts) tl
 
+   let rec lastcontext hyps i =
+      let i = pred i in
+      if i < 0 then i else
+         match SeqHyp.get hyps i with
+            Context _ -> i
+          | Hypothesis _ | HypBinding _ -> lastcontext hyps i
+
    let rec compile_so_redex_term allow_so_patterns restrict addrs stack svars bconts bvars term =
       (* Check for variables and contexts *)
       if is_var_term term then
@@ -336,11 +343,12 @@ struct
           } = explode_sequent term
       in
       let stack, arg = compile_so_redex_term true restrict addrs stack svars bconts bvars arg in
+      let l = SeqHyp.length hyps in
       let stack, hyps, goals =
-         compile_so_redex_sequent_inner restrict addrs stack svars bconts bvars 0 (SeqHyp.length hyps) hyps goals in
+         compile_so_redex_sequent_inner restrict addrs stack svars bconts bvars 0 l (lastcontext hyps l) hyps goals in
          stack, RWSequent (arg, hyps, goals)
 
-   and compile_so_redex_sequent_inner restrict addrs stack svars bconts bvars i len hyps goals =
+   and compile_so_redex_sequent_inner restrict addrs stack svars bconts bvars i len mc hyps goals =
       if i = len then
          let stack, goals =
             compile_so_redex_goals restrict addrs stack svars bconts bvars 0 (SeqGoal.length goals) goals
@@ -355,11 +363,11 @@ struct
                   (* The context should have a unique name *)
                   REF_RAISE(RefineError ("is_context_term", RewriteBoundSOVar v))
                else let index =
-                  if i = (len - 1) then
+                  if i = mc then
                      if Lm_array_util.mem v addrs then
-                        REF_RAISE(RefineError ("compile_so_redex_sequent_inner", StringVarError("Context at the end of the sequent does not need to be passed in as an argument",v)))
+                        REF_RAISE(RefineError ("compile_so_redex_sequent_inner", StringVarError("Last context of the sequent does not need to be passed in as an argument",v)))
                      else
-                        -1
+                        i - len
                   else
                      if Lm_array_util.mem v addrs then
                         Lm_array_util.index v addrs
@@ -379,7 +387,7 @@ struct
                      RWSeqFreeVarsContext (restrict_conts, restrict_free, index, stack_ind, vars')
                in
                let stack, hyps, goals =
-                  compile_so_redex_sequent_inner restrict addrs stack svars ((v, stack_ind)::bconts) bvars (i + 1) len hyps goals
+                  compile_so_redex_sequent_inner restrict addrs stack svars ((v, stack_ind)::bconts) bvars (i + 1) len mc hyps goals
                in
                   stack, term :: hyps, goals
 
@@ -391,14 +399,14 @@ struct
                let stack = stack @ [FOVar v] in
                let bvars = (new_bvar_item l v) :: bvars in
                let stack, hyps, goals =
-                  compile_so_redex_sequent_inner restrict addrs stack svars bconts bvars (i + 1) len hyps goals
+                  compile_so_redex_sequent_inner restrict addrs stack svars bconts bvars (i + 1) len mc hyps goals
                in
                   stack, RWSeqHypBnd (bname l v, term) :: hyps, goals
 
           | Hypothesis term ->
                let stack, term = compile_so_redex_term true restrict addrs stack svars bconts bvars term in
                let stack, hyps, goals =
-                  compile_so_redex_sequent_inner restrict addrs stack svars bconts bvars (i + 1) len hyps goals
+                  compile_so_redex_sequent_inner restrict addrs stack svars bconts bvars (i + 1) len mc hyps goals
                in
                let l = List.length stack in
                let hyps = RWSeqHypBnd (bname l "", term) :: List.map (restrict_free_in_hyp l) hyps in

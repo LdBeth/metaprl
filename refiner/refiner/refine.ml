@@ -1405,7 +1405,7 @@ struct
    type ext_cmd =
       ECBind
     | ECRename of int
-    | ECRenameLast
+    | ECRenameLast of int
     | ECSkip of int
     | ECSkipCont of int
     | ECRestart
@@ -1416,6 +1416,11 @@ struct
     * extract.
     *)
    let compute_rule_ext =
+      let rec only_hyps = function
+         (HypBinding _| Hypothesis _) :: rest -> only_hyps rest
+       | Context _ :: _ -> false
+       | [] -> true
+      in
       let rec skip_hyps = function
          (HypBinding _| Hypothesis _) :: rest ->
             let i, rest = skip_hyps rest in i + 1, rest
@@ -1431,20 +1436,21 @@ struct
                   ECSkip i :: (prog_of_hyps addrs all_ghyps rest ahyps)
           | _, (HypBinding _| Hypothesis _) :: rest ->
                ECBind :: prog_of_hyps addrs all_ghyps ghyps rest
-          | [Context(c,_,_)], (Context(c',_,_) :: rest) when c = c' ->
-               ECRenameLast :: prog_of_hyps addrs all_ghyps [] rest
+          | (Context(c,_,_)) :: rest, (Context(c',_,_) :: rest') when c = c' ->
+               let h =
+                  if Lm_array_util.mem c addrs then
+                     ECRename (Lm_array_util.index c addrs)
+                  else if only_hyps rest then
+                     ECRenameLast (List.length rest)
+                  else
+                     REF_RAISE(RefineError("compute_rule_ext", StringVarError("Free context variable", c)))
+               in
+                  h :: prog_of_hyps addrs all_ghyps rest rest'
           | ([] | [Context _]), Context (c, _, _)::_ ->
                if List.exists (function Context(c', _, _) -> c=c' | _ -> false) all_ghyps then
                   ECRestart :: prog_of_hyps addrs all_ghyps all_ghyps ahyps
                else
                   REF_RAISE(RefineError("compute_rule_ext", StringVarError("Free context variable", c)))
-          | (Context(c,_,_)) :: rest, (Context(c',_,_) :: rest') when c = c' ->
-               let i =
-                  try Lm_array_util.index c addrs
-                  with Not_found ->
-                     REF_RAISE(RefineError("compute_rule_ext", StringVarError("Free context variable", c)))
-               in
-                  ECRename i :: prog_of_hyps addrs all_ghyps rest rest'
           | (Context(c,_,_)) :: rest, _ ->
                let i =
                   try Lm_array_util.index c addrs
@@ -1485,7 +1491,7 @@ struct
        | ECSkip i -> "Skip(" ^ (string_of_int i) ^ ")"
        | ECSkipCont i -> "SkipCount(" ^ (string_of_int i) ^ ")"
        | ECRename i -> "Rename(" ^ (string_of_int i) ^ ")"
-       | ECRenameLast -> "RenameLast"
+       | ECRenameLast i -> "RenameLast(" ^ (string_of_int i) ^ ")"
        | ECRestart -> "Restart"
       in
       let apply_arg_prog addrs goal arg prog =
@@ -1514,8 +1520,8 @@ struct
                let count = addrs.(i) in
                let count = if (count > 0 ) then count - 1 else glen - goal_ind + count in
                   rename goal_ind t arg_ind rest count
-          | ECRenameLast :: rest ->
-               rename goal_ind t arg_ind rest (glen - goal_ind)
+          | ECRenameLast i :: rest ->
+               rename goal_ind t arg_ind rest (glen - goal_ind -i )
           | ECRestart :: rest ->
                aux 0 t arg_ind rest
          and rename goal_ind t arg_ind prog count =

@@ -495,7 +495,7 @@ struct
                REF_RAISE(RefineError ("match_redex_sequent_hyps", RewriteBadMatch (HypMatch hyps)));
             match_redex_sequent_goals addrs stack all_bvars goals' goals 0 (SeqGoal.length goals)
        | (RWSeqContext (addr, j, l) | RWSeqFreeVarsContext (_, _, addr, j, l) as hyp') :: hyps' ->
-            let count = if addr == -1 then len - i else
+            let count = if addr < 0 then len - i + addr + 1 else
                let count = addrs.(addr) in
                   if (count > 0 ) then count - 1 else len - i + count
             in
