@@ -141,7 +141,7 @@ struct
          if !debug_rewrite then
             eprintf "Rewrite.set_bvars %d/%d%t" (List.length vars) (List.length names) eflush
       ENDIF;
-      iter2 (set_bvar stack) vars names
+      iter2_1 set_bvar stack vars names
 
    (*
     * Matching functions.
@@ -337,7 +337,7 @@ struct
                if Opname.eq op.op_name op'.rw_name then
                   begin
                      match_redex_params_iter stack op'.rw_params op.op_params;
-                     rev_iter2 (match_redex_bterms addrs stack) bterms' term.term_terms;
+                     rev_iter2_2 match_redex_bterms addrs stack bterms' term.term_terms;
                      IFDEF VERBOSE_EXN THEN
                         if !debug_rewrite then
                            eprintf "Rewrite.match_redex.RWComposite done%t" eflush
@@ -546,7 +546,7 @@ struct
                end
          ENDIF;
          match_redex_term addrs stack prog t;
-         iter2 (match_redex_term addrs stack) progs tl
+         iter2_2 match_redex_term addrs stack progs tl
 end
 
 (*

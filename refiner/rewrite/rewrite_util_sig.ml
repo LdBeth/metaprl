@@ -43,8 +43,9 @@ sig
    (*
     * List operations that throw refiner errors.
     *)
-   val iter2 : ('a -> 'b -> unit) -> 'a list -> 'b list -> unit
-   val rev_iter2 : ('a -> 'b -> unit) -> 'a list -> 'b list -> unit
+   val iter2_2 : ('c -> 'd -> 'a -> 'b -> unit) -> 'c -> 'd -> 'a list -> 'b list -> unit
+   val iter2_1 : ('c -> 'a -> 'b -> unit) -> 'c -> 'a list -> 'b list -> unit
+   val rev_iter2_2 : ('c -> 'd -> 'a -> 'b -> unit) -> 'c -> 'd -> 'a list -> 'b list -> unit
 
    (*
     * Membership in the stack.

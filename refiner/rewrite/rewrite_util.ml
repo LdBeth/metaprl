@@ -95,19 +95,29 @@ struct
    let rev_iter2_exn = RefineError("Rewrite.rev_iter2", StringError "length mismatch")
    let redex_params_iter_exn = RefineError("Rewrite.match_redex_params_iter", StringError "length mismatch")
 
-   let rec iter2 f al bl =
+   let rec iter2_2 f arg1 arg2 al bl =
       match (al, bl) with
          h1::t1, h2::t2 ->
-            f h1 h2;
-            iter2 f t1 t2
+            f arg1 arg2 h1 h2;
+            iter2_2 f arg1 arg2 t1 t2
        | [], [] ->
             ()
        | _ ->
             REF_RAISE(iter2_exn)
 
-   let rec rev_iter2 f a b =   match (a,b) with
+   let rec iter2_1 f arg1 al bl =
+      match (al, bl) with
+         h1::t1, h2::t2 ->
+            f arg1 h1 h2;
+            iter2_1 f arg1 t1 t2
+       | [], [] ->
+            ()
+       | _ ->
+            REF_RAISE(iter2_exn)
+
+   let rec rev_iter2_2 f arg1 arg2 a b = match (a,b) with
          ([], []) -> ()
-       | (ha::ta, hb::tb) -> rev_iter2 f ta tb; f ha hb
+       | (ha::ta, hb::tb) -> rev_iter2_2 f arg1 arg2 ta tb; f arg1 arg2 ha hb
        | _ -> REF_RAISE (rev_iter2_exn)
 
    (*
