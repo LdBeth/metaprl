@@ -223,8 +223,9 @@ sig
 
    (*
     * Apply the rewrite to the outermost terms where it does not fail.
-    *)
+    * XXX: BUG: the currentl implementation is wrong.
    val crwhigher : cond_rewrite -> cond_rewrite
+    *)
 
    (*
     * Application of a conditional rewrite.

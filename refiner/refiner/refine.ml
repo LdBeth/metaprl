@@ -655,6 +655,7 @@ struct
     ************************************************************************)
 
    (*
+    * XXX HACK!!! This should go away once we implement the crw mechanism properly
     * Replace the subgoals in the sequent.
     * We have to rename variables to avoid capture,
     * so we need to calculate the binding occurrences to the
@@ -668,7 +669,6 @@ struct
        *)
       let replace_subgoal addr t' =
          (* Compute the extra binding variables in the clause *)
-         (* XXX HACK!!! This should go away once we implement the crw mechanism properly *)
          let seqtest = TermAddr.replace_subterm seq addr t' in
          let addr' = TermAddr.clause_address_of_address addr in
          let ttst = term_subterm seqtest addr' in
@@ -754,7 +754,7 @@ struct
 
    (*
     * Apply the rewrite at the outermost terms where it does not fail.
-    *)
+    * XXX: This breacks current (incomplete) conditional variable scope checking.
    let crwhigher (crw: cond_rewrite) sent bvars t =
       let t', args =
          let f bvars t =
@@ -765,6 +765,7 @@ struct
       in
       let subgoals, just = List.split args in
          t', CondRewriteSubgoalsList subgoals, CondRewriteHigher (t, just, t')
+    *)
 
    (*
     * Composition is supplied for efficiency.

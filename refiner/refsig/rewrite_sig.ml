@@ -63,7 +63,7 @@ sig
    type 'a rewrite_param =
       RewriteParam of 'a
     | RewriteMetaParam of var
-  
+
    type rewrite_item =
       RewriteTerm of term
     | RewriteFun of (term list -> term)
@@ -75,7 +75,7 @@ sig
    (* Names of the contexts to be passed as arguments *)
    type rewrite_args_spec = var array
 
-   (* Sizes (+1) for sequent contexts, strings for new variable names, bound variables *)
+   (* Sizes (+1) for sequent contexts, bound variables *)
    (* Non-positive sizes mean counting the hyps to skip from the end *)
    type rewrite_args = int array * SymbolSet.t
 

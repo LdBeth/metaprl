@@ -177,8 +177,10 @@ struct
    let higherC = function
       RewriteConv rw ->
          RewriteConv (rwhigher rw)
-    | CondRewriteConv crw ->
-         CondRewriteConv (crwhigher crw)
+  (* XXX: disabled
+   *| CondRewriteConv crw ->
+   *     CondRewriteConv (crwhigher crw)
+   *)
     | conv ->
          HigherConv conv
 
