@@ -18,24 +18,25 @@ DEFTEXTHEORIES=\
 	czf\
 	fir
 
-.PHONY: doc theories ocaml
+.PHONY: doc theories all-theories ocaml ocaml-book compile m-paper mtr m-paper-tr
 
-theories:
+theories all-theories:
 	+ @ $(MAKE) NAME=all-theories GOAL=theories TEXTHEORIES="$(DEFTEXTHEORIES)" doc
 
-ocaml:
+ocaml ocaml-book:
 	+ @ $(MAKE) NAME=book2 GOAL=ocaml-book TEXTHEORIES=ocaml_doc doc
 
-compile:
-	+ @ $(MAKE) NAME=m-paper GOAL=m-paper TEXTHEORIES=experimental/compile doc
+compile m-paper:
+	+ @ $(MAKE) NAME=m-paper GOAL=m-paper TEXTHEORIES=experimental/compile MOREINPUTS="../inputs/sig-alternate.cls" doc
 
-mtr:
+mtr m-paper-tr:
 	+ @ $(MAKE) NAME=m-paper-tr GOAL=m-paper-tr TEXTHEORIES=experimental/compile doc
 
 all: doc
 opt: doc
 
-INPUTS = ../inputs/rc.bib\
+INPUTS = $(MOREINPUTS)\
+	../inputs/rc.bib\
 	../inputs/metaprl.tex\
 	$(NAME).tex
 
