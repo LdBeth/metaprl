@@ -1,8 +1,40 @@
 #
-# If the config file does not exist, then create one
+# Override the root directory
 #
-.INCLUDE: mk/config
-    ROOT=$(ROOT) mk/make_config.sh
+OLDROOT = $(ROOT)
+ROOT    = $(dir .)
+LIB     = $(dir lib)
+BIN     = $(dir bin)
+
+#
+# If this is the root directory of the project,
+# then include the config file.  Otherwise,
+# we assume that the variables in the mk/config
+# file have been set in the project root.
+#
+if $(equal $(OLDROOT), $(dir .))
+    #
+    # Read the config file.
+    # If the config file does not exist, then create one.
+    #
+    .INCLUDE: mk/config
+        ROOT=$(ROOT) mk/make_config.sh
+
+    #
+    # Generic compiler options for this project.
+    # You can probably ignore these.
+    #
+    CAMLLIB = /usr/lib/ocaml
+    CAMLP4LIB = /usr/lib/ocaml/camlp4
+
+    #
+    # Generic CC options
+    #
+    CC = $(CCC)
+    CFLAGS = -Wall -g -O2
+    INCLUDES = $(INCLUDES) -I$(CAMLLIB)
+
+    export
 
 #
 # Generic phony targets
@@ -26,27 +58,6 @@ realclean: clean
 MPINSTALL = mp.install
 
 .PHONY: $(MPINSTALL)
-
-#
-# Generic C compiler options for this project.
-# You can probably ignore these.
-#
-CAMLLIB = /usr/lib/ocaml
-CAMLP4LIB = /usr/lib/ocaml/camlp4
-
-#
-# Generic CC options
-#
-CC = gcc
-CFLAGS = -Wall -g -O2
-INCLUDES = $(INCLUDES) -I$(CAMLLIB)
-
-#
-# Override the root directory
-#
-ROOT = $(dir .)
-LIB  = $(dir lib)
-BIN  = $(dir bin)
 
 #
 # Always use -linkall on libraries
@@ -110,7 +121,7 @@ if true
 # Theories also have special options
 #
 DEFAULT_THEORIES = tactic ocaml base itt
-LM_THEORIES = $(if $(equal $(LIBMOJAVE), undefined), $(EMPTY), mc theories/expermimental)
+LM_THEORIES = $(if $(equal $(LIBMOJAVE), undefined), $(EMPTY), mc experimental/compile)
 ALL_THEORIES = tactic ocaml base ocaml_doc itt ocaml_sos fol czf phobos mc sil $(LM_THEORIES)
 
 #
