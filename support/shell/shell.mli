@@ -112,6 +112,11 @@ topval print_term_match : term list -> unit
 topval eval_term_match : term -> unit
 
 (*
+topval term_of_sequent : term -> term
+topval sequent_of_term : unit -> term
+ *)
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "editor.top"

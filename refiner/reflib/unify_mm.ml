@@ -34,79 +34,134 @@ open Printf
 open Lm_debug
 
 open Opname
-open Refiner.Refiner
-open RefineError
-open TermType
-open Term
-open TermSubst
-open TermMan
+
+open Refiner.Refiner.TermType
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermOp
+open Refiner.Refiner.TermSubst
+open Refiner.Refiner.TermMan
+open Refiner.Refiner.RefineError
 
 (***********************
  * COMPATIBILTY
  ***********************)
 
 (*
- * Helper terms.
+ * For compatibilty, we convert sequents to the "old" style.
+ *
+ * sequent ::= sequent{'arg; 'hyps}
+ * hyps ::= sequent_hyp{'t1; v. 'hyps}
+ *       |  sequent_hyp{'t1; 'hyps}
+ *       |  sequent_context{'contexts; 'args; H. 'hyps}
+ *       |  concl
+ * concl ::= sequent_concls{term list}
  *)
-let pair_opname = make_opname ["pair"]
 
-let mk_pair_term t1 t2 =
-   mk_simple_term pair_opname [t1; t2]
+let sequent_opname      = make_opname [".sequent"]
+let sequent_hyp_binding = make_opname [".seq_hyp_binding"]
+let sequent_hypothesis  = make_opname [".seq_hypothesis"]
+let sequent_context     = make_opname [".seq_context"]
+let sequent_concl       = make_opname [".seq_concl"]
 
 (*
- * A term to represent contexts.
+ * Build the term representation of a sequent.
  *)
-let context_opname = make_opname ["context"]
+let term_of_sequent t =
+   let  { sequent_hyps = hyps;
+          sequent_goals = goals;
+          sequent_args = arg
+        } = explode_sequent t
+   in
 
-let mk_context_term t =
-   mk_simple_term context_opname [t]
+   (* Place goals in a list *)
+   let t = mk_simple_term sequent_concl (SeqGoal.to_list goals) in
+
+   (* Add all the hyps *)
+   let rec collect t i =
+      let i = pred i in
+         if i < 0 then
+            t
+         else
+            let t =
+               match SeqHyp.get hyps i with
+                  HypBinding (v, hyp) ->
+                     mk_dep0_dep1_term sequent_hyp_binding v hyp t
+                | Hypothesis hyp ->
+                     mk_simple_term sequent_hypothesis [hyp; t]
+                | Context (v, vars, args) ->
+                     let contexts = mk_xlist_term (List.map mk_var_term vars) in
+                     let args = mk_xlist_term args in
+                        mk_dep0_dep0_dep1_term sequent_context contexts args v t
+            in
+               collect t i
+   in
+   let t = collect t (SeqHyp.length hyps) in
+
+      (* Add the arg *)
+      mk_simple_term sequent_opname [arg; t]
 
 (*
- * Default hyp symbol.
+ * Convert an expanded sequent back to original form.
  *)
-let v_hyp = Lm_symbol.add "v"
+let sequent_of_term t =
+   (* Collect sequent *)
+   let rec collect t =
+      let op = opname_of_term t in
+         if Opname.eq op sequent_hyp_binding then
+            let v, hyp, t = dest_dep0_dep1_any_term t in
+            let hyps, goals = collect t in
+               HypBinding (v, hyp) :: hyps, goals
+         else if Opname.eq op sequent_hypothesis then
+            let hyp, t = two_subterms t in
+            let hyps, goals = collect t in
+               Hypothesis hyp :: hyps, goals
+         else if Opname.eq op sequent_context then
+            let contexts, args, v, t = dest_dep0_dep0_dep1_any_term t in
+            let contexts = List.map dest_var (dest_xlist contexts) in
+            let args = dest_xlist args in
+            let hyps, goals = collect t in
+               Context (v, contexts, args) :: hyps, goals
+         else if Opname.eq op sequent_concl then
+            let _, goals = dest_simple_term t in
+               [], goals
+         else
+            raise (RefineError ("sequent_of_term", StringTermError ("malformed sequent", t)))
+   in
+
+   (* Collect parts of the sequent *)
+   let arg, t = two_subterms t in
+   let hyps, goals = collect t in
+   let hyps = SeqHyp.of_list hyps in
+   let goals = SeqGoal.of_list goals in
+   let seq =
+      { sequent_args = arg;
+        sequent_hyps = hyps;
+        sequent_goals = goals
+      }
+   in
+      mk_sequent_term seq
 
 (*
- * This is the easy way to get around sequent unification.
- * We turn the sequent into a normal term.
+ * Override dest_term to expand sequents.
  *)
 let dest_term t =
    let t =
       if is_sequent_term t then
-         let { sequent_hyps = hyps;
-               sequent_goals = goals;
-               sequent_args = arg
-             } = explode_sequent t
-         in
-
-      (* Collect goals into a list *)
-         let t = mk_xlist_term (SeqGoal.to_list goals) in
-
-      (* Collect hyps as a lambda term *)
-         let rec collect_hyps t i =
-            let i = pred i in
-               if i < 0 then
-                  mk_pair_term arg t
-               else
-                  let t =
-                     match SeqHyp.get hyps i with
-                        HypBinding (v, e) ->
-                           mk_pair_term e (mk_xbind_term v t)
-                      | Hypothesis e ->
-                           let fv = free_vars_set t in
-                           let v = new_name v_hyp (SymbolSet.mem fv) in
-                              mk_pair_term e (mk_xbind_term v t)
-                      | Context _ ->
-                           mk_context_term t
-                  in
-                     collect_hyps t i
-         in
-            collect_hyps t (SeqHyp.length hyps)
-
+         term_of_sequent t
       else
          t
    in
       dest_term t
+
+(*
+ * Convert all the sequents.
+ *)
+let make_term t =
+   let t = make_term t in
+      if Opname.eq (opname_of_term t) sequent_opname then
+         sequent_of_term t
+      else
+         t
 
 (***********************
  * BASIC SUBSTITUTIONS *
@@ -140,7 +195,7 @@ let is_free_var v t = SymbolSet.mem (free_vars_set t) v
  * MM UNIFICATION *
  ******************)
 
-type fun_name= TermType.operator
+type fun_name= operator
 type var_name = Vinit | V of var
 
 type system = { mutable t: multeq list; mutable u: upart }
@@ -504,72 +559,59 @@ let rec get_bterms = function
 let null_var = Lm_symbol.add ""
 
 let rec cterm2multiterm t consts u var_hashtbl b_assoclist =
-     let t = dest_term t in
-     let tbvs_list = get_bvars t.term_terms
-     and tbcore_list = get_bterms t.term_terms
-     in
-     let op_n =List.length tbvs_list
-     in
-     let op_a = Array.of_list
-                  (List.map List.length tbvs_list
-                  )
-     in
-     let fs = { opsymb = t.term_op;
-                oparity_n = op_n;
-                oparity_a = op_a ;
-                b_length = 1;
-                opbinding = (Array.init op_n
-                             (function i -> (Array.create op_a.(i) [] )
-                             )
-                            );
-                renamings = (Array.init op_n
-                             (function i -> (Array.create op_a.(i) (V null_var) )
-                             )
-                            );
-                timestamp = (-1)
-               }
-     in
-     let multit ={fsymb= Op fs ; args =[]}
-     in
-       let i =ref 0 in
-        let conv_list l =
+   let t = dest_term t in
+   let tbvs_list = get_bvars t.term_terms in
+   let tbcore_list = get_bterms t.term_terms in
+   let op_n = List.length tbvs_list in
+   let op_a = Array.of_list (List.map List.length tbvs_list) in
+   let fs =
+      { opsymb    = t.term_op;
+        oparity_n = op_n;
+        oparity_a = op_a ;
+        b_length  = 1;
+        opbinding = Array.init op_n (fun i -> Array.create op_a.(i) []);
+        renamings = Array.init op_n (fun i -> Array.create op_a.(i) (V null_var));
+        timestamp = -1
+      }
+   in
+   let multit = { fsymb = Op fs ; args = [] } in
+   let i = ref 0 in
+   let conv_list l =
         (* uses list l to set the values in
-                 fs.opbinding.(!i) :array[1..length(l)]of bound_variable;
-           returns an association list which associates
+                 fs.opbinding.(!i) : array[1..length(l)] of bound_variable;
+           returns an association list that associates
            the bound variable names from l with corresponding
            bound_variables; finally increments (!i)
         *)
-         (let j = ref 0 and b_aslist_ref = ref b_assoclist in
-           List.iter (function v ->
-                      (let bv ={name_bv = (V v);
-                                  fsymb_bv = fs;
-                                  arg_numb = (!i);
-                                  binding_numb =(!j)
-                                 }
-                         in
-                           ((fs.opbinding).(!i)).(!j)<- [bv];
-                           b_aslist_ref:= (v,bv)::(!b_aslist_ref);
-                           incr j
-                      )
-                     ) l ;
-           incr i;
-           (!b_aslist_ref)
-         )
-                     in
-     multit.args <-
-     targs2args tbcore_list consts u var_hashtbl (List.map conv_list tbvs_list);
+      let j = ref 0 and b_aslist_ref = ref b_assoclist in
+          List.iter (function v ->
+                (let bv =
+                    { name_bv = (V v);
+                      fsymb_bv = fs;
+                      arg_numb = (!i);
+                      binding_numb =(!j)
+                    }
+                 in
+                    ((fs.opbinding).(!i)).(!j) <- [bv];
+                    b_aslist_ref:= (v,bv)::(!b_aslist_ref);
+                    incr j)) l;
+          incr i;
+          !b_aslist_ref
+   in
+      multit.args <-
+         targs2args tbcore_list consts u var_hashtbl (List.map conv_list tbvs_list);
                                          (* this List.map... makes
                                             the correct multit.fsymb
                                             as a side effect
-                                         *)
-     multit
+                                          *)
+      multit
 
 (* converts targs into args *)
 and targs2args li consts u var_hashtbl b_asslistlist =
-    let f tt b_asslist =
-       term2temp_multeq tt consts u var_hashtbl b_asslist
-    in
-       List.map2 f li b_asslistlist
+   let f tt b_asslist =
+      term2temp_multeq tt consts u var_hashtbl b_asslist
+   in
+      List.map2 f li b_asslistlist
 
 and term2temp_multeq tt consts u var_hashtbl b_asslist =
    if is_var_term tt then
@@ -578,15 +620,15 @@ and term2temp_multeq tt consts u var_hashtbl b_asslist =
                m_t = [{fsymb = Bvar (List.assoc x b_asslist); args = []}]
              }
          with Not_found ->
-            if (SymbolSet.mem consts x) then
-               { s_t = Queue.create () ;
-                 m_t = [{fsymb = (Cnst (V x)); args = []}]
-                }
-            else begin
-               let q = Queue.create() in
-                  Queue.add (get_variable x u var_hashtbl) q;
-                  { s_t = q ; m_t =[]}
-            end
+               if (SymbolSet.mem consts x) then
+                  { s_t = Queue.create () ;
+                    m_t = [{fsymb = (Cnst (V x)); args = []}]
+                  }
+               else begin
+                       let q = Queue.create() in
+                          Queue.add (get_variable x u var_hashtbl) q;
+                          { s_t = q ; m_t =[]}
+                    end
    else
       { s_t = Queue.create () ;
         m_t = [(cterm2multiterm tt consts u var_hashtbl b_asslist) ]
@@ -1016,33 +1058,37 @@ let solvedpart2subst slvdpt consts var_hashtbl =
 let unify t0 t1 consts=
    if is_var_term t0 then
       let x = dest_var t0 in
-      if is_var_term t1 then
-         let y = dest_var t1 in
-         if SymbolSet.mem consts x then
-            if SymbolSet.mem consts y then
-               if(x=y) then [] else raise Clash
-            else
-               [y,t0]
+         if is_var_term t1 then
+            let y = dest_var t1 in
+               if SymbolSet.mem consts x then
+                  if SymbolSet.mem consts y then
+                     if(x=y) then [] else raise Clash
+                  else
+                     [y,t0]
+               else
+                  [x,t1]
+         else if SymbolSet.mem consts x then
+            raise Clash
+         else if (is_free_var x t1) then
+            raise Cycle
          else
             [x,t1]
-      else
-         if SymbolSet.mem consts x then raise Clash
-         else if (is_free_var x t1) then raise Cycle
-         else [x,t1]
+   else if is_var_term t1 then
+      let y = dest_var t1 in
+         if SymbolSet.mem consts y then
+            raise Clash
+         else if (is_free_var y t0) then
+            raise Cycle
+         else
+            [y,t0]
    else
-      if is_var_term t1 then
-         let y = dest_var t1 in
-         if SymbolSet.mem consts y then raise Clash
-         else if (is_free_var y t0) then raise Cycle
-         else [y,t0]
-      else
-         let t_0 = dest_term t0 in
-         let t_1 = dest_term t1 in
-         let var_hashtbl = (Hashtbl.create 23) in
-           solvedpart2subst
-             (mm_unify (cterms2system t_0 t_1 consts var_hashtbl)).t
-             consts
-             var_hashtbl
+      let t_0 = dest_term t0 in
+      let t_1 = dest_term t1 in
+      let var_hashtbl = Hashtbl.create 23 in
+         solvedpart2subst (**)
+            (mm_unify (cterms2system t_0 t_1 consts var_hashtbl)).t
+            consts
+            var_hashtbl
 
 let unify_eqnl l1 consts =
    let l = List.rev l1 in

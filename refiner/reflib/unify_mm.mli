@@ -83,3 +83,10 @@ val unifiable_eqnl : eqnlist -> SymbolSet.t -> bool
 val unify : term -> term -> SymbolSet.t -> term_subst
 val unify_eqnl : eqnlist -> SymbolSet.t -> term_subst
 val unify_eqnl_eqnl : eqnlist -> SymbolSet.t -> eqnlist
+
+(*
+ * For debugging.
+val term_of_sequent : term -> term
+val sequent_of_term : term -> term
+ *)
+

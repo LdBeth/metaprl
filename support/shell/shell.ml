@@ -1587,6 +1587,23 @@ let print_term_match = Term_match_table.print_term_match
 let eval_term_match = Term_match_table.eval_term_match
 
 (*
+ * Sequent conversions.
+let saveterm = ref None
+
+let term_of_sequent t =
+   let t = Unify_mm.term_of_sequent t in
+      saveterm := Some t;
+      t
+
+let sequent_of_term () =
+   match !saveterm with
+      Some t ->
+         Unify_mm.sequent_of_term t
+    | None ->
+         raise (RefineError ("sequent_of_term", StringError "no saved term"))
+ *)
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "editor.top"
