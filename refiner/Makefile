@@ -70,7 +70,9 @@ CMXFILES :=\
 $(MAINLIB).cma: $(CMALIBS)
 	$(OCAMLC) $(OCAMLCFLAGS) -a -o $(MAINLIB).cma $(CMALIBS)
 
-$(MAINLIB).cmxa $(MAINLIB).a: $(CMXFILES)
+$(MAINLIB).a: $(MAINLIB).cmxa
+
+$(MAINLIB).cmxa: $(CMXFILES)
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -a -o $(MAINLIB).cmxa $(CMXFILES)
 
 #
