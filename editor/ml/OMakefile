@@ -237,3 +237,9 @@ do_tex: $(TEXFILES)
 
 $(TEXDIR)/%/theory.tex: $(TEXBIN) $(TEXDIR)/%/print.ml $(ROOT)/theories/%/$(THELIB)
 	$(TEXPROG) $(TEXDIR)/$*/print.ml
+
+#
+# Clean up
+#
+clean:
+    $(CLEAN)

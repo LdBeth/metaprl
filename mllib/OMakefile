@@ -78,3 +78,9 @@ FILES =\
 	mp_term
 
 OCamlLibraryInstall($(MPINSTALL), $(LIB), util, $(FILES))
+
+#
+# Clean up
+#
+clean:
+    $(CLEAN)

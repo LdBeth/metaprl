@@ -31,3 +31,9 @@ if $(not $(equal $(OCAMLSRC), undefined))
     patch:
 	patch -o extern.c $(OCAMLSRC)/byterun/extern.c extern.patch
 	patch -o intern.c $(OCAMLSRC)/byterun/intern.c intern.patch
+
+#
+# Clean up
+#
+clean:
+    $(CLEAN)

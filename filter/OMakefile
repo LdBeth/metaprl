@@ -196,3 +196,9 @@ INSTALL = $(addprefix $(LIB)/, $(PROGS))
 all: $(PROGS)
 opt: $(PROGS)
 install: $(INSTALL)
+
+#
+# Clean up
+#
+clean:
+    $(CLEAN)

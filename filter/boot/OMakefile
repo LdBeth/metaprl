@@ -17,3 +17,9 @@ MLZFILES =\
 include Files
 
 OCamlLibraryInstall($(MPINSTALL), $(LIB), filterlib, $(BOOT_FILES))
+
+#
+# Clean up
+#
+clean:
+    $(CLEAN)

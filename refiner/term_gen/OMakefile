@@ -9,3 +9,9 @@ OCAMLINCLUDES =\
 	-I ../refsig
 
 OCamlLibraryInstall($(MPINSTALL), $(LIB), termgen, $(TERM_GEN_FILES))
+
+#
+# Clean up
+#
+clean:
+    $(CLEAN)

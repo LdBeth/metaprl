@@ -7,7 +7,18 @@
 #
 # Generic phony targets
 #
-.PHONY: all opt install clean depend
+.PHONY: all opt install clean realclean depend
+
+#
+# Default clean line
+#
+CLEAN = $'(RM) -f *.opt *.run *.o *.cm* *~ .\#*
+REALCLEAN = $(CLEAN) *.prlb
+
+clean:
+    $(CLEAN)
+
+realclean: clean
 
 #
 # Phony target for installing libraries
@@ -129,3 +140,9 @@ if true
     MP_DIRS  = $(dir $(addprefix theories/, $(THEORIES)))
 
     .SUBDIRS: $(MP_DIRS) editor/ml
+
+#
+# Clean up
+#
+clean:
+    $(CLEAN)

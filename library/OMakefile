@@ -61,3 +61,9 @@ $(LIB)/mbs-mpl.txt: $(TEXT_FILE)
 
 $(LIB)/registry.txt: $(REGISTRY_FILE)
 	$(LN) $(in $(LIB), $(REGISTRY_FILE)) $@
+
+#
+# Clean up
+#
+clean:
+    $(CLEAN)

@@ -18,3 +18,9 @@ OCamlLibraryInstall($(MPINSTALL), $(LIB), rewrite, $(REWRITE_FILES))
 #
 rewrite_type_sig.mlz: rewrite_types.ml
 	$(CAMLP4MACROPRINT) -intf rewrite_types.ml -o $@
+
+#
+# Clean up
+#
+clean:
+    $(CLEAN) rewrite_type_sig.mlz

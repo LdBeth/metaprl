@@ -6,3 +6,9 @@ OCAMLINCLUDES =\
 	-I ../refbase
 
 OCamlLibraryInstall($(MPINSTALL), $(LIB), refsig, $(REFSIG_FILES))
+
+#
+# Clean up
+#
+clean:
+    $(CLEAN)

@@ -13,3 +13,9 @@ OCAMLINCLUDES =\
 include Files
 
 OCamlLibraryInstall($(MPINSTALL), $(LIB), filterfilter, $(FILTER_FILES))
+
+#
+# Clean up
+#
+clean:
+    $(CLEAN)

@@ -158,3 +158,9 @@ $(addsuffix .ml, $(PARSING_FILES)): %.ml: $(OCAMLSRC)/parsing/%.ml
 
 $(addsuffix .mli, $(PARSING_FILES)): %.mli: $(OCAMLSRC)/parsing/%.mli
 	$(LN) $(OCAMLSRC)/parsing/$*.mli $@
+
+#
+# Clean up
+#
+clean:
+    $(CLEAN)

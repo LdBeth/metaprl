@@ -3,3 +3,9 @@ OCAMLINCLUDES =\
 	-I $(ROOT)/mllib
 
 OCamlLibraryInstall($(MPINSTALL), $(LIB), refbase, $(REFBASE_FILES))
+
+#
+# Clean up
+#
+clean:
+    $(CLEAN)

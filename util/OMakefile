@@ -29,4 +29,4 @@ install: ocamldep
 	$(CP) -pf ocamldep $(MPBIN)
 
 clean:
-	$(RM) *.cm* *~ ocamldep.ml *.o Makefile.dep ocamldep
+	$(RM) -f *.cm* *~ ocamldep.ml *.o Makefile.dep ocamldep

@@ -120,3 +120,9 @@ else
     ROPT_ENS_LIB = $(LIB)/$(OPT_ENS_LIB) $(LIB)/$(LIBNAME)_ens$(EXT_LIB)
 
     OCamlProgram($(MPSERVER), $(LMFILES))
+
+#
+# Clean up
+#
+clean:
+    $(CLEAN)

@@ -18,3 +18,9 @@ MLZFILES =\
 include Files
 
 OCamlLibraryInstall($(MPINSTALL), $(LIB), filterphobos, $(PHOBOS_FILES))
+
+#
+# Clean up
+#
+clean:
+    $(CLEAN)
