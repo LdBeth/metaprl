@@ -296,20 +296,68 @@ let is_first_char char string =
 
 let level_expression_escape_string = "\\ \n\t\'[]"
 
+let incr_level_exp_n i le = 
+   let { le_const = c; le_vars = vars } = dest_level le in
+      let add1 lv = 
+        let { le_var = v; le_offset = o } = dest_level_var lv in
+            mk_level_var v (o + i)
+      in
+         mk_level (c + i) (List.map add1 vars)
+
+(*
 let scan_level_expression s =
   let le = ref (mk_const_level_exp 0) in
-
-  let rec scan_expression () = 
-    if (scan_at_byte_p s ilsquare) then
+  let rec scan_numbers () = 
+  if (scan_at_char_p s '\'') then 
+  (scan_next s;
+	     le := incr_level_exp !le;
+	     scan_numbers ())
+  else if scan_at_digit_p s then
+  (le := incr_level_exp_n (Num.int_of_num (scan_num s)) !le;
+      scan_numbers ()) in
+      let rec scan_atom () = 
+      if (scan_at_byte_p s ilsquare) then
       (scan_char_delimited_list s scan_expression '[' ']' '|';
        scan_whitespace s)
     else if scan_at_digit_p s then 
       (le := max_level_exp (mk_const_level_exp (Num.int_of_num (scan_num s))) !le; ())
     else (let v = scan_string s in
     scan_whitespace s; 
-    le := max_level_exp (mk_var_level_exp v) !le); () in 
-
-  scan_expression ();
+    le := max_level_exp (mk_var_level_exp v) !le); () 
+  and scan_expression () = 
+  scan_atom ();
+  scan_numbers ();
+  scan_expression ()
+  in scan_expression (); 
+  !le
+*)
+let scan_level_expression scanner =
+  let le = ref (mk_const_level_exp 0) in
+  let rec scan_numbers s = 
+    if (scan_at_char_p s '\'') then 
+      (scan_next s;
+       le := incr_level_exp !le;
+       scan_numbers s;
+       s)
+    else if scan_at_digit_p s then
+      (le := incr_level_exp_n (Num.int_of_num (scan_num s)) !le;
+       scan_numbers s;
+       s) 
+    else s in
+  let rec scan_atom s = 
+     let scan_expression_q () = scan_expression s in
+     if (scan_at_byte_p s ilsquare) then
+      (scan_char_delimited_list s scan_expression_q '[' ']' '|';
+       scan_whitespace s; ())
+    else if scan_at_digit_p s then 
+      (le := max_level_exp (mk_const_level_exp (Num.int_of_num (scan_num s))) !le; ())
+    else (let v = scan_string s in
+    scan_whitespace s; 
+    le := max_level_exp (mk_var_level_exp v) !le); s 
+   and scan_expression s2 = 
+    scan_numbers (scan_atom s2);
+    s2
+  in scan_expression scanner; 
   !le
 
 let make_le_scanner = make_scanner level_expression_escape_string "\n\t\r "
@@ -340,6 +388,22 @@ let mk_meta_param_from_strings value ptype =
   | "l" -> (MLevel value)
   |  t -> failwith "unknown special meta op-param"
  
+let extract_binding3 pl = 
+  match (List.map dest_param pl) with
+  (String "extended")::((String m)::((String v)::tl)) -> ["extended"; m; v]
+ | t  -> failwith "extract binding 3"
+
+let extract_binding2 pl = 
+  match (List.map dest_param pl) with
+  (String "extended")::((String v)::tl) -> ["extended"; v]
+ |(String "display")::((String v)::tl) -> ["display"; v]
+ | t  -> failwith "extract binding 2"
+
+let extract_binding1 pl = 
+  match (List.map dest_param pl) with
+  (String v)::tl -> [v]
+ | t  -> failwith "extract binding 1"
+
 let string_to_bindings value = 
   let l = String.length value in
   if l > ash_length then 
@@ -348,8 +412,8 @@ let string_to_bindings value =
     (if v = ascii_special_header then 
       let c = String.sub v 0 1 and v' = String.sub v 1 (l' - 1) in
       match c with 
-	"A" -> ["nuprl5_implementation3"; "extended"; "meta"; v']
-      | "D" -> ["nuprl5_implementation3"; "extended"; "meta"; v']
+	"A" -> ["nuprl5_implementation3"; "extended"; "abstraction"; v']
+      | "D" -> ["nuprl5_implementation3"; "extended"; "display"; v']
       | "S" -> ["nuprl5_implementation2"; "extended"; v']
       | "d" -> ["nuprl5_implementation2"; "display"; v']
       | "a" -> ["nuprl5_implementation1"; v']

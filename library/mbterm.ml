@@ -261,20 +261,24 @@ let rec term_of_mbterm mbterm =
 
 let rec print_param param =
   match (dest_param param) with
-    Number p ->  (print_int(int_of_num p)  ; print_string ":n ")
-  | String p ->   (print_string p ; print_string ":s ")
+    Number p -> (print_int(int_of_num p)  ; print_string ":n ")
+  | String p -> (print_string p ; print_string ":s ")
   | Token p -> (print_string p ; print_string ":t ")
-  | Level p ->  print_string "(print level not yet implemented):l "
-                                        (* let aux = function
-					   {le_const = i; le_vars = vars } ->
-					   (let rec loop l nodes=
-					   (match l with
-					   [] -> mbnode mbs_Level  ((mb_integer i)::nodes)
-					   | hd::tl ->  let aux2 = function
-					   { le_var = v; le_offset = i2 } ->
- 					   loop tl  ((mb_string v)::((mb_integer i2)::nodes))
-					   in aux2 (dest_level_var hd)) in loop vars [])
-					   in aux  (dest_level p)*)
+  | Level p -> let rec loop l =
+      (match l with
+	[] -> print_string "]}"
+      | hd::tl -> let 
+	    { le_var = v; le_offset = i2 } = (dest_level_var hd) in
+ 	print_string "(";
+	print_string v; print_int i2; 
+	print_string ")"; 
+	loop tl)
+  in let aux = function
+      {le_const = i; le_vars = vars } ->
+	(print_string "{"; print_int i ;print_string " [";
+	 loop vars)
+	  
+  in aux (dest_level p)
   | Var p -> (print_string p ; print_string ":v ")
   | ObId p -> (print_string "["; List.map print_param (dest_object_id p); print_string "]";
 	       print_string ":obid")
