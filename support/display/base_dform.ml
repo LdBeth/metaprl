@@ -255,9 +255,8 @@ dform bvar_df : except_mode[src] :: bvar{'v} = 'v
 (*
  * Rewriting.
  *)
-
 dform rewrite_df2 : "rewrite"{'redex; 'contractum} =
-   szone pushm[3] slot{'redex} " " longleftrightarrow " " slot{'contractum} popm ezone
+   szone pushm[0] szone slot{'redex} ezone hspace longleftrightarrow hspace szone slot{'contractum} ezone popm ezone
 
 let rec fmt_term_lst format_term buf = function
    [] -> raise(Invalid_argument("fmt_term_lst"))
