@@ -41,8 +41,9 @@ let _ =
  * so that we can do opname normalization lazily.
  *)
 type token = string
+type atom = string list
 
-let opname_token = String.create 1
+let opname_token = String.make 4 (Char.chr 0)
 
 type opname =
    { mutable opname_token : token;
@@ -84,9 +85,25 @@ and make_opname = function
 
 let normalize_opname { opname_token = token; opname_name = name } =
    if token = opname_token then
+      (*
+       * This is for reverse compatibility with opnames made
+       * from lists.
+       *)
       make_opname name
    else
       make_opname (token :: name)
+
+(*
+ * Atoms are the inner string list.
+ *)
+let intern opname =
+   if opname.opname_token == opname_token then
+      opname.opname_name
+   else
+      let name = (normalize_opname opname).opname_name in
+         opname.opname_token <- opname_token;
+         opname.opname_name <- name;
+         name
 
 (*
  * Equality on opnames.
