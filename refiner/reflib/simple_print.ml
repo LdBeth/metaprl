@@ -246,9 +246,9 @@ struct
     | _::_ as bterms ->
          (* format_space buf; *)
          format_char buf '{';
-                           format_pushm buf 1;
-                           format_btermlist buf bterms;
-                           format_char buf '}';
+         format_pushm buf 1;
+         format_btermlist buf bterms;
+         format_char buf '}';
          format_popm buf
 
    (*

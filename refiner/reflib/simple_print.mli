@@ -31,8 +31,6 @@
  *
  *)
 
-open Rformat
-open Opname
 open Refiner_sig
 open Simple_print_sig
 
