@@ -23,10 +23,12 @@ $env = new cons(
     INCPATH     => ["@{$env->{INCPATH}}"],
 
     ## Overrides
-    OCAMLC      => $native ? "ocamlopt.opt" : "ocamlc", # The OCaml compiler
-    OCAMLLINK   => $native ? "ocamlopt.opt" : "ocamlc", # The OCaml compiler
+    OCAMLC      => $native ? "ocamlopt.opt" : "ocamlc.opt", # The OCaml compiler
+    OCAMLLINK   => $native ? "ocamlopt.opt" : "ocamlc.opt", # The OCaml compiler
     SUFOBJ      => $native ? ".cmx"  : ".cmo",          # Object suffix
     SUFLIB      => $native ? ".cmxa" : ".cma",          # Library suffix
+    CPP         => "/lib/cpp",
+    CPPFLAGS    => "-D__OCAML",
 
     SUFSRC      => ".ml",       # The suffix for source files
     SUFSIG      => ".mli",      # The suffix for signature files
@@ -37,6 +39,7 @@ $env = new cons(
     SIGCOM      => "%OCAMLC %OCAMLCFLAGS %_IFLAGS -c %1", # How to compile signatures
     LINKCOM     => "%OCAMLLINK %OCAMLCFLAGS -o %> %MLLIBS %< %CCLIBS", # How to link objects
     ARCOM       => "%OCAMLLINK %OCAMLCFLAGS -a -o %> %<", # How to archive objects
+    CPPCOM      => "%CPP %CPPFLAGS %_IFLAGS -imacros %1:b.h %1 > %>", # How to run cpp
     LEXCOM      => "ocamllex %1",                         # How to lex a file
     YACCCOM     => "ocamlyacc %1",                        # How to yacc a file
     LNCOM       => "ln -sf %1:f %>",                      # How to link a file
