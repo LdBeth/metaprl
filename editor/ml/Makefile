@@ -257,14 +257,14 @@ tex:
 	+ @ if [ -f $(MP).opt ]; then $(MAKE) texopt; else $(MAKE) texbyte; fi
 
 texbyte:
-	+ @ $(MAKE) TEXBIN=$(MP).top TEXPROG=./mptop do_tex
+	+ @ $(MAKE) TEXBIN=$(MP).top TEXPROG=./mptop THELIB=theory.cma do_tex
 
 texopt:
-	+ @ $(MAKE) TEXBIN=$(MP).opt TEXPROG=./mpopt do_tex
+	+ @ $(MAKE) TEXBIN=$(MP).opt TEXPROG=./mpopt THELIB=theory.cmxa do_tex
 
 do_tex: $(TEXFILES)
 
-$(TEXDIR)/%/theory.tex: $(TEXBIN) $(TEXDIR)/%/print.ml
+$(TEXDIR)/%/theory.tex: $(TEXBIN) $(TEXDIR)/%/print.ml $(ROOT)/theories/%/$(THELIB)
 	$(TEXPROG) $(TEXDIR)/$*/print.ml
 
 # Real makefile

@@ -16,7 +16,7 @@
 
 open Printf
 
-module StringSet = 
+module StringSet =
   Set.Make(struct type t = string let compare = compare end)
 
 let free_structure_names = ref StringSet.empty
@@ -55,6 +55,8 @@ rule main = parse
       { struct_name lexbuf; main lexbuf }
   | "include" [' ' '\010' '\013' '\009' '\012'] +
       { struct_name lexbuf; main lexbuf }
+  | "derive" [' ' '\010' '\013' '\009' '\012'] +
+      { struct_name lexbuf; main lexbuf }
   | ['A'-'Z' '\192'-'\214' '\216'-'\222' ]
     (['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255'
       '\'' '0'-'9' ]) * '.'
@@ -65,11 +67,11 @@ rule main = parse
       { string lexbuf; main lexbuf }
   | "(*"
       { comment_depth := 1; comment lexbuf; main lexbuf }
-  | "'" [^ '\\'] "'" 
+  | "'" [^ '\\'] "'"
     { main lexbuf }
-  | "'" '\\' ['\\' '\'' 'n' 't' 'b' 'r'] "'" 
+  | "'" '\\' ['\\' '\'' 'n' 't' 'b' 'r'] "'"
     { main lexbuf }
-  | "'" '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'" 
+  | "'" '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
     { main lexbuf }
   | eof
       { () }
@@ -129,7 +131,7 @@ let prl_flag = ref false
 let prl_init_flag = ref false
 
 let rec find_file name = function
-   [] -> 
+   [] ->
       raise Not_found
  | ext::exts ->
       try
@@ -146,11 +148,11 @@ let find_dependency_cmi modname deps =
 let find_dependency_cmo_cmx modname (cmo_deps,cmx_deps) =
    let name = String.uncapitalize modname in
    let cmi_file =
-      try 
+      try
          Some ((find_file name [".mli"; ".cmi"])^".cmi")
       with Not_found ->
          None
-   in 
+   in
    let cmx_file =
       try
          Some ((find_file name [".ml"; ".cmx"; ".cmo"])^".cmx")
@@ -166,7 +168,7 @@ let find_dependency_cmo_cmx modname (cmo_deps,cmx_deps) =
          cmo_deps, cmx :: cmx_deps
     | None, None ->
          cmo_deps, cmx_deps
-   
+
 let (depends_on, escaped_eol) =
   match Sys.os_type with
   | "Unix" | "Win32" -> (": ", "\\\n    ")
@@ -238,5 +240,5 @@ let _ =
      "-noprl", Arg.Clear prl_flag, "add dependencies for PRL files"
     ] file_dependencies usage;
   exit 0
-    
+
 }

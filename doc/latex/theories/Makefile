@@ -11,6 +11,8 @@ endif
 
 include $(ROOT)/mk/preface
 
+NAME=all-theories
+
 .PHONY: doc
 
 all: doc
@@ -18,7 +20,8 @@ opt: doc
 
 INPUTS = ../inputs/metaprl.bib\
 	../inputs/metaprl.tex\
-	all-theories.tex
+	../inputs/section-hack.sty\
+	$(NAME).tex
 
 TEXTHEORIES=\
 	base\
@@ -33,23 +36,29 @@ doc:
 	+ @ $(MAKE) -C $(ROOT)/editor/ml TEXTHEORIES="$(TEXTHEORIES)" tex
 	+ @ $(MAKE) $(ROOT)/doc/ps/theories/theories.pdf
 
-all-theories.pdf: $(INPUTS) $(TEXFILES)
-	touch all-theories.ind
-	TEXINPUTS=$(TEXINPUTS) pdflatex all-theories
-	if [ grep -q \\\citation all-theories.aux ]; then \
-   	TEXINPUTS=$(TEXINPUTS) bibtex all-theories; \
-		TEXINPUTS=$(TEXINPUTS) pdflatex all-theories; \
-		TEXINPUTS=$(TEXINPUTS) pdflatex all-theories; \
+$(NAME).aux: $(INPUTS) $(TEXFILES)
+	TEXINPUTS=$(TEXINPUTS) pdflatex $(NAME)
+	if [ grep -q \\\citation $(NAME).aux ]; then \
+		TEXINPUTS=$(TEXINPUTS) bibtex $(NAME); \
+		TEXINPUTS=$(TEXINPUTS) pdflatex $(NAME); \
+		TEXINPUTS=$(TEXINPUTS) pdflatex $(NAME); \
 	fi
-	TEXINPUTS=$(TEXINPUTS) makeindex all-theories
-	TEXINPUTS=$(TEXINPUTS) pdflatex all-theories
-	cp -a all-theories.pdf $(ROOT)/doc/ps/theories/theories.pdf
 
-$(ROOT)/doc/ps/theories/theories.pdf: all-theories.pdf
-	$(CP) all-theories.pdf $@
+$(NAME).ind: $(INPUTS) $(TEXFILES)
+	+ @ $(MAKE) $(NAME).aux
+	TEXINPUTS=$(TEXINPUTS) makeindex $(NAME)
+
+$(NAME).pdf: $(INPUTS) $(TEXFILES) $(NAME).ind
+	TEXINPUTS=$(TEXINPUTS) pdflatex $(NAME)
+
+$(NAME).dvi: $(INPUTS) $(TEXFILES) $(NAME).ind
+	TEXINPUTS=$(TEXINPUTS) latex $(NAME)
+
+$(ROOT)/doc/ps/theories/theories.pdf: $(NAME).pdf
+	$(CP) $(NAME).pdf $@
 
 clean::
-	$(RM) *.log *.aux *.idx *.ilg *.ind *.pdf
+	$(RM) *.log *.aux *.idx *.ilg *.ind *.pdf *.ps *.dvi *.blg *.bbl *.out
 
 # Real makefile
 include $(ROOT)/mk/rules
