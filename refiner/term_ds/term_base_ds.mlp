@@ -188,11 +188,12 @@ struct
           core = Term t}
 
    let mk_term op bterms =
-      if op.op_name == var_opname
-         then raise (Failure "Term_ds.mk_term : variables should not be created with mk_term")
-      else 
-         { free_vars = bterms_free_vars bterms;
-           core = Term { term_op = op; term_terms = bterms }}
+      match op, bterms with 
+         { op_name = opname; op_params = [Var v] }, [] when opname == var_opname ->
+            mk_var_term v
+       | _ -> 
+            { free_vars = bterms_free_vars bterms;
+              core = Term { term_op = op; term_terms = bterms }}
 
    let mk_op name params = { op_name = name; op_params = params }
 
