@@ -80,14 +80,14 @@ BUILDING METAPRL
    the ocaml and ocaml/camlp4 library directories are located.  For example,
    config.local may contain the following lines:
 
-      CAMLLIB=/sw-custom/lib/ocaml
-      CAMLP4LIB=/sw-custom/lib/ocaml/camlp4
+      CAMLLIB=/usr/local/lib/ocaml
+      CAMLP4LIB=/usr/local/lib/ocaml/camlp4
 
-6. If you want readline and ncurses support and have Fink installed you
-   might want to add "-I/sw/include -L/sw/lib" to the CCC= line in
-   mk/config and "OCAML_LINK_FLAGS=-cclib -L/sw/lib" to mk/config.local.
-   Otherwise, you'll need to set the appropriate options in mk/config to
-   false.
+6. If you have Fink installed and want readline and ncurses support in
+   MetaPRL (for, e.g. command history and editing) you might want to add
+   "-I/sw/include -L/sw/lib" to the CCC= line in mk/config and
+   "OCAML_LINK_FLAGS=-cclib -L/sw/lib" to mk/config.local.  If you don't have
+   readline and ncurses, you need to disable them in mk/config.
 
 7. From the MetaPRl source directory (the directory with this file), run
    "omake" to build MetaPRL.
