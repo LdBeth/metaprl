@@ -5314,14 +5314,14 @@ end
 
 (**************************************************************)
 
-let prover hyps concl =
- let (input_map,renamed_termlist) = renam_free_vars (hyps @ [concl]) in
- let (ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof) = prove renamed_termlist "J" in
+let gen_prover logic calculus hyps concls =
+ let (input_map,renamed_termlist) = renam_free_vars (hyps @ concls) in
+ let (ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof) = prove renamed_termlist logic in
    if ftree = Empty then
     raise (Failure "Formula invalid")
    else
      (try
-       let sequent_proof = reconstruct ftree red_ordering sigmaQ ext_proof "J" "LJ" in
+       let sequent_proof = reconstruct ftree red_ordering sigmaQ ext_proof logic calculus in
             (* transform types and rename constants *)
         (* we can transform the eigenvariables AFTER proof reconstruction since *)
         (* new delta_0 constants may have been constructed during rule permutation *)
@@ -5331,6 +5331,8 @@ let prover hyps concl =
         Failure("not_reconstructible") -> (* this possibility should of course be eliminated *)
           raise (Failure "deadlock unsolvable")
      )
+
+let prover hyps concl = gen_prover "J" "LJ" hyps [concl]
 
 (************* test with propositional proof reconstruction ************)
 
