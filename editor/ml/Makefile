@@ -1,8 +1,10 @@
 #
 # Nuprl-light editor.
 #
-DIR := editor/ml
-ROOT := ../..
+DIR = editor/ml
+ROOT = ../..
+
+include $(ROOT)/mk/preface
 
 INCLUDE = -I .\
 	-I $(ROOT)/theories/tactic\
@@ -15,14 +17,14 @@ INCLUDE = -I .\
 	-I $(ENSROOT)/lib\
 	-I $(CAMLP4LIB)
 
-OCAMLDEPFLAGS := -prl
+OCAMLDEPFLAGS = -prl
 
 ########################################################################
 # LOCAL FILES
 ########################################################################
 
 # Common files
-MLZFILES :=\
+MLZFILES =\
 	io_proof_type\
 	proof_type\
 	package_type\
@@ -30,7 +32,7 @@ MLZFILES :=\
 	shell_p4_type
 
 # Library files
-NLFILES :=\
+NLFILES =\
 	io_proof_type\
 	io_proof\
 	proof_type\
@@ -47,7 +49,7 @@ NLFILES :=\
 	shell_p4_type\
 	shell
 
-NL2FILES :=\
+NL2FILES =\
 	nl_version\
 	shell_p4\
 	shell_nl\
@@ -55,20 +57,20 @@ NL2FILES :=\
 	nl\
 	nl_top
 
-RUNFILES :=\
+RUNFILES =\
 	nl_version\
 	shell_p4\
 	test\
 	nl
 
-TOPFILES :=\
+TOPFILES =\
 	nl_version\
 	shell_nl\
 	nl_top
 
-RCMOFILES := $(addsuffix .cmo, $(RUNFILES))
-TCMOFILES := $(addsuffix .cmo, $(TOPFILES))
-TCMXFILES := $(addsuffix .cmx, $(TOPFILES))
+RCMOFILES = $(addsuffix .cmo, $(RUNFILES))
+TCMOFILES = $(addsuffix .cmo, $(TOPFILES))
+TCMXFILES = $(addsuffix .cmx, $(TOPFILES))
 
 ########################################################################
 # ENSEMBLE

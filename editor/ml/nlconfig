@@ -1,5 +1,3 @@
-#!/bin/csh -f
-
 #
 # Configure Ensemble
 #
@@ -22,3 +20,10 @@ endif
 # Use the local copy of the library
 #
 setenv NLLIB ../../lib
+
+#
+# Camlp4 directory
+#
+if ( ! $?CAMLP4LIB ) then
+   setenv CAMLP4LIB /usr/lib/camlp4
+endif

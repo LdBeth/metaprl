@@ -1,6 +1,5 @@
 # -*- Mode: makefile -*-
 #
-# Script to generate a program.
 # Assumes variables:
 #    MFILES: root names of files
 #    LMFILES: root names of library files
@@ -9,63 +8,7 @@
 #    MAIN: root name of generated program
 #
 
-#
-# Config
-#
-ifeq ($(OSTYPE),win32)
-   EXE = .exe
-endif
-ifeq ($(OSTYPE),cygwin32)
-   EXE = .exe
-endif
-
-ifndef CAMLLIB
-   CAMLLIB = /usr/lib/ocaml
-endif
-
-ifndef CAMLP4LIB
-   CAMLP4LIB = /usr/lib/camlp4
-endif
-
-ifndef NLLIB
-   NLLIB=$(ROOT)/lib
-endif
-
-ifdef INCAMLP4
-   INCLUDE := $(INCLUDE) -I $(CAMLP4LIB)
-endif
-
-#
-# OCAML commands
-#
-ifndef CAMLP4
-   CAMLP4 = camlp4o$(EXE)
-endif
-ifndef OCAMLC
-   OCAMLC = ocamlc$(EXE)
-endif
-ifndef OCAMLCP
-   OCAMLCP = $(OCAMLC)
-   OCAMLCPOPT =
-endif
-ifndef OCAMLMKTOP
-   OCAMLMKTOP = ocamlmktop
-endif
-ifndef OCAMLOPT
-   OCAMLOPT = ocamlopt$(EXE)
-endif
-ifndef OCAMLLEX
-   OCAMLLEX = ocamllex$(EXE)
-endif
-ifndef OCAMLYACC
-   OCAMLYACC = ocamlyacc$(EXE)
-endif
-ifndef PRLC
-   PRLC = $(ROOT)/bin/prlc$(EXE) -lib $(ROOT)/lib
-endif
-ifndef INLINE
-   INLINE=5
-endif
+include $(ROOT)/mk/preface
 
 #
 # Use this when compiling with threads.
