@@ -120,6 +120,20 @@ let identity x = x
 let unit_term = mk_simple_term nil_opname []
 
 (*
+ * Normalizer.
+ *)
+let normalize info =
+   let convert =
+      { term_f  = normalize_term;
+        proof_f = identity;
+        ctyp_f  = identity;
+        expr_f  = identity;
+        item_f  = identity
+      }
+   in
+      summary_map convert info
+
+(*
  * When a StrFilterCache ot SigFilterCache is
  * saved, comments are not saved.
  *)
@@ -211,7 +225,7 @@ struct
     | Implementation _ ->
          raise (Failure "RawSigInfo.marshal")
    let unmarshal info =
-      Interface info
+      Interface (normalize info)
 end
 
 (*
@@ -274,7 +288,7 @@ struct
     | Interface _ ->
          raise (Failure "RawStrInfo.marshal")
    let unmarshal info =
-      Implementation info
+      Implementation (normalize info)
 end
 
 (*
@@ -440,6 +454,9 @@ module StrFilterCache = MakeFilterCache (SigMarshal) (StrMarshal) (SummaryBase)
 
 (*
  * $Log$
+ * Revision 1.11  1998/04/09 18:25:48  jyh
+ * Working compiler once again.
+ *
  * Revision 1.10  1998/04/08 14:57:06  jyh
  * ImpDag is in mllib.
  *

@@ -203,7 +203,9 @@ sig
    type ctyp
    type item
 
-   val extract : (proof, ctyp, expr, item) module_info -> string -> (item * (int * int)) list
+   val extract : (proof, ctyp, expr, item) module_info ->
+      (module_path * ctyp resource_info) list ->
+      string -> (item * (int * int)) list
 end
 
 (*
@@ -239,20 +241,23 @@ struct
             eprintf "Adding resource: %s.%s%t" (string_of_path path) rsrc.resource_name eflush;
          FilterCache.add_resource cache path rsrc
       in
-      let nresources' = get_resources info in
-      let nresources =
-         let rec collect resources = function
+      let nresources, nresources' =
+         (*
+          * nresources: all the resources
+          * nresources': just the new ones
+          *)
+         let rec collect nresources nresources' = function
             rsrc::tl ->
-               if mem_resource rsrc resources then
-                  collect resources tl
+               if mem_resource rsrc nresources then
+                  collect nresources nresources' tl
                else
-                  collect (rsrc :: resources) tl
+                  collect (rsrc :: nresources) (rsrc :: nresources') tl
           | [] ->
-               resources
+               nresources, nresources'
          in
-            collect resources nresources'
+            collect resources [] (get_resources info)
       in
-         List.iter add_resource nresources;
+         List.iter add_resource nresources';
          
          (* Add all the infix words *)
          List.iter add_infix (get_infixes info);
@@ -632,7 +637,7 @@ struct
     * Extract an item list.
     *)
    let extract proc =
-      Info.extract (FilterCache.info proc.cache) proc.name
+      Info.extract (FilterCache.info proc.cache) (FilterCache.resources proc.cache) proc.name
    
    (*
     * Check the implementation with its interface.
@@ -984,6 +989,9 @@ END
 
 (*
  * $Log$
+ * Revision 1.13  1998/04/09 18:25:50  jyh
+ * Working compiler once again.
+ *
  * Revision 1.12  1998/04/09 15:26:32  jyh
  * Added strip_mfunction.
  *

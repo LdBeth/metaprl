@@ -1413,18 +1413,19 @@ let check_rule
     | h::t ->
          match h with
             Rule { rule_name = name'; rule_params = params'; rule_stmt = stmt' } ->
-               if name' = name then
-                  if not (check_params params' params) then
-                     implem_error (sprintf "Rule %s: argument lists do not match" name)
-                  else if not (meta_alpha_equal stmt' stmt) then
-                     let s' = string_of_mterm stmt' in
-                     let s = string_of_mterm stmt in
-                        implem_error (sprintf "Rule %s: specification mismatch:\n%s\nis not equal to\n%s\n" (**)
-                                         name s' s)
+               let stmt' = strip_mfunction stmt' in
+                  if name' = name then
+                     if not (check_params params' params) then
+                        implem_error (sprintf "Rule %s: argument lists do not match" name)
+                     else if not (meta_alpha_equal stmt' stmt) then
+                        let s' = string_of_mterm stmt' in
+                        let s = string_of_mterm stmt in
+                           implem_error (sprintf "Rule %s: specification mismatch:\n%s\nis not equal to\n%s\n" (**)
+                                            name s' s)
+                     else
+                        ()
                   else
-                     ()
-               else
-                  search t
+                     search t
           | _ ->
                search t
    in
@@ -1686,6 +1687,9 @@ and check_implementation { info_list = implem } { info_list = interf } =
 
 (*
  * $Log$
+ * Revision 1.10  1998/04/09 18:25:52  jyh
+ * Working compiler once again.
+ *
  * Revision 1.9  1998/04/06 21:31:17  jyh
  * Items must be reversed.
  *

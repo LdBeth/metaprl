@@ -462,12 +462,6 @@ struct
                let { base = base; summaries = summaries } = cache in
                let info = Base.find base path SigMarshal.select in
                let info' = SigMarshal.unmarshal (Base.info base info) in
-                  if debug_resource then
-                     begin
-                        eprintf "Summary: %s%t" (string_of_path path) eflush;
-                        eprint_info info'
-                     end;
-
                   (* This module gets listed in the inline stack *)
                   cache.summaries <- info :: summaries;
 
@@ -475,6 +469,11 @@ struct
                   inline_sig_components arg path info (info_items info');
 
                   (* Call the hook *)
+                  if debug_resource then
+                     begin
+                        eprintf "Summary: %s%t" (string_of_path path) eflush;
+                        eprint_info info'
+                     end;
                   vals := inline_hook cache (path, info') !vals;
 
                   info
@@ -561,6 +560,9 @@ end
    
 (*
  * $Log$
+ * Revision 1.4  1998/04/09 18:25:49  jyh
+ * Working compiler once again.
+ *
  * Revision 1.3  1998/02/23 14:46:03  jyh
  * First implementation of binary file compilation.
  *

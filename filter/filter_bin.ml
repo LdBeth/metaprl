@@ -9,6 +9,7 @@ open Printf
 
 open Debug
 
+open Filter_type
 open Filter_summary
 open Filter_summary_type
 open Filter_cache
@@ -32,7 +33,9 @@ sig
    type ctyp
    type item
 
-   val extract : (proof, ctyp, expr, item) module_info -> string -> (item * (int * int)) list
+   val extract : (proof, ctyp, expr, item) module_info ->
+      (module_path * ctyp resource_info) list ->
+      string -> (item * (int * int)) list
    val compile : (item * (int * int)) list -> unit
 end
 
@@ -67,7 +70,7 @@ struct
       in
       let cache = FilterCache.create !include_path in
       let info, _ = FilterCache.load cache path kind InterfaceType inline_hook () in
-      let items = Info.extract (FilterCache.info info) path in
+      let items = Info.extract (FilterCache.info info) (FilterCache.resources info) path in
          Info.compile items
 end
 
@@ -141,6 +144,9 @@ let _ = Printexc.catch main ()
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/09 18:25:47  jyh
+ * Working compiler once again.
+ *
  * Revision 1.1  1998/03/03 04:05:59  jyh
  * Added filter bin.
  *

@@ -11,6 +11,8 @@ open Opname
 open Term
 open Term_util
 
+let max_column = 120
+
 (************************************************************************
  * PRINTERS                                                             *
  ************************************************************************)
@@ -320,7 +322,7 @@ let format_simple_level_exp = format_level_exp
 let print_simple_level_exp_fp out p =
    let buf = new_buffer () in
       format_level_exp buf p;
-      print_to_channel 80 buf out
+      print_to_channel max_column buf out
 
 let print_simple_level_exp = print_simple_level_exp_fp stdout
 
@@ -329,7 +331,7 @@ let prerr_simple_level_exp = print_simple_level_exp_fp stderr
 let string_of_level_exp p =
    let buf = new_buffer () in
       format_level_exp buf p;
-      print_to_string 80 buf
+      print_to_string max_column buf
 
 (* Params *)
 let format_simple_param = format_param
@@ -337,7 +339,7 @@ let format_simple_param = format_param
 let print_simple_param_fp out p =
    let buf = new_buffer () in
       format_param buf p;
-      print_to_channel 80 buf out
+      print_to_channel max_column buf out
 
 let print_simple_param = print_simple_param_fp stdout
 
@@ -346,7 +348,7 @@ let prerr_simple_param = print_simple_param_fp stderr
 let string_of_param p =
    let buf = new_buffer () in
       format_param buf p;
-      print_to_string 80 buf
+      print_to_string max_column buf
 
 (* Terms *)
 let format_simple_term = format_term
@@ -354,7 +356,7 @@ let format_simple_term = format_term
 let print_simple_term_fp out term =
    let buf = new_buffer () in
       format_term buf term;
-      print_to_channel 80 buf out
+      print_to_channel max_column buf out
 
 let print_simple_term = print_simple_term_fp stdout
 
@@ -363,7 +365,7 @@ let prerr_simple_term = print_simple_term_fp stderr
 let string_of_term term =
    let buf = new_buffer () in
       format_term buf term;
-      print_to_string 800 buf
+      print_to_string max_column buf
 
 (* Terms *)
 let format_simple_bterm buf = format_bterm buf
@@ -371,7 +373,7 @@ let format_simple_bterm buf = format_bterm buf
 let print_simple_bterm_fp out term =
    let buf = new_buffer () in
       format_bterm buf term;
-      print_to_channel 80 buf out
+      print_to_channel max_column buf out
 
 let print_simple_bterm = print_simple_bterm_fp stdout
 
@@ -380,7 +382,7 @@ let prerr_simple_bterm = print_simple_bterm_fp stderr
 let string_of_bterm term =
    let buf = new_buffer () in
       format_bterm buf term;
-      print_to_string 80 buf
+      print_to_string max_column buf
 
 (*
  * MetaTerms.
@@ -390,7 +392,7 @@ let format_simple_mterm = format_mterm
 let print_simple_mterm_fp out mterm =
    let buf = new_buffer () in
       format_mterm buf mterm;
-      print_to_channel 80 buf out
+      print_to_channel max_column buf out
 
 let print_simple_mterm = print_simple_mterm_fp stdout
 
@@ -399,7 +401,7 @@ let prerr_simple_mterm = print_simple_mterm_fp stderr
 let string_of_mterm mterm =
    let buf = new_buffer () in
       format_mterm buf mterm;
-      print_to_string 80 buf
+      print_to_string max_column buf
 
 (*
  * Addresses.
@@ -412,6 +414,9 @@ let prerr_simple_address = print_simple_address_fp stderr
 
 (*
  * $Log$
+ * Revision 1.5  1998/04/09 18:26:00  jyh
+ * Working compiler once again.
+ *
  * Revision 1.4  1998/03/20 22:16:20  eli
  * Eli: Changed integer parameters to Num.num's.
  *

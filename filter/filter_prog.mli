@@ -4,6 +4,7 @@
 
 open Term
 
+open Filter_type
 open Filter_summary
 open Filter_cache
 
@@ -11,15 +12,20 @@ open Filter_cache
  * Program extraction from sepc.
  *)
 val extract_sig :
-   (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info -> string ->
-   (MLast.sig_item * (int * int)) list
+   (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info ->
+   (module_path * MLast.ctyp resource_info) list ->
+   string -> (MLast.sig_item * (int * int)) list
 
 val extract_str :
-   (proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info -> string ->
-   (MLast.str_item * (int * int)) list
+   (proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info ->
+   (module_path * MLast.ctyp resource_info) list ->
+   string -> (MLast.str_item * (int * int)) list
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/09 18:25:52  jyh
+ * Working compiler once again.
+ *
  * Revision 1.2  1998/02/23 14:46:16  jyh
  * First implementation of binary file compilation.
  *

@@ -27,7 +27,7 @@ let registry_types = ref []
  * The registry should be stored in the lib directory.
  *)
 let registry_file =
-   try Filename.concat (Sys.getenv "NLLIB") "library/registry.txt" with
+   try Filename.concat (Sys.getenv "NLLIB") "registry.txt" with
       Not_found ->
          raise (Failure "environment variable NLLIB is not defined")
 
@@ -207,6 +207,9 @@ let generate_registry_declarations ofile file =
 
 (*
  * $Log$
+ * Revision 1.8  1998/04/09 18:25:57  jyh
+ * Working compiler once again.
+ *
  * Revision 1.7  1998/04/08 20:51:37  lolorigo
  * reg file
  *

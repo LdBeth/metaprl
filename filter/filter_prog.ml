@@ -358,12 +358,45 @@ let declare_magic_block loc { magic_code = items } =
    items
 
 (*
+ * Collect the inherited resources.
+ *)
+let interf_resources resources loc =
+   let rec loop names = function
+      (mname, { resource_name = name;
+                resource_extract_type = extract_type;
+                resource_improve_type = improve_type;
+                resource_data_type = data_type
+       } as rsrc)::t ->
+         if debug_resource then
+            if mname = [] then
+               eprintf "Resource: %s%t" name eflush
+            else
+               eprintf "Resource: %s/%s%t" (string_of_path mname) name eflush;
+         if not (List.mem name names) then
+            let ctyp =
+               if mname = [] then
+                  (<:ctyp< $lid: name$ >>)
+               else
+                  let ctyp = parent_path_ctyp loc mname in
+                     (<:ctyp< $ctyp$ . $lid: name$ >>)
+            in
+               (<:sig_item< value $name$ : $ctyp$ >>) :: (loop (name :: names) t)
+         else
+            loop names t
+   
+    | [] ->
+         []
+   in
+      loop [] resources
+
+(*
  * Trailer declares a new refiner.
  *)
-let interf_postlog loc =
+let interf_postlog info loc =
    let refiner_decl = (<:sig_item< value $refiner_id$ : $refiner_ctyp loc$ >>) in
    let dformer_decl = (<:sig_item< value $dformer_id$ : $dformer_ctyp loc$ >>) in
-      [refiner_decl; dformer_decl]
+   let resources = interf_resources info loc in
+      refiner_decl :: dformer_decl :: resources
 
 (*
  * Extract a signature item.
@@ -442,13 +475,13 @@ let extract_sig_item (item, loc) =
 (*
  * Extract a signature.
  *)
-let extract_sig info path =
+let extract_sig info resources path =
    let _ =
       if debug_filter_prog then
          eprintf "Filter_prog.extract_sig: begin%t" eflush
    in
    let items = List_util.flat_map extract_sig_item (info_items info) in
-   let postlog = interf_postlog (0, 0) in
+   let postlog = interf_postlog resources (0, 0) in
       List.map (fun item -> item, (0, 0)) (items @ postlog)
 
 (************************************************************************
@@ -1263,7 +1296,7 @@ let extract_str_item proc (item, loc) =
 (*
  * Extract a signature.
  *)
-let extract_str info name =
+let extract_str info resources name =
    let proc = { imp_resources = [] } in
    let prolog = implem_prolog proc (0, 0) in
    let items = List_util.flat_map (extract_str_item proc) (info_items info) in
@@ -1272,6 +1305,9 @@ let extract_str info name =
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/09 18:25:51  jyh
+ * Working compiler once again.
+ *
  * Revision 1.2  1998/02/23 14:46:14  jyh
  * First implementation of binary file compilation.
  *

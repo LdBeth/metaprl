@@ -2,6 +2,9 @@
  * Utilities on terms.
  *
  * $Log$
+ * Revision 1.5  1998/04/09 18:26:01  jyh
+ * Working compiler once again.
+ *
  * Revision 1.4  1998/04/09 15:26:47  jyh
  * Added strip_mfunction.
  *
@@ -191,14 +194,17 @@ let meta_for_all2 f t1 t2 =
     | MetaIff (a1, b1), MetaIff (a2, b2) ->
          aux (a1, a2) & aux (b1, b2)
     | _ ->
-         raise (Invalid_argument "meta_for_all2")
+         raise (Failure "meta_for_all2")
    in
       aux (t1, t2)
 
 (*
  * Alpha equality.
  *)
-let meta_alpha_equal = meta_for_all2 alpha_equal
+let meta_alpha_equal t1 t2 =
+   try meta_for_all2 alpha_equal t1 t2 with
+      Failure "meta_for_all2" ->
+         false
 
 (************************************************************************
  * UTILITIES                                                            *

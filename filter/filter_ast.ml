@@ -44,8 +44,7 @@ let build_printed_term loc t =
          let i' = string_of_int i in
             <:expr< $int:i'$ >>
     | ML_Num n ->
-         let i' = Num.string_of_num n in
-            <:expr< $int:i'$ >>
+         <:expr< $uid:"Num"$ . $lid:"num_of_string"$ $str:Num.string_of_num n$ >>
     | ML_String s ->
          <:expr< $str:s$ >>
     | ML_List l ->
@@ -134,6 +133,9 @@ let () = ()
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/09 18:25:47  jyh
+ * Working compiler once again.
+ *
  * Revision 1.2  1998/03/20 22:15:42  eli
  * Eli: Changed integer parameters to Num.num's.
  *
