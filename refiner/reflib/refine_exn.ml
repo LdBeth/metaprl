@@ -175,11 +175,12 @@ let format_explanation buf s =
  * Print a refinement error.
  *)
 let format_refine_error db buf printers name error =
-   let rec format indent name error =
+   let rec format name error =
       format_newline buf;
-      format_pushm buf indent;
-      format_string buf name;
-      format_string buf ": ";
+      format_pushm buf 3;
+      format_string buf (name ^ ":");
+      format_space buf;
+      format_szone buf;
       begin match error with
          GenericError ->
             format_string buf "Generic refiner error"
@@ -208,14 +209,14 @@ let format_refine_error db buf printers name error =
             format_space buf;
             printers.format_term db buf t
        | StringWrapError (name, e) ->
-            format 3 name e
+            format name e
        | SubgoalError (i, name, e) ->
             format_int buf i;
             format_space buf;
-            format 3 name e
+            format name e
        | PairError (name1, e1, name2, e2) ->
-            format 3 name1 e1;
-            format 3 name2 e2
+            format name1 e1;
+            format name2 e2
        | NodeError (s, t, el) ->
             format_string buf s;
             format_space buf;
@@ -294,7 +295,7 @@ let format_refine_error db buf printers name error =
        | RewriteAddressError (a, name, e) ->
             format_address buf a;
             format_space buf;
-            format 3 name e
+            format name e
        | RewriteFreeContextVar(v1,v2) ->
             format_string buf "FreeContextVar: ";
             format_string buf (string_of_symbol v1);
@@ -302,9 +303,10 @@ let format_refine_error db buf printers name error =
             format_string buf (string_of_symbol v2);
             format_string buf ")";
       end;
+      format_ezone buf;
       format_popm buf
    in
-      format 0 name error
+      format name error
 
 (*
  * Convert an exception to a string.
