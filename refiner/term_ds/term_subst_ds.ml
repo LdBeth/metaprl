@@ -461,8 +461,8 @@ struct
 
    let rec match_terms subst bvars tm1 tm2 =
       match get_core tm1, get_core tm2 with
-         FOVar v, FOVar v'
-            when List.mem_assoc v bvars && v' = List.assoc v bvars -> subst
+         FOVar v, FOVar v' when List.mem_assoc v bvars ->
+            if v' = List.assoc v bvars then subst else RAISE_GENERIC_EXN
        | FOVar v, _ ->
             begin try
                let tm1 = List.assoc v subst in
