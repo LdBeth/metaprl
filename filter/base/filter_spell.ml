@@ -32,16 +32,9 @@ open Lm_printf
  *)
 let tmp_magic = 0x2557f3ed
 
-let tmp_filename, local_words =
-   let lib =
-      try Sys.getenv "MPLIB" with
-         Not_found ->
-            raise (Invalid_argument "MPLIB environment variable in undefined")
-   in
-      lib ^ "/english_dictionary.dat", lib ^ "/words"
-
-let ispell_filename =
-   ".ispell_english"
+let tmp_filename = Env_arg.lib ^ "/english_dictionary.dat"
+let local_words = Env_arg.lib ^ "/words"
+let ispell_filename = ".ispell_english"
 
 let home_filename =
    let home =

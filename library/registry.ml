@@ -61,15 +61,11 @@ let registry_types = ref []
  * The registry file should be stored in the lib directory.
  *)
 let get_registry_file () =
-   try Filename.concat (Sys.getenv "MPLIB") "registry.txt" with
-      Not_found ->
-         raise (Failure "environment variable MPLIB is not defined")
+   Filename.concat Env_arg.lib "registry.txt"
 
 let token_table = (Hashtbl.create 3)
 let index_table = (Hashtbl.create 3)
-let token_file = try Filename.concat (Sys.getenv "MPLIB") "mbs-mpl.txt" with
-      Not_found ->
-         raise (Failure "environment variable MPLIB is not defined")
+let token_file = Filename.concat Env_arg.lib "mbs-mpl.txt"
 
 (*
  * Define a particular type of registry.

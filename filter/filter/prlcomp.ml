@@ -74,10 +74,7 @@ let file_interactive name =
 (*
  * Environment.
  *)
-let lib =
-   ref (try Sys.getenv "MPLIB" with
-           Not_found ->
-              raise (Invalid_argument "MPLIB environment variable is undefined"))
+let lib = ref Env_arg.lib
 
 let set_lib s =
    let var = sprintf "MPLIB=%s" s in

@@ -23,7 +23,13 @@ type ('a, 'b) var_set = string -> 'a ref -> 'b -> unit
 (*
  * Environment variables are prefixed with this string.
  *)
-let environ_prefix = "MP_"
+let environ_prefix = "MP"
+
+let lib =
+   let name = environ_prefix ^ "LIB" in
+   try Sys.getenv name with
+      Not_found ->
+         raise (Invalid_argument ("Env_arg: " ^ name ^ " environment variable must be defined"))
 
 (*
  * Master list of args.
@@ -35,7 +41,7 @@ let param_args = ref []
  *)
 let if_getenv key f =
    let key = String.uppercase key in
-   let key = environ_prefix ^ key in
+   let key = environ_prefix ^ "_" ^ key in
       try f (Sys.getenv key) with
          Not_found -> ()
 

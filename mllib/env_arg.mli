@@ -91,6 +91,11 @@ val usage : (string * Arg.spec * string) list -> string -> unit
 val parse : (string * Arg.spec * string) list -> (string -> unit) -> string -> unit
 
 (*
+ * Library directory
+ *)
+val lib : string
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

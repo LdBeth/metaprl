@@ -25,7 +25,6 @@
  * @end[license]
  *)
 
-val mplib : string option
 val mproot : string option
 
 (*!

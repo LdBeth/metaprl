@@ -110,6 +110,7 @@ let string_of_file mplib filename =
        | None ->
            ""
 
+let mplib = Some Env_arg.lib
 let string_of_lib_file = string_of_file mplib
 let string_of_root_file = string_of_file mproot
 

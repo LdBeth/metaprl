@@ -239,16 +239,11 @@ struct
     *)
    let main _ =
       install_debug_printer Shell_state.print_term_fp;
-      let mplib =
-         try Sys.getenv "MPLIB" with
-            Not_found ->
-               raise (Invalid_argument "MPLIB environment variable in undefined")
-      in
       let eval_include inc =
          let _ = Toploop.execute_phrase false Format.std_formatter (Ptop_dir ("directory", Pdir_string inc)) in
             ()
       in
-         eval_include mplib;
+         eval_include Env_arg.lib;
          List.iter eval_include (Shell_state.get_includes ());
          if not
             (Toploop.execute_phrase false Format.std_formatter

@@ -26,12 +26,6 @@
  *)
 open Lm_printf
 
-let mplib =
-   try Some (Sys.getenv "MPLIB") with
-      Not_found ->
-         eprintf "Mp_env_boot.print_file: the MPLIB environment variable is not defined@.";
-         None
-
 let mproot =
    try Some (Sys.getenv "MP_ROOT") with
       Not_found ->
