@@ -293,11 +293,12 @@ struct
     * Perform all the checks.
     *)
    let check tree =
-      check_red tree;
-      check_black tree;
-      check_sort tree;
-      check_size tree;
-      tree
+      let _ = 
+         check_red tree; 
+         check_black tree; 
+         check_sort tree; 
+         check_size tree
+      in tree
 
    (*
     * Print the tree.

@@ -687,7 +687,7 @@ struct
    let generalization = generalizes_term
 
    let generalizes t1 t2 =
-      try generalizes_term [] t1 t2; true with
+      try let _ = generalizes_term [] t1 t2 in true with
          Failure "generalization" ->
             false
 

@@ -74,8 +74,9 @@ let delete ot stamp oid i =
     tent_delete tent stamp i oid
 
 let undo ot stamp oid i =
-  let tent = find ot oid  in
-    tent_undo tent stamp i; ()
+  let tent = find ot oid in
+  let _ = tent_undo tent stamp i in
+    ()
 
 let commit ot stamp oid i =
   (* print_string "commit "; print_object_id oid; print_int (hash oid); print_newline(); *)

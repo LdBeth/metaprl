@@ -95,7 +95,7 @@ struct
       let c2 = Set2.cardinal s2 in
       if c1 = c2 then c1 else
       begin
-         "Cardinality is wrong:\n";
+         eprintf "Cardinality is wrong:\n";
          error_sets s1 s2
       end
 

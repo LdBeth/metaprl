@@ -238,8 +238,8 @@ struct
       []
 
    let main_loop queue =
-      Thread.create thread_main_loop queue;
-      ()
+      let _ = Thread.create thread_main_loop queue
+      in ()
 end
 
 (*

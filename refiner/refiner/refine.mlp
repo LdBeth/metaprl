@@ -1020,8 +1020,8 @@ struct
     *)
    let check = function
       PrimAxiomRefiner pax ->
-         axiom_proof pax;
-         ()
+         let _ = axiom_proof pax in
+            ()
     | PrimRuleRefiner prule ->
          let _ = rule_proof prule in
             ()
@@ -1078,7 +1078,7 @@ struct
                raise (Failure "Refine.term_of_extract: extract list too short")
       in
       let check_rewrite just =
-         check_rewrite_just (fun opname -> find_refiner opname; ()) just
+         check_rewrite_just (fun opname -> let _ = find_refiner opname in ()) just
       in
       let rec construct extracts = function
          SingleJust { ext_names = names; ext_params = params; ext_refiner = name } ->
@@ -1093,12 +1093,12 @@ struct
                 | MLRuleRefiner { ml_rule_rule = { ml_rule_extract = f } } ->
                      f (names, params) extracts
                 | RewriteRefiner rw ->
-                     find_rewrite rw;
-                     split_first extracts
+                     let _ = find_rewrite rw in
+                        split_first extracts
                 | CondRewriteRefiner crw ->
                      let { crw_count = count } = crw in
                      let hd, tl = split_first extracts in
-                        find_cond_rewrite crw;
+                     let _ = find_cond_rewrite crw in
                         hd, nth_tl count tl
                 | MLRewriteRefiner _ ->
                      split_first extracts
@@ -1307,7 +1307,7 @@ struct
          else
             ref_raise(RefineError ("refine_axiom", TermMatchError (goal, name)))
       in
-         check_axiom term;
+         let _ = check_axiom term in
          refiner', (tac : prim_tactic)
 
    let add_prim_axiom build name term =
@@ -1687,10 +1687,10 @@ struct
                      if equal_hyps goal_hyps sub_hyps &
                         List_util.for_all2 alpha_equal (redex :: contractum :: subgoals) (goal :: subgoals)
                      then
-                        term_of_extract refiner ext []
+                        let _ = term_of_extract refiner ext [] 
+                        in ()
                      else
-                        ref_raise(RefineError (name, StringError "derivation does not match"));
-                     ()
+                        ref_raise(RefineError (name, StringError "derivation does not match"))
                in
                   PrimCondRewriteRefiner { pcrw_proof = Delayed compute_ext;
                                            pcrw_rewrite = crw;

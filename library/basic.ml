@@ -161,7 +161,7 @@ exception Nuprl5_Exception of (string * term)
 let error sl oids tl =
   print_string (String.concat " " sl);
   print_newline();
-  map Mbterm.print_term tl;
+  List.iter Mbterm.print_term tl;
 
  raise (Nuprl5_Exception ((String.concat " " sl),(imessage_term ("NuprlLightLibrary" :: sl) oids tl)))
 

@@ -98,8 +98,7 @@ let insert info hash key value =
       info.count <- count + 1;
       table.(index) <- (key, value) :: table.(index);
       if count > len * 2 then
-         info.table <- rehash table;
-      info
+         info.table <- rehash table
    
 let extr tt = ( tt.table, tt.count )
 

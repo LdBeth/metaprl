@@ -35,7 +35,7 @@ sig
 
     val seek : ('key, 'value) t -> int -> 'key -> 'value search_result 
 
-    val insert : ('key, 'value) t -> int -> 'key -> 'value -> ('key, 'value) t
+    val insert : ('key, 'value) t -> int -> 'key -> 'value -> unit
 
     val extr : ('key, 'value) t -> ( ('key * 'value) list array * int )
 

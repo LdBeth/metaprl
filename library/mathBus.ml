@@ -158,7 +158,7 @@ let mbnode numlabel args=
   let node = make_mbnode numlabel (List.length args) in
   let rec maux i ls=
     (match ls with
-      [] -> []
+      [] -> ()
     | hd::tl -> (Array.set node i (Mnode hd);
 		 maux (i + 1) tl)) in
   maux 1 args;
@@ -245,7 +245,7 @@ let mb_number num =
   let length = List.length ints in
   let node = make_mbnode mbs_LongInteger length in
   let rec assign i l =
-    if l = [] then node
+    if l = [] then ()
     else
       (Array.set node i (List.hd l);
        assign (i+1) (List.tl l)) in
@@ -268,7 +268,7 @@ let mb_numberq num label =
   let length = List.length ints in
   let node = make_mbnode label length in
   let rec assign i l =
-    if l = [] then node
+    if l = [] then ()
     else
       (Array.set node i (List.hd l);
        assign (i+1) (List.tl l)) in
@@ -828,7 +828,7 @@ let read_node stream =
 
     (let node = read_node_internal stream in
        (*;; Trailer*)
-    read_32bit stream;
+    let _ = read_32bit stream in
     node)
 
 

@@ -310,14 +310,14 @@ let rec print_param param =
 
   in aux (dest_level p)
   | Var p -> (print_string p ; print_string ":v ")
-  | ObId p -> (print_string "["; List.map print_param (dest_object_id p); print_string "]";
+  | ObId p -> (print_string "["; List.iter print_param (dest_object_id p); print_string "]";
 	       print_string ":obid")
   | MNumber p -> (print_string p; print_string ":mn ")
   | MString p -> (print_string p; print_string ":ms ")
   | MToken p -> (print_string p; print_string ":mt ")
   | MLevel p -> (print_string p; print_string ":ml ")
   | MVar p ->  (print_string p; print_string ":mv ")
-  | ParamList p -> (print_string "["; List.map print_param p; print_string "]";
+  | ParamList p -> (print_string "["; List.iter print_param p; print_string "]";
 		   print_string ":pl ")
   | _ -> failwith "unauthorized parameter type"
 
@@ -329,12 +329,12 @@ let rec print_term term =
 	print_newline ();
 	print_string "    ";
 	if bvars <> [] then print_string "bindings:";
-	List.map print_string bvars;
+	List.iter print_string bvars;
 	print_term t
       end in
-  List.map print_string (dest_opname opname);
-  print_string "{"; List.map print_param params; print_string "}";
-  print_string "("; List.map print_subterms (List.map dest_bterm bterms);
+  List.iter print_string (dest_opname opname);
+  print_string "{"; List.iter print_param params; print_string "}";
+  print_string "("; List.iter print_subterms (List.map dest_bterm bterms);
   print_string ")" ;
   ()
 

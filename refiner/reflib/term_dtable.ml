@@ -269,7 +269,7 @@ let extract { table_items = entries } =
     | Table t -> insert_table tables t
 
    in
-      List.fold_left insert_item [] (List.rev entries);
+   let _ = List.fold_left insert_item [] (List.rev entries) in
       { ext_lrtable = lrbase;
         ext_rltable = rlbase;
         ext_dtable = dbase

@@ -328,7 +328,7 @@ let rec bus_wait c tid ehook =
  	    op_params = ib :: ps } when (parmeq ib ibroadcasts_parameter & nuprl5_opname_p opn)
            -> ((try
 		(special_error_handler
-		  (function () -> ((orb_broadcast (hd c.orb.environments) t); ()))
+		  (function () -> let _ = orb_broadcast (hd c.orb.environments) t in ())
 		  (fun s t ->
 			 print_string "broadcast failed xyz"
 			; print_newline()
@@ -682,9 +682,9 @@ let start_broadcasts e =
 		     nl0_description))
 
 	in (* print_string "start_broadcasts : "; *)
-		orb_broadcast e (broadcasts_of_istart_term
-				 (info_of_iinform_term t))
-          ; ()
+		let _ = orb_broadcast e (broadcasts_of_istart_term
+                            (info_of_iinform_term t))
+      in ()
 
 let irevoke_op = mk_nuprl5_op [make_param (Token "!revoke")]
 let irevoke_term t = mk_term irevoke_op [mk_bterm [] t]
@@ -785,21 +785,22 @@ let orb_eval result_p env expr tid ehook=
 
 
 let eval_string e tid s =
-  orb_eval
-    false
-    e
-    (iml_expression_term false (itext_term s) [])
-    tid
-    default_ehook;
-  ()
+  let _ = 
+    orb_eval
+      false
+      e
+      (iml_expression_term false (itext_term s) [])
+      tid
+      default_ehook
+  in ()
 
 let eval e tid t =
-  orb_eval false e (iml_expression_term false t []) tid default_ehook;
-  ()
+  let _ = orb_eval false e (iml_expression_term false t []) tid default_ehook
+  in ()
 
 let eval_args e tid t tl =
-  orb_eval false e (iml_expression_term false t tl) tid default_ehook;
-  ()
+  let _ = orb_eval false e (iml_expression_term false t tl) tid default_ehook
+  in ()
 
 let eval_string_to_term e tid s =
  orb_eval true e (iml_expression_term true (itext_term s) []) tid default_ehook
@@ -826,13 +827,12 @@ let itransaction_parameter = make_param (Token "!transaction")
 let itransaction_term b = mk_term (mk_nuprl5_op [itransaction_parameter; make_bool_parameter b]) []
 
 let eval_callback checkpointp e tid f =
- orb_eval false e (icommand_term (itransaction_term checkpointp))
-	tid
-	(function term ->
-		(f term)
-		; iack_term)
- ; ()
-
+  let _ = 
+    orb_eval false e (icommand_term (itransaction_term checkpointp))
+	   tid
+	   (function term ->
+		  (f term) ; iack_term)
+  in ()
 
 let with_fail_protect g f =
   let a = null_oref ()
@@ -840,10 +840,12 @@ let with_fail_protect g f =
 
   try (
     g (function b ->
-	oref_set a
-	  (try f b
-	   with e -> oref_set err e; raise e);
-      ());
+         let _ = 
+	         oref_set a
+	            (try f b
+	             with e -> let _ = oref_set err e in raise e)
+         in ()
+      );
 
     oref_val a)
 
@@ -893,15 +895,16 @@ let quit_loop_term_p t =
 let quit_hook ehook =
  function t ->
   if quit_loop_term_p t
-     then (oref_set quit_loop true; ivoid_term)
+     then (let _ = oref_set quit_loop true in ivoid_term)
      else ehook t
 
 
 let orb_req_loop env =
 
   while (not (oref_val quit_loop))
-  do bus_wait env.connection None
-      (quit_hook env.ehook)
+  do let _ = bus_wait env.connection None
+                      (quit_hook env.ehook)
+     in ()
   done
 
 

@@ -85,8 +85,8 @@ struct
          begin
             let count = compile table s1 in
                try
-                  Hashtbl.find table x;
-                  count
+                  let _ = Hashtbl.find table x
+                  in count
                with
                   Not_found ->
                      Hashtbl.add table x x;
@@ -96,7 +96,7 @@ struct
          begin
             let count = compile table s1 in
                try
-                  Hashtbl.find table x;
+                  let _ = Hashtbl.find table x in
                   Hashtbl.remove table x;
                   pred count
                with
@@ -106,7 +106,7 @@ struct
     | Hash (hash, count) ->
          let count = ref 0 in
          let add x y =
-            try Hashtbl.find table x; () with
+            try let _ = Hashtbl.find table x in () with
                Not_found ->
                   Hashtbl.add table x y;
                   incr count
@@ -153,7 +153,7 @@ struct
     *)
    let mem s1 x =
       let table, _ = flush s1 in
-         try Hashtbl.find table x; true with
+         try let _ = Hashtbl.find table x in true with
             Not_found ->
                false
 

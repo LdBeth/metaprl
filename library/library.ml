@@ -72,7 +72,7 @@ let orbr = null_oref ()
 
 let init_orb () =
   if (not (oref_p orbr))
-     then (oref_set orbr (orb_open "foo"); () )
+     then (let _ = oref_set orbr (orb_open "foo") in () )
      else ()
 
 let connect remote_host remote_port local_port =

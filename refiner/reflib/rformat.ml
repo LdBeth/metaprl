@@ -554,7 +554,7 @@ let compute_breaks buf rmargin =
                      (* Don't take the break *)
                      let curx' = curx + notake in
                      let maxx' = max curx' maxx in
-                        breaks.(i) = false;
+                        breaks.(i) <- false;
                         aux (margins, breaks, refd, cbreaks, curx', maxx', cury, catch, search, nest) t
                   else
                      (* Take the break *)
@@ -592,7 +592,7 @@ let compute_breaks buf rmargin =
                      (* Don't take the break *)
                      let curx' = curx + notake in
                      let maxx' = max curx' maxx in
-                        breaks.(i) = false;
+                        breaks.(i) <- false;
                         aux (margins, breaks, refd, cbreaks, curx', maxx', cury, catch, search, nest) t
 
                   else
@@ -800,7 +800,7 @@ let print_to_channel rmargin buf ch =
    let breaks = Array.create (buf.szone_number + 1) false in
    let _ = normalize_buffer buf in
    let breaks = compute_breaks buf rmargin in
-      format_to_handler (output_string ch) rmargin breaks buf.commands;
+   let _ = format_to_handler (output_string ch) rmargin breaks buf.commands in
       ()
 
 (*
@@ -819,7 +819,7 @@ let print_to_string rmargin buf =
    in
    let _ = normalize_buffer buf in
    let breaks = compute_breaks buf rmargin in
-      format_to_handler handle rmargin breaks buf.commands;
+   let _ = format_to_handler handle rmargin breaks buf.commands in
       smash "" !buffer
 
 (*

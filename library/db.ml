@@ -411,18 +411,19 @@ let scan_level_expression scanner =
   let rec scan_atom s =
      let scan_expression_q () = scan_expression s in
      if (scan_whitespace s; scan_at_byte_p s ilsquare) then
-      (scan_char_delimited_list s scan_expression_q '[' ']' '|';
-       scan_whitespace s; ())
+      let _ = scan_char_delimited_list s scan_expression_q '[' ']' '|' 
+      in scan_whitespace s
     else if (scan_whitespace s; scan_at_digit_p s) then
       (le := max_level_exp (mk_const_level_exp (Mp_num.int_of_num (scan_num s))) !le; ())
     else (let v = scan_string s in
     scan_whitespace s;
     le := max_level_exp (mk_var_level_exp v) !le); s
    and scan_expression s2 =
-    scan_numbers (scan_atom s2);
-    s2
-  in scan_expression scanner;
-  !le
+    let _ = scan_numbers (scan_atom s2)
+    in s2
+  in 
+    let _ = scan_expression scanner
+    in !le
 
 let make_le_scanner = make_scanner level_expression_escape_string "\n\t\r "
 
@@ -726,16 +727,16 @@ and read_static_level_aux scanner =
      (* parameters_of_term will include the embedded nuprl5 opid as first parameter
 	since this is a nuprl5_implementation term
      *)
-     extract_level_string_updates level (tl (parameters_of_term (session_read_term scanner)));
+     let _ = extract_level_string_updates level (tl (parameters_of_term (session_read_term scanner))) in
 
      (*	ditto *)
-     map (function p -> level_assign level (Parameter p))
+     List.iter (function p -> level_assign level (Parameter p))
 	 (tl (parameters_of_term (session_read_term scanner)));
 
-     map (function opt -> level_assign level (Operator (operator_of_term (term_of_unbound_term opt))))
+     List.iter (function opt -> level_assign level (Operator (operator_of_term (term_of_unbound_term opt))))
 	 (bound_terms_of_term (session_read_term scanner));
 
-     map (function bterm -> level_assign level (Term (term_of_unbound_term bterm)))
+     List.iter (function bterm -> level_assign level (Term (term_of_unbound_term bterm)))
 	 (bound_terms_of_term (session_read_term scanner));
 
     scanner.levels

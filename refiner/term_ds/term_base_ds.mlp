@@ -186,7 +186,7 @@ struct
                      in
                         if !debug_fv then begin
                            eprintf "Result: ";
-                           List.map (eprintf "%s ") (StringSet.elements res);
+                           List.iter (eprintf "%s ") (StringSet.elements res);
                            eprintf "%t" eflush;
                         end; res
 #endif
@@ -201,7 +201,7 @@ struct
 #ifdef VERBOSE_EXN
                      if !debug_fv then begin
                         eprintf "Request for Subst fvs: Term: %a; Subst: " debug_print t;
-                        List.map (fun (v,t) -> eprintf "(%s : %a) " v debug_print t) sub;
+                        List.iter (fun (v,t) -> eprintf "(%s : %a) " v debug_print t) sub;
                         eprintf "%t" eflush;
                      end;
                      let res =
@@ -216,7 +216,7 @@ struct
                      in 
                         if !debug_fv then begin
                            eprintf "Result: ";
-                           List.map (eprintf "%s ") (StringSet.elements res);
+                           List.iter (eprintf "%s ") (StringSet.elements res);
                            eprintf "%t" eflush;
                         end; res
 #endif
@@ -390,7 +390,7 @@ struct
             raise (Invalid_argument "Term_base_ds.dest_term: dest_term called on a sequent")
        | FOVar v -> 
              { term_op = { op_name = var_opname; op_params = [Var v] }; term_terms = [] }
-       | Subst _ -> get_core t; dest_term t
+       | Subst _ -> let _ = get_core t in dest_term t
 
    (*
     * New variable production.
@@ -545,7 +545,7 @@ struct
       Term t -> t.term_op.op_name
     | Sequent _ -> sequent_opname
     | FOVar _ -> var_opname
-    | Subst _ -> get_core t; opname_of_term t
+    | Subst _ -> let _ = get_core t in opname_of_term t
 
    (* These are trivial identity functions *)
 
@@ -571,7 +571,7 @@ struct
    let rec is_var_term t =
       match t.core with
          FOVar _ -> true
-       | Subst _ -> get_core t; is_var_term t
+       | Subst _ -> let _ = get_core t in is_var_term t
        | _ -> false
 
    (*
@@ -580,7 +580,7 @@ struct
    let rec dest_var t =
       match t.core with
          FOVar v -> v
-       | Subst _ -> get_core t; dest_var t
+       | Subst _ -> let _ = get_core t in dest_var t
        | _ -> ref_raise(RefineError ("dest_var", TermMatchError (t, "not a var")))
 
    (*

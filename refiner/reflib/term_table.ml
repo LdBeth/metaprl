@@ -298,7 +298,7 @@ let print_table { tbl_items = items } =
     | [] ->
          tables
    in
-      print_item [] items;
+   let _ = print_item [] items in
       ()
 
 (*

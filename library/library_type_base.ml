@@ -42,7 +42,7 @@ let library_open host localport remoteport =
     then raise (LibraryException "Open: Library already open.")
     else ( oref_set library (join (oref_set connection (connect host localport remoteport))
 				["NuprlLight"])
-	 ; at_exit (function () -> library_close()))
+	 ; at_exit (function () -> library_close()))   (* Something is strage here *)
  ; ()
 
 let maybe_lib_open () =
@@ -69,23 +69,23 @@ let lib_get () =
 
 let library_set magics magic filename term =
   print_string "hello";
-  (with_transaction (lib_get())
+  let _ =
+    (with_transaction (lib_get())
 
-    (function t ->
-      let root = (root t "Files") in
+      (function t ->
+        let root = (root t "Files") in
 
-	(* make filename dir if none *)
-	let dir = try (descendent t root [filename])
-		    with _ -> (let ndir = make_directory t root filename in
-				put_property t ndir "NAME" (itoken_term filename);
-				ndir)
-	  in
+	  (* make filename dir if none *)
+	  let dir = try (descendent t root [filename])
+	  	    with _ -> (let ndir = make_directory t root filename in
+	  			put_property t ndir "NAME" (itoken_term filename);
+	  			ndir)
+	    in
 
-	  (* store term in filename at magic *)
-	  ninsert_leaf t dir (string_of_int (List.nth magics magic)) "TERM" term))
+	    (* store term in filename at magic *)
+	    ninsert_leaf t dir (string_of_int (List.nth magics magic)) "TERM" term))
 
-  ; ()
-
+  in ()
 
 
 
