@@ -557,7 +557,7 @@ ml_dform sequent_tex_df : mode["tex"] :: sequent ('ext) { <H> >- 'concl } format
 (*
  * This is a convenient way to print a number.
  *)
-ml_dform df_length_df : internal :: df_length{'l} format_term buf = fun term ->
+ml_dform df_length_df : df_length{'l} format_term buf = fun term ->
    try
       format_int buf (List.length (dest_xlist (one_subterm term)))
    with
@@ -568,7 +568,7 @@ ml_dform df_length_df : internal :: df_length{'l} format_term buf = fun term ->
  * This is a convenient way to print a number.
  * This changes to the numbered directory.
  *)
-ml_dform df_down_df : internal :: mode[html] :: df_down{'l} format_term buf = fun term ->
+ml_dform df_down_df : mode[html] :: df_down{'l} format_term buf = fun term ->
    try
       let length = List.length (dest_xlist (one_subterm term)) in
          format_izone buf;
@@ -584,7 +584,7 @@ ml_dform df_down_df : internal :: mode[html] :: df_down{'l} format_term buf = fu
       RefineError _ ->
          format_string buf "???"
 
-ml_dform df_down_df : internal :: except_mode[html] :: df_down{'l} format_term buf = fun term ->
+ml_dform df_down_df : except_mode[html] :: df_down{'l} format_term buf = fun term ->
    try
       let length = List.length (dest_xlist (one_subterm term)) in
          format_int buf length
@@ -595,34 +595,34 @@ ml_dform df_down_df : internal :: except_mode[html] :: df_down{'l} format_term b
 (*
  * Get the last item in a list.
  *)
-dform df_last_df1 : internal :: df_last{cons{'a; cons{'b; 'c}}} =
+dform df_last_df1 : df_last{cons{'a; cons{'b; 'c}}} =
    df_last{cons{'b; 'c}}
 
-dform df_last_df2 : internal :: df_last{cons{'a; nil}} =
+dform df_last_df2 : df_last{cons{'a; nil}} =
    'a
 
 (*
  * List concatenation
  *)
-dform df_concat_cons : internal :: df_concat{'sep; cons{'hd; 'tl}} =
+dform df_concat_cons : df_concat{'sep; cons{'hd; 'tl}} =
    slot{'hd} 'sep df_concat{'sep;'tl}
 
-dform df_concat_nil : internal :: df_concat{'sep; cons{'hd; nil}} =
+dform df_concat_nil : df_concat{'sep; cons{'hd; nil}} =
    slot{'hd}
 
-dform df_concat_nil2 : internal :: df_concat{'sep; nil} =
+dform df_concat_nil2 : df_concat{'sep; nil} =
    `""
 
 (*
  * List rev_concatenation
  *)
-dform df_rev_concat_cons : internal :: df_rev_concat{'sep; cons{'hd; 'tl}} =
+dform df_rev_concat_cons : df_rev_concat{'sep; cons{'hd; 'tl}} =
    df_rev_concat{'sep; 'tl} 'sep slot{'hd}
 
-dform df_rev_concat_nil : internal :: df_rev_concat{'sep; cons{'hd; nil}} =
+dform df_rev_concat_nil : df_rev_concat{'sep; cons{'hd; nil}} =
    slot{'hd}
 
-dform df_rev_concat_nil2 : internal :: df_rev_concat{'sep; nil} =
+dform df_rev_concat_nil2 : df_rev_concat{'sep; nil} =
    `""
 
 (*
@@ -635,18 +635,18 @@ dform bind_df : except_mode[src] :: bind{x. 'T} =
  * COMMANDS                                                             *
  ************************************************************************)
 
-dform space_df : internal :: " " = `" "
-dform hat_df : internal :: "^" = `"^"
-dform underscore_df : internal :: "_" = `"_"
-dform left_curly_df : internal :: "{" = `"{"
-dform right_curly_df : internal :: "}" = `"}"
-dform dollar_df : internal :: "$" = `"$"
-dform left_brack_df : internal :: "[" = `"["
-dform right_brack_df : internal :: "]" = `"]"
-dform semicolon_df : internal :: ";" = `";"
-dform newline_df : internal :: "\\" = \newline
+dform space_df : " " = `" "
+dform hat_df : "^" = `"^"
+dform underscore_df : "_" = `"_"
+dform left_curly_df : "{" = `"{"
+dform right_curly_df : "}" = `"}"
+dform dollar_df : "$" = `"$"
+dform left_brack_df : "[" = `"["
+dform right_brack_df : "]" = `"]"
+dform semicolon_df : ";" = `";"
+dform newline_df : "\\" = \newline
 
-dform szone_df : internal :: szone{'e} =
+dform szone_df : szone{'e} =
    szone 'e ezone
 
 (*

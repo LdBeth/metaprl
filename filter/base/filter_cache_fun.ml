@@ -344,7 +344,6 @@ struct
        "pushfont", [ShapeString], [];
        "popfont", [ShapeString], [];
        "parens" , [], [];
-       "internal", [], [];
 
        (* Some params *)
        "cbreak", [ShapeString; ShapeString], [];

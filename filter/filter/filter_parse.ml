@@ -740,17 +740,6 @@ struct
                         get_dfmode loc hd :: modes, except_modes, options
                    | "except_mode" :: _ ->
                         modes, get_dfmode loc hd :: except_modes, options
-                   | "internal" :: _ ->
-                        (*
-                         * XXX: TODO: Currently the "internal" annotations are simply silently ignored.
-                         * They used to be propagated into the Dform module and ignore there, which
-                         * only makes things slower - for no good reason.
-                         *
-                         * The original idea was to use the flag in the Java interface to separate
-                         * the real "clickable/selectable" terms from the internal helper ones. This
-                         * was never implemented
-                         *)
-                        modes, except_modes, options
                    | _ ->
                         Stdpp.raise_with_loc loc (Failure("warning: unknown display form option " ^ (string_of_term hd)))
             end

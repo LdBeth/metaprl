@@ -61,7 +61,7 @@ declare sig_slt
 dform sig_exception_df : sig_exception[name:s]{'tl} =
    szone push_indent "_exception" space stl{.Ocaml!"string"[name:s]; 'tl} popm ezone
 
-dform sig_exception_df2 : internal :: sig_exception[start:n, finish:n, name:s]{'tl} =
+dform sig_exception_df2 : sig_exception[start:n, finish:n, name:s]{'tl} =
    sig_exception[name:s]{'tl}
 
 (*
@@ -72,7 +72,7 @@ dform sig_external_df1 : sig_external[name:s]{'t; 'sl} =
    ":" space slot{'t}
    "=" space list_expr{'sl}
 
-dform sig_external_df2 : internal :: sig_external[start:n, finish:n, name:s]{'t; 'sl} =
+dform sig_external_df2 : sig_external[start:n, finish:n, name:s]{'t; 'sl} =
    sig_external[name:s]{'t; 'sl}
 
 (*
@@ -81,7 +81,7 @@ dform sig_external_df2 : internal :: sig_external[start:n, finish:n, name:s]{'t;
 dform sig_module_df1 : sig_module[name:s]{'mt} =
    "_module" space slot[name] space ":" space slot{'mt}
 
-dform sig_module_df2 : internal :: sig_module[start:n, finish:n, name:s]{'mt} =
+dform sig_module_df2 : sig_module[start:n, finish:n, name:s]{'mt} =
    sig_module[name:s]{'mt}
 
 (*
@@ -90,7 +90,7 @@ dform sig_module_df2 : internal :: sig_module[start:n, finish:n, name:s]{'mt} =
 dform sig_module_type_df1 : sig_module_type[name:s]{'mt} =
    szone push_indent "_moduletype" space slot[name] space "=" space slot{'mt} popm ezone
 
-dform sig_module_type_df2 : internal :: sig_module_type[start:n, finish:n, name:s]{'mt} =
+dform sig_module_type_df2 : sig_module_type[start:n, finish:n, name:s]{'mt} =
    sig_module_type[name:s]{'mt}
 
 (*
@@ -99,7 +99,7 @@ dform sig_module_type_df2 : internal :: sig_module_type[start:n, finish:n, name:
 dform sig_open_df1 : sig_open{'sl} =
    "_open" space ident_expr{'sl}
 
-dform sig_open_df2 : internal :: sig_open[start:n, finish:n]{'sl} =
+dform sig_open_df2 : sig_open[start:n, finish:n]{'sl} =
    sig_open{'sl}
 
 (*
@@ -112,14 +112,14 @@ declare sig_type_aux{'tdls}
 dform sig_type_df : sig_type{cons{'tdl; 'tdls}} =
    szone pushm[0] "_type" `" " slot{'tdl} sig_type_aux{'tdls} popm ezone
 
-dform sig_type_aux_df : internal :: sig_type_aux{cons{'tdl; 'tdls}} =
+dform sig_type_aux_df : sig_type_aux{cons{'tdl; 'tdls}} =
    newline "_and" `" " slot{'tdl}
    sig_type_aux{'tdls}
 
-dform sig_type_aux_df : internal :: sig_type_aux{nil} =
+dform sig_type_aux_df : sig_type_aux{nil} =
    `""
 
-dform sig_type_df2 : internal :: sig_type[start:n, finish:n]{'tdl} =
+dform sig_type_df2 : sig_type[start:n, finish:n]{'tdl} =
    sig_type{'tdl}
 
 dform tdl_df1 : tdl{.Ocaml!"string"[name:s]; nil; 't; nil} =
@@ -134,16 +134,16 @@ dform tdl_df3 : tdl{.Ocaml!"string"[name:s]; nil; 't; 'tc} =
 dform tdl_df4 : tdl{.Ocaml!"string"[name:s]; 'sl; 't; 'tc} =
    "(" type_arg{'sl} ")" `" " slot[name:s] `" =" hspace slot{'t} hspace type_constraint{'tc}
 
-dform tc_df1 : internal :: type_constraint{cons{ tc{'t1;'t2}; nil}} =
+dform tc_df1 : type_constraint{cons{ tc{'t1;'t2}; nil}} =
    `"constraint' " slot{'t1} `" = " slot{'t2}
 
-dform tc_df1 : internal :: type_constraint{cons{ tc{'t1;'t2}; 'tc}} =
+dform tc_df1 : type_constraint{cons{ tc{'t1;'t2}; 'tc}} =
    `"constraint' " slot{'t1} `" = " slot{'t2} hspace type_constraint{'tc}
 
-dform type_arg_cons_df1 : internal :: type_arg{cons{.Ocaml!"string"[name:s]; nil}} =
+dform type_arg_cons_df1 : type_arg{cons{.Ocaml!"string"[name:s]; nil}} =
    "'" slot[name]
 
-dform type_arg_cons_df2 : internal :: type_arg{cons{.Ocaml!"string"[name:s]; 'sl}} =
+dform type_arg_cons_df2 : type_arg{cons{.Ocaml!"string"[name:s]; 'sl}} =
    "'" slot[name] `", " type_arg{'sl}
 
 (*
@@ -152,7 +152,7 @@ dform type_arg_cons_df2 : internal :: type_arg{cons{.Ocaml!"string"[name:s]; 'sl
 dform sig_value_df1 : sig_value[name:s]{'t} =
    szone push_indent "_val" `" " slot[name:s] `" : " slot{'t} popm ezone
 
-dform sig_value_df2 : internal :: sig_value[start:n, finish:n, name:s]{'t} =
+dform sig_value_df2 : sig_value[start:n, finish:n, name:s]{'t} =
    sig_value[name:s]{'t}
 
 (*

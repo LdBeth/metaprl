@@ -300,227 +300,227 @@ dform pagebreak_df2 : mode[prl] :: pagebreak =
 (*
  * Print the string in invis mode.
  *)
-dform html_df1 : internal :: mode[html] :: html[content:s] =
+dform html_df1 : mode[html] :: html[content:s] =
    izone slot[content:s] ezone
 
-dform html_df2 : internal :: except_mode[html] :: html[content:s] =
+dform html_df2 : except_mode[html] :: html[content:s] =
    `""
 
 (*
  * Change directory.
  *)
-dform cd_begin_df1 : internal :: except_mode[html] :: cd_begin[name:s] =
+dform cd_begin_df1 : except_mode[html] :: cd_begin[name:s] =
    `""
 
-dform cd_begin_df2_java : internal :: mode[java] :: cd_begin[name:s] =
+dform cd_begin_df2_java : mode[java] :: cd_begin[name:s] =
    izone `"<a href=\"http://cd.metaprl.local/" slot[name:s] `"\">" ezone
 
-dform cd_begin_df2_html : internal :: mode[html] :: cd_begin[name:s] =
+dform cd_begin_df2_html : mode[html] :: cd_begin[name:s] =
    izone `"<a href=\"" slot[name:s] `"/\">" ezone
 
-dform cd_end_df1 : internal :: except_mode[html] :: cd_end =
+dform cd_end_df1 : except_mode[html] :: cd_end =
    `""
 
-dform cd_end_df2 : internal :: mode[html] :: cd_end =
+dform cd_end_df2 : mode[html] :: cd_end =
    izone `"</a>" ezone
 
 (************************************************************************
  * DISPLAY FORMS                                                        *
  ************************************************************************)
 
-dform atomic_df : internal :: atomic[text:s] =
+dform atomic_df : atomic[text:s] =
    azone slot[text:s] ezone
 
-dform text_df : internal :: text{'e} =
+dform text_df : text{'e} =
    'e
 
-dform info_begin_df : internal :: mode[html] :: info_begin =
+dform info_begin_df : mode[html] :: info_begin =
    html["<span class=\"info\">"]
 
-dform info_end_df : internal :: mode[html] :: info_end =
+dform info_end_df : mode[html] :: info_end =
    html["</span>"]
 
-dform info_df1 : internal :: info[text:s] =
+dform info_df1 : info[text:s] =
    info_begin slot[text:s] info_end
 
-dform info_df2 : internal :: info{'t} =
+dform info_df2 : info{'t} =
    info_begin 't info_end
 
-dform keyword_begin_df : internal :: mode[html] :: keyword_begin =
+dform keyword_begin_df : mode[html] :: keyword_begin =
    html["<span class=\"keyword\">"]
 
-dform keyword_end_df : internal :: mode[html] :: keyword_end =
+dform keyword_end_df : mode[html] :: keyword_end =
    html["</span>"]
 
-dform info_begin_df_all : internal :: mode [src] :: info_begin = `""
-dform info_end_df_all : internal :: mode[src] :: info_end = `""
+dform info_begin_df_all : mode [src] :: info_begin = `""
+dform info_end_df_all : mode[src] :: info_end = `""
 
-dform keyword_begin_df_all : internal :: except_mode[html] :: except_mode[tex] :: keyword_begin =
+dform keyword_begin_df_all : except_mode[html] :: except_mode[tex] :: keyword_begin =
    bf_begin
 
-dform keyword_end_df_all : internal :: except_mode[html] :: except_mode[tex] :: keyword_end =
+dform keyword_end_df_all : except_mode[html] :: except_mode[tex] :: keyword_end =
    bf_end
 
-dform keyword_df1 : internal :: except_mode[tex] :: keyword[text:s] =
+dform keyword_df1 : except_mode[tex] :: keyword[text:s] =
    keyword_begin slot[text:s] keyword_end
 
-dform keyword_df2 : internal :: keyword{'t} =
+dform keyword_df2 : keyword{'t} =
    keyword_begin 't keyword_end
 
-dform bf_begin_df : internal :: mode[html] :: bf_begin =
+dform bf_begin_df : mode[html] :: bf_begin =
    html["<b>"]
 
-dform bf_end_df : internal :: mode[html] :: bf_end =
+dform bf_end_df : mode[html] :: bf_end =
    html["</b>"]
 
-dform bf_begin_df : internal :: mode[prl] :: bf_begin =
+dform bf_begin_df : mode[prl] :: bf_begin =
    pushfont["bf"]
 
-dform bf_end_df : internal :: mode[prl] :: bf_end =
+dform bf_end_df : mode[prl] :: bf_end =
    popfont["bf"]
 
-dform bf_df1 : internal :: bf[text:s] =
+dform bf_df1 : bf[text:s] =
    bf_begin slot[text:s] bf_end
 
-dform bf_df2 : internal :: bf{'t} =
+dform bf_df2 : bf{'t} =
    bf_begin 't bf_end
 
-dform it_begin_df : internal :: mode[html] :: it_begin =
+dform it_begin_df : mode[html] :: it_begin =
    html["<i>"]
 
-dform it_end_df : internal :: mode[html] :: it_end =
+dform it_end_df : mode[html] :: it_end =
    html["</i>"]
 
-dform it_begin_df : internal :: mode[prl] :: it_begin =
+dform it_begin_df : mode[prl] :: it_begin =
    pushfont["it"]
 
-dform it_end_df : internal :: mode[prl] :: it_end =
+dform it_end_df : mode[prl] :: it_end =
    popfont["it"]
 
-dform it_df1 : internal :: it[text:s] =
+dform it_df1 : it[text:s] =
    it_begin slot[text:s] it_end
 
-dform it_df2 : internal :: it{'t} =
+dform it_df2 : it{'t} =
    it_begin 't it_end
 
-dform i_df1 : internal :: i[text:s] =
+dform i_df1 : i[text:s] =
    it[text:s]
 
-dform i_df2 : internal :: i{'t} =
+dform i_df2 : i{'t} =
    it{'t}
 
-dform math_it_df2 : internal :: except_mode[tex] :: math_it{'t} =
+dform math_it_df2 : except_mode[tex] :: math_it{'t} =
    it{'t}
 
-dform math_it_df2 : internal :: except_mode[tex] :: math_it[text:s] =
+dform math_it_df2 : except_mode[tex] :: math_it[text:s] =
    it[text:s]
 
 (*
  * These are atomic symbols.
  *)
-dform html_sym_df : internal ::  mode[html] :: html_sym[text:s] =
+dform html_sym_df :  mode[html] :: html_sym[text:s] =
    azone `"&" slot[text:s] `";" ezone
 
-dform html_uni_df : internal :: mode[html] :: html_uni[num:n] =
+dform html_uni_df : mode[html] :: html_uni[num:n] =
    azone `"&#" slot[num:n] `";" ezone
 
-dform em_begin_df : internal :: mode[html] :: em_begin =
+dform em_begin_df : mode[html] :: em_begin =
    html["<em>"]
 
-dform em_end_df : internal :: mode[html] :: em_end =
+dform em_end_df : mode[html] :: em_end =
    html["</em>"]
 
-dform em_begin_df : internal :: mode[prl] :: em_begin =
+dform em_begin_df : mode[prl] :: em_begin =
    `""
 
-dform em_end_df : internal :: mode[prl] :: em_end =
+dform em_end_df : mode[prl] :: em_end =
    `""
 
-dform em_df1 : internal :: em[text:s] =
+dform em_df1 : em[text:s] =
    em_begin slot[text:s] em_end
 
-dform em_df2 : internal :: em{'t} =
+dform em_df2 : em{'t} =
    em_begin 't em_end
 
-dform emph_df1 : internal :: emph{'t} =
+dform emph_df1 : emph{'t} =
    em_begin 't em_end
 
-dform tt_begin_df : internal :: mode[html] :: tt_begin =
+dform tt_begin_df : mode[html] :: tt_begin =
    html["<tt>"]
 
-dform tt_end_df : internal :: mode[html] :: tt_end =
+dform tt_end_df : mode[html] :: tt_end =
    html["</tt>"]
 
-dform tt_begin_df : internal :: mode[prl] :: tt_begin =
+dform tt_begin_df : mode[prl] :: tt_begin =
    `""
 
-dform tt_end_df : internal :: mode[prl] :: tt_end =
+dform tt_end_df : mode[prl] :: tt_end =
    `""
 
-dform tt_df1 : internal :: tt[text:s] =
+dform tt_df1 : tt[text:s] =
    tt_begin slot[text:s] tt_end
 
-dform tt_df2 : internal :: tt{'t} =
+dform tt_df2 : tt{'t} =
    tt_begin 't tt_end
 
-dform url_df1 : internal :: mode[html] :: url[url:s] =
+dform url_df1 : mode[html] :: url[url:s] =
    izone `"<a href=\"" slot[url:s] `"\"><tt>" ezone slot[url:s] izone `"</tt></a>" ezone
 
-dform url_df2 : internal :: mode[tex] :: url[url:s] =
+dform url_df2 : mode[tex] :: url[url:s] =
    izone `"\\url{" ezone slot[url:s] izone `"}" ezone
 
-dform url_df3 : internal :: mode[prl] :: mode [src] :: url[url:s] =
+dform url_df3 : mode[prl] :: mode [src] :: url[url:s] =
    `"@url[" slot[url:s] `"]"
 
-dform sub_begin_df : internal :: mode[html] :: sub_begin =
+dform sub_begin_df : mode[html] :: sub_begin =
    html["<sub>"]
 
-dform sub_end_df : internal :: mode[html] :: sub_end =
+dform sub_end_df : mode[html] :: sub_end =
    html["</sub>"]
 
-dform sub_df1 : internal :: sub[text:s] =
+dform sub_df1 : sub[text:s] =
    sub_begin slot[text:s] sub_end
 
-dform sub_df2 : internal :: sub{'t} =
+dform sub_df2 : sub{'t} =
    sub_begin 't sub_end
 
-dform sup_begin_df : internal :: mode[html] :: sup_begin =
+dform sup_begin_df : mode[html] :: sup_begin =
    html["<sup>"]
 
-dform sup_end_df : internal :: mode[html] :: sup_end =
+dform sup_end_df : mode[html] :: sup_end =
    html["</sup>"]
 
-dform sup_df1 : internal :: sup[text:s] =
+dform sup_df1 : sup[text:s] =
    sup_begin slot[text:s] sup_end
 
-dform sup_df2 : internal :: sup{'t} =
+dform sup_df2 : sup{'t} =
    sup_begin 't sup_end
 
-dform sub_begin_df : internal :: mode[prl] :: sub_begin =
+dform sub_begin_df : mode[prl] :: sub_begin =
    `"_"
 
-dform sub_end_df : internal :: mode[prl] :: sub_end =
+dform sub_end_df : mode[prl] :: sub_end =
    `""
 
-dform sup_begin_df : internal :: mode[prl] :: sup_begin =
+dform sup_begin_df : mode[prl] :: sup_begin =
    `"^"
 
-dform sup_end_df : internal :: mode[prl] :: sup_end =
+dform sup_end_df : mode[prl] :: sup_end =
    `""
 
-dform small_begin_df : internal :: mode[html] :: small_begin =
+dform small_begin_df : mode[html] :: small_begin =
    html["<small>"]
 
-dform small_end_df : internal :: mode[html] :: small_end =
+dform small_end_df : mode[html] :: small_end =
    html["</small>"]
 
-dform small_df1 : internal :: small[text:s] =
+dform small_df1 : small[text:s] =
    small_begin slot[text:s] small_end
 
-dform small_df2 : internal :: small{'t} =
+dform small_df2 : small{'t} =
    small_begin 't small_end
 
-dform esquash_df : internal :: esquash{'t} =
+dform esquash_df : esquash{'t} =
    esq_l 't esq_r
 
 (************************************************************************
@@ -532,39 +532,39 @@ declare ensuremath{'t}
 declare mathBB[name:s]
 declare mathmacro[name:s]
 
-dform ensuremath_df0 : internal :: except_mode[tex] :: ensuremath{'t} =
+dform ensuremath_df0 : except_mode[tex] :: ensuremath{'t} =
    't
 
-dform ensuremath_df1 : internal :: ensuremath[text:s] =
+dform ensuremath_df1 : ensuremath[text:s] =
    ensuremath{slot[text:s]}
 
-dform ensuremath_df2 : internal :: mode[tex] :: ensuremath{'t} =
+dform ensuremath_df2 : mode[tex] :: ensuremath{'t} =
    tzone["ensuremath"] slot{'t} ezone
 
-dform ensuremath_cons_df : internal :: mode[tex] :: cons{ensuremath{'t1}; ensuremath{'t2}} =
+dform ensuremath_cons_df : mode[tex] :: cons{ensuremath{'t1}; ensuremath{'t2}} =
    ensuremath{cons{'t1;'t2}}
 
-dform mathBB_df : internal :: mode[tex] :: mathBB[text:s] =
+dform mathBB_df : mode[tex] :: mathBB[text:s] =
    izone `"\\mathbb{" ezone slot[text:s] izone `"}" ezone
 
-dform mathmacro_df : internal :: mode[tex] :: mathmacro[text:s] =
+dform mathmacro_df : mode[tex] :: mathmacro[text:s] =
    izone `"\\" slot[text:s] `" " ezone
 
-dform info_begin_df : internal :: mode[tex] :: info_begin =
+dform info_begin_df : mode[tex] :: info_begin =
    izone `"\\textbf{" ezone
 
-dform info_end_df : internal :: mode[tex] :: info_end =
+dform info_end_df : mode[tex] :: info_end =
    izone `"}" ezone
 
-dform info_begin_df : internal :: mode[prl] :: info_begin =
+dform info_begin_df : mode[prl] :: info_begin =
    pushfont["bf"]
 
-dform info_end_df : internal :: mode[prl] :: info_end =
+dform info_end_df : mode[prl] :: info_end =
    popfont["bf"]
 
 let not_alnum c = not (is_alnum c)
 
-ml_dform keyword_tex_df : internal :: mode[tex] :: keyword[text:s] format_term buf =
+ml_dform keyword_tex_df : mode[tex] :: keyword[text:s] format_term buf =
    fun term ->
      let text = dest_string_param term in
      let font = if Lm_string_util.for_all not_alnum text then "tt" else "bf" in
@@ -576,22 +576,22 @@ ml_dform keyword_tex_df : internal :: mode[tex] :: keyword[text:s] format_term b
         format_string buf "}";
         format_ezone buf
 
-dform keyword_begin_df : internal :: mode[tex] :: keyword_begin =
+dform keyword_begin_df : mode[tex] :: keyword_begin =
    izone `"\\textbf{" ezone
 
-dform keyword_end_df : internal :: mode[tex] :: keyword_end =
+dform keyword_end_df : mode[tex] :: keyword_end =
    izone `"}" ezone
 
-dform bf_begin_df : internal :: mode[tex] :: bf_begin =
+dform bf_begin_df : mode[tex] :: bf_begin =
    tzone["textbf"]
 
-dform bf_end_df : internal :: mode[tex] :: bf_end =
+dform bf_end_df : mode[tex] :: bf_end =
    ezone
 
-dform it_begin_df : internal :: mode[tex] :: it_begin =
+dform it_begin_df : mode[tex] :: it_begin =
    tzone["textit"]
 
-dform it_end_df : internal :: mode[tex] :: it_end =
+dform it_end_df : mode[tex] :: it_end =
    ezone
 
 dform math_it_df1 : mode[tex] :: math_it{'t} =
@@ -600,34 +600,34 @@ dform math_it_df1 : mode[tex] :: math_it{'t} =
 dform math_it_df1 : mode[tex] :: math_it[text:s] =
    izone `"\\mathit{" ezone slot[text:s] izone `"}" ezone
 
-dform em_begin_df : internal :: mode[tex] :: em_begin =
+dform em_begin_df : mode[tex] :: em_begin =
    tzone["emph"]
 
-dform em_end_df : internal :: mode[tex] :: em_end =
+dform em_end_df : mode[tex] :: em_end =
    ezone
 
-dform tt_begin_df : internal :: mode[tex] :: tt_begin =
+dform tt_begin_df : mode[tex] :: tt_begin =
    tzone["texttt"]
 
-dform tt_end_df : internal :: mode[tex] :: tt_end =
+dform tt_end_df : mode[tex] :: tt_end =
    ezone
 
-dform sub_begin_df : internal :: mode[tex] :: sub_begin =
+dform sub_begin_df : mode[tex] :: sub_begin =
    izone `"{}_{" ezone
 
-dform sub_end_df : internal :: mode[tex] :: sub_end =
+dform sub_end_df : mode[tex] :: sub_end =
    izone `"}" ezone
 
-dform sup_begin_df : internal :: mode[tex] :: sup_begin =
+dform sup_begin_df : mode[tex] :: sup_begin =
    izone `"{}^{" ezone
 
-dform sup_end_df : internal :: mode[tex] :: sup_end =
+dform sup_end_df : mode[tex] :: sup_end =
    izone `"}" ezone
 
-dform small_begin_df : internal :: mode[tex] :: small_begin =
+dform small_begin_df : mode[tex] :: small_begin =
    izone `"{\\scriptsize " ezone
 
-dform small_end_df : internal :: mode[tex] :: small_end =
+dform small_end_df : mode[tex] :: small_end =
    izone `"}" ezone
 
 (************************************************************************
@@ -635,465 +635,465 @@ dform small_end_df : internal :: mode[tex] :: small_end =
  ************************************************************************)
 
 (* Displays *)
-dform mathbbA_df		: internal :: mode[prl] :: mathbbA                   = bf["A"]
-dform mathbbB_df		: internal :: mode[prl] :: mathbbB                   = bf["B"]
-dform mathbbC_df		: internal :: mode[prl] :: mathbbC                   = atomic["ℂ"]
-dform mathbbD_df		: internal :: mode[prl] :: mathbbD                   = bf["D"]
-dform mathbbE_df		: internal :: mode[prl] :: mathbbE                   = bf["E"]
-dform mathbbF_df		: internal :: mode[prl] :: mathbbF                   = bf["F"]
-dform mathbbG_df		: internal :: mode[prl] :: mathbbG                   = bf["G"]
-dform mathbbH_df		: internal :: mode[prl] :: mathbbH                   = atomic["ℍ"]
-dform mathbbI_df		: internal :: mode[prl] :: mathbbI                   = bf["I"]
-dform mathbbJ_df		: internal :: mode[prl] :: mathbbJ                   = bf["J"]
-dform mathbbK_df		: internal :: mode[prl] :: mathbbK                   = bf["K"]
-dform mathbbL_df		: internal :: mode[prl] :: mathbbL                   = bf["L"]
-dform mathbbM_df		: internal :: mode[prl] :: mathbbM                   = bf["M"]
-dform mathbbN_df		: internal :: mode[prl] :: mathbbN                   = atomic["ℕ"]
-dform mathbbO_df		: internal :: mode[prl] :: mathbbO                   = bf["O"]
-dform mathbbP_df		: internal :: mode[prl] :: mathbbP                   = atomic["ℙ"]
-dform mathbbQ_df		: internal :: mode[prl] :: mathbbQ                   = atomic["ℚ"]
-dform mathbbR_df		: internal :: mode[prl] :: mathbbR                   = atomic["ℝ"]
-dform mathbbS_df		: internal :: mode[prl] :: mathbbS                   = bf["S"]
-dform mathbbT_df		: internal :: mode[prl] :: mathbbT                   = bf["T"]
-dform mathbbU_df		: internal :: mode[prl] :: mathbbU                   = atomic["Ů"] (* or: `"Ⓤ", or `"U" *)
-dform mathbbV_df		: internal :: mode[prl] :: mathbbV                   = bf["V"]
-dform mathbbW_df		: internal :: mode[prl] :: mathbbW                   = bf["W"]
-dform mathbbX_df		: internal :: mode[prl] :: mathbbX                   = bf["X"]
-dform mathbbY_df		: internal :: mode[prl] :: mathbbY                   = bf["Y"]
-dform mathbbZ_df		: internal :: mode[prl] :: mathbbZ                   = atomic["ℤ"]
+dform mathbbA_df		: mode[prl] :: mathbbA                   = bf["A"]
+dform mathbbB_df		: mode[prl] :: mathbbB                   = bf["B"]
+dform mathbbC_df		: mode[prl] :: mathbbC                   = atomic["ℂ"]
+dform mathbbD_df		: mode[prl] :: mathbbD                   = bf["D"]
+dform mathbbE_df		: mode[prl] :: mathbbE                   = bf["E"]
+dform mathbbF_df		: mode[prl] :: mathbbF                   = bf["F"]
+dform mathbbG_df		: mode[prl] :: mathbbG                   = bf["G"]
+dform mathbbH_df		: mode[prl] :: mathbbH                   = atomic["ℍ"]
+dform mathbbI_df		: mode[prl] :: mathbbI                   = bf["I"]
+dform mathbbJ_df		: mode[prl] :: mathbbJ                   = bf["J"]
+dform mathbbK_df		: mode[prl] :: mathbbK                   = bf["K"]
+dform mathbbL_df		: mode[prl] :: mathbbL                   = bf["L"]
+dform mathbbM_df		: mode[prl] :: mathbbM                   = bf["M"]
+dform mathbbN_df		: mode[prl] :: mathbbN                   = atomic["ℕ"]
+dform mathbbO_df		: mode[prl] :: mathbbO                   = bf["O"]
+dform mathbbP_df		: mode[prl] :: mathbbP                   = atomic["ℙ"]
+dform mathbbQ_df		: mode[prl] :: mathbbQ                   = atomic["ℚ"]
+dform mathbbR_df		: mode[prl] :: mathbbR                   = atomic["ℝ"]
+dform mathbbS_df		: mode[prl] :: mathbbS                   = bf["S"]
+dform mathbbT_df		: mode[prl] :: mathbbT                   = bf["T"]
+dform mathbbU_df		: mode[prl] :: mathbbU                   = atomic["Ů"] (* or: `"Ⓤ", or `"U" *)
+dform mathbbV_df		: mode[prl] :: mathbbV                   = bf["V"]
+dform mathbbW_df		: mode[prl] :: mathbbW                   = bf["W"]
+dform mathbbX_df		: mode[prl] :: mathbbX                   = bf["X"]
+dform mathbbY_df		: mode[prl] :: mathbbY                   = bf["Y"]
+dform mathbbZ_df		: mode[prl] :: mathbbZ                   = atomic["ℤ"]
 
-dform mathbbA_df		: internal :: mode[html] :: mathbbA                   = keyword["A"]
-dform mathbbB_df		: internal :: mode[html] :: mathbbB                   = keyword["B"]
-dform mathbbC_df		: internal :: mode[html] :: mathbbC                   = html_uni[8450]
-dform mathbbD_df		: internal :: mode[html] :: mathbbD                   = keyword["D"]
-dform mathbbE_df		: internal :: mode[html] :: mathbbE                   = keyword["E"]
-dform mathbbF_df		: internal :: mode[html] :: mathbbF                   = keyword["F"]
-dform mathbbG_df		: internal :: mode[html] :: mathbbG                   = keyword["G"]
-dform mathbbH_df		: internal :: mode[html] :: mathbbH                   = html_uni[8461]
-dform mathbbI_df		: internal :: mode[html] :: mathbbI                   = keyword["I"]
-dform mathbbJ_df		: internal :: mode[html] :: mathbbJ                   = keyword["J"]
-dform mathbbK_df		: internal :: mode[html] :: mathbbK                   = keyword["K"]
-dform mathbbL_df		: internal :: mode[html] :: mathbbL                   = keyword["L"]
-dform mathbbM_df		: internal :: mode[html] :: mathbbM                   = keyword["M"]
-dform mathbbN_df		: internal :: mode[html] :: mathbbN                   = html_uni[8469]
-dform mathbbO_df		: internal :: mode[html] :: mathbbO                   = keyword["O"]
-dform mathbbP_df		: internal :: mode[html] :: mathbbP                   = html_uni[8473]
-dform mathbbQ_df		: internal :: mode[html] :: mathbbQ                   = html_uni[8474]
-dform mathbbR_df		: internal :: mode[html] :: mathbbR                   = html_uni[8477]
-dform mathbbS_df		: internal :: mode[html] :: mathbbS                   = keyword["S"]
-dform mathbbT_df		: internal :: mode[html] :: mathbbT                   = keyword["T"]
-dform mathbbU_df		: internal :: mode[html] :: mathbbU                   = keyword["U"]
-dform mathbbV_df		: internal :: mode[html] :: mathbbV                   = keyword["V"]
-dform mathbbW_df		: internal :: mode[html] :: mathbbW                   = keyword["W"]
-dform mathbbX_df		: internal :: mode[html] :: mathbbX                   = keyword["X"]
-dform mathbbY_df		: internal :: mode[html] :: mathbbY                   = keyword["Y"]
-dform mathbbZ_df		: internal :: mode[html] :: mathbbZ                   = html_uni[8484]
+dform mathbbA_df		: mode[html] :: mathbbA                   = keyword["A"]
+dform mathbbB_df		: mode[html] :: mathbbB                   = keyword["B"]
+dform mathbbC_df		: mode[html] :: mathbbC                   = html_uni[8450]
+dform mathbbD_df		: mode[html] :: mathbbD                   = keyword["D"]
+dform mathbbE_df		: mode[html] :: mathbbE                   = keyword["E"]
+dform mathbbF_df		: mode[html] :: mathbbF                   = keyword["F"]
+dform mathbbG_df		: mode[html] :: mathbbG                   = keyword["G"]
+dform mathbbH_df		: mode[html] :: mathbbH                   = html_uni[8461]
+dform mathbbI_df		: mode[html] :: mathbbI                   = keyword["I"]
+dform mathbbJ_df		: mode[html] :: mathbbJ                   = keyword["J"]
+dform mathbbK_df		: mode[html] :: mathbbK                   = keyword["K"]
+dform mathbbL_df		: mode[html] :: mathbbL                   = keyword["L"]
+dform mathbbM_df		: mode[html] :: mathbbM                   = keyword["M"]
+dform mathbbN_df		: mode[html] :: mathbbN                   = html_uni[8469]
+dform mathbbO_df		: mode[html] :: mathbbO                   = keyword["O"]
+dform mathbbP_df		: mode[html] :: mathbbP                   = html_uni[8473]
+dform mathbbQ_df		: mode[html] :: mathbbQ                   = html_uni[8474]
+dform mathbbR_df		: mode[html] :: mathbbR                   = html_uni[8477]
+dform mathbbS_df		: mode[html] :: mathbbS                   = keyword["S"]
+dform mathbbT_df		: mode[html] :: mathbbT                   = keyword["T"]
+dform mathbbU_df		: mode[html] :: mathbbU                   = keyword["U"]
+dform mathbbV_df		: mode[html] :: mathbbV                   = keyword["V"]
+dform mathbbW_df		: mode[html] :: mathbbW                   = keyword["W"]
+dform mathbbX_df		: mode[html] :: mathbbX                   = keyword["X"]
+dform mathbbY_df		: mode[html] :: mathbbY                   = keyword["Y"]
+dform mathbbZ_df		: mode[html] :: mathbbZ                   = html_uni[8484]
 
-dform mathbbA_df		: internal :: mode[tex] :: mathbbA                   = mathBB["A"]
-dform mathbbB_df		: internal :: mode[tex] :: mathbbB                   = mathBB["B"]
-dform mathbbC_df		: internal :: mode[tex] :: mathbbC                   = mathBB["C"]
-dform mathbbD_df		: internal :: mode[tex] :: mathbbD                   = mathBB["D"]
-dform mathbbE_df		: internal :: mode[tex] :: mathbbE                   = mathBB["E"]
-dform mathbbF_df		: internal :: mode[tex] :: mathbbF                   = mathBB["F"]
-dform mathbbG_df		: internal :: mode[tex] :: mathbbG                   = mathBB["G"]
-dform mathbbH_df		: internal :: mode[tex] :: mathbbH                   = mathBB["H"]
-dform mathbbI_df		: internal :: mode[tex] :: mathbbI                   = mathBB["I"]
-dform mathbbJ_df		: internal :: mode[tex] :: mathbbJ                   = mathBB["J"]
-dform mathbbK_df		: internal :: mode[tex] :: mathbbK                   = mathBB["K"]
-dform mathbbL_df		: internal :: mode[tex] :: mathbbL                   = mathBB["L"]
-dform mathbbM_df		: internal :: mode[tex] :: mathbbM                   = mathBB["M"]
-dform mathbbN_df		: internal :: mode[tex] :: mathbbN                   = mathBB["N"]
-dform mathbbO_df		: internal :: mode[tex] :: mathbbO                   = mathBB["O"]
-dform mathbbP_df		: internal :: mode[tex] :: mathbbP                   = mathBB["P"]
-dform mathbbQ_df		: internal :: mode[tex] :: mathbbQ                   = mathBB["Q"]
-dform mathbbR_df		: internal :: mode[tex] :: mathbbR                   = mathBB["R"]
-dform mathbbS_df		: internal :: mode[tex] :: mathbbS                   = mathBB["S"]
-dform mathbbT_df		: internal :: mode[tex] :: mathbbT                   = mathBB["T"]
-dform mathbbU_df		: internal :: mode[tex] :: mathbbU                   = mathBB["U"]
-dform mathbbV_df		: internal :: mode[tex] :: mathbbV                   = mathBB["V"]
-dform mathbbW_df		: internal :: mode[tex] :: mathbbW                   = mathBB["W"]
-dform mathbbX_df		: internal :: mode[tex] :: mathbbX                   = mathBB["X"]
-dform mathbbY_df		: internal :: mode[tex] :: mathbbY                   = mathBB["Y"]
-dform mathbbZ_df		: internal :: mode[tex] :: mathbbZ                   = mathBB["Z"]
+dform mathbbA_df		: mode[tex] :: mathbbA                   = mathBB["A"]
+dform mathbbB_df		: mode[tex] :: mathbbB                   = mathBB["B"]
+dform mathbbC_df		: mode[tex] :: mathbbC                   = mathBB["C"]
+dform mathbbD_df		: mode[tex] :: mathbbD                   = mathBB["D"]
+dform mathbbE_df		: mode[tex] :: mathbbE                   = mathBB["E"]
+dform mathbbF_df		: mode[tex] :: mathbbF                   = mathBB["F"]
+dform mathbbG_df		: mode[tex] :: mathbbG                   = mathBB["G"]
+dform mathbbH_df		: mode[tex] :: mathbbH                   = mathBB["H"]
+dform mathbbI_df		: mode[tex] :: mathbbI                   = mathBB["I"]
+dform mathbbJ_df		: mode[tex] :: mathbbJ                   = mathBB["J"]
+dform mathbbK_df		: mode[tex] :: mathbbK                   = mathBB["K"]
+dform mathbbL_df		: mode[tex] :: mathbbL                   = mathBB["L"]
+dform mathbbM_df		: mode[tex] :: mathbbM                   = mathBB["M"]
+dform mathbbN_df		: mode[tex] :: mathbbN                   = mathBB["N"]
+dform mathbbO_df		: mode[tex] :: mathbbO                   = mathBB["O"]
+dform mathbbP_df		: mode[tex] :: mathbbP                   = mathBB["P"]
+dform mathbbQ_df		: mode[tex] :: mathbbQ                   = mathBB["Q"]
+dform mathbbR_df		: mode[tex] :: mathbbR                   = mathBB["R"]
+dform mathbbS_df		: mode[tex] :: mathbbS                   = mathBB["S"]
+dform mathbbT_df		: mode[tex] :: mathbbT                   = mathBB["T"]
+dform mathbbU_df		: mode[tex] :: mathbbU                   = mathBB["U"]
+dform mathbbV_df		: mode[tex] :: mathbbV                   = mathBB["V"]
+dform mathbbW_df		: mode[tex] :: mathbbW                   = mathBB["W"]
+dform mathbbX_df		: mode[tex] :: mathbbX                   = mathBB["X"]
+dform mathbbY_df		: mode[tex] :: mathbbY                   = mathBB["Y"]
+dform mathbbZ_df		: mode[tex] :: mathbbZ                   = mathBB["Z"]
 
-dform shortLeftarrow_df		: internal :: mode[prl] :: shortLeftarrow            = atomic["⇐"]
-dform leftarrow_df		: internal :: mode[prl] :: Leftarrow                 = atomic["⇐═"]
-dform middlearrow_df		: internal :: mode[prl] :: Middlearrow               = atomic["═"]
-dform shortRightarrow_df	: internal :: mode[prl] :: shortRightarrow           = atomic["⇒"]
-dform rightarrow_df		: internal :: mode[prl] :: Rightarrow                = atomic["═⇒"]
-dform leftrightarrow_df		: internal :: mode[prl] :: Leftrightarrow            = atomic["⇐═⇒"]
-dform ulcorner_df		: internal :: mode[prl] :: ulcorner                  = atomic["⌈"]
-dform urcorner_df		: internal :: mode[prl] :: urcorner                  = atomic["⌉"]
-dform vdash_df                  : internal :: mode[prl] :: vdash                     = atomic["⊢"]
-dform integral_df		: internal :: mode[prl] :: integral                  = atomic["∫"]
-dform cdot_df                   : internal :: mode[prl] :: cdot                      = atomic["⋅"]
-dform downarrow_df		: internal :: mode[prl] :: downarrow                 = atomic["↓"]
-dform uparrow_df		: internal :: mode[prl] :: uparrow                   = atomic["↑"]
-dform vartriangleleft_df	: internal :: mode[prl] :: vartriangleleft           = atomic["◁"]
-dform vartriangleright_df	: internal :: mode[prl] :: vartriangleright          = atomic["▷"]
-dform alpha_df                  : internal :: mode[prl] :: alpha                     = atomic["α"]
-dform beta_df			: internal :: mode[prl] :: beta                      = atomic["β"]
-dform pi_df			: internal :: mode[prl] :: pi                        = atomic["π"]
-dform lambda_df			: internal :: mode[prl] :: lambda                    = atomic["λ"]
-dform gamma_df			: internal :: mode[prl] :: gamma                     = atomic["γ"]
-dform delta_df			: internal :: mode[prl] :: delta                     = atomic["δ"]
-dform rho_df			: internal :: mode[prl] :: rho                       = atomic["ρ"]
-dform sigma_df			: internal :: mode[prl] :: sigma                     = atomic["σ"]
-dform epsilon_df		: internal :: mode[prl] :: epsilon                   = atomic["ε"]
-dform eta_df			: internal :: mode[prl] :: eta                       = atomic["η"]
-dform theta_df			: internal :: mode[prl] :: theta                     = atomic["θ"]
-dform iota_df			: internal :: mode[prl] :: iota                      = atomic["ι"]
-dform kappa_df			: internal :: mode[prl] :: kappa                     = atomic["κ"]
-dform mu_df			: internal :: mode[prl] :: mu                        = atomic["μ"]
-dform nu_df			: internal :: mode[prl] :: nu                        = atomic["ν"]
-dform omicron_df		: internal :: mode[prl] :: omicron                   = atomic["ο"]
-dform tau_df			: internal :: mode[prl] :: tau                       = atomic["τ"]
-dform phi_df			: internal :: mode[prl] :: phi                       = atomic["φ"]
-dform xi_df			: internal :: mode[prl] :: xi                        = atomic["χ"]
-dform omega_df			: internal :: mode[prl] :: omega                     = atomic["ω"]
+dform shortLeftarrow_df		: mode[prl] :: shortLeftarrow            = atomic["⇐"]
+dform leftarrow_df		: mode[prl] :: Leftarrow                 = atomic["⇐═"]
+dform middlearrow_df		: mode[prl] :: Middlearrow               = atomic["═"]
+dform shortRightarrow_df	: mode[prl] :: shortRightarrow           = atomic["⇒"]
+dform rightarrow_df		: mode[prl] :: Rightarrow                = atomic["═⇒"]
+dform leftrightarrow_df		: mode[prl] :: Leftrightarrow            = atomic["⇐═⇒"]
+dform ulcorner_df		: mode[prl] :: ulcorner                  = atomic["⌈"]
+dform urcorner_df		: mode[prl] :: urcorner                  = atomic["⌉"]
+dform vdash_df                  : mode[prl] :: vdash                     = atomic["⊢"]
+dform integral_df		: mode[prl] :: integral                  = atomic["∫"]
+dform cdot_df                   : mode[prl] :: cdot                      = atomic["⋅"]
+dform downarrow_df		: mode[prl] :: downarrow                 = atomic["↓"]
+dform uparrow_df		: mode[prl] :: uparrow                   = atomic["↑"]
+dform vartriangleleft_df	: mode[prl] :: vartriangleleft           = atomic["◁"]
+dform vartriangleright_df	: mode[prl] :: vartriangleright          = atomic["▷"]
+dform alpha_df                  : mode[prl] :: alpha                     = atomic["α"]
+dform beta_df			: mode[prl] :: beta                      = atomic["β"]
+dform pi_df			: mode[prl] :: pi                        = atomic["π"]
+dform lambda_df			: mode[prl] :: lambda                    = atomic["λ"]
+dform gamma_df			: mode[prl] :: gamma                     = atomic["γ"]
+dform delta_df			: mode[prl] :: delta                     = atomic["δ"]
+dform rho_df			: mode[prl] :: rho                       = atomic["ρ"]
+dform sigma_df			: mode[prl] :: sigma                     = atomic["σ"]
+dform epsilon_df		: mode[prl] :: epsilon                   = atomic["ε"]
+dform eta_df			: mode[prl] :: eta                       = atomic["η"]
+dform theta_df			: mode[prl] :: theta                     = atomic["θ"]
+dform iota_df			: mode[prl] :: iota                      = atomic["ι"]
+dform kappa_df			: mode[prl] :: kappa                     = atomic["κ"]
+dform mu_df			: mode[prl] :: mu                        = atomic["μ"]
+dform nu_df			: mode[prl] :: nu                        = atomic["ν"]
+dform omicron_df		: mode[prl] :: omicron                   = atomic["ο"]
+dform tau_df			: mode[prl] :: tau                       = atomic["τ"]
+dform phi_df			: mode[prl] :: phi                       = atomic["φ"]
+dform xi_df			: mode[prl] :: xi                        = atomic["χ"]
+dform omega_df			: mode[prl] :: omega                     = atomic["ω"]
 
-dform shortLeftarrow_df		: internal :: mode[html] :: shortLeftarrow            = html_uni[8656]
-dform leftarrow_df		: internal :: mode[html] :: Leftarrow                 = html_uni[8656]
-dform middlearrow_df		: internal :: mode[html] :: Middlearrow               = html_uni[9552]
-dform shortRightarrow_df	: internal :: mode[html] :: shortRightarrow           = html_uni[8658]
-dform rightarrow_df		: internal :: mode[html] :: Rightarrow                = html_uni[8658]
-dform leftrightarrow_df		: internal :: mode[html] :: Leftrightarrow            = html_uni[8660]
-dform ulcorner_df		: internal :: mode[html] :: ulcorner                  = html_uni[8968]
-dform urcorner_df		: internal :: mode[html] :: urcorner                  = html_uni[8969]
-dform vdash_df                  : internal :: mode[html] :: vdash                     = html_uni[8866]
-dform integral_df		: internal :: mode[html] :: integral                  = html_uni[8747]
-dform cdot_df                   : internal :: mode[html] :: cdot                      = html_sym["middot"]
-dform downarrow_df		: internal :: mode[html] :: downarrow                 = html_uni[8595]
-dform uparrow_df		: internal :: mode[html] :: uparrow                   = html_uni[8593]
-dform vartriangleleft_df	: internal :: mode[html] :: vartriangleleft           = html_uni[9665]
-dform vartriangleright_df	: internal :: mode[html] :: vartriangleright          = html_uni[9655]
-dform alpha_df                  : internal :: mode[html] :: alpha                     = html_uni[945]
-dform beta_df			: internal :: mode[html] :: beta                      = html_uni[946]
-dform pi_df			: internal :: mode[html] :: pi                        = html_uni[960]
-dform lambda_df			: internal :: mode[html] :: lambda                    = html_uni[955]
-dform gamma_df			: internal :: mode[html] :: gamma                     = html_uni[947]
-dform delta_df			: internal :: mode[html] :: delta                     = html_uni[948]
-dform rho_df			: internal :: mode[html] :: rho                       = html_uni[961]
-dform sigma_df			: internal :: mode[html] :: sigma                     = html_uni[963]
-dform epsilon_df		: internal :: mode[html] :: epsilon                   = html_uni[949]
-dform eta_df			: internal :: mode[html] :: eta                       = html_uni[951]
-dform theta_df			: internal :: mode[html] :: theta                     = html_uni[952]
-dform iota_df			: internal :: mode[html] :: iota                      = html_uni[953]
-dform kappa_df			: internal :: mode[html] :: kappa                     = html_uni[954]
-dform mu_df			: internal :: mode[html] :: mu                        = html_uni[956]
-dform nu_df			: internal :: mode[html] :: nu                        = html_uni[957]
-dform omicron_df		: internal :: mode[html] :: omicron                   = html_uni[959]
-dform tau_df			: internal :: mode[html] :: tau                       = html_uni[964]
-dform phi_df			: internal :: mode[html] :: phi                       = html_uni[966]
-dform xi_df			: internal :: mode[html] :: xi                        = html_uni[967]
-dform omega_df			: internal :: mode[html] :: omega                     = html_uni[969]
+dform shortLeftarrow_df		: mode[html] :: shortLeftarrow            = html_uni[8656]
+dform leftarrow_df		: mode[html] :: Leftarrow                 = html_uni[8656]
+dform middlearrow_df		: mode[html] :: Middlearrow               = html_uni[9552]
+dform shortRightarrow_df	: mode[html] :: shortRightarrow           = html_uni[8658]
+dform rightarrow_df		: mode[html] :: Rightarrow                = html_uni[8658]
+dform leftrightarrow_df		: mode[html] :: Leftrightarrow            = html_uni[8660]
+dform ulcorner_df		: mode[html] :: ulcorner                  = html_uni[8968]
+dform urcorner_df		: mode[html] :: urcorner                  = html_uni[8969]
+dform vdash_df                  : mode[html] :: vdash                     = html_uni[8866]
+dform integral_df		: mode[html] :: integral                  = html_uni[8747]
+dform cdot_df                   : mode[html] :: cdot                      = html_sym["middot"]
+dform downarrow_df		: mode[html] :: downarrow                 = html_uni[8595]
+dform uparrow_df		: mode[html] :: uparrow                   = html_uni[8593]
+dform vartriangleleft_df	: mode[html] :: vartriangleleft           = html_uni[9665]
+dform vartriangleright_df	: mode[html] :: vartriangleright          = html_uni[9655]
+dform alpha_df                  : mode[html] :: alpha                     = html_uni[945]
+dform beta_df			: mode[html] :: beta                      = html_uni[946]
+dform pi_df			: mode[html] :: pi                        = html_uni[960]
+dform lambda_df			: mode[html] :: lambda                    = html_uni[955]
+dform gamma_df			: mode[html] :: gamma                     = html_uni[947]
+dform delta_df			: mode[html] :: delta                     = html_uni[948]
+dform rho_df			: mode[html] :: rho                       = html_uni[961]
+dform sigma_df			: mode[html] :: sigma                     = html_uni[963]
+dform epsilon_df		: mode[html] :: epsilon                   = html_uni[949]
+dform eta_df			: mode[html] :: eta                       = html_uni[951]
+dform theta_df			: mode[html] :: theta                     = html_uni[952]
+dform iota_df			: mode[html] :: iota                      = html_uni[953]
+dform kappa_df			: mode[html] :: kappa                     = html_uni[954]
+dform mu_df			: mode[html] :: mu                        = html_uni[956]
+dform nu_df			: mode[html] :: nu                        = html_uni[957]
+dform omicron_df		: mode[html] :: omicron                   = html_uni[959]
+dform tau_df			: mode[html] :: tau                       = html_uni[964]
+dform phi_df			: mode[html] :: phi                       = html_uni[966]
+dform xi_df			: mode[html] :: xi                        = html_uni[967]
+dform omega_df			: mode[html] :: omega                     = html_uni[969]
 
-dform shortLeftarrow_df		: internal :: mode[tex] :: shortLeftarrow            = mathmacro["leftarrow"]
-dform leftarrow_df		: internal :: mode[tex] :: Leftarrow                 = mathmacro["leftarrow"]
-dform middlearrow_df		: internal :: mode[tex] :: Middlearrow               = mathmacro["-"]
-dform shortRightarrow_df	: internal :: mode[tex] :: shortRightarrow           = mathmacro["rightarrow"]
-dform rightarrow_df		: internal :: mode[tex] :: Rightarrow                = mathmacro["rightarrow"]
-dform leftrightarrow_df		: internal :: mode[tex] :: Leftrightarrow            = mathmacro["leftrightarrow"]
-dform ulcorner_df		: internal :: mode[tex] :: ulcorner                  = mathmacro["ulcorner"]
-dform urcorner_df		: internal :: mode[tex] :: urcorner                  = mathmacro["urcorner"]
-dform mid			: internal :: mode[tex] :: mid                       = `"|"
-dform vdash_df                  : internal :: mode[tex] :: vdash                     = mathmacro["vdash"]
-dform integral_df		: internal :: mode[tex] :: integral                  = mathmacro["int"]
-dform cdot_df                   : internal :: mode[tex] :: cdot                      = mathmacro["cdot"]
-dform downarrow_df		: internal :: mode[tex] :: downarrow                 = mathmacro["downarrow"]
-dform uparrow_df		: internal :: mode[tex] :: uparrow                   = mathmacro["uparrow"]
-dform vartriangleleft_df	: internal :: mode[tex] :: vartriangleleft           = mathmacro["vartriangleleft"]
-dform vartriangleright_df	: internal :: mode[tex] :: vartriangleright          = mathmacro["vartriangleright"]
-dform alpha_df                  : internal :: mode[tex] :: alpha                     = mathmacro["alpha"]
-dform beta_df			: internal :: mode[tex] :: beta                      = mathmacro["beta"]
-dform pi_df			: internal :: mode[tex] :: pi                        = mathmacro["pi"]
-dform lambda_df			: internal :: mode[tex] :: lambda                    = mathmacro["lambda"]
-dform gamma_df			: internal :: mode[tex] :: gamma                     = mathmacro["gamma"]
-dform delta_df			: internal :: mode[tex] :: delta                     = mathmacro["delta"]
-dform rho_df			: internal :: mode[tex] :: rho                       = mathmacro["rho"]
-dform sigma_df			: internal :: mode[tex] :: sigma                     = mathmacro["sigma"]
-dform epsilon_df		: internal :: mode[tex] :: epsilon                   = mathmacro["epsilon"]
-dform eta_df			: internal :: mode[tex] :: eta                       = mathmacro["eta"]
-dform theta_df			: internal :: mode[tex] :: theta                     = mathmacro["theta"]
-dform iota_df			: internal :: mode[tex] :: iota                      = mathmacro["iota"]
-dform kappa_df			: internal :: mode[tex] :: kappa                     = mathmacro["kappa"]
-dform mu_df			: internal :: mode[tex] :: mu                        = mathmacro["mu"]
-dform nu_df			: internal :: mode[tex] :: nu                        = mathmacro["nu"]
-dform omicron_df		: internal :: mode[tex] :: omicron                   = mathmacro["omicron"]
-dform tau_df			: internal :: mode[tex] :: tau                       = mathmacro["tau"]
-dform phi_df			: internal :: mode[tex] :: phi                       = mathmacro["phi"]
-dform xi_df			: internal :: mode[tex] :: xi                        = mathmacro["xi"]
-dform omega_df			: internal :: mode[tex] :: omega                     = mathmacro["omega"]
+dform shortLeftarrow_df		: mode[tex] :: shortLeftarrow            = mathmacro["leftarrow"]
+dform leftarrow_df		: mode[tex] :: Leftarrow                 = mathmacro["leftarrow"]
+dform middlearrow_df		: mode[tex] :: Middlearrow               = mathmacro["-"]
+dform shortRightarrow_df	: mode[tex] :: shortRightarrow           = mathmacro["rightarrow"]
+dform rightarrow_df		: mode[tex] :: Rightarrow                = mathmacro["rightarrow"]
+dform leftrightarrow_df		: mode[tex] :: Leftrightarrow            = mathmacro["leftrightarrow"]
+dform ulcorner_df		: mode[tex] :: ulcorner                  = mathmacro["ulcorner"]
+dform urcorner_df		: mode[tex] :: urcorner                  = mathmacro["urcorner"]
+dform mid			: mode[tex] :: mid                       = `"|"
+dform vdash_df                  : mode[tex] :: vdash                     = mathmacro["vdash"]
+dform integral_df		: mode[tex] :: integral                  = mathmacro["int"]
+dform cdot_df                   : mode[tex] :: cdot                      = mathmacro["cdot"]
+dform downarrow_df		: mode[tex] :: downarrow                 = mathmacro["downarrow"]
+dform uparrow_df		: mode[tex] :: uparrow                   = mathmacro["uparrow"]
+dform vartriangleleft_df	: mode[tex] :: vartriangleleft           = mathmacro["vartriangleleft"]
+dform vartriangleright_df	: mode[tex] :: vartriangleright          = mathmacro["vartriangleright"]
+dform alpha_df                  : mode[tex] :: alpha                     = mathmacro["alpha"]
+dform beta_df			: mode[tex] :: beta                      = mathmacro["beta"]
+dform pi_df			: mode[tex] :: pi                        = mathmacro["pi"]
+dform lambda_df			: mode[tex] :: lambda                    = mathmacro["lambda"]
+dform gamma_df			: mode[tex] :: gamma                     = mathmacro["gamma"]
+dform delta_df			: mode[tex] :: delta                     = mathmacro["delta"]
+dform rho_df			: mode[tex] :: rho                       = mathmacro["rho"]
+dform sigma_df			: mode[tex] :: sigma                     = mathmacro["sigma"]
+dform epsilon_df		: mode[tex] :: epsilon                   = mathmacro["epsilon"]
+dform eta_df			: mode[tex] :: eta                       = mathmacro["eta"]
+dform theta_df			: mode[tex] :: theta                     = mathmacro["theta"]
+dform iota_df			: mode[tex] :: iota                      = mathmacro["iota"]
+dform kappa_df			: mode[tex] :: kappa                     = mathmacro["kappa"]
+dform mu_df			: mode[tex] :: mu                        = mathmacro["mu"]
+dform nu_df			: mode[tex] :: nu                        = mathmacro["nu"]
+dform omicron_df		: mode[tex] :: omicron                   = mathmacro["omicron"]
+dform tau_df			: mode[tex] :: tau                       = mathmacro["tau"]
+dform phi_df			: mode[tex] :: phi                       = mathmacro["phi"]
+dform xi_df			: mode[tex] :: xi                        = mathmacro["xi"]
+dform omega_df			: mode[tex] :: omega                     = mathmacro["omega"]
 
-dform wedge_df			: internal :: mode[prl] :: wedge                     = atomic["∧"]
-dform tneg_df			: internal :: mode[prl] :: tneg                      = atomic["¬"]
-dform member_df			: internal :: mode[prl] :: member                    = atomic["∈"]
-dform plusminus_df		: internal :: mode[prl] :: plusminus                 = atomic["±"]
-dform oplus_df			: internal :: mode[prl] :: oplus                     = atomic["⊕"]
-dform infty_df			: internal :: mode[prl] :: infty                     = atomic["∞"]
-dform partial_df		: internal :: mode[prl] :: partial                   = atomic["∂"]
-dform cap_df			: internal :: mode[prl] :: cap                       = atomic["∩"]
-dform cup_df			: internal :: mode[prl] :: cup                       = atomic["∪"]
-dform forall_df			: internal :: mode[prl] :: forall                    = atomic["∀"]
-dform exists_df			: internal :: mode[prl] :: "exists"                  = atomic["∃"]
-dform oinfty_df			: internal :: mode[prl] :: oinfty                    = atomic["∝"]
-dform shortleftrightarrow_df	: internal :: mode[prl] :: shortleftrightarrow       = atomic["↔"]
-dform shortleftarrow_df		: internal :: mode[prl] :: shortleftarrow            = atomic["←"]
-dform shortrightarrow_df	: internal :: mode[prl] :: shortrightarrow           = atomic["→"]
-dform longleftrightarrow_df	: internal :: mode[prl] :: longleftrightarrow        = atomic["←──→"]
-dform longleftarrow_df		: internal :: mode[prl] :: longleftarrow             = atomic["←──"]
-dform longrightarrow_df		: internal :: mode[prl] :: longrightarrow            = atomic["──→"]
-dform neq_df			: internal :: mode[prl] :: neq                       = atomic["≠"]
-dform sim_df			: internal :: mode[prl] :: sim                       = atomic["∼"] (* atomic["~"] or atomic["˜"] *)
-dform cong_df			: internal :: mode[prl] :: cong                      = atomic["≅"]
-dform le_df			: internal :: mode[prl] :: le                        = atomic["≤"]
-dform ge_df			: internal :: mode[prl] :: ge                        = atomic["≥"]
-dform equiv_df			: internal :: mode[prl] :: equiv                     = atomic["≡"]
-dform vee_df			: internal :: mode[prl] :: vee                       = atomic["∨"]
-dform perp_df			: internal :: mode[prl] :: perp                      = atomic["⊥"]
-dform esq_dfl			: internal :: mode[prl] :: esq_l                     = atomic["〚"]
-dform esq_dfr			: internal :: mode[prl] :: esq_r                     = atomic["〛"]
-dform leftarrow_df		: internal :: mode[prl] :: leftarrow                 = atomic["←─"]
-dform middlearrow_df		: internal :: mode[prl] :: middlearrow               = atomic["─"]
-dform rightarrow_df		: internal :: mode[prl] :: rightarrow                = atomic["─→"]
-dform gamma_df			: internal :: mode[prl] :: Gamma                     = atomic["Γ"]
-dform delta_df			: internal :: mode[prl] :: Delta                     = atomic["Δ"]
-dform lambda_df		        : internal :: mode[prl] :: Lambda                    = atomic["Λ"]
-dform sigma_df			: internal :: mode[prl] :: Sigma                     = atomic["Σ"]
-dform pi_df			: internal :: mode[prl] :: Pi                        = atomic["Π"]
-dform omega_df		        : internal :: mode[prl] :: Omega                     = atomic["Ω"]
-dform times_df			: internal :: mode[prl] :: times                     = atomic["╳"] (* or atomic["⋆"] or atomic["×"] or atomic["⨉"] or atomic["⋊"] or atomic["⨯"] *)
-dform div_df            	: internal :: mode[prl] :: "div"                     = atomic["÷"]
-dform supplus_df		: internal :: mode[prl] :: supplus                   = atomic["⁺"]
-dform supminus_df		: internal :: mode[prl] :: supminus                  = atomic["⁻"]
-dform supcirc_df		: internal :: mode[prl] :: supcirc                   = atomic["°"]
-dform subset_df			: internal :: mode[prl] :: "subset"                  = atomic["⊂"]
-dform supset_df			: internal :: mode[prl] :: supset                    = atomic["⊃"]
-dform subseteq_df		: internal :: mode[prl] :: subseteq                  = atomic["⊆"]
-dform supseteq_df		: internal :: mode[prl] :: supseteq                  = atomic["⊇"]
-dform sqsubset_df		: internal :: mode[prl] :: sqsubset                  = atomic["⊏"]
-dform sqsupset_df		: internal :: mode[prl] :: sqsupset                  = atomic["⊐"]
-dform sqsubseteq_df		: internal :: mode[prl] :: sqsubseteq                = atomic["⊑"]
-dform sqsupseteq_df		: internal :: mode[prl] :: sqsupseteq                = atomic["⊒"]
-dform subzero_df		: internal :: mode[prl] :: subzero                   = atomic["₀"]
-dform subone_df			: internal :: mode[prl] :: subone                    = atomic["₁"]
-dform subtwo_df			: internal :: mode[prl] :: subtwo                    = atomic["₂"]
-dform subthree_df		: internal :: mode[prl] :: subthree                  = atomic["₃"]
+dform wedge_df			: mode[prl] :: wedge                     = atomic["∧"]
+dform tneg_df			: mode[prl] :: tneg                      = atomic["¬"]
+dform member_df			: mode[prl] :: member                    = atomic["∈"]
+dform plusminus_df		: mode[prl] :: plusminus                 = atomic["±"]
+dform oplus_df			: mode[prl] :: oplus                     = atomic["⊕"]
+dform infty_df			: mode[prl] :: infty                     = atomic["∞"]
+dform partial_df		: mode[prl] :: partial                   = atomic["∂"]
+dform cap_df			: mode[prl] :: cap                       = atomic["∩"]
+dform cup_df			: mode[prl] :: cup                       = atomic["∪"]
+dform forall_df			: mode[prl] :: forall                    = atomic["∀"]
+dform exists_df			: mode[prl] :: "exists"                  = atomic["∃"]
+dform oinfty_df			: mode[prl] :: oinfty                    = atomic["∝"]
+dform shortleftrightarrow_df	: mode[prl] :: shortleftrightarrow       = atomic["↔"]
+dform shortleftarrow_df		: mode[prl] :: shortleftarrow            = atomic["←"]
+dform shortrightarrow_df	: mode[prl] :: shortrightarrow           = atomic["→"]
+dform longleftrightarrow_df	: mode[prl] :: longleftrightarrow        = atomic["←──→"]
+dform longleftarrow_df		: mode[prl] :: longleftarrow             = atomic["←──"]
+dform longrightarrow_df		: mode[prl] :: longrightarrow            = atomic["──→"]
+dform neq_df			: mode[prl] :: neq                       = atomic["≠"]
+dform sim_df			: mode[prl] :: sim                       = atomic["∼"] (* atomic["~"] or atomic["˜"] *)
+dform cong_df			: mode[prl] :: cong                      = atomic["≅"]
+dform le_df			: mode[prl] :: le                        = atomic["≤"]
+dform ge_df			: mode[prl] :: ge                        = atomic["≥"]
+dform equiv_df			: mode[prl] :: equiv                     = atomic["≡"]
+dform vee_df			: mode[prl] :: vee                       = atomic["∨"]
+dform perp_df			: mode[prl] :: perp                      = atomic["⊥"]
+dform esq_dfl			: mode[prl] :: esq_l                     = atomic["〚"]
+dform esq_dfr			: mode[prl] :: esq_r                     = atomic["〛"]
+dform leftarrow_df		: mode[prl] :: leftarrow                 = atomic["←─"]
+dform middlearrow_df		: mode[prl] :: middlearrow               = atomic["─"]
+dform rightarrow_df		: mode[prl] :: rightarrow                = atomic["─→"]
+dform gamma_df			: mode[prl] :: Gamma                     = atomic["Γ"]
+dform delta_df			: mode[prl] :: Delta                     = atomic["Δ"]
+dform lambda_df		        : mode[prl] :: Lambda                    = atomic["Λ"]
+dform sigma_df			: mode[prl] :: Sigma                     = atomic["Σ"]
+dform pi_df			: mode[prl] :: Pi                        = atomic["Π"]
+dform omega_df		        : mode[prl] :: Omega                     = atomic["Ω"]
+dform times_df			: mode[prl] :: times                     = atomic["╳"] (* or atomic["⋆"] or atomic["×"] or atomic["⨉"] or atomic["⋊"] or atomic["⨯"] *)
+dform div_df            	: mode[prl] :: "div"                     = atomic["÷"]
+dform supplus_df		: mode[prl] :: supplus                   = atomic["⁺"]
+dform supminus_df		: mode[prl] :: supminus                  = atomic["⁻"]
+dform supcirc_df		: mode[prl] :: supcirc                   = atomic["°"]
+dform subset_df			: mode[prl] :: "subset"                  = atomic["⊂"]
+dform supset_df			: mode[prl] :: supset                    = atomic["⊃"]
+dform subseteq_df		: mode[prl] :: subseteq                  = atomic["⊆"]
+dform supseteq_df		: mode[prl] :: supseteq                  = atomic["⊇"]
+dform sqsubset_df		: mode[prl] :: sqsubset                  = atomic["⊏"]
+dform sqsupset_df		: mode[prl] :: sqsupset                  = atomic["⊐"]
+dform sqsubseteq_df		: mode[prl] :: sqsubseteq                = atomic["⊑"]
+dform sqsupseteq_df		: mode[prl] :: sqsupseteq                = atomic["⊒"]
+dform subzero_df		: mode[prl] :: subzero                   = atomic["₀"]
+dform subone_df			: mode[prl] :: subone                    = atomic["₁"]
+dform subtwo_df			: mode[prl] :: subtwo                    = atomic["₂"]
+dform subthree_df		: mode[prl] :: subthree                  = atomic["₃"]
 
-dform suba_df			: internal :: mode[prl] :: suba = atomic["⒜"]
-dform subb_df			: internal :: mode[prl] :: subb = atomic["⒝"]
-dform subc_df			: internal :: mode[prl] :: subc = atomic["⒞"]
-dform subd_df			: internal :: mode[prl] :: subd = atomic["⒟"]
-dform sube_df			: internal :: mode[prl] :: sube = atomic["⒠"]
-dform subf_df			: internal :: mode[prl] :: subf = atomic["⒡"]
-dform subg_df			: internal :: mode[prl] :: subg = atomic["⒢"]
-dform subh_df			: internal :: mode[prl] :: subh = atomic["⒣"]
-dform subi_df			: internal :: mode[prl] :: subi = atomic["⒤"]
-dform subj_df			: internal :: mode[prl] :: subj = atomic["⒥"]
-dform subk_df			: internal :: mode[prl] :: subk = atomic["⒦"]
-dform subl_df			: internal :: mode[prl] :: subl = atomic["⒧"]
-dform subm_df			: internal :: mode[prl] :: subm = atomic["⒨"]
-dform subn_df			: internal :: mode[prl] :: subn = atomic["⒩"]
-dform subo_df			: internal :: mode[prl] :: subo = atomic["⒪"]
-dform subp_df			: internal :: mode[prl] :: subp = atomic["⒫"]
-dform subq_df			: internal :: mode[prl] :: subq = atomic["⒬"]
-dform subr_df			: internal :: mode[prl] :: subr = atomic["⒭"]
-dform subs_df			: internal :: mode[prl] :: subs = atomic["⒮"]
-dform subt_df			: internal :: mode[prl] :: subt = atomic["⒯"]
-dform subu_df			: internal :: mode[prl] :: subu = atomic["⒰"]
-dform subv_df			: internal :: mode[prl] :: subv = atomic["⒱"]
-dform subw_df			: internal :: mode[prl] :: subw = atomic["⒲"]
-dform subx_df			: internal :: mode[prl] :: subx = atomic["⒳"]
-dform suby_df			: internal :: mode[prl] :: suby = atomic["⒴"]
-dform subz_df			: internal :: mode[prl] :: subz = atomic["⒵"]
+dform suba_df			: mode[prl] :: suba = atomic["⒜"]
+dform subb_df			: mode[prl] :: subb = atomic["⒝"]
+dform subc_df			: mode[prl] :: subc = atomic["⒞"]
+dform subd_df			: mode[prl] :: subd = atomic["⒟"]
+dform sube_df			: mode[prl] :: sube = atomic["⒠"]
+dform subf_df			: mode[prl] :: subf = atomic["⒡"]
+dform subg_df			: mode[prl] :: subg = atomic["⒢"]
+dform subh_df			: mode[prl] :: subh = atomic["⒣"]
+dform subi_df			: mode[prl] :: subi = atomic["⒤"]
+dform subj_df			: mode[prl] :: subj = atomic["⒥"]
+dform subk_df			: mode[prl] :: subk = atomic["⒦"]
+dform subl_df			: mode[prl] :: subl = atomic["⒧"]
+dform subm_df			: mode[prl] :: subm = atomic["⒨"]
+dform subn_df			: mode[prl] :: subn = atomic["⒩"]
+dform subo_df			: mode[prl] :: subo = atomic["⒪"]
+dform subp_df			: mode[prl] :: subp = atomic["⒫"]
+dform subq_df			: mode[prl] :: subq = atomic["⒬"]
+dform subr_df			: mode[prl] :: subr = atomic["⒭"]
+dform subs_df			: mode[prl] :: subs = atomic["⒮"]
+dform subt_df			: mode[prl] :: subt = atomic["⒯"]
+dform subu_df			: mode[prl] :: subu = atomic["⒰"]
+dform subv_df			: mode[prl] :: subv = atomic["⒱"]
+dform subw_df			: mode[prl] :: subw = atomic["⒲"]
+dform subx_df			: mode[prl] :: subx = atomic["⒳"]
+dform suby_df			: mode[prl] :: suby = atomic["⒴"]
+dform subz_df			: mode[prl] :: subz = atomic["⒵"]
 
-dform wedge_df			: internal :: mode[html] :: wedge                     = html_uni[8743]
-dform tneg_df			: internal :: mode[html] :: tneg                      = html_sym["not"]
-dform member_df			: internal :: mode[html] :: member                    = html_uni[8712]
-dform plusminus_df		: internal :: mode[html] :: plusminus                 = html_sym["plusmn"]
-dform oplus_df			: internal :: mode[html] :: oplus                     = html_uni[8853]
-dform infty_df			: internal :: mode[html] :: infty                     = html_uni[8734]
-dform partial_df		: internal :: mode[html] :: partial                   = html_uni[8706]
-dform cap_df			: internal :: mode[html] :: cap                       = html_uni[8745]
-dform cup_df			: internal :: mode[html] :: cup                       = html_uni[8746]
-dform forall_df			: internal :: mode[html] :: forall                    = html_uni[8704]
-dform exists_df			: internal :: mode[html] :: "exists"                  = html_uni[8707]
-dform oinfty_df			: internal :: mode[html] :: oinfty                    = html_uni[8733]
-dform shortleftrightarrow_df	: internal :: mode[html] :: shortleftrightarrow       = html_uni[8596]
-dform shortleftarrow_df		: internal :: mode[html] :: shortleftarrow            = html_uni[8592]
-dform shortrightarrow_df	: internal :: mode[html] :: shortrightarrow           = html_uni[8594]
-dform longleftrightarrow_df	: internal :: mode[html] :: longleftrightarrow        = html_uni[8596]
-dform longleftarrow_df		: internal :: mode[html] :: longleftarrow             = html_uni[8592]
-dform longrightarrow_df		: internal :: mode[html] :: longrightarrow            = html_uni[8594]
-dform neq_df			: internal :: mode[html] :: neq                       = html_uni[8800]
-dform sim_df			: internal :: mode[html] :: sim                       = html_uni[8764]
-dform cong_df			: internal :: mode[html] :: cong                      = html_uni[8773]
-dform le_df			: internal :: mode[html] :: le                        = html_uni[8804]
-dform ge_df			: internal :: mode[html] :: ge                        = html_uni[8805]
-dform equiv_df			: internal :: mode[html] :: equiv                     = html_uni[8801]
-dform vee_df			: internal :: mode[html] :: vee                       = html_uni[8744]
-dform perp_df			: internal :: mode[html] :: perp                      = html_sym["perp"]
-dform esq_dfl			: internal :: mode[html] :: esq_l                     = html_uni[12314]
-dform esq_dfr			: internal :: mode[html] :: esq_r                     = html_uni[12315]
-dform leftarrow_df		: internal :: mode[html] :: leftarrow                 = html_uni[8592]
-dform middlearrow_df		: internal :: mode[html] :: middlearrow               = html_uni[9472]
-dform rightarrow_df		: internal :: mode[html] :: rightarrow                = html_uni[8594]
-dform gamma_df			: internal :: mode[html] :: Gamma                     = html_uni[915]
-dform delta_df			: internal :: mode[html] :: Delta                     = html_uni[916]
-dform lambda_df		        : internal :: mode[html] :: Lambda                    = html_uni[923]
-dform pi_df			: internal :: mode[html] :: Pi                        = html_uni[928]
-dform sigma_df			: internal :: mode[html] :: Sigma                     = html_uni[931]
-dform omega_df			: internal :: mode[html] :: Omega                     = html_uni[937]
-dform times_df			: internal :: mode[html] :: times                     = html_sym["times"]
-dform div_df            	: internal :: mode[html] :: "div"                     = html_sym["divide"]
-dform supplus_df		: internal :: mode[html] :: supplus                   = sup["+"]
-dform supminus_df		: internal :: mode[html] :: supminus                  = sup["-"]
-dform supcirc_df		: internal :: mode[html] :: supcirc                   = html_sym["deg"]
-dform subset_df			: internal :: mode[html] :: "subset"                  = html_uni[8834]
-dform supset_df			: internal :: mode[html] :: supset                    = html_uni[8835]
-dform subseteq_df		: internal :: mode[html] :: subseteq                  = html_uni[8838]
-dform supseteq_df		: internal :: mode[html] :: supseteq                  = html_uni[8839]
-dform sqsubset_df		: internal :: mode[html] :: sqsubset                  = html_uni[8847]
-dform sqsupset_df		: internal :: mode[html] :: sqsupset                  = html_uni[8848]
-dform sqsubseteq_df		: internal :: mode[html] :: sqsubseteq                = html_uni[8849]
-dform sqsupseteq_df		: internal :: mode[html] :: sqsupseteq                = html_uni[8850]
-dform subzero_df		: internal :: mode[html] :: subzero                   = sub["0"]
-dform subone_df			: internal :: mode[html] :: subone                    = sub["1"]
-dform subtwo_df			: internal :: mode[html] :: subtwo                    = sub["2"]
-dform subthree_df		: internal :: mode[html] :: subthree                  = sub["3"]
+dform wedge_df			: mode[html] :: wedge                     = html_uni[8743]
+dform tneg_df			: mode[html] :: tneg                      = html_sym["not"]
+dform member_df			: mode[html] :: member                    = html_uni[8712]
+dform plusminus_df		: mode[html] :: plusminus                 = html_sym["plusmn"]
+dform oplus_df			: mode[html] :: oplus                     = html_uni[8853]
+dform infty_df			: mode[html] :: infty                     = html_uni[8734]
+dform partial_df		: mode[html] :: partial                   = html_uni[8706]
+dform cap_df			: mode[html] :: cap                       = html_uni[8745]
+dform cup_df			: mode[html] :: cup                       = html_uni[8746]
+dform forall_df			: mode[html] :: forall                    = html_uni[8704]
+dform exists_df			: mode[html] :: "exists"                  = html_uni[8707]
+dform oinfty_df			: mode[html] :: oinfty                    = html_uni[8733]
+dform shortleftrightarrow_df	: mode[html] :: shortleftrightarrow       = html_uni[8596]
+dform shortleftarrow_df		: mode[html] :: shortleftarrow            = html_uni[8592]
+dform shortrightarrow_df	: mode[html] :: shortrightarrow           = html_uni[8594]
+dform longleftrightarrow_df	: mode[html] :: longleftrightarrow        = html_uni[8596]
+dform longleftarrow_df		: mode[html] :: longleftarrow             = html_uni[8592]
+dform longrightarrow_df		: mode[html] :: longrightarrow            = html_uni[8594]
+dform neq_df			: mode[html] :: neq                       = html_uni[8800]
+dform sim_df			: mode[html] :: sim                       = html_uni[8764]
+dform cong_df			: mode[html] :: cong                      = html_uni[8773]
+dform le_df			: mode[html] :: le                        = html_uni[8804]
+dform ge_df			: mode[html] :: ge                        = html_uni[8805]
+dform equiv_df			: mode[html] :: equiv                     = html_uni[8801]
+dform vee_df			: mode[html] :: vee                       = html_uni[8744]
+dform perp_df			: mode[html] :: perp                      = html_sym["perp"]
+dform esq_dfl			: mode[html] :: esq_l                     = html_uni[12314]
+dform esq_dfr			: mode[html] :: esq_r                     = html_uni[12315]
+dform leftarrow_df		: mode[html] :: leftarrow                 = html_uni[8592]
+dform middlearrow_df		: mode[html] :: middlearrow               = html_uni[9472]
+dform rightarrow_df		: mode[html] :: rightarrow                = html_uni[8594]
+dform gamma_df			: mode[html] :: Gamma                     = html_uni[915]
+dform delta_df			: mode[html] :: Delta                     = html_uni[916]
+dform lambda_df		        : mode[html] :: Lambda                    = html_uni[923]
+dform pi_df			: mode[html] :: Pi                        = html_uni[928]
+dform sigma_df			: mode[html] :: Sigma                     = html_uni[931]
+dform omega_df			: mode[html] :: Omega                     = html_uni[937]
+dform times_df			: mode[html] :: times                     = html_sym["times"]
+dform div_df            	: mode[html] :: "div"                     = html_sym["divide"]
+dform supplus_df		: mode[html] :: supplus                   = sup["+"]
+dform supminus_df		: mode[html] :: supminus                  = sup["-"]
+dform supcirc_df		: mode[html] :: supcirc                   = html_sym["deg"]
+dform subset_df			: mode[html] :: "subset"                  = html_uni[8834]
+dform supset_df			: mode[html] :: supset                    = html_uni[8835]
+dform subseteq_df		: mode[html] :: subseteq                  = html_uni[8838]
+dform supseteq_df		: mode[html] :: supseteq                  = html_uni[8839]
+dform sqsubset_df		: mode[html] :: sqsubset                  = html_uni[8847]
+dform sqsupset_df		: mode[html] :: sqsupset                  = html_uni[8848]
+dform sqsubseteq_df		: mode[html] :: sqsubseteq                = html_uni[8849]
+dform sqsupseteq_df		: mode[html] :: sqsupseteq                = html_uni[8850]
+dform subzero_df		: mode[html] :: subzero                   = sub["0"]
+dform subone_df			: mode[html] :: subone                    = sub["1"]
+dform subtwo_df			: mode[html] :: subtwo                    = sub["2"]
+dform subthree_df		: mode[html] :: subthree                  = sub["3"]
 
-dform suba_df			: internal :: mode[html] :: suba = sub["a"]
-dform subb_df			: internal :: mode[html] :: subb = sub["b"]
-dform subc_df			: internal :: mode[html] :: subc = sub["c"]
-dform subd_df			: internal :: mode[html] :: subd = sub["d"]
-dform sube_df			: internal :: mode[html] :: sube = sub["e"]
-dform subf_df			: internal :: mode[html] :: subf = sub["f"]
-dform subg_df			: internal :: mode[html] :: subg = sub["g"]
-dform subh_df			: internal :: mode[html] :: subh = sub["h"]
-dform subi_df			: internal :: mode[html] :: subi = sub["i"]
-dform subj_df			: internal :: mode[html] :: subj = sub["j"]
-dform subk_df			: internal :: mode[html] :: subk = sub["k"]
-dform subl_df			: internal :: mode[html] :: subl = sub["l"]
-dform subm_df			: internal :: mode[html] :: subm = sub["m"]
-dform subn_df			: internal :: mode[html] :: subn = sub["n"]
-dform subo_df			: internal :: mode[html] :: subo = sub["o"]
-dform subp_df			: internal :: mode[html] :: subp = sub["p"]
-dform subq_df			: internal :: mode[html] :: subq = sub["q"]
-dform subr_df			: internal :: mode[html] :: subr = sub["r"]
-dform subs_df			: internal :: mode[html] :: subs = sub["s"]
-dform subt_df			: internal :: mode[html] :: subt = sub["t"]
-dform subu_df			: internal :: mode[html] :: subu = sub["u"]
-dform subv_df			: internal :: mode[html] :: subv = sub["v"]
-dform subw_df			: internal :: mode[html] :: subw = sub["w"]
-dform subx_df			: internal :: mode[html] :: subx = sub["x"]
-dform suby_df			: internal :: mode[html] :: suby = sub["y"]
-dform subz_df			: internal :: mode[html] :: subz = sub["z"]
+dform suba_df			: mode[html] :: suba = sub["a"]
+dform subb_df			: mode[html] :: subb = sub["b"]
+dform subc_df			: mode[html] :: subc = sub["c"]
+dform subd_df			: mode[html] :: subd = sub["d"]
+dform sube_df			: mode[html] :: sube = sub["e"]
+dform subf_df			: mode[html] :: subf = sub["f"]
+dform subg_df			: mode[html] :: subg = sub["g"]
+dform subh_df			: mode[html] :: subh = sub["h"]
+dform subi_df			: mode[html] :: subi = sub["i"]
+dform subj_df			: mode[html] :: subj = sub["j"]
+dform subk_df			: mode[html] :: subk = sub["k"]
+dform subl_df			: mode[html] :: subl = sub["l"]
+dform subm_df			: mode[html] :: subm = sub["m"]
+dform subn_df			: mode[html] :: subn = sub["n"]
+dform subo_df			: mode[html] :: subo = sub["o"]
+dform subp_df			: mode[html] :: subp = sub["p"]
+dform subq_df			: mode[html] :: subq = sub["q"]
+dform subr_df			: mode[html] :: subr = sub["r"]
+dform subs_df			: mode[html] :: subs = sub["s"]
+dform subt_df			: mode[html] :: subt = sub["t"]
+dform subu_df			: mode[html] :: subu = sub["u"]
+dform subv_df			: mode[html] :: subv = sub["v"]
+dform subw_df			: mode[html] :: subw = sub["w"]
+dform subx_df			: mode[html] :: subx = sub["x"]
+dform suby_df			: mode[html] :: suby = sub["y"]
+dform subz_df			: mode[html] :: subz = sub["z"]
 
-dform wedge_df			: internal :: mode[tex] :: wedge                     = mathmacro["wedge"]
-dform tneg_df			: internal :: mode[tex] :: tneg                      = mathmacro["neg"]
-dform member_df			: internal :: mode[tex] :: member                    = mathmacro["in"]
-dform plusminus_df		: internal :: mode[tex] :: plusminus                 = mathmacro["pm"]
-dform oplus_df			: internal :: mode[tex] :: oplus                     = mathmacro["oplus"]
-dform infty_df			: internal :: mode[tex] :: infty                     = mathmacro["infty"]
-dform partial_df		: internal :: mode[tex] :: partial                   = mathmacro["partial"]
-dform cap_df			: internal :: mode[tex] :: cap                       = mathmacro["cap"]
-dform cup_df			: internal :: mode[tex] :: cup                       = mathmacro["cup"]
-dform forall_df			: internal :: mode[tex] :: forall                    = mathmacro["forall"]
-dform exists_df			: internal :: mode[tex] :: "exists"                  = mathmacro["exists"]
-dform oinfty_df			: internal :: mode[tex] :: oinfty                    = mathmacro["oinfty"]
-dform shortleftrightarrow_df	: internal :: mode[tex] :: shortleftrightarrow       = mathmacro["shortleftrightarrow"]
-dform shortleftarrow_df		: internal :: mode[tex] :: shortleftarrow            = mathmacro["shortleftarrow"]
-dform shortrightarrow_df	: internal :: mode[tex] :: shortrightarrow           = mathmacro["shortrightarrow"]
-dform longleftrightarrow_df	: internal :: mode[tex] :: longleftrightarrow        = mathmacro["longleftrightarrow"]
-dform longleftarrow_df		: internal :: mode[tex] :: longleftarrow             = mathmacro["longleftarrow"]
-dform longrightarrow_df		: internal :: mode[tex] :: longrightarrow            = mathmacro["longrightarrow"]
-dform neq_df			: internal :: mode[tex] :: neq                       = mathmacro["neq"]
-dform sim_df			: internal :: mode[tex] :: sim                       = mathmacro["sim"]
-dform cong_df			: internal :: mode[tex] :: cong                      = mathmacro["cong"]
-dform le_df			: internal :: mode[tex] :: le                        = mathmacro["le"]
-dform ge_df			: internal :: mode[tex] :: ge                        = mathmacro["ge"]
-dform equiv_df			: internal :: mode[tex] :: equiv                     = mathmacro["equiv"]
-dform vee_df			: internal :: mode[tex] :: vee                       = mathmacro["vee"]
-dform perp_df			: internal :: mode[tex] :: perp                      = mathmacro["perp"]
-dform esq_dfl			: internal :: mode[tex] :: esq_l                     = `"[" izone `"\\![" ezone
-dform esq_dfr			: internal :: mode[tex] :: esq_r                     = `"]" izone `"\\!]" ezone
-dform leftarrow_df		: internal :: mode[tex] :: leftarrow                 = mathmacro["leftarrow"]
-dform middlearrow_df		: internal :: mode[tex] :: middlearrow               = mathmacro["-"]
-dform rightarrow_df		: internal :: mode[tex] :: rightarrow                = mathmacro["rightarrow"]
-dform gamma_df			: internal :: mode[tex] :: Gamma                     = mathmacro["Gamma"]
-dform delta_df			: internal :: mode[tex] :: Delta                     = mathmacro["Delta"]
-dform lambda_df		        : internal :: mode[tex] :: Lambda                    = mathmacro["Lambda"]
-dform pi_df			: internal :: mode[tex] :: Pi                        = mathmacro["Pi"]
-dform sigma_df			: internal :: mode[tex] :: Sigma                     = mathmacro["Sigma"]
-dform omega_df			: internal :: mode[tex] :: Omega                     = mathmacro["Omega"]
-dform times_df			: internal :: mode[tex] :: times                     = mathmacro["times"]
-dform div_df            	: internal :: mode[tex] :: "div"                     = mathmacro["div"]
-dform circ_df		        : internal :: mode[tex] :: circ                      = mathmacro["circ"]
-dform supplus_df		: internal :: mode[tex] :: supplus                   = sup["+"]
-dform supminus_df		: internal :: mode[tex] :: supminus                  = sup["-"]
-dform supcirc_df		: internal :: mode[tex] :: supcirc                   = sup{circ}
-dform subset_df			: internal :: mode[tex] :: "subset"                  = mathmacro["subset"]
-dform supset_df			: internal :: mode[tex] :: supset                    = mathmacro["supset"]
-dform subseteq_df		: internal :: mode[tex] :: subseteq                  = mathmacro["subseteq"]
-dform supseteq_df		: internal :: mode[tex] :: supseteq                  = mathmacro["supseteq"]
-dform sqsubset_df		: internal :: mode[tex] :: sqsubset                  = mathmacro["sqsubset"]
-dform sqsupset_df		: internal :: mode[tex] :: sqsupset                  = mathmacro["sqsupset"]
-dform sqsubseteq_df		: internal :: mode[tex] :: sqsubseteq                = mathmacro["sqsubseteq"]
-dform sqsupseteq_df		: internal :: mode[tex] :: sqsupseteq                = mathmacro["sqsupseteq"]
-dform subzero_df		: internal :: mode[tex] :: subzero                   = sub["0"]
-dform subone_df			: internal :: mode[tex] :: subone                    = sub["1"]
-dform subtwo_df			: internal :: mode[tex] :: subtwo                    = sub["2"]
-dform subthree_df		: internal :: mode[tex] :: subthree                  = sub["3"]
+dform wedge_df			: mode[tex] :: wedge                     = mathmacro["wedge"]
+dform tneg_df			: mode[tex] :: tneg                      = mathmacro["neg"]
+dform member_df			: mode[tex] :: member                    = mathmacro["in"]
+dform plusminus_df		: mode[tex] :: plusminus                 = mathmacro["pm"]
+dform oplus_df			: mode[tex] :: oplus                     = mathmacro["oplus"]
+dform infty_df			: mode[tex] :: infty                     = mathmacro["infty"]
+dform partial_df		: mode[tex] :: partial                   = mathmacro["partial"]
+dform cap_df			: mode[tex] :: cap                       = mathmacro["cap"]
+dform cup_df			: mode[tex] :: cup                       = mathmacro["cup"]
+dform forall_df			: mode[tex] :: forall                    = mathmacro["forall"]
+dform exists_df			: mode[tex] :: "exists"                  = mathmacro["exists"]
+dform oinfty_df			: mode[tex] :: oinfty                    = mathmacro["oinfty"]
+dform shortleftrightarrow_df	: mode[tex] :: shortleftrightarrow       = mathmacro["shortleftrightarrow"]
+dform shortleftarrow_df		: mode[tex] :: shortleftarrow            = mathmacro["shortleftarrow"]
+dform shortrightarrow_df	: mode[tex] :: shortrightarrow           = mathmacro["shortrightarrow"]
+dform longleftrightarrow_df	: mode[tex] :: longleftrightarrow        = mathmacro["longleftrightarrow"]
+dform longleftarrow_df		: mode[tex] :: longleftarrow             = mathmacro["longleftarrow"]
+dform longrightarrow_df		: mode[tex] :: longrightarrow            = mathmacro["longrightarrow"]
+dform neq_df			: mode[tex] :: neq                       = mathmacro["neq"]
+dform sim_df			: mode[tex] :: sim                       = mathmacro["sim"]
+dform cong_df			: mode[tex] :: cong                      = mathmacro["cong"]
+dform le_df			: mode[tex] :: le                        = mathmacro["le"]
+dform ge_df			: mode[tex] :: ge                        = mathmacro["ge"]
+dform equiv_df			: mode[tex] :: equiv                     = mathmacro["equiv"]
+dform vee_df			: mode[tex] :: vee                       = mathmacro["vee"]
+dform perp_df			: mode[tex] :: perp                      = mathmacro["perp"]
+dform esq_dfl			: mode[tex] :: esq_l                     = `"[" izone `"\\![" ezone
+dform esq_dfr			: mode[tex] :: esq_r                     = `"]" izone `"\\!]" ezone
+dform leftarrow_df		: mode[tex] :: leftarrow                 = mathmacro["leftarrow"]
+dform middlearrow_df		: mode[tex] :: middlearrow               = mathmacro["-"]
+dform rightarrow_df		: mode[tex] :: rightarrow                = mathmacro["rightarrow"]
+dform gamma_df			: mode[tex] :: Gamma                     = mathmacro["Gamma"]
+dform delta_df			: mode[tex] :: Delta                     = mathmacro["Delta"]
+dform lambda_df		        : mode[tex] :: Lambda                    = mathmacro["Lambda"]
+dform pi_df			: mode[tex] :: Pi                        = mathmacro["Pi"]
+dform sigma_df			: mode[tex] :: Sigma                     = mathmacro["Sigma"]
+dform omega_df			: mode[tex] :: Omega                     = mathmacro["Omega"]
+dform times_df			: mode[tex] :: times                     = mathmacro["times"]
+dform div_df            	: mode[tex] :: "div"                     = mathmacro["div"]
+dform circ_df		        : mode[tex] :: circ                      = mathmacro["circ"]
+dform supplus_df		: mode[tex] :: supplus                   = sup["+"]
+dform supminus_df		: mode[tex] :: supminus                  = sup["-"]
+dform supcirc_df		: mode[tex] :: supcirc                   = sup{circ}
+dform subset_df			: mode[tex] :: "subset"                  = mathmacro["subset"]
+dform supset_df			: mode[tex] :: supset                    = mathmacro["supset"]
+dform subseteq_df		: mode[tex] :: subseteq                  = mathmacro["subseteq"]
+dform supseteq_df		: mode[tex] :: supseteq                  = mathmacro["supseteq"]
+dform sqsubset_df		: mode[tex] :: sqsubset                  = mathmacro["sqsubset"]
+dform sqsupset_df		: mode[tex] :: sqsupset                  = mathmacro["sqsupset"]
+dform sqsubseteq_df		: mode[tex] :: sqsubseteq                = mathmacro["sqsubseteq"]
+dform sqsupseteq_df		: mode[tex] :: sqsupseteq                = mathmacro["sqsupseteq"]
+dform subzero_df		: mode[tex] :: subzero                   = sub["0"]
+dform subone_df			: mode[tex] :: subone                    = sub["1"]
+dform subtwo_df			: mode[tex] :: subtwo                    = sub["2"]
+dform subthree_df		: mode[tex] :: subthree                  = sub["3"]
 
-dform suba_df			: internal :: mode[tex] :: suba = sub["a"]
-dform subb_df			: internal :: mode[tex] :: subb = sub["b"]
-dform subc_df			: internal :: mode[tex] :: subc = sub["c"]
-dform subd_df			: internal :: mode[tex] :: subd = sub["d"]
-dform sube_df			: internal :: mode[tex] :: sube = sub["e"]
-dform subf_df			: internal :: mode[tex] :: subf = sub["f"]
-dform subg_df			: internal :: mode[tex] :: subg = sub["g"]
-dform subh_df			: internal :: mode[tex] :: subh = sub["h"]
-dform subi_df			: internal :: mode[tex] :: subi = sub["i"]
-dform subj_df			: internal :: mode[tex] :: subj = sub["j"]
-dform subk_df			: internal :: mode[tex] :: subk = sub["k"]
-dform subl_df			: internal :: mode[tex] :: subl = sub["l"]
-dform subm_df			: internal :: mode[tex] :: subm = sub["m"]
-dform subn_df			: internal :: mode[tex] :: subn = sub["n"]
-dform subo_df			: internal :: mode[tex] :: subo = sub["o"]
-dform subp_df			: internal :: mode[tex] :: subp = sub["p"]
-dform subq_df			: internal :: mode[tex] :: subq = sub["q"]
-dform subr_df			: internal :: mode[tex] :: subr = sub["r"]
-dform subs_df			: internal :: mode[tex] :: subs = sub["s"]
-dform subt_df			: internal :: mode[tex] :: subt = sub["t"]
-dform subu_df			: internal :: mode[tex] :: subu = sub["u"]
-dform subv_df			: internal :: mode[tex] :: subv = sub["v"]
-dform subw_df			: internal :: mode[tex] :: subw = sub["w"]
-dform subx_df			: internal :: mode[tex] :: subx = sub["x"]
-dform suby_df			: internal :: mode[tex] :: suby = sub["y"]
-dform subz_df			: internal :: mode[tex] :: subz = sub["z"]
+dform suba_df			: mode[tex] :: suba = sub["a"]
+dform subb_df			: mode[tex] :: subb = sub["b"]
+dform subc_df			: mode[tex] :: subc = sub["c"]
+dform subd_df			: mode[tex] :: subd = sub["d"]
+dform sube_df			: mode[tex] :: sube = sub["e"]
+dform subf_df			: mode[tex] :: subf = sub["f"]
+dform subg_df			: mode[tex] :: subg = sub["g"]
+dform subh_df			: mode[tex] :: subh = sub["h"]
+dform subi_df			: mode[tex] :: subi = sub["i"]
+dform subj_df			: mode[tex] :: subj = sub["j"]
+dform subk_df			: mode[tex] :: subk = sub["k"]
+dform subl_df			: mode[tex] :: subl = sub["l"]
+dform subm_df			: mode[tex] :: subm = sub["m"]
+dform subn_df			: mode[tex] :: subn = sub["n"]
+dform subo_df			: mode[tex] :: subo = sub["o"]
+dform subp_df			: mode[tex] :: subp = sub["p"]
+dform subq_df			: mode[tex] :: subq = sub["q"]
+dform subr_df			: mode[tex] :: subr = sub["r"]
+dform subs_df			: mode[tex] :: subs = sub["s"]
+dform subt_df			: mode[tex] :: subt = sub["t"]
+dform subu_df			: mode[tex] :: subu = sub["u"]
+dform subv_df			: mode[tex] :: subv = sub["v"]
+dform subw_df			: mode[tex] :: subw = sub["w"]
+dform subx_df			: mode[tex] :: subx = sub["x"]
+dform suby_df			: mode[tex] :: suby = sub["y"]
+dform subz_df			: mode[tex] :: subz = sub["z"]
 
 (*
  * Math mode.
  *)
-dform math_div_df1              : internal :: mode[tex] :: math_div                  = izone `"\\div{}" ezone
-dform math_div_df2              : internal :: except_mode[tex] :: math_div           = `"div"
+dform math_div_df1              : mode[tex] :: math_div                  = izone `"\\div{}" ezone
+dform math_div_df2              : except_mode[tex] :: math_div           = `"div"
 
 (*
  * Source
  *)
-dform mid_df : internal :: except_mode[tex] :: mid = `" | "
-dform leftarrow_df : internal :: mode[src] :: Leftarrow = `"<="
-dform leftrightarrow_df : internal :: mode[src] :: Leftrightarrow = `"<=>"
-dform rightarrow_df : internal :: mode[src] :: Rightarrow = `"=>"
-dform leftarrow_df : internal :: mode[src] :: leftarrow = `"<-"
-dform rightarrow_df : internal :: mode[src] :: rightarrow = `"->"
-dform longleftrightarrow_src_df : internal :: mode[src] :: longleftrightarrow = `"<-->"
-dform longleftarrow_src_df : internal :: mode[src] :: longleftarrow = `"<--"
-dform longrightarrow_src_df : internal :: mode[src] :: longrightarrow = `"-->"
-dform times_df : internal :: mode[src] :: times = `"*"
-dform vee_df : internal :: mode[src] :: vee = `"or"
-dform wedge_df : internal :: mode[src] :: wedge = `"and"
-dform sim_df : internal :: mode[src] :: sim = `"~"
+dform mid_df : except_mode[tex] :: mid = `" | "
+dform leftarrow_df : mode[src] :: Leftarrow = `"<="
+dform leftrightarrow_df : mode[src] :: Leftrightarrow = `"<=>"
+dform rightarrow_df : mode[src] :: Rightarrow = `"=>"
+dform leftarrow_df : mode[src] :: leftarrow = `"<-"
+dform rightarrow_df : mode[src] :: rightarrow = `"->"
+dform longleftrightarrow_src_df : mode[src] :: longleftrightarrow = `"<-->"
+dform longleftarrow_src_df : mode[src] :: longleftarrow = `"<--"
+dform longrightarrow_src_df : mode[src] :: longrightarrow = `"-->"
+dform times_df : mode[src] :: times = `"*"
+dform vee_df : mode[src] :: vee = `"or"
+dform wedge_df : mode[src] :: wedge = `"and"
+dform sim_df : mode[src] :: sim = `"~"
 
 (*
  * -*-

@@ -360,7 +360,7 @@ declare dform_modes{'l}
 dform dform_modes_df1 : dform_modes{cons{'hd; 'tl}} =
    slot{'hd} " " keyword["::"] " " dform_modes{'tl}
 
-dform dform_modes_df2 : internal :: dform_modes{nil} =
+dform dform_modes_df2 : dform_modes{nil} =
    `""
 
 (*
@@ -368,13 +368,13 @@ dform dform_modes_df2 : internal :: dform_modes{nil} =
  *)
 declare raw_list{'l}
 
-dform raw_list_df1 : internal :: raw_list{cons{'hd; cons{'tl1; 'tl2}}} =
+dform raw_list_df1 : raw_list{cons{'hd; cons{'tl1; 'tl2}}} =
    slot["raw"]{'hd} " " raw_list{cons{'tl1; 'tl2}}
 
-dform raw_list_df2 : internal :: raw_list{cons{'hd; nil}} =
+dform raw_list_df2 : raw_list{cons{'hd; nil}} =
    slot["raw"]{'hd}
 
-dform raw_list_df2 : internal :: raw_list{nil} =
+dform raw_list_df2 : raw_list{nil} =
    `""
 
 (*
@@ -382,10 +382,10 @@ dform raw_list_df2 : internal :: raw_list{nil} =
  *)
 declare lines{'e}
 
-dform lines_nil_df : internal :: lines{nil} =
+dform lines_nil_df : lines{nil} =
    `""
 
-dform lines_cons_df : internal :: lines{cons{'e1; 'e2}} =
+dform lines_cons_df : lines{cons{'e1; 'e2}} =
    newline szone{'e1} lines{'e2}
 
 dform interface_df : "interface"{'body} =
@@ -411,16 +411,16 @@ dform location_df : "location"[start:n, finish:n]{'body} =
 declare res_def_list{'res}
 declare resources{'resources}
 
-dform resources_nil_df : internal :: resources{nil} =
+dform resources_nil_df : resources{nil} =
    " "
 
-dform resources_cons_df : internal :: resources{cons{'h; 't}} =
+dform resources_cons_df : resources{cons{'h; 't}} =
    hspace szone keyword["{| "] pushm res_def_list{cons{'h; 't}} popm keyword[" |} "] ezone
 
-dform res_def_list_df1 : internal :: res_def_list{cons{'a; nil}} =
+dform res_def_list_df1 : res_def_list{cons{'a; nil}} =
    slot{'a}
 
-dform res_def_list_df2 : internal :: res_def_list{cons{'a; 'b}} =
+dform res_def_list_df2 : res_def_list{cons{'a; 'b}} =
    slot{'a} keyword[";"] hspace res_def_list{'b}
 
 dform resource_defs_df1 : resource_defs[name:s]{'args} =
@@ -429,7 +429,7 @@ dform resource_defs_df1 : resource_defs[name:s]{'args} =
 dform resource_defs_df1 : resource_defs[name:s]{nil} =
    slot[name:s]
 
-dform resource_defs_dfs : internal :: resource_defs[start:n, finish:n, name:s]{'args} =
+dform resource_defs_dfs : resource_defs[start:n, finish:n, name:s]{'args} =
    resource_defs[name:s]{'args}
 
 (*
@@ -516,33 +516,33 @@ declare begin_cd{'t}
 declare path{'t}
 declare cdinternal{'t}
 
-dform begin_cd_df : internal :: except_mode[html] :: begin_cd{'path} =
+dform begin_cd_df : except_mode[html] :: begin_cd{'path} =
    `""
 
-dform begin_cd_df1 : internal :: mode[java] :: begin_cd{'path} =
+dform begin_cd_df1 : mode[java] :: begin_cd{'path} =
    izone `"<a href=\"http://cd.metaprl.local/" cdinternal{'path} `"\">" ezone
 
-dform begin_cd_df2 : internal :: mode[html] :: begin_cd{'path} =
+dform begin_cd_df2 : mode[html] :: begin_cd{'path} =
    izone `"<a href=\"../" cdinternal{'path} `"/\">" ezone
 
-dform cd_internal_df1 : internal :: cdinternal{cons{."parent"[name:s]; cons{'n2; 'n3}}} =
+dform cd_internal_df1 : cdinternal{cons{."parent"[name:s]; cons{'n2; 'n3}}} =
    slot[name:s] `"/" cdinternal{cons{'n2; 'n3}}
 
-dform cd_internal_df2 : internal :: mode[html] :: cdinternal{cons{."parent"[name:s]; nil}} =
+dform cd_internal_df2 : mode[html] :: cdinternal{cons{."parent"[name:s]; nil}} =
    slot[name:s]
 
-dform cd_internal_df2 : internal :: except_mode[html] :: cdinternal{cons{."parent"[name:s]; nil}} =
+dform cd_internal_df2 : except_mode[html] :: cdinternal{cons{."parent"[name:s]; nil}} =
    hrefmodule[name:s]
 
-dform cd_internal_df3 : internal :: cdinternal{nil} = `""
+dform cd_internal_df3 : cdinternal{nil} = `""
 
-dform path_parent_nil_df2 : internal :: mode[tex] :: path{cons{."parent"[name:s]; nil}} =
+dform path_parent_nil_df2 : mode[tex] :: path{cons{."parent"[name:s]; nil}} =
    slot[name:s]
 
-dform path_parent_nil_df : internal :: path{cons{."parent"[name:s]; nil}} =
+dform path_parent_nil_df : path{cons{."parent"[name:s]; nil}} =
    slot[name:s]
 
-dform path_parent_cons_df : internal :: path{cons{."parent"[name:s]; .cons{'n1; 'n2}}} =
+dform path_parent_cons_df : path{cons{."parent"[name:s]; .cons{'n1; 'n2}}} =
    slot[name:s] keyword["."] cons{'n1; 'n2}
 
 dform parent_df : except_mode[tex] :: "parent"{'path; 'resources} =
@@ -571,9 +571,9 @@ dform dform_df : "dform"[name:s]{'modes; 'redex; 'def} =
  *)
 declare "rel"[op:s]
 
-dform rel_lt_df : internal :: "rel"["lt"] = keyword["<"]
-dform rel_eq_df : internal :: "rel"["eq"] = keyword["="]
-dform rel_gt_df : internal :: "rel"["gt"] = keyword[">"]
+dform rel_lt_df : "rel"["lt"] = keyword["<"]
+dform rel_eq_df : "rel"["eq"] = keyword["="]
+dform rel_gt_df : "rel"["gt"] = keyword[">"]
 
 dform prec_df : "prec"[name:s] =
    info["prec"] " " slot[name:s]
@@ -638,39 +638,39 @@ dform parens_df : parens_df =
  *)
 declare packages_df{'t}
 
-dform packages_df1 : internal :: packages{'packages} =
+dform packages_df1 : packages{'packages} =
    szone pushm[0] pushm[4] info["Root theories:"] hspace
        packages_df{'packages} popm hspace
    info["end"] popm ezone
 
-dform packages_df2 : internal :: packages_df{cons{package[name:s]; 'next}} =
+dform packages_df2 : packages_df{cons{package[name:s]; 'next}} =
    info["module "] cd_begin[name] slot[name:s] cd_end hspace packages_df{'next}
 
-dform packages_df3 : internal :: packages_df{nil} =
+dform packages_df3 : packages_df{nil} =
    `""
 
 (********************************
  * Argument lists
  *)
-dform int_arg_df : internal :: int_arg[i:n] =
+dform int_arg_df : int_arg[i:n] =
    slot[i:n]
 
-dform term_arg_df : internal :: term_arg{'t} =
+dform term_arg_df : term_arg{'t} =
    't
 
-dform type_arg_df : internal :: type_arg{'t} =
+dform type_arg_df : type_arg{'t} =
    't
 
-dform bool_arg_df : internal :: bool_arg[s:t] =
+dform bool_arg_df : bool_arg[s:t] =
    slot[s:t]
 
-dform string_arg_df : internal :: string_arg[s:s] =
+dform string_arg_df : string_arg[s:s] =
    slot[s:s]
 
-dform term_list_arg_df : internal :: term_list_arg{'terms} =
+dform term_list_arg_df : term_list_arg{'terms} =
    df_concat{slot[" "];'terms}
 
-dform arglist_df1 : internal :: arglist{'args} =
+dform arglist_df1 : arglist{'args} =
    szone pushm df_concat{slot[" "];'args} popm ezone
 
 (********************************
@@ -681,23 +681,23 @@ declare goals_df{'main; 'goal; 'status}
 declare status_df{'path_status; 'node_status; 'cache_status}
 declare goal_list_status{'cache}
 
-dform proof_df : internal :: proof{'main; goal_list{'goal}; 'status; 'text; 'subgoals} =
+dform proof_df : proof{'main; goal_list{'goal}; 'status; 'text; 'subgoals} =
    szone pushm pagebreak goals_df{'main; 'goal; 'status} 'text 'subgoals popm ezone
 
-dform goals_df : internal :: goals_df{goal{'path_status; 'label; 'assums; 'goal}; 'cache; 'node_status} =
+dform goals_df : goals_df{goal{'path_status; 'label; 'assums; 'goal}; 'cache; 'node_status} =
    status_df{'path_status;'node_status;goal_list_status{'cache}} newline 'label msequent{'goal; 'assums}
 
-dform goal_df : internal :: goal{'status; 'label; 'assums; 'goal} =
+dform goal_df : goal{'status; 'label; 'assums; 'goal} =
    status_df{'status; status_partial; nil} newline 'label msequent{'goal; 'assums}
 
 (* XXX display of the cache status is turned off since there is no way to access the cache anyway *)
-dform cache_status_df : internal :: status_df{'path_status; 'node_status; 'cache_status} =
+dform cache_status_df : status_df{'path_status; 'node_status; 'cache_status} =
    'path_status `"<" 'node_status `">" (* space `"[" 'cache_status `"]" *)
 
-dform goal_list_status_df1 : internal :: goal_list_status{cons{goal{goal_status{'status}; 'label; 'assums; 'goal}; cons{'hd; 'tl}}} =
+dform goal_list_status_df1 : goal_list_status{cons{goal{goal_status{'status}; 'label; 'assums; 'goal}; cons{'hd; 'tl}}} =
    df_last{'status} `" " goal_list_status{cons{'hd; 'tl}}
 
-dform goal_list_status_df2 : internal :: goal_list_status{cons{goal{goal_status{'status}; 'label; 'assums; 'goal}; nil}} =
+dform goal_list_status_df2 : goal_list_status{cons{goal{goal_status{'status}; 'label; 'assums; 'goal}; nil}} =
    df_last{'status}
 
 (*
@@ -705,16 +705,16 @@ dform goal_list_status_df2 : internal :: goal_list_status{cons{goal{goal_status{
  *)
 declare numbered_assums{'number; 'assums}
 
-dform msequent_df1 : internal :: msequent{'goal; nil} =
+dform msequent_df1 : msequent{'goal; nil} =
    'goal newline
 
-dform msequent_df2 : internal :: msequent{'goal; 'assums} =
+dform msequent_df2 : msequent{'goal; 'assums} =
    numbered_assums{cons{nil; nil}; 'assums} 'goal newline
 
-dform numbered_assums_df1 : internal :: numbered_assums{'number; cons{'a; 'b}} =
+dform numbered_assums_df1 : numbered_assums{'number; cons{'a; 'b}} =
    szone df_length{'number} `". " pushm 'a popm newline ezone numbered_assums{cons{nil; 'number}; 'b}
 
-dform numbered_assums_df2 : internal :: numbered_assums{'number; nil} =
+dform numbered_assums_df2 : numbered_assums{'number; nil} =
    `"====" newline
 
 (*
@@ -728,48 +728,48 @@ declare goal_cd_begin{'cd}
 declare goal_cd_middle{'cd}
 declare goal_cd_end
 
-dform status_df2 : internal :: goal_status{nil} = `""
+dform status_df2 : goal_status{nil} = `""
 
-dform status_df1 : internal :: goal_status{cons{'a; 'b}} =
+dform status_df1 : goal_status{cons{'a; 'b}} =
    goal_status_df{cons{'a; nil}; 'b}
 
-dform status_df3 : internal :: goal_status_df{'l; cons{'a; 'b}} =
+dform status_df3 : goal_status_df{'l; cons{'a; 'b}} =
    goal_status_df{cons{'a; 'l}; 'b}
 
-dform status_df4 : internal :: goal_status_df{'l; nil} =
+dform status_df4 : goal_status_df{'l; nil} =
    goal_status_cd{goal_cd_dot; 'l}
 
-dform status_df5 : internal :: goal_status_cd{'cd; cons{'a; 'b}} =
+dform status_df5 : goal_status_cd{'cd; cons{'a; 'b}} =
    goal_status_cd{cons{goal_cd_up; 'cd}; 'b} goal_cd_begin{'cd} 'a `" " goal_cd_end
 
-dform status_df5b : internal :: goal_status_cd{'cd; nil} =
+dform status_df5b : goal_status_cd{'cd; nil} =
    `""
 
-dform status_df6a : internal :: goal_cd_begin{'cd} =
+dform status_df6a : goal_cd_begin{'cd} =
    `""
 
-dform status_df9a : internal :: goal_cd_end =
+dform status_df9a : goal_cd_end =
    `""
 
-dform status_df6_java : internal :: mode[java] :: goal_cd_begin{'cd} =
+dform status_df6_java : mode[java] :: goal_cd_begin{'cd} =
    izone `"<a href=\"cd.metaprl.local/" goal_cd_middle{'cd}
 
-dform status_df6_html : internal :: mode[html] :: goal_cd_begin{'cd} =
+dform status_df6_html : mode[html] :: goal_cd_begin{'cd} =
    izone `"<a href=\"." goal_cd_middle{'cd}
 
-dform status_df7 : internal :: mode[html] :: goal_cd_middle{goal_cd_dot} =
+dform status_df7 : mode[html] :: goal_cd_middle{goal_cd_dot} =
    `"/.\">" ezone
 
-dform status_df8 : internal :: mode[html] :: goal_cd_middle{cons{goal_cd_up; 'cd}} =
+dform status_df8 : mode[html] :: goal_cd_middle{cons{goal_cd_up; 'cd}} =
    `"/.." goal_cd_middle{'cd}
 
-dform status_df9 : internal :: mode[html] :: goal_cd_end =
+dform status_df9 : mode[html] :: goal_cd_end =
    izone `"</a>" ezone
 
 (*
  * Label is printed with surrounding dots.
  *)
-dform label_df : internal :: goal_label[name:s] =
+dform label_df : goal_label[name:s] =
    `"...." slot[name:s] `"...." newline
 
 dform status_bad_df : status_bad =
@@ -793,13 +793,13 @@ dform status_interactive : status_interactive[rules:n,nodes:n]{'status} =
 (*
  * Rule box.
  *)
-dform rule_box_df1 : internal :: rule_box[text:s] =
+dform rule_box_df1 : rule_box[text:s] =
    newline szone info["BY "] pushm slot[text:s] popm ezone
 
-dform rule_box_df2 : internal :: rule_box{'t} =
+dform rule_box_df2 : rule_box{'t} =
    newline szone info_begin `"BY [" pushm 't `"]" popm ezone info_end
 
-dform rule_box_df3 : internal :: rule_box[text:s]{'t} =
+dform rule_box_df3 : rule_box[text:s]{'t} =
    newline szone info_begin `"BY [" pushm 't `"]" space slot[text:s] popm ezone info_end
 
 (*
@@ -808,32 +808,32 @@ dform rule_box_df3 : internal :: rule_box[text:s]{'t} =
 declare child_df{'number; 'child}
 declare child_df{'child}
 
-dform subgoals_df1 : internal :: subgoals{'children; 'extras} =
+dform subgoals_df1 : subgoals{'children; 'extras} =
    newline subgoals{cons{nil; nil}; 'children; 'extras}
 
-dform subgoals_df2 : internal :: subgoals{'number; cons{'child; 'tl}; 'extras} =
+dform subgoals_df2 : subgoals{'number; cons{'child; 'tl}; 'extras} =
    newline child_df{'number; 'child} subgoals{cons{nil; 'number}; 'tl; 'extras}
 
-dform subgoals_df3 : internal :: subgoals{'number; nil; cons{'a; 'b}} =
+dform subgoals_df3 : subgoals{'number; nil; cons{'a; 'b}} =
    newline info["===="] newline subgoals{'number; cons{'a; 'b}; nil}
 
-dform subgoals_df4 : internal :: subgoals{'number; cons{goal{goal_status{'status}; 'label; 'assums; 'goal}; 'tl}; nil} =
+dform subgoals_df4 : subgoals{'number; cons{goal{goal_status{'status}; 'label; 'assums; 'goal}; 'tl}; nil} =
    szone info_begin df_length{'number} `". " pushm df_last{'status} info_end newline 'label 'goal popm ezone newline
    subgoals{cons{nil; 'number}; nil; 'tl}
 
-dform subgoals_df5 : internal :: subgoals{'number; nil; nil} =
+dform subgoals_df5 : subgoals{'number; nil; nil} =
    `""
 
-dform child_df1 : internal :: child_df{'number; goal_list{'child}} =
+dform child_df1 : child_df{'number; goal_list{'child}} =
    szone info_begin df_down{'number} `". " pushm `"[" goal_list_status{'child} `"]" info_end newline child_df{'child} popm ezone
 
-dform child_df2 : internal :: child_df{cons{goal{'status; 'label; 'assums; 'goal}; 'tl}} =
+dform child_df2 : child_df{cons{goal{'status; 'label; 'assums; 'goal}; 'tl}} =
    'label 'goal
 
-dform tactic_arg_df1 : internal :: tactic_arg[label:s]{'goal; 'args; 'parents} =
+dform tactic_arg_df1 : tactic_arg[label:s]{'goal; 'args; 'parents} =
    szone `"[" slot[label:s] `"] " pushm 'goal popm ezone
 
-dform tactic_arg_df2 : internal :: tactic_arg[label:s]{'goal; 'args; 'parents} =
+dform tactic_arg_df2 : tactic_arg[label:s]{'goal; 'args; 'parents} =
    szone `"[" slot[label:s] `"] " pushm 'goal ezone `" " popm szone `"with args " pushm `"<" 'args `">" popm ezone
 
 (*
@@ -856,10 +856,10 @@ dform comment_df3 : mode[html] :: comment{'t} =
 declare term_binding{'t;v.'t2['v]}
 declare bound_term{'t}
 
-dform term_binding : internal :: term_binding{'t;v.'t2['v]} = 't2[bound_term{'t}]
-dform term_binding2 : internal :: resources{term_binding{'t;v.'t2['v]}} = resources{'t2[bound_term{'t}]}
+dform term_binding : term_binding{'t;v.'t2['v]} = 't2[bound_term{'t}]
+dform term_binding2 : resources{term_binding{'t;v.'t2['v]}} = resources{'t2[bound_term{'t}]}
 
-dform bound_term : internal :: bound_term{'t} =
+dform bound_term : bound_term{'t} =
    szone pushm[3] tt["<<"] hspace ensuremath{'t} popm hspace tt[">>"] ezone
 
 (************************************************************************
