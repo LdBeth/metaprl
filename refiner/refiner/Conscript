@@ -6,7 +6,7 @@ $env = $env->clone(
 );
 
 Command $env "refiner.ml", "#mk/config", qq(
-	echo "module Refiner = Refiner_ds.Refiner" > %>
+	echo "module Refiner = Refiner_%TERMS.Refiner" > %>
 );
 
 OCamlSources $env

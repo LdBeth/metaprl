@@ -5,12 +5,12 @@ $env = $env->clone(
     PPFLAGS     => "$env->{PPFLAGS} -Irefiner/refsig",
 );
 
-Command $env 'rewrite_type_sig.ml', 'rewrite_types.ml', qq(
+Command $env 'rewrite_type_sig.mlz', 'rewrite_types.ml', qq(
 	%CAMLP4MACROPRINT -intf %1 -o %>
 );
 
 OCamlSources $env
-	'rewrite_type_sig.ml',
+	'rewrite_type_sig.mlz',
 	'rewrite_util_sig.mlz',
 	'rewrite_debug_sig.mlz',
 	'rewrite_compile_redex_sig.mlz',

@@ -16,7 +16,7 @@ $env = new cons(
     # Configuration
     #
     MP_VERSION => "0.7.1",
-    REFINER => "Refiner_ds",
+    REFINER => "VERBOSE",
     TERMS => "ds",
 
     ## Overrides

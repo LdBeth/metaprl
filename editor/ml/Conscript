@@ -21,7 +21,7 @@ $env = $env->clone(
 );
 
 Command $env 'mp_version.ml', "#mk/config", qq(
-	echo -n '(* open Dform_print open Refiner open Theory open Mp_resource *) let version = "MetaPRL %MP_VERSION:\\n\\t\\tbuild [`LC_ALL=C LANG=C date`]\\n\\t\\ton `hostname`\\n\\t\\tUses %REFINER Refiner_%TERMS"' > %>
+	echo -n '(* open Dform_print open Refiner open Theory open Mp_resource *) let version = "'"MetaPRL %MP_VERSION:\\n\\t\\tbuild [`LC_ALL=C LANG=C date`]\\n\\t\\ton `hostname`\\n\\t\\tUses %REFINER Refiner_%TERMS"'"' > %>
 );
 
 OCamlSources $env
