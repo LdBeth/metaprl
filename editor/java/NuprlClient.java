@@ -84,193 +84,6 @@ implements NuprlBusClient
     private final static int STATE_ESC_DIGIT            = 8;
     private final static int STATE_ESC_HOST             = 9;
 
-    /************************************************************************
-     * TELNET STATE                                                         *
-     ************************************************************************/
-
-    /**
-     * End-of-subnegotiation.
-     */
-    private final static byte TELNET_SE                 = (byte) 240;
-
-    /**
-     * No-operation.
-     */
-    final static byte TELNET_NOP                        = (byte) 241;
-
-    /**
-     * Data-mark.
-     */
-    final static byte TELNET_DM                         = (byte) 242;
-
-    /**
-     * Break.
-     */
-    final static byte TELNET_BREAK                      = (byte) 243;
-
-    /**
-     * Interrupt process.
-     */
-    final static byte TELNET_INTERRUPT                  = (byte) 244;
-
-    /**
-     * Abort output.
-     */
-    final static byte TELNET_ABORT_OUTPUT               = (byte) 245;
-
-    /**
-     * Are you there?
-     */
-    final static byte TELNET_ARE_YOU_THERE              = (byte) 246;
-
-    /**
-     * Erase a single byteacter.
-     */
-    final static byte TELNET_ERASE_CHAR                 = (byte) 247;
-
-    /**
-     * Erase an entire line.
-     */
-    final static byte TELNET_ERASE_LINE                 = (byte) 248;
-
-    /**
-     * Go ahead and do something.
-     */
-    final static byte TELNET_GO_AHEAD                   = (byte) 249;
-
-    /**
-     * Start subnegotiation.
-     */
-    private final static byte TELNET_SB                 = (byte) 250;
-
-    /**
-     * Request to do something.
-     * Will do it if not rejected.
-     */
-    private final static byte TELNET_WILL               = (byte) 251;
-
-    /**
-     * Require not to do something.
-     */
-    private final static byte TELNET_WONT               = (byte) 252;
-
-    /**
-     * Please do something.
-     */
-    private final static byte TELNET_DO                 = (byte) 253;
-
-    /**
-     * Require not to do something.
-     */
-    private final static byte TELNET_DONT               = (byte) 254;
-
-    /**
-     * This is the telnet escape code.
-     */
-    final static byte TELNET_IAC                        = (byte) 255;
-
-    /**
-     * Transmit data in binary option.
-     * IAC WILL BINARY: request to send data in binary
-     * IAC WONT BINARY: force ASCII only
-     * IAC DO   BINARY: request to send data in binary
-     * IAC DONT BINARY: force ASCII only
-     */
-    final static byte TELNET_OPT_BINARY                 = (byte) 0;
-
-    /**
-     * Request server to echo input lines.
-     *
-     * IAC WILL ECHO: request the server to echo
-     * IAC WONT ECHO: force the server not to echo
-     * IAC DO   ECHO: request the server to echo
-     * IAC DONT ECHO: force the server not to echo
-     */
-    final static byte TELNET_OPT_ECHO                   = (byte) 1;
-
-    /**
-     * Supress go-ahead requests.
-     *
-     * IAC WILL SUPRESS_GA: request to supress go-ahead
-     * IAC WONT SUPRESS_GA: will not supress go-ahead
-     * IAC DO   SUPRESS_GA: please supress go-ahead
-     * IAC DONT SUPRESS_GA: will not supress go-ahead
-     */
-    final static byte TELNET_OPT_SUPPRES_GA             = (byte) 3;
-
-    /**
-     * Discuss status of options.
-     * IAC DONT STATUS: dont discuss options
-     * IAC WONT STATUS: wont discuss options
-     * IAC SB STATUS SEND IAC SE: please send options
-     * IAC SB STATUS IS (WILL option | WONT option) IAS SE
-     *
-     * This is so complex, we dont handle it.
-     */
-    final static byte TELNET_OPT_STATUS                 = (byte) 5;
-    final static byte TELNET_OPT_SB_SEND                = (byte) 1;
-    final static byte TELNET_OPT_SB_IS                  = (byte) 0;
-
-    /**
-     * Timing mark.
-     * This is used to insert a timing mark at the "appropriate" place.
-     * All we do is request the owner to create a timing mark.
-     *
-     * IAC DO   TIMING_MARK: request a timing mark
-     * IAC WILL TIMING_MARK: this is the timing mark that was requested
-     * IAC WONT TIMING_MARK: the request is refused
-     * IAC DONT TIMING_MARK: timing mark has been ignored
-     */
-    final static byte TELNET_OPT_TIMING_MARK            = (byte) 6;
-
-    /**
-     * Extended options.
-     *
-     * IAC DO   EXOPL: please negotiate extended options
-     * IAC WILL EXOPL: will nogotiate extended options
-     * IAC WONT EXOPL: wont negotiate extended options
-     * IAC SB   EXOPL subcommand
-     * subcommand ::= (DO | DONT | WILL | WONT) option IAC SE
-     *             |  SB <option code> <parameters> SE IAC SE
-     */
-    private final static byte TELNET_OPT_EXOPL          = (byte) 255;
-
-    /**
-     * Terminal type.
-     *
-     * IAC WILL TTYPE: willing to negotiate terminal type
-     * IAC DO   TTYPE: please send terminal type
-     * IAC DONT TTYPE: dont send terminal type
-     * IAC WONT TTYPE: wont send terminal type
-     * IAC SB   TTYPE SEND IAC SE: please send terminal type
-     * IAC SB   TTYPE IS <ascii terminal name ignore case> IAC SE
-     */
-    final static byte TELNET_OPT_TTYPE                  = (byte) 24;
-
-    /**
-     * End of "record".
-     * A record is some unit of data.
-     *
-     * IAC WILL EOR: will send end-of-record when encountered
-     * IAC WONT EOR: wont send end-of-record
-     * IAC DO   EOR: please send edn-of-record
-     * IAC DONT EOR: dont bother me with this crap
-     */
-    final static byte TELNET_OPT_EOR                    = (byte) 25;
-
-    /**
-     * Window size.
-     *
-     * IAC WILL NAWS: please accept window size info
-     * IAC WONT NAWS: will not send window size
-     * IAC DO   NAWS: please send window size info
-     * IAC DONT NAWS: dont send this crap
-     * IAC SB NAWS <width : 16bits> <height : 16bits> IAC SE
-     *
-     * if IAC occurs in 16bits, it must be doubled as usual.
-     */
-    final static byte TELNET_OPT_NAWS                   = (byte) 31;
-
     /**
      * Keep track of flags that have been sent and received.
      *
@@ -389,52 +202,52 @@ implements NuprlBusClient
         String command;
 
         switch(code) {
-        case TELNET_SE:
+        case NuprlConstants.TELNET_SE:
             command = "SE";
             break;
-        case TELNET_NOP:
+        case NuprlConstants.TELNET_NOP:
             command = "NOP";
             break;
-        case TELNET_DM:
+        case NuprlConstants.TELNET_DM:
             command = "DM";
             break;
-        case TELNET_BREAK:
+        case NuprlConstants.TELNET_BREAK:
             command = "BREAK";
             break;
-        case TELNET_INTERRUPT:
+        case NuprlConstants.TELNET_INTERRUPT:
             command = "INTERRUPT";
             break;
-        case TELNET_ABORT_OUTPUT:
+        case NuprlConstants.TELNET_ABORT_OUTPUT:
             command = "ABORT";
             break;
-        case TELNET_ARE_YOU_THERE:
+        case NuprlConstants.TELNET_ARE_YOU_THERE:
             command = "ARE_YOU_THERE";
             break;
-        case TELNET_ERASE_CHAR:
+        case NuprlConstants.TELNET_ERASE_CHAR:
             command = "ERASE_CHAR";
             break;
-        case TELNET_ERASE_LINE:
+        case NuprlConstants.TELNET_ERASE_LINE:
             command = "ERASE_LINE";
             break;
-        case TELNET_GO_AHEAD:
+        case NuprlConstants.TELNET_GO_AHEAD:
             command = "GO_AHEAD";
             break;
-        case TELNET_SB:
+        case NuprlConstants.TELNET_SB:
             command = "SB";
             break;
-        case TELNET_WILL:
+        case NuprlConstants.TELNET_WILL:
             command = "WILL";
             break;
-        case TELNET_WONT:
+        case NuprlConstants.TELNET_WONT:
             command = "WONT";
             break;
-        case TELNET_DO:
+        case NuprlConstants.TELNET_DO:
             command = "DO";
             break;
-        case TELNET_DONT:
+        case NuprlConstants.TELNET_DONT:
             command = "DONT";
             break;
-        case TELNET_IAC:
+        case NuprlConstants.TELNET_IAC:
             command = "IAC";
             break;
         default:
@@ -452,31 +265,31 @@ implements NuprlBusClient
         String command;
 
         switch(code) {
-        case TELNET_OPT_BINARY:
+        case NuprlConstants.TELNET_OPT_BINARY:
             command = "BINARY";
             break;
-        case TELNET_OPT_ECHO:
+        case NuprlConstants.TELNET_OPT_ECHO:
             command = "ECHO";
             break;
-        case TELNET_OPT_SUPPRES_GA:
+        case NuprlConstants.TELNET_OPT_SUPPRES_GA:
             command = "SUPPRESS_GA";
             break;
-        case TELNET_OPT_STATUS:
+        case NuprlConstants.TELNET_OPT_STATUS:
             command = "STATUS";
             break;
-        case TELNET_OPT_TIMING_MARK:
+        case NuprlConstants.TELNET_OPT_TIMING_MARK:
             command = "TIMING_MARK";
             break;
-        case TELNET_OPT_EXOPL:
+        case NuprlConstants.TELNET_OPT_EXOPL:
             command = "EXOPL";
             break;
-        case TELNET_OPT_TTYPE:
+        case NuprlConstants.TELNET_OPT_TTYPE:
             command = "TTYPE";
             break;
-        case TELNET_OPT_EOR:
+        case NuprlConstants.TELNET_OPT_EOR:
             command = "EOR";
             break;
-        case TELNET_OPT_NAWS:
+        case NuprlConstants.TELNET_OPT_NAWS:
             command = "NAWS";
             break;
         default:
@@ -545,7 +358,7 @@ implements NuprlBusClient
         while(true) {
             int i = start;
             while(i != end) {
-                if(bytes[i] == TELNET_IAC)
+                if(bytes[i] == NuprlConstants.TELNET_IAC)
                     break;
                 i++;
             }
@@ -560,8 +373,8 @@ implements NuprlBusClient
                 break;
 
             // Escape the IAC
-            stdin.write(TELNET_IAC);
-            stdin.write(TELNET_IAC);
+            stdin.write(NuprlConstants.TELNET_IAC);
+            stdin.write(NuprlConstants.TELNET_IAC);
             if(NuprlDebug.debug_input)
                 System.err.println("Wrote: IAC IAC");
             start = i + 1;
@@ -583,10 +396,10 @@ implements NuprlBusClient
         boolean flag = token.flag;
         byte sent = sentOptionFlags[token.option];
         byte recv = receivedOptionFlags[token.option];
-        boolean ack = recv == TELNET_WILL || recv == TELNET_WONT;
+        boolean ack = recv == NuprlConstants.TELNET_WILL || recv == NuprlConstants.TELNET_WONT;
 
         // Check if we have already finished negotiation
-        if(flag && sent == TELNET_DO && ack || !flag && sent == TELNET_DONT && ack) {
+        if(flag && sent == NuprlConstants.TELNET_DO && ack || !flag && sent == NuprlConstants.TELNET_DONT && ack) {
             if(NuprlDebug.debug_telnet)
                 System.err.println("NuprlClient.OptionRequest: already met: IAC "
                                    + telnetCommandName(sent)
@@ -596,13 +409,13 @@ implements NuprlBusClient
             // Reply to the sender with the final option
             endpoint.Send(src_host,
                           src_port,
-                          new NuprlOptionResponseToken(token.option, recv == TELNET_WILL ? true : false));
+                          new NuprlOptionResponseToken(token.option, recv == NuprlConstants.TELNET_WILL ? true : false));
         }
         else {
             // Send the new option
-            byte reply = flag ? TELNET_DO : TELNET_DONT;
+            byte reply = flag ? NuprlConstants.TELNET_DO : NuprlConstants.TELNET_DONT;
             sentOptionFlags[token.option] = reply;
-            stdin.write(TELNET_IAC);
+            stdin.write(NuprlConstants.TELNET_IAC);
             stdin.write(reply);
             stdin.write(token.option);
             stdin.flush();
@@ -629,10 +442,10 @@ implements NuprlBusClient
         boolean flag = token.flag;
         byte sent = sentOptionFlags[token.option];
 
-        if((flag && sent != TELNET_WILL) || (!flag && sent != TELNET_WONT)) {
-            byte reply = flag ? TELNET_WILL : TELNET_WONT;
+        if((flag && sent != NuprlConstants.TELNET_WILL) || (!flag && sent != NuprlConstants.TELNET_WONT)) {
+            byte reply = flag ? NuprlConstants.TELNET_WILL : NuprlConstants.TELNET_WONT;
             sentOptionFlags[token.option] = reply;
-            stdin.write(TELNET_IAC);
+            stdin.write(NuprlConstants.TELNET_IAC);
             stdin.write(reply);
             stdin.write(token.option);
             stdin.flush();
@@ -658,14 +471,14 @@ implements NuprlBusClient
         byte sent = sentOptionFlags[token.option];
         byte recv = receivedOptionFlags[token.option];
 
-        if((sent == TELNET_WILL && recv == TELNET_DO) || (sent == TELNET_DO && recv == TELNET_WILL)) {
+        if((sent == NuprlConstants.TELNET_WILL && recv == NuprlConstants.TELNET_DO) || (sent == NuprlConstants.TELNET_DO && recv == NuprlConstants.TELNET_WILL)) {
             // Send the block
-            stdin.write(TELNET_IAC);
-            stdin.write(TELNET_SB);
+            stdin.write(NuprlConstants.TELNET_IAC);
+            stdin.write(NuprlConstants.TELNET_SB);
             byte[] data = token.formatData();
             stdin.write(data, 0, data.length);
-            stdin.write(TELNET_IAC);
-            stdin.write(TELNET_SE);
+            stdin.write(NuprlConstants.TELNET_IAC);
+            stdin.write(NuprlConstants.TELNET_SE);
             stdin.flush();
 
             if(NuprlDebug.debug_telnet) {
@@ -756,16 +569,16 @@ implements NuprlBusClient
     private void SendOption(byte c)
     {
         switch(telnetOption) {
-        case TELNET_WILL:
+        case NuprlConstants.TELNET_WILL:
             endpoint.Send(command_port, new NuprlOptionResponseToken(c, true));
             break;
-        case TELNET_WONT:
+        case NuprlConstants.TELNET_WONT:
             endpoint.Send(command_port, new NuprlOptionResponseToken(c, false));
             break;
-        case TELNET_DO:
+        case NuprlConstants.TELNET_DO:
             endpoint.Send(command_port, new NuprlOptionRequestToken(c, true));
             break;
-        case TELNET_DONT:
+        case NuprlConstants.TELNET_DONT:
             endpoint.Send(command_port, new NuprlOptionRequestToken(c, false));
             break;
         }
@@ -794,7 +607,7 @@ implements NuprlBusClient
                 // Look for the next special byte
                 while(i != end) {
                     byte c = buffer[i];
-                    if(c == TELNET_IAC || c < ' ')
+                    if(c == NuprlConstants.TELNET_IAC || c < ' ')
                         break;
                     i++;
                 }
@@ -813,7 +626,7 @@ implements NuprlBusClient
                 switch(state) {
                 case STATE_DATA:
                     // Normal state
-                    if(c == TELNET_IAC) {
+                    if(c == NuprlConstants.TELNET_IAC) {
                         if(NuprlDebug.debug_telnet)
                             System.err.println("IAC");
                         state = STATE_IAC;
@@ -969,28 +782,28 @@ implements NuprlBusClient
                 case STATE_IAC:
                     // Begin telnet negotiation option
                     switch(c) {
-                    case TELNET_IAC:
+                    case NuprlConstants.TELNET_IAC:
                         // Doubled IAC sends and IAC
-                        Send(TELNET_IAC);
+                        Send(NuprlConstants.TELNET_IAC);
                         state = STATE_DATA;
                         break;
-                    case TELNET_WILL:
-                        telnetOption = TELNET_WILL;
+                    case NuprlConstants.TELNET_WILL:
+                        telnetOption = NuprlConstants.TELNET_WILL;
                         state = STATE_IAC_OPTION;
                         break;
-                    case TELNET_WONT:
-                        telnetOption = TELNET_WONT;
+                    case NuprlConstants.TELNET_WONT:
+                        telnetOption = NuprlConstants.TELNET_WONT;
                         state = STATE_IAC_OPTION;
                         break;
-                    case TELNET_DONT:
-                        telnetOption = TELNET_DONT;
+                    case NuprlConstants.TELNET_DONT:
+                        telnetOption = NuprlConstants.TELNET_DONT;
                         state = STATE_IAC_OPTION;
                         break;
-                    case TELNET_DO:
-                        telnetOption = TELNET_DO;
+                    case NuprlConstants.TELNET_DO:
+                        telnetOption = NuprlConstants.TELNET_DO;
                         state = STATE_IAC_OPTION;
                         break;
-                    case TELNET_SB:
+                    case NuprlConstants.TELNET_SB:
                         telnetSBIndex = 0;
                         state = STATE_IAC_SB;
                         break;
@@ -1013,7 +826,7 @@ implements NuprlBusClient
                     // Send the option command to destination 0
                     SendOption(c);
                     receivedOptionFlags[c] = telnetOption;
-                    if(telnetOption == TELNET_DO || telnetOption == TELNET_DONT)
+                    if(telnetOption == NuprlConstants.TELNET_DO || telnetOption == NuprlConstants.TELNET_DONT)
                         sentOptionFlags[c] = 0;
 
                     // Back to data mode
@@ -1026,7 +839,7 @@ implements NuprlBusClient
                         System.err.println("IAC SB " + c);
 
                     switch(c) {
-                    case TELNET_IAC:
+                    case NuprlConstants.TELNET_IAC:
                         // IAC codes are escaped in the body of the subnegotiation
                         state = STATE_IAC_SB_IAC;
                         break;
@@ -1041,15 +854,15 @@ implements NuprlBusClient
 
                 case STATE_IAC_SB_IAC:
                     switch(c) {
-                    case TELNET_IAC:
+                    case NuprlConstants.TELNET_IAC:
                         // IAC has been escaped
                         if(NuprlDebug.debug_telnet)
                             System.err.println("<SB> IAC IAC");
                         if(telnetSBIndex < MAX_ARGUMENTS)
-                            telnetSBBuffer[telnetSBIndex++] = TELNET_IAC;
+                            telnetSBBuffer[telnetSBIndex++] = NuprlConstants.TELNET_IAC;
                         break;
 
-                    case TELNET_SE:
+                    case NuprlConstants.TELNET_SE:
                         // Subnegotiation is terminated
                         if(NuprlDebug.debug_telnet)
                             System.err.println("SB: " + new String(telnetSBBuffer, 0, telnetSBIndex));

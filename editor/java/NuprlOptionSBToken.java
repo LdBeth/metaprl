@@ -68,7 +68,7 @@ extends NuprlOptionBlockToken
         // Count total number of bytes needed
         int count = 0;
         for(int i = 0; i != data.length; i++) {
-            if(data[i] == NuprlClient.TELNET_IAC)
+            if(data[i] == NuprlConstants.TELNET_IAC)
                 count++;
             count++;
         }
@@ -76,13 +76,13 @@ extends NuprlOptionBlockToken
         // Quick format
         if(count == data.length)
             return data;
-        
+
         // Escape the IAC
         byte[] escaped = new byte[count];
         count = 0;
         for(int i = 0; i != data.length; i++) {
-            if(data[i] == NuprlClient.TELNET_IAC)
-                escaped[count++] = NuprlClient.TELNET_IAC;
+            if(data[i] == NuprlConstants.TELNET_IAC)
+                escaped[count++] = NuprlConstants.TELNET_IAC;
             escaped[count++] = data[i];
         }
         return escaped;

@@ -1096,7 +1096,7 @@ implements KeyListener, ComponentListener
     {
         byte[] buffer = new byte[5];
         int width = terminal_width - 1;
-        buffer[0] = NuprlClient.TELNET_OPT_NAWS;
+        buffer[0] = NuprlConstants.TELNET_OPT_NAWS;
         buffer[1] = (byte) ((width >> 8) & 0xff);
         buffer[2] = (byte) (width & 0xff);
         buffer[3] = (byte) ((terminal_height >> 8) & 0xff);
@@ -1117,27 +1117,27 @@ implements KeyListener, ComponentListener
 
         // Don't take any options except binary mode
         switch(option) {
-        case NuprlClient.TELNET_OPT_BINARY:
+        case NuprlConstants.TELNET_OPT_BINARY:
             endpt.Send(host, port, new NuprlOptionResponseToken(option, true));
             break;
-        case NuprlClient.TELNET_OPT_TTYPE:
+        case NuprlConstants.TELNET_OPT_TTYPE:
             endpt.Send(host, port, new NuprlOptionResponseToken(option, true));
             buffer = new byte[7];
-            buffer[0] = NuprlClient.TELNET_OPT_TTYPE;
-            buffer[1] = NuprlClient.TELNET_OPT_SB_IS;
+            buffer[0] = NuprlConstants.TELNET_OPT_TTYPE;
+            buffer[1] = NuprlConstants.TELNET_OPT_SB_IS;
             buffer[2] = (byte) 'x';
             buffer[3] = (byte) 't';
             buffer[4] = (byte) 'e';
             buffer[5] = (byte) 'r';
             buffer[6] = (byte) 'm';
             endpt.Send(host, port, new NuprlOptionSBToken(buffer));
-            endpt.Send(host, port, new NuprlOptionRequestToken(NuprlClient.TELNET_OPT_NAWS, true));
+            endpt.Send(host, port, new NuprlOptionRequestToken(NuprlConstants.TELNET_OPT_NAWS, true));
             break;
-        case NuprlClient.TELNET_OPT_NAWS:
+        case NuprlConstants.TELNET_OPT_NAWS:
             endpt.Send(host, port, new NuprlOptionResponseToken(option, true));
             endpt.Send(host, port, windowSizeToken());
             break;
-        case NuprlClient.TELNET_OPT_ECHO:
+        case NuprlConstants.TELNET_OPT_ECHO:
         default:
             endpt.Send(host, port, new NuprlOptionResponseToken(option, false));
             break;

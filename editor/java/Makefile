@@ -17,7 +17,6 @@ FILES :=\
 	NuprlOptionResponseToken\
 	NuprlOptionRequestToken\
 	NuprlOptionBlockToken\
-	NuprlOptionSBToken\
 	NuprlCommandToken\
 	NuprlURLToken\
 	NuprlBusMessage\
@@ -26,11 +25,13 @@ FILES :=\
 	NuprlBusClient\
 	NuprlBus\
 	NuprlFrame\
-	NuprlClient\
 	NuprlInternalFrame\
+	NuprlConstants\
+	NuprlTerm\
+	NuprlOptionSBToken\
+	NuprlClient\
 	NuprlText\
 	NuprlCommand\
-	NuprlTerm\
 	NuprlProof\
 	NuprlMenu\
 	NuprlHost\
