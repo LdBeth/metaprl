@@ -1007,12 +1007,16 @@ struct
                let expand_item (item, _) =
                   match item with
                      Rewrite rw ->
+                        if !debug_shell then eprintf "Rewrite %s%t" rw.rw_name eflush;
                         expand (Shell_rewrite.view_rw pack parse_arg display_mode rw)
                    | CondRewrite crw ->
+                        if !debug_shell then eprintf "CondRewrite %s%t" crw.crw_name eflush;
                         expand (Shell_rewrite.view_crw pack parse_arg display_mode crw)
                    | Axiom ax ->
+                        if !debug_shell then eprintf "Axiom %s%t" ax.axiom_name eflush;
                         expand (Shell_rule.view_axiom pack parse_arg display_mode ax)
                    | Rule rl ->
+                        if !debug_shell then eprintf "Rule %s%t" rl.rule_name eflush;
                         expand (Shell_rule.view_rule pack parse_arg display_mode rl)
                    | _ ->
                         ()
