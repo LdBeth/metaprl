@@ -320,7 +320,7 @@ clean:
     $(CLEAN) $(file bin/ocamldep$(EXE) lib/camlp4* bin/convert$(EXE) bin/proxyedit$(EXE) lib/*.cm* lib/*.ml* lib/*.txt lib/*.dat lib/*.a lib/macrop* bin/prlc* lib/*.html lib/*.js lib/*.css lib/*.gif lib/*.pem lib/metaprl-ssl.config)
 
 realclean: clean
-    -$'(RM) $(file theories/*/*.prlb theories/*/*/*.prlb) # XXX: This is a temporary HACK
+    -$'(RM) $(file theories/*/*.prlb theories/*/*/*.prlb theories/*/*/*/*.prlb) # XXX: This is a temporary HACK
     cvs_realclean -i .omakedb -i mk/config -i mk/config.local
 
 #

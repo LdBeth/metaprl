@@ -42,11 +42,11 @@ SATISFYING DEPENDENCIES
    tools using "make world.opt" and install them using "make install".
 
 3. Make sure that the location that you chose to put the binaries in is
-   in your path.  If the OCaml libraries were installed into ./lib/ocaml,
-   you'll need to run the following two commands:
+   in your path.  If the OCaml libraries were installed into
+   /usr/local/lib/ocaml, you'll need to run the following two commands:
 
-      ranlib ./lib/ocaml/camlp4/camlp4.a
-      ranlib ./lib/ocaml/camlp4/odyl.a
+      ranlib /usr/local/lib/ocaml/camlp4/camlp4.a
+      ranlib /usr/local/lib/ocaml/camlp4/odyl.a
 
    You also need to copy some files from your OCaml build directory.
    Copy these files into the OCaml library directory (e.g., ./lib/ocaml)
@@ -61,7 +61,7 @@ SATISFYING DEPENDENCIES
        parsing/parsetree.mli \
        typing/typecore.cmi \
        typing/typecore.mli \
-           ./lib/ocaml  # Or wherever you've installed ocaml
+           /usr/local/lib/ocaml  # Or wherever you've installed ocaml
 
 4. The OMake build tool is used to build MetaPRL.  OMake can be obtained
    from <http://mojave.caltech.edu/download.html>.  Follow the included
