@@ -163,26 +163,33 @@ struct
 
    (*
     * Turn a string into a path.
+    * The string is "/"-separated; "." means current directory, ".." its
+    * parent, "..." its grandparent etc.
     *)
    let parse_path dir name =
-      if name = "." then
-         dir
-      else if name = ".." then
-         try fst (List_util.split_last dir) with
-            Failure "split_last" ->
-               []
-      else if String.length name <> 0 & name.[0] = '.' then
-         String_util.split '.' name
-      else
-         dir @ String_util.split '.' name
+      let rec aux dir names =
+         match names with
+            [] -> dir
+          | ""::ns -> aux dir ns
+          | n::ns when (String_util.for_all (fun c -> c = '.') n) ->
+               (* Remove |n| elements from dir's tail *)
+               let head = try (fst (List_util.split_list ((List.length dir) - (String.length n) + 1) dir))
+                          with Failure "split_list" -> []
+               in aux head ns
+          | n::ns -> aux (dir @ [n]) ns
+      in
+         aux (if String.length name <> 0 & name.[0] = '/' then [] else dir)
+             (String_util.split '/' name)
 
+   (*
+    * Turn a path to an absolute string.
+    *)
    let rec string_of_path = function
-      [h] ->
-         h
+      [n] -> "/" ^ n
     | h::t ->
-         h ^ "." ^ string_of_path t
+         "/" ^ h ^ string_of_path t
     | [] ->
-         ""
+         "/"
 
    (*
     * Update the current item being edited.
@@ -192,7 +199,7 @@ struct
       let item =
          try Package.find pack name with
             Not_found ->
-               eprintf "Item '%s.%s' not found%t" modname name eflush;
+               eprintf "Item '/%s/%s' not found%t" modname name eflush;
                raise Not_found
       in
       let item =
@@ -206,44 +213,44 @@ struct
           | Rule rule ->
                Shell_rule.view_rule pack rule
           | Opname _ ->
-               eprintf "Editing opname '%s.%s' not supported%t" modname name eflush;
+               eprintf "Editing opname '/%s/%s' not supported%t" modname name eflush;
                raise (Failure "view")
           | MLTerm _ ->
-               eprintf "Editing mlterm '%s.%s' not implemented%t" modname name eflush;
+               eprintf "Editing mlterm '/%s/%s' not implemented%t" modname name eflush;
                raise (Failure "view")
           | Condition _ ->
-               eprintf "Editing condition '%s.%s' not implemented%t" modname name eflush;
+               eprintf "Editing condition '/%s/%s' not implemented%t" modname name eflush;
                raise (Failure "view")
           | Parent _ ->
-               eprintf "Editing parent '%s.%s' not supported%t" modname name eflush;
+               eprintf "Editing parent '/%s/%s' not supported%t" modname name eflush;
                raise (Failure "view")
           | Module _ ->
-               eprintf "Editing module '%s.%s' not implemented%t" modname name eflush;
+               eprintf "Editing module '/%s/%s' not implemented%t" modname name eflush;
                raise (Failure "view")
           | DForm _ ->
-               eprintf "Editing display form '%s.%s' not implemented%t" modname name eflush;
+               eprintf "Editing display form '/%s/%s' not implemented%t" modname name eflush;
                raise (Failure "view")
           | Prec _ ->
-               eprintf "Editing precedence '%s.%s' not supported%t" modname name eflush;
+               eprintf "Editing precedence '/%s/%s' not supported%t" modname name eflush;
                raise (Failure "view")
           | PrecRel _ ->
-               eprintf "Editing precedence relation '%s.%s' not supported%t" modname name eflush;
+               eprintf "Editing precedence relation '/%s/%s' not supported%t" modname name eflush;
                raise (Failure "view")
           | Id _ ->
-               eprintf "Editing magic number '%s.%s' not supported%t" modname name eflush;
+               eprintf "Editing magic number '/%s/%s' not supported%t" modname name eflush;
                raise (Failure "view")
           | Resource _ ->
-               eprintf "Editing resource '%s.%s' not supported%t" modname name eflush;
+               eprintf "Editing resource '/%s/%s' not supported%t" modname name eflush;
                raise (Failure "view")
           | Infix _ ->
-               eprintf "Editing infix '%s.%s' not supported%t" modname name eflush;
+               eprintf "Editing infix '/%s/%s' not supported%t" modname name eflush;
                raise (Failure "view")
           | SummaryItem _
           | ToploopItem _ ->
-               eprintf "Editing summary item '%s.%s' not implemented%t" modname name eflush;
+               eprintf "Editing summary item '/%s/%s' not implemented%t" modname name eflush;
                raise (Failure "view")
           | MagicBlock _ ->
-               eprintf "Editing magic block '%s.%s' not implemented%t" modname name eflush;
+               eprintf "Editing magic block '/%s/%s' not implemented%t" modname name eflush;
                raise (Failure "view")
       in
          info.proof <- item
@@ -293,7 +300,7 @@ struct
     *)
    let view_item modname name =
       (* Get the package and item *)
-      let _ = eprintf "View item %s.%s%t" modname name eflush in
+      let _ = eprintf "View item /%s/%s%t" modname name eflush in
       let buf = new_buffer () in
       let mod_info = get_current_package info in
       let db = get_mode_base (Package.dforms mod_info) info.df_mode in
@@ -329,15 +336,7 @@ struct
     * Show the directory.
     *)
    let pwd () =
-      let rec aux = function
-         [h] ->
-            h
-       | h::t ->
-            h ^ "." ^ (aux t)
-       | [] ->
-            ""
-      in
-         aux info.dir
+      string_of_path info.dir
 
    (************************************************************************
     * MODULES                                                              *
@@ -641,7 +640,6 @@ struct
     *)
    let rec cd name =
       let dir = parse_path info.dir name in
-         info.dir <- dir;
          begin
             match dir with
                modname :: name ->
@@ -653,14 +651,18 @@ struct
                      begin
                         match name with
                            [name] ->
-                              set_item modname name
+                              set_item modname name;
+                              info.dir <- dir
                          | [] ->
+                              info.dir <- dir;
                               info.proof <- Shell_null.null_object
                          | _ ->
+                              info.dir <- [modname];
                               eprintf "Recursive modules not implemented%t" eflush;
                               raise (Failure "cd")
                      end
              | [] ->
+                  info.dir <- [];
                   info.package <- None;
                   ShellP4.set_df None;
                   ShellP4.set_mk_opname None;
