@@ -630,6 +630,11 @@ struct
             print_out out_line (StringSet.add name printed) data o rest
        | (Old name :: nrest), _ when StringSet.mem printed name ->
             print_out out_line printed data o nrest
+       | (Old _ :: _), ((_, name, _) as item :: ((_, name', _) as item') :: orest)
+            when name=name' && StringSet.mem data.io_names name ->
+            out_line item;
+            out_line item';
+            print_out out_line (StringSet.add name printed) data orest n
        | (Old _ :: _), ((_, name, _) as item :: orest) when StringSet.mem data.io_names name ->
             out_line item;
             print_out out_line (StringSet.add name printed) data orest n
