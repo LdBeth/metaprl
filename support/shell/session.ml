@@ -200,8 +200,6 @@ let add_file file =
  *)
 let add_directory str =
    State.write shared_entry (fun shared ->
-         let dirs = shared.shared_directories in
-
          (* Parse the filename *)
          let path =
             match Lm_string_util.split "/" str with
@@ -216,10 +214,11 @@ let add_directory str =
                [] ->
                   ()
              | [dir] ->
-                  if not (LineTable.mem shared.shared_directories dir) then
-                     shared.shared_directories <- LineTable.add shared.shared_directories dir ""
-             | dir :: subdir ->
-                  shared.shared_directories <- LineTable.add shared.shared_directories dir (String.concat "/" subdir))
+                  shared.shared_directories <- LineTable.add shared.shared_directories dir ""
+             | group :: md :: subdir ->
+                  let dir = group ^ "/" ^ md in
+                     if (subdir <> []) || not (LineTable.mem shared.shared_directories dir) then
+                        shared.shared_directories <- LineTable.add shared.shared_directories dir (String.concat "/" subdir))
 
 (*
  * Capture output channels.

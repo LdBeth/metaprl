@@ -557,7 +557,7 @@ let parse_path shell name =
        | "" :: ns ->
             collect rev_dir ns
        | "~" :: ns ->
-            collect (path_of_dir ((home_of_fs shell.shell_fs), [])) ns
+            collect (List.rev (path_of_dir ((home_of_fs shell.shell_fs), []))) ns
        | n :: ns ->
             if (Lm_string_util.for_all (fun c -> c = '.') n) then
                let count = String.length n in
