@@ -562,7 +562,7 @@ struct
               | { aname = Some n; aterm = t } ->
                    { vname = Some n; vterm = MetaTheorem t }
           ]
-          | [ sl_open_brack; name = word_or_string; sl_close_brack; t = singleterm ->
+          | [ "["; name = word_or_string; "]"; t = singleterm ->
               match t with
                  { aname = None; aterm = t } ->
                    { vname = None; vterm = MetaLabeled (name, MetaTheorem t) }
@@ -603,7 +603,7 @@ struct
               | { aname = Some n; aterm = t } ->
                    { vname = Some n; vterm = MetaTheorem t }
           ]
-          | [ sl_open_brack; name = word_or_string; sl_close_brack; t = bound_term ->
+          | [ "["; name = word_or_string; "]"; t = bound_term ->
               match t with
                  { aname = None; aterm = t } ->
                    { vname = None; vterm = MetaLabeled (name, MetaTheorem t) }
@@ -664,7 +664,7 @@ struct
          ["comma" LEFTA
           [ x = noncommaterm ->
              make_aterm x
-           | x = noncommaterm; sl_comma; y = noncommaterm ->
+           | x = noncommaterm; ","; y = noncommaterm ->
              { aname = None; aterm = mk_pair_term loc (make_term x) (make_term y) }
          ]];
 
@@ -673,9 +673,9 @@ struct
            "ite" LEFTA
             [ "if"; e1 = SELF; "then"; e2 = SELF; "else"; e3 = SELF ->
                wrap_term loc (mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc "ifthenelse") (make_term e1) (make_term e2) (make_term e3))
-            | "let"; x = var; sl_equal; e1 = SELF; "in"; e2 = SELF ->
+            | "let"; x = var; "="; e1 = SELF; "in"; e2 = SELF ->
                wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") x (make_term e1) (make_term e2))
-            | e2 = SELF; "where";  x = var; sl_equal; e1 = SELF ->
+            | e2 = SELF; "where";  x = var; "="; e1 = SELF ->
                wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") x (make_term e1) (make_term e2))
             | "open";  e1 =  SELF; "in"; e2 = SELF ->
                wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") (Lm_symbol.add "self") (make_term e1) (make_term e2))
@@ -696,16 +696,16 @@ struct
             ]
           | "quantify" LEFTA
             [ (* all/exists*)
-               op = sl_quantify; v = var; sl_colon; t1 = SELF; sl_period; t2 = SELF ->
+               op = sl_quantify; v = var; ":"; t1 = SELF; "."; t2 = SELF ->
                   wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) v (make_term t1) (make_term t2))
             |(* dall/dexists*)
-               op = sl_quantify; v = var; sl_set_in; t1 = SELF; sl_period; t2 = SELF ->
+               op = sl_quantify; v = var; sl_set_in; t1 = SELF; "."; t2 = SELF ->
                   wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc  ("d"^op)) v (make_term t1) (make_term t2))
             |(* sall/sexists*)
-              op = sl_quantify; v = var; sl_period; t2 = SELF ->
+              op = sl_quantify; v = var; "."; t2 = SELF ->
                   wrap_term loc (mk_dep1_term (mk_dep1_opname loc ("s"^op)) v (make_term t2))
             |(* thereis/forall *)
-              op = sl_open_quantify; t1 = SELF; sl_period; t2 = SELF ->
+              op = sl_open_quantify; t1 = SELF; "."; t2 = SELF ->
                   wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) (Lm_symbol.add "self") (make_term t1) (make_term t2))
             ]
 
@@ -734,10 +734,10 @@ struct
               t1 = SELF; (op,_) = sl_equal_rel; t2 = NEXT ->
                 mk_arith_term loc op t1 t2
               (* t1 =[g] t2, t1 <>[g] t2  - algebraic relations for g *)
-            | t1 = SELF; (_,op) = sl_equal_rel; sl_open_brack; g = aterm; sl_close_brack; t2 = SELF ->
+            | t1 = SELF; (_,op) = sl_equal_rel; "["; g = aterm; "]"; t2 = SELF ->
                make_application loc [mk_field_term loc (get_aterm loc g) op; make_term t1; make_term t2]
             | (* t1 ~ t2 - squiggle equality  *)
-              t1 = SELF; sl_tilde; t2 = SELF ->
+              t1 = SELF; "~"; t2 = SELF ->
                (* XXX: HACK - Perv!rewrite should be eventially replaced by mk_opname loc ["sqeq"] *)
                (* wrap_term loc (mk_dep0_dep0_term (mk_dep0_dep0_opname loc "sqeq") (make_term t1) (make_term t2)) *)
                   wrap_term loc (mk_xrewrite_term (make_term t1) (make_term t2))
@@ -756,7 +756,7 @@ struct
                t1 = SELF; op = sl_label_self_rel;  t2 = SELF ->
                make_application loc [mk_field_self_term loc op; make_term t1; make_term t2]
             |(* t1 <[g] t2, t1 >[g] t2, ...  - algebraic relations for g *)
-               t1 = SELF; (_,op) = sl_rel; sl_open_brack; g = aterm; sl_close_brack; t2 = SELF ->
+               t1 = SELF; (_,op) = sl_rel; "["; g = aterm; "]"; t2 = SELF ->
                make_application loc [mk_field_term loc (get_aterm loc g) op; make_term t1; make_term t2]
             ]
 
@@ -775,18 +775,18 @@ struct
             ]
           | "isect" RIGHTA
             [ (* Isect x: A. B[x], Union x:A. B[x]  - intersection, union of family of types *)
-               op = sl_Isect; v = var; sl_colon; t1 = SELF; sl_period; t2 = SELF ->
+               op = sl_Isect; v = var; ":"; t1 = SELF; "."; t2 = SELF ->
                wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) v (make_term t1) (make_term t2))
              | (* A union B, A isect B, x: A isect B[x]  - binary union, intersection and dependent intersection *)
                t1 = SELF; op = sl_isect; t2 = SELF ->
                mk_type_term loc op t1 t2
              |(* quot x,y: t1 // t2  - quotient type *)
-               op = sl_quotient; x = var; sl_comma; y = var; sl_colon; t1 = SELF; sl_double_slash; t2 = SELF ->
+               op = sl_quotient; x = var; ","; y = var; ":"; t1 = SELF; "//"; t2 = SELF ->
                wrap_term loc (mk_dep0_dep2_term (mk_dep0_dep2_opname loc op) x y (make_term t1) (make_term t2))
             ]
           | "plus" RIGHTA
             [  (* t1 +[g] t2  - algebraic plus *)
-               t1 = SELF; sl_plus; sl_open_brack; g = aterm;  sl_close_brack; t2 = SELF ->
+               t1 = SELF; sl_plus; "["; g = aterm;  "]"; t2 = SELF ->
                make_application loc [mk_field_term loc (get_aterm loc g) "+"; make_term t1; make_term t2]
              | (* t1 + t2 - disjoint union *)
                t1 = SELF; op = sl_plus; t2 = SELF ->
@@ -803,7 +803,7 @@ struct
                t1 = SELF; op = sl_label_self_minus;  t2 = SELF ->
                make_application loc [mk_field_self_term loc op; make_term t1; make_term t2]
             |(* t1 -[g] t2   - algebraic minus for g *)
-               t1 = SELF; op = sl_add; sl_open_brack; g = aterm; sl_close_brack; t2 = SELF ->
+               t1 = SELF; op = sl_add; "["; g = aterm; "]"; t2 = SELF ->
                make_application loc [mk_field_term loc (get_aterm loc g) op; make_term t1; make_term t2 ]
             ]
           | "uminus"
@@ -812,7 +812,7 @@ struct
             ]
           | "prod" RIGHTA
             [  (* t1 *[g] t2  - algebraic multiplication (e.g. group operation) *)
-               t1 = SELF; sl_star; sl_open_brack; g = aterm;  sl_close_brack; t2 = SELF ->
+               t1 = SELF; sl_star; "["; g = aterm;  "]"; t2 = SELF ->
                make_application loc [mk_field_term loc (get_aterm loc g) "*"; make_term t1; make_term t2]
              | (* t1 * t2 - type product *)
                t1 = SELF; op = sl_star; t2 = SELF ->
@@ -829,7 +829,7 @@ struct
                t1 = SELF; op = sl_label_self_div;  t2 = SELF ->
                make_application loc [mk_field_self_term loc op; make_term t1; make_term t2]
             |(* t1 /[g] t2   - algebraic right division for g *)
-               t1 = SELF; op = sl_div; sl_open_brack; g = aterm; sl_close_brack; t2 = SELF ->
+               t1 = SELF; op = sl_div; "["; g = aterm; "]"; t2 = SELF ->
                make_application loc [mk_field_term loc (get_aterm loc g) op; make_term t1; make_term t2]
             ]
 
@@ -846,7 +846,7 @@ struct
                t1 = SELF; op = sl_label_self_power;  t2 = SELF ->
                make_application loc [mk_field_self_term loc op; (make_term t1); (make_term t2)]
             |(* t1 ^[g] t2   - algebraic power for g *)
-               t1 = SELF; op = sl_power; sl_open_brack; g = aterm; sl_close_brack; t2 = SELF ->
+               t1 = SELF; op = sl_power; "["; g = aterm; "]"; t2 = SELF ->
                make_application loc [mk_field_term loc (get_aterm loc g) op; (make_term t1); (make_term t2)]
             |(* r ^ lab - field selection for records *)
               r = SELF; sl_power; lab = word_or_string  ->
@@ -876,7 +876,7 @@ struct
               end
             | op = opname; (params, bterms) = termsuffix ->
               wrap_term loc (mk_term (mk_op (mk_bopname loc op params bterms) params) bterms)
-            | op = opname; sl_colon; t = SELF ->
+            | op = opname; ":"; t = SELF ->
               match op with
                  [name] ->
                     ST_Term({ aname = Some (mk_var_term (Lm_symbol.add name)); aterm = make_term t }, loc)
@@ -915,7 +915,7 @@ struct
          ];
 
       bound_term:
-         [ [ sl_open_paren; v = varterm; sl_colon; t = aterm; sl_close_paren ->
+         [ [ "("; v = varterm; ":"; t = aterm; ")" ->
                { aname = Some v; aterm = (get_aterm loc t) }
            ]
           | [ t = singleterm ->
@@ -926,19 +926,19 @@ struct
       termsuffix:
          [[ p = params ->
              p, []
-           | p = params; sl_open_curly; bterms = btermslist; sl_close_curly ->
+           | p = params; "{"; bterms = btermslist; "}" ->
              p, bterms
-           | sl_open_curly; bterms = btermslist; sl_close_curly ->
+           | "{"; bterms = btermslist; "}" ->
              [], bterms
           ]];
 
       rcrdterm:
-         [[ ";"; lab = word_or_string; sl_equal; t = aterm  ->
+         [[ ";"; lab = word_or_string; "="; t = aterm  ->
                (lab,t)
          ]];
 
       recordterm:
-         [[ lab = word_or_string; sl_colon; t = aterm  ->
+         [[ lab = word_or_string; ":"; t = aterm  ->
              (Some lab,t)
            ]
          |[ t = aterm  ->
@@ -956,7 +956,7 @@ struct
            | x = sequent -> x
 
              (* records {x1=a1;x2=a2;...} *)
-           | sl_open_curly; lab = word_or_string; sl_equal; t = aterm; rest = LIST0 rcrdterm; sl_close_curly ->
+           | "{"; lab = word_or_string; "="; t = aterm; rest = LIST0 rcrdterm; "}" ->
                 let r0 =   mk_term (mk_op (mk_opname loc ["rcrd"] [] []) []) [] in
                 let aux = fun r -> function (lab,t) ->
                            mk_term (mk_op (mk_opname loc ["rcrd"] [ShapeToken] [0;0])
@@ -964,7 +964,7 @@ struct
                 in
                    List.fold_left aux r0 ((lab,t)::rest)
              (* record typess {x1:A1;x2:a2;...} *)
-           | sl_open_curly; lab = word_or_string; sl_colon; t = aterm; ";"; r = LIST0 recordterm SEP ";"; sl_close_curly ->
+           | "{"; lab = word_or_string; ":"; t = aterm; ";"; r = LIST0 recordterm SEP ";"; "}" ->
                 let r0 =   mk_term (mk_op (mk_opname loc ["record"] [ShapeToken] [0])
                                [make_param (Token lab )])  [mk_simple_bterm (get_aterm loc t)] in
                 let aux = fun r -> function
@@ -976,14 +976,14 @@ struct
                 in
                     List.fold_left aux r0 r
              (* single record types {x1:A1} *)
-           | sl_open_curly; lab = word_or_string; sl_colon; t = aterm; sl_close_curly ->
+           | "{"; lab = word_or_string; ":"; t = aterm; "}" ->
                 mk_term (mk_op (mk_opname loc ["record"] [ShapeToken] [0])
                         [make_param (Token lab )])  [mk_simple_bterm (get_aterm loc t)]
              (* sets {x:A | P[x]} *)
-           | sl_open_curly; v = word_or_string; sl_colon; ty = aterm; sl_pipe; b = aterm; sl_close_curly ->
+           | "{"; v = word_or_string; ":"; ty = aterm; "|"; b = aterm; "}" ->
              mk_dep0_dep1_term (mk_dep0_dep1_opname loc "set") (Lm_symbol.add v) (get_aterm loc ty) (get_aterm loc b)
              (* very dependent functions {f | x:A -> B[x]} *)
-           | sl_open_curly; f =  word_or_string; sl_pipe; t = aterm; sl_close_curly ->
+           | "{"; f =  word_or_string; "|"; t = aterm; "}" ->
              let t = get_aterm loc t in let f = Lm_symbol.add f in
              let rfun_op = mk_dep0_dep2_opname loc "rfun" in
                 if is_dep0_dep1_term (mk_dep0_dep1_opname loc "fun") t then
@@ -994,30 +994,30 @@ struct
                       mk_dep0_dep2_term rfun_op f (mk_gensym ()) a b
                 else
                    Stdpp.raise_with_loc loc (ParseError "body of <rfun> is not a function")
-            | sl_exclamation; v = var ->
+            | "!"; v = var ->
                encode_free_var v
             | x = QUOTATION ->
                parse_quotation loc "term" (dest_quot x)
             | s = ANTIQUOT ->
                Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s
-            | sl_open_paren; t = aterm; sl_close_paren ->
+            | "("; t = aterm; ")" ->
                get_aterm loc t
           ]];
 
       var: [[ v = word_or_string -> Lm_symbol.add v ]];
 
       varterm:
-         [[ sl_single_quote; v = var ->
+         [[ "'"; v = var ->
              begin match mk_var_contexts loc v 0 with Some conts -> mk_so_var_term v conts [] | None -> mk_var_term v end
-           | sl_single_quote; v = var; sl_contexts_left; conts = LIST0 var SEP ";"; sl_contexts_right ->
+           | "'"; v = var; sl_contexts_left; conts = LIST0 var SEP ";"; sl_contexts_right ->
                mk_so_var_term v conts []
-           | sl_single_quote; v = var; sl_contexts_left; conts = LIST0 var SEP ";"; sl_contexts_right; sl_open_brack; terms = termlist; sl_close_brack ->
+           | "'"; v = var; sl_contexts_left; conts = LIST0 var SEP ";"; sl_contexts_right; "["; terms = termlist; "]" ->
                mk_so_var_term v conts terms
-           | sl_single_quote; v = var; sl_contexts_empty ->
+           | "'"; v = var; sl_contexts_empty ->
                mk_so_var_term v [] []
-           | sl_single_quote; v = var; sl_contexts_empty; sl_open_brack; terms = termlist; sl_close_brack ->
+           | "'"; v = var; sl_contexts_empty; "["; terms = termlist; "]" ->
                mk_so_var_term v [] terms
-           | sl_single_quote; v = var; sl_open_brack; terms = termlist; sl_close_brack ->
+           | "'"; v = var; "["; terms = termlist; "]" ->
                mk_so_var_term v (get_var_contexts loc v terms) terms
           ]];
 
@@ -1032,7 +1032,7 @@ struct
 
       (* Parameters and bterm lists *)
       opname:
-         [[ op = LIST1 word_or_string SEP sl_exclamation ->
+         [[ op = LIST1 word_or_string SEP "!" ->
              op
           ]];
 
@@ -1044,7 +1044,7 @@ struct
           ]];
 
       params:
-         [[ sl_open_brack; params = LIST0 param SEP ","; sl_close_brack ->
+         [[ "["; params = LIST0 param SEP ","; "]" ->
              params
           ]];
 
@@ -1058,14 +1058,14 @@ struct
              make_param (Number n)
            | "-"; n = sl_number ->
              make_param (Number (Lm_num.mult_num n (Lm_num.num_of_int (-1))))
-           | sl_atsign ->
+           | "@" ->
              make_param (Quote)
           ]
-          | [ p = param; sl_colon; w = sl_word ->
+          | [ p = param; ":"; w = sl_word ->
                cast_param p w
-             | p = param; sl_single_quote ->
+             | p = param; "'" ->
                make_param (MLevel (incr_level_exp (cast_level p)))
-             | p1 = param; sl_pipe; p2 = param ->
+             | p1 = param; "|"; p2 = param ->
                make_param (MLevel (max_level_exp (cast_level p1) (cast_level p2) 0))
             ]
          ];
@@ -1079,47 +1079,47 @@ struct
           ]];
 
       bterms:
-         [[ sl_open_curly; bterms = btermslist; sl_close_curly ->
+         [[ "{"; bterms = btermslist; "}" ->
              bterms
           ]];
 
       btermslist:
-         [[ bterms = LIST0 bterm SEP sl_semi_colon ->
+         [[ bterms = LIST0 bterm SEP ";" ->
                 List.map mk_bterm' bterms
           ]];
 
       bterm:
          [[ h = bhead ->
              [], tupelize loc h
-           | h = bhead; sl_period; t = term ->
+           | h = bhead; "."; t = term ->
              List.map make_bvar h, t
-           | sl_period; t = term ->
+           | "."; t = term ->
              [], t
           ]];
 
       bhead:
-         [[ l = LIST1 noncommaterm SEP sl_comma ->
+         [[ l = LIST1 noncommaterm SEP "," ->
              l
           ]];
 
       (* Special forms *)
       sequent:
-         [[ sl_sequent; sl_open_curly; (hyps, concls) = sequent_body; sl_close_curly ->
+         [[ sl_sequent; "{"; (hyps, concls) = sequent_body; "}" ->
                mk_sequent_term {
                   sequent_args = mk_term (mk_op (mk_opname loc ["sequent_arg"] [] []) []) [];
                   sequent_hyps = hyps;
                   sequent_goals = concls;
                }
-          | sl_sequent; sl_open_brack; args = LIST1 term SEP ";"; sl_close_brack;
-            sl_open_curly; (hyps, concls) = sequent_body; sl_close_curly ->
+          | sl_sequent; "["; args = LIST1 term SEP ";"; "]";
+            "{"; (hyps, concls) = sequent_body; "}" ->
                let args_bt = List.map mk_simple_bterm args in
                mk_sequent_term {
                   sequent_args = mk_term (mk_op (mk_bopname loc ["sequent_arg"] [] args_bt) []) args_bt;
                   sequent_hyps = hyps;
                   sequent_goals = concls
                }
-          | sl_sequent; sl_open_paren; arg = term; sl_close_paren;
-               sl_open_curly; (hyps, concls) = sequent_body; sl_close_curly ->
+          | sl_sequent; "("; arg = term; ")";
+               "{"; (hyps, concls) = sequent_body; "}" ->
                mk_sequent_term { sequent_args = arg; sequent_hyps = hyps; sequent_goals = concls }
           ]];
 
@@ -1154,7 +1154,7 @@ struct
           ]];
 
       brtermlist:
-         [[ sl_open_brack; l = termlist; sl_close_brack -> l ]];
+         [[ "["; l = termlist; "]" -> l ]];
 
       (*
        * A term describing the display form.
@@ -1168,7 +1168,7 @@ struct
       df_item:
          [[ t = singleterm ->
              get_aterm loc t
-           | sl_back_quote; name = STRING ->
+           | "`"; name = STRING ->
              mk_xstring_term (Token.eval_string loc name)
           ]];
 
@@ -1180,11 +1180,11 @@ struct
          [[ l = LIST1 con_term SEP ";" -> l ]];
 
       con_term:
-         [[ sl_exclamation; t = term; sl_exclamation -> ConTerm t
+         [[ "!"; t = term; "!" -> ConTerm t
           | e = ANTIQUOT "arg" -> ConExpr (expr_of_arg loc e)
           | e = ANTIQUOT -> ConExpr (expr_of_anti loc "" e)
-          | sl_single_quote; v = ANTIQUOT "arg" -> ConVar (expr_of_arg loc v)
-          | sl_single_quote; v = ANTIQUOT -> ConVar (expr_of_anti loc "" v)
+          | "'"; v = ANTIQUOT "arg" -> ConVar (expr_of_arg loc v)
+          | "'"; v = ANTIQUOT -> ConVar (expr_of_anti loc "" v)
           | op = opname -> ConConstruct (mk_opname loc op [] [], [], [])
           | op = opname; (params, bterms) = con_term_suffix ->
                let param_types = List.map snd params in
@@ -1196,14 +1196,14 @@ struct
       con_term_suffix:
          [[ p = con_params ->
              p, []
-           | p = con_params; sl_open_curly; bterms = con_btermslist; sl_close_curly ->
+           | p = con_params; "{"; bterms = con_btermslist; "}" ->
              p, bterms
-           | sl_open_curly; bterms = con_btermslist; sl_close_curly ->
+           | "{"; bterms = con_btermslist; "}" ->
              [], bterms
           ]];
 
       con_params:
-         [[ sl_open_brack; params = LIST0 con_param SEP ","; sl_close_brack ->
+         [[ "["; params = LIST0 con_param SEP ","; "]" ->
              params
           ]];
 
@@ -1212,9 +1212,9 @@ struct
           | s = sl_word   -> ConPMeta (Lm_symbol.add s), ShapeString
           | n = sl_number -> ConPNum n, ShapeNumber
           | e = ANTIQUOT "int" -> ConPInt (expr_of_anti loc "int" e), ShapeNumber
-          | s = STRING  ; sl_colon; shape = con_param_shape -> ConPStr s, shape
-          | s = sl_word ; sl_colon; shape = con_param_shape -> ConPMeta (Lm_symbol.add s), shape
-          | e = ANTIQUOT; sl_colon; shape = con_param_shape -> ConPExpr (expr_of_anti loc "" e), shape
+          | s = STRING  ; ":"; shape = con_param_shape -> ConPStr s, shape
+          | s = sl_word ; ":"; shape = con_param_shape -> ConPMeta (Lm_symbol.add s), shape
+          | e = ANTIQUOT; ":"; shape = con_param_shape -> ConPExpr (expr_of_anti loc "" e), shape
           ]];
 
       con_param_shape:
@@ -1261,19 +1261,19 @@ struct
 
       (* Special forms *)
       con_sequent:
-         [[ sl_sequent; sl_open_curly; hyps = con_hyps;
-            concl = LIST0 con_term SEP ";"; sl_close_curly ->
+         [[ sl_sequent; "{"; hyps = con_hyps;
+            concl = LIST0 con_term SEP ";"; "}" ->
                let arg = ConTerm (mk_term (mk_op (mk_opname loc ["sequent_arg"] [] []) []) []) in
                   ConSequent (arg, hyps, concl)
-          | sl_sequent; sl_open_brack; args = con_termlist; sl_close_brack; sl_open_curly; hyps = con_hyps;
-            concl = LIST0 con_term SEP ";"; sl_close_curly ->
+          | sl_sequent; "["; args = con_termlist; "]"; "{"; hyps = con_hyps;
+            concl = LIST0 con_term SEP ";"; "}" ->
                let bterm_arities = List.map (fun _ -> 0) args in
                let op = mk_opname loc ["sequent_arg"] [] bterm_arities in
                let bterms = List.map (fun t -> [], t) args in
                let arg = ConConstruct (op, [], bterms) in
                   ConSequent (arg, hyps, concl)
-          | sl_sequent; sl_open_paren; arg = con_term; sl_close_paren; sl_open_curly; hyps = con_hyps;
-            concl = LIST0 con_term SEP ";"; sl_close_curly ->
+          | sl_sequent; "("; arg = con_term; ")"; "{"; hyps = con_hyps;
+            concl = LIST0 con_term SEP ";"; "}" ->
                   ConSequent (arg, hyps, concl)
           ]];
 
@@ -1284,16 +1284,16 @@ struct
               ConHypList (expr_of_anti loc "list" expr)
           | v = word_or_string; rest = con_hyp_suffix ->
               rest v
-          | v = ANTIQUOT "arg"; sl_colon; t = con_term ->
+          | v = ANTIQUOT "arg"; ":"; t = con_term ->
               ConHypothesis (expr_of_arg loc v, t)
-          | v = ANTIQUOT; sl_colon; t = con_term ->
+          | v = ANTIQUOT; ":"; t = con_term ->
               ConHypothesis (expr_of_anti loc "" v, t)
           | t = con_term ->
               ConHypothesis (<:expr< Lm_symbol.empty_var >>, t)
           ]];
 
       con_hyp_suffix:
-         [[ sl_colon; t = con_term ->
+         [[ ":"; t = con_term ->
                fun v -> ConHypothesis (<:expr< Lm_symbol.add $str:v$ >>, t)
           | (params, bterms) = con_term_suffix ->
                (fun op ->
@@ -1312,7 +1312,7 @@ struct
           ]];
 
       con_brtermlist:
-         [[ sl_open_brack; l = con_termlist; sl_close_brack -> l ]];
+         [[ "["; l = con_termlist; "]" -> l ]];
 
       (* Terminals *)
       sl_contexts_left: [[ "<|" -> () ]];
@@ -1328,24 +1328,6 @@ struct
       sl_meta_left_arrow:
          [[ "<--" -> () ]];
 
-      sl_open_curly:
-         [[ "{" -> () ]];
-
-      sl_close_curly:
-         [[ "}" -> () ]];
-
-      sl_open_paren:
-         [[ "(" -> () ]];
-
-      sl_close_paren:
-         [[ ")" -> () ]];
-
-      sl_open_brack:
-         [[ "[" -> () ]];
-
-      sl_close_brack:
-         [[ "]" -> () ]];
-
       sl_in:
          [[ "in" -> ()
           | "IN" -> () ]];
@@ -1354,32 +1336,8 @@ struct
          [[ "In" -> "mem"
          ]];
 
-      sl_colon:
-         [[ ":" -> () ]];
-
       sl_double_colon:
          [[ "::" -> "cons" ]];
-
-      sl_semi_colon:
-         [[ ";" -> () ]];
-
-      sl_double_slash:
-         [[ "//" -> () ]];
-
-      sl_comma:
-         [[ "," -> () ]];
-
-      sl_period:
-         [[ "." -> () ]];
-
-      sl_pipe:
-         [[ "|" -> () ]];
-
-      sl_single_quote:
-         [[ "'" -> () ]];
-
-      sl_back_quote:
-         [[ "`" -> () ]];
 
       sl_sequent:
          [[ "sequent" -> () ]];
@@ -1387,14 +1345,8 @@ struct
       sl_turnstile:
          [[ ">-" -> () ]];
 
-      sl_exclamation:
-         [[ "!" -> () ]];
-
       sl_assign:
          [[ ":=" -> "assign" ]];
-
-      sl_equal:
-         [[ "=" -> () ]];
 
       sl_equal_rel:
          [[ "=" -> "equal","="
@@ -1487,9 +1439,6 @@ struct
       sl_or:
          [[ "or" -> "or" ]];
 
-      sl_atsign:
-         [[ "@" -> ()]];
-
       sl_and:
          [[ "and" -> "and"
            | "&" -> "and"
@@ -1520,9 +1469,6 @@ struct
 
       sl_quotient:
          [[ "quot" -> "quot" ]];
-
-      sl_tilde:
-         [[ "~" -> () ]];
 
       sl_type:
          [[ "Type" -> "type" ]];
