@@ -3,6 +3,7 @@
     <head>
         <title>%%TITLE%%</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<script type="text/javascript" src="/inputs/mojave.js"></script>
 	<script type="text/javascript" src="/inputs/menucancel.js"></script>
 	<script type="text/javascript" src="/inputs/edit.js"></script>
 	<link rel="stylesheet" type="text/css" href="/inputs/style.css">
@@ -10,16 +11,15 @@
     </head>
 
     <body id="editbody" onload="OnLoad()">
-    <h2>Edit: <span class="editfile">%%FILE%%</span></h2>
-    <a href="/inputs/edit-help.html">How can I use my own editor to edit this file?</a>
-
-    <p>
+    <div id="editheading">Editing %%FILE%%
+    <span class="edithelp"><a href="/inputs/edit-help.html">How can I use my own editor to edit this file?</a></span>
+    </div>
+    <div id="editform">
     <form name="commandform" method="post" action="./info.prl">
-    <p>
-    <textarea name="content" rows=24 cols=80>%%CONTENT%%</textarea>
-    <p>
+    <textarea name="content" id="editarea">%%CONTENT%%</textarea>
     <input type="submit" name="submit" value="Submit changes">
     <input type="button" name="cancel" value="Cancel" onclick="Cancel()">
     </form>
+    </div>
     </body>
 </html>

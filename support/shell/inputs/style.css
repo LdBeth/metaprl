@@ -61,6 +61,11 @@ SPAN.system {
     color: #002277;
     font-family: monospace
 }
+SPAN.edithelp {
+    color: #000044;
+    font-size: 10pt;
+    font-style: italic
+}
 
 /*
  * Slots are selectable.
@@ -176,11 +181,16 @@ A:hover {
 #rulebody {
 }
 
-#inputbox {
-    position: static;
-    display: block;
-    border: none;
-    padding: 0px
+/*
+ * Rule box.
+ */
+#inputline {
+    width: 95%
+}
+
+#inputarea {
+    width: 95%;
+    height: 100px
 }
 
 /*
@@ -299,6 +309,33 @@ DIV.menuitemhover {
     width: 100%;
     height: 30px;
     margin: 0px;
+    border: 0px
+}
+
+#editbody {
+    background: #ddddee;
+}
+
+#editheading {
+    width: 100%;
+    border: 0px;
+    margin: 0px;
+    color: #000044;
+    font-size: 18pt
+}
+
+#editform {
+    width: 100%;
+    border: 0px;
+    margin: 0px
+}
+
+#editarea {
+    background: white;
+    width: 100%;
+    height: 300px;
+    margin: 0px;
+    margin-bottom: 5px;
     border: 0px
 }
 

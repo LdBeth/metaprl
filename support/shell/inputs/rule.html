@@ -15,9 +15,9 @@
 	</script>
     </head>
 
-    <body id="rulebody" onload="OnLoad(session)" onkeypress="RuleKey(event)">
+    <body id="rulebody" onload="OnLoad(parent, session)" onkeypress="RuleKey(event)">
         <form name="commandform" method="post" action="." enctype="multipart/form-data">
-        # <input type="text" name="command" size="100">
+        # <input type="text" name="command" id="inputline">
         </form>
     </body>
 </html>

@@ -8,31 +8,41 @@
  * The code for finding the window size
  * is based on code from www.howtocreate.co.uk.
  */
+function WindowSize()
+{
+    var size = new Object();
+
+    if(typeof(window.innerWidth) == 'number') {
+        // Non-IE
+        size.width = window.innerWidth;
+        size.height = window.innerHeight;
+    }
+    else if(document.documentElement && (document.documentElement.clientWidth || document.documentElement.clientHeight)) {
+        // IE 6+ in 'standards compliant mode'
+        size.width = document.documentElement.clientWidth;
+        size.height = document.documentElement.clientHeight;
+    }
+    else if(document.body && (document.body.clientWidth || document.body.clientHeight)) {
+        // IE 4 compatible
+        size.width = document.body.clientWidth;
+        size.height = document.body.clientHeight;
+    }
+    else {
+        alert("Can't figure out window size");
+        size.width = 800;
+        size.height = 800;
+    }
+    return size;
+}
+
 var window_width = 0;
 var window_height = 0;
 
 function GetWindowSize()
 {
-    if(typeof(window.innerWidth) == 'number') {
-        // Non-IE
-        window_width = window.innerWidth;
-        window_height = window.innerHeight;
-    }
-    else if(document.documentElement && (document.documentElement.clientWidth || document.documentElement.clientHeight)) {
-        // IE 6+ in 'standards compliant mode'
-        window_width = document.documentElement.clientWidth;
-        window_height = document.documentElement.clientHeight;
-    }
-    else if(document.body && (document.body.clientWidth || document.body.clientHeight)) {
-        // IE 4 compatible
-        window_width = document.body.clientWidth;
-        window_height = document.body.clientHeight;
-    }
-    else {
-        alert("Can't figure out window size");
-        window_width = 800;
-        window_height = 800;
-    }
+    var size = WindowSize();
+    window_width = size.width;
+    window_height = size.height;
 }
 
 /*

@@ -99,4 +99,7 @@ function OnLoad()
     buttonshandle = GetObject(self, 'buttonshandle');
     if(buttonshandle)
         buttonshandle.onmousedown = ButtonsDragStart;
+
+    /* Resize the window */
+    window.onresize = LoadFrame;
 }

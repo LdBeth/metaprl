@@ -25,6 +25,20 @@ function Layout()
     this.ruletop    = this.buttonstop + this.buttonsheight;
 }
 
+function ResizeInput()
+{
+    var frame = GetObject(self, 'ruleframe');
+    if(frame) {
+        var inputarea = GetObject(parent.ruleframe, "inputarea");
+        if(inputarea) {
+            var height = ruleheight - 20;
+            if(height < 70)
+                height = 70;
+            inputarea.style.height = height + 'px';
+        }
+    }
+}
+
 function ResizeBoxes()
 {
     var layout = new Layout();
@@ -45,6 +59,9 @@ function ResizeBoxes()
     buttonsframe.style.height = layout.buttonsheight + 'px';
     ruleframe.style.top       = layout.ruletop       + 'px';
     ruleframe.style.height    = layout.ruleheight    + 'px';
+
+    /* Input area gets resized too */
+    ResizeInput();
 
     /* Handles */
     var handleheight = 10;
@@ -269,14 +286,18 @@ function ButtonSubmit()
 function ButtonLong()
 {
     // Get the current text
-    var ruledoc = parent.ruleframe.document;
-    var text = ruledoc.commandform.command.value;
+    var frame = GetObject(self, 'ruleframe');
+    if(frame) {
+        var ruledoc = parent.ruleframe.document;
+        var text = ruledoc.commandform.command.value;
 
-    // Reset the input area
-    ruledoc.commandform.innerHTML = '# <textarea name="command" rows="4" cols="100">' + text + '</textarea>';
+        // Reset the input area
+        ruledoc.commandform.innerHTML = '# <textarea name="command" id="inputarea">' + text + '</textarea>';
+        ResizeInput();
 
-    // For convenience, refocus the input area
-    ruledoc.commandform.command.focus();
+        // For convenience, refocus the input area
+        ruledoc.commandform.command.focus();
+    }
 }
 
 /************************************************************************

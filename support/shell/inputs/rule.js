@@ -37,7 +37,7 @@ function RuleKey(event)
 /*
  * On load, cancel menus, and call parent loader.
  */
-function OnLoad(session)
+function OnLoad(mojave, session)
 {
     document.onmouseup = parent.CancelMenu;
     parent.LoadRule(session);
