@@ -218,9 +218,9 @@ by computational rewriting and inference rules. The following
 are some of the types defined in the <TT>Itt_logic</TT> module:</P>
 
 <BLOCKQUOTE>
-  <PRE><B>declare </B>"true"
-<B>declare</B> "false"
-<B>declare </B>"and"{'A; 'B}
+  <PRE><B>declare </B>&quot;true&quot;
+<B>declare</B> &quot;false&quot;
+<B>declare </B>&quot;and&quot;{'A; 'B}
 <B>declare </B>all{'A; x. 'B['x]}</PRE>
 </BLOCKQUOTE>
 
@@ -234,207 +234,331 @@ and brackets for subterms. The verbosity can obscure the meaning
 implied by term expressions. The page on <A HREF="mp-dform.html">display
 forms</A> discusses the pretty-printing mechanism for displaying
 terms. The parser also provides a simplified syntax for commonly
-occurring terms. The following tables list the simplified syntax
-in the left column, and the right column gives term in the uniform
+occurring terms. The following tables list the operators for simplified syntax
+in the priority order (starting from the lowest order to the highest order).
+The right column gives term in the uniform
 syntax. The simplified form is just an abbreviation; the term
 must still be declared. For example, the use of the term <TT>true
 <B>or</B> false</TT> requires that the term for <TT>or</TT> be
 declared,as in the following sequence:</P>
 
 <BLOCKQUOTE>
-  <PRE><B>declare</B> "true"
-<B>declare</B> "false"
-<B>declare </B>"or"{'A; 'B}
-<B>let </B>t = &lt;&lt; "true" <B>or </B>"false" &gt;&gt;</PRE>
+  <PRE><B>declare</B> &quot;true&quot;
+<B>declare</B> &quot;false&quot;
+<B>declare </B>&quot;or&quot;{'A; 'B}
+<B>let </B>t = &lt;&lt; &quot;true&quot; <B>or </B>&quot;false&quot; &gt;&gt;</PRE>
 </BLOCKQUOTE>
 
-<H3>Logic syntax</H3>
+<BLOCKQUOTE>
+
+<H3>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</H3>
+
+</BLOCKQUOTE>
+
+<H3>Low priority operators</H3>
 
 <BLOCKQUOTE>
   <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
     <TR>
       <TD WIDTH="50%">
-      &nbsp;<I><TT>t1</TT></I><TT> <B>and</B> <I>t2</I></TT></TD>
+      <TT>
+      &nbsp;<b>if</b> <I>t1</I> <b>then</b> <I>t2</I> <b>else</b>
+      <I>t3<br>
+      &nbsp;</I><b>let</b> <i>x = t1 </i><b>in</b> <i>t2<br>
+      &nbsp;t2 </i><b>where </b><i>x = t1<br>
+      &nbsp;</i><b>open </b><i>t1 </i><b>in </b><i>t2</i></TT></TD>
       <TD WIDTH="50%">
-      &nbsp;<TT>and{<I>t1; t2</I></TT>}</TD>
-    </TR>
-    <TR>
-      <TD WIDTH="50%">
-      &nbsp;<I><TT>t1</TT></I><TT> &amp; <I>t2</I></TT></TD>
-      <TD WIDTH="50%">
-      &nbsp;<TT>and{<I>t1; t2</I>}</TT></TD>
-    </TR>
-    <TR>
-      <TD WIDTH="50%">
-      &nbsp;<I><TT>t1</TT></I><TT> <B>or</B> <I>t2</I></TT></TD>
-      <TD WIDTH="50%">
-      &nbsp;<TT>or{<I>t1; t2</I>}</TT></TD>
-    </TR>
-    <TR>
-      <TD WIDTH="50%">
-      &nbsp;<I><TT>t1</TT></I><TT> =&gt; <I>t2</I></TT></TD>
-      <TD WIDTH="50%">
-      &nbsp;<TT>implies{<I>t1; t2</I>}</TT></TD>
-    </TR>
-    <TR>
-      <TD WIDTH="50%">
-      &nbsp;<B><TT>all </TT></B><TT><I>x: t1. t2</I></TT></TD>
-      <TD WIDTH="50%">
-      &nbsp;<TT>all{<I>t1; x. t2</I>}</TT></TD>
-    </TR>
-    <TR>
-      <TD WIDTH="50%">
-      &nbsp;<B><TT>exst</TT></B><TT> <I>x: t1. t2</I></TT></TD>
-      <TD WIDTH="50%">
-      &nbsp;<TT>exists{<I>t1; x. t2</I>}</TT></TD>
+      <TT>
+      &nbsp;ifthenelse{<I>t1; t2; t3</I>}<br>
+      &nbsp;let{<i>t1;x.t2</i>}<br>
+      &nbsp;let{<i>t1;x.t2</i>}<br>
+      &nbsp;let{<i>t1;self.t2</i>}</TT></TD>
     </TR>
   </TABLE>
 </BLOCKQUOTE>
 
-<H3>Type syntax</H3>
+<H3>Logical connectives</H3>
 
 <BLOCKQUOTE>
-  <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
+  <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0" height="138">
+    <tr>
+      <TD WIDTH="219" height="19">
+      <TT>
+      &nbsp;<I>t1</I> =&gt; <I>t2</I></TT></TD>
+      <TD WIDTH="219" height="19" colspan="2">
+      <TT>
+      &nbsp;implies{<I>t1; t2</I>}</TT></TD>
+    </tr>
+    <tr>
+      <TD WIDTH="219" height="19">
+      <TT>
+      &nbsp;<I>t1</I> <B>or</B> <I>t2</I></TT></TD>
+      <TD WIDTH="219" height="19" colspan="2">
+      <TT>
+      &nbsp;or{<I>t1; t2</I>}</TT></TD>
+    </tr>
     <TR>
-      <TD WIDTH="50%">
-      &nbsp;<I><TT>t1</TT></I><TT> + <I>t2</I></TT></TD>
-      <TD WIDTH="50%">
-      &nbsp;<TT>union{<I>t1; t2</I>}</TT></TD>
+      <TD WIDTH="219" height="19">
+      <TT>
+      &nbsp;<I>t1</I> <B>and</B> <I>t2<br>
+      </I>
+      &nbsp;<I>t1</I> &amp; <I>t2</I></TT></TD>
+      <TD WIDTH="219" height="19" colspan="2">
+      <TT>
+      &nbsp;and{<I>t1; t2</I>}</TT></TD>
     </TR>
     <TR>
-      <TD WIDTH="50%">
-      &nbsp;<I><TT>t1</TT></I><TT> * <I>t2</I></TT></TD>
-      <TD WIDTH="50%">
-      &nbsp;<TT>prod{<I>t1; t2}</I></TT></TD>
-    </TR>
-    <TR>
-      <TD WIDTH="50%">
-      &nbsp;<I><TT>t1</TT></I><TT> -&gt; <I>t2</I></TT></TD>
-      <TD WIDTH="50%">
-      &nbsp;<TT>fun{<I>t1; t2</I>}</TT></TD>
-    </TR>
-    <TR>
-      <TD WIDTH="50%">
-      &nbsp;<I><TT>x:t1</TT></I><TT> * <I>t2</I></TT></TD>
-      <TD WIDTH="50%">
-      &nbsp;<TT>prod{<I>t1; x. t2</I>}</TT></TD>
-    </TR>
-    <TR>
-      <TD WIDTH="50%">
-      &nbsp;<I><TT>x:t1 -&gt; t2</TT></I></TD>
-      <TD WIDTH="50%">
-      &nbsp;<TT>fun{<I>t1; x. t2</I>}</TT></TD>
-    </TR>
-    <TR>
-      <TD WIDTH="50%">
-      &nbsp;<I><TT>x, y: t1 </TT></I><TT>// <I>t2</I></TT></TD>
-      <TD WIDTH="50%">
-      &nbsp;<TT>quot{<I>t1; x, y. t2</I>}</TT></TD>
-    </TR>
-    <TR>
-      <TD WIDTH="50%">
-      &nbsp;<B><TT>isect</TT></B><TT> <I>x: t1. t2</I></TT></TD>
-      <TD WIDTH="50%">
-      &nbsp;<TT>isect{<I>t1; x. t2</I>}</TT></TD>
-    </TR>
-    <TR>
-      <TD WIDTH="50%">
-      &nbsp;<TT><I>t1</I><B> IN </B><I>t2</I></TT></TD>
-      <TD WIDTH="50%">
-      &nbsp;<TT>equal{<I>t2; t1; t1</I>}</TT></TD>
-    </TR>
-    <TR>
-      <TD WIDTH="50%">
-      &nbsp;<TT><I>t1</I> = <I>t2</I> <B>in </B><I>t3</I></TT></TD>
-      <TD WIDTH="50%">
-      &nbsp;<TT>equal{<I>t3; t1; t2</I>}</TT></TD>
-    </TR>
-    <TR>
-      <TD WIDTH="50%">
-      &nbsp;<TT><I>t1 </I> &lt;&gt; <I>t2 </I><B>in</B> <I>t3</I></TT></TD>
-      <TD WIDTH="50%">
-      &nbsp;<TT>nequal{<I>t3; t2; t1</I>}</TT></TD>
+      <TD WIDTH="219" height="19">
+      <TT>
+      &nbsp; <B>all </B><I>x:t1. t2</I><B><br>
+      </B>&nbsp;<B>exst</B> <I>x:t1. t2<br>
+      </I>
+      &nbsp; <b>forany </b><I>t1. t2</I><B><br>
+      </B>&nbsp;<b>thereis</b> <I>t1. t2<br>
+      </I>
+      &nbsp; <B>all </B><I>x. t2</I><B><br>
+      </B>&nbsp;<B>exst</B> <I>x. t2<br>
+      </I>
+      &nbsp; <B>all </B><I>x </I><b>In</b><I> t1. t2</I><B><br>
+      </B>&nbsp;<B>exst</B> <I>x </I><b>In</b> <I> t1. t2&nbsp;</I> </TT></TD>
+      <TD WIDTH="184" height="19">
+      <TT>
+      &nbsp;all{<I>t1; x. t2</I>}<br>
+
+      &nbsp;exists{<I>t1; x. t2</I>}<br>
+
+      &nbsp;all{<I>t1; self. t2</I>}<br>
+
+      &nbsp;exists{<I>t1; self. t2</I>}<br>
+      &nbsp;sall{<I>t1; x. t2</I>}<br>
+      &nbsp;sexists{<I>t1; x. t2</I>}<br>
+      &nbsp;dall{<I>t1; x. t2</I>}<br>
+      &nbsp;dexists{<I>t1; x. t2</I>}</TT></TD>
+      <TD WIDTH="31" height="19">
+      <br>
+      <br>
+      &nbsp;<br>
+      _____<br>
+      &nbsp;<i>For&nbsp;&nbsp;</i><br>
+      &nbsp;CZF<i><br>
+      </i><i>&nbsp;the-&nbsp;<br>
+      &nbsp;ories</i></TD>
     </TR>
   </TABLE>
 </BLOCKQUOTE>
 
-<H3>Arithmetic syntax</H3>
+<H3>Relations</H3>
 
 <BLOCKQUOTE>
   <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
     <TR>
       <TD WIDTH="50%">
-      &nbsp;<I><TT>t1 </TT></I><TT>+@ <I>t2</I></TT></TD>
+      <tt><i>&nbsp;t1</i> = <I>t2</I> <B>in </B><I>t<br>
+      &nbsp;t1</I> &lt;&gt; <I>t2</I> <B>in </B><I>t<br>
+      &nbsp;t1</I> <B>in </B><I>t<br>
+      &nbsp;t1</I> = <I>t2</I> &nbsp;<br>
+      &nbsp;
+      <I>t1</I> &lt;&gt; <I>t2<br>
+      &nbsp;t1 ~ t2</I> </tt> </TD>
       <TD WIDTH="50%">
-      &nbsp;<TT>add{<I>t1; t2</I>}</TT></TD>
+      <TT>
+      &nbsp;equal{<I>t; t1; t2</I>}<br>
+
+      &nbsp;nequal{<I>t; t1; t2</I>}<br>
+
+      &nbsp;equal{<I>t; t1; t1</I>}<br>
+
+      &nbsp;equal{<I>t1; t2</I>}<br>
+
+      &nbsp;nequal{<I>t1; t2</I>}<br>
+
+      &nbsp;sqeq{<I>t1; t2</I>}</TT></TD>
     </TR>
     <TR>
       <TD WIDTH="50%">
-      &nbsp;<I><TT>t1</TT></I><TT> -@ <I>t2</I></TT></TD>
+      <TT>
+      &nbsp;<I>t1</I>  &lt;= <I>t2<br>
+      </I>
+      &nbsp;<I>t1</I>  &lt; <I>t2<br>
+      </I>
+      &nbsp;<I>t1</I>  &gt;= <I>t2<br>
+      </I>
+      &nbsp;<I>t1</I>  &gt; <I>t2</I> </TT></TD>
       <TD WIDTH="50%">
-      &nbsp;<TT>sub{<I>t1; t2</I>}</TT></TD>
+      <TT>
+      &nbsp;le{<I>t3; t1; t2</I>}<br>
+
+      &nbsp;lt{<I>t3; t1; t2</I>}<br>
+
+      &nbsp;ge{<I>t3; t1; t2</I>}<br>
+
+      &nbsp;gt{<I>t3; t1; t2</I>}</TT></TD>
+    </TR>
+  </TABLE>
+</BLOCKQUOTE>
+
+<H3>Mathematical operators</H3>
+
+<BLOCKQUOTE>
+  <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
+    <tr>
+      <TD WIDTH="50%">
+      <TT>
+      &nbsp;<I>t1 </I><b>::</b><I> t2 </I></TT></TD>
+      <TD WIDTH="50%">
+      <TT>
+      &nbsp;cons{<I>t1; t2</I>}</TT></TD>
+    </tr>
+    <TR>
+      <TD WIDTH="50%">
+      <TT>
+      &nbsp;(<i>t1, t2</i>)</TT></TD>
+      <TD WIDTH="50%">
+      <TT>&nbsp;pair(<i>t1; t2</i>)</TT></TD>
+    </TR>
+  </TABLE>
+</BLOCKQUOTE>
+
+<H3>Type operators</H3>
+
+<BLOCKQUOTE>
+  <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
+    <tr>
+      <TD WIDTH="50%">
+      <TT>
+      &nbsp;<I>t1</I> -&gt; <I>t2<br>
+      </I>
+      &nbsp;<I>x:t1</I> -&gt; <I>t2</I></TT></TD>
+      <TD WIDTH="50%">
+      <TT>
+      &nbsp;fun{<I>t1; t2</I>}<br>
+      &nbsp;fun{<I>t1; x.t2</I>}</TT></TD>
+    </tr>
+    <tr>
+      <TD WIDTH="50%">
+      <TT>
+      &nbsp;<I>t1</I> * <I>t2<br>
+      </I>
+      &nbsp;<I>x:t1</I> * <I>t2</I></TT></TD>
+      <TD WIDTH="50%">
+      <TT>
+      &nbsp;prod{<I>t1; t2}<br>
+      </I>&nbsp;prod{<I>t1; x. t2</I>}</TT></TD>
+    </tr>
+    <TR>
+      <TD WIDTH="50%">
+      <TT>
+      &nbsp;<I>t1</I> + <I>t2</I></TT></TD>
+      <TD WIDTH="50%">
+      <TT>
+      &nbsp;union{<I>t1; t2</I>}</TT></TD>
     </TR>
     <TR>
       <TD WIDTH="50%">
-      &nbsp;<I><TT>t1 </TT></I><TT>*@ <I>t2</I></TT></TD>
+      <TT>
+      &nbsp;<I>x, y: t1 </I>// <I>t2<br>
+      </I>
+      &nbsp;<b>isect </b><I>x: t1.</I> <I>t2</I></TT></TD>
       <TD WIDTH="50%">
-      &nbsp;<TT>mul{<I>t1; t2</I>}</TT></TD>
+      <TT>
+      &nbsp;quot{<I>t1; x, y. t2</I>}<br>
+      &nbsp;isect{<i>t1; x. t2</i>}</TT></TD>
     </TR>
-    <TR>
+  </TABLE>
+</BLOCKQUOTE>
+
+<H3>Arithmetic operations</H3>
+
+<BLOCKQUOTE>
+  <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
+    <tr>
       <TD WIDTH="50%">
-      &nbsp;<I><TT>t1 </TT></I><TT><B>/@</B> <I>t2</I></TT></TD>
+      <TT>
+      &nbsp;<I>t1 </I>+@ <I>t2<br>
+      </I>&nbsp;<I>t1</I> -@ <I>t2</I></TT></TD>
       <TD WIDTH="50%">
-      &nbsp;<TT>div{<I>t1; t2</I>}</TT></TD>
-    </TR>
-    <TR>
+      <TT>
+      &nbsp;add{<I>t1; t2</I>}<br>
+      &nbsp;sub{<I>t1; t2</I>}</TT></TD>
+    </tr>
+    <tr>
       <TD WIDTH="50%">
-      &nbsp;<I><TT>t1</TT></I> <TT><B>%@</B> <I>t2</I></TT></TD>
+      <TT>
+      &nbsp;- t</TT></TD>
       <TD WIDTH="50%">
-      &nbsp;<TT>rem{<I>t1; t2</I>}</TT></TD>
-    </TR>
-    <TR>
+      <TT>
+      &nbsp;minus{<I>t</I>}&nbsp;</TT></TD>
+    </tr>
+    <tr>
       <TD WIDTH="50%">
-      &nbsp;<I><TT>t1</TT></I><TT> &lt; <I>t2</I></TT></TD>
+      <TT>
+      &nbsp;<I>t1 </I>*@ <I>t2<br>
+      </I>
+      &nbsp;<I>t1 </I><B>/@</B> <I>t2<br>
+      </I>
+      &nbsp;<I>t1</I> <B>%@</B> <I>t2</I></TT></TD>
       <TD WIDTH="50%">
-      &nbsp;<TT>lt{<I>t1; t2</I>}</TT></TD>
-    </TR>
-    <TR>
-      <TD WIDTH="50%">
-      &nbsp;<I><TT>t1 </TT></I><TT>&lt;= <I>t2</I></TT></TD>
-      <TD WIDTH="50%">
-      &nbsp;<TT>le{<I>t1; t2</I>}</TT></TD>
-    </TR>
-    <TR>
-      <TD WIDTH="50%">
-      &nbsp;<I><TT>t1</TT></I><TT> &gt;= <I>t2</I></TT></TD>
-      <TD WIDTH="50%">
-      &nbsp;<TT>ge{<I>t1; t2</I>}</TT></TD>
-    </TR>
-    <TR>
-      <TD WIDTH="50%">
-      &nbsp;<I><TT>t1 </TT></I><TT>&gt; <I>t2</I></TT></TD>
-      <TD WIDTH="50%">
-      &nbsp;<TT>gt{<I>t1; t2</I>}</TT></TD>
-    </TR>
+      <TT>
+      &nbsp;mul{<I>t1; t2</I>}<br>
+
+      &nbsp;div{<I>t1; t2</I>}<br>
+
+      &nbsp;rem{<I>t1; t2</I>}</TT></TD>
+    </tr>
   </TABLE></BLOCKQUOTE>
 
-<H3>Other</H3>
+<H3>Other operators</H3>
 
 <BLOCKQUOTE>
   <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
+    <tr>
+      <TD WIDTH="50%">
+      <TT>
+      &nbsp;<I>t1 </I>&nbsp;<I>t2 </I></TT></TD>
+      <TD WIDTH="50%">
+      <TT>
+      &nbsp;apply{<I>t1; t2</I>}</TT></TD>
+    </tr>
     <TR>
       <TD WIDTH="50%">
-      &nbsp;<I>t1 </I>&nbsp;<I>t2 </I></TD>
+      <TT>
+      &nbsp;<i>t1</i><b>^</b>x</TT></TD>
       <TD WIDTH="50%">
-      &nbsp;<TT>apply{<I>t1; t2</I>}</TT></TD>
+      <TT>&nbsp;field[&quot;x&quot;:t]{<i>t1</i>}</TT></TD>
     </TR>
-    <TR>
+  </TABLE>
+</BLOCKQUOTE>
+
+<H3>Parenthesis&nbsp;</H3>
+
+<BLOCKQUOTE>
+  <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
+    <tr>
       <TD WIDTH="50%">
-      &nbsp;<TT>if</TT> <I>t1</I> <TT>then</TT> <I>t2</I> <TT>else</TT>
-      <I>t3</I></TD>
+      <TT>
+      &nbsp;{<i>x </i><b>:</b><i> t1</i>&nbsp; |&nbsp; <i>t2</i>}</TT></TD>
       <TD WIDTH="50%">
-      &nbsp;<TT>ifthenelse{<I>t1; t2; t3</I>}</TT></TD>
-    </TR>
+      <TT>
+      &nbsp;set{<i>t1; x.t2</i>}</TT></TD>
+    </tr>
+    <tr>
+      <TD WIDTH="50%">
+      <TT>
+      &nbsp;{x<i> </i><b>:</b><i> A</i><b>; ... ; </b>z<b> :</b> <i>C</i>}</TT></TD>
+      <TD WIDTH="50%">
+      <TT>
+      record[x:t]{<i>A; self. . . .<br>
+      &nbsp; </i>record[z:t]<i>{C}...</i>}</TT></TD>
+    </tr>
+    <tr>
+      <TD WIDTH="50%">
+      <TT>
+      &nbsp;{x<i> </i><b>=</b><i> a</i><b>; ... ; </b>z<b> =</b> <i>c</i>}</TT></TD>
+      <TD WIDTH="50%">
+      <TT>
+      rcrd[x:t]{<i>a; . . . .</i><br>
+      &nbsp; rcrd[z:t]{<i>c</i>}...}</TT></TD>
+    </tr>
   </TABLE>
 </BLOCKQUOTE>
 
