@@ -760,7 +760,7 @@ dform status_complete : status_complete =
    keyword["*"]
 
 dform status_primitive : status_primitive{'t} =
-   szone keyword["!"] `"[" 't "]" ezone
+   szone keyword["!"] `"[" slot{'t} "]" ezone
 
 dform status_interactive : status_interactive[rules:n,nodes:n]{'status} =
    'status `"[" slot[rules:n] `"," slot[nodes:n] `"]"
