@@ -29,6 +29,7 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Opname
 
 open Refine_error_sig
 open Term_sig
@@ -109,6 +110,7 @@ struct
     | RewriteAllSOInstances of string
     | RewriteMissingContextArg of string
     | RewriteStringError of string
+    | RewriteStringOpnameOpnameError of string * opname * opname
     | RewriteAddressError of address * string * refine_error
     | RewriteFreeContextVars of string list
 

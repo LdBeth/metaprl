@@ -209,8 +209,13 @@ struct
          (* Check the opnames to short-circuit applications that quickly fail *)
          match redex with
             RWComposite { rw_op = { rw_name = opname1 } } :: _ ->
-               if not (Opname.eq opname1 (opname_of_term goal)) then
-                  REF_RAISE(opname_exn)
+               let opname2 = opname_of_term goal in
+                  if not (Opname.eq opname1 opname2) then
+                     REF_RAISE(opname_exn);
+(*
+ * JYH sometimes likes to see the actual opnames.
+                     REF_RAISE(RefineError ("Rewrite.apply_rewrite", RewriteStringOpnameOpnameError ("opnames do not match", opname1, opname2)))
+ *)
           | _ ->
                ()
       in

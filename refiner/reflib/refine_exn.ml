@@ -251,6 +251,14 @@ let format_refine_error db buf printers name error =
             format_string buf "StringError:";
             format_space buf;
             format_string buf s
+       | RewriteStringOpnameOpnameError (s, opname1, opname2) ->
+            format_string buf "StringOpnameOpnameError:";
+            format_space buf;
+            format_string buf s;
+            format_space buf;
+            format_string buf (string_of_opname opname1);
+            format_space buf;
+            format_string buf (string_of_opname opname2)
        | RewriteAddressError (a, name, e) ->
             format_address buf a;
             format_space buf;
