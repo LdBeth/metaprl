@@ -1341,7 +1341,7 @@ let tex_escape_string linebreaks s =
           | '_' ->
                collect_escape i j "\\_"
           | '^' ->
-               collect_escape i j "\\makehat"
+               collect_escape i j "{\\makehat}"
           | '&' ->
                collect_escape i j "\\&"
           | '#' ->
@@ -1355,7 +1355,7 @@ let tex_escape_string linebreaks s =
           | '}' ->
                collect_escape i j "\\}"
           | '\\' ->
-               collect_escape_space i j "\\backslash"
+               collect_escape_space i j "{\\backslash}"
           | '$' ->
                collect_escape i j "\\$"
           | '%' ->
@@ -1363,9 +1363,9 @@ let tex_escape_string linebreaks s =
           | '|' ->
                collect_escape i j "\\|"
           | '<' ->
-               collect_escape_space i j "\\lt"
+               collect_escape_space i j "{\\lt}"
           | '>' ->
-               collect_escape_space i j "\\gt"
+               collect_escape_space i j "{\\gt}"
           | _ ->
                collect i (succ j)
    and collect_esc i j s' =
@@ -1425,7 +1425,7 @@ let tex_push_line buf tags =
    let line = tex_line buf in
       output_string buf.tex_out line;
       buf.tex_current_line <- [];
-      if line <> "" && line.[String.length line - 1] != '\n' then begin 
+      if line <> "" && line.[String.length line - 1] != '\n' then begin
          output_string buf.tex_out (String.make (List.length tags) '}');
          output_string buf.tex_out "\\\\\n";
          buf.tex_current_line <- List.map make_tag tags
@@ -1465,7 +1465,7 @@ let tex_tag buf s =
    buf.tex_current_line <- (make_tag s) :: buf.tex_current_line
 
 let tex_etag buf _ =
-   buf.tex_current_line <- (false, "}") :: buf.tex_current_line 
+   buf.tex_current_line <- (false, "}") :: buf.tex_current_line
 
 (*
  * A TeX printer.

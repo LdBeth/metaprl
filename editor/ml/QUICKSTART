@@ -8,7 +8,7 @@ for native code --
 for bytecode --
   editor/ml/mptop
 for interactive tactic development (bytecode)--
-  editor/ml/mp   (with   #use "x.ml";; as the first command, 
+  editor/ml/mp   (with   #use "x.ml";; as the first command,
                   not recommended for beginners)
 
 Navigation:
@@ -19,14 +19,14 @@ ls: string -> unit
   ls "";;   -- lists the most interesting parts,
   ls "a";;  -- lists everything,
   ls "R";;  -- lists rules,
-  ls "r";;  -- lists rewrites, 
+  ls "r";;  -- lists rewrites,
   ls "u";;  -- lists everything unproved,
   ls "f";;  -- lists all formal contents
   ls "d";;  -- lists all display-related items.
-  Note that you can combile ls options, e.g. ls "rR" would list all rules
+  Note that you can combine ls options, e.g. ls "rR" would list all rules
   and rewrites.
 
-pwd ();;   returnes current path in the _loaded_module_ tree.  
+pwd ();;   returns current path in the _loaded_module_ tree.
 
 cd: string -> unit
     provides navigation in the loaded module tree.
@@ -49,12 +49,12 @@ Proof refinement:
 Save proof:
 When you cd into some theory for the first time, MetaPRL reads the
 newest among the .prla, .prlb and .cmoz
-  save ();;  -- current module in .prlb file  
-                (but only if it was modified; for local use),  
+  save ();;  -- current module in .prlb file
+                (but only if it was modified; for local use),
   save_all ();; -- all modified modules,
   export ();; -- in .prla file (for cvs, ...)
 ------------------------
-  export() function: 
+  export() function:
   Note that it uses the old .prla file as a part of
   input (it tries to keep as many lines as possible unchanged to be more
   CVS-friendly), so if you exported the same theory several times between
@@ -66,11 +66,11 @@ newest among the .prla, .prlb and .cmoz
   4) Do export()
   5) commit.
 -------------------------
- 
+
 Proof expansion:
    expand ();;
      -- re-runs the proof (that's at and under the current node you are at);
-   expand_all ();;	
+   expand_all ();;
      -- re-runs all proofs in the current node
      -- from root - re-runs all proofs in MetaPRL
 
@@ -84,7 +84,12 @@ Object status:
 Proof checking:
 
    check ();;
-   check_all ();;  -- not imlpemented yet.
+   check_all ();;  -- not implemented yet.
+
+Changing display form mode:
+    set_dfmode : string -> unit
+Set display mode, string could be "prl" (default), "src", "tex", "html"
+This command should be run before entering proof of rule/rewrite.
 
 WHERE AND HOW TO TRY:
 
@@ -113,14 +118,14 @@ HOW TO USE prl-hack.el
 Once:
   1) Make a symbolic link in your home directory to metaprl/   :
        cd
-       ln -s <path>/metaprl/ ./   
+       ln -s <path>/metaprl/ ./
 
 Every time:
   2) Start emacs
   3) Load prl_hack (in emacs, M-... usually means Alt-... ):
-       M-x load-file                                  
-       metaprl/editor/emacs/prl-hack.el   
-     
+       M-x load-file
+       metaprl/editor/emacs/prl-hack.el
+
      Comments:
                2+3) alternative:
                emacs -l metaprl/editor/emacs/prl-hack.el
@@ -130,29 +135,29 @@ Every time:
                (load-file "~/metaprl/editor/emacs/prl-hack.el")
 
   4) Start the shell for MetaPrl in emacs (uses Unicode font) :
-       M-x metaprl    
-  5) In this shell cd to metaprl/editor/ml/ and 
+       M-x metaprl
+  5) In this shell cd to metaprl/editor/ml/ and
      start any toploop  (mptop, mp,  mpopt)
-       
 
-For Connection to Nuprl5 
 
-There are 2 possible connections to Nuprl5.  You can use either 1 or 
+For Connection to Nuprl5
+
+There are 2 possible connections to Nuprl5.  You can use either 1 or
 both at the same time as they serve different functions.
-  1. The "metaprl" connection gives nuprl access to the entire collection 
+  1. The "metaprl" connection gives nuprl access to the entire collection
      of theories with a variety of commands to edit and view the objects.
   2. The "jprover" connection gives acces to the jprover refiner so that one
      can call the tactic "Jprover" on any proof being viewed in nuprl.
 
 
-Below we assume that: 
+Below we assume that:
   - Nuprl is running on host, <hostname>.
   - The Nuprl library environment is named <libenv>.
   - The Nuprl database is at <dbpathname>
 
 To connect metaprl:
 
-  Setup the nuprl *library* to listen for a connections on port <xxxx>. 
+  Setup the nuprl *library* to listen for a connections on port <xxxx>.
   ML[(lib)] orb_start_accept <xxxx> `mathbus`;;
 
   1) Start editor/ml/mp
@@ -161,7 +166,7 @@ To connect metaprl:
 
 To connect jprover:
 
-  Setup the nuprl *refiner* to listen for a connections on port <xxxx>. 
+  Setup the nuprl *refiner* to listen for a connections on port <xxxx>.
   ML[(lib)] orb_start_accept <xxxx> `mathbus`;;
 
   1) Start editor/ml/mp

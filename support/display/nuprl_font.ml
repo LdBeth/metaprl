@@ -232,6 +232,7 @@ declare Sigma
 declare Omega
 declare times
 declare "div"
+declare circ
 declare supplus
 declare supminus
 declare supcirc
@@ -583,13 +584,13 @@ dform tt_end_df : internal :: mode[tex] :: tt_end =
    ezone
 
 dform sub_begin_df : internal :: mode[tex] :: sub_begin =
-   izone `"_{" ezone
+   izone `"{}_{" ezone
 
 dform sub_end_df : internal :: mode[tex] :: sub_end =
    izone `"}" ezone
 
 dform sup_begin_df : internal :: mode[tex] :: sup_begin =
-   izone `"^{" ezone
+   izone `"{}^{" ezone
 
 dform sup_end_df : internal :: mode[tex] :: sup_end =
    izone `"}" ezone
@@ -962,7 +963,7 @@ dform subz_df			: internal :: mode[html] :: subz = sub["z"]
 dform wedge_df			: internal :: mode[tex] :: wedge                     = mathmacro["wedge"]
 dform tneg_df			: internal :: mode[tex] :: tneg                      = mathmacro["neg"]
 dform member_df			: internal :: mode[tex] :: member                    = mathmacro["in"]
-dform plusminus_df		: internal :: mode[tex] :: plusminus                 = mathmacro["pluminus"]
+dform plusminus_df		: internal :: mode[tex] :: plusminus                 = mathmacro["pm"]
 dform oplus_df			: internal :: mode[tex] :: oplus                     = mathmacro["oplus"]
 dform infty_df			: internal :: mode[tex] :: infty                     = mathmacro["infty"]
 dform partial_df		: internal :: mode[tex] :: partial                   = mathmacro["partial"]
@@ -992,15 +993,16 @@ dform middlearrow_df		: internal :: mode[tex] :: middlearrow               = mat
 dform rightarrow_df		: internal :: mode[tex] :: rightarrow                = mathmacro["rightarrow"]
 dform gamma_df			: internal :: mode[tex] :: Gamma                     = mathmacro["Gamma"]
 dform delta_df			: internal :: mode[tex] :: Delta                     = mathmacro["Delta"]
-dform lambda_df		: internal :: mode[tex] :: Lambda                    = mathmacro["Lambda"]
+dform lambda_df		        : internal :: mode[tex] :: Lambda                    = mathmacro["Lambda"]
 dform pi_df			: internal :: mode[tex] :: Pi                        = mathmacro["Pi"]
 dform sigma_df			: internal :: mode[tex] :: Sigma                     = mathmacro["Sigma"]
 dform omega_df			: internal :: mode[tex] :: Omega                     = mathmacro["Omega"]
 dform times_df			: internal :: mode[tex] :: times                     = mathmacro["times"]
 dform div_df            	: internal :: mode[tex] :: "div"                     = mathmacro["div"]
-dform supplus_df		: internal :: mode[tex] :: supplus                   = izone `"^{+}" ezone
-dform supminus_df		: internal :: mode[tex] :: supminus                  = izone `"^{-}" ezone
-dform supcirc_df		: internal :: mode[tex] :: supcirc                   = izone `"^{\circ}" ezone
+dform circ_df		        : internal :: mode[tex] :: circ                      = mathmacro["circ"]
+dform supplus_df		: internal :: mode[tex] :: supplus                   = sup["+"]
+dform supminus_df		: internal :: mode[tex] :: supminus                  = sup["-"]
+dform supcirc_df		: internal :: mode[tex] :: supcirc                   = sup{circ}
 dform subset_df			: internal :: mode[tex] :: "subset"                  = mathmacro["subset"]
 dform supset_df			: internal :: mode[tex] :: supset                    = mathmacro["supset"]
 dform subseteq_df		: internal :: mode[tex] :: subseteq                  = mathmacro["subseteq"]
@@ -1009,37 +1011,37 @@ dform sqsubset_df		: internal :: mode[tex] :: sqsubset                  = mathma
 dform sqsupset_df		: internal :: mode[tex] :: sqsupset                  = mathmacro["sqsupset"]
 dform sqsubseteq_df		: internal :: mode[tex] :: sqsubseteq                = mathmacro["sqsubseteq"]
 dform sqsupseteq_df		: internal :: mode[tex] :: sqsupseteq                = mathmacro["sqsupseteq"]
-dform subzero_df		: internal :: mode[tex] :: subzero                   = izone `"_0" ezone
-dform subone_df			: internal :: mode[tex] :: subone                    = izone `"_1" ezone
-dform subtwo_df			: internal :: mode[tex] :: subtwo                    = izone `"_2" ezone
-dform subthree_df		: internal :: mode[tex] :: subthree                  = izone `"_3" ezone
+dform subzero_df		: internal :: mode[tex] :: subzero                   = sub["0"]
+dform subone_df			: internal :: mode[tex] :: subone                    = sub["1"]
+dform subtwo_df			: internal :: mode[tex] :: subtwo                    = sub["2"]
+dform subthree_df		: internal :: mode[tex] :: subthree                  = sub["3"]
 
-dform suba_df			: internal :: mode[tex] :: suba = izone `"_a" ezone
-dform subb_df			: internal :: mode[tex] :: subb = izone `"_b" ezone
-dform subc_df			: internal :: mode[tex] :: subc = izone `"_c" ezone
-dform subd_df			: internal :: mode[tex] :: subd = izone `"_d" ezone
-dform sube_df			: internal :: mode[tex] :: sube = izone `"_e" ezone
-dform subf_df			: internal :: mode[tex] :: subf = izone `"_f" ezone
-dform subg_df			: internal :: mode[tex] :: subg = izone `"_g" ezone
-dform subh_df			: internal :: mode[tex] :: subh = izone `"_h" ezone
-dform subi_df			: internal :: mode[tex] :: subi = izone `"_i" ezone
-dform subj_df			: internal :: mode[tex] :: subj = izone `"_j" ezone
-dform subk_df			: internal :: mode[tex] :: subk = izone `"_k" ezone
-dform subl_df			: internal :: mode[tex] :: subl = izone `"_l" ezone
-dform subm_df			: internal :: mode[tex] :: subm = izone `"_m" ezone
-dform subn_df			: internal :: mode[tex] :: subn = izone `"_n" ezone
-dform subo_df			: internal :: mode[tex] :: subo = izone `"_o" ezone
-dform subp_df			: internal :: mode[tex] :: subp = izone `"_p" ezone
-dform subq_df			: internal :: mode[tex] :: subq = izone `"_q" ezone
-dform subr_df			: internal :: mode[tex] :: subr = izone `"_r" ezone
-dform subs_df			: internal :: mode[tex] :: subs = izone `"_s" ezone
-dform subt_df			: internal :: mode[tex] :: subt = izone `"_t" ezone
-dform subu_df			: internal :: mode[tex] :: subu = izone `"_u" ezone
-dform subv_df			: internal :: mode[tex] :: subv = izone `"_v" ezone
-dform subw_df			: internal :: mode[tex] :: subw = izone `"_w" ezone
-dform subx_df			: internal :: mode[tex] :: subx = izone `"_x" ezone
-dform suby_df			: internal :: mode[tex] :: suby = izone `"_y" ezone
-dform subz_df			: internal :: mode[tex] :: subz = izone `"_z" ezone
+dform suba_df			: internal :: mode[tex] :: suba = sub["a"]
+dform subb_df			: internal :: mode[tex] :: subb = sub["b"]
+dform subc_df			: internal :: mode[tex] :: subc = sub["c"]
+dform subd_df			: internal :: mode[tex] :: subd = sub["d"]
+dform sube_df			: internal :: mode[tex] :: sube = sub["e"]
+dform subf_df			: internal :: mode[tex] :: subf = sub["f"]
+dform subg_df			: internal :: mode[tex] :: subg = sub["g"]
+dform subh_df			: internal :: mode[tex] :: subh = sub["h"]
+dform subi_df			: internal :: mode[tex] :: subi = sub["i"]
+dform subj_df			: internal :: mode[tex] :: subj = sub["j"]
+dform subk_df			: internal :: mode[tex] :: subk = sub["k"]
+dform subl_df			: internal :: mode[tex] :: subl = sub["l"]
+dform subm_df			: internal :: mode[tex] :: subm = sub["m"]
+dform subn_df			: internal :: mode[tex] :: subn = sub["n"]
+dform subo_df			: internal :: mode[tex] :: subo = sub["o"]
+dform subp_df			: internal :: mode[tex] :: subp = sub["p"]
+dform subq_df			: internal :: mode[tex] :: subq = sub["q"]
+dform subr_df			: internal :: mode[tex] :: subr = sub["r"]
+dform subs_df			: internal :: mode[tex] :: subs = sub["s"]
+dform subt_df			: internal :: mode[tex] :: subt = sub["t"]
+dform subu_df			: internal :: mode[tex] :: subu = sub["u"]
+dform subv_df			: internal :: mode[tex] :: subv = sub["v"]
+dform subw_df			: internal :: mode[tex] :: subw = sub["w"]
+dform subx_df			: internal :: mode[tex] :: subx = sub["x"]
+dform suby_df			: internal :: mode[tex] :: suby = sub["y"]
+dform subz_df			: internal :: mode[tex] :: subz = sub["z"]
 
 (*
  * Math mode.

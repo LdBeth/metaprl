@@ -186,6 +186,7 @@ declare Sigma
 declare Omega
 declare times
 declare "div"
+declare circ
 declare supplus
 declare supminus
 declare supcirc
