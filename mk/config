@@ -45,7 +45,7 @@ CAMLP4OFLAGS := $(INCLUDE)
 CFLAGS = -g -I$(CAMLLIB)
 CC = gcc
 RM = rm
-INSTALL = install
+INSTALL = cp -pf
 
 # Library file names
 MLFILES      := $(addsuffix .ml,   $(NLFILES) $(LMFILES) $(MFILES) $(PFILES))
