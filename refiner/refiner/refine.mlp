@@ -31,6 +31,9 @@
  *      calculus, and it means:
  *         p: (H >> x in A # B) --> (C:[pair(x.1, x.2)] <--> C:[x])
  *)
+
+#include "refine_error.h"
+
 open Printf
 open Debug
 
@@ -449,10 +452,10 @@ struct
             if alpha_equal (List.nth hyps i) goal then
                [], NthHypJust i
             else
-               raise (RefineError ("nth_hyp", StringError "hyp mismatch"))
+               ref_raise (RefineError ("nth_hyp", StringError "hyp mismatch"))
          with
             Failure "nth" ->
-               raise (RefineError ("nth_hyp", IntError i))
+               ref_raise (RefineError ("nth_hyp", IntError i))
 
    (*
     * COMPOSE
@@ -464,7 +467,7 @@ struct
       let subgoals' = List.map (fun ext -> ext.ext_goal) extl in
       let _ =
          if not (List_util.for_all2 msequent_alpha_equal subgoals subgoals') then
-            raise (RefineError ("compose", StringError "goal mistmatch"))
+            ref_raise (RefineError ("compose", StringError "goal mistmatch"))
       in
       let justl = List.map (fun ext -> ext.ext_just) extl in
       let just = ComposeJust (just, justl) in
@@ -496,9 +499,13 @@ struct
     * we can make use of rewrite subgoals.
    let foldrw rw t' t =
       let t'', refiner =
+#ifdef VERBOSE_EXN
          try rw t' with
             RefineError x ->
                raise (RefineError ("foldrw", GoalError x))
+#else
+         rw t'
+#endif
       in
          if alpha_equal t'' t then
             t', refiner
@@ -511,23 +518,36 @@ struct
     *)
    let andthenrw rw1 rw2 sent t =
       let t', refiner =
+#ifdef VERBOSE_EXN
          try rw1 sent t with
             RefineError (name, x) ->
                raise (RefineError ("andthenrw", GoalError (name, x)))
+#else
+         rw1 sent t
+#endif
       in
       let t'', refiner' =
+#ifdef VERBOSE_EXN
          try rw2 sent t' with
             RefineError (name, x) ->
                raise (RefineError ("andthenrw", SecondError (name, x)))
+#else 
+         rw2 sent t'
+#endif
       in
          t'', PairRefiner (refiner, refiner')
 
    let orelserw rw1 rw2 sent t =
       try rw1 sent t with
+#ifdef VERBOSE_EXN
          RefineError (name1, x) ->
             try rw2 sent t with
                RefineError (name2, y) ->
                   raise (RefineError ("orelserw", PairError (name1, x, name2, y)))
+#else
+         _ ->
+            rw2 sent t
+#endif
 
    (************************************************************************
     * CONDITIONAL REWRITES                                                 *
@@ -544,7 +564,9 @@ struct
     * Apply the rewrite to an addressed term.
     *)
    let crwaddr addr crw sent bvars seq t =
+#ifdef VERBOSE_EXN
       try
+#endif
          let t, (subgoals, just) =
             let f sent bvars t =
                let t, subgoals, just = crw sent bvars seq t in
@@ -553,9 +575,11 @@ struct
                apply_fun_arg_at_addr (f sent) addr bvars t
          in
             t, subgoals, just
+#ifdef VERBOSE_EXN
       with
          RefineError (name, x) ->
             raise (RefineError ("crwaddr", RewriteAddressError (addr, name, x)))
+#endif
 
    (*
     * Apply a conditional rewrite.
@@ -574,23 +598,36 @@ struct
     *)
    let candthenrw crw1 crw2 sent bvars seq t =
       let t', subgoals, just =
+#ifdef VERBOSE_EXN
          try crw1 sent bvars seq t with
             RefineError (name, x) ->
                raise (RefineError ("candthenrw", GoalError (name, x)))
+#else
+         crw1 sent bvars seq t
+#endif
       in
       let t'', subgoals', just' =
+#ifdef VERBOSE_EXN
          try crw2 sent bvars seq t' with
             RefineError (name, x) ->
                raise (RefineError ("candthenrw", SecondError (name, x)))
+#else
+         crw2 sent bvars seq t'
+#endif
       in
          t'', subgoals @ subgoals', PairJust (just, just')
 
    let corelserw crw1 crw2 sent bvars seq t =
       try crw1 sent bvars seq t with
+#ifdef VERBOSE_EXN
          RefineError (name1, x) ->
             try crw2 sent bvars seq t with
                RefineError (name2, y) ->
                   raise (RefineError ("corelserw", PairError (name1, x, name2, y)))
+#else
+         _ ->
+            crw2 sent bvars seq t
+#endif
 
    (************************************************************************
     * UTILITIES                                                            *
@@ -656,7 +693,7 @@ struct
                search refiners next
           | MLRewriteRefiner { ml_rw_name = n; ml_rw_refiner = next } as r ->
                if n = name then
-                  raise (RefineError (n, StringError "ML rewrites can't be justified"))
+                  ref_raise (RefineError (n, StringError "ML rewrites can't be justified"))
                else
                   search refiners next
 
@@ -754,22 +791,22 @@ struct
       let find_axiom name =
          try Hashtbl.find axioms name with
             Not_found ->
-               raise (RefineError (name, StringError "axiom is not justified"))
+               ref_raise (RefineError (name, StringError "axiom is not justified"))
       in
       let find_rule name =
          try Hashtbl.find rules name with
             Not_found ->
-               raise (RefineError (name, StringError "rule is not justified"))
+               ref_raise (RefineError (name, StringError "rule is not justified"))
       in
       let find_rewrite name =
          try Hashtbl.find rewrites name with
             Not_found ->
-               raise (RefineError (name, StringError "rewrite is not justified"))
+               ref_raise (RefineError (name, StringError "rewrite is not justified"))
       in
       let find_cond_rewrite name =
          try Hashtbl.find cond_rewrites name with
             Not_found ->
-               raise (RefineError (name, StringError "cond_rewrite is not justified"))
+               ref_raise (RefineError (name, StringError "cond_rewrite is not justified"))
       in
          { find_axiom = find_axiom;
            find_rule = find_rule;
@@ -791,7 +828,7 @@ struct
             if pax.pax_axiom == ax then
                pax
             else
-               raise (RefineError (name, StringError "axiom proof does not match"))
+               ref_raise (RefineError (name, StringError "axiom proof does not match"))
       in
       let check_rule rule =
          let { rule_name = name } = rule in
@@ -799,7 +836,7 @@ struct
             if prule.prule_rule == rule then
                prule
             else
-               raise (RefineError (name, StringError "rule proof does not match"))
+               ref_raise (RefineError (name, StringError "rule proof does not match"))
       in
       let check_rewrite rw =
          let { rw_name = name } = rw in
@@ -807,7 +844,7 @@ struct
             if prw.prw_rewrite == rw then
                prw
             else
-               raise (RefineError (name, StringError "rewrite proof does not match"))
+               ref_raise (RefineError (name, StringError "rewrite proof does not match"))
       in
       let check_cond_rewrite crw =
          let { crw_name = name } = crw in
@@ -815,7 +852,7 @@ struct
             if pcrw.pcrw_rewrite == crw then
                pcrw
             else
-               raise (RefineError (name, StringError "cond_rewrite proof does not match"))
+               ref_raise (RefineError (name, StringError "cond_rewrite proof does not match"))
       in
          { check_axiom = check_axiom;
            check_rule = check_rule;
@@ -1038,7 +1075,7 @@ struct
             else
                begin
                   eprintf "check_axiom: sentinal failed %s%t" name eflush;
-                  raise (RefineError ("check_axiom",
+                  ref_raise (RefineError ("check_axiom",
                                       StringStringError ("axiom is not valid in this context", name)))
                end
       in
@@ -1052,7 +1089,7 @@ struct
             else
                begin
                   eprintf "check_rule: sentinal failed %s%t" name eflush;
-                  raise (RefineError ("check_rule",
+                  ref_raise (RefineError ("check_rule",
                                       StringStringError ("rule is not valid in this context", name)))
                end
       in
@@ -1066,7 +1103,7 @@ struct
             else
                begin
                   eprintf "check_ml_rule: sentinal failed: %s%t" (string_of_opname opname) eflush;
-                  raise (RefineError ("check_ml_rule",
+                  ref_raise (RefineError ("check_ml_rule",
                                       StringTermError ("ML rule is not valid in this context",
                                                        ml_rule.ml_rule_arg)))
                end
@@ -1081,7 +1118,7 @@ struct
             else
                begin
                   eprintf "check_rewrite: sentinal failed %s%t" name eflush;
-                  raise (RefineError ("check_rewrite",
+                  ref_raise (RefineError ("check_rewrite",
                                       StringStringError ("rewrite is not valid in this context", name)))
                end
       in
@@ -1095,7 +1132,7 @@ struct
             else
                begin
                   eprintf "check_cond_rewrite: sentinal failed %s%t" name eflush;
-                  raise (RefineError ("check_cond_rewrite",
+                  ref_raise (RefineError ("check_cond_rewrite",
                                       StringStringError ("conditional rewrite is not valid in this context", name)))
             end
       in
@@ -1109,7 +1146,7 @@ struct
             else
                begin
                   eprintf "check_ml_rewrite: sentinal failed %s%t" name eflush;
-                  raise (RefineError ("check_ml_rewrite",
+                  ref_raise (RefineError ("check_ml_rewrite",
                                       StringStringError ("ML rewrite is not valid in this context", name)))
                end
       in
@@ -1136,7 +1173,7 @@ struct
          [] ->
             true
        | l ->
-            raise (RefineError ("check_axiom", RewriteFreeContextVars l))
+            ref_raise (RefineError ("check_axiom", RewriteFreeContextVars l))
 
    let add_axiom refiner name term =
       if !debug_refiner then
@@ -1155,7 +1192,7 @@ struct
                [], SingleJust { ext_names = [||]; ext_params = []; ext_refiner = refiner' }
             end
          else
-            raise (RefineError ("refine_axiom", TermMatchError (goal, name)))name
+            ref_raise (RefineError ("refine_axiom", TermMatchError (goal, name)))
       in
          check_axiom term;
          refiner', (tac : prim_tactic)
@@ -1170,7 +1207,7 @@ struct
                                pax_refiner = refiner
             }
        | _ ->
-            raise (RefineError (name, StringError "not an axiom"))
+            ref_raise (RefineError (name, StringError "not an axiom"))
 
    let add_delayed_axiom refiner name extf =
       if !debug_refiner then
@@ -1182,7 +1219,7 @@ struct
                let ext = extf () in
                let { ext_goal = { mseq_goal = goal' }; ext_subgoals = subgoals } = ext in
                   if not (alpha_equal (nth_concl goal' 0) goal) or subgoals != [] then
-                     raise (RefineError (name, StringError "not justified"));
+                     ref_raise (RefineError (name, StringError "not justified"));
                   term_of_extract refiner ext []
             in
                PrimAxiomRefiner { pax_proof = Delayed compute;
@@ -1190,7 +1227,7 @@ struct
                                   pax_refiner = refiner
                }
        | _ ->
-            raise (RefineError (name, StringError "not an axiom"))
+            ref_raise (RefineError (name, StringError "not an axiom"))
 
    (************************************************************************
     * RULE                                                                 *
@@ -1274,7 +1311,7 @@ struct
                                  prule_refiner = refiner
                }
        | _ ->
-            raise (RefineError (name, StringError "not a rule"))
+            ref_raise (RefineError (name, StringError "not a rule"))
 
    let add_delayed_rule refiner name vars params args ext =
       if !debug_refiner then
@@ -1287,7 +1324,7 @@ struct
                let { ext_goal = goal'; ext_subgoals = subgoals } = ext in
                let _ =
                   if not (msequent_alpha_equal goal' goal) or subgoals <> [] then
-                     raise (RefineError (name, StringError "extract does not match"))
+                     ref_raise (RefineError (name, StringError "extract does not match"))
                in
                let t = term_of_extract refiner ext args in
                   compute_rule_ext name vars params args t
@@ -1297,7 +1334,7 @@ struct
                                  prule_refiner = refiner
                }
        | _ ->
-            raise (RefineError (name, StringError "not a rule"))
+            ref_raise (RefineError (name, StringError "not a rule"))
 
    (*
     * An ML condition.
@@ -1390,9 +1427,9 @@ struct
                                        prw_proof = Extracted ()
                   }
                else
-                  raise (RefineError (name, StringError "not a rewrite"))
+                  ref_raise (RefineError (name, StringError "not a rewrite"))
        | _ ->
-            raise (RefineError (name, StringError "not a rewrite"))
+            ref_raise (RefineError (name, StringError "not a rewrite"))
 
    let add_delayed_rewrite refiner name redex contractum ext =
       if !debug_refiner then
@@ -1410,9 +1447,9 @@ struct
                         if alpha_equal goal redex & alpha_equal subgoal contractum then
                            term_of_extract refiner ext []
                         else
-                           raise (RefineError (name, StringError "extract does not match"))
+                           ref_raise (RefineError (name, StringError "extract does not match"))
                    | _ ->
-                        raise (RefineError (name, StringError "bogus proof"))
+                        ref_raise (RefineError (name, StringError "bogus proof"))
                in
                   ()
             in
@@ -1421,7 +1458,7 @@ struct
                                     prw_refiner = refiner
                }
        | _ ->
-            raise (RefineError (name, StringError "not a rewrite"))
+            ref_raise (RefineError (name, StringError "not a rewrite"))
 
    (************************************************************************
     * CONDITIONAL REWRITE                                                  *
@@ -1475,9 +1512,9 @@ struct
                                            pcrw_refiner = refiner
                   }
                else
-                  raise (RefineError (name, StringError "not a conditional rewrite"))
+                  ref_raise (RefineError (name, StringError "not a conditional rewrite"))
        | _ ->
-            raise (RefineError (name, StringError "not a conditional rewrite"))
+            ref_raise (RefineError (name, StringError "not a conditional rewrite"))
 
    let add_delayed_cond_rewrite refiner name vars params subgoals redex contractum ext =
       if !debug_refiner then
@@ -1498,7 +1535,7 @@ struct
                   then
                      term_of_extract refiner ext []
                   else
-                     raise (RefineError (name, StringError "derivation does not match"));
+                     ref_raise (RefineError (name, StringError "derivation does not match"));
                   ()
             in
                PrimCondRewriteRefiner { pcrw_proof = Delayed compute_ext;
@@ -1506,7 +1543,7 @@ struct
                                         pcrw_refiner = refiner
                }
        | _ ->
-            raise (RefineError (name, StringError "not a conditional rewrite"))
+            ref_raise (RefineError (name, StringError "not a conditional rewrite"))
 
    (*
     * An ML rewrite.
@@ -1683,146 +1720,3 @@ struct
          RILabel name, r
 end
 
-(*
- * $Log$
- * Revision 1.9  1998/07/02 18:35:22  jyh
- * Refiner modules now raise RefineError exceptions directly.
- * Modules in this revision have two versions: one that raises
- * verbose exceptions, and another that uses a generic exception.
- *
- * Revision 1.8  1998/07/01 04:36:50  nogin
- * Moved Refiner exceptions into a separate module RefineErrors
- *
- * Revision 1.7  1998/06/23 22:12:13  jyh
- * Improved rewriter speed with conversion tree and flist.
- *
- * Revision 1.6  1998/06/22 19:45:37  jyh
- * Rewriting in contexts.  This required a change in addressing,
- * and the body of the context is the _last_ subterm, not the first.
- *
- * Revision 1.5  1998/06/15 22:32:29  jyh
- * Added CZF.
- *
- * Revision 1.4  1998/06/12 13:46:54  jyh
- * D tactic works, added itt_bool.
- *
- * Revision 1.3  1998/06/03 15:23:16  jyh
- * Generalized many the term_addr, term_man, and term_shape modules.
- *
- * Revision 1.2  1998/06/01 19:53:37  jyh
- * Working addition proof.  Removing polymorphism from refiner(?)
- *
- * Revision 1.1  1998/05/28 15:00:23  jyh
- * Partitioned refiner into subdirectories.
- *
- * Revision 1.10  1998/05/27 15:13:51  jyh
- * Functorized the refiner over the Term module.
- *
- * Revision 1.9  1998/04/29 14:48:16  jyh
- * Added ocaml_sos.
- *
- * Revision 1.8  1998/04/28 18:30:40  jyh
- * ls() works, adding display.
- *
- * Revision 1.7  1998/04/24 02:42:45  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.6  1998/04/22 14:06:35  jyh
- * Implementing proof editor.
- *
- * Revision 1.5  1998/04/21 19:53:57  jyh
- * Upgraded refiner for program extraction.
- *
- * Revision 1.4  1998/04/17 20:48:39  jyh
- * Updating refiner for extraction.
- *
- * Revision 1.3  1997/08/07 19:43:45  jyh
- * Updated and added Lori's term modifications.
- * Need to update all pattern matchings.
- *
- * Revision 1.2  1997/08/06 16:18:12  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
- * Revision 1.1  1997/04/28 15:51:30  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- * Revision 1.17  1996/09/25 22:52:00  jyh
- * Initial "tactical" commit.
- *
- * Revision 1.16  1996/05/21 02:14:04  jyh
- * This is a semi-working version before Wisconsin vacation.
- *
- * Revision 1.15  1996/04/07 18:24:49  jyh
- * This is an intermediate commit while adjusting the dforms.
- * We intend that dform printers just return a list of terms.
- *
- * Revision 1.14  1996/03/25 20:50:43  jyh
- * Intermediate commit while modifying grammer.  Restricting
- * ML hooks to condition terms.
- *
- * Revision 1.13  1996/03/11 18:34:23  jyh
- * The filterModule module is untested, but it seems to work
- * correctly on most inputs, except for mlbegin ... mlend expressions.
- * That's the next task.
- *
- * Revision 1.12  1996/03/08 15:40:48  jyh
- * This version works for most constructs except for ML rewrites.
- * The next step will be to break apart the rewriter so that
- * redices and contracta can be compiled separately.
- *
- * Revision 1.11  1996/03/05 19:48:34  jyh
- * Preliminary version with logical framework.
- *
- * Revision 1.10  1996/02/25 15:16:17  jyh
- * This is a partial checkin as filterModule is being developed.
- * After the meta-logical framework is developed, sequent.* will go away.
- *
- * Revision 1.9  1996/02/18 23:32:31  jyh
- * Changin Format module to more Nuprl-like format.
- *
- * Revision 1.8  1996/02/14 03:51:51  jyh
- * This is a version common to Caml-Light and Caml-Special-Light.
- *
- * Revision 1.7  1996/02/13 21:32:28  jyh
- * This is an intermediate checkin while matching is being added to the rewriter.
- *
- * Revision 1.6  1996/02/10 20:19:55  jyh
- * Initial checkin of filter (prlcomp).
- *
- * Revision 1.5  1996/02/08 16:02:30  jyh
- * Adding type Theory.
- *
- * Revision 1.4  1996/02/07 23:41:15  jyh
- * First working version in CamlSpecialLight.
- *
- * Revision 1.3  1996/02/07 17:34:08  jyh
- * This is Version 0 of the refiner in Caml-Light.  At this point,
- * Caml-Light becomes a branch, and main development will be
- * in Caml-Special-Light.
- *
- * Revision 1.2  1996/02/05 18:14:53  jyh
- * Merge context rewrites onto the main branch.
- *
- * Revision 1.1.4.1  1996/02/05 06:09:53  jyh
- * This version has the rewriter with contexts, and Rule application
- * in Sequent.ml, but it is not fully debugged.
- *
- * Revision 1.1  1996/01/31 20:02:39  jyh
- * Generalizing rewriter to work on Sequents.
- *
- * -*-
- * Local Variables:
- * Caml-master: "refiner.run"
- * End:
- * -*-
- *)

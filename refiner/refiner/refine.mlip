@@ -1,0 +1,47 @@
+(*
+ * The refiner works on proof trees, which are trees of sequents.
+ * A basic refinement takes a sequent (a "goal") and produces a
+ * list of sequents (the "subgoals"), and an extract term.  The type
+ * "tactic" packages refinements, and elements of tactics are
+ * always "correct" in the sense that they can be reduced to steps
+ * of primitive inferences.
+ *
+ * The refiner also tracks rewrites, and just as for tactics,
+ * elements of type Rewrite are always "correct".
+ *
+ *)
+
+open Term_sig
+open Term_base_sig
+open Term_man_sig
+open Term_subst_sig
+open Term_addr_sig
+open Term_meta_sig
+open Refine_error_sig
+open Rewrite_sig
+open Refine_sig
+
+module Refine (**)
+   (TermType : TermSig)
+   (Term : TermBaseSig
+    with type term = TermType.term)
+   (TermMan : TermManSig
+    with type term = TermType.term)
+   (TermSubst : TermSubstSig
+    with type term = TermType.term)
+   (TermAddr : TermAddrSig
+    with type term = TermType.term)
+   (TermMeta : TermMetaSig
+    with type term = TermType.term)
+   (Rewrite : RewriteSig
+    with type term = TermType.term
+    with type address = TermAddr.address)
+   (RefineError : RefineErrorSig
+    with type term = TermType.term
+    with type address = TermAddr.address
+    with type meta_term = TermMeta.meta_term)
+: RefineSig
+  with type term = TermType.term
+  with type address = TermAddr.address
+  with type meta_term = TermMeta.meta_term
+

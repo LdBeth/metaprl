@@ -16,11 +16,14 @@ struct
    module TermEval = Term_eval_ds_simp.TermEval
    module TermMeta = Term_meta_gen_simp.TermMeta (TermType) (Term) (TermSubst) (RefineError)
    module Rewrite = Rewrite_simp.Rewrite (TermType) (Term) (TermMan) (TermAddr) (TermSubst) (RefineError)
-   module Refine = Refine.Refine (TermType) (Term) (TermMan) (TermSubst) (TermAddr) (TermMeta) (Rewrite) (RefineError)
+   module Refine = Refine_simp.Refine (TermType) (Term) (TermMan) (TermSubst) (TermAddr) (TermMeta) (Rewrite) (RefineError)
 end
 
 (*
  * $Log$
+ * Revision 1.2  1998/07/03 19:15:20  nogin
+ * Divided refine.ml into a "verbose" and a "simple" versions.
+ *
  * Revision 1.1  1998/07/02 18:35:30  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

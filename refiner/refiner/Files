@@ -1,10 +1,10 @@
 REFINER_PFILES :=\
-	rewrite
+	rewrite\
+	refine
 
 REFINER_FILES :=\
 	$(addsuffix _verb, $(REFINER_PFILES))\
 	$(addsuffix _simp, $(REFINER_PFILES))\
-	refine\
 	refine_error\
 	refiner_std\
 	refiner_std_simp\
