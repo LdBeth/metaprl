@@ -118,9 +118,9 @@ struct
          REF_RAISE (RefineError ("Term_addr_ds.clause_address_of_address", StringError "address is not a sequent address"))
 
    IFDEF VERBOSE_EXN THEN
-      DEFMACRO ATERM = (a, term)
+      DEFINE ATERM = (a, term)
    ELSE
-      DEFMACRO ATERM = NOTHING
+      DEFINE ATERM = NOTHING
    ENDIF
 
    let rec find_subterm_term addr arg t =
@@ -281,11 +281,11 @@ struct
     *)
 
    IFDEF VERBOSE_EXN THEN
-      DEFMACRO FAIL = fail
-      DEFMACRO DO_FAIL = fail_addr fail
+      DEFINE FAIL = fail
+      DEFINE DO_FAIL = fail_addr fail
    ELSE
-      DEFMACRO FAIL = NOTHING
-      DEFMACRO DO_FAIL = RAISE_GENERIC_EXN
+      DEFINE FAIL = NOTHING
+      DEFINE DO_FAIL = RAISE_GENERIC_EXN
    ENDIF
 
    let rec collect_hyp_bvars i hyps bvars =
@@ -299,51 +299,51 @@ struct
    let fail_addr (addr, term) =
       REF_RAISE(RefineError ("Term_addr_ds.apply_*_fun_*", AddressError (addr, term)))
 
-   DEFMACRO MAKE_PATH_REPLACE_TERM =
-      fun FAIL f BVARS t -> function
+   DEFINE MAKE_PATH_REPLACE_TERM(bvars, path_replace_bterm, path_replace_terms) =
+      fun FAIL f bvars t -> function
          i::tl -> begin
             match get_core t with
                Term t ->
-                  let bterms, arg = PATH_REPLACE_BTERM FAIL f tl i BVARS t.term_terms in
+                  let bterms, arg = path_replace_bterm FAIL f tl i bvars t.term_terms in
                      mk_term t.term_op bterms, arg
              | SOVar(v, conts, ts) ->
-                  let ts, arg = PATH_REPLACE_TERMS FAIL f tl i BVARS ts in
+                  let ts, arg = path_replace_terms FAIL f tl i bvars ts in
                      core_term (SOVar(v, conts, ts)), arg
              | Sequent _ | FOVar _ -> DO_FAIL
              | Hashed _ | Subst _ -> fail_core "path_replace_term"
             end
        | [] ->
-            f BVARS t
+            f bvars t
 
-   DEFMACRO MAKE_PATH_REPLACE_TERMS =
-      fun FAIL f tl i BVARS ts ->
+   DEFINE MAKE_PATH_REPLACE_TERMS(bvars, path_replace_term, path_replace_terms) =
+      fun FAIL f tl i bvars ts ->
          match i, ts with
             0, (t::ts) ->
-               let t, arg = PATH_REPLACE_TERM FAIL f BVARS t tl
+               let t, arg = path_replace_term FAIL f bvars t tl
                   in (t::ts), arg
           | _, (t::ts) ->
-               let ts, arg = PATH_REPLACE_TERMS FAIL f tl (pred i) BVARS ts in
+               let ts, arg = path_replace_terms FAIL f tl (pred i) bvars ts in
                   (t::ts), arg
           | _, [] ->
                DO_FAIL
 
-   DEFMACRO MAKE_PATH_REPLACE_BTERM =
-      fun FAIL f tl i BVARS bterms ->
+   DEFINE MAKE_PATH_REPLACE_BTERM(bvars, vars_bvars, path_replace_term, path_replace_bterm) =
+      fun FAIL f tl i bvars bterms ->
          match i, bterms with
             (0, { bvars = vars; bterm = term } :: bterms) ->
-               let term, arg = PATH_REPLACE_TERM FAIL f VARS_BVARS term tl in
+               let term, arg = path_replace_term FAIL f vars_bvars term tl in
                   mk_bterm vars term :: bterms, arg
           | (_, bterm :: bterms) ->
-               let bterms, arg = PATH_REPLACE_BTERM FAIL f tl (pred i) BVARS bterms in
+               let bterms, arg = path_replace_bterm FAIL f tl (pred i) bvars bterms in
                   bterm :: bterms, arg
           | _, [] ->
                DO_FAIL
 
-   DEFMACRO APPLY_FUN_AUX MY_NAME =
-      fun FAIL f addr BVARS term ->
+   DEFINE APPLY_FUN_AUX(my_name, path_replace_term, bvars, hyp_bvars, goal_bvars) =
+      fun FAIL f addr bvars term ->
          match (get_core term, addr) with
             (Sequent s, ArgAddr) ->
-               let term, arg = f BVARS s.sequent_args in
+               let term, arg = f bvars s.sequent_args in
                   mk_sequent_term (**)
                      { sequent_args = term;
                        sequent_hyps = s.sequent_hyps;
@@ -353,15 +353,15 @@ struct
                if i>=0 && i < SeqHyp.length s.sequent_hyps then
                   let hyp, arg = match SeqHyp.get s.sequent_hyps i with
                      HypBinding (v,t) as hyp ->
-                        let term, arg = f HYP_BVARS t in
+                        let term, arg = f hyp_bvars t in
                            HypBinding (v,term), arg
                    | Hypothesis t as hyp ->
-                        let term, arg = f HYP_BVARS t in
+                        let term, arg = f hyp_bvars t in
                            Hypothesis term, arg
                    | Context (v, conts, subterms) ->
                         let slot = mk_var_term v in
                         let t = mk_context_term v slot conts subterms in
-                        let t, arg = f BVARS t in
+                        let t, arg = f bvars t in
                         let v1, term1, conts, subterms = dest_context t in
                            if v1 = v && is_var_term term1 && dest_var term1 = v then
                               Context (v, conts, subterms), arg
@@ -378,7 +378,7 @@ struct
                else DO_FAIL
           | (Sequent s, GoalAddr i) ->
                if i>=0 && i < SeqGoal.length s.sequent_goals then
-                  let term, arg = f GOAL_BVARS (SeqGoal.get s.sequent_goals i) in
+                  let term, arg = f goal_bvars (SeqGoal.get s.sequent_goals i) in
                   let aux i' t' =
                     if i' = i then term else t'
                   in mk_sequent_term (**)
@@ -388,73 +388,59 @@ struct
                         }, arg
                else DO_FAIL
           | (_, Path addr) ->
-               PATH_REPLACE_TERM FAIL f BVARS term addr
+               path_replace_term FAIL f bvars term addr
           | (_, Compose (addr1, addr2)) ->
-               MY_NAME FAIL (MY_NAME FAIL f addr2) addr1 BVARS term
+               my_name FAIL (my_name FAIL f addr2) addr1 bvars term
           | _ -> DO_FAIL
 
-   DEFMACRO BVARS = NOTHING
-   DEFMACRO VARS_BVARS = NOTHING
-   DEFMACRO HYP_BVARS = NOTHING
-   DEFMACRO GOAL_BVARS = NOTHING
-   DEFMACRO PATH_REPLACE_TERM = path_replace_term
-   DEFMACRO PATH_REPLACE_BTERM = path_replace_bterm
-   DEFMACRO PATH_REPLACE_TERMS = path_replace_terms
-
-   let rec path_replace_term = MAKE_PATH_REPLACE_TERM
-   and path_replace_terms = MAKE_PATH_REPLACE_TERMS
-   and path_replace_bterm = MAKE_PATH_REPLACE_BTERM
+   let rec path_replace_term = MAKE_PATH_REPLACE_TERM(NOTHING, path_replace_bterm, path_replace_terms)
+   and path_replace_terms = MAKE_PATH_REPLACE_TERMS(NOTHING, path_replace_term, path_replace_terms)
+   and path_replace_bterm = MAKE_PATH_REPLACE_BTERM(NOTHING, NOTHING, path_replace_term, path_replace_bterm)
 
    IFDEF VERBOSE_EXN THEN
       let rec apply_fun_arg_at_addr_aux =
-         APPLY_FUN_AUX apply_fun_arg_at_addr_aux
+         APPLY_FUN_AUX(apply_fun_arg_at_addr_aux, path_replace_term, NOTHING, NOTHING, NOTHING)
 
       let apply_fun_arg_at_addr =
-         fun f addr BVARS term ->
-            apply_fun_arg_at_addr_aux (addr, term) f addr BVARS term
+         fun f addr term ->
+            apply_fun_arg_at_addr_aux (addr, term) f addr term
    ELSE
       let rec apply_fun_arg_at_addr =
-         APPLY_FUN_AUX apply_fun_arg_at_addr
+         APPLY_FUN_AUX(apply_fun_arg_at_addr, path_replace_term, NOTHING, NOTHING, NOTHING)
    ENDIF
 
-   let add_unit_arg f BVARS t =
-      f BVARS t, ()
+   let add_unit_arg f t =
+      f t, ()
 
-   let apply_fun_at_addr f addr BVARS term =
-      fst (apply_fun_arg_at_addr (add_unit_arg f) addr BVARS term)
+   let apply_fun_at_addr f addr term =
+      fst (apply_fun_arg_at_addr (add_unit_arg f) addr term)
 
-   UNDEF BVARS
-   UNDEF VARS_BVARS
+   let rec path_var_replace_term =
+      MAKE_PATH_REPLACE_TERM(bvars, path_var_replace_bterm, path_var_replace_terms)
+   and path_var_replace_terms =
+      MAKE_PATH_REPLACE_TERMS(bvars, path_var_replace_term, path_var_replace_terms)
+   and path_var_replace_bterm =
+      MAKE_PATH_REPLACE_BTERM(bvars, SymbolSet.add_list bvars vars, path_var_replace_term, path_var_replace_bterm)
 
-   DEFMACRO BVARS = bvars
-   DEFMACRO VARS_BVARS = SymbolSet.add_list bvars vars
-   DEFMACRO HYP_BVARS = (collect_hyp_bvars (pred i) s.sequent_hyps BVARS)
-   DEFMACRO GOAL_BVARS = (collect_goal_bvars s.sequent_hyps BVARS)
-   DEFMACRO PATH_REPLACE_TERM = path_var_replace_term
-   DEFMACRO PATH_REPLACE_BTERM = path_var_replace_bterm
-   DEFMACRO PATH_REPLACE_TERMS = path_var_replace_terms
-
-   let rec path_var_replace_term = MAKE_PATH_REPLACE_TERM
-   and path_var_replace_terms = MAKE_PATH_REPLACE_TERMS
-   and path_var_replace_bterm = MAKE_PATH_REPLACE_BTERM
-
+   DEFINE HYP_BVARS = (collect_hyp_bvars (pred i) s.sequent_hyps bvars)
+   DEFINE GOAL_BVARS = (collect_goal_bvars s.sequent_hyps bvars)
    IFDEF VERBOSE_EXN THEN
       let rec apply_var_fun_at_addr_aux =
-         APPLY_FUN_AUX apply_var_fun_at_addr_aux
+         APPLY_FUN_AUX(apply_var_fun_at_addr_aux, path_var_replace_term, bvars, HYP_BVARS, GOAL_BVARS)
 
       let apply_var_fun_arg_at_addr =
-         fun f addr BVARS term ->
-            apply_var_fun_at_addr_aux (addr, term) f addr BVARS term
+         fun f addr bvars term ->
+            apply_var_fun_at_addr_aux (addr, term) f addr bvars term
    ELSE
       let rec apply_var_fun_arg_at_addr =
-         APPLY_FUN_AUX apply_var_fun_arg_at_addr
+         APPLY_FUN_AUX(apply_var_fun_arg_at_addr, path_var_replace_term, bvars, HYP_BVARS, GOAL_BVARS)
    ENDIF
 
-   let add_var_unit_arg f BVARS t =
-      f BVARS t, ()
+   let add_var_unit_arg f bvars t =
+      f bvars t, ()
 
-   let apply_var_fun_at_addr f addr BVARS term =
-      fst (apply_var_fun_arg_at_addr (add_var_unit_arg f) addr BVARS term)
+   let apply_var_fun_at_addr f addr bvars term =
+      fst (apply_var_fun_arg_at_addr (add_var_unit_arg f) addr bvars term)
 
    let replace_subterm_aux subterm term =
       subterm

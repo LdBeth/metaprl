@@ -37,10 +37,10 @@ open Term_man_sig
 open Term_addr_sig
 open Term_subst_sig
 open Refine_error_sig
-
-open Rewrite_type_sig
 open Rewrite_util_sig
 open Rewrite_debug_sig
+
+open Rewrite_types
 
 module MakeRewriteMatchRedex
    (TermType : TermSig)
@@ -77,20 +77,16 @@ module MakeRewriteMatchRedex
     with type bound_term = TermType.bound_term
     with type seq_hyps = TermType.seq_hyps
     with type seq_goals = TermType.seq_goals)
-   (RewriteTypes : RewriteTypesSig
-    with type level_exp = TermType.level_exp
-    with type term = TermType.term
-    with type address = TermAddr.address
-    with type seq_hyps = TermType.seq_hyps)
    (RewriteUtil : RewriteUtilSig
     with type term = TermType.term
-    with type rstack = RewriteTypes.rstack)
+    with type rstack = MakeRewriteTypes(TermType)(TermAddr).rstack)
    (RewriteDebug : RewriteDebugSig
-    with type rwterm = RewriteTypes.rwterm
-    with type stack = RewriteTypes.stack
-    with type varname = RewriteTypes.varname)
+    with type rwterm = MakeRewriteTypes(TermType)(TermAddr).rwterm
+    with type stack = MakeRewriteTypes(TermType)(TermAddr).stack
+    with type varname = MakeRewriteTypes(TermType)(TermAddr).varname)
 : sig
-   open RewriteTypes
+   open TermType
+   open RewriteDebug
 
    val match_redex : int array -> stack array -> SymbolSet.t -> term -> term list -> rwterm list -> unit
 end

@@ -1,2 +1,3 @@
 REFBASE_FILES =\
-	opname
+   opname\
+   seq_set\

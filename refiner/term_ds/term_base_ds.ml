@@ -109,8 +109,8 @@ struct
       type t = term
    end
 
-   module SeqHyp = SEQ_SET.Make (SeqHypType)
-   module SeqGoal = SEQ_SET.Make (SeqGoalType)
+   module SeqHyp = Seq_set.Make (SeqHypType)
+   module SeqGoal = Seq_set.Make (SeqGoalType)
 
    (************************************************************************
     * DEBUGGING                                                            *
@@ -151,13 +151,13 @@ struct
                match t.core with
                   FOVar v -> SymbolSet.singleton v
                 | Term t' ->
-                     LETMACRO BODY = bterms_free_vars t'.term_terms
+                     DEFINE body = bterms_free_vars t'.term_terms
                      IN
                      IFDEF VERBOSE_EXN THEN
                         if !debug_fv then
                            eprintf "Request for Term fvs: Term: %a%t" debug_print t eflush;
                         let res =
-                          BODY
+                          body
                         in
                            if !debug_fv then begin
                               eprintf "Result: ";
@@ -165,7 +165,7 @@ struct
                               eprintf "%t" eflush;
                            end; res
                      ELSE
-                        BODY
+                        body
                      ENDIF
                 | Sequent seq ->
                      SymbolSet.union
@@ -175,7 +175,7 @@ struct
                            (SeqHyp.length seq.sequent_hyps - 1)
                            (goal_fv seq.sequent_goals (SeqGoal.length seq.sequent_goals - 1)))
                 | Subst (t,sub) ->
-                     LETMACRO BODY =
+                     DEFINE body =
                         SymbolSet.union
                            (List.fold_left
                               SymbolSet.remove (**)
@@ -190,7 +190,7 @@ struct
                            eprintf "%t" eflush;
                         end;
                         let res =
-                           BODY
+                           body
                         in
                            if !debug_fv then begin
                               eprintf "Result: ";
@@ -198,7 +198,7 @@ struct
                               eprintf "%t" eflush;
                            end; res
                      ELSE
-                        BODY
+                        body
                      ENDIF
                 | SOVar (v, vs, ts) ->
                      SymbolSet.add (SymbolSet.add_list (terms_free_vars ts) vs) v

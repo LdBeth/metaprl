@@ -1,5 +1,4 @@
 MLZFILES =\
-	rewrite_type_sig\
 	rewrite_util_sig\
 	rewrite_debug_sig\
 	rewrite_compile_redex_sig\
@@ -9,7 +8,6 @@ MLZFILES =\
 	rewrite_meta_sig
 
 REWRITE_FILES =\
-	rewrite_type_sig\
 	rewrite_util_sig\
 	rewrite_debug_sig\
 	rewrite_types\

@@ -48,9 +48,9 @@ open Term_subst_sig
 open Term_shape_sig
 open Refine_error_sig
 
-open Rewrite_type_sig
 open Rewrite_util_sig
 open Rewrite_debug_sig
+open Rewrite_types
 
 (*
  * Show the file loading.
@@ -91,19 +91,16 @@ module MakeRewriteCompileRedex
     with type param = TermType.param
     with type term = TermType.term
     with type bound_term = TermType.bound_term)
-   (RewriteTypes : RewriteTypesSig
-    with type level_exp = TermType.level_exp
-    with type term = TermType.term
-    with type address = TermAddr.address)
    (RewriteUtil : RewriteUtilSig
     with type term = TermType.term
-    with type rstack = RewriteTypes.rstack)
+    with type rstack = MakeRewriteTypes(TermType)(TermAddr).rstack)
    (RewriteDebug : RewriteDebugSig
-    with type rwterm = RewriteTypes.rwterm
-    with type rstack = RewriteTypes.rstack
-    with type varname = RewriteTypes.varname)
+    with type rwterm = MakeRewriteTypes(TermType)(TermAddr).rwterm
+    with type rstack = MakeRewriteTypes(TermType)(TermAddr).rstack
+    with type varname = MakeRewriteTypes(TermType)(TermAddr).varname)
    =
 struct
+   module RewriteTypes = MakeRewriteTypes(TermType)(TermAddr)
    open TermType
    open Term
    open TermMan
@@ -111,6 +108,8 @@ struct
    open RefineError
    open RewriteTypes
    open RewriteUtil
+
+   type strict = RewriteTypes.strict
 
    (*
     *

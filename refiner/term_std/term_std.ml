@@ -112,8 +112,8 @@ struct
     | Hypothesis of term
     | Context of var * var list * term list
 
-   type seq_hyps = hypothesis SEQ_SET.linear_set
-   type seq_goals = term SEQ_SET.linear_set
+   type seq_hyps = hypothesis Seq_set.linear_set
+   type seq_goals = term Seq_set.linear_set
 
    type esequent =
       { sequent_args : term;

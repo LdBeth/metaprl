@@ -38,9 +38,9 @@ open Term_addr_sig
 open Term_subst_sig
 open Refine_error_sig
 
-open Rewrite_type_sig
 open Rewrite_util_sig
 open Rewrite_debug_sig
+open Rewrite_types
 
 module MakeRewriteCompileContractum
    (TermType : TermSig)
@@ -73,19 +73,15 @@ module MakeRewriteCompileContractum
     with type param = TermType.param
     with type term = TermType.term
     with type bound_term = TermType.bound_term)
-   (RewriteTypes : RewriteTypesSig
-    with type level_exp = TermType.level_exp
-    with type object_id = TermType.object_id
-    with type term = TermType.term
-    with type operator = TermType.operator
-    with type address = TermAddr.address)
    (RewriteUtil : RewriteUtilSig
     with type term = TermType.term
-    with type rstack = RewriteTypes.rstack)
+    with type rstack = MakeRewriteTypes(TermType)(TermAddr).rstack)
    (RewriteDebug : RewriteDebugSig
-    with type rstack = RewriteTypes.rstack)
+    with type rstack = MakeRewriteTypes(TermType)(TermAddr).rstack)
 : sig
-   open RewriteTypes
+   open RewriteUtil
+   type strict = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr).strict
+   type rwterm = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr).rwterm
 
    val compile_so_contractum : strict -> rstack array -> term -> var array * rwterm
    val compile_so_contracta : strict -> rstack array -> term list -> var array * rwterm list

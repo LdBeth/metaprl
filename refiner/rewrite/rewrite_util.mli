@@ -32,13 +32,15 @@
 
 open Term_sig
 open Term_base_sig
+open Term_addr_sig
 open Refine_error_sig
 
-open Rewrite_type_sig
 open Rewrite_util_sig
 
 module MakeRewriteUtil
    (TermType : TermSig)
+   (TermAddr : TermAddrSig
+    with type term = TermType.term)
    (Term : TermBaseSig
     with type term = TermType.term
     with type term' = TermType.term'
@@ -55,11 +57,10 @@ module MakeRewriteUtil
     with type level_exp = TermType.level_exp
     with type param = TermType.param
     with type term = TermType.term
-    with type bound_term = TermType.bound_term)
-   (RewriteTypes : RewriteTypesSig) :
+    with type bound_term = TermType.bound_term) :
    RewriteUtilSig
    with type term = TermType.term
-   with type rstack = RewriteTypes.rstack
+   with type rstack = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr).rstack
 
 (*
  * -*-

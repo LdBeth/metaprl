@@ -35,13 +35,19 @@ open Lm_symbol
 open Opname
 open Term_shape_sig
 
-IFIMPLEMENTATION THEN
 open Term_sig
 open Term_addr_sig
-ELSE
-ENDIF
 
-DEFTOPMACRO BODY =
+module MakeRewriteTypes (TermType : TermSig)
+   (TermAddr : TermAddrSig
+    with type term = TermType.term) =
+struct
+   type level_exp = TermType.level_exp
+   type object_id = TermType.object_id
+   type term = TermType.term
+   type operator = TermType.operator
+   type address = TermAddr.address
+   type seq_hyps = TermType.seq_hyps
 
    (* See refsig/rewrite_sig.mlz for explanaition *)
    type strict = Strict | Relaxed
@@ -196,39 +202,7 @@ DEFTOPMACRO BODY =
         con_new_vars : var array
       }
 
-END
-
-IFIMPLEMENTATION THEN
-
-module MakeRewriteTypes (TermType : TermSig)
-   (TermAddr : TermAddrSig
-    with type term = TermType.term) =
-struct
-   type level_exp = TermType.level_exp
-   type object_id = TermType.object_id
-   type term = TermType.term
-   type operator = TermType.operator
-   type address = TermAddr.address
-   type seq_hyps = TermType.seq_hyps
-
-   USETOPMACRO BODY END
 end
-
-ELSE
-
-module type RewriteTypesSig =
-sig
-   type level_exp
-   type object_id
-   type term
-   type operator
-   type address
-   type seq_hyps
-
-   USETOPMACRO BODY END
-end
-
-ENDIF
 
 (*
  * -*-

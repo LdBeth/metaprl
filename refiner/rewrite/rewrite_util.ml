@@ -35,9 +35,8 @@ INCLUDE "refine_error.mlh"
 open Lm_debug
 open Term_sig
 open Term_base_sig
+open Term_addr_sig
 open Refine_error_sig
-
-open Rewrite_type_sig
 
 (*
  * Show the file loading.
@@ -61,6 +60,8 @@ let debug_subst =
 
 module MakeRewriteUtil
    (TermType : TermSig)
+   (TermAddr : TermAddrSig
+    with type term = TermType.term)
    (Term : TermBaseSig
     with type term = TermType.term
     with type term' = TermType.term'
@@ -78,9 +79,9 @@ module MakeRewriteUtil
     with type param = TermType.param
     with type term = TermType.term
     with type bound_term = TermType.bound_term)
-   (RewriteTypes : RewriteTypesSig)
    =
 struct
+   module RewriteTypes = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr)
    open Term
    open RefineError
    open RewriteTypes

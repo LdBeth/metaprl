@@ -8,22 +8,12 @@
 OCAMLDEP = $(file ocamldep$(EXE))
 BINDEP   = $(file $(BIN)/ocamldep$(EXE))
 
-MACROCMO = $(file macro.cmo)
-LIBMACRO = $(file $(LIB)/macro.cmo)
-
-#
-# The MetaPRL macro preprocessor
-#
-macro.cmo: macro.ml
-	$(OCAMLC) $(OCAMLCFLAGS) -pp "camlp4o -I $(CAMLP4LIB) pa_extend.cmo q_MLast.cmo" -I $(CAMLP4LIB) -c macro.ml
-
-$(LIBMACRO): $(MACROCMO)
-	$(CP) $< $@
-
 #
 # We also use our own version of ocamldep
 #
 OCamlProgramInstall($(MPINSTALL), $(BIN), ocamldep, ocamldep)
+
+ocamldep.o ocamldep.cmx ocamldep.cmo:
 
 #
 # Phony targets
@@ -31,4 +21,20 @@ OCamlProgramInstall($(MPINSTALL), $(BIN), ocamldep, ocamldep)
 install: $(BINDEP)
 
 clean:
-	$(RM) *.cm* *~ ocamldep.ml *.o *.exe Makefile.dep ocamldep ocamldep.opt ocamldep.run
+	$(CLEAN) *.cm* *~ ocamldep.ml *.o *.exe Makefile.dep ocamldep ocamldep.opt ocamldep.run
+
+#
+# Macros
+#
+OCAML_LIBS += $(CAMLP4LIB)/odyl $(CAMLP4LIB)/camlp4
+OCAMLINCLUDES += -I $(CAMLP4LIB)
+OCAML_LINK_FLAGS += -linkall
+OCAMLFLAGS += -pp "camlp4r -I $(CAMLP4LIB) -nolib"
+
+MACRO_FILES =\
+   $(CAMLP4LIB)/pa_o\
+   pa_macro\
+   macro_main\
+
+OCamlProgramInstall($(MPINSTALL), $(LIB), macropp, $(CAMLP4LIB)/pr_dump $(MACRO_FILES) )
+OCamlProgramInstall($(MPINSTALL), $(LIB), macroprint, $(CAMLP4LIB)/pr_o $(MACRO_FILES) )

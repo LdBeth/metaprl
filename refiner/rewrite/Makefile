@@ -22,6 +22,10 @@ OCAMLFLAGS = -pp "$(CAMLP4MACRO) -I../refsig"
 
 all: lib
 
+rewrite_types.mli: rewrite_types.ml
+	$(OCAMLCP) $(OCAMLCFLAGS) -c -i $< > $@.tmp
+	mv -f $@.tmp $@
+
 #
 # Actual makefile
 #
@@ -37,10 +41,7 @@ opt: $(MAIN).cmxa $(RMLIFILES) $(RCMIFILES) Files
 install:: $(MAIN).cma $(CMIFILES)
 	$(INSTALL) $(MLIFILES) $(CMIFILES) $(MPLIB)
 
-Makefile.dep: Files
-
-rewrite_type_sig.mlz: rewrite_types.ml
-	$(CAMLP4MACROPRINT) -intf rewrite_types.ml -o $@
-
 clean::
-	$(RM) rewrite_type_sig.mlz
+	$(RM) rewrite_types.mli
+
+Makefile.dep: Files

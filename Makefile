@@ -43,18 +43,14 @@ DIRS = $(REFINER_DIRS)\
 .PHONY: documentation docs doc latex theories.pdf all-theories.pdf ocaml-book
 
 all: check_config
-	+@for i in util $(DIRS); do if [ -f $$i/Makefile.prl ]; then\
-		if (echo Making $$i...; $(MAKE) -C $$i -f Makefile.prl $@); then true; else exit 1; fi;\
-	else\
+	+@for i in util $(DIRS); do\
 		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
-	fi; done
+	done
 
 opt: check_config check_versions_opt
-	+@for i in util $(DIRS); do if [ -f $$i/Makefile.prl ]; then\
-		if (echo Making $$i...; $(MAKE) -C $$i -f Makefile.prl $@); then true; else exit 1; fi;\
-	else\
+	+@for i in util $(DIRS); do\
 		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
-	fi; done
+	done
 
 profile_clean:
 	+@for i in util $(REFINER_DIRS) editor/ml; do\
@@ -112,30 +108,22 @@ profile_opt_mem: check_config
 	done
 
 install: check_config
-	+@for i in util $(DIRS); do if [ -f $$i/Makefile.prl ]; then\
-		if (echo Making $$i...; $(MAKE) -C $$i -f Makefile.prl $@); then true; else exit 1; fi;\
-	else\
+	+@for i in util $(DIRS); do\
 		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
-	fi; done
+	done
 
 clean:
 	+@for i in lib bin doc util $(DIRS); do if [ -d $$i ]; then\
-		if [ -f $$i/Makefile.prl ]; then\
-			if (echo Cleaning $$i...; $(MAKE) -C $$i -f Makefile.prl $@); then true; else exit 1; fi;\
-		else\
-			if (echo Cleaning $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
-		fi\
+		if (echo Cleaning $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	fi; done
 
 depend: check_config
 	+@for i in $(DIRS); do\
 		if (echo Making $$i...; cd $$i && $(RM) Makefile.dep); then true; else exit 1; fi;\
 	done
-	+@for i in $(DEP_DIRS); do if [ -f $$i/Makefile.prl ]; then\
-		if (echo Making $$i...; $(MAKE) -C $$i -f Makefile.prl $@); then true; else exit 1; fi;\
-	else\
+	+@for i in $(DEP_DIRS); do\
 		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
-	fi; done
+	done
 
 mk/config: mk/make_config.sh
 	@echo Making mk/config...

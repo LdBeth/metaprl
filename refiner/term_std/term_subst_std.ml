@@ -257,7 +257,7 @@ struct
          Lm_list_util.for_all2 equal_bterm bterms1 bterms2
 
    let alpha_equal t1 t2 =
-      LETMACRO BODY = try equal_term [] t1 t2 with Failure _ -> false
+      DEFINE body = try equal_term [] t1 t2 with Failure _ -> false
       IN
       IFDEF VERBOSE_EXN THEN
          if !debug_alpha_equal then
@@ -268,13 +268,13 @@ struct
             with Failure _ ->
                eprintf "alpha_equal: false:\n%a\n%a%t" debug_print t1 debug_print t2 eflush;
                false
-         else BODY
+         else body
       ELSE
-         BODY
+         body
       ENDIF
 
    let alpha_equal_vars t v t' v' =
-      LETMACRO BODY = try equal_term (Lm_list_util.zip v v') t t' with Failure _ -> false
+      DEFINE body = try equal_term (Lm_list_util.zip v v') t t' with Failure _ -> false
       IN
       IFDEF VERBOSE_EXN THEN
          if !debug_alpha_equal then
@@ -285,9 +285,9 @@ struct
             with Failure _ ->
                eprintf "alpha_equal_vars: false%t" eflush;
                false
-         else BODY
+         else body
       ELSE
-         BODY
+         body
       ENDIF
 
    let rev_mem a b = List.mem b a

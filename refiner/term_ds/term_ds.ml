@@ -109,8 +109,8 @@ struct
       HypBinding of var * term
     | Hypothesis of term
     | Context of var * var list * term list
-   and seq_hyps = hypothesis SEQ_SET.linear_set
-   and seq_goals = term SEQ_SET.linear_set
+   and seq_hyps = hypothesis Seq_set.linear_set
+   and seq_goals = term Seq_set.linear_set
    and esequent =
       { sequent_args : term;
         sequent_hyps : seq_hyps;

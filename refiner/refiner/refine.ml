@@ -761,7 +761,7 @@ struct
     * Apply the rewrite to an addressed term.
     *)
    let crwaddr addr (crw: cond_rewrite) sent bvars t =
-      LETMACRO BODY =
+      DEFINE body =
          let t', (subgoals, just) =
             let f sent bvars t =
                let t, subgoals, just = crw sent bvars t in
@@ -772,12 +772,12 @@ struct
             t', CondRewriteSubgoalsAddr (addr, subgoals), CondRewriteAddress (t, addr, just, t')
       IN
       IFDEF VERBOSE_EXN THEN
-         try BODY
+         try body
          with
             RefineError (name, x) ->
                raise (RefineError ("crwaddr", RewriteAddressError (addr, name, x)))
       ELSE
-         BODY
+         body
       ENDIF
 
    (*

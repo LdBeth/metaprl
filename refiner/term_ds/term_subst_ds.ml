@@ -389,7 +389,7 @@ struct
         equal_goals goals1 goals2 vars (pred i) )
 
    let alpha_equal t1 t2 =
-      LETMACRO BODY =
+      DEFINE body =
          match get_core t1, get_core t2 with
             (Term _, Term _) | (Sequent _, Sequent _) ->
                equal_term [] t1 t2
@@ -403,18 +403,18 @@ struct
       (t1 == t2) ||
       try
          IFDEF VERBOSE_EXN THEN
-            let result = BODY in
+            let result = body in
                if !debug_alpha_equal then
                   eprintf "alpha_equal: %b:\n%a\n%a%t" result debug_print t1 debug_print t2 eflush;
                result
          ELSE
-            BODY
+            body
          ENDIF
       with
          Failure _ -> false
 
    let alpha_equal_vars t v t' v' =
-      LETMACRO BODY = try equal_term (Lm_list_util.zip v v') t t' with
+      DEFINE body = try equal_term (Lm_list_util.zip v v') t t' with
                          Failure _ -> false
       IN
       IFDEF VERBOSE_EXN THEN
@@ -427,9 +427,9 @@ struct
                eprintf "alpha_equal_vars: false%t" eflush;
                false
          else
-            BODY
+            body
       ELSE
-         BODY
+         body
       ENDIF
 
    (*
@@ -613,14 +613,14 @@ struct
        | _ -> RAISE_GENERIC_EXN
 
    let match_terms subst t1 t2 =
-      LETMACRO BODY = List.rev (match_terms subst [] t1 t2)
+      DEFINE body = List.rev (match_terms subst [] t1 t2)
       IN
       IFDEF VERBOSE_EXN THEN
-         try BODY with
+         try body with
             RefineError (_, GenericError) ->
                raise (RefineError ("Term_subst_ds.match_terms", TermPairError (t1, t2)))
       ELSE
-         BODY
+         body
       ENDIF
 
    (************************************************************************

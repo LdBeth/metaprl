@@ -96,8 +96,8 @@ struct
       type t = term
    end
 
-   module SeqHyp = SEQ_SET.Make (SeqHypType)
-   module SeqGoal = SEQ_SET.Make (SeqGoalType)
+   module SeqHyp = Seq_set.Make (SeqHypType)
+   module SeqGoal = Seq_set.Make (SeqGoalType)
 
    (************************************************************************
     * DEBUGGING                                                            *

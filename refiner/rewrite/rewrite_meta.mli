@@ -32,13 +32,14 @@
 
 open Term_sig
 open Term_base_sig
+open Term_addr_sig
 open Term_man_sig
 open Refine_error_sig
 
-open Rewrite_type_sig
-
 module MakeRewriteMeta
    (TermType : TermSig)
+   (TermAddr : TermAddrSig
+     with type term = TermType.term)
    (Term : TermBaseSig
     with type term = TermType.term
     with type term' = TermType.term'
@@ -62,12 +63,10 @@ module MakeRewriteMeta
     with type param = TermType.param
     with type term = TermType.term
     with type bound_term = TermType.bound_term)
-   (RewriteTypes : RewriteTypesSig
-    with type operator = TermType.operator
-    with type level_exp = TermType.level_exp
-    with type object_id = TermType.object_id)
 : sig
-   open RewriteTypes
+   open TermType
+
+   type rewrite_rule = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr).rewrite_rule
 
    (*
     * See if a rule may apply to a particular term

@@ -118,22 +118,22 @@ struct
    open RefineError
 
    module RewriteTypes = MakeRewriteTypes (TermType) (TermAddr)
-   module RewriteUtil = MakeRewriteUtil (TermType) (Term) (RefineError) (RewriteTypes)
-   module RewriteDebug = MakeRewriteDebug (TermType) (Term) (TermAddr) (RefineError) (RewriteTypes)
+   module RewriteUtil = MakeRewriteUtil (TermType) (TermAddr) (Term) (RefineError)
+   module RewriteDebug = MakeRewriteDebug (TermType) (Term) (TermAddr) (RefineError)
    module RewriteCompileRedex =
       MakeRewriteCompileRedex (TermType) (Term) (TermMan) (TermAddr) (**)
-         (TermSubst) (RefineError) (RewriteTypes) (RewriteUtil) (RewriteDebug)
+         (TermSubst) (RefineError) (RewriteUtil) (RewriteDebug)
    module RewriteCompileContractum =
       MakeRewriteCompileContractum (TermType) (Term) (TermMan) (TermAddr) (**)
-         (TermSubst) (RefineError) (RewriteTypes) (RewriteUtil) (RewriteDebug)
+         (TermSubst) (RefineError) (RewriteUtil) (RewriteDebug)
    module RewriteMatchRedex =
       MakeRewriteMatchRedex (TermType) (Term) (TermMan) (TermAddr) (TermSubst) (**)
-         (RefineError) (RewriteTypes) (RewriteUtil) (RewriteDebug)
+         (RefineError) (RewriteUtil) (RewriteDebug)
    module RewriteBuildContractum =
       MakeRewriteBuildContractum (TermType) (Term) (TermMan) (TermAddr) (TermSubst) (**)
-         (RefineError) (RewriteTypes) (RewriteUtil) (RewriteDebug)
+         (RefineError) (RewriteUtil) (RewriteDebug)
    module RewriteMeta =
-      MakeRewriteMeta (TermType) (Term) (TermMan) (RefineError) (RewriteTypes)
+      MakeRewriteMeta (TermType) (TermAddr) (Term) (TermMan) (RefineError)
 
    open RewriteTypes
    open RewriteDebug

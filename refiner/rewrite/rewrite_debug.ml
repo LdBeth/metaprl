@@ -43,8 +43,6 @@ open Term_base_sig
 open Term_addr_sig
 open Refine_error_sig
 
-open Rewrite_type_sig
-
 (*
  * Show the file loading.
  *)
@@ -72,12 +70,9 @@ module MakeRewriteDebug
     with type param = TermType.param
     with type term = TermType.term
     with type bound_term = TermType.bound_term)
-   (RewriteTypes : RewriteTypesSig
-    with type term = TermType.term
-    with type address = TermAddr.address
-    with type operator = TermType.operator)
    =
 struct
+   module RewriteTypes = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr)
    open TermType
    open Term
    open TermAddr

@@ -34,9 +34,9 @@ open Term_sig
 open Term_base_sig
 open Term_addr_sig
 open Refine_error_sig
-
-open Rewrite_type_sig
 open Rewrite_debug_sig
+
+open Rewrite_types
 
 module MakeRewriteDebug
    (TermType : TermSig)
@@ -58,16 +58,12 @@ module MakeRewriteDebug
     with type level_exp = TermType.level_exp
     with type param = TermType.param
     with type term = TermType.term
-    with type bound_term = TermType.bound_term)
-   (RewriteTypes : RewriteTypesSig
-    with type term = TermType.term
-    with type address = TermAddr.address
-    with type operator = TermType.operator) :
+    with type bound_term = TermType.bound_term):
    RewriteDebugSig
-   with type rwterm = RewriteTypes.rwterm
-   with type rstack = RewriteTypes.rstack
-   with type stack  = RewriteTypes.stack
-   with type varname = RewriteTypes.varname
+   with type rwterm = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr).rwterm
+   with type rstack = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr).rstack
+   with type stack  = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr).stack
+   with type varname = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr).varname
 
 (*
  * -*-

@@ -15,6 +15,7 @@ MAIN := reflib
 
 # Flags
 CCLIBS := -cclib -lnums
+OCAMLFLAGS = -pp "$(CAMLP4MACRO)"
 
 all: lib
 

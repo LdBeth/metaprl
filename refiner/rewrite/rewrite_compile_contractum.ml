@@ -47,9 +47,9 @@ open Term_subst_sig
 open Term_shape_sig
 open Refine_error_sig
 
-open Rewrite_type_sig
 open Rewrite_util_sig
 open Rewrite_debug_sig
+open Rewrite_types
 
 (*
  * Show the file loading.
@@ -90,19 +90,14 @@ module MakeRewriteCompileContractum
     with type param = TermType.param
     with type term = TermType.term
     with type bound_term = TermType.bound_term)
-   (RewriteTypes : RewriteTypesSig
-    with type level_exp = TermType.level_exp
-    with type object_id = TermType.object_id
-    with type term = TermType.term
-    with type operator = TermType.operator
-    with type address = TermAddr.address)
    (RewriteUtil : RewriteUtilSig
     with type term = TermType.term
-    with type rstack = RewriteTypes.rstack)
+    with type rstack = MakeRewriteTypes(TermType)(TermAddr).rstack)
    (RewriteDebug : RewriteDebugSig
-    with type rstack = RewriteTypes.rstack)
+    with type rstack = MakeRewriteTypes(TermType)(TermAddr).rstack)
    =
 struct
+   module RewriteTypes = MakeRewriteTypes(TermType)(TermAddr)
    open TermType
    open Term
    open TermMan
@@ -110,6 +105,9 @@ struct
    open RewriteTypes
    open RewriteUtil
    open RewriteDebug
+
+   type strict = RewriteTypes.strict
+   type rwterm = RewriteTypes.rwterm
 
    let compile_bname strict enames stack n =
       if array_rstack_fo_mem n stack then

@@ -109,8 +109,8 @@ sig
         sequent_hyps : seq_hyps;
         sequent_goals : seq_goals
       }
-   and seq_hyps = hypothesis SEQ_SET.linear_set
-   and seq_goals = term SEQ_SET.linear_set
+   and seq_hyps = hypothesis Seq_set.linear_set
+   and seq_goals = term Seq_set.linear_set
    and lazy_vars =
       Vars of SymbolSet.t
     | VarsDelayed

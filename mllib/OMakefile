@@ -1,5 +1,5 @@
 # C preprocessing
-OCAMLFLAGS = $(OCAMLFLAGS) -pp "$(CAMLP4MACRO)"
+OCAMLFLAGS = $(OCAMLFLAGS) -pp $(MACROPP)
 
 OCAMLINCLUDES +=\
 	-I $(ROOT)/libmojave/stdlib\

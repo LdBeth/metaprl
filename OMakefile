@@ -197,7 +197,7 @@ MLZFILES =
 CLEAN = $'(RM) *.opt *.run *.o *.obj *.lib *.cm* *.a *~ .\#* *.ppo *.p4i *.p4o $'(addsuffix .ml, $(MLZFILES)) $'(addsuffix .mli, $(MLZFILES))
 
 clean:
-    $(CLEAN) $(file bin/ocamldep$(EXE) lib/camlp4* bin/convert$(EXE) lib/*.cm* lib/*.ml* lib/*.txt lib/*.dat lib/*.a bin/prlc*)
+    $(CLEAN) $(file bin/ocamldep$(EXE) lib/camlp4* bin/convert$(EXE) lib/*.cm* lib/*.ml* lib/*.txt lib/*.dat lib/*.a lib/macrop* bin/prlc*)
 
 realclean: clean
     -$'(RM) $(file theories/*/*.prlb theories/*/*/*.prlb) # XXX: This is a temporary HACK
@@ -256,9 +256,8 @@ THREADSLIB =
 #
 
 # Macro preprocess
-OCAMLMACROS = $(file lib/macro.cmo)
-CAMLP4MACRO = camlp4o $(OCAMLMACROS)
-CAMLP4MACROPRINT = camlp4o -I $(CAMLP4LIB) pr_o.cmo $(OCAMLMACROS)
+MACROPP = $(file lib/macropp$(EXE))
+MACROPRINT = $(file lib/macroprint$(EXE))
 LINEARSET = $(file libmojave/stdlib/$(uncapitalize $(SEQ_SET)_linear_set.cmi))
 
 #
@@ -267,9 +266,9 @@ LINEARSET = $(file libmojave/stdlib/$(uncapitalize $(SEQ_SET)_linear_set.cmi))
 #
 if true
     # Add the extra dependency
-    %.cmi: $(OCAMLMACROS) $(LINEARSET)
-    %.cmo: $(OCAMLMACROS) $(LINEARSET)
-    %.cmx: $(OCAMLMACROS) $(LINEARSET)
+    %.cmi: $(MACROPP) $(LINEARSET)
+    %.cmo: $(MACROPP) $(LINEARSET)
+    %.cmx: $(MACROPP) $(LINEARSET)
 
     # These directories use the macro preprocessor
     .SUBDIRS: mllib refiner
