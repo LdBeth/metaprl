@@ -35,6 +35,7 @@ open Printf
 open Lm_debug
 
 open Refiner.Refiner
+open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermAddr
@@ -189,14 +190,37 @@ struct
 
    let allSubC conv =
       let allSubCE conv env =
-         let count = env_term_subterm_count env in
-         let rec subC conv count i =
-            if i = count then
-               idC
+         let t = env_term env in
+            if is_sequent_term t then
+               (* For sequents, apply to all the hyps, goals, and arg *)
+               let { sequent_hyps = hyps;
+                     sequent_goals = goals
+                   } = explode_sequent t
+               in
+               let hyp_count = SeqHyp.length hyps in
+               let goal_count = SeqGoal.length goals in
+               let rec subGoalC conv i =
+                  if i > goal_count then
+                     addrLiteralC arg_addr conv
+                  else
+                     prefix_thenC (addrLiteralC (nth_concl_addr t i) conv) (subGoalC conv (i + 1))
+               in
+               let rec subHypC conv i =
+                  if i > hyp_count then
+                     subGoalC conv 1
+                  else
+                     prefix_thenC (addrLiteralC (nth_hyp_addr t i) conv) (subHypC conv (i + 1))
+               in
+                  subHypC conv 1
             else
-               prefix_thenC (addrC [i] conv) (subC conv count (i + 1))
-         in
-            subC conv count 0
+               let count = subterm_count t in
+               let rec subC conv count i =
+                  if i = count then
+                     idC
+                  else
+                     prefix_thenC (addrC [i] conv) (subC conv count (i + 1))
+               in
+                  subC conv count 0
       in
          funC (allSubCE conv)
 
