@@ -569,7 +569,7 @@ token_term_matches:
 
 opt_term_matches:
    /* empty */                { [] }
- | term_match_list            { List.rev $1 }
+ | term_match_list            { $1 } /* Aleksey: We keep reverse order, phobos_utils will reverse */
 
 term_match_list:
    term_match_list TokPipe term_match
