@@ -94,7 +94,7 @@ let home =
          try access home [F_OK]; false with
             Unix_error _ ->
                begin
-                  eprintf "@[<v 3>WARNING!  MetaPRL state directory %s does not exist, creating.@]@." home;
+                  eprintf "@[<v 3>@WARNING!  MetaPRL state directory %s does not exist, creating.@@]@." home;
                   try mkdir home 0o700 with
                      Unix_error _ -> ()
                end;

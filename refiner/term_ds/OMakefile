@@ -7,12 +7,10 @@ OCAMLINCLUDES +=\
 
 OCAMLFLAGS += -rectypes
 
-OCamlLibraryInstall($(MPINSTALL), $(LIB), termds, $(TERM_DS_FILES))
+OCamlLibraryInstall(all, $(LIB), termds, $(TERM_DS_FILES))
 
 MLZFILES = term_ds_sig
 
 clean:
     $(CLEAN)
-
-all: termds$(LIB_SUFFIX)
 

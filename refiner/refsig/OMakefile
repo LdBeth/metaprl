@@ -3,12 +3,10 @@ MLZFILES=$(REFSIG_FILES)
 OCAMLINCLUDES +=\
 	-I ../refbase
 
-OCamlLibraryInstall($(MPINSTALL), $(LIB), refsig, $(REFSIG_FILES))
+OCamlLibraryInstall(all, $(LIB), refsig, $(REFSIG_FILES))
 
 #
 # Clean up
 #
 clean:
     $(CLEAN)
-
-all: refsig$(LIB_SUFFIX)

@@ -6,12 +6,10 @@ OCAMLINCLUDES +=\
 	-I ../term_ds\
 	-I ../rewrite
 
-OCamlLibraryInstall($(MPINSTALL), $(LIB), refine, $(REFINER_FILES))
+OCamlLibraryInstall(all, $(LIB), refine, $(REFINER_FILES))
 
 #
 # Clean up
 #
 clean:
     $(CLEAN)
-
-all: refine$(LIB_SUFFIX)

@@ -4,11 +4,9 @@ OCAMLINCLUDES +=\
 	-I ../refbase\
 	-I ../refsig
 
-OCamlLibraryInstall($(MPINSTALL), $(LIB), termgen, $(TERM_GEN_FILES))
+OCamlLibraryInstall(all, $(LIB), termgen, $(TERM_GEN_FILES))
 
 MLZFILES = term_man_gen_sig
 
 clean:
     $(CLEAN)
-
-all: termgen$(LIB_SUFFIX)

@@ -4,7 +4,7 @@
 # The upper limit is there because old versions of omake did not do the comparison correctly.
 # Remove when we require omake >= 0.8
 #
-OMakeVersion(0.7.11, 0.7.30)
+OMakeVersion(0.7.15, 0.7.30)
 
 ########################################################################
 # This section is for compatibility with old version of omake, so
@@ -518,10 +518,10 @@ OCamlGeneratedFiles(files) =
 %.cmx %$(EXT_OBJ): %.ppo
         $(OCAMLOPT) $(OCAMLOPTFLAGS) $(OCAMLINCLUDES) -c -impl $<
 
-%.p4i: %.mli
+%.p4i: %.mli $(PRLC) $(CAMLP4O)
         $(PRLCC) $(OCAMLINCLUDES) -E $*.mli > $@
 
-%.p4: %.ml
+%.p4: %.ml $(PRLC) $(CAMLP4O)
         $(PRLCC) $(OCAMLINCLUDES) -E $*.ml > $@
 
 #

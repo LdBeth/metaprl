@@ -8,7 +8,7 @@ OCAMLINCLUDES +=\
 	-I ../term_ds\
 	-I ../term_gen
 
-OCamlLibraryInstall($(MPINSTALL), $(LIB), reflib, $(REFLIB_FILES))
+OCamlLibraryInstall(all, $(LIB), reflib, $(REFLIB_FILES))
 
 MLZFILES =\
    ascii_io_sig\
@@ -20,5 +20,3 @@ MLZFILES =\
 
 clean:
     $(CLEAN)
-
-all: reflib$(LIB_SUFFIX)

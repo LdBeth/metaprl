@@ -10,12 +10,10 @@ OCAMLINCLUDES +=\
 #
 # Rewriter library
 #
-OCamlLibraryInstall($(MPINSTALL), $(LIB), rewrite, $(REWRITE_FILES))
+OCamlLibraryInstall(all, $(LIB), rewrite, $(REWRITE_FILES))
 
 #
 # Clean up
 #
 clean:
     $(CLEAN)
-
-all: rewrite$(LIB_SUFFIX)

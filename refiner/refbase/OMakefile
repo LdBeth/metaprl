@@ -1,4 +1,4 @@
-OCamlLibraryInstall($(MPINSTALL), $(LIB), refbase, $(REFBASE_FILES))
+OCamlLibraryInstall(all, $(LIB), refbase, $(REFBASE_FILES))
 
 #
 # Clean up
