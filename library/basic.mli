@@ -1,5 +1,6 @@
  
 open Term
+open Opname
 open Num
 
 (*
@@ -21,6 +22,7 @@ val ivoid_term_p	: term -> bool
 
 val number_of_inatural_term	: term -> int
 val oid_of_ioid_term		: term -> object_id
+val oids_of_ioid_term		: term -> object_id list
 val string_of_itoken_term	: term -> string
 
 val operator_of_term		: term -> operator
@@ -84,6 +86,7 @@ val get_stamp 		: unit ->  stamp
 
 val sequence		: unit -> int
 val tid			: unit -> term
+val tideq		: term -> term -> bool
 
 val term_of_unbound_term	: bound_term -> term
 val unbound_bterm_p		: bound_term -> bool
@@ -115,4 +118,22 @@ val property_of_iproperty_term	: term -> (string * term)
 
 val istring_term		: string -> term
 val string_of_istring_term	: term -> string
+
+
+val nullp			: 'a list -> bool
+val chareq			: char -> char -> bool
+val inteq			: int -> int -> bool
+val stringeq			: string -> string -> bool
+
+val listeq			: ('a -> 'a -> bool) -> 'a list -> 'a list -> bool
+
+val parmeq			: param -> param -> bool
+val oideq			: object_id -> object_id -> bool
+
+val opeq			: operator -> operator -> bool
+
+val nuprl5_opname_p		: opname -> bool
+
+val parmhash			: param -> int
+
 

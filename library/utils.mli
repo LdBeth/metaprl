@@ -7,6 +7,7 @@ exception OrefNone
 val null_oref	: unit -> 'a oref
 val oref	: 'a -> 'a oref
 val oref_set	: 'a oref -> 'a -> 'a
+val oref_nullify	: 'a oref -> unit
 
 val oref_p	: 'a oref -> bool
 val oref_val	: 'a oref -> 'a		(* fails if None *)

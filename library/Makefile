@@ -42,7 +42,8 @@ LMFILES :=\
 	definition\
 	orb\
 	library\
-	library_type_base
+	library_type_base\
+	library_eval
 
 # Name of main libraris
 MAIN = library

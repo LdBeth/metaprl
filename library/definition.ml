@@ -25,7 +25,7 @@ type dependency = {data : stamp; objc : stamp; oid : object_id }
 let idata_op = mk_nuprl5_op [make_param (Token "!data")]
 let term_of_idata_term t =
   match dest_term t with
-    { term_op = op; term_terms = [subterm] } when op = idata_op
+    { term_op = op; term_terms = [subterm] } when opeq op idata_op
       -> term_of_unbound_term subterm
     |_ -> error ["term"; "!data"] [] [t]
 
@@ -73,14 +73,14 @@ let term_to_data t =
  match dest_term t with
    { term_op = op; term_terms = [istamp] } 
       -> (match dest_op op with 
-	   { op_name = opname; op_params = [id; ftype] } when idata_persist_param = id
+	   { op_name = opname; op_params = [id; ftype] } when parmeq id idata_persist_param
 		-> new data (term_to_stamp (term_of_unbound_term istamp))
 			    (dest_token_param ftype)
 		|_ -> error  ["term"; "data_persist"; "op"] [] [t]
 	)
    | { term_op = op; term_terms = [istamp; inline] } 
       -> (match dest_op op with 
-	   { op_name = opname; op_params = [id; ftype] } when idata_persist_inline_param = id
+	   { op_name = opname; op_params = [id; ftype] } when parmeq id idata_persist_inline_param
 		-> new inline_data (term_to_stamp (term_of_unbound_term istamp))
 				   (term_of_unbound_term inline)
 		|_ -> error  ["term"; "data_persist_inline"; "op"] [] [t]
@@ -98,7 +98,7 @@ let isubstance_op = mk_nuprl5_op [make_param (Token "!substance")]
 
 let term_of_isubstance_term t =
  match dest_term t with
-   { term_op = op; term_terms = [sub; refs; props; super] } when op = isubstance_op
+   { term_op = op; term_terms = [sub; refs; props; super] } when opeq op isubstance_op
 	-> term_of_unbound_term sub
    |_ -> error ["term"; "!substance"] [] [t]
     
@@ -240,7 +240,7 @@ let idirectory_term_p t =
   { term_op = op; term_terms = [children]} when unbound_bterm_p children
      -> (match dest_op op with
 	  { op_name = opname; op_params = id :: rest} 
-		when opname = nuprl5_opname & id = idirectory_param
+		when nuprl5_opname_p opname & parmeq id idirectory_param
 		-> true
 	  |_ -> false
 	)
@@ -255,7 +255,8 @@ let children_of_idirectory_term t =
 		(fun c -> match dest_term c with
 			    { term_op = op; term_terms = [] } 
 			       -> (match dest_op op with
-				    { op_name = opname; op_params = [id; name; oid] } when id = idag_child_param
+				    { op_name = opname; op_params = [id; name; oid] }
+					when parmeq id idag_child_param
 				       -> (dest_token_param name, dest_obid_param oid)
 				    |_ -> error ["term"; "!directory"; "child"; "op"] [] [t]
 				   )
@@ -270,7 +271,7 @@ let iroot_directory_term_p t =
   { term_op = op; term_terms = terms}
      -> (match dest_op op with
 	  { op_name = opname; op_params = id :: rest} 
-		when not (rest = []) 
+		when not (nullp rest) 
 		-> (match dest_param (hd rest) with
 		    Token name -> true
 		   |_ -> false
@@ -310,7 +311,9 @@ class 'a directory_definition d dat st=
 			   else ""
   *)
   val children = children_of_idirectory_term (term_of_isubstance_term dat#get_term)
-  val rootp = iroot_directory_term_p (term_of_isubstance_term dat#get_term)
+  val rootp = iroot_directory_term_p (term_of_isubstance_term
+				      dat#get_term
+				      )
   val root_name = let term = (term_of_isubstance_term dat#get_term) in
 			if (iroot_directory_term_p term)
 			   then name_of_iroot_directory_term term
@@ -341,7 +344,8 @@ let term_to_dependency t =
   match dest_term t with 
     { term_op = op; term_terms = [objc; data] } 
       -> (match dest_op op with
-	  { op_name = opname; op_params = [id; oid] } when id = idependency_param & opname = nuprl5_opname
+	  { op_name = opname; op_params = [id; oid] } when parmeq id idependency_param 
+							   & nuprl5_opname_p opname
 		->	{ data = term_to_stamp (term_of_unbound_term data)
 			; objc = term_to_stamp (term_of_unbound_term objc)
 			; oid = dest_obid_param oid
@@ -353,14 +357,19 @@ let term_to_dependency t =
    want polymorphism with definitions and tables
  *)
 let import_term idef idesc =
+  (* print_string " import_term "; Mbterm.print_term idef; *)
   match dest_term idef with
-    { term_op = op; term_terms = [idep; idata] } when op = idefinition_op
+    { term_op = op; term_terms = [idep; idata] } when opeq op idefinition_op
       -> (let dep = term_to_dependency (term_of_unbound_term idep) in
 	  let data = term_to_data (term_of_unbound_term idata) in
 
+	  (*print_string " import_term "; Mbterm.print_term (term_of_unbound_term idata); *)
+	  (* if not (dag_description_p idesc) then print_string " uh oh"; *)
+
 	  if not (dag_description_p idesc)
 	     then TermDefinition (new term_definition dep data TermSubstance)
-	     else DirectoryDefinition (new directory_definition dep data Substance)
+	     else
+		DirectoryDefinition (new directory_definition dep data Substance)
 	)
 
     |_ -> error ["term"; "!definition"] [] [idef]
@@ -403,26 +412,32 @@ let apply_broadcast ttable ibcast idesc stamp commit_stamp =
 		| Some s -> commit ttable s oid seq
 		) in
 
+  (*
+  print_string "apply broadcast";
+  print_newline();
+  Mbterm.print_term ibcast;
+  *)
+
   match dest_term ibcast with
     { term_op = op; term_terms = terms} ->
 	match dest_op op with
-	  { op_name = opn; op_params = pid :: pseq :: rest } when opn = nuprl5_opname
-	    -> ((if pid = idefinition_insert_param
+	  { op_name = opn; op_params = pid :: pseq :: rest } when nuprl5_opname_p opn
+	    -> ((if parmeq pid idefinition_insert_param
 		    then let entry = (import_term (term_of_unbound_term (hd terms)) idesc) in
 		         let oid = (oid_of_term_entry entry) 
 			 and seq = (dest_int_param pseq) in
 			  insert ttable stamp oid seq entry
 			  ; auto_commit oid seq
-		else if pid = idefinition_delete_param
+		else if parmeq pid idefinition_delete_param
 		    then let oid = (dest_obid_param (hd rest)) 
 			 and seq = (dest_int_param pseq) in
 			  delete ttable stamp oid seq
 			  ; auto_commit oid seq
-		else if pid = icommit_param
+		else if parmeq pid icommit_param
 		    then commit ttable stamp 
 					(dest_obid_param (hd rest)) 
 					(dest_int_param pseq)
-		else if pid = iundo_param
+		else if parmeq pid iundo_param
 		    then undo ttable stamp 
 					(dest_obid_param (hd rest)) 
 					(dest_int_param pseq)

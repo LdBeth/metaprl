@@ -112,7 +112,7 @@ let result_of_irsp_term t =
       term_terms = bterms } 
     -> (match dest_op o with
 	{ op_name = ro;
-	  op_params = irsp :: ps} when (ro = nuprl5_opname & irsp = irsp_parameter)
+	  op_params = irsp :: ps} when (nuprl5_opname_p ro & parmeq irsp irsp_parameter)
 	  -> term_of_unbound_term (hd bterms)
 	| _ -> error ["orb"; "rsp"; "not"] [] [t])
 
@@ -123,7 +123,7 @@ let seq_of_irsp_term t =
       term_terms = bterms } 
     -> (match dest_op o with
 	{ op_name = ro;
-	  op_params = irsp :: iseq :: ps} when (ro = nuprl5_opname & irsp = irsp_parameter)
+	  op_params = irsp :: iseq :: ps} when (nuprl5_opname_p ro & parmeq irsp irsp_parameter)
 	  -> dest_int_param iseq
 	| _ -> error ["orb"; "rsp"; "not"] [] [t])
 
@@ -138,7 +138,7 @@ let broadcasts_of_ibroadcasts_term t =
       term_terms = bterms } 
     -> (match dest_op o with
 	{ op_name = ro;
-	  op_params = ib :: tp :: ps} when (ro = nuprl5_opname & ib = ibroadcasts_parameter)
+	  op_params = ib :: tp :: ps} when (nuprl5_opname_p ro & parmeq ib ibroadcasts_parameter)
 	  -> if (ps = [] or not (destruct_bool_parameter (hd ps)))
 	        then (tl bterms)
 		else (tl (tl bterms))
@@ -150,7 +150,7 @@ let transaction_stamp_of_ibroadcasts_term t =
       term_terms = bterms } 
     -> (match dest_op o with
 	{ op_name = ro;
-	  op_params = ib :: tp :: ps} when (ro = nuprl5_opname & ib = ibroadcasts_parameter)
+	  op_params = ib :: tp :: ps} when (nuprl5_opname_p ro & parmeq ib ibroadcasts_parameter)
 	  -> term_to_stamp (term_of_unbound_term (hd bterms))
 	| _ -> error ["orb"; "broadcasts"; "stamp"; "not"] [] [t])
  
@@ -161,7 +161,7 @@ let auto_commit_of_ibroadcasts_term t =
     -> (match dest_op o with
 	{ op_name = ro;
 	  op_params = ib :: tp :: ps} when (ro = nuprl5_opname & ib = ibroadcasts_parameter)
-	  -> if (not (ps = []) & (destruct_bool_parameter (hd ps)))
+	  -> if (not (nullp ps) & (destruct_bool_parameter (hd ps)))
 	        then Some (term_to_stamp (term_of_unbound_term (hd (tl bterms))))
 		else None
 	| _ -> error ["orb"; "broadcasts"; "commit"; "not"] [] [t])
@@ -171,7 +171,7 @@ let ifail_op = mk_nuprl5_op [ifail_parameter]
 let ifail_term t = mk_term ifail_op [mk_bterm [] t]
 let ifail_term_p t =
   match dest_term t with
-    { term_op = fo; term_terms = bterms } when fo = ifail_op -> true
+    { term_op = fo; term_terms = bterms } when opeq fo ifail_op -> true
   | _ -> false
 
 
@@ -179,7 +179,7 @@ let ivalue_parameter = make_param (Token "!value")
 let ivalue_op = mk_nuprl5_op [ivalue_parameter]
 let ivalue_term_p t =
   match dest_term t with
-    { term_op = vo; term_terms = bterms } when vo = ivalue_op -> true
+    { term_op = vo; term_terms = bterms } when opeq vo ivalue_op -> true
   | _ -> false
 
 let ivalue_term t = mk_term ivalue_op [mk_bterm [] t]
@@ -189,7 +189,7 @@ let iack_op = mk_nuprl5_op [iack_parameter]
 let iack_term = mk_term iack_op []
 let iack_term_p t = 
   match dest_term t with
-    { term_op = ao; term_terms = bterms } when ao = iack_op & bterms = [] -> true
+    { term_op = ao; term_terms = bterms } when opeq ao iack_op & nullp bterms -> true
   | _ -> false
 
 let messages_of_iresult_term t =
@@ -214,12 +214,14 @@ let ipassport_param = make_param (Token "!passport")
  * apply to table
  *)
 let broadcast_eval env tstamp commit_stamp bcasts =
+  (* print_string "num bcasts "; print_string (string_of_int (List.length bcasts));  print_newline(); *)
   map (function bipass -> 
+	(* print_string "eval_bcast"; print_newline(); *)
         let ipass = term_of_unbound_term bipass in
 	match dest_term ipass with
 	  { term_op = pop; term_terms = [stamp; desc; bcast] } 
 	    -> (match dest_op pop with
-		{ op_name = opn; op_params = [id; ttype] } when id = ipassport_param
+		{ op_name = opn; op_params = [id; ttype] } when parmeq id ipassport_param
 		  -> (try apply_broadcast
 				(resource env (dest_token_param ttype))
 				(term_of_unbound_term bcast)				
@@ -227,7 +229,7 @@ let broadcast_eval env tstamp commit_stamp bcasts =
 				tstamp (*(term_to_stamp (term_of_unbound_term stamp))*)
 				commit_stamp
 		     with Not_found -> print_string "Broadcast for unknown table ignored. ";
-					print_string (dest_token_param ttype); print_newline(); ()
+				       print_string (dest_token_param ttype); print_newline(); ()
 			  | e -> raise e)
 		|_ -> error ["term"; "!passport"; "op"] [] [ipass]
 		)
@@ -248,7 +250,7 @@ let icommand_op = mk_nuprl5_op [icommand_parameter]
 let icommand_term t = mk_term icommand_op [mk_bterm [] t]
 
 let cmd_of_icommand_term t = 
- match dest_term t with { term_op = o; term_terms = [cmd] } when o = icommand_op
+ match dest_term t with { term_op = o; term_terms = [cmd] } when opeq o icommand_op
     -> term_of_unbound_term cmd
  |_ -> error ["orb"; "command"; "not"] [] [t]
 
@@ -276,19 +278,19 @@ let rec bus_wait c tid ehook =
       term_terms = bterms } 
     ->  (match dest_op op with
           { op_name = opn;
- 	    op_params = ib :: ps } when (ib = ibroadcasts_parameter & opn = nuprl5_opname)
+ 	    op_params = ib :: ps } when (parmeq ib ibroadcasts_parameter & nuprl5_opname_p opn)
            -> ((try 
 		(special_error_handler 
 		  (function () -> ((orb_broadcast (hd c.orb.environments) t); ()))
 		  (fun s t -> 
-			print_string "broadcast failed"
+			 print_string "broadcast failed xyz"
 			; print_newline()
 			; print_string s
 			; print_newline()
 			; print_term t
 			; print_newline()))
 		with Not_found -> (print_string "broadcast failed notfound"; print_newline())
-		     | _-> (print_string "broadcast failed"; print_newline()))
+		     | _-> (print_string "broadcast failed abc"; print_newline()))
 
 		(*
 		(try ((orb_broadcast (hd c.orb.environments) t); ())
@@ -298,7 +300,7 @@ let rec bus_wait c tid ehook =
 		(* above assumes single environment is present, nfg if more than one env. *)
              ; bus_wait c tid ehook)
 	| { op_name = opn;
-	    op_params = ireq :: ps } when (opn = nuprl5_opname & ireq = ireq_parameter)
+	    op_params = ireq :: ps } when (nuprl5_opname_p opn & parmeq ireq ireq_parameter)
 	  -> (match tid with
 	      None ->
 		(Link.send c.link
@@ -309,7 +311,7 @@ let rec bus_wait c tid ehook =
 			
       	    | Some ttid -> 
 		  (Link.send c.link
-	           (if not (ttid = (term_of_unbound_term (hd (tl (bterms)))) )
+	           (if not (tideq ttid (term_of_unbound_term (hd (tl (bterms)))) )
 			then (irsp_term (hd ps)
 				   (ifail_term (imessage_term ["orb"; "req"; "recursive"; "tid"] [] [])))
 			else irsp_term (hd ps)
@@ -317,7 +319,7 @@ let rec bus_wait c tid ehook =
 						(term_of_unbound_term (hd bterms))))
 	           ; bus_wait c tid ehook))
 	| { op_name = opn;
-	    op_params = imsg :: ps } when (opn = nuprl5_opname & imsg = imsg_parameter)
+	    op_params = imsg :: ps } when (nuprl5_opname_p opn & parmeq imsg imsg_parameter)
 	  -> ( print_term t
 	     ; bus_wait c tid ehook)
 	| _ -> t)
@@ -342,7 +344,7 @@ let bus_eval c addr expr tid ehook =
      Link.send link (ireq_term seq addr expr tid);
 
     let t = bus_wait c (Some tid) ehook in
-     if not (seq = seq_of_irsp_term t) 
+     if not (inteq seq (seq_of_irsp_term t))
 	then (print_term t; print_term expr; error ["bus"; "eval"; "sequence"] [] [t])
 	else result_of_irsp_term t
 
@@ -353,7 +355,7 @@ let iinform_term info = mk_term iinform_op
 				[mk_bterm [] info]
 let iinform_term_p t =
   match dest_term t with
-    { term_op = ino; term_terms = bterms } when ino = iinform_op -> true
+    { term_op = ino; term_terms = bterms } when opeq ino iinform_op -> true
   | _ -> false
 
 let info_of_iinform_term t = one_subterm t
@@ -369,10 +371,10 @@ let ienvironment_address_term a =
 let address_of_ienvironment_address_term t =
   (match dest_term t with
     { term_op = op;
-      term_terms =  bts } when bts = []
+      term_terms =  bts } when nullp bts
       ->  (match dest_op op with
 	    { op_name = opn;
-	      op_params = ienv :: al } when (opn = nuprl5_opname & ienv = ienvironment_address_parameter)
+	      op_params = ienv :: al } when (nuprl5_opname_p opn & parmeq ienv ienvironment_address_parameter)
 	      ->  (map token_parameter_to_string al)
             |_-> error ["orb"; "term"; "EnvironmentAddress"; "invalid"; "op"] [] [t])
      |_-> error ["orb"; "term"; "EnvironmentAddress"; "invalid"; "subterms"; token_parameter_to_string (hd (parameters_of_term t))] [] [t])
@@ -393,7 +395,7 @@ let iconfigure_term term =  mk_term iconfigure_op [mk_bterm [] term]
 
 let command_of_iconfigure_term t =
   match dest_term t with
-    { term_op = co; term_terms = [bterm] } when co = iconfigure_op 
+    { term_op = co; term_terms = [bterm] } when opeq co iconfigure_op 
       -> (match dest_bterm bterm with
 	   { bvars = []; bterm = term} -> term
          | _ -> error ["orb"; "term"; "configure"; "subterm"] [] [t])
@@ -530,7 +532,7 @@ let iexpression_term term =
 	 [mk_bterm [] term]
 
 let iml_expression_term result_p expr args =
- if args = []
+ if nullp args
     then iexpression_term (iml_woargs_term result_p expr)
     else iexpression_term (iml_term result_p expr args)
 
@@ -616,7 +618,7 @@ let istart_term t s e d =
 let broadcasts_of_istart_term s =
   match dest_term s with
     { term_op = o;
-      term_terms = [_; _; _; bs] } when o = istart_op
+      term_terms = [_; _; _; bs] } when opeq o istart_op
      -> (term_of_unbound_term bs)
   |_ -> ( let name = (opname_of_term s) in
 	 (*print_term s;*) error ["orb"; "start"; "broadcasts"; "not"; "start"] [] [s])
@@ -632,7 +634,8 @@ let start_broadcasts e =
 			  (* nfg if we allow mulitple envs *)
 		     nl0_description)) 
 
-	in orb_broadcast e (broadcasts_of_istart_term
+	in (* print_string "start_broadcasts : "; *)
+		orb_broadcast e (broadcasts_of_istart_term
 				 (info_of_iinform_term t))
           ; ()
 
@@ -836,7 +839,7 @@ let iquit_loop_op = mk_nuprl5_op [ make_param (Token "!quit_loop")]
 
 let quit_loop_term_p t =
   match dest_term t with
-    { term_op = qlo; term_terms = bterms } when qlo = iquit_loop_op -> true
+    { term_op = qlo; term_terms = bterms } when opeq qlo iquit_loop_op -> true
   | _ -> false
 
 

@@ -8,27 +8,35 @@
 module type Oid =
  sig
   type t = object_id
-  val eq : object_id -> object_id -> bool
+  val equal	: object_id -> object_id -> bool
+  val hash	: object_id -> int
  end
 
 module Oid =
  struct
   type t = object_id
-  let eq = (fun x y -> (x = y))
+  let equal = (fun x y -> (oideq x y))
+  let hash oid = hash (List.map parmhash oid)
  end
 
 module OidTent = Tent (Oid)
 
 open OidTent
 
-type 'a oidtable = (object_id, 'a tent) t
+module OidHashTable = Hashtbl.Make (Oid)
+
+open OidHashTable
+
+type 'a oidtable = 'a tent t
 
 let print_object_id oid =  List.map Mbterm.print_param (dest_object_id oid)
 
-let make_oidtable () = ((Hashtbl.create 997): 'a oidtable)
+let make_oidtable () = ((OidHashTable.create 997): 'a oidtable)
 
 let delete ot stamp oid i =
+  (* print_string "deleteing "; *)
   let tent = find ot oid  in
+    (* print_string " found tent "; *)
     tent_delete tent stamp i oid
 
 let undo ot stamp oid i =
@@ -64,10 +72,11 @@ let oidtable_unit_map ot stamp f =
 let oidtable_map ot stamp f =
  let acc = ref [] in
    iter (fun oid tent -> 
+	     (* (print_string "oid_table_map "); *)
 	try (match (f oid (try tent_lookup tent stamp with _ -> raise Oidtablemap)) with
 	      None -> ()
 	    | Some x -> (acc :=  x :: !acc); ())
-	with Oidtablemap -> ())
+	with Oidtablemap -> (print_string "oidtablemap fail"); ())
        ot;
  !acc
 

@@ -60,7 +60,7 @@ let new_level n = {items = (create n level_array_initial); fill = 0 }
 
 let level_allocate_slot l = 
   let fill = l.fill in
-    (if fill = (Array.length l.items)
+    (if inteq fill (Array.length l.items)
        then let nitems = create (fill + level_array_growth) level_array_initial in
          blit l.items 0 nitems 0 fill;
          l.items <- nitems
@@ -123,7 +123,7 @@ let levels_lookup scanner level index =
 (* scanner includes levels *)
 
 let make_operator opid parameters =
-  if opid = "!nuprl_light_implementation"
+  if stringeq opid "!nuprl_light_implementation"
      then (mk_op (make_opname
 			(map (function p -> 
 				match dest_param p with
@@ -346,8 +346,7 @@ let db_read_aux =
 let ascii_special_header = "%"
 let ash_length = String.length (ascii_special_header)
 
-let is_first_char char string =
-  (String.get string 0) = char
+let is_first_char char string = chareq (String.get string 0) char
 
 let level_expression_escape_string = "[ |']"
 
@@ -355,7 +354,7 @@ let incr_level_exp_n i le =
    let { le_const = c; le_vars = vars } = dest_level le in
       let add1 lv = 
         let { le_var = v; le_offset = o } = dest_level_var lv in
-            if o = 0 then mk_level_var v (o + i) else lv
+            if (inteq o 0) then mk_level_var v (o + i) else lv
       in
          mk_level (max i c) (List.map add1 vars)
 
@@ -398,8 +397,8 @@ let mk_real_param_from_strings stp value ptype =
   | "s" -> (String value)
   | "q" -> (ParmList [(make_param (Token "quote")); (make_param (Token value))])
   | "b" -> ( ParmList [ ( make_param (Token "bool"))
-			; if value = "false"	 then make_param (Number (Num.num_of_int 0))
-			  else if value = "true" then make_param (Number (Num.num_of_int 1))
+			; if stringeq value "false"	then make_param (Number (Num.num_of_int 0))
+			  else if stringeq value "true"	then make_param (Number (Num.num_of_int 1))
 			  else error ["real_parameter_from_string"; value][][]
 		      ])
   | "v" -> (Var value)
@@ -441,7 +440,7 @@ let string_to_bindings value =
   let l = String.length value in
   if l > ash_length then 
     let v = String.sub value 0 ash_length in
-    (if v = ascii_special_header then 
+    (if stringeq v ascii_special_header then 
       let c = String.sub value 1 1 and v' = String.sub value 2 (l - 2) in
       match c with 
 	"A" -> ["nuprl5_implementation3"; "extended"; "abstraction"; v']
@@ -459,7 +458,7 @@ let rec string_to_parameter s ptype =
 
   let len = String.length s in
 
-    if (len < 2 or not ('%' = String.get s 0))
+    if (len < 2 or not (chareq '%' (String.get s 0)))
 	then make_param (mk_real_param_from_strings string_to_parameter s ptype)
 
     else 
@@ -504,17 +503,17 @@ let make_session_scanner stream =
 
 let extract_level_string_updates level inparms =
      let parms = ref (map dest_param inparms) in
-	while not (!parms = [])
+	while not (nullp !parms )
 	do (match (hd !parms) with
 	    Token s ->
 	     (try 
-		if s = "nuprl5_implementation3"
+		if stringeq s "nuprl5_implementation3"
 		   then (level_assign level (Binding (extract_binding3 (tl !parms)))
 			; parms := tl (tl (tl !parms)))
-		else if s = "nuprl5_implementation2"
+		else if stringeq s "nuprl5_implementation2"
 		   then (level_assign level (Binding (extract_binding2 (tl !parms)))
 			; parms := tl (tl !parms))		
-		else if s= "nuprl5_implementation1"
+		else if stringeq s "nuprl5_implementation1"
 		   then (level_assign level (Binding (extract_binding2 (tl !parms)))
 			; parms := tl !parms)
 		else level_assign level (Opid s)
@@ -532,7 +531,7 @@ let idata_persist_term_p t =
  match dest_term t with
    { term_op = op; term_terms = [istamp] } 
       -> (match dest_op op with 
-	   { op_name = opname; op_params = [id; ftype] } when idata_persist_param = id
+	   { op_name = opname; op_params = [id; ftype] } when parmeq id idata_persist_param
             -> true
 	 |_ -> false)
  |_ -> false
@@ -542,7 +541,7 @@ let stamp_of_idata_persist_term t =
  match dest_term t with
    { term_op = op; term_terms = [istamp] } 
       -> (match dest_op op with 
-	   { op_name = opname; op_params = [id; ftype] } when idata_persist_param = id
+	   { op_name = opname; op_params = [id; ftype] } when parmeq id idata_persist_param
           -> term_to_stamp (term_of_unbound_term istamp)
      |_ -> error ["stamp_of_idata_persist_file"][][t])
    |_ -> error ["stamp_of_idata_persist_file"][][t]
@@ -551,7 +550,7 @@ let stamp_and_type_of_idata_persist_term t =
  match dest_term t with
    { term_op = op; term_terms = [istamp] } 
       -> (match dest_op op with 
-	   { op_name = opname; op_params = [id; ftype] } when idata_persist_param = id
+	   { op_name = opname; op_params = [id; ftype] } when parmeq id idata_persist_param
           -> ((term_to_stamp (term_of_unbound_term istamp)), dest_token_param ftype)
      |_ -> error ["stamp_and_type_of_idata_persist_file"][][t])
    |_ -> error ["stamp_and_type_of_idata_persist_file"][][t]
@@ -560,7 +559,7 @@ let with_open_persist_file f t =
  match dest_term t with
    { term_op = op; term_terms = [istamp] } 
       -> (match dest_op op with 
-	   { op_name = opname; op_params = [id; ftype] } when idata_persist_param = id
+	   { op_name = opname; op_params = [id; ftype] } when parmeq id idata_persist_param
 
 	 -> with_open_file (function in_channel -> 
 			  f (make_session_scanner (Stream.of_channel in_channel)))
@@ -585,7 +584,7 @@ let with_open_static_file f t =
  match dest_term t with
    { term_op = op; term_terms = [istamp] } 
       -> (match dest_op op with 
-	   { op_name = opname; op_params = [id; ftype] } when idata_persist_param = id
+	   { op_name = opname; op_params = [id; ftype] } when parmeq id idata_persist_param
 
 	 -> with_open_pid_file (function in_channel -> 
 			  f (make_session_scanner (Stream.of_channel in_channel)))
@@ -786,7 +785,7 @@ let db_write stamp object_type term =
 
 let db_init master ascp =
   asciip := ascp;
-  let name = if String.get master (String.length master - 1) = '/' then master
+  let name = if (chareq (String.get master (String.length master - 1)) '/') then master
 	     else String.concat "" [master; "/"] in
    master_pathname := name;
 

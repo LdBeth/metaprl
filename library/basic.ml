@@ -7,6 +7,56 @@ open Num
 open Term
 open Nuprl5
 
+let inteq i j = (i = j)
+let nullp l = l = []
+let chareq a b = (a = b)
+let stringeq a b = (a = b)
+
+let listeq p a b =
+   (List.length a = List.length b)
+   & try for_all2 p a b with _ -> false
+
+let rec parmeq p q =
+
+ match dest_param p, dest_param q with
+
+    Number pn, Number qn	-> eq_num pn qn
+  | ParmList pl, ParmList ql	-> listeq parmeq pl ql 
+  | ObId poid, ObId qoid	-> listeq parmeq poid qoid 
+
+  |_ -> p = q
+
+
+let oideq = listeq parmeq
+
+let opeq a b = 
+ match dest_op a with
+  	{ op_name = aopname; 
+	  op_params = aparms }
+  -> (match dest_op b with
+  	{ op_name = bopname; 
+	  op_params = bparms }
+	-> (aopname = bopname & listeq parmeq aparms bparms))
+
+
+let nuprl5_opname_p opn = stringeq opn nuprl5_opname
+
+
+open Hashtbl
+
+(*	TODO PERF 
+	these maps are unfortunate as we will be consing at every lookup
+ *)
+let rec parmhash p = 
+
+ match dest_param p with
+
+    Number pn	-> hash (string_of_num pn)
+  | ParmList pl	-> hash (map parmhash pl)
+  | ObId poid	-> hash (map parmhash poid)
+
+  | _ -> hash p
+
 (*
  * common terms
  *)
@@ -58,7 +108,7 @@ let ivoid_term = mk_term ivoid_op []
 
 let ivoid_term_p t = 
   match dest_term t with
-  { term_op = op; term_terms = []} when op = ivoid_op
+  { term_op = op; term_terms = []} when opeq op ivoid_op
      -> true
   |_ -> false   
 
@@ -133,8 +183,17 @@ let parameter_of_carrier p t =
   match dest_term t with
     { term_op = o; term_terms = []} 
      -> (match dest_op o with
-	  { op_name = opname; op_params = [p'; c] } when (p = p' & opname = nuprl5_opname)
+	  { op_name = opname; op_params = [p'; c] } when (parmeq p p' & nuprl5_opname_p opname)
 	    -> c
+	|_ -> error ["term"; "carrier"; "op"] [] [t; mk_term (mk_nuprl5_op [p]) []])
+  |_ -> error ["term"; "carrier"; "subterms"] [] [t]
+
+let parameters_of_carrier p t =
+  match dest_term t with
+    { term_op = o; term_terms = []} 
+     -> (match dest_op o with
+	  { op_name = opname; op_params = p':: r } when (parmeq p p' & nuprl5_opname_p opname)
+	    -> r
 	|_ -> error ["term"; "carrier"; "op"] [] [t; mk_term (mk_nuprl5_op [p]) []])
   |_ -> error ["term"; "carrier"; "subterms"] [] [t]
 
@@ -178,13 +237,20 @@ let string_of_itoken_term t =
 let oid_of_ioid_term t =
   match dest_param (parameter_of_carrier ioid_parameter t) with
     ObId o -> o
-  |_ -> print_string "failing here"; Mbterm.print_term t;
- print_newline(); error ["term"; "!oid"; "parameter type"] [] [t]
+  |_ -> (* print_string "failing here"; Mbterm.print_term t;
+	   print_newline();
+	   *)
+     error ["term"; "!oid"; "parameter type"] [] [t]
+
 
 let dest_obid_param p =
   match dest_param p with
     ObId o -> o
   |_ -> error ["parameter"; "obid"] [] []
+
+
+let oids_of_ioid_term t = map dest_obid_param (parameters_of_carrier ioid_parameter t)
+
 
 let dest_token_param p =
   match dest_param p with
@@ -240,7 +306,7 @@ let term_to_stamp t =
     -> (match dest_op op with
 	{ op_name = opname; 
 	  op_params = [istamp; pseq; ptime; ptseq; ppid] }
-	    when (opname = nuprl5_opname & istamp = istamp_parameter)
+	    when (nuprl5_opname_p opname & parmeq istamp istamp_parameter)
          ->
 	(match dest_param ppid with Token pid ->
 	(match dest_param ptseq with Number (Num.Int tseq) -> 
@@ -281,9 +347,10 @@ let in_transaction_p = fun
 let transaction_less = fun
   { term = term1; process_id = pid1; seq = seq1; time = time1 }
   { term = term2; process_id = pid2; seq = seq2; time = time2 } -> 
-    if not (pid1 = pid2) then error ["stamp"; "less"; "incomparable"] [] [term1; term2]
-    else if (time1 = time2) then seq1 < seq2
-         else (time1 < time2)
+
+    if not (stringeq pid1 pid2) then error ["stamp"; "less"; "incomparable"] [] [term1; term2]
+    else if (eq_num time1 time2) then seq1 < seq2
+         else (lt_num time1 time2)
 
 let get_inet_addr =
 	let {h_addr_list=l} = gethostbyname (gethostname ())
@@ -319,7 +386,7 @@ let equal_stamps_p a b =
  a.process_id = b.process_id
  & a.transaction_seq = b.transaction_seq
  & a.seq = b.seq
- & a.time = b.time
+ & (eq_num a.time b.time)
 
 let new_stamp () = 
   stamp_data.count <- stamp_data.count + 1;
@@ -343,6 +410,9 @@ let tid () =
 		])
      [])
 
+let tideq s t = 
+ opeq (operator_of_term s) (operator_of_term t)
+
 
 (* expect Fatal error: uncaught exception Incomparable_Stamps
    should try other tests and make outcome more apparent ie print test ok
@@ -362,20 +432,20 @@ let icons_term op h t = mk_term op [mk_bterm [] h; mk_bterm [] t]
 
 let hd_of_icons_term iop t =
   match dest_term t with
-    { term_op = op; term_terms = [l; r] } when op = iop
+    { term_op = op; term_terms = [l; r] } when opeq op iop
        ->  term_of_unbound_term l
     |_ -> error ["icons"; "not"] [] [t]
 
 let tl_of_icons_term iop t =
   match dest_term t with
-    { term_op = op; term_terms = [l; r] } when op = iop
+    { term_op = op; term_terms = [l; r] } when opeq op iop
        ->  term_of_unbound_term r
     |_ -> error ["icons"; "not"] [] [t]
 
 
 let list_to_ilist_by_op_map op f l =
  let rec aux ll = 
-   if ll = [] 
+   if nullp ll
       then mk_term op []
       else mk_term op [mk_bterm [] (f (hd ll)); mk_bterm [] (aux (tl ll))] in
  aux l
@@ -390,11 +460,11 @@ let list_to_ilist_map f l = list_to_ilist_by_op_map icons_op f l
 let map_isexpr_to_list_by_op iop f t =
  let rec aux t acc =
   match dest_term t with
-    { term_op = op; term_terms = [] } when op = iop
+    { term_op = op; term_terms = [] } when opeq op iop
        -> acc
-    | { term_op = op; term_terms = [] } when not (op = iop)
+    | { term_op = op; term_terms = [] } when not (opeq op iop)
        -> (f t) :: acc
-    | { term_op = op; term_terms = [l; r] } when ((op = iop) & (unbound_bterm_p l) & (unbound_bterm_p r))
+    | { term_op = op; term_terms = [l; r] } when ((opeq op iop) & (unbound_bterm_p l) & (unbound_bterm_p r))
        -> aux (term_of_unbound_term l) (aux (term_of_unbound_term r) acc)
     |_ -> (f t) :: acc  
   in
@@ -403,11 +473,11 @@ let map_isexpr_to_list_by_op iop f t =
 let map_isexpr_by_op iop f t =
  let rec aux t =
   match dest_term t with
-    { term_op = op; term_terms = [] } when op = iop
+    { term_op = op; term_terms = [] } when opeq op iop
        -> ()
-    | { term_op = op; term_terms = [] } when not (op = iop)
+    | { term_op = op; term_terms = [] } when not (opeq op iop)
        -> (f t); ()
-    | { term_op = op; term_terms = [l; r] } when ((op = iop) & (unbound_bterm_p l) & (unbound_bterm_p r))
+    | { term_op = op; term_terms = [l; r] } when ((opeq op iop) & (unbound_bterm_p l) & (unbound_bterm_p r))
        -> aux (term_of_unbound_term l); aux (term_of_unbound_term r); ()
     |_ -> (f t); ()
   in
@@ -424,10 +494,10 @@ let ioption_term tt =
  | Some t -> isome_term t
 
 let option_of_ioption_term t =
-  if t = ivoid_term
+  if ivoid_term_p t
      then None
      else  match dest_term t with
-              { term_op = op; term_terms = [s] } when op = isome_op
+              { term_op = op; term_terms = [s] } when opeq op isome_op
                ->  Some (term_of_unbound_term s)
 	      |_ -> error ["isome"; "not"] [] [t]
 
@@ -446,9 +516,15 @@ let property_of_iproperty_term pt =
   match dest_term pt with 
     { term_op = pto; term_terms = [prop] } 
     -> (match dest_op pto with
-	{ op_name = po; op_params = [iprop; name] } when (po = nuprl5_opname & iprop = iproperty_parameter)
+	{ op_name = po; op_params = [iprop; name] } when (nuprl5_opname_p po 
+							  & parmeq iprop iproperty_parameter)
 	  -> (string_of_token_parameter name, term_of_unbound_term prop)
 	|_ -> error ["iproperty"; "op"; "not"; ""] [] [pt])
     |_ -> error ["iproperty"; "term"; "not"; ""] [] [pt]
+
+
+
+
+
 
 

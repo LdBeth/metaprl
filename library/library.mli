@@ -56,6 +56,8 @@
  val join	: connection -> string (* mnemonic *) list -> library
  val leave	: library -> unit
 
+ val join_eval	: connection -> string (* mnemonic *) list -> (term -> term) -> library
+
  val restore	: connection -> string (* cookie *) -> (transaction -> unit) -> library
  val save	: library -> (transaction -> unit) -> string (* cookie *)
 

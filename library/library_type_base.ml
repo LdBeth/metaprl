@@ -5,6 +5,7 @@
 open File_base_type
 
 open Term
+open Basic
 
 open Utils
 open Library
@@ -68,7 +69,9 @@ let library_set magic filename term =
 	
 	(* make filename dir if none *)
 	let dir = try (descendent t root [filename])
-		    with _ -> make_directory t root filename
+		    with _ -> (let ndir = make_directory t root filename in
+				put_property t ndir "NAME" (itoken_term filename);
+				ndir)
 	  in
 
 	  (* store term in filename at magic *)
@@ -109,6 +112,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.6  1998/05/05 20:05:53  eaton
+ * .
+ *
  * Revision 1.5  1998/04/08 18:10:34  eaton
  * .
  *

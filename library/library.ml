@@ -122,18 +122,22 @@ let test_do_add bterms =
 
 let test_add_op = mk_nuprl5_op [ make_param (Token "!test_add")]
 let faux_refiner_op = mk_nuprl5_op [ make_param (Token "!faux_refine")]
+let refiner_op = mk_nuprl5_op [ make_param (Token "!refine")]
 let faux_ascii_op = mk_nuprl5_op [ make_param (Token "!faux_ascii")]
 let faux_mbs_op = mk_nuprl5_op [ make_param (Token "!faux_mbs")]
 
 let test_ehook t = 
+
   match dest_term t with
-    {term_op = op; term_terms = bterms } when op = test_add_op
+    {term_op = op; term_terms = bterms } when opeq op test_add_op
       -> test_do_add bterms
-    | {term_op = op; term_terms = bterms } when op = faux_refiner_op
+    | {term_op = op; term_terms = bterms } when opeq op faux_refiner_op
       ->  faux_refine bterms
-    | {term_op = op; term_terms = bterms } when op = faux_ascii_op
+    | {term_op = op; term_terms = bterms } when opeq op refiner_op
+      ->  faux_refine bterms
+    | {term_op = op; term_terms = bterms } when opeq op faux_ascii_op
       ->  faux_ascii_quick bterms
-    | {term_op = op; term_terms = bterms } when op = faux_mbs_op
+    | {term_op = op; term_terms = bterms } when opeq op faux_mbs_op
       ->  faux_mbs bterms
     | _ -> error ["eval"; "op"; "unrecognized"] [] [t]
  
@@ -158,6 +162,15 @@ let join c tags =
 		test_ehook
 	}
 
+let join_eval c tags ehook =
+	{ transactions = []
+	; environment =
+	     join_library_environment
+		c
+		tags	
+		ehook
+	}
+
 
 (* TODO: FTTB this is done in two steps : 1st restore lib, second start a transaction
  *  to import oids. Later either do in one step or as for export second step is local.
@@ -171,7 +184,7 @@ let cookie_of_icallback_term t =
   match dest_term t with
     { term_op = op; term_terms = [s] }
        ->  (match dest_op op with
-	     { op_name = opn; op_params = [icp; ckp] } when (opn = Nuprl5.nuprl5_opname & icp = icallback_param)
+	     { op_name = opn; op_params = [icp; ckp] } when (nuprl5_opname_p opn & parmeq icp icallback_param)
 		-> (match dest_param ckp with
 		    String s -> s
 		    |_ -> error ["icallback"; "not"; "param"] [] [t])
@@ -184,7 +197,7 @@ let stamp_of_icallback_term t =
     { term_op = op; term_terms = [s] } 
 	-> (match dest_op op with
 	     { op_name = opn; op_params = (icp :: rest) } 
-			when (opn = Nuprl5.nuprl5_opname & icp = icallback_param)
+			when (nuprl5_opname_p opn & parmeq icp icallback_param)
 	        ->  (term_of_unbound_term s)
 	     |_ -> error ["icallback"; "not"; "op"] [] [t])
     |_ -> error ["icallback"; "not"; "term"] [] [t]
@@ -635,7 +648,7 @@ let child t oid name =
 
 let descendent t oid names = 
  let rec aux oid names =
-  if names = [] 
+  if nullp names
      then oid
      else try aux (assoc (hd names) (children t oid)) (tl names)
 	  with Not_found -> error ("child" :: "Not_found" :: names) [oid] []

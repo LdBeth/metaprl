@@ -4,6 +4,7 @@ type 'a oref = {mutable ocontents : 'a option}
 let null_oref ()  = {ocontents = None}
 let oref a = {ocontents = (Some  a)}
 let oref_set a b = (a.ocontents <- Some b); b
+let oref_nullify a = (a.ocontents <- None); ()
 
 exception OrefNone
 

@@ -39,7 +39,7 @@ let explode str =
  let l = String.length str in
 
  let rec aux i = 
-    if i = l then []
+    if (inteq i l) then []
     else (get str i) :: aux (1+i)
   in
 
@@ -53,7 +53,7 @@ let implode_rev chars =
   let rest = ref chars in
   let i = ref (l - 1) in
 
-  while not (!rest = [])
+  while not (nullp !rest)
   do String.set s !i (hd !rest);
      i := !i - 1;
      rest := tl !rest
@@ -94,7 +94,7 @@ let scan_bump s =
 
 let scan_next s =
  scan_bump s;
- if s.cchar = '\\'  then (scan_bump s; s.escapep <- true);
+ if (chareq s.cchar '\\')  then (scan_bump s; s.escapep <- true);
  ()
 
 
@@ -154,7 +154,7 @@ let scan_string s =
 let digits_to_num digits = 
   let num10 = num_of_int 10 in
   let rec aux acc power digits = 
-    if digits = [] then acc
+    if (nullp digits) then acc
     else aux (add_num (mult_num (power_num num10 power)
 			        (num_of_string (Char.escaped (hd digits))))
 		       acc)

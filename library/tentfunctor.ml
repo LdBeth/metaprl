@@ -3,7 +3,7 @@
 module type OID_TYPE =
  sig
   type t
-  val eq: t -> t -> bool
+  val equal : t -> t -> bool
  end
 
 
@@ -70,27 +70,36 @@ module TentFunctor =
 
   let tent_lookup_sent tent stamp =
    let f sent = 
-      (in_transaction_p sent.stamp stamp) in
+       (in_transaction_p sent.stamp stamp) 
+    in
     match (assoc_if f tent.pending) with
       None -> (let f sent = 
+		   (*
+		    print_string " tent lookup sent committed";
+		   Mbterm.print_term (stamp_to_term sent.stamp);
+		   Mbterm.print_term (stamp_to_term stamp);
+		   *)
 		(transaction_less sent.stamp stamp) in 
+
               match (assoc_if f tent.committed) with
 		None -> error ["Tent"; "LookupSent"; "None"][][]
               | Some sent -> sent)
     | Some sent -> sent
 
   let tent_lookup tent stamp =
+     (* print_string " tent lookup "; *)
      match (tent_lookup_sent tent stamp).data with
-       None -> error ["Tent"; "Lookup"; "None"][][]
+       None -> (* print_string " tent lookup none"; *)
+		error ["Tent"; "Lookup"; "None"][][]
      | Some data -> data
 
 
   let tent_lookup_woid tent stamp oid =
    let f sent = 
-      (in_transaction_p sent.stamp stamp) & (OID.eq sent.oid oid)  in
+      (in_transaction_p sent.stamp stamp) & (OID.equal sent.oid oid)  in
     match (assoc_if f tent.pending) with
       None -> (let f sent = 
-		(transaction_less sent.stamp stamp) & (OID.eq sent.oid oid) in 
+		(transaction_less sent.stamp stamp) & (OID.equal sent.oid oid) in 
               match (assoc_if f tent.committed) with
 		None -> error ["Tent"; "LookupWoid"; "None"][][]
               | Some sent -> sent)
@@ -112,7 +121,7 @@ module TentFunctor =
 
   let tent_undo tent stamp seq =
    let f sent = (if (in_transaction_p sent.stamp stamp)
-		   then if (seq = sent.seq)
+		   then if (inteq seq sent.seq)
 			     then true
 			     else error ["Tent"; "Undo"; "BadSeq"][][]
 		   else false) in
@@ -136,14 +145,16 @@ module TentFunctor =
     
 
   let tent_commit tent stamp seq = 
+    
     (*
     print_endline "tent_commit "; print_int seq;
-    print_stamp stamp; print_newline(); 
+    print_stamp stamp; print_newline();
     *)
+
     (* need to look in reverse order *)
-    let f sent = (* print_stamp sent.stamp; print_newline(); *)
+    let f sent =  (* print_stamp sent.stamp; print_newline();  *)
     		(if (in_transaction_p sent.stamp stamp)
-		     then if (seq = sent.seq)
+		    then if (inteq seq sent.seq)
 			     then true
 			     else error ["Tent"; "Commit"; "BadSeq"] [][]
 	  	     else false) in
@@ -177,7 +188,7 @@ module TentFunctor =
   in
 
    List.iter collect committed;
-   (if not ([] = !removes)
+   (if not (nullp !removes)
       then tent.committed <- filter (function s -> List.mem s !removes) committed);
    ()
 

@@ -45,7 +45,11 @@ let oiljgs connection =
 	(* test get *)
 	(with_transaction lib
 	   (function t ->
+		 (print_string "oiljgs 1"); (print_string (string_of_int (List.length (roots t))));
 		 let oid = root t "demo" in 
+		   (print_string "oiljgs 2");
+		   (child t oid "test1"); (print_string "oiljgs 3");
+		
 		   if not (1 = number_of_inatural_term (get_term t (child t oid "test1")))
 		        then (print_string "check"; raise (Test "check"))))
 	; cookie := (lib_close lib))
@@ -275,8 +279,8 @@ let dtest connection =
 
 
 let looptest connection =
-  let lib = join connection ["nltestl"] in 
-
+  let lib = join connection ["NuprlLight"] in 
+  (* let lib = join connection ["nltestl"] in  *)
     (unwind_error
       (function () -> 
 
@@ -472,12 +476,27 @@ let jointest remote_port local_port =
  raise (Test "Join Test Successful") 
 ;;
 
+open List
+open Term
+open Library_eval
 
-special_error_handler (function () -> testascii "BOLVERK" 3448 4442)
-  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
+let faux_refine g t =
 
+    print_newline();
+    Mbterm.print_term g;
+    print_newline();
+    [g; g]
+;;
+
+
+special_error_handler (function () -> (library_open_and_loop_eval faux_refine))
+ (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
+ 
 
 (*
+special_error_handler (function () -> testascii "LOCKE" 5289 5289)
+  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
+
 special_error_handler (function () -> testall "LOCKE" 5289 2895)
  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 

@@ -30,7 +30,7 @@ module type TENT =
 module type OID_TYPE =
  sig
   type t
-  val eq: t -> t -> bool
+  val equal: t -> t -> bool
  end
 
 module Tent : functor (Oid : OID_TYPE) -> (TENT with type oid = Oid.t)
