@@ -64,9 +64,10 @@ open Filter_prog
 open Filter_magic
 open Proof_convert
 
-(*
- * Show loading of the file.
- *)
+(************************************************************************
+ * DEBUGGING                                                            *
+ ************************************************************************)
+
 let _ =
    show_loading "Loading Filter_parse%t"
 
@@ -90,6 +91,26 @@ let debug_grammar =
         debug_description = "display term parsing operations";
         debug_value = false
       }
+
+let rec print_terms out = function
+   h::t ->
+      eprintf "\t%s\n" (string_of_term h);
+      print_terms out t
+ | [] ->
+      flush stderr
+
+let rec print_vterms out = function
+   (labels, Some v, h)::t ->
+      eprintf "\t%a %s. %s\n" print_string_list labels (string_of_term v) (string_of_term h);
+      print_vterms out t
+ | (labels, None, h)::t ->
+      eprintf "\t%a %s\n" print_string_list labels (string_of_term h);
+      print_vterms out t
+ | [] ->
+      flush stderr
+
+let print_non_vars out params =
+   print_terms out (collect_terms params)
 
 (************************************************************************
  * PATHS                                                                *
@@ -620,26 +641,6 @@ struct
             opdef_definition = contractum;
             opdef_resources = res;
          }, loc)
-
-   let rec print_terms out = function
-      h::t ->
-         eprintf "\t%s\n" (string_of_term h);
-         print_terms out t
-    | [] ->
-         flush stderr
-
-   let rec print_vterms out = function
-      (labels, Some v, h)::t ->
-         eprintf "\t%a %s. %s\n" print_string_list labels (string_of_term v) (string_of_term h);
-         print_vterms out t
-    | (labels, None, h)::t ->
-         eprintf "\t%a %s\n" print_string_list labels (string_of_term h);
-         print_vterms out t
-    | [] ->
-         flush stderr
-
-   let print_non_vars out params =
-      print_terms out (collect_terms params)
 
    let rule_command proc name params t pf res =
       (* Extract context names *)
@@ -1357,12 +1358,12 @@ EXTEND
               empty_str_item loc
         | "dform"; name = LIDENT; ":"; options = df_options; "="; form = xdform ->
            let f () =
+              let f = create_term_parser () in
               let options, t = options in
-                 match dest_xlist (term_of_parsed_term (mk_xlist_term (t::form::options))) with
-                    t::form::options ->
-                        StrFilter.define_dform (StrFilter.get_proc loc) loc name options t form
-                  | _ ->
-                        raise (Invalid_argument "Filter_parse: internal error")
+              (* We want to scan the redex before contractum here; the order is important *)
+              let t = f t in
+              let form = f form in
+                 StrFilter.define_dform (StrFilter.get_proc loc) loc name options t form
            in
               print_exn f ("dform " ^ name) loc;
               empty_str_item loc

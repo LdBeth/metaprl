@@ -63,6 +63,7 @@ sig
    val term_of_parsed_term : term -> term
    val term_of_parsed_term_with_vars : term -> term
    val display_term_of_term : term -> term
+   val create_term_parser : unit -> term -> term
    val mterm_of_parsed_mterm : meta_term -> meta_term
    val mterms_of_parsed_mterms : meta_term -> term list -> meta_term * term list * (term -> term)
    (* finds all SO variables in a term and uses them *)
