@@ -1,7 +1,7 @@
 #
 # Make sure omake is up-to-date
 #
-OMakeVersion(0.9.0)
+OMakeVersion(0.9.3)
 
 ########################################################################
 # Begin real makefile.
@@ -331,20 +331,6 @@ INCLUDES += $(CAMLLIB)
 .PHONY: all opt install clean realclean depend tex doc
 
 #
-# Default clean line
-#
-MLZFILES =
-MLPFILES =
-CLEAN = $`(RM) $`(file *.opt *.run *.o *.obj *.lib *.cm* *.a *~ .*~ .\#* *.ppo *.p4i *.p4o .version.* *.omc $`(addsuffix .ml, $(MLZFILES)) $`(addsuffix .mli, $(MLZFILES)) $`(addsuffix .ml, $(MLPFILES)))
-
-clean:
-    $(CLEAN) $(file bin/ocamldep$(EXE) lib/camlp4* bin/convert$(EXE) bin/proxyedit$(EXE) bin/genmagic$(EXE) lib/*.cm* lib/*.ml* lib/*.txt lib/*.dat lib/*.a lib/macrop* bin/prlc* lib/*.html lib/*.js lib/*.css lib/*.gif lib/*.pem lib/metaprl-ssl.config mk/*.omc)
-
-realclean: clean
-    -$`(RM) $(file theories/*/*.prlb theories/*/*/*.prlb theories/*/*/*/*.prlb) # XXX: This is a temporary HACK
-    cvs_realclean -i .omakedb -i mk/config -i mk/config.local
-
-#
 # Phony target for installing libraries
 #
 INSTALL_INTERFACES = true
@@ -385,9 +371,61 @@ if $(NCURSES_ENABLED)
     OCAML_LINK_FLAGS += -cclib -lncurses
     export
 
-#
+########################################################################
+# Collect the directories into configuration files.
+
+WriteLN(f, d) =
+   d = \ -I $(in $(ROOT)/editor/ml, $(dir $d))\\
+   $f::
+      echo $d>> $f
+
+THEORIES_CONF = $(file editor/ml/theories.dir)
+MLDEBUG_CONF = $(file editor/ml/mldebug.dir)
+
+.DEFAULT: $(THEORIES_CONF) $(MLDEBUG_CONF)
+
+$(THEORIES_CONF) ::
+   echo $'INCLUDES=\"\'> $@
+
+$(MLDEBUG_CONF) ::
+   echo $'DEBUGINCLUDES=\"\'> $@
+
+CamlDirs(names) =
+   foreach(n, $(names))
+      WriteLN($(MLDEBUG_CONF), $(n))
+
+CamlSubDirs(names) =
+   .SUBDIRS: $(names)
+   CamlDirs($(names))
+
+TheoryDirs(names) =
+   CamlDirs($(names))
+   foreach(n, $(names))
+      WriteLN($(THEORIES_CONF), $(n))
+
+TheorySubDirs(names) =
+   .SUBDIRS: $(names)
+   TheoryDirs($(names))
+
+CamlDirs($(CAMLLIB) $(CAMLP4LIB))
+
+########################################################################
+# Default clean line
+
+MLZFILES =
+MLPFILES =
+CLEAN = $`(RM) $`(file *.opt *.run *.o *.obj *.lib *.cm* *.a *~ .*~ .\#* *.ppo *.p4i *.p4o .version.* *.omc $`(addsuffix .ml, $(MLZFILES)) $`(addsuffix .mli, $(MLZFILES)) $`(addsuffix .ml, $(MLPFILES)))
+
+clean:
+    $(CLEAN) $(file bin/ocamldep$(EXE) lib/camlp4* bin/convert$(EXE) bin/proxyedit$(EXE) bin/genmagic$(EXE) lib/*.cm* lib/*.ml* lib/*.txt lib/*.dat lib/*.a lib/macrop* bin/prlc* lib/*.html lib/*.js lib/*.css lib/*.gif lib/*.pem lib/metaprl-ssl.config mk/*.omc) $(THEORIES_CONF) $(MLDEBUG_CONF)
+
+realclean: clean
+    -$`(RM) $(file theories/*/*.prlb theories/*/*/*.prlb theories/*/*/*/*.prlb) # XXX: This is a temporary HACK
+    cvs_realclean -i .omakedb -i mk/config -i mk/config.local
+
+########################################################################
 # Directories needing only the standard config
-#
+
 .SUBDIRS: clib util
 
 ########################################################################
@@ -403,7 +441,7 @@ OCAMLDEPFLAGS += -omake
 #
 # Libmojave is using our custom scanner, but otherwise config is normal
 #
-.SUBDIRS: libmojave
+CamlSubDirs(libmojave)
 
 OCAMLINCLUDES += $(dir libmojave/stdlib libmojave/util libmojave/unix)
 
@@ -426,11 +464,11 @@ section
     %.cmx: $(MACROPP)
 
     # These directories use the macro preprocessor
-    .SUBDIRS: mllib
+    CamlSubDirs(mllib)
 
     OCAMLINCLUDES += $(dir mllib)
 
-    .SUBDIRS: refiner
+    CamlSubDirs(refiner)
 
 OCAMLINCLUDES += $(dir mllib)
 
@@ -442,12 +480,12 @@ OCAMLINCLUDES += $(dir refiner/refsig refiner/refbase refiner/refiner refiner/re
 # Generic directories with no special options
 #
 
-.SUBDIRS: library debug $(ENSEMBLE_DIR) tactics/proof
+CamlSubDirs(library debug $(ENSEMBLE_DIR) tactics/proof)
 
 # Add camlp4 library to include path
 OCAMLINCLUDES += $(CAMLP4LIB) $(dir library tactics/proof)
 
-.SUBDIRS: filter
+CamlSubDirs(filter)
 
 OCAMLINCLUDES += $(dir filter/base filter/filter)
 
@@ -617,15 +655,25 @@ CLEAN += $`(file *.log *.aux *.idx *.ilg *.ind *.pdf *.ps *.dvi *.blg *.bbl *.ou
 section
    THEORYNAME = support
    THEORYDESCR = MetaPRL Internal "Helper" Modules
-   .SUBDIRS: $(SUPPORT_DIRS) editor/ml
+   TheorySubDirs($(SUPPORT_DIRS) editor/ml)
 
 section
    # Default theory for those directories that do not override it
    THEORYNAME = other
    THEORYDESCR = Miscellaneous Theories
-   .SUBDIRS: $(THEORY_DIRS)
+   TheorySubDirs($(THEORY_DIRS))
 
 if $(NATIVE_ENABLED)
    .PHONY: check_status
    check_status: util/check-status util/check-status.sh editor/ml/mp.opt editor/ml/mpopt editor/ml/mpconfig
       util/check-status
+
+########################################################################
+# Close the directory listing files
+#
+
+$(THEORIES_CONF) ::
+   echo $'\"'>> $@
+
+$(MLDEBUG_CONF) ::
+   echo $'\"'>> $@

@@ -16,7 +16,7 @@ MAINPROG = prlc
 # Recursive make
 #########################################################################
 
-.SUBDIRS: base phobos filter
+CamlSubDirs(base phobos filter)
 
 #
 # Build combined libraries from subdirs

@@ -52,7 +52,7 @@ OCAML_LINK_FLAGS += -linkall
 TESTFILES =
 
 if $(TESTS_ENABLED)
-   .SUBDIRS: tests
+   TheorySubDirs(tests)
    TESTFILES[] =
    if $(mem itt, $(THEORIES))
       TESTFILES[] +=

@@ -45,73 +45,7 @@ if [ -z "$CAMLP4LIB" ]; then
    CAMLP4LIB=`ocamlc -where`/camlp4
 fi
 
-INCLUDES="\
-	-I .\
-	-I $MP_ROOT/support/display\
-	-I $MP_ROOT/support/shell\
-	-I $MP_ROOT/support/tactics\
-	-I $MP_ROOT/theories/sil\
-	-I $MP_ROOT/theories/tutorial\
-	-I $MP_ROOT/theories/tptp\
-	-I $MP_ROOT/theories/fol\
-	-I $MP_ROOT/theories/czf\
-	-I $MP_ROOT/theories/mesa\
-	-I $MP_ROOT/theories/kat\
-	-I $MP_ROOT/theories/itt\
-	-I $MP_ROOT/theories/base\
-	-I $MP_ROOT/theories/ocaml_sos\
-	-I $MP_ROOT/theories/ocaml_doc\
-	-I $MP_ROOT/theories/mc\
-	-I $MP_ROOT/theories/fir\
-	-I $MP_ROOT/theories/phobos\
-	-I $MP_ROOT/theories/experimental/compile\
-	-I $MP_ROOT/theories/experimental/unity\
-	-I $MP_ROOT/theories/mmc/util\
-	-I $MP_ROOT/theories/mmc/base\
-	-I $MP_ROOT/theories/mmc/core\
-	-I $MP_ROOT/theories/mmc/extensions/direct\
-	-I $MP_ROOT/theories/mmc/extensions/special\
-	-I $MP_ROOT/theories/mmc/extensions/reserve\
-	-I $MP_ROOT/theories/mmc/extensions/arithmetic\
-	-I $MP_ROOT/theories/mmc/extensions/arithmetic_integer\
-	-I $MP_ROOT/theories/mmc/extensions/array\
-	-I $MP_ROOT/theories/mmc/extensions/unit\
-	-I $MP_ROOT/theories/mmc/extensions/boolean\
-	-I $MP_ROOT/theories/mmc/extensions/integer\
-	-I $MP_ROOT/theories/mmc/extensions/tuple\
-	-I $MP_ROOT/theories/mmc/extensions/string\
-	-I $MP_ROOT/theories/mmc/extensions/fix\
-	-I $MP_ROOT/theories/mmc/extensions/loop\
-	-I $MP_ROOT/theories/mmc/opt/direct/core\
-	-I $MP_ROOT/theories/mmc/opt/direct/extensions/fix\
-	-I $MP_ROOT/theories/mmc/opt/dead/core\
-	-I $MP_ROOT/theories/mmc/arch/ra\
-	-I $MP_ROOT/theories/mmc/arch/util\
-	-I $MP_ROOT/theories/mmc/arch/x86\
-	-I $MP_ROOT/theories/mmc/arch/ppc\
-	-I $MP_ROOT/theories/mmc/util\
-	-I $MP_ROOT/theories/mmc/main\
-	-I $MP_ROOT/theories/mmc/test\
-	-I $MP_ROOT/theories/cic\
-	-I tests\
-"
-
-DEBUGINCLUDES="$INCLUDES\
-	-I $CAMLP4LIB\
-	-I $MP_ROOT/libmojave/stdlib\
-	-I $MP_ROOT/libmojave/util\
-	-I $MP_ROOT/mllib\
-	-I $MP_ROOT/refiner/refbase\
-	-I $MP_ROOT/refiner/refsig\
-	-I $MP_ROOT/refiner/term_gen\
-	-I $MP_ROOT/refiner/term_std\
-	-I $MP_ROOT/refiner/term_ds\
-	-I $MP_ROOT/refiner/rewrite\
-	-I $MP_ROOT/refiner/refiner\
-	-I $MP_ROOT/refiner/reflib\
-	-I $MP_ROOT/tactics/proof\
-	-I $MP_ROOT/filter/base\
-	-I $MP_ROOT/filter/filter\
-"
+. ./mldebug.dir
+. ./theories.dir
 
 export INCLUDES DEBUGINCLUDES
