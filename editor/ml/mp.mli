@@ -35,6 +35,8 @@ open Refiner.Refiner.Refine
 
 open Tactic_type.Tacticals
 
+open Proof_edit
+
 (*
  * Navigation and display.
  *)
@@ -117,6 +119,7 @@ val edit_list_parents : string -> string list
 val edit_list_dforms : string -> (string * Filter_type.dform_modes * term list * term * term) list
 val edit_list_precs : string -> term list
 val edit_list_prec_rels : string -> (string * term * term) list
+val edit_cd_list_contents : string -> obj_contents list
 val edit_create_thm : string -> string -> unit
 val edit_create_rw : string -> string -> unit
 val edit_cd_thm : string -> string -> unit

@@ -40,6 +40,7 @@ open Rformat
 open Dform
 open Refiner.Refiner
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.RefineError
 open Refiner.Refiner.Refine
@@ -247,8 +248,13 @@ let rec edit pack parse_arg sentinal arg name window obj =
                RefineError (name', err) ->
                   raise (RefineError (name, GoalError (name', err)))
    in
-   let edit_status () =
-      (Proof_edit.ped_status obj.rw_ped), obj.rw_name
+   let edit_get_contents () =
+      obj.rw_name,
+      Proof_edit.ped_status obj.rw_ped,
+      List.fold_right (fun x y -> MetaImplies(MetaTheorem x,y))
+                      obj.rw_assums 
+                      (MetaIff(MetaTheorem obj.rw_redex, MetaTheorem obj.rw_contractum)),
+      obj.rw_params
    in
    let get_ped obj =
       match obj.rw_ped with
@@ -287,19 +293,13 @@ let rec edit pack parse_arg sentinal arg name window obj =
        | Derived _
        | Incomplete ->
             (* Convert to a ped *)
-            let { rw_params = params;
-                  rw_assums = assums;
-                  rw_redex = redex;
-                  rw_contractum = contractum
-                } = obj
-            in
-            let mseq = mk_rw_goal assums redex contractum in
+            let mseq = mk_rw_goal obj.rw_assums obj.rw_redex obj.rw_contractum in
             let goal', assums' = dest_msequent mseq in
             let proof = Package.new_proof pack parse_arg name assums' goal' in
             let ped = Package.ped_of_proof pack parse_arg proof mseq in
                obj.rw_proof <- Interactive proof;
                obj.rw_ped <- Interactive ped;
-               Proof_edit.set_params ped params;
+               Proof_edit.set_params ped obj.rw_params;
                save_ped ();
                ped
        | Interactive ped ->
@@ -318,7 +318,7 @@ let rec edit pack parse_arg sentinal arg name window obj =
       Proof_edit.interpret (get_ped ()) command
    in
       { edit_display = edit_display;
-        edit_status = edit_status;
+        edit_get_contents = edit_get_contents;
         edit_copy = edit_copy;
         edit_set_goal = edit_set_goal;
         edit_set_redex = edit_set_redex;

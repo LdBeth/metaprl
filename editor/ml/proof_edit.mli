@@ -63,14 +63,14 @@ type edit_info =
    }
 
 type obj_status =
-   ObjRoot
- | ObjPackage
- | ObjPrimitive
+   ObjPrimitive
  | ObjDerived
  | ObjComplete
  | ObjIncomplete
  | ObjBad
  | ObjUnknown
+
+type obj_contents = string * obj_status * meta_term * term Filter_type.param list
 
 (*
  * Constructors.

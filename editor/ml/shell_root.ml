@@ -216,11 +216,11 @@ let rec edit pack window =
    let edit_interpret command =
       raise_edit_error "this is not a proof"
    in
-   let edit_status () =
-      Proof_edit.ObjRoot, "/"
+   let edit_get_contents () =
+      raise_edit_error "can only retrieve contents of an individual item, not of a root package"
    in
       { edit_display = edit_display;
-        edit_status = edit_status;
+        edit_get_contents = edit_get_contents;
         edit_copy = edit_copy;
         edit_set_goal = edit_set_goal;
         edit_set_redex = edit_set_redex;

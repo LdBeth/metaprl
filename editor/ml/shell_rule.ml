@@ -40,6 +40,7 @@ open Rformat
 open Dform
 open Refiner.Refiner
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.RefineError
@@ -254,8 +255,11 @@ let rec edit pack parse_arg sentinal arg name window obj =
    let edit_nop () =
       Proof_edit.nop_ped (get_ped obj)
    in
-   let edit_status () =
-      (Proof_edit.ped_status obj.rule_ped), obj.rule_name
+   let edit_get_contents () =
+      obj.rule_name,
+      Proof_edit.ped_status obj.rule_ped,
+      List.fold_right (fun x y -> MetaImplies(MetaTheorem x,y)) obj.rule_assums (MetaTheorem obj.rule_goal),
+      obj.rule_params
    in
    let get_ped () =
       match obj.rule_ped with
@@ -296,7 +300,7 @@ let rec edit pack parse_arg sentinal arg name window obj =
       Proof_edit.interpret (get_ped ()) command
    in
       { edit_display = edit_display;
-        edit_status = edit_status;
+        edit_get_contents = edit_get_contents;
         edit_copy = edit_copy;
         edit_set_goal = edit_set_goal;
         edit_set_redex = edit_set_redex;

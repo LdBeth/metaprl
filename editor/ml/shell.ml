@@ -1069,13 +1069,9 @@ struct
          apply_all f info true
 
    and status item =
-      let status = item.edit_status () in
-      let str_status = match fst status with
-         ObjRoot ->
-            "is a root directory"
-       | ObjPackage ->
-            "is a theory module"
-       | ObjPrimitive ->
+      let name, status, _, _ = item.edit_get_contents () in
+      let str_status = match status with
+         ObjPrimitive ->
             "is a primitive axiom"
        | ObjDerived ->
             "is an internally derived object"
@@ -1088,11 +1084,11 @@ struct
        | ObjUnknown ->
             "is an object with unknown status"
       in
-         eprintf "Status: `%s' %s%t" (snd status) str_status eflush
+         eprintf "Status: `%s' %s%t" name str_status eflush
 
    and status_all info =
       let f item db =
-         eprintf "Expanding `%s':%t" (snd (item.edit_status ())) eflush;
+         eprintf "Expanding `%s':%t" (let name, _, _, _ = item.edit_get_contents () in name) eflush;
          begin try item.edit_expand db with _ | Invalid_argument _ -> () end;
          status item
       in
@@ -1348,9 +1344,6 @@ struct
             let names = collect t in
                match h with
                   Rewrite { rw_name = name } -> name :: names
-               (* | CondRewrite { crw_name = name } -> name :: names
-                | Axiom { axiom_name = name } -> name :: names
-                | Rule { rule_name = name } -> name :: names *)
                 | _ -> names
       in
          collect (info_items info)
@@ -1465,6 +1458,14 @@ struct
       in
          collect (info_items (edit_info info name))
 
+   let edit_cd_list_contents info mname =
+      let objs = ref [] in
+      let f obj _ = objs := (obj.edit_get_contents ())::(!objs) in begin
+         print_exn info (chdir info) [mname];
+         apply_all f info false
+      end;
+      List.rev !objs
+
    (*
     * Create a new thm.
     *)
@@ -1480,9 +1481,7 @@ struct
                   collect t
       in
       let opens = collect (info_items (edit_info info mname)) in
-      let _ = cd info ("/" ^ mname ^ "/" ^ name) in
-         ShellP4.eval_opens info.shell opens;
-         ()
+      ignore (print_exn info (chdir info) [mname; name]; ShellP4.eval_opens info.shell opens)
 
    let edit_create_thm info mname name =
       let _ = edit_info info mname in

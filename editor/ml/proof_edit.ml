@@ -128,14 +128,14 @@ type proof_command =
  | ProofSquash
 
 type obj_status =
-   ObjRoot
- | ObjPackage
- | ObjPrimitive
+   ObjPrimitive
  | ObjDerived
  | ObjComplete
  | ObjIncomplete
  | ObjBad
  | ObjUnknown
+
+type obj_contents = string * obj_status * meta_term * term Filter_type.param list
 
 (************************************************************************
  * OPERATIONS                                                           *
