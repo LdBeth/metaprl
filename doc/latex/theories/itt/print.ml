@@ -65,7 +65,7 @@ print_theory "itt_record";;
 print_theory "itt_record_exm";;
 print_theory "itt_grouplikeobj";;
 print_theory "itt_group";;
-print_theory "itt_abelian_group";;
+print_theory "itt_cyclic_group";;
 print_theory "itt_collection";;
 print_theory "itt_pointwise";;
 
