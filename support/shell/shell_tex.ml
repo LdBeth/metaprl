@@ -27,12 +27,12 @@
  * TeX prologue.
  *)
 let tex_prologue = "% -*- Mode: fundamental -*-
-\\documentclass{article}
+\\documentclass{book}
 
 %
 % Ludica-Bright fonts
 %
-%\\usepackage{lucidbry}
+\\usepackage{lucidbry}
 %\\usepackage[ansinew]{texnansi}
 %\\usepackage[LY1]{fontenc}
 

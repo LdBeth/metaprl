@@ -144,7 +144,7 @@ INCLUDES += -I$(CAMLLIB)
 #
 # Generic phony targets
 #
-.PHONY: all opt install clean realclean depend
+.PHONY: all opt install clean realclean depend tex
 
 #
 # Default clean line
@@ -244,19 +244,20 @@ CAMLP4NFLAGS = $'(OCAMLINCLUDES)
 CAMLP4OFLAGS = $'(OCAMLINCLUDES)
 MPTIME =
 
-# Use prlc, not ocamlc
+#
+# Commands for running MetaPRL
+#
 if $(equal $(OSTYPE), Win32)
-    PRLCC    = set MPLIB=$(LIB)&& $(PRLC)
-    CAMLP4NC = set MPLIB=$(LIB)&& $(CAMLP4N)
-    CAMLP4OC = set MPLIB=$(LIB)&& $(CAMLP4O)
-    CONVERTC = set MPLIB=$(LIB)&& $(CONVERT)
+    SET_MPLIB = set MPLIB=$(LIB)&&
     export
 else
-    PRLCC     = MPLIB=$(LIB) $(PRLC)
-    CAMLP4NC  = MPLIB=$(LIB) LC_ALL=C $(MPTIME) $(CAMLP4N)
-    CAMLP4OC  = MPLIB=$(LIB) LC_ALL=C $(MPTIME) $(CAMLP4O)
-    CONVERTC  = MPLIB=$(LIB) LC_ALL=C $(MPTIME) $(CONVERT)
+    SET_MPLIB = MPLIB=$(LIB) LC_ALL=C $(MPTIME)
     export
+
+PRLCC     = $(SET_MPLIB) $(PRLC)
+CAMLP4NC  = $(SET_MPLIB) $(CAMLP4N)
+CAMLP4OC  = $(SET_MPLIB) $(CAMLP4O)
+CONVERTC  = $(SET_MPLIB) $(CONVERT)
 
 #
 # Add dependency scanning for .ppo files
@@ -312,4 +313,59 @@ OCAMLINCLUDES += -I $(CAMLP4LIB) -I $(LIB)
 THEORIES = $(if $(equal $(THEORIES), all), $(THEORIES_ALL), $(THEORIES))
 MP_DIRS  = $(SUPPORT_DIRS) $(dir $(addprefix theories/, $(THEORIES)))
 
+########################################################################
+# LaTeX documentation
+#
+
+#
+# Add the inputs directory to the search path.
+#
+INPUTSDIR = $(dir doc/latex/inputs)
+TEXINPUTS += $(INPUTSDIR)
+
+#
+# Directory that store the .ps and .pdf files
+#
+DOCDIR = $(dir doc/ps/theories)
+
+#
+# Assume these files are always dependencies.
+#
+TEXDEPS += $(file $(INPUTSDIR)/rc.bib $(INPUTSDIR)/metaprl.tex)
+
+#
+# MetaPRL command
+#
+MP = $(file $(ROOT)/editor/ml/mp$(OBJ_SUFFIX))
+
+#
+# Build a theory document.
+# The main goal is to get MetaPRL to generate the TeX files.
+#
+TheoryDocument(name, theories) =
+    #
+    # Contents of the print.ml file
+    #
+    $(name).ml:
+	echo 'set_tex_file "$(name).tex";; $(add-quoted-wrapper print_theory , ;;, $(theories))' > $@
+
+    #
+    # Get MetaPRL to generate the .tex files
+    #
+    $(name).tex $(name)-body.tex: $(MP) $(name).ml
+	$(SET_MPLIB) $(MP) $(OCAMLINCLUDES) $(name).ml
+
+    #
+    # Build the LaTeX document from the .tex files
+    #
+    LaTeXDocumentInstall(tex, $(DOCDIR), $(name), $(name)-body)
+
+#
+# Also clean up the TeX files in the subdirectories
+#
+CLEAN += *.log *.aux *.idx *.ilg *.ind *.pdf *.ps *.dvi *.blg *.bbl *.out *.toc
+
+########################################################################
+# Subdirectories to build
+#
 .SUBDIRS: $(MP_DIRS) editor/ml

@@ -246,25 +246,6 @@ if $(BYTE_ENABLED)
         .DEFAULT: $(MAIN).cma $(MP).top $(MP).run
 
 #
-# TeX
-# JYH: disabled until I figure out how all of this works
-#
-TEXBIN =
-THELIB =
-TEXTHEORIES =
-
-TEXDIR=$(ROOT)/doc/latex/theories
-
-TEXFILES=$(addprefix $(TEXDIR)/, $(addsuffix /theory.tex, $(TEXTHEORIES)))
-
-.PHONY: tex texbyte texopt do_tex
-
-do_tex: $(TEXFILES)
-
-$(TEXDIR)/%/theory.tex: $(TEXBIN) $(TEXDIR)/%/print.ml $(ROOT)/theories/%/$(THELIB)
-        $(TEXPROG) $(TEXDIR)/$*/print.ml
-
-#
 # Clean up
 #
 clean:
