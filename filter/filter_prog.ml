@@ -10,6 +10,7 @@ open Term
 open Term_util
 open Precedence
 open Rewrite
+open Simple_print
 
 open Free_vars
 open Filter_util
@@ -24,8 +25,7 @@ open Filter_summary
  *)
 let _ =
    if !debug_load then
-      eprintf "Loading xyz%t" eflush
-
+      eprintf "Loading Filter_prog%t" eflush
 
 (*
  * Empty sig_item.
@@ -238,6 +238,28 @@ let add_lt_expr loc =
 
 let add_eq_expr loc =
    <:expr< $uid:"Precedence"$ . $lid:"add_eq"$ >>
+
+(*
+ * Print a message on loading, and catch errors.
+ *)
+let wrap_exn loc name e =
+   let unit_patt = <:patt< () >> in
+   let unit_expr = <:expr< () >> in
+   
+   (* Wrap the body to catch exceptions *)
+   let fun_expr = <:expr< fun [ $list: [unit_patt, None, e ]$ ] >> in
+   let printer = <:expr< $uid: "Refine_exn"$ . $lid: "print_exn"$ $fun_expr$ >> in
+   let wrapped = <:expr< $printer$ $unit_expr$ >> in
+
+   (* Print a message before the execution *)
+   let debug_load_ref = <:expr< $uid: "Debug"$ . $lid: "debug_load"$ >> in
+   let debug_load = <:expr< $debug_load_ref$ . $lid: "val"$ >> in
+   let eflush = <:expr< $uid: "Debug"$ . $lid: "eflush"$ >> in
+   let msg = <:expr< $str: "Loading " ^ name ^ "%t"$ >> in
+   let eprintf = <:expr< $uid: "Printf"$ . $lid: "eprintf"$ >> in
+   let print_msg = <:expr< $eprintf$ $msg$ $eflush$ >> in
+   let debug = <:expr< if $debug_load$ then $print_msg$ else $unit_expr$ >> in
+      <:expr< do $list: [ debug ]$ return $wrapped$ >>
 
 (*
  * Make a new variable.
@@ -568,10 +590,10 @@ let prim_rewrite proc loc
                  $lid:name$ >>
     in
     let name_rewrite_let =
-       <:str_item< value $rec:false$ $list:[ rw_patt, body ]$ >>
+       <:str_item< value $rec:false$ $list:[ rw_patt, wrap_exn loc rw_id body ]$ >>
     in
     let name_let =
-       <:str_item< value $rec:false$ $list:[ name_patt, rw_fun_expr ]$ >>
+       <:str_item< value $rec:false$ $list:[ name_patt, wrap_exn loc name rw_fun_expr ]$ >>
     in
        [name_rewrite_let; name_let ]
 
@@ -978,7 +1000,8 @@ let define_dform proc loc
                         dform_print_expr loc, expansion_expr ]$ } >>
    in
    let expr = <:expr< $create_dform_expr loc$ $lid:local_dformer_id$ $modes_expr$ $rec_value$ >> in
-      [<:str_item< $exp:expr$ >>]
+   let name = string_of_opname (opname_of_term t) in
+      [<:str_item< $exp: wrap_exn loc name expr$ >>]
 
 (*
  * Precedence definition relation.
@@ -1351,6 +1374,9 @@ let extract_str info resources name =
    
 (*
  * $Log$
+ * Revision 1.10  1998/04/24 19:38:29  jyh
+ * Updated debugging.
+ *
  * Revision 1.9  1998/04/24 02:42:02  jyh
  * Added more extensive debugging capabilities.
  *

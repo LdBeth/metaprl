@@ -16,13 +16,6 @@ let _ =
       eprintf "Loading Ml_string%t" eflush
 
 (*
- * Show the file loading.
- *)
-let _ =
-   if !debug_load then
-      eprintf "Loading xyz%t" eflush;
-
-(*
  * String printer.
  *)
 module StringFile =
@@ -73,6 +66,9 @@ module StringPrint = MakePrinter (StringFile)
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/24 19:39:03  jyh
+ * Updated debugging.
+ *
  * Revision 1.2  1998/04/24 02:42:42  jyh
  * Added more extensive debugging capabilities.
  *

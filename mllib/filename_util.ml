@@ -2,6 +2,15 @@
  * Utilities on filenames.
  *)
 
+open Printf
+open Debug
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Filename_util%t" eflush
+
 (*
  * Pathname separator chars.
  *)
@@ -49,6 +58,9 @@ let suffix s =
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/24 19:38:55  jyh
+ * Updated debugging.
+ *
  * Revision 1.2  1998/04/15 12:40:06  jyh
  * Updating editor packages to Filter_summarys.
  *

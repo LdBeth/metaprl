@@ -20,7 +20,7 @@ open Filter_prog
  *)
 let _ =
    if !debug_load then
-      eprintf "Loading xyz%t" eflush
+      eprintf "Loading Filter_bin%t" eflush
 
 
 (*
@@ -152,6 +152,9 @@ let _ = Printexc.catch main ()
 
 (*
  * $Log$
+ * Revision 1.6  1998/04/24 19:38:14  jyh
+ * Updated debugging.
+ *
  * Revision 1.5  1998/04/24 02:41:44  jyh
  * Added more extensive debugging capabilities.
  *

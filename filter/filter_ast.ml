@@ -13,7 +13,7 @@ open Ml_format
  *)
 let _ =
    if !debug_load then
-      eprintf "Loading xyz%t" eflush
+      eprintf "Loading Filter_ast%t" eflush
 
 
 (*
@@ -144,6 +144,9 @@ let () = ()
 
 (*
  * $Log$
+ * Revision 1.5  1998/04/24 19:38:13  jyh
+ * Updated debugging.
+ *
  * Revision 1.4  1998/04/24 02:41:43  jyh
  * Added more extensive debugging capabilities.
  *

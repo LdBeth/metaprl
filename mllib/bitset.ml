@@ -2,6 +2,16 @@
  * Packed boolean array.
  *)
 
+open Printf
+open Debug
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Bitset%t" eflush
+
 let int_size = 30
 
 type t = int array
@@ -26,6 +36,9 @@ let get bits i =
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/24 19:38:47  jyh
+ * Updated debugging.
+ *
  * Revision 1.1  1998/04/08 14:57:13  jyh
  * ImpDag is in mllib.
  *

@@ -18,7 +18,7 @@ open Filter_type
  *)
 let _ =
    if !debug_load then
-      eprintf "Loading xyz%t" eflush
+      eprintf "Loading Filter_util%t" eflush
 
 
 (************************************************************************
@@ -130,6 +130,9 @@ let output_path oport =
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/24 19:38:38  jyh
+ * Updated debugging.
+ *
  * Revision 1.3  1998/04/24 02:42:14  jyh
  * Added more extensive debugging capabilities.
  *

@@ -13,7 +13,7 @@ open MLast
  *)
 let _ =
    if !debug_load then
-      eprintf "Loading xyz%t" eflush
+      eprintf "Loading Filter_hash%t" eflush
 
 
 (*
@@ -342,6 +342,9 @@ and hash_sslt index (s, sl, t) =
 
 (*
  * $Log$
+ * Revision 1.7  1998/04/24 19:38:20  jyh
+ * Updated debugging.
+ *
  * Revision 1.6  1998/04/24 02:41:51  jyh
  * Added more extensive debugging capabilities.
  *

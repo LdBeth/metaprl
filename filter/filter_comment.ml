@@ -20,7 +20,7 @@ open MLast_util
  *)
 let _ =
    if !debug_load then
-      eprintf "Loading xyz%t" eflush
+      eprintf "Loading Filter_comment%t" eflush
 
 
 (************************************************************************
@@ -277,6 +277,9 @@ let get = Hashtbl.find
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/24 19:38:19  jyh
+ * Updated debugging.
+ *
  * Revision 1.3  1998/04/24 02:41:49  jyh
  * Added more extensive debugging capabilities.
  *

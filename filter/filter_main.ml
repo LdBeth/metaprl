@@ -13,7 +13,7 @@ open Filter_parse
  *)
 let _ =
    if !debug_load then
-      eprintf "Loading xyz%t" eflush
+      eprintf "Loading Filter_main%t" eflush
 
 
 (*
@@ -38,6 +38,9 @@ let _ = set_include_path !include_path
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/24 19:38:23  jyh
+ * Updated debugging.
+ *
  * Revision 1.2  1998/04/24 02:41:54  jyh
  * Added more extensive debugging capabilities.
  *

@@ -7,6 +7,13 @@ open Printf
 open Debug
 
 (*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Debug_set%t" eflush
+
+(*
  * Info about variables.
  *)
 type debug_info = 
@@ -105,6 +112,9 @@ let _ = Env_arg.general "debug" [] "Debug flags" set_path set_path_arg
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/24 19:38:49  jyh
+ * Updated debugging.
+ *
  * Revision 1.1  1998/04/24 02:42:29  jyh
  * Added more extensive debugging capabilities.
  *

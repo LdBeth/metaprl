@@ -13,7 +13,7 @@ open Term_grammar
  *)
 let _ =
    if !debug_load then
-      eprintf "Loading xyz%t" eflush
+      eprintf "Loading Term_quote%t" eflush
 
 
 (************************************************************************
@@ -62,6 +62,9 @@ let _ = Quotation.default := "term"
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/24 19:38:44  jyh
+ * Updated debugging.
+ *
  * Revision 1.2  1998/04/24 02:42:23  jyh
  * Added more extensive debugging capabilities.
  *

@@ -4,7 +4,16 @@
  * marshaled objects.
  *)
 
+open Printf
+open Debug
 open File_base_type
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading File_type_base%t" eflush
          
 (************************************************************************
  * TYPES                                                                *
@@ -146,6 +155,9 @@ module MakeFileBase (Types : FileTypeSummarySig)
 
 (*
  * $Log$
+ * Revision 1.6  1998/04/24 19:38:53  jyh
+ * Updated debugging.
+ *
  * Revision 1.5  1998/02/23 14:46:36  jyh
  * First implementation of binary file compilation.
  *

@@ -13,7 +13,7 @@ open Debug
  *)
 let _ =
    if !debug_load then
-      eprintf "Loading xyz%t" eflush
+      eprintf "Loading Filter_summary_base%t" eflush
 
 
 (*
@@ -38,6 +38,9 @@ and 'a module_base = 'a module_table ref
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/24 19:38:34  jyh
+ * Updated debugging.
+ *
  * Revision 1.2  1998/04/24 02:42:10  jyh
  * Added more extensive debugging capabilities.
  *

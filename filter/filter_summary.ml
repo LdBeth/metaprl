@@ -24,7 +24,7 @@ open Filter_ocaml
  *)
 let _ =
    if !debug_load then
-      eprintf "Loading xyz%t" eflush
+      eprintf "Loading Filter_summary%t" eflush
 
 
 (************************************************************************
@@ -1782,6 +1782,9 @@ and check_implementation { info_list = implem } { info_list = interf } =
 
 (*
  * $Log$
+ * Revision 1.16  1998/04/24 19:38:32  jyh
+ * Updated debugging.
+ *
  * Revision 1.15  1998/04/24 02:42:07  jyh
  * Added more extensive debugging capabilities.
  *

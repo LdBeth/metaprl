@@ -2,6 +2,15 @@
  * Operations on files.
  *)
 
+open Printf
+open Debug
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading File_util%t" eflush
+
 (* Can't open and can't find a file *)
 exception CantOpen of string
 exception CantFind of string
@@ -100,6 +109,9 @@ let with_output_file name f =
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/24 19:38:54  jyh
+ * Updated debugging.
+ *
  * Revision 1.2  1998/04/08 14:57:18  jyh
  * ImpDag is in mllib.
  *

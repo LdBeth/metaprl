@@ -79,7 +79,11 @@ let handle_anon_arg arg =
 let spec =
    ["-I", Arg.String add_include, "add an directory to the path for include files"]
 
-let _ = Env_arg.parse spec handle_anon_arg "Nuprl-Light toploop" 
+let _ =
+   let args =
+      spec @ Env_arg.args ()
+   in
+      Env_arg.parse args handle_anon_arg "Nuprl-Light toploop" 
 
 (************************************************************************
  * INITIAL BASE                                                         *
@@ -397,6 +401,9 @@ let fold_all () =
 (*
  *
  * $Log$
+ * Revision 1.6  1998/04/24 19:38:07  jyh
+ * Updated debugging.
+ *
  * Revision 1.5  1998/04/24 02:41:34  jyh
  * Added more extensive debugging capabilities.
  *

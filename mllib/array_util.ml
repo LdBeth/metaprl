@@ -2,6 +2,16 @@
  * Operations on arrays.
  *)
 
+open Printf
+open Debug
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Array_util%t" eflush
+
 (*
  * Membership in an array.
  *)
@@ -65,6 +75,9 @@ let find_index f v =
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/24 19:38:45  jyh
+ * Updated debugging.
+ *
  * Revision 1.2  1998/04/21 19:53:50  jyh
  * Upgraded refiner for program extraction.
  *

@@ -28,7 +28,7 @@ open Debug
  *)
 let _ =
    if !debug_load then
-      eprintf "Loading xyz%t" eflush
+      eprintf "Loading Prlcomp%t" eflush
 
 
 (*
@@ -204,6 +204,9 @@ let _ = Printexc.catch (Unix.handle_unix_error main) ()
 
 (*
  * $Log$
+ * Revision 1.10  1998/04/24 19:38:41  jyh
+ * Updated debugging.
+ *
  * Revision 1.9  1998/04/24 02:42:20  jyh
  * Added more extensive debugging capabilities.
  *

@@ -2,6 +2,15 @@
  * Operations on strings.
  *)
 
+open Printf
+open Debug
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading String_util%t" eflush
+
 (*
  * Find a char in a string.
  *)
@@ -133,6 +142,9 @@ let concat s l =
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/24 19:39:01  jyh
+ * Updated debugging.
+ *
  * Revision 1.2  1998/02/23 14:46:38  jyh
  * First implementation of binary file compilation.
  *

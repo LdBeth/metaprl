@@ -2,6 +2,16 @@
  * Some character case operations.
  *)
 
+open Printf
+open Debug
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Ctype%t" eflush
+
 (* Character lists *)
 let lowerchars = "abcdefghijklmnopqrstuvwxyz"
 let upperchars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -51,6 +61,9 @@ let is_lowercase s =
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/24 19:38:48  jyh
+ * Updated debugging.
+ *
  * Revision 1.1  1997/08/06 16:17:51  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

@@ -11,7 +11,7 @@ open Debug
  *)
 let _ =
    if !debug_load then
-      eprintf "Loading xyz%t" eflush
+      eprintf "Loading Buffer%t" eflush
 
 type t =
    { mutable buf_str : string;
@@ -67,6 +67,9 @@ let gets { buf_str = str; buf_index = i } =
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/24 19:38:11  jyh
+ * Updated debugging.
+ *
  * Revision 1.2  1998/04/24 02:41:41  jyh
  * Added more extensive debugging capabilities.
  *

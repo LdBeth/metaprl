@@ -6,6 +6,14 @@
  *)
 
 open Printf
+open Debug
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Env_arg%t" eflush
 
 (*
  * Type of variable setting functions.
@@ -120,6 +128,9 @@ let parse spec usage errmsg =
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/24 19:38:50  jyh
+ * Updated debugging.
+ *
  * Revision 1.3  1998/02/18 18:46:42  jyh
  * Initial ocaml semantics.
  *

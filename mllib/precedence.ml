@@ -5,7 +5,16 @@
  *
  *)
 
+open Printf
+open Debug
 open Imp_dag
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Precedence%t" eflush
 
 (************************************************************************
  * TYPES                                                                *
@@ -71,6 +80,9 @@ let get_prec p1 p2 =
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/24 19:38:59  jyh
+ * Updated debugging.
+ *
  * Revision 1.2  1998/04/08 15:08:26  jyh
  * Moved precedence to mllib.
  *

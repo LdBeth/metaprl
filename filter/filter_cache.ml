@@ -28,7 +28,7 @@ open Filter_cache_fun
  *)
 let _ =
    if !debug_load then
-      eprintf "Loading xyz%t" eflush
+      eprintf "Loading Filter_cache%t" eflush
 
 
 (************************************************************************
@@ -471,6 +471,9 @@ module StrFilterCache = MakeFilterCache (SigMarshal) (StrMarshal) (SummaryBase)
 
 (*
  * $Log$
+ * Revision 1.16  1998/04/24 19:38:16  jyh
+ * Updated debugging.
+ *
  * Revision 1.15  1998/04/24 02:41:46  jyh
  * Added more extensive debugging capabilities.
  *

@@ -58,7 +58,7 @@ CMADEPS =\
 CMALIBS =\
 	$(CMADEPS)
 
-CMOBJS =\
+xCMOBJS =\
 	$(CAMLP4LIB)/odyl.cma\
 	$(CMALIBS)\
 	$(CAMLP4LIB)/pa_o.cmo\
@@ -66,6 +66,10 @@ CMOBJS =\
 	$(CAMLP4LIB)/q_MLast.cmo\
 	$(CMOFILES)\
 	$(CAMLP4LIB)/odyl.cmo
+CMOBJS =\
+	$(CAMLP4LIB)/odyl.cma\
+	$(CMALIBS)\
+	$(CMOFILES)
 
 CCLIBS =\
 	-cclib -lunix\

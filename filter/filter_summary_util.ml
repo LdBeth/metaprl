@@ -15,7 +15,7 @@ open Filter_summary
  *)
 let _ =
    if !debug_load then
-      eprintf "Loading xyz%t" eflush
+      eprintf "Loading Filter_summary_util%t" eflush
 
 
 (*
@@ -123,6 +123,9 @@ let mem_resource { resource_name = name } resources =
 
 (*
  * $Log$
+ * Revision 1.8  1998/04/24 19:38:36  jyh
+ * Updated debugging.
+ *
  * Revision 1.7  1998/04/24 02:42:13  jyh
  * Added more extensive debugging capabilities.
  *

@@ -11,7 +11,7 @@ open Debug
  *)
 let _ =
    if !debug_load then
-      eprintf "Loading xyz%t" eflush
+      eprintf "Loading Free_vars%t" eflush
 
 
 (*
@@ -150,6 +150,9 @@ let new_vars expr l =
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/24 19:38:39  jyh
+ * Updated debugging.
+ *
  * Revision 1.2  1998/04/24 02:42:15  jyh
  * Added more extensive debugging capabilities.
  *

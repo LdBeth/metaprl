@@ -2,6 +2,15 @@
  * Extra operations on lists.
  *)
 
+open Printf
+open Debug
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading List_util%t" eflush
+
 (* Filter items out of a list *)
 let filter f l =
    let rec aux = function
@@ -516,6 +525,9 @@ let fold_left f x l =
 
 (*
  * $Log$
+ * Revision 1.7  1998/04/24 19:38:58  jyh
+ * Updated debugging.
+ *
  * Revision 1.6  1998/04/23 20:04:34  jyh
  * Initial rebuilt editor.
  *

@@ -21,7 +21,7 @@ open Filter_summary_type
  *)
 let _ =
    if !debug_load then
-      eprintf "Loading xyz%t" eflush
+      eprintf "Loading Filter_summary_io%t" eflush
 
 
 (*
@@ -158,6 +158,9 @@ end
    
 (*
  * $Log$
+ * Revision 1.6  1998/04/24 19:38:35  jyh
+ * Updated debugging.
+ *
  * Revision 1.5  1998/04/24 02:42:11  jyh
  * Added more extensive debugging capabilities.
  *

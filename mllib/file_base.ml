@@ -11,6 +11,13 @@ open Debug
 open File_base_type
 
 (*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading File_base%t" eflush
+
+(*
  * Make the summary from the info in the Combo.
  *)
 module MakeFileBase (Info : FileBaseInfoSig) :
@@ -271,6 +278,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.6  1998/04/24 19:38:52  jyh
+ * Updated debugging.
+ *
  * Revision 1.5  1998/04/24 02:42:32  jyh
  * Added more extensive debugging capabilities.
  *

@@ -16,7 +16,7 @@ open Term
  *)
 let _ =
    if !debug_load then
-      eprintf "Loading xyz%t" eflush
+      eprintf "Loading Filter_ocaml%t" eflush
 
 
 (*
@@ -1502,6 +1502,9 @@ let term_of_class = mk_class
 
 (*
  * $Log$
+ * Revision 1.8  1998/04/24 19:38:24  jyh
+ * Updated debugging.
+ *
  * Revision 1.7  1998/04/24 02:41:56  jyh
  * Added more extensive debugging capabilities.
  *

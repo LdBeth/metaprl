@@ -19,7 +19,7 @@ open Filter_summary
  *)
 let _ =
    if !debug_load then
-      eprintf "Loading xyz%t" eflush
+      eprintf "Loading Term_grammar%t" eflush
 
 
 (*
@@ -905,6 +905,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.8  1998/04/24 19:38:43  jyh
+ * Updated debugging.
+ *
  * Revision 1.7  1998/04/24 02:42:21  jyh
  * Added more extensive debugging capabilities.
  *

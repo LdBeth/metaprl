@@ -8,7 +8,16 @@
  * and the quiried edges are actually saved.
  *)
 
+open Printf
+open Debug
 open Dag
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Imp_dag%t" eflush
 
 module ImpDag =
 struct
@@ -306,6 +315,9 @@ end
    
 (*
  * $Log$
+ * Revision 1.3  1998/04/24 19:38:57  jyh
+ * Updated debugging.
+ *
  * Revision 1.2  1998/04/17 01:31:16  jyh
  * Editor is almost constructed.
  *

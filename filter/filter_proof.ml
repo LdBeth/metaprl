@@ -17,7 +17,7 @@ open Filter_ocaml
  *)
 let _ =
    if !debug_load then
-      eprintf "Loading xyz%t" eflush
+      eprintf "Loading Filter_proof%t" eflush
 
 
 let summary_opname = mk_opname "summary" nil_opname
@@ -271,6 +271,9 @@ let tactics_of_proof proof =
 
 (*
  * $Log$
+ * Revision 1.5  1998/04/24 19:38:31  jyh
+ * Updated debugging.
+ *
  * Revision 1.4  1998/04/24 02:42:05  jyh
  * Added more extensive debugging capabilities.
  *

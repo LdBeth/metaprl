@@ -15,7 +15,7 @@ open MLast
  *)
 let _ =
    if !debug_load then
-      eprintf "Loading xyz%t" eflush
+      eprintf "Loading MLast_util%t" eflush
 
 
 (*
@@ -354,6 +354,9 @@ and fold_sslt iter x (s, sl, t) =
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/24 19:38:40  jyh
+ * Updated debugging.
+ *
  * Revision 1.3  1998/04/24 02:42:18  jyh
  * Added more extensive debugging capabilities.
  *

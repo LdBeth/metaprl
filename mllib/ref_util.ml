@@ -2,6 +2,15 @@
  * Operations on references.
  *)
 
+open Printf
+open Debug
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Ref_util%t" eflush
+
 (*
  * Stack operations.
  *)
@@ -18,6 +27,9 @@ let pop stack =
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/24 19:39:00  jyh
+ * Updated debugging.
+ *
  * Revision 1.1  1997/08/06 16:18:01  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.
