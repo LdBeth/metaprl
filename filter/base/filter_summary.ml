@@ -1035,8 +1035,11 @@ struct
     *)
    and dest_parent convert t =
       let path, resources =
-         if is_dep0_dep0_term parent_op t then two_subterms t
-         else let p, _, r = three_subterms t in p, r
+         if is_dep0_dep0_term parent_op t then
+            two_subterms t
+         else
+            let p, _, r = three_subterms t in
+               p, r
       in
          Parent { parent_name = dest_string_param_list path;
                   parent_resources = List.map (dest_resource_sig convert) (dest_xlist resources)

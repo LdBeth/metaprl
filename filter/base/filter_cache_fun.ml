@@ -620,7 +620,8 @@ struct
                rioi
       in
       let (this_resources, par_resources), infixes, opnames, includes =
-         List.fold_left inline_component (([], []), Infix.Set.empty, [], []) items in
+         List.fold_left inline_component (([], []), Infix.Set.empty, [], []) items
+      in
       let this_resources = Sort.list compare_resources this_resources in
          { sig_summary = self;
            sig_resources = merge_resources this_resources par_resources;
@@ -643,13 +644,14 @@ struct
                 *)
                let base = cache.base in
                let info = Base.sub_info base.lib self n in
-               let info = {
-                  sig_summary = info;
-                  sig_resources = [];
-                  sig_infixes = Infix.Set.empty;
-                  sig_opnames = [];
-                  sig_includes = []
-               } in
+               let info =
+                  { sig_summary = info;
+                    sig_resources = [];
+                    sig_infixes = Infix.Set.empty;
+                    sig_opnames = [];
+                    sig_includes = []
+                  }
+               in
                   base.sig_summaries <- info :: base.sig_summaries
 
           | Opname { opname_name = str; opname_term = t }
@@ -663,8 +665,7 @@ struct
 
           | Parent { parent_name = path } ->
                (* Recursive inline of all ancestors *)
-               let _ = inline_sig_module barg cache path in
-                  ()
+               ignore (inline_sig_module barg cache path)
 
           | _ ->
                ()
@@ -732,17 +733,17 @@ struct
    let create_cache base name self_select child_select =
       let dir = Filename.dirname name in
       let name = Filename.basename name in
-      { opprefix = Opname.mk_opname (String.capitalize name) nil_opname;
-        optable = create_optable ();
-        summaries = [];
-        precs = [];
-        resources = [];
-        info = new_module_info ();
-        self = Base.create_info base.lib self_select dir name;
-        name = name;
-        base = base;
-        select = self_select
-      }
+         { opprefix = Opname.mk_opname (String.capitalize name) nil_opname;
+           optable = create_optable ();
+           summaries = [];
+           precs = [];
+           resources = [];
+           info = new_module_info ();
+           self = Base.create_info base.lib self_select dir name;
+           name = name;
+           base = base;
+           select = self_select
+         }
 
    (*
     * When a cache is loaded follow the steps to inline
