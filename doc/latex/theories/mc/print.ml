@@ -25,12 +25,14 @@
 set_tex_file "../../doc/latex/theories/mc/theory.tex";;
 
 print_theory "mp_mc_theory";;
+(*
 print_theory "mp_mc_fir_base";;
 print_theory "mp_mc_fir_ty";;
 print_theory "mp_mc_fir_exp";;
 print_theory "mp_mc_fir_eval";;
 print_theory "mp_mc_deadcode";;
 print_theory "mp_mc_const_elim";;
+*)
 
 
 (*
