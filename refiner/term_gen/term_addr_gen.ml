@@ -79,12 +79,6 @@ struct
    let make_address l =
       Path l
 
-   let is_null_address = function
-      Path [] ->
-         true
-    | _ ->
-         false
-
    let compose_address path1 path2 =
       match path1 with
          Path [] ->

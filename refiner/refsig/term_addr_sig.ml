@@ -43,7 +43,6 @@ sig
     *)
    val make_address : int list -> address
    val compose_address : address -> address -> address
-   val is_null_address : address -> bool
 
    (* Works only on sequent addresses and their subaddresses. *)
    (* XXX TODO: Should go away once a proper crw mechanism is implemented. *)

@@ -77,12 +77,6 @@ struct
    let make_address =
       List.map (fun i -> Subterm i)
 
-   let is_null_address = function
-      [] ->
-         true
-    | _ ->
-         false
-
    let compose_address path1 path2 =
       path1 @ path2
 
