@@ -1059,7 +1059,7 @@ struct
       let axiom_patt = <:patt< $lid:name$ >> in
       let thm =
          <:expr< $code$ $lid:local_refiner_id$ $str:name$ (**)
-                 $nil_array loc$ $nil_list loc$ $goals$ $extract$
+                 (* $nil_array loc$ $nil_list loc$ $goals$ *) $extract$
          >>
       in
       let axiom_item = (<:str_item< value $rec:false$ $list:[axiom_patt, wrap_exn loc name axiom_value]$ >>) in

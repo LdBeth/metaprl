@@ -1876,6 +1876,13 @@ and check_implementation { info_list = implem } { info_list = interf } =
  ************************************************************************)
 
 (*
+ * Each of these functions takes two arguments:
+ * the entry that was parsed from the .ml file,
+ * and the entry that was read from the .prlb file.
+ * The proofs from the saved .prlb files are copied.
+ *)
+
+(*
  * Copy a rewrite proof if it exists.
  *)
 let copy_rw_proof copy_proof rw info2 =
