@@ -113,6 +113,10 @@ sig
    val mk_dep0_dep0_dep1_term : opname -> term -> term -> var -> term -> term
    val dest_dep0_dep0_dep1_term : opname -> term -> term * term * var * term
 
+   val is_dep0_dep0_dep2_term : opname -> term -> bool
+   val mk_dep0_dep0_dep2_term : opname -> term -> term -> var -> var -> term -> term
+   val dest_dep0_dep0_dep2_term : opname -> term -> term * term * var * var * term
+
    val is_dep0_dep0_dep1_any_term : term -> bool
    val mk_dep0_dep0_dep1_any_term : operator -> term -> term -> var -> term -> term
    val dest_dep0_dep0_dep1_any_term : term -> term * term * var * term
@@ -124,7 +128,7 @@ sig
    val is_dep0_dep2_dep0_dep2_term : opname -> term -> bool
    val mk_dep0_dep2_dep0_dep2_term : opname -> term -> var -> var -> term -> term -> var -> var -> term -> term
    val dest_dep0_dep2_dep0_dep2_term : opname -> term -> term * var * var * term * term * var * var * term
-   
+
    val is_dep0_dep0_dep3_term : opname -> term -> bool
    val mk_dep0_dep0_dep3_term : opname -> term -> term -> var -> var -> var -> term -> term
    val dest_dep0_dep0_dep3_term : opname -> term -> term * term * var * var * var * term
