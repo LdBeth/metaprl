@@ -1,33 +1,33 @@
 ### Default environment
 
-$native = 0;    # 0 for bytecodes, 1 for native
+Import qw( env );
 
 ## Cons environments come from the cons module.
 ## Apparently, we need byte code output instead of native,
 ## so we have to go through all these definitions again.
 $env = new cons(
-
     ## Overrides
-    OCAMLC      => $native ? "ocamlopt.opt" : "ocamlc", # The OCaml compiler
-    OCAMLLINK   => $native ? "ocamlopt.opt" : "ocamlc", # The OCaml compiler
-    SUFOBJ      => $native ? ".cmx"  : ".cmo",          # Object suffix
-    SUFLIB      => $native ? ".cmxa" : ".cma",          # Library suffix
+    OCAMLC      => $env->{OCAMLC_BYTE},     # The OCaml compiler
+    OCAMLLINK   => $env->{OCAMLLINK_BYTE},  # The OCaml compiler
+    SUFOBJ      => $env->{SUFOBJ_BYTE},     # Object suffix
+    SUFLIB      => $env->{SUFLIB_BYTE},     # Library suffix
 
-    SUFSRC      => ".ml",       # The suffix for source files
-    SUFSIG      => ".mli",      # The suffix for signature files
-    SUFCSIG     => ".cmi",      # The suffix for compiled signature files
+    SUFSRC      => $env->{SUFSRC},
+    SUFSIG      => $env->{SUFSIG},
+    SUFCSIG     => $env->{SUFCSIG},
 
-    OCAMLCFLAGS => "-pp 'camlp4o pa_extend.cmo q_MLast.cmo' -I `camlp4 -where`",
+    OCAMLCFLAGS => "-pp '%CAMLP4 pa_extend.cmo q_MLast.cmo' -I $env->{CAMLP4STDLIB}",
     OCAMLCOM    => "%OCAMLC %OCAMLCFLAGS %_IFLAGS -c %1", # How to compile files
     SIGCOM      => "%OCAMLC %OCAMLCFLAGS %_IFLAGS -c %1", # How to compile signatures
     LINKCOM     => "%OCAMLLINK %OCAMLCFLAGS -o %> %MLLIBS %< %CCLIBS", # How to link objects
     ARCOM       => "%OCAMLLINK %OCAMLCFLAGS -a -o %> %<", # How to archive objects
-    LEXCOM      => "ocamllex %1",                         # How to lex a file
-    YACCCOM     => "ocamlyacc %1",                        # How to yacc a file
+    LEXCOM      => $env->{LEXCOM},                        # How to lex a file
+    YACCCOM     => $env->{YACCCOM},                       # How to yacc a file
 
-    PPFLAGS     => "",
-    CAMLP4MACRO => "camlp4o %PPFLAGS",
-    CAMLP4MACROPRINT => "camlp4o pr_o.cmo %PPFLAGS",
+    CAMLP4      => $env->{CAMLP4},
+    PPFLAGS     => $env->{PPFLAGS},
+    CAMLP4MACRO => $env->{CAMLP4MACRO},
+    CAMLP4MACROPRINT => $env->{CAMLP4MACROPRINT},
 
     ENV  => {
       PATH      => $ENV{'PATH'} # Use user's path instead of the cons default
