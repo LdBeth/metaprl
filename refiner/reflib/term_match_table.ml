@@ -146,10 +146,10 @@ let simplify_term t =
 let make_info (t,v) =
    let t = simplify_term t in
    let redex = compile_redex Relaxed [||] t in
-   { info_term = t;
-     info_redex = redex;
-     info_value = v
-   }
+      { info_term = t;
+        info_redex = redex;
+        info_value = v
+      }
 
 (************************************************************************
  * DTREE COMPILATION                                                    *
@@ -295,11 +295,11 @@ let create_table items compact =
 let table_resource_info compact extract =
    let add datas data = data :: datas in
    let retr datas = extract (create_table datas compact) in
-   Functional {
-      fp_empty = [];
-      fp_add = add;
-      fp_retr = retr
-   }
+      Functional (**)
+         { fp_empty = [];
+           fp_add = add;
+           fp_retr = retr
+         }
 
 (************************************************************************
  * DTREE EXECUTION                                                      *

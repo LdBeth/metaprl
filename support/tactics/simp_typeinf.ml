@@ -128,7 +128,7 @@ let infer tbl =
       let inf =
          try snd (lookup tbl t) with
             Not_found ->
-               raise (Invalid_argument "Simp_typeinf.infer: missing a default case")
+               raise (RefineError ("simp_typeinf", StringTermError ("Don't know how to infer type for", t)))
       in
          inf infer_term consts tenv eqs t
    in
@@ -147,12 +147,8 @@ let typeinf_final consts eqs t ty =
 let simp_infer_type p t =
    let consts = free_vars_set t in
    let inf = get_resource_arg p get_simp_typeinf_resource in
-      try
-         let t, eqs, ty = inf consts SymbolTable.empty eqnlist_empty t in
-            typeinf_final consts eqs t ty
-      with
-         RefineError _ ->
-            raise (RefineError ("infer_type", StringTermError ("Type inference failed", t)))
+   let t, eqs, ty = inf consts SymbolTable.empty eqnlist_empty t in
+      typeinf_final consts eqs t ty
 
 let simp_infer_type_args p t =
    let t =
