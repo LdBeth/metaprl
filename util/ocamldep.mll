@@ -209,7 +209,8 @@ let print_dependencies target_file deps =
           print_string escaped_eol; print_string dep; print_string " ";
           print_items (String.length dep + 5) rem
         end in
-    print_items (String.length target_file + 2) deps
+    print_items (String.length target_file + 2) deps;
+    flush stdout
 
 let file_dependencies source_file =
   try

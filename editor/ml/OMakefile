@@ -84,17 +84,20 @@ BASE_CMAS  = $(addsuffix .cma      , $(BASE_LIBS))
 BASE_CMXAS = $(addsuffix .cmxa     , $(BASE_LIBS))
 
 # JYH: have to update these to match $(ROOT)/OMakefile
-THREADS = -thread
-THREADSLIB = $(CAMLLIB)/threads/threads.cma
-OPTTHREADSLIB = $(CAMLLIB)/threads/threads.cmxa
-
-if $(equal $(OSTYPE), Win32)
-    LIBTHREADS =
-    OPTTHREADS =
-    export
-else
+if $(THREADS_ENABLED)
+    THREADS = -thread
+    THREADSLIB = $(CAMLLIB)/threads/threads.cma
+    OPTTHREADSLIB = $(CAMLLIB)/threads/threads.cmxa
     LIBTHREADS = -cclib -lthreadsnat -cclib -lunix -cclib -lpthread
     OPTTHREADS = -cclib -lthreadsnat -cclib -lunix -cclib -lpthread
+    export
+
+else
+    THREADS =
+    THREADSLIB =
+    OPTTHREADSLIB =
+    LIBTHREADS =
+    OPTTHREADS =
     export
 
 ########################################################################
