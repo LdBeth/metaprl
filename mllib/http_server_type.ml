@@ -62,10 +62,15 @@ type audio_type =
  | AudioTypeMpegUrl
 
 type content_type =
-   ContentTypeText of text_type
- | ContentTypeImage of image_type
- | ContentTypeVideo of video_type
- | ContentTypeAudio of audio_type
+   { content_type_main : string;
+     content_type_sub  : string;
+     content_type_params : (string * string) list
+   }
+
+type content_disposition =
+   { content_disposition_type : string;
+     content_disposition_params : (string * string) list
+   }
 
 (*
  * Request headers.
@@ -93,7 +98,9 @@ type request_header_entry =
  | RequestAuthorization of string
  | RequestCacheControl of cache_request_directive
  | RequestConnection of string
+ | RequestContentType of content_type
  | RequestContentLength of int
+ | RequestContentDisposition of content_disposition
  | RequestCookies of (string * string) list
  | RequestDate of float
  | RequestExpect

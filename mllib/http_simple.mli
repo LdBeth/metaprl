@@ -39,6 +39,7 @@ type t
 (*
  * Output channel is abstract.
  *)
+type input
 type output
 
 (*
@@ -63,15 +64,15 @@ val decode_uri : string -> string list
 (*
  * The body is a list of key/value pairs.
  *)
-val parse_post_body : string -> (string * string) list
+val parse_post_body : content_type -> string -> (string * string) list
 
 (*
  * Start a synchronous web server on the specified port.
  * The function argument handle client connections.  This
  * version is synchronous, and not threaded.
  *)
-type 'a start_handler = t -> 'a -> 'a
-type 'a connect_handler = t -> 'a -> output -> in_channel -> string list -> request_header_entry list -> string -> 'a
+type 'a start_handler   = t -> 'a -> 'a
+type 'a connect_handler = t -> 'a -> output -> input -> string list -> request_header_entry list -> string -> 'a
 
 val serve_http : 'a start_handler -> 'a connect_handler -> 'a -> int option -> unit
 
@@ -83,10 +84,13 @@ val http_info : t -> http_info
 (*
  * Responses.
  *)
-val print_success_page : output -> response_code -> Buffer.t -> unit
+val print_success_page    : output -> response_code -> Buffer.t -> unit
+val print_content_page    : output -> response_code -> string -> Buffer.t -> unit
+val print_multipart_page  : output -> response_code -> (string * Buffer.t) list -> unit
 val print_success_channel : output -> response_code -> in_channel -> unit
-val print_error_page : output -> response_code -> unit
-val print_redirect_page : output -> response_code -> string -> unit
+val print_content_channel : output -> response_code -> string -> in_channel -> unit
+val print_error_page      : output -> response_code -> unit
+val print_redirect_page   : output -> response_code -> string -> unit
 
 (*
  * -*-

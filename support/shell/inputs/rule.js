@@ -33,3 +33,14 @@ function RuleKey(event)
     else if(code == 40) // UpArrow
         HistoryNavigate(1);
 }
+
+/*
+ * On load, cancel menus, and call parent loader.
+ */
+function OnLoad(session)
+{
+    document.onmouseup = parent.CancelMenu;
+    parent.LoadRule(session);
+    document.commandform.command.value = rulebox;
+    document.commandform.command.focus();
+}

@@ -55,9 +55,10 @@ let eflush out =
 type t = Lm_inet.server
 
 (*
- * The output is just a channel.
+ * The output is a SSL channel.
  *)
-type output = out_channel
+type input  = Lm_ssl.ssl_in
+type output = Lm_ssl.ssl_out
 
 (*
  * Info about the local connection.
@@ -71,7 +72,7 @@ type http_info =
  * Handler types.
  *)
 type 'a start_handler = t -> 'a -> 'a
-type 'a connect_handler = t -> 'a -> out_channel -> in_channel -> string list -> request_header_entry list -> string -> 'a
+type 'a connect_handler = t -> 'a -> output -> input -> string list -> request_header_entry list -> string -> 'a
 
 (************************************************************************
  * CONSTANTS                                                            *
@@ -127,9 +128,35 @@ let http_protocol = "HTTP/1.0"
  *)
 let print_success_page_err out code buf =
    let code, msg = get_code code in
-      fprintf out "%s %d %s\r\n" http_protocol code msg;
-      fprintf out "Content-Length: %d\r\n\r\n" (Buffer.length buf);
-      Buffer.output_buffer out buf
+      Lm_ssl.fprintf out "%s %d %s\r\n" http_protocol code msg;
+      Lm_ssl.fprintf out "Content-Length: %d\r\n\r\n" (Buffer.length buf);
+      Lm_ssl.output_buffer out buf
+
+let print_content_page_err out code content_type buf =
+   let code, msg = get_code code in
+      Lm_ssl.fprintf out "%s %d %s\r\n" http_protocol code msg;
+      Lm_ssl.fprintf out "Content-Type: %s\r\n" content_type;
+      Lm_ssl.fprintf out "Content-Length: %d\r\n\r\n" (Buffer.length buf);
+      Lm_ssl.output_buffer out buf
+
+let print_multipart_page_err out code pages =
+   let code, msg = get_code code in
+   let boundary = sprintf "%08x%08x%08x%08x" (Random.bits ()) (Random.bits ()) (Random.bits ()) (Random.bits ()) in
+   let buf = Buffer.create 100 in
+      (* Multipart body *)
+      List.iter (fun (content_type, buf') ->
+            bprintf buf "--%s\r\n" boundary;
+            bprintf buf "Content-type: %s\r\n" content_type;
+            bprintf buf "Content-length: %d\r\n\r\n" (Buffer.length buf');
+            Buffer.add_buffer buf buf';
+            Buffer.add_string buf "\r\n") pages;
+      bprintf buf "--%s--\r\n" boundary;
+
+      (* Print the entries as alternatives *)
+      Lm_ssl.fprintf out "%s %d %s\r\n" http_protocol code msg;
+      Lm_ssl.fprintf out "Content-Type: multipart/alternative; boundary=%s\r\n" boundary;
+      Lm_ssl.fprintf out "Content-Length: %d\r\n\r\n" (Buffer.length buf);
+      Lm_ssl.output_buffer out buf
 
 (*
  * Print a file.
@@ -140,7 +167,7 @@ let copy outx inx =
       let count = input inx buffer 0 8192 in
          if count <> 0 then
             begin
-               output outx buffer 0 count;
+               Lm_ssl.output outx buffer 0 count;
                copy ()
             end
    in
@@ -158,7 +185,7 @@ let print_gmtime outx time =
    in
    let mon_names = [|"Jan"; "Feb"; "Mar"; "Apr"; "May"; "Jun"; "Jul"; "Aug"; "Sep"; "Oct"; "Nov"; "Dec"|] in
    let day_names = [|"Sun"; "Mon"; "Tue"; "Wed"; "Thu"; "Fri"; "Sat"|] in
-      fprintf outx "%s, %02d %s %d %02d:%02d:%02d GMT" day_names.(wday) mday mon_names.(mon) (1900+year) hour min sec
+      Lm_ssl.fprintf outx "%s, %02d %s %d %02d:%02d:%02d GMT" day_names.(wday) mday mon_names.(mon) (1900+year) hour min sec
 
 let print_success_channel_err out code inx =
    let fd = Unix.descr_of_in_channel inx in
@@ -166,11 +193,25 @@ let print_success_channel_err out code inx =
          Unix.st_mtime = st_mtime
        } = Unix.fstat fd
    in
-   let code, msg = ok_code in
-      fprintf out "%s %d %s\r\n" http_protocol code msg;
-      fprintf out "Last-Modified: %a\r\n" print_gmtime st_mtime;
-      fprintf out "Cache-Control: public\r\n";
-      fprintf out "Content-Length: %d\r\n\r\n" st_size;
+   let code, msg = get_code code in
+      Lm_ssl.fprintf out "%s %d %s\r\n" http_protocol code msg;
+      Lm_ssl.fprintf out "Last-Modified: %a\r\n" print_gmtime st_mtime;
+      Lm_ssl.fprintf out "Cache-Control: public\r\n";
+      Lm_ssl.fprintf out "Content-Length: %d\r\n\r\n" st_size;
+      copy out inx
+
+let print_content_channel_err out code content_type inx =
+   let fd = Unix.descr_of_in_channel inx in
+   let { Unix.st_size = st_size;
+         Unix.st_mtime = st_mtime
+       } = Unix.fstat fd
+   in
+   let code, msg = get_code code in
+      Lm_ssl.fprintf out "%s %d %s\r\n" http_protocol code msg;
+      Lm_ssl.fprintf out "Last-Modified: %a\r\n" print_gmtime st_mtime;
+      Lm_ssl.fprintf out "Cache-Control: public\r\n";
+      Lm_ssl.fprintf out "Content-Type: %s\r\n" content_type;
+      Lm_ssl.fprintf out "Content-Length: %d\r\n\r\n" st_size;
       copy out inx
 
 (*
@@ -186,8 +227,8 @@ let print_error_page_err out code =
 <h1>%s</h1>
 </body>
 </html>" msg msg in
-      fprintf out "%s %d %s\r\n" http_protocol code msg;
-      fprintf out "Content-Length: %d\r\n\r\n%s" (String.length buf) buf
+      Lm_ssl.fprintf out "%s %d %s\r\n" http_protocol code msg;
+      Lm_ssl.fprintf out "Content-Length: %d\r\n\r\n%s" (String.length buf) buf
 
 (*
  * Redirect.
@@ -203,22 +244,37 @@ You are being redirected to <a href=\"%s\"><tt>%s</tt></a>
 </body>
 </html>" msg where where
    in
-      fprintf out "%s %d %s\r\n" http_protocol code msg;
-      fprintf out "Location: %s\r\n" where;
-      fprintf out "Content-Length: %d\r\n\r\n%s" (String.length buf) buf
+      Lm_ssl.fprintf out "%s %d %s\r\n" http_protocol code msg;
+      Lm_ssl.fprintf out "Location: %s\r\n" where;
+      Lm_ssl.fprintf out "Content-Length: %d\r\n\r\n%s" (String.length buf) buf
 
 (*
  * Catch sigpipe.
  *)
-exception SigPipe
+exception SigPipe = Lm_ssl.SSLSigPipe
 
 let print_success_page out code buf =
    try print_success_page_err out code buf with
       SigPipe ->
          ()
 
+let print_content_page out code content_type buf =
+   try print_content_page_err out code content_type buf with
+      SigPipe ->
+         ()
+
+let print_multipart_page out code pages =
+   try print_multipart_page_err out code pages with
+      SigPipe ->
+         ()
+
 let print_success_channel out code inx =
    try print_success_channel_err out code inx with
+      SigPipe ->
+         ()
+
+let print_content_channel out code content_type inx =
+   try print_content_channel_err out code content_type inx with
       SigPipe ->
          ()
 
@@ -331,7 +387,7 @@ let parse_args line =
 let colon = ':'
 
 let header_line inx =
-   let line = input_line inx in
+   let line = Lm_ssl.input_line inx in
       try
          let index = String.index line colon in
          let length = String.length line in
@@ -357,6 +413,51 @@ let rec read_header inx lines =
    with
       End_of_file ->
          lines
+
+(*
+ * Get the next header line from the string.
+ *)
+type string_header =
+   StringEntry of string * string * int
+ | StringOffset of int
+ | StringNone
+
+let rec find_colon s i len =
+   if i = len then
+      raise Not_found
+   else if s.[i] = colon then
+      i
+   else
+      find_colon s (succ i) len
+
+let string_header_line line i =
+   try
+      let length = String.index_from line i '\n' in
+         try
+            let index = find_colon line i length in
+            let tag = String.lowercase (String.sub line i (index - i)) in
+            let field = String.sub line (succ index) (length - index - 1) in
+               StringEntry (tag, Lm_string_util.trim field, succ length)
+         with
+            Not_found ->
+               StringOffset (succ length)
+   with
+      Not_found ->
+         StringNone
+
+let string_read_header part =
+   let rec split lines i =
+      match string_header_line part i with
+         StringEntry (tag, field, i) ->
+            if !debug_http then
+               eprintf "Http_simple.string_header line: %s: %s%t" tag field eflush;
+            split ((tag, field) :: lines) i
+       | StringOffset i ->
+            i, lines
+       | StringNone ->
+            i, lines
+   in
+      split [] 0
 
 (*
  * Header parsing.
@@ -457,36 +558,87 @@ let parse_uri s =
         uri_path = Buffer.contents file
       }
 
-let parse_eq_list sep body =
-   let split arg =
-      let arg = Lm_string_util.trim arg in
-         try
-            let index = String.index arg '=' in
-            let length = String.length arg in
-               if index < length then
-                  let tag = String.sub arg 0 index in
-                  let tag = decode_hex tag in
-                  let field = String.sub arg (succ index) (length - index - 1) in
-                  let field = decode_hex field in
-                     if !debug_http then
-                        eprintf "Http_simple.post_body: %s=%s%t" tag (String.escaped field) eflush;
-                     tag, field
-               else
-                  arg, ""
-         with
-            Not_found ->
+let split_eq_val arg =
+   let arg = Lm_string_util.trim arg in
+      try
+         let index = String.index arg '=' in
+         let length = String.length arg in
+            if index < length then
+               let tag = String.sub arg 0 index in
+               let tag = decode_hex tag in
+               let field = String.sub arg (succ index) (length - index - 1) in
+               let field = decode_hex field in
+                  if !debug_http then
+                     eprintf "Http_simple.post_body: %s=%s%t" tag (String.escaped field) eflush;
+                  tag, field
+            else
                arg, ""
-   in
+      with
+         Not_found ->
+            arg, ""
+
+let parse_eq_list sep body =
       if !debug_http then
          eprintf "parse_post_body: \"%s\"%t" (String.escaped body) eflush;
-      List.map split (Lm_string_util.split sep body)
+      List.map split_eq_val (Lm_string_util.split sep body)
 
 let parse_cookies body =
    parse_eq_list ";" body
 
-let parse_post_body body =
-   parse_eq_list "&" body
+(*
+ * Content-type.
+ *)
+let parse_content_type body =
+   let parts = Lm_string_util.split ";" body in
+      match parts with
+         info :: params ->
+            let main, sub =
+               match Lm_string_util.split "/" info with
+                  main :: sub :: _ ->
+                     main, sub
+                | [main] ->
+                     main, ""
+                | [] ->
+                     "", ""
+            in
+            let params =
+               List.map (fun arg ->
+                     let key, x = split_eq_val arg in
+                        String.lowercase key, x) params
+            in
+               { content_type_main   = String.lowercase main;
+                 content_type_sub    = String.lowercase sub;
+                 content_type_params = params
+               }
+       | [] ->
+            { content_type_main = "";
+              content_type_sub  = "";
+              content_type_params = []
+            }
 
+(*
+ * Content-disposition.
+ *)
+let parse_content_disposition body =
+   let parts = Lm_string_util.split ";" body in
+      match parts with
+         info :: params ->
+            let params =
+               List.map (fun arg ->
+                     let key, x = split_eq_val arg in
+                        String.lowercase key, x) params
+            in
+               { content_disposition_type = String.lowercase info;
+                 content_disposition_params = params
+               }
+       | [] ->
+            { content_disposition_type = "";
+              content_disposition_params = []
+            }
+
+(*
+ * HTTP header.
+ *)
 let parse_header_entry (tag, field) =
    match tag with
       "accept" ->
@@ -503,8 +655,12 @@ let parse_header_entry (tag, field) =
          RequestCacheControl (parse_request_cache_control field)
     | "connection" ->
          RequestConnection field
+    | "content-type" ->
+         RequestContentType (parse_content_type field)
     | "content-length" ->
          RequestContentLength (parse_int field)
+    | "content-disposition" ->
+         RequestContentDisposition (parse_content_disposition field)
     | "cookie" ->
          RequestCookies (parse_cookies field)
     | "date" ->
@@ -555,6 +711,85 @@ let input_header inx =
    List.map parse_header_entry (read_header inx [])
 
 (*
+ * Each part has a header and a value.
+ *)
+let rec get_content_disposition header =
+   match header with
+      RequestContentDisposition disp :: _ ->
+         disp
+    | _ :: rest ->
+         get_content_disposition rest
+    | [] ->
+         raise Not_found
+
+let parse_post_body part i =
+   let len = String.length part in
+   let len =
+      if len - i >= 2 && part.[len - 2] = '\r' && part.[len - 1] = '\n' then
+         len - 2
+      else
+         len
+   in
+      String.sub part i (len - i)
+
+let parse_post_part part =
+   if !debug_http then
+      eprintf "Http_simple.parse_post_part: %s%t" (String.escaped part) eflush;
+   let i, header = string_read_header part in
+   let header = List.map parse_header_entry header in
+      match get_content_disposition header with
+         { content_disposition_type = "form-data";
+           content_disposition_params = params
+         } ->
+            let name =
+               try List.assoc "name" params with
+                  Not_found ->
+                     raise (Failure "parse_post_body: form-data has no name")
+            in
+            let name = Lm_string_util.unescape name in
+            let body = parse_post_body part i in
+               if !debug_http then
+                  eprintf "Http_simple.parse_post_part: %s = %s%t" name (String.escaped body) eflush;
+               name, body
+       | { content_disposition_type = dtype } ->
+            raise (Failure ("parse_post_body: bad Content-Disposition: " ^ dtype))
+
+let parse_post_multipart boundary body =
+   if !debug_http then
+      eprintf "Http_simple.parse_post_multipart: %s%t" (String.escaped body) eflush;
+   let parts = Lm_string_util.split_mime_string boundary body in
+      List.map parse_post_part parts
+
+let parse_post_body content_type body =
+   match content_type with
+      { content_type_main = "application";
+        content_type_sub  = "x-www-form-urlencoded";
+      } ->
+         parse_eq_list "&" body
+
+    | { content_type_main = "multipart";
+        content_type_sub  = "form-data";
+        content_type_params = params
+      } ->
+         let boundary =
+            try List.assoc "boundary" params with
+               Not_found ->
+                  raise (Failure "parse_post_body: boundary is not defined")
+         in
+            if !debug_http then
+               begin
+                  List.iter (fun (name, x) ->
+                        eprintf "parse_post_body: %s=%s%t" name x eflush) params;
+                  eprintf "parse_post_body.boundary = %s%t" boundary eflush
+               end;
+            parse_post_multipart boundary body
+
+    | { content_type_main = main;
+        content_type_sub = sub
+      } ->
+         raise (Failure ("parse_post_body: unknown content type: " ^ main ^ "/" ^ sub))
+
+(*
  * POST body.
  *)
 let rec find_content_length = function
@@ -573,7 +808,7 @@ let rec read_body inx header =
       let body = String.create length in
          if !debug_http then
             eprintf "Http_simple.read_body: trying to read %d chars%t" length eflush;
-         really_input inx body 0 length;
+         Lm_ssl.really_input inx body 0 length;
          if !debug_http then
             eprintf "Http_simple.read_body: %d, %s%t" length (String.escaped body) eflush;
          body
@@ -590,11 +825,10 @@ let rec read_body inx header =
 (*
  * Handle a connection to the server.
  *)
-let handle server connect info client =
-   let fd = Lm_inet.file_descr_of_client client in
-   let inx = Unix.in_channel_of_descr fd in
-   let outx = Unix.out_channel_of_descr fd in
-   let line = input_line inx in
+let handle server ssl connect info =
+   let inx  = Lm_ssl.in_channel_of_ssl ssl in
+   let outx = Lm_ssl.out_channel_of_ssl ssl in
+   let line = Lm_ssl.input_line inx in
    let _ =
       if !debug_http then
          eprintf "Http_simple.handle: %s%t" line eflush
@@ -613,43 +847,83 @@ let handle server connect info client =
          eprintf "Httpd_simple.handle: %s%t" line eflush
    in
    let state = connect server info outx inx args header body in
-      Pervasives.flush outx;
+      Lm_ssl.flush outx;
       state
 
 (*
  * Do the web service.
  *)
-let serve connect fd info =
+let serve connect server info =
    if !debug_http then
-      eprintf "Httpd_simpleimple_httpd: starting web services%t" eflush;
+      eprintf "Httpd_simple: starting web services%t" eflush;
 
+   (* Catch sigpipe *)
+   let () = catch_sigpipe () in
+
+   (* Start SSL *)
+   let passwd_name, dh_name =
+      let mplib =
+         try Sys.getenv "MPLIB" with
+            Not_found ->
+               raise (Invalid_argument "Http_simple.serve: MPLIB is not defined")
+      in
+      let passwd_name = Filename.concat mplib "server.pem" in
+      let dh_name = Filename.concat mplib "dh.pem" in
+         if not (Sys.file_exists passwd_name) then
+            raise (Invalid_argument (sprintf "Http_simple.serve: SSL certificate file %s does not exist" passwd_name));
+         if not (Sys.file_exists dh_name) then
+            raise (Invalid_argument (sprintf "Http_simple.serve: SSL certificate file %s does not exist" dh_name));
+         passwd_name, dh_name
+   in
+   let context = Lm_ssl.create_server passwd_name dh_name in
+
+   (* Serve as a secure connection *)
    let rec serve info =
-      let client = Lm_inet.accept fd in
-      let fd' = Lm_inet.file_descr_of_client client in
+      let client = Lm_inet.accept server in
+      let fd = Lm_inet.file_descr_of_client client in
       let () =
          if !debug_http then
-            eprintf "Httpd_simple: connection on fd=%d%t" (Obj.magic fd') eflush
+            eprintf "Httpd_simple: connection on fd=%d%t" (Obj.magic fd) eflush
       in
       let info =
          (* Ignore errors when the connection is handled *)
-         try handle fd connect info client with
+         try
+            let ssl = Lm_ssl.create_ssl context in
+               try
+                  Lm_ssl.set_fd ssl fd;
+                  Lm_ssl.accept ssl;
+                  let info = handle server ssl connect info in
+                     Lm_ssl.shutdown ssl;
+                     info
+               with
+                  exn ->
+                     Lm_ssl.shutdown ssl;
+                     raise exn
+         with
             Unix.Unix_error _
           | Sys_error _
+          | Failure _
+          | End_of_file
           | SigPipe as exn ->
-               if !debug_http then
-                  eprintf "Httpd_simple: %s: stopping web services%t" (Printexc.to_string exn) eflush;
+               eprintf "Httpd_simple: %s: error during web service%t" (Printexc.to_string exn) eflush;
                info
       in
-         Unix.close fd';
+      let () =
+         try Unix.shutdown fd Unix.SHUTDOWN_ALL with
+            Unix.Unix_error _ ->
+               ()
+      in
+      let () =
+         try Unix.close fd with
+            Unix.Unix_error _ ->
+               ()
+      in
          serve info
    in
-
-      (* Catch sigpipe *)
-      catch_sigpipe ();
-
       try serve info with
          Unix.Unix_error _
-       | Sys_error _ ->
+       | Sys_error _
+       | Failure _ ->
             if !debug_http then
                eprintf "Httpd_simple: service closed%t" eflush
 

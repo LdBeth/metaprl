@@ -312,7 +312,22 @@ struct
    let get_current_shell () =
       !current_shell
 
-   let synchronize info f x =
+   let synchronize_shell shell f x =
+      Mutex.lock global_lock;
+      let old_shell = !current_shell in
+         current_shell := shell;
+         try
+            let result = f x in
+               current_shell := old_shell;
+               Mutex.unlock global_lock;
+               result
+         with
+            exn ->
+               current_shell := old_shell;
+               Mutex.unlock global_lock;
+               raise exn
+
+   let synchronize shell f x =
       Mutex.lock global_lock;
       try
          let result = f x in
@@ -322,7 +337,7 @@ struct
          exn ->
             Mutex.unlock global_lock;
             let buf = Lm_rformat.new_buffer () in
-            let db = get_db info in
+            let db = get_db shell in
                Filter_exn.format_exn db buf exn;
                output_rbuffer stderr buf;
                flush stderr;
@@ -367,6 +382,9 @@ struct
       try Filter_exn.print_exn (get_db info) None f x with
          RefineError _ ->
             raise (RefineError ("Shell", ToploopIgnoreError))
+
+   let synchronize_shell_print_exn shell f x =
+      synchronize_shell shell (print_exn shell f) x
 
    (************************************************************************
     * VIEWING                                                              *
@@ -691,6 +709,14 @@ struct
 
    let pwd shell =
       string_of_path shell.shell_dir
+
+   let filename shell =
+      match shell.shell_package with
+         Some pack ->
+            let parse_arg = get_parse_arg shell in
+               Some (Package.filename pack parse_arg)
+       | None ->
+            None
 
   (************************************************************************
     * MODULES                                                              *
@@ -1490,7 +1516,7 @@ struct
     *)
    let eval_top shell text =
       try
-         print_exn shell (fun text ->
+         synchronize_shell_print_exn shell (fun text ->
                begin
                   match shell.shell_df_info with
                      DisplayJavaInfo port ->
@@ -1507,7 +1533,7 @@ struct
 
    let chdir_top shell text =
       try
-         print_exn shell (fun text ->
+         synchronize_shell_print_exn shell (fun text ->
                begin
                   match shell.shell_df_info with
                      DisplayJavaInfo port ->

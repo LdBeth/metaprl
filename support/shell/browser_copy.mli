@@ -52,13 +52,25 @@ val session_sym     : symbol
 val menu_macros_sym : symbol
 val rulebox_sym     : symbol
 val buttons_macros_sym : symbol
+val file_sym        : symbol
+val content_sym     : symbol
+val basename_sym    : symbol
+
+(*
+ * Get files.
+ *)
+val string_of_lib_file               : string -> string
+val string_of_root_file              : string -> string
+val save_root_file                   : string -> string -> unit
 
 (*
  * Translate a file.
  *)
 val print_raw_file_to_http           : Http_simple.output -> string -> unit
+val print_metaprl_file_to_http       : Http_simple.output -> string -> unit
 val print_translated_file_to_http    : Http_simple.output -> BrowserTable.t -> string -> unit
 val print_translated_file_to_channel : out_channel -> BrowserTable.t -> string -> unit
+val print_multipart_file_to_http     : Http_simple.output -> BrowserTable.t -> string -> (string * Buffer.t) list -> unit
 
 (*!
  * @docoff

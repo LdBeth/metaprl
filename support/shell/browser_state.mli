@@ -53,6 +53,7 @@ val set_main        : Lm_rformat.buffer -> term StringTable.t -> unit
  *)
 val add_prompt      : t -> string -> unit
 val add_directory   : t -> string -> unit
+val add_file        : t -> string option -> unit
 
 (*
  * Get the output for display.
@@ -66,6 +67,7 @@ val format_message  : t -> int -> Buffer.t -> unit
 val get_directories : t -> string list
 val get_history     : t -> string list
 val get_term        : t -> string -> term
+val get_files       : t -> string list
 
 (*
  * Set the current ls options.

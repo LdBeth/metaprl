@@ -98,6 +98,12 @@ READLINE_ENABLED=$READLINE_ENABLED
 NCURSES_ENABLED=$NCURSES_ENABLED
 
 #
+# The OpenSSL package (available in Linux at least) (yes/no)
+# Should be set to "yes" for secure server support to be enabled.
+#
+SSL_ENABLED=$SSL_ENABLED
+
+#
 # C compiler
 #
 CCC=$CCC

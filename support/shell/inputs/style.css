@@ -1,11 +1,19 @@
 /*
  * General properties of everything in the <body>
  */
+HTML {
+    overflow-x: hidden;
+    overflow-y: auto
+}
+
 BODY {
     background-color: white;
     color: black;
-    font-family: Sans-Serif;
-    font-size: 10pt
+    font-family: Arial Unicode MS, Sans-Serif;
+    font-size: 10pt;
+    border: 0px;
+    margin: 0px;
+    padding: 0px
 }
 
 /*
@@ -94,29 +102,42 @@ A:hover {
 }
 
 /*
- * Properties of select menus.
- */
-SELECT.menu {
-    width: 100px
-}
-
-/*
- * Properties of the built-in panels.
+ * Properties of the frames.
  */
 #menuframe {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    width: 100%;
+    height: 30px;
+    margin: 0px;
+    border: 0px
 }
 
 #menubody {
-    background-color: #f8f8ff
 }
 
 #contentframe {
+    position: absolute;
+    left: 0px;
+    top: 30px;
+    width: 100%;
+    height: 400px;
+    margin: 0px;
+    border: 0px
 }
 
 #contentbody {
 }
 
 #messageframe {
+    position: absolute;
+    left: 0px;
+    top: 430px;
+    width: 100%;
+    height: 150px;
+    margin: 0px;
+    border: 0px;
     background-color: #f8f8ff
 }
 
@@ -125,15 +146,30 @@ SELECT.menu {
 }
 
 #buttonsframe {
+    position: absolute;
+    left: 0px;
+    top: 580px;
+    width: 100%;
+    height: 50px;
+    margin: 0px;
+    border: 0px;
+    background-color: #f8f8ff
 }
 
 #buttonsbody {
 }
 
 #ruleframe {
+    position: absolute;
+    left: 0px;
+    top: 630px;
+    width: 100%;
+    height: 100px;
+    margin: 0px;
+    border: 0px;
 }
 
-#ruleframe {
+#rulebody {
 }
 
 #inputbox {
@@ -141,4 +177,123 @@ SELECT.menu {
     display: block;
     border: none;
     padding: 0px
+}
+
+/*
+ * Resize handles.
+ */
+#messagehandle {
+    position: absolute;
+    background: black;
+    width: 10px;
+    height: 10px;
+    z-index: 2;
+    visibility: hidden
+}
+
+#buttonshandle {
+    position: absolute;
+    background: black;
+    width: 10px;
+    height: 10px;
+    z-index: 2;
+    visibility: hidden
+}
+
+#dragbox {
+    position: absolute;
+    background: transparent;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    visibility: hidden
+}
+
+/*
+ * Floating menus.
+ */
+#menufloat {
+    position: absolute;
+    visibility: hidden;
+    background: #D3E4FA;
+    border-width: 2px;
+    border-style: solid;
+    border-top-color: #eeeeee;
+    border-left-color: #eeeeee;
+    border-bottom-color: #777777;
+    border-right-color: #777777;
+    padding: 2px;
+    z-index: 2;
+    width: 30em
+}
+
+#menubox {
+}
+
+TABLE.menubox {
+    background: transparent;
+    margin: 0px;
+    padding: 4px;
+    table-layout: fixed;
+    border-width: 0px;
+    border-collapse: separate;
+    border-spacing: 5px 0px
+}
+
+TR.menurow {
+    background: #ECF2FF;
+    border-width: 0px;
+    border: 0px;
+    margin: 0px;
+    padding: 0px
+}
+
+TD.menulabel {
+    background: #D3E4FA;
+    border-width: 1px;
+    border-style: solid;
+    border-top-color: #eeeeee;
+    border-left-color: #eeeeee;
+    border-bottom-color: #777777;
+    border-right-color: #777777;
+    margin: 0px;
+    padding: 0px;
+    width: 80px
+}
+
+TD.menulabelhover {
+    background: #ECF2FF;
+    border-width: 1px;
+    border-style: solid;
+    border-top-color: white;
+    border-left-color: white;
+    border-bottom-color: black;
+    border-right-color: black;
+    margin: 0px;
+    padding: 0px;
+    width: 80px
+}
+
+DIV.menuitem {
+    width: 100%
+}
+
+DIV.menuitemhover {
+    width: 100%;
+    background-color: #f0e0d0
+}
+
+/*
+ * Editing.
+ */
+#hiddenframe {
+    position: absolute;
+    background: white;
+    visibility: hidden;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    height: 30px;
+    margin: 0px;
+    border: 0px
 }

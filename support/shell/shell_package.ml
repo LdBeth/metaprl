@@ -354,7 +354,8 @@ let mk_ls_filter options =
                   is_informal_item :: predicate
              | LsNone ->
                   is_no_item :: predicate
-             | LsHandles ->
+             | LsHandles
+             | LsExternalEditor ->
                   predicate) [] options
    in
       compile_ls_predicate predicate

@@ -198,6 +198,7 @@ sig
     *)
    val cd : t -> string -> string
    val pwd : t -> string
+   val filename : t -> string option
    val set_dfmode : t -> string -> unit
    val set_window_width : t -> int -> unit
 

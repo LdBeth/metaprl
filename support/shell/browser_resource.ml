@@ -96,9 +96,11 @@ type browser_info =
  *)
 type browser_state =
    { browser_directories : string list;
+     browser_files       : string list;
      browser_history     : string list;
      browser_options     : string;
-     browser_sessions    : int
+     browser_id          : int;
+     browser_sessions    : int;
    }
 
 (************************************************************************
@@ -157,6 +159,16 @@ let improve info t =
 (*
  * Extract the map.
  *)
+let rec pp_print_id_list buf ids =
+   match ids with
+      [id] ->
+         bprintf buf "'%s'" id
+    | id :: ids ->
+         bprintf buf "'%s', " id;
+         pp_print_id_list buf ids
+    | [] ->
+         ()
+
 let extract info =
    let { info_buttons = buttons;
          info_menus   = menus;
@@ -166,37 +178,51 @@ let extract info =
 
    (* Collect the button text *)
    let buf  = Buffer.create 32 in
-   let macros = StringTable.empty in
-   let macros =
-      List.fold_left (fun macros { command_label = label; command_value = command } ->
-            let sym = sprintf "id%d" (StringTable.cardinal macros) in
-            let macros = StringTable.add macros sym command in
-               bprintf buf "<input type=button name=\"%s\" value=\"%s\" onclick=\"parent.ButtonCommand(macros, this);\">\n" sym label;
-               macros) macros (List.rev buttons)
+   let buttoncommands = StringTable.empty in
+   let buttoncommands =
+      List.fold_left (fun buttoncommands { command_label = label; command_value = command } ->
+            let sym = sprintf "id%d" (StringTable.cardinal buttoncommands) in
+            let buttoncommands = StringTable.add buttoncommands sym command in
+               bprintf buf "\t\t<td class=\"menulabel\" id=\"%s\">%s</td>\n" sym label;
+               buttoncommands) buttoncommands (List.rev buttons)
    in
 
    (* Collect the menu text *)
-   let macros =
-      List.fold_left (fun macros menu ->
+   let menus, menulabels, menucommands =
+      List.fold_left (fun (menus, menulabels, menucommands) menu ->
             let { menu_name = name; menu_label = label; menu_items = items } = menu in
-            let macros =
-               bprintf buf "<select id=\"%s\" class=\"menu\" onChange=\"parent.MenuCommand(macros, this);\">\n" name;
-               bprintf buf "<option value=\"nop\"><span>%s</span></option>\n" label;
-               List.fold_left (fun macros { command_label = label; command_value = command } ->
-                     let sym = sprintf "id%d" (StringTable.cardinal macros) in
-                     let macros = StringTable.add macros sym command in
-                        bprintf buf "<option value=\"%s\">%s</option>\n" sym label;
-                        macros) macros (List.rev items)
+            let items, menulabels, menucommands =
+               bprintf buf "\t\t<td class=\"menulabel\" id=\"%s\">&#8227;%s</td>\n" name label;
+               List.fold_left (fun (items, menulabels, menucommands)
+                                   { command_label = label; command_value = command } ->
+                     let sym = sprintf "id%d" (StringTable.cardinal menulabels) in
+                     let items = sym :: items in
+                     let menulabels = StringTable.add menulabels sym label in
+                     let menucommands = StringTable.add menucommands sym command in
+                        items, menulabels, menucommands) ([], menulabels, menucommands) (List.rev items)
             in
-               bprintf buf "</select>\n";
-               macros) macros menus
+            let menus = StringTable.add menus name (List.rev items) in
+               menus, menulabels, menucommands) (StringTable.empty, StringTable.empty, StringTable.empty) menus
    in
 
    (* Format the macros *)
    let macros_buf = Buffer.create 32 in
    let () =
-      StringTable.iter (fun v s ->
-            bprintf macros_buf "\tmacros['%s'] = \"%s\";\n" v (String.escaped s)) macros
+      bprintf macros_buf "\tvar buttoncommands = new Array();\n";
+      StringTable.iter (fun id s ->
+            bprintf macros_buf "\tbuttoncommands['%s'] = \"%s\";\n" id (String.escaped s)) buttoncommands;
+
+      bprintf macros_buf "\tvar menus = new Array();\n";
+      StringTable.iter (fun name items ->
+            bprintf macros_buf "\tmenus['%s'] = new Array(%a);\n" name pp_print_id_list items) menus;
+
+      bprintf macros_buf "\tvar menulabels = new Array();\n";
+      StringTable.iter (fun id s ->
+            bprintf macros_buf "\tmenulabels['%s'] = \"%s\";\n" id (String.escaped s)) menulabels;
+
+      bprintf macros_buf "\tvar menucommands = new Array();\n";
+      StringTable.iter (fun id s ->
+            bprintf macros_buf "\tmenucommands['%s'] = \"%s\";\n" id (String.escaped s)) menucommands
    in
 
    (* Collect the style sheets *)
@@ -275,6 +301,43 @@ let add_sessions info i =
          info
 
 (*
+ * Add files for editing.
+ *)
+let add_edit state info =
+   let { browser_id = id;
+         browser_files = files;
+         browser_options = options
+       } = state
+   in
+      try
+         menu_replace info "edit" (fun menu ->
+               let flag = String.contains options 'E' in
+               let item =
+                  if flag then
+                     { command_label = "Use Browser editor";
+                       command_value = "Command('clear_view_options \"E\"')"
+                     }
+                  else
+                     { command_label = "Use External editor";
+                       command_value = "Command('set_view_options \"E\"')"
+                     }
+               in
+               let items = item :: menu.menu_items in
+               let items =
+                  List.fold_left (fun items file ->
+                        let item =
+                           { command_label = "Open " ^ Filename.basename file;
+                             command_value = sprintf "Edit(%b, '/session/%d/edit/%s')" flag id file
+                           }
+                        in
+                           item :: items) items files
+               in
+                  { menu with menu_items = items })
+      with
+         Not_found ->
+            info
+
+(*
  * Add the options.
  *)
 let view_table =
@@ -297,7 +360,7 @@ let add_view info view =
                              command_value = sprintf "Command('clear_view_options \"%c\"')" flag
                            }
                         else
-                           { command_label = sprintf "%s View %s" pre name;
+                           { command_label = sprintf "%s Show %s" pre name;
                              command_value = sprintf "Command('set_view_options \"%c\"')" flag
                            }
                      in
@@ -318,6 +381,7 @@ let extract info state =
    let info = add_directories info directories in
    let info = add_history info history in
    let info = add_sessions info sessions in
+   let info = add_edit state info in
    let info = add_view info options in
       extract info
 
@@ -349,6 +413,7 @@ let menubar_init =
    [<< menu["file", "File"] >>;
     << menuitem["file", "New Window", "NewWindow()"] >>;
     << menuitem["file", "Quit", "Quit()"] >>;
+    << menu["edit", "Edit"] >>;
     << menu["session", "Session"] >>;
     << menuitem["session", "New", "NewSession()"] >>;
     << menu["view", "View"] >>;

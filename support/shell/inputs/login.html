@@ -11,11 +11,11 @@
 <script type="text/javascript" src="/inputs/cookie.js"></script>
 <script type="text/javascript" src="/inputs/validate.js"></script>
 <script type="text/javascript" src="/inputs/layout.js"></script>
+<script type="text/javascript" src="/inputs/mojave.js"></script>
 <script type="text/javascript">
 <!-- Hide this text from old browsers --
 var challenge = '%%CHALLENGE%%';
-var response = '%%RESPONSE%%';
-var startpage = 'http://%%HOST%%:%%PORT%%/session/1/frameset';
+var response  = '%%RESPONSE%%';
 GetWindowSize();
 SetWindowCookie();
 ValidateOnLoad();
@@ -32,8 +32,10 @@ yet.  Your password is stored in a file under your home directory
    Password: <input name="pass" type="password" value="" size=20>
 </form>
 <p>
+
 This will save your password as a cookie in your browser so you don't
-have to enter it again.  The contents of this cookie are not sent in
-the clear over the network.
+have to enter it again for a while.  The contents of this cookie are
+not sent in the clear over the network.
+
 </body>
 </html>

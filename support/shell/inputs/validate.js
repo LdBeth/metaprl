@@ -41,7 +41,7 @@ function ValidatePassword()
     SetCookie(response_name, encrypted, expDate, "/", null, false);
 
     // Allow the user to return to work
-    location.href = startpage;
+    location.reload();
 
     return false;
 }

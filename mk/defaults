@@ -43,6 +43,7 @@ CCC_DEFAULT=gcc -O2 -Wall -Wno-unused-variable
 NATIVE_ENABLED_DEFAULT=true
 BYTE_ENABLED_DEFAULT=false
 MAKE_OPTS_DEFAULT=-s
+SSL_ENABLES=false
 
 #
 # Default -inline argument to ocamlopt

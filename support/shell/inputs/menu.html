@@ -3,19 +3,21 @@
     <head>
         <title>%%TITLE%%: %%LOCATION%%</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<script type="text/javascript" src="/inputs/menuclient.js"></script>
+	<script type="text/javascript" src="/inputs/menu.js"></script>
 	<link rel="stylesheet" type="text/css" href="/inputs/style.css">
         %%STYLE%%
         <script type="text/javascript">
         <!-- Hide this text from old browsers --
-	session = new Array();
 	%%SESSION%%
-        macros = new Array();
 	%%MENUMACROS%%
 	-->
 	</script>
     </head>
 
-    <body id="menubody" onload="parent.LoadMenu(session)">
+    <body id="menubody" onload="OnLoad(session)">
+    <table id="menubox" class="menubox"><tr class="menurow">
     %%MENU%%
+    </tr></table>
     </body>
 </html>

@@ -1,0 +1,39 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+    <head>
+        <title>%%TITLE%%</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <link rel="stylesheet" type="text/css" href="/inputs/style.css">
+        </script>
+    </head>
+
+    <body id="editbody">
+    <h2>Using a custom editor</h2>
+
+    <p>
+    Editing files in the browser gets old fast.  However, browser
+    security prevents us from invoking an external editor to edit
+    these files.  However, it is still possible!  Here is how to do
+    it.
+
+    <p>
+    The strategy is to get your Browser to handle MetaPRL files with
+    <tt>Content-Type: application/x-metaprl</tt>.
+
+    <ul>
+    <li>First, you need to download the medit application.  Download it
+    to a standard place.
+        <ul>
+        <li><a href="/inputs/medit">Linux</a>
+        <li><a href="/inputs/medit.exe">Microsoft Windows</a>
+        </ul>
+    <li>Next, choose the <tt>External Editor</tt> option in the <tt>View</tt> menu.
+    <li>When you try to edit a file, your browser should now prompt you for
+    what to do.  Choose the <tt>medit</tt> application you just saved.
+    <li>By default, <tt>medit</tt> will invoke <tt>vi</tt> on Unix,
+    and <tt>notepad</tt> on Windows.  To change this, edit the
+    file <tt>~/.metaprl/editor.
+    </ul>
+
+    </body>
+</html>

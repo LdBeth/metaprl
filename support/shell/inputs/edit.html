@@ -1,0 +1,26 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+    <head>
+        <title>%%TITLE%%</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<script type="text/javascript" src="/inputs/menucancel.js"></script>
+	<script type="text/javascript" src="/inputs/edit.js"></script>
+	<link rel="stylesheet" type="text/css" href="/inputs/style.css">
+        %%STYLE%%
+    </head>
+
+    <body id="editbody" onload="OnLoad()">
+    <h2>Edit: <span class="editfile">%%FILE%%</span></h2>
+    <a href="/inputs/edit-help.html">How can I use my own editor to edit this file?</a>
+
+    <p>
+    <form name="commandform" method="post" action="./%%BASENAME%%">
+    <p>
+    <textarea name="content" rows=24 cols=80>%%CONTENT%%</textarea>
+    </p>
+    <input type="submit" name="submit" value="Submit changes">
+    <input type="button" name="cancel" value="Cancel" onclick="Cancel()">
+    </form>
+    </p>
+    </body>
+</html>

@@ -1,5 +1,4 @@
 (*
- * Translation table for HTML files.
  *
  * ----------------------------------------------------------------
  *
@@ -24,26 +23,8 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_symbol
 
-module type BrowserTableSig =
-sig
-   type t
-
-   (*
-    * Table operations.
-    *)
-   val empty : t
-   val add_string : t -> symbol -> string -> t
-   val add_buffer : t -> symbol -> Buffer.t -> t
-   val add_file   : t -> symbol -> string -> t
-   val add_fun    : t -> symbol -> (Buffer.t -> unit) -> t
-
-   (*
-    * Append the value to a buffer.  This may raise Not_found.
-    *)
-   val append_to_buffer : Buffer.t -> t -> symbol -> unit
-end
+val parse_file : string -> (string * string) list
 
 (*!
  * @docoff

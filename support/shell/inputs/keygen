@@ -1,0 +1,8 @@
+#!/bin/sh
+echo "Use the password: Password"
+openssl req -x509 -newkey rsa:1024 -keyout key.pem -out req.pem -days 360 -config ssl.config
+cat key.pem req.pem > server.pem
+openssl req -x509 -newkey rsa:1024 -keyout key.pem -out req.pem -days 360 -config ssl.config
+cat key.pem req.pem > client.pem
+openssl dhparam -2 -out dh.pem
+chmod 600 *.pem

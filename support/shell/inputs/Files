@@ -1,0 +1,35 @@
+#
+# Files to copy to the lib directory
+#
+INPUTS =\
+	access.html\
+	start.html\
+	login.html\
+	page.html\
+	layout.js\
+	md5.js\
+	cookie.js\
+	validate.js\
+	menu.js\
+	content.js\
+	message.js\
+	buttons.js\
+	rule.js\
+	menuserver.js\
+	menuclient.js\
+	menucancel.js\
+	mojave.js\
+	frameset.js\
+	edit.html\
+	edit.js\
+	edit-help.html\
+	menubutton.gif\
+	noscroll.css\
+	style.css\
+	frameset.html\
+	menu.html\
+	content.html\
+	message.html\
+	buttons.html\
+	rule.html\
+	empty.html

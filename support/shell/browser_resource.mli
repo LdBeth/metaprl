@@ -64,8 +64,10 @@ type browser_info =
  *)
 type browser_state =
    { browser_directories : string list;
+     browser_files       : string list;
      browser_history     : string list;
      browser_options     : string;
+     browser_id          : int;
      browser_sessions    : int
    }
 

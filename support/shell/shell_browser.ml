@@ -44,6 +44,7 @@ open Browser_copy
 open Browser_resource
 open Shell_sig
 open Package_info
+open Shell_util
 
 let _ =
    show_loading "Loading Shell Browser%t"
@@ -155,6 +156,9 @@ struct
     | LoginURI of string
     | UnknownURI of string
     | SessionURI of session * session
+    | EditURI of session * string
+    | RedirectURI of session * string
+    | FileURI of string
 
    (*
     * Decode the URI.
@@ -162,7 +166,15 @@ struct
     *)
    let decode_uri state uri =
       match decode_uri uri with
-         ["session"; id]
+         [] ->
+            (try
+                let session = IntTable.find state.state_sessions 1 in
+                   RedirectURI (session, "frameset")
+             with
+                Not_found
+              | Failure _ ->
+                   UnknownURI "/")
+       | ["session"; id]
        | ["session"; id; "frameset"] ->
             (try
                 let session = IntTable.find state.state_sessions (int_of_string id) in
@@ -210,10 +222,21 @@ struct
                 Not_found ->
                    eprintf "Bad session: %s@." id;
                    UnknownURI (Lm_string_util.prepend "/" rest))
+       | "session" :: id :: "edit" :: rest ->
+            (try
+                let session = IntTable.find state.state_sessions (int_of_string id) in
+                let name = String.concat "/" rest in
+                   EditURI (session, name)
+             with
+                Not_found ->
+                   eprintf "Bad session: %s@." id;
+                   UnknownURI (Lm_string_util.prepend "/" rest))
        | "inputs" :: rest ->
             InputURI (Lm_string_util.prepend "/" rest)
        | ["login"; key] ->
             LoginURI key
+       | "file" :: name ->
+            FileURI (String.concat "/" name)
        | uri ->
             UnknownURI (Lm_string_util.prepend "/" uri)
 
@@ -236,6 +259,23 @@ struct
          { state with state_challenge = challenge;
                       state_response = response
          }
+
+   (*
+    * Get the content-type.
+    *)
+   let rec get_content_type header =
+      match header with
+         RequestContentType content_type :: _ ->
+            content_type
+       | _ :: rest ->
+            get_content_type rest
+       | [] ->
+            raise Not_found
+
+   let get_post_body header body =
+      try parse_post_body (get_content_type header) body with
+         Not_found ->
+            []
 
    (*
     * Check the response from the header.
@@ -315,13 +355,15 @@ struct
     * Be sure to increment version numbers.
     *)
    let invalidate_directory session cwd =
-      let { session_buffer          = state;
+      let { session_shell           = shell;
+            session_buffer          = state;
             session_menu_version    = menu_version;
             session_buttons_version = buttons_version;
             session_content_version = content_version
           } = session
       in
          Browser_state.add_directory state cwd;
+         Browser_state.add_file state (ShellArg.filename shell);
 
          session.session_cwd <- cwd;
 
@@ -380,7 +422,8 @@ struct
       let { state_id = session_count } = state in
       let { session_buffer = buffer;
             session_state = info;
-            session_shell = shell
+            session_shell = shell;
+            session_id = id
           } = session
       in
          match info with
@@ -389,8 +432,10 @@ struct
           | None ->
                let info =
                   { browser_directories = Browser_state.get_directories buffer;
+                    browser_files = Browser_state.get_files buffer;
                     browser_history = Browser_state.get_history buffer;
                     browser_options = ShellArg.get_view_options shell;
+                    browser_id = id;
                     browser_sessions = session_count
                   }
                in
@@ -520,12 +565,14 @@ struct
             session_rule_version    = rule_version
           } = session
       in
-         Printf.bprintf buf "\tsession['location'] = 'http://%s:%d/session/%d/content%s/';\n" host port id cwd;
+         Printf.bprintf buf "\tvar session = new Array();\n";
+         Printf.bprintf buf "\tsession['location'] = 'https://%s:%d/session/%d/content%s/';\n" host port id cwd;
          Printf.bprintf buf "\tsession['menu']     = %d;\n" menu_version;
          Printf.bprintf buf "\tsession['content']  = %d;\n" content_version;
          Printf.bprintf buf "\tsession['message']  = %d;\n" message_version;
          Printf.bprintf buf "\tsession['buttons']  = %d;\n" buttons_version;
-         Printf.bprintf buf "\tsession['rule']     = %d;\n" rule_version
+         Printf.bprintf buf "\tsession['rule']     = %d;\n" rule_version;
+         Printf.bprintf buf "\tsession['id']       = %d;\n" id
 
    (*
     * This is the default printer for each non-content pane.
@@ -535,7 +582,8 @@ struct
             session_cwd             = cwd;
             session_menu            = menu;
             session_buttons         = buttons;
-            session_styles          = styles
+            session_styles          = styles;
+            session_shell           = shell
           } = session
       in
       let table = table_of_state state in
@@ -628,11 +676,57 @@ struct
             session_cwd = cwd
           } = session
       in
-      let uri = sprintf "http://%s:%d/session/%d/%s" host port id (which_uri cwd) in
+      let uri = sprintf "https://%s:%d/session/%d/%s" host port id (which_uri cwd) in
          if !debug_http then
             eprintf "Redirecting to %s@." uri;
          print_redirect_page outx SeeOtherCode uri
 
+   (*
+    * Ship out a local file.
+    *)
+   let print_internal_edit_page server state filename outx =
+      let table = table_of_state state in
+      let table = BrowserTable.add_string table title_sym "Edit File" in
+      let table = BrowserTable.add_string table file_sym filename in
+      let table = BrowserTable.add_string table basename_sym (Filename.basename filename) in
+      let table = BrowserTable.add_string table response_sym state.state_response in
+      let table = BrowserTable.add_file table content_sym filename in
+         print_translated_file_to_http outx table "edit.html"
+
+   let print_external_edit_page server state filename outx =
+      let { http_host     = host;
+            http_port     = port
+          } = http_info server
+      in
+      let { state_response = response } = state in
+      let buf = Buffer.create 100 in
+         try
+            bprintf buf "host = \"%s\"\n" (String.escaped host);
+            bprintf buf "port = %d\n" port;
+            bprintf buf "name = \"file/%s\"\n" (String.escaped filename);
+            bprintf buf "passwd = \"%s\"\n" (String.escaped response);
+            bprintf buf "keyfile = \"%s\"\n" (String.escaped (string_of_lib_file "client.pem"));
+            bprintf buf "content = \"%s\"\n" (String.escaped (string_of_root_file filename));
+            print_content_page outx OkCode "application/x-metaprl" buf
+         with
+            Not_found ->
+               print_error_page outx NotFoundCode
+
+   let print_edit_page server state session filename outx =
+      let edit =
+         if LsOptionSet.mem (ShellArg.get_ls_options session.session_shell) LsExternalEditor then
+            print_external_edit_page
+         else
+            print_internal_edit_page
+      in
+         edit server state filename outx
+
+   let print_file_page server state filename outx =
+      print_metaprl_file_to_http outx filename
+
+   (*
+    * URL names.
+    *)
    let content_uri cwd =
       "content" ^ cwd ^ "/"
 
@@ -809,14 +903,50 @@ struct
                      print_redisplay_page content_uri server state session outx
             else
                print_login_page outx state (Some session)
+       | EditURI (session, filename) ->
+            if is_valid_response state header then
+               print_edit_page server state session filename outx
+            else
+               print_login_page outx state None
+       | FileURI filename ->
+            if is_valid_response state header then
+               print_file_page server state filename outx
+            else
+               print_error_page outx ForbiddenCode
+       | RedirectURI (session, uri) ->
+            if is_valid_response state header then
+               print_redisplay_page (fun _ -> uri) server state session outx
+            else
+               print_login_page outx state None
        | UnknownURI dirname ->
-            print_login_page outx state None
+            print_error_page outx NotFoundCode
+
+   (*
+    * Handle a put command by updating the file as specified.
+    *)
+   let put server state outx uri header body =
+      if !debug_http then
+         eprintf "Put: %s@." uri;
+      match decode_uri state uri with
+         FileURI filename ->
+            save_root_file filename body
+       | InputURI _
+       | LoginURI _
+       | UnknownURI _
+       | ContentURI _
+       | FrameURI _
+       | CloneURI _
+       | SessionURI _
+       | EditURI _
+       | RedirectURI _ ->
+            print_error_page outx BadRequestCode;
+            eprintf "Shell_simple_http: bad PUT command@."
 
    (*
     * Handle a post command.  This means to submit the text to MetaPRL.
     *)
    let post server state outx inx uri header body =
-      let body = parse_post_body body in
+      let body = get_post_body header body in
       let () =
          if !debug_http then
             List.iter (fun (name, text) ->
@@ -826,6 +956,11 @@ struct
       (* Precedence *)
       let command =
          try Some (List.assoc "command" body) with
+            Not_found ->
+               None
+      in
+      let content =
+         try Some (List.assoc "content" body) with
             Not_found ->
                None
       in
@@ -849,13 +984,25 @@ struct
                                    quit state)
                  | None ->
                       print_redisplay_page rule_uri server state session outx)
+          | EditURI (session, filename) ->
+               let edit_uri _ =
+                  sprintf "edit/%s" filename
+               in
+                  (match content with
+                      Some content ->
+                         save_root_file filename content
+                    | None ->
+                         ());
+                  print_redisplay_page edit_uri server state session outx
           | InputURI _
           | LoginURI _
           | UnknownURI _
           | ContentURI _
           | FrameURI _
           | CloneURI _
-          | SessionURI _ ->
+          | SessionURI _
+          | FileURI _
+          | RedirectURI _ ->
                print_error_page outx BadRequestCode;
                eprintf "Shell_simple_http: bad POST command@."
 
@@ -898,6 +1045,11 @@ struct
          match args with
             "get" :: uri :: _ ->
                get server state outx uri header
+          | "put" :: uri :: _ ->
+               if is_valid_response state header then
+                  put server state outx uri header body
+               else
+                  print_login_page outx state None
           | "post" :: uri :: _ ->
                if is_valid_response state header then
                   post server state outx inx uri header body
@@ -959,7 +1111,7 @@ struct
       in
       let out = Unix.out_channel_of_descr fd in
       let file_url = sprintf "file://%s" filename in
-      let http_url = sprintf "http://%s:%d/" host port in
+      let http_url = sprintf "https://%s:%d/" host port in
          (* Start page *)
          print_start_page out state;
          Pervasives.flush out;

@@ -3,22 +3,25 @@
     <head>
         <title>%%TITLE%%: %%LOCATION%%</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<script type="text/javascript" src="/inputs/menuclient.js"></script>
+	<script type="text/javascript" src="/inputs/buttons.js"></script>
 	<link rel="stylesheet" type="text/css" href="/inputs/style.css">
         %%STYLE%%
         <script type="text/javascript">
         <!-- Hide this text from old browsers --
-	session = new Array();
 	%%SESSION%%
-        macros = new Array();
 	%%BUTTONSMACROS%%
+	buttoncommands['submit'] = 'ButtonSubmit()';
+	buttoncommands['toggle'] = 'ButtonLong()';
 	-->
 	</script>
     </head>
 
-    <body id="buttonsbody" onload="parent.LoadButtons(session)">
-        <font style="visibility:hidden"># </font>
-        <input type=button value="Submit" onclick="parent.ButtonSubmit();">
-        <input type=button name="togglebutton" value="Long" onclick="parent.ToggleInputArea(this);">
+    <body id="buttonsbody" onload="OnLoad(session)">
+	<table id="menubox" class="menubox"><tr class="menurow">
+	<td class="menulabel" id="submit">Submit</td>
+	<td class="menulabel" id="toggle">Long</td>
         %%BUTTONS%%
+	</tr></table>
     </body>
 </html>

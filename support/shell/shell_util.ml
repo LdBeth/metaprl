@@ -47,6 +47,7 @@ type ls_option =
     *   LsHandles: display handles to allow selection of arbitrary subterms.
     *)
  | LsHandles
+ | LsExternalEditor
 
 (*
  * LS options.
@@ -99,6 +100,8 @@ let option_of_char c =
          LsNone
     | 'H' ->
          LsHandles
+    | 'E' ->
+         LsExternalEditor
     | _ ->
          raise (RefineError ("ls", StringError (sprintf "unrecognized option '%s'" (Char.escaped c))))
 
@@ -118,6 +121,7 @@ let char_of_option option =
     | LsDefault -> 'D'
     | LsNone -> '!'
     | LsHandles -> 'H'
+    | LsExternalEditor -> 'E'
 
 (*
  * Translate string options to LS options.
@@ -158,7 +162,8 @@ let ls_options_add options s =
              | LsDisplay
              | LsParent
              | LsNone
-             | LsHandles ->
+             | LsHandles
+             | LsExternalEditor ->
                   LsOptionSet.add options option
              | LsAll
              | LsDefault ->
@@ -185,7 +190,8 @@ let ls_options_clear options s =
              | LsFormal
              | LsInformal
              | LsParent
-             | LsHandles ->
+             | LsHandles
+             | LsExternalEditor ->
                   LsOptionSet.remove options option
              | LsNone
              | LsAll

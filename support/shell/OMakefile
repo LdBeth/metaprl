@@ -9,19 +9,14 @@ include Files
 Theory($(MPFILES))
 
 #
-# Copy the files in inputs
-#
-LIBINPUTS = $(file $(addprefix $(LIB)/, $(INPUTS)))
-
-$(LIBINPUTS): $(LIB)/%: inputs/%
-	$(LN) $(in $(LIB), $(CWD))/$< $@
-
-$(MPINSTALL): $(LIBINPUTS)
-
-#
 # Clean up
 #
 clean:
     $(CLEAN) browser_copy.ml
 
 all: theory$(LIB_SUFFIX)
+
+#
+# Input installation
+#
+.SUBDIRS: inputs

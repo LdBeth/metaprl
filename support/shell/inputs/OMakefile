@@ -1,0 +1,38 @@
+#
+# Files to install
+#
+include Files
+
+#
+# Build the SSL files
+#
+if $(SSL_ENABLED)
+    if $(equal $(OSTYPE), Win32)
+        UMASK =
+        export
+    else
+        UMASK = umask 077 &&
+        export
+
+    server.pem: metaprl-ssl.config
+        $(UMASK) openssl req -x509 -newkey rsa:1024 -keyout $@ -out $@ -days 360 -config $<
+
+    client.pem: metaprl-ssl.config
+        $(UMASK) openssl req -x509 -newkey rsa:1024 -keyout $@ -out $@ -days 360 -config $<
+
+    dh.pem:
+        $(UMASK) openssl dhparam -2 -out $@
+
+    INPUTS += server.pem client.pem dh.pem
+
+    export
+
+#
+# Copy the files in inputs
+#
+LIBINPUTS = $(file $(addprefix $(LIB)/, $(INPUTS)))
+
+$(LIBINPUTS): $(LIB)/%: %
+        $(LN) $(in $(LIB), $(CWD))/$< $@
+
+$(MPINSTALL): $(LIBINPUTS)

@@ -281,16 +281,16 @@ struct
     * if that fails, search for the module in all submodules.
     *)
    let expand_path cache path =
-      if !debug_filter_cache or !debug_filter_path then
+      if !debug_filter_cache || !debug_filter_path then
          eprintf "Filter_cache.expand_path: %s%t" (string_of_path path) eflush;
       let { base = { lib = base; sig_summaries = summaries } } = cache in
          match path with
-            modname::modpath ->
+            modname :: modpath ->
                (* First search for head module in top level modules *)
                let rec head_search = function
                   [] ->
                      None
-                | { sig_summary = info }::t ->
+                | { sig_summary = info } :: t ->
                      let modname' = String.capitalize (Base.name base info) in
                         if !debug_filter_path then
                            eprintf "Filter_cache.expand_path.head_search: %s vs. %s%t" modname' modname eflush;
@@ -697,9 +697,9 @@ struct
       let base = cache.base.lib in
       let base_info =
          try Base.find base barg path SigMarshal.select AnySuffix with
-            Not_found ->
+            Not_found as exn ->
                eprintf "Can't find module %s%t" (string_of_path path) eflush;
-               raise Not_found
+               raise exn
       in
          if !debug_filter_cache then
             eprintf "FilterCache.inline_module': %s%t" (string_of_path path) eflush;
@@ -731,12 +731,13 @@ struct
                   info
 
    and collect_opnames cache info =
-      if not (List.memq info cache.summaries) then begin
-         Lm_list_util.rev_iter (collect_opnames cache) info.sig_includes;
-         let optable = cache.optable in
-         Lm_list_util.rev_iter (fun (str, op) -> Hashtbl.add optable str op) info.sig_opnames;
-         cache.summaries <- info :: cache.summaries
-      end
+      if not (List.memq info cache.summaries) then
+         begin
+            Lm_list_util.rev_iter (collect_opnames cache) info.sig_includes;
+            let optable = cache.optable in
+               Lm_list_util.rev_iter (fun (str, op) -> Hashtbl.replace optable str op) info.sig_opnames;
+               cache.summaries <- info :: cache.summaries
+         end
 
    let inline_module cache barg path =
       try

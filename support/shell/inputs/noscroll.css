@@ -1,0 +1,7 @@
+/*
+ * This is a total hack, but it seems the only way to turn off
+ * the scrollbar in IE and Mozilla at the same time.
+ */
+html, body { margin: 0px; overflow: auto }
+html>body { overflow: visible }
+html { height: 100% }

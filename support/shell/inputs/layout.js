@@ -1,41 +1,89 @@
 /*
- * Get the size of the window.
- * The code for finding the window size
- * is based on code from www.howtocreate.co.uk.
- */
-var window_width = 0;
-var window_height = 0;
-
-function GetWindowSize()
-{
-    if(typeof(window.innerWidth) == 'number') {
-        // Non-IE
-        window_width = window.innerWidth;
-        window_height = window.innerHeight;
-    }
-    else if(document.documentElement && (document.documentElement.clientWidth || document.documentElement.clientHeight)) {
-        // IE 6+ in 'standards compliant mode'
-        window_width = document.documentElement.clientWidth;
-        window_height = document.documentElement.clientHeight;
-    }
-    else if(document.body && (document.body.clientWidth || document.body.clientHeight)) {
-        // IE 4 compatible
-        window_width = document.body.clientWidth;
-        window_height = document.body.clientHeight;
-    }
-    else {
-        alert('Cant figure out window size');
-        window_width = 800;
-        window_height = 800;
-    }
-}
-
-/*
  * The styles depend on the window size.
  */
-function ResizeBoxes(rulebox_height)
+var messageheight = 100;
+var ruleheight = 70;
+
+function Layout()
 {
-    parent.document.body.rows = '40,*,100,40,' + rulebox_height;
+    this.menuheight    = 35;
+    this.buttonsheight = 35;
+    this.messageheight = messageheight;
+    this.ruleheight    = ruleheight;
+    this.contentheight = window_height - this.menuheight - this.messageheight - this.buttonsheight - this.ruleheight;
+    if(this.contentheight < 50)
+        this.contentheight = 50;
+    if(this.messageheight < 50)
+        this.messageheight = 50;
+    if(this.ruleheight < 50)
+        this.ruleheight = 50;
+
+    this.menutop    = 0;
+    this.contenttop = this.menutop    + this.menuheight;
+    this.messagetop = this.contenttop + this.contentheight;
+    this.buttonstop = this.messagetop + this.messageheight;
+    this.ruletop    = this.buttonstop + this.buttonsheight;
+}
+
+function ResizeBoxes()
+{
+    var layout = new Layout();
+
+    var menuframe    = GetObject(self, 'menuframe');
+    var contentframe = GetObject(self, 'contentframe');
+    var messageframe = GetObject(self, 'messageframe');
+    var buttonsframe = GetObject(self, 'buttonsframe');
+    var ruleframe    = GetObject(self, 'ruleframe');
+
+    menuframe.style.top       = layout.menutop       + 'px';
+    menuframe.style.height    = layout.menuheight    + 'px';
+    contentframe.style.top    = layout.contenttop    + 'px';
+    contentframe.style.height = layout.contentheight + 'px';
+    messageframe.style.top    = layout.messagetop    + 'px';
+    messageframe.style.height = layout.messageheight + 'px';
+    buttonsframe.style.top    = layout.buttonstop    + 'px';
+    buttonsframe.style.height = layout.buttonsheight + 'px';
+    ruleframe.style.top       = layout.ruletop       + 'px';
+    ruleframe.style.height    = layout.ruleheight    + 'px';
+
+    /* Handles */
+    var handleheight = 10;
+    var handlewidth = 10;
+    var handleleft = window_width - 40;
+
+    var messagehandle = GetObject(self, 'messagehandle');
+    var messagehandletop = layout.messagetop - handleheight / 2;
+    messagehandle.style.left = handleleft + 'px';
+    messagehandle.style.top = messagehandletop + 'px';
+    messagehandle.style.visibility = 'visible';
+
+    var buttonshandle = GetObject(self, 'buttonshandle');
+    var buttonshandletop = layout.buttonstop - handleheight / 2;
+    buttonshandle.style.left = handleleft + 'px';
+    buttonshandle.style.top = buttonshandletop + 'px';
+    buttonshandle.style.visibility = 'visible';
+}
+
+function MoveHandles()
+{
+    var layout = new Layout();
+
+    /* Handles */
+    var handleheight = 10;
+    var handlewidth = 10;
+    var handleleft = window_width - 40;
+
+    var messagehandle = GetObject(self, 'messagehandle');
+    var messagehandletop = layout.messagetop - handleheight / 2;
+    messagehandle.style.left = handleleft + 'px';
+    messagehandle.style.top = messagehandletop + 'px';
+    messagehandle.style.visibility = 'visible';
+
+    var buttonshandle = GetObject(self, 'buttonshandle');
+    var buttonshandletop = layout.buttonstop - handleheight / 2;
+    buttonshandle.style.left = handleleft + 'px';
+    buttonshandle.style.top = buttonshandletop + 'px';
+    buttonshandle.style.visibility = 'visible';
 }
 
 /*
@@ -63,19 +111,19 @@ var version = new Array();
 function Update(session)
 {
     if(version['menu'] != session['menu'])
-        parent.menu.location.reload();
+        parent.menuframe.location.reload();
     if(version['content'] != session['content']) {
         if(version['location'] != session['location'])
-            parent.content.location.href = session['location'];
+            parent.contentframe.location.href = session['location'];
         else
-            parent.content.location.reload();
+            parent.contentframe.location.reload();
     }
     if(version['message'] != session['message'])
-        parent.message.location.reload();
+        parent.messageframe.location.reload();
     if(version['buttons'] != session['buttons'])
-        parent.buttons.location.reload();
+        parent.buttonsframe.location.reload();
     if(version['rule'] != session['rule'])
-        parent.rule.location.reload();
+        parent.ruleframe.location.reload();
 }
 
 /*
@@ -85,6 +133,7 @@ function LoadFrame()
 {
    GetWindowSize();
    SetWindowCookie();
+   ResizeBoxes();
 }
 
 function LoadMenu(session)
@@ -96,33 +145,22 @@ function LoadContent(session)
 {
     version['location'] = session['location'];
     version['content'] = session['content'];
-
-    // Update the other windows
     Update(session);
 }
 
 function LoadMessage(session)
 {
     version['message'] = session['message'];
-    parent.message.scrollTo(0, 100000);
 }
 
 function LoadButtons(session)
 {
     version['buttons'] = session['buttons'];
-
-    // Reset history button
-    parent.buttons.document.getElementById('historybox').selectedIndex = 0;
 }
 
 function LoadRule(session)
 {
     version['rule'] = session['rule'];
-
-    // Focus on the rule box
-    parent.rule.document.commandform.command.focus();
-
-    // Update the other windows
     Update(session);
 }
 
@@ -135,7 +173,7 @@ function LoadRule(session)
  */
 function Prompt(cmd)
 {
-    parent.rule.document.commandform.command.value = cmd;
+    parent.ruleframe.document.commandform.command.value = cmd;
 }
 
 /*
@@ -143,8 +181,8 @@ function Prompt(cmd)
  */
 function Command(cmd)
 {
-    parent.rule.document.commandform.command.value = cmd;
-    parent.rule.document.commandform.submit();
+    parent.ruleframe.document.commandform.command.value = cmd;
+    parent.ruleframe.document.commandform.submit();
 }
 
 /*
@@ -163,7 +201,7 @@ function NewWindow()
 {
     var url = parent.location.href;
     window.open(url + '/clone');
-    parent.menu.location.reload();
+    parent.menuframe.location.reload();
 }
 
 /*
@@ -193,33 +231,19 @@ function URL(where)
 }
 
 /*
- * Generic event handler.
+ * Menu item was selected.
  */
-function HandleCommand(macros, id)
+function MenuCommand(s)
 {
-    var command = 'parent.' + macros[id];
-    eval(command);
+    eval(s);
 }
 
 /*
- * The user selected a command from a menu.
+ * Button command is some text to be evaluated.
  */
-function MenuCommand(macros, menu)
+function ButtonCommand(s)
 {
-    if(menu.selectedIndex != 0) {
-        var id = menu.options[menu.selectedIndex].value;
-        menu.selectedIndex = 0;
-        HandleCommand(macros, id);
-    }
-}
-
-/*
- * Press a button.
- */
-function ButtonCommand(macros, button)
-{
-    var id = button.name;
-    HandleCommand(macros, id);
+    eval(s);
 }
 
 /*
@@ -227,32 +251,33 @@ function ButtonCommand(macros, button)
  */
 function ButtonSubmit()
 {
-    parent.rule.document.commandform.submit();
+    parent.ruleframe.document.commandform.submit();
 }
 
 /*
  * Toggle the kind of input area.
  */
-function ToggleInputArea(button)
+function ButtonLong()
 {
     // Get the current text
-    var ruledoc = parent.rule.document;
+    var ruledoc = parent.ruleframe.document;
     var text = ruledoc.commandform.command.value;
 
     // Reset the input area
-    if(button.value == 'Long') {
-        button.value = 'Short';
-        ruledoc.commandform.innerHTML = '# <textarea name="command" rows="4" cols="100">' + text + '</textarea>';
-        ResizeBoxes(150);
-    }
-    else {
-        button.value = 'Long';
-        ruledoc.commandform.innerHTML = '# <input type="text" name="command" size="100" border="0">';
-        ruledoc.commandform.command.value = text;
-        ResizeBoxes(70);
-    }
+    ruledoc.commandform.innerHTML = '# <textarea name="command" rows="4" cols="100">' + text + '</textarea>';
 
     // For convenience, refocus the input area
     ruledoc.commandform.command.focus();
 }
 
+/************************************************************************
+ * Edit a file.
+ */
+
+function Edit(ext, filename)
+{
+    if(ext)
+        parent.hiddenframe.location.href = filename;
+    else
+        window.open(filename);
+}

@@ -153,7 +153,7 @@ let save_stringbuffer_to_home queue name =
       let filename = Filename.concat home name in
       let out = Pervasives.open_out filename in
          LineBuffer.iter (fun s ->
-               Printf.fprintf out "%s\n" s) queue;
+               Printf.fprintf out "%s\n" (String.escaped s)) queue;
          close_out out
    with
       Not_found ->
@@ -177,7 +177,7 @@ let add_stringbuffer_from_home queue name =
          in
             match line with
                Some line ->
-                  LineBuffer.add queue line;
+                  LineBuffer.add queue (Lm_string_util.unescape line);
                   read ()
              | None ->
                   ()
@@ -291,7 +291,7 @@ let save_stringtable_to_home queue name =
       let filename = Filename.concat home name in
       let out = Pervasives.open_out filename in
          LineTable.iter (fun dir subdir ->
-               Printf.fprintf out "%s/%s\n" dir subdir) queue;
+               Printf.fprintf out "%s#%s\n" dir subdir) queue;
          close_out out
    with
       Not_found ->
@@ -317,7 +317,7 @@ let read_stringtable_from_home name =
                Some line ->
                   let dir, subdir =
                      try
-                        let index = String.index line '/' in
+                        let index = String.index line '#' in
                         let dir = String.sub line 0 index in
                         let subdir = String.sub line (succ index) (String.length line - index - 1) in
                            dir, subdir
@@ -349,6 +349,7 @@ let read_stringtable_from_home name =
 type t =
    { info_history                : string LineBuffer.t;
      mutable info_directories    : string LineTable.t;
+     mutable info_files          : string LineTable.t;
      info_message                : buffer LineBuffer.t;
      mutable info_content_buffer : buffer;
      mutable info_content_table  : term StringTable.t;
@@ -359,6 +360,7 @@ type t =
  * Names of the history files.
  *)
 let history_filename     = ".metaprl/history"
+let files_filename       = ".metaprl/files"
 let directories_filename = ".metaprl/directories"
 
 (*
@@ -372,6 +374,7 @@ let current = ref None
 let create () =
    { info_history        = read_stringbuffer_from_home history_filename;
      info_directories    = read_stringtable_from_home directories_filename;
+     info_files          = read_stringtable_from_home files_filename;
      info_message        = LineBuffer.create ();
      info_content_buffer = new_buffer ();
      info_content_table  = StringTable.empty;
@@ -390,9 +393,9 @@ let set_options info options =
 let get_tagger info =
    let tagger =
       if LsOptionSet.mem info.info_options LsHandles then
-         (fun s -> Printf.sprintf "<span class=\"slot\" id=\"%s\" onmouseover=\"SlotMouseOver(event)\" onmouseout=\"SlotMouseOut(event)\" onclick=\"SlotMouseClick(event)\">&#8227;" s)
+         (fun s -> Printf.sprintf "<span class=\"slot\" id=\"%s\">&#8227;" s)
       else
-         (fun s -> Printf.sprintf "<span class=\"slot\" id=\"%s\" onmouseover=\"SlotMouseOver(event)\" onmouseout=\"SlotMouseOut(event)\" onclick=\"SlotMouseClick(event)\">" s)
+         (fun s -> Printf.sprintf "<span class=\"slot\" id=\"%s\">" s)
    in
       Some { html_tag_begin = FunTagger tagger;
              html_tag_end = StringTagger "</span>"
@@ -424,6 +427,80 @@ let add_prompt info str =
         | None ->
              LineBuffer.add info.info_history str);
       save_stringbuffer_to_home info.info_history history_filename
+
+(*
+ * Add a file.
+ *)
+let rec resolve_symlink filename =
+   let stat = Unix.lstat filename in
+      if stat.Unix.st_kind = Unix.S_LNK then
+         resolve_symlink (Unix.readlink filename)
+      else if stat.Unix.st_kind = Unix.S_REG then
+         filename
+      else
+         raise Not_found
+
+let resolve_symlink filename =
+   try Some (resolve_symlink filename) with
+      Unix.Unix_error _
+    | Not_found ->
+         None
+
+let strip_root filename =
+   match filename with
+      Some filename ->
+         (try
+             let root = Sys.getenv "MP_ROOT" ^ "/" in
+             let root_len = String.length root in
+             let file_len = String.length filename in
+             let convert c =
+                if c = '\\' then
+                   '/'
+                else
+                   c
+             in
+             let rec matches i =
+                if i = root_len then
+                   true
+                else
+                   convert root.[i] = convert filename.[i] && matches (succ i)
+             in
+             let file =
+                if root_len < file_len && matches 0 then
+                   String.sub filename root_len (file_len - root_len)
+                else
+                   filename
+             in
+                (* eprintf "Root: %s Filename: %s Stripped: %s\n%t" root filename file flush; *)
+                Some file
+          with
+             Not_found ->
+                Some filename)
+    | None ->
+         None
+
+let add_filename info name =
+   match name with
+      Some name ->
+         info.info_files <- LineTable.add info.info_files name ""
+    | None ->
+         ()
+
+let add_file info file =
+   match file with
+      Some name ->
+         let basename =
+            try String.sub name 0 (String.rindex name '.') with
+               Not_found ->
+                  name
+         in
+         let ml_name = strip_root (resolve_symlink (basename ^ ".ml")) in
+         let mli_name = strip_root (resolve_symlink (basename ^ ".mli")) in
+            add_filename info ml_name;
+            add_filename info mli_name;
+            save_stringtable_to_home info.info_files files_filename
+    | None ->
+         ()
 
 (*
  * Add a directory.  For the buffer, remember the main part of the directory
@@ -483,6 +560,16 @@ let get_history info =
             line :: lines) [] info.info_history
    in
       List.rev history
+
+(*
+ * Get the files.
+ *)
+let get_files info =
+   let files =
+      LineTable.fold (fun files file _ ->
+            file :: files) [] info.info_files
+   in
+      List.rev files
 
 (*
  * Get the directories.

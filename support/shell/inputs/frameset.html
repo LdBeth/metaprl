@@ -3,17 +3,26 @@
     <head>
         <title>%%TITLE%%</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<script type="text/javascript" src="/inputs/mojave.js"></script>
+	<script type="text/javascript" src="/inputs/menuserver.js"></script>
 	<script type="text/javascript" src="/inputs/cookie.js"></script>
 	<script type="text/javascript" src="/inputs/layout.js"></script>
+	<script type="text/javascript" src="/inputs/frameset.js"></script>
 	<link rel="stylesheet" type="text/css" href="/inputs/style.css">
+	<link rel="stylesheet" type="text/css" href="/inputs/noscroll.css">
         %%STYLE%%
     </head>
 
-    <frameset border="0" rows="40,*,100,40,70" onload="LoadFrame()">
-        <frame name="menu"    id="menuframe"    src="frame/menu/" scrolling="no">
-	<frame name="content" id="contentframe" src="content/%%LOCATION%%/">
-	<frame name="message" id="messageframe" src="frame/message/">
-	<frame name="buttons" id="buttonsframe" src="frame/buttons/">
-	<frame name="rule"    id="ruleframe"    src="frame/rule/">
-    </frameset>
+    <body onload="OnLoad()">
+        <div id="menufloat"></div>
+	<div id="messagehandle"></div>
+	<div id="buttonshandle"></div>
+	<div id="dragbox">ABC</div>
+        <iframe name="menuframe"    id="menuframe"    frameborder="0" src="frame/menu/">You need frames</iframe>
+	<iframe name="contentframe" id="contentframe" frameborder="0" src="content/%%LOCATION%%/">You need frames</iframe>
+	<iframe name="messageframe" id="messageframe" frameborder="0" src="frame/message/">You need frames</iframe>
+	<iframe name="buttonsframe" id="buttonsframe" frameborder="0" src="frame/buttons/">You need frames</iframe>
+	<iframe name="ruleframe"    id="ruleframe"    frameborder="0" src="frame/rule/">You need frames</iframe>
+	<iframe name="hiddenframe"  id="hiddenframe"  frameborder="0" src="/inputs/empty.html">You need frames</iframe>
+    </body>
 </html>

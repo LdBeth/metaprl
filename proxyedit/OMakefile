@@ -1,0 +1,15 @@
+#
+# External editor
+#
+if $(SSL_ENABLED)
+   PROXYEDIT_FILES =\
+       proxyedit_lex\
+       proxyedit_main
+
+   LIBS += $(LIB)/liblmcutil $(LIB)/clib
+
+   OCAML_LIBS += $(LIB)/lm
+   OCAML_OTHER_LIBS += unix
+   OCAML_LINK_FLAGS += $(OTHER_CCLIBS)
+
+   OCamlProgramInstall(.DEFAULT, $(BIN), proxyedit, $(PROXYEDIT_FILES))

@@ -52,6 +52,96 @@ let session_sym     = Lm_symbol.add "SESSION"
 let menu_macros_sym = Lm_symbol.add "MENUMACROS"
 let rulebox_sym     = Lm_symbol.add "RULEBOX"
 let buttons_macros_sym = Lm_symbol.add "BUTTONSMACROS"
+let file_sym        = Lm_symbol.add "FILE"
+let content_sym     = Lm_symbol.add "CONTENT"
+let basename_sym    = Lm_symbol.add "BASENAME"
+
+(*
+ * Open the file as a channel.
+ *)
+let mplib =
+   try Some (Sys.getenv "MPLIB") with
+      Not_found ->
+         eprintf "Shell_browser.print_file: the MPLIB environment variable is not defined@.";
+         None
+
+let mproot =
+   try Some (Sys.getenv "MP_ROOT") with
+      Not_found ->
+         eprintf "Shell_browser.print_file: the MP_ROOT environment variable is not defined@.";
+         None
+
+let channel_of_file mplib name =
+   match mplib with
+      None ->
+         None
+    | Some mplib ->
+         let name = Filename.concat mplib name in
+            try
+               if (Unix.stat name).Unix.st_kind = Unix.S_REG then
+                  Some (open_in name)
+               else
+                  None
+            with
+               Sys_error _
+             | Unix.Unix_error _ ->
+                  None
+
+(*
+ * Get an escaped string from a file.
+ *)
+let string_of_file mplib filename =
+   let buf = Buffer.create 1024 in
+      match channel_of_file mplib filename with
+         Some inx ->
+            let rec copy () =
+               Buffer.add_char buf (input_char inx);
+               copy ()
+            in
+            let () =
+               try copy () with
+                  End_of_file ->
+                     ()
+            in
+               close_in inx;
+               Buffer.contents buf
+       | None ->
+           raise Not_found
+
+let string_of_lib_file = string_of_file mplib
+let string_of_root_file = string_of_file mproot
+
+(*
+ * Strip DOS-style line-endings.
+ *)
+let unix_of_dos s =
+   let len = String.length s in
+   let buf = Buffer.create len in
+   let rec copy i =
+      if i = len then
+         Buffer.contents buf
+      else
+         let c = s.[i] in
+            if c = '\r' && i + 1 < len && s.[i + 1] = '\n' then
+               begin
+                  Buffer.add_char buf '\n';
+                  copy (i + 2)
+               end
+            else
+               begin
+                  Buffer.add_char buf c;
+                  copy (i + 1)
+               end
+   in
+      copy 0
+
+(*
+ * Replace the file with the string.
+ *)
+let save_root_file filename contents =
+   let contents = unix_of_dos contents in
+      eprintf "save_root_file: %s@." filename;
+      eprintf "%s$@." contents
 
 (*
  * Browser table.
@@ -79,6 +169,23 @@ struct
 
    let add_buffer table v buffer =
       SymbolTable.add table v (fun buf -> Buffer.add_buffer buf buffer)
+
+   let add_file table v filename =
+      SymbolTable.add table v (fun buf ->
+         match channel_of_file mproot filename with
+            Some inx ->
+               let rec copy () =
+                  Buffer.add_char buf (input_char inx);
+                  copy ()
+               in
+               let () =
+                  try copy () with
+                     End_of_file ->
+                        ()
+               in
+                  close_in inx
+          | None ->
+              ())
 
    let add_fun = SymbolTable.add
 
@@ -149,36 +256,21 @@ let parse table buf inx =
       main (Lexing.from_channel inx)) inx
 
 (*
- * Open the file as a channel.
- *)
-let mplib =
-   try Some (Sys.getenv "MPLIB") with
-      Not_found ->
-         eprintf "Shell_browser.print_file: the MPLIB environment variable is not defined@.";
-         None
-
-let channel_of_file name =
-   match mplib with
-      None ->
-         None
-    | Some mplib ->
-         let name = Filename.concat mplib name in
-            try
-               if (Unix.stat name).Unix.st_kind = Unix.S_REG then
-                  Some (open_in name)
-               else
-                  None
-            with
-               Sys_error _ | Unix.Unix_error _ ->
-                  None
-
-(*
  * Print the contents of a file, with replacement.
  *)
 let print_raw_file_to_http out name =
-   match channel_of_file name with
+   match channel_of_file mplib name with
       Some inx ->
-         print_success_channel out OkCode inx
+         print_success_channel out OkCode inx;
+         close_in inx
+    | None ->
+         print_error_page out NotFoundCode
+
+let print_metaprl_file_to_http out name =
+   match channel_of_file mproot name with
+      Some inx ->
+         print_success_channel out OkCode inx;
+         close_in inx
     | None ->
          print_error_page out NotFoundCode
 
@@ -186,7 +278,7 @@ let print_raw_file_to_http out name =
  * Print the contents of a file, with replacement.
  *)
 let print_translated_file print_success_page print_error_page out table name =
-   match channel_of_file name with
+   match channel_of_file mplib name with
       Some inx ->
          let buf = Buffer.create 1024 in
             parse table buf inx;
@@ -206,6 +298,16 @@ let print_translated_file_to_channel out table name =
       raise (Invalid_argument ("File not found: " ^ name))
    in
       print_translated_file print_success_page print_error_page out table name
+
+let print_multipart_file_to_http out table name pages =
+   match channel_of_file mplib name with
+      Some inx ->
+         let buf = Buffer.create 1024 in
+            parse table buf inx;
+            close_in inx;
+            print_multipart_page out OkCode (("text/HTML", buf) :: pages)
+    | None ->
+         print_error_page out NotFoundCode
 }
 
 (*

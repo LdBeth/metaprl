@@ -3,17 +3,18 @@
     <head>
         <title>%%TITLE%%: %%LOCATION%%</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<script type="text/javascript" src="/inputs/menucancel.js"></script>
+	<script type="text/javascript" src="/inputs/message.js"></script>
 	<link rel="stylesheet" type="text/css" href="/inputs/style.css">
         %%STYLE%%
         <script type="text/javascript">
         <!-- Hide this text from old browsers --
-	session = new Array();
 	%%SESSION%%
 	-->
 	</script>
     </head>
 
-    <body id="messagebody" onload="parent.LoadMessage(session)">
+    <body id="messagebody" onload="OnLoad(session)">
     %%MESSAGE%%
     </body>
 </html>

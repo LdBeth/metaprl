@@ -45,6 +45,7 @@ type ls_option =
     *   LsHandles: display handles to allow selection of arbitrary subterms.
     *)
  | LsHandles
+ | LsExternalEditor
 
 module LsOptionSet : Lm_set_sig.LmSet with type elt = ls_option
 
