@@ -46,6 +46,7 @@ open Refiner.Refiner.TermType
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
+open Refiner.Refiner.TermShape
 open Refiner.Refiner.Rewrite
 open Term_match_table
 open Simple_print.SimplePrint
@@ -325,6 +326,10 @@ let dcontv_opname = mk_opname "df_context_var" base_opname
 let make_cont v = mk_term (mk_op dcontv_opname [make_param (Var v)]) []
 
 (* List of params *)
+(*
+ * XXX: BUG: Nogin: format_simple_param will not do the right thing for printing
+ * shape parameters in the "src" mode
+ *)
 let rec format_paramlist buf = function
    [] ->
       ()
@@ -721,7 +726,8 @@ let slot { dform_state = state; dform_items = items; dform_printer = printer; df
          format_etag state buf
     | [RewriteString s]
     | [RewriteNum ((RewriteMetaParam _) as s)]
-    | [RewriteToken ((RewriteMetaParam _) as s)] ->
+    | [RewriteToken ((RewriteMetaParam _) as s)]
+    | [RewriteShape ((RewriteMetaParam _) as s)] ->
          if !debug_dform then
             eprintf "Dform.slot: str: %s%t" (string_of_param s) eflush;
          format_string buf (string_of_param s)
@@ -738,6 +744,10 @@ let slot { dform_state = state; dform_items = items; dform_printer = printer; df
             eprintf "Dform.slot: token: %s%t" (string_of_opname opname) eflush;
          (* XXX: TODO (nogin) Should we use the shortener here? *)
          format_string buf (string_of_opname opname)
+    | [RewriteShape (RewriteParam sh)] ->
+         if !debug_dform then
+             eprintf "Dform.slot: shape: %s%t" (string_of_shape sh) eflush;
+         printer buf NOParens (canonical_term_of_shape sh)
     | [RewriteNum (RewriteParam n)] ->
          let s = Lm_num.string_of_num n in
             if !debug_dform then
@@ -811,6 +821,7 @@ let init_list =
     "popfont",  [], popfont;
     "slot",     [MString raw_sym; MString s_sym], slot;
     "slot",     [MString s_sym], slot;
+    "slot",     [MShape s_sym], slot;
     "slot",     [MLevel (mk_var_level_exp l_sym)], slot;
     "slot",     [MToken t_sym], slot;
     "slot",     [MNumber n_sym], slot;

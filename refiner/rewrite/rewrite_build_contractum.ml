@@ -42,6 +42,7 @@ open Term_base_sig
 open Term_man_sig
 open Term_addr_sig
 open Term_subst_sig
+open Term_shape_sig
 open Refine_error_sig
 
 open Rewrite_util_sig
@@ -63,6 +64,7 @@ module MakeRewriteBuildContractum
    (TermMan : TermManSig with module ManTypes = TermType)
    (TermAddr : TermAddrSig with module AddrTypes = TermType)
    (TermSubst : TermSubstSig with module SubstTypes = TermType)
+   (TermShape : TermShapeSig with type term = TermType.term)
    (RefineError : RefineErrorSig with module Types = TermType)
    (RewriteUtil : RewriteUtilSig
     with type term = TermType.term
@@ -79,6 +81,7 @@ struct
    open TermMan
    open TermAddr
    open TermSubst
+   open TermShape
    open RewriteTypes
    open RewriteDebug
 
@@ -367,6 +370,7 @@ struct
                 StackString s -> String s
               | StackVar v -> MString v
               | StackNumber j -> String (Lm_num.string_of_num j)
+              | StackShape sh -> String (string_of_shape sh)
               | _ -> raise(build_con_exn)
          end
     | RWMToken i ->

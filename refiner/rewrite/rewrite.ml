@@ -109,7 +109,7 @@ struct
       MakeRewriteMatchRedex (TermType) (Term) (TermMan) (TermAddr) (TermSubst) (TermShape) (**)
          (RefineError) (RewriteUtil) (RewriteDebug)
    module RewriteBuildContractum =
-      MakeRewriteBuildContractum (TermType) (Term) (TermMan) (TermAddr) (TermSubst) (**)
+      MakeRewriteBuildContractum (TermType) (Term) (TermMan) (TermAddr) (TermSubst) (TermShape) (**)
          (RefineError) (RewriteUtil) (RewriteDebug)
 
    open RwTypes
