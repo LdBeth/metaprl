@@ -36,38 +36,19 @@ open Term_subst_sig
 open Term_man_sig
 
 module TermMan (**)
-   (Term : TermDsSig
-        with type level_exp_var = TermType.level_exp_var
-        with type level_exp = TermType.level_exp
-        with type param = TermType.param
-        with type operator = TermType.operator
-        with type term = TermType.term
-        with type term_core = TermType.term_core
-        with type bound_term = TermType.bound_term
-        with type esequent = TermType.esequent
-        with type seq_hyps = TermType.seq_hyps
-        with type seq_goals = TermType.seq_goals
-        with type hypothesis = TermType.hypothesis
-
-        with type level_exp_var' = TermType.level_exp_var'
-        with type level_exp' = TermType.level_exp'
-        with type object_id = TermType.object_id
-        with type param' = TermType.param'
-        with type operator' = TermType.operator'
-        with type term' = TermType.term'
-        with type bound_term' = TermType.bound_term')
+   (Term : TermDsSig with module TermTypes = TermType)
    (TermOp : TermOpSig
-    with type term = Term.term)
+    with type term = TermType.term)
    (TermSubst : TermSubstSig
-    with type term = Term.term
-    with type param = Term.param)
+    with type term = TermType.term
+    with type param = TermType.param)
    (RefineError : RefineErrorSig
-    with type term = Term.term)
+    with type term = TermType.term)
 : TermManSig
-  with type term = Term.term
+  with type term = TermType.term
   with type match_term = TermType.match_term
-  with type operator = Term.operator
-  with type level_exp = Term.level_exp
+  with type operator = TermType.operator
+  with type level_exp = TermType.level_exp
   with type esequent = TermType.esequent
   with type hypothesis = TermType.hypothesis
 

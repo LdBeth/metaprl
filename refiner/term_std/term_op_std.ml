@@ -39,21 +39,7 @@ open Term_std_sig
 open Term_std
 
 module TermOp
-   (Term : TermStdSig
-    with type level_exp_var = TermType.level_exp_var
-    with type level_exp = TermType.level_exp
-    with type param = TermType.param
-    with type operator = TermType.operator
-    with type term = TermType.term
-    with type bound_term = TermType.bound_term
-
-    with type level_exp_var' = TermType.level_exp_var'
-    with type level_exp' = TermType.level_exp'
-    with type object_id = TermType.object_id
-    with type param' = TermType.param'
-    with type operator' = TermType.operator'
-    with type term' = TermType.term'
-    with type bound_term' = TermType.bound_term')
+   (Term : TermStdSig with module TermTypes = TermType)
    (RefineError : RefineErrorSig
     with type level_exp = TermType.level_exp
     with type param = TermType.param

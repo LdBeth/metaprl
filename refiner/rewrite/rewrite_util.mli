@@ -42,17 +42,7 @@ module MakeRewriteUtil
    (TermAddr : TermAddrSig
     with type term = TermType.term)
    (Term : TermBaseSig
-    with type term = TermType.term
-    with type term' = TermType.term'
-    with type bound_term = TermType.bound_term
-    with type bound_term' = TermType.bound_term'
-    with type operator = TermType.operator
-    with type operator' = TermType.operator'
-    with type param = TermType.param
-    with type param' = TermType.param'
-    with type level_exp = TermType.level_exp
-    with type level_exp' = TermType.level_exp'
-    with type object_id = TermType.object_id)
+    with module TermTypes = TermType)
    (RefineError : RefineErrorSig
     with type level_exp = TermType.level_exp
     with type param = TermType.param

@@ -7,34 +7,34 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Lori Lorigo, Richard Eaton, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
-open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Definition
 open Link
 
 type orb
-type connection = 
+type connection =
 	{ link	: link;
 	  orb	: orb;			(* local orb containing connection *)
 	  ro_address	: string list	(* remote orb *)
-	}	
+	}
 type environment
 
 val orb_open	: string (* mnemonic *)  -> orb
@@ -48,17 +48,17 @@ val jprover_description_term	: term
 val metaprl_description_term	: term
 val current_description_term	: term ref
 
-val open_library_environment	: connection			
+val open_library_environment	: connection
 				-> string			(* "" means new lib env, otherwise -> restore *)
 				-> (term -> term) 		(* local eval *)
 				-> environment
 val close_library_environment	: environment -> string
-val join_library_environment	: connection 
- 				-> string list			(* mneumonic *)				
+val join_library_environment	: connection
+ 				-> string list			(* mneumonic *)
 				-> (term -> term) 		(* local eval *)
 				-> environment
 val leave_library_environment	: environment -> unit
-val restore_library_environment	: connection			
+val restore_library_environment	: connection
 				-> string
 				-> (term -> term) 		(* local eval *)
 				-> environment

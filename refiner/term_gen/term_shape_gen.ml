@@ -43,14 +43,7 @@ open Term_shape_sig
 module TermShape (**)
    (TermType : TermSig)
    (Term : TermBaseSig
-    with type term = TermType.term
-    with type term' = TermType.term'
-    with type bound_term = TermType.bound_term
-    with type bound_term' = TermType.bound_term'
-    with type operator = TermType.operator
-    with type operator' = TermType.operator'
-    with type param = TermType.param
-    with type param' = TermType.param')
+    with module TermTypes = TermType)
    (TermMan : TermManSig
     with type term = TermType.term) =
 struct
@@ -58,8 +51,8 @@ struct
    open Term
    open TermMan
 
-   type term = Term.term
-   type param = Term.param
+   type term = TermType.term
+   type param = TermType.param
 
    type shape =
       { shape_opname : opname;

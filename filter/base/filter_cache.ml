@@ -335,7 +335,7 @@ struct
    module MakeSigInfo (Convert : ConvertInternalSig with type term = ToTerm.TermType.term) =
    struct
       type select = select_type
-      type raw    = TTerm.term
+      type raw    = ToTerm.TermType.term
       type cooked = Convert.cooked summary_type
       type arg    = Convert.t
 
@@ -381,7 +381,7 @@ struct
    module MakeStrInfo (Convert : ConvertInternalSig with type term = ToTerm.TermType.term) =
    struct
       type select = select_type
-      type raw    = TTerm.term
+      type raw    = ToTerm.TermType.term
       type cooked = Convert.cooked summary_type
       type arg    = Convert.t
 

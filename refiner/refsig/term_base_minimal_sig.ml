@@ -51,22 +51,8 @@ sig
     * TYPES                                                                *
     ************************************************************************)
 
-   type level_exp_var
-   type level_exp
-   type param
-   type operator
-   type term
-   type bound_term
-   type seq_hyps
-   type seq_goals
-
-   type hypothesis
-   type level_exp_var'
-   type level_exp'
-   type param'
-   type operator'
-   type term'
-   type bound_term'
+   module TermTypes : Term_sig.TermSig
+   open TermTypes
 
    module SeqHyp : MinLinSet with type elt = hypothesis with type t = seq_hyps
    module SeqGoal : MinLinSet with type elt = term with type t = seq_goals
@@ -104,6 +90,7 @@ end
 module type TermBaseInternalSig =
 sig
    include TermBaseMinimalSig
+   open TermTypes
 
    (*
     * This function is not exported by the refiner,

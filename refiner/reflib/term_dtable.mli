@@ -30,7 +30,7 @@
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
-open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 
 type 'a term_dtable
 type 'a term_dextract

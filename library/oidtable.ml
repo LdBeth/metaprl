@@ -32,6 +32,7 @@ let _ =
    show_loading "Loading Oidtable%t"
 
 open Basic
+open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 
 open Tentfunctor

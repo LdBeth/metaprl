@@ -41,8 +41,8 @@ module PSymbolTable : LmMap with type key = psymbol
 module PSymbolMTable : LmMapList with type key = psymbol
 
 val psymbol_set_compare : PSymbolSet.t -> PSymbolSet.t -> int
-type mp_pre_term = Refiner.Refiner.Term.term * pos
-and mp_term = Refiner.Refiner.Term.term
+type mp_pre_term = Refiner.Refiner.TermType.term * pos
+and mp_term = Refiner.Refiner.TermType.term
 and mp_pre_rewrite = mp_pre_term list * mp_pre_term
 and mp_pre_term_rewrite = mp_pre_term * mp_pre_term
 and mp_rewrite = Refiner.Refiner.Rewrite.rewrite_rule
@@ -72,7 +72,7 @@ and lexer_crewrite_table = mp_rewrite PSymbolMTable.t
 and crewrites = {
   rw_lexer : lexer_crewrite_table;
   rw_parser : crewrite_table;
-} 
+}
 and item = production_id * int
 
 val item_compare : int * int -> int * int -> int
@@ -88,12 +88,12 @@ module IntSetMap : LmMap with type key = IntSet.t
 module Parser_state : LmMap with type key = item
 
 type parser_state = PSymbolSet.t Parser_state.t
-and state_struct = { state_map : parser_state; state_cache : IntSet.t; } 
+and state_struct = { state_map : parser_state; state_cache : IntSet.t; }
 and state_list = parser_state list
 and state_list_struct = {
   states_list : state_struct list;
   states_cache : int IntSetMap.t;
-} 
+}
 and state_with_id_list_struct = (state_struct * int) list
 and state_id = int
 and action_edge = state_id * state_id * psymbol
@@ -115,17 +115,17 @@ and grammar_state = {
   grammar_local_rewrites : mp_pre_term_rewrite list;
   grammar_post_rewrites : mp_pre_term_rewrite list list;
   grammar_inline_forms : mp_pre_term list;
-} 
+}
 and lexer_env = {
   lexer_regexps : multi_regexp list;
   lexer_options : loption list;
   lexer_rewrites : lexer_rewrite_table;
-} 
+}
 and clexer_env = {
   clexer_regexps : cregexp list;
   clexer_options : loption list;
   clexer_rewrites : lexer_rewrite_table;
-} 
+}
 and parser_env = {
   parser_module : string;
   parser_grammar : grammar_table;
@@ -135,7 +135,7 @@ and parser_env = {
   parser_first_set : PSymbolSet.t PSymbolTable.t;
   parser_follow_set : PSymbolSet.t PSymbolTable.t;
   parser_rewrites : rewrite_table;
-} 
+}
 and ploc = state_id * psymbol
 val ploc_compare : 'a * psymbol -> 'a * psymbol -> int
 
@@ -162,5 +162,5 @@ and phobos_parser_return_type = {
   phobos_local_rewrites : mp_pre_term_rewrite list;
   phobos_post_rewrites : mp_pre_term_rewrite list list;
   phobos_inline_forms : mp_pre_term list;
-} 
+}
 and source = (psymbol * string * pos) list

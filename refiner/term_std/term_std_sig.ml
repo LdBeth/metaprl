@@ -121,23 +121,8 @@ sig
     * TYPES                                                                *
     ************************************************************************)
 
-   type level_exp_var
-   type level_exp
-   type param
-   type operator
-   type term
-   type bound_term
-   type seq_hyps
-   type seq_goals
-
-   type hypothesis
-   type level_exp_var'
-   type level_exp'
-   type object_id
-   type param'
-   type operator'
-   type term'
-   type bound_term'
+   module TermTypes : TermStdTypeSig
+   open TermTypes
 
    module SeqHyp : Lm_linear_set_sig.LinearSetSig with type elt = hypothesis with type t = seq_hyps
    module SeqGoal : Lm_linear_set_sig.LinearSetSig with type elt = term with type t = seq_goals

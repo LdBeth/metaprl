@@ -49,7 +49,7 @@ val set_file : unit -> unit
 val set_lib : unit -> unit
 
 (* FDL connection utility *)
-val term_of_meta_term : Refiner.Refiner.TermType.meta_term -> Refiner.Refiner.Term.term
+val term_of_meta_term : Refiner.Refiner.TermType.meta_term -> Refiner.Refiner.TermType.term
 
 (*
  * -*-

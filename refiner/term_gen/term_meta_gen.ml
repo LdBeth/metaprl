@@ -43,14 +43,7 @@ open Lm_symbol
 module TermMeta (**)
    (TermType : TermSig)
    (Term : TermBaseSig
-    with type term = TermType.term
-    with type term' = TermType.term'
-    with type bound_term = TermType.bound_term
-    with type bound_term' = TermType.bound_term'
-    with type operator = TermType.operator
-    with type hypothesis = TermType.hypothesis
-    with type seq_hyps = TermType.seq_hyps
-    with type seq_goals = TermType.seq_goals)
+    with module TermTypes = TermType)
    (TermSubst : TermSubstSig
     with type term = TermType.term)
    (TermMan : TermManSig

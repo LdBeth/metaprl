@@ -103,7 +103,7 @@ type multi_regexp = bool * string * string list
 (*************************************************
  * Parser symbols.
  *************************************************)
-(* 
+(*
  * A psymbol can be a terminal (token),
  * a non-terminal, an empty symbol, or an EOF.
  *)
@@ -116,7 +116,7 @@ type psymbol =
 (*************************************************
  * Higher ADT's with psymbols.
  *************************************************)
- 
+
 let compare_strings = compare
 
 (*
@@ -184,12 +184,12 @@ let psymbol_set_compare pss1 pss2 =
  *************************************************)
 (*
  * A rule associates a non-terminal psymbol to a list of
- * psymbols. It also has an optional precedence symbol 
+ * psymbols. It also has an optional precedence symbol
  * and its position.
  *)
 
-type mp_pre_term = Refiner.Refiner.Term.term * pos
-type mp_term = Refiner.Refiner.Term.term
+type mp_pre_term = Refiner.Refiner.TermType.term * pos
+type mp_term = Refiner.Refiner.TermType.term
 
 type mp_pre_rewrite = mp_pre_term list * mp_pre_term
 type mp_pre_term_rewrite = mp_pre_term * mp_pre_term
@@ -213,7 +213,7 @@ type grammar_table = psymbol list PSymbolMTable.t
  * one mapping productions to unique integers,
  * and vice versa. Then we will represent an item
  * by a production_id and a position.
- *)   
+ *)
 type production_id = int
 
 let production_id_compare = (-)
@@ -323,7 +323,7 @@ let int_set_compare is1 is2 =
    with
         IntSetCompareResult i -> i
       | Invalid_argument _ -> !shorter
-         
+
 module IntSetBase =
 struct
    type t = IntSet.t
@@ -339,7 +339,7 @@ module Parser_state = Lm_map.LmMake (ItemBase)
 
 type parser_state = (PSymbolSet.t(* * bool*)) Parser_state.t
 
-type state_struct = 
+type state_struct =
    { state_map : parser_state;
      state_cache : IntSet.t
    }
@@ -455,7 +455,7 @@ let ploc_compare (i1, ps1) (i2, ps2) =
       temp
    else
       psymbol_compare ps1 ps2
- 
+
 module FABase =
 struct
    type t = ploc

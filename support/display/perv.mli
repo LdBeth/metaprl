@@ -30,7 +30,7 @@
  * jyh@cs.cornell.edu
  *)
 open Lm_symbol
-open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 
 declare "nil"
 declare "cons"{'car; 'cdr}

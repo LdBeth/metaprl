@@ -38,5 +38,5 @@ module NuprlRun (Nuprl: NuprlSig):
       val run_library : string -> unit  (* uses  NUPRL_HOST and NUPRL_PORT env vars *)
       val run_jprover : int (*library*) -> string (*host*) -> string (*library*) -> string (*db*) -> unit
       val run_connection : int (*library*) -> string (*host*) -> string (*library*) -> string (*db*) -> unit
-      val run_connection_with_hook : int (*library*) -> string (*host*)-> string -> string (*dbpath*) -> (Refiner.Refiner.Term.term -> Refiner.Refiner.Term.term) -> unit
+      val run_connection_with_hook : int (*library*) -> string (*host*)-> string -> string (*dbpath*) -> (Refiner.Refiner.TermType.term -> Refiner.Refiner.TermType.term) -> unit
     end

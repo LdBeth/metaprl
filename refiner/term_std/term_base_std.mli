@@ -40,24 +40,7 @@ module Term (**)
     with type param = TermType.param
     with type term = TermType.term
     with type bound_term = TermType.bound_term)
-: TermStdSig
-  with type level_exp_var = TermType.level_exp_var
-  with type level_exp = TermType.level_exp
-  with type param = TermType.param
-  with type operator = TermType.operator
-  with type term = TermType.term
-  with type bound_term = TermType.bound_term
-  with type seq_hyps = TermType.seq_hyps
-  with type seq_goals = TermType.seq_goals
-
-  with type hypothesis = TermType.hypothesis
-  with type level_exp_var' = TermType.level_exp_var'
-  with type level_exp' = TermType.level_exp'
-  with type object_id = TermType.object_id
-  with type param' = TermType.param'
-  with type operator' = TermType.operator'
-  with type term' = TermType.term'
-  with type bound_term' = TermType.bound_term'
+: (TermStdSig with module TermTypes = TermType)
 
 (*
  * -*-

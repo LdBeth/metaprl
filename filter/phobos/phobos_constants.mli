@@ -17,12 +17,12 @@ val array_sub : 'a array -> int -> int -> 'a array
 val string_of_file : string -> string
 val first_of_option : ('a * 'b) option -> 'a option
 val breakup_term :
-  Refiner.Refiner.Term.term ->
-  Opname.opname * Refiner.Refiner.Term.param' list *
+  Refiner.Refiner.TermType.term ->
+  Opname.opname * Refiner.Refiner.TermType.param' list *
   Refiner.Refiner.TermType.bound_term list
 val breakup_bterm :
-  Refiner.Refiner.Term.bound_term ->
-  Opname.opname * Refiner.Refiner.Term.param' list *
+  Refiner.Refiner.TermType.bound_term ->
+  Opname.opname * Refiner.Refiner.TermType.param' list *
   Refiner.Refiner.TermType.bound_term list
 val timestamp_of : string -> float
 val size_of : string -> int

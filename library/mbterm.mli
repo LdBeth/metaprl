@@ -27,7 +27,7 @@
 
 (*conversion between nuprl-light terms and mathbus terms*)
 
-open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open MathBus
 
 val use_table : bool ref

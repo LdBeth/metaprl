@@ -34,26 +34,7 @@ open Term_op_sig
 open Term_ds
 
 module TermOp
-   (Term : TermDsSig
-    with type level_exp_var = TermType.level_exp_var
-    with type level_exp = TermType.level_exp
-    with type param = TermType.param
-    with type operator = TermType.operator
-    with type term = TermType.term
-    with type term_core = TermType.term_core
-    with type bound_term = TermType.bound_term
-    with type hypothesis = TermType.hypothesis
-    with type esequent = TermType.esequent
-    with type seq_hyps = TermType.seq_hyps
-    with type seq_goals = TermType.seq_goals
-
-    with type level_exp_var' = TermType.level_exp_var'
-    with type level_exp' = TermType.level_exp'
-    with type object_id = TermType.object_id
-    with type param' = TermType.param'
-    with type operator' = TermType.operator'
-    with type term' = TermType.term'
-    with type bound_term' = TermType.bound_term')
+   (Term : TermDsSig with module TermTypes = TermType)
    (RefineError : RefineErrorSig
     with type level_exp = TermType.level_exp
     with type param = TermType.param

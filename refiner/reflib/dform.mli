@@ -35,7 +35,7 @@ open Lm_string_set
 
 open Opname
 open Precedence
-open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.Rewrite
 

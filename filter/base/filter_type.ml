@@ -33,7 +33,7 @@ open Lm_symbol
 
 open Term_shape_sig
 open Refiner.Refiner
-open Term
+open TermType
 open TermMeta
 open Opname
 open Dform
@@ -65,7 +65,7 @@ exception IterfImplemMismatch of string
 (*
  * A "quoted" term is given in exploded form.
  *)
-type quote_term = string * Term.param list * bound_term list
+type quote_term = string * param list * bound_term list
 
 (*
  * Module paths, but empty paths are not allowed.

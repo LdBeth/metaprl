@@ -66,23 +66,7 @@ struct
    open TermType
    open RefineError
 
-   type level_exp_var  = TermType.level_exp_var
-   type level_exp      = TermType.level_exp
-   type param          = TermType.param
-   type operator       = TermType.operator
-   type term           = TermType.term
-   type bound_term     = TermType.bound_term
-   type seq_hyps       = TermType.seq_hyps
-   type seq_goals      = TermType.seq_goals
-
-   type hypothesis     = TermType.hypothesis
-   type level_exp_var' = TermType.level_exp_var'
-   type level_exp'     = TermType.level_exp'
-   type object_id      = TermType.object_id
-   type param'         = TermType.param'
-   type operator'      = TermType.operator'
-   type term'          = TermType.term'
-   type bound_term'    = TermType.bound_term'
+   module TermTypes = TermType
 
    (*
     * Simple substitution.

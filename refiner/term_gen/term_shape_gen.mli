@@ -40,19 +40,12 @@ open Term_shape_sig
 module TermShape (**)
    (TermType : TermSig)
    (Term : TermBaseSig
-    with type term = TermType.term
-    with type term' = TermType.term'
-    with type bound_term = TermType.bound_term
-    with type bound_term' = TermType.bound_term'
-    with type operator = TermType.operator
-    with type operator' = TermType.operator'
-    with type param = TermType.param
-    with type param' = TermType.param')
+    with module TermTypes = TermType)
    (TermMan : TermManSig
     with type term = TermType.term)
 : TermShapeSig
-  with type term = Term.term
-  with type param = Term.param
+  with type term = TermType.term
+  with type param = TermType.param
 
 (*
  * -*-

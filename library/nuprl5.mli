@@ -27,7 +27,7 @@
 open Lm_symbol
 
 open Opname
-open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Lm_num
 
 val mk_nuprl5_op	: param list -> operator
@@ -68,15 +68,3 @@ val nuprl_dest_not : term -> term
 
 val nuprl_is_var_term : term -> bool
 val nuprl_dest_var : term -> var
-
-
-
-
-
-
-
-
-
-
-
-

@@ -33,7 +33,7 @@
  * Modified by: Alexey Nogin <nogin@cs.cornell.edu>
  *)
 open Lm_symbol
-open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 
 open Unify_mm
 

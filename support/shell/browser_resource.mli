@@ -23,7 +23,7 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Mp_resource
 
 (************************************************************************

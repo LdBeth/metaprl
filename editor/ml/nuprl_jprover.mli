@@ -27,7 +27,7 @@
  *
  *)
 
-open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 
 val jprover_result_to_term : (string * term * term) list -> term
 

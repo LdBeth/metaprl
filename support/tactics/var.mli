@@ -31,7 +31,7 @@
  *)
 open Lm_symbol
 open Tactic_type.Sequent
-open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 
 (* Generate a new var different from any in the list *)
 val new_var           : var -> var list -> var

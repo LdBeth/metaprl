@@ -389,7 +389,7 @@ let params_ctyp loc ctyp params =
                ContextParam _ ->
                   <:ctyp< int >>
              | TermParam _ ->
-                  <:ctyp< Refiner.Refiner.Term.term >>
+                  <:ctyp< Refiner.Refiner.TermType.term >>
          in
             <:ctyp< $arg_type$ -> $ctyp'$ >>
    in

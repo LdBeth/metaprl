@@ -56,21 +56,7 @@ let _ =
 module TermMan (**)
    (Term : TermSig)
    (TermBase : TermBaseSig
-    with type term = Term.term
-    with type term' = Term.term'
-    with type bound_term = Term.bound_term
-    with type bound_term' = Term.bound_term'
-    with type operator = Term.operator
-    with type operator' = Term.operator'
-    with type param = Term.param
-    with type param' = Term.param'
-    with type level_exp = Term.level_exp
-    with type level_exp' = Term.level_exp'
-    with type level_exp_var = Term.level_exp_var
-    with type level_exp_var' = Term.level_exp_var'
-    with type hypothesis = Term.hypothesis
-    with type seq_hyps = Term.seq_hyps
-    with type seq_goals = Term.seq_goals)
+    with module TermTypes = Term)
    (TermOp : TermOpSig
     with type term = Term.term)
    (TermSubst : TermSubstSig

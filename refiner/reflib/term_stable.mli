@@ -31,7 +31,7 @@
  *)
 open Lm_printf
 
-open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Mp_resource
 
 type 'a term_stable

@@ -38,7 +38,7 @@
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 open Mp_resource
-open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Tactic_type.Tactic
 
 (*
