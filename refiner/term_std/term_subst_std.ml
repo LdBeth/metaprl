@@ -76,6 +76,25 @@ struct
     ************************************************************************)
 
    (*
+    * Check whether a term is closed.
+    *)
+   let rec is_closed_term bvars = function
+      { term_op = { op_name = opname; op_params = [Var v] }; term_terms = bterms } when Opname.eq opname var_opname ->
+         List.mem v bvars && is_closed_bterms bvars bterms
+    | { term_terms = bterms } ->
+         is_closed_bterms bvars bterms
+
+   and is_closed_bterms bvars = function
+      { bvars = vars; bterm = term} :: l ->
+         let bvars' = vars @ bvars in
+            is_closed_term bvars' term && is_closed_bterms bvars l
+
+    | [] ->
+         true
+
+   let is_closed_term = is_closed_term []
+
+   (*
     * Calculate the list of free variables.
     * Also count second order variables.
     * Just recursively descend the term, keeping track

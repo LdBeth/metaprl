@@ -78,6 +78,9 @@ struct
 
    type term_subst = (var * term) list
 
+   let is_closed_term t =
+      SymbolSet.is_empty (free_vars_set t)
+
    let rec combine_fst_flt_nodups fvs vl tl =
       match vl, tl with
        | [v],[t] ->

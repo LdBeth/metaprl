@@ -107,6 +107,7 @@ sig
    (*
     * Get the list of free variables.
     *)
+   val is_closed_term : term -> bool
    val is_var_free : var -> term -> bool
    val is_some_var_free : var list -> term -> bool
    val is_some_var_free_list : var list -> term list -> bool
