@@ -82,14 +82,14 @@ struct
     * In a redex:
     *    RWComposite matches a term with a given pattern
     *    RWSOVar matches any term
+    *    RWSOInstance matches an instantiated second order variable
     *    RWSOContext matches a second order context with an addressed subterm
     *    RWCheckVar matches the specific bound variable
     *    RWFreeVars enforces restrictions on free instances
     *       of some variables. This is generated only in "strict" mode.
     * In a contractum:
     *    RWComposite construct a term with the given pattern
-    *    RWSOMatch matches an instantiated second order variable
-    *    RWSOSubst instantiates a second order variable
+    *    RWSOINstance instantiates a second order variable
     *    RWSOContextSubst instantiates a second order context
     *    RWCheckVar instantiates a bound variable
     *)
@@ -98,14 +98,12 @@ struct
     | RWCompositeSimple of rwcterm_simple
     | RWSequent of rwterm * rw_seq_term list * rwterm list
     | RWSOVar of int * int list
-    | RWSOMatch of int * rwterm list
-    | RWSOSubst of int * rwterm list
+    | RWSOInstance of int * rwterm list
     | RWSOContext of int * int * rwterm * int list
     | RWSOContextSubst of int * rwterm * rwterm list
     | RWFreeVars of rwterm * int list * int list
     | RWCheckVar of int
     | RWStackVar of int
-    | RWError
 
    (* Match a specific term *)
    and rwcterm = { rw_op : rwoperator; rw_bterms : rw_bound_term list }

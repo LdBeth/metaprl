@@ -159,7 +159,7 @@ struct
                let index = array_rstack_so_index v stack in
                check_arity v conts (List.length subterms) stack.(index);
                let enames, subterms = compile_so_contractum_terms strict enames stack bconts bvars subterms in
-                  enames, RWSOSubst(index, subterms)
+                  enames, RWSOInstance(index, subterms)
 
             end else if (strict = Relaxed) &&
                     (array_rstack_mem v stack) &&

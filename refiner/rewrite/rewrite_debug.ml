@@ -262,12 +262,8 @@ struct
                (print_prog_list (tabstop + 3)) goals
        | RWSOVar (i, il) ->
             fprintf out "RWSOVar (%d, %a)\n" i print_int_list il
-       | RWSOMatch (i, tl) ->
-            fprintf out "RWSOMatch (%d)\n%a" (**)
-               i
-               (print_prog_list (tabstop + 3)) tl
-       | RWSOSubst (i, tl) ->
-            fprintf out "RWSOSubst %d\n%a" i (print_prog_list (tabstop + 3)) tl
+       | RWSOInstance (i, tl) ->
+            fprintf out "RWSOInstance (%d)\n%a" i (print_prog_list (tabstop + 3)) tl
        | RWSOContext (i, j, t, il) ->
             fprintf out "RWSOContext (%d, %d, [%a])\n%a" (**)
                i j print_int_list il
@@ -283,8 +279,6 @@ struct
             fprintf out "RWCheckVar %d\n" i
        | RWStackVar i ->
             fprintf out "RWStackVar %d\n" i
-       | RWError ->
-            fprintf out "RWError"
 
    and print_prog_list tabstop out tl =
       List.iter (print_prog tabstop out) tl

@@ -221,13 +221,13 @@ struct
          in
             mk_sequent_term seq
 
-    | RWSOSubst(i, []) ->
+    | RWSOInstance(i, []) ->
          begin
             match stack.(i) with
                StackBTerm(term, []) -> term
              | _ -> raise(Invalid_argument("Rewrite_build_contractum.build_contractum_term: stack entry is not valid"))
          end
-    | RWSOSubst(i, terms) ->
+    | RWSOInstance(i, terms) ->
          begin
              (*
               * Instantiate a second order term.
@@ -239,7 +239,7 @@ struct
                IFDEF VERBOSE_EXN THEN
                   if !debug_subst then
                       begin
-                         eprintf "RWSOSubst2: %a%t" debug_print term eflush;
+                         eprintf "RWSOInstance 2: %a%t" debug_print term eflush;
                          List.iter2 (fun name term ->
                                eprintf "\t%a: %a%t" print_symbol name debug_print term eflush) (**)
                             vars terms
@@ -256,7 +256,7 @@ struct
                   StackBTerm(term, vars) ->
                      IFDEF VERBOSE_EXN THEN
                         if !debug_subst then
-                           eprintf "RWSOSubst: BTerm: %a: [%a]%t" debug_print term print_symbol_list vars eflush
+                           eprintf "RWSOInstance: BTerm: %a: [%a]%t" debug_print term print_symbol_list vars eflush
                      ENDIF;
                      subst term vars
                 | _ ->

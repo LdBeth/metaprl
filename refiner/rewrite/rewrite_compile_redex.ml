@@ -207,12 +207,12 @@ struct
                   match the SO variable v may have no free occurences of this argument
                   and this would prevent us from establishing an SO pattern *)
                let stack, terms = compile_so_redex_terms false restrict addrs stack svars bconts bvars subterms in
-               stack, RWSOMatch(rstack_so_index v stack, terms)
+               stack, RWSOInstance(rstack_so_index v stack, terms)
             end else
                let stack' = (stack @ [SOVarInstance (v, conts, List.length subterms)]) in
                let stack', terms =
                   compile_so_redex_terms false restrict addrs stack' svars bconts bvars subterms in
-               stack', RWSOMatch(List.length stack, terms)
+               stack', RWSOInstance(List.length stack, terms)
 
       else if is_context_term term then
          let v, term, conts, vars = dest_context term in

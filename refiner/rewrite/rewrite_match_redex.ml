@@ -359,14 +359,10 @@ struct
                end else
                   REF_RAISE(RefineError ("match_redex_term", RewriteBadMatch (TermMatch t)))
 
-       | RWSequent (arg', hyps', goals') ->
-            let { sequent_args = arg;
-                  sequent_hyps = hyps;
-                  sequent_goals = goals
-                } = explode_sequent_and_rename t all_bvars
-            in
-               match_redex_term addrs stack all_bvars arg' arg;
-               match_redex_sequent_hyps addrs stack goals' goals all_bvars hyps' hyps 0 (SeqHyp.length hyps)
+       | RWSequent (arg, hyps, goals) ->
+            let s = if SymbolSet.is_empty all_bvars then explode_sequent t else explode_sequent_and_rename t all_bvars in
+               match_redex_term addrs stack all_bvars arg s.sequent_args;
+               match_redex_sequent_hyps addrs stack goals s.sequent_goals all_bvars hyps s.sequent_hyps 0 (SeqHyp.length s.sequent_hyps)
 
        | RWCheckVar i ->
             begin
@@ -436,7 +432,7 @@ struct
                         REF_RAISE(RefineError ("match_redex_term", RewriteStringError "stack entry is not valid"))
             end
 
-       | RWSOMatch (i, subterms) ->
+       | RWSOInstance (i, subterms) ->
               (* See if the term matches *)
             begin
                IFDEF VERBOSE_EXN THEN
