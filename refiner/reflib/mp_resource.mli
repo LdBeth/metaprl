@@ -64,9 +64,8 @@ type global_resource
 
 type ('annotation, 'input) annotation_processor =
    string ->          (* Name of the new rule *)
-   var array ->       (* Names of the context vars *)
-   term list ->       (* Arguments *)
-   term list ->       (* Parameters *)
+   var array ->       (* Names of the context vars parameters *)
+   term list ->       (* Term parameters *)
    meta_term ->       (* Rule statement *)
    'annotation ->     (* Extra arguments, will include Tactic.pre_tactic *)
    'input
@@ -76,7 +75,7 @@ type ('annotation, 'input) rw_annotation_processor =
    term ->            (* Redex *)
    term ->            (* Contractum *)
    term list ->       (* Assumptions *)
-   term list ->       (* Arguments *)
+   term list ->       (* Term arguments *)
    'annotation ->     (* Extra arguments, will include Refine.prim_rewrite *)
    'input
 

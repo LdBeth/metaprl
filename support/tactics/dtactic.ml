@@ -401,7 +401,7 @@ let in_auto p =
    try Sequent.get_bool_arg p "d_auto"
    with RefineError _ -> false
 
-let process_intro_resource_annotation name context_args term_args _ statement (pre_tactic, options) =
+let process_intro_resource_annotation name context_args term_args statement (pre_tactic, options) =
    let _, goal = unzip_mfunction statement in
    let t =
       try TermMan.nth_concl goal 1 with
@@ -472,7 +472,7 @@ let rec get_elim_args_arg = function
  | [] ->
       None
 
-let process_elim_resource_annotation name context_args term_args _ statement (pre_tactic, options) =
+let process_elim_resource_annotation name context_args term_args statement (pre_tactic, options) =
    let assums, goal = unzip_mfunction statement in
    let { sequent_hyps = hyps } =
       try TermMan.explode_sequent goal with

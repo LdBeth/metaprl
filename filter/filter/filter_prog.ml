@@ -1067,7 +1067,7 @@ let define_ml_rewrite want_checkpoint proc loc mlrw rewrite_expr =
  * The Tactic_type.pre_tactic is passed as an argument,
  * along with the params, so that we can figure out its type.
  *)
-let define_rule_resources proc loc name cvars_id avars_id params_id assums_id resources name_rule_expr =
+let define_rule_resources proc loc name cvars_id params_id assums_id resources name_rule_expr =
    if resources.item_item = [] then <:expr< () >> else
    let define_resource (loc, name', args) =
       let input = res_type proc loc name' in
@@ -1082,7 +1082,7 @@ let define_rule_resources proc loc name cvars_id avars_id params_id assums_id re
       let anno_name = "_$" ^ name' ^ "_resource_annotation" in
          impr_resource proc loc name' <:expr<
             ($lid:process_name$ : Mp_resource.annotation_processor '$anno_name$ $input$)
-               $str:name$ $lid:cvars_id$ $lid:avars_id$ $lid:params_id$ $lid:assums_id$ $arg_expr$
+               $str:name$ $lid:cvars_id$ $lid:params_id$ $lid:assums_id$ $arg_expr$
          >>
    in bindings_let proc loc resources <:expr< do { $list:List.map define_resource resources.item_item$ } >>
 
@@ -1122,7 +1122,7 @@ let define_rule want_checkpoint code proc loc
          $tactic_type_expr loc$.compile_rule $lid:local_refiner_id$ ($list_expr loc (expr_of_label loc) labels$) $lid:rule_id$
       in let _ = do {
          $code$ $lid:local_refiner_id$ $str:name$ $lid:cvars_id$ $lid:params_id$ $lid:avars_id$ $extract$;
-         $define_rule_resources proc loc name cvars_id params_id avars_id assums_id resources name_rule_expr$
+         $define_rule_resources proc loc name cvars_id params_id assums_id resources name_rule_expr$
       }
          in $name_rule_expr$
    >> in
