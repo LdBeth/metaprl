@@ -145,16 +145,26 @@ struct
     | [] ->
          ()
 
-   let print_expr state out (expr,typ) =
+   let print_expr_buf state buf (expr, typ) =
+      format_szone buf;
+      format_expr buf (Shell_state.get_dfbase state) expr;
+      format_space buf;
+      format_ezone buf;
+      format_string buf ": ";
+      format_string buf (str_typ typ)
+
+   let print_expr state out expr_typ =
       let buf = new_buffer () in
-         format_szone buf;
-         format_expr buf (Shell_state.get_dfbase state) expr;
-         format_space buf;
-         format_ezone buf;
-         format_string buf ": ";
-         format_string buf (str_typ typ);
+         print_expr_buf state buf expr_typ;
          print_text_channel default_width buf out;
          eflush out
+
+   let print_expr_browser state expr_typ =
+      let buf = new_buffer () in
+         print_expr_buf state buf expr_typ;
+
+         (* BUG HTML: we should set the width correctly *)
+         Browser_display_term.set_message default_width buf
 
    (*
     * Evaluate a struct item.
@@ -167,12 +177,16 @@ struct
                flush stdout
             end
 
+   (*
+    * For now, this assumes we are in browser mode.
+    *)
    let eval_top state =
       Shell_state.synchronize state (function str ->
          let instream = Shell_state.stream_of_string state str in
             match Grammar.Entry.parse Pcaml.top_phrase instream with
-               Some phrase ->
-                  eval_str_item state phrase
+               Some item ->
+                  let expr = evaluate_ocaml_str_item (Shell_state.get_toploop state) item in
+                     print_expr_browser state expr
              | None ->
                   ())
 

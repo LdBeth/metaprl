@@ -419,22 +419,23 @@ let parse_uri s =
 
 let parse_eq_list sep body =
    let split arg =
-      try
-         let index = String.index arg '=' in
-         let length = String.length arg in
-            if index < length then
-               let tag = String.sub arg 0 index in
-               let tag = decode_hex tag in
-               let field = String.sub arg (succ index) (length - index - 1) in
-               let field = decode_hex field in
-                  if !debug_http then
-                     eprintf "Http_simple.post_body: %s=%s%t" tag (String.escaped field) eflush;
-                  tag, field
-            else
+      let arg = Lm_string_util.trim arg in
+         try
+            let index = String.index arg '=' in
+            let length = String.length arg in
+               if index < length then
+                  let tag = String.sub arg 0 index in
+                  let tag = decode_hex tag in
+                  let field = String.sub arg (succ index) (length - index - 1) in
+                  let field = decode_hex field in
+                     if !debug_http then
+                        eprintf "Http_simple.post_body: %s=%s%t" tag (String.escaped field) eflush;
+                     tag, field
+               else
+                  arg, ""
+         with
+            Not_found ->
                arg, ""
-      with
-         Not_found ->
-            arg, ""
    in
       if !debug_http then
          eprintf "parse_post_body: \"%s\"%t" (String.escaped body) eflush;

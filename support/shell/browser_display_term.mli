@@ -45,7 +45,8 @@ val reset : unit -> unit
  * Parts of the output.
  *)
 val set_main : int -> Rformat.buffer -> unit
-val set_message : string -> unit
+val set_message : int -> Rformat.buffer -> unit
+val set_message_string : string -> unit
 
 (*
  * -*-

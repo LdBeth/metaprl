@@ -43,15 +43,18 @@ let message = Buffer.create 1024
  *)
 let reset () =
    Buffer.clear message;
-   Buffer.clear buffer;
-   Buffer.add_string buffer "The editor did not display a term"
+   Buffer.clear buffer
 
 (*
  * Set the rule text.
  *)
-let set_message text =
+let set_message width buf =
    Buffer.clear message;
-   Buffer.add_string message text
+   Rformat.print_html_buffer width buf message
+
+let set_message_string str =
+   Buffer.clear message;
+   Buffer.add_string message str
 
 (*
  * Display a term in the window.

@@ -101,6 +101,9 @@ struct
       let rec search header =
          match header with
             RequestCookies cookies :: rest ->
+               if !debug_http then
+                  List.iter (fun (name, v) ->
+                        eprintf "Cookie: %s=%s@." name v) cookies;
                (try List.assoc "MetaPRL.response" cookies with
                    Not_found ->
                       search rest)
@@ -109,7 +112,12 @@ struct
           | [] ->
                raise Not_found
       in
-         try search header = state.state_response with
+         try
+            let response = search header in
+               if !debug_http then
+                  eprintf "Response: %s, Valid response: %s, ok=%b@." response state.state_response (response = state.state_response);
+               response = state.state_response
+         with
             Not_found ->
                false
 
@@ -163,7 +171,6 @@ struct
     * Print the login page.
     *)
    let print_login_page out state =
-      let state = update_challenge state in
       let table = table_of_state state in
       let table = BrowserTable.add_string table title_sym "MetaPRL Login Page" in
          print_translated_file_to_http out table "login.html";
@@ -182,7 +189,8 @@ struct
     * Print the login page.
     *)
    let print_access_granted_page out state =
-      let state = update_challenge state in
+      if !debug_http then
+         eprintf "Access granted@.";
       let table = table_of_state state in
       let table = BrowserTable.add_string table title_sym "MetaPRL Access Granted" in
       let table = BrowserTable.add_string table response_sym state.state_response in
@@ -235,7 +243,10 @@ struct
                   print_page outx state dirname;
                   state
             else
-               print_login_page outx state
+               begin
+                  eprintf "Invalid request@.";
+                  print_login_page outx state
+               end
 
    (*
     * Handle a post command.  This means to submit the text to MetaPRL.
@@ -299,7 +310,8 @@ struct
                       eprintf "Shell_simple_http: null command@.";
                       state)
           | Some button ->
-               Browser_display_term.set_message (sprintf "Unknown button %s" button);
+               (* BUG HTML: this width constant should be fixed *)
+               Browser_display_term.set_message_string (sprintf "Unknown button %s" button);
                print_page outx state dirname;
                state
 
