@@ -29,7 +29,7 @@ ocamldep$(EXT_OBJ) ocamldep.cmx ocamldep.cmo ocamldep.cmi:
 install: $(BINDEP)
 
 clean:
-	$(CLEAN) *.cm* *~ ocamldep.ml *.o *.exe Makefile.dep ocamldep ocamldep.opt ocamldep.run
+	$(CLEAN) *.cm* *~ ocamldep.ml *.o *.exe Makefile.dep ocamldep ocamldep.opt ocamldep.run macropp macroprint
 
 #
 # Macros
