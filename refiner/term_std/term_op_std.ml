@@ -32,6 +32,7 @@
 
 INCLUDE "refine_error.mlh"
 
+open Term_sig
 open Refine_error_sig
 open Opname
 open Term_std_sig

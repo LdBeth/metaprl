@@ -28,6 +28,7 @@
 open Lm_debug
 open Lm_printf
 
+open Term_sig
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Opname

@@ -50,6 +50,8 @@ sig
    type level_exp_var = level_exp_var'
    and level_exp = level_exp'
    and param = param'
+   and param' = (level_exp, param) poly_param
+   and object_id = param list
    and operator = operator'
 
    and term = term'
@@ -64,26 +66,9 @@ sig
    and level_exp' = { le_const : int; le_vars : level_exp_var list }
 
    (*
-    * Parameters have a number of simple types.
-    *)
-   and param' =
-      Number of Lm_num.num
-    | String of string
-    | Token of string
-    | Var of var
-    | MNumber of var
-    | MString of var
-    | MToken of var
-    | MLevel of level_exp
-    | ObId of object_id
-    | ParamList of param list
-
-   (*
     * An operator combines a name with a list of parameters.
     * The order of params is significant.
     *)
-   and object_id = param list
-
    and operator' = { op_name : opname; op_params : param list }
 
    (*

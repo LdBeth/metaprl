@@ -210,11 +210,11 @@ let expr_of_pcon loc = function
           | _ -> Stdpp.raise_with_loc loc (Invalid_argument "\"con\" quotation: string constant parameter must
  be of string or token kind")
       in
-         <:expr< Refiner.Refiner.Term.make_param (Refiner.Refiner.TermType.$uid:shape$ $str:s$) >>
+         <:expr< Refiner.Refiner.Term.make_param (Term_sig.$uid:shape$ $str:s$) >>
  | ConPMeta l, ShapeLevel ->
       <:expr<
          Refiner.Refiner.Term.make_param
-            (Refiner.Refiner.TermType.MLevel
+            (Term_sig.MLevel
                (Refiner.Refiner.TermMan.mk_var_level_exp $str:string_of_symbol l$))
       >>
  | ConPMeta s, shape ->
@@ -225,7 +225,7 @@ let expr_of_pcon loc = function
           | ShapeToken -> "MToken"
           | _ -> Stdpp.raise_with_loc loc (Invalid_argument "\"con\" quotation: unsupported meta-parameter")
       in
-         <:expr< Refiner.Refiner.Term.make_param (Refiner.Refiner.TermType.$uid:shape$ $str:string_of_symbol s$) >>
+         <:expr< Refiner.Refiner.Term.make_param (Term_sig.$uid:shape$ $str:string_of_symbol s$) >>
   | ConPExpr e, shape ->
       let shape =
          match shape with
@@ -235,11 +235,11 @@ let expr_of_pcon loc = function
           | ShapeLevel -> "Level"
           | ShapeVar -> "Var"
       in
-         <:expr< Refiner.Refiner.Term.make_param (Refiner.Refiner.TermType.$uid:shape$ $e$) >>
+         <:expr< Refiner.Refiner.Term.make_param (Term_sig.$uid:shape$ $e$) >>
   | ConPNum n, ShapeNumber ->
-      <:expr< Refiner.Refiner.Term.make_param (Refiner.Refiner.TermType.Number $add_binding (BindNum n)$) >>
+      <:expr< Refiner.Refiner.Term.make_param (Term_sig.Number $add_binding (BindNum n)$) >>
   | ConPInt e, ShapeNumber ->
-      <:expr< Refiner.Refiner.Term.make_param (Refiner.Refiner.TermType.Number (Lm_num.num_of_int $e$)) >>
+      <:expr< Refiner.Refiner.Term.make_param (Term_sig.Number (Lm_num.num_of_int $e$)) >>
   | (ConPNum _|ConPInt _), _ ->
       Stdpp.raise_with_loc loc (Invalid_argument "\"con\" quotation: numeric parameter of non-numeric kind?")
 

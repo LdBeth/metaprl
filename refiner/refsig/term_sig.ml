@@ -38,12 +38,33 @@ type 'term poly_hypothesis =
    Hypothesis of var * 'term
  | Context of var * var list * 'term list
 
+(*
+ * The terms in the framework include
+ * a meta-implication and meta-iff.
+ *)
 type 'term poly_meta_term =
    MetaTheorem of 'term
  | MetaImplies of 'term poly_meta_term * 'term poly_meta_term
  | MetaFunction of 'term * 'term poly_meta_term * 'term poly_meta_term
  | MetaIff of 'term poly_meta_term * 'term poly_meta_term
  | MetaLabeled of string * 'term poly_meta_term
+
+(*
+ * Parameters have a number of simple types.
+ *)
+type ('level_exp, 'param) poly_param =
+   Number of Lm_num.num
+ | String of string
+ | Token of string
+ | Var of var
+ | MNumber of var
+ | MString of var
+ | MToken of var
+ | MLevel of 'level_exp
+
+   (* Special Nuprl5 values *)
+ | ObId of 'param list
+ | ParamList of 'param list
 
 module type TermSig =
 sig
@@ -82,25 +103,6 @@ sig
    and level_exp' = { le_const : int; le_vars : level_exp_var list }
 
    (*
-    * Parameters have a number of simple types.
-    *)
-   and object_id = param list
-
-   and param' =
-      Number of Lm_num.num
-    | String of string
-    | Token of string
-    | Var of var
-    | MNumber of var
-    | MString of var
-    | MToken of var
-    | MLevel of level_exp
-
-      (* Special Nuprl5 values *)
-    | ObId of object_id
-    | ParamList of param list
-
-   (*
     * An operator combines a name with a list of parameters.
     * The order of params is significant.
     *)
@@ -113,10 +115,9 @@ sig
    and term' = { term_op : operator; term_terms : bound_term list }
    and bound_term' = { bvars : var list; bterm : term }
 
-   (*
-    * The terms in the framework include
-    * a meta-implication and meta-iff.
-    *)
+   and object_id = param list
+   and param' = (level_exp, param) poly_param
+
    type meta_term = term poly_meta_term
 
    (************************************************************************

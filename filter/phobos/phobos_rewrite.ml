@@ -26,15 +26,17 @@ open Mp_resource
 
 open Conversionals_boot.Conversionals
 
-open Phobos_type
-open Phobos_util
-open Phobos_exn
+open Opname
+open Term_sig
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.Rewrite
-open Opname
 open Lm_num
+
+open Phobos_type
+open Phobos_util
+open Phobos_exn
 
 (* ATN: removed with connection of error recovery
 let my_dest_loc loc =

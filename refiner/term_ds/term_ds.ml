@@ -59,23 +59,7 @@ struct
    type level_exp' = { le_const : int; le_vars : level_exp_var list }
    type level_exp = level_exp'
 
-   (*
-    * Parameters have a number of simple types.
-    *)
-   type param' =
-      Number of Lm_num.num
-    | String of string
-    | Token of string
-    | Var of var
-    | MNumber of var
-    | MString of var
-    | MToken of var
-    | MLevel of level_exp
-
-      (* Special Nuprl5 values *)
-    | ObId of object_id
-    | ParamList of param list
-
+   type param' = (level_exp, param) poly_param
    and object_id = param list
    and param = param'
 

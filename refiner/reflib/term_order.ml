@@ -30,6 +30,7 @@
  *)
 
 open Opname
+open Term_sig
 
 module type TermOrderSig =
 functor(R: Refiner_sig.RefinerSig) ->

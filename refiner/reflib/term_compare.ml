@@ -36,6 +36,7 @@
 open Lm_debug
 open Lm_printf
 
+open Term_sig
 open Termmod_sig
 open Term_compare_sig
 
@@ -80,16 +81,16 @@ struct
 
    let compare_param param1 param2 =
       match param1, param2 with
-         CType.Number    n1,         CType.Number    n2         -> Lm_num.eq_num n1 n2
-       | CType.String    s1,         CType.String    s2         -> s1 = s2
-       | CType.Token     s1,         CType.Token     s2         -> s1 = s2
-       | CType.Var       v1,         CType.Var       v2         -> v1 = v2
-       | CType.MNumber   s1,         CType.MNumber   s2         -> s1 = s2
-       | CType.MString   s1,         CType.MString   s2         -> s1 = s2
-       | CType.MToken    s1,         CType.MToken    s2         -> s1 = s2
-       | CType.MLevel    l1,         CType.MLevel    l2         -> l1 == l2
-       | CType.ObId      oid1,       CType.ObId      oid2       -> list_mem_eq oid1 oid2
-       | CType.ParamList params1,    CType.ParamList params2    -> list_mem_eq params1 params2
+         Number    n1,         Number    n2         -> Lm_num.eq_num n1 n2
+       | String    s1,         String    s2         -> s1 = s2
+       | Token     s1,         Token     s2         -> s1 = s2
+       | Var       v1,         Var       v2         -> v1 = v2
+       | MNumber   s1,         MNumber   s2         -> s1 = s2
+       | MString   s1,         MString   s2         -> s1 = s2
+       | MToken    s1,         MToken    s2         -> s1 = s2
+       | MLevel    l1,         MLevel    l2         -> l1 == l2
+       | ObId      oid1,       ObId      oid2       -> list_mem_eq oid1 oid2
+       | ParamList params1,    ParamList params2    -> list_mem_eq params1 params2
        | _ -> false
 
    let compare_operator { CType.op_name = opname1; CType.op_params = params1 }

@@ -28,6 +28,7 @@
  *)
 
 open Opname
+open Term_sig
 
 module TermHeaderConstr (**)
    (FromTerm : Termmod_sig.TermModuleSig)
@@ -53,16 +54,10 @@ struct
          TTerm.make_level { TType.le_const=c; TType.le_vars=List.map make_level_var vars }
 
    let rec make_param' = function
-      FType.Number n1 ->            TType.Number n1
-    | FType.String s1 ->            TType.String s1
-    | FType.Token s1 ->             TType.Token s1
-    | FType.Var v1 ->               TType.Var v1
-    | FType.MNumber s1 ->           TType.MNumber s1
-    | FType.MString s1 ->           TType.MString s1
-    | FType.MToken s1 ->            TType.MToken s1
-    | FType.MLevel l1 ->            TType.MLevel (make_level l1)
-    | FType.ObId oid1 ->            TType.ObId (List.map make_param_aux oid1)
-    | FType.ParamList p1 ->         TType.ParamList (List.map make_param_aux p1)
+      MLevel l1 ->            MLevel (make_level l1)
+    | ObId oid1 ->            ObId (List.map make_param_aux oid1)
+    | ParamList p1 ->         ParamList (List.map make_param_aux p1)
+    | (Number _ | String _ | Token _ | Var _ | MNumber _ | MString _ | MToken _) as param -> param
 
    and make_param_aux param = TTerm.make_param (make_param' (FTerm.dest_param param))
 

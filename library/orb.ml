@@ -34,6 +34,7 @@ open List
 open Utils
 open Nuprl5
 open Link
+open Term_sig
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermOp

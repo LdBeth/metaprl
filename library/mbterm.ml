@@ -33,9 +33,10 @@ open Lm_symbol
 open Lint32
 open Lm_num
 open MathBus
+open Opname
+open Term_sig
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
-open Opname
 open Registry
 
 let _ =

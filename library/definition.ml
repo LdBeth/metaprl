@@ -29,6 +29,7 @@ open Lm_debug
 open Lm_printf
 
 open Basic
+open Term_sig
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Nuprl5

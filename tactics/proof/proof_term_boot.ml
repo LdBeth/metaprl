@@ -36,6 +36,7 @@ open Opname
 open Weak_memo
 open Mp_resource
 
+open Term_sig
 open Refiner_sig
 open Refiner.Refiner.RefineError
 

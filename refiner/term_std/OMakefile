@@ -5,6 +5,8 @@ OCAMLINCLUDES +=\
 	-I ../refsig\
 	-I ../term_gen
 
+OCAMLFLAGS += -rectypes
+
 OCamlLibraryInstall($(MPINSTALL), $(LIB), termstd, $(TERM_STD_FILES))
 
 MLZFILES = term_std_sig

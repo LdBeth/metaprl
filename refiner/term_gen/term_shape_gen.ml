@@ -97,7 +97,7 @@ struct
        | Token _ | MToken _ -> ShapeToken
        | Var _ -> ShapeVar
        | MLevel _ -> ShapeLevel
-       | _ ->
+       | ObId _ | ParamList _ ->
             raise (Invalid_argument "Term.shape_of_term")
 
    let bterm_type bt =

@@ -3,6 +3,7 @@
  *)
 open Lm_debug
 
+open Term_sig
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open MathBus

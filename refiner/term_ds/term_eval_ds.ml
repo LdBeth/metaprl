@@ -43,6 +43,7 @@ open Lm_symbol
 
 open Refine_error_sig
 open Term_ds_sig
+open Term_sig
 
 open Opname
 open Term_ds

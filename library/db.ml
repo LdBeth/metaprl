@@ -30,6 +30,7 @@ open Lm_symbol
 open Lm_printf
 open Lm_num
 
+open Term_sig
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMan

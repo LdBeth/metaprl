@@ -30,6 +30,7 @@
  * This implements a filesystem interface to the Nuprl library.
  *)
 open Lm_debug
+open Term_sig
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Refine

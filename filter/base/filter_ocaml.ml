@@ -40,6 +40,7 @@ open MLast
 open Lm_printf
 
 open Opname
+open Term_sig
 open Refiner_sig
 open Filter_type
 

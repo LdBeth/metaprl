@@ -30,6 +30,7 @@ open Lm_printf
 
 open Utils
 open List
+open Term_sig
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermSubst

@@ -35,7 +35,7 @@ open Lm_symbol
 open Lm_string_set
 
 open Opname
-
+open Term_sig
 open Termmod_hash_sig
 
 let debug_ascii_io =

@@ -37,6 +37,7 @@ open Lm_symbol
 open Lm_printf
 
 open Opname
+open Term_sig
 open Refine_error_sig
 open Term_std_sig
 open Term_std

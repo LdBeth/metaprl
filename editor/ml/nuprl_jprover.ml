@@ -26,6 +26,7 @@
  *
  *)
 open Lm_symbol
+open Term_sig
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Nuprl5

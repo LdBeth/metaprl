@@ -31,6 +31,7 @@ open Lm_printf
 open Unix
 open List
 open Lm_num
+open Term_sig
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Nuprl5
