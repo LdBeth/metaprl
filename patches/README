@@ -1,10 +1,8 @@
-This directory contains the patches necessary to be able to compile MetaPRL.
+This directory used to contain OCaml patches necessary for compiling MetaPRL.
 
-You need the following patch:
-
-1) camlp4-%{version}-opt.patch
-     (only if you want to be able to compile MetaPRL to native code).
-
-2) ocaml-%{version}-camlp4-prof.patch
-     (only if you want to be able to compile MetaPRL to native code
-      with gprof profiling support).
+As of OCaml 3.08.0, the only modification to OCaml that is needed for MetaPRL
+is copying 8 extra files out of the build tree (as listed in
+doc/htmlman/install.html and http://metaprl.org/install.html). An alternative
+to copying the files manually is to apply the
+"ocaml-%{version}-wish1804.patch" before compiling OCaml (or before running
+"make install" on a compiled OCaml tree).
