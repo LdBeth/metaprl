@@ -326,65 +326,85 @@ let split_end = function
  | [] ->
       raise Not_found
 
-let rec execute prog stack =
-   match prog with
-      DtreePop prog ->
+let rec execute search stack = function
+   DtreePop prog ->
+      if !debug_term_table then
+         eprintf "Term_table.execute: DtreePop: %d%t" (List.length stack) eflush;
+      execute search (snd (split stack)) prog
+ | DtreeMatch (shape, prog) ->
+      let h, _ = split stack in
+      let shape' = shape_of_term h in
          if !debug_term_table then
-            eprintf "Term_table.execute: DtreePop: %d%t" (List.length stack) eflush;
-         execute prog (snd (split stack))
-    | DtreeMatch (shape, prog) ->
-         let h, _ = split stack in
-         let shape' = shape_of_term h in
-            if !debug_term_table then
-               eprintf "Term_table.execute: DtreeMatch: %a vs %a%t" (**)
-                  print_shape shape print_shape shape' eflush;
-            if TermShape.eq shape shape' then
-               begin
-                  if !debug_term_table then
-                     eprintf "Term_table.execute: DtreeMatch: succeeded%t" eflush;
-                  execute prog stack
-               end
-            else
-               begin
-                  if !debug_term_table then
-                     eprintf "Term_table.execute: DtreeMatch: failed%t" eflush;
-                  raise Not_found
-               end
-    | DtreeFlatten prog ->
-         let h, t = split stack in
-            if !debug_term_table then
-               eprintf "Term_table.execute: DtreeFlatten %s%t" (string_of_term h) eflush;
-            execute prog ((subterms_of_term h) @ (end_marker :: t))
-    | DtreeTerm prog ->
-         let t = split_end stack in
-            if !debug_term_table then
-               eprintf "Term_table.execute: DtreeTerm%t" eflush;
-            execute prog t
-    | DtreeChoice progs ->
-         if !debug_term_table then
-            eprintf "Term_table.execute: DtreeChoice%t" eflush;
-         let rec search = function
-            prog::progs ->
-               begin
-                  try execute prog stack with
-                     Not_found ->
-                        search progs
-               end
-          | [] ->
+            eprintf "Term_table.execute: DtreeMatch: %a vs %a%t" (**)
+               print_shape shape print_shape shape' eflush;
+         if TermShape.eq shape shape' then
+            begin
+               if !debug_term_table then
+                  eprintf "Term_table.execute: DtreeMatch: succeeded%t" eflush;
+               execute search stack prog
+            end else begin
+               if !debug_term_table then
+                  eprintf "Term_table.execute: DtreeMatch: failed%t" eflush;
                raise Not_found
-         in
-            search progs
-    | DtreeAccept info ->
+            end
+ | DtreeFlatten prog ->
+      let h, t = split stack in
          if !debug_term_table then
-            eprintf "Term_table.execute: DtreeAccept: %d%t" (List.length stack) eflush;
-         if stack = [] then
-            info
-         else
-            raise Not_found
+            eprintf "Term_table.execute: DtreeFlatten %s%t" (string_of_term h) eflush;
+         execute search ((subterms_of_term h) @ (end_marker :: t)) prog
+ | DtreeTerm prog ->
+      let t = split_end stack in
+         if !debug_term_table then
+            eprintf "Term_table.execute: DtreeTerm%t" eflush;
+         execute search t prog
+ | DtreeChoice progs ->
+      if !debug_term_table then
+         eprintf "Term_table.execute: DtreeChoice%t" eflush;
+      execute_many search stack progs
+ | DtreeAccept info ->
+      if !debug_term_table then
+         eprintf "Term_table.execute: DtreeAccept: %d%t" (List.length stack) eflush;
+      if stack = [] then
+         search info
+      else
+         raise Not_found
+
+and execute_many search stack = function
+   prog::progs ->
+      begin try
+         execute search stack prog
+      with Not_found ->
+         execute_many search stack progs
+      end
+ | [] ->
+      raise Not_found
 
 (*
  * Lookup an entry.
  *)
+let rec search_infos t = function
+   { info_term = t'; info_redex = redex; info_value = v } :: tl ->
+      begin
+         if !debug_term_table then
+            eprintf "Term_table.lookup: try %s%t" (string_of_term t') eflush;
+         try
+            let _, items =
+               let debug = !debug_rewrite in
+               let _ = debug_rewrite := false in
+               let x = apply_redex' redex [||] t [] in
+                  debug_rewrite := debug;
+                  x
+            in
+               items, v
+         with
+            _ ->
+               if !debug_term_table then
+                  eprintf "Term_table.lookup: %s failed%t" (string_of_term t') eflush;
+               search_infos t tl
+      end
+ | [] ->
+      raise Not_found
+
 let lookup base t =
    let shape = shape_of_term t in
    let _ =
@@ -403,34 +423,10 @@ let lookup base t =
             eprintf "Term_table.lookup: against:\n";
             List.iter print_term stack
    in
-   let items = execute prog stack in
-   let rec search = function
-      { info_term = t'; info_redex = redex; info_value = v } :: tl ->
-         begin
-            if !debug_term_table then
-               eprintf "Term_table.lookup: try %s%t" (string_of_term t') eflush;
-            try
-               let _, items =
-                  let debug = !debug_rewrite in
-                  let _ = debug_rewrite := false in
-                  let x = apply_redex' redex [||] t [] in
-                     debug_rewrite := debug;
-                     x
-               in
-                  items, v
-            with
-               _ ->
-                  if !debug_term_table then
-                     eprintf "Term_table.lookup: %s failed%t" (string_of_term t') eflush;
-                  search tl
-         end
-    | [] ->
-         raise Not_found
-   in
-   let triple = search items in
+   let result = execute (search_infos t) stack prog in
       if !debug_term_table then
          eprintf "Term_table.lookup: %s found%t" (string_of_term t) eflush;
-      triple
+      result
 
 (*
  * -*-
