@@ -37,6 +37,8 @@
  * jyh@cs.cornell.edu
  *)
 
+open String_set
+
 open Opname
 open Refiner.Refiner
 open Refiner.Refiner.Term
@@ -62,10 +64,24 @@ type typeinf_subst_fun = term_subst -> (string option * term) -> term_subst
  * A type inference is performed in a type context,
  * which maps variables to type.
  *
- * The inference infers the type for a term in the given context,
- * or it throws the RefineError exception
+ * An inference function takes as arguments :
+ * 1) consts - a set of variables that should be treated as
+ * constants when we use unification to figure things out.
+ * 2) decls - an associative list of variable names and
+ * the types these variables were declared with.
+ * 3) eqs - a list of equations we have on our type variables
+ * 4) opt_eqs - a list of equations we can use to figure the variables out,
+ * but these equations do not have to be satisfied.
+ * 5) defs -  list of the defaults that we should use instead of variables
+ * in case there is no other information we can use to figure them out
+ * 6) t - a term whose type we want to infer
+ * 
+ * An inference function returns:
+ * Updated eqs, updated opt_eqs, updated defs and a type
+ * (that can contain variables)
  *)
-type typeinf_func = eqnlist -> term -> eqnlist * term
+type opt_eqs_type = (term * term) list
+type typeinf_func = StringSet.t -> term_subst -> eqnlist -> opt_eqs_type -> term_subst -> term -> eqnlist * opt_eqs_type * term_subst * term
 
 (*
  * Visible types.
