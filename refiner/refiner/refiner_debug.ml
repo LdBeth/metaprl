@@ -765,9 +765,13 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    let merge_strings = merge_list merge_string "string"
    let merge_var_lo = merge_opt merge_vars "var list"
 
-   let merge_ss x (s1 : SymbolSet.t) s2 =
+   let merge_ss x s1 s2 =
       if not (SymbolSet.equal s1 s2) then
-         report_error x "Symbol sets mismatch";
+         report_error x ("Symbol sets mismatch: Implementation 1: {" ^
+            (String.concat ", " (List.map string_of_symbol (SymbolSet.elements s1))) ^
+            "}; Implementation 2: {" ^
+            (String.concat ", " (List.map string_of_symbol (SymbolSet.elements s2))) ^
+            "}");
       s1
 
    let merge_param x p1 p2 =
@@ -2831,7 +2835,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    end
 
-   module Rewrite = struct
+   module RewriteExt = struct
       module RwTypes = TermType
       include TermType
 
@@ -2917,7 +2921,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    end
 
-   module Refine = struct
+   module RefineExt = struct
       include TermType
 
       (*
@@ -3227,6 +3231,21 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          merge merge_unit "Refine.join_refiner" (wrap2 Refine1.join_refiner p0_1 p1_1) (wrap2 Refine2.join_refiner p0_2 p1_2)
 
    end
+
+   module RewriteInt =
+      Rewrite.Rewrite (TermType) (Term) (TermMan) (TermAddr) (TermSubst) (RefineError)
+   module RefineInt =
+      Refine.Refine (TermType) (Term) (TermMan) (TermSubst) (TermAddr) (TermMeta) (TermShape) (RewriteInt) (RefineError)
+
+   (* Debug internal interfaces *)
+   module Rewrite = RewriteInt
+   module Refine = RefineInt
+
+(*
+   (* Debug external interfaces *)
+   module Rewrite = RewriteExt
+   module Refine = RefineExt
+*)
 
    (* XXX; TODO: the underlying implementations are ignored and are not debugged! *)
    module TermMod = struct
