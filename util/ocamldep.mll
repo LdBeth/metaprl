@@ -261,25 +261,23 @@ let file_dependencies source_file =
     in
     let lb = Lexing.from_channel ic in
     main lb;
+    free_structures := StringSet.union !free_structures !prl_structures;
     if !modules_flag then begin
-       StringSet.iter (fun s -> print_string s; print_char ' ')
-                      (StringSet.union !free_structures !prl_structures);
+       StringSet.iter (fun s -> print_string s; print_char ' ') !prl_structures;
        print_newline ()
     end else begin
-    if not (!omake_flag) then
-      free_structures := StringSet.union !free_structures !prl_structures;
     if !prl_flag then
       List.iter add_structure prl_names;
     if !prl_flag && !contains_topval then
       List.iter add_structure topval_names;
     if Filename.check_suffix source_file ".ml" then begin
       let basename = Filename.chop_suffix source_file ".ml" in
-      let init_deps =
+      let init_deps,init_ppo_dep =
         if Sys.file_exists (basename ^ ".mli")
-        then let cmi_name = basename ^ ".cmi" in ([cmi_name], [cmi_name])
-        else ([], []) in
+        then let cmi_name = basename ^ ".cmi" in (([cmi_name], [cmi_name]), [basename ^ ".cmiz"])
+        else (([], []), []) in
       let (cmo_deps, cmx_deps) =
-        StringSet.fold find_dependency_cmo_cmx (StringSet.union !free_structures !prl_structures) init_deps in
+        StringSet.fold find_dependency_cmo_cmx !free_structures init_deps in
       let (cmo_deps, cmx_deps) =
         if !contains_source_quot then
           syntaxdef_prereq :: cmo_deps, syntaxdef_prereq :: cmx_deps
@@ -288,7 +286,7 @@ let file_dependencies source_file =
       in
       let ppo_deps =
          if !omake_flag then
-            StringSet.fold find_dependency_cmiz !prl_structures []
+            StringSet.fold find_dependency_cmiz !prl_structures (fst init_deps)
          else cmo_deps
       in
       (* XXX HACK: since we can not check whether the corresponding .mli contains "topval",
