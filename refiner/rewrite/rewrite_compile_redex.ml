@@ -183,12 +183,16 @@ struct
 
             else if Array_util.mem v addrs then
                (* All the vars should be free variables *)
+               let vars' = List.map (var_index bvars) vars in
                let stack' = stack @ [CVar v] in
                let stack'', term' = compile_so_redex_term strict addrs stack' bvars term in
-                  stack'', RWSOContext(Array_util.index v addrs,
-                                       List.length stack,
-                                       term',
-                                       List.map (var_index bvars) vars)
+               let term'' = RWSOContext(Array_util.index v addrs,
+                                        List.length stack,
+                                        term', vars') in
+               let restrict_free = if strict then List_util.subtract (List.map bvar_ind bvars) vars' else [] in
+                  stack'', if restrict_free = [] then term'' else
+                     (* RWFreeVars(term'',restrict_free) *)
+                     raise (Invalid_argument "compile_so_redex_term: free variable restrictions on SO contexts are not implemented")
             else
                (* No argument for this context *)
                ref_raise(RefineError ("is_context_term", RewriteMissingContextArg v))
@@ -324,11 +328,19 @@ struct
 
                else if Array_util.mem v addrs then
                   (* All the vars should be free variables *)
+                  let vars' = List.map (var_index bvars) vars in
                   let stack = stack @ [CVar v] in
+                  let restrict_free = if strict then List_util.subtract (List.map bvar_ind bvars) vars' else [] in
                   let term =
-                     RWSeqContext (Array_util.index v addrs,
-                                   List.length stack - 1,
-                                   List.map (var_index bvars) vars)
+                     if restrict_free = [] then
+                        RWSeqContext (Array_util.index v addrs,
+                                      List.length stack - 1,
+                                      vars')
+                     else
+                        RWSeqFreeVarsContext (restrict_free,
+                                              Array_util.index v addrs,
+                                              List.length stack - 1,
+                                              vars')
                   in
                   let stack, hyps, goals =
                      compile_so_redex_sequent_inner strict addrs stack bvars (i + 1) len hyps goals

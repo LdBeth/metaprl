@@ -126,6 +126,7 @@ sig
       RWSeqHyp of varname * rwterm
     | RWSeqContext of int * int * int list
     | RWSeqContextSubst of int * rwterm list
+    | RWSeqFreeVarsContext of int list * int * int * int list
 
    and varname =
       StackName of int

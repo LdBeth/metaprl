@@ -484,8 +484,8 @@ struct
                   let bvars = append_vars bvars [v] in
                   let part = Array_util.ArrayElement (Hypothesis (v, hyp)) in
                      build_contractum_sequent_hyps names bnames stack bvars (part :: parts) hyps
-             | RWSeqContext _ ->
-                  ref_raise(RefineError ("build_contractum_sequent_hyps", StringError "found a sequent context"))
+             | RWSeqContext _ | RWSeqFreeVarsContext _ ->
+                  raise(Invalid_argument "build_contractum_sequent_hyps: found an invalid context")
 
    let build_contractum names bnames stack prog =
       build_contractum_term names bnames stack [||] prog

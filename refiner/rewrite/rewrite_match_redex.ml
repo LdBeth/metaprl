@@ -323,8 +323,7 @@ struct
    let rec match_redex_term addrs stack t' t =
       match t' with
          RWFreeVars (t'',vars) ->
-            if List_util.intersects (extract_bvars stack vars) (free_vars t) then
-               ref_raise(RefineError ("match_redex_term", RewriteBadMatch (TermMatch t)));
+            check_term_free_vars (extract_bvars stack vars) t;
             match_redex_term addrs stack t'' t
        | RWComposite { rw_op = op'; rw_bterms = bterms' } ->
             let term = dest_term t in
@@ -466,7 +465,6 @@ struct
          [] ->
             if i <> len then
                ref_raise(RefineError ("match_redex_sequent_hyps", RewriteBadMatch (HypMatch hyps)))
-
        | hyp' :: hyps' ->
             match hyp' with
                RWSeqContext (addr, j, l) ->
@@ -480,6 +478,16 @@ struct
                   if count + i > len then
                      ref_raise(RefineError ("match_redex_sequent_hyps", StringError "not enough hyps"))
                   else
+                     let bvars = extract_bvars stack l in
+                        stack.(j) <- StackSeqContext (bvars, (i, count, hyps));
+                        match_redex_sequent_hyps addrs stack hyps' hyps (i+count) len
+
+             | RWSeqFreeVarsContext (non_free, addr, j, l) ->
+                  let count = depth_of_address addrs.(addr) in
+                  if count + i > len then
+                     ref_raise(RefineError ("match_redex_sequent_hyps", StringError "not enough hyps"))
+                  else
+                     check_hyp_free_vars (extract_bvars stack non_free) hyps i (i+count);
                      let bvars = extract_bvars stack l in
                         stack.(j) <- StackSeqContext (bvars, (i, count, hyps));
                         match_redex_sequent_hyps addrs stack hyps' hyps (i+count) len
@@ -501,7 +509,6 @@ struct
                    | Context _ ->
                         ref_raise(RefineError ("get_sequent_hyp", StringIntError ("hyp index refers to a context", i)))
                   end
-
              | RWSeqContextSubst _ ->
                   ref_raise(RefineError ("match_redex_seq_hyps", RewriteBadMatch (HypMatch hyps)))
 
@@ -515,6 +522,21 @@ struct
                ref_raise(RefineError ("match_redex_sequent_goals", RewriteBadMatch (GoalMatch goals)));
             match_redex_term addrs stack goal' (SeqGoal.get goals i);
             match_redex_sequent_goals addrs stack goals' goals (succ i) len
+
+   and check_hyp_free_vars vars hyps i len =
+      if (i=len) then () else
+      match SeqHyp.get hyps i with
+         Hypothesis (var, term) ->
+            let vars = List_util.remove var vars in
+            check_term_free_vars vars term;
+            check_hyp_free_vars vars hyps (succ i) len
+       | Context (var, terms) ->
+            List.iter (check_term_free_vars vars) terms;
+            check_hyp_free_vars vars hyps (succ i) len
+            
+   and check_term_free_vars vars t =
+      if List_util.intersects vars (free_vars t) then
+         ref_raise(RefineError ("match_redex_term", RewriteBadMatch (TermMatch t)))
 
    let match_redex addrs stack t tl = function
       [] ->

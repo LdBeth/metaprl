@@ -92,6 +92,9 @@ section.
 the contractum was compiled against. Hopefully we never do this wrong, but we still
 should enforce it.
 
+*) SO contexts that are not a part of a sequent are corrently never used and as a result
+the corresponding rewriter code is undebugged.
+
 REFINER
 
 *) alpha_equal_match is incorrect. According to 

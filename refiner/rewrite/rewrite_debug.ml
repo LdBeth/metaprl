@@ -319,6 +319,9 @@ struct
             fprintf out "RWSeqTerm: %a\n%a" (**)
                print_varname v
                (print_prog (tabstop + 3)) t
+       | RWSeqFreeVarsContext (il', i, j, il) ->
+            fprintf out "RWSeqFreeVarsContext (%a: %d, %d, [%a])\n"
+               print_int_list il' i j print_int_list il
 
    and print_seq_prog tabstop out items =
       List.iter (print_seq_prog_item tabstop out) items
