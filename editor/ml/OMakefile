@@ -224,6 +224,7 @@ if true
 	OCAMLOPT = ocamlopt
 	OCAML_OTHER_LIBS = unix
 
+	make_mp_version.o:
 	make_mp_version.cmo:
 	make_mp_version.cmi:
 	make_mp_version.cmx:
