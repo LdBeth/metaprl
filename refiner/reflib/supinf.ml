@@ -121,11 +121,87 @@ struct
 
 end
 
+module type SourceSig =
+sig
+	type bfield
+	type vars
+
+	type source =
+		Signore
+	 | Shypothesis of int
+	 | Sleft of source
+	 | Sright of source
+	 | Smin of source * source
+	 | Smax of source * source
+	 | StransitiveLeft of source * source * vars
+	 | StransitiveRight of vars * source * source
+	 | Sextract2left of vars * source
+	 | Sextract2right of vars * source
+	 | StrivialConst of bfield
+	 | StrivialVar of vars
+	 | Scontradiction of source
+	 | Sscale of bfield * source
+	 | SaddVar of bfield * vars * source
+	 | Ssum of source * source
+
+	exception IncompatibleSources of source * source * string
+
+	val print : out_channel -> source -> unit
+
+end
+
+module MakeSource(BField : BoundFieldSig)
+   : SourceSig with type bfield=BField.bfield and type vars=VarType.t =
+struct
+	type bfield = BField.bfield
+	type vars = VarType.t
+
+	type source =
+		Signore
+	 | Shypothesis of int
+	 | Sleft of source
+	 | Sright of source
+	 | Smin of source * source
+	 | Smax of source * source
+	 | StransitiveLeft of source * source * vars
+	 | StransitiveRight of vars * source * source
+	 | Sextract2left of vars * source
+	 | Sextract2right of vars * source
+	 | StrivialConst of bfield
+	 | StrivialVar of vars
+	 | Scontradiction of source
+	 | Sscale of bfield * source
+	 | SaddVar of bfield * vars * source
+	 | Ssum of source * source
+
+	exception IncompatibleSources of source * source * string
+
+	let rec print out = function
+		Signore -> fprintf out "ignore"
+	 | Shypothesis(h) -> fprintf out "hyp %i" h
+	 | Sleft(s) -> fprintf out "left(%a)" print s
+	 | Sright(s) -> fprintf out "right(%a)" print s
+	 | Smin(s1,s2) -> fprintf out "min(%a,%a)" print s1 print s2
+	 | Smax(s1,s2) -> fprintf out "max(%a,%a)" print s1 print s2
+	 | StransitiveLeft(s1,s2,v) -> fprintf out "transL(%i,%a,%a)" v print s1 print s2
+	 | StransitiveRight(v,s1,s2) -> fprintf out "transR(%i,%a,%a)" v print s1 print s2
+	 | Sextract2left(v,s) -> fprintf out "extr2left(%i,%a)" v print s
+	 | Sextract2right(v,s) -> fprintf out "extr2right(%i,%a)" v print s
+	 | StrivialConst(c) -> fprintf out "trivConst(%a)" BField.print c
+	 | StrivialVar(v) -> fprintf out "trivVar(%i)" v
+	 | Scontradiction(s) -> fprintf out "contrad(%a)" print s
+	 | Sscale(c,s) -> fprintf out "scale(%a,%a)" BField.print c print s
+	 | SaddVar(c,v,s) -> fprintf out "addVar(%a,%i,%a)" BField.print c v print s
+	 | Ssum(s1,s2) -> fprintf out "sum(%a,%a)" print s1 print s2
+
+end
+
 module type AF_Sig =
 sig
+   type bfield
    type vars=int
    type af
-   type bfield
+   type source
 
    val constvar : vars
 
@@ -147,12 +223,31 @@ sig
 
    val term_of : (term array) -> af -> term
 
+	val setSource : source -> af -> af
+	val getSource : af -> source
+	val extract2leftSource : vars -> af -> af
+	val extract2rightSource : vars -> af -> af
+(*	val trivialConstSource : bfield -> af
+	val trivialVarSource : vars -> af
+*)
+	val contrSource : af -> af -> af
+	val hypSource : int -> af -> af
+(*	val scaleSource : bfield -> af -> af *)
+	val addVarSource : bfield -> vars -> af -> af
+	val sumSource : af -> af -> af
+
    val print : out_channel -> af -> unit
    val print_var : out_channel -> vars -> unit
 end
 
 module MakeAF(BField : BoundFieldSig)
-   : AF_Sig with type bfield=BField.bfield and type vars=VarType.t =
+   (Source: SourceSig with
+      type bfield=BField.bfield and
+      type vars=VarType.t)
+   : AF_Sig with
+	type bfield=BField.bfield and
+	type vars=VarType.t and
+	type source=Source.source =
 struct
    module Monom=MakeMonom(BField)
    module Table=Lm_splay_table.MakeTable(Monom)
@@ -160,65 +255,46 @@ struct
 
    type bfield=BField.bfield
    type vars=Monom.elt
-   type af=Table.t
+	type source = Source.source
+	open Source
 
-   let constvar = 0
+   type af=source * Table.t
+
+	let constvar = 0
 
    let print_var = VarType.print
 
-   let print out f =
+   let print out (s,f) =
       let aux key data =
          fprintf out "+"; Monom.print out key [data]
       in
       fprintf out "("; Table.iter aux f; fprintf out ")%t" eflush
 
-   let mk_number k = Table.add Table.empty constvar k
-   let mk_var v = Table.add Table.empty v BField.fieldUnit
+   let minusInfinity = (Signore, Table.add Table.empty constvar BField.minusInfinity)
+   let plusInfinity = (Signore, Table.add Table.empty constvar BField.plusInfinity)
+
+   let mk_number k =
+		if BField.isInfinite k then
+			if BField.compare BField.minusInfinity k =0 then
+				minusInfinity
+			else
+				plusInfinity
+		else
+			StrivialConst(k), Table.add Table.empty constvar k
+
+   let mk_var v = StrivialVar(v), Table.add Table.empty v BField.fieldUnit
 
    let scale_aux k v d =
       BField.mul k d
 
-   let scale k f =
-      if BField.compare k BField.fieldZero =0 then Table.empty
-      else if BField.compare k BField.fieldUnit =0 then f
-      else Table.map (scale_aux k) f
+   let scale k (s,f) =
+      if BField.compare k BField.fieldZero =0 then StrivialConst(BField.fieldZero),Table.empty
+      else if BField.compare k BField.fieldUnit =0 then s,f
+      else Sscale(k,s),Table.map (scale_aux k) f
 
-   let add f1 f2 = Table.union f1 f2
-
-   let coef f v =
+   let coef (s,f) v =
       try Table.find f v
       with Not_found -> BField.fieldZero
-
-   let remove = Table.remove
-
-   let rec split f =
-      if !debug_supinf_trace then
-			begin
-				eprintf "split"; Table.print stderr f;
-				eprintf "@.split %a@.%t" print f eflush;
-			end;
-      let (v,coefs,rest)=Table.deletemax f in
-      match coefs with
-         [c] ->
-            if !debug_supinf_trace then
-               (Monom.print stderr v coefs; eprintf " %a@." print rest);
-				if v!=constvar && (BField.compare c BField.fieldZero =0) then
-					split rest
-				else
-					(c,v,rest)
-       | _ -> raise (Invalid_argument "More than one coefficient associated with a variable")
-
-   let isNumber f =
-      let test=ref true in
-      let aux v c =
-         if v<>constvar && compare c BField.fieldZero <>0 then
-            test:=false
-      in
-      Table.iter aux f;
-      !test
-
-   let minusInfinity = Table.add Table.empty constvar BField.minusInfinity
-   let plusInfinity = Table.add Table.empty constvar BField.plusInfinity
 
    let isInfinite f =
       BField.isInfinite (coef f constvar)
@@ -228,6 +304,61 @@ struct
 
    let isPlusInfinity f =
       BField.compare BField.plusInfinity (coef f constvar) =0
+
+   let add f1 f2 =
+		if (isInfinite f1) or (isInfinite f2) then
+			if isInfinite f1 then
+				if isInfinite f2 then
+					if (isMinusInfinity f1) && (isMinusInfinity f2) then
+						f1
+					else
+						if (isPlusInfinity f1) && (isPlusInfinity f2) then
+							f1
+						else
+							raise (Invalid_argument "MinusInfinity+PlusInfinity is undefined")
+				else
+					f1
+			else
+				f2
+		else
+			let (s1,f1)=f1 in
+			let (s2,f2)=f2 in
+			let f = Table.union f1 f2 in
+			if s1==s2 then
+				s1,f
+			else
+				match s1,s2 with
+					Signore, s -> s,f
+				 | s,Signore -> s,f
+				 | _ -> (Ssum(s1,s2),f)
+
+   let remove (s,f) vs = s,Table.remove f vs
+
+   let rec split (s,f) =
+      if !debug_supinf_trace then
+			begin
+				eprintf "split"; Table.print stderr f;
+				eprintf "@.split %a@.%t" print (s,f) eflush;
+			end;
+      let (v,coefs,rest)=Table.deletemax f in
+      match coefs with
+         [c] ->
+            if !debug_supinf_trace then
+               (Monom.print stderr v coefs; eprintf " %a@." print (s,rest));
+				if v!=constvar && (BField.compare c BField.fieldZero =0) then
+					split (s,rest)
+				else
+					(c,v,(s,rest))
+       | _ -> raise (Invalid_argument "More than one coefficient associated with a variable")
+
+   let isNumber (s,f) =
+      let test=ref true in
+      let aux v c =
+         if v<>constvar && compare c BField.fieldZero <>0 then
+            test:=false
+      in
+      Table.iter aux f;
+      !test
 
    let term_of_monom info k v =
       if v=constvar then
@@ -240,7 +371,7 @@ struct
     | [(v,k)] -> term_of_monom info k v
     | (v,k)::tl -> BField.add_term (term_of_monom info k v) (term_of_aux info tl)
 
-   let rec term_of info f =
+   let rec term_of info (s,f) =
       let l=Table.list_of f in
       let aux = function
          (k,[d]) -> (k,d)
@@ -250,14 +381,41 @@ struct
       let aux2 (k,d) = if BField.compare d BField.fieldZero = 0 then false else true in
       term_of_aux info (List.filter aux2 (List.map aux l))
 
+	let setSource s (s',f) = (s,f)
+
+	let getSource (s,f) = s
+
+	let extract2leftSource v f = setSource (Sextract2left(v,getSource f)) f
+
+	let extract2rightSource v f = setSource (Sextract2right(v,getSource f)) f
+
+	let trivialConstSource c = setSource (StrivialConst c) (mk_number c)
+
+	let trivialVarSource v = setSource (StrivialVar v) (mk_var v)
+
+	let contrSource src f = setSource (Scontradiction (getSource src)) f
+
+	let hypSource h f = setSource (Shypothesis h) f
+
+	let scaleSource coef f = setSource (Sscale(coef, getSource f)) f
+
+	let addVarSource coef v f = setSource (SaddVar(coef, v, getSource f)) f
+
+	let sumSource f1 f2 = setSource (Ssum(getSource f1, getSource f2)) f2
+
 end
 
 module type SAF_Sig =
 sig
    type bfield
    type vars
+	type source
+
    type af
-   type saf = Affine of af | Max of saf*saf | Min of saf*saf
+
+   type saf' = Affine of af | Max of saf*saf | Min of saf*saf
+	and saf = source * saf'
+
    type 'a step =
       Assert of string * saf * saf * 'a
     |   Transitive of string * saf * saf * saf
@@ -278,131 +436,216 @@ sig
 
    val term_of: (term array) -> saf -> term
 
+	val getSource : saf -> source
+	val setSource : source -> saf -> saf
+	val transitiveLeftSource : saf -> saf -> vars -> saf
+	val transitiveRightSource : vars -> saf -> saf -> saf
+	val addVarSource : bfield -> vars -> saf -> saf
+(*
+	val scaleSource : bfield -> saf -> saf
+	val sumSource : saf -> saf -> saf
+*)
    val print : out_channel -> saf -> unit
 end
 
-module MakeSAF(BField : BoundFieldSig)(AF : AF_Sig  with type bfield=BField.bfield)
-: SAF_Sig with type bfield=BField.bfield and type vars=AF.vars and type af=AF.af =
+module MakeSAF(BField : BoundFieldSig)
+	   (Source: SourceSig with
+   	   type bfield=BField.bfield and
+      	type vars=VarType.t)
+	(AF : AF_Sig with type bfield=BField.bfield and
+							type source=Source.source)
+: SAF_Sig with
+	type bfield=BField.bfield and
+	type vars=AF.vars and
+	type af=AF.af and
+	type source=Source.source =
 struct
    open BField
 
-   type vars=AF.vars
-   type af=AF.af
    type bfield=BField.bfield
+   type vars=AF.vars
+	type source = Source.source
+   type af=AF.af
+   open Source
 
-   type saf = Affine of af | Max of saf*saf | Min of saf*saf
+   type saf' = Affine of af | Max of saf*saf | Min of saf*saf
+	and saf = source * saf'
+
    type 'a step =
       Assert of string * saf * saf * 'a
-    |   Transitive of string * saf * saf * saf
+    | Transitive of string * saf * saf * saf
     | Tactic of string * 'a
 
-   let affine af = Affine af
+	let getSource (s,f') = s
+	let setSource s (_,f) = (s,f)
 
-   let min_aff_simple f1 f =
+   let affine af = (AF.getSource af), Affine af
+
+	let min_aff_simple f1 s f =
       match f1 with
-         Affine f1' ->
+         s1,Affine f1' ->
             if AF.isNumber f1' then
                let c=AF.coef f1' AF.constvar in
-                  if BField.compare c BField.plusInfinity = 0 then Affine f
-                  else if BField.compare c BField.minusInfinity =0 then f1
-                  else Min (f1, Affine f)
+                  if BField.compare c BField.plusInfinity = 0 then
+							Signore, s, Affine f
+                  else if BField.compare c BField.minusInfinity =0 then
+							s1, Signore, (Affine f1')
+                  else
+							s1, s, Min (f1, (s, Affine f))
             else
-               Min (f1, Affine f)
-       |   _ -> Min (f1, Affine f)
+               s1, s, Min (f1, (s, Affine f))
+       | s1,_ -> s1, s, Min (f1, (s, Affine f))
 
-   let min_aff f1 f =
+   let min_aff f1 s f =
+   	let s1,f1'=f1 in
       if AF.isNumber f then
          let c=AF.coef f AF.constvar in
-            if BField.compare c BField.plusInfinity = 0 then f1
-            else if BField.compare c BField.minusInfinity =0 then Affine f
-            else min_aff_simple f1 f
+            if BField.compare c BField.plusInfinity = 0 then
+					s1, Signore, f1'
+            else if BField.compare c BField.minusInfinity =0 then
+					Signore, s, Affine f
+            else
+					min_aff_simple f1 s f
       else
-         min_aff_simple f1 f
+         min_aff_simple f1 s f
 
    let min f1 f2 =
       match f1,f2 with
-         _, Affine f -> min_aff f1 f
-       | Affine f, _ -> min_aff f2 f
-       | Min (f11,f12), Min (f21,f22) -> Min (f1,f2)
+         (_,_), (s, Affine f) ->
+				let s1,s2,minf=min_aff f1 s f in
+					Smin(s1,s2), minf
+       | (s, Affine f), (_,_) ->
+				let s2,s1,minf=min_aff f2 s f in
+					Smin(s1,s2), minf
+       | (s1, Min(f11,f12)), (s2, Min(f21,f22)) ->
+				Smin(s1,s2), Min (f1,f2)
        | _,_ -> raise (Invalid_argument "SAF.min: detected a mixture of min and max")
 
-   let max_aff_simple f1 f =
+   let max_aff_simple f1 s f =
       match f1 with
-         Affine f1' ->
+         s1, Affine f1' ->
             if AF.isNumber f1' then
                let c=AF.coef f1' AF.constvar in
-                  if BField.compare c BField.plusInfinity = 0 then f1
-                  else if BField.compare c BField.minusInfinity =0 then Affine f
-                  else Max (f1, Affine f)
+                  if BField.compare c BField.plusInfinity = 0 then
+							s1, Signore, (Affine f1')
+                  else if BField.compare c BField.minusInfinity =0 then
+							Signore, s, Affine f
+                  else
+							s1, s, Max (f1, (s,Affine f))
             else
-               Max (f1, Affine f)
-       |   _ -> Max (f1, Affine f)
+               s1, s, Max (f1, (s,Affine f))
+       | s1, _ -> s1, s, Max (f1, (s,Affine f))
 
-   let max_aff f1 f =
+   let max_aff f1 s f =
+   	let s1,f1'=f1 in
       if AF.isNumber f then
          let c=AF.coef f AF.constvar in
-            if BField.compare c BField.plusInfinity = 0 then Affine f
-            else if BField.compare c BField.minusInfinity =0 then f1
-            else max_aff_simple f1 f
+            if BField.compare c BField.plusInfinity = 0 then
+					Signore, s, Affine f
+            else if BField.compare c BField.minusInfinity =0 then
+					getSource f1, Signore, f1'
+            else
+					max_aff_simple f1 s f
       else
-         max_aff_simple f1 f
+         max_aff_simple f1 s f
 
    let max f1 f2 =
       match f1,f2 with
-         _, Affine f -> max_aff f1 f
-       | Affine f, _ -> max_aff f2 f
-       | Max(f11,f12),Max(f21,f22) -> Max (f1,f2)
+         (_,_), (s, Affine f) ->
+				let s1,s2,maxf=max_aff f1 s f in
+				Smin(s1,s2), maxf
+       | (s, Affine f), _ ->
+				let s2,s1,maxf=max_aff f2 s f in
+				Smin(s1,s2), maxf
+       | (s1,Max(f11,f12)),(s2,Max(f21,f22)) ->
+				Smax(s1,s2), Max (f1,f2)
        | _,_ -> raise (Invalid_argument "SAF.min: detected a mixture of min and max")
 
 
    let rec scale k f =
       match f with
-         Affine f' -> Affine (AF.scale k f')
-       | Min (a,b) ->
+         s, Affine f' -> Sscale(k,s), Affine (AF.scale k f')
+       | s, Min (a,b) ->
             let cmp=compare k fieldZero in
-               if cmp<0 then Max (scale k a, scale k b)
-               else if cmp=0 then Affine(AF.mk_number(fieldZero))
-               else Min (scale k a, scale k b)
-       | Max (a,b) ->
+               if cmp<0 then
+						Sscale(k,s), Max (scale k a, scale k b)
+               else if cmp=0 then
+						StrivialConst(fieldZero), Affine(AF.mk_number(fieldZero))
+               else
+						Sscale(k,s), Min (scale k a, scale k b)
+       | s, Max (a,b) ->
             let cmp=compare k fieldZero in
-               if cmp<0 then Min (scale k a, scale k b)
-               else if cmp=0 then Affine(AF.mk_number(fieldZero))
-               else Max (scale k a, scale k b)
+               if cmp<0 then
+						Sscale(k,s), Min (scale k a, scale k b)
+               else if cmp=0 then
+						StrivialConst(fieldZero), Affine(AF.mk_number(fieldZero))
+               else
+						Sscale(k,s), Max (scale k a, scale k b)
 
    let rec add f1 f2 =
       match f1,f2 with
-         Affine f1', Affine f2' -> Affine (AF.add f1' f2')
-       | Min (a,b), _ -> Min (add a f2, add b f2)
-       | _, Min (a,b) -> Min (add f1 a, add f1 b)
-       | Max (a,b), _ -> Max (add a f2, add b f2)
-       | _, Max (a,b) -> Max (add f1 a, add f1 b)
+         (s1,Affine f1'), (s2,Affine f2') ->
+         	let saf'=Affine (AF.add f1' f2') in
+				(match s1,s2 with
+					Signore, s -> s,saf'
+				 | s,Signore -> s,saf'
+				 | _ -> Ssum(s1,s2),saf'
+	 			)
+       | (s1, Min(a,b)), (s2,_) -> Ssum(s1,s2), Min(add a f2, add b f2)
+       | (s1,_), (s2, Min(a,b)) -> Ssum(s1,s2), Min(add f1 a, add f1 b)
+       | (s1, Max(a,b)), (s2,_) -> Ssum(s1,s2), Max(add a f2, add b f2)
+       | (s1,_), (s2, Max(a,b)) -> Ssum(s1,s2), Max(add f1 a, add f1 b)
 
-   let rec occurs v f =
+   let rec occurs v (_,f) =
       match f with
          Affine f' -> (compare (AF.coef f' v) fieldZero <>0)
        | Min (a,b) -> (occurs v a) || (occurs v b)
        | Max (a,b) -> (occurs v a) || (occurs v b)
 
    let isInfinite = function
-      Affine f ->
+      _,Affine f ->
          AF.isInfinite f
     | _ -> false
 
    let isMinusInfinity = function
-      Affine f ->
+      _,Affine f ->
          AF.isMinusInfinity f
     | _ -> false
 
    let isPlusInfinity = function
-      Affine f ->
+      _,Affine f ->
          AF.isPlusInfinity f
     | _ -> false
 
    let isAffine = function
-      Affine _ -> true
+      _,Affine _ -> true
     | _ -> false
 
-   let rec print out f =
+	let transitiveLeftSource (s,f) (s0,f0) v =
+		StransitiveLeft(s,s0,v), f
+
+	let transitiveRightSource v (s,f) (s0,f0) =
+		StransitiveRight(v,s,s0), f
+
+	let addVarSource coef v (s,f) = SaddVar(coef,v,s),f
+
+(*
+	let rec scaleSource coef = function
+		Affine f -> Affine (AF.scaleSource coef f)
+	 | Min (f1,f2) -> Min (scaleSource coef f1, scaleSource coef f2)
+	 | Max (f1,f2) -> Max (scaleSource coef f1, scaleSource coef f2)
+
+	let rec sumSource_aux f0 = function
+		Affine f -> Affine (AF.sumSource f f0)
+	 | Min (f1,f2) -> Min (sumSource_aux f0 f1, sumSource_aux f0 f2)
+	 | Max (f1,f2) -> Max (sumSource_aux f0 f1, sumSource_aux f0 f2)
+
+	let rec sumSource f = function
+		Affine f0 -> sumSource_aux f0 f
+	 | Min (f1,f2) -> Min (sumSource f f1, sumSource f f2)
+	 | Max (f1,f2) -> Max (sumSource f f1, sumSource f f2)
+*)
+	let rec print out (_,f) =
       match f with
          Affine f' -> AF.print out  f'
        | Max (a,b) ->
@@ -411,7 +654,7 @@ struct
             fprintf out "min(%a; %a)" print a print b
 
    let rec term_of info = function
-      Affine f -> AF.term_of info f
-    | Max (a,b) -> BField.max_term (term_of info a) (term_of info b)
-    | Min (a,b) -> BField.min_term (term_of info a) (term_of info b)
+      _,Affine f -> AF.term_of info f
+    | _,Max (a,b) -> BField.max_term (term_of info a) (term_of info b)
+    | _,Min (a,b) -> BField.min_term (term_of info a) (term_of info b)
 end
