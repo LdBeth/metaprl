@@ -14,14 +14,14 @@ doc <:doc<
    In addition, it add resource @emph{annotations} that can be used in rule
    definitions to add them automatically to the @tt[dT] resources.
 
-   The @tt[dT] tactic uses two resources.  The @resource[intro]
-   is used to collect introduction rules; and the @resource[elim]
+   The @tt[dT] tactic uses two resources.  The @resource[intro] resource
+   is used to collect introduction rules; and the @resource[elim] resource
    is used to collect elimination rules.  The components of both resources
    take a term that describes the shape of the goals to which they apply,
    and a tactic to use when goals of that form are recognized.  The
    @hrefresource[elim] takes a tactic of type @code{int -> tactic} (the
    tactic takes the number of the hypothesis to which it applies), and the
-   @hrefresource[intro] takes a tactic of type @code{tactic}.
+   @hrefresource[intro] resource takes a tactic of type @code{tactic}.
 
    The (@hreftactic[dT] $i$) tactic is a generic tactic that takes the clause number
    of the clause (either hypothesis or conclusion) to ``decompose,'' and it
@@ -44,7 +44,7 @@ doc <:doc<
    rule.
 
    The resource annotations take a list of optional arguments.  The
-   @hrefresource[intro] takes arguments of the following type:
+   @hrefresource[intro] resource takes arguments of the following type:
 
    @begin[center]
    @begin[verbatim]
@@ -65,7 +65,7 @@ doc <:doc<
       @tt["{| intro [SelectOption 1] |}"];
       <<sequent(nil){ <H> >- <:doc<B @Type>> }>>
           @cr <<sequent(nil){ <H> >- 'A }>>;
-      <<sequent(nil){ <H> >- <:doc<A @wedge B>> }>>}
+      <<sequent(nil){ <H> >- <:doc<A @vee B>> }>>}
    $$
 
    $$
@@ -73,7 +73,7 @@ doc <:doc<
      @tt["{| intro [SelectOption 2] |}"];
      <<sequent(nil){ <H> >- <:doc<A @Type>> }>>@cr
         <<sequent(nil){ <H> >- 'B }>>;
-     <<sequent(nil){ <H> >- <:doc<A @wedge B>> }>>}
+     <<sequent(nil){ <H> >- <:doc<A @vee B>> }>>}
    $$
 
    These options require @hreftactic[selT] arguments: the left rule is applied with
@@ -97,7 +97,7 @@ doc <:doc<
    The @tt[CondMustComplete] option is a conditional version of @tt[AutoMustComplete];
    it is used to pass in a predicate controlling when to activate the @tt[AutoMustComplete].
 
-   The @hrefresource[elim_resource] options are defined with the following type:
+   The @hrefresource[elim] resource options are defined with the following type:
 
    @begin[center]
    @begin[verbatim]
@@ -116,7 +116,7 @@ doc <:doc<
    the term descriptions and tactics for ``decomposition''
    reasoning.  The @hreftactic[dT] tactic selects the most appropriate
    rule for a given goal and applies it.  The @tt{(dT 0)} tactic
-   is added to the @hrefresource[auto_resource] by default.
+   is added to the @hrefresource[auto] resource by default.
    @end[doc]
 
    ---------------------------------------------------------------
