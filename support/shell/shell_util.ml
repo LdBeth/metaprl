@@ -53,6 +53,7 @@ type ls_option =
     *)
  | LsHandles
  | LsExternalEditor
+ | LsLineNumbers
 
 (*
  * LS options.
@@ -109,6 +110,8 @@ let option_of_char c =
          LsFileAll
     | 'F' ->
          LsFileModifiers
+    | 'L' ->
+         LsLineNumbers
     | _ ->
          raise (RefineError ("ls", StringError (sprintf "unrecognized option '%s'" (Char.escaped c))))
 
@@ -130,6 +133,7 @@ let char_of_option option =
     | LsExternalEditor -> 'E'
     | LsFileAll -> 'A'
     | LsFileModifiers -> 'F'
+    | LsLineNumbers -> 'L'
 
 (*
  * Translate string options to LS options.
@@ -183,6 +187,7 @@ let ls_options_add options s =
              | LsHandles
              | LsExternalEditor
              | LsFileModifiers
+             | LsLineNumbers
              | LsFileAll
              | LsAll ->
                   LsOptionSet.add options option) options s
@@ -217,6 +222,7 @@ let ls_options_clear options s =
              | LsHandles
              | LsExternalEditor
              | LsFileModifiers
+             | LsLineNumbers
              | LsFileAll
              | LsAll ->
                   LsOptionSet.remove options option) options s

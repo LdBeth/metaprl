@@ -940,12 +940,12 @@ struct
    let print_internal_edit_page server state session filename outx =
       let filename = filename_of_proxyedit filename in
       let info = get_edit_info filename in
-      eprintf "Editing file: %s: %s@." filename info.edit_rootname;
+      let line_numbers = LsOptionSet.mem (Top.get_ls_options ()) LsLineNumbers in
       let table = table_of_state state in
       let table = BrowserTable.add_string table title_sym "Edit File" in
       let table = BrowserTable.add_string table file_sym filename in
       let table = BrowserTable.add_string table basename_sym (Filename.basename filename) in
-      let table = BrowserTable.add_file   table content_sym info.edit_rootname in
+      let table = BrowserTable.add_file   table content_sym info.edit_rootname line_numbers in
       let table = BrowserTable.add_string table response_sym state.state_response in
       let table = BrowserTable.add_fun    table session_sym (print_session server state session) in
       let table = BrowserTable.add_fun    table editinfo_sym (print_edit_info info) in
@@ -1059,7 +1059,8 @@ struct
    let start_edit_command session state target =
       let { session_edit_version = edit_version } = session in
       let flag = LsOptionSet.mem (Top.get_ls_options ()) LsExternalEditor in
-         Session.add_edit target;
+         if Sys.file_exists (editname target) then
+            Session.add_edit target;
          session.session_edit <- target;
          session.session_edit_flag <- true;
          session.session_edit_external <- flag;
@@ -1255,7 +1256,7 @@ struct
          eprintf "Put: %s@." uri;
       match decode_uri state uri with
          FileURI filename ->
-            if save_file filename 0 body then
+            if save_file filename false 0 body then
                print_edit_done_page outx state
             else
                print_error_page outx NotFoundCode
@@ -1343,8 +1344,9 @@ struct
                                      | _ ->
                                           backup_file
                               in
+                              let line_flag = LsOptionSet.mem (Top.get_ls_options ()) LsLineNumbers in
                               let filename = filename_of_proxyedit filename in
-                                 if action filename point content then
+                                 if action filename line_flag point content then
                                     print_redisplay_page edit_uri server state session outx
                                  else
                                     print_error_page outx NotFoundCode

@@ -174,7 +174,8 @@ let add_char io_entry c =
          Buffer.add_char io.io_buffer c)
 
 let close io_entry =
-   State.write io_entry (fun io ->
+    State.write io_entry (fun io ->
+         eprintf "Closing: %s@." io.io_command;
          match io.io_process with
             ProcessRunning command ->
                let { command_in = fd_in;
@@ -210,6 +211,7 @@ let start io_entry command_string =
               command_input = inx
             }
          in
+            eprintf "Command: %s@." command_string;
             Unix.close fd_out;
             Buffer.clear io.io_buffer;
             io.io_command <- command_string;

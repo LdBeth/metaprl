@@ -166,7 +166,7 @@ struct
    (*
     * Length is hardcoded for now.
     *)
-   let max_queue_length = 10
+   let max_queue_length = 100
 
    (*
     * Empty queue.

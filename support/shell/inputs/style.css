@@ -378,6 +378,10 @@ DIV.menuitemhover {
     background: white
 }
 
+#cancelbutton {
+    visibility: hidden
+}
+
 /*
  * System output.
  */

@@ -49,7 +49,7 @@ function OnLoad()
     var window_height = FrameHeight();
     var outputframe = parent.GetObject(self, 'outputframe');
     outputframe.style.height = (window_height - 50) + 'px';
-    setTimeout('LoadOutput ()', 1000);
+    setTimeout('LoadOutput ()', 5000);
     document.onmouseup = parent.CancelMenu;
 }
 

@@ -21,14 +21,11 @@
     <form name="editform" id="editform" method="post" action="./info.prl">
 
     <div id="editheading">Editing %%FILE%%
-    <input type="button" name="save"   id="savebutton"  value="Save" onclick="EditSave()">
-    <input type="hidden" name="cancel" id="cancelbutton" value="Cancel" onclick="EditCancel()">
-    <input type="hidden" name="point"  id="pointbutton" value="0">
-    <input type="hidden" name="type"   id="typebutton"  value="save">
+    <input type="button" name="save"   id="savebutton"   value="Save" onclick="EditSave()">
+    <input type="button" name="cancel" id="cancelbutton" value="Cancel" onclick="EditCancel()">
+    <input type="hidden" name="point"  id="pointbutton"  value="0">
+    <input type="hidden" name="type"   id="typebutton"   value="save">
     <span class="edithelp"><a href="/inputs/edit-help.html">Help</a></span>
     </div>
 
-    <textarea name="content" id="editarea" rows="60" cols="100">%%CONTENT%%</textarea>
-    </form>
-    </body>
-</html>
+    <textarea name="content" id="editarea" rows="60" cols="100">%%CONTENT%%

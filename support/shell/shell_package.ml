@@ -244,6 +244,7 @@ let mk_ls_filter options =
              | LsFileAll
              | LsFileModifiers
              | LsHandles
+             | LsLineNumbers
              | LsExternalEditor ->
                   predicate) [] options
    in

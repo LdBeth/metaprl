@@ -54,6 +54,7 @@ type ls_option =
     *)
  | LsHandles
  | LsExternalEditor
+ | LsLineNumbers
 
 module LsOptionSet : Lm_set_sig.LmSet with type elt = ls_option
 

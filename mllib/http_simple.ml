@@ -160,7 +160,8 @@ let print_success_page_err out code buf =
 
 let print_success_header_err out code =
    let code, msg = get_code code in
-      Lm_ssl.fprintf out "%s %d %s\r\n\r\n" http_protocol code msg
+      Lm_ssl.fprintf out "%s %d %s\r\n" http_protocol code msg;
+      Lm_ssl.fprintf out "Cache-Control: no-cache\r\n\r\n"
 
 let print_content_page_err out code content_type buf =
    let code, msg = get_code code in

@@ -46,6 +46,8 @@ let backup_suffix = ".bak"
 let absname name =
    Filename.concat (Setup.root ()) name
 
+let editname = absname
+
 let backupname name =
    name ^ backup_suffix
 
@@ -89,12 +91,47 @@ let out_channel_of_file name =
          None
 
 (*
+ * Skip a number: this should be exactly 9 characters.
+ *)
+let skip_number s off =
+   let len = String.length s in
+   let rec check_decimal i =
+      if i = 9 then
+         true
+      else
+         match s.[off + i] with
+            ' '
+          | '0'..'9' ->
+               check_decimal (succ i)
+          | _ ->
+               false
+   in
+      if len - off >= 9 && check_decimal 0 then
+          off + 9
+      else
+          off
+
+(*
+ * Add a specific number of space characters.
+ *)
+let add_spaces buf spaces =
+   for i = 1 to spaces do
+      Buffer.add_char buf ' '
+   done
+
+(*
  * Strip DOS-style line-endings.
  *)
-let unix_of_dos s =
+let unix_of_dos skip_lines s =
    let len = String.length s in
    let buf = Buffer.create len in
-   let rec copy i =
+   let skip_number =
+      if skip_lines then
+         skip_number
+      else
+         (fun _ i -> i)
+   in
+   let rec copy spaces i =
       if i = len then
          Buffer.contents buf
       else
@@ -102,23 +139,31 @@ let unix_of_dos s =
             if c = '\r' && i + 1 < len && s.[i + 1] = '\n' then
                begin
                   Buffer.add_char buf '\n';
-                  copy (i + 2)
+                  copy 0 (skip_number s (i + 2))
                end
+            else if c = '\n' then
+               begin
+                  Buffer.add_char buf '\n';
+                  copy 0 (skip_number s (i + 1))
+               end
+            else if c = ' ' then
+               copy (succ spaces) (succ i)
             else
                begin
+                  add_spaces buf spaces;
                   Buffer.add_char buf c;
-                  copy (i + 1)
+                  copy 0 (i + 1)
                end
    in
-      copy 0
+      copy 0 (skip_number s 0)
 
 (*
  * Replace the file with the string.
  *)
-let save_file name point contents =
+let save_file name skip_lines point contents =
    let filename = absname name in
    let backupname = backupname filename in
-   let contents = unix_of_dos contents in
+   let contents = unix_of_dos skip_lines contents in
    let result =
       match out_channel_of_file filename with
          Some out ->
@@ -138,9 +183,9 @@ let save_file name point contents =
 (*
  * Just back it up.
  *)
-let backup_file name point contents =
+let backup_file name skip_lines point contents =
    let backupname = absname (backupname name) in
-   let contents = unix_of_dos contents in
+   let contents = unix_of_dos skip_lines contents in
    let result =
       match out_channel_of_file backupname with
          Some out ->
@@ -157,7 +202,7 @@ let backup_file name point contents =
 (*
  * Cancel the edit.
  *)
-let cancel_file name point contents =
+let cancel_file name _ point contents =
    let backupname = absname (backupname name) in
       (try Unix.unlink backupname with
           Unix.Unix_error _ ->

@@ -36,6 +36,11 @@ type edit_info =
    }
 
 (*
+ * Name of the edit file.
+ *)
+val editname : string -> string
+
+(*
  * Get the edit info.
  *)
 val get_edit_info : string -> edit_info
@@ -46,9 +51,9 @@ val get_edit_info : string -> edit_info
 val proxyedit_of_filename : string -> string
 val filename_of_proxyedit : string -> string
 
-val save_file : string -> int -> string -> bool
-val backup_file : string -> int -> string -> bool
-val cancel_file : string -> int -> string -> bool
+val save_file   : string -> bool -> int -> string -> bool
+val backup_file : string -> bool -> int -> string -> bool
+val cancel_file : string -> bool -> int -> string -> bool
 
 (*!
  * @docoff

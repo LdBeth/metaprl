@@ -37,7 +37,7 @@ function SetSaveButton()
     /* Show the cancel button if modified */
     if(editinfo.ismodified) {
         var cancelbutton = parent.GetObject(self, 'cancelbutton');
-        cancelbutton.type = 'button';
+        cancelbutton.style.visibility = 'visible';
     }
 }
 
@@ -152,11 +152,13 @@ function CheckUpdate(event)
         editinfo.ischanged = true;
         SetSaveButton();
     }
+    else
+       Check();
 }
 
-function KeyPress(event)
+function Check()
 {
-    setTimeout('CheckUpdate()', 500);
+    setTimeout('CheckUpdate()', 1000);
 }
 
 /*
@@ -183,16 +185,16 @@ function OnLoad()
         if(height < 50)
             height = 50;
         editarea.style.height = height + 'px';
-        editarea.onkeypress = KeyPress;
         editinfo.length = editarea.value.length;
+        editarea.onblur = OnBlur;
     }
     var editform = parent.GetObject(self, 'editform');
     if(editform)
         editform.style.height = window_height + 'px';
     document.onmouseup = parent.CancelMenu;
-    document.onblur = OnBlur;
 
     /* Set the state */
+    Check();
     SetSaveButton();
     SetPoint();
 }

@@ -120,10 +120,8 @@ let rootname s =
    let s =
       if String.length s >= 3 && String.sub s 0 3 = "/fs" then
          String.sub s 3 (String.length s - 3)
-      else if String.length s <> 0 && s.[0] = '/' then
-         s
       else
-         Filename.concat (Shell_command.fs_pwd ()) s
+         s
    in
    let s = Lm_filename_util.split_path s in
    let s = Lm_filename_util.simplify_path s in

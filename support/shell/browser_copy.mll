@@ -189,16 +189,36 @@ struct
    let add_buffer table v buffer =
       SymbolTable.add table v (fun info -> info.info_add_buffer buffer)
 
-   let add_file table v filename =
+   let add_file table v filename show_lines =
       SymbolTable.add table v (fun info ->
          match in_channel_of_file (Setup.root ()) filename with
             Some inx ->
-               let rec copy () =
-                  info.info_add_char (input_char inx);
-                  copy ()
+               let escape_string s =
+                  let len = String.length s in
+                  let buf = Buffer.create len in
+                     for i = 0 to pred len do
+                        let c = s.[i] in
+                           if c = '&' then
+                              Buffer.add_string buf "&amp;"
+                           else
+                              Buffer.add_char buf c
+                     done;
+                     Buffer.add_string buf "\r\n";
+                     Buffer.contents buf
+               in
+               let rec copy i =
+                  let line = input_line inx in
+                  let line =
+                     if show_lines then
+                        Printf.sprintf "%8d %s" i (escape_string line)
+                     else
+                        escape_string line
+                  in
+                     info.info_add_string line;
+                     copy (succ i)
                in
                let () =
-                  try copy () with
+                  try copy 1 with
                      End_of_file ->
                         ()
                in
@@ -361,7 +381,7 @@ let html_escape_char info col c =
         info.info_add_string "&";
         succ col
     | ' ' ->
-        info.info_add_string "&nbsp;";
+        info.info_add_string " ";
         succ col
     | '\r'
     | '\n' ->

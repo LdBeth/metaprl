@@ -39,7 +39,7 @@ sig
    val empty      : t
    val add_string : t -> symbol -> string -> t
    val add_buffer : t -> symbol -> Buffer.t -> t
-   val add_file   : t -> symbol -> string -> t
+   val add_file   : t -> symbol -> string -> bool -> t
    val add_fun    : t -> symbol -> (Buffer.t -> unit) -> t
 end
 

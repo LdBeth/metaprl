@@ -278,6 +278,7 @@ function Prompt(cmd)
 {
     parent.ruleframe.document.commandform.command.value = cmd;
     ButtonFocus();
+    ShowContent();
 }
 
 /*
@@ -287,6 +288,7 @@ function Command(cmd)
 {
     parent.ruleframe.document.commandform.command.value = cmd;
     parent.ruleframe.document.commandform.submit();
+    ShowContent();
 }
 
 /*

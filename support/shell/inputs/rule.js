@@ -29,6 +29,8 @@ function HistoryNavigate(amount)
 function RuleKey(event)
 {
     var code = event.keyCode;
+    var scode = String.fromCharCode(code);
+    alert('Char code is: "' + scode + '"');
     if(code == 38)  // DownArrow
         HistoryNavigate(-1);
     else if(code == 40) // UpArrow

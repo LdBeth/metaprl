@@ -428,7 +428,8 @@ let view_table =
     'p', "-", "Show Parents",                   "Hide Parents";
     'd', "-", "Show Display Forms",             "Hide Display Forms";
     'A', "",  "Show All Files",                 "Show Standard Files";
-    'F', "-", "Show File Attributes",           "Hide File Attributes"]
+    'F', "-", "Show File Attributes",           "Hide File Attributes";
+    'L', "-", "Show Line Numbers",              "Hide Line Numbers"]
 
 let add_view info view =
    try
