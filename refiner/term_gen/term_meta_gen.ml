@@ -238,6 +238,7 @@ let () = ();;
    let vv = Lm_symbol.make "v" 0
    let bang = [Lm_symbol.make "!" 0]
    let df_context_op = make_opname ["df_context"; "Base_dform"]
+   let hash_sym = Lm_symbol.make "#" 0
 
    let encode_free_var v = mk_so_var_term v bang []
 
@@ -278,9 +279,9 @@ let () = ();;
 
    (*
     * Go down the term, mapping the context bindings
-    * f knows how to map contexts; f' knows what to do with free FO variables; f'' handles sequents.
+    * f knows how to map contexts; f' knows what to do with free FO variables.
     *)
-   let convert_contexts f f' parsing =
+   let convert_contexts (f : var list -> var -> var list -> var list * var list) f' parsing =
       let rec convert_term bvars fvars bconts t =
          if is_var_term t then
             let v = dest_var t in if SymbolSet.mem fvars v then f' t v bconts else t
@@ -297,13 +298,13 @@ let () = ();;
                else
                   t
             else
-               let conts' = f bconts v conts in
+               let _, conts' = f bconts v conts in
                let terms' = Lm_list_util.smap (convert_term bvars fvars bconts) terms in
                if conts' == conts && terms == terms' then t else mk_so_var_term v conts' terms'
           else if is_context_term t then
             let v,ct,conts,terms = dest_context t in
-            let ct' = convert_term bvars fvars (v::bconts) ct in
-            let conts' = f bconts v conts in
+            let bconts', conts' = f bconts v conts in
+            let ct' = convert_term bvars fvars bconts' ct in
             let terms' = Lm_list_util.smap (convert_term bvars fvars bconts) terms in
             if ct == ct && conts' == conts && terms == terms' then t else mk_context_term v ct' conts' terms'
           else if is_sequent_term t then
@@ -337,9 +338,9 @@ let () = ();;
             let hd' = if t' == t then hd else Hypothesis(v, t') in
                hd' :: tl'), concl', SymbolSet.union seqfvars (free_vars_set t')
       | (Context (c, conts, terms) as hd :: tl) as hyps ->
-            let conts' = f bconts c conts in
+            let bconts', conts' = f bconts c conts in
             let terms' = Lm_list_util.smap (convert_term bvars fvars bconts) terms in
-            let tl', concl', seqfvars = convert_hyps bvars fvars (c::bconts) concl tl in
+            let tl', concl', seqfvars = convert_hyps bvars fvars bconts' concl tl in
             let hd' =
                if conts' == conts && terms == terms' && parsing then
                   hd
@@ -369,12 +370,31 @@ let () = ();;
          let mt1' = convert_mterm f mt1 in if mt1' == mt1 then mt else MetaLabeled(l,mt1')
 
    (* Diring parsing and display, the default contexts are "encoded" as a singleton list containing just the variable itself *)
-   let context_of_parsed_contexts bconts v = function
-      [v'] when Lm_symbol.eq v v' -> bconts
-    | conts -> conts
+   let context_of_parsed_contexts bconts v conts =
+      let bconts', conts =
+         match conts with
+            v :: rest when Lm_symbol.eq v hash_sym ->
+               bconts, rest
+          | _ ->
+               v :: bconts, conts
+      in
+      let conts =
+         match conts with
+            [v'] when Lm_symbol.eq v v' ->
+               bconts
+          | _ ->
+               conts
+      in
+         bconts', conts
 
    let display_context_of_contexts bconts v conts =
-      if bconts = conts then [v] else conts
+      let conts =
+         if bconts = conts then
+            [v]
+         else
+            conts
+      in
+         v :: bconts, conts
 
    (* Actual term convertors *)
    let term_of_parsed_term =
@@ -389,23 +409,39 @@ let () = ();;
    (* create a fresh term convertor with memoization *)
    let create_term_parser () =
       let map = ref SymbolTable.empty in
-      let context_of_parsed_contexts bconts v = function
-         [v'] when Lm_symbol.eq v v' ->
-            if SymbolTable.mem !map v then SymbolTable.find !map v else begin
-               map:=SymbolTable.add !map v bconts;
-               bconts
-            end
-       | conts ->
-            if not (SymbolTable.mem !map v) then
-               map:=SymbolTable.add !map v conts;
-            conts
+      let context_of_parsed_contexts bconts v conts =
+         let bconts', conts =
+            match conts with
+               v :: rest when Lm_symbol.eq v hash_sym ->
+                  bconts, rest
+             | _ ->
+                  v :: bconts, conts
+         in
+         let conts =
+            match conts with
+               [v'] when Lm_symbol.eq v v' ->
+                  if SymbolTable.mem !map v then
+                     SymbolTable.find !map v
+                  else begin
+                     map:=SymbolTable.add !map v bconts;
+                     bconts
+                  end
+             | conts ->
+                  if not (SymbolTable.mem !map v) then
+                     map:=SymbolTable.add !map v conts;
+                  conts
+         in
+            bconts', conts
       and deal_with_a_var _ v conts =
          let conts =
-            if SymbolTable.mem !map v then SymbolTable.find !map v else begin
+            if SymbolTable.mem !map v then
+               SymbolTable.find !map v
+            else begin
                map:=SymbolTable.add !map v conts;
                conts
             end
-         in mk_so_var_term v conts []
+         in
+            mk_so_var_term v conts []
       in
          convert_contexts context_of_parsed_contexts deal_with_a_var true
 
