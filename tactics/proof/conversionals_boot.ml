@@ -216,7 +216,7 @@ struct
     * Apply all to all terms the first conversion that works
     *)
    let applyAllC convs =
-      higherC (sweepUpC (firstC convs))
+      sweepUpC (firstC convs)
 
    (*
     * Repeat the conversion until nothing more happens.

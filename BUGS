@@ -84,19 +84,7 @@ RewriteInternal.rw intentional rewrite should apply conv the whole sequent.
 After fixing this bug, rwcAll should use RewriteInternal.rw instead
 of onAllMClausesT (conversionals_boot.ml).
 
-3.14) (kopylov; 2001.19.06)
-Converertions can not be applied to context.
-E.g.  'H; 'J['A*'B >- C
-# refine rw (reduceC) 1;;
-    Term_addr_ds.term_subterm: [Hyp(1)]
-    [ext] H; J[A * B] >- C
-# refine rw (sweepUpC unfold_prod) 1;;
-Refine error:
-    Term_addr_ds.term_subterm: [Hyp(1)]
-    [ext] H; J[A * B] >- C
-After fixing this bug, higherC would be redundant in the definition
-of applyAllC (conversionals_boot.ml).
-
+3.14) (fixed)
 
 REFINER
 
