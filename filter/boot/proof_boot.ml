@@ -857,7 +857,7 @@ struct
     * Split them into children and extras that don't match up.
     * Be careful not to change the arguments if not necessary.
     *)
-   let match_subgoals =
+   let match_subgoals_general find_leaf =
       let rec filter_subgoals = function
          Goal _ :: subgoals ->
             filter_subgoals subgoals
@@ -872,16 +872,6 @@ struct
        | (_, arg) ->
             Some arg
       in
-      let rec find_leaf leaf = function
-         (goal, subgoal) as h :: subgoals ->
-            if tactic_arg_alpha_equal goal leaf then
-               subgoal, subgoals
-            else
-               let subgoal, subgoals = find_leaf leaf subgoals in
-                  subgoal, h :: subgoals
-       | [] ->
-            Goal leaf, []
-      in
       let rec collect leaves subgoals =
          match leaves with
             leaf :: leaves ->
@@ -894,63 +884,31 @@ struct
          (fun leaves subgoals extras ->
                collect leaves (filter_subgoals (subgoals @ extras)))
 
-   (*
-    * Replace the subgoal nodes.
-    *)
-   let update_subgoals =
-      let rec filter_subgoals tail = function
-         subgoal :: subgoals ->
-            begin
-               match subgoal with
-                  Goal arg ->
-                     filter_subgoals (subgoal :: tail) subgoals
-                | _ ->
-                     (goal_ext subgoal, subgoal) :: filter_subgoals tail subgoals
+   let rec find_leaf compare leaf = function
+      (goal, subgoal) as h :: subgoals ->
+         if compare goal leaf then
+            subgoal, subgoals
+         else
+            let subgoal, subgoals = find_leaf compare leaf subgoals in
+               subgoal, h :: subgoals
+    | [] ->
+         Goal leaf, []
+
+   let match_subgoals = match_subgoals_general (find_leaf tactic_arg_alpha_equal)
+
+   let find_leaf_guess leaf subgoals =
+      match find_leaf tactic_arg_alpha_equal leaf subgoals with
+         Goal _, _ ->
+            begin match find_leaf tactic_arg_alpha_equal_concl leaf subgoals with
+               RuleBox rb, subgoals ->
+                  RuleBox { rb with rule_extract = Goal leaf}, subgoals
+             | answer ->
+                  answer
             end
-       | [] ->
-            let spread ext =
-               match ext with
-                  Goal arg ->
-                     (arg, ext)
-                | _ ->
-                     raise (Invalid_argument "Proof_boot.match_subgoals.search")
-            in
-               List.map spread tail
-      in
-      let filter_extra = function
-         (_, Goal _) ->
-            None
-       | (_, arg) ->
-            Some arg
-      in
-      let set_goal subgoal mseq =
-         match subgoal with
-            RuleBox rb ->
-               RuleBox { rb with rule_extract = Goal mseq }
-          | _ ->
-               subgoal
-      in
-      let rec find_leaf leaf = function
-         (goal, subgoal) as h :: subgoals ->
-            if tactic_arg_alpha_equal_concl goal leaf then
-               set_goal subgoal leaf, subgoals
-            else
-               let subgoal, subgoals = find_leaf leaf subgoals in
-                  subgoal, h :: subgoals
-       | [] ->
-            Goal leaf, []
-      in
-      let rec collect leaves subgoals =
-         match leaves with
-            leaf :: leaves ->
-               let subgoal, subgoals = find_leaf leaf subgoals in
-               let subgoals, extras = collect leaves subgoals in
-                  subgoal :: subgoals, extras
-          | [] ->
-               [], List_util.some_map filter_extra subgoals
-      in
-         (fun leaves subgoals extras ->
-               collect leaves (filter_subgoals [] (subgoals @ extras)))
+       | answer ->
+            answer
+
+   let update_subgoals = match_subgoals_general find_leaf_guess
 
    (*
     * Replace a child at the given index.
@@ -2395,7 +2353,7 @@ struct
          } ->
             let t = goal_ext goal in
             let new_goal =
-               try Refine_exn.print dforms (fun () -> snd (TacticInternal.refine (tac ()) t)) () with
+               try Filter_exn.print dforms (fun () -> snd (TacticInternal.refine (tac ()) t)) () with
                   RefineError _ ->
                      goal
             in
