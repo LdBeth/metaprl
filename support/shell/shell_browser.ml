@@ -157,8 +157,8 @@ struct
     *)
    let print_page out state location =
       let table = add_title_location state "MetaPRL display" location in
-      let table = BrowserTable.add_buffer table body_sym Browser_display_term.buffer in
-      let table = BrowserTable.add_buffer table message_sym Browser_display_term.message in
+      let table = BrowserTable.add_fun table body_sym Browser_display_term.format_main in
+      let table = BrowserTable.add_fun table message_sym Browser_display_term.format_message in
       let filename =
          if state.state_long then
             "pagelong.html"
@@ -202,13 +202,13 @@ struct
     * Send it to the shell, and get the result.
     *)
    let eval state outx command =
-      Browser_display_term.reset ();
-      Shell.eval state.state_shell (command ^ ";;")
+      let command = command ^ ";;" in
+         Browser_display_term.set_message_string ("# " ^ command);
+         Shell.eval state.state_shell command
 
    let chdir state dir =
       if !debug_http then
          eprintf "Changing directory to %s@." dir;
-      Browser_display_term.reset ();
       ignore (Shell.cd state.state_shell dir)
 
    let flush state =

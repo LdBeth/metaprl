@@ -55,8 +55,7 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-open Printf
-
+open Format
 open Lm_debug
 
 (*
@@ -220,6 +219,7 @@ type printer =
      print_tab       : int * string -> string list -> unit;
      print_begin_tag : string -> unit;
      print_end_tag   : string -> unit;
+     print_flush     : unit -> unit
    }
 
 (*
@@ -381,7 +381,7 @@ let format_pushm buf off =
    let off =
       if off < 0 then
          begin
-            eprintf "Rformat.format_pushm: negative margin %d%t" off eflush;
+            eprintf "Rformat.format_pushm: negative margin %d@." off;
             0
          end
       else
@@ -694,8 +694,8 @@ let margin_string str1 space str2 =
          let s1 = String.sub str1 (len1 - space) overlap in
          let s2 = String.sub str2 0 overlap in
             if s1 <> s2 then
-               eprintf "Rformat.margin_string: strings do not overlap: \"%s\":%d:\"%s\"%t" (**)
-                  (String.escaped str1) space (String.escaped str2) eflush;
+               eprintf "Rformat.margin_string: strings do not overlap: \"%s\":%d:\"%s\"@." (**)
+                  (String.escaped str1) space (String.escaped str2);
             String.sub str1 0 (len1 - space) ^ str2
 
 (*
@@ -757,7 +757,7 @@ let rec next_text_len stack = function
  *)
 let rec search_lzone buf lmargin rmargin col maxx search =
    if !debug_rformat then
-      eprintf "Rformat.search_lzone%t" eflush;
+      eprintf "Rformat.search_lzone@.";
    let rec collect col maxx = function
       h :: t ->
          let col, maxx =
@@ -805,7 +805,7 @@ let rec search_lzone buf lmargin rmargin col maxx search =
  *)
 and search_tzone buf stack ((lmargin, _) as lmargin') rmargin col maxx breaks search =
    if !debug_rformat then
-      eprintf "Rformat.search_tzone%t" eflush;
+      eprintf "Rformat.search_tzone@.";
    let rec collect col maxx search = function
       h :: t ->
          begin
@@ -818,7 +818,7 @@ and search_tzone buf stack ((lmargin, _) as lmargin') rmargin col maxx breaks se
 
              | CBreak (index, take_len, notake_len, _, _) ->
                   if !debug_rformat then
-                     eprintf "CBreak col=%d rmargin=%d search=%b index=%d breaks=%b%t" col rmargin search index breaks.(index) eflush;
+                     eprintf "CBreak col=%d rmargin=%d search=%b index=%d breaks=%b@." col rmargin search index breaks.(index);
                   if search then
                      (* Searching for margin error in linear mode *)
                      let col = col + notake_len in
@@ -843,7 +843,7 @@ and search_tzone buf stack ((lmargin, _) as lmargin') rmargin col maxx breaks se
 
              | Break (index, take_len, notake_len, _, _) ->
                   if !debug_rformat then
-                     eprintf "Break col=%d rmargin=%d search=%b index=%d breaks=%b%t" col rmargin search index breaks.(index) eflush;
+                     eprintf "Break col=%d rmargin=%d search=%b index=%d breaks=%b@." col rmargin search index breaks.(index);
                   if search then
                      (* Searching for margin error in linear mode *)
                      let col = col + notake_len in
@@ -917,7 +917,7 @@ and search_szone buf stack lmargin rmargin col maxx search =
  *)
 and search_zone buf stack lmargin rmargin col maxx breaks search =
    if !debug_rformat then
-      eprintf "Rformat.search_zone%t" eflush;
+      eprintf "Rformat.search_zone@.";
    match buf.buf_tag with
       LZoneTag ->
          search_lzone buf lmargin rmargin col maxx search
@@ -947,7 +947,7 @@ and search_zone buf stack lmargin rmargin col maxx breaks search =
  *)
 let compute_breaks buf width =
    if !debug_rformat then
-      eprintf "Rformat.compute_breaks%t" eflush;
+      eprintf "Rformat.compute_breaks@.";
    flush_formatting buf;
    search_zone buf [] (0, "") width 0 0 [||] false
 
@@ -990,7 +990,7 @@ let print_arg2_invis _ _ =
  *)
 let rec print_lzone buf rmargin col printer tags =
    if !debug_rformat then
-      eprintf "Rformat.print_lzone%t" eflush;
+      eprintf "Rformat.print_lzone@.";
    let rec print col = function
       h :: t ->
          begin
@@ -1025,7 +1025,7 @@ let rec print_lzone buf rmargin col printer tags =
  *)
 and print_tzone buf rmargin col printer tags =
    if !debug_rformat then
-      eprintf "Rformat.print_tzone%t" eflush;
+      eprintf "Rformat.print_tzone@.";
    let { formatted_commands = commands;
          formatted_breaks = breaks;
          formatted_lmargin = ((lmargin', str) as lmargin)
@@ -1085,7 +1085,7 @@ and print_ltzone linear =
 
 and print_zone buf rmargin col printer linear tags =
    if !debug_rformat then
-      eprintf "Rformat.print_zone%t" eflush;
+      eprintf "Rformat.print_zone@.";
    match buf.buf_tag with
       LZoneTag ->
          print_lzone buf rmargin col printer tags
@@ -1114,7 +1114,7 @@ and print_zone buf rmargin col printer linear tags =
 
 let print_buf buf rmargin printer =
    if !debug_rformat then
-      eprintf "Rformat.print_buf%t" eflush;
+      eprintf "Rformat.print_buf@.";
    print_zone buf rmargin 0 printer false
 
 (************************************************************************
@@ -1154,6 +1154,7 @@ let make_text_printer raw =
         print_tab       = print_tab;
         print_begin_tag = print_arg1_invis;
         print_end_tag   = print_arg1_invis;
+        print_flush     = print_arg1_invis
       }
 
 (*
@@ -1206,6 +1207,8 @@ let html_escape_string s =
  * Print strings.
  *)
 let html_print_string buf s =
+   if !debug_rformat then
+      eprintf "html_string: %s@." s;
    buf.html_current_line <- (true, s) :: buf.html_current_line
 
 let html_print_invis buf s =
@@ -1244,6 +1247,9 @@ let html_push_line buf =
    let line = html_line buf in
       buf.html_print_string line;
       buf.html_current_line <- []
+
+let html_flush buf () =
+   html_push_line buf
 
 (*
  * Set up all pending tabstops.
@@ -1303,6 +1309,7 @@ let make_html_printer raw =
         print_tab       = html_tab buf;
         print_begin_tag = html_tag buf;
         print_end_tag   = html_etag buf;
+        print_flush     = html_flush buf
       }
 
 (*
@@ -1431,6 +1438,9 @@ let tex_push_line buf tags =
             buf.tex_current_line <- List.map make_tag tags
          end
 
+let tex_flush buf () =
+   tex_push_line buf []
+
 (*
  * Set up all pending tabstops.
  *)
@@ -1487,6 +1497,7 @@ let make_tex_printer raw =
         print_tab       = tex_tab buf;
         print_begin_tag = tex_tag buf;
         print_end_tag   = tex_etag buf;
+        print_flush     = tex_flush buf
       }
 
 (*
@@ -1507,15 +1518,21 @@ let print_to_printer buf rmargin printer =
  * Text printing.
  *)
 let print_text_raw rmargin buf raw =
-   print_to_printer buf rmargin (make_text_printer raw)
+   let info = make_text_printer raw in
+      print_to_printer buf rmargin info;
+      info.print_flush ()
 
 let print_html_raw rmargin buf raw =
-   print_to_printer buf rmargin (make_html_printer raw)
+   let info = make_html_printer raw in
+      print_to_printer buf rmargin info;
+      info.print_flush ()
 
 let print_tex_raw rmargin buf raw =
-   raw.raw_print_string "\\iftex\\begin{tabbing}\n";
-   print_to_printer buf rmargin (make_tex_printer raw);
-   raw.raw_print_string "\\end{tabbing}\\fi\n"
+   let info = make_tex_printer raw in
+      raw.raw_print_string "\\iftex\\begin{tabbing}\n";
+      print_to_printer buf rmargin info;
+      raw.raw_print_string "\\end{tabbing}\\fi\n";
+      info.print_flush ()
 
 (*
  * The channel and buffer versions.

@@ -31,22 +31,14 @@
  *)
 
 (*
- * The data is placed in a buffer.
- *)
-val buffer : Buffer.t
-val message : Buffer.t
-
-(*
- * Reset the buffer to a default message.
- *)
-val reset : unit -> unit
-
-(*
  * Parts of the output.
  *)
 val set_main : int -> Rformat.buffer -> unit
+val format_main : Buffer.t -> unit
+
 val set_message : int -> Rformat.buffer -> unit
 val set_message_string : string -> unit
+val format_message : Buffer.t -> unit
 
 (*
  * -*-

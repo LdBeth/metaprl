@@ -29,32 +29,63 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-open Printf
-open Lm_debug
+open Format
+
+(*
+ * Line-based buffer.
+ *)
+module type LineBufferSig =
+sig
+   type t
+
+   val create : unit -> t
+   val add_buffer : t -> Buffer.t -> unit
+   val add_to_buffer : t -> Buffer.t -> unit
+end
+
+module LineBuffer : LineBufferSig =
+struct
+   type t = string Queue.t
+
+   let max_queue_length = 100
+
+   let create = Queue.create
+
+   let add_buffer queue buf =
+      if Queue.length queue = max_queue_length then
+         ignore (Queue.take queue);
+      Queue.add (Buffer.contents buf) queue
+
+   let add_to_buffer queue buf =
+      Queue.iter (fun s ->
+            Buffer.add_string buf s;
+            Buffer.add_string buf "<br>\n") queue
+end
+
+let message = LineBuffer.create ()
 
 (*
  * The display buffer is global.
  *)
 let buffer = Buffer.create 1024
-let message = Buffer.create 1024
-
-(*
- * Reset the buffer in case nothing happened.
- *)
-let reset () =
-   Buffer.clear message;
-   Buffer.clear buffer
 
 (*
  * Set the rule text.
  *)
 let set_message width buf =
-   Buffer.clear message;
-   Rformat.print_html_buffer width buf message
+   let buffer = Buffer.create 100 in
+      Rformat.print_html_buffer width buf buffer;
+      LineBuffer.add_buffer message buffer
 
 let set_message_string str =
-   Buffer.clear message;
-   Buffer.add_string message str
+   let buffer = Buffer.create 100 in
+      Buffer.add_string buffer "<b>";
+      Buffer.add_string buffer str;
+      Buffer.add_string buffer "</b>";
+      LineBuffer.add_buffer message buffer
+
+let format_message buf =
+   LineBuffer.add_to_buffer message buf
 
 (*
  * Display a term in the window.
@@ -62,6 +93,9 @@ let set_message_string str =
 let set_main width buf =
    Buffer.clear buffer;
    Rformat.print_html_buffer width buf buffer
+
+let format_main buf =
+   Buffer.add_buffer buf buffer
 
 (*
  * -*-

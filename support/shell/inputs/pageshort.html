@@ -1,6 +1,6 @@
 <html>
     <head>
-        <title>%%TITLE%% %%LOCATION%%</title>
+        <title>%%TITLE%%: %%LOCATION%%</title>
 	<script type="text/javascript" src="/inputs/cookie.js"></script>
 	<script type="text/javascript" src="/inputs/layout.js"></script>
         <script type="text/javascript">
@@ -13,10 +13,9 @@ SetWindowCookie();
     </head>
 
     <body bgcolor="%%BGCOLOR%%" fgcolor="%%FGCOLOR%%">
-    <div id="contentbox">%%BODY%%</div>
-    <div id="rulebox">
-        %%MESSAGE%%
-        <p>
+    <div name="content" id="contentbox">%%BODY%%</div>
+    <div name="message" id="messagebox">%%MESSAGE%%</div>
+    <div name="rule" id="rulebox">
         <form name="commandform" method="post">
         <font color="%%BGCOLOR%%"># </font>
         <input name="button" type="submit" value="Submit" border="0">
@@ -28,6 +27,7 @@ SetWindowCookie();
         <script type="text/javascript">
         <!-- Hide this text from old browsers --
         document.commandform.command.focus();
+	document.getElementById('messagebox').scrollTop += 10000;
         -->
         </script>
     </div>

@@ -31,7 +31,7 @@
  *)
 extends Shell
 
-open Printf
+open Format
 
 open Lm_debug
 
@@ -116,7 +116,7 @@ struct
       UnitExpr () ->
          format_string buf "()"
     | BoolExpr b ->
-         format_string buf (sprintf "%b" b)
+         format_string buf (string_of_bool b)
     | IntExpr i ->
          format_int buf i;
     | AddressExpr a ->
@@ -130,7 +130,7 @@ struct
          format_pushm buf 1;
          format_expr_list buf df l;
          format_popm buf;
-         format_char buf ']';
+         format_char buf ']'
     | _ ->
          format_string buf "-"
 
@@ -162,8 +162,6 @@ struct
    let print_expr_browser state expr_typ =
       let buf = new_buffer () in
          print_expr_buf state buf expr_typ;
-
-         (* BUG HTML: we should set the width correctly *)
          Browser_display_term.set_message default_width buf
 
    (*
@@ -229,7 +227,7 @@ struct
       let catch =
          if backtrace then
             begin
-               eprintf "*** Note: uncaught exceptions will cause MetaPRL to exit%t" eflush;
+               eprintf "*** Note: uncaught exceptions will cause MetaPRL to exit@.";
                (fun f ->
                      try f () with
                         End_of_file ->
@@ -284,7 +282,7 @@ struct
       match Shell_state.get_input_files () with
          [] ->
             let instream, flush = Shell_state.stdin_stream state in
-               printf "%s\n%t" Mp_version.version eflush;
+               printf "%s\n@." Mp_version.version;
                toploop state true instream flush
         | files ->
             use_files state files

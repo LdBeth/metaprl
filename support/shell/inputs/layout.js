@@ -28,23 +28,42 @@ function GetWindowSize() {
  * The styles depend on the window size.
  */
 function WriteWindowStyle(rulebox_height) {
+    var horizontal_border_size = 2;
+    var vertical_border_size = 2;
+    var box_width = window_width - 2 * horizontal_border_size;
+    var message_height = 100;
+    var content_height = window_height - message_height - rulebox_height;
+    var rulebox_top = content_height + message_height;
+
     document.write('<style type="text/css" media="screen"><!-- ');
     document.write('#contentbox {'
                    + ' position: absolute'
 		   + '; top: 0'
-                   + '; left: 0'
-		   + '; width: 100%'
-		   + '; height: ' + (window_height - rulebox_height)
+                   + '; left: ' + horizontal_border_size
+		   + '; width: ' + box_width
+		   + '; height: ' + (content_height - vertical_border_size)
 		   + '; display: block'
 		   + '; border: none'
 		   + '; padding: none'
 		   + '; overflow: auto'
 		   + '} ');
+    document.write('#messagebox {'
+                   + ' position: absolute'
+		   + '; top: ' + content_height
+                   + '; left: ' + horizontal_border_size
+		   + '; width: ' + box_width
+		   + '; height: ' + (message_height - vertical_border_size)
+		   + '; display: block'
+		   + '; border: none'
+		   + '; padding: none'
+		   + '; overflow: auto'
+                   + '; background: #f8f8ff'
+		   + '} ');
     document.write('#rulebox {'
                    + ' position: absolute'
-		   + '; top:' + (window_height - rulebox_height)
-                   + '; left: 0'
-		   + '; width: 100%'
+		   + '; top:' + rulebox_top
+                   + '; left: ' + horizontal_border_size
+		   + '; width: ' + box_width
 		   + '; height: ' + rulebox_height
 		   + '; display: block'
 		   + '; border: none'
