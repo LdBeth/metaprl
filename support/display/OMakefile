@@ -9,7 +9,6 @@ MPFILES =\
 	nuprl_font\
 	base_dform\
 	comment\
-	summary\
 	ocaml\
 	ocaml_base_df\
 	ocaml_expr_df\
@@ -19,7 +18,8 @@ MPFILES =\
 	ocaml_me_df\
 	ocaml_sig_df\
 	ocaml_str_df\
-	ocaml_df
+	ocaml_df\
+	summary\
 
 Theory($(MPFILES))
 

@@ -34,6 +34,7 @@ extends Perv
 extends Nuprl_font
 extends Base_dform
 extends Comment
+extends Ocaml_df
 
 open Refiner.Refiner.TermType
 
@@ -115,6 +116,7 @@ declare "proof"{'main; 'goal; 'status; 'text; 'subgoals}
 
 (* PRL Bindings *)
 declare term_binding{'t;v.'t2['v]}
+declare opname_binding{'t;v.'t2['v]}
 
 (************************************************************************
  * ML ACCESS                                                            *

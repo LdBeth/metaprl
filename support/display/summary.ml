@@ -73,6 +73,7 @@ extends Perv
 extends Nuprl_font
 extends Base_dform
 extends Comment
+extends Ocaml_df
 
 open Lm_debug
 open Lm_printf
@@ -829,10 +830,13 @@ dform comment_df3 : mode[html] :: comment{'t} =
  * XXX TODO: display forms for term constructor bindings.
  *)
 declare term_binding{'t;v.'t2['v]}
+declare opname_binding{'t;v.'t2['v]}
 declare bound_term{'t}
 
 dform term_binding : term_binding{'t;v.'t2['v]} = 't2[bound_term{'t}]
 dform term_binding2 : resources{term_binding{'t;v.'t2['v]}} = resources{'t2[bound_term{'t}]}
+dform opname_binding : opname_binding{'t;v.'t2['v]} =
+   't2[Ocaml!apply{ (Ocaml!lid["opname_of_term"]); bound_term{'t}}]
 
 dform bound_term : bound_term{'t} =
    szone pushm[3] tt["<<"] hspace ensuremath{'t} popm hspace tt[">>"] ezone
