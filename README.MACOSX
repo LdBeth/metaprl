@@ -85,7 +85,7 @@ BUILDING METAPRL
 
 6. If you want readline and ncurses support and have Fink installed you
    might want to add "-I/sw/include -L/sw/lib" to the CCC= line in
-   mk/config and "OCAML_LIB_FLAGS=-ccopt -L/sw/lib" to mk/config.local.
+   mk/config and "OCAML_LINK_FLAGS=-cclib -L/sw/lib" to mk/config.local.
    Otherwise, you'll need to set the appropriate options in mk/config to
    false.
 
