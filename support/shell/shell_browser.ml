@@ -1214,7 +1214,7 @@ struct
                   if is_valid_response state header then
                      let width = get_window_width header in
                         (* To ensure relative links are correct, all URLs must end with a slash *)
-                        if chdir state session dirname && is_dir then
+                        if chdir state session dirname && is_dir && (Top.pwd () = dirname) then
                            begin
                               flush state session;
                               print_page server state session outx width "content"
@@ -1222,7 +1222,6 @@ struct
                         else
                            begin
                               (* Invalid directory or directory change failed *)
-                              eprintf "Bad URL@.";
                               print_redisplay_page content_uri server state session outx
                            end
                   else
