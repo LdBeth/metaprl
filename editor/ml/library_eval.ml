@@ -92,7 +92,6 @@ let lib_open_eval env ehook host localport remoteport =
  * 
  *)
 
-
 let mp_list_root_op = mk_nuprl5_op [ make_param (Token "!mp_list_root")]
 let mp_list_module_op = mk_nuprl5_op [ make_param (Token "!mp_list_module")]
 let mp_create_op = mk_nuprl5_op [ make_param (Token "!mp_create")]
@@ -135,12 +134,19 @@ let int_list_of_term t =
 let string_list_of_term t =
   map_isexpr_to_list_by_op icons_op string_of_itoken_term t
 
-let inl_msequent_op = (mk_nuprl5_op [make_param (Token "!mp_msequent")])
-let inl_msequent_term a g = mk_term inl_msequent_op [(mk_bterm [] a); (mk_bterm [] g)]
+let imp_msequent_op = (mk_nuprl5_op [make_param (Token "!mp_msequent")])
+let imp_msequent_term a g = mk_term imp_msequent_op [(mk_bterm [] a); (mk_bterm [] g)]
     
 let msequent_to_term mseq = 
   let (goal, hyps) = dest_msequent mseq 
-  in inl_msequent_term (list_to_ilist hyps) goal 
+  in imp_msequent_term (list_to_ilist hyps) goal 
+
+let term_to_msequent mseq = 
+  let { term_op = imp_msequent_op; term_terms = [assums ; goal] } = dest_term mseq 
+  in (map_isexpr_to_list (let f x = x in f) (term_of_unbound_term assums),
+     (term_of_unbound_term goal))
+
+let ilist_op = (mk_nuprl5_op [make_param (Token "!list")])
 
 let ipair_op = (mk_nuprl5_op [make_param (Token "!pair")])
 let ipair_term h t = mk_term ipair_op [(mk_bterm [] h); (mk_bterm [] t)] 
@@ -152,6 +158,20 @@ let list_of_ints length =
  in List.rev (ll length)
 
 open List
+open List_util
+let get_fl name =
+  let rec lp ls lf =
+   if ls = [] then lf 
+   else let el = edit_list_parents (hd ls) in
+   lp (union el (tl ls)) (union el lf) in 
+  lp [name] [name] 
+
+let idform_op = (mk_nuprl5_op [make_param (Token "!dform")])
+let idform_term attr lhs rhs = 
+ mk_term idform_op [mk_bterm [] attr; mk_bterm [] lhs; mk_bterm [] rhs]
+
+let idform_attr_op = (mk_nuprl5_op [make_param (Token "!dform_attr_cons")])
+let imode_cons_op = (mk_nuprl5_op [make_param (Token "!mode_cons")])
 
 let refine_ehook rhook =
   (function t ->
@@ -190,8 +210,8 @@ let refine_ehook rhook =
       	Shell.edit_refine (int_list_of_term (term_of_unbound_term addr))
   	  (string_of_itext_term tac) 
       in
-      icons_term (msequent_to_term goal)
-      	(icons_term (list_to_ilist (map msequent_to_term subgoals)) 
+      icons_term icons_op (msequent_to_term goal)
+      	(icons_term icons_op (list_to_ilist (map msequent_to_term subgoals)) 
 	   (list_to_ilist (List.map msequent_to_term extras)))
    *)
 
@@ -212,14 +232,30 @@ let refine_ehook rhook =
       let f x = (Shell.edit_cd_thm name x;
 		let (s, goal, subgoals, extras) = Shell.edit_node [] in
 		ipair_term (itoken_term x) (msequent_to_term goal))
-      in list_to_ilist (List.map f (Shell.edit_list_module name))
+      in let flat_list = get_fl name
+      in icons_term icons_op 
+                   (list_to_ilist_map (function x -> itoken_term (String.uncapitalize x)) flat_list)
+		    (list_to_ilist_map f (Shell.edit_list_module name))
+  
+  | {term_op = op; term_terms = symaddr :: r } when (opeq op mp_list_display_op) ->
+      let ff name =
+      let f = function (n, modes, attr, model, formats) -> 
+		(ipair_term (itoken_term n) 
+			    (idform_term (list_to_ilist_by_op idform_attr_op 
+						((list_to_ilist_by_op imode_cons_op (map itoken_term modes)) :: attr)) 
+	                                 formats model))
+      in ipair_term (list_to_ilist (edit_list_precs name))
+		    (list_to_ilist (List.map f (Shell.edit_list_dforms name)))
+      in list_to_ilist_map ff (map (function x -> (hd (map_isexpr_to_list string_of_itoken_term x)))
+                          (map_isexpr_to_list_by_op ilist_op (function x -> x) (term_of_unbound_term symaddr)))
 
-  (*| {term_op = op; term_terms = symaddr :: goal :: r} when (opeq op mp_set_goal_op) ->
+  | {term_op = op; term_terms = symaddr :: goal :: r} when (opeq op mp_set_thm_op) ->
       let l = string_list_of_term (term_of_unbound_term symaddr)
       in 
       (if l = !current_symaddr then () else Shell.edit_cd_thm (hd (tl l)) (hd (tl (tl l)));
-       Shell.edit_set_goal (term_to_msequent goal); ivoid_term)
- 
+       let (assums, goal) = (term_to_msequent (term_of_unbound_term mseq)) in
+	Mp.set_goal goal; Mp.set_assumptions assums; ivoid_term)
+ (* 
   | {term_op = op; term_terms = symaddr :: r} when (opeq op mp_thm_create_op) ->
       let l = string_list_of_term (term_of_unbound_term symaddr)
       in 
@@ -265,7 +301,7 @@ let library_loop_eval () =
 	(with_transaction lib
 	   (function t ->
 		(eval t
-		 (null_ap (itext_term "\l. inform_message nil ``NuprlLight Loop Start`` nil")))))
+		 (null_ap (itext_term "\l. inform_message nil ``MetaPRL Loop Start`` nil")))))
 
 	; server_loop lib
 

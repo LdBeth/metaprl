@@ -311,15 +311,15 @@ let dtest connection =
 
 
 let looptest connection =
-  let lib = join connection ["NuprlLight"] in
-  (* let lib = join connection ["nltestl"] in  *)
+  let lib = join connection ["MetaPRL"] in
+  (* let lib = join connection ["mptestl"] in  *)
     (unwind_error
       (function () ->
 
 	(with_transaction lib
 	   (function t ->
 		(eval t
-		 (null_ap (itext_term "\l. inform_message nil ``NuprlLight Loop Start`` nil")))))
+		 (null_ap (itext_term "\l. inform_message nil ``MetaPRL Loop Start`` nil")))))
 
 	; server_loop lib
 	; leave lib
@@ -442,7 +442,7 @@ let test remote_port local_port =
 
     unwind_error
       (function () ->
-        (let lib = lib_new connection "nuprl-light" in
+        (let lib = lib_new connection "meta-prl" in
 
  	  unwind_error
 	    (function () -> (demo lib))
@@ -464,7 +464,7 @@ let demo_put_test lib i =
  (with_transaction lib
 	     (function t ->
 		let oid = root t "demo" in
-		 insert_leaf t oid "nuprl_light_data" "TERM" (inatural_term i)));
+		 insert_leaf t oid "meta_prl_data" "TERM" (inatural_term i)));
  ()
 
 
@@ -472,7 +472,7 @@ let demo_get_put_test lib =
  (with_transaction lib
 	     (function t ->
 		let rootoid = root t "demo" in
-		let childoid = (child t rootoid "nuprl_light_data") in
+		let childoid = (child t rootoid "meta_prl_data") in
 
 		let i = number_of_inatural_term (get_term t childoid) in
 
@@ -492,7 +492,7 @@ let jointest remote_port local_port =
 
     unwind_error
       (function () ->
-        (let lib = join connection ["nuprl-light"] in
+        (let lib = join connection ["meta-prl"] in
  	  unwind_error
 	    (function () -> (demo_get_put_test lib))
 (*
@@ -521,7 +521,7 @@ let faux_refine g t =
 
 
 let library_run (():unit) =
-  special_error_handler (function () -> (library_open_and_loop_eval "NuprlLight" faux_refine))
+  special_error_handler (function () -> (library_open_and_loop_eval "MetaPRL" faux_refine))
   (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
 let library_run_n name =
