@@ -9,7 +9,7 @@ sig
 
    val create : unit -> 'a t
    val add : 'a t -> elt -> 'a -> 'a t
-   val union : 'a t -> 'a t -> 'a t
+   val union : ('a list -> 'a list -> 'a list) -> 'a t -> 'a t -> 'a t
    val mem : 'a t -> elt -> bool
    val find : 'a t -> elt -> 'a
    val find_all : 'a t -> elt -> 'a list

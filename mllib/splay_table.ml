@@ -9,7 +9,7 @@ sig
 
    val create : unit -> 'a t
    val add : 'a t -> elt -> 'a -> 'a t
-   val union : 'a t -> 'a t -> 'a t
+   val union : ('a list -> 'a list -> 'a list) -> 'a t -> 'a t -> 'a t
    val mem : 'a t -> elt -> bool
    val find : 'a t -> elt -> 'a
    val find_all : 'a t -> elt -> 'a list
@@ -32,11 +32,19 @@ struct
    type 'a tree =
       Leaf
     | Node of 'a node
-    
+
    and 'a node = (elt * 'a list * 'a t * 'a t) ref
 
+   (*
+    * The int is the total number
+    * of entries in the table.
+    *)
    and 'a t = 'a tree * int
 
+   (*
+    * Directions are used to define
+    * paths in the tree.
+    *)
    type 'a direction =
       Left of 'a node
     | Right of 'a node
@@ -270,7 +278,7 @@ struct
     * Merge two hashtables.
     * Data fields get concatenated.
     *)
-   let rec union s1 s2 =
+   let rec union append s1 s2 =
       match s1, s2 with
          (Leaf, _), _ ->
             s2
@@ -285,22 +293,22 @@ struct
                   let key1, data1, left1, right1 = !n1 in
                      if splay (Ord.compare key1) s2 then
                         let _, data2, left2, right2 = !n2 in
-                        let (_, sll) as ll = union left1 left2 in
-                        let (_, srr) as rr = union right1 right2 in
-                           Node (ref (key1, data1 @ data2, ll, rr)), 1 + sll + srr
+                        let (_, sll) as ll = union append left1 left2 in
+                        let (_, srr) as rr = union append right1 right2 in
+                           Node (ref (key1, append data1 data2, ll, rr)), 1 + sll + srr
                      else
                         let key2, data2, ((_, sl2) as left2), ((_, sr2) as right2) = !n2 in
                            if Ord.compare key1 key2 < 0 then
-                              let (_, sll) as ll = union left1 left2 in
+                              let (_, sll) as ll = union append left1 left2 in
                               let (_, srr) as rr =
-                                 union right1 (Node (ref (key2, data2, empty, right2)), succ sr2)
+                                 union append right1 (Node (ref (key2, data2, empty, right2)), succ sr2)
                               in
                                  Node (ref (key1, data1, ll, rr)), 1 + sll + srr
                            else
                               let (_, sll) as ll =
-                                 union left1 (Node (ref (key2, data2, left2, empty)), succ sl2)
+                                 union append left1 (Node (ref (key2, data2, left2, empty)), succ sl2)
                               in
-                              let (_, srr) as rr = union right1 right2 in
+                              let (_, srr) as rr = union append right1 right2 in
                                  (Node (ref (key1, data1, ll, rr)), 1 + sll + srr)
             else if size1 = 1 then
                let key1, data1, _, _ = !n1 in
@@ -309,22 +317,22 @@ struct
                let key2, data2, left2, right2 = !n2 in
                   if splay (Ord.compare key2) s1 then
                      let _, data1, left1, right1 = !n1 in
-                     let (_, sll) as ll = union left2 left1 in
-                     let (_, srr) as rr = union right2 right1 in
-                        Node (ref (key2, data1 @ data2, ll, rr)), 1 + sll + srr
+                     let (_, sll) as ll = union append left2 left1 in
+                     let (_, srr) as rr = union append right2 right1 in
+                        Node (ref (key2, append data1 data2, ll, rr)), 1 + sll + srr
                   else
                      let key1, data1, ((_, sl1) as left1), ((_, sr1) as right1) = !n1 in
                         if Ord.compare key2 key1 < 0 then
-                           let (_, sll) as ll = union left2 left1 in
+                           let (_, sll) as ll = union append left2 left1 in
                            let (_, srr) as rr =
-                              union right2 (Node (ref (key1, data1, empty, right1)), succ sr1)
+                              union append right2 (Node (ref (key1, data1, empty, right1)), succ sr1)
                            in
                               Node (ref (key2, data2, ll, rr)), 1 + sll + srr
                         else
                            let (_, sll) as ll =
-                              union left2 (Node (ref (key1, data1, left1, empty)), succ sl1)
+                              union append left2 (Node (ref (key1, data1, left1, empty)), succ sl1)
                            in
-                           let (_, srr) as rr = union right2 right1 in
+                           let (_, srr) as rr = union append right2 right1 in
                               Node (ref (key2, data2, ll, rr)), 1 + sll + srr
 
    (*
