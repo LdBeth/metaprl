@@ -47,8 +47,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *
  *)
 
@@ -108,6 +108,7 @@ val format_num : 'tag buffer -> Mp_num.num -> unit
 (*
  * Collecting output.
  *)
+val default_width : int (* 80 *)
 val print_to_channel : int -> 'tag buffer -> out_channel -> unit
 val print_to_string : int -> 'tag buffer -> string
 val print_to_html : int -> 'tag buffer -> out_channel -> (int * 'tag) list

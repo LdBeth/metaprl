@@ -19,13 +19,15 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.caltech.edu
+ * Author: Jason Hickey <jyh@cs.caltech.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
-val term_size : unit -> int * int
+open Unix
+
+val term_size : file_descr -> int * int
 val min_screen_width : int ref
-val term_width : int -> int
+val term_width : out_channel -> int -> int
 
 (*
  * -*-

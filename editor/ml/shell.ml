@@ -215,9 +215,8 @@ struct
             Mutex.unlock global_lock;
             let buf = Rformat.new_buffer () in
             let db = get_db info in
-            let width = Mp_term.term_width info.width in
                TacticExn.format_exn db buf exn;
-               Rformat.print_to_channel width buf stderr;
+               Rformat.print_to_channel info.width buf stderr;
                flush stderr;
                raise exn
 

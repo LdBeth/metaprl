@@ -56,7 +56,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * Author: Jason Hickey <jyh@cs.cornell.edu>
- * Modified: Aleksey Nogin <nogin@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
 open Printf
@@ -261,7 +261,7 @@ struct
       let buf = Rformat.new_buffer () in
          format_extract !debug_base buf ext;
          format_newline buf;
-         print_to_channel 80 buf stderr;
+         print_to_channel default_width buf stderr;
          flush stderr
 
    (************************************************************************
@@ -686,7 +686,7 @@ struct
             format_space buf;
             List.iter (format_arg !debug_base buf) leaves;
             format_ezone buf;
-            print_to_channel 80 buf stderr;
+            print_to_channel default_width buf stderr;
             eprintf "%t" eflush
          end;
          remove_duplicates [] leaves
@@ -2693,7 +2693,7 @@ struct
                         let buf = Rformat.new_buffer () in
                         format_arg !debug_base buf arg;
                         eprintf "Warning: Proof_boot.io_proof_of_proof: an attribute list in unjustified node was non-empty before IO:\n%t%t"
-                           (print_to_channel 80 buf) eflush
+                           (print_to_channel default_width buf) eflush
                      end;
                      empty_attribute
                  end else attrs
@@ -2830,7 +2830,7 @@ struct
                         let buf = Rformat.new_buffer () in
                         format_arg !debug_base buf res;
                         eprintf "Warning: Proof_boot.proof_of_io_proof: an attribute list in unjustified node was non-empty after IO:\n%t%t"
-                        (print_to_channel 80 buf) eflush
+                        (print_to_channel default_width buf) eflush
                      end;
                      res
                end else make_tactic_arg

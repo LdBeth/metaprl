@@ -618,7 +618,6 @@ let format_aux window proof =
       TextWindow { df_width = width; df_base = dfbase; df_mode = mode } ->
          let df = get_mode_base dfbase mode in
          let buf = Rformat.new_buffer () in
-         let width = Mp_term.term_width width in
             Dform.format_term df buf proof;
             Rformat.format_newline buf;
             Rformat.print_to_channel width buf stdout;
@@ -626,7 +625,6 @@ let format_aux window proof =
     | TexWindow { df_width = width; df_base = dfbase; df_mode = mode } ->
          let df = get_mode_base dfbase mode in
          let buf = Rformat.new_buffer () in
-         let width = Mp_term.term_width width in
             Dform.format_term df buf proof;
             Rformat.format_newline buf;
             Rformat.print_to_tex width buf stdout;

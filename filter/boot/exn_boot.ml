@@ -75,7 +75,7 @@ struct
       let buf = new_buffer () in
          format_exn db buf exn;
          format_newline buf;
-         print_to_channel 80 buf stderr;
+         print_to_channel default_width buf stderr;
          flush stderr;
          raise exn
 

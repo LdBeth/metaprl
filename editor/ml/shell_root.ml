@@ -129,7 +129,6 @@ let display_term window term =
       TextWindow { df_base = base; df_mode = mode; df_width = width } ->
          let df = get_mode_base base mode in
          let buf = Rformat.new_buffer () in
-         let width = Mp_term.term_width width in
             Dform.format_term df buf term;
             Rformat.print_to_channel width buf stdout;
             flush stdout

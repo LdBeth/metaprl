@@ -15,7 +15,7 @@ value caml_term_size(value arg)
     struct winsize ws;
 
     /* Get the terminal size, return None on failure */
-    if(ioctl(0, TIOCGWINSZ, &ws) < 0)
+    if(ioctl(Int_val(arg), TIOCGWINSZ, &ws) < 0)
         failwith("termsize: standard input is not a terminal");
 
     /* Return the pair of numbers */

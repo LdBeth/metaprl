@@ -61,7 +61,7 @@ let test_arg name goal =
       let buf = new_buffer () in
       format_arg !debug_base buf goal;
       eprintf "Warning: Proof_term_boot.%s: non-empty attribute list:\n%t%t"
-         name (print_to_channel 80 buf) eflush
+         name (print_to_channel default_width buf) eflush
    end
 
 module ProofTerm (ToTerm : RefinerSig) =

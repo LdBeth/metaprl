@@ -19,12 +19,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.caltech.edu
+ * Author: Jason Hickey <jyh@cs.caltech.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
 open Mp_debug
 open Printf
+open Unix
 
 let debug_terminal =
    create_debug {
@@ -33,13 +34,13 @@ let debug_terminal =
       debug_value = false
    }
 
-external term_size : unit -> int * int = "caml_term_size"
+external term_size : file_descr -> int * int = "caml_term_size"
 
 let min_screen_width = ref 40
 
-let term_width width =
+let term_width out width =
    try
-      let _, cols = term_size () in
+      let _, cols = term_size (descr_of_out_channel out) in
          if !debug_terminal then
             eprintf "Terminal size: requested %i, got %i, minimal witdth is %i%t" width cols (!min_screen_width) eflush;
          max (!min_screen_width) cols

@@ -688,12 +688,12 @@ let format_term base = format_short_term base null_shortener
 let print_term_fp base out term =
    let buf = new_buffer () in
       format_term base buf term;
-      print_to_channel 80 buf out
+      print_to_channel default_width buf out
 
 let print_short_term_fp base shortener out term =
    let buf = new_buffer() in
       format_short_term base shortener buf term;
-      print_to_channel 80 buf out
+      print_to_channel default_width buf out
 
 let print_term base = print_term_fp base stdout
 
@@ -702,7 +702,7 @@ let prerr_term base = print_term_fp base stderr
 let string_of_term base term =
    let buf = new_buffer () in
       format_term base buf term;
-      print_to_string 80 buf
+      print_to_string default_width buf
 
 (* Terms *)
 let format_bterm base buf =
@@ -711,7 +711,7 @@ let format_bterm base buf =
 let print_bterm_fp base out term =
    let buf = new_buffer () in
       format_bterm base buf term;
-      print_to_channel 80 buf out
+      print_to_channel default_width buf out
 
 let print_bterm base = print_bterm_fp base stdout
 
@@ -720,7 +720,7 @@ let prerr_bterm base = print_bterm_fp base stderr
 let string_of_bterm base term =
    let buf = new_buffer () in
       format_bterm base buf term;
-      print_to_string 80 buf
+      print_to_string default_width buf
 
 (*
  * MetaTerms.
@@ -769,7 +769,7 @@ let rec format_mterm base buf = function
 let print_mterm_fp base out mterm =
    let buf = new_buffer () in
       format_mterm base buf mterm;
-      print_to_channel 80 buf out
+      print_to_channel default_width buf out
 
 let print_mterm base = print_mterm_fp base stdout
 

@@ -26,8 +26,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *
  *)
 
@@ -50,8 +50,6 @@ let debug_simple_print =
         debug_description = "show simple printing operations";
         debug_value = false
       }
-
-let max_column = 120
 
 module MakeSimplePrint (Refiner : RefinerSig) =
 struct
@@ -436,7 +434,7 @@ struct
    let print_simple_level_exp_fp out p =
       let buf = new_buffer () in
          format_level_exp buf p;
-         print_to_channel max_column buf out
+         print_to_channel default_width buf out
 
    let print_simple_level_exp = print_simple_level_exp_fp stdout
 
@@ -445,7 +443,7 @@ struct
    let string_of_level_exp p =
       let buf = new_buffer () in
          format_level_exp buf p;
-         print_to_string max_column buf
+         print_to_string default_width buf
 
    (* Params *)
    let format_simple_param = format_param
@@ -453,7 +451,7 @@ struct
    let print_simple_param_fp out p =
       let buf = new_buffer () in
          format_param buf p;
-         print_to_channel max_column buf out
+         print_to_channel default_width buf out
 
    let print_simple_param = print_simple_param_fp stdout
 
@@ -462,7 +460,7 @@ struct
    let string_of_param p =
       let buf = new_buffer () in
          format_param buf p;
-         print_to_string max_column buf
+         print_to_string default_width buf
 
    (* Terms *)
    let format_simple_term = format_term
@@ -470,7 +468,7 @@ struct
    let print_simple_term_fp out term =
       let buf = new_buffer () in
          format_term buf term;
-         print_to_channel max_column buf out
+         print_to_channel default_width buf out
 
    let print_simple_term = print_simple_term_fp stdout
 
@@ -479,10 +477,10 @@ struct
    let string_of_term term =
       let buf = new_buffer () in
          format_term buf term;
-         print_to_string max_column buf
+         print_to_string default_width buf
 
    let short_string_of_term term =
-      line_format max_column ( fun buf -> format_term buf term)
+      line_format default_width ( fun buf -> format_term buf term)
 
    (* Terms *)
    let format_simple_bterm buf = format_bterm buf
@@ -490,7 +488,7 @@ struct
    let print_simple_bterm_fp out term =
       let buf = new_buffer () in
          format_bterm buf term;
-         print_to_channel max_column buf out
+         print_to_channel default_width buf out
 
    let print_simple_bterm = print_simple_bterm_fp stdout
 
@@ -499,7 +497,7 @@ struct
    let string_of_bterm term =
       let buf = new_buffer () in
          format_bterm buf term;
-         print_to_string max_column buf
+         print_to_string default_width buf
 
    (*
     * MetaTerms.
@@ -509,7 +507,7 @@ struct
    let print_simple_mterm_fp out mterm =
       let buf = new_buffer () in
          format_mterm buf mterm;
-         print_to_channel max_column buf out
+         print_to_channel default_width buf out
 
    let print_simple_mterm = print_simple_mterm_fp stdout
 
@@ -518,7 +516,7 @@ struct
    let string_of_mterm mterm =
       let buf = new_buffer () in
          format_mterm buf mterm;
-         print_to_string max_column buf
+         print_to_string default_width buf
 
    (*
     * Addresses.

@@ -52,8 +52,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *
  *)
 
@@ -73,6 +73,8 @@ let debug_rformat =
         debug_description = "display text formatting operations";
         debug_value = false
       }
+
+let default_width = 80
 
 (************************************************************************
  * TYPES                                                                *
@@ -1604,6 +1606,7 @@ let print_to_printer buf rmargin printer =
  * Print to an IO buffer.
  *)
 let print_to_channel rmargin buf out =
+   let rmargin = Mp_term.term_width out rmargin in
    match buf with
       Buf buf -> print_to_printer buf rmargin (make_channel_printer out)
     | LineBuf _ -> raise elinebuf
