@@ -30,10 +30,11 @@ struct
 
    type tree =
       LEAF
-    | NODE of (elt * t * t) ref
+    | NODE of node 
+   and node = (elt * t * t) ref
    and t = tree * int
 
-   type direction = LEFT | RIGHT ;;
+   type direction = LEFT of node | RIGHT of node;;
 
    let cardinal (_,c) = c
 
@@ -49,29 +50,29 @@ struct
 
    let rec lift = function
       [] -> ()
-    | [(LEFT, parent)] ->
+    | [LEFT parent] ->
          rotate_left parent
-    | [(RIGHT, parent)] ->
+    | [RIGHT parent] ->
          rotate_right parent
-    | (LEFT, parent) :: (LEFT, grandparent) :: ancestors ->
+    | LEFT parent :: LEFT grandparent :: ancestors ->
          (
             rotate_left grandparent;
             rotate_left grandparent;  (* parent has moved into grandparent's position *)
             lift ancestors
          )
-    | (RIGHT, parent) :: (RIGHT, grandparent) :: ancestors ->
+    | RIGHT parent :: RIGHT grandparent :: ancestors ->
          (
             rotate_right grandparent;
             rotate_right grandparent;  (* parent has moved into grandparent's position *)
             lift ancestors
          )
-    | (LEFT, parent) :: (RIGHT, grandparent) :: ancestors ->
+    | LEFT parent :: RIGHT grandparent :: ancestors ->
          (
             rotate_left parent;
             rotate_right grandparent;
             lift ancestors
          )
-    | (RIGHT, parent) :: (LEFT, grandparent) :: ancestors ->
+    | RIGHT parent :: LEFT grandparent :: ancestors ->
          (
             rotate_right parent;
             rotate_left grandparent;
@@ -89,10 +90,10 @@ struct
                )
             else if comp < 0 then
             (* left *)
-               splay_aux reln ((LEFT, node) :: path) left
+               splay_aux reln (LEFT node :: path) left
             else
             (* right *)
-               splay_aux reln ((RIGHT, node) :: path) right
+               splay_aux reln (RIGHT node :: path) right
     | (LEAF,_) ->
          (match path with
              [] -> false

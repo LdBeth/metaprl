@@ -31,13 +31,15 @@ struct
 
    type 'a tree =
       Leaf
-    | Node of (elt * 'a list * 'a t * 'a t) ref
+    | Node of 'a node
+    
+   and 'a node = (elt * 'a list * 'a t * 'a t) ref
 
    and 'a t = 'a tree * int
 
-   type direction =
-      Left
-    | Right
+   type 'a direction =
+      Left of 'a node
+    | Right of 'a node
 
    (************************************************************************
     * IMPLEMENTATION                                                       *
@@ -100,29 +102,29 @@ struct
    let rec lift = function
       [] ->
          ()
-    | [(Left, parent)] ->
+    | [Left parent] ->
          rotate_left parent
-    | [(Right, parent)] ->
+    | [Right parent] ->
          rotate_right parent
-    | (Left, parent) :: (Left, grandparent) :: ancestors ->
+    | Left parent :: Left grandparent :: ancestors ->
          begin
             rotate_left grandparent;
             rotate_left grandparent;  (* parent has moved into grandparent's position *)
             lift ancestors
          end
-    | (Right, parent) :: (Right, grandparent) :: ancestors ->
+    | Right parent :: Right grandparent :: ancestors ->
          begin
             rotate_right grandparent;
             rotate_right grandparent;  (* parent has moved into grandparent's position *)
             lift ancestors
          end
-    | (Left, parent) :: (Right, grandparent) :: ancestors ->
+    | Left parent :: Right grandparent :: ancestors ->
          begin
             rotate_left parent;
             rotate_right grandparent;
             lift ancestors
          end
-    | (Right, parent) :: (Left, grandparent) :: ancestors ->
+    | Right parent :: Left grandparent :: ancestors ->
          begin
             rotate_right parent;
             rotate_left grandparent;
@@ -146,10 +148,10 @@ struct
                end
             else if comp < 0 then
                (* node is down the left branch *)
-               splay_aux reln ((Left, node) :: path) left
+               splay_aux reln (Left node :: path) left
             else
                (* node is down the right branch *)
-               splay_aux reln ((Right, node) :: path) right
+               splay_aux reln (Right node :: path) right
 
     | (Leaf, _) ->
          match path with
