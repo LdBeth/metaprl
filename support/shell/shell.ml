@@ -520,11 +520,12 @@ struct
        *)
       let init () =
          refresh_packages ();
-         Shell_current.restore_sessions ();
-         Shell_state.set_module "shell_theory";
-         if not !Shell_state.batch_flag then
+         if not !Shell_state.batch_flag then begin
+            Shell_current.restore_sessions ();
+            Shell_state.set_module "shell_theory";
             synchronize (fun shell ->
                eprintf "Current directory: %s@." (string_of_dir (shell.shell_fs, shell.shell_subdir)))
+         end
 
       (*
        * External toploop.
@@ -583,8 +584,10 @@ struct
              * Note! the main function will call Top.init.
              *)
             ShellP4.main ();
-            Shell_current.flush ();
-            if not (!Shell_state.batch_flag) then Top.backup_all ()
+            if not (!Shell_state.batch_flag) then begin
+               Shell_current.flush ();
+               Top.backup_all ()
+            end
    end
 end
 
