@@ -158,10 +158,7 @@ let raise_edit_error s =
 let rec edit pack window =
    let edit_display _ =
       (* Display the roots of the package *)
-      let compare pack1 pack2 =
-         (Package.name pack1) < (Package.name pack2)
-      in
-      let packs = Sort.list compare (Package.packages pack) in
+      let packs = Package.packages pack in
       let term = mk_packages_term (List.map (fun root -> mk_package_term (Package.name root)) packs) in
          display_term window term
    in

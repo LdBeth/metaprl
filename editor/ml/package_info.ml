@@ -751,10 +751,13 @@ struct
       in
          search packages
 
+   let compare pack1 pack2 =
+      pack1.pack_name < pack2.pack_name
+
    let packages pack =
       synchronize_pack pack (function
          { pack_dag = dag; pack_packages = packages } ->
-            List.map (ImpDag.node_value dag) packages)
+            Sort.list compare (List.map (ImpDag.node_value dag) packages))
 
    let roots pack =
       synchronize_pack pack (function
