@@ -44,6 +44,7 @@ print_theory "itt_decidable";;
 print_theory "itt_bool";;
 print_theory "itt_int";;
 print_theory "itt_isect";;
+print_theory "itt_disect";;
 print_theory "itt_bisect";;
 print_theory "itt_tunion";;
 print_theory "itt_bunion";;

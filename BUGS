@@ -41,6 +41,7 @@ find a better solution - in particular we should take into account subgoal sizes
 the number of subgoals.
 
 It may be a good idea to implement a generic display-form mechanism to allow limiting
+
 the number of lines a certain term would occupy. On the other hand, such an approach
 would only save the time to output the display form, but not the time to produce it.
 
@@ -145,6 +146,16 @@ with segmentation fault!
 
 4.9) (2000.08.13 nogin)
 Something is still leaking "with" arguments into RuleBox'es.
+
+4.10) (2000.09.18 kopylov)
+The extract of a subgoal of a rule should be of the form 't['x1;,,,;'xn], where 't is
+a second order varible and 'x,...,'xn are ALL varibles declared in the hypothesis of the subgoal.
+For example we should not be able to write rules with the subgoal of the form:
+ ('t['x] : sequent ['ext] { 'H; x: 'A; y: B >- 'T['x] }) --> ....
+or
+ ('t+'s : sequent ['ext] { 'H >- 'T }) --> ....
+
+
 
 PARSER & FILTER
 
