@@ -239,7 +239,7 @@ struct
          Tactic.main_loop ();
 
          (* Ignore initialization errors *)
-         try Shell.init () with
+         try Shell_command.init () with
             _ ->
                ()
 
