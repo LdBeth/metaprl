@@ -202,12 +202,14 @@ let rec compute_aux name = function
       bookmark, List.fold_right add_data data Table.empty, includes
  | DatBookmark bk :: tail ->
       let bookmark, incr, includes = compute_aux name tail in
-      let bk = (name, bk) in
-      Hashtbl.add global_bookmarker bk {
+      let bkmrk = (name, bk) in
+      if Hashtbl.mem global_bookmarker bkmrk then
+         raise (Invalid_argument ("Mp_resource: duplicate bookmark " ^ name ^ "." ^ bk));
+      Hashtbl.add global_bookmarker bkmrk {
          inc_bookmark = bookmark;
          inc_increment = incr
       };
-      bk, Table.empty, includes
+      bkmrk, Table.empty, includes
   | DatInclude name' :: tail ->
       let bookmark, incr, includes = compute_aux name tail in
       let incr, includes = collect_include incr name' includes in

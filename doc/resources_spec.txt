@@ -9,7 +9,7 @@ MODEL 1.
 
 We have a collection of "modules" each being a list with "directives" of one
 of the following kinds:
-- "add <data>" (corresponds to "improve_resource" or a resource annotation)
+- "add <data>" (corresponds to "resource xyz +=" or a resource annotation)
 - "extends <theory-name>"
 - "bookmark <name>"
 
