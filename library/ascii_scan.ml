@@ -103,7 +103,9 @@ let scan_at_char_p s c = (not (scan_at_eof_p s)) & (s.cchar = c)
 let scan_char s c = 
  if (scan_at_char_p s c) 
     then scan_next s
-    else error ["scanner"; "char"; (Char.escaped c); (Char.escaped s.cchar)] [] []
+ else if (scan_at_eof_p s) 
+    then  error ["scanner"; "char"; Char.escaped c; "eof"] [] []
+ else error ["scanner"; "char"; (Char.escaped c); (Char.escaped s.cchar)] [] []
  ; ()
 
 
@@ -113,7 +115,10 @@ let scan_at_byte_p s c = (not (scan_at_eof_p s)) & (code s.cchar) = c
 let scan_byte s c = 
  if (scan_at_byte_p s c) 
     then scan_next s
-    else error ["scanner"; "char"; Char.escaped (chr c); Char.escaped s.cchar] [] []
+
+   else if (scan_at_eof_p s) 
+	    then  error ["scanner"; "char"; Char.escaped (chr c); "eof"] [] []
+   else error ["scanner"; "char"; Char.escaped (chr c); Char.escaped s.cchar] [] []
 
 
 let numeric_digits = ['0'; '1'; '2'; '3'; '4'; '5'; '6'; '7'; '8'; '9']
@@ -129,7 +134,7 @@ let rec scan_whitespace s =
 
 let scan_string s =
  let acc = ref [] in
- while (not (scan_at_eof_p s)) & ((mem s.cchar s.escape) & (not s.escapep))
+ while not (scan_at_eof_p s) & not ((mem s.cchar s.escape) & (not s.escapep))
   do acc := s.cchar :: !acc; scan_next s
   done
 
@@ -171,6 +176,8 @@ let scan_char_delimited_list s itemf ld rd sep =
 	  done;
 	
 	if (scan_at_char_p s rd) then rev !acc
+	else if (scan_at_eof_p s) 
+	  then  error ["scanner"; "delimited_list"; "eof"; Char.escaped rd] [] []
 	else error ["scanner"; "delimited_list"; Char.escaped s.cchar; Char.escaped rd] [] []
     
 
@@ -185,6 +192,8 @@ let scan_delimited_list s itemf ld rd sep =
 	  done;
 	
 	if (scan_at_byte_p s rd) then rev !acc
+	else if (scan_at_eof_p s) 
+	  then  error ["scanner"; "delimited_list"; "eof"; Char.escaped (chr rd)] [] []
 	else error ["scanner"; "delimited_list"; Char.escaped s.cchar; Char.escaped (chr rd)] [] []
     
 
