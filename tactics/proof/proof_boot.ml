@@ -528,21 +528,6 @@ struct
       goal_ext proof.pf_node
 
    (*
-    * Compute the parent sets.
-    *)
-   let rec get_parents arg =
-      match arg.ref_parent with
-         ParentLazy parent ->
-            let set = get_parents parent in
-            let set = ParentTable.add set parent.ref_goal parent in
-               arg.ref_parent <- ParentSet (parent, set);
-               set
-       | ParentSet (_, set) ->
-            set
-       | ParentNone ->
-            ParentTable.empty
-
-   (*
     * Remove duplicates in a list of tactic args.
     * This is a quadratic algorithm, but the number
     * of leaves is usually small so its not worth doing
@@ -1839,7 +1824,6 @@ struct
    type simple_tactic_arg =
       { simp_goal : msequent;
         simp_label : string;
-        simp_parent : simple_tactic_arg option;
         simp_attributes : attribute_info
       }
 
@@ -1881,17 +1865,8 @@ struct
             Not_found ->
                let { ref_goal = goal;
                      ref_label = label;
-                     ref_parent = parent;
                      ref_attributes = attrs
                    } = arg
-               in
-               let parent =
-                  match parent with
-                     ParentNone ->
-                        None
-                   | ParentLazy parent
-                   | ParentSet (parent, _) ->
-                        Some (make_tactic_arg parent)
                in
                let attr =
                   let attrs = squash_attributes attrs in
@@ -1907,7 +1882,6 @@ struct
                in let arg' =
                   { simp_goal = goal;
                     simp_label = label;
-                    simp_parent = parent;
                     simp_attributes = attr
                   }
                in
@@ -1991,22 +1965,13 @@ struct
             Not_found ->
                let { simp_goal = goal;
                      simp_label = label;
-                     simp_parent = parent;
                      simp_attributes = args
                    } = arg
                in
                let args = update_attributes args raw_attributes in
-               let parent =
-                  match parent with
-                     None ->
-                        ParentNone
-                   | Some parent ->
-                        ParentLazy (make_tactic_arg parent)
-               in
                let arg' =
                   { ref_goal = goal;
                     ref_label = label;
-                    ref_parent = parent;
                     ref_attributes = args;
                     ref_bookmark = bookmark;
                     ref_sentinal = sentinal

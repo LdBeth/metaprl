@@ -111,24 +111,15 @@ sig
 
    (*
     * A tactic argument includes the msequent goal,
-    * as well as the attributes.  The parents is mutable,
-    * but only because it is computed lazily.
+    * as well as the attributes.
     *)
    and tactic_arg =
       { ref_goal : msequent;
         ref_label : string;
-        mutable ref_parent : tactic_parent;
         ref_attributes : attribute_info;
         ref_bookmark : global_resource;
         ref_sentinal : sentinal
       }
-
-   and tactic_parent =
-      ParentNone
-    | ParentLazy of tactic_arg
-    | ParentSet of tactic_arg * parents
-
-   and parents
 
    (*
     * An extract has these kinds:
@@ -200,12 +191,6 @@ sig
     | HigherConv of conv
     | ThenTC of conv * tactic
     | IdentityConv
-
-   module ParentTable
-   : Lm_map_sig.TableSig
-     with type t = parents
-     with type elt = msequent
-     with type data = tactic_arg
 end
 
 (*

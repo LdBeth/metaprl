@@ -182,18 +182,10 @@ struct
    and tactic_arg =
       { ref_goal : msequent;
         ref_label : string;
-        mutable ref_parent : tactic_parent;
         ref_attributes : attribute_info;
         ref_bookmark : Mp_resource.global_resource;
         ref_sentinal : sentinal
       }
-
-   and tactic_parent =
-      ParentNone
-    | ParentLazy of tactic_arg
-    | ParentSet of tactic_arg * parents
-
-   and parents = tactic_arg Term_eq_table.msequent_table
 
    and tactic = tactic_arg -> (tactic_arg, arglist, extract) ThreadRefiner.t
 
@@ -348,7 +340,6 @@ struct
    let create sentinal goal bookmark =
       { ref_goal = msequent_remove_redundant_hypbindings goal;
         ref_label = "main";
-        ref_parent = ParentNone;
         ref_attributes = empty_attribute;
         ref_bookmark = bookmark;
         ref_sentinal = sentinal
@@ -885,7 +876,6 @@ struct
     * in a tactic application.
     *)
    let make_labeled_subgoals labels arg goals =
-      let parent_lazy = ParentLazy arg in
       let rec collect labels goals =
          match labels, goals with
             label :: lt, goal :: gt ->
@@ -900,7 +890,6 @@ struct
                   arg with
                   ref_goal = goal;
                   ref_label = label;
-                  ref_parent = parent_lazy;
                } in
                   goal :: collect lt gt
           | [], [] ->
@@ -911,13 +900,11 @@ struct
          collect labels goals
 
    let make_subgoals arg goals =
-      let parent_lazy = ParentLazy arg in
       let rec collect = function
          goal :: t ->
             let goal = {
                   arg with
                   ref_goal = goal;
-                  ref_parent = parent_lazy;
                }
             in
                goal :: collect t
@@ -973,7 +960,6 @@ struct
                let subgoal = {
                   arg with
                   ref_goal = subgoal;
-                  ref_parent = ParentLazy arg
                } in
                   ThreadRefinerTacticals.create_value [subgoal] (Extract (arg, [subgoal], ext))
           | [], _ ->
@@ -991,7 +977,6 @@ struct
          arg with
          ref_label = label;
          ref_goal = goal;
-         ref_parent = ParentLazy arg
       } in
       let subgoals =
          match subgoals with
@@ -1178,7 +1163,6 @@ struct
    let debug_arg bookmark t =
       { ref_goal = mk_msequent t [];
         ref_label = "main";
-        ref_parent = ParentNone;
         ref_attributes = empty_attribute;
         ref_bookmark = bookmark;
         ref_sentinal = any_sentinal

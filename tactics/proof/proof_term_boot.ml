@@ -83,9 +83,6 @@ struct
    let tactic_arg_op          = mk_opname "tactic_arg"        summary_opname
    let msequent_op            = mk_opname "msequent"          summary_opname
 
-   let parent_none_op         = mk_opname "parent_none"       summary_opname
-   let parent_cons_op         = mk_opname "parent"            summary_opname
-
    let term_arg_op            = mk_opname "arg_term"          summary_opname
    let type_arg_op            = mk_opname "arg_type"          summary_opname
    let int_arg_op             = mk_opname "arg_int"           summary_opname
@@ -198,12 +195,8 @@ struct
 
    type 'attribute_index arglist_header = 'attribute_index list
 
-   type 'tactic_arg_index parents_header =
-      HeadParentNone
-    | HeadParentCons of 'tactic_arg_index
-
-   type ('msequent_index, 'attributes_index, 'parents_index) tactic_arg_header =
-      'msequent_index * string * 'attributes_index * 'parents_index
+   type ('msequent_index, 'attributes_index) tactic_arg_header =
+      'msequent_index * string * 'attributes_index
 
    type ('term_index, 'arglist_index, 'tactic_arg_index, 'extract_index) extract_header =
       HeadGoal of 'tactic_arg_index
@@ -236,20 +229,17 @@ struct
     *    attribute: all attributes are managed individually
     *    attributes: attributes in tactic_arg
     *    arglist: args for the Wrapped extract
-    *    tactic_parent: upward linked list in the tactic_arg
     *    tactic_arg: arguments for tactics
     *    extract: proof terms
     *)
    type ('ext_attribute,  'term_attribute,
          'ext_attributes, 'term_attributes,
          'ext_arglist,    'term_arglist,
-         'ext_parents,    'term_parents,
          'ext_tactic_arg, 'term_tactic_arg,
          'ext_extract,    'term_extract) memo =
       { attribute       : (args_info * ('ext_attribute,  'term_attribute,
                                         'ext_attributes, 'term_attributes,
                                         'ext_arglist,    'term_arglist,
-                                        'ext_parents,    'term_parents,
                                         'ext_tactic_arg, 'term_tactic_arg,
                                         'ext_extract,    'term_extract) memo,
                            'ext_attribute,
@@ -259,7 +249,6 @@ struct
         attributes      : (args_info * ('ext_attribute,  'term_attribute,
                                         'ext_attributes, 'term_attributes,
                                         'ext_arglist,    'term_arglist,
-                                        'ext_parents,    'term_parents,
                                         'ext_tactic_arg, 'term_tactic_arg,
                                         'ext_extract,    'term_extract) memo,
                            'ext_attributes,
@@ -269,37 +258,24 @@ struct
         arglist         : (args_info * ('ext_attribute,  'term_attribute,
                                         'ext_attributes, 'term_attributes,
                                         'ext_arglist,    'term_arglist,
-                                        'ext_parents,    'term_parents,
                                         'ext_tactic_arg, 'term_tactic_arg,
                                         'ext_extract,    'term_extract) memo,
                            'ext_arglist,
                            'term_attribute d arglist_header,
                            'term_attribute wd arglist_header,
                            'term_arglist) WeakMemo.t;
-        tactic_parent   : (args_info * ('ext_attribute,  'term_attribute,
-                                        'ext_attributes, 'term_attributes,
-                                        'ext_arglist,    'term_arglist,
-                                        'ext_parents,    'term_parents,
-                                        'ext_tactic_arg, 'term_tactic_arg,
-                                        'ext_extract,    'term_extract) memo,
-                           'ext_parents,
-                           'term_tactic_arg d parents_header,
-                           'term_tactic_arg wd parents_header,
-                           'term_parents) WeakMemo.t;
         tactic_arg      : (args_info * ('ext_attribute,  'term_attribute,
                                         'ext_attributes, 'term_attributes,
                                         'ext_arglist,    'term_arglist,
-                                        'ext_parents,    'term_parents,
                                         'ext_tactic_arg, 'term_tactic_arg,
                                         'ext_extract,    'term_extract) memo,
                            'ext_tactic_arg,
-                           (msequent_index, 'term_attributes d, 'term_parents d) tactic_arg_header,
-                           (msequent_weak_index, 'term_attributes wd, 'term_parents wd) tactic_arg_header,
+                           (msequent_index, 'term_attributes d) tactic_arg_header,
+                           (msequent_weak_index, 'term_attributes wd) tactic_arg_header,
                            'term_tactic_arg) WeakMemo.t;
         extract         : (args_info * ('ext_attribute,  'term_attribute,
                                         'ext_attributes, 'term_attributes,
                                         'ext_arglist,    'term_arglist,
-                                        'ext_parents,    'term_parents,
                                         'ext_tactic_arg, 'term_tactic_arg,
                                         'ext_extract,    'term_extract) memo,
                            'ext_extract,
@@ -343,14 +319,8 @@ struct
    let weaken_arglist_header _ args =
       List.map WeakMemo.weaken args
 
-   let weaken_tactic_parent_header _ = function
-      HeadParentNone ->
-         HeadParentNone
-    | HeadParentCons arg ->
-         HeadParentCons (WeakMemo.weaken arg)
-
-   let weaken_tactic_arg_header _ (goal, text, args, parent) =
-      weaken_msequent goal, text, WeakMemo.weaken args, WeakMemo.weaken parent
+   let weaken_tactic_arg_header _ (goal, text, args) =
+      weaken_msequent goal, text, WeakMemo.weaken args
 
    let weaken_extract_header _ = function
       HeadGoal arg ->
@@ -408,17 +378,8 @@ struct
    let compare_arglist args1 args2 =
       list_mem_eq args1 args2
 
-   let compare_tactic_parent parent1 parent2 =
-      match parent1, parent2 with
-         HeadParentCons parent1, HeadParentCons parent2 ->
-            parent1 == parent2
-       | HeadParentNone, HeadParentNone ->
-            true
-       | _ ->
-            false
-
-   let compare_tactic_arg (goal1, label1, args1, parent1) (goal2, label2, args2, parent2) =
-      compare_msequents goal1 goal2 && label1 = label2 && args1 == args2 && parent1 == parent2
+   let compare_tactic_arg (goal1, label1, args1) (goal2, label2, args2) =
+      compare_msequents goal1 goal2 && label1 = label2 && args1 == args2
 
    let compare_extract ext1 ext2 =
       match ext1, ext2 with
@@ -454,9 +415,6 @@ struct
    and ext_add_arglist info args =
       WeakMemo.lookup (snd info).arglist info (ext_make_arglist_header info args)
 
-   and ext_add_tactic_parent info arg =
-      WeakMemo.lookup (snd info).tactic_parent info (ext_make_tactic_parent_header info arg)
-
    and ext_add_tactic_arg info arg =
       WeakMemo.lookup (snd info).tactic_arg info (ext_make_tactic_arg_header info arg)
 
@@ -483,19 +441,10 @@ struct
    and ext_make_arglist_header info args =
       List.map (ext_add_attribute info) args
 
-   and ext_make_tactic_parent_header info = function
-      ParentNone ->
-         HeadParentNone
-    | ParentLazy arg
-    | ParentSet (arg, _) ->
-         HeadParentCons (ext_add_tactic_arg info arg)
-
    and ext_make_tactic_arg_header info arg =
-      let { ref_goal = goal; ref_label = label; ref_parent = parent } = arg in
-         ext_add_msequent goal,
-         label,
-         ext_add_attributes info (Tactic.attributes arg),
-         ext_add_tactic_parent info parent
+      ext_add_msequent arg.ref_goal,
+      arg.ref_label,
+      ext_add_attributes info (Tactic.attributes arg)
 
    and ext_make_extract_header info = function
       Goal arg ->
@@ -547,9 +496,6 @@ struct
    let ext_retrieve_arglist info arg =
       WeakMemo.retrieve (snd info).arglist info arg
 
-   let ext_retrieve_tactic_parent info arg =
-      WeakMemo.retrieve (snd info).tactic_parent info arg
-
    let ext_retrieve_tactic_arg info arg =
       WeakMemo.retrieve (snd info).tactic_arg info arg
 
@@ -591,16 +537,9 @@ struct
    let ext_make_arglist info args =
       Tactic.compress_arglist (List.map (ext_retrieve_attribute info) args)
 
-   let ext_make_tactic_parent info = function
-      HeadParentNone ->
-         ParentNone
-    | HeadParentCons arg ->
-         ParentLazy (ext_retrieve_tactic_arg info arg)
-
-   let ext_make_tactic_arg info (mseq, label, args, parent) =
+   let ext_make_tactic_arg info (mseq, label, args) =
       { ref_goal = ext_retrieve_msequent mseq;
         ref_label = label;
-        ref_parent = ext_retrieve_tactic_parent info parent;
         ref_attributes = ext_retrieve_attributes info args;
         ref_bookmark = (fst info).bookmark;
         ref_sentinal = (fst info).sentinal
@@ -670,9 +609,6 @@ struct
    let term_retrieve_arglist info arg =
       WeakMemo.retrieve (snd info).arglist info arg
 
-   let term_retrieve_tactic_parent info arg =
-      WeakMemo.retrieve (snd info).tactic_parent info arg
-
    let term_retrieve_tactic_arg info arg =
       WeakMemo.retrieve (snd info).tactic_arg info arg
 
@@ -707,16 +643,9 @@ struct
    let term_make_arglist info args =
       mk_xlist_term (List.map (term_retrieve_attribute info) args)
 
-   let term_make_tactic_parent info = function
-      HeadParentNone ->
-         mk_simple_term parent_none_op []
-    | HeadParentCons parent ->
-         mk_simple_term parent_cons_op [term_retrieve_tactic_arg info parent]
-
-   let term_make_tactic_arg info (goal, label, args, parent) =
+   let term_make_tactic_arg info (goal, label, args) =
       mk_simple_string_term tactic_arg_op label [term_make_msequent goal;
-                                                 term_retrieve_attributes info args;
-                                                 term_retrieve_tactic_parent info parent]
+                                                 term_retrieve_attributes info args]
 
    let term_make_extract info = function
       HeadGoal arg ->
@@ -764,9 +693,6 @@ struct
    and term_add_arglist info t =
       WeakMemo.lookup (snd info).arglist info (term_make_arglist_header info t)
 
-   and term_add_tactic_parent info t =
-      WeakMemo.lookup (snd info).tactic_parent info (term_make_tactic_parent_header info t)
-
    and term_add_tactic_arg info t =
       WeakMemo.lookup (snd info).tactic_arg info (term_make_tactic_arg_header info t)
 
@@ -805,25 +731,23 @@ struct
    and term_make_arglist_header info t =
       List.map (term_add_attribute info) (dest_xlist t)
 
-   and term_make_tactic_parent_header info t =
-      let op = opname_of_term t in
-         if Opname.eq op parent_none_op then
-            HeadParentNone
-         else if Opname.eq op parent_cons_op then
-            let t = one_subterm t in
-               HeadParentCons (term_add_tactic_arg info t)
-         else
-            raise (RefineError ("Proof_boot.term_make_tactic_parent_header", StringError "ill-formed proof"))
-
    and term_make_tactic_arg_header info t =
       let op = opname_of_term t in
          if Opname.eq op tactic_arg_op then
             let label = dest_string_param t in
-            let goal, args, parent = three_subterms t in
+            (*
+             * XXX HACK: The "match" is here because tactic_arg terms used to have 3 subterms in old files.
+             * (ASCII IO format <= 1.0.9 and Term IO format <= 1.0.6)
+             *)
+            let goal, args = (* two_subterms t *)
+               match (dest_term t).term_terms with
+                  [g; a]
+                | [g; a; _ ] -> (dest_bterm g).bterm, (dest_bterm a).bterm
+                | _ -> raise (RefineError ("Proof_boot.tactic_arg_header_of_term", StringError "ill-formed proof"))
+            in
                term_add_msequent goal,
                label,
-               term_add_attributes info args,
-               term_add_tactic_parent info parent
+               term_add_attributes info args
          else
             raise (RefineError ("Proof_boot.tactic_arg_header_of_term", StringError "ill-formed proof"))
 
@@ -891,8 +815,6 @@ struct
            weaken_attributes_header compare_attributes ext_make_attributes;
         arglist = WeakMemo.create_default "Proof_term_boot.ext_memo.arglist" (**)
            weaken_arglist_header compare_arglist ext_make_arglist;
-        tactic_parent = WeakMemo.create_default "Proof_term_boot.ext_memo.tactic_parent" (**)
-           weaken_tactic_parent_header compare_tactic_parent ext_make_tactic_parent;
         tactic_arg = WeakMemo.create_default "Proof_term_boot.ext_memo.tactic_arg" (**)
            weaken_tactic_arg_header compare_tactic_arg ext_make_tactic_arg;
         extract = WeakMemo.create_default "Proof_term_boot.ext_memo.extract" (**)
@@ -906,8 +828,6 @@ struct
            weaken_attributes_header compare_attributes term_make_attributes;
         arglist = WeakMemo.create_default "Proof_term_boot.term_memo.arglist" (**)
            weaken_arglist_header compare_arglist term_make_arglist;
-        tactic_parent = WeakMemo.create_default "Proof_term_boot.term_memo.tactic_parent" (**)
-           weaken_tactic_parent_header compare_tactic_parent term_make_tactic_parent;
         tactic_arg = WeakMemo.create_default "Proof_term_boot.term_memo.tactic_arg" (**)
            weaken_tactic_arg_header compare_tactic_arg term_make_tactic_arg;
         extract = WeakMemo.create_default "Proof_term_boot.term_memo.extract" (**)
