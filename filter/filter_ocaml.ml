@@ -34,6 +34,9 @@ let true_op = mk_ocaml_op "true"
 let false_op = mk_ocaml_op "false"
 let list_op  = mk_ocaml_op "list"
 
+let cons_op = mk_ocaml_op "cons"
+let nil_op = mk_ocaml_op "nil"
+
 (*
  * Loc has two integer describing character offsets.
  * Ignore remaining params.
@@ -131,6 +134,7 @@ let str_table  = Hashtbl.create 17
 let mt_able    = Hashtbl.create 17
 let me_table   = Hashtbl.create 17
 let wc_table   = Hashtbl.create 5
+let ctf_table  = Hashtbl.create 17
 let cf_table   = Hashtbl.create 17
 
 (*
@@ -432,6 +436,11 @@ and dest_uid_type t =
 (*
  * Signatures.
  *)
+and dest_class_sig t =
+   let loc = dest_loc t in
+   let ctl = subterms_of_term t in
+      <:sig_item< class $list: List.map dest_class_type ctl$ >>
+
 and dest_subsig_sig t =
    let loc = dest_loc t in
    let sl = subterms_of_term t in
@@ -604,9 +613,11 @@ and dest_functor_me t =
    let v, mt, me = dest_dep0_dep1_any_term t in
       <:module_expr< functor ($v$ : $dest_mt mt$ ) -> $dest_me me$ >>
 
+(*
 and dest_lid_me t =
    let loc = dest_loc t in
       <:module_expr< $lid:dest_var t$ >>
+*)
 
 and dest_struct_me t =
    let loc = dest_loc t in
@@ -621,6 +632,50 @@ and dest_cast_me t =
 and dest_uid_me t =
    let loc = dest_loc t in
       <:module_expr< $uid:dest_var t$ >>
+
+(*
+ * Class type.
+ *)
+and dest_class_type t =
+   let loc = dest_loc t in
+      match subterms_of_term t with
+         [s; sl; tl1; so; ctfl; b1; b2] ->
+             { ctLoc = loc;
+               ctNam = dest_string s;
+               ctPrm = List.map dest_string (subterms_of_term sl);
+               ctArg = List.map dest_type (subterms_of_term tl1);
+               ctTyc = dest_string_opt so;
+               ctFld = List.map dest_ctf (subterms_of_term ctfl);
+               ctVir = dest_bool b1;
+               ctCls = dest_bool b2
+             }
+       | _ ->
+             raise (FormatError ("class type format not recognized", t))
+
+and dest_ctr_ctf t =
+   let loc = dest_loc t in
+   let s, t = two_subterms t in
+      CtCtr (loc, dest_string s, dest_type t)
+
+and dest_inh_ctf t =
+   let loc = dest_loc t in
+   let t = one_subterm t in
+      CtInh (loc, dest_type t)
+
+and dest_mth_ctf t =
+   let loc = dest_loc t in
+   let s, t = two_subterms t in
+      CtMth (loc, dest_string s, dest_type t)
+
+and dest_val_ctf t =
+   let loc = dest_loc t in
+   let s, b1, b2, ot = four_subterms t in
+      CtVal (loc, dest_string s, dest_bool b1, dest_bool b2, dest_type_opt ot)
+
+and dest_vir_ctf t =
+   let loc = dest_loc t in
+   let s, t = two_subterms t in
+      CtVir (loc, dest_string s, dest_type t)
 
 (*
  * Classes.
@@ -715,6 +770,8 @@ and dest_sslt t =
 
 and dest_expr_opt t = dest_opt dest_expr t
 
+and dest_type_opt t = dest_opt dest_type t
+
 and dest_bool t =
    let op = opname_of_term t in
       not (op == false_op)
@@ -730,6 +787,7 @@ and dest_str  t = dest_tbl "str"  str_table  t
 and dest_mt   t = dest_tbl "mt"   mt_able    t
 and dest_me   t = dest_tbl "me"   me_table   t
 and dest_wc   t = dest_tbl "wc"   wc_table   t
+and dest_ctf  t = dest_tbl "ctf"  ctf_table  t
 and dest_cf   t = dest_tbl "cf"   cf_table   t
 
 and add_expr name f = add_tbl expr_table name f
@@ -740,6 +798,7 @@ and add_str  name f = add_tbl str_table  name f
 and add_mt   name f = add_tbl mt_able    name f
 and add_me   name f = add_tbl me_table   name f
 and add_wc   name f = add_tbl wc_table   name f
+and add_ctf  name f = add_tbl ctf_table  name f
 and add_cf   name f = add_tbl cf_table   name f
 
 (************************************************************************
@@ -761,7 +820,7 @@ let expr_assign_op		= add_expr "assign"		dest_assign_expr
 let expr_coerce_class_op	= add_expr "coerce_class"	dest_coerce_class_expr
 let expr_upto_op		= add_expr "for_upto"		dest_upto_expr
 let expr_downto_op		= add_expr "for_downto"		dest_downto_expr
-let expr_fun_op			= add_expr "lambda_pattern"	dest_fun_expr
+let expr_fun_op			= add_expr "fun"      	        dest_fun_expr
 let expr_if_op			= add_expr "if"			dest_if_expr
 let expr_letrec_op		= add_expr "letrec"		dest_letrec_expr
 let expr_let_op			= add_expr "let"		dest_let_expr
@@ -808,6 +867,7 @@ let type_record_op		= add_type "type_record"        dest_record_type
 let type_list_op		= add_type "type_list"          dest_list_type
 let type_prod_op		= add_type "type_prod"          dest_prod_type
 
+let sig_class_op		= add_sig "sig_class"           dest_class_sig
 let sig_subsig_op		= add_sig "sig_subsig"          dest_subsig_sig
 let sig_exception_op		= add_sig "sig_exception"       dest_exception_sig
 let sig_external_op		= add_sig "sig_external"        dest_external_sig
@@ -840,13 +900,21 @@ let mt_type_with_op		= add_mt "mt_type_with"         dest_with_mt
 let wc_type_op     		= add_wc "wc_type"              dest_type_wc
 let wc_module_op   		= add_wc "wc_module"            dest_module_wc
 
-let me_lid_op			= add_me "me_lid"               dest_lid_me
+(* let me_lid_op			= add_me "me_lid"               dest_lid_me *)
 let me_uid_op			= add_me "me_uid"               dest_uid_me
 let me_proj_op			= add_me "me_proj"              dest_proj_me
 let me_apply_op			= add_me "me_apply"             dest_apply_me
 let me_functor_op		= add_me "me_functor"           dest_functor_me
 let me_struct_op		= add_me "me_struct"            dest_struct_me
 let me_cast_op			= add_me "me_cast"              dest_cast_me
+
+let class_type_op		= mk_ocaml_op "class_type"
+
+let ctf_ctr_op                  = add_ctf "class_type_ctr"      dest_ctr_ctf
+let ctf_inh_op                  = add_ctf "class_type_inh"      dest_inh_ctf
+let ctf_mth_op                  = add_ctf "class_type_mth"      dest_mth_ctf
+let ctf_val_op                  = add_ctf "class_type_val"      dest_val_ctf
+let ctf_vir_op                  = add_ctf "class_type_vir"      dest_vir_ctf
 
 let class_op			= mk_ocaml_op "class"
 
@@ -1091,7 +1159,9 @@ and mk_type t =
 and mk_sig_item si =
    let loc = loc_of_sig_item si in
       match si with
-         (<:sig_item< declare $list:sil$ end >>) ->
+         (<:sig_item< class $list:ctl$ >>) ->
+            mk_simple_term sig_class_op loc (List.map mk_class_type ctl)
+       | (<:sig_item< declare $list:sil$ end >>) ->
             mk_simple_term sig_subsig_op loc (List.map mk_sig_item sil)
        | (<:sig_item< exception $s$ of $list:tl$ >>) ->
             mk_simple_named_term sig_exception_op loc s (List.map mk_type tl)
@@ -1131,7 +1201,7 @@ and mk_str_item si =
             mk_simple_term str_type_op loc (List.map mk_sslt ssltl)
        | (<:str_item< value $rec:b$ $list:pel$ >>) ->
             let op = if b then str_letrec_op else str_let_op in
-      	 mk_simple_term op loc (List.map mk_pe pel)
+      	       mk_simple_term op loc (List.map mk_pe pel)
           
 and mk_module_type mt =
    let loc = loc_of_module_type mt in
@@ -1171,8 +1241,10 @@ and mk_module_expr me =
        | (<:module_expr< functor ( $s$ : $mt$ ) -> $me$ >>) ->
             let op_loc = mk_op_loc me_functor_op loc in
                mk_dep0_dep1_any_term op_loc s (mk_module_type mt) (mk_module_expr me)
+(*
        | (<:module_expr< $lid:i$ >>) ->
             mk_var me_lid_op loc i
+*)
        | (<:module_expr< struct $list:sil$ end >>) ->
             mk_simple_term me_struct_op loc (List.map mk_str_item sil)
        | (<:module_expr< ( $me$ : $mt$) >>) ->
@@ -1180,6 +1252,35 @@ and mk_module_expr me =
        | (<:module_expr< $uid:i$ >>) ->
             mk_var me_uid_op loc i
       
+and mk_class_type
+  { ctLoc = loc;
+    ctNam = s;
+    ctPrm = sl;
+    ctArg = tl;
+    ctTyc = so;
+    ctFld = ctfl;
+    ctVir = b1;
+    ctCls = b2 } =
+   mk_simple_named_term class_type_op loc s
+	[ mk_list_term (List.map mk_simple_string sl);
+	  mk_list_term (List.map mk_type tl);
+          mk_string_opt expr_string_op so;
+ 	  mk_list_term (List.map mk_ctf ctfl);
+	  mk_bool b1;
+	  mk_bool b2]
+
+and mk_ctf = function
+   CtCtr (loc, s, t) ->
+      mk_simple_term ctf_ctr_op loc [mk_simple_string s; mk_type t]
+ | CtInh (loc, t) ->
+      mk_simple_term ctf_inh_op loc [mk_type t]
+ | CtMth (loc, s, t) ->
+      mk_simple_term ctf_mth_op loc [mk_simple_string s; mk_type t]
+ | CtVal (loc, s, b1, b2, ot) ->
+      mk_simple_term ctf_val_op loc [mk_simple_string s; mk_bool b1; mk_bool b2; mk_type_opt ot]
+ | CtVir (loc, s, t) ->
+      mk_simple_term ctf_vir_op loc [mk_simple_string s; mk_type t]
+
 and mk_class
   { cdLoc = loc;
     cdNam = s;
@@ -1215,6 +1316,8 @@ and mk_cf = function
  * Combined forms.
  *)
 and mk_expr_opt x = mk_opt mk_expr x
+
+and mk_type_opt x = mk_opt mk_type x
 
 and mk_pwe (patt, with_expr, expr) =
    Term.mk_simple_term pwe_op [mk_patt patt; mk_expr_opt with_expr; mk_expr expr]
@@ -1277,6 +1380,9 @@ let term_of_class = mk_class
 
 (*
  * $Log$
+ * Revision 1.2  1998/01/27 23:03:33  jyh
+ * Ocaml 1.07.
+ *
  * Revision 1.1  1997/09/12 17:21:36  jyh
  * Added MLast <-> term conversion.
  * Splitting filter_parse into two phases:
