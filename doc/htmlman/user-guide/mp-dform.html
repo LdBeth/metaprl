@@ -327,15 +327,15 @@ term begins a linear zone, the <TT>szone</TT> a soft zone, the
 <TT>hzone</TT> are hard zone, and the <TT>ezone</TT> term terminates
 the most recently entered zone, and returns to the previous zone.</P>
 
-<P>Line breaking is specified with the terms <TT>sbreak[</TT><I>inline</I><TT>:s,</TT><I>take</I><TT>:s]</TT>
-and <TT>hbreak[</TT><I>inline</I><TT>:s,</TT><I>take</I><TT>:s]</TT>.
+<P>Line breaking is specified with the terms <TT>sbreak[</TT><I>take</I><TT>:s,</TT><I>inline</I><TT>:s]</TT>
+and <TT>hbreak[</TT><I>take</I><TT>:s,</TT><I>inline</I><TT>:s]</TT>.
 The <I>inline</I> string specifies a string to be displayed if
 the break is <I>not</I> taken, and the <I>take</I> string is printed
 <I>before</I> the end of the line if the line break is taken.
 The string arguments can be omitted; they default to the empty
-string <TT>&quot;&quot;</TT>. For convenience, the <TT>hspace</TT>
-term is defined in the <TT>Nuprl_font</TT> module as <TT>hbreak[&quot;
-&quot;:s,&quot;&quot;:s]</TT>.</P>
+string <TT>&quot;&quot;</TT>. For convenience, the <TT>space</TT> term
+is defined as <TT>sbreak[&quot;&quot;:s,&quot;&nbsp;&quot;:s]</TT> and the <TT>hspace</TT>
+term is defined as <TT>hbreak[&quot;&quot;:s,&quot;&nbsp;&quot;:s]</TT>.</P>
 
 <H2>Indentation</H2>
 

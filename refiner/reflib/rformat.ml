@@ -6,7 +6,7 @@
  *    format_sbreak str str': soft break is taken if necessary
  *        if taken, str is printed after the current line
  *        if not, str' is printed
- *    format_break str str': hard break is takenin groups
+ *    format_hbreak str str': hard breaks are taken in groups
  *        if taken, str is printed
  *        if not, str' is printed
  *
@@ -467,7 +467,7 @@ let format_sbreak buf str str' =
          NoBinder ->
             ()
 
-let format_break buf str str' =
+let format_hbreak buf str str' =
    let l = String.length str in
    let l' = String.length str' in
       try
@@ -483,7 +483,7 @@ let format_space buf =
    format_sbreak buf "" " "
 
 let format_hspace buf =
-   format_break buf "" " "
+   format_hbreak buf "" " "
 
 (*
  * Actual printing.

@@ -6,7 +6,7 @@
  *    format_sbreak str str': soft break is taken if necessary
  *        if taken, str is printed after the current line
  *        if not, str' is printed
- *    format_break str str': hard break is takenin groups
+ *    format_hbreak str str': hard breaks are taken in groups
  *        if taken, str is printed
  *        if not, str' is printed
  *
@@ -72,7 +72,7 @@ val clear_buffer : 'tag buffer -> unit
  * Breaks.
  *)
 val format_sbreak : 'tag buffer -> string -> string -> unit
-val format_break : 'tag buffer -> string -> string -> unit
+val format_hbreak : 'tag buffer -> string -> string -> unit
 val format_space : 'tag buffer -> unit
 val format_hspace : 'tag buffer -> unit
 val format_newline : 'tag buffer -> unit

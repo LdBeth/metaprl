@@ -290,7 +290,7 @@ struct
     *)
    let standard_opnames =
       ["lzone"; "hzone"; "szone"; "izone"; "tzone"; "ezone";
-       "break"; "sbreak"; "space"; "hspace"; "newline";
+       "hbreak"; "sbreak"; "space"; "hspace"; "newline";
        "pushm"; "popm"; "pushfont"; "popfont";
        "parens"; "prec"; "internal"; "mode"; "slot";
        "sequent"; "hyp"; "concl"; "var"; "context"]

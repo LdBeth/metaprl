@@ -216,10 +216,10 @@ let izone { dform_buffer = buf } =
 let ezone { dform_buffer = buf } =
    format_ezone buf
 
-let break = function
+let hbreak = function
    { dform_items = [RewriteString yes; RewriteString no]; dform_buffer = buf } ->
-      format_break buf yes no
- | _ -> raise (Invalid_argument "Dform.break")
+      format_hbreak buf yes no
+ | _ -> raise (Invalid_argument "Dform.hbreak")
 
 let sbreak = function
    { dform_items = [RewriteString yes; RewriteString no]; dform_buffer = buf } ->
@@ -256,7 +256,7 @@ let popfont _ =
  *)
 let init_list =
    ["sbreak", [MString "y"; MString "n"], sbreak;
-    "break", [MString "y"; MString "n"], break;
+    "hbreak", [MString "y"; MString "n"], hbreak;
     "space", [], space;
     "hspace", [], hspace;
     "newline", [], newline;
@@ -292,7 +292,7 @@ let format_params buf = function
    [] ->
       ()
  | params ->
-      format_break buf "" "";
+      format_hbreak buf "" "";
       format_char buf '[';
       format_pushm buf 0;
       format_paramlist buf params;
@@ -334,7 +334,7 @@ and format_bterms buf printer = function
    [] ->
       ()
  | bterms ->
-      format_break buf "" "";
+      format_hbreak buf "" "";
       format_char buf '{';
       format_pushm buf 0;
       format_btermlist buf printer bterms;
