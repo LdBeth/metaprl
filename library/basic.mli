@@ -50,6 +50,7 @@ val ivoid_term_p	: term -> bool
 
 val inil_term		: term
 
+val number_of_ipui_addr_term	: term -> int
 val number_of_inatural_term	: term -> int
 val num_of_inatural_term	: term -> num
 val oid_of_ioid_term		: term -> object_id
@@ -62,6 +63,7 @@ val parameters_of_term		: term -> param list
 val token_parameter_to_string	: param -> string
 
 val inil_parameter		: param
+val ipui_addr_parameter		: param
 
 val dest_obid_param 		: param -> object_id
 val dest_token_param		: param -> string
@@ -126,7 +128,6 @@ val unbound_bterm_p		: bound_term -> bool
 val string_of_itext_term	: term -> string
 
 
-val mk_nuprl5_op	: param list -> operator
 
 val icons_op			: operator
 val icons_term			: operator -> term -> term -> term
@@ -165,8 +166,6 @@ val parmeq			: param -> param -> bool
 val oideq			: object_id -> object_id -> bool
 
 val opeq			: operator -> operator -> bool
-
-val nuprl5_opname_p		: opname -> bool
 
 val parmhash			: param -> int
 

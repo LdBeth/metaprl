@@ -73,10 +73,6 @@ let opeq a b =
 	  op_params = bparms }
 	-> (aopname = bopname & listeq parmeq aparms bparms))
 
-
-let nuprl5_opname_p opn = stringeq opn nuprl5_opname
-
-
 open Hashtbl
 
 (*	TODO PERF
@@ -95,8 +91,6 @@ let rec parmhash p =
 (*
  * common terms
  *)
-
-let mk_nuprl5_op pl = mk_op nuprl5_opname pl
 
 let imessage_parameter = make_param (Token "!message")
 let imessage_op parms = mk_nuprl5_op (imessage_parameter :: parms)
@@ -241,6 +235,11 @@ let token_parameter_to_string p =
     Token s -> s
   |_ -> error ["parameter"; "token"; "not"] [] []
 
+let ipui_addr_parameter = make_param (Token "!pui_addr")
+let number_of_ipui_addr_term t =
+  match dest_param (parameter_of_carrier ipui_addr_parameter t) with
+    Number (Mp_num.Int n) -> n
+  |_ -> error ["term"; "!pui_addr"; "parameter type"] [] [t]
 
 let number_of_inatural_term t =
   match dest_param (parameter_of_carrier inatural_parameter t) with

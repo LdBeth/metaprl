@@ -718,7 +718,8 @@ struct
          print_exn info create name
 
    let create_tptp info name =
-      let create name =
+    ()
+(*      let create name =
          let seq = Tptp_load.load name in
          let parse_arg = get_parse_arg info in
          let display_mode = get_display_mode info in
@@ -729,7 +730,7 @@ struct
             touch info
       in
          print_exn info create name
-
+*)
    let create_opname info name =
       let create name =
          touch info;

@@ -50,6 +50,8 @@ open List
 
 open Opname
 
+
+
 let _ =
    show_loading "Loading Db%t"
 
@@ -58,6 +60,9 @@ let mask_p mask code  = (((land) code mask) = mask)
 let compression_code_p		= mask_p 0x80
 let compression_add_byte_p	= mask_p 0xC0
 
+let make_term_scanner = make_scanner "\\ \n\r\t()[]{}:;.," "\n\t\r "
+
+let myscanner = ref (make_term_scanner (Stream.of_string "lori"))
 
 let index_of_bytes b c = ((b land 0x0F) lsl 8) + c
 
@@ -172,7 +177,7 @@ let make_operator opid parameters =
 				ParamList pl -> pl
 				 | _ -> error ["read_term"; "operator"; "nuprl-light"; "opname"] [] [])))
 		(tl parameters))
-     else mk_nuprl5_op ((make_param (Token opid)) :: parameters)
+     else Nuprl5.mk_nuprl5_op ((make_param (Token opid)) :: parameters)
 
 
 
@@ -183,28 +188,53 @@ let rec scan_item stype scanner =
   | CParameter -> Parameter (scan_parameter scanner)
   | COperator -> Operator (scan_operator scanner)
   | CTerm -> Term (scan_term scanner)
-  | CNumeral -> raise (Invalid_argument "Db.scan_item: CNumeral case is not implemented")
+  | CNumeral -> Parameter (scan_numeral_parameter scanner)
 
 and scan_numeral_parameter scanner =
- let l = scan_cur_byte scanner.scanner in
- let mp256 = num_of_int 256 in
-
+ 
+ (*error ["break"] [] []; *)
+ let mp256 = num_of_int 256 and mp0 = num_of_int 0 and mp1 = num_of_int 1 in
+ 
+ let code = scan_cur_byte scanner.scanner in
+ (*print_string " code = "; print_string (string_of_int code);*)
   let rec aux i mpexp acc =
-   scan_next scanner.scanner;
+    
    if i = 0
       then acc
-      else aux (i - 1) (mult_num mpexp mp256)
-               (add_num acc (mult_num mpexp (num_of_int (scan_cur_byte scanner.scanner))))
+   else (scan_bump scanner.scanner;
+         let c = scan_cur_byte scanner.scanner in 
+         (
+         aux (i - 1) (mult_num mpexp mp256)
+               (add_num acc (mult_num mpexp (num_of_int c)))))
 
-   in
+  in
+  
+  let value = aux code mp1 mp0 in
 
-  let n = aux l (num_of_int 1) (num_of_int 0) in
-    scan_byte scanner.scanner icolon;
-    let ptype = (scan_string scanner.scanner) in
-      match ptype with "n" -> (Number n)
-      | "time" -> (ParamList [(make_param (Token "time"));
-                          (make_param (Number n))])
-      | _ -> error ["read_term"; "numeral_parameter"; "MetaPRL"; ptype] [] []
+    	 (* print_string " scanned numeral ";
+         print_string (string_of_num value);
+         scan_whitespace !myscanner ;
+         scan_bump scanner.scanner;
+         scan_whitespace !myscanner ;
+         print_string " scanned bump ";*)
+
+         scan_next scanner.scanner;
+         scan_byte scanner.scanner icolon;
+
+          (*let c = scan_cur_byte scanner.scanner in 
+          print_string " code = "; print_string (string_of_int c);
+          scan_whitespace !myscanner ;
+          if scan_at_byte_p scanner.scanner icolon then scan_bump scanner.scanner;
+         scan_whitespace !myscanner ;*)
+
+        myscanner := scanner.scanner;
+     let ptype = scan_string scanner.scanner in
+      match ptype with "n" -> make_param (Number value)
+      | "time" -> make_param (ParamList [(make_param (Token "time"));
+                          (make_param (Number value))])
+      | "ime" -> make_param (ParamList [(make_param (Token "time"));
+                          (make_param (Number value))])
+      | _ -> error ["scan_numeral_parameter"; ptype] [] []
 
 
 and scan_numeral_parameter_old scanner =
@@ -221,20 +251,17 @@ and scan_numeral_parameter_old scanner =
   let n = aux l mp256 in
     scan_byte scanner.scanner icolon;
     let ptype = (scan_string scanner.scanner) in
-      match ptype with "n" -> (Number n)
-      | "time" -> (ParamList [(make_param (Token "time"));
+      match ptype with "n" -> make_param (Number n)
+      | "time" -> make_param (ParamList [(make_param (Token "time"));
 			  (make_param (Number n))])
-      | _ -> error ["read_term"; "numeral_parameter"; "MetaPRL"; ptype] [] []
+      | _ -> error ["scan_numeral_parameter_old"; ptype] [] []
 
 
-and scan_compressed code scanner =
+and scan_compressed_new code scanner =
  if (compression_add_byte_p code)
     then let ctype = (type_of_byte code) in
           scan_next scanner.scanner;
-          if ctype = CNumeral
-	    then Parameter (make_param (scan_numeral_parameter scanner))
-	    else ((* print_string " scan compressed add "; *)
-		  levels_assign scanner code (function () -> scan_item ctype scanner))
+          levels_assign scanner code (function () -> scan_item ctype scanner)
     else (scan_bump scanner.scanner;
 	 (* print_string " scan compressed index "; *)
 	 let r = levels_lookup scanner
@@ -243,20 +270,35 @@ and scan_compressed code scanner =
 	   scan_next scanner.scanner;
 	   r)
 
+and scan_compressed code scanner =
+ if compression_add_byte_p code
+    then let ctype = type_of_byte code in
+          scan_next scanner.scanner;
+          if ctype = CNumeral
+	    then (let p = Parameter (scan_numeral_parameter scanner) in p)
+	    else ((* print_string " scan compressed add "; *)
+		  levels_assign scanner code (function () -> scan_item ctype scanner))
+    else (scan_bump scanner.scanner;
+	 let r = levels_lookup scanner
+			       (level_of_byte code)
+			       (index_of_bytes code (scan_cur_byte scanner.scanner)) in
+	   scan_next scanner.scanner;
+	   r)
+
 and scan_binding scanner =
- let code = (scan_cur_byte scanner.scanner) in
+ let code = scan_cur_byte scanner.scanner in
   if compression_code_p code
     then match (scan_compressed code scanner) with
 	    Binding sl  -> sl
 	  |_ -> error ["read_term"; "binding"] [] []
-    else (scanner.stb (scan_string scanner.scanner))
+    else scanner.stb (scan_string scanner.scanner)
 
 and scan_parameter scanner =
- let code = (scan_cur_byte scanner.scanner) in
-  (* print_string "code  "; print_string (string_of_int code); *)
+ let code = scan_cur_byte scanner.scanner in
+  (* print_string "code = "; print_string (string_of_int code); *)
   if compression_code_p code
     then match (scan_compressed code scanner) with
-	    Parameter p -> p
+        Parameter p -> p
 	| item ->
 
   ((match item with
@@ -265,11 +307,13 @@ and scan_parameter scanner =
    | Term p -> print_string "Term"
    | Binding p -> print_string "Binding"
    | Opid p -> print_string p; print_string "Opid");
-	error ["read_term"; "parameter"] [] []
+   
+   error ["scan_parameter"; "not"] [] []
    )
 
-    else let s = (scan_string scanner.scanner) in
+  else let s = scan_string scanner.scanner in
 	  scan_byte scanner.scanner icolon;
+	  (*myscanner := scanner.scanner;*)
 	  scanner.stp s (scan_string scanner.scanner)
 
 and scan_parameters scanner =
@@ -281,7 +325,7 @@ and scan_parameters scanner =
 
 and scan_operator scanner =
  (* print_string " sop "; *)
- let code = (scan_cur_byte scanner.scanner) in
+ let code = scan_cur_byte scanner.scanner in
   if compression_code_p code
     then match (scan_compressed code scanner) with
 	    Operator op -> op
@@ -294,9 +338,9 @@ and scan_operator scanner =
 	| Term t  -> error ["read_term"; "operator"; "term"] [] [t]
 	*)
 
-    else (let opid = (scan_string scanner.scanner) in
-	  let parms = (scan_parameters scanner) in
-	    (make_operator opid parms))
+    else let opid = scan_string scanner.scanner in
+	  let parms = scan_parameters scanner in
+	    (make_operator opid parms)
 
 and scan_bound_term scanner =
  let code = (scan_cur_byte scanner.scanner) in
@@ -361,15 +405,16 @@ and scan_bound_terms scanner =
 
 and scan_term scanner =
  (* print_string " st "; *)
+ 
  let code = scan_cur_byte scanner.scanner in
-   if (compression_code_p code)
+   if compression_code_p code
       then match (scan_compressed code scanner) with
 	      Opid s ->		let op = (make_operator s (scan_parameters scanner)) in
 				  mk_term op (scan_bound_terms scanner)
 	    | Operator op ->	mk_term op (scan_bound_terms scanner)
 	    | Term term ->	term
 	    |_ -> error ["read_term"; "term"] [] []
-      else let op = (scan_operator scanner) in
+      else let op = scan_operator scanner in
 		let bterms = (scan_bound_terms scanner) in
 			mk_term op bterms
 
@@ -378,7 +423,6 @@ and scan_term scanner =
 let read_term_aux scanner stb stp =
  scan_term (new_lscanner scanner stb stp)
 
-let make_term_scanner = make_scanner "\\ \n\r\t()[]{}:;.," "\n\t\r "
 
 let string_to_trivial_term s stp =
   read_term_aux
@@ -481,18 +525,21 @@ let mk_real_param_from_strings stp value ptype =
   | "t" -> (Token value)
   | "s" -> (String value)
   | "q" -> (ParamList [(make_param (Token "quote")); (make_param (Token value))])
-  | "b" -> ( ParamList [ ( make_param (Token "bool"))
-			; if stringeq value "false"	then make_param (Number (Mp_num.num_of_int 0))
-			  else if stringeq value "true"	then make_param (Number (Mp_num.num_of_int 1))
-			  else error ["real_parameter_from_string"; value][][]
+  | "b" -> ( ParamList [ (make_param (Token "bool"))
+			; if (stringeq value "false") or (stringeq value "F") then
+			  make_param (Number (Mp_num.num_of_int 0))
+			  else if (stringeq value "true") or (stringeq value "T") then 
+			  make_param (Number (Mp_num.num_of_int 1))
+			  else error ["real_parameter_from_string"; value] [] []
 		      ])
   | "v" -> (Var value)
-  | "l" -> let level =
-      scan_level_expression (make_le_scanner (Stream.of_string value)) in
+  | "l" -> let level = scan_level_expression (make_le_scanner (Stream.of_string value)) in
     (ParamList [(make_param (Token "nuprl5_level_expression")); (make_param (MLevel level)); (make_param (String value))])
   | "oid" -> let term = string_to_trivial_term value stp in
     (ObId (stamp_to_object_id (term_to_stamp term)))
-  | t -> failwith "unknown special op-param"
+  | "o" -> let term = string_to_trivial_term value stp in
+    (ObId (stamp_to_object_id (term_to_stamp term)))
+  | t -> failwith (String.concat "  " ["unknown special op-param"; ptype; value])
 
 let mk_meta_param_from_strings value ptype =
   match ptype with "n" -> (MNumber value)
@@ -542,7 +589,7 @@ let string_to_bindings value =
 
 
 let rec string_to_parameter s ptype =
-
+  (*if s = "!stamp" then failwith "stamp";*)
   let len = String.length s in
 
     if (len < 2 or not (chareq '%' (String_util.get "Db.string_to_parameter" s 0)))
@@ -746,7 +793,6 @@ let loaded_levels_update index stamp levels =
  loaded_levels := (index, (stamp, levels)) :: !loaded_levels
 
 
-
 let rec read_levels term index =
  (* print_string "read_levels "; Mbterm.print_term term; *)
  if idata_persist_term_p term
@@ -803,7 +849,8 @@ and session_read_term scanner =
 	  session_read_term scanner )
   else if (scan_at_char_p scanner.scanner 't')
     then (scan_char scanner.scanner 't';
-	 let t = scan_term scanner in
+	  let t = scan_term scanner in
+	   (* print_newline(); print_string " after scan term "; Mbterm.print_term t; *)
 	   scan_char scanner.scanner 't';
 	   t)
   else error ["session"; "read_term"; Char.escaped (scan_cur_char scanner.scanner)] [][]

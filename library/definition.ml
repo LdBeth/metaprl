@@ -51,6 +51,7 @@ let purposes_of_idescription_term t =
   match dest_term t with
     { term_op = op; term_terms = [version; purposes] }
     -> map_isexpr_to_list string_of_itoken_term (term_of_unbound_term purposes)
+    | { term_op = op; term_terms = [version; purposes; rest] } -> map_isexpr_to_list string_of_itoken_term (term_of_unbound_term purposes)
     |_ -> error ["term"; "!description"; "not"] [] [t]
 (*
 
@@ -245,6 +246,7 @@ end
 
 
 let substance_import def stype data =
+  print_string "subimp ";
   match stype with
     Substance -> def#set_substance (new substance data#get_term); ()
   | TermSubstance -> def#set_substance (new term_substance data#get_term); ()
@@ -269,11 +271,30 @@ class ['a] definition (d : dependency) (da : data) st =
 	  match sub with None -> raise NoSubstance | Some s -> s
 end
 
+class term_dyneval (t: term) =
+ object(self)
+ 
+  (*val mutable stamp = None*)
+  val term = t
+  (*val mutable flags = None
+
+  method get_term = self#get_term*)
+
+end
+
+
+exception NoDyneval
 
 class ['a] term_definition d da st =
  object (self)
   inherit ['a] definition d da st
 
+  val mutable dyneval = Some (new term_dyneval ivoid_term)
+
+  method set_dyneval s = dyneval <- Some s
+  method dyn_p = match dyneval with None -> false | Some s -> true
+  method get_dyneval = match dyneval with None -> raise NoDyneval | Some s -> s
+  
   method set_substance (s : term_substance) = sub <- Some s
   method get_term = (self#get_substance)#get_term
 
@@ -281,6 +302,7 @@ end
 
 let idag_child_param = make_param (Token "!dag_child")
 let idirectory_param = make_param (Token "!directory")
+let idyneval_param = make_param (Token "!dyneval")
 
 let idag_cons_op = mk_nuprl5_op [make_param (Token "!dag_cons")]
 
@@ -294,6 +316,16 @@ let idirectory_term_p t =
 	  |_ -> false
 	)
   |_ -> false
+
+let idyneval_term_p t =
+ match dest_term t with
+  { term_op = op; term_terms = bts}  -> (*lal make stronger test*)
+  (match dest_op op with
+      { op_name = opname; op_params =  id :: rest}
+      when Opname.eq nuprl5_opname opname & parmeq id idyneval_param -> true
+      | _ -> false
+     )
+  | _ -> false
 
 
 let children_of_idirectory_term t =
@@ -354,25 +386,24 @@ class ['a] directory_definition d dat st =
 
   (* instantiation of values could be lazy, but seems like inconsequential space savings *)
   (*
-  val children = children_of_idirectory_term (super#get_substance)#get_term
+  val children = children_of_idirectory_term (super#get_substance)#get_term (*LAL fails, not a dir term*)
   val rootp = iroot_directory_term_p (super#get_substance)#get_term
   val root_name = let term = (super#get_substance)#get_term in
-			if (iroot_directory_term_p term)
+			(print_string " n "; if (iroot_directory_term_p term)
 			   then name_of_iroot_directory_term term
-			   else ""
+			   else "")
   *)
   val children = children_of_idirectory_term (term_of_isubstance_term datterm)
   val rootp = iroot_directory_term_p (term_of_isubstance_term
 				      datterm
 				      )
   val root_name = let term = (term_of_isubstance_term datterm) in
-			if (iroot_directory_term_p term)
-			   then name_of_iroot_directory_term term
+			if (iroot_directory_term_p term) then name_of_iroot_directory_term term
 			   else ""
 
   method get_children = children
   method rootp = rootp
-  method get_root_name = if rootp then root_name else raise NotRootDirectory
+  method get_root_name = if rootp then root_name else (print_string "nonroot"; raise NotRootDirectory)
 end
 
 
@@ -408,20 +439,59 @@ let term_to_dependency t =
 (* would like this to take table as arg and table contains term -> def
    want polymorphism with definitions and tables
  *)
-let import_term idef idesc =
-  (* print_string " import_term "; Mbterm.print_term idef; *)
+let import_term_old idef idesc =
+  print_string " import_term "; Mbterm.print_term idef; 
   match dest_term idef with
     { term_op = op; term_terms = [idep; idata] } when opeq op idefinition_op
       -> (let dep = term_to_dependency (term_of_unbound_term idep) in
 	  let data = term_to_data (term_of_unbound_term idata) in
 
-	  (*print_string " import_term "; Mbterm.print_term (term_of_unbound_term idata); *)
-	  (* if not (dag_description_p idesc) then print_string " uh oh"; *)
+	  print_string " import_term "; Mbterm.print_term (term_of_unbound_term idata); 
+	  if not (dag_description_p idesc) then print_string " uh oh"; 
 
 	  if not (dag_description_p idesc)
 	     then TermDefinition (new term_definition dep data TermSubstance)
 	     else
-		DirectoryDefinition (new directory_definition dep data Substance)
+		  DirectoryDefinition (new directory_definition dep data Substance) (*LAL fails, subst not a dir term*)
+	)
+
+    |_ -> error ["term"; "!definition"] [] [idef]
+(*
+let dest_dyneval_term t =
+  match dest_term t with
+  { term_op = op; term_terms = [cond; exp; stamp; value]} (*lal make stronger test*)
+     -> (match dest_op op with
+	  { op_name = opname; op_params = id :: rest}
+		when nuprl5_opname_p opname & parmeq id idyneval_param
+		-> 
+	  | _ -> fail
+	)
+  |_ -> fail
+*)
+
+let import_term idef idesc =
+  (*print_string " import_term "; Mbterm.print_term idef;*) 
+  match dest_term idef with
+    { term_op = op; term_terms = [idep; idata] } when opeq op idefinition_op
+      -> (let dep = term_to_dependency (term_of_unbound_term idep) in
+	  let data = term_to_data (term_of_unbound_term idata) in
+
+	  (*print_string " import_term "; Mbterm.print_term (term_of_unbound_term idata);*) 
+	  
+	  if not (dag_description_p idesc)
+	     then TermDefinition (new term_definition dep data TermSubstance)
+	     else
+		let datterm = data#get_term in
+                let idir = term_of_isubstance_term datterm in
+		if idirectory_term_p idir then DirectoryDefinition (new directory_definition dep data Substance) (*LAL fails, subst not a dir term*)
+		else TermDefinition (new term_definition dep data TermSubstance)
+
+		(*if (idyneval_term_p idir) then 
+		let def = new term_definition dep data TermSubstance in
+		and [stamp, flags, term] = dest_dyneval_term idir in
+		(def#set_dyneval (new term_dyneval idir); TermDefinition def)
+		else error ["import"; "term"; "not"] [] [idir]*)
+		
 	)
 
     |_ -> error ["term"; "!definition"] [] [idef]
@@ -464,22 +534,23 @@ let apply_broadcast ttable ibcast idesc stamp commit_stamp =
 		| Some s -> commit ttable s oid seq
 		) in
 
-  (*
-  print_string "apply broadcast";
+  
+  (*print_string "apply broadcast";
   print_newline();
   Mbterm.print_term ibcast;
-  *)
+  print_newline();*)
 
   match dest_term ibcast with
     { term_op = op; term_terms = terms} ->
 	match dest_op op with
 	  { op_name = opn; op_params = pid :: pseq :: rest } when nuprl5_opname_p opn
-	    -> ((if parmeq pid idefinition_insert_param
-		    then let entry = (import_term (term_of_unbound_term (hd terms)) idesc) in
+	    -> (if parmeq pid idefinition_insert_param
+		    then 
+                    let entry = (import_term (term_of_unbound_term (hd terms)) idesc) in
 		         let oid = (oid_of_term_entry entry)
 			 and seq = (dest_int_param pseq) in
-			  insert ttable stamp oid seq entry
-			  ; auto_commit oid seq
+			  (insert ttable stamp oid seq entry;
+			  auto_commit oid seq)
 		else if parmeq pid idefinition_delete_param
 		    then let oid = (dest_obid_param (hd rest))
 			 and seq = (dest_int_param pseq) in
@@ -493,8 +564,8 @@ let apply_broadcast ttable ibcast idesc stamp commit_stamp =
 		    then undo ttable stamp
 					(dest_obid_param (hd rest))
 					(dest_int_param pseq)
-		else error ["term"; "broadcast"; "opid"] [] [ibcast])
-		)
+		else error ["term"; "broadcast"; "opid"] [] [ibcast]
+		)		
 	   |_ -> error ["term"; "broadcast"] [] [ibcast]
 
 

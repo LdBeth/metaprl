@@ -23,9 +23,9 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
  * Authors: Lori Lorigo, Richard Eaton
- *	
  *)
-(* Thread.create Library_test.library_run_n "MPdispl" ;; let f x = Printf.eprintf "Name = %s\n" x; flush stderr; edit_cd_thm name x;;
-val f : string -> unit = <fun>*)
-val library_run: unit -> unit
-val library_run_n: string -> unit
+
+open Nuprl_sig
+
+module Nuprl : NuprlSig
+

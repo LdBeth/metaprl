@@ -38,6 +38,7 @@ open Mp_debug
 open Utils
 open Basic
 open Library
+open Nuprl5
 
 open Ascii_scan
 
@@ -334,7 +335,7 @@ let looptest connection =
 	)
 
      (function () -> leave lib))
-;;
+
 
 
 let toptestloop libhost remote_port local_port =
@@ -355,7 +356,7 @@ let toptestloop libhost remote_port local_port =
  ; print_string "TestLoop DONE"
  ; print_newline()
  ; print_newline()
-;;
+
 
 let testascii libhost remote_port local_port =
  print_newline();
@@ -375,7 +376,7 @@ let testascii libhost remote_port local_port =
  ; print_string "TestAscii DONE"
  ; print_newline()
  ; print_newline()
-;;
+
 
 let testall libhost remote_port local_port =
  print_newline();
@@ -400,7 +401,7 @@ let testall libhost remote_port local_port =
  ; print_string "TestAll DONE"
  ; print_newline()
  ; print_newline()
-;;
+
 *)
 
 
@@ -464,7 +465,7 @@ let test remote_port local_port =
     disconnect connection);
 
  raise (Test "DONE")
-;;
+
 
 
 let demo_put_test lib i =
@@ -490,7 +491,6 @@ let demo_get_put_test lib =
 		     else ()))
   ; ()
 
-
 let jointest remote_port local_port =
  print_string "Test called ";
  print_newline();
@@ -513,86 +513,41 @@ let jointest remote_port local_port =
     disconnect connection);
 
  raise (Test "Join Test Successful")
-;;
+
 *)
 open List
+open Opname
 open Refiner.Refiner.Term
-open Library_eval
-
-let faux_refine g t =
-
-    print_newline();
-    Mbterm.print_term g;
-    print_newline();
-    [g; g]
-;;
+open Refiner.Refiner.TermType
+open Nuprl_eval
+open Nuprl_sig
 
 
-let library_run (():unit) =
-  special_error_handler (function () -> (library_open_and_loop_eval "MetaPRL" faux_refine))
+module Nuprl = (Nuprl_eval.Nuprl : NuprlSig)
+
+open Nuprl
+
+
+module NuprlRun = struct
+ 
+let run_nuprl (():unit) =
+  special_error_handler (function () -> (library_open_and_loop_eval "MetaPRL" refine_ehook))
   (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
-let library_run_n name =
-  special_error_handler (function () -> (library_open_and_loop_eval name faux_refine))
+  let run_library name =
+  special_error_handler (function () -> (library_open_and_loop_eval name refine_ehook))
   (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
-
-(*
-special_error_handler (function () -> testascii "LOCKE" 5289 5289)
+  let run_connection lport mport host name =
+  special_error_handler (function () -> (library_open_and_loop_eval' lport mport host name refine_ehook))
+  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
+  
+  let run_connection_with_hook lport mport host name rhook =
+  special_error_handler (function () -> (library_open_and_loop_eval' lport mport host name rhook))
+  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
+  
+  let run_dummy_connection lport mport host name =
+  special_error_handler (function () -> (library_open_and_loop_eval' lport mport host name (let dumf x = (Mbterm.print_term x; (if nuprl_is_all_term x then Mbterm.print_term ivoid_term else Mbterm.print_term (itoken_term "foo")); x) in dumf)))
   (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
-
-special_error_handler (function () -> testall "ALFHEIM" 3448 4688)
- (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
-
-
-special_error_handler (function () ->
-			( Db.db_init "/usr/u/nuprl/nuprl5/NuPrlDBa" true	
-			; Mbterm.print_term (Db.session_string_to_term "l!l{1:n}ltvoid()t")
-			;()
-			))
- (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
-
-
-special_error_handler (function () ->
-			( maybe_lib_open()
-			; Mbterm.print_term (Db.session_string_to_term "l!l{1:n}ltvoid()t")
-			;()))
- (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
-
-special_error_handler
-  (function () ->
- 	   Mbterm.print_term (Db.string_to_term "!level_assoc(!l{0:n};!data_persist{STATIC:t}(!stamp{6740:n,3091287743:time,44:n,1900031899_3D6C_B8413DA9:t}))")
-	   ;())
-  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
-
-special_error_handler
-  (function () ->
- 	let s = (make_scanner "[|]"  "\n\t\r " (Stream.of_string "[0]")) in
-          print_string (List.hd (scan_char_delimited_list s (function () -> scan_string s) '[' ']' '|'))
-	   ;())
-  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
-
-
-
-special_error_handler (function () -> testall "DENEB" 3444 4444)
- (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
-
-special_error_handler (function () -> maybe_lib_open())
- (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
-
-
-special_error_handler (function () -> disconnect (connect "BOLVERK" 5289 5291); ())
- (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
-
-special_error_handler (function () -> testall "ALFHEIM" 7289 2897)
- (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
-
-special_error_handler (function () -> jointest 5289 2895)
- (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
-
-special_error_handler (function () -> test 5289 2895)
- (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
-*)
-
-
+end

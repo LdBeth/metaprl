@@ -35,6 +35,11 @@ module ShellHTTP = Shell_http.ShellHTTP (Shell)
 
 open Shell
 
+module Nuprl = Nuprl_eval.Nuprl 
+module NuprlRun = Nuprl_run.NuprlRun 
+
+let run_nuprl = NuprlRun.run_connection
+
 (*
  * Job control.
  *)

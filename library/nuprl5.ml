@@ -25,6 +25,8 @@
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
+open Refine_error_sig
+
 open Printf
 open Mp_debug
 
@@ -37,6 +39,7 @@ let _ =
    show_loading "Loading Nuprl5%t"
 
 let nuprl5_opname = mk_opname "!nuprl5_implementation!" nil_opname
+let nuprl5_opname_p opname = opname = nuprl5_opname
 
 (* parameter mapping *)
 
@@ -89,12 +92,105 @@ let destruct_bool_parameter p =
     | _ -> raise (Invalid_argument "destruct_bool_parameter"))
   | _ -> raise (Invalid_argument "destruct_bool_parameter")
 
+
 (* common terms *)
 
+let mk_nuprl5_op pl = mk_op nuprl5_opname pl
+let mk_nuprl5_simple_op s = mk_op nuprl5_opname [(make_param (Token s))]
+
+let nuprl_is_op_term opname term = 
+    match Lib_term.dest_term term with
+   { term_op = term_op'; term_terms = _  
+    } when term_op' = opname -> true
+    | _ -> false
+
+let nuprl_is_not_term = nuprl_is_op_term (mk_nuprl5_simple_op "not")
+let nuprl_is_exists_term = nuprl_is_op_term (mk_nuprl5_simple_op "exists")
+let nuprl_is_or_term = nuprl_is_op_term (mk_nuprl5_simple_op "or")
+let nuprl_is_and_term = nuprl_is_op_term (mk_nuprl5_simple_op "and")
+let nuprl_is_implies_term = nuprl_is_op_term (mk_nuprl5_simple_op "implies")
+let nuprl_is_all_term = nuprl_is_op_term (mk_nuprl5_simple_op "all")
+
+let nuprl_dest_all term = 
+   match Lib_term.dest_term term with
+   { term_op = term_op'; term_terms = [tp ; prop] } 
+    when term_op' = (mk_nuprl5_simple_op "all") -> 
+      (match dest_bterm tp with
+      { bvars = [x]; bterm = t1 } ->
+         (match dest_bterm prop with { bvars = []; bterm = t2 } -> 
+          x, t1, t2
+         | _ -> failwith "nuprl_dest_all")
+      | _ -> failwith "nuprl_dest_all")    
+    | _ -> failwith "nuprl_dest_all"
+
+  
+let nuprl_dest_exists term = 
+   match Lib_term.dest_term term with
+   { term_op = term_op'; term_terms = [tp ; prop] } 
+    when term_op' = (mk_nuprl5_simple_op "exists") -> 
+      (match dest_bterm tp with
+      { bvars = [x]; bterm = t1 } ->
+         (match dest_bterm prop with { bvars = []; bterm = t2 } -> 
+          x, t1, t2
+         | _ -> failwith "nuprl_dest_exists")
+      | _ -> failwith "nuprl_dest_exists")    
+    | _ -> failwith "nuprl_dest_exists"
+  
+
+let nuprl_dest_not term = 
+   match Lib_term.dest_term term with
+   { term_op = term_op'; term_terms = [tp ; prop] } 
+    when term_op' = (mk_nuprl5_simple_op "not") -> 
+      (match dest_bterm tp with
+      { bvars = []; bterm = t } ->
+          t
+         | _ -> failwith "nuprl_dest_not")    
+    | _ -> failwith "nuprl_dest_not"
+  
+
+let nuprl_dest_or term = 
+   match Lib_term.dest_term term with
+   { term_op = term_op'; term_terms = [tp ; prop] } 
+    when term_op' = (mk_nuprl5_simple_op "or") -> 
+      (match dest_bterm tp with
+      { bvars = []; bterm = t1 } ->
+         (match dest_bterm prop with { bvars = []; bterm = t2 } -> 
+          t1, t2
+         | _ -> failwith "nuprl_dest_or")
+      | _ -> failwith "nuprl_dest_or")    
+    | _ -> failwith "nuprl_dest_or"
+  
+
+let nuprl_dest_implies term = 
+   match Lib_term.dest_term term with
+   { term_op = term_op'; term_terms = [tp ; prop] } 
+    when term_op' = (mk_nuprl5_simple_op "implies") -> 
+      (match dest_bterm tp with
+      { bvars = []; bterm = t1 } ->
+         (match dest_bterm prop with { bvars = []; bterm = t2 } -> 
+          t1, t2
+         | _ -> failwith "nuprl_dest_implies")
+      | _ -> failwith "nuprl_dest_implies")    
+    | _ -> failwith "nuprl_dest_implies"
+  
+
+let nuprl_dest_and term = 
+   match Lib_term.dest_term term with
+   { term_op = term_op'; term_terms = [tp ; prop] } 
+    when term_op' = (mk_nuprl5_simple_op "and") -> 
+      (match dest_bterm tp with
+      { bvars = []; bterm = t1 } ->
+         (match dest_bterm prop with { bvars = []; bterm = t2 } -> 
+          t1, t2
+         | _ -> failwith "nuprl_dest_and")
+      | _ -> failwith "nuprl_dest_and")    
+    | _ -> failwith "nuprl_dest_and"
+  
+
 (*
-let itoken_term s = mk_token_term nuprl5_opname s
-let inatural_term i = mk_number_term nuprl5_opname i
+let nuprl_is_all_term = function
+    { term_op = { op_name = nuprl5_opname; op_params = [make_param (Token "all")] };
+      term_terms = [{ bvars = [] }; { bvars = [_] }]
+    }  -> true
+    | _ -> false
 *)
-
-
-

@@ -35,7 +35,7 @@ open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermSubst
 open Basic
-(*open Tent *)
+open Nuprl5
 open Orb
 open Definition
 

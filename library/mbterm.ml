@@ -302,7 +302,7 @@ let rec print_param param =
     | Token p -> (print_string p ; print_string ":t ")
     | Var p -> (print_string p ; print_string ":v ")
     | ObId p -> (print_string "["; List.iter print_param (dest_object_id p); print_string "]";
-                 print_string ":obid")
+                 print_string ":oid ")
     | MNumber p -> (print_string p; print_string ":mn ")
     | MString p -> (print_string p; print_string ":ms ")
     | MToken p -> (print_string p; print_string ":mt ")

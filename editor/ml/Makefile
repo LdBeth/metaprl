@@ -51,21 +51,30 @@ MPFILES =\
 MP2FILES =\
 	shell_mp\
 	shell_p4\
+	nuprl_sig\
+	nuprl_eval\
+	nuprl_jprover\
+	nuprl_run\
 	mp\
-	mp_top\
-	library_eval\
-	library_test
+	mp_top
 
 RUNFILES =\
 	mp_version\
+	shell_mp\
 	shell_p4\
-	mp\
-	library_eval\
-	library_test\
+	nuprl_sig\
+	nuprl_eval\
+	nuprl_jprover\
+	nuprl_run\
+	mp	
 
 TOPFILES =\
 	mp_version\
 	shell_mp\
+	nuprl_sig\
+	nuprl_eval\
+	nuprl_jprover\
+	nuprl_run\
 	mp_top
 
 ifeq ($(TESTS),YES)

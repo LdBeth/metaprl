@@ -78,7 +78,7 @@ let undo ot stamp oid i =
     ()
 
 let commit ot stamp oid i =
-  (* print_string "commit "; print_object_id oid; print_int (hash oid); print_newline(); *)
+  (*print_string "commit "; print_object_id oid; print_int (hash oid); print_newline(); *)
   let tent = find ot oid  in
     tent_commit tent stamp i
 
@@ -90,7 +90,7 @@ let lookup ot stamp oid =
 (*34567890123456789012345678901234567890123456789012345 *)
 
 let insert ot st oid i v =
-  (* print_string "Insert ";  print_object_id oid; print_int (hash oid); print_newline(); *)
+  (*print_string "Insert ";  print_object_id oid; print_int (hash oid); print_newline(); *)
   let tent = (try (find ot oid)
 	      with Not_found -> let ntent = new_tent () in (add ot oid ntent); ntent) in
     (tent_insert tent st i oid v)

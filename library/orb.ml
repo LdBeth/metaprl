@@ -249,11 +249,15 @@ let ipassport_param = make_param (Token "!passport")
  * apply to table
  *)
 let broadcast_eval env tstamp commit_stamp bcasts =
-  (* print_string "num bcasts "; print_string (string_of_int (List.length bcasts));  print_newline(); *)
+  print_string "num bcasts "; print_string (string_of_int (List.length bcasts));  print_newline(); 
+  let count = ref 1 in
   map (function bipass ->
-	(* print_string "eval_bcast"; print_newline(); *)
-        let ipass = term_of_unbound_term bipass in
-	match dest_term ipass with
+	print_string ".";
+	(*print_string "eval_bcast "; print_string (string_of_int !count); print_newline(); 
+        count := !count + 1;*)  
+	let ipass = term_of_unbound_term bipass in
+	(*Mbterm.print_term ipass; print_newline(); *)
+        match dest_term ipass with
 	  { term_op = pop; term_terms = [stamp; desc; bcast] }
 	    -> (match dest_op pop with
 		{ op_name = opn; op_params = [id; ttype] } when parmeq id ipassport_param
@@ -265,7 +269,7 @@ let broadcast_eval env tstamp commit_stamp bcasts =
 				commit_stamp
 		     with Not_found -> print_string "Broadcast for unknown table ignored. ";
 				       print_string (dest_token_param ttype); print_newline(); ()
-			  | e -> raise e)
+			  | e -> (print_string "ap bcast failed"; raise e))
 		|_ -> error ["term"; "!passport"; "op"] [] [ipass]
 		)
 	  |_ -> error ["term"; "!passport"] [] [ipass]
@@ -305,6 +309,15 @@ let local_eval f t =
     (function () -> (ivalue_term (f (cmd_of_icommand_term t))))
     (function term -> ifail_term term)
 
+(*
+let local_eval_new f t =
+  unconditional_error_handler
+    (function () -> 
+     (match dest_term t with {term_op = { op_name = opn; op_params = p :: oppl} ; term_terms = bts }
+	-> if parmeq p icommand_parameter then (ivalue_term (f (cmd_of_icommand_term t)))
+       	   else if parmeq p iexpression_parameter
+    (function term -> ifail_term term)
+*)
 
 let imsg_parameter = make_param (Token "!msg")
 
@@ -518,6 +531,7 @@ let connect orb host hsock sock =
 
     let connection =  { link = link; orb = orb; ro_address = address } in
       orb.connections <- (connection :: orb.connections);
+      
       connection
 
 let irevoke_parameter = make_param (Token "!revoke")
@@ -680,7 +694,7 @@ let start_broadcasts e =
 			  (* nfg if we allow mulitple envs *)
 		     nl0_description))
 
-	in (* print_string "start_broadcasts : "; *)
+	in  print_string "start_broadcasts : "; 
 		let _ = orb_broadcast e (broadcasts_of_istart_term
                             (info_of_iinform_term t))
       in ()
@@ -710,11 +724,13 @@ let open_library_environment connection lib_id ehook =
 	} in
     (connection.orb).environments <- env :: connection.orb.environments;
     start_broadcasts env;
+    (*print_string "after sbc";*)
     env
 
 
 let join_library_environment connection tags ehook =
   let lib_env_address = library_environment_join connection tags in
+    
     let env =
 	{ connection = connection
 	; re_address = lib_env_address
@@ -725,6 +741,7 @@ let join_library_environment connection tags ehook =
 	} in
     (connection.orb).environments <- env :: connection.orb.environments;
     start_broadcasts env;
+    (*print_string "after sbc";*)
     env
 
 let restore_library_environment connection sstamp ehook =

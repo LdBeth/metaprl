@@ -46,3 +46,8 @@ val string_to_bindings	: string (*value*) -> string list
 
 val string_to_term	: string -> term
 val session_string_to_term	: string -> term
+
+(* below temp for interactive debugging *)
+
+val make_term_scanner : char t -> scanner 
+val myscanner : scanner ref

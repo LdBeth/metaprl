@@ -23,56 +23,19 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
  * Authors: Lori Lorigo, Richard Eaton
+ *	
  *)
 
-open Opname
 open Refiner.Refiner.Term
-open Mp_num
+open Refiner.Refiner.TermType
 
-val mk_nuprl5_op	: param list -> operator
-val nuprl5_opname	: opname
-val nuprl5_opname_p		: opname -> bool
+(* jprover fun returns string*term*term list, convert to term *)
 
-(* parameter mapping *)
+let ijprover_op = Nuprl5.mk_nuprl5_op [(make_param (Token "jprover"))]
 
-val make_bool_parameter	: bool -> param
-val make_time_parameter	: num -> param
+let ijprover_term s t1 t2 = 
+  mk_term ijprover_op [mk_bterm [] (Basic.istring_term s); mk_bterm [] t1; mk_bterm [] t2]
 
-val time_parameter_p	: param -> bool
-val bool_parameter_p	: param -> bool
-
-val destruct_time_parameter	: param -> num
-val destruct_bool_parameter	: param -> bool
-
-
-(* itt logic functions *)
-
-val nuprl_is_all_term : term -> bool
-val nuprl_dest_all : term -> string * term * term
-
-val nuprl_is_exists_term : term -> bool
-val nuprl_dest_exists : term -> string * term * term
-
-val nuprl_is_or_term : term -> bool
-val nuprl_dest_or : term -> term * term
-
-val nuprl_is_and_term : term -> bool
-val nuprl_dest_and : term -> term * term
-
-val nuprl_is_implies_term : term -> bool
-val nuprl_dest_implies : term -> term * term
-
-val nuprl_is_not_term : term -> bool
-val nuprl_dest_not : term -> term
-
-
-
-
-
-
-
-
-
-
-
-
+let jprover_result_to_term l = 
+  let f (s, t1, t2) = ijprover_term s t1 t2 in
+  Basic.list_to_ilist_map f l

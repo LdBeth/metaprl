@@ -22,57 +22,22 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * Authors: Lori Lorigo, Richard Eaton
+ * Authors: Lori Lorigo, Richard Eaton	
  *)
 
-open Opname
-open Refiner.Refiner.Term
-open Mp_num
+(* 
+  Thread.create run_library "mp_o8" ;; 
+  let f x = Printf.eprintf "Name = %s\n" x; flush stderr; edit_cd_thm name x;;
 
-val mk_nuprl5_op	: param list -> operator
-val nuprl5_opname	: opname
-val nuprl5_opname_p		: opname -> bool
+  # #use "nuprl.txt";;
+  # NuprlRun.run_connection  3998 4992 "baldwin" "lmp_d21";;
+*)
 
-(* parameter mapping *)
-
-val make_bool_parameter	: bool -> param
-val make_time_parameter	: num -> param
-
-val time_parameter_p	: param -> bool
-val bool_parameter_p	: param -> bool
-
-val destruct_time_parameter	: param -> num
-val destruct_bool_parameter	: param -> bool
-
-
-(* itt logic functions *)
-
-val nuprl_is_all_term : term -> bool
-val nuprl_dest_all : term -> string * term * term
-
-val nuprl_is_exists_term : term -> bool
-val nuprl_dest_exists : term -> string * term * term
-
-val nuprl_is_or_term : term -> bool
-val nuprl_dest_or : term -> term * term
-
-val nuprl_is_and_term : term -> bool
-val nuprl_dest_and : term -> term * term
-
-val nuprl_is_implies_term : term -> bool
-val nuprl_dest_implies : term -> term * term
-
-val nuprl_is_not_term : term -> bool
-val nuprl_dest_not : term -> term
-
-
-
-
-
-
-
-
-
-
-
-
+module NuprlRun :
+sig
+	val run_nuprl : unit -> unit
+	val run_library : string -> unit
+	val run_connection : int (*library*) -> int -> string (*host*)-> string -> unit
+	val run_dummy_connection : int (*library*) -> int -> string (*host*)-> string -> unit
+	val run_connection_with_hook : int (*library*) -> int -> string (*host*)-> string -> (Refiner.Refiner.Term.term -> Refiner.Refiner.Term.term) -> unit
+end

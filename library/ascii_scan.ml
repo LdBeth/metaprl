@@ -136,10 +136,10 @@ let scan_cur_char s = s.cchar
 let scan_at_char_p s c = (not (scan_at_eof_p s)) & (s.cchar = c) & not (scan_escape_p s)
 
 let scan_char s c =
- if (scan_at_char_p s c)
+ if scan_at_char_p s c
     then scan_next s
- else if (scan_at_eof_p s)
-    then  error ["scanner"; "char"; Char.escaped c; "eof"] [] []
+ else if scan_at_eof_p s
+    then error ["scanner"; "char"; Char.escaped c; "eof"] [] []
  else error ["scanner"; "char"; (Char.escaped c); (Char.escaped s.cchar)] [] []
  ; ()
 
@@ -148,12 +148,12 @@ let scan_cur_byte s = code s.cchar
 let scan_at_byte_p s c = (not (scan_at_eof_p s)) & (code s.cchar) = c  & not (scan_escape_p s)
 
 let scan_byte s c =
- if (scan_at_byte_p s c)
+ if scan_at_byte_p s c
     then scan_next s
 
-   else if (scan_at_eof_p s)
-	    then  error ["scanner"; "char"; Char.escaped (chr c); "eof"] [] []
-   else error ["scanner"; "char"; Char.escaped (chr c); Char.escaped s.cchar] [] []
+   else if scan_at_eof_p s
+	    then  error ["scanner"; "byte"; Char.escaped (chr c); "eof"] [] []
+   else error ["scanner"; "byte"; Char.escaped (chr c); Char.escaped s.cchar] [] []
 
 
 let numeric_digits = ['0'; '1'; '2'; '3'; '4'; '5'; '6'; '7'; '8'; '9']
@@ -224,7 +224,7 @@ let scan_delimited_list s itemf ld rd sep =
 
  scan_byte s ld;
 
- if (scan_at_byte_p s rd) then (scan_byte s rd; [])
+ if scan_at_byte_p s rd then (scan_byte s rd; [])
  else let acc = ref [(itemf ())] in
 	while (scan_at_byte_p s sep)
 	  do (scan_byte s sep); acc := (itemf ()) :: !acc
