@@ -61,13 +61,16 @@ This error also raised when we cd <theory>, and then load <theory>:
 > /dec_eq : string
 > # <<it>>;;
 
+*) Display forms do not work (they raise Invalid_argument ("List.combine") ) if they 
+are specified using SO variables. This may be a rewriter bug.
+
 REWRITER
 
 *) If a variable is bound in a context, rewriter may handle it incorrectly.
 
 *) If the same variable is bound several times in redex or contractum specification, rewriter
-may handle it incorrectly. We should prohibit repeated bound variables in rewrite
-specification - that would eliminate this bug and also help prevent typos in rewrites.
+may handle it incorrectly. We can not prohibit repeated bound variable in redeces
+specification because of two-way rewrites.
 
 *) If the same variabe is bound several times in the matched term, rewriter may handle
 it incorrectly.
@@ -103,7 +106,13 @@ is bound only once (which may be used to prove incorrect results).
 on <<lambda{x.('x 'x)}>>. This may be fixed by using rewriter in "strict" mode, when
 implemented (see REWRITER section above).
 
-PARSER
+*) "Understanding" extracts seems broken. When refiner passes extracts to rewriter,
+it "forgets to mention" that they are in the scope of hypothesis variables.
+
+One of the side-effects of this problem is that we have to pass unnecessary arguments
+to some of the rules (such as srecElimination).
+
+PARSER & FILTER
 
 *) Rules and rewrites should be added to toploop. 
 
@@ -117,15 +126,4 @@ should be sufficient (it means that we should remove an alternative rule
 syntax of
 interactive name: A1 A2 ... : An)
 
-*) Parser should check display forms for correctness. Currently it accepts
-many incorrect display forms and later we get (in mp):
-
-# ls();;
-subst: L () (r; l)
-Uncaught exception: Invalid_argument("List.combine")
-# << rfun{'L; r,l.'L}>>;;
-subst: L () (r; l)
-- : Refiner.Refiner.Term.term =
-<printer Shell_p4.print_term raised an exception>
-
-without even explaining which display form caused an error message.
+*) Filter should attempt compiling rewrites in order to detect problems at compile-time.
