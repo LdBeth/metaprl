@@ -4,6 +4,7 @@ TERM_DS_FILES :=\
 	term_base_ds\
 	term_op_ds\
 	term_unif_ds\
+        rob_ds\
 	term_subst_ds\
 	term_eval_ds\
 	term_addr_ds\

@@ -87,6 +87,10 @@ struct
 *   below n (field bound in nodeknown). There souldn't be links to bound
 *   nodes in sack.
 *)
+
+(*   type classif= Fv | Co | Fs
+*)
+
    type node= nodeknown ref
    and nodeknown={mutable nodeterm:term;
                   mutable children:childrentype;
@@ -111,6 +115,29 @@ struct
 
 (* node equality *)
 let eq_n m n = (!m == !n)
+
+(* Bound occurence equality. There shouldn't be any links to such nodes,
+*  so we needn't follow_links here. The nodes should be already calculated.
+*)
+let eq_bvar_n n1 n2 =
+   match (!n1).bindings , (!n2).bindings with
+      BoundOc (nn1,i1,j1) , BoundOc (nn2,i2,j2) ->
+         (match (!nn1).bindings ,(!nn2).bindings with
+            BindingPoint l1 , BindingPoint l2 ->
+               (List.nth (List.nth l1 i1) j1)==(List.nth (List.nth l2 i2) j2)
+          | _ -> raise generic_refiner_exn
+         )
+    | _ -> raise generic_refiner_exn
+
+(* Initial term to node converion:
+*  val term2node :term -> node
+*)
+let term2node t = ref {nodeterm=t;
+                       children=ChildrenDelayed;
+                       bindings=BindingDelayed  [];
+                       bound=false}
+
+let initsack = Hashtbl.create 23
 
 let rec cr_dummylist l =
    match l with
@@ -189,6 +216,17 @@ let calc_node n  sack consts =
       end
     | _ ->()
 
+(* val soft_bound_n : node -> bool
+*  Does not calculate the node but checks whether it is bound in DAG.
+*)
+let soft_bound_n n =
+   match (!n).bindings with
+      BindingDelayed bbd ->
+         let f w = is_var_free (fst w) (!n).nodeterm
+         in
+         List.exists f bbd
+    | _ ->(!n).bound
+
 (* we have to deal with looping edges in sack too !! *)
 let rec follow_links n sack consts = calc_node n sack consts;
    match (!n).bindings with
@@ -199,6 +237,7 @@ let rec follow_links n sack consts = calc_node n sack consts;
                     else (follow_links nn sack consts)
         | _ -> n)
     | _ -> n
+
 
 let is_bvar_n n = match (!n).bindings with
                     BoundOc _ -> true
@@ -212,11 +251,39 @@ let is_fvar_n n = (is_var_term (!n).nodeterm) &&
                   (not (is_bvar_n n)) &&
                   (not (is_const_n n))
 
+
 let links_fvar_n n sack consts = is_fvar_n (follow_links n sack consts)
 
 let fvarstr_n n sack consts =
    let nn = follow_links n sack consts in
    dest_var (!nn).nodeterm
+
+
+
+
+(* val soft_fvarinfo_n : node -> sacktype -> StringSet.t -> bool*string
+*  Does not calculate the node! Value (b,str) --
+*  b=true <=> n after calculation and folow_links will represent a free variable;
+*  and in this case str is the variable name. Otherwise str ="".
+*)
+let soft_fvarinfo_n n  sack consts =
+   match (!n).bindings with
+      BindingDelayed bbd ->
+      begin
+      match get_core (!n).nodeterm with
+         FOVar x ->if List.mem_assoc x bbd then  (false,"")
+                   else let unlinked = not (Hashtbl.mem sack x) in
+                        if unlinked && (StringSet.mem consts x) then (false,"")
+                   else if unlinked then (true, (dest_var (!n).nodeterm))
+                   else let nn=follow_links (Hashtbl.find sack x) sack consts in
+                        let b=is_fvar_n nn in
+                        (b, if b then  dest_var (!nn).nodeterm else "")
+       | Term t ->  (false,"")
+       | _ -> REF_RAISE ( RefineError("unify_rob", StringError "Fail to convert term"))
+      end
+    | _ -> let nn = follow_links n sack consts in
+           let b=is_fvar_n nn in
+           (b, if b then  dest_var (!nn).nodeterm else "")
 
 let is_fsymb_n n = (not (is_var_term (!n).nodeterm)) ||
                    (is_const_n n)
@@ -236,14 +303,16 @@ let succs n sack consts =
          ChildrenKnown l -> l
        | _ -> raise generic_refiner_exn
 
-let successors n sack consts = (*links followed twice*)
-   let nn = follow_links n sack consts in
-      match (!nn).children with
-         ChildrenKnown l ->
-            List.map (function x -> follow_links x sack consts) l
-       | _ -> raise generic_refiner_exn
+(*
+*let successors n sack consts = (*links followed twice*)
+*   let nn = follow_links n sack consts in
+*      match (!nn).children with
+*         ChildrenKnown l ->
+*            List.map (function x -> follow_links x sack consts) l
+*       | _ -> raise generic_refiner_exn
+*)
 
-let is_link v sack consts = (* (Hashtbl.mem sack v) && seems to be =true *)
+let is_link v sack consts = (* (Hashtbl.mem sack v) && SHOULD BE  =true *)
    let n=Hashtbl.find sack v in
    (is_fsymb_n n) ||
    ((is_fvar_n n) && (not ((fvarstr_n n sack consts)=v)))
@@ -262,33 +331,33 @@ struct
    let hash = Hashtbl.hash
 end
 (* Hashtbl  with keys: node ; should be calculated !*)
-module Hashtbl_n = Hashtbl.Make(H_nodeknown)
+module Hashtbl_nkn = Hashtbl.Make(H_nodeknown)
 
 (* follows links and removes repeated elements (up to eq_n)
 *  from the node list
 *)
 let filt_nodelist l sack consts =
-   let s = Hashtbl_n.create 23 in
+   let s = Hashtbl_nkn.create 23 in
    let rec filt = function
       [] ->
          []
     | h::t -> let n=follow_links h sack consts in
-              if Hashtbl_n.mem s (!n) then (filt t)
-              else (Hashtbl_n.add s (!n) true; n::(filt t))
+              if Hashtbl_nkn.mem s (!n) then (filt t)
+              else (Hashtbl_nkn.add s (!n) true; n::(filt t))
    in
    filt l
 
 (* outputs as filt_nodelist but for varnamelists *)
 let filt_strlist l sack consts =
-   let s = Hashtbl_n.create 23 in
+   let s = Hashtbl_nkn.create 23 in
    let rec filt = function
       [] ->
          []
     | h::t ->if Hashtbl.mem sack h then
                 let n=follow_links (Hashtbl.find sack h) sack consts
                 in
-                if Hashtbl_n.mem s (!n) then (filt t)
-                else (Hashtbl_n.add s (!n) 0;
+                if Hashtbl_nkn.mem s (!n) then (filt t)
+                else (Hashtbl_nkn.add s (!n) 0;
                       n::(filt t)
                      )
              else filt t
@@ -298,7 +367,7 @@ let filt_strlist l sack consts =
 (* calculates the conjunction of p(x) where x ranges all the nodes of
 *  the list (filt_strlist l sack consts). When v \in l is not a link
 *  then the corresponding conjunct is omitted. Uses external
-*  pmemo :Hashtbl_n.t which stores some values of p(x) with keys (!x).
+*  pmemo :Hashtbl_nkn.t which stores some values of p(x) with keys (!x).
 *)
 let forall_filt_strlist l sack consts p pmemo=
    let rec filt = function
@@ -307,10 +376,10 @@ let forall_filt_strlist l sack consts p pmemo=
     | h::t ->if Hashtbl.mem sack h then
                 let n=follow_links (Hashtbl.find sack h) sack consts
                 in
-                if Hashtbl_n.mem pmemo (!n) then
-                     (Hashtbl_n.find pmemo (!n)) && (filt t)
+                if Hashtbl_nkn.mem pmemo (!n) then
+                     (Hashtbl_nkn.find pmemo (!n)) && (filt t)
                 else (let value = p n in
-                      Hashtbl_n.add pmemo (!n) value;
+                      Hashtbl_nkn.add pmemo (!n) value;
                       value && (filt t)
                      )
              else filt t
@@ -327,10 +396,10 @@ let forall_filt_nodelist l sack consts p pmemo=
       [] ->
          true
     | h::t -> let n=follow_links h sack consts in
-              if Hashtbl_n.mem pmemo (!n) then
-               (Hashtbl_n.find pmemo (!n)) && (filt t)
+              if Hashtbl_nkn.mem pmemo (!n) then
+               (Hashtbl_nkn.find pmemo (!n)) && (filt t)
               else (let value = p n in
-                    Hashtbl_n.add pmemo (!n) value;
+                    Hashtbl_nkn.add pmemo (!n) value;
                     value && (filt t)
                    )
    in
@@ -402,16 +471,97 @@ let rec sfree v n sack consts pmemo=
            )
 
 
-let substfree v n sack consts = (not (is_link v sack consts)) &&
-   (match (!n).bindings with
-       BindingDelayed bbd ->(let f w = is_var_free (fst w) (!n).nodeterm
-                             in
-                             List.exists f bbd
-                            )
-     | _ ->not (!n).bound
-   )
-   && (let pmemo=Hashtbl_n.create 23 in sfree v n sack consts pmemo)
+let substfree v n sack consts =
+   (not (is_link v sack consts)) &&
+   (not (soft_bound_n n)) &&
+   (let pmemo=Hashtbl_nkn.create 23 in sfree v n sack consts pmemo)
 
+
+
+
+(* val unify_n : node -> node -> sacktype -> StringSet.t ->bool
+*  It checks the unifiability and returnes the mgu as a side effect
+*  by updating the sack: given initially a sack representing an idempotent
+*  substitution \sigma it updates the sack into one representing (mgu)*\sigma,
+*  also idempotent.
+*  When nodes are not unifiable the sack will be broken !!!
+*)
+
+let rec unify_n n1 n2 sack consts = (eq_n n1 n2) ||
+
+(* IF ONE OF n1 ,n2 REPRESENTS A FREE VARIABLE v:string ( NOT TO CALCULATE n )
+*  THEN
+*     LET n BE THE OTHER ( NOT TO CALCULATE n );
+*     IF n REPRESENTS THE SAME VARABLE v (  NOT TO CALCULATE n ) THEN (REPLACE;true)
+*     ELSE
+*     ((substfree v n sack consts)&&(Hashtbl.add sack v (follow_links n);REPLACE; true))
+*)
+
+   let (b1,s1)=soft_fvarinfo_n n1 sack consts
+   and (b2,s2)=soft_fvarinfo_n n2 sack consts
+   in
+   if b1 && b2 && (s1=s2) then
+      (let nn = follow_links n2 sack consts in
+      calc_node n1 sack consts;
+      n1:=(!nn);
+      n2:=(!nn);
+      true)
+   else if b1 then
+      (calc_node n1 sack consts;
+      ((substfree s1 n2 sack consts) &&
+      (let nn=follow_links n2 sack consts in
+      Hashtbl.add sack s1 nn;
+      n1:=(!nn);
+      n2:=(!nn);
+      true)
+      ))
+   else if b2 then
+      (calc_node n2 sack consts;
+      (substfree s2 n1 sack consts) &&
+      (let nn=follow_links n1 sack consts in
+      Hashtbl.add sack s2 nn;
+      n2:=(!nn);
+      n1:=(!nn);
+      true
+      ))
+(*
+*  ELSE
+*  (...;REPLACE;RETURN VALUE)
+*
+*)
+   else
+      (let nn1=follow_links n1 sack consts
+       and nn2=follow_links n2 sack consts
+       in
+       if (is_bvar_n nn1)&&(is_bvar_n nn2)&&(eq_bvar_n nn1 nn2) then
+          (n2:=(!nn1);
+           n1:=(!nn1);
+           true
+          )
+       else if (is_bvar_n nn1) || (is_bvar_n nn2) then false
+       else if ((fsymboper_n nn1 sack consts)<>(fsymboper_n nn2 sack consts)) then false
+       else
+          (try(if List.for_all2
+                  (function x -> (function y -> (unify_n x y sack consts)))
+                  (succs nn1 sack consts) (succs nn2 sack consts)
+               then
+                  begin
+                  n2:=(!nn1);
+                  n1:=(!nn1);
+                  true
+                  end
+               else false
+              )
+           with Invalid_argument("List.for_all2") -> false
+          )
+      )
+
+let unifiable_rob t1 t2 sack consts =
+   unify_n (term2node t1) (term2node t2) sack consts
+
+let unifytosack t1 t2 sack consts =
+   if unifiable_rob t1 t2 sack consts then sack
+   else REF_RAISE ( RefineError("unify_rob", StringError "Fail to unify"))
 
 
 end     (* end TermSubstRob  *)

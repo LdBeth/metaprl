@@ -138,6 +138,9 @@ sig
 *         bindings = BindingDelayed _ .
 *)
 
+   val term2node : term -> node
+   val initsack : sacktype
+
    val calc_node : node -> sacktype -> StringSet.t -> unit
    val follow_links : node -> sacktype -> StringSet.t -> node
 
@@ -151,8 +154,19 @@ sig
    val is_fsymb_n : node -> bool
    val links_fsymb_n : node -> sacktype -> StringSet.t -> bool
    val fsymboper_n : node -> sacktype -> StringSet.t -> TermType.operator
-   val successors : node -> sacktype -> StringSet.t -> node list
+   val succs : node -> sacktype -> StringSet.t -> node list
    val substfree : string -> node -> sacktype -> StringSet.t -> bool
+
+(* unify_n checks the unifiability and returnes the mgu as a side effect
+*  by updating the sack: given initially a sack representing an idempotent
+*  substitution \sigma it updates the sack into one representing (mgu)*\sigma,
+*  also idempotent.
+*  When nodes are not unifiable the sack will be broken !!!
+*)
+   val unify_n : node -> node -> sacktype -> StringSet.t ->bool
+   val unifiable_rob : term -> term -> sacktype -> StringSet.t ->bool
+   val  unifytosack :  term -> term -> sacktype -> StringSet.t ->sacktype
+
 
 end
 
