@@ -9,13 +9,18 @@
 
 include $(ROOT)/mk/preface
 
-.PHONY: threads
-threads:
-
 #
 # Use this when compiling with threads.
 # This is tested only on Linux i386 and Solaris 2.5
 #
+ifndef OCAMLCPOPT
+   THREADS = -thread
+   THREADSLIB = $(CAMLLIB)/threads/threads.cma
+else
+   THREADS = -I $(CAMLLIB)/threads
+   THREADSLIB = $(CAMLLIB)/profiling.cmo $(CAMLLIB)/threads/threads.cma
+endif
+OPTTHREADSLIB = $(CAMLLIB)/threads/threads.cmxa
 ifeq ($(OSTYPE),Linux)
    OPTTHREADS = -cclib -lthreadsnat$(EXT_PROF) -cclib -lunix$(EXT_PROF) -cclib -lpthread
    LIBTHREADS = -cclib -lthreads -cclib -lunix -cclib -lpthread
@@ -24,6 +29,8 @@ ifeq ($(OSTYPE),Solaris)
    OPTTHREADS = -cclib -lthreadsnat$(EXT_PROF) -cclib -lunix$(EXT_PROF) -cclib -lpthread -cclib -lposix4
    LIBTHREADS = -cclib -lthreads -cclib -lunix -cclib -lpthread -cclib -lposix4
 else
+.PHONY: threads
+$(THREADSLIB) $(OPTTHREADSLIB): threads
 threads:
 	@echo "!!! "
 	@echo "!!! The value of your OSTYPE enviroment variable, \"$(OSTYPE)\", is unknown."
@@ -33,14 +40,6 @@ threads:
 	@exit 1
 endif
 endif
-ifndef OCAMLCPOPT
-   THREADS = -thread
-   THREADSLIB = $(CAMLLIB)/threads/threads.cma
-else
-   THREADS = -I $(CAMLLIB)/threads
-   THREADSLIB = $(CAMLLIB)/profiling.cmo $(CAMLLIB)/threads/threads.cma
-endif
-OPTTHREADSLIB = $(CAMLLIB)/threads/threads.cmxa
 
 #
 # Configuration
@@ -172,14 +171,14 @@ $(MAIN).cma: $(LCMOFILES) $(MP_CMOFILES) $(ROOT)/mk/config
 $(MAIN).cmxa: $(LCMXFILES) $(MP_CMXFILES) $(ROOT)/mk/config
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -a -o $@ $(LCMXFILES) $(MP_CMXFILES)
 
-$(MAIN).run: $(CMAFILES) $(CMADEPS) $(PCMOFILES) $(ROOT)/mk/config threads
+$(MAIN).run: $(CMAFILES) $(CMADEPS) $(PCMOFILES) $(ROOT)/mk/config $(THREADSLIB)
 	$(OCAMLCP) -custom $(OCAMLCFLAGS) -o $@ $(OCAMLCPOPT) $(CMALIBS) $(CMAFILES) $(PCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS)
 	if [ -f $(MAIN).run.exe ]; then\
 		mv $(MAIN).run.exe $(MAIN).run.bak;\
 		mv $(MAIN).run.bak $(MAIN).run;\
 	fi
 
-$(MAIN).opt: $(CMXAFILES) $(CMXDEPS) $(PCMXFILES) $(ROOT)/mk/config threads
+$(MAIN).opt: $(CMXAFILES) $(CMXDEPS) $(PCMXFILES) $(ROOT)/mk/config $(OPTTHREADSLIB)
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ $(CMXAFILES) $(CMXLIBS) $(PCMXFILES) $(NATIVE_CCLIBS) $(OPTTHREADS)
 	if [ -f $(MAIN).exe ]; then\
 		mv $(MAIN).exe $(MAIN).bak;\

@@ -265,37 +265,37 @@ install:: $(MAIN).cma $(LCMIFILES) $(CAMLP4N).run $(CAMLP4O).run $(PRLCN).run $(
 #
 # Compile a special camlp4 to run Nuprl.
 #
-$(CAMLP4N).run: $(CAMLP4N_CMOBJS) threads
+$(CAMLP4N).run: $(CAMLP4N_CMOBJS) $(THREADSLIB)
 	$(OCAMLC) $(PROFILE) -o $@ -linkall -custom $(CAMLP4N_CMOBJS) $(CAMLP4X_BYTE_CCLIBS) $(LIBTHREADS)
 
-$(CAMLP4O).run: $(CAMLP4O_CMOBJS) threads
+$(CAMLP4O).run: $(CAMLP4O_CMOBJS) $(THREADSLIB)
 	$(OCAMLC) $(PROFILE) -o $@ -linkall -custom $(CAMLP4O_CMOBJS) $(CAMLP4X_BYTE_CCLIBS) $(LIBTHREADS)
 
 #
 # Binary compiler
 #
-$(PRLCN).run: $(PRLCN_CMOBJS) threads
+$(PRLCN).run: $(PRLCN_CMOBJS) $(THREADSLIB)
 	$(OCAMLC) $(PROFILE) -o $@ -custom $(PRLCN_CMOBJS) $(PRLCX_BYTE_CCLIBS) $(LIBTHREADS)
 
-$(PRLCO).run: $(PRLCO_CMOBJS) threads
+$(PRLCO).run: $(PRLCO_CMOBJS) $(THREADSLIB)
 	$(OCAMLC) $(PROFILE) -o $@ -custom $(PRLCO_CMOBJS) $(PRLCX_BYTE_CCLIBS) $(LIBTHREADS)
 
 #
 # Compile a special camlp4 to run Nuprl.
 #
-$(CAMLP4N).opt: $(CAMLP4N_CMXOBJS) threads
+$(CAMLP4N).opt: $(CAMLP4N_CMXOBJS) $(OPTTHREADSLIB)
 	$(OCAMLOPT) $(PROFILE) -o $@ -linkall $(CAMLP4N_CMXOBJS) $(CAMLP4X_NATIVE_CCLIBS) $(OPTTHREADS)
 
-$(CAMLP4O).opt: $(CAMLP4O_CMXOBJS) threads
+$(CAMLP4O).opt: $(CAMLP4O_CMXOBJS) $(OPTTHREADSLIB)
 	$(OCAMLOPT) $(PROFILE) -o $@ -linkall $(CAMLP4O_CMXOBJS) $(CAMLP4X_NATIVE_CCLIBS) $(OPTTHREADS)
 
 #
 # Binary compiler
 #
-$(PRLCN).opt: $(PRLCN_CMXOBJS) threads
+$(PRLCN).opt: $(PRLCN_CMXOBJS) $(OPTTHREADSLIB)
 	$(OCAMLOPT) $(PROFILE) -o $@ $(PRLCN_CMXOBJS) $(PRLCX_NATIVE_CCLIBS) $(OPTTHREADS)
 
-$(PRLCO).opt: $(PRLCO_CMXOBJS) threads
+$(PRLCO).opt: $(PRLCO_CMXOBJS) $(OPTTHREADSLIB)
 	$(OCAMLOPT) $(PROFILE) -o $@ $(PRLCO_CMXOBJS) $(PRLCX_NATIVE_CCLIBS) $(OPTTHREADS)
 
 #
