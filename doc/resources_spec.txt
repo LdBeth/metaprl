@@ -97,6 +97,11 @@ compilation slow and it also affects start-up time. We want to have some
 in parsing/compiling/start-up (although it's OK if the time to retrieve the
 bookmark is proportional to #data + #resources).
 
+PROBLEM 2.2:
+Bookmarks shoud be processed lazily. Currently, before starting working on a
+rule we first retrieve all the data bookmarked for that rule. It could be
+better if bookmarks would only be retrieved as needed.
+
 MODEL 3:
 Same as Model 2, but now each theory can also declare a new resource and then
 it (and others that include it) can use it.
@@ -144,21 +149,31 @@ Module 1: Collecting data of type 'data for a single resource.
 (* Note that in this module each theory is processed separately, only the
    global_data is global *)
 
-type 'data data =
+type 'data data_cell =
    DatInclude of string
- | DatData of 'data
+ | DatData of 'data list (* last added first *)
  | DatBookmark of string list (* each string in the list is a "local part" of
 a bookmark name *)
 
-type 'data global_data = (string, ('data data) list) Hashtbl.t (* Here the
+type 'data data =
+   'data data_cell list (* last added first *)
+
+type 'data global_data = (string, 'data data) Hashtbl.t (* Here the
 string is a theory name, we'll have a single entry for each theory *)
 
-val x_global_data = x_data global_data
-val create: unit -> 'data data
-val add_data: 'data data -> 'data -> 'data data
+val create: unit -> 'data global_data
+val improve: 'data data -> 'data -> 'data data (* same as "add_data" *)
 val bookmark: 'data data -> string -> 'data data
 val include: 'data data -> string -> 'data data
-val x_finish_theory: x_data data -> string -> unit (* adds to x_global_data *)
+
+(* Since theories are processed one-by-one, we can do it imperatively for a
+particular resource. See also Module 5 for a potential value of x_data *)
+val x_theory_data : x_data data ref (* initially empty *)
+val x_improve : x_data -> unit (* adds to x_theory_data *)
+val x_bookmark: string -> unit
+val x_global_data = x_data global_data
+val x_finish_theory: string -> unit (* adds x_theory_data to x_global_data and
+   flushes it *)
 
 Module 2: Avoiding repeatedly including theories.
 
@@ -170,12 +185,11 @@ type bookmark = string * string (* theory name + local name *)
 local name *)
 
 type 'data increment = {
-   (* None if we are at the beginning of a leaf theory
-      Some if the place can be reached by incrementing to some existing
-      bookmark *)
-   inc_base_bookmark: bookmark option;
-   (* increment shoul be always non-empty, except for the empty bookmars,
-      those may need to be handled specially *)
+   (* base will be empty_bookmark (see below) for leaf bookmarks *)
+   inc_base_bookmark: bookmark;
+   (* we should try to keep the increment non-empty, when possible *)
+   (* first added first, this is the opposite of 'data data_cell and 'data
+      data *)
    inc_increment: 'data list;
    (* non-empty inc_bookmarks list all bookmarks of this increment *)
    mutable inc_bookmarks: bookmark list
