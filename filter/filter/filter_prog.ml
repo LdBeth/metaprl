@@ -34,6 +34,7 @@ open Printf
 
 open Mp_debug
 
+open Opname
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
@@ -84,6 +85,10 @@ type t = {
    mutable imp_num_terms : int;
    mutable imp_meta_terms : meta_term list;
    mutable imp_num_meta_terms : int;
+   mutable imp_nums : Mp_num.num list;
+   mutable imp_num_nums : int;
+   mutable imp_opnames : opname list;
+   mutable imp_num_opnames : int
 }
 
 (*
@@ -105,6 +110,8 @@ type wrap_arg =
  *)
 let global_term_var = "_$globterms"
 let global_meta_term_var = "_$globmterms"
+let global_num_var = "_$globnums"
+let global_opname_var = "_$globopnames"
 
 let expr_of_term proc loc t =
    proc.imp_terms <- t::proc.imp_terms;
@@ -117,6 +124,18 @@ let expr_of_meta_term proc loc t =
    let num = proc.imp_num_meta_terms in
       proc.imp_num_meta_terms <- num + 1;
       <:expr< $lid:global_meta_term_var$.($int:(string_of_int num)$) >>
+
+let expr_of_num proc loc i =
+   proc.imp_nums <- i :: proc.imp_nums;
+   let num = proc.imp_num_nums in
+      proc.imp_num_nums <- succ num;
+      <:expr< $lid:global_num_var$.($int:(string_of_int num)$) >>
+
+let expr_of_opname proc loc opname =
+   proc.imp_opnames <- opname :: proc.imp_opnames;
+   let num = proc.imp_num_opnames in
+      proc.imp_num_opnames <- succ num;
+      <:expr< $lid:global_opname_var$.($int:(string_of_int num)$) >>
 
 (************************************************************************
  * SYNTAX                                                               *
@@ -306,8 +325,8 @@ let expr_of_label loc = function
  *)
 let wrap_exn proc loc name e =
    let name = (String.capitalize proc.imp_name) ^ "." ^ name in
-   <:expr< 
-      do { 
+   <:expr<
+      do {
          (* Print a message before the execution *)
          Mp_debug.show_loading $str: "Loading " ^ name ^ "%t"$;
          (* Wrap the body to catch exceptions *)
@@ -555,7 +574,7 @@ let extract_sig_item (item, loc) =
          Stdpp.raise_with_loc loc (Failure "Filter_sig.extract_sig_item: nested modules are not implemented")
     | Definition def ->
          declare_definition loc def
-         
+
 (*
  * Extract a signature.
  *)
@@ -578,7 +597,7 @@ let extract_sig _ info resources path =
  let beta_reduce_var var f =
     let loc = MLast.loc_of_expr f in
     match f with
-       <:expr< fun $lid:v$ -> $e$ >> -> 
+       <:expr< fun $lid:v$ -> $e$ >> ->
           v, e
      | _ ->
         var, <:expr< $f$ $lid:var$ >>
@@ -803,7 +822,7 @@ let define_ml_program proc loc strict_expr args tname redex bnd_expr code =
    <:expr<
       let $lid:term_id$ = $expr_of_term proc loc redex$ in
       let $lid:args_id$ = [ $lid:term_id$ :: $list_expr loc (expr_of_term proc loc) args$ ] in
-      (* XXX BUG? We should actually pass the context args array, not just [||], but that 
+      (* XXX BUG? We should actually pass the context args array, not just [||], but that
          is only needed for ml_rules and that code is dead anyway... *)
       let $lid:redex_id$ = Refiner.Refiner.Rewrite.compile_redices $strict_expr loc$ [||] $lid:args_id$ in
          $bindings_let proc loc bnd_expr code$
@@ -834,7 +853,7 @@ let define_rewrite_resources proc loc name redex contractum assums params resour
       in
       let process_name = "process_" ^ name' ^ "_resource_rw_annotation" in
       let anno_name = "_$" ^ name' ^ "_resource_annotation" in
-         impr_resource proc loc name' <:expr< 
+         impr_resource proc loc name' <:expr<
             ($lid:process_name$ : Mp_resource.rw_annotation_processor '$anno_name$ $input$)
                $str:name$ $redex$ $contractum$ $assums$ $params$ $arg_expr$
          >>
@@ -878,10 +897,10 @@ let define_rewrite want_checkpoint code proc loc rw expr =
    let create_rw = <:expr<
       let $lid:redex_id$ = $expr_of_term proc loc rw.rw_redex$ in
       let $lid:contractum_id$ = $expr_of_term proc loc rw.rw_contractum$ in
-      let $lid:rw_id$ = 
+      let $lid:rw_id$ =
          $refiner_expr loc$.create_rewrite $lid:local_refiner_id$ $str:name$ $redex$ $contractum$ in
-      let _ = do { 
-         $prim_expr$; 
+      let _ = do {
+         $prim_expr$;
          $define_rewrite_resources proc loc name redex contractum nil nil rw.rw_resources rw_id_expr$
       } in
          $rw_id_expr$
@@ -1036,7 +1055,7 @@ let define_ml_rewrite want_checkpoint proc loc mlrw rewrite_expr =
    let body = define_ml_program proc loc strict_expr tparams name mlrw.mlterm_term rewrite_expr rewrite_let in
       checkpoint_resources want_checkpoint loc name [
          <:str_item< value $name_patt$ =
-            $rewrite_of_pre_rewrite_expr loc$ ($wrap_exn proc loc name body $) $list_expr loc lid_expr tparam_ids$ >>; 
+            $rewrite_of_pre_rewrite_expr loc$ ($wrap_exn proc loc name body $) $list_expr loc lid_expr tparam_ids$ >>;
          refiner_let loc
       ]
 
@@ -1062,7 +1081,7 @@ let define_rule_resources proc loc name cvars_id avars_id params_id assums_id re
       in
       let process_name = "process_" ^ name' ^ "_resource_annotation" in
       let anno_name = "_$" ^ name' ^ "_resource_annotation" in
-         impr_resource proc loc name' <:expr< 
+         impr_resource proc loc name' <:expr<
             ($lid:process_name$ : Mp_resource.annotation_processor '$anno_name$ $input$)
                $str:name$ $lid:cvars_id$ $lid:avars_id$ $lid:params_id$ $lid:assums_id$ $arg_expr$
          >>
@@ -1096,10 +1115,10 @@ let define_rule want_checkpoint code proc loc
       let $lid:avars_id$ = $list_expr loc (expr_of_term proc loc) avars$ in
       let $lid:params_id$ = $list_expr loc (expr_of_term proc loc) tparams$ in
       let $lid:assums_id$ = $expr_of_meta_term proc loc mterm$ in
-      let $lid:rule_id$ = 
+      let $lid:rule_id$ =
          $refiner_expr loc$.create_rule $lid:local_refiner_id$ $str:name$ $lid:cvars_id$ $lid:params_id$ $lid:assums_id$
       in
-      let $lid:name_rule_id$ = 
+      let $lid:name_rule_id$ =
          $tactic_type_expr loc$.compile_rule $lid:local_refiner_id$ ($list_expr loc (expr_of_label loc) labels$) $lid:rule_id$
       in let _ = do {
          $code$ $lid:local_refiner_id$ $str:name$ $lid:cvars_id$ $lid:params_id$ $lid:avars_id$ $extract$;
@@ -1108,9 +1127,9 @@ let define_rule want_checkpoint code proc loc
          in $name_rule_expr$
    >> in
       checkpoint_resources want_checkpoint loc name [
-         <:str_item< value $lid:name_rule_id$ = $wrap_exn proc loc name rule_expr$ >>; 
-         <:str_item< value $lid:name$ = $name_value$ >>; 
-         refiner_let loc; 
+         <:str_item< value $lid:name_rule_id$ = $wrap_exn proc loc name rule_expr$ >>;
+         <:str_item< value $lid:name$ = $name_value$ >>;
+         refiner_let loc;
          toploop_rule proc loc name params
       ]
 
@@ -1211,7 +1230,7 @@ let create_dform_expr loc modes =
  * Define a display form expansion.
  *)
 let define_dform proc loc df expansion =
-   let expr = <:expr< 
+   let expr = <:expr<
       $create_dform_expr loc df.dform_modes$ $lid:local_dformer_id$ {
          $dform_name_patt loc$ = $str: df.dform_name$;
          $dform_pattern_patt loc$ = $expr_of_term proc loc df.dform_redex$;
@@ -1446,18 +1465,33 @@ let define_magic_block proc loc { magic_name = name; magic_code = stmts } =
  *)
 let implem_prolog proc loc name =
    let term_let =
-      if proc.imp_terms = [] && proc.imp_meta_terms = [] then [] else 
-      let marshalled_terms = Ml_term.string_of_term_lists (List.rev proc.imp_terms) (List.rev proc.imp_meta_terms) in
-         [<:str_item< value ($lid:global_term_var$, $lid:global_meta_term_var$) =
-                         Ml_term.term_arrays_of_string $str:String.escaped marshalled_terms$>>]
+      if (proc.imp_terms = [])
+         && (proc.imp_meta_terms = [])
+         && (proc.imp_nums = [])
+         && (proc.imp_opnames = [])
+      then
+         []
+      else
+         let marshalled_terms =
+            Ml_term.string_of_term_lists (**)
+               (List.rev proc.imp_terms)
+               (List.rev proc.imp_meta_terms)
+               (List.rev proc.imp_opnames)
+               (List.rev proc.imp_nums)
+         in
+            [<:str_item< value ($lid:global_term_var$,
+                                $lid:global_meta_term_var$,
+                                $lid:global_opname_var$,
+                                $lid:global_num_var$) =
+                            Ml_term.term_arrays_of_string $str:String.escaped marshalled_terms$>>]
    in
-   <:str_item< value $lid:local_refiner_id$ = $refiner_expr loc$ . null_refiner $str: name$
-               and   $lid:local_dformer_id$ = ref Dform_print.null_mode_base >> :: term_let
+      <:str_item< value $lid:local_refiner_id$ = $refiner_expr loc$ . null_refiner $str: name$
+                  and   $lid:local_dformer_id$ = ref Dform_print.null_mode_base >> :: term_let
 
 (*
  * Trailing declarations.
  *)
-let implem_postlog proc loc = 
+let implem_postlog proc loc =
    match proc.imp_toploop with
       (name, _) :: _ -> raise (Failure ("Topval "^name^" not implemented (or was duplicated in the interface)"))
     | [] ->
@@ -1598,6 +1632,10 @@ let extract_str arg sig_info info resources name =
                 imp_num_terms = 0;
                 imp_meta_terms = [];
                 imp_num_meta_terms = 0;
+                imp_nums = [];
+                imp_num_nums = 0;
+                imp_opnames = [];
+                imp_num_opnames = 0
               }
    in
    let items = List_util.flat_map (extract_str_item proc) (info_items info) in

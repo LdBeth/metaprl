@@ -29,6 +29,7 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
+open Opname
 open Refiner_io
 
 open Refiner.Refiner.Term
@@ -49,17 +50,26 @@ let check_magic s =
 (*
  * Convert to a string.
  *)
-let string_of_term_lists ts mts =
-   let terms = List.map denormalize_term ts, List.map denormalize_meta_term mts
-      in magic ^ (Marshal.to_string terms [])
+let string_of_term_lists ts mts opnames nums =
+   let terms =
+      List.map denormalize_term ts,
+      List.map denormalize_meta_term mts,
+      opnames,
+      nums
+   in
+      magic ^ Marshal.to_string terms []
 
 (*
  * Convert from a string.
  *)
 let term_arrays_of_string s =
    check_magic s;
-   let ts, mts = (Marshal.from_string s magic_len : Refiner_io.TermType.term list * Refiner_io.TermType.meta_term list) in
-      Array.of_list (List.map normalize_term ts), Array.of_list (List.map normalize_meta_term mts)
+   let ts, mts, opnames, nums =
+      (Marshal.from_string s magic_len : Refiner_io.TermType.term list * Refiner_io.TermType.meta_term list * opname list * Mp_num.num list) in
+      Array.of_list (List.map normalize_term ts),
+      Array.of_list (List.map normalize_meta_term mts),
+      Array.of_list (List.map normalize_opname opnames),
+      Array.of_list nums
 
 (*
  * -*-
