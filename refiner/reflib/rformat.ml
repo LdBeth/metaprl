@@ -353,7 +353,16 @@ let format_tzone buf tag =
    push_zone buf (TZoneTag tag)
 
 let format_pushm buf off =
-   push_zone buf (MZoneTag (off, String.make off ' '))
+   let off =
+      if off < 0 then
+         begin
+            eprintf "Rformat.format_pushm: negative margin %d%t" off eflush;
+            0
+         end
+      else
+         off
+   in
+      push_zone buf (MZoneTag (off, String.make off ' '))
 
 let format_pushm_str buf s =
    push_zone buf (MZoneTag (String.length s, s))
@@ -602,6 +611,39 @@ let format_num buf n =
 exception MarginError
 
 (*
+ * Build a margin string.
+ * str1 is the margin prefix
+ * space is the number of additional chars to before the suffix
+ * str2 is the margin suffix
+ *
+ * Note that space may be nagative in cases like this:
+ *    pushm[5] pushm[3]
+ *
+ * We allow this case, but print a warning message.
+ * In this case, the strings should overlap.  The margins are always
+ * positive, so we are guaranteed that the overlap can be taken from
+ * the first margin.
+ *)
+let margin_string str1 space str2 =
+   if space > 0 then
+      str1 ^ String.make space ' ' ^ str2
+   else if space = 0 then
+      str1 ^ str2
+   else
+      (* Remove <space> chars of overlap *)
+      let space = -space in
+      let len1 = String.length str1 in
+      let len2 = String.length str2 in
+         assert(len1 >= space);
+         let overlap = min space len2 in
+         let s1 = String.sub str1 (len1 - space) overlap in
+         let s2 = String.sub str2 0 overlap in
+            if s1 <> s2 then
+               eprintf "Rformat.margin_string: strings do not overlap: \"%s\":%d:\"%s\"%t" (**)
+                  (String.escaped str1) space (String.escaped str2) eflush;
+            String.sub str1 0 (len1 - space) ^ str2
+
+(*
  * Get the info from the buffer.
  *)
 let get_unformatted buf =
@@ -838,7 +880,7 @@ and search_zone buf stack lmargin rmargin col maxx breaks search =
          (* Adjust the left margin *)
          let lmargin, str' = lmargin in
          let space = col - lmargin in
-         let lmargin = col + off, str' ^ String.make space ' ' ^ str in
+         let lmargin = col + off, margin_string str' space str in
             search_tzone buf stack lmargin rmargin col maxx breaks search
 
 (*
