@@ -38,13 +38,6 @@ open TermMeta
 open Opname
 open Dform
 
-(*
- * OMakefile instructs omake to watch this file for changes and warn
- * that filter_magic.ml may need to be updated when the types in this file
- * change. _Do not delete_ the following marker.
- * %%MAGICBEGIN%%
- *)
-
 (************************************************************************
  * COMMON ERRORS                                                        *
  ************************************************************************)
@@ -64,6 +57,13 @@ exception BadCommand of string
  * .ml does not match its .mli
  *)
 exception IterfImplemMismatch of string
+
+(*
+ * OMakefile instructs omake to watch this file for changes and warn
+ * that filter_magic.ml may need to be updated when the types in this file
+ * change. _Do not delete_ the following marker.
+ * %%MAGICBEGIN%%
+ *)
 
 (************************************************************************
  * COMMON TYPES                                                         *
