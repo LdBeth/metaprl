@@ -45,6 +45,36 @@ let connect remote_host remote_port local_port =
 
 let disconnect c = Orb.disconnect (oref_val orbr) c
 
+
+(*	test_ehook
+ *	
+ *	  - add : term -> term -> term list
+ *	  
+ *	
+ *)
+
+let test_do_add bterms =
+ let r =
+  inatural_term
+   (fold_left (fun i j -> i + j)
+	 0
+	 (map (function bt -> number_of_inatural_term (term_of_unbound_term bt)) bterms))
+  in
+
+    print_newline();
+    Mbterm.print_term r;
+    print_newline();
+    r
+
+let test_add_op = mk_nuprl5_op [ make_param (Token "!test_add")]
+
+let test_ehook t = 
+  match dest_term t with
+    {term_op = op; term_terms = bterms } when op = test_add_op
+      -> test_do_add bterms
+    | _ -> error ["eval"; "op"; "unrecognized"] [] [t]
+ 
+
 let lib_new c s =
 	{ transactions = []
 	; environment =
@@ -502,6 +532,16 @@ let insert_leaf t parent name typ data =
     (term_ap
       (token_ap
 	(token_ap (oid_ap insert_leaf_ap parent)
+		  name)
+	typ)
+      data)
+
+let ninsert_leaf_ap = null_ap (itext_term "dag_ninsert_leaf")
+let ninsert_leaf t parent name typ data =
+  eval_to_object_id t 
+    (term_ap
+      (token_ap
+	(token_ap (oid_ap ninsert_leaf_ap parent)
 		  name)
 	typ)
       data)

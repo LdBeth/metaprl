@@ -72,7 +72,7 @@ let library_set magic filename term =
 	  in
 
 	  (* store term in filename at magic *)
-	  insert_leaf t dir (string_of_int magic) "TERM" term))
+	  ninsert_leaf t dir (string_of_int magic) "TERM" term))
 
   ; ()
 
@@ -109,6 +109,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.5  1998/04/08 18:10:34  eaton
+ * .
+ *
  * Revision 1.4  1998/04/03 18:07:33  eaton
  * .
  *

@@ -28,7 +28,7 @@ open Definition
  *	and a local one. We assume local is refiner and remote may be a library or editor.
  *	Any eval request contains environment record. Any broadcast is matched against
  *	the broadcast filter ( matches lib stamp and member table types ).
- *	Configure will add to environment.
+*	Configure will add to environment.
  *)
 
 
@@ -289,21 +289,30 @@ let rec bus_wait c tid ehook =
              ; bus_wait c tid ehook)
 	| { op_name = opn;
 	    op_params = ireq :: ps } when (opn = nuprl5_opname & ireq = ireq_parameter)
-	  -> (Link.send c.link
-	      (if not (tid = (term_of_unbound_term (hd (tl (bterms)))) )
-		then (irsp_term (hd ps)
-			   (ifail_term (imessage_term ["orb"; "req"; "recursive"; "tid"] [] [])))
-		else irsp_term (hd ps)
+	  -> (match tid with
+	      None ->
+		(Link.send c.link
+	          (irsp_term (hd ps)
 			   (local_eval ehook
 					(term_of_unbound_term (hd bterms))))
-	     ; bus_wait c tid ehook)
+		  ; ivoid_term)
+			
+      	    | Some ttid -> 
+		  (Link.send c.link
+	           (if not (ttid = (term_of_unbound_term (hd (tl (bterms)))) )
+			then (irsp_term (hd ps)
+				   (ifail_term (imessage_term ["orb"; "req"; "recursive"; "tid"] [] [])))
+			else irsp_term (hd ps)
+				   (local_eval ehook
+						(term_of_unbound_term (hd bterms))))
+	           ; bus_wait c tid ehook))
 	| { op_name = opn;
 	    op_params = imsg :: ps } when (opn = nuprl5_opname & imsg = imsg_parameter)
 	  -> ( print_term t
 	     ; bus_wait c tid ehook)
 	| _ -> t)
 
-(* presence of tid has connatation to lib. mainly that 
+(* presence of tid has connotation to lib. mainly that 
  the lib eval is non-local. But evals to join lib env are local
   thus it needs to be optional
  another connotation might be that there is a transaction.
@@ -322,11 +331,10 @@ let bus_eval c addr expr tid ehook =
  *)
      Link.send link (ireq_term seq addr expr tid);
 
-    let t = bus_wait c tid ehook in
+    let t = bus_wait c (Some tid) ehook in
      if not (seq = seq_of_irsp_term t) 
 	then (print_term t; print_term expr; error ["bus"; "eval"; "sequence"] [] [t])
 	else result_of_irsp_term t
-
 
 
 let iinform_parameter = make_param (Token "!inform")
@@ -821,3 +829,29 @@ let eval_args_to_term_with_callback e tid f t tl =
 
 
 
+let quit_loop = oref false
+
+let iquit_loop_op = mk_nuprl5_op [ make_param (Token "!quit_loop")]
+
+let quit_loop_term_p t =
+  match dest_term t with
+    { term_op = qlo; term_terms = bterms } when qlo = iquit_loop_op -> true
+  | _ -> false
+
+
+let quit_hook ehook =
+ function t -> 
+  if quit_loop_term_p t 
+     then (oref_set quit_loop true; ivoid_term)
+     else ehook t
+   
+
+let orb_req_loop env = 
+  
+  while (oref_val quit_loop)
+  do bus_wait env.connection None
+      (quit_hook env.ehook)
+  done
+
+
+	  

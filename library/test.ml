@@ -406,7 +406,7 @@ let jointest remote_port local_port =
 ;;
 
 
-special_error_handler (function () -> testall "BOLVERK" 3466 4666)
+special_error_handler (function () -> testall "DENEB" 5289 2895)
  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
 

@@ -227,6 +227,12 @@
 				-> string (* type *) -> term
 				-> object_id
 
+ (* overwrites in dir if name exists. *)
+ val ninsert_leaf	: transaction
+				-> object_id -> string (* name *) 
+				-> string (* type *) -> term
+				-> object_id
+
 
  (* NB: cycle prevention not yet implemented. *)
  val insert		: transaction -> object_id -> string -> object_id -> unit

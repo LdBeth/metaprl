@@ -141,6 +141,11 @@ let number_of_inatural_term t =
     Number (Num.Int n) -> n
   |_ -> error ["term"; "!natural"; "parameter type"] [] [t]
 
+let num_of_inatural_term t =
+  match dest_param (parameter_of_carrier inatural_parameter t) with
+    Number n -> n
+  |_ -> error ["term"; "!natural"; "parameter type"] [] [t]
+
 let string_of_itext_term t =
   match dest_param (parameter_of_carrier itext_parameter t) with
     String s -> s
