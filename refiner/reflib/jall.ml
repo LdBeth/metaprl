@@ -5,6 +5,7 @@ open Term
 open TermType
 open TermOp
 open TermSubst
+open TermMan
 open RefineError
 open Opname
 
@@ -12,7 +13,7 @@ open Jlogic_sig
 
 open Jtunify
 
- let ruletable = function
+let ruletable = function
    Fail -> "Fail"
  | Ax ->     "Ax"
  | Negl ->  "Negl"
@@ -29,6 +30,9 @@ open Jtunify
  | Exr ->   "Exr"
  | Alll ->   "Alll"
  | Allr ->   "Allr"
+
+let free_var_op = make_opname ["free_variable";"Jprover"]
+let jprover_op = make_opname ["string";"Jprover"]
 
 module JProver (JLogic : JLogicSig) =
 struct
@@ -1286,7 +1290,7 @@ struct
             let new_eigen_var = (ofname^"_r"^(string_of_int (!eigen_counter))) in
             eigen_counter := !eigen_counter + 1;
 (*        print_endline ("New Counter :"^(string_of_int (!eigen_counter))); *)
-            mk_string_term (make_opname ["jprover";new_eigen_var]) new_eigen_var
+            mk_string_term jprover_op new_eigen_var
 
    let replace_subterm term oldt rept  =
       let v_term = var_subst term oldt "dummy_var" in
@@ -2255,10 +2259,10 @@ struct
       let inst_label = apply_sigmaQ (pos.label) csigmaQ in
       match pos.op,pos.pol with
          Null,_ -> raise (Invalid_argument "Jprover: no rule")
-       | At,O -> Ax,(inst_label),(mk_string_term (make_opname []) "dummy") (* to give back a term *)
-       | At,I -> Ax,(inst_label),(mk_string_term (make_opname []) "dummy")
-       | And,O -> Andr,(inst_label),(mk_string_term (make_opname []) "dummy")
-       | And,I -> Andl,(inst_label),(mk_string_term (make_opname []) "dummy")
+       | At,O -> Ax,(inst_label),xnil_term (* to give back a term *)
+       | At,I -> Ax,(inst_label),xnil_term
+       | And,O -> Andr,(inst_label),xnil_term
+       | And,I -> Andl,(inst_label),xnil_term
        | Or,O ->
             if calculus = "LJ" then
                let or_rule =
@@ -2267,18 +2271,18 @@ struct
                   else
                      Orr2
                in
-               or_rule,(inst_label),(mk_string_term (make_opname [])"dummy")
+               or_rule,(inst_label),xnil_term
             else
-               Orr,(inst_label),(mk_string_term (make_opname [])"dummy")
-       | Or,I -> Orl,(inst_label),(mk_string_term (make_opname [])"dummy")
-       | Neg,O -> Negr,(inst_label),(mk_string_term (make_opname [])"dummy")
-       | Neg,I -> Negl,(inst_label),(mk_string_term (make_opname [])"dummy")
-       | Imp,O -> Impr,(inst_label),(mk_string_term (make_opname [])"dummy")
-       | Imp,I -> Impl,(inst_label),(mk_string_term (make_opname [])"dummy")
+               Orr,(inst_label),xnil_term
+       | Or,I -> Orl,(inst_label),xnil_term
+       | Neg,O -> Negr,(inst_label),xnil_term
+       | Neg,I -> Negl,(inst_label),xnil_term
+       | Imp,O -> Impr,(inst_label),xnil_term
+       | Imp,I -> Impl,(inst_label),xnil_term
        | All,I -> Alll,(inst_label),(selectQ spos.name csigmaQ)  (* elements of csigmaQ is (string * term) *)
        | Ex,O -> Exr,(inst_label), (selectQ  spos.name csigmaQ)
-       | All,O -> Allr,(inst_label),(mk_string_term (make_opname ["jprover";(spos.name)]) (spos.name)) (* must be a proper term *)
-       | Ex,I -> Exl,(inst_label),(mk_string_term (make_opname ["jprover";(spos.name)]) (spos.name)) (* must be a proper term *)
+       | All,O -> Allr,(inst_label),(mk_string_term jprover_op spos.name) (* must be a proper term *)
+       | Ex,I -> Exl,(inst_label),(mk_string_term jprover_op spos.name) (* must be a proper term *)
 
 
 (* %%%%%%%%%%%%%%%%%%%% Split begin %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% *)
@@ -2468,7 +2472,7 @@ struct
                   else
                      var
                in
-               let replace_term = mk_string_term (make_opname ["jprover";dname]) dname in
+               let replace_term = mk_string_term jprover_op dname in
                let next_term = var_subst term replace_term new_var in
                let (new_term,next_diffs) = check_delta_terms (v,next_term) r dterms in
                (new_term,((new_var,dname)::next_diffs))
@@ -3677,8 +3681,8 @@ let update_position position m replace_n subst_list mult =
          (vx,vnx)::subst_list
       else
          if b=Delta_0 then
-            let sx = mk_string_term (make_opname ["jprover";x]) x
-            and snx = mk_string_term (make_opname ["jprover";nx]) nx in
+            let sx = mk_string_term jprover_op x
+            and snx = mk_string_term jprover_op nx in
             (sx,snx)::subst_list
          else
             subst_list
@@ -4099,7 +4103,7 @@ let check_subst_term (variable,old_term) pos_name stype =
       let new_variable =
          if stype = Gamma_0 then (mk_var_term (pos_name^"_jprover"))
          else
-            (mk_string_term (make_opname ["jprover";pos_name]) pos_name)
+            (mk_string_term jprover_op pos_name)
       in
       (subst1 old_term variable new_variable) (* replace variable (non-empty) in t by pos_name *)
          (* pos_name is either a variable term or a constant, f.i. a string term *)
@@ -4329,7 +4333,7 @@ let rec renam_free_vars termlist =
     | f::r ->
          let var_names = free_vars_list f in
          let string_terms =
-            List.map (fun x -> (mk_string_term (make_opname ["free_variable";x]) x)) var_names
+            List.map (fun x -> (mk_string_term free_var_op x)) var_names
          in
          let mapping = List.combine var_names string_terms
          and new_f = subst f var_names string_terms in
@@ -4359,7 +4363,7 @@ let rec create_output rule_list input_map =
          and delta2_names = collect_delta_terms [term2] in
          let unique_deltas = remove_dups_list (delta1_names @ delta2_names) in
          let delta_terms =
-            List.map (fun x -> (mk_string_term (make_opname ["jprover";x]) x)) unique_deltas in
+            List.map (fun x -> (mk_string_term jprover_op x)) unique_deltas in
          let delta_vars = List.map (fun x -> (x^"_jprover")) unique_deltas in
          let delta_map = List.combine delta_vars delta_terms in
          let var_mapping = (input_map @ delta_map) in
@@ -4386,7 +4390,7 @@ let rec make_test_interface rule_list input_map =
          and delta2_names = collect_delta_terms [term2] in
          let unique_deltas = remove_dups_list (delta1_names @ delta2_names) in
          let delta_terms =
-            List.map (fun x -> (mk_string_term (make_opname ["jprover";x]) x)) unique_deltas in
+            List.map (fun x -> (mk_string_term jprover_op x)) unique_deltas in
          let delta_vars = List.map (fun x -> (x^"_jprover")) unique_deltas in
          let delta_map = List.combine delta_vars delta_terms in
          let var_mapping = (input_map @ delta_map) in
