@@ -74,6 +74,26 @@ let ext_patt s =
 let _ = Quotation.add "ext" (Quotation.ExAst (ext_exp, ext_patt))
 
 (*
+ * Descriptions.
+ *)
+let desc_exp s =
+   let grammar_filename =
+      try
+         Sys.getenv "DESC_LANG_FILE"
+      with
+         Not_found ->
+            !Phobos_state.mp_desc_grammar_filename
+   in
+   let t = Phobos_exn.catch (term_of_string [] grammar_filename) s in
+      expr_of_term (0, 0) t
+
+let desc_patt s =
+   let loc = 0,0 in
+      <:patt<$str:s$>>
+
+let _ = Quotation.add "desc" (Quotation.ExAst (desc_exp, desc_patt))
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

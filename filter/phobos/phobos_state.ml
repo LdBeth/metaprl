@@ -30,7 +30,8 @@ open Mp_debug
 (*
  * Default grammar and options.
  *)
-let mp_grammar_filename = ref "m_ir.pho"
+let mp_desc_grammar_filename = ref "m_ir.pho"
+let mp_grammar_filename = ref "m_ast.pho"
 
 let debug_grammar = ref true
 let save_grammar = ref true
