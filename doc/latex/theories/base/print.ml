@@ -25,16 +25,16 @@
 set_tex_file "../../doc/latex/theories/base/theory.tex";;
 
 print_theory "base_theory";;
-print_theory "summary";;
-print_theory "comment";;
-print_theory "mptop";;
-print_theory "var";;
 print_theory "top_tacticals";;
 print_theory "top_conversionals";;
+print_theory "var";;
 print_theory "auto_tactic";;
 print_theory "dtactic";;
 print_theory "base_trivial";;
 print_theory "base_rewrite";;
+print_theory "summary";;
+print_theory "comment";;
+print_theory "mptop";;
 
 (*
  * -*-

@@ -4,12 +4,7 @@ doc <:doc<
   
    The @tt[Var] module provides utilities to
    generate new variables that are guaranteed to be distinct
-   from all other bound variables in a proof goal.  For example,
-   the @tt[productElimination] (Section @refmodule[Itt_dprod])
-   rule, splits a hypothesis of the form $x@colon T_1 @times T_2$
-   into two hypotheses $u@colon T_1$ and $v@colon T_2$.  The variables
-   $u$ and $v$ have to be chosen at rule application time, and this
-   module assists in the generation of new names.
+   from all other bound variables in a proof goal.
   
    There are three basic functions implemented here.
    @begin[verbatim]
@@ -21,7 +16,8 @@ doc <:doc<
    The function $@tt[new_var]@space v@space @i[vars]$ generates a new variable
    ``similar'' to $v$, but not contained in $@i[vars]$.  In this
    case ``similar'' means that the variable has the same name, but
-   it may have a numerical suffix to make it distinct.
+   it may have a numerical suffix to make it distinct. @tt[maybe_] forms attempt to
+   use the priginal name, if possible, and only append the suffix when necessary.
    @end[doc]
   
    ----------------------------------------------------------------

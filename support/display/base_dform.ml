@@ -145,7 +145,7 @@ let really_dest_var term =
    match (dest_op (dest_term term).term_op).op_params with
       [p] ->
          begin match dest_param p with
-            Var v -> v
+            String v | MString v | Var v -> v
           | _ -> raise (Invalid_argument "var_*_df")
          end
     | _ ->
@@ -211,7 +211,7 @@ dform cvar_src_df : mode[src] :: df_context_var[s:s] = slot[s:s]
 
 ml_dform cvar_prl_df : mode[prl] :: df_context_var[s:s] format_term buf = fun
    term ->
-      let v = dest_string_param term in
+      let v = really_dest_var term in
       if v = "" then raise (Invalid_argument "var_prl_df");
       begin match v.[0] with
          'H' -> format_term buf NOParens <<Gamma>>
@@ -229,11 +229,11 @@ let context_term = function
 
 ml_dform cvar_html_df : mode[html] :: df_context_var[s:s] format_term buf = fun
    term ->
-      print_html_var format_term buf context_term (dest_string_param term)
+      print_html_var format_term buf context_term (really_dest_var term)
 
 ml_dform cvar_tex_df : mode[tex] :: df_context_var[s:s] format_term buf = fun
    term ->
-      print_tex_var format_term buf context_term (dest_string_param term)
+      print_tex_var format_term buf context_term (really_dest_var term)
 
 let bvar_opname = opname_of_term <<bvar{'v}>>
 

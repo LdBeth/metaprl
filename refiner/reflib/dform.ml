@@ -469,13 +469,7 @@ let format_short_term base shortener =
                    df_printer = printer;
                    df_external = is_external
           } =
-         let t =
-            if is_sequent_term t then
-               sequent_term
-            else
-               t
-         in
-            lookup base t
+            lookup base (if is_sequent_term t then sequent_term else t)
       in
       let pr, parenflag =
          if pr' = inherit_prec then
@@ -512,7 +506,7 @@ let format_short_term base shortener =
       in
          if parenflag then
             format_string buf "(";
-         begin
+         begin try
             match printer with
                DFPrinter f ->
                   let entry =
@@ -524,7 +518,7 @@ let format_short_term base shortener =
                   in
                      if !debug_dform then
                         eprintf "Dform fun %s: %s%t" name (short_string_of_term t) eflush;
-                     f entry
+                        f entry
              | DFExpansion (r) ->
                   begin match apply_rewrite r empty_args t [] with
                      [t] ->
@@ -533,6 +527,11 @@ let format_short_term base shortener =
                         print_entry pr buf eq t
                    | _ -> raise (Invalid_argument("Dform.format_short_term"))
                   end
+         with 
+            (Invalid_argument _) as exn ->
+               raise exn
+          | _ ->
+               raise (Invalid_argument ("Dform "^ name ^ "raised an exception when trying to print"^ (short_string_of_term t)))
          end;
          if parenflag then
             format_string buf ")";

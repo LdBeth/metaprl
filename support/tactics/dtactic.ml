@@ -14,14 +14,14 @@ doc <:doc<
    In addition, it add resource @emph{annotations} that can be used in rule
    definitions to add them automatically to the @tt[dT] resources.
   
-   The @tt[dT] tactic uses two resources.  The @resource[intro_resource]
-   is used to collect introduction rules; and the @resource[elim_resource]
+   The @tt[dT] tactic uses two resources.  The @resource[intro]
+   is used to collect introduction rules; and the @resource[elim]
    is used to collect elimination rules.  The components of both resources
    take a term that describes the shape of the goals to which they apply,
    and a tactic to use when goals of that form are recognized.  The
-   @hrefresource[elim_resource] takes a tactic of type @code{int -> tactic} (the
+   @hrefresource[elim] takes a tactic of type @code{int -> tactic} (the
    tactic takes the number of the hypothesis to which it applies), and the
-   @hrefresource[intro_resource] takes a tactic of type @code{tactic}.
+   @hrefresource[intro] takes a tactic of type @code{tactic}.
   
    The (@hreftactic[dT] $i$) tactic is a generic tactic that takes the clause number
    of the clause (either hypothesis or conclusion) to ``decompose,'' and it
@@ -33,7 +33,7 @@ doc <:doc<
   
    $$
    @defrule[and_intro]{
-       @{| @tt{intro@_resource} [ ] |@} H;
+       @tt["{| intro [ ] |}"] @Gamma;
        <<sequent{ <H> >- 'A }>>@cr
           <<sequent{ <H> >- 'B }>>;
        <<sequent{ <H> >- <:doc<A @wedge B>> }>>}
@@ -44,7 +44,7 @@ doc <:doc<
    rule.
   
    The resource annotations take a list of optional arguments.  The
-   @hrefresource[intro_resource] takes arguments of the following type:
+   @hrefresource[intro] takes arguments of the following type:
   
    @begin[center]
    @begin[verbatim]
@@ -61,7 +61,7 @@ doc <:doc<
   
    $$
    @defrule[or_intro_left]{
-      @{| @tt{intro@_resource} [SelectOption 1] |@} H;
+      @tt["{| intro [SelectOption 1] |}"] @Gamma;
       <<sequent{ <H> >- <:doc<B @Type>> }>>
           @cr <<sequent{ <H> >- 'A }>>;
       <<sequent{ <H> >- <:doc<A @wedge B>> }>>}
@@ -69,7 +69,7 @@ doc <:doc<
   
    $$
    @defrule[or_intro_right]{
-     @{| @tt{intro@_resource} [SelectOption 2] |@} H;
+     @tt["{| intro [SelectOption 2] |}"] @Gamma;
      <<sequent{ <H> >- <:doc<A @Type>> }>>@cr
         <<sequent{ <H> >- 'B }>>;
      <<sequent{ <H> >- <:doc<A @wedge B>> }>>}

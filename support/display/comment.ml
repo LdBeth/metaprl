@@ -1095,46 +1095,7 @@ dform math_emph_df2 : except_mode[tex] :: math_emph{'t} =
 declare math_Type
 
 doc <:doc< 
-   @begin[doc]
-   The following terms defines some common math symbols.
-   
-   $$
-   @begin[array, lcl]
-   @line{@code{@colon} @equiv @colon}
-   @line{@code{@rightarrow} @equiv @rightarrow}
-   @line{@code{@Rightarrow} @equiv @Rightarrow}
-   @line{@code{@leftarrow} @equiv @leftarrow}
-   @line{@code{@Leftarrow} @equiv @Leftarrow}
-   @line{@code{@leftrightarrow} @equiv @leftrightarrow}
-   @line{@code{@Leftrightarrow} @equiv @Leftrightarrow}
-   @line{@code{@longleftrightarrow} @equiv @longleftrightarrow}
-   @line{@code{@wedge} @equiv @wedge}
-   @line{@code{@vee} @equiv @vee}
-   @line{@code{@phi} @equiv @phi}
-   @line{@code{@cap} @equiv @cap}
-   @line{@code{@cup} @equiv @cup}
-   @line{@code{@bigcap} @equiv @bigcap}
-   @line{@code{@bigcup} @equiv @bigcup}
-   @line{@code{@in} @equiv @in}
-   @line{@code{@cdot} @equiv @cdot}
-   @line{@code{@cdots} @equiv @cdots}
-   @line{@code{@vdots} @equiv @vdots}
-   @line{@code{@ldots} @equiv @ldots}
-   @line{@code{@subset} @equiv @subset}
-   @line{@code{@subseteq} @equiv @subseteq}
-   @line{@code{@times} @equiv @times}
-   @line{@code{@equiv} @equiv @equiv}
-   @line{@code{@space} @equiv @space}
-   @line{@code{@neg} @equiv @neg}
-   @line{@code{@neq} @equiv @neq}
-   @line{@code{@forall} @equiv @forall}
-   @line{@code{@exists} @equiv @exists}
-   @line{@code{@lambda} @equiv @lambda}
-   @line{@code{@int} @equiv @int}
-   @end[array]
-   $$
-   
-   @end[doc]
+   @doc{The following terms defines some common math symbols.}
 >>
 declare math_colon
 declare math_rightarrow
@@ -1187,10 +1148,10 @@ declare math_right[s]
 declare math_vec{'e}
 declare math_underbrace{'e}
 declare math_underbrace{'e1; 'e2}
-doc <:doc< @docoff >>
+doc docoff
 
 dform math_Type_df1 : math_Type =
-   math_tt["Type"]
+   math_space math_tt["Type"]
 
 dform math_colon_df1 : mode[tex] :: math_colon =
    izone `"\\colon " ezone
@@ -1864,10 +1825,7 @@ dform normal_math_rulebox_df1 : except_mode[tex] :: math_rulebox{'name; 'args; '
 doc <:doc< 
    @begin[doc]
    The following terms display standard representations
-   of the usual names.  @code{@MetaPRL} displays as @MetaPRL;
-   @code{@Nuprl} displays as @Nuprl; @code{@NuPRL} displays as @NuPRL;
-   @code{@OCaml} displays as @OCaml; and @code{@LaTeX} displays as
-   @LaTeX.
+   of the usual names.
    @end[doc]
 >>
 declare "MetaPRL"
@@ -1895,6 +1853,8 @@ dform nuprl_df1 : mode[tex] :: "Nuprl" =
 
 dform nuprl_df2 : except_mode[tex] :: "Nuprl" =
    it["Nuprl":s]
+
+dform nuprl_df3 : "NuPRL" = "Nuprl"
 
 dform ocaml_df1 : "OCaml" =
    math_mbox{slot["OCaml"]}
