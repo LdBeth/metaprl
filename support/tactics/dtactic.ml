@@ -320,8 +320,7 @@ let intro_compact entries =
  * Extract a D tactic from the data.
  * The tactic checks for an optable.
  *)
-let extract_elim_data data =
-   let tbl = create_table data compact_arg_table_data in
+let extract_elim_data tbl =
    argfunT (fun i p ->
       let t = Sequent.nth_hyp p i in
       let tac =
@@ -338,8 +337,7 @@ let extract_elim_data data =
             eprintf "Dtactic: applying elim %s%t" (SimplePrint.string_of_opname (opname_of_term t)) eflush;
          tac i)
 
-let extract_intro_data data =
-   let tbl = create_table data intro_compact in
+let extract_intro_data tbl =
    funT (fun p ->
       let t = Sequent.concl p in
          try
@@ -363,11 +361,6 @@ let extract_intro_data data =
          with
             Not_found ->
                raise (RefineError ("extract_intro_data", StringTermError ("D tactic doesn't know about", t))))
-
-(*
- * Add a new tactic.
- *)
-let add_data datas data = data::datas
 
 (*
  * Options for intro rule.
@@ -562,37 +555,14 @@ let process_elim_resource_annotation name context_args term_args statement (pre_
    in
       t, tac
 
-let add_intro_data datas ((t, _) as data) =
-   if !debug_dtactic then begin
-      let opname = opname_of_term t in
-         eprintf "Dtactic.improve_intro_resource: %s%t" (string_of_opname opname) eflush
-   end;
-   add_data datas data
-
 let wrap_intro tac =
    ("wrap_intro", None, tac)
 
-let add_elim_data datas ((t,_) as data) =
-   if !debug_dtactic then begin
-      let opname = opname_of_term t in
-         eprintf "Dtactic.improve_elim_resource: %s%t" (string_of_opname opname) eflush
-   end;
-   add_data datas data
-
 (*
- * Resource.
+ * Resources
  *)
-let resource elim = Functional {
-   fp_empty = [];
-   fp_add = add_elim_data;
-   fp_retr = extract_elim_data;
-}
-
-let resource intro = Functional {
-   fp_empty = [];
-   fp_add = add_intro_data;
-   fp_retr = extract_intro_data;
-}
+let resource elim = table_resource_info compact_arg_table_data extract_elim_data
+let resource intro = table_resource_info intro_compact extract_intro_data
 
 let dT =
    argfunT (fun i p ->
