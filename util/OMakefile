@@ -8,14 +8,20 @@ misc.cmx:
 ocamldep.cmo: misc.cmi
 ocamldep.cmx: misc.cmi misc.cmx
 
+OCAMLDEP = $(file ocamldep$(EXE))
+BINDEP   = $(file $(BIN)/ocamldep$(EXE))
+
+MACROCMO = $(file macro.cmo)
+LIBMACRO = $(file $(LIB)/macro.cmo)
+
 #
 # The MetaPRL macro preprocessor
 #
 macro.cmo: macro.ml
-	$(OCAMLC) -pp "camlp4o pa_extend.cmo q_MLast.cmo" -I `camlp4 -where` -c macro.ml
+	$(OCAMLC) -pp "camlp4o -I $(CAMLP4LIB) pa_extend.cmo q_MLast.cmo" -I $(CAMLP4LIB) -c macro.ml
 
-$(LIB)/macro.cmo: macro.cmo
-	$(LN) -f $,(in $(LIB), $(file macro.cmo)) $(LIB)/macro.cmo
+$(LIBMACRO): $(MACROCMO)
+	$(CP) $< $@
 
 #
 # We also use our own version of ocamldep
@@ -25,8 +31,7 @@ OCamlProgramInstall($(MPINSTALL), $(BIN), ocamldep, misc ocamldep)
 #
 # Phony targets
 #
-install: ocamldep
-	$(CP) -pf ocamldep $(MPBIN)
+install: $(BINDEP)
 
 clean:
-	$(RM) -f *.cm* *~ ocamldep.ml *.o Makefile.dep ocamldep
+	$(RM) *.cm* *~ ocamldep.ml *.o *.exe Makefile.dep ocamldep

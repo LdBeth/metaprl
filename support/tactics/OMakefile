@@ -1,0 +1,31 @@
+#
+# Don't need any libraries.
+#
+OCAMLINCLUDES = -I . -I ../display -I ../shell -I $(CAMLP4LIB)
+
+# Common files
+MLZFILES =
+
+# Library files
+MPFILES =\
+	tactic_cache\
+	base_cache\
+	var\
+	top_tacticals\
+	top_conversionals\
+	typeinf\
+	auto_tactic\
+	dtactic\
+
+Theory($(MPFILES))
+
+#
+# Clean up
+#
+clean:
+    $(CLEAN)
+
+realclean:
+    $(REALCLEAN)
+
+all: theory$(LIB_SUFFIX)

@@ -9,8 +9,14 @@ BIN     = $(dir bin)
 #
 # Library suffix
 #
-LIB_SUFFIX = $(if $(NATIVE_ENABLED), .cmxa, .cma)
-OBJ_SUFFIX = $(if $(NATIVE_ENABLED), .opt, .run)
+if $(NATIVE_ENABLED)
+   LIB_SUFFIX = .cmxa
+   OBJ_SUFFIX = .opt
+   export
+else
+   LIB_SUFFIX = .cma
+   OBJ_SUFFIX = .run
+   export
 
 #
 # If this is the root directory of the project,
@@ -23,15 +29,32 @@ if $(equal $(OLDROOT), $(ROOT))
     # Read the config file.
     # If the config file does not exist, then create one.
     #
-    .INCLUDE: mk/config
-        ROOT=$(ROOT) mk/make_config.sh
+    if $(equal $(OSTYPE), Win32)
+       .INCLUDE: mk/config
+           copy mk\\config.default mk\\config
 
-    #
-    # Generic compiler options for this project.
-    # You can probably ignore these.
-    #
-    CAMLLIB = /usr/lib/ocaml
-    CAMLP4LIB = /usr/lib/ocaml/camlp4
+       #
+       # No native-code version of camlp4 on windows
+       #
+       NATIVE_ENABLED=false
+       BYTE_ENABLED=true
+
+       #
+       # CAMLLIB should be set in the environment
+       #
+       CAMLLIB = $(dir $(getenv OCAMLLIB))
+       CAMLP4LIB = $(dir $(CAMLLIB)/camlp4)
+       export
+    else
+       .INCLUDE: mk/config
+           ROOT=$(ROOT) mk/make_config.sh
+
+       #
+       # JYH: I'm not sure why these are not set in mk/config...
+       #
+       CAMLLIB = $(dir /usr/lib/ocaml)
+       CAMLP4LIB = $(dir $(CAMLLIB)/camlp4)
+       export
 
     #
     # Generic CC options
@@ -83,7 +106,7 @@ OTHER_CCLIBS = -cclib -lreadline -cclib -lncurses -cclib -ltermcap
 #
 # For the rest of MetaPRL, use our custom scanner.
 #
-OCAMLDEP = $(file bin/ocamldep)
+OCAMLDEP = $(file bin/ocamldep$(EXE))
 
 .SCANNER: %.cmi %.cmo %.cmx: $(OCAMLDEP)
     $(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLINCLUDES) $(set $(replacesuffixes .cmi .cmo .cmx, .mli .ml .ml, $^))
@@ -112,7 +135,7 @@ if true
     # Add a dependency on the macro preprocess
     OCAMLMACROS = $(file lib/macro.cmo)
     CAMLP4MACRO = camlp4o $(OCAMLMACROS)
-    CAMLP4MACROPRINT = camlp4o pr_o.cmo $(OCAMLMACROS)
+    CAMLP4MACROPRINT = camlp4o -I $(CAMLP4LIB) pr_o.cmo $(OCAMLMACROS)
 
     # Add the extra dependency
     %.mli: $(OCAMLMACROS)
@@ -125,32 +148,42 @@ if true
 # Theory building
 
 #
+# Support directories
+#
+SUPPORT_DIRS = $(dir $(addprefix support/, display shell tactics))
+
+#
 # Theories also have special options
 #
-DEFAULT_THEORIES = tactic ocaml base itt
+DEFAULT_THEORIES = base itt
 
 MC_THEORIES =\
-	experimental/mcc/fir/util
+        experimental/mcc/fir/util
 
 LM_THEORIES = $(if $(equal $(LIBMOJAVE), undefined), $(EMPTY), $(MC_THEORIES))
 
-ALL_THEORIES = tactic ocaml base ocaml_doc itt ocaml_sos fol czf phobos sil $(LM_THEORIES)
+ALL_THEORIES = base ocaml_doc itt ocaml_sos fol czf phobos sil
 
 #
 # Commands to compile theory files
 #
-PRLC = $(file lib/prlc)
+PRLC = $(file lib/prlc$(EXE))
 
 if true
     # Use prlc, not ocamlc
-    OCAMLC = MPLIB=$(LIB) $(PRLC)
-    OCAMLOPT = MPLIB=$(LIB) $(PRLC) -opt
+    if $(equal $(OSTYPE), Win32)
+        OCAMLC = set MPLIB=$(LIB) && $(PRLC)
+        OCAMLOPT = set MPLIB=$(LIB) && $(PRLC) -opt
+        export
+    else
+        OCAMLC = MPLIB=$(LIB) $(PRLC)
+        OCAMLOPT = MPLIB=$(LIB) $(PRLC) -opt
+        export
 
     # Add the extra dependency
-    if $(not $(SLOPPY_DEPENDENCIES))
-        %.cmi: $(MPINSTALL)
-        %.cmo: $(MPINSTALL)
-        %.cmx: $(MPINSTALL)
+    %.cmi: $(MPINSTALL) $(PRLC)
+    %.cmo: $(MPINSTALL) $(PRLC)
+    %.cmx: $(MPINSTALL) $(PRLC)
 
     # Dependency analysis uses -prl flag by default
     OCAMLDEPFLAGS = -prl
@@ -161,7 +194,7 @@ if true
     # These directories use prlc
     THEORIES = $(if $(equal $(THEORIES), all), $(ALL_THEORIES), $(THEORIES))
     THEORIES = $(if $(equal $(THEORIES), default), $(DEFAULT_THEORIES), $(THEORIES))
-    MP_DIRS  = $(dir $(addprefix theories/, $(THEORIES)))
+    MP_DIRS  = $(SUPPORT_DIRS) $(dir $(addprefix theories/, $(THEORIES)))
 
     .SUBDIRS: $(MP_DIRS) editor/ml
 

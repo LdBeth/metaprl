@@ -15,7 +15,7 @@ OCAMLINCLUDES =\
 #
 # Generic camlp4 preprocessing
 #
-OCAMLPPFLAGS = -pp "camlp4o$(EXE) q_MLast.cmo pa_extend.cmo"
+OCAMLPPFLAGS = -pp "camlp4o$(EXE) -I $(CAMLP4LIB) q_MLast.cmo pa_extend.cmo"
 
 #
 # Name of main program

@@ -19,7 +19,7 @@ OCAMLINCLUDES =\
 # variable changes.
 #
 refiner.ml:
-	echo "module Refiner = Refiner_$(TERMS).Refiner" > refiner.ml
+	echo module Refiner = Refiner_$(TERMS).Refiner > refiner.ml
 
 OCamlLibraryInstall($(MPINSTALL), $(LIB), refine, $(REFINER_FILES))
 

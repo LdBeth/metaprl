@@ -37,7 +37,7 @@ REFINER=VERBOSE
 #
 # Alternatively, use THEORIES = all
 #
-THEORIES=tactic ocaml base experimental/mcc/fir/util
+THEORIES=default
 
 #
 # Use GNU readline package (available on Linux at least) (yes/no).

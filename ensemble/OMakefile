@@ -30,7 +30,7 @@ if $(equal $(ENSROOT), undefined)
 	thread_refiner
 
     thread_refiner.ml: thread_refiner_null.ml
-	$(LN) -f $^ $@
+	$(LN) $^ $@
 
     OCamlLibraryInstall($(MPINSTALL), $(LIB), $(LIBNAME), $(FILES_null))
 
