@@ -49,7 +49,7 @@ MPFILES =\
 	shell
 
 MP2FILES =\
-	test\
+	tests/test\
 	shell_mp\
 	shell_p4\
 	mp\
@@ -60,14 +60,14 @@ MP2FILES =\
 RUNFILES =\
 	mp_version\
 	shell_p4\
-	test\
+	tests/test\
 	mp\
 	library_eval\
 	library_test
 
 TOPFILES =\
 	mp_version\
-	test\
+	tests/test\
 	shell_mp\
 	mp_top
 
