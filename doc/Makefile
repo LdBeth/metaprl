@@ -31,20 +31,6 @@ USER-GUIDE =\
 	mp-modules\
 	mp-editor
 
-TUTORIAL =\
-	mp-tutorial\
-	mp-getting-started\
-	mp-type\
-	mp-base\
-	mp-base-auto\
-	mp-simple\
-	mp-not\
-	mp-all\
-	mp-struct\
-	mp-ctheory\
-	mp-class\
-	mp-theory
-
 SYSTEM =\
 	mp-system\
 	mp-refiner\
@@ -81,7 +67,6 @@ DEVELOPER-GUIDE =\
 
 W-FILES = $(addprefix htmlman/, $(addsuffix .html, $(WELCOME)))
 UG-FILES = $(addprefix htmlman/user-guide/, $(addsuffix .html, $(USER-GUIDE)))
-T-FILES = $(addprefix htmlman/tutorial/, $(addsuffix .html, $(TUTORIAL)))
 S-FILES = $(addprefix htmlman/system/, $(addsuffix .html, $(SYSTEM)))
 D-FILES = $(addprefix htmlman/developer-guide/, $(addsuffix .html, $(DEVELOPER-GUIDE)))
 
@@ -90,7 +75,6 @@ GENERATED-FILES =\
 	user-guide\
 	system\
 	developer-guide\
-	#tutorial
 
 DOCFILES = $(addsuffix .ps, $(GENERATED-FILES)) $(addsuffix .pdf, $(GENERATED-FILES))
 
@@ -111,12 +95,6 @@ user-guide.ps: $(UG-FILES)
 
 user-guide.pdf: $(UG-FILES)
 	$(GEN-PDF) $(UG-FILES) -f $@
-
-tutorial.ps: $(T-FILES)
-	$(GEN-PS) $(T-FILES) -f $@
-
-tutorial.pdf: $(T-FILES)
-	$(GEN-PDF) $(T-FILES) -f $@
 
 system.ps: $(S-FILES)
 	$(GEN-PS) $(S-FILES) -f $@
