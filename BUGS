@@ -61,6 +61,25 @@ This error also raised when we cd <theory>, and then load <theory>:
 > /dec_eq : string
 > # <<it>>;;
 
+REWRITER
+
+*) When redex has repeated meta-parameter, rewriter does not check the parameter
+equality when matching agaings that redex
+
+*) If a variable is bound in a context, rewriter may handle it incorrectly.
+
+*) If the same variable is bound several times in redex or contractum, rewriter
+may handle it incorrectly. We should prohibit repeated bound variables in rewrite
+specification - that would eliminate this bug and also help prevent typos in rewrites.
+
+*) Rewriter should support "strict" matching - in a redex, when a abound variable
+is not explicity mentioned as an argument of a SO variable, the matching term should
+not have free occurences of the correspondent variable. 
+
+The "strict" mode would also eliminate the problem rhw bug mentioned below in the REFINER
+section.
+
+*) Rewriter does not prevent capturing. It should, at least in the "strict" mode.
 
 REFINER
 
@@ -73,7 +92,8 @@ handled incorrectly. For example, thinning rule does not check if the variable
 is bound only once (which may be used to prove incorrect results).
 
 *) rwh does not do matching correctly - for example, it allows to use reduceEta
-on <<lambda{x.('x 'x)}>>
+on <<lambda{x.('x 'x)}>>. This may be fixed by using rewriter in "strict" mode, when
+implemented (see REWRITER section above).
 
 PARSER
 
