@@ -109,6 +109,13 @@ let debug_proof_normalize =
         debug_value = false
       }
 
+let debug_unjustified =
+   create_debug (**)
+      { debug_name = "unjustified";
+        debug_description = "show how Unjustified nodes are created";
+        debug_value = false
+      }
+
 type term_io = Refiner_io.TermType.term
 
 module Proof =
@@ -283,7 +290,7 @@ struct
    (* Replace the current goal with an equivalent one *)
    let rec replace_goal node goal =
       match node with
-         Goal _ | RuleBox _ ->
+         Goal _ | RuleBox _ | Pending _ ->
             raise (Invalid_argument "Proof_boot.replace_goal")
        | Unjustified (g,sgs) ->
             if g==goal then node else Unjustified (goal,sgs)
@@ -310,8 +317,6 @@ struct
                comp_subgoals = ci.comp_subgoals;
                comp_leaves = ci.comp_leaves;
                comp_extras = ci.comp_extras }
-       | Pending f ->
-            replace_goal (f ()) goal
        | Locked ext ->
             let res = replace_goal ext goal in
             if res == ext then node else Locked res
@@ -332,7 +337,7 @@ struct
 
    let rec replace_subg_aux gs node =
       match node with
-         Goal _ | RuleBox _ ->
+         Goal _ | RuleBox _ | Pending _ ->
             raise (Invalid_argument "Proof_boot.replace_subg_aux")
        | Unjustified (g,sgs) ->
             let gs, res = replace_list gs sgs in
@@ -370,8 +375,6 @@ struct
                comp_subgoals = res;
                comp_leaves = LazyLeavesDelayed;
                comp_extras = ci.comp_extras }
-       | Pending f ->
-            replace_subg_aux gs (f ())
        | Locked ext ->
             let gs,res = replace_subg_aux gs ext in
             if res == ext then gs, node else gs, Locked res
@@ -2583,11 +2586,23 @@ struct
                         Some (make_tactic_arg parent)
                    | ParentSet (parent, _) ->
                         Some (make_tactic_arg parent)
+               in
+               let attr =
+                  let attrs = squash_attributes attrs in
+                  if squash then begin
+                     if attrs <> empty_attribute then begin
+                        let buf = Rformat.new_buffer () in
+                        format_arg !debug_base buf arg;
+                        eprintf "Warning: Proof_boot.io_proof_of_proof: an attribute list in unjustified node was non-empty before IO:\n%t%t"
+                           (print_to_channel 80 buf) eflush
+                     end;
+                     empty_attribute
+                 end else attrs
                in let arg' =
                   { simp_goal = goal;
                     simp_label = label;
                     simp_parent = parent;
-                    simp_attributes = if squash then empty_attribute else squash_attributes attrs
+                    simp_attributes = attr
                   }
                in
                   parents := (arg, arg') :: !parents;
@@ -2708,7 +2723,19 @@ struct
          IOGoal arg ->
             Goal (make_tactic_arg arg)
        | IOUnjustified (goal, subgoals) ->
-            Unjustified (make_tactic_arg goal, List.map make_tactic_arg subgoals)
+            let make_tactic_arg =
+               if !debug_unjustified then begin
+                  function goal ->
+                     let res = make_tactic_arg goal in
+                     if (squash_attributes res.ref_attributes) <> empty_attribute then begin
+                        let buf = Rformat.new_buffer () in
+                        format_arg !debug_base buf res;
+                        eprintf "Warning: Proof_boot.proof_of_io_proof: an attribute list in unjustified node was non-empty after IO:\n%t%t"
+                        (print_to_channel 80 buf) eflush
+                     end;
+                     res
+               end else make_tactic_arg
+            in Unjustified (make_tactic_arg goal, List.map make_tactic_arg subgoals)
        | IOExtractNthHyp (goal, i) ->
             ExtractNthHyp (make_tactic_arg goal, i)
        | IOExtractCut (goal, term, cut_lemma, cut_then) ->

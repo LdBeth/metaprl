@@ -313,7 +313,7 @@ let rec mk_ls_filter predicate = function
  * Error handler.
  *)
 let raise_edit_error s =
-   raise (RefineError ("Shell_root", StringError s))
+   raise (RefineError ("Shell_package", StringError s))
 
 (*
  * Build the shell interface.
@@ -347,7 +347,7 @@ let rec edit pack_info parse_arg window =
       raise_edit_error "check the entire package?"
    in
    let edit_expand _ =
-      raise_edit_error "expand all the proofs in the package?"
+      raise_edit_error "expand all the proofs in the package? Use expand_all."
    in
    let edit_root () =
       ()

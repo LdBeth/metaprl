@@ -31,9 +31,13 @@
  * jyh@cs.cornell.edu
  *)
 
-open Weak_memo
+open Mp_debug
+open Dform
+open Printf
+open Rformat
 
 open Opname
+open Weak_memo
 
 open Refiner_sig
 open Refiner.Refiner.RefineError
@@ -43,6 +47,22 @@ open Term_copy2_weak
 open Tactic_boot
 open Tactic_boot.TacticType
 open Tactic_boot.TacticInternalType
+open Tactic_boot.TacticInternal
+
+let debug_unjustified =
+   create_debug (**)
+      { debug_name = "unjustified";
+        debug_description = "show how Unjustified nodes are created";
+        debug_value = false
+      }
+
+let test_arg name goal =
+   if (squash_attributes goal.ref_attributes) <> empty_attribute then begin
+      let buf = new_buffer () in
+      format_arg !debug_base buf goal;
+      eprintf "Warning: Proof_term_boot.%s: non-empty attribute list:\n%t%t"
+         name (print_to_channel 80 buf) eflush
+   end
 
 module ProofTerm (ToTerm : RefinerSig) =
 struct
@@ -501,6 +521,10 @@ struct
       Goal arg ->
          HeadGoal (ext_add_tactic_arg info arg)
     | Unjustified (goal, subgoals) ->
+         if !debug_unjustified then begin
+            test_arg "ext_make_extract_header" goal;
+            List.iter (test_arg "ext_make_extract_header") subgoals
+         end;
          HeadUnjustified (ext_add_tactic_arg info goal, List.map (ext_add_tactic_arg info) subgoals)
     | Extract (goal, subgoals, _) ->
          HeadUnjustified (ext_add_tactic_arg info goal, List.map (ext_add_tactic_arg info) subgoals)
@@ -600,7 +624,7 @@ struct
             Tactic.term_list_attribute name tl
 
    let ext_make_attributes info args =
-      TacticInternal.attribute_info_of_raw_attributes (List.map (ext_convert_named_attribute info) args @ (fst info).raw_attributes)
+      attribute_info_of_raw_attributes (List.map (ext_convert_named_attribute info) args @ (fst info).raw_attributes)
 
    let ext_make_arglist info args =
       Tactic.compress_arglist (List.map (ext_retrieve_attribute info) args)
@@ -636,7 +660,16 @@ struct
       HeadGoal arg ->
          Goal (ext_retrieve_tactic_arg info arg)
     | HeadUnjustified (goal, subgoals) ->
-         Unjustified (ext_retrieve_tactic_arg info goal, List.map (ext_retrieve_tactic_arg info) subgoals)
+         let retrieve_tactic_arg =
+            if !debug_unjustified then
+               function goal ->
+                  let res = ext_retrieve_tactic_arg info goal in
+                  test_arg "ext_make_extract" res;
+                  res
+            else
+               ext_retrieve_tactic_arg info
+         in
+            Unjustified (retrieve_tactic_arg goal, List.map retrieve_tactic_arg subgoals)
     | HeadWrapped (label, ext) ->
          Wrapped (ext_retrieve_arglist info label, ext_retrieve_extract info ext)
     | HeadCompose (goal, subgoals, extras) ->

@@ -85,7 +85,7 @@ type edit_object =
      edit_down : int -> unit;
      edit_undo : unit -> unit;
      edit_redo : unit -> unit;
-     edit_addr : int list -> unit;
+     edit_addr : int list -> unit;           (* This operation must be atomic: if it fails, the address is not modified *)
      edit_info : unit -> edit_info;
      edit_refine : string -> MLast.expr -> tactic -> unit;
    }

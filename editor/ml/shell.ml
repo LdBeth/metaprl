@@ -388,8 +388,9 @@ struct
                eprintf "Editing magic block '/%s/%s' not implemented%t" modname name eflush;
                raise (Failure "view")
       in
+         (* Leave the current proof at the root *)
          info.proof.edit_addr [];
-         info.proof <- proof
+         proof
 
    (*
     * Display the current proof.
@@ -1100,14 +1101,19 @@ struct
             else
                begin
                   (* select an item (if not there already), then go down the proof. *)
-                  if info.dir = []
-                     or List.tl info.dir = []
-                     or List.hd (List.tl info.dir) <> List.hd item
-                  then
-                     set_item info modname (List.hd item);
+                  let proof =
+                     if info.dir = []
+                        or List.tl info.dir = []
+                        or List.hd (List.tl info.dir) <> List.hd item
+                     then
+                        set_item info modname (List.hd item)
+                     else
+                        info.proof
+                  in
 
                   (* go down the proof with pf_path *)
-                  info.proof.edit_addr (List.map int_of_string (List.tl item));
+                  proof.edit_addr (List.map int_of_string (List.tl item));
+                  info.proof <- proof;
                   info.dir <- dir
                end
       in

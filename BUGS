@@ -24,9 +24,7 @@ MetaPRL Tutorial is very outdated.
 
 EDITOR
 
-2.1) Shell.cd function tries to expand proofs, it should not
-
-2.2-2.3 are fixed
+2.1-2.3 are fixed
 
 2.4) (Confirmed on 1999.09.02 by jyh and nogin)
 There is no way to override display forms right now.
@@ -43,6 +41,13 @@ the number of subgoals.
 It may be a good idea to implement a generic display-form mechanism to allow limiting
 the number of lines a certain term would occupy. On the other hand, such an approach
 would only save the time to output the display form, but not the time to produce it.
+
+2.7) Native code just coredumps on stack overflow. This is really bad since it does not give
+user a chance to save work. Not sure what can be done about it.
+
+2.8) When ls is used with non-empty flags (e.g. ls "u"), it should not use the word
+     "Implementation" in the listing header (or it should at least tell what exactly
+     it is listing).
 
 REWRITER
 
@@ -103,7 +108,7 @@ same bug as 3.3
 4.3) rwh does not do matching correctly - for example, it allows to use reduceEta
 on <<lambda{x.('x 'x)}>>. This may be already fixed by the "strict" rewriter mode.
 
-4.4) "Understanding" extracts seems broken. When refiner passes extracts to rewriter,
+4.4) "Understanding" of extracts seems broken. When refiner passes extracts to rewriter,
 it "forgets to mention" that they are in the scope of hypothesis variables.
 
 One of the side-effects of this problem is that we have to pass unnecessary arguments
@@ -176,6 +181,10 @@ be proven in the unlikely event that it is actually needed.
 
 P.S. Unfortunatelly, there seems to be no mechanism to do similar trick
 for rules with assumptions. May be it would be a good idea to create one.
+
+6.4) Dependent product type is currently defined as a very dependent function type.
+Unfortunatelly, we were not (yet) able to prove productElimination. We should
+think whether it's true and if not, then define dprod differently.
 
 BUILD SYSTEM
 

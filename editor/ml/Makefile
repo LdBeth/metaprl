@@ -27,6 +27,7 @@ MLZFILES =\
 	proof_sig\
 	package_sig\
 	display_sig\
+	nuprl_sig\
 	shell_sig\
 	shell_p4_sig
 
@@ -66,7 +67,7 @@ RUNFILES =\
 	nuprl_eval\
 	nuprl_jprover\
 	nuprl_run\
-	mp	
+	mp
 
 TOPFILES =\
 	mp_version\
@@ -110,7 +111,7 @@ else
 endif
 
 ########################################################################
-# LIBRARIES			
+# LIBRARIES
 ########################################################################
 
 CMXDEPS =\

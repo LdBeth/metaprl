@@ -254,7 +254,8 @@ let rec edit pack parse_arg sentinal arg name window obj =
    in
    let get_ped () =
       match obj.rule_ped with
-         Primitive _
+         Primitive _ ->
+            raise (RefineError ("Shell_rule.get_ped", StringError "Editing of primitive rules is not currently allowed"))
        | Derived _
        | Incomplete ->
             (* Convert to a ped *)

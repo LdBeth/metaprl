@@ -271,7 +271,8 @@ let rec edit pack parse_arg sentinal arg name window obj =
    in
    let get_ped () =
       match obj.rw_ped with
-         Primitive _
+         Primitive _ ->
+            raise (RefineError ("Shell_rewrite.get_ped", StringError "Editing of primitive rewrites is not currently allowed"))
        | Derived _
        | Incomplete ->
             (* Convert to a ped *)
