@@ -13,21 +13,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *
@@ -46,25 +46,14 @@ open Term_subst_sig
 open Term_meta_sig
 open Refine_error_sig
 
-#ifdef VERBOSE_EXN
-open Rewrite_type_verb
-open Rewrite_util_verb
-open Rewrite_debug_verb
-open Rewrite_compile_redex_verb
-open Rewrite_compile_contractum_verb
-open Rewrite_match_redex_verb
-open Rewrite_build_contractum_verb
-open Rewrite_meta_verb
-#else
-open Rewrite_type_simp
-open Rewrite_util_simp
-open Rewrite_debug_simp
-open Rewrite_compile_redex_simp
-open Rewrite_compile_contractum_simp
-open Rewrite_match_redex_simp
-open Rewrite_build_contractum_simp
-open Rewrite_meta_simp
-#endif
+open Rewrite_types
+open Rewrite_util
+open Rewrite_debug
+open Rewrite_compile_redex
+open Rewrite_compile_contractum
+open Rewrite_match_redex
+open Rewrite_build_contractum
+open Rewrite_meta
 
 (*
  * Show the file loading.

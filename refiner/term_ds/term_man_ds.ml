@@ -10,21 +10,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Alexey Nogin, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Authors: Alexey Nogin
  *)
 
@@ -41,11 +41,7 @@ open Term_op_sig
 open Term_addr_sig
 open Term_subst_sig
 
-#ifdef VERBOSE_EXN
-open Term_addr_ds_verb
-#else
-open Term_addr_ds_simp
-#endif
+open Term_addr_ds
 
 (*
  * Show that the file is loading.
@@ -88,12 +84,7 @@ module TermMan (**)
     with type term = Term.term)
    (TermAddr : TermAddrSig
     with type term = Term.term
-#ifdef VERBOSE_EXN
-    with type address = Term_addr_ds_verb.addr
-#else
-    with type address = Term_addr_ds_simp.addr
-#endif
-   )
+    with type address = Term_addr_ds.addr)
    (TermSubst : TermSubstSig
     with type term = Term.term
     with type param = Term.param)
@@ -372,7 +363,7 @@ struct
     *)
    let hyp_range_addr t i =
       HypAddr i
-   
+
    let hyp_indices_addr t i =
       let count = num_hyps t in
       if i < 0 then

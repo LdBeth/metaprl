@@ -5,7 +5,6 @@ INCLUDE := -I ../../mllib -I ../refbase -I ../refsig -I ../term_std -I ../term_g
 
 # Library files
 include Files
-MLPFILES := $(REFINER_PFILES)
 LMFILES := $(REFINER_FILES)
 
 # Name of library
@@ -13,6 +12,9 @@ MAIN := reflib
 
 # Flags
 CCLIBS := -cclib -lnums
+
+# C preprocessor
+OCAMLFLAGS = -pp "$(CPP) $(INCLUDE)"
 
 all: lib
 
@@ -38,16 +40,16 @@ include Makefile.dep
 refiner.ml: .refiner
 	@REF=`cat .refiner`;\
 	if [ -n "$$REF" ]; then\
-      echo "| .refiner defines Refiner as Refiner_"$$REF;\
-	else \
-      if [ -n "$$MP_REFINER" ]; then\
-         REF="$$MP_REFINER";\
-         echo "| MP_REFINER environment variable defines Refiner as Refiner_"$$REF;\
-	   else\
-         REF="ds_verb";\
-         echo "Warning: MP_REFINER is undefined, using Refiner_"$$REF;\
-	   fi;\
-   fi;\
+		echo "| .refiner defines Refiner as Refiner_"$$REF;\
+	else\
+		if [ -n "$$MP_REFINER" ]; then\
+			REF="$$MP_REFINER";\
+	       		echo "| MP_REFINER environment variable defines Refiner as Refiner_"$$REF;\
+	   	else\
+			REF="ds";\
+			echo "Warning: MP_REFINER is undefined, using Refiner_"$$REF;\
+		fi;\
+	fi;\
 	echo "module Refiner = Refiner_"$$REF".Refiner" > refiner.ml
 
 #

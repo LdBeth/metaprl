@@ -177,7 +177,7 @@ exception ProofRefineError of t * string * refine_error
 (*
  * For building IO proofs.
  *)
-type io_proof = Refiner_std_verb.Refiner.TermType.term proof
+type io_proof = Refiner_std.Refiner.TermType.term proof
 
 (*
  * Memo tables for converting proofs.

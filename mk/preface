@@ -5,6 +5,24 @@
 #
 
 #
+# General properties
+#
+MAKE=make -j3
+
+#
+# Environment options for simp and verb variations
+#
+SIMP_ENV=CPPFLAGS=-DSIMPLE_EXN
+VERB_ENV=CPPFLAGS=-DVERBOSE_EXN
+
+#
+# Parameters
+#
+ifndef INLINE
+   INLINE=5
+endif
+
+#
 # Config
 #
 ifeq ($(OSTYPE),win32)
@@ -12,6 +30,16 @@ ifeq ($(OSTYPE),win32)
 endif
 ifeq ($(OSTYPE),cygwin32)
    EXE = .exe
+endif
+
+ifdef PROFILE
+   EXT_LIB=.p.a
+   EXT_OBJ=.p.o
+   EXT_PROF=.p
+else
+   EXT_LIB=.a
+   EXT_OBJ=.o
+   EXT_PROF=
 endif
 
 ifndef CAMLLIB
@@ -52,16 +80,4 @@ ifndef OCAMLYACC
 endif
 ifndef PRLC
    PRLC = $(ROOT)/bin/prlc$(EXE) -lib $(ROOT)/lib
-endif
-ifndef INLINE
-   INLINE=5
-endif
-ifdef PROFILE
-   EXT_LIB=.p.a
-   EXT_OBJ=.p.o
-   EXT_PROF=.p
-else
-   EXT_LIB=.a
-   EXT_OBJ=.o
-   EXT_PROF=
 endif

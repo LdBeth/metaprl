@@ -3,7 +3,6 @@
 # Assumes variables:
 #    MFILES: root names of files
 #    LMFILES: root names of library files
-#    PFILES: root names of program files
 #    MLLIBS: root name of libraries
 #    MAIN: root name of generated program
 #
@@ -45,7 +44,7 @@ CC = gcc
 RM = rm -f
 INSTALL = /bin/cp -pf
 CP = /bin/cp -pf
-CPP = /lib/cpp -traditional -nostdinc -nostdinc++
+CPP = /lib/cpp -traditional -nostdinc -nostdinc++ $(CPPFLAGS)
 LN = ln -sf
 ifndef CAMLP4N
 	CAMLP4N = $(ROOT)/lib/camlp4n$(EXE)
@@ -80,20 +79,15 @@ LCMXFILES    = $(addsuffix .cmx,  $(LMFILES))
 MCMIFILES    = $(addsuffix .cmi,  $(MFILES))
 MCMOFILES    = $(addsuffix .cmo,  $(MFILES))
 MCMXFILES    = $(addsuffix .cmx,  $(MFILES))
-PCMIFILES    = $(addsuffix .cmi,  $(PFILES))
-PCMOFILES    = $(addsuffix .cmo,  $(PFILES))
-PCMXFILES    = $(addsuffix .cmx,  $(PFILES))
 
 LMLIFILES    = $(addsuffix .mli,  $(LMFILES))
 LMLFILES     = $(addsuffix .ml,   $(LMFILES))
 MMLFILES     = $(addsuffix .mli,  $(MFILES))
 MMLIFILES    = $(addsuffix .ml,   $(MFILES))
-PMLIFILES    = $(addsuffix .mli,  $(PFILES))
-PMLFILES     = $(addsuffix .ml,   $(PFILES))
 
-REG_CMIFILES = $(sort $(LCMIFILES) $(MCMIFILES) $(PCMIFILES))
-REG_CMOFILES = $(sort $(LCMOFILES) $(MCMOFILES) $(PCMOFILES))
-REG_CMXFILES = $(sort $(LCMXFILES) $(MCMXFILES) $(PCMXFILES))
+REG_CMIFILES = $(sort $(LCMIFILES) $(MCMIFILES))
+REG_CMOFILES = $(sort $(LCMOFILES) $(MCMOFILES))
+REG_CMXFILES = $(sort $(LCMXFILES) $(MCMXFILES))
 
 CMIFILES     = $(sort $(MP_CMIFILES) $(MP2_CMIFILES) $(LCMIFILES) $(MCMIFILES))
 CMOFILES     = $(sort $(MP_CMOFILES) $(MP2_CMOFILES) $(LCMOFILES) $(MCMOFILES))
@@ -114,8 +108,23 @@ RAFILES      = $(addprefix $(ROOT)/lib/, $(addsuffix $(EXT_LIB), $(INSTALL_LIBS)
 
 ZMLFILES     = $(addsuffix .ml, $(MLZFILES))
 ZMLIFILES    = $(addsuffix .mli, $(MLZFILES))
-PMLFILES     = $(addsuffix _verb.ml, $(MLPFILES)) $(addsuffix _simp.ml, $(MLPFILES))
-PMLIFILES    = $(addsuffix _verb.mli, $(MLPFILES)) $(addsuffix _simp.mli, $(MLPFILES))
+
+#
+# verb and simp variations
+#
+.PHONY: simp verb opt_simp opt_verb
+
+verb:
+	$(VERB_ENV) $(MAKE) all
+
+simp:
+	$(SIMP_ENV) $(MAKE) all
+
+opt_verb:
+	$(VERB_ENV) $(MAKE) opt
+
+opt_simp:
+	$(SIMP_ENV) $(MAKE) opt
 
 # Instructions to make
 .PHONY: all lib opt clean depend install
@@ -137,15 +146,15 @@ $(MAIN).cma: $(LCMOFILES) $(MP_CMOFILES)
 $(MAIN).cmxa: $(LCMXFILES) $(MP_CMXFILES)
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -a -o $@ $(LCMXFILES) $(MP_CMXFILES)
 
-$(MAIN).run: $(CMAFILES) $(CMADEPS) $(PCMOFILES)
-	$(OCAMLCP) -custom $(OCAMLCFLAGS) -o $@ $(OCAMLCPOPT) $(CMALIBS) $(CMAFILES) $(PCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS)
+$(MAIN).run: $(CMAFILES) $(CMADEPS)
+	$(OCAMLCP) -custom $(OCAMLCFLAGS) -o $@ $(OCAMLCPOPT) $(CMALIBS) $(CMAFILES) $(BYTE_CCLIBS) $(LIBTHREADS)
 	if [ -f $(MAIN).run.exe ]; then\
 		mv $(MAIN).run.exe $(MAIN).run.bak;\
 		mv $(MAIN).run.bak $(MAIN).run;\
 	fi
 
-$(MAIN).opt: $(CMXAFILES) $(CMXDEPS) $(PCMXFILES)
-	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ $(CMXAFILES) $(CMXLIBS) $(PCMXFILES) $(NATIVE_CCLIBS) $(OPTTHREADS)
+$(MAIN).opt: $(CMXAFILES) $(CMXDEPS)
+	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ $(CMXAFILES) $(CMXLIBS) $(NATIVE_CCLIBS) $(OPTTHREADS)
 	if [ -f $(MAIN).exe ]; then\
 		mv $(MAIN).exe $(MAIN).bak;\
 		mv $(MAIN).bak $(MAIN);\
@@ -215,25 +224,25 @@ $(REG_CMXFILES): %.cmx: %.ml %.cmi
 	$(RM) $@
 	$(LN) $*.mlz $@
 
-%_verb.ml: %.mlp $(ROOT)/refiner/refsig/refine_error.h
-	$(RM) $@
-	$(CPP) $(INCLUDE) -DVERBOSE_EXN $*.mlp > $@
-	chmod 444 $@
-
-%_verb.mli: %.mlip
-	$(RM) $@
-	$(CPP) $(INCLUDE) -DVERBOSE_EXN $*.mlip > $@
-	chmod 444 $@
-
-%_simp.ml: %.mlp $(ROOT)/refiner/refsig/refine_error.h
-	$(RM) $@
-	$(CPP) $(INCLUDE) $*.mlp > $@
-	chmod 444 $@
-
-%_simp.mli: %.mlip
-	$(RM) $@
-	$(CPP) $(INCLUDE) $*.mlip > $@
-	chmod 444 $@
+# %_verb.ml: %.mlp $(ROOT)/refiner/refsig/refine_error.h
+# 	$(RM) $@
+# 	$(CPP) $(INCLUDE) -DVERBOSE_EXN $*.mlp > $@
+# 	chmod 444 $@
+# 
+# %_verb.mli: %.mlip
+# 	$(RM) $@
+# 	$(CPP) $(INCLUDE) -DVERBOSE_EXN $*.mlip > $@
+# 	chmod 444 $@
+# 
+# %_simp.ml: %.mlp $(ROOT)/refiner/refsig/refine_error.h
+# 	$(RM) $@
+# 	$(CPP) $(INCLUDE) $*.mlp > $@
+# 	chmod 444 $@
+# 
+# %_simp.mli: %.mlip
+# 	$(RM) $@
+# 	$(CPP) $(INCLUDE) $*.mlip > $@
+# 	chmod 444 $@
 
 %-byte.o: %.c
 	$(CC) $(BYTE_CFLAGS) $(CFLAGS) -c $*.c -o $@
@@ -250,7 +259,7 @@ $(REG_CMXFILES): %.cmx: %.ml %.cmi
 #
 clean::
 	$(RM) *.run *.top *.opt *.cma *.cmxa *.cmx *.cmi* *.cmo* *.z* *.o *.a *~ *.bak *.output $(CLEAN_MAIN)
-	$(RM) gmon.out $(ZMLFILES) $(ZMLIFILES) $(PMLFILES) $(PMLIFILES) Makefile.dep
+	$(RM) gmon.out $(ZMLFILES) $(ZMLIFILES) Makefile.dep
 
 Makefile.dep:
 	@if [ -f $(OCAMLDEP) ]; then touch Makefile.dep; make depend; fi

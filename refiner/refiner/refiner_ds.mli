@@ -11,41 +11,31 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
 
-module Refiner =
-struct
-   module TermType = Term_ds.TermType
-   module AddressType = Term_addr_ds_simp.AddressType
-   module RefineError = Refine_error.MakeRefineError (TermType) (AddressType)
-   module Term = Term_base_ds_simp.Term (RefineError)
-   module TermOp = Term_op_ds_simp.TermOp (Term) (RefineError)
-   module TermSubst = Term_subst_ds_simp.TermSubst (Term) (RefineError)
-   module TermAddr = Term_addr_ds_simp.TermAddr (Term) (TermOp) (RefineError)
-   module TermMan = Term_man_ds_simp.TermMan (Term) (TermOp) (TermAddr) (TermSubst) (RefineError)
-   module TermShape = Term_shape_gen_simp.TermShape (TermType) (Term)
-   module TermEval = Term_eval_ds_simp.TermEval (Term) (RefineError)
-   module TermMeta = Term_meta_gen_simp.TermMeta (TermType) (Term) (TermSubst) (RefineError)
-   module Rewrite = Rewrite_simp.Rewrite (TermType) (Term) (TermMan) (TermAddr) (TermSubst) (RefineError)
-   module Refine = Refine_simp.Refine (TermType) (Term) (TermMan) (TermSubst) (TermAddr) (TermMeta) (Rewrite) (RefineError)
-end
+open Term_sig
+open Refiner_sig
+
+module Refiner :
+   RefinerSig
+   with module TermType = Term_ds.TermType
 
 (*
  * -*-

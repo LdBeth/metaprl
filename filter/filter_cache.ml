@@ -13,21 +13,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -297,8 +297,8 @@ end
 module RawSigInfo (Convert : ConvertProofSig) =
 struct
    type select  = select_type
-   type raw     = (Refiner_std_verb.Refiner.TermType.term,
-                   Refiner_std_verb.Refiner.TermType.meta_term,
+   type raw     = (Refiner_std.Refiner.TermType.term,
+                   Refiner_std.Refiner.TermType.meta_term,
                    unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
    type cooked  = Convert.t summary_type
 
@@ -364,8 +364,8 @@ end
 module RawStrInfo (Convert : ConvertProofSig) =
 struct
    type select  = select_type
-   type raw     = (Refiner_std_verb.Refiner.TermType.term,
-                   Refiner_std_verb.Refiner.TermType.meta_term,
+   type raw     = (Refiner_std.Refiner.TermType.term,
+                   Refiner_std.Refiner.TermType.meta_term,
                    Convert.raw proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
    type cooked  = Convert.t summary_type
 

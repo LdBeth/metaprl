@@ -18,8 +18,8 @@ REFLIB_FILES :=\
 	refine_exn\
 	theory\
 	mp_resource\
-   term_compare_sig\
+	term_compare_sig\
 	term_compare\
-   term_transfer\
-   term_copy2\
-   match_seq
+	term_transfer\
+	term_copy2\
+	match_seq

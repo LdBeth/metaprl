@@ -8,17 +8,6 @@ MLZFILES :=\
 	rewrite_build_contractum_sig\
 	rewrite_meta_sig
 
-REWRITE_PFILES :=\
-	rewrite_type\
-	rewrite_util\
-	rewrite_debug\
-	rewrite_compile_redex\
-	rewrite_compile_contractum\
-	rewrite_match_redex\
-	rewrite_build_contractum\
-	rewrite_meta\
-	rewrite
-
 REWRITE_FILES :=\
 	rewrite_type_sig\
 	rewrite_util_sig\
@@ -28,5 +17,12 @@ REWRITE_FILES :=\
 	rewrite_match_redex_sig\
 	rewrite_build_contractum_sig\
 	rewrite_meta_sig\
-	$(addsuffix _verb, $(REWRITE_PFILES))\
-	$(addsuffix _simp, $(REWRITE_PFILES))
+	rewrite_types\
+	rewrite_util\
+	rewrite_debug\
+	rewrite_compile_redex\
+	rewrite_compile_contractum\
+	rewrite_match_redex\
+	rewrite_build_contractum\
+	rewrite_meta\
+	rewrite

@@ -1,4 +1,14 @@
 #
+# General options
+#
+MAKE = make -j3
+
+#
+# Environment for simp and verb variations
+#
+include mk/preface
+
+#
 # Build all the parts of Nuprl-Light:
 #    refiner: logic engine
 #    filter: front end to the compiler
@@ -9,8 +19,7 @@
 #    theories/czf: Aczel's contructive set theory
 #    editor/ml: interactive proof editor
 #
-
-REFINER_DIRS :=\
+REFINER_DIRS =\
 	util\
 	clib\
 	mllib\
@@ -18,7 +27,8 @@ REFINER_DIRS :=\
 	library\
 	debug
 
-MP_DIRS :=\
+MP_DIRS =\
+	filter\
 	ensemble\
 	theories/tactic\
 	theories/ocaml\
@@ -28,33 +38,43 @@ MP_DIRS :=\
 	theories/reflect_itt\
 	theories/fol
 
-DIRS := $(REFINER_DIRS) filter $(MP_DIRS) editor/ml
+DIRS = $(REFINER_DIRS) $(MP_DIRS) editor/ml
 
-.PHONY: all opt install depend clean filter profile_all profile_clean profile_byte profile profile_opt
+.PHONY: all opt simp verb opt_simp opt_verb
+.PHONY: profile_all profile_clean profile_byte profile profile_opt
+.PHONY: install depend clean
 
-all:
+all: verb
+opt: opt_verb
+
+simp:
 	@for i in $(DIRS); do\
-		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
+		if (echo Making $$i...; $(SIMP_ENV) $(MAKE) -C $$i all); then true; else exit 1; fi;\
 	done
 
-opt:
+verb:
 	@for i in $(DIRS); do\
-		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
+		if (echo Making $$i...; $(VERB_ENV) $(MAKE) -C $$i all); then true; else exit 1; fi;\
 	done
 
-filter:
-	@for i in $(REFINER_DIRS) filter; do\
-		if (echo Making $$i...; $(MAKE) -C $$i all); then true; else exit 1; fi;\
+opt_simp:
+	@for i in $(DIRS); do\
+		if (echo Making $$i...; $(SIMP_ENV) $(MAKE) -C $$i opt); then true; else exit 1; fi;\
+	done
+
+opt_verb:
+	@for i in $(DIRS); do\
+		if (echo Making $$i...; $(VERB_ENV) $(MAKE) -C $$i opt); then true; else exit 1; fi;\
 	done
 
 profile_clean: 
 	@for i in $(REFINER_DIRS) editor/ml; do\
-		if (echo Making $$i...; $(MAKE) -C $$i clean); then true; else exit 1; fi;\
+		if (echo Making $$i...; $(SIMP_ENV) $(MAKE) -C $$i clean); then true; else exit 1; fi;\
 	done
 
 profile_all: 
 	@for i in $(REFINER_DIRS) editor/ml; do\
-		if (echo Making $$i...; OCAMLCP=ocamlcp OCAMLCPOPT="-p a" $(MAKE) -C $$i all); then true; else exit 1; fi;\
+		if (echo Making $$i...; OCAMLCP=ocamlcp OCAMLCPOPT="-p a" $(SIMP_ENV) $(MAKE) -C $$i all); then true; else exit 1; fi;\
 	done
 
 profile_byte:
@@ -69,11 +89,11 @@ profile:
 
 profile_opt:
 	@for i in $(REFINER_DIRS); do\
-		if (echo Making $$i...; $(MAKE) -C $$i PROFILE=-p INLINE=0 opt); then true; else exit 1; fi;\
+		if (echo Making $$i...; $(SIMP_ENV) $(MAKE) -C $$i PROFILE=-p INLINE=0 opt); then true; else exit 1; fi;\
 	done
 	@if (echo Making filter...; $(MAKE) -C filter PROFILE=-p INLINE=0 profile); then true; else exit 1; fi
 	@for i in $(MP_DIRS) editor/ml; do\
-		if (echo Making $$i...; $(MAKE) -C $$i PROFILE=-p INLINE=0 opt); then true; else exit 1; fi;\
+		if (echo Making $$i...; $(SIMP_ENV) $(MAKE) -C $$i PROFILE=-p INLINE=0 opt); then true; else exit 1; fi;\
 	done
 
 install:

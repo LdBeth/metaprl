@@ -16,6 +16,9 @@ MAIN := reflib
 # Flags
 CCLIBS := -cclib -lnums
 
+# Run C preprocessor
+OCAMLFLAGS = -pp "$(CPP) $(INCLUDE)"
+
 all: lib
 
 #
