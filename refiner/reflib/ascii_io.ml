@@ -352,15 +352,12 @@ struct
             if String.length line = 0 || line.[0] = '#' then
                collect (succ lineno)
             else
-               let args = Lm_string_util.parse_args_list line in
-               let _ =
-                  match args with
-                     (arg1 :: arg2 :: args)::more_args ->
-                        add_line table (arg1, arg2, (args::more_args))
-                   | _ ->
-                        eprintf "Ascii_io: syntax error on line %d%t" lineno eflush
-               in
-                  collect (succ lineno)
+               match Lm_string_util.parse_args_list line with
+                  (arg1 :: arg2 :: args)::more_args ->
+                     add_line table (arg1, arg2, (args::more_args));
+                     collect (succ lineno)
+                | _ ->
+                     eprintf "Ascii_io: syntax error on line %d%t" lineno eflush
       in
       let _ =
          try collect 1 with
