@@ -122,9 +122,8 @@ struct
       binding_vars_bterms bvars (dest_term t).term_terms
 
    and binding_vars_bterms bvars = function
-      btrm::l ->
-         let bt = dest_bterm btrm in
-            binding_vars_bterms (binding_vars_term bt.bterm (List.fold_right StringSet.add bt.bvars bvars)) l
+      bt::l ->
+         binding_vars_bterms (binding_vars_term bt.bterm (List.fold_right StringSet.add bt.bvars bvars)) l
     | [] -> bvars
 
    let binding_vars t =
@@ -236,11 +235,9 @@ struct
    and equal_bterms vars btrms1 btrms2 =
       match (btrms1,btrms2) with
          [],[] -> true
-       | (btrm1::btrms1_tl, btrm2::btrms2_tl) ->
+       | (bt1::btrms1_tl, bt2::btrms2_tl) ->
             (equal_bterms vars btrms1_tl btrms2_tl) &&
-            ((vars == [] && btrm1 == btrm2) || (
-            let bt1 = dest_bterm btrm1 in
-            let bt2 = dest_bterm btrm2 in
+            ((vars == [] && bt1 == bt2) || (
             equal_term (join_vars vars (bt1.bvars,bt2.bvars)) bt1.bterm bt2.bterm))
        | _ -> false
 
@@ -313,10 +310,9 @@ struct
        | [] -> bterms
 
    and var_subst_bterm bt t' v =
-      let dbt = dest_bterm bt in
-         if List.mem v dbt.bvars then bt
-         else let term' = var_subst dbt.bterm t' v in
-                 if dbt.bterm == term' then bt else mk_bterm dbt.bvars term'
+      if List.mem v bt.bvars then bt
+      else let term' = var_subst bt.bterm t' v in
+              if bt.bterm == term' then bt else mk_bterm bt.bvars term'
 
    (*
     * Check the following:
@@ -352,13 +348,10 @@ struct
        | _ -> false
 
    and equal_comp_bterms vars' vars bterms1 bterms2 =
-      let equal_comp_bterm btrm1 btrm2 =
-         let bt1 = dest_bterm btrm1
-         and bt2 = dest_bterm btrm2
-         in
-            equal_comp vars' (**)
-               (List_util.zip_list vars bt1.bvars (List.map mk_var_term bt2.bvars))
-               bt1.bterm bt2.bterm
+      let equal_comp_bterm bt1 bt2 =
+         equal_comp vars' (**)
+            (List_util.zip_list vars bt1.bvars (List.map mk_var_term bt2.bvars))
+            bt1.bterm bt2.bterm
       in
          List_util.for_all2 equal_comp_bterm bterms1 bterms2
 
@@ -539,9 +532,7 @@ struct
 
    and unify_bterms subst constants bvars bterms1 bterms2 =
       match bterms1, bterms2 with
-         (bterm1 :: tl1), (bterm2 :: tl2) ->
-            let bt1 = dest_bterm bterm1 in
-            let bt2 = dest_bterm bterm2 in
+         (bt1 :: tl1), (bt2 :: tl2) ->
             let subst' =
                unify_terms subst constants (zip_cons bvars bt1.bvars bt2.bvars) bt1.bterm bt2.bterm
             in
@@ -594,9 +585,7 @@ struct
 
    and match_bterms subst bvars bterms1 bterms2 =
       match bterms1, bterms2 with
-         (bterm1 :: tl1), (bterm2 :: tl2) ->
-            let bt1 = dest_bterm bterm1 in
-            let bt2 = dest_bterm bterm2 in
+         (bt1 :: tl1), (bt2 :: tl2) ->
             let subst' =
                match_terms subst (zip_cons bvars bt1.bvars bt2.bvars) bt1.bterm bt2.bterm
             in
@@ -669,10 +658,8 @@ struct
       if param1 <> param2 then
          raise (Failure "generalization")
 
-   and generalizes_bterm vars bterm1 bterm2 =
-      (* Keep track of binding vars *)
-      let { bvars = vars1; bterm = term1 } = dest_bterm bterm1 in
-      let { bvars = vars2; bterm = term2 } = dest_bterm bterm2 in
+   and generalizes_bterm vars { bvars = vars1; bterm = term1 } 
+                              { bvars = vars2; bterm = term2 } =
       let aux vars v1 v2 =
          try
             if v2 = List.assoc v1 vars then

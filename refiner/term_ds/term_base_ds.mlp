@@ -223,20 +223,7 @@ struct
             in t.free_vars <- Vars vars; vars
 
    and bterm_free_vars bt =
-      match bt.bfree_vars with
-         Vars vars -> vars
-       | VarsDelayed ->
-            let vars =
-               match bt.bcore with
-                  BTerm bt -> List.fold_right StringSet.remove bt.bvars (term_free_vars bt.bterm)
-                | BSubst (bt,sub) ->
-                     StringSet.union
-                        (List.fold_right
-                           StringSet.remove
-                           (List_util.fst_split sub)
-                           (bterm_free_vars bt))
-                        (subst_free_vars sub)
-            in bt.bfree_vars <- Vars vars; vars
+      List.fold_right StringSet.remove bt.bvars (term_free_vars bt.bterm)
 
    and bterms_free_vars = function
       [] -> StringSet.empty
@@ -286,11 +273,20 @@ struct
        | sub' ->
             {free_vars = VarsDelayed; core = Subst (t,sub')}
 
+   let rec filter_sub_vars bvars = function
+      [] -> []
+    | (((v,t) as sb)::tail) as l ->
+         if (List.mem v bvars) then filter_sub_vars bvars tail
+         else
+            let ftail = filter_sub_vars bvars tail in
+            if ftail == tail then l else sb::ftail
+
    let do_bterm_subst sub bt =
-      match StringSet.fst_mem_filt (bterm_free_vars bt) sub with
-         [] -> bt
-       | sub' ->
-            {bfree_vars = VarsDelayed; bcore = BSubst (bt,sub')}
+      if (bt.bvars==[]) then
+         { bvars = []; bterm = do_term_subst sub bt.bterm }
+      else
+         { bvars = bt.bvars; bterm = 
+           do_term_subst (filter_sub_vars bt.bvars sub) bt.bterm }
 
    (************************************************************************
     * De/Constructors                                                 *
@@ -374,14 +370,12 @@ struct
    let mk_op name params = { op_name = name; op_params = params }
 
    let mk_simple_bterm term =
-      { bfree_vars = term.free_vars;
-        bcore = BTerm { bvars = []; bterm = term }}
+      { bvars = []; bterm = term }
 
-   let make_bterm bt =
-      { bfree_vars = VarsDelayed; bcore = BTerm bt }
+   external make_bterm : bound_term -> bound_term = "%identity"
 
    let mk_bterm vars term =
-      { bfree_vars = VarsDelayed; bcore = BTerm {bvars = vars; bterm = term }}
+      { bvars = vars; bterm = term }
 
    let rec dest_term t =
       match t.core with
@@ -413,54 +407,18 @@ struct
          let v' = new_var av v 0 in
             ((v,v')::vs, (v,mk_var_term v')::ts)
 
-   let rec dest_bterm bt =
-      match bt.bcore with
-         BTerm tt -> tt
-       | BSubst (tt,sub) ->
-            let ttt = dest_bterm tt in
-            let btrm = ttt.bterm in
-            let t4 =
-               match ttt.bvars with
-                  [] ->
-                     { bvars = [];
-                       bterm =
-                        { free_vars = bt.bfree_vars;
-                          core = Subst (btrm,sub) }}
-                | bvrs ->
-                     let sub_fvars = subst_free_vars sub in
-                     let capt_vars = StringSet.mem_filt sub_fvars bvrs in
-                     match capt_vars with
-                        [] ->
-                           { bvars = bvrs;
-                             bterm =
-                              { free_vars = VarsDelayed; core = Subst (btrm,sub) }}
-                      | _ ->
-                           let avoidvars = StringSet.union sub_fvars (term_free_vars btrm) in
-                           let (vs,ts) = new_vars avoidvars capt_vars in
-                           let new_t = do_term_subst ts btrm in
-                           { bvars =
-                              List.map
-                                 (function v ->
-                                    try List.assoc v vs
-                                    with Not_found -> v)
-                                 bvrs;
-                              bterm =
-                                 { free_vars = VarsDelayed; core = Subst (new_t,sub) }}
-            in
-               bt.bcore <- BTerm t4;
-               t4
+   external dest_bterm : bound_term -> bound_term = "%identity"
 
    let mk_sequent_term seq =
       { free_vars = VarsDelayed; core = Sequent seq }
 
    let rec no_bvars = function
       [] -> true
-    | bt::btrms -> (dest_bterm bt).bvars == [] && no_bvars btrms
+    | bt::btrms -> bt.bvars == [] && no_bvars btrms
 
-   let dest_simple_bterm bt =
-      match dest_bterm bt with
-         { bvars = []; bterm = tt } -> tt
-       | _ -> ref_raise(RefineError ("dest_simple_bterm", StringError "bvars exist"))
+   let dest_simple_bterm = function
+      { bvars = []; bterm = tt } -> tt
+    | _ -> ref_raise(RefineError ("dest_simple_bterm", StringError "bvars exist"))
 
    let make_term = function
       { term_op = { op_name = opname; op_params = [Var v] };
@@ -529,12 +487,12 @@ struct
       { le_const = i; le_vars = l }
 
    let subterms_of_term t =
-      List.map (fun bt -> (dest_bterm bt).bterm) (dest_term t).term_terms
+      List.map (fun bt -> bt.bterm) (dest_term t).term_terms
 
    let subterm_count t =
       List.length (dest_term t).term_terms
 
-   let subterm_arities_aux bterm = List.length (dest_bterm bterm).bvars
+   let subterm_arities_aux bterm = List.length bterm.bvars
 
    let subterm_arities term =
          List.map subterm_arities_aux (dest_term term).term_terms

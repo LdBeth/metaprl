@@ -204,17 +204,9 @@ struct
    let rec is_xlist_term t =
       match get_core t with
          Term { term_op = { op_name = opname; op_params = [] };
-                term_terms = [bterm1; bterm2]
-         } when Opname.eq opname xcons_opname ->
-            begin
-               match (dest_bterm bterm1, dest_bterm bterm2) with
-                  ({ bvars = []; bterm = _ }, { bvars = []; bterm = b }) ->
-                     is_xlist_term b
-                | _ ->
-                     false
-            end
-       | Term { term_op = { op_name = opname; op_params = [] }; term_terms = [] } when Opname.eq opname xnil_opname ->
-            true
+                term_terms = [{ bvars = []; bterm = _ }; { bvars = []; bterm = b }]
+         } -> Opname.eq opname xcons_opname
+       | Term { term_op = { op_name = opname; op_params = [] }; term_terms = [] } -> Opname.eq opname xnil_opname
        | _ ->
             false
 
@@ -222,14 +214,10 @@ struct
       let rec aux trm =
          match dest_term trm with
             { term_op = { op_name = opname; op_params = [] };
-              term_terms = [bterm1; bterm2]
+              term_terms = [{ bvars = []; bterm = a };
+                            { bvars = []; bterm = b }]
             } when Opname.eq opname xcons_opname ->
-               begin
-                  match (dest_bterm bterm1, dest_bterm bterm2) with
-                     ({ bvars = []; bterm = a },
-                      { bvars = []; bterm = b }) -> a::(aux b)
-                   | _ -> ref_raise(RefineError ("dest_xlist", TermMatchError (t, "not a list")))
-               end
+               a::(aux b)
           | { term_op = { op_name = opname; op_params = [] }; term_terms = [] } when Opname.eq opname xnil_opname ->
                []
           | _ ->

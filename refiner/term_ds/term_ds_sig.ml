@@ -107,10 +107,7 @@ sig
     | Sequent of esequent
     | FOVar of string
    and term = { mutable free_vars : lazy_vars; mutable core : term_core }
-   and bound_term_core =
-      BTerm of bound_term'
-    | BSubst of bound_term * term_subst
-   and bound_term = { mutable bfree_vars : lazy_vars; mutable bcore: bound_term_core }
+   and bound_term = bound_term'
    and term' = { term_op : operator; term_terms : bound_term list }
    and bound_term' = { bvars : string list; bterm : term }
    and hypothesis =

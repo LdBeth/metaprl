@@ -115,15 +115,15 @@ struct
 
    let rec is_subst_term_args = function
       [],[] -> true
-    | var::vars,bt::bterms ->
-         (dest_bterm bt).bvars = [] && is_subst_term_args (vars,bterms)
+    | var::vars,{bvars=[]}::bterms ->
+         is_subst_term_args (vars,bterms)
     | _ -> false
 
    let is_subst_term t = match dest_term t with
       { term_op = { op_name = opname; op_params = [] };
         term_terms = bt::bterms
       } when Opname.eq opname subst_opname ->
-         is_subst_term_args ((dest_bterm bt).bvars,bterms)
+         is_subst_term_args (bt.bvars,bterms)
     | _ -> false
 
    (*
@@ -139,9 +139,8 @@ struct
 
    let dest_subst t = match dest_term t with
       { term_op = { op_name = opname; op_params = [] };
-        term_terms = btrm::bterms
+        term_terms = bt::bterms
       } when Opname.eq opname subst_opname ->
-         let bt = dest_bterm btrm in
          (bt.bterm, dest_subst_args t (bt.bvars,bterms))
      | _ -> ref_raise(RefineError ("dest_subst", TermMatchError (t, "bad arity")))
 
@@ -169,21 +168,16 @@ struct
         core = Term
          { term_op = { op_name = subst_opname; op_params = [] };
            term_terms =
-            [ { bfree_vars = VarsDelayed;
-                bcore = BTerm {bvars=[v]; bterm=main_term}};
-              { bfree_vars = t.free_vars;
-                bcore = BTerm {bvars=[]; bterm=t}}]}}
+            [{bvars=[v]; bterm=main_term};
+             {bvars=[]; bterm=t}]}}
 
    let make_2subst_term main_term v1 v2 t1 t2 =
       { free_vars = VarsDelayed;
         core = Term
          { term_op = { op_name = subst_opname; op_params = [] };
            term_terms =
-            [ { bfree_vars = VarsDelayed;
-                bcore = BTerm {bvars=[v1;v2]; bterm=main_term}};
-              { bfree_vars = t1.free_vars;
-                bcore = BTerm {bvars=[]; bterm=t1}};
-              { bfree_vars = t2.free_vars;
-                bcore = BTerm {bvars=[]; bterm=t2}}]}}
+            [ {bvars=[v1;v2]; bterm=main_term};
+              {bvars=[]; bterm=t1};
+              {bvars=[]; bterm=t2}]}}
 
 end

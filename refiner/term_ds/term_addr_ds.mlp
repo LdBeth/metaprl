@@ -144,7 +144,7 @@ struct
       [] ->
          t
     | i::tl ->
-         term_subterm_path ATERM (dest_bterm (getnth ATERM (dest_term t).term_terms i)).bterm tl
+         term_subterm_path ATERM (getnth ATERM (dest_term t).term_terms i).bterm tl
 
    (*
     * Get the subterm for any type of path.
@@ -273,8 +273,7 @@ struct
 \
    and path_replace_bterm FAIL f tl i BVARS bterms = \
       match i, bterms with \
-         (0, bterm :: bterms) -> \
-            let { bvars = vars; bterm = term } = dest_bterm bterm in \
+         (0, { bvars = vars; bterm = term } :: bterms) -> \
             let term, arg = path_replace_term FAIL f VARS_BVARS term tl in \
                mk_bterm vars term :: bterms, arg \
        | (_, bterm :: bterms) -> \
@@ -451,14 +450,13 @@ struct
          ([],coll)
     | (bt::btrms) as bterms ->
          let (btrms_new, args) = apply_fun_higher_bterms f coll btrms in
-         let dbt = dest_bterm bt in
-         let (bt_new, args2) = apply_fun_higher_term f args dbt.bterm in
+         let (bt_new, args2) = apply_fun_higher_term f args bt.bterm in
             if args2 == coll then (bterms, coll)
             else
                let bt_new =
                   if args2 == args
                   then bt else
-                  mk_bterm dbt.bvars bt_new
+                  mk_bterm bt.bvars bt_new
                in
                (bt_new::btrms_new, args2)
 
@@ -484,9 +482,8 @@ struct
    and apply_var_fun_higher_bterms f bvars coll = function
       [] ->
          [], coll
-    | (bterm :: bterms) as bterms' ->
+    | ({ bvars = bvars'; bterm = term } :: bterms) as bterms' ->
          let bterms_new, args = apply_var_fun_higher_bterms f bvars coll bterms in
-         let { bvars = bvars'; bterm = term } = dest_bterm bterm in
          let bterm_new, args = apply_var_fun_higher_term f (bvars' :: bvars) args term in
             if args == coll then
                bterms, coll
