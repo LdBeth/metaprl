@@ -105,6 +105,7 @@ doc <:doc<
     | TacticListFunExpr of (tactic list -> top_expr)
     | ConvListFunExpr of (conv list -> top_expr)
    @end[verbatim]
+   @docoff
    @end[doc]
 >>
 

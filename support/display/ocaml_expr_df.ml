@@ -402,13 +402,13 @@ dform try_df2 : "try"[start:n, finish:n]{'e; 'pwel} =
  * "Let" forms.  The real work is performed in the patterns.
  *)
 dform let_df1 : parens :: "prec"[prec_let] :: "let"{'p; 'e} =
-   szone pushm[0] "_let" `" " patt_format{'p; 'e} popm ezone
+   szone pushm[0] keyword["_let"] `" " patt_format{'p; 'e} popm ezone
 
 dform let_df2 : "let"[start:n, finish:n]{'p; 'e} =
    "let"{'p; 'e}
 
 dform fix_df1 : parens :: "prec"[prec_let] :: "fix"{'p} =
-   szone pushm[0] "_letrec" hspace patt_format{'p; nil}
+   szone pushm[0] keyword["_letrec"] hspace patt_format{'p; nil} popm ezone
 
 dform fix_df2 : "fix"[start:n, finish:n]{'p} =
    "fix"{'p}

@@ -660,7 +660,7 @@ struct
          shell.shell_df_mode <- "tex";
          chdir shell false true [name];
          expand_all shell;
-         view shell LsOptionSet.empty ".";
+         view shell (LsOptionSet.singleton LsAll) ".";
          shell.shell_df_mode <- mode;
          chdir shell false false dir
 

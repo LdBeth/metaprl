@@ -168,6 +168,8 @@ declare "rule"[name:s]{'params; 'stmt; 'proof; 'res}
 
 doc <:doc<
    @begin[doc]
+   XXX BUG (nogin) Text below is outdated.
+
    Resources are declared with the @tt[resource]
    term, which has three subterms corresponding to the three types in the resource definition.  The
    @it{extract} is the type of values provided by the resource, @it{data} is the internal
@@ -180,6 +182,7 @@ doc <:doc<
 >>
 declare "resource"[name:s]{'expr}
 declare "resource_defs"[name:s]{'res}
+declare "resource"{'inp; 'outp; 'expr}
 declare "improve"[name:s]{'expr}
 doc <:doc< @docoff >>
 declare "resource_defs"[start:n, finish:n, name:s]{'res}
@@ -576,9 +579,9 @@ dform prec_rel_df : prec_rel[op, left, right] =
 dform id_df : "id"[n:n] =
    info["Id: "] slot[n:n]
 
-dform resource_df : "resource"[name]{'expr} =
+dform resource_df : "resource"[name]{"resource"{'inp; 'outp; 'expr}} =
    pushm[3] szone
-   info["let"] " " info["resource"] " " resource_name[name:s] " " keyword ["="] hspace
+   info["let"] " " info["resource"] `" (" 'inp `", " 'outp `") " resource_name[name:s] " " keyword ["="] hspace
    szone{'expr} ezone popm
 
 dform improve_df : "improve"[name]{'expr} =

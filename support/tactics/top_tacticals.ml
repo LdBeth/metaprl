@@ -21,6 +21,7 @@ doc <:doc<
    This new tactic would simply attempt to do a single proof step by applying
    the corresponding inference rule. @emph{Tacticals} allow creation of more complicated
    tactics by combining existing tactics together.
+   @docoff
    @end[doc]
 
    ----------------------------------------------------------------
