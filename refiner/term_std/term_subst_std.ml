@@ -143,24 +143,15 @@ struct
    (*
     * See if a variable is free.
     *)
-   let is_var_free v =
-      let rec free_vars_term bvars = function
-         { term_op = { op_name = opname; op_params = [Var v'] };
-         } when Opname.eq opname var_opname && v' = v ->
-            true
-       | { term_terms = bterms } ->
-            free_vars_bterms bvars bterms
+   let rec is_var_free v = function
+      { term_op = { op_name = opname; op_params = [Var v'] };
+      } when Opname.eq opname var_opname && v' = v ->
+         true
+    | { term_terms = bterms } ->
+         List.exists (is_var_free_bterm v) bterms
 
-      and free_vars_bterms bvars = function
-         { bvars = bvars'; bterm = term }::t ->
-            if List.mem v bvars' then
-               free_vars_bterms bvars t
-            else
-               (free_vars_term (bvars' @ bvars) term) or (free_vars_bterms bvars t)
-
-       | [] -> false
-      in
-         free_vars_term []
+   and is_var_free_bterm v bt =
+      (not (List.mem v bt.bvars)) && is_var_free v bt.bterm
 
    (*
     * See if any of the variables are free in the terms.
@@ -449,9 +440,8 @@ struct
          subst_term terms (List.map free_vars_list terms) vars term
 
    let subst1 t var term =
-      let fv = free_vars_list t in
-      if List.mem var fv then
-         subst_term [term] [fv] [var] t
+      if List.mem var (free_vars_list t) then
+         subst_term [term] [free_vars_list term] [var] t
       else
          t
 

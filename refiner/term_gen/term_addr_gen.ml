@@ -47,14 +47,11 @@ open Term_man_gen_sig
  *)
 type addr =
    Path of int list
- | NthClause of int * bool
+ | NthClause of int
  | Compose of addr * addr
 
 let nth_hd_address i =
-   NthClause (i, true)
-
-let nth_tl_address i =
-   NthClause (i, false)
+   NthClause i
 
 module TermAddr (**)
    (TermType : TermSig)
@@ -163,29 +160,27 @@ struct
    (*
     * Follow a sequent path to a clause.
     *)
-   let rec term_subterm_nthpath ATERM flag t = function
+   let rec term_subterm_nthpath ATERM t = function
       0 ->
-         if flag then
-            match dest_term t with
-               { term_op = op } when Opname.eq (dest_op op).op_name context_opname ->
-                  let v, _, conts, subterms = dest_context t in
-                     mk_so_var_term v conts subterms
-             | { term_op = op; term_terms = bterm :: _ } ->
-                  (dest_bterm bterm).bterm
-             | _ ->
-                  REF_RAISE(RefineError ("term_subterm_nthpath", AddressError (a, term)))
-         else
-            t
+         begin match dest_term t with
+            { term_op = op } when Opname.eq (dest_op op).op_name context_opname ->
+               let v, _, conts, subterms = dest_context t in
+                  mk_so_var_term v conts subterms
+          | { term_op = op; term_terms = bterm :: _ } ->
+               (dest_bterm bterm).bterm
+          | _ ->
+               REF_RAISE(RefineError ("term_subterm_nthpath", AddressError (a, term)))
+         end
     | i ->
          let { term_op = op; term_terms = bterms } = dest_term t in
             match (dest_term t).term_terms with
                [bterm] ->
-                  term_subterm_nthpath ATERM flag (dest_bterm bterm).bterm (i - 1)
+                  term_subterm_nthpath ATERM (dest_bterm bterm).bterm (i - 1)
              | ((_ :: bterm2 :: _) as bterms) ->
                   if Opname.eq (dest_op op).op_name context_opname then
-                     let _, t, _, _ = dest_context t in term_subterm_nthpath ATERM flag t (i - 1)
+                     let _, t, _, _ = dest_context t in term_subterm_nthpath ATERM t (i - 1)
                   else
-                     term_subterm_nthpath ATERM flag (dest_bterm bterm2).bterm (i - 1)
+                     term_subterm_nthpath ATERM (dest_bterm bterm2).bterm (i - 1)
              | _ ->
                   REF_RAISE(RefineError ("term_subterm_nthpath", AddressError (a, term)))
 
@@ -196,16 +191,10 @@ struct
       match a with
          Path addr ->
             term_subterm_path ATERM term addr
-       | NthClause (addr, flag) ->
-            term_subterm_nthpath ATERM flag term addr
+       | NthClause addr ->
+            term_subterm_nthpath ATERM term addr
        | Compose (addr1, addr2) ->
             term_subterm (term_subterm term addr1) addr2
-
-   let rec make_path_list i =
-      if i = 0 then [] else let i = pred i in (Path [i]) :: (make_path_list i)
-
-   let subterm_addresses t =
-      make_path_list (List.length (dest_term t).term_terms)
 
    (*
     * Replace a subterm at the specified address.
@@ -247,46 +236,43 @@ struct
                DO_FAIL
 
    DEFMACRO MAKE_NTHPATH_REPLACE_TERM =
-      fun FAIL flag f BVARS t i ->
+      fun FAIL f BVARS t i ->
          if i = 0 then
-            if flag then
-               match dest_term t with
-                  { term_op = op } when Opname.eq (dest_op op).op_name context_opname ->
-                     let v, term, conts, subterms = dest_context t in
-                     let slot = mk_var_term v in
-                     let t = mk_context_term v slot conts subterms in
-                     let t, arg = f BVARS t in
-                     let v1, term1, conts, subterms = dest_context t in
-                        if v1 = v && is_var_term term1 && dest_var term1 = v then
-                           mk_context_term v term conts subterms, arg
-                        else
-                           DO_FAIL
-                | { term_op = op; term_terms = bterm :: bterms } ->
-                     let { bvars = vars; bterm = term } = dest_bterm bterm in
-                     let term, arg = f VARS_BVARS term in
-                     let bterm = mk_bterm vars term in
-                        mk_term op (bterm :: bterms), arg
-                | _ ->
-                     DO_FAIL
-            else
-               f BVARS t
+            match dest_term t with
+               { term_op = op } when Opname.eq (dest_op op).op_name context_opname ->
+                  let v, term, conts, subterms = dest_context t in
+                  let slot = mk_var_term v in
+                  let t = mk_context_term v slot conts subterms in
+                  let t, arg = f BVARS t in
+                  let v1, term1, conts, subterms = dest_context t in
+                     if v1 = v && is_var_term term1 && dest_var term1 = v then
+                        mk_context_term v term conts subterms, arg
+                     else
+                        DO_FAIL
+             | { term_op = op; term_terms = bterm :: bterms } ->
+                  let { bvars = vars; bterm = term } = dest_bterm bterm in
+                  let term, arg = f VARS_BVARS term in
+                  let bterm = mk_bterm vars term in
+                     mk_term op (bterm :: bterms), arg
+             | _ ->
+                  DO_FAIL
          else
             match dest_term t with
                { term_op = op; term_terms = [bterm] } ->
                   (* Always take subterm if there is only one *)
                   let { bvars = vars; bterm = trm } = dest_bterm bterm in
-                  let term, arg = NTHPATH_REPLACE_TERM FAIL flag f VARS_BVARS trm (i - 1) in
+                  let term, arg = NTHPATH_REPLACE_TERM FAIL f VARS_BVARS trm (i - 1) in
                   let bterm = mk_bterm vars term in
                      mk_term op [bterm], arg
              | { term_op = op; term_terms = ((bterm1 :: bterm2 :: bterms) as bterms') } ->
                   if Opname.eq (dest_op op).op_name context_opname then
                      let v, t, conts, args  = dest_context t in
                      let vars = [v] in
-                     let t, arg = NTHPATH_REPLACE_TERM FAIL flag f VARS_BVARS t (i - 1) in
+                     let t, arg = NTHPATH_REPLACE_TERM FAIL f VARS_BVARS t (i - 1) in
                         mk_context_term v t conts args, arg
                   else
                      let { bvars = vars; bterm = trm } = dest_bterm bterm2 in
-                     let term, arg = NTHPATH_REPLACE_TERM FAIL flag f VARS_BVARS trm (i - 1) in
+                     let term, arg = NTHPATH_REPLACE_TERM FAIL f VARS_BVARS trm (i - 1) in
                      let bterm = mk_bterm vars term in
                         mk_term op (bterm1 :: bterm :: bterms), arg
              | _ ->
@@ -297,8 +283,8 @@ struct
          match addr with
             Path addr ->
                PATH_REPLACE_TERM FAIL f BVARS term addr
-          | NthClause (addr, flag) ->
-               NTHPATH_REPLACE_TERM FAIL flag f BVARS term addr
+          | NthClause addr ->
+               NTHPATH_REPLACE_TERM FAIL f BVARS term addr
           | Compose (addr1, addr2) ->
                MY_NAME FAIL (MY_NAME FAIL f addr2) addr1 BVARS term
 
@@ -393,8 +379,8 @@ struct
    let rec collect_string_of_address = function
       Path addr ->
          String.concat "; " (List.map string_of_int addr)
-    | NthClause (addr, flag) ->
-         (if flag then "hd" else "tl") ^ "@" ^ (string_of_int addr)
+    | NthClause addr ->
+         "hd@" ^ (string_of_int addr)
     | Compose (addr1, Path [] ) ->
          collect_string_of_address addr1
     | Compose (addr1, addr2) ->
@@ -473,7 +459,6 @@ struct
     *)
    let nth_hyp_addr_name = "nth_hyp_addr"
    let nth_hyp_addr t n =
-      let n = pred n in
       let addr = nth_hd_address n in
       let rec skip_hyps i term =
          let { term_op = op; term_terms = bterms } = dest_term term in
@@ -493,7 +478,7 @@ struct
             else
                REF_RAISE(RefineError (nth_hyp_addr_name, TermMatchError (t, "not enough hyps")))
       in
-         skip_hyps n (goal_of_sequent t)
+         skip_hyps (pred n) (goal_of_sequent t)
 
    (*
     * Find the address of the conclusion.
@@ -506,18 +491,12 @@ struct
    let nth_concl_addr t n =
       let rec skip_concl i n term =
          if n <= 1 then
-            nth_tl_address i
+            nth_hd_address i
          else
             match dest_term term with
-               { term_op = op; term_terms = [bterm1; bterm2] }
+               { term_op = op; term_terms = bterms }
                   when Opname.eq (dest_op op).op_name concl_opname ->
-                  begin
-                     match dest_bterm bterm1, dest_bterm bterm2 with
-                        ({ bvars = [] }, { bvars = []; bterm = term }) ->
-                           skip_concl (i + 1) (n - 1) term
-                      | _ ->
-                           REF_RAISE(RefineError (nth_concl_addr_name, TermMatchError (t, "malformed conclusion")))
-                  end
+                  skip_concl (i + 1) (n - 1) (match_concl nth_concl_addr_name t bterms)
              | _ ->
                   REF_RAISE(RefineError (nth_concl_addr_name, (TermMatchError (t, "malformed conclusion"))))
       in
@@ -532,7 +511,7 @@ struct
                   skip_hyps (i + 1) term
             else if Opname.eq opname concl_opname then
                let term = match_concl nth_concl_addr_name t bterms in
-                  skip_concl i n term
+                  skip_concl (i + 1) n term
             else
                REF_RAISE(RefineError (nth_concl_addr_name, TermMatchError (t, "malformed sequent")))
       in
@@ -570,5 +549,34 @@ struct
 
    let nth_clause_addr t i =
       nth_clause_addr_aux (fun count -> make_nth_clause_addr nth_hd_address count i) t
+   
+   let rec make_path_list i =
+      if i = 0 then [] else let i = pred i in (Path [i]) :: (make_path_list i) 
+   let subterm_addresses_name = "Term_addr_gen.subterm_addresses"
+   let subterm_addresses t =
+      if is_var_term t then []
+      else if is_so_var_term t then let _, _, ts = dest_so_var t in make_path_list (List.length ts)
+      else if is_context_term t then let _, _, _, ts = dest_context t in make_path_list (List.length ts)
+      else if is_sequent_term t then
+         let rec aux i term =
+            let { term_op = op; term_terms = bterms } = dest_term term in
+            let opname = (dest_op op).op_name in
+               if Opname.eq opname hyp_opname then
+                  nth_hd_address i :: aux (i + 1) (match_hyp subterm_addresses_name t bterms)
+               else if Opname.eq opname context_opname then
+                  let _, term, _, ts = dest_context term in
+                     (List.map (compose_address (nth_hd_address i)) (make_path_list (List.length ts))) @ 
+                     (aux (i + 1) term)
+               else if Opname.eq opname concl_opname then
+                  if bterms = [] then
+                     [Path[0]] (* arg address *)            
+                  else
+                     nth_hd_address i :: aux (i + 1) (match_concl subterm_addresses_name t bterms)
+               else
+                  REF_RAISE(RefineError (subterm_addresses_name, TermMatchError (t, "malformed sequent")))
+         in
+            aux 1 (goal_of_sequent t)
+      else make_path_list (List.length (dest_term t).term_terms)
+
 end
 

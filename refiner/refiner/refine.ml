@@ -694,7 +694,7 @@ struct
        *)
       let replace_subgoal addr t' =
          (* Compute the extra binding variables in the clause *)
-         (* HACK!!! This should go away once we implement the crw mechanism properly *)
+         (* XXX HACK!!! This should go away once we implement the crw mechanism properly *)
          let seqtest = TermAddr.replace_subterm seq addr t' in
          let addr' = TermAddr.clause_address_of_address addr in
          let ttst = term_subterm seqtest addr' in
@@ -738,7 +738,7 @@ struct
          else if i <= List.length hyps then
             List.nth hyps (pred i)
          else
-            REF_RAISE(RefineError ("crwtactic", StringIntError ("hyp is out of range", i)))
+            REF_RAISE(RefineError ("Refine.crwtactic", StringIntError ("assumption is out of range", i)))
       in
       IFDEF VERBOSE_EXN THEN
          if !debug_rewrites then
@@ -782,11 +782,11 @@ struct
     *)
    let crwhigher (crw: cond_rewrite) sent bvars t =
       let t', args =
-         let f sent bvars t =
+         let f bvars t =
             let t, subgoals, just = crw sent bvars t in
                t, (subgoals, just)
          in
-            apply_var_fun_higher (f sent) bvars t
+            apply_var_fun_higher f bvars t
       in
       let subgoals, just = List.split args in
          t', CondRewriteSubgoalsList subgoals, CondRewriteHigher (t, just, t')

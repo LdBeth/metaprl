@@ -44,6 +44,7 @@ sig
    val is_null_address : address -> bool
 
    (* Works only on sequent addresses and their subaddresses. *)
+   (* XXX TODO: Should go away once a proper crw mechanism is implemented. *)
    val clause_address_of_address : address -> address
 
    (*
