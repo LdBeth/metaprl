@@ -162,7 +162,6 @@ struct
    let false_op = mk_ocaml_op "false"
 
    let ee_op                       = mk_ocaml_op "ee"
-   let pe_op                       = mk_ocaml_op "pe"
 
    (*
     * Loc has two integer describing character offsets.
@@ -548,25 +547,11 @@ struct
 
    and dest_record_expr t =
       let loc = dest_loc "dest_record_expr" t in
-      let opname = opname_of_term t in
-         if Opname.eq opname pe_op then
-            let pel, eo = two_subterms t in
-            let pel = dest_xlist pel in
-            let pel = List.map dest_pe pel in
-            let eo = dest_expr_opt eo in
-               MLast.ExRec (loc, pel, eo)
-         else
-            let eel, eo = two_subterms t in
-            let eel = dest_xlist eel in
-            let eel = List.map two_subterms eel in
-            let eo = dest_expr_opt eo in
-            let pel =
-               List.map (fun (e1, e2) ->
-                     let v = dest_var e1 in
-                     let p = <:patt< $lid:v$ >> in
-                        p, dest_expr e2) eel
-            in
-               MLast.ExRec (loc, pel, eo)
+      let pel, eo = two_subterms t in
+      let pel = dest_xlist pel in
+      let pel = List.map dest_ident_pe pel in
+      let eo = dest_expr_opt eo in
+         MLast.ExRec (loc, pel, eo)
 
    and dest_seq_expr t =
       let loc = dest_loc "dest_seq_expr" t in
@@ -1323,10 +1308,9 @@ struct
       let s, e = two_subterms t in
          dest_string s, dest_expr e
 
-   and dest_pe t =
-      let pe = one_subterm "dest_pe" t in
-      let p, e = dest_patt t in
-         p, dest_expr e
+   and dest_ident_pe t =
+      let p, e = two_subterms t in
+         patt_of_expr_ident (dest_expr p), dest_expr e
 
    and dest_st t =
       let s, t = two_subterms t in
@@ -1768,8 +1752,8 @@ struct
    (*
           | (<:expr< { $list:eel$ } >>) ->
    *)
-          | ExRec (_, eel, eo) ->
-               mk_simple_term expr_record_op loc [mk_xlist_term (List.map (mk_pe vars comment) eel);
+          | ExRec (_, pel, eo) ->
+               mk_simple_term expr_record_op loc [mk_xlist_term (List.map (mk_ident_pe vars comment) pel);
                                                   mk_expr_opt vars comment eo]
           | (<:expr< do { $list:el$ } >>) ->
                mk_simple_term expr_seq_op loc [mk_xlist_term (List.map (mk_expr vars comment) el)]
@@ -2311,8 +2295,8 @@ struct
    and mk_se vars comment (s, e) =
       ToTerm.Term.mk_simple_term se_op [mk_simple_string s; mk_expr vars comment e]
 
-   and mk_pe vars comment (p, e) =
-      ToTerm.Term.mk_simple_term pe_op [mk_patt vars comment p (fun vars -> mk_expr vars comment e)]
+   and mk_ident_pe vars comment (p, e) =
+      ToTerm.Term.mk_simple_term ee_op [mk_expr vars comment (expr_of_patt_ident p); mk_expr vars comment e]
 
    and mk_st comment (s, t) =
       ToTerm.Term.mk_simple_term st_op [mk_simple_string s; mk_type comment t]
