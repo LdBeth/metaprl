@@ -357,8 +357,6 @@ struct
    let mk_bterm vars term =
       { bfree_vars = VarsDelayed; bcore = BTerm {bvars = vars; bterm = term }}
 
-   let mk_var_op v = { op_name = var_opname; op_params = [Var v] }
-
    let rec dest_term t =
       match t.core with
          Term t -> t

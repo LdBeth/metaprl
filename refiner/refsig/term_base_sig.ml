@@ -95,7 +95,6 @@ sig
    val is_var_term : term -> bool
    val dest_var : term -> string
    val mk_var_term : string -> term
-   val mk_var_op : string -> operator
 
    val is_so_var_term : term -> bool
    val dest_so_var : term -> string * term list

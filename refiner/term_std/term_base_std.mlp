@@ -234,8 +234,6 @@ struct
         term_terms = []
       }
 
-   let mk_var_op v = { op_name = var_opname; op_params = [Var v] }
-
    (*
     * Second order variables have subterms.
     *)
