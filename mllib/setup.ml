@@ -181,7 +181,7 @@ let gethostname, sethostname =
    in
    let setter name tbl =
       Punix.putenv (hostname_env ^ "=" ^ name);
-      (Hashtbl.add tbl nm name)
+      (Hashtbl.replace tbl nm name)
    in
       (fun () -> State.write shared_state getter),
       (fun name -> State.write shared_state (setter name))
@@ -220,7 +220,9 @@ let create_cert name =
             Unix.Unix_error (err, _, _) ->
                raise (Failure ("Setup.create_cert: config file " ^ conf ^ " is not accessible: " ^ (Unix.error_message err)))
       in
-      let () = eprintf "Creating certificate file %s%t" name eflush in
+         (* Make sure the MP_BROWSER_HOSTNAME environ variable is set - we refer to it in the config file *)
+         sethostname (gethostname ());
+         eprintf "Creating certificate file %s%t" name eflush;
          execute_openssl [|"req"; "-x509"; "-newkey"; "rsa:1024"; "-keyout"; name; "-out"; name; "-days"; "360"; "-config"; conf |]
    end;
    try access name [F_OK;R_OK] with
