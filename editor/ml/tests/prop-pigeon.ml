@@ -78,6 +78,8 @@ end
 
 module PigeonTable = MakeTable (StringTableBase)
 
+let dT i p = thinningT false (dT i) p
+
 (*
  * Proving well-formedness.
  *)
