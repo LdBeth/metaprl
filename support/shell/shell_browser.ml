@@ -682,6 +682,16 @@ struct
          print_redirect_page outx SeeOtherCode uri
 
    (*
+    * External files get the .proxyedit suffix.
+    *)
+   let chop_proxyedit_suffix filename =
+      let suf = ".proxyedit" in
+         if Filename.check_suffix filename suf then
+            Filename.chop_suffix filename suf
+         else
+            filename
+
+   (*
     * Ship out a local file.
     *)
    let print_internal_edit_page server state filename outx =
@@ -700,6 +710,9 @@ struct
       in
       let { state_response = response } = state in
       let buf = Buffer.create 100 in
+
+      (* Strip the .proxyedit *)
+      let filename = chop_proxyedit_suffix filename in
          try
             bprintf buf "host = \"%s\"\n" (String.escaped host);
             bprintf buf "port = %d\n" port;

@@ -49,12 +49,18 @@ THEORIES=base itt
 #
 # Use GNU readline package (available on Linux at least) (yes/no).
 #
-READLINE_ENABLED=yes
+READLINE_ENABLED=no
 
 #
 # The GNU ncurses package (available in Linux at least) (yes/no)
 #
 NCURSES_ENABLED=no
+
+#
+# The OpenSSL package (available in Linux at least) (yes/no)
+# Should be set to "yes" for secure server support to be enabled.
+#
+SSL_ENABLED=no
 
 #
 # C compiler

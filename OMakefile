@@ -61,13 +61,17 @@ if $(equal $(OSTYPE), Win32)
    CURRENT_EXEC_DIR =
 
    #
+   # Pathname separator
+   #
+   SLASH = \\
+
+   #
    # No native-code version of camlp4 on windows
    #
    NATIVE_ENABLED = false
    BYTE_ENABLED = true
    READLINE_ENABLED = false
    NCURSES_ENABLED = false
-   SSL_ENABLED = false
    NATIVE_PROFILING_ENABLED = false
    CFLAGS += /MT
 
@@ -114,6 +118,11 @@ else
    # That is, the current directory, like ./make_mp_config
    #
    CURRENT_EXEC_DIR = ./
+
+   #
+   # Pathname separator
+   #
+   SLASH = /
 
    #
    # Location of OCaml root
@@ -307,7 +316,12 @@ LMINSTALL = $(MPINSTALL)
 #
 OCAML_LIB_FLAGS = $(OCAML_LIB_FLAGS) -linkall
 OTHER_CCLIBS =
-if $(not $(equal $(OSTYPE), Win32))
+if $(equal $(OSTYPE), Win32)
+    if $(SSL_ENABLED)
+        OTHER_CCLIBS = -cclib c:/OpenSSL/lib/VC/ssleay32.lib -cclib c:/OpenSSL/lib/VC/libeay32.lib
+        export
+    export
+else
     OTHER_CCLIBS = -cclib -lreadline -cclib -lncurses -cclib -ltermcap -cclib -lssl
     export
 

@@ -32,7 +32,7 @@ if $(SSL_ENABLED)
 #
 LIBINPUTS = $(file $(addprefix $(LIB)/, $(INPUTS)))
 
-$(LIBINPUTS): $(LIB)/%: %
-        $(LN) $(in $(LIB), $(CWD))/$< $@
+$(LIBINPUTS): $(LIB)$(SLASH)%: %
+        $(symlink $<, $@)
 
 $(MPINSTALL): $(LIBINPUTS)
