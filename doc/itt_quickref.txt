@@ -609,6 +609,10 @@ the rest of the sequent, then (thinT i) deletes the hypothesis.
 (thinAllT i j) deletes the hypotheses numbered i through j
 (inclusive).
 
+* nthAssumT : int -> tactic
+Matches the current goal against an assumption, doing thinning and
+squashing/unsquashing if necessary.
+
 * assertT : term -> tactic
 (assertT t) creates two subgoals; one where << t >> is the conclusion,
 and one which adds << x: t >> as a new hypothesis (at the end of the
@@ -665,8 +669,13 @@ Replaces a goal << "type"{'T} >> with << 'a IN 'T>> then tries to
 prove it using tcaT
 
 This file adds to the trivialT tactic.
-trivialT can solve goals with a hypothesis << x: 'A >> and a goal
+- trivialT can solve goals with a hypothesis << x: 'A >> and a goal
 << 'A >>.
+- trivialT will use the improved nthAssumT to match the goal against an
+assumption.
+- trivialT will prove goals of the form << "type"{'A} >> from an assumption
+<< 't1 = 't2 in 'A >> provided in can thin things to get the exact match
+between the hypotheses of the goal and the hypotheses of the assumption.
 
 ----------------------------------------
 itt_squash:
@@ -692,10 +701,6 @@ Squashed the sequent argument
 If the current goal sequent is squashed, replaces the sequent argument
 with the given term.
 
-* nthAssumT : int -> tactic
-Matches the current goal against an assumption, doing thinning and
-squashing/unsquashing if necessary.
-
 This theory adds to dT tactic:
 If the conclusion is of the form <<squash{'A1} = squash{'A2} in univ[i:l] >>,
 (dT 0) reduces it to << 'A1 = 'A2 in univ[i:l] >>
@@ -712,10 +717,6 @@ If the conclusion is of the form << it IN squash{'A} >>,
 
 If the hypothesis i is of the form << squash{'A} >>,
 (dT i) is equivalent to (unsquashT i)
-
-This theory adds to trivialT tactic:
-trivialT will use the improved nthAssumT to match the goal against an
-assumption.
 
 This theory adds to autoT:
 autoT will attempt to run unsquashAllT and sqsquashT thus unsquashing
