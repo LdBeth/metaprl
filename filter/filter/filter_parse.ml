@@ -379,11 +379,17 @@ module MakeFilter (**)
 struct
    (*
     * Processors include both the cache and the name of the module.
+    *
+    * Filename, must be globally unique
+    * Gensym prefix must be globally unique,
+    *    deterministically generated, and different
+    *    for .ml and .mli files ()
     *)
    type t =
       { cache           : FilterCache.info;
         select          : select_type;
-        name            : string; (* Filename, must be globally unique *)
+        name            : string;
+        gensym          : string;
         group           : string; (* e.g. "itt" *)
         groupdsc        : string; (* e.g. "Constructive Type Theory" *)
         mutable names   : StringSet.t;
@@ -884,10 +890,21 @@ struct
             let cache = FilterCache.create !include_path in
             let info = FilterCache.create_cache cache module_name select in
             (* Important: proc.name should be globlly unique *)
+            let gensym_name =
+               let suffix =
+                  match select with
+                     ImplementationType ->
+                        "_ml"
+                   | InterfaceType ->
+                        "_mli"
+               in
+                  module_name ^ suffix
+            in
             let proc =
                { cache    = info;
                  select   = select;
                  name     = module_name;
+                 gensym   = gensym_name;
                  group    = theory_group ();
                  groupdsc = theory_groupdsc ();
                  names    = StringSet.empty;
@@ -968,7 +985,7 @@ struct
     * of separate (distinct) files.
     *)
    let gensym proc =
-      Lm_symbol.new_symbol_string proc.name
+      Lm_symbol.new_symbol_string proc.gensym
 
    let add_token proc loc lexer_id s t =
       FilterCache.add_token proc.cache lexer_id (gensym proc) s t;

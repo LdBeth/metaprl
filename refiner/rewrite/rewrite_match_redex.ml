@@ -422,8 +422,14 @@ struct
                            eprintf "Rewrite.match_redex.RWComposite done%t" eflush
                      ENDIF;
                end
-            else
+            else begin
+               IFDEF VERBOSE_EXN THEN
+                  if !debug_rewrite then
+                     eprintf "Rewrite.match_redex.RWComposite: %s[%d](%d)@." (**)
+                        (string_of_opname op'.rw_name) (List.length op'.rw_params) (List.length bterms');
+               ENDIF;
                REF_RAISE(RefineError ("match_redex_term", RewriteBadMatch (TermMatch t)))
+            end
 
        | RWSequent (arg, hyps, concl) ->
             let s = explode_sequent_and_rename t all_bvars in
