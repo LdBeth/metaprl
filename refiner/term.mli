@@ -403,7 +403,7 @@ val mk_xlambda_term : string -> term -> term
 type shape 
 
 val shape_of_term : term -> shape
-val print_shape : shape -> unit
+val print_shape : out_channel -> shape -> unit
 
 (*
  * ``Special'' terms to be used in reduction rules
@@ -431,6 +431,9 @@ val make_2subst_term : term -> string -> string -> term -> term -> term
 
 (*
  * $Log$
+ * Revision 1.15  1998/05/01 14:59:39  jyh
+ * Updating display forms.
+ *
  * Revision 1.14  1998/04/29 14:48:26  jyh
  * Added ocaml_sos.
  *

@@ -162,13 +162,7 @@ let opname_of_term = function
  * None of the subterms should be bound.
  *)
 let subterms_of_term t =
-   let aux = function
-      { bvars = []; bterm = t } ->
-         t
-    | _ ->
-         raise (TermMatch ("subterms_of_term", t, "binding vars exist"))
-   in
-      List.map aux t.term_terms
+   List.map (fun { bterm = t } -> t) t.term_terms
 
 (************************************************************************
  * Tools for "simple" terms                                             *
@@ -2405,19 +2399,37 @@ let shape_of_term { term_op = { op_name = name; op_params = params }; term_terms
         shape_arities = List.map bterm_type bterms
       }
 
-let print_shape { shape_opname = name; shape_params = params; shape_arities = arities } =
-   print_string (flat_opname name);
-   print_string " [";
-   List.map (function
-      ShapeNumber -> print_string "N" |
-      ShapeString -> print_string "S" |
-      ShapeToken  -> print_string "T" |
-      ShapeLevel  -> print_string "L" |
-      ShapeVar    -> print_string "V" ) params;
-   print_string "] { ";
-   List.map (function x -> print_int x; print_string " ") arities;
-   print_string "}"
-
+let print_shape out { shape_opname = name; shape_params = params; shape_arities = arities } =
+   let print_param param =
+      let s =
+         match param with
+            ShapeNumber ->
+               "N"
+          | ShapeString ->
+               "S"
+          | ShapeToken  ->
+               "T"
+          | ShapeLevel  ->
+               "L"
+          | ShapeVar    ->
+               "V"
+      in
+         output_string out s
+   in
+   let rec print_arity out = function
+      [i] ->
+         fprintf out "%d" i
+    | i::t ->
+         fprintf out "%d;%a" i print_arity t
+    | [] ->
+         ()
+   in
+      output_string out (flat_opname name);
+      output_string out "[";
+      List.iter print_param params;
+      output_string out "]{";
+      print_arity out arities;
+      output_string out "}"
  
 (*
  * ``Special'' terms to be used in reduction rules
@@ -2525,6 +2537,9 @@ let make_2subst_term main_term v1 v2 t1 t2 =
 
 (*
  * $Log$
+ * Revision 1.18  1998/05/01 14:59:37  jyh
+ * Updating display forms.
+ *
  * Revision 1.17  1998/04/29 20:53:36  jyh
  * Initial working display forms.
  *

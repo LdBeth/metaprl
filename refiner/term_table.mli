@@ -15,15 +15,15 @@ open Rewrite
 type 'a term_table
 
 val new_table : unit -> 'a term_table
-val insert : 'a term_table -> term list -> 'a -> 'a term_table
+val insert : 'a term_table -> term -> 'a -> 'a term_table
 val join_tables : 'a term_table -> 'a term_table -> 'a term_table
-val lookup : 'a term_table -> term list -> rewrite_stack * rewrite_item list * 'a
+val lookup : 'a term_table -> term -> rewrite_stack * rewrite_item list * 'a
 
 (*
  * Destruction.
  *)
 type 'a table_entry =
-   TableEntry of term list * 'a
+   TableEntry of term * 'a
  | TableTable of 'a term_table
 
 val is_empty_table : 'a term_table -> bool
@@ -32,6 +32,9 @@ val dest_table : 'a term_table -> 'a table_entry * 'a term_table
 
 (*
  * $Log$
+ * Revision 1.3  1998/05/01 14:59:44  jyh
+ * Updating display forms.
+ *
  * Revision 1.2  1998/04/29 14:48:32  jyh
  * Added ocaml_sos.
  *

@@ -7,15 +7,8 @@
  *    lookup : table -> term -> 'a
  * should retrieve the value with the most specific pattern match.
  *
- * This implementation is as a two level table.  The first level
- * is a hash table the is used to look up a value based on the
- * outermost structure of the term.  The next lookup uses the
- * rewriter for full pattern matching.
- *
- * The interface is functional, so to make this a little
- * less expensive, we compile a regular table on the first access,
- * and just keep around a list of entries normally.
- *
+ * This implementation uses a discrimination tree, and term templates
+ * are used as discrimination keys.
  *)
 
 open Printf
@@ -39,14 +32,38 @@ let _ =
  ************************************************************************)
 
 (*
- * pre-entries just contain the pattern/value pair.
+ * The discrimination tree.  The tree is modeled as a nondeterministic
+ * stack machine in the following language:
+ *    DtreeAccept info: accept the term if the stack is empty
+ *    DtreeTerm prog: current term should be finished
+ *    DtreePop prog: pop the top entry from the stack
+ *    DtreeFlatten prog: place all the subterms of the current term on the stack
+ *    DtreeMatch (template, prog): match the current term with the template, fail on no match
+ *    DtreeChoice progs: choose one of the programs
+ *
+ * Fail if the end of the program is reached with accepting.
  *)
-type 'a info_entry =
-   { info_terms : term list;
-     info_pattern : Term_template.t;
+type 'a dtree_prog =
+   DtreeAccept of 'a info_entry list
+ | DtreeTerm of 'a dtree_prog
+ | DtreePop of 'a dtree_prog
+ | DtreeFlatten of 'a dtree_prog
+ | DtreeMatch of shape * 'a dtree_prog
+ | DtreeChoice of 'a dtree_prog list
+
+(*
+ * Entries contain the pattern/value pair.
+ *)
+and 'a info_entry =
+   { info_term : term;
      info_redex : rewrite_redex;
      info_value : 'a
    }
+
+(*
+ * Real tree uses a hastable to perform initial selection.
+ *)
+type 'a dtree = (shape, 'a dtree_prog) Hashtbl.t
 
 (*
  * We can add entries, as well as other tables.
@@ -55,50 +72,40 @@ type 'a info_entry =
  *)
 type 'a table_item =
    Entry of 'a info_entry
- | Table of ('a table_item) list
-
-(*
- * A compiled table is a hashtable of entries.
- *)
-type 'a term_extract = (Term_template.t, ('a info_entry) list) Hashtbl.t
+ | Table of 'a table_item list
 
 (*
  * A table has a list of pairs, plus an position for a compute
  * table.
  *)
 type 'a term_table =
-   { tbl_items : ('a table_item) list;
-     mutable tbl_base : 'a term_extract option
+   { tbl_items : 'a table_item list;
+     mutable tbl_base : 'a dtree option
    }
 
 (*
  * Destruction.
  *)
 type 'a table_entry =
-   TableEntry of term list * 'a
+   TableEntry of term * 'a
  | TableTable of 'a term_table
+
+(*
+ * We need a particular term to represent a term conclusion.
+ *)
+let end_marker = mk_xstring_term "end_marker"
 
 (************************************************************************
  * IMPLEMENTATION                                                       *
  ************************************************************************)
 
 (*
- * Term printing.
- *)
-let rec print_terms out = function
-   [h] ->
-      output_string out (string_of_term h)
- | h::t ->
-      output_string out (string_of_term h);
-      output_string out "; ";
-      print_terms out t
- | [] ->
-      ()
-
-(*
  * Empty table contains nothing.
  *)
-let new_table () = { tbl_items = []; tbl_base = None }
+let new_table () =
+   { tbl_items = [];
+     tbl_base = None
+   }
 
 (*
  * Destruction.
@@ -119,8 +126,8 @@ let dest_table { tbl_items = items } =
     | x::tl ->
          let entry =
             match x with
-               Entry { info_terms = tl; info_value = x } ->
-                  TableEntry (tl, x)
+               Entry { info_term = t; info_value = x } ->
+                  TableEntry (t, x)
              | Table t ->
                   TableTable { tbl_items = t; tbl_base = None }
          in
@@ -129,74 +136,187 @@ let dest_table { tbl_items = items } =
 (*
  * Add an entry.
  *)
-let insert { tbl_items = items } tl v =
-   let template = Term_template.of_term_list tl in
-   let redex = compile_redices [||] tl in
+let insert { tbl_items = items } t v =
+   let redex = compile_redex [||] t in
    let entry =
-      { info_terms = tl;
-        info_pattern = template;
+      { info_term = t;
         info_redex = redex;
         info_value = v
       }
    in
-      if true or !debug_dform then
-         eprintf "Term_table.insert: %d (%a)%t" (Term_template.to_int template) print_terms tl eflush;
+      if !debug_term_table then
+         eprintf "Term_table.insert: %s%t" (string_of_term t) eflush;
       { tbl_items = Entry entry :: items; tbl_base = None }
 
 (*
  * Join another table.
  *)
 let join_tables { tbl_items = entries } { tbl_items = items } =
-   { tbl_items = (Table items)::entries; tbl_base = None }
+   { tbl_items = Table items :: entries; tbl_base = None }
+
+(************************************************************************
+ * DTREE COMPILATION                                                    *
+ ************************************************************************)
+
+(*
+ * Print out a program.
+ *)
+let tab out stop =
+   for i = 1 to stop do
+      output_char out ' '
+   done
+
+let print_prog out prog =
+   let rec print tabstop = function
+      DtreeAccept l ->
+         let print_info { info_term = t } =
+            fprintf out "%a%s\n" tab (tabstop + 2) (string_of_term t)
+         in
+            fprintf out "%aAccept:\n" tab tabstop;
+            List.iter print_info l
+    | DtreeTerm prog ->
+         fprintf out "%aDtreeTerm\n" tab tabstop;
+         print tabstop prog
+    | DtreePop prog ->
+         fprintf out "%aDtreePop\n" tab tabstop;
+         print tabstop prog
+    | DtreeFlatten prog ->
+         fprintf out "%aDtreeFlatten\n" tab tabstop;
+         print tabstop prog
+    | DtreeMatch (shape, prog) ->
+         fprintf out "%aDtreeShape: %a\n" tab tabstop print_shape shape;
+         print tabstop prog
+    | DtreeChoice progs ->
+         fprintf out "%aDtreeChoice:\n" tab tabstop;
+         List.iter (print (tabstop + 2)) progs
+   in
+      print 0 prog;
+      flush out
+
+(*
+ * Collect the entries into a single list.
+ * Keep a list of tables that have been inserted so that each table is only inserted
+ * once.  Tables are just lists of items; compare them with physical equality.
+ *)
+let collect_entries { tbl_items = items } =
+   let rec insert_item tables_entries = function
+      [] ->
+         tables_entries
+    | h::t ->
+         let tables, entries = tables_entries in
+            match h with
+               Entry info ->
+                  insert_item (tables, info :: entries) t
+             | Table table ->
+                  if List.memq table tables then
+                     insert_item tables_entries t
+                  else
+                     insert_item (insert_item (table :: tables, entries) table) t
+   in
+      snd (insert_item ([], []) items)
+
+(*
+ * Collect subterms entries into three kinds:
+ *   complete: there should be no more data to collect
+ *   now: current term should be finished
+ *   skip: skip this particular subterm
+ *   select: need a particular subterm
+ *)
+let collect_stacks stacks =
+   let rec collect complete now skip select = function
+      [] ->
+         complete, now, skip, select
+    | ([], info) :: t ->
+         collect (info :: complete) now skip select t
+    | (term :: terms, info) :: t ->
+         if term == end_marker then
+            collect complete ((terms, info) :: now) skip select t
+         else if is_var_term term then
+            collect complete now ((terms, info) :: skip) select t
+         else
+            let shape = shape_of_term term in
+            let rec merge = function
+               h' :: t' ->
+                  let shape', select = h' in
+                     if shape = shape' then
+                        (shape', (term, terms, info) :: select) :: t'
+                     else
+                        h' :: merge t'
+             | [] ->
+                  [shape, [term, terms, info]]
+            in
+               collect complete now skip (merge select) t
+   in
+      collect [] [] [] [] stacks
+
+(*
+ * Compile a list of term stacks.
+ * Select from the head terms.
+ * We assume each stack has a head term.
+ *)
+let rec compile_select (shape, selections) =
+   let expand_term (term, stack, info) =
+      (subterms_of_term term) @ (end_marker :: stack), info
+   in
+   let stacks = List.map expand_term selections in
+      DtreeMatch (shape, DtreeFlatten (compile_stacks stacks))
+
+and compile_stacks stacks =
+   match collect_stacks stacks with
+      complete, [], [], [] ->
+         DtreeAccept complete
+    | [], now, [], [] ->
+         DtreeTerm (compile_stacks now)
+    | [], [], skip, [] ->
+         DtreePop (compile_stacks skip)
+    | complete, now, skip, select ->
+         DtreeChoice (DtreeAccept complete
+                      :: (DtreeTerm (compile_stacks now))
+                      :: (DtreePop (compile_stacks skip))
+                      :: (List.map compile_select select))
+
+(*
+ * The raw interface assumes the term has already been falttened.
+ *)
+let compile_prog terms =
+   let mk_stack info =
+      (subterms_of_term info.info_term) @ [end_marker], info
+   in
+   let stacks = List.map mk_stack terms in
+      compile_stacks stacks
 
 (*
  * Compile the table from the list of entries.
- * Filter out redundant entries.
- *
- * Note that the items lists have to be reversed before insertion
- * so that newer entries will override older ones.
+ * First collect all the entries into those that have the
+ * same term template, then join all the common ones into
+ * programs.
  *)
-let compute_base entries =
+let compute_dtree table =
+   (* Create the base of common entries *)
    let base = Hashtbl.create 97 in
 
    (* Insert a new entry into the table *)
-   let insert_entry ({ info_terms = terms; info_pattern = pattern } as info) =
-      let entries = 
-         try Hashtbl.find base pattern with
-            Not_found -> []
+   let insert_entry info =
+      let t = info.info_term in
+      let shape' = shape_of_term t in
+      let entries =
+         try Hashtbl.find base shape' with
+            Not_found ->
+               let entries = ref [] in
+                  Hashtbl.add base shape' entries;
+                  entries
       in
-      let gen_filter { info_terms = terms' } =
-         not (List_util.for_all2 generalizes terms terms')
-      in
-      let entries' = info :: List_util.filter gen_filter entries in
-         if !debug_dform then
-            eprintf "Term_table.compute_base: %d (%a)%t" (Term_template.to_int pattern) print_terms terms eflush;
-         Hashtbl.remove base pattern;
-         Hashtbl.add base pattern entries'
+         Ref_util.push info entries
    in
-
-   (*
-    * Insert another table.  Keep a list of tables that
-    * have been inserted so that each table is only inserted
-    * once.  Tables are just lists of items; compare them with
-    * physical equality.
-    *)
-   let rec insert_table tables t =
-      (* Remember, t is a list of items *)
-      if List.memq t tables then
-         tables
-      else
-         let tables' = t :: tables in
-            List.fold_left insert_item tables' (List.rev t)
-
-   (* Insert a generic item *)
-   and insert_item tables = function
-      Entry info -> insert_entry info; tables
-    | Table t -> insert_table tables t
-
+   let _ = List.iter insert_entry (collect_entries table) in
+   
+   (* Compile the hastable into a collection of programs *)
+   let base' = Hashtbl.create 97 in
+   let compile_entries template entries =
+      Hashtbl.add base' template (compile_prog !entries)
    in
-      List.fold_left insert_item [] (List.rev entries);
-      base
+      Hashtbl.iter compile_entries base;
+      base'
 
 (*
  * Lookup the base.
@@ -204,49 +324,129 @@ let compute_base entries =
 let get_base = function
    { tbl_base = Some base } ->
       base
- | { tbl_items = items } as tbl ->
-      let base = compute_base items in
+ | { tbl_base = None } as tbl ->
+      let base = compute_dtree tbl in
          tbl.tbl_base <- Some base;
          base
 
+(************************************************************************
+ * DTREE EXECUTION                                                      *
+ ************************************************************************)
+
 (*
- * Second level of lookup.
+ * Execute a program, and return the info block.
+ * The stack is a list of terms to promote sharing of stacks.
  *)
-let find_entry entries tl =
-   let match_entry { info_terms = tl'; info_pattern = pattern; info_redex = redex; info_value = v } =
-      if !debug_dform then
-         eprintf "Term_table.find_entry.match_entry: %d (%a)%t" (**)
-            (Term_template.to_int pattern) print_terms tl' eflush;
-      let stack, items = apply_redex' redex [||] tl in
-         stack, items, v
-   in
-   let rec aux = function
-      h::t ->
-         begin
-            try match_entry h with
-               _ ->
-                  aux t
-         end
-    | [] ->
+let split = function
+   h::t ->
+      if h == end_marker then
          raise Not_found
-   in
-      aux entries
+      else
+         h, t
+ | [] ->
+      raise Not_found
+
+let split_end = function
+   h::t ->
+      if h == end_marker then
+         t
+      else
+         raise Not_found
+ | [] ->
+      raise Not_found
+
+let rec execute prog stack =
+   match prog with
+      DtreePop prog ->
+         if !debug_term_table then
+            eprintf "Term_table.execute: DtreePop: %d%t" (List.length stack) eflush;
+         execute prog (snd (split stack))
+    | DtreeMatch (shape, prog) ->
+         let h, _ = split stack in
+         let shape' = shape_of_term h in
+            if !debug_term_table then
+               eprintf "Term_table.execute: DtreeMatch: %a vs %a%t" (**)
+                  print_shape shape print_shape shape' eflush;
+            if shape = shape' then
+               execute prog stack
+            else
+               raise Not_found
+    | DtreeFlatten prog ->
+         let h, t = split stack in
+            if !debug_term_table then
+               eprintf "Term_table.execute: DtreeFlatten %s%t" (string_of_term h) eflush;
+            execute prog ((subterms_of_term h) @ (end_marker :: t))
+    | DtreeTerm prog ->
+         let t = split_end stack in
+            if !debug_term_table then
+               eprintf "Term_table.execute: DtreeTerm%t" eflush;
+            execute prog t
+    | DtreeChoice progs ->
+         if !debug_term_table then
+            eprintf "Term_table.execute: DtreeChoice%t" eflush;
+         let rec search = function
+            prog::progs ->
+               begin
+                  try execute prog stack with
+                     Not_found ->
+                        search progs
+               end
+          | [] ->
+               raise Not_found
+         in
+            search progs
+    | DtreeAccept info ->
+         if !debug_term_table then
+            eprintf "Term_table.execute: DtreeAccept: %d%t" (List.length stack) eflush;
+         if stack = [] then
+            info
+         else
+            raise Not_found
 
 (*
  * Lookup an entry.
  *)
-let lookup tbl tl =
-   (* First level of lookup *)
-   let base = get_base tbl in
-   let template = Term_template.of_term_list tl in
-   let entries = Hashtbl.find base template in
-      (* Second level of lookup *)
-      find_entry entries tl
+let lookup table t =
+   let base = get_base table in
+   let shape = shape_of_term t in
+   let _ =
+      if !debug_term_table then
+         eprintf "Term_table.lookup: %s%t" (string_of_term t) eflush
+   in
+   let prog = Hashtbl.find base shape in
+   let stack = (subterms_of_term t) @ [end_marker] in
+   let _ =
+      if !debug_term_table then
+         let print_term t =
+            eprintf "  %s%t" (string_of_term t) eflush
+         in
+            eprintf "Term_table.lookup: program\n";
+            print_prog stderr prog;
+            eprintf "Term_table.lookup: against:\n";
+            List.iter print_term stack
+   in
+   let items = execute prog stack in
+   let rec search = function
+      { info_term = t'; info_redex = redex; info_value = v } :: tl ->
+         begin
+            if !debug_term_table then
+               eprintf "Term_table.lookup: try %s%t" (string_of_term t') eflush;
+            try
+               let stack, items = apply_redex' redex [||] [t] in
+                  stack, items, v
+            with
+               _ ->
+                  search tl
+         end
+    | [] ->
+         raise Not_found
+   in
+      search items
 
 (*
  * $Log$
- * Revision 1.7  1998/04/30 14:20:27  jyh
- * Updating term_table.
+ * Revision 1.8  1998/05/01 14:59:42  jyh
+ * Updating display forms.
  *
  * Revision 1.6  1998/04/29 20:53:38  jyh
  * Initial working display forms.

@@ -25,6 +25,7 @@ type debug_info =
 let info =
    [|{ info_name = "load";         info_info = "Loading of files";      info_flag = debug_load };
      { info_name = "dform";        info_info = "Display forms";         info_flag = debug_dform };
+     { info_name = "term_table";   info_info = "Term lookup";           info_flag = debug_term_table };
      { info_name = "rewrite";      info_info = "Rewriter";              info_flag = debug_rewrite };
      { info_name = "refiner";      info_info = "Refiner";               info_flag = debug_refiner };
      { info_name = "simple_print"; info_info = "Term printer";          info_flag = debug_simple_print };
@@ -119,6 +120,9 @@ let init () = ()
 
 (*
  * $Log$
+ * Revision 1.4  1998/05/01 14:59:30  jyh
+ * Updating display forms.
+ *
  * Revision 1.3  1998/04/28 18:30:26  jyh
  * ls() works, adding display.
  *

@@ -100,23 +100,6 @@ type dform_entry =
 let slot_opname = mk_opname "slot" nil_opname
 
 (*
- * Get subterms of a slot.
- *)
-let terms_of_slot t =
-   if opname_of_term t == slot_opname then
-      try
-         match dest_simple_term t with
-            _, [_] ->
-               [t]
-          | _, tl ->
-               tl
-      with
-         Term.TermMatch _ ->
-            [t]
-   else
-      [t]
-
-(*
  * We use a special precedence to specify that a form should
  * inherit the precedence of its parent.
  *)
@@ -147,17 +130,16 @@ let add_dform base { dform_name = name;
                  process_options (prec, true) t
    in
    let prec = process_options (min_prec, false) options in
-   let tl = terms_of_slot t in
    let printer' =
       match printer with
          DFormExpansion e ->
-            let redex = compile_redices [||] tl in
+            let redex = compile_redex [||] t in
             let contractum = compile_contractum redex e in
                DFExpansion contractum
        | DFormPrinter f ->
             DFPrinter f
    in
-      insert base tl { df_name = name; df_precedence = prec; df_printer = printer' }
+      insert base t { df_name = name; df_precedence = prec; df_printer = printer' }
 
 (*
  * Join two bases.
@@ -173,19 +155,12 @@ let dest_dfbase base =
    let info, base' = dest_table base in
    let info' =
       match info with
-         TableEntry (tl, { df_name = name; df_precedence = pr; df_printer = p }) ->
+         TableEntry (t, { df_name = name; df_precedence = pr; df_printer = p }) ->
             let options =
                if pr = max_prec then
                   []
                else
                   [DFormParens; DFormPrec pr]
-            in
-            let t =
-               match tl with
-                  [t] ->
-                     t
-                | tl ->
-                     mk_simple_term slot_opname tl
             in
             let printer =
                match p with
@@ -414,34 +389,38 @@ and format_bterms buf printer = function
  | _::_ as bterms ->
       format_break buf "" "";
       format_char buf '{';
-      format_pushm buf 0;
-      format_btermlist buf printer bterms;
-      format_char buf '}';
+                        format_pushm buf 0;
+                        format_btermlist buf printer bterms;
+                        format_char buf '}';
       format_popm buf
 
 (*
  * This is the default top level print function.
+ * Check for variables.
  *)
 and format_term buf shortener printer term =
-   (* Standard term *)
-   let { term_op = op; term_terms = bterms } = dest_term term in
-   let { op_name = name; op_params = params } = dest_op op in
-      format_szone buf;
-      format_pushm buf 4;
-      begin
-         match dest_opname name with
-            h::_ ->
-               if shortener h == name then
-                  format_string buf h
-               else
-                  format_quoted_string buf (string_of_opname name)
-          | [] ->
-               raise (Invalid_argument "DForm.format_term")
-      end;
-      format_params buf params;
-      format_bterms buf printer bterms;
-      format_popm buf;
-      format_ezone buf
+   if is_so_var_term term then
+      format_simple_term buf term
+   else
+      (* Standard term *)
+      let { term_op = op; term_terms = bterms } = dest_term term in
+      let { op_name = name; op_params = params } = dest_op op in
+         format_szone buf;
+         format_pushm buf 4;
+         begin
+            match dest_opname name with
+               h::_ ->
+                  if shortener h == name then
+                     format_string buf h
+                  else
+                     format_quoted_string buf (string_of_opname name)
+             | [] ->
+                  raise (Invalid_argument "DForm.format_term")
+         end;
+         format_params buf params;
+         format_bterms buf printer bterms;
+         format_popm buf;
+         format_ezone buf
 
 (************************************************************************
  * PRINTING                                                             *
@@ -454,8 +433,7 @@ let format_short_term base shortener =
    (* Print a single term, ignoring lookup errors *)
    let rec print_term' pprec buf eq t =
       (* Check for a display form entry *)
-      let tl = terms_of_slot t in
-      let stack, items, { df_name = name; df_precedence = pr'; df_printer = printer } = lookup base tl in
+      let stack, items, { df_name = name; df_precedence = pr'; df_printer = printer } = lookup base t in
       let pr, parenflag =
          if pr' = inherit_prec then
             pprec, false
@@ -509,7 +487,7 @@ let format_short_term base shortener =
                   let flag = !debug_dform in
                      eprintf "Default display form: %s%t" (string_of_term t) eflush;
                      debug_dform := true;
-                     (try lookup base (terms_of_slot t); () with _ -> ());
+                     (try lookup base t; () with _ -> ());
                      debug_dform := flag
                end;
             (* format_term buf shortener (print_term max_prec buf NOParens) t *)
@@ -651,6 +629,9 @@ let string_of_mterm base mterm =
 
 (*
  * $Log$
+ * Revision 1.9  1998/05/01 14:59:33  jyh
+ * Updating display forms.
+ *
  * Revision 1.8  1998/04/30 14:20:23  jyh
  * Updating term_table.
  *

@@ -15,6 +15,11 @@ let debug_load = ref false
 let debug_dform = ref false
 
 (*
+ * Debugging of term table.
+ *)
+let debug_term_table = ref false
+
+(*
  * Debug the rewriter.
  *)
 let debug_rewrite = ref false
@@ -91,6 +96,9 @@ let eflush out =
 
 (*
  * $Log$
+ * Revision 1.6  1998/05/01 14:59:25  jyh
+ * Updating display forms.
+ *
  * Revision 1.5  1998/04/28 21:38:06  jyh
  * Adjusted uppercasing.
  *

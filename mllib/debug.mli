@@ -14,6 +14,11 @@ val debug_load : bool ref
 val debug_dform : bool ref
 
 (*
+ * Debugging of term table.
+ *)
+val debug_term_table : bool ref
+
+(*
  * Debug the rewriter.
  *)
 val debug_rewrite : bool ref
@@ -80,6 +85,9 @@ val eflush : out_channel -> unit
 
 (*
  * $Log$
+ * Revision 1.5  1998/05/01 14:59:28  jyh
+ * Updating display forms.
+ *
  * Revision 1.4  1998/04/28 18:30:25  jyh
  * ls() works, adding display.
  *

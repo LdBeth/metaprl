@@ -1,4 +1,5 @@
 #!/bin/sh
+set -e
 (cd ../../refiner; echo refiner; make; cp refiner.cma /usr/local/lib/nuprl-light)
 # (cd ../../filter; echo filter; make)
 (cd ../../theories/tactic; echo tactic; make)

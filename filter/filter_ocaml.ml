@@ -907,7 +907,7 @@ let expr_coerce_class_op        = add_expr "coerce_class"       dest_coerce_clas
 let expr_upto_op                = add_expr "for_upto"           dest_upto_expr
 let expr_downto_op              = add_expr "for_downto"         dest_downto_expr
 let expr_fun_op                 = add_expr "lambda_pattern"     dest_fun_expr
-let expr_if_op                  = add_expr "if"                 dest_if_expr
+let expr_if_op                  = add_expr "ifthenelse"         dest_if_expr
 let expr_letrec_op              = add_expr "letrec"             dest_letrec_expr
 let expr_let_op                 = add_expr "let"                dest_let_expr
 let expr_match_op               = add_expr "match"              dest_match_expr
@@ -1504,6 +1504,9 @@ let term_of_class = mk_class
 
 (*
  * $Log$
+ * Revision 1.11  1998/05/01 14:59:20  jyh
+ * Updating display forms.
+ *
  * Revision 1.10  1998/04/30 14:20:16  jyh
  * Updating term_table.
  *
