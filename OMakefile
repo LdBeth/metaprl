@@ -32,6 +32,11 @@ if $(not $(defined VERBOSE))
    export
 
 #
+# omake options
+#
+ABORT_ON_DEPENDENCY_ERRORS = true
+
+#
 # Configuration defaults
 #
 .INCLUDE: mk/defaults

@@ -4,6 +4,12 @@
 include $(STDROOT)
 
 #
+# A MetaPRL theory is always named "theory"
+#
+Theory(files) =
+    OCamlLibrary(theory, $(files))
+
+#
 # Include the OMakefile
 #
 .SUBDIRS: .

@@ -162,6 +162,7 @@ let load_path = ref [""]
 
 let prl_flag = ref false
 let omake_flag = ref false
+let ml_topval_flag = ref true
 let modules_flag = ref false
 
 let syntaxdef_prereq = "syntax.pho"
@@ -283,9 +284,11 @@ let file_dependencies source_file =
          if !contains_source_quot then syntaxdef_prereq :: ppo_deps else ppo_deps
       in
       (* XXX HACK: since we can not check whether the corresponding .mli contains "topval",
-         in prl mode we always assume dependencies - at least on the .cmi *)
+         in prl mode we always assume dependencies - at least on the .cmi
+
+         JYH: unfortunately this is wrong for files in the support/shell directory.  *)
       let cmo_deps, cmx_deps =
-         if !prl_flag then
+         if !prl_flag && !ml_topval_flag then
             let extra_deps = List.fold_right find_dependency_cmi topval_names [] in
                (extra_deps @ cmo_deps), (extra_deps @ cmx_deps)
          else cmo_deps, cmx_deps
@@ -317,6 +320,7 @@ let _ =
      "-prl", Arg.Set prl_flag, "add dependencies for PRL files";
      "-omake", Arg.Set omake_flag, "add dependencies on PRL files";
      "-noprl", Arg.Clear prl_flag, "do not add dependencies for PRL files";
+     "-notopval", Arg.Clear ml_topval_flag, "do not add topval dependencies for .ml files";
      "-modules", Arg.Set modules_flag, "print modules"
     ] file_dependencies usage;
   exit 0

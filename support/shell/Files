@@ -22,11 +22,11 @@ MPFILES =\
 	shell_root\
 	recursive_lock\
 	mptop\
-	shell_java\
-	shell_browser\
 	shell_state\
 	shell_p4_sig\
-	shell
+	shell\
+	shell_java\
+	shell_browser
 
 # Files to copy to the lib directory
 INPUTS =\

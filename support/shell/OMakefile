@@ -2,6 +2,7 @@
 # Don't need any libraries.
 #
 OCAMLINCLUDES += -I . -I ../display
+OCAMLDEPFLAGS += -notopval
 
 include Files
 

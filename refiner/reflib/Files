@@ -5,11 +5,11 @@ REFLIB_FILES =\
 	term_copy2_weak\
 	term_io\
 	ml_term\
+	mp_resource\
 	term_eq_table\
 	term_match_table\
 	term_stable\
 	term_dtable\
-	mp_resource\
 	dform\
 	refine_exn\
 	ascii_io_sig\
@@ -18,7 +18,7 @@ REFLIB_FILES =\
 	term_compare_sig\
 	term_compare\
 	match_seq\
-   lib_term\
+   	lib_term\
 	unify_mm\
 	jlogic_sig\
 	jtunify\
