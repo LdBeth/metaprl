@@ -48,13 +48,13 @@ exception Unchanged
  *)
 let rec nth l i =
    if i <= 0 then
-      raise (Failure "nth")
+      raise (Failure "List_util.nth")
    else
       match l with
          _::t ->
             nth t (i - 1)
        | [] ->
-            raise (Failure "nth")
+            raise (Failure "List_util.nth")
 
 (* Filter items out of a list *)
 let rec filter f = function
@@ -122,7 +122,7 @@ let rec map2 f l1 l2 = match (l1,l2) with
       let h = f h1 h2 in
          h :: map2 f t1 t2
  | [], [] -> []
- | _ -> raise (Failure "map2")
+ | _ -> raise (Failure "List_util.map2")
 
 (*
  * Remove marked elements.
@@ -144,7 +144,7 @@ let rec removeq x = function
       else
          h :: removeq x t
  | [] ->
-      raise (Failure "removeq")
+      raise (Failure "List_util.removeq")
 
 let rec remove x = function
    h::t ->
@@ -153,7 +153,7 @@ let rec remove x = function
       else
          h :: remove x t
  | [] ->
-      raise (Failure "remove")
+      raise (Failure "List_util.remove")
 
 (*
  * Iterated tail.
@@ -166,7 +166,7 @@ let rec nth_tl i l =
          h::t ->
             nth_tl (i - 1) l
        | [] ->
-            raise (Failure "nth_tl")
+            raise (Failure "List_util.nth_tl")
 
 (*
  * Functional replacement.
@@ -178,7 +178,7 @@ let rec replacef_nth i f = function
       else
          h :: replacef_nth (i - 1) f t
  | [] ->
-      raise (Failure "replacef_nth")
+      raise (Failure "List_util.replacef_nth")
 
 let rec replacef_arg_nth i f = function
    h::t ->
@@ -189,7 +189,7 @@ let rec replacef_arg_nth i f = function
          let t, arg = replacef_arg_nth (i - 1) f t in
             h :: t, arg
  | [] ->
-      raise (Failure "replacef_arg_nth")
+      raise (Failure "List_util.replacef_arg_nth")
 
 (*
  * Functional replacement.
@@ -201,7 +201,7 @@ let rec replace_nth i x = function
       else
          h :: replace_nth (i - 1) x t
  | [] ->
-      raise (Failure "replace_nth")
+      raise (Failure "List_util.replace_nth")
 
 let rec replace_first f x = function
    h::t ->
@@ -241,7 +241,7 @@ let rec remove_nth i l =
          else
             h :: remove_nth (i - 1) t
     | [] ->
-         raise (Failure "remove_nth")
+         raise (Failure "List_util.remove_nth")
 
 (*
  * Insert an element into a position.
@@ -254,7 +254,7 @@ let rec insert_nth i x l =
          h::t ->
             h :: insert_nth (i - 1) x t
        | [] ->
-            raise (Failure "insert_nth")
+            raise (Failure "List_util.insert_nth")
 
 (*
  * Find the elemnt.
@@ -409,7 +409,7 @@ let rec zip_list l l1 l2 = match (l1,l2) with
       zip_list ((h1,h2)::l) t1 t2
  | [], [] ->
       l
- | _ -> raise (Failure "zip")
+ | _ -> raise (Failure "List_util.zip")
 
 (*
  * Zip two lists. Sapme as List.combine, but rauses Failure instead of Invalid_argument
@@ -420,7 +420,7 @@ let rec zip a b = match (a,b) with
  | [], [] ->
       []
  | 
-   _ -> raise (Failure "zip")
+   _ -> raise (Failure "List_util.zip")
 
 (*
  * Find index of association.
@@ -454,7 +454,7 @@ let add_assoc (v1, v2) l =
           if v2 = v2' then
              l
           else
-             raise (Failure "add_assoc")
+             raise (Failure "List_util.add_assoc")
    with
       Not_found -> (v1, v2)::l
 
@@ -513,7 +513,7 @@ let rec split_list i l = match (i,l) with
       let l, l' = split_list (i - 1) t in
          h::l, l'
  | _, [] ->
-      raise (Failure "split_list")
+      raise (Failure "List_util.split_list")
 
 (*
  * Split off the last item.
@@ -525,7 +525,7 @@ let rec split_last = function
       let l, x = split_last t in
          h::l, x
  | [] ->
-      raise (Failure "split_last")
+      raise (Failure "List_util.split_last")
 
 (*
  * Split off the last item.
@@ -536,7 +536,7 @@ let rec last = function
  | h::t ->
       last t
  | [] ->
-      raise (Failure "last")
+      raise (Failure "List_util.last")
 
 (*
  * Produce a list of first elements out of the list of pairs
@@ -554,19 +554,19 @@ let rec remove_suffix_aux suffix = function
       if l' = suffix then
          []
       else
-         raise (Failure "remove_suffix")
+         raise (Failure "List_util.remove_suffix")
  | (i, _::t) ->
       remove_suffix_aux suffix (i - 1, t)
  | _ ->
       (* This will never happen *)
-      raise (Failure "remove_suffix")
+      raise (Failure "List_util.remove_suffix")
 
 let remove_suffix l suffix =
    let i = (List.length l) - (List.length suffix) in
       if i >= 0 then
          remove_suffix_aux suffix (i, l)
       else
-         raise (Failure "remove_suffix")
+         raise (Failure "List_util.remove_suffix")
 
 (*
  * Reverse do_list.
@@ -668,7 +668,7 @@ let rec iter2 f al bl =
     | [], [] ->
          ()
     | _ ->
-         raise (Failure "iter2")
+         raise (Failure "List_util.iter2")
 
 let rec rev_iter2 f a b =
    match (a,b) with
@@ -686,7 +686,7 @@ let rec fold_left2 f x al bl =
     | [], [] ->
          x
     | _ ->
-         raise (Failure "fold_left2")
+         raise (Failure "List_util.fold_left2")
 
 (*
  * -*-

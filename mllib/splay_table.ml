@@ -276,7 +276,7 @@ let create
                   Node (_, data :: _, _, _, _) ->
                      data
                 | _ ->
-                     raise (Failure "find")
+                     raise (Failure "Splay_table.find")
             end
        | SplayNotFound tree ->
             t.splay_tree <- tree;
@@ -292,7 +292,7 @@ let create
                   Node (_, data, _, _, _) ->
                      data
                 | _ ->
-                     raise (Failure "find_all")
+                     raise (Failure "Splay_table.find_all")
             end
        | SplayNotFound tree ->
             t.splay_tree <- tree;
@@ -312,7 +312,7 @@ let create
                   Node (key, data', left, right, size) ->
                      Node (key, ord_append data data', left, right, size)
                 | Leaf ->
-                     raise (Failure "add_list")
+                     raise (Failure "Splay_table.add_list")
             end
        | SplayNotFound tree ->
             begin
@@ -356,7 +356,7 @@ let create
                 | Node (key, _ :: data, left, right, size) ->
                      { splay_tree = Node (key, data, left, right, size); splay_arg = arg }
                 | _ ->
-                     raise (Failure "remove")
+                     raise (Failure "Splay_table.remove")
             end
        | SplayNotFound tree ->
             t.splay_tree <- tree;
@@ -394,7 +394,7 @@ let create
                            let right3 = union_aux arg right1 right2 in
                               new_node key1 data1 left3 right3
                    | _ ->
-                        raise (Failure "union")
+                        raise (Failure "Splay_table.union")
             else if size1 = 1 then
                add_list arg s2 key1 data1
             else
@@ -413,7 +413,7 @@ let create
                         let right3 = union_aux arg right1 right2 in
                            new_node key2 data2 left3 right3
                 | _ ->
-                     raise (Failure "union")
+                     raise (Failure "Splay_table.union")
    in
 
    let union s1 s2 =

@@ -264,10 +264,10 @@ struct
                            Node (key, left_left, Leaf, _) ->
                               { splay_tree = new_node key left_left right }
                          | _ ->
-                              raise (Failure "remove")
+                              raise (Failure "Fun_splay_set.remove")
                      end
                 | Leaf ->
-                     raise (Failure "remove")
+                     raise (Failure "Fun_splay_set.remove")
             end
        | SplayNotFound tree ->
             t.splay_tree <- tree;
@@ -304,7 +304,7 @@ struct
                            let right3 = union_aux right1 right2 in
                               new_node key1 left3 right3
                    | _ ->
-                        raise (Failure "union")
+                        raise (Failure "Fun_splay_set.union")
             else if size1 = 1 then
                add_aux s2 key1
             else
@@ -323,7 +323,7 @@ struct
                         let right3 = union_aux right1 right2 in
                            new_node key2 left3 right3
                 | _ ->
-                     raise (Failure "union")
+                     raise (Failure "Fun_splay_set.union")
 
    let union s1 s2 =
       { splay_tree = union_aux s1.splay_tree s2.splay_tree }
@@ -353,7 +353,7 @@ struct
                            (intersects right1 right2)
                            || (intersects left1 (new_node key2 left2 Leaf))
                    | _ ->
-                        raise (Failure "intersects")
+                        raise (Failure "Fun_splay_set.intersects")
             else if size1 = 1 then
                search key1 s2
             else
@@ -368,7 +368,7 @@ struct
                         (intersects right1 right2)
                         || (intersects (new_node key1 left1 Leaf) left2)
                 | _ ->
-                     raise (Failure "union")
+                     raise (Failure "Fun_splay_set.union")
 
    let intersectp s1 s2 =
       intersects s1.splay_tree s2.splay_tree
