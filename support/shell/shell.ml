@@ -253,6 +253,16 @@ struct
       info.shell_df_mode <- mode
 
    (*
+    * Get the resource collection.
+    *)
+   let get_resource info =
+      match info.shell_package with
+         Some mod_info ->
+            Mp_resource.find (Mp_resource.theory_bookmark (Package.name mod_info))
+       | None ->
+            raise Not_found
+
+   (*
     * Create a new sub-shell.
     *)
    let global =

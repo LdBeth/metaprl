@@ -5,23 +5,33 @@
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 	<script type="text/javascript" src="/inputs/cookie.js"></script>
 	<script type="text/javascript" src="/inputs/layout.js"></script>
+	<script type="text/javascript">
+<!--
+        var macros = new Array();
+	%%MACROS%%
+-->
+        </script>
 	<link rel="stylesheet" type="text/css" href="/inputs/style.css">
         %%STYLE%%
     </head>
 
     <body onLoad="Load(110)">
-    <div id="contentbox">%%BODY%%</div>
+    <div id="menubox">%%MENU%%</div>
+    <iframe id="contentbox" src="body.html">%%BODY%%</iframe>
     <div id="messagebox">%%MESSAGE%%</div>
     <div id="rulebox">
-        <form name="commandform" method="post" action=".">
         <font style="visibility:hidden"># </font>
-        <input type=submit name="submit" value="Submit">
-        <input type=button name="togglebutton" value="Long" onClick="return Toggle()">
+        <input type=button value="Submit" onclick="ButtonSubmit();">
+        <input type=button name="togglebutton" value="Long" onclick="ToggleInputArea(this);">
         %%BUTTONS%%
+	<select onchange="MenuCommand(this, false)">
+	%%HISTORY%%
+	</select>
         <p>
-        <div id="inputbox">
+        <form name="commandform" method="post" action=".">
+        <span id="inputbox">
 	# <input type="text" name="command" size="100" value="">
-        </div>
+        </span>
         </form>
     </div>
     </body>

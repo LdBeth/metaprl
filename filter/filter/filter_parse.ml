@@ -178,6 +178,22 @@ let term_patt s =
 let _ = Quotation.add "term" (Quotation.ExAst (term_exp, term_patt))
 let _ = Quotation.default := "term"
 
+(* Allow dforms too *)
+let add_quot name =
+   let quot_exp s =
+      let t = parse_quotation (0, 0) "term" (name, s) in
+         add_binding (BindTerm t)
+   in
+   let quot_patt s =
+      let t = parse_quotation (0, 0) "term" (name, s) in
+         Filter_exn.print_exn Dform.null_base (Some "Can not build a pattern out of a term:\n") Filter_patt.build_term_patt t
+   in
+      ignore (Quotation.add name (Quotation.ExAst (quot_exp, quot_patt)))
+
+let () = add_quot "dform"
+let () = add_quot "doc"
+let () = add_quot "topdoc"
+
 let rec mk_list_expr loc = function
    [] -> <:expr< [] >>
  | hd :: tl -> <:expr< $uid:"::"$ $hd$ $mk_list_expr loc tl$ >>

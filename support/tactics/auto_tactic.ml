@@ -98,6 +98,7 @@ doc <:doc<
 extends Mptop
 extends Top_tacticals
 extends Top_conversionals
+extends Browser_resource
 doc <:doc< @docoff >>
 
 open Lm_debug
@@ -120,6 +121,7 @@ open Tactic_type
 open Tactic_type.Sequent
 open Tactic_type.Tacticals
 open Top_conversionals
+open Browser_resource
 
 (*
  * Debugging.
@@ -393,6 +395,12 @@ let resource auto += {
    auto_tac = onSomeHypT nthHypT orelseT onSomeAssumT nthAssumT;
    auto_type = AutoTrivial;
 }
+
+(*
+ * Add autoT to the browser.
+ *)
+let resource browser +=
+    << button["autoT", "refine autoT"] >>
 
 (*
  * -*-

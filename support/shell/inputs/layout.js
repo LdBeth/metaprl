@@ -6,7 +6,8 @@
 var window_width = 0;
 var window_height = 0;
 
-function GetWindowSize() {
+function GetWindowSize()
+{
     if(typeof(window.innerWidth) == 'number') {
         // Non-IE
         window_width = window.innerWidth;
@@ -32,24 +33,35 @@ function GetWindowSize() {
 /*
  * The styles depend on the window size.
  */
-function ResizeBoxes(rulebox_height) {
+function ResizeBoxes(rulebox_height)
+{
     var horizontal_border_size = 2;
     var vertical_border_size = 2;
-    var box_width = window_width - 2 * horizontal_border_size;
-    var message_height = 100;
-    var content_height = window_height - message_height - rulebox_height;
-    var rulebox_top = content_height + message_height;
+    var box_width = window_width - 2 * horizontal_border_size - 4;
 
+    var menu_height = 30;
+    var message_height = 100;
+    var content_top = menu_height;
+    var content_height = window_height - menu_height - message_height - rulebox_height;
+    var message_top = content_top + content_height;
+    var rulebox_top = message_top + message_height;
+
+    var menu = document.getElementById('menubox');
     var content = document.getElementById('contentbox');
     var message = document.getElementById('messagebox');
     var rule = document.getElementById('rulebox');
 
-    content.style.top = "0px";
+    menu.style.top = "0px";
+    menu.style.left = horizontal_border_size + "px";
+    menu.style.width = box_width + "px";
+    menu.style.height = (menu_height - vertical_border_size) + "px";
+
+    content.style.top = menu_height + "px";
     content.style.left = horizontal_border_size + "px";
     content.style.width = box_width + "px";
     content.style.height = (content_height - vertical_border_size) + "px";
 
-    message.style.top = content_height + "px";
+    message.style.top = message_top + "px";
     message.style.left = horizontal_border_size + "px";
     message.style.width = box_width + "px";
     message.style.height = (message_height - vertical_border_size) + "px";
@@ -65,55 +77,83 @@ function ResizeBoxes(rulebox_height) {
  */
 var window_width_name = 'MetaPRL.width';
 
-function SetWindowCookie() {
+function SetWindowCookie()
+{
    SetCookie(window_width_name, '' + window_width, null, "/", null, false);
-}
-
-/*
- * Toggling between the long and short view of the input box.
- */
-var input_is_short = true;
-
-function Long() {
-    var inputbox = document.getElementById('inputbox');
-    var text = document.commandform.command.value;
-    document.commandform.togglebutton.value = 'Short';
-    inputbox.innerHTML = '# <textarea name="command" rows="4" cols="100">' + text + '</textarea>';
-    ResizeBoxes(150);
-    input_is_short = false;
-}
-
-function Short() {
-    var inputbox = document.getElementById('inputbox');
-    var text = document.commandform.command.value;
-    document.commandform.togglebutton.value = 'Long';
-    inputbox.innerHTML = '# <input type="text" name="command" size="100" border="0" value="' + text + '">';
-    ResizeBoxes(100);
-    input_is_short = true;
-}
-
-function Toggle() {
-    if(input_is_short)
-        Long();
-    else
-        Short();
-    document.commandform.command.focus();
-    return false;
 }
 
 /*
  * Resize event.
  */
-function Resize(rulebox_height) {
+function Resize(rulebox_height)
+{
    GetWindowSize();
    ResizeBoxes(rulebox_height);
    SetWindowCookie();
 }
 
-function Load(rulebox_height) {
+function Load(rulebox_height)
+{
     input_is_short = true;
     Resize(rulebox_height);
     document.commandform.command.focus();
     document.getElementById('messagebox').scrollTop += 10000;
 }
+
+/*
+ * The user selected a command from a menu.
+ */
+function MenuCommand(menu, submit)
+{
+    var id = menu.options[menu.selectedIndex].value;
+    var text = macros[id];
+    document.commandform.command.value = text;
+    if(submit)
+        document.commandform.submit();
+}
+
+/*
+ * Press a button.
+ */
+function ButtonCommand(button)
+{
+    var id = button.name;
+    var text = macros[id];
+    document.commandform.command.value = text;
+    document.commandform.submit();
+}
+
+/*
+ * Press the submit button.
+ */
+function ButtonSubmit()
+{
+    document.commandform.submit();
+}
+
+/*
+ * Toggle the kind of input area.
+ */
+function ToggleInputArea(button)
+{
+    // Get the current text
+    var inputbox = document.getElementById('inputbox');
+    var text = document.commandform.command.value;
+
+    // Reset the input area
+    if(button.value == 'Long') {
+        button.value = 'Short';
+        inputbox.innerHTML = '# <textarea name="command" rows="4" cols="100">' + text + '</textarea>';
+        ResizeBoxes(150);
+    }
+    else {
+        button.value = 'Long';
+        inputbox.innerHTML = '# <input type="text" name="command" size="100" border="0" value="' + text + '">';
+        ResizeBoxes(100);
+    }
+
+    // For convenience, refocus the input area
+    document.commandform.command.focus();
+}
+
 

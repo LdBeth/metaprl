@@ -158,6 +158,7 @@ doc <:doc<
 >>
 extends Top_tacticals
 extends Auto_tactic
+extends Browser_resource
 doc <:doc< @docoff >>
 
 open Lm_debug
@@ -180,6 +181,7 @@ open Tactic_type.Tacticals
 open Auto_tactic
 open Simp_typeinf
 open Typeinf
+open Browser_resource
 
 (*
  * Show that the file is loading.
@@ -541,9 +543,16 @@ let elim_univ_arg = ElimArgsOption (univ_arg_fun, None)
 let intro_univ_arg = IntroArgsOption (univ_arg_fun, None)
 
 (*
+ * Add autoT to the browser.
+ *)
+let resource browser +=
+    << button["dT 0", "refine dT 0"] >>
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "editor.run"
  * End:
  * -*-
  *)
+

@@ -29,38 +29,34 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Lm_string_set
 open Lm_rformat
 open Lm_format
 
-(*
- * Line-based buffer.
+(************************************************************************
+ * A simple bounded buffer.
  *)
-module type LineBufferSig =
-sig
-   type t
-
-   val create : unit -> t
-   val add_buffer : t -> buffer -> unit
-   val add_to_buffer : t -> int -> Buffer.t -> unit
-end
-
-module LineBuffer : LineBufferSig =
+module LineBuffer =
 struct
-   type t = Lm_rformat.buffer Queue.t
-
    let max_queue_length = 100
 
    let create = Queue.create
 
-   let add_buffer queue buf =
+   let add queue buf =
       if Queue.length queue = max_queue_length then
          ignore (Queue.take queue);
       Queue.add buf queue
 
-   let add_to_buffer queue width buf =
-      Queue.iter (fun buffer ->
-            Lm_rformat_html.print_html_buffer width buffer buf) queue
+   let iter = Queue.iter
+   let fold = Queue.fold
 end
+
+let history = LineBuffer.create ()
+let message = LineBuffer.create ()
+
+let add_to_buffer queue width buf =
+   Queue.iter (fun buffer ->
+         Lm_rformat_html.print_html_buffer width buffer buf) queue
 
 let message = LineBuffer.create ()
 
@@ -77,10 +73,11 @@ let format_invis buf s =
  *)
 let add_prompt str =
    let buffer = new_buffer () in
-      format_invis buffer "<b>";
+      format_invis buffer "<b># ";
       format_string buffer str;
       format_invis buffer "</b><br>\n";
-      LineBuffer.add_buffer message buffer
+      LineBuffer.add message buffer;
+      LineBuffer.add history str
 
 (*
  * Capture output channels.
@@ -93,7 +90,7 @@ let add_channel color =
                   format_invis buffer font;
                   format_buffer buffer buf;
                   format_invis buffer "</span>";
-                  LineBuffer.add_buffer message buffer)
+                  LineBuffer.add message buffer)
 
 let divert () =
    Lm_format.divert std_formatter (Some (add_channel "stdout"));
@@ -103,7 +100,29 @@ let divert () =
  * Format it.
  *)
 let format_message width buf =
-   LineBuffer.add_to_buffer message width buf
+   LineBuffer.iter (fun buffer ->
+         Lm_rformat_html.print_html_buffer width buffer buf) message
+
+(*
+ * Create history.
+ *)
+let get_history macros =
+   let macros_buf = Buffer.create 1024 in
+   let history_buf = Buffer.create 1024 in
+   let () =
+      Buffer.add_string history_buf "<option><b>History</b></option>\n"
+   in
+   let macros =
+      LineBuffer.fold (fun macros s ->
+            let id = Printf.sprintf "id%d" (StringTable.cardinal macros) in
+               (* BUG JYH: probably need our own escape function *)
+               Printf.bprintf history_buf "<option value=\"%s\">%s</option>\n" id (String.escaped s);
+               StringTable.add macros id s) macros history
+   in
+      StringTable.iter (fun s v ->
+            (* BUG JYH: probably need our own escape function *)
+            Printf.bprintf macros_buf "\tmacros[\"%s\"] = \"%s\";\n" s (String.escaped v)) macros;
+      Buffer.contents macros_buf, Buffer.contents history_buf
 
 (*
  * Display a term in the window.

@@ -29,6 +29,7 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Lm_string_set
 
 (*
  * Parts of the output.
@@ -36,8 +37,9 @@
 val set_main : Lm_rformat.buffer -> unit
 val format_main : int -> Buffer.t -> unit
 
-val add_prompt : string -> unit
+val add_prompt     : string -> unit
 val format_message : int -> Buffer.t -> unit
+val get_history    : string StringTable.t -> string * string
 
 val divert : unit -> unit
 

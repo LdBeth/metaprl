@@ -34,6 +34,7 @@ open Refiner.Refiner
 open Dform
 
 open Tactic_type.Tactic
+open Mp_resource
 open Proof_edit
 open MLast
 
@@ -182,6 +183,7 @@ sig
     *)
    val find_shell : string -> t
    val eval_top : t -> string -> unit
+   val get_resource : t -> global_resource
 
    (* Returns false iff the directory command failed *)
    val chdir_top : t -> string -> bool

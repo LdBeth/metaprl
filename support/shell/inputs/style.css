@@ -76,40 +76,53 @@ A:hover {
 /*
  * Properties of the built-in panels.
  */
+#menubox {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 800px;
+    height: 50px;
+    display: block;
+    border: none;
+    padding: 0px;
+    overflow: auto;
+    background-color: #f8f8ff
+}
+
 #contentbox {
     position: absolute;
-    top: 0;
-    left: 0;
+    top: 50px;
+    left: 0px;
     width: 800px;
     height: 600px;
     display: block;
     border: none;
-    padding: 0;
+    padding: 0px;
     overflow: auto
 }
 
 #messagebox {
     position: absolute;
-    top: 600px;
-    left: 0;
+    top: 650px;
+    left: 0px;
     width: 800px;
     height: 100px;
     display: block;
     border: none;
-    padding: 0;
+    padding: 0px;
     overflow: auto;
     background-color: #f8f8ff
 }
 
 #rulebox {
     position: absolute;
-    top: 700px;
-    left: 0;
+    top: 750px;
+    left: 0px;
     width: 800px;
     height: 150px;
     display: block;
     border: none;
-    padding: 0;
+    padding: 0px;
     overflow: auto
 }
 
@@ -117,5 +130,5 @@ A:hover {
     position: static;
     display: block;
     border: none;
-    padding: 0
+    padding: 0px
 }

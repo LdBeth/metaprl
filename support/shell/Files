@@ -11,6 +11,7 @@ MPFILES =\
 	java_display_term\
 	browser_copy\
 	browser_display_term\
+	browser_resource\
 	proof_edit\
 	package_sig\
 	package_info\
@@ -33,6 +34,7 @@ INPUTS =\
 	start.html\
 	login.html\
 	page.html\
+	body.html\
 	layout.js\
 	md5.js\
 	cookie.js\

@@ -1,5 +1,4 @@
 (*
- * Copy HTML files, with variable replacement.
  *
  * ----------------------------------------------------------------
  *
@@ -24,38 +23,48 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_symbol
+open Lm_string_set
+open Refiner.Refiner.Term
+open Mp_resource
 
-open Browser_sig
+(************************************************************************
+ * Different kinds of elements to display.
+ *
+ * These terms are not passed through display forms.
+ *)
 
 (*
- * Lookup table for HTML translation.
+ * A button with the given label.
+ * The command is text that should be executed
+ * when the button is pushed.
  *)
-module BrowserTable : BrowserTableSig
+declare button[label:s, command:s]
 
 (*
- * Some common keys.
+ * A menu is like a button, but it has collections of
+ * elements that act like buttons.
  *)
-val title_sym       : symbol
-val buttons_sym     : symbol
-val location_sym    : symbol
-val body_sym        : symbol
-val host_sym        : symbol
-val port_sym        : symbol
-val challenge_sym   : symbol
-val response_sym    : symbol
-val message_sym     : symbol
-val style_sym       : symbol
-val macros_sym      : symbol
-val history_sym     : symbol
-val menu_sym        : symbol
+declare menu[menuname:s, label:s]
+declare menuitem[menuname:s, label:s, command:s]
+
+(************************************************************************
+ * Resource
+ *)
 
 (*
- * Translate a file.
+ * The resulting info.
  *)
-val print_raw_file_to_http           : out_channel -> string -> unit
-val print_translated_file_to_http    : out_channel -> BrowserTable.t -> string -> unit
-val print_translated_file_to_channel : out_channel -> BrowserTable.t -> string -> unit
+type browser_info =
+   { browser_styles  : string;
+     browser_menubar : string;
+     browser_buttons : string;
+     browser_macros  : string StringTable.t
+   }
+
+(*
+ * Resources.
+ *)
+resource (term, browser_info) browser
 
 (*!
  * @docoff

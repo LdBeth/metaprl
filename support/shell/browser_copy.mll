@@ -37,11 +37,7 @@ open Browser_sig
  * Build the table of values used in the HTML.
  *)
 let title_sym       = Lm_symbol.add "TITLE"
-let fgcolor_sym     = Lm_symbol.add "FGCOLOR"
-let bgcolor_sym     = Lm_symbol.add "BGCOLOR"
 let buttons_sym     = Lm_symbol.add "BUTTONS"
-let rulebox_sym     = Lm_symbol.add "RULEBOX"
-let rulebox_hex_sym = Lm_symbol.add "RULEBOXHEX"
 let location_sym    = Lm_symbol.add "LOCATION"
 let body_sym        = Lm_symbol.add "BODY"
 let host_sym        = Lm_symbol.add "HOST"
@@ -50,6 +46,9 @@ let challenge_sym   = Lm_symbol.add "CHALLENGE"
 let response_sym    = Lm_symbol.add "RESPONSE"
 let message_sym     = Lm_symbol.add "MESSAGE"
 let style_sym       = Lm_symbol.add "STYLE"
+let macros_sym      = Lm_symbol.add "MACROS"
+let history_sym     = Lm_symbol.add "HISTORY"
+let menu_sym        = Lm_symbol.add "MENU"
 
 (*
  * Browser table.

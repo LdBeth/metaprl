@@ -33,6 +33,7 @@
  *)
 open Lm_debug
 open Lm_symbol
+open Lm_string_set
 
 open Format
 
@@ -40,6 +41,7 @@ open Http_simple
 open Http_server_type
 
 open Browser_copy
+open Browser_resource
 open Shell_sig
 open Package_info
 
@@ -77,9 +79,25 @@ struct
     *)
    type uri =
       SessionURI of Shell.t * string * bool  (* bool states whether the URL ends with a / *)
+    | SubpageURI of Shell.t * string * string
     | InputURI of string
     | LoginURI of string
     | UnknownURI of string
+
+   (*
+    * Get the last element from the list.
+    *)
+   let split_last l =
+      let rec split first l =
+         match l with
+            [tl] ->
+               Some (List.rev first, tl)
+          | [] ->
+               None
+          | h :: tl ->
+               split (h :: first) tl
+      in
+         split [] l
 
    (*
     * Decode the URI.
@@ -90,8 +108,14 @@ struct
          "session" :: id :: rest ->
             (try
                 let shell = Shell.find_shell id in
-                let dirname = Lm_string_util.prepend "/" rest in
-                   SessionURI (shell, dirname, uri.[String.length uri - 1] = '/')
+                   match split_last rest with
+                      Some (dir, page)
+                      when page = "body.html" ->
+                         let dirname = Lm_string_util.prepend "/" dir in
+                            SubpageURI (shell, dirname, page)
+                    | _ ->
+                         let dirname = Lm_string_util.prepend "/" rest in
+                            SessionURI (shell, dirname, uri.[String.length uri - 1] = '/')
              with
                 Not_found ->
                    eprintf "Bad session: %s@." id;
@@ -204,22 +228,49 @@ struct
          table
 
    (*
-    * Add the rulebox to the state table.
-    *)
-   let add_rulebox state command =
-      let table = state.state_table in
-      let table = BrowserTable.add_string table rulebox_sym command in
-      let table = BrowserTable.add_fun table rulebox_hex_sym (fun buf -> Buffer.add_string buf (encode_hex command)) in
-         { state with state_table = table }
-
-   (*
     * This is the default printer that uses tables for display.
     *)
-   let print_page out width state location =
+   let print_page state shell out width location =
+      (* Add the title bar *)
       let table = add_title_location state "MetaPRL display" location in
+
+      (* Add the body and the mssages from stdout/stderr *)
       let table = BrowserTable.add_fun table body_sym (Browser_display_term.format_main width) in
       let table = BrowserTable.add_fun table message_sym (Browser_display_term.format_message width) in
+
+      (* Add the buttons from the resources *)
+      let table, macros =
+         try
+            let browser = get_browser_resource (Shell.get_resource shell) in
+            let { browser_styles  = styles;
+                  browser_menubar = menubar;
+                  browser_buttons = buttons;
+                  browser_macros  = macros
+                } = browser
+            in
+            let table = BrowserTable.add_string table style_sym styles in
+            let table = BrowserTable.add_string table menu_sym menubar in
+            let table = BrowserTable.add_string table buttons_sym buttons in
+               table, macros
+         with
+            Not_found ->
+               table, StringTable.empty
+      in
+      let macros, history = Browser_display_term.get_history macros in
+      let table = BrowserTable.add_string table macros_sym macros in
+      let table = BrowserTable.add_string table history_sym history in
          print_translated_file_to_http out table "page.html"
+
+   (*
+    * Print the body all by itself.
+    *)
+   let print_subpage state shell out width location page =
+      (* Add the title bar *)
+      let table = add_title_location state "MetaPRL display" location in
+
+      (* Add the body and the mssages from stdout/stderr *)
+      let table = BrowserTable.add_fun table body_sym (Browser_display_term.format_main width) in
+         print_translated_file_to_http out table page
 
    (*
     * Print the login page.
@@ -260,7 +311,7 @@ struct
           } = http_info server
       in
       let uri = sprintf "http://%s:%d/session/%s%s" host port (Shell.pid shell) (Shell.pwd shell) in
-      let uri = if uri.[String.length uri - 1] = '/' then uri else (uri ^ "/") in
+      let uri = if uri.[String.length uri - 1] = '/' then uri else uri ^ "/" in
          if !debug_http then
             eprintf "Redirecting to %s@." uri;
          print_redirect_page outx SeeOtherCode uri;
@@ -271,11 +322,9 @@ struct
     * Send it to the shell, and get the result.
     *)
    let eval state shell outx command =
-      let command = command ^ ";;" in
-      let state = add_rulebox state "" in
-         Browser_display_term.add_prompt ("# " ^ command);
-         Shell.eval_top shell command;
-         state
+      Browser_display_term.add_prompt command;
+      Shell.eval_top shell (command ^ ";;");
+      state
 
    let chdir state shell dir =
       if !debug_http then
@@ -314,7 +363,7 @@ struct
                   if chdir state shell dirname && is_dir then
                      begin
                         flush state shell;
-                        print_page outx width state dirname;
+                        print_page state shell outx width dirname;
                         state
                      end
                   else
@@ -322,6 +371,14 @@ struct
                      print_redisplay_page server state shell outx
             else
                print_login_page outx state
+       | SubpageURI (shell, dirname, page) ->
+            if is_valid_response state header then
+               let width = get_window_width header in
+                  print_subpage state shell outx width dirname page;
+                  state
+            else
+               print_login_page outx state
+
        | UnknownURI dirname ->
             (*
              * Create a new shell, and change to that shell.
@@ -363,7 +420,8 @@ struct
          match decode_uri uri with
             InputURI _
           | LoginURI _
-          | UnknownURI _ ->
+          | UnknownURI _
+          | SubpageURI _ ->
                print_error_page outx BadRequestCode;
                eprintf "Shell_simple_http: bad POST command@.";
                state
@@ -387,9 +445,9 @@ struct
                    | Some button ->
                         Browser_display_term.add_prompt (sprintf "Unknown button %s" button);
                         print_redisplay_page server state shell outx
-                  else
-                     (* Invalid directory or directory change failed *)
-                     print_redisplay_page server state shell outx
+               else
+                  (* Invalid directory or directory change failed *)
+                  print_redisplay_page server state shell outx
 
    (*
     * Handle a connection.
