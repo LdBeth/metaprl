@@ -232,6 +232,7 @@ let tokenize name
      clexer_options = loptions;
      clexer_rewrites = _
    } =
+   tokens := [];
    let buf = string_of_file name in
    let tokens = do_tokenize name buf regexps loptions in
    debug_tokens "The input token list:\n" tokens;
@@ -243,6 +244,7 @@ let tokenize_string str
      clexer_options = loptions;
      clexer_rewrites = _
    } =
+   tokens := [];
    let tokens = do_tokenize "<<string>>" str regexps loptions in
    debug_tokens "The input token list:\n" tokens;
    List.map (fun (s1, s2, pos) ->

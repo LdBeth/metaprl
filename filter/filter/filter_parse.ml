@@ -1044,10 +1044,9 @@ EXTEND
 
    term: LAST
       [[ "$"; s = STRING; "$" ->
-            Phobos_compile.term_of_string [] pho_grammar_filename s
+            Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s
       ]
       | [ x = QUOTATION ->
-            print_string x;
             let kind, s =
                try
                   let i = String.index x ':' in
@@ -1058,7 +1057,7 @@ EXTEND
             in
                match kind with
                   "ext" ->
-                     Phobos_compile.term_of_string [] pho_grammar_filename s
+                     Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s
                 | "term" | "" ->
                      let cs = Stream.of_string s in
                         Grammar.Entry.parse TermGrammar.term_eoi cs
