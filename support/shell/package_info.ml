@@ -34,7 +34,6 @@ open Lm_debug
 
 open Lm_printf
 open Lm_thread
-open Lm_imp_dag
 open Lm_string_set
 
 open File_base_type
@@ -153,8 +152,7 @@ module Cache = MakeCaches (Convert)
  *)
 type info =
    { pack_cache    : Cache.StrFilterCache.t;
-     pack_dag      : package ImpDag.t;
-     pack_packages : (string,package ImpDag.node) Hashtbl.t;
+     pack_packages : (string,package) Hashtbl.t;
      pack_groups   : (string,(string*StringSet.t)) Hashtbl.t;
    }
 
@@ -212,7 +210,7 @@ let refresh pack_entry path =
          let find_or_create name =
             try Hashtbl.find pack.pack_packages name with
                Not_found ->
-                  let node = ImpDag.insert pack.pack_dag (mk_package name) in
+                  let node = mk_package name in
                      Hashtbl.add pack.pack_packages name node;
                      node
          in
@@ -222,10 +220,6 @@ let refresh pack_entry path =
                   Not_found -> thy.thy_groupdesc, StringSet.empty
             in
             let node = find_or_create thy.thy_name in
-            let add_parent name =
-               ImpDag.add_edge pack.pack_dag (find_or_create name) node
-            in
-               List.iter add_parent (Mp_resource.get_parents thy.thy_name);
                if thy.thy_groupdesc <> dsc then
                   raise (Failure (sprintf "Description mismatch:\n %s described %s as %s,\nbut %s describes it as %s" (**)
                      (StringSet.choose theories) thy.thy_group dsc thy.thy_name thy.thy_groupdesc));
@@ -237,7 +231,6 @@ let refresh pack_entry path =
 let create path =
    let pack =
       { pack_cache = Cache.StrFilterCache.create path;
-        pack_dag = ImpDag.create ();
         pack_packages = Hashtbl.create 17;
         pack_groups = Hashtbl.create 17;
       }
@@ -277,46 +270,14 @@ let get_package pack name =
    Hashtbl.find pack.pack_packages name
 
 (*
- * Add a parent edge.
- * We only allow parents with toplevel names.
- *)
-let insert_parent pack node = function
-   [parent] ->
-      begin
-         try
-            let pnode = get_package pack parent in
-               ImpDag.add_edge pack.pack_dag pnode node
-         with
-            Not_found ->
-               raise (Failure "Package_info.insert_parent: parent is not defined")
-      end
- | path ->
-      raise (Failure ("Package_info/insert_parent: parent is not toplevel: " ^ string_of_path path))
-
-(*
  * Add an implementation package.
  * This replaces any current version of the package,
  * and adds the edges to the parents.
  *)
 let add_implementation pack_info =
    let { pack_info = pack_entry; pack_name = name; pack_str = info } = pack_info in
-      State.write pack_entry (fun pack ->
-            let { pack_dag = dag; pack_packages = packages } = pack in
-            let parents =
-               match info with
-                  Some { pack_str_info = info } ->
-                     Cache.StrFilterCache.parents info
-                | None ->
-                     raise (Invalid_argument "Package_info/add_implementation")
-            in
-            let node = ImpDag.insert dag pack_info in
-               if Hashtbl.mem packages name then
-                  begin
-                     ImpDag.delete dag (Hashtbl.find packages name);
-                     Hashtbl.remove packages name
-                  end;
-               Hashtbl.add packages name node;
-               List.iter (insert_parent pack node) parents)
+      State.write pack_entry (fun { pack_packages = packages } ->
+         Hashtbl.replace packages name pack_info)
 
 (*
  * Load a package.
@@ -364,7 +325,7 @@ let auto_load_str arg pack_info =
 let load pack_entry arg name =
    synchronize_pack pack_entry (fun pack ->
          let pack_info =
-            try ImpDag.node_value pack.pack_dag (get_package pack name) with
+            try get_package pack name with
                Not_found ->
                   { pack_info = pack_entry;
                     pack_status = PackUnmodified;
@@ -453,38 +414,12 @@ let set pack_info arg item =
     | { pack_str = None; pack_name = name } ->
          raise (NotLoaded name))
 
-(*
- * DAG access.
- *)
-let get_node pack info =
-   Hashtbl.find pack.pack_packages info.pack_name
-
 let compare pack1 pack2 =
    pack1.pack_name < pack2.pack_name
 
 let packages pack =
-   let res = ref [] in
-      synchronize_pack pack (function
-         { pack_dag = dag; pack_packages = packs } ->
-            Hashtbl.iter (fun _ pack -> res := (ImpDag.node_value dag pack):: !res) packs;
-            Sort.list compare !res)
-
-let roots pack =
-   synchronize_pack pack (function
-      { pack_dag = dag } ->
-         List.map (ImpDag.node_value dag) (ImpDag.roots dag))
-
-let parents pack_entry info =
-   synchronize_pack pack_entry (fun pack ->
-         let { pack_dag = dag } = pack in
-         let node = get_node pack info in
-            List.map (ImpDag.node_value dag) (ImpDag.node_out_edges dag node))
-
-let children pack_entry info =
-   synchronize_pack pack_entry (fun pack ->
-         let { pack_dag = dag } = pack in
-         let node = get_node pack info in
-            List.map (ImpDag.node_value dag) (ImpDag.node_in_edges dag node))
+   synchronize_pack pack (fun { pack_packages = tbl } ->
+      Sort.list compare (Hashtbl.fold (fun _ pack packs -> pack :: packs) tbl []))
 
 (*
  * Access to cache.
@@ -579,7 +514,7 @@ let get_grammar pack_info =
 let get pack name =
    synchronize_pack pack (function
       pack ->
-         try ImpDag.node_value pack.pack_dag (get_package pack name) with
+         try get_package pack name with
             Not_found ->
                raise (Invalid_argument("Package_info.get: package " ^ name ^ " is not loaded")))
 

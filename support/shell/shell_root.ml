@@ -66,9 +66,9 @@ dform theories_df1: theories{'tl} =
       theories_df{'tl} popm newline
    info["end"] popm ezone
 
-dform packages_df2 : except_mode[prl] :: theories_df{xcons{theory[name:s,dsc:s]; 'next}} =
+dform packages_df2 : theories_df{xcons{theory[name:s,dsc:s]; 'next}} =
    newline
-   info["Theory \""] cd_begin[name] slot[name:s] cd_end `"\": " cd_begin[name] slot[dsc:s] cd_end
+   info["Theory \""] cd_begin[name] slot[name:s] cd_end info["\": "] cd_begin[name] slot[dsc:s] cd_end
    theories_df{'next}
 
 dform packages_df3 : theories_df{xnil} = `""
