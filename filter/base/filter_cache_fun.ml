@@ -390,6 +390,24 @@ struct
       cache.str_summaries <- [];
       cache.sig_summaries <- []
 
+   let clear_info info =
+      let { base = cache; name = name } = info in
+      let { lib = base;
+            str_summaries = str_summaries
+          } = cache
+      in
+      let path = [name] in
+      let str_summaries =
+         List.fold_left (fun str_summaries info ->
+               if Base.pathname base info = path then begin
+                  Base.remove_info base info;
+                  str_summaries
+               end
+               else
+                  info :: str_summaries) [] str_summaries
+      in
+         cache.str_summaries <- str_summaries
+
    let set_path { lib = base } path =
       Base.set_path base path
 

@@ -184,6 +184,7 @@ sig
    (* Creation *)
    val create         : string list -> t
    val clear          : t -> unit
+   val clear_info     : info -> unit
    val set_path       : t -> string list -> unit
 
    (* Loading *)

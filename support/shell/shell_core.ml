@@ -74,6 +74,9 @@ let packages = Package_info.create (Shell_state.get_includes ())
 let modified_packages () =
    List.filter shell_package (Package_info.modified_packages packages)
 
+let loaded_packages () =
+   List.filter shell_package (Package_info.loaded_packages packages)
+
 let all_theories () =
    let names = StringSet.empty in
    let names =
@@ -672,14 +675,7 @@ let mount_module modname parse_arg shell force_flag need_shell verbose =
 
    (* Set the state *)
    Shell_state.set_so_var_context None;
-   set_package parse_arg shell modname;
-
-   (* Set the proof *)
-   let pack = Package_info.load packages parse_arg modname in
-   let display_mode = get_display_mode shell in
-   let proof = Shell_package.view pack parse_arg display_mode in
-      (* Set the proof *)
-      shell.shell_proof <- proof
+   set_package parse_arg shell modname
 
 (*
  * Mount a specific proof.
@@ -1117,7 +1113,7 @@ let abandon_all parse_arg shell =
       Package_info.abandon pack
    in
       Mp_resource.clear ();
-      List.iter abandon (modified_packages ());
+      List.iter abandon (loaded_packages ());
       Proof_boot.Proof.clear_cache ();
       Package_info.clear_cache packages;
       refresh parse_arg shell

@@ -98,6 +98,7 @@ val get_refiner  : package -> Refine.refiner
  * Navigation.
  *)
 val modified_packages : t -> package list
+val loaded_packages : t -> package list
 val groups : t -> (string * string) list
 val group_exists : t -> string -> bool
 val group_packages : t -> string -> string * string list (* May raise Not_found *)

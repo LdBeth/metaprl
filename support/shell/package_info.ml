@@ -428,6 +428,34 @@ let load pack_entry arg name =
 
 let get = get_package
 
+(*
+ * Package listings.
+ *)
+let compare pack1 pack2 =
+   pack1.pack_name < pack2.pack_name
+
+let modified_packages pack =
+   synchronize_pack pack (fun { pack_modified = modified } ->
+         Sort.list compare modified)
+
+let loaded_packages pack =
+   synchronize_pack pack (fun { pack_packages = weak } ->
+         let len = Weak.length weak in
+         let rec collect packages i =
+            if i = len then
+               packages
+            else
+               let packages =
+                  match Weak.get weak i with
+                     Some pack ->
+                        pack :: packages
+                   | None ->
+                        packages
+               in
+                  collect packages (i + 1)
+         in
+            Sort.list compare (collect [] 0))
+
 (************************************************************************
  * DESTRUCTION                                                          *
  ************************************************************************)
@@ -487,13 +515,6 @@ let set pack_info arg item =
          Cache.StrFilterCache.set_command info (item, dummy_loc)
     | { pack_str = None; pack_name = name } ->
          raise (NotLoaded name))
-
-let compare pack1 pack2 =
-   pack1.pack_name < pack2.pack_name
-
-let modified_packages pack =
-   synchronize_pack pack (fun { pack_modified = modified } ->
-      Sort.list compare modified)
 
 (*
  * Access to cache.
@@ -635,13 +656,18 @@ let revert pack_info =
             eprintf "File is already reverted@.")
 
 (*
- * Compeletly abandon changes.  You will lost all your work when
+ * Compeletly abandon changes.  You will lose all your work when
  * you do this.
  *)
 let abandon pack_info =
    synchronize_node pack_info (fun pack ->
+         (match pack.pack_str with
+             Some { pack_str_info = info } ->
+                Cache.StrFilterCache.clear_info info;
+                pack.pack_str <- None
+           | None ->
+                ());
          pack.pack_sig_info <- None;
-         pack.pack_str <- None;
          pack.pack_infixes <- Infix.Set.empty;
          set_status pack_info PackUnmodified)
 

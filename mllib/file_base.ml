@@ -127,7 +127,19 @@ struct
     * Remove the info (used when a file is reverted).
     *)
    let remove_info base info =
-      Hashtbl.remove base.io_table info.info_file
+      try
+         let bucket = Hashtbl.find base.io_table info.info_file in
+         let bucket' =
+            List.fold_left (fun bucket info' ->
+                  if info'.info_type = info.info_type then
+                     bucket
+                  else
+                     info' :: bucket) [] !bucket
+         in
+            bucket := bucket'
+      with
+         Not_found ->
+            ()
 
    (*
     * Filename for a spec.
