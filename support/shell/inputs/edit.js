@@ -19,12 +19,14 @@ function FrameHeight()
 }
 
 /*
- * Cancel this edit operation.
+ * A key was pressed in the text area.
  */
-function Cancel()
+function KeyPress(event)
 {
-    parent.ShowContent();
-    location.href = '/inputs/empty.html';
+    var editarea = parent.GetObject(self, 'editarea');
+    var savebutton = parent.GetObject(self, 'savebutton');
+    savebutton.value += " (modified)";
+    editarea.onkeypress = null;
 }
 
 /*
@@ -33,14 +35,15 @@ function Cancel()
 function OnLoad()
 {
     var window_height = FrameHeight();
-    var editarea = parent.GetObject(this, 'editarea');
+    var editarea = parent.GetObject(self, 'editarea');
     if(editarea) {
         var height = window_height - 40;
         if(height < 50)
             height = 50;
         editarea.style.height = height + 'px';
+        editarea.onkeypress = KeyPress;
     }
-    var editform = parent.GetObject(this, 'editform');
+    var editform = parent.GetObject(self, 'editform');
     if(editform)
         editform.style.height = window_height + 'px';
     document.onmouseup = parent.CancelMenu;

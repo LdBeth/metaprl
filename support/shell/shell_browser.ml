@@ -769,16 +769,18 @@ struct
       in
       let id = dest_pid id in
       let io_version = Browser_syscall.version state.state_io in
+      let js_cwd = Lm_string_util.js_escaped cwd in
+      let js_edit = Lm_string_util.js_escaped edit in
          Printf.bprintf buf "\tvar session = new Array();\n";
-         Printf.bprintf buf "\tsession['cwd']      = '%s';\n" cwd;
-         Printf.bprintf buf "\tsession['location'] = 'https://%s:%d/session/%d/content%s/';\n" host port id cwd;
+         Printf.bprintf buf "\tsession['cwd']      = '%s';\n" js_cwd;
+         Printf.bprintf buf "\tsession['location'] = 'https://%s:%d/session/%d/content%s/';\n" host port id js_cwd;
          Printf.bprintf buf "\tsession['menu']     = %d;\n" menu_version;
          Printf.bprintf buf "\tsession['content']  = %d;\n" content_version;
          Printf.bprintf buf "\tsession['message']  = %d;\n" message_version;
          Printf.bprintf buf "\tsession['buttons']  = %d;\n" buttons_version;
          Printf.bprintf buf "\tsession['rule']     = %d;\n" rule_version;
          Printf.bprintf buf "\tsession['io']       = %d;\n" io_version;
-         Printf.bprintf buf "\tsession['file']     = '%s';\n" edit;
+         Printf.bprintf buf "\tsession['file']     = '%s';\n" js_edit;
          Printf.bprintf buf "\tsession['editflag'] = %b;\n" edit_flag;
          Printf.bprintf buf "\tsession['edit']     = %d;\n" edit_version;
          Printf.bprintf buf "\tsession['external'] = %b;\n" edit_external;
@@ -791,7 +793,7 @@ struct
       let info = get_session_state state session in
          Printf.bprintf buf "\tvar command_history = new Array();\n";
          ignore (List.fold_left (fun i s ->
-                       Printf.bprintf buf "\tcommand_history[%d] = '%s';\n" i s;
+                       Printf.bprintf buf "\tcommand_history[%d] = '%s';\n" i (Lm_string_util.js_escaped s);
                        succ i) 0 info.browser_history)
 
 
@@ -820,7 +822,6 @@ struct
             Buffer.add_buffer buf macros
       in
       let print_cwd buf =
-         eprintf "CWD: %s: %s@." frame cwd;
          Buffer.add_string buf cwd
       in
 
@@ -1300,15 +1301,16 @@ struct
                let edit_uri _ =
                   sprintf "edit/%s" filename
                in
-                  (match content with
-                      Some content ->
-                         let filename = filename_of_proxyedit filename in
-                            if save_root_file filename content then
-                               print_edit_done_page outx state
-                            else
-                               print_error_page outx NotFoundCode
-                    | None ->
-                         print_error_page outx BadRequestCode)
+                  synchronize_pid pid (fun session ->
+                        match content with
+                           Some content ->
+                              let filename = filename_of_proxyedit filename in
+                                 if save_root_file filename content then
+                                    print_redisplay_page edit_uri server state session outx
+                                 else
+                                    print_error_page outx NotFoundCode
+                         | None ->
+                              print_error_page outx BadRequestCode)
           | InputURI _
           | ManualURI _
           | LoginURI _

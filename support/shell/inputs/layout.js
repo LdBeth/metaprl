@@ -187,14 +187,10 @@ function Update(session)
         parent.menuframe.location.reload();
     if(version['content'] != session['content']) {
         var commentbox = GetObject(parent, 'commentbox');
-        if(version['location'] != session['location']) {
-            Debug('Content location set to: ' + session['location']);
+        if(version['location'] != session['location'])
             parent.contentframe.location.href = session['location'];
-        }
-        else {
-            Debug('Reloading content window');
+        else
             parent.contentframe.location.reload();
-        }
     }
     if(version['message'] != session['message'])
         parent.messageframe.location.reload();

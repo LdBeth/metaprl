@@ -274,7 +274,7 @@ let extract info =
    let () =
       bprintf macros_buf "\tvar buttoncommands = new Array();\n";
       StringTable.iter (fun id s ->
-               bprintf macros_buf "\tbuttoncommands['%s'] = \"%s\";\n" id (String.escaped s)) buttoncommands;
+               bprintf macros_buf "\tbuttoncommands['%s'] = '%s';\n" id (Lm_string_util.js_escaped s)) buttoncommands;
 
       bprintf macros_buf "\tvar menus = new Array();\n";
       StringTable.iter (fun name items ->
@@ -284,11 +284,11 @@ let extract info =
       bprintf macros_buf "\tvar menulabels = new Array();\n";
       StringTable.iter (fun id (s, enabled) ->
             bprintf macros_buf "\tmenuenabled['%s'] = %b;\n" id enabled;
-            bprintf macros_buf "\tmenulabels['%s'] = \"%s\";\n" id (String.escaped s)) menulabels;
+            bprintf macros_buf "\tmenulabels['%s'] = '%s';\n" id (Lm_string_util.js_escaped s)) menulabels;
 
       bprintf macros_buf "\tvar menucommands = new Array();\n";
       StringTable.iter (fun id s ->
-            bprintf macros_buf "\tmenucommands['%s'] = \"%s\";\n" id (String.escaped s)) menucommands
+            bprintf macros_buf "\tmenucommands['%s'] = '%s';\n" id (Lm_string_util.js_escaped s)) menucommands
    in
 
    (* Collect the style sheets *)
@@ -334,7 +334,7 @@ let add_history info lines =
                List.fold_left (fun items s ->
                      let item =
                         { command_label   = s;
-                          command_value   = sprintf "Prompt('%s')" s;
+                          command_value   = sprintf "Prompt('%s')" (Lm_string_util.js_escaped s);
                           command_enabled = always_enabled
                         }
                      in
