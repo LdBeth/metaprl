@@ -11,14 +11,17 @@ struct
    module TermSubst = Term_subst_std.TermSubst
    module TermShape = Term_shape_std.TermShape
    module TermEval = Term_eval_std.TermEval
-   module TermMeta = Term_meta_std.TermMeta
 
+   module TermMeta = Term_meta_std.TermMeta (Term) (TermSubst)
    module Rewrite = Rewrite.Rewrite (Term) (TermMan) (TermAddr) (TermSubst)
    module Refine = Refine.Refine (Term) (TermMan) (TermSubst) (TermAddr) (TermMeta) (Rewrite)
 end
 
 (*
  * $Log$
+ * Revision 1.2  1998/05/28 02:45:13  nogin
+ * Parameterized TermMeta module with Term and TermSubst modules
+ *
  * Revision 1.1  1998/05/27 15:14:04  jyh
  * Functorized the refiner over the Term module.
  *
