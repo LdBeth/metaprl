@@ -2,9 +2,10 @@
 # Configure Ensemble
 #
 setenv ENS_PORT 7474
-setenv ENS_MODES "UDP"
+setenv ENS_MODES "DEERING:UDP"
+setenv ENS_DEERING_PORT 7472
 setenv ENS_GOSSIP_PORT 7470
-setenv ENS_GOSSIP_HOSTS mojave:jaoquin
+setenv ENS_GOSSIP_HOSTS mojave
 setenv ENS_ID $USER
 setenv ENS_DOMAIN_PORT 7473
 

@@ -1,9 +1,9 @@
 (*
- * Register values with C to avoid the closure marshaler.
+ * Memory-mapped file.
  *
  * ----------------------------------------------------------------
  *
- * This file is part of MetaPRL, a modular, higher order
+ * This file is part of Nuprl-Light, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -28,16 +28,24 @@
  *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
- *
  *)
 
-external set : int -> 'a -> int = "ml_set_register"
-external get : int -> 'a = "ml_get_register"
+(*
+ * Type of mmaps.
+ *)
+type t
+
+(*
+ * C functions.
+ *)
+external create : string -> Unix.open_flag list -> Unix.file_perm -> t = "ml_mmap_open"
+external close : t -> unit = "ml_mmap_close"
+external to_string : t -> string = "ml_string_of_mmap"
 
 (*
  * -*-
  * Local Variables:
- * Caml-master: "mp.run"
+ * Caml-master: "nl"
  * End:
  * -*-
  *)

@@ -29,7 +29,7 @@ OPTTHREADS = -ccopt -L$(ROOT)/lib -cclib -lthreadsnat$(EXT_PROF) -cclib -lunix$(
 # Configuration
 #
 OCAMLDEP = $(ROOT)/bin/ocamldep
-OCAMLCFLAGS = $(INCLUDE) -I $(ROOT)/lib $(OCAMLFLAGS) $(NOASSERT) $(THREADS)
+OCAMLCFLAGS = -ccopt -g $(INCLUDE) -I $(ROOT)/lib $(OCAMLFLAGS) $(NOASSERT) $(THREADS)
 OCAMLDEPFLAGS := $(OCAMLDEPFLAGS) $(INCLUDE) -I $(ROOT)/lib 
 OCAMLOPTFLAGS = -ccopt -g $(INCLUDE) -I $(ROOT)/lib $(OCAMLFLAGS) $(PROFILE) -inline $(INLINE) -noassert $(THREADS)
 CAMLP4NFLAGS = $(INCLUDE) $(OCAMLFLAGS)

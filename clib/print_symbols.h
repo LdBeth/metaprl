@@ -42,6 +42,7 @@
 #pragma interface
 #endif __GNUC__
 
+value function_symbols;
 value ml_extern_symbols(value symbols);
 void print_symbol(int pc);
 

@@ -15,9 +15,12 @@ MLZFILES :=\
 	register
 
 # Library files
-LMFILES := $(MLZFILES)\
+LMFILES :=\
+	$(MLZFILES)\
 	mp_debug\
 	mp_pervasives\
+	mmap\
+	mmap_pipe\
 	env_arg\
 	punix\
 	getrusage\

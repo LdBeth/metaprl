@@ -22,10 +22,12 @@ LMFILES =\
 
 ifdef ENSROOT
     ENSFILES =\
-	appl_closure\
+	appl_outboard_common\
+	appl_outboard_client\
 	ensemble_queue
 
     LMFILES_ens =\
+	$(MLZFILES)\
 	$(LMFILES)\
 	$(ENSFILES)\
 	remote_sig\
@@ -36,6 +38,55 @@ ifdef ENSROOT
 
     CMOFILES_ens = $(addsuffix .cmo, $(LMFILES_ens))
     CMXFILES_ens = $(addsuffix .cmx, $(LMFILES_ens))
+
+    CMALIBS_ens =\
+        $(ROOT)/lib/trefiner_ens.cma
+
+    CMXALIBS_ens =\
+        $(ROOT)/lib/trefiner_ens.cmxa
+
+    #
+    # Server program
+    #
+    MSFILES =\
+	appl_outboard_common\
+	appl_outboard_server
+
+    PFILES = $(MSFILES)
+
+    CMIFILES_serv = $(addsuffix .cmi, $(MSFILES))
+    CMOFILES_serv = $(addsuffix .cmo, $(MSFILES))
+    CMXFILES_serv = $(addsuffix .cmx, $(MSFILES))
+
+    CMADEPS_serv =\
+	$(CAMLLIB)/unix.cma\
+	$(THREADSLIB)\
+        $(ENSROOT)/lib/$(HOSTTYPE)/socket.cma\
+        $(ENSROOT)/lib/$(HOSTTYPE)/crypto.cma\
+	$(ENSROOT)/lib/$(HOSTTYPE)/_nulldynlink.cmo\
+        $(ENSROOT)/lib/$(HOSTTYPE)/libenscore.cma\
+        $(ENSROOT)/lib/$(HOSTTYPE)/libensmin.cma\
+        $(ENSROOT)/lib/$(HOSTTYPE)/libensrest.cma\
+	$(ROOT)/lib/util.cma\
+	$(MAIN).cma
+
+    CMXADEPS_serv =\
+        $(ENSROOT)/lib/$(HOSTTYPE)/socket.cmxa\
+        $(ENSROOT)/lib/$(HOSTTYPE)/crypto.cmxa\
+        $(ENSROOT)/lib/$(HOSTTYPE)/libenscore.cmxa\
+        $(ENSROOT)/lib/$(HOSTTYPE)/libensmin.cmxa\
+        $(ENSROOT)/lib/$(HOSTTYPE)/libensrest.cmxa
+
+    CMALIBS_serv = $(CMADEPS_serv)
+
+    CMXALIBS_serv = $(CMXADEPS_serv)
+
+    CCLIBS_serv =\
+	-cclib $(ROOT)/lib/clib.a\
+	-cclib -lunix\
+        -ccopt -L$(ENSROOT)/lib/$(HOSTTYPE)\
+        -cclib -lsock\
+        -cclib -lcryptoc
 endif
 
 LMFILES_null =\
@@ -57,16 +108,21 @@ LIB = trefiner
 #
 .PHONY: lib
 
-all: lib
-
 #
 # Ensemble library
 #
 ifdef ENSROOT
+MPSERVER = mpserver
+
+all: lib $(MPSERVER).run
+
 ENS_LIB = $(LIB)_ens.cma
 OPT_ENS_LIB = $(LIB)_ens.cmxa
 RENS_LIB = $(ROOT)/lib/$(ENS_LIB)
 ROPT_ENS_LIB = $(ROOT)/lib/$(OPT_ENS_LIB) $(ROOT)/lib/$(LIB)_ens$(EXT_LIB)
+
+$(MPSERVER).run: $(CMIFILES_serv) $(CMOFILES_serv) $(CMADEPS_serv)
+	$(OCAMLC) -custom -o $@ $(OCAMLCFLAGS) $(CMALIBS_serv) $(CMOFILES_serv) $(CCLIBS_serv)
 
 $(RENS_LIB): $(ENS_LIB)
 	$(LN) $(ROOT)/$(DIR)/$(ENS_LIB) $@
@@ -90,6 +146,13 @@ $(OPT_ENS_LIB): $(CMXFILES_ens) thread_refiner.cmi thread_refiner_ens_mod.ml
 	$(LN) thread_refiner_ens_mod.ml thread_refiner.ml
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -c thread_refiner.ml
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -a -o $@ $(LCMXFILES) $(CMXFILES_ens) thread_refiner.cmx
+else
+
+#
+# No Ensemble
+#
+all: lib
+
 endif
 
 #

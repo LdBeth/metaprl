@@ -31,7 +31,8 @@
  *)
 
 load "test";;
-cd "test/pigeon3";;
+cd "test/pigeon4";;
+refine timingT proveT;;
 
 (*
  * -*-

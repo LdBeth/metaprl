@@ -9,8 +9,8 @@ include $(ROOT)/mk/preface
 # Library files
 ifdef ENSROOT
 ENSFILES :=\
-	intern.c\
-	extern.c
+	intern\
+	extern
 endif
 
 LCFILES :=\
@@ -24,7 +24,8 @@ LCFILES :=\
 	debug\
 	ml_debug\
 	getrusage\
-	register
+	register\
+	mmap
 
 # Name of library
 MAIN := clib

@@ -1,16 +1,16 @@
 (*
- * Register values with C to avoid the closure marshaler.
+ * Common nfo needed for outboard Ensemble.
  *
  * ----------------------------------------------------------------
  *
- * This file is part of MetaPRL, a modular, higher order
+ * This file is part of Nuprl-Light, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
  * See the file doc/index.html for information on Nuprl,
  * OCaml, and more information about this system.
  *
- * Copyright (C) 1999 Jason Hickey, Cornell University
+ * Copyright (C) 1998 Jason Hickey, Cornell University
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -28,16 +28,26 @@
  *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
- *
  *)
 
-external set : int -> 'a -> int = "ml_set_register"
-external get : int -> 'a = "ml_get_register"
+(*
+ * Commands we send through the shared memory.
+ *)
+val cast_code : int
+val send_code : int
+val block_code : int
+val new_view_code : int
+val start_code : int
+
+(*
+ * Directory and root name of the shared file.
+ *)
+val shared_dir : string
 
 (*
  * -*-
  * Local Variables:
- * Caml-master: "mp.run"
+ * Caml-master: "nl"
  * End:
  * -*-
  *)

@@ -50,7 +50,7 @@
 extern void failwith(const char *s);
 
 /* To print out the function symbols */
-static value function_symbols;
+value function_symbols = 0;
 
 /* Store the symbol array */
 value ml_extern_symbols(value symbols)

@@ -71,8 +71,8 @@ value ml_set_register(value id, value val)
     /* Initialize */
     if(entries == Val_unit) {
         /* Allocate the array */
-        entries = alloc_shr(MAX_REGISTRY_SIZE, 0);
         register_global_root(&entries);
+        entries = alloc_shr(MAX_REGISTRY_SIZE, 0);
 
         /* Initialize it */
         for(i = 0; i != MAX_REGISTRY_SIZE; i++)
@@ -91,12 +91,17 @@ value ml_set_register(value id, value val)
  */
 value ml_get_register(value id)
 {
-    int index = Int_val(id);
-    return index < 0 || index >= MAX_REGISTRY_SIZE ? Val_unit : Field(entries, index);
-}
-    
+    value v;
 
-        
+    int index = Int_val(id);
+    if(index < 0 || index >= MAX_REGISTRY_SIZE)
+        failwith("ml_get_register: invalid index");
+    else {
+        v = Field(entries, index);
+        if(v == Val_unit)
+            failwith("ml_get_register: bogus index");
+    }
+}
 
 /*
  * -*-

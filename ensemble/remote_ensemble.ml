@@ -38,6 +38,13 @@ open Thread_util
 
 open Remote_queue_sig
 
+let debug_remote =
+   create_debug (**)
+      { debug_name = "remote";
+        debug_description = "remote queue operations";
+        debug_value = false
+      }
+
 module Remote =
 struct
    (************************************************************************
@@ -199,9 +206,12 @@ struct
                PollSuccess local
        | [] ->
             (* Issue a lock request to the Queue *)
-            lock_printer ();
-            eprintf "Remote_ensemble.request%t" eflush;
-            unlock_printer ();
+            if !debug_remote then
+               begin
+                  lock_printer ();
+                  eprintf "Remote_ensemble.request%t" eflush;
+                  unlock_printer ()
+               end;
             Queue.lock queue.queue_queue;
             PollFailure
 
@@ -284,9 +294,12 @@ struct
             else
                hand' :: remove hands
        | [] ->
-            lock_printer ();
-            eprintf "Remote_ensemble.handle_result: lost result%t" eflush;
-            unlock_printer ();
+            if !debug_remote then
+               begin
+                  lock_printer ();
+                  eprintf "Remote_ensemble.handle_result: lost result%t" eflush;
+                  unlock_printer ()
+               end;
             []
       in
          queue.queue_pending <- remove queue.queue_pending
@@ -331,13 +344,19 @@ struct
                [Thread_event.wrap queue.queue_upcall (fun msg -> MessageUpcall msg);
                 Thread_event.wrap (Thread_event.choose block_events) (fun msg -> MessageEvent msg)]
             in
-               lock_printer ();
-               eprintf "Remote_ensemble.select: begin%t" eflush;
-               unlock_printer ();
+               if !debug_remote then
+                  begin
+                     lock_printer ();
+                     eprintf "Remote_ensemble.select: begin%t" eflush;
+                     unlock_printer ()
+                  end;
                let x = Thread_event.sync 0 (Thread_event.choose events) in
-                  lock_printer ();
-                  eprintf "Remote_ensemble.select: end%t" eflush;
-                  unlock_printer ();
+                  if !debug_remote then
+                     begin
+                        lock_printer ();
+                        eprintf "Remote_ensemble.select: end%t" eflush;
+                        unlock_printer ()
+                     end;
                   x
       in
          match poll [] events with

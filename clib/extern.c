@@ -26,6 +26,7 @@
 #include "reverse.h"
 #include "str.h"
 
+#include "inextern.h"
 #include "print_symbols.h"
 
 /* To keep track of sharing in externed objects */
@@ -360,6 +361,22 @@ static void extern_rec(value v)
     writeblock((char *) code_checksum(), 16);
     return;
   }
+#if 0
+  else {
+    int i;
+    fprintf(stderr, "Output C function\n");
+    if (!extern_closures)
+      extern_invalid_argument("output_value: functional value");
+    if(function_symbols) {
+        for(i = 0; i != closure_level; i++)
+            putc(' ', stderr);
+        print_symbol((char *) v - code_area_start);
+    }
+    writecode32(CODE_CODEPOINTER2, (unsigned long) v);
+    writeblock((char *) code_checksum(), 16);
+    return;
+  }
+#endif
   extern_invalid_argument("output_value: abstract value");
 }
 

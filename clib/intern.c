@@ -24,6 +24,8 @@
 #include "misc.h"
 #include "reverse.h"
 
+#include "inextern.h"
+
 static unsigned char * intern_src;
 /* Reading pointer in block holding input data. */
 
@@ -244,6 +246,17 @@ static void intern_rec(value *dest)
         }
         v = (value) (code_area_start + ofs);
         break;
+#if 0
+      case CODE_CODEPOINTER2:
+        ofs = read32u();
+        readblock(cksum, 16);
+        if (memcmp(cksum, code_checksum(), 16) != 0) {
+          intern_cleanup();
+          failwith("input_value: code mismatch");
+        }
+        v = (value) ofs;
+        break;
+#endif
       case CODE_INFIXPOINTER:
         ofs = read32u();
         intern_rec(&clos);

@@ -67,6 +67,8 @@ let debug_remote =
         debug_value = false
       }
 
+external yield : unit -> unit = "caml_thread_yield"
+
 (*
  * This functions are lifted out for speed, and so that
  * the marshaler does not get extra suprious values in
@@ -75,7 +77,7 @@ let debug_remote =
 module ThreadRefinerTacticals =
 struct
    (*
-    * These are the values that a tactic_auxctic returns.
+    * These are the values that a tactic returns.
     *)
    type ('term, 'extract) t =
       Value of 'term list * 'extract
@@ -107,7 +109,7 @@ end
 
 module MakeThreadRefiner (Arg : ThreadRefinerArgSig) =
 struct
-   module Remote = Remote_monitor.MakeMonitor (Remote_ensemble.Remote)
+   module Remote = (* Remote_monitor.MakeMonitor *) (Remote_ensemble.Remote)
 
    (************************************************************************
     * TYPES                                                                *
@@ -360,7 +362,10 @@ struct
     * This should be just large enough that the
     * Ensemble queues rarely get empty.
     *)
-   let remote_count = 5
+   let set_int _ iref i =
+      iref := i
+
+   let remote_count = Env_arg.int "remote" 5 "max number of remote jobs" set_int
 
    (************************************************************************
     * DEBUGGING                                                            *
@@ -696,7 +701,7 @@ struct
     *)
    let rec big_stack i = function
       _ :: t ->
-         if i = 10 then
+         if i = 2 then
             true
          else
             big_stack (succ i) t
@@ -773,6 +778,7 @@ struct
             [ValueEntry (args, ext)] ->
                ProcSuccess (args, ext)
           | entry :: stack ->
+               yield ();
                eval_stack proc (eval_entry entry stack)
           | [] ->
                raise (Invalid_argument "eval_stack")
@@ -1844,7 +1850,7 @@ struct
             begin
                match msg with
                   ProcSuccess (args, ext) ->
-                     if true then
+                     if !debug_schedule then
                         begin
                            lock_printer ();
                            eprintf "Thread_refiner_ens.handle_event: ProcSuccess%t" eflush;
@@ -1852,7 +1858,7 @@ struct
                         end;
                      handle_proc_success sched entry args ext
                 | ProcFailure exn ->
-                     if true then
+                     if !debug_schedule then
                         begin
                            lock_printer ();
                            eprintf "Thread_refiner_ens.handle_event: ProcFailure%t" eflush;
@@ -1860,7 +1866,7 @@ struct
                         end;
                      handle_proc_failure sched entry exn
                 | ProcStack stack ->
-                     if true then
+                     if !debug_schedule then
                         begin
                            lock_printer ();
                            eprintf "Thread_refiner_ens.handle_event: ProcStack%t" eflush;
@@ -1868,7 +1874,7 @@ struct
                         end;
                      handle_stack sched entry stack
                 | ProcCanceled ->
-                     if true then
+                     if !debug_schedule then
                         begin
                            lock_printer ();
                            eprintf "Thread_refiner_ens.handle_event: ProcCanceled%t" eflush;
@@ -1877,7 +1883,7 @@ struct
                      handle_process_cancelation sched entry
             end
        | SubmitMessage msg ->
-            if true then
+            if !debug_schedule then
                begin
                   lock_printer ();
                   eprintf "Thread_refiner_ens.handle_event: ProcMessage%t" eflush;
@@ -1885,7 +1891,7 @@ struct
                end;
             handle_submission sched msg
        | ClientMessage (root, msg) ->
-            if true then
+            if !debug_schedule then
                begin
                   lock_printer ();
                   eprintf "Thread_refiner_ens.handle_event: ClientMessage%t" eflush;
@@ -1897,7 +1903,7 @@ struct
                      handle_client_cancelation sched root
             end
        | RemoteMessage (remote, msg) ->
-            if true then
+            if !debug_schedule then
                begin
                   lock_printer ();
                   eprintf "Thread_refiner_ens.handle_event: RemoteMessage%t" eflush;
@@ -1911,7 +1917,7 @@ struct
                      handle_remote_failure sched remote exn
             end
        | CancelMessage local ->
-            if true then
+            if !debug_schedule then
                begin
                   lock_printer ();
                   eprintf "Thread_refiner_ens.handle_event: CancelMessage%t" eflush;
@@ -1919,7 +1925,7 @@ struct
                end;
             handle_local_cancelation sched local
        | RequestMessage local ->
-            if true then
+            if !debug_schedule then
                begin
                   lock_printer ();
                   eprintf "Thread_refiner_ens.handle_event: RequestMessage%t" eflush;
@@ -1993,7 +1999,7 @@ struct
          proc.proc_status <- StatusRunning;
          proc.proc_wakeup <- false;
          set_child_process parent pending (SProcess entry);
-         if !debug_sync or true then
+         if !debug_sync then
             begin
                lock_printer ();
                eprintf "Thread_refiner.start_process: %d%t" proc.proc_pid eflush;
@@ -2032,7 +2038,7 @@ struct
    let start_remote sched ({ pending_arg = msg; pending_parent = parent } as pending) =
       let id = max_remote_id sched.sched_remotes in
       let _ =
-         if !debug_remote or true then
+         if !debug_remote then
             begin
                lock_printer ();
                eprintf "Thread_refiner.start_remote: %d:" id;
@@ -2079,7 +2085,7 @@ struct
                         sched.sched_pending <- pendings;
                         schedule sched
                    | [] ->
-                        if List.length remotes < remote_count then
+                        if List.length remotes < !remote_count then
                            begin
                               sched.sched_remotes <- start_remote sched pending :: remotes;
                               sched.sched_pending <- pendings;
@@ -2125,7 +2131,7 @@ struct
             end
       in
       let _ =
-         if !debug_sync or true then
+         if !debug_sync then
             begin
                lock_printer ();
                eprintf "Thread_refiner.sched_main_loop: waiting";
@@ -2137,7 +2143,7 @@ struct
             end
       in
       let event = Remote.select sched.sched_remote (schedule_events sched) in
-         if !debug_sync or true then
+         if !debug_sync then
             begin
                lock_printer ();
                eprintf "Thread_Refiner.sched_main_loop: handling event%t" eflush;
@@ -2218,7 +2224,7 @@ struct
                unlock_printer ()
             end;
          let result = Thread_event.sync (-1) (Thread_event.receive msg.submit_response) in
-            if !debug_sync then
+            if !debug_sync or true then
                begin
                   lock_printer ();
                   eprintf "Thread_refiner.eval: job complete%t" eflush;

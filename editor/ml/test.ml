@@ -77,13 +77,27 @@ end
 module PigeonTable = MakeSplayTable (StringTableBase)
 
 (*
+ * Proving well-formedness.
+ *)
+let prove_wf = autoT
+(*
+let rec prove_wf p =
+   let t = Sequent.concl p in
+   let t = dest_type_term t in
+      (if is_var_term t then
+          univTypeT << univ[1:l] >> thenT trivialT
+       else
+          dT 0 thenT prove_wf) p
+*)
+
+(*
  * Step 5: prove a disjunct.
  *)
 let rec prove_disjunct pigeons p =
    let t = Sequent.concl p in
       (if is_or_term t then
-          (selT 1 (dT 0) thenMT prove_disjunct pigeons thenWT autoT)
-          orelseT (selT 2 (dT 0) thenMT prove_disjunct pigeons thenWT autoT)
+          (selT 1 (dT 0) thenMT prove_disjunct pigeons thenWT prove_wf)
+          orelseT (selT 2 (dT 0) thenMT prove_disjunct pigeons thenWT prove_wf)
        else
           try
              nthHypT (PigeonTable.find pigeons (dest_var t))

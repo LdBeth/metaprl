@@ -18,7 +18,6 @@ INCLUDE = -I .\
 	-I $(ROOT)/lib\
 	-I $(ROOT)/library\
 	-I $(ROOT)/ocaml_debug\
-	-I $(ENSROOT)/lib/$(HOSTTYPE)\
 	-I $(CAMLP4LIB)
 
 OCAMLDEPFLAGS = -prl
@@ -85,7 +84,7 @@ TCMXFILES = $(addsuffix .cmx, $(TOPFILES))
 ########################################################################
 
 ifdef ENSROOT
-    CMADEPS_ens =\
+    xCMADEPS_ens =\
         $(ENSROOT)/lib/$(HOSTTYPE)/socket.cma\
         $(ENSROOT)/lib/$(HOSTTYPE)/crypto.cma\
 	$(ENSROOT)/lib/$(HOSTTYPE)/_nulldynlink.cmo\
@@ -93,7 +92,7 @@ ifdef ENSROOT
         $(ENSROOT)/lib/$(HOSTTYPE)/libensmin.cma\
         $(ENSROOT)/lib/$(HOSTTYPE)/libensrest.cma
 
-    CMXADEPS_ens =\
+    xCMXADEPS_ens =\
         $(ENSROOT)/lib/$(HOSTTYPE)/socket.cmxa\
         $(ENSROOT)/lib/$(HOSTTYPE)/crypto.cmxa\
 	$(ENSROOT)/lib/$(HOSTTYPE)/_nulldynlink.cmx\
@@ -107,7 +106,7 @@ ifdef ENSROOT
     CMXALIBS_ens =\
         $(ROOT)/lib/trefiner_ens.cmxa
 
-    CCLIBS_ens =\
+    xCCLIBS_ens =\
         -ccopt -L$(ENSROOT)/lib/$(HOSTTYPE)\
         -cclib -lsock\
         -cclib -lcryptoc
