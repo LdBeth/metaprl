@@ -202,6 +202,9 @@ let resource (term * term * (int -> tactic), int -> tactic) nth_hyp =
 
 let nthHypT = argfunT (fun i p -> get_resource_arg p get_nth_hyp_resource i)
 
+let someNthHypT = funT (fun p ->
+   onSomeHypT (get_resource_arg p get_nth_hyp_resource))
+
 let explode t =
    let t = TermMan.explode_sequent t in
       SeqHyp.to_list t.sequent_hyps, t.sequent_concl
@@ -399,7 +402,7 @@ let nth_hyp_prec = create_auto_prec [trivial_prec] []
 let resource auto += {
    auto_name = "nthHypT/nthAssumT";
    auto_prec = nth_hyp_prec;
-   auto_tac = onSomeHypT nthHypT orelseT onSomeAssumT nthAssumT;
+   auto_tac = someNthHypT orelseT onSomeAssumT nthAssumT;
    auto_type = AutoTrivial;
 }
 

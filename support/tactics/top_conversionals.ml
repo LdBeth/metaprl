@@ -447,7 +447,7 @@ let reduceTopC_env e =
 let reduceTopC = funC reduceTopC_env
 
 let reduceC =
-   repeatC (higherC reduceTopC)
+   funC (fun e -> repeatC (higherC (reduceTopC_env e)))
 
 let reduceT =
    rwAll reduceC
