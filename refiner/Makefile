@@ -91,7 +91,7 @@ term_std/reflib.cma: $(TERM_STD_MLFILES)
 	cd term_std; $(MAKE) all
 
 term_gen/reflib.cma: $(TERM_GEN_MLFILES)
-	cd term_std; $(MAKE) all
+	cd term_gen; $(MAKE) all
 
 term_ds/reflib.cma: $(TERM_DS_MLFILES)
 	cd term_ds; $(MAKE) all
