@@ -10,7 +10,7 @@ include mk/preface
 # Build all the parts of Nuprl-Light:
 #    refiner: logic engine
 #    filter: front end to the compiler
-#    theories/tactic: tactic library
+#    support: support library
 #    theories/base: root theory
 #    theories/itt: Nuprl type theory
 #    theories/lf: Edinburgh logical framework
@@ -34,7 +34,10 @@ ifneq ($(LIBMOJAVE),undefined)
 	DEP_DIRS := $(LIBMOJAVE) $(DEP_DIRS)
 endif
 
-DIRS = $(REFINER_DIRS) filter $(MP_DIRS) editor/ml
+DIRS = $(REFINER_DIRS)\
+	filter\
+	$(MP_DIRS)\
+	editor/ml
 
 .PHONY: all opt
 .PHONY: profile_all profile_clean profile_byte filter profile profile_opt profile_mem profile_mem_opt

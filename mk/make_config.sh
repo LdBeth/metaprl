@@ -50,11 +50,11 @@ REFINER=$REFINER
 #
 # This is the list of theory directories theory/*
 # that you want to compile.  You want to include at least
-#    THEORIES = tactic ocaml base
+#    THEORIES = base
 # Include itt if you want to use the Nuprl type theory,
 # and add any additional theory directories after that.
 #
-# Alternatively, use THEORIES = all
+# Alternatively, use THEORIES = all, or THEORIES = default
 #
 THEORIES=$THEORIES
 

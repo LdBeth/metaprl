@@ -1,5 +1,5 @@
 #!/bin/sh
-cd ../theories/tactic
+cd ../support/display
 grep 'mode.prl.*::.*`"[^"]' nuprl_font.ml | \
 sed -e 's|.*::[[:blank:]]*||' -e 's|[[:blank:]]*=[[:blank:]]*|: |' | \
 awk '

@@ -10,7 +10,7 @@
 include $(ROOT)/mk/config
 include $(ROOT)/mk/config.local
 
-MP_VERSION=0.8.1
+MP_VERSION=0.8.2
 
 #
 # Versions of Ocaml/Camlp4 that are compatible with MetaPRL
@@ -22,9 +22,9 @@ CAMLP4_VERSIONS=3.06
 # All the names for "yes"
 YESFLAGS=1 true True t T TRUE Y y yes Yes YES
 
-DEFAULT_THEORIES = tactic ocaml base itt
-ALL_THEORIES = tactic ocaml base ocaml_doc itt ocaml_sos fol czf phobos sil tptp fir experimental/compile
-# Do not compile yet: lf
+DEFAULT_THEORIES = base itt
+ALL_THEORIES = base ocaml_doc itt ocaml_sos fol czf phobos sil tptp fir experimental/compile
+# Outdated and does not currently compile: lf
 
 ifndef TERMS
    TERMS=undefined
@@ -106,10 +106,11 @@ else
    ADDROOT=$(ROOT)/
 endif
 
+SUPPORT_DIRS =  $(addprefix $(ADDROOT)support/, display shell tactics)
 ifeq ($(THEORIES),all)
-   MP_DIRS = $(addprefix $(ADDROOT)theories/, $(ALL_THEORIES))
+   MP_DIRS = $(SUPPORT_DIRS) $(addprefix $(ADDROOT)theories/, $(ALL_THEORIES))
 else
-   MP_DIRS = $(addprefix $(ADDROOT)theories/, $(THEORIES))
+   MP_DIRS = $(SUPPORT_DIRS) $(addprefix $(ADDROOT)theories/, $(THEORIES))
 endif
 
 #
@@ -208,4 +209,4 @@ endif
 
 OCAMLC := $(OCAMLC) -warn-error A -w A
 OCAMLOPT := $(OCAMLOPT) -warn-error A -w A
-
+SUPPORT_INCL := -I $(ROOT)/support/display -I $(ROOT)/support/shell -I $(ROOT)/support/tactics

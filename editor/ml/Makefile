@@ -11,6 +11,7 @@ INCLUDE = -I .\
 	-I $(ROOT)/library\
 	-I $(CAMLP4LIB)\
 	-I $(ROOT)/ensemble\
+	$(SUPPORT_INCL)\
 	$(addprefix -I , $(MP_DIRS))\
 	-I $(ROOT)/library\
 	-I $(ROOT)/ocaml_debug\

@@ -40,7 +40,7 @@ if [ -z "$CAMLP4LIB" ]; then
    CAMLP4LIB=/usr/lib/camlp4
 fi
 
-INCLUDES="-I . -I ../../theories/sil -I ../../theories/reflect_itt -I ../../theories/tutorial -I ../../theories/tptp -I ../../theories/fol -I ../../theories/czf -I ../../theories/itt -I ../../theories/base -I ../../theories/ocaml -I ../../theories/ocaml_sos -I ../../theories/tactic -I ../../theories/ocaml_doc -I ../../theories/mc -I ../../theories/fir -I ../../theories/phobos -I ../../theories/experimental/compile -I tests -I $CAMLP4LIB"
+INCLUDES="-I . -I ../../support/display -I ../../support/shell -I ../../support/tactics -I ../../theories/sil -I ../../theories/reflect_itt -I ../../theories/tutorial -I ../../theories/tptp -I ../../theories/fol -I ../../theories/czf -I ../../theories/itt -I ../../theories/base -I ../../theories/ocaml_sos -I ../../theories/ocaml_doc -I ../../theories/mc -I ../../theories/fir -I ../../theories/phobos -I ../../theories/experimental/compile -I tests -I $CAMLP4LIB"
 
 DEBUGINCLUDES="$INCLUDES -I ../../mllib -I ../../refiner/refbase -I ../../refiner/refsig -I ../../refiner/term_gen -I ../../refiner/term_std -I ../../refiner/term_ds -I ../../refiner/rewrite -I ../../refiner/refiner -I ../../refiner/reflib -I ../../filter/base -I ../../filter/boot -I ../../filter/filter"
 
