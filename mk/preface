@@ -104,7 +104,7 @@ ifndef THEORIES
    THEORIES = $(THEORIES_DEFAULT)
 endif
 
-ifeq ($(ROOT),.) 
+ifeq ($(ROOT),.)
    ADDROOT=
 else
    ADDROOT=$(ROOT)/
@@ -156,7 +156,7 @@ ifndef CAMLLIB
 endif
 
 ifndef CAMLP4LIB
-   CAMLP4LIB = $(CAMLP4LIB_DEFAULT)
+   CAMLP4LIB = $(CAMLLIB)/camlp4
 endif
 
 ifndef MPLIB
