@@ -617,7 +617,7 @@ struct
          if search_arg hd found then
             remove_duplicates found tl
          else
-            hd :: remove_duplicates found tl
+            hd :: remove_duplicates (hd :: found) tl
     | [] ->
          []
 
@@ -858,24 +858,13 @@ struct
     * Be careful not to change the arguments if not necessary.
     *)
    let match_subgoals =
-      let rec filter_subgoals tail = function
-         subgoal :: subgoals ->
-            begin
-               match subgoal with
-                  Goal arg ->
-                     filter_subgoals (subgoal :: tail) subgoals
-                | _ ->
-                     (goal_ext subgoal, subgoal) :: filter_subgoals tail subgoals
-            end
+      let rec filter_subgoals = function
+         Goal _ :: subgoals ->
+            filter_subgoals subgoals
+       | subgoal :: subgoals ->
+            (goal_ext subgoal, subgoal) :: filter_subgoals subgoals
        | [] ->
-            let spread ext =
-               match ext with
-                  Goal arg ->
-                     (arg, ext)
-                | _ ->
-                     raise (Invalid_argument "Proof_boot.match_subgoals.search")
-            in
-               List.map spread tail
+            []
       in
       let filter_extra = function
          (_, Goal _) ->
@@ -903,7 +892,7 @@ struct
                [], List_util.some_map filter_extra subgoals
       in
          (fun leaves subgoals extras ->
-               collect leaves (filter_subgoals [] (subgoals @ extras)))
+               collect leaves (filter_subgoals (subgoals @ extras)))
 
    (*
     * Replace the subgoal nodes.
@@ -2410,10 +2399,11 @@ struct
                   RefineError _ ->
                      goal
             in
-            let subgoals, extras = update_subgoals (leaves_ext new_goal) subgoals extras in
+            let leaves = leaves_ext new_goal in
+            let subgoals, extras = update_subgoals leaves subgoals extras in
             let subgoals = List.map (expand_ext dforms proof) subgoals in
             let extras = List.map (expand_ext dforms proof) extras in
-            let subgoals, extras = match_subgoals (leaves_ext new_goal) subgoals extras in
+            let subgoals, extras = match_subgoals leaves subgoals extras in
                RuleBox { rule_status = LazyStatusDelayed;
                          rule_expr = expr;
                          rule_string = text;
