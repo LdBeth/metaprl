@@ -31,7 +31,6 @@
  *)
 
 extends Mptop
-extends Proof_edit
 extends Package_info
 extends Shell_rule
 extends Shell_package

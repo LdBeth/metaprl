@@ -33,7 +33,6 @@
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 extends Mptop
-extends Proof_edit
 extends Package_info
 extends Shell_util
 extends Shell_rule
@@ -61,9 +60,6 @@ open Filter_summary
 open Tactic_type
 open Tactic_type.Tacticals
 
-open Package_sig
-open Package_info
-open Proof_edit
 open Shell_sig
 open Shell_p4_sig
 open Shell_util
@@ -156,7 +152,7 @@ type info =
 
       (* Current module and path and proof *)
       mutable shell_dir     : string list;
-      mutable shell_package : Package.package option;
+      mutable shell_package : Package_info.package option;
       mutable shell_proof   : edit_object;
 
       (* Display options *)
@@ -185,7 +181,7 @@ let create_pid =
  * We should skip the packages that do not have basic shell commands in them.
  *)
 let shell_package pkg =
-   let name = Package.name pkg in
+   let name = Package_info.name pkg in
       try Mptop.mem (Mptop.get_toploop_resource (Mp_resource.find (Mp_resource.theory_bookmark name)) []) "cd" with
          Not_found ->
             false
@@ -193,10 +189,10 @@ let shell_package pkg =
 (*
  * All loaded modules.
  *)
-let packages = Package.create (Shell_state.get_includes ())
+let packages = Package_info.create (Shell_state.get_includes ())
 
 let all_packages () =
-   List.filter shell_package (Package.packages packages)
+   List.filter shell_package (Package_info.packages packages)
 
 let default_mode_base = Mp_resource.theory_bookmark "summary"
 
@@ -236,8 +232,8 @@ struct
       match info.shell_package with
          Some mod_info ->
             if !debug_shell then
-               eprintf "Selecting display forms from %s%t" (Package.name mod_info) eflush;
-            Mp_resource.theory_bookmark (Package.name mod_info)
+               eprintf "Selecting display forms from %s%t" (Package_info.name mod_info) eflush;
+            Mp_resource.theory_bookmark (Package_info.name mod_info)
        | None ->
             if !debug_shell then
                eprintf "Restoring default display forms%t" eflush;
@@ -270,7 +266,7 @@ struct
    let get_resource info =
       match info.shell_package with
          Some mod_info ->
-            Mp_resource.find (Mp_resource.theory_bookmark (Package.name mod_info))
+            Mp_resource.find (Mp_resource.theory_bookmark (Package_info.name mod_info))
        | None ->
             raise Not_found
 
@@ -368,12 +364,12 @@ struct
     *)
    let touch info =
       let pack = get_current_package info in
-         try Package.touch pack with
+         try Package_info.touch pack with
             Failure _ ->
                begin
                   (* Change the status so that we can write to the file. *)
-                  Package.set_status pack Modified;
-                  Package.touch pack
+                  Package_info.set_status pack PackModified;
+                  Package_info.touch pack
                end
 
    (*
@@ -429,7 +425,7 @@ struct
       info.shell_proof <- Shell_root.view packages (get_display_mode info)
 
    let set_package info modname =
-      let pack = Package.get packages modname in
+      let pack = Package_info.get packages modname in
          info.shell_proof.edit_addr [];
          info.shell_proof <- Shell_package.view pack (get_parse_arg info) (get_display_mode info)
 
@@ -442,7 +438,7 @@ struct
           | None -> invalid_arg "Shell.get_item: no package"
       in
       let item =
-         try Package.find pack parse_arg name with
+         try Package_info.find pack parse_arg name with
             Not_found ->
                eprintf "Item '/%s/%s' not found%t" modname name eflush;
                raise Not_found
@@ -525,7 +521,7 @@ struct
     * Display a particular package.
     *)
    let view_package info name options =
-      let pack = Package.get packages name in
+      let pack = Package_info.get packages name in
       let parse_arg = get_parse_arg info in
       let display_mode = get_display_mode info in
       let proof = Shell_package.view pack parse_arg display_mode in
@@ -687,7 +683,7 @@ struct
    let get_shortener info =
       match info.shell_package with
          Some pkg ->
-            let mk_opname = Package.mk_opname pkg in
+            let mk_opname = Package_info.mk_opname pkg in
             let shortener opname params bterms =
                match Opname.dest_opname opname with
                   h :: _ ->
@@ -715,7 +711,7 @@ struct
       match shell.shell_package with
          Some pack ->
             let parse_arg = get_parse_arg shell in
-               Some (Package.filename pack parse_arg)
+               Some (Package_info.filename pack parse_arg)
        | None ->
             None
 
@@ -731,7 +727,7 @@ struct
       match parse_path info name with
          [modname] ->
             (* Top level *)
-            let _ = Package.create_package packages (get_parse_arg info) modname in
+            let _ = Package_info.create_package packages (get_parse_arg info) modname in
                view info LsOptionSet.empty name
        | [] ->
             raise (Failure "Shell.create_package: can't create root package")
@@ -744,7 +740,7 @@ struct
    let save info =
       match info.shell_package with
          Some pack ->
-            Package.save pack
+            Package_info.save pack
        | None ->
             ()
 
@@ -752,7 +748,7 @@ struct
       touch info;
       match info.shell_package with
          Some pack ->
-            Package.export (get_parse_arg info) pack
+            Package_info.export (get_parse_arg info) pack
        | None ->
             ()
 
@@ -907,7 +903,7 @@ struct
          { shell_package = Some pack; shell_dir = mod_name :: name :: _ } ->
             begin
                try
-                  let deps = Refine.compute_dependencies (Package.refiner pack) (make_opname [name;mod_name]) in
+                  let deps = Refine.compute_dependencies (Package_info.get_refiner pack) (make_opname [name;mod_name]) in
                      printf "The proof of /%s/%s depends on the following definitions and axioms:\n" mod_name name;
                      let print_dep (dep, opname) =
                         let kind =
@@ -1012,7 +1008,7 @@ struct
                 | Filter_summary_type.Incomplete ->
                      ()
                 | Filter_summary_type.Interactive proof ->
-                     let _ = Package.ped_of_proof pkg parse_arg proof in
+                     let _ = Package_info.ped_of_proof pkg parse_arg proof in
                         ()
                in
                let sync_item (item, _) =
@@ -1024,7 +1020,7 @@ struct
                    | _ ->
                         ()
                in
-                  List.iter sync_item (info_items (Package.info pkg parse_arg))
+                  List.iter sync_item (info_items (Package_info.info pkg parse_arg))
           | None ->
                eprintf "sync: no current package%t" eflush
       in
@@ -1047,7 +1043,7 @@ struct
          match info.shell_package with
             Some pack ->
                touch info;
-               let mod_name = Package.name pack in
+               let mod_name = Package_info.name pack in
                let apply_item = function
                   Rewrite rw, _ ->
                      if !debug_shell then eprintf "Rewrite %s%t" rw.rw_name eflush;
@@ -1061,7 +1057,7 @@ struct
                 | _ ->
                      ()
                in
-               let items = info_items (Package.info pack parse_arg) in
+               let items = info_items (Package_info.info pack parse_arg) in
                if time then
                   let start = Unix.times () in
                   let start_time = Unix.gettimeofday () in
@@ -1080,7 +1076,7 @@ struct
 
           | None ->
                let expand pack =
-                  let name = Package.name pack in
+                  let name = Package_info.name pack in
                      eprintf "Entering %s%t" name eflush;
                      chdir info false true [name];
                      apply_all_exn false
@@ -1122,13 +1118,13 @@ struct
 
                   (* See if the theory exists *)
                   ignore (Theory.get_theory modname);
-                  let pkg = Package.load packages (get_parse_arg info) modname in
+                  let pkg = Package_info.load packages (get_parse_arg info) modname in
                      if need_shell && not (shell_package pkg) then
                         failwith ("Module " ^ modname ^ " does not contain shell commands");
                      info.shell_package <- Some pkg;
                      Shell_state.set_dfbase shell (Some (get_db info));
-                     Shell_state.set_mk_opname shell (Some (Package.mk_opname pkg));
-                     Shell_state.set_infixes shell (Some (Package.get_infixes pkg));
+                     Shell_state.set_mk_opname shell (Some (Package_info.mk_opname pkg));
+                     Shell_state.set_infixes shell (Some (Package_info.get_infixes pkg));
                      Shell_state.set_module shell modname;
                      if verbose then
                         eprintf "Module: /%s%t" modname eflush
@@ -1201,7 +1197,7 @@ struct
    let term_of_extract info terms =
       match info with
          { shell_package = Some pack; shell_dir = mod_name :: name :: _ } ->
-            Refine.extract_term (Package.refiner pack) (make_opname [name;mod_name]) terms
+            Refine.extract_term (Package_info.get_refiner pack) (make_opname [name;mod_name]) terms
        | _ ->
             raise (Failure "Shell.term_of_extract only works inside a proof")
 
@@ -1214,24 +1210,24 @@ struct
     *)
    let edit_list_modules info =
       let list info =
-         List.map Package.name (all_packages ())
+         List.map Package_info.name (all_packages ())
       in
          print_exn info list info
 
    let edit_info info name =
       let parse_arg = get_parse_arg info in
       let edit info =
-         try Package.info (Package.get packages name) parse_arg with
+         try Package_info.info (Package_info.get packages name) parse_arg with
             NotLoaded _ ->
                eprintf "Loading package %s%t" name eflush;
-               ignore (Package.load packages (get_parse_arg info) name);
-               Package.info (Package.get packages name) parse_arg
+               ignore (Package_info.load packages (get_parse_arg info) name);
+               Package_info.info (Package_info.get packages name) parse_arg
       in
          print_exn info edit info
 
    let edit_save info name =
       let edit info =
-         Package.save (Package.get packages name)
+         Package_info.save (Package_info.get packages name)
       in
          print_exn info edit info
 
@@ -1562,7 +1558,7 @@ struct
     * Print out an initialization file, and parse it.
     *)
    let refresh_packages () =
-      Package.refresh packages (Shell_state.get_includes ())
+      Package_info.refresh packages (Shell_state.get_includes ())
 
    let main () =
       refresh_packages ();
@@ -1660,8 +1656,8 @@ let set_tex_file = Shell_tex.set_file
 
 let save_all _ =
    let save pack =
-      if Package.status pack = Modified then
-         Package.save pack
+      if Package_info.status pack = PackModified then
+         Package_info.save pack
    in
       List.iter save (all_packages ())
 

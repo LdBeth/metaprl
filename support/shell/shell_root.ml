@@ -39,7 +39,6 @@ open Dform
 
 open Summary
 open Shell_sig
-open Package_info
 
 (************************************************************************
  * TYPES                                                                *
@@ -152,8 +151,8 @@ let raise_edit_error s =
 let rec edit pack window =
    let edit_display _ =
       (* Display the roots of the package *)
-      let packs = Package.packages pack in
-      let term = mk_packages_term (List.map (fun root -> mk_package_term (Package.name root)) packs) in
+      let packs = Package_info.packages pack in
+      let term = mk_packages_term (List.map (fun root -> mk_package_term (Package_info.name root)) packs) in
          display_term window term
    in
    let edit_copy () =

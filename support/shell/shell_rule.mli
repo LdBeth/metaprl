@@ -30,47 +30,43 @@
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
-extends Shell_sig
-extends Package_info
-
 open Refiner.Refiner.TermType
 
 open Filter_type
 open Filter_summary_type
 
 open Shell_sig
-open Package_sig
 open Package_info
 
 (*
  * Make an editable rule/rewrite.
  *)
 val create :
-   Package.package ->
+   package ->
    parse_arg ->
    display_mode ->
    string ->
    edit_object
 
 val view_rule :
-   Package.package ->
+   package ->
    parse_arg ->
    display_mode ->
-   (term, meta_term, Package.proof proof_type, MLast.expr) rule_info ->
+   (term, meta_term, proof proof_type, MLast.expr) rule_info ->
    edit_object
 
 val view_rw :
-   Package.package ->
+   package ->
    parse_arg ->
    display_mode ->
-   (term, Package.proof proof_type, MLast.expr) rewrite_info ->
+   (term, proof proof_type, MLast.expr) rewrite_info ->
    edit_object
 
 val view_crw :
-   Package.package ->
+   package ->
    parse_arg ->
    display_mode ->
-   (term, Package.proof proof_type, MLast.expr) cond_rewrite_info ->
+   (term, proof proof_type, MLast.expr) cond_rewrite_info ->
    edit_object
 
 (*

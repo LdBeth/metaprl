@@ -57,6 +57,7 @@ open Tactic_type.Tacticals
 open Summary
 
 open Java_display_term
+open Shell_sig
 
 let eprintf = Lm_printf.eprintf
 let eflush = Lm_printf.eflush
@@ -196,54 +197,6 @@ type ped =
      mutable ped_undo : ped_proof list;
      mutable ped_stack : ped_proof list
    }
-
-(*
- * Info for proof-type objects.
- *)
-type edit_info =
-   { edit_goal : tactic_arg;
-     edit_expr : string;
-     edit_subgoals : tactic_arg list;
-     edit_extras : tactic_arg list
-   }
-
-(*
- * Possible commands.
- *)
-type proof_command =
-   ProofRefine of string * MLast.expr * tactic
- | ProofUndo
- | ProofRedo
- | ProofNop
- | ProofKreitz
- | ProofUp of int
- | ProofDown of int
- | ProofRoot
- | ProofAddr of int list
- | ProofRotate of int
- | ProofCopy of string
- | ProofPaste of string
- | ProofCp of int list * int list
- | ProofExpand
- | ProofMakeAssum
- | ProofClean
- | ProofSquash
-
-type obj_status =
-   ObjPrimitive
- | ObjDerived
- | ObjComplete of int*int
- | ObjIncomplete of int*int
- | ObjBad
- | ObjUnknown
-
-type ref_status =
-   RefPrimitive
- | RefComplete of int * int * ((Refine_sig.dependency * opname) list)
- | RefUngrounded of int * int * opname
- | RefIncomplete of int * int
-
-type obj_contents = string * obj_status * meta_term * term Filter_type.param list
 
 (************************************************************************
  * CONVERSION TO TERMS                                                  *

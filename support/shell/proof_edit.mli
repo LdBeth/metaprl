@@ -45,37 +45,12 @@ open Dform
 
 open Tactic_type
 open Tactic_type.Tacticals
+open Shell_sig
 
 (*
  * The is the state of the current proof.
  *)
 type ped
-
-(*
- * Info for proof-type objects.
- *)
-type edit_info =
-   { edit_goal : tactic_arg;
-     edit_expr : string;
-     edit_subgoals : tactic_arg list;
-     edit_extras : tactic_arg list
-   }
-
-type obj_status =
-   ObjPrimitive
- | ObjDerived
- | ObjComplete of int*int
- | ObjIncomplete of int*int
- | ObjBad
- | ObjUnknown
-
-type ref_status =
-   RefPrimitive
- | RefComplete of int * int * ((Refine_sig.dependency * opname) list)
- | RefUngrounded of int * int * opname
- | RefIncomplete of int * int
-
-type obj_contents = string * obj_status * meta_term * term Filter_type.param list
 
 (*
  * Constructors.
@@ -142,28 +117,6 @@ type incomplete_ped =
    Primitive of tactic_arg
  | Incomplete of tactic_arg
  | Derived of tactic_arg * MLast.expr
-
-(*
- * Put all the commands into a single argument for interpretation.
- *)
-type proof_command =
-   ProofRefine of string * MLast.expr * tactic
- | ProofUndo
- | ProofRedo
- | ProofNop
- | ProofKreitz
- | ProofUp of int
- | ProofDown of int
- | ProofRoot
- | ProofAddr of int list
- | ProofRotate of int
- | ProofCopy of string
- | ProofPaste of string
- | ProofCp of int list * int list
- | ProofExpand
- | ProofMakeAssum
- | ProofClean
- | ProofSquash
 
 val interpret : window -> ped -> proof_command -> unit
 

@@ -30,9 +30,6 @@
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
-extends Shell_sig
-extends Package_info
-
 open Lm_debug
 open Lm_printf
 
@@ -47,7 +44,6 @@ open Opname
 open Tactic_type
 
 open Shell_sig
-open Package_info
 
 open Filter_type
 open Filter_util
@@ -79,7 +75,7 @@ type info =
    { mutable rule_params    : term param list;
      mutable rule_assums    : term list;
      mutable rule_goal      : goal;
-     mutable rule_proof     : Package.proof proof_type;
+     mutable rule_proof     : Package_info.proof proof_type;
      mutable rule_ped       : Proof_edit.ped proof_type;
      mutable rule_resources : (MLast.expr, term) resource_def;
      mutable rule_name      : string
@@ -166,7 +162,7 @@ let rec edit pack parse_arg name window obj =
    in
    let save_ped () =
       let item = item_of_obj pack name obj in
-         Package.set pack parse_arg item
+         Package_info.set pack parse_arg item
    in
    let edit_display _ =
       (* Convert to a term *)
@@ -242,12 +238,12 @@ let rec edit pack parse_arg name window obj =
    let edit_check () =
       match obj.rule_ped with
          Primitive _ ->
-            Proof_edit.RefPrimitive
+            RefPrimitive
        | Derived _
        | Incomplete ->
-            Proof_edit.RefIncomplete (0, 0)
+            RefIncomplete (0, 0)
        | Interactive ped ->
-            Proof_edit.check_ped window (Package.refiner pack) (make_opname [obj.rule_name; Package.name pack]) ped
+            Proof_edit.check_ped window (Package_info.get_refiner pack) (make_opname [obj.rule_name; Package_info.name pack]) ped
    in
    let get_ped obj =
       match obj.rule_ped with
@@ -300,8 +296,8 @@ let rec edit pack parse_arg name window obj =
                 | GRewrite (redex, contractum) ->
                      dest_msequent (mk_rw_goal obj.rule_assums redex contractum)
             in
-            let proof = Package.new_proof pack parse_arg name assums goal in
-            let ped = Package.ped_of_proof pack parse_arg proof (mk_msequent goal assums) in
+            let proof = Package_info.new_proof pack parse_arg name assums goal in
+            let ped = Package_info.ped_of_proof pack parse_arg proof (mk_msequent goal assums) in
                obj.rule_proof <- Interactive proof;
                obj.rule_ped <- Interactive ped;
                Proof_edit.set_params ped obj.rule_params;
@@ -380,7 +376,7 @@ let ped_of_proof pack parse_arg goal = function
  | Incomplete ->
       Incomplete
  | Interactive proof ->
-      Interactive (Package.ped_of_proof pack parse_arg proof goal)
+      Interactive (Package_info.ped_of_proof pack parse_arg proof goal)
 
 let view_rule pack parse_arg window
     { Filter_type.rule_name = name;

@@ -29,13 +29,13 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
+open Opname
 open Refiner.Refiner.Refine
 open Refiner.Refiner
 open Dform
 
 open Tactic_type.Tactic
 open Mp_resource
-open Proof_edit
 open MLast
 
 open Filter_type
@@ -110,6 +110,54 @@ type top_type =
  | ConsType (* 'a -> 'a list -> 'a list *)
  | FunType of top_type * top_type
 
+type obj_status =
+   ObjPrimitive
+ | ObjDerived
+ | ObjComplete of int*int
+ | ObjIncomplete of int*int
+ | ObjBad
+ | ObjUnknown
+
+type ref_status =
+   RefPrimitive
+ | RefComplete of int * int * ((Refine_sig.dependency * opname) list)
+ | RefUngrounded of int * int * opname
+ | RefIncomplete of int * int
+
+type obj_contents = string * obj_status * meta_term * term Filter_type.param list
+
+(*
+ * Possible commands.
+ *)
+type proof_command =
+   ProofRefine of string * MLast.expr * tactic
+ | ProofUndo
+ | ProofRedo
+ | ProofNop
+ | ProofKreitz
+ | ProofUp of int
+ | ProofDown of int
+ | ProofRoot
+ | ProofAddr of int list
+ | ProofRotate of int
+ | ProofCopy of string
+ | ProofPaste of string
+ | ProofCp of int list * int list
+ | ProofExpand
+ | ProofMakeAssum
+ | ProofClean
+ | ProofSquash
+
+(*
+ * Info for proof-type objects.
+ *)
+type edit_info =
+   { edit_goal : tactic_arg;
+     edit_expr : string;
+     edit_subgoals : tactic_arg list;
+     edit_extras : tactic_arg list
+   }
+
 (*
  * An editable object.
  *)
@@ -143,6 +191,26 @@ type edit_object =
      edit_info      : unit -> edit_info;
      edit_refine    : string -> MLast.expr -> tactic -> unit
    }
+
+(*
+ * Save status of a module.
+ *)
+type package_status =
+   PackUnmodified
+ | PackModified
+ | PackReadOnly (* XXX: BUG? We only ever check for this, but never actually set it! nogin 2004/06/03 *)
+ | PackIncomplete
+
+(*
+ * Values needed for parsing.
+ *)
+type parse_arg = ((string -> MLast.expr) * (MLast.expr -> tactic))
+
+(*
+ * This exception is raised when a package is requested,
+ * and it has not been loaded.
+ *)
+exception NotLoaded of string
 
 (*
  * These are the functions provided by the shell.

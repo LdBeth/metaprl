@@ -31,20 +31,19 @@
  *)
 
 open Shell_sig
-open Package_sig
 open Package_info
 
 (*
  * Make a root object.
  *)
 val create :
-   Package.package ->
+   package ->
    parse_arg ->
    display_mode ->
    edit_object
 
 val view :
-   Package.package ->
+   package ->
    parse_arg ->
    display_mode ->
    edit_object

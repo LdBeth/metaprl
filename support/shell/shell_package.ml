@@ -47,7 +47,6 @@ open Tactic_type
 open Summary
 open Shell_sig
 open Shell_util
-open Package_info
 
 (************************************************************************
  * TYPES                                                                *
@@ -135,7 +134,7 @@ let display_term pack window term =
             Lm_rformat_tex.print_tex_channel width buf out;
             Shell_tex.close_file out
     | JavaWindow { pw_menu = menu } ->
-         Java_display_term.set_dir menu ("/" ^ Package.name pack);
+         Java_display_term.set_dir menu ("/" ^ Package_info.name pack);
          Java_display_term.set menu term
     | BrowserWindow { df_base = base; df_mode = mode } ->
          let buf = Lm_rformat.new_buffer () in
@@ -184,7 +183,7 @@ let convert_impl =
          <<status_partial>>
     | Interactive proof ->
          let status =
-            match Package.status_of_proof proof with
+            match Package_info.status_of_proof proof with
                Proof.StatusBad ->
                   <<status_bad>>
              | Proof.StatusPartial ->
@@ -194,7 +193,7 @@ let convert_impl =
              | Proof.StatusComplete ->
                   <<status_complete>>
          in
-         let rcount, ncount = Package.node_count_of_proof proof in
+         let rcount, ncount = Package_info.node_count_of_proof proof in
             <:con<status_interactive[$int:rcount$, $int:ncount$]{$status$}>>
    in
       { term_f      = identity;
@@ -210,14 +209,14 @@ let convert_impl =
  * Display the entire package.
  *)
 let term_of_interface pack filter parse_arg =
-   let tl = term_list convert_intf (Filter_summary.filter filter (Package.sig_info pack parse_arg)) in
+   let tl = term_list convert_intf (Filter_summary.filter filter (Package_info.sig_info pack parse_arg)) in
       mk_interface_term tl
 
 (*
  * Display the entire package.
  *)
 let term_of_implementation pack filter parse_arg =
-   let tl = term_list convert_impl (Filter_summary.filter filter (Package.info pack parse_arg)) in
+   let tl = term_list convert_impl (Filter_summary.filter filter (Package_info.info pack parse_arg)) in
       mk_implementation_term tl
 
 (*
@@ -315,7 +314,7 @@ let is_unjustified_item = function
        | Incomplete ->
             true
        | Interactive proof ->
-            match Package.status_of_proof proof with
+            match Package_info.status_of_proof proof with
                Proof.StatusComplete ->
                   false
              | _ ->
@@ -390,7 +389,7 @@ let rec edit pack_info parse_arg window =
       raise_edit_error "this is not a rule or rewrite"
    in
    let edit_save () =
-      Package.save pack_info
+      Package_info.save pack_info
    in
    let edit_check _ =
       raise_edit_error "check the entire package? Use check_all."

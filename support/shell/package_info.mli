@@ -34,12 +34,103 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
+open Opname
+open Term_shape_sig
+open Refiner.Refiner
+open Refiner.Refiner.TermType
 
-extends Package_sig
+open Filter_type
+open Filter_summary
+open Filter_summary_type
 
-open Package_sig
+open Tactic_type
 
-module Package : PackageSig
+open Shell_sig
+open Proof_edit
+
+(*
+ * This is the database type.
+ *)
+type t
+
+(*
+ * This is the type of a package.
+ *)
+type package
+
+(*
+ * Proofs are abstract.
+ *)
+type proof
+
+(*
+ * Create a database.  The argument is the search path.
+ *)
+val create : string list -> t
+val refresh : t -> string list -> unit
+
+(*
+ * Filesystem interface.
+ * Loaded packages are initially read-only.
+ *)
+val create_package : t -> parse_arg -> string -> package
+val load : t -> parse_arg -> string -> package
+val get : t -> string -> package
+val save : package -> unit
+val export : parse_arg -> package -> unit
+
+(*
+ * Access.
+ *)
+val name       : package -> string
+val filename   : package -> parse_arg -> string
+
+(*
+ * Refiners and sentinals.
+ *)
+val get_refiner  : package -> Refine.refiner
+
+(*
+ * Navigation.
+ *)
+val packages : t -> package list
+val roots : t -> package list
+val parents : t -> package -> package list
+val children : t -> package -> package list
+
+(*
+ * Access to the status.
+ *)
+val status  : package -> package_status
+val set_status : package -> package_status -> unit
+val touch : package -> unit
+
+(*
+ * Access to the cache.
+ *)
+val mk_opname : package -> string list -> shape_param list -> int list -> opname
+
+(*
+ * Infixes/suffixes declared in the package
+ *)
+val get_infixes : package -> Infix.Set.t
+
+(*
+ * Collection of objects in the module.
+ *)
+val info : package -> parse_arg -> (term, meta_term, proof proof_type, (MLast.ctyp, MLast.expr) resource_str, MLast.ctyp, MLast.expr, MLast.str_item) module_info
+val sig_info : package -> parse_arg -> (term, meta_term, unit, MLast.ctyp resource_sig, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
+val find : package -> parse_arg -> string -> (term, meta_term, proof proof_type, (MLast.ctyp, MLast.expr) resource_str, MLast.ctyp, MLast.expr, MLast.str_item) summary_item
+val set : package -> parse_arg -> (term, meta_term, proof proof_type, (MLast.ctyp, MLast.expr) resource_str, MLast.ctyp, MLast.expr, MLast.str_item) summary_item -> unit
+
+(*
+ * This is the starting info for new proofs.
+ *)
+val arg_resource : package -> parse_arg -> string -> Mp_resource.global_resource
+val new_proof : package -> parse_arg -> string -> term list -> term -> proof
+val ped_of_proof : package -> parse_arg -> proof -> Refine.msequent -> ped
+val status_of_proof : proof -> Proof.status
+val node_count_of_proof : proof -> int * int
 
 (*
  * -*-
