@@ -55,13 +55,6 @@ let debug_alpha_equal =
         debug_value = false
       }
 
-let debug_unify =
-   create_debug (**)
-      { debug_name = "unify";
-        debug_description = "display unification operations";
-        debug_value = false
-      }
-
 ENDIF
 
 module TermSubst
@@ -95,7 +88,6 @@ struct
    type param = TermType.param
 
    type term_subst = (string * term) list
-   type unify_subst = (string list * term option) list
 
    (************************************************************************
     * Free variable calculations                                           *
@@ -528,180 +520,6 @@ struct
       in
          subst_term t
 
-   (************************************************************************
-    * UNIFICATION                                                          *
-    ************************************************************************)
-
-   (*
-    * Unify two terms.
-    *)
-   let unify_exn = RefineError ("unify", StringError "terms do not unify")
-
-   (*
-    * Utilities.
-    *)
-   let rec rev_assoc v = function
-      (v1, v2)::t ->
-         if v2 = v then
-            v1
-         else
-            rev_assoc v t
-    | [] ->
-         raise Not_found
-
-   let rec zip_cons l l1 l2 =
-      match l1, l2 with
-         v1::t1, v2::t2 ->
-            zip_cons ((v1, v2) :: l) t1 t2
-       | [], [] ->
-            l
-       | _ ->
-            raise unify_exn
-
-   (*
-    * Substitution is managed as a DAG.
-    *)
-   let convert_subst (vars, edge) =
-      match edge with
-         Some edge ->
-            (vars, Some (edge, free_vars edge))
-       | None ->
-            (vars, None)
-
-   let equate_vars subst v1 v2 =
-      try
-         Cycle_dag.equate subst v1 v2;
-         subst
-      with
-         Cycle_dag.Cycle ->
-            raise unify_exn
-
-   let subst_add subst v term =
-      try
-         Cycle_dag.insert subst v term (free_vars term);
-         subst
-      with
-         Cycle_dag.Cycle ->
-            raise unify_exn
-
-   let subst_assoc = Cycle_dag.find
-
-   let get_subst = Cycle_dag.sort
-
-   let subst_of_unify_subst =
-      let rec flatten = function
-         (nodes, term) :: terms ->
-            begin
-               match term with
-                  Some term ->
-                     flatten_nodes nodes term terms
-                | None ->
-                     flatten_vars nodes terms
-            end
-       | [] ->
-            []
-      and flatten_vars vars terms =
-         match vars with
-            [_] ->
-               flatten terms
-          | v1 :: ((v2 :: _) as vars) ->
-               (v1, mk_var_term v2) :: flatten_vars vars terms
-          | [] ->
-               raise (Invalid_argument "Term_subst_ds.get_subst")
-      and flatten_nodes nodes term terms =
-         match nodes with
-            [node] ->
-               (node, term) :: flatten terms
-          | node1 :: ((node2 :: _) as nodes) ->
-               (node1, mk_var_term node2) :: flatten_nodes nodes term terms
-          | [] ->
-               raise (Invalid_argument "Term_subst_ds.get_subst")
-      in
-         flatten
-
-   let unify_empty = []
-
-   let convert_subst_of_subst (v, t) = ([v], Some t)
-
-   let unify_subst_of_subst subst = List.map convert_subst_of_subst subst
-
-   let add_unify_subst v t s =
-      ([v], Some t) :: s
-
-   let new_unify_var s v =
-      raise (Failure "new_unify_var: not implemented")
-
-   (*
-    * The unification works over the subst.
-    *)
-   let rec unify_terms subst constants bvars term1 term2 =
-      IFDEF VERBOSE_EXN THEN
-         if !debug_unify then
-            eprintf "Unify: %a/%a%t" print_term term1 print_term term2 eflush
-      ENDIF;
-      if (is_var_term term1) then
-         let v = dest_var term1 in
-         if (is_var_term term2) then
-            let v'= dest_var term2 in
-            begin try
-               if List.assoc v bvars = v' then subst else raise unify_exn
-            with
-               Not_found ->
-                  if List_util.assoc_in_range (=) v' bvars then raise unify_exn else
-                  if v=v' then subst else
-                  if StringSet.mem constants v then
-                     if StringSet.mem constants v' then raise unify_exn else
-                     try unify_terms subst constants bvars (subst_assoc subst v') term1 with
-                        Not_found ->
-                           subst_add subst v' term1
-                  else if StringSet.mem constants v' then
-                     try unify_terms subst constants bvars (subst_assoc subst v) term2 with
-                        Not_found ->
-                           subst_add subst v term2
-                  else
-                     equate_vars subst v v'
-            end
-         else
-            if List_util.assoc_in_dom (=) v bvars then raise unify_exn else
-            unify_var_term subst constants bvars v term1 term2
-      else if (is_var_term term2) then
-         let v = dest_var term2 in
-            if List_util.assoc_in_range (=) v bvars then raise unify_exn else
-            unify_var_term subst constants bvars v term2 term1
-      else
-         let op1 = term1.term_op in
-         let op2 = term2.term_op in
-            if Opname.eq op1.op_name op2.op_name &&
-               List_util.for_all2 equal_params op1.op_params op2.op_params
-            then
-               unify_bterms subst constants bvars term1.term_terms term2.term_terms
-            else
-               raise unify_exn
-
-   and unify_var_term subst constants bvars v term1 term2 =
-      if StringSet.mem constants v then
-         raise unify_exn
-      else
-         try unify_terms subst constants bvars (subst_assoc subst v) term2 with
-            Not_found ->
-               (* Bound vars occurs check goes here *)
-               subst_add subst v term2
-
-   and unify_bterms subst constants bvars bterms1 bterms2 =
-      match bterms1, bterms2 with
-         (bt1 :: tl1), (bt2 :: tl2) ->
-            let subst' =
-               unify_terms subst constants (zip_cons bvars bt1.bvars bt2.bvars) bt1.bterm bt2.bterm
-            in
-               unify_bterms subst' constants bvars tl1 tl2
-       | [], [] ->
-            subst
-       | _ ->
-            raise unify_exn
-
-   let unify subst constants term1 term2 =
-      get_subst (unify_terms (Cycle_dag.make (List.map convert_subst subst)) constants [] term1 term2)
-
    (*
     * Matching is like unification, but variable matches
     * are only allowed on the left.  There is no occurs-check.
@@ -711,6 +529,15 @@ struct
     | (_,v)::tl ->
          if List.mem v tvs then RAISE_GENERIC_EXN else
          check_bvars tvs tl
+
+   let rec zip_cons l l1 l2 =
+      match l1, l2 with
+         v1::t1, v2::t2 ->
+            zip_cons ((v1, v2) :: l) t1 t2
+       | [], [] ->
+            l
+       | _ ->
+            RAISE_GENERIC_EXN
 
    let rec match_terms subst bvars tm1 tm2 =
       if is_var_term tm1 then
@@ -771,19 +598,20 @@ struct
 (* for compatibility  only; never used here *)  
    type eqnlist = (term*term) list
 
-
    let eqnlist_empty = []
-   let eqnlist_append_eqns x y = raise (Failure ": not implemented") 
-   let eqnlist2ttlist x = raise (Failure ": not implemented")  
+   let eqnlist_append_var_eqn _ _ _ = raise (Failure "eqnlist_append_var_eqn: not implemented in Term_std") 
+   let eqnlist_append_eqn _ _ _ = raise (Failure "eqnlist_append_eqn: not implemented in Term_std") 
+   let eqnlist_append_eqns _ _ = raise (Failure "eqnlist_append_eqns: not implemented in Term_std") 
+   let eqnlist2ttlist _ = raise (Failure "eqnlist2ttlist: not implemented in Term_std")  
+
+   let new_eqns_var _ _ = raise (Failure "new_eqns_var: not implemented in Term_std")
  
+   let unifiable _ _ _  =  raise (Failure "unifiable: not implemented in Term_std")
+   let unifiable_eqnl _ _ =  raise (Failure "unifiable_eqnl: not implemented in Term_std")
 
-   let unifiable x y z  =  raise (Failure ": not implemented")
-   let unifiable_eqnl x y =  raise (Failure " : not implemented")
-
-
-   let unify_mm x y z  = raise (Failure ": not implemented")
-   let unify_mm_eqnl x y =  raise (Failure " : not implemented")
-   let unify_mm_eqnl_eqnl x y =  raise (Failure " : not implemented") 
+   let unify_mm _ _ _ = raise (Failure "unify_mm: not implemented in Term_std")
+   let unify_mm_eqnl _ _ =  raise (Failure "unify_mm_eqnl : not implemented in Term_std")
+   let unify_mm_eqnl_eqnl _ _ =  raise (Failure "unify_mm_eqnl_eqnl : not implemented in Term_std") 
 
 
 (* ------- *)

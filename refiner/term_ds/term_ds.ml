@@ -34,6 +34,7 @@
 open Printf
 open Mp_debug
 open Opname
+open String_set
 
 (*
  * Show the file loading.
@@ -43,18 +44,6 @@ let _ =
 
 module TermType =
 struct
-   (************************************************************************
-    * Sets of strings                                                      *
-    ************************************************************************)
-
-   module OrderedString =
-      struct
-         type t = string
-         let compare = Pervasives.compare
-       end
-
-   module StringSet = Red_black_set.Make (OrderedString)
-
    (************************************************************************
     * Types                                                                *
     ************************************************************************)

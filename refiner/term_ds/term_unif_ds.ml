@@ -26,13 +26,14 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * Author: Vladimir Krupski
- * 
+ * Modified by: Alexey Nogin
  *)
 
-
+INCLUDE "refine_error.mlh"
 
 open Printf
 open Mp_debug
+open String_set
 
 open Refine_error_sig
 open Term_ds_sig
@@ -50,7 +51,6 @@ module TermSubstMm
         with type esequent = TermType.esequent
         with type seq_hyps = TermType.seq_hyps
         with type seq_goals = TermType.seq_goals
-        with type string_set = TermType.StringSet.t
         with type hypothesis = TermType.hypothesis
 
         with type level_exp_var' = TermType.level_exp_var'
@@ -66,7 +66,7 @@ module TermSubstMm
                with type level_exp = TermType.level_exp
                with type param = TermType.param
                with type term = TermType.term
-                      with type bound_term = TermType.bound_term)
+               with type bound_term = TermType.bound_term)
 =
 struct
 
@@ -77,21 +77,27 @@ struct
    type term = TermType.term
    type param = TermType.param
 
-
    type term_subst = TermType.term_subst
-   
-   type eqnlist = (term*term) list                (* -- will be unify_subst_mm type *)
+   type eqnlist = (term*term) list
 
+   let eqnlist_empty = []
 
+   let eqnlist_append_eqn l t1 t2 = (t1,t2) :: l
 
-   let eqnlist_empty = [] 
+   let eqnlist_append_var_eqn v t l = (mk_var_term v, t) :: l
 
-   let eqnlist_append_eqns = List.rev_append 
+   let eqnlist_append_eqns l es  = es @ l  
 
-   let eqnlist2ttlist x = x
+   let eqnlist2ttlist x = x  
 
+   (*
+    * Collect all free vars
+    *)
+   let rec collect_vars = function
+      [] -> StringSet.empty
+    | (t1,t2) :: eqs -> StringSet.union (term_free_vars t1) (StringSet.union (term_free_vars t2) (collect_vars eqs))
 
-
+   let new_eqns_var eqs v = String_util.vnewname v (StringSet.mem (collect_vars eqs))
 
    let subst t tl vl =
       do_term_subst (List.combine vl tl) t
@@ -133,9 +139,7 @@ struct
                   binding_vars_term (SeqGoal.get goals i) (coll_goals (succ i))
             in coll_goals 0
        | FOVar _ -> StringSet.empty
-       | Subst _ -> fail_core "binding_vars"
-       | Hashed d ->
-            binding_vars_set (Weak_memo.TheWeakMemo.retrieve_hack d)
+       | Subst _ | Hashed _ -> fail_core "binding_vars"
 
    let binding_vars t =
       StringSet.elements (binding_vars_set t)
@@ -175,7 +179,6 @@ struct
             in context_vars 0
        | _ -> []
 
-
 module Names =
 struct
      type fun_name= TermType.operator
@@ -205,7 +208,6 @@ and multiterm =
   { mutable fsymb: mm_operator;
     mutable args: temp_multeq list }
 
-
 and binding = ((bound_variable list) array) array
 
 and bound_variable = {mutable name_bv:Names.var_name;
@@ -223,18 +225,18 @@ and op_with_binding = {mutable opsymb:Names.fun_name;
                        mutable timestamp:int
                       }
 
-and mm_operator =  Op of op_with_binding
-                 | Bvar of bound_variable
-                 | Cnst of Names.var_name
-
-
-
+and mm_operator = Op of op_with_binding
+                | Bvar of bound_variable
+                | Cnst of Names.var_name
 
 exception Cycle
+exception Clash
+(*
 exception Field_m_in_multeq_must_be_single_element_or_empty_list
 exception Field_m_t_in_temp_multeq_must_be_single_element_or_empty_list
 exception Both_fields_in_temp_multeq_cannot_be_empty
-exception Clash
+*)
+exception Mm_unif_error
 
         (* val dummy : Names.fun_name *)
 let dummy = Vinit
@@ -250,17 +252,18 @@ let init_multeq ={ counter=0;
                   }
 
         (* val init_temp_multeq : temp_multeq *)
-let init_temp_multeq =   { s_t = Queue.create ();
-                           m_t = [init_multiterm]
-                         }
+let init_temp_multeq = { s_t = Queue.create ();
+                         m_t = [init_multiterm]
+                       }
 
 let init_timestamp_ref = ref 0
 
 (* val new_ts  unit -> int generates new timestamp *)
-let new_ts () = init_timestamp_ref:=(!init_timestamp_ref)+1;
+let new_ts () = incr init_timestamp_ref;
                 (!init_timestamp_ref)
 
-let opsymb_equal sy0 sy1 =  (sy0 = sy1)                (* !!!!!? operator_eq *) 
+let opsymb_equal op1 op2 =
+   Opname.eq op1.op_name op2.op_name && op1.op_params = op2.op_params
 
         (* val header_equal : multiterm -> multiterm -> bool *)
            (* all the job of merging the bindings we try to implement
@@ -273,7 +276,7 @@ let header_equal multit0 multit1 current_ts =
    (if (multit0.fsymb != multit1.fsymb) then
     begin
         match multit0.fsymb , multit1.fsymb with
-          Op op0, Op op1  ->
+          Op op0, Op op1 ->
            if not (
                    (opsymb_equal op0.opsymb op1.opsymb) &&
                    (op0.oparity_n == op1.oparity_n ) &&
@@ -283,13 +286,13 @@ let header_equal multit0 multit1 current_ts =
             begin
               if op0.b_length < op1.b_length then
                     begin
-                    let temp = ref op0.opbinding  in
+                    let temp = ref op0.opbinding in
                       op0.opbinding<-op1.opbinding;
                       op1.opbinding<-(!temp)
                     end;
-              op0.timestamp <- current_ts  ;
+              op0.timestamp <- current_ts;
               for i=0 to (op0.oparity_n - 1) do
-               for j=0 to ((op0.oparity_a).(i) - 1)  do
+               for j=0 to ((op0.oparity_a).(i) - 1) do
                 List.iter
                  (function v ->
                   (v.fsymb_bv <-op0;
@@ -299,12 +302,9 @@ let header_equal multit0 multit1 current_ts =
                  ((op1.opbinding).(i)).(j) ;
                done
               done;
-
               op0.b_length<-op0.b_length + op1.b_length ;
               true
             end
-
-
         | Bvar bv0 , Bvar bv1 ->
             (
              (
@@ -314,12 +314,11 @@ let header_equal multit0 multit1 current_ts =
              && (bv0.fsymb_bv.timestamp = current_ts )
              && (bv1.fsymb_bv.timestamp = current_ts )
             )
-
-        | Cnst c0, Cnst c1   ->  c0 == c1
-
+        | Cnst c0, Cnst c1 -> c0 == c1
         | _ , _ -> false
     end
     else ( match multit0.fsymb with
+
               (Op op) -> (op.timestamp <- current_ts ; true)
             | (Bvar bv) -> (bv.fsymb_bv.timestamp = current_ts )
             | _ -> true
@@ -334,14 +333,14 @@ let rec test_timestamps m ts =
                           (Op op) -> (op.timestamp <- ts ; true)
                         | (Bvar bv) -> (bv.fsymb_bv.timestamp = ts )
                         | _ -> true
-                      ) then    
-                            List.for_all  
+                      ) then
+                            List.for_all
                             (function tmeq ->
                              (test_timestamps_in_temp_multeq tmeq ts)
                             )
                             multit.args
                         else false
-      | _        -> true
+      | _ -> true
 
 and test_timestamps_in_temp_multeq tmeq ts =
     if ( (Queue.length tmeq.s_t) = 0 ) then (test_timestamps tmeq.m_t ts)
@@ -349,13 +348,12 @@ and test_timestamps_in_temp_multeq tmeq ts =
 
         (* val select_multeq : upart -> multeq *)
 
-let select_multeq u = match  u.zero_counter_multeq with
+let select_multeq u = match u.zero_counter_multeq with
                         [] -> raise Cycle
                       | hd::tl -> (u.zero_counter_multeq <- tl;
                                    u.multeq_number <- u.multeq_number - 1;
                                    hd
                                    )
-
 
 (* val cut_frontier : temp_multeq list -> temp_multeq list * temp_multeq list
 * val reduce : multiterm -> temp_multeq list
@@ -372,10 +370,11 @@ let rec cut_frontier arg =
                                          );
                                    m_t = []
                                  }::l1 )
-                     with  Queue.Empty -> (match hd.m_t with
+                     with Queue.Empty -> (match hd.m_t with
                                            [multit] ->
                                              ( (reduce multit)@l0 , hd::l1 )
-                                           | _ -> raise Both_fields_in_temp_multeq_cannot_be_empty
+                                           | _ -> raise Mm_unif_error
+                                       (* Both_fields_in_temp_multeq_cannot_be_empty *)
                                           )
                     )
                   )
@@ -385,8 +384,6 @@ and reduce multit =
                 (multit.args <- newargs;
                  frontier
                 )
-
-
 
 (*
 * val compact : temp_multeq list -> upart -> upart
@@ -404,7 +401,7 @@ let rec compact frontier u = match frontier with
 and compact_hd meq u =
          let multeq0ref = ref (Queue.take meq.s_t).m_v in
            ( (!multeq0ref).counter <- (!multeq0ref).counter - 1;
-               (let multeq1ref = ref init_multeq  in
+               (let multeq1ref = ref init_multeq in
                 while (Queue.length meq.s_t > 0) do
                   multeq1ref:= (Queue.take meq.s_t).m_v;
                   (!multeq1ref).counter <- (!multeq1ref).counter - 1;
@@ -412,44 +409,36 @@ and compact_hd meq u =
                 done
                );
                (* A side effect of merge_multeq is supposed here:
-               *    multeq0ref always points at the resulting merged
-               *    multieqation; it is in fact an additional entry to
-               *    the UPart list of the system stored in u:upart .
-               *)
+                *    multeq0ref always points at the resulting merged
+                *    multieqation; it is in fact an additional entry to
+                *    the UPart list of the system stored in u:upart .
+                *)
              (!multeq0ref).m <- merge_multiterms (!multeq0ref).m meq.m_t (new_ts () );
-
-             if  ((!multeq0ref).counter = 0) then
+             if ((!multeq0ref).counter = 0) then
                u.zero_counter_multeq <- (!multeq0ref)::(u.zero_counter_multeq)
            )
-
 
 and merge_multeq meq0ref meq1ref u =
        if ((!meq0ref) != (!meq1ref)) then
        begin
-         (let temp =ref (!meq0ref)  in
+         (let temp =ref (!meq0ref) in
           if ( (!meq0ref).var_number < (!meq1ref).var_number ) then
               begin
                 meq0ref:=(!meq1ref);
                 meq1ref:=(!temp)
               end
          );
-
          (!meq0ref).counter<-(!meq0ref).counter + (!meq1ref).counter;
          (!meq0ref).var_number<-(!meq0ref).var_number + (!meq1ref).var_number;
-
-         List.iter (function v -> (  v.m_v <- (!meq0ref);
+         List.iter (function v -> (v.m_v <- (!meq0ref);
                                     (!meq0ref).s <- v::((!meq0ref).s)
                                   )
                    ) (!meq1ref).s ;
          (*  (!meq1ref).s <- [] ;   try to free something ? *)
-
          (!meq0ref).m <- merge_multiterms (!meq0ref).m (!meq1ref).m (new_ts () );
          (*  (!meq1ref).m <- [] ;   try to free something ? *)
-
          u.multeq_number <- u.multeq_number - 1
-
        end
-
 
 and merge_multiterms m0 m1 current_ts =
       match m0 with
@@ -458,7 +447,7 @@ and merge_multiterms m0 m1 current_ts =
       | [multit0] -> (match m1 with
                        [] ->if (not (test_timestamps m1 current_ts) ) then raise Clash;
                             m0
-                     | [multit1] ->   (
+                     | [multit1] -> (
            if not (header_equal multit0 multit1 current_ts ) then raise Clash
            (* all the job of merging the bindings we try to implement
             * as a side effect of header_equal when it returnes TRUE
@@ -477,13 +466,12 @@ and merge_multiterms m0 m1 current_ts =
              in
                List.iter2 ggg multit0.args multit1.args;
                m0
-           end                        )
-                     | _  -> raise Field_m_t_in_temp_multeq_must_be_single_element_or_empty_list
+           end)
+                     | _ -> raise Mm_unif_error
+                  (* Field_m_t_in_temp_multeq_must_be_single_element_or_empty_list *)
                      )
-
-      | _  -> raise Field_m_t_in_temp_multeq_must_be_single_element_or_empty_list
-
-
+      | _ -> raise Mm_unif_error
+                  (* Field_m_t_in_temp_multeq_must_be_single_element_or_empty_list *)
 
      (* val mm_unify : system -> system *)
 
@@ -496,7 +484,8 @@ let mm_unify =
                   (match (!mult).m with
                       [] -> ()
                     | [multit] -> (r.u <- compact (reduce multit) r.u)
-                    | _ -> raise Field_m_in_multeq_must_be_single_element_or_empty_list
+                    | _ -> raise Mm_unif_error
+                      (* Field_m_in_multeq_must_be_single_element_or_empty_list *)
                    );
                   r.t <- (!mult)::(r.t)
                  );
@@ -506,33 +495,16 @@ let mm_unify =
     mm_unify_with_global_mult
 end     (* end Mm_unif *)
 
-
 module Mm_inter =
-
 struct
 
 open Mm_unif
 open Names
 
-(*
-type simple_term =  Var of Names.var_name
-                  | Cterm of composed_term
-
-and composed_term = {mutable tfsymb: Names.fun_name;
-                     mutable targs: simple_bterm list
-                    }
-and simple_bterm = {mutable tbvars: Names.var_name list;
-                    mutable tbcore: simple_term
-                   }
-*)
-
-exception Impossible
-exception Not_supposed
-exception Not_done
-
 let is_free = is_free_var
 
-let is_constant  = List.mem
+let seq_unsupported = Invalid_argument "Sequents are not currently supported by unify_mm"
+let impossible = Invalid_argument "Bug in unify_mm: this is not supposed to happen"
 
 (* get_variable : here x is a string.
  * As a side effect it updates u.equations and the hashtable
@@ -540,12 +512,12 @@ let is_constant  = List.mem
  * in corresponding multiequation when found
  *)
 let get_variable x u var_hashtbl=
-              try   (let v = (Hashtbl.find  var_hashtbl x )
+              try (let v = (Hashtbl.find var_hashtbl x )
                         in
                         v.m_v.counter <- v.m_v.counter + 1;
                         v
                     )
-              with Not_found -> (let v  ={name = (V x) ;
+              with Not_found -> (let v = {name = (V x) ;
                                           m_v = init_multeq
                                          }
                                       in
@@ -562,11 +534,19 @@ let get_variable x u var_hashtbl=
                                       v
                                      )
 
+let rec get_bvars = function
+   [] -> []
+ | bt::btrms -> bt.bvars :: get_bvars btrms
+
+let rec get_bterms = function
+   [] -> []
+ | bt::btrms -> bt.bterm :: get_bterms btrms
+
 (* cterm2multiterm :
  * Converts composed_term into multiterm.
  * Now composed_term means term' and is the termcore of the form Term:term'.
  * term' = { term_op : operator; term_terms : bound_term list }
- * It also 
+ * It also
  * updates u.equations and var_hashtable;
  * b_assoclist is the association list containing
  * external (for t) associations --
@@ -574,15 +554,8 @@ let get_variable x u var_hashtbl=
  *)
 
 let rec cterm2multiterm t consts u var_hashtbl b_assoclist =
-     let tbvs_list = (List.map
-                      (function sbt -> sbt.bvars)
-                       t.term_terms
-                     )  (* it is a listlist of bound varstrings from t.term_terms *)
-
-         and tbcore_list = (List.map
-                            (function sbt -> sbt.bterm)
-                             t.term_terms
-                           )       (* it is a list of terms (cores) from t.term_terms *)
+     let tbvs_list = get_bvars t.term_terms
+     and tbcore_list = get_bterms t.term_terms
      in
      let op_n =List.length tbvs_list
      in
@@ -590,20 +563,20 @@ let rec cterm2multiterm t consts u var_hashtbl b_assoclist =
                   (List.map List.length tbvs_list
                   )
      in
-     let fs =    {opsymb = t.term_op;
-                  oparity_n = op_n;
-                  oparity_a = op_a ;
-                  b_length = 1;
-                  opbinding = (Array.init op_n
-                               (function i -> (Array.create op_a.(i) [] )
-                               )
-                              );
-                  renamings = (Array.init op_n
-                               (function i -> (Array.create op_a.(i) (V "") )
-                               )
-                              );
-                  timestamp = (-1)
-                 }
+     let fs = { opsymb = t.term_op;
+                oparity_n = op_n;
+                oparity_a = op_a ;
+                b_length = 1;
+                opbinding = (Array.init op_n
+                             (function i -> (Array.create op_a.(i) [] )
+                             )
+                            );
+                renamings = (Array.init op_n
+                             (function i -> (Array.create op_a.(i) (V "") )
+                             )
+                            );
+                timestamp = (-1)
+               }
      in
      let multit ={fsymb= Op fs ; args =[]}
      in
@@ -617,7 +590,7 @@ let rec cterm2multiterm t consts u var_hashtbl b_assoclist =
         *)
          (let j = ref 0 and b_aslist_ref = ref b_assoclist in
            List.iter (function v ->
-                      (  let bv ={name_bv = (V v);
+                      (let bv ={name_bv = (V v);
                                   fsymb_bv = fs;
                                   arg_numb = (!i);
                                   binding_numb =(!j)
@@ -625,74 +598,60 @@ let rec cterm2multiterm t consts u var_hashtbl b_assoclist =
                          in
                            ((fs.opbinding).(!i)).(!j)<- [bv];
                            b_aslist_ref:= (v,bv)::(!b_aslist_ref);
-                           j:=(!j)+1
+                           incr j
                       )
                      ) l ;
-           i:=(!i)+1;
+           incr i;
            (!b_aslist_ref)
          )
-
                      in
      multit.args <-
-     targs2args tbcore_list consts u var_hashtbl (List.map  conv_list tbvs_list);
+     targs2args tbcore_list consts u var_hashtbl (List.map conv_list tbvs_list);
                                          (* this List.map... makes
                                             the correct multit.fsymb
                                             as a side effect
                                          *)
      multit
 
-
-
-
 and targs2args li consts u var_hashtbl b_asslistlist =
      (* converts targs into args *)
            let f tt b_asslist =
              (term2temp_multeq tt consts u var_hashtbl b_asslist) in
-         List.map2 f li  b_asslistlist
+         List.map2 f li b_asslistlist
 
 and term2temp_multeq tt consts u var_hashtbl b_asslist =
-
-(*       match tt.core with *)
-        match (get_core tt) with
-
+   match (get_core tt) with
         FOVar x ->(try { s_t = Queue.create () ;
                          m_t = [{fsymb = Bvar (List.assoc x b_asslist);
                                  args = []
                                 }]
                        }
-
                    with Not_found ->
-                    if (is_constant x consts) then
+                    if (StringSet.mem consts x) then
                        { s_t = Queue.create () ;
                          m_t = [{fsymb = (Cnst (V x));
                                  args = []
                                 }]
                        }
-
                   else
                      ( let q = Queue.create() in
                        Queue.add (get_variable x u var_hashtbl) q;
                        { s_t = q ; m_t =[]}
                      )
                   )
-
-       |  Term  s -> { s_t = Queue.create () ;
-                       m_t = [(cterm2multiterm s consts u var_hashtbl b_asslist) ]
-                     }
-       
-       | Subst _ -> raise Not_done
-       | _ -> raise Not_supposed
+       | Term s -> { s_t = Queue.create () ;
+                      m_t = [(cterm2multiterm s consts u var_hashtbl b_asslist) ]
+                    }
+       | Subst _ | Hashed _ -> fail_core "unify_mm"
+       | Sequent _ -> raise seq_unsupported
 
 (* converts 2 terms into temp_multieq *)
 
 let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
-      let temp_meq ={s_t=Queue.create (); m_t=[] }  in
-
-(*   match t0.core , t1.core with  *)
- match (get_core t0) , (get_core t1) with
-    FOVar x, FOVar y  ->
+   match get_core t0, get_core t1 with
+    FOVar x, FOVar y ->
        (try let vx=(List.assoc x b_asslist0) in
-                try let vy=(List.assoc y b_asslist1)  in
+                try let vy=(List.assoc y b_asslist1) in
                  (let multit0 ={fsymb=Bvar vx;
                                 args=[]
                                }
@@ -701,195 +660,144 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
                                }
                     in
                   if (header_equal multit0 multit1 (-1)) then
-                                  (temp_meq.m_t<- [multit0];
-                                   temp_meq
-                                  )
+                     { m_t = [multit0];
+                       s_t = Queue.create () }
                   else (raise Clash)
                  )
                 with Not_found -> (raise Clash)
-
         with Not_found ->
-               (  (if (List.mem_assoc y b_asslist1) then raise Clash);
-                  match (is_constant x consts),(is_constant y consts) with
-                  true,true   ->(if x=y then (temp_meq.m_t <-
-                                                  [{fsymb = (Cnst (V x));
-                                                    args = []
-                                                   }];
-                                              temp_meq
-                                             )
-                                 else raise Clash
-                                )
-                | true,false  ->
-                       (
-                       temp_meq.m_t <- [{fsymb = (Cnst (V x));
-                                         args = []
-                                        }];
-                       Queue.add (get_variable y u var_hashtbl) temp_meq.s_t;
-                       temp_meq
-                       )
-                | false,true  ->
-                       (
-                       temp_meq.m_t <- [{fsymb = (Cnst (V y));
-                                         args = []
-                                        }];
-                       Queue.add (get_variable x u var_hashtbl) temp_meq.s_t;
-                       temp_meq
-                       )
-                | false,false  ->
-                   (
-                    Queue.add (get_variable x u var_hashtbl) temp_meq.s_t;
+               ((if (List.mem_assoc y b_asslist1) then raise Clash);
+                  match StringSet.mem consts x, StringSet.mem consts y with
+                  true,true -> 
+                     if x=y then
+                      { m_t =
+                           [{ fsymb = (Cnst (V x));
+                              args = [] }];
+                        s_t = Queue.create () }
+                     else raise Clash
+                | true,false ->
+                     let q = Queue.create () in
+                     Queue.add (get_variable y u var_hashtbl) q;
+                     { m_t = [{fsymb = (Cnst (V x));
+                               args = [] }];
+                       s_t = q }
+                | false,true ->
+                     let q = Queue.create () in
+                     Queue.add (get_variable x u var_hashtbl) q;
+                     { m_t = [{fsymb = (Cnst (V y));
+                                args = [] }];
+                       s_t = q }
+                | false,false ->
+                    let q = Queue.create () in
+                    Queue.add (get_variable x u var_hashtbl) q;
                     if not (x=y) then
-                    Queue.add (get_variable y u var_hashtbl) temp_meq.s_t;
-                    temp_meq
-                   )
+                    Queue.add (get_variable y u var_hashtbl) q;
+                    { m_t = []; s_t = q }
                )
        )
-
   | FOVar x, Term t ->
-         (
-          (if ((List.mem_assoc x b_asslist0)||(is_constant x consts))
+          (if (List.mem_assoc x b_asslist0)||(StringSet.mem consts x)
            then raise Clash
           );
            (* try let vx=(List.assoc x b_asslist0) in (raise Clash )
               with Not_found -> *)
-          Queue.add (get_variable x u var_hashtbl) temp_meq.s_t;
-          temp_meq.m_t <- [cterm2multiterm t consts u var_hashtbl b_asslist1];
-          temp_meq
-
-         )
-
+         let q = Queue.create () in 
+         Queue.add (get_variable x u var_hashtbl) q;
+         { m_t = [cterm2multiterm t consts u var_hashtbl b_asslist1];
+           s_t = q }
   | Term t, FOVar y ->
-         (
-          (if ((List.mem_assoc y b_asslist1)||(is_constant y consts))
+          (if (List.mem_assoc y b_asslist1)||(StringSet.mem consts y)
            then raise Clash
           );
            (* try let vy=(List.assoc y b_asslist1) in (raise Clash)
               with Not_found -> *)
-          Queue.add (get_variable y u var_hashtbl) temp_meq.s_t;
-          temp_meq.m_t <- [cterm2multiterm t consts u var_hashtbl b_asslist0];
-          temp_meq
-
-         )
-
+         let q = Queue.create () in
+         Queue.add (get_variable y u var_hashtbl) q;
+         { m_t = [cterm2multiterm t consts u var_hashtbl b_asslist0];
+           s_t = q }
   | Term t_0, Term t_1 ->
-   (
-     let tbvs_list0 = (List.map
-                       (function sbt -> sbt.bvars)
-                        t_0.term_terms
-                      )  (* it is a listlist of bound varnames from t_0.term_terms *)
-     and tbvs_list1 = (List.map
-                       (function sbt -> sbt.bvars)
-                        t_1.term_terms
-                      )  (* it is a listlist of bound varnames from t_1.term_terms *)
-
-
-     and tbcore_list0 = (List.map
-                            (function sbt -> sbt.bterm)
-                             t_0.term_terms
-                        )       (* it is a list of cores from t_0.term_terms *)
-     and tbcore_list1 = (List.map
-                            (function sbt -> sbt.bterm)
-                             t_1.term_terms
-                        )       (* it is a list of cores from t_1.term_terms *)
-
-
-
-     in
-     let op_n0 =List.length tbvs_list0
-     and op_n1 =List.length tbvs_list1
-
-     in
-     let op_a0 = Array.of_list
-                  (List.map List.length tbvs_list0
-                  )
-     and op_a1 = Array.of_list
-                  (List.map List.length tbvs_list1
-                  )
-
-
-     in
-
-    if not ((opsymb_equal t_0.term_op t_1.term_op)&&(op_n0=op_n1)&&(op_a0=op_a1) )   
-         then raise Clash
-    else
-    begin
-
-       let fs =    {opsymb = t_0.term_op;
-                    oparity_n = op_n0;
-                    oparity_a = op_a0 ;
-                    b_length = 2;
-                    opbinding = (Array.init op_n0
-                                 (function i -> (Array.create op_a0.(i) [] )
-                                 )
-                                );
-                    renamings = (Array.init op_n0
-                                 (function i -> (Array.create op_a0.(i) (V "") )
-                                 )
-                                );
-                    timestamp = (-1)
-                   }
-       in
-       let multit ={fsymb= Op fs ; args =[]}
-
-     in
-       let i =ref 0 in
-        let conv_lists l0 l1 =
-        (* uses lists l0 l1 to set the values in
-                 fs.opbinding.(!i) :array[1..length(l0)]of bound_variable;
-           returns an association li
-st which associates
-           the bound variable names from l0 l1 with corresponding
-           bound_variables; finally increments (!i)
-        *)
-         (let j = ref 0
-          and b_aslist_ref0 = ref b_asslist0
-          and b_aslist_ref1 = ref b_asslist1
-          in
-           List.iter2 (function v0 -> function v1 ->
-                      (  let bv0 ={name_bv = (V v0);
-                                   fsymb_bv = fs;
-                                   arg_numb = (!i);
-                                   binding_numb =(!j)
-                                  }
-                         and bv1 ={name_bv = (V v1);
-                                   fsymb_bv = fs;
-                                   arg_numb = (!i);
-                                   binding_numb =(!j)
-                                  }
-                         in
-                           ((fs.opbinding).(!i)).(!j)<- [bv0;bv1];
-                            b_aslist_ref0:= (v0,bv0)::(!b_aslist_ref0);
-                            b_aslist_ref1:= (v1,bv1)::(!b_aslist_ref1);
-                           j:=(!j)+1
-                      )
+      if not (opsymb_equal t_0.term_op t_1.term_op) then raise Clash;
+      let tbvs_list0 = get_bvars t_0.term_terms
+      and tbvs_list1 = get_bvars t_1.term_terms
+      and tbcore_list0 = get_bterms t_0.term_terms
+      and tbcore_list1 = get_bterms t_1.term_terms in
+      let op_n0 =List.length tbvs_list0
+      and op_n1 =List.length tbvs_list1 in 
+      if not (op_n0=op_n1) then raise Clash;
+      let op_a0 = Array.of_list (List.map List.length tbvs_list0)
+      and op_a1 = Array.of_list (List.map List.length tbvs_list1) in
+      if not (op_a0=op_a1) then raise Clash;
+      let fs = { opsymb = t_0.term_op;
+                 oparity_n = op_n0;
+                 oparity_a = op_a0 ;
+                 b_length = 2;
+                 opbinding = (Array.init op_n0
+                              (function i -> (Array.create op_a0.(i) [] )
+                              )
+                             );
+                 renamings = (Array.init op_n0
+                              (function i -> (Array.create op_a0.(i) (V "") )
+                              )
+                             );
+                 timestamp = (-1)
+                } in
+      let multit = 
+         { fsymb = Op fs ; 
+           args =
+            if op_n0 = 0 then
+               targs2args_for2 [] [] consts u var_hashtbl []
+            else
+               let i =ref 0 in
+               let conv_lists l0 l1 =
+                 (* uses lists l0 l1 to set the values in
+                  *        fs.opbinding.(!i) :array[1..length(l0)]of bound_variable;
+                  *  returns an association list which associates
+                  * the bound variable names from l0 l1 with corresponding
+                  * bound_variables; finally increments (!i)
+                  *)
+                  if (l0=[]) && (l1=[]) then b_asslist0,b_asslist1 else
+                  let j = ref 0
+                  and b_aslist_ref0 = ref b_asslist0
+                  and b_aslist_ref1 = ref b_asslist1 in
+                  List.iter2
+                     (fun v0 v1 ->
+                        let bv0 = 
+                           { name_bv = (V v0);
+                             fsymb_bv = fs;
+                             arg_numb = (!i);
+                             binding_numb =(!j)
+                           }
+                        and bv1 =
+                           { name_bv = (V v1);
+                             fsymb_bv = fs;
+                             arg_numb = (!i);
+                             binding_numb =(!j)
+                           } in
+                        ((fs.opbinding).(!i)).(!j)<- [bv0;bv1];
+                        b_aslist_ref0:= (v0,bv0)::(!b_aslist_ref0);
+                        b_aslist_ref1:= (v1,bv1)::(!b_aslist_ref1);
+                        incr j
                      ) l0 l1;
-           i:=(!i)+1;
-           (!b_aslist_ref0),(!b_aslist_ref1)
-         )
-
-        in
-     multit.args <-
-     targs2args_for2 tbcore_list0 tbcore_list1 consts u var_hashtbl
-        (List.map2  conv_lists tbvs_list0 tbvs_list1);
-        (* this List.map2... makes
-           the correct multit.fsymb
-           as a side effect
-        *)
-     temp_meq.m_t <- [multit];
-     temp_meq
-    end
-   )
-
-  | Subst _, _ -> raise Not_done
-  | _, Subst _ -> raise Not_done
-  | _ , _      -> raise Not_supposed
-
+                  incr i;
+                  (!b_aslist_ref0),(!b_aslist_ref1)
+               in
+                  targs2args_for2 tbcore_list0 tbcore_list1 consts u var_hashtbl
+                     (List.map2 conv_lists tbvs_list0 tbvs_list1);
+                  (* this List.map2... makes
+                   * the correct multit.fsymb
+                   * as a side effect
+                   *)
+         }
+      in
+         { m_t = [multit]; s_t = Queue.create () }
+  | Subst _, _ | _, Subst _ | Hashed _, _ | _, Hashed _ -> fail_core "unify_mm"
+  | Sequent _ , _ | _, Sequent _ -> raise seq_unsupported
 
 (* converts 2 cores lists cut from targs of 2 terms into args for multiterm;
-*  b_assbilistlist is a list of pairs  b_asslist0,b_asslist1  where
-*  b_asslist*  are association lists for bindings in 2 terms --
-*  contain associations (bound variable name,bound_variable)
-*)
+ * b_assbilistlist is a list of pairs  b_asslist0,b_asslist1  where
+ * b_asslist*  are association lists for bindings in 2 terms --
+ * contain associations (bound variable name,bound_variable)
+ *)
 and targs2args_for2 li0 li1 consts u var_hashtbl b_assbilistlist =
         match li0,li1,b_assbilistlist with
           [],[],[] -> []
@@ -897,19 +805,15 @@ and targs2args_for2 li0 li1 consts u var_hashtbl b_assbilistlist =
              ( (terms2temp_multieq s0 s1 consts u var_hashtbl b_asl0 b_asl1) ::
                (targs2args_for2 tli0 tli1 consts u var_hashtbl tl)
              )
-
-        | _,_,_ ->    raise Impossible
-
-
+        | _,_,_ -> raise impossible
 
 let cterms2upart t_0 t_1 consts var_hashtbl=
   let u = { multeq_number=0;
             zero_counter_multeq=[];
             equations=[] }
-
   in
   let vinit =                            (* now Vinit is not hashed !! *)
-                (let v  ={name = Vinit ;
+                (let v = {name = Vinit ;
                           m_v = init_multeq
                          }
                       in
@@ -924,129 +828,74 @@ let cterms2upart t_0 t_1 consts var_hashtbl=
                       u.multeq_number <- u.multeq_number + 1;
                       v
                 )
-
-
-
-
   in (
       vinit.m_v.counter <- 0;
       u.zero_counter_multeq <- [vinit.m_v];
-
       vinit.m_v.m <-
         (terms2temp_multieq (make_term t_0) ( make_term t_1) consts u var_hashtbl [] []).m_t;
       u
      )
-
 
 let cterms2system t_0 t_1 consts var_hashtbl =
                           {t=[];
                            u= (cterms2upart t_0 t_1 consts var_hashtbl)
                           }
 
-
-
-
-
-
-
 let unifiable term0 term1 consts=
-    
-     let t0 =( match (get_core term0) with   
-                Term _ as aaa    -> aaa
-              | Subst _          -> get_core (make_term (dest_term term0))
-              | Sequent _        -> raise Not_supposed
-              | FOVar  _ as aaa  -> aaa 
-              | Hashed  _        -> get_core (make_term (dest_term term0)) 
-             )
-     and  t1 =( match (get_core term1) with   
-                 Term  _ as bbb  -> bbb
-               | Subst _         -> get_core (make_term (dest_term term1))
-               | Sequent _       -> raise Not_supposed
-               | FOVar  _ as bbb -> bbb 
-               | Hashed _        -> get_core (make_term (dest_term term1)) 
-              )  
-
-   in
-   match t0, t1 with
-
+   match get_core term0, get_core term1 with
     Term t_0, Term t_1 ->(
       let var_hashtbl = (Hashtbl.create 23) in
-           try 
-             let trash=mm_unify (cterms2system t_0 t_1 consts var_hashtbl)
-             in
+           try
+             ignore(mm_unify (cterms2system t_0 t_1 consts var_hashtbl));
              true
-           with  Clash  -> false
-               | Cycle  -> false
+           with Clash -> false
+              | Cycle -> false
                           )
-
-  | FOVar x, FOVar y  ->
-      ( match (is_constant x consts),(is_constant y consts) with
-          true,true    -> x=y
-        | _            -> true
-
-      )
-
-  | FOVar x, Term _ -> if (is_constant x consts) then false
-                       else true
-   
-
-  | Term _ , FOVar y -> if (is_constant y consts) then false
-                        else true
- 
-  | _ ->  raise Not_supposed
-
+  | FOVar x, FOVar y ->
+     (not (StringSet.mem consts x)) || (not (StringSet.mem consts y)) || x=y
+  | FOVar x, Term _ -> not (StringSet.mem consts x)
+  | Term _ , FOVar y -> not (StringSet.mem consts y) 
+  | Subst _, _ | _, Subst _ | Hashed _, _ | _, Hashed _ -> fail_core "unify_mm"
+  | Sequent _ , _ | _, Sequent _ -> raise seq_unsupported
 
    let fofeqnlist l =
                (List.map
-                (function z ->(match z with 
-                               (x,y) ->( mk_bterm [] x ) 
+                (function z ->(match z with
+                               (x,y) ->( mk_bterm [] x )
                               )
                 )
                 l
-               ) 
+               )
 
    let sofeqnlist l =
                (List.map
-                (function z ->(match z with 
-                               (x,y) ->( mk_bterm [] y ) 
+                (function z ->(match z with
+                               (x,y) ->( mk_bterm [] y )
                               )
                 )
                 l
-               ) 
-
+               )
 
 let unifiable_eqnl l consts =
-       let opL =  mk_op (Opname.make_opname ["L"]) []  
+       let opL = mk_op (Opname.make_opname ["L"]) []
        in
-       unifiable (mk_term opL (fofeqnlist l)) (mk_term opL (sofeqnlist l)) consts   
+       unifiable (mk_term opL (fofeqnlist l)) (mk_term opL (sofeqnlist l)) consts
 
-
-
-
-
-let alpha_equal_my term0 term1= unifiable term0 term1 (free_vars_terms [term0; term1])
-
-
-
-
-
+let alpha_equal_my term0 term1 =
+   unifiable term0 term1 (StringSet.union (term_free_vars term0) (term_free_vars term1))
 
 (*********************************************************)
-(* Conversion from Mm-unif types to Term                 *) 
+(* Conversion from Mm-unif types to Term                 *)
 (*                                                       *)
 (*********************************************************)
-module H_multeq  =
-struct 
-   type t = Mm_unif.multeq 
+module H_multeq =
+struct
+   type t = Mm_unif.multeq
    let equal = (==)
    let hash = Hashtbl.hash
 end
 (* Hashtbl for term with keys: multeq *)
 module Hashtbl_multeq = Hashtbl.Make(H_multeq)
-
-
-
-
 
 let rec extract_varstrl l =
          match l with
@@ -1056,9 +905,8 @@ let rec extract_varstrl l =
                      | V x   -> x::(extract_varstrl tl)
                     )
 
-(* extracts the string list of variable names from meq; deletes Vinit  *) 
+(* extracts the string list of variable names from meq; deletes Vinit  *)
 let mulieq2varstringl meq = extract_varstrl meq.s
-
 
 let pick_name bv consts var_hashtbl =
    let oldname=
@@ -1071,37 +919,21 @@ let pick_name bv consts var_hashtbl =
    if ( newname = (V "") ) then
          ( let namestr = match oldname with
              V oldnamestr ->
-                  ( let rec new_var cts av v i =
-                        let v' = v ^ "_" ^ (string_of_int i) in
-                            try (
-                                 match (Hashtbl.find  av  v') with
-                                 _ -> (new_var cts av v (succ i))
-                                 )
-                            with Not_found ->
-                                  (if (is_constant  v' cts) then
-                                     (new_var cts av v (succ i))
-                                   else v'
-                                  )
-                    in
-                    new_var consts var_hashtbl oldnamestr 0 (* ??? or hash(bv) *)
-                  )
-           | _ -> raise Not_supposed
+                let avoid v = StringSet.mem consts v || Hashtbl.mem var_hashtbl v in
+                String_util.vnewname oldnamestr avoid        (* ??? or hash(bv) *)
+           | _ -> raise (Invalid_argument "Bug in Unify_mm.pick_name!")
          in
           (
           ((bv.fsymb_bv.renamings).(bv.arg_numb)).(bv.binding_numb) <-
            (V namestr)
-          )   ; (V namestr)
+          ); (V namestr)
          )
    else newname
 
-
-
-
-let rec  multiterm_list2term m consts var_hashtbl sub_hashtbl multeq_hashtbl =     
+let rec multiterm_list2term m consts var_hashtbl sub_hashtbl multeq_hashtbl =
  ( match m with
-
        [multit] ->
-      ( match multit.fsymb  with
+      ( match multit.fsymb with
           Op op_w_b ->( make_term {term_op = op_w_b.opsymb ;
                                   term_terms = List.map2
                                                (function x -> function y ->
@@ -1109,116 +941,100 @@ let rec  multiterm_list2term m consts var_hashtbl sub_hashtbl multeq_hashtbl =
                                                )
                                                multit.args
                                                (List.map Array.to_list (Array.to_list op_w_b.opbinding))
-
                                  }
-                                 
                       )
-                     
-
-
-       |  Bvar bv -> (match (pick_name bv consts var_hashtbl) with
-                       (V v) ->  mk_var_term  v
-                      |   _ -> raise Impossible
+       | Bvar bv -> (match (pick_name bv consts var_hashtbl) with
+                       (V v) -> mk_var_term v
+                      |  _ -> raise impossible
                      )
-
-       |  Cnst x  -> (match x with
-                          (V v) ->  mk_var_term  v
-                         |   _ -> raise Impossible
+       | Cnst x -> (match x with
+                          (V v) -> mk_var_term v
+                         |  _ -> raise impossible
                      )
-
       )
-
-     | _ -> raise Impossible
+     | _ -> raise impossible
  )
-
-
 
 (* given temp_multeq and external bound_variable list constructs bterm *)
 
-and temp_multieq2bterm t_meq b_v_list consts var_hashtbl sub_hashtbl multeq_hashtbl =  
-   (   make_bterm       
-      (   
+and temp_multieq2bterm t_meq b_v_list consts var_hashtbl sub_hashtbl multeq_hashtbl =
+   ( make_bterm
+      (
            if ( (Queue.length t_meq.s_t) = 0 ) then
                    {bvars=(List.map
-                           (function l ->( 
-                            match     
+                           (function l ->(
+                            match
                             (pick_name (List.hd l) consts var_hashtbl)
-                            with  
-                               (V v) -> v 
-                              | _ -> raise Impossible 
-                                          ) 
-                           ) 
+                            with
+                               (V v) -> v
+                              | _ -> raise impossible
+                                          )
+                           )
                            b_v_list
                           );
                     bterm = (multiterm_list2term t_meq.m_t consts var_hashtbl sub_hashtbl multeq_hashtbl )
                    }
            else
-         
                    {bvars=(List.map
                            (function l ->(
-                            match     
+                            match
                             (pick_name (List.hd l) consts var_hashtbl )
-                            with  
-                               (V v) -> v 
-                              | _ -> raise Impossible
-                                          ) 
+                            with
+                               (V v) -> v
+                              | _ -> raise impossible
+                                          )
                            )
                            b_v_list
                            );
                     bterm = mk_var_term ( let vari=(Queue.peek t_meq.s_t) in
                                           match vari.name with
                                            (V v) ->(if (not (Hashtbl.mem sub_hashtbl v))
-                                                    then 
-                                                     begin 
-                                                      try 
-                                                       let trm= (Hashtbl_multeq.find  
+                                                    then
+                                                     begin
+                                                      try
+                                                       let trm= (Hashtbl_multeq.find
                                                                  multeq_hashtbl
                                                                  vari.m_v
                                                                 )
                                                        in
-                                                       Hashtbl.add  sub_hashtbl v trm
+                                                       Hashtbl.add sub_hashtbl v trm
                                                       with _ ->()
                                                      end; v
-                                                   )                           (* !!!!! tut  *) 
-                                          | _ -> raise Impossible             
+                                                   )                           (* !!!!! tut  *)
+                                          | _ -> raise impossible
                                         )
                    }
-               
-        
-      
       )
    )
 
+(* returnes the complete term for substitution
+ * and stores it in  multeq_hashtbl  as a side effect
+ *)
 
-(*  returnes the complete term for substitution 
-*   and stores it in  multeq_hashtbl  as a side effect 
-*)
-
-let  multieq2term meq consts var_hashtbl multeq_hashtbl =       
+let multieq2term meq consts var_hashtbl multeq_hashtbl =
        ( match meq.m with
-          []  -> (let trm = mk_var_term (match meq.s with
+          [] -> (let trm = mk_var_term (match meq.s with
                                            hd::tl ->(match hd.name with
                                                        (V v) -> v
                                                      | Vinit -> (match (List.hd tl).name with
                                                                    (V v) -> v
-                                                                 | _     ->  raise Impossible
-                                                                )   
-                                                    ) 
-                                         | []     -> raise Impossible  
+                                                                 | _ -> raise impossible
+                                                                )
+                                                    )
+                                         | [] -> raise impossible
                                         )
-                  in 
-                  Hashtbl_multeq.add multeq_hashtbl meq trm;  
+                  in
+                  Hashtbl_multeq.add multeq_hashtbl meq trm;
                   trm
                  )
-
-        | [t] ->(let sub_hashtbl = Hashtbl.create 23 
+        | [t] ->(let sub_hashtbl = Hashtbl.create 23
                  in
                  let trm= multiterm_list2term meq.m consts var_hashtbl sub_hashtbl multeq_hashtbl
                  and sub_hashtbl2sub tab=(let subref = ref [] in
                                           Hashtbl.iter
                                           (function x ->
                                            (function y ->
-                                            subref:=(x,y)::(!subref) 
+                                            subref:=(x,y)::(!subref)
                                           )) tab ;
                                           !subref
                                          )
@@ -1227,160 +1043,105 @@ let  multieq2term meq consts var_hashtbl multeq_hashtbl =
                  in
                  let trm_w_sub = match sub with
                                    [] -> trm
-                                 | _  -> {free_vars = VarsDelayed; core = Subst (trm ,sub)} 
-
-
+                                 | _  -> {free_vars = VarsDelayed; core = Subst (trm ,sub)}
                  in
-                 Hashtbl_multeq.add multeq_hashtbl meq trm_w_sub;  
-                 trm_w_sub                
-
-
+                 Hashtbl_multeq.add multeq_hashtbl meq trm_w_sub;
+                 trm_w_sub
                 )
-
-        | _   -> raise Impossible  
+        | _ -> raise impossible
        )
 
-
-
-
-
-  
 let rec upd_subst varstringl trm sigma =
-        
            match varstringl with
-                  []      -> sigma
-                | x::tl   -> (match (get_core trm) with
-                              FOVar y -> (if (x=y) then ( upd_subst tl trm sigma) 
-                                          else (x,trm)::( upd_subst tl trm sigma) 
-                                         )
-                              | _  ->  (x,trm)::( upd_subst tl trm sigma)
-                             )
-         
+                  []    -> sigma
+                | x::tl -> (match (get_core trm) with
+                            FOVar y -> (if (x=y) then ( upd_subst tl trm sigma)
+                                        else (x,trm)::( upd_subst tl trm sigma)
+                                       )
+                            | _ -> (x,trm)::( upd_subst tl trm sigma)
+                           )
 
-let solvedpart2subst slvdpt consts var_hashtbl = 
-   let multeq_hashtbl =  (Hashtbl_multeq.create 23)
-   in 
+let solvedpart2subst slvdpt consts var_hashtbl =
+   let multeq_hashtbl = (Hashtbl_multeq.create 23)
+   in
    (
-   let rec sp2s l sigma consts var_hashtbl  multeq_hashtbl = 
+   let rec sp2s l sigma consts var_hashtbl multeq_hashtbl =
     ( match l with
        [] -> sigma
      | hd::tl -> (let varstringl= (mulieq2varstringl hd)
                   and trm = (multieq2term hd consts var_hashtbl multeq_hashtbl)
-                  in  
-                   sp2s 
-                    tl 
-                    (upd_subst varstringl trm sigma) 
-                    consts 
+                  in
+                   sp2s
+                    tl
+                    (upd_subst varstringl trm sigma)
+                    consts
                     var_hashtbl
-                    multeq_hashtbl 
+                    multeq_hashtbl
                  )
     )
    in
-   sp2s slvdpt [] consts var_hashtbl  multeq_hashtbl
+   sp2s slvdpt [] consts var_hashtbl multeq_hashtbl
    )
 
-
-
 let unify term0 term1 consts=
-     let t0 =( match (get_core term0) with   
-                Term _ as aaa    -> aaa
-              | Subst _          -> get_core (make_term (dest_term term0))
-              | Sequent _        -> raise Not_supposed
-              | FOVar  _ as aaa  -> aaa 
-              | Hashed  _        -> get_core (make_term (dest_term term0)) 
-             )
-     and  t1 =( match (get_core term1) with   
-                 Term  _ as bbb  -> bbb
-               | Subst _         -> get_core (make_term (dest_term term1))
-               | Sequent _       -> raise Not_supposed
-               | FOVar  _ as bbb -> bbb 
-               | Hashed _        -> get_core (make_term (dest_term term1)) 
-              )  
-
- 
-
-   in
-   match t0, t1 with
-
+   match get_core term0, get_core term1 with
     Term t_0, Term t_1 ->(
       let var_hashtbl = (Hashtbl.create 23) in
-
            solvedpart2subst
              (mm_unify (cterms2system t_0 t_1 consts var_hashtbl)).t
              consts
-             var_hashtbl 
-
+             var_hashtbl
                           )
-
-  | FOVar x, FOVar y  ->
-      ( match (is_constant x consts),(is_constant y consts) with
-          true,true    -> (if(x=y) then []
+  | FOVar x, FOVar y ->
+      ( match StringSet.mem consts x, StringSet.mem consts y with
+          true,true -> (if(x=y) then []
                                   else raise Clash
                           )
-        
-        | true,false   ->  [(y,term0)]
-
-        | false,true   ->  [(x,term1)]                   
-
-        | false,false  ->  [(x,term1)]   
-
-
+        | true,false -> [(y,term0)]
+        | false,true -> [(x,term1)]
+        | false,false -> [(x,term1)]
       )
-
-  | FOVar x, Term _ -> if (is_constant x consts) then raise Clash
+  | FOVar x, Term _ -> if StringSet.mem consts x then raise Clash
                        else if (is_free x term1) then raise Cycle
                                      else [(x,term1)]
-   
-
-  | Term _ , FOVar y -> if (is_constant y consts) then raise Clash
+  | Term _ , FOVar y -> if StringSet.mem consts y then raise Clash
                        else if (is_free y term0) then raise Cycle
                                      else [(y,term0)]
+  | Subst _, _ | _, Subst _ | Hashed _, _ | _, Hashed _ -> fail_core "unify_mm"
+  | Sequent _ , _ | _, Sequent _ -> raise seq_unsupported
 
- 
-  | _ ->  raise Not_supposed
-
-  
-
-let unify_eqnl l consts = 
-                let opL =  mk_op (Opname.make_opname ["L"]) []  
+let unify_eqnl l1 consts =
+                let l = List.rev l1
+                in 
+                let opL = mk_op (Opname.make_opname ["L"]) []
                 in
-                unify (mk_term opL (fofeqnlist l) ) (mk_term opL (sofeqnlist l)) consts 
-
-
-
-
+                unify (mk_term opL (fofeqnlist l) ) (mk_term opL (sofeqnlist l)) consts
 
 module To_eqnlist =
 struct
 
 let update_subst varstringl terml sigma =
        match terml with
-         []  ->( match varstringl with
-                  []    -> sigma
-                | v::h  -> (List.map 
-                            (function x -> (x, mk_var_term v) ) 
+         [] -> ( match varstringl with
+                  [] -> sigma
+                | v::h -> (List.map
+                            (function x -> (x, mk_var_term v) )
                             h
                            )@ sigma
                )
-
        | [t] ->( match varstringl with
-                  []   -> sigma
-                | li   -> (List.map 
-                          (function x -> (x , (do_term_subst sigma t )) ) 
+                  [] -> sigma
+                | li -> (List.map
+                          (function x -> (x , (do_term_subst sigma t )) )
                           li
                           )@ sigma
                 )
+       | _ -> raise impossible
 
-       | _   -> raise Impossible
-
-
-
-
-let rec  multiterm_list2term m consts var_hashtbl=
+let rec multiterm_list2term m consts var_hashtbl=
  ( match m with
-
        [multit] ->
-      ( match multit.fsymb  with
+      ( match multit.fsymb with
           Op op_w_b ->( make_term {term_op = op_w_b.opsymb ;
                                   term_terms = List.map2
                                                (function x -> function y ->
@@ -1388,188 +1149,167 @@ let rec  multiterm_list2term m consts var_hashtbl=
                                                )
                                                multit.args
                                                (List.map Array.to_list (Array.to_list op_w_b.opbinding))
-
                                  }
-                                 
                       )
-                     
-
-
-       |  Bvar bv -> (match (pick_name bv consts var_hashtbl) with
-                       (V v) ->  mk_var_term  v
-                      |   _ -> raise Impossible
+       | Bvar bv -> (match (pick_name bv consts var_hashtbl) with
+                       (V v) -> mk_var_term v
+                      | _ -> raise impossible
                      )
-
-       |  Cnst x  -> (match x with
-                          (V v) ->  mk_var_term  v
-                         |   _ -> raise Impossible
+       | Cnst x -> (match x with
+                          (V v) -> mk_var_term v
+                         | _ -> raise impossible
                      )
-
       )
-
-     | _ -> raise Impossible
+     | _ -> raise impossible
  )
-
 
 (* given temp_multeq and external bound_variable list constructs bterm *)
 
 and temp_multieq2bterm t_meq b_v_list consts var_hashtbl =
-   (   make_bterm       
-      (   
+   ( make_bterm
+      (
            if ( (Queue.length t_meq.s_t) = 0 ) then
                    {bvars=(List.map
-                           (function l ->( 
-                            match     
+                           (function l ->(
+                            match
                             (pick_name (List.hd l) consts var_hashtbl)
-                            with  
-                               (V v) -> v 
-                              | _ -> raise Impossible 
-                                          ) 
-                           ) 
+                            with
+                               (V v) -> v
+                              | _ -> raise impossible
+                                          )
+                           )
                            b_v_list
                           );
                     bterm = (multiterm_list2term t_meq.m_t consts var_hashtbl)
                    }
            else
-         
                    {bvars=(List.map
                            (function l ->(
-                            match     
+                            match
                             (pick_name (List.hd l) consts var_hashtbl )
-                            with  
-                               (V v) -> v 
-                              | _ -> raise Impossible
-                                          ) 
+                            with
+                               (V v) -> v
+                              | _ -> raise impossible
+                                          )
                            )
                            b_v_list
                            );
                     bterm = mk_var_term (match (Queue.peek t_meq.s_t).name with
-                                           (V v) -> v                                 (* !!!!! tut  *) 
-                                          | _ -> raise Impossible             
+                                           (V v) -> v                                 (* !!!!! tut  *)
+                                          | _ -> raise impossible
                                         )
                    }
-               
-        
-      
       )
    )
 
-
-
-let  multieq2terms meq consts var_hashtbl =
+let multieq2terms meq consts var_hashtbl =
        ( match meq.m with
           []  -> []
-        | [t] ->  [multiterm_list2term meq.m consts var_hashtbl]
-        | _   -> raise Impossible  
+        | [t] -> [multiterm_list2term meq.m consts var_hashtbl]
+        | _   -> raise impossible
        )
-
-
 
 let update_eqnlist varstringl terml eqnl =
        match terml with
-         []  ->( match varstringl with
-                  []    -> eqnl
-                | v::h  -> (let vt = mk_var_term v
-                            in 
-                            List.map 
-                            (function x -> ((mk_var_term x), vt) ) 
+         [] -> ( match varstringl with
+                  []   -> eqnl
+                | v::h -> (let vt = mk_var_term v
+                            in
+                            List.map
+                            (function x -> ((mk_var_term x), vt) )
                             h
                            )@ eqnl
                )
-
        | [t] ->( match varstringl with
-                  []   -> eqnl
-                | li   -> (List.map 
-                          (function x -> ((mk_var_term x), t ) ) 
-                          li
-                          )@ eqnl
+                  [] -> eqnl
+                | li -> (List.map
+                        (function x -> ((mk_var_term x), t ) )
+                        li
+                        )@ eqnl
                 )
+       | _ -> raise impossible
 
-       | _   -> raise Impossible
-
-
-
-let solvedpart2eqnlist slvdpt consts var_hashtbl = 
-   let rec sp2el l  consts var_hashtbl = 
+let solvedpart2eqnlist slvdpt consts var_hashtbl =
+   let rec sp2el l consts var_hashtbl =
     ( match l with
        [] -> []
-     | hd::tl -> (  update_eqnlist                                      
-                     (mulieq2varstringl hd) 
+     | hd::tl -> ( update_eqnlist
+                     (mulieq2varstringl hd)
                      (multieq2terms hd consts var_hashtbl)
                      (sp2el
                       tl
-                      consts 
-                      var_hashtbl 
-                     ) 
-
+                      consts
+                      var_hashtbl
+                     )
                  )
     )
    in
    sp2el slvdpt consts var_hashtbl
 
-
-
 end  (* To_eqnlist *)
 
+let opL = mk_op (Opname.make_opname ["L"]) []
 
-
-let unify_eqnl_eqnl l consts =
-       let opL =  mk_op (Opname.make_opname ["L"]) []  
-       in
-        let t_0={term_op = opL; term_terms =(fofeqnlist l)} 
+let unify_eqnl_eqnl l1 consts =
+        let l = List.rev l1 
+        in
+        let t_0={term_op = opL; term_terms =(fofeqnlist l)}
         and t_1={term_op = opL; term_terms =(sofeqnlist l)}
         in
-         let var_hashtbl = (Hashtbl.create 23) 
+         let var_hashtbl = (Hashtbl.create 23)
          in
              To_eqnlist.solvedpart2eqnlist
              (mm_unify (cterms2system t_0 t_1 consts var_hashtbl)).t
              consts
-             var_hashtbl   
-        
-
-
-
+             var_hashtbl
 
 end           (* end Mm_inter *)
 
+open Mm_unif
+open Mm_inter
 
+let re_bug = Invalid_argument "Bug: Uncaught RefineError exception in unify_mm"
 
+let unifiable term0 term1 const =
+                try
+                Mm_inter.unifiable term0 term1 const
+                with RefineError _ -> raise re_bug
+                 | Mm_unif_error -> REF_RAISE (RefineError ("unify_mm", StringError "Mm_unif_error"))
 
-let unifiable = Mm_inter.unifiable
-let unifiable_eqnl = Mm_inter.unifiable_eqnl
+let unifiable_eqnl l consts =
+                try
+                   Mm_inter.unifiable_eqnl l consts
+                with RefineError _ -> raise re_bug
+                 | Mm_unif_error -> REF_RAISE (RefineError ("unify_mm", StringError "Mm_unif_error"))
 
+let unify term0 term1 consts =
+            try
+             Mm_inter.unify term0 term1 consts
+            with Clash -> REF_RAISE ( RefineError("unify_mm", StringError "Unification failed - clash"))
+              | Cycle -> REF_RAISE ( RefineError("unify_mm", StringError "Unification failed - cycle"))
+              | RefineError _ -> raise re_bug
+              | Mm_unif_error -> REF_RAISE (RefineError ("unify_mm", StringError "Mm_unif_error"))
 
-let unify = Mm_inter.unify
-let unify_eqnl = Mm_inter.unify_eqnl
-let unify_eqnl_eqnl = Mm_inter.unify_eqnl_eqnl 
-let alpha_equal_my = Mm_inter.alpha_equal_my
+let unify_eqnl l consts =
+            try
+                   Mm_inter.unify_eqnl l consts
+            with Clash -> REF_RAISE ( RefineError("unify_mm", StringError "Unification failed - clash"))
+              | Cycle -> REF_RAISE ( RefineError("unify_mm", StringError "Unification failed - cycle"))
+              | RefineError _ -> raise re_bug
+              | Mm_unif_error -> REF_RAISE (RefineError ("unify_mm", StringError "Mm_unif_error"))
 
-(* let unifytest = Mm_inter.unifytest *)
+let unify_eqnl_eqnl l consts =
+            try
+                      Mm_inter.unify_eqnl_eqnl l consts
+            with Clash -> REF_RAISE ( RefineError("unify_mm", StringError "Unification failed - clash"))
+              | Cycle -> REF_RAISE ( RefineError("unify_mm", StringError "Unification failed - cycle"))
+              | RefineError _ -> raise re_bug
+              | Mm_unif_error -> REF_RAISE (RefineError ("unify_mm", StringError "Mm_unif_error"))
+
+let alpha_equal_my term0 term1 =
+                try
+                   Mm_inter.alpha_equal_my term0 term1
+                with RefineError _ -> raise re_bug
+                 | Mm_unif_error -> REF_RAISE (RefineError ("unify_mm", StringError "Mm_unif_error"))
 
 end     (* end TermSubstMm  *)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -32,6 +32,8 @@ INCLUDE "refine_error.mlh"
 
 open Refine_error_sig
 open Term_ds_sig
+
+open String_set
 open Term_ds
 
 module TermOp

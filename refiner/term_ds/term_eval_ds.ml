@@ -39,9 +39,11 @@
 
 INCLUDE "refine_error.mlh"
 
-open Opname
 open Refine_error_sig
 open Term_ds_sig
+
+open Opname
+open String_set
 open Term_ds
 
 module TermEval

@@ -36,6 +36,7 @@ open Mp_debug
 open Opname
 open Refine_error_sig
 open Term_ds
+open String_set
 
 (*
  * Show the file loading.
@@ -82,7 +83,6 @@ struct
    type esequent = TermType.esequent
    type seq_hyps = TermType.seq_hyps
    type seq_goals = TermType.seq_goals
-   type string_set = TermType.StringSet.t
 
    type hypothesis = TermType.hypothesis
    type level_exp_var' = TermType.level_exp_var'

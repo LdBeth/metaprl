@@ -155,7 +155,7 @@ struct
     | ShareIntTactic of (int -> tactic)
     | ShareArgTactic of (tactic_arg -> tactic)
     | ShareTSubst of (term_subst -> (string option * term) -> term_subst)
-    | ShareTypeinf of (unify_subst -> term -> unify_subst * term)
+    | ShareTypeinf of (eqnlist -> term -> eqnlist * term)
     | ShareSentinal of Refine.sentinal
 
    and shared_key = shared_object ThreadRefiner.key

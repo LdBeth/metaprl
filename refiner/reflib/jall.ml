@@ -6,6 +6,7 @@ open Term
 open TermType
 open TermOp
 open TermSubst
+open RefineError
 open Opname
 
 open Jlogic_sig
@@ -3843,12 +3844,12 @@ let jqunify term1 term2 sigmaQ =
 *)
   let eqnlist = make_eq_list app_term1 app_term2 in 
   (try
-   let tauQ = unify_mm_eqnl eqnlist [] in 
+   let tauQ = unify_mm_eqnl eqnlist String_set.StringSet.empty in 
     let (mult,oel) = multiply sigmaQ tauQ in 
   (*   print_sigmaQ mult; *)
      (mult,oel)
    with 
-    _  ->  (* any unification failure, exceptions Cycle or Clash in unification module *)
+    RefineError _  ->  (* any unification failure *)
 (*    print_endline "fo-unification fail"; *)
      failwith "fail1"   (* new connection, please *)
   )

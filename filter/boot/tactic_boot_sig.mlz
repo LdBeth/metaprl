@@ -297,7 +297,7 @@ sig
    val int_tactic_attribute : string -> (unit -> int -> tactic) -> raw_attribute
    val arg_tactic_attribute : string -> (unit -> tactic_arg -> tactic) -> raw_attribute
    val tsubst_attribute : string -> (unit -> term_subst -> (string option * term) -> term_subst) -> raw_attribute
-   val typeinf_attribute : string -> (unit -> unify_subst -> term -> unify_subst * term) -> raw_attribute
+   val typeinf_attribute : string -> (unit -> eqnlist -> term -> eqnlist * term) -> raw_attribute
 
    (*
     * Lift refiner tactics into our tactic type.
@@ -391,7 +391,7 @@ sig
    val get_int_tactic : tactic_arg -> string -> (int -> tactic)
    val get_arg_tactic : tactic_arg -> string -> (tactic_arg -> tactic)
    val get_tsubst     : tactic_arg -> string -> (term_subst -> (string option * term) -> term_subst)
-   val get_typeinf    : tactic_arg -> string -> (unify_subst -> term -> unify_subst * term)
+   val get_typeinf    : tactic_arg -> string -> (eqnlist -> term -> eqnlist * term)
 
    (*
     * Basic tactics.
@@ -805,7 +805,7 @@ sig
    val get_int_tactic_arg : tactic_arg -> string -> (int -> tactic)
    val get_arg_tactic_arg : tactic_arg -> string -> tactic_arg -> tactic
    val get_tsubst_arg     : tactic_arg -> string -> (term_subst -> (string option * term) -> term_subst)
-   val get_typeinf_arg    : tactic_arg -> string -> (unify_subst -> term -> unify_subst * term)
+   val get_typeinf_arg    : tactic_arg -> string -> (eqnlist -> term -> eqnlist * term)
 end
 
 (*

@@ -134,15 +134,9 @@ One of the side-effects of this problem is that we have to pass unnecessary argu
 to some of the rules (such as Itt_struct.hypothesis and srecElimination;
 note: Itt_struct.hypothesis is mentioned in doc/htmlman/user-guide/mp-axiom.html).
 
-4.5) Currently there are two versions of unification implemented. An old one exists
-in both term_std and term_ds. A newer one (mm_* functions) is only implemented in term_ds.
-
-The old unification is buggy, but the new one is slow. We need to make the new one faster
-and eliminate the old one (converting things like TPTP's proveT to new unification).
-
-Since unification is only used in proof search, but not proof checking, it should be OK
-to not have any unification in term_std, but this may create problems, so we may need to
-create some new unification for term_std after the old one is eliminated.
+4.5) Since unification is only used in proof search, but not proof checking, it should be OK
+that we do not have any unification in term_std, but this may create problems,
+so we may need to create some unification for term_std.
 
 4.6) (Discovered 2000.04 by kopylov, confirmed by nogin)
 Until by-context free variable restriction is implemented and its usage is enforced
