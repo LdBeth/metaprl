@@ -1,34 +1,41 @@
 To run MetaPRL for the first time:
 
-   0. Make sure that you have ocaml (including camlp4) installed.
-      If you are using RedHat Linux, you can download ocaml RPM from
-      http://files.metaprl.org/RPM/
-      Otherwise you need to build camlp4 from sources yourself,
-      applying the patches from the patches directory.
+   0. Make sure that you have OCaml (including Camlp4) installed.
+      If you are using Red Hat Linux, you can download OCaml binary
+      packages from http://files.metaprl.org/RPM/
+      Otherwise you need to build OCaml from sources yourself,
+      applying the patch(es) from the patches directory.
 
-   1. If you did not use our RPMs and installed ocaml and/or camlp4 yourself,
-      you may need to set the environment variables for
-      CAMLLIB and CAMLP4LIB directories, for example:
-      % setenv CAMLLIB /usr/lib/ocaml
-      % setenv CAMLP4LIB /usr/lib/ocaml/camlp4
-      By defaut, /usr/lib/ocaml and /usr/lib/ocaml/camlp4 are used
+      Note: MetaPRL needs a specific version of OCaml. The mk/preface
+      file lists the version(s) of OCaml that would work with
+      the version of MetaPRL you have downloaded.
 
-   2. Create a make config file
-      % make mk/config
+   1. Create the make configuration files
+      % make mk/config mk/config.local
 
-   3. Edit mk/config
+   2. If you did not use our RPMs and installed OCaml and/or Camlp4 yourself,
+      you may need to set the variables for CAMLLIB and CAMLP4LIB directories.
+      You can either set them in the mk/config.local file, for example:
+      CAMLLIB=/usr/lib/ocaml
+      CAMLP4LIB=/usr/lib/ocaml/Camlp4
+      or in the environment. If a variable is set in both, mk/config.local
+      takes precedence over the environment.
+      By default, /usr/lib/ocaml and /usr/lib/ocaml/Camlp4 are used
+
+   3. Edit mk/config (instructions are provided in the file itself).
 
    4. Build MetaPRL
-      % make opt  (native code version - compiles a little slower, but runs much faster)
+      % make opt  (native code version - compiles a little slower,
+                   but runs much faster)
       or
       % make    (bytecode version)
 
    5. Run MetaPRL
+      % editor/ml/mpxterm (native code in a new xterm using a correct font)
+      or 
       % editor/ml/mpopt   (native code)
       or
       % editor/ml/mptop   (bytecode)
-      or 
-      % editor/ml/mpxterm (native code in a new xterm usung a correct font)
      
 
 The file  editor/ml/QUICKSTART contains some hints on the usage
@@ -39,6 +46,6 @@ http://cvs.metaprl.org:12000/metaprl/install.html
 for more information.
 
 
-If you plan to write some code, take a look the Developer Guide before you start.
-Go to either doc/htmlman/developer-guide/default.html or to
-http://cvs.metaprl.org:12000/metaprl/developer-guide/default.html
+If you plan to write some code, take a look the Developer Guide
+before you start. Go to either doc/htmlman/developer-guide/default.html
+or to http://cvs.metaprl.org:12000/metaprl/developer-guide/default.html
