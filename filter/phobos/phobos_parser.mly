@@ -636,8 +636,7 @@ seq_hyps_rev:
 seq_hyp:
    var TokColon simple_term   { Hypothesis ($1, fst $3) }
  | TokLt var TokGt            { Context ($2, [], []) }
- | simple_term                { let name = Lm_symbol.new_symbol_string "_" in
-                                Hypothesis (name, fst $1) }
+ | simple_term                { Hypothesis (Lm_symbol.empty_var, fst $1) }
 
 /* Opname */
 /* REMARK: name parts are in reverse order */
