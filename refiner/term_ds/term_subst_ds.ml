@@ -659,6 +659,5 @@ struct
             fail_core "standardize_term"
 
    let standardize t =
-      fst (standardize_term 0 t)
-
+      fst (standardize_term 1 t)
 end

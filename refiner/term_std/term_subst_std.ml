@@ -607,8 +607,7 @@ struct
             t, index
 
    let standardize t =
-      fst (standardize_term 0 t)
-
+      fst (standardize_term 1 t)
 end
 
 (*
