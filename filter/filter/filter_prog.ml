@@ -1111,7 +1111,7 @@ let define_rule prim_rule deffun proc loc
       let $lid:name_rule_id$ =
          $tactic_type_expr loc$.compile_rule $lid:local_refiner_id$ ($list_expr loc (expr_of_label loc) labels$) $lid:rule_id$
       in let _ = do {
-         $refiner_expr loc$.$lid:deffun$ $lid:local_refiner_id$ $str:name$ $lid:cvars_id$ $lid:params_id$ $extract_args$ $extract$;
+         $refiner_expr loc$.$lid:deffun$ $lid:local_refiner_id$ $str:name$ $lid:cvars_id$ $lid:params_id$ $lid:assums_id$ $extract_args$ $extract$;
          $define_rule_resources proc loc name cvars_id params_id assums_id resources name_rule_expr$
       }
          in $name_rule_expr$

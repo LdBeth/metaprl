@@ -246,11 +246,6 @@ sig
     *)
    val msequent_alpha_equal : msequent -> msequent -> bool
 
-   (*
-    * Utils.
-    *)
-   val split_msequent_list : msequent list -> term list * term list list
-
    (************************************************************************
     * REFINER INTERFACE                                                    *
     ************************************************************************)
@@ -324,6 +319,7 @@ sig
       string ->                    (* name *)
       var array ->                 (* addrs *)
       term list ->                 (* params *)
+      meta_term ->                 (* rule definition *)
       term list ->                 (* extract args (bindings) *)
       term ->                      (* extract *)
       unit
@@ -331,6 +327,7 @@ sig
       string ->                    (* name *)
       var array ->                 (* addrs *)
       term list ->                 (* params *)
+      meta_term ->                 (* rule definition *)
       unit ->                      (* placeholder *)
       extract ->                   (* derived justification *)
       unit
@@ -338,6 +335,7 @@ sig
       string ->                    (* name *)
       var array ->                 (* addrs *)
       term list ->                 (* params *)
+      meta_term ->                 (* rule definition *)
       unit ->                      (* placeholder *)
       (unit -> extract) ->         (* derived justification *)
       unit
