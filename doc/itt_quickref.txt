@@ -474,6 +474,11 @@ equalSymT changes the goal from << 'x = 'y in 'T >> to
 (univAssumT i) deduces << "type"{'x} >> if the i'th hypothesis is
 << x: univ[i:l] >>.
 
+* cumulativityT : term -> tactic
+(cumulativityT << univ[j:l] >>) changes the goal from 
+<< 'x = 'y in univ[i:l] >> to << 'x = 'y in univ[j:l] >>, if the
+universe level j is less than the universe level i.
+
 This file adds to the dT tactic:
 (dT 0) calls eqcdT if the conclusion is of the form << 'a = 'b in 'T >>. 
 If the n'th hypothesis is of the form << x: 'a = 'b in 'T >>, then
