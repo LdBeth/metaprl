@@ -1366,10 +1366,8 @@ let rec is_list_expr = function
 let improve_resource proc loc { improve_name = name; improve_expr = expr } =
    let expr' = expr_of_bnd_expr proc loc expr in
    let improve_expr =
-      if is_list_expr expr.item_item then
-         impr_resource_list proc loc name expr'
-      else
-         impr_resource proc loc name expr'
+      if is_list_expr expr.item_item then impr_resource_list proc loc name expr'
+      else impr_resource proc loc name expr'
    in
       [<:str_item< ($improve_expr$) >> ]
 
