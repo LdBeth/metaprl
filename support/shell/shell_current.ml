@@ -215,7 +215,6 @@ let flush () =
               session_info_messages = strings_of_linebuffer_buffers messages
             }
          in
-            eprintf "Shell_current.flush: %s@." (Lm_string_util.prepend "/" session.session_info_dir);
             write_session session))
 
 (*!

@@ -140,7 +140,7 @@ let cmd_exe, cmd_argv =
          raise (Invalid_argument ("Unknown operating system: " ^ s))
 
 (*
- * Start a new process dumoing data into the buffer.
+ * Start a new process dumping data into the buffer.
  *)
 let create command =
    let fd_in, fd_out = Unix.pipe () in

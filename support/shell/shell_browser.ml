@@ -191,7 +191,7 @@ struct
    (*
     * Find the root job.
     *)
-   let main_pid = Lm_thread_shell.create_or_find "1" Lm_thread_shell.VisibleJob
+   let main_pid = Lm_thread_shell.create_or_find "id1" Lm_thread_shell.VisibleJob
 
    (*
     * Decode the URI.
@@ -444,7 +444,7 @@ struct
          let cwd = Top.pwd () in
          let clone =
             { session_id              = Lm_thread_shell.get_pid ();
-              session_cwd             = Top.pwd ();
+              session_cwd             = cwd;
               session_menu_version    = 1;
               session_content_version = 1;
               session_message_version = 1;
@@ -1147,8 +1147,11 @@ struct
                               print_page server state session outx width "content"
                            end
                         else
-                           (* Invalid directory or directory change failed *)
-                           print_redisplay_page content_uri server state session outx
+                           begin
+                              (* Invalid directory or directory change failed *)
+                              eprintf "Bad URL@.";
+                              print_redisplay_page content_uri server state session outx
+                           end
                   else
                      print_login_page outx state (Some session))
        | EditURI (pid, filename) ->
@@ -1473,6 +1476,8 @@ struct
          let state = update_challenge state in
             Top.init ();
             Top.set_dfmode "html";
+            Top.refresh ();
+            State.write session_entry maybe_invalidate_directory;
             serve_http http_start http_connect state !browser_port;
             eprintf "Browser service finished@."
 end

@@ -2,26 +2,23 @@
 <head>
     <title>%%TITLE%%</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <script type="text/javascript" src="/inputs/md5.js"></script>
+    <script type="text/javascript" src="/inputs/cookie.js"></script>
+    <script type="text/javascript" src="/inputs/validate.js"></script>
+    <script type="text/javascript" src="/inputs/layout.js"></script>
+    <script type="text/javascript" src="/inputs/mojave.js"></script>
+    <script type="text/javascript" src="/inputs/login.js"></script>
+    <script type="text/javascript">
+    <!-- Hide this text from old browsers --
+    var challenge = '%%CHALLENGE%%';
+    var response  = '%%RESPONSE%%';
+    -->
+    </script>
     <style type="text/css" src="/inputs/style.css"></style>
     %%STYLE%%
 </head>
-<body>
 
-<script type="text/javascript" src="/inputs/md5.js"></script>
-<script type="text/javascript" src="/inputs/cookie.js"></script>
-<script type="text/javascript" src="/inputs/validate.js"></script>
-<script type="text/javascript" src="/inputs/layout.js"></script>
-<script type="text/javascript" src="/inputs/mojave.js"></script>
-<script type="text/javascript">
-<!-- Hide this text from old browsers --
-var challenge = '%%CHALLENGE%%';
-var response  = '%%RESPONSE%%';
-GetWindowSize();
-SetWindowCookie();
-ValidateOnLoad();
--->
-</script>
-
+<body onload="OnLoad()">
 <h2>Password validation.</h2>
 <p>
 Your MetaPRL password is either out-of-date, or it hasn't been entered

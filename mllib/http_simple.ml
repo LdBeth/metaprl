@@ -144,6 +144,7 @@ let http_protocol = "HTTP/1.0"
 let print_success_page_err out code buf =
    let code, msg = get_code code in
       Lm_ssl.fprintf out "%s %d %s\r\n" http_protocol code msg;
+      Lm_ssl.fprintf out "Cache-Control: no-cache\r\n";
       Lm_ssl.fprintf out "Content-Length: %d\r\n\r\n" (Buffer.length buf);
       Lm_ssl.output_buffer out buf
 
@@ -154,6 +155,7 @@ let print_success_header_err out code =
 let print_content_page_err out code content_type buf =
    let code, msg = get_code code in
       Lm_ssl.fprintf out "%s %d %s\r\n" http_protocol code msg;
+      Lm_ssl.fprintf out "Cache-Control: no-cache\r\n";
       Lm_ssl.fprintf out "Content-Type: %s\r\n" content_type;
       Lm_ssl.fprintf out "Content-Length: %d\r\n\r\n" (Buffer.length buf);
       Lm_ssl.output_buffer out buf

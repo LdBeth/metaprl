@@ -731,8 +731,9 @@ let rec chdir parse_arg shell need_shell verbose path =
  *)
 let refresh parse_arg shell =
    let dir = shell.shell_dir in
-      shell.shell_dir <- DirRoot;
-      chdir parse_arg shell true true dir
+      chdir parse_arg shell false false DirRoot;
+      chdir parse_arg shell true true dir;
+      Lm_printf.eprintf "Refreshing %s: %s@." shell.shell_df_mode (string_of_dir dir)
 
 let cd parse_arg shell name =
    chdir parse_arg shell true true (parse_path shell name);
@@ -756,7 +757,8 @@ let fs_cwd shell =
 (*
  * Window width.
  *)
-let set_window_width shell i =   shell.shell_width <- max !Mp_term.min_screen_width i
+let set_window_width shell i =
+   shell.shell_width <- max !Mp_term.min_screen_width i
 
 (*
  * Interface to the HTTP shell.

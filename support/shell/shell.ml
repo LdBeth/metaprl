@@ -581,8 +581,7 @@ struct
        *)
       let init () =
          refresh_packages ();
-         Shell_state.set_module "shell_theory";
-         synchronize (fun _ -> ())
+         Shell_state.set_module "shell_theory"
 
       (*
        * External toploop.
