@@ -157,40 +157,58 @@ let parse table buf inx =
       main (Lexing.from_channel inx)) inx
 
 (*
+ * Open the file as a channel.
+ *)
+let mplib =
+   try Some (Sys.getenv "MPLIB") with
+      Not_found ->
+         eprintf "Shell_browser.print_file: the MPLIB environment variable is not defined@.";
+         None
+
+let channel_of_file name =
+   match mplib with
+      None ->
+         None
+    | Some mplib ->
+         let name = Filename.concat mplib name in
+            try Some (open_in name) with
+               Sys_error _ ->
+                  None
+
+(*
  * Print the contents of a file, with replacement.
  *)
-let print_file_aux print_success_page print_error_page out table name =
-   let mplib =
-      try Sys.getenv "MPLIB" with
-         Not_found ->
-            eprintf "Shell_browser.print_file: the MPLIB environment variable is not defined@.";
-            "."
-   in
-   let name = Filename.concat mplib name in
-   let inx =
-      try Some (open_in name) with
-         Sys_error _ ->
-            None
-   in
-      match inx with
-         Some inx ->
-            let buf = Buffer.create 1024 in
-               parse table buf inx;
-               print_success_page out OkCode buf
-       | None ->
-            print_error_page out NotFoundCode
+let print_raw_file_to_http out name =
+   match channel_of_file name with
+      Some inx ->
+         print_success_channel out OkCode inx
+    | None ->
+         print_error_page out NotFoundCode
 
-let print_http out table name =
-   print_file_aux print_success_page print_error_page out table name
+(*
+ * Print the contents of a file, with replacement.
+ *)
+let print_translated_file print_success_page print_error_page out table name =
+   match channel_of_file name with
+      Some inx ->
+         let buf = Buffer.create 1024 in
+            parse table buf inx;
+            close_in inx;
+            print_success_page out OkCode buf
+    | None ->
+         print_error_page out NotFoundCode
 
-let print_channel out table name =
+let print_translated_file_to_http out table name =
+   print_translated_file print_success_page print_error_page out table name
+
+let print_translated_file_to_channel out table name =
    let print_success_page out code buf =
       Buffer.output_buffer out buf
    in
    let print_error_page out code =
       raise (Invalid_argument ("File not found: " ^ name))
    in
-      print_file_aux print_success_page print_error_page out table name
+      print_translated_file print_success_page print_error_page out table name
 }
 
 (*

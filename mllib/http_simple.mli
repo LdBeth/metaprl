@@ -79,6 +79,7 @@ val http_info : t -> http_info
  * Responses.
  *)
 val print_success_page : out_channel -> response_code -> Buffer.t -> unit
+val print_success_channel : out_channel -> response_code -> in_channel -> unit
 val print_error_page : out_channel -> response_code -> unit
 val print_redirect_page : out_channel -> response_code -> string -> unit
 

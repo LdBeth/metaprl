@@ -125,6 +125,47 @@ let print_success_page out code buf =
       Buffer.output_buffer out buf
 
 (*
+ * Print a file.
+ *)
+let copy outx inx =
+   let buffer = String.create 8192 in
+   let rec copy () =
+      let count = input inx buffer 0 8192 in
+         if count <> 0 then
+            begin
+               output outx buffer 0 count;
+               copy ()
+            end
+   in
+      copy ()
+
+let print_gmtime outx time =
+   let { Unix.tm_sec = sec;
+         Unix.tm_min = min;
+         Unix.tm_hour = hour;
+         Unix.tm_mday = mday;
+         Unix.tm_mon  = mon;
+         Unix.tm_year = year;
+         Unix.tm_wday = wday
+       } = Unix.gmtime time
+   in
+   let mon_names = [|"Jan"; "Feb"; "Mar"; "Apr"; "May"; "Jun"; "Jul"; "Aug"; "Sep"; "Oct"; "Nov"; "Dec"|] in
+   let day_names = [|"Sun"; "Mon"; "Tue"; "Wed"; "Thu"; "Fri"; "Sat"|] in
+      fprintf outx "%s, %02d %s %d %02d:%02d:%02d GMT" day_names.(wday) mday mon_names.(mon) year hour min sec
+
+let print_success_channel out code inx =
+   let fd = Unix.descr_of_in_channel inx in
+   let { Unix.st_size = st_size;
+         Unix.st_mtime = st_mtime
+       } = Unix.fstat fd
+   in
+   let code, msg = ok_code in
+      fprintf out "%s %d %s\r\n" http_protocol code msg;
+      fprintf out "Last-Modified: %a\r\n" print_gmtime st_mtime;
+      fprintf out "Content-Length: %d\r\n\r\n" st_size;
+      copy out inx
+
+(*
  * For errors, construct a message body.
  *)
 let print_error_page out code =

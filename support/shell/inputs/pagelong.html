@@ -1,37 +1,18 @@
 <html>
     <head>
         <title>%%TITLE%%</title>
-        <style type="text/css" media="screen">
-<!--
-#layer1 { position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 80%;
-          visibility: visible;
-          display: block;
-          border: none;
-          padding: none;
-          overflow: auto
-        }
-#layer2 { position: absolute;
-          top: 82%;
-          left: 0;
-          width: 100%;
-          height: 18%;
-          visibility: visible;
-          display: block;
-          border: none;
-          padding: none;
-          overflow: auto
-        }
+	<script type="text/javascript" src="inputs/layout.js"></script>
+        <script type="text/javascript">
+<!-- Hide this text from old browsers
+GetWindowSize();
+WriteWindowStyle(180);
 -->
-        </style>
+        </script>
     </head>
 
     <body bgcolor="%%BGCOLOR%%" fgcolor="%%FGCOLOR%%">
-    <div id="layer1">%%BODY%%</div>
-    <div id="layer2">
+    <div id="contentbox">%%BODY%%</div>
+    <div id="rulebox">
         %%MESSAGE%%
         <p>
         <form name="commandform" method="post">

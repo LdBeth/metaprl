@@ -32,4 +32,8 @@ INPUTS =\
 	start.html\
 	login.html\
 	pagelong.html\
-	pageshort.html
+	pageshort.html\
+	layout.js\
+	md5.js\
+	cookie.js\
+	validate.js

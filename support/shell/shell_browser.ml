@@ -148,7 +148,7 @@ struct
    let print_startpage out state =
       let table = table_of_state state in
       let table = BrowserTable.add_string table title_sym "MetaPRL Start Page" in
-         print_channel out table "start.html"
+         print_translated_file_to_channel out table "start.html"
 
    (*
     * This is the default printer that uses tables for display.
@@ -163,7 +163,7 @@ struct
          else
             "pageshort.html"
       in
-         print_http out table filename
+         print_translated_file_to_http out table filename
 
    (*
     * Print the login page.
@@ -171,7 +171,7 @@ struct
    let print_login out state =
       let table = table_of_state state in
       let table = BrowserTable.add_string table title_sym "MetaPRL Login Page" in
-         print_http out table "login.html";
+         print_translated_file_to_http out table "login.html";
          state
 
    (*
@@ -197,12 +197,22 @@ struct
    let get state outx uri =
       if !debug_http then
          eprintf "Get: %s@." uri;
-      let uri = "" :: decode_uri uri in
-      let dirname = Lm_string_util.concat "/" uri in
-         chdir state dirname;
-         flush state;
-         print_page outx state dirname;
-         state
+
+      (*
+       * Catch references to direct files.
+       *)
+      match decode_uri uri with
+         "inputs" :: uri ->
+            let filename = Lm_string_util.concat "/" uri in
+               print_raw_file_to_http outx filename;
+               state
+       | _ ->
+            let uri = "" :: decode_uri uri in
+            let dirname = Lm_string_util.concat "/" uri in
+               chdir state dirname;
+               flush state;
+               print_page outx state dirname;
+               state
 
    (*
     * Handle a post command.  This means to submit the text to MetaPRL.

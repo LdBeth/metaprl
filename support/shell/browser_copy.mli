@@ -53,8 +53,9 @@ val message_sym     : symbol
 (*
  * Translate a file.
  *)
-val print_http    : out_channel -> BrowserTable.t -> string -> unit
-val print_channel : out_channel -> BrowserTable.t -> string -> unit
+val print_raw_file_to_http           : out_channel -> string -> unit
+val print_translated_file_to_http    : out_channel -> BrowserTable.t -> string -> unit
+val print_translated_file_to_channel : out_channel -> BrowserTable.t -> string -> unit
 
 (*!
  * @docoff
