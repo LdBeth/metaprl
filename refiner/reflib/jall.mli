@@ -9,70 +9,70 @@ val ruletable : rule -> string
 
 
 
-(* JProver provides an efficient refiner for first-order classical 
-   and first-order intuitionistic logic. It consists of two main parts: 
-   a proof search procedure and a proof reconstruction procedure. 
+(* JProver provides an efficient refiner for first-order classical
+   and first-order intuitionistic logic. It consists of two main parts:
+   a proof search procedure and a proof reconstruction procedure.
 
 
    Proof Search
    ============
 
    The proof search process is based on a matrix-based (connection-based)
-   proof procedure, i.e.~a non-normalform extension procedure. 
-   Besides the well-known quantifier substitution (Martelli Montanari), 
-   a special string unifiation procedure is used in order to 
-   efficiently compute intuitionistic rule non-permutabilities. 
+   proof procedure, i.e.~a non-normalform extension procedure.
+   Besides the well-known quantifier substitution (Martelli Montanari),
+   a special string unifiation procedure is used in order to
+   efficiently compute intuitionistic rule non-permutabilities.
 
 
    Proof Reconstruction
    ====================
-    
-   The proof reconstruction process converts machine-generated matrix proofs 
-   into cut-free Gentzen-style sequent proofs. For classcal logic "C", 
-   Gentzen's sequent calculus "LK" is used as target calculus. 
-   For intuitionistic logic "J", either Gentzen's single-conclusioned sequent 
-   calculus "LJ" or Fitting's multiply-conclusioned sequent calculus "LJmc" 
-   can be used. All sequent claculi are implemented in a set-based formulation 
-   in order to avoid structural rules. 
 
-   The proof reconstruction procedure combines three main procedures, depending 
+   The proof reconstruction process converts machine-generated matrix proofs
+   into cut-free Gentzen-style sequent proofs. For classcal logic "C",
+   Gentzen's sequent calculus "LK" is used as target calculus.
+   For intuitionistic logic "J", either Gentzen's single-conclusioned sequent
+   calculus "LJ" or Fitting's multiply-conclusioned sequent calculus "LJmc"
+   can be used. All sequent claculi are implemented in a set-based formulation
+   in order to avoid structural rules.
+
+   The proof reconstruction procedure combines three main procedures, depending
    on the selected logics and sequent calculi. It consists of:
-      
-    1) A uniform traversal algorithm for all logics and target sequent calculi. 
-       This procedure converts classical (intuitionistic) matrix proofs 
-       directly into cut-free "LK" ("LJmc" or "LJ") sequent proofs. 
-       However, the direct construction of "LJ" proofs may fail in some cases
-       due to proof theoretical reasons. 
 
-    2) A complete redundancy deletion algorithm, which integrates additional 
-       knowledge from the proof search process into the reconstruction process. 
+    1) A uniform traversal algorithm for all logics and target sequent calculi.
+       This procedure converts classical (intuitionistic) matrix proofs
+       directly into cut-free "LK" ("LJmc" or "LJ") sequent proofs.
+       However, the direct construction of "LJ" proofs may fail in some cases
+       due to proof theoretical reasons.
+
+    2) A complete redundancy deletion algorithm, which integrates additional
+       knowledge from the proof search process into the reconstruction process.
        This procedure is called by the traversal algorithms in order to avoid
        search and deadlocks during proof reconstruciton.
-   
-    3) A permutation-based proof transformation for converting "LJmc" proofs 
-       into "LJ" proofs. 
-       This procedure is called by-need, whenever the direct reconstruction 
+
+    3) A permutation-based proof transformation for converting "LJmc" proofs
+       into "LJ" proofs.
+       This procedure is called by-need, whenever the direct reconstruction
        of "LJ" proofs from matrix proofs fails.
 
 
 
-   
-   Literature: 
+
+   Literature:
    ==========
 
-   The implementation of JProver is based on the following publications: 
+   The implementation of JProver is based on the following publications:
 
 
 
    Slides of PRL-seminar talks:
    ---------------------------
 
-   An Efficient Refiner for First-order Intuitionistic Logic 
+   An Efficient Refiner for First-order Intuitionistic Logic
 
    http://www.cs.cornell.edu/Nuprl/PRLSeminar/PRLSeminar99_00/schmitt/feb28.html
 
 
-   An Efficient Refiner for First-order Intuitionistic Logic (Part II) 
+   An Efficient Refiner for First-order Intuitionistic Logic (Part II)
 
    http://www.cs.cornell.edu/Nuprl/PRLSeminar/PRLSeminar99_00/schmitt/may22.html
 
@@ -85,8 +85,8 @@ val ruletable : rule -> string
 [1]
    @InProceedings{inp:OttenKreitz96b,
      author       = "J.~Otten and C.~Kreitz",
-     title        = "A uniform proof procedure  for classical and 
-                     non-classical logics", 
+     title        = "A uniform proof procedure  for classical and
+                     non-classical logics",
      booktitle	  = "Proceedings of the 20$^{th}$ German Annual Conference on
                      Artificial Intelligence",
      year	  = "1996",
@@ -101,16 +101,16 @@ val ruletable : rule -> string
 [2]
    @Article{ar:KreitzOtten99,
      author	  = "C.~Kreitz and J.~Otten",
-     title 	  = "Connection-based theorem proving in classical and 
+     title 	  = "Connection-based theorem proving in classical and
                      non-classical logics",
-     journal	  = "Journal for Universal Computer Science, 
+     journal	  = "Journal for Universal Computer Science,
                      Special Issue on Integration of Deductive Systems",
-     year  	  = "1999", 
+     year  	  = "1999",
      volume	  = "5",
      number	  = "3",
      pages 	  = "88--112"
     }
- 
+
 
 
 
@@ -121,7 +121,7 @@ val ruletable : rule -> string
 [3]
    @InProceedings{inp:OttenKreitz96a,
      author	  = "J.~Otten and C.~Kreitz",
-     titl         = "T-string-unification: unifying prefixes in 
+     titl         = "T-string-unification: unifying prefixes in
                      non-classical proof methods",
      booktitle	  = "Proceedings of the 5$^{th}$ Workshop on Theorem Proving
 		     with Analytic Tableaux and Related Methods",
@@ -143,9 +143,9 @@ val ruletable : rule -> string
 [4]
    @InProceedings{inp:SchmittKreitz96a,
      author       = "S.~Schmitt and C.~Kreitz",
-     title        = "Converting non-classical matrix proofs into 
+     title        = "Converting non-classical matrix proofs into
                      sequent-style systems",
-     booktitle    = "Proceedings of the 13$^t{}^h$ Conference on 
+     booktitle    = "Proceedings of the 13$^t{}^h$ Conference on
                      Automated Deduction",
      editor       =  M.~A.~McRobbie and J.~K.~Slaney",
      number       = "1104",
@@ -160,7 +160,7 @@ val ruletable : rule -> string
 [5]
    @Article{ar:KreitzSchmitt00,
      author	  = "C.~Kreitz and S.~Schmitt",
-     title 	  = "A uniform procedure for converting matrix proofs 
+     title 	  = "A uniform procedure for converting matrix proofs
                      into sequent-style systems",
      journal	  = "Journal of Information and Computation",
      year  	  = "2000",
@@ -173,17 +173,17 @@ val ruletable : rule -> string
      author	  = "S.~Schmitt",
      title 	  = "Proof reconstruction in classical and non-classical logics",
      year  	  = "2000",
-     publisher	  = "Infix", 
+     publisher	  = "Infix",
      series       = "Dissertationen zur K{\"u}nstlichen Intelleigenz",
      number       = "(to appear)",
-     note         = "(Ph.{D}.~{T}hesis, Technische Universit{\"a}t Darmstadt, 
-                     FG Intellektik, Germany, 1999)" 
+     note         = "(Ph.{D}.~{T}hesis, Technische Universit{\"a}t Darmstadt,
+                     FG Intellektik, Germany, 1999)"
     }
 
-   The traversal algorithm is presented in the Chapters 2 and 3 of my thesis. 
-   The thesis will be made available for the Department through Christoph Kreitz, 
+   The traversal algorithm is presented in the Chapters 2 and 3 of my thesis.
+   The thesis will be made available for the Department through Christoph Kreitz,
    Upson 4159, kreitz@cs.cornell.edu
-  
+
 
 
 
@@ -196,24 +196,24 @@ val ruletable : rule -> string
      author	  = "S.~Schmitt",
      title 	  = "Proof reconstruction in classical and non-classical logics",
      year  	  = "2000",
-     publisher	  = "Infix", 
+     publisher	  = "Infix",
      series       = "Dissertationen zur K{\"u}nstlichen Intelleigenz",
-     note         = "(Ph.{D}.~{T}hesis, Technische Universit{\"a}t Darmstadt, 
-                     FG Intellektik, Germany, 1999)" 
+     note         = "(Ph.{D}.~{T}hesis, Technische Universit{\"a}t Darmstadt,
+                     FG Intellektik, Germany, 1999)"
      note         = "(to appear)",
 
     }
 
-   The integration of proof knowledge and complete redundancy deletion is presented 
+   The integration of proof knowledge and complete redundancy deletion is presented
    in Chapter 4 of my thesis.
 
 
 [8]
    @InProceedings{inp:Schmitt00,
      author	  = "S.~Schmitt",
-     title        = "A tableau-like representation framework for efficient 
+     title        = "A tableau-like representation framework for efficient
                      proof reconstruction",
-     booktitle	  = "Proceedings of the International Conference on Theorem Proving 
+     booktitle	  = "Proceedings of the International Conference on Theorem Proving
                      with Analytic Tableaux and Related Methods",
      year	  = "2000",
      series   	  = LNAI,
@@ -228,13 +228,13 @@ val ruletable : rule -> string
    Proof Reconstruction: Permutation-based poof transformations "LJ" -> "LJmc"
    ---------------------------------------------------------------------------
 
-   
+
 [9]
    @InProceedings{inp:EglySchmitt98,
      author	  = "U.~Egly and S.~Schmitt",
-     title        = "Intuitionistic proof transformations and their 
+     title        = "Intuitionistic proof transformations and their
                      application to constructive program synthesis",
-     booktitle	  = "Proceedings of the 4$^{th}$ International Conference 
+     booktitle	  = "Proceedings of the 4$^{th}$ International Conference
                      on Artificial Intelligence and Symbolic Computation",
      year         = "1998",
      editor   	  = "J.~Calmet and J.~Plaza",
@@ -249,56 +249,58 @@ val ruletable : rule -> string
 [10]
    @Article{ar:EglySchmitt99,
      author	  = "U.~Egly and S.~Schmitt",
-     title 	  = "On intuitionistic proof transformations, their 
+     title 	  = "On intuitionistic proof transformations, their
                      complexity, and application to constructive program synthesis",
-     journal	  = "Fundamenta Informaticae, 
+     journal	  = "Fundamenta Informaticae,
                      Special Issue: Symbolic Computation and Artificial Intelligence",
     year  	  = "1999",
     volume	  = "39",
     number	  = "1--2",
     pages 	  = "59--83"
-   } 
+   }
 *)
 
 
-      
+
 
 module JProver(JLogic: JLogicSig) :
 sig
-  val test : term -> string -> string -> unit  
+  val test : term -> string -> string -> unit
 
-  (* Procedure call: test conclusion logic calculus 
+  (* Procedure call: test conclusion logic calculus
 
-     test is applied to a first-order formula. The output is some 
+     test is applied to a first-order formula. The output is some
      formatted sequent proof for test / debugging purposes.
 
      The arguments for test are as follows:
 
-     logic = "C"|"J"  
+     logic = "C"|"J"
      i.e. first-order classical logic or first-order intuitionistic logic
 
-     calculus = "LK"|"LJ"|"LJmc" 
-     i.e. "LK" for classical logic "C", and either Gentzen's single conclusioned 
-     calculus "LJ" or Fittings multiply-conclusioned calculus "LJmc" for 
+     calculus = "LK"|"LJ"|"LJmc"
+     i.e. "LK" for classical logic "C", and either Gentzen's single conclusioned
+     calculus "LJ" or Fittings multiply-conclusioned calculus "LJmc" for
      intuitionistic logic "J".
 
      term = first-order formula representing the proof goal.
   *)
 
-  
-
-  val seqtest : term -> string -> string -> unit  
-
-  (* This procedure is for debugging purposes only *)
 
 
-  val gen_prover : string -> string -> term list -> term list -> JLogic.inference
+  val seqtest : term -> string -> string -> unit
 
-  (* Procedure call: gen_prover logic calculus hypothesis conclusion 
-     
+  (* seqtest procedure is for debugging purposes only *)
+
+
+  val gen_prover : int option -> string -> string -> term list -> term list -> JLogic.inference
+
+  (* Procedure call: gen_prover mult_limit logic calculus hypothesis conclusion
+
      The arguments for gen_prover are as follows:
 
-     logic = same as test
+     mult_limit - maximal multiplicity to try, None for unlimited
+
+     logic = same as in test
 
      calculus = same as in test
 
@@ -307,17 +309,17 @@ sig
      conclusion = list of first-order terms forming the succedent of the input sequent
      This list should contain only one element if logic = "J" and calculus = "LJ".
   *)
-                            
 
-  val prover : term list -> term -> JLogic.inference
 
-  (* Procedure call: gen_prover "J" "LJ" hyps [concl]
+  val prover : int option -> term list -> term -> JLogic.inference
 
-     prover provides the first-order refiner for NuPRL, using 
-     a single concluisoned succedent [concl] in the sequent. 
-     The result is a sequent proof in the single-conclusioned calculus "LJ". 
+  (* Procedure call: gen_prover mult_limit "J" "LJ" hyps [concl]
+
+     prover provides the first-order refiner for NuPRL, using
+     a single concluisoned succedent [concl] in the sequent.
+     The result is a sequent proof in the single-conclusioned calculus "LJ".
   *)
 end
 
-   
+
 

@@ -4277,6 +4277,7 @@ let rec construct_ftree termlist treelist orderinglist pos_n goal =
 (*************************** Main LOOP ************************************)
 
 let unprovable = RefineError ("Jprover", StringError "formula is not provable")
+let mult_limit_exn = RefineError ("Jprover", StringError "multiplicity limit reached")
 
 let init_prover ftree =
    let atom_relation,qprefixes = prepare_prover ftree in
@@ -4285,36 +4286,40 @@ let init_prover ftree =
    (atom_relation,atom_sets,qprefixes)
 
 
-let rec try_multiplicity ftree ordering pos_n mult logic =
+let rec try_multiplicity mult_limit ftree ordering pos_n mult logic =
    try
       let (atom_relation,atom_sets,qprefixes) = init_prover ftree in
       let ((orderingQ,red_ordering),eqlist,unifier,ext_proof) =
          path_checker atom_relation atom_sets qprefixes ordering logic in
       (ftree,red_ordering,eqlist,unifier,ext_proof)   (* orderingQ is not needed as return value *)
    with Failed ->
-      let new_mult = mult+1 in
-      begin
-         Format.open_box 0;
-         Format.force_newline ();
-         Format.print_string "Multiplicity Fail: ";
-         Format.print_string ("Try new multiplicity "^(string_of_int new_mult));
-         Format.force_newline ();
-         Format.print_flush ();
+      match mult_limit with
+         Some m when m == mult ->
+            raise mult_limit_exn
+       | _ ->
+            let new_mult = mult+1 in
+            begin
+               Format.open_box 0;
+               Format.force_newline ();
+               Format.print_string "Multiplicity Fail: ";
+               Format.print_string ("Try new multiplicity "^(string_of_int new_mult));
+               Format.force_newline ();
+               Format.print_flush ();
 
-         let (new_ftree,new_ordering,new_pos_n) =
-            add_multiplicity ftree pos_n new_mult logic in
-         if (new_ftree = ftree) then
-            raise unprovable
-         else
-(*         print_formula_info new_ftree new_ordering new_pos_n;   *)
-            try_multiplicity new_ftree new_ordering new_pos_n new_mult logic
-      end
+               let (new_ftree,new_ordering,new_pos_n) =
+                  add_multiplicity ftree pos_n new_mult logic in
+               if (new_ftree = ftree) then
+                  raise unprovable
+               else
+(*                print_formula_info new_ftree new_ordering new_pos_n;   *)
+                  try_multiplicity mult_limit new_ftree new_ordering new_pos_n new_mult logic
+            end
 
-let prove termlist logic =
+let prove mult_limit termlist logic =
    let (ftree,ordering,pos_n) = construct_ftree termlist [] [] 0 (mk_var_term "dummy") in
 (* pos_n = number of positions without new root "w" *)
 (*   print_formula_info ftree ordering pos_n;    *)
-   try_multiplicity ftree ordering pos_n 1 logic
+   try_multiplicity mult_limit ftree ordering pos_n 1 logic
 
 (********** first-order type theory interface *******************)
 
@@ -4411,9 +4416,9 @@ let rec make_test_interface rule_list input_map =
 
 (**************************************************************)
 
-let gen_prover logic calculus hyps concls =
+let gen_prover mult_limit logic calculus hyps concls =
    let (input_map,renamed_termlist) = renam_free_vars (hyps @ concls) in
-   let (ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof) = prove renamed_termlist logic in
+   let (ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof) = prove mult_limit renamed_termlist logic in
    let sequent_proof = reconstruct ftree red_ordering sigmaQ ext_proof logic calculus in
          (* transform types and rename constants *)
      (* we can transform the eigenvariables AFTER proof reconstruction since *)
@@ -4421,7 +4426,7 @@ let gen_prover logic calculus hyps concls =
      (* from the LJmc to the LJ proof *)
    create_output sequent_proof input_map
 
-let prover hyps concl = gen_prover "J" "LJ" hyps [concl]
+let prover mult_limit hyps concl = gen_prover mult_limit "J" "LJ" hyps [concl]
 
 (************* test with propositional proof reconstruction ************)
 
@@ -4435,10 +4440,10 @@ let rec count_axioms seq_list =
          else
             count_axioms r
 
-let do_prove termlist logic calculus =
+let do_prove mult_limit termlist logic calculus =
    try begin
       let (input_map,renamed_termlist) = renam_free_vars termlist in
-      let (ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof) = prove renamed_termlist logic in
+      let (ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof) = prove mult_limit renamed_termlist logic in
       Format.open_box 0;
       Format.force_newline ();
       Format.force_newline ();
@@ -4515,14 +4520,14 @@ let do_prove termlist logic calculus =
    end
 
 let test concl logic calculus =  (* calculus should be LJmc or LJ for J, and LK for C *)
-   do_prove [concl] logic calculus
+   do_prove None [concl] logic calculus
 
 (* for sequents *)
 
 let seqtest list_term logic calculus =
    let bterms = (dest_term list_term).term_terms in
    let termlist = collect_subterms bterms in
-   do_prove termlist logic calculus
+   do_prove None termlist logic calculus
 
 (*****************************************************************)
 
