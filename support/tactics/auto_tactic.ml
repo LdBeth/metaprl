@@ -97,10 +97,10 @@ extends Shell
 doc <:doc< @docoff >>
 
 open Printf
-open Mp_debug
+open Lm_debug
 open Dag
 open Imp_dag
-open String_set
+open Lm_string_set
 
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term

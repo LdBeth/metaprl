@@ -34,7 +34,7 @@
  *
  * Author: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-
+open Lm_symbol
 open Refiner.Refiner
 open Term
 open Refine
@@ -65,7 +65,7 @@ type global_resource
 
 type ('annotation, 'input) annotation_processor =
    string ->          (* Name of the new rule *)
-   string array ->    (* Names of the context vars *)
+   var array ->       (* Names of the context vars *)
    term list ->       (* Arguments *)
    term list ->       (* Parameters *)
    meta_term ->       (* Rule statement *)

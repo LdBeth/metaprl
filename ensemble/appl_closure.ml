@@ -32,8 +32,8 @@
  * jyh@cs.cornell.edu
  *)
 
-open Mp_debug
-open Thread_util
+open Lm_debug
+open Lm_thread_util
 
 open Hsys
 open Ensemble

@@ -39,7 +39,7 @@ struct
    (*
     * Maximum minor size.
     *)
-   let max_shift = Int_util.log2 Sys.max_array_length
+   let max_shift = Lm_int_util.log2 Sys.max_array_length
    let max_length = 1 lsl max_shift
 
    (*
@@ -63,7 +63,7 @@ struct
     *)
    let expand info i =
       let buckets = info.array_buckets in
-      let log = succ (Int_util.log2 i) in
+      let log = succ (Lm_int_util.log2 i) in
       let length = 1 lsl log in
          if log <= max_shift then
             let new_array = Weak.create length in

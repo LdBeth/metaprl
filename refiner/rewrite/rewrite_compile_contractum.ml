@@ -36,8 +36,10 @@
 
 INCLUDE "refine_error.mlh"
 
+open Lm_symbol
+
 open Printf
-open Mp_debug
+open Lm_debug
 open Opname
 open Term_sig
 open Term_base_sig
@@ -133,9 +135,9 @@ struct
 
    let rec compile_so_contractum_term
           (strict : strict)
-          (enames : string list)
+          (enames : var list)
           (stack : rstack array)
-          (bvars : string list)
+          (bvars : var list)
           (term : term) =
       if is_so_var_term term then
          let v, subterms = dest_so_var term in
@@ -145,7 +147,7 @@ struct
                if subterms <> [] then
                   REF_RAISE(RefineError ("Rewrite_compile_contractum.compile_so_contractum_term", RewriteBoundSOVar v))
                else
-                  enames, RWCheckVar(List_util.find_rindex v bvars)
+                  enames, RWCheckVar(Lm_list_util.find_rindex v bvars)
 
             else if array_rstack_so_mem v stack then
                (*
@@ -173,7 +175,7 @@ struct
                REF_RAISE(
                   RefineError ("Rewrite_compile_contractum.compile_so_contractum_term",
                      if (!debug_rewrite) && (array_rstack_mem v stack) then
-                        StringStringError("SO Var has stack item " ^ rstack_item_str stack.(array_rstack_index v stack) ^ " and bvars are [" ^ (String.concat "; " bvars) ^ "]", v)
+                        StringVarError("SO Var has stack item " ^ rstack_item_str stack.(array_rstack_index v stack) ^ " and bvars are [" ^ (String.concat "; " (List.map string_of_symbol bvars)) ^ "]", v)
                      else
                         RewriteFreeSOVar v
                   )
@@ -277,20 +279,18 @@ struct
                                      rw_le_vars = List.map collect vars
                          })
 
-       | MVar v ->
-            if array_rstack_p_mem ShapeVar v stack then
-               (* New param *)
-               RWMVar(array_rstack_p_index ShapeVar v stack)
-            else if strict == Relaxed && array_rstack_mem v stack then
-               RWMVar(array_rstack_index v stack)
+       | Var v ->
+            if strict == Relaxed && array_rstack_mem v stack then
+               if array_rstack_p_mem ShapeVar v stack then
+                  RWMVar(array_rstack_p_index ShapeVar v stack)
+               else
+                  RWMVar(array_rstack_index v stack)
             else
-               (* Free param *)
                REF_RAISE(RefineError (param_error, RewriteFreeParamVar v))
 
        | Number i -> RWNumber i
        | String s -> RWString s
        | Token t -> RWToken t
-       | Var v -> RWVar v
 
        | ObId id ->
             RWObId id
@@ -303,7 +303,7 @@ struct
     *)
 
    and is_sparam = function
-      Number _ | String _ | Token _ | Var _ ->
+      Number _ | String _ | Token _ ->
          true
     | ParamList l ->
          are_sparams l
@@ -377,7 +377,7 @@ struct
 
           | HypBinding (v, term) ->
                if List.mem v bvars then
-                  REF_RAISE(RefineError ("Rewrite_compile_contractum.compile_so_contractum_hyp", StringStringError("double binding", v)));
+                  REF_RAISE(RefineError ("Rewrite_compile_contractum.compile_so_contractum_hyp", StringVarError("double binding", v)));
                let enames, term = compile_so_contractum_term strict enames stack bvars term in
                let enames, v' = compile_bname strict enames stack v in
                let enames, hyps, goals =

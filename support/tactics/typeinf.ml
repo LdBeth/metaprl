@@ -44,10 +44,9 @@
  *
  * @end[license]
  *)
-
 open Printf
-open Mp_debug
-open String_set
+open Lm_symbol
+open Lm_debug
 
 open Refiner.Refiner
 open Refiner.Refiner.TermType
@@ -81,14 +80,14 @@ let _ =
  * A function that analyzes the sequent to gather type info.
  * It gets a clause from the current sequent or its assumptions.
  *)
-type typeinf_subst_fun = term_subst -> (string option * term) -> term_subst
+type typeinf_subst_fun = term_subst -> (var option * term) -> term_subst
 
 (*
  * A type inference is performed in a type context,
  * which maps variables to type.
  *)
 type opt_eqs_type = (term * term) list
-type typeinf_func = StringSet.t -> term_subst -> eqnlist -> opt_eqs_type -> term_subst -> term -> eqnlist * opt_eqs_type * term_subst * term
+type typeinf_func = SymbolSet.t -> term_subst -> eqnlist -> opt_eqs_type -> term_subst -> term -> eqnlist * opt_eqs_type * term_subst * term
 
 (*
  * This resource is used to analyze the sequent to gather type info.
@@ -191,7 +190,7 @@ let infer tbl =
          let v = dest_var t in
             try eqs, opt_eqs, defs, List.assoc v decls with
                Not_found ->
-                  raise (RefineError ("typeinf", StringStringError ("Undeclared variable", v)))
+                  raise (RefineError ("typeinf", StringVarError ("Undeclared variable", v)))
       else
          let inf =
             try snd (lookup tbl t) with
@@ -212,10 +211,10 @@ let resource typeinf =
  * Projector.
  *)
 let rec collect_consts = function
-   [] -> StringSet.empty
- | [v,t] -> StringSet.add (free_vars_set t) v
+   [] -> SymbolSet.empty
+ | [v,t] -> SymbolSet.add (free_vars_set t) v
  | (v,t)::tl ->
-      StringSet.add (StringSet.union (free_vars_set t) (collect_consts tl)) v
+      SymbolSet.add (SymbolSet.union (free_vars_set t) (collect_consts tl)) v
 
 let rec try_append_eqs eqs consts = function
    [] -> eqs, []
@@ -237,7 +236,7 @@ let typeinf_final consts eqs opt_eqs defs t =
 
 let infer_type p t =
    let decls = collect_decls p in
-   let consts = StringSet.union (collect_consts decls) (free_vars_set t) in
+   let consts = SymbolSet.union (collect_consts decls) (free_vars_set t) in
    let inf = get_resource_arg p get_typeinf_resource in
    try
       let eqs,opt_eqs,defs,t = inf consts decls eqnlist_empty [] [] t in
@@ -264,7 +263,7 @@ let infer_type_2args p t =
          l
 
 let vnewname consts defs v =
-   String_util.vnewname v (fun v -> StringSet.mem consts v || List.mem_assoc v defs)
+   new_name v (fun v -> SymbolSet.mem consts v || List.mem_assoc v defs)
 
 let infer_const t _ _ _ eqs opt_eqs defs _ = eqs, opt_eqs, defs, t
 let infer_map f inf consts decls eqs opt_eqs defs t =

@@ -30,6 +30,7 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
+open Lm_symbol
 
 open Opname
 open Refiner.Refiner.Term
@@ -40,8 +41,8 @@ open Filter_type
  * UTILITIES								*
  ************************************************************************)
 
-val context_vars_list : term list -> string list
-val binding_vars_list : term list -> string list
+val context_vars_list : term list -> var list
+val binding_vars_list : term list -> var list
 val unzip_rewrite : string -> meta_term -> term list * term * term
 
 val split_mfunction : meta_term -> string list list * term list * meta_term

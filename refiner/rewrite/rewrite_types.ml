@@ -30,6 +30,7 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
+open Lm_symbol
 
 open Opname
 open Term_shape_sig
@@ -57,16 +58,15 @@ DEFTOPMACRO BODY =
     * order variables.
     *)
    type rwparam =
-      RWNumber of Mp_num.num
+      RWNumber of Lm_num.num
     | RWString of string
     | RWToken of string
-    | RWVar of string
     | RWMNumber of int
     | RWMString of int
     | RWMToken of int
+    | RWMVar of int
     | RWMLevel1 of int
     | RWMLevel2 of rw_level_exp
-    | RWMVar of int
     | RWObId of object_id
     | RWParamList of rwparam list
    and rwoperator = { rw_name : opname; rw_params : rwparam list }
@@ -136,12 +136,12 @@ DEFTOPMACRO BODY =
     * We keep the so arg length for checking.
     *)
    type rstack =
-      FOVarPattern of string
-    | SOVarPattern of string * int
-    | SOVarInstance of string * int
-    | FOVar of string
-    | CVar of string
-    | PVar of string * shape_param
+      FOVarPattern of var
+    | SOVarPattern of var * int
+    | SOVarInstance of var * int
+    | FOVar of var
+    | CVar of var
+    | PVar of var * shape_param
 
    (*
     * During reduction, we keep a stack of objects of all the
@@ -149,14 +149,14 @@ DEFTOPMACRO BODY =
     *)
    type stack =
       StackVoid
-    | StackNumber of Mp_num.num
+    | StackNumber of Lm_num.num
     | StackString of string
-    | StackMString of string
+    | StackVar of var
     | StackLevel of level_exp
-    | StackBTerm of term * string list
+    | StackBTerm of term * var list
     | StackITerm of (term * rwterm list) list
-    | StackContext of string list * term * address
-    | StackSeqContext of string list * hyp_array
+    | StackContext of var list * term * address
+    | StackSeqContext of var list * hyp_array
 
    type rewrite_stack = stack array
 
@@ -165,7 +165,7 @@ DEFTOPMACRO BODY =
     * or it can be a function to be called.
     *)
    type rwcontractum =
-      RWCTerm of rwterm list * string array
+      RWCTerm of rwterm list * var array
     | RWCFunction of (term -> term)
 
    (*
@@ -193,7 +193,7 @@ DEFTOPMACRO BODY =
 
    type rewrite_contractum =
       { con_contractum : rwterm;
-        con_new_vars : string array
+        con_new_vars : var array
       }
 
 END

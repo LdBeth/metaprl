@@ -38,8 +38,8 @@
  *)
 
 open Printf
-open Mp_debug
-open Mp_pervasives
+open Lm_debug
+open Lm_pervasives
 
 open MLast
 open MLast_util

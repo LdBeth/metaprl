@@ -29,15 +29,15 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-
+open Lm_symbol
 open Tactic_type.Sequent
 open Refiner.Refiner.Term
 
 (* Generate a new var different from any in the list *)
-val new_var           : string -> string list -> string
-val maybe_new_var     : string -> string list -> string
-val maybe_new_vars    : string list -> string list -> string list
-val maybe_new_var_arg : tactic_arg -> string -> string
+val new_var           : var -> var list -> var
+val maybe_new_var     : var -> var list -> var
+val maybe_new_vars    : var list -> var list -> var list
+val maybe_new_var_arg : tactic_arg -> var -> var
 
 (* var_subst_to_bind 'A[t] t = bind{v.'A['v]} *)
 val var_subst_to_bind : term -> term -> term

@@ -29,7 +29,7 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-
+open Lm_symbol
 open Refiner.Refiner.Term
 
 declare "nil"
@@ -47,13 +47,13 @@ declare "bind"{x,y,z,u,v,w. 'b}
 declare "bind"{x,y,z,u,v,w,t. 'b}
 declare "bind"{x,y,z,u,v,w,t,s. 'b}
 
-val mk_bind1_term : string -> term -> term
+val mk_bind1_term : var -> term -> term
 val is_bind1_term : term -> bool
-val dest_bind1 : term -> string * term
+val dest_bind1 : term -> var * term
 
-val mk_bind2_term : string -> string -> term -> term
+val mk_bind2_term : var -> var -> term -> term
 val is_bind2_term : term -> bool
-val dest_bind2 : term -> string * string * term
+val dest_bind2 : term -> var * var * term
 
 (*
  * -*-

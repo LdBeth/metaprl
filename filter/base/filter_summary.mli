@@ -32,6 +32,7 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
+open Lm_symbol
 
 open Refiner_sig
 

@@ -374,7 +374,7 @@ and mk_sig_item si =
        | MLast.SgClt _ ->
             not_supported loc "sig class"
        | (<:sig_item< declare $list:sil$ end >>) ->
-            mk_sig_item (List_util.last sil)
+            mk_sig_item (Lm_list_util.last sil)
        | (<:sig_item< exception $s$ of $list:tl$ >>) ->
             not_supported loc "sig exception"
        | (<:sig_item< external $s$ : $t$ = $list:sl$ >>) ->
@@ -401,7 +401,7 @@ and mk_str_item si =
        | MLast.StClt _ ->
             not_supported loc "str class"
        | (<:str_item< declare $list:stl$ end >>) ->
-            mk_str_item (List_util.last stl)
+            mk_str_item (Lm_list_util.last stl)
        | (<:str_item< exception $s$ of $list:tl$ >>) ->
             not_supported loc "str exception"
        | (<:str_item< $exp:e$ >>) ->

@@ -62,9 +62,10 @@
 
 INCLUDE "refine_error.mlh"
 
+open Lm_symbol
+
 open Printf
-open Mp_debug
-open String_set
+open Lm_debug
 
 open Opname
 open Term_sig
@@ -158,7 +159,7 @@ struct
     *)
    type msequent_free_vars =
       FreeVarsDelayed
-    | FreeVars of StringSet.t
+    | FreeVars of SymbolSet.t
 
    type msequent =
       { mutable mseq_vars : msequent_free_vars;
@@ -175,7 +176,7 @@ struct
    type ml_rewrite = term -> term
 
    type ml_cond_rewrite =
-      StringSet.t ->                                 (* Free vars in the msequent *)
+      SymbolSet.t ->                                 (* Free vars in the msequent *)
       term list ->                                   (* Params *)
       term ->                                        (* Term to rewrite *)
       term * term list * term_extract                (* Extractor is returned *)
@@ -436,7 +437,7 @@ struct
     * the rewrite is being applied to, and the second is the
     * particular subterm to be rewritted.
     *)
-   type crw_arg1 = sentinal and crw_arg2 = StringSet.t and crw_arg3 = term
+   type crw_arg1 = sentinal and crw_arg2 = SymbolSet.t and crw_arg3 = term
    type crw_val = term * cond_rewrite_subgoals * cond_rewrite_just
    type cond_rewrite = crw_arg1 -> crw_arg2 -> crw_arg3 -> crw_val
 
@@ -497,12 +498,12 @@ struct
    let msequent_remove_redundant_hypbindings mseq = {
       mseq with
       mseq_goal = remove_red_hbs mseq.mseq_goal;
-      mseq_hyps = List_util.smap remove_red_hbs mseq.mseq_hyps
+      mseq_hyps = Lm_list_util.smap remove_red_hbs mseq.mseq_hyps
    }
 
    let mk_msequent goal subgoals =
       { mseq_goal = remove_red_hbs goal;
-        mseq_hyps = List_util.smap remove_red_hbs subgoals;
+        mseq_hyps = Lm_list_util.smap remove_red_hbs subgoals;
         mseq_vars = FreeVarsDelayed
       }
 
@@ -591,12 +592,12 @@ struct
    let compose ext extl =
       let subgoals = List.map (fun ext -> ext.ext_goal) extl in
       let _ =
-         if not (List_util.for_all2 msequent_alpha_equal ext.ext_subgoals subgoals) then
+         if not (Lm_list_util.for_all2 msequent_alpha_equal ext.ext_subgoals subgoals) then
             REF_RAISE(RefineError ("compose", StringError "goal mismatch"))
       in {
          ext with
          ext_just = ComposeJust (ext.ext_just, List.map (fun ext -> ext.ext_just) extl);
-         ext_subgoals = List_util.flat_map (fun ext -> ext.ext_subgoals) extl
+         ext_subgoals = Lm_list_util.flat_map (fun ext -> ext.ext_subgoals) extl
       }
 
    let identity goal =
@@ -653,7 +654,7 @@ struct
                if i = 0 then
                   { mseq_vars = FreeVarsDelayed; mseq_hyps = hyps; mseq_goal = subgoal }
                else
-                  { mseq_vars = FreeVarsDelayed; mseq_hyps = List_util.replace_nth (pred i) subgoal hyps; mseq_goal = goal }
+                  { mseq_vars = FreeVarsDelayed; mseq_hyps = Lm_list_util.replace_nth (pred i) subgoal hyps; mseq_goal = goal }
             in
                { ext_goal = mseq;
                  ext_just = RewriteJust (mseq, just, subgoal);
@@ -680,7 +681,7 @@ struct
          if i = 0 then
             { mseq_vars = FreeVarsDelayed; mseq_hyps = hyps; mseq_goal = t' }
          else
-            { mseq_vars = FreeVarsDelayed; mseq_hyps = List_util.replace_nth (pred i) t' hyps; mseq_goal = goal }
+            { mseq_vars = FreeVarsDelayed; mseq_hyps = Lm_list_util.replace_nth (pred i) t' hyps; mseq_goal = goal }
       in
          [subgoal], RewriteJust (mseq, just, subgoal)
 
@@ -762,7 +763,7 @@ struct
             if !debug_rewrites then
                eprintf "Refine.replace_subgoal %a@%s with %a\n\tTest term: %a%t" print_term seq (TermAddr.string_of_address addr) print_term t' print_term ttst eflush;
          ENDIF;
-         if String_set.StringSet.cardinal (free_vars_set ttst) < String_set.StringSet.cardinal (free_vars_set t') then
+         if SymbolSet.cardinal (free_vars_set ttst) < SymbolSet.cardinal (free_vars_set t') then
             REF_RAISE(RefineError ("Refine.replace_subgoals", GoalError("Invalid context for conditional rewrite application",AddressError(addr,seq))));
 
          (* Now we can replace the goal without fear *)
@@ -820,7 +821,7 @@ struct
          if i = 0 then
             { mseq_vars = FreeVarsDelayed; mseq_hyps = hyps; mseq_goal = t' }
          else
-            { mseq_vars = FreeVarsDelayed; mseq_hyps = List_util.replace_nth (pred i) t' hyps; mseq_goal = goal }
+            { mseq_vars = FreeVarsDelayed; mseq_hyps = Lm_list_util.replace_nth (pred i) t' hyps; mseq_goal = goal }
       in
       let subgoals = subgoal :: replace_subgoals seq subgoals in
          subgoals, CondRewriteJust (seq, just, subgoals)
@@ -888,7 +889,7 @@ struct
                if i = 0 then
                   { mseq_vars = FreeVarsDelayed; mseq_hyps = hyps; mseq_goal = subgoal }
                else
-                  { mseq_vars = FreeVarsDelayed; mseq_hyps = List_util.replace_nth (pred i) subgoal hyps; mseq_goal = goal' }
+                  { mseq_vars = FreeVarsDelayed; mseq_hyps = Lm_list_util.replace_nth (pred i) subgoal hyps; mseq_goal = goal' }
             in
             let subgoals = subgoal :: replace_subgoals mseq subgoals in
                { ext_goal = mseq;
@@ -1369,7 +1370,7 @@ struct
       and partition_rest rest = function
          just :: justl ->
             let count = just_subgoal_count just in
-            let rest, restl = List_util.split_list count rest in
+            let rest, restl = Lm_list_util.split_list count rest in
                (construct rest just) :: partition_rest restl justl
        | [] ->
             if rest <> [] then
@@ -1612,15 +1613,15 @@ struct
           | h ->
                let v = match h with
                   HypBinding (v, _) -> v
-                | Hypothesis t -> incr i; "___" ^ (string_of_int !i)
-                | Context _ -> ""
+                | Hypothesis t -> incr i; Lm_symbol.make "___" !i
+                | Context _ -> Lm_symbol.add ""
                in
                   incr i;
-                  (mk_var_term v :: vars), (HypBinding (v, mk_so_var_term ("__" ^ (string_of_int !i)) vars) :: terms)
+                  (mk_var_term v :: vars), (HypBinding (v, mk_so_var_term (Lm_symbol.make "__" !i) vars) :: terms)
          in
          let vars, hyps = List.fold_left process ([],[]) (SeqHyp.to_list seq.sequent_hyps) in
          let goal = incr i; SeqGoal.get seq.sequent_goals 0 in
-         let goal = if vars <> [] && is_var_term goal then mk_so_var_term ("__" ^ (string_of_int !i)) vars else goal in
+         let goal = if vars <> [] && is_var_term goal then mk_so_var_term (Lm_symbol.make "__" !i) vars else goal in
             mk_sequent_term { seq with sequent_hyps = SeqHyp.of_list (List.rev hyps); sequent_goals = SeqGoal.of_list [goal] }
       else t
 
@@ -1641,7 +1642,7 @@ struct
       let args = mk_xlist_term (goal :: args) in
       IFDEF VERBOSE_EXN THEN
          if !debug_refiner then
-            eprintf "Refiner.compute_rule_ext: %s: %a + [%s] [%a] -> %a%t" name print_term args (String.concat ";" (Array.to_list addrs)) (print_any_list print_term) params print_term result eflush
+            eprintf "Refiner.compute_rule_ext: %s: %a + [%s] [%a] -> %a%t" name print_term args (String.concat ";" (List.map string_of_symbol (Array.to_list addrs))) (print_any_list print_term) params print_term result eflush
       ENDIF;
 (*
       let rw = Rewrite.term_rewrite Strict addrs (args :: params) [result] in
@@ -1736,8 +1737,8 @@ struct
       let subgoals, goal = unzip_mimplies mterm in
       let vars = free_vars_terms (goal::subgoals) in
          ignore (Rewrite.term_rewrite Strict addrs (goal::params) subgoals);
-         List.iter (fun p -> if is_var_term p && not (StringSet.mem vars (dest_var p)) then
-            REF_RAISE(RefineError("check_rule", StringStringError("Unused parameter", dest_var p)))) params
+         List.iter (fun p -> if is_var_term p && not (SymbolSet.mem vars (dest_var p)) then
+            REF_RAISE(RefineError("check_rule", StringVarError("Unused parameter", dest_var p)))) params
 
    (************************************************************************
     * REWRITE                                                              *
@@ -1842,7 +1843,7 @@ struct
     | v::ts ->
          let v = dest_var v in
             if List.mem v bvars then
-                check_bound_vars (List_util.remove v bvars) ts
+                check_bound_vars (Lm_list_util.remove v bvars) ts
             else
                REF_RAISE(RefineError ("definitional rewrite", RewriteFreeSOVar v))
 
@@ -1948,10 +1949,10 @@ struct
          }
       in
       let refiner' = CondRewriteRefiner ref_crw in
-      let rw' params (sent : sentinal) (bvars : StringSet.t) t =
+      let rw' params (sent : sentinal) (bvars : SymbolSet.t) t =
          IFDEF VERBOSE_EXN THEN
             if !debug_rewrites then
-               eprintf "Refiner: applying conditional rewrite %s to %a with bvars = [%a] %t" name print_term t print_string_list (StringSet.elements bvars) eflush;
+               eprintf "Refiner: applying conditional rewrite %s to %a with bvars = [%a] %t" name print_term t print_symbol_list (SymbolSet.elements bvars) eflush;
          ENDIF;
          match apply_rewrite rw ([||], bvars) t params with
             (t' :: subgoals) ->
@@ -2008,7 +2009,7 @@ struct
                   let contractum = replace_goal goal contractum in
                   let subgoals = List.map (replace_goal goal) subgoals in
                      if equal_hyps goal_hyps sub_hyps &
-                        List_util.for_all2 alpha_equal (redex :: contractum :: subgoals) (goal :: subgoals)
+                        Lm_list_util.for_all2 alpha_equal (redex :: contractum :: subgoals) (goal :: subgoals)
                      then
                         ignore (term_of_extract_nocheck refiner ext [])
                      else
@@ -2038,7 +2039,7 @@ struct
          }
       in
       let refiner' = MLCondRewriteRefiner ref_crw in
-      let rw params (sent : sentinal) (bvars : StringSet.t) t =
+      let rw params (sent : sentinal) (bvars : SymbolSet.t) t =
          let t', subgoals, ext = rw bvars params t in
             sent.sent_ml_cond_rewrite ref_crw;
             t',

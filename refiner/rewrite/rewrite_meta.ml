@@ -33,7 +33,7 @@
 INCLUDE "refine_error.mlh"
 
 open Printf
-open Mp_debug
+open Lm_debug
 open Opname
 open Term_sig
 open Term_base_sig
@@ -107,8 +107,7 @@ struct
          Number n, RWNumber rn ->
             n = rn
        | String s, RWString rs
-       | Token s, RWToken rs
-       | Var s, RWVar rs ->
+       | Token s, RWToken rs ->
             s = rs
        | MNumber _, RWNumber _
        | MNumber _, RWMNumber _
@@ -117,14 +116,13 @@ struct
        | MToken _, RWToken _
        | MToken _, RWMToken _
        | MLevel _, RWMLevel1 _
-       | MVar _, RWVar _
-       | MVar _, RWMVar _ ->
+       | Var _, RWMVar _ ->
             true
        | MLevel a, RWMLevel2 b ->
             compare_levels a b
        | _ -> false
 
-   let compare_param_lists = List_util.for_all2 compare_params
+   let compare_param_lists = Lm_list_util.for_all2 compare_params
 
    let relevant_operator op rw =
       match dest_op op, rw with
@@ -160,7 +158,7 @@ struct
     *)
    let convert_level { rw_le_const = c; rw_le_vars = vars } =
       let convert { rw_le_var = v; rw_le_offset = o } =
-         mk_level_var ("v" ^ string_of_int v) o
+         mk_level_var (Lm_symbol.add ("v" ^ string_of_int v)) o
       in
          mk_level c (List.map convert vars)
 
@@ -168,13 +166,12 @@ struct
       RWNumber i -> Number(i)
     | RWString s -> String s
     | RWToken t -> Token t
-    | RWVar v -> Var v
-    | RWMNumber i -> MNumber ("v" ^ (string_of_int i))
-    | RWMString i -> MString ("v" ^ (string_of_int i))
-    | RWMToken i -> MToken ("v" ^ (string_of_int i))
-    | RWMLevel1 i -> MLevel (mk_var_level_exp ("v" ^ (string_of_int i)))
+    | RWMNumber i -> MNumber (Lm_symbol.make "v" i)
+    | RWMString i -> MString (Lm_symbol.make "v" i)
+    | RWMToken i -> MToken (Lm_symbol.make "v" i)
+    | RWMLevel1 i -> MLevel (mk_var_level_exp (Lm_symbol.make "v" i))
     | RWMLevel2 l -> MLevel (convert_level l)
-    | RWMVar i -> MVar ("v" ^ (string_of_int i))
+    | RWMVar i -> Var (Lm_symbol.make "v" i)
     | RWObId id -> ObId id
     | RWParamList l -> ParamList (List.map convert_param l)
    and convert_param p =

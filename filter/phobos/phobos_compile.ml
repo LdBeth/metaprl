@@ -23,7 +23,7 @@
  *)
 
 open Printf
-open Mp_debug
+open Lm_debug
 open Phobos_type
 open Phobos_exn
 open Phobos_rewrite

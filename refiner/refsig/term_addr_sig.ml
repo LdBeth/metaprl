@@ -29,8 +29,7 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-
-open String_set
+open Lm_symbol
 
 module type TermAddrSig =
 sig
@@ -58,18 +57,18 @@ sig
    val term_subterm :  term -> address -> term
    val term_subterm_count : term -> address -> int
    val replace_subterm : term -> address -> term -> term
-   val replace_bound_subterm : term -> address -> StringSet.t -> (StringSet.t -> term) -> term
+   val replace_bound_subterm : term -> address -> SymbolSet.t -> (SymbolSet.t -> term) -> term
    val apply_fun_at_addr : (term -> term) -> address -> term -> term
    val apply_fun_arg_at_addr : (term -> term * 'a) -> address -> term -> term * 'a
-   val apply_var_fun_at_addr : (StringSet.t -> term -> term) -> address -> StringSet.t -> term -> term
-   val apply_var_fun_arg_at_addr : (StringSet.t -> term -> term * 'a) -> address -> StringSet.t -> term -> term * 'a
+   val apply_var_fun_at_addr : (SymbolSet.t -> term -> term) -> address -> SymbolSet.t -> term -> term
+   val apply_var_fun_arg_at_addr : (SymbolSet.t -> term -> term * 'a) -> address -> SymbolSet.t -> term -> term * 'a
 
    (*
     * higherC low-level implementation
     *)
    val apply_fun_higher : (term -> term * 'a) -> term -> term * 'a list
-   val apply_var_fun_higher : (StringSet.t -> term -> term * 'a) ->
-      StringSet.t -> term -> term * 'a list
+   val apply_var_fun_higher : (SymbolSet.t -> term -> term * 'a) ->
+      SymbolSet.t -> term -> term * 'a list
 
    (*
     * The nth_*_addr functions are used to

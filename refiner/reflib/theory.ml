@@ -32,7 +32,7 @@
  *)
 
 open Printf
-open Mp_debug
+open Lm_debug
 
 open Refiner.Refiner
 open Refiner.Refiner.Refine
@@ -62,7 +62,7 @@ let base = ref ([] : theory list)
  * Record a theory by pushing it onto the list.
  *)
 let record_theory thy =
-   Ref_util.push thy base
+   Lm_ref_util.push thy base
 
 let substitute_dforms orig upd =
    let df = (List.find (fun b -> b.thy_name = upd) (!base)).thy_dformer in

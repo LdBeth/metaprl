@@ -57,7 +57,7 @@
  *)
 open Printf
 
-open Mp_debug
+open Lm_debug
 
 (*
  * Show the file loading.
@@ -561,11 +561,11 @@ let format_char buf c =
 let rec format_string buf s =
    try
        let i = String.index s '\n' in
-          push_command buf (Text (i, String_util.sub "Rformat.format_string" s 0 i));
+          push_command buf (Text (i, Lm_string_util.sub "Rformat.format_string" s 0 i));
           format_newline buf;
           let l = (String.length s) - i - 1 in
              if l > 0 then
-                format_string buf (String_util.sub "Rformat.format_string" s (i + 1) l)
+                format_string buf (Lm_string_util.sub "Rformat.format_string" s (i + 1) l)
    with
       Not_found ->
          format_raw_string buf s
@@ -620,7 +620,7 @@ let format_int buf i =
  * Num.num numbers.
  *)
 let format_num buf n =
-   let s = Mp_num.string_of_num n in
+   let s = Lm_num.string_of_num n in
       push_command buf (Text (String.length s, s))
 
 (************************************************************************
@@ -955,7 +955,7 @@ let refresh_breaks buf =
  * "tab" to a position on the next line.
  *)
 let tab printer pos =
-   printer ("\n" ^ (String_util.make "Rformat.tab" pos ' '))
+   printer ("\n" ^ (Lm_string_util.make "Rformat.tab" pos ' '))
 
 (*
  * Some empty print functions.

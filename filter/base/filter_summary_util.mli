@@ -29,6 +29,7 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Lm_symbol
 
 open Refiner.Refiner.Term
 
@@ -38,11 +39,11 @@ open Filter_type
 (*
  * Parameter lists.
  *)
-val collect_cvars : term param list -> string list
+val collect_cvars : term param list -> var list
 val collect_terms : term param list -> term list
-val split_params : term param list -> string list * term list
+val split_params : term param list -> var list * term list
 val name_params : term param list -> string list * string list * string list
-val extract_params : string list -> string list -> term list -> term param list
+val extract_params : var list -> var list -> term list -> term param list
 
 (*
  * -*-

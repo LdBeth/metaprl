@@ -31,12 +31,13 @@
 
 INCLUDE "refine_error.mlh"
 
+open Lm_symbol
+
 open Printf
-open Mp_debug
+open Lm_debug
 open Opname
 open Refine_error_sig
 open Term_ds
-open String_set
 
 (*
  * Show the file loading.
@@ -97,7 +98,7 @@ struct
    (*
     * Simple substitution.
     *)
-   type term_subst = (string * term) list
+   type term_subst = (var * term) list
 
    module SeqHypType =
    struct
@@ -149,7 +150,7 @@ struct
        | VarsDelayed ->
             let vars =
                match t.core with
-                  FOVar v -> StringSet.make v
+                  FOVar v -> SymbolSet.singleton v
                 | Term t' ->
                      LETMACRO BODY = bterms_free_vars t'.term_terms
                      IN
@@ -161,14 +162,14 @@ struct
                         in
                            if !debug_fv then begin
                               eprintf "Result: ";
-                              List.iter (eprintf "%s ") (StringSet.elements res);
+                              List.iter (eprintf "%s ") (List.map string_of_symbol (SymbolSet.elements res));
                               eprintf "%t" eflush;
                            end; res
                      ELSE
                         BODY
                      ENDIF
                 | Sequent seq ->
-                     StringSet.union
+                     SymbolSet.union
                         (free_vars_set seq.sequent_args)
                         (hyp_fv
                            seq.sequent_hyps
@@ -176,17 +177,17 @@ struct
                            (goal_fv seq.sequent_goals (SeqGoal.length seq.sequent_goals - 1)))
                 | Subst (t,sub) ->
                      LETMACRO BODY =
-                        StringSet.union
+                        SymbolSet.union
                            (List.fold_left
-                              StringSet.remove
-                              (free_vars_set t)
-                              (List_util.fst_split sub))
-                           (subst_free_vars sub)
+                              SymbolSet.remove (**)
+                                 (free_vars_set t)
+                                 (Lm_list_util.fst_split sub))
+                             (subst_free_vars sub)
                      IN
                      IFDEF VERBOSE_EXN THEN
                         if !debug_fv then begin
                            eprintf "Request for Subst fvs: Term: %a; Subst: " debug_print t;
-                           List.iter (fun (v,t) -> eprintf "(%s : %a) " v debug_print t) sub;
+                           List.iter (fun (v,t) -> eprintf "(%a : %a) " print_symbol v debug_print t) sub;
                            eprintf "%t" eflush;
                         end;
                         let res =
@@ -194,7 +195,7 @@ struct
                         in
                            if !debug_fv then begin
                               eprintf "Result: ";
-                              List.iter (eprintf "%s ") (StringSet.elements res);
+                              List.iter (eprintf "%s ") (List.map string_of_symbol (SymbolSet.elements res));
                               eprintf "%t" eflush;
                            end; res
                      ELSE
@@ -206,37 +207,37 @@ struct
             in t.free_vars <- Vars vars; vars
 
    and bterm_free_vars bt =
-      List.fold_left StringSet.remove (free_vars_set bt.bterm) bt.bvars
+      List.fold_left SymbolSet.remove (free_vars_set bt.bterm) bt.bvars
 
    and bterms_free_vars = function
-      [] -> StringSet.empty
+      [] -> SymbolSet.empty
     | [bt] -> bterm_free_vars bt
-    | bt::tl -> StringSet.union (bterms_free_vars tl) (bterm_free_vars bt)
+    | bt::tl -> SymbolSet.union (bterms_free_vars tl) (bterm_free_vars bt)
 
    and goal_fv goals i =
-      if i < 0 then StringSet.empty else
-      StringSet.union (free_vars_set (SeqGoal.get goals i)) (goal_fv goals (pred i))
+      if i < 0 then SymbolSet.empty else
+      SymbolSet.union (free_vars_set (SeqGoal.get goals i)) (goal_fv goals (pred i))
 
    and terms_free_vars = function
-      [] -> StringSet.empty
+      [] -> SymbolSet.empty
     | [t] -> free_vars_set t
-    | t::tl -> StringSet.union (terms_free_vars tl) (free_vars_set t)
+    | t::tl -> SymbolSet.union (terms_free_vars tl) (free_vars_set t)
 
    and hyp_fv hyps i fvs =
       if i < 0 then fvs else
       hyp_fv hyps (pred i) (
       match SeqHyp.get hyps i with
          HypBinding (v,t) ->
-            StringSet.union (free_vars_set t) (StringSet.remove fvs v)
+            SymbolSet.union (free_vars_set t) (SymbolSet.remove fvs v)
        | Hypothesis t ->
-            StringSet.union (free_vars_set t) fvs
+            SymbolSet.union (free_vars_set t) fvs
        | Context (v,subterms) ->
-            StringSet.union fvs (terms_free_vars subterms))
+            SymbolSet.union fvs (terms_free_vars subterms))
 
    and subst_free_vars = function
-      [] -> StringSet.empty
+      [] -> SymbolSet.empty
     | [(v,t)] -> free_vars_set t
-    | (v,t)::tl -> StringSet.union (subst_free_vars tl) (free_vars_set t)
+    | (v,t)::tl -> SymbolSet.union (subst_free_vars tl) (free_vars_set t)
 
    let do_term_subst sub t =
       IFDEF VERBOSE_EXN THEN
@@ -245,15 +246,15 @@ struct
                debug_subst := false;
                eprintf "do_term_subst: { %a\n" debug_print t;
                eprintf "\tfree_vars:";
-               List.iter (fun name -> eprintf " %s" name) (StringSet.elements (free_vars_set t));
+               List.iter (fun name -> eprintf " %s" name) (List.map string_of_symbol (SymbolSet.elements (free_vars_set t)));
                eflush stderr;
                if sub == [] then eprintf "\t empty substitution\n" else
-               List.iter (fun (v, t) -> eprintf "\t%s: %a\n" v debug_print t) sub;
+               List.iter (fun (v, t) -> eprintf "\t%a: %a\n" print_symbol v debug_print t) sub;
                eprintf "}%t" eflush;
                debug_subst := true
             end
       ENDIF;
-      match StringSet.fst_mem_filt (free_vars_set t) sub with
+      match SymbolSet.fst_mem_filt (free_vars_set t) sub with
          [] -> t
        | sub' ->
             {free_vars = VarsDelayed; core = Subst (t,sub')}
@@ -281,36 +282,36 @@ struct
    let rec new_vars av = function
       [] -> ([],[])
     | v::vt ->
-         let v' = String_util.vnewname v (StringSet.mem av) in
-         let (vs,ts) = (new_vars (StringSet.add av v') vt) in
+         let v' = new_name v (SymbolSet.mem av) in
+         let (vs,ts) = (new_vars (SymbolSet.add av v') vt) in
             ((v,v')::vs, (v,mk_var_term v')::ts)
 
    let rec rename_bvars vs = function
       [] -> []
     | v::tl ->
-         List_util.try_assoc v vs :: rename_bvars vs tl
+         Lm_list_util.try_assoc v vs :: rename_bvars vs tl
 
    let do_bterm_subst sub bt =
       let btrm = bt.bterm in
       match bt.bvars with
          [] ->
-            begin match StringSet.fst_mem_filt (free_vars_set btrm) sub with
+            begin match SymbolSet.fst_mem_filt (free_vars_set btrm) sub with
                [] -> bt
              | sub ->
                   { bvars = []; bterm = {free_vars = VarsDelayed; core = Subst (btrm,sub)}}
             end
        | bvrs ->
-            begin match StringSet.fst_mem_filt (free_vars_set btrm)
+            begin match SymbolSet.fst_mem_filt (free_vars_set btrm)
                                                (filter_sub_vars bt.bvars sub) with
                [] -> bt
              | sub ->
                   let sub_fvars = subst_free_vars sub in
-                  begin match StringSet.mem_filt sub_fvars bvrs with
+                  begin match SymbolSet.mem_filt sub_fvars bvrs with
                      [] ->
                         { bvars = bvrs;
                           bterm = { free_vars = VarsDelayed; core = Subst (btrm,sub) }}
                    | capt_vars ->
-                        let avoidvars = StringSet.union sub_fvars (free_vars_set btrm) in
+                        let avoidvars = SymbolSet.union sub_fvars (free_vars_set btrm) in
                         let (vs,ts) = new_vars avoidvars capt_vars in
                         let new_t = do_term_subst ts btrm in
                         { bvars = rename_bvars vs bvrs;
@@ -474,8 +475,8 @@ struct
    let dest_match_param param =
       match param with
          Number n ->
-            if Mp_num.is_integer_num n then
-               MatchNumber (n, Some (Mp_num.int_of_num n))
+            if Lm_num.is_integer_num n then
+               MatchNumber (n, Some (Lm_num.int_of_num n))
             else
                MatchNumber (n, None)
        | String s ->
@@ -489,7 +490,6 @@ struct
        | MNumber _
        | MString _
        | MToken _
-       | MVar _
        | ObId _
        | ParamList _ ->
             MatchUnsupported
@@ -506,7 +506,7 @@ struct
             raise(Invalid_argument "Term_base_ds.explode_term: sequents not supported")
        | Subst _ | Hashed _ ->
             fail_core "explode_term"
-   
+
    (*
     * Descriptor operations.
     *)

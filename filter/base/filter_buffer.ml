@@ -32,7 +32,7 @@
  *)
 
 open Printf
-open Mp_debug
+open Lm_debug
 
 (*
  * Show the file loading.
@@ -67,7 +67,7 @@ let putc buf c =
    let { buf_str = str; buf_index = i } = buf in
       if i = String.length str then
          (* Grow the buffer *)
-         buf.buf_str <- str ^ (String_util.create "Buffer.putc" i);
+         buf.buf_str <- str ^ (Lm_string_util.create "Buffer.putc" i);
 
       (* Insert the char *)
       str.[i] <- c;
@@ -80,7 +80,7 @@ let puts buf s =
    let { buf_str = str; buf_index = i } = buf in
    let len = String.length s in
       if i + len > String.length str then
-         buf.buf_str <- str ^ (String_util.create "Buffer.puts" (i + len));
+         buf.buf_str <- str ^ (Lm_string_util.create "Buffer.puts" (i + len));
 
       (* Add the string *)
       String.blit s 0 str i len;

@@ -74,7 +74,7 @@
 extends Ocaml
 extends Ocaml_base_df
 
-open Mp_debug
+open Lm_debug
 open Printf
 
 let _ =

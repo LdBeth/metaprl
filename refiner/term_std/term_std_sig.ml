@@ -29,6 +29,7 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Lm_symbol
 
 open Opname
 open Refine_error_sig
@@ -58,7 +59,7 @@ sig
     * Level expression have offsets from level expression
     * vars, plus a constant offset.
     *)
-   and level_exp_var' = { le_var : string; le_offset : int }
+   and level_exp_var' = { le_var : var; le_offset : int }
 
    and level_exp' = { le_const : int; le_vars : level_exp_var list }
 
@@ -66,15 +67,14 @@ sig
     * Parameters have a number of simple types.
     *)
    and param' =
-      Number of Mp_num.num
+      Number of Lm_num.num
     | String of string
     | Token of string
-    | Var of string
-    | MNumber of string
-    | MString of string
-    | MToken of string
+    | Var of var
+    | MNumber of var
+    | MString of var
+    | MToken of var
     | MLevel of level_exp
-    | MVar of string
     | ObId of object_id
     | ParamList of param list
 
@@ -91,7 +91,7 @@ sig
     * that may be bound.
     *)
    and term' = { term_op : operator; term_terms : bound_term list }
-   and bound_term' = { bvars : string list; bterm : term }
+   and bound_term' = { bvars : var list; bterm : term }
 
    (*
     * Define a type of parameters used in pattern matching.
@@ -100,10 +100,10 @@ sig
     * and there are no Nuprl5 params.
     *)
    type match_param =
-      MatchNumber of Mp_num.num * int option
+      MatchNumber of Lm_num.num * int option
     | MatchString of string
     | MatchToken of string
-    | MatchVar of string
+    | MatchVar of var
     | MatchLevel of level_exp
     | MatchUnsupported
 
@@ -119,9 +119,9 @@ sig
     | MetaLabeled of string * meta_term
 
    type hypothesis =
-      HypBinding of string * term
+      HypBinding of var * term
     | Hypothesis of term
-    | Context of string * term list
+    | Context of var * term list
 
    type seq_hyps = hypothesis SEQ_SET.linear_set
    type seq_goals = term SEQ_SET.linear_set
@@ -178,7 +178,7 @@ sig
    val mk_op : opname -> param list -> operator
    val make_op : operator' -> operator
    val dest_op : operator -> operator'
-   val mk_bterm : string list -> term -> bound_term
+   val mk_bterm : var list -> term -> bound_term
    val make_bterm : bound_term' -> bound_term
    val dest_bterm : bound_term -> bound_term'
    val make_param : param' -> param
@@ -187,7 +187,7 @@ sig
    val mk_level : int -> level_exp_var list -> level_exp
    val make_level : level_exp' -> level_exp
    val dest_level : level_exp -> level_exp'
-   val mk_level_var : string -> int -> level_exp_var
+   val mk_level_var : var -> int -> level_exp_var
    val make_level_var : level_exp_var' -> level_exp_var
    val dest_level_var : level_exp_var -> level_exp_var'
 
@@ -210,16 +210,16 @@ sig
    val sequent_opname : opname
 
    val is_var_term : term -> bool
-   val dest_var : term -> string
-   val mk_var_term : string -> term
+   val dest_var : term -> var
+   val mk_var_term : var -> term
 
    val is_so_var_term : term -> bool
-   val dest_so_var : term -> string * term list
-   val mk_so_var_term : string -> term list -> term
+   val dest_so_var : term -> var * term list
+   val mk_so_var_term : var -> term list -> term
 
    val is_context_term : term -> bool
-   val dest_context : term -> string * term * term list
-   val mk_context_term : string -> term -> term list -> term
+   val dest_context : term -> var * term * term list
+   val mk_context_term : var -> term -> term list -> term
 
    (*
     * Simple terms have no paramaters and

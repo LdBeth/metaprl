@@ -32,9 +32,10 @@
 
 INCLUDE "refine_error.mlh"
 
-open Mp_debug
+open Lm_symbol
+
+open Lm_debug
 open Printf
-open String_set
 
 open Refine_error_sig
 open Term_std_sig
@@ -89,7 +90,7 @@ struct
    type bound_term = TermType.bound_term
    type bound_term' = TermType.bound_term'
 
-   type term_subst = (string * term) list
+   type term_subst = (var * term) list
 
    (************************************************************************
     * Free variable calculations                                           *
@@ -125,15 +126,15 @@ struct
 
    (* Actual function *)
    let free_vars_list = free_vars_term [] []
-   let free_vars_set t = StringSet.of_list (free_vars_list t)
+   let free_vars_set t = SymbolSet.of_list (free_vars_list t)
 
    (* Collect over a list of terms *)
    let free_vars_terms =
       let rec aux gvars = function
          [] -> gvars
-       | t::r -> aux (List.fold_left StringSet.add gvars (free_vars_list t)) r
+       | t::r -> aux (List.fold_left SymbolSet.add gvars (free_vars_list t)) r
       in
-         aux StringSet.empty
+         aux SymbolSet.empty
 
    let free_vars_equal t1 t2 =
       (Sort.list (<) (free_vars_list t1)) = (Sort.list (<) (free_vars_list t2))
@@ -176,7 +177,7 @@ struct
       and free_vars_bterms vars bvars = function
          { bvars = bvars'; bterm = term }::t ->
             let first =
-               let vars = List_util.subtract vars bvars' in
+               let vars = Lm_list_util.subtract vars bvars' in
                   vars <> [] && free_vars_term vars (bvars' @ bvars) term
             in
                first or free_vars_bterms vars bvars t
@@ -221,7 +222,7 @@ struct
 
    and binding_vars_bterms bvars = function
       { bvars = vars; bterm = t }::l ->
-         binding_vars_bterms (binding_vars_term (List_util.union vars bvars) t) l
+         binding_vars_bterms (binding_vars_term (Lm_list_util.union vars bvars) t) l
     | [] -> bvars
 
    let binding_vars = binding_vars_term []
@@ -236,7 +237,7 @@ struct
    let rec equal_params p1 p2 =
       match p1, p2 with
          Number n1, Number n2 ->
-            Mp_num.eq_num n1 n2
+            Lm_num.eq_num n1 n2
        | ParamList pl1, ParamList pl2 ->
             List.for_all2 equal_params pl1 pl2
        | _ ->
@@ -250,20 +251,20 @@ struct
          { term_op = { op_name = opname2; op_params = [Var v'] };
            term_terms = []
          } when Opname.eq opname1 var_opname & Opname.eq opname2 var_opname ->
-            List_util.check_assoc v v' vars
+            Lm_list_util.check_assoc v v' vars
        | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
          { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
             (Opname.eq name1 name2)
-            & (List_util.for_all2 equal_params params1 params2)
+            & (Lm_list_util.for_all2 equal_params params1 params2)
             & (equal_bterms vars bterms1 bterms2)
 
    and equal_bterms vars bterms1 bterms2 =
       let equal_bterm = fun
          { bvars = bvars1; bterm = term1 }
          { bvars = bvars2; bterm = term2 } ->
-            equal_term (List_util.zip_list vars bvars1 bvars2) term1 term2
+            equal_term (Lm_list_util.zip_list vars bvars1 bvars2) term1 term2
       in
-         List_util.for_all2 equal_bterm bterms1 bterms2
+         Lm_list_util.for_all2 equal_bterm bterms1 bterms2
 
    let alpha_equal t1 t2 =
       LETMACRO BODY = try equal_term [] t1 t2 with Failure _ -> false
@@ -283,12 +284,12 @@ struct
       ENDIF
 
    let alpha_equal_vars t v t' v' =
-      LETMACRO BODY = try equal_term (List_util.zip v v') t t' with Failure _ -> false
+      LETMACRO BODY = try equal_term (Lm_list_util.zip v v') t t' with Failure _ -> false
       IN
       IFDEF VERBOSE_EXN THEN
          if !debug_alpha_equal then
             try
-               let _ = equal_term (List_util.zip v v') t t' in
+               let _ = equal_term (Lm_list_util.zip v v') t t' in
                eprintf "alpha_equal_vars: true%t" eflush;
                true
             with Failure _ ->
@@ -308,7 +309,7 @@ struct
          ({ term_op = { op_name = opname'; op_params = [Var v'] };
            term_terms = []
          } as t') when Opname.eq opname var_opname && Opname.eq opname' var_opname ->
-            ( try List_util.try_check_assoc v v' bvars with Not_found ->
+            ( try Lm_list_util.try_check_assoc v v' bvars with Not_found ->
                ( try f t' (List.assoc v sub) with Not_found ->
                   v = v'
             ))
@@ -316,7 +317,7 @@ struct
            term_terms = []
          }, t' when Opname.eq opname var_opname ->
             not (List.mem_assoc v bvars) &&
-            not (List_util.assoc_in_range rev_mem (free_vars_list t') bvars) &&
+            not (Lm_list_util.assoc_in_range rev_mem (free_vars_list t') bvars) &&
             f t' (List.assoc v sub)
        | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
          { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
@@ -326,15 +327,15 @@ struct
          let equal_fun_bterm = fun
             { bvars = bvars1; bterm = term1 }
             { bvars = bvars2; bterm = term2 } ->
-               equal_fun_term (List_util.zip_list bvars bvars1 bvars2) (term1, term2)
+               equal_fun_term (Lm_list_util.zip_list bvars bvars1 bvars2) (term1, term2)
          in
-            List_util.for_all2 equal_fun_bterm bterms1 bterms2
+            Lm_list_util.for_all2 equal_fun_bterm bterms1 bterms2
       in
          equal_fun_term
 
    (* See refiner/refsig/term_subst_sig.mlz for explanation of this function *)
    let alpha_equal_fun f t v t' items =
-      try equal_fun f (List_util.zip v items) [] (t, t') with
+      try equal_fun f (Lm_list_util.zip v items) [] (t, t') with
          Failure _ -> false
        | Not_found -> false
 
@@ -348,7 +349,7 @@ struct
    let rec fsubtract l = function
       [] -> l
     | h::t ->
-         fsubtract (List_util.subtract l h) t
+         fsubtract (Lm_list_util.subtract l h) t
 
    (*
     * Add a var list.
@@ -387,7 +388,7 @@ struct
       [] -> []
     | v::t ->
          (* Rename the first one, then add it to free vars *)
-         let v' = String_util.vnewname v (fv_mem fv) in
+         let v' = new_name v (fv_mem fv) in
             v'::(new_vars ([v']::fv) t)
 
    (*
@@ -398,7 +399,7 @@ struct
       when Opname.eq opname var_opname->
          (* Var case *)
          begin
-            try List.nth terms (List_util.find_index v vars) with
+            try List.nth terms (Lm_list_util.find_index v vars) with
                Not_found ->
                   t
          end
@@ -416,12 +417,12 @@ struct
        | { bvars = bvars; bterm = term } ->
             (* First subtract bound instances *)
             let flags = List.map (function v -> List.mem v bvars) vars in
-            let vars' = List_util.remove_elements flags vars in
-            let fv' = List_util.remove_elements flags fv in
-            let terms' = List_util.remove_elements flags terms in
+            let vars' = Lm_list_util.remove_elements flags vars in
+            let fv' = Lm_list_util.remove_elements flags fv in
+            let terms' = Lm_list_util.remove_elements flags terms in
 
             (* If any of the binding variables are free, rename them *)
-            let renames = List_util.subtract bvars (fsubtract bvars fv') in
+            let renames = Lm_list_util.subtract bvars (fsubtract bvars fv') in
                if renames <> [] then
                   let fv'' = (free_vars_list term)::fv' in
                   let renames' = new_vars fv'' renames in
@@ -441,7 +442,7 @@ struct
 
    and subst_bvars renames' renames bvars =
       let subst_bvar v =
-         try List.nth renames' (List_util.find_index v renames) with
+         try List.nth renames' (Lm_list_util.find_index v renames) with
             Not_found -> v
       in
          List.map subst_bvar bvars
@@ -463,18 +464,18 @@ struct
    let rec need_to_rename avoid = function
       [] -> false
     | v::vs ->
-         StringSet.mem avoid v or
-         need_to_rename (StringSet.add avoid v) vs
+         SymbolSet.mem avoid v or
+         need_to_rename (SymbolSet.add avoid v) vs
 
    let rec compute_renames avoid avoid' = function
       [] -> [], [], []
     | v::vs ->
          if List.mem v vs then
-            let v' = String_util.vnewname v (fv_mem avoid') in
+            let v' = new_name v (fv_mem avoid') in
             let vs', renames, terms = compute_renames avoid ([v']::avoid') vs in
                (v'::vs'), renames, terms
-         else if StringSet.mem avoid v then
-            let v' = String_util.vnewname v (fv_mem avoid') in
+         else if SymbolSet.mem avoid v then
+            let v' = new_name v (fv_mem avoid') in
             let vs', renames, terms = compute_renames avoid ([v']::avoid') vs in
                (v'::vs'), (v::renames), ((mk_var_term v') :: terms)
          else
@@ -483,7 +484,7 @@ struct
 
    let dest_bterm_and_rename bt avoid =
       if need_to_rename avoid bt.bvars then
-         let avoid' = [ free_vars_list bt.bterm; bt.bvars; StringSet.elements avoid ] in
+         let avoid' = [ free_vars_list bt.bterm; bt.bvars; SymbolSet.elements avoid ] in
          let bvars, renames, terms = compute_renames avoid avoid' bt.bvars in
          {
             bvars = bvars;
@@ -512,10 +513,10 @@ struct
       and subst_bterm { bvars = vars; bterm = term } =
          if List.mem v vars then
             let av = vars @ (free_vars_list term) in
-            let v' = String_util.vnewname v (fun v -> List.mem v av) in
+            let v' = new_name v (fun v -> List.mem v av) in
             let rename var = if var = v then v' else var in
             let term = subst1 term v (mk_var_term v') in
-               { bvars = List_util.smap rename vars; bterm = subst_term term }
+               { bvars = Lm_list_util.smap rename vars; bterm = subst_term term }
          else
             { bvars = vars; bterm = subst_term term }
       in
@@ -604,12 +605,13 @@ struct
    let rec standardize_bterm index { bvars = bvars; bterm = t } =
       let bvars, subst, index =
          List.fold_left (fun (bvars, subst, index) v ->
+            let v_str = string_of_symbol v in
             let v' =
-               try String.sub v 0 (String.rindex v '_') with
+               try String.sub v_str 0 (String.rindex v_str '_') with
                   Not_found ->
-                     v
+                     v_str
             in
-            let v' = v' ^ "_" ^ string_of_int index in
+            let v' = Lm_symbol.add (v' ^ "_" ^ string_of_int index) in
             let t = mk_var_term v' in
             let bvars = v' :: bvars in
             let subst = (v, t) :: subst in

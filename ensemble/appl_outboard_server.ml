@@ -38,7 +38,7 @@ open Ensemble.View
 open Ensemble.Appl_handle
 
 open Printf
-open Mp_debug
+open Lm_debug
 
 open Appl_outboard_common
 
@@ -62,7 +62,7 @@ let debug_outboard =
  *    ens_client: client socket to poll for activity
  *)
 type t =
-   { ens_pipe : Mmap_pipe.t;
+   { ens_pipe : Lm_mmap_pipe.t;
      mutable ens_up_queue : (int * string * (string -> int -> int -> int)) list;
      mutable ens_dn_queue : Iovecl.t New.naction list;
      ens_server : Hsys.socket;
@@ -112,7 +112,7 @@ let send_start info =
          eprintf "Appl_outboard_server.to_buffer: (send_start 0x%08x, %d, %d/%d)%t" (Obj.magic buf) off len (String.length buf) eflush;
       Marshal.to_buffer buf off len [id] []
    in
-      if not (Mmap_pipe.write info.ens_pipe start_code id raw_write) then
+      if not (Lm_mmap_pipe.write info.ens_pipe start_code id raw_write) then
          eprintf "Appl_outboard_server: can't write initial view%t" eflush
 
 (*
@@ -164,7 +164,7 @@ let poll_client info =
             let try_send () =
                match up_queue with
                   (code, name, raw_write) :: t ->
-                     if Mmap_pipe.write pipe code name raw_write then
+                     if Lm_mmap_pipe.write pipe code name raw_write then
                         info.ens_up_queue <- t
                 | [] ->
                      ()
@@ -175,7 +175,7 @@ let poll_client info =
                   size_counter := !size_counter + len;
                   Mbuf.allocl iovec_name buf off len
                in
-                  match Mmap_pipe.read pipe raw_read with
+                  match Lm_mmap_pipe.read pipe raw_read with
                      Some (code, name, data) ->
                         eprintf "Msg: %d: %d%t" !msg_counter !size_counter eflush;
                         handle_event info code name data
@@ -193,7 +193,7 @@ let poll_client info =
  *)
 let handle_client_event info () =
    let { ens_pipe = pipe; ens_up_queue = up_queue } = info in
-      if Mmap_pipe.block pipe then
+      if Lm_mmap_pipe.block pipe then
          poll_client info
       else
          match info.ens_client with
@@ -201,7 +201,7 @@ let handle_client_event info () =
                eprintf "Closing client connection%t" eflush;
                Alarm.rmv_sock_recv info.ens_alarm client;
                info.ens_client <- None;
-               Mmap_pipe.close_client pipe
+               Lm_mmap_pipe.close_client pipe
           | None ->
                raise (Invalid_argument "Appl_outboard_server.handle_client_event")
 
@@ -210,8 +210,8 @@ let handle_client_event info () =
  *)
 let handle_server_event info () =
    let { ens_pipe = pipe } = info in
-      if Mmap_pipe.open_client pipe then
-         let client = Hsys.socket_of_file_descr (Mmap_pipe.client_socket pipe) in
+      if Lm_mmap_pipe.open_client pipe then
+         let client = Hsys.socket_of_file_descr (Lm_mmap_pipe.client_socket pipe) in
             info.ens_client <- Some client;
             info.ens_heartbeat ();
             Alarm.add_sock_recv info.ens_alarm iovec_name (**)
@@ -333,8 +333,8 @@ let main () =
    (*
     * Build the pipe.
     *)
-   let pipe = Mmap_pipe.create_server shared_dir in
-   let server = Hsys.socket_of_file_descr (Mmap_pipe.server_socket pipe) in
+   let pipe = Lm_mmap_pipe.create_server shared_dir in
+   let server = Hsys.socket_of_file_descr (Lm_mmap_pipe.server_socket pipe) in
 
    (*
     * Get default transport for this group,

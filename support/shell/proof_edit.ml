@@ -41,7 +41,7 @@
 extends Summary
 
 open Printf
-open Mp_debug
+open Lm_debug
 
 open Refiner.Refiner
 open Refiner.Refiner.Term
@@ -356,7 +356,7 @@ let copy_ped ped s =
    Mutex.lock copy_lock;
    let proof = proof_of_ped ped in
       begin
-         try copy_buffer := List_util.assoc_replace !copy_buffer s proof with
+         try copy_buffer := Lm_list_util.assoc_replace !copy_buffer s proof with
             Not_found ->
                copy_buffer := (s, proof) :: !copy_buffer
       end;
@@ -508,13 +508,13 @@ let new_window = function
  *)
 let term_of_proof_status = function
    Proof.StatusBad ->
-      status_bad_term
+      <<status_bad>>
  | Proof.StatusIncomplete ->
-      status_asserted_term
+      <<status_asserted>>
  | Proof.StatusPartial ->
-      status_partial_term
+      <<status_partial>>
  | Proof.StatusComplete ->
-      status_complete_term
+      <<status_complete>>
 
 let term_of_proof_status_list status =
    mk_status_term (List.map term_of_proof_status status)

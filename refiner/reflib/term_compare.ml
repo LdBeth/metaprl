@@ -33,7 +33,7 @@
  * Modified by: Eli Barzilay, Alexey Nogin, Yegor Bryukhov
  *)
 
-open Mp_debug
+open Lm_debug
 open Printf
 
 open Opname
@@ -67,7 +67,7 @@ struct
    (*
     * Compare that the elements on the lists are equal.
     *)
-   let list_mem_eq = List_util.compare_eq
+   let list_mem_eq = Lm_list_util.compare_eq
 
    (*
     * Comparison functions.
@@ -82,7 +82,7 @@ struct
 
    let compare_param param1 param2 =
       match param1, param2 with
-         CType.Number    n1,         CType.Number    n2         -> Mp_num.eq_num n1 n2
+         CType.Number    n1,         CType.Number    n2         -> Lm_num.eq_num n1 n2
        | CType.String    s1,         CType.String    s2         -> s1 = s2
        | CType.Token     s1,         CType.Token     s2         -> s1 = s2
        | CType.Var       v1,         CType.Var       v2         -> v1 = v2
@@ -90,7 +90,6 @@ struct
        | CType.MString   s1,         CType.MString   s2         -> s1 = s2
        | CType.MToken    s1,         CType.MToken    s2         -> s1 = s2
        | CType.MLevel    l1,         CType.MLevel    l2         -> l1 == l2
-       | CType.MVar      s1,         CType.MVar      s2         -> s1 = s2
        | CType.ObId      oid1,       CType.ObId      oid2       -> list_mem_eq oid1 oid2
        | CType.ParamList params1,    CType.ParamList params2    -> list_mem_eq params1 params2
        | _ -> false

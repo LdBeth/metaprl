@@ -29,10 +29,10 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-
 open Printf
 
-open Mp_debug
+open Lm_symbol
+open Lm_debug
 
 open Opname
 open Refiner.Refiner.Term
@@ -85,7 +85,7 @@ type t = {
    mutable imp_num_terms : int;
    mutable imp_meta_terms : meta_term list;
    mutable imp_num_meta_terms : int;
-   mutable imp_nums : Mp_num.num list;
+   mutable imp_nums : Lm_num.num list;
    mutable imp_num_nums : int;
    mutable imp_opnames : opname list;
    mutable imp_num_opnames : int
@@ -318,7 +318,7 @@ let expr_of_label loc = function
 
 (*
  * Print a message on loading, and catch errors.
- *    Mp_debug.show_loading "Loading name%t";
+ *    Lm_debug.show_loading "Loading name%t";
  *    try e with
  *       exn ->
  *          Refine_exn.print_exn name exn
@@ -328,7 +328,7 @@ let wrap_exn proc loc name e =
    <:expr<
       do {
          (* Print a message before the execution *)
-         Mp_debug.show_loading $str: "Loading " ^ name ^ "%t"$;
+         Lm_debug.show_loading $str: "Loading " ^ name ^ "%t"$;
          (* Wrap the body to catch exceptions *)
          try $e$ with
          $lid: exn_id$ ->
@@ -583,7 +583,7 @@ let extract_sig _ info resources path =
       if !debug_filter_prog then
          eprintf "Filter_prog.extract_sig: begin%t" eflush
    in
-   let items = List_util.flat_map extract_sig_item (info_items info) in
+   let items = Lm_list_util.flat_map extract_sig_item (info_items info) in
    let postlog = interf_postlog resources (0, 0) in
       List.map (fun item -> item, (0, 0)) (items @ postlog)
 
@@ -637,8 +637,10 @@ let binding_let proc loc (v, bnd) =
          expr_of_num proc loc n
 
 let bindings_let proc loc bnd_expr expr =
-   if bnd_expr.item_bindings = [] then expr
-   else <:expr< let $list:List.map (binding_let proc loc) (List.rev bnd_expr.item_bindings)$ in $expr$ >>
+   if bnd_expr.item_bindings = [] then
+      expr
+   else
+      <:expr< let $list:List.map (binding_let proc loc) (List.rev bnd_expr.item_bindings)$ in $expr$ >>
 
 let expr_of_bnd_expr proc loc expr =
    bindings_let proc loc expr expr.item_item
@@ -1099,6 +1101,7 @@ let define_rule want_checkpoint code proc loc
    (* Check the specifications *)
    let string_expr s = <:expr< $str:s$ >> in
    let lid_expr s = <:expr< $lid:s$ >> in
+   let var_expr v = <:expr< Lm_symbol.add $str: string_of_symbol v$ >> in
 
    (* Expressions *)
    let name_rule_id = "_$" ^ name ^ "_rule" in
@@ -1113,7 +1116,7 @@ let define_rule want_checkpoint code proc loc
       >>
    in
    let rule_expr = <:expr<
-      let $lid:cvars_id$ = [| $list: List.map string_expr cvars$ |] in
+      let $lid:cvars_id$ = [| $list: List.map var_expr cvars$ |] in
       let $lid:avars_id$ = $list_expr loc (expr_of_term proc loc) avars$ in
       let $lid:params_id$ = $list_expr loc (expr_of_term proc loc) tparams$ in
       let $lid:assums_id$ = $expr_of_meta_term proc loc mterm$ in
@@ -1164,6 +1167,7 @@ let define_ml_rule want_checkpoint proc loc
    let name_patt = <:patt< $lid:name$ >> in
 
    let string_expr s = <:expr< $str:s$ >> in
+   let var_expr v = <:expr< Lm_symbol.add $str: string_of_symbol v$ >> in
    let lid_patt s = <:patt< $lid:s$ >> in
    let lid_patt_ s = <:patt< $lid: "_" ^ s$ >> in
    let lid_expr s = <:expr< $lid:s$ >> in
@@ -1172,7 +1176,7 @@ let define_ml_rule want_checkpoint proc loc
 
    let cvars, tparams = split_params params in
    let all_ids, cvar_ids, tparam_ids = name_params params in
-   let cvars_expr = <:expr< [| $list: List.map string_expr cvars$ |] >> in
+   let cvars_expr = <:expr< [| $list: List.map var_expr cvars$ |] >> in
    let params_expr = list_expr loc (expr_of_term proc loc) tparams in
    let redex_expr = expr_of_term proc loc redex in
 
@@ -1184,7 +1188,7 @@ let define_ml_rule want_checkpoint proc loc
       <:expr< let $lid:info_id$ = $lid:rule_id$ in $create_expr$ >>
    in
    let rule_patt =
-      <:patt< [| $list:List.map lid_patt_ cvars$ |] >>
+      <:patt< [| $list:List.map (fun v -> lid_patt_ (string_of_symbol v)) cvars$ |] >>
    in
    let wild_patt = <:patt< _ >> in
    let wild_expr = <:expr< failwith "bad match" >> in
@@ -1270,19 +1274,23 @@ let define_prec_rel proc loc
 (*
  * Pattern to match rewrite destruction.
  *)
-let rewrite_type_patt loc = function
-   RewriteTermType name ->
-      <:patt< $rewriter_patt loc$ . RewriteTerm $lid:name$ >>
- | RewriteFunType name ->
-      <:patt< $rewriter_patt loc$ . RewriteFun $lid:name$ >>
- | RewriteContextType name ->
-      <:patt< $rewriter_patt loc$ . RewriteContext $lid:name$ >>
- | RewriteStringType name ->
-      <:patt< $rewriter_patt loc$ . RewriteString $lid:name$ >>
- | RewriteNumType name ->
-      <:patt< $rewriter_patt loc$ . RewriteNum $lid:name$ >>
- | RewriteLevelType name ->
-      <:patt< $rewriter_patt loc$ . RewriteLevel $lid:name$ >>
+let rewrite_type_patt loc (kind, name) =
+   let name = <:patt< $lid:string_of_symbol name$ >> in
+      match kind with
+         RewriteTermType ->
+            <:patt< $rewriter_patt loc$ . RewriteTerm $name$ >>
+       | RewriteFunType ->
+            <:patt< $rewriter_patt loc$ . RewriteFun $name$ >>
+       | RewriteContextType ->
+            <:patt< $rewriter_patt loc$ . RewriteContext $name$ >>
+       | RewriteStringType ->
+            <:patt< $rewriter_patt loc$ . RewriteString $name$ >>
+       | RewriteVarType ->
+            <:patt< $rewriter_patt loc$ . RewriteString (RewriteMetaParam $name$) >>
+       | RewriteNumType ->
+            <:patt< $rewriter_patt loc$ . RewriteNum $name$ >>
+       | RewriteLevelType ->
+            <:patt< $rewriter_patt loc$ . RewriteLevel $name$ >>
 
 (*
  * An ml dterm is a display form that is computed in ML.
@@ -1307,7 +1315,7 @@ let define_ml_dform proc loc
               Dform.dform_buffer = $lid:buffer$ } ->
                $code.item_item$ $lid:term_id$
           | _ ->
-               failwith "bad match"
+               raise (Invalid_argument $str:"ML dform " ^ name ^ " (generated code)"$)
          ]
       in
          $create_dform_expr loc modes$ $lid:local_dformer_id$ {
@@ -1640,7 +1648,7 @@ let extract_str arg sig_info info resources name =
                 imp_num_opnames = 0
               }
    in
-   let items = List_util.flat_map (extract_str_item proc) (info_items info) in
+   let items = Lm_list_util.flat_map (extract_str_item proc) (info_items info) in
    let items = wrap_summary_items proc items in
    let prolog = implem_prolog proc (0, 0) name in
    let postlog = implem_postlog proc (0, 0) in

@@ -62,9 +62,9 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-
 open Printf
-open Mp_debug
+open Lm_symbol
+open Lm_debug
 open Refiner.Refiner
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
@@ -178,7 +178,7 @@ and 'a inf_info =
  | Hyp of 'a hyp_info
 
 and 'a inference =
-   { inf_name : string;
+   { inf_name : var;
      inf_value : term;
      inf_hash : shape;
      inf_info : 'a inf_info
@@ -496,8 +496,8 @@ type 'a extract =
    {  (* Assumptions *)
       ext_used : 'a world list;
       ext_hcount : int;
-      ext_names : string list;
-      ext_gnames : string list;
+      ext_names : var list;
+      ext_gnames : var list;
       ext_hyps : 'a world list;
 
       (* Backward chaining *)
@@ -548,7 +548,7 @@ type 'a goal_item =
  *)
 let mk_var_name { ext_base = { ext_index = index } as base } =
    base.ext_index <- index + 1;
-   "`" ^ (string_of_int index)
+   Lm_symbol.add ("`" ^ (string_of_int index))
 
 (*
  * We use this term to stand for contexts.
@@ -761,7 +761,7 @@ let bget_node extract world ({ goal_assums = assums } as goal) =
    let test { node_world = world' } =
       is_child_with_assumptions world' assums world
    in
-      List_util.find test nodes
+      Lm_list_util.find test nodes
 
 (*
  * Provide an interface to flookup_table of type
@@ -788,7 +788,7 @@ let fget_entry { ext_base = { ext_ftable = ftable; ext_rules = rules } } { inf_h
          rule' == rl
       in
       let rules = Hashtbl.find rules plates in
-      let _, insts = List_util.find test rules in
+      let _, insts = Lm_list_util.find test rules in
          i, rl, insts
    in
    let l = Hashtbl.find ftable hash in
@@ -867,7 +867,7 @@ let find_inf { ext_base = { ext_terms = terms } } world t hash =
          alpha_equal t t' & is_child_of_parent world world'
    in
    let { entry_infs = infs } = Hashtbl.find terms hash in
-      List_util.find test infs
+      Lm_list_util.find test infs
 
 let inf_is_already_known extract world t hash =
    try
@@ -879,7 +879,7 @@ let inf_is_already_known extract world t hash =
 
 let find_goal { ext_base = { ext_terms = terms } } ({ goal_hash = hash } as goal) =
    let { entry_goals = goals } = Hashtbl.find terms hash in
-      List_util.find (eq_goal goal) goals
+      Lm_list_util.find (eq_goal goal) goals
 
 (*
  * Find the goalnodes that match the inference.
@@ -908,7 +908,7 @@ let find_nodes
    in
    let { entry_goals = goals } = Hashtbl.find terms hash in
    let goals' = filter_goals goals in
-   let nodes = List_util.flat_map (bget_nodes extract) goals' in
+   let nodes = Lm_list_util.flat_map (bget_nodes extract) goals' in
       filter_nodes nodes
 
 (*
@@ -945,7 +945,7 @@ let is_provable extract goal =
 let hash_goal { ext_base = { ext_terms = terms } }
     ({ goal_goal = t; goal_hash = hash } as goal) =
    let { entry_goals = goals } = Hashtbl.find terms hash in
-      List_util.find (eq_goal goal) goals
+      Lm_list_util.find (eq_goal goal) goals
 
 (************************************************************************
  * UTILITIES                                                            *
@@ -1336,7 +1336,7 @@ let new_bchain node =
 
        | Derived | Primitive _ ->
             (* This node is provable *)
-            let _ = Ref_util.pop fstack in
+            let _ = Lm_ref_util.pop fstack in
                ()
 
    in
@@ -1355,7 +1355,7 @@ let new_bchain node =
 
        | OrBranch ->
             (* All subgoals failed, pop the node, and fail its branch *)
-            let _ = Ref_util.pop fstack in
+            let _ = Lm_ref_util.pop fstack in
             let _ = pop_failed_branch fstack in
                false
 
@@ -1366,7 +1366,7 @@ let new_bchain node =
                   Unproved
                 | Derivable ->
                      (* Try backward chaining *)
-                     Ref_util.push (Node node) fstack;
+                     Lm_ref_util.push (Node node) fstack;
                      false
                 | Unprovable ->
                      (* Maybe this will be proved later by forward chaining *)
@@ -1665,7 +1665,7 @@ let compute_spread_ants ants =
                      h::t' -> ([], h)::(aux t' t)
                    | [] -> raise (Invalid_argument "spread_ants")
                else
-                  match List_util.split_list i l with
+                  match Lm_list_util.split_list i l with
                      ants, h::t' -> (ants, h)::(aux t' t)
                    | _, [] -> raise (Invalid_argument "spread_ants")
             end
@@ -1812,7 +1812,7 @@ let add_hyp extract i gname t =
          ext_base = base
        } = extract
    in
-   let t = subst t gnames (List.map mk_var_term names) in
+   let t = subst t names (List.map mk_var_term names) in
    let hash = shape_of_term t in
    let world = build_world_with_hyp extract world t hash in
    let name = name_of_world world in
@@ -1820,9 +1820,9 @@ let add_hyp extract i gname t =
    let node, goals, bchain = new_goals world goal in
       { ext_used = used;
         ext_hcount = hcount + 1;
-        ext_names = List_util.insert_nth i name names;
-        ext_gnames = List_util.insert_nth i gname gnames;
-        ext_hyps = List_util.insert_nth i world hyps;
+        ext_names = Lm_list_util.insert_nth i name names;
+        ext_gnames = Lm_list_util.insert_nth i gname gnames;
+        ext_hyps = Lm_list_util.insert_nth i world hyps;
         ext_goal = goal;
         ext_node = node;
         ext_goals = goals;
@@ -1866,14 +1866,14 @@ let del_hyp
    else
       (* Find a specific hyp *)
       let i' = hcount - i in
-      let rm, hyps' = List_util.split_list i' hyps in
+      let rm, hyps' = Lm_list_util.split_list i' hyps in
       let world = List.hd hyps' in
       let node, goals, bchain = new_goals world goal in
       let extract =
-         { ext_used = List_util.subtractq used rm;
+         { ext_used = Lm_list_util.subtractq used rm;
            ext_hcount = i;
-           ext_names = List_util.nth_tl i' names;
-           ext_gnames = List_util.nth_tl i' gnames;
+           ext_names = Lm_list_util.nth_tl i' names;
+           ext_gnames = Lm_list_util.nth_tl i' gnames;
            ext_hyps = hyps';
            ext_goal = goal;
            ext_node = node;
@@ -1903,7 +1903,7 @@ let ref_hyp ({ ext_hcount = hcount;
  *)
 let name_hyp extract i gname =
    let { ext_hcount = hcount; ext_gnames = gnames } = extract in
-      set_gnames extract (List_util.replace_nth (hcount - i - 1) gname gnames)
+      set_gnames extract (Lm_list_util.replace_nth (hcount - i - 1) gname gnames)
 
 (*
  * Choose a new conclusion.
@@ -1958,7 +1958,7 @@ let set_goal extract t =
  *)
 (*
  * XXX Nogin: this sym and HACK stuff is here because I do not know
- *  how the names are used and what should be done when we do not have one 
+ *  how the names are used and what should be done when we do not have one
  *)
 let set_msequent extract seq =
    let sym = ref 0 in
@@ -1972,7 +1972,7 @@ let set_msequent extract seq =
                   add_hyp extract i name hyp
              | TermType.Hypothesis hyp ->
                   incr sym;
-                  add_hyp extract i ("HACK" ^ (string_of_int !sym)) hyp
+                  add_hyp extract i (Lm_symbol.add ("HACK" ^ (string_of_int !sym))) hyp
              | TermType.Context (name, _) ->
                   add_hyp extract i name context_term
          in
@@ -2032,7 +2032,7 @@ let hyp_index { hyp_count = hcount; hyp_hyps = hyps } =
    let search_root inf =
       match inf with
          { inf_value = t; inf_info = Inference ({ inf_values = values } as info) } ->
-            let index = List_util.find_indexq t values in
+            let index = Lm_list_util.find_indexq t values in
             let rec search i = function
                ({ hyp_info = Root (j, info') } as hyp)::htl ->
                   if info == info' & j = index then
@@ -2223,7 +2223,7 @@ let lookup ({ ext_node = node } as extract) =
 let synthesize ({ ext_used = used } as extract) syns =
    let rec combine = function
       { syn_used = used' }::t ->
-         List_util.unionq used (combine t)
+         Lm_list_util.unionq used (combine t)
     | [] ->
          used
    in
@@ -2236,7 +2236,7 @@ let used_hyps
     { syn_extract = { ext_hyps = hyps; ext_hcount = hcount };
       syn_used = used
     } =
-   List.map (function inf -> hcount - (List_util.find_indexq inf hyps) - 1) used
+   List.map (function inf -> hcount - (Lm_list_util.find_indexq inf hyps) - 1) used
 
 (*
  * -*-

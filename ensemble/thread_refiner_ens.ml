@@ -31,12 +31,12 @@
  *)
 
 open Printf
-open Mp_debug
+open Lm_debug
 
 open Refiner.Refiner.RefineError
 
 open Remote_sig
-open Thread_util
+open Lm_thread_util
 open Thread_refiner_sig
 
 let debug_strategy =
@@ -187,8 +187,8 @@ struct
     *)
    type 'term submit_message =
       { submit_goal : 'term t;
-        submit_request : 'term client_message Thread_event.channel;
-        submit_response : 'term job_message Thread_event.channel
+        submit_request : 'term client_message Lm_thread_event.channel;
+        submit_response : 'term job_message Lm_thread_event.channel
       }
 
    (*
@@ -237,8 +237,8 @@ struct
       }
 
    and 'term root_entry =
-      { root_request : 'term client_message Thread_event.channel;
-        root_response : 'term job_message Thread_event.channel;
+      { root_request : 'term client_message Lm_thread_event.channel;
+        root_response : 'term job_message Lm_thread_event.channel;
         mutable root_child : 'term tree
       }
 
@@ -302,8 +302,8 @@ struct
         mutable proc_status : proc_status;
         proc_pid : int;
         proc_printer : out_channel -> 'term -> unit;
-        proc_result : 'term proc_message Thread_event.channel;
-        proc_request : 'term sched_message Thread_event.channel
+        proc_result : 'term proc_message Lm_thread_event.channel;
+        proc_request : 'term sched_message Lm_thread_event.channel
       }
 
    and proc_status =
@@ -341,7 +341,7 @@ struct
         mutable sched_pending : 'term pending_entry list;
         mutable sched_roots   : 'term root_entry list;
         mutable sched_locals  : 'term local_entry list;
-        sched_submit : 'term submit_message Thread_event.channel
+        sched_submit : 'term submit_message Lm_thread_event.channel
       }
 
    (*
@@ -737,7 +737,7 @@ struct
             raise (Invalid_argument "send_stack")
        | stack ->
             if big_stack 0 stack then
-               let stack, split = List_util.split_last stack in
+               let stack, split = Lm_list_util.split_last stack in
                   if !debug_sync then
                      begin
                         lock_printer ();
@@ -745,7 +745,7 @@ struct
                         print_stack_entry proc.proc_printer split;
                         unlock_printer ()
                      end;
-                  Thread_event.sync proc.proc_pid (Thread_event.send proc.proc_result (ProcStack split));
+                  Lm_thread_event.sync proc.proc_pid (Lm_thread_event.send proc.proc_result (ProcStack split));
                   if !debug_sync then
                      begin
                         lock_printer ();
@@ -795,7 +795,7 @@ struct
                   eprintf "Thread_refiner.process_main: waiting %d%t" proc.proc_pid eflush;
                   unlock_printer ()
                end;
-            let arg = Thread_event.sync proc.proc_pid (Thread_event.receive proc.proc_request) in
+            let arg = Lm_thread_event.sync proc.proc_pid (Lm_thread_event.receive proc.proc_request) in
                if !debug_sync then
                   begin
                      lock_printer ();
@@ -818,7 +818,7 @@ struct
                eprintf "Thread_refiner.process_main: sending result: %d%t" proc.proc_pid eflush;
                unlock_printer ()
             end;
-         Thread_event.sync proc.proc_pid (Thread_event.send proc.proc_result result);
+         Lm_thread_event.sync proc.proc_pid (Lm_thread_event.send proc.proc_result result);
          if !debug_sync then
             begin
                lock_printer ();
@@ -840,8 +840,8 @@ struct
               proc_status = StatusIdle;
               proc_pid = count;
               proc_printer = printer;
-              proc_request = Thread_event.new_channel ();
-              proc_result = Thread_event.new_channel ()
+              proc_request = Lm_thread_event.new_channel ();
+              proc_result = Lm_thread_event.new_channel ()
             }
          in
             if !debug_schedule then
@@ -1314,7 +1314,7 @@ struct
             eprintf "Thread_refiner.return_result%t" eflush;
             unlock_printer ();
          end;
-      Thread_event.sync 0 (Thread_event.send root.root_response result);
+      Lm_thread_event.sync 0 (Lm_thread_event.send root.root_response result);
       if !debug_sync then
          begin
             lock_printer ();
@@ -1949,13 +1949,13 @@ struct
     * also request a job from the remote server.
     *)
    let process_event ({ proc_process = proc } as event) =
-      Thread_event.wrap (Thread_event.receive proc.proc_result) (fun msg -> ProcMessage (event, msg))
+      Lm_thread_event.wrap (Lm_thread_event.receive proc.proc_result) (fun msg -> ProcMessage (event, msg))
 
    let stack_event ({ root_request = request } as root) =
-      Thread_event.wrap (Thread_event.receive request) (fun msg -> ClientMessage (root, msg))
+      Lm_thread_event.wrap (Lm_thread_event.receive request) (fun msg -> ClientMessage (root, msg))
 
    let submit_event sched =
-      Thread_event.wrap (Thread_event.receive sched.sched_submit) (fun msg -> SubmitMessage msg)
+      Lm_thread_event.wrap (Lm_thread_event.receive sched.sched_submit) (fun msg -> SubmitMessage msg)
 
    let remote_event sched ({ remote_hand = hand } as remote) =
       Remote.wrap (Remote.event_of_handle sched.sched_remote hand) (fun msg -> (RemoteMessage (remote, msg)))
@@ -1974,7 +1974,7 @@ struct
                 (List.map stack_event sched.sched_roots))
       in
       let block_event =
-         Remote.wrap_event (Thread_event.choose block_events)
+         Remote.wrap_event (Lm_thread_event.choose block_events)
       in
       let events =
          block_event ::
@@ -2014,7 +2014,7 @@ struct
                print_sched_stack sched.sched_printer parent;
                unlock_printer ()
             end;
-         Thread_event.sync 0 (Thread_event.send proc.proc_request msg);
+         Lm_thread_event.sync 0 (Lm_thread_event.send proc.proc_request msg);
          if !debug_sync then
             begin
                lock_printer ();
@@ -2181,7 +2181,7 @@ struct
            sched_pending = [];
            sched_roots = [];
            sched_locals = [];
-           sched_submit = Thread_event.new_channel ()
+           sched_submit = Lm_thread_event.new_channel ()
          }
       in
          sched
@@ -2216,8 +2216,8 @@ struct
          raise (Invalid_argument "Thread_refiner.eval: recursive call");
       let msg =
          { submit_goal = goal;
-           submit_request = Thread_event.new_channel ();
-           submit_response = Thread_event.new_channel ()
+           submit_request = Lm_thread_event.new_channel ();
+           submit_response = Lm_thread_event.new_channel ()
          }
       in
          if !debug_sync then
@@ -2226,14 +2226,14 @@ struct
                eprintf "Thread_refiner.eval: submitting job%t" eflush;
                unlock_printer ()
             end;
-         Thread_event.sync (-1) (Thread_event.send sched.sched_submit msg);
+         Lm_thread_event.sync (-1) (Lm_thread_event.send sched.sched_submit msg);
          if !debug_sync then
             begin
                lock_printer ();
                eprintf "Thread_refiner.eval: job submitted%t" eflush;
                unlock_printer ()
             end;
-         let result = Thread_event.sync (-1) (Thread_event.receive msg.submit_response) in
+         let result = Lm_thread_event.sync (-1) (Lm_thread_event.receive msg.submit_response) in
             if !debug_sync or true then
                begin
                   lock_printer ();

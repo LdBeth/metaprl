@@ -3,7 +3,7 @@
  *)
 
 open Printf
-open Mp_debug
+open Lm_debug
 
 open File_base_type
 
@@ -28,7 +28,7 @@ let library_close () =
   else raise (LibraryException "Close: No library open.")
 
 open Printf
-open Mp_debug
+open Lm_debug
 
 
 let library_open host localport remoteport =

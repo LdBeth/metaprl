@@ -7,6 +7,13 @@ ROOT:=.
 include mk/preface
 
 #
+# If LIBMOJAVE is undefined, then use libmojave
+#
+ifeq ($(LIBMOJAVE),undefined)
+   LIBMOJAVE := libmojave
+endif
+
+#
 # Build all the parts of Nuprl-Light:
 #    refiner: logic engine
 #    filter: front end to the compiler
@@ -18,6 +25,7 @@ include mk/preface
 #    editor/ml: interactive proof editor
 #
 REFINER_DIRS :=\
+	$(LIBMOJAVE)\
 	clib\
 	mllib\
 	refiner\
@@ -26,13 +34,9 @@ REFINER_DIRS :=\
 	ensemble
 
 DEP_DIRS :=\
+	$(LIBMOJAVE)\
 	refiner\
 	filter\
-
-ifneq ($(LIBMOJAVE),undefined)
-	REFINER_DIRS := $(LIBMOJAVE) $(REFINER_DIRS)
-	DEP_DIRS := $(LIBMOJAVE) $(DEP_DIRS)
-endif
 
 DIRS = $(REFINER_DIRS)\
 	filter\

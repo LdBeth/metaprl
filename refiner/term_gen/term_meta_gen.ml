@@ -160,7 +160,7 @@ struct
     | MetaImplies (a, b)
     | MetaFunction (_, a, b)
     | MetaIff (a, b) ->
-         List_util.union (binding_vars a) (binding_vars b)
+         Lm_list_util.union (binding_vars a) (binding_vars b)
     | MetaLabeled (_, t) ->
          binding_vars t
 
@@ -170,7 +170,7 @@ struct
     | MetaImplies (a, b)
     | MetaFunction (_, a, b)
     | MetaIff (a, b) ->
-         List_util.union (context_vars a) (context_vars b)
+         Lm_list_util.union (context_vars a) (context_vars b)
     | MetaLabeled (_, t) ->
          context_vars t
 

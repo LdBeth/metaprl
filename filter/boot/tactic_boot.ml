@@ -45,10 +45,11 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Lm_symbol
 
-open Mp_debug
+open Lm_debug
 open Printf
-open Thread_util
+open Lm_thread_util
 open Rformat
 open Dform
 
@@ -179,7 +180,7 @@ struct
         attr_ints       : (string * int) list;
         attr_bools      : (string * bool) list;
         attr_strings    : (string * string) list;
-        attr_subst      : (string * term) list;
+        attr_subst      : (var * term) list;
         attr_keys       : (string * sentinal) list
       }
 
@@ -338,21 +339,21 @@ struct
     * set to the current goal when requested.
     *)
    let attribute_info_of_raw_attributes attributes =
-      { attr_terms      = List_util.some_map (function (name, RawTerm t)     -> Some (name, t) | _ -> None) attributes;
-        attr_term_lists = List_util.some_map (function (name, RawTermList t) -> Some (name, t) | _ -> None) attributes;
-        attr_types      = List_util.some_map (function (name, RawType t)     -> Some (name, t) | _ -> None) attributes;
-        attr_ints       = List_util.some_map (function (name, RawInt i)      -> Some (name, i) | _ -> None) attributes;
-        attr_bools      = List_util.some_map (function (name, RawBool b)     -> Some (name, b) | _ -> None) attributes;
-        attr_strings    = List_util.some_map (function (name, RawString s)   -> Some (name, s) | _ -> None) attributes;
-        attr_subst      = List_util.some_map (function (name, RawSubst t)    -> Some (name, t) | _ -> None) attributes;
-        attr_keys       = List_util.some_map (function (name, RawSentinal k)   -> Some (name, k) | _ -> None) attributes
+      { attr_terms      = Lm_list_util.some_map (function (name, RawTerm t)     -> Some (name, t) | _ -> None) attributes;
+        attr_term_lists = Lm_list_util.some_map (function (name, RawTermList t) -> Some (name, t) | _ -> None) attributes;
+        attr_types      = Lm_list_util.some_map (function (name, RawType t)     -> Some (name, t) | _ -> None) attributes;
+        attr_ints       = Lm_list_util.some_map (function (name, RawInt i)      -> Some (name, i) | _ -> None) attributes;
+        attr_bools      = Lm_list_util.some_map (function (name, RawBool b)     -> Some (name, b) | _ -> None) attributes;
+        attr_strings    = Lm_list_util.some_map (function (name, RawString s)   -> Some (name, s) | _ -> None) attributes;
+        attr_subst      = Lm_list_util.some_map (function (name, RawSubst t)    -> Some (Lm_symbol.add name, t) | _ -> None) attributes;
+        attr_keys       = Lm_list_util.some_map (function (name, RawSentinal k)   -> Some (name, k) | _ -> None) attributes
       }
 
    let squash_attributes attrs =
       { attrs with attr_keys = [] }
 
    let update_attributes attrs raws =
-      { attrs with attr_keys = List_util.some_map (function (name, RawSentinal k)   -> Some (name, k) | _ -> None) raws }
+      { attrs with attr_keys = Lm_list_util.some_map (function (name, RawSentinal k)   -> Some (name, k) | _ -> None) raws }
 
    let create sentinal goal bookmark =
       { ref_goal = msequent_remove_redundant_hypbindings goal;
@@ -570,7 +571,7 @@ struct
       @ (List.map (fun (name, t) -> name, TypeArg t) types)
       @ (List.map (fun (name, i) -> name, IntArg i) ints)
       @ (List.map (fun (name, b) -> name, BoolArg b) bools)
-      @ (List.map (fun (name, t) -> name, SubstArg t) subst)
+      @ (List.map (fun (name, t) -> string_of_symbol name, SubstArg t) subst)
 
    let raw_attributes { ref_attributes = { attr_terms = terms;
                                            attr_term_lists = term_lists;
@@ -585,7 +586,7 @@ struct
       @ (List.map (fun (name, t) -> name, RawType t) types)
       @ (List.map (fun (name, i) -> name, RawInt i) ints)
       @ (List.map (fun (name, b) -> name, RawBool b) bools)
-      @ (List.map (fun (name, t) -> name, RawSubst t) subst)
+      @ (List.map (fun (name, t) -> string_of_symbol name, RawSubst t) subst)
       @ (List.map (fun (name, t) -> name, RawSentinal t) keys)
 
    (************************************************************************
@@ -656,7 +657,7 @@ struct
       format_alist "ints" buf format_int attrs.attr_ints;
       format_alist "bools" buf format_bool attrs.attr_bools;
       format_alist "strings" buf format_string attrs.attr_strings;
-      format_alist "substs" buf (format_term db) attrs.attr_subst;
+      format_alist "substs" buf (format_term db) (List.map (fun (n, t) -> string_of_symbol n, t) attrs.attr_subst);
       format_popm buf;
       format_space buf;
       format_string buf ">"
@@ -893,7 +894,7 @@ struct
    let refine tac arg =
       refine_final_list := [];
       let x = ThreadRefiner.eval (get_remote_server ()) (tac arg) in
-         List_util.rev_iter (fun f -> f ()) !refine_final_list;
+         Lm_list_util.rev_iter (fun f -> f ()) !refine_final_list;
          refine_final_list := [];
          x
 
@@ -1078,7 +1079,7 @@ struct
    let prefix_thenLT = ThreadRefinerTacticals.compose2
    let firstT = ThreadRefinerTacticals.first
    let wrapT = ThreadRefinerTacticals.wrap
-   
+
    let prefix_orelseT tac1 tac2 =
       firstT [tac1; tac2]
 

@@ -33,8 +33,8 @@
  *)
 
 open Printf
-open Mp_debug
-open Mp_pervasives
+open Lm_debug
+open Lm_pervasives
 open File_base_type
 
 (*
@@ -132,7 +132,7 @@ module MakeSingletonCombo (Info : FileTypeInfoSig) :
                let inx = open_in_bin filename in
                   try
                      let magic' = input_binary_int inx in
-                        if List_util.find_index magic' magics > magic then
+                        if Lm_list_util.find_index magic' magics > magic then
                            raise (Failure (sprintf "File %s has been modified, write operation failed" filename))
                   with
                      End_of_file ->
@@ -162,7 +162,7 @@ module MakeSingletonCombo (Info : FileTypeInfoSig) :
          let read magics versions filename =
             let inx = open_in_bin filename in
                try
-                  let magic = List_util.find_index (input_binary_int inx) magics in
+                  let magic = Lm_list_util.find_index (input_binary_int inx) magics in
                   let version = input_binary_int inx in
                   if not (List.mem version versions) then
                      raise (Bad_version(filename, versions, version));

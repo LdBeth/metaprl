@@ -28,8 +28,8 @@
  *)
 
 open Printf
-open Mp_debug
-open String_set
+open Lm_debug
+open Lm_string_set
 
 open List
 open Term_sig
@@ -70,7 +70,6 @@ struct
     | FType.MString s1 ->           TType.MString s1
     | FType.MToken s1 ->            TType.MToken s1
     | FType.MLevel l1 ->            TType.MLevel (make_level l1)
-    | FType.MVar s1 ->              TType.MVar s1
     | FType.ObId oid1 ->            TType.ObId (List.map make_param_aux oid1)
     | FType.ParamList p1 ->         TType.ParamList (List.map make_param_aux p1)
 

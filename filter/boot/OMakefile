@@ -23,3 +23,5 @@ OCamlLibraryInstall($(MPINSTALL), $(LIB), filterlib, $(BOOT_FILES))
 #
 clean:
     $(CLEAN)
+
+all: filterlib$(LIB_SUFFIX)

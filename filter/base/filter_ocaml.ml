@@ -32,12 +32,13 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Lm_symbol
 
 open Printf
 
 open MLast
 
-open Mp_debug
+open Lm_debug
 
 open Opname
 open Refiner_sig
@@ -63,7 +64,7 @@ let debug_ocaml =
 (*
  * Location is a pair of bignums.
  *)
-type loc = Mp_num.num * Mp_num.num
+type loc = Lm_num.num * Lm_num.num
 
 (*
  * Argument to the comment function
@@ -185,8 +186,8 @@ struct
                begin
                   match dest_param p1, dest_param p2 with
                      Number start, Number finish
-                        when (Mp_num.is_integer_num start && Mp_num.is_integer_num finish) ->
-                       Mp_num.int_of_num start, Mp_num.int_of_num finish
+                        when (Lm_num.is_integer_num start && Lm_num.is_integer_num finish) ->
+                       Lm_num.int_of_num start, Lm_num.int_of_num finish
                    | _ ->
                         raise_format_error "dest_loc: needs two numbers" t
                end
@@ -204,8 +205,8 @@ struct
          eprintf "Filter_ocaml.%s: %a%t" name SimplePrint.print_simple_term_fp t eflush;
          match dest_params (dest_op (dest_term t).term_op).op_params with
             [ Number start; Number finish; String s ]
-               when (Mp_num.is_integer_num start && Mp_num.is_integer_num finish) ->
-               (Mp_num.int_of_num start, Mp_num.int_of_num finish), s
+               when (Lm_num.is_integer_num start && Lm_num.is_integer_num finish) ->
+               (Lm_num.int_of_num start, Lm_num.int_of_num finish), s
           | _ ->
                raise_format_error (Printf.sprintf "dest_loc_string: %s: needs two numbers and a string" name) t
 
@@ -239,7 +240,7 @@ struct
       let loc = dest_loc "dest_var" t in
       let t = one_subterm "dest_var_t" t in
          if is_var_term t then
-            ToTerm.Term.dest_var t
+            string_of_symbol (ToTerm.Term.dest_var t)
          else
             dest_string_param t
 
@@ -251,8 +252,8 @@ struct
          eprintf "Filter_ocaml.%s: %a%t" name SimplePrint.print_simple_term_fp t eflush;
          match dest_params (dest_op (dest_term t).term_op).op_params with
             [ Number start; Number finish; Number i ]
-               when (Mp_num.is_integer_num start && Mp_num.is_integer_num finish) ->
-               (Mp_num.int_of_num start, Mp_num.int_of_num finish), Mp_num.string_of_num i
+               when (Lm_num.is_integer_num start && Lm_num.is_integer_num finish) ->
+               (Lm_num.int_of_num start, Lm_num.int_of_num finish), Lm_num.string_of_num i
           | _ ->
                raise_format_error "dest_loc_int: needs three numbers" t
 
@@ -260,7 +261,7 @@ struct
     * Redefine some functions to tag results.
     *)
    let num_of_loc (i, j) =
-     Mp_num.num_of_int i, Mp_num.num_of_int j
+     Lm_num.num_of_int i, Lm_num.num_of_int j
 
    let loc_of_expr,
        loc_of_patt,
@@ -280,8 +281,8 @@ struct
          loc_of_aux loc_of_module_expr
 
    let raise_with_loc (i, j) exn =
-      if Mp_num.is_integer_num i && Mp_num.is_integer_num j then
-         Stdpp.raise_with_loc (Mp_num.int_of_num i, Mp_num.int_of_num j) exn
+      if Lm_num.is_integer_num i && Lm_num.is_integer_num j then
+         Stdpp.raise_with_loc (Lm_num.int_of_num i, Lm_num.int_of_num j) exn
       else
          raise (Failure "Filter_ocaml.raise_with_loc: got a big number")
 
@@ -598,7 +599,7 @@ struct
    let mk_loc_int_aux opname (start, finish) i tl =
       let p1 = make_param (Number start) in
       let p2 = make_param (Number finish) in
-      let p3 = make_param (Number (Mp_num.num_of_string i)) in
+      let p3 = make_param (Number (Lm_num.num_of_string i)) in
       let op = mk_op opname [p1; p2; p3] in
          mk_term op (List.map (mk_bterm []) tl)
 
@@ -627,7 +628,7 @@ struct
       let v =
          (* XXX HACK: internal "_$" vars are always vars *)
          if List.mem s vars || (s.[0] = '_' && s.[1] = '$') then
-            mk_var_term s
+            mk_var_term (Lm_symbol.add s)
          else
             mk_string_term opname s
       in
@@ -731,14 +732,14 @@ struct
             let loc = dest_loc "dest_upto_expr" t in
             let e1, e2, v, e3 = dest_dep0_dep0_dep1_any_term t in
             let el = dest_xlist e3 in
-               <:expr< for $v$ = $dest_expr e1$ $to:true$ $dest_expr e2$ do { $list: List.map dest_expr el$ } >>
+               <:expr< for $string_of_symbol v$ = $dest_expr e1$ $to:true$ $dest_expr e2$ do { $list: List.map dest_expr el$ } >>
          in add_expr "for_upto" dest_upto_expr
       and expr_downto_op =
          let dest_downto_expr t =
             let loc = dest_loc "dest_downto_expr" t in
             let e1, e2, v, e3 = dest_dep0_dep0_dep1_any_term t in
             let el = dest_xlist e3 in
-               <:expr< for $v$ = $dest_expr e1$ $to:false$ $dest_expr e2$ do { $list: List.map dest_expr el$ } >>
+               <:expr< for $string_of_symbol v$ = $dest_expr e1$ $to:false$ $dest_expr e2$ do { $list: List.map dest_expr el$ } >>
          in add_expr "for_downto" dest_downto_expr
       and expr_if_op =
          let dest_if_expr t =
@@ -856,7 +857,7 @@ struct
                   let op = if b then expr_upto_op else expr_downto_op in
                   let op_loc = mk_op_loc op loc in
                   let el' = mk_list_term (List.map (mk_expr (s :: vars) comment) el) in
-                      mk_dep0_dep0_dep1_any_term op_loc (mk_expr vars comment e1) (mk_expr vars comment e2) s el'
+                      mk_dep0_dep0_dep1_any_term op_loc (mk_expr vars comment e1) (mk_expr vars comment e2) (Lm_symbol.add s) el'
              | (<:expr< fun [ $list:pwel$ ] >>) ->
                   mk_fun vars comment loc pwel
              | (<:expr< if $e1$ then $e2$ else $e3$ >>) ->
@@ -968,16 +969,17 @@ struct
                dest_var t
             else
                dest_string_param t
-         in let dest_uid_patt t =
-            let loc = dest_loc "dest_uid_patt" t in
-            let p, t = two_subterms t in
-               <:patt< $uid:dest_patt_id p$ >>, t
+         in
+         let dest_uid_patt t =
+         let loc = dest_loc "dest_uid_patt" t in
+         let p, t = two_subterms t in
+            <:patt< $uid:dest_patt_id p$ >>, t
          in add_patt "patt_uid" dest_uid_patt
       and patt_var_op =
          let dest_var_patt t =
             let loc = dest_loc "dest_var_patt" t in
             let v, t = dest_dep1_term t in
-               <:patt< $lid:v$ >>, t
+               <:patt< $lid:string_of_symbol v$ >>, t
          in add_patt "patt_var" dest_var_patt
       and patt_proj_op =
          let dest_proj_patt t =
@@ -1104,7 +1106,7 @@ struct
                   mk_loc_string_term patt_float_op loc s (tailf vars)
              | (<:patt< $lid:v$ >>) ->
                   (* This is a binding occurrence *)
-                  mk_patt_var patt_var_op loc v (tailf (v :: vars))
+                  mk_patt_var patt_var_op loc (Lm_symbol.add v) (tailf (v :: vars))
              | (<:patt< $p1$ | $p2$ >>) ->
                   mk_patt_triple vars comment loc patt_choice_op patt_choice_arg_op patt_choice_end_op p1 p2 tailf
              | (<:patt< $p1$ .. $p2$ >>) ->
@@ -1147,7 +1149,7 @@ struct
          mk_simple_term op1 loc [mk_patt vars comment p1 tailf]
 
    and mk_patt_record =
-      let patt_record_proj_op = mk_ocaml_op "patt_record_proj" 
+      let patt_record_proj_op = mk_ocaml_op "patt_record_proj"
       and patt_record_end_op = mk_ocaml_op "patt_record_end"
       in let patt_record_op =
          let dest_record_patt t =
@@ -1674,7 +1676,7 @@ struct
          let dest_functor_mt t =
             let loc = dest_loc "dest_functor_mt" t in
             let v, mt1, mt2 = dest_dep0_dep1_any_term t in
-               <:module_type< functor ($v$ : $dest_mt mt1$) -> $dest_mt mt2$ >>
+               <:module_type< functor ($string_of_symbol v$ : $dest_mt mt1$) -> $dest_mt mt2$ >>
          in add_mt "mt_functor" dest_functor_mt
       and mt_quot_op =
          let dest_quot_mt t =
@@ -1694,7 +1696,7 @@ struct
                let wcl = dest_xlist wcl in
                   <:module_type< $dest_mt mt$ with $list: List.map dest_wc wcl$ >>
          in add_mt "mt_type_with" dest_with_mt
-      in fun comment mt -> 
+      in fun comment mt ->
          let loc = loc_of_module_type mt in
          let term =
             match mt with
@@ -1704,7 +1706,7 @@ struct
                   mk_simple_term mt_apply_op loc [mk_module_type comment mt1; mk_module_type comment mt2]
              | (<:module_type< functor ( $s$ : $mt1$ ) -> $mt2$ >>) ->
                   let op_loc = mk_op_loc mt_functor_op loc in
-                     mk_dep0_dep1_any_term op_loc s (mk_module_type comment mt1) (mk_module_type comment mt2)
+                     mk_dep0_dep1_any_term op_loc (Lm_symbol.add s) (mk_module_type comment mt1) (mk_module_type comment mt2)
              | (<:module_type< $lid:i$ >>) ->
                   mk_var mt_lid_op [] loc i
              | (<:module_type< ' $i$ >>) ->
@@ -1770,7 +1772,7 @@ struct
          let dest_functor_me t =
             let loc = dest_loc "dest_functor_me" t in
             let v, mt, me = dest_dep0_dep1_any_term t in
-               <:module_expr< functor ($v$ : $dest_mt mt$ ) -> $dest_me me$ >>
+               <:module_expr< functor ($string_of_symbol v$ : $dest_mt mt$ ) -> $dest_me me$ >>
          in add_me "me_functor" dest_functor_me
       and me_struct_op =
          let dest_struct_me t =
@@ -1784,7 +1786,7 @@ struct
             let me, mt = two_subterms t in
                <:module_expr< ( $dest_me me$ : $dest_mt mt$) >>
          in add_me "me_cast" dest_cast_me
-      in fun vars comment me -> 
+      in fun vars comment me ->
          let loc = loc_of_module_expr me in
          let term =
             match me with
@@ -1795,7 +1797,7 @@ struct
                   mk_simple_term me_apply_op loc [mk_module_expr vars comment me1;
                                                   mk_module_expr vars comment me2]
              | (<:module_expr< functor ( $s$ : $mt$ ) -> $me$ >>) ->
-                     mk_dep0_dep1_any_term (mk_op_loc me_functor_op loc) s
+                     mk_dep0_dep1_any_term (mk_op_loc me_functor_op loc) (Lm_symbol.add s)
                         (mk_module_type comment mt) (mk_module_expr vars comment me)
              | (<:module_expr< struct $list:sil$ end >>) ->
                   mk_simple_term me_struct_op loc (List.map (mk_str_item vars comment) sil)
@@ -2203,7 +2205,7 @@ struct
                mk_simple_term patt_done_op loc []
             in
                mk_simple_term str_fix_op loc [mk_fix_aux [] comment loc pel tailf]
-         else 
+         else
             let make (p, e) =
                let tailf vars =
                   mk_simple_term patt_done_op loc []
@@ -2280,7 +2282,7 @@ struct
 
    and mk_se =
       let se_op = mk_ocaml_op "se"
-      in fun vars comment (s, e) -> 
+      in fun vars comment (s, e) ->
          ToTerm.Term.mk_simple_term se_op [mk_simple_string s; mk_expr vars comment e]
 
    and mk_ident_pe =

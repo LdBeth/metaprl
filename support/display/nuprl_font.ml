@@ -44,10 +44,10 @@
  *)
 
 open Printf
-open Mp_debug
+open Lm_debug
 open Perv
 
-open String_util
+open Lm_string_util
 open Refiner.Refiner.TermOp
 open Rformat
 
@@ -539,7 +539,7 @@ let not_alnum c = not (is_alnum c)
 ml_dform keyword_tex_df : internal :: mode[tex] :: keyword[text:s] format_term buf =
    fun term ->
      let text = dest_string_param term in
-     let font = if String_util.for_all not_alnum text then "tt" else "bf" in
+     let font = if Lm_string_util.for_all not_alnum text then "tt" else "bf" in
      format_izone buf;
      format_string buf ("\\mbox{\\" ^ font ^ " ");
      format_ezone buf;

@@ -43,7 +43,7 @@ extends Shell_root
 extends Shell_p4_sig
 
 open Printf
-open Mp_debug
+open Lm_debug
 
 open Opname
 open Precedence
@@ -329,15 +329,15 @@ struct
             [] -> dir
           | ""::ns -> aux dir ns
           | "~"::ns -> aux home ns
-          | n::ns when (String_util.for_all (fun c -> c = '.') n) ->
+          | n::ns when (Lm_string_util.for_all (fun c -> c = '.') n) ->
                (* Remove |n| elements from dir's tail *)
-               let head = try (fst (List_util.split_list ((List.length dir) - (String.length n) + 1) dir))
+               let head = try (fst (Lm_list_util.split_list ((List.length dir) - (String.length n) + 1) dir))
                           with Failure "split_list" -> []
                in aux head ns
           | n::ns -> aux (dir @ [n]) ns
       in
          aux (if String.length name <> 0 & name.[0] = '/' then [] else info.dir)
-             (String_util.split '/' name)
+             (Lm_string_util.split "/" name)
 
    (*
     * Turn a path to an absolute string.
@@ -1128,7 +1128,7 @@ struct
          print_exn info extract info
 
    let term_of_extract info terms =
-      match info.package with 
+      match info.package with
          Some pack ->
             Refine.term_of_extract (Package.refiner pack) (info.proof.edit_check (get_db info)) terms
        | None ->
@@ -1580,7 +1580,7 @@ let root () =
          ignore(cd (String.sub pwd 0 (ind - 1)))
    with Not_found -> () end;
    ls ""
-      
+
 (*
  * -*-
  * Local Variables:

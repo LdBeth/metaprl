@@ -29,6 +29,7 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Lm_symbol
 
 open MLast
 
@@ -39,7 +40,7 @@ open Filter_type
 (*
  * Location is a pair of bignums.
  *)
-type loc = Mp_num.num * Mp_num.num
+type loc = Lm_num.num * Lm_num.num
 
 (*
  * A comment function takes a term,
@@ -125,7 +126,6 @@ sig
    val dest_loc_int : term -> (int * int) * string
    val dest_opt : (term -> 'a) -> term -> 'a option
    val dest_string : term -> string
-   val dest_var : term -> string
 
    (*
     * Special functions for resources

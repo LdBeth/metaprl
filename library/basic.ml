@@ -26,13 +26,13 @@
  *)
 
 open Printf
-open Mp_debug
+open Lm_debug
 
 open Unix
 open List
 open Utils
 open Opname
-open Mp_num
+open Lm_num
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Nuprl5
@@ -98,7 +98,7 @@ let imessage_op parms = mk_nuprl5_op (imessage_parameter :: parms)
 (* !natural{n} *)
 let inatural_parameter = make_param (Token "!natural")
 let inatural_op p = mk_nuprl5_op [inatural_parameter; p]
-let inatural_term i = mk_term (inatural_op (make_param (Number (Mp_num.num_of_int i)))) []
+let inatural_term i = mk_term (inatural_op (make_param (Number (Lm_num.num_of_int i)))) []
 
 (* !token{t} *)
 let itoken_parameter = make_param (Token "!token")
@@ -121,7 +121,7 @@ let ioid_term o = mk_term (ioid_op (make_param (ObId o))) []
 
 let inil_parameter =
 	make_param (ParamList [(make_param (Token "bool"));
-			       (make_param (Number (Mp_num.num_of_int 1)))])
+			       (make_param (Number (Lm_num.num_of_int 1)))])
 
 let iterm_op = mk_nuprl5_op [make_param (Token "!term")]
 
@@ -232,12 +232,12 @@ let token_parameter_to_string p =
 let ipui_addr_parameter = make_param (Token "!pui_addr")
 let number_of_ipui_addr_term t =
   match dest_param (parameter_of_carrier ipui_addr_parameter t) with
-    Number n when Mp_num.is_integer_num n -> Mp_num.int_of_num n
+    Number n when Lm_num.is_integer_num n -> Lm_num.int_of_num n
   | _ -> error ["term"; "!pui_addr"; "parameter type"] [] [t]
 	
 let number_of_inatural_term t =
   match dest_param (parameter_of_carrier inatural_parameter t) with
-    Number n when Mp_num.is_integer_num n -> Mp_num.int_of_num n
+    Number n when Lm_num.is_integer_num n -> Lm_num.int_of_num n
   |_ -> error ["term"; "!natural"; "parameter type"] [] [t]
 
 let num_of_inatural_term t =
@@ -291,7 +291,7 @@ let dest_token_param p =
 
 let dest_int_param p =
   match dest_param p with
-    Number n when Mp_num.is_integer_num n -> Mp_num.int_of_num n
+    Number n when Lm_num.is_integer_num n -> Lm_num.int_of_num n
   |_ -> error ["parameter"; "int"] [] []
 
 let dest_num_param p =
@@ -341,13 +341,13 @@ let term_to_stamp t =
 	    when (nuprl5_opname_p opname & parmeq istamp istamp_parameter)
          ->
 	(match dest_param ppid with Token pid ->
-	(match dest_param ptseq with Number tseq when Mp_num.is_integer_num tseq ->
-	(match dest_param pseq with Number seq when Mp_num.is_integer_num seq ->
+	(match dest_param ptseq with Number tseq when Lm_num.is_integer_num tseq ->
+	(match dest_param pseq with Number seq when Lm_num.is_integer_num seq ->
 	       (* print_string "tts "; *)
            {term = t;
             process_id = pid;
-            transaction_seq = Mp_num.int_of_num tseq;
-            seq = Mp_num.int_of_num seq;
+            transaction_seq = Lm_num.int_of_num tseq;
+            seq = Lm_num.int_of_num seq;
             time = (try (destruct_time_parameter ptime)
 		    with Invalid_argument "destruct_time_parameter_b"
 				-> error ["stamp"; "term"; "invalid"; "timeb"] [] [t]
@@ -409,9 +409,9 @@ let stamp_count = ref 0
 
 let make_stamp pid tseq seq time =
 	{ term = (mk_term (istamp_op
-				[ make_param (Number (Mp_num.num_of_int seq))
+				[ make_param (Number (Lm_num.num_of_int seq))
    				; make_time_parameter time
-				; make_param (Number (Mp_num.num_of_int tseq))
+				; make_param (Number (Lm_num.num_of_int tseq))
    				; make_param (Token pid)
    				])
 			[])
@@ -442,7 +442,7 @@ let itransaction_id_op pl = mk_nuprl5_op (itransaction_id_parameter :: pl)
 let tid () =
     (mk_term
       (itransaction_id_op
-		[ make_param (Number (Mp_num.num_of_int (sequence())))
+		[ make_param (Number (Lm_num.num_of_int (sequence())))
 		; make_param (Token  (get_pid ()))
 		])
      [])

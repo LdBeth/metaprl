@@ -26,7 +26,7 @@
  *)
 
 open Stream
-open Mp_num
+open Lm_num
 
   type scanner		
 

@@ -27,6 +27,7 @@
  *
  * Author: Yegor Bryukhov, Alexey Nogin
  *)
+open Lm_symbol
 
 open List
 open Opname
@@ -62,21 +63,21 @@ struct
 
    type hypothesis_header =
       Hypothesis of term_index
-    | HypBinding of string * term_index
-    | Context of string * term_index list
+    | HypBinding of var * term_index
+    | Context of var * term_index list
 
    type hypothesis_weak_header =
       Hypothesis_weak of TType.term WM.weak_descriptor
-    | HypBinding_weak of string * TType.term WM.weak_descriptor
-    | Context_weak of string * TType.term WM.weak_descriptor list
+    | HypBinding_weak of var * TType.term WM.weak_descriptor
+    | Context_weak of var * TType.term WM.weak_descriptor list
 
    type bound_term_header =
-      { bvars: string list;
+      { bvars: var list;
         bterm: term_index
       }
 
    type bound_term_weak_header =
-      { bvars_weak: string list;
+      { bvars_weak: var list;
         bterm_weak: TType.term WM.weak_descriptor
       }
 
@@ -195,12 +196,12 @@ struct
    (*
     * Compare that the elements on the lists are equal.
     *)
-   let list_mem_eq = List_util.compare_eq
+   let list_mem_eq = Lm_list_util.compare_eq
 
    (*
     * Compare lists with cmp
    *)
-   let list_compare = List_util.compare_cmp
+   let list_compare = Lm_list_util.compare_cmp
 
    let compare_bterm_header { bvars_weak=bvars1; bterm_weak=bterm1 } { bvars_weak=bvars2; bterm_weak=bterm2 } =
       bvars1 = bvars2 & bterm1 == bterm2
@@ -399,7 +400,7 @@ struct
        | HypBinding (v1,t1), HypBinding (v2,t2) ->
             v1=v2 && HashedTerm.equal t1 t2
        | Context (v1, ts1), Context (v2, ts2) ->
-            v1=v2 && List_util.for_all2 HashedTerm.equal ts1 ts2
+            v1=v2 && Lm_list_util.for_all2 HashedTerm.equal ts1 ts2
        | _ -> false
 
       let hash = function

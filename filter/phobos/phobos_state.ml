@@ -25,7 +25,7 @@
  * @end[license]
  *)
 
-open Mp_debug
+open Lm_debug
 
 (*
  * Default grammar and options.

@@ -31,7 +31,7 @@
  *)
 
 open Printf
-open Mp_debug
+open Lm_debug
 
 open Ml_print_sig
 open Ml_print
@@ -72,12 +72,12 @@ struct
             i
       in
       let length = count 0 buf in
-      let out = String_util.create "Ml_string.get" length in
+      let out = Lm_string_util.create "Ml_string.get" length in
       let rec squash i = function
          h::t ->
             let len = String.length h in
             let off = i - len in
-               String_util.blit "Ml_string.get" h 0 out off len;
+               Lm_string_util.blit "Ml_string.get" h 0 out off len;
                squash off t
        | [] ->
             ()

@@ -38,7 +38,7 @@ type 'a tree =
  | Offset of int * 'a linear_set
 and 'a linear_set = { mutable tree : 'a tree }
 
-open Array_util
+open Lm_array_util
 open Linear_set
 
 module Make (Type : TypeSig) =

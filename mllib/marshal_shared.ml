@@ -153,8 +153,8 @@ struct
     *    marshal_page_table : owner assignment to pages, index is in global space
     *)
    type 'a t =
-      { marshal_id : Mp_id.t;
-        mutable marshal_view : Mp_id.t option array;
+      { marshal_id : Lm_id.t;
+        mutable marshal_view : Lm_id.t option array;
 
         mutable marshal_values : Obj.t LargeWeakArray.t;
         mutable marshal_copies : string LargeArray.t;
@@ -174,7 +174,7 @@ struct
         mutable marshal_lookahead_free_list : free_list;
         mutable marshal_lookahead_pages : int list;
 
-        mutable marshal_page_table : Mp_id.t option array
+        mutable marshal_page_table : Lm_id.t option array
       }
 
    (************************************************************************
@@ -202,7 +202,7 @@ struct
     * We always pre-allocate the first page.
     *)
    let create () =
-      let id = Mp_id.create () in
+      let id = Lm_id.create () in
          { marshal_id = id;
            marshal_view = [| Some id |];
 

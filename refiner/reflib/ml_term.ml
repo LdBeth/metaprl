@@ -65,7 +65,7 @@ let string_of_term_lists ts mts opnames nums =
 let term_arrays_of_string s =
    check_magic s;
    let ts, mts, opnames, nums =
-      (Marshal.from_string s magic_len : Refiner_io.TermType.term list * Refiner_io.TermType.meta_term list * opname list * Mp_num.num list) in
+      (Marshal.from_string s magic_len : Refiner_io.TermType.term list * Refiner_io.TermType.meta_term list * opname list * Lm_num.num list) in
       Array.of_list (List.map normalize_term ts),
       Array.of_list (List.map normalize_meta_term mts),
       Array.of_list (List.map normalize_opname opnames),

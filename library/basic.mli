@@ -28,7 +28,7 @@
 
 open Refiner.Refiner.Term
 open Opname
-open Mp_num
+open Lm_num
 
 val debug_term: term ref
 (*

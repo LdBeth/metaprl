@@ -34,7 +34,7 @@
  *)
 
 open Printf
-open Mp_debug
+open Lm_debug
 
 (************************************************************************
  * TYPES                                                                *
@@ -294,7 +294,7 @@ let input_callback info host port command =
 let rec input_line info =
    let line = Pervasives.input_line info.mux_in in
       eprintf "Command: %s%t" line eflush;
-      match String_util.parse_args line with
+      match Lm_string_util.parse_args line with
          host :: port :: command ->
             let port =
                try int_of_string port with

@@ -27,12 +27,14 @@
 
 (*conversion between nuprl-light terms and mathbus terms*)
 
+open Lm_symbol
+
 open Printf
-open Mp_debug
-open Mp_pervasives
+open Lm_debug
+open Lm_pervasives
 
 open Lint32
-open Mp_num
+open Lm_num
 open MathBus
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
@@ -58,7 +60,6 @@ let mbs_TokenIndex = numeric_label "TokenIndex"
 let mbs_StringIndex = numeric_label "StringIndex"
 let mbs_MString = numeric_label "MString"
 let mbs_MLongInteger = numeric_label "MLongInteger"
-let mbs_MVariable = numeric_label "MVariable"
 let mbs_MLevel = numeric_label "MLevel"
 let mbs_MToken = numeric_label "MToken"
 
@@ -76,11 +77,11 @@ let rec mbparameter_of_param param =
     Number p -> mb_number p
   | String p -> if !use_table then (let v = (try Hashtbl.find token_table p with Not_found -> 0) in if v=0 then (mb_string p) else mb_integerq v mbs_StringIndex) else mb_string p
   | Token p -> if !use_table then (let v = (try Hashtbl.find token_table p with Not_found -> 0) in if v=0 then (mb_stringq p mbs_Token) else mb_integerq v mbs_TokenIndex) else mb_stringq p mbs_Token
-  | Var p -> mb_stringq p mbs_Variable
+  | Var p -> mb_stringq (string_of_symbol p) mbs_Variable
   | ObId p -> mbnode mbs_ObjectId (List.map mbparameter_of_param (dest_object_id p))
-  | MNumber p -> mb_stringq p mbs_MLongInteger
-  | MString p -> mb_stringq p mbs_MString
-  | MToken p -> mb_stringq p mbs_MToken
+  | MNumber p -> mb_stringq (string_of_symbol p) mbs_MLongInteger
+  | MString p -> mb_stringq (string_of_symbol p) mbs_MString
+  | MToken p -> mb_stringq (string_of_symbol p) mbs_MToken
   | MLevel p ->
       let aux = function
 	  {le_const = i; le_vars = vars } ->
@@ -89,11 +90,10 @@ let rec mbparameter_of_param param =
 		[] -> mbnode mbs_Level ((mb_integer i)::nodes)
 	      | hd::tl -> let aux2 = function
 		    { le_var = v; le_offset = i2 } ->
-		      loop tl ((mb_string v)::((mb_integer i2)::nodes))
+		      loop tl ((mb_string (string_of_symbol v))::((mb_integer i2)::nodes))
 	      in aux2 (dest_level_var hd))
 	    in loop vars [])
       in aux (dest_level p)
-  | MVar p -> mb_stringq p mbs_MVariable
   | ParamList p -> mbnode mbs_ParamList (List.map mbparameter_of_param p)
 
 let mbbinding_of_binding binding = mb_stringq binding mbs_Variable (* term in the future?*)
@@ -128,7 +128,7 @@ let rec mbterm_of_term term =
       { bvars = bvars; bterm = t } ->
        	match bvars with
 	  []-> [(mbterm_of_term t)]
-       	| h::tl -> [(mbnode mbs_Bindings (mbbindings_of_bvars bvars));
+       	| h::tl -> [(mbnode mbs_Bindings (mbbindings_of_bvars (List.map string_of_symbol bvars)));
 			    (* (List.map mbbinding_of_binding bvars)*)
 		     (mbterm_of_term t)] in
   let rec loop l blist =
@@ -142,7 +142,7 @@ let rec mbterm_of_term term =
 let rec param_of_mbparameter mbparameter =
   let b = (mbnode_label mbparameter) in
   if bequal b mbs_String then make_param (String (string_value mbparameter))
-  else if bequal b mbs_Variable then make_param (Var (string_value mbparameter))
+  else if bequal b mbs_Variable then make_param (Var (Lm_symbol.add (string_value mbparameter)))
   else if bequal b mbs_Token then make_param (Token (string_value mbparameter))
   else if bequal b mbs_TokenIndex then make_param (Token (Hashtbl.find index_table (integer_value mbparameter)))
   else if bequal b mbs_StringIndex then make_param (String (Hashtbl.find index_table (integer_value mbparameter)))
@@ -174,7 +174,7 @@ let rec param_of_mbparameter mbparameter =
 	      else (match mbnode_subtermq mbparameter i with
 	      	Mnode n -> let x = integer_value n in
 	      	(match mbnode_subtermq mbparameter (i-1) with
-	      	  Mnode n2-> loop (i-2) ((mk_level_var (string_value n2) x)::l)
+	      	  Mnode n2-> loop (i-2) ((mk_level_var (Lm_symbol.add (string_value n2)) x)::l)
 	      	| Mbint b -> failwith "subterm should be a node")
 	      | Mbint b -> failwith "subterm should be a node")
 
@@ -183,10 +183,9 @@ let rec param_of_mbparameter mbparameter =
       	in make_param (MLevel (mk_level constant le_vars))
       | Mbint b -> failwith "subterm should be a node"
 
-  else if bequal b mbs_MString then make_param (MString (string_value mbparameter))
-  else if bequal b mbs_MVariable then make_param (MVar (string_value mbparameter))
-  else if bequal b mbs_MToken then make_param (MToken (string_value mbparameter))
-  else if bequal b mbs_MLongInteger then make_param (MNumber (string_value mbparameter))
+  else if bequal b mbs_MString then make_param (MString (Lm_symbol.add (string_value mbparameter)))
+  else if bequal b mbs_MToken then make_param (MToken (Lm_symbol.add (string_value mbparameter)))
+  else if bequal b mbs_MLongInteger then make_param (MNumber (Lm_symbol.add (string_value mbparameter)))
   else let ((x, y) as fg) = dest_int32 b in failwith "param_of_mbparameter1"(* ["mbparameter_of_parameter1"; "not"] [] [(inatural_term x); (inatural_term y)]*)
 
 
@@ -219,8 +218,6 @@ let bvars_of_mbbindings mbterm =
     else match mbterm.(index) with
       Mnode n -> let b2 = (mbnode_label n) in
       if (bequal b2 mbs_Variable) then loop (index - 1) ((string_value n)::bvars)
-      else if (bequal b2 mbs_MVariable) then
-      	loop (index - 1) ("nuprl5_implementation1"::((string_value n)::bvars))
       else (*parmlist node*)
  	let s1 = (match n.(1) with
 	  Mnode n1 -> (string_value n1)
@@ -236,7 +233,7 @@ let bvars_of_mbbindings mbterm =
 	loop (index - 1) ("nuprl5_implementation3"::(s1::(s2::(s3::bvars))))
 
     | Mbint b -> failwith "bvars_of_mbindings"
-  in loop (mbnode_nSubtermsq mbterm) []
+  in List.map Lm_symbol.add (loop (mbnode_nSubtermsq mbterm) [])
 
 let bvar_of_binding binding = binding
 
@@ -298,12 +295,12 @@ let rec print_param param =
       Number p -> (print_string (string_of_num p)  ; print_string ":n ")
     | String p -> (print_string p ; print_string ":s ")
     | Token p -> (print_string p ; print_string ":t ")
-    | Var p -> (print_string p ; print_string ":v ")
+    | Var p -> (print_string (string_of_symbol p) ; print_string ":v ")
     | ObId p -> (print_string "["; List.iter print_param (dest_object_id p); print_string "]";
                  print_string ":oid ")
-    | MNumber p -> (print_string p; print_string ":mn ")
-    | MString p -> (print_string p; print_string ":ms ")
-    | MToken p -> (print_string p; print_string ":mt ")
+    | MNumber p -> (print_string (string_of_symbol p); print_string ":mn ")
+    | MString p -> (print_string (string_of_symbol p); print_string ":ms ")
+    | MToken p -> (print_string (string_of_symbol p); print_string ":mt ")
     | MLevel p ->
          let rec loop l =
             (match l with
@@ -311,7 +308,7 @@ let rec print_param param =
               | hd::tl -> let
                              { le_var = v; le_offset = i2 } = (dest_level_var hd) in
                              print_string "(";
-                             print_string v; print_string ", ";print_int i2;
+                             print_string (string_of_symbol v); print_string ", ";print_int i2;
                              print_string ")";
                              loop tl)
          in let aux = function
@@ -320,7 +317,6 @@ let rec print_param param =
                 loop vars)
 
          in aux (dest_level p)
-    | MVar p ->  (print_string p; print_string ":mv ")
     | ParamList p -> (print_string "["; List.iter print_param p; print_string "]";
                       print_string ":pl ")
 
@@ -332,7 +328,7 @@ let rec print_term term =
 	print_newline ();
 	print_string "    ";
 	if bvars <> [] then print_string "bindings:";
-	List.iter print_string bvars;
+	List.iter (fun v -> print_string (string_of_symbol v)) bvars;
 	print_term t
       end in
   List.iter print_string (dest_opname opname);

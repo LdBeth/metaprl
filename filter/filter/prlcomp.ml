@@ -48,7 +48,7 @@
 open Printf
 open Arg
 
-open Mp_debug
+open Lm_debug
 
 open Filter_magic
 
@@ -167,7 +167,7 @@ let set_export () =
  * Allow include path to be set from the environment.
  *)
 let _ =
-   try List.iter add_include (String_util.split ':' (Sys.getenv "MPPATH")) with
+   try List.iter add_include (Lm_string_util.split ":" (Sys.getenv "MPPATH")) with
       Not_found ->
          ()
 

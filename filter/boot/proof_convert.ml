@@ -31,7 +31,7 @@
  *)
 
 open Printf
-open Mp_debug
+open Lm_debug
 
 open Refiner_sig
 open Refiner_io

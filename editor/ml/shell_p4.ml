@@ -36,8 +36,8 @@ open Lexing
 open Longident
 open Parsetree
 
-open Mp_debug
-open Mp_pervasives
+open Lm_debug
+open Lm_pervasives
 
 open Pcaml
 
@@ -264,7 +264,7 @@ struct
             let _ = Tactic.main_loop () in
                ()
       in
-         install_debug_printer Shell_state.print_term_fp;
+         install_debug_printer Shell_state.print_short_term_fp;
          Printexc.catch init ()
 end
 

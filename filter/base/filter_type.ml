@@ -29,6 +29,7 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
+open Lm_symbol
 
 open Term_shape_sig
 open Refiner.Refiner
@@ -78,8 +79,9 @@ type aterm = { aname : term option; aterm : term }
 
 type 'expr param_constr =
    ConPStr of string
- | ConPMeta of string
- | ConPNum of Mp_num.num
+ | ConPMeta of var
+ | ConPNum of Lm_num.num
+ | ConPInt of 'expr
  | ConPExpr of 'expr
 
 type 'expr param_constructor = 'expr param_constr * shape_param
@@ -98,7 +100,7 @@ and ('term, 'expr) bterm_constructor =
    'expr bvar_constructor list * ('term, 'expr) term_constructor
 
 (************************************************************************
- * Summary (filtyer_summary) TYPES                                      *
+ * Summary (filter_summary) TYPES                                      *
  ************************************************************************)
 
 (*
@@ -114,7 +116,7 @@ and ('term, 'expr) bterm_constructor =
 type 'term prl_binding =
    BindTerm of 'term
  | BindOpname of opname
- | BindNum of Mp_num.num
+ | BindNum of Lm_num.num
 
 type ('item, 'term) bnd_expr = {
    item_bindings : (string * 'term prl_binding) list;
@@ -133,7 +135,7 @@ type 'ctyp resource_sig = {
 }
 
 type 'term param =
-   ContextParam of string
+   ContextParam of var
  | TermParam of 'term
 
 (*
@@ -188,13 +190,13 @@ type 'ctyp parent_info =
      parent_resources : (string * 'ctyp resource_sig) list
    }
 
-type ('term, 'expr) opname_definition = {
-   opdef_name : string;
-   opdef_opname : string;
-   opdef_term : 'term;
-   opdef_definition : 'term;
-   opdef_resources : ('expr, 'term) resource_def
-}
+type ('term, 'expr) opname_definition =
+   { opdef_name : string;
+     opdef_opname : string;
+     opdef_term : 'term;
+     opdef_definition : 'term;
+     opdef_resources : ('expr, 'term) resource_def
+   }
 
 type dform_modes =
    Modes of string list       (* include these modes *)
@@ -281,7 +283,6 @@ type ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'expr1, 'item1,
  * A MagicBlock (not currently used!) is a block of code that we use to compute
  * a magic number.  The magic number changes whenever the code changes.
  *)
-
 type ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, 'module_info) summary_item_type =
    Rewrite of ('term, 'proof, 'expr) rewrite_info
  | CondRewrite of ('term, 'proof, 'expr) cond_rewrite_info
@@ -308,7 +309,6 @@ type ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, 'module_info) s
 (*
  * This type defines what info do we need during parsing to identify an opname
  *)
-
 type opname_fun = string list -> shape_param list -> int list -> Opname.opname
 
 (*

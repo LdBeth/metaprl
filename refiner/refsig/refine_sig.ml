@@ -38,8 +38,8 @@
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *
  *)
+open Lm_symbol
 
-open String_set
 open Opname
 
 (************************************************************************
@@ -70,7 +70,7 @@ sig
    type ml_rewrite = term -> term
 
    type ml_cond_rewrite =
-      StringSet.t ->                           (* Free vars in the msequent *)
+      SymbolSet.t ->                           (* Free vars in the msequent *)
       term list ->                             (* Params *)
       term ->                                  (* Term to rewrite *)
       term * term list * term_extract          (* Extractor is returned *)
@@ -274,7 +274,7 @@ sig
    val msequent_goal : msequent -> term
    val msequent_num_assums : msequent -> int
    val msequent_nth_assum :  msequent -> int -> term
-   val msequent_free_vars : msequent -> StringSet.t
+   val msequent_free_vars : msequent -> SymbolSet.t
    val msequent_remove_redundant_hypbindings : msequent -> msequent
 
    (*
@@ -306,7 +306,7 @@ sig
     * extra arguments.
     *)
    type prim_tactic = int array -> term list -> tactic
-   type prim_rewrite = 
+   type prim_rewrite =
       PrimRW of rw
     | CondRW of (term list -> cond_rewrite)
 
@@ -343,37 +343,37 @@ sig
     *)
    val create_rule : build ->
       string ->            (* name *)
-      string array ->      (* addrs *)
+      var array ->         (* addrs *)
       term list ->         (* params *)
       meta_term ->         (* rule definition *)
       prim_tactic
    val create_ml_rule : build -> string ->
-      ml_rule ->                 (* the rule definition *)
+      ml_rule ->           (* the rule definition *)
       prim_tactic
    val check_rule :
       string ->            (* name *)
-      string array ->      (* addrs *)
+      var array ->         (* addrs *)
       term list ->         (* params *)
       meta_term ->         (* rule definition *)
       unit
 
    val prim_rule : build ->
       string ->                    (* name *)
-      string array ->              (* addrs *)
+      var array ->                 (* addrs *)
       term list ->                 (* params *)
       term list ->                 (* args (binding vars) *)
       term ->                      (* extract *)
       unit
    val derived_rule : build ->
       string ->                    (* name *)
-      string array ->              (* addrs *)
+      var array ->                 (* addrs *)
       term list ->                 (* params *)
       term list ->                 (* args (binding vars) *)
       extract ->                   (* derived justification *)
       unit
    val delayed_rule : build ->
       string ->                    (* name *)
-      string array ->              (* addrs *)
+      var array ->                 (* addrs *)
       term list ->                 (* params *)
       term list ->                 (* args (binding vars) *)
       (unit -> extract) ->         (* derived justification *)
@@ -465,7 +465,6 @@ sig
     *)
    val label_refiner : build -> string -> refiner
    val join_refiner : build -> refiner -> unit
-
 end
 
 (*

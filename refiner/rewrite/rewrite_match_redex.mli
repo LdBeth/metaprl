@@ -29,8 +29,8 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
+open Lm_symbol
 
-open String_set
 open Opname
 open Term_sig
 open Term_base_sig
@@ -93,7 +93,7 @@ module MakeRewriteMatchRedex
 : sig
    open RewriteTypes
 
-   val match_redex : int array -> stack array -> StringSet.t -> term -> term list -> rwterm list -> unit
+   val match_redex : int array -> stack array -> SymbolSet.t -> term -> term list -> rwterm list -> unit
 end
 
 (*

@@ -5,6 +5,8 @@ OCAMLINCLUDES =\
 	$(OCAMLINCLUDES)\
 	-I $(CAMLP4LIB)\
 	-I $(ROOT)/mllib\
+	-I $(LIBMOJAVE)/stdlib\
+	-I $(LIBMOJAVE)/util\
 	-I $(ROOT)/refiner/refbase\
 	-I $(ROOT)/refiner/refsig\
 	-I $(ROOT)/refiner/refiner\
@@ -41,7 +43,6 @@ SUB_FILES =\
 	$(addprefix boot/, $(BOOT_FILES))\
 	$(addprefix phobos/, $(PHOBOS_FILES))\
 	filter/term_grammar\
-	filter/filter_patt
 
 if true
     OCAML_LINK_FLAGS = -linkall
@@ -56,9 +57,11 @@ if true
 #
 # Other libraries that we always want to include
 #
-OCAML_CLIBS = $(ROOT)/clib/clib
+OCAML_CLIBS = $(ROOT)/clib/clib $(LIBMOJAVE)/cutil/liblmcutil
 OCAML_OTHER_LIBS = unix $(THREADSLIB) str
-OCAML_LIBS = $(LIB)/util
+OCAML_LIBS =\
+        $(LIB)/lm\
+	$(LIB)/util
 
 #
 # Libraries for camlp4n

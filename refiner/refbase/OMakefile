@@ -1,6 +1,8 @@
 OCAMLINCLUDES =\
 	-I .\
-	-I $(ROOT)/mllib
+	-I $(ROOT)/mllib\
+	-I $(LIBMOJAVE)/stdlib\
+	-I $(LIBMOJAVE)/util
 
 OCamlLibraryInstall($(MPINSTALL), $(LIB), refbase, $(REFBASE_FILES))
 

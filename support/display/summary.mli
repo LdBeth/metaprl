@@ -80,7 +80,7 @@ declare "meta_function"{'arg; 'A; 'B}
 declare "meta_iff"{'A; 'B}
 declare "meta_labeled"[label:s]{'meta}
 
-declare "context_param"[name:s]
+declare "context_param"[name:v]
 declare "term_param"{'t}
 
 (* Arguments *)
@@ -96,10 +96,12 @@ declare "arglist"{'t}
 (* Proofs *)
 declare "href"[command:s]{'t}
 
-declare "status_bad"
-declare "status_partial"
-declare "status_asserted"
-declare "status_complete"
+declare status_bad
+declare status_partial
+declare status_asserted
+declare status_complete
+declare status_primitive{'extract}
+declare status_interactive[rules:n,nodes:n]{'status}
 
 declare "goal_status"{'sl}
 declare "goal_label"[s:s]
@@ -133,11 +135,6 @@ val mk_packages_term : term list -> term
  * Proofs.
  *)
 val mk_href_term : string -> term -> term
-
-val status_bad_term : term
-val status_partial_term : term
-val status_asserted_term : term
-val status_complete_term : term
 
 val mk_status_term : term list -> term
 

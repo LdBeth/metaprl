@@ -23,7 +23,7 @@
  * jyh@cs.caltech.edu
  *)
 
-open Mp_debug
+open Lm_debug
 open Printf
 
 (*

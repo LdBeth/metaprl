@@ -26,7 +26,7 @@
  *)
 
 open Printf
-open Mp_debug
+open Lm_debug
 
 open Unix
 open List
@@ -111,7 +111,7 @@ let orb_open name =
 let ireq_parameter = make_param (Token "!req")
 let ireq_op pl = mk_nuprl5_op (ireq_parameter :: pl)
 let ireq_term seq addr t tid =
-  mk_term (ireq_op (make_param (Number (Mp_num.num_of_int seq))
+  mk_term (ireq_op (make_param (Number (Lm_num.num_of_int seq))
 		    :: (make_param (Token "CONFIG"(*NUPRL5-type*)))
 		    :: (map (function s -> make_param (Token s)) addr)))
     [mk_bterm [] t(*; mk_bterm [] tid*)]
@@ -483,7 +483,7 @@ let iconnect_parameter = make_param (Token "!connect")
 let iconnect_op localhost sock =
   mk_nuprl5_op
     [ iconnect_parameter; 
-      make_param (Number (Mp_num.num_of_int sock));
+      make_param (Number (Lm_num.num_of_int sock));
       make_param (String localhost)
     ]
 

@@ -33,7 +33,7 @@ let comment_depth = ref 0
  *)
 let prl_init_names =
    ["Printf";
-    "Mp_debug";
+    "Lm_debug";
     "Refiner";
     "Refine_exn";
     "Term";

@@ -30,7 +30,7 @@
  * jyh@cs.cornell.edu
  *)
 
-open Mp_debug
+open Lm_debug
 open Printf
 
 let debug_memo =

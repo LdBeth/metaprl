@@ -129,7 +129,7 @@ struct
    let union set1 set2 =
       match set1, set2 with
          List l1, List l2 ->
-            let l = List_util.union l1 l2 in
+            let l = Lm_list_util.union l1 l2 in
                if List.length l <= max_size then
                   List l
                else
@@ -171,14 +171,14 @@ struct
    let mem_filt set elements =
       match set with
          List l ->
-            List_util.intersect l elements
+            Lm_list_util.intersect l elements
        | Set s ->
             BigSet.mem_filt s elements
 
    let not_mem_filt set elements =
       match set with
          List l ->
-            List_util.subtract elements l
+            Lm_list_util.subtract elements l
        | Set s ->
             BigSet.not_mem_filt s elements
 
@@ -208,7 +208,7 @@ struct
    let intersectp set1 set2 =
       match set1, set2 with
          List l1, List l2 ->
-            List_util.intersects l1 l2
+            Lm_list_util.intersects l1 l2
        | Set s1, Set s2 ->
             BigSet.intersectp s1 s2
        | List l1, Set s2 ->

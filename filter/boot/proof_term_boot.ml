@@ -31,7 +31,7 @@
  * jyh@cs.cornell.edu
  *)
 
-open Mp_debug
+open Lm_debug
 open Dform
 open Printf
 open Rformat
@@ -118,7 +118,7 @@ struct
          mk_term op bterms
 
    let mk_simple_int_term opname i terms =
-      let param = make_param (Number (Mp_num.num_of_int i)) in
+      let param = make_param (Number (Lm_num.num_of_int i)) in
       let op = mk_op opname [param] in
       let bterms = List.map (fun t -> mk_bterm [] t) terms in
          mk_term op bterms
@@ -131,7 +131,7 @@ struct
 
    let mk_string_int_term opname s i =
       let param1 = make_param (String s) in
-      let param2 = make_param (Number (Mp_num.num_of_int i)) in
+      let param2 = make_param (Number (Lm_num.num_of_int i)) in
       let op = mk_op opname [param1; param2] in
          mk_term op []
 
@@ -145,7 +145,7 @@ struct
    let dest_int_term t =
       match dest_params (dest_op (dest_term t).term_op).op_params with
             [Number n] ->
-               Mp_num.int_of_num n
+               Lm_num.int_of_num n
           | _ ->
                raise (Failure "dest_int_term")
 
@@ -380,13 +380,13 @@ struct
    (*
     * Comparison functions.
     *)
-   let list_mem_eq = List_util.compare_eq
+   let list_mem_eq = Lm_list_util.compare_eq
 
    let compare_terms = TermCopy2.compare
 
    let compare_msequents = TermCopy2.compare_msequent
 
-   let term_list_eq = List_util.compare_cmp compare_terms
+   let term_list_eq = Lm_list_util.compare_cmp compare_terms
 
    let compare_attribute arg1 arg2 =
       match arg1, arg2 with
@@ -409,7 +409,7 @@ struct
       let compare (name1, arg1) (name2, arg2) =
          name1 = name2 && arg1 == arg2
       in
-         List_util.for_all2 compare args1 args2
+         Lm_list_util.for_all2 compare args1 args2
 
    let compare_arglist args1 args2 =
       list_mem_eq args1 args2

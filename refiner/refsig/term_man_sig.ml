@@ -34,6 +34,7 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
+open Lm_symbol
 
 module type TermManSig =
 sig
@@ -49,7 +50,7 @@ sig
 
    (* Level expression operations *)
    val mk_const_level_exp : int -> level_exp
-   val mk_var_level_exp : string -> level_exp
+   val mk_var_level_exp : var -> level_exp
    val max_level_exp : level_exp -> level_exp -> int -> level_exp
    val incr_level_exp : level_exp -> level_exp
 
@@ -67,14 +68,14 @@ sig
    val remove_redundant_hypbindings : hypothesis list -> term list -> hypothesis list
 
    (* Indexing starts at 1 *)
-   
+
    val nth_hyp : term -> int -> term
-   val nth_binding : term -> int -> string
+   val nth_binding : term -> int -> var
    val nth_concl : term -> int -> term
    val num_hyps : term -> int
-   val declared_vars : term -> string list
-   val get_decl_number : term -> string -> int
-   val is_free_seq_var : int -> string -> term -> bool
+   val declared_vars : term -> var list
+   val get_decl_number : term -> var -> int
+   val is_free_seq_var : int -> var -> term -> bool
    val replace_goal : term -> term -> term     (* Single-concl seqs*)
 
    val is_xrewrite_term : term -> bool
@@ -110,12 +111,12 @@ sig
     * Primitive abstractions.
     *)
    val is_xbind_term : term -> bool
-   val mk_xbind_term : string -> term -> term
+   val mk_xbind_term : var -> term -> term
 
    (*
     * Construct a redex out of some vars, params, and other terms.
     *)
-   val construct_redex : string array -> term list -> term list -> term
+   val construct_redex : var array -> term list -> term list -> term
 end
 
 (*

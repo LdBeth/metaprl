@@ -166,7 +166,7 @@ sig
    (*
     * Wrap a regular event.
     *)
-   val wrap_event : 'a Thread_event.event -> 'a event
+   val wrap_event : 'a Lm_thread_event.event -> 'a event
 
    (*
     * Scheduling.

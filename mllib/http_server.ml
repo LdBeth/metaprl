@@ -32,7 +32,7 @@
 
 open Printf
 
-open Mp_debug
+open Lm_debug
 
 let debug_http =
    create_debug (**)
@@ -48,7 +48,7 @@ let debug_http =
 (*
  * The server info is just the socket.
  *)
-type t = Mp_inet.server
+type t = Lm_inet.server
 
 (*
  * Info about the local connection.
@@ -70,7 +70,7 @@ type http_info =
  * string -> path commands
  *)
 let set_path doc var path =
-   let path' = String_util.split ':' path in
+   let path' = Lm_string_util.split ":" path in
       var := path'
 
 let set_path_arg doc var =
@@ -128,14 +128,14 @@ let http_protocol = "HTTP/1.0"
  * and allow connect requests only for that password.
  *)
 let password =
-   String_util.hexify (sprintf "%12.4f" (Unix.gettimeofday ()))
+   Lm_string_util.hexify (sprintf "%12.4f" (Unix.gettimeofday ()))
 
 (*
  * Convert two hex chars into a new 8-bit char.
  *)
 let unhex c1 c2 =
-   let i1 = String_util.unhex c1 in
-   let i2 = String_util.unhex c2 in
+   let i1 = Lm_string_util.unhex c1 in
+   let i2 = Lm_string_util.unhex c2 in
       Char.chr (i1 * 16 + i2)
 
 (*
@@ -193,7 +193,7 @@ let encode_hex uri =
       convert 0 0
 
 let decode_uri uri =
-   let simplified = Filename_util.simplify_path (Filename_util.split (decode_hex uri)) in
+   let simplified = Lm_filename_util.simplify_path (Lm_filename_util.split_path (decode_hex uri)) in
    let simplified =
       match simplified with
          "nocache" :: _ :: simplified | simplified ->
@@ -304,13 +304,13 @@ let get out uri protocol =
  * is no quoting.
  *)
 let parse_args line =
-   String_util.split_set " \t" line
+   Lm_string_util.split " \t" line
 
 (*
  * Handle a connection to the server.
  *)
 let handle server connect client =
-   let fd = Mp_inet.file_descr_of_client client in
+   let fd = Lm_inet.file_descr_of_client client in
    let inx = Unix.in_channel_of_descr fd in
    let outx = Unix.out_channel_of_descr fd in
    let line = input_line inx in
@@ -366,8 +366,8 @@ let rec serve connect fd =
       eprintf "Editor_http: starting web services%t" eflush;
    try
       while true do
-         let client = Mp_inet.accept fd in
-         let fd' = Mp_inet.file_descr_of_client client in
+         let client = Lm_inet.accept fd in
+         let fd' = Lm_inet.file_descr_of_client client in
             if !debug_http then
                eprintf "Editor_http: connection on fd=%d%t" (Obj.magic fd') eflush;
 
@@ -395,7 +395,7 @@ let set_path path =
  * Start the server on the specified port.
  *)
 let start_http connect port =
-   let inet = Mp_inet.serve port in
+   let inet = Lm_inet.serve port in
       ignore (Thread.create (serve connect) inet);
       inet
 
@@ -403,13 +403,13 @@ let start_http connect port =
  * Stop the server by closing its socket.
  *)
 let stop_http inet =
-   Mp_inet.close_server inet
+   Lm_inet.close_server inet
 
 (*
  * Get the actual port number.
  *)
 let http_info inet =
-   let host, port = Mp_inet.get_server_host inet in
+   let host, port = Lm_inet.get_server_host inet in
       { http_host = host;
         http_port = port;
         http_password = password

@@ -32,7 +32,7 @@
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
-open String_set
+open Lm_symbol
 
 module type RewriteSig =
 sig
@@ -52,27 +52,32 @@ sig
     * Types for redex matching.
     *)
    type rewrite_type =
-      RewriteTermType of string
-    | RewriteFunType of string
-    | RewriteContextType of string
-    | RewriteStringType of string
-    | RewriteNumType of string
-    | RewriteLevelType of string
+      RewriteTermType
+    | RewriteFunType
+    | RewriteContextType
+    | RewriteStringType
+    | RewriteNumType
+    | RewriteLevelType
+    | RewriteVarType (* corresponds to RewriteString(RewriteMetaParam _) *)
 
+   type 'a rewrite_param =
+      RewriteParam of 'a
+    | RewriteMetaParam of var
+  
    type rewrite_item =
       RewriteTerm of term
     | RewriteFun of (term list -> term)
     | RewriteContext of (term -> term list -> term)
-    | RewriteString of string
-    | RewriteNum of Mp_num.num
+    | RewriteString of string rewrite_param
+    | RewriteNum of Lm_num.num rewrite_param
     | RewriteLevel of level_exp
 
    (* Names of the contexts to be passed as arguments *)
-   type rewrite_args_spec = string array
+   type rewrite_args_spec = var array
 
    (* Sizes (+1) for sequent contexts, strings for new variable names, bound variables *)
    (* Non-positive sizes mean counting the hyps to skip from the end *)
-   type rewrite_args = int array * StringSet.t
+   type rewrite_args = int array * SymbolSet.t
 
    (*
     * In "Strict" mode the rewriter should behave as described in the
@@ -103,9 +108,9 @@ sig
    (*
     * Separate analysis.
     *)
-   val compile_redex : strict -> string array -> term -> rewrite_redex
-   val compile_redices : strict -> string array -> term list -> rewrite_redex
-   val extract_redex_types : rewrite_redex -> rewrite_type list
+   val compile_redex : strict -> var array -> term -> rewrite_redex
+   val compile_redices : strict -> var array -> term list -> rewrite_redex
+   val extract_redex_types : rewrite_redex -> (rewrite_type * var) list
    val test_redex_applicability :
       rewrite_redex -> int array ->
       term -> term list -> unit

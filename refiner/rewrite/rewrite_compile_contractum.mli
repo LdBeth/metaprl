@@ -29,6 +29,7 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
+open Lm_symbol
 
 open Opname
 open Term_sig
@@ -87,8 +88,8 @@ module MakeRewriteCompileContractum
 : sig
    open RewriteTypes
 
-   val compile_so_contractum : strict -> rstack array -> term -> string array * rwterm
-   val compile_so_contracta : strict -> rstack array -> term list -> string array * rwterm list
+   val compile_so_contractum : strict -> rstack array -> term -> var array * rwterm
+   val compile_so_contracta : strict -> rstack array -> term list -> var array * rwterm list
 end
 
 (*

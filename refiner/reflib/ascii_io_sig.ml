@@ -105,7 +105,7 @@ sig
 
    val initialize : unit -> io_table
    (* if the input string was quoted, it should be unquoted before feeding it to add_line *)
-   (* you may find String_util.unquote function useful *)
+   (* you may find Lm_string_util.unquote function useful *)
    val add_line : io_table -> io_item -> unit
    val get_term : io_table -> term
    
@@ -120,7 +120,7 @@ sig
    (*
     * out_control specifies how to generate names and what to do with produced entries.
     * out_name_* function should produce a long name and a base short name
-    * out_line function should take care of quoting strings (String_util.quote)
+    * out_line function should take care of quoting strings (Lm_string_util.quote)
     *
     * input functions should work correctly no matter what out_name_* were used for output
     *)

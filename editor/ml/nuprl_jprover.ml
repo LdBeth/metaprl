@@ -25,7 +25,7 @@
  * Authors: Lori Lorigo, Richard Eaton
  *
  *)
-
+open Lm_symbol
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Nuprl5
@@ -33,9 +33,13 @@ open Nuprl5
 module Nuprl_JLogic =
 struct
    let is_all_term = nuprl_is_all_term
-   let dest_all = nuprl_dest_all
+   let dest_all t =
+      let v, t1, t2 = nuprl_dest_all t in
+         string_of_symbol v, t1, t2
    let is_exists_term = nuprl_is_exists_term
-   let dest_exists = nuprl_dest_exists
+   let dest_exists t =
+      let v, t1, t2 = nuprl_dest_exists t in
+         string_of_symbol v, t1, t2
    let is_and_term = nuprl_is_and_term
    let dest_and = nuprl_dest_and
    let is_or_term = nuprl_is_or_term
@@ -103,7 +107,7 @@ let jprover_debug_hook t =
 
 let jprover_hook t =
   let mult_limit = Basic.number_of_inatural_term (Basic.hd_of_icons_term Basic.icons_op t) and
-      term = Basic.tl_of_icons_term Basic.icons_op t in    
+      term = Basic.tl_of_icons_term Basic.icons_op t in
   jprover_result_to_term
     (jprover mult_limit ((Basic.map_isexpr_to_list (function a -> a)
 		 (Basic.hd_of_icons_term Basic.icons_op term)),

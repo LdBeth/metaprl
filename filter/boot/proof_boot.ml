@@ -60,7 +60,7 @@
  *)
 
 open Printf
-open Mp_debug
+open Lm_debug
 open Weak_memo
 
 open Opname
@@ -210,7 +210,7 @@ struct
    struct
       type data = extract
 
-      let append = List_util.unionq
+      let append = Lm_list_util.unionq
    end
 
    module Cache = MakeMsequentTable (CacheBase);;
@@ -444,7 +444,7 @@ struct
          ext
     | _ -> ext
 
-   and normalize_list l = List_util.smap normalize l
+   and normalize_list l = Lm_list_util.smap normalize l
 
    and join_subgoals sg1 sg2 =
       if all_identity sg1 then sg2 else
@@ -830,7 +830,7 @@ struct
                let subgoals, extras = collect leaves subgoals in
                   subgoal :: subgoals, extras
           | [] ->
-               [], List_util.some_map filter_extra subgoals
+               [], Lm_list_util.some_map filter_extra subgoals
       in
          (fun leaves subgoals extras ->
                collect leaves (filter_subgoals (subgoals @ extras)))
@@ -889,20 +889,20 @@ struct
    let insert_subgoal node i subgoals extras =
       let len = List.length subgoals in
          if i < len then
-            List_util.replace_nth i node subgoals, extras
+            Lm_list_util.replace_nth i node subgoals, extras
          else
-            subgoals, List_util.replace_nth (i - len) node extras
+            subgoals, Lm_list_util.replace_nth (i - len) node extras
 
    let replace_subgoal proof node raddr (goal : extract) (subgoals : extract list) (extras : extract list) i (node' : extract) =
       if i < 0 then
          raise_replace_error proof node raddr i
       else if i = 0 then
          let subgoals', extras' = match_subgoals (leaves_ext node') subgoals extras in
-            node', subgoals', extras', node' == goal && List_util.compare_eq subgoals subgoals' && List_util.compare_eq extras extras'
+            node', subgoals', extras', node' == goal && Lm_list_util.compare_eq subgoals subgoals' && Lm_list_util.compare_eq extras extras'
       else
          let subgoals', extras' = insert_subgoal node' (pred i) subgoals extras in
          let subgoals', extras' = match_subgoals (leaves_ext goal) subgoals' extras' in
-            goal, subgoals', extras', List_util.compare_eq subgoals subgoals' && List_util.compare_eq extras extras'
+            goal, subgoals', extras', Lm_list_util.compare_eq subgoals subgoals' && Lm_list_util.compare_eq extras extras'
 
    let replace_subterm proof node raddr goal subgoals i = function
       Goal goal' ->
@@ -912,7 +912,7 @@ struct
             goal', subgoals, goal' == goal
          else
             let subgoal = List.nth subgoals i in
-               goal, List_util.replace_nth i goal' subgoals, goal' == subgoal
+               goal, Lm_list_util.replace_nth i goal' subgoals, goal' == subgoal
     | _ ->
          raise_replace_error proof node raddr i
 
@@ -1155,7 +1155,7 @@ struct
             (ProofRefineError _) as exn ->
                if addr = [] then
                   raise exn;
-               let addr, _ = List_util.split_last addr in
+               let addr, _ = Lm_list_util.split_last addr in
                   map_path (fun proof node -> translate_status (status_ext node)) proof addr
 
    (*
@@ -1197,7 +1197,7 @@ struct
          [] ->
             proof
        | addr ->
-            let addr, _ = List_util.split_last addr in
+            let addr, _ = Lm_list_util.split_last addr in
                index (root proof) addr
 
    (*
@@ -1238,7 +1238,7 @@ struct
     *)
    let make_assum_arg goal i arg =
       let goal, hyps = Refine.dest_msequent arg.ref_goal in
-      let hyps = List_util.insert_nth i goal hyps in
+      let hyps = Lm_list_util.insert_nth i goal hyps in
         { arg with ref_goal = Refine.mk_msequent goal hyps }
 
    let make_assum postf proof =

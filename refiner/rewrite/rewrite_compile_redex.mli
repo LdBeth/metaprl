@@ -29,6 +29,7 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
+open Lm_symbol
 
 open Opname
 open Term_sig
@@ -84,7 +85,7 @@ module MakeRewriteCompileRedex
 : sig
    open RewriteTypes
 
-   val compile_so_redex : strict -> string array -> term list -> rstack array * rwterm list
+   val compile_so_redex : strict -> var array -> term list -> rstack array * rwterm list
 end
 
 (*

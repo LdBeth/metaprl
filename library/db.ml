@@ -24,11 +24,12 @@
  *
  * Authors: Lori Lorigo, Richard Eaton
  *)
+open Lm_symbol
 
 open Printf
-open Mp_debug
-open Mp_pervasives
-open Mp_num
+open Lm_debug
+open Lm_pervasives
+open Lm_num
 
 
 open Refiner.Refiner.Term
@@ -50,7 +51,18 @@ open List
 
 open Opname
 
+(************************************************************************
+ * Compatibility layer for abstract vars.
+ *)
+let mk_bterm bvars t =
+   mk_bterm (List.map Lm_symbol.add bvars) t
 
+let mk_var_level_exp v =
+   mk_var_level_exp (Lm_symbol.add v)
+
+(************************************************************************
+ * Original code
+ *)
 
 let _ =
    show_loading "Loading Db%t"
@@ -495,7 +507,7 @@ let scan_level_expression scanner =
        scan_numbers s;
        s)
     else if (scan_whitespace s; scan_at_digit_p s) then
-      (le := incr_level_exp_n (Mp_num.int_of_num (scan_num s)) !le;
+      (le := incr_level_exp_n (Lm_num.int_of_num (scan_num s)) !le;
        scan_numbers s;
        s)
     else s in
@@ -505,7 +517,7 @@ let scan_level_expression scanner =
       let _ = scan_char_delimited_list s scan_expression_q '[' ']' '|'
       in scan_whitespace s
     else if (scan_whitespace s; scan_at_digit_p s) then
-      (le := max_level_exp (mk_const_level_exp (Mp_num.int_of_num (scan_num s))) !le 0; ())
+      (le := max_level_exp (mk_const_level_exp (Lm_num.int_of_num (scan_num s))) !le 0; ())
     else (let v = scan_string s in
     scan_whitespace s;
     le := max_level_exp (mk_var_level_exp v) !le 0); s
@@ -519,20 +531,21 @@ let scan_level_expression scanner =
 let make_le_scanner = make_scanner level_expression_escape_string "\n\t\r "
 
 let mk_real_param_from_strings stp value ptype =
-  match ptype with "n" -> (Number (Mp_num.num_of_string value))
+  match ptype with
+    "n" -> (Number (Lm_num.num_of_string value))
   | "time" -> (ParamList [(make_param (Token "time"));
-			  (make_param (Number (Mp_num.num_of_string value)))])
+			  (make_param (Number (Lm_num.num_of_string value)))])
   | "t" -> (Token value)
   | "s" -> (String value)
   | "q" -> (ParamList [(make_param (Token "quote")); (make_param (Token value))])
   | "b" -> ( ParamList [ (make_param (Token "bool"))
 			; if (stringeq value "false") or (stringeq value "F") then
-			  make_param (Number (Mp_num.num_of_int 0))
+			  make_param (Number (Lm_num.num_of_int 0))
 			  else if (stringeq value "true") or (stringeq value "T") then
-			  make_param (Number (Mp_num.num_of_int 1))
+			  make_param (Number (Lm_num.num_of_int 1))
 			  else error ["real_parameter_from_string"; value] [] []
 		      ])
-  | "v" -> (Var value)
+  | "v" -> (Var (Lm_symbol.add value))
   | "l" -> let level = scan_level_expression (make_le_scanner (Stream.of_string value)) in
     (ParamList [(make_param (Token "nuprl5_level_expression")); (make_param (MLevel level)); (make_param (String value))])
   | "oid" -> let term = string_to_trivial_term value stp in
@@ -542,12 +555,13 @@ let mk_real_param_from_strings stp value ptype =
   | t -> failwith (String.concat "  " ["unknown special op-param"; ptype; value])
 
 let mk_meta_param_from_strings value ptype =
-  match ptype with "n" -> (MNumber value)
-  | "t" -> (MToken value)
-  | "s" -> (MString value)
+  match ptype with
+    "n" -> (MNumber (Lm_symbol.add value))
+  | "t" -> (MToken (Lm_symbol.add value))
+  | "s" -> (MString (Lm_symbol.add value))
   | "q" -> (ParamList [(make_param (Token "quote")); (make_param (Token value))])
-  | "b" -> (ParamList [(make_param (Token "bool")); (make_param (Number (Mp_num.num_of_string value)))])
-  | "v" -> (MVar value)
+  | "b" -> (ParamList [(make_param (Token "bool")); (make_param (Number (Lm_num.num_of_string value)))])
+  | "v" -> (Var (Lm_symbol.add value))
   | "l" -> let level =
       scan_level_expression (make_le_scanner (Stream.of_string value)) in
     (ParamList [(make_param (Token "nuprl5_level_expression")); (make_param (MLevel level)); (make_param (String value))])
@@ -573,16 +587,16 @@ let string_to_bindings value =
 
   let l = String.length value in
   if l > ash_length then
-    let v = String_util.sub "Db.string_to_bindings" value 0 ash_length in
+    let v = Lm_string_util.sub "Db.string_to_bindings" value 0 ash_length in
     (if stringeq v ascii_special_header then
-      let c = String_util.sub "Db.string_to_bindings" value 1 1 and v' = String_util.sub "Db.string_to_bindings" value 2 (l - 2) in
+      let c = Lm_string_util.sub "Db.string_to_bindings" value 1 1 and v' = Lm_string_util.sub "Db.string_to_bindings" value 2 (l - 2) in
       match c with
 	"A" -> ["nuprl5_implementation3"; "extended"; "abstraction"; v']
       | "D" -> ["nuprl5_implementation3"; "extended"; "display"; v']
       | "S" -> ["nuprl5_implementation2"; "extended"; v']
       | "d" -> ["nuprl5_implementation2"; "display"; v']
       | "a" -> ["nuprl5_implementation1"; v']
-      | "%" -> [(String_util.sub "Db.string_to_bindings" value 1 (l - 1)) ]
+      | "%" -> [(Lm_string_util.sub "Db.string_to_bindings" value 1 (l - 1)) ]
       | t -> failwith "unknown special binding"
     else [value])
   else [value]
@@ -592,14 +606,14 @@ let rec string_to_parameter s ptype =
   (*if s = "!stamp" then failwith "stamp";*)
   let len = String.length s in
 
-    if (len < 2 or not (chareq '%' (String_util.get "Db.string_to_parameter" s 0)))
+    if (len < 2 or not (chareq '%' (Lm_string_util.get "Db.string_to_parameter" s 0)))
 	then make_param (mk_real_param_from_strings string_to_parameter s ptype)
 
     else
-     let ss = (String_util.sub "Db.string_to_parameter" s 2 (len -2)) in
+     let ss = (Lm_string_util.sub "Db.string_to_parameter" s 2 (len -2)) in
       make_param
-       (match (String_util.get "Db.string_to_parameter" s 1) with
-	  '%' -> (mk_real_param_from_strings string_to_parameter (String_util.sub "Db.string_to_parameter" s 1 (len - 1)) ptype)
+       (match (Lm_string_util.get "Db.string_to_parameter" s 1) with
+	  '%' -> (mk_real_param_from_strings string_to_parameter (Lm_string_util.sub "Db.string_to_parameter" s 1 (len - 1)) ptype)
 
 	| 'A' -> (ParamList	[ make_param (Token "extended")
 				; make_param (Token "abstraction")
@@ -652,7 +666,7 @@ let extract_level_string_updates level inparms =
 			; parms := tl !parms)
 		else level_assign level (Opid s)
 	     with _ -> level_assign level (Opid s))
-	    | Var s -> level_assign level (Binding [s])
+	    | Var s -> level_assign level (Binding [string_of_symbol s])
 	    | _ -> error ["level_read"; "strings"] [] [])
 	   ; parms := (tl !parms)
         done
@@ -734,7 +748,7 @@ let index_of_il_term t =
    { term_op = op; term_terms = _ }
    -> (match dest_op op with  { op_name = opname; op_params = [id; index] }
       -> (match (dest_param index) with
-	  Number n -> Mp_num.int_of_num n
+	  Number n -> Lm_num.int_of_num n
 	  |_ -> error ["!l_term" ; "not"][][t])
       |_ -> error ["!l_term" ; "not"][][t])
 
@@ -744,7 +758,7 @@ let index_of_ilevel_term t =
    { term_op = op; term_terms = _ }
    -> (match dest_op op with  { op_name = opname; op_params = [id; index; size] }
       -> (match (dest_param index) with
-	  Number n -> Mp_num.int_of_num n
+	  Number n -> Lm_num.int_of_num n
 	  |_ -> error ["!level_term" ; "not"][][t])
       |_ -> error ["!level_term" ; "not"][][t])
 
@@ -753,7 +767,7 @@ let size_of_ilevel_term t =
    { term_op = op; term_terms = _ }
    -> (match dest_op op with { op_name = opname; op_params = [id; index; size] }
    -> (match (dest_param size) with
-	 Number n -> Mp_num.int_of_num n
+	 Number n -> Lm_num.int_of_num n
 	 |_ -> error ["!level_term" ; "not"][][t])
      |_ -> error ["!level_term" ; "not"][][t])
 

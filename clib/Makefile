@@ -15,9 +15,6 @@ LCFILES :=\
 	exit\
 	debug\
 	ml_debug\
-	getrusage\
-	mmap\
-	readline\
 	termsize\
 	locale
 

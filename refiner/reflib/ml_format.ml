@@ -32,7 +32,7 @@
  *)
 
 open Printf
-open Mp_debug
+open Lm_debug
 open Opname
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
@@ -150,7 +150,6 @@ struct
    let mstring_expr = ML_Module_Var (term_type_name @ ["MString"])
    let mtoken_expr = ML_Module_Var (term_type_name @ ["MToken"])
    let mlevel_expr = ML_Module_Var (term_type_name @ ["MLevel"])
-   let mvar_expr = ML_Module_Var (term_type_name @ ["MVar"])
    let msum_expr = ML_Module_Var (term_type_name @ ["MSum"])
    let mdiff_expr = ML_Module_Var (term_type_name @ ["MDiff"])
    let mproduct_expr = ML_Module_Var (term_type_name @ ["MProduct"])
@@ -179,6 +178,8 @@ struct
    let meta_iff_expr = ML_Module_Var (term_type_name @ ["MetaIff"])
    let meta_labeled_expr = ML_Module_Var (term_type_name @ ["MetaLabeled"])
 
+   let make_var_expr = ML_Module_Var ["Lm_symbol"; "add"]
+
    (************************************************************************
     * PRINTERS                                                             *
     ************************************************************************)
@@ -201,6 +202,10 @@ struct
       in
          construct (List.rev !ofile)
 
+   (* Variables *)
+   let print_var v =
+      ML_Apply [make_var_expr; ML_String (Lm_symbol.string_of_symbol v)]
+
    (* Level expression *)
    let print_level_exp' ofile l =
       match dest_level l with
@@ -210,7 +215,7 @@ struct
                   { le_var = v; le_offset = o } ->
                      let v' = newv () in
                      let le = ML_Apply [make_level_var_expr;
-                                        ML_Record [le_var_expr, ML_String v;
+                                        ML_Record [le_var_expr, print_var v;
                                                    le_offset_expr, ML_Int o]]
                      in
                         push ofile (v', le);
@@ -240,6 +245,11 @@ struct
             push ofile (v, param);
             v
       in
+      let print_var_param v name v' =
+         let param = ML_Apply [make_param_expr; ML_Apply [name; print_var v']] in
+            push ofile (v, param);
+            v
+      in
       let print_num_param v name n =
          let param = ML_Apply [make_param_expr; ML_Apply [name; ML_Num n]] in
             push ofile (v, param);
@@ -259,14 +269,13 @@ struct
             Number n -> print_num_param (newv ()) number_expr n
           | String s -> print_string_param (newv ()) string_expr s
           | Token t -> print_string_param (newv ()) token_expr t
-          | Var v -> print_string_param (newv ()) var_expr v
-          | MNumber v -> print_string_param (newv ()) mnumber_expr v
-          | MString v -> print_string_param (newv ()) mstring_expr v
-          | MToken v -> print_string_param (newv ()) mtoken_expr v
+          | Var v -> print_var_param (newv ()) var_expr v
+          | MNumber v -> print_var_param (newv ()) mnumber_expr v
+          | MString v -> print_var_param (newv ()) mstring_expr v
+          | MToken v -> print_var_param (newv ()) mtoken_expr v
           | MLevel l ->
                let v1 = print_level_exp ofile l in
                   print_le_param (newv ()) mlevel_expr v1
-          | MVar v -> print_string_param (newv ()) mvar_expr v
           | ObId _ ->
                (* We don't allow these fancy terms *)
                raise (Failure "Ml_format.print_param: can't do term with ObId parameter")
@@ -333,7 +342,7 @@ struct
          { bvars = vars; bterm = term } ->
             let bv = print_term ofile term in
             let v = newv() in
-            let vars' = List.map (function v -> ML_String v) vars in
+            let vars' = List.map print_var vars in
             let bterm = ML_Apply [make_bterm_expr;
                                   ML_Record [bvars_expr, ML_List vars';
                                              bterm_expr, ML_Var bv]]
@@ -349,7 +358,7 @@ struct
       if is_var_term term then
          let var = dest_var term in
          let v = newv () in
-         let term = ML_Apply [mk_var_term_expr; ML_String var] in
+         let term = ML_Apply [mk_var_term_expr; print_var var] in
             push ofile (v, term);
             v
       else

@@ -32,8 +32,7 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-
-open String_set
+open Lm_symbol
 
 open Opname
 open Refiner.Refiner
@@ -122,14 +121,14 @@ sig
     * as well as the attributes.  The parents is mutable,
     * but only because it is computed lazily.
     *)
-   and tactic_arg = {
-      ref_goal : msequent;
-      ref_label : string;
-      mutable ref_parent : tactic_parent;
-      ref_attributes : attribute_info;
-      ref_bookmark : global_resource;
-      ref_sentinal : sentinal
-   }
+   and tactic_arg =
+      { ref_goal : msequent;
+        ref_label : string;
+        mutable ref_parent : tactic_parent;
+        ref_attributes : attribute_info;
+        ref_bookmark : global_resource;
+        ref_sentinal : sentinal
+      }
 
    and tactic_parent =
       ParentNone
@@ -362,7 +361,7 @@ sig
    val goal        : tactic_arg -> term
    val msequent    : tactic_arg -> msequent
    val nth_hyp     : tactic_arg -> int -> term
-   val nth_binding : tactic_arg -> int -> string
+   val nth_binding : tactic_arg -> int -> var
    val num_assums  : tactic_arg -> int
    val nth_assum   : tactic_arg -> int -> term
    val nth_concl   : tactic_arg -> int -> term
@@ -654,7 +653,7 @@ sig
     * status as appropriate.  This function never fails.
     *)
    val expand : update_fun -> dform_base -> proof -> proof
-   
+
    (*
     * Get the low-level Refiner format of the proof
     *)
@@ -763,7 +762,7 @@ sig
     *)
    val clause_addr : tactic_arg -> int -> address
    val assum_clause_addr : tactic_arg -> int -> int -> address
-   val get_decl_number : tactic_arg -> string -> int
+   val get_decl_number : tactic_arg -> var -> int
    val hyp_count : tactic_arg -> int
    val assum_hyp_count : tactic_arg -> int -> int
    val get_pos_hyp_num : tactic_arg -> int -> int
@@ -777,16 +776,16 @@ sig
    val concl : tactic_arg -> term
    val num_assums : tactic_arg -> int
    val nth_hyp : tactic_arg -> int -> term
-   val nth_binding : tactic_arg -> int -> string
+   val nth_binding : tactic_arg -> int -> var
    val nth_assum : tactic_arg -> int -> term
    val label : tactic_arg -> string
 
    (*
     * Get info about the sequent.
     *)
-   val declared_vars : tactic_arg -> string list
+   val declared_vars : tactic_arg -> var list
    val explode_sequent : tactic_arg -> TermType.esequent
-   val is_free_seq_var : int -> string -> tactic_arg -> bool
+   val is_free_seq_var : int -> var -> tactic_arg -> bool
 
    (*
     * Argument functions.

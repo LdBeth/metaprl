@@ -35,7 +35,7 @@ extends Ocaml_base_df
 extends Ocaml_expr_df
 extends Ocaml_mt_df
 
-open Mp_debug
+open Lm_debug
 open Printf
 
 let _ =

@@ -28,9 +28,10 @@
 
 INCLUDE "refine_error.mlh"
 
+open Lm_symbol
+
 open Printf
-open Mp_debug
-open String_set
+open Lm_debug
 
 open Refine_error_sig
 open Term_ds_sig
@@ -104,10 +105,10 @@ struct
    let rec combine_fst_flt_nodups fvs vl tl =
       match vl, tl with
        | [v],[t] ->
-            if StringSet.mem fvs v then [v,t] else []
+            if SymbolSet.mem fvs v then [v,t] else []
        | v::vl, t::tl ->
-            if StringSet.mem fvs v then
-               (v,t) :: combine_fst_flt_nodups (StringSet.remove fvs v) vl tl
+            if SymbolSet.mem fvs v then
+               (v,t) :: combine_fst_flt_nodups (SymbolSet.remove fvs v) vl tl
             else
                combine_fst_flt_nodups fvs vl tl
        | _ ->
@@ -122,10 +123,10 @@ struct
 
    let rec fst_flt_nodups fvs = function
       [v,t] as l ->
-         if StringSet.mem fvs v then l else []
+         if SymbolSet.mem fvs v then l else []
     | ((v,t) :: tl) as l ->
-         if StringSet.mem fvs v then
-            let res = fst_flt_nodups (StringSet.remove fvs v) tl in
+         if SymbolSet.mem fvs v then
+            let res = fst_flt_nodups (SymbolSet.remove fvs v) tl in
             if res == tl then l else (v,t) :: res
          else
             fst_flt_nodups fvs tl
@@ -142,37 +143,37 @@ struct
          end
 
    let subst1 term v t =
-      if StringSet.mem (free_vars_set term) v then
+      if SymbolSet.mem (free_vars_set term) v then
          {free_vars = VarsDelayed; core = Subst (term,[v,t])}
       else
          term
 
-   let is_var_free v t = StringSet.mem (free_vars_set t) v
+   let is_var_free v t = SymbolSet.mem (free_vars_set t) v
 
-   let free_vars_list t = StringSet.elements (free_vars_set t)
+   let free_vars_list t = SymbolSet.elements (free_vars_set t)
    let free_vars_set = free_vars_set
 
    let rec need_to_rename avoid = function
       [] -> false
     | v::vs ->
-         StringSet.mem avoid v or
-         need_to_rename (StringSet.add avoid v) vs
+         SymbolSet.mem avoid v or
+         need_to_rename (SymbolSet.add avoid v) vs
 
    let rec compute_renames avoid avoid' = function
       [] -> [], []
     | [v] ->
-         if StringSet.mem avoid v then
-            let v' = String_util.vnewname v (StringSet.mem avoid')
+         if SymbolSet.mem avoid v then
+            let v' = new_name v (SymbolSet.mem avoid')
             in [v'], [v, (mk_var_term v')]
          else [v], []
     | v::vs ->
          if List.mem v vs then
-            let v' = String_util.vnewname v (StringSet.mem avoid') in
-            let vs', ts = compute_renames avoid (StringSet.add avoid' v') vs in
+            let v' = new_name v (SymbolSet.mem avoid') in
+            let vs', ts = compute_renames avoid (SymbolSet.add avoid' v') vs in
                (v'::vs'), ts
-         else if StringSet.mem avoid v then
-            let v' = String_util.vnewname v (StringSet.mem avoid') in
-            let vs', ts = compute_renames avoid (StringSet.add avoid' v') vs in
+         else if SymbolSet.mem avoid v then
+            let v' = new_name v (SymbolSet.mem avoid') in
+            let vs', ts = compute_renames avoid (SymbolSet.add avoid' v') vs in
                (v'::vs'), ((v, (mk_var_term v')) :: ts)
          else
             let vs', ts = compute_renames avoid avoid' vs in
@@ -181,8 +182,8 @@ struct
    let dest_bterm_and_rename bt avoid =
       if need_to_rename avoid bt.bvars then
          let avoid' =
-            List.fold_left StringSet.add (**)
-               (StringSet.union avoid (free_vars_set bt.bterm))
+            List.fold_left SymbolSet.add (**)
+               (SymbolSet.union avoid (free_vars_set bt.bterm))
                bt.bvars
          in
          let bvars, ts = compute_renames avoid avoid' bt.bvars in
@@ -206,7 +207,7 @@ struct
                if i = len then binding_vars_term seq.sequent_args else
                   match SeqHyp.get hyps i with
                      HypBinding (v,t) ->
-                        binding_vars_union t (StringSet.add (coll_hyps (succ i)) v)
+                        binding_vars_union t (SymbolSet.add (coll_hyps (succ i)) v)
                    | Hypothesis (t) ->
                         binding_vars_union t (coll_hyps (succ i))
                    | Context (v,[]) ->
@@ -220,7 +221,7 @@ struct
                if i = len then coll_hyps 0 else
                   binding_vars_union (SeqGoal.get goals i) (coll_goals (succ i))
             in coll_goals 0
-       | FOVar _ -> StringSet.empty
+       | FOVar _ -> SymbolSet.empty
        | Subst _ -> ignore (get_core t); binding_vars_term t
        | Hashed d ->
             binding_vars_term (Weak_memo.TheWeakMemo.retrieve_hack d)
@@ -229,22 +230,22 @@ struct
       let bv = binding_vars_term bt.bterm in
       match bt.bvars with
             [] -> bv
-          | [v] -> StringSet.add bv v
-          | vars -> List.fold_left StringSet.add bv vars
+          | [v] -> SymbolSet.add bv v
+          | vars -> List.fold_left SymbolSet.add bv vars
 
    and binding_vars_bterms = function
-      [] -> StringSet.empty
+      [] -> SymbolSet.empty
     | [bt] -> binding_vars_bterm bt
     | bt::l ->
-         StringSet.union (binding_vars_bterm bt) (binding_vars_bterms l)
+         SymbolSet.union (binding_vars_bterm bt) (binding_vars_bterms l)
 
-   and binding_vars_union t vars = StringSet.union (binding_vars_term t) vars
+   and binding_vars_union t vars = SymbolSet.union (binding_vars_term t) vars
 
    let binding_vars t =
-      StringSet.elements (binding_vars_term t)
+      SymbolSet.elements (binding_vars_term t)
 
    let add_vars vars term =
-      StringSet.union vars (free_vars_set term)
+      SymbolSet.union vars (free_vars_set term)
 
    let free_vars_terms = function
       [hd] ->
@@ -252,21 +253,21 @@ struct
     | hd :: tl ->
          List.fold_left add_vars (free_vars_set hd) tl
     | [] ->
-         StringSet.empty
+         SymbolSet.empty
 
    let is_some_var_free vars term =
       match vars with
          [] ->
             false
        | _ ->
-            List.exists (StringSet.mem (free_vars_set term)) vars
+            List.exists (SymbolSet.mem (free_vars_set term)) vars
 
    let is_some_var_free_list vars terms =
       match vars with
          [] ->
             false
        | _ ->
-            List.exists (StringSet.mem (free_vars_terms terms)) vars
+            List.exists (SymbolSet.mem (free_vars_terms terms)) vars
 
    let rec terms_context_vars = function
       [] -> []
@@ -302,7 +303,7 @@ struct
    let rec equal_params p1 p2 =
       match p1, p2 with
          Number n1, Number n2 ->
-            Mp_num.eq_num n1 n2
+            Lm_num.eq_num n1 n2
        | ParamList pl1, ParamList pl2 ->
             List.for_all2 equal_params pl1 pl2
        | _ ->
@@ -330,12 +331,12 @@ struct
       [] -> []
     | [(v1,v2)] as l ->
          if v1=v2 then []
-            else if (StringSet.mem set1 v1) || (StringSet.mem set2 v2)
+            else if (SymbolSet.mem set1 v1) || (SymbolSet.mem set2 v2)
             then l else []
     | (((v1,v2) as p) :: tl) as l ->
          let res = eq_filt_vars set1 set2 tl in
          if (res==[]) && (v1=v2) then []
-            else if (StringSet.mem set1 v1) || (StringSet.mem set2 v2) then
+            else if (SymbolSet.mem set1 v1) || (SymbolSet.mem set2 v2) then
                if (res==tl) then l else p::res
             else res
 
@@ -344,11 +345,11 @@ struct
       (vars == [] && t==t') || (
       match (get_core t, get_core t') with
          FOVar v, FOVar v' ->
-            List_util.check_assoc v v' vars
+            Lm_list_util.check_assoc v v' vars
        | Term { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
          Term { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
             Opname.eq name1 name2
-                    & List_util.for_all2 equal_params params1 params2
+                    & Lm_list_util.for_all2 equal_params params1 params2
                     & equal_bterms vars bterms1 bterms2
        | _ -> false )
 
@@ -361,7 +362,7 @@ struct
             equal_term (join_vars vars bt1.bvars bt2.bvars) bt1.bterm bt2.bterm))
        | _ -> false
 
-   let fake_var="__@@nosuchvarHACK@@__"
+   let fake_var=Lm_symbol.add "__@@nosuchvarHACK@@__"
 
    let rec equal_hyps hyps1 hyps2 vars i =
       if i = SeqHyp.length hyps1 then Some vars else
@@ -374,7 +375,7 @@ struct
                      equal_hyps hyps1 hyps2 vars (succ i)
                else None
           | Context (v1,ts1), Context (v2,ts2) ->
-            if v1=v2 && List_util.for_all2 (equal_term vars) ts1 ts2 then
+            if v1=v2 && Lm_list_util.for_all2 (equal_term vars) ts1 ts2 then
                equal_hyps hyps1 hyps2 vars (succ i)
             else None
           | _ -> None
@@ -416,13 +417,13 @@ struct
       ENDIF
 
    let alpha_equal_vars t v t' v' =
-      LETMACRO BODY = try equal_term (List_util.zip v v') t t' with
+      LETMACRO BODY = try equal_term (Lm_list_util.zip v v') t t' with
                          Failure _ -> false
       IN
       IFDEF VERBOSE_EXN THEN
          if !debug_alpha_equal then
             try
-               let _ = equal_term (List_util.zip v v') t t' in
+               let _ = equal_term (Lm_list_util.zip v v') t t' in
                eprintf "alpha_equal_vars: true%t" eflush;
                true
             with Failure _ ->
@@ -458,13 +459,13 @@ struct
 
    and var_subst_bterm bt t' v =
       if List.mem v bt.bvars then
-         let vars = List.fold_left StringSet.add (free_vars_set bt.bterm) bt.bvars in
-         let v' = String_util.vnewname v (StringSet.mem vars) in
+         let vars = List.fold_left SymbolSet.add (free_vars_set bt.bterm) bt.bvars in
+         let v' = new_name v (SymbolSet.mem vars) in
          let rename var = if var = v then v' else var in
          let bt' = subst1 bt.bterm v (mk_var_term v') in
          let bt'' = var_subst bt' t' v in
             if (bt''==bt') then bt
-            else mk_bterm (List_util.smap rename bt.bvars) bt''
+            else mk_bterm (Lm_list_util.smap rename bt.bvars) bt''
       else let term' = var_subst bt.bterm t' v in
               if bt.bterm == term' then bt else mk_bterm bt.bvars term'
 
@@ -484,27 +485,27 @@ struct
    let rec equal_fun f bvars sub t t' =
       match get_core t, get_core t' with
          FOVar v, FOVar v' ->
-            ( try List_util.try_check_assoc v v' bvars with Not_found ->
+            ( try Lm_list_util.try_check_assoc v v' bvars with Not_found ->
                ( try f t' (List.assoc v sub) with Not_found ->
                   v = v'
             ))
        | FOVar v,_ ->
             not (List.mem_assoc v bvars) &&
-            not (List_util.assoc_in_range StringSet.mem (free_vars_set t') bvars) &&
+            not (Lm_list_util.assoc_in_range SymbolSet.mem (free_vars_set t') bvars) &&
             f t' (List.assoc v sub)
        | Term t1, Term t2 ->
             Opname.eq t1.term_op.op_name t2.term_op.op_name &&
-            List_util.for_all2 equal_params t1.term_op.op_params t2.term_op.op_params &&
+            Lm_list_util.for_all2 equal_params t1.term_op.op_params t2.term_op.op_params &&
             equal_fun_bterms f bvars sub t1.term_terms t2.term_terms
        | _ -> false
 
    and equal_fun_bterms f bvars sub bterms1 bterms2 =
       let equal_fun_bterm bt1 bt2 =
          equal_fun f
-            (List_util.zip_list bvars bt1.bvars bt2.bvars)
+            (Lm_list_util.zip_list bvars bt1.bvars bt2.bvars)
             sub bt1.bterm bt2.bterm
       in
-         List_util.for_all2 equal_fun_bterm bterms1 bterms2
+         Lm_list_util.for_all2 equal_fun_bterm bterms1 bterms2
 
    (* See refiner/refsig/term_subst_sig.mlz for explanation of this function *)
    let alpha_equal_fun f t vs t' items =
@@ -512,12 +513,12 @@ struct
          if !debug_subst_ds then begin
             eprintf "Term_subst_ds.alpha_equal_fun:\n\t";
             eprintf "\tt: %a\n" debug_print t;
-            eprintf "\tvs: %a\n" print_string_list vs;
+            eprintf "\tvs: %a\n" print_symbol_list vs;
             eprintf "\tt': %a\n" debug_print t';
             eprintf "\titems: ...%t" eflush
          end
       ENDIF;
-      try equal_fun f [] (List_util.zip vs items) t t'  with
+      try equal_fun f [] (Lm_list_util.zip vs items) t t'  with
          Failure _ -> false
        | Not_found -> false
 
@@ -528,7 +529,7 @@ struct
    let rec check_bvars tvs = function
       [] -> ()
     | (_,v)::tl ->
-         if StringSet.mem tvs v then RAISE_GENERIC_EXN else
+         if SymbolSet.mem tvs v then RAISE_GENERIC_EXN else
          check_bvars tvs tl
 
    let rec zip_cons l l1 l2 =
@@ -606,12 +607,13 @@ struct
    let rec standardize_bterm index { bvars = bvars; bterm = t } =
       let bvars, subst, index =
          List.fold_left (fun (bvars, subst, index) v ->
+            let v_str = string_of_symbol v in
             let v' =
-               try String.sub v 0 (String.rindex v '_') with
+               try String.sub v_str 0 (String.rindex v_str '_') with
                   Not_found ->
-                     v
+                     v_str
             in
-            let v' = v' ^ "_" ^ string_of_int index in
+            let v' = Lm_symbol.add (v' ^ "_" ^ string_of_int index) in
             let t = mk_var_term v' in
             let bvars = v' :: bvars in
             let subst = (v, t) :: subst in

@@ -36,7 +36,7 @@
  * Modified by: Alexey Nogin <nogin@cs.cornell.edu>
  *)
 
-open String_set
+open Lm_symbol
 open Refiner.Refiner.Term
 
 open Unify_mm
@@ -49,7 +49,7 @@ open Tactic_type.Tacticals
  * A function that analyzes the sequent to gather type info.
  * It gets a clause from the current sequent or its assumptions.
  *)
-type typeinf_subst_fun = term_subst -> (string option * term) -> term_subst
+type typeinf_subst_fun = term_subst -> (var option * term) -> term_subst
 
 (*
  * A type inference is performed in a type context,
@@ -72,7 +72,7 @@ type typeinf_subst_fun = term_subst -> (string option * term) -> term_subst
  * (that can contain variables)
  *)
 type opt_eqs_type = (term * term) list
-type typeinf_func = StringSet.t -> term_subst -> eqnlist -> opt_eqs_type -> term_subst -> term -> eqnlist * opt_eqs_type * term_subst * term
+type typeinf_func = SymbolSet.t -> term_subst -> eqnlist -> opt_eqs_type -> term_subst -> term -> eqnlist * opt_eqs_type * term_subst * term
 
 (*
  * This resource is used to analyze the sequent to gather type info.
@@ -106,10 +106,10 @@ val infer_type_2args : tactic_arg -> term -> term list (* need two args; first c
 
 (* finalizes the type using all the eqautions collected,
  * returns the new eqs and opt_eqs *)
-val typeinf_final : StringSet.t -> eqnlist -> opt_eqs_type -> term_subst -> term -> eqnlist * opt_eqs_type * term_subst * term
+val typeinf_final : SymbolSet.t -> eqnlist -> opt_eqs_type -> term_subst -> term -> eqnlist * opt_eqs_type * term_subst * term
 
 (* creates a "fresh" variable name *)
-val vnewname : StringSet.t -> term_subst -> string -> string
+val vnewname : SymbolSet.t -> term_subst -> var -> var
 
 val infer_const : term -> typeinf_comp
 val infer_map : (term -> term) -> typeinf_comp

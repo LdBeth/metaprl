@@ -53,7 +53,7 @@
  *       Use  eqnlist2ttlist if you need the unification problem as is.
  *)
 
-open String_set
+open Lm_symbol
 
 open Refine_error_sig
 open Term_ds_sig
@@ -61,25 +61,25 @@ open Term_ds
 
 open Refiner.Refiner.TermType
 
-type term_subst = (string * term) list
+type term_subst = (var * term) list
 type eqnlist
 
 val eqnlist_empty : eqnlist
 val eqnlist_append_eqn : eqnlist -> term -> term -> eqnlist
-val eqnlist_append_var_eqn : string -> term -> eqnlist -> eqnlist
+val eqnlist_append_var_eqn : var -> term -> eqnlist -> eqnlist
 val eqnlist_append_eqns : eqnlist -> (term*term) list -> eqnlist
 val eqnlist2ttlist : eqnlist -> (term*term) list
 
-val new_eqns_var : eqnlist -> string -> string
+val new_eqns_var : eqnlist -> var -> var
 
 (*
- * The StringSet.t argument below specifies the set of constants
+ * The SymbolSet.t argument below specifies the set of constants
  * that can not be substituted for
  *)
 
-val unifiable : term -> term -> StringSet.t -> bool
-val unifiable_eqnl : eqnlist -> StringSet.t -> bool
+val unifiable : term -> term -> SymbolSet.t -> bool
+val unifiable_eqnl : eqnlist -> SymbolSet.t -> bool
 
-val unify : term -> term -> StringSet.t -> term_subst
-val unify_eqnl : eqnlist -> StringSet.t -> term_subst
-val unify_eqnl_eqnl : eqnlist -> StringSet.t -> eqnlist
+val unify : term -> term -> SymbolSet.t -> term_subst
+val unify_eqnl : eqnlist -> SymbolSet.t -> term_subst
+val unify_eqnl_eqnl : eqnlist -> SymbolSet.t -> eqnlist

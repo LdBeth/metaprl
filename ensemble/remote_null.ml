@@ -81,7 +81,7 @@ struct
     *)
    type 'a poll_value =
       PollSuccess of 'a
-    | PollEvent of 'a Thread_event.event
+    | PollEvent of 'a Lm_thread_event.event
     | PollFailure
 
    type 'a event = unit -> 'a poll_value
@@ -266,7 +266,7 @@ struct
        | PollFailure ->
             PollFailure
        | PollEvent event ->
-            PollEvent (Thread_event.wrap event f)
+            PollEvent (Lm_thread_event.wrap event f)
 
    (*
     * Wrap a system event.
@@ -292,7 +292,7 @@ struct
                      poll (event :: block_events) events
             end
        | [] ->
-            Thread_event.select 0 block_events
+            Lm_thread_event.select 0 block_events
       in
          Some (poll [] events)
 

@@ -23,7 +23,7 @@
  *)
 
 open Printf
-open Mp_debug
+open Lm_debug
 open Mp_resource
 
 open Conversionals_boot.Conversionals
@@ -36,7 +36,7 @@ open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.Rewrite
 open Opname
-open Mp_num
+open Lm_num
 
 (* ATN: removed with connection of error recovery
 let my_dest_loc loc =
@@ -54,7 +54,7 @@ let empty_term = mk_any_term empty_term_operator []
 let unique_var_number = ref 0
 let unique_var_term (id, _) =
    incr(unique_var_number);
-   mk_var_term (id ^ string_of_int !unique_var_number)
+   mk_var_term (Lm_symbol.make id !unique_var_number)
 
 (* Position terms *)
 let pos_opname = "__pos__"
@@ -67,11 +67,11 @@ let pos_param_number = ref 0
 
 (* Make position operator with a unique meta-variable parameters. *)
 let pos_operator () =
-   let param1 = make_param (MString (pos_wildcard1 ^ (string_of_int !pos_param_number))) in
-   let param2 = make_param (MNumber (pos_wildcard2 ^ (string_of_int !pos_param_number))) in
-   let param3 = make_param (MNumber (pos_wildcard3 ^ (string_of_int !pos_param_number))) in
-   let param4 = make_param (MNumber (pos_wildcard4 ^ (string_of_int !pos_param_number))) in
-   let param5 = make_param (MNumber (pos_wildcard5 ^ (string_of_int !pos_param_number))) in
+   let param1 = make_param (MString (Lm_symbol.make pos_wildcard1 !pos_param_number)) in
+   let param2 = make_param (MNumber (Lm_symbol.make pos_wildcard2 !pos_param_number)) in
+   let param3 = make_param (MNumber (Lm_symbol.make pos_wildcard3 !pos_param_number)) in
+   let param4 = make_param (MNumber (Lm_symbol.make pos_wildcard4 !pos_param_number)) in
+   let param5 = make_param (MNumber (Lm_symbol.make pos_wildcard5 !pos_param_number)) in
       incr pos_param_number;
       mk_op (make_opname [pos_opname]) [param1; param2; param3; param4; param5]
 
@@ -98,7 +98,7 @@ let token_param_number = ref 0
 let token_operator () =
    let name = token_wildcard ^ (string_of_int !token_param_number) in
       incr token_param_number;
-      mk_op (make_opname [token_opname]) [make_param (MString name)]
+      mk_op (make_opname [token_opname]) [make_param (MString (Lm_symbol.add name))]
 
 (* Make token operator with given string parameter *)
 let token_operator_of s =

@@ -35,7 +35,7 @@ module ShellHTTP = Shell_http.ShellHTTP (Shell)
 
 open Shell
 open Printf
-open Mp_debug
+open Lm_debug
 
 module Nuprl = Nuprl_eval.Nuprl(Shell)
 module NuprlRun = Nuprl_run.NuprlRun(Nuprl)

@@ -31,7 +31,7 @@
  *)
 
 open Printf
-open Mp_debug
+open Lm_debug
 open Gc
 
 (*
@@ -52,7 +52,7 @@ let debug_opname =
  *)
 let _ =
    let r = Gc.get () in
-(*    r.verbose <- true;  *)
+      (* r.verbose <- 1; *)
       r.Gc.minor_heap_size <- 196608;
       r.Gc.major_heap_increment <- 393216;
       r.Gc.space_overhead <- 70;

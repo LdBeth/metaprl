@@ -35,7 +35,7 @@
 
 open Printf
 
-open Mp_debug
+open Lm_debug
 open File_base_type
 
 (*

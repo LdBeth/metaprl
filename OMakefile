@@ -7,6 +7,11 @@ LIB     = $(dir lib)
 BIN     = $(dir bin)
 
 #
+# We always need threads
+#
+OCAMLFLAGS += -thread
+
+#
 # Library suffix
 #
 if $(NATIVE_ENABLED)
@@ -19,56 +24,56 @@ else
    export
 
 #
-# If this is the root directory of the project,
-# then include the config file.  Otherwise,
-# we assume that the variables in the mk/config
-# file have been set in the project root.
+# Win32-specific config.
+# Read the config file.
+# If the config file does not exist, then create one.
 #
-if $(equal $(OLDROOT), $(ROOT))
-    #
-    # Read the config file.
-    # If the config file does not exist, then create one.
-    #
-    if $(equal $(OSTYPE), Win32)
-       .INCLUDE: mk/config
-           copy mk\config.win32 mk\config
+if $(equal $(OSTYPE), Win32)
+   .INCLUDE: mk/config
+       copy mk\config.win32 mk\config
 
-       #
-       # No native-code version of camlp4 on windows
-       #
-       NATIVE_ENABLED=false
-       BYTE_ENABLED=true
-       CFLAGS += /MT
+   #
+   # No native-code version of camlp4 on windows
+   #
+   NATIVE_ENABLED = false
+   BYTE_ENABLED = true
+   CFLAGS += /MT
 
-       #
-       # CAMLLIB should be set in the environment
-       #
-       CAMLLIB = $(dir $(getenv OCAMLLIB))
-       CAMLP4LIB = $(dir $(CAMLLIB)/camlp4)
-       export
-    else
-       .INCLUDE: mk/config
-           ROOT=$(ROOT) mk/make_config.sh
-           $(CP) mk/config mk/config.win32
+   #
+   # CAMLLIB should be set in the environment
+   #
+   CAMLLIB = $(dir $(getenv OCAMLLIB))
+   CAMLP4LIB = $(dir $(CAMLLIB)/camlp4)
+   export
 
-       #
-       # JYH: I'm not sure why these are not set in mk/config...
-       #
-       CAMLLIB = $(dir /usr/lib/ocaml)
-       CAMLP4LIB = $(dir $(CAMLLIB)/camlp4)
+else
+   .INCLUDE: mk/config
+       ROOT=$(ROOT) mk/make_config.sh
+       $(CP) mk/config mk/config.win32
 
-       #
-       # Generic CC options
-       #
-       CC = $(CCC)
-       CFLAGS = -Wall -g -O2
-       export
+   #
+   # JYH: I'm not sure why these are not set in mk/config...
+   #
+   CAMLLIB = $(dir /usr/lib/ocaml)
+   CAMLP4LIB = $(dir $(CAMLLIB)/camlp4)
 
-    #
-    # Include the generic caml library
-    #
-    INCLUDES += -I$(CAMLLIB)
+   #
+   # Generic CC options
+   #
+   CC = $(CCC)
+   CFLAGS = -Wall -g -O2
+   export
 
+#
+# Include the generic caml library
+#
+INCLUDES += -I$(CAMLLIB)
+
+#
+# We have a minimal version of libmojave in case it is not defined
+#
+if $(equal $(LIBMOJAVE), undefined)
+    LIBMOJAVE = $(dir libmojave)
     export
 
 #
@@ -103,13 +108,6 @@ OCAML_LIB_FLAGS = $(OCAML_LIB_FLAGS) -linkall
 OTHER_CCLIBS =
 if $(not $(equal $(OSTYPE), Win32))
     OTHER_CCLIBS = -cclib -lreadline -cclib -lncurses -cclib -ltermcap
-    export
-
-#
-# We have a minimal version of libmojave in case it is not defined
-#
-if $(equal $(LIBMOJAVE), undefined)
-    LIBMOJAVE = $(dir libmojave)
     export
 
 #

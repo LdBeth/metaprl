@@ -29,10 +29,11 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Lm_symbol
+
 open Opname
 open Refine_error_sig
 open Term_base_sig
-open String_set
 
 module type TermDsTypeSig =
 sig
@@ -44,7 +45,7 @@ sig
     * Level expression have offsets from level expression
     * vars, plus a constant offset.
     *)
-   type level_exp_var' = { le_var : string; le_offset : int }
+   type level_exp_var' = { le_var : var; le_offset : int }
    type level_exp_var = level_exp_var'
 
    type level_exp' = { le_const : int; le_vars : level_exp_var list }
@@ -54,15 +55,14 @@ sig
     * Parameters have a number of simple types.
     *)
    type param' =
-      Number of Mp_num.num
+      Number of Lm_num.num
     | String of string
     | Token of string
-    | Var of string
-    | MNumber of string
-    | MString of string
-    | MToken of string
+    | Var of var
+    | MNumber of var
+    | MString of var
+    | MToken of var
     | MLevel of level_exp
-    | MVar of string
 
       (* Special Nuprl5 values *)
     | ObId of object_id
@@ -78,10 +78,10 @@ sig
     * and there are no Nuprl5 params.
     *)
    type match_param =
-      MatchNumber of Mp_num.num * int option
+      MatchNumber of Lm_num.num * int option
     | MatchString of string
     | MatchToken of string
-    | MatchVar of string
+    | MatchVar of var
     | MatchLevel of level_exp
     | MatchUnsupported
 
@@ -104,21 +104,21 @@ sig
     * Please read docs/term_ds_safety.txt if you plan to change
     * and/or modify any code that changes mutable fields.
     *)
-   type term_subst = (string * term) list
+   type term_subst = (var * term) list
    and term_core =
       Term of term'
     | Subst of term * term_subst
     | Sequent of esequent
-    | FOVar of string
+    | FOVar of var
     | Hashed of term Weak_memo.TheWeakMemo.descriptor
    and term = { mutable free_vars : lazy_vars; mutable core : term_core }
    and bound_term = bound_term'
    and term' = { term_op : operator; term_terms : bound_term list }
-   and bound_term' = { bvars : string list; bterm : term }
+   and bound_term' = { bvars : var list; bterm : term }
    and hypothesis =
-      HypBinding of string * term
+      HypBinding of var * term
     | Hypothesis of term
-    | Context of string * term list
+    | Context of var * term list
    and esequent =
       { sequent_args : term;
         sequent_hyps : seq_hyps;
@@ -127,7 +127,7 @@ sig
    and seq_hyps = hypothesis SEQ_SET.linear_set
    and seq_goals = term SEQ_SET.linear_set
    and lazy_vars =
-      Vars of StringSet.t
+      Vars of SymbolSet.t
     | VarsDelayed
 
    (*
@@ -183,11 +183,11 @@ sig
     * De/Constructors                                                      *
     ************************************************************************)
 
-   val free_vars_set: term -> StringSet.t
-   val bterm_free_vars: bound_term -> StringSet.t
+   val free_vars_set: term -> SymbolSet.t
+   val bterm_free_vars: bound_term -> SymbolSet.t
 
-   val new_vars : StringSet.t -> string list -> (string * string) list * (string * term) list
-   val rename_bvars : (string * string) list -> string list -> string list
+   val new_vars : SymbolSet.t -> var list -> (var * var) list * (var * term) list
+   val rename_bvars : (var * var) list -> var list -> var list
 
    (*
     * Simultaneous delayed substitution.
@@ -204,11 +204,11 @@ sig
    val make_term : term' -> term
    val mk_op : opname -> param list -> operator
    val mk_term : operator -> bound_term list -> term
-   val mk_bterm : string list -> term -> bound_term
+   val mk_bterm : var list -> term -> bound_term
    val make_bterm : bound_term' -> bound_term
    val dest_bterm : bound_term -> bound_term'
    val mk_level : int -> level_exp_var list -> level_exp
-   val mk_level_var : string -> int -> level_exp_var
+   val mk_level_var : var -> int -> level_exp_var
    val mk_sequent_term : esequent -> term
 
    val no_bvars : bound_term list -> bool
@@ -250,16 +250,16 @@ sig
    val sequent_opname : opname
 
    val is_var_term : term -> bool
-   val dest_var : term -> string
-   val mk_var_term : string -> term
+   val dest_var : term -> var
+   val mk_var_term : var -> term
 
    val is_so_var_term : term -> bool
-   val dest_so_var : term -> string * term list
-   val mk_so_var_term : string -> term list -> term
+   val dest_so_var : term -> var * term list
+   val mk_so_var_term : var -> term list -> term
 
    val is_context_term : term -> bool
-   val dest_context : term -> string * term * term list
-   val mk_context_term : string -> term -> term list -> term
+   val dest_context : term -> var * term * term list
+   val mk_context_term : var -> term -> term list -> term
 
    (*
     * Simple terms have no paramaters and

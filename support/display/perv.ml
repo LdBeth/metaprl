@@ -42,8 +42,8 @@
  *)
 
 open Printf
-open Mp_debug
-open String_util
+open Lm_debug
+open Lm_string_util
 
 open Refiner.Refiner
 

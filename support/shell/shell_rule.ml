@@ -34,7 +34,7 @@ extends Shell_sig
 extends Package_info
 
 open Printf
-open Mp_debug
+open Lm_debug
 
 open Rformat
 open Dform

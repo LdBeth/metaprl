@@ -24,3 +24,5 @@ OCamlLibraryInstall($(MPINSTALL), $(LIB), filterphobos, $(PHOBOS_FILES))
 #
 clean:
     $(CLEAN)
+
+all: filterphobos$(LIB_SUFFIX)

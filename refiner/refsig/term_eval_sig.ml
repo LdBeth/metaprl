@@ -19,40 +19,41 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *
  *)
+open Lm_symbol
 
 module type TermEvalSig =
 sig
    type term
 
    val is_canon_var_term : term -> bool
-   val dest_canon_var : term -> string
-   val mk_canon_var_term : string -> term
+   val dest_canon_var : term -> var
+   val mk_canon_var_term : var -> term
 
    val is_subst_term : term -> bool
-   val dest_subst : term -> term * (string list * term list)
-   val mk_subst_term : term -> (string * term) list -> term
-   val make_subst_term : term -> string list -> term list -> term
-   val make_1subst_term : term -> string -> term -> term
-   val make_2subst_term : term -> string -> string -> term -> term -> term
+   val dest_subst : term -> term * (var list * term list)
+   val mk_subst_term : term -> (var * term) list -> term
+   val make_subst_term : term -> var list -> term list -> term
+   val make_1subst_term : term -> var -> term -> term
+   val make_2subst_term : term -> var -> var -> term -> term -> term
 end
 
 (*

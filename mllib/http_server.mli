@@ -60,7 +60,7 @@ val set_path : string list -> unit
  * this function should be thread-safe, since the
  * server runs in a separate thread.
  *)
-val start_http : (t -> Mp_inet.client -> unit) -> int option -> t
+val start_http : (t -> Lm_inet.client -> unit) -> int option -> t
 
 (*
  * Get the actual port number.

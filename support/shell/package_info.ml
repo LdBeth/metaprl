@@ -37,9 +37,9 @@ open Parsetree
 
 open Printf
 
-open Mp_debug
+open Lm_debug
 open Imp_dag
-open String_set
+open Lm_string_set
 
 open File_base_type
 

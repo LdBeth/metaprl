@@ -30,9 +30,10 @@
 
 INCLUDE "refine_error.mlh"
 
+open Lm_symbol
+
 open Printf
-open Mp_debug
-open String_set
+open Lm_debug
 
 open Opname
 open Refine_error_sig
@@ -349,17 +350,17 @@ struct
       [] -> [], vars
     | (Context (_, ts) as hyp :: hyps) as ohyps ->
          let hyps', vars = remove_redundant_hbs vars hyps in
-            (if hyps'==hyps then ohyps else hyp :: hyps'), StringSet.union (free_vars_terms ts) vars
+            (if hyps'==hyps then ohyps else hyp :: hyps'), SymbolSet.union (free_vars_terms ts) vars
     | (Hypothesis(t) as hyp :: hyps) as ohyps ->
          let hyps', vars = remove_redundant_hbs vars hyps in
-            (if hyps'==hyps then ohyps else hyp :: hyps'), StringSet.union (free_vars_set t) vars
+            (if hyps'==hyps then ohyps else hyp :: hyps'), SymbolSet.union (free_vars_set t) vars
     | (HypBinding (v, t) as hyp :: hyps) as ohyps ->
          let hyps', vars = remove_redundant_hbs vars hyps in
-            if StringSet.mem vars v then
+            if SymbolSet.mem vars v then
                (if hyps'==hyps then ohyps else hyp :: hyps'),
-                  StringSet.union (free_vars_set t) (StringSet.remove vars v)
+                  SymbolSet.union (free_vars_set t) (SymbolSet.remove vars v)
             else
-               Hypothesis t :: hyps', StringSet.union (free_vars_set t) vars
+               Hypothesis t :: hyps', SymbolSet.union (free_vars_set t) vars
 
    let remove_redundant_hypbindings hyps goals =
       fst (remove_redundant_hbs (free_vars_terms goals) hyps)
@@ -412,7 +413,7 @@ struct
                   if i < SeqHyp.length s.sequent_hyps then
                      match SeqHyp.get s.sequent_hyps i with
                         HypBinding (v, _) -> v
-                      | Hypothesis _ -> "v"
+                      | Hypothesis _ -> Lm_symbol.add "v"
                       | Context _ ->
                            REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "it's a context")))
                   else

@@ -31,7 +31,7 @@
  *
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  *)
-
+open Lm_symbol
 open Refiner.Refiner.Term
 open Refiner.Refiner.Refine
 
@@ -89,10 +89,10 @@ val extract : 'a cache -> 'a extract
 (*
  * Actions that modify the current world.
  *)
-val add_hyp  : 'a extract -> int -> string -> term -> 'a extract
+val add_hyp  : 'a extract -> int -> var -> term -> 'a extract
 val del_hyp  : 'a extract -> int -> 'a extract
 val ref_hyp  : 'a extract -> int -> 'a extract
-val name_hyp : 'a extract -> int -> string -> 'a extract
+val name_hyp : 'a extract -> int -> var -> 'a extract
 val set_goal : 'a extract -> term -> 'a extract
 val set_msequent : 'a extract -> msequent -> 'a extract
 

@@ -8,7 +8,7 @@ open Refine_error_sig
 open Term_ds_sig
 
 open Term_ds
-open String_set
+open Lm_string_set
 
 module TermSubstRob
 (Term : TermDsSig

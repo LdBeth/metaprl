@@ -34,7 +34,7 @@
 
 open Printf
 
-open Mp_debug
+open Lm_debug
 open Opname
 
 open File_base_type
@@ -100,10 +100,12 @@ end
  *
  * Rev 0: whatever was around when the versioning was added
  * Rev 1: added PRL bindings to several summary items (many types have chaged)
+ * Rev 2: variables are now implemented as symbols.
+ * Rev 3: got rid of MVar parameters
  *)
-let raw_versions = List.map (pack_version 1 0) [1]
+let raw_versions = List.map (pack_version 1 0) [3]
 
-let term_versions = List.map (pack_version 1 0) [0]
+let term_versions = List.map (pack_version 1 0) [3]
 
 (*
  * ASCII IO format revision history:
@@ -114,10 +116,12 @@ let term_versions = List.map (pack_version 1 0) [0]
  * Rev 3: added a real summary item for "define" directives (instead of declare + prim_rw implementation)
  * Rev 4: corrected term representation for prec_rel
  * Rev 5: added PRL bindings to several summary items
+ * Rev 6: got rid of MVar parameters
  *
  * Filter_summary has a HACK needed to read some rev 0-1 files
+ * Ascii_io has a HACK needed to read some rev 0-5 files
  *)
-let ascii_versions = List.map (pack_version 1 0) [5;4;3;2;1;0]
+let ascii_versions = List.map (pack_version 1 0) [6;5;4;3;2;1;0]
 
 (************************************************************************
  * CONFIG                                                               *
@@ -565,10 +569,10 @@ struct
       let inx = open_in filename in
       let magic, version =
          try
-            match List.map String.uppercase (String_util.parse_args (input_line inx)) with
+            match List.map String.uppercase (Lm_string_util.parse_args (input_line inx)) with
                "#PRL" :: "VERSION" :: code :: _ ->
                   let major, minor, rev =
-                     match List.map int_of_string (String_util.split '.' code) with
+                     match List.map int_of_string (Lm_string_util.split "." code) with
                         [] ->
                            raise (Failure "read_table")
                       | [major] ->
@@ -591,7 +595,7 @@ struct
                raise exn
       in
       let magic =
-         try List_util.find_index magic magics with
+         try Lm_list_util.find_index magic magics with
             Not_found ->
                close_in inx;
                raise (Bad_magic filename)

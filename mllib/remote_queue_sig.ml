@@ -124,7 +124,7 @@ sig
    (*
     * Event for receiving upcalls.
     *)
-   val event_of_queue : ('a, 'b, 'c) t -> ('a, 'b) upcall Thread_event.event
+   val event_of_queue : ('a, 'b, 'c) t -> ('a, 'b) upcall Lm_thread_event.event
 
    (*
     * Submit a new queue entry.

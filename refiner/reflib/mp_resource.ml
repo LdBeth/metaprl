@@ -28,12 +28,12 @@
  *
  * Author: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-
-open Mp_debug
+open Lm_symbol
+open Lm_debug
 open Printf
 
 open Set_sig
-open String_set
+open Lm_string_set
 
 open Refiner.Refiner
 open Term
@@ -106,7 +106,7 @@ type global_resource = bookmark
 
 type ('annotation, 'input) annotation_processor =
    string ->          (* Name of the new rule *)
-   string array ->    (* Names of the context vars *)
+   var array ->       (* Names of the context vars *)
    term list ->       (* Arguments *)
    term list ->       (* Parameters *)
    meta_term ->       (* Rule statement *)
@@ -130,7 +130,7 @@ module TableBase = struct
    type elt = string
    type data = Obj.t
 
-   let compare = compare
+   let compare = Pervasives.compare
    let append = (@)
    let print s _ = printf "Resource: %s" s
 end
@@ -138,7 +138,7 @@ end
 module Table = UseTable.MakeTable(TableBase)
 
 (* Theory name  ->  theory resources (local + includes names) *)
-let (global_data : (Table.elt * Table.data) global_data) = Hashtbl.create 19 
+let (global_data : (Table.elt * Table.data) global_data) = Hashtbl.create 19
 
 let local_data = ref []
 
@@ -246,7 +246,7 @@ let make_fun_proc fun_proc =
 let make_proc_functional imp_proc =
    let result l =
       let dat = imp_proc.imp_create () in
-      List_util.rev_iter (imp_proc.imp_add dat) l;
+      Lm_list_util.rev_iter (imp_proc.imp_add dat) l;
       imp_proc.imp_retr dat
    in {
       fp_empty = [];
@@ -298,7 +298,7 @@ let get_resource bookmark resource_name =
       let proc =
          if incr == [] then proc else
          let proc = proc.res_proc.proc_clone () in
-         List_util.rev_iter proc.proc_add incr; {
+         Lm_list_util.rev_iter proc.proc_add incr; {
             res_proc = proc;
             res_result = None
          }

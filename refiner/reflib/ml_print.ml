@@ -33,7 +33,7 @@
 
 open Printf
 
-open Mp_debug
+open Lm_debug
 open Opname
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMeta
@@ -74,7 +74,7 @@ struct
             File.put ofile (sprintf " %d" i)
        | ML_Num n ->
             File.put ofile
-                     ("(Mp_num.num_of_string \"" ^ (Mp_num.string_of_num n) ^ "\")")
+                     ("(Lm_num.num_of_string \"" ^ (Lm_num.string_of_num n) ^ "\")")
        | ML_String s ->
             File.put ofile (sprintf " \"%s\"" (String.escaped s))
        | ML_List l ->

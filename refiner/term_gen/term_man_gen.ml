@@ -32,9 +32,10 @@
 
 INCLUDE "refine_error.mlh"
 
+open Lm_symbol
+
 open Printf
-open Mp_debug
-open String_set
+open Lm_debug
 
 open Opname
 open Refine_error_sig
@@ -157,7 +158,7 @@ struct
 
    let rec level_var_cmp cmp = function
       (lv1::t1 as l1), lv2::t2 ->
-         let lv1 = dest_level_var lv1 and lv2 = dest_level_var lv2 in   
+         let lv1 = dest_level_var lv1 and lv2 = dest_level_var lv2 in
          let v1 = lv1.le_var and v2 = lv2.le_var in
             if v1 = v2 then
                cmp lv1.le_offset lv2.le_offset && level_var_cmp cmp (t1, t2)
@@ -332,21 +333,21 @@ struct
       [] -> [], vars
     | Context (_, ts) as hyp :: hyps ->
          let hyps, vars = remove_redundant_hbs vars hyps in
-            (hyp :: hyps), StringSet.union (free_vars_terms ts) vars
+            (hyp :: hyps), SymbolSet.union (free_vars_terms ts) vars
     | Hypothesis(t) as hyp :: hyps ->
          let hyps, vars = remove_redundant_hbs vars hyps in
-            (hyp :: hyps), StringSet.union (free_vars_set t) vars
+            (hyp :: hyps), SymbolSet.union (free_vars_set t) vars
     | HypBinding (v, t) as hyp :: hyps ->
          let hyps, vars = remove_redundant_hbs vars hyps in
-            if StringSet.mem vars v then
-               (hyp :: hyps), StringSet.union (free_vars_set t) (StringSet.remove vars v)
+            if SymbolSet.mem vars v then
+               (hyp :: hyps), SymbolSet.union (free_vars_set t) (SymbolSet.remove vars v)
             else
-               Hypothesis t :: hyps, StringSet.union (free_vars_set t) vars
+               Hypothesis t :: hyps, SymbolSet.union (free_vars_set t) vars
 
    let remove_redundant_hypbindings hyps goals =
       fst (remove_redundant_hbs (free_vars_terms goals) hyps)
 
-   let fake_var = "_@bh@_"
+   let fake_var = Lm_symbol.add "_@bh@_"
 
    let rec mk_sequent_inner_term hyps goals vars i len =
       if i = len then
@@ -357,8 +358,8 @@ struct
                mk_hyp_term v t' (mk_sequent_inner_term hyps goals vars (i + 1) len)
           | Hypothesis t' ->
                let v =
-                  if StringSet.mem vars fake_var
-                  then String_util.vnewname fake_var (StringSet.mem vars)
+                  if SymbolSet.mem vars fake_var
+                  then new_name fake_var (SymbolSet.mem vars)
                   else fake_var
                in mk_hyp_term v t' (mk_sequent_inner_term hyps goals vars (i + 1) len)
           | Context (v, subterms) ->
@@ -368,11 +369,11 @@ struct
       [] ->
          vars
     | Context (v, ts) :: hyps ->
-         hyp_vars (StringSet.add (StringSet.union (free_vars_terms ts) vars) v) hyps
+         hyp_vars (SymbolSet.add (SymbolSet.union (free_vars_terms ts) vars) v) hyps
     | Hypothesis(t) :: hyps ->
-         hyp_vars (StringSet.union (free_vars_set t) vars) hyps
+         hyp_vars (SymbolSet.union (free_vars_set t) vars) hyps
     | HypBinding (v, t) :: hyps ->
-         hyp_vars (StringSet.add (StringSet.union (free_vars_set t) vars) v) hyps
+         hyp_vars (SymbolSet.add (SymbolSet.union (free_vars_set t) vars) v) hyps
 
    let mk_sequent_term
        { sequent_args = args;
@@ -438,7 +439,7 @@ struct
       [] ->
          REF_RAISE(RefineError (name, TermMatchError (t, "malformed context")))
     | bterms ->
-         match dest_bterm (List_util.last bterms) with
+         match dest_bterm (Lm_list_util.last bterms) with
             { bvars = []; bterm = term } ->
                term
           | _ ->
@@ -492,8 +493,8 @@ struct
                   let vars = free_vars_terms concls in
                   let hyps = List.rev hyps in
                   let hyps =
-                     if StringSet.mem vars fake_var then hyps
-                     else fst (remove_redundant_hbs (StringSet.remove (hyp_vars vars hyps) fake_var) hyps)
+                     if SymbolSet.mem vars fake_var then hyps
+                     else fst (remove_redundant_hbs (SymbolSet.remove (hyp_vars vars hyps) fake_var) hyps)
                   in {
                      sequent_args = args;
                      sequent_hyps = SeqHyp.of_list hyps;

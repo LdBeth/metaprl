@@ -73,7 +73,7 @@ struct
          Number _ | MNumber _ -> ShapeNumber
        | String _ | MString _ -> ShapeString
        | Token _ | MToken _ -> ShapeToken
-       | Var _ | MVar _ -> ShapeVar
+       | Var _ -> ShapeVar
        | MLevel _ -> ShapeLevel
        | _ ->
             raise (Invalid_argument "Term.shape_of_term")

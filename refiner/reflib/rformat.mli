@@ -121,7 +121,7 @@ val format_string : buffer -> string -> unit
 val format_raw_string : buffer -> string -> unit
 val format_quoted_string : buffer -> string -> unit
 val format_int : buffer -> int -> unit
-val format_num : buffer -> Mp_num.num -> unit
+val format_num : buffer -> Lm_num.num -> unit
 
 (*
  * Collecting output.

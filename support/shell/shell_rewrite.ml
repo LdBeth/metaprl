@@ -34,7 +34,7 @@ extends Shell_sig
 extends Package_info
 
 open Printf
-open Mp_debug
+open Lm_debug
 
 open Rformat
 open Dform
@@ -95,7 +95,7 @@ type rw =
  * shell_rule and shell_rewrite should probably be eventually merged).
  *)
 let hack_arg = mk_simple_term (make_opname ["sequent_arg";"Base_rewrite"]) []
-let hack_hyps = SeqHyp.of_list [Context("H",[])]
+let hack_hyps = SeqHyp.of_list [Context(Lm_symbol.add "H",[])]
 let mk_rewrite_hack term =
    mk_sequent_term { sequent_args = hack_arg; sequent_hyps = hack_hyps; sequent_goals = SeqGoal.of_list [term] }
 

@@ -49,7 +49,7 @@ sig
     | UpcallView
 
    val create : bool -> ('a, 'b, 'c) t
-   val event_of_queue : ('a, 'b, 'c) t -> ('a, 'b) upcall Thread_event.event
+   val event_of_queue : ('a, 'b, 'c) t -> ('a, 'b) upcall Lm_thread_event.event
    val add : ('a, 'b, 'c) t -> 'a -> ('a, 'b) handle
    val arg_of_handle : ('a, 'b) handle -> 'a
    val delete : ('a, 'b, 'c) t -> ('a, 'b) handle -> unit

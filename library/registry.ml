@@ -30,8 +30,8 @@
  * information.
  *)
 open Printf
-open Mp_debug
-open Mp_pervasives
+open Lm_debug
+open Lm_pervasives
 
 open Lint32
 
@@ -181,21 +181,21 @@ let read_string stream =
                if skip then
                   read buf len skip
                else
-                  String_util.sub "MathBus.read_string" buf 0 len
+                  Lm_string_util.sub "MathBus.read_string" buf 0 len
           | c ->
                let buf =
                   if String.length buf = len then
-                     let buf' = String_util.create "MathBus.read_string" (len * 2) in
-                        String_util.blit "MathBus.read_string" buf 0 buf' 0 len;
+                     let buf' = Lm_string_util.create "MathBus.read_string" (len * 2) in
+                        Lm_string_util.blit "MathBus.read_string" buf 0 buf' 0 len;
                         buf'
                   else
                      buf
                in
-                  String_util.set "MathBus.read_string" buf len c;
+                  Lm_string_util.set "MathBus.read_string" buf len c;
                   read buf (len + 1) false
       with
          End_of_file ->
-            String_util.sub "MathBus.read_string" buf 0 len
+            Lm_string_util.sub "MathBus.read_string" buf 0 len
    in
       read (String.create 100) 0 true
 

@@ -38,8 +38,8 @@ open Utils
 open Library
 open Nuprl5
 open Printf
-open Mp_debug
-open Mp_num
+open Lm_debug
+open Lm_num
 open Shell_sig
 
 open Shell
@@ -47,23 +47,23 @@ open Shell
 module Nuprl (Shell : ShellSig) = struct
   open Shell
   exception LibraryException of string
-  
+
   let itt_bug = ref true
   let _ = show_loading "Loading Nuprl_eval%t"
   let library = null_oref ()
   let connection = null_oref ()
-      
+
   let library_close () =
     if oref_p library then
       (leave (oref_val library);
        Library.disconnect (oref_val connection);
-       oref_nullify library) 
+       oref_nullify library)
     else raise (LibraryException "Close: No library open.")
 
   let library_open_eval servername hook host remoteport =
     if oref_p library then
       raise (LibraryException "Open: Library already open.")
-    
+
     else
       let _ = oref_set connection (connect servername host remoteport) in
       let _ = oref_set library (join_eval (oref_val connection) ["JPROVER"] hook) in
@@ -116,7 +116,7 @@ module Nuprl (Shell : ShellSig) = struct
     | _ -> error ["refine_args"; "op"; "unrecognized"] [] [t]
 
   let iinf_sequent_op = mk_nuprl5_op [make_param (Token "!inf_sequent"); Basic.inil_parameter]
-  let iinf_sequent_term hyp term = mk_term iinf_sequent_op [(mk_bterm [] hyp); (mk_bterm [""] term)]
+  let iinf_sequent_term hyp term = mk_term iinf_sequent_op [(mk_bterm [] hyp); (mk_bterm [Lm_symbol.add ""] term)]
 
   let mp_prf_term g tac s e =
     mk_term (mk_nuprl5_op [make_param (Token "!mp_prf")])
@@ -184,7 +184,7 @@ module Nuprl (Shell : ShellSig) = struct
     in List.rev (ll length)
 
   open List
-  open List_util
+  open Lm_list_util
 
   let get_parents_all name shell =
     let rec f l1 l2 =
@@ -228,9 +228,9 @@ module Nuprl (Shell : ShellSig) = struct
 		 ("term_to_msequent", (Refiner.Refiner.RefineError.TermMatchError
 					 (t, "malformed metasequent"))))
 
-  let name_of_symbolic_address sa = 
+  let name_of_symbolic_address sa =
     hd (tl (string_list_of_term (term_of_unbound_term sa)))
-  
+
   let refine_ehook =
 
     unconditional_error_handler
@@ -240,7 +240,7 @@ module Nuprl (Shell : ShellSig) = struct
 
 	  let rec visit_proof address =
 	    let (tac, goal, subgoals, extras) = edit_node !current_shell address in
-	    
+
 	    (match tac with
 	      Some s -> let length = List.length subgoals in
 	      let vps i = visit_proof (i :: address) in
@@ -250,7 +250,7 @@ module Nuprl (Shell : ShellSig) = struct
 
 	    | None -> mp_prf_term (msequent_to_term goal) ivoid_term inil_term
 		  (list_to_ilist (List.map msequent_to_term extras))) in
-	  
+
           (*command loop*)
           (match dest_term t with
 
@@ -259,16 +259,16 @@ module Nuprl (Shell : ShellSig) = struct
 
 	  | {term_op = op; term_terms = sa :: r } when (opeq op mp_list_module_op) ->
               let name = name_of_symbolic_address sa in
-	      let visit_obj x = 
+	      let visit_obj x =
 		(try (edit_cd_thm !current_shell name x;
 		      let (tac, goal, subgoals, extras) = edit_node !current_shell [] in
-		      ipair_term (itoken_term x) (msequent_to_term goal)) 
+		      ipair_term (itoken_term x) (msequent_to_term goal))
 		with
 		   _ ->
 		    (eprintf "Failed cd'ing into thm %s %s%t" name x eflush;
 		     ipair_term (itoken_term x) (itoken_term "Error cd thm : mp_list_module")))
-		  
-              and parents = (try (get_parents_all name !current_shell) 
+
+              and parents = (try (get_parents_all name !current_shell)
 	      with
 		_ ->
 		  (eprintf "Error! Failed getting parents : %s%t" name eflush;
@@ -277,14 +277,14 @@ module Nuprl (Shell : ShellSig) = struct
 	      (*return cons of parent list (dependencies of the module) and the objects*)
 	      icons_term icons_op
 		(list_to_ilist_map itoken_term parents)
-		
-		(let (w, c, a, rl) = (try (edit_list_module !current_shell name) 
+
+		(let (w, c, a, rl) = (try (edit_list_module !current_shell name)
 		with _ -> ([], [], [], [])) in
 		mp_edit_term (list_to_ilist_map visit_obj w )
                   (list_to_ilist_map visit_obj c)
                   (list_to_ilist_map visit_obj a)
                   (list_to_ilist_map visit_obj rl))
-                  
+
 	  | {term_op = op; term_terms = symaddr :: r } when (opeq op mp_list_display_op) ->
 
 	      let get_dform name =
@@ -292,43 +292,43 @@ module Nuprl (Shell : ShellSig) = struct
                   Not_found -> (eprintf "Error: Precs for %s Not found%t" name eflush; []))
 		and prec_rels = (try (edit_list_prec_rels !current_shell name) with
 		  Not_found -> (eprintf "Error: Precs for %s Not found%t" name eflush; []))
-		and dforms = (try (edit_list_dforms !current_shell name) with 
+		and dforms = (try (edit_list_dforms !current_shell name) with
 		   Not_found -> (eprintf "Error: Precs for %s Not found%t" name eflush; [])) in
-		
-	        let visit_dform = 
+
+	        let visit_dform =
 		  function (n, modes, attr, model, formats) ->
 		    ipair_term (itoken_term n)
 		       (idform_term (list_to_ilist_by_op idform_attr_op
 				       ((list_to_ilist_by_op imode_cons_op []) :: attr))
 			  formats
 			  model) in
-		
-		ipair_term 
+
+		ipair_term
 		  (imp_prec_pair_term (list_to_ilist_by_op imp_prec_cons_op precs)
-		     
+
 		     (list_to_ilist_by_op_map imp_prec_rel_cons_op
 			(function (r, t1, t2) -> imp_prec_rel_term r t1 t2)
 			prec_rels))
-		  (list_to_ilist (List.map visit_dform dforms))) in 
-	      
-	      list_to_ilist_map 
-		get_dform 
+		  (list_to_ilist (List.map visit_dform dforms))) in
+
+	      list_to_ilist_map
+		get_dform
 		(map (function x -> hd (string_list_of_term x))
 		   (map_isexpr_to_list_by_op ilist_op
 		      (function x -> x) (term_of_unbound_term symaddr)))
-		
+
 	  | {term_op = op; term_terms = symaddr :: r} when (opeq op mp_lookup_op) ->
-	      
-	      let l = string_list_of_term (term_of_unbound_term symaddr) in	    
-	      (try 
+
+	      let l = string_list_of_term (term_of_unbound_term symaddr) in
+	      (try
 		(if l = !current_symaddr then
 		  () else
 		  edit_cd_thm !current_shell (hd l) (hd (tl l)); visit_proof []) with
-		 _ -> 
+		 _ ->
 		  (eprintf "Error: Lookup cd thm for %s %s%t" (hd l) (hd (tl l)) eflush;
 		   mp_prf_term ivoid_term (itext_term "Error: Cd Thm None")
 		     (list_to_ilist [])	(list_to_ilist [])))
-		
+
 	  | {term_op = op; term_terms = symaddr :: addr :: tac :: r } when (opeq op mp_refine_op) ->
 	      (let l = string_list_of_term (term_of_unbound_term symaddr) in
 	      if l = !current_symaddr then ()
@@ -360,7 +360,7 @@ module Nuprl (Shell : ShellSig) = struct
 		       Unix.system "sh -c make";
 		   *)
 	      ivoid_term
-	      
+
 	  | {term_op = op; term_terms = symaddr :: r } when (opeq op mp_save_op) ->
 	      (let l = string_list_of_term (term_of_unbound_term symaddr) in
 	      if l = !current_symaddr then () else
@@ -374,38 +374,38 @@ module Nuprl (Shell : ShellSig) = struct
 	      ( (* let l = string_list_of_term (term_of_unbound_term symaddr) in
 		  edit_save_thy !current_shell (hd (tl l)); *)
 	       ivoid_term)
-			       
+
 	  | {term_op = op; term_terms = symaddr :: r } when false (*opeq op mp_wip_op*) ->
               let name = hd (tl (map_isexpr_to_list string_of_itoken_term (term_of_unbound_term symaddr))) in
-	      
-	      let thm_to_term x = 
+
+	      let thm_to_term x =
 		(edit_cd_thm !current_shell name x;
 		 let (tac, goal, subgoals, extras) = edit_node !current_shell [] in
 		 ipair_term (itoken_term x) (msequent_to_term goal))
-		  
-	      and rules_to_term l = 
+
+	      and rules_to_term l =
 		(let objs = ref [] in
-	        List.iter 
-		  (function oc -> 
-		    let (name, status, x, y) = oc in 
+	        List.iter
+		  (function oc ->
+		    let (name, status, x, y) = oc in
 	            if (List.mem name l) then
 		      objs := oc::(!objs))
 		  (edit_cd_list_contents !current_shell name);
-		
-		list_to_ilist_map 
-		  (function oc -> 
+
+		list_to_ilist_map
+		  (function oc ->
 		    let (name, status, x, y) = oc in
-		    ipair_term (itoken_term name) (mp_objc_to_term oc)) 
+		    ipair_term (itoken_term name) (mp_objc_to_term oc))
 		  !objs) in
-		  
+
 	      icons_term icons_op
 		(list_to_ilist_map itoken_term (get_parents_all name !current_shell))
 		(let (w, c, a, rl) = edit_list_module !current_shell name in
-		mp_edit_term (rules_to_term w) 
+		mp_edit_term (rules_to_term w)
                   (list_to_ilist_map thm_to_term c)
                   (list_to_ilist_map thm_to_term a)
                   (rules_to_term rl))
-                		
+
 	  | {term_op = op; term_terms = symaddr :: mseq :: r} when (opeq op mp_set_thm_op) ->
 	    let l = string_list_of_term (term_of_unbound_term symaddr)
 	    in
@@ -428,28 +428,28 @@ module Nuprl (Shell : ShellSig) = struct
 	       (eprintf "setting redex %s %s %t" (hd (tl l)) (hd (tl (tl l))) eflush;
 		eprintf "TO: %a/%a%t" print_term redex print_term contract eflush;
 		set_redex !current_shell redex; set_contractum !current_shell contract; ivoid_term)) (*use edit_set?*)
-		
+
  	  | {term_op = op; term_terms = mname :: name :: r} when (opeq op mp_create_op) ->
 	      (edit_create_thm !current_shell (string_of_itoken_term (term_of_unbound_term mname))
 		 (string_of_itoken_term (term_of_unbound_term name));
 	       ivoid_term)
-		
+
 	  | {term_op = op; term_terms = mname :: name :: r} when (opeq op mp_create_rw_op) ->
 	      (edit_create_rw !current_shell (string_of_itoken_term (term_of_unbound_term mname))
 		 (string_of_itoken_term (term_of_unbound_term name));
 	       ivoid_term)
-				    
+
        (* step refine ie for rewrite tactic *)
        (*
           | {term_op = op; term_terms = goal :: tac :: r} when (opeq op mp_step_refine_op) ->
           let subgoals, _ = refine (term_of_unbound_term tac) (term_of_unbound_term goal)
           in list_to_ilist_map id subgoals
        *)
-		    
+
 	  | _ -> error ["refine_ehook"; "op"; "unrecognized"] [] [t])))
 
       (function term -> (function t -> (ifail_term term)))
-      
+
   let library_mini_loop_eval () =
     let lib = oref_val library in
     server_loop lib
@@ -459,8 +459,8 @@ module Nuprl (Shell : ShellSig) = struct
     (with_transaction lib
        (function t ->
 	 (Library.eval t
-	    (null_ap 
-	       (itext_term "\l. inform_message nil 
+	    (null_ap
+	       (itext_term "\l. inform_message nil
 		  ``MetaPRL Loop Start`` nil")))));
     server_loop lib
 

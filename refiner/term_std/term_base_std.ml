@@ -36,7 +36,7 @@ INCLUDE "refine_error.mlh"
 
 open Printf
 
-open Mp_debug
+open Lm_debug
 open Opname
 open Refine_error_sig
 open Term_std
@@ -167,8 +167,8 @@ struct
    let dest_match_param param =
       match param with
          Number n ->
-            if Mp_num.is_integer_num n then
-               MatchNumber (n, Some (Mp_num.int_of_num n))
+            if Lm_num.is_integer_num n then
+               MatchNumber (n, Some (Lm_num.int_of_num n))
             else
                MatchNumber (n, None)
        | String s ->
@@ -182,7 +182,6 @@ struct
        | MNumber _
        | MString _
        | MToken _
-       | MVar _
        | ObId _
        | ParamList _ ->
             MatchUnsupported

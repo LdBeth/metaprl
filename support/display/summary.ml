@@ -63,8 +63,8 @@ doc <:doc<
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
   
-   Author: Jason Hickey
-   @email{jyh@cs.caltech.edu}
+   Author: Jason Hickey @email{jyh@cs.caltech.edu}
+   Modified By: Aleksey Nogin @email{nogin@cs.caltech.edu}
   
    @end[license]
 >>
@@ -75,7 +75,7 @@ extends Base_dform
 extends Comment
 
 open Printf
-open Mp_debug
+open Lm_debug
 
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
@@ -252,7 +252,7 @@ declare "meta_iff"{'A; 'B}
 declare "meta_labeled"[label:s]{'meta}
 doc <:doc< @docoff >>
 
-declare "context_param"[name:s]
+declare "context_param"[name:v]
 declare "term_param"{'t}
 
 (* Arguments *)
@@ -284,10 +284,12 @@ doc <:doc<
    @end[doc]
 >>
 declare "goal"{'status; 'label; 'assums; 'goal}
-declare "status_bad"
-declare "status_partial"
-declare "status_asserted"
-declare "status_complete"
+declare status_bad
+declare status_partial
+declare status_asserted
+declare status_complete
+declare status_primitive{'extract}
+declare status_interactive[rules:n,nodes:n]{'status}
 declare "status"{'sl}
 doc <:doc< @docoff >>
 
@@ -442,11 +444,11 @@ dform rewrite_df : "rewrite"[name:s]{'redex; 'contractum; 'v; 'res} =
 (*
  * A conditional rewrite requires special handling of the params.
  *)
-dform context_param_df : except_mode[src] :: "context_param"[name:s] =
-   df_context_var[name:s]
+dform context_param_df : except_mode[src] :: "context_param"[name:v] =
+   df_context_var[name:v]
 
-dform context_param_df2 : mode[src] :: "context_param"[name:s] =
-   `"'" slot[name:s]
+dform context_param_df2 : mode[src] :: "context_param"[name:v] =
+   `"'" slot[name:v]
 
 dform term_param_df : "term_param"{'t} =
    szone pushm[4]
@@ -766,6 +768,12 @@ dform status_asserted_df : status_asserted =
 dform status_complete : status_complete =
    keyword["*"]
 
+dform status_primitive : status_primitive{'t} =
+   szone keyword["!"] `"[" 't "]" ezone
+
+dform status_interactive : status_interactive[rules:n,nodes:n]{'status} =
+   'status `"[" slot[rules:n] `"," slot[nodes:n] `"]"
+
 (*
  * Rule box.
  *)
@@ -844,11 +852,6 @@ let mk_package_term name = <:con< "package"[$name$:s] >>
 let mk_packages_term tl = <:con< "packages"{$mk_xlist_term tl$} >>
 let mk_href_term s t = <:con< "href"[$s$:s]{$t$} >>
 
-let status_bad_term = << "status_bad" >>
-let status_partial_term = << "status_partial" >>
-let status_asserted_term = << "status_asserted" >>
-let status_complete_term = << "status_complete" >>
-
 let mk_status_term tl = <:con< "goal_status"{$mk_xlist_term tl$} >>
 
 let mk_goal_label_term s = <:con< "goal_label"[$s$:s] >>
@@ -876,7 +879,7 @@ let append_rule_box t s =
 let mk_proof_term main goal text subgoals = <:con< "proof"{$main$; $goal$; $text$; $subgoals$} >>
 let dest_proof = four_subterms
 
-let mk_int_arg_term i = <:con< int_arg[$Mp_num.num_of_int i$:n] >>
+let mk_int_arg_term i = <:con< int_arg[$int:i$] >>
 let mk_term_arg_term t = <:con< term_arg{$t$} >>
 let mk_type_arg_term t = <:con< type_arg{$t$} >>
 let mk_bool_arg_term b = if b then << bool_arg["true":t] >> else << bool_arg["false":t] >>

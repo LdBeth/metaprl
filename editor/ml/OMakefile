@@ -97,15 +97,11 @@ else
 #
 # If LIBMOJAVE is enabled, add the libraries
 #
-LMARDEPS = $(LIBMOJAVE)/stdlib/lmstdlib$(EXT_LIB)\
-           $(LIBMOJAVE)/util/lmutil$(EXT_LIB)
-LMXADEPS = $(LIBMOJAVE)/stdlib/lmstdlib.cmxa\
-           $(LIBMOJAVE)/util/lmutil.cmxa
-LMADEPS  = $(LIBMOJAVE)/stdlib/lmstdlib.cma\
-           $(LIBMOJAVE)/util/lmutil.cma
-TLMADEPS = $(LIBMOJAVE)/stdlib/lmstdlib.cma\
-           $(LIBMOJAVE)/util/lmutil.cma
-LIBS = $(LIBMOJAVE)/cutil/liblmcutil.a
+LMARDEPS = $(ROOT)/lib/lm$(EXT_LIB)
+LMXADEPS = $(ROOT)/lib/lm.cmxa
+LMADEPS  = $(ROOT)/lib/lm.cma
+TLMADEPS = $(ROOT)/lib/lm.cma
+LIBS = $(ROOT)/lib/liblmcutil.a
 
 #
 # If MCC is enabled, add the libraries

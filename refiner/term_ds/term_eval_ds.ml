@@ -19,31 +19,32 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Alexey Nogin, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Authors: Alexey Nogin
  *)
 
 INCLUDE "refine_error.mlh"
 
+open Lm_symbol
+
 open Refine_error_sig
 open Term_ds_sig
 
 open Opname
-open String_set
 open Term_ds
 
 module TermEval
@@ -104,7 +105,7 @@ struct
     * Make a "canon_var".
     *)
    let mk_canon_var_term v =
-      { free_vars = Vars (StringSet.make v);
+      { free_vars = Vars (SymbolSet.singleton v);
         core = Term
          { term_op = { op_name = canon_var_opname; op_params = [Var v] };
            term_terms = []}}

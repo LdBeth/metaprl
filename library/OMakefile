@@ -1,6 +1,8 @@
 OCAMLINCLUDES =\
 	-I .\
 	-I $(ROOT)/mllib\
+	-I $(LIBMOJAVE)/stdlib\
+	-I $(LIBMOJAVE)/util\
 	-I $(ROOT)/refiner/refbase\
 	-I $(ROOT)/refiner/refsig\
 	-I $(ROOT)/refiner/refiner\
@@ -67,3 +69,5 @@ $(LIB)/registry.txt: $(REGISTRY_FILE)
 #
 clean:
     $(CLEAN)
+
+all: library$(LIB_SUFFIX)

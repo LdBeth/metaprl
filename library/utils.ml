@@ -27,7 +27,7 @@
 
 
 open Printf
-open Mp_debug
+open Lm_debug
 
 let _ =
    show_loading "Loading Utils%t"

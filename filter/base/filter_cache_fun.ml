@@ -34,7 +34,7 @@
 
 open Printf
 
-open Mp_debug
+open Lm_debug
 open Opname
 open Term_shape_sig
 open Refiner.Refiner
@@ -452,7 +452,7 @@ struct
       let compare { sig_summary = info } =
          Base.pathname base info = path
       in
-         List_util.find compare summaries
+         Lm_list_util.find compare summaries
 
    (*
     * Get a previous module.
@@ -469,7 +469,7 @@ struct
       let compare info =
          Base.pathname base info = path
       in
-         List_util.find compare summaries
+         Lm_list_util.find compare summaries
 
    (*
     * Inherited access.
@@ -723,9 +723,9 @@ struct
 
    and collect_opnames cache info =
       if not (List.memq info cache.summaries) then begin
-         List_util.rev_iter (collect_opnames cache) info.sig_includes;
+         Lm_list_util.rev_iter (collect_opnames cache) info.sig_includes;
          let optable = cache.optable in
-         List_util.rev_iter (fun (str, op) -> Hashtbl.add optable str op) info.sig_opnames;
+         Lm_list_util.rev_iter (fun (str, op) -> Hashtbl.add optable str op) info.sig_opnames;
          cache.summaries <- info :: cache.summaries
       end
 

@@ -26,9 +26,9 @@
  *)
 
 open Printf
-open Mp_debug
+open Lm_debug
 
-open Mp_num
+open Lm_num
 open Char
 open List
 open Stream
@@ -70,7 +70,7 @@ let explode str =
 
  let rec aux i =
     if (inteq i l) then []
-    else (String_util.get "Ascii_scan.explode" str i) :: aux (1+i)
+    else (Lm_string_util.get "Ascii_scan.explode" str i) :: aux (1+i)
   in
 
  aux 0
@@ -79,12 +79,12 @@ let explode str =
 (* chars are reversed *)
 let implode_rev chars =
  let l = (List.length chars) in
- let s = String_util.create "Ascii_scan.implode" l in
+ let s = Lm_string_util.create "Ascii_scan.implode" l in
   let rest = ref chars in
   let i = ref (l - 1) in
 
   while not (nullp !rest)
-  do String_util.set "Ascii_scan.implode" s !i (hd !rest);
+  do Lm_string_util.set "Ascii_scan.implode" s !i (hd !rest);
      i := !i - 1;
      rest := tl !rest
   done

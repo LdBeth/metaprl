@@ -32,9 +32,10 @@
 
 INCLUDE "refine_error.mlh"
 
+open Lm_symbol
+
 open Printf
-open Mp_debug
-open String_set
+open Lm_debug
 
 open Refine_error_sig
 open Term_sig
@@ -160,7 +161,7 @@ struct
                   term_subterm_nthpath ATERM flag (dest_bterm bterm).bterm (i - 1)
              | ((_ :: bterm2 :: _) as bterms) ->
                   if Opname.eq (dest_op op).op_name context_opname then
-                     term_subterm_nthpath ATERM flag (dest_bterm (List_util.last bterms)).bterm (i - 1)
+                     term_subterm_nthpath ATERM flag (dest_bterm (Lm_list_util.last bterms)).bterm (i - 1)
                   else
                      term_subterm_nthpath ATERM flag (dest_bterm bterm2).bterm (i - 1)
              | _ ->
@@ -254,7 +255,7 @@ struct
                      mk_term op [bterm], arg
              | { term_op = op; term_terms = ((bterm1 :: bterm2 :: bterms) as bterms') } ->
                   if Opname.eq (dest_op op).op_name context_opname then
-                     let args, bterm = List_util.split_last bterms' in
+                     let args, bterm = Lm_list_util.split_last bterms' in
                      let { bvars = vars; bterm = trm } = dest_bterm bterm in
                      let term, arg = NTHPATH_REPLACE_TERM FAIL flag f VARS_BVARS trm (i - 1) in
                      let bterm = mk_bterm vars term in
@@ -309,7 +310,7 @@ struct
    UNDEF VARS_BVARS
 
    DEFMACRO BVARS = bvars
-   DEFMACRO VARS_BVARS = List.fold_left StringSet.add bvars vars
+   DEFMACRO VARS_BVARS = List.fold_left SymbolSet.add bvars vars
    DEFMACRO PATH_REPLACE_TERM = path_var_replace_term
    DEFMACRO PATH_REPLACE_BTERM = path_var_replace_bterm
    DEFMACRO NTHPATH_REPLACE_TERM = nthpath_var_replace_term
@@ -432,7 +433,7 @@ struct
     | (bterm :: bterms) as bterms' ->
          let bterms_new, args = apply_var_fun_higher_bterms f bvars coll bterms in
          let { bvars = bvars'; bterm = term } = dest_bterm bterm in
-         let bterm_new, args = apply_var_fun_higher_term f (List.fold_left StringSet.add bvars bvars') args term in
+         let bterm_new, args = apply_var_fun_higher_term f (List.fold_left SymbolSet.add bvars bvars') args term in
             if args == coll then
                bterms', coll
             else
@@ -512,7 +513,7 @@ struct
                REF_RAISE(RefineError (nth_concl_addr_name, TermMatchError (t, "malformed sequent")))
       in
          skip_hyps 0 (goal_of_sequent t)
-   
+
    (*
     * Conclusion is number 0,
     * negative numbers index from last hyp towards first.
@@ -545,6 +546,6 @@ struct
 
    let nth_clause_addr t i =
       nth_clause_addr_aux (fun count -> make_nth_clause_addr nth_hd_address count i) t
-   
+
 end
 

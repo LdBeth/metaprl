@@ -32,7 +32,7 @@
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
-open Mp_debug
+open Lm_debug
 open Phobos_debug
 open Filter_util
 open Filter_type

@@ -34,7 +34,7 @@
 
 open Printf
 
-open Mp_debug
+open Lm_debug
 
 open Refiner.Refiner.Term
 
@@ -184,14 +184,14 @@ struct
       info.info_info <- data
 
    let name base { info_path = path } =
-      List_util.last path
+      Lm_list_util.last path
 
    let pathname base { info_path = path } =
       path
 
    let root base { info_root = root; info_path = path } =
       { info_root = root;
-        info_path = [List_util.last path];
+        info_path = [Lm_list_util.last path];
         info_info = FileBase.info base root
       }
 

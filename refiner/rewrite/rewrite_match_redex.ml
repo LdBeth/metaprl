@@ -32,9 +32,10 @@
 
 INCLUDE "refine_error.mlh"
 
+open Lm_symbol
+
 open Printf
-open Mp_debug
-open String_set
+open Lm_debug
 open Opname
 open Term_sig
 open Term_base_sig
@@ -114,12 +115,15 @@ struct
    open RewriteUtil
    open RewriteDebug
 
+   let varHACK = Lm_symbol.add "__@@extract_bvarsemptyvariableHACK@@__"
+
    let rec extract_bvars stack = function
       [] -> []
     | v::tl ->
          begin match stack.(v) with
-            StackString s -> s
-          | StackVoid -> "__@@extract_bvarsemptyvariableHACK@@__"
+            StackString s -> Lm_symbol.add s
+          | StackVar v -> v
+          | StackVoid -> varHACK
           | _ -> raise(Invalid_argument("Rewrite_match_redex.extract_bvars: invalid stack entry"))
          end ::(extract_bvars stack tl)
 
@@ -127,7 +131,7 @@ struct
       [] -> []
     | v::tl ->
          begin match stack.(v) with
-            StackString s -> s::(extract_some_bvars stack tl)
+            StackVar v -> v :: extract_some_bvars stack tl
           | StackVoid -> extract_some_bvars stack tl
           | _ -> raise(Invalid_argument("Rewrite_match_redex.extract_some_bvars: invalid stack entry"))
          end
@@ -139,11 +143,11 @@ struct
       StackName i ->
          IFDEF VERBOSE_EXN THEN
             if !debug_rewrite then
-               eprintf "Rewrite.set_bvars: stack(%d)/%d with %s%t" i (Array.length stack) v eflush
+               eprintf "Rewrite.set_bvars: stack(%d)/%d with %a%t" i (Array.length stack) print_symbol v eflush
          ENDIF;
-         stack.(i) <- StackString v
+         stack.(i) <- StackVar v
     | _ ->
-         raise(Invalid_argument("Rewrite_match_redex.set_bvar")) 
+         raise(Invalid_argument("Rewrite_match_redex.set_bvar"))
 
    let set_bvars stack names vars =
       IFDEF VERBOSE_EXN THEN
@@ -215,16 +219,12 @@ struct
        | RWToken t', Token t ->
             if (t' <> t) then
                REF_RAISE(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
-       | RWVar v', Var v ->
-            if (v' <> v) then
-               REF_RAISE(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
-
            (* Variable matches *)
        | RWMNumber i, Number j ->
             IFDEF VERBOSE_EXN THEN
                if !debug_rewrite then
                   eprintf "Rewrite.match_redex_params.RWMNumber: stack(%d)/%d <- %s%t" (**)
-                     i (Array.length stack) (Mp_num.string_of_num j) eflush
+                     i (Array.length stack) (Lm_num.string_of_num j) eflush
             ENDIF;
             update_redex_param stack i (StackNumber j) PARAM_REASON
        | RWMString i, String s ->
@@ -244,10 +244,10 @@ struct
        | RWMVar i, Var v ->
             IFDEF VERBOSE_EXN THEN
                if !debug_rewrite then
-                  eprintf "Rewrite.match_redex_params.RWMVar: stack(%d)/%d <- %s%t" (**)
-                     i (Array.length stack) v eflush
+                  eprintf "Rewrite.match_redex_params.RWMVar: stack(%d)/%d <- %a%t" (**)
+                     i (Array.length stack) print_symbol v eflush
             ENDIF;
-            update_redex_param stack i (StackString v) PARAM_REASON
+            update_redex_param stack i (StackVar v) PARAM_REASON
        | RWMLevel1 i, MLevel l ->
             IFDEF VERBOSE_EXN THEN
                if !debug_rewrite then
@@ -265,31 +265,24 @@ struct
        | RWMNumber i, MNumber s ->
             IFDEF VERBOSE_EXN THEN
                if !debug_rewrite then
-                  eprintf "Rewrite.match_redex_params.RWMNumber: stack(%d)/%d <- %s%t" (**)
-                     i (Array.length stack) s eflush
+                  eprintf "Rewrite.match_redex_params.RWMNumber: stack(%d)/%d <- %a%t" (**)
+                     i (Array.length stack) print_symbol s eflush
             ENDIF;
-            update_redex_param stack i (StackMString s) PARAM_REASON
+            update_redex_param stack i (StackVar s) PARAM_REASON
        | RWMString i, MString s ->
             IFDEF VERBOSE_EXN THEN
                if !debug_rewrite then
-                  eprintf "Rewrite.match_redex_params.RWMString: stack(%d)/%d <- %s%t" (**)
-                     i (Array.length stack) s eflush
+                  eprintf "Rewrite.match_redex_params.RWMString: stack(%d)/%d <- %a%t" (**)
+                     i (Array.length stack) print_symbol s eflush
             ENDIF;
-            update_redex_param stack i (StackMString s) PARAM_REASON
+            update_redex_param stack i (StackVar s) PARAM_REASON
        | RWMToken i, MToken s ->
             IFDEF VERBOSE_EXN THEN
                if !debug_rewrite then
-                  eprintf "Rewrite.match_redex_params.RWMToken: stack(%d)/%d <- %s%t" (**)
-                     i (Array.length stack) s eflush
+                  eprintf "Rewrite.match_redex_params.RWMToken: stack(%d)/%d <- %a%t" (**)
+                     i (Array.length stack) print_symbol s eflush
             ENDIF;
-            update_redex_param stack i (StackMString s) PARAM_REASON
-       | RWMVar i, MVar v ->
-            IFDEF VERBOSE_EXN THEN
-               if !debug_rewrite then
-                  eprintf "Rewrite.match_redex_params.RWMVar: stack(%d)/%d <- %s%t" (**)
-                     i (Array.length stack) v eflush
-            ENDIF;
-            update_redex_param stack i (StackMString v) PARAM_REASON
+            update_redex_param stack i (StackVar s) PARAM_REASON
 
        | _ -> REF_RAISE(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
 
@@ -316,9 +309,9 @@ struct
          let all_bvars =
             match SeqHyp.get hyps i with
                HypBinding(v,_) | Context (v,_) ->
-                  if StringSet.mem all_bvars v then
+                  if SymbolSet.mem all_bvars v then
                      raise(Invalid_argument("Rewrite_match_redex.check_sequent_hyps: binding clash in a sequent. Please let Aleksey Nogin know if this happens to you."));
-                  StringSet.add all_bvars v
+                  SymbolSet.add all_bvars v
              | Hypothesis _ -> all_bvars
          in
             check_sequent_hyps hyps all_bvars len (i+1)
@@ -375,28 +368,36 @@ struct
                   sequent_goals = goals
                 } = explode_sequent t
             in
-               begin 
+               begin
                   try check_sequent_hyps hyps all_bvars (SeqHyp.length hyps) 0
                   with (Invalid_argument _) as exn -> begin
-                     eprintf "Rewrite.match_redex.RWSequent: check_sequent_hyps failed on %a with bvars=%a%t" debug_print t print_string_list (StringSet.elements all_bvars) eflush;
+                     eprintf "Rewrite.match_redex.RWSequent: check_sequent_hyps failed on %a with bvars=%a%t" debug_print t print_symbol_list (SymbolSet.elements all_bvars) eflush;
                      raise exn
                   end
                end;
                match_redex_term addrs stack all_bvars arg' arg;
-               match_redex_sequent_hyps addrs stack goals' goals all_bvars hyps' hyps 0 (SeqHyp.length hyps) 
+               match_redex_sequent_hyps addrs stack goals' goals all_bvars hyps' hyps 0 (SeqHyp.length hyps)
 
        | RWCheckVar i ->
             begin
                let v = dest_var t in
                   IFDEF VERBOSE_EXN THEN
                      if !debug_rewrite then
-                        eprintf "Rewrite.match_redex.RWCheckVar: %d/%s%t" i v eflush
+                        eprintf "Rewrite.match_redex.RWCheckVar: %d/%a%t" i print_symbol v eflush
                   ENDIF;
                   match stack.(i) with
                      StackString v' ->
+                        let v' = Lm_symbol.add v' in
+                           IFDEF VERBOSE_EXN THEN
+                              if !debug_rewrite then
+                                 eprintf "Rewrite.match_redex.RWCheckVar: %a/%a%t" print_symbol v' print_symbol v eflush
+                           ENDIF;
+                           if v' <> v then
+                              REF_RAISE(RefineError ("match_redex_term", RewriteBadMatch (VarMatch v)))
+                   | StackVar v' ->
                         IFDEF VERBOSE_EXN THEN
                            if !debug_rewrite then
-                              eprintf "Rewrite.match_redex.RWCheckVar: %s/%s%t" v' v eflush
+                              eprintf "Rewrite.match_redex.RWCheckVar: %a/%a%t" print_symbol v' print_symbol v eflush
                         ENDIF;
                         if v' <> v then
                            REF_RAISE(RefineError ("match_redex_term", RewriteBadMatch (VarMatch v)))
@@ -405,7 +406,7 @@ struct
             end
 
        | RWSOVar (i, l) ->
-              (* Save the term at i *)
+            (* Save the term at i *)
             begin
                let vars = extract_bvars stack l in
                   IFDEF VERBOSE_EXN THEN
@@ -492,7 +493,7 @@ struct
             if bt'.rw_bvars = List.length dbt.bvars then begin
                set_bvars stack bt'.rw_bnames dbt.bvars;
                match_redex_term addrs stack (**)
-                 (List.fold_left StringSet.add all_bvars dbt.bvars)
+                 (List.fold_left SymbolSet.add all_bvars dbt.bvars)
                  bt'.rw_bterm dbt.bterm
             end else
                REF_RAISE(RefineError ("match_redex_bterms", RewriteBadMatch (BTermMatch bt)))
@@ -504,7 +505,7 @@ struct
                REF_RAISE(RefineError ("match_redex_sequent_hyps", RewriteBadMatch (HypMatch hyps)));
             match_redex_sequent_goals addrs stack all_bvars goals' goals 0 (SeqGoal.length goals)
        | (RWSeqContext (addr, j, l) | RWSeqFreeVarsContext (_, addr, j, l) as hyp') :: hyps' ->
-            let count = if addr == -1 then len - i else 
+            let count = if addr == -1 then len - i else
                let count = addrs.(addr) in
                   if (count > 0 ) then count - 1 else len - i + count
             in
@@ -515,7 +516,7 @@ struct
             if count + i > len then
                REF_RAISE(RefineError ("match_redex_sequent_hyps", StringError "not enough hyps"))
             else
-               begin match hyp' with 
+               begin match hyp' with
                   RWSeqFreeVarsContext (non_free, _, _, _) ->
                      check_hyp_free_vars (extract_some_bvars stack non_free) hyps i (i+count)
                 | _ -> ()
@@ -534,7 +535,7 @@ struct
             else begin match SeqHyp.get hyps i with
                HypBinding (v, term) ->
                   set_bvar stack v name;
-                  let new_bvars = StringSet.add all_bvars v in
+                  let new_bvars = SymbolSet.add all_bvars v in
                   (*
                    * Strictly speaking, the match_redex_term below should
                    * use the all_bvars, not the new_bvars. But since the
@@ -570,7 +571,7 @@ struct
       match SeqHyp.get hyps i with
          HypBinding (var, term) ->
             check_term_free_vars vars term;
-            let vars = List_util.tryremove var vars in
+            let vars = Lm_list_util.tryremove var vars in
             if vars != [] then check_hyp_free_vars vars hyps (succ i) len
        | Hypothesis term ->
             check_term_free_vars vars term;
@@ -590,7 +591,7 @@ struct
          IFDEF VERBOSE_EXN THEN
             if !debug_rewrite then
                begin
-                  eprintf "match_redex: %d%t" (List.length progs) eflush;
+                  eprintf "Rewrite.match_redex: %d%t" (List.length progs) eflush;
                   List.iter (print_prog stderr) (prog::progs)
                end
          ENDIF;

@@ -1116,7 +1116,7 @@ struct
          Black (key, Leaf, Leaf, 1)
     | elements ->
          let elements = Array.of_list elements in
-         let length = Array_util.distinct compare elements in
+         let length = Lm_array_util.distinct compare elements in
          let max_depth = pred (log2 1 (succ length)) in
             of_sorted_array 0 max_depth elements 0 length
 

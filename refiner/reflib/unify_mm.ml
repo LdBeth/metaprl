@@ -28,10 +28,10 @@
  * Author: Vladimir N. Krupski
  * Modified by: Aleksey Nogin
  *)
+open Lm_symbol
 
 open Printf
-open Mp_debug
-open String_set
+open Lm_debug
 
 open Refiner.Refiner
 open RefineError
@@ -44,7 +44,7 @@ open TermMan
  * BASIC SUBSTITUTIONS *
  ***********************)
 
-type term_subst = (string * term) list
+type term_subst = (var * term) list
 type eqnlist = (term*term) list
 
 let eqnlist_empty = []
@@ -61,19 +61,19 @@ let eqnlist2ttlist x = x
  * Collect all free vars
  *)
 let rec collect_vars = function
-   [] -> StringSet.empty
- | (t1,t2) :: eqs -> StringSet.union (free_vars_set t1) (StringSet.union (free_vars_set t2) (collect_vars eqs))
+   [] -> SymbolSet.empty
+ | (t1,t2) :: eqs -> SymbolSet.union (free_vars_set t1) (SymbolSet.union (free_vars_set t2) (collect_vars eqs))
 
-let new_eqns_var eqs v = String_util.vnewname v (StringSet.mem (collect_vars eqs))
+let new_eqns_var eqs v = new_name v (SymbolSet.mem (collect_vars eqs))
 
-let is_free_var v t = StringSet.mem (free_vars_set t) v
+let is_free_var v t = SymbolSet.mem (free_vars_set t) v
 
 (******************
  * MM UNIFICATION *
  ******************)
 
 type fun_name= TermType.operator
-type var_name = Vinit | V of string
+type var_name = Vinit | V of var
 
 type system = { mutable t: multeq list; mutable u: upart }
 and upart =
@@ -434,6 +434,7 @@ let rec get_bterms = function
  * external (for t) associations --
  * bound variable names (strings) to bound_variables
  *)
+let null_var = Lm_symbol.add ""
 
 let rec cterm2multiterm t consts u var_hashtbl b_assoclist =
      let t = dest_term t in
@@ -455,7 +456,7 @@ let rec cterm2multiterm t consts u var_hashtbl b_assoclist =
                              )
                             );
                 renamings = (Array.init op_n
-                             (function i -> (Array.create op_a.(i) (V "") )
+                             (function i -> (Array.create op_a.(i) (V null_var) )
                              )
                             );
                 timestamp = (-1)
@@ -510,7 +511,7 @@ and term2temp_multeq tt consts u var_hashtbl b_asslist =
                m_t = [{fsymb = Bvar (List.assoc x b_asslist); args = []}]
              }
          with Not_found ->
-            if (StringSet.mem consts x) then
+            if (SymbolSet.mem consts x) then
                { s_t = Queue.create () ;
                  m_t = [{fsymb = (Cnst (V x)); args = []}]
                 }
@@ -548,7 +549,7 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
                 with Not_found -> (raise Clash)
             with Not_found ->
                ((if (List.mem_assoc y b_asslist1) then raise Clash);
-                  match StringSet.mem consts x, StringSet.mem consts y with
+                  match SymbolSet.mem consts x, SymbolSet.mem consts y with
                   true,true ->
                      if x=y then
                       { m_t =
@@ -577,7 +578,7 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
                )
             )
       else begin
-         if (List.mem_assoc x b_asslist0)||(StringSet.mem consts x)
+         if (List.mem_assoc x b_asslist0)||(SymbolSet.mem consts x)
             then raise Clash;
            (* try let vx=(List.assoc x b_asslist0) in (raise Clash )
               with Not_found -> *)
@@ -589,7 +590,7 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
    else
       if is_var_term t1 then
          let y = dest_var t1 in
-            if (List.mem_assoc y b_asslist1)||(StringSet.mem consts y)
+            if (List.mem_assoc y b_asslist1)||(SymbolSet.mem consts y)
                then raise Clash;
             (* try let vy=(List.assoc y b_asslist1) in (raise Clash)
                with Not_found -> *)
@@ -620,7 +621,7 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
                                  )
                                 );
                     renamings = (Array.init op_n0
-                                 (function i -> (Array.create op_a0.(i) (V "") )
+                                 (function i -> (Array.create op_a0.(i) (V null_var) )
                                  )
                                 );
                     timestamp = (-1)
@@ -716,12 +717,12 @@ let unifiable t0 t1 consts=
       let x = dest_var t0 in
       if is_var_term t1 then
          let y = dest_var t1 in
-            (not (StringSet.mem consts x)) || (not (StringSet.mem consts y)) || x=y
+            (not (SymbolSet.mem consts x)) || (not (SymbolSet.mem consts y)) || x=y
       else
-         not (StringSet.mem consts x)
+         not (SymbolSet.mem consts x)
     else
       if is_var_term t1 then
-         not (StringSet.mem consts (dest_var t1))
+         not (SymbolSet.mem consts (dest_var t1))
       else
       let var_hashtbl = (Hashtbl.create 23) in
       let t_0 = dest_term t0 in
@@ -743,7 +744,7 @@ let unifiable_eqnl l consts =
       unifiable (mk_term opL (fofeqnlist l)) (mk_term opL (sofeqnlist l)) consts
 
 let alpha_equal_my term0 term1 =
-   unifiable term0 term1 (StringSet.union (free_vars_set term0) (free_vars_set term1))
+   unifiable term0 term1 (SymbolSet.union (free_vars_set term0) (free_vars_set term1))
 
 (*********************************************************)
 (* Conversion from Mm-unif types to Term                 *)
@@ -777,11 +778,11 @@ let pick_name bv consts var_hashtbl =
    let newname =
      (((bv.fsymb_bv.renamings).(bv.arg_numb)).(bv.binding_numb))
      in
-   if ( newname = (V "") ) then
+   if ( newname = (V null_var) ) then
          ( let namestr = match oldname with
              V oldnamestr ->
-                let avoid v = StringSet.mem consts v || Hashtbl.mem var_hashtbl v in
-                String_util.vnewname oldnamestr avoid        (* ??? or hash(bv) *)
+                let avoid v = SymbolSet.mem consts v || Hashtbl.mem var_hashtbl v in
+                new_name oldnamestr avoid        (* ??? or hash(bv) *)
            | _ -> raise (Invalid_argument "Bug in Unify_mm.pick_name!")
          in
           (
@@ -950,21 +951,21 @@ let unify t0 t1 consts=
       let x = dest_var t0 in
       if is_var_term t1 then
          let y = dest_var t1 in
-         if StringSet.mem consts x then
-            if StringSet.mem consts y then
+         if SymbolSet.mem consts x then
+            if SymbolSet.mem consts y then
                if(x=y) then [] else raise Clash
             else
                [y,t0]
          else
             [x,t1]
       else
-         if StringSet.mem consts x then raise Clash
+         if SymbolSet.mem consts x then raise Clash
          else if (is_free_var x t1) then raise Cycle
          else [x,t1]
    else
       if is_var_term t1 then
          let y = dest_var t1 in
-         if StringSet.mem consts y then raise Clash
+         if SymbolSet.mem consts y then raise Clash
          else if (is_free_var y t0) then raise Cycle
          else [y,t0]
       else

@@ -37,9 +37,11 @@
 
 INCLUDE "refine_error.mlh"
 
-open String_set
+open Lm_symbol
+
+open Lm_string_set
 open Printf
-open Mp_debug
+open Lm_debug
 open Opname
 open Term_sig
 open Term_base_sig
@@ -130,10 +132,10 @@ struct
          true
     | v::ts ->
          is_var_term v
-            && let v = dest_var v in 
+            && let v = dest_var v in
                List.mem_assoc v bvars && are_bound_vars (List.remove_assoc v bvars) ts
 
-   let bvar_ind ((_:string),(i:int)) = i
+   let bvar_ind ((_:var),(i:int)) = i
 
    (* Add an extra free variable restriction to a hypothesis *)
    let restrict_free_in_hyp v = function
@@ -164,7 +166,7 @@ struct
                (* This is a second order variable, all subterms are vars *
                 * and we do not have a pattern yet                       *)
                let so_mem = rstack_so_mem v stack in
-               if so_mem then 
+               if so_mem then
                   rstack_check_arity v (List.length subterms) stack
                else
                   if rstack_mem v stack then REF_RAISE(RefineError ("compile_so_redex_term", RewriteBoundSOVar v));
@@ -179,7 +181,7 @@ struct
                   else
                      let args = List.map (var_index bvars) subterms in
                      RWSOVar(v, args),
-                     if strict then List_util.subtract (List.map bvar_ind bvars) args else []
+                     if strict then Lm_list_util.subtract (List.map bvar_ind bvars) args else []
                in
                   if restrict_free = [] then stack, term else stack, RWFreeVars(term,restrict_free)
 
@@ -203,15 +205,15 @@ struct
                (* The context should have a unique name *)
                REF_RAISE(RefineError ("is_context_term", RewriteBoundSOVar v))
 
-            else if Array_util.mem v addrs then
+            else if Lm_array_util.mem v addrs then
                (* All the vars should be free variables *)
                let vars' = List.map (var_index bvars) vars in
                let stack' = stack @ [CVar v] in
                let stack'', term' = compile_so_redex_term allow_so_patterns strict addrs stack' bvars term in
-               let term'' = RWSOContext(Array_util.index v addrs,
+               let term'' = RWSOContext(Lm_array_util.index v addrs,
                                         List.length stack,
                                         term', vars') in
-               let restrict_free = if strict then List_util.subtract (List.map bvar_ind bvars) vars' else [] in
+               let restrict_free = if strict then Lm_list_util.subtract (List.map bvar_ind bvars) vars' else [] in
                   stack'', if restrict_free = [] then term'' else
                      (* RWFreeVars(term'',restrict_free) *)
                      raise (Invalid_argument "compile_so_redex_term: free variable restrictions on SO contexts are not implemented")
@@ -227,7 +229,7 @@ struct
          (* This is normal term--not a var *)
          let { term_op = op; term_terms = bterms } = dest_term term in
          let { op_name = name; op_params = params } = dest_op op in
-         let stack2, params2 = compile_so_redex_params stack params in
+         let stack2, params2 = compile_so_redex_params stack strict params in
          let stack3, bterms3 = compile_so_redex_bterms allow_so_patterns strict addrs stack2 bvars bterms in
             stack3, RWComposite { rw_op = { rw_name = name; rw_params = params2 };
                                   rw_bterms = bterms3 }
@@ -235,13 +237,13 @@ struct
    (*
     * We also compile parameters, and bind meta-variables.
     *)
-   and compile_so_redex_params stack = function
+   and compile_so_redex_params stack strict = function
       [] ->
          stack, []
     | param::params ->
          (* Do this param *)
-         let stack', param' = compile_so_redex_param stack param in
-         let stack'', params' = compile_so_redex_params stack' params in
+         let stack', param' = compile_so_redex_param stack strict param in
+         let stack'', params' = compile_so_redex_params stack' strict params in
             stack'', param'::params'
 
    and meta_param' stack ptype v =
@@ -250,7 +252,7 @@ struct
          stack, rstack_p_index ptype v stack
       else begin
          if rstack_mem v stack then
-            REF_RAISE(RefineError("meta_param", StringStringError("Parameter meta-variable has different meanings in context",v)));
+            REF_RAISE(RefineError("meta_param", StringVarError("Parameter meta-variable has different meanings in context",v)));
          (* Add it *)
          stack @ [PVar (v, ptype)], List.length stack
       end
@@ -278,17 +280,16 @@ struct
                let stack, vars = collect stack vars in
                   stack, RWMLevel2 { rw_le_const = c; rw_le_vars = vars }
 
-   and compile_so_redex_param stack param =
+   and compile_so_redex_param stack strict param =
       match dest_param param with
          MNumber v -> meta_param stack (fun i -> RWMNumber i) ShapeNumber v
        | MString v -> meta_param stack (fun s -> RWMString s) ShapeString v
        | MToken v -> meta_param stack (fun t -> RWMToken t) ShapeToken v
+       | Var v when not strict -> meta_param stack (fun v -> RWMVar v) ShapeVar v
        | MLevel l -> meta_level stack l
-       | MVar v -> meta_param stack (fun v -> RWMVar v) ShapeVar v
        | Number i -> stack, RWNumber i
        | String s -> stack, RWString s
        | Token t -> stack, RWToken t
-       | Var v -> stack, RWVar v
        | _ -> REF_RAISE(RefineError ("compile_so_redex_param", RewriteBadMatch (ParamMatch param)))
 
    (*
@@ -309,7 +310,7 @@ struct
          rename_repeated_vars (succ i) (stack @ [FOVar v]) (bnames @ [bname i v]) ((new_bvar_item i v) :: bvars) vs
 
    and compile_so_redex_bterm allow_so_patterns strict addrs stack bvars bterm =
-      let svars = StringSet.of_list (List.map rstack_var stack) in
+      let svars = SymbolSet.of_list (List.map rstack_var stack) in
       let { bvars = vars; bterm = term } = dest_bterm_and_rename bterm svars in
       let stack', bnames, bvars' = rename_repeated_vars (List.length stack) stack [] bvars vars in
       (* Compile the term *)
@@ -341,26 +342,26 @@ struct
          match SeqHyp.get hyps i with
             Context (v, vars) ->
                if rstack_c_mem v stack then
-                  raise(Invalid_argument("Rewrite_compile_redex.compile_so_redex_sequent: context " ^ v ^ " appears more than once in redeces, which is currently unsupported"))
+                  raise(Invalid_argument("Rewrite_compile_redex.compile_so_redex_sequent: context " ^ string_of_symbol v ^ " appears more than once in redeces, which is currently unsupported"))
                else if rstack_mem v stack then
                   (* The context should have a unique name *)
                   REF_RAISE(RefineError ("is_context_term", RewriteBoundSOVar v))
                else let index =
                   if i = (len - 1) then
-                     if Array_util.mem v addrs then
-                        REF_RAISE(RefineError ("compile_so_redex_sequent_inner", StringStringError("Context at the end of the sequent does not need to be passed in as an argument",v)))
+                     if Lm_array_util.mem v addrs then
+                        REF_RAISE(RefineError ("compile_so_redex_sequent_inner", StringVarError("Context at the end of the sequent does not need to be passed in as an argument",v)))
                      else
                         -1
                   else
-                     if Array_util.mem v addrs then
-                        Array_util.index v addrs
+                     if Lm_array_util.mem v addrs then
+                        Lm_array_util.index v addrs
                      else
                         REF_RAISE(RefineError ("compile_so_redex_sequent_inner", RewriteMissingContextArg v))
                in
                (* All the vars should be free variables *)
                let vars' = List.map (var_index bvars) vars in
                let stack = stack @ [CVar v] in
-               let restrict_free = if strict then List_util.subtract (List.map bvar_ind bvars) vars' else [] in
+               let restrict_free = if strict then Lm_list_util.subtract (List.map bvar_ind bvars) vars' else [] in
                let term =
                   if restrict_free = [] then
                      RWSeqContext (index, List.length stack - 1, vars')
@@ -374,7 +375,7 @@ struct
 
           | HypBinding (v, term) ->
                if List.mem_assoc v bvars then
-                  REF_RAISE(RefineError ("compile_so_redex_sequent_inner", StringStringError ("repeated variable", v)));
+                  REF_RAISE(RefineError ("compile_so_redex_sequent_inner", StringVarError ("repeated variable", v)));
                let stack, term = compile_so_redex_term true strict addrs stack bvars term in
                let l = List.length stack in
                let stack = stack @ [FOVar v] in
@@ -391,7 +392,7 @@ struct
                in
                let l = List.length stack in
                let hyps = RWSeqHypBnd (bname l "", term) :: List.map (restrict_free_in_hyp l) hyps in
-                  stack @ [FOVar ""], hyps, List.map (restrict_free_in_term l) goals
+                  stack @ [FOVar (Lm_symbol.add "")], hyps, List.map (restrict_free_in_term l) goals
 
    and compile_so_redex_goals strict addrs stack bvars i len goals =
       if i = len then

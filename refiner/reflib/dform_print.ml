@@ -32,7 +32,7 @@
  *)
 
 open Printf
-open Mp_debug
+open Lm_debug
 
 open Dform
 
@@ -93,7 +93,7 @@ let get_mode_base mbase name =
     | None ->
          let base' =
             finish_base base;
-            create_dfbase (List_util.flat_map snd base.base_includes)
+            create_dfbase (Lm_list_util.flat_map snd base.base_includes)
          in
             base.base_cached <- Some base';
             base'
@@ -122,7 +122,7 @@ let join_dforms local_base parent_base =
 let join_mode_base base1 base2 =
    let { all_base = all1; mode_bases = bases1 } = !base1 in
    let { all_base = all2; mode_bases = bases2 } = base2 in
-   let names = List_util.union (List.map fst bases1) (List.map fst bases2) in
+   let names = Lm_list_util.union (List.map fst bases1) (List.map fst bases2) in
    let get_base1 name = try List.assoc name bases1 with Not_found -> all1 in
    let get_base2 name = try List.assoc name bases2 with Not_found -> all2 in
    let join_mode_base name =

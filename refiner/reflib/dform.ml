@@ -29,9 +29,10 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
+open Lm_symbol
 
 open Printf
-open Mp_debug
+open Lm_debug
 
 open Precedence
 open Rformat
@@ -201,24 +202,28 @@ let szone df = format_szone df.dform_buffer
 let izone df = format_izone df.dform_buffer
 let ezone df = format_ezone df.dform_buffer
 
+let string_of_param = function
+   RewriteParam s -> s
+ | RewriteMetaParam v -> string_of_symbol v
+
 let tzone = function
    { dform_items = [RewriteString tag]; dform_buffer = buf } ->
-      format_tzone buf tag
+      format_tzone buf (string_of_param tag)
  | _ -> raise (Invalid_argument "Dform.sbreak")
 
 let hbreak = function
    { dform_items = [RewriteString yes; RewriteString no]; dform_buffer = buf } ->
-      format_hbreak buf yes no
+      format_hbreak buf (string_of_param yes) (string_of_param no)
  | _ -> raise (Invalid_argument "Dform.hbreak")
 
 let sbreak = function
    { dform_items = [RewriteString yes; RewriteString no]; dform_buffer = buf } ->
-      format_sbreak buf yes no
+      format_sbreak buf (string_of_param yes) (string_of_param no)
  | _ -> raise (Invalid_argument "Dform.sbreak")
 
 let cbreak = function
    { dform_items = [RewriteString yes; RewriteString no]; dform_buffer = buf } ->
-      format_cbreak buf yes no
+      format_cbreak buf (string_of_param yes) (string_of_param no)
  | _ -> raise (Invalid_argument "Dform.sbreak")
 
 let space df = format_space df.dform_buffer
@@ -226,10 +231,12 @@ let hspace df = format_hspace df.dform_buffer
 let newline df = format_newline df.dform_buffer
 
 let pushm = function
-   { dform_items = [RewriteNum n]; dform_buffer = buf } ->
-      format_pushm buf (Mp_num.int_of_num n)
+   { dform_items = [RewriteNum (RewriteParam n)]; dform_buffer = buf } ->
+      format_pushm buf (Lm_num.int_of_num n)
+ | { dform_items = [RewriteNum (RewriteMetaParam v)]; dform_buffer = buf } ->
+      format_pushm_str buf (string_of_symbol v)
  | { dform_items = [RewriteString s]; dform_buffer = buf } ->
-      format_pushm_str buf s
+      format_pushm_str buf (string_of_param s)
  | { dform_items = []; dform_buffer = buf } ->
       format_pushm buf 0
  | _ -> raise (Invalid_argument "Dform.pushm")
@@ -274,7 +281,7 @@ let pushfont df =
    let font, buf =
       match df with
          { dform_items = [RewriteString font]; dform_buffer = buf } ->
-            font, buf
+            string_of_param font, buf
        | { dform_buffer = buf } ->
             "rm", buf
    in
@@ -319,9 +326,9 @@ let rec format_bterm' buf printer bterm =
     | { bvars = vars; bterm = term } ->
          let rec format_bvars = function
             [] -> ()
-          | [h] -> format_quoted_string buf h
+          | [h] -> format_quoted_string buf (string_of_symbol h)
           | h::t ->
-               format_quoted_string buf h;
+               format_quoted_string buf (string_of_symbol h);
                format_string buf ", ";
                format_bvars t
          in
@@ -376,7 +383,7 @@ and format_sequent buf format_term term =
             match SeqHyp.get hyps i with
                HypBinding (v, a) ->
                   format_space buf;
-                  format_string buf v;
+                  format_string buf (string_of_symbol v);
                   format_string buf ". ";
                   format_term a
              | Hypothesis a ->
@@ -443,7 +450,7 @@ and format_term buf shortener printer term =
  *)
 let sequent_term =
    let opname = mk_opname "sequent" nil_opname in
-      mk_simple_term opname [mk_var_term "ext"; mk_var_term "hyps"]
+      mk_simple_term opname [mk_var_term (Lm_symbol.add "ext"); mk_var_term (Lm_symbol.add "hyps")]
 
 let dvar_opname =
    mk_opname "display_var" nil_opname
@@ -527,11 +534,11 @@ let format_short_term base shortener =
                         print_entry pr buf eq t
                    | _ -> raise (Invalid_argument("Dform.format_short_term"))
                   end
-         with 
+         with
             (Invalid_argument _) as exn ->
                raise exn
-          | _ ->
-               raise (Invalid_argument ("Dform "^ name ^ "raised an exception when trying to print"^ (short_string_of_term t)))
+          | exn ->
+               raise (Invalid_argument ("Dform "^ name ^ " raised an exception when trying to print "^ (short_string_of_term t) ^ ": " ^ (Printexc.to_string exn)))
          end;
          if parenflag then
             format_string buf ")";
@@ -588,12 +595,15 @@ let null_shortener _ = nil_opname
 
 (*
  * The "slot" term is special because it has a subterm.
+ *
+ * XXX TODO: We should add a form that only accepts RewriteParam's and invokes
+ * some fall-back mechanism on receiving RewriteMetaParam's
  *)
 let slot { dform_items = items; dform_printer = printer; dform_buffer = buf } =
    match items with
       [RewriteString parens; RewriteTerm body] ->
          begin
-            match parens with
+            match string_of_param parens with
                "le" ->
                   printer buf LEParens body
              | "lt" ->
@@ -610,16 +620,16 @@ let slot { dform_items = items; dform_printer = printer; dform_buffer = buf } =
          if !debug_dform then
             eprintf "Dform.slot: term: %s%t" (short_string_of_term body) eflush;
          printer buf LTParens body
-    | [RewriteString s] ->
+    | [RewriteString s | RewriteNum ((RewriteMetaParam _) as s)] ->
          if !debug_dform then
-            eprintf "Dform.slot: str: %s%t" s eflush;
-         format_string buf s
-    | [RewriteString "raw"; RewriteString s] ->
+            eprintf "Dform.slot: str: %s%t" (string_of_param s) eflush;
+         format_string buf (string_of_param s)
+    | [RewriteString(RewriteParam "raw"); RewriteString s] ->
          if !debug_dform then
-            eprintf "Dform.slot: raw str: %s%t" s eflush;
-         format_raw_string buf s
-    | [RewriteNum n] ->
-         let s = Mp_num.string_of_num n in
+            eprintf "Dform.slot: raw str: %s%t" (string_of_param s) eflush;
+         format_raw_string buf (string_of_param s)
+    | [RewriteNum(RewriteParam n)] ->
+         let s = Lm_num.string_of_num n in
          if !debug_dform then
              eprintf "Dform.slot: num: %s%t" s eflush;
          format_string buf s
@@ -628,16 +638,16 @@ let slot { dform_items = items; dform_printer = printer; dform_buffer = buf } =
             eprintf "Dform.slot: level%t" eflush;
          format_simple_level_exp buf l
     | _ ->
-         raise (Invalid_argument "slot")
+         raise(Failure "Dform.slot: unknown stack type")
 
 let slot df =
    if !debug_dform_depth then
       let depth = zone_depth df.dform_buffer in begin
          slot df;
          if depth != zone_depth df.dform_buffer then
-            let str = line_format default_width ( 
-               fun buf -> 
-                  let rec format t = 
+            let str = line_format default_width (
+               fun buf ->
+                  let rec format t =
                      format_term buf null_shortener format t
                   in
                      slot {df with dform_printer = (fun _ _ -> format); dform_buffer = buf }
@@ -649,10 +659,21 @@ let slot df =
 (*
  * Install initial commands.
  *)
+let y_sym = Lm_symbol.add "y"
+let n_sym = Lm_symbol.add "n"
+let t_sym = Lm_symbol.add "t"
+let s_sym = Lm_symbol.add "s"
+let i_sym = Lm_symbol.add "i"
+let l_sym = Lm_symbol.add "l"
+let v_sym = Lm_symbol.add "v"
+let raw_sym = Lm_symbol.add "raw"
+let plain_sym = Lm_symbol.add "plain"
+let eq_sym = Lm_symbol.add "eq"
+
 let init_list =
-   ["sbreak", [MString "y"; MString "n"], sbreak;
-    "cbreak", [MString "y"; MString "n"], cbreak;
-    "hbreak", [MString "y"; MString "n"], hbreak;
+   ["sbreak", [MString y_sym; MString n_sym], sbreak;
+    "cbreak", [MString y_sym; MString n_sym], cbreak;
+    "hbreak", [MString y_sym; MString n_sym], hbreak;
     "space", [], space;
     "hspace", [], hspace;
     "newline", [], newline;
@@ -661,22 +682,23 @@ let init_list =
     "hzone", [], hzone;
     "izone", [], izone;
     "ezone", [], ezone;
-    "tzone", [MString "t"], tzone;
-    "pushm", [MNumber "i"], pushm;
-    "pushm", [MString "s"], pushm;
+    "tzone", [MString t_sym], tzone;
+    "pushm", [MNumber i_sym], pushm;
+    "pushm", [MString s_sym], pushm;
     "pushm", [], pushm;
     "popm", [], popm;
-    "pushfont", [MString "plain"], pushfont;
+    "pushfont", [MString plain_sym], pushfont;
     "popfont", [], popfont;
-    "slot", [MString "raw"; MString "s"], slot;
-    "slot", [MString "s"], slot;
-    "slot", [MLevel (mk_var_level_exp "l")], slot;
-    "slot", [MToken "t"], slot;
-    "slot", [MNumber "n"], slot;
-    "slot", [MVar "v"], slot
+    "slot", [MString raw_sym; MString s_sym], slot;
+    "slot", [MString s_sym], slot;
+    "slot", [MLevel (mk_var_level_exp l_sym)], slot;
+    "slot", [MToken t_sym], slot;
+    "slot", [MNumber n_sym], slot;
+    "slot", [Var v_sym], slot;
    ]
 
 let null_list =
+   let v_bterms = [mk_bterm [] (mk_var_term v_sym) ] in
    let rec aux (name, params, f) =
          let term = mk_term (mk_op (make_opname [name]) (List.map make_param params)) [] in
             { dform_name = name;
@@ -688,8 +710,7 @@ let null_list =
    let slot_entry1 =
       { dform_name = "slot_entry1";
         dform_pattern =
-           mk_term (mk_op slot_opname [make_param (MString "eq")])
-              [mk_bterm [] (mk_var_term "v")];
+           mk_term (mk_op slot_opname [make_param (MString eq_sym)]) v_bterms;
         dform_options = [DFormInheritPrec; DFormInternal];
         dform_print = DFormPrinter slot
       }
@@ -697,8 +718,7 @@ let null_list =
    let slot_entry2 =
       { dform_name = "slot_entry2";
         dform_pattern =
-           mk_term (mk_op slot_opname [])
-              [mk_bterm [] (mk_var_term "v")];
+           mk_term (mk_op slot_opname []) v_bterms;
         dform_options = [DFormInheritPrec; DFormInternal];
         dform_print = DFormPrinter slot
       }
@@ -796,7 +816,7 @@ let rec format_mterm base buf = function
  | MetaLabeled (l, t) ->
       format_szone buf;
       format_pushm buf 0;
-      format_string buf ( " ("^l^")" );
+      format_string buf ( " [\"" ^ l ^ "\"]" );
       format_hspace buf;
       format_mterm base buf t;
       format_popm buf;

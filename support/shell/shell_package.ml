@@ -178,7 +178,7 @@ let term_of_str_item = term_of_str_item [] comment
 let term_of_resource = FilterOCaml.term_of_resource_sig resource_op
 
 let convert_intf =
-   let null_term    = mk_var_term "..." in
+   let null_term    = mk_xstring_term "..." in
       { term_f      = identity;
         meta_term_f = term_of_meta_term;
         proof_f     = (fun _ _ -> null_term);
@@ -191,25 +191,25 @@ let convert_intf =
 let convert_impl =
    let convert_proof _ = function
       Primitive t ->
-         mk_so_var_term "!" [t]
+         <:con<status_primitive{$t$}>>
     | Derived expr ->
-         mk_var_term "?"
+         <<status_asserted>>
     | Incomplete ->
-         mk_var_term "#"
+         <<status_partial>>
     | Interactive proof ->
-         let code =
+         let status =
             match Package.status_of_proof proof with
                Proof.StatusBad ->
-                  "-"
+                  <<status_bad>>
              | Proof.StatusPartial ->
-                  "#"
+                  <<status_partial>>
              | Proof.StatusIncomplete ->
-                  "?"
+                  <<status_asserted>>
              | Proof.StatusComplete ->
-                  "*"
+                  <<status_complete>>
          in
          let rcount, ncount = Package.node_count_of_proof proof in
-            mk_var_term (sprintf "%s[%d,%d]" code rcount ncount)
+            <:con<status_interactive[$int:rcount$, $int:ncount$]{$status$}>>
    in
       { term_f      = identity;
         meta_term_f = term_of_meta_term;
@@ -252,7 +252,7 @@ let is_rule_item = function
 let is_formal_item = function
    Rewrite _ | CondRewrite _ | MLRewrite _ | Rule _ | MLAxiom  _ | Definition _ | Parent _ | Opname _ ->
       true
- | SummaryItem _ | Improve _ | Resource _ | InputForm _ | Comment _ | MagicBlock _ 
+ | SummaryItem _ | Improve _ | Resource _ | InputForm _ | Comment _ | MagicBlock _
  | ToploopItem _ | Infix _ | Prec _ | DForm _ | Module _ | Id _ | PrecRel _ ->
       false
 
@@ -286,7 +286,7 @@ let compile_ls_predicate = function
    [] ->
       (fun _ -> true)
  | predicate ->
-      (fun (item, _) -> List_util.allp (fun pred -> pred item) predicate)
+      (fun (item, _) -> Lm_list_util.allp (fun pred -> pred item) predicate)
 
 let rec mk_ls_filter predicate = function
    LsAll :: tl ->

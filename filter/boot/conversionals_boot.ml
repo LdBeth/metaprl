@@ -34,7 +34,7 @@
  * jyh@cs.cornell.edu
  *)
 
-open Mp_debug
+open Lm_debug
 open Printf
 
 open Refiner.Refiner

@@ -32,8 +32,7 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Alexey Nogin <nogin@cs.cornell.edu>
  *)
-
-open String_set
+open Lm_symbol
 open Refiner.Refiner.Term
 
 open Unify_mm
@@ -45,8 +44,8 @@ open Tactic_type.Tacticals
 (*
  * Some generic renaming of type variables.
  *)
-type ty_var = string
-module TyVarSet : Set_sig.SetSig with type elt = ty_var
+type ty_var = var
+module TyVarSet : Lm_set.LmSet with type elt = ty_var
 module TyEnv : Set_sig.TableSig
                with type elt = ty_var
                with type data = term

@@ -28,12 +28,12 @@
 open Refine_error_sig
 
 open Printf
-open Mp_debug
+open Lm_debug
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Opname
-open Mp_num
+open Lm_num
 
 let _ =
    show_loading "Loading Nuprl5%t"
@@ -45,7 +45,7 @@ let nuprl5_opname_p opname = opname = nuprl5_opname
 
 let make_bool_parameter b =
   make_param (ParamList
-		[(make_param (Token "bool")); (make_param (Number (Mp_num.num_of_int (if b then 1 else 0))))])
+		[(make_param (Token "bool")); (make_param (Number (Lm_num.num_of_int (if b then 1 else 0))))])
 
 let make_time_parameter time =
   make_param (ParamList
@@ -66,7 +66,7 @@ let bool_parameter_p p =
   match (dest_param p) with
     ParamList [h; v] -> (match (dest_param h) with
       Token s -> if s = "bool" then (match (dest_param v) with
-	Number i when Mp_num.is_integer_num i -> let i = Mp_num.int_of_num i in (i = 1 || i = 0)
+	Number i when Lm_num.is_integer_num i -> let i = Lm_num.int_of_num i in (i = 1 || i = 0)
       | _ -> false) else false
     | _ -> false)
   | _ -> false
@@ -86,7 +86,7 @@ let destruct_bool_parameter p =
   match (dest_param p) with
     ParamList [h; v] -> (match (dest_param h) with
       Token s -> if s = "bool" then (match (dest_param v) with
-	Number i when Mp_num.is_integer_num i -> let i = Mp_num.int_of_num i in i = 1
+	Number i when Lm_num.is_integer_num i -> let i = Lm_num.int_of_num i in i = 1
       | _ -> raise (Invalid_argument "destruct_bool_parameter"))
       else raise (Invalid_argument "destruct_bool_parameter")
     | _ -> raise (Invalid_argument "destruct_bool_parameter"))

@@ -30,9 +30,10 @@
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *
  *)
+open Lm_symbol
 
 open Printf
-open Mp_debug
+open Lm_debug
 
 open Rformat
 open Opname
@@ -50,6 +51,12 @@ let debug_simple_print =
         debug_description = "show simple printing operations";
         debug_value = false
       }
+
+let format_quoted_var buf v =
+   format_quoted_string buf (Lm_symbol.string_of_symbol v)
+
+let format_var buf v =
+   format_string buf (Lm_symbol.string_of_symbol v)
 
 module MakeSimplePrint (Refiner : RefinerSig) =
 struct
@@ -85,11 +92,11 @@ struct
          match dest_level_var lv with
             { le_var = v; le_offset = o } ->
                if o < 3 then begin
-                  format_quoted_string buf v;
+                  format_quoted_var buf v;
                   format_quotes o
                end
                else begin
-                  format_quoted_string buf v;
+                  format_quoted_var buf v;
                   format_char buf ' ';
                   format_int buf o
                end
@@ -101,12 +108,12 @@ struct
                (match dest_level_var v with
                   { le_var = v; le_offset = o } ->
                      if o < 3 then begin
-                     format_quoted_string buf v;
+                     format_quoted_var buf v;
                      format_quotes o
                   end
                   else begin
                      format_string buf "{";
-                     format_quoted_string buf v;
+                     format_quoted_var buf v;
                      format_int buf o;
                      format_string buf "}"
                   end)
@@ -162,12 +169,11 @@ struct
          Number n -> format_num buf n; format_string buf ":n"
        | String s -> format_char buf '"'; format_string buf (String.escaped s); format_char buf '"'; format_string buf ":s"
        | Token t -> format_char buf '"'; format_string buf (String.escaped t); format_char buf '"'; format_string buf ":t"
-       | Var v -> format_char buf '"'; format_string buf v; format_char buf '"'; format_string buf ":v"
-       | MNumber v -> format_string buf v; format_string buf ":n"
-       | MString v -> format_string buf v; format_string buf ":s"
-       | MToken v -> format_string buf v; format_string buf ":t"
+       | MNumber v -> format_var buf v; format_string buf ":n"
+       | MString v -> format_var buf v; format_string buf ":s"
+       | MToken v -> format_var buf v; format_string buf ":t"
        | MLevel l -> format_level_exp buf l; format_string buf ":l"
-       | MVar v -> format_string buf v; format_string buf ":v"
+       | Var v -> format_var buf v; format_string buf ":v"
        | ObId a -> format_string buf "<object-id>"
        | ParamList l ->
             let rec format = function
@@ -216,9 +222,9 @@ struct
        | { bvars = vars; bterm = term } ->
             let rec format_bvars = function
                [] -> ()
-             | [h] -> format_quoted_string buf h
+             | [h] -> format_quoted_var buf h
              | h::t ->
-                  format_quoted_string buf h;
+                  format_quoted_var buf h;
                   format_string buf ", ";
                   format_bvars t
             in
@@ -279,10 +285,10 @@ struct
                format_popm buf
          in
             if !debug_simple_print then
-               eprintf "Simple_print.format_term: var: %s%t" v eflush;
+               eprintf "Simple_print.format_term: var: %a%t" print_symbol v eflush;
             if subterms = [] then
                format_char buf '\'';
-            format_quoted_string buf v;
+            format_quoted_var buf v;
             if !debug_simple_print then
                eprintf "Simple_print.format_terms%t" eflush;
             format_terms subterms
@@ -304,7 +310,7 @@ struct
                   match SeqHyp.get hyps i with
                      HypBinding (v,t) ->
                         begin
-                           format_string buf v;
+                           format_string buf (string_of_symbol v);
                            format_string buf " :";
                            format_pushm buf 1;
                            format_term buf t;
@@ -318,7 +324,7 @@ struct
                         end
                    | Context (v,ts) ->
                         begin
-                           format_string buf ("<" ^ v);
+                           format_string buf ("<" ^ (string_of_symbol v));
                            format_termlist buf ts;
                            format_string buf (">");
                         end
@@ -422,7 +428,7 @@ struct
     | MetaLabeled (l, t) ->
          format_szone buf;
          format_pushm buf 0;
-         format_string buf ( " ("^l^")" );
+         format_string buf ( " [\"" ^ l ^"\"]" );
          format_mterm buf t;
          format_popm buf;
          format_ezone buf

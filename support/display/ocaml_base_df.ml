@@ -32,7 +32,7 @@
 extends Nuprl_font
 extends Base_dform
 
-open Mp_debug
+open Lm_debug
 open Printf
 
 open Refiner.Refiner

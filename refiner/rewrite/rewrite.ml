@@ -35,9 +35,10 @@
 
 INCLUDE "refine_error.mlh"
 
+open Lm_symbol
+
 open Printf
-open Mp_debug
-open String_set
+open Lm_debug
 
 open Opname
 open Term_sig
@@ -157,26 +158,31 @@ struct
    type rewrite_rule = RewriteTypes.rewrite_rule
    type rewrite_redex = RewriteTypes.rewrite_redex
 
-   type rewrite_args_spec = string array
-   type rewrite_args = int array * StringSet.t
+   type rewrite_args_spec = var array
+   type rewrite_args = int array * SymbolSet.t
 
    (*
     * Types for redex matching.
     *)
    type rewrite_type =
-      RewriteTermType of string
-    | RewriteFunType of string
-    | RewriteContextType of string
-    | RewriteStringType of string
-    | RewriteNumType of string
-    | RewriteLevelType of string
+      RewriteTermType
+    | RewriteFunType
+    | RewriteContextType
+    | RewriteStringType
+    | RewriteNumType
+    | RewriteLevelType
+    | RewriteVarType
+
+   type 'a rewrite_param =
+      RewriteParam of 'a
+    | RewriteMetaParam of var
 
    type rewrite_item =
       RewriteTerm of term
     | RewriteFun of (term list -> term)
     | RewriteContext of (term -> term list -> term)
-    | RewriteString of string
-    | RewriteNum of Mp_num.num
+    | RewriteString of string rewrite_param
+    | RewriteNum of Lm_num.num rewrite_param
     | RewriteLevel of level_exp
 
    type strict = RewriteTypes.strict = Strict | Relaxed
@@ -196,13 +202,13 @@ struct
    let opname_exn = RefineError ("Rewrite.apply_rewrite", RewriteStringError "opnames do not match")
 
    let empty_args_spec = [||]
-   let empty_args = [||], StringSet.empty
+   let empty_args = [||], SymbolSet.empty
 
    let rec collect_hyp_bnames hyps bnames len i =
-      if (len=0) then bnames else 
+      if (len=0) then bnames else
          let bnames =
             match SeqHyp.get hyps i with
-               HypBinding (v, _) | Context (v, _) -> StringSet.add bnames v
+               HypBinding (v, _) | Context (v, _) -> SymbolSet.add bnames v
              | Hypothesis _ -> bnames
          in
             collect_hyp_bnames hyps bnames (len-1) (i+1)
@@ -212,7 +218,7 @@ struct
          StackSeqContext (_, (i', len', hyps)) ->
             collect_bnames stack (collect_hyp_bnames hyps bnames len' i') len (i+1)
        | StackBTerm (hyp, vars) ->
-            collect_bnames stack (StringSet.union bnames (List.fold_left StringSet.remove (free_vars_set hyp) vars)) len (i+1)
+            collect_bnames stack (SymbolSet.union bnames (List.fold_left SymbolSet.remove (free_vars_set hyp) vars)) len (i+1)
        | _ -> collect_bnames stack bnames len (i+1)
 
    (*
@@ -236,8 +242,8 @@ struct
       in
       let bnames =
          if (rw.rr_strict==Strict) then
-            StringSet.union bnames (free_vars_set goal)
-         else StringSet.empty
+            SymbolSet.union bnames (free_vars_set goal)
+         else SymbolSet.empty
       in
       let gstack = Array.create rw.rr_gstacksize StackVoid in
          IFDEF VERBOSE_EXN THEN
@@ -254,7 +260,7 @@ struct
                   ENDIF;
                   let bnames = if (rw.rr_strict==Strict) then
                      collect_bnames gstack bnames rw.rr_gstacksize 0
-                     else StringSet.empty
+                     else SymbolSet.empty
                   in List.map (build_contractum (Array.copy enames) bnames gstack) con
              | RWCFunction f ->
                   if params == [] then
@@ -272,14 +278,14 @@ struct
     * Compute the redex types.
     *)
    let extract_redex_type = function
-      FOVarPattern s -> RewriteTermType s
+      FOVarPattern s -> RewriteTermType, s
     | SOVarPattern (s, _)
-    | SOVarInstance (s, _) -> RewriteFunType s
-    | CVar s -> RewriteContextType s
-    | PVar (s, ShapeNumber) -> RewriteNumType s
-    | FOVar s
-    | PVar (s, (ShapeString | ShapeToken | ShapeVar)) -> RewriteStringType s
-    | PVar (s, ShapeLevel) -> RewriteLevelType s
+    | SOVarInstance (s, _) -> RewriteFunType, s
+    | CVar s -> RewriteContextType, s
+    | PVar (s, ShapeNumber) -> RewriteNumType, s
+    | FOVar s | PVar (s, ShapeVar) -> RewriteVarType, s
+    | PVar (s, (ShapeString | ShapeToken)) -> RewriteStringType, s
+    | PVar (s, ShapeLevel) -> RewriteLevelType, s
 
    let extract_redex_types { redex_stack = stack } =
       let l = Array.length stack in
@@ -328,24 +334,25 @@ struct
              | _ -> REF_RAISE(extract_exn)
          end
     | PVar (_, ShapeNumber) ->
-         begin
+         RewriteNum begin
             match gstack with
-               StackNumber i -> RewriteNum i
-             | StackMString s -> RewriteString s
+               StackNumber i -> RewriteParam i
+             | StackVar v -> RewriteMetaParam v
              | _ -> REF_RAISE(extract_exn)
          end
     | FOVar _
     | PVar (_, (ShapeString | ShapeToken | ShapeVar)) ->
-         begin
+         RewriteString begin
             match gstack with
-               StackString s | StackMString s -> RewriteString s
+               StackString s -> RewriteParam s
+             | StackVar v -> RewriteMetaParam v
              | _ -> REF_RAISE(extract_exn)
          end
     | PVar (_, ShapeLevel) ->
-         begin
+         RewriteLevel begin
             match gstack with
-               StackLevel l -> RewriteLevel l
-             | StackMString s -> RewriteString s
+               StackLevel l -> l
+             | StackVar v -> mk_var_level_exp v
              | _ -> REF_RAISE(extract_exn)
          end
 
@@ -364,18 +371,18 @@ struct
     *)
    let test_redex_applicability { redex_stack = stack; redex_redex = redex } addrs term terms =
       let gstack = Array.create (Array.length stack) StackVoid in
-         match_redex addrs gstack StringSet.empty term terms redex
+         match_redex addrs gstack SymbolSet.empty term terms redex
 
    let apply_redex { redex_stack = stack; redex_redex = redex } addrs term terms =
       let gstack = Array.create (Array.length stack) StackVoid in
-         match_redex addrs gstack StringSet.empty term terms redex;
+         match_redex addrs gstack SymbolSet.empty term terms redex;
          extract_redex_values gstack stack
 
    (*
     * Build a contractum from the spec and a stack.
     *)
    let make_contractum { con_contractum = con } gstack =
-      build_contractum [||] StringSet.empty gstack con
+      build_contractum [||] SymbolSet.empty gstack con
 
    (*
     * Compile redex and contractum, and form a rewrite rule.

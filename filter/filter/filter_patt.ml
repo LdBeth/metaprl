@@ -41,7 +41,8 @@
  * Modified By: Aleksey Nogin @email{nogin@cs.caltech.edu}
  * @end[license]
  *)
-open Mp_debug
+open Lm_symbol
+open Lm_debug
 
 open Opname
 open Refiner.Refiner.TermType
@@ -57,11 +58,7 @@ open Filter_util
  * Turn a term into a pattern expression.
  * The bterms should all be vars.
  *)
-let build_term_patt t =
-   (* Fake the location for now *)
-   let loc = 0, 0 in
-
-   if is_var_term t then <:patt< $lid: dest_var t$ >> else
+let build_term_nonvar_patt loc t =
 
    let { term_op = op; term_terms = bterms } = dest_term t in
    let { op_name = op; op_params = params } = dest_op op in
@@ -74,9 +71,9 @@ let build_term_patt t =
       List.map (fun param ->
             match dest_param param with
                Number n ->
-                  if not (Mp_num.is_integer_num n) then
+                  if not (Lm_num.is_integer_num n) then
                      raise (Invalid_argument "build_term_patt: number is not an integer");
-                  let i = string_of_int (Mp_num.int_of_num n) in
+                  let i = string_of_int (Lm_num.int_of_num n) in
                      <:patt< Refiner.Refiner.TermType.MatchNumber ( _, Some $int:i$ ) >>
 
              | String s ->
@@ -85,27 +82,24 @@ let build_term_patt t =
              | Token s ->
                   <:patt< Refiner.Refiner.TermType.MatchToken $str: String.escaped s$ >>
 
-             | Var s ->
-                  <:patt< Refiner.Refiner.TermType.MatchVar $str: String.escaped s$ >>
-
              | MNumber v ->
-                  <:patt< Refiner.Refiner.TermType.MatchNumber ( $lid: v$, _ ) >>
+                  <:patt< Refiner.Refiner.TermType.MatchNumber ( $lid: (string_of_symbol v)$, _ ) >>
 
              | MString v ->
-                  <:patt< Refiner.Refiner.TermType.MatchString $lid: v$ >>
+                  <:patt< Refiner.Refiner.TermType.MatchString $lid: (string_of_symbol v)$ >>
 
              | MToken v ->
-                  <:patt< Refiner.Refiner.TermType.MatchToken $lid: v$ >>
+                  <:patt< Refiner.Refiner.TermType.MatchToken $lid: (string_of_symbol v)$ >>
 
-             | MVar v ->
-                  <:patt< Refiner.Refiner.TermType.MatchVar $lid: v$ >>
+             | Var v ->
+                  <:patt< Refiner.Refiner.TermType.MatchVar $lid: (string_of_symbol v)$ >>
 
              | MLevel l ->
                   (match dest_level l with
                       { le_const = 0; le_vars = [v] } ->
                          (match dest_level_var v with
                              { le_var = v; le_offset = 0 } ->
-                                 <:patt< Refiner.Refiner.TermType.MatchLevel $lid: v$ >>
+                                 <:patt< Refiner.Refiner.TermType.MatchLevel $lid: (string_of_symbol v)$ >>
                            | _ ->
                               raise (Invalid_argument "term_patt: complex level expressions not supported"))
                     | _ ->
@@ -127,15 +121,24 @@ let build_term_patt t =
                raise (Invalid_argument "term_patt: subterms must be variables")
          in
          let v, _ = dest_so_var t in
-         let bvars_rhs = List.fold_right (fun v l -> <:patt< [$lid:v$ :: $l$] >>) bvars <:patt< [] >> in
+         let bvars_rhs = List.fold_right (fun v l -> <:patt< [$lid: string_of_symbol v$ :: $l$] >>) bvars <:patt< [] >> in
             <:patt< { Refiner.Refiner.TermType.bvars = $bvars_rhs$;
-                      Refiner.Refiner.TermType.bterm = $lid: v$
+                      Refiner.Refiner.TermType.bterm = $lid: string_of_symbol v$
                     } >>) bterms
    in
    let bterms = List.fold_right (fun x l -> <:patt< [$x$ :: $l$] >>) bterms <:patt< [] >> in
 
       (* Full pattern match is a triple *)
       <:patt< ( $ops$ , $params$ , $bterms$ ) >>
+
+let build_term_patt t =
+   (* Fake the location for now *)
+   let loc = 0, 0 in
+
+   if is_var_term t then
+      <:patt< $lid: string_of_symbol (dest_var t)$ >>
+   else
+      build_term_nonvar_patt loc t
 
 (*!
  * @docoff

@@ -31,9 +31,10 @@
 
 INCLUDE "refine_error.mlh"
 
+open Lm_symbol
+
 open Printf
-open Mp_debug
-open String_set
+open Lm_debug
 
 open Refine_error_sig
 open Term_ds_sig
@@ -248,7 +249,7 @@ struct
    let rec collect_hyp_bvars i hyps bvars =
       if i < 0 then bvars
       else match SeqHyp.get hyps i with
-         HypBinding (v,_) -> collect_hyp_bvars (pred i) hyps (StringSet.add bvars v)
+         HypBinding (v,_) -> collect_hyp_bvars (pred i) hyps (SymbolSet.add bvars v)
        | Hypothesis _ | Context _ -> collect_hyp_bvars (pred i) hyps bvars
 
    let collect_goal_bvars hyps = collect_hyp_bvars (SeqHyp.length hyps - 1) hyps
@@ -366,7 +367,7 @@ struct
    UNDEF VARS_BVARS
 
    DEFMACRO BVARS = bvars
-   DEFMACRO VARS_BVARS = List.fold_left StringSet.add bvars vars
+   DEFMACRO VARS_BVARS = List.fold_left SymbolSet.add bvars vars
    DEFMACRO HYP_BVARS = (collect_hyp_bvars (pred i) s.sequent_hyps BVARS)
    DEFMACRO GOAL_BVARS = (collect_goal_bvars s.sequent_hyps BVARS)
    DEFMACRO PATH_REPLACE_TERM = path_var_replace_term
@@ -493,7 +494,7 @@ struct
          [], coll
     | ({ bvars = bvars'; bterm = term } :: bterms) as bterms' ->
          let bterms_new, args = apply_var_fun_higher_bterms f bvars coll bterms in
-         let bterm_new, args = apply_var_fun_higher_term f (List.fold_left StringSet.add bvars bvars') args term in
+         let bterm_new, args = apply_var_fun_higher_term f (List.fold_left SymbolSet.add bvars bvars') args term in
             if args == coll then
                bterms', coll
             else
@@ -559,6 +560,6 @@ struct
                   REF_RAISE(RefineError (nth_clause_addr_name, TermMatchError (t, "not enough hyps for a negative addressing")))
        | _ ->
             REF_RAISE(RefineError (nth_clause_addr_name, TermMatchError (t, "not a sequent")))
- 
+
 end
 

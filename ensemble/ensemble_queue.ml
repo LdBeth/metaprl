@@ -30,8 +30,8 @@
  * jyh@cs.cornell.edu
  *)
 
-open Mp_debug
-open Thread_util
+open Lm_debug
+open Lm_thread_util
 
 open Printf
 
@@ -194,7 +194,7 @@ struct
          *)
         mutable mp_pending_lock : ('a, 'b) lock option;
         mutable mp_upcalls : ('a, 'b) upcall list;
-        mp_upcall_chan : ('a, 'b) upcall Thread_event.channel;
+        mp_upcall_chan : ('a, 'b) upcall Lm_thread_event.channel;
 
         (*
          * Server info:
@@ -353,7 +353,7 @@ struct
                eprintf "Ensemble_queue.issue_upcall%t" eflush;
                unlock_printer ()
             end;
-         Thread_event.sync 0 (Thread_event.send info.mp_upcall_chan upcall)
+         Lm_thread_event.sync 0 (Lm_thread_event.send info.mp_upcall_chan upcall)
       in
          if upcalls <> [] then
             begin
@@ -1081,7 +1081,7 @@ struct
     * This should be the first queued message to go out.
     *)
    let cast_stack info =
-      if Array_util.all_true info.mp_rank_flags then
+      if Lm_array_util.all_true info.mp_rank_flags then
          let { mp_unlocked = unlocked;
                mp_local = local;
                mp_remote = remote;
@@ -1105,7 +1105,7 @@ struct
     * broadcast the new stack.
     *)
    let handle_queue_send info srcid unlocked local remote shares =
-      let rank = List_util.find_index srcid (Appl_outboard_client.view info.mp_ensemble) in
+      let rank = Lm_list_util.find_index srcid (Appl_outboard_client.view info.mp_ensemble) in
          if !debug_message then
             begin
                lock_printer ();
@@ -1150,7 +1150,7 @@ struct
       let id = Appl_outboard_client.endpt info.mp_ensemble in
       let view = Appl_outboard_client.view info.mp_ensemble in
       let length = List.length view in
-      let rank = List_util.find_index id view in
+      let rank = Lm_list_util.find_index id view in
          if !debug_message then
             begin
                lock_printer ();
@@ -1379,7 +1379,7 @@ struct
 
         mp_pending_lock = None;
         mp_upcalls = [];
-        mp_upcall_chan = Thread_event.new_channel ();
+        mp_upcall_chan = Lm_thread_event.new_channel ();
 
         mp_new_view = false;
         mp_rank_flags = [||];
@@ -1428,7 +1428,7 @@ struct
     * Get the upcall event queue.
     *)
    let event_of_queue info =
-      Thread_event.receive info.mp_upcall_chan
+      Lm_thread_event.receive info.mp_upcall_chan
 
    (*
     * Add a new element to the queue.

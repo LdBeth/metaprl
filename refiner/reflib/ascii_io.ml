@@ -30,12 +30,13 @@
  * nogin@cs.cornell.edu
  *
  *)
+open Lm_symbol
+open Lm_string_set
 
 open Printf
-open Mp_debug
+open Lm_debug
 
 open Opname
-open String_set
 
 open Termmod_hash_sig
 
@@ -129,6 +130,7 @@ struct
    let add_bterm r = function
       (_, name, term::vars) ->
          let term = Hashtbl.find r.io_terms term in
+         let vars = List.map Lm_symbol.add vars in
          hash_add_new r.io_bterms name { bvars = vars; bterm = term }
      | _ ->
          fail "add_bterm"
@@ -136,7 +138,7 @@ struct
    let add_hyp r = function
       (_, name, [var;term]) ->
          let term = Hashtbl.find r.io_terms term in
-         hash_add_new r.io_hyps name (HypBinding(var,term))
+         hash_add_new r.io_hyps name (HypBinding(Lm_symbol.add var,term))
     | (_, name, [term]) ->
          let term = Hashtbl.find r.io_terms term in
          hash_add_new r.io_hyps name (Hypothesis term)
@@ -146,7 +148,7 @@ struct
    let add_context r = function
       (_, name, v::terms) ->
          let terms = List.map (Hashtbl.find r.io_terms) terms in
-         hash_add_new r.io_hyps name (Context(v,terms))
+         hash_add_new r.io_hyps name (Context(Lm_symbol.add v,terms))
     | _ ->
          fail "add_context"
 
@@ -176,7 +178,7 @@ struct
 
    let rec level_exp_vars = function
       var::offset::vars ->
-         make_level_var { le_var = var; le_offset = int_of_string offset } ::
+         make_level_var { le_var = Lm_symbol.add var; le_offset = int_of_string offset } ::
             level_exp_vars vars
     | [] ->
          []
@@ -185,21 +187,21 @@ struct
 
    let add_param r = function
       (_, name, ["Number"; n]) ->
-         hash_add_new r.io_params name (constr_param (Number (Mp_num.num_of_string n)))
+         hash_add_new r.io_params name (constr_param (Number (Lm_num.num_of_string n)))
     | (_, name, ["String"; s]) ->
          hash_add_new r.io_params name (constr_param (String s))
     | (_, name, ["Token"; s]) ->
          hash_add_new r.io_params name (constr_param (Token s))
     | (_, name, ["Var"; s]) ->
-         hash_add_new r.io_params name (constr_param (Var s))
+         hash_add_new r.io_params name (constr_param (Var (Lm_symbol.add s)))
     | (_, name, ["MNumber"; s]) ->
-         hash_add_new r.io_params name (constr_param (MNumber s))
+         hash_add_new r.io_params name (constr_param (MNumber (Lm_symbol.add s)))
     | (_, name, ["MString"; s]) ->
-         hash_add_new r.io_params name (constr_param (MString s))
+         hash_add_new r.io_params name (constr_param (MString (Lm_symbol.add s)))
     | (_, name, ["MToken"; s]) ->
-         hash_add_new r.io_params name (constr_param (MToken s))
-    | (_, name, ["MVar"; s]) ->
-         hash_add_new r.io_params name (constr_param (MVar s))
+         hash_add_new r.io_params name (constr_param (MToken (Lm_symbol.add s)))
+    | (_, name, ["MVar"; s]) (* XXX HACK: support file versions 1.0.5 and below *) ->
+         hash_add_new r.io_params name (constr_param (Var (Lm_symbol.add s)))
     | (_, name, "MLevel" :: n :: vars) ->
          let l = make_level { le_const = int_of_string n; le_vars = level_exp_vars vars } in
          hash_add_new r.io_params name (constr_param (MLevel l))
@@ -274,7 +276,7 @@ struct
             if String.length line = 0 || line.[0] = '#' then
                collect (succ lineno)
             else
-               let args = String_util.parse_args line in
+               let args = Lm_string_util.parse_args line in
                let _ =
                   match args with
                      arg1 :: arg2 :: args ->
@@ -356,7 +358,7 @@ struct
        | ((comment,name,record) as item :: tail) as original ->
             let tail' = clean_inputs tail in
             let c = Char.uppercase comment.[0] in
-            let record' = List_util.smap rename record in
+            let record' = Lm_list_util.smap rename record in
             begin match Hashtbl.find_all h_reverse (c, record'), c with
                [], _ | _, ('S'| 'G' ) ->
                   begin match c with
@@ -510,7 +512,7 @@ struct
          let (t_name, t_ind) = out_term ctrl data t in
          let hyp, i_data = match h with
             TermType.HypBinding(v, _) ->
-               HypBinding (v,t_ind), [v; t_name] 
+               HypBinding (v,t_ind), [string_of_symbol v; t_name]
           | _ -> Hypothesis t_ind, [t_name]
          in try
             let name = HashHyp.find data.out_hyps hyp in
@@ -527,7 +529,7 @@ struct
     | TermType.Context (v,ts) as h -> begin
          let terms = List.map (out_term ctrl data) ts in
          let hyp = Context (v, List.map snd terms) in
-         let i_data = v :: (List.map fst terms) in
+         let i_data = string_of_symbol v :: (List.map fst terms) in
          try
             let name = HashHyp.find data.out_hyps hyp in
             check_old data name i_data;
@@ -563,7 +565,7 @@ struct
       let bt' = dest_bterm bt in
       let (term_name, term_ind) = out_term ctrl data bt'.TermType.bterm in
       let bt'' = { bvars = bt'.TermType.bvars; bterm = term_ind } in
-      let i_data = term_name :: bt'.TermType.bvars in
+      let i_data = term_name :: List.map string_of_symbol bt'.TermType.bvars in
       try
          let name = HashBTerm.find data.out_bterms bt'' in
          check_old data name i_data;
@@ -597,20 +599,19 @@ struct
       [] -> []
     | v :: vs ->
          let v' = dest_level_var v in
-         v'.le_var :: (string_of_int v'.le_offset) :: map_level_vars vs
+         string_of_symbol v'.le_var :: (string_of_int v'.le_offset) :: map_level_vars vs
 
    and out_param ctrl data param =
       let param' = constr_param (dest_param param) in
       let i_data =
          match dest_param param with
-            Number n -> ["Number"; Mp_num.string_of_num n]
+            Number n -> ["Number"; Lm_num.string_of_num n]
           | String s -> ["String"; s]
           | Token s -> ["Token"; s]
-          | Var s -> ["Var"; s]
-          | MNumber s -> ["MNumber"; s]
-          | MString s -> ["MString"; s]
-          | MToken s -> ["MToken"; s]
-          | MVar s -> ["Mvar"; s]
+          | Var s -> ["Var"; string_of_symbol s]
+          | MNumber s -> ["MNumber"; string_of_symbol s]
+          | MString s -> ["MString"; string_of_symbol s]
+          | MToken s -> ["MToken"; string_of_symbol s]
           | MLevel le ->
                let le' = dest_level le in
                "MLevel" :: (string_of_int le'.le_const) :: (map_level_vars le'.le_vars)
@@ -667,16 +668,16 @@ struct
 
    let rec output_aux out = function
       [] -> raise (Invalid_argument "Ascii_io.output_aux")
-    | [str] -> output_string out (String_util.quote str)
+    | [str] -> output_string out (Lm_string_util.quote str)
     | str :: strs ->
-         output_string out (String_util.quote str);
+         output_string out (Lm_string_util.quote str);
          output_char out ' ';
          output_aux out strs
 
    let simple_output_line out (str1, str2, strs) =
-      output_string out (String_util.quote str1);
+      output_string out (Lm_string_util.quote str1);
       output_char out '\t';
-      output_string out (String_util.quote str2);
+      output_string out (Lm_string_util.quote str2);
       output_char out '\t';
       output_aux out strs;
       output_char out '\n'

@@ -63,10 +63,10 @@ struct
    let split t ind =
       Array.sub t 0 ind, t.(ind), Array.sub t (succ ind) (Array.length t - ind - 1)
 
-   let lazy_sub_map = Array_util.sub_map
-   let append_list = Array_util.append_list_array
+   let lazy_sub_map = Lm_array_util.sub_map
+   let append_list = Lm_array_util.append_list_array
    let mapi = Array.mapi
    let init = Array.init
-   let collect = Array_util.collect
+   let collect = Lm_array_util.collect
 
 end

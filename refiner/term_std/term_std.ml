@@ -31,10 +31,11 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Lm_symbol
 
 open Printf
 
-open Mp_debug
+open Lm_debug
 open Opname
 open Refine_error_sig
 
@@ -64,7 +65,7 @@ struct
     * Level expression have offsets from level expression
     * vars, plus a constant offset.
     *)
-   and level_exp_var' = { le_var : string; le_offset : int }
+   and level_exp_var' = { le_var : var; le_offset : int }
 
    and level_exp' = { le_const : int; le_vars : level_exp_var list }
 
@@ -72,15 +73,14 @@ struct
     * Parameters have a number of simple types.
     *)
    and param' =
-      Number of Mp_num.num
+      Number of Lm_num.num
     | String of string
     | Token of string
-    | Var of string
-    | MNumber of string
-    | MString of string
-    | MToken of string
+    | Var of var
+    | MNumber of var
+    | MString of var
+    | MToken of var
     | MLevel of level_exp
-    | MVar of string
     | ObId of object_id
     | ParamList of param list
 
@@ -97,7 +97,7 @@ struct
     * that may be bound.
     *)
    and term' = { term_op : operator; term_terms : bound_term list }
-   and bound_term' = { bvars : string list; bterm : term }
+   and bound_term' = { bvars : var list; bterm : term }
 
    (*
     * Define a type of parameters used in pattern matching.
@@ -106,10 +106,10 @@ struct
     * and there are no Nuprl5 params.
     *)
    type match_param =
-      MatchNumber of Mp_num.num * int option
+      MatchNumber of Lm_num.num * int option
     | MatchString of string
     | MatchToken of string
-    | MatchVar of string
+    | MatchVar of var
     | MatchLevel of level_exp
     | MatchUnsupported
 
@@ -125,9 +125,9 @@ struct
     | MetaLabeled of string * meta_term
 
    type hypothesis =
-      HypBinding of string * term
+      HypBinding of var * term
     | Hypothesis of term
-    | Context of string * term list
+    | Context of var * term list
 
    type seq_hyps = hypothesis SEQ_SET.linear_set
    type seq_goals = term SEQ_SET.linear_set

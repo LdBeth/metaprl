@@ -33,7 +33,10 @@
 INCLUDE "refine_error.mlh"
 
 open Printf
-open Mp_debug
+open Lm_debug
+
+open Lm_symbol
+
 open Opname
 open Term_sig
 open Term_base_sig
@@ -99,6 +102,11 @@ struct
       print_any_list print_varname
 
    (*
+    * Print a list of variables.
+    *)
+   let print_var_list = print_symbol_list
+
+   (*
     * Print a stack item.
     * We can't print terms.
     *)
@@ -106,25 +114,25 @@ struct
       StackVoid ->
          fprintf out "Void"
     | StackNumber n ->
-         fprintf out "Number %s" (Mp_num.string_of_num n)
+         fprintf out "Number %s" (Lm_num.string_of_num n)
     | StackString s ->
          fprintf out "String %s" s
-    | StackMString s ->
-         fprintf out "MString %s" s
+    | StackVar v ->
+         fprintf out "Var %a" print_symbol v
     | StackLevel l ->
          fprintf out "Level"
     | StackBTerm (t, vars) ->
-         fprintf out "BTerm %a[%a]" print_term t print_string_list vars
+         fprintf out "BTerm %a[%a]" print_term t print_var_list vars
     | StackITerm ts ->
          fprintf out "ITerm %a" (print_any_list (fun out (t, subterms) -> fprintf out "%a[%d] " print_term t (List.length subterms))) ts
     | StackContext (vars, t, addr) ->
          fprintf out "Context (%a/%a/%s)" (**)
-            print_string_list vars
+            print_var_list vars
             print_term t
             (string_of_address addr)
     | StackSeqContext (vars, (i, len, hyps)) ->
          fprintf out "SeqContext (%a/(%d,%d))" (**)
-            print_string_list vars i len
+            print_var_list vars i len
 
    (*
     * Stack is printed on lines.
@@ -142,18 +150,18 @@ struct
     * Redex stack names.
     *)
    let rstack_item_str = function
-      FOVarPattern s ->
-         "FOVarPattern " ^ s
-    | SOVarPattern (s, i) ->
-         sprintf "SOVarPattern %s[%d]" s i
-    | SOVarInstance (s, i) ->
-         sprintf "SOVarInstance %s[%d]" s i
-    | FOVar s ->
-         "FOVar " ^ s
-    | CVar s ->
-         "CVar " ^ s
-    | PVar (s, _) ->
-         "PVar " ^ s ^":*"
+      FOVarPattern v ->
+         "FOVarPattern " ^ string_of_symbol v
+    | SOVarPattern (v, i) ->
+         sprintf "SOVarPattern %s[%d]" (string_of_symbol v) i
+    | SOVarInstance (v, i) ->
+         sprintf "SOVarInstance %s[%d]" (string_of_symbol v) i
+    | FOVar v ->
+         "FOVar " ^ (string_of_symbol v)
+    | CVar v ->
+         "CVar " ^ (string_of_symbol v)
+    | PVar (v, _) ->
+         "PVar " ^ (string_of_symbol v) ^ ":*"
 
    let print_rstack out stack =
       let print_item item =
@@ -169,13 +177,11 @@ struct
     *)
    let rec print_param out = function
       RWNumber n ->
-         fprintf out "%s:n" (Mp_num.string_of_num n)
+         fprintf out "%s:n" (Lm_num.string_of_num n)
     | RWString s ->
          fprintf out "%s:s" s
     | RWToken s ->
          fprintf out "%s:t" s
-    | RWVar s ->
-         fprintf out "%s:v" s
     | RWMNumber i ->
          fprintf out "@%d:n" i
     | RWMString i ->
@@ -209,13 +215,13 @@ struct
 
    let rec print_sparam out h = match dest_param h with
       Number n ->
-         fprintf out "%s:n" (Mp_num.string_of_num n)
+         fprintf out "%s:n" (Lm_num.string_of_num n)
     | String s ->
          fprintf out "%s:s" s
     | Token s ->
          fprintf out "%s:t" s
     | Var s ->
-         fprintf out "%s:v" s
+         fprintf out "%s:v" (Lm_symbol.string_of_symbol s)
     | ParamList pl ->
          fprintf out "[%a]" print_sparam_list pl
     | _ ->
@@ -329,8 +335,8 @@ struct
 
    and print_sop out op =
       let op' = dest_op op in
-      fprintf out "%s%a" (string_of_opname op'.op_name) (**)
-         print_sparam_list op'.op_params
+      output_string out (string_of_opname op'.op_name);
+      if op'.op_params <> [] then fprintf out "[%a]" print_sparam_list op'.op_params
 
    let print_prog = print_prog 0
 end

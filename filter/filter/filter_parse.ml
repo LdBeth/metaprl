@@ -35,7 +35,8 @@
 open Printf
 open Pcaml
 
-open Mp_debug
+open Lm_symbol
+open Lm_debug
 open Precedence
 open Simple_print.SimplePrint
 open Mp_resource
@@ -201,7 +202,7 @@ let expr_of_pcon loc = function
       <:expr<
          Refiner.Refiner.Term.make_param
             (Refiner.Refiner.TermType.MLevel
-               (Refiner.Refiner.TermMan.mk_var_level_exp $str:l$))
+               (Refiner.Refiner.TermMan.mk_var_level_exp $str:string_of_symbol l$))
       >>
  | ConPMeta s, shape ->
       let shape =
@@ -211,7 +212,7 @@ let expr_of_pcon loc = function
           | ShapeToken -> "MToken"
           | _ -> Stdpp.raise_with_loc loc (Invalid_argument "\"con\" quotation: unsupported meta-parameter")
       in
-         <:expr< Refiner.Refiner.Term.make_param (Refiner.Refiner.TermType.$uid:shape$ $str:s$) >>
+         <:expr< Refiner.Refiner.Term.make_param (Refiner.Refiner.TermType.$uid:shape$ $str:string_of_symbol s$) >>
   | ConPExpr e, shape ->
       let shape =
          match shape with
@@ -219,13 +220,14 @@ let expr_of_pcon loc = function
           | ShapeToken -> "Token"
           | ShapeNumber -> "Number"
           | ShapeLevel -> "Level"
-          | ShapeVar -> Stdpp.raise_with_loc loc (Invalid_argument "\"con\" quotation: variable parameters sho
-uld not be explicit")
+          | ShapeVar -> "Var"
       in
          <:expr< Refiner.Refiner.Term.make_param (Refiner.Refiner.TermType.$uid:shape$ $e$) >>
   | ConPNum n, ShapeNumber ->
       <:expr< Refiner.Refiner.Term.make_param (Refiner.Refiner.TermType.Number $add_binding (BindNum n)$) >>
-  | ConPNum _, _ ->
+  | ConPInt e, ShapeNumber ->
+      <:expr< Refiner.Refiner.Term.make_param (Refiner.Refiner.TermType.Number (Lm_num.num_of_int $e$)) >>
+  | (ConPNum _|ConPInt _), _ ->
       Stdpp.raise_with_loc loc (Invalid_argument "\"con\" quotation: numeric parameter of non-numeric kind?")
 
 let is_simp_bterm = function
@@ -263,14 +265,14 @@ let con_exp s =
       expr_of_term_con (0,0) con
 
 let con_patt _ =
-   raise(Invalid_argument "<:con< >> quotation can not be used where pattern is expected") 
+   raise(Invalid_argument "<:con< >> quotation can not be used where pattern is expected")
 
 let _ = Quotation.add "con" (Quotation.ExAst (con_exp, con_patt))
 
-let bind_item i = {
-   item_item = i;
-   item_bindings = get_bindings ();
-}
+let bind_item i =
+   { item_item = i;
+     item_bindings = get_bindings ();
+   }
 
 (************************************************************************
  * TERM HACKING                                                         *
@@ -286,7 +288,8 @@ let get_string_param loc t =
          { op_params = [param] } ->
             begin
                match dest_param param with
-                  String s | MString s -> s
+                  String s -> s
+                | MString s -> string_of_symbol s
                 | _ -> Stdpp.raise_with_loc loc (RefineError ("Filter_parse.get_string_param", TermMatchError (t, "param type")))
             end
        | { op_params = [] } ->
@@ -300,7 +303,7 @@ let get_string_param loc t =
 let wrap_code loc v body =
    let v =
       match v with
-         Some v -> dest_var v
+         Some v -> string_of_symbol (dest_var v)
        | None -> "_$goal"
    in
    let p = <:patt< $lid:v$ >> in
@@ -1376,7 +1379,7 @@ EXTEND
     *)
    df_options:
       [[ l = LIST1 singleterm SEP "::" ->
-          List_util.split_last (List.map (function { aterm = t } -> t) l)
+          Lm_list_util.split_last (List.map (function { aterm = t } -> t) l)
        ]];
 
    (*

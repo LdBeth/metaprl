@@ -3,7 +3,7 @@
  *)
 
 open Printf
-open Mp_debug
+open Lm_debug
 
 (*
  * Show the file loading.

@@ -28,9 +28,9 @@
 (*ocaml mathbus implementation*)
 
 open Printf
-open Mp_debug
+open Lm_debug
 
-open Mp_num
+open Lm_num
 open Registry
 open Lint32
 
@@ -240,7 +240,7 @@ let mb_number num =
    (*print_string "m n "; print_string (string_of_num num);*)
   let a = abs_num num and b = num_of_int 1000000000 in
   let rec loop c l =
-    if Mp_num.lt_num c b then
+    if Lm_num.lt_num c b then
       (Mbint (mk_bint (int_of_num c)))::l
     else loop (quo_num c b) ((Mbint (mk_bint (int_of_num (mod_num c b))))::l) in
   let ints = try (loop a []) with _ ->
@@ -254,7 +254,7 @@ let mb_number num =
       (Array.set node i (List.hd l);
        assign (i+1) (List.tl l)) in
   assign 1 ints;
-  (if Mp_num.lt_num num (num_of_int 0) then
+  (if Lm_num.lt_num num (num_of_int 0) then
     let bval = (match node.(1) with
       Mbint b -> b
     | Mnode n -> failwith "node ") in
@@ -265,7 +265,7 @@ let mb_number num =
 let mb_numberq num label =
   let a = abs_num num and b = num_of_int 1000000000 in
   let rec loop c l =
-    if Mp_num.lt_num c b then
+    if Lm_num.lt_num c b then
       (Mbint (mk_bint (int_of_num num)))::l
     else loop (quo_num c b) ((Mbint (mk_bint (int_of_num (mod_num c b))))::l) in
   let ints = loop a [] in
@@ -277,7 +277,7 @@ let mb_numberq num label =
       (Array.set node i (List.hd l);
        assign (i+1) (List.tl l)) in
   assign 0 ints;
-  (if Mp_num.lt_num num (num_of_int 0) then
+  (if Lm_num.lt_num num (num_of_int 0) then
     let bval = (match node.(1) with
       Mbint b -> b
     | Mnode n -> failwith "node") in
@@ -348,8 +348,8 @@ let number_value node=
   match (mbnode_subtermq node 1) with
     Mbint b -> let base = num_of_int (dest_bint b) in if nsubterms = 1 then base
     else (match (mbnode_subtermq node 2) with
-      Mbint c -> let int = Mp_num.add_num (Mp_num.mult_num (abs_num base) (num_of_int 1000000000)) (num_of_int (dest_bint c)) in
-      if Mp_num.ge_num base (num_of_int 0) then int else (Mp_num.sub_num (num_of_int 0) int)
+      Mbint c -> let int = Lm_num.add_num (Lm_num.mult_num (abs_num base) (num_of_int 1000000000)) (num_of_int (dest_bint c)) in
+      if Lm_num.ge_num base (num_of_int 0) then int else (Lm_num.sub_num (num_of_int 0) int)
     | Mnode n -> failwith "integer_value")
   | Mnode n -> failwith "integer_value"
 
@@ -383,9 +383,9 @@ let mb_stringq_with_unicode s num_id =
   then match node.(j) with
     Mbint b -> Array.set node j
 	(Mbint (if (1+ (i * 2))< len then
-	  lbor (lbsl (create (Char.code (String_util.get "MathBus.mb_stringq" s (2 * i)))) 16)
-	    (create (Char.code  (String_util.get "MathBus.mb_stringq" s (1+ (2 * i)))))
-	else lbsl (create (Char.code (String_util.get "MathBus.mb_stringq" s (2 * i)))) 16))
+	  lbor (lbsl (create (Char.code (Lm_string_util.get "MathBus.mb_stringq" s (2 * i)))) 16)
+	    (create (Char.code  (Lm_string_util.get "MathBus.mb_stringq" s (1+ (2 * i)))))
+	else lbsl (create (Char.code (Lm_string_util.get "MathBus.mb_stringq" s (2 * i)))) 16))
   | Mnode n -> failwith "mb_string";
 
   done;
@@ -402,11 +402,11 @@ let mb_stringq s num_id =
   (match node.(j) with
     Mbint b -> (Array.set node j
 	(Mbint
-	  (lbor (lbor (lbsl (create (Char.code (String_util.get "MathBus.mb_string" s i))) 24)
+	  (lbor (lbor (lbsl (create (Char.code (Lm_string_util.get "MathBus.mb_string" s i))) 24)
 	             (if (i + 2) > len then (create 0)
-			else (lbsl (create (Char.code (String_util.get "MathBus.mb_string" s (1 + i)))) 16)))
-	       (lbor (if (i + 3) > len then (create 0) else (lbsl (create (Char.code (String_util.get "MathBus.mb_string" s (2 + i)))) 8))
-		     (if (i + 4) > len then (create 0) else (create (Char.code (String_util.get "MathBus.mb_string" s (3 + i)))))))); loop (i + 4) (1 + j))
+			else (lbsl (create (Char.code (Lm_string_util.get "MathBus.mb_string" s (1 + i)))) 16)))
+	       (lbor (if (i + 3) > len then (create 0) else (lbsl (create (Char.code (Lm_string_util.get "MathBus.mb_string" s (2 + i)))) 8))
+		     (if (i + 4) > len then (create 0) else (create (Char.code (Lm_string_util.get "MathBus.mb_string" s (3 + i)))))))); loop (i + 4) (1 + j))
   | Mnode n -> failwith "mb_string") in
   loop 0 2;
 
@@ -419,14 +419,14 @@ let mb_string s =
 let string_value_with_unicode node =
   match (mbnode_subtermq node 1) with
     Mbint b -> let (x, y) = dest_int32 b in
-    let str = if y < 0 then failwith "string_value" else String_util.create "MathBus.string_value" y in
+    let str = if y < 0 then failwith "string_value" else Lm_string_util.create "MathBus.string_value" y in
     let rec loop i j =
       if (i >= y) or (j > (mbnode_nSubterms node)) then str else
       (match node.(j) with
 	Mbint c -> let (a, b) = dest_int32 c in
-	(String_util.set "MathBus.string_value_with_unicode" str i (Char.chr a);
+	(Lm_string_util.set "MathBus.string_value_with_unicode" str i (Char.chr a);
 	 if (i + 1) < y then
-	   String_util.set "MathBus.string_value_with_unicode" str (i + 1) (Char.chr b);
+	   Lm_string_util.set "MathBus.string_value_with_unicode" str (i + 1) (Char.chr b);
 	 loop (i + 2) (j + 1))
       | Mnode n -> failwith "string_value") in
     loop 0 2
@@ -437,18 +437,18 @@ let string_value node =
   if !use_unicode then string_value_with_unicode node
   else match (mbnode_subtermq node 1) with
     Mbint b -> let (x, y) = dest_int32 b in
-    let str = if y < 0 then failwith "string_value" else String_util.create "MathBus.string_value" y in
+    let str = if y < 0 then failwith "string_value" else Lm_string_util.create "MathBus.string_value" y in
     let rec loop i j =
       if (i >= y) or (j > (mbnode_nSubterms node)) then str else
       (match node.(j) with
 	Mbint c -> let (a, b) = dest_int32 c in let a1 = (a asr 8) land 0xFF and a2 = a land 0xFF and b1 = (b asr 8) land 0xFF and b2 = b land 0xFF in
-	(String_util.set "MathBus.string_value" str i (Char.chr a1);
+	(Lm_string_util.set "MathBus.string_value" str i (Char.chr a1);
 	 if (i + 1) < y then
-	   String_util.set "MathBus.string_value" str (i + 1) (Char.chr a2);
+	   Lm_string_util.set "MathBus.string_value" str (i + 1) (Char.chr a2);
 	 if (i + 2) < y then
-	   String_util.set "MathBus.string_value" str (i + 2) (Char.chr b1);
+	   Lm_string_util.set "MathBus.string_value" str (i + 2) (Char.chr b1);
 	 if (i + 3) < y then
-	   String_util.set "MathBus.string_value" str (i + 3) (Char.chr b2);
+	   Lm_string_util.set "MathBus.string_value" str (i + 3) (Char.chr b2);
 	 loop (i + 4) (j + 1))
       | Mnode n -> failwith "string_value") in
     loop 0 2

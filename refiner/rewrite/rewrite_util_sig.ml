@@ -29,6 +29,7 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
+open Lm_symbol
 
 open Term_shape_sig
 
@@ -52,51 +53,51 @@ sig
    (*
     * Membership in the stack.
     *)
-   val rstack_var : rstack -> string
-   val rstack_mem : string -> rstack list -> bool
-   val rstack_so_mem : string -> rstack list -> bool
-   val rstack_pattern_mem : string -> rstack list -> bool
-   val rstack_fo_mem : string -> rstack list -> bool
-   val rstack_p_mem : shape_param -> string -> rstack list -> bool
-   val rstack_c_mem : string -> rstack list -> bool
+   val rstack_var : rstack -> var
+   val rstack_mem : var -> rstack list -> bool
+   val rstack_so_mem : var -> rstack list -> bool
+   val rstack_pattern_mem : var -> rstack list -> bool
+   val rstack_fo_mem : var -> rstack list -> bool
+   val rstack_p_mem : shape_param -> var -> rstack list -> bool
+   val rstack_c_mem : var -> rstack list -> bool
 
-   val array_rstack_mem : string -> rstack array -> bool
-   val array_rstack_so_mem : string -> rstack array -> bool
-   val array_rstack_fo_mem : string -> rstack array -> bool
-   val array_rstack_p_mem : shape_param -> string -> rstack array -> bool
-   val array_rstack_c_mem : string -> rstack array -> bool
+   val array_rstack_mem : var -> rstack array -> bool
+   val array_rstack_so_mem : var -> rstack array -> bool
+   val array_rstack_fo_mem : var -> rstack array -> bool
+   val array_rstack_p_mem : shape_param -> var -> rstack array -> bool
+   val array_rstack_c_mem : var -> rstack array -> bool
 
    (*
     * Location in the stack.
     *)
-   val rstack_index : string -> rstack list -> int
-   val rstack_so_index : string -> rstack list -> int
-   val rstack_fo_index : string -> rstack list -> int
-   val rstack_p_index : shape_param -> string -> rstack list -> int
-   val rstack_c_index : string -> rstack list -> int
+   val rstack_index : var -> rstack list -> int
+   val rstack_so_index : var -> rstack list -> int
+   val rstack_fo_index : var -> rstack list -> int
+   val rstack_p_index : shape_param -> var -> rstack list -> int
+   val rstack_c_index : var -> rstack list -> int
 
-   val array_rstack_index : string -> rstack array -> int
-   val array_rstack_so_index : string -> rstack array -> int
-   val array_rstack_fo_index : string -> rstack array -> int
-   val array_rstack_p_index : shape_param -> string -> rstack array -> int
-   val array_rstack_c_index : string -> rstack array -> int
+   val array_rstack_index : var -> rstack array -> int
+   val array_rstack_so_index : var -> rstack array -> int
+   val array_rstack_fo_index : var -> rstack array -> int
+   val array_rstack_p_index : shape_param -> var -> rstack array -> int
+   val array_rstack_c_index : var -> rstack array -> int
 
    (*
     * Consistency in the stack.
     *)
-   val check_arity : string -> int -> rstack -> unit
-   val rstack_check_arity : string -> int -> rstack list -> unit
+   val check_arity : var -> int -> rstack -> unit
+   val rstack_check_arity : var -> int -> rstack list -> unit
 
    (*
     * Stack operations.
     *)
-   val rstack_upgrade : string -> rstack list -> rstack list
+   val rstack_upgrade : var -> rstack list -> rstack list
 
    (*
     * Assoc.
     *)
-   val var_index : (string * int) list -> term -> int
-   val svar_index : (string * int) list -> string -> int
+   val var_index : (var * int) list -> term -> int
+   val svar_index : (var * int) list -> var -> int
 end
 
 (*

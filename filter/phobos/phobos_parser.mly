@@ -25,7 +25,7 @@
 %{
 open Phobos_debug
 open Opname
-open Mp_num
+open Lm_num
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Phobos_type
@@ -105,14 +105,14 @@ let pho_make_term id_pos_list params bterms =
       mk_term (mk_op (make_opname opname) params) bterms
 
 let pho_make_var_term (id, pos) =
-   mk_var_term id
+   mk_var_term (Lm_symbol.add id)
 
 let pho_make_so_var_term (id, pos) terms =
    let terms = List.map fst terms in
-      mk_so_var_term id terms
+      mk_so_var_term (Lm_symbol.add id) terms
 
 let pho_make_bterm id_pos_list pterm =
-   let vars = List.map fst id_pos_list in
+   let vars = List.map (fun (id, _) -> Lm_symbol.add id) id_pos_list in
       mk_bterm vars (fst pterm)
 
 let pho_make_unique_var_term = unique_var_term
@@ -660,13 +660,13 @@ term_param:
    /* Meta-parameter */
    TokId TokColon TokId       { match fst $3 with
                                    "s" ->
-                                       make_param (MString (fst $1))
+                                       make_param (MString (Lm_symbol.add (fst $1)))
                                  | "n" ->
-                                       make_param (MNumber (fst $1))
+                                       make_param (MNumber (Lm_symbol.add (fst $1)))
                                  | "v" ->
-                                       make_param (MVar (fst $1))
+                                       make_param (Var (Lm_symbol.add (fst $1)))
                                  | "t" ->
-                                       make_param (MToken (fst $1))
+                                       make_param (MToken (Lm_symbol.add (fst $1)))
                                  | _ ->
                                        raise (ParseError (snd $3, "unknown meta-parameter type"))
                               }
@@ -684,15 +684,13 @@ term_param:
                                        make_param (String (fst $1))
                                  | TyToken ->
                                        make_param (Token (fst $1))
-                                 | TyVar ->
-                                       make_param (Var (fst $1)) 
                                  | _ ->
                                        raise (ParseError (snd $3, "invalid parameter type"))
                               }
  | TokString                  { make_param (String (fst $1)) }
  | TokInt                     { make_param (Number (num_of_int (fst $1))) }
    /* Meta-parameter without type is assumed to be meta-string */
- | TokId                      { make_param (MString (fst $1)) }
+ | TokId                      { make_param (MString (Lm_symbol.add (fst $1))) }
 
 /*
  * Term declarations (for the term set section).

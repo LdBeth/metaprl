@@ -29,10 +29,11 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Lm_symbol
 
 open Printf
 
-open Mp_debug
+open Lm_debug
 
 open Refiner.Refiner
 open Refiner.Refiner.TermType
@@ -101,7 +102,7 @@ let rec format_strings buf = function
 let format_hypothesis db buf printers = function
    Context (v, subterms) ->
       format_string buf "Context(";
-      format_string buf v;
+      format_string buf (string_of_symbol v);
       List.iter (fun t ->
             format_string buf ", ";
             printers.format_term db buf t;
@@ -110,7 +111,7 @@ let format_hypothesis db buf printers = function
 
  | HypBinding (v, term) ->
       format_string buf "HypBinding(";
-      format_string buf v;
+      format_string buf (string_of_symbol v);
       format_string buf ", ";
       printers.format_term db buf term;
       format_string buf ")"
@@ -131,7 +132,7 @@ let format_match_type db buf printers = function
  | VarMatch s ->
       format_string buf "VarMatch:";
       format_space buf;
-      format_string buf s
+      format_string buf (string_of_symbol s)
  | TermMatch t ->
       format_string buf "TermMatch:";
       format_space buf;
@@ -187,6 +188,10 @@ let format_refine_error db buf printers name error =
             format_string buf s1;
             format_space buf;
             format_string buf s2
+       | StringVarError (s, v) ->
+            format_string buf s;
+            format_space buf;
+            format_string buf (string_of_symbol v)
        | StringTermError (s, t) ->
             format_string buf s;
             format_space buf;
@@ -223,23 +228,23 @@ let format_refine_error db buf printers name error =
        | RewriteBoundSOVar s ->
             format_string buf "BoundSoVar:";
             format_space buf;
-            format_string buf s
+            format_string buf (string_of_symbol s)
        | RewriteFreeSOVar s ->
             format_string buf "FreeSOVar:";
             format_space buf;
-            format_string buf s
+            format_string buf (string_of_symbol s)
        | RewriteSOVarArity s ->
             format_string buf "SOVarArity:";
             format_space buf;
-            format_string buf s
+            format_string buf (string_of_symbol s)
        | RewriteBoundParamVar s ->
             format_string buf "BoundParamVar:";
             format_space buf;
-            format_string buf s
+            format_string buf (string_of_symbol s)
        | RewriteFreeParamVar s ->
             format_string buf "FreeParamVar:";
             format_space buf;
-            format_string buf s
+            format_string buf (string_of_symbol s)
        | RewriteBadRedexParam p ->
             format_string buf "BadRedexParam:";
             format_space buf;
@@ -253,11 +258,11 @@ let format_refine_error db buf printers name error =
        | RewriteAllSOInstances s ->
             format_string buf "AllSOInstances:";
             format_space buf;
-            format_string buf s
+            format_string buf (string_of_symbol s)
        | RewriteMissingContextArg s ->
             format_string buf "MissingContextArg:";
             format_space buf;
-            format_string buf s
+            format_string buf (string_of_symbol s)
        | RewriteStringError s ->
             format_string buf "StringError:";
             format_space buf;
@@ -276,7 +281,7 @@ let format_refine_error db buf printers name error =
             format (indent + 3) name e
        | RewriteFreeContextVars vars ->
             format_string buf "FreeContextVars: ";
-            format_strings buf vars
+            format_strings buf (List.map string_of_symbol vars)
    in
       format 0 name error
 

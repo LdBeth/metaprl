@@ -29,6 +29,7 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Lm_symbol
 
 open Opname
 
@@ -74,63 +75,63 @@ sig
    val six_subterms : term -> term * term * term * term * term * term
 
    val is_dep1_term : opname -> term -> bool
-   val mk_dep1_term : opname -> string -> term -> term
-   val dest_dep1_term : opname -> term -> string * term
+   val mk_dep1_term : opname -> var -> term -> term
+   val dest_dep1_term : opname -> term -> var * term
 
    val is_dep2_term : opname -> term -> bool
-   val mk_dep2_term : opname -> string -> string -> term -> term
-   val dest_dep2_term : opname -> term -> string * string * term
+   val mk_dep2_term : opname -> var -> var -> term -> term
+   val dest_dep2_term : opname -> term -> var * var * term
 
    val is_dep1_dep1_term : opname -> term -> bool
-   val mk_dep1_dep1_term : opname -> string -> term -> string -> term -> term
-   val dest_dep1_dep1_term : opname -> term -> string * term * string * term
+   val mk_dep1_dep1_term : opname -> var -> term -> var -> term -> term
+   val dest_dep1_dep1_term : opname -> term -> var * term * var * term
 
    val is_dep0_dep1_term : opname -> term -> bool
    val is_dep0_dep1_any_term : term -> bool
-   val mk_dep0_dep1_term : opname -> string -> term -> term -> term
-   val mk_dep0_dep1_any_term : operator -> string -> term -> term -> term
-   val dest_dep0_dep1_term : opname -> term -> string * term * term
-   val dest_dep0_dep1_any_term : term -> string * term * term
+   val mk_dep0_dep1_term : opname -> var -> term -> term -> term
+   val mk_dep0_dep1_any_term : operator -> var -> term -> term -> term
+   val dest_dep0_dep1_term : opname -> term -> var * term * term
+   val dest_dep0_dep1_any_term : term -> var * term * term
 
    val is_dep1_dep0_term : opname -> term -> bool
-   val mk_dep1_dep0_term : opname -> string -> term -> term -> term
-   val dest_dep1_dep0_term : opname -> term -> string * term * term
+   val mk_dep1_dep0_term : opname -> var -> term -> term -> term
+   val dest_dep1_dep0_term : opname -> term -> var * term * term
 
    val is_dep0_dep2_term : opname -> term -> bool
-   val mk_dep0_dep2_term : opname -> string -> string -> term -> term -> term
-   val dest_dep0_dep2_term : opname -> term -> string * string * term * term
+   val mk_dep0_dep2_term : opname -> var -> var -> term -> term -> term
+   val dest_dep0_dep2_term : opname -> term -> var * var * term * term
 
    val is_dep0_dep3_term : opname -> term -> bool
-   val mk_dep0_dep3_term : opname -> string -> string -> string -> term -> term -> term
-   val dest_dep0_dep3_term : opname -> term -> string * string * string * term * term
+   val mk_dep0_dep3_term : opname -> var -> var -> var -> term -> term -> term
+   val dest_dep0_dep3_term : opname -> term -> var * var * var * term * term
 
    val is_dep2_dep0_term : opname -> term -> bool
-   val mk_dep2_dep0_term : opname -> string -> string -> term -> term -> term
-   val dest_dep2_dep0_term : opname -> term -> string * string * term * term
+   val mk_dep2_dep0_term : opname -> var -> var -> term -> term -> term
+   val dest_dep2_dep0_term : opname -> term -> var * var * term * term
 
    val is_dep0_dep0_dep1_term : opname -> term -> bool
-   val mk_dep0_dep0_dep1_term : opname -> term -> term -> string -> term -> term
-   val dest_dep0_dep0_dep1_term : opname -> term -> term * term * string * term
+   val mk_dep0_dep0_dep1_term : opname -> term -> term -> var -> term -> term
+   val dest_dep0_dep0_dep1_term : opname -> term -> term * term * var * term
 
    val is_dep0_dep0_dep1_any_term : term -> bool
-   val mk_dep0_dep0_dep1_any_term : operator -> term -> term -> string -> term -> term
-   val dest_dep0_dep0_dep1_any_term : term -> term * term * string * term
+   val mk_dep0_dep0_dep1_any_term : operator -> term -> term -> var -> term -> term
+   val dest_dep0_dep0_dep1_any_term : term -> term * term * var * term
 
    val is_dep0_dep1_dep1_term : opname -> term -> bool
-   val mk_dep0_dep1_dep1_term : opname -> term -> string -> term -> string -> term -> term
-   val dest_dep0_dep1_dep1_term : opname -> term -> term * string * term * string * term
+   val mk_dep0_dep1_dep1_term : opname -> term -> var -> term -> var -> term -> term
+   val dest_dep0_dep1_dep1_term : opname -> term -> term * var * term * var * term
 
    val is_dep0_dep2_dep0_dep2_term : opname -> term -> bool
-   val mk_dep0_dep2_dep0_dep2_term : opname -> term -> string -> string -> term -> term -> string -> string -> term -> term
-   val dest_dep0_dep2_dep0_dep2_term : opname -> term -> term * string * string * term * term * string * string * term
-
+   val mk_dep0_dep2_dep0_dep2_term : opname -> term -> var -> var -> term -> term -> var -> var -> term -> term
+   val dest_dep0_dep2_dep0_dep2_term : opname -> term -> term * var * var * term * term * var * var * term
+   
    val is_dep0_dep0_dep3_term : opname -> term -> bool
-   val mk_dep0_dep0_dep3_term : opname -> term -> term -> string -> string -> string -> term -> term
-   val dest_dep0_dep0_dep3_term : opname -> term -> term * term * string * string * string * term
+   val mk_dep0_dep0_dep3_term : opname -> term -> term -> var -> var -> var -> term -> term
+   val dest_dep0_dep0_dep3_term : opname -> term -> term * term * var * var * var * term
 
    val is_dep2_dep2_dep0_dep0_term : opname -> term -> bool
-   val mk_dep2_dep2_dep0_dep0_term : opname -> string -> string -> term -> string -> string -> term -> term -> term -> term
-   val dest_dep2_dep2_dep0_dep0_term : opname -> term -> string * string * term * string * string * term * term * term
+   val mk_dep2_dep2_dep0_dep0_term : opname -> var -> var -> term -> var -> var -> term -> term -> term -> term
+   val dest_dep2_dep2_dep0_dep0_term : opname -> term -> var * var * term * var * var * term * term * term
 
    val is_string_term : opname -> term -> bool
    val mk_string_term : opname -> string -> term
@@ -147,24 +148,24 @@ sig
    val dest_string_string_dep0_any_term : term -> string * string * term
 
    val is_number_dep0_term : opname -> term -> bool
-   val mk_number_dep0_term : opname -> Mp_num.num -> term -> term
-   val dest_number_dep0_term : opname -> term -> Mp_num.num * term
-   val dest_number_dep0_any_term : term -> Mp_num.num * term
+   val mk_number_dep0_term : opname -> Lm_num.num -> term -> term
+   val dest_number_dep0_term : opname -> term -> Lm_num.num * term
+   val dest_number_dep0_any_term : term -> Lm_num.num * term
 
    val is_number_dep1_term : opname -> term -> bool
-   val mk_number_dep1_term : opname -> Mp_num.num -> string -> term -> term
-   val dest_number_dep1_term : opname -> term -> Mp_num.num * string * term
-   val dest_number_dep1_any_term : term -> Mp_num.num * string * term
+   val mk_number_dep1_term : opname -> Lm_num.num -> var -> term -> term
+   val dest_number_dep1_term : opname -> term -> Lm_num.num * var * term
+   val dest_number_dep1_any_term : term -> Lm_num.num * var * term
 
    val is_number_number_dep0_term : opname -> term -> bool
-   val mk_number_number_dep0_term : opname -> Mp_num.num -> Mp_num.num -> term -> term
-   val dest_number_number_dep0_term : opname -> term -> Mp_num.num * Mp_num.num * term
-   val dest_number_number_dep0_any_term : term -> Mp_num.num * Mp_num.num * term
+   val mk_number_number_dep0_term : opname -> Lm_num.num -> Lm_num.num -> term -> term
+   val dest_number_number_dep0_term : opname -> term -> Lm_num.num * Lm_num.num * term
+   val dest_number_number_dep0_any_term : term -> Lm_num.num * Lm_num.num * term
 
    val is_number_number_string_dep0_term : opname -> term -> bool
-   val mk_number_number_string_dep0_term : opname -> Mp_num.num -> Mp_num.num -> string -> term -> term
-   val dest_number_number_string_dep0_term : opname -> term -> Mp_num.num * Mp_num.num * string * term
-   val dest_number_number_string_dep0_any_term : term -> Mp_num.num * Mp_num.num * string * term
+   val mk_number_number_string_dep0_term : opname -> Lm_num.num -> Lm_num.num -> string -> term -> term
+   val dest_number_number_string_dep0_term : opname -> term -> Lm_num.num * Lm_num.num * string * term
+   val dest_number_number_string_dep0_any_term : term -> Lm_num.num * Lm_num.num * string * term
 
    val is_string_string_dep0_dep0_term : opname -> term -> bool
    val mk_string_string_dep0_dep0_term : opname -> string -> string -> term -> term -> term
@@ -172,9 +173,9 @@ sig
    val dest_string_string_dep0_dep0_any_term : term -> string * string * term * term
 
    val is_number_term : opname -> term -> bool
-   val mk_number_term : opname -> Mp_num.num -> term
-   val dest_number_term : opname -> term -> Mp_num.num
-   val dest_number_any_term : term -> Mp_num.num
+   val mk_number_term : opname -> Lm_num.num -> term
+   val dest_number_term : opname -> term -> Lm_num.num
+   val dest_number_any_term : term -> Lm_num.num
 
    val is_univ_term : opname -> term -> bool
    val mk_univ_term : opname -> level_exp -> term

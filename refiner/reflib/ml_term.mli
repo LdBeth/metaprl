@@ -34,8 +34,8 @@ open Opname
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMeta
 
-val term_arrays_of_string : string -> term array * meta_term array * opname array * Mp_num.num array
-val string_of_term_lists : term list -> meta_term list -> opname list -> Mp_num.num list -> string
+val term_arrays_of_string : string -> term array * meta_term array * opname array * Lm_num.num array
+val string_of_term_lists : term list -> meta_term list -> opname list -> Lm_num.num list -> string
 
 (*
  * -*-

@@ -38,9 +38,10 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Lm_symbol
 
 open Printf
-open Mp_debug
+open Lm_debug
 open Opname
 
 open Refiner.Refiner
@@ -117,7 +118,7 @@ let end_marker = mk_xstring_term "end_marker"
  *)
 let sequent_term =
    let opname = mk_opname "sequent" nil_opname in
-      mk_simple_term opname [mk_var_term "ext"; mk_var_term "hyps"]
+      mk_simple_term opname [mk_var_term (Lm_symbol.add "ext"); mk_var_term (Lm_symbol.add "hyps")]
 
 let shape_of_term t =
    shape_of_term (if is_sequent_term t then sequent_term else t)
@@ -279,7 +280,7 @@ let create_table items compact =
                   Hashtbl.add base shape' entries;
                   entries
       in
-         Ref_util.push info entries
+         Lm_ref_util.push info entries
    in
    let _ = List.iter insert_entry items in
 

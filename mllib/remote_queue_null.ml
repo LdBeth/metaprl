@@ -32,9 +32,9 @@
  *)
 
 open Printf
-open Mp_debug
+open Lm_debug
 
-open Thread_util
+open Lm_thread_util
 
 let debug_queue =
    create_debug (**)
@@ -83,7 +83,7 @@ struct
     *    2. a list of locked entries
     *)
    type ('a, 'b, 'c) t =
-      { queue_chan : ('a, 'b) upcall Thread_event.channel;
+      { queue_chan : ('a, 'b) upcall Lm_thread_event.channel;
         queue_lock : Mutex.t;
         queue_cond : Condition.t;
         mutable queue_unlocked : ('a, 'b) handle list;
@@ -115,7 +115,7 @@ struct
                eprintf "Remote_queue_null.issue_upcall: begin%t" eflush;
                unlock_printer ()
             end;
-         Thread_event.sync 0 (Thread_event.send queue.queue_chan upcall);
+         Lm_thread_event.sync 0 (Lm_thread_event.send queue.queue_chan upcall);
          if !debug_queue or true then
             begin
                lock_printer ();
@@ -129,7 +129,7 @@ struct
     * Get an event for receiving upcalls.
     *)
    let event_of_queue queue =
-      Thread_event.receive queue.queue_chan
+      Lm_thread_event.receive queue.queue_chan
 
    (*
     * Submit a value to the queue.
@@ -153,11 +153,11 @@ struct
    let delete queue lock =
       Mutex.lock queue.queue_lock;
       try
-         queue.queue_unlocked <- List_util.removeq lock queue.queue_unlocked;
+         queue.queue_unlocked <- Lm_list_util.removeq lock queue.queue_unlocked;
          Mutex.unlock queue.queue_lock;
       with
          Not_found ->
-            queue.queue_locked <- List_util.removeq lock queue.queue_locked;
+            queue.queue_locked <- Lm_list_util.removeq lock queue.queue_locked;
             send_upcall queue (UpcallCancel lock);
             Mutex.unlock queue.queue_lock
 
@@ -197,7 +197,7 @@ struct
     *)
    let cancel queue lock =
       Mutex.lock queue.queue_lock;
-      queue.queue_locked <- List_util.removeq lock queue.queue_locked;
+      queue.queue_locked <- Lm_list_util.removeq lock queue.queue_locked;
       queue.queue_unlocked <- lock :: queue.queue_unlocked;
       Mutex.unlock queue.queue_lock
 
@@ -206,7 +206,7 @@ struct
     *)
    let unlock queue lock x =
       Mutex.lock queue.queue_lock;
-      queue.queue_locked <- List_util.removeq lock queue.queue_locked;
+      queue.queue_locked <- Lm_list_util.removeq lock queue.queue_locked;
       send_upcall queue (UpcallResult (lock, x));
       Mutex.unlock queue.queue_lock
 
@@ -242,7 +242,7 @@ struct
     * Create an empty queue.
     *)
    let create upcalls =
-      { queue_chan = Thread_event.new_channel ();
+      { queue_chan = Lm_thread_event.new_channel ();
         queue_lock = Mutex.create ();
         queue_cond = Condition.create ();
         queue_unlocked = [];

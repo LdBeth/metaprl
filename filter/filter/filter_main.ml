@@ -34,7 +34,7 @@
 
 open Arg
 open Printf
-open Mp_debug
+open Lm_debug
 
 open Filter_parse
 
@@ -48,7 +48,7 @@ let _ =
  * string -> path commands
  *)
 let set_path doc var path =
-   let path' = String_util.split ':' path in
+   let path' = Lm_string_util.split ":" path in
       var := path'
 
 let set_path_arg doc var =

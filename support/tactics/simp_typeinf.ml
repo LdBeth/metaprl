@@ -44,8 +44,8 @@
  *)
 
 open Printf
-open Mp_debug
-open String_set
+open Lm_symbol
+open Lm_debug
 
 open Refiner.Refiner
 open Refiner.Refiner.TermType
@@ -78,7 +78,7 @@ let _ =
 (*
  * Some generic renaming of type variables.
  *)
-type ty_var = string
+type ty_var = var
 
 (*
  * String table.
@@ -91,12 +91,12 @@ struct
    let print _ _ =
       ()
 
-   let compare = String.compare
+   let compare = Lm_symbol.compare
 
    let append = (@)
 end
 
-module TyVarSet = StringSet
+module TyVarSet = SymbolSet
 module TyEnv = Red_black_table.MakeTable (TyVarBase)
 
 (*
@@ -182,12 +182,8 @@ let simp_infer_type_args p t =
 (*
  * Generating new symbols.
  *)
-let gensym =
-   let index = ref 0 in
-      fun () ->
-         let i = !index in
-            incr index;
-            "$ty_" ^ string_of_int i
+let gensym () =
+   new_symbol_string "$ty"
 
 (*
  * -*-

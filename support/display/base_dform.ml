@@ -51,13 +51,15 @@ extends Nuprl_font
 (* @docoff *)
 
 open Printf
-open Mp_debug
+open Lm_symbol
+open Lm_debug
 
 open Refiner.Refiner
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMan
+open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
 open Dform
 open Rformat
@@ -91,7 +93,7 @@ declare df_last{'l}
 declare df_concat{'sep;'l}
 declare df_rev_concat{'sep;'l}
 
-declare df_context_var[s:s]
+declare df_context_var[name:v]
 
 (* same as "szone 'e ezone" *)
 declare szone{'e}
@@ -99,15 +101,15 @@ declare szone{'e}
 
 (*
  * @begin[doc]
- * Variables are terms with the opname @tt{var}, and a single @emph{var}
+ * Variables are terms with the opname @tt[var], and a single @emph[var]
  * parameter.  @emph{Second-order} variables also have (unbound) subterms
  * that correspond to the free variables in the term being represented (in
  * a redex), or terms to be substituted for those variables (in a contractum).
  *
- * Display for mechanism would convert the variable term into a @tt{display_var}
+ * Display for mechanism would convert the variable term into a @tt[display_var]
  * term to avoid having to deal with argument lists of arbitrary length.
  *
- * The @tt{tex} mode display form for @tt{display_var} uses some heuristics to split
+ * The @tt[tex] mode display form for @tt[display_var] uses some heuristics to split
  * the variable name into the name and the subscript part and is omited from the
  * documentation.
  * @end[doc]
@@ -135,28 +137,18 @@ let split_digits s =
    let rec aux i =
       if (i=0) then 0 else
          let i' = pred i in
-         if String_util.is_digit(s.[i']) then aux i' else i
+         if Lm_string_util.is_digit(s.[i']) then aux i' else i
    in
       let len = String.length s in
       let i = aux len in
       String.sub s 0 i, String.sub s i (len-i)
 
-let really_dest_var term =
-   match (dest_op (dest_term term).term_op).op_params with
-      [p] ->
-         begin match dest_param p with
-            String v | MString v | Var v -> v
-          | _ -> raise (Invalid_argument "var_*_df")
-         end
-    | _ ->
-      raise (Invalid_argument "var_*_df")
-
 let split_var v =
-   match String_util.split '_' v with
+   match Lm_string_util.split "_" v with
       [] ->
          raise (Invalid_argument "var_*_df: string has an empty name")
     | h::tl ->
-         if List.for_all (String_util.for_all String_util.is_digit) tl then
+         if List.for_all (Lm_string_util.for_all Lm_string_util.is_digit) tl then
             let hn,hd = split_digits h in
                if (hn <> "") && (hd <> "") then hn, hd::tl else h,tl
          else
@@ -197,20 +189,20 @@ let print_tex_var format_term buf header_fun v =
       format_ezone buf
 
 let mk_mathit s = <:con< math_it[$s$:s] >>
-         
+
 ml_dform var_html_df : mode[html] :: display_var[v:v]{nil} format_term buf = fun
    term ->
-      print_html_var format_term buf mk_mathit (really_dest_var term)
+      print_html_var format_term buf mk_mathit (string_of_symbol v)
 
 ml_dform var_tex_df : mode[tex] :: display_var[v:v]{nil} format_term buf = fun
    term ->
-      print_tex_var format_term buf mk_mathit (really_dest_var term)
+      print_tex_var format_term buf mk_mathit (string_of_symbol v)
 
-dform cvar_src_df : mode[src] :: df_context_var[s:s] = slot[s:s]
+dform cvar_src_df : mode[src] :: df_context_var[v:v] = slot[v:v]
 
-ml_dform cvar_prl_df : mode[prl] :: df_context_var[s:s] format_term buf = fun
+ml_dform cvar_prl_df : mode[prl] :: df_context_var[v:v] format_term buf = fun
    term ->
-      let v = really_dest_var term in
+      let v = string_of_symbol v in
       if v = "" then raise (Invalid_argument "var_prl_df");
       begin match v.[0] with
          'H' -> format_term buf NOParens <<Gamma>>
@@ -226,23 +218,22 @@ let context_term = function
  | "K" -> <<Sigma>>
  |  v  -> mk_mathit v
 
-ml_dform cvar_html_df : mode[html] :: df_context_var[s:s] format_term buf = fun
+ml_dform cvar_html_df : mode[html] :: df_context_var[v:v] format_term buf = fun
    term ->
-      print_html_var format_term buf context_term (really_dest_var term)
+      print_html_var format_term buf context_term (string_of_symbol v)
 
-ml_dform cvar_tex_df : mode[tex] :: df_context_var[s:s] format_term buf = fun
+ml_dform cvar_tex_df : mode[tex] :: df_context_var[v:v] format_term buf = fun
    term ->
-      print_tex_var format_term buf context_term (really_dest_var term)
+      print_tex_var format_term buf context_term (string_of_symbol v)
 
 let bvar_opname = opname_of_term <<bvar{'v}>>
 
 ml_dform bvar_df : mode[src] :: bvar{'v} format_term buf = fun
    term ->
-      let t = dest_dep0_term bvar_opname term in
-         if is_var_term t then
-            format_string buf (dest_var t)
-         else
-            format_term buf LTParens t
+      if is_var_term v then
+         format_string buf (string_of_symbol (dest_var v))
+      else
+         format_term buf LTParens v
 
 dform bvar_df : except_mode[src] :: bvar{'v} = 'v
 
@@ -300,7 +291,7 @@ ml_dform sequent_src_df : mode["src"] :: "sequent"{'ext; 'seq} format_term buf =
             match SeqHyp.get hyps i with
                HypBinding (v, a) ->
                   format_space buf;
-                  format_string buf v;
+                  format_string buf (string_of_symbol v);
                   format_string buf ": ";
                   format_term buf NOParens a
              | Hypothesis a ->
@@ -308,7 +299,7 @@ ml_dform sequent_src_df : mode["src"] :: "sequent"{'ext; 'seq} format_term buf =
                   format_term buf NOParens a
              | Context (v, values) ->
                   format_space buf;
-                  format_string buf ("<" ^ v);
+                  format_string buf ("<" ^ string_of_symbol v);
                   format_term_list format_term buf values;
                   format_string buf ">"
          in
@@ -334,7 +325,7 @@ ml_dform sequent_src_df : mode["src"] :: "sequent"{'ext; 'seq} format_term buf =
       format
 
 let format_context format_term buf v values =
-   format_term buf NOParens <:con< df_context_var[$v$:s] >>;
+   format_term buf NOParens <:con< df_context_var[$v$:v] >>;
    format_term_list format_term buf values
 
 (*

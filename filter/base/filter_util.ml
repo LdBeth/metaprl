@@ -32,7 +32,7 @@
  *)
 
 open Printf
-open Mp_debug
+open Lm_debug
 open Opname
 open Refiner.Refiner
 open Refiner.Refiner.Term
@@ -59,13 +59,13 @@ let _ =
  *)
 let rec context_vars_list = function
    h::t ->
-      List_util.union (TermSubst.context_vars h) (context_vars_list t)
+      Lm_list_util.union (TermSubst.context_vars h) (context_vars_list t)
  | [] ->
       []
 
 let rec binding_vars_list = function
    h::t ->
-      List_util.union (TermSubst.binding_vars h) (binding_vars_list t)
+      Lm_list_util.union (TermSubst.binding_vars h) (binding_vars_list t)
  | [] ->
       []
 
@@ -92,13 +92,13 @@ let split_mfunction mterm =
    let collect (labels', ext, t) (i, labels, vars, terms) =
       let ext = match ext with
          Some v -> v
-       | None -> mk_var_term ("_" ^ (string_of_int i))
+       | None -> mk_var_term (Lm_symbol.make "" i)
       in
          (* XXX HACK: we use join_ext_arg_hack here to "catch" unused hyp binding before they
             are eliminated. The real solution should be passing the whole meta-term to the refiner *)
          succ i, labels' :: labels, (Refine.join_ext_arg_hack ext t) :: vars, t :: terms
    in
-   let _, labels, vars, terms = List.fold_right collect subgoals (0, [], [], []) in
+   let _, labels, vars, terms = List.fold_right collect subgoals (1, [], [], []) in
       labels, vars, zip_mimplies terms goal
 
 (************************************************************************

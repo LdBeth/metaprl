@@ -30,6 +30,7 @@
  * jyh@cs.cornell.edu
  *
  *)
+open Lm_symbol
 
 (************************************************************************
  * META-TERMS                                                           *
@@ -46,8 +47,8 @@ sig
    (*
     * Some operations on meta_term.
     *)
-   val binding_vars : meta_term -> string list
-   val context_vars : meta_term -> string list
+   val binding_vars : meta_term -> var list
+   val context_vars : meta_term -> var list
    val meta_alpha_equal : meta_term -> meta_term -> bool
    val unzip_mimplies : meta_term -> term list * term
    val zip_mimplies : term list -> term -> meta_term

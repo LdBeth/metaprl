@@ -29,6 +29,8 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Lm_symbol
+
 open Opname
 open Linear_set
 
@@ -76,7 +78,7 @@ sig
    val mk_op : opname -> param list -> operator
    val make_op : operator' -> operator
    val dest_op : operator -> operator'
-   val mk_bterm : string list -> term -> bound_term
+   val mk_bterm : var list -> term -> bound_term
    val make_bterm : bound_term' -> bound_term
    val dest_bterm : bound_term -> bound_term'
    val make_param : param' -> param
@@ -85,7 +87,7 @@ sig
    val mk_level : int -> level_exp_var list -> level_exp
    val make_level : level_exp' -> level_exp
    val dest_level : level_exp -> level_exp'
-   val mk_level_var : string -> int -> level_exp_var
+   val mk_level_var : var -> int -> level_exp_var
    val make_level_var : level_exp_var' -> level_exp_var
    val dest_level_var : level_exp_var -> level_exp_var'
 
@@ -104,17 +106,17 @@ sig
     *)
    val var_opname : opname
    val is_var_term : term -> bool
-   val dest_var : term -> string
-   val mk_var_term : string -> term
+   val dest_var : term -> var
+   val mk_var_term : var -> term
 
    val is_so_var_term : term -> bool
-   val dest_so_var : term -> string * term list
-   val mk_so_var_term : string -> term list -> term
+   val dest_so_var : term -> var * term list
+   val mk_so_var_term : var -> term list -> term
 
    val context_opname : opname
    val is_context_term : term -> bool
-   val dest_context : term -> string * term * term list
-   val mk_context_term : string -> term -> term list -> term
+   val dest_context : term -> var * term * term list
+   val mk_context_term : var -> term -> term list -> term
 
    val xperv : opname
    val sequent_opname : opname

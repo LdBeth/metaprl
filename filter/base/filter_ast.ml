@@ -31,7 +31,7 @@
  *)
 
 open Printf
-open Mp_debug
+open Lm_debug
 
 open Ml_format_sig
 open Ml_format
@@ -65,7 +65,7 @@ let build_printed_term loc t =
          <:expr< [] >>
    and build_var = function
       [h] ->
-         if String_util.is_capitalized h then
+         if Lm_string_util.is_capitalized h then
             <:expr< $uid:h$ >>
          else
             <:expr< $lid:h$ >>
@@ -75,7 +75,7 @@ let build_printed_term loc t =
          raise (Invalid_argument "build_application")
    and build_patt = function
       ML_Module_Var [h] ->
-         if String_util.is_capitalized h then
+         if Lm_string_util.is_capitalized h then
             <:patt< $uid:h$ >>
          else
             <:patt< $lid:h$ >>
@@ -90,7 +90,7 @@ let build_printed_term loc t =
          let i' = string_of_int i in
             <:expr< $int:i'$ >>
     | ML_Num n ->
-         <:expr< Mp_num.num_of_string $str:Mp_num.string_of_num n$ >>
+         <:expr< Lm_num.num_of_string $str:Lm_num.string_of_num n$ >>
     | ML_String s ->
          <:expr< $str:s$ >>
     | ML_List l ->

@@ -32,11 +32,12 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
+open Lm_symbol
 
 open Printf
 
-open Mp_debug
-open File_util
+open Lm_debug
+open Lm_file_util
 open Opname
 open Refiner_sig
 open Precedence
@@ -247,7 +248,7 @@ let test_axiom name = function
  | _ -> false
 
 let find_axiom { info_list = summary } name =
-   try Some (List_util.find (test_axiom name) summary) with
+   try Some (Lm_list_util.find (test_axiom name) summary) with
       Not_found ->
          None
 
@@ -263,7 +264,7 @@ let test_rewrite name (item, _) =
          false
 
 let find_rewrite { info_list = summary } name =
-   try Some (List_util.find (test_rewrite name) summary) with
+   try Some (Lm_list_util.find (test_rewrite name) summary) with
       Not_found ->
          None
 
@@ -278,7 +279,7 @@ let test_iform name (item, _) =
          false
 
 let find_iform { info_list = summary } name =
-   try Some (List_util.find (test_iform name) summary) with
+   try Some (Lm_list_util.find (test_iform name) summary) with
       Not_found ->
          None
 
@@ -292,7 +293,7 @@ let test_mlrewrite name = function
       false
 
 let find_mlrewrite { info_list = summary } name =
-   try Some (List_util.find (test_mlrewrite name) summary) with
+   try Some (Lm_list_util.find (test_mlrewrite name) summary) with
       Not_found ->
          None
 
@@ -303,7 +304,7 @@ let test_mlaxiom name = function
       false
 
 let find_mlaxiom { info_list = summary } name =
-   try Some (List_util.find (test_mlaxiom name) summary) with
+   try Some (Lm_list_util.find (test_mlaxiom name) summary) with
       Not_found ->
          None
 
@@ -318,7 +319,7 @@ let test_module name (item, _) =
          false
 
 let find_module { info_list = summary } name =
-   try Some (List_util.find (test_module name) summary) with
+   try Some (Lm_list_util.find (test_module name) summary) with
       Not_found ->
          None
 
@@ -333,7 +334,7 @@ let test_dform name (item, _) =
          false
 
 let find_dform { info_list = summary } name =
-   try Some (List_util.find (test_dform name) summary) with
+   try Some (Lm_list_util.find (test_dform name) summary) with
       _ -> None
 
 (*
@@ -347,7 +348,7 @@ let test_prec name (item, _) =
          false
 
 let find_prec { info_list = summary } name =
-   try Some (List_util.find (test_prec name) summary) with
+   try Some (Lm_list_util.find (test_prec name) summary) with
       Not_found ->
          None
 
@@ -435,7 +436,7 @@ let find { info_list = summary } name =
        | _ ->
             false
    in
-      List_util.find test summary
+      Lm_list_util.find test summary
 
 (*
  * Set an item by name.
@@ -461,7 +462,7 @@ let set_command info item =
        | _ ->
             (fun _ -> false)
    in
-      { info_list = List_util.replace_first test item info.info_list }
+      { info_list = Lm_list_util.replace_first test item info.info_list }
 
 (************************************************************************
  * CREATION/MODIFICATION						*
@@ -480,7 +481,7 @@ let info_items { info_list = info } =
    List.rev info
 
 let filter pred { info_list = info } =
-   { info_list = List_util.filter pred info }
+   { info_list = Lm_list_util.filter pred info }
 
 (*
  * Optional application.
@@ -711,6 +712,7 @@ struct
    open ToTerm.TermOp
    open ToTerm.TermMan
    open ToTerm.TermSubst
+   open ToTerm.TermShape
    open ToTerm.TermMeta
    open ToTerm.RefineError
 
@@ -737,7 +739,9 @@ struct
                [p], [t] ->
                   begin match dest_param p, dest_bterm t with
                      String l, { bvars = []; bterm = t } ->
-                        MetaLabeled (l,meta_term_of_term t)
+                        MetaLabeled (l, meta_term_of_term t)
+                   | Var l, { bvars = []; bterm = t } ->
+                        MetaLabeled (string_of_symbol l, meta_term_of_term t)
                    | _ -> raise (Failure "Filter_summary.meta_term_of_term: term is not a meta term")
                   end
              | _ -> raise (Failure "Filter_summary.meta_term_of_term: term is not a meta term")
@@ -767,15 +771,15 @@ struct
 
    let dest_loc t =
       match (dest_number_number_dep0_any_term t) with
-         (i, j, t) when Mp_num.is_integer_num i && Mp_num.is_integer_num j ->
-            t, (Mp_num.int_of_num i, Mp_num.int_of_num j)
+         (i, j, t) when Lm_num.is_integer_num i && Lm_num.is_integer_num j ->
+            t, (Lm_num.int_of_num i, Lm_num.int_of_num j)
        | _ ->
             raise (Failure "dest_loc: location is not an integer")
 
    let dest_loc_string t =
       match dest_number_number_string_dep0_any_term t with
-         (i, j, s, t) when Mp_num.is_integer_num i && Mp_num.is_integer_num j ->
-            t, (Mp_num.int_of_num i, Mp_num.int_of_num j), s
+         (i, j, s, t) when Lm_num.is_integer_num i && Lm_num.is_integer_num j ->
+            t, (Lm_num.int_of_num i, Lm_num.int_of_num j), s
        | _ ->
             raise (Failure "dest_loc_string: location is not an integer")
 
@@ -787,13 +791,13 @@ struct
       let opname = opname_of_term t in
          if Opname.eq opname term_binding_op then
             let v, t, t' = dest_dep0_dep1_any_term t in
-               dest_bindings convert ((v,BindTerm (convert.term_f t))::bnds) t'
+               dest_bindings convert ((string_of_symbol v, BindTerm (convert.term_f t))::bnds) t'
          else if Opname.eq opname opname_binding_op then
             let v, t, t' = dest_dep0_dep1_any_term t in
-               dest_bindings convert ((v,BindOpname (opname_of_term t))::bnds) t'
+               dest_bindings convert ((string_of_symbol v, BindOpname (opname_of_term t))::bnds) t'
          else if Opname.eq opname num_binding_op then
             let n, v, t = dest_number_dep1_any_term t in
-               dest_bindings convert ((v, BindNum n) :: bnds) t
+               dest_bindings convert ((string_of_symbol v, BindNum n) :: bnds) t
          else
             bnds, t
 
@@ -904,14 +908,11 @@ struct
    let term_param_op       = mk_opname "term_param"
 
    let dest_param convert t =
-      let string_param = function
+      let var_param = function
          [param] ->
-            begin
-               match dest_param param with
-                  String s ->
-                     s
-                | _ ->
-                     raise (Failure "Parameter is not a string")
+            begin match dest_param param with
+               Var v -> v
+             | _ -> raise (Failure "Parameter is not a variable")
             end
        | _ ->
             raise (Failure "Wrong number of parameters")
@@ -919,7 +920,7 @@ struct
       let { term_op = op } = dest_term t in
       let { op_name = opname; op_params = params } = dest_op op in
          if Opname.eq opname context_param_op then
-            ContextParam (string_param params)
+            ContextParam (var_param params)
          else if Opname.eq opname term_param_op then
             TermParam (convert.term_f (one_subterm t))
          else
@@ -1089,7 +1090,7 @@ struct
     *)
    and dest_id convert t =
       let n = (dest_number_any_term t) in
-         if Mp_num.is_integer_num n then Id (Mp_num.int_of_num n)
+         if Lm_num.is_integer_num n then Id (Lm_num.int_of_num n)
          else raise (Invalid_argument "Filter_summary.dest_id: not an int")
 
    (*
@@ -1208,7 +1209,7 @@ struct
        (convert : (term, term, term, term, term, term, term,
                    'term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) convert)
        (terms : term list) =
-      let items = List_util.some_map (dest_term_loc convert) terms in
+      let items = Lm_list_util.some_map (dest_term_loc convert) terms in
          ({ info_list = List.rev items } : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info)
 
    (**************
@@ -1219,7 +1220,7 @@ struct
     * Make a location.
     *)
    let mk_loc (i, j) t =
-      mk_number_number_dep0_term loc_op (Mp_num.num_of_int i) (Mp_num.num_of_int j) t
+      mk_number_number_dep0_term loc_op (Lm_num.num_of_int i) (Lm_num.num_of_int j) t
 
    (*
     * Make a optional arg.
@@ -1247,7 +1248,7 @@ struct
          mk_term op bterms
 
    let mk_loc_string_term op (start, finish) name t =
-      mk_number_number_string_dep0_term op (Mp_num.num_of_int start) (Mp_num.num_of_int finish) name t
+      mk_number_number_string_dep0_term op (Lm_num.num_of_int start) (Lm_num.num_of_int finish) name t
 
    (*
     * Make a term with only strings parameters.
@@ -1259,8 +1260,8 @@ struct
     * Parameters.
     *)
    let mk_param convert = function
-      ContextParam s ->
-         mk_string_param_term context_param_op s []
+      ContextParam v ->
+         mk_term (mk_op context_param_op [make_param (Var v)]) []
     | TermParam t ->
          mk_simple_term term_param_op [convert.term_f t]
 
@@ -1273,12 +1274,12 @@ struct
    let rec term_of_bindings convert t = function
       [] -> t
     | (v, BindTerm t') :: tl ->
-         term_of_bindings convert (mk_dep0_dep1_term term_binding_op v (convert.term_f t') t) tl
+         term_of_bindings convert (mk_dep0_dep1_term term_binding_op (Lm_symbol.add v) (convert.term_f t') t) tl
     | (v, BindOpname op) :: tl ->
          let t' = mk_simple_term op [] in
-            term_of_bindings convert (mk_dep0_dep1_term opname_binding_op v t' t) tl
+            term_of_bindings convert (mk_dep0_dep1_term opname_binding_op (Lm_symbol.add v) t' t) tl
     | (v, BindNum n) :: tl ->
-         term_of_bindings convert (mk_number_dep1_term num_binding_op n v t) tl
+         term_of_bindings convert (mk_number_dep1_term num_binding_op n (Lm_symbol.add v) t) tl
 
    and mk_bnd_expr convert expr =
       term_of_bindings convert (convert.expr_f expr.item_item) expr.item_bindings
@@ -1482,7 +1483,7 @@ struct
     | PrecRel { prec_rel = rel; prec_left = left; prec_right = right } ->
          mk_prec_rel_term rel left right
     | Id id ->
-         mk_number_term id_op (Mp_num.num_of_int id)
+         mk_number_term id_op (Lm_num.num_of_int id)
     | Resource (name, r) ->
          mk_string_param_term resource_op name [convert.resource_f r]
     | Improve { improve_name = name; improve_expr = expr } ->
@@ -1526,7 +1527,7 @@ struct
           | _ ->
                false
       in
-         List_util.for_all2 check int_params imp_params
+         Lm_list_util.for_all2 check int_params imp_params
 
    (*
     * Check that a rewrite is justified.
@@ -1661,10 +1662,10 @@ struct
        | ( Opname { opname_name = name'; opname_term = term' }
          | Definition { opdef_opname = name'; opdef_term = term' }
          ) :: t when name' = name ->
-            if alpha_equal term' term then
-               ()
-            else
-               search true t
+            let shape' = shape_of_term term' in
+            let shape = shape_of_term term in
+               if not (ToTerm.TermShape.eq shape' shape) then
+                   search true t
        | _ :: t ->
             search mismatch t
       in

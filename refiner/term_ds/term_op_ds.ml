@@ -30,10 +30,11 @@
 
 INCLUDE "refine_error.mlh"
 
+open Lm_symbol
+
 open Refine_error_sig
 open Term_ds_sig
 
-open String_set
 open Term_ds
 
 module TermOp
@@ -271,7 +272,7 @@ struct
          REF_RAISE(RefineError ("dest_string_param", TermMatchError (t, "no string parameter")))
 
    let mk_string_term opname s =
-      { free_vars = Vars StringSet.empty;
+      { free_vars = Vars SymbolSet.empty;
         core = Term
          { term_op = { op_name = opname; op_params = [String s] }; term_terms = [] }}
 
@@ -521,7 +522,7 @@ struct
          REF_RAISE(RefineError ("dest_number_any_term", TermMatchError (t, "bad arity")))
 
    let mk_number_term opname n =
-      { free_vars = Vars StringSet.empty;
+      { free_vars = Vars SymbolSet.empty;
         core = Term
          { term_op = { op_name = opname; op_params = [Number n] };
            term_terms = [] }}
@@ -542,7 +543,7 @@ struct
     | _ -> REF_RAISE(RefineError ("dest_univ_term", TermMatchError (t, "")))
 
    let mk_univ_term opname n =
-      { free_vars = Vars StringSet.empty;
+      { free_vars = Vars SymbolSet.empty;
         core = Term
          { term_op = { op_name = opname; op_params = [MLevel n] };
            term_terms = [] }}
@@ -563,7 +564,7 @@ struct
     | _ -> REF_RAISE(RefineError ("dest_token_term", TermMatchError (t, "bad arity")))
 
    let mk_token_term opname n =
-      { free_vars = Vars StringSet.empty;
+      { free_vars = Vars SymbolSet.empty;
         core = Term
          { term_op = { op_name = opname; op_params = [Token n] };
            term_terms = [] }}

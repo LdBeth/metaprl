@@ -31,7 +31,7 @@
  *)
 
 open Printf
-open Mp_debug
+open Lm_debug
 
 open Shell_sig
 
@@ -85,7 +85,7 @@ struct
           } = Http_server.http_info server
       in
       let url = sprintf "http://%s:%d/" host port in
-      let fd = Mp_inet.file_descr_of_client client in
+      let fd = Lm_inet.file_descr_of_client client in
       let _ =
          if !debug_http then
             eprintf "ShellHTTP: starting service on port %d%t" (Obj.magic fd) eflush

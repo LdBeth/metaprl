@@ -33,7 +33,7 @@
 open Printf
 open Lexing
 
-open Mp_debug
+open Lm_debug
 
 open Opname
 open Refiner.Refiner.TermType
@@ -53,6 +53,11 @@ let debug_lock =
         debug_description = "show locking operations";
         debug_value = false
       }
+
+(*
+ * Intialize readline package.
+ *)
+let _ = Lm_readline.initialize_readline ()
 
 (*
  * Save the text in the input_buffers during each toplevel read.
@@ -259,7 +264,7 @@ let print_term state t =
       Rformat.print_to_channel Rformat.default_width buf stdout;
       flush stdout
 
-let print_term_fp out t =
+let print_short_term_fp out t =
    synchronize_client (fun state ->
          let db =
             match state with
@@ -268,9 +273,12 @@ let print_term_fp out t =
              | None ->
                   Dform.null_base
          in
-         let buf = Rformat.new_buffer () in
-            Dform.format_term db buf t;
-            Rformat.print_to_channel Rformat.default_width buf out;
+         let str = try
+            Rformat.line_format Rformat.default_width (fun bf -> Dform.format_term db bf t)
+         with _ ->
+            "unprintable term"
+         in
+            output_string out str;
             flush out)
 
 let term_printer t =
@@ -451,21 +459,21 @@ let set_file state name =
  *)
 let get_buffered_text (start, finish) bufs =
    let count = finish - start in
-   let s = String_util.create "Shell_p4.get_buffered_text" count in
+   let s = Lm_string_util.create "Shell_p4.get_buffered_text" count in
    let rec collect count = function
       (pos, len, buf) :: t ->
          if start > pos then
             if start + count - pos > len then
                raise (Failure "collect")
             else
-               String_util.blit "Shell_p4.get_buffered_text" buf (start - pos) s 0 count
+               Lm_string_util.blit "Shell_p4.get_buffered_text" buf (start - pos) s 0 count
          else if start + count > pos then
             let amount = start + count - pos in
                if amount > len then
                   raise (Failure "collect")
                else
                   begin
-                     String_util.blit "Shell_p4.get_buffered_text" buf 0 s (pos - start) amount;
+                     Lm_string_util.blit "Shell_p4.get_buffered_text" buf 0 s (pos - start) amount;
                      collect (count - amount) t
                   end
          else
@@ -486,7 +494,7 @@ let get_buffered_text (start, finish) bufs =
  * Get the text from the file.
  *)
 let get_file_text (start, finish) input =
-   let buf = String_util.create "Shell_p4.get_file_text" (finish - start) in
+   let buf = Lm_string_util.create "Shell_p4.get_file_text" (finish - start) in
       try
          seek_in input start;
          really_input input buf 0 (finish - start);
@@ -574,7 +582,7 @@ let set_prompt2 _ prompt =
 let stdin_stream state =
    let buf = create_buffer () in
    let refill loc =
-      let str = unsynchronize state Readline.readline !stdin_prompt ^ "\n" in
+      let str = unsynchronize state Lm_readline.readline !stdin_prompt ^ "\n" in
          stdin_prompt := !stdin_prompt2;
          buf.buf_index <- 0;
          buf.buf_buffer <- str;

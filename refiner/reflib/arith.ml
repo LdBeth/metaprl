@@ -191,7 +191,7 @@ struct
        let {op_params=[param]} = dest_op op in
        let Number cval = dest_param param in *)
        let n = TermOp.dest_number_any_term c in
-       (v1,v2,Mp_num.int_of_num n)
+       (v1,v2,Lm_num.int_of_num n)
 
     let get_v1 h a = let (v,_,_)=get_cmp h a in v
     let get_v2 h a = let (_,v,_)=get_cmp h a in v

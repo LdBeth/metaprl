@@ -142,6 +142,7 @@ CMXFILES_CONVERT = $(addsuffix .cmx, $(MFILES_CONVERT))
 # Libraries for prlc
 #
 CMXADEPS =\
+	$(ROOT)/lib/lm.cmxa\
 	$(ROOT)/lib/util.cmxa
 
 CMXLIBS =\
@@ -150,6 +151,7 @@ CMXLIBS =\
 	$(CMXADEPS)
 
 CMADEPS =\
+	$(ROOT)/lib/lm.cma\
 	$(ROOT)/lib/util.cma
 
 CMALIBS =\
@@ -159,12 +161,14 @@ CMALIBS =\
 
 BYTE_CCLIBS =\
 	-cclib -lunix\
-	-cclib $(ROOT)/clib/clib-byte$(EXT_LIB)\
+	-cclib $(ROOT)/lib/liblmcutil-byte$(EXT_LIB)\
+	-cclib $(ROOT)/lib/clib-byte$(EXT_LIB)\
 	$(OTHER_CCLIBS)
 
 NATIVE_CCLIBS =\
 	-cclib -lunix\
-	-cclib $(ROOT)/clib/clib-native$(EXT_LIB)\
+	-cclib $(ROOT)/lib/liblmcutil-native$(EXT_LIB)\
+	-cclib $(ROOT)/lib/clib-native$(EXT_LIB)\
 	$(OTHER_CCLIBS)
 
 #
@@ -344,9 +348,9 @@ install:: $(MAINLIB).cma $(LCMIFILES) $(CAMLP4N).run $(CAMLP4O).run $(PRLCN).run
 		$(LN) ../$(DIR)/$(PRLCO).run $(ROOT)/lib/$(PRLCO);\
 	fi
 	if [ $(CONVERT).opt -nt $(CONVERT).run ]; then\
-		$(LN) ../$(DIR)/$(CONVERT).opt $(ROOT)/lib/$(CONVERT);\
+		$(LN) ../$(DIR)/$(CONVERT).opt $(ROOT)/bin/$(CONVERT);\
 	else\
-		$(LN) ../$(DIR)/$(CONVERT).run $(ROOT)/lib/$(CONVERT);\
+		$(LN) ../$(DIR)/$(CONVERT).run $(ROOT)/bin/$(CONVERT);\
 	fi
 	$(INSTALL) $(MAINPROG).run $(MPBIN)/$(MAINPROG)
 

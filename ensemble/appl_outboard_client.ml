@@ -33,8 +33,8 @@
 
 open Printf
 
-open Thread_util
-open Mp_debug
+open Lm_thread_util
+open Lm_debug
 
 open Appl_outboard_common
 
@@ -89,7 +89,7 @@ and ('cast, 'send) appl_handlers =
  *)
 and ('cast, 'send) t =
    { ens_lock : Mutex.t;
-     ens_pipe : Mmap_pipe.t;
+     ens_pipe : Lm_mmap_pipe.t;
      mutable ens_queue : ('cast, 'send) message list;
      mutable ens_endpt : id;
      mutable ens_view : view_state;
@@ -142,7 +142,7 @@ let try_recv info appl_handlers =
    let raw_read buf off len =
       Marshal.from_string buf off
    in
-      match Mmap_pipe.read info.ens_pipe raw_read with
+      match Lm_mmap_pipe.read info.ens_pipe raw_read with
          Some (code, id, data) ->
             handle_event info appl_handlers code id data
        | None ->
@@ -164,7 +164,7 @@ let try_send info =
                            eprintf "Appl_outboard_client.to_buffer: Cast (0x%08x, %d, %d)%t" (Obj.magic buf) off len eflush;
                         Marshal.to_buffer buf off len data [Marshal.Closures]
                      in
-                        if Mmap_pipe.write info.ens_pipe cast_code "" raw_write then
+                        if Lm_mmap_pipe.write info.ens_pipe cast_code "" raw_write then
                            info.ens_queue <- t
                 | Send (id, data) ->
                      let raw_write buf off len =
@@ -172,7 +172,7 @@ let try_send info =
                            eprintf "Appl_outboard_client.to_buffer: Send (0x%08x, %d, %d)%t" (Obj.magic buf) off len eflush;
                         Marshal.to_buffer buf off len data [Marshal.Closures]
                      in
-                        if Mmap_pipe.write info.ens_pipe send_code id raw_write then
+                        if Lm_mmap_pipe.write info.ens_pipe send_code id raw_write then
                            info.ens_queue <- t
             end
        | [] ->
@@ -186,7 +186,7 @@ let try_send info =
 let rec reader_thread info appl_handlers =
    try_send info;
    try_recv info appl_handlers;
-   let _ = Mmap_pipe.block info.ens_pipe in
+   let _ = Lm_mmap_pipe.block info.ens_pipe in
       reader_thread info appl_handlers
 
 (************************************************************************
@@ -207,7 +207,7 @@ let args () =
  *    3. an application handler record
  *)
 let create endpt_name appl_name create_handlers =
-   let pipe = Mmap_pipe.create_client shared_dir in
+   let pipe = Lm_mmap_pipe.create_client shared_dir in
    let rec sync () =
       let raw_read buf off len =
          Marshal.from_string buf off
@@ -218,8 +218,8 @@ let create endpt_name appl_name create_handlers =
                eprintf "Appl_outboard_client: waiting for new view%t" eflush;
                unlock_printer ()
             end;
-         (let _ = Mmap_pipe.block pipe in ());
-         match Mmap_pipe.read pipe raw_read with
+         (let _ = Lm_mmap_pipe.block pipe in ());
+         match Lm_mmap_pipe.read pipe raw_read with
             Some (code, id, view) ->
                if code = start_code then
                   begin

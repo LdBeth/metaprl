@@ -94,17 +94,6 @@ else
 	CMXALIBS_ext := $(ROOT)/lib/trefiner_null.cmxa
 endif
 
-#
-# If LIBMOJAVE is available, use it
-#
-
-ifneq ($(LIBMOJAVE),undefined)
-	CMALIBS_ext := $(ROOT)/lib/lm.cma $(CMALIBS_ext)
-	CMXALIBS_ext := $(ROOT)/lib/lm.cmxa $(CMXALIBS_ext)
-	BYTE_CCLIBS := -cclib $(ROOT)/lib/cutil-byte$(EXT_LIB)
-	NATIVE_CCLIBS := -cclib $(ROOT)/lib/cutil-native$(EXT_LIB)
-endif
-
 ########################################################################
 # LIBRARIES
 ########################################################################
@@ -113,6 +102,7 @@ CMXDEPS =\
 	$(CAMLLIB)/unix.cmxa\
 	$(CAMLLIB)/str.cmxa\
 	$(CAMLP4LIB)/camlp4.cmxa\
+	$(ROOT)/lib/lm.cmxa\
 	$(ROOT)/lib/util.cmxa\
 	$(ROOT)/lib/refiner.cmxa\
 	$(ROOT)/lib/library.cmxa\
@@ -130,6 +120,7 @@ CMXADEPS =\
 	$(OPTTHREADSLIB)\
 	$(CAMLP4LIB)/odyl.cmxa\
 	$(CAMLP4LIB)/camlp4.cmxa\
+	$(ROOT)/lib/lm.cmxa\
 	$(ROOT)/lib/util.cmxa\
 	$(ROOT)/lib/refiner.cmxa\
 	$(ROOT)/lib/library.cmxa\
@@ -150,6 +141,7 @@ CMADEPS =\
 	$(THREADSLIB)\
 	$(CAMLP4LIB)/camlp4.cma\
 	$(CAMLP4LIB)/camlp4_top.cma\
+	$(ROOT)/lib/lm.cma\
 	$(ROOT)/lib/util.cma\
 	$(ROOT)/lib/refiner.cma\
 	$(ROOT)/lib/library.cma\
@@ -166,6 +158,7 @@ TCMADEPS =\
 	$(CAMLLIB)/str.cma\
 	$(THREADSLIB)\
 	$(CAMLP4LIB)/camlp4.cma\
+	$(ROOT)/lib/lm.cma\
 	$(ROOT)/lib/util.cma\
 	$(ROOT)/lib/refiner.cma\
 	$(ROOT)/lib/library.cma\
@@ -193,10 +186,12 @@ CMXOBJS =\
 
 BYTE_CCLIBS := $(BYTE_CCLIBS)\
 	-cclib $(ROOT)/lib/clib-byte$(EXT_LIB)\
+	-cclib $(ROOT)/lib/liblmcutil-byte$(EXT_LIB)\
 	$(OTHER_CCLIBS)
 
 NATIVE_CCLIBS := $(NATIVE_CCLIBS)\
 	-cclib $(ROOT)/lib/clib-native$(EXT_LIB)\
+	-cclib $(ROOT)/lib/liblmcutil-native$(EXT_LIB)\
 	$(OTHER_CCLIBS)
 
 # Name of main librariws

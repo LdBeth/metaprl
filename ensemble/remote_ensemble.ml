@@ -32,9 +32,9 @@
  *)
 
 open Printf
-open Mp_debug
+open Lm_debug
 
-open Thread_util
+open Lm_thread_util
 
 open Remote_queue_sig
 
@@ -112,7 +112,7 @@ struct
     *)
    type 'a poll_value =
       PollSuccess of 'a
-    | PollEvent of 'a Thread_event.event
+    | PollEvent of 'a Lm_thread_event.event
     | PollFailure
 
    type 'a event = unit -> 'a poll_value
@@ -123,7 +123,7 @@ struct
     *)
    type ('a, 'b, 'c) t =
       { queue_queue : ('a, 'b, 'c) Queue.t;
-        queue_upcall : ('a, 'b) Queue.upcall Thread_event.event;
+        queue_upcall : ('a, 'b) Queue.upcall Lm_thread_event.event;
         mutable queue_lock : ('a, 'b) Queue.lock list;
         mutable queue_pending : ('a, 'b) handle list;
         mutable queue_local : ('a, 'b) local list
@@ -183,7 +183,7 @@ struct
    let cancel_handle queue hand =
       hand.hand_value <- Some RemoteCanceled;
       try
-         queue.queue_pending <- List_util.removeq hand queue.queue_pending;
+         queue.queue_pending <- Lm_list_util.removeq hand queue.queue_pending;
          Queue.delete queue.queue_queue hand.hand_hand
       with
          Failure "removeq" ->
@@ -236,14 +236,14 @@ struct
     *)
    let cancel_local queue local =
       Queue.cancel queue.queue_queue local.local_lock;
-      queue.queue_local <- List_util.removeq local queue.queue_local
+      queue.queue_local <- Lm_list_util.removeq local queue.queue_local
 
    (*
     * Return a value for the local job.
     *)
    let return_local queue local x =
       Queue.unlock queue.queue_queue local.local_lock x;
-      queue.queue_local <- List_util.removeq local queue.queue_local
+      queue.queue_local <- Lm_list_util.removeq local queue.queue_local
 
    (************************************************************************
     * SHARED MEMORY                                                        *
@@ -314,7 +314,7 @@ struct
        | PollFailure ->
             PollFailure
        | PollEvent event ->
-            PollEvent (Thread_event.wrap event f)
+            PollEvent (Lm_thread_event.wrap event f)
 
    (*
     * Wrap a system event.
@@ -341,8 +341,8 @@ struct
             end
        | [] ->
             let events =
-               [Thread_event.wrap queue.queue_upcall (fun msg -> MessageUpcall msg);
-                Thread_event.wrap (Thread_event.choose block_events) (fun msg -> MessageEvent msg)]
+               [Lm_thread_event.wrap queue.queue_upcall (fun msg -> MessageUpcall msg);
+                Lm_thread_event.wrap (Lm_thread_event.choose block_events) (fun msg -> MessageEvent msg)]
             in
                if !debug_queue then
                   begin
@@ -350,7 +350,7 @@ struct
                      eprintf "Remote_ensemble.select: begin%t" eflush;
                      unlock_printer ()
                   end;
-               let x = Thread_event.sync 0 (Thread_event.choose events) in
+               let x = Lm_thread_event.sync 0 (Lm_thread_event.choose events) in
                   if !debug_queue then
                      begin
                         lock_printer ();

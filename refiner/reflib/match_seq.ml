@@ -30,7 +30,7 @@
  *
  *)
 
-open Mp_debug
+open Lm_debug
 
 open Refiner.Refiner
 open RefineError
@@ -44,7 +44,7 @@ let cant_match_hyp = RefineError ("Match_seq.match_hyp", StringError "sequents d
 
 let aev v1 v2 t1 t2 = alpha_equal_vars t1 v1 t2 v2
 
-let fake_var = "__@@match_seq_var_HACK@@__"
+let fake_var = Lm_symbol.add "__@@match_seq_var_HACK@@__"
 
 let match_hyps big small =
    let big_hyp = big.sequent_hyps in

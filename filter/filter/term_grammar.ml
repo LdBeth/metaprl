@@ -31,10 +31,10 @@
  * Modified By: Alexei Kopylov <kopylov@cs.cornell.edu>
  * Modified By: Adam Granicz <granicz@cs.caltech.edu>
  *)
-
 open Printf
 
-open Mp_debug
+open Lm_symbol
+open Lm_debug
 open Opname
 open Term_shape_sig
 open Refiner.Refiner
@@ -87,7 +87,7 @@ let comment_white_op = mk_comment_opname "comment_white"
 let comment_string_op = mk_comment_opname "comment_string"
 let comment_block_op = mk_comment_opname "comment_block"
 let comment_term_op = mk_comment_opname "comment_term"
-  
+
 let misspelled = ref []
 let dict_inited = ref false
 
@@ -115,7 +115,7 @@ let raise_spelling_error () =
        | [] ->
             ()
       in
-      let (word, loc) = List_util.last !misspelled in
+      let (word, loc) = Lm_list_util.last !misspelled in
       let l = Sort.list (<) !misspelled in
          misspelled := [];
          eprintf "The following words may be misspelled:";
@@ -204,7 +204,7 @@ struct
 
    let mk_gensym () =
       incr gensym;
-      "$" ^ (string_of_int !gensym)
+      Lm_symbol.make "$" !gensym
 
    (* Currying *)
    let mk_bterm' (vars, bterm) = mk_bterm vars bterm
@@ -233,14 +233,14 @@ struct
       if s.[pred (String.length s)] = '\'' then
          incr_level_exp (level_var (String.sub s 0 (pred (String.length s))))
       else
-         mk_var_level_exp s
+         mk_var_level_exp (Lm_symbol.add s)
 
    let cast_level p =
       match dest_param p with
-         Number n when Mp_num.is_integer_num n ->
-           mk_const_level_exp (Mp_num.int_of_num n)
+         Number n when Lm_num.is_integer_num n ->
+           mk_const_level_exp (Lm_num.int_of_num n)
        | MLevel l -> l
-       | MString v -> level_var v
+       | MString v -> level_var (string_of_symbol v)
        | _ -> raise (BadParamCast (p, "l"))
 
    (*
@@ -260,14 +260,14 @@ struct
     | "s" ->
          begin
             match dest_param p with
-               Number(n) -> make_param (String (Mp_num.string_of_num n))
+               Number(n) -> make_param (String (Lm_num.string_of_num n))
              | String _ | MString _ -> p
              | _ -> raise (BadParamCast (p, "s"))
          end
     | "t" ->
          begin
             match dest_param p with
-               Number(n) -> make_param (Token (Mp_num.string_of_num n))
+               Number(n) -> make_param (Token (Lm_num.string_of_num n))
              | String(s) -> make_param (Token s)
              | MString(v) -> make_param (MToken v)
              | _ -> raise (BadParamCast (p, "t"))
@@ -276,9 +276,8 @@ struct
     | "v" ->
          begin
             match dest_param p with
-               Number(n) -> make_param (Var (Mp_num.string_of_num n))
-             | String(s) -> make_param (Var s)
-             | MString(v) -> make_param (MVar v)
+               Number(n) -> make_param (Var (Lm_symbol.add (Lm_num.string_of_num n)))
+             | MString(v) -> make_param (Var v)
              | _ -> raise (BadParamCast (p, "v"))
          end
 
@@ -324,12 +323,13 @@ struct
    (*
     * Make record terms
     *)
-
    let mk_field_term loc r field =
                 mk_term (mk_op (mk_opname loc ["field"] [ShapeToken] [0])
                                [make_param (Token field)])  [mk_simple_bterm r]
 
-   let mk_field_self_term loc field =  mk_field_term loc (mk_var_term "self") field
+   let mk_field_self_term =
+      let self_term = mk_var_term (Lm_symbol.add "self") in
+         fun loc field -> mk_field_term loc self_term field
 
 
    (*
@@ -347,25 +347,25 @@ struct
    (************************************************************************
     * QUOTATIONS                                                           *
     ************************************************************************)
-   
+
    let parse_term s =
       let cs = Stream.of_string s in
          Grammar.Entry.parse TermGrammar.term_eoi cs
-   
+
    let pho_grammar_filename =
       try
          Sys.getenv "LANG_FILE"
       with
          Not_found ->
             !Phobos_state.mp_grammar_filename
-   
+
    let pho_desc_grammar_filename =
       try
          Sys.getenv "DESC_LANG_FILE"
       with
          Not_found ->
             !Phobos_state.mp_desc_grammar_filename
-   
+
    let dest_quot quot =
       try
          let i = String.index quot ':' in
@@ -373,7 +373,7 @@ struct
       with
          Not_found ->
             "term", quot
-   
+
    (*
     * Parse a comment string.
     *)
@@ -381,17 +381,18 @@ struct
       SpellOff
     | SpellOn
     | SpellAdd
-   
+
    let fake_arities =
       List.map ( fun _ -> 0)
-   
+
    let string_params =
       List.map ( fun _ -> ShapeString)
 
-   let expr_of_anti (loc, _) s =
+   let expr_of_anti (loc, _) name s =
       try Grammar.Entry.parse Pcaml.expr_eoi (Stream.of_string s) with
          Stdpp.Exc_located ((l1, l2), exn) ->
             let offset = loc + String.length "$" in
+            let offset = if name = "" then offset else offset + 1 + (String.length name) in
                Stdpp.raise_with_loc (offset+l1, offset+l2) exn
 
    let rec parse_quotation loc curr = function
@@ -413,7 +414,7 @@ struct
          parse_comment loc false s
     | nm, _ ->
          Stdpp.raise_with_loc loc (Invalid_argument ("Camlp4 term grammar: unknown " ^ nm ^ " quotation"))
-   
+
    and parse_comment (loc, _) math s =
       if !debug_spell && not(!dict_inited) then begin
          Filter_spell.init ();
@@ -466,7 +467,7 @@ struct
             mk_simple_term comment_block_op [build_term spelling items]
        | Comment_parse.Quote ((l1,l2), tag, s) ->
             mk_simple_term comment_term_op [parse_quotation (loc+l1, loc+l2) "doc" (tag,s)]
-   
+
       and build_term spelling tl =
          mk_xlist_term (List.map (build_comment_term spelling) tl)
       in
@@ -487,7 +488,7 @@ struct
       if is_string_term comment_string_op t then
          parse_comment loc false (dest_string_term comment_string_op t)
       else t
-   
+
    (************************************************************************
     * GRAMMAR                                                              *
     ************************************************************************)
@@ -628,11 +629,11 @@ struct
             [ "if"; e1 = noncommaterm; "then"; e2 = noncommaterm; "else"; e3 = noncommaterm ->
                { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc "ifthenelse") e1.aterm e2.aterm e3.aterm }
             | "let"; x = word_or_string; sl_equal; e1 = applyterm; "in"; e2 = noncommaterm ->
-               { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") x e1.aterm e2.aterm }
+               { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") (Lm_symbol.add x) e1.aterm e2.aterm }
             | e2 = noncommaterm; "where";  x = word_or_string; sl_equal; e1 = noncommaterm ->
-               { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") x e1.aterm e2.aterm }
+               { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") (Lm_symbol.add x) e1.aterm e2.aterm }
             | "open";  e1 =  applyterm; "in"; e2 = noncommaterm ->
-               { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") "self" e1.aterm e2.aterm }
+               { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") (Lm_symbol.add "self") e1.aterm e2.aterm }
             ]
 
           (* Logical operators *)
@@ -651,16 +652,16 @@ struct
           | "quantify" LEFTA
             [ (* all/exists*)
                op = sl_quantify; v = word_or_string; sl_colon; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
-                  { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) v t1.aterm t2.aterm }
+                  { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) (Lm_symbol.add v) t1.aterm t2.aterm }
             |(* dall/dexists*)
                op = sl_quantify; v = word_or_string; sl_set_in; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
-                  { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc  ("d"^op)) v t1.aterm t2.aterm }
+                  { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc  ("d"^op)) (Lm_symbol.add v) t1.aterm t2.aterm }
             |(* sall/sexists*)
               op = sl_quantify; v = word_or_string; sl_period; t2 = noncommaterm ->
-                  { aname = None; aterm = mk_dep1_term (mk_dep1_opname loc ("s"^op)) v t2.aterm }
+                  { aname = None; aterm = mk_dep1_term (mk_dep1_opname loc ("s"^op)) (Lm_symbol.add v) t2.aterm }
             |(* thereis/forall *)
               op = sl_open_quantify; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
-                  { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) "self" t1.aterm t2.aterm }
+                  { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) (Lm_symbol.add "self") t1.aterm t2.aterm }
             ]
           | "neg"
             [ op = sl_not; x = noncommaterm ->
@@ -678,7 +679,7 @@ struct
                   let t =
                      try mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc "equal") ty.aterm t.aterm t.aterm
                      with _ -> mk_dep0_dep0_term (mk_dep0_dep0_opname loc "member") t.aterm ty.aterm
-                  in 
+                  in
                      { aname = None; aterm = t }
             | (* t1 in t2 subset t3 *)
               t1 = noncommaterm; sl_in; t2 = NEXT; sl_subset; t3 = noncommaterm ->
@@ -733,13 +734,13 @@ struct
           | "isect" RIGHTA
             [ (* Isect x: A. B[x], Union x:A. B[x]  - intersection, union of family of types *)
                op = sl_Isect; v = word_or_string; sl_colon; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
-                        { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) v t1.aterm t2.aterm }
+                        { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) (Lm_symbol.add v) t1.aterm t2.aterm }
              | (* A union B, A isect B, x: A isect B[x]  - binary union, intersection and dependent intersection *)
                t1 = noncommaterm; op = sl_isect; t2 = noncommaterm ->
                mk_type_term loc op t1 t2
              |(* quot x,y: t1 // t2  - quotient type *)
                op = sl_quotient; x = word_or_string; sl_comma; y = word_or_string; sl_colon; t1 = noncommaterm; sl_double_slash; t2 = noncommaterm ->
-               { aname = None; aterm = mk_dep0_dep2_term (mk_dep0_dep2_opname loc op) x y t1.aterm t2.aterm }
+               { aname = None; aterm = mk_dep0_dep2_term (mk_dep0_dep2_opname loc op) (Lm_symbol.add x) (Lm_symbol.add y) t1.aterm t2.aterm }
             ]
           | "plus" RIGHTA
             [  (* t1 +[g] t2  - algebraic plus *)
@@ -812,7 +813,7 @@ struct
                  [name] ->
                     if !debug_grammar then
                        eprintf "Got bound term: %s%t" name eflush;
-                    { aname = Some (mk_var_term name); aterm = t.aterm }
+                    { aname = Some (mk_var_term (Lm_symbol.add name)); aterm = t.aterm }
                | _ ->
                     Stdpp.raise_with_loc loc (ParseError "illegal binding variable")
            ]
@@ -846,7 +847,7 @@ struct
                sl_power; lab = word_or_string; sl_assign; t = noncommaterm   ->
              { aname = None;
                aterm = mk_term (mk_op (mk_opname loc ["rcrd"] [ShapeToken] [0;0])
-                               [make_param (Token lab )])  [mk_simple_bterm t.aterm; mk_simple_bterm  (mk_var_term "self")]
+                               [make_param (Token lab )])  [mk_simple_bterm t.aterm; mk_simple_bterm  (mk_var_term (Lm_symbol.add "self"))]
              }
            ]
           | [ t = nonwordterm ->
@@ -938,9 +939,9 @@ struct
                 let aux = fun r -> function
                       (Some lab,t) ->
                            mk_term (mk_op (mk_opname loc ["record"] [ShapeToken] [1;0])
-                               [make_param (Token lab )])  [mk_bterm ["self"] t.aterm; mk_simple_bterm  r]
+                               [make_param (Token lab )])  [mk_bterm [Lm_symbol.add "self"] t.aterm; mk_simple_bterm  r]
                    |  (None,t) ->
-                           mk_dep0_dep1_term (mk_dep0_dep1_opname loc "set") "self" r t.aterm
+                           mk_dep0_dep1_term (mk_dep0_dep1_opname loc "set") (Lm_symbol.add "self") r t.aterm
                 in
                    { aname = None;
                      aterm = List.fold_left aux r0 r
@@ -955,9 +956,10 @@ struct
                    }
              (* sets {x:A | P[x]} *)
            | sl_open_curly; v =  word_or_string; sl_colon; ty = aterm; sl_pipe; b = aterm; sl_close_curly ->
-             { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc "set") v ty.aterm b.aterm }
+             { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc "set") (Lm_symbol.add v) ty.aterm b.aterm }
              (* very dependent functions {f | x:A -> B[x]} *)
            | sl_open_curly; f =  word_or_string; sl_pipe; t = aterm; sl_close_curly ->
+             let f = Lm_symbol.add f in
              let t = t.aterm in
              let rfun_op = mk_dep0_dep2_opname loc "rfun" in
              let t' =
@@ -975,9 +977,9 @@ struct
 
       varterm:
          [[ sl_single_quote; v = word_or_string ->
-             mk_var_term v
+             mk_var_term (Lm_symbol.add v)
            | sl_single_quote; v = word_or_string; sl_open_brack; terms = opttermlist; sl_close_brack ->
-             mk_so_var_term v terms
+             mk_so_var_term (Lm_symbol.add v) terms
           ]];
 
       quote_term:
@@ -1032,7 +1034,7 @@ struct
       (* Parameters *)
       param:
          [[  w = sl_word ->
-             make_param (MString w)
+             make_param (MString (Lm_symbol.add w))
            | w = STRING ->
              make_param (String (Token.eval_string w))
            | n = sl_number ->
@@ -1081,7 +1083,7 @@ struct
          [[ h = bhead ->
              [], tupelize loc h
            | h = bhead; sl_period; t = term ->
-             check_bvars h, t
+             List.map Lm_symbol.add (check_bvars h), t
            | sl_period; t = term ->
              [], t
           ]];
@@ -1133,16 +1135,16 @@ struct
 
       hyp:
          [[ "<"; name = word_or_string; args=optbrtermlist; ">" ->
-             Context(name,args)
+             Context(Lm_symbol.add name, args)
           | v = word_or_string; rest = hyp_suffix ->
-              rest(v)
+              rest v
           | t = aterm ->
               Hypothesis t.aterm
           ]];
 
       hyp_suffix:
          [[ sl_colon; t = aterm ->
-               fun v -> HypBinding (v, t.aterm)
+               fun v -> HypBinding (Lm_symbol.add v, t.aterm)
           | (params, bterms) = termsuffix ->
                fun op -> Hypothesis (mk_term (mk_op (mk_bopname loc [op] params bterms) params) bterms)
           | ->
@@ -1174,22 +1176,22 @@ struct
            | sl_back_quote; name = STRING ->
              mk_xstring_term (Token.eval_string name)
           ]];
-      
+
       (* Term constructor "programs" *)
       term_con_eoi:
          [[ con = term_con; EOI -> con ]];
 
       term_con:
          [[ sl_exclamation; t = term; sl_exclamation -> ConTerm t
-          | e = ANTIQUOT -> ConExpr (expr_of_anti loc e)
-          | sl_single_quote; v = ANTIQUOT -> ConVar (expr_of_anti loc v)
+          | e = ANTIQUOT -> ConExpr (expr_of_anti loc "" e)
+          | sl_single_quote; v = ANTIQUOT -> ConVar (expr_of_anti loc "" v)
           | op = opname -> ConConstruct (mk_opname loc op [] [], [], [])
           | op = opname; (params, bterms) = term_con_suffix ->
                let param_types = List.map snd params in
                let bterm_arities = List.map (fun (bvars, _) -> List.length bvars) bterms in
                   ConConstruct (mk_opname loc op param_types bterm_arities, params, bterms)
          ]];
-      
+
       term_con_suffix:
          [[ p = con_params ->
              p, []
@@ -1206,11 +1208,12 @@ struct
 
       con_param:
          [[ s = STRING    -> ConPStr s, ShapeString
-          | s = sl_word   -> ConPMeta s, ShapeString
+          | s = sl_word   -> ConPMeta (Lm_symbol.add s), ShapeString
           | n = sl_number -> ConPNum n, ShapeNumber
+          | e = ANTIQUOT "int" -> ConPInt (expr_of_anti loc "int" e), ShapeNumber
           | s = STRING  ; sl_colon; shape = con_param_shape -> ConPStr s, shape
-          | s = sl_word ; sl_colon; shape = con_param_shape -> ConPMeta s, shape
-          | e = ANTIQUOT; sl_colon; shape = con_param_shape -> ConPExpr (expr_of_anti loc e), shape
+          | s = sl_word ; sl_colon; shape = con_param_shape -> ConPMeta (Lm_symbol.add s), shape
+          | e = ANTIQUOT; sl_colon; shape = con_param_shape -> ConPExpr (expr_of_anti loc "" e), shape
           ]];
 
       con_param_shape:
@@ -1220,6 +1223,7 @@ struct
                 | "s" -> ShapeString
                 | "l" -> ShapeLevel
                 | "t" -> ShapeToken
+                | "v" -> ShapeVar
                 |  s  -> raise (BadParamCast (make_param (String ""), s))
           ]];
 
@@ -1230,20 +1234,20 @@ struct
          [[ v = LIDENT; b = con_bterm_suffix ->
                let bv, bt = b in (ConBVarConst v :: bv), bt
           | e = ANTIQUOT; suff = OPT con_bterm_suffix ->
-               let e = expr_of_anti loc e in
+               let e = expr_of_anti loc "" e in
                match suff with
                   Some (bv, bt) ->
                      (ConBVarExpr e :: bv), bt
                 | None ->
                      [], ConExpr e
-          ] | [ t = term_con -> [], t 
+          ] | [ t = term_con -> [], t
           ]];
 
       con_bterm_suffix:
          [[ ","; bt = con_bterm -> bt
           | "."; t = term_con -> [], t
           ]];
-           
+
 
       (* Terminals *)
       sl_meta_left_right_arrow:
@@ -1461,7 +1465,7 @@ struct
 
       sl_number:
          [[ n = INT ->
-             Mp_num.num_of_string n
+             Lm_num.num_of_string n
           ]];
 
       (* Take a word or a string as an identifier *)

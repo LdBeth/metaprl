@@ -29,6 +29,8 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Lm_symbol
+
 open Opname
 
 open Refine_error_sig
@@ -58,7 +60,7 @@ struct
     *)
    type match_type =
       ParamMatch of param
-    | VarMatch of string
+    | VarMatch of var
     | TermMatch of term
     | TermMatch2 of term * term
     | BTermMatch of bound_term
@@ -69,10 +71,19 @@ struct
     * We declare the general exception type for all the
     * modules in the refiner.
     *
-    * GenericError is used when the specific error is not desired.
+    * The RefineError parameters are only meant to be used for user
+    * interaction and debugging purposes. But in the code that does not directly
+    * produce any output, try ... with ... expressions should
+    * only mention generic  RefineError _  pattern and should not
+    * try to match specific parameters.
+    *
+    * This limitation makes it possible to use RefineError(GenericError)
+    * instead of any other RefineError when we do not care about printed
+    * error messages and want to reduce the RefineError allocation
+    * overhead.
     *)
    type refine_error =
-      (* Generic error is raised by simplified refiners *)
+      (* Generic error is used in simplified refiners for space saving reasons *)
       GenericError
 
       (* Mptop toploop ignore this error *)
@@ -84,6 +95,7 @@ struct
     | TermError of term
     | StringIntError of string * int
     | StringStringError of string * string
+    | StringVarError of string * var
     | StringTermError of string * term
     | GoalError of string * refine_error
     | SecondError of string * refine_error
@@ -100,20 +112,20 @@ struct
     | MetaTermMatchError of meta_term
 
       (* Rewriter errors *)
-    | RewriteBoundSOVar of string
-    | RewriteFreeSOVar of string
-    | RewriteSOVarArity of string
-    | RewriteBoundParamVar of string
-    | RewriteFreeParamVar of string
+    | RewriteBoundSOVar of var
+    | RewriteFreeSOVar of var
+    | RewriteSOVarArity of var
+    | RewriteBoundParamVar of var
+    | RewriteFreeParamVar of var
     | RewriteBadRedexParam of param
     | RewriteNoRuleOperator
     | RewriteBadMatch of match_type
-    | RewriteAllSOInstances of string
-    | RewriteMissingContextArg of string
+    | RewriteAllSOInstances of var
+    | RewriteMissingContextArg of var
     | RewriteStringError of string
     | RewriteStringOpnameOpnameError of string * opname * opname
     | RewriteAddressError of address * string * refine_error
-    | RewriteFreeContextVars of string list
+    | RewriteFreeContextVars of var list
 
    (*
     * Every error is paired with the name of

@@ -29,8 +29,7 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-
-open String_set
+open Lm_symbol
 
 module type TermSubstSig =
 sig
@@ -42,7 +41,7 @@ sig
    (*
     * Substitution, matching, unification.
     *)
-   type term_subst = (string * term) list
+   type term_subst = (var * term) list
 
    (************************************************************************
     * Operations                                                           *
@@ -52,29 +51,29 @@ sig
 
    (*
     * subst: simultaneous subst of terms for vars.
-    * if string list has repeated variables, the first match is used
+    * if var list has repeated variables, the first match is used
     *
     * Bound variables will be renamed if necessary to prevent capturing
     * When renaming in bound terms with duplicate variables:
     *   x,x.t[x] would become new(x),new(x).t[new(x)]
     *
-    * If a same variable is mentioned several times in string list,
+    * If a same variable is mentioned several times in var list,
     * the first occurence is used.
     *)
-   val subst : term -> string list -> term list -> term
-   val subst1 : term -> string -> term -> term
+   val subst : term -> var list -> term list -> term
+   val subst1 : term -> var -> term -> term
    val apply_subst : term -> term_subst -> term
 
    (*
     * dest_bterm_and_rename is the same as dest_bterm, except it will also
     * do alpha-renaming to avoid reusing the specified variables
     *)
-   val dest_bterm_and_rename : bound_term -> String_set.StringSet.t -> bound_term'
+   val dest_bterm_and_rename : bound_term -> SymbolSet.t -> bound_term'
 
    (*
     * var_subst: subst of var for a term.
     *)
-   val var_subst : term -> term -> string -> term
+   val var_subst : term -> term -> var -> term
    val equal_params : param -> param -> bool
 
    (*
@@ -85,9 +84,9 @@ sig
 
    (*
     * alpha_equal_vars: alpha equality on destructed bound terms
-    * If one of the "string list"s has duplicate entries, the first entry is used.
+    * If one of the "var list"s has duplicate entries, the first entry is used.
     *)
-   val alpha_equal_vars : term -> string list -> term -> string list -> bool
+   val alpha_equal_vars : term -> var list -> term -> var list -> bool
 
    (*
     * alpha_equal_fun f t1 vs t2 os =
@@ -96,7 +95,7 @@ sig
     *)
    val alpha_equal_fun :
       ( term -> 'a -> bool ) ->
-      term -> string list ->
+      term -> var list ->
       term -> 'a list ->
       bool
 
@@ -110,14 +109,14 @@ sig
    (*
     * Get the list of free variables.
     *)
-   val is_var_free : string -> term -> bool
-   val is_some_var_free : string list -> term -> bool
-   val is_some_var_free_list : string list -> term list -> bool
-   val free_vars_list : term -> string list
-   val free_vars_set : term -> StringSet.t
-   val free_vars_terms : term list -> StringSet.t
-   val context_vars : term -> string list
-   val binding_vars : term -> string list
+   val is_var_free : var -> term -> bool
+   val is_some_var_free : var list -> term -> bool
+   val is_some_var_free_list : var list -> term list -> bool
+   val free_vars_list : term -> var list
+   val free_vars_set : term -> SymbolSet.t
+   val free_vars_terms : term list -> SymbolSet.t
+   val context_vars : term -> var list
+   val binding_vars : term -> var list
 
    (*
     * Matching is like unification but variables in

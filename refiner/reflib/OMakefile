@@ -1,7 +1,7 @@
 OCAMLINCLUDES =\
 	$(OCAMLINCLUDES)\
-	-I $(ROOT)/lm_libmojave/naml/stdlib\
-	-I $(ROOT)/lm_libmojave/util\
+	-I $(LIBMOJAVE)/stdlib\
+	-I $(LIBMOJAVE)/util\
 	-I ../../mllib\
 	-I ../refbase\
 	-I ../refsig\
@@ -16,3 +16,5 @@ OCamlLibraryInstall($(MPINSTALL), $(LIB), reflib, $(REFLIB_FILES))
 #
 clean:
     $(CLEAN)
+
+all: reflib$(LIB_SUFFIX)

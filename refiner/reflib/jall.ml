@@ -30,7 +30,8 @@
  * Author: Stephan Schmitt <schmitts@spmail.slu.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-open Mp_debug
+open Lm_symbol
+open Lm_debug
 
 open Refiner.Refiner
 open Term
@@ -40,11 +41,41 @@ open TermSubst
 open TermMan
 open RefineError
 open Opname
+open Lm_string_set
 
 open Unify_mm
 
 open Jlogic_sig
 open Jtunify
+
+(************************************************************************
+ * Compatibility layer for abstract vars.
+ *)
+let var_subst t1 t2 v =
+   var_subst t1 t2 (Lm_symbol.add v)
+
+let subst1 t1 v t2 =
+   subst1 t1 (Lm_symbol.add v) t2
+
+let subst t vars tl =
+   subst t (List.map Lm_symbol.add vars) tl
+
+let mk_var_term s =
+   mk_var_term (Lm_symbol.add s)
+
+let free_vars_list t =
+   List.map string_of_symbol (free_vars_list t)
+
+let symbol_set_of_string_set set =
+   SymbolSet.of_list (List.map Lm_symbol.add (StringSet.elements set))
+
+let unify t1 t2 vars =
+   let subst = unify t1 t2 (symbol_set_of_string_set vars) in
+      List.map (fun (v, t) -> string_of_symbol v, t) subst
+
+(************************************************************************
+ * Original JProver.
+ *)
 
 let ruletable = function
    Fail -> "Fail"
@@ -3240,7 +3271,7 @@ struct
    (List.combine sigma_vars apply_terms) @ tauQ
 *)
 
-   let multiply sigmaQ tauQ =
+   let multiply sigmaQ (tauQ : (string * term) list) =
       let (tau_vars,tau_terms) = List.split tauQ in
       let (new_sigmaQ,sigma_ordering)  = rec_apply sigmaQ tauQ tau_vars tau_terms
       and tau_ordering_terms = (List.map (fun x -> [x]) tau_terms) (* for extending ordering_elements *)
@@ -3260,7 +3291,7 @@ struct
    print_term stdout app_term2;
 *)
       try
-         let tauQ = unify app_term1 app_term2 String_set.StringSet.empty in
+         let tauQ = unify app_term1 app_term2 Lm_string_set.StringSet.empty in
          let (mult,oel) = multiply sigmaQ tauQ in
   (*   print_sigmaQ mult; *)
          (mult,oel)
