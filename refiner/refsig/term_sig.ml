@@ -105,7 +105,7 @@ sig
 
    (*
     * The terms in the framework include
-    * a meta-implication and met-iff.
+    * a meta-implication and meta-iff.
     *)
    type meta_term =
       MetaTheorem of term

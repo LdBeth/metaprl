@@ -1179,20 +1179,24 @@ struct
 
       (* Term constructor "programs" *)
       term_con_eoi:
-         [[ con = term_con; EOI -> con ]];
+         [[ con = con_term; EOI -> con ]];
 
-      term_con:
+      con_termlist:
+         [[ l = LIST1 con_term SEP ";" -> l ]];
+
+      con_term:
          [[ sl_exclamation; t = term; sl_exclamation -> ConTerm t
           | e = ANTIQUOT -> ConExpr (expr_of_anti loc "" e)
           | sl_single_quote; v = ANTIQUOT -> ConVar (expr_of_anti loc "" v)
           | op = opname -> ConConstruct (mk_opname loc op [] [], [], [])
-          | op = opname; (params, bterms) = term_con_suffix ->
+          | op = opname; (params, bterms) = con_term_suffix ->
                let param_types = List.map snd params in
                let bterm_arities = List.map (fun (bvars, _) -> List.length bvars) bterms in
                   ConConstruct (mk_opname loc op param_types bterm_arities, params, bterms)
+          | con = con_sequent -> con
          ]];
 
-      term_con_suffix:
+      con_term_suffix:
          [[ p = con_params ->
              p, []
            | p = con_params; sl_open_curly; bterms = con_btermslist; sl_close_curly ->
@@ -1240,13 +1244,71 @@ struct
                      (ConBVarExpr e :: bv), bt
                 | None ->
                      [], ConExpr e
-          ] | [ t = term_con -> [], t
+          ] | [ t = con_term -> [], t
           ]];
 
       con_bterm_suffix:
          [[ ","; bt = con_bterm -> bt
-          | "."; t = term_con -> [], t
+          | "."; t = con_term -> [], t
           ]];
+
+      (* Special forms *)
+      con_sequent:
+         [[ sl_sequent; sl_open_curly;
+            hyps = LIST0 con_hyp SEP ";"; sl_turnstile;
+            concl = LIST1 con_term SEP ";"; sl_close_curly ->
+               let arg = ConTerm (mk_term (mk_op (mk_opname loc ["sequent_arg"] [] []) []) []) in
+                  ConSequent (arg, hyps, concl)
+          | sl_sequent; sl_open_brack; args = con_termlist; sl_close_brack; sl_open_curly;
+            hyps = LIST0 con_hyp SEP ";"; sl_turnstile;
+            concl = LIST1 con_term SEP ";"; sl_close_curly ->
+               let bterm_arities = List.map (fun _ -> 0) args in
+               let op = mk_opname loc ["sequent_arg"] [] bterm_arities in
+               let bterms = List.map (fun t -> [], t) args in
+               let arg = ConConstruct (op, [], bterms) in
+                  ConSequent (arg, hyps, concl)
+          | sl_sequent; sl_open_paren; arg = con_term; sl_close_paren; sl_open_curly;
+            hyps = LIST0 con_hyp SEP ";"; sl_turnstile;
+            concl = LIST1 con_term SEP ";"; sl_close_curly ->
+               let op = mk_opname loc ["sequent_arg"] [] [0] in
+               let arg = ConConstruct (op, [], [[], arg]) in
+                  ConSequent (arg, hyps, concl)
+          ]];
+
+      con_hyp:
+         [[ "<"; name = word_or_string; args = con_optbrtermlist; ">" ->
+              ConContext (<:expr< $str:name$ >>, args)
+          | "<"; name = ANTIQUOT; ">" ->
+              ConHypList (expr_of_anti loc "" name)
+          | v = word_or_string; rest = con_hyp_suffix ->
+              rest v
+          | v = ANTIQUOT; sl_colon; t = con_term ->
+              ConHypBinding (expr_of_anti loc "" v, t)
+          | t = con_term ->
+              ConHypothesis t
+          ]];
+
+      con_hyp_suffix:
+         [[ sl_colon; t = con_term ->
+               fun v -> ConHypBinding (<:expr< $str:v$ >>, t)
+          | (params, bterms) = con_term_suffix ->
+               (fun op ->
+                  let param_types = List.map snd params in
+                  let bterm_arities = List.map (fun (bvars, _) -> List.length bvars) bterms in
+                     ConHypothesis (ConConstruct (mk_opname loc [op] param_types bterm_arities, params, bterms)))
+          | ->
+               fun op -> ConHypothesis (ConTerm (mk_term (mk_op (mk_opname loc [op] [] []) []) []))
+          ]];
+
+      con_optbrtermlist:
+         [[ tl = OPT con_brtermlist ->
+             match tl with
+                Some l -> l
+              | None -> []
+          ]];
+
+      con_brtermlist:
+         [[ sl_open_brack; l = con_termlist; sl_close_brack -> l ]];
 
 
       (* Terminals *)

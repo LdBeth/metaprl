@@ -240,7 +240,8 @@ let rec expr_of_term_con loc = function
  | ConExpr e ->
       e
  | ConVar e ->
-      let loc = (0,0) in <:expr< Refiner.Refiner.Term.mk_var_term $e$ >>
+      let loc = (0, 0) in
+         <:expr< Refiner.Refiner.Term.mk_var_term $e$ >>
  | ConConstruct (op, params, bterms) ->
       let op = add_binding (BindOpname op) in
          if params = [] && List.for_all is_simp_bterm bterms then
@@ -250,6 +251,15 @@ let rec expr_of_term_con loc = function
             let bterms = mk_list_expr loc (List.map (expr_of_bterm_con loc) bterms) in
             let params = mk_list_expr loc (List.map (expr_of_pcon loc) params) in
                <:expr< Refiner.Refiner.Term.mk_term (Refiner.Refiner.Term.mk_op $op$ $params$) $bterms$ >>
+ | ConSequent (arg, hyps, goals) ->
+      let arg = expr_of_term_con loc arg in
+      let hyps = expr_of_hyps_con loc hyps in
+      let goals = mk_list_expr loc (List.map (expr_of_term_con loc) goals) in
+         <:expr< Refiner.Refiner.TermMan.mk_sequent_term
+                    { Refiner.Refiner.TermType.sequent_args = $arg$;
+                      Refiner.Refiner.TermType.sequent_hyps = Refiner.Refiner.Term.SeqHyp.of_list $hyps$;
+                      Refiner.Refiner.TermType.sequent_goals = Refiner.Refiner.Term.SeqGoal.of_list $goals$
+         } >>
 
 and expr_of_bterm_con loc (bvars, bt) =
    let bt = expr_of_term_con loc bt in
@@ -258,6 +268,26 @@ and expr_of_bterm_con loc (bvars, bt) =
    else
       let bvars = mk_list_expr loc (List.map (expr_of_bvar_con loc) bvars) in
          <:expr< Refiner.Refiner.Term.mk_bterm $bvars$ $bt$ >>
+
+and expr_of_hyps_con loc hyps =
+   match hyps with
+      [] ->
+         <:expr< [] >>
+    | hyp :: hyps ->
+         let hyps = expr_of_hyps_con loc hyps in
+            match hyp with
+               ConContext (v, args) ->
+                  let args = mk_list_expr loc (List.map (expr_of_term_con loc) args) in
+                  let e = <:expr< Refiner.Refiner.TermType.Context (Lm_symbol.add $v$, $args$) >> in
+                     <:expr< [$e$ :: $hyps$] >>
+             | ConHypList l ->
+                  <:expr< $l$ @ $hyps$ >>
+             | ConHypothesis t ->
+                  let e = <:expr< Refiner.Refiner.TermType.Hypothesis $expr_of_term_con loc t$ >> in
+                     <:expr< [$e$ :: $hyps$] >>
+             | ConHypBinding (v, t) ->
+                  let e = <:expr< Refiner.Refiner.TermType.HypBinding (Lm_symbol.add $v$, $expr_of_term_con loc t$) >> in
+                     <:expr< [$e$ :: $hyps$] >>
 
 let con_exp s =
    let cs = Stream.of_string s in
