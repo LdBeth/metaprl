@@ -664,7 +664,7 @@ section
 if $(NATIVE_ENABLED)
    .PHONY: check_status
    check_status: util/check-status util/check-status.sh editor/ml/mp.opt editor/ml/mpopt editor/ml/mpconfig
-      util/check-status
+      util/check-status nomake
 
 ########################################################################
 # Close the directory listing files

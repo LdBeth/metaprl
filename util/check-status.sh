@@ -38,7 +38,6 @@ done
 TEMP=`mktemp /tmp/mkstatus.XXXXXX`
 umask 002
 cd $1
-rm -f editor/ml/mp.opt
 ((
 if [ "$2" = "update" ]; then
    echo "*** cvs -n update ***"
@@ -46,9 +45,12 @@ if [ "$2" = "update" ]; then
    echo ""
 fi
 # cvs -q update 2>&1
-unset OMAKEFLAGS
-omake VERBOSE=1 -S editor/ml/mp.opt
-sleep 10
+if [ "$3" <> "nomake" ]; then
+   rm -f editor/ml/mp.opt
+   unset OMAKEFLAGS
+   omake VERBOSE=1 -S editor/ml/mp.opt
+   sleep 10
+fi
 if [ -f editor/ml/mp.opt ]; then
 util/status-all.sh > $TEMP
 if diff -q -I '^Expand time:' $TEMP $LOG > /dev/null; then

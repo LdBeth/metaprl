@@ -94,9 +94,10 @@ type ('a, 'b) info_entry = {
  * not just a fixed number of conclusions (nogin 2004/06/30).
  *)
 type seq_hyps =
-   Exact
- | Left
- | Right
+   Right of int
+ | Left of int
+ | Both of int * int
+ | Exact of int
 
 (*
  * The discrimination program.  The tree is modeled as a stack machine
@@ -116,22 +117,23 @@ type seq_hyps =
  *  (a) a DtreeChoice list can only contain 0 or 1 DtreeFlatten, followed by 0
  *      or 1 DtreePop, followed by 0 or 1 DtreeAccept.
  *  (b) a DtreeSeq list can contain any number of Exact entries in strictly
- *      decreasing order, followed by any number of Left entries with positive
- *      numbers in strictly decreasing order, followed by Right entries with
- *      non-negative numbers in strictly decreasing order.
+ *      decreasing order, followed by any number or Both entries with positive
+ *      numbers in decreasing order, followed by any number of Left entries
+ *      with positive numbers in strictly decreasing order, followed by Right
+ *      entries with non-negative numbers in strictly decreasing order.
  *)
 type ('a, 'b) internal_term_table =
    DtreeAccept of ('a, 'b) info_entry list
  | DtreePop of ('a, 'b) internal_term_table
  | DtreeFlatten of ('a, 'b) internal_term_table ShapeTable.t
  | DtreeChoice of ('a, 'b) internal_term_table list
- | DtreeSeq of (seq_hyps * int * int * ('a, 'b) internal_term_table) list
+ | DtreeSeq of (seq_hyps * int * ('a, 'b) internal_term_table) list
 
 type ('a, 'b) prog_step =
    ProgAccept of ('a, 'b) info_entry
  | ProgPop
  | ProgFlatten of shape
- | ProgSeq of seq_hyps * int * int
+ | ProgSeq of seq_hyps * int
 
 (* Invariant: (c) has exactly one ProgAccept step - at the very end *)
 type ('a, 'b) term_prog = ('a, 'b) prog_step list
@@ -173,22 +175,24 @@ let sequent_marker =
    mk_simple_term (make_opname ["marker"; "Term_match_table"]) []
 
 let bad_sequent_patt =
-   Invalid_argument("Term_match_table.compile_sequent: improper sequent pattern\nA sequent pattern can have at most one context in the hypothesis list and that context can only be at the very beginning or at the very end of the list")
+   Invalid_argument("Term_match_table.compile_sequent: improper sequent pattern\nA sequent pattern can have at most one context in the hypothesis list")
 
 let compseq_bug = Invalid_argument("Term_match_table.compile_sequent: internal error")
 
 let rec compile_sequent prog clen stack = function
-   [] -> ProgSeq(Exact, 0, clen) :: prog, stack
+   [] -> ProgSeq(Exact 0, clen) :: prog, stack
  | Hypothesis (_, t) :: hyps ->
       begin match compile_sequent prog clen stack hyps with
-         ProgSeq(Right, 0, _) :: prog, stack -> ProgSeq(Left, 1, clen) :: prog, t :: stack
-       | ProgSeq(Right, _, _) :: _, _        -> raise bad_sequent_patt
-       | ProgSeq (kind, i, _) :: prog, stack -> ProgSeq(kind, (i+1), clen) :: prog, t :: stack
-       | _                                   -> raise compseq_bug
+         ProgSeq(Right 0, _) :: prog, stack      -> ProgSeq(Left 1, clen) :: prog, t :: stack
+       | ProgSeq(Right i, _) :: _, _             -> ProgSeq(Both(1,i), clen) :: prog, t :: stack
+       | ProgSeq(Exact i, _) :: prog, stack      -> ProgSeq(Exact (i+1), clen) :: prog, t :: stack
+       | ProgSeq(Left i, _) :: prog, stack       -> ProgSeq(Left (i+1), clen) :: prog, t :: stack
+       | ProgSeq(Both (i, j), _) :: prog, stack  -> ProgSeq(Both (i+1, j), clen) :: prog, t :: stack
+       | _                                       -> raise compseq_bug
       end
  | Context _ :: hyps ->
       begin match compile_sequent prog clen stack hyps with
-         ProgSeq(Exact, i, _) :: prog, stack -> ProgSeq(Right, i, clen) :: prog, stack
+         ProgSeq(Exact i, _) :: prog, stack -> ProgSeq(Right i, clen) :: prog, stack
        | ProgSeq _ :: _, _                   -> raise bad_sequent_patt
        | _                                   -> raise compseq_bug
       end
@@ -258,10 +262,10 @@ and add_to_choice choices prog =
          choice (DtreeFlatten (ShapeTable.filter_add stbl s (add_option prog))) tl
     | _, ProgFlatten s :: prog ->
          choice (DtreeFlatten (ShapeTable.filter_add ShapeTable.empty s (add_option prog))) choices
-    | [], ProgSeq (knd, i, j) :: prog ->
-         DtreeSeq [knd, i, j, add_to_choice [] prog]
-    | [DtreeSeq(lst)], (ProgSeq (knd, i, j) :: prog) ->
-         DtreeSeq (seq_add_to_choice prog knd i j lst)
+    | [], ProgSeq (knd, i) :: prog ->
+         DtreeSeq [knd, i, add_to_choice [] prog]
+    | [DtreeSeq(lst)], (ProgSeq (knd, i) :: prog) ->
+         DtreeSeq (seq_add_to_choice prog knd i lst)
     | ((DtreeSeq _ :: _), _) | (_, ProgSeq _ :: _) ->
          raise (Invalid_argument "Term_match_table.add_to_choice: internal error - sequent mismatch")
 
@@ -269,17 +273,14 @@ and add_option prog = function
    None -> add_to_choice [] prog
  | Some tbl -> add_prog tbl prog
 
-and seq_add_to_choice prog knd i j lst =
+and seq_add_to_choice prog knd i lst =
    match lst, knd with
-      (((Exact|Left), _, _, _) as hd :: tl), Right
-    | ((Exact, _, _, _) as hd :: tl), Left ->
-         hd :: (seq_add_to_choice prog knd i j tl)
-    | (knd', i', j', _) as hd :: tl, _ when knd = knd' && ( i < i' || (i = i' && j < j')) ->
-         hd :: (seq_add_to_choice prog knd i j tl)
-    | (knd', i', j', tbl) :: rest, _ when knd = knd' && i = i' && j = j' ->
-         (knd, i, j, add_prog tbl prog) :: rest
+      (knd', i', _) as hd :: tl, _ when knd < knd' || i < i' ->
+         hd :: (seq_add_to_choice prog knd i tl)
+    | (knd', i', tbl) :: rest, _ when knd = knd' && i = i' ->
+         (knd, i, add_prog tbl prog) :: rest
     | _ , _ ->
-         (knd, i, j, add_to_choice [] prog) :: lst
+         (knd, i, add_to_choice [] prog) :: lst
 
 (*
  * Add an entry.
@@ -375,20 +376,24 @@ and execute_fallback search = function
 and execute_sequent search fallbacks old_stack hyps l goals gl stack = function
    [] ->
       execute_fallback search fallbacks
- | (_, i, j, _) :: lst when (i > l || j <> gl) ->
+ | ((Exact i|Left i|Right i), j, _) :: lst when (i > l || j <> gl) ->
       execute_sequent search fallbacks old_stack hyps l goals gl stack lst
- | (Exact, i, _, _) :: lst when i <> l ->
+ | (Exact i, _, _) :: lst when i <> l ->
       execute_sequent search fallbacks old_stack hyps l goals gl stack lst
- | (knd, i, j, tbl) :: lst ->
-      let last =
-         match knd with
-            Exact | Right -> l-1
-          | Left -> i - 1
-      in
+ | (Both (i1,i2), j, _) :: lst when ((i1 + i2) > l || j <> gl) ->
+      execute_sequent search fallbacks old_stack hyps l goals gl stack lst
+ | (knd, _, tbl) :: lst ->
       let fallbacks =
          if lst = [] then fallbacks else (([DtreeSeq lst], old_stack)::fallbacks)
       in
-         execute_hyps search fallbacks tbl hyps ((SeqGoal.to_list goals) @ stack) i last
+      let stack = (SeqGoal.to_list goals) @ stack in
+         match knd with
+            Exact i | Right i ->
+               execute_hyps search fallbacks tbl hyps stack i (l-1)
+          | Left i ->
+               execute_hyps search fallbacks tbl hyps stack i (i - 1)
+          | Both (i1, i2) ->
+               execute_hyps_both search fallbacks tbl hyps stack i1 i2 (l-1)
 
 and execute_hyps search fallbacks tbl hyps stack num last =
    if num = 0 then
@@ -396,6 +401,15 @@ and execute_hyps search fallbacks tbl hyps stack num last =
    else match SeqHyp.get hyps last with
       Hypothesis (_, t) ->
          execute_hyps search fallbacks tbl hyps (t::stack) (num-1) (last-1)
+    | Context _ ->
+         execute_fallback search fallbacks
+
+and execute_hyps_both search fallbacks tbl hyps stack lnum num last =
+   if num = 0 then
+      execute_hyps search fallbacks tbl hyps stack lnum (lnum-1)
+   else match SeqHyp.get hyps last with
+      Hypothesis (_, t) ->
+         execute_hyps_both search fallbacks tbl hyps (t::stack) lnum (num-1) (last-1)
     | Context _ ->
          execute_fallback search fallbacks
 
