@@ -807,39 +807,26 @@ and targs2args_for2 li0 li1 consts u var_hashtbl b_assbilistlist =
              )
         | _,_,_ -> raise impossible
 
-let cterms2upart t_0 t_1 consts var_hashtbl=
-  let u = { multeq_number=0;
-            zero_counter_multeq=[];
-            equations=[] }
-  in
-  let vinit =                            (* now Vinit is not hashed !! *)
-                (let v = {name = Vinit ;
-                          m_v = init_multeq
-                         }
-                      in
-                 let meq ={counter=1;
-                           var_number=1;
-                           s=[v];
-                           m=[]
-                          }
-                      in
-                      v.m_v <- meq;
-                      u.equations <- meq :: u.equations;
-                      u.multeq_number <- u.multeq_number + 1;
-                      v
-                )
-  in (
-      vinit.m_v.counter <- 0;
-      u.zero_counter_multeq <- [vinit.m_v];
-      vinit.m_v.m <-
-        (terms2temp_multieq (make_term t_0) ( make_term t_1) consts u var_hashtbl [] []).m_t;
-      u
-     )
-
 let cterms2system t_0 t_1 consts var_hashtbl =
-                          {t=[];
-                           u= (cterms2upart t_0 t_1 consts var_hashtbl)
-                          }
+   let u =
+      { multeq_number=1;
+        zero_counter_multeq=[];
+        equations=[] } in
+   let v =
+      { name = Vinit ;
+        m_v = init_multeq } in
+   let meq =
+      { counter=0;
+        var_number=1;
+        s=[v];
+        m=[] } in
+   v.m_v <- meq;
+   let ml = [meq] in
+   u.equations <- ml;
+   u.zero_counter_multeq <- ml;
+   meq.m <-
+      (terms2temp_multieq (make_term t_0) ( make_term t_1) consts u var_hashtbl [] []).m_t;
+   { t=[]; u=u }
 
 let unifiable term0 term1 consts=
    match get_core term0, get_core term1 with
