@@ -382,37 +382,43 @@ struct
     * var_subst t t' v
     * is to substitute v for occurrences of the term t' in t.
     *)
-   let rec var_subst t t' v =
+   let rec var_subst t t' fv' v =
       if alpha_equal t t' then mk_var_term v
       else match t.core with
            Term { term_op = op; term_terms = bterms} ->
-              let bterms' = var_subst_bterms bterms t' v in
+              let bterms' = var_subst_bterms bterms t' fv' v in
                  if bterms == bterms' then t else mk_term op bterms'
          | FOVar _ -> t
          | SOVar(v', conts, ts) ->
-               core_term (SOVar(v', conts, List.map (fun t -> var_subst t t' v) ts))
+               core_term (SOVar(v', conts, List.map (fun t -> var_subst t t' fv' v) ts))
          | Sequent _ -> raise (Invalid_argument "Term_ds.var_subst: sequents not supported")
          | Hashed _ | Subst _ -> fail_core "var_subst"
 
-   and var_subst_bterms bterms t' v =
+   and var_subst_bterms bterms t' fv' v =
       match bterms with
          bt::btrms ->
-            let bt' = var_subst_bterm bt t' v in
-            let btrms' = var_subst_bterms btrms t' v in
+            let bt' = var_subst_bterm bt t' fv' v in
+            let btrms' = var_subst_bterms btrms t' fv' v in
                if (bt == bt') && (btrms == btrms') then bterms else bt'::btrms'
        | [] -> bterms
 
-   and var_subst_bterm bt t' v =
-      if List.mem v bt.bvars then
+   and var_subst_bterm bt t' fv' v =
+      if List.exists (SymbolSet.mem fv') bt.bvars then
+         (* Avoid capture *)
+         bt
+      else if List.mem v bt.bvars then
          let vars = SymbolSet.add_list (free_vars_set bt.bterm) bt.bvars in
          let v' = new_name v (SymbolSet.mem vars) in
          let rename var = if var = v then v' else var in
          let bt' = subst1 bt.bterm v (mk_var_term v') in
-         let bt'' = var_subst bt' t' v in
+         let bt'' = var_subst bt' t' fv' v in
             if (bt''==bt') then bt
             else mk_bterm (Lm_list_util.smap rename bt.bvars) bt''
-      else let term' = var_subst bt.bterm t' v in
+      else let term' = var_subst bt.bterm t' fv' v in
               if bt.bterm == term' then bt else mk_bterm bt.bvars term'
+
+   let var_subst t t' v =
+      var_subst t t' (free_vars_set t') v
 
    let print_string_pair out (v1, v2) =
       fprintf out "%s:%a" v1 debug_print v2

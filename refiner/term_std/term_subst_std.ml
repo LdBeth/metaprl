@@ -470,22 +470,26 @@ struct
     *)
    let var_subst t t' v =
       let { term_op = { op_name = opname } } = t' in
+      let fv = free_vars_set t' in
       let vt = mk_var_term v in
       let rec subst_term = function
          { term_op = { op_name = opname'; op_params = params };
            term_terms = bterms
          } as t ->
             (* Check if this is the same *)
-            if Opname.eq opname' opname & alpha_equal t t' then
+            if Opname.eq opname' opname && alpha_equal t t' then
                vt
             else
                { term_op = { op_name = opname'; op_params = params };
                  term_terms = List.map subst_bterm bterms
                }
 
-      and subst_bterm { bvars = vars; bterm = term } =
-         if List.mem v vars then
-            let av = vars @ (free_vars_list term) in
+      and subst_bterm ({ bvars = vars; bterm = term } as bt) =
+         if List.exists (SymbolSet.mem fv) vars then
+            (* Avoid capture *)
+            bt
+         else if List.mem v vars then
+            let av = vars @ free_vars_list term in
             let v' = new_name v (fun v -> List.mem v av) in
             let rename var = if var = v then v' else var in
             let term = subst1 term v (mk_var_term v') in
