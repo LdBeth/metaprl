@@ -237,7 +237,7 @@ struct
             if array_rstack_p_mem ShapeNumber v stack then
                (* New param *)
                RWMNumber (array_rstack_p_index ShapeNumber v stack)
-            else if array_rstack_mem v stack && strict = Relaxed then
+            else if strict = Relaxed && array_rstack_mem v stack then
                RWMNumber (array_rstack_index v stack)
             else
                (* Free param *)
@@ -247,7 +247,7 @@ struct
             if array_rstack_p_mem ShapeString v stack then
                (* New param *)
                RWMString (array_rstack_p_index ShapeString v stack)
-            else if array_rstack_mem v stack && strict = Relaxed then
+            else if strict = Relaxed && array_rstack_mem v stack then
                RWMString (array_rstack_index v stack)
             else
                (* Free param *)
@@ -257,7 +257,7 @@ struct
             if array_rstack_p_mem ShapeToken v stack then
                (* New param *)
                RWMToken (array_rstack_p_index ShapeToken v stack)
-            else if array_rstack_mem v stack && strict = Relaxed then
+            else if strict = Relaxed && array_rstack_mem v stack then
                RWMToken (array_rstack_index v stack)
             else
                (* Free param *)
@@ -303,9 +303,6 @@ struct
 
        | ParamList l ->
             RWParamList (List.map (compile_so_contractum_param strict stack) l)
-
-       | BackwardsCompatibleLevel _ ->
-            REF_RAISE(RefineError (param_error, StringError "BackwardsCompatibleLevel"))
 
    (*
     * Tests whether params can be left as is.

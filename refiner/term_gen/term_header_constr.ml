@@ -77,7 +77,6 @@ struct
                           })
          else
             TType.MLevel (make_level l1)
-    | FType.BackwardsCompatibleLevel l1 -> TType.MLevel (make_level l1)
     | FType.MVar s1 ->              TType.MVar s1
     | FType.ObId oid1 ->            TType.ObId (List.map make_param_aux oid1)
     | FType.ParamList p1 ->         TType.ParamList (List.map make_param_aux p1)

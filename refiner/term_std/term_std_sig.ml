@@ -69,7 +69,6 @@ sig
       Number of Mp_num.num
     | String of string
     | Token of string
-    | BackwardsCompatibleLevel of level_exp
     | Var of string
     | MNumber of string
     | MString of string

@@ -167,10 +167,6 @@ struct
        | MString v -> format_string buf v; format_string buf ":s"
        | MToken v -> format_string buf v; format_string buf ":t"
        | MLevel l -> format_level_exp buf l; format_string buf ":l"
-       | BackwardsCompatibleLevel l ->
-            format_quoted_string buf "BackwardsCompatibleLevel:";
-            format_level_exp buf l;
-            format_string buf ":l"
        | MVar v -> format_string buf v; format_string buf ":v"
        | ObId a -> format_string buf "<object-id>"
        | ParamList l ->

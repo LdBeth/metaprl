@@ -93,8 +93,6 @@ let rec mbparameter_of_param param =
 	      in aux2 (dest_level_var hd))
 	    in loop vars [])
       in aux (dest_level p)
-  | BackwardsCompatibleLevel _ ->
-       raise (Invalid_argument "Mbterm.mbparameter.BackwardsCompatibleLevel")
   | MVar p -> mb_stringq p mbs_MVariable
   | ParamList p -> mbnode mbs_ParamList (List.map mbparameter_of_param p)
 
@@ -322,8 +320,6 @@ let rec print_param param =
                 loop vars)
 
          in aux (dest_level p)
-    | BackwardsCompatibleLevel _ ->
-         raise (Invalid_argument "Mbterm.mbparameter.BackwardsCompatibleLevel")
     | MVar p ->  (print_string p; print_string ":mv ")
     | ParamList p -> (print_string "["; List.iter print_param p; print_string "]";
                       print_string ":pl ")

@@ -266,9 +266,6 @@ struct
           | MLevel l ->
                let v1 = print_level_exp ofile l in
                   print_le_param (newv ()) mlevel_expr v1
-          | BackwardsCompatibleLevel l ->
-               let v1 = print_level_exp ofile l in
-                  print_le_param (newv ()) mlevel_expr v1
           | MVar v -> print_string_param (newv ()) mvar_expr v
           | ObId _ ->
                (* We don't allow these fancy terms *)
