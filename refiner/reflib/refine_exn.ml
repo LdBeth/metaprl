@@ -131,6 +131,12 @@ let format_match_type db buf printers = function
       format_string buf "TermMatch:";
       format_space buf;
       printers.format_term db buf t
+ | TermMatch2 (t1, t2) ->
+      format_string buf "TermMatch2:";
+      format_space buf;
+      printers.format_term db buf t1;
+      format_space buf;
+      printers.format_term db buf t2
  | BTermMatch bt ->
       format_string buf "BTermMatch:";
       format_space buf;

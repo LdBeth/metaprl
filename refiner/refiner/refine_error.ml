@@ -60,6 +60,7 @@ struct
       ParamMatch of param
     | VarMatch of string
     | TermMatch of term
+    | TermMatch2 of term * term
     | BTermMatch of bound_term
     | HypMatch of seq_hyps
     | GoalMatch of seq_goals

@@ -311,7 +311,7 @@ struct
          if alpha_equal_fun (match_redex_term_pred addrs stack all_bvars) t' vs t subterms then
             check_match addrs stack all_bvars t' vs tl
          else
-            REF_RAISE(RefineError ("check_match", RewriteBadMatch (TermMatch t)))
+            REF_RAISE(RefineError ("check_match", RewriteBadMatch (TermMatch2 (t', t))))
     | [] ->
          ()
 
@@ -324,7 +324,7 @@ struct
      *)
    and match_redex_term addrs stack all_bvars t' t =
       match t' with
-         RWFreeVars (t'',vars) ->
+         RWFreeVars (t'', vars) ->
             check_term_free_vars (extract_bvars stack vars) t;
             match_redex_term addrs stack all_bvars t'' t
        | RWComposite { rw_op = op'; rw_bterms = bterms' } ->
