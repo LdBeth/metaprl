@@ -291,6 +291,30 @@ struct
    let lookup_meta mth = p_lookup_meta global_hash mth
    let unsafe_lookup_meta mth = p_unsafe_lookup_meta global_hash mth
    let retrieve_meta mti = p_retrieve_meta global_hash mti
+
+   module HashedTerm =
+   struct
+      type t=term_index
+      let equal t1 t2 = (WM.weaking t1) = (WM.weaking t2)
+      let hash t = (WM.wd_hash (WM.weaking t)) land 0x3FFFFFFF
+   end
+
+   module HashTerm = Hashtbl.Make (HashedTerm)
+
+   module HashedBTerm =
+   struct
+
+      type t = bound_term_header
+      
+      let equal bt1 bt2 = 
+         (bt1.bvars = bt2.bvars) && HashedTerm.equal bt1.bterm bt2.bterm
+
+      let hash bt =
+         ((Hashtbl.hash bt.bvars) + (65599 * (HashedTerm.hash bt.bterm))) land 0x3FFFFFFF
+   end
+
+   module HashBTerm = Hashtbl.Make (HashedBTerm)
+   
 end
 
 (*

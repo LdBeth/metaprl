@@ -42,6 +42,7 @@ struct
                            anchor: 'a 
                         }
 
+   let wd_hash i = i
    let weaking d = d.descriptor
 
    exception Cell_is_full

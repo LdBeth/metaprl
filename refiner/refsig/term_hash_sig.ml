@@ -118,6 +118,14 @@ sig
    val lookup_meta : meta_term_header -> meta_term_index
    val unsafe_lookup_meta : meta_term_header -> meta_term_index
    val retrieve_meta : meta_term_index -> meta_term
+
+(*
+ * In case we want to index something by terms
+ *)
+
+   module HashTerm : Hashtbl.S with type key = term_index
+   module HashBTerm : Hashtbl.S with type key = bound_term_header
+
 end
 
 (*

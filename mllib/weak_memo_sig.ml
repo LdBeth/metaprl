@@ -35,6 +35,7 @@ sig
  * Weak_descriptors are hash-table entries permiting GC
  *)
     type 'a weak_descriptor
+    val wd_hash : 'a weak_descriptor -> int
 
 (* Memo-type
  * 'param - the way for recursion
