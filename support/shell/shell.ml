@@ -993,39 +993,6 @@ struct
       in
          print_exn info set info
 
-   (*
-    * Load all the ped's for the current module.
-    * This is mainly for preparing for performance testing.
-    *)
-   let sync info =
-      let sync info =
-         let parse_arg = get_parse_arg info in
-         match info.shell_package with
-            Some pkg ->
-               let ped_of_proof = function
-                  Filter_summary_type.Primitive _
-                | Filter_summary_type.Derived _
-                | Filter_summary_type.Incomplete ->
-                     ()
-                | Filter_summary_type.Interactive proof ->
-                     let _ = Package_info.ped_of_proof pkg parse_arg proof in
-                        ()
-               in
-               let sync_item (item, _) =
-                  match item with
-                     Rewrite { rw_proof = proof }
-                   | CondRewrite { crw_proof = proof }
-                   | Rule { rule_proof = proof } ->
-                        ped_of_proof proof
-                   | _ ->
-                        ()
-               in
-                  List.iter sync_item (info_items (Package_info.info pkg parse_arg))
-          | None ->
-               eprintf "sync: no current package%t" eflush
-      in
-         print_exn info sync info
-
    let rec apply_all info f time clean_res =
       let dir = info.shell_dir in
       let apply_it item mod_name name =

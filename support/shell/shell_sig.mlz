@@ -312,7 +312,6 @@ sig
    val refine : t -> tactic -> unit
    val undo : t -> unit
    val redo : t -> unit
-   val sync : t -> unit
    val expand_all : t -> unit
 
    (*
