@@ -199,6 +199,8 @@ let context_opname = make_opname ["context"]
  *)
 let xperv = make_opname ["Perv"]
 let sequent_opname = mk_opname "sequent" xperv
+let xnil_opname = mk_opname "nil" xperv
+let xcons_opname = mk_opname "cons" xperv
 
 (*
  * -*-

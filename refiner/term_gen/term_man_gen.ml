@@ -155,9 +155,6 @@ struct
    (*
     * Lists.
     *)
-   let xnil_opname = mk_opname "nil" xperv
-   let xcons_opname = mk_opname "cons" xperv
-
    let xnil_term = mk_simple_term xnil_opname []
    let is_xnil_term t = t = xnil_term
 

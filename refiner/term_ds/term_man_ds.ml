@@ -188,8 +188,6 @@ struct
    (*
     * Lists.
     *)
-   let xnil_opname = xnil_opname
-   let xcons_opname = xcons_opname
    let xnil_term = xnil_term
    let is_xlist_term = is_xlist_term
    let dest_xlist = dest_xlist
