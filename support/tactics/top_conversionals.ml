@@ -461,8 +461,8 @@ let reduceT =
 let create_iform =
    Tactic_type.Conversionals.create_iform
 
-let apply_rewrite =
-   Tactic_type.Conversionals.apply_rewrite
+let apply_rewrite p t =
+   get_resource_arg p Tactic_type.Conversionals.apply_rewrite t
 
 (*
  * -*-

@@ -365,7 +365,6 @@ struct
    let zero_addr = TermAddr.make_address []
 
    let apply_rewrite bookmark conv t =
-      let bookmark = Mp_resource.find bookmark in
       let arg = TacticInternal.debug_arg bookmark t in
       let tac = apply 0 zero_addr conv in
       let res = fst (TacticInternal.refine tac arg) in

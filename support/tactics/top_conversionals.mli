@@ -108,7 +108,7 @@ topval reduceT : tactic
  ************************************************************************)
 
 val create_iform : string -> bool -> term -> term -> conv
-val apply_rewrite : Mp_resource.bookmark -> conv -> term -> term
+val apply_rewrite : tactic_arg -> conv -> term -> term
 
 (*
  * -*-

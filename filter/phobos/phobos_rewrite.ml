@@ -186,7 +186,8 @@ let apply_rewrite rw terms =
  * Conversionals.
  *)
 let _ = recompute_top ()
-let apply_rw_top = Conversionals_boot.Conversionals.apply_rewrite top_bookmark
+let apply_rw_top =
+   Conversionals_boot.Conversionals.apply_rewrite (Mp_resource.find top_bookmark)
 
 let iforms_conv iforms =
    let patterns =

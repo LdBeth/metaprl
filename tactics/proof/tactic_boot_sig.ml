@@ -986,7 +986,7 @@ sig
    (*
     * Standard rewrite annotatetion processor: return a pair of the redex and the conv
     *)
-   val redex_and_conv_of_rw_annotation: string -> (prim_rewrite, term * conv) Mp_resource.rw_annotation_processor
+   val redex_and_conv_of_rw_annotation: string -> (prim_rewrite, term * conv) rw_annotation_processor
 end
 
 module type RewriteInternalSig =
@@ -1066,7 +1066,7 @@ sig
    (*
     * Debugging.
     *)
-   val apply_rewrite : Mp_resource.bookmark -> conv -> term -> term
+   val apply_rewrite : global_resource -> conv -> term -> term
 end
 
 (*
@@ -1203,7 +1203,7 @@ sig
    (*
     * Debugging.
     *)
-   val apply_rewrite : Mp_resource.bookmark -> conv -> term -> term
+   val apply_rewrite : global_resource -> conv -> term -> term
 end
 
 (*
