@@ -1142,7 +1142,7 @@ struct
       sequent:
          [[ sl_sequent; sl_open_curly;
             hyps = LIST0 hyp SEP ";"; sl_turnstile;
-            concl = LIST1 term SEP ";"; sl_close_curly ->
+            concl = LIST0 term SEP ";"; sl_close_curly ->
                mk_sequent_term {
                   sequent_args = mk_term (mk_op (mk_opname loc ["sequent_arg"] [] []) []) [];
                   sequent_hyps = SeqHyp.of_list hyps;
@@ -1150,7 +1150,7 @@ struct
                }
           | sl_sequent; sl_open_brack; args = termlist; sl_close_brack; sl_open_curly;
             hyps = LIST0 hyp SEP ";"; sl_turnstile;
-            concl = LIST1 term SEP ";"; sl_close_curly ->
+            concl = LIST0 term SEP ";"; sl_close_curly ->
                let args_bt = List.map mk_simple_bterm args in
                mk_sequent_term {
                   sequent_args = mk_term (mk_op (mk_bopname loc ["sequent_arg"] [] args_bt) []) args_bt;
@@ -1159,7 +1159,7 @@ struct
                }
           | sl_sequent; sl_open_paren; arg = term; sl_close_paren; sl_open_curly;
             hyps = LIST0 hyp SEP ";"; sl_turnstile;
-            concl = LIST1 term SEP ";"; sl_close_curly ->
+            concl = LIST0 term SEP ";"; sl_close_curly ->
                mk_sequent_term {
                   sequent_args = arg;
                   sequent_hyps = SeqHyp.of_list hyps;
@@ -1294,18 +1294,18 @@ struct
       (* Special forms *)
       con_sequent:
          [[ sl_sequent; sl_open_curly; hyps = con_hyps;
-            concl = LIST1 con_term SEP ";"; sl_close_curly ->
+            concl = LIST0 con_term SEP ";"; sl_close_curly ->
                let arg = ConTerm (mk_term (mk_op (mk_opname loc ["sequent_arg"] [] []) []) []) in
                   ConSequent (arg, hyps, concl)
           | sl_sequent; sl_open_brack; args = con_termlist; sl_close_brack; sl_open_curly; hyps = con_hyps;
-            concl = LIST1 con_term SEP ";"; sl_close_curly ->
+            concl = LIST0 con_term SEP ";"; sl_close_curly ->
                let bterm_arities = List.map (fun _ -> 0) args in
                let op = mk_opname loc ["sequent_arg"] [] bterm_arities in
                let bterms = List.map (fun t -> [], t) args in
                let arg = ConConstruct (op, [], bterms) in
                   ConSequent (arg, hyps, concl)
           | sl_sequent; sl_open_paren; arg = con_term; sl_close_paren; sl_open_curly; hyps = con_hyps;
-            concl = LIST1 con_term SEP ";"; sl_close_curly ->
+            concl = LIST0 con_term SEP ";"; sl_close_curly ->
                   ConSequent (arg, hyps, concl)
           ]];
 
