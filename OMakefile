@@ -346,9 +346,9 @@ OCAML_LIB_FLAGS += -linkall
 
 if $(SSL_ENABLED)
     if $(equal $(OSTYPE), Win32)
-        OCAML_LINK_FLAGS += -cclib c:/OpenSSL/lib/VC/ssleay32.lib -cclib c:/OpenSSL/lib/VC/libeay32.lib
+        OCAML_LINK_FLAGS += -cclib $(SSL_LIB_WIN32)/ssleay32.lib -cclib $(SSL_LIB_WIN32)/libeay32.lib
         CFLAGS += /DSSL_ENABLED
-	INCLUDES += c:/OpenSSL/include
+	INCLUDES += $(SSL_INC_WIN32)
         export
     else
         OCAML_LINK_FLAGS += -cclib -lcrypto -cclib -lssl
@@ -375,9 +375,14 @@ if $(NCURSES_ENABLED)
 # Collect the directories into configuration files.
 
 WriteLN(f, d) =
-   d = \ -I $(in $(ROOT)/editor/ml, $(dir $d))\\
-   $f::
-      echo $d>> $f
+	if $(equal $(OSTYPE), Win32)
+		d = \ -I $(in $(ROOT)/editor/ml, $(dir $d))
+		$f::
+			echo $d>> $f
+	else
+		d = \ -I $(in $(ROOT)/editor/ml, $(dir $d))\\
+		$f::
+			echo $d>> $f
 
 THEORIES_CONF = $(file editor/ml/theories.dir)
 MLDEBUG_CONF = $(file editor/ml/mldebug.dir)
@@ -385,10 +390,12 @@ MLDEBUG_CONF = $(file editor/ml/mldebug.dir)
 .DEFAULT: $(THEORIES_CONF) $(MLDEBUG_CONF)
 
 $(THEORIES_CONF) ::
-   echo $'INCLUDES=\"\'> $@
+	if $(not $(equal $(OSTYPE), Win32))
+		echo $'INCLUDES=\"\'> $@
 
 $(MLDEBUG_CONF) ::
-   echo $'DEBUGINCLUDES=\"\'> $@
+	if $(not $(equal $(OSTYPE), Win32))
+		echo $'DEBUGINCLUDES=\"\'> $@
 
 CamlDirs(names) =
    foreach(n, $(names))
@@ -673,7 +680,9 @@ if $(NATIVE_ENABLED)
 #
 
 $(THEORIES_CONF) ::
-   echo $'\"'>> $@
+	if $(not $(equal $(OSTYPE), Win32))
+		echo $'\"'>> $@
 
 $(MLDEBUG_CONF) ::
-   echo $'\"'>> $@
+	if $(not $(equal $(OSTYPE), Win32))
+		echo $'\"'>> $@

@@ -7,3 +7,5 @@
 #
 # CAMLLIB = /usr/local/lib/ocaml
 # CAMLP4LIB = /usr/local/lib/ocaml/camlp4
+# SSL_LIB_WIN32 = d:/Local/OpenSSL/lib
+# SSL_INC_WIN32 = d:/Local/OpenSSL/include
