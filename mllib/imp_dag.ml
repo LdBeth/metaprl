@@ -241,9 +241,8 @@ struct
       let rec loop searched front =
          match front with
             node :: t ->
-               if node = node2 then
-                  true
-               else if List.mem node searched then
+               node = node2 or
+               if List.mem node searched then
                   loop searched t
                else
                   let edges = select entries.(node) in
@@ -315,6 +314,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.5  1998/06/14 23:03:03  nogin
+ * .
+ *
  * Revision 1.4  1998/06/01 13:54:39  jyh
  * Proving twice one is two.
  *
