@@ -22,5 +22,6 @@ fi
 if grep -qi '^TESTS *= *NO$' mk/config ; then :; else
    echo "Warning: to make the comparison more adequate, use TESTS=no in mk/config"
 fi
-ssh -n -o BatchMode=yes `hostname -s` `pwd`/util/check-status.sh `pwd`&
-date "+%c: check-status.sh spawned, results should be emailed to you in a little while"
+#ssh -n -o BatchMode=yes `hostname -s` `pwd`/util/check-status.sh `pwd`&
+ssh 127.0.0.1 `pwd`/util/check-status.sh `pwd`
+#date "+%c: check-status.sh spawned, results should be emailed to you in a little while"
