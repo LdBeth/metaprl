@@ -390,8 +390,7 @@ struct
                   { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_opname loc ["equal"]) ty.aterm t.aterm t.aterm }
             ]
           | [ t1 = noncommaterm; sl_tilde; t2 = noncommaterm ->
-               (* HACK - Perv!rewrite should be eventially replaced by mk_opname loc ["sqeq"] *)
-                  { aname = None; aterm = mk_xrewrite_term t1.aterm t2.aterm }
+                  { aname = None; aterm = mk_dep0_dep0_term (mk_opname loc ["sqeq"]) t1.aterm t2.aterm }
             ]
           | "fun" RIGHTA
            [ t1 = noncommaterm; op = sl_arrow; t2 = noncommaterm ->

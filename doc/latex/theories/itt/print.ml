@@ -28,6 +28,7 @@ set_tex_file "../../doc/latex/theories/itt/theory.tex";;
 print_theory "itt_squash";;
 print_theory "itt_equal";;
 print_theory "itt_struct";;
+print_theory "itt_squiggle";;
 print_theory "itt_subtype";;
 print_theory "itt_void";;
 print_theory "itt_unit";;
