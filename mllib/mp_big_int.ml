@@ -203,7 +203,7 @@ let rec sub_mag borrow val1 val2 =
     | val1, [] ->
          sub_borrow borrow val1
     | [], val2 ->
-         if (zeros val2) && (not borrow) then [] else raise (Failure "sub_mag")
+         if (zeros val2) && (not borrow) then [] else raise (Invalid_argument "Mp_big_int.sub_mag")
 
 and sub_digit borrow digit1 digit2 val1 val2 =
    let z =
@@ -226,7 +226,7 @@ and sub_borrow borrow val1 =
             else
                pred digit1 :: val1
        | [] ->
-            raise (Failure "sub_borrow")
+            raise (Invalid_argument "Mp_big_int.sub_borrow")
    else
       val1
 
