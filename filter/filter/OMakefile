@@ -1,0 +1,15 @@
+#
+# No special includes
+#
+OCAMLINCLUDES =\
+	$(OCAMLINCLUDES)\
+	-I ../base\
+	-I ../boot\
+	-I ../phobos
+
+#
+# Library files
+#
+include Files
+
+OCamlLibraryInstall($(MPINSTALL), $(LIB), filterfilter, $(FILTER_FILES))

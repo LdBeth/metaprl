@@ -1,4 +1,4 @@
-REFINER_FILES :=\
+REFINER_FILES =\
 	refine\
 	refine_error\
 	refiner_std\

@@ -1,4 +1,4 @@
-REFSIG_FILES :=\
+REFSIG_FILES =\
 	refine_error_sig\
 	term_sig\
 	term_base_sig\

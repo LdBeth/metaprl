@@ -1,0 +1,52 @@
+#
+# Include MLLIB
+#
+OCAMLINCLUDES =\
+	$(OCAMLINCLUDES)\
+	-I $(ROOT)/mllib
+
+#
+# Add the preprocessor command line argument
+#
+CAMLP4INCLUDES =
+CAMLP4MACRO = camlp4o $(OCAMLMACROS) -D$(REFINER)_EXN -DSEQ_SET=$(SEQ_SET)_linear_set $'(CAMLP4INCLUDES)
+OCAMLPPFLAGS = -pp "$(CAMLP4MACRO)"
+
+#
+# Include files from subdirectories
+#
+include refbase/Files
+include refsig/Files
+include term_gen/Files
+include term_std/Files
+include term_ds/Files
+include rewrite/Files
+include refiner/Files
+include reflib/Files
+
+REFBASE_FILES  = $(file $(addprefix refbase/,  $(REFBASE_FILES)))
+REFSIG_FILES   = $(file $(addprefix refsig/,   $(REFSIG_FILES)))
+TERM_GEN_FILES = $(file $(addprefix term_gen/, $(TERM_GEN_FILES)))
+TERM_STD_FILES = $(file $(addprefix term_std/, $(TERM_STD_FILES)))
+TERM_DS_FILES  = $(file $(addprefix term_ds/,  $(TERM_DS_FILES)))
+REWRITE_FILES  = $(file $(addprefix rewrite/,  $(REWRITE_FILES)))
+REFINER_FILES  = $(file $(addprefix refiner/,  $(REFINER_FILES)))
+REFLIB_FILES   = $(file $(addprefix reflib/,   $(REFLIB_FILES)))
+
+FILES =\
+	$(REFBASE_FILES)\
+	$(REFSIG_FILES)\
+	$(TERM_GEN_FILES)\
+	$(TERM_STD_FILES)\
+	$(TERM_DS_FILES)\
+	$(REWRITE_FILES)\
+	$(REFINER_FILES)\
+	$(REFLIB_FILES)
+
+OCamlLibrary(refiner, $(FILES))
+OCamlLibraryCopy($(MPINSTALL), $(LIB), refiner, $(EMPTY))
+
+#
+# Subdirectories
+#
+.SUBDIRS: refbase refsig term_gen term_std term_ds rewrite refiner reflib

@@ -1,4 +1,4 @@
-BASE_FILES :=\
+BASE_FILES =\
 	filter_buffer\
 	mLast_util\
 	free_vars\

@@ -195,3 +195,7 @@ endif
 ifndef CONVERT
    CONVERT = $(ROOT)/bin/convert$(EXE)
 endif
+
+ifndef SLOPPY_DEPENDENCIES
+   SLOPPY_DEPENDENCIES = false
+endif

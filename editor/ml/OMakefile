@@ -1,0 +1,239 @@
+#
+# MetaPRL editor.
+#
+OCAMLINCLUDES =\
+	-I .\
+	-I $(ROOT)/lib\
+	-I $(ROOT)/library\
+	-I $(CAMLP4LIB)\
+	-I $(ROOT)/ensemble\
+	$(addprefix -I , $(MP_DIRS))
+
+# Name of main librariws
+MAIN = meta-prl
+MP = mp
+
+########################################################################
+# LOCAL FILES
+########################################################################
+
+# Common files
+MLZFILES =\
+	proof_sig\
+	package_sig\
+	display_sig\
+	nuprl_sig\
+	shell_sig\
+	shell_p4_sig
+
+# Library files
+MPFILES =\
+	recursive_lock\
+	mux_channel\
+	display_term\
+	proof_edit\
+	package_sig\
+	package_info\
+	shell_tex\
+	shell_sig\
+	shell_rewrite\
+	shell_rule\
+	shell_package\
+	shell_root\
+	shell_p4_sig\
+	shell_http\
+	shell_state\
+	shell
+
+MP2FILES =\
+	shell_mp\
+	shell_p4\
+	nuprl_sig\
+	nuprl_eval\
+	nuprl_jprover\
+	nuprl_run\
+	mp\
+	mp_top
+
+RUNFILES =\
+	mp_version\
+	shell_mp\
+	shell_p4\
+	nuprl_sig\
+	nuprl_eval\
+	nuprl_jprover\
+	nuprl_run\
+	mp
+
+TOPFILES =\
+	mp_version\
+	shell_mp\
+	nuprl_sig\
+	nuprl_eval\
+	nuprl_jprover\
+	nuprl_run\
+	mp_top
+
+OCAML_LINK_FLAGS = -linkall
+
+OCamlLibrary($(MAIN), $(MPFILES))
+
+# JYH: fix this omake parser bug
+TESTFILES = $(if $(equal $(TESTS), yes), tests/test tests/prop-pigeon, $(EMPTY))
+
+MP2FILES = $(TESTFILES) $(MP2FILES)
+RUNFILES = $(TESTFILES) $(RUNFILES)
+TOPFILES = $(TESTFILES) $(TOPFILES)
+
+RCMOFILES = $(addsuffix .cmo, $(RUNFILES))
+TCMOFILES = $(addsuffix .cmo, $(TOPFILES))
+TCMXFILES = $(addsuffix .cmx, $(TOPFILES))
+
+# Disable ensemble for now
+CMALIBS_ens = $(LIB)/trefiner.cma
+CMXALIBS_ens =$(LIB)/trefiner.cmxa
+
+# JYH: have to update these to match $(ROOT)/OMakefile
+MP_VERSION=0.7.2
+THREADS = -thread
+THREADSLIB = $(CAMLLIB)/threads/threads.cma
+OPTTHREADSLIB = $(CAMLLIB)/threads/threads.cmxa
+LIBTHREADS = -cclib -lthreadsnat -cclib -lunix -cclib -lpthread
+OPTTHREADS = -cclib -lthreadsnat -cclib -lunix -cclib -lpthread
+
+########################################################################
+# LIBRARIES
+########################################################################
+
+CMXADEPS =\
+	$(CAMLLIB)/unix.cmxa\
+	$(CAMLLIB)/str.cmxa\
+	$(OPTTHREADSLIB)\
+	$(CAMLP4LIB)/odyl.cmxa\
+	$(CAMLP4LIB)/camlp4.cmxa\
+	$(ROOT)/lib/util.cmxa\
+	$(ROOT)/lib/refiner.cmxa\
+	$(ROOT)/lib/library.cmxa\
+	$(CMXALIBS_ens)\
+	$(ROOT)/lib/prlc.cmxa\
+	$(addsuffix /theory.cmxa, $(MP_DIRS))\
+	$(CAMLP4LIB)/pa_o.cmx\
+	$(CAMLP4LIB)/pa_op.cmx\
+	$(MAIN).cmxa
+
+CMXALIBS =\
+	$(CMXADEPS)
+
+CMADEPS =\
+	$(CAMLP4LIB)/odyl.cma\
+	$(CAMLLIB)/unix.cma\
+	$(CAMLLIB)/str.cma\
+	$(THREADSLIB)\
+	$(CAMLP4LIB)/camlp4.cma\
+	$(CAMLP4LIB)/camlp4_top.cma\
+	$(ROOT)/lib/util.cma\
+	$(ROOT)/lib/refiner.cma\
+	$(ROOT)/lib/library.cma\
+	$(CMALIBS_ens)\
+	$(ROOT)/lib/prlc.cma\
+	$(addsuffix /theory.cma, $(MP_DIRS))\
+	$(CAMLP4LIB)/pa_o.cmo\
+	$(CAMLP4LIB)/pa_op.cmo\
+	$(MAIN).cma
+
+TCMADEPS =\
+	$(CAMLP4LIB)/odyl.cma\
+	$(CAMLLIB)/unix.cma\
+	$(CAMLLIB)/str.cma\
+	$(THREADSLIB)\
+	$(CAMLP4LIB)/camlp4.cma\
+	$(ROOT)/lib/util.cma\
+	$(ROOT)/lib/refiner.cma\
+	$(ROOT)/lib/library.cma\
+	$(CMALIBS_ens)\
+	$(ROOT)/lib/prlc.cma\
+	$(addsuffix /theory.cma, $(MP_DIRS))\
+	$(CAMLP4LIB)/pa_o.cmo\
+	$(CAMLP4LIB)/pa_op.cmo\
+	$(MAIN).cma
+
+CMALIBS =\
+	$(CMADEPS)
+
+TCMALIBS =\
+	$(TCMADEPS)
+
+CMOBJS =\
+	$(CMALIBS)
+
+TCMOBJS =\
+	$(TCMALIBS)
+
+CMXOBJS =\
+	$(CMXALIBS)
+
+CLIBS = $(LIB)/clib
+BYTE_CLIBS = $(addsuffix -byte$(EXT_LIB), $(CLIBS))
+NATIVE_CLIBS = $(addsuffix -native$(EXT_LIB), $(CLIBS))
+
+BYTE_CCLIBS =\
+	$(addprefix -cclib , $(BYTE_CLIBS))\
+	$(OTHER_CCLIBS)
+
+NATIVE_CCLIBS =\
+	$(addprefix -cclib , $(NATIVE_CLIBS))\
+	$(OTHER_CCLIBS)
+
+$(MP).run: $(CMOBJS) $(RCMOFILES) $(CMADEPS) $(THREADSLIB) $(BYTE_CLIBS)
+	$(RM) -f $@
+	$(OCAMLMKTOP) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(CMOBJS) $(RCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS)
+
+$(MP).top: $(TCMOBJS) $(TCMOFILES) $(TCMADEPS) $(THREADSLIB) $(BYTE_CLIBS)
+	$(RM) -f $@
+	$(OCAMLLINK) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(TCMOBJS) $(TCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS)
+
+$(MP).opt: $(CMXOBJS) $(TCMXFILES) $(OPTTHREADSLIB) $(NATIVE_CLIBS)
+	$(RM) -f $@
+	$(OCAMLOPTLINK) $(OCAMLOPTFLAGS) -o $@ -linkall $(THREADS) $(CMXOBJS) $(TCMXFILES) $(NATIVE_CCLIBS) $(OPTTHREADS)
+
+mp_version.cmo: $(CMOBJS) $(filter-out mp_version.%, $(RCMOFILES)) $(CMADEPS) $(TCMOBJS) $(filter-out mp_version.%, $(TCMOFILES)) $(TCMADEPS) mp_version.cmi
+	echo -n "let version = \"MetaPRL $(MP_VERSION):\\n\\t\\tbuild [`LC_ALL=C LANG=C date`]\\n\\t\\ton `hostname`\\n\\t\\tUses $(REFINER) Refiner_$(TERMS)\"" > mp_version.ml
+	$(OCAMLC) -c $(OCAMLCFLAGS) mp_version.ml
+
+mp_version.cmx: $(CMXOBJS) $(CMXADEPS) mp_version.cmi
+	echo -n "let version = \"MetaPRL $(MP_VERSION):\\n\\t\\tbuild [`LC_ALL=C LANG=C date`]\\n\\t\\ton `hostname`\\n\\t\\tUses $(REFINER) Refiner_$(TERMS)\"" > mp_version.ml
+	$(OCAMLOPT) -c $(OCAMLOPTFLAGS) mp_version.ml
+
+mp_version.cmi: mp_version.mli
+	$(OCAMLC) $(OCAMLCFLAGS) mp_version.mli
+
+#
+# Phony targets
+#
+if $(NATIVE_ENABLED)
+	.DEFAULT: $(MAIN).cmxa $(MP).opt
+else
+	.DEFAULT: $(MAIN).cma $(MP).top $(MP).run
+
+clean::
+	$(RM) -f *.p4* *.pp* mp_version.ml
+	$(RM) -f tests/*.p4* tests/*.pp* tests/*.cmx tests/*.cmi* tests/*.cmo* tests/*.o
+
+#
+# TeX
+# JYH: disabled until I figure out how all of this works
+#
+TEXBIN =
+THELIB =
+TEXTHEORIES =
+
+TEXDIR=$(ROOT)/doc/latex/theories
+
+TEXFILES=$(addprefix $(TEXDIR)/, $(addsuffix /theory.tex, $(TEXTHEORIES)))
+
+.PHONY: tex texbyte texopt do_tex
+
+do_tex: $(TEXFILES)
+
+$(TEXDIR)/%/theory.tex: $(TEXBIN) $(TEXDIR)/%/print.ml $(ROOT)/theories/%/$(THELIB)
+	$(TEXPROG) $(TEXDIR)/$*/print.ml

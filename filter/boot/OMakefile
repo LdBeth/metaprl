@@ -1,0 +1,19 @@
+#
+# Includes
+#
+OCAMLINCLUDES =\
+	$(OCAMLINCLUDES)\
+	-I ../base
+
+#
+# Type files
+#
+MLZFILES =\
+	tactic_boot_sig
+
+#
+# Library files
+#
+include Files
+
+OCamlLibraryInstall($(MPINSTALL), $(LIB), filterlib, $(BOOT_FILES))

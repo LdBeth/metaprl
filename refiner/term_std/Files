@@ -1,8 +1,7 @@
-TERM_STD_FILES :=\
+TERM_STD_FILES =\
 	term_std_sig\
 	term_std\
 	term_base_std\
 	term_op_std\
 	term_subst_std\
 	term_eval_std
-

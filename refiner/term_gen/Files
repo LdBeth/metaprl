@@ -1,4 +1,4 @@
-TERM_GEN_FILES :=\
+TERM_GEN_FILES =\
 	term_man_gen_sig\
 	term_man_gen\
 	term_addr_gen\

@@ -1,0 +1,129 @@
+#
+# If the config file does not exist, then create one
+#
+.INCLUDE: mk/config
+    ROOT=$(ROOT) mk/make_config.sh
+
+#
+# Generic phony targets
+#
+.PHONY: all opt install clean depend
+
+#
+# Generic C compiler options for this project.
+# You can probably ignore these.
+#
+CAMLLIB = /usr/lib/ocaml
+CAMLP4LIB = /usr/lib/ocaml/camlp4
+
+#
+# Generic CC options
+#
+CC = gcc
+CFLAGS = -Wall -g -O2
+INCLUDES = $(INCLUDES) -I$(CAMLLIB)
+
+#
+# Override the root directory
+#
+ROOT = $(dir .)
+LIB  = $(dir lib)
+BIN  = $(dir bin)
+
+#
+# Always use -linkall on libraries
+#
+OCAML_LIB_FLAGS = $(OCAML_LIB_FLAGS) -linkall
+OTHER_CCLIBS = -cclib -lreadline -cclib -lncurses -cclib -ltermcap
+
+#
+# Directories needing only the standard config
+#
+.SUBDIRS: util clib
+
+########################################################################
+# Generic directories with no special options
+
+#
+# For the rest of MetaPRL, use our custom scanner.
+#
+OCAMLDEP = $(file bin/ocamldep)
+
+.SCANNER: %.cmi %.cmo %.cmx: $(OCAMLDEP)
+    $(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLINCLUDES) $(set $(replacesuffixes .cmi .cmo .cmx, .mli .ml .ml, $^))
+
+#
+# MetaPRL is always compiled with threads.
+#
+THREADS_ENABLED = true
+OCAMLFLAGS = $(OCAMLFLAGS) -thread
+THREADSLIB = threads
+
+#
+# Phony target for installing libraries
+#
+MPINSTALL = mp.install
+
+.PHONY: $(MPINSTALL)
+
+#
+# Directories using our custom scanner, but otherwise config is normal
+#
+.SUBDIRS: library debug ensemble filter
+
+########################################################################
+# Refiner building
+#
+
+#
+# For the refiner and mllib directories,
+# add a dependency on the macro processor.
+#
+if true
+    # Add a dependency on the macro preprocess
+    OCAMLMACROS = $(file lib/macro.cmo)
+    CAMLP4MACRO = camlp4o $(OCAMLMACROS)
+
+    # Add the extra dependency
+    %.cmo: $(OCAMLMACROS)
+    %.cmx: $(OCAMLMACROS)
+
+    # These directories use the macro preprocessor
+    .SUBDIRS: mllib refiner
+
+########################################################################
+# Theory building
+
+#
+# Theories also have special options
+#
+DEFAULT_THEORIES = tactic ocaml base itt
+ALL_THEORIES = tactic ocaml base ocaml_doc itt ocaml_sos fol czf phobos mc sil
+
+#
+# Commands to compile theory files
+#
+PRLC = $(file bin/prlc)
+
+if true
+    # Use prlc, not ocamlc
+    OCAMLC = MPLIB=$(LIB) $(PRLC)
+    OCAMLOPT = MPLIB=$(LIB) $(PRLC) -opt
+
+    # Add the extra dependency
+    %.cmi: $(MPINSTALL)
+    %.cmo: $(MPINSTALL)
+    %.cmx: $(MPINSTALL)
+
+    # Dependency analysis uses -prl flag by default
+    OCAMLDEPFLAGS = -prl
+
+    # Add library to include path
+    OCAMLINCLUDES = $(OCAMLINCLUDES) -I $(CAMLP4LIB) -I $(LIB)
+
+    # These directories use prlc
+    THEORIES = $(if $(equal $(THEORIES), all), $(ALL_THEORIES), $(THEORIES))
+    THEORIES = $(if $(equal $(THEORIES), default), $(DEFAULT_THEORIES), $(THEORIES))
+    MP_DIRS  = $(dir $(addprefix theories/, $(THEORIES)))
+
+    .SUBDIRS: $(MP_DIRS) editor/ml

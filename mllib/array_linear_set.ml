@@ -29,7 +29,6 @@
  *
  * Author: Alexey Nogin
  *)
-
 type 'a linear_set = 'a array
 
 open Linear_set

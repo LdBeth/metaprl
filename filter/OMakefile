@@ -1,0 +1,198 @@
+#
+# Add refiner to default includes
+#
+OCAMLINCLUDES =\
+	$(OCAMLINCLUDES)\
+	-I $(CAMLP4LIB)\
+	-I $(ROOT)/mllib\
+	-I $(ROOT)/refiner/refbase\
+	-I $(ROOT)/refiner/refsig\
+	-I $(ROOT)/refiner/refiner\
+	-I $(ROOT)/refiner/reflib\
+	-I $(ROOT)/library\
+	-I $(ROOT)/ensemble
+
+#
+# Generic camlp4 preprocessing
+#
+OCAMLPPFLAGS = -pp "camlp4o$(EXE) q_MLast.cmo pa_extend.cmo"
+
+#
+# Name of main program
+#
+MAINLIB = prlc
+MAINPROG = prlc
+
+########################################################################
+# Recursive make
+#########################################################################
+
+.SUBDIRS: base boot phobos filter
+
+#
+# Build combined libraries from subdirs
+#
+include base/Files
+include boot/Files
+include phobos/Files
+
+SUB_FILES =\
+	$(addprefix base/, $(BASE_FILES))\
+	$(addprefix boot/, $(BOOT_FILES))\
+	$(addprefix phobos/, $(PHOBOS_FILES))\
+	filter/term_grammar
+
+if true
+    OCAML_LINK_FLAGS = -linkall
+
+    OCamlLibrary($(MAINLIB), $(SUB_FILES))
+    OCamlLibraryCopy($(MPINSTALL), $(LIB), $(MAINLIB), $(EMPTY))
+
+########################################################################
+# MAIN PROGRAMS
+########################################################################
+
+#
+# Other libraries that we always want to include
+#
+OCAML_CLIBS = $(ROOT)/clib/clib
+OCAML_OTHER_LIBS = unix $(THREADSLIB) str
+OCAML_LIBS = $(LIB)/util
+
+#
+# Libraries for camlp4n
+#
+CAMLP4N = camlp4n
+CAMLP4O = camlp4o
+
+CAMLP4_FILES =\
+	filter/filter_parse\
+	filter/filter_main
+
+STANDARD_LIBS =\
+	$(CAMLP4LIB)/camlp4\
+	$(LIB)/refiner\
+	$(LIB)/library\
+	$(LIB)/trefiner\
+	$(MAINLIB)
+
+CAMLP4_LIBS =\
+
+
+CAMLP4N_LIBS =\
+	$(CAMLP4LIB)/odyl\
+	$(STANDARD_LIBS)\
+	$(CAMLP4_LIBS)
+
+CAMLP4N_FILES =\
+	$(CAMLP4LIB)/pa_o\
+	$(CAMLP4LIB)/pr_dump\
+	$(CAMLP4LIB)/pa_extend\
+	$(CAMLP4LIB)/q_MLast\
+	$(CAMLP4_FILES)
+
+CAMLP4O_LIBS =\
+	$(CAMLP4LIB)/odyl\
+	$(STANDARD_LIBS)\
+	$(CAMLP4_LIBS)
+
+CAMLP4O_FILES =\
+	$(CAMLP4LIB)/pa_o\
+	$(CAMLP4LIB)/pr_o\
+	$(CAMLP4LIB)/pa_extend\
+	$(CAMLP4LIB)/q_MLast\
+	$(CAMLP4_FILES)
+
+#
+# File format conversion
+#
+CONVERT = convert
+
+CONVERT_LIBS =\
+	$(STANDARD_LIBS)
+
+CONVERT_FILES =\
+	filter/filter_convert
+
+
+#
+# Main program
+#
+PRLCOMP = prlc
+
+PRLCOMP_FILES =\
+	filter/prlcomp
+
+PRLCOMP_LIBS =\
+	$(STANDARD_LIBS)
+
+#
+# Files for binary compiler.
+#
+PRLCN = prlcn
+PRLCO = prlco
+
+PRLC_FILES =\
+	$(PRLCOMP_FILES)\
+	filter/filter_bin
+
+PRLCN_LIBS =\
+	$(STANDARD_LIBS)
+
+PRLCN_FILES =\
+	$(CAMLP4LIB)/pr_dump\
+	$(PRLC_FILES)
+
+PRLCO_LIBS =\
+	$(STANDARD_LIBS)
+
+PRLCO_FILES =\
+	$(CAMLP4LIB)/pr_o\
+	$(PRLC_FILES)
+
+#
+# Compile a special camlp4 to run Nuprl.
+#
+OCAML_LINK_FLAGS = $(OCAML_LINK_FLAGS) $(OTHER_CCLIBS)
+
+if true
+    OCAML_LIBS = $(OCAML_LIBS) $(CAMLP4N_LIBS)
+    OCAML_LINK_FLAGS = $(OCAML_LINK_FLAGS) -linkall
+
+    OCamlProgramInstall($(MPINSTALL), $(LIB), $(CAMLP4N), $(CAMLP4N_FILES))
+
+if true
+    OCAML_LIBS = $(OCAML_LIBS) $(CAMLP4O_LIBS)
+    OCAML_LINK_FLAGS = $(OCAML_LINK_FLAGS) -linkall
+
+    OCamlProgramInstall($(MPINSTALL), $(LIB), $(CAMLP4O), $(CAMLP4O_FILES))
+
+if true 
+    OCAML_LIBS = $(OCAML_LIBS) $(PRLCN_LIBS)
+
+    OCamlProgramInstall($(MPINSTALL), $(LIB), $(PRLCN), $(PRLCN_FILES))
+
+if true
+    OCAML_LIBS = $(OCAML_LIBS) $(PRLCO_LIBS)
+
+    OCamlProgramInstall($(MPINSTALL), $(LIB), $(PRLCO), $(PRLCO_FILES))
+
+if true
+    OCAML_LIBS = $(OCAML_LIBS) $(CONVERT_LIBS)
+
+    OCamlProgramInstall($(MPINSTALL), $(LIB), $(CONVERT), $(CONVERT_FILES))
+
+if true
+    OCAML_LIBS = $(OCAML_LIBS) $(PRLCOMP_LIBS)
+
+    OCamlProgramInstall($(MPINSTALL), $(LIB), $(PRLCOMP), $(PRLCOMP_FILES))
+
+#
+# Default targets
+#
+PROGS = $(CAMLP4N) $(CAMLP4O) $(PRLCN) $(PRLCO) $(CONVERT) $(PRLCOMP)
+INSTALL = $(addprefix $(LIB)/, $(PROGS))
+
+all: $(PROGS)
+opt: $(PROGS)
+install: $(INSTALL)

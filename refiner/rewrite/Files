@@ -1,4 +1,4 @@
-MLZFILES :=\
+MLZFILES =\
 	rewrite_type_sig\
 	rewrite_util_sig\
 	rewrite_debug_sig\
@@ -8,7 +8,7 @@ MLZFILES :=\
 	rewrite_build_contractum_sig\
 	rewrite_meta_sig
 
-REWRITE_FILES :=\
+REWRITE_FILES =\
 	rewrite_type_sig\
 	rewrite_util_sig\
 	rewrite_debug_sig\

@@ -1,0 +1,24 @@
+CAMLP4INCLUDES = -I../refsig
+
+OCAMLINCLUDES =\
+	$(OCAMLINCLUDES)\
+	-I $(ROOT)/lm_libmojave/naml/stdlib\
+	-I $(ROOT)/lm_libmojave/util\
+	-I ../../mllib\
+	-I ../refbase\
+	-I ../refsig\
+	-I ../term_std\
+	-I ../term_gen\
+	-I ../term_ds\
+	-I ../rewrite
+
+#
+# Actual refiner based on configuration.
+# Note: there is no need for a dependency here,
+# since omake will run this whenever the TERMS
+# variable changes.
+#
+refiner.ml:
+	echo "module Refiner = Refiner_$(TERMS).Refiner" > refiner.ml
+
+OCamlLibraryInstall($(MPINSTALL), $(LIB), refine, $(REFINER_FILES))

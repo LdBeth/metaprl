@@ -1,0 +1,63 @@
+OCAMLINCLUDES =\
+	-I .\
+	-I $(ROOT)/mllib\
+	-I $(ROOT)/refiner/refbase\
+	-I $(ROOT)/refiner/refsig\
+	-I $(ROOT)/refiner/refiner\
+	-I $(ROOT)/refiner/term_gen
+
+# Libraries
+OCAMLOTHERLIBS = unix
+
+OCAMLLIBS =\
+	$(ROOT)/mllib/util\
+	$(ROOT)/refiner/refiner\
+	$(ROOT)/refiner/refsig/reflib\
+	library
+
+OCAMLLINKFLAGS =\
+	-cclib $(ROOT)/lib/clib.a\
+	-cclib -lunix
+
+# Library files
+LMFILES =\
+	lib_term\
+	utils\
+	lint32\
+	nuprl5\
+	registry\
+	mathBus\
+	mbterm\
+	basic\
+	socketIo\
+	link\
+	ascii_scan\
+	db\
+	tentfunctor\
+	oidtable\
+	definition\
+	orb\
+	library\
+	library_type_base
+
+#
+# Library also depends on registry
+#
+OCamlLibraryInstall($(MPINSTALL), $(LIB), library, $(LMFILES))
+
+#
+# Special files
+#
+REGISTRY_FILE = $(file registry.txt)
+TEXT_FILE = $(file mbs-mpl.txt)
+
+#
+# Add files to all target
+#
+$(MPINSTALL): $(LIB)/mbs-mpl.txt $(LIB)/registry.txt
+
+$(LIB)/mbs-mpl.txt: $(TEXT_FILE)
+	$(LN) $(in $(LIB), $(TEXT_FILE)) $@
+
+$(LIB)/registry.txt: $(REGISTRY_FILE)
+	$(LN) $(in $(LIB), $(REGISTRY_FILE)) $@

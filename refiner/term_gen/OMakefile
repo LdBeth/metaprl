@@ -1,0 +1,11 @@
+CAMLP4INCLUDES = -I../refsig
+
+OCAMLINCLUDES =\
+	$(OCAMLINCLUDES)\
+	-I $(ROOT)/lm_libmojave/naml/stdlib\
+	-I $(ROOT)/lm_libmojave/util\
+	-I $(ROOT)/mllib\
+	-I ../refbase\
+	-I ../refsig
+
+OCamlLibraryInstall($(MPINSTALL), $(LIB), termgen, $(TERM_GEN_FILES))

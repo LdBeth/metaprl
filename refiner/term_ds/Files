@@ -1,4 +1,4 @@
-TERM_DS_FILES :=\
+TERM_DS_FILES =\
 	term_ds_sig\
 	term_ds\
 	term_base_ds\

@@ -1,2 +1,2 @@
-REFBASE_FILES :=\
+REFBASE_FILES =\
 	opname

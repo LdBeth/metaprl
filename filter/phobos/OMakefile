@@ -1,0 +1,20 @@
+#
+# Standard includes
+#
+OCAMLINCLUDES =\
+	$(OCAMLINCLUDES)\
+	-I ../base\
+	-I ../boot
+
+#
+# Type files
+#
+MLZFILES =\
+	phobos_parser
+
+#
+# Library files
+#
+include Files
+
+OCamlLibraryInstall($(MPINSTALL), $(LIB), filterphobos, $(PHOBOS_FILES))

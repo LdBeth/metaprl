@@ -1,0 +1,12 @@
+OCAMLINCLUDES =\
+	$(OCAMLINCLUDES)\
+	-I $(ROOT)/lm_libmojave/naml/stdlib\
+	-I $(ROOT)/lm_libmojave/util\
+	-I ../../mllib\
+	-I ../refbase\
+	-I ../refsig\
+	-I ../refiner\
+	-I ../term_ds\
+	-I ../term_gen
+
+OCamlLibraryInstall($(MPINSTALL), $(LIB), reflib, $(REFLIB_FILES))

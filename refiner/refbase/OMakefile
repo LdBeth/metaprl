@@ -1,0 +1,5 @@
+OCAMLINCLUDES =\
+	-I .\
+	-I $(ROOT)/mllib
+
+OCamlLibraryInstall($(MPINSTALL), $(LIB), refbase, $(REFBASE_FILES))
