@@ -21,18 +21,18 @@ struct
     * Manifest terms are injected into the "perv" module.
     *)
    let xperv = make_opname ["Perv"]
-   
+
    (************************************************************************
     * Level expressions                                                    *
     ************************************************************************)
-   
+
    (* Simplified level expression constructors *)
    let mk_const_level_exp i =
       { le_const = i; le_vars = [] }
-   
+
    let mk_var_level_exp v =
       { le_const = 0; le_vars = [{ le_var = v; le_offset = 0 }] }
-   
+
    (*
     * Increment a level exp
     *)
@@ -43,7 +43,7 @@ struct
                { le_var = v; le_offset = o + 1 }
          in
             { le_const = c + 1; le_vars = List.map add1 vars }
-   
+
    (*
     * Build a level expression out of the max of two level
     * expressions.
@@ -65,7 +65,7 @@ struct
           | l1, [] -> l1
          in
             { le_const = max c1 c2; le_vars = join (l1, l2) }
-   
+
    (*
     * See if the first level is contained in the second.
     *)
@@ -91,33 +91,33 @@ struct
                caux (vars1, vars2)
             else
                false
-   
+
    (************************************************************************
     * PRIMITIVE FORMS                                                      *
     ************************************************************************)
-   
+
    (*
     * Rewrite
     *)
    let xrewrite_op = mk_opname "rewrite" xperv
-   
+
    let is_xrewrite_term = is_dep0_dep0_term xrewrite_op
    let mk_xrewrite_term = mk_dep0_dep0_term xrewrite_op
    let dest_xrewrite = dest_dep0_dep0_term xrewrite_op
-   
+
    (*
     * Lists.
     *)
    let xnil_opname = mk_opname "nil" xperv
    let xcons_opname = mk_opname "cons" xperv
-   
+
    let xnil_term = mk_simple_term xnil_opname []
    let is_xnil_term t = t = xnil_term
-   
+
    let is_xcons_term = is_dep0_dep0_term xcons_opname
    let mk_xcons_term = mk_dep0_dep0_term xcons_opname
    let dest_xcons = dest_dep0_dep0_term xcons_opname
-   
+
    let rec is_xlist_term = function
       { term_op = { op_name = opname; op_params = [] };
         term_terms = [{ bvars = []; bterm = _ };
@@ -125,7 +125,7 @@ struct
       } when opname == xcons_opname -> is_xlist_term b
     | { term_op = { op_name = opname; op_params = [] }; term_terms = [] } when opname == xnil_opname -> true
     | _ -> false
-   
+
    let dest_xlist t =
       let rec aux = function
          { term_op = { op_name = opname; op_params = [] };
@@ -136,7 +136,7 @@ struct
        | _ -> raise (TermMatch ("dest_xlist", t, "not a list"))
       in
           aux t
-   
+
    let rec mk_xlist_term = function
       h::t ->
          { term_op = { op_name = xcons_opname; op_params = [] };
@@ -145,12 +145,12 @@ struct
          }
     | [] ->
          xnil_term
-   
+
    (*
     * Strings.
     *)
    let string_opname = mk_opname "string" xperv
-   
+
    let is_xstring_term = function
       { term_op = { op_name = opname; op_params = [String _] };
         term_terms = []
@@ -158,7 +158,7 @@ struct
          true
     | _ ->
          false
-   
+
    let dest_xstring = function
       { term_op = { op_name = opname; op_params = [String s] };
         term_terms = []
@@ -166,39 +166,39 @@ struct
          s
     | t ->
          raise (TermMatch ("dest_xstring", t, "not a string"))
-   
+
    let mk_xstring_term s =
       { term_op = { op_name = string_opname; op_params = [String s] };
         term_terms = []
       }
-   
+
    (****************************************
     * LAMBDA                               *
     ****************************************)
-   
+
    let xlambda_opname = mk_opname "lambda" xperv
-   
+
    let mk_xlambda_term = mk_dep1_term xlambda_opname
 
    (*************************
     * Sequents              *                                              *
     *************************)
-   
+
    (* Sequents operator name *)
    let hyp_opname = mk_opname "hyp" xperv
    let concl_opname = mk_opname "concl" xperv
    let sequent_opname = mk_opname "sequent" xperv
-   
+
    (* Dependent hypotheses *)
    let is_hyp_term = is_dep0_dep1_term hyp_opname
    let mk_hyp_term = mk_dep0_dep1_term hyp_opname
    let dest_hyp = dest_dep0_dep1_term hyp_opname
-   
+
    (* Conclusions *)
    let is_concl_term = is_dep0_dep0_term concl_opname
    let mk_concl_term = mk_dep0_dep0_term concl_opname
    let dest_concl = dest_dep0_dep0_term concl_opname
-   
+
    (* Sequent wrapper *)
    let is_sequent_term = is_simple_term_opname sequent_opname
    let mk_sequent_term = mk_simple_term sequent_opname
@@ -209,9 +209,9 @@ struct
       } when name == sequent_opname ->
          t
     | t -> raise (TermMatch ("goal_of_sequent", t, ""))
-   
+
    let null_concl = mk_simple_term concl_opname []
-   
+
    (*
     * Find the address of the conclusion.
     *)
@@ -244,7 +244,7 @@ struct
        | _ -> raise (TermMatch ("concl_addr", t, ""))
       in
          aux 0 (goal_of_sequent t)
-      
+
    (*
     * Fast access to hyp and concl.
     *)
@@ -262,7 +262,7 @@ struct
        | _ -> raise (TermMatch ("nth_hyp", t, ""))
       in
          aux i (goal_of_sequent t)
-   
+
    let nth_concl t i =
       let rec aux i = function
          { term_op = { op_name = opname; op_params = [] };
@@ -281,7 +281,7 @@ struct
        | t -> raise (TermMatch ("nth_concl", t, ""))
       in
          aux i (goal_of_sequent t)
-   
+
    (*
     * Count the hyps.
     *)
@@ -295,7 +295,7 @@ struct
             i
       in
          aux 0 (goal_of_sequent t)
-   
+
    (*
     * Collect the vars.
     *)
@@ -309,7 +309,7 @@ struct
             vars
       in
          aux [] (goal_of_sequent t)
-   
+
    (*
     * Collect the vars.
     *)
@@ -323,7 +323,7 @@ struct
             vars
       in
          aux [] (goal_of_sequent t)
-   
+
    (*
     * Get the number of the hyp with the given var.
     *)
@@ -340,7 +340,7 @@ struct
             raise Not_found
       in
          aux 0 (goal_of_sequent t)
-   
+
    (*
     * See if a var is free in the rest of the sequent.
     *)
@@ -357,7 +357,7 @@ struct
              | _ -> raise (Invalid_argument "is_free_seq_var")
       in
          aux i (goal_of_sequent t)
-   
+
    (*
     * Generate a list of sequents with replaced goals.
     *)
@@ -371,10 +371,10 @@ struct
             }
        | _ ->
             goal
-   
+
    let replace_goal seq goal =
       replace_concl (mk_concl_term goal null_concl) seq
-   
+
    (************************************************************************
     * Rewrite rules                                                        *
     ************************************************************************)
@@ -396,6 +396,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.3  1998/05/30 19:18:47  nogin
+ * Eliminated white space in empty lines.
+ *
  * Revision 1.2  1998/05/29 04:11:04  nogin
  * Fixed some typos.
  * Use == instead of = for comparing opnames.

@@ -24,7 +24,7 @@ struct
    (************************************************************************
     * Type definitions                                                     *
     ************************************************************************)
-   
+
    (*
     * The type are just the naive types.
     *)
@@ -32,7 +32,7 @@ struct
    and level_exp = level_exp'
    and param = param'
    and operator = operator'
-   
+
    and term = term'
    and bound_term = bound_term'
 
@@ -41,9 +41,9 @@ struct
     * vars, plus a constant offset.
     *)
    and level_exp_var' = { le_var : string; le_offset : int }
-   
+
    and level_exp' = { le_const : int; le_vars : level_exp_var list }
-   
+
    (*
     * Parameters have a number of simple types.
     *)
@@ -60,7 +60,7 @@ struct
     | MVar of string
     | ObId of object_id
     | ParamList of param list
-      
+
       (* Num operations *)
     | MSum of param * param
     | MDiff of param * param
@@ -68,104 +68,104 @@ struct
     | MQuotient of param * param
     | MRem of param * param
     | MLessThan of param * param
-      
+
       (* Comparisons *)
     | MEqual of param * param
     | MNotEqual of param * param
-   
+
    (*
     * An operator combines a name with a list of parameters.
     * The order of params is significant.
     *)
    and object_id = param list
-   
+
    and operator' = { op_name : opname; op_params : param list }
-   
+
    (*
     * A term has an operator, and a finite number of subterms
     * that may be bound.
     *)
    and term' = { term_op : operator; term_terms : bound_term list }
    and bound_term' = { bvars : string list; bterm : term }
-   
+
    (*
     * Level expression have offsets from level expression
     * vars, plus a constant offset.
     *)
-   
+
    type term_subst = (string * term) list
-   
+
    (*
     * General exception for term destruction.
     *)
    exception TermMatch of string * term * string
    exception BadMatch of term * term
-   
+
    (************************************************************************
     * Term de/constructors                                                 *
     ************************************************************************)
-   
+
    (*
     * These are basically identity functions for this implementation.
     *)
    let mk_term op bterms = { term_op = op; term_terms = bterms }
-   
+
    let make_term term = term
-   
+
    let dest_term term = term
-   
+
    let mk_op name params = { op_name = name; op_params = params }
-   
+
    let make_op op = op
-   
+
    let dest_op op = op
-   
+
    let mk_bterm bvars term = { bvars = bvars; bterm = term }
-   
+
    let make_bterm bterm = bterm
-   
+
    let dest_bterm bterm = bterm
-   
+
    let make_param param = param
-   
+
    let dest_param param = param
-   
+
    let mk_level_var v i =
       { le_var = v; le_offset = i }
-   
+
    let make_level_var v = v
-   
+
    let dest_level_var v = v
-   
+
    let mk_level i l =
       { le_const = i; le_vars = l }
-   
+
    let make_level l = l
-   
+
    let dest_level l = l
-   
+
    let make_object_id object_id  = object_id 
    let dest_object_id object_id  = object_id
-    
+
    (*
     * Operator names.
     *)
    let opname_of_term = function
       { term_op = { op_name = name } } -> name
-   
+
    (*
     * Get the subterms.
     * None of the subterms should be bound.
     *)
    let subterms_of_term t =
       List.map (fun { bterm = t } -> t) t.term_terms
-   
+
    (************************************************************************
     * Variables                                                            *
     ************************************************************************)
-   
+
    let var_opname = make_opname ["var"]
-   
+
    (*
     * See if a term is a variable.
     *)
@@ -174,7 +174,7 @@ struct
         term_terms = []
       } when opname == var_opname -> true
     | _ -> false
-   
+
    (*
     * Destructor for a variable.
     *)
@@ -183,7 +183,7 @@ struct
         term_terms = []
       } when opname == var_opname -> v
      | t -> raise (TermMatch ("dest_var", t, ""))
-   
+
    (*
     * Make a variable.
     *)
@@ -191,9 +191,9 @@ struct
       { term_op = { op_name = var_opname; op_params = [Var v] };
         term_terms = []
       }
-   
+
    let mk_var_op v = { op_name = var_opname; op_params = [Var v] }
-   
+
    (*
     * Second order variables have subterms.
     *)
@@ -202,7 +202,7 @@ struct
       when opname == var_opname ->
          List.for_all (function { bvars = [] } -> true | _ -> false) bterms
     | _ -> false
-   
+
    let dest_so_var = function
       ({ term_op = { op_name = opname; op_params = [Var(v)] };
          term_terms = bterms
@@ -211,7 +211,7 @@ struct
                raise (TermMatch ("dest_so_var", term, "bvars exist")))
          bterms
     | term -> raise (TermMatch ("dest_so_var", term, "not a so_var"))
-   
+
    (*
     * Second order variable.
     *)
@@ -222,19 +222,19 @@ struct
          { term_op = { op_name = var_opname; op_params = [Var(v)] };
            term_terms = List.map mk_bterm terms
          }
-   
+
    (*
     * Second order context, contains a context term, plus
     * binding variables like so vars.
     *)
    let context_opname = make_opname ["context"]
-   
+
    let is_context_term = function
       ({ term_op = { op_name = opname; op_params = [Var _] }; term_terms = bterms } : term)
       when opname == context_opname ->
          List.for_all (function { bvars = [] } -> true | _ -> false) bterms
     | term -> false
-   
+
    let dest_context = function
       ({ term_op = { op_name = opname; op_params = [Var v] };
          term_terms = { bvars = []; bterm = term' }::bterms
@@ -244,7 +244,7 @@ struct
                raise (TermMatch ("dest_context", term, "bvars exist")))
          bterms
     | term -> raise (TermMatch ("dest_context", term, "not a context"))
-   
+
    let mk_context_term v term terms =
       let mk_bterm term =
          { bvars = []; bterm = term }
@@ -252,7 +252,7 @@ struct
          { term_op = { op_name = context_opname; op_params = [Var v] };
            term_terms = (mk_bterm term)::(List.map mk_bterm terms)
          }
-   
+
    (************************************************************************
     * Simple terms                                                         *
     ************************************************************************)
@@ -271,16 +271,16 @@ struct
          in
             aux bterms
     | _ -> false
-   
+
    let mk_any_term op terms =
       let aux t =
          { bvars = []; bterm = t }
       in
          { term_op = op; term_terms = List.map aux terms }
-      
+
    let mk_simple_term name terms =
       mk_any_term { op_name = name; op_params = [] } terms
-   
+
    let dest_simple_term = function
       ({ term_op = { op_name = name; op_params = [] };
          term_terms = bterms
@@ -291,7 +291,7 @@ struct
          in
             name, List.map aux bterms
     | t -> raise (TermMatch ("dest_simple_term", t, "params exist"))
-   
+
    let dest_simple_term_opname name = function
       ({ term_op = { op_name = name'; op_params = [] };
          term_terms = bterms
@@ -317,14 +317,17 @@ struct
                      };
            term_terms = List.map normalize_bterm bterms
          }
-         
+
    and normalize_bterm = function
       { bvars = vars; bterm = t } ->
          { bvars = vars; bterm = normalize_term t }
 end
-   
+
 (*
  * $Log$
+ * Revision 1.2  1998/05/30 19:18:48  nogin
+ * Eliminated white space in empty lines.
+ *
  * Revision 1.1  1998/05/28 15:02:41  jyh
  * Partitioned refiner into subdirectories.
  *

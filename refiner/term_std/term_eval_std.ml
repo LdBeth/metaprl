@@ -24,7 +24,7 @@ struct
     * Manifest terms are injected into the "perv" module.
     *)
    let xperv = make_opname ["Perv"]
-   
+
    let canon_var_opname = mk_opname "canon_var" xperv
 
    (*
@@ -119,6 +119,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/05/30 19:18:47  nogin
+ * Eliminated white space in empty lines.
+ *
  * Revision 1.1  1998/05/28 15:02:25  jyh
  * Partitioned refiner into subdirectories.
  *

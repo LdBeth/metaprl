@@ -18,30 +18,30 @@ struct
    type address =
       Path of int list
     | NthPath of int * bool
-   
+
    exception IncorrectAddress of address * term
    exception BadAddressPrefix of address * address
 
    (************************************************************************
     * Subterm addressing                                                   *
     ************************************************************************)
-   
+
    (*
     * Constructor.
     *)
    let make_address l = Path l
-   
+
    let make_seq_address i = NthPath (i + 1, true)
-   
+
    let nth_cdr_addr i = NthPath (i, false)
-   
+
    (*
     * Compute arities of subterms.
     *)
    let subterm_arities { term_terms = terms } =
       let aux { bvars = vars } = List.length vars in
          List.map aux terms
-   
+
    (*
     * Get a subterm.
     *)
@@ -78,7 +78,7 @@ struct
             in
                aux term addr
          end
-   
+
    let apply_fun_at_addr f a term =
       match a with
          Path addr ->
@@ -132,11 +132,11 @@ struct
                in
                   aux term addr
             end
-   
+
    let replace_subterm term a subterm =
       let aux _ = subterm in
          apply_fun_at_addr aux a term
-   
+
    (*
     * Subtract two addresses.
     * addr1 must be a prefix of addr2, and it is removed from addr2.
@@ -156,7 +156,7 @@ struct
                         NthPath (j - i - 1, flag2)
                      else
                         raise (BadAddressPrefix (addr1, addr2))
-   
+
                 | Path path ->
                      (*
                       * Check prefix of addr2 is a cdr path
@@ -177,7 +177,7 @@ struct
                      in
                         aux i path
             end
-            
+
        | Path path1 ->
             begin
                match addr2 with
@@ -204,7 +204,7 @@ struct
                      in
                         aux path1 path2
             end
-   
+
    (*
     * Print a string.
     *)
@@ -226,6 +226,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/05/30 19:18:46  nogin
+ * Eliminated white space in empty lines.
+ *
  * Revision 1.1  1998/05/28 15:02:22  jyh
  * Partitioned refiner into subdirectories.
  *

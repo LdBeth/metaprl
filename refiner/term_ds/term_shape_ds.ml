@@ -13,7 +13,7 @@ open Term_ds
 module TermShape =
 struct
    open Term
-   
+
    type term = Term.term
 
    type shape =
@@ -21,14 +21,14 @@ struct
         shape_params : shape_param list;
         shape_arities : int list
       }
-   
+
    and shape_param =
       ShapeNumber
     | ShapeString
     | ShapeToken
     | ShapeLevel
     | ShapeVar
-   
+
    (*
     * When computing the shape, we don't allow meta-parameters.
     * Raises Invalid_argument if this happens.
@@ -58,7 +58,7 @@ struct
            shape_params = List.map param_type op.op_params;
            shape_arities = List.map bterm_type t.term_terms
          }
-   
+
    let print_shape out { shape_opname = name; shape_params = params; shape_arities = arities } =
       let print_param param =
          let s =

@@ -3,7 +3,7 @@ open Term_ds
 module TermSubst =
 struct
    open Term
-   
+
    type term = Term.term
    type param = Term.param
 
@@ -14,7 +14,7 @@ struct
    let is_free_var v t = StringSet.mem v t.free_vars
 
    let free_vars t = StringSet.elements t.free_vars
-   
+
    let var_subst t t2 v = 
       if StringSet.mem v t.free_vars 
          then 
@@ -67,7 +67,7 @@ struct
    (************************************************************************
     * ALPHA EQUALITY                                                       *
     ************************************************************************)
-   
+
    (*
     * Recursive computation of alpha equality.
     *)
@@ -77,12 +77,12 @@ struct
             Num.eq_num n1 n2
        | _ ->
             p1 = p2
-   
+
    let rec remove_var v = function
       [] -> []
     | (v',_)::tl when v' = v -> remove_var v tl
     | hd::tl -> hd::(remove_var v tl)
-   
+
    let rec join_vars vars = function
       ([],[]) -> vars
     | (v1::vt1,v2::vt2) ->
@@ -90,7 +90,7 @@ struct
             then join_vars (remove_var v1 vars) (vt1,vt2)
             else (v1,v2)::(join_vars vars (vt1,vt2))
     | _ -> raise (Invalid_argument ("join_vars"))
-   
+
    let rec equal_term_main vars t t' =
       match (dest_term t, dest_term t') with
          { term_op = { op_name = opname1; op_params = [Var v] };
@@ -108,36 +108,36 @@ struct
             name1 == name2
                     & List_util.for_all2 equal_params params1 params2
                     & equal_bterms vars bterms1 bterms2
-   
+
    and equal_term = function
       [] ->
          (function t1  ->
             function t2 ->
                (t1 == t2) || equal_term_main [] t1 t2)
     | vars -> equal_term_main vars
-   
+
    and equal_bterm_main vars btrm1 btrm2 =
       let bt1 = dest_bterm btrm1 in
       let bt2 = dest_bterm btrm2 in
       equal_term (join_vars vars (bt1.bvars,bt2.bvars)) bt1.bterm bt2.bterm
-   
+
    and equal_bterm = function
       [] ->
          (function bt1 ->
             function bt2 ->
                (bt1 == bt2) || equal_bterm_main [] bt1 bt2)
     | vars -> equal_bterm_main vars
-   
+
    and equal_bterms vars = List_util.for_all2 (equal_bterm vars)
-   
+
    let alpha_equal t1 t2 =
       try equal_term [] t1 t2 with
          Invalid_argument _ -> false
-   
+
    let alpha_equal_vars (t, v) (t', v') =
       try equal_term (List_util.zip v v') t t' with
          Invalid_argument _ -> false
-   
+
    (*
     * Check the following:
     *   that t' = t[terms[v''/v''']/v]
@@ -160,7 +160,7 @@ struct
             { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
             name1 = name2 & params1 = params2 & equal_comp_bterms vars' vars bterms1 bterms2)
          (dest_term t')
-   
+
    and equal_comp_bterms vars' vars bterms1 bterms2 =
       let equal_comp_bterm btrm1 btrm2 =
          let bt1 = dest_bterm btrm1 and
@@ -170,7 +170,7 @@ struct
             bt1.bterm bt2.bterm
       in
          List_util.for_all2 equal_comp_bterm bterms1 bterms2
-   
+
    let alpha_equal_match (t, v) (t', v'', v''', terms) =
       try equal_comp (List_util.zip v''' v'') (List_util.zip v terms) t t'  with
          Invalid_argument _ -> false
@@ -178,7 +178,7 @@ struct
    (************************************************************************
     * UNIFICATION                                                          *
     ************************************************************************)
-   
+
    (*
     * Utilities.
     *)
@@ -192,7 +192,7 @@ struct
        | [] -> raise Not_found
       in
          aux
-   
+
    let rec zip_cons l = function
       v1::t1, v2::t2 ->
          if (v1=v2)
@@ -200,7 +200,7 @@ struct
             else zip_cons ((v1, v2)::l) (t1, t2)
     | [], [] -> l
     | _ -> raise (Invalid_argument "zip_cons")
-   
+
    (*
     * Unify two terms.
     *)
@@ -226,7 +226,7 @@ struct
              | TermMatch _ ->
                   raise (BadMatch (tm1, tm2))
          end
-   
+
     | t1, ({ term_op = { op_name = opname; op_params = [Var v] };
              term_terms = []
            } as t2)
@@ -248,7 +248,7 @@ struct
              | TermMatch _ ->
                   raise (BadMatch (tm1, tm2))
          end
-   
+
     | ({ term_op = { op_name = opname1; op_params = params1 };
          term_terms = bterms1
        } as t1),
@@ -261,7 +261,7 @@ struct
                Invalid_argument _ -> raise (BadMatch (tm1, tm2))
          else
             raise (BadMatch (tm1, tm2))
-   
+
    and unify_bterms subst bvars = function
       (btrm1::tl1), (btrm2::tl2) ->
          let bt1 = dest_bterm btrm1
@@ -270,7 +270,7 @@ struct
             unify_bterms subst' bvars (tl1, tl2)
     | [], [] -> subst
     | _ -> raise (Invalid_argument "unify_bterms")
-   
+
    let unify subst t1 t2 =
       List.rev (unify_terms subst [] t1 t2)
 

@@ -25,18 +25,18 @@ struct
     * Constructor.
     *)
    let make_address l = Path l
-   
+
    let make_seq_address i = NthPath (i + 1, true)
-   
+
    let nth_cdr_addr i = NthPath (i, false)
-   
+
    (*
     * Compute arities of subterms.
     *)
    let subterm_arities term =
       let aux bterm = List.length (dest_bterm bterm).bvars in
          List.map aux (dest_term term).term_terms
-   
+
    (*
     * Get a subterm.
     *)
@@ -74,7 +74,7 @@ struct
                in
                   aux term addr
             end
-   
+
    let apply_fun_at_addr f a term =
       match a with
          Path addr ->
@@ -123,11 +123,11 @@ struct
                in
                   aux term addr
             end
-   
+
    let replace_subterm term a subterm =
       let aux _ = subterm in
          apply_fun_at_addr aux a term
-   
+
    (*
     * Subtract two addresses.
     * addr1 must be a prefix of addr2, and it is removed from addr2.
@@ -147,7 +147,7 @@ struct
                         NthPath (j - i - 1, flag2)
                      else
                         raise (BadAddressPrefix (addr1, addr2))
-   
+
                 | Path path ->
                      (*
                       * Check prefix of addr2 is a cdr path
@@ -168,7 +168,7 @@ struct
                      in
                         aux i path
             end
-   
+
        | Path path1 ->
             begin
                match addr2 with
@@ -195,7 +195,7 @@ struct
                      in
                         aux path1 path2
             end
-   
+
    (*
     * Print a string.
     *)

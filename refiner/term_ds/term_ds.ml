@@ -61,7 +61,7 @@ struct
       (* Special Nuprl5 values *)
     | ObId of object_id
     | ParamList of param list
-   
+
       (* Num operations *)
     | MSum of param * param
     | MDiff of param * param
@@ -69,7 +69,7 @@ struct
     | MQuotient of param * param
     | MRem of param * param
     | MLessThan of param * param
-   
+
       (* Comparisons *)
     | MEqual of param * param
     | MNotEqual of param * param
@@ -401,7 +401,7 @@ struct
       mk_term 
          { op_name = normalize_opname op.op_name; op_params = op.op_params }
          (List.map normalize_bterm t.term_terms)
-      
+
    and normalize_bterm btrm =
       let bt = dest_bterm btrm in
       mk_bterm bt.bvars (normalize_term bt.bterm)
@@ -409,7 +409,7 @@ struct
    (************************************************************************
     * Tools for "simple" terms                                             *
     ************************************************************************)
-   
+
    (*
     * "Simple" terms have no parameters and no binding variables.
     *)
@@ -418,18 +418,18 @@ struct
         term_terms = bterms
       } when name' = name -> no_bvars bterms
     | _ -> false
-   
+
    let mk_any_term op terms = mk_term op (List.map mk_simple_bterm terms)
-   
+
    let mk_simple_term name terms =
       mk_any_term { op_name = name; op_params = [] } terms
-   
+
    let dest_simple_term t = match dest_term t with
       { term_op = { op_name = name; op_params = [] };
          term_terms = bterms } ->
             name, dest_simple_bterms t bterms
     | _ -> raise (TermMatch ("dest_simple_term", t, "params exist"))
-   
+
    let dest_simple_term_opname name t = match dest_term t with
       { term_op = { op_name = name'; op_params = [] };
          term_terms = bterms } ->

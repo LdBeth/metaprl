@@ -50,7 +50,7 @@ sig
       (* Special Nuprl5 values *)
     | ObId of object_id
     | ParamList of param list
-   
+
       (* Num operations *)
     | MSum of param * param
     | MDiff of param * param
@@ -58,7 +58,7 @@ sig
     | MQuotient of param * param
     | MRem of param * param
     | MLessThan of param * param
-   
+
       (* Comparisons *)
     | MEqual of param * param
     | MNotEqual of param * param
@@ -165,7 +165,7 @@ sig
    val is_context_term : term -> bool
    val dest_context : term -> string * term * term list
    val mk_context_term : string -> term -> term list -> term
-   
+
    (*
     * Simple terms have no paramaters and
     * all subterms have no binding vars.

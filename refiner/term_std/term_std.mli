@@ -10,7 +10,7 @@ sig
    (************************************************************************
     * Type definitions                                                     *
     ************************************************************************)
-   
+
    (*
     * The type are just the naive types.
     *)
@@ -18,7 +18,7 @@ sig
    and level_exp = level_exp'
    and param = param'
    and operator = operator'
-   
+
    and term = term'
    and bound_term = bound_term'
 
@@ -27,9 +27,9 @@ sig
     * vars, plus a constant offset.
     *)
    and level_exp_var' = { le_var : string; le_offset : int }
-   
+
    and level_exp' = { le_const : int; le_vars : level_exp_var list }
-   
+
    (*
     * Parameters have a number of simple types.
     *)
@@ -46,7 +46,7 @@ sig
     | MVar of string
     | ObId of object_id
     | ParamList of param list
-      
+
       (* Num operations *)
     | MSum of param * param
     | MDiff of param * param
@@ -54,19 +54,19 @@ sig
     | MQuotient of param * param
     | MRem of param * param
     | MLessThan of param * param
-      
+
       (* Comparisons *)
     | MEqual of param * param
     | MNotEqual of param * param
-   
+
    (*
     * An operator combines a name with a list of parameters.
     * The order of params is significant.
     *)
    and object_id = param list
-   
+
    and operator' = { op_name : opname; op_params : param list }
-   
+
    (*
     * A term has an operator, and a finite number of subterms
     * that may be bound.
@@ -124,15 +124,15 @@ sig
    val dest_var : term -> string
    val mk_var_term : string -> term
    val mk_var_op : string -> operator
-   
+
    val is_so_var_term : term -> bool
    val dest_so_var : term -> string * term list
    val mk_so_var_term : string -> term list -> term
-   
+
    val is_context_term : term -> bool
    val dest_context : term -> string * term * term list
    val mk_context_term : string -> term -> term list -> term
-   
+
    (*
     * Simple terms have no paramaters and
     * all subterms have no binding vars.
@@ -146,6 +146,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/05/30 19:18:49  nogin
+ * Eliminated white space in empty lines.
+ *
  * Revision 1.1  1998/05/28 15:02:43  jyh
  * Partitioned refiner into subdirectories.
  *
