@@ -6,7 +6,7 @@ To run MetaPRL for the first time:
       Otherwise you need to build OCaml from sources yourself,
       applying the patch(es) from the patches directory.
 
-      Note: MetaPRL needs a specific version of OCaml. The mk/preface
+      Note: MetaPRL needs a specific version of OCaml. The mk/defaults
       file lists the version(s) of OCaml that would work with
       the version of MetaPRL you have downloaded.
 
