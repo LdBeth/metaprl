@@ -42,13 +42,13 @@ let camlp4 () =
     "pa_extend.cmo";
     "q_ast.cmo";
     sprintf "%s/refiner/refiner.cma" !root;
-    sprintf "%s/filter_p4/prlcomp.cma" !root;
-    sprintf "%s/filter_p4/filter_main.cmo" !root]
+    sprintf "%s/filter/prlcomp.cma" !root;
+    sprintf "%s/filter/filter_main.cmo" !root]
 
 let ocamlc () =
    ["ocamlc";
     "-pp";
-    sprintf "camlp4 pa_o.cmo pa_op.cmo pr_dump.cmo pa_extend.cmo q_ast.cmo %s/refiner/refiner.cma %s/filter_p4/prlcomp.cma %s/filter_p4/filter_main.cmo" !root !root !root]
+    sprintf "camlp4 pa_o.cmo pa_op.cmo pr_dump.cmo pa_extend.cmo q_ast.cmo %s/refiner/refiner.cma %s/filter/prlcomp.cma %s/filter/filter_main.cmo" !root !root !root]
 
 (*
  * Collect argument list.
@@ -146,6 +146,9 @@ let _ = Printexc.catch (Unix.handle_unix_error main) ()
 
 (*
  * $Log$
+ * Revision 1.2  1997/05/05 21:04:48  jyh
+ * Changing filter_p4 to filter.
+ *
  * Revision 1.1  1997/04/28 15:51:05  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

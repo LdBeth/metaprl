@@ -15,6 +15,9 @@ val fun_expr : loc -> string list -> Ast.expr -> Ast.expr
 
 (*
  * $Log$
+ * Revision 1.2  1997/05/05 21:04:47  jyh
+ * Changing filter_p4 to filter.
+ *
  * Revision 1.1  1997/04/28 15:50:51  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included
