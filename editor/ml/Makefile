@@ -49,7 +49,6 @@ MPFILES =\
 	shell
 
 MP2FILES =\
-	tests/test\
 	shell_mp\
 	shell_p4\
 	mp\
@@ -60,16 +59,26 @@ MP2FILES =\
 RUNFILES =\
 	mp_version\
 	shell_p4\
-	tests/test\
 	mp\
 	library_eval\
-	library_test
+	library_test\
 
 TOPFILES =\
 	mp_version\
-	tests/test\
 	shell_mp\
 	mp_top
+
+ifeq ($(TESTS),YES)
+TESTFILES =\
+	tests/test\
+	tests/prop-pigeon\
+
+MP2FILES := $(TESTFILES) $(MP2FILES)
+RUNFILES := $(TESTFILES) $(RUNFILES)
+TOPFILES := $(TESTFILES) $(TOPFILES)
+
+endif
+
 
 RCMOFILES = $(addsuffix .cmo, $(RUNFILES))
 TCMOFILES = $(addsuffix .cmo, $(TOPFILES))

@@ -38,6 +38,27 @@ endif
 ifndef OCAMLSRC
    OCAMLSRC=undefined
 endif
+ifndef TESTS
+   TESTS=no
+endif
+ifeq ($(TESTS),y)
+   TESTS=YES
+endif
+ifeq ($(TESTS),Y)
+   TESTS=YES
+endif
+ifeq ($(TESTS),Yes)
+   TESTS=YES
+endif
+ifeq ($(TESTS),true)
+   TESTS=YES
+endif
+ifeq ($(TESTS),1)
+   TESTS=YES
+endif
+ifeq ($(TESTS),TRUE)
+   TESTS=YES
+endif
 ifndef CCC
    CCC=gcc
 endif

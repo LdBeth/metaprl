@@ -731,7 +731,7 @@ struct
     *)
    let extract sig_info proc =
       (Info.extract sig_info (FilterCache.info proc.cache) (**)
-          (FilterCache.resources proc.cache)) proc.name
+          (FilterCache.resources proc.cache)) (Filename.basename proc.name)
 
    (*
     * Check the implementation with its interface.

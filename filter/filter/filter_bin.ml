@@ -120,7 +120,7 @@ struct
       let check () =
          FilterCache.check info () InterfaceType
       in
-      let items = Info.extract check (FilterCache.info info) (FilterCache.resources info) path
+      let items = Info.extract check (FilterCache.info info) (FilterCache.resources info) (Filename.basename path)
       in
          Info.compile items
 end

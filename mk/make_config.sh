@@ -65,6 +65,11 @@ MAKE_JOBS=$MAKE_JOBS
 MAKE_OPTS=$MAKE_OPTS
 
 #
+# Whether to compile in various test theories and files
+#
+TESTS=$TESTS
+
+#
 # If ENSROOT is defined, it should point
 # to the root of the Ensemble source tree
 # In this case Ensemble support would be compiled into Meta-PRL
