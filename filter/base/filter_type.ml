@@ -306,27 +306,28 @@ type grammar_update =
  * a magic number.  The magic number changes whenever the code changes.
  *)
 type ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, 'module_info) summary_item_type =
-   Rewrite of ('term, 'proof, 'expr) rewrite_info
+   Rewrite     of ('term, 'proof, 'expr) rewrite_info
  | CondRewrite of ('term, 'proof, 'expr) cond_rewrite_info
- | Rule of ('term, 'meta_term, 'proof, 'expr) rule_info
- | Opname of 'term opname_info
- | MLRewrite of ('term, 'expr) mlterm_info
- | MLAxiom of ('term, 'expr) mlterm_info
- | Parent of 'ctyp parent_info
- | Module of string * 'module_info
- | DForm of ('term, 'expr) dform_info
- | Prec of string
- | PrecRel of prec_rel_info
- | Id of int
- | Resource of string * 'resource
- | Improve of ('expr, 'term) improve_info
- | GramUpd of grammar_update
+ | Rule        of ('term, 'meta_term, 'proof, 'expr) rule_info
+ | Opname      of 'term opname_info
+ | MLRewrite   of ('term, 'expr) mlterm_info
+ | MLAxiom     of ('term, 'expr) mlterm_info
+ | Parent      of 'ctyp parent_info
+ | Module      of string * 'module_info
+ | DForm       of ('term, 'expr) dform_info
+ | Prec        of string
+ | PrecRel     of prec_rel_info
+ | Id          of int
+ | Resource    of string * 'resource
+ | Improve     of ('expr, 'term) improve_info
+ | MLGramUpd   of grammar_update
  | SummaryItem of ('item, 'term) bnd_expr
  | ToploopItem of 'item
- | MagicBlock of 'item magic_info
- | Comment of 'term
- | InputForm of ('term, 'proof, 'expr) rewrite_info
- | Definition of ('term, 'expr) opname_definition
+ | MagicBlock  of 'item magic_info
+ | Comment     of 'term
+ | InputForm   of ('term, 'proof, 'expr) rewrite_info
+ | Definition  of ('term, 'expr) opname_definition
+ | PRLGrammar  of Filter_grammar.t
 
 (* %%MAGICEND%% *)
 
@@ -342,18 +343,18 @@ type context_fun = var -> int -> var list option
  *)
 module type TermGrammarSig =
 sig
-   val mk_opname : MLast.loc -> opname_fun
-   val mk_var_contexts : MLast.loc -> context_fun
-   val term_eoi : term Grammar.Entry.e
-   val term : term Grammar.Entry.e
-   val parsed_term : term Grammar.Entry.e
-   val quote_term : quote_term Grammar.Entry.e
-   val mterm : meta_term Grammar.Entry.e
-   val bmterm : meta_term Grammar.Entry.e
-   val singleterm : aterm Grammar.Entry.e
+   val mk_opname         : MLast.loc -> opname_fun
+   val mk_var_contexts   : MLast.loc -> context_fun
+   val term_eoi          : term Grammar.Entry.e
+   val term              : term Grammar.Entry.e
+   val parsed_term       : term Grammar.Entry.e
+   val quote_term        : quote_term Grammar.Entry.e
+   val mterm             : meta_term Grammar.Entry.e
+   val bmterm            : meta_term Grammar.Entry.e
+   val singleterm        : aterm Grammar.Entry.e
    val parsed_bound_term : aterm Grammar.Entry.e
-   val xdform : term Grammar.Entry.e
-   val term_con_eoi : (term, MLast.expr) term_constructor Grammar.Entry.e
+   val xdform            : term Grammar.Entry.e
+   val term_con_eoi      : (term, MLast.expr) term_constructor Grammar.Entry.e
 end
 
 (*

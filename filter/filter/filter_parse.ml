@@ -39,6 +39,7 @@ open Lm_string_set
 
 open Pcaml
 
+open Opname
 open Precedence
 open Simple_print.SimplePrint
 open File_base_type
@@ -51,6 +52,7 @@ open TermOp
 open TermType
 open TermMan
 open TermMeta
+open TermShape
 open Rewrite
 open RefineError
 
@@ -63,6 +65,19 @@ open Filter_summary_util
 open Filter_prog
 open Filter_magic
 open Proof_convert
+
+(************************************************************************
+ * TYPES                                                                *
+ ************************************************************************)
+
+(*
+ * Temporary type for precedence directives.
+ *)
+type prec_info =
+   PrecEqual of term
+ | PrecLessThan of term
+ | PrecGreaterThan of term
+ | PrecNone
 
 (************************************************************************
  * DEBUGGING                                                            *
@@ -325,9 +340,23 @@ let con_exp s =
       expr_of_term_con dummy_loc con
 
 let con_patt _ =
-   raise(Invalid_argument "<:con< >> quotation can not be used where pattern is expected")
+   raise (Invalid_argument "<:con< >> quotation can not be used where pattern is expected")
 
 let _ = Quotation.add "con" (Quotation.ExAst (con_exp, con_patt))
+
+(*
+ * <:action< s >> is like <:con< s >>, but it is wrapped in
+ * a (fun argv -> ...)
+ *)
+let action_exp s =
+   let e = con_exp s in
+   let loc = dummy_loc in
+      <:expr< fun argv -> $e$ >>
+
+let action_patt _ =
+   raise (Invalid_argument "<:action< >> quotation can not be used where pattern is expected")
+
+let _ = Quotation.add "action" (Quotation.ExAst (action_exp, action_patt))
 
 let bind_item i =
    { item_item = i;
@@ -455,15 +484,51 @@ struct
     * Processors include both the cache and the name of the module.
     *)
    type t =
-      { cache : FilterCache.info;
-        select : FilterCache.select;
-        name : string; (* Filename *)
-        group : string; (* e.g. "itt" *)
-        groupdsc : string; (* e.g. "Constructive Type Theory" *)
-        mutable names : StringSet.t;
+      { cache           : FilterCache.info;
+        select          : FilterCache.select;
+        name            : string; (* Filename, must be globally unique *)
+        group           : string; (* e.g. "itt" *)
+        groupdsc        : string; (* e.g. "Constructive Type Theory" *)
+        mutable names   : StringSet.t;
         mutable parents : StrLSet.t;
-        mutable infixes: Infix.Set.t;
+        mutable infixes : Infix.Set.t;
       }
+
+   (*
+    * Processor.
+    *)
+   let proc_ref = ref None
+
+   (*
+    * Parse an input expression.
+    * This comes before get_proc because
+    * the get_proc function needs to set the start symbols.
+    *)
+   let input_exp shape s =
+      match !proc_ref with
+         Some proc ->
+            let pos =
+               { Lexing.pos_fname = proc.name;
+                 Lexing.pos_lnum  = 1;
+                 Lexing.pos_bol   = 0;
+                 Lexing.pos_cnum  = 0
+               }
+            in
+            let t = FilterCache.parse proc.cache pos shape s in
+               add_binding (BindTerm t)
+       | None ->
+            raise (Invalid_argument "Input grammar is not initialized")
+
+   let input_patt opname s =
+      raise (Invalid_argument "Input grammar does not support patterns")
+
+   let add_start shape =
+      let name, _ = dst_opname (opname_of_shape shape) in
+         Filter_grammar.set_start name shape;
+         Quotation.add name (Quotation.ExAst (input_exp shape, input_patt shape))
+
+   let add_starts opnames =
+      List.iter add_start opnames
 
    (*
     * Our version of add_command - make sure there are no name clashes.
@@ -480,11 +545,12 @@ struct
        | Rule { rule_name = name }
        | MLRewrite { mlterm_name = name }
        | MLAxiom { mlterm_name = name }
-       | GramUpd (Infix name | Suffix name)
+       | MLGramUpd (Infix name)
+       | MLGramUpd (Suffix name)
        | Definition { opdef_name = name } ->
-       (* | DForm{ dform_name = name } *)
+       (* | DForm { dform_name = name } *)
             if StringSet.mem proc.names name then
-               raise(Invalid_argument ("Filter_parse.add_command: duplicate name " ^ name));
+               raise (Invalid_argument ("Filter_parse.add_command: duplicate name " ^ name));
             proc.names <- StringSet.add proc.names name
        | DForm _
        | SummaryItem _
@@ -498,7 +564,8 @@ struct
        | Improve _
        | Id _
        | MagicBlock _
-       | Comment _ ->
+       | Comment _
+       | PRLGrammar _ ->
             ()
       end;
       FilterCache.add_command proc.cache cmd
@@ -510,19 +577,44 @@ struct
     *       a. adds the resources
     *       b. adds the infix directives.
     *)
+   let rec pp_print_string_list buf sl =
+      match sl with
+         [s] ->
+            pp_print_string buf s
+       | s :: sl ->
+            pp_print_string buf s;
+            pp_print_char buf '.';
+            pp_print_string_list buf sl
+       | [] ->
+            ()
+
    let declare_parent proc loc path =
+      (* Prevent multiple inclusion *)
       if StrLSet.mem proc.parents path then
          Stdpp.raise_with_loc loc (Invalid_argument "Same theory extended twice");
       proc.parents <- StrLSet.add proc.parents path;
+
       (* Lots of errors can occur here *)
-      ignore(FilterCache.inline_module proc.cache () path);
-      let infixes = FilterCache.sig_infixes proc.cache path in
-      Infix.Set.iter Infix.add (Infix.Set.diff infixes proc.infixes);
-      proc.infixes <- Infix.Set.union infixes proc.infixes;
-      let info = {
-         parent_name = path;
-         parent_resources = FilterCache.sig_resources proc.cache path;
-      } in
+      let () =
+         try FilterCache.inline_module proc.cache () path with
+            exn ->
+               Stdpp.raise_with_loc loc exn
+      in
+
+      (* Add infixes *)
+      let () =
+         let infixes = FilterCache.sig_infixes proc.cache path in
+            Infix.Set.iter Infix.add (Infix.Set.diff infixes proc.infixes);
+            proc.infixes <- Infix.Set.union infixes proc.infixes
+      in
+
+      (* Add resources and grammar start symbols *)
+      let info =
+         { parent_name = path;
+           parent_resources = FilterCache.sig_resources proc.cache path;
+         }
+      in
+         add_starts (FilterCache.get_start proc.cache);
          add_command proc (Parent info, loc)
 
    (*
@@ -605,8 +697,8 @@ struct
    let input_form_command proc name params args pf res =
       match params, args with
          [], MetaIff (MetaTheorem redex, MetaTheorem contractum) ->
-            (* This is a simple rewrite *)
-            simple_input_form proc name redex contractum pf res
+            (* This is always a simple rewrite *)
+            redex, contractum, simple_input_form proc name redex contractum pf res
        | _ ->
             (* Conditional rewrite *)
             raise (RefineError ("input_form_command", StringError "conditional input forms are not allowed"))
@@ -623,8 +715,9 @@ struct
 
    let declare_input_form proc loc name params args pf res =
       try
-         let cmd = input_form_command proc name params args pf res in
-            add_command proc (cmd, loc)
+         let redex, contractum, cmd = input_form_command proc name params args pf res in
+            add_command proc (cmd, loc);
+            redex, contractum
       with exn ->
          Stdpp.raise_with_loc loc exn
 
@@ -680,7 +773,7 @@ struct
     * Infix directive.
     *)
    let declare_gupd proc loc upd =
-      add_command proc (GramUpd upd, loc);
+      add_command proc (MLGramUpd upd, loc);
       Infix.add upd
 
    (*
@@ -865,10 +958,8 @@ struct
       add_command proc (MagicBlock { magic_name = name; magic_code = stmts }, loc)
 
    (*
-    * Processor.
+    * Input processor.
     *)
-   let proc_ref = ref None
-
    let get_proc loc =
       match !proc_ref with
          Some proc ->
@@ -884,17 +975,23 @@ struct
                      Stdpp.raise_with_loc loc (Failure "Input is not a .ml or .mli file")
             in
             let cache = FilterCache.create !include_path in
-            let info = FilterCache.create_cache cache module_name select InterfaceType in
-            let proc = { cache = info;
-                         select = select;
-                         name = module_name;
-                         group = theory_group ();
-                         groupdsc = theory_groupdsc ();
-                         names = StringSet.empty;
-                         parents = StrLSet.empty;
-                         infixes = Infix.Set.empty;
-                       }
+            let info = FilterCache.create_cache cache module_name select in
+            (* Important: proc.name should be globlly unique *)
+            let proc =
+               { cache    = info;
+                 select   = select;
+                 name     = module_name;
+                 group    = theory_group ();
+                 groupdsc = theory_groupdsc ();
+                 names    = StringSet.empty;
+                 parents  = StrLSet.empty;
+                 infixes  = Infix.Set.empty;
+               }
             in
+               if select = ImplementationType then
+                  FilterCache.load_sig_grammar info () InterfaceType;
+               FilterCache.set_grammar info;
+               add_starts (FilterCache.get_start info);
                mk_opname_ref := FilterCache.mk_opname info;
                proc_ref := Some proc;
                proc
@@ -938,6 +1035,59 @@ struct
                   end
       in
          sig_info
+
+   (************************************************************************
+    * Grammar interface.
+    *)
+
+   (*
+    * This function must guarantee global uniqueness, even across separate compilations
+    * of separate (distinct) files.
+    *)
+   let gensym proc =
+      Lm_symbol.new_symbol_string proc.name
+
+   let add_token proc loc s t =
+      FilterCache.add_token proc.cache (gensym proc) s t;
+      FilterCache.set_grammar proc.cache
+
+   let add_production proc loc args opt_prec t =
+      FilterCache.add_production proc.cache (gensym proc) args opt_prec t;
+      FilterCache.set_grammar proc.cache
+
+   let input_prec proc loc assoc tl rel =
+      let info = proc.cache in
+      let pre =
+         try
+            match rel with
+               PrecEqual t2 ->
+                  FilterCache.find_input_prec info t2
+             | PrecLessThan t2 ->
+                  FilterCache.input_prec_lt info t2 assoc
+             | PrecGreaterThan t2 ->
+                  FilterCache.input_prec_gt info t2 assoc
+             | PrecNone ->
+                  FilterCache.input_prec_new info assoc
+         with
+            Not_found ->
+               Stdpp.raise_with_loc loc (Failure "precedence not found")
+          | exn ->
+               Stdpp.raise_with_loc loc exn
+      in
+         List.iter (FilterCache.add_input_prec info pre) tl;
+         FilterCache.set_grammar proc.cache
+
+   let add_parser proc loc t =
+      FilterCache.add_start proc.cache t;
+      add_start (shape_of_term t);
+      FilterCache.set_grammar proc.cache
+
+   let add_iform proc loc redex contractum =
+      FilterCache.add_iform proc.cache (gensym proc) redex contractum;
+      FilterCache.set_grammar proc.cache
+
+   let compile_parser proc loc =
+      FilterCache.compile_parser proc.cache
 end
 
 (*
@@ -1148,6 +1298,14 @@ EXTEND
            in
              print_exn f ("rewrite " ^ name) loc;
              empty_sig_item loc
+        | "iform"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
+           let f () =
+              let t, args, res = parse_mtlr t args res in
+              let redex, contractum = SigFilter.declare_input_form (SigFilter.get_proc loc) loc name args t () res in
+                 SigFilter.add_iform (SigFilter.get_proc loc) loc redex contractum
+           in
+              print_exn f ("iform " ^ name) loc;
+              empty_sig_item loc
         | "ml_rw"; name = LIDENT; args = optarglist; ":"; t = parsed_term ->
            let f () =
              let args = List.map term_of_parsed_term args in
@@ -1218,7 +1376,28 @@ EXTEND
               print_exn f ("topval " ^ name) loc;
               empty_sig_item loc
         | "doc"; doc_sig ->
-           empty_sig_item loc
+          empty_sig_item loc
+
+          (* Grammar *)
+        | "token"; regex = STRING; t = OPT token_expansion ->
+          SigFilter.add_token (SigFilter.get_proc loc) loc regex t;
+          empty_sig_item loc
+
+        | "production"; args = LIST0 parsed_term SEP ";"; opt_prec = OPT prec_term; "-->"; t = parsed_term ->
+          SigFilter.add_production (SigFilter.get_proc loc) loc args opt_prec t;
+          empty_sig_item loc
+
+        | "token"; assoc = prec_declare; "["; args = LIST0 parsed_term SEP ";"; "]"; rel = prec_relation ->
+          SigFilter.input_prec (SigFilter.get_proc loc) loc assoc args rel;
+          empty_sig_item loc
+
+        | "parser"; t = term ->
+          SigFilter.add_parser (SigFilter.get_proc loc) loc t;
+          empty_sig_item loc
+
+        | "GENGRAMMAR" ->
+          SigFilter.compile_parser (SigFilter.get_proc loc) loc;
+          empty_sig_item loc
        ]];
 
    doc_sig:
@@ -1270,7 +1449,10 @@ EXTEND
         | "iform"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
            let f () =
               let t, args, res = parse_mtlr t args res in
-              StrFilter.declare_input_form (StrFilter.get_proc loc) loc name args t (Primitive xnil_term) res
+              let redex, contractum =
+                 StrFilter.declare_input_form (StrFilter.get_proc loc) loc name args t (Primitive xnil_term) res
+              in
+                 StrFilter.add_iform (StrFilter.get_proc loc) loc redex contractum
            in
               print_exn f ("iform " ^ name) loc;
               empty_str_item loc
@@ -1419,6 +1601,27 @@ EXTEND
               empty_str_item loc
         | "doc"; doc_str ->
            empty_str_item loc
+
+          (* Grammar *)
+        | "token"; regex = STRING; t = OPT token_expansion ->
+          StrFilter.add_token (StrFilter.get_proc loc) loc regex t;
+          empty_str_item loc
+
+        | "production"; args = LIST0 parsed_term SEP ";"; opt_prec = OPT prec_term; "-->"; t = parsed_term ->
+          StrFilter.add_production (StrFilter.get_proc loc) loc args opt_prec t;
+          empty_str_item loc
+
+        | "token"; assoc = prec_declare; "["; args = LIST0 parsed_term SEP ";"; "]"; rel = prec_relation ->
+          StrFilter.input_prec (StrFilter.get_proc loc) loc assoc args rel;
+          empty_str_item loc
+
+        | "parser"; t = term ->
+          StrFilter.add_parser (StrFilter.get_proc loc) loc t;
+          empty_str_item loc
+
+        | "GENGRAMMAR" ->
+          StrFilter.compile_parser (StrFilter.get_proc loc) loc;
+          empty_str_item loc
        ]];
 
     doc_str:
@@ -1497,6 +1700,28 @@ EXTEND
             mt, extract
        | mt = bmterm ->
             mt, mk_simple_term (mk_opname loc ["default_extract"] [] []) []
+      ]];
+
+   (*
+    * Precedence option.
+    *)
+   token_expansion:
+      [[ "-->"; t = parsed_term -> t ]];
+
+   prec_term:
+      [[ "%"; t = parsed_term -> t ]];
+
+   prec_declare:
+      [[ LIDENT "left" -> Filter_grammar.LeftAssoc
+       | LIDENT "right" -> Filter_grammar.RightAssoc
+       | LIDENT "nonassoc" -> Filter_grammar.NonAssoc
+      ]];
+
+   prec_relation:
+      [[ "<"; t = parsed_term -> PrecLessThan t
+       | "="; t = parsed_term -> PrecEqual t
+       | ">"; t = parsed_term -> PrecGreaterThan t
+       | -> PrecNone
       ]];
 
    (*

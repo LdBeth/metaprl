@@ -38,7 +38,7 @@ open File_type_base
  ************************************************************************
  *
  * Current MD5 hash of the summary-related types (as computed by OMake):
- * FILTER_MD5: 0x3b05abd51e4a283fb7f25978a9ba960b
+ * FILTER_MD5: 0x2d0b01f59ba759ac833a82dff9cf64f7
  *
  * The arguments for pack_version are:
  *    major version number, minor sub-version number, revision number
@@ -62,10 +62,11 @@ open File_type_base
  * Rev 9: removed the "internal" display form flag.
  * Rev 10: added input/optput types to resource definitions (bug 168).
  * Rev 11: added the "Quote" parameter
+ * Rev 12: added the "Grammar" choice to the summary_item type
  *)
-let raw_versions = List.map (pack_version 1 0) [11;10]
+let raw_versions = List.map (pack_version 1 0) [12;11;10]
 
-let term_versions = List.map (pack_version 1 0) [11;10;9;8]
+let term_versions = List.map (pack_version 1 0) [12;11;10;9;8]
 
 (*
  * ASCII IO format revision history:

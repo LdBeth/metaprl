@@ -38,7 +38,8 @@ open Filter_type
 val comment_string_op : opname
 val raise_spelling_error: unit -> unit
 
-module MakeTermGrammar (TermGrammar : TermGrammarSig) : sig
+module MakeTermGrammar (TermGrammar : TermGrammarSig) :
+sig
    val dest_quot : string -> string * string
    val parse_quotation: MLast.loc -> string -> string * string -> term
    val mk_comment_term : term list -> term

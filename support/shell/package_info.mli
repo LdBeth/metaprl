@@ -122,6 +122,11 @@ val mk_opname : package -> string list -> shape_param list -> int list -> opname
 val get_infixes : package -> Infix.Set.t
 
 (*
+ * Quotation expander used by this module.
+ *)
+val get_grammar : package -> Filter_grammar.t
+
+(*
  * Collection of objects in the module.
  *)
 val info : package -> parse_arg -> (term, meta_term, proof proof_type, (MLast.ctyp, MLast.expr) resource_str, MLast.ctyp, MLast.expr, MLast.str_item) module_info

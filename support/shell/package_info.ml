@@ -328,7 +328,7 @@ let load_aux arg pack_info =
             let { pack_cache = cache } = pack in
                try
                   let path = [name] in
-                  let info = Cache.StrFilterCache.load cache arg name ImplementationType InterfaceType AnySuffix in
+                  let info = Cache.StrFilterCache.load cache arg name ImplementationType AnySuffix in
                   let pack_str =
                      { pack_str_info = info;
                        pack_parse = arg
@@ -501,6 +501,14 @@ let get_infixes = function
    { pack_str = Some _; pack_infixes = infixes } -> infixes
  | _ -> invalid_arg "Package_info.get_infixes: package not loaded"
 
+let get_grammar pack_info =
+   synchronize_node pack_info (fun pack_info ->
+         match pack_info.pack_str with
+            Some { pack_str_info = info } ->
+               Cache.StrFilterCache.get_grammar info
+          | None ->
+               raise (NotLoaded pack_info.pack_name))
+
 (*
  * Get a loaded theory.
  *)
@@ -578,9 +586,7 @@ let create_package pack_entry arg name =
               pack_status = PackModified;
               pack_sig_info = None;
               pack_str =
-                 Some { pack_str_info =
-                           Cache.StrFilterCache.create_cache pack.pack_cache (**)
-                              name ImplementationType InterfaceType;
+                 Some { pack_str_info = Cache.StrFilterCache.create_cache pack.pack_cache name ImplementationType;
                         pack_parse = arg
                  };
               pack_infixes = Infix.Set.empty;

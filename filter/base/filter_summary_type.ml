@@ -34,10 +34,10 @@
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *
  *)
-
-open Refiner.Refiner
+open Lm_symbol
 open Opname
-open TermType
+open Refiner.Refiner.TermType
+open Refiner.Refiner.TermShape
 
 open File_base_type
 
@@ -81,29 +81,29 @@ sig
    type t
 
    (* Creation *)
-   val create : string list -> t
-   val set_path : t -> string list -> unit
-   val set_magic : t -> info -> int -> unit
-   val create_info : t -> select -> dir_name -> file_name -> info
-   val remove_info : t -> info -> unit
+   val create          : string list -> t
+   val set_path        : t -> string list -> unit
+   val set_magic       : t -> info -> int -> unit
+   val create_info     : t -> select -> dir_name -> file_name -> info
+   val remove_info     : t -> info -> unit
 
    (* Loading and saving *)
-   val find : t -> arg -> module_path -> select -> alt_suffix -> info
-   val find_file : t -> arg -> module_path -> select -> alt_suffix -> info
-   val find_match : t -> arg -> info -> select -> alt_suffix -> info
-   val save : t -> arg -> info -> alt_suffix -> unit
-   val save_if_newer : t -> arg -> info -> alt_suffix -> unit
+   val find            : t -> arg -> module_path -> select -> alt_suffix -> info
+   val find_file       : t -> arg -> module_path -> select -> alt_suffix -> info
+   val find_match      : t -> arg -> info -> select -> alt_suffix -> info
+   val save            : t -> arg -> info -> alt_suffix -> unit
+   val save_if_newer   : t -> arg -> info -> alt_suffix -> unit
    val save_if_missing : t -> arg -> info -> alt_suffix -> unit
 
    (* Info about a module *)
-   val info : t -> info -> cooked
-   val set_info : t -> info -> cooked -> unit
-   val sub_info : t -> info -> string -> info
-   val name : t -> info -> module_name
-   val pathname : t -> info -> module_path
-   val root : t -> info -> info
-   val file_name : t -> info -> file_name
-   val type_of : t -> info -> select
+   val info            : t -> info -> cooked
+   val set_info        : t -> info -> cooked -> unit
+   val sub_info        : t -> info -> string -> info
+   val name            : t -> info -> module_name
+   val pathname        : t -> info -> module_path
+   val root            : t -> info -> info
+   val file_name       : t -> info -> file_name
+   val type_of         : t -> info -> select
 end
 
 (*
@@ -135,7 +135,8 @@ end
  *    1. opnames in the current module
  *    2. infix operators in the current module
  *    3. resources in the current module
- *    4. summary of the current module, recorded as a module_info
+ *    4. grammar for the current module
+ *    5. summary of the current module, recorded as a module_info
  *
  * The cache also takes care of recursively opening parent modules
  * when a module is opened.  All the opnames of the parents are
@@ -179,73 +180,95 @@ sig
    type t
 
    (* Creation *)
-   val create : string list -> t
-   val set_path : t -> string list -> unit
+   val create         : string list -> t
+   val set_path       : t -> string list -> unit
 
    (* Loading *)
-   val create_cache : t -> module_name -> select -> select -> info
-   val load : t -> arg -> module_name -> select -> select -> alt_suffix -> info
-   val check : info -> arg -> select -> sig_info
+   val create_cache   : t -> module_name -> select -> info
+   val load           : t -> arg -> module_name -> select -> alt_suffix -> info
+   val filename       : t -> info -> string
+
+   (* Module operations *)
+   val check          : info -> arg -> select -> sig_info
    val parse_comments : info -> (loc -> term -> term) -> unit
-   val copy_proofs : info -> arg -> (str_proof -> str_proof -> str_proof) -> unit
-   val revert_proofs : info -> arg -> unit
-   val set_mode : info -> summary_mode -> unit
-   val save : info -> arg -> alt_suffix -> unit
+   val copy_proofs    : info -> arg -> (str_proof -> str_proof -> str_proof) -> unit
+   val revert_proofs  : info -> arg -> unit
+   val set_mode       : info -> summary_mode -> unit
+   val save           : info -> arg -> alt_suffix -> unit
 
    (* Access *)
-   val info : info -> str_info
-   val name : info -> string
-   val filename : t -> info -> string
-   val sig_info : info -> arg -> select -> sig_info
-   val sub_info : info -> module_path -> sig_info
+   val info           : info -> str_info
+   val name           : info -> string
+   val sig_info       : info -> arg -> select -> sig_info
+   val sub_info       : info -> module_path -> sig_info
 
    (* Expand a partial path specification to a complete one *)
-   val expand_path : info -> module_path -> module_path
+   val expand_path    : info -> module_path -> module_path
 
    (* Opname management *)
-   val op_prefix : info -> opname
-   val update_opname : info -> string -> term -> unit
-   val mk_opname : info -> opname_fun
+   val op_prefix      : info -> opname
+   val update_opname  : info -> string -> term -> unit
+   val mk_opname      : info -> opname_fun
 
    (* Inherited access for module_info *)
-   val find : info -> string -> (str_elem * loc)
-   val find_axiom : info -> string -> (str_elem * loc) option
-   val find_rewrite : info -> string -> (str_elem * loc) option
+   val find           : info -> string -> (str_elem * loc)
+   val find_axiom     : info -> string -> (str_elem * loc) option
+   val find_rewrite   : info -> string -> (str_elem * loc) option
    val find_mlrewrite : info -> string -> (str_elem * loc) option
-   val find_mlaxiom : info -> string -> (str_elem * loc) option
-   val find_dform : info -> string -> (str_elem * loc) option
-   val find_prec : info -> string -> bool
-   val resources : info -> (module_path * string * str_ctyp resource_sig) list
-   val parents : info -> module_path list
-   val proofs : info -> (string * str_proof) list
+   val find_mlaxiom   : info -> string -> (str_elem * loc) option
+   val find_dform     : info -> string -> (str_elem * loc) option
+   val find_prec      : info -> string -> bool
+   val resources      : info -> (module_path * string * str_ctyp resource_sig) list
+   val parents        : info -> module_path list
+   val proofs         : info -> (string * str_proof) list
 
    (* These are the resources and infixes for an included parent *)
-   val sig_resources : info -> module_path -> (string * sig_ctyp resource_sig) list
-   val sig_infixes : info -> module_path -> Infix.Set.t
+   val sig_resources  : info -> module_path -> (string * sig_ctyp resource_sig) list
+   val sig_infixes    : info -> module_path -> Infix.Set.t
 
    (* All infixes - own and inherited *)
-   val all_infixes : info -> Infix.Set.t
+   val all_infixes    : info -> Infix.Set.t
 
    (*
     * Update.
     *)
-   val add_command : info -> (str_elem * loc) -> unit
-   val set_command : info -> (str_elem * loc) -> unit
-   val add_resource : info -> string -> str_ctyp resource_sig -> unit
-   val add_prec : info -> string -> unit
-   val hash : info -> int
+   val add_command    : info -> (str_elem * loc) -> unit
+   val set_command    : info -> (str_elem * loc) -> unit
+   val add_resource   : info -> string -> str_ctyp resource_sig -> unit
+   val add_prec       : info -> string -> unit
+   val hash           : info -> int
 
    (*
     * Debugging.
     *)
-   val eprint_info : info -> unit
+   val eprint_info    : info -> unit
 
    (*
     * An inlined module includes its opnames in the current
     * space.  This function recursively inlines all modules in
-    * the hierarchy, calling the hook on each.
+    * the hierarchy.
     *)
-   val inline_module : info -> arg -> module_path -> sig_info
+   val inline_module  : info -> arg -> module_path -> unit
+
+   (* Grammar functions *)
+   type precedence
+
+   val load_sig_grammar  : info -> arg -> select -> unit
+
+   val add_token         : info -> symbol -> string -> term option -> unit
+   val add_production    : info -> symbol -> term list -> term option -> term -> unit
+   val add_iform         : info -> symbol -> term -> term -> unit
+   val find_input_prec   : info -> term -> precedence
+   val input_prec_lt     : info -> term -> Filter_grammar.assoc -> precedence
+   val input_prec_gt     : info -> term -> Filter_grammar.assoc -> precedence
+   val input_prec_new    : info -> Filter_grammar.assoc -> precedence
+   val add_input_prec    : info -> precedence -> term -> unit
+   val add_start         : info -> term -> unit
+   val get_start         : info -> shape list
+   val parse             : info -> Lexing.position -> shape -> string -> term
+   val compile_parser    : info -> unit
+   val get_grammar       : info -> Filter_grammar.t
+   val set_grammar       : info -> unit  (* Set the grammar to be used by quotations *)
 end
 
 (*

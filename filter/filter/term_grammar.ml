@@ -374,10 +374,13 @@ struct
     | SpellAdd
 
    let fake_arities =
-      List.map ( fun _ -> 0)
+      List.map (fun _ -> 0)
 
    let string_params =
-      List.map ( fun _ -> ShapeString)
+      List.map (fun _ -> ShapeString)
+
+   let expr_of_arg loc s =
+      <:expr< argv.( $int: s$ ) >>
 
    let expr_of_anti (loc, _) name s =
       try Grammar.Entry.parse Pcaml.expr_eoi (Stream.of_string s) with
@@ -414,7 +417,13 @@ struct
        | "dform" ->
             parse_comment (q_shift_loc loc nm) false SpellOff false s
        | _ ->
-            Stdpp.raise_with_loc loc (Invalid_argument ("Camlp4 term grammar: unknown " ^ nm ^ " quotation"))
+            (* Otherwise, use the current grammar *)
+            (try
+                Filter_grammar.term_of_string nm (fst (q_shift_loc loc nm)) s
+             with
+                exn ->
+                   (* XXX: TODO: nogin: This stuff needs debugging; what if exn is already an Exc_located? *)
+                   Stdpp.raise_with_loc loc exn)
 
    and parse_comment loc math spell space s =
       let pos = fst loc in
@@ -1172,7 +1181,9 @@ struct
 
       con_term:
          [[ sl_exclamation; t = term; sl_exclamation -> ConTerm t
+          | e = ANTIQUOT "arg" -> ConExpr (expr_of_arg loc e)
           | e = ANTIQUOT -> ConExpr (expr_of_anti loc "" e)
+          | sl_single_quote; v = ANTIQUOT "arg" -> ConVar (expr_of_arg loc v)
           | sl_single_quote; v = ANTIQUOT -> ConVar (expr_of_anti loc "" v)
           | op = opname -> ConConstruct (mk_opname loc op [] [], [], [])
           | op = opname; (params, bterms) = con_term_suffix ->
@@ -1223,15 +1234,23 @@ struct
       con_bterm:
          [[ v = LIDENT; b = con_bterm_suffix ->
                let bv, bt = b in (ConBVarConst v :: bv), bt
+          | e = ANTIQUOT "arg"; suff = OPT con_bterm_suffix ->
+               let e = expr_of_arg loc e in
+                  (match suff with
+                      Some (bv, bt) ->
+                         (ConBVarExpr e :: bv), bt
+                    | None ->
+                         [], ConExpr e)
           | e = ANTIQUOT; suff = OPT con_bterm_suffix ->
                let e = expr_of_anti loc "" e in
-               match suff with
-                  Some (bv, bt) ->
-                     (ConBVarExpr e :: bv), bt
-                | None ->
-                     [], ConExpr e
-          ] | [ t = con_term -> [], t
-          ]];
+                  (match suff with
+                      Some (bv, bt) ->
+                         (ConBVarExpr e :: bv), bt
+                    | None ->
+                         [], ConExpr e)
+          ]
+          |
+          [ t = con_term -> [], t ]];
 
       con_bterm_suffix:
          [[ ","; bt = con_bterm -> bt
@@ -1265,6 +1284,8 @@ struct
               ConHypList (expr_of_anti loc "list" expr)
           | v = word_or_string; rest = con_hyp_suffix ->
               rest v
+          | v = ANTIQUOT "arg"; sl_colon; t = con_term ->
+              ConHypothesis (expr_of_arg loc v, t)
           | v = ANTIQUOT; sl_colon; t = con_term ->
               ConHypothesis (expr_of_anti loc "" v, t)
           | t = con_term ->

@@ -30,7 +30,6 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-
 open Lm_debug
 
 open Lm_printf
@@ -158,7 +157,8 @@ struct
         sig_resources : (string * sig_ctyp resource_sig) list;
         sig_infixes   : Infix.Set.t;
         sig_opnames   : (op_shape * opname) list;
-        sig_includes  : sig_summary list;
+        sig_grammar   : Filter_grammar.t;
+        sig_includes  : sig_summary list
       }
 
    (*
@@ -184,6 +184,9 @@ struct
       { opprefix : opname;
         optable : (op_shape, opname) Hashtbl.t; (* Invariant: old entries are replaced, not shadowed *)
         mutable summaries : sig_summary list;
+
+        (* Input grammar *)
+        mutable grammar : Filter_grammar.t;
 
         (* Names of precedences in this module *)
         mutable precs : string list;
@@ -302,7 +305,7 @@ struct
                let rec mod_search = function
                   [] ->
                      raise Not_found
-                | { sig_summary = info }::tl ->
+                | { sig_summary = info } :: tl ->
                      let modname' = String.capitalize (Base.name base info) in
                         try modname' :: (expand_in_summary path (SigMarshal.unmarshal (Base.info base info))) with
                            Not_found ->
@@ -330,41 +333,41 @@ struct
     * or by making nothing global.
     *)
    let standard_opnames =
-      ["lzone"  , [], [];
-       "hzone"   , [], [];
-       "szone"   , [], [];
-       "izone"  , [], [];
-       "azone"  , [], [];
-       "ezone"  , [], [];
-       "space"   , [], [];
-       "hspace" , [], [];
-       "newline", [], [];
-       "popm"    , [], [];
+      ["lzone",    [], [];
+       "hzone",    [], [];
+       "szone",    [], [];
+       "izone",    [], [];
+       "azone",    [], [];
+       "ezone",    [], [];
+       "space",    [], [];
+       "hspace",   [], [];
+       "newline",  [], [];
+       "popm",     [], [];
        "pushfont", [ShapeString], [];
-       "popfont", [ShapeString], [];
-       "parens" , [], [];
+       "popfont",  [ShapeString], [];
+       "parens" ,  [], [];
 
        (* Some params *)
-       "cbreak", [ShapeString; ShapeString], [];
-       "hbreak", [ShapeString; ShapeString], [];
-       "sbreak", [ShapeString; ShapeString], [];
-       "mode", [ShapeString], [];
+       "cbreak",      [ShapeString; ShapeString], [];
+       "hbreak",      [ShapeString; ShapeString], [];
+       "sbreak",      [ShapeString; ShapeString], [];
+       "mode",        [ShapeString], [];
        "except_mode", [ShapeString], [];
-       "prec", [ShapeString], [];
-       "tzone", [ShapeString], [];
+       "prec",        [ShapeString], [];
+       "tzone",       [ShapeString], [];
 
        (* Multi-shape operators *)
-       "slot", [ShapeString], [];
-       "slot", [ShapeVar], [];
-       "slot", [ShapeToken], [];
-       "slot", [ShapeLevel] , [];
-       "slot", [ShapeNumber], [];
-       "slot", [ShapeString; ShapeString], [];
-       "slot", [ShapeString], [0];
-       "slot", [], [0];
-       "pushm", [], [];
-       "pushm", [ShapeNumber], [];
-       "pushm", [ShapeString], []]
+       "slot",        [ShapeString], [];
+       "slot",        [ShapeVar], [];
+       "slot",        [ShapeToken], [];
+       "slot",        [ShapeLevel] , [];
+       "slot",        [ShapeNumber], [];
+       "slot",        [ShapeString; ShapeString], [];
+       "slot",        [ShapeString], [0];
+       "slot",        [], [0];
+       "pushm",       [], [];
+       "pushm",       [ShapeNumber], [];
+       "pushm",       [ShapeString], []]
 
    (*
     * Make a new hashtable for mapping opnames.
@@ -400,42 +403,46 @@ struct
       if names = [] then raise (Invalid_argument "Filter_cache_fun.mk_opname");
       let name = Lm_list_util.last names in
       let shape = { sh_name = name; sh_params = strip_quotations params; sh_arities = arities } in
-      if List.tl names = [] then begin
-         try
-            let opname = optable cache shape in
-               if !debug_opname then
-                  eprintf "Filter_cache_fun.mk_opname: %s -> %s%t" (**)
-                     (string_of_shape shape) (**)
-                     (SimplePrint.string_of_opname opname) eflush;
-               opname
-         with
-            Not_found ->
-               raise (Failure ("undeclared name: " ^ (string_of_shape shape)))
-      end else begin
-         (* Opname is prefixed by one or more module names, which specify it more exactly. *)
-         let path =
-            try expand_path cache names with
-               Not_found ->
-                  raise (Failure ("no object with name: " ^ (string_of_opname_list names)))
-         in
-         let opname = make_opname (List.rev path) in
-         if !debug_opname then
-            eprintf "Filter_cache_fun.mk_opname: path: %s%t" (**)
-               (SimplePrint.string_of_opname opname) eflush;
-         let all_opnames = Hashtbl.find_all cache.optable shape in
-            if List.mem opname all_opnames then
-               opname
-            else
-               raise (Failure ("opname " ^ (SimplePrint.string_of_opname opname) ^ " is not declared with shape name: " ^ (string_of_shape shape)))
-      end
+         if List.tl names = [] then
+            begin
+               try
+                  let opname = optable cache shape in
+                     if !debug_opname then
+                        eprintf "Filter_cache_fun.mk_opname: %s -> %s%t" (**)
+                           (string_of_shape shape) (**)
+                           (SimplePrint.string_of_opname opname) eflush;
+                     opname
+               with
+                  Not_found ->
+                     raise (Failure ("undeclared name: " ^ (string_of_shape shape)))
+            end
+         else
+            begin
+               (* Opname is prefixed by one or more module names, which specify it more exactly. *)
+               let path =
+                  try expand_path cache names with
+                     Not_found ->
+                        raise (Failure ("no object with name: " ^ (string_of_opname_list names)))
+               in
+               let opname = make_opname (List.rev path) in
+                  if !debug_opname then
+                     eprintf "Filter_cache_fun.mk_opname: path: %s%t" (**)
+                        (SimplePrint.string_of_opname opname) eflush;
+                  let all_opnames = Hashtbl.find_all cache.optable shape in
+                     if List.mem opname all_opnames then
+                        opname
+                     else
+                        raise (Failure ("opname " ^ (SimplePrint.string_of_opname opname) ^ " is not declared with shape name: " ^ (string_of_shape shape)))
+            end
 
    let op_shape_of_term name t =
       let params = List.map param_type (dest_op (dest_term t).term_op).op_params in
-      if strip_quotations params != params then raise (Invalid_argument "Filter_cache_fun.op_shape_of_term: quoted opnames must not be declared");
-      { sh_name = name;
-        sh_params = params;
-        sh_arities = Term.subterm_arities t
-      }
+         if strip_quotations params != params then
+            raise (Invalid_argument "Filter_cache_fun.op_shape_of_term: quoted opnames must not be declared");
+         { sh_name = name;
+           sh_params = params;
+           sh_arities = Term.subterm_arities t
+         }
 
    (*
     * Update opname in the table.
@@ -510,6 +517,74 @@ struct
    let sig_infixes cache path =
       (find_summarized_sig_module cache path).sig_infixes
 
+   let sig_grammar cache path =
+      (find_summarized_sig_module cache path).sig_grammar
+
+   (************************************************************************
+    * Grammar.
+    *)
+
+   (*
+    * The external interface.
+    *)
+   type precedence = Filter_grammar.precedence
+
+   let add_token cache id redex contractum =
+      cache.grammar <- Filter_grammar.add_token cache.grammar id redex contractum
+
+   let add_production cache id args opt_prec contractum =
+      let opt_prec =
+         match opt_prec with
+            Some t ->
+               Some (shape_of_term t)
+          | None ->
+               None
+      in
+         cache.grammar <- Filter_grammar.add_production cache.grammar id args opt_prec contractum
+
+   let find_input_prec cache t =
+      Filter_grammar.find_prec cache.grammar (shape_of_term t)
+
+   let input_prec_new cache assoc =
+      let gram, pre = Filter_grammar.create_prec_new cache.grammar assoc in
+         cache.grammar <- gram;
+         pre
+
+   let input_prec_lt cache t assoc =
+      let gram, pre = Filter_grammar.create_prec_lt cache.grammar (shape_of_term t) assoc in
+         cache.grammar <- gram;
+         pre
+
+   let input_prec_gt cache t assoc =
+      let gram, pre = Filter_grammar.create_prec_gt cache.grammar (shape_of_term t) assoc in
+         cache.grammar <- gram;
+         pre
+
+   let add_input_prec cache pre t =
+      cache.grammar <- Filter_grammar.add_prec cache.grammar pre (shape_of_term t)
+
+   let add_start cache t =
+      cache.grammar <- Filter_grammar.add_start cache.grammar (shape_of_term t)
+
+   let get_start cache =
+      Filter_grammar.get_start cache.grammar
+
+   let add_iform cache id redex contractum =
+      cache.grammar <- Filter_grammar.add_iform cache.grammar id redex contractum
+
+   let parse cache pos opname s =
+      Filter_grammar.parse cache.grammar opname pos s
+
+   let compile_parser cache =
+      Filter_grammar.compile cache.grammar;
+      eprintf "%a@." Filter_grammar.pp_print_grammar cache.grammar
+
+   let get_grammar cache =
+      cache.grammar
+
+   let set_grammar cache =
+      Filter_grammar.set_grammar cache.grammar
+
    (************************************************************************
     * UPDATE                                                               *
     ************************************************************************)
@@ -523,8 +598,8 @@ struct
    let hash cache =
       let aux ops op i =
          (*
-          * Note: since the order is undefinded, the hashes of the individual entries
-          * have to be combined using an assotiative commitative operation
+          * Note: since the order is undefined, the hashes of the individual entries
+          * have to be combined using an associative commutative operation.
           *)
          (Hashtbl.hash_param max_int max_int (ops, op)) lxor i
       in
@@ -567,13 +642,13 @@ struct
     *)
    let rec merge_resources rsrc1 rsrc2 =
       match rsrc1, rsrc2 with
-         ((n1,r1) :: t1) as l1, (((n2,r2) :: t2) as l2) ->
+         ((n1, r1) :: t1) as l1, (((n2, r2) :: t2) as l2) ->
                if n1 = n2 then
-                  (n1,r1) :: merge_resources t1 t2
+                  (n1, r1) :: merge_resources t1 t2
                else if n1 < n2 then
-                  (n1,r1) :: merge_resources t1 l2
+                  (n1, r1) :: merge_resources t1 l2
                else
-                  (n2,r2) :: merge_resources l1 t2
+                  (n2, r2) :: merge_resources l1 t2
        | [], l2 ->
             l2
        | l1, [] ->
@@ -599,13 +674,14 @@ struct
                 *)
                let base = cache.base in
                let info = Base.sub_info base.lib self n in
-               let info = {
-                  sig_summary = info;
-                  sig_resources = [];
-                  sig_infixes = Infix.Set.empty;
-                  sig_opnames = [];
-                  sig_includes = [];
-               }
+               let info =
+                  { sig_summary   = info;
+                    sig_resources = [];
+                    sig_infixes   = Infix.Set.empty;
+                    sig_opnames   = [];
+                    sig_grammar   = Filter_grammar.empty;
+                    sig_includes  = []
+                  }
                in
                   base.sig_summaries <- info :: base.sig_summaries;
                   summ
@@ -623,12 +699,18 @@ struct
 
           | Parent { parent_name = path } ->
                (* Recursive inline of all ancestors *)
-               let info' = inline_sig_module barg cache path in {
-                  summ with
-                  sig_resources = merge_resources info'.sig_resources summ.sig_resources;
-                  sig_infixes = Infix.Set.union summ.sig_infixes info'.sig_infixes;
-                  sig_includes = info' :: summ.sig_includes;
-               }
+               let info = inline_sig_module barg cache path in
+               let grammar =
+                  if Filter_grammar.is_empty info.sig_grammar then
+                     summ.sig_grammar
+                  else
+                     info.sig_grammar
+               in
+                  { summ with sig_resources = merge_resources info.sig_resources summ.sig_resources;
+                              sig_infixes   = Infix.Set.union summ.sig_infixes info.sig_infixes;
+                              sig_includes  = info :: summ.sig_includes;
+                              sig_grammar   = grammar
+                  }
 
           | Resource (name, r) ->
                if not (resource_member name cache.resources) then
@@ -641,19 +723,24 @@ struct
                      cache.precs <- p :: precs;
                   summ
 
-          | GramUpd upd ->
+          | MLGramUpd upd ->
                { summ with sig_infixes = Infix.Set.add summ.sig_infixes upd }
+
+          | PRLGrammar gram ->
+               { summ with sig_grammar = gram }
 
           | _ ->
                summ
       in
-      let summ = {
-         sig_summary = self;
-         sig_resources = [];
-         sig_infixes = Infix.Set.empty;
-         sig_opnames = [];
-         sig_includes = [];
-      } in
+      let summ =
+         { sig_summary   = self;
+           sig_resources = [];
+           sig_infixes   = Infix.Set.empty;
+           sig_opnames   = [];
+           sig_grammar   = Filter_grammar.empty;
+           sig_includes  = []
+         }
+      in
          List.fold_left inline_component summ items
 
    and inline_str_components barg cache path self (items : (term, meta_term, str_proof, str_resource, str_ctyp, str_expr, str_item) summary_item_loc list) =
@@ -671,11 +758,12 @@ struct
                let base = cache.base in
                let info = Base.sub_info base.lib self n in
                let info =
-                  { sig_summary = info;
+                  { sig_summary   = info;
                     sig_resources = [];
-                    sig_infixes = Infix.Set.empty;
-                    sig_opnames = [];
-                    sig_includes = [];
+                    sig_infixes   = Infix.Set.empty;
+                    sig_opnames   = [];
+                    sig_grammar   = Filter_grammar.empty;
+                    sig_includes  = []
                   }
                in
                   base.sig_summaries <- info :: base.sig_summaries
@@ -691,7 +779,11 @@ struct
 
           | Parent { parent_name = path } ->
                (* Recursive inline of all ancestors *)
-               ignore (inline_sig_module barg cache path)
+               let info = inline_sig_module barg cache path in
+                  cache.grammar <- info.sig_grammar
+
+          | PRLGrammar gram ->
+               cache.grammar <- gram
 
           | _ ->
                ()
@@ -707,17 +799,17 @@ struct
                raise exn
       in
          if !debug_filter_cache then
-            eprintf "FilterCache.inline_module': %s%t" (string_of_path path) eflush;
+            eprintf "FilterCache.inline_sig_module: %s%t" (string_of_path path) eflush;
          try
             let info = find_summarized_sig_module cache path in
                if !debug_filter_cache then
-                  eprintf "FilterCache.inline_module': %s: already loaded%t" (string_of_path path) eflush;
+                  eprintf "FilterCache.inline_sig_module: %s: already loaded%t" (string_of_path path) eflush;
                collect_opnames cache info;
                info
          with
             Not_found ->
                if !debug_filter_cache then
-                  eprintf "FilterCache.inline_module': finding: %s%t" (string_of_path path) eflush;
+                  eprintf "FilterCache.inline_sig_module: finding: %s%t" (Base.file_name base base_info) eflush;
                let info' = SigMarshal.unmarshal (Base.info base base_info) in
                let info =
                   (* Inline the subparts *)
@@ -729,7 +821,7 @@ struct
 
                   if !debug_filter_cache then
                      begin
-                        eprintf "Summary: %s%t" (string_of_path path) eflush;
+                        eprintf "Summary: %s%t" (Base.file_name base base_info) eflush;
                         eprint_info info'
                      end;
 
@@ -747,7 +839,7 @@ struct
    let inline_module cache barg path =
       try
          let info = inline_sig_module barg cache path in
-            SigMarshal.unmarshal (Base.info cache.base.lib info.sig_summary)
+            cache.grammar <- Filter_grammar.union cache.grammar info.sig_grammar
       with
          Not_found ->
             raise (BadCommand (sprintf "Theory is not found: %s" (String.concat "." path)))
@@ -757,26 +849,27 @@ struct
     *    1. module_base
     *    2. Load path
     *)
-   let create_cache base name self_select child_select =
+   let create_cache base name self_select =
       let dir = Filename.dirname name in
       let name = Filename.basename name in
-         { opprefix = Opname.mk_opname (String.capitalize name) nil_opname;
-           optable = create_optable ();
-           summaries = [];
-           precs = [];
-           resources = [];
-           info = new_module_info ();
-           self = Base.create_info base.lib self_select dir name;
-           name = name;
-           base = base;
-           select = self_select
+         { opprefix   = Opname.mk_opname (String.capitalize name) nil_opname;
+           optable    = create_optable ();
+           summaries  = [];
+           precs      = [];
+           resources  = [];
+           info       = new_module_info ();
+           self       = Base.create_info base.lib self_select dir name;
+           name       = name;
+           base       = base;
+           grammar    = Filter_grammar.empty;
+           select     = self_select
          }
 
    (*
     * When a cache is loaded follow the steps to inline
     * the file into a new cache.
     *)
-   let load base barg (name : module_name) (my_select : select) (child_select : select) suffix =
+   let load base barg (name : module_name) (my_select : select) suffix =
       let path = [name] in
       let info =
          try find_summarized_str_module base path with
@@ -787,16 +880,17 @@ struct
       in
       let info' = StrMarshal.unmarshal (Base.info base.lib info) in
       let cache =
-         { opprefix = Opname.mk_opname (String.capitalize name) nil_opname;
-           optable = create_optable ();
-           summaries = [];
-           precs = [];
-           resources = [];
-           info = info';
-           self = info;
-           name = name;
-           base = base;
-           select = my_select
+         { opprefix   = Opname.mk_opname (String.capitalize name) nil_opname;
+           optable    = create_optable ();
+           summaries  = [];
+           precs      = [];
+           resources  = [];
+           info       = info';
+           self       = info;
+           name       = name;
+           base       = base;
+           grammar    = Filter_grammar.empty;
+           select     = my_select
          }
       in
          if !debug_filter_cache then
@@ -833,6 +927,27 @@ struct
                Base.find_match lib barg self alt_select AnySuffix
       in
          SigMarshal.unmarshal (Base.info lib info)
+
+   (*
+    * Include the grammar from the .cmiz file.
+    *)
+   let load_sig_grammar cache barg alt_select =
+      let { base = base; self = self; name = name } = cache in
+      let { lib = lib; sig_summaries = summaries } = base in
+      let grammar =
+         try (find_summarized_sig_module cache [name]).sig_grammar with
+            Not_found ->
+               let base_info = Base.find_match lib barg self alt_select AnySuffix in
+               let info = SigMarshal.unmarshal (Base.info lib base_info) in
+               let info =
+                  (* Inline the subparts *)
+                  inline_sig_components barg cache [name] base_info (info_items info)
+               in
+                  (* This module gets listed in the inline stack *)
+                  cache.base.sig_summaries <- info :: cache.base.sig_summaries;
+                  info.sig_grammar
+      in
+         cache.grammar <- grammar
 
    (*
     * Check the implementation with its interface.
@@ -883,13 +998,14 @@ struct
             base = { lib = base };
             self = self;
             info = info;
-            select = my_select
+            select = my_select;
+            grammar = grammar
           } = cache
       in
       let path = [name] in
-      let info' = Base.find_file base barg path my_select (OnlySuffixes ["prlb"]) in
-      let info' = StrMarshal.unmarshal (Base.info base info') in
-      let info  = FilterSummaryTerm.copy_proofs revert_proof info info' in
+      let base_info = Base.find_file base barg path my_select (OnlySuffixes ["prlb"]) in
+      let str_info = StrMarshal.unmarshal (Base.info base base_info) in
+      let info  = FilterSummaryTerm.copy_proofs revert_proof info str_info in
          (* Save the .prlb to the .cmoz *)
          Base.set_info base self (StrMarshal.marshal info);
          Base.set_magic base self 1;
@@ -914,7 +1030,15 @@ struct
     * Save the cache.
     *)
    let save cache barg suffix =
-      let { base = { lib = base }; self = self; info = info } = cache in
+      let { base = { lib = base }; name = name; self = self; info = info; grammar = grammar } = cache in
+      let info =
+         if Filter_grammar.is_modified grammar then
+            let pos = { Lexing.dummy_pos with Lexing.pos_fname = Base.file_name base self } in
+            let loc = pos, pos in
+               Filter_summary.add_command info (PRLGrammar (Filter_grammar.prepare_to_marshal grammar name), loc)
+         else
+            info
+      in
          if !debug_filter_cache then
             begin
                eprintf "Filter_cache.save: begin%t" eflush;

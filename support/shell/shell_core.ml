@@ -253,7 +253,7 @@ let get_item parse_arg info modname name =
        | Improve _ ->
             eprintf "Editing resource improvement '/%s/%s' not supported%t" modname name eflush;
             raise (Failure "view")
-       | GramUpd _ ->
+       | MLGramUpd _ ->
             eprintf "Editing infix/suffix '/%s/%s' not supported%t" modname name eflush;
             raise (Failure "view")
        | SummaryItem _
@@ -268,6 +268,9 @@ let get_item parse_arg info modname name =
             raise (Failure "view")
        | InputForm _ ->
             eprintf "Editing input form '/%s/%s' not implemented%t" modname name eflush;
+            raise (Failure "view")
+       | PRLGrammar _ ->
+            eprintf "Editing grammar '/%s/%s' not implemented%t" modname name eflush;
             raise (Failure "view")
 
 (*
@@ -572,6 +575,7 @@ let mount_root parse_arg shell force_flag need_shell verbose =
       Shell_state.set_mk_opname None;
       Shell_state.set_so_var_context None;
       Shell_state.set_infixes None;
+      Shell_state.set_grammar None;
       Shell_state.set_module "shell_theory"
 
 (*
@@ -585,6 +589,7 @@ let mount_fs parse_arg shell force_flag need_shell verbose =
       Shell_state.set_mk_opname None;
       Shell_state.set_so_var_context None;
       Shell_state.set_infixes None;
+      Shell_state.set_grammar None;
       Shell_state.set_module "shell_theory"
 
 (*
@@ -615,6 +620,7 @@ let mount_current_module modname parse_arg shell force_flag need_shell verbose =
                update_dfbase shell;
                Shell_state.set_mk_opname (Some (Package_info.mk_opname pack));
                Shell_state.set_infixes (Some (Package_info.get_infixes pack));
+               Shell_state.set_grammar (Some (Package_info.get_grammar pack));
                Shell_state.set_module modname;
                if verbose then
                   eprintf "Module: /%s%t" modname eflush

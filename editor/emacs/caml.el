@@ -52,7 +52,7 @@
   (modify-syntax-entry ?\( "()1"  caml-mode-syntax-table)
   (modify-syntax-entry ?\) ")(4"  caml-mode-syntax-table)
   (modify-syntax-entry ?*  ". 23" caml-mode-syntax-table)
-  (modify-syntax-entry ?\' "\""   caml-mode-syntax-table)
+  (modify-syntax-entry ?\' "."    caml-mode-syntax-table)
 
   ;; Make all these symbols part of punctuation class.
   ;; "Operators" are a sequence of punctuation chars.
@@ -290,7 +290,7 @@ point is outside the region."
     (21 nil &+ \. &)
     (6  nil &+ (alt --> <--> <--) &)
     (5  t   (alt dform condition) & (opt = &))
-    (5  t   (alt prec infix) &)
+    (5  t   (alt prec infix token production parser) &)
     (5  t   (opt &+) declare & (opt end))
     (5  t   ml_rewrite & : & (opt == &))
     (5  t   (alt define rewrite axiom primrw rule) & : &)
@@ -306,7 +306,7 @@ point is outside the region."
 (defconst caml-initial-terminals
   '(let type val value open extends include exception module
 	dform condition prec declare define rewrite axiom primrw prim
-	infix external magic_block mlterm)
+	infix external magic_block mlterm token production parser)
   "Tokens that may start a top level production")
 
 (defconst caml-special-terminals
@@ -322,8 +322,8 @@ point is outside the region."
   "End of a comment")
 
 (defconst caml-char-constant-pattern
-  "'\\(.'\\|\\\\\\)"
-  "Pattern that matches the beginning of character constants")
+  "'\\(.\\|\\\\.\\|...\\)'"
+  "Pattern that matches character constants")
 
 ;;
 ;; Quotation syntax

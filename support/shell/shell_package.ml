@@ -168,12 +168,13 @@ let is_formal_item = function
  | Comment _
  | MagicBlock _
  | ToploopItem _
- | GramUpd _
+ | MLGramUpd _
  | Prec _
  | DForm _
  | Module _
  | Id _
- | PrecRel _ ->
+ | PrecRel _
+ | PRLGrammar _ ->
       false
 
 let is_informal_item item =
@@ -181,7 +182,7 @@ let is_informal_item item =
 
 let is_display_item = function
    Opname _
- | GramUpd _
+ | MLGramUpd _
  | Prec _
  | DForm _
  | InputForm _ ->

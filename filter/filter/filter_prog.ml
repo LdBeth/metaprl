@@ -561,10 +561,10 @@ let extract_sig_item (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: cond rewrite: %s%t" name eflush;
          declare_cond_rewrite loc crw
-    | Rule ({ rule_name = name } as rule) ->
+    | Rule ({ rule_name = name } as item) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: rule: %s%t" name eflush;
-         declare_rule loc rule
+         declare_rule loc item
     | Prec name ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: prec: %s%t" name eflush;
@@ -591,7 +591,13 @@ let extract_sig_item (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: magic block%t" eflush;
          declare_magic_block loc block
-    | Opname _ | DForm _ | PrecRel _ | Id _ | Comment _ | GramUpd _ ->
+    | Opname _
+    | DForm _
+    | PrecRel _
+    | Id _
+    | Comment _
+    | MLGramUpd _
+    | PRLGrammar _ ->
          []
     | MLRewrite item ->
          if !debug_filter_prog then
@@ -888,7 +894,7 @@ let define_input_form proc loc iform =
    let create_input_form = <:expr<
       let $lid:contractum_id$ = $expr_of_term proc loc iform.rw_contractum$ in
          $refiner_expr loc$.create_input_form $lid:local_refiner_id$ $str:name$ (**)
-            ($expr_of_term proc loc iform.rw_redex$) $lid:contractum_id$
+            $uid:"true"$ ($expr_of_term proc loc iform.rw_redex$) $lid:contractum_id$
     >> in
        [
           <:str_item< value $lid:name$ = $rewrite_of_pre_rewrite_expr loc$ ($wrap_exn proc loc name create_input_form$) [||] [] >>;
@@ -1366,8 +1372,10 @@ let rec is_list_expr = function
 let improve_resource proc loc { improve_name = name; improve_expr = expr } =
    let expr' = expr_of_bnd_expr proc loc expr in
    let improve_expr =
-      if is_list_expr expr.item_item then impr_resource_list proc loc name expr'
-      else impr_resource proc loc name expr'
+      if is_list_expr expr.item_item then
+         impr_resource_list proc loc name expr'
+      else
+         impr_resource proc loc name expr'
    in
       [<:str_item< ($improve_expr$) >> ]
 
@@ -1536,7 +1544,8 @@ let extract_str_item proc (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: rwthm: %s%t" name eflush;
          derived_rewrite proc loc rw tac
-    | Rewrite ({ rw_name = name; rw_proof = (Interactive _ | Incomplete) } as rw) ->
+    | Rewrite ({ rw_name = name; rw_proof = Interactive _ } as rw)
+    | Rewrite ({ rw_name = name; rw_proof = Incomplete } as rw) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: rwinteractive: %s%t" name eflush;
          interactive_rewrite proc loc rw
@@ -1552,7 +1561,8 @@ let extract_str_item proc (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: thm condrw: %s%t" name eflush;
          derived_cond_rewrite proc loc crw tac
-    | CondRewrite ({ crw_name = name; crw_proof = (Interactive _|Incomplete) } as crw) ->
+    | CondRewrite ({ crw_name = name; crw_proof = Interactive _ } as crw)
+    | CondRewrite ({ crw_name = name; crw_proof = Incomplete } as crw) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: interactive condrw: %s%t" name eflush;
          interactive_cond_rewrite proc loc crw
@@ -1564,18 +1574,19 @@ let extract_str_item proc (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: ML rewrite (unimplemented): %s%t" name eflush;
          raise (Failure "Filter_prog.extract_str_item: ML rewrite is not defined")
-    | Rule ({ rule_name = name; rule_proof = Primitive t } as rule) ->
+    | Rule ({ rule_name = name; rule_proof = Primitive t } as item) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: prim rule: %s%t" name eflush;
-         prim_rule proc loc rule t
-    | Rule ({ rule_name = name; rule_proof = Derived tac } as rule) ->
+         prim_rule proc loc item t
+    | Rule ({ rule_name = name; rule_proof = Derived tac } as item) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: thm rule: %s%t" name eflush;
-         derived_rule proc loc rule tac
-    | Rule ({ rule_name = name; rule_proof = (Interactive _ | Incomplete) } as rule) ->
+         derived_rule proc loc item tac
+    | Rule ({ rule_name = name; rule_proof = Interactive _ } as item)
+    | Rule ({ rule_name = name; rule_proof = Incomplete } as item) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: interactive rule: %s%t" name eflush;
-         interactive_rule proc loc rule
+         interactive_rule proc loc item
     | MLAxiom ({ mlterm_name = name; mlterm_def = Some rule_expr } as mlrule) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: ML axiom: %s%t" name eflush;
@@ -1621,14 +1632,18 @@ let extract_str_item proc (item, loc) =
             eprintf "Filter_prog.extract_str_item: summary item%t" eflush;
          define_summary_item proc loc item
     | ToploopItem item ->
-         raise(Invalid_argument "Filter_prog.extract_str_item: we should not have ToploopItem in str")
+         raise (Invalid_argument "Filter_prog.extract_str_item: we should not have ToploopItem in str")
     | MagicBlock block ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: magic block%t" eflush;
          define_magic_block proc loc block
-    | GramUpd (Infix s | Suffix s) ->
+    | MLGramUpd (Infix s)
+    | MLGramUpd (Suffix s) ->
          define_prefix loc s
-    | Opname _ | Id _ | Comment _ ->
+    | Opname _
+    | Id _
+    | Comment _
+    | PRLGrammar _ ->
          []
     | Module _ ->
          if !debug_filter_prog then

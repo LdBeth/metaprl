@@ -156,7 +156,7 @@ let eprint_entry print_info = function
       eprintf "Resource: %s\n" name
  | Improve { improve_name = name } ->
       eprintf "Improve %s with ..." name
- | GramUpd (Infix name | Suffix name) ->
+ | MLGramUpd (Infix name | Suffix name) ->
       eprintf "Infix/Suffix: %s\n" name
  | Id id ->
       eprintf "Id: 0x%08x\n" id
@@ -166,6 +166,8 @@ let eprint_entry print_info = function
       eprintf "Comment\n"
  | Definition { opdef_name = name } ->
       eprintf "Definition: %s\n" name
+ | PRLGrammar _ ->
+      eprintf "PRLGrammar\n"
 
 (*
  * Non-recursive print.
@@ -389,7 +391,7 @@ let get_infixes { info_list = summary } =
       (h, _)::t ->
          begin
             match h with
-               GramUpd s -> Infix.Set.add (search t) s
+               MLGramUpd s -> Infix.Set.add (search t) s
              | _ -> search t
          end
     | [] ->
@@ -622,12 +624,15 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
                    | MLDForm mldf ->
                         MLDForm { mldf with dform_ml_code = convert_bnd_expr mldf.dform_ml_code }
                in
-                  DForm { df with
-                     dform_redex = convert.term_f df.dform_redex;
-                     dform_def = def
+                  DForm { df with dform_redex = convert.term_f df.dform_redex;
+                                  dform_def = def
                   }
 
-          | (Prec _ | PrecRel _ | Id _ | GramUpd _) as item ->
+          | Prec _
+          | PrecRel _
+          | Id _
+          | MLGramUpd _
+          | PRLGrammar _ as item ->
                item
 
           | Resource (name, r) ->
@@ -1180,9 +1185,9 @@ struct
                else if Opname.eq opname improve_op then
                   dest_improve convert t
                else if Opname.eq opname infix_op then
-                  GramUpd (Infix (dest_string_param t))
+                  MLGramUpd (Infix (dest_string_param t))
                else if Opname.eq opname suffix_op then
-                  GramUpd (Suffix (dest_string_param t))
+                  MLGramUpd (Suffix (dest_string_param t))
                else if Opname.eq opname magic_block_op then
                   dest_magic_block convert t
                else if Opname.eq opname summary_item_op then
@@ -1501,9 +1506,9 @@ struct
          mk_string_param_term resource_op name [convert.resource_f r]
     | Improve { improve_name = name; improve_expr = expr } ->
          mk_string_param_term improve_op name [mk_bnd_expr convert expr]
-    | GramUpd (Infix op) ->
+    | MLGramUpd (Infix op) ->
          mk_string_param_term infix_op op []
-    | GramUpd (Suffix op) ->
+    | MLGramUpd (Suffix op) ->
          mk_string_param_term suffix_op op []
     | MagicBlock { magic_name = name; magic_code = items } ->
          mk_string_param_term magic_block_op name [mk_xlist_term (List.map convert.item_f items)]
@@ -1511,6 +1516,8 @@ struct
          mk_simple_term comment_op [convert.term_f t]
     | Definition d ->
          term_of_definition convert d
+    | PRLGrammar _ ->
+         raise (Invalid_argument "Filter_summary.term_list_aux")
 
    and term_list_loc convert (t, loc) =
       mk_loc loc (term_list_aux convert t)
@@ -1518,7 +1525,20 @@ struct
    and term_list (convert : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item,
                              term, term, term, term, term, term, term) convert)
        ({ info_list = info } : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info) =
-      (List.map (term_list_loc convert) (List.rev info) : term list)
+      List.fold_left (fun terms item ->
+            (*
+             * XXX: TODO:
+             * This is the place where we drop things that are part of .cmoz, but should
+             * not be included in .prlb/.prla
+             * At some point we should be dropping all the stuff that can be recovered from
+             * .ml[i] in here
+             *)
+            match item with
+               PRLGrammar _, _ ->
+                  (* Don't include the grammar *)
+                  terms
+             | _ ->
+                  term_list_loc convert item :: terms) [] info
 
    (************************************************************************
     * SUBTYPING                                                            *
@@ -1554,9 +1574,9 @@ struct
       let rec search = function
          [] ->
             implem_error (sprintf "Rewrite %s: not implemented" name)
-       | ( Rewrite { rw_name = name'; rw_redex = redex'; rw_contractum = con' }
-         | Definition { opdef_name = name'; opdef_term = redex'; opdef_definition = con' }
-         ) :: _ when name = name' ->
+       | Rewrite { rw_name = name'; rw_redex = redex'; rw_contractum = con' } :: _
+       | Definition { opdef_name = name'; opdef_term = redex'; opdef_definition = con' } :: _
+         when name = name' ->
             if alpha_equal redex' redex then
                if alpha_equal con' con then
                   ()
@@ -1674,9 +1694,9 @@ struct
             implem_error
                (sprintf "Opname %s: %s" name
                   (if mismatch then "specification(s) mismatch" else "not implemented"))
-       | ( Opname { opname_name = name'; opname_term = term' }
-         | Definition { opdef_opname = name'; opdef_term = term' }
-         ) :: t when name' = name ->
+       | Opname { opname_name = name'; opname_term = term' } :: t
+       | Definition { opdef_opname = name'; opdef_term = term' } :: t
+         when name' = name ->
             let shape' = shape_of_term term' in
             let shape = shape_of_term term in
                if not (ToTerm.TermShape.eq shape' shape) then
@@ -1794,7 +1814,7 @@ struct
                match upd with
                   Infix name -> sprintf "Infix %s: not implemented" name
                 | Suffix name -> sprintf "Suffix %s: not implemented" name)
-       | (GramUpd upd')::_ when upd = upd' ->
+       | (MLGramUpd upd')::_ when upd = upd' ->
             ()
        | _ :: t ->
             search t
@@ -1879,7 +1899,7 @@ struct
             check_resource name implem
        | Improve _ ->
             raise (Invalid_argument "Filter_summary.check_implemented")
-       | GramUpd upd ->
+       | MLGramUpd upd ->
             check_gupd upd implem
        | Id id ->
             check_id id implem
@@ -1889,7 +1909,8 @@ struct
        | ToploopItem _
        | PrecRel _
        | MagicBlock _
-       | Comment _ ->
+       | Comment _
+       | PRLGrammar _ ->
             ()
 
    (*
@@ -1976,28 +1997,28 @@ struct
    (*
     * Copy the proof in a rule.
     *)
-   let copy_rule_proof copy_proof rule info2 =
+   let copy_rule_proof copy_proof item info2 =
       Rule (
-         match find_axiom info2 rule.rule_name with
+         match find_axiom info2 item.rule_name with
             Some (Rule { rule_stmt = stmt;
                          rule_proof = proof
                   }, _) ->
-               if not (meta_alpha_equal rule.rule_stmt stmt) then
+               if not (meta_alpha_equal item.rule_stmt stmt) then
                   begin
-                     eprintf "Copy_proof: warning: rule %s%s%t" rule.rule_name changed_warning eflush;
+                     eprintf "Copy_proof: warning: rule %s%s%t" item.rule_name changed_warning eflush;
                      if !debug_match then
                         begin
                            eprintf "Term 1:\n\t";
-                           prerr_simple_mterm rule.rule_stmt;
+                           prerr_simple_mterm item.rule_stmt;
                            eflush stderr;
                            eprintf "Term 2:\n\t";
                            prerr_simple_mterm stmt;
                            eflush stderr
                         end
                   end;
-               { rule with rule_proof = copy_proof rule.rule_proof proof }
+               { item with rule_proof = copy_proof item.rule_proof proof }
           | _ ->
-               rule
+               item
       )
 
    (*
@@ -2011,14 +2032,28 @@ struct
                   copy_rw_proof copy_proof rw info2
              | CondRewrite crw ->
                   copy_crw_proof copy_proof crw info2
-             | Rule rule ->
-                  copy_rule_proof copy_proof rule info2
+             | Rule item ->
+                  copy_rule_proof copy_proof item info2
              | Module (name, info) ->
                   copy_module_proof copy_proof name info info2
-             | Opname _ | MLRewrite _ | MLAxiom _ | Parent _ | DForm _
-             | Prec _ | PrecRel _ | Id _ | Comment _ | Resource _
-             | Improve _ | GramUpd _ | SummaryItem _ | ToploopItem _
-             | MagicBlock _ | InputForm _ | Definition _ ->
+             | Opname _
+             | MLRewrite _
+             | MLAxiom _
+             | Parent _
+             | DForm _
+             | Prec _
+             | PrecRel _
+             | Id _
+             | Comment _
+             | Resource _
+             | Improve _
+             | MLGramUpd _
+             | SummaryItem _
+             | ToploopItem _
+             | MagicBlock _
+             | InputForm _
+             | Definition _
+             | PRLGrammar _ ->
                   item
          in
             item, loc

@@ -58,6 +58,9 @@ val set_mk_opname : opname_fun option -> unit
 (* This is the set of grammar infix/suffix mods needed in this state *)
 val set_infixes : Infix.Set.t option -> unit
 
+(* Set the quotation expander *)
+val set_grammar : Filter_grammar.t option -> unit
+
 (* Scan (lazily) terms for SO variable contexts and use that for SO var parsing *)
 val set_so_var_context : term list option -> unit
 

@@ -1,6 +1,7 @@
 BASE_FILES =\
 	filter_buffer\
 	free_vars\
+	filter_grammar\
 	filter_type\
 	infix\
 	filter_util\
@@ -14,4 +15,4 @@ BASE_FILES =\
 	filter_cache_fun\
 	filter_magic\
 	filter_cache\
-	filter_spell\
+	filter_spell

@@ -37,9 +37,12 @@ open Lm_printf
 open Lm_printf_rbuffer
 open Lm_thread
 
+open Opname
+
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
+open Refiner.Refiner.TermShape
 
 open Dform
 open Filter_type
@@ -147,6 +150,7 @@ type state =
      mutable state_input_info      : info;
      mutable state_interactive     : bool;
      mutable state_infixes         : Infix.Set.t;
+     mutable state_grammar         : Filter_grammar.t;
      mutable state_prompt1         : string;
      mutable state_prompt2         : string
    }
@@ -184,6 +188,7 @@ let state_entry =
         state_input_info      = Buffered [];
         state_interactive     = true;
         state_infixes         = Infix.Set.empty;
+        state_grammar         = Filter_grammar.empty;
         state_prompt1         = "# ";
         state_prompt2         = "  "
       }
@@ -310,6 +315,34 @@ let _ = Quotation.add "term" (Quotation.ExAst (term_exp, term_patt))
 let _ = Quotation.default := "term"
 
 (*
+ * Parse an input expression.
+ * This comes before get_proc because
+ * the get_proc function needs to set the start symbols.
+ *)
+let input_exp shape s =
+   synchronize_state (fun state ->
+         let pos =
+            { Lexing.pos_fname = "<stdin>";
+              Lexing.pos_lnum  = 1;
+              Lexing.pos_bol   = 0;
+              Lexing.pos_cnum  = 0
+            }
+         in
+         let t = Filter_grammar.parse state.state_grammar shape pos s in
+            save_term state t)
+
+let input_patt opname s =
+   raise (Failure "Input grammar does not support patterns")
+
+let add_start shape =
+   let name, _ = dst_opname (opname_of_shape shape) in
+      Filter_grammar.set_start name shape;
+      Quotation.add name (Quotation.ExAst (input_exp shape, input_patt shape))
+
+let add_starts shapes =
+   List.iter add_start shapes
+
+(*
  * The client also saves the most recent tactic.
  *)
 let set_tactic s e =
@@ -396,6 +429,19 @@ let set_infixes infixes =
                state.state_infixes <- infs
           | None ->
                state.state_infixes <- Infix.Set.empty)
+
+let set_grammar grammar =
+   synchronize_write (fun state ->
+         let gram =
+            match grammar with
+               Some gram ->
+                  gram
+             | None ->
+                  Filter_grammar.empty
+         in
+            state.state_grammar <- gram;
+            Filter_grammar.set_grammar gram;
+            add_starts (Filter_grammar.get_start gram))
 
 let set_so_var_context context =
    synchronize_write (fun state ->
