@@ -26,7 +26,7 @@ SUB_FILES =\
 	$(addprefix phobos/, $(PHOBOS_FILES))\
 	filter/term_grammar\
 
-if true
+section
     OCAML_LINK_FLAGS = -linkall
 
     OCamlLibrary($(MAINLIB), $(SUB_FILES))
@@ -47,7 +47,7 @@ if $(NATIVE_PROFILING_ENABLED)
 # Other libraries that we always want to include
 #
 OCAML_CLIBS = $(ROOT)/clib/clib $(ROOT)/libmojave/cutil/liblmcutil
-OCAML_OTHER_LIBS = unix $(THREADSLIB) str
+OCAML_OTHER_LIBS += str
 OCAML_LIBS =\
         $(LIB)/lm\
 	$(LIB)/util

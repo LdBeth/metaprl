@@ -104,6 +104,11 @@ NCURSES_ENABLED=$NCURSES_ENABLED
 SSL_ENABLED=$SSL_ENABLED
 
 #
+# Do you want to use threads (yes/no)?
+#
+THREADS_ENABLED=$THREADS_ENABLED
+
+#
 # C compiler
 #
 CCC=$CCC

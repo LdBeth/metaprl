@@ -44,5 +44,5 @@ MACRO_FILES =\
    pa_macro\
    macro_main\
 
-OCamlProgramInstall($(MPINSTALL), $(LIB), macropp, $(CAMLP4LIB)/pr_dump $(MACRO_FILES) )
-OCamlProgramInstall($(MPINSTALL), $(LIB), macroprint, $(CAMLP4LIB)/pr_o $(MACRO_FILES) )
+OCamlProgramInstall($(MPINSTALL), $(LIB), macropp, $(CAMLP4LIB)/pr_dump $(MACRO_FILES))
+OCamlProgramInstall($(MPINSTALL), $(LIB), macroprint, $(CAMLP4LIB)/pr_o $(MACRO_FILES))

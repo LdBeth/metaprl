@@ -78,23 +78,6 @@ BASE_ARS   = $(addsuffix $(EXT_LIB), $(BASE_LIBS))
 BASE_CMAS  = $(addsuffix .cma      , $(BASE_LIBS))
 BASE_CMXAS = $(addsuffix .cmxa     , $(BASE_LIBS))
 
-# JYH: have to update these to match $(ROOT)/OMakefile
-if $(THREADS_ENABLED)
-    THREADS = -thread
-    THREADSLIB = $(CAMLLIB)/threads/threads.cma
-    OPTTHREADSLIB = $(CAMLLIB)/threads/threads.cmxa
-    LIBTHREADS = -cclib -lthreadsnat -cclib -lunix -cclib -lpthread
-    OPTTHREADS = -cclib -lthreadsnat -cclib -lunix -cclib -lpthread
-    export
-
-else
-    THREADS =
-    THREADSLIB =
-    OPTTHREADSLIB =
-    LIBTHREADS =
-    OPTTHREADS =
-    export
-
 ########################################################################
 # LIBRARIES
 ########################################################################
@@ -206,15 +189,15 @@ if $(NATIVE_ENABLED)
 
 $(MP).run: $(BYTE_DEPS) $(RCMOFILES)
         $(RM) $@
-        $(OCAMLMKTOP) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(CMOBJS) $(RCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS) $(LIBS) $(OCAML_LINK_FLAGS)
+        $(OCAMLMKTOP) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(CMOBJS) $(RCMOFILES) $(BYTE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
 
 $(MP).top: $(TOP_DEPS) $(TCMOFILES)
         $(RM) $@
-        $(OCAMLLINK) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(TCMOBJS) $(TCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS) $(LIBS) $(OCAML_LINK_FLAGS)
+        $(OCAMLLINK) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(TCMOBJS) $(TCMOFILES) $(BYTE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
 
 $(MP).opt: $(OPT_DEPS) $(TCMXFILES)
         $(RM) $@
-        $(OCAMLOPTLINK) $(OCAMLOPTFLAGS) -o $@ -linkall $(THREADS) $(CMXOBJS) $(TCMXFILES) $(NATIVE_CCLIBS) $(OPTTHREADS) $(LIBS) $(OCAML_LINK_FLAGS)
+        $(OCAMLOPTLINK) $(OCAMLOPTFLAGS) -o $@ -linkall $(THREADS) $(CMXOBJS) $(TCMXFILES) $(NATIVE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
 
 #
 # Generate the mp_version.ml file

@@ -1,5 +1,5 @@
 # Libraries
-OCAMLOTHERLIBS = unix
+OCAML_OTHER_LIBS = unix
 
 OCAMLLIBS =\
 	$(ROOT)/mllib/util\
@@ -7,7 +7,7 @@ OCAMLLIBS =\
 	$(ROOT)/refiner/refsig/reflib\
 	library
 
-OCAMLLINKFLAGS =\
+OCAML_LINK_FLAGS =\
 	-cclib $(ROOT)/lib/clib.a\
 	-cclib -lunix
 
