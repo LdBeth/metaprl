@@ -91,6 +91,10 @@ struct
       in
       let filename = sprintf "%s/%s.%s" dir name suffix in
       let info = unmarshal magic filename in
+      let _ =
+         if debug_file_base then
+            eprintf "File_base.load_file: loaded file %s%t" filename eflush
+      in
       let info' =
          { info_info = info;
            info_file = name;
@@ -151,7 +155,9 @@ struct
          try
             let rec search = function
                info::tl ->
-                  let { info_type = select' } = info in
+                  let { info_type = select'; info_file = file; info_dir = dir } = info in
+                     if debug_file_base then
+                        eprintf "File_base.find: checking %s/%s%t" dir file eflush;
                      if select' = select then
                         info
                      else
@@ -205,6 +211,10 @@ struct
     * First, check that the module does not already exist.
     *)
    let create_info base data select dir file =
+      let _ =
+         if debug_file_base then
+            eprintf "File_base.create_info: %s/%s%t" dir file eflush
+      in
       let { io_table = table } = base in
       let rec search = function
          { info_dir = dir'; info_file = file'; info_type = select' }::tl ->
@@ -261,6 +271,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.4  1998/02/23 14:46:34  jyh
+ * First implementation of binary file compilation.
+ *
  * Revision 1.3  1998/02/18 18:46:43  jyh
  * Initial ocaml semantics.
  *

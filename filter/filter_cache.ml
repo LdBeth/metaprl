@@ -387,7 +387,10 @@ struct
    type t = summary_type
    let create () = Interface (new_module_info ())
    let find_sub_module info path =
-      SigMarshal.marshal (Filter_summary.find_sub_module (SigMarshal.unmarshal info) path)
+      if path = [] then
+         info
+      else
+         SigMarshal.marshal (Filter_summary.find_sub_module (SigMarshal.unmarshal info) path)
 end
 
 (*
@@ -401,16 +404,17 @@ struct
    type item  = MLast.str_item
 
    type select = select_type
-   let select = InterfaceType
+   let select = ImplementationType
 
    type cooked = summary_type
    let marshal info =
+      eprintf "Filter_cache.StrMarshal.marshal%t" eflush;
       Implementation info
    let unmarshal = function
       Implementation info ->
          info
     | Interface _ ->
-         raise (Failure "SigMarshal.unmarshal")
+         raise (Failure "StrMarshal.unmarshal")
 end
 
 (*
@@ -436,6 +440,9 @@ module StrFilterCache = MakeFilterCache (SigMarshal) (StrMarshal) (SummaryBase)
 
 (*
  * $Log$
+ * Revision 1.7  1998/02/23 14:46:00  jyh
+ * First implementation of binary file compilation.
+ *
  * Revision 1.6  1998/02/19 21:08:19  jyh
  * Adjusted proof type to be primitive or derived.
  *

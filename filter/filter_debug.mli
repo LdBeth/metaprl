@@ -18,7 +18,30 @@ val debug_resource : bool
 val debug_library_base : bool
 
 (*
+ * Summary debugging.
+ *)
+val debug_summary : bool
+
+(*
+ * Conversion to program code.
+ *)
+val debug_filter_prog : bool
+
+(*
+ * Parser.
+ *)
+val debug_filter_parse : bool
+
+(*
+ * Debug FilterCache.
+ *)
+val debug_filter_cache : bool
+
+(*
  * $Log$
+ * Revision 1.3  1998/02/23 14:46:06  jyh
+ * First implementation of binary file compilation.
+ *
  * Revision 1.2  1998/02/12 23:38:06  jyh
  * Added support for saving intermediate files to the library.
  *

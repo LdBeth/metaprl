@@ -114,9 +114,6 @@ let thy_refiner_expr loc =
 let thy_dformer_expr loc =
    <:expr< $uid:"Theory"$ . $lid:"thy_dformer"$ >>
 
-let thy_id_expr loc =
-   <:expr< $uid:"Theory"$ . $lid:"thy_id"$ >>
-
 let record_theory_expr loc =
    <:expr< $uid:"Theory"$ . $lid:"record_theory"$ >>
 
@@ -373,40 +370,83 @@ let interf_postlog loc =
  *)
 let extract_sig_item (item, loc) =
    match item with
-      Rewrite rw ->
+      Rewrite ({ rw_name = name } as rw) ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_sig_item: rewrite: %s%t" name eflush;
          declare_rewrite loc rw
-    | CondRewrite crw ->
+    | CondRewrite ({ crw_name = name } as crw) ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_sig_item: cond rewrite: %s%t" name eflush;
          declare_cond_rewrite loc crw
-    | Axiom ax ->
+    | Axiom ({ axiom_name = name } as ax) ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_sig_item: axiom: %s%t" name eflush;
          declare_axiom loc ax
-    | Rule rule ->
+    | Rule ({ rule_name = name } as rule) ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_sig_item: rule: %s%t" name eflush;
          declare_rule loc rule
     | Prec name ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_sig_item: prec: %s%t" name eflush;
          declare_prec loc name
-    | Resource rsrc ->
+    | Resource ({ resource_name = name } as rsrc) ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_sig_item: resource: %s%t" name eflush;
          declare_resource loc rsrc
-    | Parent parent ->
+    | Parent ({ parent_name = name } as parent) ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_sig_item: parent: %s%t" (string_of_path name) eflush;
          declare_parent loc parent
     | SummaryItem item ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_sig_item: summary_item%t" eflush;
          declare_summary_item loc item
     | MagicBlock block ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_sig_item: magic block%t" eflush;
          declare_magic_block loc block
-    | Opname _
-    | MLTerm _
-    | Condition _
-    | DForm _
-    | PrecRel _
-    | Id _
-    | Infix _ ->
-      (* Ignore all these items *)
+    | Opname _ ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_sig_item: opname%t" eflush;
          []
-    | Module _ ->
+    | MLTerm _ ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_sig_item: mlterm%t" eflush;
+         []
+    | Condition _ ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_sig_item: condition%t" eflush;
+         []
+    | DForm _ ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_sig_item: dform%t" eflush;
+         []
+    | PrecRel _ ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_sig_item: prec rel%t" eflush;
+         []
+    | Id id ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_sig_item: id: 0x%08x%t" id eflush;
+         []
+    | Infix name ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_sig_item: infix: %s%t" name eflush;
+         []
+    | Module (name, _) ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_sig_item: module: %s%t" name eflush;
          raise (Failure "Filter_sig.extract_sig_item: nested modules are not implemented")
 
 (*
  * Extract a signature.
  *)
-let extract_sig info =
+let extract_sig info path =
+   let _ =
+      if debug_filter_prog then
+         eprintf "Filter_prog.extract_sig: begin%t" eflush
+   in
    let items = List_util.flat_map extract_sig_item (info_items info) in
    let postlog = interf_postlog (0, 0) in
       List.map (fun item -> item, (0, 0)) (items @ postlog)
@@ -1097,12 +1137,11 @@ let implem_prolog proc loc =
  *    }
  * let _ = record_theory theory_name
  *)
-let implem_postlog proc loc name id =
+let implem_postlog proc loc name =
    let thy_elems =
       [(<:expr< $thy_name_expr loc$ >>, <:expr< $str:name$ >>);
        (<:expr< $thy_refiner_expr loc$ >>, <:expr< $lid:refiner_id$ >>);
-       (<:expr< $thy_dformer_expr loc$ >>, <:expr< $lid:dformer_id$ >>);
-       (<:expr< $thy_id_expr loc$ >>, <:expr< $int:string_of_int id$ >>)]
+       (<:expr< $thy_dformer_expr loc$ >>, <:expr< $lid:dformer_id$ >>)]
    in
    let thy_rec = <:expr< { $list:thy_elems$ } >> in
    let thy = <:expr< $record_theory_expr loc$ $thy_rec$ >> in
@@ -1124,66 +1163,118 @@ let _ = ()
  *)
 let extract_str_item proc (item, loc) =
    match item with
-      Rewrite ({ rw_proof = Primitive _ } as rw) ->
+      Rewrite ({ rw_name = name; rw_proof = Primitive _ } as rw) ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_str_item: primrw: %s%t" name eflush;
          prim_rewrite proc loc rw
-    | Rewrite ({ rw_proof = Derived tac } as rw) ->
+    | Rewrite ({ rw_name = name; rw_proof = Derived tac } as rw) ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_str_item: rwthm: %s%t" name eflush;
          rewrite_theorem proc loc rw tac
-    | CondRewrite ({ crw_proof = Primitive _ } as crw) ->
+    | CondRewrite ({ crw_name = name; crw_proof = Primitive _ } as crw) ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_str_item: prim condrw: %s%t" name eflush;
          prim_cond_rewrite proc loc crw
-    | CondRewrite ({ crw_proof = Derived tac } as crw) ->
+    | CondRewrite ({ crw_name = name; crw_proof = Derived tac } as crw) ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_str_item: thm condrw: %s%t" name eflush;
          cond_rewrite_theorem proc loc crw tac
-    | Axiom ({ axiom_proof = Primitive t } as ax) ->
+    | Axiom ({ axiom_name = name; axiom_proof = Primitive t } as ax) ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_str_item: prim axiom: %s%t" name eflush;
          prim_axiom proc loc ax t
-    | Axiom ({ axiom_proof = Derived tac } as ax) ->
+    | Axiom ({ axiom_name = name; axiom_proof = Derived tac } as ax) ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_str_item: thm axiom: %s%t" name eflush;
          thm_axiom proc loc ax tac
-    | Rule ({ rule_proof = Primitive t } as rule) ->
+    | Rule ({ rule_name = name; rule_proof = Primitive t } as rule) ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_str_item: prim rule: %s%t" name eflush;
          prim_rule proc loc rule t
-    | Rule ({ rule_proof = Derived tac } as rule) ->
+    | Rule ({ rule_name = name; rule_proof = Derived tac } as rule) ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_str_item: thm rule: %s%t" name eflush;
          thm_rule proc loc rule tac
     | MLTerm { mlterm_term = term; mlterm_contracta = cons; mlterm_def = Some def } ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_str_item: mlterm%t" eflush;
          define_ml_term proc loc term cons def
     | MLTerm { mlterm_def = None } ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_str_item: mlterm%t" eflush;
          raise (Failure "Filter_proof.extract_str_item: mlterm is not defined")
     | Condition _ ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_str_item: condition%t" eflush;
          raise (Failure "Filter_proof.extract_str_item: condition is not implemented")
     | DForm ({ dform_def = TermDForm expansion} as df) ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_str_item: dform%t" eflush;
          define_dform proc loc df expansion
     | DForm ({ dform_def = MLDForm code} as df) ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_str_item: dform%t" eflush;
          define_ml_dform proc loc df code
     | DForm { dform_def = NoDForm } ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_str_item: dform%t" eflush;
          raise (Failure "Filter_proof.extract_str_item: dform is not defined")
     | Prec name ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_str_item: prec: %s%t" name eflush;
          define_prec proc loc name
     | PrecRel rel ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_str_item: prec_rel%t" eflush;
          define_prec_rel proc loc rel
-    | Resource rsrc ->
+    | Resource ({ resource_name = name } as rsrc) ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_str_item: resource: %s%t" name eflush;
          define_resource proc loc rsrc
-    | Parent parent ->
+    | Parent ({ parent_name = name } as parent) ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_str_item: parent: %s%t" (string_of_path name) eflush;
          define_parent proc loc parent
     | SummaryItem item ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_str_item: summary item%t" eflush;
          define_summary_item proc loc item
     | MagicBlock block ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_str_item: magic block%t" eflush;
          define_magic_block proc loc block
-    | Opname _
-    | Id _
+    | Opname _ ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_str_item: opname%t" eflush;
+         []
+    | Id _ ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_str_item: id%t" eflush;
+         []
     | Infix _ ->
-      (* Ignore all these items *)
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_str_item: infix%t" eflush;
          []
     | Module _ ->
+         if debug_filter_prog then
+            eprintf "Filter_prog.extract_str_item: infix%t" eflush;
          raise (Failure "Filter_prog.extract_str_item: nested modules are not implemented")
 
 (*
  * Extract a signature.
  *)
-let extract_str info name id =
+let extract_str info name =
    let proc = { imp_resources = [] } in
    let prolog = implem_prolog proc (0, 0) in
    let items = List_util.flat_map (extract_str_item proc) (info_items info) in
-   let postlog = implem_postlog proc (0, 0) name id in
+   let postlog = implem_postlog proc (0, 0) name in
       List.map (fun item -> item, (0, 0)) (prolog @ items @ postlog)
 
 (*
  * $Log$
+ * Revision 1.2  1998/02/23 14:46:14  jyh
+ * First implementation of binary file compilation.
+ *
  * Revision 1.1  1998/02/21 20:57:47  jyh
  * Two phase parse/extract.
  *

@@ -59,36 +59,36 @@ module MakeSingletonCombo (Info : FileTypeInfoSig) :
     with type info = (Info.select, Info.cooked) common_info) =
    MakeIOSingletonCombo (**)
       (struct
-                            type t = Info.raw
+         type t = Info.raw
 
-                            let write magic filename info =
-                                     let outx = open_out_bin filename in
-                                        try
-                                           output_binary_int outx magic;
-                                           output_value outx (info : t);
-                                           close_out outx
-                                        with
-            exn ->
-               close_out outx;
-               raise exn
+         let write magic filename info =
+            let outx = open_out_bin filename in
+               try
+                  output_binary_int outx magic;
+                  output_value outx (info : t);
+                  close_out outx
+               with
+                  exn ->
+                     close_out outx;
+                     raise exn
 
-               let read magic filename =
-      let inx = open_in_bin filename in
-         try
-            let magic' = input_binary_int inx in
-               if magic = magic' then
-                  (input_value inx : t)
-               else
-                  begin
+         let read magic filename =
+            let inx = open_in_bin filename in
+               try
+                  let magic' = input_binary_int inx in
+                     if magic = magic' then
+                        (input_value inx : t)
+                     else
+                        begin
+                           close_in inx;
+                           raise (Sys_error "load_file")
+                        end
+               with
+                  exn ->
                      close_in inx;
                      raise (Sys_error "load_file")
-                  end
-         with
-            exn ->
-               close_in inx;
-               raise (Sys_error "load_file")
-                            end)
-   (Info)
+      end)
+      (Info)
 
 (*
  * Extend a Combo with new data.
@@ -146,6 +146,9 @@ module MakeFileBase (Types : FileTypeSummarySig)
 
 (*
  * $Log$
+ * Revision 1.5  1998/02/23 14:46:36  jyh
+ * First implementation of binary file compilation.
+ *
  * Revision 1.4  1998/02/19 17:13:21  jyh
  * Splitting filter_parse.
  *

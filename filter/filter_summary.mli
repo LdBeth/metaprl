@@ -254,10 +254,11 @@ val of_term_list :
    ('proof, 'ctyp, 'expr, 'item) module_info
 
 (*
- * Interface checking.
+ * Interface checking implem/interf/exception.
  *)
-val check_implementation : ('proof, 'ctyp, 'expr, 'item) module_info ->
-   ('proof, 'ctyp, 'expr, 'item) module_info ->
+val check_implementation :
+   ('proof1, 'ctyp1, 'expr1, 'item1) module_info ->
+   ('proof2, 'ctyp2, 'expr2, 'item2) module_info ->
    unit
 
 (*
@@ -268,6 +269,9 @@ val eprint_info : ('proof, 'ctyp, 'expr, 'item) module_info -> unit
 
 (*
  * $Log$
+ * Revision 1.7  1998/02/23 14:46:20  jyh
+ * First implementation of binary file compilation.
+ *
  * Revision 1.6  1998/02/21 20:57:54  jyh
  * Two phase parse/extract.
  *

@@ -2,6 +2,9 @@
  * Debugging utilities.
  *
  * $Log$
+ * Revision 1.2  1998/02/23 14:46:30  jyh
+ * First implementation of binary file compilation.
+ *
  * Revision 1.1  1997/08/06 16:17:52  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.
@@ -56,14 +59,22 @@ let debug_refiner = false
 let debug_simple_print = false
 
 (*
- * Debug FilterCache.
- *)
-let debug_filter_cache = false
-
-(*
  * Debug files.
  *)
 let debug_file_base = false
+
+(*
+ * Print some strings.
+ *)
+let rec print_strings sep out = function
+   [h] ->
+      output_string out h
+ | h::t ->
+      output_string out h;
+      output_string out sep;
+      print_strings sep out t
+ | [] ->
+      ()
 
 (*
  * Print a newline and flush.

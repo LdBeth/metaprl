@@ -15,10 +15,33 @@ let debug_resource = false
 (*
  * Library debugging.
  *)
-let debug_library_base = true
+let debug_library_base = false
+
+(*
+ * Summary debugging.
+ *)
+let debug_summary = false
+
+(*
+ * Conversion to program code.
+ *)
+let debug_filter_prog = false
+
+(*
+ * Parser.
+ *)
+let debug_filter_parse = false
+
+(*
+ * Debug FilterCache.
+ *)
+let debug_filter_cache = false
 
 (*
  * $Log$
+ * Revision 1.3  1998/02/23 14:46:05  jyh
+ * First implementation of binary file compilation.
+ *
  * Revision 1.2  1998/02/12 23:38:05  jyh
  * Added support for saving intermediate files to the library.
  *

@@ -36,6 +36,7 @@ open Filter_summary
 open Filter_summary_type
 open Filter_summary_util
 open Filter_cache
+open Filter_prog
 
 (************************************************************************
  * PATHS                                                                *
@@ -202,13 +203,13 @@ sig
    type ctyp
    type item
 
-   val extract : (proof, ctyp, expr, item) module_info -> (item * (int * int)) list
+   val extract : (proof, ctyp, expr, item) module_info -> string -> (item * (int * int)) list
 end
 
 (*
  * Make the filter.
  *)
-module MakeFilter
+module MakeFilter (**)
    (Info : FilterInfoSig)
    (FilterCache : SummaryCacheSig
     with type sig_ctyp  = Info.ctyp
@@ -225,11 +226,11 @@ struct
       { cache : FilterCache.info;
         name : string
       }
-   
+
    (*
     * When a module is inlined, add the resources and infixes.
     *)
-   let inline_hook proc root_path cache (path, info) (paths, resources) =
+   let inline_hook root_path cache (path, info) (paths, resources) =
       (* Include all the resources *)
       if debug_resource then
          eprintf "Inline_hook: %s, %s%t" (string_of_path root_path) (string_of_path path) eflush;
@@ -268,7 +269,7 @@ struct
     *)
    let declare_parent proc loc path =
       (* Lots of errors can occur here *)
-      let _, (opens, nresources) = FilterCache.inline_module proc.cache path (inline_hook proc path) ([], []) in
+      let _, (opens, nresources) = FilterCache.inline_module proc.cache path (inline_hook path) ([], []) in
       let info =
          { parent_name = path;
            parent_opens = opens;
@@ -414,7 +415,7 @@ struct
    
    let axiom_command proc name params args pf =
       match params, args with
-        [], MetaTheorem a ->
+         [], MetaTheorem a ->
             simple_axiom proc name a pf
        | _ ->
             cond_axiom proc name params args pf
@@ -582,7 +583,8 @@ struct
    
    let get_proc loc =
       match !proc_ref with
-         Some proc -> proc
+         Some proc ->
+            proc
        | None ->
             let select, module_name =
                let name = !Pcaml.input_file in
@@ -619,7 +621,13 @@ struct
     * Extract an item list.
     *)
    let extract proc =
-      Info.extract (FilterCache.info proc.cache)
+      Info.extract (FilterCache.info proc.cache) proc.name
+   
+   (*
+    * Check the implementation with its interface.
+    *)
+   let check proc alt_select =
+      FilterCache.check proc.cache alt_select
 end
 
 (*
@@ -632,7 +640,7 @@ struct
    type ctyp  = MLast.ctyp
    type item  = MLast.sig_item
 
-   let extract = raise (Failure "hello") (* Filter_sig.extract *)
+   let extract = extract_sig
 end
 
 module StrFilterInfo =
@@ -642,7 +650,7 @@ struct
    type ctyp  = MLast.ctyp
    type item  = MLast.str_item
 
-   let extract = raise (Failure "hello") (* Filter_str.extract *)
+   let extract = extract_str
 end
 
 module SigFilter = MakeFilter (SigFilterInfo) (SigFilterCache)
@@ -685,9 +693,6 @@ let empty_sig_item loc =
 let empty_str_item loc =
    <:str_item< declare $list:[]$ end >>
 
-let sig_open loc name = name
-let str_open loc name = name
-
 (*
  * Extend the programming language.
  *)
@@ -700,9 +705,11 @@ EXTEND
 
    interf:
       [[ interf_opening; st = LIST0 interf_item; EOI ->
-         let proc = SigFilter.get_proc loc in
-            SigFilter.save proc;
-            SigFilter.extract proc
+          let proc = SigFilter.get_proc loc in
+          let id = Hashtbl.hash proc in
+             SigFilter.add_command proc (Id id, (0, 0));
+             SigFilter.save proc;
+             SigFilter.extract proc
        ]];
    
    interf_opening:
@@ -712,6 +719,8 @@ EXTEND
    
    interf_item:
       [[ s = sig_item; OPT ";;" ->
+          if debug_filter_parse then
+             eprintf "Filter_parse.interf_item: adding item%t" eflush;
           SigFilter.add_command (SigFilter.get_proc loc) (SummaryItem s, loc);
           s, loc
        ]];
@@ -720,6 +729,7 @@ EXTEND
       [[ implem_opening; st = LIST0 implem_item; EOI ->
           let proc = StrFilter.get_proc loc in
              StrFilter.save proc;
+             StrFilter.check proc InterfaceType;
              StrFilter.extract proc
        ]];
    
@@ -963,6 +973,9 @@ END
 
 (*
  * $Log$
+ * Revision 1.11  1998/02/23 14:46:09  jyh
+ * First implementation of binary file compilation.
+ *
  * Revision 1.10  1998/02/21 20:57:44  jyh
  * Two phase parse/extract.
  *

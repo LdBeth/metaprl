@@ -292,9 +292,13 @@ let find_sub_module summary path =
     | name::rest ->
          let rec search = function
             [] ->
-               raise (CantFind (string_of_path path))
-          | ((Module (n, s)), _)::_ when n = name ->
-               walk s rest
+               raise (Failure ("Filter_summary.find_sub_module: can't find " ^ (string_of_path path)))
+          | ((Module (n, s)), _)::t ->
+               eprintf "Filter_summary.find_sub_module: checking %s = %s%t" n name eflush;
+               if n = name then
+                  walk s rest
+               else
+                  search t
           | _::t ->
                search t
          in
@@ -1300,7 +1304,9 @@ let check_params int_params imp_params =
 (*
  * Check that a rewrite is justified.
  *)
-let check_rewrite info implem =
+let check_rewrite
+    (info : 'proof1 rewrite_info)
+    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let { rw_name = name; rw_redex = redex; rw_contractum = con } = info in
    let rec search = function
       [] ->
@@ -1328,7 +1334,9 @@ let check_rewrite info implem =
 (*
  * Conditions in implementation must be weaker than in the interface.
  *)
-let check_cond_rewrite info implem =
+let check_cond_rewrite
+    (info : 'proof1 cond_rewrite_info)
+    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let { crw_name = name;
          crw_params = params;
          crw_args = args;
@@ -1366,7 +1374,9 @@ let check_cond_rewrite info implem =
 (*
  * Axiom must be more general.
  *)
-let check_axiom info implem =
+let check_axiom
+    (info : 'proof1 axiom_info)
+    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let { axiom_name = name; axiom_stmt = stmt } = info in
    let rec search = function
       [] ->
@@ -1389,7 +1399,9 @@ let check_axiom info implem =
 (*
  * Rule must be more general.
  *)
-let check_rule info implem =
+let check_rule
+    (info : 'proof1 rule_info)
+    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let { rule_name = name; rule_params = params; rule_stmt = stmt } = info in
    let rec search = function
       [] ->
@@ -1417,7 +1429,9 @@ let check_rule info implem =
 (*
  * Opnames must be equal.
  *)
-let check_opname info implem =
+let check_opname
+    (info : opname_info)
+    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let { opname_name = name; opname_term = term } = info in
    let rec search = function
       [] ->
@@ -1443,7 +1457,9 @@ let check_opname info implem =
 let string_of_term t =
    string_of_opname_list (Opname.dest_opname (opname_of_term t))
 
-let check_mlterm { mlterm_term = term } implem =
+let check_mlterm
+    ({ mlterm_term = term } : 'expr1 mlterm_info)
+    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let rec search = function
       [] ->
          implem_error (sprintf "MLTerm %s: not implemented" (string_of_term term))
@@ -1460,7 +1476,9 @@ let check_mlterm { mlterm_term = term } implem =
 (*
  * Coniditions must match.
  *)
-let check_condition { mlterm_term = term } implem =
+let check_condition
+    ({ mlterm_term = term } : 'expr1 mlterm_info)
+    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let rec search = function
       [] ->
          implem_error (sprintf "Condition %s: not implemented" (string_of_term term))
@@ -1477,7 +1495,9 @@ let check_condition { mlterm_term = term } implem =
 (*
  * Parent names must match.
  *)
-let check_parent path implem =
+let check_parent
+    (path : module_path)
+    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let rec search = function
       [] ->
          implem_error (sprintf "Include %s: not implemented" (string_of_path path))
@@ -1494,7 +1514,10 @@ let check_parent path implem =
 (*
  * Display forms.
  *)
-let check_dform tags term implem =
+let check_dform
+    (tags : dform_option list)
+    (term : term)
+    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let rec search = function
       [] ->
          implem_error (sprintf "DForm %s: not implemented" (string_of_term term))
@@ -1516,7 +1539,8 @@ let check_dform tags term implem =
 (*
  * Precedence declaration.
  *)
-let check_prec name implem =
+let check_prec (name : string)
+    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let rec search = function
       [] ->
          implem_error (sprintf "Prec %s: not implemented" name)
@@ -1533,7 +1557,9 @@ let check_prec name implem =
 (*
  * Resource checking.
  *)
-let check_resource info implem =
+let check_resource
+    (info : 'ctyp1 resource_info)
+    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let { resource_name = name } = info in
    let rec search = function
       [] ->
@@ -1551,7 +1577,8 @@ let check_resource info implem =
 (*
  * Infix declarations.
  *)
-let check_infix name implem =
+let check_infix (name : string)
+    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let rec search = function
       [] ->
          implem_error (sprintf "Infix %s: not implemented" name)
@@ -1566,9 +1593,29 @@ let check_infix name implem =
       search implem
 
 (*
+ * Match the ids.
+ *)
+let check_id (id : int) (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+   let rec search = function
+      [] ->
+         implem_error "Id: not implemented"
+    | h::t ->
+         match h with
+            Id id' ->
+               if id' <> id then
+                  implem_error (sprintf "Implementation is out of date (recompile)")
+          | _ ->
+               search t
+   in
+      search implem
+
+(*
  * Module definitions.
  *)
-let rec check_module name info implem =
+let rec check_module
+    (name : string)
+    (info : ('proof1, 'ctyp1, 'expr1, 'item1) module_info)
+    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let rec search = function
       [] ->
          implem_error (sprintf "Module %s: not implemented" name)
@@ -1576,7 +1623,7 @@ let rec check_module name info implem =
          match h with
             Module (name', info') ->
                if name' = name then
-                  check_implementation info info'
+                  check_implementation info' info
                else
                   search t
           | _ ->
@@ -1587,7 +1634,9 @@ let rec check_module name info implem =
 (*
  * Check that an item is implemented.
  *)
-and check_implemented implem (interf, _) =
+and check_implemented
+    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list)
+    ((interf : ('proof1, 'ctyp1, 'expr1, 'item1) summary_item), _) =
    match interf with
       SummaryItem _ ->
          ()
@@ -1619,8 +1668,8 @@ and check_implemented implem (interf, _) =
          check_resource info implem
     | Infix name ->
          check_infix name implem
-    | Id _ ->
-         ()
+    | Id id ->
+         check_id id implem
     | MagicBlock _ ->
          ()
 
@@ -1633,6 +1682,9 @@ and check_implementation { info_list = implem } { info_list = interf } =
 
 (*
  * $Log$
+ * Revision 1.7  1998/02/23 14:46:18  jyh
+ * First implementation of binary file compilation.
+ *
  * Revision 1.6  1998/02/21 20:57:51  jyh
  * Two phase parse/extract.
  *

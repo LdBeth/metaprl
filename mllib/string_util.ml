@@ -34,6 +34,54 @@ let for_all f s =
       check 0
 
 (*
+ * Check if a char is in a string.
+ *)
+let mem c s =
+   let len = String.length s in
+   let rec loop i =
+      if i = len then
+         false
+      else
+         let c' = s.[i] in
+            if c' = c then
+               true
+            else
+               loop (i + 1)
+   in
+      loop 0
+
+(*
+ * Index of first char in a set.
+ *)
+let index_set s set =
+   let len = String.length s in
+   let rec loop i =
+      if i = len then
+         raise Not_found
+      else
+         let c = s.[i] in
+            if mem c set then
+               i
+            else
+               loop (i + 1)
+   in
+      loop 0
+
+let rindex_set s set =
+   let len = String.length s in
+   let rec loop i =
+      if i < 0 then
+         raise Not_found
+      else
+         let c = s.[i] in
+            if mem c set then
+               i
+            else
+               loop (i - 1)
+   in
+      loop (String.length s - 1)
+
+(*
  * Split a string at a particular char.
  *)
 let split c s =
@@ -47,6 +95,23 @@ let split c s =
          else
             [String.sub s i (j - i)]
       else if s.[j] = c then
+         (String.sub s i (j - i)) :: (loop (j + 1) (j + 1))
+      else
+         loop i (j + 1)
+   in
+      loop 0 0
+
+let split_set c s =
+   let len = String.length s in
+   let rec loop i j =
+      if j = len then
+         if i = 0 then
+            [s]
+         else if i = j then
+            []
+         else
+            [String.sub s i (j - i)]
+      else if mem s.[i] c then
          (String.sub s i (j - i)) :: (loop (j + 1) (j + 1))
       else
          loop i (j + 1)
@@ -68,6 +133,9 @@ let concat s l =
 
 (*
  * $Log$
+ * Revision 1.2  1998/02/23 14:46:38  jyh
+ * First implementation of binary file compilation.
+ *
  * Revision 1.1  1997/08/06 16:18:02  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

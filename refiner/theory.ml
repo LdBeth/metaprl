@@ -12,8 +12,7 @@ open Dform_print
 type theory =
    { thy_name : string;
      thy_refiner : Refiner.refiner;
-     thy_dformer : dform_mode_base;
-     thy_id : int
+     thy_dformer : dform_mode_base
    }
 
 (*
@@ -34,6 +33,9 @@ let get_theories () = !base
 
 (*
  * $Log$
+ * Revision 1.2  1998/02/23 14:46:42  jyh
+ * First implementation of binary file compilation.
+ *
  * Revision 1.1  1997/04/28 15:51:50  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

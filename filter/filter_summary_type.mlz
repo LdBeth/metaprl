@@ -146,7 +146,8 @@ sig
    
    (* Loading *)
    val create_cache : t -> module_name -> select -> select -> info
-   (* val load : t -> module_name -> select -> select -> 'a hook -> 'a -> info * 'a *)
+   val load : t -> module_name -> select -> select -> 'a hook -> 'a -> info * 'a
+   val check : info -> select -> unit
    val save : info -> unit
 
    (* Access *)
@@ -189,6 +190,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.5  1998/02/23 14:46:24  jyh
+ * First implementation of binary file compilation.
+ *
  * Revision 1.4  1998/02/21 20:57:56  jyh
  * Two phase parse/extract.
  *

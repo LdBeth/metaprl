@@ -19,14 +19,14 @@ val debug_refiner : bool
 val debug_simple_print : bool
 
 (*
- * Debug FilterCache.
- *)
-val debug_filter_cache : bool
-
-(*
  * Debug Files
  *)
 val debug_file_base : bool
+
+(*
+ * Print a list of strings.
+ *)
+val print_strings : string -> out_channel -> string list -> unit
 
 (*
  * Flush output.
@@ -35,6 +35,9 @@ val eflush : out_channel -> unit
 
 (*
  * $Log$
+ * Revision 1.2  1998/02/23 14:46:32  jyh
+ * First implementation of binary file compilation.
+ *
  * Revision 1.1  1997/08/06 16:17:52  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

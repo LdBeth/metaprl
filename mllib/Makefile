@@ -13,6 +13,7 @@ LMFILES :=\
 	list_util\
 	ref_util\
 	file_util\
+	filename_util\
 	env_arg\
 	ctype\
 	file_base_type\

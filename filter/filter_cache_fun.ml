@@ -377,7 +377,7 @@ struct
    (*
     * Inline a module into the current one.
     *)
-   let rec inline_components' arg path self items =
+   let rec inline_sig_components arg path self items =
       let cache, _, _ = arg in
 
       (* Get the opname for this path *)
@@ -387,12 +387,12 @@ struct
       let inline_component (item, _) =
          match item with
             Module (n, _) ->
-            (* The contained summaries become top level *)
+               (* The contained summaries become top level *)
                let info' = Base.sub_info cache.base self n in
                   cache.summaries <- info' :: cache.summaries
 
           | Opname { opname_name = str; opname_term = t } ->
-            (* Hash this name to the full opname *)
+               (* Hash this name to the full opname *)
                let opname = Opname.mk_opname str opprefix in
                   Hashtbl.add cache.optable str opname
 
@@ -404,9 +404,9 @@ struct
             cache.precs <- name :: cache.precs
 *)
 
-          | Parent { parent_name = path' } ->
-            (* Recursive inline of all ancestors *)
-               inline_module' arg path';
+          | Parent { parent_name = path } ->
+               (* Recursive inline of all ancestors *)
+               inline_sig_module arg path;
                ()
 
           | _ ->
@@ -414,7 +414,44 @@ struct
       in
          List_util.rev_iter inline_component items
 
-   and inline_module' arg path =
+   and inline_str_components arg path self (items : (str_proof, str_ctyp, str_expr, str_item) summary_item_loc list) =
+      let cache, _, _ = arg in
+
+      (* Get the opname for this path *)
+      let opprefix = make_opname path in
+
+      (* Get all the sub-summaries *)
+      let inline_component (item, _) =
+         match item with
+            Module (n, _) ->
+               (* The contained summaries become top level *)
+               let info' = Base.sub_info cache.base self n in
+                  cache.summaries <- info' :: cache.summaries
+
+          | Opname { opname_name = str; opname_term = t } ->
+               (* Hash this name to the full opname *)
+               let opname = Opname.mk_opname str opprefix in
+                  Hashtbl.add cache.optable str opname
+
+(*
+ * NOTE: check for missing prec in the implementation,
+ * if the interface defines it.
+       | Prec name ->
+            (* This becomes a local prec *)
+            cache.precs <- name :: cache.precs
+*)
+
+          | Parent { parent_name = path } ->
+               (* Recursive inline of all ancestors *)
+               inline_sig_module arg path;
+               ()
+
+          | _ ->
+               ()
+      in
+         List_util.rev_iter inline_component items
+
+   and inline_sig_module arg path =
       let cache, inline_hook, vals = arg in
          if debug_filter_cache then
             eprintf "FilterCache.inline_module': %s%t" (string_of_path path) eflush;
@@ -435,7 +472,7 @@ struct
                   cache.summaries <- info :: summaries;
 
                   (* Inline the subparts *)
-                  inline_components' arg path info (info_items info');
+                  inline_sig_components arg path info (info_items info');
 
                   (* Call the hook *)
                   vals := inline_hook cache (path, info') !vals;
@@ -449,7 +486,7 @@ struct
 
    let inline_module cache path inline_hook arg =
       let vals = ref arg in
-      let info = inline_module' (cache, inline_hook, vals) path in
+      let info = inline_sig_module (cache, inline_hook, vals) path in
          SigMarshal.unmarshal (Base.info cache.base info), !vals
    
    (*
@@ -471,20 +508,40 @@ struct
    (*
     * When a cache is loaded, we follow the steps to inline
     * the file into a new cache.
-    *
-    * The hard thing about this function is that the types 
     *)
-(*
    let load base (name : module_name) (my_select : select) (child_select : select) (hook : 'a hook) (arg : 'a) =
       let vals = ref arg in
       let path = [name] in
-      let cache = create_cache base name my_select child_select in
       let info = Base.find base path my_select in
-      let info' = Base.info base info in
-         cache.summaries <- [info];
-         inline_components' (cache, hook, vals) path info (info_items (StrMarshal.unmarshal info'));
-         cache, hook cache (path, info') !vals
-*)
+      let info' = StrMarshal.unmarshal (Base.info base info) in
+      let cache =
+         { opprefix = Opname.mk_opname (String.capitalize name) nil_opname;
+           optable = create_optable ();
+           precs = [];
+           summaries = [info];
+           resources = [];
+           info = info';
+           self = info;
+           base = base
+         }
+      in
+         if debug_filter_cache then
+            begin
+               eprintf "Filter_cache.load: loaded %s%t" name eflush;
+               eprint_info info'
+            end;
+         inline_str_components (cache, hook, vals) path info (info_items info');
+         cache, !vals (* hook cache (path, info') !vals *)
+   
+   (*
+    * Check the implementation with its interface.
+    *)
+   let check cache alt_select =
+      let { base = base; self = self } = cache in
+      let sig_info = SigMarshal.unmarshal (Base.info base (Base.find_match base self alt_select)) in
+      let id = find_id sig_info in
+         add_command cache (Id id, (0, 0));
+         check_implementation cache.info sig_info
    
    (*
     * Save the cache.
@@ -492,7 +549,10 @@ struct
    let save cache =
       let { base = base; self = self; info = info } = cache in
          if debug_filter_cache then
-            eprintf "Filter_cache.save: begin%t" eflush;
+            begin
+               eprintf "Filter_cache.save: begin%t" eflush;
+               eprint_info info
+            end;
          Base.set_info base self (StrMarshal.marshal info);
          Base.save base self;
          if debug_filter_cache then
@@ -501,6 +561,9 @@ end
    
 (*
  * $Log$
+ * Revision 1.3  1998/02/23 14:46:03  jyh
+ * First implementation of binary file compilation.
+ *
  * Revision 1.2  1998/02/21 20:57:42  jyh
  * Two phase parse/extract.
  *

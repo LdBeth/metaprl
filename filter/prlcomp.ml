@@ -32,18 +32,11 @@ let lib =
          "/usr/local/lib/nuprl-light"
 
 (*
- * Preprocess?
+ * Flags.
  *)
 let preprocess_flag = ref false
-
+let binary_flag = ref false
 let verbose_mode = ref 0
-
-(*
- * Files.
- *)
-let camlp4 = [Filename.concat lib "camlp4o.run"]
-
-let ocamlc = ["ocamlc"; "-I"; lib; "-pp"; Filename.concat lib "camlp4n.run"]
 
 (*
  * Collect argument list.
@@ -52,6 +45,24 @@ let argv = ref []
     
 let add_arg arg =
    argv := !argv @ [arg]
+
+let add_anon_arg arg =
+   if Filename.check_suffix arg ".cmiz" or
+      Filename.check_suffix arg ".cmit"
+   then
+      begin
+         binary_flag := true;
+         argv := !argv @ ["-intf"; arg]
+      end
+   else if Filename.check_suffix arg ".cmoz" or
+           Filename.check_suffix arg ".cmot"
+   then
+      begin
+         binary_flag := true;
+         argv := !argv @ ["-impl"; arg]
+      end
+   else
+      add_arg arg
 
 let add_argv arg () =
    add_arg arg
@@ -82,6 +93,42 @@ let set_includes () =
          eprintf "%s%t" var eflush;
       Punix.putenv var;
       ()
+
+(*
+ * Commands are constructed from argument list.
+ *)
+let mk_camlp4 argv includes =
+   (Filename.concat lib "camlp4o.run") :: argv
+
+let mk_ocamlc argv includes =
+   ["ocamlc"; "-I"; lib; "-pp"; Filename.concat lib "camlp4n.run"] @ argv
+
+let mk_prlcn argv includes =
+   let rec mk_includes = function
+      h::t ->
+         " -I " ^ h ^ (mk_includes t)
+    | [] ->
+         ""
+   in
+   let preproc = (Filename.concat lib "prlcn.run") ^ (mk_includes includes) in
+      ["ocamlc"; "-I"; lib; "-pp"; preproc] @ argv
+
+let mk_prlco argv includes =
+   Filename.concat lib "prlco.run" :: argv
+
+let mk_command () =
+   let f =
+      if !preprocess_flag then
+         if !binary_flag then
+            mk_prlco
+         else
+            mk_camlp4
+      else if !binary_flag then
+         mk_prlcn
+      else
+         mk_ocamlc
+   in
+      f !argv !includes
 
 (*
  * Arguments.
@@ -123,14 +170,9 @@ let print_command_line argv =
  * Main function parses arguments, then issues command.
  *)
 let main () =
-   let _ = Env_arg.parse spec add_arg "Nuprl-Light compiler" in
+   let _ = Env_arg.parse spec add_anon_arg "Nuprl-Light compiler" in
    let _ = set_includes () in
-   let argv =
-      if !preprocess_flag then
-         camlp4 @ !argv
-      else
-         ocamlc @ !argv
-   in
+   let argv = mk_command () in
    let argv' = Array.of_list argv in
    let _ =
       if !verbose_mode <> 0 then
@@ -154,6 +196,9 @@ let _ = Printexc.catch (Unix.handle_unix_error main) ()
 
 (*
  * $Log$
+ * Revision 1.8  1998/02/23 14:46:26  jyh
+ * First implementation of binary file compilation.
+ *
  * Revision 1.7  1998/02/18 18:46:32  jyh
  * Initial ocaml semantics.
  *

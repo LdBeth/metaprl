@@ -2,7 +2,6 @@
  * This module defines an interface for saving information about
  * modules.  We record information about each module interface,
  * to be used in the definition of the module and in submodules.
- *
  *)
 
 open Printf
@@ -13,6 +12,7 @@ open Term
 
 open File_base_type
 
+open Filter_debug
 open Filter_type
 open Filter_summary
 open Filter_summary_type
@@ -62,6 +62,8 @@ struct
     * Find a specific module given a full pathname.
     *)
    let find base name select =
+      if debug_summary then
+         eprintf "Filter_summary_io.find: %a%t" (print_strings "/") name eflush;
       match name with
          [] ->
             raise (EmptyModulePath "Filter_summary_io.find")
@@ -79,7 +81,7 @@ struct
    let find_match base info select =
       let { info_root = root; info_path = path } = info in
       let root' = FileBase.find_match base root select in
-      let info = Address.find_sub_module (FileBase.info base root') info.info_path in
+      let info = Address.find_sub_module (FileBase.info base root') (List.tl info.info_path) in
          { info_root = root';
            info_path = path;
            info_info = info
@@ -149,6 +151,9 @@ end
    
 (*
  * $Log$
+ * Revision 1.4  1998/02/23 14:46:22  jyh
+ * First implementation of binary file compilation.
+ *
  * Revision 1.3  1998/02/19 17:14:01  jyh
  * Splitting filter_parse.
  *
