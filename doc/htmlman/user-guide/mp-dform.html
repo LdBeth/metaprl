@@ -275,7 +275,9 @@ specifies that the display form should be added to all modes except for the give
 but they can not be mixed. By default, the display form is added to all modes, but this is almost always
 undesirable since few display forms are intended for <TT>src</TT> mode.</P>
 
-<P>When MetaPRL is started, the <TT>prl</TT> mode is active. <TT>set_dfmode</TT> command may be used to switch between modes.</P>
+<P>When MetaPRL is started, the <TT>prl</TT> mode is active. <TT>set_dfmode</TT> command may be used to switch between modes.
+It affects the output of functions that return terms immediately.
+For theory/proof listing you have to <TT>cd</TT> to "/" in order this change to take effect.</P>
 
 <H3>The <TT>slot</TT> expression</H3>
 
