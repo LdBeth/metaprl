@@ -60,6 +60,7 @@ declare "infix"[name:s]
 declare "suffix"[name:s]
 declare "magic_block"[name:s]{'items}
 declare "summary_item"{'term}
+declare "resource_defs"[start:n, finish:n, name:s]{'res}
 declare "resource_defs"[name:s]{'res}
 declare "comment"{'t}
 
