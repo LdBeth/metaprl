@@ -177,7 +177,7 @@ $(NL).top: $(TCMOBJS) $(TCMOFILES) $(TCMADEPS)
 
 $(NL).opt: $(CMXOBJS) $(TCMXFILES)
 	rm -f $@
-	$(OCAMLOPT) -o $@ -linkall $(THREADS) $(CMXOBJS) $(TCMXFILES) $(CCLIBS) $(OPTTHREADS)
+	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ -linkall $(CMXOBJS) $(TCMXFILES) $(CCLIBS) $(OPTTHREADS)
 
 clean::
 	$(RM) -f *.p4* *.pp*
