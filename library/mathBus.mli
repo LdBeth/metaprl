@@ -68,10 +68,11 @@ val print_node: mbterm -> unit
 val numeric_label: string -> lint32
 val symbolic_label: lint32 ->  string
 
-val mbs_String: lint32
-val mbs_Token: lint32
-val mbs_LongInteger: lint32
-val mBS_Attributes: lint32
+val assign_mbs_vals: unit -> unit
+val mbs_String: lint32 ref
+val mbs_Token: lint32 ref
+val mbs_LongInteger: lint32 ref
+val mbs_Attributes: lint32 ref
 
 (*debugging purposes*)
 

@@ -36,7 +36,7 @@ val index_table: (int, string) Hashtbl.t
 
 val registry_types: string list ref
 
-val registry_file: string
+val get_registry_file: unit -> string
 val token_file: string
 
 val define_registry_type: string -> bool -> unit
@@ -51,7 +51,7 @@ val read_string: in_channel -> string
  (*val read_number: in_channel -> num*)
 val read_int32 : in_channel -> lint32
 
-val read_registry: unit
+val read_registry: unit -> unit
 val read_tokens: unit
 
  (*val default_registry_files: unit ->

@@ -57,10 +57,18 @@ let next_local_label = ref maximum_local_numeric_label
 let symbolic_label num = registry_lookup_identifier "StringId" num ;;
 let numeric_label string = registry_lookup_value string "StringId" ;;
 
-let mBS_Attributes = numeric_label "Attributes"
-let mbs_String = numeric_label "String"
-let mbs_LongInteger = numeric_label "LongInteger"
-let mbs_Token = numeric_label "Token"
+let mbs_Attributes = ref (create 0X0000);;
+let mbs_String = ref (create 0X0000);;
+let mbs_LongInteger = ref (create 0X0000);;
+let mbs_Token = ref (create 0X0000);;
+
+let assign_mbs_vals () =
+  mbs_Attributes := numeric_label "Attributes";
+  mbs_String := numeric_label "String";
+  mbs_LongInteger := numeric_label "LongInteger";
+  mbs_Token := numeric_label "Token"
+
+;;
 
 (* ;; Subterm_Types returns the subtypes of a node ie. which sub_terms are
    ;; 32_bit integers and which are nodes themselves. The meansings are:
@@ -111,7 +119,7 @@ let mbnode_labelq node = match node.(0) with
 
 let mbnode_label node =
   let i = mbnode_labelq node in
-  if bequal i mBS_Attributes then
+  if bequal i !mbs_Attributes then
     (match node.(1) with
       Mbint b -> failwith "node following attributes is an int"
     | Mnode n -> mbnode_labelq n)
@@ -121,7 +129,7 @@ let mbnode_nSubtermsq node = Array.length node - 1
 let mbnode_nSubterms node =
   mbnode_nSubtermsq
     (let i = mbnode_labelq node in
-    if bequal i mBS_Attributes then
+    if bequal i !mbs_Attributes then
       (match node.(1) with
 	Mbint b -> failwith "node following attributes is an int"
       | Mnode n -> n)
@@ -131,7 +139,7 @@ let mbnode_subtermq node i =Array.get node i ;;
 let mbnode_subterm node index =
   mbnode_subtermq
     (let i = mbnode_labelq node in
-    if bequal i mBS_Attributes then
+    if bequal i !mbs_Attributes then
       (match node.(1) with
 	Mbint b -> failwith "node following attributes is an int"
       | Mnode n -> n)
@@ -140,7 +148,7 @@ let mbnode_subterm node index =
 
 let mbnode_set_subterm node id v =
   Array.set (let i = mbnode_labelq node in
-  if bequal i mBS_Attributes then
+  if bequal i !mbs_Attributes then
     (match node.(1) with
       Mbint b -> failwith "node following attributes is an int"
     | Mnode n -> n)
@@ -217,11 +225,11 @@ let maximum_integern = num_of_int 1073741823 ;;
 let mb_number num =
   let a = (abs_num num) and b = (num_of_int 1000000000) in
   if a </ b then
-    let node = make_mbnode mbs_LongInteger 1 in
+    let node = make_mbnode !mbs_LongInteger 1 in
     Array.set node 1 (Mbint (mk_bint (int_of_num num)));
     node
   else
-    let node = make_mbnode mbs_LongInteger 2 in
+    let node = make_mbnode !mbs_LongInteger 2 in
     let base = (a//1000000000) in
     Array.set node 1 (if num >=/ (num_of_int 0) then
       (Mbint (mk_bint base))
@@ -241,7 +249,7 @@ let mb_number num =
       (print_string "mb_number "; print_string (string_of_num a); print_string " quo "; print_string (string_of_num a); print_string " "; print_string (string_of_num b); print_string " = "; print_string (string_of_num (quo_num a b)); print_string " mod "; print_string (string_of_num (mod_num a b)); failwith "foo")
   in
   let length = List.length ints in
-  let node = make_mbnode mbs_LongInteger length in
+  let node = make_mbnode !mbs_LongInteger length in
   let rec assign i l =
     if l = [] then ()
     else
@@ -283,11 +291,11 @@ let mb_numberq num label =
 let mb_integer int =
   let a = abs int in
   if a < 1000000000 then
-    let node = make_mbnode mbs_LongInteger 1 in
+    let node = make_mbnode !mbs_LongInteger 1 in
     Array.set node 1 (Mbint (mk_bint int));
     node
   else
-    let node = make_mbnode mbs_LongInteger 2 in
+    let node = make_mbnode !mbs_LongInteger 2 in
     let base = (a/1000000000) in
     Array.set node 1 (if int >= 0 then
       (Mbint (mk_bint base))
@@ -297,7 +305,7 @@ let mb_integer int =
 
 (* call with bigint*)
 let mb_integerb int =
-  let node = make_mbnode mbs_LongInteger 1 in
+  let node = make_mbnode !mbs_LongInteger 1 in
     Array.set node 1 (Mbint int);
     node
 
@@ -404,8 +412,8 @@ let mb_stringq s num_id =
   node
 
 let mb_string s =
-  if !use_unicode then mb_stringq_with_unicode s mbs_String
-  else mb_stringq s mbs_String
+  if !use_unicode then mb_stringq_with_unicode s !mbs_String
+  else mb_stringq s !mbs_String
 
 let string_value_with_unicode node =
   match (mbnode_subtermq node 1) with
@@ -448,13 +456,13 @@ let string_value node =
 (*prints to standard output*)
 let rec print_node node =
   let b = mbnode_label node in
-  if bequal b mbs_LongInteger then
+  if bequal b !mbs_LongInteger then
     begin
       print_char '{';
       print_string (string_of_num (number_value node));
       print_char '}'
     end
-  else if (bequal b mbs_String) or (bequal b mbs_Token) then
+  else if (bequal b !mbs_String) or (bequal b !mbs_Token) then
     print_string (string_value node)
   else
     begin
@@ -828,7 +836,7 @@ let rec read_node_internal stream =
   in
   loop_over_subterms node loop;
 
-      (*if op = mBS_RegistryStoreLocal then
+      (*if op = !mbs_RegistryStoreLocal then
       	cond eql mbnode_subtermq node 2 rsl_stringId
 	let new_op declare_local_stringId
 	string_value mbnode_subtermq node 3

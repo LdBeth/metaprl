@@ -59,7 +59,7 @@ let registry_types = ref []
 (*
  * The registry file should be stored in the lib directory.
  *)
-let registry_file =
+let get_registry_file () =
    try Filename.concat (Sys.getenv "MPLIB") "registry.txt" with
       Not_found ->
          raise (Failure "environment variable MPLIB is not defined")
@@ -110,9 +110,9 @@ let clear_registry globalp localp =
  * Get a value from the registry.
  *)
 let registry_lookup_value id regtype =
-  try 
+  try
     (match Hashtbl.find local_registry regtype with
-      Uni h -> 
+      Uni h ->
 	(try Hashtbl.find h id with
 	  Not_found ->
             (match (Hashtbl.find global_registry regtype) with
@@ -123,8 +123,8 @@ let registry_lookup_value id regtype =
           Not_found ->
             (match (Hashtbl.find global_registry regtype) with
               Uni h -> Hashtbl.find h id
-            | Bi (h1, h2) -> Hashtbl.find h1 id))) with 
-    Not_found -> 
+            | Bi (h1, h2) -> Hashtbl.find h1 id))) with
+    Not_found ->
       raise (Failure ("undefined registry value for id: " ^ id))
 
 (*
@@ -143,7 +143,7 @@ let registry_lookup_identifier regtype v =
               Uni h -> failwith "Not a bidirectional registry property"
             | Bi (h1, h2) -> Hashtbl.find h2 v)))
   with
-    Not_found -> 
+    Not_found ->
       raise (Failure ("undefined identifier in registry table: " ^ regtype))
 
 (*
@@ -211,8 +211,8 @@ let read_int32 stream =
 (*
  * Load the entire registry file.
  *)
-let read_registry =
-   let stream = open_in registry_file in
+let read_registry () =
+   let stream = open_in (get_registry_file ()) in
    let p = read_string stream in
    let rec loop ident =
       if ident = "" then

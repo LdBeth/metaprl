@@ -46,20 +46,38 @@ let use_table = ref true
 
 exception InvalidMathBusLabel of (int32 * int32)
 
-let mbs_Term = numeric_label "Term"
-let mbs_Variable = numeric_label "Variable"
-let mbs_Token = numeric_label "Token"
-let mbs_Bindings = numeric_label "Bindings"
-let mbs_Level = numeric_label "Level"
-let mbs_ObjectId = numeric_label "ObjectId"
-let mbs_ParamList = numeric_label "ParmList"
-let mbs_TermIndex = numeric_label "TermIndex"
-let mbs_TokenIndex = numeric_label "TokenIndex"
-let mbs_StringIndex = numeric_label "StringIndex"
-let mbs_MString = numeric_label "MString"
-let mbs_MLongInteger = numeric_label "MLongInteger"
-let mbs_MLevel = numeric_label "MLevel"
-let mbs_MToken = numeric_label "MToken"
+let mbs_Term = ref (create  0X0000);;
+let mbs_Variable = ref (create  0X0000);;
+let mbs_Token = ref (create  0X0000);;
+let mbs_Bindings = ref (create  0X0000);;
+let mbs_Level = ref (create  0X0000);;
+let mbs_ObjectId = ref (create  0X0000);;
+let mbs_ParamList = ref (create  0X0000);;
+let mbs_TermIndex = ref (create  0X0000);;
+let mbs_TokenIndex = ref (create  0X0000);;
+let mbs_StringIndex = ref (create  0X0000);;
+let mbs_MString = ref (create  0X0000);;
+let mbs_MLongInteger = ref (create  0X0000);;
+let mbs_MLevel = ref (create  0X0000);;
+let mbs_MToken = ref (create  0X0000);;
+
+let assign_mbs_terms () =
+  mbs_Term := numeric_label "Term";
+  mbs_Variable := numeric_label "Variable";
+  mbs_Token := numeric_label "Token";
+  mbs_Bindings := numeric_label "Bindings";
+  mbs_Level := numeric_label "Level";
+  mbs_ObjectId := numeric_label "ObjectId";
+  mbs_ParamList := numeric_label "ParmList";
+  mbs_TermIndex := numeric_label "TermIndex";
+  mbs_TokenIndex := numeric_label "TokenIndex";
+  mbs_StringIndex := numeric_label "StringIndex";
+  mbs_MString := numeric_label "MString";
+  mbs_MLongInteger := numeric_label "MLongInteger";
+  mbs_MLevel := numeric_label "MLevel";
+  mbs_MToken := numeric_label "MToken";
+  ()
+;;
 
 (* nuprl-light -> mathbus*)
 
@@ -73,28 +91,28 @@ let param_of_opname opname =
 let rec mbparameter_of_param param =
   match (dest_param param) with
     Number p -> mb_number p
-  | String p -> if !use_table then (let v = (try Hashtbl.find token_table p with Not_found -> 0) in if v=0 then (mb_string p) else mb_integerq v mbs_StringIndex) else mb_string p
-  | Token p -> if !use_table then (let v = (try Hashtbl.find token_table p with Not_found -> 0) in if v=0 then (mb_stringq p mbs_Token) else mb_integerq v mbs_TokenIndex) else mb_stringq p mbs_Token
-  | Var p -> mb_stringq (string_of_symbol p) mbs_Variable
-  | ObId p -> mbnode mbs_ObjectId (List.map mbparameter_of_param (dest_object_id p))
-  | MNumber p -> mb_stringq (string_of_symbol p) mbs_MLongInteger
-  | MString p -> mb_stringq (string_of_symbol p) mbs_MString
-  | MToken p -> mb_stringq (string_of_symbol p) mbs_MToken
+  | String p -> if !use_table then (let v = (try Hashtbl.find token_table p with Not_found -> 0) in if v=0 then (mb_string p) else mb_integerq v !mbs_StringIndex) else mb_string p
+  | Token p -> if !use_table then (let v = (try Hashtbl.find token_table p with Not_found -> 0) in if v=0 then (mb_stringq p !mbs_Token) else mb_integerq v !mbs_TokenIndex) else mb_stringq p !mbs_Token
+  | Var p -> mb_stringq (string_of_symbol p) !mbs_Variable
+  | ObId p -> mbnode !mbs_ObjectId (List.map mbparameter_of_param (dest_object_id p))
+  | MNumber p -> mb_stringq (string_of_symbol p) !mbs_MLongInteger
+  | MString p -> mb_stringq (string_of_symbol p) !mbs_MString
+  | MToken p -> mb_stringq (string_of_symbol p) !mbs_MToken
   | MLevel p ->
       let aux = function
 	  {le_const = i; le_vars = vars } ->
 	    (let rec loop l nodes=
 	      (match l with
-		[] -> mbnode mbs_Level ((mb_integer i)::nodes)
+		[] -> mbnode !mbs_Level ((mb_integer i)::nodes)
 	      | hd::tl -> let aux2 = function
 		    { le_var = v; le_offset = i2 } ->
 		      loop tl ((mb_string (string_of_symbol v))::((mb_integer i2)::nodes))
 	      in aux2 (dest_level_var hd))
 	    in loop vars [])
       in aux (dest_level p)
-  | ParamList p -> mbnode mbs_ParamList (List.map mbparameter_of_param p)
+  | ParamList p -> mbnode !mbs_ParamList (List.map mbparameter_of_param p)
 
-let mbbinding_of_binding binding = mb_stringq binding mbs_Variable (* term in the future?*)
+let mbbinding_of_binding binding = mb_stringq binding !mbs_Variable (* term in the future?*)
 
 let append l p =
   let rec aux l1 l2 =
@@ -108,9 +126,9 @@ let mbbindings_of_bvars bvars =
     match l1 with
       "nuprl5_implementation1"::(h1::t1) -> loop t1 ((mbbinding_of_binding h1)::l2)
     | "nuprl5_implementation2"::(h1::(h2::t1)) ->
-	loop t1 ((mbnode mbs_ParamList (List.map mbbinding_of_binding [h1; h2]))::l2)
+	loop t1 ((mbnode !mbs_ParamList (List.map mbbinding_of_binding [h1; h2]))::l2)
     |  "nuprl5_implementation3"::(h1::(h2::(h3::t1))) ->
-	loop t1 ((mbnode mbs_ParamList (List.map mbbinding_of_binding [h1; h2; h3]))::l2)
+	loop t1 ((mbnode !mbs_ParamList (List.map mbbinding_of_binding [h1; h2; h3]))::l2)
     |  h1::t1 -> loop t1 ((mbbinding_of_binding h1)::l2)
     | [] -> List.rev l2
   in loop bvars []
@@ -126,28 +144,28 @@ let rec mbterm_of_term term =
       { bvars = bvars; bterm = t } ->
        	match bvars with
 	  []-> [(mbterm_of_term t)]
-       	| h::tl -> [(mbnode mbs_Bindings (mbbindings_of_bvars (List.map string_of_symbol bvars)));
+       	| h::tl -> [(mbnode !mbs_Bindings (mbbindings_of_bvars (List.map string_of_symbol bvars)));
 			    (* (List.map mbbinding_of_binding bvars)*)
 		     (mbterm_of_term t)] in
   let rec loop l blist =
     (match blist with
       []-> l
     | h::t -> loop (append (mbsubterms_of_bterm (dest_bterm h)) l) t) in
-  mbnode mbs_Term (append mbparams (loop [] bterms)) (*LAL*)
+  mbnode !mbs_Term (append mbparams (loop [] bterms)) (*LAL*)
 
 (* mathbus -> nuprl-light*)
 
 let rec param_of_mbparameter mbparameter =
   let b = (mbnode_label mbparameter) in
-  if bequal b mbs_String then make_param (String (string_value mbparameter))
-  else if bequal b mbs_Variable then make_param (Var (Lm_symbol.add (string_value mbparameter)))
-  else if bequal b mbs_Token then make_param (Token (string_value mbparameter))
-  else if bequal b mbs_TokenIndex then make_param (Token (Hashtbl.find index_table (integer_value mbparameter)))
-  else if bequal b mbs_StringIndex then make_param (String (Hashtbl.find index_table (integer_value mbparameter)))
-  else if bequal b mbs_TermIndex then make_param (String (Hashtbl.find index_table (integer_value mbparameter)))
-  else if bequal b mbs_LongInteger then
+  if bequal b !mbs_String then make_param (String (string_value mbparameter))
+  else if bequal b !mbs_Variable then make_param (Var (Lm_symbol.add (string_value mbparameter)))
+  else if bequal b !mbs_Token then make_param (Token (string_value mbparameter))
+  else if bequal b !mbs_TokenIndex then make_param (Token (Hashtbl.find index_table (integer_value mbparameter)))
+  else if bequal b !mbs_StringIndex then make_param (String (Hashtbl.find index_table (integer_value mbparameter)))
+  else if bequal b !mbs_TermIndex then make_param (String (Hashtbl.find index_table (integer_value mbparameter)))
+  else if bequal b !mbs_LongInteger then
     let n = number_value mbparameter in make_param (Number n)
-  else if bequal b mbs_ParamList then
+  else if bequal b !mbs_ParamList then
     let rec loop i l =
       if i = 0 then l
       else match (mbnode_subtermq mbparameter i) with
@@ -155,7 +173,7 @@ let rec param_of_mbparameter mbparameter =
       |	Mbint b -> failwith "subterm should be a node"
     in make_param (ParamList (loop (mbnode_nSubtermsq mbparameter) []))
 
-  else if bequal b mbs_ObjectId then
+  else if bequal b !mbs_ObjectId then
     let rec loop i l =
       if i = 0 then l
       else match (mbnode_subtermq mbparameter i) with
@@ -163,7 +181,7 @@ let rec param_of_mbparameter mbparameter =
       |	Mbint b -> failwith "subterm should be a node"
     in make_param (ObId (make_object_id (loop (mbnode_nSubtermsq mbparameter) [])))
 
-  else if bequal b mbs_Level or bequal b mbs_MLevel then
+  else if bequal b !mbs_Level or bequal b !mbs_MLevel then
     let nsubterms = mbnode_nSubtermsq mbparameter in
     match mbnode_subtermq mbparameter 1 with
       Mnode n1 -> let constant = integer_value n1 and
@@ -181,9 +199,9 @@ let rec param_of_mbparameter mbparameter =
       	in make_param (MLevel (mk_level constant le_vars))
       | Mbint b -> failwith "subterm should be a node"
 
-  else if bequal b mbs_MString then make_param (MString (Lm_symbol.add (string_value mbparameter)))
-  else if bequal b mbs_MToken then make_param (MToken (Lm_symbol.add (string_value mbparameter)))
-  else if bequal b mbs_MLongInteger then make_param (MNumber (Lm_symbol.add (string_value mbparameter)))
+  else if bequal b !mbs_MString then make_param (MString (Lm_symbol.add (string_value mbparameter)))
+  else if bequal b !mbs_MToken then make_param (MToken (Lm_symbol.add (string_value mbparameter)))
+  else if bequal b !mbs_MLongInteger then make_param (MNumber (Lm_symbol.add (string_value mbparameter)))
   else let ((x, y) as fg) = dest_lint32 b in failwith "param_of_mbparameter1"(* ["mbparameter_of_parameter1"; "not"] [] [(inatural_term x); (inatural_term y)]*)
 
 
@@ -210,12 +228,12 @@ let op_of_params params =
 
 let bvars_of_mbbindings mbterm =
   let b = (mbnode_label mbterm)
-  in if not (bequal b mbs_Bindings) then failwith "bindings label" else
+  in if not (bequal b !mbs_Bindings) then failwith "bindings label" else
   let rec loop index bvars =
     if index = 0 then bvars
     else match mbterm.(index) with
       Mnode n -> let b2 = (mbnode_label n) in
-      if (bequal b2 mbs_Variable) then loop (index - 1) ((string_value n)::bvars)
+      if (bequal b2 !mbs_Variable) then loop (index - 1) ((string_value n)::bvars)
       else (*parmlist node*)
  	let s1 = (match n.(1) with
 	  Mnode n1 -> (string_value n1)
@@ -241,27 +259,27 @@ let bterms_of_sb subterms bindings =
 
 let rec term_of_mbterm mbterm =
   let b = mbnode_label mbterm in
-  if not (bequal b mbs_Term) then failwith "term of mbterm label"
+  if not (bequal b !mbs_Term) then failwith "term of mbterm label"
   else let nsubterms = mbnode_nSubtermsq mbterm in
   let rec loop index leaves  =
     match mbterm.(index) with
       Mnode node -> if
-	(bequal (mbnode_label node) mbs_Term) or
-	(bequal (mbnode_label node) mbs_Bindings) or
-	(bequal (mbnode_label node) mbs_TermIndex) then
+	(bequal (mbnode_label node) !mbs_Term) or
+	(bequal (mbnode_label node) !mbs_Bindings) or
+	(bequal (mbnode_label node) !mbs_TermIndex) then
 	let rec loop1 i b =
 	  (match mbterm.(i) with
 	    Mnode n ->
 	      if (i = nsubterms) then
 	      	let bterms =
-		  (if (bequal (mbnode_label n) mbs_Term) then
+		  (if (bequal (mbnode_label n) !mbs_Term) then
 		    ((mk_bterm [] (term_of_mbterm n))::b)
 		  else raise (Invalid_argument "last subterm should be a term")) in
 	      	Lib_term.mk_term (op_of_params (List.rev leaves)) bterms
 
- 	      else (if (bequal (mbnode_label n) mbs_Term) then
+ 	      else (if (bequal (mbnode_label n) !mbs_Term) then
 		loop1 (i + 1) ((mk_bterm [] (term_of_mbterm n))::b)
-	      else (if (bequal (mbnode_label n) mbs_Bindings) then
+	      else (if (bequal (mbnode_label n) !mbs_Bindings) then
 		(if (i + 1) = nsubterms then
 		  (match mbterm.(i+ 1) with
 		    Mnode n2 ->  let bterms = ((mk_bterm (bvars_of_mbbindings n)
