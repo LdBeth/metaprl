@@ -363,13 +363,13 @@ struct
       { term_op = { op_name = var_opname; op_params = [Var v] }; 
         term_terms = [] }
 
-   let dest_term t =
-      match get_core t with
+   let rec dest_term t =
+      match t.core with
          Term t -> t
        | Sequent _ ->
             raise (Invalid_argument "Term_base_ds.dest_term: dest_term called on a sequent")
        | FOVar v -> make_so_ugly v
-       | Subst _ -> fail_core "dest_term"
+       | Subst _ -> get_core t; dest_term t
 
    (*
     * New variable production.
@@ -547,17 +547,19 @@ struct
     * See if a term is a variable.
     *)
 
-   let is_var_term t =
-      match get_core t with
+   let rec is_var_term t =
+      match t.core with
          FOVar _ -> true
+       | Subst _ -> get_core t; is_var_term t
        | _ -> false
 
    (*
     * Destructor for a variable.
     *)
-   let dest_var t =
-      match get_core t with
+   let rec dest_var t =
+      match t.core with
          FOVar v -> v
+       | Subst _ -> get_core t; dest_var t
        | _ -> ref_raise(RefineError ("dest_var", TermMatchError (t, "not a var")))
 
    (*
