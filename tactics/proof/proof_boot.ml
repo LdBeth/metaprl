@@ -220,6 +220,9 @@ struct
     * PROOF PRINTING                                                       *
     ************************************************************************)
 
+   (*
+    * This function is really only used for debugging.
+    *)
    let format_proof db buf proof =
       let rec format_addr buf = function
          [i] ->
@@ -241,9 +244,14 @@ struct
          format_hspace buf;
          format_extract db buf proof.pf_node
 
+   (*
+    * BUG JYH: we should probably make the db type abstract,
+    * construct this triple in the Dform module.
+    *)
    let print_ext ext =
       let buf = Lm_rformat.new_buffer () in
-         format_extract ("prl", find_dftable Mp_resource.top_bookmark) buf ext;
+      let db = "prl", find_dftable Mp_resource.top_bookmark, null_state in
+         format_extract db buf ext;
          format_newline buf;
          prerr_rbuffer buf;
          flush stderr
@@ -589,23 +597,23 @@ struct
                leaves_ext ext
       in
          if !debug_proof then begin
-            let db = ("prl", find_dftable Mp_resource.top_bookmark) in
+            let db = "prl", find_dftable Mp_resource.top_bookmark, null_state in
             let buf = Lm_rformat.new_buffer () in
-            format_hzone buf;
-            format_string buf "Leaves of";
-            format_space buf;
-            format_szone buf;
-            format_extract db buf goal;
-            format_ezone buf;
-            format_space buf;
-            print_ext goal;
-            format_space buf;
-            format_string buf "are";
-            format_space buf;
-            List.iter (format_arg db buf) leaves;
-            format_ezone buf;
-            prerr_rbuffer buf;
-            eprintf "%t" eflush
+               format_hzone buf;
+               format_string buf "Leaves of";
+               format_space buf;
+               format_szone buf;
+               format_extract db buf goal;
+               format_ezone buf;
+               format_space buf;
+               print_ext goal;
+               format_space buf;
+               format_string buf "are";
+               format_space buf;
+               List.iter (format_arg db buf) leaves;
+               format_ezone buf;
+               prerr_rbuffer buf;
+               eprintf "%t" eflush
          end;
          remove_duplicates [] leaves
 

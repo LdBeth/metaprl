@@ -33,6 +33,8 @@ open Lm_string_set
 open Lm_rformat
 open Lm_format
 
+open Refiner.Refiner.Term
+
 (************************************************************************
  * A simple bounded buffer.
  *)
@@ -349,10 +351,11 @@ let read_stringtable_from_home name =
  * The buffer.
  *)
 type t =
-   { info_history             : string LineBuffer.t;
-     mutable info_directories : string LineTable.t;
-     info_message             : buffer LineBuffer.t;
-     mutable info_content     : buffer
+   { info_history                : string LineBuffer.t;
+     mutable info_directories    : string LineTable.t;
+     info_message                : buffer LineBuffer.t;
+     mutable info_content_buffer : buffer;
+     mutable info_content_table  : term StringTable.t
    }
 
 (*
@@ -370,10 +373,11 @@ let current = ref None
  * Empty buffer.
  *)
 let create () =
-   { info_history     = read_stringbuffer_from_home history_filename;
-     info_directories = read_stringtable_from_home directories_filename;
-     info_message     = LineBuffer.create ();
-     info_content     = new_buffer ()
+   { info_history        = read_stringbuffer_from_home history_filename;
+     info_directories    = read_stringtable_from_home directories_filename;
+     info_message        = LineBuffer.create ();
+     info_content_buffer = new_buffer ();
+     info_content_table  = StringTable.empty
    }
 
 (*
@@ -475,17 +479,24 @@ let get_directories info =
       List.rev dirs
 
 (*
+ * Get the term matched by the id.
+ *)
+let get_term info id =
+   StringTable.find info.info_content_table id
+
+(*
  * Display a term in the window.
  *)
-let set_main buf =
+let set_main buf terms =
    match !current with
       Some info ->
-         info.info_content <- buf
+         info.info_content_buffer <- buf;
+         info.info_content_table <- terms
     | None ->
          eprintf "Browser_state.set_main: no current buffer@."
 
 let format_main info width buf =
-   Lm_rformat_html.print_html_buffer width info.info_content buf
+   Lm_rformat_html.print_html_buffer width info.info_content_buffer buf
 
 (*
  * Divert output during this call.

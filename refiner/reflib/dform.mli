@@ -31,6 +31,7 @@
  *
  *)
 open Lm_printf
+open Lm_string_set
 
 open Precedence
 open Opname
@@ -49,6 +50,13 @@ open Refiner.Refiner.Rewrite
 type dform_table
 
 (*
+ * During formatting, the display form maintains a state.
+ * Currently, this is just used to collect the terms
+ * that are printed in slots during HTML formatting.
+ *)
+type dform_state
+
+(*
  * Print to term tagged buffers.
  *)
 type buffer = Lm_rformat.buffer
@@ -64,10 +72,11 @@ type parens =
  | LEParens
 
 type dform_printer_info =
-   { dform_term : term;
-     dform_items : rewrite_item list;
+   { dform_term    : term;
+     dform_items   : rewrite_item list;
      dform_printer : buffer -> parens -> term -> unit;
-     dform_buffer : buffer
+     dform_buffer  : buffer;
+     dform_state   : dform_state
    }
 
 type dform_printer =
@@ -96,21 +105,22 @@ type dform_modes =
 (*
  * This is the info needed for each display form.
  *)
-type dform_info = {
-   dform_modes : dform_modes;
-   dform_pattern : term;
-   dform_options : dform_option list;
-   dform_print : dform_printer;
-   dform_name : string;
-}
+type dform_info =
+   { dform_modes   : dform_modes;
+     dform_pattern : term;
+     dform_options : dform_option list;
+     dform_print   : dform_printer;
+     dform_name    : string
+   }
 
-type dform_base = string * dform_table
+type dform_base = string * dform_table * dform_state
 
 (*
  * Display form installation.
  *)
 val null_table : dform_table
-val null_base : dform_base
+val null_base  : dform_base
+val null_state : dform_state
 
 (*
  * The main dform table interface
@@ -119,10 +129,19 @@ val find_dftable : Mp_resource.bookmark -> dform_table
 val add_dform : dform_info -> unit
 
 (*
- * XXX: Backwards compativility with the old API.
+ * XXX: Backwards compatibility with the old API.
  *)
 type dform_mode_base = Mp_resource.bookmark
 val get_mode_base : dform_mode_base -> string -> dform_base
+
+(*
+ * Save terms in slot position?
+ * If requested, each term in a slot is given a unique string tag,
+ * and printed in a tzone with that tag.  The table provides a map
+ * from tag to term.
+ *)
+val save_slot_terms : dform_base -> dform_base
+val get_slot_terms  : dform_base -> term StringTable.t
 
 (************************************************************************
  * PRINTERS                                                             *

@@ -38,6 +38,8 @@ INPUTS =\
 	md5.js\
 	cookie.js\
 	validate.js\
+	content.js\
+	rule.js\
 	style.css\
 	frameset.html\
 	menu.html\

@@ -356,6 +356,7 @@ struct
          session.session_state           <- None;
          session.session_commandbar_info <- None;
          session.session_buttons         <- None;
+         session.session_styles          <- None;
          maybe_invalidate_directory session
 
    (*
@@ -714,6 +715,39 @@ struct
          invalidate_chdir session success;
          success
 
+   (*
+    * Check if a command is pasted.  Just check for the regular expression %%[A-z]*%%
+    *)
+   let pasted_regexp = Str.regexp "%%[A-Za-z0-9]*%%"
+
+   let get_pasted_command server state session command =
+      try
+         let index = Str.search_forward pasted_regexp command 0 in
+         let name = Str.matched_string command in
+         let command = String.sub command 0 index in
+         let len = String.length name in
+            if len < 4 then
+               None
+            else
+               let id = String.sub name 2 (len - 4) in
+                  Some (command, Browser_state.get_term session.session_buffer id)
+      with
+         Not_found ->
+            None
+
+   (*
+    * Paste the term.
+    *
+    * BUG JYH: this should be printed in "src" mode, not "raw" mode.
+    *)
+   let paste server state session outx command term =
+      let db = "src", Dform.find_dftable Mp_resource.top_bookmark, Dform.null_state in
+      let s = Dform.string_of_term db term in
+      let command = Printf.sprintf "%s << %s >>" command s in
+      let state = { state with state_table = BrowserTable.add_string state.state_table rulebox_sym (String.escaped command) } in
+         eprintf "Hello: << %s >>@." s;
+         print_page server state session outx 140 "rule"
+
    (************************************************************************
     * Server operations.
     *)
@@ -792,18 +826,24 @@ struct
       in
          match decode_uri state uri with
             FrameURI (session, "rule") ->
-               let state =
-                  match command with
-                     Some command ->
-                        if !debug_http then
-                           eprintf "Command: \"%s\"@." (String.escaped command);
-                        (try eval state session outx command with
-                            End_of_file ->
-                               quit state)
-                   | None ->
-                        ()
-               in
-                  print_redisplay_page rule_uri server state session outx
+               (match command with
+                   Some command ->
+                      if !debug_http then
+                         eprintf "Command: \"%s\"@." (String.escaped command);
+
+                      (* If the command contains a pasted element, then paste it *)
+                      (match get_pasted_command server state session command with
+                          Some (command, term) ->
+                             paste server state session outx command term
+                        | None ->
+                             try
+                                eval state session outx command;
+                                print_redisplay_page rule_uri server state session outx
+                             with
+                                End_of_file ->
+                                   quit state)
+                 | None ->
+                      print_redisplay_page rule_uri server state session outx)
           | InputURI _
           | LoginURI _
           | UnknownURI _

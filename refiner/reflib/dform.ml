@@ -35,6 +35,7 @@ open Lm_printf
 open Lm_printf_rbuffer
 open Lm_rformat
 open Lm_rformat_text
+open Lm_string_set
 
 open Precedence
 open Opname
@@ -77,6 +78,13 @@ let debug_dform_depth =
 type buffer = Lm_rformat.buffer
 
 (*
+ * We also define a dform state, used for collecting terms
+ * as they are displayed.
+ *)
+type dform_state =
+   { mutable dform_table : term StringTable.t option }
+
+(*
  * A display form printer knows about this term, and
  * a printer for subterms.  The subterm printer takes
  * an extra argument that specifies parenthesization.
@@ -89,9 +97,9 @@ type parens =
 type dform_printer_info =
    { dform_term : term;
      dform_items : rewrite_item list;
-
      dform_printer : buffer -> parens -> term -> unit;
-     dform_buffer : buffer
+     dform_buffer : buffer;
+     dform_state : dform_state
    }
 
 type dform_printer =
@@ -140,7 +148,7 @@ type dform_item =
 
 type dform_table = dform_item term_table
 
-type dform_base = string * dform_table
+type dform_base = string * dform_table * dform_state
 
 (************************************************************************
  * IMPLEMENTATION                                                       *
@@ -173,8 +181,14 @@ let rec process_options precedence parens options =
           | DFormParens ->
                process_options precedence true t
 
+(*
+ * Add the display form to the table.
+ *)
 let add_dform tbl df =
-   let () =
+   (*
+    * DEBUG: the raw mode can never be mentioned explicitly.
+    *)
+   let modes =
       match df.dform_modes with
          AllModes ->
             ()
@@ -425,7 +439,7 @@ and format_term buf shortener printer term =
          format_pushm buf 4;
          begin
             match dest_opname name with
-               h::_ ->
+               h :: _ ->
                   if Opname.eq (shortener h) name then
                      format_string buf h
                   else
@@ -446,23 +460,33 @@ and format_term buf shortener printer term =
 (*
  * Sequents and variables are handled specially.
  *)
-let base_opname = mk_opname "Base_dform" nil_opname
-let dsovar_opname = mk_opname "df_so_var" base_opname
-let dvar_opname = mk_opname "df_var" base_opname
-let dfvar_opname = mk_opname "df_free_fo_var" base_opname
-let dcont_opname = mk_opname "df_context_var" base_opname
+let base_opname   = mk_opname "Base_dform"     nil_opname
+let dsovar_opname = mk_opname "df_so_var"      base_opname
+let dvar_opname   = mk_opname "df_var"         base_opname
+let dfvar_opname  = mk_opname "df_free_fo_var" base_opname
+let dcont_opname  = mk_opname "df_context_var" base_opname
 
 let make_cont v = mk_term (mk_op dcont_opname [make_param (Var v)]) []
 
-let mode_selector mode = function
-   { df_modes = ExceptModes l } -> not (List.mem mode l)
- | { df_modes = Modes l } -> List.mem mode l
- | { df_modes = AllModes } -> true
+(*
+ * Mode "src" is treated specially.  It is only allowed if explicitly mentioned.
+ *
+ * BUG JYH: we should have some generic way to specify special modes.
+ * A special mode is defined as: the display form is included *only if*
+ * the mode is mentioned explicitly in the display form.
+ *)
+let special_modes = ["src"]
+
+let mode_selector mode df =
+   match df with
+      { df_modes = ExceptModes l } -> not (List.mem mode l) && not (List.mem mode special_modes)
+    | { df_modes = Modes l } -> List.mem mode l
+    | { df_modes = AllModes } -> not (List.mem mode special_modes)
 
 (*
  * Print a term to a buffer.
  *)
-let format_short_term (mode, table) shortener =
+let format_short_term (mode, table, state) shortener =
    (* Print a single term, ignoring lookup errors *)
    let rec print_term' pprec buf eq t =
       (* Convert a variable into a display_var *)
@@ -482,7 +506,7 @@ let format_short_term (mode, table) shortener =
       in
 
       (* Check for a display form entry *)
-      let _ =
+      let () =
          if mode = "raw" then
             raise Not_found
       in
@@ -541,7 +565,8 @@ let format_short_term (mode, table) shortener =
                         { dform_term = t;
                           dform_items = items;
                           dform_printer = print_term cprec;
-                          dform_buffer = buf
+                          dform_buffer = buf;
+                          dform_state = state
                         }
                      in
                         if !debug_dform then
@@ -610,32 +635,69 @@ let format_short_term (mode, table) shortener =
 let null_shortener _ = nil_opname
 
 (*
+ * Saving slot terms.
+ *)
+let save_slot_terms (mode, base, _) =
+   mode, base, { dform_table = Some StringTable.empty }
+
+let get_slot_terms (_, _, state) =
+   match state.dform_table with
+      Some table ->
+         table
+    | None ->
+         raise (Invalid_argument "Dform.get_slot_terms")
+
+(*
+ * Tag all terms printed in slots (if requested).
+ *)
+let format_tag state buf t =
+   match state.dform_table with
+      Some table ->
+         let index = StringTable.cardinal table in
+         let id = sprintf "slot%d" index in
+         let table = StringTable.add table id t in
+            format_tzone buf id;
+            state.dform_table <- Some table
+    | None ->
+         ()
+
+let format_etag state buf =
+   match state.dform_table with
+      Some _ ->
+         format_ezone buf
+    | None ->
+         ()
+
+(*
  * The "slot" term is special because it has a subterm.
  *
  * XXX TODO: We should add a form that only accepts RewriteParam's and invokes
  * some fall-back mechanism on receiving RewriteMetaParam's
  *)
-let slot { dform_items = items; dform_printer = printer; dform_buffer = buf } =
+let slot { dform_state = state; dform_items = items; dform_printer = printer; dform_buffer = buf } =
    match items with
       [RewriteString parens; RewriteTerm body] ->
-         begin
-            match string_of_param parens with
-               "le" ->
-                  printer buf LEParens body
-             | "lt" ->
-                  printer buf LTParens body
-             | "raw" ->
-                  let rec format t =
-                     format_term buf null_shortener format t
-                  in
-                     format body
-             | _ ->
-                  printer buf NOParens body
-         end
+         (* Tag the term *)
+         format_tag state buf body;
+         (match string_of_param parens with
+             "le" ->
+                printer buf LEParens body
+           | "lt" ->
+                printer buf LTParens body
+           | "raw" ->
+                let rec format t =
+                   format_term buf null_shortener format t
+                in
+                   format body
+           | _ ->
+                printer buf NOParens body);
+         format_etag state buf
     | [RewriteTerm body] ->
          if !debug_dform then
             eprintf "Dform.slot: term: %s%t" (short_string_of_term body) eflush;
-         printer buf LTParens body
+         format_tag state buf body;
+         printer buf LTParens body;
+         format_etag state buf
     | [RewriteString s | RewriteNum ((RewriteMetaParam _) as s)] ->
          if !debug_dform then
             eprintf "Dform.slot: str: %s%t" (string_of_param s) eflush;
@@ -656,6 +718,10 @@ let slot { dform_items = items; dform_printer = printer; dform_buffer = buf } =
     | _ ->
          raise(Failure "Dform.slot: unknown stack type")
 
+(*
+ * Wrap the slot display with a debugging check to test
+ * the the contents of the slot are balanced.
+ *)
 let slot df =
    if !debug_dform_depth then
       let depth = zone_depth df.dform_buffer in
@@ -668,7 +734,7 @@ let slot df =
                            let rec format t =
                               format_term buf null_shortener format t
                            in
-                              slot {df with dform_printer = (fun _ _ -> format); dform_buffer = buf })
+                              slot { df with dform_printer = (fun _ _ -> format); dform_buffer = buf })
                in
                   eprintf "Unbalanced display form: %s%t" str eflush
          end
@@ -750,8 +816,11 @@ let null_list =
 let null_table =
    List.fold_left add_dform empty_table null_list
 
+let null_state =
+   { dform_table = None }
+
 let null_base =
-   "src", null_table
+   "src", null_table, null_state
 
 (*
  * The display form tables for different theories are managed as a resource.
@@ -774,7 +843,10 @@ let dform_resource =
 let find_dftable bk =
    let bk =
       (* XXX: HACK: use "summary" dforms in the "comment" module *)
-      if (fst bk) = "comment" then Mp_resource.theory_bookmark "summary" else bk
+      if fst bk = "comment" then
+         Mp_resource.theory_bookmark "summary"
+      else
+         bk
    in
       dform_resource (Mp_resource.find bk)
 
@@ -787,9 +859,9 @@ let add_dform df =
 type dform_mode_base = Mp_resource.bookmark
 
 let get_mode_base dfbase dfmode =
-   try dfmode, (find_dftable dfbase) with
+   try dfmode, find_dftable dfbase, null_state with
       Not_found ->
-         raise(Failure("Dform.get_mode_base: can not find display forms for " ^ (String.capitalize (fst dfbase)) ^ "." ^ (snd dfbase)))
+         raise (Failure("Dform.get_mode_base: can not find display forms for " ^ (String.capitalize (fst dfbase)) ^ "." ^ (snd dfbase)))
 
 (************************************************************************
  * SIMPLIFIED PRINTERS                                                  *
@@ -797,8 +869,8 @@ let get_mode_base dfbase dfmode =
 
 let format_quoted_term base buf t =
    let t = display_term_of_term t in
-   format_term buf null_shortener
-   (fun t -> format_short_term base null_shortener buf t) t
+      format_term buf null_shortener (fun t ->
+            format_short_term base null_shortener buf t) t
 
 let format_term base buf t =
    format_short_term base null_shortener buf (display_term_of_term t)
@@ -809,7 +881,7 @@ let print_term_fp base out term =
       output_rbuffer out buf
 
 let print_short_term_fp base shortener out term =
-   let buf = new_buffer() in
+   let buf = new_buffer () in
       format_short_term base shortener buf term;
       output_rbuffer out buf
 

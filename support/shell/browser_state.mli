@@ -31,6 +31,8 @@
  *)
 open Lm_string_set
 
+open Refiner.Refiner.Term
+
 (*
  * We allow the output to be multiplexed.
  *)
@@ -41,7 +43,7 @@ val create : unit -> t
 (*
  * The output goes into the "current" buffer.
  *)
-val set_main        : Lm_rformat.buffer -> unit
+val set_main        : Lm_rformat.buffer -> term StringTable.t -> unit
 
 (*
  * Add a prompt/directory to a specific buffer.
@@ -60,6 +62,7 @@ val format_message  : t -> int -> Buffer.t -> unit
  *)
 val get_directories : t -> string list
 val get_history     : t -> string list
+val get_term        : t -> string -> term
 
 (*
  * This function should be used while output is begin diverted.

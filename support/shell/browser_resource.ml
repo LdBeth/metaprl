@@ -177,9 +177,9 @@ let extract info =
    (* Collect the menu text *)
    let macros =
       List.fold_left (fun macros menu ->
-            let { menu_label = label; menu_items = items } = menu in
+            let { menu_name = name; menu_label = label; menu_items = items } = menu in
             let macros =
-               bprintf buf "<select name=\"%s\" class=\"menu\" onChange=\"parent.MenuCommand(macros, this);\">\n" label;
+               bprintf buf "<select id=\"%s\" class=\"menu\" onChange=\"parent.MenuCommand(macros, this);\">\n" name;
                bprintf buf "<option value=\"nop\">%s</option>\n" label;
                List.fold_left (fun macros { command_label = label; command_value = command } ->
                      let sym = sprintf "id%d" (StringTable.cardinal macros) in

@@ -247,45 +247,12 @@ function ToggleInputArea(button)
     }
     else {
         button.value = 'Long';
-        ruledoc.commandform.innerHTML = '# <input type="text" name="command" size="100" border="0" value="' + text + '">';
+        ruledoc.commandform.innerHTML = '# <input type="text" name="command" size="100" border="0">';
+        ruledoc.commandform.command.value = text;
         ResizeBoxes(70);
     }
 
     // For convenience, refocus the input area
     ruledoc.commandform.command.focus();
-}
-
-/************************************************************************
- * Low-level events.
- */
-
-/*
- * Scroll the history.
- */
-function HistoryNavigate(amount)
-{
-    var history = parent.buttons.document.getElementById('historybox');
-    var length = history.options.length;
-    var index = history.selectedIndex + amount;
-    while(index < 0)
-        index += length;
-    while(index >= length)
-        index -= length;
-    var id = history.options[index].value;
-    history.selectedIndex = index;
-    var text = parent.buttons.macros[id];
-    parent.rule.document.commandform.command.value = text;
-}
-
-/*
- * Rulebox received a key.
- */
-function RuleKey(e)
-{
-    var code = e.keyCode;
-    if(code == 38)  // DownArrow
-        HistoryNavigate(-1);
-    else if(code == 40) // UpArrow
-        HistoryNavigate(1);
 }
 

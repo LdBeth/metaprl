@@ -50,6 +50,7 @@ val history_sym     : symbol
 val menu_sym        : symbol
 val session_sym     : symbol
 val menu_macros_sym : symbol
+val rulebox_sym     : symbol
 val buttons_macros_sym : symbol
 
 (*

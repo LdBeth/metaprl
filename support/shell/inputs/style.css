@@ -17,11 +17,13 @@ B {
 
 /*
  * General text classes for MetaPRL.
+ *    location: the location header printed in the content box
  *    info: general informative text, used in root display
  *    keyword: program keywords
  *    var: first and second-order variables
  *    stdout: text displayed to stdout
  *    stderr: text displayed to stderr
+ *    slot: terms printed in slot zones
  */
 SPAN.location {
     color: #444488;
@@ -46,6 +48,18 @@ SPAN.stdout {
 }
 SPAN.stderr {
     color: #992222
+}
+
+/*
+ * Slots are selectable.
+ */
+SPAN.slot {
+}
+SPAN.slotHover {
+    background-color: #e0e0f0
+}
+SPAN.slotClick {
+    background-color: #8888aa
 }
 
 /*

@@ -50,6 +50,7 @@ let history_sym     = Lm_symbol.add "HISTORY"
 let menu_sym        = Lm_symbol.add "MENU"
 let session_sym     = Lm_symbol.add "SESSION"
 let menu_macros_sym = Lm_symbol.add "MENUMACROS"
+let rulebox_sym     = Lm_symbol.add "RULEBOX"
 let buttons_macros_sym = Lm_symbol.add "BUTTONSMACROS"
 
 (*
