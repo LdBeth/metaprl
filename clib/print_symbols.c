@@ -43,8 +43,6 @@
 
 #include "print_symbols.h"
 
-extern void failwith(const char *s);
-
 /* To print out the function symbols */
 value function_symbols = 0;
 

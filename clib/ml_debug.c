@@ -6,14 +6,12 @@
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
+#include <caml/fail.h>
 
 #include <stdio.h>
 
 #include "debug.h"
 #include "ml_debug.h"
-
-extern void failwith(const char *s);
-extern mlsize_t string_length(value);
 
 /*
  * Out local description.

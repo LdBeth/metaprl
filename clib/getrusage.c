@@ -25,7 +25,6 @@ value ml_getrusage(value unit_val)
 {
 	 CAMLparam1(unit_val);
     struct rusage rsrc;
-    double system, user;
     CAMLlocal1(rval);
     int ret, i;
 

@@ -16,7 +16,6 @@ LCFILES :=\
 	debug\
 	ml_debug\
 	getrusage\
-	register\
 	mmap\
 	readline\
 	termsize\

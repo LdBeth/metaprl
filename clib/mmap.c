@@ -51,8 +51,7 @@
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
-
-extern void failwith(const char *s);
+#include <caml/fail.h>
 
 /************************************************************************
  * TYPES                                                                *

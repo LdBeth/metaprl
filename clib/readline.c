@@ -24,7 +24,7 @@ value caml_readline(value prompt_arg)
 {
     CAMLparam1(prompt_arg);
     CAMLlocal2(v, b);
-    char *line, *bufp;
+    char *line;
 
 #ifdef READLINE
     line = readline(String_val(prompt_arg));
@@ -39,6 +39,8 @@ value caml_readline(value prompt_arg)
     add_history(line);
 
 #else
+    char *bufp;
+
     bufp = malloc(MAX_LINE_LENGTH);
     if(bufp == 0) {
         /* Pretend that we have reached EOF */

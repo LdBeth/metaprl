@@ -53,7 +53,7 @@ else
    TESTS=no
 endif
 ifndef CCC
-   CCC=gcc
+   CCC=gcc -O2 -Wall -Wno-unused-variable
 endif
 CC=$(CCC)
 
