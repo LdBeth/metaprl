@@ -88,7 +88,7 @@
   *	
   *	BEWARE : failing out of a transaction undoes all modifications to library
   *	  by the transaction. If needed, I can supply a commit call to make changes
-  *	  persist .
+  *	  persist prior to transaction end.
   *)
 
  val with_transaction		: library -> (transaction -> 'a) -> 'a
@@ -219,7 +219,9 @@
   *)
  (* NB: cycle prevention not yet implemented. *)
 
- val make_leaf		: transaction -> object_id -> string -> object_id
+ val make_leaf		: transaction -> object_id
+				-> string (* name *) -> string (* type *)
+				-> object_id
  val remove_leaf	: transaction -> object_id -> string -> unit
 
  val insert_leaf	: transaction

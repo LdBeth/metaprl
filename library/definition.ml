@@ -442,10 +442,12 @@ let root_name tt stamp oid =
     | TermDefinition def -> error ["Term Table"; "root name"; "directory"; "not"] [oid] []
 
 let directory_p tt stamp oid = 
- let te = termtable_lookup tt stamp oid in
+ try
+ (let te = termtable_lookup tt stamp oid in
     match te with
       DirectoryDefinition def -> true
-    | TermDefinition def -> false
+    | TermDefinition def -> false)
+ with e -> false
 
 
 let directory_children tt stamp oid =

@@ -16,8 +16,11 @@ open Basic
 open Library
 
 
-exception Testfailed
+exception Testfailed of int
 
+(*  insert_leaf 
+    
+*)
 let oiljgs connection = 
 
   let cookie = ref "" in
@@ -31,7 +34,7 @@ let oiljgs connection =
 		insert_leaf t oid "test1" "TERM" (inatural_term 1))
 	; (leave lib)))
 
-     (function () -> (lib_close lib); (raise Testfailed)));
+     (function () -> (lib_close lib); (raise (Testfailed 1))));
 
   let lib = join connection ["testall"] in
     (unwind_error
@@ -44,12 +47,19 @@ let oiljgs connection =
 		        then (print_string "check"; raise (Test "check"))))
 	; cookie := (lib_close lib))
 
-     (function () -> (lib_close lib); (raise Testfailed)));
+     (function () -> (lib_close lib); (raise (Testfailed 2))));
 
     print_endline "open insert leave join get successful.";
 
     !cookie
 	  
+(* restore
+   save
+   oid_export
+   oid_import
+*)   
+   
+
 let seri connection cookie =
   let lib = restore connection cookie (function t -> ()) in
 
@@ -85,17 +95,24 @@ let seri connection cookie =
 exception Pleasefail
 
 (* join after close, then ... *)
+(* join
+   create
+   put_property get_property remove_property
+   put_properties get_properties
+   put_term get_term
+*)
+
 let ptest connection =
   let lib = join connection ["testall"] in
     (unwind_error
       (function () -> 
 	(* test get *)
-	let doid = (with_transaction lib
-		   (function t ->
-			 let oid = root t "demo" in 
-			   if not (1 = number_of_inatural_term (get_term t (child t oid "test1")))
-			        then (print_string "check"; raise (Test "check"))
-			   ; oid)) in
+	(with_transaction lib
+	 (function t ->
+	  let oid = root t "demo" in 
+	   if not (1 = number_of_inatural_term (get_term t (child t oid "test1")))
+	        then (print_string "check"; raise (Test "check"))
+	   ; ()));
 
 	
 	let noid = (with_transaction lib
@@ -108,20 +125,26 @@ let ptest connection =
 	      (* monkey with properties and then fail*)		
 	      (let ps = get_properties t noid in
 
+		if not (2 = number_of_inatural_term (get_term t noid))
+		   then raise (Testfailed 3);
+		put_term t noid (inatural_term 3);
+		if not (3 = number_of_inatural_term (get_term t noid))
+		   then raise (Testfailed 4);
+
 		put_properties t noid (("goo", inatural_term 4) :: ps);
 		if not (3 = number_of_inatural_term (get_property t noid "foo"))
-		   then raise Testfailed;
+		   then raise (Testfailed 5);
 		if not (4 = number_of_inatural_term (get_property t noid "goo"))
-		   then raise Testfailed;
+		   then raise (Testfailed 6);
 
 		put_property t noid "foo" (inatural_term 5);
 		if not (5 = number_of_inatural_term (get_property t noid "foo"))
-		   then raise Testfailed;
+		   then raise (Testfailed 7);
 
 		remove_property t noid "goo";
                 (let failp = ref false in 
 		  (try (get_property t noid "goo"); () with e -> failp := true);
-		  if (not !failp) then raise Testfailed);
+		  if (not !failp) then raise (Testfailed 8));
 
  		raise Pleasefail)))
 		
@@ -130,20 +153,115 @@ let ptest connection =
 	     (with_transaction lib
 	      (function t ->
 		(if not (3 = number_of_inatural_term (get_property t noid "foo"))
-		   then raise Testfailed
+		   then raise (Testfailed 9)
 		   else ())))
 	   | e -> raise e;
 
+	(with_transaction lib
+	    (function t ->
+		if not (2 = number_of_inatural_term (get_term t noid))
+		   then raise (Testfailed 10);
+		put_term t noid (inatural_term 3);
+		if not (3 = number_of_inatural_term (get_term t noid))
+		   then raise (Testfailed 11)
+	    ));
+
+
+	(with_transaction lib
+	    (function t ->
+		if not (3 = number_of_inatural_term (get_term t noid))
+		   then raise (Testfailed 12)));
+
      (lib_close lib); ())
 
-     (function () -> (lib_close lib); (raise Testfailed)))
+     (function () -> (lib_close lib)))
 
   ; print_newline()
   ; print_endline "property test successful, (the failures were part of the test)."
 
 
+(* make_directory
+   insert
+   make_leaf
+   directory_p   
+   deactivate activate
+   roots root children child descendent
+*)
+let dtest connection =
+  let lib = join connection ["testall"] in
+    (unwind_error
+      (function () -> 
+	
+	(* test get *)
+	let doid = (with_transaction lib
+		   (function t ->
+			 let oid = root t "demo" in 
+			   (let toid = make_directory t oid "test"
+	 		    and coid =  create t "TERM" (Some (inatural_term 1)) [] in
+			     insert t toid "test1" coid
+			     ; (let coid2 = make_leaf t toid "TEST2" "TERM" in
+				 put_term t coid2 (inatural_term 2)))
+			   ; oid)) in
 
-  
+	(with_local_transaction lib
+	   (function t ->
+             let toid = child t doid "test" in
+		if not (directory_p t toid) then raise (Testfailed 14)));
+
+	(with_transaction lib
+	   (function t ->
+             let toid = child t doid "test"in
+		deactivate t toid;
+		if (directory_p t toid) then raise (Testfailed 15)));
+
+	(with_local_transaction lib
+	   (function t ->
+             let toid = child t doid "test" in
+		if (directory_p t toid) then raise (Testfailed 16)));
+	
+	(with_transaction lib
+	   (function t ->
+             let toid = child t doid "test" in
+		activate t toid;
+		if not (directory_p t toid) then raise (Testfailed 17)));
+
+	(with_local_transaction lib
+	   (function t ->
+             let toid = child t doid "test" in
+		if not (directory_p t toid) then raise (Testfailed 18)));
+
+	(with_local_transaction lib
+	   (function t ->
+		if not (1 = List.length (roots t)) then raise (Testfailed 19)));
+
+	(with_transaction lib
+	   (function t ->
+		let t2 = descendent t doid ["test"; "TEST2"] in
+		 if not (2 = number_of_inatural_term (get_term t t2)) then raise (Testfailed 20)));
+
+	(with_transaction lib
+	   (function t ->
+	      let toid = descendent t doid ["test"] in
+		if not (2 = List.length (children t toid)) then raise (Testfailed 21);
+		remove_leaf t toid "TEST2";
+		if not (1 = List.length (children t toid)) then raise (Testfailed 22);
+		remove_directory t doid "test";
+		get_term t toid;
+		disallow_collection t toid;
+		delete t toid;
+		get_term t toid;
+		allow_collection t toid;
+		delete_strong t toid;
+		try (get_term t toid; raise (Testfailed 23)) with e -> ()
+	    ));
+		  
+     (lib_close lib); ())
+
+     (function () -> (lib_close lib)))
+
+  ; print_newline()
+  ; print_endline "activate test successful."
+
 let testall remote_port local_port =
  print_newline(); 
  print_newline(); 
@@ -155,10 +273,11 @@ let testall remote_port local_port =
     (unwind_error
       (function () -> 
 	  cookie := oiljgs connection
+        ; dtest connection
 	; cookie := seri connection !cookie
 	; ptest connection
 	)
-      (function () -> disconnect connection; (raise Testfailed)))
+      (function () -> disconnect connection))
 
     ; disconnect connection)
 
@@ -176,7 +295,7 @@ let create_test lib =
 	  create t "TERM" None []) 
 
 
-let put_get_test lib oid i =
+let pu_tget_test lib oid i =
  (with_transaction lib
 	     (function t ->
                  put_term t oid (inatural_term i);
@@ -187,7 +306,7 @@ let put_get_test lib oid i =
 	     & (i+1) = number_of_inatural_term (get_property t oid "foo"))
         then raise (Test "Failed")));
  oid
-
+ 
 let demo lib =
  (with_transaction lib
    (function t -> let oid = make_root t "demo" in make_directory t oid "test"))

@@ -178,7 +178,9 @@ let with_transaction lib f =
 	   else raise e
 
 
-let with_local_transaction lib f =
+let with_local_transaction lib f = with_transaction lib f
+
+(* needs fixin!
   f	{ library = lib
 	; tbegin = new_stamp()
 	; tent_collect = []
@@ -186,7 +188,7 @@ let with_local_transaction lib f =
 	; tid = tid ()
 	; cookie = ""
 	}
-
+*)
 
 
 let require_remote_transaction t =
@@ -341,8 +343,8 @@ let properties_to_term props = list_to_ilist_map iproperty_term props
 let activate_ap = null_ap (itext_term "activate ")
 let activate t oid = eval t (oid_ap activate_ap oid)
 
-let deactivate_ap = null_ap (itext_term "activate ")
-let deactivate t oid = eval t (oid_ap activate_ap oid)
+let deactivate_ap = null_ap (itext_term "deactivate ")
+let deactivate t oid = eval t (oid_ap deactivate_ap oid)
 
 let allow_ap = null_ap (itext_term "allow_collection ")
 let allow_collection t oid = eval t (oid_ap allow_ap oid)
@@ -433,11 +435,11 @@ let remove_directory t oid s =
 
 
 let make_leaf_ap = null_ap (itext_term "dag_make_leaf ")
-let make_leaf t oid s =
+let make_leaf t oid name ttype =
   eval_to_object_id t 
-    (token_ap
+    (token_ap (token_ap
       (oid_ap make_leaf_ap oid)
-      s)
+      name) ttype)
 
 let remove_leaf_ap = null_ap (itext_term "dag_remove_leaf ")
 let remove_leaf t oid s =
