@@ -1,4 +1,8 @@
-(* This file is part of Nuprl-Light, a modular, higher order
+(* This file is an interface for simple hash table
+ *
+ *-----------------------------------------------------------------
+ * 
+ * This file is part of Nuprl-Light, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -27,3 +31,11 @@
 open Simplehash_sig
 
 module Simplehashtbl : SimpleHashSig
+
+(*
+ * -*-
+ * Local Variables:
+ * Caml-master: "bi_memo, weak_memo"
+ * End:
+ * -*-
+ *)

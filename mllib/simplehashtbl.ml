@@ -1,4 +1,8 @@
-(* This file is part of Nuprl-Light, a modular, higher order
+(* This file implements simple has htable 
+ *
+ * -----------------------------------------------------------------
+ *
+ * This file is part of Nuprl-Light, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -36,8 +40,6 @@ type ('key, 'value) t =
       mutable table: ('key * 'value) list array;
       mutable count: int;
    }
-
-type 'tt search_result = Some of 'tt | None
 
 let create i comp =
    {
@@ -102,8 +104,26 @@ let insert info hash key value =
    
 let extr tt = ( tt.table, tt.count )
 
+let iter f info = Array.iter (List.iter f) info.table
+
+let gc hashfun test info =
+   let new_table = create 17 info.compare in
+   let agent (key, value) = 
+         if test (key, value) then 
+            insert new_table (hashfun key) key value
+         else
+            ()
+         in
+      iter agent info;
+      info.table <- new_table.table;
+      info.count <- new_table.count
+
 end
 
-
-
-
+(*
+ * -*-
+ * Local Variables:
+ * Caml-master: "bi_memo, weak_memo"
+ * End:
+ * -*-
+ *)

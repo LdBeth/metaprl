@@ -78,7 +78,7 @@ let apply info par arg =
    let table = info.memo_d2i_ref in
    let hash = Hashtbl.hash arg in
    match Hash.seek table hash arg with
-      Hash.Some value ->
+      Some value ->
          (*
           * We have seen this exact application before.
           *)
@@ -86,12 +86,12 @@ let apply info par arg =
             eprintf "forward_object F: success%t" eflush;
 *)
          value
-    | Hash.None ->
+    | None ->
          let table = info.memo_d2i_value in
          let d2i_arg = info.memo_domain_convert par arg in
          let d2i_hash = Hashtbl.hash d2i_arg in
             match Hash.seek table d2i_hash d2i_arg with
-               Hash.Some value ->
+               Some value ->
                   (*
                    * This happens when g finds an approximate match,
                    * but the exact pointer equality has not been seen.
@@ -102,7 +102,7 @@ let apply info par arg =
 *)
                   Hash.insert info.memo_d2i_ref hash arg value;
                      value
-            | Hash.None ->
+            | None ->
                  (*
                   * We have never seen the value before.
                   * Remember it in both ref_table and value_table.
@@ -124,7 +124,7 @@ let invert info par arg =
    let table = info.memo_i2d_ref in
    let hash = Hashtbl.hash arg in
    match Hash.seek table hash arg with
-      Hash.Some value ->
+      Some value ->
          (*
           * We have seen this exact application before.
           *)
@@ -132,12 +132,12 @@ let invert info par arg =
             eprintf "forward_object F: success%t" eflush;
 *)
          value
-    | Hash.None ->
+    | None ->
          let table = info.memo_i2d_value in
          let i2d_arg = info.memo_image_convert par arg in
          let i2d_hash = Hashtbl.hash i2d_arg in
             match Hash.seek table i2d_hash i2d_arg with
-               Hash.Some value ->
+               Some value ->
                   (*
                    * This happens when g finds an approximate match,
                    * but the exact pointer equality has not been seen.
@@ -148,7 +148,7 @@ let invert info par arg =
 *)
                   Hash.insert info.memo_i2d_ref hash arg value;
                      value
-            | Hash.None ->
+            | None ->
                  (*
                   * We have never seen the value before.
                   * Remember it in both ref_table and value_table.

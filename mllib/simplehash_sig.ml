@@ -1,4 +1,8 @@
-(* This file is part of Nuprl-Light, a modular, higher order
+(* This file is an interface for simple hash table
+ * 
+ * ----------------------------------------------------------------
+ *
+ * This file is part of Nuprl-Light, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
  *
@@ -27,16 +31,29 @@
 module type SimpleHashSig =
 sig
 
+(*
+ * Hash-table type
+ *)
     type ('key, 'value) t
-
-    type 'tt search_result = Some of 'tt | None
 
     val create : int -> ('key -> 'key -> bool) -> ('key, 'value) t
 
-    val seek : ('key, 'value) t -> int -> 'key -> 'value search_result 
+    val seek : ('key, 'value) t -> int -> 'key -> 'value option
 
     val insert : ('key, 'value) t -> int -> 'key -> 'value -> unit
 
     val extr : ('key, 'value) t -> ( ('key * 'value) list array * int )
 
+    val iter : ('key * 'value -> unit) -> ('key, 'value) t -> unit
+
+    val gc : ('key -> int) -> ('key * 'value -> bool) -> ('key, 'value) t -> unit
+
 end
+
+(*
+ * -*-
+ * Local Variables:
+ * Caml-master: "simplehashtbl, bi_memo, weak_memo"
+ * End:
+ * -*-
+ *)
