@@ -148,8 +148,7 @@ struct
        | VarsDelayed ->
             let vars =
                match t.core with
-                  TVar (v,[]) -> StringSet.make v
-                | TVar _ -> StringSet.empty
+                  FOVar v -> StringSet.make v
                 | Term t' -> 
 #ifdef VERBOSE_EXN
                      if !debug_fv then
@@ -298,12 +297,10 @@ struct
          Subst (tt,sub) ->
             let core =
                match get_core tt with
-                  TVar (v,[]) ->
+                  FOVar v ->
                      (* since sub was not eliminated, v should be in sub *)
                      let new_term = List.assoc v sub in
                         get_core (new_term)
-                | TVar (v,ts) -> 
-                     TVar (v, List.map (do_term_subst sub) ts)
                 | Term ttt ->
                      Term { term_op = ttt.term_op;
                             term_terms = List.map (do_bterm_subst sub) ttt.term_terms }
@@ -346,7 +343,7 @@ struct
     *)
    let mk_var_term v =
       { free_vars = VarsDelayed;
-        core = TVar (v,[]) }
+        core = FOVar v }
 
    let mk_op name params = { op_name = name; op_params = params }
 
@@ -362,16 +359,16 @@ struct
 
    let mk_var_op v = { op_name = var_opname; op_params = [Var v] }
 
-   let make_so_ugly v ts =
+   let make_so_ugly v =
       { term_op = { op_name = var_opname; op_params = [Var v] }; 
-        term_terms = List.map mk_simple_bterm ts}
+        term_terms = [] }
 
    let dest_term t =
       match get_core t with
          Term t -> t
        | Sequent _ ->
             raise (Invalid_argument "Term_base_ds.dest_term: dest_term called on a sequent")
-       | TVar (v,ts) -> make_so_ugly v ts
+       | FOVar v -> make_so_ugly v
        | Subst _ -> fail_core "dest_term"
 
    (*
@@ -446,16 +443,16 @@ struct
 
    let make_term = function
       { term_op = { op_name = opname; op_params = [Var v] };
-        term_terms = terms
-      } when Opname.eq opname var_opname && no_bvars terms ->
-         {free_vars = VarsDelayed; core = TVar (v,(List.map dest_simple_bterm terms))}
+        term_terms = []
+      } when Opname.eq opname var_opname ->
+         {free_vars = VarsDelayed; core = FOVar v}
     | t ->
          {free_vars = VarsDelayed; core = Term t}
 
    let mk_term op bterms =
-      match op with
-         { op_name = opname; op_params = [Var v] } when Opname.eq opname var_opname && no_bvars bterms->
-            {free_vars = VarsDelayed; core = TVar (v,(List.map dest_simple_bterm bterms))}
+      match op,bterms with
+         { op_name = opname; op_params = [Var v] },[] when Opname.eq opname var_opname ->
+            {free_vars = VarsDelayed; core = FOVar v }
        | _ ->
             { free_vars = VarsDelayed;
               core = Term { term_op = op; term_terms = bterms }}
@@ -526,7 +523,7 @@ struct
    let rec opname_of_term t = match t.core with
       Term t -> t.term_op.op_name
     | Sequent _ -> sequent_opname
-    | TVar _ -> var_opname
+    | FOVar _ -> var_opname
     | Subst _ -> get_core t; opname_of_term t
 
    (* These are trivial identity functions *)
@@ -552,7 +549,7 @@ struct
 
    let is_var_term t =
       match get_core t with
-         TVar (_,[]) -> true
+         FOVar _ -> true
        | _ -> false
 
    (*
@@ -560,25 +557,34 @@ struct
     *)
    let dest_var t =
       match get_core t with
-         TVar (v,[]) -> v
+         FOVar v -> v
        | _ -> ref_raise(RefineError ("dest_var", TermMatchError (t, "not a var")))
 
    (*
     * Second order variables have subterms.
     *)
    let is_so_var_term t = match get_core t with
-      TVar _ -> true
+      FOVar _ -> true
+    | Term { term_op = { op_name = opname; op_params = [Var _] };
+             term_terms = terms } -> 
+         Opname.eq opname var_opname && no_bvars terms
     | _ -> false
 
    let dest_so_var t = match get_core t with
-      TVar (v,ts) -> v,ts
+      FOVar v -> v,[]
+    | Term { term_op = { op_name = opname; op_params = [Var v] };
+             term_terms = terms } when Opname.eq opname var_opname ->
+         v, List.map dest_simple_bterm terms
     | _ -> ref_raise(RefineError ("dest_so_var", TermMatchError (t, "not a so_var")))
 
    (*
     * Second order variable.
     *)
    let mk_so_var_term v terms =
-      {free_vars = VarsDelayed; core = TVar (v,terms)}
+      { free_vars = VarsDelayed; 
+        core = Term { term_op = { op_name = var_opname; op_params = [Var v] };
+                      term_terms = List.map mk_simple_bterm terms }
+        }
 
    (*
     * Second order context, contains a context term, plus

@@ -153,10 +153,8 @@ struct
                         ref_raise(RefineError (term_subterm_name, AddressError (a, term)))
             else
                ref_raise(RefineError (term_subterm_name, AddressError (a, term)))
-       | (TVar _, Path []) -> 
+       | (FOVar _, Path []) -> 
             term
-       | (TVar (_,ts), Path (hd::tl)) ->
-            term_subterm_path ATERM (getnth ATERM ts hd) tl 
        | (_, Compose (addr1, addr2)) ->
             term_subterm (term_subterm term addr1) addr2
        | _ -> ref_raise(RefineError (term_subterm_name, AddressError (a, term)))
@@ -203,17 +201,6 @@ struct
        | (_, bterm :: bterms) -> \
             let bterms, arg = path_replace_bterm FAIL f tl (pred i) BVARS bterms in \
                bterm :: bterms, arg \
-       | _, [] -> \
-            DO_FAIL \
-\
-   let rec var_replace_term FAIL f tl i BVARS terms = \
-      match i, terms with \
-         (0, term :: terms) -> \
-            let term, arg = path_replace_term FAIL f BVARS term tl in \
-               term :: terms, arg \
-       | (_, term :: terms) -> \
-            let terms, arg = var_replace_term FAIL f tl (pred i) BVARS terms in \
-               term :: terms, arg \
        | _, [] -> \
             DO_FAIL
 
@@ -272,11 +259,8 @@ struct
                        sequent_goals = SeqGoal.mapi aux s.sequent_goals                   \
                      }, arg 												\
             else DO_FAIL 												\
-       | (TVar _, Path []) -> \
+       | (FOVar _, Path []) -> \
             f BVARS term \
-       | (TVar (v,ts), Path (hd::tl)) -> \
-            let terms, arg = var_replace_term FAIL f tl hd BVARS ts in \
-               mk_so_var_term v terms, arg \
        | (_, Compose (addr1, addr2)) -> 										\
             apply_fun_arg_at_addr_aux FAIL (**) 									\
                (apply_fun_arg_at_addr_aux FAIL f addr2) addr1 BVARS term 						\

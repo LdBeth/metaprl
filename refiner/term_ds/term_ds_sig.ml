@@ -77,7 +77,7 @@ sig
       Term of term'
     | Subst of term * term_subst
     | Sequent of esequent
-    | TVar of string * term list
+    | FOVar of string
    and term = { mutable free_vars : lazy_vars; mutable core : term_core }
    and bound_term_core =
       BTerm of bound_term'
