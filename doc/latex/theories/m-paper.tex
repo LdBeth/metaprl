@@ -46,7 +46,7 @@
 % For tracking purposes - this is V1.3 - OCTOBER 2002
 
 % EMRE: use the preprint option to get rid of the silly ACM copyright.
-\documentclass[preprint,letterpaper]{sig-alternate}
+\documentclass[letterpaper,10pt]{llncs}
 
 \usepackage[dvipdfm]{hyperref}
 \usepackage{makeidx}
@@ -65,62 +65,25 @@
 
 \begin{document}
 
-% EMRE: What to put instead of the ACM copyright.
-\toappearbox{Submitted to MER$\lambda$IN 2003, Uppsala, Sweden.}
-
-%
-% --- Author Metadata here ---
-%\conferenceinfo{ICFP}{'03 Uppsala, Sweden}
-%\CopyrightYear{2003} % Allows default copyright year (2000) to be over-ridden - IF NEED BE.
-%\crdata{0-12345-67-8/90/01}  % Allows default copyright data (0-89791-88-6/97/05) to be over-ridden - IF NEED BE.
-% --- End of Author Metadata ---
-
-\title{Compiler Implementation in a Formal Logical Framework\titlenote{An
+\title{Compiler Implementation in a Formal Logical Framework\thanks{An
   extended version of this paper is available as Caltech technical report
   \texttt{caltechCSTR:2003.002} at
   \href{http://resolver.caltech.edu/caltechCSTR:2003.002}{\texttt{http://caltechcstr.library.caltech.edu/}}}
 }
 
-%
-% You need the command \numberofauthors to handle the "boxing"
-% and alignment of the authors under the title, and to add
-% a section for authors number 4 through n.
-%
-% Up to the first three authors are aligned under the title;
-% use the \alignauthor commands below to handle those names
-% and affiliations. Add names, affiliations, addresses for
-% additional authors as the argument to \additionalauthors;
-% these will be set for you without further effort on your
-% part as the last section in the body of your article BEFORE
-% References or any Appendices.
-
-\numberofauthors{1}
-%
-% You can go ahead and credit authors number 4+ here;
-% their names will appear in a section called
-% "Additional Authors" just before the Appendices
-% (if there are any) or Bibliography (if there
-% aren't)
-
-% Put no more than the first THREE authors in the \author command
 \author{
-%
-% The command \alignauthor (no curly braces needed) should
-% precede each author name, affiliation/snail-mail address and
-% e-mail address. Additionally, tag each line of
-% affiliation/address with \affaddr, and tag the
-%% e-mail address with \email.
-\alignauthor Jason Hickey, Aleksey Nogin, Adam Granicz, and Brian Aydemir \thanks{This
+Jason Hickey \and Aleksey Nogin \and Adam Granicz \and Brian Aydemir \thanks{This
   work was supported in part by the DoD Multidisciplinary
   University Research Initiative (MURI) program administered by the
   Office of Naval Research (ONR) under Grant N00014-01-1-0765, the
   Defense Advanced Research Projects Agency (DARPA), the United States
   Air Force, the Lee Center, and by NSF Grant CCR
-  0204193.}\\[\baselineskip]
-       \affaddr{California Institute of Technology, M/C 256-80}\\
-       \affaddr{1200 E. California Blvd.}\\
-       \affaddr{Pasadena, CA 91125, USA}\\
-       \email{\{jyh,nogin,granicz,emre\}@cs.caltech.edu}
+  0204193.}}
+\institute{
+California Institute of Technology, M/C 256-80\\
+1200 E. California Blvd.\\
+Pasadena, CA 91125, USA\\
+\email{\{jyh,nogin,granicz,emre\}@cs.caltech.edu}
 }
 \maketitle
 
@@ -164,5 +127,4 @@ assembly in which all registers are immutable.
 
 \printindex
 
-\balancecolumns
 \end{document}

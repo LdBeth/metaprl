@@ -31,7 +31,7 @@ ocaml ocaml-book:
 	+ @ $(MAKE) NAME=book2 GOAL=ocaml-book TEXTHEORIES=ocaml_doc doc
 
 compile m-paper:
-	+ @ $(MAKE) NAME=m-paper GOAL=m-paper TEXTHEORIES=experimental/compile MOREINPUTS="../inputs/sig-alternate.cls" doc
+	+ @ $(MAKE) NAME=m-paper GOAL=m-paper TEXTHEORIES=experimental/compile MOREINPUTS="../inputs/llncs.cls" doc
 
 mtr m-paper-tr:
 	+ @ $(MAKE) NAME=m-paper-tr GOAL=m-paper-tr TEXTHEORIES=experimental/compile doc
