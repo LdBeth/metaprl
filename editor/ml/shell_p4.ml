@@ -23,11 +23,7 @@ open Term_grammar
 open Filter_grammar
 
 open Tacticals
-
-(*
- * Version number.
- *)
-let version = "1.07.0.1"
+open Nl_version
 
 (*
  * Ref cell for returning the tactic value.
@@ -365,7 +361,7 @@ struct
    let _ =
       let wrapped = !Toploop.parse_toplevel_phrase in
       let motd lb =
-         eprintf "\tNuprl-Light version %s\n%t" version eflush;
+         eprintf "\t%s\n%t" version eflush;
          Toploop.parse_toplevel_phrase := wrap_once wrapped;
          !Toploop.parse_toplevel_phrase lb
       in

@@ -24,15 +24,11 @@ open Filter_grammar
 
 open Tacticals
 open Nltop
+open Nl_version
 
 (************************************************************************
  * CONSTANTS                                                            *
  ************************************************************************)
-
-(*
- * Version number.
- *)
-let version = "1.07.0.1"
 
 module ShellP4 =
 struct
@@ -623,7 +619,7 @@ struct
       match !input_files with
          [] ->
             let instream = stream_of_channel stdin in
-               printf "Nuprl-Light %s\n%t" version eflush;
+               printf "%s\n%t" version eflush;
                toploop true instream
         | files ->
             use_files files

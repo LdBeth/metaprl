@@ -48,6 +48,7 @@ NLFILES :=\
 	shell
 
 NL2FILES :=\
+	nl_version\
 	shell_p4\
 	shell_nl\
 	test\
@@ -55,11 +56,13 @@ NL2FILES :=\
 	nl_top
 
 RUNFILES :=\
+	nl_version\
 	shell_p4\
 	test\
 	nl
 
 TOPFILES :=\
+	nl_version\
 	shell_nl\
 	nl_top
 
@@ -215,10 +218,11 @@ CCLIBS =\
 	-cclib $(ROOT)/lib/clib.a\
 	$(CCLIBS_ens)
 
-
 # Name of main libraris
 MAIN = nuprl-light
 NL = nl
+
+.PHONY: version
 
 all: $(MAIN).cma $(NL).top $(NL).run
 opt: $(MAIN).cmxa $(NL).opt
@@ -238,6 +242,11 @@ $(NL).opt: $(CMXOBJS) $(TCMXFILES)
 
 clean::
 	$(RM) -f *.p4* *.pp*
+
+nl_version.ml: version
+
+version:
+	echo -n "let version = \"Nuprl-Light 2.00.1:\\n\\t\\tbuild [`date`]\\n\\t\\ton `hostname`\"" > nl_version.ml
 
 # Real makefile
 include $(ROOT)/mk/config
