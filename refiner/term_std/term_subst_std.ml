@@ -342,10 +342,6 @@ struct
          try equal_term (List_util.zip v v') t t' with
             Failure _ -> false
 
-   (*
-    * Check the following:
-    *   that t' = t[terms[v''/v''']/v]
-    *)
    let eq_comp_var v = function
       { term_op = { op_name = opname; op_params = [Var v'] };
         term_terms = []
@@ -354,6 +350,11 @@ struct
     | _ ->
          false
 
+   (*
+    * Check the following:
+    * subst t' =alpha subst t (subst_in_snd vars' vars)
+    * where subst_in_snd vars' = List.map (v,t -> v, subst t vars')
+    *)
    let equal_comp vars' =
       let rec equal_comp_term vars = function
          { term_op = { op_name = opname; op_params = [Var v] };
@@ -384,6 +385,10 @@ struct
       in
          equal_comp_term
 
+   (*
+    * Check the following:
+    *   that t' = t[terms[v''/v''']/v]
+    *)
    let alpha_equal_match (t, v) (t', v'', v''', terms) =
       try equal_comp (List_util.zip v''' v'') (List_util.zip v terms) (t, t') with
          Failure _ ->

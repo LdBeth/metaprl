@@ -94,6 +94,16 @@ should enforce it.
 
 REFINER
 
+*) alpha_equal_match is incorrect. According to 
+alpha_equal_match (t, v) (t', v'', v''', terms) ==
+   t' =alpha t[terms[v''/v''']/v]
+specification, alpha_equal_match should return true when t and t' and alpha-equal
+closed terms. However:
+# alpha_equal_match (<<lambda{x.'x}>>,[]) (<<lambda{y.'y}>>,["y"],["x"],[]);;
+- : bool = false
+# alpha_equal_match (<<lambda{x.'x}>>,[]) (<<lambda{y.'y}>>,["x"],["y"],[]);;
+- : bool = false
+
 *) There is no clear semantics for the hidden hypothesis. As a result,
 many rules deal with hidden hypothesis incorrectly. Currently, one
 can prove 0=1 using those unsound rules.

@@ -212,18 +212,19 @@ struct
    let rec remove_var v = function
       [] ->
          []
-    | (v', _) :: tl when v' = v ->
+    | (v1, v2) :: tl when (v1 = v || v2 = v)->
          remove_var v tl
     | hd :: tl ->
          hd :: remove_var v tl
 
-   let rec join_vars vars = function
-      ([],[]) -> vars
-    | (v1::vt1,v2::vt2) ->
-         if (v1=v2)
-         then join_vars (remove_var v1 vars) (vt1,vt2)
-         else (v1,v2)::(join_vars vars (vt1,vt2))
-    | _ -> raise (Failure ("join_vars"))
+   let rec join_vars vars vs1 vs2 =
+      match vs1,vs2 with
+         ([],[]) -> vars
+       | (v1::vt1,v2::vt2) ->
+            if (v1=v2)
+            then remove_var v1 (join_vars vars vt1 vt2)
+            else (v1,v2)::(join_vars vars vt1 vt2)
+       | _ -> raise (Failure ("join_vars"))
 
    let rec eq_filt_vars set1 set2 = function
       [] -> []
@@ -257,7 +258,7 @@ struct
        | (bt1::btrms1_tl, bt2::btrms2_tl) ->
             (equal_bterms vars btrms1_tl btrms2_tl) &&
             ((vars == [] && bt1 == bt2) || (
-            equal_term (join_vars vars (bt1.bvars,bt2.bvars)) bt1.bterm bt2.bterm))
+            equal_term (join_vars vars bt1.bvars bt2.bvars) bt1.bterm bt2.bterm))
        | _ -> false
 
    let rec equal_hyps hyps1 hyps2 vars i =
@@ -339,7 +340,7 @@ struct
                  let bterms' = var_subst_bterms bterms t' v in
                     if bterms == bterms' then t else mk_term op bterms'
             | { core = FOVar v } -> t
-            | _ -> raise (Failure "Term_ds.var_subst: this is not supposed to happen")
+            | _ -> raise (Invalid_argument "Term_ds.var_subst: this is not supposed to happen")
 
    and var_subst_bterms bterms t' v =
       match bterms with
@@ -354,10 +355,6 @@ struct
       else let term' = var_subst bt.bterm t' v in
               if bt.bterm == term' then bt else mk_bterm bt.bvars term'
 
-   (*
-    * Check the following:
-    *   that t' = t[terms[v''/v''']/v]
-    *)
    let print_string_pair out (v1, v2) =
       fprintf out "%s:%a" v1 debug_print v2
 
@@ -370,8 +367,12 @@ struct
             v' = v
        | _ ->
             false
-
-   let rec equal_comp vars' vars t t' =
+   (*
+    * Check the following:
+    * subst t' =alpha subst t (subst_in_snd vars' vars)
+    * where subst_in_snd vars' = List.map (v,t -> v, subst t vars')
+    *)
+   let rec equal_comp (vars' : (string*string) list) (vars : (string*term) list) t t' =
       match get_core t, get_core t' with
          FOVar v,_ ->
             (try equal_term vars' t' (List.assoc v vars) with
@@ -395,6 +396,10 @@ struct
       in
          List_util.for_all2 equal_comp_bterm bterms1 bterms2
 
+   (*
+    * Check the following:
+    *   that t' =alpha t[terms[v''/v''']/v]
+    *)
    let alpha_equal_match (t, v) (t', v'', v''', terms) =
 #ifdef VERBOSE_EXN
       if !debug_subst_ds then

@@ -49,16 +49,40 @@ sig
     * Operations                                                           *
     ************************************************************************)
 
+   (* Term operations. *)
+   
    (*
-    * Term operations.
     * subst: simultaneous subst of terms for vars.
-    * var_subst: subst of var for a term.
+    * if string list has repeated variables, the first match is used
+    *
+    * Bound variables will be renamed if necessary to prevent capturing
+    * When renaming in bound terms with duplicate variables:
+    *   x,x.t[x] would become new(x),new(x).t[new(x)]
     *)
    val subst : term -> term list -> string list -> term
+
+   (*
+    * var_subst: subst of var for a term.
+    *)
    val var_subst : term -> term -> string -> term
    val equal_params : param -> param -> bool
+
+   (* 
+    * In all alpha_equal* functions: 
+    * for bound terms with duplicate variables: x,x.t =alpha x,new_var.t
+    *)
    val alpha_equal : term -> term -> bool
+
+   (*
+    * alpha_equal_vars: alpha equality on destructed bound terms
+    * If one of the "string list"s has duplicate entries, the first entry is used.
+    *)
    val alpha_equal_vars : (term * string list) -> (term * string list) -> bool
+   
+   (* 
+    * alpha_equal_match (t1,vs1) (t2,vs2,vs2',terms) = 
+    * t2 =alpha t1[terms[vs2/vs2']/vs1]
+    *)
    val alpha_equal_match : (term * string list) ->
           (term * string list * string list * term list) ->
           bool
