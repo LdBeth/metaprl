@@ -48,7 +48,6 @@ open Dform_print
 open Filter_type
 open Filter_summary
 open Filter_cache
-open Filter_prog
 
 open Tactic_type
 open Tactic_type.Tactic

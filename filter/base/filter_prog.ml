@@ -269,20 +269,13 @@ let dprinter_id         = "_$dprinter"
 let labels_id           = "_$labels"
 let rule_name_id        = "_$rule_name"
 
-(*
- * Convert between expressions and terms.
- *)
-let expr_of_term loc t =
-   <:expr< Ml_term.term_of_string $str: String.escaped (Ml_term.string_of_term t)$ >>
-
-let expr_of_mterm loc t =
-   <:expr< Ml_term.mterm_of_string $str: String.escaped (Ml_term.string_of_mterm t)$ >>
-
 let expr_of_label loc = function
    [] ->
       <:expr< None >>
- | h :: _ ->
+ | [h] ->
       <:expr< Some $str: h$ >>
+ | _ ->
+      Stdpp.raise_with_loc loc (Invalid_argument "Filter_prog.expr_of_label: multi-component labels not supported")
 
 (*
  * Print a message on loading, and catch errors.

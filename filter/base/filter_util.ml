@@ -100,6 +100,19 @@ let split_mfunction mterm =
       labels, vars, zip_mimplies terms
 
 (************************************************************************
+ * TERMS                                                                *
+ ************************************************************************)
+
+(*
+ * Convert between expressions and terms.
+ *)
+let expr_of_term loc t =
+   <:expr< Ml_term.term_of_string $str: String.escaped (Ml_term.string_of_term t)$ >>
+
+let expr_of_mterm loc t =
+   <:expr< Ml_term.mterm_of_string $str: String.escaped (Ml_term.string_of_mterm t)$ >>
+
+(************************************************************************
  * OPNAMES                                                              *
  ************************************************************************)
 

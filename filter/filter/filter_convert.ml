@@ -46,7 +46,6 @@ open Filter_type
 open Filter_summary
 open Filter_summary_type
 open Filter_cache
-open Filter_prog
 
 (*
  * Show the file loading.

@@ -31,18 +31,15 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 extends Package_sig
 
-open Filter_prog
-
 open Package_sig
 
-module Extract : ExtractSig;;
-module Package : PackageSig with type proof = Extract.proof
+module Package : PackageSig
 
 (*
  * -*-

@@ -33,7 +33,7 @@
 
 open Mp_debug
 open Phobos_debug
-open Filter_prog
+open Filter_util
 open Phobos_compile
 
 (*

@@ -56,7 +56,6 @@ open Filter_summary
 open Filter_summary_util
 open Filter_cache
 open Filter_util
-open Filter_prog
 open Infix
 
 open Tactic_type
@@ -167,7 +166,7 @@ struct
     *
     *    (Package_info/prove name tactics)
     *
-    * BUG: jyh: I backed this out, and right now proofs
+    * XXX: BUG: jyh: I backed this out, and right now proofs
     * always fail.
     *)
    let to_expr _ name proof =
@@ -181,11 +180,6 @@ struct
       in
          <:expr< fun [ $list: [unit_patt, None, error_expr]$ ] >>
 end
-
-(*
- * Extraction functions.
- *)
-module Extract = MakeExtract (Convert)
 
 (*
  * Build the cache from the converter.
