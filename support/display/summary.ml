@@ -204,7 +204,7 @@ declare "id"[n:n]
 declare "module"[name:s]{'info}
 declare "mlterm"{'term; 'cons; 'oexpr}
 declare "condition"{'term; 'cons; 'oexpr}
-declare "mlrewrite"[name:s]{'params; 'redex; 'contracta; 'body; 'resources}
+declare "mlrewrite"[name:s]{'params; 'redex; 'body; 'resources}
 
 doc <:doc< 
    @begin[doc]
@@ -494,10 +494,10 @@ dform condition_df : "condition"{'term; 'cons; 'oexpr} =
    info["condition"] " " slot{'term}
    ezone popm
 
-dform mlrewrite_df1 : "mlrewrite"[name:s]{'params; 'redex; 'contracta; 'body; 'res} =
+dform mlrewrite_df1 : "mlrewrite"[name:s]{'params; 'redex; some{'body}; 'res} =
    szone pushm[4]
-   info["mlrewrite"] " " rewrite_name[name:s] " " resources{'res} df_concat{slot[" "];'params} keyword[":"] hspace
-   ensuremath{'redex} keyword["="] slot{'body}
+   info["mlrewrite"] " " rewrite_name[name:s] resources{'res} df_concat{slot[" "];'params} keyword[":"] hspace
+   ensuremath{'redex} " " keyword["="] hspace slot{'body}
    popm ezone
 
 (*

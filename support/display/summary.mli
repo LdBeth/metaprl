@@ -48,7 +48,7 @@ declare "opname"[name:s]{'term}
 declare "definition"[name:s]{'term; 'definition; 'res}
 declare "mlterm"{'term; 'cons; 'oexpr}
 declare "condition"{'term; 'cons; 'oexpr}
-declare "mlrewrite"[name:s]{'params; 'redex; 'contracta; 'body; 'resources}
+declare "mlrewrite"[name:s]{'params; 'redex; 'body; 'resources}
 declare "parent"{'path; 'opens; 'resources}
 declare "module"[name:s]{'info}
 declare "dform"[name:s]{'modes; 'redex; 'def}
