@@ -452,6 +452,7 @@ doc <:doc<
    @end[doc]
 >>
 declare hrefmodule[name:s]
+declare hrefmodule_internal[name:s]
 declare hrefterm[name:s]
 declare hrefresource[name:s]
 declare hrefrewrite[name:s]
@@ -460,10 +461,14 @@ declare hrefconv[name:s]
 declare hrefrule[name:s]
 doc <:doc< @docoff >>
 
-dform hrefmodule_df1 : mode[tex] :: hrefmodule[name:s] =
+ml_dform hrefmodule_df : hrefmodule[name:s] format_term buf = fun _ ->
+   format_term buf Dform.NOParens (**)
+      <:con<hrefmodule_internal[$String.capitalize (Dform.string_of_param name)$:s]>>
+
+dform hrefmodule_internal_df1 : mode[tex] :: hrefmodule_internal[name:s] =
    izone `"\\hreflabelmodule{" slot[name:s] `"}{" ezone slot[name:s] izone `"}" ezone
 
-dform hrefmodule_df2 : except_mode[tex] :: hrefmodule[name:s] =
+dform hrefmodule_internal_df2 : except_mode[tex] :: hrefmodule_internal[name:s] =
    bf[name:s]
 
 dform hrefterm_df1 : mode[tex] :: hrefterm[name:s] =
@@ -997,8 +1002,8 @@ declare math_mathop{'t}
 declare math_mathop[text:s]
 declare math_mathrel{'t}
 declare math_mathrel[text:s]
-declare math_bb{'t}
-declare math_bb[text:s]
+declare math_bb{'T}
+declare math_bb[TEXT:s]
 declare math_tt{'t}
 declare math_tt[text:s]
 declare math_bf{'t}
@@ -1946,6 +1951,7 @@ dform foot_sp   : slot["decl"]{footnote{'t}} = special
 dform target_sp : slot["decl"]{target[name]{'t}} = special
 dform target_sp : slot["decl"]{hreftarget[name]} = special
 dform hrefm_sp  : slot["decl"]{hrefmodule[name:s]} = special
+dform hrefm_sp  : slot["decl"]{hrefmodule_internal[name:s]} = special
 dform hreft_sp  : slot["decl"]{hrefterm[name:s]} = special
 dform hrefr_sp  : slot["decl"]{hrefresource[name:s]} = special
 dform hrefrw_sp : slot["decl"]{hrefrewrite[name:s]} = special

@@ -325,10 +325,6 @@ struct
     * QUOTATIONS                                                           *
     ************************************************************************)
 
-   let parse_term s =
-      let cs = Stream.of_string s in
-         Grammar.Entry.parse TermGrammar.term_eoi cs
-
    let pho_grammar_filename =
       try
          Sys.getenv "LANG_FILE"
@@ -380,7 +376,9 @@ struct
     | "desc", s ->
          Phobos_exn.catch (Phobos_compile.term_of_string [] pho_desc_grammar_filename) s
     | ("term" | ""), s -> begin
-         try parse_term s
+         try
+            let cs = Stream.of_string s in
+               term_of_parsed_term (Grammar.Entry.parse TermGrammar.term_eoi cs)
          with Stdpp.Exc_located ((l1, l2), exn) ->
             let offset = fst(loc) in
             Stdpp.raise_with_loc (offset+l1, offset+l2) exn

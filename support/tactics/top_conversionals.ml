@@ -6,16 +6,17 @@ doc <:doc<
    @begin[doc]
    @module[Top_conversionals]
   
-   Conversionals are analog of tactics  (Section~@refmodule[Top_tacticals])
-   for rewriting.  Conversionals are used extensively in the @Nuprl
-   type theory (Section @refmodule[Itt_theory]) to express and
+   @emph{Conversions} and @emph{conversionals} are analogs of tactics and tacticals
+   (Section~@refmodule[Top_tacticals])
+   for rewriting.  Conversions are used extensively in Computational Type Theory
+   (Section @refmodule[Itt_theory]) to express and
    apply computational equivalences.  The @tt{Top_conversionals}
    module defines the basic conversionals provided by the @MetaPRL
    prover.
   
    Each @bf{rewrite} definition in a module defines a conversion.
-   For example, the definition of beta reduction in the @Nuprl type
-   theory (Section @refmodule[Itt_rfun]), is defined as follows:
+   For example, the definition of beta reduction in the Type
+   Theory (Section @refmodule[Itt_rfun]), is defined as follows:
   
    @begin[center]
    @bf{rewrite} unfold_beta : $(@lambda x. b[x])@space a @longleftrightarrow b[a]$
@@ -117,22 +118,22 @@ doc <:doc<
    a conversion is to use @tt[rw], which converts a conversion to
    a tactic applied to a specific clause in a sequent (these functions
    are defined only for a sequent calculus).  The (@tt[rw] @it[conv] $i$)
-   @emph{tactic} applies the conversion @it[conv] to clause $i$ in
+   tactic applies the conversion @it[conv] to clause $i$ in
    the current goal sequent.}
   
    @item{@conv[rwc];
    Conversions may be applied also to assumptions.
-   The (@tt[rwc] @it[conv] $a$ $c$) @emph{tactic} applies the
+   The (@tt[rwc] @it[conv] $a$ $c$) tactic applies the
    conversion @it[conv] to the $c$-th clause in the $a$-th assumption.}
   
    @item{@conv[rwAll] @conv[rwcAll] @conv[rwAllAll];
-   The (@tt[rwAll] @it[conv]) @emph{tactic} applies the
+   The (@tt[rwAll] @it[conv]) tactic applies the
    conversion @it[conv] to the whole goal sequent.
   
-   The (@tt[rwcAll] @it[conv] $a$) @emph{tactic} applies the
+   The (@tt[rwcAll] @it[conv] $a$) tactic applies the
    conversion @it[conv] to the whole $a$-th assumption.
   
-   The (@tt[rwAllAll] @it[conv]) @emph{tactic} applies the
+   The (@tt[rwAllAll] @it[conv]) tactic applies the
    conversion @it[conv] to all assumptions and to the goal sequent.}
    @end[description]
   
@@ -236,12 +237,12 @@ doc <:doc<
   
    @item{@conv[addrC];
    Subterms can also be addressed explicitly with the (@tt{addrC @it[addr] $c$})
-   conversion, although the use is discouraged.  The address is an integer list
+   conversion.  The address is an integer list
    that describes the @emph{path} leading to the term to be rewritten.  For
    example, the address $[ ]$ is the identity address, $[0]$ is its leftmost
-   subterm, $[0; 1]$ is the second subterm of the first subterm, @i[etc].  Addresses
-   are fragile, and correct addresses are difficult to discover.  For this
-   reason, the @tt[addrC] conversion is almost never used.}
+   subterm, $[0; 1]$ is the second subterm of the first subterm, @i[etc]. 
+   However addresses are somewhat fragile, and correct addresses can be difficult
+   to discover. For this reason, the use of @tt[addrC] is discouraged.}
   
    @item{@conv[higherC];
    The (@tt[higherC] $c$) conversion searches for the outermost
@@ -304,10 +305,9 @@ doc <:doc<
    @begin[doc]
    @modsection{Conversion reversal}
   
-   Computational rewrites define a congruence, and all of the
-   equivalence relations hold, including reversing the application
-   of the rewrite.  However, reversed rewrites are usually incompletely
-   specified.
+   Computational rewrites define a congruence, and all equivalence relations
+   in the congruence closure hold, including reversing the application of
+   the rewrite.  However, reversed rewrites are often incompletely specified.
   
    @begin[description]
    @item{@conv[foldC], @conv[cutC];

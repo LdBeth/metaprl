@@ -1,11 +1,13 @@
 abelian
 Aczel
 Aleksey
+analogs
 arity
 Aydemir
 backend
 bookmarking
 booleans
+browsed
 constructivity
 consequentially
 contravariant
@@ -49,6 +51,7 @@ Nogin
 nondependent
 Nuprl
 OCaml
+parenthesization
 pointwise
 polymorphism
 redex
@@ -68,6 +71,7 @@ toplevel
 toploop
 thinning
 typehood
+untyped
 uppercase
 Xin
 Yegor

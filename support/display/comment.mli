@@ -235,8 +235,8 @@ declare math_slot[tag:s]{'t}
 declare math_hbox{'t}
 declare math_mbox{'t}
 
-declare math_bb{'t}
-declare math_tt[text:s]
+declare math_bb{'T}
+declare math_tt[TEXT:s]
 declare math_tt{'t}
 declare math_bf{'t}
 declare math_bf[text:s]

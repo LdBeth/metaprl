@@ -147,7 +147,8 @@ doc <:doc<
    Rewrites are defined with the @tt[rewrite] and @tt[cond_rewrite]
    terms.  The @it{redex} and @it{contractum} define the rewrite; the @it{proof} is
    the proof of the rewrite (which is empty if the rewrite is primitive).  For the conditional
-   rewrite the @it[params] and @it[args] are the terms the defined the assumptions
+   rewrite the @it[params] are the conversion parameters and @it[args] are the terms
+   that define the assumptions
    under which the rewrite is valid.  The @it{name} is the name of the rewrite.
    @end[doc]
 >>
@@ -506,23 +507,25 @@ declare begin_cd{'t}
 declare cdinternal{'t}
 declare end_cd
 
-dform begin_cd_tex_df : internal :: begin_cd{'path} =
+dform begin_cd_df : internal :: except_mode[html] :: begin_cd{'path} =
    `""
 
-dform end_cd_tex_df : internal :: end_cd =
+dform end_cd_df : internal :: except_mode[html] :: end_cd =
    `""
 
 dform begin_cd_df1 : internal :: mode[html] :: begin_cd{'path} =
-   izone `"<a href=\"http://cd.metaprl.local//" cdinternal{'path}
+   izone `"<a href=\"http://cd.metaprl.local//" cdinternal{'path} `"\">" ezone
 
-dform cd_internal_df1 : internal :: mode[html] :: cdinternal{cons{."parent"[name:s]; cons{'n2; 'n3}}} =
+dform cd_internal_df1 : internal :: cdinternal{cons{."parent"[name:s]; cons{'n2; 'n3}}} =
    slot[name:s] `"/" cdinternal{cons{'n2; 'n3}}
 
 dform cd_internal_df2 : internal :: mode[html] :: cdinternal{cons{."parent"[name:s]; nil}} =
-   slot[name:s] cdinternal{nil}
+   slot[name:s]
 
-dform cd_internal_df3 : internal :: mode[html] :: cdinternal{nil} =
-   `"\">" ezone
+dform cd_internal_df2 : internal :: except_mode[html] :: cdinternal{cons{."parent"[name:s]; nil}} =
+   hrefmodule[name:s]
+
+dform cd_internal_df3 : internal :: cdinternal{nil} = `""
 
 dform end_cd_df1 : internal :: mode[html] :: end_cd =
    izone `"</a>" ezone
@@ -536,8 +539,11 @@ dform path_parent_nil_df : internal :: path{cons{."parent"[name:s]; nil}} =
 dform path_parent_cons_df : internal :: path{cons{."parent"[name:s]; .cons{'n1; 'n2}}} =
    slot[name:s] keyword["."] cons{'n1; 'n2}
 
-dform parent_df : "parent"{'path; 'opens; 'resources} =
+dform parent_df : except_mode[tex] :: "parent"{'path; 'opens; 'resources} =
    info["extends"] " " begin_cd{'path} path{'path} end_cd
+
+dform parent_df2 : mode[tex] :: "parent"{'path; 'opens; 'resources} =
+   info["Extends"] " " cdinternal{'path}
 
 (*
  * Nested module is indented.

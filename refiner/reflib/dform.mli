@@ -134,6 +134,8 @@ val print_mterm : dform_base -> meta_term -> unit
 val prerr_mterm : dform_base -> meta_term -> unit
 val string_of_mterm : dform_base -> meta_term -> string
 
+val string_of_param : string rewrite_param -> string
+
 (*
  * -*-
  * Local Variables:

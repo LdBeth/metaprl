@@ -135,7 +135,9 @@ dform conts_left_df : mode[src] :: mode[prl] :: mode[html] :: df_bconts{'conts} 
    `"<|" df_concat{slot[";"]; 'conts} `"|>"
 
 dform conts_left_df : mode[tex] :: df_bconts{'conts} =
+   izone `"{}_{" ezone 
    <<mathmacro["left<"]>> `"|" df_concat{slot[";"]; 'conts} `"|" <<mathmacro["right>"]>>
+   izone `"}" ezone
 
 dform var_list_df1 : var_list{cons{'a;'b}} =
    'a `";" hspace var_list{'b}
@@ -477,7 +479,7 @@ ml_dform sequent_html_df : mode["html"] :: sequent ('ext) { <H> >- 'concl } form
    in
       format
 
-ml_dform sequent_tex_df : mode["tex"] :: "sequent"{'ext; 'seq} format_term buf =
+ml_dform sequent_tex_df : mode["tex"] :: sequent ('ext) { <H> >- 'concl } format_term buf =
    let rec format_hyp hyps i len =
       if i <> len then
          let lead = (string_of_int (succ i)) ^ ". " in
