@@ -201,6 +201,7 @@ struct
    let add key t =
       match splay key [] t.splay_tree with
          SplayFound tree ->
+            t.splay_tree <- tree;
             t
        | SplayNotFound tree ->
             let tree =
