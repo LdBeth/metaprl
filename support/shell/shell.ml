@@ -509,9 +509,6 @@ struct
       let export             = wrap_unit_arg export
       let export_all         = wrap_unit_arg export_all
 
-      (*
-       * Extraction (JYH: I think this is for testing).
-       *)
       let extract shell path =
          extract parse_arg shell (dir_of_path path)
 

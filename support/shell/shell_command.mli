@@ -104,7 +104,7 @@ topval stop_gmon : unit -> unit
 topval restart_gmon : unit -> unit
 topval print_gc_stats : unit -> unit
 
-(* Callback to return a primitive proof *)
+(* Callback to return a primitive proof. Filter passes this to Refine module *)
 val extract : string list -> unit -> Refine.extract
 
 (*

@@ -428,27 +428,30 @@ let expand_ped window ped addr =
  * Check a proof.
  *)
 let refiner_extract_of_ped window ped =
-   ((status_of_ped ped [] <> Proof.StatusComplete) && (expand_ped window ped [])),
-   (Proof.refiner_extract_of_proof (proof_of_ped ped))
+   let modified = (status_of_ped ped [] <> Proof.StatusComplete) && (expand_ped window ped []) in
+   let extract = Proof.refiner_extract_of_proof (proof_of_ped ped) in
+      modified, extract
 
 let check_ped window refiner opname ped =
-   ((status_of_ped ped [] <> Proof.StatusComplete) && (expand_ped window ped [])),
-   match status_of_ped ped [] with
-      Proof.StatusBad
-    | Proof.StatusIncomplete
-    | Proof.StatusPartial ->
-         let c1, c2 = node_count_of_ped ped in
-            RefIncomplete (c1, c2)
-    | Proof.StatusComplete ->
-         let proof = proof_of_ped ped in
-         let c1, c2 = node_count_of_ped ped in
-            try
-               RefComplete (c1, c2, Refine.compute_dependencies refiner opname)
-            with
-               Refine_sig.Incomplete opname ->
-                  RefUngrounded (c1, c2, opname)
-             | Not_found ->
-                  raise (RefineError ("Proof_edit.check_ped", StringStringError("could not find", string_of_opname opname)))
+   let modified = (status_of_ped ped [] <> Proof.StatusComplete) && (expand_ped window ped []) in
+   let status =
+      match status_of_ped ped [] with
+         Proof.StatusBad
+       | Proof.StatusIncomplete
+       | Proof.StatusPartial ->
+            let c1, c2 = node_count_of_ped ped in
+               RefIncomplete (c1, c2)
+       | Proof.StatusComplete ->
+            let proof = proof_of_ped ped in
+            let c1, c2 = node_count_of_ped ped in
+               try
+                  RefComplete (c1, c2, Refine.compute_dependencies refiner opname)
+               with
+                  Refine_sig.Incomplete opname ->
+                     RefUngrounded (c1, c2, opname)
+                | Not_found ->
+                     raise (RefineError ("Proof_edit.check_ped", StringStringError("could not find", string_of_opname opname)))
+   in modified, status
 
 (*
  * Command interpretation.
