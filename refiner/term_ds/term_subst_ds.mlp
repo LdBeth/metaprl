@@ -73,13 +73,6 @@ struct
 
    let free_vars t = StringSet.elements t.free_vars
 
-   let var_subst t t2 v =
-      if StringSet.mem v t.free_vars
-         then
-            { free_vars = StringSet.union t2.free_vars (StringSet.remove v t.free_vars);
-              core = Subst (t,[(v,t2)])}
-         else t
-
    (*
     * Collect all binding vars.
     *)
@@ -193,6 +186,33 @@ struct
    let alpha_equal_vars (t, v) (t', v') =
       try equal_term (List_util.zip v v') t t' with
          Invalid_argument _ -> false
+
+   (*
+    * The meaning of
+    * var_subst t t' v
+    * is to substitute v for occurrences of the term t' in t.
+    *)
+   let rec var_subst t t' v =
+      if alpha_equal t t' then mk_var_term v 
+         else match t with
+            {core = Term { term_op = op; term_terms = bterms}} ->
+               let bterms' = var_subst_bterms bterms t' v in
+               if bterms == bterms' then t else mk_term op bterms'
+          | _ -> raise (Failure "Term_ds.var_subst: this is not supposed to happen")
+
+   and var_subst_bterms bterms t' v =
+      match bterms with
+         bt::btrms ->
+            let bt' = var_subst_bterm bt t' v in
+            let btrms' = var_subst_bterms btrms t' v in
+            if (bt == bt') && (btrms == btrms') then bterms else bt'::btrms'
+       | [] -> bterms
+
+   and var_subst_bterm bt t' v =
+      let dbt = dest_bterm bt in
+      if List.mem v dbt.bvars then bt
+         else let term' = var_subst dbt.bterm t' v in
+         if dbt.bterm == term' then bt else mk_bterm dbt.bvars term'
 
    (*
     * Check the following:
