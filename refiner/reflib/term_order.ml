@@ -170,13 +170,13 @@ struct
           | _            , Var _         -> 1
           | Quote        , _             -> -1
           | _            , Quote         -> 1
-          | MNumber s1   , MNumber s2    -> Pervasives.compare s1 s2
+          | MNumber v1   , MNumber v2    -> Lm_symbol.compare v1 v2
           | MNumber _    , _             -> -1
           | _            , MNumber _     -> 1
-          | MString s1   , MString s2    -> Pervasives.compare s1 s2
+          | MString v1   , MString v2    -> Lm_symbol.compare v1 v2
           | MString _    , _             -> -1
           | _            , MString _     -> 1
-          | MToken s1    , MToken s2     -> Pervasives.compare s1 s2
+          | MToken v1    , MToken v2     -> Lm_symbol.compare v1 v2
           | MToken _     , _             -> -1
           | _            , MToken _      -> 1
           | MLevel l1    , MLevel l2     -> compare_levels l1 l2
