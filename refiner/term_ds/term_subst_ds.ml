@@ -107,7 +107,7 @@ struct
          { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
             name1 == name2
                     & List_util.for_all2 equal_params params1 params2
-                    & equal_bterms vars bterms1 bterms2
+                    & List_util.for_all2 (equal_bterm vars) bterms1 bterms2
 
    and equal_term = function
       [] ->
@@ -127,8 +127,6 @@ struct
             function bt2 ->
                (bt1 == bt2) || equal_bterm_main [] bt1 bt2)
     | vars -> equal_bterm_main vars
-
-   and equal_bterms vars = List_util.for_all2 (equal_bterm vars)
 
    let alpha_equal t1 t2 =
       try equal_term [] t1 t2 with
