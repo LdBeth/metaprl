@@ -48,6 +48,10 @@ opt: optlib
 	@ $(MAKE) $(ROOT)/lib/$(MAINLIB)$(EXT_LIB)
 	@ $(MAKE) optbin
 
+profile: optlib
+	@ $(MAKE) $(ROOT)/lib/$(MAINLIB).cmxa 
+	@ $(MAKE) $(ROOT)/lib/$(MAINLIB)$(EXT_LIB)
+
 include base/Files
 include boot/Files
 include filter/Files
@@ -304,8 +308,6 @@ optbin: $(RMLIFILES) $(RCMIFILES) $(RCMXAFILES) $(CAMLP4N).opt $(CAMLP4O).opt $(
 	$(LN) ../$(DIR)/$(PRLCO).opt $(ROOT)/lib/$(PRLCO)
 	$(LN) ../$(DIR)/$(MAINPROG).opt $(ROOT)/bin/$(MAINPROG)
 	$(LN) ../$(DIR)/$(CONVERT).opt $(ROOT)/bin/$(CONVERT)
-
-profile: $(RMLIFILES) $(RCMXAFILES) 
 
 install:: $(MAINLIB).cma $(LCMIFILES) $(CAMLP4N).run $(CAMLP4O).run $(PRLCN).run $(PRLCO).run $(MAINPROG).run $(CONVERT).run
 	$(INSTALL) $(MAINLIB).cma $(LMLIFILES) $(LCMIFILES) $(MPLIB)
