@@ -388,13 +388,10 @@ let rec search_infos t = function
          if !debug_term_table then
             eprintf "Term_table.lookup: try %s%t" (string_of_term t') eflush;
          try
-            let _, items =
-               let debug = !debug_rewrite in
-               let _ = debug_rewrite := false in
-               let x = apply_redex' redex [||] t [] in
-                  debug_rewrite := debug;
-                  x
-            in
+            let debug = !debug_rewrite in
+            let _ = debug_rewrite := false in
+            let items = apply_redex redex [||] t [] in
+               debug_rewrite := debug;
                items, v
          with
             _ ->

@@ -767,8 +767,7 @@ struct
          if (!debug_dform) && (modes=AllModes) then
             eprintf "Warning: display form %s - no modes specified%t" name eflush;
          begin try
-            let redex = compile_redex Relaxed [||] t in
-            ignore (compile_contractum Relaxed redex expansion)
+            ignore(term_rewrite Relaxed ([||],[||]) [t] [expansion])
          with
             exn ->
                Stdpp.raise_with_loc loc exn

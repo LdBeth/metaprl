@@ -154,8 +154,6 @@ struct
 
    type rewrite_rule = RewriteTypes.rewrite_rule
    type rewrite_redex = RewriteTypes.rewrite_redex
-   type rewrite_contractum = RewriteTypes.rewrite_contractum
-   type rewrite_stack = RewriteTypes.rewrite_stack
 
    (*
     * Types for redex matching.
@@ -338,15 +336,14 @@ struct
    (*
     * Match with a redex, and extract the forms to be bound.
     *)
+   let test_redex_applicability { redex_stack = stack; redex_redex = redex } addrs term terms =
+      let gstack = Array.create (Array.length stack) StackVoid in
+         match_redex addrs gstack term terms redex
+
    let apply_redex { redex_stack = stack; redex_redex = redex } addrs term terms =
       let gstack = Array.create (Array.length stack) StackVoid in
          match_redex addrs gstack term terms redex;
-         gstack
-
-   let apply_redex' { redex_stack = stack; redex_redex = redex } addrs term terms =
-      let gstack = Array.create (Array.length stack) StackVoid in
-         match_redex addrs gstack term terms redex;
-         gstack, extract_redex_values gstack stack
+         extract_redex_values gstack stack
 
    (*
     * Build a contractum from the spec and a stack.

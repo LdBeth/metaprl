@@ -43,10 +43,8 @@ sig
    (* Packaged rewrite rule *)
    type rewrite_rule
 
-   (* Separated forms *)
+   (* Separated form *)
    type rewrite_redex
-   type rewrite_contractum
-   type rewrite_stack
 
    (*
     * Types for redex matching.
@@ -83,15 +81,13 @@ sig
     *)
    val compile_redex : strict -> string array -> term -> rewrite_redex
    val compile_redices : strict -> string array -> term list -> rewrite_redex
-   val compile_contractum : strict -> rewrite_redex -> term -> rewrite_contractum
    val extract_redex_types : rewrite_redex -> rewrite_type list
+   val test_redex_applicability :
+      rewrite_redex -> address array ->
+      term -> term list -> unit
    val apply_redex :
       rewrite_redex -> address array ->
-      term -> term list -> rewrite_stack
-   val apply_redex' :
-      rewrite_redex -> address array ->
-      term -> term list -> rewrite_stack * rewrite_item list
-   val make_contractum : rewrite_contractum -> rewrite_stack -> term
+      term -> term list -> rewrite_item list
 
    (* Rewrite constructor/destructors *)
    val term_rewrite : strict -> string array * string array ->

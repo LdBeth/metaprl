@@ -119,7 +119,7 @@ type dform_info =
  * with their precedence and printer.
  *)
 type df_printer =
-   DFExpansion of rewrite_redex * rewrite_contractum
+   DFExpansion of rewrite_rule
  | DFPrinter of (dform_printer_info -> unit)
 
 type dform_item =
@@ -182,9 +182,7 @@ let make_dform { dform_name = name;
    let printer' =
       match printer with
          DFormExpansion e ->
-            let redex = compile_redex Relaxed [||] t in
-            let contractum = compile_contractum Relaxed redex e in
-               DFExpansion (redex, contractum)
+            DFExpansion (term_rewrite Relaxed ([||],[||]) [t] [e])
        | DFormPrinter f ->
             DFPrinter f
    in
@@ -475,12 +473,14 @@ let format_short_term base shortener =
                      if !debug_dform then
                         eprintf "Dform fun %s: %s%t" name (short_string_of_term t) eflush;
                      f entry
-             | DFExpansion (r, c) ->
-                  let stack = apply_redex r [||] t [] in
-                  let t = make_contractum c stack in
-                     if !debug_dform then
-                        eprintf "Dform %s%t" name eflush;
-                     print_entry pr buf eq t
+             | DFExpansion (r) ->
+                  begin match apply_rewrite r ([||],[||],[]) t [] with
+                     [t] ->
+                        if !debug_dform then
+                           eprintf "Dform %s%t" name eflush;
+                        print_entry pr buf eq t
+                   | _ -> raise (Invalid_argument("Dform.format_short_term"))
+                  end
          end;
          if is_external then
             format_ezone buf;
