@@ -292,10 +292,8 @@ struct
    let rec expr_of_patt_ident p =
       let loc = MLast.loc_of_patt p in
          match p with
-            <:patt< $uid: uid$ . $p$ >> ->
-              <:expr< $uid: uid$ . $expr_of_patt_ident p$ >>
-          | <:patt< $lid: lid$ . $p$ >> ->
-              <:expr< $lid: lid$ . $expr_of_patt_ident p$ >>
+            <:patt< $p1$ . $p2$ >> ->
+              <:expr< $expr_of_patt_ident p1$ . $expr_of_patt_ident p2$ >>
           | <:patt< $uid: uid$ >> ->
               <:expr< $uid: uid$ >>
           | <:patt< $lid: lid$ >> ->
@@ -306,10 +304,8 @@ struct
    let rec patt_of_expr_ident e =
       let loc = MLast.loc_of_expr e in
          match e with
-            <:expr< $uid: uid$ . $e$ >> ->
-               <:patt< $uid: uid$ . $patt_of_expr_ident e$ >>
-          | <:expr< $lid: lid$ . $e$ >> ->
-               <:patt< $lid: lid$ . $patt_of_expr_ident e$ >>
+          | <:expr< $e1$ . $e2$ >> ->
+               <:patt< $patt_of_expr_ident e1$ . $patt_of_expr_ident e2$ >>
           | <:expr< $uid: uid$ >> ->
                <:patt< $uid: uid$ >>
           | <:expr< $lid: lid$ >> ->
