@@ -221,8 +221,9 @@ struct
     | [] -> ()
 
    let rec add_items_debug r = function
-      (long,short,_) as item :: items ->
+      (long,short,rest) as item :: items ->
          add_items_debug r items;
+         eprintf "%s %s %s%t" long short (String.concat " " rest) eflush;
          begin try
             match long.[0] with
                'T'|'t' -> ignore (add_term r item)
@@ -235,7 +236,7 @@ struct
              | 'N'|'n' -> add_name r item
              | 'P'|'p' -> add_param r item
              | _ -> fail ("add_items: " ^ long)
-         with 
+         with
             Not_found -> fail ("add_items_debug: " ^ long ^ " " ^ short ^ " ...")
          end
     | [] -> ()
@@ -339,10 +340,42 @@ struct
     }
 
    let init_data inputs =
+      let h_reverse = Hashtbl.create 19 in
+      let h_rename = Hashtbl.create 19 in
+      let rename name =
+         match Hashtbl.find_all h_rename name with
+            [] -> name
+          | name' :: _ ->
+               if !debug_ascii_io then
+                  eprintf "renaming %s -> %s %t" name name' eflush;
+               name'
+      in let rec clean_inputs = function
+         [] -> []
+       | ((comment,name,record) as item :: tail) as original ->
+            let tail' = clean_inputs tail in
+            let record' = List_util.smap rename record in
+            let c = comment.[0] in
+            begin match Hashtbl.find_all h_reverse record', c with
+               [], _ | _, ('S'| 's' | 'G' | 'g') ->
+                  begin match c with
+                     'S'| 's' | 'G' | 'g' -> ()
+                   | _ -> Hashtbl.add h_reverse record' name
+                  end;
+                  let item' =
+                     if record==record' then item else (comment,name,record')
+                  in
+                     if tail==tail' && item==item' then original else item'::tail'
+             | name'::_, _ ->
+                  eprintf "Will be renaming %s -> %s %t" name name' eflush;
+                  Hashtbl.add h_rename name name';
+                  tail'
+            end
+      in
+      inputs := clean_inputs !inputs;
       let r = new_record () in
-      add_items r inputs;
+      add_items r !inputs;
       let data = new_out_data () in
-      List.iter (fun ((_,name,_) as item) -> Hashtbl.add data.old_items name item) inputs;
+      List.iter (fun ((_,name,_) as item) -> Hashtbl.add data.old_items name item) !inputs;
       Hashtbl.iter
        ( fun name ind ->
             data.all_names <- StringSet.add name data.all_names;
@@ -404,7 +437,7 @@ struct
          if i_data<> io_data then begin
             if !debug_ascii_io then
                eprintf "ASCII IO: Duplicate entry updated: %s%t" name eflush;
-            data.out_items <- New (lname, name, i_data) :: data.out_items 
+            data.out_items <- New (lname, name, i_data) :: data.out_items
          end else begin
             data.io_names <- StringSet.add name data.io_names;
             data.out_items <- Old name :: data.out_items
@@ -429,7 +462,7 @@ struct
                data.new_names <- StringSet.add name data.new_names;
                match Hashtbl.find_all data.old_items name with
                   (_,_,io_data2)::(_,_,io_data1)::_
-                     when io_data1=i_data1 && io_data2=i_data2 -> 
+                     when io_data1=i_data1 && io_data2=i_data2 ->
                         data.io_names <- StringSet.add name data.io_names;
                         data.out_items <- Old name :: Old name :: data.out_items
                         (* We need two "Old name" entries becase sequent is printed on two lines *)
@@ -613,7 +646,7 @@ struct
             raise (Invalid_argument "Ascii_io.print_out")
 
    let output_term inputs ctrl t =
-      let data = init_data !inputs in
+      let data = init_data inputs in
       ignore (out_term ctrl data t);
       print_out ctrl.out_line StringSet.empty data (List.rev !inputs) (List.rev data.out_items)
 
