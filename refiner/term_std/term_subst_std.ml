@@ -203,20 +203,6 @@ struct
 
    let context_vars = context_vars_term []
 
-   (*
-    * Collect all binding vars.
-    *)
-   let rec binding_vars_term bvars = function
-      { term_terms = bterms } ->
-         binding_vars_bterms bvars bterms
-
-   and binding_vars_bterms bvars = function
-      { bvars = vars; bterm = t }::l ->
-         binding_vars_bterms (binding_vars_term (Lm_list_util.union vars bvars) t) l
-    | [] -> bvars
-
-   let binding_vars = binding_vars_term []
-
    (************************************************************************
     * ALPHA EQUALITY                                                       *
     ************************************************************************)

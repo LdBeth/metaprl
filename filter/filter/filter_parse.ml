@@ -512,8 +512,7 @@ struct
    let cond_rewrite proc name params args pf res =
       (* Print the type to the .mli file *)
       let cvars = context_vars args in
-      let bvars = binding_vars args in
-      let params' = extract_params cvars bvars params in
+      let params' = extract_params cvars params in
       let args', redex, contractum = unzip_rewrite name args in
          (* Check the rewrite *)
          Refine.check_rewrite (**)
@@ -610,8 +609,7 @@ struct
             eprintf "Conditional rule: %s%t" name eflush
       in
       let cvars = context_vars t in
-      let bvars = binding_vars t in
-      let params' = extract_params cvars bvars params in
+      let params' = extract_params cvars params in
          (* Do some checking on the rule *)
          if !debug_grammar then
             begin
@@ -652,8 +650,7 @@ struct
     *)
    let declare_mlrewrite proc loc mlname args t def resources =
       let cvars = context_vars (MetaTheorem t) in
-      let bvars = binding_vars (MetaTheorem t) in
-      let params = extract_params cvars bvars args in
+      let params = extract_params cvars args in
          FilterCache.add_command proc.cache (MLRewrite { mlterm_name = mlname;
                                                          mlterm_params = params;
                                                          mlterm_term = t;
@@ -663,8 +660,7 @@ struct
 
    let declare_mlaxiom proc loc mlname args t def resources =
       let cvars = context_vars (MetaTheorem t) in
-      let bvars = binding_vars (MetaTheorem t) in
-      let params = extract_params cvars bvars args in
+      let params = extract_params cvars args in
          FilterCache.add_command proc.cache (MLAxiom { mlterm_name = mlname;
                                                        mlterm_params = params;
                                                        mlterm_term = t;

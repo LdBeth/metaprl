@@ -1225,12 +1225,17 @@ struct
                (SymbolSet.add avoid v, mk_var_term v :: vars , conts, HypBinding(v,t) :: hyps)
        | HypBinding (v,t) as hyp ->
             (avoid, mk_var_term v :: vars , conts, hyp::hyps)
+      in
+      let vfold vars = function
+         Context (v, _, _) | HypBinding(v, _) -> SymbolSet.add vars v
+       | Hypothesis _ -> vars
       in fun i t ->
          let v = Lm_symbol.make "ext_arg" i in
             if is_sequent_term t then
-               let vars = (SymbolSet.add_list (free_vars_set t) (binding_vars t)) in
                let eseq = explode_sequent t in
-               let _, vars, conts, hyps = List.fold_left fold (vars,[],[],[]) (SeqHyp.to_list eseq.sequent_hyps) in
+               let hyps = SeqHyp.to_list eseq.sequent_hyps in
+               let vars = List.fold_left vfold (free_vars_set t) hyps in
+               let _, vars, conts, hyps = List.fold_left fold (vars,[],[],[]) hyps in
                let goal = mk_so_var_term v conts vars in
                   mk_sequent_term { eseq with sequent_hyps = SeqHyp.of_list (List.rev hyps); sequent_goals = SeqGoal.of_list [goal] }
             else mk_so_var_term v [] []

@@ -100,7 +100,7 @@ let name_params =
 (*
  * Distinguish between context var parameters, and other parameters.
  *)
-let extract_params cvars bvars =
+let extract_params cvars =
    let aux h =
       if is_so_var_term h then
          let v, conts, terms = dest_so_var h in

@@ -57,12 +57,6 @@ let rec context_vars_list = function
  | [] ->
       []
 
-let rec binding_vars_list = function
-   h::t ->
-      Lm_list_util.union (TermSubst.binding_vars h) (binding_vars_list t)
- | [] ->
-      []
-
 (*
  * Collect the arguments in a rewrite.
  *)

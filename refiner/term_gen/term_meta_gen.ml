@@ -170,16 +170,6 @@ struct
    (*
     * Calculate context vars.
     *)
-   let rec binding_vars = function
-      MetaTheorem t ->
-         TermSubst.binding_vars t
-    | MetaImplies (a, b)
-    | MetaFunction (_, a, b)
-    | MetaIff (a, b) ->
-         Lm_list_util.union (binding_vars a) (binding_vars b)
-    | MetaLabeled (_, t) ->
-         binding_vars t
-
    let rec context_vars = function
       MetaTheorem t ->
          TermSubst.context_vars t

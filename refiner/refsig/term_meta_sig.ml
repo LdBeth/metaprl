@@ -47,7 +47,6 @@ sig
    (*
     * Some operations on meta_term.
     *)
-   val binding_vars : meta_term -> var list
    val context_vars : meta_term -> var list
    val meta_alpha_equal : meta_term -> meta_term -> bool
    val unfold_mlabeled : string -> meta_term -> term

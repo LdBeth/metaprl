@@ -186,58 +186,6 @@ struct
          }
       else bt
 
-   (*
-    * Collect all binding vars.
-    *)
-   let rec binding_vars_term t =
-      match t.core with
-         Term t ->
-            binding_vars_bterms t.term_terms
-       | Sequent seq ->
-            let hyps = seq.sequent_hyps in
-            let len = SeqHyp.length hyps in
-            let rec coll_hyps i =
-               if i = len then binding_vars_term seq.sequent_args else
-                  match SeqHyp.get hyps i with
-                     HypBinding (v,t) ->
-                        binding_vars_union (SymbolSet.add (coll_hyps (succ i)) v) t
-                   | Hypothesis (t) ->
-                        binding_vars_union (coll_hyps (succ i)) t
-                   | Context (_,_,[]) ->
-                        coll_hyps (succ i)
-                   | Context (_,_,ts) ->
-                        List.fold_left binding_vars_union (coll_hyps (succ i)) ts
-            in
-            let goals = seq.sequent_goals in
-            let len = SeqGoal.length goals in
-            let rec coll_goals i =
-               if i = len then coll_hyps 0 else
-                  binding_vars_union (coll_goals (succ i)) (SeqGoal.get goals i)
-            in coll_goals 0
-       | FOVar _ -> SymbolSet.empty
-       | SOVar(_, _, ts) -> List.fold_left binding_vars_union SymbolSet.empty ts
-       | Subst _ -> ignore (get_core t); binding_vars_term t
-       | Hashed d ->
-            binding_vars_term (Weak_memo.TheWeakMemo.retrieve_hack d)
-
-   and binding_vars_bterm bt =
-      let bv = binding_vars_term bt.bterm in
-      match bt.bvars with
-            [] -> bv
-          | [v] -> SymbolSet.add bv v
-          | vars -> SymbolSet.add_list bv vars
-
-   and binding_vars_bterms = function
-      [] -> SymbolSet.empty
-    | [bt] -> binding_vars_bterm bt
-    | bt::l ->
-         SymbolSet.union (binding_vars_bterm bt) (binding_vars_bterms l)
-
-   and binding_vars_union vars t = SymbolSet.union (binding_vars_term t) vars
-
-   let binding_vars t =
-      SymbolSet.to_list (binding_vars_term t)
-
    let add_vars vars term =
       SymbolSet.union vars (free_vars_set term)
 

@@ -41,7 +41,6 @@ open Filter_type
  ************************************************************************)
 
 val context_vars_list : term list -> var list
-val binding_vars_list : term list -> var list
 val unzip_rewrite : string -> meta_term -> term list * term * term
 
 val split_mfunction : meta_term -> string list list * term list * meta_term
@@ -58,7 +57,7 @@ val output_path : out_channel -> module_path -> unit
 val add_binding : term prl_binding -> MLast.expr
 val get_bindings : unit -> (string * term prl_binding) list
 (* Do not convert bound contexts *)
-val get_unparsed_bindings : unit -> (string * term prl_binding) list 
+val get_unparsed_bindings : unit -> (string * term prl_binding) list
 
 val no_resources : (MLast.expr, term) resource_def
 
