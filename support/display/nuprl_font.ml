@@ -333,8 +333,11 @@ dform keyword_end_df : internal :: mode[html] :: keyword_end =
 dform info_begin_df_all : internal :: mode [src] :: info_begin = `""
 dform info_end_df_all : internal :: mode[src] :: info_end = `""
 
-dform keyword_begin_df_all : internal :: except_mode[html] :: except_mode[tex] :: keyword_begin = `""
-dform keyword_end_df_all : internal :: except_mode[html] :: except_mode[tex] :: keyword_end = `""
+dform keyword_begin_df_all : internal :: except_mode[html] :: except_mode[tex] :: keyword_begin =
+   bf_begin
+
+dform keyword_end_df_all : internal :: except_mode[html] :: except_mode[tex] :: keyword_end =
+   bf_end
 
 dform keyword_df1 : internal :: except_mode[tex] :: keyword[text:s] =
    keyword_begin slot[text:s] keyword_end
