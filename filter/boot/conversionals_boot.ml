@@ -251,7 +251,8 @@ struct
       rwcAll conv 0
 
    let rwAllAll conv   =
-      Tacticals.prefix_thenMT (Tacticals.onAllMAssumT (rwcAll conv)) (rwAll conv)
+      Tacticals.prefix_thenT Tacticals.removeHiddenLabelT
+         (Tacticals.prefix_thenMT (Tacticals.onAllMAssumT (rwcAll conv)) (rwAll conv))
 
    let rwh conv = rw (higherC conv)
    let rwch conv = rwc (higherC conv)
