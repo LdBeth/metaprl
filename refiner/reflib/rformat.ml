@@ -1421,7 +1421,7 @@ let tex_escape_string linebreaks s =
       else
          match s.[j] with
             ' ' ->
-               collect_escape i j "{\\ }"
+               collect_escape i j "\\ "
           | '_' ->
                collect_escape i j "\\_"
           | '^' ->
@@ -1439,11 +1439,13 @@ let tex_escape_string linebreaks s =
           | '}' ->
                collect_escape i j "\\}"
           | '\\' ->
-               collect_escape i j "\\verb+\\+"
+               collect_escape i j "\\backslash "
           | '$' ->
                collect_escape i j "\\$"
           | '%' ->
                collect_escape i j "\\%"
+          | '|' ->
+               collect_escape i j "\\|"
           | _ ->
                collect i (succ j)
    and collect_escape i j s' =
@@ -1464,19 +1466,36 @@ let tex_print_invis buf s =
    buf.tex_current_line <- (false, s) :: buf.tex_current_line
 
 (*
+ * Count the number of $'s in a line.
+ *)
+let tex_count_math line =
+   let rec count c start =
+      try
+         let i = String.index_from line start '$' in
+         if (i=0) || (line.[pred i]<>'\\') then
+            count (succ c) (succ i)
+         else
+            count c (succ i)
+      with
+         Not_found ->
+            c
+   in
+      count 0 0
+
+(*
  * Extract the entire line.
  *)
 let tex_line buf =
-   let rec collect line = function
+   let rec collect count line = function
       (vis, h) :: t ->
          if vis then
-            collect (tex_escape_string true h ^ line) t
+            collect count (tex_escape_string true h ^ line) t
          else
-            collect (h ^ line) t
+            collect (count + (tex_count_math h)) (h ^ line) t
     | [] ->
-         line
+         count, line
    in
-      collect "" buf.tex_current_line
+      collect 0 "" buf.tex_current_line
 
 let tex_visible buf =
    let rec collect line = function
@@ -1490,10 +1509,15 @@ let tex_visible buf =
       collect "" buf.tex_current_line
 
 let tex_push_line buf =
-   let line = tex_line buf in
+   let count, line = tex_line buf in
       output_string buf.tex_out line;
+      if (count mod 2) = 1 then
+         output_string buf.tex_out "$";
       output_string buf.tex_out "\\\\\n";
-      buf.tex_current_line <- []
+      if (count mod 2) = 1 then
+         buf.tex_current_line <- [false, "$ "]
+      else
+         buf.tex_current_line <- []
 
 (*
  * Set up all pending tabstops.
@@ -1510,11 +1534,11 @@ let tex_tab buf (col, _) =
    if col = 0 then
       begin
          tex_push_line buf;
-         buf.tex_current_line <- [false, "\\\\\n"];
+         buf.tex_current_line <- (false, "\\\\\n") :: buf.tex_current_line;
          buf.tex_prefix <- ""
       end
    else
-      let tabline = buf.tex_prefix ^ tex_visible buf in
+      let tabline = tex_tab_line buf in
          tex_push_line buf;
          let prefix =
             if col >= String.length tabline then
@@ -1524,7 +1548,7 @@ let tex_tab buf (col, _) =
          in
          let spacer = sprintf "\\phantom{%s}" (tex_escape_string false prefix) in
             buf.tex_prefix <- prefix;
-            buf.tex_current_line <- [false, spacer]
+            buf.tex_current_line <- (false, spacer) :: buf.tex_current_line
 
 (*
  * Begin a tagged block.
