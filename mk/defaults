@@ -5,7 +5,7 @@
 #
 # The version of the MetaPRL program.
 #
-MP_VERSION=0.9.5
+MP_VERSION=0.9.5+
 
 #
 # Versions of Ocaml/Camlp4 that are compatible with MetaPRL
