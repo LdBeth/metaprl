@@ -288,18 +288,21 @@ let format_refine_error db buf printers name error =
  * Convert an exception to a string.
  *)
 let format_exn db buf printers exn =
-   let format = function
+   format_pushm buf 4;
+   begin match exn with
       RefineError (name, msg) ->
          format_string buf "Refine error:";
          format_refine_error db buf printers name msg
     | Incomplete opname ->
          format_string buf ("Incomplete proof: /" ^ (String.concat "/" (List.rev (dest_opname opname))))
+    | Invalid_argument s ->
+         format_string buf ("Invalid Argument:\n" ^ s)
+    | Failure s ->
+         format_string buf ("Failure:\n" ^ s)
     | exn ->
          format_string buf (Printexc.to_string exn)
-   in
-      format_pushm buf 4;
-      format exn;
-      format_popm buf
+   end;
+   format_popm buf
 
 (*
  * Formatting.
