@@ -327,6 +327,14 @@ point is outside the region."
   "Pattern that matches all char constants")
 
 ;;
+;; Quotation syntax
+(defconst caml-quotation-start "<<\\|<:[A-z]+<"
+  "Beginning of a quotation")
+
+(defconst caml-quotation-end ">>"
+  "End of a quotation")
+
+;;
 ;; Syntax tables are computed at compile time.
 ;;
 (eval-when-compile (require 'caml-fa))
@@ -485,6 +493,8 @@ Return nil if there are no more tokens"
 	   (cons 'token (point)))
 	  ((looking-at caml-comment-start)
 	   (cons 'comment (caml-comment-end)))
+	  ((looking-at caml-quotation-start)
+	   (cons 'comment (caml-quotation-end)))
 	  ((or (looking-at "^#") (looking-at "\\\\$"))
 	   (end-of-line)
 	   (cons 'comment (point)))
@@ -575,6 +585,40 @@ Return nil if there are no more tokens"
 		    (setq level (1+ level))
 		    (goto-char end))
 		   ((looking-at caml-comment-end)
+		    (setq level (1- level))
+		    (goto-char end)))
+	     (not (or (= level 0) (eobp)))))
+    (point)))
+
+;;
+;; Find the end of the quotation.
+;; The problem here is that quotations may be nested, and
+;; char and string literals matter.
+;;
+(defun caml-quotation-end ()
+  "Move to the end of this quotation"
+  (interactive)
+  (if (looking-at caml-quotation-start)
+      (re-search-forward caml-quotation-start))
+  (let ((level 1)
+	(search (concat "\"\\|'\\|\\("
+			caml-quotation-start "\\)\\|\\("
+			caml-quotation-end "\\)"))
+	(end (point-max)))
+    (while (progn
+	     (when (re-search-forward search nil 0)
+		   (setq end (point))
+		   (goto-char (match-beginning 0)))
+	     (cond ((looking-at "'")
+		    (if (looking-at caml-char-constant-pattern)
+			(goto-char (caml-char-constant-end))
+		      (forward-char 1)))
+		   ((looking-at "\"")
+		    (goto-char (caml-string-constant-end)))
+		   ((looking-at caml-quotation-start)
+		    (setq level (1+ level))
+		    (goto-char end))
+		   ((looking-at caml-quotation-end)
 		    (setq level (1- level))
 		    (goto-char end)))
 	     (not (or (= level 0) (eobp)))))
@@ -677,7 +721,7 @@ Return nil if there are no more tokens"
 
 			       ;; Collect this token
 			       (setq stack (cdr code))
-			       (and justify bol 
+			       (and justify bol
 				    (caml-justify pos (if (eq token '|)
 							  (+ bol caml-pipe-indent)
 							bol)))))))
@@ -942,7 +986,7 @@ Return nil if there are no more tokens"
       (while (and info (> (cdr (cdr (car info))) pos))
 	(setq info (cdr info)))
 
-      ;; Have a previous stack? 
+      ;; Have a previous stack?
       (cond (info
 	     ;; Repeal to the previous point
 	     (setq start (cdr (cdr (car info))))
