@@ -44,11 +44,11 @@ SIG_EDIT :=\
 	-e "s,and operator =.*,and operator,"
 
 term_sig.mli: term_simple_sig.mlz
-	rm -f $@
+	$(RM) $@
 	sed $(SIG_EDIT) < term_simple_sig.mlz > $@
 	chmod 444 $@
 
 term_sig.ml: term_simple_sig.mlz
-	rm -f $@
+	$(RM) $@
 	sed $(SIG_EDIT) < term_simple_sig.mlz > $@
 	chmod 444 $@

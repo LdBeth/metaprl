@@ -1,2 +1,2 @@
 clean:
-	rm -f *.cm* *.ml* *.txt prlc* *.a camlp4*
+	$(RM) *.cm* *.ml* *.txt prlc* *.a camlp4*

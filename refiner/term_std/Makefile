@@ -34,4 +34,4 @@ install:: $(MAIN).cma $(CMIFILES)
 	$(INSTALL) $(MLIFILES) $(CMIFILES) $(MPLIB)
 
 clean::
-	rm -f *_simp.* *_verb.*
+	$(RM) *_simp.* *_verb.*

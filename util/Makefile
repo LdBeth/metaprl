@@ -30,7 +30,7 @@ ocamldep.ml: ocamldep.mll
 	$(OCAMLLEX) ocamldep.mll
 
 clean:
-	rm -f *.cm* *~ ocamldep.ml *.o Makefile.dep
+	$(RM) *.cm* *~ ocamldep.ml *.o Makefile.dep
 
 depend:
 

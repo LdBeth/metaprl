@@ -110,7 +110,7 @@ clean::
 	done
 
 depend::
-	rm -f Makefile.tmp
+	$(RM) Makefile.tmp
 	touch Makefile.tmp
 	$(ROOT)/bin/ocamldep $(IDIRS) -I ../mllib $(MLFILES) $(MLIFILES) >> Makefile.tmp
 	mv Makefile.tmp Makefile.dep

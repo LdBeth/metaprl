@@ -1,2 +1,2 @@
 clean:
-	rm -f prlc ocamldep
+	$(RM) prlc ocamldep

@@ -54,9 +54,9 @@ $(REFINER).cma: $(CMOFILES)
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -c $*.ml
 
 clean:
-	rm -f *.cm* *.z* *~ *.aux *.log *.dvi *.ps
-	rm -f $(REFINER).cma
-	rm -f *.output
+	$(RM) *.cm* *.z* *~ *.aux *.log *.dvi *.ps
+	$(RM) $(REFINER).cma
+	$(RM) *.output
 
 depend: $(MLFILES) $(MLIFILES)
 	$(OCAMLDEP) $(INCLUDE) $(MLFILES) $(MLIFILES) > Makefile.dep

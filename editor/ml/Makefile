@@ -243,15 +243,15 @@ opt: $(MAIN).cmxa $(MP).opt
 install:: all
 
 $(MP).run: $(CMOBJS) $(RCMOFILES) $(CMADEPS)
-	rm -f $@
+	$(RM) $@
 	$(OCAMLMKTOP) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(CMOBJS) $(RCMOFILES) $(CCLIBS) $(LIBTHREADS)
 
 $(MP).top: $(TCMOBJS) $(TCMOFILES) $(TCMADEPS)
-	rm -f $@
+	$(RM) $@
 	$(OCAMLC) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(TCMOBJS) $(TCMOFILES) $(CCLIBS) $(LIBTHREADS)
 
 $(MP).opt: $(CMXOBJS) $(TCMXFILES)
-	rm -f $@
+	$(RM) $@
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ -linkall $(THREADS) $(CMXOBJS) $(TCMXFILES) $(CCLIBS) $(OPTTHREADS)
 
 clean::

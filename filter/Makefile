@@ -296,7 +296,7 @@ $(PRLCO).opt: $(PRLCO_CMXOBJS)
 # Infix file is preprocessed.
 #
 infix.ml: infix.pre.ml
-	rm -f $@
+	$(RM) $@
 	camlp4$(EXE) pa_o.cmo pa_op.cmo pr_o.cmo pa_extend.cmo q_MLast.cmo ./infix.pre.ml |\
 		sed -e 's,"KEYWORD",keyword,' > infix.ml
 	chmod 444 $@

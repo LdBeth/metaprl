@@ -76,7 +76,7 @@ install:: $(MAIN).cma
 	$(INSTALL) $(MAIN).cma registry.txt $(MPLIB)
 
 clean::
-	rm -f *.p4* *.pp*
+	$(RM) *.p4* *.pp*
 
 $(ROOT)/lib/registry.txt: registry.txt
 	$(LN) $(ROOT)/$(DIR)/registry.txt $@
