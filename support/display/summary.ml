@@ -474,8 +474,11 @@ dform rule_df : "rule"[name:s]{'params; 'stmt; 'proof; 'res} =
 
 declare displayed_as{'t}
 
-dform displayed_as_df : displayed_as{'t} =
+dform displayed_as_df : except_mode[tex] :: displayed_as{'t} =
    szone info["(displayed as"] hspace ensuremath{slot["decl"]{'t}} info[")"] ezone
+
+dform displayed_as_df : mode[tex] :: displayed_as{'t} =
+   szone info["(displayed as"] hspace `"``" ensuremath{slot["decl"]{'t}} `"''" info[")"] ezone
 
 dform opname_df : "opname"[name:s]{'term} =
    pushm[4] szone
