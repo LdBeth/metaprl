@@ -38,3 +38,6 @@ install:: $(MAIN).cma $(CMIFILES)
 
 clean::
 	$(RM) *_simp.* *_verb.*
+
+Makefile.dep: Files
+

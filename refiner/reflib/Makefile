@@ -37,3 +37,5 @@ opt: $(MAIN).cmxa $(RMLIFILES) $(RCMIFILES)
 install:: $(MAIN).cma $(CMIFILES)
 	$(INSTALL) $(MLIFILES) $(CMIFILES) $(MPLIB)
 
+Makefile.dep: Files
+

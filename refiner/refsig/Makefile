@@ -52,3 +52,6 @@ term_sig.ml: term_simple_sig.mlz
 	$(RM) $@
 	sed $(SIG_EDIT) < term_simple_sig.mlz > $@
 	chmod 444 $@
+
+Makefile.dep: Files
+

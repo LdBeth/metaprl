@@ -234,7 +234,7 @@ clean::
 	$(RM) *.run *.top *.opt *.cma *.cmxa *.cmx *.cmi* *.cmo* *.z* *.o *.a *~ *.bak *.output $(CLEAN_MAIN)
 	$(RM) gmon.out $(ZMLFILES) $(ZMLIFILES) Makefile.dep
 
-Makefile.dep:
+Makefile.dep: Makefile $(ROOT)/mk/config $(ROOT)/mk/preface $(ROOT)/mk/rules
 	@if [ -f $(OCAMLDEP) ]; then touch Makefile.dep; make depend; fi
 
 depend:: $(MLFILES) $(MLIFILES)

@@ -39,3 +39,5 @@ install:: $(MAIN).cma $(CMIFILES)
 clean::
 	rm -f refiner.ml
 
+Makefile.dep: Files
+
