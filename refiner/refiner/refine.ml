@@ -241,6 +241,7 @@ struct
     | ComposeJust of ext_just * ext_just list
     | NthHypJust of msequent * int
     | CutJust of cut_just
+    | Identity
 
    and atomic_just =
       { just_goal : msequent;
@@ -456,6 +457,7 @@ struct
      | EDComposition (* any compilcated steps will fall into this category *)
      | EDNthHyp of int
      | EDCut of term
+     | EDIdentity
 
    (************************************************************************
     * SEQUENT OPERATIONS                                                   *
@@ -578,21 +580,25 @@ struct
       let cut_info = { cut_goal = seq; cut_hyp = t; cut_lemma = cut_lemma; cut_then = cut_then } in
          [cut_lemma; cut_then], CutJust cut_info
 
+   let subgoals_of_extract ext = ext.ext_subgoals
+
    (*
     * Compose two extracts.
     * The subgoals of the first must match with the goals of the second.
     *)
    let compose ext extl =
-      let { ext_goal = goal; ext_just = just; ext_subgoals = subgoals } = ext in
-      let subgoals' = List.map (fun ext -> ext.ext_goal) extl in
+      let subgoals = List.map (fun ext -> ext.ext_goal) extl in
       let _ =
-         if not (List_util.for_all2 msequent_alpha_equal subgoals subgoals') then
-            REF_RAISE(RefineError ("compose", StringError "goal mistmatch"))
-      in
-      let justl = List.map (fun ext -> ext.ext_just) extl in
-      let just = ComposeJust (just, justl) in
-      let subgoals'' = List_util.flat_map (fun ext -> ext.ext_subgoals) extl in
-         { ext_goal = goal; ext_just = just; ext_subgoals = subgoals }
+         if not (List_util.for_all2 msequent_alpha_equal ext.ext_subgoals subgoals) then
+            REF_RAISE(RefineError ("compose", StringError "goal mismatch"))
+      in {
+         ext with
+         ext_just = ComposeJust (ext.ext_just, List.map (fun ext -> ext.ext_just) extl);
+         ext_subgoals = List_util.flat_map (fun ext -> ext.ext_subgoals) extl
+      }
+
+   let identity goal =
+      { ext_goal = goal; ext_just = Identity; ext_subgoals = [goal] }
 
    (************************************************************************
     * REGULAR REWRITES                                                     *
@@ -1070,6 +1076,7 @@ struct
        | ComposeJust _ -> EDComposition
        | NthHypJust (_, i) -> EDNthHyp i
        | CutJust j -> EDCut j.cut_hyp
+       | Identity -> EDIdentity
 
    (*
     * When an term is calculated from an extract, we have to search
@@ -1290,6 +1297,8 @@ struct
          0
     | CutJust _ ->
          2
+    | Identity ->
+         1
 
    and cond_rewrite_just_subgoal_count = function
       CondRewriteHere { cjust_subgoals = subgoals }
@@ -1336,6 +1345,8 @@ struct
             f params (all_args args rest)
        | RewriteJust (_, just, _) ->
             check_rewrite just;
+            one_arg args rest
+       | Identity ->
             one_arg args rest
        | NthHypJust (_, i) ->
             List.nth args i

@@ -822,11 +822,11 @@ struct
          print_exn info set pl
 
    let check info =
-      let set info =
-         let _ = info.proof.edit_check () in
-            display_proof info info.proof []
+      let check info =
+         ignore(info.proof.edit_check (get_db info));
+         display_proof info info.proof []
       in
-         print_exn info set info
+         print_exn info check info
 
    let expand info =
       let set info =
@@ -989,12 +989,6 @@ struct
       in
          apply_all f info true
 
-   and check_all info =
-      let f item db =
-         ignore (item.edit_check ())
-      in
-         apply_all f info true
-
    and status item =
       let name, status, _, _ = item.edit_get_contents () in
       let str_status = match status with
@@ -1012,6 +1006,19 @@ struct
             "is an object with unknown status"
       in
          eprintf "Status: `%s' %s%t" name str_status eflush
+
+   and check_all info =
+      let check item db =
+         begin match item.edit_get_contents () with
+            _, (ObjPrimitive | ObjDerived), _, _ -> ()
+          | _ -> ignore (item.edit_check db)
+         end;
+         status item
+      in
+      let f item db =
+         print_exn info (check item) db
+      in
+         apply_all f info true
 
    and status_all info =
       let f item db =

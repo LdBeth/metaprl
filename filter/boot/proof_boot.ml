@@ -1445,6 +1445,8 @@ struct
                IntArgList ("nthAssumT", i)
           | EDCut t ->
                TermArgList ("cutT", t)
+          | EDIdentity ->
+               NoneArgList "<identity>"
       in
          ExprExtract arglist
 
@@ -1801,9 +1803,30 @@ struct
    let rec refiner_extract_of_proof_ext = function
       Goal _ | Unjustified _ ->
          raise(RefineError("Proof_boot.refiner_extract_of_proof_ext", StringError "The proof is incomplete or unexpanded"))
-    | Wrapped(_,ext) -> refiner_extract_of_proof_ext ext
+    | Wrapped(_,ext) | Locked ext -> refiner_extract_of_proof_ext ext
     | Extract(_,_,re) -> re
-    | _ -> raise (Invalid_argument "Proof_boot.refiner_extract_of_proof_ext: not fully implemented yet") (*XXX TODO*)
+    | Compose{ comp_goal = goal; comp_subgoals = subgoals } ->
+         Refine.compose (refiner_extract_of_proof_ext goal) (List.map refiner_extract_of_proof_ext subgoals)
+    | RuleBox{ rule_extract = goal; rule_subgoals = subgoals } ->
+         (* In a RuleBox, several identical subgoals could be compressed into one, *)
+         (* so we need to be careful.                                              *)
+         let ext = refiner_extract_of_proof_ext goal in
+         let real_subgoals = subgoals_of_extract ext in
+            Refine.compose ext (List.map (find_mseq_extract subgoals) real_subgoals)
+    | Pending f ->
+         refiner_extract_of_proof_ext (f ())
+    | Identity goal ->
+         Refine.identity goal.ref_goal
+
+   and find_mseq_extract subgoals mseq =
+      match subgoals with
+       | hd::tl ->
+            if msequent_alpha_equal mseq (goal_ext hd).ref_goal then
+               refiner_extract_of_proof_ext hd
+            else
+               find_mseq_extract tl mseq
+       | [] ->
+            raise(RefineError("Proof_boot.refiner_extract_of_proof_ext", StringError "Invalide rule box"))
 
    let refiner_extract_of_proof proof = refiner_extract_of_proof_ext proof.pf_root
 

@@ -35,8 +35,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 extends Summary
 
@@ -332,17 +332,19 @@ let kreitz_ped ped =
    push_proof ped (Proof.kreitz (update_fun ped) (proof_of_ped ped))
 
 (*
- * Check a proof.
- *)
-let check_ped ped =
-   raise (Failure "Proof_edit.check_ped: not implemented")
-
-(*
  * When the proof is expanded, we make a dulicate.
  * Expansion never fails, but it may change the status of the proof.
  *)
 let expand_ped dforms ped =
    push_proof ped (Proof.expand (update_fun ped) dforms (proof_of_ped ped))
+
+(*
+ * Check a proof.
+ *)
+let check_ped dforms ped =
+   if status_of_ped ped <> Proof.StatusComplete then
+      expand_ped dforms ped;
+   Proof.refiner_extract_of_proof (proof_of_ped ped)
 
 (*
  * We keep a global copy/paste buffer.

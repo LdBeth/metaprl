@@ -138,6 +138,12 @@ sig
    (* The cut rule is primitive, but it doesn't weaken the logic *)
    val cut : term -> tactic
 
+   (* Identity is a no-op proof step *)
+   val identity : msequent -> extract
+
+   (* Returns the list of unproven subgoals *)
+   val subgoals_of_extract : extract -> msequent list
+
    (*
     * For UI purposes only, we want refiner to be able to desribe
     * what it did in a proof step
@@ -149,6 +155,7 @@ sig
     | EDComposition (* any compilcated steps will fall into this category *)
     | EDNthHyp of int
     | EDCut of term
+    | EDIdentity
 
    val describe_extract : extract -> extract_description
 

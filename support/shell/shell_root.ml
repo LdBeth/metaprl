@@ -183,7 +183,7 @@ let rec edit pack window =
    let edit_save () =
       raise_edit_error "list of packages can't be saved"
    in
-   let edit_check () =
+   let edit_check _ =
       raise_edit_error "check the complete set of packages?"
    in
    let edit_expand _ =

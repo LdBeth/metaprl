@@ -342,7 +342,7 @@ let rec edit pack_info parse_arg window =
    let edit_save () =
       Package.save pack_info
    in
-   let edit_check () =
+   let edit_check _ =
       raise_edit_error "check the entire package?"
    in
    let edit_expand _ =

@@ -201,7 +201,7 @@ let rec edit pack parse_arg name window obj =
             ()
 *)
    in
-   let edit_check () =
+   let edit_check df =
       match obj.rule_ped with
          Primitive _ ->
             raise (RefineError ("Shell_rule.check", StringError "can't check primitive rules"))
@@ -210,7 +210,7 @@ let rec edit pack parse_arg name window obj =
        | Incomplete ->
             raise (RefineError ("Shell_rule.check", StringError "proof is incomplete"))
        | Interactive ped ->
-            try Proof_edit.check_ped ped with
+            try Proof_edit.check_ped df ped with
                RefineError (name', err) ->
                   raise (RefineError (name, GoalError (name', err)))
    in

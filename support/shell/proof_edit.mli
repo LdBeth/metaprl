@@ -34,12 +34,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
-open Refiner.Refiner.Term
-open Refiner.Refiner.Refine
+open Refiner.Refiner.TermType
+open Refiner.Refiner
 open Dform_print
 open Dform
 
@@ -78,7 +78,7 @@ type obj_contents = string * obj_status * meta_term * term Filter_type.param lis
 val create : term Filter_type.param list -> tactic_arg -> ped
 val ped_of_proof : term Filter_type.param list -> Proof.proof -> ped
 val set_params : ped -> term Filter_type.param list -> unit
-val set_goal : ped -> msequent -> unit
+val set_goal : ped -> Refine.msequent -> unit
 
 val edit_info_of_ped : ped -> edit_info
 
@@ -131,8 +131,8 @@ val squash_ped : ped -> unit
  *    expand_proof: check as much of the proof as possible,
  *       no exceptions are raised
  *)
-val check_ped : ped -> term
 val expand_ped : dform_base -> ped -> unit
+val check_ped : dform_base -> ped -> Refine.extract
 val ped_status : ped Filter_summary_type.proof_type -> obj_status
 
 (*
