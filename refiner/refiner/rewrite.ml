@@ -1387,6 +1387,8 @@ struct
 
    let build_contractum names stack = build_contractum_term names stack [||]
 
+   let opname_exn = RefineError("Rewrite.apply_rewrite", StringError "opnames do not match")
+
    (*
     * To do the rewrite. match agaist the redex, then
     * instantiate the contractum.
@@ -1402,7 +1404,7 @@ struct
          match redex, terms with
             (RWComposite { rw_op = { rw_name = opname1 } } :: _, t :: _) ->
                if opname1 != opname_of_term t then
-                  raise (RewriteErr (BadMatch (TermMatch t)))
+                  raise opname_exn
           | _ ->
                ()
       in
@@ -1652,6 +1654,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.12  1998/07/01 17:11:53  nogin
+ * When opnames do not match, raise RefineError directly
+ *
  * Revision 1.11  1998/07/01 04:36:56  nogin
  * Moved Refiner exceptions into a separate module RefineErrors
  *
