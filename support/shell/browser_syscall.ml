@@ -25,6 +25,7 @@
  * @end[license]
  *)
 open Lm_printf
+open Lm_thread
 
 module Buffer =
 struct
