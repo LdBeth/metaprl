@@ -257,13 +257,7 @@ struct
             funC repeatForCE
 
    let rwc conv assum clause =
-      let addr = TermAddr.make_address [ClauseAddr clause] in
-      Tacticals.funT
-      (fun p ->
-         let a = Sequent.nth_assum p assum in
-         if not (TermAddr.subterm_exists a addr) then
-            raise (RefineError("rwc", AddressError (addr, a)));
-         Rewrite.rw conv assum addr)
+      Rewrite.rw conv assum (TermAddr.make_address [ClauseAddr clause])
 
    let empty_addr = TermAddr.make_address []
 
