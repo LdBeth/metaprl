@@ -75,7 +75,9 @@ INSTALL = /bin/cp -pf
 CP = /bin/cp -pf
 CPP = /lib/cpp -traditional
 LN = ln -sf
-CAMLP4N = $(ROOT)/lib/camlp4n$(EXE)
+ifndef CAMLP4N
+	CAMLP4N = $(ROOT)/lib/camlp4n$(EXE)
+endif
 
 # For cleaning the directory
 ifdef MAIN

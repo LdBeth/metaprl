@@ -81,5 +81,5 @@ clean::
 	rm -f *.p4* *.pp*
 
 $(ROOT)/lib/registry.txt: registry.txt
-	$(INSTALL) registry.txt $(ROOT)/lib
+	$(LN) $(ROOT)/$(DIR)/registry.txt $@
 

@@ -25,7 +25,7 @@ install:: $(MAIN).a
 # Installation
 #
 $(ROOT)/lib/$(MAIN).a: $(MAIN).a
-	$(INSTALL) $(MAIN).a $@
+	$(LN) $(ROOT)/$(DIR)/$(MAIN).a $@
 
 # Actual makefile
 include ../mk/config
