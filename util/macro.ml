@@ -34,7 +34,8 @@
 (*
  * DEFINE SYMBOL
  * UNDEFINE SYMBOL
- *   Define and undefine a symbol.
+ * UNDEF SYMBOL
+ *   Define and undefine a symbol (UNDEF is the same as UNDEFINE to mimic CPP).
  *   Also adds "-DSYM" & "-USYM" command-line options for these.
  *
  * DEFINE SYMBOL = <expr>
@@ -42,7 +43,9 @@
  *   Also makes "-DSYM=<expr>" available this.
  *
  * IFDEF SYMBOL THEN ...
- * IFDEF SYMBOL THEN ... ELSE ...
+ * IFDEF SYMBOL THEN ...
+ * IFNDEF SYMBOL THEN ... ELSE ...
+ * IFNDEF SYMBOL THEN ... ELSE ...
  *   Works for top-level structure items and for expressions.
  *
  * DEFEXPRMACRO MAC ARG... = <expr>
@@ -106,7 +109,7 @@ module Codewalk = struct
       in
          expr_fun := exprF;
          patt_fun := pattF;
-         loc := (match locN with None -> (fun x -> x) | Some l -> (fun _ -> l));
+         loc := (match locN with None -> fun x -> x | Some l -> fun _ -> l);
          let result = func x in
             expr_fun := exprO;
             patt_fun := pattO;
@@ -361,7 +364,11 @@ let undefine x =
 let is_defined x = List.exists (fun y -> fst y = x) !defined
 
 type str_item_or_def =
-   SdStrs of str_item list | SdDef of string * expr | SdUnd of string | SdNop
+   | SdStr of str_item
+   | SdLst of str_item_or_def list
+   | SdIfd of string * str_item_or_def list * str_item_or_def list
+   | SdDef of string * expr
+   | SdUnd of string
 
 EXTEND
    GLOBAL: expr str_item;
@@ -369,27 +376,50 @@ EXTEND
       [[ "IFDEF"; c = UIDENT; "THEN"; e1 = expr; "ELSE"; e2 = expr; "ENDIF" ->
             if is_defined c then e1 else e2
        | "IFDEF"; c = UIDENT; "THEN"; e1 = expr; "ENDIF" ->
-            if is_defined c then e1 else <:expr< () >> ]];
+            if is_defined c then e1 else <:expr< () >>
+       | "IFNDEF"; c = UIDENT; "THEN"; e1 = expr; "ELSE"; e2 = expr; "ENDIF" ->
+            if is_defined c then e2 else e1
+       | "IFNDEF"; c = UIDENT; "THEN"; e1 = expr; "ENDIF" ->
+            if is_defined c then <:expr< () >> else e1 ]];
    str_item: FIRST
       [[ x = def_undef ->
             let nothing = <:str_item< declare end >> in
+            let rec aux x =
                match x with
-               | SdStrs sis   -> <:str_item< declare $list:sis$ end >>
-               | SdDef x expr -> define x expr; nothing
-               | SdUnd x      -> undefine x;    nothing
-               | SdNop        ->                nothing ]];
+               | SdStr si  -> si
+               | SdLst l -> (match List.filter (fun x -> x <> nothing)
+                                      (List.map aux l) with
+                              | []   -> nothing
+                              | [si] -> si
+                              | sis  -> <:str_item< declare $list:sis$ end >>)
+               | SdIfd x e1 e2 -> aux (SdLst (if is_defined x then e1 else e2))
+               | SdDef x e -> define x e; nothing
+               | SdUnd x -> undefine x; nothing
+            in
+              aux x ]];
    def_undef:
-      [[ "IFDEF"; c = UIDENT; "THEN"; e1 = str_item_def_undef;
-         "ELSE"; e2 = str_item_def_undef; "ENDIF" ->
-            if is_defined c then e1 else e2
-       | "IFDEF"; c = UIDENT; "THEN"; e1 = str_item_def_undef; "ENDIF" ->
-            if is_defined c then e1 else SdNop
-       | "DEFINE";   c = UIDENT; "="; e = expr -> SdDef c e
-       | "DEFINE";   c = UIDENT                -> SdDef c <:expr< () >>
-       | "UNDEFINE"; c = UIDENT                -> SdUnd c ]];
+      [[ "IFDEF"; c = UIDENT; "THEN"; e1 = LIST0 str_item_def_undef;
+         "ELSE"; e2 = LIST0 str_item_def_undef; "ENDIF" ->
+            SdIfd c e1 e2
+       | "IFDEF"; c = UIDENT; "THEN"; e1 = LIST0 str_item_def_undef; "ENDIF" ->
+            SdIfd c e1 []
+       | "IFNDEF"; c = UIDENT; "THEN"; e1 = LIST0 str_item_def_undef;
+         "ELSE"; e2 = LIST0 str_item_def_undef; "ENDIF" ->
+            SdIfd c e2 e1
+       | "IFNDEF"; c = UIDENT; "THEN"; e1 = LIST0 str_item_def_undef; "ENDIF"->
+            SdIfd c [] e1
+       | "DEFINE";   c = UIDENT; "="; e = expr ->
+            SdDef c e
+       | "DEFINE";   c = UIDENT ->
+            SdDef c <:expr< () >>
+       | "UNDEFINE"; c = UIDENT ->
+            SdUnd c
+       | "UNDEF"; c = UIDENT ->
+            (* UNDEF is the same as UNDEFINE to mimic CPP *)
+            SdUnd c ]];
    str_item_def_undef:
       [[ d = def_undef -> d
-       | sis = LIST1 str_item -> SdStrs sis ]];
+       | sis = str_item -> SdStr sis ]];
 END
 
 (* Parse a string as an expr - wrap it in parens to make sure it all parses. *)
@@ -402,7 +432,7 @@ let parse_expr str =
          Format.open_vbox 0;
          let exc =
             match exc with
-               Stdpp.Exc_located (bp, ep) exc ->
+             | Stdpp.Exc_located (bp, ep) exc ->
                   Printf.eprintf
                      "When processing -D for %s, at chars %d-%d of \"%s\"\n"
                      !Pcaml.input_file bp ep str;

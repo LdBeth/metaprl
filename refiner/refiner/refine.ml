@@ -60,7 +60,7 @@
  * jyh@cs.cornell.edu
  *)
 
-#include "refine_error.h"
+INCLUDE "refine_error.mlh"
 
 open Printf
 open Mp_debug
@@ -514,10 +514,10 @@ struct
             if alpha_equal (List.nth hyps i) goal then
                [], NthHypJust i
             else
-               ref_raise(RefineError ("nth_hyp", StringError "hyp mismatch"))
+               REF_RAISE(RefineError ("nth_hyp", StringError "hyp mismatch"))
          with
             Failure "nth" ->
-               ref_raise(RefineError ("nth_hyp", IntError i))
+               REF_RAISE(RefineError ("nth_hyp", IntError i))
 
    (*
     * COMPOSE
@@ -529,7 +529,7 @@ struct
       let subgoals' = List.map (fun ext -> ext.ext_goal) extl in
       let _ =
          if not (List_util.for_all2 msequent_alpha_equal subgoals subgoals') then
-            ref_raise(RefineError ("compose", StringError "goal mistmatch"))
+            REF_RAISE(RefineError ("compose", StringError "goal mistmatch"))
       in
       let justl = List.map (fun ext -> ext.ext_just) extl in
       let just = ComposeJust (just, justl) in
@@ -568,36 +568,37 @@ struct
     *)
    let andthenrw rw1 rw2 sent t =
       let t', just =
-#ifdef VERBOSE_EXN
-         try rw1 sent t with
-            RefineError (name, x) ->
-               raise (RefineError ("andthenrw", GoalError (name, x)))
-#else
-         rw1 sent t
-#endif
+         IFDEF VERBOSE_EXN THEN
+            try rw1 sent t with
+               RefineError (name, x) ->
+                  raise (RefineError ("andthenrw", GoalError (name, x)))
+         ELSE
+            rw1 sent t
+         ENDIF
       in
       let t'', just' =
-#ifdef VERBOSE_EXN
-         try rw2 sent t' with
-            RefineError (name, x) ->
-               raise (RefineError ("andthenrw", SecondError (name, x)))
-#else
-         rw2 sent t'
-#endif
+         IFDEF VERBOSE_EXN THEN
+            try rw2 sent t' with
+               RefineError (name, x) ->
+                  raise (RefineError ("andthenrw", SecondError (name, x)))
+         ELSE
+            rw2 sent t'
+         ENDIF
       in
          t'', RewritePair (just, just')
 
    let orelserw rw1 rw2 sent t =
-      try rw1 sent t with
-#ifdef VERBOSE_EXN
-         RefineError (name1, x) ->
-            try rw2 sent t with
-               RefineError (name2, y) ->
-                  raise (RefineError ("orelserw", PairError (name1, x, name2, y)))
-#else
-         _ ->
-            rw2 sent t
-#endif
+      IFDEF VERBOSE_EXN THEN
+         try rw1 sent t with
+            RefineError (name1, x) ->
+               try rw2 sent t with
+                  RefineError (name2, y) ->
+                     raise (RefineError ("orelserw", PairError (name1, x, name2, y)))
+      ELSE
+         try rw1 sent t with
+            _ ->
+               rw2 sent t
+      ENDIF
 
    (************************************************************************
     * CONDITIONAL REWRITES                                                 *
@@ -622,9 +623,7 @@ struct
     * Apply the rewrite to an addressed term.
     *)
    let crwaddr addr crw sent bvars seq t =
-#ifdef VERBOSE_EXN
-      try
-#endif
+      LETMACRO BODY =
          let t, (subgoals, just) =
             let f sent bvars t =
                let t, subgoals, just = crw sent bvars seq t in
@@ -633,11 +632,15 @@ struct
                apply_var_fun_arg_at_addr (f sent) addr bvars t
          in
             t, subgoals, just
-#ifdef VERBOSE_EXN
-      with
-         RefineError (name, x) ->
-            raise (RefineError ("crwaddr", RewriteAddressError (addr, name, x)))
-#endif
+      IN
+      IFDEF VERBOSE_EXN THEN
+         try BODY
+         with
+            RefineError (name, x) ->
+               raise (RefineError ("crwaddr", RewriteAddressError (addr, name, x)))
+      ELSE
+         BODY
+      ENDIF
 
    (*
     * Apply the rewrite at the outermost terms where it does not fail.
@@ -679,36 +682,37 @@ struct
     *)
    let candthenrw crw1 crw2 sent bvars seq t =
       let t', subgoals, just =
-#ifdef VERBOSE_EXN
-         try crw1 sent bvars seq t with
-            RefineError (name, x) ->
-               raise (RefineError ("candthenrw", GoalError (name, x)))
-#else
-         crw1 sent bvars seq t
-#endif
+         IFDEF VERBOSE_EXN THEN
+            try crw1 sent bvars seq t with
+               RefineError (name, x) ->
+                  raise (RefineError ("candthenrw", GoalError (name, x)))
+         ELSE
+            crw1 sent bvars seq t
+         ENDIF
       in
       let t'', subgoals', just' =
-#ifdef VERBOSE_EXN
-         try crw2 sent bvars seq t' with
-            RefineError (name, x) ->
-               raise (RefineError ("candthenrw", SecondError (name, x)))
-#else
-         crw2 sent bvars seq t'
-#endif
+         IFDEF VERBOSE_EXN THEN
+            try crw2 sent bvars seq t' with
+               RefineError (name, x) ->
+                  raise (RefineError ("candthenrw", SecondError (name, x)))
+         ELSE
+            crw2 sent bvars seq t'
+         ENDIF
       in
          t'', subgoals @ subgoals', PairJust (just, just')
 
    let corelserw crw1 crw2 sent bvars seq t =
-      try crw1 sent bvars seq t with
-#ifdef VERBOSE_EXN
-         RefineError (name1, x) ->
-            try crw2 sent bvars seq t with
-               RefineError (name2, y) ->
-                  raise (RefineError ("corelserw", PairError (name1, x, name2, y)))
-#else
-         _ ->
-            crw2 sent bvars seq t
-#endif
+      IFDEF VERBOSE_EXN THEN
+         try crw1 sent bvars seq t with
+            RefineError (name1, x) ->
+               try crw2 sent bvars seq t with
+                  RefineError (name2, y) ->
+                     raise (RefineError ("corelserw", PairError (name1, x, name2, y)))
+      ELSE
+         try crw1 sent bvars seq t with
+            _ ->
+               crw2 sent bvars seq t
+      ENDIF
 
    (************************************************************************
     * UTILITIES                                                            *
@@ -782,7 +786,7 @@ struct
                search refiners next
           | MLRewriteRefiner { ml_rw_name = n; ml_rw_refiner = next } as r ->
                if n = name then
-                  ref_raise(RefineError (string_of_opname n, StringError "ML rewrites can't be justified"))
+                  REF_RAISE(RefineError (string_of_opname n, StringError "ML rewrites can't be justified"))
                else
                   search refiners next
 
@@ -906,27 +910,27 @@ struct
       let find_axiom name =
          try Hashtbl.find axioms name with
             Not_found ->
-               ref_raise(RefineError (string_of_opname name, StringError "axiom is not justified"))
+               REF_RAISE(RefineError (string_of_opname name, StringError "axiom is not justified"))
       in
       let find_rule name =
          try Hashtbl.find rules name with
             Not_found ->
-               ref_raise(RefineError (string_of_opname name, StringError "rule is not justified"))
+               REF_RAISE(RefineError (string_of_opname name, StringError "rule is not justified"))
       in
       let find_rewrite name =
          try Hashtbl.find rewrites name with
             Not_found ->
-               ref_raise(RefineError (string_of_opname name, StringError "rewrite is not justified"))
+               REF_RAISE(RefineError (string_of_opname name, StringError "rewrite is not justified"))
       in
       let find_cond_rewrite name =
          try Hashtbl.find cond_rewrites name with
             Not_found ->
-               ref_raise(RefineError (string_of_opname name, StringError "cond_rewrite is not justified"))
+               REF_RAISE(RefineError (string_of_opname name, StringError "cond_rewrite is not justified"))
       in
       let find_refiner name =
          try Hashtbl.find refiners name with
             Not_found ->
-               ref_raise(RefineError (string_of_opname name, StringError "refiner is not justified"))
+               REF_RAISE(RefineError (string_of_opname name, StringError "refiner is not justified"))
       in
          { find_axiom = find_axiom;
            find_rule = find_rule;
@@ -949,7 +953,7 @@ struct
             if pax.pax_axiom == ax then
                pax
             else
-               ref_raise(RefineError (string_of_opname name, StringError "axiom proof does not match"))
+               REF_RAISE(RefineError (string_of_opname name, StringError "axiom proof does not match"))
       in
       let check_rule rule =
          let { rule_name = name } = rule in
@@ -957,7 +961,7 @@ struct
             if prule.prule_rule == rule then
                prule
             else
-               ref_raise(RefineError (string_of_opname name, StringError "rule proof does not match"))
+               REF_RAISE(RefineError (string_of_opname name, StringError "rule proof does not match"))
       in
       let check_rewrite rw =
          let { rw_name = name } = rw in
@@ -965,7 +969,7 @@ struct
             if prw.prw_rewrite == rw then
                prw
             else
-               ref_raise(RefineError (string_of_opname name, StringError "rewrite proof does not match"))
+               REF_RAISE(RefineError (string_of_opname name, StringError "rewrite proof does not match"))
       in
       let check_cond_rewrite crw =
          let { crw_name = name } = crw in
@@ -973,7 +977,7 @@ struct
             if pcrw.pcrw_rewrite == crw then
                pcrw
             else
-               ref_raise(RefineError (string_of_opname name, StringError "cond_rewrite proof does not match"))
+               REF_RAISE(RefineError (string_of_opname name, StringError "cond_rewrite proof does not match"))
       in
          { check_axiom = check_axiom;
            check_rule = check_rule;
@@ -1164,50 +1168,50 @@ struct
             insert refiners next
        | AxiomRefiner ax ->
             let { axiom_name = name; axiom_refiner = next } = ax in
-#ifdef VERBOSE_EXN
-               if !debug_sentinal then
-                  eprintf "sentinal_of_refiner: add axiom %s%t" (string_of_opname name) eflush;
-#endif
+               IFDEF VERBOSE_EXN THEN
+                  if !debug_sentinal then
+                     eprintf "sentinal_of_refiner: add axiom %s%t" (string_of_opname name) eflush
+               ENDIF;
                Hashtbl.add axioms name ax;
                insert refiners next
        | RuleRefiner rule ->
             let { rule_name = name; rule_refiner = next } = rule in
-#ifdef VERBOSE_EXN
-               if !debug_sentinal then
-                  eprintf "sentinal_of_refiner: add rule %s%t" (string_of_opname name) eflush;
-#endif
+               IFDEF VERBOSE_EXN THEN
+                  if !debug_sentinal then
+                     eprintf "sentinal_of_refiner: add rule %s%t" (string_of_opname name) eflush
+               ENDIF;
                Hashtbl.add rules name rule;
                insert refiners next
        | RewriteRefiner rw ->
             let { rw_name = name; rw_refiner = next } = rw in
-#ifdef VERBOSE_EXN
-               if !debug_sentinal then
-                  eprintf "sentinal_of_refiner: add rewrite %s%t" (string_of_opname name) eflush;
-#endif
+               IFDEF VERBOSE_EXN THEN
+                  if !debug_sentinal then
+                     eprintf "sentinal_of_refiner: add rewrite %s%t" (string_of_opname name) eflush
+               ENDIF;
                Hashtbl.add rewrites name rw;
                insert refiners next
        | CondRewriteRefiner crw ->
             let { crw_name = name; crw_refiner = next } = crw in
-#ifdef VERBOSE_EXN
-               if !debug_sentinal then
-                  eprintf "sentinal_of_refiner: add cond_rewrite %s%t" (string_of_opname name) eflush;
-#endif
+               IFDEF VERBOSE_EXN THEN
+                  if !debug_sentinal then
+                     eprintf "sentinal_of_refiner: add cond_rewrite %s%t" (string_of_opname name) eflush
+               ENDIF;
                Hashtbl.add cond_rewrites name crw;
                insert refiners next
        | MLRewriteRefiner mlrw ->
             let { ml_rw_name = name; ml_rw_refiner = next } = mlrw in
-#ifdef VERBOSE_EXN
-               if !debug_sentinal then
-                  eprintf "sentinal_of_refiner: add ML rewrite %s%t" (string_of_opname name) eflush;
-#endif
+               IFDEF VERBOSE_EXN THEN
+                  if !debug_sentinal then
+                     eprintf "sentinal_of_refiner: add ML rewrite %s%t" (string_of_opname name) eflush
+               ENDIF;
                Hashtbl.add ml_rewrites name mlrw;
                insert refiners next
        | MLRuleRefiner mlrule ->
             let { ml_rule_name = opname; ml_rule_refiner = next } = mlrule in
-#ifdef VERBOSE_EXN
-               if !debug_sentinal then
-                  eprintf "sentinal_of_refiner: add ML rule %s%t" (string_of_opname opname) eflush;
-#endif
+               IFDEF VERBOSE_EXN THEN
+                  if !debug_sentinal then
+                     eprintf "sentinal_of_refiner: add ML rule %s%t" (string_of_opname opname) eflush
+               ENDIF;
                Hashtbl.add ml_rules opname mlrule;
                insert refiners next
        | LabelRefiner (_, next) as r ->
@@ -1225,35 +1229,31 @@ struct
       let _ = insert [] refiner in
       let check_sentinal table name v =
          if try Hashtbl.find table name == v with Not_found -> false then
-#ifdef VERBOSE_EXN
-            (if !debug_sentinal then
-                eprintf "check_sentinal: found %s%t" (string_of_opname name) eflush)
-#else
-            ()
-#endif
+            IFDEF VERBOSE_EXN THEN
+               if !debug_sentinal then
+                  eprintf "check_sentinal: found %s%t" (string_of_opname name) eflush
+            ENDIF
          else
             begin
                eprintf "check_sentinal: failed %s%t" (string_of_opname name) eflush;
-               ref_raise(RefineError ("check_sentinal",
-                                   StringStringError ("axiom is not valid in this context", (string_of_opname name))))
+               REF_RAISE(RefineError
+                            ("check_sentinal",
+                             StringStringError ("axiom is not valid in this context", (string_of_opname name))))
             end
       in
       let check_axiom ax = check_sentinal axioms ax.axiom_name ax in
       let check_rule rule = check_sentinal rules rule.rule_name rule in
       let check_ml_rule ml_rule =
          let opname = ml_rule.ml_rule_name in
-            if try Hashtbl.find ml_rules opname == ml_rule with Not_found -> false
-               then
-#ifdef VERBOSE_EXN
+            if try Hashtbl.find ml_rules opname == ml_rule with Not_found -> false then
+               IFDEF VERBOSE_EXN THEN
                   if !debug_sentinal then
                      eprintf "check_ml_rule: found rule %s%t" (string_of_opname opname) eflush
-#else
-                  ()
-#endif
+               ENDIF
             else
                begin
                   eprintf "check_ml_rule: sentinal failed: %s%t" (string_of_opname opname) eflush;
-                  ref_raise(RefineError ("check_ml_rule",
+                  REF_RAISE(RefineError ("check_ml_rule",
                                          StringStringError ("ML rule is not valid in this context",
                                                             string_of_opname opname)))
                end
@@ -1284,13 +1284,13 @@ struct
          [] ->
             ()
        | l ->
-            ref_raise(RefineError ("check_axiom", RewriteFreeContextVars l))
+            REF_RAISE(RefineError ("check_axiom", RewriteFreeContextVars l))
 
    let add_axiom build name term =
-#ifdef VERBOSE_EXN
-      if !debug_refiner then
-         eprintf "Refiner.add_axiom: %s%t" name eflush;
-#endif
+      IFDEF VERBOSE_EXN THEN
+         if !debug_refiner then
+            eprintf "Refiner.add_axiom: %s%t" name eflush
+      ENDIF;
       let { build_opname = opname; build_refiner = refiner } = build in
       let opname = mk_opname name opname in
       let ref_axiom =
@@ -1307,16 +1307,16 @@ struct
                [], SingleJust { ext_names = [||]; ext_params = []; ext_refiner = opname }
             end
          else
-            ref_raise(RefineError ("refine_axiom", TermMatchError (goal, name)))
+            REF_RAISE(RefineError ("refine_axiom", TermMatchError (goal, name)))
       in
          let _ = check_axiom term in
          refiner', (tac : prim_tactic)
 
    let add_prim_axiom build name term =
-#ifdef VERBOSE_EXN
-      if !debug_refiner then
-         eprintf "Refiner.prim_axiom: %s%t" name eflush;
-#endif
+      IFDEF VERBOSE_EXN THEN
+         if !debug_refiner then
+            eprintf "Refiner.prim_axiom: %s%t" name eflush
+      ENDIF;
       let { build_opname = opname; build_refiner = refiner } = build in
          match find_refiner refiner (mk_opname name opname) with
             AxiomRefiner ax ->
@@ -1325,13 +1325,13 @@ struct
                                   pax_refiner = refiner
                }
           | _ ->
-               ref_raise(RefineError (name, StringError "not an axiom"))
+               REF_RAISE(RefineError (name, StringError "not an axiom"))
 
    let add_delayed_axiom build name extf =
-#ifdef VERBOSE_EXN
-      if !debug_refiner then
-         eprintf "Refiner.delayed_axiom: %s%t" name eflush;
-#endif
+      IFDEF VERBOSE_EXN THEN
+         if !debug_refiner then
+            eprintf "Refiner.delayed_axiom: %s%t" name eflush
+      ENDIF;
       let { build_opname = opname; build_refiner = refiner } = build in
          match find_refiner refiner (mk_opname name opname) with
             AxiomRefiner ax ->
@@ -1340,7 +1340,7 @@ struct
                   let ext = extf () in
                   let { ext_goal = { mseq_goal = goal' }; ext_subgoals = subgoals } = ext in
                      if not (alpha_equal (nth_concl goal' 0) goal) or subgoals != [] then
-                        ref_raise(RefineError (name, StringError "not justified"));
+                        REF_RAISE(RefineError (name, StringError "not justified"));
                      term_of_extract refiner ext []
                in
                   PrimAxiomRefiner { pax_proof = Delayed compute;
@@ -1348,7 +1348,7 @@ struct
                                      pax_refiner = refiner
                   }
           | _ ->
-               ref_raise(RefineError (name, StringError "not an axiom"))
+               REF_RAISE(RefineError (name, StringError "not an axiom"))
 
    (************************************************************************
     * RULE                                                                 *
@@ -1361,10 +1361,10 @@ struct
     * and there are no dependencies.
     *)
    let add_rule build name addrs names params mterm =
-#ifdef VERBOSE_EXN
-      if !debug_refiner then
-         eprintf "Refiner.add_rule: %s%t" name eflush;
-#endif
+      IFDEF VERBOSE_EXN THEN
+         if !debug_refiner then
+            eprintf "Refiner.add_rule: %s%t" name eflush
+      ENDIF;
       let { build_opname = opname; build_refiner = refiner } = build in
       let terms = unzip_mimplies mterm in
       let subgoals, goal = List_util.split_last terms in
@@ -1430,10 +1430,10 @@ struct
          compute_ext
 
    let add_prim_rule build name vars params args result =
-#ifdef VERBOSE_EXN
-      if !debug_refiner then
-         eprintf "Refiner.add_prim_theorem: %s%t" name eflush;
-#endif
+      IFDEF VERBOSE_EXN THEN
+         if !debug_refiner then
+            eprintf "Refiner.add_prim_theorem: %s%t" name eflush
+      ENDIF;
       let { build_opname = opname; build_refiner = refiner } = build in
          match find_refiner refiner (mk_opname name opname) with
             RuleRefiner rule ->
@@ -1443,13 +1443,13 @@ struct
                                     prule_refiner = refiner
                   }
           | _ ->
-               ref_raise(RefineError (name, StringError "not a rule"))
+               REF_RAISE(RefineError (name, StringError "not a rule"))
 
    let add_delayed_rule build name vars params args ext =
-#ifdef VERBOSE_EXN
-      if !debug_refiner then
-         eprintf "Refiner.delayed_rule: %s%t" name eflush;
-#endif
+      IFDEF VERBOSE_EXN THEN
+         if !debug_refiner then
+            eprintf "Refiner.delayed_rule: %s%t" name eflush
+      ENDIF;
       let { build_opname = opname; build_refiner = refiner } = build in
          match find_refiner refiner (mk_opname name opname) with
             RuleRefiner rule ->
@@ -1459,7 +1459,7 @@ struct
                   let { ext_goal = goal'; ext_subgoals = subgoals } = ext in
                   let _ =
                      if not (msequent_alpha_equal goal' goal) or subgoals <> [] then
-                        ref_raise(RefineError (name, StringError "extract does not match"))
+                        REF_RAISE(RefineError (name, StringError "extract does not match"))
                   in
                   let t = term_of_extract refiner ext args in
                      compute_rule_ext name vars params args t
@@ -1469,16 +1469,16 @@ struct
                                     prule_refiner = refiner
                   }
           | _ ->
-               ref_raise(RefineError (name, StringError "not a rule"))
+               REF_RAISE(RefineError (name, StringError "not a rule"))
 
    (*
     * An ML rule
     *)
    let add_ml_rule build name info =
-#ifdef VERBOSE_EXN
-      if !debug_refiner then
-         eprintf "Refiner.add_ml_rule: %s%t" name eflush;
-#endif
+      IFDEF VERBOSE_EXN THEN
+         if !debug_refiner then
+            eprintf "Refiner.add_ml_rule: %s%t" name eflush
+      ENDIF;
       let { ml_rule_rewrite = rw } = info in
       let { build_opname = opname; build_refiner = refiner } = build in
       let opname = mk_opname name opname in
@@ -1525,10 +1525,10 @@ struct
     * The rewrite must be a MetaIff.
     *)
    let add_rewrite build name redex contractum =
-#ifdef VERBOSE_EXN
-      if !debug_refiner then
-         eprintf "Refiner.add_rewrite: %s%t" name eflush;
-#endif
+      IFDEF VERBOSE_EXN THEN
+         if !debug_refiner then
+            eprintf "Refiner.add_rewrite: %s%t" name eflush
+      ENDIF;
       let { build_opname = opname; build_refiner = refiner } = build in
       let rw = Rewrite.term_rewrite ar0_ar0 [redex] [contractum] in
       let opname = mk_opname name opname in
@@ -1552,10 +1552,10 @@ struct
          refiner', (rw : prim_rewrite)
 
    let add_prim_rewrite build name redex contractum =
-#ifdef VERBOSE_EXN
-      if !debug_refiner then
-         eprintf "Refiner.add_prim_rewrite: %s%t" name eflush;
-#endif
+      IFDEF VERBOSE_EXN THEN
+         if !debug_refiner then
+            eprintf "Refiner.add_prim_rewrite: %s%t" name eflush
+      ENDIF;
       let { build_opname = opname; build_refiner = refiner } = build in
          match find_refiner refiner (mk_opname name opname) with
             RewriteRefiner rw ->
@@ -1568,15 +1568,15 @@ struct
                                           prw_proof = Extracted ()
                      }
                   else
-                     ref_raise(RefineError (name, StringError "not a rewrite"))
+                     REF_RAISE(RefineError (name, StringError "not a rewrite"))
           | _ ->
-               ref_raise(RefineError (name, StringError "not a rewrite"))
+               REF_RAISE(RefineError (name, StringError "not a rewrite"))
 
    let add_delayed_rewrite build name redex contractum ext =
-#ifdef VERBOSE_EXN
-      if !debug_refiner then
-         eprintf "Refiner.add_delayed_rewrite: %s%t" name eflush;
-#endif
+      IFDEF VERBOSE_EXN THEN
+         if !debug_refiner then
+            eprintf "Refiner.add_delayed_rewrite: %s%t" name eflush
+      ENDIF;
       let { build_opname = opname; build_refiner = refiner } = build in
          match find_refiner refiner (mk_opname name opname) with
             RewriteRefiner rw ->
@@ -1591,9 +1591,9 @@ struct
                            if alpha_equal goal redex & alpha_equal subgoal contractum then
                               term_of_extract refiner ext []
                            else
-                              ref_raise(RefineError (name, StringError "extract does not match"))
+                              REF_RAISE(RefineError (name, StringError "extract does not match"))
                       | _ ->
-                           ref_raise(RefineError (name, StringError "bogus proof"))
+                           REF_RAISE(RefineError (name, StringError "bogus proof"))
                   in
                      ()
                in
@@ -1602,7 +1602,7 @@ struct
                                        prw_refiner = refiner
                   }
           | _ ->
-               ref_raise(RefineError (name, StringError "not a rewrite"))
+               REF_RAISE(RefineError (name, StringError "not a rewrite"))
 
    (************************************************************************
     * CONDITIONAL REWRITE                                                  *
@@ -1612,10 +1612,10 @@ struct
     * Conditional rewrite.
     *)
    let add_cond_rewrite build name vars params subgoals redex contractum =
-#ifdef VERBOSE_EXN
-      if !debug_refiner then
-         eprintf "Refiner.add_cond_rewrite: %s%t" name eflush;
-#endif
+      IFDEF VERBOSE_EXN THEN
+         if !debug_refiner then
+            eprintf "Refiner.add_cond_rewrite: %s%t" name eflush
+      ENDIF;
       let { build_opname = opname; build_refiner = refiner } = build in
       let rw = Rewrite.term_rewrite ([||], vars) (redex::params) (contractum :: subgoals) in
       let opname = mk_opname name opname in
@@ -1645,10 +1645,10 @@ struct
          refiner', (rw' : prim_cond_rewrite)
 
    let add_prim_cond_rewrite build name vars params subgoals redex contractum =
-#ifdef VERBOSE_EXN
-      if !debug_refiner then
-         eprintf "Refiner.add_prim_cond_rewrite: %s%t" name eflush;
-#endif
+      IFDEF VERBOSE_EXN THEN
+         if !debug_refiner then
+            eprintf "Refiner.add_prim_cond_rewrite: %s%t" name eflush
+      ENDIF;
       let { build_opname = opname; build_refiner = refiner } = build in
          match find_refiner refiner (mk_opname name opname) with
             CondRewriteRefiner crw ->
@@ -1661,15 +1661,15 @@ struct
                                               pcrw_refiner = refiner
                      }
                   else
-                     ref_raise(RefineError (name, StringError "not a conditional rewrite"))
+                     REF_RAISE(RefineError (name, StringError "not a conditional rewrite"))
           | _ ->
-               ref_raise(RefineError (name, StringError "not a conditional rewrite"))
+               REF_RAISE(RefineError (name, StringError "not a conditional rewrite"))
 
    let add_delayed_cond_rewrite build name vars params subgoals redex contractum ext =
-#ifdef VERBOSE_EXN
-      if !debug_refiner then
-         eprintf "Refiner.add_delayed_cond_rewrite: %s%t" name eflush;
-#endif
+      IFDEF VERBOSE_EXN THEN
+         if !debug_refiner then
+            eprintf "Refiner.add_delayed_cond_rewrite: %s%t" name eflush
+      ENDIF;
       let { build_opname = opname; build_refiner = refiner } = build in
          match find_refiner refiner (mk_opname name opname) with
             CondRewriteRefiner crw ->
@@ -1688,23 +1688,23 @@ struct
                         let _ = term_of_extract refiner ext []
                         in ()
                      else
-                        ref_raise(RefineError (name, StringError "derivation does not match"))
+                        REF_RAISE(RefineError (name, StringError "derivation does not match"))
                in
                   PrimCondRewriteRefiner { pcrw_proof = Delayed compute_ext;
                                            pcrw_rewrite = crw;
                                            pcrw_refiner = refiner
                   }
           | _ ->
-               ref_raise(RefineError (name, StringError "not a conditional rewrite"))
+               REF_RAISE(RefineError (name, StringError "not a conditional rewrite"))
 
    (*
     * An ML rewrite.
     *)
    let add_ml_rewrite build name info =
-#ifdef VERBOSE_EXN
-      if !debug_refiner then
-         eprintf "Refiner.add_cond_rewrite: %s%t" name eflush;
-#endif
+      IFDEF VERBOSE_EXN THEN
+         if !debug_refiner then
+            eprintf "Refiner.add_cond_rewrite: %s%t" name eflush
+      ENDIF;
       let { ml_rewrite_rewrite = rw } = info in
       let { build_opname = opname; build_refiner = refiner } = build in
       let opname = mk_opname name opname in

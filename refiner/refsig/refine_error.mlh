@@ -1,0 +1,18 @@
+(*
+ * We duplicate the modules, with verbose
+ * and simplified error reporting.
+ *
+ * Can't do this with the module system unfortunately.
+ *)
+
+DEFMACRO RAISE_GENERIC_EXN = raise generic_refiner_exn
+
+IFDEF SIMPLE_EXN THEN
+  DEFMACRO REF_RAISE EXN = RAISE_GENERIC_EXN
+  UNDEF VERBOSE_EXN
+ELSE
+  IFNDEF VERBOSE_EXN THEN
+    DEFINE VERBOSE_EXN
+  ENDIF
+  DEFMACRO REF_RAISE EXN = raise EXN
+ENDIF
