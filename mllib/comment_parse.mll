@@ -249,6 +249,10 @@ rule main = parse
  | white
    { TokWhite false }
 
+   (* Nested comments *)
+ | "(*"
+   { comment lexbuf; main lexbuf }
+
    (* Quotations *)
  | "<<"
    { set_tag "";
@@ -292,6 +296,19 @@ rule main = parse
 
  | eof
    { TokEof }
+
+(*
+ * Comments.
+ *)
+and comment = parse
+   "(*"
+   { comment lexbuf; comment lexbuf }
+ | "*)"
+   { () }
+ | _
+   { comment lexbuf }
+ | eof
+   { parse_error_buf "comment is not terminated" lexbuf }
 
 (*
  * Read the first string in the opname.

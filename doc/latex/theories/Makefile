@@ -3,6 +3,7 @@
 #
 DIR := doc/latex/theories
 ROOT := ../../..
+TEXINPUTS := ../inputs:$(TEXINPUTS)
 
 include $(ROOT)/mk/preface
 
@@ -11,6 +12,7 @@ opt: doc
 
 doc:	metaprl.bib
 	(cd $(ROOT)/editor/ml; make tex)
+	touch all-theories.ind
 	pdflatex all-theories
 	bibtex all-theories
 	pdflatex all-theories
