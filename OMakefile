@@ -1,7 +1,7 @@
 #
 # Make sure omake is up-to-date
 #
-OMakeVersion(0.7.0)
+OMakeVersion(0.7.1)
 
 #
 # Override the root directory
@@ -25,21 +25,16 @@ if $(not $(defined VERBOSE))
 .INCLUDE: mk/defaults
 
 #
-# We always need threads
-#
-# OCAMLFLAGS += -thread
-
-#
 # Win32-specific config.
 # Read the config file.
 # If the config file does not exist, then create one.
 #
 if $(equal $(OSTYPE), Win32)
    .INCLUDE: mk/config: mk/config.win32
-      copy mk\config.win32 mk\config
+       copy mk\config.win32 mk\config
 
    .INCLUDE: mk/config.local
-      copy mk\config.local.empty mk\config.local
+       copy mk\config.local.empty mk\config.local
 
    #
    # cmd.exe does not like ./command paths
@@ -66,29 +61,29 @@ else
    #
    # Defaults (in case mk/config does not define them)
    #
-   TERMS=$(TERMS_DEFAULT)
-   REFINER=$(REFINER_DEFAULT)
-   MAKE_OPTS=
-   SEQ_SET=$(SEQ_SET_DEFAULT)
-   CCC=$(CCC_DEFAULT)
-   ENSROOT=$(ENSROOT_DEFAULT)
-   OCAMLSRC=$(OCAMLSRC_DEFAULT)
-   THEORIES=$(THEORIES_DEFAULT)
-   TESTS_ENABLED=$(TESTS_ENABLED_DEFAULT)
+   TERMS = $(TERMS_DEFAULT)
+   REFINER = $(REFINER_DEFAULT)
+   MAKE_OPTS =
+   SEQ_SET = $(SEQ_SET_DEFAULT)
+   CCC = $(CCC_DEFAULT)
+   ENSROOT = $(ENSROOT_DEFAULT)
+   OCAMLSRC = $(OCAMLSRC_DEFAULT)
+   THEORIES = $(THEORIES_DEFAULT)
+   TESTS_ENABLED = $(TESTS_ENABLED_DEFAULT)
    READLINE_ENABLED=true
    NCURSES_ENABLED=true
-   NATIVE_ENABLED=$(NATIVE_ENABLED_DEFAULT)
-   BYTE_ENABLED=$(BYTE_ENABLED_DEFAULT)
-   SLOPPY_DEPENDENCIES=false
+   NATIVE_ENABLED = $(NATIVE_ENABLED_DEFAULT)
+   BYTE_ENABLED = $(BYTE_ENABLED_DEFAULT)
+   SLOPPY_DEPENDENCIES = false
 
    .INCLUDE: mk/config
-      ROOT="$(ROOT)" TERMS="$(TERMS)" REFINER="$(REFINER)" MAKE_OPTS="$(MAKE_OPTS)" SEQ_SET="$(SEQ_SET)" CCC="$(CCC)" ENSROOT="$(ENSROOT)" OCAMLSRC="$(OCAMLSRC)" THEORIES="$(THEORIES)" TESTS_ENABLED="$(TESTS_ENABLED)" READLINE_ENABLED="$(READLINE_ENABLED)" NCURSES_ENABLED="$(NCURSES_ENABLED)" SLOPPY_DEPENDENCIES="$(SLOPPY_DEPENDENCIES)" NATIVE_ENABLED="$(NATIVE_ENABLED)" BYTE_ENABLED="$(BYTE_ENABLED)" mk/make_config.sh
+       ROOT="$(ROOT)" TERMS="$(TERMS)" REFINER="$(REFINER)" MAKE_OPTS="$(MAKE_OPTS)" SEQ_SET="$(SEQ_SET)" CCC="$(CCC)" ENSROOT="$(ENSROOT)" OCAMLSRC="$(OCAMLSRC)" THEORIES="$(THEORIES)" TESTS_ENABLED="$(TESTS_ENABLED)" READLINE_ENABLED="$(READLINE_ENABLED)" NCURSES_ENABLED="$(NCURSES_ENABLED)" SLOPPY_DEPENDENCIES="$(SLOPPY_DEPENDENCIES)" NATIVE_ENABLED="$(NATIVE_ENABLED)" BYTE_ENABLED="$(BYTE_ENABLED)" mk/make_config.sh
 
    .INCLUDE: mk/config: mk/make_config.sh
-      ROOT="$(ROOT)" TERMS="$(TERMS)" REFINER="$(REFINER)" MAKE_OPTS="$(MAKE_OPTS)" SEQ_SET="$(SEQ_SET)" CCC="$(CCC)" ENSROOT="$(ENSROOT)" OCAMLSRC="$(OCAMLSRC)" THEORIES="$(THEORIES)" TESTS_ENABLED="$(TESTS_ENABLED)" READLINE_ENABLED="$(READLINE_ENABLED)" NCURSES_ENABLED="$(NCURSES_ENABLED)" SLOPPY_DEPENDENCIES="$(SLOPPY_DEPENDENCIES)" NATIVE_ENABLED="$(NATIVE_ENABLED)" BYTE_ENABLED="$(BYTE_ENABLED)" mk/make_config.sh
+       ROOT="$(ROOT)" TERMS="$(TERMS)" REFINER="$(REFINER)" MAKE_OPTS="$(MAKE_OPTS)" SEQ_SET="$(SEQ_SET)" CCC="$(CCC)" ENSROOT="$(ENSROOT)" OCAMLSRC="$(OCAMLSRC)" THEORIES="$(THEORIES)" TESTS_ENABLED="$(TESTS_ENABLED)" READLINE_ENABLED="$(READLINE_ENABLED)" NCURSES_ENABLED="$(NCURSES_ENABLED)" SLOPPY_DEPENDENCIES="$(SLOPPY_DEPENDENCIES)" NATIVE_ENABLED="$(NATIVE_ENABLED)" BYTE_ENABLED="$(BYTE_ENABLED)" mk/make_config.sh
 
    .INCLUDE: mk/config.local
-      $(CP) mk/config.local.empty mk/config.local
+       $(CP) mk/config.local.empty mk/config.local
 
    #
    # Current directory, for executables.
@@ -228,7 +223,7 @@ OCAMLDEP = $(file bin/ocamldep$(EXE))
 .SCANNER: %.cmi: %.mli $(OCAMLDEP)
     $(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLINCLUDES) $(set $(replacesuffixes .cmi .cmo .cmx, .mli .ml .ml, $^))
 
-.SCANNER: %.cmo %.cmx: %.ml $(OCAMLDEP)
+.SCANNER: %.cmo %.cmx: %.ml $(optional %.mli) $(OCAMLDEP)
     $(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLINCLUDES) $(set $(replacesuffixes .cmi .cmo .cmx, .mli .ml .ml, $^))
 
 #
@@ -298,35 +293,35 @@ CONVERTC  = $(SET_MPLIB) $(CONVERT)
 #
 # Add dependency scanning for .ppo files
 #
-.SCANNER: %.ppo: %.ml $(OCAMLDEP)
+.SCANNER: %.ppo: %.ml $(optional %.mli) $(OCAMLDEP)
     $(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLINCLUDES) $(replacesuffixes .ppo, .ml, $^)
 
 #
 # For theory files, generate intermediate .ppo files
 #
-%.ppo: %.ml $(CAMLP4N)
-	$(CAMLP4NC) $(CAMLP4NFLAGS) -o $*.ppo $<
+%.ppo %.cmoz: %.ml $(CAMLP4N)
+        $(CAMLP4NC) $(CAMLP4NFLAGS) -o $*.ppo $<
 
 %.prla: %.cmoz
-	$(CONVERT) $(OCAMLINCLUDES) -impl $<
+        $(CONVERT) $(OCAMLINCLUDES) -impl $<
 
 %.prlb: %.prla
-	$(CONVERT) $(OCAMLINCLUDES) -raw -impl $*<
+        $(CONVERT) $(OCAMLINCLUDES) -raw -impl $*<
 
-%.cmi: %.mli
+%.cmi %.cmiz: %.mli
         $(PRLCC) $(OCAMLCFLAGS) $(OCAMLPPFLAGS) $(OCAMLINCLUDES) -c $<
 
 %.cmo: %.ppo
-	$(OCAMLC) $(OCAMLCFLAGS) $(OCAMLINCLUDES) -c -impl $<
+        $(OCAMLC) $(OCAMLCFLAGS) $(OCAMLINCLUDES) -c -impl $<
 
 %.cmx %$(EXT_OBJ): %.ppo
-	$(OCAMLOPT) $(OCAMLOPTFLAGS) $(OCAMLINCLUDES) -c -impl $<
+        $(OCAMLOPT) $(OCAMLOPTFLAGS) $(OCAMLINCLUDES) -c -impl $<
 
 %.p4i: %.mli
-	$(PRLCC) $(INCLUDE) -E $*.mli > $@
+        $(PRLCC) $(INCLUDE) -E $*.mli > $@
 
 %.p4: %.ml
-	$(PRLCC) $(INCLUDE) -E $*.ml > $@
+        $(PRLCC) $(INCLUDE) -E $*.ml > $@
 
 #
 # Support directories
@@ -387,13 +382,13 @@ TheoryDocument(docname, theories) =
     # Contents of the print.ml file
     #
     $(docname)_print.ml:
-	echo 'set_tex_file "$(docname).tex";; $(add-quoted-wrapper print_theory , ;;, $(THEORIES))' > $@
+        echo 'set_tex_file "$(docname).tex";; $(add-quoted-wrapper print_theory , ;;, $(THEORIES))' > $@
 
     #
     # Get MetaPRL to generate the .tex files
     #
     $(docname).tex $(docname)-body.tex: $(MP) $(CMOZFILES) $(docname)_print.ml
-	$(SET_MPLIB) $(MP) $(OCAMLINCLUDES) $(docname)_print.ml
+        $(SET_MPLIB) $(MP) $(OCAMLINCLUDES) $(docname)_print.ml
 
 #
 # Format the document and copy it to the DOCDIR directory.
