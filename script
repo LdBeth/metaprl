@@ -1,6 +1,0 @@
-#!/bin/csh -f
-
-foreach i ($*)
-   mv $i $i.bak
-   sed -e 's,^open Debug,open Nl_debug,' < $i.bak > $i
-end

@@ -231,8 +231,7 @@ clean::
 	$(RM) gmon.out $(ZMLFILES) $(ZMLIFILES) $(PMLFILES) $(PMLIFILES)
 
 Makefile.dep:
-	@touch Makefile.dep
-	@make depend
+	@if [ -f $(OCAMLDEP) ]; then touch Makefile.dep; make depend; fi
 
 depend:: $(MLFILES) $(MLIFILES)
 	$(RM) Makefile.tmp
