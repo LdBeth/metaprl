@@ -12,7 +12,7 @@ open Opname
  *)
 let _ =
    if !debug_load then
-      eprintf "Loading Term_ds%t" eflush
+      eprintf "Loading TermDs%t" eflush
 
 (************************************************************************
  * Sets of strings                                                      *
@@ -34,14 +34,16 @@ module StringSet = Set.Make (OrderedString)
  * Level expression have offsets from level expression
  * vars, plus a constant offset.
  *)
-type level_exp_var = { le_var : string; le_offset : int }
+type level_exp_var' = { le_var : string; le_offset : int }
+type level_exp_var = level_exp_var'
 
-type level_exp = { le_const : int; le_vars : level_exp_var list }
+type level_exp' = { le_const : int; le_vars : level_exp_var list }
+type level_exp = level_exp'
 
 (*
  * Parameters have a number of simple types.
  *)
-type param =
+type param' =
    Number of Num.num
  | String of string
  | Token of string
@@ -70,12 +72,14 @@ type param =
  | MNotEqual of param * param
 
 and object_id = param list
+and param = param'
 
 (*
  * An operator combines a name with a list of parameters.
  * The order of params is significant.
  *)
-type operator = { op_name : opname; op_params : param list }
+type operator' = { op_name : opname; op_params : param list }
+type operator = operator'
 
 (*
  * A term has an operator, and a finite number of subterms
@@ -88,15 +92,15 @@ type operator = { op_name : opname; op_params : param list }
 
 type term_subst = (string * term) list
 and term_core =
-   Term of term_nods |
+   Term of term' |
    Subst of term * term_subst
 and term = { free_vars : StringSet.t; mutable core : term_core }
 and bound_term_core =
-   BTerm of bound_term_nods |
+   BTerm of bound_term' |
    BSubst of bound_term * term_subst
 and bound_term = { bfree_vars : StringSet.t; mutable bcore: bound_term_core }
-and term_nods = { term_op : operator; term_terms : bound_term list }
-and bound_term_nods = { bvars : string list; bterm : term }
+and term' = { term_op : operator; term_terms : bound_term list }
+and bound_term' = { bvars : string list; bterm : term }
 
 (*
  * Address of a subterm.
@@ -189,7 +193,7 @@ let dest_var_nods = function
   | t -> raise (TermMatch ("dest_var", {free_vars = bterms_free_vars t.term_terms; core = Term t}, ""))
 
 (************************************************************************
- * Term de/constructors                                                 *
+ * De/Constructors                                                 *
  ************************************************************************)
 
 let rec dest_term t = 
@@ -347,6 +351,19 @@ let binding_vars = binding_vars_term []
  * Operator names.
  *)
 let opname_of_term t = (dest_term t).term_op.op_name
+
+(* These are trivial identity functions *)
+
+let make_op o = o 
+let dest_op o = o
+let make_param p = p
+let dest_param p = p
+let make_level l = l
+let dest_level l = l
+let make_level_var v = v
+let dest_level_var v = v
+let make_object_id i = i
+let dest_object_id i = i
 
 (************************************************************************
  * Level expressions                                                    *

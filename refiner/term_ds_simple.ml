@@ -13,7 +13,7 @@ open Term_ds
  *)
 let _ =
    if !debug_load then
-      eprintf "Loading Term_ds_simple%t" eflush
+      eprintf "Loading TermDsSimple%t" eflush
 
 (************************************************************************
  * Tools for "simple" terms                                             *

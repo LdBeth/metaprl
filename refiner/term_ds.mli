@@ -22,14 +22,16 @@ module StringSet : ( Set.S with type elt = string )
  * Level expression have offsets from level expression
  * vars, plus a constant offset.
  *)
-type level_exp_var = { le_var : string; le_offset : int }
+type level_exp_var' = { le_var : string; le_offset : int }
+type level_exp_var = level_exp_var'
 
-type level_exp = { le_const : int; le_vars : level_exp_var list }
+type level_exp' = { le_const : int; le_vars : level_exp_var list }
+type level_exp = level_exp'
 
 (*
  * Parameters have a number of simple types.
  *)
-type param =
+type param' =
    Number of Num.num
  | String of string
  | Token of string
@@ -58,13 +60,14 @@ type param =
  | MNotEqual of param * param
 
 and object_id = param list
+and param = param'
 
 (*
  * An operator combines a name with a list of parameters.
  * The order of params is significant.
  *)
-type operator = { op_name : opname; op_params : param list }
-
+type operator' = { op_name : opname; op_params : param list }
+type operator = operator'
 
 (*
  * A term has an operator, and a finite number of subterms
@@ -77,15 +80,15 @@ type operator = { op_name : opname; op_params : param list }
 
 type term_subst = (string * term) list
 and term_core = 
-   Term of term_nods |
+   Term of term' |
    Subst of term * term_subst
 and term = { free_vars : StringSet.t; mutable core : term_core }
 and bound_term_core = 
-   BTerm of bound_term_nods |
+   BTerm of bound_term' |
    BSubst of bound_term * term_subst
 and bound_term = { bfree_vars : StringSet.t; mutable bcore: bound_term_core }
-and term_nods = { term_op : operator; term_terms : bound_term list } 
-and bound_term_nods = { bvars : string list; bterm : term }
+and term' = { term_op : operator; term_terms : bound_term list } 
+and bound_term' = { bvars : string list; bterm : term }
 
 (*
  * Address of a subterm.
@@ -114,13 +117,13 @@ val subst : term -> term list -> string list -> term
 val do_bterm_subst : term_subst -> bound_term -> bound_term
 val var_subst : term -> term -> string -> term
 
-val dest_term : term -> term_nods
-val make_term : term_nods -> term
+val dest_term : term -> term'
+val make_term : term' -> term
 val mk_op : opname -> param list -> operator
 val mk_term : operator -> bound_term list -> term
 val mk_bterm : string list -> term -> bound_term
-val make_bterm : bound_term_nods -> bound_term
-val dest_bterm : bound_term -> bound_term_nods
+val make_bterm : bound_term' -> bound_term
+val dest_bterm : bound_term -> bound_term'
 val mk_level : int -> level_exp_var list -> level_exp
 val mk_level_var : string -> int -> level_exp_var
 
@@ -142,6 +145,18 @@ val nth_cdr_addr : int -> address
 (* Projections *)
 val opname_of_term : term -> opname
 val subterms_of_term : term -> term list
+
+(* These are trivial identity functions *)
+val make_op : operator' -> operator
+val dest_op : operator -> operator'
+val make_param : param' -> param
+val dest_param : param -> param'
+val make_level : level_exp' -> level_exp
+val dest_level : level_exp -> level_exp'
+val make_level_var : level_exp_var' -> level_exp_var
+val dest_level_var : level_exp_var -> level_exp_var'
+val make_object_id : param list -> object_id 
+val dest_object_id : object_id  ->  param list
 
 (************************************************************************
  * Operations                                                           *
@@ -198,9 +213,9 @@ val level_cumulativity : level_exp -> level_exp -> bool
  * A variable is a term with opname "var", and a single
  * var parameter that is the name of the variable.
  *)
-val is_var_term_nods : term_nods -> bool
+val is_var_term_nods : term' -> bool
 val is_var_term : term -> bool
-val dest_var_nods : term_nods -> string
+val dest_var_nods : term' -> string
 val dest_var : term -> string
 val mk_var_term : string -> term
 val mk_var_op : string -> operator
