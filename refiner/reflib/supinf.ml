@@ -27,6 +27,7 @@ sig
    val div : bfield -> bfield -> bfield
    val compare : bfield -> bfield -> int
    val isInfinite : bfield -> bool
+	val isNegative : bfield -> bool
 
    val term_of : bfield -> term
    val mul_term : term -> term -> term
@@ -326,6 +327,7 @@ sig
    val minusInfinity : af
    val plusInfinity : af
 
+	val value_of : af -> bfield
    val term_of : (term array) -> af -> term
 
 	val setSource : source -> af -> af
@@ -373,7 +375,7 @@ struct
       let aux key data =
          fprintf out "+"; Monom.print out key [data]
       in
-      fprintf out "("; Table.iter aux f; fprintf out ")%t" eflush
+      fprintf out "("; Table.iter aux f; fprintf out ")%t" flush
 
    let minusInfinity = (Signore, Table.add Table.empty constvar BField.minusInfinity)
    let plusInfinity = (Signore, Table.add Table.empty constvar BField.plusInfinity)
@@ -445,16 +447,19 @@ struct
 				eprintf "split"; Table.print stderr f;
 				eprintf "@.split %a@.%t" print (s,f) eflush;
 			end;
-      let (v,coefs,rest)=Table.deletemax f in
-      match coefs with
-         [c] ->
-            if !debug_supinf_trace then
-               (Monom.print stderr v coefs; eprintf " %a@." print (s,rest));
-				if v!=constvar && (BField.compare c BField.fieldZero =0) then
-					split (s,rest)
-				else
-					(c,v,(s,rest))
-       | _ -> raise (Invalid_argument "More than one coefficient associated with a variable")
+		if Table.is_empty f then
+			(BField.fieldZero, constvar, mk_number BField.fieldZero)
+		else
+			let (v,coefs,rest)=Table.deletemax f in
+			match coefs with
+				[c] ->
+					if !debug_supinf_trace then
+						(Monom.print stderr v coefs; eprintf " %a@." print (s,rest));
+					if v!=constvar && (BField.compare c BField.fieldZero =0) then
+						split (s,rest)
+					else
+						(c,v,(s,rest))
+			 | _ -> raise (Invalid_argument "More than one coefficient associated with a variable")
 
    let isNumber (s,f) =
       let test=ref true in
@@ -464,6 +469,15 @@ struct
       in
       Table.iter aux f;
       !test
+
+	let value_of f =
+		if isNumber f then
+			coef f constvar
+		else
+			begin
+				eprintf "AF.value_of: applied to a non-constant form %a" print f;
+				raise (Invalid_argument "AF.value_of: applied to a non-constant form")
+			end
 
    let term_of_monom info k v =
       if v=constvar then
@@ -539,6 +553,7 @@ sig
    val isPlusInfinity: saf -> bool
    val isAffine: saf -> bool
 
+	val value_of: saf -> bfield
    val term_of: (term array) -> saf -> term
 
 	val getSource : saf -> source
@@ -586,6 +601,19 @@ struct
 
    let affine af = (AF.getSource af), Affine af
 
+	let min_number f1 s f =
+      match f1 with
+         s1,Affine f1' ->
+            if AF.isNumber f1' then
+               let c=AF.coef f1' AF.constvar in
+						if BField.compare c (AF.coef f AF.constvar) >= 0 then
+							Signore, s, Affine f
+						else
+							s1, Signore, (Affine f1')
+            else
+               s1, s, Min (f1, (s, Affine f))
+       | s1,_ -> s1, s, Min (f1, (s, Affine f))
+
 	let min_aff_simple f1 s f =
       match f1 with
          s1,Affine f1' ->
@@ -610,7 +638,7 @@ struct
             else if BField.compare c BField.minusInfinity =0 then
 					Signore, s, Affine f
             else
-					min_aff_simple f1 s f
+					min_number f1 s f
       else
          min_aff_simple f1 s f
 
@@ -625,6 +653,19 @@ struct
        | (s1, Min(f11,f12)), (s2, Min(f21,f22)) ->
 				Smin(s1,s2), Min (f1,f2)
        | _,_ -> raise (Invalid_argument "SAF.min: detected a mixture of min and max")
+
+   let max_number f1 s f =
+      match f1 with
+         s1, Affine f1' ->
+            if AF.isNumber f1' then
+               let c=AF.coef f1' AF.constvar in
+						if BField.compare c (AF.coef f AF.constvar) >= 0 then
+							s1, Signore, (Affine f1')
+						else
+							Signore, s, Affine f
+            else
+               s1, s, Max (f1, (s,Affine f))
+       | s1, _ -> s1, s, Max (f1, (s,Affine f))
 
    let max_aff_simple f1 s f =
       match f1 with
@@ -650,7 +691,7 @@ struct
             else if BField.compare c BField.minusInfinity =0 then
 					getSource f1, Signore, f1'
             else
-					max_aff_simple f1 s f
+					max_number f1 s f
       else
          max_aff_simple f1 s f
 
@@ -757,6 +798,14 @@ struct
             fprintf out "max(%a; %a)" print a print b
        | Min (a,b) ->
             fprintf out "min(%a; %a)" print a print b
+
+	let value_of = function
+		_,Affine f -> AF.value_of f
+	 | f ->
+			begin
+				eprintf "SAF.value_of: applied to a non-affine form %a" print f;
+				raise (Invalid_argument "SAF.value_of: applied to a non-affine form")
+			end
 
    let rec term_of info = function
       _,Affine f -> AF.term_of info f

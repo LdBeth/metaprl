@@ -17,6 +17,7 @@ sig
    val div : bfield -> bfield -> bfield
    val compare : bfield -> bfield -> int
    val isInfinite : bfield -> bool
+	val isNegative : bfield -> bool
 
    val term_of : bfield -> term
    val mul_term : term -> term -> term
@@ -112,7 +113,8 @@ sig
    val minusInfinity : af
    val plusInfinity : af
 
-   val term_of : (term array) -> af -> term
+   val value_of : af -> bfield
+	val term_of : (term array) -> af -> term
 
 	val setSource : source -> af -> af
 	val getSource : af -> source
@@ -169,6 +171,7 @@ sig
    val isPlusInfinity: saf -> bool
    val isAffine: saf -> bool
 
+	val value_of: saf -> bfield
    val term_of: (term array) -> saf -> term
 
 	val getSource : saf -> source
