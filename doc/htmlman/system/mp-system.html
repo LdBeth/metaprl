@@ -3,22 +3,22 @@
   <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
   <TITLE>MetaPRL System Description</TITLE>
 </HEAD>
-<BODY BGCOLOR="#ffffff">
+<BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000">
 
 <H1><CENTER>MetaPRL System Description</CENTER></H1>
 
 <P><MAP NAME="mp-archMap1">
-    <AREA SHAPE="rect" COORDS="66,-4,178,27" HREF="mp-editor-imp.html">
-    <AREA SHAPE="rect" COORDS="-3,33,74,62" HREF="mp-itt.html">
-    <AREA SHAPE="rect" COORDS="63,70,178,111" HREF="mp-base.html">
-    <AREA SHAPE="rect" COORDS="63,118,179,161" HREF="mp-ocaml.html">
-    <AREA SHAPE="rect" COORDS="62,165,177,208" HREF="mp-tactic.html">
-    <AREA SHAPE="rect" COORDS="63,213,178,255" HREF="mp-chaining.html">
-    <AREA SHAPE="rect" COORDS="63,263,177,304" HREF="mp-ensemble.html">
-    <AREA SHAPE="rect" COORDS="63,310,178,350" HREF="mp-filter.html">
-    <AREA SHAPE="rect" COORDS="66,359,179,401" HREF="mp-refine.html">
-</MAP><IMG SRC="mp-arch.gif" WIDTH="241" HEIGHT="397" ALIGN="RIGHT"
-BORDER="0" NATURALSIZEFLAG="3" USEMAP="#mp-archMap1" ISMAP>MetaPRL
+    <AREA ALT="MetaPRL Editor" SHAPE="rect" COORDS="66,-4,178,27" HREF="mp-editor-imp.html">
+    <AREA ALT="Nuprl Type Theory" SHAPE="rect" COORDS="-3,33,74,62" HREF="mp-itt.html">
+    <AREA ALT="Base Theory" SHAPE="rect" COORDS="63,70,178,111" HREF="mp-base.html">
+    <AREA ALT="OCaml Syntax" SHAPE="rect" COORDS="63,118,179,161" HREF="mp-ocaml.html">
+    <AREA ALT="Tactic Mechanism" SHAPE="rect" COORDS="62,165,177,208" HREF="mp-tactic.html">
+    <AREA ALT="Forward Chaining" SHAPE="rect" COORDS="63,213,178,255" HREF="mp-chaining.html">
+    <AREA ALT="Distributed Proving" SHAPE="rect" COORDS="63,263,177,304" HREF="mp-ensemble.html">
+    <AREA ALT="Module Compiler" SHAPE="rect" COORDS="63,310,178,350" HREF="mp-filter.html">
+    <AREA ALT="Refiner" SHAPE="rect" COORDS="66,359,179,401" HREF="mp-refine.html">
+</MAP><IMG ALT="MetaPRL Architecture Map" SRC="mp-arch.gif" WIDTH="241" HEIGHT="397" ALIGN="RIGHT"
+BORDER="0" USEMAP="#mp-archMap1" ISMAP>MetaPRL
 is implemented as an extended OCaml compiler. Modules in MetaPRL
 can be plain prgrams, or they can be extended to additional logical
 definitions and syntax. The architecture of the system is summarized
@@ -69,7 +69,8 @@ parts:</P>
   sequents. In addition, the basic logic module defines tactics
   for automation, including automation of introduction and elimination
   rules, equality reasoning, and general tactic-based search.
-  <LI>The logics currently defined include the Nuprl type theory,
+  <LI>The logics currently defined include the
+  <A HREF="mp-itt.html">Nuprl type theory</a>,
   Aczel's set theory, first order logic, and a partial implementation
   of the Edinburgh logical framework (LF).
   <LI>The <B><A HREF="mp-editor-imp.html">module editor</A></B>

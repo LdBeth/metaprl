@@ -3,7 +3,7 @@
   <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
   <TITLE>MetaPRL Distributed Tactics</TITLE>
 </HEAD>
-<BODY BGCOLOR="#ffffff">
+<BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000">
 
 <H1>MetaPRL Distributed Prover</H1>
 
@@ -28,8 +28,8 @@ handle failures, so that proofs will not be lost due to process
 or network failurs, and we also want to handle <I>joins</I>, where
 a new processor is assigned to the pool working on a proof task.</P>
 
-<P><IMG SRC="proof-tree.gif" WIDTH="212" HEIGHT="132" ALIGN="RIGHT"
-BORDER="0" NATURALSIZEFLAG="3">The process of proving generates
+<P><IMG ALT="proof tree" SRC="proof-tree.gif" WIDTH="212" HEIGHT="132" ALIGN="RIGHT"
+BORDER="0">The process of proving generates
 <I>proof trees</I>. Each node in a proof is refined to a list
 of subgoals. Each branch in the tree may be <I>and-branching</I>,
 meaining that <I>all</I> subgoals are required for a successful
@@ -39,7 +39,7 @@ fragment is shown at the right. The root node produces an and-branch
 with two subgoals. The right subchild is an or-node, and either
 of the subgoals is sufficient to prove the goal.</P>
 
-<H4>Tactics</H4>
+<H2>Tactics</H2>
 
 <P>The <I>tactic</I> mechanism is used to generate proof trees.
 Each rule in a logic produces a primitive tactic. Primitive tactics
@@ -47,8 +47,8 @@ are always and-branching. The following digram is an example of
 a tactic defined in <TT>Itt_logic</TT>.</P>
 
 <BLOCKQUOTE>
-  <P><IMG SRC="proof-node.gif" WIDTH="348" HEIGHT="51" ALIGN="BOTTOM"
-  BORDER="0" NATURALSIZEFLAG="3"></P>
+  <P><IMG ALT="proof node" SRC="proof-node.gif" WIDTH="348" HEIGHT="51" ALIGN="BOTTOM"
+  BORDER="0"></P>
 </BLOCKQUOTE>
 
 <P>The ML value defined by this rule has the following type: <B><TT>val</TT></B><TT>
@@ -83,8 +83,8 @@ subgoals <I>t1, ..., tn</I>. The second tactic <TT>tac2</TT> is
 applied to each of these subgoals, and the subgoals it produces
 are concatenated to form the final result.</P>
 
-<P><CENTER><IMG SRC="andthen1.gif" WIDTH="291" HEIGHT="151" ALIGN="BOTTOM"
-BORDER="0" NATURALSIZEFLAG="3"></CENTER></P>
+<P><CENTER><IMG ALT="andthen1" SRC="andthen1.gif" WIDTH="291" HEIGHT="151" ALIGN="BOTTOM"
+BORDER="0"></CENTER></P>
 
 <P>The <TT>andthen2</TT> tactic is similar to the <TT>anthen1</TT>
 tactic, but it allows different tactics to be applied to the subgoals.
@@ -92,21 +92,21 @@ The tactic <TT>(andthen2 tac [tac1; tac2; ...; tacn])</TT> tactic
 requires that the <TT>tac</TT> tactic produce exactly <TT>n</TT>
 subgoals, and <TT>tac<I>i</I></TT> is applied to subgoal <I><TT>i</TT></I>.</P>
 
-<P><CENTER><IMG SRC="andthen2.gif" WIDTH="298" HEIGHT="176" ALIGN="BOTTOM"
-BORDER="0" NATURALSIZEFLAG="3"></CENTER></P>
+<P><CENTER><IMG ALT="andthen2" SRC="andthen2.gif" WIDTH="298" HEIGHT="176" ALIGN="BOTTOM"
+BORDER="0"></CENTER></P>
 
 <P>The <CODE><TT>choose</TT></CODE> tactical allows searching
 with tactics. The tactic <TT>(choose [tac1; tac2; ...; tacn])</TT>
 applies each tactic <TT>tac1</TT>, <TT>tac2</TT>, <TT>...</TT>
 in turn until the first one succeeds.</P>
 
-<P><CENTER><IMG SRC="choose.gif" WIDTH="285" HEIGHT="118" ALIGN="BOTTOM"
-BORDER="0" NATURALSIZEFLAG="3"></CENTER></P>
+<P><CENTER><IMG ALT="choose" SRC="choose.gif" WIDTH="285" HEIGHT="118" ALIGN="BOTTOM"
+BORDER="0"></CENTER></P>
 
-<H4>Scheduler</H4>
+<H2>Scheduler</H2>
 
-<P><IMG SRC="sched2.gif" WIDTH="281" HEIGHT="345" ALIGN="RIGHT"
-BORDER="0" NATURALSIZEFLAG="3">There is a great deal of parallelism
+<P><IMG ALT="sched2" SRC="sched2.gif" WIDTH="281" HEIGHT="345" ALIGN="RIGHT"
+BORDER="0">There is a great deal of parallelism
 in tactic-tree proofs: the branches of the proof considered independently.
 The branching factor is typically bounded by a constant, but the
 depth of the tree can grow to be quite large. for performance
@@ -141,22 +141,22 @@ proof tree to the scheduler. The closed circles in the diagram
 correspond to unfinished goals; the open circles are finished
 goals that have been associated with a value.</P>
 
-<P><CENTER><IMG SRC="consume.gif" WIDTH="414" HEIGHT="156" ALIGN="BOTTOM"
-BORDER="0" NATURALSIZEFLAG="3"></CENTER></P>
+<P><CENTER><IMG ALT="consume" SRC="consume.gif" WIDTH="414" HEIGHT="156" ALIGN="BOTTOM"
+BORDER="0"></CENTER></P>
 
 <P>When a thread is finished, it performs the <B>return</B> operation
 to give the result to the scheduler. The scheduler can also <B>cancel</B>
 a thread, if the job is no longer needed.</P>
 
-<P><CENTER><IMG SRC="return.gif" WIDTH="473" HEIGHT="120" ALIGN="BOTTOM"
-BORDER="0" NATURALSIZEFLAG="3"></CENTER></P>
+<P><CENTER><IMG ALT="return" SRC="return.gif" WIDTH="473" HEIGHT="120" ALIGN="BOTTOM"
+BORDER="0"></CENTER></P>
 
 <P>The client has three operations it can perform. It may <B>submit</B>
 a job, it can <B>cancel</B> a job, and a value can be <B>return</B>ed
 from from scheduler to the client.</P>
 
-<P><CENTER><IMG SRC="server.gif" WIDTH="415" HEIGHT="156" ALIGN="BOTTOM"
-BORDER="0" NATURALSIZEFLAG="3"></CENTER></P>
+<P><CENTER><IMG ALT="server" SRC="server.gif" WIDTH="415" HEIGHT="156" ALIGN="BOTTOM"
+BORDER="0"></CENTER></P>
 
 <P>The scheduler is implemented in the module <TT>Thread_refiner_ens</TT>.
 The scheduler maintains a constant sized pool of threads that
@@ -186,7 +186,7 @@ scheduler loop:</P>
   </UL>
 </BLOCKQUOTE>
 
-<H4>Proof tree pruning</H4>
+<H2>Proof tree pruning</H2>
 
 <P>The most complex operation in the scheduler is tree pruning.
 There are five cases for inserting a result into the proof tree,
@@ -204,8 +204,8 @@ the basic algorithm for handling a returned result:</P>
     <LI>If the node is an or-branch, remove the node from the proof
     tree.
     <DL>
-      <DT><IMG SRC="and-failure.gif" WIDTH="267" HEIGHT="141" ALIGN="BOTTOM"
-      BORDER="0" NATURALSIZEFLAG="3">
+      <DT><IMG ALT="failure: and" SRC="and-failure.gif" WIDTH="267" HEIGHT="141" ALIGN="BOTTOM"
+      BORDER="0">
     </DL>
   </UL>
   <LI>If the result is a success
@@ -218,8 +218,8 @@ the basic algorithm for handling a returned result:</P>
     </UL>
     <LI>If the node is an or-branch, cancel all unfinished children.
     <DL>
-      <DT><IMG SRC="and-success.gif" WIDTH="479" HEIGHT="116" ALIGN="BOTTOM"
-      BORDER="0" NATURALSIZEFLAG="3">
+      <DT><IMG ALT="success: and" SRC="and-success.gif" WIDTH="479" HEIGHT="116" ALIGN="BOTTOM"
+      BORDER="0">
     </DL>
   </UL>
 </UL>
@@ -227,7 +227,7 @@ the basic algorithm for handling a returned result:</P>
 <P>After a result has been propagated, the parent is processed
 recursively.</P>
 
-<H4>Ensemble implementation</H4>
+<H2>Ensemble Support</H2>
 
 <P>The Ensemble support for MetaPRL is implemented in the
 module <TT>Ensemble_queue</TT>. The abstraction that the Ensemble
@@ -282,7 +282,7 @@ Finally, the <TT>View</TT> message is a general wakeup meaning
 that the status of the memory has changed. The <TT>View</TT> message
 is used only for debugging.</P>
 
-<H4>Ensemble Implementation</H4>
+<H2>Ensemble Implementation</H2>
 
 <P>Each process in a MetaPRL process group maintains a copy
 of the shared memory. When a process <I>adds</I> an entry, the
@@ -306,10 +306,10 @@ All entries in the other partition are deleted, and all computation
 ceases. It would be reasonable to continue computation in the
 hope that the partition will heal (which remains as future work).+</P>
 
-<H4>Scheduling with Ensemble</H4>
+<H2>Scheduling with Ensemble</H2>
 
-<P><IMG SRC="lock.gif" WIDTH="474" HEIGHT="404" ALIGN="RIGHT"
-BORDER="0" NATURALSIZEFLAG="3">The scheduler treats the Ensemble
+<P><IMG ALT="lock" SRC="lock.gif" WIDTH="474" HEIGHT="404" ALIGN="RIGHT"
+BORDER="0">The scheduler treats the Ensemble
 shared memory as if it were another thread (but with a different
 interface). The scheduler maintains a list of jobs posted to the
 shared memory. If the scheduler queue ever become empty, a lock

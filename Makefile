@@ -102,7 +102,7 @@ install: check_config
 	done
 
 clean: check_config
-	@for i in lib bin $(DIRS); do\
+	@for i in lib bin doc $(DIRS); do\
 		if (echo Cleaning $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	done
 

@@ -1,0 +1,4 @@
+disable directory-index
+
+enable img-size
+enable bad-link

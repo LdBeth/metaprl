@@ -3,7 +3,7 @@
   <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
   <TITLE>MetaPRL Tacticals</TITLE>
 </HEAD>
-<BODY BGCOLOR="#ffffff">
+<BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000">
 
 <H1>MetaPRL Tacticals</H1>
 
@@ -27,7 +27,7 @@ two arguments that defined the hypotheses matched by <TT>'H</TT>
 and <TT>'J</TT>, and two arguments for the variable names <TT>'y</TT>
 and <TT>'z</TT>.</P>
 
-<H3>Tactic arguments</H3>
+<H2>Tactic arguments</H2>
 
 <P>The <TT>tactic</TT> type defined in the <TT>Tacticals</TT>
 module differs from the tactic type of the refiner. The <TT>Tacticals.tactic</TT>
@@ -111,7 +111,7 @@ to modify the attribute list during refinement:</P>
 <P>Not all of the attributes can be modified: some are constant
 values that are initialized by the proof editor when a proof tree</P>
 
-<H4>Simple tactics</H4>
+<H2>Simple tactics</H2>
 
 <P>There are several simple tactics. The <B><TT>topval</TT></B>
 declaration declares a value that is available to the MetaPRL
@@ -126,7 +126,7 @@ toploop.</P>
 the <TT>idT</TT> tactic produces the single subgoal <TT>T</TT>.
 The <TT>failT</TT> tactic always fails.</P>
 
-<H4><A NAME="anchor228099"></A>Assumption tactics</H4>
+<H2><A NAME="anchor228099">Assumption tactics</A></H2>
 
 <P>Proofs in MetaPRL are proofs of <I>derived rules</I>. There
 are two kinds of hypotheses in a derived rule. The subgoals of
@@ -167,10 +167,10 @@ proof is valid:</P>
 <TT>Goal:</TT>
 <TT>sequent { 'H &gt;- all x: 'A. 'B['x] }</TT>
 <B><TT>BY</TT></B><TT> D 0</TT>
-<TT></TT>
+
 <TT>Subgoal 1:</TT>
 <TT>   Assums: </TT><I>same</I>
-<I>   </I>Goal: sequent { 'H &gt;- 'A type }
+   Goal: sequent { 'H &gt;- 'A type }
    <B>BY</B> nthAssumT 2
 
 Subgoal 2:
@@ -179,7 +179,7 @@ Subgoal 2:
    <B>BY </B>nthAssumT 1</PRE>
 </BLOCKQUOTE>
 
-<H4>Tactic composition</H4>
+<H2>Tactic composition</H2>
 
 <P>There are several tactics for composition. Most of these tactics
 are defined as <I>infix</I> operators by the MetaPRL compiler.
@@ -226,7 +226,7 @@ The type <TT>tactic</TT> is defined as <TT>tactic_arg -&gt; tactic_list</TT>;
 the <TT>thenFLT</TT> tactic performs the partial tactic application
 for the subgoal list.</P>
 
-<H4>Conditional tactics and looping</H4>
+<H2>Conditional tactics and looping</H2>
 
 <P>There are several tactics for conditional application and looping.</P>
 

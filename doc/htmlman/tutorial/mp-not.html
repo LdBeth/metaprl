@@ -3,7 +3,7 @@
   <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
   <TITLE>MetaPRL Tutorial: The derived module for negation</TITLE>
 </HEAD>
-<BODY BGCOLOR="#ffffff">
+<BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000">
 
 <H2>MetaPRL Tutorial: The derived module for negation</H2>
 
@@ -131,8 +131,8 @@ follows.</P>
 
 <BLOCKQUOTE>
   <P>6.<I> Start the proof of the rule for </I><TT>not:</TT></P>
-  <P><IMG SRC="mp_fol_not1.gif" WIDTH="670" HEIGHT="476" ALIGN="BOTTOM"
-  BORDER="0" NATURALSIZEFLAG="3"></P>
+  <P><IMG ALT="Screen shot" SRC="mp_fol_not1.gif" WIDTH="670" HEIGHT="476" ALIGN="BOTTOM"
+  BORDER="0"></P>
 </BLOCKQUOTE>
 
 <P>This listing shows that there are three incomplete proof obligations:
@@ -143,8 +143,8 @@ the axioms for <TT>not_type</TT>, <TT>not_intro</TT>, and <TT>not_elim</TT>.</P>
 <P>To prove <TT>not_type</TT>, cd to the <TT>not_type</TT> proof:</P>
 
 <BLOCKQUOTE>
-  <PRE><IMG SRC="mp_fol_not2.gif" WIDTH="670" HEIGHT="284" ALIGN="BOTTOM"
-BORDER="0" NATURALSIZEFLAG="3"></PRE>
+  <PRE><IMG ALT="Screen shot" SRC="mp_fol_not2.gif" WIDTH="670" HEIGHT="284" ALIGN="BOTTOM"
+BORDER="0"></PRE>
 </BLOCKQUOTE>
 
 <P>To prove this goal, we first unfold the negation. This requires
@@ -155,8 +155,8 @@ the rewrite to a tactic, and applies it to the <I>outermost</I>
 occurrence of a <TT>not</TT> term.</P>
 
 <BLOCKQUOTE>
-  <PRE><IMG SRC="mp_fol_not3.gif" WIDTH="670" HEIGHT="284" ALIGN="BOTTOM"
-BORDER="0" NATURALSIZEFLAG="3"></PRE>
+  <PRE><IMG ALT="Screen shot" SRC="mp_fol_not3.gif" WIDTH="670" HEIGHT="284" ALIGN="BOTTOM"
+BORDER="0"></PRE>
 </BLOCKQUOTE>
 
 <P>Now that the negation is unfolded to its definition, we can
@@ -165,8 +165,8 @@ then apply the <TT>dT</TT> tactic to apply the <TT>implies_type</TT>
 rule.</P>
 
 <BLOCKQUOTE>
-  <PRE><IMG SRC="mp_fol_not4.gif" WIDTH="670" HEIGHT="404" ALIGN="BOTTOM"
-BORDER="0" NATURALSIZEFLAG="3"></PRE>
+  <PRE><IMG ALT="Screen shot" SRC="mp_fol_not4.gif" WIDTH="670" HEIGHT="404" ALIGN="BOTTOM"
+BORDER="0"></PRE>
 </BLOCKQUOTE>
 
 <P>This proof step produces two subgoals: one to prove that <TT>'A</TT>
@@ -175,8 +175,8 @@ For the first goal, we use the typehood assumption, using that
 tactic <TT>nthAssumT</TT>.</P>
 
 <BLOCKQUOTE>
-  <PRE><IMG SRC="mp_fol_not5.gif" WIDTH="670" HEIGHT="404" ALIGN="BOTTOM"
-BORDER="0" NATURALSIZEFLAG="3"></PRE>
+  <PRE><IMG ALT="Screen shot" SRC="mp_fol_not5.gif" WIDTH="670" HEIGHT="404" ALIGN="BOTTOM"
+BORDER="0"></PRE>
 </BLOCKQUOTE>
 
 <P>Note that the application of the <TT>nthAssumT</TT> tactic
@@ -187,8 +187,8 @@ and we apply the <TT>dT</TT> tactic to invoke the <TT>false_type</TT>
 rule.</P>
 
 <BLOCKQUOTE>
-  <PRE><IMG SRC="mp_fol_not6.gif" WIDTH="670" HEIGHT="560" ALIGN="BOTTOM"
-BORDER="0" NATURALSIZEFLAG="3"></PRE>
+  <PRE><IMG ALT="Screen shot" SRC="mp_fol_not6.gif" WIDTH="670" HEIGHT="560" ALIGN="BOTTOM"
+BORDER="0"></PRE>
 </BLOCKQUOTE>
 
 <P>At this point, all proof obligations have been satisfied, and
@@ -202,8 +202,8 @@ and <TT>nthAssumT</TT>. We can navigate back up the proof tree,
 and prove the goal in one step.</P>
 
 <BLOCKQUOTE>
-  <PRE><IMG SRC="mp_fol_not7.gif" WIDTH="670" HEIGHT="440" ALIGN="BOTTOM"
-BORDER="0" NATURALSIZEFLAG="3"></PRE>
+  <PRE><IMG ALT="Screen shot" SRC="mp_fol_not7.gif" WIDTH="670" HEIGHT="440" ALIGN="BOTTOM"
+BORDER="0"></PRE>
 </BLOCKQUOTE>
 
 <P>The <TT>autoT</TT> tactic proves the goal, and it preserved
@@ -218,8 +218,8 @@ to perform <I>sequencing</I>. First, we unfold the negation, then
 we apply the <TT>autoT</TT> tactic.</P>
 
 <BLOCKQUOTE>
-  <PRE><IMG SRC="mp_fol_not8.gif" WIDTH="670" HEIGHT="464" ALIGN="BOTTOM"
-BORDER="0" NATURALSIZEFLAG="3"></PRE>
+  <PRE><IMG ALT="Screen shot" SRC="mp_fol_not8.gif" WIDTH="670" HEIGHT="464" ALIGN="BOTTOM"
+BORDER="0"></PRE>
 </BLOCKQUOTE>
 
 <H4>Proving <TT>not_elim</TT></H4>
@@ -230,15 +230,15 @@ prove this goal because of <I>folding</I> constraints. The root
 of the proof tree can be expanded using the <TT>autoT</TT> tactic.</P>
 
 <BLOCKQUOTE>
-  <PRE><IMG SRC="mp_fol_not9.gif" WIDTH="670" HEIGHT="464" ALIGN="BOTTOM"
-BORDER="0" NATURALSIZEFLAG="3"></PRE>
+  <PRE><IMG ALT="Screen shot" SRC="mp_fol_not9.gif" WIDTH="670" HEIGHT="464" ALIGN="BOTTOM"
+BORDER="0"></PRE>
 </BLOCKQUOTE>
 
 <P>The second goal has a trivial proof.</P>
 
 <BLOCKQUOTE>
-  <PRE><IMG SRC="mp_fol_not10.gif" WIDTH="670" HEIGHT="380" ALIGN="BOTTOM"
-BORDER="0" NATURALSIZEFLAG="3"></PRE>
+  <PRE><IMG ALT="Screen shot" SRC="mp_fol_not10.gif" WIDTH="670" HEIGHT="380" ALIGN="BOTTOM"
+BORDER="0"></PRE>
 </BLOCKQUOTE>
 
 <P>The first goal is more difficult. The goal uses the hypothesis
@@ -250,8 +250,8 @@ which takes the term that is the <I>result </I>of the fold, and
 an unfolding conversion, and performs the reverse rewrite.</P>
 
 <BLOCKQUOTE>
-  <PRE><IMG SRC="mp_fol_not11.gif" WIDTH="670" HEIGHT="728" ALIGN="BOTTOM"
-BORDER="0" NATURALSIZEFLAG="3"></PRE>
+  <PRE><IMG ALT="Screen shot" SRC="mp_fol_not11.gif" WIDTH="670" HEIGHT="728" ALIGN="BOTTOM"
+BORDER="0"></PRE>
 </BLOCKQUOTE>
 
 <P>This completes the derivation. As a final step, we can change
@@ -259,8 +259,8 @@ back to the module directory and check that all obligations have
 been satisfied.</P>
 
 <BLOCKQUOTE>
-  <PRE><IMG SRC="mp_fol_not12.gif" WIDTH="670" HEIGHT="476" ALIGN="BOTTOM"
-BORDER="0" NATURALSIZEFLAG="3"></PRE>
+  <PRE><IMG ALT="Screen shot" SRC="mp_fol_not12.gif" WIDTH="670" HEIGHT="476" ALIGN="BOTTOM"
+BORDER="0"></PRE>
 </BLOCKQUOTE>
 
 <P>Finally, we save the theory with the <TT>save</TT> command.</P>

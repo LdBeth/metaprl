@@ -3,7 +3,7 @@
   <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
   <TITLE>MetaPRL Conversionals</TITLE>
 </HEAD>
-<BODY BGCOLOR="#ffffff">
+<BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000">
 
 <H1>MetaPRL Conversionals</H1>
 
@@ -25,7 +25,7 @@ definition of <I>beta</I> reduction defines a conversion called
   <P><B><TT>val</TT></B><TT> beta : conv</TT></P>
 </BLOCKQUOTE>
 
-<H4>Conversion application</H4>
+<H2>Conversion application</H2>
 
 <P>A conversion is applied to the current goal by using the rw
 function:</P>
@@ -53,7 +53,7 @@ proof fragment:</P>
 Subgoal 1: sequent { 'H; x: 1 &lt; 0 &gt;- false }</PRE>
 </BLOCKQUOTE>
 
-<H4>Simple conversions</H4>
+<H2>Simple conversions</H2>
 
 <P>There are several simple conversions:</P>
 
@@ -66,7 +66,7 @@ Subgoal 1: sequent { 'H; x: 1 &lt; 0 &gt;- false }</PRE>
 is applied to a term, the result of the rewriting is the argument,
 unchanged. The <TT>failC</TT> conversion always fails.</P>
 
-<H4>Simple conversionals</H4>
+<H2>Simple conversionals</H2>
 
 <P>There are several standard conversionals:</P>
 
@@ -129,7 +129,7 @@ is to be performed on, and the <TT>env_goal</TT> returns the entire
 goal (so, for instance, the results will be different if rewriting
 is being performed on a subterm of the goal with <TT>addrC</TT>).</P>
 
-<H4>Search conversionals</H4>
+<H2>Search conversionals</H2>
 
 <P>Typically, rewriting is performed by search. For example, it
 is often useful to reduce <I>all</I> beta redices in the goal.

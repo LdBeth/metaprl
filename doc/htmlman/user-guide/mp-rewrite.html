@@ -3,7 +3,7 @@
   <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
   <TITLE>MetaPRL Computational Rewriting</TITLE>
 </HEAD>
-<BODY BGCOLOR="#ffffff">
+<BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000">
 
 <H1>MetaPRL Computational Rewriting</H1>
 
@@ -19,7 +19,7 @@ are described on the previous page.</P>
 <P>Rewrites are declared with the following form:</P>
 
 <BLOCKQUOTE>
-  <P><B><TT>rewrite </TT></B><I>name<TT> </TT></I><TT>[</TT><I>params</I><TT>]
+  <P><B><TT>rewrite </TT></B><I>name</I> <TT>[</TT><I>params</I><TT>]
   : [</TT><I>conditions</I><TT>] </TT><I>redex</I><TT> &lt;--&gt;
   </TT><I>contractum</I></P>
 </BLOCKQUOTE>
@@ -67,7 +67,7 @@ are primitive to a logic use the <TT>prim_rw</TT> form:</P>
 
 <BLOCKQUOTE>
   <P><B><TT>prim_rw </TT></B><I>name </I><TT>[</TT><I>params</I><TT>]
-  : [</TT><I>conditiona</I><TT>] </TT><I>redex<TT> </TT></I><TT>&lt;--&gt;
+  : [</TT><I>conditiona</I><TT>] </TT><I>redex</I> <TT>&lt;--&gt;
   </TT><I>contractum</I></P>
 </BLOCKQUOTE>
 
@@ -80,7 +80,7 @@ are implemented with the <TT>interactive_rw</TT> form. The definition
 has the same form as the <TT>prim_rw</TT>:</P>
 
 <BLOCKQUOTE>
-  <P><B><TT>interactive_rw</TT></B><TT> </TT><I>name</I><TT> [</TT><I>params</I><TT>]
+  <P><B><TT>interactive_rw</TT></B><I> name</I><TT> [</TT><I>params</I><TT>]
   : [</TT><I>conditions</I><TT>] </TT><I>redex</I><TT> &lt;--&gt;
   </TT><I>contractum</I></P>
 </BLOCKQUOTE>

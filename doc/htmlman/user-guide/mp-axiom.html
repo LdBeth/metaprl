@@ -3,7 +3,7 @@
   <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
   <TITLE>MetaPRL Axioms and Inference Rules</TITLE>
 </HEAD>
-<BODY BGCOLOR="#ffffff">
+<BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000">
 
 <H1>MetaPRL Axioms and Inference Rules</H1>
 
@@ -18,7 +18,7 @@ a set of valid inferences in the logic. At the moment, inferences
 are non-recursive: they have the syntax:</P>
 
 <BLOCKQUOTE>
-  <P><I>inference</I><B> </B>::= <I>term | term<TT> </TT></I><TT>--&gt;
+  <P><I>inference</I> ::= <I>term | term</I> <TT>--&gt;
   </TT><I>inference</I></P>
 </BLOCKQUOTE>
 
@@ -42,7 +42,7 @@ in their signatures.</P>
 form. The general syntax is the following:</P>
 
 <BLOCKQUOTE>
-  <P><B><TT>rule</TT></B><TT> </TT><I>name </I><TT>[</TT><I>params</I><TT>]
+  <P><B><TT>rule</TT></B> <I>name </I><TT>[</TT><I>params</I><TT>]
   : </TT><I>inference</I></P>
 </BLOCKQUOTE>
 
@@ -163,7 +163,7 @@ previous rules in a logic. Derived rules are delcared with the
 following form:</P>
 
 <BLOCKQUOTE>
-  <P><B><TT>interactive </TT></B><I>name<TT> </TT></I><TT>: [</TT><I>params</I><TT>]
+  <P><B><TT>interactive </TT></B><I>name</I> <TT>: [</TT><I>params</I><TT>]
   : </TT><I>inference</I></P>
 </BLOCKQUOTE>
 

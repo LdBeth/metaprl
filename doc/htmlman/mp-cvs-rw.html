@@ -3,7 +3,7 @@
   <META NAME="GENERATOR" CONTENT="Vi">
   <TITLE>MetaPRL RW CVS Instructions</TITLE>
 </HEAD>
-<BODY BGCOLOR="#ffffff">
+<BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000">
 <H2>MetaPRL Read-Write CVS Access</H2>
 
 <OL>
@@ -40,7 +40,7 @@ User &lt;your login on ensemble01&gt;</PRE>
       <LI>Put the following in the <TT>/tmp/fixrep.sh</TT> :
 
 <PRE>#!/bin/sh
-echo :ext:metaprl-cvs:/cvsroot > $1/Root
+echo :ext:metaprl-cvs:/cvsroot &gt; $1/Root
 (echo 's|/meta-prl|/--meta-prl-root-dir--|'; echo 's|^.*/--meta-prl-root-dir--|/cvsroot/meta-prl|'; echo w; echo q) | ed $1/Repository</PRE>
 
       <LI><PRE>chmod 755 /tmp/fixrep.sh</PRE>
