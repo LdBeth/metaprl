@@ -1,6 +1,8 @@
 #!/bin/sh
 $MAKE -s clean
 
+find . -name \*.prlb -exec rm -f "{}" \;
+
 function clean () {
    if [ -f "$1/CVS/Entries" ]; then
       for f in `ls -1A $1`; do
