@@ -2507,22 +2507,10 @@ struct
       [] -> []
     | t::r ->
          let dt = dest_term t in
-         let top = dt.term_op
-         and tterms = dt.term_terms in
-         let dop = dest_op top in
-         let don = dest_opname dop.op_name in
-         match don with
-            [] ->
-               let sub_terms = collect_subterms tterms in
-               collect_delta_terms (sub_terms @ r)
-          | op1::opr ->
-               if op1 = "jprover" then
-                  match opr with
-                     [] -> raise (Invalid_argument "Jprover: delta position missing")
-                   | delta::_ ->
-                        delta::(collect_delta_terms r)
-               else
-                  let sub_terms = collect_subterms tterms in
+            if Opname.eq (dest_op dt.term_op).op_name jprover_op then
+               (dest_string_param t)::(collect_delta_terms r)
+            else
+               let sub_terms = collect_subterms dt.term_terms in
                   collect_delta_terms (sub_terms @ r)
 
    let rec check_delta_terms (v,term) ass_delta_diff dterms =
