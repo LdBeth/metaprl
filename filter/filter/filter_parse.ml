@@ -1661,12 +1661,18 @@ EXTEND
 
           (* Grammar *)
         | "lex_token"; id = singleterm; ":"; regex = STRING; t = OPT token_expansion ->
-          SigFilter.add_token (SigFilter.get_proc loc) loc (opname_of_term (parse_term loc id.aterm)) regex t;
-          empty_sig_item loc
+          let f () =
+             SigFilter.add_token (SigFilter.get_proc loc) loc (opname_of_term (parse_term loc id.aterm)) regex t;
+          in
+             handle_exn f "lex_token" loc;
+             empty_sig_item loc
 
         | "lex_token"; id = singleterm; ":"; regex1 = STRING; regex2 = STRING; t = OPT token_expansion ->
-          SigFilter.add_token_pair (SigFilter.get_proc loc) loc (opname_of_term (parse_term loc id.aterm)) regex1 regex2 t;
-          empty_sig_item loc
+          let f () =
+             SigFilter.add_token_pair (SigFilter.get_proc loc) loc (opname_of_term (parse_term loc id.aterm)) regex1 regex2 t;
+          in
+             handle_exn f "lex_token pair" loc;
+             empty_sig_item loc
 
         | "production"; t = term; opt_prec = OPT prec_term; "<--"; args = LIST0 term SEP ";" ->
           let f () =
@@ -1677,17 +1683,26 @@ EXTEND
              empty_sig_item loc
 
         | "lex_prec"; assoc = prec_declare; "["; args = LIST0 parsed_term SEP ";"; "]"; rel = prec_relation ->
-          SigFilter.input_prec (SigFilter.get_proc loc) loc assoc args rel;
-          empty_sig_item loc
+          let f () =
+             SigFilter.input_prec (SigFilter.get_proc loc) loc assoc args rel;
+          in
+             handle_exn f "lex_prec" loc;
+             empty_sig_item loc
 
         | "parser"; t = term; ":"; id = parsed_term ->
-          let t = unchecked_term_of_parsed_term t in
-             SigFilter.add_parser (SigFilter.get_proc loc) loc t (opname_of_term id);
+          let f () =
+             let t = unchecked_term_of_parsed_term t in
+                SigFilter.add_parser (SigFilter.get_proc loc) loc t (opname_of_term id);
+          in
+             handle_exn f "parser" loc;
              empty_sig_item loc
 
         | "GENGRAMMAR" ->
-          SigFilter.compile_parser (SigFilter.get_proc loc) loc;
-          empty_sig_item loc
+          let f () =
+             SigFilter.compile_parser (SigFilter.get_proc loc) loc;
+          in
+             handle_exn f "GENGRAMMAR" loc;
+             empty_sig_item loc
 
         | "prim" -> str_keyword "prim" loc
         | "interactive" -> str_keyword "interactive" loc
@@ -1951,12 +1966,18 @@ EXTEND
 
           (* Grammar *)
         | "lex_token"; id = singleterm; ":"; regex = STRING; t = OPT token_expansion ->
-          StrFilter.add_token (StrFilter.get_proc loc) loc (opname_of_term (parse_term loc id.aterm)) regex t;
-          empty_str_item loc
+          let f () =
+             StrFilter.add_token (StrFilter.get_proc loc) loc (opname_of_term (parse_term loc id.aterm)) regex t;
+          in
+             handle_exn f "lex_token" loc;
+             empty_str_item loc
 
         | "lex_token"; id = singleterm; ":"; regex1 = STRING; regex2 = STRING; t = OPT token_expansion ->
-          StrFilter.add_token_pair (StrFilter.get_proc loc) loc (opname_of_term (parse_term loc id.aterm)) regex1 regex2 t;
-          empty_str_item loc
+          let f () =
+             StrFilter.add_token_pair (StrFilter.get_proc loc) loc (opname_of_term (parse_term loc id.aterm)) regex1 regex2 t;
+          in
+             handle_exn f "lex_token pair" loc;
+             empty_str_item loc
 
         | "production"; t = term; opt_prec = OPT prec_term; "<--"; args = LIST0 term SEP ";" ->
           let f () =
@@ -1967,17 +1988,26 @@ EXTEND
              empty_str_item loc
 
         | "lex_prec"; assoc = prec_declare; "["; args = LIST0 parsed_term SEP ";"; "]"; rel = prec_relation ->
-          StrFilter.input_prec (StrFilter.get_proc loc) loc assoc args rel;
-          empty_str_item loc
+          let f () =
+             StrFilter.input_prec (StrFilter.get_proc loc) loc assoc args rel;
+          in
+             handle_exn f "lex_prec" loc;
+             empty_str_item loc
 
         | "parser"; t = term; ":"; id = parsed_term ->
-          let t = unchecked_term_of_parsed_term t in
-             StrFilter.add_parser (StrFilter.get_proc loc) loc t (opname_of_term id);
+          let f () =
+             let t = unchecked_term_of_parsed_term t in
+                StrFilter.add_parser (StrFilter.get_proc loc) loc t (opname_of_term id);
+          in
+             handle_exn f "parser" loc;
              empty_str_item loc
 
         | "GENGRAMMAR" ->
-          StrFilter.compile_parser (StrFilter.get_proc loc) loc;
-          empty_str_item loc
+          let f () =
+             StrFilter.compile_parser (StrFilter.get_proc loc) loc;
+          in
+             handle_exn f "GENGRAMMAR" loc;
+             empty_str_item loc
 
         | "rule" -> sig_keyword "rule" loc
         | "rewrite" -> sig_keyword "rewrite" loc
