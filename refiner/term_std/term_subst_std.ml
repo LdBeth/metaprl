@@ -766,11 +766,23 @@ struct
       ENDIF
 
 (* for compatibility  only; never used here *)  
-   type unify_subst_mm = unify_subst
-   let unifiable t1 t2 l=
-      raise (Failure "unifiable: not implemented")
-   let unify_mm t1 t2 l=
-      raise (Failure "unify_mm: not implemented")
+   type eqnlist = (term*term) list
+
+
+   let eqnlist_empty = []
+   let eqnlist_append_eqns x y = raise (Failure ": not implemented") 
+   let eqnlist2ttlist x = raise (Failure ": not implemented")  
+ 
+
+   let unifiable x y z  =  raise (Failure ": not implemented")
+   let unifiable_eqnl x y =  raise (Failure " : not implemented")
+
+
+   let unify_mm x y z  = raise (Failure ": not implemented")
+   let unify_mm_eqnl x y =  raise (Failure " : not implemented")
+   let unify_mm_eqnl_eqnl x y =  raise (Failure " : not implemented") 
+
+
 (* ------- *)
 
 

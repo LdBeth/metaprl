@@ -672,34 +672,27 @@ struct
 (************************************)
 
 open Term_unif_ds
-(*
-module TermType = Term_ds.TermType
-module AddressType = Term_addr_ds.AddressType
-module RefineError = Refine_error.MakeRefineError (TermType) (AddressType)
-module Term = Term_base_ds.Term (RefineError)
-*)
-
 module Unification = Term_unif_ds.TermSubstMm(Term)(RefineError)
 
-type unify_subst_mm = unify_subst 
-(* !!!! this type will be changed 
+type eqnlist = Unification.eqnlist
+(*  
 * modified: meta-prl/refiner/term_ds/term_subst_ds.ml
-*           meta-prl/refiner/term_ds/Files
 *           meta-prl/refiner/refsig/term_subst_sig.mlz
 *           meta-prl/refiner/term_std/term_subst_std.ml     
 *)
+        
+let eqnlist_empty = Unification.eqnlist_empty
+let eqnlist_append_eqns = Unification.eqnlist_append_eqns
+let eqnlist2ttlist =  Unification.eqnlist2ttlist  
+ 
 
 let unifiable = Unification.unifiable
+let unifiable_eqnl =  Unification.unifiable_eqnl
+
 
 let unify_mm = Unification.unify
-
-
-
-
-
-
-
-
+let unify_mm_eqnl = Unification.unify_eqnl 
+let unify_mm_eqnl_eqnl = Unification.unify_eqnl_eqnl 
 
 
 
