@@ -111,3 +111,6 @@ val empty_bookmark : global_resource
 val theory_bookmark : string -> bookmark
 
 val debug_resource : bool ref
+
+(* Finds the names of the _immediate_ parents *)
+val get_parents : string -> string list

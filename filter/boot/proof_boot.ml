@@ -1418,38 +1418,33 @@ struct
     * Expressions.
     *)
    let string_of_opname opname =
-      let rec collect_opname caps = function
-         [t] ->
-            if caps then String.capitalize t else t
+      let rec collect_opname cap = function
+         [t] -> cap t
        | h :: t ->
-            collect_opname true t ^ "." ^ (if caps then String.capitalize h else h)
+            (collect_opname String.capitalize t) ^ "." ^ cap h
        | [] ->
             "<nil opname>"
       in
-         collect_opname false (dest_opname opname)
+         collect_opname (fun x -> x) (dest_opname opname)
 
    let make_extract_expr ext =
       let arglist =
-         match Refine.dest_extract ext with
-            AtomicExtract { just_addrs = addrs;
-                            just_params = params;
-                            just_refiner = opname
-            } ->
+         match Refine.describe_extract ext with
+            EDRule (opname, addrs, params) ->
                let addrs = Array.map (fun addr -> IntArg addr) addrs in
                let params = Array.of_list (List.map (fun t -> TermArg t) params) in
                let name = [|StringArg (string_of_opname opname)|] in
                   GeneralArgList (Array.concat [name; addrs; params])
-
-          | RewriteExtract _ ->
+          | EDRewrite ->
                NoneArgList "<rewrite>"
-          | CondRewriteExtract _ ->
+          | EDCondREwrite ->
                NoneArgList "<conditional-rewrite>"
-          | ComposeExtract _ ->
+          | EDComposition ->
                StringStringArgList ("<tactic>", "thenT", "<tactic>")
-          | NthHypExtract (_, i) ->
+          | EDNthHyp i ->
                IntArgList ("nthAssumT", i)
-          | CutExtract { cut_hyp = hyp } ->
-               TermArgList ("cutT", hyp)
+          | EDCut t ->
+               TermArgList ("cutT", t)
       in
          ExprExtract arglist
 

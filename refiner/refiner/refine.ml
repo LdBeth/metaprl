@@ -288,31 +288,6 @@ struct
       }
 
    (*
-    * Extract destruction types.
-    *)
-   and extract_info =
-      AtomicExtract of single_just
-    | RewriteExtract of msequent * rw_extract * msequent
-    | CondRewriteExtract of msequent * crw_extract * msequent list
-    | ComposeExtract of extract * extract list
-    | NthHypExtract of msequent * int
-    | CutExtract of cut_just
-
-   and rw_extract_info =
-      AtomicRewriteExtract of term * opname * term
-    | ReverseRewriteExtract of rw_extract
-    | ComposeRewriteExtract of rw_extract * rw_extract
-    | AddressRewriteExtract of term * address * rw_extract * term
-    | HigherRewriteExtract of term * rw_extract list * term
-
-   and crw_extract_info =
-      AtomicCondRewriteExtract of cond_rewrite_here
-    | ReverseCondRewriteExtract of crw_extract
-    | ComposeCondRewriteExtract of crw_extract * crw_extract
-    | AddressCondRewriteExtract of term * address * crw_extract * term
-    | HigherCondRewriteExtract of term * crw_extract list * term
-
-   (*
     * A refiner contains the following items:
     *    + theorems: terms that are true in a sequent calculus
     *    + rules: implications on proofs
@@ -472,47 +447,15 @@ struct
     | CondRW of prim_cond_rw
 
    (*
-    * For destruction.
+    * Extract decription for UI purposes.
     *)
-   type refiner_item =
-      RIRule of ri_rule
-    | RIPrimTheorem of ri_prim_theorem
-    | RIMLRule of ri_ml_rule
-
-    | RIRewrite of ri_rewrite
-    | RIDefRewrite of ri_rewrite
-    | RIMLRewrite of ri_ml_rewrite
-    | RICondRewrite of ri_cond_rewrite
-    | RIPrimRewrite of ri_prim_rewrite
-    | RIMLCondRewrite of ri_ml_rewrite
-
-    | RIParent of refiner
-    | RILabel of string
-
-   and ri_rule =
-      { ri_rule_name : opname;
-        ri_rule_rule : msequent
-      }
-   and ri_ml_rule =
-      { ri_ml_rule_name : opname }
-   and ri_prim_theorem =
-      { ri_pthm_axiom : refiner }
-
-   and ri_rewrite =
-      { ri_rw_name : opname;
-        ri_rw_redex : term;
-        ri_rw_contractum : term
-      }
-   and ri_cond_rewrite =
-      { ri_crw_name : opname;
-        ri_crw_conds : term list;
-        ri_crw_redex : term;
-        ri_crw_contractum : term
-      }
-   and ri_prim_rewrite =
-      { ri_prw_rewrite : refiner }
-   and ri_ml_rewrite =
-      { ri_ml_rw_name : opname }
+   type extract_description =
+       EDRule of opname * int array * term list
+     | EDRewrite
+     | EDCondREwrite
+     | EDComposition (* any compilcated steps will fall into this category *)
+     | EDNthHyp of int
+     | EDCut of term
 
    (************************************************************************
     * SEQUENT OPERATIONS                                                   *
@@ -1116,239 +1059,17 @@ struct
     ************************************************************************)
 
    (*
-    * Build a rewrite extract out of a justification.
+    * Extract decription for UI purposes.
     *)
-   let rec goal_of_rewrite_just = function
-      RewriteHere (goal, _, _)
-    | RewriteML (goal, _, _)
-    | RewriteAddress (goal, _, _, _)
-    | RewriteHigher (goal, _, _) ->
-         goal
-    | RewriteReverse just ->
-         subgoal_of_rewrite_just just
-    | RewriteCompose (just, _) ->
-         goal_of_rewrite_just just
-
-   and subgoal_of_rewrite_just = function
-      RewriteHere (_, _, subgoal)
-    | RewriteML (_, _, subgoal)
-    | RewriteAddress (_, _, _, subgoal)
-    | RewriteHigher (_, _, subgoal) ->
-         subgoal
-    | RewriteReverse just ->
-         goal_of_rewrite_just just
-    | RewriteCompose (_, just) ->
-         subgoal_of_rewrite_just just
-
-   let rewrite_extract_of_rewrite_just just =
-      { rw_goal = goal_of_rewrite_just just;
-        rw_just = just;
-        rw_subgoal = subgoal_of_rewrite_just just
-      }
-
-   (*
-    * Build a conditional rewrite extract from a justification.
-    *)
-   let rec goal_of_cond_rewrite_just = function
-      CondRewriteHere { cjust_goal = goal }
-    | CondRewriteML ({ cjust_goal = goal }, _)
-    | CondRewriteAddress (goal, _, _, _)
-    | CondRewriteHigher (goal, _, _) ->
-         goal
-    | CondRewriteReverse just ->
-         subgoal_of_cond_rewrite_just just
-    | CondRewriteCompose (just, _) ->
-         goal_of_cond_rewrite_just just
-
-   and subgoal_of_cond_rewrite_just = function
-      CondRewriteHere { cjust_subgoal_term = subgoal }
-    | CondRewriteML ({ cjust_subgoal_term = subgoal }, _)
-    | CondRewriteAddress (_, _, _, subgoal)
-    | CondRewriteHigher (_, _, subgoal) ->
-         subgoal
-    | CondRewriteReverse just ->
-         goal_of_cond_rewrite_just just
-    | CondRewriteCompose (_, just) ->
-         subgoal_of_cond_rewrite_just just
-
-   let rec subgoals_of_cond_rewrite_just = function
-      CondRewriteHere { cjust_subgoals = subgoals }
-    | CondRewriteML ({ cjust_subgoals = subgoals }, _) ->
-         CondRewriteSubgoals subgoals
-    | CondRewriteReverse just ->
-         subgoals_of_cond_rewrite_just just
-    | CondRewriteCompose (just1, just2) ->
-         CondRewriteSubgoalsList [subgoals_of_cond_rewrite_just just1; subgoals_of_cond_rewrite_just just2]
-    | CondRewriteAddress (_, addr, just, _) ->
-         CondRewriteSubgoalsAddr (addr, subgoals_of_cond_rewrite_just just)
-    | CondRewriteHigher (_, justl, _) ->
-         CondRewriteSubgoalsList (List.map subgoals_of_cond_rewrite_just justl)
-
-   let cond_rewrite_extract_of_cond_rewrite_just just =
-      { crw_goal = goal_of_cond_rewrite_just just;
-        crw_just = just;
-        crw_subgoal_term = subgoal_of_cond_rewrite_just just;
-        crw_subgoals = subgoals_of_cond_rewrite_just just
-      }
-
-   (*
-    * Turn a justification into an extract.
-    *)
-   let rec goal_of_just = function
-      SingleJust { just_goal = goal }
-    | MLJust ({ just_goal = goal }, _)
-    | RewriteJust (goal, _, _)
-    | CondRewriteJust (goal, _, _)
-    | NthHypJust (goal, _)
-    | CutJust { cut_goal = goal } ->
-         goal
-    | ComposeJust (just, _) ->
-         goal_of_just just
-
-   let rec subgoals_of_just = function
-      SingleJust { just_subgoals = subgoals }
-    | MLJust ({ just_subgoals = subgoals }, _)
-    | CondRewriteJust (_, _, subgoals) ->
-         subgoals
-    | RewriteJust (_, _, subgoal) ->
-         [subgoal]
-    | ComposeJust (_, justl) ->
-         List.flatten (List.map subgoals_of_just justl)
-    | NthHypJust _ ->
-         []
-    | CutJust { cut_lemma = cut_lemma; cut_then = cut_then } ->
-         [cut_lemma; cut_then]
-
-   let extract_of_just just =
-      { ext_goal = goal_of_just just;
-        ext_just = just;
-        ext_subgoals = subgoals_of_just just
-      }
-
-   (*
-    * Extract destruction.
-    * These break the extract into parts,
-    * which can be composed to form the original extract.
-    *)
-   let dest_extract { ext_just = just } =
-      match just with
-         SingleJust info
-       | MLJust (info, _) ->
-            AtomicExtract info
-       | RewriteJust (goal, info, subgoal) ->
-            RewriteExtract (goal, rewrite_extract_of_rewrite_just info, subgoal)
-       | CondRewriteJust (goal, info, subgoals) ->
-            CondRewriteExtract (goal, cond_rewrite_extract_of_cond_rewrite_just info, subgoals)
-       | ComposeJust (just, justl) ->
-            ComposeExtract (extract_of_just just, List.map extract_of_just justl)
-       | NthHypJust (goal, i) ->
-            NthHypExtract (goal, i)
-       | CutJust info ->
-            CutExtract info
-
-   let goal_of_extract ext =
-      ext.ext_goal
-
-   let subgoals_of_extract ext =
-      ext.ext_subgoals
-
-   (*
-    * Break apart a rw_extract.
-    *)
-(*
-   let rec goal_of_rewrite_just = function
-      RewriteHere (goal, _, _) ->
-         goal
-    | RewriteReverse just ->
-         subgoal_of_rewrite_just just
-    | RewriteCompose (just, _) ->
-         goal_of_rewrite_just just
-    | RewriteAddress (goal, _, _, _) ->
-         goal
-    | RewriteHigher (goal, _, _) ->
-         goal
-
-   and subgoal_of_rewrite_just = function
-      RewriteHere (_, _, subgoal) ->
-         subgoal
-    | RewriteReverse just ->
-         goal_of_rewrite_just just
-    | RewriteCompose (_, just) ->
-         subgoal_of_rewrite_just just
-    | RewriteAddress (_, _, _, subgoal) ->
-         subgoal
-    | RewriteHigher (_, _, subgoal) ->
-         subgoal
-*)
-
-   let rewrite_extract_of_rewrite_just just =
-      { rw_goal = goal_of_rewrite_just just;
-        rw_just = just;
-        rw_subgoal = subgoal_of_rewrite_just just
-      }
-
-   let dest_rw_extract { rw_just = just } =
-      match just with
-         RewriteHere (goal, opname, subgoal)
-       | RewriteML (goal, opname, subgoal) ->
-            AtomicRewriteExtract (goal, opname, subgoal)
-       | RewriteReverse just ->
-            ReverseRewriteExtract (rewrite_extract_of_rewrite_just just)
-       | RewriteCompose (just1, just2) ->
-            ComposeRewriteExtract (rewrite_extract_of_rewrite_just just1,
-                                   rewrite_extract_of_rewrite_just just2)
-       | RewriteAddress (goal, addr, just, subgoal) ->
-            AddressRewriteExtract (goal, addr, rewrite_extract_of_rewrite_just just, subgoal)
-       | RewriteHigher (goal, justl, subgoal) ->
-            HigherRewriteExtract (goal, List.map rewrite_extract_of_rewrite_just justl, subgoal)
-
-   let goal_of_rw_extract rw =
-      rw.rw_goal
-
-   let subgoal_of_rw_extract rw =
-      rw.rw_subgoal
-
-   (*
-    * Conditional rewrite.
-    *)
-   let cond_rewrite_extract_of_cond_rewrite_just just =
-      { crw_goal = goal_of_cond_rewrite_just just;
-        crw_just = just;
-        crw_subgoal_term = subgoal_of_cond_rewrite_just just;
-        crw_subgoals = subgoals_of_cond_rewrite_just just
-      }
-
-   let dest_crw_extract { crw_just = just } =
-      match just with
-         CondRewriteHere info
-       | CondRewriteML (info, _) ->
-            AtomicCondRewriteExtract info
-       | CondRewriteReverse just ->
-            ReverseCondRewriteExtract (cond_rewrite_extract_of_cond_rewrite_just just)
-       | CondRewriteCompose (just1, just2) ->
-            ComposeCondRewriteExtract (cond_rewrite_extract_of_cond_rewrite_just just1,
-                                       cond_rewrite_extract_of_cond_rewrite_just just2)
-       | CondRewriteAddress (goal, addr, just, subgoal) ->
-            AddressCondRewriteExtract (goal, addr, cond_rewrite_extract_of_cond_rewrite_just just, subgoal)
-       | CondRewriteHigher (goal, justs, subgoal) ->
-            HigherCondRewriteExtract (goal, List.map cond_rewrite_extract_of_cond_rewrite_just justs, subgoal)
-
-   let goal_of_crw_extract crw =
-      crw.crw_goal
-
-   let subgoal_of_crw_extract crw =
-      crw.crw_subgoal_term
-
-   let rec flatten_cond_rewrite_subgoals addr subgoals = function
-      CondRewriteSubgoalsAddr (addr', subgoal) ->
-         flatten_cond_rewrite_subgoals (TermAddr.compose_address addr addr') subgoals subgoal
-    | CondRewriteSubgoalsList subgoals' ->
-         List.fold_left (flatten_cond_rewrite_subgoals addr) subgoals subgoals'
-    | CondRewriteSubgoals terms ->
-         List.map (fun t -> addr, t) terms @ subgoals
-
-   let subgoals_of_crw_extract crw =
-      flatten_cond_rewrite_subgoals (TermAddr.make_address []) [] crw.crw_subgoals
+   let describe_extract ext =
+      match ext.ext_just with
+         SingleJust j | MLJust (j, _) ->
+            EDRule (j.just_refiner, j.just_addrs, j.just_params)
+       | RewriteJust _ -> EDRewrite
+       | CondRewriteJust _ -> EDCondREwrite
+       | ComposeJust _ -> EDComposition
+       | NthHypJust (_, i) -> EDNthHyp i
+       | CutJust j -> EDCut j.cut_hyp
 
    (*
     * When an term is calculated from an extract, we have to search
@@ -1590,19 +1311,18 @@ struct
 
    let term_of_extract refiner { ext_just = just } (args : term list) =
       let find = find_of_hash (hash_refiner refiner) in
-      let { find_refiner = find_refiner } = find in
       let { check_rule = find_rule;
             check_rewrite = find_rewrite;
             check_cond_rewrite = find_cond_rewrite
           } = check_of_find find
       in
       let check_rewrite just =
-         check_rewrite_just (fun opname -> ignore (find_refiner opname)) just
+         check_rewrite_just (fun opname -> ignore (find.find_refiner opname)) just
       in
       let rec construct args (rest : (term list -> term) list) = function
          SingleJust { just_params = params; just_refiner = name } ->
             begin
-               match find_refiner name with
+               match find.find_refiner name with
                   RuleRefiner r ->
                      let { rule_count = count } = r in
                      let extracts = count_args args rest count in
@@ -1874,6 +1594,19 @@ struct
             subgoals, just
       in
          refiner', (tac : prim_tactic)
+
+   (*
+    * Sentinel of a rule/rewrite.
+    *)
+   let find_sentinal refiner opname =
+      match find_refiner refiner opname with
+         RuleRefiner { rule_refiner = r }
+       | RewriteRefiner { rw_refiner = r }
+       | CondRewriteRefiner { crw_refiner = r } ->
+            sentinal_of_refiner r
+       | _ ->
+            (* Only the above can be user-provable and can be returned by find_sentinel *)
+            raise (Invalid_argument "find_sentinal")
 
    (*
     * Theorem for a previous theorem or rule.
@@ -2399,63 +2132,5 @@ struct
          build.build_refiner <- refiner;
          CondRW rw'
 
-   (************************************************************************
-    * DESTRUCTORS                                                          *
-    ************************************************************************)
-
-   (*
-    * Null refiners.
-    *)
-   let is_null_refiner = function
-      NullRefiner -> true
-    | _ -> false
-
-   (*
-    * Get the next item from a refiner.
-    *)
-   let dest_refiner = function
-      NullRefiner
-    | ListRefiner _ ->
-         (* List are never constructed by the user *)
-         raise (Invalid_argument "dest_refiner")
-
-    | RuleRefiner { rule_name = n; rule_rule = t; rule_refiner = r } ->
-         RIRule { ri_rule_name = n; ri_rule_rule = t }, r
-    | MLRuleRefiner { ml_rule_name = cond; ml_rule_refiner = r } ->
-         RIMLRule { ri_ml_rule_name = cond }, r
-    | PrimRuleRefiner { prule_rule = rule; prule_refiner = r } ->
-         RIPrimTheorem { ri_pthm_axiom = RuleRefiner rule }, r
-
-    | RewriteRefiner { rw_name = n; rw_rewrite = redex, con; rw_refiner = r } ->
-         RIRewrite { ri_rw_name = n;
-                     ri_rw_redex = redex;
-                     ri_rw_contractum = con
-         }, r
-    | DefinitionalRewriteRefiner { rw_name = n; rw_rewrite = redex, con; rw_refiner = r } ->
-         RIDefRewrite { ri_rw_name = n;
-                        ri_rw_redex = redex;
-                        ri_rw_contractum = con
-         }, r
-    | MLRewriteRefiner { ml_rw_name = n; ml_rw_refiner = r } ->
-         RIMLRewrite { ri_ml_rw_name = n }, r
-    | PrimRewriteRefiner { prw_rewrite = r1; prw_refiner = r2 } ->
-         RIPrimRewrite { ri_prw_rewrite = RewriteRefiner r1 }, r2
-
-    | CondRewriteRefiner { crw_name = n; crw_rewrite = conds, redex, con; crw_refiner = r } ->
-         RICondRewrite { ri_crw_name = n;
-                         ri_crw_conds = conds;
-                         ri_crw_redex = redex;
-                         ri_crw_contractum = con
-         },
-         r
-    | PrimCondRewriteRefiner { pcrw_rewrite = r1; pcrw_refiner = r2 } ->
-         RIPrimRewrite { ri_prw_rewrite = CondRewriteRefiner r1 }, r2
-    | MLCondRewriteRefiner { ml_crw_name = n; ml_crw_refiner = r } ->
-         RIMLCondRewrite { ri_ml_rw_name = n }, r
-
-    | PairRefiner (r, par) ->
-         RIParent par, r
-    | LabelRefiner (name, r) ->
-         RILabel name, r
 end
 

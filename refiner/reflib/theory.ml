@@ -76,35 +76,6 @@ let get_theories () =
    !base
 
 (*
- * Get the parents of a theory.
- *)
-let get_parents thy =
-   let rec find_parent parent = function
-      thy :: _ when thy.thy_refiner == parent ->
-         thy
-    | _ :: tl ->
-         find_parent parent tl
-    | [] ->
-         raise Not_found
-   in
-   let rec search refiner =
-      if is_null_refiner refiner then
-         []
-      else
-         let item, refiner' = dest_refiner refiner in
-            match item with
-               RIParent parent ->
-                  begin
-                     try find_parent parent !base :: search refiner' with
-                        Not_found ->
-                           search refiner'
-                  end
-             | _ ->
-                  search refiner'
-   in
-      search thy.thy_refiner
-
-(*
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

@@ -1228,11 +1228,11 @@ EXTEND
    mod_ident:
       [ RIGHTA
         [ i = UIDENT ->
-           [i]
+           [String.uncapitalize i]
          | i = LIDENT ->
            [i]
          | m = UIDENT; "."; i = mod_ident ->
-           m :: i
+           (String.uncapitalize m) :: i
         ]
       ];
 

@@ -387,11 +387,10 @@ let unsynchronize state' f x =
  * Shell commands are always added in.
  *)
 let set_module state name =
-   let name = String.capitalize name in
    let rsrc =
       try Mp_resource.find (Mp_resource.theory_bookmark name) with
          Not_found ->
-            eprintf "Module %s: resources not found%t" name eflush;
+            eprintf "Module %s: resources not found%t" (String.capitalize name) eflush;
             Mp_resource.recompute_top ();
             Mp_resource.find Mp_resource.top_bookmark
    in

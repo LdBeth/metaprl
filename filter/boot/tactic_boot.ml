@@ -443,13 +443,10 @@ struct
       let xlazy () =
          let refiner = (get_theory mod_name).thy_refiner in
          let opname = make_opname [name; mod_name] in
-         let refiner =
-            try snd (dest_refiner (find_refiner refiner opname)) with
+            try Refine.find_sentinal refiner opname with
                Not_found ->
                   eprintf "Warning: using default refiner for %s%t" name eflush;
-                  refiner
-         in
-            Refine.sentinal_of_refiner refiner
+                  Refine.sentinal_of_refiner refiner
       in
          ThreadRefiner.share (get_remote_server ()) "sentinal_object" xlazy
 

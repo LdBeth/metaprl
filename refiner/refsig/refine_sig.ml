@@ -34,8 +34,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *
  *)
 
@@ -137,6 +137,20 @@ sig
 
    (* The cut rule is primitive, but it doesn't weaken the logic *)
    val cut : term -> tactic
+
+   (*
+    * For UI purposes only, we want refiner to be able to desribe
+    * what it did in a proof step
+    *)
+   type extract_description =
+      EDRule of opname * int array * term list
+    | EDRewrite
+    | EDCondREwrite
+    | EDComposition (* any compilcated steps will fall into this category *)
+    | EDNthHyp of int
+    | EDCut of term
+
+   val describe_extract : extract -> extract_description
 
    (************************************************************************
     * REWRITES                                                             *
@@ -302,6 +316,12 @@ sig
    val sentinal_of_refiner : refiner -> sentinal
 
    (*
+    * Get a sentinel containing all the items that can be used
+    * in a proof od a given object (rule/rewrite). Can raise Not_found
+    *)
+   val find_sentinal : refiner -> opname -> sentinal
+
+   (*
     * A rule is an implication on terms (the conclusion
     * is true if all the antecedents are).
     *     Args: refiner, name, addrs, params, rule
@@ -433,123 +453,6 @@ sig
    val label_refiner : build -> string -> refiner
    val join_refiner : build -> refiner -> unit
 
-   (************************************************************************
-    * DESTRUCTION                                                          *
-    ************************************************************************)
-
-   (*
-    * Destruct extracts.
-    * the guarantee is that extracts, when destructed and composed, will
-    * be equal.
-    *)
-   type atomic_just =
-      { just_goal : msequent;
-        just_addrs : int array;
-        just_params : term list;
-        just_refiner : opname;
-        just_subgoals : msequent list
-      }
-
-   type cut_just =
-      { cut_goal : msequent;
-        cut_hyp : term;
-        cut_lemma : msequent;
-        cut_then : msequent
-      }
-
-   type extract_info =
-      AtomicExtract of atomic_just
-    | RewriteExtract of msequent * rw_extract * msequent
-    | CondRewriteExtract of msequent * crw_extract * msequent list
-    | ComposeExtract of extract * extract list
-    | NthHypExtract of msequent * int
-    | CutExtract of cut_just
-
-   type rw_extract_info =
-      AtomicRewriteExtract of term * opname * term
-    | ReverseRewriteExtract of rw_extract
-    | ComposeRewriteExtract of rw_extract * rw_extract
-    | AddressRewriteExtract of term * address * rw_extract * term
-    | HigherRewriteExtract of term * rw_extract list * term
-
-   type cond_rewrite_here =
-      { cjust_goal : term;
-        cjust_params : term list;
-        cjust_refiner : opname;
-        cjust_subgoal_term : term;
-        cjust_subgoals : term list
-      }
-
-   type crw_extract_info =
-      AtomicCondRewriteExtract of cond_rewrite_here
-    | ReverseCondRewriteExtract of crw_extract
-    | ComposeCondRewriteExtract of crw_extract * crw_extract
-    | AddressCondRewriteExtract of term * address * crw_extract * term
-    | HigherCondRewriteExtract of term * crw_extract list * term
-
-   val dest_extract : extract -> extract_info
-   val goal_of_extract : extract -> msequent
-   val subgoals_of_extract : extract -> msequent list
-
-   val dest_rw_extract : rw_extract -> rw_extract_info
-   val goal_of_rw_extract : rw_extract -> term
-   val subgoal_of_rw_extract : rw_extract -> term
-
-   val dest_crw_extract : crw_extract -> crw_extract_info
-   val goal_of_crw_extract : crw_extract -> term
-   val subgoal_of_crw_extract : crw_extract -> term
-   val subgoals_of_crw_extract : crw_extract -> (address * term) list
-
-   (*
-    * Describe the contents of the refiner.
-    *)
-   type refiner_item =
-      RIRule of ri_rule
-    | RIPrimTheorem of ri_prim_theorem
-    | RIMLRule of ri_ml_rule
-
-    | RIRewrite of ri_rewrite
-    | RIDefRewrite of ri_rewrite
-    | RIMLRewrite of ri_ml_rewrite
-    | RICondRewrite of ri_cond_rewrite
-    | RIPrimRewrite of ri_prim_rewrite
-    | RIMLCondRewrite of ri_ml_rewrite
-
-    | RIParent of refiner
-    | RILabel of string
-
-   and ri_rule =
-      { ri_rule_name : opname;
-        ri_rule_rule : msequent
-      }
-   and ri_ml_rule =
-      { ri_ml_rule_name : opname }
-   and ri_prim_theorem =
-      { ri_pthm_axiom : refiner }
-
-   and ri_rewrite =
-      { ri_rw_name : opname;
-        ri_rw_redex : term;
-        ri_rw_contractum : term
-      }
-   and ri_cond_rewrite =
-      { ri_crw_name : opname;
-        ri_crw_conds : term list;
-        ri_crw_redex : term;
-        ri_crw_contractum : term
-      }
-   and ri_prim_rewrite =
-      { ri_prw_rewrite : refiner }
-   and ri_ml_rewrite =
-      { ri_ml_rw_name : opname }
-
-   (*
-    * Destructors.
-    * dest_refiner raises (Invalid_argument "dest_refiner") if the refiner is empty
-    *)
-   val is_null_refiner : refiner -> bool
-   val dest_refiner : refiner -> refiner_item * refiner
-   val find_refiner : refiner -> opname -> refiner
 end
 
 (*

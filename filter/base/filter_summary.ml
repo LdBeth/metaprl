@@ -1650,7 +1650,7 @@ struct
        (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
       let rec search = function
          [] ->
-            implem_error (sprintf "Include %s: not implemented" (string_of_path path))
+            implem_error (sprintf "Extends %s: not implemented" (string_of_path path))
        | Parent { parent_name = path' } :: _ when path = path' ->
             ()
        | _ :: t ->

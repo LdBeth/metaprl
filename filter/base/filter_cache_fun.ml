@@ -295,7 +295,7 @@ struct
                   [] ->
                      None
                 | { sig_summary = info }::t ->
-                     let modname' = Base.name base info in
+                     let modname' = String.capitalize (Base.name base info) in
                         if !debug_filter_path then
                            eprintf "Filter_cache.expand_path.head_search: %s vs. %s%t" modname' modname eflush;
                         if modname' = modname then
@@ -307,7 +307,7 @@ struct
                   [] ->
                      raise Not_found
                 | { sig_summary = info }::tl ->
-                     let modname' = Base.name base info in
+                     let modname' = String.capitalize (Base.name base info) in
                         try modname' :: (expand_in_summary path (SigMarshal.unmarshal (Base.info base info))) with
                            Not_found ->
                               mod_search tl

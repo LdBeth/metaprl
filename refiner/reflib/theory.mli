@@ -54,12 +54,6 @@ val substitute_dforms : string -> string -> unit
 val get_theories : unit -> theory list
 
 (*
- * Get all the parent theories for a theory.
- * This is not guaranteed to be accurate.
- *)
-val get_parents : theory -> theory list
-
-(*
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

@@ -255,12 +255,11 @@ struct
                   node
       in
       let add_theory thy =
-         let { thy_name = name } = thy in
-         let node = find_or_create name in
-         let add_parent { thy_name = name } =
+         let node = find_or_create thy.thy_name in
+         let add_parent name =
             ImpDag.add_edge pack.pack_dag (find_or_create name) node
          in
-            List.iter add_parent (Theory.get_parents thy)
+            List.iter add_parent (Mp_resource.get_parents thy.thy_name)
       in
          List.iter add_theory (get_theories ())
 
@@ -711,10 +710,9 @@ struct
     * Look for a global_resource for an item
     *)
    let find_bookmark mod_name item_name =
-      let mod_name = String.capitalize mod_name in
       try Mp_resource.find (mod_name, item_name)
       with Not_found -> begin
-         eprintf "Warning: resources for %s.%s not found,\n\ttrying to use default resources for %s%t" mod_name item_name mod_name eflush;
+         eprintf "Warning: resources for %s.%s not found,\n\ttrying to use default resources for %s%t" (String.capitalize mod_name) item_name mod_name eflush;
          try
             Mp_resource.find (Mp_resource.theory_bookmark mod_name)
          with Not_found ->

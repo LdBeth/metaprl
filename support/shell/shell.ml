@@ -146,7 +146,7 @@ type info =
 
 (* We should skip the packages that do not have basic shell commands in them *)
 let shell_package pkg =
-   let name = String.capitalize (Package.name pkg) in
+   let name = Package.name pkg in
    try Mptop.mem (Mptop.get_toploop_resource (Mp_resource.find (Mp_resource.theory_bookmark name)) []) "cd"
    with Not_found -> false
 
@@ -1040,7 +1040,7 @@ struct
             set_packages info;
             Shell_state.set_dfbase shell None;
             Shell_state.set_mk_opname shell None;
-            Shell_state.set_module shell "Shell"
+            Shell_state.set_module shell "shell"
        | (modname :: item) as dir ->
             (* change module only if in another (or at top) *)
             if info.dir = [] or List.hd info.dir <> modname then
@@ -1421,7 +1421,7 @@ struct
    let main () =
       Package.refresh packages (Shell_state.get_includes ());
       let info = global in
-         Shell_state.set_module info.shell "Shell";
+         Shell_state.set_module info.shell "shell";
          ShellP4.main info.shell
 
    let wrap cmd arg = cmd !current_shell arg

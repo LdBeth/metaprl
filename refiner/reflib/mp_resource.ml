@@ -169,7 +169,6 @@ let top_name = "_$top_resource$_"
 let top_bookmark = theory_bookmark top_name
 
 let close_theory name =
-   let name = String.capitalize name in
    Hashtbl.add global_data name !local_data;
    top_data := DatInclude name :: !top_data;
    local_data := []
@@ -323,3 +322,14 @@ let recompute_top () =
    end;
    Hashtbl.add global_data top_name !top_data;
    ignore(find(top_bookmark))
+
+let rec get_parents_aux prnts = function
+   [] -> prnts
+ | DatInclude name :: tl ->
+      get_parents_aux (name::prnts) tl
+ | _ :: tl ->
+      get_parents_aux prnts tl
+
+let get_parents name =
+   try get_parents_aux [] (Hashtbl.find global_data name)
+   with Not_found -> raise (Invalid_argument("Mp_resource.get_parents: unknown theory " ^ name))
