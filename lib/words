@@ -5,6 +5,7 @@ analogs
 arity
 Aydemir
 backend
+Bickford
 bookmarking
 booleans
 browsed
@@ -54,6 +55,7 @@ OCaml
 parenthesization
 pointwise
 polymorphism
+ponens
 redex
 redices
 reflectivity
