@@ -27,8 +27,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Alelsey Nogin <nogin@cs.caltech.edu>
  *)
 
 type atom
@@ -52,6 +52,15 @@ val normalize_opname : opname -> opname
 val dst_opname : opname -> string * opname
 val dest_opname : opname -> string list
 val string_of_opname : opname -> string
+
+(*
+ * A few "special" opnames.
+ * These must be common to all the term modules, so they are defined here.
+ *)
+val var_opname : opname
+val context_opname : opname
+val xperv : opname
+val sequent_opname : opname
 
 (*
  * Debugging.

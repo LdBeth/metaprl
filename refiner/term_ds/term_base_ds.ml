@@ -320,18 +320,6 @@ struct
             end
 
    (************************************************************************
-    * De/Constructors                                                      *
-    ************************************************************************)
-
-   let var_opname = make_opname ["var"]
-
-   (*
-    * Manifest terms are injected into the "perv" module.
-    *)
-   let xperv = make_opname ["Perv"]
-   let sequent_opname = mk_opname "sequent" xperv
-
-   (************************************************************************
     * De/Constructors                                                 *
     ************************************************************************)
 
@@ -429,8 +417,6 @@ struct
          FOVar v -> v
        | Subst _ -> let _ = get_core t in dest_var t
        | _ -> REF_RAISE(RefineError ("dest_var", TermMatchError (t, "not a var")))
-
-   let context_opname = make_opname ["context"]
 
    (* xlists *)
    let xnil_opname = mk_opname "nil" xperv

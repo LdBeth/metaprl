@@ -3,6 +3,7 @@
  * Convert sequents to regular terms.
  *)
 
+open Opname
 open Refiner.Refiner
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term

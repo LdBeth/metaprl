@@ -34,6 +34,7 @@ INCLUDE "refine_error.mlh"
 
 open Lm_symbol
 
+open Opname
 open Refine_error_sig
 open Term_sig
 open Term_base_sig

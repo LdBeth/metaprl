@@ -203,11 +203,6 @@ sig
     * A variable is a term with opname "var", and a single
     * var parameter that is the name of the variable.
     *)
-   val var_opname : opname
-   val context_opname : opname
-   val xperv : opname
-   val sequent_opname : opname
-
    val is_var_term : term -> bool
    val dest_var : term -> var
    val mk_var_term : var -> term

@@ -244,12 +244,6 @@ sig
     * However, for efficiency purposes, internally
     * in Term_ds FO variables are represented specially
     *)
-
-   val var_opname : opname
-   val context_opname : opname
-   val xperv : opname
-   val sequent_opname : opname
-
    val is_var_term : term -> bool
    val dest_var : term -> var
    val mk_var_term : var -> term

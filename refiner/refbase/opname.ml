@@ -28,6 +28,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
 open Lm_debug
@@ -187,6 +188,19 @@ let string_of_opname op =
             collect h t
    in
       flatten op.opname_name
+
+(*
+ * A few "special" opnames.
+ *)
+let var_opname = make_opname ["var"]
+let context_opname = make_opname ["context"]
+
+(*
+ * Manifest terms are injected into the "perv" module.
+ *)
+let xperv = make_opname ["Perv"]
+let sequent_opname = mk_opname "sequent" xperv
+
 
 (*
  * -*-
