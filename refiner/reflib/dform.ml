@@ -728,7 +728,7 @@ let slot { dform_state = state; dform_items = items; dform_printer = printer; df
     | [RewriteString (RewriteParam "raw"); RewriteString s] ->
          if !debug_dform then
             eprintf "Dform.slot: raw str: %s%t" (string_of_param s) eflush;
-         format_raw_string buf (string_of_param s)
+         format_raw_string buf (String.escaped (string_of_param s))
     | [RewriteToken (RewriteParam opname)] ->
          if !debug_dform then
             eprintf "Dform.slot: token: %s%t" (string_of_opname opname) eflush;
