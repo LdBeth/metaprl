@@ -112,6 +112,8 @@ struct
 
 end
 
+module TheWeakMemo = WeakMemo(Simplehashtbl.Simplehashtbl)(Infinite_weak_array.InfiniteWeakArray)
+
 (*
  * -*-
  * Local Variables:

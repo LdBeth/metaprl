@@ -29,11 +29,32 @@
  *)
 
 open Term_hash
+open Infinite_weak_array
 
-module TermCopyWeak :
-  functor(FromTerm : Termmod_sig.TermModuleSig) ->
-  functor(ToTerm : Termmod_sig.TermModuleSig) ->
-  functor(TermHash : TermHashSig with module ToTermPar = ToTerm) ->
+module TermCopyWeak
+  (FromTerm : Termmod_sig.TermModuleSig)
+
+   (ToTerm : Termmod_sig.TermModuleSig) 
+
+   (TermHeader : Term_header_sig.TermHeaderSig
+      with type term = ToTerm.TermType.term
+      with type param = ToTerm.TermType.param
+      with type meta_term = ToTerm.TermType.meta_term
+
+      with type 'a descriptor = 'a InfiniteWeakArray.descriptor
+      with type 'a weak_descriptor = 'a InfiniteWeakArray.weak_descriptor)
+
+   (TermHash : Term_hash_sig.TermHashSig
+      with type param_header = TermHeader.param_header
+      with type param_weak_header = TermHeader.param_weak_header
+      with type term_header = TermHeader.term_header
+      with type term_weak_header = TermHeader.term_weak_header
+      with type meta_term_header = TermHeader.meta_term_header
+      with type meta_term_weak_header = TermHeader.meta_term_weak_header
+
+      with type param = ToTerm.TermType.param
+      with type term = ToTerm.TermType.term
+      with type meta_term = ToTerm.TermType.meta_term) :
 sig
 
 (*
@@ -51,21 +72,7 @@ sig
    val convert_meta :
       FromTerm.TermType.meta_term -> ToTerm.TermType.meta_term
 end
-(*
-(*
- * Distinguished conversions
- *)
-val normalize_term :
-  Refiner_std.Refiner.TermType.term -> Refiner.Refiner.TermType.term
-val normalize_meta_term :
-  Refiner_std.Refiner.TermType.meta_term ->
-  Refiner.Refiner.TermType.meta_term
-val denormalize_term :
-  Refiner.Refiner.TermType.term -> Refiner_std.Refiner.TermType.term
-val denormalize_meta_term :
-  Refiner.Refiner.TermType.meta_term ->
-  Refiner_std.Refiner.TermType.meta_term
-*)
+
 (*
  * -*-
  * Local Variables:

@@ -28,11 +28,53 @@
  * Author: Yegor Bryukhov, Alexey Nogin
  *)
 
-module TermCopy2Weak :
-  functor(FromTerm : Termmod_sig.TermModuleSig) ->
-  functor(ToTerm : Termmod_sig.TermModuleSig) ->
-  functor(SourceHash : Term_hash.TermHashSig with module ToTermPar = FromTerm) ->
-  functor(TargetHash : Term_hash.TermHashSig with module ToTermPar = ToTerm) ->
+open Infinite_weak_array
+
+module TermCopy2Weak 
+   (FromTerm : Termmod_sig.TermModuleSig) 
+
+   (FromHeader : Term_header_sig.TermHeaderSig
+      with type term = FromTerm.TermType.term
+      with type param = FromTerm.TermType.param
+      with type meta_term = FromTerm.TermType.meta_term
+
+      with type 'a descriptor = 'a InfiniteWeakArray.descriptor
+      with type 'a weak_descriptor = 'a InfiniteWeakArray.weak_descriptor)
+
+   (FromHash : Term_hash_sig.TermHashSig
+      with type param_header = FromHeader.param_header
+      with type param_weak_header = FromHeader.param_weak_header
+      with type term_header = FromHeader.term_header
+      with type term_weak_header = FromHeader.term_weak_header
+      with type meta_term_header = FromHeader.meta_term_header
+      with type meta_term_weak_header = FromHeader.meta_term_weak_header
+
+      with type param = FromTerm.TermType.param
+      with type term = FromTerm.TermType.term
+      with type meta_term = FromTerm.TermType.meta_term) 
+
+   (ToTerm : Termmod_sig.TermModuleSig) 
+
+   (ToHeader : Term_header_sig.TermHeaderSig
+      with type term = ToTerm.TermType.term
+      with type param = ToTerm.TermType.param
+      with type meta_term = ToTerm.TermType.meta_term
+
+      with type 'a descriptor = 'a InfiniteWeakArray.descriptor
+      with type 'a weak_descriptor = 'a InfiniteWeakArray.weak_descriptor)
+
+   (ToHash : Term_hash_sig.TermHashSig
+      with type param_header = ToHeader.param_header
+      with type param_weak_header = ToHeader.param_weak_header
+      with type term_header = ToHeader.term_header
+      with type term_weak_header = ToHeader.term_weak_header
+      with type meta_term_header = ToHeader.meta_term_header
+      with type meta_term_weak_header = ToHeader.meta_term_weak_header
+
+      with type param = ToTerm.TermType.param
+      with type term = ToTerm.TermType.term
+      with type meta_term = ToTerm.TermType.meta_term) :
+
 sig
 
 (*
@@ -65,21 +107,7 @@ sig
    val revert_meta :
       ToTerm.TermType.meta_term -> FromTerm.TermType.meta_term
 end
-(*
-(*
- * Distinguished conversions
- *)
-val normalize_term :
-  Refiner_std.Refiner.TermType.term -> Refiner.Refiner.TermType.term
-val normalize_meta_term :
-  Refiner_std.Refiner.TermType.meta_term ->
-  Refiner.Refiner.TermType.meta_term
-val denormalize_term :
-  Refiner.Refiner.TermType.term -> Refiner_std.Refiner.TermType.term
-val denormalize_meta_term :
-  Refiner.Refiner.TermType.meta_term ->
-  Refiner_std.Refiner.TermType.meta_term
-*)
+
 (*
  * -*-
  * Local Variables:

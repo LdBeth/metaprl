@@ -31,8 +31,8 @@ include Makefile.dep
 #
 # Rules
 #
-lib: $(MAIN).cma $(RMLIFLES) $(RCMIFILES)
-opt: $(MAIN).cmxa $(RMLIFILES) $(RCMIFILES)
+lib: $(MAIN).cma $(RMLIFLES) $(RCMIFILES) Files
+opt: $(MAIN).cmxa $(RMLIFILES) $(RCMIFILES) Files
 
 install:: $(MAIN).cma $(CMIFILES)
 	$(INSTALL) $(MLIFILES) $(CMIFILES) $(MPLIB)

@@ -40,7 +40,7 @@ open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
-open Term_copy
+open Term_io
 
 open File_base_type
 open File_type_base
@@ -170,10 +170,9 @@ let unit_term = mk_simple_term nil_opname []
  * Save term in term_std format.
  *)
 let normalize_info info =
-   let share = create_norm () in
    let convert =
-      { term_f  = normalize_term share;
-        meta_term_f = normalize_meta_term share;
+      { term_f  = normalize_term;
+        meta_term_f = normalize_meta_term;
         proof_f = (fun _ pf -> pf);
         ctyp_f  = identity;
         expr_f  = identity;
@@ -183,10 +182,9 @@ let normalize_info info =
       summary_map convert info
 
 let denormalize_info info =
-   let share = create_denorm () in
    let convert =
-      { term_f  = denormalize_term share;
-        meta_term_f = denormalize_meta_term share;
+      { term_f  = denormalize_term;
+        meta_term_f = denormalize_meta_term;
         proof_f = (fun _ pf -> pf);
         ctyp_f  = identity;
         expr_f  = identity;
@@ -376,10 +374,9 @@ struct
 
    let marshal = function
       Implementation info ->
-         let share = create_denorm () in
          let convert =
-            { term_f  = denormalize_term share;
-              meta_term_f = denormalize_meta_term share;
+            { term_f  = denormalize_term;
+              meta_term_f = denormalize_meta_term;
               proof_f = (fun name proof -> interactive_proof Convert.to_raw name proof);
               ctyp_f  = identity;
               expr_f  = identity;
@@ -390,10 +387,9 @@ struct
     | Interface _ ->
          raise (Failure "RawStrInfo.marshal")
    let unmarshal info =
-      let share = create_norm () in
       let convert =
-         { term_f  = normalize_term share;
-           meta_term_f = normalize_meta_term share;
+         { term_f  = normalize_term;
+           meta_term_f = normalize_meta_term;
            proof_f = (fun name proof -> interactive_proof Convert.of_raw name proof);
            ctyp_f  = identity;
            expr_f  = identity;

@@ -27,18 +27,37 @@
  * Author: Yegor Bryukhov, Alexey Nogin
  *)
 
-open Term_header
-open Term_hash
+open Infinite_weak_array
 
-module TermHeaderConstr :
-  functor(FromTerm : Termmod_sig.TermModuleSig) ->
-  functor(ToTerm : Termmod_sig.TermModuleSig) ->
-  functor(TermHash : TermHashSig with module ToTermPar = ToTerm) ->
+module TermHeaderConstr 
+   (FromTerm : Termmod_sig.TermModuleSig) 
+   (ToTerm : Termmod_sig.TermModuleSig)
+
+   (TermHeader : Term_header_sig.TermHeaderSig
+      with type term = ToTerm.TermType.term
+      with type param = ToTerm.TermType.param
+      with type meta_term = ToTerm.TermType.meta_term
+
+      with type 'a descriptor = 'a InfiniteWeakArray.descriptor
+      with type 'a weak_descriptor = 'a InfiniteWeakArray.weak_descriptor)
+
+   (TermHash : Term_hash_sig.TermHashSig
+      with type param_header = TermHeader.param_header
+      with type param_weak_header = TermHeader.param_weak_header
+      with type term_header = TermHeader.term_header
+      with type term_weak_header = TermHeader.term_weak_header
+      with type meta_term_header = TermHeader.meta_term_header
+      with type meta_term_weak_header = TermHeader.meta_term_weak_header
+
+      with type param = ToTerm.TermType.param
+      with type term = ToTerm.TermType.term
+      with type meta_term = ToTerm.TermType.meta_term) :
+
 sig
    val make_param_header :
-      TermHash.t -> FromTerm.TermType.param -> TermHeader(TermHash.ToTermPar).param_header
+      TermHash.t -> FromTerm.TermType.param -> TermHeader.param_header
    val make_term_header :
-      TermHash.t -> FromTerm.TermType.term -> TermHeader(TermHash.ToTermPar).term_header
+      TermHash.t -> FromTerm.TermType.term -> TermHeader.term_header
    val make_meta_term_header :
-      TermHash.t -> FromTerm.TermType.meta_term -> TermHeader(TermHash.ToTermPar).meta_term_header
+      TermHash.t -> FromTerm.TermType.meta_term -> TermHeader.meta_term_header
 end

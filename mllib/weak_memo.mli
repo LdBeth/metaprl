@@ -28,60 +28,14 @@
  * Author: Yegor Bryukhov
  *)
 
-module WeakMemo :
-  functor(Hash : Simplehash_sig.SimpleHashSig) ->
-  functor(IAr : Infinite_weak_array_sig.InfiniteWeakArraySig) ->
-sig
+open Weak_memo_sig
 
-(* Memo-type
- * 'param - the way for recursion
- * 'header - already transformed argument where all recursive references replaced with
- *           its target's descriptors
- * 'weak_header - already transformed argument where all recursive references replaced with
- *           its target's weak_descriptors
- * 'image - result type
- *)
-   type ('param, 'header, 'weak_header, 'image) t
+module WeakMemo 
+   (Hash : Simplehash_sig.SimpleHashSig) 
+   (IAr : Infinite_weak_array_sig.InfiniteWeakArraySig) :
+      (WeakMemoSig with type 'a descriptor = 'a IAr.descriptor)
 
-(*
- * External kind of descriptors to prevent GC
- *)
-   and 'a descriptor = 'a IAr.descriptor
-
-(*
- * Creates new memo-structure
- *)
-   val create : int -> int ->              (* This numbers are sizes of headers' hash table *)
-                                           (* and results' array *)
-          ('header -> 'weak_header) ->     (* Convert 'header to 'weak_header *)
-          ('weak_header -> 'weak_header -> bool) ->  (* Headers' comparision function *)
-          ('param -> 'header -> 'image) -> (* Converter from header to result *)
-          ('param, 'header, 'weak_header, 'image) t      (* New memo-structure *)
-
-(*
- * Looks for header and returns result's descriptor if succeed otherwise evaluate the result 
- * and memorize it (if result GC-ed already then it reevaluated correctly) and returns
- * its descriptor
- *)
-   val lookup : ('param, 'header, 'weak_header, 'image) t -> 'param -> 'header -> 'image descriptor
- 
-(*
- * As previous but it suppose result is not GC-ed (if not exception raises)
- *)
-   val unsafe_lookup : ('param, 'header, 'weak_header, 'image) t -> 'param -> 'header -> 'image descriptor
-
-(*
- * Returns descriptor's denotat
- *)
-   val retrieve : ('param, 'header, 'weak_header, 'image) t -> 'param -> 'image descriptor  -> 'image
-
-(*
- * As previous but raise exception if object already GC-ed
- 
-   val unsafe_retrieve : ('param, 'header, 'weak_header, 'image) t -> 'param -> 'image weak_descriptor  -> 'image
- *)
-
-end
+module TheWeakMemo : WeakMemoSig with type 'a descriptor = 'a Infinite_weak_array.InfiniteWeakArray.descriptor
 
 (*
  * -*-

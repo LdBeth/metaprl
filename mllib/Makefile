@@ -49,19 +49,19 @@ LMFILES :=\
 	string_set\
 	flist\
 	cycle_dag\
-	memo\
 	thread_util\
 	thread_event\
 	remote_queue_null\
 	remote_lazy_queue\
-	bi_memo\
+	memo\
 	linear_set\
 	splay_linear_set\
 	array_linear_set\
 	infinite_weak_array_sig\
 	infinite_weak_array\
-	weak_memo\
-	simplehashtbl
+	simplehashtbl\
+	weak_memo_sig\
+	weak_memo
 
 # Name of library
 MAIN := util

@@ -29,85 +29,31 @@
  *)
 
 open Weak_memo
-open Term_header
 open Infinite_weak_array
+open Term_hash_sig
 
-module type TermHashSig =
-sig
+module TermHash 
+   (ToTerm : Termmod_sig.TermModuleSig) 
 
-   module ToTermPar : Termmod_sig.TermModuleSig
+   (TermHeader : Term_header_sig.TermHeaderSig 
+      with type term = ToTerm.TermType.term
+      with type param = ToTerm.TermType.param
+      with type meta_term = ToTerm.TermType.meta_term
 
-(*
- * Objects of this types refers to terms and meta_terms and prevents objects them
- * refered to from GC
- *)
-   type term_index
-   type meta_term_index
+      with type 'a descriptor = 'a InfiniteWeakArray.descriptor
+      with type 'a weak_descriptor = 'a InfiniteWeakArray.weak_descriptor) :
 
-(*
- * term's hashing structure
- *)
-   type t =
-      { param_hash     : (t, TermHeader(ToTermPar).param_header,
-                             TermHeader(ToTermPar).param_weak_header,
-                             ToTermPar.TermType.param
-                         ) WeakMemo(Simplehashtbl.Simplehashtbl)(InfiniteWeakArray).t;
-        opname_hash    : (t, Opname.opname,
-                             Opname.opname,
-                             Opname.opname
-                         ) WeakMemo(Simplehashtbl.Simplehashtbl)(InfiniteWeakArray).t;
-        term_hash      : (t, TermHeader(ToTermPar).term_header,
-                             TermHeader(ToTermPar).term_weak_header,
-                             ToTermPar.TermType.term
-                         ) WeakMemo(Simplehashtbl.Simplehashtbl)(InfiniteWeakArray).t;
-        meta_term_hash : (t, TermHeader(ToTermPar).meta_term_header,
-                             TermHeader(ToTermPar).meta_term_weak_header,
-                             ToTermPar.TermType.meta_term
-                         ) WeakMemo(Simplehashtbl.Simplehashtbl)(InfiniteWeakArray).t
-      }
+   TermHashSig 
+      with type param_header = TermHeader.param_header
+      with type param_weak_header = TermHeader.param_weak_header
+      with type term_header = TermHeader.term_header
+      with type term_weak_header = TermHeader.term_weak_header
+      with type meta_term_header = TermHeader.meta_term_header
+      with type meta_term_weak_header = TermHeader.meta_term_weak_header
 
-(*
- * Construct term-objects from headers
- *)    
-   val p_constr_param : t -> TermHeader(ToTermPar).param_header -> ToTermPar.TermType.param
-   val p_constr_term : t -> TermHeader(ToTermPar).term_header -> ToTermPar.TermType.term
-   val p_constr_meta_term : t -> TermHeader(ToTermPar).meta_term_header -> ToTermPar.TermType.meta_term
-
-(*
- * Creates new hashing structure
- *)
-   val p_create : int -> int -> t
-
-(*
- * Functions for storing and accessing objects to hashing structure
- *)
-   val p_lookup : t -> TermHeader(ToTermPar).term_header -> term_index
-   val p_unsafe_lookup : t -> TermHeader(ToTermPar).term_header -> term_index
-   val p_retrieve : t -> term_index -> ToTermPar.TermType.term
-
-   val p_lookup_meta : t -> TermHeader(ToTermPar).meta_term_header -> meta_term_index
-   val p_unsafe_lookup_meta : t -> TermHeader(ToTermPar).meta_term_header -> meta_term_index
-   val p_retrieve_meta : t -> meta_term_index -> ToTermPar.TermType.meta_term
-
-(*
- * Globally accessible copy
- *)
-   val global_hash : t
-
-(*
- * As previous but operate with global copy of data
- *)
-   val lookup : TermHeader(ToTermPar).term_header -> term_index
-   val unsafe_lookup : TermHeader(ToTermPar).term_header -> term_index
-   val retrieve : term_index -> ToTermPar.TermType.term
-
-   val lookup_meta : TermHeader(ToTermPar).meta_term_header -> meta_term_index
-   val unsafe_lookup_meta : TermHeader(ToTermPar).meta_term_header -> meta_term_index
-   val retrieve_meta : meta_term_index -> ToTermPar.TermType.meta_term
-end
-
-module TermHash :
-  functor(ToTerm : Termmod_sig.TermModuleSig) -> (TermHashSig with module ToTermPar = ToTerm)
+      with type param = ToTerm.TermType.param
+      with type term = ToTerm.TermType.term
+      with type meta_term = ToTerm.TermType.meta_term
 
 (*
  * -*-

@@ -152,15 +152,13 @@ struct
     * We just save the io representation.
     *)
    let to_term name proof =
-      let norm = Term_copy.normalize_term (Term_copy.create_norm ()) in
-         term_of_proof norm (to_raw name proof)
+      term_of_proof Term_io.normalize_term (to_raw name proof)
 
    (*
     * Convert back to a proof.
     *)
    let of_term name proof =
-      let denorm = Term_copy.denormalize_term (Term_copy.create_denorm ()) in
-         ref (ProofRaw (name, proof_of_term denorm [] proof))
+      ref (ProofRaw (name, proof_of_term Term_io.denormalize_term [] proof))
 
    (*
     * When we compile, we extract the tactics into a separate array

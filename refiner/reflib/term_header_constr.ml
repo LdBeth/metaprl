@@ -33,20 +33,39 @@ open Termmod_sig
 open Weak_memo
 open Opname
 open Term_hash
+open Infinite_weak_array
 
-module TermHeaderConstr =
-  functor(FromTerm : Termmod_sig.TermModuleSig) ->
-  functor(ToTerm : Termmod_sig.TermModuleSig) ->
-  functor(TermHash : TermHashSig with module ToTermPar = ToTerm) ->
+module TermHeaderConstr
+   (FromTerm : Termmod_sig.TermModuleSig)
+   (ToTerm : Termmod_sig.TermModuleSig)
+
+   (TermHeader : Term_header_sig.TermHeaderSig
+      with type term = ToTerm.TermType.term
+      with type param = ToTerm.TermType.param
+      with type meta_term = ToTerm.TermType.meta_term
+
+      with type 'a descriptor = 'a InfiniteWeakArray.descriptor
+      with type 'a weak_descriptor = 'a InfiniteWeakArray.weak_descriptor)
+
+   (TermHash : Term_hash_sig.TermHashSig
+      with type param_header = TermHeader.param_header
+      with type param_weak_header = TermHeader.param_weak_header
+      with type term_header = TermHeader.term_header
+      with type term_weak_header = TermHeader.term_weak_header
+      with type meta_term_header = TermHeader.meta_term_header
+      with type meta_term_weak_header = TermHeader.meta_term_weak_header
+
+      with type param = ToTerm.TermType.param
+      with type term = ToTerm.TermType.term
+      with type meta_term = ToTerm.TermType.meta_term) =
+
 struct
-   module TTerm = TermHash.ToTermPar.Term
-   module TType = TermHash.ToTermPar.TermType
+   module TTerm = ToTerm.Term
+   module TType = ToTerm.TermType
    module FTerm = FromTerm.Term
    module FType = FromTerm.TermType
 
-   module IAr = Infinite_weak_array.InfiniteWeakArray
-   module WMemo = WeakMemo(Simplehashtbl.Simplehashtbl)(Infinite_weak_array.InfiniteWeakArray)
-   module TermHeader = Term_header.TermHeader(TermHash.ToTermPar)
+   module IAr = InfiniteWeakArray
 
    let make_level_var_header lvar =
       let { FType.le_var = var; FType.le_offset = offset } = FTerm.dest_level_var lvar in
@@ -69,20 +88,20 @@ struct
        | FType.MToken s1 ->            TermHeader.MToken s1
        | FType.MLevel s1 ->            TermHeader.MLevel s1
        | FType.MVar s1 ->              TermHeader.MVar s1
-       | FType.ObId oid1 ->            TermHeader.ObId (List.map (fun x -> WMemo.lookup param_hash info (make_param_header info x)) oid1)
-       | FType.ParamList p1 ->         TermHeader.ParamList (List.map (fun x -> WMemo.lookup param_hash info (make_param_header info x)) p1)
-       | FType.MSum (p11, p21) ->      TermHeader.MSum (WMemo.lookup param_hash info (make_param_header info p11), WMemo.lookup param_hash info (make_param_header info p21))
-       | FType.MDiff (p11, p21) ->     TermHeader.MDiff (WMemo.lookup param_hash info (make_param_header info p11), WMemo.lookup param_hash info (make_param_header info p21))
-       | FType.MProduct (p11, p21) ->  TermHeader.MProduct (WMemo.lookup param_hash info (make_param_header info p11), WMemo.lookup param_hash info (make_param_header info p21))
-       | FType.MQuotient (p11, p21) -> TermHeader.MQuotient (WMemo.lookup param_hash info (make_param_header info p11), WMemo.lookup param_hash info (make_param_header info p21))
-       | FType.MRem (p11, p21) ->      TermHeader.MRem (WMemo.lookup param_hash info (make_param_header info p11), WMemo.lookup param_hash info (make_param_header info p21))
-       | FType.MLessThan (p11, p21) -> TermHeader.MLessThan (WMemo.lookup param_hash info (make_param_header info p11), WMemo.lookup param_hash info (make_param_header info p21))
-       | FType.MEqual (p11, p21) ->    TermHeader.MEqual (WMemo.lookup param_hash info (make_param_header info p11), WMemo.lookup param_hash info (make_param_header info p21))
-       | FType.MNotEqual (p11, p21) -> TermHeader.MNotEqual (WMemo.lookup param_hash info (make_param_header info p11), WMemo.lookup param_hash info (make_param_header info p21))
+       | FType.ObId oid1 ->            TermHeader.ObId (List.map (fun x -> TheWeakMemo.lookup param_hash info (make_param_header info x)) oid1)
+       | FType.ParamList p1 ->         TermHeader.ParamList (List.map (fun x -> TheWeakMemo.lookup param_hash info (make_param_header info x)) p1)
+       | FType.MSum (p11, p21) ->      TermHeader.MSum (TheWeakMemo.lookup param_hash info (make_param_header info p11), TheWeakMemo.lookup param_hash info (make_param_header info p21))
+       | FType.MDiff (p11, p21) ->     TermHeader.MDiff (TheWeakMemo.lookup param_hash info (make_param_header info p11), TheWeakMemo.lookup param_hash info (make_param_header info p21))
+       | FType.MProduct (p11, p21) ->  TermHeader.MProduct (TheWeakMemo.lookup param_hash info (make_param_header info p11), TheWeakMemo.lookup param_hash info (make_param_header info p21))
+       | FType.MQuotient (p11, p21) -> TermHeader.MQuotient (TheWeakMemo.lookup param_hash info (make_param_header info p11), TheWeakMemo.lookup param_hash info (make_param_header info p21))
+       | FType.MRem (p11, p21) ->      TermHeader.MRem (TheWeakMemo.lookup param_hash info (make_param_header info p11), TheWeakMemo.lookup param_hash info (make_param_header info p21))
+       | FType.MLessThan (p11, p21) -> TermHeader.MLessThan (TheWeakMemo.lookup param_hash info (make_param_header info p11), TheWeakMemo.lookup param_hash info (make_param_header info p21))
+       | FType.MEqual (p11, p21) ->    TermHeader.MEqual (TheWeakMemo.lookup param_hash info (make_param_header info p11), TheWeakMemo.lookup param_hash info (make_param_header info p21))
+       | FType.MNotEqual (p11, p21) -> TermHeader.MNotEqual (TheWeakMemo.lookup param_hash info (make_param_header info p11), TheWeakMemo.lookup param_hash info (make_param_header info p21))
 
 (*   let make_operator_header info op =
       let { FType.op_name = opname; FType.op_params = params } = FTerm.dest_op op in
-         ( normalize_opname opname, List.map (WMemo.lookup param_hash info) params )
+         ( normalize_opname opname, List.map (TheWeakMemo.lookup param_hash info) params )
 *)
 
 
@@ -96,13 +115,13 @@ struct
             let make_hyp_header info hyp =
                let {TermHash.term_hash = term_hash} = info in
                   match hyp with
-                     FType.Hypothesis (v, t) -> TermHeader.Hypothesis (v, WMemo.lookup term_hash info (make_term_header info t))
-                   | FType.Context (v, trms) -> TermHeader.Context (v, List.map (fun x -> WMemo.lookup term_hash info (make_term_header info x)) trms)
+                     FType.Hypothesis (v, t) -> TermHeader.Hypothesis (v, TheWeakMemo.lookup term_hash info (make_term_header info t))
+                   | FType.Context (v, trms) -> TermHeader.Context (v, List.map (fun x -> TheWeakMemo.lookup term_hash info (make_term_header info x)) trms)
             in
                TermHeader.Seq
-                  { TermHeader.seq_arg = WMemo.lookup term_hash info (make_term_header info arg);
+                  { TermHeader.seq_arg = TheWeakMemo.lookup term_hash info (make_term_header info arg);
                     TermHeader.seq_hyps = List.map (make_hyp_header info) (FTerm.SeqHyp.to_list hyps);
-                    TermHeader.seq_goals = List.map (fun x -> WMemo.lookup term_hash info (make_term_header info x)) (FTerm.SeqGoal.to_list goals)
+                    TermHeader.seq_goals = List.map (fun x -> TheWeakMemo.lookup term_hash info (make_term_header info x)) (FTerm.SeqGoal.to_list goals)
                   }
          else
             let make_true_term_header info tterm =
@@ -111,11 +130,11 @@ struct
                let { FType.op_name = opname; FType.op_params = params } = FTerm.dest_op term_op in
                let make_bterm_header info bterm =
                   (let { FType.bvars = bvs; FType.bterm = bterm } = FTerm.dest_bterm bterm in
-                     { TermHeader.bvars = bvs; TermHeader.bterm = WMemo.lookup term_hash info (make_term_header info bterm) }
+                     { TermHeader.bvars = bvs; TermHeader.bterm = TheWeakMemo.lookup term_hash info (make_term_header info bterm) }
                   )
                in
-                  { TermHeader.op_name = WMemo.lookup opname_hash info opname;
-                    TermHeader.op_params = List.map (fun x -> WMemo.lookup param_hash info (make_param_header info x)) params;
+                  { TermHeader.op_name = TheWeakMemo.lookup opname_hash info opname;
+                    TermHeader.op_params = List.map (fun x -> TheWeakMemo.lookup param_hash info (make_param_header info x)) params;
                     TermHeader.term_terms = (List.map (make_bterm_header info) term_terms)
                   }
             in 
@@ -125,16 +144,16 @@ struct
       let {TermHash.term_hash = term_hash; TermHash.meta_term_hash = meta_term_hash} = info in
          match mt with
          FType.MetaTheorem t ->
-            TermHeader.MetaTheorem (WMemo.lookup term_hash info (make_term_header info t))
+            TermHeader.MetaTheorem (TheWeakMemo.lookup term_hash info (make_term_header info t))
        | FType.MetaImplies (t1, t2) ->
-            TermHeader.MetaImplies (WMemo.lookup meta_term_hash info (make_meta_term_header info t1),
-                                    WMemo.lookup meta_term_hash info (make_meta_term_header info t2))
+            TermHeader.MetaImplies (TheWeakMemo.lookup meta_term_hash info (make_meta_term_header info t1),
+                                    TheWeakMemo.lookup meta_term_hash info (make_meta_term_header info t2))
        | FType.MetaFunction (t1, mt1, mt2) ->
-            TermHeader.MetaFunction (WMemo.lookup term_hash info (make_term_header info t1),
-                                     WMemo.lookup meta_term_hash info (make_meta_term_header info mt1),
-                                     WMemo.lookup meta_term_hash info (make_meta_term_header info mt2))
+            TermHeader.MetaFunction (TheWeakMemo.lookup term_hash info (make_term_header info t1),
+                                     TheWeakMemo.lookup meta_term_hash info (make_meta_term_header info mt1),
+                                     TheWeakMemo.lookup meta_term_hash info (make_meta_term_header info mt2))
        | FType.MetaIff (mt1, mt2) ->
-            TermHeader.MetaIff (WMemo.lookup meta_term_hash info (make_meta_term_header info mt1),
-                                WMemo.lookup meta_term_hash info (make_meta_term_header info mt2))
+            TermHeader.MetaIff (TheWeakMemo.lookup meta_term_hash info (make_meta_term_header info mt1),
+                                TheWeakMemo.lookup meta_term_hash info (make_meta_term_header info mt2))
 
 end   

@@ -1148,14 +1148,12 @@ let make_proof_child info = function
 let id _ x = x
 
 let create_denorm () =
-   let term_info = Term_copy.create_denorm () in
-   let denorm = Term_copy.denormalize_term term_info in
-      { denorm = denorm;
-        step_denorm = Proof_step.create_denorm denorm;
-        proof_of_node = Memo.create make_proof id compare_proof;
-        proof_node_of_node_item = Memo.create make_proof_node id compare_proof_node;
-        proof_child_of_child_node = Memo.create make_proof_child id compare_proof_child
-      }
+   { denorm = Term_io.denormalize_term;
+     step_denorm = Proof_step.create_denorm Term_io.denormalize_term;
+     proof_of_node = Memo.create make_proof id compare_proof;
+     proof_node_of_node_item = Memo.create make_proof_node id compare_proof_node;
+     proof_child_of_child_node = Memo.create make_proof_child id compare_proof_child
+   }
 
 let io_proof_of_proof { pf_root = root } =
    let info = create_denorm () in
@@ -1202,11 +1200,9 @@ let make_child_node info = function
  *)
 let proof_of_io_proof arg parser create_tactic sentinal pf =
    let { ref_fcache = fcache; ref_args = args } = arg in
-   let term_info = Term_copy.create_norm () in
-   let norm = Term_copy.normalize_term term_info in
    let info =
-      { norm = norm;
-        step_norm = Proof_step.create_norm norm arg parser create_tactic sentinal;
+      { norm = Term_io.normalize_term;
+        step_norm = Proof_step.create_norm Term_io.normalize_term arg parser create_tactic sentinal;
         node_of_proof = Memo.create id make_proof compare_proof;
         node_item_of_proof_node = Memo.create id make_node_item compare_proof_node;
         child_node_of_proof_child = Memo.create id make_child_node compare_proof_child

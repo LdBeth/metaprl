@@ -38,6 +38,14 @@ struct
    module TType = ToTerm.TermType
    module IAr = InfiniteWeakArray
 
+   type term = TType.term
+   type param = TType.param
+   type meta_term = TType.meta_term
+
+   type 'a descriptor = 'a InfiniteWeakArray.descriptor
+   type 'a weak_descriptor = 'a InfiniteWeakArray.weak_descriptor
+ 
+
    (************************************************************************
     * TYPES                                                                *
     ************************************************************************)

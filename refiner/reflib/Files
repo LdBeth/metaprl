@@ -2,7 +2,13 @@ REFLIB_FILES :=\
 	rformat\
 	simple_print_sig\
 	simple_print\
-	term_copy\
+	term_header\
+	term_hash\
+	term_header_constr\
+	term_copy_weak\
+	term_norm\
+	term_copy2_weak\
+	term_io\
 	ml_format_sig\
 	ml_format\
 	ml_print_sig\
@@ -20,12 +26,4 @@ REFLIB_FILES :=\
 	mp_resource\
 	term_compare_sig\
 	term_compare\
-	term_transfer\
-	term_copy2\
-	term_header\
-	term_hash\
-	term_header_constr\
-	term_copy_weak\
-	term_norm\
-	term_copy2_weak\
 	match_seq

@@ -30,8 +30,8 @@ refiner.ml: $(ROOT)/mk/config
 #
 # Rules
 #
-lib: $(MAIN).cma $(RMLIFILES) $(RCMIFILES)
-opt: $(MAIN).cmxa $(RMLIFILES) $(RCMIFILES)
+lib: $(MAIN).cma $(RMLIFILES) $(RCMIFILES) Files
+opt: $(MAIN).cmxa $(RMLIFILES) $(RCMIFILES) Files
 
 install:: $(MAIN).cma $(CMIFILES)
 	$(INSTALL) $(MLIFILES) $(CMIFILES) $(MPLIB)

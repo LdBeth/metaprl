@@ -30,14 +30,36 @@
 
 open Term_hash
 open Term_header_constr
+open Infinite_weak_array
 
-module TermCopyWeak =
-  functor(FromTerm : Termmod_sig.TermModuleSig) ->
-  functor(ToTerm   : Termmod_sig.TermModuleSig) ->
-  functor(TermHash : TermHashSig with module ToTermPar = ToTerm) ->
+module TermCopyWeak
+   (FromTerm : Termmod_sig.TermModuleSig)
+
+   (ToTerm : Termmod_sig.TermModuleSig) 
+
+   (TermHeader : Term_header_sig.TermHeaderSig
+      with type term = ToTerm.TermType.term
+      with type param = ToTerm.TermType.param
+      with type meta_term = ToTerm.TermType.meta_term
+
+      with type 'a descriptor = 'a InfiniteWeakArray.descriptor
+      with type 'a weak_descriptor = 'a InfiniteWeakArray.weak_descriptor)
+
+   (TermHash : Term_hash_sig.TermHashSig
+      with type param_header = TermHeader.param_header
+      with type param_weak_header = TermHeader.param_weak_header
+      with type term_header = TermHeader.term_header
+      with type term_weak_header = TermHeader.term_weak_header
+      with type meta_term_header = TermHeader.meta_term_header
+      with type meta_term_weak_header = TermHeader.meta_term_weak_header
+
+      with type param = ToTerm.TermType.param
+      with type term = ToTerm.TermType.term
+      with type meta_term = ToTerm.TermType.meta_term) =
+   
 struct
 
-   module THC = TermHeaderConstr(FromTerm)(ToTerm)(TermHash)
+   module THC = TermHeaderConstr(FromTerm)(ToTerm)(TermHeader)(TermHash)
 
    let p_add info t = TermHash.p_lookup info (THC.make_term_header info t)
    let p_convert info t = TermHash.p_retrieve info (p_add info t)
@@ -60,18 +82,6 @@ struct
    let retrieve_meta = TermHash.retrieve_meta
 
 end
-(*
-module NormalizeTerm =
-   TermCopyWeak (Refiner_std.Refiner) (Refiner.Refiner)
-
-module DenormalizeTerm =
-   TermCopyWeak (Refiner.Refiner) (Refiner_std.Refiner)
-
-let normalize_term = NormalizeTerm.convert
-let normalize_meta_term = NormalizeTerm.convert_meta
-let denormalize_term = DenormalizeTerm.convert
-let denormalize_meta_term = DenormalizeTerm.convert_meta
-*)
 
 (*
  * -*-

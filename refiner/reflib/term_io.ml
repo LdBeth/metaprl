@@ -1,5 +1,6 @@
-(* This file is an interface for recursiveless denotation
- * of term types
+(* This file implements terms' conversion 
+ * between term representation for IO (Refiner_std)
+ * and the current term representation (Refiner)
  *
  * -----------------------------------------------------------------
  * This file is part of Nuprl-Light, a modular, higher order
@@ -28,23 +29,26 @@
  * Author: Yegor Bryukhov, Alexey Nogin
  *)
 
-open Infinite_weak_array
-open Termmod_sig
-open Term_header_sig
+open Term_copy2_weak
 
-module TermHeader (ToTerm : TermModuleSig) :
-   TermHeaderSig
-      with type term = ToTerm.TermType.term
-      with type param = ToTerm.TermType.param
-      with type meta_term = ToTerm.TermType.meta_term
+module Refiner_std = Refiner_std.Refiner
+module Refiner = Refiner.Refiner
+module Header_std = Term_header.TermHeader (Refiner_std)
+module Header = Term_header.TermHeader (Refiner)
+module Hash_std = Term_hash.TermHash (Refiner_std) (Header_std)
+module Hash = Term_hash.TermHash (Refiner) (Header)
+module NormalizeTerm =
+   Term_copy2_weak.TermCopy2Weak (Refiner_std) (Header_std) (Hash_std) (Refiner) (Header) (Hash)
 
-      with type 'a descriptor = 'a InfiniteWeakArray.descriptor
-      with type 'a weak_descriptor = 'a InfiniteWeakArray.weak_descriptor
+let normalize_term = NormalizeTerm.convert
+let normalize_meta_term = NormalizeTerm.convert_meta
+let denormalize_term = NormalizeTerm.revert
+let denormalize_meta_term = NormalizeTerm.revert_meta
 
 (*
  * -*-
  * Local Variables:
- * Caml-master: "term_hash, term_header_constr"
+ * Caml-master: ""
  * End:
  * -*-
  *)

@@ -31,25 +31,66 @@
 open Term_hash
 open Term_norm
 open Term_copy_weak
+open Infinite_weak_array
 
-module TermCopy2Weak =
-  functor(Source : Termmod_sig.TermModuleSig) ->
-  functor(Target   : Termmod_sig.TermModuleSig) ->
-  functor(SourceHash : TermHashSig with module ToTermPar = Source) ->
-  functor(TargetHash : TermHashSig with module ToTermPar = Target) ->
+module TermCopy2Weak
+   (FromTerm : Termmod_sig.TermModuleSig)
+
+   (FromHeader : Term_header_sig.TermHeaderSig
+      with type term = FromTerm.TermType.term
+      with type param = FromTerm.TermType.param
+      with type meta_term = FromTerm.TermType.meta_term
+
+      with type 'a descriptor = 'a InfiniteWeakArray.descriptor
+      with type 'a weak_descriptor = 'a InfiniteWeakArray.weak_descriptor)
+
+   (FromHash : Term_hash_sig.TermHashSig
+      with type param_header = FromHeader.param_header
+      with type param_weak_header = FromHeader.param_weak_header
+      with type term_header = FromHeader.term_header
+      with type term_weak_header = FromHeader.term_weak_header
+      with type meta_term_header = FromHeader.meta_term_header
+      with type meta_term_weak_header = FromHeader.meta_term_weak_header
+
+      with type param = FromTerm.TermType.param
+      with type term = FromTerm.TermType.term
+      with type meta_term = FromTerm.TermType.meta_term)
+
+   (ToTerm : Termmod_sig.TermModuleSig)
+
+   (ToHeader : Term_header_sig.TermHeaderSig
+      with type term = ToTerm.TermType.term
+      with type param = ToTerm.TermType.param
+      with type meta_term = ToTerm.TermType.meta_term
+
+      with type 'a descriptor = 'a InfiniteWeakArray.descriptor
+      with type 'a weak_descriptor = 'a InfiniteWeakArray.weak_descriptor)
+
+   (ToHash : Term_hash_sig.TermHashSig
+      with type param_header = ToHeader.param_header
+      with type param_weak_header = ToHeader.param_weak_header
+      with type term_header = ToHeader.term_header
+      with type term_weak_header = ToHeader.term_weak_header
+      with type meta_term_header = ToHeader.meta_term_header
+      with type meta_term_weak_header = ToHeader.meta_term_weak_header
+
+      with type param = ToTerm.TermType.param
+      with type term = ToTerm.TermType.term
+      with type meta_term = ToTerm.TermType.meta_term) =
+
 struct
 
-   module SourceNorm = TermNorm(Source)(SourceHash)
-   module TargetNorm = TermNorm(Target)(TargetHash)
-   module Forward = TermCopyWeak(Source)(Target)(TargetHash)
-   module Backward = TermCopyWeak(Target)(Source)(SourceHash)
+   module SourceNorm = TermNorm(FromTerm)(FromHeader)(FromHash)
+   module TargetNorm = TermNorm(ToTerm)(ToHeader)(ToHash)
+   module Forward = TermCopyWeak(FromTerm)(ToTerm)(ToHeader)(ToHash)
+   module Backward = TermCopyWeak(ToTerm)(FromTerm)(FromHeader)(FromHash)
 
-   type t = { source_hash : SourceHash.t; 
-              target_hash : TargetHash.t
+   type t = { source_hash : FromHash.t; 
+              target_hash : ToHash.t
             }
 
-   let p_create i j = { source_hash = SourceHash.p_create i j;
-                        target_hash = TargetHash.p_create i j;
+   let p_create i j = { source_hash = FromHash.p_create i j;
+                        target_hash = ToHash.p_create i j;
                       }
 
    let p_convert info t = SourceNorm.p_add info.source_hash t; Forward.p_convert info.target_hash t
@@ -58,8 +99,8 @@ struct
    let p_convert_meta info t = SourceNorm.p_add_meta info.source_hash t; Forward.p_convert_meta info.target_hash t
    let p_revert_meta info t = TargetNorm.p_add_meta info.target_hash t; Backward.p_convert_meta info.source_hash t
 
-   let global_hash = { source_hash = SourceHash.global_hash;
-                       target_hash = TargetHash.global_hash;
+   let global_hash = { source_hash = FromHash.global_hash;
+                       target_hash = ToHash.global_hash;
                      }
 
    let convert = p_convert global_hash
@@ -69,15 +110,7 @@ struct
    let revert_meta = p_revert_meta global_hash
 
 end
-(*
-module NormalizeTerm =
-   TermCopy2Weak (Refiner_std.Refiner) (Refiner.Refiner)
 
-let normalize_term = NormalizeTerm.convert
-let normalize_meta_term = NormalizeTerm.convert_meta
-let denormalize_term = NormalizeTerm.revert
-let denormalize_meta_term = NormalizeTerm.revert_meta
-*)
 (*
  * -*-
  * Local Variables:
