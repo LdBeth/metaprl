@@ -86,6 +86,7 @@ type zone_tag =
  | HZoneTag
  | SZoneTag
  | IZoneTag
+ | TZoneTag of string
  | MZoneTag of int * string
 
 (*
@@ -201,13 +202,16 @@ and root =
  * A printer contains a tabbing function,
  * a function to print to strings,
  * and a function to print tags.
+ *
+ * The second argument to print_tab is the list of boxes
+ * (inner to outher) that need to closed and restarted.
  *)
 type printer =
    { print_string : string -> unit;
      print_invis : string -> unit;
-     print_tab : int * string -> unit;
-     print_begin_block : buffer -> int -> unit;
-     print_end_block : buffer -> int -> unit;
+     print_tab : int * string -> string list -> unit;
+     print_begin_tag : string -> unit;
+     print_end_tag : string -> unit;
    }
 
 (*
@@ -362,6 +366,9 @@ let format_szone buf =
 let format_izone buf =
    push_zone buf IZoneTag
 
+let format_tzone buf tag =
+   push_zone buf (TZoneTag tag)
+
 let format_pushm buf off =
    let off =
       if off < 0 then
@@ -463,7 +470,7 @@ let rec get_soft_binder buf =
                      head.formatting_index <- index;
                      index
 
-             | MZoneTag _ ->
+             | MZoneTag _ | TZoneTag _ ->
                   (* These zones are invisible to binders *)
                   search tl
          in
@@ -490,7 +497,7 @@ let rec get_hard_binder buf =
                   (* Return the hard break binder *)
                   0
 
-             | MZoneTag _ ->
+             | MZoneTag _ | TZoneTag _ ->
                   (* These zones are invisible to binders *)
                   search tl
          in
@@ -915,6 +922,8 @@ and search_zone buf stack lmargin rmargin col maxx breaks search =
          let space = col - lmargin in
          let lmargin = col + off, margin_string str' space str in
             search_tzone buf stack lmargin rmargin col maxx breaks search
+    | TZoneTag _ ->
+         search_tzone buf stack lmargin rmargin col maxx breaks search
 
 (*
  * Calculate all the line breaks.
@@ -962,7 +971,7 @@ let print_arg2_invis _ _ =
  * Format a linear zone.
  * Stop when the right margin is exceeded.
  *)
-let rec print_lzone buf rmargin col printer =
+let rec print_lzone buf rmargin col printer tags =
    if !debug_rformat then
       eprintf "Rformat.print_lzone%t" eflush;
    let rec print col = function
@@ -986,7 +995,7 @@ let rec print_lzone buf rmargin col printer =
                   print (succ col) t
 
              | Inline buf' ->
-                  print (print_zone buf' rmargin col printer true) t
+                  print (print_zone buf' rmargin col printer true tags) t
          end
 
     | [] ->
@@ -998,7 +1007,7 @@ let rec print_lzone buf rmargin col printer =
 (*
  * Format a tagged zone.
  *)
-and print_tzone buf rmargin col printer =
+and print_tzone buf rmargin col printer tags =
    if !debug_rformat then
       eprintf "Rformat.print_tzone%t" eflush;
    let { formatted_commands = commands;
@@ -1017,7 +1026,7 @@ and print_tzone buf rmargin col printer =
              | Break (index, take_len, notake_len, take, notake) ->
                   if breaks.(index) then
                      begin
-                        printer.print_tab lmargin;
+                        printer.print_tab lmargin tags;
                         printer.print_string take;
                         print lmargin' t
                      end
@@ -1030,7 +1039,7 @@ and print_tzone buf rmargin col printer =
              | CBreak (index, take_len, notake_len, take, notake) ->
                   if breaks.(index) then
                      begin
-                        printer.print_tab lmargin;
+                        printer.print_tab lmargin tags;
                         printer.print_string take;
                         print lmargin' t
                      end
@@ -1041,11 +1050,11 @@ and print_tzone buf rmargin col printer =
                      end
 
              | HBreak ->
-                  printer.print_tab lmargin;
+                  printer.print_tab lmargin tags;
                   print lmargin' t
 
              | Inline buf' ->
-                  print (print_zone buf' rmargin col printer false) t
+                  print (print_zone buf' rmargin col printer false tags) t
          end
     | [] ->
          col
@@ -1058,33 +1067,33 @@ and print_tzone buf rmargin col printer =
 and print_ltzone linear =
    if linear then print_lzone else print_tzone
 
-and print_zone buf rmargin col printer linear =
+and print_zone buf rmargin col printer linear tags =
    if !debug_rformat then
       eprintf "Rformat.print_zone%t" eflush;
    match buf.buf_tag with
       LZoneTag ->
-         print_lzone buf rmargin col printer
+         print_lzone buf rmargin col printer tags
 
     | HZoneTag
     | SZoneTag ->
-         print_ltzone linear buf rmargin col printer
+         print_ltzone linear buf rmargin col printer tags
 
     | IZoneTag ->
-         let { print_invis = print_invis } = printer in
          let printer =
-            { print_string = print_invis;
-              print_invis = print_invis;
-              print_tab = print_arg1_invis;
-              print_begin_block = print_arg2_invis;
-              print_end_block = print_arg2_invis;
+            { printer with
+              print_string = printer.print_invis;
+              print_tab = print_arg2_invis;
             }
          in
-            print_ltzone linear buf rmargin col printer
+            print_ltzone linear buf rmargin col printer tags
 
     | MZoneTag (off, str) ->
-         printer.print_begin_block buf (col + off);
-         let col = print_ltzone linear buf rmargin col printer in
-            printer.print_end_block buf (col + off);
+         (print_ltzone linear buf rmargin col printer tags) + off
+
+    | TZoneTag tag ->
+         printer.print_begin_tag tag;
+         let col = print_ltzone linear buf rmargin col printer (tag::tags) in
+            printer.print_end_tag tag;
             col
 
 let print_buf buf rmargin printer =
@@ -1103,15 +1112,15 @@ let make_channel_printer out =
    let print_string s =
       output_string out s
    in
-   let print_tab (_, str) =
+   let print_tab (_, str) _ =
       output_char out '\n';
       output_string out str
    in
       { print_string = print_string;
         print_invis = print_string;
         print_tab = print_tab;
-        print_begin_block = print_arg2_invis;
-        print_end_block = print_arg2_invis;
+        print_begin_tag = print_arg1_invis;
+        print_end_tag = print_arg1_invis;
       }
 
 (*
@@ -1122,15 +1131,15 @@ let make_string_printer () =
    let print_string s =
       strings := s :: !strings
    in
-   let print_tab (_, str) =
+   let print_tab (_, str) _ =
       strings := ("\n" ^ str) :: !strings
    in
    let printer =
       { print_string = print_string;
         print_invis = print_arg1_invis;
         print_tab = print_tab;
-        print_begin_block = print_arg2_invis;
-        print_end_block = print_arg2_invis;
+        print_begin_tag = print_arg1_invis;
+        print_end_tag = print_arg1_invis;
       }
    in
    let get_string () =
@@ -1256,7 +1265,7 @@ let html_tab_line buf =
  * Compute all pending tabstops,
  * then push the line and the new tabstop.
  *)
-let html_tab buf (col, _) =
+let html_tab buf (col, _) _ =
    if col = 0 then
       begin
          html_push_line buf;
@@ -1277,6 +1286,12 @@ let html_tab buf (col, _) =
             output_string buf.html_out "<br>\n";
             output_string buf.html_out spacer
 
+let html_tag buf s =
+   output_string buf.html_out ("<" ^ s ^ ">")
+
+let html_etag buf s =
+   output_string buf.html_out ("</" ^ s ^ ">")
+
 (*
  * An HTML printer.
  *)
@@ -1290,8 +1305,8 @@ let make_html_printer out =
       { print_string = html_print_string buf;
         print_invis = html_print_invis buf;
         print_tab = html_tab buf;
-        print_begin_block = print_arg2_invis;
-        print_end_block = print_arg2_invis;
+        print_begin_tag = html_tag buf;
+        print_end_tag = html_etag buf;
       }
 
 (*
@@ -1385,59 +1400,38 @@ let tex_print_invis buf s =
    buf.tex_current_line <- (false, s) :: buf.tex_current_line
 
 (*
- * Count the number of $'s in a line.
- *)
-let tex_count_math line =
-   let rec count c start =
-      try
-         let i = String.index_from line start '$' in
-            if i = 0 || line.[pred i] <> '\\' then
-               count (succ c) (succ i)
-            else
-               count c (succ i)
-      with
-         Not_found ->
-            c
-   in
-      count 0 0
-
-(*
  * Extract the entire line.
  *)
 let tex_line buf =
-   let rec collect count line = function
-      (vis, h) :: t ->
-         if vis then
-            collect count (tex_escape_string true h ^ line) t
-         else
-            collect (count + tex_count_math h) (h ^ line) t
-    | [] ->
-         count, line
-   in
-      collect 0 "" buf.tex_current_line
-
-let tex_visible buf =
    let rec collect line = function
-      (true, h) :: t ->
-         collect (h ^ line) t
-    | _ :: t ->
-         collect line t
+      (vis, h) :: t ->
+         collect ((if vis then (tex_escape_string true h) else h) ^ line) t
     | [] ->
          line
    in
       collect "" buf.tex_current_line
 
-let tex_push_line buf =
-   let count, line = tex_line buf in
+let tex_visible buf =
+   let rec collect line = function
+      (vis, h) :: t ->
+         collect (if vis then h ^ line else line) t
+    | [] ->
+         line
+   in
+      collect "" buf.tex_current_line
+
+let make_tag s =
+   (false, "\\" ^ s ^ "{")
+
+let tex_push_line buf tags =
+   let line = tex_line buf in
       output_string buf.tex_out line;
-      if count mod 2 = 1 then
-         output_string buf.tex_out "$";
-      if line <> "" && line.[String.length line - 1] != '\n' then
+      buf.tex_current_line <- [];
+      if line <> "" && line.[String.length line - 1] != '\n' then begin 
+         output_string buf.tex_out (String.make (List.length tags) '}');
          output_string buf.tex_out "\\\\\n";
-      if count mod 2 = 1 then
-         buf.tex_current_line <- [false, "$ "]
-      else
-         buf.tex_current_line <- []
+         buf.tex_current_line <- List.map make_tag tags
+      end
 
 (*
  * Set up all pending tabstops.
@@ -1450,17 +1444,15 @@ let tex_tab_line buf =
  * Compute all pending tabstops,
  * then push the line and the new tabstop.
  *)
-let tex_tab buf (col, _) =
+let tex_tab buf (col, _) tags =
    if col = 0 then
       begin
-         tex_push_line buf;
-         if buf.tex_current_line <> [] then
-            buf.tex_current_line <- (false, "\\\\\n") :: buf.tex_current_line;
+         tex_push_line buf tags;
          buf.tex_prefix <- ""
       end
    else
       let tabline = tex_tab_line buf in
-         tex_push_line buf;
+         tex_push_line buf tags;
          let prefix =
             if col >= String.length tabline then
                tabline
@@ -1469,7 +1461,13 @@ let tex_tab buf (col, _) =
          in
          let spacer = sprintf "\\phantom{%s}" (tex_escape_string false prefix) in
             buf.tex_prefix <- prefix;
-            buf.tex_current_line <- (false, spacer) :: buf.tex_current_line
+            buf.tex_current_line <- buf.tex_current_line @ [false, spacer]
+
+let tex_tag buf s =
+   buf.tex_current_line <- (make_tag s) :: buf.tex_current_line
+
+let tex_etag buf _ =
+   buf.tex_current_line <- (false, "}") :: buf.tex_current_line 
 
 (*
  * A TeX printer.
@@ -1484,8 +1482,8 @@ let make_tex_printer out =
       { print_string = tex_print_string buf;
         print_invis = tex_print_invis buf;
         print_tab = tex_tab buf;
-        print_begin_block = print_arg2_invis;
-        print_end_block = print_arg2_invis;
+        print_begin_tag = tex_tag buf;
+        print_end_tag = tex_etag buf;
       }
 
 (*
@@ -1493,7 +1491,7 @@ let make_tex_printer out =
  *)
 let print_to_printer buf rmargin printer =
    ignore (compute_breaks buf rmargin);
-   ignore (print_buf buf rmargin printer)
+   ignore (print_buf buf rmargin printer [])
 
 (*
  * Print to an IO buffer.

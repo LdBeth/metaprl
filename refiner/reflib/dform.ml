@@ -201,6 +201,11 @@ let szone df = format_szone df.dform_buffer
 let izone df = format_izone df.dform_buffer
 let ezone df = format_ezone df.dform_buffer
 
+let tzone = function
+   { dform_items = [RewriteString tag]; dform_buffer = buf } ->
+      format_tzone buf tag
+ | _ -> raise (Invalid_argument "Dform.sbreak")
+
 let hbreak = function
    { dform_items = [RewriteString yes; RewriteString no]; dform_buffer = buf } ->
       format_hbreak buf yes no
@@ -651,6 +656,7 @@ let init_list =
     "hzone", [], hzone;
     "izone", [], izone;
     "ezone", [], ezone;
+    "tzone", [MString "t"], tzone;
     "pushm", [MNumber "i"], pushm;
     "pushm", [MString "s"], pushm;
     "pushm", [], pushm;

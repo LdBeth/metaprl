@@ -103,6 +103,9 @@ val format_hzone : buffer -> unit
 val format_ezone : buffer -> unit
 val format_izone : buffer -> unit
 
+(* TeX boxes *)
+val format_tzone : buffer -> string -> unit
+
 (*
  * Margins.
  *)
