@@ -26,10 +26,11 @@ INSTALL_LIBS := $(MAINLIB)
 .PHONY: lib optlib
 
 all: lib 
-	$(MAKE) $(ROOT)/lib/$(MAINLIB).cma
+	@ $(MAKE) $(ROOT)/lib/$(MAINLIB).cma
 
 opt: optlib 
-	$(MAKE) $(ROOT)/lib/$(MAINLIB).cmxa $(ROOT)/lib/$(MAINLIB).a
+	@ $(MAKE) $(ROOT)/lib/$(MAINLIB).cmxa 
+	@ $(MAKE) $(ROOT)/lib/$(MAINLIB).a
 
 #
 # The real Makefile

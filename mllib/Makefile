@@ -50,7 +50,8 @@ include Makefile.dep
 # Rules
 #
 lib: $(RMLIFILES) $(RCMIFILES) $(RCMAFILES)
-opt: $(RMLIFILES) $(RCMIFILES) $(RCMXAFILES) $(RAFILES)
+opt: $(RMLIFILES) $(RCMIFILES) $(RCMXAFILES) 
+	@ $(MAKE) $(RAFILES)
 
 install:: $(MAIN).cma $(CMIFILES)
 	$(INSTALL) $(MAIN).cma $(MLIFILES) $(CMIFILES) $(NLLIB)
