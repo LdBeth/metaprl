@@ -46,9 +46,7 @@ would only save the time to output the display form, but not the time to produce
 
 2.7) (Fixed in OCaml)
 
-2.8) When ls is used with non-empty flags (e.g. ls "u"), it should not use the word
-     "Implementation" in the listing header (or it should at least tell what exactly
-     it is listing).
+2.8) (fixed)
 
 2.9) Display form mechanism does not give a way to distinguish between parameters
      and meta-parameters. Because of that terms with meta-parameters will very
@@ -72,19 +70,7 @@ the corresponding rewriter code is undebugged.
 Nuprl's way is more natural and we should convert. I already wrote the new type
 inference (only for spread) with Nuprl's understanding in mind.
 
-3.11) (nogin: 2000.08.08; nogin: still there 2003.11.24)
-When dT is ran on hypothesys x: exists i:'T..., y is used as a name of the new hypothesys
-variable instead of i. I am not sure whether it's a rewriter problem or a bad tactic.
-In particular, this breaks lots of proofs in itt_collection.
-
-3.12) (fixed)
-
-3.13) (kopylov; 2001.19.06)
-RewriteInternal.rw intentional rewrite should apply conv the whole sequent.
-After fixing this bug, rwcAll should use RewriteInternal.rw instead
-of onAllMClausesT (conversionals_boot.ml).
-
-3.14) (fixed)
+(3.11-3.14) fixed
 
 REFINER
 
