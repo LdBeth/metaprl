@@ -24,13 +24,7 @@ MetaPRL Tutorial is very outdated.
 
 EDITOR
 
-2.1-2.3 are fixed
-
-2.4) (Updated 2000.08.13 by nogin)
-Term_match_table listing is being reversed in order for new display forms to take
-precedence over old ones. But for some reason, the dT table works OK without
-reversing. Hopefully, after we reiplement term tables properly, this crazyness
-will go away.
+2.1-2.4 are fixed
 
 2.5) Display form mode generality is not working.
 
@@ -47,8 +41,8 @@ would only save the time to output the display form, but not the time to produce
 
 2.7) Native code just exits with segmentation fault on stack overflow. This is really bad
 since it does not give user a chance to save work.
-We may try to do our own "depth counting" in scheduler and catch too deep recursion
-before it has a chance to overflow the stack.
+Note: tactic scheduler seems to use its own stack, so nothing back happens if a tactic
+loops.
 
 2.8) When ls is used with non-empty flags (e.g. ls "u"), it should not use the word
      "Implementation" in the listing header (or it should at least tell what exactly
@@ -181,13 +175,7 @@ a) Make sure that nobody can cheat the system by starting to mute strings.
 b) Let the compiler and GC know that we are not going to mute strings (which should allow
 them to be more efficient).
 
-4.8) (2000.06.09 nogin)
-When autoT is ran on <<sequent [squash] { >- "type"{'O} } >> (with no assumtions),
-MetaPRL seems to go into an infinite loop and because of the BUG 2.7, mpopt would crash
-with segmentation fault!
-
-4.9) (2000.08.13 nogin)
-Something is still leaking "with" arguments into RuleBox'es.
+4.8-4.9) (fixed)
 
 4.10) (2000.09.18 kopylov)
 The extract of a subgoal of a rule should be of the form 't['x1;,,,;'xn], where 't is
@@ -196,6 +184,8 @@ For example we should not be able to write rules with the subgoal of the form:
  ('t['x] : sequent ['ext] { 'H; x: 'A; y: B >- 'T['x] }) --> ....
 or
  ('t+'s : sequent ['ext] { 'H >- 'T }) --> ....
+
+See also BUGS #4.4
 
 4.11) (2001.06 kopylov)
 If the goal sequent has a second-order variable with two repated variables then
@@ -219,10 +209,7 @@ PARSER & FILTER
 
 5.3) Some times parser requires too many brackets.
 
-5.4) Parsing or printing bug that can be seen using ASCII files:
-     sometimes string arguments in params gets unquoted too many times.
-     Reproduce this bug by loading an old ASCII file, then saving it
-     and seeing that some parameters have been unquoted.
+5.4) (fixed)
 
 5.5) Toploop_resource seems to be added into .p4 file even if
    base_theory is not included.
@@ -237,21 +224,9 @@ that). We should try to rewrite that code in a tail-recusive way.
 
 RULES & REWRITES
 
-6.1) Fixed
+6.1-6.2) (fixed)
 
-6.2) Fixed
-
-6.3) (Formulated by krupski and confirmed by nogin - 2000.05.12)
-After the membership rule is postulated, the corresponding ext rule can often
-be proven using Itt_struct.introduction rule. There is no need to postulate
-the ext rule and it should be actually proven only when it's useful.
-
-Example: After <<'H >- univ[i:l] in int>> is postulated, there is no need
-to postulate <<'H >- univ[i:l]>> with <<int>> extract since it can always
-be proven in the unlikely event that it is actually needed.
-
-P.S. Unfortunatelly, there seems to be no mechanism to do similar trick
-for rules with assumptions. May be it would be a good idea to create one.
+6.3) See Bugzilla bugs 5,6,7.
 
 6.4) Dependent product type is currently defined as a very dependent function type.
 Unfortunatelly, we were not (yet) able to prove productElimination. We should
@@ -275,8 +250,7 @@ Another problem is that when .prla is removed from the repository and
 after "cvs update" removes it from the working copy, the old .prlb
 becomes active instead of being deleted.
 
-7.2) (fixed)
+P.S. It's possible that cons (with its MD5 checksums) would be able to help
+with this problem.
 
-7.3) We need to do something that works with both old versions of Make as well as
-with the new "jobserver" versions without printing all the annoing warnings and
-falling back to -j1.
+7.2-7.3) (fixed)
