@@ -74,82 +74,25 @@ struct
       Node (key, left, right, cardinality left + cardinality right + 1)
 
    (*
-    * Rotate kthe entries so that the child becomes the root.
-    * Return the new left and right children.
-    *)
-   let rotate_left left right = function
-      Node (key, _, right', _) ->
-         left, new_node key right right'
-    | _ ->
-         raise (Invalid_argument "rotate_left")
-
-   let rotate_right left right = function
-      Node (key, left', _, _) ->
-         new_node key left' left, right
-    | _ ->
-         raise (Invalid_argument "rotate_right")
-
-   let rotate_left_left left right = function
-      Node (key,
-            Node (key_left, _, left_right, _),
-            right',
-            _) ->
-         left, new_node key_left right (new_node key left_right right')
-    | _ ->
-         raise (Invalid_argument "rotate_left_left")
-
-   let rotate_right_right left right = function
-      Node (key,
-            left',
-            Node (key_right, right_left, _, _),
-            _) ->
-         new_node key_right (new_node key left' right_left) left, right
-    | _ ->
-         raise (Invalid_argument "rotate_right_right")
-
-   let rotate_left_right left right = function
-      Node (key,
-            Node (key_left, left_left, _, _),
-            right',
-            _) ->
-         new_node key_left left_left left, new_node key right right'
-    | _ ->
-         raise (Invalid_argument "rotate_left_right")
-
-   let rotate_right_left left right = function
-      Node (key,
-            left',
-            Node (key_right, _, right_right, _),
-            _) ->
-         new_node key left' left, new_node key_right right right_right
-    | _ ->
-         raise (Invalid_argument "rotate_right_left")
-
-   (*
     * This function performs the action of moving an entry
     * to the root.  The argument is the path to the entry.
     *)
    let rec lift key left right = function
       [] ->
          new_node key left right
-    | [Left parent] ->
-         let left, right = rotate_left left right parent in
-            new_node key left right
-    | [Right parent] ->
-         let left, right = rotate_right left right parent in
-            new_node key left right
-    | Left parent :: Left grandparent :: ancestors ->
-         let left, right = rotate_left_left left right grandparent in
-            lift key left right ancestors
-    | Right parent :: Right grandparent :: ancestors ->
-         let left, right = rotate_right_right left right grandparent in
-            lift key left right ancestors
-    | Left parent :: Right grandparent :: ancestors ->
-         let left, right = rotate_right_left left right grandparent in
-            lift key left right ancestors
-    | Right parent :: Left grandparent :: ancestors ->
-         let left, right = rotate_left_right left right grandparent in
-            lift key left right ancestors
+    | [Left (Node (key', _, right', _))] ->
+            new_node key left (new_node key' right right')
+    | [Right (Node (key', left', _, _))] ->
+            new_node key (new_node key' left' left) right
+    | Left (Node (key_left, _, left_right, _)) :: Left (Node (key', _, right', _)) :: ancestors ->
+            lift key left (new_node key_left right (new_node key' left_right right')) ancestors
+    | Right (Node (key_right, right_left, _, _)) :: Right (Node (key', left', _, _)) :: ancestors ->
+            lift key (new_node key_right (new_node key' left' right_left) left) right ancestors
+    | Left (Node (key_right, _, right_right, _)) :: Right (Node (key', left', _, _)) :: ancestors ->
+            lift key (new_node key' left' left) (new_node key_right right right_right) ancestors
+    | Right (Node (key_left, left_left, _, _)) :: Left (Node (key', _, right', _)) :: ancestors ->
+            lift key (new_node key_left left_left left) (new_node key' right right') ancestors
+    | _ -> raise (Invalid_argument "lift")
 
    (*
     * Find an entry in the tree.
@@ -198,13 +141,11 @@ struct
    let rec lift_right = function
       Node (key, left, Leaf, _) ->
          key, left
-    | Node (_, _, Node (key, left, Leaf, _), _) as parent ->
-         let left, _ = rotate_right left Leaf parent in
-            key, left
-    | Node (_, _, Node (_, left, right, _), _) as grandparent ->
-         let key, left = lift_right right in
-         let left, _ = rotate_right_right left Leaf grandparent in
-            key, left
+    | Node (key, left', Node (key', left, Leaf, _), _) ->
+            key', new_node key left' left
+    | Node (key, left', Node (key_right, right_left, right, _), _) ->
+         let key', left = lift_right right in
+            key', new_node key_right (new_node key left' right_left) left
     | Leaf ->
          raise (Invalid_argument "lift_right")
 
