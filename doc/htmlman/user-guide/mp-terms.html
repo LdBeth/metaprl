@@ -103,25 +103,20 @@ omitted.</P>
 
 <H3>Variables</H3>
 
-<P>Variables are a built-in term with the opname <TT>variable</TT>.
-There are two types of variables. <I>First-order</I> variables
-are defined with the syntax <TT>variable[&quot;v&quot;:v]</TT>
-(which represents the variable <I>v</I>). <I>Second-order</I>
-variables represent terms with substitutions (second order variables
-are used to define computational rewrites and inference rules).
-The syntax of second-order variables represents substitutions with
-subterms. For example, the term <TT>variable[&quot;v&quot;:v]{variable[&quot;v1&quot;:v];
-variable[&quot;v2&quot;:v]}</TT> is a second-order variable with
-two variables <I>v1</I> and <I>v2</I> as subterms.</P>
+<P>Variables are a built-in term that are handled specially by the system.
+There are two types of variables. <I>First-order</I> variables represent the
+variable of the <em>object theory</em>.  <I>Second-order</I>, or
+<em>meta-level</em> variables represent terms with substitutions (second order
+variables are used to define computational rewrites and inference rules).  The
+syntax of second-order variables represents substitutions with subterms.
 
 <P>The parser includes a simplifying syntax for variables: if
 a simple literal is prefixed with an apostrophe (<TT>'</TT>),
 the literal is interpreted as a variable. For example, the variable
-<I>v</I> is also represented with the syntax <TT>'v</TT>, which
-is expanded by the parser into the full form <TT>variable[&quot;v&quot;:v]</TT>.
+<I>v</I> is represented with the syntax <TT>'v</TT>
 Second order variables include their subterms in square brackets,
-so <TT>'v['v1; 'v2]</TT> is the short form for the second-order
-variable in the last paragraph.</P>
+so <TT>'v['v1; 'v2]</TT> is the second-order variable <tt>v</tt> with two
+arguments: <tt>v1</tt> and <tt>v2</tt>.
 
 <H3>Examples</H3>
 
@@ -256,33 +251,33 @@ declared,as in the following sequence:</P>
 <BLOCKQUOTE>
   <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
     <tr>
-      <TD WIDTH="219" height="19">
+      <TD WIDTH="40%" height="19">
       <TT>
       &nbsp;<I>t1</I> =&gt; <I>t2</I></TT></TD>
-      <TD WIDTH="219" height="19" colspan="2">
+      <TD WIDTH="60%" height="19" colspan="2">
       <TT>
       &nbsp;implies{<I>t1; t2</I>}</TT></TD>
     </tr>
     <tr>
-      <TD WIDTH="219" height="19">
+      <TD WIDTH="40%" height="19">
       <TT>
       &nbsp;<I>t1</I> <B>or</B> <I>t2</I></TT></TD>
-      <TD WIDTH="219" height="19" colspan="2">
+      <TD WIDTH="60%" height="19" colspan="2">
       <TT>
       &nbsp;or{<I>t1; t2</I>}</TT></TD>
     </tr>
     <TR>
-      <TD WIDTH="219" height="19">
+      <TD WIDTH="40%" height="19">
       <TT>
       &nbsp;<I>t1</I> <B>and</B> <I>t2<br>
       </I>
       &nbsp;<I>t1</I> &amp; <I>t2</I></TT></TD>
-      <TD WIDTH="219" height="19" colspan="2">
+      <TD WIDTH="60%" height="19" colspan="2">
       <TT>
       &nbsp;and{<I>t1; t2</I>}</TT></TD>
     </TR>
     <TR>
-      <TD WIDTH="219" height="19">
+      <TD WIDTH="40%" height="19">
       <TT>
       &nbsp;<B>all </B><I>x:t1. t2</I><B><br>
       </B>&nbsp;<B>exst</B> <I>x:t1. t2<br>
@@ -295,7 +290,7 @@ declared,as in the following sequence:</P>
       </I>
       &nbsp;<B>all </B><I>x </I><b>In</b><I> t1. t2</I><B><br>
       </B>&nbsp;<B>exst</B> <I>x </I><b>In</b> <I> t1. t2&nbsp;</I> </TT></TD>
-      <TD WIDTH="184" height="19">
+      <TD WIDTH="50%" height="19">
       <TT>
       &nbsp;all{<I>t1; x. t2</I>}<br>
 
@@ -308,7 +303,7 @@ declared,as in the following sequence:</P>
       &nbsp;sexists{<I>x. t</I>}<br>
       &nbsp;dall{<I>t1; x. t2</I>}<br>
       &nbsp;dexists{<I>t1; x. t2</I>}</TT></TD>
-      <TD WIDTH="31" height="19">
+      <TD WIDTH="10%" height="19">
       <br>
       <br>
       &nbsp;<br>
@@ -326,7 +321,7 @@ declared,as in the following sequence:</P>
 <BLOCKQUOTE>
   <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
     <TR>
-      <TD WIDTH="50%">
+      <TD WIDTH="40%">
       <tt><i>&nbsp;t1</i> = <I>t2</I> <B>in </B><I>t<br>
       &nbsp;t1</I> &lt;&gt; <I>t2</I> <B>in </B><I>t<br>
       &nbsp;t1</I> <B>in </B><I>t<br>
@@ -336,13 +331,13 @@ declared,as in the following sequence:</P>
       &nbsp;t1 </i><b>subset </b><i>t2&nbsp;<br>
       &nbsp;t </i><b>in </b><i>t1 </i><b>subset </b><i>t2&nbsp;<br>
       &nbsp;t1 ~ t2</i> </tt> </TD>
-      <TD WIDTH="50%">
+      <TD WIDTH="60%">
       <TT>
       &nbsp;equal{<I>t; t1; t2</I>}<br>
 
       &nbsp;nequal{<I>t; t1; t2</I>}<br>
 
-      &nbsp;equal{<I>t; t1; t1</I>}<br>
+      &nbsp;equal{<I>t;&nbsp;t1;&nbsp;t1</I>}&nbsp;or&nbsp;member{<i>t1;&nbsp;t</i>}&nbsp;(*) <br>
 
       &nbsp;equal{<I>t1; t2</I>}<br>
 
@@ -354,7 +349,7 @@ declared,as in the following sequence:</P>
       &nbsp;sqeq{<I>t1; t2</I>}</TT></TD>
     </TR>
     <TR>
-      <TD WIDTH="50%">
+      <TD WIDTH="40%">
       <TT>
       &nbsp;<I>t1</I>   &lt;= <I>t2<br>
       </I>
@@ -375,7 +370,7 @@ declared,as in the following sequence:</P>
       &nbsp;<I>t1</I>  &gt;=@ <I>t2<br>
       </I>
       &nbsp;<I>t1</I>  &gt;@ <I>t2</I> </TT></TD>
-      <TD WIDTH="50%">
+      <TD WIDTH="60%">
       <TT>
       &nbsp;le{t<I>1; t2</I>}<br>
 
@@ -394,23 +389,27 @@ declared,as in the following sequence:</P>
   </TABLE>
 </BLOCKQUOTE>
 
+<p>(*) The &quot;<I>t1</I> <B>in </B><I>t</I>&quot; form is overloaded
+&mdash; if only one of the two operators is declared, then the declared
+operator is used, anf if both are declared, the <tt>equal</tt> form is used.
+
 <H4>Mathematical operators</H4>
 
 <BLOCKQUOTE>
   <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
     <tr>
-      <TD WIDTH="50%">
+      <TD WIDTH="40%">
       <TT>
       &nbsp;<I>t1 </I><b>::</b><I> t2 </I></TT></TD>
-      <TD WIDTH="50%">
+      <TD WIDTH="60%">
       <TT>
       &nbsp;cons{<I>t1; t2</I>}</TT></TD>
     </tr>
     <TR>
-      <TD WIDTH="50%">
+      <TD WIDTH="40%">
       <TT>
       &nbsp;(<i>t1, t2</i>)</TT></TD>
-      <TD WIDTH="50%">
+      <TD WIDTH="60%">
       <TT>&nbsp;pair(<i>t1; t2</i>)</TT></TD>
     </TR>
   </TABLE>
@@ -421,37 +420,37 @@ declared,as in the following sequence:</P>
 <BLOCKQUOTE>
   <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
     <tr>
-      <TD WIDTH="50%">
+      <TD WIDTH="40%">
       <TT>
       &nbsp;<I>t1</I> -&gt; <I>t2<br>
       </I>
       &nbsp;<I>x:t1</I> -&gt; <I>t2</I></TT></TD>
-      <TD WIDTH="50%">
+      <TD WIDTH="60%">
       <TT>
       &nbsp;fun{<I>t1; t2</I>}<br>
       &nbsp;fun{<I>t1; x.t2</I>}</TT></TD>
     </tr>
     <tr>
-      <TD WIDTH="50%">
+      <TD WIDTH="40%">
       <TT>
       &nbsp;<I>t1</I> * <I>t2<br>
       </I>
       &nbsp;<I>x:t1</I> * <I>t2</I></TT></TD>
-      <TD WIDTH="50%">
+      <TD WIDTH="60%">
       <TT>
       &nbsp;prod{<I>t1; t2}<br>
       </I>&nbsp;prod{<I>t1; x. t2</I>}</TT></TD>
     </tr>
     <TR>
-      <TD WIDTH="50%">
+      <TD WIDTH="40%">
       <TT>
       &nbsp;<I>t1</I> + <I>t2</I></TT></TD>
-      <TD WIDTH="50%">
+      <TD WIDTH="60%">
       <TT>
       &nbsp;union{<I>t1; t2</I>}</TT></TD>
     </TR>
     <TR>
-      <TD WIDTH="50%">
+      <TD WIDTH="40%">
       <TT>
       &nbsp;<I>x, y: t1 </I>// <I>t2<br>
       </I>
@@ -459,7 +458,7 @@ declared,as in the following sequence:</P>
       &nbsp;<I>x: t1</I> <b>isect </b> <I>t2</I><br>
       &nbsp;<b>Isect </b><I>x: t1.</I> <I>t2</I><br>
       &nbsp;<I>t1</I> <b>union </b> <I>t2</I><br>&nbsp;<b>Union </b><I>x: t1.</I> <I>t2</I></TT></TD>
-      <TD WIDTH="50%">
+      <TD WIDTH="60%">
       <TT>
       &nbsp;quot{<I>t1; x, y. t2</I>}<br>
       &nbsp;bisect{<i>t1; t2</i>}<br>
@@ -477,25 +476,25 @@ declared,as in the following sequence:</P>
 <BLOCKQUOTE>
   <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
     <tr>
-      <TD WIDTH="50%">
+      <TD WIDTH="40%">
       <TT>
       &nbsp;<I>t1 </I>+@ <I>t2<br>
       </I>&nbsp;<I>t1</I> -@ <I>t2</I></TT></TD>
-      <TD WIDTH="50%">
+      <TD WIDTH="60%">
       <TT>
       &nbsp;add{<I>t1; t2</I>}<br>
       &nbsp;sub{<I>t1; t2</I>}</TT></TD>
     </tr>
     <tr>
-      <TD WIDTH="50%">
+      <TD WIDTH="40%">
       <TT>
       &nbsp;- t</TT></TD>
-      <TD WIDTH="50%">
+      <TD WIDTH="60%">
       <TT>
       &nbsp;minus{<I>t</I>}&nbsp;</TT></TD>
     </tr>
     <tr>
-      <TD WIDTH="50%">
+      <TD WIDTH="40%">
       <TT>
       &nbsp;<I>t1 </I>*@ <I>t2<br>
       </I>
@@ -503,7 +502,7 @@ declared,as in the following sequence:</P>
       </I>
       &nbsp;<I>t1</I> <B>%@</B> <I>t2<br>
       &nbsp;t1 ^@ t2</I></TT></TD>
-      <TD WIDTH="50%">
+      <TD WIDTH="60%">
       <TT>
       &nbsp;mul{<I>t1; t2</I>}<br>
 
@@ -519,14 +518,14 @@ declared,as in the following sequence:</P>
 <BLOCKQUOTE>
   <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
     <tr>
-      <TD WIDTH="50%">
+      <TD WIDTH="40%">
       <tt>&nbsp;<I>t1 </I>op[<i>t</i>] <I>t2
       </I>&nbsp;<br>
       &nbsp;<I>t1 ^</I>op <I>t2
       </I>&nbsp;<br>
       &nbsp;&nbsp; where op is *,+,/,-,^,&nbsp;&nbsp;<br>
       &nbsp;&nbsp;&nbsp;&nbsp; or &gt;,&lt;,=,&lt;&gt;,&lt;=,&gt;=</tt></TD>
-      <TD WIDTH="50%">
+      <TD WIDTH="60%">
       <tt>&nbsp;<i>t</i>^&quot;op&quot; <i>t1 t2<br>
       &nbsp;'self</i>^&quot;op&quot; <i>t1 t2<br>
       <br>
@@ -539,14 +538,14 @@ declared,as in the following sequence:</P>
 <BLOCKQUOTE>
   <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
     <TR>
-      <TD WIDTH="50%">
+      <TD WIDTH="40%">
       <TT>
       &nbsp;<b>if</b> <I>t1</I> <b>then</b> <I>t2</I> <b>else</b>
       <I>t3<br>
       &nbsp;</I><b>let</b> <i>x = t1 </i><b>in</b> <i>t2<br>
       &nbsp;t2 </i><b>where </b><i>x = t1<br>
       &nbsp;</i><b>open </b><i>t1 </i><b>in </b><i>t2</i></TT></TD>
-      <TD WIDTH="50%">
+      <TD WIDTH="60%">
       <TT>
       &nbsp;ifthenelse{<I>t1; t2; t3</I>}<br>
       &nbsp;let{<i>t1;x.t2</i>}<br>
@@ -561,19 +560,19 @@ declared,as in the following sequence:</P>
 <BLOCKQUOTE>
   <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
     <tr>
-      <TD WIDTH="50%">
+      <TD WIDTH="40%">
       <TT>
       &nbsp;<I>t1 </I>&nbsp;<I>t2 </I></TT></TD>
-      <TD WIDTH="50%">
+      <TD WIDTH="60%">
       <TT>
       &nbsp;apply{<I>t1; t2</I>}</TT></TD>
     </tr>
     <TR>
-      <TD WIDTH="50%">
+      <TD WIDTH="40%">
       <TT>
       &nbsp;<i>t</i><b>^</b>x<br>
       &nbsp;<i>t</i>^x:=<i>t2</i></TT></TD>
-      <TD WIDTH="50%">
+      <TD WIDTH="60%">
       <TT>&nbsp;field[&quot;x&quot;:t]{<i>t1</i>}<br>
       &nbsp;rxrd[&quot;x&quot;:t]{<i>t2;t1</i>}&nbsp;</TT></TD>
     </TR>
@@ -585,20 +584,20 @@ declared,as in the following sequence:</P>
 <BLOCKQUOTE>
   <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
     <tr>
-      <TD WIDTH="50%">
+      <TD WIDTH="40%">
       <TT>
       &nbsp;{<i>x </i><b>:</b><i> t1</i>&nbsp; |&nbsp; <i>t2</i>}</TT></TD>
-      <TD WIDTH="50%">
+      <TD WIDTH="60%">
       <TT>
       &nbsp;set{<i>t1; x.t2</i>}</TT></TD>
     </tr>
     <tr>
-      <TD WIDTH="50%">
+      <TD WIDTH="40%">
       <TT>
       &nbsp;{x<i> </i><b>:</b><i> A</i><b>; ... ; </b>z<b> :</b> <i>C</i>}<br>
       <br>
       &nbsp;{x<i> </i><b>:</b><i> A</i><b>; ... ; </b>z<b> :</b> <i>C; P </i>}</TT></TD>
-      <TD WIDTH="50%">
+      <TD WIDTH="60%">
       <TT>
       record[x:t]{<i>A; self. . . .<br>
       &nbsp; </i>record[z:t]<i>{C}...</i>}<br>
@@ -606,10 +605,10 @@ declared,as in the following sequence:</P>
       P}</i></TT></TD>
     </tr>
     <tr>
-      <TD WIDTH="50%">
+      <TD WIDTH="40%">
       <TT>
       &nbsp;{x<i> </i><b>=</b><i> a</i><b>; ... ; </b>z<b> =</b> <i>c</i>}</TT></TD>
-      <TD WIDTH="50%">
+      <TD WIDTH="60%">
       <TT>
       rcrd[x:t]{<i>a; . . . .</i><br>
       &nbsp; rcrd[z:t]{<i>c</i>}...}</TT></TD>
