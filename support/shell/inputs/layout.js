@@ -64,6 +64,8 @@ function ResizeBoxes()
 
     var menuframe    = GetObject(self, 'menuframe');
     var contentframe = GetObject(self, 'contentframe');
+    var systemframe  = GetObject(self, 'systemframe');
+    var editframe    = GetObject(self, 'editframe');
     var messageframe = GetObject(self, 'messageframe');
     var buttonsframe = GetObject(self, 'buttonsframe');
     var ruleframe    = GetObject(self, 'ruleframe');
@@ -72,6 +74,10 @@ function ResizeBoxes()
     menuframe.style.height    = layout.menuheight    + 'px';
     contentframe.style.top    = layout.contenttop    + 'px';
     contentframe.style.height = layout.contentheight + 'px';
+    systemframe.style.top     = layout.contenttop    + 'px';
+    systemframe.style.height  = layout.contentheight + 'px';
+    editframe.style.top       = layout.contenttop    + 'px';
+    editframe.style.height    = layout.contentheight + 'px';
     messageframe.style.top    = layout.messagetop    + 'px';
     messageframe.style.height = layout.messageheight + 'px';
     buttonsframe.style.top    = layout.buttonstop    + 'px';
@@ -147,6 +153,8 @@ var version = new Array();
  */
 function Update(session)
 {
+    version['id'] = session['id'];
+
     if(version['menu'] != session['menu'])
         parent.menuframe.location.reload();
     if(version['content'] != session['content']) {
@@ -163,13 +171,19 @@ function Update(session)
         parent.ruleframe.location.reload();
     if(session['io'] && version['io'] != session['io']) {
         version['io'] = session['io'];
-        parent.window.open('/session/' + session['id'] + '/frame/system/');
+        if(reloading)
+            setTimeout('LoadSystem ()', 2000);
+        else {
+            LoadSystem();
+            ShowSystem();
+        }
     }
     if(session['edit'] && version['edit'] != session['edit']) {
         version['edit'] = session['edit'];
         if(session['editflag']) {
             var filename = '/session/' + session['id'] + '/edit/' + session['file'] + '/info.prl';
-            Edit(session['external'], filename);
+            parent.editframe.location.href = filename;
+            ShowEdit();
         }
     }
 
@@ -185,6 +199,7 @@ function LoadFrame()
    GetWindowSize();
    SetWindowCookie();
    ResizeBoxes();
+   reloading = false;
 }
 
 function LoadMenu(session)
@@ -242,8 +257,7 @@ function Command(cmd)
  */
 function Quit()
 {
-    Command('exit ()');
-    parent.window.close();
+    parent.location.href = '/';
 }
 
 /*
@@ -336,12 +350,52 @@ function ButtonLong()
 }
 
 /************************************************************************
+ * Make different frames visible.
+ */
+
+function ShowContent()
+{
+    var contentframe = GetObject(self, 'contentframe');
+    var systemframe  = GetObject(self, 'systemframe');
+    var editframe    = GetObject(self, 'editframe');
+
+    systemframe.style.visibility = 'hidden';
+    editframe.style.visibility = 'hidden';
+    contentframe.style.visibilily = 'visible';
+}
+
+function ShowSystem()
+{
+    var contentframe = GetObject(self, 'contentframe');
+    var systemframe  = GetObject(self, 'systemframe');
+    var editframe    = GetObject(self, 'editframe');
+
+    editframe.style.visibility = 'hidden';
+    contentframe.style.visibilily = 'hidden';
+    systemframe.style.visibility = 'visible';
+}
+
+function LoadSystem()
+{
+    parent.systemframe.location.href = '/session/' + version['id'] + '/frame/system/';
+}
+
+function ShowEdit()
+{
+    var contentframe = GetObject(self, 'contentframe');
+    var systemframe  = GetObject(self, 'systemframe');
+    var editframe    = GetObject(self, 'editframe');
+
+    systemframe.style.visibility = 'hidden';
+    contentframe.style.visibilily = 'hidden';
+    editframe.style.visibility = 'visible';
+}
+
+/************************************************************************
  * Edit a file.
  */
 function Edit(ext, filename)
 {
-    if(ext)
-        parent.hiddenframe.location.href = filename;
-    else
-        window.open(filename);
+    parent.editframe.location.href = filename;
+    ShowEdit();
 }

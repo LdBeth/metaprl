@@ -1,0 +1,4 @@
+function OnLoad()
+{
+    parent.ShowContent();
+}

@@ -453,7 +453,7 @@ let add_view info view =
                              command_enabled = always_enabled
                            }
                      in
-                        item :: items) (List.rev menu.menu_items) view_table
+                        item :: items) menu.menu_items view_table
             in
                { menu with menu_items = items })
    with
@@ -513,6 +513,7 @@ let menubar_init =
     << menuitem["file", "Restart",    "Command('!restart')"] >>,           always_enabled;
     << menuitem["file", "CVS Update", "Command('!cvs \"update\"')"] >>,    always_enabled;
     << menuitem["file", "Save",       "Command('save ()')"] >>,            always_enabled;
+    << menuitem["file", "Quit",       "Quit()"] >>,                        always_enabled;
     << menuitem["file", "-",          ""] >>,                              always_enabled;
     << menuitem["file", "New Window", "NewWindow()"] >>,                   always_enabled;
     << menuitem["file", "New Session", "NewSession()"] >>,                 always_enabled;
@@ -524,6 +525,10 @@ let menubar_init =
     << menuitem["edit", "Redo", "Command('redo ()')"] >>,                  undo_is_enabled;
     << menuitem["edit", "-", ""] >>,                                       always_enabled;
     << menu["view", "View"] >>,                                            always_enabled;
+    << menuitem["view", "View Content", "ShowContent()"] >>,               always_enabled;
+    << menuitem["view", "View Command", "ShowSystem()"] >>,                always_enabled;
+    << menuitem["view", "View Editor", "ShowEdit()"] >>,                   always_enabled;
+    << menuitem["view", "-", ""] >>,                                       always_enabled;
     << menu["dir", "Directory"] >>,                                        always_enabled;
     << menuitem["dir", "Refresh", "Command('ls \"\"')"] >>,                always_enabled;
     << menu["help", "Help"] >>,                                            always_enabled;

@@ -144,6 +144,7 @@ let cmd_exe, cmd_argv =
  *)
 let create command =
    let fd_in, fd_out = Unix.pipe () in
+   let () = Unix.set_close_on_exec fd_in in
    let pid = Unix.create_process cmd_exe (cmd_argv command) Unix.stdin fd_out fd_out in
    let inx = Unix.in_channel_of_descr fd_in in
       Unix.close fd_out;
@@ -166,7 +167,14 @@ let close io =
             io.io_finished <- true;
             Unix.close fd_in;
             close_in inx;
-            ignore (Unix.waitpid [] pid)
+
+            (*
+             * BUG JYH: Linux *says* that any thread can call waitpid,
+             * but it isn't true.
+             *)
+            try ignore (Unix.waitpid [] pid) with
+               Unix.Unix_error _ ->
+                  ()
          end
 
 (*

@@ -5,20 +5,21 @@
 /*
  * Scroll the history.
  */
+var history_index = 0;
+
 function HistoryNavigate(amount)
 {
-    var history = parent.buttons.document.getElementById('history');
     if(history) {
-        var length = history.options.length;
-        var index = history.selectedIndex + amount;
+        var length = command_history.length;
+        var index = history_index;
+        index += amount;
         while(index < 0)
             index += length;
         while(index >= length)
             index -= length;
-        var id = history.options[index].value;
-        history.selectedIndex = index;
-        var text = parent.buttons.macros[id];
-        eval('parent.' + text);
+        var text = command_history[index];
+        history_index = index;
+        parent.Prompt(text);
     }
 }
 

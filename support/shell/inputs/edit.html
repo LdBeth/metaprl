@@ -5,23 +5,27 @@
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <link rel="shortcut icon" href="/manual/images/metaprl.ico" type="image/x-icon">
         <link rel="icon" href="/manual/images/metaprl.png" type="image/png">
-	<script type="text/javascript" src="/inputs/mojave.js"></script>
 	<script type="text/javascript" src="/inputs/menucancel.js"></script>
 	<script type="text/javascript" src="/inputs/edit.js"></script>
 	<link rel="stylesheet" type="text/css" href="/inputs/style.css">
         %%STYLE%%
+        <script type="text/javascript">
+        <!-- Hide this text from old browsers --
+	%%SESSION%%
+	-->
+	</script>
     </head>
 
     <body id="editbody" onload="OnLoad()">
+    <form id="editform" name="commandform" method="post" action="./info.prl">
+
     <div id="editheading">Editing %%FILE%%
-    <span class="edithelp"><a href="/inputs/edit-help.html">How can I use my own editor to edit this file?</a></span>
-    </div>
-    <div id="editform">
-    <form name="commandform" method="post" action="./info.prl">
-    <textarea name="content" id="editarea" rows="60" cols="100">%%CONTENT%%</textarea>
     <input type="submit" name="submit" value="Submit changes">
     <input type="button" name="cancel" value="Cancel" onclick="Cancel()">
-    </form>
+    <span class="edithelp"><a href="/inputs/edit-help.html">Help</a></span>
     </div>
+
+    <textarea name="content" id="editarea" rows="60" cols="100">%%CONTENT%%</textarea>
+    </form>
     </body>
 </html>

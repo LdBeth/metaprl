@@ -791,6 +791,17 @@ struct
          Printf.bprintf buf "\tsession['id']       = %d;\n" id
 
    (*
+    * Print the history.
+    *)
+   let print_history state session buf =
+      let info = get_session_state state session in
+         Printf.bprintf buf "\tvar command_history = new Array();\n";
+         ignore (List.fold_left (fun i s ->
+                       Printf.bprintf buf "\tcommand_history[%d] = '%s';\n" i s;
+                       succ i) 0 info.browser_history)
+
+
+   (*
     * This is the default printer for each non-content pane.
     *)
    let print_page server state session out width frame =
@@ -837,6 +848,9 @@ struct
       (* Buttons *)
       let table = BrowserTable.add_fun    table buttons_sym        (print_menu_buffer get_buttons) in
       let table = BrowserTable.add_fun    table buttons_macros_sym (print_menu_macros get_buttons) in
+
+      (* History *)
+      let table = BrowserTable.add_fun    table history_sym        (print_history state session) in
 
       (* Styles *)
       let table = BrowserTable.add_fun    table style_sym          (print_buffer get_styles) in
@@ -909,17 +923,18 @@ struct
    (*
     * Ship out a local file.
     *)
-   let print_internal_edit_page server state filename outx =
+   let print_internal_edit_page server state session filename outx =
       let filename = filename_of_proxyedit filename in
       let table = table_of_state state in
       let table = BrowserTable.add_string table title_sym "Edit File" in
       let table = BrowserTable.add_string table file_sym filename in
       let table = BrowserTable.add_string table basename_sym (Filename.basename filename) in
-      let table = BrowserTable.add_file table content_sym filename in
+      let table = BrowserTable.add_file   table content_sym filename in
       let table = BrowserTable.add_string table response_sym state.state_response in
+      let table = BrowserTable.add_fun    table session_sym (print_session server session) in
          print_translated_file_to_http outx table "edit.html"
 
-   let print_external_edit_page server state filename outx =
+   let print_external_edit_page server state session filename outx =
       let { http_host     = host;
             http_port     = port
           } = http_info server
@@ -950,7 +965,7 @@ struct
       in
          session.session_edit_flag <- false;
          unsynchronize_session session (fun () ->
-               edit server state filename outx)
+               edit server state session filename outx)
 
    (*
     * Print the edit done page.

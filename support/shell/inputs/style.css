@@ -341,12 +341,24 @@ DIV.menuitemhover {
     border: 0px
 }
 
+#editframe {
+    position: absolute;
+    left: 0px;
+    top: 50px;
+    width: 100%;
+    height: 300px;
+    margin: 0px;
+    border: 0px;
+    visibility: hidden
+}
+
 #editbody {
-    background: #ddddee;
+    background: #f8f8f8;
 }
 
 #editheading {
     width: 100%;
+    height: 40px;
     border: 0px;
     margin: 0px;
     color: #000044;
@@ -355,8 +367,11 @@ DIV.menuitemhover {
 
 #editform {
     width: 100%;
+    height: 300px;
     border: 0px;
-    margin: 0px
+    margin: 0px;
+    padding: 0px;
+    overflow: hidden
 }
 
 #editarea {
@@ -364,7 +379,7 @@ DIV.menuitemhover {
     width: 100%;
     height: 300px;
     margin: 0px;
-    margin-bottom: 5px;
+    padding: 0px;
     border: 0px
 }
 
@@ -375,15 +390,22 @@ DIV.menuitemhover {
 /*
  * System output.
  */
+#systembody {
+}
+
 #systemheader {
+    font-size: 20pt
+}
+
+#systemframe {
     position: absolute;
     left: 0px;
-    top: 0px;
+    top: 50px;
     width: 100%;
-    height: 50px;
+    height: 100%;
     margin: 0px;
     border: 0px;
-    font-size: 20pt
+    visibility: hidden
 }
 
 #outputframe {

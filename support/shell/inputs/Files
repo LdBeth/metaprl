@@ -21,8 +21,9 @@ INPUTS =\
 	mojave.js\
 	frameset.js\
 	edit.html\
-	edit-done.html\
 	edit.js\
+	edit-done.html\
+	edit-done.js\
 	edit-help.html\
 	menubutton.gif\
 	noscroll.css\
@@ -37,5 +38,6 @@ INPUTS =\
 	system.html\
 	system.js\
 	output.html\
+	output.js\
 	reload.html\
 	welcome.html

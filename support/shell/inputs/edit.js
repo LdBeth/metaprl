@@ -3,30 +3,44 @@
  */
 
 /*
+ * Height of the frame.
+ */
+function FrameHeight()
+{
+    var height = 100;
+
+    if(self.innerHeight)
+        height = self.innerHeight;
+    else if(document.documentElement && document.documentElement.clientHeight)
+        height = document.documentElement.clientHeight;
+    else if(document.body)
+        height = document.body.clientHeight;
+    return height;
+}
+
+/*
  * Cancel this edit operation.
  */
 function Cancel()
 {
-    window.close();
+    parent.ShowContent();
+    location.href = '/inputs/empty.html';
 }
 
 /*
  * Resize the window.
  */
-function Resize()
-{
-    GetWindowSize();
-    var editarea = GetObject(this, "editarea");
-    if(editarea) {
-        var height = window_height - 110;
-        if(height < 300)
-            height = 300;
-        editarea.style.height = height + "px";
-    }
-}
-
 function OnLoad()
 {
-    Resize();
-    window.onresize = Resize;
+    var window_height = FrameHeight();
+    var editarea = parent.GetObject(this, 'editarea');
+    if(editarea) {
+        var height = window_height - 40;
+        if(height < 50)
+            height = 50;
+        editarea.style.height = height + 'px';
+    }
+    var editform = parent.GetObject(this, 'editform');
+    if(editform)
+        editform.style.height = window_height + 'px';
 }

@@ -5,22 +5,17 @@
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <link rel="shortcut icon" href="/manual/images/metaprl.ico" type="image/x-icon">
         <link rel="icon" href="/manual/images/metaprl.png" type="image/png">
+	<script type="text/javascript" src="/inputs/output.js"></script>
 	<link rel="stylesheet" type="text/css" href="/inputs/style.css">
         %%STYLE%%
         <script type="text/javascript">
-        <!-- // Hide this text from old browsers --
-	function Bottom()
-	{
-            window.scrollTo(0, 1000000);
-	    setTimeout('Bottom()', 1000);
-	}
-	setTimeout('Bottom()', 1000);
+        <!-- Hide this text from old browsers --
+	OnStart();
 	-->
 	</script>
-
     </head>
 
-    <body id="outputbody">
+    <body id="outputbody" onload="OnLoad()">
     <!-- Don't delete these blank lines; they are there to force the browser to update -->
     <!-- Don't delete these blank lines; they are there to force the browser to update -->
     <!-- Don't delete these blank lines; they are there to force the browser to update -->
@@ -36,5 +31,7 @@
     <!-- Don't delete these blank lines; they are there to force the browser to update -->
     <!-- Don't delete these blank lines; they are there to force the browser to update -->
     %%CONTENT%%
+    <p>
+    <b>Done</b>
     </body>
 </html>

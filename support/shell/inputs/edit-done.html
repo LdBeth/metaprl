@@ -3,18 +3,15 @@
     <head>
         <title>%%TITLE%%</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-   <link rel="shortcut icon" href="/manual/images/metaprl.ico" type="image/x-icon">
-   <link rel="icon" href="/manual/images/metaprl.png" type="image/png">
+	<link rel="shortcut icon" href="/manual/images/metaprl.ico" type="image/x-icon">
+	<link rel="icon" href="/manual/images/metaprl.png" type="image/png">
 	<script type="text/javascript" src="/inputs/menucancel.js"></script>
-	<script type="text/javascript" src="/inputs/edit.js"></script>
+	<script type="text/javascript" src="/inputs/edit-done.js"></script>
 	<link rel="stylesheet" type="text/css" href="/inputs/style.css">
         %%STYLE%%
     </head>
 
-    <body id="editbody" onload="Cancel()">
-    <h2>Edit: <span class="editfile">%%FILE%%</span></h2>
-    <p>
-    Editing is done, click the following button to quit.
-    <input type="button" name="cancel" value="Cancel" onclick="Cancel()">
+    <body id="editbody" onload="OnLoad()">
+    Edit accepted.
     </body>
 </html>
