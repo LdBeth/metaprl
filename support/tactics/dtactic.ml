@@ -344,17 +344,15 @@ let process_intro_resource_annotation name context_args term_args statement (pre
             let rec auto_aux = function
                AutoMustComplete :: _ (* Will record into the table, no need to double-check *)
              | [] ->
-                  (fun p -> ())
+                  funT (fun p -> Tactic_type.Tactic.tactic_of_rule pre_tactic [||] (term_args p))
              | CondMustComplete f :: _ ->
-                  (fun p -> if f p && in_auto p then raise auto_exn)
+                  funT (fun p ->
+                     if f p && (in_auto p) then raise auto_exn
+                     else Tactic_type.Tactic.tactic_of_rule pre_tactic [||] (term_args p))
              | _ :: tl ->
                   auto_aux tl
             in
-            let check_auto = auto_aux options
-            in
-               funT (fun p ->
-                  check_auto p;
-                     Tactic_type.Tactic.tactic_of_rule pre_tactic [||] (term_args p))
+               auto_aux options
        | _ ->
             raise (Invalid_argument (sprintf "Dtactic.intro: %s: not an introduction rule" name))
    in
