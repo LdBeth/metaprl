@@ -328,14 +328,11 @@ struct
    (*
     * Check that all are strings.
     *)
-   let check_bvars =
-      let check = function
-         ST_Term (_, loc) ->
-            Stdpp.raise_with_loc loc (ParseError "Not a binding var")
-       | ST_String (s, _) ->
-            s
-      in
-         List.map check
+   let make_bvar = function
+      ST_Term (_, loc) ->
+         Stdpp.raise_with_loc loc (ParseError "Not a binding var")
+    | ST_String (s, _) ->
+         Lm_symbol.add s
 
    let get_var_contexts loc v terms =
       match mk_var_contexts loc v (List.length terms) with Some conts -> conts | None -> [v]
@@ -1111,7 +1108,7 @@ struct
          [[ h = bhead ->
              [], tupelize loc h
            | h = bhead; sl_period; t = term ->
-             List.map Lm_symbol.add (check_bvars h), t
+             List.map make_bvar h, t
            | sl_period; t = term ->
              [], t
           ]];
@@ -1151,19 +1148,14 @@ struct
          [[ "<"; name = var; conts = OPT contslist; args=optbrtermlist; ">" ->
              let conts = match conts with Some conts -> conts | None -> get_var_contexts loc name args in
              Context(name, conts, args)
-          | v = word_or_string; rest = hyp_suffix ->
-              rest v
+          | v = LIDENT; ":"; t = aterm ->
+             Hypothesis(Lm_symbol.add v, get_aterm loc t)
+          | v = UIDENT; ":"; t = aterm ->
+             Hypothesis(Lm_symbol.add v, get_aterm loc t)
+          | v = STRING; ":"; t = aterm ->
+             Hypothesis(Lm_symbol.add v, get_aterm loc t)
           | t = aterm ->
-              Hypothesis (empty_var, get_aterm loc t)
-          ]];
-
-      hyp_suffix:
-         [[ sl_colon; t = aterm ->
-               fun v -> Hypothesis (Lm_symbol.add v, get_aterm loc t)
-          | (params, bterms) = termsuffix ->
-               fun op -> Hypothesis (empty_var, mk_term (mk_op (mk_bopname loc [op] params bterms) params) bterms)
-          | ->
-               fun op -> Hypothesis (empty_var, mk_term (mk_op (mk_opname loc [op] [] []) []) [])
+             Hypothesis(empty_var, get_aterm loc t)
           ]];
 
       contslist: [[ sl_contexts_left; vl = LIST0 var SEP ";" ; sl_contexts_right -> vl ]];
