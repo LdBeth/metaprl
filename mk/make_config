@@ -102,7 +102,7 @@ CCC = $(CCC)
 # Whether to build MetaPRL native code with profiling enabled
 # (see man gprof).
 #
-# When enabled, overrides NATIVE_ENABLED and BYTECODE_ENABLED.
+# When enabled, overrides NATIVE_ENABLED and BYTE_ENABLED.
 # When set to "compact", passes the "-compact" option to ocamlopt
 # which makes all memory allocations more obvious in profiling graphs.
 #
