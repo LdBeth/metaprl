@@ -1083,7 +1083,7 @@ struct
    and status_all info =
       let f item db =
          eprintf "Expanding `%s':%t" (let name, _, _, _ = item.edit_get_contents () in name) eflush;
-         begin try item.edit_expand db with _ | Invalid_argument _ -> () end;
+         begin try item.edit_expand db with Invalid_argument _ | _ -> () end;
          status item
       in
          apply_all f info true

@@ -745,6 +745,12 @@ struct
             let e1, e2, e3 = three_subterms t in
                <:expr< if $dest_expr e1$ then $dest_expr e2$ else $dest_expr e3$ >>
          in add_expr "ifthenelse" dest_if_expr
+      and expr_laz_op =
+         let dest_laz_expr t =
+            let loc = dest_loc "dest_laz_expr" t in
+            let e = one_subterm "dest_laz_expr" t in
+               <:expr< lazy $dest_expr e$ >>
+         in add_expr "lazy" dest_laz_expr
       and expr_new_op =
          let dest_new_expr t =
             let loc = dest_loc "dest_new_expr" t in
@@ -858,6 +864,8 @@ struct
                                                  mk_expr vars comment e3]
              | (<:expr< $int:s$ >>) ->
                   mk_loc_int expr_int_op loc s
+             | (<:expr< lazy $e$ >>) ->
+                  mk_simple_term expr_laz_op loc [mk_expr vars comment e]
              | (<:expr< let $rec:b$ $list:pel$ in $e$ >>) ->
                   if b then
                      mk_fix vars comment loc pel e
@@ -871,10 +879,7 @@ struct
                                                            mk_expr vars comment e]
              | (<:expr< match $e$ with [ $list:pwel$ ] >>) ->
                   mk_match vars comment loc pwel e
-      (*
-             | (<:expr< new $e$ >>) ->
-      *)
-             | ExNew (_, sl) ->
+             | (<:expr< new $list: sl$ >>) ->
                   mk_simple_term expr_new_op loc [mk_xlist_term (List.map (mk_string expr_new_op) sl)]
              | (<:expr< {< $list:sel$ >} >>) ->
                   mk_simple_term expr_stream_op loc (List.map (mk_se vars comment) sel)
@@ -1238,7 +1243,7 @@ struct
          (*
                <:ctyp< # $dest_type t$ >>
          *)
-               TyCls (loc, List.map dest_string (dest_xlist t))
+               TyCls (loc, List.map dest_string (dest_xlist (one_subterm "dest_class_id_type" t)))
          in add_type "type_class_id" dest_class_id_type
       and type_param_op =
          let dest_param_type t =
@@ -1294,6 +1299,12 @@ struct
             let tl = dest_xlist (one_subterm "dest_prod_type" t) in
                <:ctyp< ( $list: List.map dest_type tl$ ) >>
          in add_type "type_prod" dest_prod_type
+      and type_pol_op =
+         let dest_pol_type t =
+            let loc = dest_loc "type_pol_op" t in
+            let strs, ct = two_subterms t in
+               TyPol(loc, List.map dest_string (dest_xlist strs), dest_type ct)
+         in add_type "type_pol" dest_pol_type
       and type_vrn_op =
          let dest_sbtl t =
             let s, b, tl = three_subterms t in
@@ -1370,6 +1381,8 @@ struct
                   mk_simple_named_term type_olb_op loc s [mk_type comment t]
              | MLast.TyLab (_, s, t) ->
                   mk_simple_named_term type_lab_op loc s [mk_type comment t]
+             | MLast.TyPol (_, strs, t) ->
+                  mk_simple_term type_pol_op loc [mk_xlist_term (List.map (mk_string type_class_id_op) strs); mk_type comment t]
          in
             comment TypeTerm loc term
 
@@ -1662,6 +1675,11 @@ struct
             let v, mt1, mt2 = dest_dep0_dep1_any_term t in
                <:module_type< functor ($v$ : $dest_mt mt1$) -> $dest_mt mt2$ >>
          in add_mt "mt_functor" dest_functor_mt
+      and mt_quot_op =
+         let dest_quot_mt t =
+            let loc = dest_loc "dest_quot_mt" t in
+               <:module_type< ' $dest_var t$ >>
+         in add_mt "mt_quot" dest_quot_mt
       and mt_sig_op =
          let dest_sig_mt t =
             let loc = dest_loc "dest_sig_mt" t in
@@ -1688,6 +1706,8 @@ struct
                      mk_dep0_dep1_any_term op_loc s (mk_module_type comment mt1) (mk_module_type comment mt2)
              | (<:module_type< $lid:i$ >>) ->
                   mk_var mt_lid_op [] loc i
+             | (<:module_type< ' $i$ >>) ->
+                  mk_var mt_quot_op [] loc i
              | (<:module_type< sig $list:sil$ end >>) ->
                   mk_simple_term mt_sig_op loc [mk_xlist_term (List.map (mk_sig_item comment) sil)]
              | (<:module_type< $uid:i$ >>) ->
@@ -1698,7 +1718,7 @@ struct
          in
             comment ModuleTypeTerm loc term
 
-   and mk_wc comment =
+   and mk_wc =
       let wc_type_op =
          let dest_type_wc t =
             let loc = dest_loc "dest_type_wc" t in
@@ -1711,9 +1731,9 @@ struct
          let dest_module_wc t =
             let loc = dest_loc "dest_module_wc" t in
             let sl1, mt = two_subterms t in
-               WcMod (loc, List.map dest_string (dest_xlist sl1), dest_mt mt)
+               WcMod (loc, List.map dest_string (dest_xlist sl1), dest_me mt)
          in add_wc "wc_module" dest_module_wc
-      in function
+      in fun comment -> function
          WcTyp (loc, sl1, sl2, t) ->
             let loc = num_of_loc loc in
             let sl1' = mk_xlist_term (List.map mk_simple_string sl1) in
@@ -1722,7 +1742,7 @@ struct
        | WcMod (loc, sl1, mt) ->
             let loc = num_of_loc loc in
             let sl1' = mk_xlist_term (List.map mk_simple_string sl1) in
-               comment WithClauseTerm loc (mk_simple_term wc_module_op loc [sl1'; mk_module_type comment mt])
+               comment WithClauseTerm loc (mk_simple_term wc_module_op loc [sl1'; mk_module_expr [] comment mt])
 
    (*
     * Module expressions.
@@ -2007,8 +2027,8 @@ struct
       and cf_mth_op =
          let dest_mth_cf t =
             let loc = dest_loc "dest_mth_cf" t in
-            let s, b, e = three_subterms t in
-               CrMth (loc, dest_string s, dest_bool b, dest_expr e)
+            let s, b, e, t = four_subterms t in
+               CrMth (loc, dest_string s, dest_bool b, dest_expr e, dest_opt dest_type t)
          in add_cf "class_mth" dest_mth_cf
       and cf_val_op =
          let dest_val_cf t =
@@ -2041,12 +2061,13 @@ struct
                let loc = num_of_loc loc in
                   loc, mk_simple_term cf_ini_op loc (**)
                           [mk_expr vars comment e]
-          | CrMth (loc, s, b, e) ->
+          | CrMth (loc, s, b, e, t) ->
                let loc = num_of_loc loc in
                   loc, mk_simple_term cf_mth_op loc (**)
                           [mk_simple_string s;
                            mk_bool b;
-                           mk_expr vars comment e]
+                           mk_expr vars comment e;
+                           mk_opt (mk_type comment) t]
           | CrVal (loc, s, b, e) ->
                let loc = num_of_loc loc in
                   loc, mk_simple_term cf_val_op loc (**)

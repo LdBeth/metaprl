@@ -78,12 +78,10 @@ let rec fold_expr iter x expr =
        | (<:expr< $e1$ .[ $e2$ ] >>) ->
             fold_expr iter (fold_expr iter x e1) e2
        | (<:expr< $anti: e$ >>)
-(* 3.02
-       | MLast.ExXnd (_, _, e)
- *)
        | (<:expr< ~ $_$ : $e$ >>)
        | (<:expr< ? $_$ : $e$ >>)
-       | (<:expr< $e$ # $_$ >>) ->
+       | (<:expr< $e$ # $_$ >>)
+       | (<:expr< lazy $e$ >>) ->
             fold_expr iter x e
        | (<:expr< [| $list:el$ |] >>)
        | (<:expr< do { $list:el$ } >>)
@@ -93,7 +91,7 @@ let rec fold_expr iter x expr =
        | (<:expr< $flo:_$ >>)
        | (<:expr< $int:_$ >>)
        | (<:expr< $lid:_$ >>)
-       | MLast.ExNew (_, _)
+       | (<:expr< new $list:_$ >>)
        | (<:expr< $str:_$ >>)
        | (<:expr< $uid:_$ >>)
        | (<:expr< ` $_$ >>) ->
@@ -114,9 +112,6 @@ let rec fold_expr iter x expr =
        | (<:expr< match $e$ with [ $list:pwel$ ] >>)
        | (<:expr< try $e$ with [ $list:pwel$ ] >>) ->
             List.fold_left (fold_pwe iter) (fold_expr iter x e) pwel
-(*
-       | (<:expr< new $e$ >>) ->
-*)
        | (<:expr< {< $list:sel$ >} >>) ->
             List.fold_left (fold_se iter) x sel
 (*
@@ -183,10 +178,8 @@ and fold_type iter x t =
        | (<:ctyp< $uid:_$ >>) ->
             x
        | (<:ctyp< ~ $_$ : $t$ >>)
-       | (<:ctyp< ? $_$ : $t$ >>) ->
-(* 3.02
-       | MLast.TyXnd (_, _, t) ->
- *)
+       | (<:ctyp< ? $_$ : $t$ >>)
+       | MLast.TyPol (_, _, t ) ->
             fold_type iter x t
        | (<:ctyp< < $list:stl$ $_$ > >>) ->
             List.fold_left (fold_st iter) x stl
@@ -263,6 +256,7 @@ and fold_module_type iter x mt =
        | (<:module_type< functor ( $_$ : $mt1$ ) -> $mt2$ >>) ->
             fold_module_type iter (fold_module_type iter x mt1) mt2
        | (<:module_type< $lid:_$ >>)
+       | (<:module_type< ' $_$ >>)
        | (<:module_type< $uid:_$ >>) ->
             x
        | (<:module_type< sig $list:sil$ end >>) ->
@@ -276,7 +270,7 @@ and fold_with_constr iter x wc =
          MLast.WcTyp (loc, sl1, sl2, t) ->
            fold_type iter x t
        | MLast.WcMod (loc, sl1, mt) ->
-           fold_module_type iter x mt
+           fold_module_expr iter x mt
 
 and fold_module_expr iter x me =
    let x = iter.fold_module_expr x me in
@@ -374,9 +368,10 @@ and fold_class_str_item iter x cf =
        | CrInh (_, ce, _) ->
             fold_class_expr iter x ce
        | CrIni (_, e)
-       | CrMth (_, _, _, e)
        | CrVal (_, _, _, e) ->
             fold_expr iter x e
+       | CrMth (_, _, _, e, co) ->
+            fold_expr iter (fold_type_opt iter x co) e
 
 (*
  * Combined forms.

@@ -625,7 +625,7 @@ let library_environment_join c tags =
   address_of_ienvironment_address_term
     (connection_eval_args c
 	(itext_term
-	  "\l. (ienvironment_address_term (library_open 
+	  "\\l. (ienvironment_address_term (library_open 
 	   (tags_of_ienvironment_address_term (hd l))))")
 	[ienvironment_address_term tags]
 	)
@@ -641,7 +641,7 @@ let library_environment_close c addr =
   string_of_istring_term
     (connection_eval_args c
 	(itext_term
-	 "\args. istring_term (hd (close_environment (tags_of_ienvironment_address_term (hd args)) false ))")
+	 "\\args. istring_term (hd (close_environment (tags_of_ienvironment_address_term (hd args)) false ))")
 	[ienvironment_address_term addr])
 
 

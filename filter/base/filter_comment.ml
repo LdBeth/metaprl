@@ -232,7 +232,7 @@ let fold_class_str_item locs = function
  | CrDcl (loc, _)
  | CrInh (loc, _, _)
  | CrIni (loc, _)
- | CrMth (loc, _, _, _)
+ | CrMth (loc, _, _, _, _)
  | CrVal (loc, _, _, _)
  | CrVir (loc, _, _, _) ->
       loc :: locs

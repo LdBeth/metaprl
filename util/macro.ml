@@ -241,6 +241,7 @@ module Codewalk = struct
        | TyMan (l, x, y)    -> TyMan (!loc l, ctyp x, ctyp y)
        | TyObj (l, x, y)    -> TyObj (!loc l, map string_ctyp x, y)
        | TyOlb (l, s, x)    -> TyOlb (!loc l, s, ctyp x)
+       | TyPol (l, sl, t)   -> TyPol (!loc l, sl, ctyp t)
        | TyQuo (l, x)       -> TyQuo (!loc l, x)
        | TyRec (l, x)       -> TyRec (!loc l, map (loc_string_bool_ctyp loc) x)
        | TySum (l, x)       -> TySum (!loc l, map (loc_string_ctyplist loc) x)
@@ -309,6 +310,7 @@ module Codewalk = struct
        | ExIfe (l, x, y, z) -> ExIfe (!loc l, expr x, expr y, expr z)
        | ExInt (l, x)       -> ExInt (!loc l, x)
        | ExLab (l, s, x)    -> ExLab (!loc l, s, expr x)
+       | ExLaz (l, e)       -> ExLaz (!loc l, expr e)
        | ExLet (l, x, y, z) -> ExLet (!loc l, x, map patt_expr y, expr z)
        | ExLid (l, x)       -> ExLid (!loc l, x)
        | ExLmd (l, x, y, z) -> ExLmd (!loc l, x, module_expr y, expr z)
@@ -336,6 +338,7 @@ module Codewalk = struct
        | MtApp (l, x, y)    -> MtApp (!loc l, module_type x, module_type y)
        | MtFun (l, x, y, z) -> MtFun (!loc l, x, module_type y, module_type z)
        | MtLid (l, x)       -> MtLid (!loc l, x)
+       | MtQuo (l, s)       -> MtQuo (!loc l, s)
        | MtSig (l, x)       -> MtSig (!loc l, map sig_item x)
        | MtUid (l, x)       -> MtUid (!loc l, x)
        | MtWit (l, x, y)    -> MtWit (!loc l, module_type x, map with_constr y)
@@ -358,7 +361,7 @@ module Codewalk = struct
    and with_constr x =
       match x with
        | WcTyp (l, x, y, z) -> WcTyp (!loc l, x, y, ctyp z)
-       | WcMod (l, x, y)    -> WcMod (!loc l, x, module_type y)
+       | WcMod (l, x, y)    -> WcMod (!loc l, x, module_expr y)
 
    and module_expr x =
       let newx = match !mexp_fun with None -> x | Some f -> f x in
@@ -417,7 +420,7 @@ module Codewalk = struct
        | CrDcl (l, x)       -> CrDcl (!loc l, map class_str_item x)
        | CrInh (l, x, y)    -> CrInh (!loc l, class_expr x, y)
        | CrIni (l, x)       -> CrIni (!loc l, expr x)
-       | CrMth (l, x, y, z) -> CrMth (!loc l, x, y, expr z)
+       | CrMth (l, x, y, z, co) -> CrMth (!loc l, x, y, expr z, ctypopt co)
        | CrVal (l, x, y, z) -> CrVal (!loc l, x, y, expr z)
        | CrVir (l, x, y, z) -> CrVir (!loc l, x, y, ctyp z)
 

@@ -94,6 +94,8 @@ let rec hash_expr index = function
       hash_string (hash index 0x1458c565) s
  | (<:expr< ~ $i$ : $e$ >>) ->
       hash_string (hash_expr (hash index 0x18e9bcfa) e) i
+ | (<:expr< lazy $e$ >>) ->
+     hash_expr (hash index 0x60fd8357) e
  | (<:expr< let $rec:b$ $list:pel$ in $e$ >>) ->
       List.fold_left hash_pe (hash_bool (hash_expr (hash index 0x328a80d8) e) b) pel
  | (<:expr< $lid:s$ >>) ->
@@ -104,10 +106,7 @@ let rec hash_expr index = function
       List.fold_left hash_pwe (hash_expr (hash index 0x565460ab) e) pwel
  | (<:expr< ? $i$ : $e$ >>) ->
       hash_string (hash_expr (hash index 0xe5a52b6) e) i
-(*
- | (<:expr< new $e$ >>) ->
-*)
- | MLast.ExNew (_, sl) ->
+ | (<:expr< new $list:sl$ >>) ->
       List.fold_left hash_string (hash index 0x24e41e2d) sl
  | (<:expr< {< $list:sel$ >} >>) ->
       List.fold_left hash_se (hash index 0x5e034524) sel
@@ -230,12 +229,10 @@ and hash_type index = function
       List.fold_left hash_type (hash index 0x5f9e28c7) tl
  | (<:ctyp< $uid:s$ >>) ->
       hash_string (hash index 0x48872c13) s
+ | MLast.TyPol (loc, s, t) ->
+      hash_string (hash_type (hash index 0x1677a389) t) s
  | MLast.TyVrn (_, sbtll, bsloo) ->
       List.fold_left hash_sbtl (hash_string (hash index 0x79ffedd7) bsloo) sbtll
-(* 3.02
- | MLast.TyXnd (loc, s, t) ->
-      hash_string (hash_type (hash index 0x1677a389) t) s
- *)
 
 and hash_sig_item index = function
    (<:sig_item< class $list:ctl$ >>) ->
@@ -286,9 +283,9 @@ and hash_str_item index = function
       List.fold_left hash_tdl (hash index 0x0c9046df) tdl
  | (<:str_item< value $rec:b$ $list:pel$ >>) ->
       List.fold_left hash_pe (if b then 0x2715b1cb else 0x383ff901) pel
- | MLast.StDir (loc, s, eo) ->
+ | MLast.StDir (_, s, eo) ->
       hash_string (hash_expr_opt (hash index 0x371be624) eo) s
- | MLast.StInc (loc, me) ->
+ | MLast.StInc (_, me) ->
       hash_module_expr (hash index 0x17be552b) me
  | MLast.StExc (_, s, tl, sl) ->
       hash_string (List.fold_left hash_type (List.fold_left hash_string (hash index 0x1378b2ef) sl) tl) s
@@ -302,6 +299,8 @@ and hash_module_type index = function
       hash_string (hash_module_type (hash_module_type (hash index 0x6989bebf) mt2) mt1) s
  | (<:module_type< $lid:i$ >>) ->
       hash_string (hash index 0x54c81b5b) i
+ | (<:module_type< ' $i$ >>) ->
+      hash_string (hash index 0xb023821b) i
  | (<:module_type< sig $list:sil$ end >>) ->
       List.fold_left hash_sig_item (hash index 0x1a246031) sil
  | (<:module_type< $uid:i$ >>) ->
@@ -313,7 +312,7 @@ and hash_wc index = function
    WcTyp (_, sl1, sl2, t) ->
       List.fold_left hash_string (List.fold_left hash_string (hash_type (hash index 0x695de1fc) t) sl2) sl1
  | WcMod (_, sl1, mt) ->
-      List.fold_left hash_string (hash_module_type (hash index 0x2dea13e4) mt) sl1
+      List.fold_left hash_string (hash_module_expr (hash index 0x2dea13e4) mt) sl1
 
 and hash_module_expr index = function
    (<:module_expr< $me1$ . $me2$ >>) ->
@@ -386,8 +385,8 @@ and hash_class_str_item index = function
       hash_class_expr (hash_string_opt (hash index 0x113fee9d) so) ce
  | CrIni (_, e) ->
       hash_expr (hash index 0x73413214) e
- | CrMth (_, s, b, e) ->
-      hash_string (hash_expr (hash_bool (hash index 0x4ab006da) b) e) s
+ | CrMth (_, s, b, e, t) ->
+      hash_type_opt (hash_string (hash_expr (hash_bool (hash index 0x4ab006da) b) e) s) t
  | CrVal (_, s, b, e) ->
       hash_string (hash_bool (hash_expr (hash index 0x6d82d28f) e) b) s
  | CrVir (_, s, b, t) ->

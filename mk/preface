@@ -16,8 +16,8 @@ MP_VERSION=0.8.1
 # Versions of Ocaml/Camlp4 that are compatible with MetaPRL
 # CAML_VERSIONS shoud be a space-separated list of versions
 #
-CAML_VERSIONS=3.04
-CAMLP4_VERSIONS=3.04_for_MetaPRL-0.7.1 3.04
+CAML_VERSIONS=3.06
+CAMLP4_VERSIONS=3.06
 
 # All the names for "yes"
 YESFLAGS=1 true True t T TRUE Y y yes Yes YES

@@ -100,7 +100,6 @@ else
 endif
 
 LMFILES_null =\
-	$(LMFILES)\
 	thread_refiner_null
 
 MFILES = $(LMFILES) $(LMFILES_ens) $(LMFILES_null) thread_refiner
@@ -184,13 +183,17 @@ $(ROPT_NULL_LIB): $(OPT_NULL_LIB)
 $(ROPT_NULL_LIBA): $(OPT_NULL_LIBA)
 	$(LN) $(ROOT)/$(DIR)/$(OPT_NULL_LIBA) $@
 
-$(NULL_LIB): $(CMOFILES_null) thread_refiner.cmi thread_refiner_null_mod.ml
+#
+# XXX This appears to be a make bug. LCMOFILES includes thread_refiner_sig.cmo, but for some
+# reason it needs to be listed explicitly!
+#
+$(NULL_LIB): $(LCMOFILES) $(CMOFILES_null) thread_refiner.cmi thread_refiner_null_mod.ml thread_refiner_sig.cmo
 	$(RM) thread_refiner.ml
 	$(LN) thread_refiner_null_mod.ml thread_refiner.ml
 	$(OCAMLC) $(OCAMLCFLAGS) -c thread_refiner.ml
 	$(OCAMLC) $(OCAMLCFLAGS) -a -o $@ $(LCMOFILES) $(CMOFILES_null) thread_refiner.cmo
 
-$(OPT_NULL_LIB): $(CMXFILES_null) thread_refiner.cmi thread_refiner_null_mod.ml
+$(OPT_NULL_LIB): $(CMXFILES_null) $(LCMXFILES) thread_refiner.cmi thread_refiner_null_mod.ml
 	$(RM) thread_refiner.ml
 	$(LN) thread_refiner_null_mod.ml thread_refiner.ml
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -c thread_refiner.ml

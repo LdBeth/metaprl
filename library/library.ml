@@ -418,7 +418,7 @@ let make_ap remote_termto toterm =
     wrap_parens (iml_cons_term unmarshall_ap_itext (fst m)), (toterm v) :: snd m)
 
 
-let abstract_prefix_itext = (itext_term "\l. ")
+let abstract_prefix_itext = (itext_term "\\l. ")
 let abstract_suffix_itext = (itext_term " l")
 
 let with_abstract f g =
@@ -540,13 +540,13 @@ let get_property t oid s =
     (token_ap (oid_ap get_property_ap oid) s)
 
 
-let put_properties_ap = null_ap (itext_term "\oid iprops. set_properties oid (term_to_property_list iprops) ")
+let put_properties_ap = null_ap (itext_term "\\oid iprops. set_properties oid (term_to_property_list iprops) ")
 let put_properties t oid props =
   eval t
     (term_ap (oid_ap put_properties_ap oid)
        (properties_to_term props))
 
-let get_properties_ap = null_ap (itext_term "\oid . property_list_to_term (get_properties oid) ")
+let get_properties_ap = null_ap (itext_term "\\oid . property_list_to_term (get_properties oid) ")
 let get_properties t oid =
   term_to_properties
     (eval_to_term t
