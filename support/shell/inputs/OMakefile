@@ -9,19 +9,21 @@ include Files
 if $(SSL_ENABLED)
     if $(equal $(OSTYPE), Win32)
         UMASK =
+        SILENT =
         export
     else
         UMASK = umask 077 &&
+        SILENT = > /dev/null 2>&1
         export
 
     server.pem: metaprl-ssl.config
-        $(UMASK) openssl req -x509 -newkey rsa:1024 -keyout $@ -out $@ -days 360 -config $<
+        $(UMASK) openssl req -x509 -newkey rsa:1024 -keyout $@ -out $@ -days 360 -config $< $(SILENT)
 
     client.pem: metaprl-ssl.config
-        $(UMASK) openssl req -x509 -newkey rsa:1024 -keyout $@ -out $@ -days 360 -config $<
+        $(UMASK) openssl req -x509 -newkey rsa:1024 -keyout $@ -out $@ -days 360 -config $< $(SILENT)
 
     dh.pem:
-        $(UMASK) openssl dhparam -2 -out $@
+        $(UMASK) openssl dhparam -2 -out $@ $(SILENT)
 
     INPUTS += server.pem client.pem dh.pem
 
