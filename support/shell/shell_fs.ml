@@ -51,18 +51,49 @@ let eflush out =
  ************************************************************************)
 
 (*
- * This is the actual editable object.
+ * Info for a directory.
  *)
-type entry =
-   EntryFile of string * string
- | EntryUnreadable
-
-type dir =
-   { mutable dir_root    : string;
-     mutable dir_subdir  : string;
-     mutable dir_entries : entry list;
-     mutable dir_ignore  : Str.regexp option
+type dir_info =
+   { dir_entries : (string * string) list;
+     dir_ignore  : Str.regexp option
    }
+
+(*
+ * The element can be a directory or a file.
+ *)
+type info_data =
+   File of string list
+ | Directory of dir_info
+
+(*
+ * Info for a specific file.
+ *)
+type info =
+   { mutable info_root    : string;
+     mutable info_subdir  : string;
+     mutable info_data    : info_data
+   }
+
+(************************************************************************
+ * Read a file into memory.
+ *)
+let lines_of_file filename =
+   let inx = open_in filename in
+   let rec collect lines =
+      let line =
+         try Some (input_line inx) with
+            End_of_file ->
+               None
+      in
+         match line with
+            Some line ->
+               collect (line :: lines)
+          | None ->
+               List.rev lines
+   in
+   let lines = collect [] in
+      close_in inx;
+      lines
 
 (************************************************************************
  * Listing.
@@ -112,7 +143,7 @@ let entries_of_dir dirname =
                   Unix.Unix_error _ ->
                      "!"
             in
-               EntryFile (name, modifier)) names
+               name, modifier) names
 
 (*
  * Convert a shell regular expression to normal regular expression.
@@ -205,31 +236,52 @@ let load_cvsignore dirname =
       Sys_error _ ->
          None
 
-let dirname_of_subdir dir subdir =
-   Filename.concat dir.dir_root subdir
+let dirname_of_subdir info subdir =
+   Filename.concat info.info_root subdir
 
-let load_dir_entries dir subdir =
-   let dirname = dirname_of_subdir dir subdir in
-      dir.dir_entries <- entries_of_dir dirname;
-      dir.dir_ignore <- load_cvsignore dirname;
-      dir.dir_subdir <- subdir
+let load_dir_entries_exn info subdir =
+   let filename = dirname_of_subdir info subdir in
+   let data =
+      match (Unix.stat filename).Unix.st_kind with
+         Unix.S_DIR ->
+            let dir_info =
+               { dir_entries = entries_of_dir filename;
+                 dir_ignore = load_cvsignore filename
+               }
+            in
+               Directory dir_info
+       | Unix.S_REG ->
+            File (lines_of_file filename)
+       | _ ->
+            raise Not_found
+   in
+      info.info_subdir <- subdir;
+      info.info_data <- data
 
-let refresh_dir_entries dir =
-   try load_dir_entries dir dir.dir_subdir with
-      Unix.Unix_error _ ->
-         dir.dir_entries <- [EntryUnreadable];
-         dir.dir_ignore <- None
+let load_dir_entries info subdir =
+   try load_dir_entries_exn info subdir with
+      Unix.Unix_error _
+    | Sys_error _
+    | Failure _ ->
+         raise (RefineError ("Shell_fs.load_dir_entries", StringStringError (subdir, "unreadable")))
+
+let refresh_dir_entries info =
+   load_dir_entries info info.info_subdir
 
 (************************************************************************
  * SHELL INTERFACE                                                      *
  ************************************************************************)
 
 (*
- * Display the listing.
+ * Display the entries in a directory.
  *)
-let edit_display get_dfm dir options =
+let term_of_dir info options subdir dir_info =
+   let { dir_entries = entries;
+         dir_ignore = ignore
+       } = dir_info
+   in
    let nametest =
-      match dir.dir_ignore with
+      match ignore with
          Some ignore ->
             if LsOptionSet.mem options LsFileAll then
                (fun _ -> true)
@@ -245,17 +297,41 @@ let edit_display get_dfm dir options =
          (fun modifier -> "")
    in
    let terms =
-      List.fold_left (fun terms entry ->
-            match entry with
-               EntryFile (name, modifier) ->
-                  if nametest name then
-                     mk_file_term name (modname modifier) :: terms
-                  else
-                     terms
-             | EntryUnreadable ->
-                  mk_unreadable_term :: terms) [] dir.dir_entries
+      List.fold_left (fun terms (name, modifier) ->
+            if nametest name then
+               mk_direntry_term name (modname modifier) :: terms
+            else
+               terms) [] entries
    in
-   let term = mk_listing_term dir.dir_subdir (List.rev terms) in
+      mk_dirlisting_term subdir (List.rev terms)
+
+(*
+ * File lines.
+ *)
+let term_of_file info options subdir lines =
+   let lines, _ =
+      List.fold_left (fun (lines, i) line ->
+            let line = mk_fileline_term (Lm_num.num_of_int i) line in
+               line :: lines, succ i) ([], 1) lines
+   in
+      mk_filelisting_term subdir (List.rev lines)
+
+(*
+ * Display the listing.
+ *)
+let edit_display get_dfm info options =
+   let { info_root    = root;
+         info_subdir  = subdir;
+         info_data    = data
+       } = info
+   in
+   let term =
+      match data with
+         Directory dir_info ->
+            term_of_dir info options subdir dir_info
+       | File file_info ->
+            term_of_file info options subdir file_info
+   in
       Proof_edit.display_term (get_dfm ()) term
 
 (*
@@ -267,19 +343,19 @@ let raise_edit_error s =
 (*
  * Build the shell interface.
  *)
-let rec edit get_dfm dir =
+let rec edit get_dfm info =
    let edit_check_addr addr =
       let path = Lm_filename_util.simplify_path addr in
       let path = Lm_filename_util.concat_path path in
-         if dir.dir_subdir <> path then
-            load_dir_entries dir path
+         if info.info_subdir <> path then
+            load_dir_entries info path
    in
    let edit_display addr options =
       edit_check_addr addr;
-      edit_display get_dfm dir options
+      edit_display get_dfm info options
    in
    let edit_copy () =
-      edit get_dfm { dir with dir_root = dir.dir_root }
+      edit get_dfm { info with info_root = info.info_root }
    in
    let not_a_rule _ =
       raise_edit_error "this is not a rule or rewrite"
@@ -326,15 +402,14 @@ let rec edit get_dfm dir =
       }
 
 let create get_dfm =
-   let dir =
-      { dir_root    = Setup.root ();
-        dir_subdir  = ".";
-        dir_entries = [];
-        dir_ignore  = None
+   let info =
+      { info_root    = Setup.root ();
+        info_subdir  = ".";
+        info_data    = Directory { dir_entries = []; dir_ignore = None }
       }
    in
-      refresh_dir_entries dir;
-      edit get_dfm dir
+      refresh_dir_entries info;
+      edit get_dfm info
 
 let view = create
 

@@ -311,9 +311,11 @@ declare "package"[name:s]
 declare "packages"{'pl}
 
 (* Directories *)
-declare "file"[name:s, modifier:s]
-declare "unreadable"
-declare "listing"[name:s]{'fl}
+declare "direntry"[name:s, modifier:s]
+declare "dirlisting"[name:s]{'fl}
+
+declare "fileline"[number:n, contents:s]
+declare "filelisting"[name:s]{'l}
 
 (* Location *)
 declare "location"[start:n, finish:n]{'body}
@@ -654,25 +656,30 @@ dform packages_df3 : packages_df{nil} =
  *)
 declare listing_df{'t}
 
-dform listing_df1 : listing[name:s]{'listing} =
-   szone pushm[0] pushm[4] info["Directory listing:"] `" " slot[name:s] hspace
+dform dirlisting_df : dirlisting[name:s]{'listing} =
+   szone pushm[0] pushm[4] info["Directory listing:"] hspace
        listing_df{'listing} popm hspace
    info["end"] popm ezone
 
-dform listing_df2 : listing_df{cons{'e1; cons{'e2; 'next}}} =
+dform filelisting_df : filelisting[name:s]{'listing} =
+   hzone pushm[0] pushm[4] info["File listing:"] hspace
+       listing_df{'listing} popm hspace
+   info["end"] popm ezone
+
+dform listing_df1 : listing_df{cons{'e1; cons{'e2; 'next}}} =
    'e1 hspace listing_df{cons{'e2; 'next}}
 
-dform listing_df3 : listing_df{cons{'e; nil}} =
+dform listing_df2 : listing_df{cons{'e; nil}} =
    'e
 
-dform listing_df4 : listing_df{nil} =
+dform listing_df3 : listing_df{nil} =
    `""
 
-dform file_df1 : file[name:s, modifier:s] =
+dform direntry_df : direntry[name:s, modifier:s] =
    cd_begin[name] slot[name:s] cd_end slot[modifier:s]
 
-dform unreadable_df1 : unreadable =
-   info["unreadable"]
+dform fileline_df : fileline[number:n, line:s] =
+   slot[line:s]
 
 (********************************
  * Argument lists
@@ -891,9 +898,10 @@ dform bound_term : bound_term{'t} =
  * ML INTERFACE                                                         *
  ************************************************************************)
 
-let mk_unreadable_term = << unreadable >>
-let mk_file_term s modifier = <:con< "file"[$s$:s, $modifier$:s] >>
-let mk_listing_term name files = <:con< "listing"[$name$:s]{$mk_xlist_term files$} >>
+let mk_direntry_term s modifier = <:con< "direntry"[$s$:s, $modifier$:s] >>
+let mk_dirlisting_term name files = <:con< "dirlisting"[$name$:s]{$mk_xlist_term files$} >>
+let mk_fileline_term n s = <:con< "fileline"[$n$:n, $s$:s] >>
+let mk_filelisting_term name files = <:con< "filelisting"[$name$:s]{$mk_xlist_term files$} >>
 
 let mk_interface_term tl = <:con< "interface"{ $mk_xlist_term tl$ } >>
 let mk_implementation_term tl = <:con< "implementation"{ $mk_xlist_term tl$ } >>
