@@ -32,6 +32,7 @@
 
 open Lm_debug
 
+open Term_sig
 open Refiner.Refiner
 open RefineError
 open Term
@@ -94,7 +95,7 @@ let try_match_hyps relaxed big small =
 
 let match_hyps = try_match_hyps false
 
-let match_some_hyps big small = 
+let match_some_hyps big small =
    let index = try_match_hyps true big small in
    let rec aux i =
       let i = pred i in

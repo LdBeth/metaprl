@@ -53,6 +53,7 @@ extends Nuprl_font
 open Lm_symbol
 open Lm_debug
 
+open Term_sig
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermType

@@ -37,6 +37,7 @@ open Lm_debug
 open Precedence
 open Rformat
 open Opname
+open Term_sig
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMan

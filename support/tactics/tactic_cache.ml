@@ -1966,12 +1966,12 @@ let set_msequent extract seq =
       else
          let extract =
             match SeqHyp.get hyps i with
-               TermType.HypBinding (name, hyp) ->
+               Term_sig.HypBinding (name, hyp) ->
                   add_hyp extract i name hyp
-             | TermType.Hypothesis hyp ->
+             | Term_sig.Hypothesis hyp ->
                   incr sym;
                   add_hyp extract i (Lm_symbol.add ("HACK" ^ (string_of_int !sym))) hyp
-             | TermType.Context (name, _, _) ->
+             | Term_sig.Context (name, _, _) ->
                   add_hyp extract i name context_term
          in
             collect (i + 1) len extract hyps

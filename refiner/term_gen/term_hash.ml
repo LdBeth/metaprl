@@ -267,9 +267,9 @@ struct
 
    let p_constr_hyp info hyp =
       match hyp with
-         Hypothesis t -> TType.Hypothesis (WM.retrieve info.term_hash info t)
-       | HypBinding (v, t) -> TType.HypBinding (v, WM.retrieve info.term_hash info t)
-       | Context (v, conts, trms) -> TType.Context (v, conts, List.map (WM.retrieve info.term_hash info) trms)
+         Hypothesis t -> Term_sig.Hypothesis (WM.retrieve info.term_hash info t)
+       | HypBinding (v, t) -> Term_sig.HypBinding (v, WM.retrieve info.term_hash info t)
+       | Context (v, conts, trms) -> Term_sig.Context (v, conts, List.map (WM.retrieve info.term_hash info) trms)
 
    let p_constr_tterm info { op_name = op; op_params = params; term_terms = bterms } =
       TTerm.make_term
@@ -291,19 +291,19 @@ struct
    let p_constr_meta_term info mt =
       match mt with
          MetaTheorem t ->
-            TType.MetaTheorem (WM.retrieve info.term_hash info t)
+            Term_sig.MetaTheorem (WM.retrieve info.term_hash info t)
        | MetaImplies (t1, t2) ->
-            TType.MetaImplies (WM.retrieve info.meta_term_hash info t1,
+            Term_sig.MetaImplies (WM.retrieve info.meta_term_hash info t1,
                                WM.retrieve info.meta_term_hash info t2)
        | MetaFunction (t1, mt1, mt2) ->
-            TType.MetaFunction (WM.retrieve info.term_hash info t1,
+            Term_sig.MetaFunction (WM.retrieve info.term_hash info t1,
                                 WM.retrieve info.meta_term_hash info mt1,
                                 WM.retrieve info.meta_term_hash info mt2)
        | MetaIff (mt1, mt2) ->
-            TType.MetaIff (WM.retrieve info.meta_term_hash info mt1,
+            Term_sig.MetaIff (WM.retrieve info.meta_term_hash info mt1,
                            WM.retrieve info.meta_term_hash info mt2)
        | MetaLabeled (l, mt) ->
-            TType.MetaLabeled (l, WM.retrieve info.meta_term_hash info mt)
+            Term_sig.MetaLabeled (l, WM.retrieve info.meta_term_hash info mt)
 
    let p_constr_msequent info (hyps, goal) =
       Refinex.mk_msequent (WM.retrieve info.term_hash info goal) (List.map (WM.retrieve info.term_hash info) hyps)

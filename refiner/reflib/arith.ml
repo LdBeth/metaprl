@@ -31,6 +31,9 @@
  * Author: Yegor Bryukhov @email{ynb@mail.ru}
  * Modified by: Aleksey Nogin @email{nogin@cs.cornell.edu}
  *)
+open Printf
+open Lm_debug
+open Term_sig
 
 module type HypsSig = sig
     type var
@@ -86,8 +89,6 @@ struct
       in aux 0
 end
 
-open Printf
-open Lm_debug
 let debug_graph_arith1 =
    create_debug (**)
       { debug_name = "debug_graph_arith1";

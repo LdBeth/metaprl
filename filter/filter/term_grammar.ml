@@ -35,6 +35,7 @@ open Printf
 
 open Lm_symbol
 open Lm_debug
+open Term_sig
 open Term_shape_sig
 open Refiner.Refiner
 open Term

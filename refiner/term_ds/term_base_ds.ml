@@ -37,6 +37,7 @@ open Printf
 open Lm_debug
 open Opname
 open Refine_error_sig
+open Term_sig
 open Term_ds
 
 (*

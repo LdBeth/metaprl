@@ -37,6 +37,7 @@ open Lm_debug
 
 open Rformat
 open Opname
+open Term_sig
 open Refiner_sig
 
 (*
@@ -380,7 +381,7 @@ struct
          format_termlist buf subterms;
          format_string buf "]";
          format_popm buf
-   
+
    and format_termlist buf = function
       [] -> ()
     | [h] -> format_term buf h

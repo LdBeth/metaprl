@@ -42,6 +42,7 @@ open Simple_print.SimplePrint
 open Mp_resource
 open File_base_type
 open Term_shape_sig
+open Term_sig
 
 open Refiner.Refiner
 open Term

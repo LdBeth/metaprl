@@ -32,6 +32,7 @@
 open Lm_symbol
 
 open Opname
+open Term_sig
 
 module type TermDsTypeSig =
 sig
@@ -100,10 +101,7 @@ sig
    and bound_term = bound_term'
    and term' = { term_op : operator; term_terms : bound_term list }
    and bound_term' = { bvars : var list; bterm : term }
-   and hypothesis =
-      HypBinding of var * term
-    | Hypothesis of term
-    | Context of var * var list * term list
+   and hypothesis = term poly_hypothesis
    and esequent =
       { sequent_args : term;
         sequent_hyps : seq_hyps;
@@ -137,12 +135,7 @@ sig
     * The terms in the framework include
     * a meta-implication and met-iff.
     *)
-   type meta_term =
-      MetaTheorem of term
-    | MetaImplies of meta_term * meta_term
-    | MetaFunction of term * meta_term * meta_term
-    | MetaIff of meta_term * meta_term
-    | MetaLabeled of string * meta_term
+   type meta_term = term poly_meta_term
 end
 
 module type TermDsSig =

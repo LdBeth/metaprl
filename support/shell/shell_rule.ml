@@ -36,6 +36,7 @@ extends Package_info
 open Printf
 open Lm_debug
 
+open Term_sig
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMeta

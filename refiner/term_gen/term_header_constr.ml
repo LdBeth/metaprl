@@ -74,9 +74,9 @@ struct
 
    and make_hyp_header info hyp =
       match hyp with
-         FType.Hypothesis t -> TermHash.Hypothesis (TermHash.p_lookup info (make_term_header info t))
-       | FType.HypBinding (v, t) -> TermHash.HypBinding (v, TermHash.p_lookup info (make_term_header info t))
-       | FType.Context (v, conts, trms) -> TermHash.Context (v, conts, List.map (make_context_header info) trms)
+         Term_sig.Hypothesis t -> TermHash.Hypothesis (TermHash.p_lookup info (make_term_header info t))
+       | Term_sig.HypBinding (v, t) -> TermHash.HypBinding (v, TermHash.p_lookup info (make_term_header info t))
+       | Term_sig.Context (v, conts, trms) -> TermHash.Context (v, conts, List.map (make_context_header info) trms)
 
    and make_goal_header info goal =
       TermHash.p_lookup info (make_term_header info goal)
@@ -117,19 +117,19 @@ struct
 
    let rec make_meta_term_header info mt =
       match mt with
-         FType.MetaTheorem t ->
+         Term_sig.MetaTheorem t ->
             TermHash.MetaTheorem (TermHash.p_lookup info (make_term_header info t))
-       | FType.MetaImplies (t1, t2) ->
+       | Term_sig.MetaImplies (t1, t2) ->
             TermHash.MetaImplies (TermHash.p_lookup_meta info (make_meta_term_header info t1),
                                   TermHash.p_lookup_meta info (make_meta_term_header info t2))
-       | FType.MetaFunction (t1, mt1, mt2) ->
+       | Term_sig.MetaFunction (t1, mt1, mt2) ->
             TermHash.MetaFunction (TermHash.p_lookup info (make_term_header info t1),
                                    TermHash.p_lookup_meta info (make_meta_term_header info mt1),
                                    TermHash.p_lookup_meta info (make_meta_term_header info mt2))
-       | FType.MetaIff (mt1, mt2) ->
+       | Term_sig.MetaIff (mt1, mt2) ->
             TermHash.MetaIff (TermHash.p_lookup_meta info (make_meta_term_header info mt1),
                               TermHash.p_lookup_meta info (make_meta_term_header info mt2))
-       | FType.MetaLabeled (l, mt) ->
+       | Term_sig.MetaLabeled (l, mt) ->
             TermHash.MetaLabeled (l, TermHash.p_lookup_meta info (make_meta_term_header info mt))
 
    let make_msequent_header info mseq =

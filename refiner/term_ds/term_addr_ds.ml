@@ -34,6 +34,7 @@ INCLUDE "refine_error.mlh"
 open Lm_symbol
 
 open Refine_error_sig
+open Term_sig
 open Term_ds_sig
 open Term_ds
 open Term_subst_sig

@@ -43,6 +43,7 @@
  *)
 open Lm_symbol
 
+open Term_sig
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMan
@@ -148,13 +149,13 @@ let build_sequent_patt loc t =
       of subterms. *)
    let opname = opname_of_term args in
    let opname = Opname.dest_opname opname in
-   let opname = List.fold_right (fun x l -> 
+   let opname = List.fold_right (fun x l ->
          <:patt< [$str:String.escaped x$ :: $l$] >>) opname <:patt< [] >> in
-   
+
    let args = subterms_of_term args in
-   let args = List.fold_right (fun x l -> 
+   let args = List.fold_right (fun x l ->
          let x = build_term_patt loc x in
-            <:patt< [$x$ :: $l$] >>) args <:patt< [] >> 
+            <:patt< [$x$ :: $l$] >>) args <:patt< [] >>
    in
 
    (* Collect the hyps: if there is a context, it should be final *)

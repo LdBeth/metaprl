@@ -34,6 +34,18 @@ open Lm_symbol
 
 open Opname
 
+type 'term poly_hypothesis =
+   HypBinding of var * 'term
+ | Hypothesis of 'term
+ | Context of var * var list * 'term list
+
+type 'term poly_meta_term =
+   MetaTheorem of 'term
+ | MetaImplies of 'term poly_meta_term * 'term poly_meta_term
+ | MetaFunction of 'term * 'term poly_meta_term * 'term poly_meta_term
+ | MetaIff of 'term poly_meta_term * 'term poly_meta_term
+ | MetaLabeled of string * 'term poly_meta_term
+
 module type TermSig =
 sig
    (************************************************************************
@@ -106,22 +118,13 @@ sig
     * The terms in the framework include
     * a meta-implication and meta-iff.
     *)
-   type meta_term =
-      MetaTheorem of term
-    | MetaImplies of meta_term * meta_term
-    | MetaFunction of term * meta_term * meta_term
-    | MetaIff of meta_term * meta_term
-    | MetaLabeled of string * meta_term
+   type meta_term = term poly_meta_term
 
    (************************************************************************
     * SEQUENTS                                                             *
     ************************************************************************)
 
-   type hypothesis =
-      HypBinding of var * term
-    | Hypothesis of term
-    | Context of var * var list * term list
-
+   type hypothesis = term poly_hypothesis
    type seq_hyps
    type seq_goals
 

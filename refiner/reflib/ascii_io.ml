@@ -606,10 +606,10 @@ struct
             (name, ind)
 
    and out_hyp ctrl data = function
-      (TermType.HypBinding (_,t) | TermType.Hypothesis t as h) -> begin
+      (Term_sig.HypBinding (_,t) | Term_sig.Hypothesis t as h) -> begin
          let (t_name, t_ind) = out_term ctrl data t in
          let hyp, i_data = match h with
-            TermType.HypBinding(v, _) ->
+            Term_sig.HypBinding(v, _) ->
                HypBinding (v,t_ind), [[string_of_symbol v; t_name]]
           | _ -> Hypothesis t_ind, [[t_name]]
          in try
@@ -624,7 +624,7 @@ struct
                New ("H" ^ lname, name, i_data) :: data.out_items;
             (name, hyp)
       end
-    | TermType.Context (v,conts,ts) as h -> begin
+    | Term_sig.Context (v,conts,ts) as h -> begin
          let terms = List.map (out_term ctrl data) ts in
          let hyp = Context (v, conts, List.map snd terms) in
          let i_data = [[string_of_symbol v]; List.map string_of_symbol conts; List.map fst terms] in

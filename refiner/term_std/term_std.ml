@@ -35,6 +35,7 @@ open Lm_symbol
 
 open Lm_debug
 open Opname
+open Term_sig
 
 (*
  * Show the file loading.
@@ -96,22 +97,8 @@ struct
    and term' = { term_op : operator; term_terms : bound_term list }
    and bound_term' = { bvars : var list; bterm : term }
 
-   (*
-    * The terms in the framework include
-    * a meta-implication and met-iff.
-    *)
-   type meta_term =
-      MetaTheorem of term
-    | MetaImplies of meta_term * meta_term
-    | MetaFunction of term * meta_term * meta_term
-    | MetaIff of meta_term * meta_term
-    | MetaLabeled of string * meta_term
-
-   type hypothesis =
-      HypBinding of var * term
-    | Hypothesis of term
-    | Context of var * var list * term list
-
+   type meta_term = term poly_meta_term
+   type hypothesis = term poly_hypothesis
    type seq_hyps = hypothesis Seq_set.linear_set
    type seq_goals = term Seq_set.linear_set
 

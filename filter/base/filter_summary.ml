@@ -38,6 +38,7 @@ open Printf
 
 open Lm_debug
 open Opname
+open Term_sig
 open Refiner_sig
 open Precedence
 

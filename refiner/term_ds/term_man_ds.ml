@@ -36,6 +36,7 @@ open Lm_debug
 
 open Opname
 open Refine_error_sig
+open Term_sig
 open Term_ds_sig
 open Term_ds
 open Term_op_sig
@@ -325,7 +326,7 @@ struct
     | HypBinding (v,t) :: hyps ->
          let hyps', sub' = rename_hyps (SymbolSet.add vars v) sub hyps in
             HypBinding(v, apply_subst sub t) :: hyps', sub'
-   
+
    let explode_sequent_and_rename t vars =
       let s = explode_sequent t in
          let hyps, subst = rename_hyps vars [] (SeqHyp.to_list s.sequent_hyps) in
@@ -557,7 +558,7 @@ struct
    (*
     * Second order context, contains a context term, plus
     * binding variables like so vars.
-    * 
+    *
     * XXX TODO: Eventually contexts should probably have their own
     * choice in the core type.
     *)
