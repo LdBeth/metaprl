@@ -86,23 +86,22 @@ struct
     * This first part should be a session #.
     *)
    let decode_uri uri =
-      let uri = decode_uri uri in
-         match uri with
-            "session" :: id :: rest ->
-               (try
-                   let shell = Shell.find_shell id in
-                   let dirname = Lm_string_util.prepend "/" rest in
-                      SessionURI (shell, dirname)
-                with
-                   Not_found ->
-                      eprintf "Bad session: %s@." id;
-                      UnknownURI (Lm_string_util.prepend "/" rest))
-          | "inputs" :: rest ->
-               InputURI (Lm_string_util.prepend "/" rest)
-          | ["login"; key] ->
-               LoginURI key
-          | _ ->
-               UnknownURI (Lm_string_util.prepend "/" uri)
+      match decode_uri uri with
+         "session" :: id :: rest ->
+            (try
+                let shell = Shell.find_shell id in
+                let dirname = Lm_string_util.prepend "/" rest in
+                   SessionURI (shell, dirname)
+             with
+                Not_found ->
+                   eprintf "Bad session: %s@." id;
+                   UnknownURI (Lm_string_util.prepend "/" rest))
+       | "inputs" :: rest ->
+            InputURI (Lm_string_util.prepend "/" rest)
+       | ["login"; key] ->
+            LoginURI key
+       | uri ->
+            UnknownURI (Lm_string_util.prepend "/" uri)
 
    (*
     * Make up a challenge.
@@ -261,6 +260,8 @@ struct
           } = http_info server
       in
       let uri = sprintf "http://%s:%d/session/%s%s" host port (Shell.pid shell) (Shell.pwd shell) in
+         if !debug_http then
+            eprintf "Redirecting to %s@." uri;
          print_redirect_page outx SeeOtherCode uri;
          state
 

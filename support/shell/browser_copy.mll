@@ -161,8 +161,13 @@ let channel_of_file name =
          None
     | Some mplib ->
          let name = Filename.concat mplib name in
-            try Some (open_in name) with
-               Sys_error _ ->
+            try
+               if (Unix.stat name).Unix.st_kind = Unix.S_REG then
+                  Some (open_in name)
+               else
+                  None
+            with
+               Sys_error _ | Unix.Unix_error _ ->
                   None
 
 (*

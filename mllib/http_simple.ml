@@ -153,7 +153,7 @@ let print_gmtime outx time =
    in
    let mon_names = [|"Jan"; "Feb"; "Mar"; "Apr"; "May"; "Jun"; "Jul"; "Aug"; "Sep"; "Oct"; "Nov"; "Dec"|] in
    let day_names = [|"Sun"; "Mon"; "Tue"; "Wed"; "Thu"; "Fri"; "Sat"|] in
-      fprintf outx "%s, %02d %s %d %02d:%02d:%02d GMT" day_names.(wday) mday mon_names.(mon) year hour min sec
+      fprintf outx "%s, %02d %s %d %02d:%02d:%02d GMT" day_names.(wday) mday mon_names.(mon) (1900+year) hour min sec
 
 let print_success_channel out code inx =
    let fd = Unix.descr_of_in_channel inx in
