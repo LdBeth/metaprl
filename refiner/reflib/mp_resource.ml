@@ -261,7 +261,7 @@ let obj_processor (proc : ('input, 'output) processor) =
 
 let make_resource name proc =
    if Hashtbl.mem global_processed_data name then
-      raise (Invalid_argument ("Mp_resource.create_resource: resource with name " ^ name ^ "already exists! Time to start prepending resource names with theory names?"));
+      raise (Invalid_argument ("Mp_resource.create_resource: resource with name " ^ name ^ "already exists!"));
    let proc_data = Hashtbl.create 19 in
       Hashtbl.add proc_data empty_bookmark {
          res_proc = obj_processor (make_processor proc);

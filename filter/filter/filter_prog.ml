@@ -73,7 +73,7 @@ type t = {
    mutable imp_toploop : (string * MLast.ctyp) list;
    imp_arg : Convert.t;
    imp_name : string;
-   mutable imp_resources : (string * MLast.ctyp) list;
+   mutable imp_resources : (string * (MLast.ctyp * string)) list; (* The second string is the FQN *)
    imp_all_resources : (module_path * string * MLast.ctyp resource_sig) list;
    mutable imp_terms : term list;
    mutable imp_num_terms : int;
@@ -298,6 +298,9 @@ let get_resource_name name =
 
 let input_type name =
    "_$" ^ name ^ "_resource_input"
+
+let res_fqn path name =
+   (String.concat "!" (List.map String.capitalize path)) ^ "!" ^ name
 
 let dform_name_patt loc =
    <:patt< Dform.dform_name >>
@@ -656,7 +659,7 @@ let extract_sig _ info resources path =
       <:str_item< (Mp_resource.bookmark $str:rule_name$) >> :: rest
    else rest
 
-let res_type proc loc name =
+let find_res proc loc name =
    try
       List.assoc name proc.imp_resources
    with
@@ -664,10 +667,12 @@ let res_type proc loc name =
          Stdpp.raise_with_loc loc (Failure ("Attempted to use undeclared resource " ^ name))
 
 let impr_resource proc loc name expr =
-   <:expr< Mp_resource.improve $str:name$ (Obj.repr ( $expr$ : $res_type proc loc name$ )) >>
+   let ctyp, fqn = find_res proc loc name in
+      <:expr< Mp_resource.improve $str:fqn$ (Obj.repr ( $expr$ : $ctyp$ )) >>
 
 let impr_resource_list proc loc name expr =
-   <:expr< Mp_resource.improve_list $str:name$ (Obj.magic ( $expr$ : (list $res_type proc loc name$) )) >>
+   let ctyp, fqn = find_res proc loc name in
+      <:expr< Mp_resource.improve_list $str:fqn$ (Obj.magic ( $expr$ : list $ctyp$ )) >>
 
 let rec mk_string_list_expr loc = function
    [] ->
@@ -896,7 +901,7 @@ let extract_expr loc modname name =
 let define_rewrite_resources proc loc name redex contractum assums addrs params resources name_id_expr =
    if resources.item_item = [] then <:expr< () >> else
    let define_resource (loc, name', args) =
-      let input = res_type proc loc name' in
+      let input, _ = find_res proc loc name' in
       let arg_expr =
          match args with
             [] ->
@@ -1127,7 +1132,7 @@ let define_ml_rewrite want_checkpoint proc loc mlrw rewrite_expr =
 let define_rule_resources proc loc name cvars_id params_id assums_id resources name_rule_expr =
    if resources.item_item = [] then <:expr< () >> else
    let define_resource (loc, name', args) =
-      let input = res_type proc loc name' in
+      let input, _ = find_res proc loc name' in
       let arg_expr =
          match args with
             [] ->
@@ -1393,11 +1398,12 @@ let define_resource proc loc name expr =
    in
    let intermediate = "_$" ^ name ^ "_resource_intermediate" in
    let input_name = input_type name in
+   let fqn = res_fqn [proc.imp_name] name in
       proc.imp_resources
-         <- (name, <:ctyp< $lid:input_name$ >>) :: proc.imp_resources;
+         <- (name, (<:ctyp< $lid:input_name$ >>, fqn)) :: proc.imp_resources;
       [<:str_item< type $input_name$ = $input$ >>;
        <:str_item< value $lid:get_resource_name name$ =
-         Mp_resource.create_resource $str:name$ (**)
+         Mp_resource.create_resource $str:fqn$ (**)
             ( $expr$ : Mp_resource.resource_info $lid:input_name$ '$intermediate$ $output$ ) >>]
 
 let rec is_list_expr = function
@@ -1432,7 +1438,7 @@ let define_parent proc loc
          find_resource name t
    in let make_ctyp (name, _) =
       let path = find_resource name proc.imp_all_resources in
-      (name, <:ctyp< $parent_path_ctyp loc path$ . $lid:input_type name$ >>)
+      (name, (<:ctyp< $parent_path_ctyp loc path$ . $lid:input_type name$ >>, res_fqn path name))
    in
       proc.imp_resources <- proc.imp_resources @ (List.map make_ctyp nresources);
       match path with
