@@ -8,4 +8,4 @@ source mpconfig
 #
 # Start the executable.
 #
-exec ./mp.run -I . -I ../../theories/reflect_itt -I ../../theories/fol -I ../../theories/tptp -I ../../theories/czf -I ../../theories/itt -I ../../theories/base -I ../../theories/ocaml -I ../../theories/tactic -I $CAMLP4LIB $*
+exec ./mp.run $INCLUDES $*
