@@ -1,0 +1,33 @@
+CFILES =\
+	print_symbols\
+	marshal_shared\
+	truncate\
+	putenv\
+	execvp\
+	profile\
+	exit\
+	debug\
+	ml_debug\
+	getrusage\
+	mmap\
+	readline\
+	termsize\
+	locale
+
+StaticCLibrary(clib, $(CFILES))
+
+#
+# Patched OCaml files
+#
+.PHONY: patches patch
+
+if $(not $(equal $(OCAMLSRC), undefined))
+    CINCLUDE = -I$(OCAMLSRC)/byterun
+
+    patches: $(OCAMLSRC)/byterun/intern.c $(OCAMLSRC)/byterun/extern.c
+	diff -c $(OCAMLSRC)/byterun/extern.c extern.c > extern.patch
+	diff -c $(OCAMLSRC)/byterun/intern.c intern.c > intern.patch
+
+    patch:
+	patch -o extern.c $(OCAMLSRC)/byterun/extern.c extern.patch
+	patch -o intern.c $(OCAMLSRC)/byterun/intern.c intern.patch
