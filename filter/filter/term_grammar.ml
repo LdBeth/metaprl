@@ -39,6 +39,7 @@ open Opname
 open Term_sig
 open Term_shape_sig
 open Term_ty_sig
+open Refiner.Refiner
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermOp
@@ -49,6 +50,7 @@ open Refiner.Refiner.TermShape
 open Lexing
 open Filter_type
 open Filter_util
+open Filter_summary_util
 open Simple_print.SimplePrint
 
 open Term_ty_infer

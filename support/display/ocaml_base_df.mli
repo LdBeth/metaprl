@@ -40,84 +40,84 @@ extends Ocaml
 (*
  * Operators.
  *)
-declare "[" : Ocaml
-declare "]" : Ocaml
-declare "[|" : Ocaml
-declare "|]" : Ocaml
-declare "[<" : Ocaml
-declare ">]" : Ocaml
-declare "{" : Ocaml
-declare "}" : Ocaml
-declare "(" : Ocaml
-declare ")" : Ocaml
+declare "[" : OCaml
+declare "]" : OCaml
+declare "[|" : OCaml
+declare "|]" : OCaml
+declare "[<" : OCaml
+declare ">]" : OCaml
+declare "{" : OCaml
+declare "}" : OCaml
+declare "(" : OCaml
+declare ")" : OCaml
 
-declare "+" : Ocaml
-declare "-" : Ocaml
-declare "*" : Ocaml
-declare "/" : Ocaml
-declare "mod" : Ocaml
+declare "+" : OCaml
+declare "-" : OCaml
+declare "*" : OCaml
+declare "/" : OCaml
+declare "mod" : OCaml
 
-declare "&" : Ocaml
-declare "or" : Ocaml
-declare "=" : Ocaml
-declare "==" : Ocaml
-declare "::" : Ocaml
-declare ":=" : Ocaml
-declare "." : Ocaml
-declare ".(" : Ocaml
-declare ".[" : Ocaml
-declare ":>" : Ocaml
-declare ";" : Ocaml
-declare "->" : Ocaml
-declare "|" : Ocaml
-declare "<>" : Ocaml
-declare ":" : Ocaml
-declare "_" : Ocaml
-declare "#" : Ocaml
-declare "'" : Ocaml
-declare "\"" : Ocaml
+declare "&" : OCaml
+declare "or" : OCaml
+declare "=" : OCaml
+declare "==" : OCaml
+declare "::" : OCaml
+declare ":=" : OCaml
+declare "." : OCaml
+declare ".(" : OCaml
+declare ".[" : OCaml
+declare ":>" : OCaml
+declare ";" : OCaml
+declare "->" : OCaml
+declare "|" : OCaml
+declare "<>" : OCaml
+declare ":" : OCaml
+declare "_" : OCaml
+declare "#" : OCaml
+declare "'" : OCaml
+declare "\"" : OCaml
 
-declare "_if" : Ocaml
-declare "_then" : Ocaml
-declare "_else" : Ocaml
+declare "_if" : OCaml
+declare "_then" : OCaml
+declare "_else" : OCaml
 
-declare "_for" : Ocaml
-declare "_while" : Ocaml
-declare "_to" : Ocaml
-declare "_downto" : Ocaml
-declare "_do" : Ocaml
-declare "_done" : Ocaml
+declare "_for" : OCaml
+declare "_while" : OCaml
+declare "_to" : OCaml
+declare "_downto" : OCaml
+declare "_do" : OCaml
+declare "_done" : OCaml
 
-declare "_new" : Ocaml
-declare "_fun" : Ocaml
-declare "_match" : Ocaml
-declare "_try" : Ocaml
-declare "_type" : Ocaml
-declare "_exception" : Ocaml
-declare "_let" : Ocaml
-declare "_letrec" : Ocaml
-declare "_in" : Ocaml
-declare "_and" : Ocaml
-declare "_with" : Ocaml
-declare "_val" : Ocaml
-declare "_as" : Ocaml
-declare "_external" : Ocaml
-declare "_of" : Ocaml
+declare "_new" : OCaml
+declare "_fun" : OCaml
+declare "_match" : OCaml
+declare "_try" : OCaml
+declare "_type" : OCaml
+declare "_exception" : OCaml
+declare "_let" : OCaml
+declare "_letrec" : OCaml
+declare "_in" : OCaml
+declare "_and" : OCaml
+declare "_with" : OCaml
+declare "_val" : OCaml
+declare "_as" : OCaml
+declare "_external" : OCaml
+declare "_of" : OCaml
 
-declare "_module" : Ocaml
-declare "_moduletype" : Ocaml
-declare "_open" : Ocaml
-declare "_sig" : Ocaml
-declare "_struct" : Ocaml
-declare "_functor" : Ocaml
-declare "_end" : Ocaml
+declare "_module" : OCaml
+declare "_moduletype" : OCaml
+declare "_open" : OCaml
+declare "_sig" : OCaml
+declare "_struct" : OCaml
+declare "_functor" : OCaml
+declare "_end" : OCaml
 
-declare push_indent : Ocaml
+declare push_indent : OCaml
 
 (*
  * Display control tags.
  *)
-declare patt_format{'a : Ocaml; 'b : Ocaml} : Ocaml
+declare patt_format{'a : OCaml; 'b : OCaml} : OCaml
 
 (*
  * -*-

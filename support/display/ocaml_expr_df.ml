@@ -37,17 +37,17 @@ extends Ocaml_base_df
 open Lm_debug
 
 let _ =
-   show_loading "Loading Ocaml_expr_df%t"
+   show_loading "Loading OCaml_expr_df%t"
 
 (*
  * Special flags.
  *)
-declare ident_expr{'expr : Ocaml} : Ocaml
-declare list_expr{'l : Ocaml} : Ocaml
-declare se_list{'l : Ocaml} : Ocaml
-declare ee_list{'l : Ocaml} : Ocaml
-declare ee_list'{'l : Ocaml} : Ocaml
-declare e_list{'l : Ocaml}
+declare ident_expr{'expr : OCaml} : OCaml
+declare list_expr{'l : OCaml} : OCaml
+declare se_list{'l : OCaml} : OCaml
+declare ee_list{'l : OCaml} : OCaml
+declare ee_list'{'l : OCaml} : OCaml
+declare e_list{'l : OCaml}
 
 (*
  * Precedences.
@@ -96,7 +96,7 @@ dform df_rev_concat_onil2 : mode[src] :: mode[html] :: mode[prl] :: mode[tex] ::
 (*
  * Type hacking.
  *)
-declare df_term{'t : Dform} : Ocaml
+declare df_term{'t : Dform} : OCaml
 
 dform df_term_df : df_term{'t} =
    't
@@ -158,8 +158,8 @@ dform proj_df2 : "proj"[start:n, finish:n]{'A; 'B} =
 (*
  * Application.
  *)
-declare "apply"[lid:s]{'e1 : Ocaml; 'e2 : Ocaml} : Ocaml
-declare apply_cons_list_parse{'reversed_parsed : Ocaml; 'tail : Ocaml} : Ocaml
+declare "apply"[lid:s]{'e1 : OCaml; 'e2 : OCaml} : OCaml
+declare apply_cons_list_parse{'reversed_parsed : OCaml; 'tail : OCaml} : OCaml
 
 dform apply_df1 : parens :: "prec"[prec_apply] :: "apply"{'e1; 'e2} =
    pushm[0] slot{'e1} hspace slot{'e2} popm
@@ -405,7 +405,7 @@ dform class_coerce_df2 : class_coerce[start:n, finish:n]{'e1; 'e2} =
 (*
  * New object.
  *)
-declare "new"{'e1 : Ocaml}
+declare "new"{'e1 : OCaml}
 
 dform new_df1 : parens :: "prec"[prec_not] :: "new"{'e1} =
    "_new" slot{'e1}
