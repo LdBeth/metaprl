@@ -3,7 +3,7 @@
 # List the dependencies explicitly.
 #
 .SCANNER: %.cmx %.cmo %.cmi
-	echo ""
+	@
 
 OCAMLDEP = $(file ocamldep$(EXE))
 BINDEP   = $(file $(BIN)/ocamldep$(EXE))
