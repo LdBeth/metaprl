@@ -32,7 +32,7 @@
 
 open Shell_sig
 
-module ShellBrowser (Shell : ShellSig) : ShellMainSig
+module ShellBrowser (Top : ShellTopSig) : ShellMainSig
 
 (*
  * -*-

@@ -349,8 +349,6 @@ let create_window = function
       Proof_edit.create_text_window base mode
  | DisplayTex base ->
       Proof_edit.create_tex_window base
- | DisplayJava (port, base) ->
-      Proof_edit.create_java_window port base
  | DisplayBrowser base ->
       Proof_edit.create_browser_window base
 

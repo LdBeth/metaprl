@@ -57,8 +57,8 @@ val set_tactic : string -> MLast.expr -> unit
 val get_term : int -> term
 
 (****************************************
- * TOPLOOP FUNCTIONS                    *
- ****************************************)
+ * TOPLOOP FUNCTIONS
+ *)
 
 (* This is the opname function used when terms are built. *)
 val set_mk_opname : t -> opname_fun option -> unit
@@ -101,8 +101,8 @@ val reset_terms : t -> unit
 val synchronize : t -> ('a -> 'b) -> 'a -> 'b
 
 (****************************************
- * FILE PARSING                         *
- ****************************************)
+ * FILE PARSING
+ *)
 
 val stream_of_channel : t -> in_channel -> char Stream.t
 val stream_of_string : t -> string -> char Stream.t
@@ -114,11 +114,19 @@ val wrap : t -> (Lexing.lexbuf -> 'a) -> Lexing.lexbuf -> 'a
 val set_file : t -> string -> unit
 
 (****************************************
- * ADDITIONAL FUNCTIONS                 *
- ****************************************)
+ * ADDITIONAL FUNCTIONS
+ *)
 
 (*
  * Include directory list.
  *)
 val get_includes : unit -> string list
 val get_input_files : unit -> string list
+
+(*
+ * -*-
+ * Local Variables:
+ * Caml-master: "nl"
+ * End:
+ * -*-
+ *)

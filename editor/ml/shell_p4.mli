@@ -29,8 +29,6 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-
-
 open Tactic_type.Tactic
 open Shell_p4_sig
 

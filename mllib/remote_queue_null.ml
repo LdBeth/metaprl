@@ -33,7 +33,7 @@
 open Lm_debug
 
 open Lm_printf
-open Lm_threads
+open Lm_thread
 open Lm_thread_util
 
 let debug_queue =

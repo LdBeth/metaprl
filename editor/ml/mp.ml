@@ -29,17 +29,19 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-
 module Shell = Shell.Shell (Shell_p4.ShellP4)
 
 open Shell
 open Lm_printf
 
-module Nuprl = Nuprl_eval.Nuprl(Shell)
-module NuprlRun = Nuprl_run.NuprlRun(Nuprl)
+module Nuprl = Nuprl_eval.Nuprl (Shell.Edit)
+module NuprlRun = Nuprl_run.NuprlRun (Nuprl)
 
 let run_nuprl = NuprlRun.run_connection
 let run_nuprljp = NuprlRun.run_jprover
+
+(*
+ * BUG JYH: reenable these?
 
 (*
  * The possible objects in a package.
@@ -70,38 +72,53 @@ let set_params = set_params (get_current_shell ())
  * Proof editing.
  *)
 let goal () = goal (get_current_shell ())
+ *)
 
 (*
  * Nuprl5 interface.
  *)
-let edit_list_modules () = edit_list_modules (get_current_shell ())
-let edit_list_module_all = edit_list_module_all (get_current_shell ())
-let edit_list_module = edit_list_module (get_current_shell ())
-let edit_list_module_rw = edit_list_module_rw (get_current_shell ())
-let edit_list_parents = edit_list_parents (get_current_shell ())
-let edit_list_dforms = edit_list_dforms (get_current_shell ())
-let edit_list_precs = edit_list_precs (get_current_shell ())
-let edit_list_prec_rels = edit_list_prec_rels (get_current_shell ())
-let edit_cd_list_contents = edit_cd_list_contents (get_current_shell ())
-let edit_create_thm = edit_create_thm (get_current_shell ())
-let edit_create_rw = edit_create_rw (get_current_shell ())
-let edit_cd_thm = edit_cd_thm (get_current_shell ())
-let edit_set_goal = edit_set_goal (get_current_shell ())
-let edit_set_redex = edit_set_redex (get_current_shell ())
-let edit_set_contractum = edit_set_contractum (get_current_shell ())
-let edit_set_assumptions = edit_set_assumptions (get_current_shell ())
-let edit_set_params = edit_set_params (get_current_shell ())
-let edit_refine = edit_refine (get_current_shell ())
-let edit_node = edit_node (get_current_shell ())
-let edit_save = edit_save (get_current_shell ())
-let edit_undo () = edit_undo (get_current_shell ())
+let edit_list_modules = Edit.list_modules
+let edit_list_module_all = Edit.list_module_all
+let edit_list_module = Edit.list_module
+let edit_list_module_rw = Edit.list_module_rw
+let edit_list_parents = Edit.list_parents
+let edit_list_dforms = Edit.list_dforms
+let edit_list_precs = Edit.list_precs
+let edit_list_prec_rels = Edit.list_prec_rels
+let edit_cd_list_contents = Edit.cd_list_contents
+let edit_create_thm = Edit.create_thm
+let edit_create_rw = Edit.create_rw
+let edit_cd_thm = Edit.cd_thm
+let edit_set_goal = Edit.set_goal
+let edit_set_redex = Edit.set_redex
+let edit_set_contractum = Edit.set_contractum
+let edit_set_assumptions = Edit.set_assumptions
+let edit_set_params = Edit.set_params
+let edit_refine = Edit.refine
+let edit_node = Edit.node
+let edit_save = Edit.save
+let edit_undo = Edit.undo
 
 let shell_get_term = Shell_state.get_term
 
-let _ = Shell.main ()
+let _ = Shell.Main.main ()
 
-let _ = eprintf "\n!!                     ***************                           !!\n!!                     *** WARNING ***                           !!\n!!                     ***************                           !!\n!!                                                               !!\n!! This version of MetaPRL with OCaml toploop is only meant      !!\n!! to be used as a tactic development aid.                       !!\n!! Proofs developed in such toploop might not replay later       !!\n!! due to the differences in namespace management between        !!\n!! the different toploops.                                       !!\n!! Please always use MetaPRL with MetaPRL toploop                !!\n!!   (run mpopt for native code version, mptop for bytecode one) !!\n!! for proof development.                                        !!\n\n%t" eflush
+let _ =
+   eprintf "
+!!                     ***************                           !!
+!!                     *** WARNING ***                           !!
+!!                     ***************                           !!
+!!                                                               !!
+!! This version of MetaPRL with OCaml toploop is only meant      !!
+!! to be used as a tactic development aid.                       !!
+!! Proofs developed in such toploop might not replay later       !!
+!! due to the differences in namespace management between        !!
+!! the different toploops.                                       !!
+!! Please always use MetaPRL with MetaPRL toploop                !!
+!!   (run mpopt for native code version, mptop for bytecode one) !!
+!! for proof development.                                        !!
 
+%t" eflush
 
 (*
  * -*-

@@ -136,7 +136,6 @@ val print_exn              : window -> ('a -> 'b) -> 'a -> 'b
  *)
 val create_text_window    : dform_mode_base -> string -> window
 val create_tex_window     : dform_mode_base -> window
-val create_java_window    : Java_mux_channel.session -> dform_mode_base -> window
 val create_browser_window : dform_mode_base -> window
 
 (*

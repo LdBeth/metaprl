@@ -35,7 +35,7 @@ open Lexing
 open Lm_debug
 open Lm_printf
 open Lm_printf_rbuffer
-open Lm_threads
+open Lm_thread
 
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
@@ -72,17 +72,22 @@ let rl_history_file =
             let home = Sys.getenv "HOME" in
                Some (Filename.concat home ".metaprl_history")
          with
-            Not_found -> None
+            Not_found ->
+               None
 
 let rl_history_length =
    try
       int_of_string (Sys.getenv "MP_HISTORY_LENGTH")
    with
-      _ -> 100
+      _ ->
+         100
 
-let _ = Lm_readline.initialize_readline ()
-let _ = match rl_history_file with
-      None -> ()
+let () = Lm_readline.initialize_readline ()
+
+let () =
+   match rl_history_file with
+      None ->
+         ()
     | Some name ->
          try
             Lm_readline.read_history name
@@ -112,36 +117,26 @@ type input_buf =
 (*
  * This is the type of global state.
  *)
-type t =
-   { mutable state_mk_opname : opname_fun;
+type state =
+   { mutable state_mk_opname       : opname_fun;
      mutable state_mk_var_contexts : context_fun;
-     mutable state_df_base : dform_base;
-     mutable state_inline_terms : (int * term) list;
-     mutable state_inline_var : int;
-     mutable state_tactic : string * MLast.expr;
-     mutable state_toploop : Mptop.top_table;
-     mutable state_input_info : info;
-     mutable state_interactive : bool;
-     mutable state_infixes : Infix.Set.t
+     mutable state_df_base         : dform_base;
+     mutable state_inline_terms    : (int * term) list;
+     mutable state_inline_var      : int;
+     mutable state_tactic          : string * MLast.expr;
+     mutable state_active          : bool;
+     mutable state_toploop         : Mptop.top_table;
+     mutable state_input_info      : info;
+     mutable state_interactive     : bool;
+     mutable state_infixes         : Infix.Set.t;
+     mutable state_prompt1         : string;
+     mutable state_prompt2         : string
    }
 
 (*
- * Global state is a reference to one of the states.
- * Invariant: this variable is (Some _) only if the lock
- * is locked (we are within some toploop).
+ * We no longer use shell handles.
  *)
-let state = ref None
-
-(*
- * Lock modifications to the state.
- *)
-let lock = Recursive_lock.create ()
-
-(*
- * The infix/suffix mods that we currently have in the grammar.
- * This is only updated inside synchronize_shell calls
- *)
-let infixes = ref Infix.Set.empty
+type t = unit
 
 (*
  * Default values.
@@ -160,80 +155,86 @@ let default_saved_tactic =
       ("\"no saved tactic\"", <:expr< $str: "no saved tactic"$ >>)
 
 (*
- * Default state.
+ * Global state is a private variable.
+ *)
+let state_entry =
+   Mp_resource.recompute_top ();
+   let default =
+      { state_mk_opname       = mk_opname_null;
+        state_mk_var_contexts = mk_var_contexts_null;
+        state_active          = false;
+        state_df_base         = Dform.null_base;
+        state_inline_terms    = [];
+        state_inline_var      = 0;
+        state_tactic          = default_saved_tactic;
+        state_toploop         = Mptop.get_toploop_resource (Mp_resource.find Mp_resource.top_bookmark) [];
+        state_input_info      = Buffered [];
+        state_interactive     = true;
+        state_infixes         = Infix.Set.empty;
+        state_prompt1         = "# ";
+        state_prompt2         = "  "
+      }
+   in
+   let fork state =
+      { state with state_mk_opname = state.state_mk_opname }
+   in
+      State.private_val "Shell_state.state" default fork
+
+(*
+ * The external functions are essentially no-ops.
  *)
 let create () =
-   Mp_resource.recompute_top ();
-   { state_mk_opname = mk_opname_null;
-     state_mk_var_contexts = mk_var_contexts_null;
-     state_df_base = Dform.null_base;
-     state_inline_terms = [];
-     state_inline_var = 0;
-     state_tactic = default_saved_tactic;
-     state_toploop = Mptop.get_toploop_resource (Mp_resource.find Mp_resource.top_bookmark) [];
-     state_input_info = Buffered [];
-     state_interactive = true;
-     state_infixes = Infix.Set.empty
-   }
+   ()
 
-let fork state =
-   { state with state_mk_opname = state.state_mk_opname }
+let fork () =
+   ()
+
+(*
+ * The infix/suffix mods that we currently have in the grammar.
+ * This is a global variable, since the parser is shared by
+ * all threads.
+ *)
+let infixes_entry = State.shared_val "Shell_state.infixes" (ref Infix.Set.empty)
 
 (************************************************************************
  * CLIENT FUNCTIONS                                                     *
  ************************************************************************)
 
-let update_infixes state =
-   if !infixes != state.state_infixes then begin
-      Infix.Set.iter Infix.add (Infix.Set.diff state.state_infixes !infixes);
-      Infix.Set.iter Infix.remove (Infix.Set.diff !infixes state.state_infixes);
-      infixes := state.state_infixes
-   end
+(*
+ * Update the infix table.
+ * The infixes are defined in the Infix module.
+ *)
+let update_infixes infixes state =
+   if !infixes != state.state_infixes then
+      begin
+         Infix.Set.iter Infix.add (Infix.Set.diff state.state_infixes !infixes);
+         Infix.Set.iter Infix.remove (Infix.Set.diff !infixes state.state_infixes);
+         infixes := state.state_infixes
+      end
 
 (*
- * Synchronize the client.
- * For some client functions, it is allowable that we are not within the
- * toploop, so don't do that check here.
+ * Synchronize the for reading the state.
  *)
-let synchronize_client f =
-   if !debug_lock then
-      eprintf "Shell_state.lock: %d client waiting%t" (Thread.id (Thread.self ())) eflush;
-   Recursive_lock.lock lock;
-   if !debug_lock then
-      eprintf "Shell_state.lock: %d client done%t" (Thread.id (Thread.self ())) eflush;
-   try
-      let result = f !state in
-         ignore (Recursive_lock.unlock lock);
-         result
-   with
-      exn ->
-         ignore (Recursive_lock.unlock lock);
-         raise exn
+let synchronize_read f =
+   State.read state_entry f
+
+(*
+ * Synchronize for writing the state.
+ *)
+let synchronize_write f =
+   State.write state_entry f
 
 (*
  * This is the case where the client really needs to be within the toploop.
- * Check the state, and fetch it for the client.
+ * The state may be modified.
  *)
 let synchronize_state f =
-   if !debug_lock then
-      eprintf "Shell_state.lock: %d state waiting%t" (Thread.id (Thread.self ())) eflush;
-   Recursive_lock.lock lock;
-   if !debug_lock then
-      eprintf "Shell_state.lock: %d state done%t" (Thread.id (Thread.self ())) eflush;
-   match !state with
-      None ->
-         ignore (Recursive_lock.unlock lock);
-         raise (Invalid_argument "Shell_mp.synchronize_state: client call is not within toploop")
-    | Some state ->
-         try
-            update_infixes state;
-            let result = f state in
-               ignore (Recursive_lock.unlock lock);
-               result
-         with
-            exn ->
-               ignore (Recursive_lock.unlock lock);
-               raise exn
+   State.write infixes_entry (fun infixes ->
+   State.write state_entry (fun state ->
+         if not state.state_active then
+            raise (Invalid_argument "Shell_mp.synchronize_state: client call is not within toploop");
+         update_infixes infixes state;
+         f state))
 
 (*
  * Extend the grammar with terms.
@@ -291,7 +292,7 @@ let get_term_state state i =
          xnil_term
 
 let get_term i =
-   synchronize_state (fun state -> get_term_state state i)
+   synchronize_read (fun state -> get_term_state state i)
 
 let term_exp s =
    synchronize_state (fun state ->
@@ -318,12 +319,13 @@ let set_tactic s e =
  * since a print can occur in the refiner somewhere
  * outside the current invocation of the toploop.
  *)
-let print_term state t =
-   let db = state.state_df_base in
-   let buf = Lm_rformat.new_buffer () in
-      Dform.format_term db buf t;
-      output_rbuffer stdout buf;
-      flush stdout
+let print_term _ t =
+   synchronize_state (fun state ->
+         let db = state.state_df_base in
+         let buf = Lm_rformat.new_buffer () in
+            Dform.format_term db buf t;
+            output_rbuffer stdout buf;
+            flush stdout)
 
 let output_short db out t =
    let str =
@@ -340,9 +342,11 @@ let output_long db out t =
       Dform.format_term db buf t;
       output_rbuffer out buf
 
-let get_dbase = function
-   Some state -> state.state_df_base
- | None -> Dform.null_base
+let get_dbase state =
+   if state.state_active then
+      state.state_df_base
+   else
+      Dform.null_base
 
 let print_term_fp out t =
    let printer =
@@ -351,10 +355,12 @@ let print_term_fp out t =
       else
          output_short
    in
-      synchronize_client (fun state -> printer (get_dbase state) out t; flush out)
+      synchronize_read (fun state ->
+            printer (get_dbase state) out t;
+            flush out)
 
 let term_printer t =
-   synchronize_client (fun state ->
+   synchronize_read (fun state ->
       open_box 0;
       print_string (Dform.string_of_term (get_dbase state) t);
       close_box())
@@ -366,144 +372,134 @@ let term_printer t =
 (*
  * Get the tactic for the last refinement.
  *)
-let get_tactic state =
-   state.state_tactic
+let get_tactic handle =
+   synchronize_read (fun state -> state.state_tactic)
 
 (*
  * Set the opname function.
  *)
-let set_mk_opname state = function
-   Some f ->
-      state.state_mk_opname <- f
- | None ->
-      state.state_mk_opname <- mk_opname_null
-
-let set_infixes state = function
-   Some infs ->
-      state.state_infixes <- infs
- | None ->
-      state.state_infixes <- Infix.Set.empty
-
-let set_so_var_context state = function
-   Some ts ->
-      let delayed_fun v i =
-         let f = context_subst_of_terms ts in
-         let f v i = match f v i with
-            Some _ as conts -> conts
+let set_mk_opname handle op =
+   synchronize_write (fun state ->
+         match op with
+            Some f ->
+               state.state_mk_opname <- f
           | None ->
-               if i = 0 then None else
-                  raise(Failure "Unknown SO variable, please specify contexts explicitly")
-         in
-            state.state_mk_var_contexts <- f;
-            f v i
-      in
-         state.state_mk_var_contexts <- delayed_fun
- | None ->
-      state.state_mk_var_contexts <- mk_var_contexts_null
+               state.state_mk_opname <- mk_opname_null)
+
+let set_infixes handle infixes =
+   synchronize_write (fun state ->
+         match infixes with
+            Some infs ->
+               state.state_infixes <- infs
+          | None ->
+               state.state_infixes <- Infix.Set.empty)
+
+let set_so_var_context handle context =
+   synchronize_write (fun state ->
+         match context with
+            Some ts ->
+               let delayed_fun v i =
+                  let f = context_subst_of_terms ts in
+                  let f v i = match f v i with
+                                 Some _ as conts -> conts
+                               | None ->
+                                    if i = 0 then None else
+                                       raise(Failure "Unknown SO variable, please specify contexts explicitly")
+                  in
+                     state.state_mk_var_contexts <- f;
+                     f v i
+               in
+                  state.state_mk_var_contexts <- delayed_fun
+          | None ->
+               state.state_mk_var_contexts <- mk_var_contexts_null)
 
 (*
  * Set the display base.
  *)
-let set_dfbase state df =
-   let df =
-      match df with
-         Some df ->
-            df
-       | None ->
-            Dform.null_base
-   in
-      state.state_df_base <- df
+let set_dfbase handle df =
+   synchronize_write (fun state ->
+         let df =
+            match df with
+               Some df ->
+                  df
+             | None ->
+                  Dform.null_base
+         in
+            state.state_df_base <- df)
 
-let get_dfbase state =
-   state.state_df_base
+let get_dfbase handle =
+   synchronize_read (fun state ->
+         state.state_df_base)
 
 (*
  * Fetch terms after parsing.
  *)
-let reset_terms state =
-   state.state_inline_terms <- []
+let reset_terms handle =
+   synchronize_write (fun state ->
+         state.state_inline_terms <- [])
 
 (*
  * Activate the toploop.
- * Be careful about recursive locks.
+ * Take a write lock on all three data value.
  *)
-let synchronize state' f x =
-   if !debug_lock then
-      eprintf "Shell_state.synchronize: %d begin%t" (Thread.id (Thread.self ())) eflush;
-   Recursive_lock.lock lock;
-   if !debug_lock then
-      eprintf "Shell_state.synchronize: %d got lock%t" (Thread.id (Thread.self ())) eflush;
-   state := Some state';
-   try
-      update_infixes state';
-      let result = f x in
-         state := None;
-         if not (Recursive_lock.unlock lock) then
-            state := Some state';
-         if !debug_lock then
-            eprintf "Shell_state.synchronize: %d released lock%t" (Thread.id (Thread.self ())) eflush;
-         result
-      with
-         exn ->
-            if not (Recursive_lock.unlock lock) then
-               state := Some state';
-            if !debug_lock then
-               eprintf "Shell_state.synchronize: %d released lock%t" (Thread.id (Thread.self ())) eflush;
-            raise exn
+let synchronize handle f x =
+   State.write state_entry   (fun state ->
+   State.write infixes_entry (fun infixes ->
+         state.state_active <- true;
+         update_infixes infixes state;
+         try
+            let result = f x in
+               state.state_active <- false;
+               result
+         with
+            exn ->
+               state.state_active <- false;
+               raise exn))
 
-let unsynchronize state' f x =
-   state := None;
-   if !debug_lock then
-      eprintf "Shell_state.unsynchronize: %d releasing lock%t" (Thread.id (Thread.self ())) eflush;
-   ignore (Recursive_lock.unlock lock);
-   try
-      let result = f x in
-         if !debug_lock then
-            eprintf "Shell_state.unsynchronize: %d reacquiring lock%t" (Thread.id (Thread.self ())) eflush;
-         Recursive_lock.lock lock;
-         if !debug_lock then
-            eprintf "Shell_state.unsynchronize: %d lock reacquired%t" (Thread.id (Thread.self ())) eflush;
-         state := Some state';
-         update_infixes state';
+let unsynchronize handle f x =
+   let state   = State.get state_entry in
+   let infixes = State.get infixes_entry in
+      state.state_active <- false;
+      let result =
+         (* Release all the locks and execute the function *)
+         State.unlock infixes_entry (fun () ->
+         State.unlock state_entry (fun () ->
+               f x))
+      in
+         (* Locks have been restored *)
+         state.state_active <- true;
+         update_infixes infixes state;
          result
-   with
-      exn ->
-         if !debug_lock then
-            eprintf "Shell_state.unsynchronize: %d reacquiring lock%t" (Thread.id (Thread.self ())) eflush;
-         Recursive_lock.lock lock;
-         if !debug_lock then
-            eprintf "Shell_state.unsynchronize: %d lock reacquired%t" (Thread.id (Thread.self ())) eflush;
-         state := Some state';
-         raise exn
 
 (*
  * Set the module.
  * Collect the toplevel commands to use.
  * Shell commands are always added in.
  *)
-let set_module state name =
-   let rsrc =
-      try Mp_resource.find (Mp_resource.theory_bookmark name) with
-         Not_found ->
-            eprintf "Module %s: resources not found%t" (String.capitalize name) eflush;
-            Mp_resource.recompute_top ();
-            Mp_resource.find Mp_resource.top_bookmark
-   in
-   let shell_expr = IntFunExpr (fun i -> TermExpr (get_term_state state i)) in
-   let top = Mptop.get_toploop_resource rsrc ["", "shell_get_term", shell_expr, FunType(IntType, TermType)] in
-      state.state_toploop <- top
+let set_module handle name =
+   synchronize_write (fun state ->
+         let rsrc =
+            try Mp_resource.find (Mp_resource.theory_bookmark name) with
+               Not_found ->
+                  eprintf "Module %s: resources not found%t" (String.capitalize name) eflush;
+                  Mp_resource.recompute_top ();
+                  Mp_resource.find Mp_resource.top_bookmark
+         in
+         let shell_expr = IntFunExpr (fun i -> TermExpr (get_term_state state i)) in
+         let top = Mptop.get_toploop_resource rsrc ["", "shell_get_term", shell_expr, FunType (IntType, TermType)] in
+            state.state_toploop <- top)
 
-let get_toploop state =
-   state.state_toploop
+let get_toploop handle =
+   synchronize_read (fun state -> state.state_toploop)
 
 (*
  * Return interactive flag.
  *)
-let is_interactive state =
-   state.state_interactive
+let is_interactive handle =
+   synchronize_read (fun state -> state.state_interactive)
 
-let set_interactive state flag =
-   state.state_interactive <- flag
+let set_interactive handle flag =
+   synchronize_write (fun state -> state.state_interactive <- flag)
 
 (************************************************************************
  * TOPLEVEL PARSING                                                     *
@@ -536,9 +532,10 @@ let reset_input state =
 (*
  * Set the file to read from.
  *)
-let set_file state name =
-   reset_input state;
-   state.state_input_info <- Filename name
+let set_file handle name =
+   synchronize_write (fun state ->
+         reset_input state;
+         state.state_input_info <- Filename name)
 
 (*
  * Get the text associated with a location.
@@ -627,29 +624,31 @@ let create_buffer () =
  * Wrap the input channel so that we can recover input.
  * Unblock the state while we are reading so other shells can make progress.
  *)
-let stream_of_string state str =
-   let buf = { buf_index = 0; buf_buffer = str } in
-   let rec read loc =
-      let { buf_index = index; buf_buffer = buffer } = buf in
-         if index = String.length buffer then
-            None
-         else
-            let c = buffer.[index] in
-               buf.buf_index <- index + 1;
-               Some c
-   in
-      reset_input state;
-      push_buffer state 0 (String.length str) str;
-      Stream.from read
+let stream_of_string handle str =
+   synchronize_write (fun state ->
+         let buf = { buf_index = 0; buf_buffer = str } in
+         let rec read loc =
+            let { buf_index = index; buf_buffer = buffer } = buf in
+               if index = String.length buffer then
+                  None
+               else
+                  let c = buffer.[index] in
+                     buf.buf_index <- index + 1;
+                     Some c
+         in
+            reset_input state;
+            push_buffer state 0 (String.length str) str;
+            Stream.from read)
 
 (*
  * Wrap the input channel so that we can recover input.
  * Unblock the state while we are reading so other shells can make progress.
  *)
-let stream_of_channel state inx =
+let stream_of_channel handle inx =
    let buf = create_buffer () in
    let refill loc =
-      let str = unsynchronize state input_line inx ^ "\n" in
+      let state = State.get state_entry in
+      let str = unsynchronize handle input_line inx ^ "\n" in
          buf.buf_index <- 0;
          buf.buf_buffer <- str;
          push_buffer state loc (String.length str) str
@@ -668,21 +667,18 @@ let stream_of_channel state inx =
                buf.buf_index <- index + 1;
                Some c
    in
-      reset_input state;
+      synchronize_write (fun state -> reset_input state);
       Stream.from read
 
 (*
  * Wrap the input channel so that we can recover input.
  * Use the readline package.  Input is always from stdin.
  *)
-let stdin_prompt = ref "# "
-let stdin_prompt2 = ref "  "
+let set_prompt handle prompt =
+   synchronize_write (fun state -> state.state_prompt1 <- prompt)
 
-let set_prompt _ prompt =
-   stdin_prompt := prompt
-
-let set_prompt2 _ prompt =
-   stdin_prompt2 := prompt
+let set_prompt2 handle prompt =
+   synchronize_write (fun state -> state.state_prompt2 <- prompt)
 
 let save_readline_history () =
    match rl_history_file with
@@ -696,11 +692,12 @@ let save_readline_history () =
                eprintf "Couldn't save readline history file \"%s\"\n%s\n" name err
 
 
-let stdin_stream state =
+let stdin_stream handle =
    let buf = create_buffer () in
    let refill loc =
-      let str = unsynchronize state Lm_readline.readline !stdin_prompt ^ "\n" in
-         stdin_prompt := !stdin_prompt2;
+      let state = State.get state_entry in
+      let str = unsynchronize handle Lm_readline.readline state.state_prompt1 ^ "\n" in
+         state.state_prompt1 <- state.state_prompt2;
          buf.buf_index <- 0;
          buf.buf_buffer <- str;
          push_buffer state loc (String.length str) str
@@ -724,26 +721,28 @@ let stdin_stream state =
       buf.buf_index <- 0;
       buf.buf_buffer <- ""
    in
-      reset_input state;
+      synchronize_write (fun state -> reset_input state);
       Stream.from read, flush
 
 (*
  * Wrap the toplevel input function.
  * Replace the buffer filler so that we record all the input.
  *)
-let rec wrap state f lb =
+let rec wrap handle f lb =
    let refill = lb.refill_buff in
    let refill' lb =
-      lb.lex_buffer <- String.copy lb.lex_buffer;
-      unsynchronize state refill lb;
-         push_buffer state lb.lex_abs_pos lb.lex_buffer_len lb.lex_buffer;
+      let state = State.get state_entry in
+         lb.lex_buffer <- String.copy lb.lex_buffer;
+         unsynchronize handle refill lb;
+         push_buffer state lb.lex_abs_pos lb.lex_buffer_len lb.lex_buffer
    in
    let lb = { lb with refill_buff = refill' } in
-      reset_input state;
-      push_buffer state lb.lex_abs_pos lb.lex_buffer_len lb.lex_buffer;
-      let x = f lb in
-         reset_input state;
-         x
+      synchronize_write (fun state ->
+            reset_input state;
+            push_buffer state lb.lex_abs_pos lb.lex_buffer_len lb.lex_buffer;
+            let x = f lb in
+               reset_input state;
+               x)
 
 (************************************************************************
  * ARGUMENT COLLECTION                                                  *

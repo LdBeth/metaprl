@@ -30,7 +30,7 @@
  * jyh@cs.cornell.edu
  *)
 open Lm_debug
-open Lm_threads
+open Lm_thread
 open Printf
 
 let debug_http =

@@ -57,6 +57,8 @@ struct
 
    (*
     * State for evaluating toploop expressions.
+    * BUG JYH: note that the shell handle is ignored.
+    * This code should be removed at some point.
     *)
    let current_state = ref (Shell_state.create ())
 

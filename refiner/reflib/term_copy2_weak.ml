@@ -1,4 +1,5 @@
-(* This file implements terms' conversion from one Term-module
+(*
+ * This file implements terms' conversion from one Term-module
  * to another
  *
  * -----------------------------------------------------------------
@@ -27,7 +28,7 @@
  *
  * Author: Yegor Bryukhov, Alexey Nogin
  *)
-open Lm_threads
+open Lm_thread
 
 open Termmod_hash_sig
 
@@ -37,7 +38,6 @@ module TermCopy2Weak
    (SourceTerm : TermModuleHashSig)
    (TargetTerm : TermModuleHashSig) =
 struct
-
    module SourceHash = SourceTerm.TermHash
    module TargetHash = TargetTerm.TermHash
    module SourceNorm = SourceTerm.TermNorm
@@ -45,11 +45,12 @@ struct
    module Forward = TermCopyWeak (SourceTerm) (TargetTerm)
    module Backward = TermCopyWeak (TargetTerm) (SourceTerm)
 
-   type t =
+   type info =
       { source_hash : SourceHash.t;
-        target_hash : TargetHash.t;
-        locker: Mutex.t
+        target_hash : TargetHash.t
       }
+
+   type t = info State.entry
 
    type term_index = SourceHash.term_index * TargetHash.term_index
    type meta_term_index = SourceHash.meta_term_index * TargetHash.meta_term_index
@@ -75,144 +76,115 @@ struct
     * Create the bi-directional table.
     *)
    let p_create i =
-      { source_hash = SourceHash.p_create i;
-        target_hash = TargetHash.p_create i;
-        locker = Mutex.create ()
-      }
+      State.shared_val "Term_copy2_weak" (**)
+         { source_hash = SourceHash.p_create i;
+           target_hash = TargetHash.p_create i
+         }
 
    (*
     * Terms.
     *)
-   let p_add_src info t =
-      Mutex.lock info.locker;
-      let i1 = SourceNorm.p_add info.source_hash t in
-      let i2 = Forward.p_add info.target_hash t in
-         Mutex.unlock info.locker;
-         (i1, i2)
+   let p_add_src entry t =
+      State.write entry (fun info ->
+            let i1 = SourceNorm.p_add info.source_hash t in
+            let i2 = Forward.p_add info.target_hash t in
+               (i1, i2))
 
-   let p_add_dst info t =
-      Mutex.lock info.locker;
-      let i2 = TargetNorm.p_add info.target_hash t in
-      let i1 = Backward.p_add info.source_hash t in
-         Mutex.unlock info.locker;
-         (i1, i2)
+   let p_add_dst entry t =
+      State.write entry (fun info ->
+            let i2 = TargetNorm.p_add info.target_hash t in
+            let i1 = Backward.p_add info.source_hash t in
+               (i1, i2))
 
-   let p_retrieve_src info (i1, _) =
-      Mutex.lock info.locker;
-      let r = SourceNorm.p_retrieve info.source_hash i1 in
-         Mutex.unlock info.locker;
-         r
+   let p_retrieve_src entry (i1, _) =
+      State.write entry (fun info ->
+            SourceNorm.p_retrieve info.source_hash i1)
 
-   let p_retrieve_dst info (_, i2) =
-      Mutex.lock info.locker;
-      let r = TargetNorm.p_retrieve info.target_hash i2 in
-         Mutex.unlock info.locker;
-         r
+   let p_retrieve_dst entry (_, i2) =
+      State.write entry (fun info ->
+            TargetNorm.p_retrieve info.target_hash i2)
 
-   let p_convert info t =
-      Mutex.lock info.locker;
-      let _ = SourceNorm.p_add info.source_hash t in
-      let r = Forward.p_convert info.target_hash t in
-         Mutex.unlock info.locker;
-         r
+   let p_convert entry t =
+      State.write entry (fun info ->
+            ignore (SourceNorm.p_add info.source_hash t);
+            Forward.p_convert info.target_hash t)
 
-   let p_revert info t =
-      Mutex.lock info.locker;
-      let _ = TargetNorm.p_add info.target_hash t in
-      let r = Backward.p_convert info.source_hash t in
-         Mutex.unlock info.locker;
-         r
+   let p_revert entry t =
+      State.write entry (fun info ->
+            ignore (TargetNorm.p_add info.target_hash t);
+            Backward.p_convert info.source_hash t)
 
    (*
     * Meta-terms.
     *)
-   let p_add_meta_src info t =
-      Mutex.lock info.locker;
-      let i1 = SourceNorm.p_add_meta info.source_hash t in
-      let i2 = Forward.p_add_meta info.target_hash t in
-         Mutex.unlock info.locker;
-         (i1, i2)
+   let p_add_meta_src entry t =
+      State.write entry (fun info ->
+            let i1 = SourceNorm.p_add_meta info.source_hash t in
+            let i2 = Forward.p_add_meta info.target_hash t in
+               (i1, i2))
 
-   let p_add_meta_dst info t =
-      Mutex.lock info.locker;
-      let i2 = TargetNorm.p_add_meta info.target_hash t in
-      let i1 = Backward.p_add_meta info.source_hash t in
-         Mutex.unlock info.locker;
-         (i1, i2)
+   let p_add_meta_dst entry t =
+      State.write entry (fun info ->
+            let i2 = TargetNorm.p_add_meta info.target_hash t in
+            let i1 = Backward.p_add_meta info.source_hash t in
+               (i1, i2))
 
-   let p_retrieve_meta_src info (i1, _) =
-      Mutex.lock info.locker;
-      let r = SourceNorm.p_retrieve_meta info.source_hash i1 in
-         Mutex.unlock info.locker;
-         r
+   let p_retrieve_meta_src entry (i1, _) =
+      State.write entry (fun info ->
+            SourceNorm.p_retrieve_meta info.source_hash i1)
 
-   let p_retrieve_meta_dst info (_, i2) =
-      Mutex.lock info.locker;
-      let r = TargetNorm.p_retrieve_meta info.target_hash i2 in
-         Mutex.unlock info.locker;
-         r
+   let p_retrieve_meta_dst entry (_, i2) =
+      State.write entry (fun info ->
+            TargetNorm.p_retrieve_meta info.target_hash i2)
 
-   let p_convert_meta info t =
-      Mutex.lock info.locker;
-      let _ = SourceNorm.p_add_meta info.source_hash t in
-      let r = Forward.p_convert_meta info.target_hash t in
-         Mutex.unlock info.locker;
-         r
+   let p_convert_meta entry t =
+      State.write entry (fun info ->
+            ignore (SourceNorm.p_add_meta info.source_hash t);
+            Forward.p_convert_meta info.target_hash t)
 
-   let p_revert_meta info t =
-      Mutex.lock info.locker;
-      let _ = TargetNorm.p_add_meta info.target_hash t in
-      let r = Backward.p_convert_meta info.source_hash t in
-         Mutex.unlock info.locker;
-         r
+   let p_revert_meta entry t =
+      State.write entry (fun info ->
+            ignore (TargetNorm.p_add_meta info.target_hash t);
+            Backward.p_convert_meta info.source_hash t)
 
    (*
     * MSequents.
     *)
-   let p_add_msequent_src info t =
-      Mutex.lock info.locker;
-      let i1 = SourceNorm.p_add_msequent info.source_hash t in
-      let i2 = Forward.p_add_msequent info.target_hash t in
-         Mutex.unlock info.locker;
-         (i1, i2)
+   let p_add_msequent_src entry t =
+      State.write entry (fun info ->
+            let i1 = SourceNorm.p_add_msequent info.source_hash t in
+            let i2 = Forward.p_add_msequent info.target_hash t in
+               (i1, i2))
 
-   let p_add_msequent_dst info t =
-      Mutex.lock info.locker;
-      let i2 = TargetNorm.p_add_msequent info.target_hash t in
-      let i1 = Backward.p_add_msequent info.source_hash t in
-         Mutex.unlock info.locker;
-         (i1, i2)
+   let p_add_msequent_dst entry t =
+      State.write entry (fun info ->
+            let i2 = TargetNorm.p_add_msequent info.target_hash t in
+            let i1 = Backward.p_add_msequent info.source_hash t in
+               (i1, i2))
 
-   let p_retrieve_msequent_src info (i1, _) =
-      Mutex.lock info.locker;
-      let r = SourceNorm.p_retrieve_msequent info.source_hash i1 in
-         Mutex.unlock info.locker;
-         r
+   let p_retrieve_msequent_src entry (i1, _) =
+      State.write entry (fun info ->
+            SourceNorm.p_retrieve_msequent info.source_hash i1)
 
-   let p_retrieve_msequent_dst info (_, i2) =
-      Mutex.lock info.locker;
-      let r = TargetNorm.p_retrieve_msequent info.target_hash i2 in
-         Mutex.unlock info.locker;
-         r
+   let p_retrieve_msequent_dst entry (_, i2) =
+      State.write entry (fun info ->
+            TargetNorm.p_retrieve_msequent info.target_hash i2)
 
-   let p_convert_msequent info t =
-      Mutex.lock info.locker;
-      let _ = SourceNorm.p_add_msequent info.source_hash t in
-      let r = Forward.p_convert_msequent info.target_hash t in
-         Mutex.unlock info.locker;
-         r
+   let p_convert_msequent entry t =
+      State.write entry (fun info ->
+            ignore (SourceNorm.p_add_msequent info.source_hash t);
+            Forward.p_convert_msequent info.target_hash t)
 
-   let p_revert_msequent info t =
-      Mutex.lock info.locker;
-      let _ = TargetNorm.p_add_msequent info.target_hash t in
-      let r = Backward.p_convert_msequent info.source_hash t in
-         Mutex.unlock info.locker;
-         r
+   let p_revert_msequent entry t =
+      State.write entry (fun info ->
+            ignore (TargetNorm.p_add_msequent info.target_hash t);
+            Backward.p_convert_msequent info.source_hash t)
 
-   let global_hash = { source_hash = SourceHash.global_hash;
-                       target_hash = TargetHash.global_hash;
-                       locker = Mutex.create ()
-                     }
+   let global_hash =
+      State.shared_val "Term_copy2_weak.global_hash" (**)
+         { source_hash = SourceHash.global_hash;
+           target_hash = TargetHash.global_hash
+         }
 
    let add_src = p_add_src global_hash
    let add_dst = p_add_dst global_hash

@@ -41,7 +41,7 @@
 extends Summary
 
 open Lm_debug
-open Lm_threads
+open Lm_thread
 
 open Opname
 open Refiner.Refiner
@@ -56,7 +56,6 @@ open Tactic_type.Tacticals
 
 open Summary
 
-open Java_display_term
 open Shell_sig
 
 let eprintf = Lm_printf.eprintf
@@ -89,15 +88,6 @@ let debug_show_all_subgoals =
 (*
  * A window is either a text window or an HTML window.
  *)
-type java_window =
-   { pw_port     : Java_mux_channel.session;
-     pw_base     : dform_mode_base;
-     pw_goal     : Java_display_term.t;
-     pw_rule     : Java_display_term.t;
-     pw_subgoals : Java_display_term.t;
-     pw_menu     : Java_display_term.t
-   }
-
 type text_window =
    { df_base  : dform_mode_base;
      df_mode  : string;
@@ -105,8 +95,7 @@ type text_window =
    }
 
 type window =
-   JavaWindow of java_window
- | BrowserWindow of text_window
+   BrowserWindow of text_window
  | TextWindow of text_window
  | TexWindow of text_window
 
@@ -136,32 +125,12 @@ let create_browser_window base =
                    df_width = 80
    }
 
-let create_java_window port dfbase =
-   let { java_proof_goal = pw_goal;
-         java_proof_rule = pw_rule;
-         java_proof_subgoals = pw_subgoals
-       } = Java_display_term.create_proof port dfbase
-   in
-   let pw_menu = Java_display_term.create_menu port dfbase in
-   let window =
-      { pw_port = port;
-        pw_base = dfbase;
-        pw_goal = pw_goal;
-        pw_rule = pw_rule;
-        pw_subgoals = pw_subgoals;
-        pw_menu = pw_menu
-      }
-   in
-      JavaWindow window
-
 (*
  * Fork the current window.
  *)
 let new_window window =
    match window with
-      JavaWindow { pw_port = port; pw_base = base } ->
-         create_java_window port base
-    | BrowserWindow _
+      BrowserWindow _
     | TextWindow _
     | TexWindow _ ->
          window
@@ -175,7 +144,6 @@ let update_terminal_width window =
          info.df_width <- Mp_term.term_width stdout info.df_width;
          window
     | TexWindow _
-    | JavaWindow _
     | BrowserWindow _ ->
          window
 
@@ -353,20 +321,6 @@ let format_aux window proof =
             Lm_rformat.format_newline buf;
             Lm_rformat_tex.print_tex_channel width buf stdout;
             flush stdout
-    | JavaWindow { pw_goal = pw_goal;
-                   pw_rule = pw_rule;
-                   pw_subgoals = pw_subgoals
-      } ->
-         let main, goal, status, text, subgoals = dest_proof proof in
-            if !debug_edit then
-               eprintf "Proof_edit.format_aux: set_goal%t" eflush;
-            Java_display_term.set pw_goal main;
-            if !debug_edit then
-               eprintf "Proof_edit.format_aux: set_rule%t" eflush;
-            Java_display_term.set pw_rule text;
-            if !debug_edit then
-               eprintf "Proof_edit.format_aux: set_subgoals%t" eflush;
-            Java_display_term.set pw_subgoals subgoals
     | BrowserWindow { df_base = dfbase; df_mode = mode } ->
          let buf = Lm_rformat.new_buffer () in
          let df = get_mode_base dfbase mode in
@@ -386,8 +340,6 @@ let print_exn window f x =
        | TexWindow { df_base = base; df_mode = mode }
        | BrowserWindow { df_base = base; df_mode = mode } ->
             get_mode_base base mode
-       | JavaWindow _ ->
-            Dform.null_base
    in
       Filter_exn.print_exn df None f x
 
@@ -586,24 +538,26 @@ let kreitz_ped ped =
 (*
  * We keep a global copy/paste buffer.
  *)
-let copy_buffer = ref []
-let copy_lock = Mutex.create ()
+let copy_entry =
+   let default = ref [] in
+   let fork l = ref !l in
+      State.private_val "Proof_edit.copy" default fork
 
 let copy_ped ped s =
-   Mutex.lock copy_lock;
-   let proof = proof_of_ped ped in
-      begin
-         try copy_buffer := Lm_list_util.assoc_replace !copy_buffer s proof with
-            Not_found ->
-               copy_buffer := (s, proof) :: !copy_buffer
-      end;
-      Mutex.unlock copy_lock
+   State.write copy_entry (fun copy_buffer ->
+         let proof = proof_of_ped ped in
+            begin
+               try copy_buffer := Lm_list_util.assoc_replace !copy_buffer s proof with
+                  Not_found ->
+                     copy_buffer := (s, proof) :: !copy_buffer
+            end)
 
 let paste_ped ped s =
    let proof2 =
-      try List.assoc s !copy_buffer with
-         Not_found ->
-            raise (RefineError ("paste", StringStringError ("no proof in buffer", s)))
+      State.read copy_entry (fun copy_buffer ->
+            try List.assoc s !copy_buffer with
+               Not_found ->
+                  raise (RefineError ("paste", StringStringError ("no proof in buffer", s))))
    in
    let proof1 = proof_of_ped ped in
    let proof = Proof.paste (update_fun ped) proof1 proof2 in

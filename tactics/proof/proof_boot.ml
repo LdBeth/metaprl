@@ -61,7 +61,7 @@
 open Lm_debug
 open Lm_printf
 open Lm_printf_rbuffer
-open Lm_threads
+open Lm_thread
 
 open Opname
 open Refiner.Refiner
@@ -211,10 +211,13 @@ struct
 
    (*
     * Cache is actually imperative.
+    * There is a single cache shared by all threads.
+    * NOTE: performance would be improved if we have separate
+    * caches (use State.private_val).
     *)
-   let cache = ref (Cache.empty)
-
-   let cache_lock = Mutex.create ()
+   let cache_entry =
+      let default = ref (Cache.empty) in
+         State.shared_val "Proof_boot.cache" default
 
    (************************************************************************
     * PROOF PRINTING                                                       *
@@ -1251,9 +1254,8 @@ struct
     *)
    let set_cache ext =
       let mseq = (goal_ext ext).ref_goal in
-         Mutex.lock cache_lock;
-         cache := Cache.add !cache mseq ext;
-         Mutex.unlock cache_lock
+         State.write cache_entry (fun cache ->
+               cache := Cache.add !cache mseq ext)
 
    (*
     * Add a new Pending node to the cache.
@@ -1331,7 +1333,7 @@ struct
    let get_cache proof =
       try
          let goal = goal proof in
-         let exts = Cache.find_all !cache goal.ref_goal in
+         let exts = State.read cache_entry (fun cache -> Cache.find_all !cache goal.ref_goal) in
          let parents = compute_path_set proof in
          let nodes = prune_cycles parents [] exts in
             List.map (fold_proof (fun proof -> proof) proof) nodes

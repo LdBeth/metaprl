@@ -44,7 +44,7 @@ open Tactic_type.Tactic
 open Shell_sig
 open Shell_p4_sig
 
-module Shell (ShellP4 : ShellP4Sig): ShellSig
+module Shell (ShellP4 : ShellP4Sig) : ShellAllSig
 
 (* Quit *)
 topval exit : unit -> unit

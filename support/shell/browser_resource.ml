@@ -100,7 +100,7 @@ type browser_state =
      browser_history     : string list;
      browser_options     : string;
      browser_id          : int;
-     browser_sessions    : int;
+     browser_sessions    : int list
    }
 
 (************************************************************************
@@ -293,21 +293,18 @@ let add_history info lines =
 (*
  * Add the sessions.
  *)
-let add_sessions info i =
+let add_sessions info ids =
    try
       menu_replace info "session" (fun menu ->
-            let rec collect items j =
-               if j > i then
-                  items
-               else
-                  let item =
-                     { command_label = sprintf "Session %d" j;
-                       command_value = sprintf "Session(%d)" j
-                     }
-                  in
-                     collect (item :: items) (succ j)
+            let items =
+               List.fold_left (fun items j ->
+                     let item =
+                        { command_label = sprintf "Session %d" j;
+                          command_value = sprintf "Session(%d)" j
+                        }
+                     in
+                        item :: items) [] ids
             in
-            let items = collect menu.menu_items 1 in
                { menu with menu_items = items })
    with
       Not_found ->

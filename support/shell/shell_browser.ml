@@ -34,6 +34,8 @@
 open Lm_debug
 open Lm_symbol
 open Lm_int_set
+open Lm_thread
+open Lm_thread_sig
 
 open Format
 
@@ -60,11 +62,11 @@ let debug_http =
 (*
  * We may start this as a web service.
  *)
-let browser_flag   = Env_arg.bool "browser" false "start a browser service" Env_arg.set_bool_bool
-let browser_port   = Env_arg.int "port" 0 "start browser services on this port" Env_arg.set_int_int
-let browser_string = Env_arg.string "browser_command" None "browser to start on startup" Env_arg.set_string_option_string
+let browser_flag    = Env_arg.bool "browser" false "start a browser service" Env_arg.set_bool_bool
+let browser_port    = Env_arg.int "port" 0 "start browser services on this port" Env_arg.set_int_int
+let browser_string  = Env_arg.string "browser_command" None "browser to start on startup" Env_arg.set_string_option_string
 
-module ShellBrowser (ShellArg : ShellSig) =
+module ShellBrowser (Top : ShellTopSig) =
 struct
    (*
     * Menu info contains a string to for the text, and
@@ -76,12 +78,14 @@ struct
       }
 
    (*
-    * Each session has its own info.
+    * Each session has its own info,
+    * and it is assigned a unique process id.
     *)
+   type pid = Lm_thread_shell.pid
+
    type session =
-      { session_id                      : int;
+      { session_id                      : pid;
         session_buffer                  : Browser_state.t;
-        session_shell                   : ShellArg.t;
 
         (*
          * If the directory is changed, invalidate:
@@ -152,10 +156,6 @@ struct
         mutable state_challenge : string;
         mutable state_response  : string;
 
-        (* Active sessions *)
-        mutable state_id        : int;
-        mutable state_sessions  : session IntTable.t;
-
         (* Processes *)
         mutable state_children  : int list
       }
@@ -164,18 +164,17 @@ struct
     * Types of URIs.
     *)
    type uri =
-      InputURI   of string
-    | LoginURI   of string
-    | UnknownURI of string
-    | FileURI    of string
-
-    | ContentURI  of session * string * bool  (* bool states whether the URL ends with a / *)
-    | FrameURI    of session * string
-    | SessionURI  of session * session
-    | EditURI     of session * string
-    | RedirectURI of session * string
-    | OutputURI   of session
-    | CloneURI    of session
+      InputURI    of string
+    | LoginURI    of string
+    | UnknownURI  of string
+    | FileURI     of string
+    | ContentURI  of pid * string * bool  (* bool states whether the URL ends with a / *)
+    | FrameURI    of pid * string
+    | SessionURI  of pid
+    | EditURI     of pid * string
+    | RedirectURI of pid * string
+    | OutputURI   of pid
+    | CloneURI    of pid
 
    (*
     * Decode the URI.
@@ -184,76 +183,61 @@ struct
    let decode_uri state uri =
       match decode_uri uri with
          [] ->
-            (try
-                let session = IntTable.find state.state_sessions 1 in
-                   RedirectURI (session, "frameset")
-             with
-                Not_found
-              | Failure _ ->
-                   UnknownURI "/")
+            RedirectURI (1, "frameset")
        | ["session"; id]
        | ["session"; id; "frameset"] ->
-            (try
-                let session = IntTable.find state.state_sessions (int_of_string id) in
-                   FrameURI (session, "frameset")
-             with
-                Not_found
-              | Failure _ ->
+            (try FrameURI (Lm_thread_shell.pid_of_string id, "frameset") with
+                Failure _
+              | Not_found ->
                    eprintf "Bad session: %s@." id;
                    UnknownURI "/")
        | ["session"; id; "frameset"; "clone"] ->
-            (try
-                let session = IntTable.find state.state_sessions (int_of_string id) in
-                   CloneURI session
-             with
-                Not_found
-              | Failure _ ->
+            (try CloneURI (Lm_thread_shell.pid_of_string id) with
+                Failure _
+              | Not_found ->
                    eprintf "Bad session: %s@." id;
                    UnknownURI "/")
        | ["session"; id1; "frameset"; "session"; id2] ->
             (try
-                let session1 = IntTable.find state.state_sessions (int_of_string id1) in
-                let session2 = IntTable.find state.state_sessions (int_of_string id2) in
-                   SessionURI (session1, session2)
+                (* Check id1, even if we don't use it *)
+                let _ = Lm_thread_shell.pid_of_string id1 in
+                   SessionURI (Lm_thread_shell.pid_of_string id2)
              with
-                Not_found
-              | Failure _ ->
+                Failure _
+              | Not_found ->
                    eprintf "Bad sessions: %s -> %s@." id1 id2;
                    UnknownURI "/")
        | ["session"; id; "frame"; frame] ->
-            (try
-                let session = IntTable.find state.state_sessions (int_of_string id) in
-                   FrameURI (session, frame)
-             with
-                Not_found
-              | Failure _ ->
+            (try FrameURI (Lm_thread_shell.pid_of_string id, frame) with
+                Failure _
+              | Not_found ->
                    eprintf "Bad session: %s@." id;
                    UnknownURI "/")
        | "session" :: id :: "content" :: rest ->
             (try
-                let session = IntTable.find state.state_sessions (int_of_string id) in
+                let pid = Lm_thread_shell.pid_of_string id in
                 let dirname = Lm_string_util.prepend "/" rest in
                 let is_dir = uri.[String.length uri - 1] = '/' in
-                   ContentURI (session, dirname, is_dir)
+                   ContentURI (pid, dirname, is_dir)
              with
-                Not_found ->
+                Failure _
+              | Not_found ->
                    eprintf "Bad session: %s@." id;
                    UnknownURI (Lm_string_util.prepend "/" rest))
        | "session" :: id :: "edit" :: rest ->
             (try
-                let session = IntTable.find state.state_sessions (int_of_string id) in
+                let pid = Lm_thread_shell.pid_of_string id in
                 let name = String.concat "/" rest in
-                   EditURI (session, name)
+                   EditURI (pid, name)
              with
-                Not_found ->
+                Failure _
+              | Not_found ->
                    eprintf "Bad session: %s@." id;
                    UnknownURI (Lm_string_util.prepend "/" rest))
        | ["session"; id; "output"] ->
-            (try
-                let session = IntTable.find state.state_sessions (int_of_string id) in
-                   OutputURI session
-             with
-                Not_found ->
+            (try OutputURI (Lm_thread_shell.pid_of_string id) with
+                Failure _
+              | Not_found ->
                    eprintf "Bad session: %s@." id;
                    UnknownURI "/output")
        | "inputs" :: rest ->
@@ -364,9 +348,86 @@ struct
     * Close an exit the process.
     *)
    let quit state =
-      IntTable.iter (fun _ session ->
-            Browser_state.flush session.session_buffer) state.state_sessions;
       exit 0
+
+   (************************************************************************
+    * Session management.
+    *)
+
+   (*
+    * Keep a handle to the current session.
+    *)
+   let session_entry =
+      let default =
+         let id = Lm_thread_shell.get_pid () in
+         let empty_buffer = Buffer.create 1 in
+            { session_id              = id;
+              session_buffer          = Browser_state.create ();
+              session_cwd             = Top.pwd ();
+              session_menu_version    = 1;
+              session_content_version = 1;
+              session_message_version = 1;
+              session_buttons_version = 1;
+              session_rule_version    = 1;
+              session_state           = None;
+              session_menubar_info    = None;
+              session_commandbar_info = None;
+              session_menu            = None;
+              session_buttons         = None;
+              session_styles          = None;
+              session_io              = None;
+              session_io_command      = "No Command";
+              session_io_version      = 0;
+              session_edit            = "No File";
+              session_edit_flag       = false;
+              session_edit_version    = 0
+            }
+      in
+      let fork session =
+         let { session_buffer = buffer;
+               session_menu_version = menu_version;
+               session_cwd = cwd
+             } = session
+         in
+         let id = Lm_thread_shell.get_pid () in
+         let clone =
+            { session_id              = id;
+              session_buffer          = Browser_state.create ();
+              session_cwd             = cwd;
+              session_menu_version    = 1;
+              session_content_version = 1;
+              session_message_version = 1;
+              session_buttons_version = 1;
+              session_rule_version    = 1;
+              session_state           = None;
+              session_menubar_info    = None;
+              session_commandbar_info = None;
+              session_menu            = None;
+              session_buttons         = None;
+              session_styles          = None;
+              session_io              = None;
+              session_io_command      = "No command";
+              session_io_version      = 0;
+              session_edit            = "No File";
+              session_edit_flag       = false;
+              session_edit_version    = 0
+            }
+         in
+            session.session_menu_version <- succ menu_version;
+            session.session_state        <- None;
+            session.session_menubar_info <- None;
+            session.session_menu         <- None;
+            clone
+      in
+         State.private_val "Shell_browser.session" default fork
+
+   (*
+    * Lock the current session.
+    *)
+   let synchronize_pid pid f =
+      Lm_thread_shell.with_pid pid (fun () ->
+            State.write session_entry (fun session ->
+                  f session)) ()
 
    (************************************************************************
     * Lazy state operations.
@@ -380,15 +441,14 @@ struct
     * Be sure to increment version numbers.
     *)
    let invalidate_directory session cwd =
-      let { session_shell           = shell;
-            session_buffer          = state;
+      let { session_buffer          = state;
             session_menu_version    = menu_version;
             session_buttons_version = buttons_version;
             session_content_version = content_version
           } = session
       in
          Browser_state.add_directory state cwd;
-         Browser_state.add_file state (ShellArg.filename shell);
+         Browser_state.add_file state (Top.filename ());
 
          session.session_cwd <- cwd;
 
@@ -404,7 +464,7 @@ struct
          session.session_styles          <- None
 
    let maybe_invalidate_directory session =
-      let cwd = ShellArg.pwd session.session_shell in
+      let cwd = Top.pwd () in
          if cwd <> session.session_cwd then
             invalidate_directory session cwd
 
@@ -444,10 +504,8 @@ struct
     * Get the current state if possible.
     *)
    let get_session_state state session =
-      let { state_id = session_count } = state in
       let { session_buffer = buffer;
             session_state = info;
-            session_shell = shell;
             session_id = id
           } = session
       in
@@ -459,9 +517,9 @@ struct
                   { browser_directories = Browser_state.get_directories buffer;
                     browser_files       = Browser_state.get_files buffer;
                     browser_history     = Browser_state.get_history buffer;
-                    browser_options     = ShellArg.get_view_options shell;
+                    browser_options     = Top.get_view_options ();
                     browser_id          = id;
-                    browser_sessions    = session_count
+                    browser_sessions    = Lm_thread_shell.get_pids ()
                   }
                in
                   session.session_state <- Some info;
@@ -478,7 +536,7 @@ struct
           | None ->
                let state = get_session_state state session in
                let f =
-                  try get_menubar_resource (ShellArg.get_resource session.session_shell) with
+                  try get_menubar_resource (Top.get_resource ()) with
                      Not_found ->
                         default_menubar_info
                in
@@ -494,7 +552,7 @@ struct
           | None ->
                let state = get_session_state state session in
                let f =
-                  try get_commandbar_resource (ShellArg.get_resource session.session_shell) with
+                  try get_commandbar_resource (Top.get_resource ()) with
                      Not_found ->
                         default_commandbar_info
                in
@@ -616,7 +674,6 @@ struct
             session_menu            = menu;
             session_buttons         = buttons;
             session_styles          = styles;
-            session_shell           = shell;
             session_io_command      = command
           } = session
       in
@@ -755,7 +812,7 @@ struct
 
    let print_edit_page server state session filename outx =
       let edit =
-         if LsOptionSet.mem (ShellArg.get_ls_options session.session_shell) LsExternalEditor then
+         if LsOptionSet.mem (Top.get_ls_options ()) LsExternalEditor then
             print_external_edit_page
          else
             print_internal_edit_page
@@ -791,11 +848,8 @@ struct
     * directory).
     *)
    let flush state session =
-      let { session_buffer = buffer;
-            session_shell  = shell
-          } = session
-      in
-         Browser_state.synchronize buffer ShellArg.flush shell
+      let { session_buffer = buffer } = session in
+         Browser_state.synchronize buffer Top.flush ()
 
    (************************************************************************
     * System calls.
@@ -847,12 +901,11 @@ struct
     * For the editor, just set the info in the session.
     *)
    let start_edit_command session state outx target =
-      let { session_shell = shell;
-            session_buffer = buffer;
+      let { session_buffer = buffer;
             session_edit_version = edit_version
           } = session
       in
-      let flag = LsOptionSet.mem (ShellArg.get_ls_options shell) LsExternalEditor in
+      let flag = LsOptionSet.mem (Top.get_ls_options ()) LsExternalEditor in
          Browser_state.add_edit buffer target;
          session.session_edit <- target;
          session.session_edit_flag <- flag;
@@ -891,65 +944,15 @@ struct
     *)
 
    (*
-    * Clone the current command.
-    *)
-   let clone state session =
-      let { state_id = id;
-            state_sessions = sessions
-          } = state
-      in
-      let { session_shell = shell;
-            session_buffer = buffer;
-            session_menu_version = menu_version;
-            session_cwd = cwd
-          } = session
-      in
-      let id = succ id in
-      let clone =
-         { session_id              = id;
-           session_shell           = ShellArg.fork shell;
-           session_buffer          = Browser_state.create ();
-           session_cwd             = cwd;
-           session_menu_version    = 1;
-           session_content_version = 1;
-           session_message_version = 1;
-           session_buttons_version = 1;
-           session_rule_version    = 1;
-           session_state           = None;
-           session_menubar_info    = None;
-           session_commandbar_info = None;
-           session_menu            = None;
-           session_buttons         = None;
-           session_styles          = None;
-           session_io              = None;
-           session_io_command      = "No command";
-           session_io_version      = 0;
-           session_edit            = "No File";
-           session_edit_flag       = false;
-           session_edit_version    = 0
-         }
-      in
-         state.state_id               <- id;
-         state.state_sessions         <- IntTable.add sessions id clone;
-         session.session_menu_version <- succ menu_version;
-         session.session_state        <- None;
-         session.session_menubar_info <- None;
-         session.session_menu         <- None;
-         clone
-
-   (*
     * Evaluate a command.
     * Send it to the shell, and get the result.
     *)
    let eval server state session outx command =
-      let { session_shell = shell;
-            session_buffer = buffer
-          } = session
-      in
+      let { session_buffer = buffer } = session in
          Shell_syscall.set_syscall_handler (handle_syscall server state session outx);
          Browser_state.add_prompt  buffer command;
-         Browser_state.synchronize buffer (ShellArg.eval_top shell) (command ^ ";;");
-         Browser_state.set_options buffer (ShellArg.get_ls_options shell);
+         Browser_state.synchronize buffer Top.eval (command ^ ";;");
+         Browser_state.set_options buffer (Top.get_ls_options ());
          invalidate_eval session
 
    (*
@@ -958,11 +961,8 @@ struct
    let chdir state session dir =
       if !debug_http then
          eprintf "Changing directory to %s@." dir;
-      let { session_buffer = buffer;
-            session_shell = shell
-          } = session
-      in
-      let success = Browser_state.synchronize buffer (ShellArg.chdir_top shell) dir in
+      let { session_buffer = buffer } = session in
+      let success = Browser_state.synchronize buffer Top.chdir dir in
          invalidate_chdir session success;
          success
 
@@ -991,7 +991,7 @@ struct
     *)
    let paste server state session outx command term =
       let db = "src", Dform.find_dftable Mp_resource.top_bookmark, Dform.null_state in
-      let shortener = ShellArg.get_shortener session.session_shell in
+      let shortener = Top.get_shortener () in
       let s = Dform.string_of_short_term db shortener term in
       let command = Printf.sprintf "%s << %s >>" command s in
       let state = { state with state_table = BrowserTable.add_string state.state_table rulebox_sym (String.escaped command) } in
@@ -1022,57 +1022,65 @@ struct
                print_access_granted_page outx state
             else
                print_login_page outx state None
-       | FrameURI (session, frame) ->
-            if is_valid_response state header then
-               let width = get_window_width header in
-                  print_page server state session outx width frame
-            else
-               print_login_page outx state (Some session)
-       | CloneURI session ->
-            if is_valid_response state header then
-               let session = clone state session in
-                  print_redisplay_page frameset_uri server state session outx
-            else
-               print_login_page outx state (Some session)
-       | SessionURI (_, session) ->
-            if is_valid_response state header then
-               print_redisplay_page frameset_uri server state session outx
-            else
-               print_login_page outx state (Some session)
-       | ContentURI (session, dirname, is_dir) ->
-            if is_valid_response state header then
-               let width = get_window_width header in
-                  (* To ensure relative links are correct, all URLs must end with a slash *)
-                  if chdir state session dirname && is_dir then
-                     begin
-                        flush state session;
-                        print_page server state session outx width "content"
-                     end
+       | FrameURI (pid, frame) ->
+            synchronize_pid pid (fun session ->
+                  if is_valid_response state header then
+                     let width = get_window_width header in
+                        print_page server state session outx width frame
                   else
-                     (* Invalid directory or directory change failed *)
-                     print_redisplay_page content_uri server state session outx
-            else
-               print_login_page outx state (Some session)
-       | EditURI (session, filename) ->
-            if is_valid_response state header then
-               print_edit_page server state session filename outx
-            else
-               print_login_page outx state None
+                     print_login_page outx state (Some session))
+       | CloneURI pid ->
+            synchronize_pid pid (fun session ->
+                  if is_valid_response state header then
+                     let pid = Lm_thread_shell.create false in
+                        synchronize_pid pid (fun session ->
+                              print_redisplay_page frameset_uri server state session outx)
+                  else
+                     print_login_page outx state (Some session))
+       | SessionURI pid ->
+            synchronize_pid pid (fun session ->
+                  if is_valid_response state header then
+                     print_redisplay_page frameset_uri server state session outx
+                  else
+                     print_login_page outx state (Some session))
+       | ContentURI (pid, dirname, is_dir) ->
+            synchronize_pid pid (fun session ->
+                  if is_valid_response state header then
+                     let width = get_window_width header in
+                        (* To ensure relative links are correct, all URLs must end with a slash *)
+                        if chdir state session dirname && is_dir then
+                           begin
+                              flush state session;
+                              print_page server state session outx width "content"
+                           end
+                        else
+                           (* Invalid directory or directory change failed *)
+                           print_redisplay_page content_uri server state session outx
+                  else
+                     print_login_page outx state (Some session))
+       | EditURI (pid, filename) ->
+            synchronize_pid pid (fun session ->
+                  if is_valid_response state header then
+                     print_edit_page server state session filename outx
+                  else
+                     print_login_page outx state None)
        | FileURI filename ->
             if is_valid_response state header then
                print_file_page server state filename outx
             else
                print_error_page outx ForbiddenCode
-       | OutputURI session ->
-            if is_valid_response state header then
-               print_output_page state session outx
-            else
-               print_login_page outx state None
-       | RedirectURI (session, uri) ->
-            if is_valid_response state header then
-               print_redisplay_page (fun _ -> uri) server state session outx
-            else
-               print_login_page outx state None
+       | OutputURI pid ->
+            synchronize_pid pid (fun session ->
+                  if is_valid_response state header then
+                     print_output_page state session outx
+                  else
+                     print_login_page outx state None)
+       | RedirectURI (pid, uri) ->
+            synchronize_pid pid (fun session ->
+                  if is_valid_response state header then
+                     print_redisplay_page (fun _ -> uri) server state session outx
+                  else
+                     print_login_page outx state None)
        | UnknownURI dirname ->
             print_error_page outx NotFoundCode
 
@@ -1124,26 +1132,27 @@ struct
                None
       in
          match decode_uri state uri with
-            FrameURI (session, "rule") ->
-               (match command with
-                   Some command ->
-                      if !debug_http then
-                         eprintf "Command: \"%s\"@." (String.escaped command);
+            FrameURI (pid, "rule") ->
+               synchronize_pid pid (fun session ->
+                     match command with
+                        Some command ->
+                           if !debug_http then
+                              eprintf "Command: \"%s\"@." (String.escaped command);
 
-                      (* If the command contains a pasted element, then paste it *)
-                      (match get_pasted_command server state session command with
-                          Some (command, term) ->
-                             paste server state session outx command term
-                        | None ->
-                             try
-                                eval server state session outx command;
-                                print_redisplay_page rule_uri server state session outx
-                             with
-                                End_of_file ->
-                                   quit state)
-                 | None ->
-                      print_redisplay_page rule_uri server state session outx)
-          | EditURI (session, filename) ->
+                           (* If the command contains a pasted element, then paste it *)
+                           (match get_pasted_command server state session command with
+                               Some (command, term) ->
+                                  paste server state session outx command term
+                             | None ->
+                                  try
+                                     eval server state session outx command;
+                                     print_redisplay_page rule_uri server state session outx
+                                  with
+                                     End_of_file ->
+                                        quit state)
+                      | None ->
+                           print_redisplay_page rule_uri server state session outx)
+          | EditURI (pid, filename) ->
                let edit_uri _ =
                   sprintf "edit/%s" filename
                in
@@ -1368,49 +1377,22 @@ struct
    let main () =
       if !browser_flag then
          let mp_dir, password = init_password () in
-         let id = 1 in
-         let shell = ShellArg.get_current_shell () in
-         let empty_buffer = Buffer.create 1 in
-         let session =
-            { session_id              = id;
-              session_shell           = shell;
-              session_buffer          = Browser_state.create ();
-              session_cwd             = ShellArg.pwd shell;
-              session_menu_version    = 1;
-              session_content_version = 1;
-              session_message_version = 1;
-              session_buttons_version = 1;
-              session_rule_version    = 1;
-              session_state           = None;
-              session_menubar_info    = None;
-              session_commandbar_info = None;
-              session_menu            = None;
-              session_buttons         = None;
-              session_styles          = None;
-              session_io              = None;
-              session_io_command      = "No Command";
-              session_io_version      = 0;
-              session_edit            = "No File";
-              session_edit_flag       = false;
-              session_edit_version    = 0
-            }
-         in
          let state =
             { state_table     = BrowserTable.empty;
               state_mp_dir    = mp_dir;
               state_password  = password;
               state_challenge = "unknown";
               state_response  = "unknown";
-              state_id        = id;
-              state_sessions  = IntTable.add IntTable.empty id session;
               state_children  = []
             }
          in
          let state = update_challenge state in
-         let options = string_of_ls_options (Browser_state.get_options session.session_buffer) in
-            ShellArg.set_view_options shell options;
-            ShellArg.refresh_packages ();
-            ShellArg.set_dfmode shell "html";
+         let pid = Lm_thread_shell.get_pid () in
+            synchronize_pid pid (fun session ->
+                  let options = string_of_ls_options (Browser_state.get_options session.session_buffer) in
+                     Top.set_view_options options);
+            Top.refresh_packages ();
+            Top.set_dfmode "html";
             serve_http http_start http_connect state !browser_port;
             eprintf "Browser service finished@."
 end

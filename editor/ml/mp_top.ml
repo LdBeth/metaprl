@@ -29,7 +29,6 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-
 open Lm_debug
 open Lm_printf
 
@@ -41,8 +40,7 @@ module Shell = Shell.Shell (Shell_mp.ShellP4)
 let _ =
    show_loading "Loaded Shell%t"
 
-module ShellBrowser = Shell_browser.ShellBrowser (Shell)
-module ShellJava = Shell_java.ShellJava (Shell)
+module ShellBrowser = Shell_browser.ShellBrowser (Shell.Top)
 
 let _ =
    show_loading "Starting main loop%t"
@@ -50,9 +48,8 @@ let _ =
 (*
  * The first active shell will take everything.
  *)
-let _ = ShellBrowser.main ()
-let _ = ShellJava.main ()
-let _ = Shell.main ()
+let () = ShellBrowser.main ()
+let () = Shell.Main.main ()
 
 external exit : int -> unit = "caml_exit"
 

@@ -33,7 +33,7 @@
 open Lm_debug
 
 open Lm_printf
-open Lm_threads
+open Lm_thread
 open Lm_imp_dag
 
 open File_base_type
@@ -150,12 +150,13 @@ module Cache = MakeCaches (Convert)
 (*
  * This is the global info.
  *)
-type t =
-   { pack_lock : Mutex.t;
-     pack_cache : Cache.StrFilterCache.t;
-     pack_dag : package ImpDag.t;
+type info =
+   { pack_cache    : Cache.StrFilterCache.t;
+     pack_dag      : package ImpDag.t;
      pack_packages : (string,package ImpDag.node) Hashtbl.t
    }
+
+and t = info State.entry
 
 (*
  * This is the info we save when the structure is
@@ -176,10 +177,10 @@ and package =
 
      pack_name : string;
 
-     mutable pack_status : package_status;
+     mutable pack_status   : package_status;
      mutable pack_sig_info : Cache.StrFilterCache.sig_info option;
-     mutable pack_str : pack_str_info option;
-     mutable pack_infixes : Infix.Set.t;
+     mutable pack_str      : pack_str_info option;
+     mutable pack_infixes  : Infix.Set.t;
    }
 
 (*
@@ -195,68 +196,53 @@ type proof = Convert.cooked
  * Create the cache.
  * Add placeholders for all the theories.
  *)
- let refresh pack path =
-   let mk_package name =
-      { pack_info = pack;
-        pack_name = name;
-        pack_status = PackIncomplete;
-        pack_sig_info = None;
-        pack_str = None;
-        pack_infixes = Infix.Set.empty;
-      }
-   in
-   let find_or_create name =
-      try Hashtbl.find pack.pack_packages name with
-         Not_found ->
-            let node = ImpDag.insert pack.pack_dag (mk_package name) in
-               Hashtbl.add pack.pack_packages name node;
-               node
-   in
-   let add_theory thy =
-      let node = find_or_create thy.thy_name in
-      let add_parent name =
-         ImpDag.add_edge pack.pack_dag (find_or_create name) node
-      in
-         List.iter add_parent (Mp_resource.get_parents thy.thy_name)
-   in
-      List.iter add_theory (get_theories ())
+let refresh pack_entry path =
+   State.write pack_entry (fun pack ->
+         let mk_package name =
+            { pack_info = pack_entry;
+              pack_name = name;
+              pack_status = PackIncomplete;
+              pack_sig_info = None;
+              pack_str = None;
+              pack_infixes = Infix.Set.empty;
+            }
+         in
+         let find_or_create name =
+            try Hashtbl.find pack.pack_packages name with
+               Not_found ->
+                  let node = ImpDag.insert pack.pack_dag (mk_package name) in
+                     Hashtbl.add pack.pack_packages name node;
+                     node
+         in
+         let add_theory thy =
+            let node = find_or_create thy.thy_name in
+            let add_parent name =
+               ImpDag.add_edge pack.pack_dag (find_or_create name) node
+            in
+               List.iter add_parent (Mp_resource.get_parents thy.thy_name)
+         in
+            List.iter add_theory (get_theories ()))
 
 let create path =
-   let pack = {
-      pack_lock = Mutex.create ();
-      pack_cache = Cache.StrFilterCache.create path;
-      pack_dag = ImpDag.create ();
-      pack_packages = Hashtbl.create 17
-   } in
-   refresh pack path;
-   pack
+   let pack =
+      { pack_cache = Cache.StrFilterCache.create path;
+        pack_dag = ImpDag.create ();
+        pack_packages = Hashtbl.create 17
+      }
+   in
+   let pack = State.shared_val "Package_info.pack" pack in
+      refresh pack path;
+      pack
 
 (*
  * Lock the pack.
  *)
-let synchronize_pack pack f =
-   let lock = pack.pack_lock in
-      Mutex.lock lock;
-      try
-         let result = f pack in
-            Mutex.unlock lock;
-            result
-      with
-         exn ->
-            Mutex.unlock lock;
-            raise exn
+let synchronize_pack pack_entry f =
+   State.write pack_entry f
 
 let synchronize_node node f =
-   let lock = node.pack_info.pack_lock in
-      Mutex.lock lock;
-      try
-         let result = f node in
-            Mutex.unlock lock;
-            result
-      with
-         exn ->
-            Mutex.unlock lock;
-            raise exn
+   State.write node.pack_info (fun _ ->
+         f node)
 
 (************************************************************************
  * REFINER ACCESS                                                       *
@@ -301,47 +287,49 @@ let insert_parent pack node = function
  * and adds the edges to the parents.
  *)
 let add_implementation pack_info =
-   let { pack_info = pack; pack_name = name; pack_str = info } = pack_info in
-   let { pack_dag = dag; pack_packages = packages } = pack in
-   let parents =
-      match info with
-         Some { pack_str_info = info } ->
-            Cache.StrFilterCache.parents info
-       | None ->
-            raise (Invalid_argument "Package_info/add_implementation")
-   in
-   let node = ImpDag.insert dag pack_info in
-      if Hashtbl.mem packages name then begin
-         ImpDag.delete dag (Hashtbl.find packages name);
-         Hashtbl.remove packages name
-      end;
-      Hashtbl.add packages name node;
-      List.iter (insert_parent pack node) parents
+   let { pack_info = pack_entry; pack_name = name; pack_str = info } = pack_info in
+      State.write pack_entry (fun pack ->
+            let { pack_dag = dag; pack_packages = packages } = pack in
+            let parents =
+               match info with
+                  Some { pack_str_info = info } ->
+                     Cache.StrFilterCache.parents info
+                | None ->
+                     raise (Invalid_argument "Package_info/add_implementation")
+            in
+            let node = ImpDag.insert dag pack_info in
+               if Hashtbl.mem packages name then begin
+                                                    ImpDag.delete dag (Hashtbl.find packages name);
+                                                    Hashtbl.remove packages name
+                                                 end;
+               Hashtbl.add packages name node;
+               List.iter (insert_parent pack node) parents)
 
 (*
  * Load a package.
  * We search for the description, and load it.
  *)
 let load_aux arg pack_info =
-   let { pack_info = pack; pack_name = name } = pack_info in
-   let { pack_cache = cache } = pack in
-      try
-         let path = [name] in
-         let info = Cache.StrFilterCache.load cache arg name ImplementationType InterfaceType AnySuffix in
-         let pack_str =
-            { pack_str_info = info;
-              pack_parse = arg
-            }
-         in
-            pack_info.pack_str <- Some pack_str;
-            pack_info.pack_status <- PackUnmodified;
-            pack_info.pack_infixes <- Cache.StrFilterCache.all_infixes info;
-            add_implementation pack_info;
-            Cache.StrFilterCache.set_mode info InteractiveSummary
-   with
-      Not_found
-    | Sys_error _ ->
-         raise (Failure (sprintf "Package_info.load: '%s' not found" name))
+   let { pack_info = pack_entry; pack_name = name } = pack_info in
+      State.write pack_entry (fun pack ->
+            let { pack_cache = cache } = pack in
+               try
+                  let path = [name] in
+                  let info = Cache.StrFilterCache.load cache arg name ImplementationType InterfaceType AnySuffix in
+                  let pack_str =
+                     { pack_str_info = info;
+                       pack_parse = arg
+                     }
+                  in
+                     pack_info.pack_str <- Some pack_str;
+                     pack_info.pack_status <- PackUnmodified;
+                     pack_info.pack_infixes <- Cache.StrFilterCache.all_infixes info;
+                     add_implementation pack_info;
+                     Cache.StrFilterCache.set_mode info InteractiveSummary
+               with
+                  Not_found
+                | Sys_error _ ->
+                     raise (Failure (sprintf "Package_info.load: '%s' not found" name)))
 
 (*
  * Make sure the str info is valid.
@@ -360,12 +348,12 @@ let auto_load_str arg pack_info =
 (*
  * Load the package if it is not loaded already.
  *)
-let load pack arg name =
-   synchronize_pack pack (fun pack ->
+let load pack_entry arg name =
+   synchronize_pack pack_entry (fun pack ->
          let pack_info =
             try ImpDag.node_value pack.pack_dag (get_package pack name) with
                Not_found ->
-                  { pack_info = pack;
+                  { pack_info = pack_entry;
                     pack_status = PackUnmodified;
                     pack_name = name;
                     pack_sig_info = None;
@@ -391,8 +379,9 @@ let status pack = pack.pack_status
  *)
 let filename pack_info arg =
    auto_loading_str arg pack_info (function
-      { pack_info = { pack_cache = cache }; pack_str = Some { pack_str_info = info } } ->
-         Cache.StrFilterCache.filename cache info
+      { pack_info = pack_entry; pack_str = Some { pack_str_info = info } } ->
+         State.write pack_entry (fun { pack_cache = cache } ->
+               Cache.StrFilterCache.filename cache info)
     | { pack_name = name; pack_str = None } ->
          raise (NotLoaded name))
 
@@ -472,15 +461,15 @@ let roots pack =
       { pack_dag = dag } ->
          List.map (ImpDag.node_value dag) (ImpDag.roots dag))
 
-let parents pack info =
-   synchronize_pack pack (function
-         { pack_dag = dag } ->
-            let node = get_node pack info in
-               List.map (ImpDag.node_value dag) (ImpDag.node_out_edges dag node))
+let parents pack_entry info =
+   synchronize_pack pack_entry (fun pack ->
+         let { pack_dag = dag } = pack in
+         let node = get_node pack info in
+            List.map (ImpDag.node_value dag) (ImpDag.node_out_edges dag node))
 
-let children pack info =
-   synchronize_pack pack (function
-      { pack_dag = dag } ->
+let children pack_entry info =
+   synchronize_pack pack_entry (fun pack ->
+         let { pack_dag = dag } = pack in
          let node = get_node pack info in
             List.map (ImpDag.node_value dag) (ImpDag.node_in_edges dag node))
 
@@ -539,18 +528,18 @@ let export arg pack_info =
 (*
  * Create an empty package.
  *)
-let create_package pack arg name =
-   synchronize_pack pack (function
-      pack ->
+let create_package pack_entry arg name =
+   synchronize_pack pack_entry (fun pack ->
          let info =
-           { pack_info = pack;
+            { pack_info = pack_entry;
               pack_status = PackModified;
               pack_sig_info = None;
-              pack_str = Some { pack_str_info =
-                                   Cache.StrFilterCache.create_cache pack.pack_cache (**)
-                                   name ImplementationType InterfaceType;
-                                pack_parse = arg
-                         };
+              pack_str =
+                 Some { pack_str_info =
+                           Cache.StrFilterCache.create_cache pack.pack_cache (**)
+                              name ImplementationType InterfaceType;
+                        pack_parse = arg
+                 };
               pack_infixes = Infix.Set.empty;
               pack_name = name
             }

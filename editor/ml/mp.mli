@@ -29,13 +29,15 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-
 open Refiner.Refiner.Refine
 
 open Tactic_type.Tacticals
 
+open Shell_sig
 open Proof_edit
 
+(*
+ * BUG JYH: reenable these?
 (*
  * The possible objects in a package.
  *)
@@ -66,6 +68,7 @@ val set_params : term Filter_type.param list -> unit
  * Proof editing.
  *)
 val goal : unit -> tactic_arg
+ *)
 
 (*
  * Nuprl5.

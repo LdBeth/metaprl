@@ -55,12 +55,6 @@ open Shell_util
 (*
  * A window is either a text window or an HTML window.
  *)
-type java_window =
-   { pw_port : Java_mux_channel.session;
-     pw_base : dform_mode_base;
-     pw_menu : Java_display_term.t
-   }
-
 type text_window =
    { df_base : dform_mode_base;
      df_mode : string;
@@ -68,8 +62,7 @@ type text_window =
    }
 
 type window =
-   JavaWindow of java_window
- | TextWindow of text_window
+   TextWindow of text_window
  | TexWindow of text_window
  | BrowserWindow of text_window
 
@@ -85,9 +78,6 @@ let create_window = function
       TextWindow { df_base = base; df_mode = mode; df_width = 80 }
  | DisplayTex base ->
       TexWindow { df_base = base; df_mode = "tex"; df_width = 60 }
- | DisplayJava (port, base) ->
-      let menu = Java_display_term.create_term port base in
-         JavaWindow { pw_port = port; pw_base = base; pw_menu = menu }
  | DisplayBrowser base ->
       BrowserWindow { df_base = base; df_mode = "html"; df_width = 70 }
 
@@ -100,7 +90,6 @@ let update_terminal_width window =
          info.df_width <- Mp_term.term_width Pervasives.stdout info.df_width;
          window
     | TexWindow _
-    | JavaWindow _
     | BrowserWindow _ ->
          window
 
@@ -108,9 +97,7 @@ let update_terminal_width window =
  * Copy the window.
  *)
 let new_window = function
-   JavaWindow { pw_port = port; pw_base = base } ->
-      JavaWindow { pw_port = port; pw_base = base; pw_menu = Java_display_term.create_term port base }
- | TextWindow _
+   TextWindow _
  | TexWindow _
  | BrowserWindow _ as window ->
       window
@@ -133,9 +120,6 @@ let display_term pack window term =
             Dform.format_term df buf term;
             Lm_rformat_tex.print_tex_channel width buf out;
             Shell_tex.close_file out
-    | JavaWindow { pw_menu = menu } ->
-         Java_display_term.set_dir menu ("/" ^ Package_info.name pack);
-         Java_display_term.set menu term
     | BrowserWindow { df_base = base; df_mode = mode } ->
          let buf = Lm_rformat.new_buffer () in
          let df = get_mode_base base mode in

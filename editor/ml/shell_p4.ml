@@ -33,6 +33,7 @@ open Longident
 open Parsetree
 
 open Lm_printf
+open Lm_thread
 
 open Pcaml
 
@@ -45,10 +46,11 @@ open Tactic_type.Tacticals
 (*
  * Ref cell for returning the tactic value.
  *)
-let inline_tactic = ref None
+let inline_tactic =
+   State.private_val (ref None) (fun x -> ref !x)
 
 let install_tactic tac =
-   inline_tactic := Some tac
+   State.write inline_tactic (fun x -> x := Some tac)
 
 module ShellP4 =
 struct
@@ -58,7 +60,10 @@ struct
 
    (*
     * No notion of current state, since the toploop evaluates all
-    * shell call relative to the Mp module.
+    * shell calls relative to the Mp module.
+    *
+    * BUG JYH: note that the shell handle is ignored.
+    * This code should be removed at some point.
     *)
    let current_state = ref (Shell_state.create ())
 
@@ -142,10 +147,10 @@ struct
          OnceFinal tac ->
             tac
        | OnceInitial pt_item ->
-            inline_tactic := None;
+            State.write inline_tactic (fun x -> x := None);
             try
                if Toploop.execute_phrase false Format.std_formatter (Parsetree.Ptop_def pt_item) then
-                  match !inline_tactic with
+                  match State.read inline_tactic (fun x -> !x) with
                      Some tac ->
                         tacv := OnceFinal tac;
                         tac
