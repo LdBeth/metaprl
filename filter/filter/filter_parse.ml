@@ -1179,7 +1179,7 @@ EXTEND
            in
               print_exn f ("resource " ^ name) loc;
               empty_sig_item loc
-        | "dform"; name = LIDENT; ":"; options = df_options ->
+        | "dform"; name = LIDENT; ":"; options = parsed_df_options ->
            let f () =
               let options', t = options in
                  SigFilter.declare_dform (SigFilter.get_proc loc) loc name options' t;
@@ -1357,12 +1357,16 @@ EXTEND
               empty_str_item loc
         | "dform"; name = LIDENT; ":"; options = df_options; "="; form = xdform ->
            let f () =
-              let options', t = options in
-                 StrFilter.define_dform (StrFilter.get_proc loc) loc name options' t form
+              let options, t = options in
+                 match dest_xlist (term_of_parsed_term (mk_xlist_term (t::form::options))) with
+                    t::form::options ->
+                        StrFilter.define_dform (StrFilter.get_proc loc) loc name options t form
+                  | _ ->
+                        raise (Invalid_argument "Filter_parse: internal error")
            in
               print_exn f ("dform " ^ name) loc;
               empty_str_item loc
-        | "ml_dform"; name = LIDENT; ":"; options = df_options; format = LIDENT; buf = LIDENT; "="; code = expr ->
+        | "ml_dform"; name = LIDENT; ":"; options = parsed_df_options; format = LIDENT; buf = LIDENT; "="; code = expr ->
            let f () =
               let options', t = options in
                  StrFilter.define_ml_dform (StrFilter.get_proc loc) loc name options' t format buf (bind_item code)
@@ -1497,9 +1501,14 @@ EXTEND
    (*
     * DISPLAY FORMS.
     *)
-   df_options:
+   parsed_df_options:
       [[ l = LIST1 singleterm SEP "::" ->
           Lm_list_util.split_last (List.map (function { aterm = t } -> term_of_parsed_term t) l)
+       ]];
+
+   df_options:
+      [[ l = LIST1 singleterm SEP "::" ->
+          Lm_list_util.split_last (List.map (function { aterm = t } -> t) l)
        ]];
 
    (*

@@ -134,7 +134,7 @@ struct
                 * a substitution instance.  Check that the subterm counts
                 * match.
                 *)
-               List.iter (check_cont v bconts) conts;
+               if strict = Strict then List.iter (check_cont v bconts) conts;
                let index = array_rstack_so_index v stack in
                check_arity v conts (List.length subterms) stack.(index);
                let enames, subterms = compile_so_contractum_terms strict enames stack bconts bvars subterms in
@@ -168,7 +168,7 @@ struct
                 * Second order context and the v is bound.
                 * We generate a substitution instance.
                 *)
-               List.iter (check_cont v bconts) conts;
+               if strict = Strict then List.iter (check_cont v bconts) conts;
                let index = array_rstack_c_index v stack in
                check_arity v conts (List.length subterms) stack.(index); (* TODO: check_arity does not support contexts yet *)
                let enames, term' = compile_so_contractum_term strict enames stack bconts bvars term' in
@@ -348,7 +348,7 @@ struct
                    *)
                   let index = array_rstack_c_index v stack in
                   check_arity v conts (List.length subterms) stack.(index);
-                  List.iter (check_cont v bconts) conts;
+                  if strict = Strict then List.iter (check_cont v bconts) conts;
                   let enames, subterms =
                      compile_so_contractum_terms strict enames stack bconts bvars subterms
                   in

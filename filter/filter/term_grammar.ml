@@ -1158,7 +1158,7 @@ struct
 
       df_item:
          [[ t = singleterm ->
-             term_of_parsed_term (get_aterm loc t)
+             get_aterm loc t
            | sl_back_quote; name = STRING ->
              mk_xstring_term (Token.eval_string loc name)
           ]];
