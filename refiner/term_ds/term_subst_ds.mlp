@@ -28,7 +28,9 @@ module TermSubst
         with type param = TermType.param
         with type operator = TermType.operator
         with type term = TermType.term
+        with type term_core = TermType.term_core
         with type bound_term = TermType.bound_term
+        with type esequent = TermType.esequent
 
         with type level_exp_var' = TermType.level_exp_var'
         with type level_exp' = TermType.level_exp'
@@ -176,9 +178,43 @@ struct
             equal_term (join_vars vars (bt1.bvars,bt2.bvars)) bt1.bterm bt2.bterm))
        | _ -> false
 
+   let rec equal_hyps hyps1 hyps2 vars i =
+      if i = SeqHyp.length hyps1 then Some vars else
+         match hyps1.(i), hyps2.(i) with
+            Hypothesis (v1,t1), Hypothesis (v2,t2) ->
+               if equal_term vars t1 t2 then
+                  equal_hyps 
+                     hyps1 hyps2 
+                     (if v1=v2 then remove_var v1 vars else (v1,v2)::vars)
+                     (succ i)
+               else None
+          | Context (v1,ts1), Context (v2,ts2) -> 
+            if v1=v2 && List_util.for_all2 (equal_term vars) ts1 ts2 then
+               equal_hyps hyps1 hyps2 vars (succ i)
+            else None
+          | _ -> None
+
+   let rec equal_goals goals1 goals2 vars i =
+      i < 0 ||
+      ( equal_term vars goals1.(i) goals2.(i) &&
+        equal_goals goals1 goals2 vars (pred i) )
+   
    let alpha_equal t1 t2 = 
-      try equal_term [] t1 t2 with
-         Failure _ -> false
+      match get_core t1, get_core t2 with
+         Term _, Term _ -> 
+            (try equal_term [] t1 t2 with
+               Failure _ -> false)
+       | Sequent s1, Sequent s2 ->
+            (try
+               SeqHyp.length s1.sequent_hyps = SeqHyp.length s2.sequent_hyps &&
+               SeqGoal.length s1.sequent_goals = SeqGoal.length s2.sequent_goals &&
+               equal_term [] s1.sequent_args s2.sequent_args &&
+               match equal_hyps s1.sequent_hyps s2.sequent_hyps [] 0 with
+                  None -> false
+                | Some vars -> equal_goals s1.sequent_goals s2.sequent_goals vars (SeqGoal.length s1.sequent_goals - 1)
+            with
+               Failure _ -> false)
+       | _ -> false
 
    let alpha_equal_vars (t, v) (t', v') =
       try equal_term (List_util.zip v v') t t' with
