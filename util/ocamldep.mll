@@ -224,18 +224,28 @@ let (depends_on, escaped_eol) =
   | "Unix" | "Win32" | "Cygwin" -> (": ", "\\\n    ")
   | "MacOS" -> ("\196 ", "\182\n    ")
   | x -> invalid_arg ("Ocamldep: unknown system type: " ^ x)
-;;
+
+let print_file s =
+   for i=0 to (String.length s) -1 do
+      match s.[i] with
+         ' '  -> print_string "\\ "
+       | '\t' -> print_string "\\t"
+       | '\n' -> print_string "\\n"
+       | '\r' -> print_string "\\r"
+       | '\\' -> print_string "\\\\"
+       | c    -> print_char c
+   done
 
 let print_dependencies target_file deps =
   match deps with
     [] -> ()
   | _ ->
-    print_string target_file; print_string depends_on;
+    print_file target_file; print_string depends_on;
     let rec print_items pos = function
       [] -> print_string "\n"
     | dep :: rem ->
         if pos + String.length dep <= 77 then begin
-          print_string dep; print_string " ";
+          print_file dep; print_string " ";
           print_items (pos + String.length dep + 1) rem
         end else begin
           print_string escaped_eol; print_string dep; print_string " ";
