@@ -741,7 +741,7 @@ struct
           } = cache
       in
       let path = [name] in
-      let info' = Base.find_file base.lib barg path my_select (OnlySuffixes ["prlb"]) in
+      let info' = Base.find_file base.lib barg path my_select (OnlySuffixes ["prlb"; "prla"]) in
       let info' = StrMarshal.unmarshal (Base.info base.lib info') in
          cache.info <- FilterSummaryTerm.copy_proofs copy_proof info info'
 

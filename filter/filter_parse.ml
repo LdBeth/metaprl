@@ -744,7 +744,7 @@ struct
          (* Also copy the proofs if they exist *)
          if proc.select = ImplementationType then
             let name = proc.name in
-               if file_interactive (name ^ ".prlb") then
+               if file_interactive (name ^ ".prlb") || Sys.file_exists (name ^ ".prla") then
                   begin
                      FilterCache.set_mode proc.cache InteractiveSummary;
                      FilterCache.copy_proofs proc.cache () Info.copy_proof
