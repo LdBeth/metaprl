@@ -34,8 +34,8 @@ open Lm_printf
 
 open Lm_string_set
 
-open Refiner.Refiner
-open Refine
+open Rewrite_sig
+open Refiner.Refiner.Refine
 
 (*
  * Show loading of the file.
@@ -103,21 +103,21 @@ type ('input, 'intermediate, 'output) resource_info =
 type global_resource = bookmark
 
 type ('annotation, 'input) annotation_processor =
-   string ->          (* Name of the new rule *)
-   var array ->       (* Names of the context vars parameters *)
-   term list ->       (* Term parameters *)
-   meta_term ->       (* Rule statement *)
-   'annotation ->     (* Extra arguments, will include Tactic.pre_tactic *)
+   string ->            (* Name of the new rule *)
+   rewrite_args_spec -> (* Names of the context vars parameters *)
+   term list ->         (* Term parameters *)
+   meta_term ->         (* Rule statement *)
+   'annotation ->       (* Extra arguments, will include Tactic.pre_tactic *)
    'input list
 
 type ('annotation, 'input) rw_annotation_processor =
-   string ->          (* Name of the new rewrite *)
-   term ->            (* Redex *)
-   term ->            (* Contractum *)
-   term list ->       (* Assumptions *)
-   var array ->       (* Names of the context vars parameters *)
-   term list ->       (* Term arguments *)
-   'annotation ->     (* Extra arguments, will include Refine.prim_rewrite *)
+   string ->            (* Name of the new rewrite *)
+   term ->              (* Redex *)
+   term ->              (* Contractum *)
+   term list ->         (* Assumptions *)
+   rewrite_args_spec -> (* Names of the context vars parameters *)
+   term list ->         (* Term arguments *)
+   'annotation ->       (* Extra arguments, will include Refine.prim_rewrite *)
    'input list
 
 (************************************************************************
