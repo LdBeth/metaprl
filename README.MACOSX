@@ -1,0 +1,40 @@
+Author: Brian Emre Aydemir (emre@cs.caltech.edu)
+
+These are some very informal directions for getting MetaPRL to work under
+MacOS X.  I will make them more verbose and precise later.  Feel free to
+email me with any questions that you might have.  --emre
+
+(0) Download the 'Apple Developer Tools' kit from Apple, and install.
+    [I need to find out exactly what this is called, and so on.]
+
+(1) Download the sources for OCaml, including the MacOS patch.
+
+(2) Download MetaPRL, or check it out from CVS.
+
+(3) Unpack OCaml and copy the MacOS patch and the MetaPRL patch into
+    the OCaml source directory.  Run
+
+       patch -p0 < ocaml-macosx-patch
+       patch -p0 < metaprl-ocaml-patch
+
+   to patch the sources.
+
+(4) Run ./configure with the -with-pthread option.  Ignore the error about
+    "labltk" (unless you really want that support; MetaPRL does not need it).
+    You may also want to use '--prefix dir' to put OCaml in some preferred
+    location.
+
+(5) Build OCaml, i.e., run 'make world.opt ; make world.opt ; make install'.
+    You will need to run 'ranlib' on the following two files after you
+    install OCaml:
+
+       lib/ocaml/camlp4/camlp4.a
+       lib/ocaml/camlp4/odyl.a
+
+    Not exactly sure why you need to do this...
+
+(6) MetaPRL build as normal (see directions elsewhere).
+
+(7) In order to use the toploop, you need to install the fonts in
+    editor/fonts/ttf to Library/Fonts (and login again).  You should
+    set the Terminal program to use the MetaPRL Luxi Mono family.

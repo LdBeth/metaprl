@@ -51,11 +51,11 @@ struct
       ((Jall.ruletable r), t1, t2) :: inf
 end
 
-module Nuprl_JProver = Jall.JProver(Nuprl_JLogic)
+module NuprlJProver = Jall.JProver(Nuprl_JLogic)
 
 let jprover mult_limit (tlist,concl) =
   print_string "calling jprover";
-  Nuprl_JProver.prover (Some mult_limit) tlist concl
+  NuprlJProver.prover (Some mult_limit) tlist concl
 
 (* jprover function returns string*term*term list, convert to term *)
 

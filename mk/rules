@@ -25,6 +25,10 @@ ifeq ($(OSTYPE),Linux)
    OPTTHREADS = -cclib -lthreadsnat$(EXT_PROF) -cclib -lunix$(EXT_PROF) -cclib -lpthread
    LIBTHREADS = -cclib -lthreads -cclib -lunix -cclib -lpthread
 else
+ifeq ($(OSTYPE),darwin)
+   OPTTHREADS = -cclib -lthreadsnat$(EXT_PROF) -cclib -lunix$(EXT_PROF) -cclib -lpthread
+   LIBTHREADS = -cclib -lthreads -cclib -lunix -cclib -lpthread
+else
 ifeq ($(OSTYPE),Solaris)
    OPTTHREADS = -cclib -lthreadsnat$(EXT_PROF) -cclib -lunix$(EXT_PROF) -cclib -lpthread -cclib -lposix4
    LIBTHREADS = -cclib -lthreads -cclib -lunix -cclib -lpthread -cclib -lposix4
@@ -38,6 +42,7 @@ threads:
 	@echo "!!! If you know how to do it, add it to mk/rules file" > /dev/stderr
 	@echo "!!! " > /dev/stderr
 	@exit 1
+endif
 endif
 endif
 
