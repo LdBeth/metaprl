@@ -393,7 +393,7 @@ struct
                         if !debug_rewrite then
                            eprintf "\tRWSOVar: Bterm: check_simple_match%t" eflush;
 #endif
-                        check_simple_match (t, vars) (t', vars);
+                        check_simple_match (t, vars) (t', vars');
 #ifdef VERBOSE_EXN
                         if !debug_rewrite then
                            eprintf "\tRWSOVar: Bterm: check_simple_match: ok%t" eflush;

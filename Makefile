@@ -31,6 +31,7 @@ MP_DIRS =\
 	theories/ocaml\
 	theories/base\
 	theories/itt\
+	theories/czf\
 	theories/tptp\
 	theories/reflect_itt\
 	theories/fol

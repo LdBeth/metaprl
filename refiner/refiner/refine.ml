@@ -1518,8 +1518,7 @@ struct
     * See if the rewrite will compile.
     *)
    let check_rewrite name vars params subgoals redex contractum =
-      let _ = Rewrite.term_rewrite ([||], vars) (redex::params) [contractum] in
-         ()
+      ignore(Rewrite.term_rewrite ([||], vars) (redex::params) [contractum])
 
    (*
     * Create a simple rewrite from a meta-term.

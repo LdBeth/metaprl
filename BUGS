@@ -125,5 +125,3 @@ PARSER & FILTER
 should be sufficient (it means that we should remove an alternative rule
 syntax of
 interactive name: A1 A2 ... : An)
-
-*) Filter should attempt compiling rewrites in order to detect problems at compile-time.
