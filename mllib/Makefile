@@ -32,12 +32,12 @@ LMFILES :=\
 	mp_pervasives\
 	mmap\
 	mmap_pipe\
+	string_util\
 	env_arg\
 	punix\
 	getrusage\
 	int_util\
 	array_util\
-	string_util\
 	list_util\
 	ref_util\
 	file_util\

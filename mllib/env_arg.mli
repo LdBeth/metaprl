@@ -81,6 +81,11 @@ val set_bool_bool : (bool, bool) var_set
 val args : unit -> (string * Arg.spec * string) list
 
 (*
+ * Print a usage message.
+ *)
+val usage : (string * Arg.spec * string) list -> string -> unit
+
+(*
  * Our parser saves the spec list.
  *)
 val parse : (string * Arg.spec * string) list -> (string -> unit) -> string -> unit

@@ -125,6 +125,18 @@ let rec map2 f l1 l2 = match (l1,l2) with
  | _ -> raise (Failure "List_util.map2")
 
 (*
+ * Work left-to-right, but reverse the result.
+ *)
+let rec rev_map' f l = function
+   h :: t ->
+      rev_map' f (f h :: l) t
+ | [] ->
+      l
+
+let rev_map f l =
+   rev_map' f [] l
+
+(*
  * Remove marked elements.
  *)
 let rec remove_elements l1 l2 =
@@ -413,6 +425,16 @@ let rec unionq l = function
  | [] ->
       l
 
+(*
+ * The first list is a subset of the second one )base of structural equality
+ *)
+let rec subset l1 l2 =
+   match l1 with
+      x :: l1 ->
+         List.mem x l2 && subset l1 l2
+    | [] ->
+         true
+
 let rec zip_list l l1 l2 = match (l1,l2) with
    (h1::t1), (h2::t2) ->
       zip_list ((h1,h2)::l) t1 t2
@@ -548,6 +570,19 @@ let rec last = function
       raise (Failure "List_util.last")
 
 (*
+ * Return the first n elements of the list.
+ *)
+let rec firstn i l =
+   if i = 0 then
+      []
+   else
+      match l with
+         h :: t ->
+            h :: firstn (pred i) t
+       | [] ->
+            []
+
+(*
  * Produce a list of first elements out of the list of pairs
  *)
 let rec fst_split = function
@@ -662,6 +697,18 @@ let rec fold_left_aux f x l = function
       x, List.rev l
 
 let fold_left f x l = fold_left_aux f x [] l
+
+(*
+ * Generalize fold_left over three lists.
+ *)
+let rec fold_left3 f arg l1 l2 l3 =
+   match l1, l2, l3 with
+      h1 :: t1, h2 :: t2, h3 :: t3 ->
+         fold_left3 f (f arg h1 h2 h3) t1 t2 t3
+    | [], [], [] ->
+         arg
+    | _ ->
+         raise (Failure "List_util.fold_left3")
 
 (*
  * Inherited.

@@ -1,14 +1,11 @@
 (*
- * Additional operations on lists.
+ * Additional utilities for list maniputaion.
  *
  * ----------------------------------------------------------------
  *
  * This file is part of MetaPRL, a modular, higher order
  * logical framework that provides a logical programming
  * environment for OCaml and other languages.
- *
- * See the file doc/index.html for information on Nuprl,
- * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
  *
@@ -55,6 +52,11 @@ val map2 : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
 val fold_left2 : ('a -> 'b -> 'c -> 'a) -> 'a -> 'b list -> 'c list -> 'a
 val iter2 : ('a -> 'b -> unit) -> 'a list -> 'b list -> unit
 
+(*
+ * Generalize fold_left over three lists.
+ *)
+val fold_left3 : ('a -> 'b -> 'c -> 'd -> 'a) -> 'a -> 'b list -> 'c list -> 'd list -> 'a
+
 (* Do map and try preserving sharing *)
 val smap : ('a -> 'a) -> 'a list -> 'a list
 
@@ -80,10 +82,13 @@ val remove : 'a -> 'a list -> 'a list
 val tryremove : 'a -> 'a list -> 'a list
 val removeq : 'a -> 'a list -> 'a list
 
-(* Find the index of the element that satisfies a predicate *)
+(* Find the element that satisfies a predicate *)
 val find : ('a -> bool) -> 'a list -> 'a
+(* Now find its inxed *)
 val find_item : ('a -> bool) -> 'a list -> int
+(* By equality *)
 val find_index : 'a -> 'a list -> int
+(* By pointer-equality *)
 val find_indexq : 'a -> 'a list -> int
 
 (* Set-like operations *)
@@ -95,12 +100,20 @@ val subtractq : 'a list -> 'a list -> 'a list
 val subtract_multiset : 'a list -> 'a list -> 'a list
 val union : 'a list -> 'a list -> 'a list
 val unionq : 'a list -> 'a list -> 'a list
+val subset : 'a list -> 'a list -> bool
 
 (*
  * Reverse iteration
  *)
 val rev_iter : ('a -> 'b) -> 'a list -> unit
 val rev_iter2 : ('a -> 'b -> unit) -> 'a list -> 'b list -> unit
+
+(*
+ * Map a function over the list (left-to-right)
+ * and reverse the result.
+ *)
+val rev_map : ('a -> 'b) -> 'a list -> 'b list
+
 val flat_map : ('a -> 'b list) -> 'a list -> 'b list
 val fail_map : ('a -> 'b) -> 'a list -> 'b list
 val some_map : ('a -> 'b option) -> 'a list -> 'b list
@@ -143,6 +156,11 @@ val split_list : int -> 'a list -> 'a list * 'a list
 val split_last : 'a list -> 'a list * 'a
 val last : 'a list -> 'a
 val fst_split : ('a * 'b) list -> 'a list
+
+(*
+ * Return the first n elements of the list.
+ *)
+val firstn : int -> 'a list -> 'a list
 
 (*
  * -*-

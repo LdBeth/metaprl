@@ -77,7 +77,7 @@ let int name default info set =
       let i =
          try int_of_string s with
             Failure "int_of_string" ->
-               eprintf "CDARG: bad value for %s: '%s' not integer, exiting\n" name s ;
+               eprintf "Env_arg: bad value for %s: '%s' not integer, exiting\n" name s ;
                exit 1
       in
          set name v i
@@ -101,7 +101,7 @@ let bool name default info set =
        | "false" | "FALSE" ->
             false
        | _ ->
-            eprintf "CDARG: bad value for %s: '%s' not boolean, exiting\n" name s;
+            eprintf "Env_arg: bad value for %s: '%s' not boolean, exiting\n" name s;
             exit 1
       in
          set name v flag
@@ -140,8 +140,30 @@ let args () = !param_args
 (*
  * Parse the arguments.
  *)
-let parse spec usage errmsg =
-   Arg.parse (!param_args @ spec) usage errmsg
+let usage spec errmsg =
+   Arg.usage (!param_args @ spec) errmsg;
+   debug_usage ()
+
+let parse spec def errmsg =
+   Arg.parse (!param_args @ spec) def errmsg
+
+(*
+ * Set debug flags from the environment.
+ *)
+let set_possible_debug_flags _ _ flags =
+   List.iter (fun name -> set_possible_debug name true) (String_util.split ':' flags)
+
+let set_debug_flags _ _ =
+   let set flags =
+      let names = String_util.split ':' flags in
+      try List.iter (fun name -> set_debug name true) names with
+         Failure _ ->
+            usage [] "illegal option: valid options are:";
+            exit 1
+      in
+         Arg.String set
+
+let _ = general "debug" () "" set_possible_debug_flags set_debug_flags
 
 (*
  * -*-

@@ -62,6 +62,7 @@ val load_debug : string -> bool ref
 val set_debug : string -> bool -> unit
 val get_debug : string -> debug_info
 val debuggers : unit -> debug_info array
+val debug_usage : unit -> unit
 
 (*
  * We allow flags to be set from the environment.

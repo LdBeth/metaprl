@@ -133,7 +133,7 @@ let debug_usage () =
    let usage { debug_name = name; debug_description = desc; debug_value = flag } =
       eprintf "\t%s: %s: %b\n" name desc flag
    in
-      eprintf "Debugging variables:\n";
+      eprintf "Debugging flags:\n";
       Array.iter usage (debuggers ());
       flush stderr
 
@@ -281,11 +281,12 @@ let check_debug () =
 (*
  * File loading.
  *)
-let debug_load = create_debug (**)
-                    { debug_name = "load";
-                      debug_description = "Print file names as they load";
-                      debug_value = false
-                    }
+let debug_load =
+   create_debug (**)
+      { debug_name = "load";
+        debug_description = "Print file names as they load";
+        debug_value = false
+      }
 
 let show_loading s = if !debug_load then Printf.eprintf s eflush
 
