@@ -122,6 +122,8 @@ struct
          MetaImplies (a, strip_mfunction t)
     | MetaIff (t1, t2) ->
          MetaIff (strip_mfunction t1, strip_mfunction t2)
+    | MetaLabeled (_, (MetaTheorem _ | MetaIff _)) as t ->
+         raise(RefineError("Term_meta_gen.strip_mfunction",StringWrapError("Labels on rule and rewrite statements are not allowed",MetaTermMatchError t)))
     | MetaLabeled (l, t) ->
          MetaLabeled (l, strip_mfunction t)
 
@@ -228,7 +230,7 @@ struct
     * BOUND CONTEXTS "MAGIC"                                               *
     ************************************************************************)
 
-   (* 
+   (*
     * Go down the term, mapping the context bindings
     * f knows how to map contexts; f' knows what to do with free FO variables
     *)
@@ -340,7 +342,7 @@ struct
                map:=SymbolTable.add !map v bconts;
                bconts
             end
-       | conts -> 
+       | conts ->
             if not (SymbolTable.mem !map v) then
                map:=SymbolTable.add !map v conts;
             conts
