@@ -299,7 +299,18 @@ struct
                Rformat.print_to_channel 80 buf out;
                flush out)
 
-   let print_term_stdout t = print_term_fp stdout t
+   let term_printer t =
+      synchronize_client (fun state ->
+            let db =
+               match state with
+                  Some state ->
+                     state.state_df_base
+                | None ->
+                     Dform.null_base
+            in
+               Format.open_box 0;
+               Format.print_string (Dform.string_of_term db t);
+               Format.close_box())
 
    (************************************************************************
     * TOPLOOP FUNCTIONS                                                    *

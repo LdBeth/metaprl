@@ -278,7 +278,7 @@ struct
             Debug_set.init ();
             eval_include mplib;
             List.iter eval_include (State.get_includes ());
-            let _ = Toploop.execute_phrase false (Ptop_dir ("install_printer", Pdir_ident (Ldot (Ldot (Lident "Shell_state", "ShellState"), "print_term_stdout")))) in
+            let _ = Toploop.execute_phrase false (Ptop_dir ("install_printer", Pdir_ident (Ldot (Ldot (Lident "Shell_state", "ShellState"), "term_printer")))) in
             let _ = Toploop.execute_phrase false (Ptop_def [{ pstr_desc = Pstr_open (Lident "Mp");
                                                       pstr_loc = Location.none
                                                     }]) in
