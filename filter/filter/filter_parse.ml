@@ -958,8 +958,8 @@ struct
    let gensym proc =
       Lm_symbol.new_symbol_string proc.name
 
-   let add_token proc loc s t =
-      FilterCache.add_token proc.cache (gensym proc) s t;
+   let add_token proc loc lexer_id s t =
+      FilterCache.add_token proc.cache lexer_id (gensym proc) s t;
       FilterCache.set_grammar proc.cache
 
    let add_production proc loc args opt_prec t =
@@ -988,8 +988,8 @@ struct
          List.iter (FilterCache.add_input_prec info pre) tl;
          FilterCache.set_grammar proc.cache
 
-   let add_parser proc loc t =
-      FilterCache.add_start proc.cache t;
+   let add_parser proc loc t lexer_id =
+      FilterCache.add_start proc.cache t lexer_id;
       add_start (shape_of_term t);
       FilterCache.set_grammar proc.cache
 
@@ -1644,8 +1644,8 @@ EXTEND
           empty_sig_item loc
 
           (* Grammar *)
-        | "lex_token"; regex = STRING; t = OPT token_expansion ->
-          SigFilter.add_token (SigFilter.get_proc loc) loc regex t;
+        | "lex_token"; id = singleterm; ":"; regex = STRING; t = OPT token_expansion ->
+          SigFilter.add_token (SigFilter.get_proc loc) loc (opname_of_term (parse_term loc id.aterm)) regex t;
           empty_sig_item loc
 
         | "production"; args = LIST0 term SEP ";"; opt_prec = OPT prec_term; "-->"; t = term ->
@@ -1667,13 +1667,13 @@ EXTEND
              handle_exn f "production" loc;
              empty_sig_item loc
 
-        | "lex_token"; assoc = prec_declare; "["; args = LIST0 parsed_term SEP ";"; "]"; rel = prec_relation ->
+        | "lex_prec"; assoc = prec_declare; "["; args = LIST0 parsed_term SEP ";"; "]"; rel = prec_relation ->
           SigFilter.input_prec (SigFilter.get_proc loc) loc assoc args rel;
           empty_sig_item loc
 
-        | "parser"; t = term ->
+        | "parser"; t = term; ":"; id = parsed_term ->
           let t = unchecked_term_of_parsed_term t in
-             SigFilter.add_parser (SigFilter.get_proc loc) loc t;
+             SigFilter.add_parser (SigFilter.get_proc loc) loc t (opname_of_term id);
              empty_sig_item loc
 
         | "GENGRAMMAR" ->
@@ -1936,8 +1936,8 @@ EXTEND
            empty_str_item loc
 
           (* Grammar *)
-        | "lex_token"; regex = STRING; t = OPT token_expansion ->
-          StrFilter.add_token (StrFilter.get_proc loc) loc regex t;
+        | "lex_token"; id = singleterm; ":"; regex = STRING; t = OPT token_expansion ->
+          StrFilter.add_token (StrFilter.get_proc loc) loc (opname_of_term (parse_term loc id.aterm)) regex t;
           empty_str_item loc
 
         | "production"; args = LIST0 term SEP ";"; opt_prec = OPT prec_term; "-->"; t = term ->
@@ -1959,13 +1959,13 @@ EXTEND
              handle_exn f "production" loc;
              empty_str_item loc
 
-        | "lex_token"; assoc = prec_declare; "["; args = LIST0 parsed_term SEP ";"; "]"; rel = prec_relation ->
+        | "lex_prec"; assoc = prec_declare; "["; args = LIST0 parsed_term SEP ";"; "]"; rel = prec_relation ->
           StrFilter.input_prec (StrFilter.get_proc loc) loc assoc args rel;
           empty_str_item loc
 
-        | "parser"; t = term ->
+        | "parser"; t = term; ":"; id = parsed_term ->
           let t = unchecked_term_of_parsed_term t in
-             StrFilter.add_parser (StrFilter.get_proc loc) loc t;
+             StrFilter.add_parser (StrFilter.get_proc loc) loc t (opname_of_term id);
              empty_str_item loc
 
         | "GENGRAMMAR" ->

@@ -79,6 +79,7 @@ let parser_arg_opname = mk_opname "parser_arg" parser_opname
  * Positions and actions.
  *)
 type id = Lm_symbol.symbol
+type lexer_id = opname
 
 module Action =
 struct
@@ -173,12 +174,17 @@ type iform =
  * marshaling.  If time comes to marshal it again, and it still
  * has a name, then it is unchanged, and there is no need to
  * marshal again.
+ *
+ * There can be multiple lexers.  Each lexer is associated with a start
+ * symbol.
  *)
 type t =
-   { gram_name                : string option;
-     gram_lexer               : Lexer.t;
+   { gram_magic               : int;
+     gram_name                : string option;
+     gram_lexers              : Lexer.t OpnameTable.t;
      gram_lexer_actions       : lexer_action option ActionTable.t;
      gram_lexer_clauses       : lexer_clause ActionTable.t;
+     gram_lexer_start         : opname ShapeTable.t;
      gram_parser              : Parser.t;
      gram_parser_actions      : parser_action ActionTable.t;
      gram_parser_clauses      : parser_clause ActionTable.t;
@@ -188,11 +194,15 @@ type t =
 
 (* %%MAGICEND%% *)
 
+let gram_magic = 0x17b24ef1
+
 let empty =
-   { gram_name           = None;
-     gram_lexer          = Lexer.empty;
+   { gram_magic          = gram_magic;
+     gram_name           = None;
+     gram_lexers         = OpnameTable.empty;
      gram_lexer_actions  = ActionTable.empty;
      gram_lexer_clauses  = ActionTable.empty;
+     gram_lexer_start    = ShapeTable.empty;
      gram_parser         = Parser.empty;
      gram_parser_actions = ActionTable.empty;
      gram_parser_clauses = ActionTable.empty;
@@ -284,33 +294,50 @@ let union gram1 gram2 =
    else if is_empty gram2 || gram1.gram_name <> None && gram2.gram_name = gram1.gram_name then
       gram1
    else
-      let { gram_lexer          = lexer1;
+      let { gram_lexers         = lexers1;
             gram_lexer_actions  = lexer_actions1;
             gram_lexer_clauses  = lexer_clauses1;
+            gram_lexer_start    = starts1;
             gram_parser         = parser1;
             gram_parser_actions = parser_actions1;
             gram_parser_clauses = parser_clauses1;
             gram_iforms         = iforms1
           } = gram1
       in
-      let { gram_lexer          = lexer2;
+      let { gram_lexers         = lexers2;
             gram_lexer_actions  = lexer_actions2;
             gram_lexer_clauses  = lexer_clauses2;
+            gram_lexer_start    = starts2;
             gram_parser         = parser2;
             gram_parser_actions = parser_actions2;
             gram_parser_clauses = parser_clauses2;
             gram_iforms         = iforms2
           } = gram2
       in
+      let lexers =
+         OpnameTable.fold (fun lexers name lexer2 ->
+               let lexer =
+                  try
+                     let lexer1 = OpnameTable.find lexers name in
+                        Lexer.union lexer1 lexer2
+                  with
+                     Not_found ->
+                        lexer2
+               in
+                  OpnameTable.add lexers name lexer) lexers1 lexers2
+      in
+      let starts = ShapeTable.fold ShapeTable.add starts1 starts2 in
          if !debug_grammar then
             eprintf "Grammar union: active: %a, %a@." pp_print_string_opt gram1.gram_name pp_print_string_opt gram2.gram_name;
-         { gram_name           = None;
-           gram_lexer          = Lexer.union lexer1 lexer2;
+         { gram_magic          = gram_magic;
+           gram_name           = None;
+           gram_lexers         = lexers;
            gram_parser         = Parser.union parser1 parser2;
            gram_lexer_actions  = ActionTable.fold ActionTable.add lexer_actions1 lexer_actions2;
            gram_parser_actions = ActionTable.fold ActionTable.add parser_actions1 parser_actions2;
            gram_lexer_clauses  = ActionTable.fold ActionTable.add lexer_clauses1 lexer_clauses2;
            gram_parser_clauses = ActionTable.fold ActionTable.add parser_clauses1 parser_clauses2;
+           gram_lexer_start    = starts;
            gram_iforms         = ActionTable.fold ActionTable.add iforms1 iforms2;
            gram_iform_table    = None
          }
@@ -339,13 +366,19 @@ let mk_lexer_term lexeme args =
 (*
  * Add a lexer token.
  *)
-let add_token gram id s contractum_opt =
-   let { gram_lexer = lexer;
+let add_token gram lexer_id id s contractum_opt =
+   let { gram_lexers = lexers;
          gram_lexer_actions = actions;
          gram_lexer_clauses = clauses
        } = gram
    in
+   let lexer =
+      try OpnameTable.find lexers lexer_id with
+         Not_found ->
+            Lexer.empty
+   in
    let arity, lexer = Lexer.add_clause lexer id s in
+   let lexers = OpnameTable.add lexers lexer_id lexer in
    let redex = mk_lexer_redex arity in
    let rw_opt =
       match contractum_opt with
@@ -363,7 +396,7 @@ let add_token gram id s contractum_opt =
    in
    let clauses = ActionTable.add clauses id clause in
       { gram with gram_name          = None;
-                  gram_lexer         = lexer;
+                  gram_lexers        = lexers;
                   gram_lexer_actions = actions;
                   gram_lexer_clauses = clauses
       }
@@ -436,8 +469,11 @@ let add_prec gram pre v =
 (************************************************************************
  * Start symbols.
  *)
-let add_start gram v =
-   { gram with gram_name = None; gram_parser = Parser.add_start gram.gram_parser v }
+let add_start gram v lexer_id =
+   { gram with gram_name = None;
+               gram_lexer_start = ShapeTable.add gram.gram_lexer_start v lexer_id;
+               gram_parser = Parser.add_start gram.gram_parser v
+   }
 
 let get_start gram =
    Parser.get_start gram.gram_parser
@@ -536,43 +572,55 @@ let apply_iforms_mterm gram mt args =
  * Utilities.
  *)
 let compile gram =
-   let { gram_lexer = lexer;
+   let { gram_lexers = lexers;
          gram_parser = parse
        } = gram
    in
-      Lexer.compile lexer;
+      OpnameTable.iter (fun _ lexer -> Lexer.compile lexer) lexers;
       Parser.compile parse;
       compile_iforms gram
 
 let prepare_to_marshal gram name =
-   let { gram_lexer = lexer;
+   let { gram_lexers = lexers;
          gram_parser = parse
        } = gram
    in
-      Lexer.compile lexer;
+      OpnameTable.iter (fun _ lexer -> Lexer.compile lexer) lexers;
       Parser.compile parse;
       gram.gram_iform_table <- None;
       { gram with gram_name = Some name }
+
+let unmarshal gram =
+   if gram.gram_magic <> gram_magic then begin
+      eprintf "! A grammar that was loaded from a file is out-of-date.\n";
+      eprintf "! This is probably not a problem, but if you have trouble\n";
+      eprintf "! you should export your work and recompile MetaPRL.@.";
+      empty
+   end
+   else
+      gram
 
 let is_modified gram =
    gram.gram_name = None && not (is_empty gram)
 
 let pp_print_grammar buf gram =
-   let { gram_lexer = lexer;
+   let { gram_lexers = lexers;
          gram_parser = parse
        } = gram
    in
       debug_grammar := true;
-      fprintf buf "@[<v 0>%a@ %a@]" (**)
-         Lexer.pp_print_lexer lexer
-         Parser.pp_print_parser parse
+      fprintf buf "@[<v 0>";
+      OpnameTable.iter (fun name lexer ->
+            fprintf buf "@[<v 3>Lexer %s@ %a@]" (string_of_opname name) Lexer.pp_print_lexer lexer) lexers;
+      fprintf buf "@ %a@]" Parser.pp_print_parser parse
 
 (************************************************************************
  * Actual parsing.
  *)
 let parse gram start loc s =
-   let { gram_lexer          = lexer;
+   let { gram_lexers         = lexers;
          gram_lexer_actions  = lexer_actions;
+         gram_lexer_start    = starts;
          gram_parser         = parse;
          gram_parser_actions = parser_actions
        } = gram
@@ -585,6 +633,13 @@ let parse gram start loc s =
        } = loc
    in
    let input = Lm_channel.of_loc_string filename line char s in
+
+   (* Get the lexer *)
+   let lexer =
+      try OpnameTable.find lexers (ShapeTable.find starts start) with
+         Not_found ->
+            raise (Failure ("unknown start symbol: " ^ string_of_shape start))
+   in
 
    (* Lexer *)
    let rec lexer_fun () =

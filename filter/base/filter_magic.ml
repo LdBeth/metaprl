@@ -38,7 +38,7 @@ open File_type_base
  ************************************************************************
  *
  * Current MD5 hash of the summary-related types (as computed by OMake):
- * FILTER_MD5: 0xea86565665ca509e2af5e3d482747cea
+ * FILTER_MD5: 0x0a00107c9a28793b6d47656df32bb532
  *
  * The arguments for pack_version are:
  *    major version number, minor sub-version number, revision number
@@ -67,8 +67,9 @@ open File_type_base
  * Rev 14: address arguments to rules and rewrites
  * Rev 15: tokens now use opnames instead of strings
  * Rev 16: removed "Opname" and "Definition" from the summary_item type
+ * Rev 17: changed the Filter_grammar definition
  *)
-let raw_versions = List.map (pack_version 1 0) [16]
+let raw_versions = List.map (pack_version 1 0) [17]
 
 let term_versions = List.map (pack_version 1 0) [16]
 

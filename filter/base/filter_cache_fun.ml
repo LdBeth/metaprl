@@ -990,8 +990,8 @@ struct
     *)
    type precedence = Filter_grammar.precedence
 
-   let add_token cache id redex contractum =
-      cache.grammar <- Filter_grammar.add_token cache.grammar id redex contractum
+   let add_token cache lexer_id id redex contractum =
+      cache.grammar <- Filter_grammar.add_token cache.grammar lexer_id id redex contractum
 
    let add_production cache id args opt_prec contractum =
       let opt_prec =
@@ -1024,8 +1024,8 @@ struct
    let add_input_prec cache pre t =
       cache.grammar <- Filter_grammar.add_prec cache.grammar pre (shape_of_term t)
 
-   let add_start cache t =
-      cache.grammar <- Filter_grammar.add_start cache.grammar (shape_of_term t)
+   let add_start cache t lexer_id =
+      cache.grammar <- Filter_grammar.add_start cache.grammar (shape_of_term t) lexer_id
 
    let get_start cache =
       Filter_grammar.get_start cache.grammar
@@ -1279,7 +1279,7 @@ struct
                { summ with sig_infixes = Infix.Set.add summ.sig_infixes upd }
 
           | PRLGrammar gram ->
-               { summ with sig_grammar = gram }
+               { summ with sig_grammar = Filter_grammar.unmarshal gram }
 
           | InputForm _
           | Comment _
@@ -1361,7 +1361,7 @@ struct
                   summ
 
           | PRLGrammar gram ->
-               cache.grammar <- gram;
+               cache.grammar <- Filter_grammar.unmarshal gram;
                summ
 
           | InputForm _

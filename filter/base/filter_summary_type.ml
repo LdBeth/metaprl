@@ -271,7 +271,7 @@ sig
 
    val load_sig_grammar  : info -> arg -> select -> unit
 
-   val add_token         : info -> symbol -> string -> term option -> unit
+   val add_token         : info -> opname -> symbol -> string -> term option -> unit
    val add_production    : info -> symbol -> term list -> term option -> term -> unit
    val add_iform         : info -> symbol -> term -> term -> unit
    val find_input_prec   : info -> term -> precedence
@@ -279,7 +279,7 @@ sig
    val input_prec_gt     : info -> term -> Filter_grammar.assoc -> precedence
    val input_prec_new    : info -> Filter_grammar.assoc -> precedence
    val add_input_prec    : info -> precedence -> term -> unit
-   val add_start         : info -> term -> unit
+   val add_start         : info -> term -> opname -> unit
    val get_start         : info -> shape list
    val parse             : info -> Lexing.position -> shape -> string -> term
    val compile_parser    : info -> unit

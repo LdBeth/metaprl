@@ -58,17 +58,21 @@ FILTER_MAGIC[] =
     filter_grammar.ml
 
 filter_magic.cmo: .magic
-filter_magic.cmx: .magic
+filter_magic.cmx filter_magic.o: .magic
 
 .magic.txt: $(FILTER_MAGIC)
    ExtractMagicLines($@, $+)
+
+if $(not $(defined CHECK_MAGIC))
+    CHECK_MAGIC = true
+    export
 
 .magic: .magic.txt $(GENMAGIC) filter_magic.ml
    section eval
       NEW_MAGIC = $(shell $(GENMAGIC) .magic.txt)
       ExtractMagic(filter_magic.ml, $@)
       OLD_MAGIC = $(cat $@)
-      if $(not $(equal $(NEW_MAGIC), $(OLD_MAGIC)))
+      if $(and $(CHECK_MAGIC), $(not $(equal $(NEW_MAGIC), $(OLD_MAGIC))))
          eprintln(!!! )
          eprintln(!!! The FILTER_MD5 digest recorder in the filter/base/filter_magic.ml file)
          eprintln(!!! does not match the computed one!)

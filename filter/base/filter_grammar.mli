@@ -24,6 +24,7 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
+open Opname
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermShape
 
@@ -51,10 +52,15 @@ type precedence
 type id = Lm_symbol.symbol
 
 (*
+ * Lexers are identified by strings.
+ *)
+type lexer_id = opname
+
+(*
  * Add a lexer token.
  * If the term option is None, this token is ignored.
  *)
-val add_token      : t -> id -> string -> term option -> t
+val add_token      : t -> lexer_id -> id -> string -> term option -> t
 
 (*
  * Add a production.
@@ -90,7 +96,7 @@ val add_prec        : t -> precedence -> shape -> t
 (*
  * Start symbols.
  *)
-val add_start       : t -> shape -> t
+val add_start       : t -> shape -> opname -> t
 val get_start       : t -> shape list
 
 (*
@@ -111,6 +117,7 @@ val compile         : t -> unit
  * In addition, the grammar is given a name.
  *)
 val prepare_to_marshal : t -> string -> t
+val unmarshal          : t -> t
 
 (*
  * Check if the grammar has been changed since the

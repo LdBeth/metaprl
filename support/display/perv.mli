@@ -97,6 +97,13 @@ declare typeclass Token
 
 (*
  * @begin[doc]
+ * The type of lexers.
+ * @end[doc]
+ *)
+declare typeclass Lexer
+
+(*
+ * @begin[doc]
  * Grammar terms.
  * @end[doc]
  *)
