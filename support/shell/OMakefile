@@ -21,6 +21,6 @@ $(MPINSTALL): $(LIBINPUTS)
 # Clean up
 #
 clean:
-    $(CLEAN)
+    $(CLEAN) browser_copy.ml
 
 all: theory$(LIB_SUFFIX)

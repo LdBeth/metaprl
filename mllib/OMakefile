@@ -14,6 +14,7 @@ MLZFILES =\
    remote_queue_sig\
    simplehash_sig\
    weak_memo_sig\
+   http_server_type\
 
 OCamlLibraryInstall($(MPINSTALL), $(LIB), util, $(FILES))
 
