@@ -402,7 +402,7 @@ struct
     * This comes before get_proc because
     * the get_proc function needs to set the start symbols.
     *)
-   let input_exp shape s =
+   let input_exp shape id s =
       match !proc_ref with
          Some proc ->
             let pos =
@@ -412,7 +412,10 @@ struct
                  Lexing.pos_cnum  = 0
                }
             in
-            let t = FilterCache.parse proc.cache pos shape s in
+            let parse_quotation name s =
+               TermGrammar.raw_term_of_parsed_term (TermGrammar.parse_quotation dummy_loc id name s)
+            in
+            let t = FilterCache.parse parse_quotation proc.cache pos shape s in
             let t = TermGrammar.mk_parsed_term t in
                add_parsed_binding (BindTerm t)
        | None ->
@@ -424,7 +427,7 @@ struct
    let add_start shape =
       let name, _ = dst_opname (opname_of_shape shape) in
          Filter_grammar.set_start name shape;
-         Quotation.add name (Quotation.ExAst (input_exp shape, input_patt shape))
+         Quotation.add name (Quotation.ExAst (input_exp shape name, input_patt shape))
 
    let add_starts opnames =
       List.iter add_start opnames
@@ -962,6 +965,10 @@ struct
       FilterCache.add_token proc.cache lexer_id (gensym proc) s t;
       FilterCache.set_grammar proc.cache
 
+   let add_token_pair proc loc lexer_id s1 s2 t =
+      FilterCache.add_token_pair proc.cache lexer_id (gensym proc) s1 s2 t;
+      FilterCache.set_grammar proc.cache
+
    let add_production proc loc args opt_prec t =
       FilterCache.add_production proc.cache (gensym proc) args opt_prec t;
       FilterCache.set_grammar proc.cache
@@ -1100,11 +1107,11 @@ let _ = Quotation.default := "term"
 (* Allow dforms too *)
 let add_quot name check =
    let quot_exp s =
-      let t = parse_quotation dummy_loc "term" (name, s) in
+      let t = parse_quotation dummy_loc "term" name s in
          add_parsed_binding (BindTerm t)
    in
    let quot_patt s =
-      let t = parse_quotation dummy_loc "term" (name, s) in
+      let t = parse_quotation dummy_loc "term" name s in
       let t = unchecked_term_of_parsed_term t in
          Filter_exn.print_exn Dform.null_base (Some "Can not build a pattern out of a term:\n") Filter_patt.build_term_patt t
    in
@@ -1648,6 +1655,10 @@ EXTEND
           SigFilter.add_token (SigFilter.get_proc loc) loc (opname_of_term (parse_term loc id.aterm)) regex t;
           empty_sig_item loc
 
+        | "lex_token"; id = singleterm; ":"; regex1 = STRING; regex2 = STRING; t = OPT token_expansion ->
+          SigFilter.add_token_pair (SigFilter.get_proc loc) loc (opname_of_term (parse_term loc id.aterm)) regex1 regex2 t;
+          empty_sig_item loc
+
         | "production"; args = LIST0 term SEP ";"; opt_prec = OPT prec_term; "-->"; t = term ->
           let args, t = parse_production loc args t in
              SigFilter.add_production (SigFilter.get_proc loc) loc args opt_prec t;
@@ -1687,8 +1698,8 @@ EXTEND
                match dest_quot q with
                   "doc", com ->
                      SigFilter.declare_comment (SigFilter.get_proc loc) loc (mk_string_term comment_string_op com)
-                | q ->
-                     let q = unchecked_term_of_parsed_term (parse_quotation loc "doc" q) in
+                | (name, q) ->
+                     let q = unchecked_term_of_parsed_term (parse_quotation loc "doc" name q) in
                         SigFilter.declare_comment (SigFilter.get_proc loc) loc q
            in
               handle_exn f "comment" loc;
@@ -1940,6 +1951,10 @@ EXTEND
           StrFilter.add_token (StrFilter.get_proc loc) loc (opname_of_term (parse_term loc id.aterm)) regex t;
           empty_str_item loc
 
+        | "lex_token"; id = singleterm; ":"; regex1 = STRING; regex2 = STRING; t = OPT token_expansion ->
+          StrFilter.add_token_pair (StrFilter.get_proc loc) loc (opname_of_term (parse_term loc id.aterm)) regex1 regex2 t;
+          empty_str_item loc
+
         | "production"; args = LIST0 term SEP ";"; opt_prec = OPT prec_term; "-->"; t = term ->
           let args, t = parse_production loc args t in
              StrFilter.add_production (StrFilter.get_proc loc) loc args opt_prec t;
@@ -2029,8 +2044,8 @@ EXTEND
                   (* XXX HACK: this makes sure parsing of top-level "doc" quotations is lazy *)
                   "doc", com ->
                      StrFilter.declare_comment (StrFilter.get_proc loc) loc (mk_string_term comment_string_op com)
-                | q ->
-                     let q = unchecked_term_of_parsed_term (parse_quotation loc "doc" q) in
+                | (name, q) ->
+                     let q = unchecked_term_of_parsed_term (parse_quotation loc "doc" name q) in
                         StrFilter.declare_comment (StrFilter.get_proc loc) loc q
            in
               handle_exn f "comment" loc
@@ -2096,7 +2111,7 @@ EXTEND
 
    rule_body:
       [[ mt = bmterm; "="; extract = term ->
-            mt, raw_term_of_parsed_term extract
+            mt, raw_input_term_of_parsed_term extract
        | mt = bmterm ->
             try
                mt, mk_simple_term (TermGrammarBefore.mk_opname_kind loc NormalKind ["default_extract"] [] []) []

@@ -148,7 +148,7 @@ declare xhypcontext{'contexts : Dform; 'args : Dform} : 'a
 (*
  * Quotations.
  *)
-declare xquotation[quote:s] : 'a
+declare xquotation[name:s, quote:s] : 'a
 
 (************************************************************************
  * Normal terms.

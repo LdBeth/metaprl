@@ -291,6 +291,28 @@ struct
       { term_op = { op_name = opname; op_params = [String s] }; term_terms = [] }
 
    (*
+    * Two string params.
+    *)
+   let is_string_string_term opname = function
+      { term_op = { op_name = opname'; op_params = [String _; String _] };
+        term_terms = []
+      } when Opname.eq opname opname' ->
+         true
+    | _ ->
+         false
+
+   let dest_string_string_term opname = function
+      { term_op = { op_name = opname'; op_params = [String s1; String s2] };
+        term_terms = []
+      } when Opname.eq opname opname' ->
+         s1, s2
+    | t ->
+         REF_RAISE(RefineError ("dest_string_string_term", TermMatchError (t, "not a string-pair term")))
+
+   let mk_string_string_term opname s1 s2 =
+      { term_op = { op_name = opname; op_params = [String s1; String s2] }; term_terms = [] }
+
+   (*
     * One variable param.
     *)
    let is_var_param_term opname = function

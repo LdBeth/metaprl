@@ -993,6 +993,9 @@ struct
    let add_token cache lexer_id id redex contractum =
       cache.grammar <- Filter_grammar.add_token cache.grammar lexer_id id redex contractum
 
+   let add_token_pair cache lexer_id id redex1 redex2 contractum =
+      cache.grammar <- Filter_grammar.add_token_pair cache.grammar lexer_id id redex1 redex2 contractum
+
    let add_production cache id args opt_prec contractum =
       let opt_prec =
          match opt_prec with
@@ -1033,8 +1036,8 @@ struct
    let add_iform cache id redex contractum =
       cache.grammar <- Filter_grammar.add_iform cache.grammar id redex contractum
 
-   let parse cache pos opname s =
-      Filter_grammar.parse cache.grammar opname pos s
+   let parse parse_quotation cache pos opname s =
+      Filter_grammar.parse parse_quotation cache.grammar opname pos s
 
    let compile_parser cache =
       Filter_grammar.compile cache.grammar;

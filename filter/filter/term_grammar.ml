@@ -622,7 +622,7 @@ struct
    let q_shift_loc loc nm =
       shift_pos (fst loc) (if nm = "" then String.length "<<" else (String.length "<:") + (String.length nm) + (String.length "<")), (snd loc)
 
-   let rec parse_quotation loc curr (nm, s) =
+   let rec parse_quotation loc curr nm s =
       if nm = curr then
          Stdpp.raise_with_loc loc (Failure (nm ^ " quotation inside a " ^ curr ^ " quotation"));
       match nm with
@@ -647,11 +647,14 @@ struct
             parse_comment (q_shift_loc loc nm) false SpellOff false s
        | _ ->
             (* Otherwise, use the current grammar *)
-            (try
-                Filter_grammar.term_of_string nm (fst (q_shift_loc loc nm)) s
-             with
-                exn ->
-                   Stdpp.raise_with_loc loc exn)
+            let parse_quotation name s =
+               parse_quotation loc nm name s
+            in
+               try
+                  Filter_grammar.term_of_string parse_quotation nm (fst (q_shift_loc loc nm)) s
+               with
+                  exn ->
+                     Stdpp.raise_with_loc loc exn
 
    and parse_comment loc math spell space s =
       let pos = fst loc in
@@ -724,7 +727,7 @@ struct
        | Comment_parse.Block items ->
             mk_simple_term comment_block_op [build_term spelling space items]
        | Comment_parse.Quote ((l1, l2), tag, s) ->
-            let t = parse_quotation (adjust_pos pos l1, adjust_pos pos l2) "doc" (tag, s) in
+            let t = parse_quotation (adjust_pos pos l1, adjust_pos pos l2) "doc" tag s in
                mk_simple_term comment_term_op [term_of_parsed_term t]
 
       (*
@@ -771,19 +774,19 @@ struct
 
    let apply_iforms_raw t =
       let parse_quotation name s =
-         parse_quotation dummy_loc "unknown" (name, s)
+         parse_quotation dummy_loc "unknown" name s
       in
          Filter_grammar.apply_iforms parse_quotation t
 
    let apply_iforms loc t =
       let parse_quotation name s =
-         parse_quotation loc "unknown" (name, s)
+         parse_quotation loc "unknown" name s
       in
          Filter_grammar.apply_iforms parse_quotation t
 
    let apply_iforms_mterm loc mt =
       let parse_quotation name s =
-         parse_quotation loc "unknown" (name, s)
+         parse_quotation loc "unknown" name s
       in
          Filter_grammar.apply_iforms_mterm parse_quotation mt
 
@@ -909,6 +912,9 @@ struct
 
    (* For bypassing the type checker *)
    let raw_term_of_parsed_term t =
+      t
+
+   let raw_input_term_of_parsed_term t =
       apply_iforms_raw t
 
    let unparsed_term_of_parsed_term loc t =
@@ -1433,7 +1439,8 @@ struct
             | "!"; v = var ->
                encode_free_var v
             | x = QUOTATION ->
-               parse_quotation loc "term" (dest_quot x)
+               let name, s = dest_quot x in
+                  parse_quotation loc "term" name s
             | s = ANTIQUOT ->
                Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s
             | "("; t = aterm; ")" ->

@@ -146,6 +146,10 @@ sig
    val dest_string_term : opname -> term -> string
    val dest_string_param : term -> string
 
+   val is_string_string_term : opname -> term -> bool
+   val mk_string_string_term : opname -> string -> string -> term
+   val dest_string_string_term : opname -> term -> string * string
+
    val is_var_param_term : opname -> term -> bool
    val mk_var_param_term : opname -> var -> term
    val dest_var_param_term : opname -> term -> var

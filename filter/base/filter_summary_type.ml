@@ -272,6 +272,7 @@ sig
    val load_sig_grammar  : info -> arg -> select -> unit
 
    val add_token         : info -> opname -> symbol -> string -> term option -> unit
+   val add_token_pair    : info -> opname -> symbol -> string -> string -> term option -> unit
    val add_production    : info -> symbol -> term list -> term option -> term -> unit
    val add_iform         : info -> symbol -> term -> term -> unit
    val find_input_prec   : info -> term -> precedence
@@ -281,7 +282,7 @@ sig
    val add_input_prec    : info -> precedence -> term -> unit
    val add_start         : info -> term -> opname -> unit
    val get_start         : info -> shape list
-   val parse             : info -> Lexing.position -> shape -> string -> term
+   val parse             : (string -> string -> term) -> info -> Lexing.position -> shape -> string -> term
    val compile_parser    : info -> unit
    val get_grammar       : info -> Filter_grammar.t
    val set_grammar       : info -> unit  (* Set the grammar to be used by quotations *)

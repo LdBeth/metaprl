@@ -101,6 +101,40 @@ module ActionTable = SymbolTable;;
 module Lexer = MakeLexer (Lm_channel.LexerInput) (Action);;
 
 (*
+ * Boolean lexer is for parsing comments and quotations.
+ *)
+module BoolCompare =
+struct
+   type t = bool
+
+   let compare b1 b2 =
+      if b1 then
+         if b2 then
+            0
+         else
+            1
+      else if b2 then
+         -1
+      else
+         0
+end
+
+module BoolSet = Lm_set.LmMake (BoolCompare);;
+
+module BoolAction =
+struct
+   type action = bool
+
+   let pp_print_action = pp_print_bool
+
+   module ActionSet = BoolSet;;
+
+   let choose = max
+end;;
+
+module BoolLexer = MakeLexer (Lm_channel.LexerInput) (BoolAction);;
+
+(*
  * CFG variables are symbols.
  *)
 module ParserArg =
@@ -141,13 +175,16 @@ module Parser = Lm_parser.MakeParser (ParserArg) (ParserPrecedence);;
  * A lexer action contains the rewrite,
  * and the name of the lexeme.
  *)
-type lexer_action = rewrite_rule
-
 type lexer_clause =
    { lexer_regex      : string;
      lexer_redex      : term;
      lexer_contractum : term option
    }
+
+type lexer_action =
+   LexerRewrite of rewrite_rule
+ | LexerPair of BoolLexer.t * lexer_action
+ | LexerNone
 
 (*
  * A parser action contains a term list for the variables
@@ -186,7 +223,7 @@ type t =
    { gram_magic               : int;
      gram_name                : string option;
      gram_lexers              : Lexer.t OpnameTable.t;
-     gram_lexer_actions       : lexer_action option ActionTable.t;
+     gram_lexer_actions       : lexer_action ActionTable.t;
      gram_lexer_clauses       : lexer_clause ActionTable.t;
      gram_lexer_start         : opname ShapeTable.t;
      gram_parser              : Parser.t;
@@ -387,13 +424,57 @@ let add_token gram lexer_id id s contractum_opt =
    let rw_opt =
       match contractum_opt with
          Some contractum ->
-            Some (term_rewrite Rewrite_sig.Relaxed empty_args_spec [redex] [contractum])
+            LexerRewrite (term_rewrite Rewrite_sig.Relaxed empty_args_spec [redex] [contractum])
        | None ->
-            None
+            LexerNone
    in
    let actions = ActionTable.add actions id rw_opt in
    let clause =
       { lexer_regex = s;
+        lexer_redex = redex;
+        lexer_contractum = contractum_opt
+      }
+   in
+   let clauses = ActionTable.add clauses id clause in
+      { gram with gram_name          = None;
+                  gram_lexers        = lexers;
+                  gram_lexer_actions = actions;
+                  gram_lexer_clauses = clauses
+      }
+
+(*
+ * Add a matched pair.
+ *)
+let add_token_pair gram lexer_id id s1 s2 contractum_opt =
+   (* Make a new lexer for the pair *)
+   let lexer_pair = BoolLexer.empty in
+   let _, lexer_pair = BoolLexer.add_clause lexer_pair true s1 in
+   let _, lexer_pair = BoolLexer.add_clause lexer_pair false s2 in
+
+   (* Now add the initial production to the normal lexer *)
+   let { gram_lexers = lexers;
+         gram_lexer_actions = actions;
+         gram_lexer_clauses = clauses
+       } = gram
+   in
+   let lexer =
+      try OpnameTable.find lexers lexer_id with
+         Not_found ->
+            Lexer.empty
+   in
+   let _, lexer = Lexer.add_clause lexer id s1 in
+   let lexers = OpnameTable.add lexers lexer_id lexer in
+   let redex = mk_lexer_redex 2 in
+   let rw_opt =
+      match contractum_opt with
+         Some contractum ->
+            LexerRewrite (term_rewrite Rewrite_sig.Relaxed empty_args_spec [redex] [contractum])
+       | None ->
+            LexerNone
+   in
+   let actions = ActionTable.add actions id (LexerPair (lexer_pair, rw_opt)) in
+   let clause =
+      { lexer_regex = s1;
         lexer_redex = redex;
         lexer_contractum = contractum_opt
       }
@@ -583,8 +664,8 @@ let dest_xhypcontext_term t =
  * have the form <:name<...>>.
  *)
 let xquotation_opname = mk_opname "xquotation" perv_opname
-let is_xquotation_term = is_string_term xquotation_opname
-let dest_xquotation = dest_string_term xquotation_opname
+let is_xquotation_term = is_string_string_term xquotation_opname
+let dest_xquotation = dest_string_string_term xquotation_opname
 
 let is_quote_char = function
    '<'
@@ -595,39 +676,42 @@ let is_quote_char = function
  | _ ->
       false
 
-let dest_xquotation_term t =
-   let s = Lm_string_util.trim (dest_xquotation t) in
-   let len = String.length s in
-   let () =
-      if len < 4 then
-         raise (Failure ("bad quotation: " ^ s))
-   in
-   let name, left =
-      if is_quote_char s.[0] && is_quote_char s.[1] then
-         "term", 2
-      else if is_quote_char s.[0] && s.[1] = ':' then
-         let rec search_left i =
-            if i = len then
-               raise (Failure ("bad quotation: " ^ s))
-            else if is_quote_char s.[i] then
-               succ i
-            else
-               search_left (succ i)
-         in
-         let stop = search_left 2 in
-         let name = String.sub s 2 (stop - 2) in
-            name, stop
+let trim_quotation_name default name =
+   let len = String.length name in
+   let rec search_left i =
+      if i = len then
+         i
+      else if is_quote_char name.[i] then
+         search_left (succ i)
       else
-         raise (Failure ("bad quotation: " ^ s))
+         i
    in
-   let right =
-      if is_quote_char s.[len - 1] && is_quote_char s.[len - 2] then
-         len - 3
+   let rec search_right i =
+      if i = len then
+         i
+      else if is_quote_char name.[i] then
+         search_right (succ i)
       else
-         raise (Failure ("bad quotation: " ^ s))
+         i
    in
-   let s = String.sub s left (right - left) in
-     name, s
+   let left = search_left 0 in
+   let right = search_right left in
+      if right = left then
+         default
+      else
+         String.sub name left (right - left)
+
+let unfold_xquotation parse_quotation t =
+   let name, quote = dest_xquotation t in
+      parse_quotation name quote
+
+let rec sweep_up_unfold_xquotation parse_quotation t =
+   map_up (fun t ->
+         if is_xquotation_term t then
+            let t = unfold_xquotation parse_quotation t in
+               sweep_up_unfold_xquotation parse_quotation t
+         else
+            t) t
 
 (*
  * The so-var iforms are primitive, because hyps are rewritten to contexts.
@@ -675,8 +759,7 @@ let apply_sovar_iforms parse_quotation apply_iforms t =
          let args = apply_so_var_iforms_term_list args in
             mk_so_var_term v cvars args
       else if is_xquotation_term t then
-         let name, s = dest_xquotation_term t in
-         let t = parse_quotation name s in
+         let t = unfold_xquotation parse_quotation t in
             apply_so_var_iforms_term (apply_iforms t)
       else
          let { term_op = op; term_terms = bterms } = dest_term t in
@@ -778,7 +861,11 @@ let pp_print_grammar buf gram =
 (************************************************************************
  * Actual parsing.
  *)
-let parse gram start loc s =
+
+(*
+ * Parse the input.
+ *)
+let parse parse_quotation gram start loc s =
    let { gram_lexers         = lexers;
          gram_lexer_actions  = lexer_actions;
          gram_lexer_start    = starts;
@@ -802,30 +889,65 @@ let parse gram start loc s =
             raise (Failure ("unknown start symbol: " ^ string_of_shape start))
    in
 
-   (* Lexer *)
-   let rec lexer_fun () =
+   (* Rewrite a lexeme; handle quotations here *)
+   let rewrite_lexeme rw loc lexeme args =
+      let arg = mk_lexer_term lexeme args in
+      let tok =
+         match apply_rewrite rw empty_args arg [] with
+            [tok] ->
+               tok
+          | _ ->
+               raise (Invalid_argument "lexer_fun")
+      in
+      let tok = sweep_up_unfold_xquotation parse_quotation tok in
+      let shape = shape_of_term tok in
+         if !debug_grammar then
+            eprintf "Token: %a@." pp_print_shape shape;
+         shape, loc, (), tok
+   in
+
+   (* Process a lexeme *)
+   let rec lexer_action rw_opt loc lexeme args =
+      match rw_opt with
+         LexerRewrite rw ->
+            rewrite_lexeme rw loc lexeme args
+       | LexerPair (lexer_bool, rw_opt) ->
+            lexer_match lexer_bool rw_opt loc (Buffer.create 64) lexeme 0
+       | LexerNone ->
+            lexer_fun ()
+
+   (* Lex a matched pair *)
+   and lexer_match lexer rw_opt loc buf name level =
+      let text, key = BoolLexer.search lexer input in
+         Buffer.add_string buf text;
+
+         match key with
+            Some (false, arg, _) ->
+               (* Terminator *)
+               if level = 0 then
+                  let name = trim_quotation_name "term" name in
+                  let arg = trim_quotation_name name arg in
+                     lexer_action rw_opt loc (Buffer.contents buf) [name; arg]
+               else begin
+                  Buffer.add_string buf arg;
+                  lexer_match lexer rw_opt loc buf name (pred level)
+               end
+          | Some (true, arg, _) ->
+               Buffer.add_string buf arg;
+               lexer_match lexer rw_opt loc buf name (succ level)
+          | None ->
+               (* Unexpected EOF *)
+               raise (Failure ("unexpected end-of-file in quotation " ^ name))
+
+   (* General lexing *)
+   and lexer_fun () =
       let action, loc, lexeme, args = Lexer.lex lexer input in
       let () =
          if !debug_grammar then
             eprintf "Lexeme: \"%s\"@." (String.escaped lexeme)
       in
       let rw_opt = ActionTable.find lexer_actions action in
-         match rw_opt with
-            Some rw ->
-               let arg = mk_lexer_term lexeme args in
-               let tok =
-                  match apply_rewrite rw empty_args arg [] with
-                     [tok] ->
-                        tok
-                   | _ ->
-                        raise (Invalid_argument "lexer_fun")
-               in
-               let shape = shape_of_term tok in
-                  if !debug_grammar then
-                     eprintf "Token: %a@." pp_print_shape shape;
-                  shape, loc, (), tok
-          | None ->
-               lexer_fun ()
+         lexer_action rw_opt loc lexeme args
    in
 
    (* Semantic action evaluator *)
@@ -864,11 +986,11 @@ let set_grammar gram =
 let set_start s shape =
    state.state_starts <- StringTable.add state.state_starts s shape
 
-let term_of_string name loc s =
+let term_of_string parse_quotation name loc s =
    match state.state_grammar with
       Some gram ->
          let start = StringTable.find state.state_starts name in
-            parse gram start loc s
+            parse parse_quotation gram start loc s
     | None ->
          raise (Failure "grammar is not initialized")
 

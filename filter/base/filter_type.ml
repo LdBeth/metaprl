@@ -398,6 +398,12 @@ sig
    type parsed_bound_term
    type parsed_meta_term = parsed_term poly_meta_term
 
+   (* Quotation access *)
+   val dest_quot       : string -> string * string
+   val parse_quotation : MLast.loc -> string -> string -> string -> parsed_term
+   val mk_comment_term : term list -> term
+   val convert_comment : MLast.loc -> term -> term
+
    (* Term conversion *)
    val parse_term           : MLast.loc -> parsed_term -> term
    val parse_term_with_vars : MLast.loc -> parsed_term -> term
@@ -434,8 +440,11 @@ sig
     * !!! either the parser or the type checker.
     *)
 
-   (* Bypass both the parser and the type checker *)
+   (* Bypass everything: the iforms, the parser, and the type checker *)
    val raw_term_of_parsed_term : parsed_term -> term
+
+   (* Bypass both the parser and the type checker *)
+   val raw_input_term_of_parsed_term : parsed_term -> term
 
    (* Bypass the parser, but do type checking *)
    val unparsed_term_of_parsed_term : MLast.loc -> parsed_term -> term

@@ -29,25 +29,16 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-
 open Opname
 open Refiner.Refiner
 open TermShape
 open Filter_type
 
 val comment_string_op : opname
-val raise_spelling_error: unit -> unit
+val raise_spelling_error : unit -> unit
 
 (* Parsed types *)
-module MakeTermGrammar (TermGrammar : TermGrammarSig) :
-sig
-   include ParsedTermGrammarSig
-
-   val dest_quot       : string -> string * string
-   val parse_quotation : MLast.loc -> string -> string * string -> parsed_term
-   val mk_comment_term : term list -> term
-   val convert_comment : MLast.loc -> term -> term
-end
+module MakeTermGrammar (TermGrammar : TermGrammarSig) : ParsedTermGrammarSig
 
 (*
  * -*-

@@ -57,10 +57,16 @@ type id = Lm_symbol.symbol
 type lexer_id = opname
 
 (*
+ * For expanding quotations.
+ *)
+type quotation_expander = string -> string -> term
+
+(*
  * Add a lexer token.
  * If the term option is None, this token is ignored.
  *)
 val add_token      : t -> lexer_id -> id -> string -> term option -> t
+val add_token_pair : t -> lexer_id -> id -> string -> string -> term option -> t
 
 (*
  * Add a production.
@@ -133,7 +139,7 @@ val pp_print_grammar : Lm_printf.out_channel -> t -> unit
 (*
  * Parse a string.
  *)
-val parse           : t -> shape -> Lexing.position -> string -> term
+val parse           : quotation_expander -> t -> shape -> Lexing.position -> string -> term
 
 (*
  * Stateful versions.
@@ -142,13 +148,11 @@ val parse           : t -> shape -> Lexing.position -> string -> term
  *)
 val set_grammar     : t -> unit
 val set_start       : string -> shape -> unit
-val term_of_string  : string -> Lexing.position -> string -> term
+val term_of_string  : quotation_expander -> string -> Lexing.position -> string -> term
 
 (*
  * Iform expansion.
  *)
-type quotation_expander = string -> string -> term
-
 val apply_iforms       : quotation_expander -> term -> term
 val apply_iforms_mterm : quotation_expander -> meta_term -> term list -> meta_term * term list
 
