@@ -15,6 +15,9 @@
 ifndef LOCALBIN
    LOCALBIN := /usr/local/bin
 endif
+ifndef CAMLP4LIB
+   CAMLP4LIB := /usr/local/lib/camlp4
+endif
 
 #
 # OCAML commands

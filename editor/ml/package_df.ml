@@ -2,6 +2,10 @@
  * Display all the elements in a particular theory.
  *)
 
+include Base_theory
+
+include Package_info
+
 open Opname
 open Term
 open Rformat
@@ -13,10 +17,14 @@ open Filter_ocaml
 open Filter_cache
 open Filter_proof
 
-include Base_theory
-
-include Package_info
+open Package_info
 open Package
+
+(*
+ * Our display parameters.
+ *)
+let tabstop = 3
+let min_screen_width = 40
 
 (*
  * Unit term used for interfaces.
@@ -62,7 +70,7 @@ let convert_impl =
 (*
  * Display the entire package.
  *)
-let display_interface mode buf pack =
+let format_interface mode buf pack =
    let dbase = dforms pack in
    let db = get_mode_base dbase mode in
    let tl = term_list convert_intf (Package.sig_info pack) in
@@ -72,7 +80,7 @@ let display_interface mode buf pack =
 (*
  * Display the entire package.
  *)
-let display_implementation mode buf pack =
+let format_implementation mode buf pack =
    let dbase = dforms pack in
    let db = get_mode_base dbase mode in
    let tl = term_list convert_impl (Package.info pack) in
@@ -88,14 +96,14 @@ let format_packages buf pack =
       Package.name pack1 <= Package.name pack2
    in
    let packs = Sort.list compare (Package.packages pack) in
-   let format_package pack =
-      let children = Sort.list compare (Package.children pack) in
+   let format_package pack' =
+      let children = Sort.list compare (Package.children pack pack') in
       let format_child child =
          format_newline buf;
          format_string buf (Package.name child)
       in
          format_pushm buf tabstop;
-         format_string buf (Package.name pack);
+         format_string buf (Package.name pack');
          List.iter format_child children;
          format_popm buf;
          format_newline buf
@@ -104,6 +112,9 @@ let format_packages buf pack =
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/23 20:03:37  jyh
+ * Initial rebuilt editor.
+ *
  * Revision 1.1  1998/04/17 20:48:11  jyh
  * Updating refiner for extraction.
  *

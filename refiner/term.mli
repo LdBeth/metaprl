@@ -360,6 +360,10 @@ val concl_addr : term -> int * int
 val replace_concl : term -> term -> term
 val replace_goal : term -> term -> term          (* One subgoal *)
 
+val is_xrewrite_term : term -> bool
+val mk_xrewrite_term : term -> term -> term
+val dest_xrewrite : term -> term * term
+
 (*
  * Primitive lists.
  *)
@@ -426,6 +430,9 @@ val make_2subst_term : term -> string -> string -> term -> term -> term
 
 (*
  * $Log$
+ * Revision 1.13  1998/04/23 20:04:45  jyh
+ * Initial rebuilt editor.
+ *
  * Revision 1.12  1998/04/21 19:54:33  jyh
  * Upgraded refiner for program extraction.
  *

@@ -13,6 +13,7 @@ val compare_lists : ('a -> 'b -> int) -> 'a list -> 'b list -> int
  *)
 val for_all2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 val exists2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
+val map2 : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
 
 (* Remove items marked by a vector of bools *)
 val remove_elements : bool list -> 'a list -> 'a list
@@ -68,6 +69,9 @@ val last : 'a list -> 'a
 
 (*
  * $Log$
+ * Revision 1.6  1998/04/23 20:04:36  jyh
+ * Initial rebuilt editor.
+ *
  * Revision 1.5  1998/04/21 19:53:54  jyh
  * Upgraded refiner for program extraction.
  *

@@ -11,14 +11,17 @@
  * Also add display capability.
  *)
 
+include Proof
+
+open Term
 open Rformat
 open Dform
+open Refine_sig
 open Refine
 
 open Tactic_type
 open Proof_step
 open Proof
-open Edit_type
 
 (************************************************************************
  * TYPES                                                                *
@@ -33,7 +36,7 @@ type ped_select =
  | PedChild of int
 
 type ped_proof =
-   { ped_proof : proof;
+   { ped_proof : Proof.t;
      ped_select : ped_select
    }
 
@@ -46,7 +49,8 @@ type ped_proof =
  * Current proof is at top of undo stack.
  *)
 type t =
-   { mutable ped_goal : tactic_arg;
+   { mutable ped_params : Filter_summary.param list;
+     mutable ped_goal : tactic_arg;
      mutable ped_undo : ped_proof list;
      mutable ped_stack : ped_proof list
    }
@@ -58,8 +62,9 @@ type t =
 (*
  * Constructors.
  *)
-let create t =
-   { ped_goal = t;
+let create params t =
+   { ped_params = params;
+     ped_goal = t;
      ped_undo = [];
      ped_stack = []
    }
@@ -67,18 +72,24 @@ let create t =
 let ped_of_proof pf =
    let ped = { ped_proof = pf; ped_select = PedGoal } in
    let stack = [ped] in
-      { ped_goal = proof_goal pf;
+      { ped_params = [];
+        ped_goal = Proof.goal pf;
         ped_undo = stack;
         ped_stack = stack
       }
+
+let set_params ped params =
+   ped.ped_params <- params
 
 (*
  * Destructors.
  *)
 let proof_of_ped { ped_undo = undo } =
    match undo with
-      { ped_proof = pf }::_ -> pf
-    | [] -> raise (Invalid_argument "Proof_edit.proof_of_ped")
+      { ped_proof = pf } :: _ ->
+         pf
+    | [] ->
+         raise (Failure "proof_of_ped")
 
 (*
  * Get the goal of a proof.
@@ -86,15 +97,16 @@ let proof_of_ped { ped_undo = undo } =
 let ped_goal { ped_proof = pf; ped_select = select } =
    match select with
       PedGoal ->
-         proof_goal pf
+         Proof.goal pf
     | PedChild i ->
          try
-            match List.nth (proof_children pf) i with
-               ProofChildTerm t -> t
-             | ProofChildProof pf ->
+            match List.nth (Proof.children pf) i with
+               Proof.ChildTerm t ->
+                  t
+             | Proof.ChildProof pf ->
                   raise (Failure "Proof_edit.ped_goal: child is not a leaf")
          with
-            Not_found ->
+            Failure "nth" ->
                raise (Failure "Proof_edit.ped_goal: no such child")
             
 (************************************************************************
@@ -107,10 +119,12 @@ let ped_goal { ped_proof = pf; ped_select = select } =
 let display_children db buf =
    let rec aux i = function
       h::t ->
-	 let goal, _ =
+	 let { tac_goal = goal } =
 	    match h with
-	       ProofChildTerm goal -> goal
-	     | ProofChildProof pf -> proof_goal pf
+	       Proof.ChildTerm goal ->
+                  goal
+	     | Proof.ChildProof pf ->
+                  Proof.goal pf
 	 in
 	    format_string buf "\n-<subgoal>-\n";
 	    format_int buf i;
@@ -137,10 +151,10 @@ let display_status buffer status =
 	 let l = String.length s' in
 	 let code =
 	    match s with
-	       StatusBad -> '-'
-	     | StatusPartial -> '#'
-	     | StatusAsserted -> '!'
-	     | StatusComplete -> '*'
+	       Proof.Bad -> '-'
+	     | Proof.Partial -> '#'
+	     | Proof.Asserted -> '!'
+	     | Proof.Complete -> '*'
 	 in
 	    format_char buffer code;
 	    format_string buffer (String.make l ' ');
@@ -169,7 +183,7 @@ let display_goal db buffer goal status =
 
    (* Goal *)
    format_string buffer "\n-<main>-\n";
-   format_term db buffer (fst goal);
+   format_term db buffer goal.tac_goal;
 
    (* Rule *)
    format_string buffer "\n\n-<beginrule>-\n";
@@ -180,10 +194,10 @@ let display_goal db buffer goal status =
  * Display a proof with an inference.
  *)
 let display_proof db buffer pf =
-   let goal, _ = proof_goal pf in
-   let item = proof_item pf in
-   let children = proof_children pf in
-   let status = proof_status pf in
+   let { tac_goal = goal } = Proof.goal pf in
+   let item = Proof.item pf in
+   let children = Proof.children pf in
+   let status = Proof.status pf in
       (* Display the current address *)
       display_status buffer status;
 
@@ -197,7 +211,7 @@ let display_proof db buffer pf =
          match item with
             ProofStep step ->
                format_string buffer "BY ";
-               format_string buffer (step_text step);
+               format_string buffer (Proof_step.text step);
                format_newline buffer
           | ProofProof _ ->
                format_string buffer "BY <proof>\n"
@@ -217,11 +231,11 @@ let display_proof db buffer pf =
 let format db buffer { ped_goal = goal; ped_undo = undo } =
    match undo with
       [] ->
-         display_goal db buffer goal [StatusPartial, 1]
+         display_goal db buffer goal [Proof.Partial, 1]
     | { ped_proof = pf; ped_select = select }::_ ->
          match select with
             PedChild i ->
-               display_goal db buffer goal ((proof_status pf) @ [StatusPartial, i + 1])
+               display_goal db buffer goal ((Proof.status pf) @ [Proof.Partial, i + 1])
           | PedGoal ->
                display_proof db buffer pf
 
@@ -237,20 +251,20 @@ let format db buffer { ped_goal = goal; ped_undo = undo } =
  *)
 let refine_ped ped text ast tac =
    let { ped_goal = goal; ped_undo = undo; ped_stack = stack } = ped in
-   let subgoals = fst (Refiner.refine tac goal) in
-   let step = Proof_step.create goal subgoals text ast in
+   let subgoals, _ = Refiner.refine tac goal in
+   let step = Proof_step.create goal subgoals text ast tac in
    let pf' =
       match undo with
          [] ->
-            proof_of_step step
+            Proof.of_step step
        | ped::_ ->
             let { ped_proof = pf; ped_select = select } = ped in
                match select with
                   PedGoal ->
                      replace_item pf (ProofStep step)
                 | PedChild i ->
-                     let pf' = replace_child pf i (proof_of_step step) in
-                        proof_child pf' i
+                     let pf' = replace_child pf i (Proof.of_step step) in
+                        Proof.child pf' i
    in
    let ped' = { ped_proof = pf'; ped_select = PedGoal } in
    let stack' = ped' :: stack in
@@ -268,7 +282,7 @@ let undo_ped ped =
                ped.ped_goal <- goal;
                ped.ped_undo <- h::t
        | _ ->
-            raise (BadCommand "undo stack is empty")
+            raise (RefineError (StringError "undo stack is empty"))
 
 (*
  * Reset the undo stack.
@@ -278,9 +292,28 @@ let nop_ped ped =
       ped.ped_undo <- stack;
       match stack with
          { ped_proof = pf }::t ->
-            ped.ped_goal <- proof_goal pf
+            ped.ped_goal <- Proof.goal pf
        | [] ->
             ()
+
+(*
+ * Fold the current subgoals into a new proof node.
+ *)
+let fold f ped =
+   let { ped_undo = undo; ped_stack = stack } = ped in
+      match undo with
+         [] ->
+            raise (RefineError (StringError "fold_ped: no goal"))
+       | ped' :: _ ->
+            let { ped_proof = pf; ped_select = select } = ped' in
+            let ped' = { ped_proof = f pf; ped_select = PedGoal } in
+            let stack = ped' :: stack in
+               ped.ped_undo <- stack;
+               ped.ped_stack <- stack
+
+let fold_ped = fold Proof.fold
+
+let fold_all_ped = fold Proof.fold_all
 
 (************************************************************************
  * NAVIGATION                                                           *
@@ -293,10 +326,10 @@ let root_ped ped =
    let { ped_undo = undo; ped_stack = stack } = ped in
       match undo with
          { ped_proof = pf }::_ ->
-            let pf' = proof_main pf in
+            let pf' = Proof.main pf in
             let ped' = { ped_proof = pf'; ped_select = PedGoal } in
             let stack' = ped' :: stack in
-               ped.ped_goal <- proof_goal pf';
+               ped.ped_goal <- Proof.goal pf';
                ped.ped_undo <- stack';
                ped.ped_stack <- stack'
        | [] ->
@@ -316,13 +349,13 @@ let up_ped ped =
                   PedChild _ ->
                      pf
                 | PedGoal ->
-                     match proof_parent pf with
-                        Some pf' -> pf'
-                      | None -> pf
+                     try Proof.parent pf with
+                        Failure "parent" ->
+                           pf
             in
             let ped' = { ped_proof = pf'; ped_select = PedGoal } in
             let stack' = ped' :: stack in
-               ped.ped_goal <- proof_goal pf';
+               ped.ped_goal <- Proof.goal pf';
                ped.ped_undo <- stack';
                ped.ped_stack <- stack'
 
@@ -336,26 +369,70 @@ let rec down_ped ped i =
             ()
        | { ped_proof = pf; ped_select = select }::_ ->
             let child =
-               try List.nth (proof_children pf) i with
-                  Not_found -> raise (BadCommand "Bad child index")
+               try List.nth (Proof.children pf) i with
+                  Not_found ->
+                     raise (RefineError (StringStringError ("down_ped", "Bad child index")))
             in
                match child with
-                  ProofChildProof pf' ->
+                  Proof.ChildProof pf' ->
                      let ped' = { ped_proof = pf'; ped_select = PedGoal } in
                      let stack' = ped' :: stack in
-                        ped.ped_goal <- proof_goal pf';
+                        ped.ped_goal <- Proof.goal pf';
                         ped.ped_undo <- stack';
                         ped.ped_stack <- stack'
-                | ProofChildTerm goal ->
+                | Proof.ChildTerm goal ->
                      (* This is a leaf *)
                      let ped' = { ped_proof = pf; ped_select = PedChild i } in
                      let stack' = ped' :: stack in
-                        ped.ped_goal <- proof_goal pf;
+                        ped.ped_goal <- Proof.goal pf;
                         ped.ped_undo <- stack';
                         ped.ped_stack <- stack'
 
+(************************************************************************
+ * PROOF CHECKING                                                       *
+ ************************************************************************)
+
+(*
+ * Check a proof.
+ * If there is a failure (ProofRefineError (pf, err)),
+ * update the current edit, and raise an exception.
+ *)
+let check_ped ped =
+   let { ped_undo = undo; ped_stack = stack } = ped in
+      match undo with
+         [] ->
+            raise (RefineError (StringError "check_ped: no goal"))
+       | ped' :: _ ->
+            let { ped_proof = pf } = ped' in
+               try Proof.check pf with
+                  Proof.ProofRefineError (pf', err) ->
+                     let ped' = { ped_proof = pf'; ped_select = PedGoal } in
+                     let stack = ped' :: stack in
+                        ped.ped_undo <- stack;
+                        ped.ped_stack <- stack;
+                        raise (RefineError err)
+
+(*
+ * When the proof is expanded, we make a dulicate.
+ * Expansion never fails, but it may change the status of the proof.
+ *)
+let expand_ped ped =
+   let { ped_undo =undo; ped_stack = stack } = ped in
+      match undo with
+         [] ->
+            raise (RefineError (StringError "expand_ped: no goal"))
+       | ped' :: _ ->
+            let { ped_proof = pf; ped_select = select } = ped' in
+            let ped' = { ped_proof = Proof.expand pf; ped_select = select } in
+            let stack = ped' :: stack in
+               ped.ped_undo <- stack;
+               ped.ped_stack <- stack
+
 (*
  * $Log$
+ * Revision 1.3  1998/04/23 20:03:52  jyh
+ * Initial rebuilt editor.
+ *
  * Revision 1.2  1998/04/15 12:39:40  jyh
  * Updating editor packages to Filter_summarys.
  *

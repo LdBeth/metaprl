@@ -5,8 +5,26 @@
  *    2. Creation, inspection of items in modules.
  *)
 
+include Tactic_type
+
 include Proof_edit
 include Package_info
+include Package_df
+include Shell_null
+include Shell_rewrite
+
+open Printf
+
+open Term
+open Dform
+open Dform_print
+open Rformat
+open Refine_sig
+
+open Package_type
+open Package_info
+open Package_df
+open Shell_type
 
 (************************************************************************
  * TYPES                                                                *
@@ -23,20 +41,11 @@ type shellInfo =
       (* Current module and path and proof *)
       mutable dir : string list;
       mutable package : Package.package option;
-      mutable proof : (string * ped) option;
+      mutable proof : edit_object;
    
       (* All loaded modules *)
-      packages : Package.t;
+      packages : Package.t
    }
-
-(************************************************************************
- * CONSTANTS                                                            *
- ************************************************************************)
-
-(*
- * Minimum width of the screen.
- *)
-let min_width = 40
 
 (************************************************************************
  * ARGUMENT COLLECTION                                                  *
@@ -60,7 +69,7 @@ let handle_anon_arg arg =
  * Argument specifications.
  *)
 let spec =
-   ["-I", String add_include, "add an directory to the path for include files"]
+   ["-I", Arg.String add_include, "add an directory to the path for include files"]
 
 let _ = Env_arg.parse spec handle_anon_arg "Nuprl-Light toploop" 
 
@@ -76,8 +85,8 @@ let info =
      df_mode = "prl";
      dir = [];
      package = None;
-     packages = map new_package big_theories;
-     proof = Package.create !includes
+     packages = Package.create !includes;
+     proof = Shell_null.null_object
    }
 
 (************************************************************************
@@ -96,6 +105,16 @@ let get_db dbase =
             dbase
    in
       get_mode_base dbase' info.df_mode
+
+(*
+ * Get the current package.
+ *)
+let get_current_package info =
+   match info.package with
+      Some pack ->
+         pack
+    | None ->
+         raise (RefineError (StringError "no current package"))
 
 (*
  * Term printer.
@@ -117,30 +136,33 @@ let print_error_term ofile t =
  ************************************************************************)
 
 (*
+ * Turn a string into a path.
+ *)
+let parse_path dir name =
+   dir @ String_util.split '.' name
+
+let rec string_of_path = function
+   [h] ->
+      h
+ | h::t ->
+      h ^ "." ^ string_of_path t
+ | [] ->
+      ""
+
+(*
  * Display the current proof.
  *)
 let display_proof () =
    (* Get the package and item *)
    let mod_info = get_current_package info in
-   let name, ped = get_current_proof info in
-   let dformer = package_dforms mod_info in
-   let modname = package_name mod_info in
+   let edit = info.proof in
+   let dformer = Package.dforms mod_info in
+   let modname = Package.name mod_info in
    let buf = new_buffer () in
    let db = get_mode_base dformer info.df_mode in
-      display_ped db buf ped;
-      printf "\n--+--proof--+--\nTheory item: %s; path: /%s/%s\n--\n"
-         name modname name;
+      edit.edit_format db buf;
       print_to_channel info.width buf stdout;
-      output_string stdout "\n--+--proof--+--\n";
       flush stdout
-
-(*
- * When a package item is displayed, we may want to record some information.
- *)
-let display_package_thm = function
-   { thm_name = name; thm_ped = ped } ->
-      info.proof <- Some (name, ped);
-      display_proof ()
 
 (*
  * Display the "root" directory.
@@ -174,7 +196,8 @@ let view_item modname name =
    (* Get the package and item *)
    let pack = Package.get info.packages name in
    let buf = new_buffer () in
-   let db = get_mode_base (package_dforms mod_info) info.df_mode in
+   let mod_info = get_current_package info in
+   let db = get_mode_base (Package.dforms mod_info) info.df_mode in
       raise (Failure "Shell.view_item: not implemented")
 
 (*
@@ -196,7 +219,7 @@ let view name =
  * Window width.
  *)
 let set_window_width i =
-   info.width <- if i < min_width then min_width else i
+   info.width <- if i < min_screen_width then min_screen_width else i
 
 (*
  * Show the directory.
@@ -218,7 +241,7 @@ let cd name =
       begin
          match dir with
             modname::_ ->
-               info.package <- Some (find_package modname info.packages)
+               info.package <- Some (Package.get info.packages modname)
           | [] ->
                info.package <- None
       end;
@@ -233,7 +256,7 @@ let cd name =
  * Make a new package.
  * Right now we only allow packages at the top level.
  *)
-let create_package name =
+let create_pkg name =
    match parse_path info.dir name with
       [modname] ->
          (* Top level *)
@@ -250,7 +273,7 @@ let create_package name =
 let save () =
    match info.package with
       Some pack ->
-         Package.save pack
+         Package.save info.packages pack
     | None ->
          ()
 
@@ -266,70 +289,109 @@ let save_all () =
  ************************************************************************)
 
 (*
- * Add a parent theory.
- * Eventually we will have to open up the filterPackage package,
- * and expose the interface definition, because we need it 
- * for describing opnames among other things.  For now, we just
- * inherit the refiner and display forms.
+ * Creation functions.
  *)
-let add_parent name =
-   let mod_info = find_package name info.packages in
-   let cmod = get_current_package info in
-      package_add_parent cmod mod_info
+let create_rw name =
+   raise (RefineError (StringError "not implemented"))
+
+let create_axiom name =
+   raise (RefineError (StringError "not implemented"))
+
+let create_thm name =
+   raise (RefineError (StringError "not implemented"))
+
+let create_opname name =
+   raise (RefineError (StringError "not implemented"))
+
+let create_condition name =
+   raise (RefineError (StringError "not implemented"))
+
+let create_parent name =
+   raise (RefineError (StringError "not implemented"))
+
+let create_dform name =
+   raise (RefineError (StringError "not implemented"))
+
+let create_prec name =
+   raise (RefineError (StringError "not implemented"))
+
+let create_prec_rul name =
+   raise (RefineError (StringError "not implemented"))
+
+let create_resource name =
+   raise (RefineError (StringError "not implemented"))
+
+let create_infix name =
+   raise (RefineError (StringError "not implemented"))
+
+let create_ml name =
+   raise (RefineError (StringError "not implemented"))
 
 (*
- * Start a new proof.
+ * Proof operations.
  *)
-let create_thm name term =
-   let mod_info = get_current_package info in
-   let ped = new_ped (new_proof term) in
-      package_add_thm mod_info name ped;
-      view name
+let set_goal t =
+   info.proof.edit_set_goal t;
+   display_proof ()
 
-(*
- * Navigate the proof.
- *)
-let move_up () =
-   let _, ped = get_current_proof info in
-      up_ped ped;
-      display_proof ()
+let set_redex t =
+   info.proof.edit_set_redex t;
+   display_proof ()
 
-(*
- * Navigate the proof.
- *)
-let move_root () =
-   let _, ped = get_current_proof info in
-      root_ped ped;
-      display_proof ()
+let set_contractum t =
+   info.proof.edit_set_contractum t;
+   display_proof ()
 
-let move_down i =
-   let _, ped = get_current_proof info in
-      down_ped ped i;
-      display_proof ()
+let set_assumptions tl =
+   info.proof.edit_set_assumptions tl;
+   display_proof ()
 
-let refine str tac =
-   let _, ped = get_current_proof info in
-      refine_ped ped str tac;
-      display_proof ()
+let set_params pl =
+   info.proof.edit_set_params pl;
+   display_proof ()
+
+let check () =
+   info.proof.edit_check ();
+   display_proof ()
+
+let expand () =
+   info.proof.edit_expand ();
+   display_proof ()
+
+let root () =
+   info.proof.edit_root ();
+   display_proof ()
+
+let up () =
+   info.proof.edit_up ();
+   display_proof ()
+
+let down i =
+   info.proof.edit_down i;
+   display_proof ()
+
+let refine str ast tac =
+   info.proof.edit_refine str ast tac;
+   display_proof ()
 
 let undo () =
-   let _, ped = get_current_proof info in
-      undo_ped ped;
-      display_proof ()
+   info.proof.edit_undo ();
+   display_proof ()
 
-(************************************************************************
- * DEBUGGING                                                            *
- ************************************************************************)
+let fold () =
+   info.proof.edit_fold ();
+   display_proof ()
 
-let pf = ref (| 'a |)
-
-let z p =
-   pf := fst p;
-   idT p
+let fold_all () =
+   info.proof.edit_fold_all ();
+   display_proof ()
 
 (*
  *
  * $Log$
+ * Revision 1.4  1998/04/23 20:04:02  jyh
+ * Initial rebuilt editor.
+ *
  * Revision 1.3  1998/04/17 02:25:32  jyh
  * Implementing shell.
  *

@@ -10,10 +10,14 @@
  * Also add display capability.
  *)
 
+include Proof
+
+open Term
 open Rformat
 open Dform
+open Refine_sig
+open Refine
 open Tactic_type
-open Proof
 
 (*
  * The is the state of the current proof.
@@ -23,13 +27,14 @@ type t
 (*
  * Constructors.
  *)
-val create : tactic_arg -> t
-val ped_of_proof : proof -> t
+val create : Filter_summary.param list -> tactic_arg -> t
+val ped_of_proof : Proof.t -> t
+val set_params : t -> Filter_summary.param list -> unit
 
 (*
  * Destructors.
  *)
-val proof_of_ped : t -> proof
+val proof_of_ped : t -> Proof.t
 
 (*
  * Display operation.
@@ -48,6 +53,8 @@ val format : dform_base -> buffer -> t -> unit
 val refine_ped : t -> string -> MLast.expr -> tactic -> unit
 val undo_ped : t -> unit
 val nop_ped : t -> unit
+val fold_ped : t -> unit
+val fold_all_ped : t -> unit
 
 (*
  * Navigation.
@@ -57,7 +64,21 @@ val down_ped : t -> int -> unit
 val root_ped : t -> unit
 
 (*
+ * Check the proof and return its extract.
+ * Two versions for handling refinement errors:
+ *    check_proof: expand until first error, exceptions propagate
+ *       On failure, the ped is modified to point to the error
+ *    expand_proof: check as much of the proof as possible,
+ *       no exceptions are raised
+ *)
+val check_ped : t -> Refiner.extract
+val expand_ped : t -> unit
+
+(*
  * $Log$
+ * Revision 1.3  1998/04/23 20:03:55  jyh
+ * Initial rebuilt editor.
+ *
  * Revision 1.2  1998/04/09 19:07:26  jyh
  * Updating the editor.
  *

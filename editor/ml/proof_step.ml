@@ -8,8 +8,10 @@
 include Tactic_type
 
 open Term
+open Opname
 open Refine_sig
 open Refine_util
+open Refine_exn
 open Refine
 
 open Filter_proof_type
@@ -57,17 +59,60 @@ let ast { step_ast = ast } = ast
 let tactic { step_tactic = tac } = tac
 
 (*
+ * Make an error term.
+ * Just a string.
+ *)
+let mk_error_subgoal { tac_hyps = hyps; tac_arg = arg } err =
+   let s = string_of_refine_error err in
+   let t = mk_string_term nil_opname s in
+      { tac_goal = t;
+        tac_hyps = hyps;
+        tac_arg = arg
+      }
+
+(*
  * Apply the tactic and compute the extract.
  * Usually the subgoals will be exactly the same.
  * We use hash functions to make the search a little simpler.
+ *
+ * This function never fails.
  *)
-let expand { step_goal = goal; step_tactic = tac } =
-   Refiner.refine tac goal
+let expand step =
+   let { step_goal = goal;
+         step_text = text;
+         step_ast = ast;
+         step_tactic = tac;
+         step_subgoals = subgoals
+       } = step
+   in
+      try
+         let subgoals', _ = Refiner.refine tac goal in
+            if List_util.for_all2 tactic_arg_alpha_equal subgoals' subgoals then
+               step
+            else
+               { step_goal = goal;
+                 step_text = text;
+                 step_ast = ast;
+                 step_tactic = tac;
+                 step_subgoals = subgoals'
+               }
+      with
+         RefineError err ->
+            { step_goal = goal;
+              step_text = text;
+              step_ast = ast;
+              step_tactic = tac;
+              step_subgoals = [mk_error_subgoal goal err]
+            }
 
 let check step =
-   let { step_subgoals = subgoals } = step in
-   let subgoals', ext = expand step in
-      if List_util.for_all2 tactic_arg_alpha_equal subgoals subgoals' then
+   let { step_goal = goal;
+         step_tactic = tac;
+         step_subgoals = subgoals
+       } = step
+   in
+   let subgoals', ext = Refiner.refine tac goal in
+      if List_util.for_all2 tactic_arg_alpha_equal subgoals' subgoals then
          ext
       else
          raise (RefineError (StringError "Proof_step.check: refinement mismatch"))
@@ -136,6 +181,9 @@ let step_of_io_step resources fcache tactics
 
 (*
  * $Log$
+ * Revision 1.8  1998/04/23 20:03:57  jyh
+ * Initial rebuilt editor.
+ *
  * Revision 1.7  1998/04/22 22:44:20  jyh
  * *** empty log message ***
  *

@@ -3,13 +3,11 @@ INCLUDE := -I . -I ../../theories/tactic -I ../../theories/base -I $(NLLIB) -I /
 
 # Common files
 MLZFILES :=\
-	edit_type\
 	package_type\
 	shell_type
 
 # Library files
 NLFILES :=\
-	edit_type\
 	proof_step\
 	proof\
 	proof_edit\
@@ -17,19 +15,73 @@ NLFILES :=\
 	package_info\
 	package_df\
 	shell_type\
+	shell_null\
+	shell_rewrite\
 	shell
 
-MFILES :=\
-	editor_init
+MFILES :=
 
 PFILES :=\
-	main
+	shell_p4
+
+CMXDEPS =\
+	$(CAMLLIB)/unix.cmxa\
+        $(CAMLLIB)/nums.cmxa\
+	$(CAMLP4LIB)/camlp4.cmxa\
+	$(NLLIB)/clib.cmxa\
+	$(NLLIB)/util.cmxa\
+	$(NLLIB)/refiner.cmxa\
+	$(NLLIB)/library.cmxa\
+	$(NLLIB)/refiner.cmxa\
+	$(NLLIB)/prlc.cmxa\
+	../../theories/tactic/tactics.cmxa\
+	../../theories/base/base.cmxa\
+	nl.cmxa
+
+CMXLIBS =\
+	$(CMXDEPS)
+
+CMADEPS =\
+	$(CAMLLIB)/unix.cma\
+        $(CAMLLIB)/nums.cma\
+	$(CAMLP4LIB)/camlp4.cma\
+	$(NLLIB)/clib.cma\
+	$(NLLIB)/util.cma\
+	$(NLLIB)/refiner.cma\
+	$(NLLIB)/library.cma\
+	$(NLLIB)/refiner.cma\
+	$(NLLIB)/prlc.cma\
+	../../theories/tactic/tactics.cma\
+	../../theories/base/base.cma\
+	nl.cma
+
+CMALIBS =\
+	$(CMADEPS)
+
+CMOBJS =\
+	$(CAMLP4LIB)/odyl.cma\
+	$(CMALIBS)\
+	$(CAMLP4LIB)/pa_o.cmo\
+	$(CAMLP4LIB)/pa_extend.cmo\
+	$(CAMLP4LIB)/q_MLast.cmo\
+	$(CMOFILES)\
+	$(CAMLP4LIB)/odyl.cmo
+
+CCLIBS =\
+	-cclib -lunix\
+        -cclib -lnums\
+	-cclib $(NLLIB)/clib.a
+
 
 # Name of main libraris
 MAIN = nuprl-light
+NL = nl
 
-all: $(MAIN).cma $(MAIN).run editor_init.cmo
-opt: $(MAIN).cmxa $(MAIN) editor_init.cmx
+all: $(MAIN).cma $(NL).run
+opt: $(MAIN).cmxa $(NL)
+
+$(NL).run: $(CMOBJS)
+	$(OCAMLC) -g -o $@ -custom -linkall $(CMOBJS) $(CCLIBS)
 
 clean::
 	$(RM) -f *.p4* *.pp*

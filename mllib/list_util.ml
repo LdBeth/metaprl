@@ -61,6 +61,20 @@ let exists2 f l1 l2 =
       compare (l1, l2)
 
 (*
+ * Map a function over two lists.
+ *)
+let map2 f l1 l2 =
+   let rec map = function
+      h1::t1, h2::t2 ->
+         f h1 h2 :: map (t1, t2)
+    | [], [] ->
+         []
+    | _ ->
+         raise (Failure "map2")
+   in
+      map (l1, l2)
+
+(*
  * Remove marked elements.
  *)
 let rec remove_elements l1 l2 =
@@ -502,6 +516,9 @@ let fold_left f x l =
 
 (*
  * $Log$
+ * Revision 1.6  1998/04/23 20:04:34  jyh
+ * Initial rebuilt editor.
+ *
  * Revision 1.5  1998/04/21 19:53:53  jyh
  * Upgraded refiner for program extraction.
  *

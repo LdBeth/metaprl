@@ -2,16 +2,24 @@
  * Create an ediable rewrite object.
  *)
 
-open Filter_summary
-
 include Shell_type
 include Package_info
 include Package_df
 
+open Term
+open Opname
+open Refine_sig
+
+open Filter_summary
+
+open Tactic_type
+open Tactic_cache
+open Shell_type
+
 (*
  * This is the actual rewrite object.
  *)
-type rewrite =
+type rw =
    { mutable rw_params : param list;
      mutable rw_assums : term list;
      mutable rw_redex : term;
@@ -20,70 +28,152 @@ type rewrite =
    }
 
 (*
+ * Make a rewrite goal from the assumptions,
+ * and the rewrite.
+ *)
+let seq = << sequent { 'H >- 'rw } >>
+
+let mk_goal resources redex contractum =
+   let rw = replace_goal seq (mk_xrewrite_term redex contractum) in
+   let arg =
+      { ref_label = "main";
+        ref_args = [];
+        ref_fcache = extract (new_cache ());    (* BUG: this should be fixed *)
+        ref_rsrc = resources
+      }
+   in
+      { tac_goal = rw;
+        tac_hyps = [];
+        tac_arg = arg
+      }
+
+let mk_cond_goal resources assums redex contractum =
+   let rw = replace_goal seq (mk_xrewrite_term redex contractum) in
+   let assums = List.map (replace_goal seq) assums in
+   let arg =
+      { ref_label = "main";
+        ref_args = [];
+        ref_fcache = extract (new_cache ());
+        ref_rsrc = resources
+      }
+   in
+      { tac_goal = rw;
+        tac_hyps = assums;
+        tac_arg = arg
+      }
+
+let mk_ped resources params assums redex contractum =
+   let goal =
+      if assums = [] then
+         mk_goal resources redex contractum
+      else
+         mk_cond_goal resources assums redex contractum
+   in
+      Proof_edit.create params goal
+   
+(*
  * The object has a package in scope.
  *)
-let create pack prog name =
+let unit_term = mk_simple_term nil_opname []
+
+let create pack prog resources name =
    let obj =
       { rw_assums = [];
         rw_params = [];
         rw_redex = unit_term;
         rw_contractum = unit_term;
-        rw_proof = null_proof
+        rw_ped = mk_ped resources [] [] unit_term unit_term
       }
    in
-   let mk_goal () =
-      let { rw_assums = assums;
-            rw_params = params;
+   let update_ped () =
+      let { rw_params = params;
+            rw_assums = assums;
             rw_redex = redex;
             rw_contractum = contractum
           } = obj
       in
-         { crw_name = name;
-           crw_params = params;
-           crw_args = assums;
-           crw_redex = redex;
-           crw_contractum = contractum;
-           crw_proof = null_proof
-         }
+         obj.rw_ped <- mk_ped resources params assums redex contractum;
+   in
+   let extractf () =
+      let { rw_ped = ped } = obj in
+         try Proof_edit.check_ped ped with
+            RefineError err ->
+               raise (RefineError (GoalError (name, err)))
    in
    let edit_format db buf =
       (* Convert to a term *)
-      let t = term_of_rewrite convert_impl (mk_rewrite_for_display ()) in
-         format_term db buf t
+      let { rw_ped = ped } = obj in
+         Proof_edit.format db buf ped
    in
    let edit_set_goal t =
       raise (Failure "Shell_rewrite.edit_set_goal: bogus edit")
    in
    let edit_set_redex t =
-      obj.rw_redex <- t
+      obj.rw_redex <- t;
+      update_ped ()
    in
    let edit_set_contractum t =
-      obj.rw_contractum <- t
+      obj.rw_contractum <- t;
+      update_ped ()
    in
    let edit_set_assumptions tl =
-      obj.rw_assums <- tl
+      obj.rw_assums <- tl;
+      update_ped ()
    in
    let edit_set_params pl =
-      obj.rw_params <- pl
+      obj.rw_params <- pl;
+      update_ped ()
    in
-   let edit_check () =
-      (*
-       * Install the proof.
-       * Get the extract from the proof, and add the rule to the refiner.
-       *)
-      let { rw_assums = assums;
-            rw_params = params;
-            rw_redex = redex;
-            rw_contractum = contractum;
-            rw_ped = ped
-          } = obj
-      in
-      
-      
-
+   let edit_check = extractf in
+   let edit_expand () =
+      Proof_edit.expand_ped obj.rw_ped
+   in
+   let edit_root () =
+      Proof_edit.root_ped obj.rw_ped
+   in
+   let edit_up () =
+      Proof_edit.up_ped obj.rw_ped
+   in
+   let edit_down i =
+      Proof_edit.down_ped obj.rw_ped i
+   in
+   let edit_refine text ast tac =
+      Proof_edit.refine_ped obj.rw_ped text ast tac
+   in
+   let edit_undo () =
+      Proof_edit.undo_ped obj.rw_ped
+   in
+   let edit_nop () =
+      Proof_edit.nop_ped obj.rw_ped
+   in
+   let edit_fold () =
+      Proof_edit.fold_ped obj.rw_ped
+   in
+   let edit_fold_all () =
+      Proof_edit.fold_all_ped obj.rw_ped
+   in
+      { edit_format = edit_format;
+        edit_set_goal = edit_set_goal;
+        edit_set_redex = edit_set_redex;
+        edit_set_contractum = edit_set_contractum;
+        edit_set_assumptions = edit_set_assumptions;
+        edit_set_params = edit_set_params;
+        edit_check = edit_check;
+        edit_expand = edit_expand;
+        edit_root = edit_root;
+        edit_up = edit_up;
+        edit_down = edit_down;
+        edit_refine = edit_refine;
+        edit_undo = edit_undo;
+        edit_fold = edit_fold;
+        edit_fold_all = edit_fold_all
+      }
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/23 20:04:20  jyh
+ * Initial rebuilt editor.
+ *
  * Revision 1.3  1998/04/22 14:06:28  jyh
  * Implementing proof editor.
  *

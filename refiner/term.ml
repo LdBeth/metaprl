@@ -1073,6 +1073,15 @@ let mk_context_term v term terms =
         term_terms = (mk_bterm term)::(List.map mk_bterm terms)
       }
 
+(*
+ * Rewrite
+ *)
+let xrewrite_op = mk_opname "rewrite" xperv
+
+let is_xrewrite_term = is_dep0_dep0_term xrewrite_op
+let mk_xrewrite_term = mk_dep0_dep0_term xrewrite_op
+let dest_xrewrite = dest_dep0_dep0_term xrewrite_op
+
 (************************************************************************
  * PRIMITIVE FORMS                                                      *
  ************************************************************************)
@@ -2502,6 +2511,9 @@ let make_2subst_term main_term v1 v2 t1 t2 =
 
 (*
  * $Log$
+ * Revision 1.13  1998/04/23 20:04:42  jyh
+ * Initial rebuilt editor.
+ *
  * Revision 1.12  1998/04/21 19:54:22  jyh
  * Upgraded refiner for program extraction.
  *

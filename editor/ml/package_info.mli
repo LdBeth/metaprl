@@ -9,10 +9,15 @@
 
 include Package_type
 
+open Package_type
+
 module Package : PackageSig
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/23 20:03:44  jyh
+ * Initial rebuilt editor.
+ *
  * Revision 1.3  1998/04/15 12:39:34  jyh
  * Updating editor packages to Filter_summarys.
  *

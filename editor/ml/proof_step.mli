@@ -40,7 +40,7 @@ val tactic : t -> tactic
  *   expand: allow arbitrary changes in the refinement
  *)
 val check : t -> Refiner.extract
-val expand : t -> tactic_arg list * Refiner.extract
+val expand : t -> t
 
 (* IO *)
 val io_step_of_step : t -> proof_step
@@ -48,6 +48,9 @@ val step_of_io_step : tactic_resources -> cache -> (string, tactic) Hashtbl.t ->
 
 (*
  * $Log$
+ * Revision 1.7  1998/04/23 20:04:00  jyh
+ * Initial rebuilt editor.
+ *
  * Revision 1.6  1998/04/22 22:44:21  jyh
  * *** empty log message ***
  *

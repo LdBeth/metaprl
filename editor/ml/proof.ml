@@ -38,8 +38,11 @@ include Proof_step
 open Printf
 
 open Term
+open Refine_sig
+open Refine_util
+open Refine_exn
 open Refine
-open Filter_proof_type
+open Tactic_type
 
 (************************************************************************
  * TYPES                                                                *
@@ -57,18 +60,18 @@ type address = int list
  * This is the "justification" for the first step of
  * the proof.
  *)
-type proof_item =
+type item =
    ProofStep of Proof_step.t
- | ProofProof of proof
+ | ProofProof of t
 
 (*
  * Status of a proof node.
  *)
-and proof_status =
-   StatusBad
- | StatusPartial
- | StatusAsserted
- | StatusComplete
+and status =
+   Bad
+ | Partial
+ | Asserted
+ | Complete
 
 (*
  * A proof may be just a proof step, or it may be a composition
@@ -83,24 +86,24 @@ and proof_status =
  * have to be removed to preserved the invariant.  In that case, the children
  * a saved as "extras."
  *)
-and proof_node =
-   { node_status : proof_status;
-     node_item : node_item;
+and node =
+   { node_status   : status;
+     node_item     : node_item;
      node_children : child_node list;
-     node_extras : proof_node list
+     node_extras   : node list
    }
 
 and node_item =
-   NodeStep of Proof_step.t
- | NodeNode of proof_node
+   Step of Proof_step.t
+ | Node of node
 
 and child_node =
    ChildGoal of tactic_arg
- | ChildNode of proof_node
+ | ChildNode of node
 
-and proof_child =
-   ProofChildTerm of tactic_arg
- | ProofChildProof of proof
+and child =
+   ChildTerm of tactic_arg
+ | ChildProof of t
 
 (*
  * The actual "proof" is a handle, with a reference
@@ -110,26 +113,22 @@ and proof_child =
  * The invariant here is:
  *    pf_root[pf_address] = pf_node
  *)
-and proof =
-   { pf_root : proof_node;
+and t =
+   { pf_root : node;
      pf_address : address;
-     pf_node : proof_node
+     pf_node : node
    }
 
 (*
  * This exception is raised when composed proofs don't match
  *)
-exception ProofMatch
+exception Match
 
 (*
- * Can't get a child at a bogus address.
+ * We overload the refinement error to give the location of
+ * the error.
  *)
-exception InvalidAddress of proof * int
-
-(*
- * This is a local exception.
- *)
-exception NodeInvalidAddress of int list * int * proof_node
+exception ProofRefineError of t * refine_err
 
 (************************************************************************
  * CONSTRUCTORS                                                         *
@@ -138,18 +137,18 @@ exception NodeInvalidAddress of int list * int * proof_node
 (*
  * Make a proof from a step.
  *)
-let proof_of_step step =
-   let subgoals = step_subgoals step in
+let of_step step =
+   let subgoals = Proof_step.subgoals step in
    let status =
       if subgoals = [] then
-         StatusComplete
+         Complete
       else
-         StatusPartial
+         Partial
    in
    let children = List.map (function t -> ChildGoal t) subgoals in
    let node =
       { node_status = status;
-	node_item = NodeStep step;
+	node_item = Step step;
 	node_children = children;
 	node_extras = []
       }
@@ -168,31 +167,35 @@ let proof_of_step step =
  *)
 let rec node_goal { node_item = item } =
    match item with
-      NodeStep step -> step_goal step
-    | NodeNode node -> node_goal node
+      Step step ->
+         Proof_step.goal step
+    | Node node ->
+         node_goal node
 
 let rec node_subgoals { node_children = children } =
    let flatten = function
-      ChildGoal goal -> [goal]
-    | ChildNode node -> node_subgoals node
+      ChildGoal goal ->
+         [goal]
+    | ChildNode node ->
+         node_subgoals node
    in
       List_util.flat_map flatten children
 
 (*
  * Proof info.
  *)
-let proof_goal { pf_node = node } = node_goal node
+let goal { pf_node = node } = node_goal node
 
-let proof_subgoals { pf_node = node } = node_subgoals node
+let subgoals { pf_node = node } = node_subgoals node
 
 (*
  * Walking the tree.
  *)
-let proof_item { pf_root = root; pf_address = addr; pf_node = node } =
+let item { pf_root = root; pf_address = addr; pf_node = node } =
    match node.node_item with
-      NodeStep step ->
+      Step step ->
          ProofStep step
-    | NodeNode node ->
+    | Node node ->
          ProofProof { pf_root = root;
                       pf_address = addr @ [0];
                       pf_node = node
@@ -201,23 +204,24 @@ let proof_item { pf_root = root; pf_address = addr; pf_node = node } =
 (*
  * Get the children of a proof.
  *)
-let proof_children
+let children
     { pf_root = root;
       pf_address = addr;
       pf_node = { node_children = children }
     } =
    let rec collect i = function
-      h::t ->
+      h :: t ->
          let t' = collect (i + 1) t in
          let h' =
             match h with
                ChildGoal goal ->
-                  ProofChildTerm goal
+                  ChildTerm goal
              | ChildNode node ->
-                  ProofChildProof { pf_root = root; pf_address = addr @ [i]; pf_node = node }
+                  ChildProof { pf_root = root; pf_address = addr @ [i]; pf_node = node }
          in
             h' :: t'
-    | [] -> []
+    | [] ->
+         []
    in
       collect 1 children
 
@@ -227,14 +231,20 @@ let proof_children
 let select node i =
    if i = 0 then
       match node with
-         { node_item = NodeNode node' } ->
+         { node_item = Node node' } ->
             node'
-       | { node_item = _ } ->
-            raise (Invalid_argument "proof_index")
+       | { node_item = Step _ } ->
+            raise (Failure "Proof.select")
    else
-      match List.nth node.node_children (i - 1) with
-         ChildGoal _ -> raise (Invalid_argument "proof_index")
-       | ChildNode node -> node
+      try
+         match List.nth node.node_children (i - 1) with
+            ChildGoal _ ->
+               raise (Failure "Proof.select")
+          | ChildNode node ->
+               node
+      with
+         Failure "nth" ->
+            raise (Failure "Proof.select")
 
 (*
  * Follow the complete address.
@@ -242,38 +252,37 @@ let select node i =
  * prefix of the address that worked, plus the point where it
  * failed.
  *)
-let index node addr =
-   let rec aux node = function
-      i::t ->
+let node_index node addr =
+   let rec search node = function
+      i :: t ->
          let node' =
             try select node i with
-               Invalid_argument _ ->
-                  raise (NodeInvalidAddress (List_util.remove_suffix addr (i::t), i, node))
+               Failure _ ->
+                  raise (Failure "node_index")
          in
-            aux node' t
+            search node' t
     | [] ->
          node
    in
-      aux node addr
+      search node addr
 
 (*
  * Index from a proof node.
  * Again, on failure, interprete the failure,
  * and return the point where the address failed.
  *)
-let proof_index { pf_root = root; pf_address = addr; pf_node = node } addr' =
+let index { pf_root = root; pf_address = addr; pf_node = node } addr' =
    let node' =
-      try index node addr' with
-         NodeInvalidAddress (addr'', step, node') ->
-            let pf' = { pf_root = root; pf_address = addr @ addr''; pf_node = node } in
-               raise (InvalidAddress (pf', step))
+      try node_index node addr' with
+         Failure "node_index" ->
+            raise (Failure "index")
    in
       { pf_root = root;
         pf_address = addr @ addr';
         pf_node = node'
       }
 
-let proof_child { pf_root = root; pf_address = addr; pf_node = node } i =
+let child { pf_root = root; pf_address = addr; pf_node = node } i =
    let node' = select node (i + 1) in
       { pf_root = root;
         pf_address = addr @ [i + 1];
@@ -283,43 +292,43 @@ let proof_child { pf_root = root; pf_address = addr; pf_node = node } i =
 (*
  * Back up to parent.
  *)
-let proof_parent { pf_root = root; pf_address = addr } =
+let parent { pf_root = root; pf_address = addr } =
    if addr = [] then
-      None
+      raise (Failure "parent")
    else
       let addr', _ = List_util.split_last addr in
-      let node' = index root addr' in
-         Some { pf_root = root;
-                pf_address = addr';
-                pf_node = node'
-              }
+      let node' = node_index root addr' in
+         { pf_root = root;
+           pf_address = addr';
+           pf_node = node'
+         }
 
 (*
  * Get the main goal.
  *)
-let proof_main { pf_root = root } =
+let main { pf_root = root } =
    { pf_root = root; pf_address = []; pf_node = root }
    
 (*
  * Address relative to the main goal.
  *)
-let proof_address { pf_address = addr } = addr
+let address { pf_address = addr } = addr
 
 (*
  * Get the status too.
  *)
-let proof_status { pf_root = root; pf_address = addr } =
-   let rec aux node addr =
+let status { pf_root = root; pf_address = addr } =
+   let rec search node addr =
       let status = node.node_status in
          match addr with
-            i::t ->
+            i :: t ->
                (* This can't fail! *)
                let node' = select node i in
-                  (status, i)::(aux node' t)
+                  (status, i) :: (search node' t)
           | [] ->
                [status, 0]
    in
-      aux root addr
+      search root addr
 
 (************************************************************************
  * UPDATES                                                              *
@@ -341,55 +350,61 @@ let compute_status item children =
    (* Status of the item *)
    let istatus =
       match item with
-         NodeStep step ->
-            if step_subgoals step = [] then
-               StatusComplete
+         Step step ->
+            if Proof_step.subgoals step = [] then
+               Complete
             else
-               StatusPartial
-       | NodeNode { node_status = status } ->
+               Partial
+       | Node { node_status = status } ->
             status
    in
 
    (* Status of a single child *)
    let child_status = function
-      ChildGoal _ -> StatusPartial
-    | ChildNode { node_status = status } -> status
+      ChildGoal _ ->
+         Partial
+    | ChildNode { node_status = status } ->
+         status
    in
 
    (* Minimize status across all the children *)
    let min_status status1 child =
       let status2 = child_status child in
          match status1 with
-            StatusComplete -> status2
-          | StatusAsserted ->
-	    begin
-	       match status2 with
-		  StatusComplete -> status1
-		| _ -> status2
-	    end
-          | StatusPartial ->
-	    begin
-	       match status2 with
-		  StatusComplete | StatusAsserted -> status1
-		| _ -> status2
-	    end
-          | StatusBad -> StatusBad
+            Complete ->
+               status2
+          | Asserted ->
+               begin
+                  match status2 with
+                     Complete -> status1
+                   | _ -> status2
+               end
+          | Partial ->
+               begin
+                  match status2 with
+                     Complete | Asserted -> status1
+                   | _ -> status2
+               end
+          | Bad ->
+               Bad
    in
-   let cstatus = List.fold_left min_status StatusComplete children in
+   let cstatus = List.fold_left min_status Complete children in
       (* Combine the status of the item and of the children *)
       match istatus with
-         StatusComplete | StatusAsserted ->
-	 begin
-	    match cstatus with
-	       StatusComplete -> istatus
-	     | _ -> raise (Invalid_argument "compute_status")
-	 end
-       | StatusPartial -> cstatus
-       | StatusBad -> StatusBad
+         Complete | Asserted ->
+            begin
+               match cstatus with
+                  Complete -> istatus
+                | _ -> raise (Failure "Proof.compute_status")
+            end
+       | Partial ->
+            cstatus
+       | Bad ->
+            Bad
 
 (*
  * Replace a node in the tree functionally.
- * It is guaranteed that node' has the same goal as node.
+ * It is assumed that node' has the same goal as node.
  *
  * Adjust the status as the tree is copied.
  *)
@@ -400,12 +415,12 @@ let replace_node { pf_root = root; pf_address = addr; pf_node = node } node' =
 	 node_children = children;
 	 node_extras = extras
        } = function
-      i::t ->
+      i :: t ->
          if i = 0 then
             (* Replace the interior node *)
             match item with
-	       NodeNode node' ->
-                  let item' = NodeNode (replace node' t) in
+	       Node node' ->
+                  let item' = Node (replace node' t) in
                   let status' = compute_status item' children in
                      { node_status = status';
 		       node_item = item';
@@ -427,7 +442,7 @@ let replace_node { pf_root = root; pf_address = addr; pf_node = node } node' =
 		     raise (Failure "Proof.replace_node: truncated proof tree")
             in
             let replace _ = ChildNode node'' in
-            let children' = List_util.replacef_nth children (i - 1) replace in
+            let children' = List_util.replacef_nth (i - 1) replace children in
             let status' = compute_status item children' in
                { node_status = status';
 		 node_item = item;
@@ -454,7 +469,8 @@ let replace_node { pf_root = root; pf_address = addr; pf_node = node } node' =
  * permutations.
  *)
 let rec child_nodes = function
-   [] -> []
+   [] ->
+      []
  | h::t ->
       match h with
          ChildGoal _ ->
@@ -463,18 +479,27 @@ let rec child_nodes = function
             n :: child_nodes t
 
 (*
+ * Get the goal of the child.
+ *)
+let child_goal = function
+   ChildGoal t ->
+      t
+ | ChildNode node ->
+      node_goal node
+
+(*
  * This is the common case.
  *)
-let join_order_children =
+let join_ordered_children =
    let join_child subgoal = function
       ChildGoal _ ->
          ChildGoal subgoal
     | ChildNode node ->
-	 let subgoal', _ = node_goal node in
-	    if alpha_equal subgoal' (fst subgoal) then
+	 let { tac_goal = subgoal' } = node_goal node in
+	    if alpha_equal subgoal' subgoal.tac_goal then
 	       ChildNode node
 	    else
-	       raise ProofMatch
+	       raise Match
    in
    let rec join_common = function
       subgoal :: subgoals, child :: children ->
@@ -491,17 +516,17 @@ let join_order_children =
    
 (*
  * Try permutations, where matching is equality.
- * May later upgrade this to alpha-equality, or
+ * NOTE: may later upgrade this to alpha-equality, or
  * generalization, or something else.
  *)
 let join_permuted_children subgoals children =
    (* Use a hash function to help matching *)
    let make_index1 subgoal =
-      Hashtbl.hash (fst subgoal), subgoal
+      Hashtbl.hash subgoal.tac_goal, subgoal
    in
    let make_index2 node =
       let goal = node_goal node in
-	 Hashtbl.hash (fst goal), goal, node
+	 Hashtbl.hash goal.tac_goal, goal, node
    in
    let indices1 = List.map make_index1 subgoals in
    let indices2 = List.map make_index2 children in
@@ -533,72 +558,67 @@ let join_permuted_children subgoals children =
 (*
  * Combine them.
  *)
-let join_children subgoals children =
-   try join_order_children subgoals children with
-      ProofMatch -> join_permuted_children subgoals (child_nodes children)
+let join_children subgoals children extras =
+   let extras = List.map (fun extra -> ChildNode extra) extras in
+   let children = children @ extras in
+      try join_ordered_children subgoals children with
+         Match ->
+            join_permuted_children subgoals (child_nodes children)
+
+(*
+ * Check that the goals match.
+ *)
+let check_goals node item =
+   let goal = node_goal node in
+   let goal' =
+      match item with
+         Step step ->
+            Proof_step.goal step
+
+       | Node node ->
+            node_goal node
+   in
+      if not (tactic_arg_alpha_equal goal goal') then
+         raise Match
 
 (*
  * Replace the proof item with another.  The goal of the new item
  * must match the old goal, and the new subgoals should match those of
  * any children that exist.
  *)
-let replace_item pf = function
-   (*
-    * When the node is replaced with a step,
-    * check that the subgoals match up.
-    *)
-   ProofStep step ->
-      let { pf_node = node } = pf in
+let replace_node_item check node item =
+   let subgoals =
+      match item with
+         Step step ->
+            Proof_step.subgoals step
+       | Node node ->
+            node_subgoals node
+   in
       let { node_children = children; node_extras = extras } = node in
-      let _ =
-	 if not (fst (node_goal node) = fst (step_goal step)) then
-	    raise ProofMatch
-      in
-      let subgoals = step_subgoals step in
-      let children', extras' = join_children subgoals children in
-      let item' = NodeStep step in
-      let status' = compute_status item' children' in
-      let node' =
-	 { node_status = status';
-	   node_item = item';
-	   node_children = children';
-	   node_extras = extras @ extras'
-	 }
-      in
-	 replace_node pf node'
+      let children', extras' = join_children subgoals children extras in
+         { node_status = compute_status item children;
+           node_item = item;
+           node_children = children';
+           node_extras = extras'
+         }
 
- | ProofProof pf' ->
-      let { pf_node = node } = pf in
-      let { pf_node = node' } = pf' in
-      let { node_children = children; node_extras = extras } = node in
-      let _ =
-	 if not (fst (node_goal node) = fst (node_goal node')) then
-	    raise ProofMatch
-      in
-      let subgoals = node_subgoals node' in
-      let create_child subgoal = function
-	 ChildGoal _ ->
-            ChildGoal subgoal
-       | ChildNode node ->
-            if fst subgoal = fst (node_goal node) then
-               ChildNode node
-            else
-               raise ProofMatch
-      in
-      let children' =
-         try List.map2 create_child subgoals children with
-            Invalid_argument "map2" -> raise ProofMatch
-      in
-      let item' = NodeNode node' in
-      let status' = compute_status item' children' in
-      let node' =
-	 { node_status = status';
-	   node_item = item';
-	   node_children = children';
-	   node_extras = extras
-	 }
-      in
-	 replace_node pf node'
+(*
+ * Replace the proof item with another.  The goal of the new item
+ * must match the old goal, and the new subgoals should match those of
+ * any children that exist.
+ *)
+let replace_item pf item =
+   let item =
+      match item with
+         ProofStep step ->
+            Step step
+       | ProofProof { pf_node = node } ->
+            Node node
+   in
+   let { pf_node = node } = pf in
+   let _ = check_goals node item in
+   let node = replace_node_item true node item in
+      replace_node pf node
 
 (*
  * Replace a child.  Check that the child retains the goal.
@@ -610,20 +630,24 @@ let replace_child pf i { pf_node = child' } =
          node_extras = extras
        } = node
    in
-   let goal', _ = node_goal child' in
+   let { tac_goal = goal' } = node_goal child' in
    let replace = function
       ChildGoal goal ->
-         if alpha_equal (fst goal) goal' then
+         if alpha_equal goal.tac_goal goal' then
             ChildNode child'
          else
-            raise ProofMatch
+            raise Match
     | ChildNode node ->
-         if alpha_equal (fst (node_goal node)) goal' then
+         if alpha_equal (node_goal node).tac_goal goal' then
             ChildNode child'
          else
-            raise ProofMatch
+            raise Match
    in
-   let children' = List_util.replacef_nth children i replace in
+   let children' =
+      try List_util.replacef_nth i replace children with
+         Failure "replacef_nth" ->
+            raise Match
+   in
    let status' = compute_status item children' in
    let node' =
       { node_status = status';
@@ -651,7 +675,7 @@ let remove_child pf i =
          let goal = node_goal node in
             ChildGoal goal
    in
-   let children' = List_util.replacef_nth children i replace in
+   let children' = List_util.replacef_nth i replace children in
    let status' = compute_status item children' in
    let node' =
       { node_status = status';
@@ -669,8 +693,8 @@ let remove_children pf =
    let { pf_node = node } = pf in
    let { node_item = item; node_extras = extras } = node in
    let item_subgoals = function
-      NodeStep step -> step_subgoals step
-    | NodeNode node -> node_subgoals node
+      Step step -> Proof_step.subgoals step
+    | Node node -> node_subgoals node
    in
    let children' = List.map (function x -> ChildGoal x) (item_subgoals item) in
    let status' = compute_status item children' in
@@ -683,6 +707,178 @@ let remove_children pf =
    in
       replace_node pf node'
 
+(*
+ * Fold the current proof step, wrapping the subgoals into a subproof.
+ *)
+let fold pf =
+   let { pf_node = node } = pf in
+   let { node_status = status;
+         node_item = item;
+         node_children = children;
+         node_extras = extras
+       } = node
+   in
+   let rec collect = function
+      child :: childt ->
+         let item, children, extras = collect_child child in
+         let items, children', extras' = collect childt in
+            item :: items, children @ children', extras @ extras'
+    | [] ->
+         [], [], []
+   and collect_child child =
+      match child with
+         ChildGoal _ ->
+            child, [], []
+       | ChildNode node ->
+            let { node_item = item;
+                  node_children = children;
+                  node_extras = extras
+                } = node
+            in
+            let children' = List.map (fun child -> ChildGoal (child_goal child)) children in
+            let node' =
+               { node_status = compute_status item children';
+                 node_item = item;
+                 node_children = children';
+                 node_extras = []
+               }
+            in
+               ChildNode node', children, extras
+   in
+   let items, children, extras = collect children in
+   let node' =
+      { node_status = compute_status item items;
+        node_item = item;
+        node_children = items;
+        node_extras = []
+      }
+   in
+   let node =
+      { node_status = status;
+        node_item = Node node';
+        node_children = children;
+        node_extras = extras
+      }
+   in
+      replace_node pf node
+
+(*
+ * Do a fold, but fold all the way down to the leaves.
+ *)
+let fold_all pf =
+   let { pf_node = node } = pf in
+   let { node_status = status;
+         node_item = item;
+         node_children = children;
+         node_extras = extras
+       } = node
+   in
+   let children' = List.map (fun child -> ChildGoal child) (node_subgoals node) in
+   let node' =
+      { node_status = status;
+        node_item = item;
+        node_children = children;
+        node_extras = []
+      }
+   in
+   let node =
+      { node_status = status;
+        node_item = Node node';
+        node_children = children';
+        node_extras = extras
+      }
+   in
+      replace_node pf node
+
+(************************************************************************
+ * PROOF CHECKING                                                       *
+ ************************************************************************)
+
+(*
+ * When a proof is checked, we check each of the steps individually
+ * and compose the results with the refiner.  This gives us a lot
+ * more control than Kreitz'ing the tactic.
+ *
+ * Addresses are reversed in the check_ functions.
+ *)
+let check { pf_root = root; pf_address = addr; pf_node = node } =
+   let mk_pf addr node =
+      replace_node ({ pf_root = root; pf_address = List.rev addr; pf_node = node }) node
+   in
+   let rec check_node addr' node =
+      let { node_status = status;
+            node_item = item;
+            node_children = children
+          } = node
+      in
+      let ext =
+         if status = Complete then
+            match item with
+               Step step ->
+                  check_step addr' node step
+             | Node node ->
+                  check_node (0 :: addr') node
+         else
+            raise (ProofRefineError (mk_pf addr' node, (StringError "Proof is not complete")))
+      in
+      let rec fold_child i = function
+         child :: childt ->
+            check_child (i :: addr) node child :: fold_child (i + 1) childt
+       | [] ->
+            []
+      in
+      let extl = fold_child 1 children in
+         try Refiner.compose ext extl with
+            RefineError err ->
+               raise (ProofRefineError (mk_pf addr' node, err))
+
+   and check_step addr' node step =
+      try Proof_step.check step with
+         RefineError err ->
+            raise (ProofRefineError (mk_pf (List.tl addr') node, err))
+
+   and check_child addr' node = function
+      ChildGoal goal ->
+         (* This can't happen if the status were set correctly *)
+         raise (ProofRefineError (mk_pf addr' node, StringError "Proof is not complete"))
+    | ChildNode node ->
+         check_node addr' node
+   in
+      check_node (List.rev addr) node
+
+(*
+ * During expansion, we allow the refinement to change arbitrarily.
+ * This is functional update, so the entire proof may be copied.
+ *
+ * This function never fails.
+ *)
+let expand pf =
+   let { pf_node = node } = pf in
+   let rec expand_node node =
+      let item =
+         match node.node_item with
+            Step step ->
+               Step (Proof_step.expand step)
+          | Node node' ->
+               Node (expand_node node')
+      in
+      let node' = replace_node_item false node item in
+      let { node_children = children; node_extras = extras } = node' in
+      let children = List.map expand_child children in
+         { node_status = compute_status item children;
+           node_item = item;
+           node_children = children;
+           node_extras = extras
+         }
+   and expand_child child =
+      match child with
+         ChildGoal _ ->
+            child
+       | ChildNode node ->
+            ChildNode (expand_node node)
+   in
+      replace_node pf (expand_node node)
+
 (************************************************************************
  * IO                                                                   *
  ************************************************************************)
@@ -691,24 +887,33 @@ let remove_children pf =
  * Make an io proof.
  *)
 let io_status_of_status = function
-   StatusBad -> Filter_proof_type.StatusBad
- | StatusPartial -> Filter_proof_type.StatusPartial
- | StatusAsserted -> Filter_proof_type.StatusAsserted
- | StatusComplete -> Filter_proof_type.StatusComplete
+   Bad ->
+      Filter_proof_type.StatusBad
+ | Partial ->
+      Filter_proof_type.StatusPartial
+ | Asserted ->
+      Filter_proof_type.StatusAsserted
+ | Complete ->
+      Filter_proof_type.StatusComplete
 
 let rec io_child_of_child = function
-   ChildGoal (t, { ref_label = label; ref_args = args }) ->
-      Filter_proof_type.ChildGoal { aterm_goal = t;
-                             aterm_label = label;
-                             aterm_args = args
-                           }
+   ChildGoal { tac_goal = t;
+               tac_hyps = hyps;
+               tac_arg = { ref_label = label; ref_args = args } } ->
+      Filter_proof_type.ChildGoal (**)
+         { tac_goal = t;
+           tac_hyps = hyps;
+           tac_arg = { Filter_proof_type.aterm_label = label;
+                       Filter_proof_type.aterm_args = args
+                     }
+         }
  | ChildNode node ->
       Filter_proof_type.ChildProof (io_proof_of_node node)
 
 and io_node_of_item = function
-   NodeStep step ->
-      Filter_proof_type.ProofStep (io_step_of_step step)
- | NodeNode node ->
+   Step step ->
+      Filter_proof_type.ProofStep (Proof_step.io_step_of_step step)
+ | Node node ->
       Filter_proof_type.ProofNode (io_proof_of_node node)
       
 and io_proof_of_node
@@ -730,30 +935,42 @@ let io_proof_of_proof { pf_node = node } =
  * Restore an io proof.
  *)
 let status_of_io_status = function
-   Filter_proof_type.StatusBad -> StatusBad
- | Filter_proof_type.StatusPartial -> StatusPartial
- | Filter_proof_type.StatusAsserted -> StatusAsserted
- | Filter_proof_type.StatusComplete -> StatusComplete
+   Filter_proof_type.StatusBad ->
+      Bad
+ | Filter_proof_type.StatusPartial ->
+      Partial
+ | Filter_proof_type.StatusAsserted ->
+      Asserted
+ | Filter_proof_type.StatusComplete ->
+      Complete
 
-let proof_of_io_proof resources fcache pf =
+let proof_of_io_proof resources fcache tacs pf =
+   let hash = Hashtbl.create (Array.length tacs) in
+   let _ = Array.iter (function (name, tac) -> Hashtbl.add hash name tac) tacs in
    let rec child_of_io_child = function
-      Filter_proof_type.ChildGoal ({ aterm_goal = t;
-                              aterm_label = label;
-                              aterm_args = args
-                            }) ->
-         ChildGoal (t, { ref_label = label;
-                         ref_args = args;
-                         ref_fcache = fcache;
-                         ref_rsrc = resources
-                    })
+      Filter_proof_type.ChildGoal (**)
+         { tac_goal = goal;
+           tac_hyps = hyps;
+           tac_arg = { Filter_proof_type.aterm_label = label;
+                       Filter_proof_type.aterm_args = args
+                     }
+         } ->
+         ChildGoal { tac_goal = goal;
+                     tac_hyps = hyps;
+                     tac_arg = { ref_label = label;
+                                 ref_args = args;
+                                 ref_fcache = fcache;
+                                 ref_rsrc = resources
+                               }
+         }
     | Filter_proof_type.ChildProof pf ->
          ChildNode (node_of_io_proof pf)
 
    and item_of_io_node = function
       Filter_proof_type.ProofStep step ->
-         NodeStep (step_of_io_step resources fcache step)
+         Step (Proof_step.step_of_io_step resources fcache hash step)
     | Filter_proof_type.ProofNode node ->
-         NodeNode (node_of_io_proof node)
+         Node (node_of_io_proof node)
 
    and node_of_io_proof
        { Filter_proof_type.proof_status = status;
@@ -775,6 +992,9 @@ let proof_of_io_proof resources fcache pf =
 
 (*
  * $Log$
+ * Revision 1.6  1998/04/23 20:03:47  jyh
+ * Initial rebuilt editor.
+ *
  * Revision 1.5  1998/04/22 22:44:17  jyh
  * *** empty log message ***
  *

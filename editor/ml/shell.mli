@@ -2,7 +2,14 @@
  * General purpose toploop.
  *)
 
+include Tactic_type
+include Package_info
+include Package_df
+include Shell_rewrite
+
 open Term
+
+open Tactic_type
 
 (*
  * Navigation and display.
@@ -39,8 +46,6 @@ val create_ml : string -> unit
  * An object is not installed until it is checked.
  *)
 val view : string -> unit
-val check : string -> MLast.str_item
-val close : unit -> unit
 
 (*
  * Editing commands.
@@ -49,19 +54,26 @@ val set_goal : term -> unit
 val set_redex : term -> unit
 val set_contractum : term -> unit
 val set_assumptions : term list -> unit
-val set_params : param list -> unit
+val set_params : Filter_summary.param list -> unit
+val check : unit -> unit
+val expand : unit -> unit
 
 (*
  * Proof editing.
  *)
-val move_up : unit -> unit
-val move_down : int -> unit
-val move_root : unit -> unit
-val refine : MLast.expr -> tactic -> string -> unit
+val root : unit -> unit
+val up : unit -> unit
+val down : int -> unit
+val refine : string -> MLast.expr -> tactic -> unit
 val undo : unit -> unit
+val fold : unit -> unit
+val fold_all : unit -> unit
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/23 20:04:04  jyh
+ * Initial rebuilt editor.
+ *
  * Revision 1.3  1998/04/17 20:48:15  jyh
  * Updating refiner for extraction.
  *

@@ -33,6 +33,7 @@ include Tactic_type
 include Proof_step
 
 open Term
+open Refine_sig
 open Refine
 
 open Filter_proof_type
@@ -47,8 +48,8 @@ type t
  * proof and the first children.
  *)
 type item =
-   Step of Proof_step.t
- | Proof of t
+   ProofStep of Proof_step.t
+ | ProofProof of t
 
 (*
  * Children are either leaves, or they
@@ -86,10 +87,10 @@ type address = int list
 exception Match
 
 (*
- * This exception is raised when a subgoal does
- * not exist at the given address.
+ * We overload the refinement error to give the location of
+ * the error.
  *)
-exception InvalidAddress of proof * int
+exception ProofRefineError of t * refine_err
 
 (*
  * Constructors
@@ -135,6 +136,8 @@ val child : t -> int -> t
  *    and subgoals must match the previous values.
  * For replace_child, the goal must match the given child goal.
  *)
+val fold : t -> t
+val fold_all : t -> t
 val replace_item : t -> item -> t
 val replace_child : t -> int -> t -> t
 val remove_child : t -> int -> t
@@ -148,7 +151,7 @@ val remove_children : t -> t
  *       no exceptions are raised
  *)
 val check : t -> Refiner.extract
-val expand : t -> unit
+val expand : t -> t
 
 (*
  * IO
@@ -158,6 +161,9 @@ val proof_of_io_proof : tactic_resources -> cache -> (string * tactic) array -> 
 
 (*
  * $Log$
+ * Revision 1.7  1998/04/23 20:03:49  jyh
+ * Initial rebuilt editor.
+ *
  * Revision 1.6  1998/04/22 22:44:18  jyh
  * *** empty log message ***
  *

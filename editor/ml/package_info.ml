@@ -3,6 +3,8 @@
  * Its really derived from Filter_cache
  *)
 
+include Package_type
+
 open Printf
 
 open Debug
@@ -19,7 +21,7 @@ open Filter_util
 open Filter_prog
 open Infix
 
-include Package_type
+open Package_type
 
 module Package : PackageSig =
 struct
@@ -183,7 +185,7 @@ struct
       List.exists (load_check dag name) packages
 
    let get_package { pack_dag = dag; pack_packages = packages } name =
-      List_util.find packages (load_check dag name)
+      List_util.find (load_check dag name) packages
    
    (*
     * Add a parent edge.
@@ -380,6 +382,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.7  1998/04/23 20:03:41  jyh
+ * Initial rebuilt editor.
+ *
  * Revision 1.6  1998/04/17 02:25:29  jyh
  * Implementing shell.
  *

@@ -2,30 +2,41 @@
  * This is the generic editing interface.
  *)
 
-open Term
+include Tactic_type
 
-open Refiner
+open Term
+open Rformat
+open Refine
+open Dform
+
+open Tactic_type
 
 type edit_object =
    { (* Adjust the contents of the object *)
-     edit_format : buf -> unit;
+     edit_format : dform_base -> buffer -> unit;
      edit_set_goal : term -> unit;
      edit_set_redex : term -> unit;
      edit_set_contractum : term -> unit;
      edit_set_assumptions : term list -> unit;
-     edit_set_params : param list -> unit;
-     edit_check : unit -> MLast.str_item;
+     edit_set_params : Filter_summary.param list -> unit;
+     edit_check : unit -> Refiner.extract;
+     edit_expand : unit -> unit;
      
      (* Navigation of there is a proof *)
      edit_root : unit -> unit;
      edit_up : unit -> unit;
      edit_down : int -> unit;
-     edit_refine : MLast.expr -> Refine.tactic -> string -> unit;
-     edit_undo : unit -> unit
+     edit_refine : string -> MLast.expr -> tactic -> unit;
+     edit_undo : unit -> unit;
+     edit_fold : unit -> unit;
+     edit_fold_all : unit -> unit
    }
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/23 20:04:24  jyh
+ * Initial rebuilt editor.
+ *
  * Revision 1.1  1998/04/17 20:48:20  jyh
  * Updating refiner for extraction.
  *
