@@ -275,7 +275,7 @@ clean::
 	$(RM) gmon.out $(ZMLFILES) $(ZMLIFILES) Makefile.dep
 
 Makefile.dep: Makefile $(ROOT)/mk/config $(ROOT)/mk/preface $(ROOT)/mk/rules
-	@if [ -f $(OCAMLDEP) ]; then touch Makefile.dep; make depend; fi
+	+@if [ -f $(OCAMLDEP) ]; then touch Makefile.dep; $(MAKE) depend; fi
 
 depend:: $(MLFILES) $(MLIFILES)
 	$(RM) Makefile.tmp

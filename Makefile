@@ -2,7 +2,7 @@ DIR:=
 ROOT:=.
 
 #
-# Various variables 
+# Various variables
 #
 include mk/preface
 
@@ -36,83 +36,83 @@ DIRS = $(REFINER_DIRS) filter $(MP_DIRS) editor/ml
 .PHONY: documentation docs doc
 
 all: check_config
-	@for i in $(DIRS); do\
+	+@for i in $(DIRS); do\
 		if (echo Making $$i...; $(MAKE) -C $$i all); then true; else exit 1; fi;\
 	done
 
 opt: check_config
-	@for i in $(DIRS); do\
+	+@for i in $(DIRS); do\
 		if (echo Making $$i...; $(MAKE) -C $$i opt); then true; else exit 1; fi;\
 	done
 
 profile_clean:
-	@for i in $(REFINER_DIRS) editor/ml; do\
+	+@for i in $(REFINER_DIRS) editor/ml; do\
 		if (echo Making $$i...; $(MAKE) -C $$i clean); then true; else exit 1; fi;\
 	done
 
 profile_all: check_config
-	@for i in $(REFINER_DIRS) editor/ml; do\
+	+@for i in $(REFINER_DIRS) editor/ml; do\
 		if (echo Making $$i...; OCAMLCP=ocamlcp OCAMLCPOPT="-p a" $(MAKE) -C $$i all); then true; else exit 1; fi;\
 	done
 
 filter: check_config
-	@for i in $(REFINER_DIRS) filter; do\
+	+@for i in $(REFINER_DIRS) filter; do\
 		if (echo Making $$i...; $(MAKE) -C $$i all); then true; else exit 1; fi;\
 	done
 
 filter_opt: check_config
-	@for i in $(REFINER_DIRS) filter; do\
+	+@for i in $(REFINER_DIRS) filter; do\
 		if (echo Making $$i...; $(MAKE) -C $$i opt); then true; else exit 1; fi;\
 	done
 
 profile_byte: check_config
-	@$(MAKE) profile_clean
-	@$(MAKE) all
-	@$(MAKE) profile_clean
-	@$(MAKE) profile_all
+	+@$(MAKE) profile_clean
+	+@$(MAKE) all
+	+@$(MAKE) profile_clean
+	+@$(MAKE) profile_all
 
 profile: check_config
-	@$(MAKE) filter
-	@$(MAKE) profile_opt
+	+@$(MAKE) filter
+	+@$(MAKE) profile_opt
 
 profile_mem: check_config
-	@$(MAKE) filter
-	@$(MAKE) profile_opt_mem
+	+@$(MAKE) filter
+	+@$(MAKE) profile_opt_mem
 
 profile_opt: check_config
-	@for i in $(REFINER_DIRS); do\
+	+@for i in $(REFINER_DIRS); do\
 		if (echo Making $$i...; $(MAKE) -C $$i PROFILE=-p INLINE=0 opt); then true; else exit 1; fi;\
 	done
-	@if (echo Making filter...; $(MAKE) -C filter PROFILE=-p INLINE=0 profile); then true; else exit 1; fi
-	@for i in $(MP_DIRS) editor/ml; do\
+	+@if (echo Making filter...; $(MAKE) -C filter PROFILE=-p INLINE=0 profile); then true; else exit 1; fi
+	+@for i in $(MP_DIRS) editor/ml; do\
 		if (echo Making $$i...; $(MAKE) -C $$i PROFILE=-p INLINE=0 opt); then true; else exit 1; fi;\
 	done
 
 profile_opt_mem: check_config
-	@for i in $(REFINER_DIRS); do\
+	+@for i in $(REFINER_DIRS); do\
 		if (echo Making $$i...; $(MAKE) -C $$i PROFILE="-p -compact" INLINE=0 opt); then true; else exit 1; fi;\
 	done
-	@if (echo Making filter...; $(MAKE) -C filter PROFILE="-p -compact" INLINE=0 profile); then true; else exit 1; fi
-	@for i in $(MP_DIRS) editor/ml; do\
+	+@if (echo Making filter...; $(MAKE) -C filter PROFILE="-p -compact" INLINE=0 profile); then true; else exit 1; fi
+	+@for i in $(MP_DIRS) editor/ml; do\
 		if (echo Making $$i...; $(MAKE) -C $$i PROFILE="-p -compact" INLINE=0 opt); then true; else exit 1; fi;\
 	done
 
 install: check_config
-	@for i in $(DIRS); do\
+	+@for i in $(DIRS); do\
 		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	done
 
 clean:
-	@for i in lib bin doc $(DIRS); do\
+	+@for i in lib bin doc $(DIRS); do\
 		if (echo Cleaning $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	done
 
 depend: check_config
-	@$(MAKE) -C util
-	@for i in $(DIRS); do\
+	+@$(MAKE) -C util
+	+@for i in $(DIRS); do\
 		if (echo Making $$i...; cd $$i && $(RM) Makefile.dep); then true; else exit 1; fi;\
 	done
-	@$(MAKE) -C refiner depend
+	+@$(MAKE) -C refiner depend
 
 mk/config: mk/make_config.sh
 	@echo Making mk/config...
@@ -140,7 +140,7 @@ realclean::
 	mk/cvs_realclean.sh
 
 docs::
-	@make -C doc all
+	+@$(MAKE) -C doc all
 
 doc: docs
 documentation: docs
