@@ -644,8 +644,10 @@ sig
    (*
     * Reapply all the tactics in the proof, adjusting the
     * status as appropriate.  This function never fails.
+    * The second argument should be Refine_exn.print or a
+    * similar wrapper.
     *)
-   val expand : update_fun -> dform_base -> proof -> proof
+   val expand : update_fun -> ((unit -> extract) -> unit -> extract) -> proof -> proof
 
    (*
     * Get the low-level Refiner format of the proof

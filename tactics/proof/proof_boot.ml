@@ -1741,7 +1741,7 @@ struct
    (*
     * Re-expand all the rule boxes.
     *)
-   let rec expand_ext dforms node =
+   let rec expand_ext exn_wrapper node =
       match node with
          Goal _
        | Identity _
@@ -1749,9 +1749,9 @@ struct
        | Extract _ ->
             node
        | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } ->
-            let goal = expand_ext dforms goal in
-            let subgoals = List.map (expand_ext dforms) subgoals in
-            let extras = List.map (expand_ext dforms) extras in
+            let goal = expand_ext exn_wrapper goal in
+            let subgoals = List.map (expand_ext exn_wrapper) subgoals in
+            let extras = List.map (expand_ext exn_wrapper) extras in
             let subgoals, extras = match_subgoals (leaves_ext goal) subgoals extras in
                Compose { comp_status = LazyStatusDelayed;
                          comp_goal = goal;
@@ -1760,7 +1760,7 @@ struct
                          comp_leaves = LazyLeavesDelayed
                }
        | Wrapped (label, goal) ->
-            Wrapped (label, expand_ext dforms goal)
+            Wrapped (label, expand_ext exn_wrapper goal)
        | RuleBox { rule_expr = expr;
                    rule_string = text;
                    rule_extract_normalized = normal;
@@ -1771,13 +1771,13 @@ struct
          } ->
             let t = goal_ext goal in
             let new_goal =
-               try Refine_exn.print dforms (fun () -> snd (TacticInternal.refine (tac ()) t)) ()
+               try exn_wrapper (fun () -> snd (TacticInternal.refine (tac ()) t)) ()
                with RefineError _ -> goal
             in
             let leaves = leaves_ext new_goal in
             let subgoals, extras = update_subgoals leaves subgoals extras in
-            let subgoals = List.map (expand_ext dforms) subgoals in
-            let extras = List.map (expand_ext dforms) extras in
+            let subgoals = List.map (expand_ext exn_wrapper) subgoals in
+            let extras = List.map (expand_ext exn_wrapper) extras in
             let subgoals, extras = match_subgoals leaves subgoals extras in
                RuleBox { rule_status = LazyStatusDelayed;
                          rule_expr = expr;
@@ -1790,12 +1790,12 @@ struct
                          rule_extras = extras
                }
        | Pending f ->
-            expand_ext dforms (f ())
+            expand_ext exn_wrapper (f ())
        | Locked ext ->
-            expand_ext dforms ext
+            expand_ext exn_wrapper ext
 
-   let expand postf dforms proof =
-      fold_proof postf proof (expand_ext dforms proof.pf_node)
+   let expand postf exn_wrapper proof =
+      fold_proof postf proof (expand_ext exn_wrapper proof.pf_node)
 
    let rec refiner_extract_of_proof_ext = function
       Goal _ | Unjustified _ ->
