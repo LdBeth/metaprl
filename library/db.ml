@@ -14,9 +14,11 @@ let master_pathname = ref ""
 let process_pathname = ref ""
 
 let db_init stamp master =
- master_pathname := master;
+ let name = if String.get master (String.length master - 1) = '/' then master
+            else String.concat "" [master; "/"] in
+ master_pathname := name;
  let {process_id = pid} = dest_stamp stamp in
- process_pathname := String.concat "" [master; "/"; pid];
+ process_pathname := String.concat "" [name ; pid];
  mkdir !process_pathname 999
 
 (*let db_query string =*)
