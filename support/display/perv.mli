@@ -198,7 +198,13 @@ declare "bind"{a, b, c, d, e. 'z}
 declare "bind"{a, b, c, d, e, f. 'z}
 declare "bind"{a, b, c, d, e, f, g. 'z}
 
-declare xbinder{'e}
+(*
+ * @begin[doc]
+ * The @tt{xbinder} term is used to specify first-order variables in rules
+ * and rewrites.
+ * @end[doc]
+ *)
+declare xbinder{'e : 'a}
 
 (*
  * @begin[doc]
