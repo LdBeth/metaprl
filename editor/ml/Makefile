@@ -13,7 +13,6 @@ INCLUDE = -I .\
 	-I $(ROOT)/theories/base\
 	-I $(ROOT)/theories/itt\
 	-I $(ROOT)/ensemble\
-	-I $(ROOT)/lib\
 	-I $(ROOT)/library\
 	-I $(ROOT)/ocaml_debug\
 	-I $(CAMLP4LIB)
