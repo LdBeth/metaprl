@@ -58,6 +58,7 @@ open Term_grammar
 open Filter_grammar
 open Filter_type
 open Filter_util
+open Filter_patt
 open Filter_ast
 open Filter_summary
 open Filter_summary_type
@@ -169,7 +170,9 @@ let term_exp s =
       add_binding (BindTerm t)
 
 let term_patt s =
-   raise (Failure "Filter_parse.term_patt: not implemented yet")
+   let cs = Stream.of_string s in
+   let t = Grammar.Entry.parse TermGrammar.term_eoi cs in
+      Filter_patt.build_term_patt t
 
 let _ = Quotation.add "term" (Quotation.ExAst (term_exp, term_patt))
 let _ = Quotation.default := "term"
@@ -1036,14 +1039,14 @@ EXTEND
       [[ q = QUOTATION ->
            let f () =
                match dest_quot q with
-                  "doc", com -> 
+                  "doc", com ->
                      SigFilter.declare_comment (SigFilter.get_proc loc) loc (mk_string_term comment_string_op com)
                 | q ->
                      SigFilter.declare_comment (SigFilter.get_proc loc) loc (parse_quotation loc "doc" q)
            in
               print_exn f "comment" loc;
         | tl = applytermlist ->
-           SigFilter.declare_comment (SigFilter.get_proc loc) loc (mk_comment_term tl) 
+           SigFilter.declare_comment (SigFilter.get_proc loc) loc (mk_comment_term tl)
        ]];
 
    str_item:
@@ -1139,7 +1142,7 @@ EXTEND
            in
               print_exn f "mlrule" loc;
               empty_str_item loc
-        |  "let"; "resource"; name = LIDENT; "="; code = expr ->
+        | "let"; "resource"; name = LIDENT; "="; code = expr ->
            let f () =
               StrFilter.define_resource (StrFilter.get_proc loc) loc name code
            in
@@ -1208,20 +1211,20 @@ EXTEND
         | "doc"; doc_str ->
            empty_str_item loc
        ]];
-        
+
     doc_str:
        [[ q = QUOTATION ->
            let f () =
                match dest_quot q with
                   (* XXX HACK: this makes sure parsing of top-level "doc" quotations is lazy *)
-                  "doc", com -> 
+                  "doc", com ->
                      StrFilter.declare_comment (StrFilter.get_proc loc) loc (mk_string_term comment_string_op com)
                 | q ->
                      StrFilter.declare_comment (StrFilter.get_proc loc) loc (parse_quotation loc "doc" q)
            in
               print_exn f "comment" loc
         | tl = applytermlist ->
-           StrFilter.declare_comment (StrFilter.get_proc loc) loc (mk_comment_term tl) 
+           StrFilter.declare_comment (StrFilter.get_proc loc) loc (mk_comment_term tl)
        ]];
 
    mod_ident:
@@ -1261,7 +1264,7 @@ EXTEND
                     | _ ->
                          Stdpp.raise_with_loc (MLast.loc_of_expr expr) (Failure "resource is not a sequence")
                 in
-                let e = 
+                let e =
                    match e with
                       <:expr< do { $list:el$ } >> ->
                          List.map (fun expr -> split_application (MLast.loc_of_expr expr) [] expr) el

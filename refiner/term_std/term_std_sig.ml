@@ -94,6 +94,19 @@ sig
    and bound_term' = { bvars : string list; bterm : term }
 
    (*
+    * Define a type of parameters used in pattern matching.
+    * The main difference is lack of meta-variables, numbers
+    * have an optional constant representation for small numbers,
+    * and there are no Nuprl5 params.
+    *)
+   type match_param =
+      MatchNumber of Mp_num.num * int option
+    | MatchString of string
+    | MatchToken of string
+    | MatchVar of string
+    | MatchLevel of level_exp
+
+   (*
     * The terms in the framework include
     * a meta-implication and met-iff.
     *)
@@ -146,6 +159,7 @@ sig
    type operator'
    type term'
    type bound_term'
+   type match_param
 
    module SeqHyp : Linear_set.LinearSetSig with type elt = hypothesis with type t = seq_hyps
    module SeqGoal : Linear_set.LinearSetSig with type elt = term with type t = seq_goals
@@ -169,6 +183,8 @@ sig
    val make_param : param' -> param
    val dest_param : param -> param'
    val dest_params : param list -> param' list
+   val dest_match_param : param -> match_param
+   val dest_match_params : param list -> match_param list
    val mk_level : int -> level_exp_var list -> level_exp
    val make_level : level_exp' -> level_exp
    val dest_level : level_exp -> level_exp'

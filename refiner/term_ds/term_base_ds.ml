@@ -92,6 +92,7 @@ struct
    type operator' = TermType.operator'
    type term' = TermType.term'
    type bound_term' = TermType.bound_term'
+   type match_param = TermType.match_param
 
    (*
     * Simple substitution.
@@ -469,6 +470,32 @@ struct
    let dest_level_var x = x (* external dest_level_var : level_exp_var -> level_exp_var' = "%identity" *)
    let make_object_id x = x (* external make_object_id : param list -> object_id = "%identity" *)
    let dest_object_id x = x (* external dest_object_id : object_id -> param list = "%identity" *)
+
+   let dest_match_param param =
+      match param with
+         Number n ->
+            if Mp_num.is_integer_num n then
+               MatchNumber (n, Some (Mp_num.int_of_num n))
+            else
+               MatchNumber (n, None)
+       | String s ->
+            MatchString s
+       | Token s ->
+            MatchToken s
+       | Var v ->
+            MatchVar v
+       | MLevel l ->
+            MatchLevel l
+       | MNumber _
+       | MString _
+       | MToken _
+       | MVar _
+       | ObId _
+       | ParamList _ ->
+            raise (Invalid_argument "Term_base_std.dest_match_param")
+
+   let dest_match_params params =
+      List.map dest_match_param params
 
    (*
     * Descriptor operations.

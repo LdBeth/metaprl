@@ -72,6 +72,19 @@ sig
    and param = param'
 
    (*
+    * Define a type of parameters used in pattern matching.
+    * The main difference is lack of meta-variables, numbers
+    * have an optional constant representation for small numbers,
+    * and there are no Nuprl5 params.
+    *)
+   type match_param =
+      MatchNumber of Mp_num.num * int option
+    | MatchString of string
+    | MatchToken of string
+    | MatchVar of string
+    | MatchLevel of level_exp
+
+   (*
     * An operator combines a name with a list of parameters.
     * The order of params is significant.
     *)
@@ -154,6 +167,7 @@ sig
    type operator'
    type term'
    type bound_term'
+   type match_param
 
    type term_subst
 
@@ -213,6 +227,8 @@ sig
    val make_param : param' -> param
    val dest_param : param -> param'
    val dest_params : param list -> param' list
+   val dest_match_param : param -> match_param
+   val dest_match_params : param list -> match_param list
    val make_level : level_exp' -> level_exp
    val dest_level : level_exp -> level_exp'
    val make_level_var : level_exp_var' -> level_exp_var

@@ -41,11 +41,13 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
+open MLast
+
 open Opname
 open Refiner.Refiner.TermType
 
-val explode_term : term -> opname * param' list * bound_term' list
-val build_term_patt : term -> MLast.patt
+val explode_term : term -> string list * match_param list * bound_term' list
+val build_term_patt : term -> patt
 
 (*!
  * @docoff

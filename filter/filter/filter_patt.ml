@@ -43,6 +43,7 @@
  *)
 open Mp_debug
 
+open Opname
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMan
@@ -58,81 +59,74 @@ open Filter_util
  *    1. the opname
  *    2. the parameters of type param'
  *    3. a list of bterms of type bterm'
+ *
+ * Variables are a special case: we use the "standard"
+ * form with opname ["variable"] and a var parameter.
  *)
 let explode_term t =
-   let { term_op = op; term_terms = bterms } = dest_term t in
-   let { op_name = op; op_params = params } = dest_op op in
-   let params = List.map dest_param params in
-   let bterms = List.map dest_bterm bterms in
-      op, params, bterms
+   if is_so_var_term t then
+      let s, terms = dest_so_var t in
+      let bterms = List.map (fun t -> { bvars = []; bterm = t }) terms in
+         ["variable"], [MatchVar s], bterms
+   else
+      let { term_op = op; term_terms = bterms } = dest_term t in
+      let { op_name = op; op_params = params } = dest_op op in
+      let op = dest_opname op in
+      let params = List.map dest_match_param params in
+      let bterms = List.map dest_bterm bterms in
+         op, params, bterms
 
 (*
  * Turn a term into a pattern expression.
  * The bterms should all be vars.
  *)
-let opname_var = "_$opname"
-
 let build_term_patt t =
+   (* Fake the location for now *)
+   let loc = 0, 0 in
+
    let { term_op = op; term_terms = bterms } = dest_term t in
    let { op_name = op; op_params = params } = dest_op op in
 
-   (* Add opname *)
-   let op = add_binding (BindOpname op) in
-
-   (* Name generator *)
-   let gensym i =
-      "_$v" ^ string_of_int i
-   in
-
-   (* Sorry, no loc information... *)
-   let loc = 0, 0 in
+   let ops = Opname.dest_opname op in
+   let ops = List.fold_right (fun x l -> <:patt< [$str:x$ :: $l$] >>) ops <:patt< [] >> in
 
    (* Parameter patterns *)
-   let _, whens, params =
-      List.fold_left (fun (i, whens, params) param ->
+   let params =
+      List.map (fun param ->
             match dest_param param with
                Number n ->
-                  let e = add_binding (BindNum n) in
-                  let v = gensym i in
-                  let when_exp = <:expr< $uid:"Mp_num"$ . $lid: "eq_num"$ $lid: v$ $e$ >> in
-                  let patt = <:patt< $uid: "Term_simple_sig"$ . $uid: "Number"$ $lid: v$ >> in
-                     succ i, when_exp :: whens, patt :: params
+                  if not (Mp_num.is_integer_num n) then
+                     raise (Invalid_argument "build_term_patt: number is not an integer");
+                  let i = string_of_int (Mp_num.int_of_num n) in
+                     <:patt< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"TermType"$ . $uid: "MatchNumber"$ ( _, $uid: "Some"$ $int:i$ ) >>
 
              | String s ->
-                  let patt = <:patt< $uid: "Term_simple_sig"$ . $uid: "String"$ $str: s$ >> in
-                     i, whens, patt :: params
+                  <:patt< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"TermType"$ . $uid: "MatchString"$ $str: s$ >>
 
              | Token s ->
-                  let patt = <:patt< $uid: "Term_simple_sig"$ . $uid: "Token"$ $str: s$ >> in
-                     i, whens, patt :: params
+                  <:patt< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"TermType"$ . $uid: "MatchToken"$ $str: s$ >>
 
              | Var s ->
-                  let patt = <:patt< $uid: "Term_simple_sig"$ . $uid: "Var"$ $str: s$ >> in
-                     i, whens, patt :: params
+                  <:patt< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"TermType"$ . $uid: "MatchVar"$ $str: s$ >>
 
              | MNumber v ->
-                  let patt = <:patt< $uid: "Term_simple_sig"$ . $uid: "Number"$ $lid: v$ >> in
-                     i, whens, patt :: params
+                  <:patt< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"TermType"$ . $uid: "MatchNumber"$ ( $lid: v$, _ ) >>
 
              | MString v ->
-                  let patt = <:patt< $uid: "Term_simple_sig"$ . $uid: "String"$ $lid: v$ >> in
-                     i, whens, patt :: params
+                  <:patt< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"TermType"$ . $uid: "MatchString"$ $lid: v$ >>
 
              | MToken v ->
-                  let patt = <:patt< $uid: "Term_simple_sig"$ . $uid: "Token"$ $lid: v$ >> in
-                     i, whens, patt :: params
+                  <:patt< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"TermType"$ . $uid: "MatchToken"$ $lid: v$ >>
 
              | MVar v ->
-                  let patt = <:patt< $uid: "Term_simple_sig"$ . $uid: "Var"$ $lid: v$ >> in
-                     i, whens, patt :: params
+                  <:patt< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"TermType"$ . $uid: "MatchVar"$ $lid: v$ >>
 
              | MLevel l ->
                   (match dest_level l with
                       { le_const = 0; le_vars = [v] } ->
                          (match dest_level_var v with
                              { le_var = v; le_offset = 0 } ->
-                                 let patt = <:patt< $uid: "Term_simple_sig"$ . $uid: "Level"$ $lid: v$ >> in
-                                    i, whens, patt :: params
+                                 <:patt< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"TermType"$ . $uid: "MatchLevel"$ $lid: v$ >>
                            | _ ->
                               raise (Invalid_argument "term_patt: complex level expressions not supported"))
                     | _ ->
@@ -141,7 +135,7 @@ let build_term_patt t =
              | ObId _ ->
                   raise (Invalid_argument "term_patt: object-ids not supported")
              | ParamList _ ->
-                  raise (Invalid_argument "term_patt: parameter lists not supported")) (0, [], []) params
+                  raise (Invalid_argument "term_patt: parameter lists not supported")) params
    in
    let params = List.fold_right (fun x l -> <:patt< [$x$ :: $l$] >>) params <:patt< [] >> in
 
@@ -155,20 +149,14 @@ let build_term_patt t =
          in
          let v, _ = dest_so_var t in
          let bvars_rhs = List.fold_right (fun v l -> <:patt< [$lid:v$ :: $l$] >>) bvars <:patt< [] >> in
-            <:patt< { $uid: "Term_simple_sig"$ . $lid: "bvars"$ = $bvars_rhs$;
-                      $uid: "Term_simple_sig"$ . $lid: "bterm"$ = $lid: v$
+            <:patt< { $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"TermType"$ . $lid: "bvars"$ = $bvars_rhs$;
+                      $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"TermType"$ . $lid: "bterm"$ = $lid: v$
                     } >>) bterms
    in
    let bterms = List.fold_right (fun x l -> <:patt< [$x$ :: $l$] >>) bterms <:patt< [] >> in
 
-   (* Conjoin when clauses *)
-   let whens =
-      List.fold_right (fun w l -> <:expr< $w$ && $l$ >>)
-         whens <:expr< $uid: "Opname"$ . $lid: "eq"$ $lid: opname_var$ $op$ >>
-   in
-
-   (* Full pattern match is a triple *)
-   <:patt< ( $lid: opname_var$ , $params$ , $bterms$ ) >>
+      (* Full pattern match is a triple *)
+      <:patt< ( $ops$ , $params$ , $bterms$ ) >>
 
 (*!
  * @docoff

@@ -80,6 +80,19 @@ struct
    and param = param'
 
    (*
+    * Define a type of parameters used in pattern matching.
+    * The main difference is lack of meta-variables, numbers
+    * have an optional constant representation for small numbers,
+    * and there are no Nuprl5 params.
+    *)
+   type match_param =
+      MatchNumber of Mp_num.num * int option
+    | MatchString of string
+    | MatchToken of string
+    | MatchVar of string
+    | MatchLevel of level_exp
+
+   (*
     * An operator combines a name with a list of parameters.
     * The order of params is significant.
     *)

@@ -100,6 +100,19 @@ struct
    and bound_term' = { bvars : string list; bterm : term }
 
    (*
+    * Define a type of parameters used in pattern matching.
+    * The main difference is lack of meta-variables, numbers
+    * have an optional constant representation for small numbers,
+    * and there are no Nuprl5 params.
+    *)
+   type match_param =
+      MatchNumber of Mp_num.num * int option
+    | MatchString of string
+    | MatchToken of string
+    | MatchVar of string
+    | MatchLevel of level_exp
+
+   (*
     * The terms in the framework include
     * a meta-implication and met-iff.
     *)
