@@ -39,7 +39,7 @@ if $(equal $(OSTYPE), Win32)
    #
    # cmd.exe does not like ./command paths
    #
-   CURRENT_DIR =
+   CURRENT_EXEC_DIR =
 
    #
    # No native-code version of camlp4 on windows
@@ -71,7 +71,7 @@ else
    # Current directory, for executables.
    # That is, the current directory, like ./make_mp_config
    #
-   CURRENT_DIR = ./
+   CURRENT_EXEC_DIR = ./
 
    #
    # Location of OCaml root
