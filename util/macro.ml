@@ -114,26 +114,38 @@ module Codewalk = struct
 
    let expr_fun = ref None
    let patt_fun = ref None
+   let ctyp_fun = ref None
+   let mexp_fun = ref None
+   let mtyp_fun = ref None
    let loc      = ref (fun x -> x)
 
    let map = List.map
 
-   let rec walkwith exprF pattF locN func x =
+   let rec walkwith exprF pattF ctypF mexpF mtypF locN func x =
       let exprO = !expr_fun
       and pattO = !patt_fun
+      and ctypO = !ctyp_fun
+      and mexpO = !mexp_fun
+      and mtypO = !mtyp_fun
       and locO  = !loc
       in
          expr_fun := exprF;
          patt_fun := pattF;
+         ctyp_fun := ctypF;
+         mexp_fun := mexpF;
+         mtyp_fun := mtypF;
          loc := (match locN with None -> fun x -> x | Some l -> fun _ -> l);
          let result = func x in
             expr_fun := exprO;
             patt_fun := pattO;
+            ctyp_fun := ctypO;
+            mexp_fun := mexpO;
+            mtyp_fun := mtypO;
             loc      := locO;
             result
 
    and changeloc loc =
-      walkwith None None (Some loc)
+      walkwith None None None None None (Some loc)
 
    and patt_patt (x, y) =
       (patt x, patt y)
@@ -178,6 +190,8 @@ module Codewalk = struct
        | None   -> None
 
    and ctyp x =
+      let newx = (match !ctyp_fun with None -> x | Some f -> f x) in
+      if x <> newx then ctyp newx else
       match x with
        | TyAcc (l, x, y)    -> TyAcc (!loc l, ctyp x, ctyp y)
        | TyAli (l, x, y)    -> TyAli (!loc l, ctyp x, ctyp y)
@@ -266,6 +280,8 @@ module Codewalk = struct
        | ExXnd (l, s, x)    -> ExXnd (!loc l, s, expr x)
 
    and module_type x =
+      let newx = match !mtyp_fun with None -> x | Some f -> f x in
+      if x <> newx then module_type newx else
       match x with
        | MtAcc (l, x, y)    -> MtAcc (!loc l, module_type x, module_type y)
        | MtApp (l, x, y)    -> MtApp (!loc l, module_type x, module_type y)
@@ -295,6 +311,8 @@ module Codewalk = struct
        | WcMod (l, x, y)    -> WcMod (!loc l, x, module_type y)
 
    and module_expr x =
+      let newx = match !mexp_fun with None -> x | Some f -> f x in
+      if x <> newx then module_expr newx else
       match x with
        | MeAcc (l, x, y)    -> MeAcc (!loc l, module_expr x, module_expr y)
        | MeApp (l, x, y)    -> MeApp (!loc l, module_expr x, module_expr y)
@@ -382,22 +400,33 @@ end
  * macros with an () expression body expander. *)
 let expr_macros = ref []
 let patt_macros = ref []
+let ctyp_macros = ref []
+let mexp_macros = ref []
+let mtyp_macros = ref []
 
-let add_expr_macro name expander =
-   expr_macros := (name, expander) :: !expr_macros
-
-let add_patt_macro name expander =
-   patt_macros := (name, expander) :: !patt_macros
+let add_expr_macro name expander = expr_macros := (name,expander)::!expr_macros
+let add_patt_macro name expander = patt_macros := (name,expander)::!patt_macros
+let add_ctyp_macro name expander = ctyp_macros := (name,expander)::!ctyp_macros
+let add_mexp_macro name expander = mexp_macros := (name,expander)::!mexp_macros
+let add_mtyp_macro name expander = mtyp_macros := (name,expander)::!mtyp_macros
 
 let undefine_macro x =
-   expr_macros :=
-      List.fold_right (fun y l -> if fst y = x then l else y::l) !expr_macros [];
-   patt_macros :=
-      List.fold_right (fun y l -> if fst y = x then l else y::l) !patt_macros []
+   let aux lp =
+      lp := List.fold_right (fun y l -> if fst y = x then l else y::l) !lp []
+   in
+      aux expr_macros;
+      aux patt_macros;
+      aux ctyp_macros;
+      aux mexp_macros;
+      aux mtyp_macros
 
 let is_defined x =
-   List.exists (fun y -> fst y = x) !expr_macros ||
-   List.exists (fun y -> fst y = x) !patt_macros
+   let aux lp = List.exists (fun y -> fst y = x) !lp in
+      aux expr_macros ||
+      aux patt_macros ||
+      aux ctyp_macros ||
+      aux mexp_macros ||
+      aux mtyp_macros
 
 (* This is for errors and locs while expanding macros. *)
 let current_macname_loc = ref ("", 0, 0)
@@ -413,19 +442,27 @@ let macro_error msg =
 let current_loc () =
    match !current_macname_loc with (_, a, b) -> (a, b)
 
-(* append_exprs expr [e1; e2; ...] --> "expr e1 e2..." *)
+(* append syntaxes using application: X [Y1; Y2; ...] --> "X Y1 Y2..." *)
 let rec append_exprs expr = function
  | [] -> expr
- | e::exprs ->
-      let loc = loc_of_expr expr in
-         append_exprs <:expr< $expr$ $e$ >> exprs
-
-(* append_patts patt [p1; p2; ...] --> "patt p1 p2..." *)
+ | e::exprs -> let loc = loc_of_expr expr in
+                  append_exprs <:expr< $expr$ $e$ >> exprs
 let rec append_patts patt = function
  | [] -> patt
- | p::patts ->
-      let loc = loc_of_patt patt in
-         append_patts <:patt< $patt$ $p$ >> patts
+ | p::patts -> let loc = loc_of_patt patt in
+                  append_patts <:patt< $patt$ $p$ >> patts
+let rec append_ctyps ctyp = function
+ | [] -> ctyp
+ | t::ctyps -> let loc = loc_of_ctyp ctyp in
+                  append_ctyps <:ctyp< $ctyp$ $t$ >> ctyps
+let rec append_mexps mexp = function
+ | [] -> mexp
+ | e::mexps -> let loc = loc_of_module_expr mexp in
+                  append_mexps <:module_expr< $mexp$ $e$ >> mexps
+let rec append_mtyps mtyp = function
+ | [] -> mtyp
+ | t::mtyps -> let loc = loc_of_module_type mtyp in
+                  append_mtyps <:module_type< $mtyp$ $t$ >> mtyps
 
 let _ =
    add_expr_macro "CONCAT"
@@ -442,7 +479,7 @@ let _ =
                  | _ -> macro_error
                          "expected two identifiers, got some other expression"
              in
-                append_exprs <:expr< $id$ >> exprs)
+                append_exprs id exprs)
 
 let _ =
    add_patt_macro "CONCAT"
@@ -459,48 +496,105 @@ let _ =
                  | _ -> macro_error
                          "expected two identifiers, got some other expression"
              in
-                append_patts <:patt< $id$ >> patts)
+                append_patts id patts)
+
+let _ =
+   add_ctyp_macro "CONCAT"
+      (function
+          [] | [_] -> macro_error "expecting two identifiers"
+        | x :: y :: ctyps ->
+             let loc = (fst (current_loc ())), (snd (loc_of_ctyp y)) in
+             let id =
+                match x, y with
+                 | <:ctyp< $lid:x$ >>, <:ctyp< $lid:y$ >> -> <:ctyp<$lid:x^y$>>
+                 | <:ctyp< $lid:x$ >>, <:ctyp< $uid:y$ >> -> <:ctyp<$lid:x^y$>>
+                 | <:ctyp< $uid:x$ >>, <:ctyp< $lid:y$ >> -> <:ctyp<$uid:x^y$>>
+                 | <:ctyp< $uid:x$ >>, <:ctyp< $uid:y$ >> -> <:ctyp<$uid:x^y$>>
+                 | _ -> macro_error
+                         "expected two identifiers, got some other expression"
+             in
+                append_ctyps id ctyps)
+
+let _ =
+   add_mexp_macro "CONCAT"
+      (function
+          [] | [_] -> macro_error "expecting two identifiers"
+        | x :: y :: mexps ->
+             let loc = (fst (current_loc ())), (snd (loc_of_module_expr y)) in
+             let id =
+                match x, y with
+                 | <:module_expr< $uid:x$ >>, <:module_expr< $uid:y$ >> ->
+                      <:module_expr<$uid:x^y$>>
+                 | _ -> macro_error
+                         "expected two identifiers, got some other expression"
+             in
+                append_mexps id mexps)
+
+let _ =
+   add_mtyp_macro "CONCAT"
+      (function
+          [] | [_] -> macro_error "expecting two identifiers"
+        | x :: y :: mtyps ->
+             let loc = (fst (current_loc ())), (snd (loc_of_module_type y)) in
+             let id =
+                match x, y with
+                 | <:module_type< $lid:x$ >>, <:module_type< $lid:y$ >> ->
+                      <:module_type<$lid:x^y$>>
+                 | <:module_type< $lid:x$ >>, <:module_type< $uid:y$ >> ->
+                      <:module_type<$lid:x^y$>>
+                 | <:module_type< $uid:x$ >>, <:module_type< $lid:y$ >> ->
+                      <:module_type<$uid:x^y$>>
+                 | <:module_type< $uid:x$ >>, <:module_type< $uid:y$ >> ->
+                      <:module_type<$uid:x^y$>>
+                 | _ -> macro_error
+                         "expected two identifiers, got some other expression"
+             in
+                append_mtyps id mtyps)
 
 (*
  * Get a pattern/expression "MAC x y z...",
- * Find a macro and its arguments, then apply it;
- * return the original syntax if no macro was found.
+ * Return a name MAC and a list of args [X; Y; ...] if it fits Not_found otw.
  *)
 
-let apply_expr_macros expr =
-   let rec aux expr =
-      match expr with
-       | <:expr< $e1$ $e2$ >> ->
-            let (name_mac, args) = aux e1 in (name_mac, e2 :: args)
-       | <:expr< $uid:str$ >> ->
-            ((str, List.assoc str !expr_macros), [])
-       | _ -> raise Not_found
-   in
-   try let ((name, mac), exprs) = (aux expr) in
-      current_macname_loc := (let (b,e) = loc_of_expr expr in (name, b, e));
-      Codewalk.changeloc (loc_of_expr expr) Codewalk.expr
-         (mac (List.rev exprs))
-   with Not_found -> expr
+let rec flat_expr = function
+ | <:expr< $x$ $y$ >> -> let (name, args) = flat_expr x in (name, y::args)
+ | <:expr< $uid:str$ >> -> (str, [])
+ | _ -> raise Not_found
+let rec flat_patt = function
+ | <:patt< $x$ $y$ >> -> let (name, args) = flat_patt x in (name, y::args)
+ | <:patt< $uid:str$ >> -> (str, [])
+ | _ -> raise Not_found
+let rec flat_ctyp = function
+ | <:ctyp< $x$ $y$ >> -> let (name, args) = flat_ctyp x in (name, y::args)
+ | <:ctyp< $uid:str$ >> -> (str, [])
+ | _ -> raise Not_found
+let rec flat_mexp = function
+ | <:module_expr< $x$ $y$ >> -> let (name,args) = flat_mexp x in (name,y::args)
+ | <:module_expr< $uid:str$ >> -> (str, [])
+ | _ -> raise Not_found
+let rec flat_mtyp = function
+ | <:module_type< $x$ $y$ >> -> let (name,args) = flat_mtyp x in (name,y::args)
+ | <:module_type< $uid:str$ >> -> (str, [])
+ | _ -> raise Not_found
 
-let apply_patt_macros patt =
-   let rec aux patt =
-      match patt with
-       | <:patt< $p1$ $p2$ >> ->
-            let (name_mac, args) = aux p1 in (name_mac, p2 :: args)
-       | <:patt< $uid:str$ >> -> ((str, List.assoc str !patt_macros), [])
-       | _ -> raise Not_found
-   in
-   try let ((name, mac), patts) = (aux patt) in
-      current_macname_loc := (let (b,e) = loc_of_patt patt in (name, b, e));
-      Codewalk.changeloc (loc_of_patt patt) Codewalk.patt
-         (mac (List.rev patts))
-   with Not_found -> patt
+let apply_macros flatter codewalker locator macros x =
+   try let name, args = flatter x in
+       let mac = List.assoc name macros in
+       let loc = locator x in
+          current_macname_loc := (let (b,e) = loc in (name, b, e));
+          Codewalk.changeloc loc codewalker (mac (List.rev args))
+   with Not_found -> x
 
 (* The actual processing uses code-walk *)
 let macros_codewalk f =
    Codewalk.walkwith
-      (Some apply_expr_macros)
-      (Some apply_patt_macros)
+      (Some (apply_macros flat_expr Codewalk.expr loc_of_expr !expr_macros))
+      (Some (apply_macros flat_patt Codewalk.patt loc_of_patt !patt_macros))
+      (Some (apply_macros flat_ctyp Codewalk.ctyp loc_of_ctyp !ctyp_macros))
+      (Some (apply_macros flat_mexp Codewalk.module_expr loc_of_module_expr
+                          !mexp_macros))
+      (Some (apply_macros flat_mtyp Codewalk.module_type loc_of_module_type
+                          !mtyp_macros))
       None
       f
 
@@ -522,7 +616,6 @@ let rec add_simple_expr_macro name args body =
                 (* Do the substitution, append extra exprs *)
                 append_exprs (macros_codewalk Codewalk.expr body) exprs
            | (args, _) ->
-                (* Not enough expressions *)
                 macro_error "not enough arguments for simple macro";
           in
           let old_macros = !expr_macros in
@@ -535,15 +628,14 @@ let rec add_simple_patt_macro name args body =
    add_patt_macro name
       (fun patts ->
           let rec aux = function
-           | (a::args, e::patts) ->
+           | (a::args, p::patts) ->
                 (* Combine macro list *)
-                add_simple_patt_macro a [] e;
+                add_simple_patt_macro a [] p;
                 aux (args, patts)
            | ([], patts) ->
                 (* Do the substitution, append extra patts *)
                 append_patts (macros_codewalk Codewalk.patt body) patts
            | (args, _) ->
-                (* Not enough expressions *)
                 macro_error "not enough arguments for simple macro";
           in
           let old_macros = !patt_macros in
@@ -552,12 +644,72 @@ let rec add_simple_patt_macro name args body =
                 patt_macros := old_macros;
                 result)
 
+let rec add_simple_ctyp_macro name args body =
+   add_ctyp_macro name
+      (fun ctyps ->
+          let rec aux = function
+           | (a::args, ct::ctyp) ->
+                (* Combine macro list *)
+                add_simple_ctyp_macro a [] ct;
+                aux (args, ctyps)
+           | ([], ctyps) ->
+                (* Do the substitution, append extra ctyps *)
+                append_ctyps (macros_codewalk Codewalk.ctyp body) ctyps
+           | (args, _) ->
+                macro_error "not enough arguments for simple macro";
+          in
+          let old_macros = !ctyp_macros in
+             ctyp_macros := [];
+             let result = aux (args, ctyps) in
+                ctyp_macros := old_macros;
+                result)
+
+let rec add_simple_mexp_macro name args body =
+   add_mexp_macro name
+      (fun mexps ->
+          let rec aux = function
+           | (a::args, me::mexp) ->
+                (* Combine macro list *)
+                add_simple_mexp_macro a [] me;
+                aux (args, mexps)
+           | ([], mexps) ->
+                (* Do the substitution, append extra mexps *)
+                append_mexps (macros_codewalk Codewalk.module_expr body) mexps
+           | (args, _) ->
+                macro_error "not enough arguments for simple macro";
+          in
+          let old_macros = !mexp_macros in
+             mexp_macros := [];
+             let result = aux (args, mexps) in
+                mexp_macros := old_macros;
+                result)
+
+let rec add_simple_mtyp_macro name args body =
+   add_mtyp_macro name
+      (fun mtyps ->
+          let rec aux = function
+           | (a::args, mt::mtyp) ->
+                (* Combine macro list *)
+                add_simple_mtyp_macro a [] mt;
+                aux (args, mtyps)
+           | ([], mtyps) ->
+                (* Do the substitution, append extra mtyps *)
+                append_mtyps (macros_codewalk Codewalk.module_type body) mtyps
+           | (args, _) ->
+                macro_error "not enough arguments for simple macro";
+          in
+          let old_macros = !mtyp_macros in
+             mtyp_macros := [];
+             let result = aux (args, mtyps) in
+                mtyp_macros := old_macros;
+                result)
+
 
 
 (*****************************************************************************)
 (* Utilities *)
 
-let remove_nothings =
+let remove_nothings f =
    Codewalk.walkwith
       (Some (fun expr -> match expr with
               | <:expr< $e1$ $lid:"!NOTHING"$ >> -> e1
@@ -571,9 +723,21 @@ let remove_nothings =
               | <:patt< $p1$ $lid:"!NOTHING"$ >> -> p1
               | <:patt< $lid:"!NOTHING"$ $p2$ >> -> p2
               | x -> x))
+      (Some (fun ctyp -> match ctyp with
+              | <:ctyp< $ct1$ $lid:"!NOTHING"$ >> -> ct1
+              | <:ctyp< $lid:"!NOTHING"$ $ct2$ >> -> ct2
+              | x -> x))
+      (Some (fun mexp -> match mexp with
+              | <:module_expr< $me1$ $uid:"!NOTHING"$ >> -> me1
+              | <:module_expr< $uid:"!NOTHING"$ $me2$ >> -> me2
+              | x -> x))
+      (Some (fun mtyp -> match mtyp with
+              | <:module_type< $mt1$ $uid:"!NOTHING"$ >> -> mt1
+              | <:module_type< $uid:"!NOTHING"$ $mt2$ >> -> mt2
+              | x -> x))
       None
-      Codewalk.str_item
-      
+      f
+
 (* Define str; if it "X=Y", then define X with Y parsed as possible macros *)
 let define_str str =
    try begin
@@ -592,6 +756,23 @@ let define_str str =
                name [] (Grammar.Entry.parse patt (Stream.of_string pstr));
             parsed := true;
          with _ -> () end;
+         begin try
+            add_simple_ctyp_macro
+               name [] (Grammar.Entry.parse ctyp (Stream.of_string pstr));
+            parsed := true;
+         with _ -> () end;
+         begin try
+            add_simple_mexp_macro
+               name []
+               (Grammar.Entry.parse module_expr (Stream.of_string pstr));
+            parsed := true;
+         with _ -> () end;
+         begin try
+            add_simple_mtyp_macro
+               name []
+               (Grammar.Entry.parse module_type (Stream.of_string pstr));
+            parsed := true;
+         with _ -> () end;
          if not !parsed then begin
             Printf.eprintf "Couldn't parse -D flag definition: \"%s\"\n" str;
             exit 2;
@@ -599,7 +780,7 @@ let define_str str =
    end with Not_found ->
       add_simple_expr_macro str [] (let loc = (0,0) in <:expr< () >>)
 
-(* This function turns simple patterns to expressions for exprpatt macros. *)
+(* This function turns simple expressions to patterns. *)
 let rec expr2patt expr =
    let loc = loc_of_expr expr in
       match expr with
@@ -625,6 +806,50 @@ let rec expr2patt expr =
             in <:patt< { $list:ppl$ } >>
        | _ -> failwith "could not convert expression to pattern."
 
+(* This function turns simple expressions to patterns. *)
+let rec expr2ctyp expr =
+   let loc = loc_of_expr expr in
+      match expr with
+       | <:expr< $lid:i$ >> -> <:ctyp< $lid:i$ >>
+       | <:expr< $uid:s$ >> -> <:ctyp< $uid:s$ >>
+       | <:expr< $e1$ . $e2$ >> ->
+            let ct1 = expr2ctyp e1 and ct2 = expr2ctyp e2
+            in <:ctyp< $ct1$ . $ct2$ >>
+       | <:expr< $e1$ $e2$ >> ->
+            let ct1 = expr2ctyp e1 and ct2 = expr2ctyp e2
+            in <:ctyp< $ct1$ $ct2$ >>
+       | <:expr< ( $list:el$ ) >> ->
+            let ctl = List.map expr2ctyp el in
+               <:ctyp< ( $list:ctl$ ) >>
+       | _ -> failwith "could not convert expression to type."
+
+(* This function turns simple expressions to patterns. *)
+let rec expr2mexp expr =
+   let loc = loc_of_expr expr in
+      match expr with
+       | <:expr< $uid:s$ >> -> <:module_expr< $uid:s$ >>
+       | <:expr< $e1$ . $e2$ >> ->
+            let me1 = expr2mexp e1 and me2 = expr2mexp e2
+            in <:module_expr< $me1$ . $me2$ >>
+       | <:expr< $e1$ $e2$ >> ->
+            let me1 = expr2mexp e1 and me2 = expr2mexp e2
+            in <:module_expr< $me1$ $me2$ >>
+       | _ -> failwith "could not convert expression to module expression."
+
+(* This function turns simple expressions to patterns. *)
+let rec expr2mtyp expr =
+   let loc = loc_of_expr expr in
+      match expr with
+       | <:expr< $lid:i$ >> -> <:module_type< $lid:i$ >>
+       | <:expr< $uid:s$ >> -> <:module_type< $uid:s$ >>
+       | <:expr< $e1$ . $e2$ >> ->
+            let mt1 = expr2mtyp e1 and mt2 = expr2mtyp e2
+            in <:module_type< $mt1$ . $mt2$ >>
+       | <:expr< $e1$ $e2$ >> ->
+            let mt1 = expr2mtyp e1 and mt2 = expr2mtyp e2
+            in <:module_type< $mt1$ $mt2$ >>
+       | _ -> failwith "could not convert expression to module expression."
+
 (* This is a list of directories to search for INCLUDE statements. *)
 let include_dirs = ref ["./"]
 
@@ -635,6 +860,24 @@ let add_include_dir str =
                 then str else str ^ "/" in
          include_dirs := !include_dirs @ [str]
 
+let read_file file pa =
+   (* This is copied from camlp4/argl.ml's 'process'. *)
+   let file =
+      try (List.find (fun dir -> Sys.file_exists (dir ^ file)) !include_dirs)
+          ^ file
+      with Not_found -> file in
+   let old_name = !input_file in
+   let ic       = open_in_bin file in
+   let clear()  = close_in ic in
+   let cs       = Stream.of_channel ic in
+      input_file := file;
+      let phr = try Grammar.Entry.parse pa cs with x -> clear(); raise x
+      in
+         clear();
+         (* Note: input_file isn't restored above when on an error. *)
+         input_file := old_name;
+         phr
+
 
 
 (*****************************************************************************)
@@ -642,6 +885,7 @@ let add_include_dir str =
 
 type str_item_or_def =
    | MaStr of str_item                    (* normal str_item *)
+   | MaSig of sig_item                    (* normal sig_item *)
    | MaDfe of string * string list * expr (* an expr macro def. statement *)
    | MaDfp of string * string list * patt (* a patt macro def. statement *)
    | MaDfa of string * string list * expr (* all types (should convert expr) *)
@@ -651,57 +895,87 @@ type str_item_or_def =
    | MaLst of str_item_or_def list        (* str_items to scan *)
    | MaInc of string                      (* a file to include *)
 
-let handle_macstuff loc =
+let handle_macstuff_str loc =
    let rec aux macstuff =
       let nothing = <:str_item< declare end >> in
       match macstuff with
-       | MaStr si  -> si
+       | MaStr si -> si
+       | MaSig _ -> failwith "Something bad happened."
        | MaDfe n a e -> add_simple_expr_macro n a e; nothing
        | MaDfp n a p -> add_simple_patt_macro n a p; nothing
        | MaDfa n a e -> add_simple_expr_macro n a e;
             (try add_simple_patt_macro n a (expr2patt e) with _ -> ());
+            (try add_simple_ctyp_macro n a (expr2ctyp e) with _ -> ());
+            (try add_simple_mexp_macro n a (expr2mexp e) with _ -> ());
+            (try add_simple_mtyp_macro n a (expr2mtyp e) with _ -> ());
             nothing
        | MaUnd x -> undefine_macro x; nothing
-       | MaIfd x e1 e2 -> aux (MaLst (if is_defined x then e1 else e2))
+       | MaIfd x l1 l2 -> aux (MaLst (if is_defined x then l1 else l2))
        | MaLst l ->
             (match List.filter (fun x -> x<>nothing) (List.map aux l)
              with
               | []   -> nothing
               | [si] -> si
               | sis  -> <:str_item< declare $list:sis$ end >>)
-       | MaInc file ->
-            (* This is copied from camlp4/argl.ml's 'process'. *)
-            let file =
-               try (List.find (fun dir -> Sys.file_exists (dir ^ file))
-                              !include_dirs)
-                   ^ file
-               with Not_found -> file in
-            let old_name = !input_file in
-            let ic       = open_in_bin file in
-            let clear()  = close_in ic in
-            let cs       = Stream.of_channel ic in
-               input_file := file;
-               let phr = try Grammar.Entry.parse implem cs
-                         with x -> clear(); raise x
-               in
-                  clear();
-                  (* Note: input_file isn't restored above when on an error. *)
-                  input_file := old_name;
-                  StDcl (loc, List.map fst phr)
+       | MaInc file -> StDcl (loc,
+                              List.map fst
+                                 (Codewalk.changeloc
+                                     loc
+                                     (Codewalk.ast_list Codewalk.str_item)
+                                     (read_file file implem)))
+   in
+      aux
+
+let handle_macstuff_sig loc =
+   let rec aux macstuff =
+      let nothing = <:sig_item< declare end >> in
+      match macstuff with
+       | MaSig si -> si
+       | MaStr _ -> failwith "Something bad happened."
+       | MaDfe n a e -> add_simple_expr_macro n a e; nothing
+       | MaDfp n a p -> add_simple_patt_macro n a p; nothing
+       | MaDfa n a e -> add_simple_expr_macro n a e;
+            (try add_simple_patt_macro n a (expr2patt e) with _ -> ());
+            (try add_simple_ctyp_macro n a (expr2ctyp e) with _ -> ());
+            (try add_simple_mexp_macro n a (expr2mexp e) with _ -> ());
+            (try add_simple_mtyp_macro n a (expr2mtyp e) with _ -> ());
+            nothing
+       | MaUnd x -> undefine_macro x; nothing
+       | MaIfd x l1 l2 -> aux (MaLst (if is_defined x then l1 else l2))
+       | MaLst l ->
+            (match List.filter (fun x -> x<>nothing) (List.map aux l)
+             with
+              | []   -> nothing
+              | [si] -> si
+              | sis  -> <:sig_item< declare $list:sis$ end >>)
+       | MaInc file -> SgDcl (loc,
+                              List.map fst
+                                 (Codewalk.changeloc
+                                     loc
+                                     (Codewalk.ast_list Codewalk.sig_item)
+                                     (read_file file interf)))
    in
       aux
 
 EXTEND
-   GLOBAL: str_item expr patt;
+   GLOBAL: str_item sig_item expr patt ctyp module_expr module_type;
    (* Note: macstuff is macro definitions etc, in these cases, there is no
     * substitutions done because we want them as they are. *)
    str_item: FIRST
-      [[ x = macstuff -> (* macro directives etc *)
-            handle_macstuff loc x
+      [[ x = macstuff_str -> (* macro directives etc *)
+            handle_macstuff_str loc x
        | si = NEXT -> (* expand macros etc *)
-            remove_nothings (macros_codewalk Codewalk.str_item si)
+            remove_nothings Codewalk.str_item
+                            (macros_codewalk Codewalk.str_item si)
        ]];
-   macstuff:
+   sig_item: FIRST
+      [[ x = macstuff_sig -> (* macro directives etc *)
+            handle_macstuff_sig loc x
+       | si = NEXT -> (* expand macros etc *)
+            remove_nothings Codewalk.sig_item
+                            (macros_codewalk Codewalk.sig_item si)
+       ]];
+   macstuff_str:
       [[ "IFDEF"; c = UIDENT; "THEN"; e1 = LIST0 str_item_macstuff;
          "ELSE"; e2 = LIST0 str_item_macstuff; "ENDIF" ->
             MaIfd c e1 e2
@@ -712,26 +986,46 @@ EXTEND
             MaIfd c e2 e1
        | "IFNDEF"; c = UIDENT; "THEN"; e1 = LIST0 str_item_macstuff; "ENDIF"->
             MaIfd c [] e1
-       | "DEFINE"; c = UIDENT ->
+       | x = macstuff_shared -> x
+       ]];
+   macstuff_sig:
+      [[ "IFDEF"; c = UIDENT; "THEN"; e1 = LIST0 sig_item_macstuff;
+         "ELSE"; e2 = LIST0 sig_item_macstuff; "ENDIF" ->
+            MaIfd c e1 e2
+       | "IFDEF"; c = UIDENT; "THEN"; e1 = LIST0 sig_item_macstuff; "ENDIF" ->
+            MaIfd c e1 []
+       | "IFNDEF"; c = UIDENT; "THEN"; e1 = LIST0 sig_item_macstuff;
+         "ELSE"; e2 = LIST0 sig_item_macstuff; "ENDIF" ->
+            MaIfd c e2 e1
+       | "IFNDEF"; c = UIDENT; "THEN"; e1 = LIST0 sig_item_macstuff; "ENDIF"->
+            MaIfd c [] e1
+       | x = macstuff_shared -> x
+       ]];
+   macstuff_shared:
+      [[ "DEFINE"; c = UIDENT ->
             MaDfe c [] <:expr< () >>
        | "DEFINE"; name = UIDENT; "="; body = expr ->
             (* can only be used for argument-less macros because of camlp4. *)
-            MaDfe name [] body
+            MaDfa name [] body
        | ["UNDEFINE" | "UNDEF"]; c = UIDENT ->
             (* UNDEF is the same as UNDEFINE to mimic CPP *)
             MaUnd c
-       | "DEFMACRO";     name = UIDENT; args = LIST0 UIDENT; "="; body = expr ->
+       | "DEFMACRO";     name= UIDENT; args = LIST0 UIDENT; "="; body = expr ->
             MaDfa name args body
-       | "DEFEXPRMACRO"; name = UIDENT; args = LIST0 UIDENT; "="; body = expr ->
+       | "DEFEXPRMACRO"; name= UIDENT; args = LIST0 UIDENT; "="; body = expr ->
             MaDfe name args body
-       | "DEFPATTMACRO"; name = UIDENT; args = LIST0 UIDENT; "="; body = patt ->
+       | "DEFPATTMACRO"; name= UIDENT; args = LIST0 UIDENT; "="; body = patt ->
             MaDfp name args body
        | "INCLUDE"; file = STRING ->
             MaInc file
        ]];
    str_item_macstuff:
-      [[ d = macstuff -> d
+      [[ d = macstuff_str -> d
        | sis = str_item -> MaStr sis
+       ]];
+   sig_item_macstuff:
+      [[ d = macstuff_sig -> d
+       | sis = sig_item -> MaSig sis
        ]];
    expr: LEVEL "expr1"
       [[ "IFDEF"; c = UIDENT; "THEN"; e1 = expr; "ELSE"; e2 = expr; "ENDIF" ->
@@ -753,6 +1047,9 @@ EXTEND
        ]];
    expr: LEVEL "simple" [[ "NOTHING" -> <:expr< $lid:"!NOTHING"$ >> ]];
    patt: LEVEL "simple" [[ "NOTHING" -> <:patt< $lid:"!NOTHING"$ >> ]];
+   ctyp: LEVEL "simple" [[ "NOTHING" -> <:ctyp< $lid:"!NOTHING"$ >> ]];
+   module_expr: [[ "NOTHING" -> <:module_expr< $uid:"!NOTHING"$ >> ]];
+   module_type: [[ "NOTHING" -> <:module_type< $uid:"!NOTHING"$ >> ]];
 END
 
 
