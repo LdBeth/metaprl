@@ -76,7 +76,6 @@
 
 open Pcaml
 open MLast
-open Printf
 
 
 
@@ -480,7 +479,7 @@ let current_macname_loc = ref ("", 0, 0)
 (* Report an error, prints the macro name and its position. *)
 let macro_error msg =
    match !current_macname_loc with (name, b, e) ->
-      eprintf "While expanding \"%s\" at %d-%d: %s.\n"
+      Printf.eprintf "While expanding \"%s\" at %d-%d: %s.\n"
          name b e msg;
       exit 1
 
@@ -702,7 +701,7 @@ let rec patt2expr patt =
                   ppl
             in <:expr< { $list:eel$ } >>
        | patt -> let (b, e) = loc in
-            eprintf "could not convert pattern to expression at %d-%d.\n" b e;
+            Printf.eprintf "could not convert pattern to expression at %d-%d.\n" b e;
             exit 1
 
 let include_dirs = ref ["./"]
