@@ -1021,6 +1021,12 @@ struct
                mk_so_var_term v [] terms
            | "'"; v = var; "["; terms = termlist; "]" ->
                mk_so_var_term v (get_var_contexts loc v terms) terms
+           | "'"; v = var; sl_contexts_left; conts = LIST0 var SEP ";"; sl_contexts_right; "["; "["; t = term; "]"; "]"; terms = optbrtermlist ->
+               mk_context_term v t conts terms
+           | "'"; v = var; sl_contexts_empty; "["; "["; t = term; "]"; "]"; terms = optbrtermlist ->
+               mk_context_term v t [] terms
+           | "'"; v = var; "["; "["; t = term; "]"; "]"; terms = optbrtermlist ->
+               mk_context_term v t (get_var_contexts loc v terms) terms
           ]];
 
       quote_term:

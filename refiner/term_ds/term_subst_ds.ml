@@ -206,10 +206,14 @@ struct
                if i = len then [] else
                   (context_vars (SeqGoal.get goals i) @ goals_context_vars (succ i))
             in (context_vars seq.sequent_args) @ (hyp_context_vars 0) @ (goals_context_vars 0)
+       | Term { term_op = { op_name = opname; op_params = [Var v] }; term_terms = bts }
+            when Opname.eq opname Opname.context_opname ->
+            v :: terms_context_vars (List.map (fun bt -> bt.bterm) bts)
        | Term { term_terms = bts } ->
             terms_context_vars (List.map (fun bt -> bt.bterm) bts)
        | SOVar(_, _, ts) -> terms_context_vars ts
-       | _ -> []
+       | FOVar _ -> []
+       | Hashed _| Subst _ -> fail_core "context_vars"
 
    (************************************************************************
     * ALPHA EQUALITY                                                       *

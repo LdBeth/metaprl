@@ -377,6 +377,10 @@ struct
                   scan_term eseq.sequent_args;
                   SeqHyp.iter scan_hyp eseq.sequent_hyps;
                   SeqGoal.iter scan_term eseq.sequent_goals
+            end else if is_context_term t then begin
+               let v, t, conts, ts = dest_context t in
+                  upd_map v conts ts;
+                  scan_term t
             end else
                List.iter scan_bterm (dest_term t).term_terms
          end
