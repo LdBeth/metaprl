@@ -88,6 +88,9 @@ sig
     *
     * Subst (BSubst) - delayed simultanious substitution
     * Hashed descriptor: a descriptor into the global hash table
+    *
+    * Please read docs/term_ds_safety.txt if you plan to change 
+    * and/or modify any code that changes mutable fields.
     *)
    type term_subst = (string * term) list
    and term_core =

@@ -1,7 +1,7 @@
 Free Variables Calculation in the Term_ds Module
 
-In the Term_ds module term and bound_term types have a field for storing the set
-of free variables. This field is supposed to be either VarsDelayed if the set
+In the Term_ds module term type has a field for storing the set of free
+variables. This field is supposed to be either VarsDelayed if the set
 was not computed yet or (Vars s) where s is the set variable names (strings) of
 all first-order variables occurring free in the term (bound_term). 
 
@@ -20,16 +20,13 @@ Example:
 
 { free_vars = {"y"}; core = Term
     { opname = "exists"; term_terms =
-        [{ bfree_vars = ["y"]; bcore = BTerm
-            { bvars = "x"; bterm =
-                { free_vars={"x","y"}; core = Term
-                    { opname = "equal"; term_terms =
-                        [ { bfree_vars = {"x"}; bcore = BTerm
-                            { bvars = []; bterm = 
-                                { free_vars = {"x"}; core = FOVar "x" } } };
-                          { bfree_vars = {"y"}; bcore = BTerm
-                            { bvars = []; bterm = 
-                                { free_vars = {"y"}; core = FOVar "y" } } } ] } } } } ] } }
+         [ { bvars = "x"; bterm =
+             { free_vars={"x","y"}; core = Term
+                 { opname = "equal"; term_terms =
+                    [ { bvars = []; bterm = 
+                          { free_vars = {"x"}; core = FOVar "x" } } };
+                      { bvars = []; bterm = 
+                          { free_vars = {"y"}; core = FOVar "y" } } ] } } } ] } }
 
 (Here ``opaname = "..."'' is used as an abbrevation for 
    ``term_op = {op_opname = "..."; op_params = []}'' )
@@ -46,7 +43,6 @@ Since both are indistinguishable in the Term_std, sometimes Term_ds would use
 FOVar "x" (and consider it a free occurrence of "x") when "x" is actually an SO
 variable.
 
-2) When the Subst (or BSubst) is created, we first remove all "garbage" from
-the substitution making sure that all variables that are being substituted 
-for actually occur in the term. That makes computing the free variables set
-of the substitution easier.
+2) When the Subst is created, we first remove all "garbage" from the substitution
+making sure that all variables that are being substituted for actually occur
+in the term. That makes computing the free variables set of the substitution easier.
