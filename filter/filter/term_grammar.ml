@@ -663,8 +663,12 @@ struct
                { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc op) ty.aterm t1.aterm t2.aterm }
             | (* t1 in ty  *)
               t = noncommaterm; op = sl_in; ty = NEXT ->
-               (* HACK - this is to support ad-hoc I/O form "member" - see TODO 2.14 -2.15 *)
-                  { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc "equal") ty.aterm t.aterm t.aterm }
+               (* XXX HACK - this is to support ad-hoc I/O form "member" - see TODO 2.14 -2.15 *)
+                  let t =
+                     try mk_dep0_dep0_term (mk_dep0_dep0_opname loc "member_of") t.aterm ty.aterm
+                     with _ -> mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc "equal") ty.aterm t.aterm t.aterm
+                  in 
+                     { aname = None; aterm = t }
             | (* t1 in t2 subset t3 *)
               t1 = noncommaterm; sl_in; t2 = NEXT; sl_subset; t3 = noncommaterm ->
                { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc "member") t1.aterm t2.aterm t3.aterm }
