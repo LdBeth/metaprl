@@ -213,50 +213,52 @@ let format_message buf s =
 let print_exn db s f x =
    if Refine_exn.backtrace then
       f x
-   else try f x with
-      exn ->
-         let buf = new_buffer () in
-            format_message buf s;
-            format_exn db buf exn;
-            format_ezone buf;
-            format_popm buf;
-            format_newline buf;
-            output_rbuffer stderr buf;
-            flush stderr;
-            raise (Refine_exn.ToploopIgnoreExn exn)
+   else
+      try f x with
+         exn ->
+            let buf = new_buffer () in
+               format_message buf s;
+               format_exn db buf exn;
+               format_ezone buf;
+               format_popm buf;
+               format_newline buf;
+               output_rbuffer stderr buf;
+               flush stderr;
+               raise (Refine_exn.ToploopIgnoreExn exn)
 
 let handle_exn db s loc f =
    if Refine_exn.backtrace then
       f ()
-   else try f () with
-      exn ->
-         let exn =
-            match exn with
-               Stdpp.Exc_located _ ->
-                  exn
-             | _ ->
-                  Stdpp.Exc_located (loc, exn)
-         in
-         let buf = new_buffer () in
-         let () = format_message buf s in
-         let buf =
-            try format_exn db buf exn; buf with
-               exn ->
-                  let buf = new_buffer () in
-                     format_message buf s;
-                     format_string buf "!!! Filter_exn.handle_exn: error during exception printing !!!";
-                     format_space buf;
-                     format_loc buf loc;
-                     format_space buf;
-                     format_string buf (Printexc.to_string exn);
-                     buf
-         in
-            format_ezone buf;
-            format_popm buf;
-            format_newline buf;
-            output_rbuffer stderr buf;
-            flush stderr;
-            exit 2
+   else
+      try f () with
+         exn ->
+            let exn =
+               match exn with
+                  Stdpp.Exc_located _ ->
+                     exn
+                | _ ->
+                     Stdpp.Exc_located (loc, exn)
+            in
+            let buf = new_buffer () in
+            let () = format_message buf s in
+            let buf =
+               try format_exn db buf exn; buf with
+                  exn ->
+                     let buf = new_buffer () in
+                        format_message buf s;
+                        format_string buf "!!! Filter_exn.handle_exn: error during exception printing !!!";
+                        format_space buf;
+                        format_loc buf loc;
+                        format_space buf;
+                        format_string buf (Printexc.to_string exn);
+                        buf
+            in
+               format_ezone buf;
+               format_popm buf;
+               format_newline buf;
+               output_rbuffer stderr buf;
+               flush stderr;
+               exit 2
 
 (*
  * -*-
