@@ -29,39 +29,30 @@
  *
  * Author: Alexey Nogin
  *)
-open Lm_format
+open Lm_printf
 open Lm_map_sig
 
 module MakeTable
-   (Base : TableBaseSig)
-   (Table1: TableSig
-               with type elt = Base.elt
-               with type data = Base.data)
-   (Table2: TableSig
-               with type elt = Base.elt
-               with type data = Base.data) =
+(Base : TableBaseSig)
+(Table1: TableSig
+         with type elt = Base.elt
+         with type data = Base.data)
+(Table2: TableSig
+         with type elt = Base.elt
+         with type data = Base.data) =
 struct
 
    type elt = Table1.elt
    type data = Table1.data
    type t = Table1.t * Table2.t
 
-   let print (t1,t2) =
-      force_newline ();
-      open_box 3;
-      print_string "Table1:";
-      Table1.print t1;
-      close_box ();
-      force_newline ();
-      open_box 3;
-      print_string "Table2:";
-      Table2.print t2;
-      close_box ();
-      force_newline ()
+   let print out (t1, t2) =
+      fprintf out "@[<v 0>@[<hv 3>Table1:%a@]@ @[<hv 3>Table2:%a@]@]@." (**)
+         Table1.print t1
+         Table2.print t2
 
    let error t =
-      print t;
-      print_flush ();
+      print stderr t;
       raise (Invalid_argument "DebugTables")
 
    let mem (t1,t2 as t) key =
@@ -76,52 +67,37 @@ struct
       let d1 =
          try Table1.find t1 key
          with Not_found ->
-            ignore (Table2.find t2 key);
-            printf "DebugTables.find mismatch: found in Table2, but not in Table1\n";
-            error t
+               ignore (Table2.find t2 key);
+               printf "DebugTables.find mismatch: found in Table2, but not in Table1\n";
+               error t
       in let d2 =
          try Table2.find t2 key
          with Not_found ->
-            printf "DebugTables.find mismatch: found in Table1, but not in Table2\n";
-            error t
+               printf "DebugTables.find mismatch: found in Table1, but not in Table2\n";
+               error t
       in
-         if (d1=d2) then d1 else begin
-            open_box 0;
-            print_string "DebugTables.find mismatch: found different data:";
-            print_newline ();
-            open_box 3;
-            Base.print key [d1;d2];
-            close_box ();
-            close_box ();
-            error t
-         end
+         if (d1=d2) then d1 else
+            begin
+               eprintf "@[<hv 0>DebugTables.find mismatch: found different data:@ @[<hv 3>%t@]@]" (**)
+                  (fun out -> Base.print out key [d1; d2]);
+               error t
+            end
 
    let find_all (t1,t2 as t) key =
       let d1 = Table1.find_all t1 key
       and d2 = Table2.find_all t2 key in
-      if List.length d1 = List.length d2 then
-         if d1 = d2 then d1 else begin
-            open_hvbox 3;
-            print_string "DebugTables.find_all mismatch: found different data:";
-            print_space ();
-            open_hvbox 3;
-            print_string "In table1:";
-            print_space ();
-            Base.print key d1;
-            close_box ();
-            print_space ();
-            open_hvbox 3;
-            print_string "In table2:";
-            print_space ();
-            Base.print key d2;
-            close_box ();
-            close_box ();
-            error t
-         end
-      else begin
-         printf "DebugTables.find_all mismatch:\n\t%d entries in Table1, but %d entries in Table2\n" (List.length d1) (List.length d2);
-         error t
-      end
+         if List.length d1 = List.length d2 then
+            if d1 = d2 then d1 else
+               begin
+                  eprintf "@[<hv 3>DebugTables.find_all mismatch: found different data:@ @[<hv 3>In table1:@ %t@]@ @[<hv 3>In table2:@ %t@]@]" (**)
+                     (fun out -> Base.print out key d1)
+                     (fun out -> Base.print out key d2);
+                  error t
+               end
+         else begin
+                 eprintf "DebugTables.find_all mismatch:\n\t%d entries in Table1, but %d entries in Table2\n" (List.length d1) (List.length d2);
+                 error t
+              end
 
    exception Mismatch of t * elt
 
@@ -139,9 +115,7 @@ struct
          check (Table1.empty, Table2.empty)
       with
          Mismatch (t,key) ->
-            open_vbox 3;
-            print_string "Create made non-empty tables:";
-            print_space ();
+            eprintf "@[<v 3>Create made non-empty tables:@ ";
             ignore(find_all t key);
             raise(Invalid_argument "DebugTables.create - something funny")
 
@@ -150,19 +124,9 @@ struct
          check (Table1.add t1 key data, Table2.add t2 key data)
       with
          Mismatch (t',key') ->
-            open_vbox 3;
-            print_string "Add made different tables:";
-            print_space ();
-            open_vbox 3;
-            print_string "Old table:";
-            print t;
-            close_box ();
-            open_hvbox 3;
-            print_string "Added data:";
-            print_space ();
-            Base.print key [data];
-            close_box ();
-            print_cut();
+            eprintf "@[<v 3>Add made different tables:@ @[<v 3>Old table: %a@]@ @[<hv 3>Added data:@ %t@]" (**)
+               print t
+               (fun out -> Base.print out key [data]);
             ignore(find_all t' key');
             raise(Invalid_argument "DebugTables.add - something funny")
 
@@ -171,9 +135,7 @@ struct
          check(Table1.union t1 t1', Table2.union t2 t2')
       with
          Mismatch (t'',key) ->
-            open_vbox 3;
-            print_string "Union made different tables:";
-            print_space ();
+            eprintf "@[<v 3>Union made different tables:@ ";
             ignore(find_all t'' key);
             raise(Invalid_argument "DebugTables.union - something funny")
 
@@ -182,9 +144,7 @@ struct
          check(Table1.remove t1 key, Table2.remove t2 key)
       with
          Mismatch (t',key') ->
-            open_vbox 3;
-            print_string "Remove made different tables:";
-            print_space ();
+            eprintf "@[< v 3>Remove made different tables:@ ";
             ignore(find_all t' key');
             raise(Invalid_argument "DebugTables.remove - something funny")
 
@@ -194,60 +154,50 @@ struct
    let list_of (t1, t2) =
       let l1=Table1.list_of t1 in
       let l2=Table2.list_of t2 in
-		if l1=l2 then
-			l1
-		else
-			begin
-				open_vbox 3;
-				print_string "List_of made different lists:";
-				print_space ();
-				print (t1,t2);
-				raise(Invalid_argument "DebugTables.list_of - something funny")
-			end
+         if l1=l2 then
+            l1
+         else
+            begin
+               eprintf "@[<v 3>List_of made different lists:@ %a" (**)
+                  print (t1, t2);
+               raise(Invalid_argument "DebugTables.list_of - something funny")
+            end
 
    let map f (t1, t2) =
       try
          check(Table1.map f t1, Table2.map f t2)
       with
          Mismatch (t',key) ->
-            open_vbox 3;
-            print_string "Map made different tables:";
-            print_space ();
+            eprintf "@[<v 3>Map made different tables:@ ";
             ignore(find_all t' key);
             raise(Invalid_argument "DebugTables.map - something funny")
 
    let deletemax (t1,t2) =
-		let (k1,m1,t1')=Table1.deletemax t1 in
-		let (k2,m2,t2')=Table2.deletemax t2 in
-		if (compare k1 k2 =0) then
-			if Lm_list_util.compare_eq m1 m2 then
-				try
-					let t=check (t1',t2') in
-					(k1,m1,t)
-				with
-					Mismatch (t',key') ->
-						open_vbox 3;
-						print_string "Deletemax made different tables:";
-						print_space ();
-						ignore(find_all t' key');
-						raise(Invalid_argument "DebugTables.deletemax - something funny")
-			else
-				begin
-					open_vbox 3;
-					print_string "Deletemax returned different content of same maximum:";
-					print_space ();
-					ignore(find_all (t1',t2') k1);
-					raise(Invalid_argument "DebugTables.deletemax - something funny")
-				end
-		else
-			begin
-				open_vbox 3;
-				print_string "Deletemax returned different maximums:";
-				print_space ();
-				ignore(find_all (t1',t2') k1);
-				print_space ();
-				ignore(find_all (t1',t2') k2);
-				raise(Invalid_argument "DebugTables.deletemax - something funny")
-			end
+      let (k1,m1,t1')=Table1.deletemax t1 in
+      let (k2,m2,t2')=Table2.deletemax t2 in
+         if (compare k1 k2 =0) then
+            if Lm_list_util.compare_eq m1 m2 then
+               try
+                  let t=check (t1',t2') in
+                     (k1,m1,t)
+               with
+                  Mismatch (t',key') ->
+                     eprintf "@[<v 3>Deletemax made different tables:@ ";
+                     ignore(find_all t' key');
+                     raise(Invalid_argument "DebugTables.deletemax - something funny")
+            else
+               begin
+                  eprintf "@[<v 3>Deletemax returned different content of same maximum:@ ";
+                  ignore(find_all (t1',t2') k1);
+                  raise(Invalid_argument "DebugTables.deletemax - something funny")
+               end
+         else
+            begin
+               eprintf "@[<v 3>Deletemax returned different maximums:@ ";
+               ignore(find_all (t1',t2') k1);
+               eprintf "@ ";
+               ignore(find_all (t1',t2') k2);
+               raise(Invalid_argument "DebugTables.deletemax - something funny")
+            end
 
 end

@@ -77,7 +77,7 @@ struct
       type elt = Extra.index
       type data = Base.data
 
-      let print _ _ = ()
+      let print _ _ _ = ()
       let compare x y = Extra.compare x y
       let append = Base.append
    end

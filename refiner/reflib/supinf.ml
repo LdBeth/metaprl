@@ -38,7 +38,7 @@ sig
    val max_term : term -> term -> term
    val min_term : term -> term -> term
 
-   val print : bfield -> unit
+   val print : out_channel -> bfield -> unit
 end
 
 module VarType =
@@ -46,9 +46,9 @@ struct
    type t=int
    let compare a b = a-b
 
-   let print v =
-      if v>0 then printf "v%i" v
-      else if v=0 then printf "1"
+   let print out v =
+      if v>0 then fprintf out "v%i" v
+      else if v=0 then fprintf out "1"
       else raise (Invalid_argument "Variable index should be non-negative")
 end
 
@@ -79,9 +79,9 @@ struct
             index
          end
 
-   let print info =
+   let print out info =
       let count,table=info in
-      let aux k d = printf "%a ->v%i%t" print_term k d eflush in
+      let aux k d = fprintf out "%a ->v%i%t" print_term k d eflush in
       (*printf "count=%i%t" !count eflush;*)
       Table.iter aux table
 
@@ -105,9 +105,9 @@ struct
 
    let compare = VarType.compare
 
-   let print (v:elt) (kl: data list) =
+   let print out (v:elt) (kl: data list) =
       match kl with
-         [k] -> BField.print k; (*printf"*";*) VarType.print v
+         [k] -> BField.print out k; (*printf"*";*) VarType.print out v
        | _ -> raise (Invalid_argument "More than one coefficient is associated with one variable")
 
    let append l1 l2 =
@@ -144,8 +144,8 @@ sig
 
    val term_of : (term array) -> af -> term
 
-   val print : af -> unit
-   val print_var : vars -> unit
+   val print : out_channel -> af -> unit
+   val print_var : out_channel -> vars -> unit
 end
 
 module MakeAF(BField : BoundFieldSig)
@@ -163,9 +163,9 @@ struct
 
    let print_var = VarType.print
 
-   let print f =
+   let print out f =
       let aux key data =
-         printf "+"; Monom.print key [data]
+         fprintf out "+"; Monom.print out key [data]
       in
       (*printf "(";*) Table.iter aux f; (*printf")";*) flush stdout
 
@@ -190,12 +190,12 @@ struct
 
    let split f =
       if !debug_supinf_trace then
-         (printf "split "; print f; eflush stdout);
+         eprintf "split %a@." print f;
       let (v,coefs,rest)=Table.deletemax f in
       match coefs with
          [c] ->
             if !debug_supinf_trace then
-               (Monom.print v coefs; printf" "; print rest; eflush stdout);
+               (Monom.print stderr v coefs; eprintf " %a@." print rest);
             (c,v,rest)
        | _ -> raise (Invalid_argument "More than one coefficient associated with a variable")
 
@@ -261,11 +261,11 @@ sig
 
    val term_of: (term array) -> saf -> term
 
-   val print : saf -> unit
+   val print : out_channel -> saf -> unit
 end
 
 module MakeSAF(BField : BoundFieldSig)(AF : AF_Sig  with type bfield=BField.bfield)
-   : SAF_Sig with type bfield=BField.bfield and type vars=AF.vars and type af=AF.af =
+: SAF_Sig with type bfield=BField.bfield and type vars=AF.vars and type af=AF.af =
 struct
    open BField
 
@@ -286,9 +286,9 @@ struct
          Affine f1' ->
             if AF.isNumber f1' then
                let c=AF.coef f1' AF.constvar in
-               if BField.compare c BField.plusInfinity = 0 then Affine f
-               else if BField.compare c BField.minusInfinity =0 then f1
-               else Min (f1, Affine f)
+                  if BField.compare c BField.plusInfinity = 0 then Affine f
+                  else if BField.compare c BField.minusInfinity =0 then f1
+                  else Min (f1, Affine f)
             else
                Min (f1, Affine f)
        |   _ -> Min (f1, Affine f)
@@ -296,9 +296,9 @@ struct
    let min_aff f1 f =
       if AF.isNumber f then
          let c=AF.coef f AF.constvar in
-         if BField.compare c BField.plusInfinity = 0 then f1
-         else if BField.compare c BField.minusInfinity =0 then Affine f
-         else min_aff_simple f1 f
+            if BField.compare c BField.plusInfinity = 0 then f1
+            else if BField.compare c BField.minusInfinity =0 then Affine f
+            else min_aff_simple f1 f
       else
          min_aff_simple f1 f
 
@@ -314,9 +314,9 @@ struct
          Affine f1' ->
             if AF.isNumber f1' then
                let c=AF.coef f1' AF.constvar in
-               if BField.compare c BField.plusInfinity = 0 then f1
-               else if BField.compare c BField.minusInfinity =0 then Affine f
-               else Max (f1, Affine f)
+                  if BField.compare c BField.plusInfinity = 0 then f1
+                  else if BField.compare c BField.minusInfinity =0 then Affine f
+                  else Max (f1, Affine f)
             else
                Max (f1, Affine f)
        |   _ -> Max (f1, Affine f)
@@ -324,9 +324,9 @@ struct
    let max_aff f1 f =
       if AF.isNumber f then
          let c=AF.coef f AF.constvar in
-         if BField.compare c BField.plusInfinity = 0 then Affine f
-         else if BField.compare c BField.minusInfinity =0 then f1
-         else max_aff_simple f1 f
+            if BField.compare c BField.plusInfinity = 0 then Affine f
+            else if BField.compare c BField.minusInfinity =0 then f1
+            else max_aff_simple f1 f
       else
          max_aff_simple f1 f
 
@@ -343,14 +343,14 @@ struct
          Affine f' -> Affine (AF.scale k f')
        | Min (a,b) ->
             let cmp=compare k fieldZero in
-            if cmp<0 then Max (scale k a, scale k b)
-            else if cmp=0 then Affine(AF.mk_number(fieldZero))
-            else Min (scale k a, scale k b)
+               if cmp<0 then Max (scale k a, scale k b)
+               else if cmp=0 then Affine(AF.mk_number(fieldZero))
+               else Min (scale k a, scale k b)
        | Max (a,b) ->
             let cmp=compare k fieldZero in
-            if cmp<0 then Min (scale k a, scale k b)
-            else if cmp=0 then Affine(AF.mk_number(fieldZero))
-            else Max (scale k a, scale k b)
+               if cmp<0 then Min (scale k a, scale k b)
+               else if cmp=0 then Affine(AF.mk_number(fieldZero))
+               else Max (scale k a, scale k b)
 
    let rec add f1 f2 =
       match f1,f2 with
@@ -375,13 +375,13 @@ struct
       Affine _ -> true
     | _ -> false
 
-   let rec print f =
+   let rec print out f =
       match f with
-         Affine f' -> AF.print f'
+         Affine f' -> AF.print out  f'
        | Max (a,b) ->
-            printf "max("; print a; printf"; "; print b; printf ")"
+            fprintf out "max(%a; %a)" print a print b
        | Min (a,b) ->
-            printf "min("; print a; printf"; "; print b; printf ")"
+            fprintf out "min(%a; %a)" print a print b
 
    let rec term_of info = function
       Affine f -> AF.term_of info f
