@@ -5153,6 +5153,7 @@ and frees2 = free_vars term2 in
    and unique_list2 = make_equal_list (List.length frees2) unique_object
    in
  begin
+(*
   print_endline "";
   print_endline "";
   print_stringlist frees1;
@@ -5160,6 +5161,7 @@ and frees2 = free_vars term2 in
   print_stringlist frees2;
   print_endline "";
   print_endline "";
+*)
    let next_term1 = subst term1 unique_list1 frees1
    and next_term2 = subst term2 unique_list2 frees2 in 
            let new_term1 = apply_var_subst next_term1 var_mapping
