@@ -139,10 +139,10 @@ struct
                   { bvars = [v]; bterm = t } ->
                      v, t
                 | _ ->
-                     raise (RefineError ("Filter_ocaml.dest_dep1_term", StringError "bad arity"))
+                     raise (RefineError ("Filter_ocaml.dest_dep1_term", TermMatchError (t, "bad arity")))
             end
        | _ ->
-            raise (RefineError ("Filter_ocaml.dest_dep1_term", StringError "bad arity"))
+            raise (RefineError ("Filter_ocaml.dest_dep1_term", TermMatchError (t,"bad arity")))
 
    (************************************************************************
     * TERM DESTRUCTORS                                                     *
@@ -484,16 +484,25 @@ struct
          <:expr< let $rec:false$ $list: pel$ in $dest_expr e$ >>
 
    and dest_fix t =
-      let rec dest t =
+      let rec dest_exprs t =
          if Opname.eq (opname_of_term t) patt_in_op then
             [], one_subterm "dest_fix_expr" t
          else
-            let p, t = dest_patt t in
             let e, t = two_subterms t in
-            let pel, e' = dest t in
-               (p, dest_expr e) :: pel, e'
+            let es, e' = dest_exprs t in
+            (dest_expr e) :: es, e'
+      and dest_patts t =
+         let p, t = dest_patt t in
+         if Opname.eq (opname_of_term t) patt_fix_arg_op then
+            let es, e = dest_exprs t in
+            [p], es, e
+         else
+            let t = one_subterm "dest_fix_expr" t in
+            let ps, es, e = dest_patts t in
+            p :: ps, es, e
       in
-         dest (one_subterm "dest_fix_expr" t)
+         let ps, es, e = dest_patts (one_subterm "dest_fix_expr" t) in
+         (List.combine ps es), e
 
    and dest_fix_expr t =
       let loc = dest_loc "dest_fix_expr" t in
