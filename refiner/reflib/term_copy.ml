@@ -105,14 +105,14 @@ struct
        | TType.MVar      s1,         TType.MVar      s2         -> s1 = s2
        | TType.ObId      oid1,       TType.ObId      oid2       -> list_mem_eq oid1 oid2
        | TType.ParamList params1,    TType.ParamList params2    -> list_mem_eq params1 params2
-       | TType.MSum      (p11, p12), TType.MSum      (p21, p22) -> p11 == p12 & p21 == p22
-       | TType.MDiff     (p11, p12), TType.MDiff     (p21, p22) -> p11 == p12 & p21 == p22
-       | TType.MProduct  (p11, p12), TType.MProduct  (p21, p22) -> p11 == p12 & p21 == p22
-       | TType.MQuotient (p11, p12), TType.MQuotient (p21, p22) -> p11 == p12 & p21 == p22
-       | TType.MRem      (p11, p12), TType.MRem      (p21, p22) -> p11 == p12 & p21 == p22
-       | TType.MLessThan (p11, p12), TType.MLessThan (p21, p22) -> p11 == p12 & p21 == p22
-       | TType.MEqual    (p11, p12), TType.MEqual    (p21, p22) -> p11 == p12 & p21 == p22
-       | TType.MNotEqual (p11, p12), TType.MNotEqual (p21, p22) -> p11 == p12 & p21 == p22
+       | TType.MSum      (p11, p12), TType.MSum      (p21, p22) -> p11 == p21 & p12 == p22
+       | TType.MDiff     (p11, p12), TType.MDiff     (p21, p22) -> p11 == p21 & p12 == p22
+       | TType.MProduct  (p11, p12), TType.MProduct  (p21, p22) -> p11 == p21 & p12 == p22
+       | TType.MQuotient (p11, p12), TType.MQuotient (p21, p22) -> p11 == p21 & p12 == p22
+       | TType.MRem      (p11, p12), TType.MRem      (p21, p22) -> p11 == p21 & p12 == p22
+       | TType.MLessThan (p11, p12), TType.MLessThan (p21, p22) -> p11 == p21 & p12 == p22
+       | TType.MEqual    (p11, p12), TType.MEqual    (p21, p22) -> p11 == p21 & p12 == p22
+       | TType.MNotEqual (p11, p12), TType.MNotEqual (p21, p22) -> p11 == p21 & p12 == p22
        | _ -> false
 
    let compare_operator { TType.op_name = opname1; TType.op_params = params1 }
