@@ -73,7 +73,7 @@ find a better solution - in particular we should take into account subgoal sizes
 the number of subgoals. 
 
 It may be a good idea to implement a generic display-form mechanism to allow limiting
-the number of lines a sertain term would occupy. On the other hand, such an approach
+the number of lines a certain term would occupy. On the other hand, such an approach
 would only save the time to output the display form, but not the time to produce it.
 
 REWRITER
@@ -84,7 +84,7 @@ REWRITER
 may handle it incorrectly. We can not prohibit repeated bound variable in redeces
 specification because of two-way rewrites.
 
-3.3) If the same variabe is bound several times in the matched term, rewriter may handle
+3.3) If the same variable is bound several times in the matched term, rewriter may handle
 it incorrectly.
 
 Example:
@@ -113,7 +113,7 @@ There is no clear semantics for the hidden hypothesis. As a result,
 many rules deal with hidden hypothesis incorrectly. Currently, one
 can prove 0=1 using those unsound rules.
 
-In Nuprl the semantics of hudden hypothesis is that the variable introduced
+In Nuprl the semantics of hidden hypothesis is that the variable introduced
 by a hidden hypothesis may not appear in the extract. In MetaPRL we want to be
 able to use derived rules before we have proven them which means that we want to
 be able to use them before we know their extracts.
@@ -134,9 +134,26 @@ One of the side-effects of this problem is that we have to pass unnecessary argu
 to some of the rules (such as Itt_struct.hypothesis and srecElimination;
 note: Itt_struct.hypothesis is mentioned in doc/htmlman/user-guide/mp-axiom.html).
 
+4.5) Currently there are two versions of unification implemented. An old one exists
+in both term_std and term_ds. A newer one (mm_* functions) is only implemented in term_ds.
+
+The old unification is buggy, but the new one is slow. We need to make the new one faster
+and eliminate the old one (converting things like TPTP's proveT to new unification).
+
+Since unification is only used in proof search, but not proof checking, it should be OK
+to not have any unification in term_std, but this may create problems, so we may need to
+create some new unification for term_std after the old one is eliminated.
+
+4.6) (Discovered 2000.04 by kopylov, confirmed by nogin)
+Until by-context free variable restriction is implemented and its usage is enforced
+when necessary (see doc/sequents.tex for more information), the rule chaining is not
+necessarily valid (e.g. even when S1 --> S2 and S2 --> S3 are valid rules, S1 --> S3 is not
+necessarily valid).
+
 PARSER & FILTER
 
 5.1) Rules and rewrites should be added to toploop. 
+(updated 2000.04.24 by nogin) I believe this is fixed, but I am not sure.
 
 5.2) When rule is added, the appropriate tactic should be added automatically
 (assuming sequent calculus).
