@@ -145,7 +145,10 @@ class NuprlManager
                 }
             }
             else
+            {
                 state = STATE_LOGIN;
+                if (login == null) placeLogin();
+            }
         }
 
         if(NuprlDebug.debug_manager)
@@ -563,6 +566,7 @@ class NuprlManager
             if(client != null)
                 client.Close();
             try {
+                ensureCommandExists();
                 command.setVisible(true);
                 client = new NuprlClient(bus, auth, new NuprlCommandManager());
             }

@@ -36,6 +36,7 @@ implements NuprlFrame
         // Now add the window
         getContentPane().add(textPane);
         pack();
+        setVisible(false);
 
         // Watch for window closings
         addInternalFrameListener(new NuprlCommandListener());
