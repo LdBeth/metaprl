@@ -58,7 +58,7 @@ endif
 CC=$(CCC)
 
 ifndef OSTYPE
-   OSTYPE=
+   OSTYPE=`uname`
 endif
 ifeq ($(OSTYPE),linux)
    OSTYPE=Linux
