@@ -43,7 +43,7 @@ type 'pos ftree = Empty |
 
 type atom  = {aname : string; 
 	      aaddress : int list;
-              aprefix : string array;
+              aprefix : string list;
               apredicate :  operator;
               apol : polarity; 
               ast : stype;
@@ -61,6 +61,17 @@ type atom_relations = atom * atom list * atom list
 
 
 
+(* definition: rules, inferences for LJ, LJmc, and LK *)
+
+type rule = Ax | Andr | Andl | Orr | Orr1 | Orr2 | Orl | Impr | Impl | Negr | Negl |
+            Allr | Alll| Exr | Exl | Fail
+
+(* Assume only constants for instantiations, not adapted to terms yet *)
+
+
+
+type inf = rule * term  * term
+
 
 
 
@@ -76,6 +87,19 @@ module OrderedAtom =
 module AtomSet = Set.Make(OrderedAtom);;
 
 
+
+module OrderedString = 
+ struct 
+  type t = string 
+  let compare a1 a2 = if a1 = a2 then 0 else 
+                       if a1 < a2 then -1 else 1
+ end;;
+
+
+module StringSet = Set.Make(OrderedString);;
+
+
+
 (*****************************************************************)
 
 
@@ -87,37 +111,7 @@ module AtomSet = Set.Make(OrderedAtom);;
 
 (************ printing T-string unifiers ****************************)
 
-
-let rec list_to_string s = 
- match s with 
-  [] -> "" 
- |f::r -> 
-  f^"."^(list_to_string r)
-
-
-let rec print_subst sigma = 
- match sigma with 
-  [] -> 
-   print_endline ""
- |f::r -> 
-  let (v,s) = f in
-   let ls = list_to_string s in 
-  begin
-   print_endline (v^" = "^ls); 
-   print_subst r
-  end
-
-
-let print_tunify sigma = 
- let (n,subst) = sigma in 
- begin
-  print_endline ("MaxVar = "^(string_of_int (n-1)));
-  print_endline " ";
-  print_endline "Substitution:";
-  print_subst subst;
-  print_endline " "
- end
-
+(* se unification module *)
 
 
 
@@ -180,7 +174,7 @@ let print_atom at tab =
    Format.force_newline (); 
    Format.print_break (tab+1) (tab+1);
    Format.print_string "prefix=";
-   print_prefix (Array.to_list z);
+   print_prefix z;
    Format.print_string "; predicate=<abstr>; ";
    Format.print_break (tab+1) (tab+1);
    Format.print_break (tab+1) (tab+1);
@@ -351,20 +345,74 @@ let print_ftree ftree =
  end;;
 
 
-let rec print_ordering ordering = 
- match ordering with 
+
+
+
+let rec print_set_list set_list = 
+ match set_list with 
+  [] -> "" 
+ |f::r -> 
+   (f.aname)^" "^(print_set_list r)
+
+let print_set  set = 
+ let set_list = AtomSet.elements set in 
+  if set_list = [] then "empty"
+  else 
+   print_set_list set_list 
+
+
+
+
+
+
+let rec print_stringlist slist = 
+  match slist with 
+    [] -> 
+     Format.print_string ""
+   |f::r -> 
+     begin
+      Format.print_string (f^".");
+      print_stringlist r
+     end 
+
+
+let rec print_list_sets list_of_sets = 
+ match list_of_sets with 
+  [] -> Format.print_string ""
+ |(pos,fset)::r -> 
+  begin
+    Format.print_string (pos^": ");   (* first element = node which successors depend on *)
+    print_stringlist (StringSet.elements fset); 
+    Format.force_newline ();
+    print_list_sets r 
+  end
+
+
+let print_ordering list_of_sets = 
+  begin
+   Format.open_box 0;
+   print_list_sets list_of_sets; 
+   Format.print_flush ()
+  end
+
+
+
+
+let rec print_pairlist pairlist = 
+ match pairlist with 
   [] -> Format.print_string ""
  |(a,b)::rest -> 
    begin
     Format.print_break 1 1;
     Format.print_string ("("^a^","^b^")");
-    print_ordering rest
+    print_pairlist rest
    end
+
+
+
 
 let print_pos_n  pos_n =
   Format.print_int pos_n
-
-
 
 
 let print_formula_info ftree ordering pos_n = 
@@ -377,6 +425,7 @@ begin
  Format.force_newline ();
  Format.print_string "number of positions: ";
  print_pos_n pos_n;
+ Format.force_newline ();
  print_endline "";
  print_endline "";
  Format.print_flush ()
@@ -387,358 +436,1067 @@ end
 
 
 
-(************ T-STRING UNIFICATION *********************************)
+(************** PROOF RECONSTRUCTION without redundancy deletion ******************************)
 
 
 
-let is_const name  = 
-  (String.get name 0) = 'c'
+(* proof tree for pretty print only *)
 
 
-let is_var name  = 
-  (String.get name 0) = 'v'
-
-
-
-let r_1 s ft rt = 
-  (s = []) & (ft = []) & (rt = []) 
+type 'inf ptree = PEmpty | 
+                  PNodeAx of 'inf |
+                  PNodeA of 'inf * 'inf ptree | 
+                  PNodeB of 'inf * 'inf ptree * 'inf ptree;;
 
 
 
 
 
-let r_2 s ft rt = 
-  (s = []) & (ft = []) & (List.length rt >= 1) 
+(* build the proof tree from a list of inference rules *)
+
+let rec unclosed subtree =  
+    match subtree with 
+       PEmpty -> true 
+     | PNodeAx(y) -> false
+     | PNodeA(y,left) -> (unclosed left)
+     | PNodeB(y,left,right) -> (or) (unclosed left) (unclosed right);;
+   
+
+
+let rec extend prooftree element =  
+   match prooftree with 
+     PEmpty -> 
+       let (rule,formula,term) = element in 
+         if rule = Ax then  
+          PNodeAx(element)
+         else 
+           if List.mem rule [Andr; Orl; Impl] then 
+              PNodeB(element,PEmpty,PEmpty)
+           else 
+              PNodeA(element,PEmpty)
+   | PNodeAx(y) -> 
+        PEmpty           (* that's only for  exhaustive pattern matching *)
+   | PNodeA(y, left) -> 
+        PNodeA(y, (extend left element))
+   | PNodeB(y, left, right) -> 
+        if (unclosed left) then 
+          PNodeB(y, (extend left element), right)
+        else 
+          PNodeB(y, left, (extend right element));;
+
+
+let rec bptree prooftree nodelist nax= 
+   match nodelist with 
+    [] -> prooftree,nax
+   |  (rule,formula,term)::rest -> 
+      let newax =  
+       if rule = Ax then 
+         1
+       else
+         0
+      in 
+        bptree (extend prooftree (rule,formula,term)) rest (nax+newax);; 
+
+
+let bproof nodelist = 
+     bptree PEmpty nodelist 0
 
 
 
 
 
-let r_3 s ft rt = 
-  if ft=[] then 
-    if (List.length s >= 1) &  (List.length rt >= 1) then 
-     let x = List.hd s 
-     and y = List.hd rt in 
-       x=y 
+let ruletable r =  
+  match r with 
+   Fail -> "Fail"  
+ | Ax ->     "Ax"
+ | Negl ->  "Negl"
+ | Negr ->  "Negr"
+ | Andl ->  "Andl"
+ | Andr ->  "Andr"
+ | Orl ->   "Orl"
+ | Orr ->   "Orr"
+ | Orr1 ->   "Orr1"
+ | Orr2 ->   "Orr2"
+ | Impl ->   "Impl"
+ | Impr ->   "Impr"
+ | Exl ->   "Exl"
+ | Exr ->   "Exr"
+ | Alll ->   "Alll"
+ | Allr ->   "Allr";;
+
+
+
+let pp_rule (r,formula,term) tab = 
+  let rep = ruletable r in  
+   if List.mem rep ["Alll";"Allr";"Exl";"Exr"] then 
+        begin
+	  Format.open_box 0;
+	  Format.force_newline (); 
+	  Format.print_break tab 0;
+	  Format.print_string (rep^" ");
+	  Format.print_break tab 0;
+	  Format.force_newline (); 
+	  Format.print_break tab 0;
+          print_term stdout formula;
+          print_term stdout term;
+    (*      Format.force_newline (); *)
+	  Format.print_flush ()
+        end
+      else
+        begin
+	  Format.open_box 0;
+	  Format.print_break tab 0;
+	  Format.print_string (rep^" ");
+	  Format.print_flush ();
+	  Format.open_box 0;
+(*	  Format.print_break tab 0; *)
+	  Format.force_newline (); 
+(*	  Format.print_break tab 0; *)
+          print_term stdout formula;
+          Format.force_newline () 
+        end
+
+
+let last addr = 
+ if addr = ""
+  then "" 
+ else
+  String.make 1 (String.get addr (String.length addr-1));;
+
+
+let rest addr = 
+ if addr = ""
+  then "" 
+ else
+  String.sub addr 0 ((String.length addr) - 1);;
+
+
+
+let rec get_r_chain addr =  
+ if addr = "" then 
+  0
+ else  
+  let l = last addr in 
+   if l = "l" then 
+    0
+   else (* l = "r" *) 
+   let rs = rest addr in 
+     1 + (get_r_chain rs);;
+ 
+
+
+
+let rec tpp seqtree tab addr =  
+ match seqtree with 
+ | PEmpty -> raise (Failure "Invalid argument")
+ | PNodeAx(rule) ->
+    let (r,p,pa) = rule in  
+     begin 
+      pp_rule (r,p,pa) tab;
+(*      Format.force_newline (); *)
+(*      let mult = get_r_chain addr in  *)
+(*        Format.print_break 100 (tab - (3 * mult)) *)
+     end
+ | PNodeA(rule,left) -> 
+   let (r,p,pa) = rule in  
+        begin
+         pp_rule (r,p,pa) tab;
+         tpp left tab addr  
+        end
+ | PNodeB(rule,left,right) -> 
+   let (r,p,pa) = rule in  
+       let newtab = tab + 3 in 
+        begin
+         pp_rule (r,p,pa) tab;
+(*	 Format.force_newline (); *)
+(*       Format.print_break 100 newtab; *)
+         (tpp left newtab (addr^"l"));
+         (tpp right newtab (addr^"r"))
+        end;;
+
+
+
+let tt seqtree = 
+ begin
+  Format.open_box 0;
+  tpp seqtree 0 "";
+  Format.force_newline ();
+  Format.close_box (); 
+  Format.print_newline ()
+ end;;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+let rec init_unsolved treelist = 
+ match treelist with  
+  [] -> []
+ |f::r -> 
+   match f with 
+     Empty -> [] 
+    |NodeAt(pos) -> 
+      (pos.name)::(init_unsolved r)
+    |NodeA(pos,suctrees) -> 
+      let new_treelist = (Array.to_list suctrees) @ r in 
+       (pos.name)::(init_unsolved new_treelist)
+
+
+(* only the unsolved positions will be represented --> skip additional root position *)
+
+let build_unsolved ftree = 
+ match ftree with 
+   Empty ->   
+    raise (Failure "Invalid Argument")
+  |NodeAt(_) -> 
+    raise (Failure "Invalid Argument")
+  |NodeA(pos,suctrees) -> 
+    ((pos.name),init_unsolved (Array.to_list suctrees))
+
+
+
+
+let rec collect_variables tree_list = 
+ match tree_list with  
+  [] -> []
+ |f::r -> 
+   match f with 
+     Empty -> [] 
+    |NodeAt(pos) -> 
+      if pos.st = Gamma_0 then 
+        pos.name::collect_variables r
+      else
+        collect_variables r
+    |NodeA(pos,suctrees) -> 
+      let new_tree_list = (Array.to_list suctrees) @ r in 
+       if pos.st = Gamma_0 then 
+         pos.name::collect_variables new_tree_list
+       else
+         collect_variables new_tree_list
+
+
+
+let rec extend_sigmaQ sigmaQ vlist = 
+ match vlist with 
+  [] -> []
+ |f::r -> 
+  let vf = mk_var_term f in 
+   if List.exists (fun x -> (fst x = vf)) sigmaQ then 
+     extend_sigmaQ sigmaQ r
+   else
+(* first and second component are var terms in meta-prl *)
+     [(vf,vf)] @ (extend_sigmaQ sigmaQ r)
+
+
+
+let build_sigmaQ sigmaQ ftree = 
+  let vlist = collect_variables [ftree] in 
+    sigmaQ @ (extend_sigmaQ sigmaQ vlist)
+
+
+ 
+
+
+(* subformula relation subrel is assumed to be represented in pairs 
+   (a,b) *)
+
+
+
+
+let rec delete e list =     (* e must not necessarily occur in list *)
+ match list with 
+    [] -> []               (* e must not necessarily occur in list *)
+  | first::rest -> 
+    if e = first then 
+      rest
+    else
+      first::(delete e rest);; 
+
+     
+let rec key_delete fname pos_list =   (* in key_delete, f is a pos name (key) but sucs is a list of positions *)
+  match pos_list with 
+   [] -> []               (* the position with name f  must not necessarily occur in pos_list *)
+  |f::r -> 
+   if fname = f.name then 
+     r 
+   else 
+    f::(key_delete fname r)
+
+
+
+
+let rec get_roots treelist = 
+ match treelist with 
+   [] -> []
+ |f::r -> 
+   match f with 
+     Empty -> (get_roots r)    (* Empty is posible below alpha-nodes after purity *)
+   | NodeAt(pos) -> pos::(get_roots r)
+   | NodeA(pos,trees) ->  pos::(get_roots r);;
+
+
+
+let rec comp_ps padd ftree = 
+ match ftree with 
+  Empty -> raise (Failure "invalid argument") 
+ |NodeAt(pos) -> 
+    []
+ |NodeA(pos,strees) -> 
+    match padd with 
+     [] -> get_roots (Array.to_list strees)
+    |f::r -> 
+       if r = [] then 
+         pos::(comp_ps r (Array.get strees (f-1)))
+       else
+         comp_ps r (Array.get strees (f-1))
+
+
+
+(* computes a list: first element predecessor, next elements successoes of p *)
+
+let tpredsucc p ftree =        
+ let padd = p.address in 
+  comp_ps padd ftree
+
+
+
+
+
+
+(* set an element in an array, without side effects *) 
+
+let myset array int element = 
+ let length = Array.length array in 
+  let firstpart = Array.sub array 0 (int) in 
+   let secondpart = Array.sub array (int+1) (length-(int+1)) in 
+    (Array.append firstpart (Array.append [|element|] secondpart));;
+
+
+
+
+let rec compute_open treelist slist = 
+ match treelist with 
+   [] -> []
+  |first::rest -> 
+   let elements = 
+     match first with 
+         Empty -> []  
+       | NodeAt(pos) -> 
+         if (List.mem (pos.name) slist) then 
+          [pos] 
+         else 
+          [] 
+       | NodeA(pos,suctrees) -> 
+         if (List.mem (pos.name) slist) then 
+	   [pos] 
+         else 
+	   compute_open (Array.to_list suctrees) slist 
+  in 
+   elements @ (compute_open rest slist);; 
+
+
+
+let rec select_connection pname connections slist = 
+ match connections with 
+   [] -> ("none","none")
+  |f::r -> 
+   let partner = 
+    if (fst f) = pname then 
+      (snd f) 
     else 
-     false 
-  else 
-   false 
+     if (snd f) = pname then 
+      (fst f) 
+     else 
+      "none" 
+   in 
+   if ((partner = "none") or (List.mem partner slist)) then 
+    select_connection pname r slist
+   else 
+    f;;
 
 
 
 
-let r_4 s ft rt = 
-  if ft=[] then 
-    if (List.length s >= 1) &  (List.length rt >= 1) then 
-     let c = List.hd s 
-     and v = List.hd rt in 
-       (is_const c) & (is_var v) 
+let rec replace_element element element_set redord = 
+  match redord with 
+   [] -> raise (Failure "Invalid argument")   (* element occurs in redord *)
+  |(f,fset)::r -> 
+    if f = element then 
+     (f,element_set)::r
+    else
+     (f,fset)::(replace_element element element_set r)
+     
+
+
+let rec collect_succ_sets sucs redord = 
+  match redord with 
+   [] -> StringSet.empty
+  |(f,fset)::r -> 
+   let new_sucs = key_delete f sucs in 
+    if (List.length sucs) = (List.length new_sucs) then   (* position with name f did not occur in sucs -- no deletion *)
+     (collect_succ_sets sucs r)
     else 
-     false 
-  else 
-   false
+      StringSet.union (StringSet.add f fset) (collect_succ_sets new_sucs r)
+
+
+let replace_ordering psucc_name sucs redord = 
+  let new_psucc_set = collect_succ_sets sucs redord in 
+   replace_element psucc_name new_psucc_set redord
 
 
 
- let r_5 s ft rt = 
-  if rt=[] then 
-    if (List.length s >= 1) then 
-     let v = List.hd s in 
-       (is_var v) 
-    else 
-     false
-  else 
-   false
+let rec update pname redord =  
+  match redord with 
+   [] -> []
+  |(f,fset)::r -> 
+   if pname=f then 
+     r
+   else 
+     (f,fset)::(update pname r)
+     
+
+
+(*  rule construction *)
+
+let rec selectQ spos_var csigmaQ =
+ match csigmaQ  with 
+  [] -> 
+   raise (Failure "Invalid argument") 
+ |(var,term)::r -> 
+   if spos_var=var then 
+     term
+   else 
+     selectQ  spos_var r
+  
+
+
+let apply_sigmaQ term sigmaQ =    (* this has to be done *)
+   term
 
 
 
-
-let r_6 s ft rt = 
-  if ft=[] then 
-    if (List.length s >= 1) &  (List.length rt >= 1) then 
-     let v = List.hd s 
-     and c1 = List.hd rt in 
-       (is_var v) & (is_const c1) 
-    else 
-     false
-  else 
-   false
-
-
-
-
-let r_7 s ft rt = 
-    if (List.length s >= 1) &  (List.length rt >= 2) then 
-     let v = List.hd s 
-     and c1 = List.hd rt 
-     and c2 = (List.hd (List.tl rt)) in 
-       (is_var v) & (is_const c1) & (is_const c2) 
-    else 
-     false
-
-
-
-
-
-
-let r_8 s ft rt = 
-  if ft=[] then 
-    if (List.length s >= 2) &  (List.length rt >= 1) then 
-     let v = List.hd s 
-     and v1 = List.hd rt in 
-       (is_var v) & (is_var v1) & (v <> v1)
-    else 
-     false
-  else 
-   false
+let build_rule pos spos csigmaQ orr_flag calculus =  
+  match pos.op,pos.pol with 
+    Null,_ -> raise (Failure "Invalid argument") 
+  | At,O -> 
+     let inst_atom = apply_sigmaQ pos.label csigmaQ in 
+        Ax,(inst_atom),(mk_string_term (make_opname []) "dummy") (* to give back a term *)
+  | At,I -> 
+      let inst_atom = apply_sigmaQ pos.label csigmaQ in 
+        Ax,(inst_atom),(mk_string_term (make_opname []) "dummy")
+  | And,O -> Andr,(pos.label),(mk_string_term (make_opname []) "dummy")
+  | And,I -> Andl,(pos.label),(mk_string_term (make_opname []) "dummy")
+  | Or,O -> 
+     if calculus = "LJ" then 
+      let or_rule = 
+       if orr_flag = 1 then 
+        Orr1
+       else 
+        Orr2
+      in 
+       or_rule,(pos.label),(mk_string_term (make_opname [])"dummy")
+     else  
+       Orr,(pos.label),(mk_string_term (make_opname [])"dummy")
+  | Or,I -> Orl,(pos.label),(mk_string_term (make_opname [])"dummy")
+  | Neg,O -> Negr,(pos.label),(mk_string_term (make_opname [])"dummy")
+  | Neg,I -> Negl,(pos.label),(mk_string_term (make_opname [])"dummy")
+  | Imp,O -> Impr,(pos.label),(mk_string_term (make_opname [])"dummy")
+  | Imp,I -> Impl,(pos.label),(mk_string_term (make_opname [])"dummy")
+  | All,I -> Alll,(pos.label),(selectQ (mk_var_term (spos.name)) csigmaQ)
+  | Ex,O -> Exr,(pos.label), (selectQ  (mk_var_term (spos.name)) csigmaQ)
+  | All,O -> Allr,(pos.label),(mk_string_term (make_opname []) (spos.name)) (* must be a proper term *)
+  | Ex,I -> Exl,(pos.label),(mk_string_term (make_opname []) (spos.name)) (* must be a proper term *)
 
 
 
+(* %%%%%%%%%%%%%%%%%%%% Split begin %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% *)
 
 
-let r_9 s ft rt = 
-    if (List.length s >= 2) & (List.length ft >= 1) & (List.length rt >= 1) then 
-     let v = (List.hd s)
-     and v1 = (List.hd rt) in 
-       (is_var v) & (is_var v1) & (v <> v1)
-    else 
-      false
+let rec nonemptys treearray j n = 
+ if j = n then 
+  0
+ else
+  let count = 
+   if (Array.get treearray j) <> Empty then 
+    1
+   else
+    0
+  in 
+  count + (nonemptys treearray (j+1) n);;
 
 
 
-let r_10 s ft rt = 
-    if (List.length s >= 1) &  (List.length rt >= 1) then 
-     let v = List.hd s 
-     and x = List.hd rt in 
-       (is_var v) & (v <> x) & 
-        (((List.tl s) =[]) or (is_const x) or ((List.tl rt) <> []))
-    else 
-     false
+let rec collect_pure ftreelist (flist,slist) =  
+
+ let rec collect_itpure ftree (flist,slist) = 
+  match ftree with 
+     Empty ->  (* assumed that not all brother trees are Empty *)
+      [] 
+   | NodeAt(pos) -> (* that may NOT longer be an inner node *)
+      if ((List.mem (pos.name) flist) or (List.mem (pos.name) slist)) then
+       [] 
+      else 
+       [pos]
+   | NodeA(pos,treearray) -> 
+       collect_pure (Array.to_list treearray) (flist,slist) 
+in 
+ match ftreelist with 
+  [] -> [] 
+ |f::r -> 
+   (collect_itpure f (flist,slist)) @ (collect_pure r (flist,slist))
 
  
 
 
 
 
-let rec com_subst slist (ov,ovlist) = 
- match slist with 
-  [] -> raise (Failure "Invalid argument")
+
+let rec update_list testlist list = 
+ match testlist with 
+   [] -> list 
   |f::r -> 
-   if f = ov then 
-    (ovlist @ r) 
-   else 
-    f::(com_subst r (ov,ovlist))
+    let newlist = delete f list in    (* f may not occur in list; then newlist=list *)
+     update_list r newlist 
 
 
-let rec combine subst (ov,oslist)  = 
- match subst with 
-  [] -> []
+
+
+
+
+let rec update_pairlist p pairlist = 
+ match pairlist with 
+   [] -> []
+  |f::r -> 
+    if ((fst f) = p) or ((snd f) = p) then 
+      update_pairlist p r
+    else 
+      f::(update_pairlist p r)
+
+
+
+let rec update_connections slist connections = 
+  match slist with 
+    [] -> connections
+   |f::r -> 
+    let connew = update_pairlist f connections in 
+     update_connections r connew 
+   
+
+
+
+
+let rec update_redord delset redord =   (* delset is the set of positions to be deleted *) 
+ match redord with 
+  [] -> [] 
+  |(f,fset)::r -> 
+    if (StringSet.mem f delset) then 
+     update_redord delset r   (* delete all key elements f from redord which are in delset *) 
+    else 
+     let new_fset  = StringSet.diff fset delset in  (* no successor of f from delset should remain in fset *)
+      (f,new_fset)::(update_redord delset r) 
+    
+
+
+
+
+
+let rec get_position_names treelist = 
+ match treelist with 
+   [] -> [] 
+  |deltree::rests -> 
+   match deltree with 
+    Empty -> get_position_names rests
+  | NodeAt(pos) -> 
+     (pos.name)::get_position_names rests
+  | NodeA(pos,strees) -> 
+     (pos.name)::(get_position_names ((Array.to_list strees) @ rests))
+
+
+
+
+let rec slist_to_set slist = 
+ match slist with 
+  [] -> 
+   StringSet.empty
  |f::r -> 
-  let (v,slist) = f in  
-   if (List.mem ov slist) & (not (List.mem v oslist)) then 
-    (v,(com_subst slist (ov,oslist)))::(combine r (ov,oslist))
-   else
-    f::(combine r (ov,oslist))
+   StringSet.add f (slist_to_set r)
 
 
 
-let compose sigma one_subst =  (* the composition could be optimized for *) 
-                               (* practical reasons *)
-  let (n,subst)=sigma 
-  and (ov,oslist) = one_subst in 
-   let com = combine subst (ov,oslist) 
-    in
-(*    begin
-     print_endline "!!!!!!!!!test print!!!!!!!!!!";
-     print_subst [one_subst];
-     print_subst subst;
-     print_endline "!!!!!!!!! END test print!!!!!!!!!!";
+
+let rec print_purelist pr = 
+ match pr with 
+  [] -> 
+   begin
+    print_string ".";
+    print_endline " ";
+   end
+ |f::r ->  
+   print_string ((f.name)^", ");
+   print_purelist r;;
+
+
+
+
+let update_relations deltree redord connections unsolved_list = 
+  let pure_names = get_position_names [deltree] in 
+   begin
+(*        print_ftree deltree;
+	Format.open_box 0;
+        print_endline " ";
+	print_stringlist pure_names; 
+        Format.force_newline ();
+	Format.print_flush ();
 *)
-     if List.mem one_subst subst then 
-       (n,com)
-     else 
-(* ov may multiply as variable in subst with DIFFERENT values *)
-(* in order to avoid explicit atom instances!!! *) 
-      (n,(com @ [one_subst]))
-(*   end *)
-  
-
-
-
-let rec compute_all fs ft rt sigma = 
-
-let apply_r1 fs ft rt sigma = 
- begin
-(*  print_endline "r1 -- SUCEED WITH AN UNIFIER!!!"; 
-  print_tunify sigma;
-*)
-   [sigma] 
- end
-
-in
-let apply_r2 fs ft rt sigma = 
-(*  print_endline "r2"; *)
-  compute_all rt fs ft sigma
-
-in
-let apply_r3 fs ft rt sigma =
-(*  print_endline "r3";  *)
-  compute_all (List.tl fs) ft (List.tl rt) sigma
-
-in
-let apply_r4 fs ft rt sigma = 
-(*  print_endline "r4"; *)
-  compute_all rt ft fs sigma 
-
-in
-let apply_r5 fs ft rt sigma = 
-(*  print_endline "r5"; *)
- let v = (List.hd fs) in 
-   let sigma_new = (compose sigma (v,ft)) in 
-     compute_all (List.tl fs) rt rt sigma_new
-
-in
-let apply_r6 fs ft rt sigma = 
-(*  print_endline "r6"; *)
- let v = (List.hd fs) in 
-  let sigma_new = (compose sigma (v,[])) in 
-    compute_all (List.tl fs) ft rt sigma_new
-
-in
-let apply_r7 fs ft rt sigma = 
-(*  print_endline "r7"; *)
- let v = (List.hd fs) 
- and c1 = (List.hd rt) 
- and c2t =(List.tl rt) in 
-  let sigma_new = (compose sigma (v,(ft @ [c1]))) in 
-    compute_all (List.tl fs) [] c2t sigma_new
-
-in
-let apply_r8 fs ft rt sigma = 
-(*  print_endline "r8"; *)
-  compute_all rt [(List.hd fs)] (List.tl fs) sigma
-
-
-in
-let apply_r9 fs ft rt sigma = 
-(*  print_endline "r9"; *)
- let v = (List.hd fs) 
- and (max,subst) = sigma in 
-  let v_new = ("vnew"^(string_of_int max)) in 
-    let sigma_new = (compose ((max+1),subst) (v,(ft @ [v_new]))) in 
-      compute_all rt [v_new] (List.tl fs) sigma_new
-
-in
-let apply_r10 fs ft rt sigma = 
-(*  print_endline "r10"; *)
- let x = List.hd rt in 
- compute_all fs (ft @ [x]) (List.tl rt) sigma
-
-in
-  if r_1 fs ft rt then 
-   let sigma_1_list = apply_r1 fs ft rt sigma in 
-    sigma_1_list
-  else 
-  if r_2 fs ft rt then 
-   let sigma_1_list = apply_r2 fs ft rt sigma in 
-    sigma_1_list
-  else 
-  if r_3 fs ft rt then 
-   let sigma_1_list = apply_r3 fs ft rt sigma in 
-    sigma_1_list
-  else 
-  if r_4 fs ft rt then 
-   let sigma_1_list = apply_r4 fs ft rt sigma in 
-    sigma_1_list
-  else 
-  if r_5 fs ft rt then 
-   let sigma_1_list = apply_r5 fs ft rt sigma in  
-    sigma_1_list
-  else 
-  if r_6 fs ft rt then 
-   let sigma_1_list = apply_r6 fs ft rt sigma 
-   and sigma_2_list = apply_r10 fs ft rt sigma   in (* r10 always applicable *)
-                                                    (*if r6 was *)
-      if r_7 fs ft rt then (* r7 applicable if r6 was and tr6 = C2t' *)
-       let sigma_3_list = apply_r7 fs ft rt sigma in
-         (sigma_1_list @ sigma_2_list @ sigma_3_list)
-      else 
-         (sigma_1_list @ sigma_2_list)
-  else
-  if r_7 fs ft rt then  (* not r6 and r7 possible if z <> [] *) 
-   let sigma_1_list = apply_r7 fs ft rt sigma 
-   and sigma_2_list = apply_r10 fs ft rt sigma in (* r10 always applicable *)
-                                                  (* if r7 was *)
-      (sigma_1_list @ sigma_2_list)
-  else
-  if r_8 fs ft rt then  
-    let sigma_1_list = apply_r8 fs ft rt sigma in 
-      if r_10 fs ft rt then (* r10 applicable if r8 was and tr8 <> [] *)
-       let sigma_2_list = apply_r10 fs ft rt sigma in 
-         (sigma_1_list @ sigma_2_list)
-      else 
-        sigma_1_list 
-  else
-  if r_9 fs ft rt then  
-    let sigma_1_list = apply_r9 fs ft rt sigma in 
-      if r_10 fs ft rt then (* r10 applicable if r9 was and tr9 <> [] *)
-       let sigma_2_list = apply_r10 fs ft rt sigma in 
-         (sigma_1_list @ sigma_2_list)
-      else 
-         sigma_1_list 
-  else
-  if r_10 fs ft rt then  (* not ri, i<10, and r10 possible if for instance *)
-                         (* (s=[] and x=v1) or (z<>[] and xt=C1V1t') *)
-    let sigma_1_list = apply_r10 fs ft rt sigma in 
-      sigma_1_list
-  else  (* NO rule applicable *) 
-   begin 
-(*    print_endline "FAIL BRANCH!!!"; *)
-      []   (* global failure unifier *)
+     let rednew = update_redord (slist_to_set pure_names) redord
+     and connew = update_connections pure_names connections 
+     and unsolnew = update_list pure_names unsolved_list in 
+      (rednew,connew,unsolnew)
     end
   
 
 
 
 
-let rec apply_subst subst us ns = 
- match us with 
-   [] -> [] 
+
+let rec reduce_tree addr actual_node ftree beta_flag = 
+ match addr with 
+  [] -> (ftree,Empty,actual_node,beta_flag)
+ |a::radd -> 
+  match ftree with 
+    Empty -> 
+      print_endline "Empty purity tree";
+      raise (Failure "Invalid argument")
+   |NodeAt(_) -> 
+      print_endline "Atom purity tree"; 
+       raise (Failure "Invalid argument") 
+   |NodeA(pos,strees) ->   
+(*       print_endline pos.name; *)
+    (* the associated node occurs above f (or the empty address) and hence, is neither atom nor empty tree *)
+  
+     let nexttree = (Array.get strees (a-1)) in 
+       if (nonemptys strees 0 (Array.length strees)) < 2  then 
+         begin
+(*	  print_endline "strees 1 or non-empties < 2"; *)
+	  let (ft,dt,an,bf) =  reduce_tree radd actual_node nexttree beta_flag in 
+           let nstrees = myset strees (a-1) ft in 
+(*            print_endline ("way back "^pos.name); *)
+             (NodeA(pos,nstrees),dt,an,bf)
+         end
+       else  (* nonemptys >= 2 *)
+          begin
+(*             print_endline "nonempties  >= 2 "; *)
+           let (new_act,new_bf) =  
+            if pos.pt = Beta then 
+              (actual_node,true)
+            else 
+              ((pos.name),false)
+            in
+            let (ft,dt,an,bf) = reduce_tree radd new_act nexttree new_bf in  
+              if an = pos.name then 
+                let nstrees = myset strees (a-1) Empty in 
+(*                 print_endline ("way back assocnode "^pos.name); *)
+                 (NodeA(pos,nstrees),nexttree,an,bf)
+              else  (* has been replaced / will be replaced below / above pos *)
+		let nstrees = myset strees (a-1) ft in 
+(*                 print_endline ("way back "^pos.name); *)
+                   (NodeA(pos,nstrees),dt,an,bf)
+          end;;
+
+
+
+
+
+
+
+
+
+let rec purity ftree redord connections unsolved_list = 
+
+let rec purity_reduction pr ftree redord connections unsolved_list = 
+       begin
+(*	Format.open_box 0;
+        print_endline " ";
+	print_purelist pr; 
+        Format.force_newline ();
+	Format.print_flush ();
+*)
+ match pr with 
+  [] -> (ftree,redord,connections,unsolved_list)
+ |f::r -> 
+(*   print_endline ("pure position "^(f.name)); *)
+    let (ftnew,deltree,assocn,beta_flag) = reduce_tree f.address "" ftree false
+    in
+(*     print_endline ("assoc node "^assocn); *)
+     if assocn = "" then  
+       (Empty,[],[],[])  (* should not occur in the final version *)
+     else
+       let (rednew,connew,unsolnew) = update_relations deltree redord connections unsolved_list in 
+       begin
+(*	Format.open_box 0;
+        print_endline " ";
+        print_pairlist connew;
+        Format.force_newline ();       
+	Format.print_flush ();
+*)
+        if beta_flag = true then 
+         begin 
+(*          print_endline "beta_flag true"; *)
+         purity ftnew rednew connew unsolnew   
+  (* new pure positions may occur; old ones may not longer exist *)
+         end
+        else
+         purity_reduction r ftnew rednew connew unsolnew (* let's finish the old pure positions *)
+       end
+     end
+  
+in
+  let flist,slist = List.split connections in 
+    let pr = collect_pure [ftree] (flist,slist) in 
+       purity_reduction pr ftree redord connections unsolved_list
+
+
+
+let rec betasplit addr ftree redord connections unsolved_list =
+   match ftree with 
+     Empty  -> 
+(*       print_endline "bsplit Empty tree";*)
+       raise (Failure "Invalid argument") 
+    |NodeAt(_) -> 
+(*       print_endline "bsplit Atom tree";*)
+       raise (Failure "Invalid argument")   (* the beta-node should actually occur! *)
+    |NodeA(pos,strees) -> 
+     match addr with 
+      [] ->    (* we are at the beta node under consideration *)
+       let st1tree = (Array.get strees 0) 
+       and st2tree = (Array.get strees 1) in 
+        let (zw1red,zw1conn,zw1uslist) = update_relations st2tree redord connections unsolved_list 
+        and (zw2red,zw2conn,zw2uslist) = update_relations st1tree redord connections unsolved_list in 
+          ((NodeA(pos,[|st1tree;Empty|])),zw1red,zw1conn,zw1uslist),
+          ((NodeA(pos,[|Empty;st2tree|])),zw2red,zw2conn,zw2uslist)
+     |f::rest -> 
+        let nexttree  = Array.get strees (f-1) in 
+         let (zw1ft,zw1red,zw1conn,zw1uslist),(zw2ft,zw2red,zw2conn,zw2uslist) = 
+            betasplit rest nexttree redord connections unsolved_list in 
+(*          let scopytrees = Array.copy strees in  *)
+             let zw1trees = myset strees (f-1) zw1ft 
+             and zw2trees = myset strees (f-1) zw2ft in 
+               (NodeA(pos,zw1trees),zw1red,zw1conn,zw1uslist),(NodeA(pos,zw2trees),zw2red,zw2conn,zw2uslist)
+          
+
+
+
+let split addr ftree redord connections unsolved_list =  
+  let  (zw1ft,zw1red,zw1conn,zw1uslist),(zw2ft,zw2red,zw2conn,zw2uslist) = 
+     betasplit addr ftree redord connections unsolved_list in 
+(*   print_endline "betasp_out"; *)
+  let ft1,red1,conn1,uslist1 =  purity zw1ft zw1red zw1conn zw1uslist in 
+(*   print_endline "purity_one_out"; *)
+  let ft2,red2,conn2,uslist2 =  purity zw2ft zw2red zw2conn zw2uslist in 
+(*        print_endline "purity_two_out"; *)
+        (ft1,red1,conn1,uslist1),(ft2,red2,conn2,uslist2);;
+
+  
+(* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Splitting end %%%%%%%%%%%%%%%%  *) 
+
+
+
+
+(* for wait labels we collect all solved atoms with pol=0 *)
+
+let rec collect_solved_O_At ftreelist slist = 
+  match ftreelist with 
+   [] -> 
+    []
   |f::r -> 
-   if (is_var f) & (f<>ns) & (List.mem_assoc f subst) then (* don't apply atom instances!! *)
-     (List.assoc f subst) @ (apply_subst subst r ns)
-   else
-     f::(apply_subst subst r ns)
+    match f with 
+     Empty ->    (* may become possible after purity *)
+       collect_solved_O_At r slist 
+   |NodeAt(pos) ->
+     if ((List.mem (pos.name) slist) or (pos.pol = I)) then  (* recall slist is the unsolved list *)
+       collect_solved_O_At r slist
+     else 
+    (* here, we have pos solved and pos.pol = O) *)
+       pos::(collect_solved_O_At r slist)
+ | NodeA(pos,treearray) -> 
+    collect_solved_O_At ((Array.to_list treearray) @ r) slist
 
 
-let apply_univ sigma us ns= 
-(*  print_endline "apply old sigma"; *)
- let (n,subst) = sigma in 
-  if subst  = [] then
-   us
+
+
+let rec red_ord_block pname redord = 
+ match redord with 
+  [] -> false 
+ |(f,fset)::r -> 
+  if ((f = pname) or (not (StringSet.mem pname fset))) then 
+   red_ord_block pname r 
+  else  
+   true   (* then, we have (StringSet.mem pname fset) *)
+
+
+
+
+
+
+
+
+let rec check_wait_succ_LJ faddress ftree = 
+ match ftree with 
+  Empty -> raise (Failure "invalid argument") 
+ | NodeAt(pos) -> raise (Failure "invalid argument") (* we have an gamma_0 position or an or-formula *)
+ | NodeA(pos,strees) -> 
+    match faddress with 
+     [] -> 
+       if pos.op = Or then 
+         match (strees.(0),strees.(1)) with 
+           (Empty,Empty) -> raise (Failure "Invalid argument: redundancies occur")
+         |(Empty,_) -> (false,2)   (* determines the Orr2 rule *)
+         |(_,Empty) -> (false,1)   (* determines the Orr1 ruke *)
+         |(_,_)  -> (true,0)    (* wait-label is set *)
+       else
+        (false,0)
+    |f::r -> 
+      if r = [] then 
+       if (pos.pt = Gamma) & ((nonemptys strees 0 (Array.length strees)) > 1)  then 
+        (true,0)             (* we are at a gamma position (exr) with one than one successor -- wait label in LJ*)
+       else     
+         check_wait_succ_LJ r (Array.get strees (f-1))
+      else
+         check_wait_succ_LJ r (Array.get strees (f-1))
+
+
+
+
+
+
+let blocked f po redord ftree connections slist logic calculus = 
+(* print_endline ("Blocking check "^(f.name)); *)
+ if (red_ord_block (f.name) redord) then 
+    begin
+(*     print_endline "wait-1 check positive"; *)
+     true,0 
+    end
   else
-   apply_subst subst us ns
-   
+   if logic = "C" then 
+    false,0  (* ready, in C only redord counts *)
+   else
+    let pa_O = collect_solved_O_At [ftree] slist      (* solved atoms in ftree *)
+    and po_test = (delete f po) in 
+     if calculus = "LJmc" then (* we provide dynamic wait labels for both sequent calculi *)
+(*       print_endline "wait-2 check"; *)
+        if (f.st = Psi_0)  &  (f.pt <> PNull) &
+           ((pa_O <> []) or (List.exists (fun x -> x.pol = O) po_test)) then 
+          begin
+(*          print_endline "wait-2 positive"; *)
+            true,0 (* wait_2 label *)
+          end
+        else 
+          begin
+(*	    print_endline "wait-2 negative"; *)
+	    false,0
+          end
+      else  (* calculus is supposed to be LJ *)
+       if calculus = "LJ" then 
+        if  ((f.st = Phi_0)  & ((f.op=Neg) or (f.op=Imp)) & 
+             ((pa_O <> []) or (List.exists (fun x -> x.pol = O) po_test))
+            )
+         (* this would cause an impl or negl rule with an non-empty succedent *)
+            then 
+             if (f.op=Neg) then 
+               true,0
+             else  (* (f.op=Imp) *) 
+              (* In case of an impl rule on A => B, the wait_label must NOT be set 
+                 iff all succedent formulae depend exclusively on B. For this, we
+                 perform a split operation and determine, if in the A-subgoal 
+                 all succedent formulae are pure, i.e.~have been deleted from treds. 
+                 Otherwise, in case of A-dependent succedent formulae, the 
+                 wait_label must be set.
+               *)
+              let slist_fake = delete f.name slist in 
+              let  ((zw1ft,zw1red,zw1conn,zw1uslist),_) = 
+               betasplit (f.address) ftree redord connections slist_fake in  
+                let ft1,_,_,uslist1 =  purity zw1ft zw1red zw1conn zw1uslist in 
+(*                   print_endline "wait label purity_one_out"; *)
+                 let ft1_root = (List.hd (List.tl (tpredsucc f ft1))) in 
+(*                 print_endline ("wait-root "^(ft1_root.name)); *)
+                 let po_fake = compute_open [ft1] uslist1 in 
+                 let po_fake_test = delete ft1_root po_fake
+                 and pa_O_fake = collect_solved_O_At [ft1] uslist1 in 
+(*                  print_purelist (po_fake_test @ pa_O_fake); *)
+                  if ((pa_O_fake <> []) or (List.exists (fun x -> x.pol = O) po_fake_test)) then 
+                   true,0   
+                  else
+                   false,0   
+         else
+          if ((f.pol=O) & ((f.st=Gamma_0) or (f.op=Or))) then 
+           let (bool,orr_flag) = check_wait_succ_LJ f.address ftree in 
+             (bool,orr_flag)    
+        (* here is determined if orr1 or orr2 will be performed, provided bool=false) *)
+        (* orr_flag can be 1 or 2 *)
+          else 
+           false,0
+       else
+        raise (Failure "Invalid argument: calculus should be LJmc or LJ")
 
+
+let rec select_pos search_po po redord ftree connections slist logic calculus = 
+ match search_po with 
+   [] -> 
+    failwith "deadlock" 
+  |f::r ->  (* there exist an open position *)
+    let (bool,orr_flag) = (blocked f po redord ftree connections slist logic calculus) in 
+    if (bool = true) then 
+     select_pos r po redord  ftree connections slist logic calculus
+    else 
+     (f,orr_flag)
+
+
+
+
+(* total corresponds to tot in the thesis, 
+   tot simulates the while-loop, solve is the rest *)
+
+
+let rec total  ftree redord connections csigmaQ slist logic calculus = 
+
+let rec tot  ftree redord connections po slist = 
+
+let rec solve  ftree redord connections p po slist (pred,succs) orr_flag =  
+   let newslist = delete (p.name) slist in 
+     let rback = 
+       if p.st = Gamma_0 then 
+        begin
+(* 	 print_endline "that's the gamma rule";  *)
+         [(build_rule pred p csigmaQ orr_flag calculus)]
+        end 
+         else 
+          []
+       in    
+(*        print_endline "gamma check finish";  *)
+        let pnew =  
+	 if p.pt <> Beta then 
+           succs @ (delete  p po)
+         else 
+          po 
+        in
+         match p.pt with 
+           Gamma -> 
+            rback @ (tot  ftree redord connections pnew newslist)
+	 | Psi   -> 
+            if p.op = At then 
+             let succ = List.hd succs in 
+               rback @ (solve ftree redord connections succ pnew newslist (p,[]) orr_flag)  (* solve atoms immediately *)
+            else
+             rback @ (tot  ftree redord connections pnew newslist)
+	 | Phi   -> 
+            if p.op = At then 
+             let succ = List.hd succs in 
+               rback @ (solve ftree redord connections succ pnew newslist (p,[]) orr_flag)  (* solve atoms immediately *)
+            else
+             rback @ (tot  ftree redord connections pnew newslist)
+         | PNull -> 
+	     let c = select_connection (p.name) connections slist in 
+	       if c = ("none","none") then 
+                 rback @ (tot  ftree redord connections pnew newslist) 
+               else 
+                rback @ [(build_rule p p csigmaQ orr_flag calculus)] (* one possibility of recursion end *)
+         | Alpha -> 
+             rback @ ((build_rule p p csigmaQ orr_flag calculus)::(tot  ftree redord connections pnew newslist))
+         | Delta -> 
+            let sp = List.hd succs in
+              rback @ ((build_rule p sp csigmaQ orr_flag calculus)::(tot ftree redord connections pnew newslist))
+         | Beta  ->  
+(*             print_endline "split_in"; *)
+            let (ft1,red1,conn1,uslist1),(ft2,red2,conn2,uslist2) = 
+                split (p.address) ftree redord connections newslist in  
+(*           print_endline "split_out"; *)
+	     let p1 = total  ft1 red1 conn1 csigmaQ uslist1 logic calculus in 
+(*           print_endline "compute p1 out";	      *)
+              let p2 = total  ft2 red2 conn2 csigmaQ uslist2 logic calculus in 
+(*           print_endline "compute p2 out";	      *)
+		 rback @ [(build_rule p p csigmaQ orr_flag calculus)] @ p1 @ p2  (* second possibility of recursion end *)
+in       
+ (try 
+  let (p,orr_flag) = select_pos po po redord ftree connections slist logic calculus
+   in 
+(*    print_endline ((p.name)^" "^(string_of_int orr_flag)); *)
+     let predsuccs = tpredsucc p ftree in 
+      let pred = List.hd predsuccs 
+      and succs = List.tl predsuccs in 
+       let redpo = update (p.name) redord in   (* deletes the entry (p,psuccset) from the redord *)
+       let rednew = 
+         if (p.pt = Delta) then                 (* keep the tree ordering for the successor position only *)
+          let psucc = List.hd succs in 
+           let ppsuccs = tpredsucc psucc ftree in  
+             let pre = List.hd ppsuccs 
+             and sucs = List.tl ppsuccs in 
+              replace_ordering (psucc.name) sucs redord (* union the succsets of psucc *)
+         else 
+          redpo
+     in
+(*      print_endline "update ok"; *)
+     solve ftree rednew connections p po slist (pred,succs) orr_flag
+   with
+    Failure("deadlock") -> 
+      failwith "not_reconstructible"  (* this possibility should of course be eliminated *)
+  )
+
+in
+let po  = compute_open [ftree] slist in 
+  tot ftree redord connections po slist;;
+
+
+
+
+
+let reconstruct ftree redord sigmaQ connections logic calculus =  
+  let complete_sigmaQ = build_sigmaQ sigmaQ ftree in 
+   let  (newroot_name,unsolved_list) =  build_unsolved ftree in 
+    let redord2 = (update newroot_name redord) in   (* otherwise we would have a deadlock *)
+      let (init_tree,init_redord,init_connections,init_unsolved_list) = 
+         purity ftree redord2 connections unsolved_list in 
+          total init_tree init_redord init_connections complete_sigmaQ 
+                init_unsolved_list logic calculus
+  
  
-let tunify us ut ns nt sigma =  
- let s = (apply_univ sigma us ns) 
- and t = (apply_univ sigma ut nt) in 
-(* print_endline "go compute"; *)
-  compute_all s [] t sigma
 
 
 
-let stringunify ext_atom try_one sigma logic = 
+
+
+
+
+
+
+
+
+
+
+
+
+(************ T-STRING UNIFICATION *********************************)
+
+
+
+let stringunify ext_atom try_one eqlist logic = 
  if logic = "C" then 
-  [sigma]
+  ((0,[]),[])
  else
-  let us  = (Array.to_list ext_atom.aprefix)
-  and ut  = (Array.to_list try_one.aprefix) 
+  let us  = ext_atom.aprefix
+  and ut  = try_one.aprefix
   and ns = ext_atom.aname 
   and nt = try_one.aname in 
-  tunify us ut ns nt sigma
+  Jtunify.do_stringunify us ut ns nt eqlist
 
 
 
@@ -799,62 +1557,111 @@ let update_position position m replace_n subst_list mult =
 
 
 
-let rec copy_and_rename_tree last_tree replace_n predecessor ordering pos_n mult subst_list =
 
- let rec rename_subtrees tree_list nposition s_ordering s_pos_n nsubst_list =  
+
+
+
+
+
+
+let rec append_orderings list_of_lists = 
+  match list_of_lists with
+   [] ->   
+     []
+  |f::r -> 
+   f @ (append_orderings r) 
+
+
+let rec union_orderings first_orderings = 
+  match first_orderings with 
+    [] -> 
+     StringSet.empty
+   |(pos,fset)::r -> 
+     StringSet.union (StringSet.add pos fset) (union_orderings r)
+
+
+let rec select_orderings add_orderings = 
+ match add_orderings with 
+   [] -> []
+  |f::r -> 
+   (List.hd f)::select_orderings r
+   
+
+let combine_ordering_list add_orderings pos_name = 
+  let first_orderings = select_orderings add_orderings in 
+   let pos_succs = union_orderings first_orderings in 
+    let rest_orderings  = append_orderings add_orderings in 
+     (pos_name,pos_succs)::rest_orderings
+    
+
+
+
+
+
+
+let rec copy_and_rename_tree last_tree replace_n pos_n mult subst_list =
+
+ let rec rename_subtrees tree_list nposition s_pos_n nsubst_list =  
     match tree_list with 
-     [] -> ([||],s_ordering,s_pos_n) 
+     [] -> ([||],[],s_pos_n) 
     | f::r ->
      let (f_subtree,f_ordering,f_pos_n) = 
-       copy_and_rename_tree f replace_n nposition s_ordering s_pos_n  mult nsubst_list in 
-      let (r_subtrees,r_ordering,r_pos_n) = rename_subtrees r nposition f_ordering f_pos_n nsubst_list in 
-        ((Array.append [|f_subtree|] r_subtrees),r_ordering,r_pos_n)
+       copy_and_rename_tree f replace_n s_pos_n  mult nsubst_list in 
+      let (r_subtrees,r_ordering_list,r_pos_n) = rename_subtrees r nposition f_pos_n nsubst_list in 
+        ((Array.append [|f_subtree|] r_subtrees),(f_ordering::r_ordering_list),r_pos_n)
 
  in
  match last_tree with  
   Empty -> raise (Failure "Invalid argument")
   |NodeAt(position) ->   (* can never be a Gamma_0 position -> no replacements *)
       let (nposition,npos_n,_) = update_position position (pos_n+1) replace_n subst_list mult in 
-        ((NodeAt(nposition)),((predecessor.name,nposition.name)::ordering),npos_n)
+        ((NodeAt(nposition)),[(nposition.name,StringSet.empty)],npos_n)
   |NodeA(position, suctrees) -> 
       let (nposition,npos_n,nsubst_list) = update_position position (pos_n+1) replace_n subst_list mult in 
-        let (new_suctrees, new_ordering, new_pos_n) = 
-          rename_subtrees (Array.to_list suctrees) nposition ordering npos_n nsubst_list in 
-           ((NodeA(nposition,new_suctrees)),((predecessor.name,nposition.name)::new_ordering),new_pos_n)
+        let (new_suctrees, new_ordering_list, new_pos_n) = 
+          rename_subtrees (Array.to_list suctrees) nposition npos_n nsubst_list in 
+           let new_ordering = combine_ordering_list new_ordering_list (nposition.name) in 
+           ((NodeA(nposition,new_suctrees)),new_ordering,new_pos_n)
   
 
 
 
 
+(* we construct for each pos a list orderings representing and correspondning to the array of succtrees *)
 
-let rec add_multiplicity ftree ordering pos_n  mult = 
 
-  let rec parse_subtrees tree_list s_ordering s_pos_n =  
+let rec add_multiplicity ftree pos_n  mult logic = 
+
+  let rec parse_subtrees tree_list s_pos_n =  
     match tree_list with 
-     [] -> ([||],s_ordering,s_pos_n) 
+     [] -> ([||],[],s_pos_n) 
     |f::r ->
-     let (f_subtree,f_ordering,f_pos_n) = add_multiplicity f s_ordering s_pos_n  mult in 
-      let (r_subtrees,r_ordering,r_pos_n) = parse_subtrees r f_ordering f_pos_n in 
-        ((Array.append [|f_subtree|] r_subtrees),r_ordering,r_pos_n)
+     let (f_subtree,f_ordering,f_pos_n) = add_multiplicity f s_pos_n  mult logic in 
+      let (r_subtrees,r_ordering_list,r_pos_n) = parse_subtrees r f_pos_n in 
+        ((Array.append [|f_subtree|] r_subtrees),(f_ordering::r_ordering_list),r_pos_n)
      
   in
   match ftree with   
    Empty -> raise (Failure "Invalid argument")
-   |NodeAt(_) -> (ftree, ordering, pos_n) 
+   |NodeAt(pos) -> (ftree,[(pos.name,StringSet.empty)],pos_n) 
    |NodeA(pos,suctrees) -> 
-    let (new_suctrees, new_ordering, new_pos_n) = parse_subtrees (Array.to_list suctrees) ordering pos_n in 
-        if (((pos.pt = Phi) & (pos.op <> At))  (* no explicit atom-instances *)
+    let (new_suctrees, new_ordering_list, new_pos_n) = parse_subtrees (Array.to_list suctrees) pos_n in 
+        if (((pos.pt = Phi) & (((pos.op <> At) & (logic="J")) or ((pos.op = All) & (logic = "C"))))
+          (* no explicit atom-instances *)
         or ((pos.pt = Gamma) & (pos.st <> Phi_0))) then   (* universal quantifiers are copied *) 
 	                                                        (* at their Phi positions *)
          let replace_n = (List.length pos.address)  (* points to the following argument in the array_of_address *)
-         and last = (Array.length new_suctrees) - 1 in 
+         and last = (Array.length new_suctrees) - 1 in (* array first element has index 0 *)
           let last_tree = new_suctrees.(last) in 
-           let (new_tree,final_ordering,final_pos_n) = 
-             copy_and_rename_tree last_tree replace_n  pos new_ordering new_pos_n mult [] in
-            let final_suctrees = Array.append new_suctrees [|new_tree|] in 
-             ((NodeA(pos,final_suctrees)),final_ordering,final_pos_n)
+           let (add_tree,add_ordering,final_pos_n) = 
+            copy_and_rename_tree last_tree replace_n new_pos_n mult [] in
+             let final_suctrees = Array.append new_suctrees [|add_tree|] 
+             and add_orderings = List.append new_ordering_list [add_ordering] in 
+              let final_ordering = combine_ordering_list add_orderings (pos.name) in 
+               ((NodeA(pos,final_suctrees)),final_ordering,final_pos_n)
         else       
-         ((NodeA(pos,new_suctrees)),new_ordering,new_pos_n)
+         let final_ordering = combine_ordering_list new_ordering_list (pos.name) in 
+           ((NodeA(pos,new_suctrees)),final_ordering,new_pos_n)
 
 
 
@@ -932,50 +1739,77 @@ let fail_ext_set ext_atom ext_set atom_sets =
    check_ext_list ext_list fail_set atom_sets 
        
 
-let rec ext_partners con path ext_atom atom_sets = 
+
+let rec ext_partners con path ext_atom (reduction_partners,extension_partners) atom_sets = 
  match con with
-  [] -> AtomSet.empty 
+  [] -> 
+   (reduction_partners,extension_partners) 
  |f::r -> 
    let (a,b) = f in 
     if List.mem ext_atom [a;b] then 
      let ext_partner =  
        if ext_atom = a then b else a 
      in 
-      if (AtomSet.mem ext_partner path) or 
-         (check_alpha_relation ext_partner path atom_sets) then 
-         AtomSet.add ext_partner (ext_partners r path ext_atom atom_sets)
-      else
-        ext_partners r path ext_atom atom_sets
-    else 
-      ext_partners r path ext_atom atom_sets
+      let (new_red_partners,new_ext_partners) = 
+(* force reduction steps first *)
+       if (AtomSet.mem ext_partner path) then 
+         ((AtomSet.add ext_partner reduction_partners),extension_partners)
+       else
+        if (check_alpha_relation ext_partner path atom_sets) then 
+         (reduction_partners,(AtomSet.add ext_partner extension_partners))
+        else
+         (reduction_partners,extension_partners) 
+      in   
+        ext_partners r path ext_atom (new_red_partners,new_ext_partners) atom_sets
+    else
+        ext_partners r path ext_atom (reduction_partners,extension_partners) atom_sets
      
      
 
-let rec print_set_list set_list = 
- match set_list with 
-  [] -> "" 
- |f::r -> 
-   (f.aname)^" "^(print_set_list r)
 
-let print_set  set = 
- let set_list = AtomSet.elements set in 
-  if set_list = [] then "empty"
-  else 
-   print_set_list set_list 
+  
 
+let rec transitive_closure addset const ordering =   
+  match ordering with 
+    [] -> 
+     []
+  |(pos,fset)::r -> 
+   if (pos = const) or (StringSet.mem const fset) then
+    (pos,(StringSet.union fset addset)) :: (transitive_closure addset const r)
+   else
+    (pos,fset)::(transitive_closure addset const r)
+
+
+let rec search_set var ordering = 
+ match ordering with 
+  [] -> 
+   raise (Failure "Invalid argument")
+ |(pos,fset)::r -> 
+   if pos = var then 
+     StringSet.add pos fset
+   else
+     search_set var r
+
+
+let add_sets var const ordering = 
+ let addset =  search_set var ordering  in 
+  transitive_closure addset const ordering
 
 
 
 let rec add_arrows (v,vlist) ordering = 
  match vlist with 
-  [] -> [] 
+  [] -> ordering 
  |f::r -> 
-   if ((String.get f 0)='c') & (not (List.mem (f,v) ordering)) then 
-     (f,v)::(add_arrows (v,r) ordering) 
+   if ((String.get f 0)='c') then   
+     let new_ordering = add_sets v f ordering in 
+       add_arrows (v,r) new_ordering
    else 
      add_arrows (v,r) ordering
-  
-  
+
+
+
+
 let rec check_subst subst ordering atom_rel = 
  match subst with 
   [] -> ordering
@@ -984,112 +1818,96 @@ let rec check_subst subst ordering atom_rel =
       or (List.exists (fun (x,_,_) -> (x.aname = v)) atom_rel) then   (* no reduction ordering at atoms *)
     (check_subst r ordering atom_rel)   
    else
-    (add_arrows (v,vlist) ordering) @ (check_subst r ordering atom_rel)
+    let next_ordering = add_arrows (v,vlist) ordering in 
+      check_subst r next_ordering atom_rel
     
 
 
-let add_subst tau ordering atom_rel = 
- let (n,subst) = tau in 
+let add_subst sigma ordering atom_rel = 
+ let (n,subst) = sigma in 
    check_subst subst ordering atom_rel
 
 
 
-let path_checker atom_rel atom_sets ordering logic =  
+let path_checker atom_rel atom_sets init_ordering logic =  
+
   let con = connections atom_rel [] in 
 (*   print_endline "";
    print_endline ("number of connections: "^(string_of_int (List.length con)));
 *)
 
 
-(* sigma global in provable ?? *)
-   let rec provable path closed sigma ordering = 
+   let rec provable path closed (ordering,reduction_ordering) eqlist sigma = 
   
-     let rec check_unifiers ext_atom try_one sigmalist = 
-      match sigmalist with
-       [] -> failwith "fail1"
-      |tau::rest -> 
-        (try 
-        let new_ordering = add_subst tau ordering atom_rel in 
-         let new_closed = AtomSet.add ext_atom closed in  
-           let (subst,next_ordering,subproof) = 
-             if AtomSet.mem try_one path then 
-              let (tau_1,nordering,p0) = 
-                 provable path new_closed tau new_ordering in 
-                  (tau_1,nordering,p0)
-             else 
-              let new_path = AtomSet.add ext_atom path
-              and extension = AtomSet.add try_one AtomSet.empty in 
-               let (tau_1,nordering,p1) = 
-                 provable new_path extension tau new_ordering in 
-                 let (tau_2,nnordering,p2) = 
-		   provable path new_closed tau_1 nordering in 
-                    (tau_2,nnordering, (p1 @ p2))
-      (* first the extension subgoals = depth first; then other subgoals in same clause *)
-           in 
-            (subst,next_ordering,(((ext_atom.aname),(try_one.aname))::subproof))
-         with 
-           Failure("fail3next") ->                   (* go to next unifier *)
-            print_endline "fail3next";
-            check_unifiers ext_atom try_one rest
-         | Failure("fail3skip") ->                   (* go to next connection  -> fail1 *)
-            print_endline "fail3skip";         
-            check_unifiers ext_atom try_one []) 
-     in  
- 
-     let rec check_connections ext_partners ext_atom  =  
-      if ext_partners = AtomSet.empty then failwith "fail2" 
-      else 
-       let try_one = AtomSet.choose ext_partners in 
-        let try_set = AtomSet.add try_one AtomSet.empty in        (* try_set consisting of one atom *)
-         print_endline ("connection partner "^(try_one.aname));
+     let rec check_connections (reduction_partners,extension_partners) ext_atom = 
+      let try_one = 
+       if reduction_partners = AtomSet.empty then 
+        if extension_partners = AtomSet.empty then 
+           failwith "fail2" 
+        else
+          AtomSet.choose extension_partners 
+       else
+       (* force reduction steps always first!! *)
+         AtomSet.choose reduction_partners 
+      in
+(*         print_endline ("connection partner "^(try_one.aname)); *)
 (*       print_endline ("partner path "^(print_set path));
 *)
         (try 
-         let sigmalist = stringunify ext_atom try_one sigma logic in 
-           check_unifiers ext_atom try_one sigmalist
+         let (new_sigma,new_eqlist) =  stringunify ext_atom try_one eqlist logic in 
+          let new_ordering = add_subst new_sigma ordering atom_rel in 
+(*           print_endline ("make reduction ordering "^((string_of_int (List.length new_ordering)))); *)
+           let new_closed = AtomSet.add ext_atom closed in  
+            let (next_ordering,next_eqlist,next_sigma,subproof) = 
+             if AtomSet.mem try_one path then 
+                 provable path new_closed (ordering,new_ordering) new_eqlist new_sigma
+                     (* always use old tree ordering for recursion *) 
+             else 
+              let new_path = AtomSet.add ext_atom path
+              and extension = AtomSet.add try_one AtomSet.empty in 
+               let (nordering,neqlist,nsigma,p1) = 
+                 provable new_path extension (ordering,new_ordering) new_eqlist new_sigma in  
+                 let (nnordering,nneqlist,nnsigma,p2) = 
+                   provable path new_closed (ordering,nordering) neqlist nsigma in 
+                    (nnordering,nneqlist,nnsigma,(p1 @ p2))
+      (* first the extension subgoals = depth first; then other subgoals in same clause *)
+           in 
+            (next_ordering,next_eqlist,next_sigma,(((ext_atom.aname),(try_one.aname))::subproof))
          with Failure("fail1") -> 
 (*          print_endline ("new connection for "^(ext_atom.aname)); *)
-           print_endline ("fail1");
-           check_connections (AtomSet.diff ext_partners try_set) ext_atom)
+(*            print_endline ("fail1"); *)
+            check_connections ((AtomSet.remove try_one reduction_partners),
+                               (AtomSet.remove try_one extension_partners)
+                              ) ext_atom 
+        )
 
      in 
-
-(* failflag says if the current subgoals -- including recursion through fail2 -- *)
-(* had ever any connections in ext_partners. If so, then backtracking over other *) 
-(* tunifiers of the actual entry connection is required: failwith fail3. *)
-(* Otherwise, we can cut the search  and go directly to a new entry connection: failwith fail1. *)
-     let rec check_extension  extset failflag = 
+     let rec check_extension  extset = 
       if extset = AtomSet.empty then 
-       if failflag = true then 
-         failwith "fail3next"           (* try other tunifiers of the actual entry connection *)
-       else
-         failwith "fail3skip"             (* go directly to a new entry connection *)
+         failwith "fail1"             (* go directly to a new entry connection *)
       else 
        let select_one = AtomSet.choose extset in 
-        print_endline ("extension literal "^(select_one.aname));
+(*        print_endline ("extension literal "^(select_one.aname)); *)
 (*        print_endline ("extension path "^(print_set path));*)
-        let ext_partners = ext_partners con path select_one atom_sets in 
-         let newflag = 
-          if (failflag = true) or (ext_partners <> AtomSet.empty) then 
-           true 
-          else 
-           false
-        in 
-         (try
-           check_connections ext_partners select_one
+        let (reduction_partners,extension_partners) = 
+          ext_partners con path select_one (AtomSet.empty,AtomSet.empty) atom_sets in 
+        (try
+           check_connections (reduction_partners,extension_partners) select_one 
           with Failure("fail2") -> 
 (*         print_endline ("no connections for subgoal "^(select_one.aname)); *)
-           print_endline ("fail2");
+(*           print_endline ("fail2"); *)
            let fail_ext_set = fail_ext_set select_one extset atom_sets in 
-           check_extension fail_ext_set newflag)
+           check_extension fail_ext_set 
+        )
+
      in 
-   
      let extset = extset atom_sets path closed in 
-      if extset = AtomSet.empty then (sigma,ordering,[])
+      if extset = AtomSet.empty then 
+        (reduction_ordering,eqlist,sigma,[])
       else 
-        check_extension extset false
+        check_extension extset 
   in    
-   provable AtomSet.empty AtomSet.empty (1,[]) ordering
+   provable AtomSet.empty AtomSet.empty (init_ordering,[]) [] (1,[])
 
 
 
@@ -1107,7 +1925,6 @@ let rec list_to_set list =
  |f::r -> 
    let rest_set = list_to_set r in 
     AtomSet.add f rest_set
-
 
 
 
@@ -1131,7 +1948,7 @@ let rec predecessor address_1 address_2 ftree =
      |_,[] -> raise (Failure "Invalid argument")
      | (f1::r1),(f2::r2) -> 
       if f1 = f2 then 
-        predecessor r1 r2 (suctrees.(f1-1))
+        predecessor r1 r2 (suctrees.(f1-1)) 
       else 
         position.pt       
 
@@ -1173,7 +1990,7 @@ let dest_atom atom =
 
 let atom_record position prefix = 
  let aname = (position.name) in 
-  let aprefix = (Array.append prefix [|aname|]) in (* atom position is last element in prefix *)
+  let aprefix = (List.append prefix [aname]) in (* atom position is last element in prefix *)
    let (aop,aterms) = (dest_atom (position.label)) in 
      ({aname=aname; aaddress=(position.address); aprefix=aprefix; apredicate=aop;  
        apol=(position.pol); ast=(position.st); aarguments=aterms})
@@ -1191,11 +2008,11 @@ let rec select_atoms_treelist treelist prefix =
     let treelist = Array.to_list suctrees in 
      let prefix_element = 
       if List.mem (position.st) [Psi_0;Phi_0] then 
-       [|(position.name)|]
+       [(position.name)]
       else
-       [||]
+       []
      in
-      select_atoms_treelist treelist (Array.append prefix prefix_element)
+      select_atoms_treelist treelist (List.append prefix prefix_element)
 
  in  
  match treelist with 
@@ -1208,7 +2025,7 @@ let rec select_atoms_treelist treelist prefix =
 
 
 let prepare_prover ftree =  
-  let alist = select_atoms_treelist [ftree] [||] in 
+  let alist = select_atoms_treelist [ftree] [] in 
     compute_atomlist_relations alist ftree alist
 
 
@@ -1261,7 +2078,7 @@ let check_subst_term (variable,old_term) pos_name stype =
 
 
 
-let rec build_ftree (variable,old_term) pol stype address pos_n predecessor = 
+let rec build_ftree (variable,old_term) pol stype address pos_n = 
  let pos_name = make_position_name stype pos_n in 
   let term = check_subst_term (variable,old_term) pos_name stype in
     if JLogic.is_and_term term then 
@@ -1273,12 +2090,17 @@ let rec build_ftree (variable,old_term) pol stype address pos_n predecessor =
           Alpha,Alpha_1,Alpha_2
        in 
         let position = {name=pos_name; address=address; op=And; pol=pol; pt=ptype; st=stype; label=term} in
-         let subtree_left,ordering_left,posn_left = build_ftree ("",s) pol stype_1 (address@[1]) (pos_n+1) position in 
+         let subtree_left,ordering_left,posn_left = build_ftree ("",s) pol stype_1 (address@[1]) (pos_n+1) in 
           let subtree_right,ordering_right,posn_right = build_ftree ("",t) pol stype_2 (address@[2]) 
-                                                                    (posn_left+1) position in
+                                                                    (posn_left+1) in
+           let (succ_left,whole_left) = List.hd ordering_left
+           and (succ_right,whole_right) = List.hd ordering_right in 
+           let pos_succs = 
+            (StringSet.add succ_left (StringSet.add succ_right (StringSet.union whole_left whole_right)))
+           in
           (NodeA(position,[|subtree_left;subtree_right|]),
-           (predecessor.name,position.name)::(ordering_left@ordering_right),   
-           posn_right
+           ((position.name,pos_succs)::(ordering_left @ ordering_right)),
+           posn_right 
           )
   else 
    if JLogic.is_or_term term then 
@@ -1290,11 +2112,15 @@ let rec build_ftree (variable,old_term) pol stype address pos_n predecessor =
         Beta,Beta_1,Beta_2
      in 
       let position = {name=pos_name; address=address; op=Or; pol=pol; pt=ptype; st=stype; label=term} in 
-       let subtree_left,ordering_left,posn_left = build_ftree ("",s) pol stype_1 (address@[1]) (pos_n+1) position in 
+       let subtree_left,ordering_left,posn_left = build_ftree ("",s) pol stype_1 (address@[1]) (pos_n+1) in 
         let subtree_right,ordering_right,posn_right = build_ftree ("",t) pol stype_2 (address@[2]) 
-                                                                  (posn_left+1) position in
+                                                                  (posn_left+1) in
+           let (succ_left,whole_left) = List.hd ordering_left
+           and (succ_right,whole_right) = List.hd ordering_right in 
+           let pos_succs = 
+             StringSet.add succ_left (StringSet.add succ_right (StringSet.union whole_left whole_right)) in 
           (NodeA(position,[|subtree_left;subtree_right|]),
-           (predecessor.name,position.name)::(ordering_left@ordering_right),   
+           ((position.name),pos_succs) :: (ordering_left @ ordering_right),
            posn_right
           )
    else
@@ -1310,11 +2136,16 @@ let rec build_ftree (variable,old_term) pol stype address pos_n predecessor =
       let sposition = {name=pos_name; address=address; op=Imp; pol=pol; pt=ptype_0; st=stype; label=term} 
       and position = {name=pos2_name; address=address@[1]; op=Imp; pol=pol; pt=ptype; st=stype_0; label=term} in
        let subtree_left,ordering_left,posn_left = build_ftree ("",s) (dual_pol pol) stype_1 (address@[1;1]) 
-                                                              (pos_n+2) position in 
+                                                              (pos_n+2) in 
         let subtree_right,ordering_right,posn_right = build_ftree ("",t) pol stype_2 (address@[1;2]) 
-                                                                  (posn_left+1) position in
+                                                                  (posn_left+1) in
+         let (succ_left,whole_left) = List.hd ordering_left
+         and (succ_right,whole_right) = List.hd ordering_right in 
+          let pos_succs = 
+            StringSet.add succ_left (StringSet.add succ_right (StringSet.union whole_left whole_right)) in 
+           let pos_ordering = (position.name,pos_succs) :: (ordering_left @ ordering_right) in 
           (NodeA(sposition,[|NodeA(position,[|subtree_left;subtree_right|])|]),
-	   [(predecessor.name,sposition.name);(sposition.name,position.name)]@(ordering_left@ordering_right),   
+	   ((sposition.name,(StringSet.add position.name pos_succs))::pos_ordering),
            posn_right
           )
    else
@@ -1330,11 +2161,16 @@ let rec build_ftree (variable,old_term) pol stype address pos_n predecessor =
       let sposition = {name=pos_name; address=address; op=Neg; pol=pol; pt=ptype_0; st=stype; label=term} 
       and position = {name=pos2_name; address=address@[1]; op=Neg; pol=pol; pt=ptype; st=stype_0; label=term} in
        let subtree_left,ordering_left,posn_left = build_ftree ("",s) (dual_pol pol) stype_1 (address@[1;1]) 
-                                                                 (pos_n+2) position in 
+                                                                 (pos_n+2) in 
+         let (succ_left,whole_left) = List.hd ordering_left in 
+          let pos_succs = 
+            StringSet.add succ_left whole_left in 
+             let pos_ordering = (position.name,pos_succs) :: ordering_left in 
           (NodeA(sposition,[|NodeA(position,[|subtree_left|])|]),
-	   [(predecessor.name,sposition.name);(sposition.name,position.name)]@(ordering_left),
+	   ((sposition.name,(StringSet.add position.name pos_succs))::pos_ordering),
            posn_left
           )
+
    else
    if JLogic.is_exists_term term then 
     let v,s,t = JLogic.dest_exists term in  (* s is type of v and will be supressed here *)
@@ -1345,9 +2181,12 @@ let rec build_ftree (variable,old_term) pol stype address pos_n predecessor =
         Delta,Delta_0
      in 
       let position = {name=pos_name; address=address; op=Ex; pol=pol; pt=ptype; st=stype; label=term} in
-        let subtree_left,ordering_left,posn_left = build_ftree (v,t) pol stype_1 (address@[1]) (pos_n+1) position in 
+        let subtree_left,ordering_left,posn_left = build_ftree (v,t) pol stype_1 (address@[1]) (pos_n+1) in 
+         let (succ_left,whole_left) = List.hd ordering_left in 
+          let pos_succs = 
+            StringSet.add succ_left whole_left in 
           (NodeA(position,[|subtree_left|]),
-           (predecessor.name,position.name)::(ordering_left),
+           ((position.name,pos_succs) :: ordering_left),
            posn_left
           )
    else
@@ -1364,11 +2203,16 @@ let rec build_ftree (variable,old_term) pol stype address pos_n predecessor =
       let sposition = {name=pos_name; address=address; op=All; pol=pol; pt=ptype_0; st=stype; label=term} 
       and position = {name=pos2_name; address=address@[1]; op=All; pol=pol; pt=ptype; st=stype_0; label=term} in
        let subtree_left,ordering_left,posn_left = build_ftree (v,t) pol stype_1 (address@[1;1]) 
-                                                                 (pos_n+2) position in 
+                                                                 (pos_n+2) in 
+         let (succ_left,whole_left) = List.hd ordering_left in 
+          let pos_succs = 
+            StringSet.add succ_left whole_left in 
+             let pos_ordering = (position.name,pos_succs) :: ordering_left in 
           (NodeA(sposition,[|NodeA(position,[|subtree_left|])|]),
-	   [(predecessor.name,sposition.name);(sposition.name,position.name)]@(ordering_left),
+	   ((sposition.name,(StringSet.add position.name pos_succs))::pos_ordering),
            posn_left
           )
+
    else      (* finally, term is atomic *)
     let ptype_0,stype_0 = 
        if pol = O
@@ -1380,20 +2224,17 @@ let rec build_ftree (variable,old_term) pol stype address pos_n predecessor =
      let sposition = {name=pos_name; address=address; op=At; pol=pol; pt=ptype_0; st=stype; label=term} 
      and position = {name=pos2_name; address=address@[1]; op=At; pol=pol; pt=PNull; st=stype_0; label=term} in
      (NodeA(sposition,[|NodeAt(position)|]),
-      [(predecessor.name,sposition.name);(sposition.name,position.name)],
+      [(sposition.name,(StringSet.add position.name StringSet.empty));(position.name,StringSet.empty)],
       pos_n+1
      )
 
 
-    
 
 let construct_ftree term = 
-  print_endline "tree in";
  let new_root = {name="w"; address=[]; op=Null; pol=O; pt=Psi; st=PNull_0; label=term} in 
-   let tree,ordering,pos_n = build_ftree ("",term) O Psi_0 [1] 1 new_root in 
-     print_endline "tree out";
-      NodeA(new_root,[|tree|]),ordering,pos_n
-                      
+   let tree,ordering,pos_n = build_ftree ("",term) O Psi_0 [1] 1 in 
+     let (f,fset) = List.hd ordering in 
+        NodeA(new_root,[|tree|]),(("w",(StringSet.add f fset))::ordering),pos_n
 
 
 
@@ -1404,25 +2245,34 @@ let construct_ftree term =
 
 let init_prover ftree = 
      let atom_relation = prepare_prover ftree in 
-(*      print_atom_info atom_relation; *)
+(*      print_atom_info atom_relation;  *)
         let atom_sets = make_atom_sets atom_relation in 
          (atom_relation,atom_sets)
-          
 
 
 let rec try_multiplicity ftree ordering pos_n mult logic = 
  (try 
-    let (atom_relation,atom_sets) = init_prover ftree in 
-      path_checker atom_relation atom_sets ordering logic 
+   let (atom_relation,atom_sets) = init_prover ftree in 
+      let (red_ordering,eqlist,unifier,ext_proof) = 
+       path_checker atom_relation atom_sets ordering logic in 
+         (ftree,red_ordering,eqlist,unifier,ext_proof) 
   with 
-   fail_multiplicity -> 
+   Failure("fail1") -> 
     let new_mult = mult+1 in 
      begin 
-       print_endline "!!! Multiplicity Fail !!!!";
-       print_endline ("Try new multiplicity: "^(string_of_int new_mult));
-       let (new_ftree,new_ordering,new_pos_n) = add_multiplicity ftree ordering pos_n new_mult in 
-(*       print_formula_info new_ftree new_ordering new_pos_n;  *)
-       try_multiplicity new_ftree new_ordering new_pos_n new_mult logic
+     Format.open_box 0;
+     Format.force_newline ();
+     Format.print_string "Multiplicity Fail: ";
+      Format.print_string ("Try new multiplicity "^(string_of_int new_mult));
+     Format.force_newline ();
+     Format.print_flush ();
+
+       let (new_ftree,new_ordering,new_pos_n) = add_multiplicity ftree pos_n new_mult logic in 
+        if (new_ftree = ftree) then 
+         failwith "formula_invalid"
+        else
+(*         print_formula_info new_ftree new_ordering new_pos_n;   *)
+         try_multiplicity new_ftree new_ordering new_pos_n new_mult logic
      end
  )
 
@@ -1431,53 +2281,237 @@ let rec try_multiplicity ftree ordering pos_n mult logic =
 
 let prove term logic = 
  let (ftree,ordering,pos_n) = construct_ftree term in (* pos_n = number of positions without new root "w" *) 
-(*   print_formula_info ftree ordering pos_n;  *)
-    try_multiplicity ftree ordering pos_n 1 logic 
+(*   print_formula_info ftree ordering pos_n;   *)
+   (try 
+     try_multiplicity ftree ordering pos_n 1 logic 
+    with 
+     Failure("formula_invalid") -> 
+      (Empty,[],[],(0,[]),[])
+   )
 
 
 
-(**************** Test multiplicity increase!! ***********************)
 
 
-let testt term = 
- let (ftree,ordering,pos_n) = construct_ftree term in (* pos_n = number of positions without new root "w" *) 
-(*   print_formula_info ftree ordering pos_n; *)
-   (ftree,ordering,pos_n)
-
-
-let testm  ftree ordering pos_n new_mult = 
-    let (new_ftree,new_ordering,new_pos_n) = add_multiplicity ftree ordering pos_n new_mult in 
-(*     print_formula_info new_ftree new_ordering new_pos_n; *)
-      (new_ftree,new_ordering,new_pos_n)
-
-(**************** Test multiplicity increase!! END ***********************)
+let rec remove_dups list = 
+ match list with 
+  [] -> [] 
+ |f::r -> 
+   if List.mem f r then 
+    remove_dups r
+   else 
+    f::remove_dups r
+   
 
 
 
-let test term logic = 
-  let (unifier,ordering,ext_proof) = prove term logic in 
+
+(********** propositional nuprl interface *******************)
+
+
+
+let rec make_nuprl_interface rule_list = 
+ match rule_list with 
+   [] -> []
+  |f::r -> 
+    let (rule,term1,term2) = f in
+     ((ruletable rule),term1,term2)::(make_nuprl_interface r)
+
+
+let prover term = 
+ let (ftree,red_ordering,eqlist,unifier,ext_proof) = prove term "J" in
+   if ftree = Empty then 
+    raise (Failure "Formula invalid")
+   else
+    let connections = remove_dups ext_proof in 
+     (try 
+       let sequent_proof = reconstruct ftree red_ordering [] connections "J" "LJ" in 
+         make_nuprl_interface sequent_proof  (* transform types *)
+      with 
+        Failure("not_reconstructible") -> (* this possibility should of course be eliminated *)
+          raise (Failure "deadlock unsolvable") 
+     )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(************* test with propositional proof reconstruction ************)
+
+
+
+let rec count_axioms seq_list = 
+  match seq_list with 
+   [] -> 0 
+  |f::r -> 
+    let (rule,_,_) = f in 
+     if rule = Ax then 
+      1 + count_axioms r 
+     else 
+      count_axioms r 
+
+
+
+
+
+
+let test term logic calculus =  (* calculus should be LJmc or LJ for J, and LK for C *)
+  let (ftree,red_ordering,eqlist,unifier,ext_proof) = prove term logic in 
+   if ftree = Empty then 
+    begin
+     Format.open_box 0;
+     Format.force_newline ();
+     Format.force_newline ();
+     Format.print_string "Formuls is invalid";
+     Format.force_newline ();
+     Format.force_newline ();
+     Format.force_newline ();
+     Format.print_flush ();
+    end
+   else 
+   begin
+     Format.open_box 0;
+     Format.force_newline ();
+     Format.force_newline ();
+     Format.print_string "Extension proof ready";
+     Format.force_newline ();
+     Format.force_newline ();
+     Format.print_string ("Length of Extension proof: "^((string_of_int (List.length ext_proof)))^
+                       " Axioms");
+     Format.force_newline ();
+     Format.force_newline ();
+     Format.print_flush ();
+     Format.open_box 0;
+     Format.force_newline ();
+     Format.print_string "Break ... ";
+     Format.print_flush ();
+      let _ = input_char stdin in
+    let connections = remove_dups ext_proof in 
+    (try 
+      let sequent_proof = reconstruct ftree red_ordering [] connections logic calculus in 
+    begin
+     Format.open_box 0;
+     Format.force_newline ();
+     Format.force_newline ();
+     Format.print_string "Sequent proof ready";
+     Format.force_newline ();
+     Format.force_newline ();
+     Format.print_flush ();
+       let (ptree,count_ax) = bproof sequent_proof in 
       begin
+(*        print_endline "Extension proof:";
 	Format.open_box 0;
+        print_pairlist connections;       (* print list of type (string * string) list *) 
+	Format.print_flush ();
+*)
+        Format.open_box 0;
+       Format.print_string ("Length of sequent proof: "^((string_of_int count_ax))^" Axioms");
+       Format.force_newline ();
+       Format.force_newline ();
+       Format.force_newline ();
+       Format.force_newline ();
+       Format.print_flush ();
+        tt ptree;
+	Format.print_flush ();
+        print_endline "";
+        print_endline ""
+      end
+     end
+     with 
+         Failure("not_reconstructible") -> (* this possibility should of course be eliminated *)
+          print_endline "deadlock unsolvable"
+       )
+  end
+
+
+
+
+
+
+(*****************************************************************)
+
+
+
+
+
+
+
+
+let test_old term logic = 
+  let (ftree,red_ordering,eqlist,unifier,ext_proof) = prove term logic in 
+   let connections = remove_dups ext_proof in 
+      begin
         print_endline "";
         print_endline "";
         print_endline "Extension proof:";
-        print_ordering ext_proof;            (* print list of type (string * string) list *) 
-        print_endline "";
-        print_endline "";
+	Format.open_box 0;
+        print_pairlist ext_proof;       (* print list of type (string * string) list *) 
 	Format.print_flush ();
         print_endline "";
         print_endline "";
+        print_endline "Connections:";
+        print_pairlist connections;       (* print list of type (string * string) list *) 
+	Format.print_flush ();
+        print_endline "";
+        print_endline "";
+        print_endline "";
+        print_endline "";
         print_endline ("Length of extension proof: "^((string_of_int (List.length ext_proof))));
+        print_endline ("Length of connections: "^((string_of_int (List.length connections))));
         print_endline "";
         print_endline "";
-        print_tunify unifier;
+        Format.open_box 0;
+        Jtunify.print_tunify unifier;
+	Format.print_flush ();
         print_endline "";
         print_endline "";
-        print_ordering ordering
+        Format.open_box 0;
+	Jtunify.print_equations eqlist;
+	Format.print_flush ();
+        print_endline "";
+        print_endline "";
+        print_endline ("Length of equations : "^((string_of_int (List.length eqlist))));
+        print_endline "";
+        print_endline "";
+        Format.open_box 0;
+        print_ordering red_ordering;
+	Format.print_flush ();
+        print_endline "";
+        print_endline "";
+        print_endline ("Length of reduction ordering: "^((string_of_int (List.length red_ordering))))
       end
+
+
 
 
 (* #use "/home/steph/meta-prl/refiner/reflib/jtree.ml" *)
 
 
 end (* of struct *)
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

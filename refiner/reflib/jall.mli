@@ -8,7 +8,10 @@ open Jlogic_sig
 
 module JProver(JLogic: JLogicSig) :
 sig
-  val test :  Refiner.Refiner.TermSubst.term -> string -> unit
-  val prove : Refiner.Refiner.TermSubst.term ->  string -> 
-    (int * (string * string list) list) * (string * string) list * (string * string) list
+  val test :  Refiner.Refiner.Term.term -> string -> string -> unit  
+             (* sequent calculus, another argumnet for proof reconstruction *)
+  val prover :  Refiner.Refiner.Term.term -> (string * Refiner.Refiner.Term.term * Refiner.Refiner.Term.term) list 
 end
+
+   
+
