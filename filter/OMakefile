@@ -24,16 +24,13 @@ CamlSubDirs(base phobos filter)
 include base/Files
 include phobos/Files
 
-SUB_FILES =\
-	$(addprefix base/, $(BASE_FILES))\
-	$(addprefix phobos/, $(PHOBOS_FILES))\
-	filter/term_grammar
+SUB_FILES[] =
+    $(addprefix base/, $(BASE_FILES))
+    $(addprefix phobos/, $(PHOBOS_FILES))
+    filter/term_grammar
 
-section
-    OCAML_LINK_FLAGS += -linkall
-
-    OCamlLibrary($(MAINLIB), $(SUB_FILES))
-    OCamlLibraryCopy($(MPINSTALL), $(LIB), $(MAINLIB), $(EMPTY))
+OCamlLibrary($(MAINLIB), $(SUB_FILES))
+OCamlLibraryCopy($(MPINSTALL), $(LIB), $(MAINLIB), $(EMPTY))
 
 ########################################################################
 # MAIN PROGRAMS
@@ -79,13 +76,9 @@ STANDARD_LIBS[] =
 	$(file $(ROOT)/tactics/proof/prooflib)
 	$(MAINLIB)
 
-CAMLP4_LIBS =\
-
-
-CAMLP4N_LIBS =\
-	$(CAMLP4LIB)/odyl\
-	$(STANDARD_LIBS)\
-	$(CAMLP4_LIBS)
+CAMLP4_LIBS[] =
+	$(CAMLP4LIB)/odyl
+	$(STANDARD_LIBS)
 
 CAMLP4N_FILES =\
 	$(CAMLP4LIB)/pa_o\
@@ -93,11 +86,6 @@ CAMLP4N_FILES =\
 	$(CAMLP4LIB)/pa_extend\
 	$(CAMLP4LIB)/q_MLast\
 	$(CAMLP4_FILES)
-
-CAMLP4O_LIBS =\
-	$(CAMLP4LIB)/odyl\
-	$(STANDARD_LIBS)\
-	$(CAMLP4_LIBS)
 
 CAMLP4O_FILES =\
 	$(CAMLP4LIB)/pa_o\
@@ -116,7 +104,6 @@ CONVERT_LIBS =\
 
 CONVERT_FILES =\
 	filter/filter_convert
-
 
 #
 # Main program
@@ -158,14 +145,14 @@ PRLCO_FILES =\
 # Compile a special camlp4 to run Nuprl.
 #
 section
-    OCAML_LIBS += $(CAMLP4N_LIBS)
-    OCAML_LINK_FLAGS += -linkall
+    OCAML_LIBS += $(CAMLP4_LIBS)
+    OCAML_LINK_FLAGS += -linkall # XXX: http://caml.inria.fr/bin/caml-bugs?selectid=3439 workaround
 
     OCamlProgramInstall($(MPINSTALL), $(LIB), $(CAMLP4N), $(CAMLP4N_FILES))
 
 section
-    OCAML_LIBS += $(CAMLP4O_LIBS)
-    OCAML_LINK_FLAGS += -linkall
+    OCAML_LIBS += $(CAMLP4_LIBS)
+    OCAML_LINK_FLAGS += -linkall # XXX: http://caml.inria.fr/bin/caml-bugs?selectid=3439 workaround
 
     OCamlProgramInstall($(MPINSTALL), $(LIB), $(CAMLP4O), $(CAMLP4O_FILES))
 

@@ -333,11 +333,6 @@ LMINSTALL = $(MPINSTALL)
 
 .PHONY: $(MPINSTALL)
 
-#
-# Always use -linkall on libraries
-#
-OCAML_LIB_FLAGS += -linkall
-
 if $(SSL_ENABLED)
     if $(equal $(OSTYPE), Win32)
         OCAML_LINK_FLAGS += -cclib $(SSL_LIB_WIN32)/ssleay32.lib -cclib $(SSL_LIB_WIN32)/libeay32.lib
@@ -672,6 +667,8 @@ section
    # Default theory for those directories that do not override it
    THEORYNAME = other
    THEORYDESCR = Miscellaneous Theories
+   # Always use -linkall on Theory libraries
+   OCAML_LIB_FLAGS += -linkall
    TheorySubDirs($(THEORY_DIRS))
 
 if $(NATIVE_ENABLED)

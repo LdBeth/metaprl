@@ -47,8 +47,6 @@ TOPFILES =\
         nuprl_run\
         mp_top
 
-OCAML_LINK_FLAGS += -linkall
-
 PRLFiles($(MP2FILES))
 
 TESTFILES[] =
@@ -207,17 +205,17 @@ if $(NATIVE_ENABLED)
 
 $(MP).run: $(BYTE_DEPS) $(RCMOFILES) $(OCAMLMKTOP_VERSION)
         $(RM) $@
-        $(OCAMLMKTOP) $(OCAMLFLAGS) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS)\
+        $(OCAMLMKTOP) $(OCAMLFLAGS) $(OCAMLCFLAGS) -o $@ -custom $(THREADS)\
 		$(CMOBJS) $(RCMOFILES) $(BYTE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
 
 $(MP).top: $(TOP_DEPS) $(TCMOFILES)
         $(RM) $@
-        $(OCAMLLINK) $(OCAMLFLAGS) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS)\
+        $(OCAMLLINK) $(OCAMLFLAGS) $(OCAMLCFLAGS) -o $@ -custom $(THREADS)\
 		$(TCMOBJS) $(TCMOFILES) $(BYTE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
 
 $(MP).opt: $(OPT_DEPS) $(TCMXFILES) $(TOBJFILES)
         $(RM) $@
-        $(OCAMLOPTLINK) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) -o $@ -linkall $(THREADS)\
+        $(OCAMLOPTLINK) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) -o $@ $(THREADS)\
 		$(CMXOBJS) $(TCMXFILES) $(NATIVE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
 
 #
