@@ -1049,21 +1049,25 @@ struct
             else
                begin
                   (* select an item (if not there already), then go down the proof. *)
-                  let proof =
-                     match info.dir with
-                        old_modname::old_item::_ when old_modname = modname && old_item = List.hd item ->
-                           info.proof
-                      | _ ->
+                  begin match info.dir with
+                     old_modname::old_item::_ when old_modname = modname && old_item = List.hd item ->
+                        info.proof.edit_addr (List.map int_of_string (List.tl item))
+                   | _ ->
+                        try
+                           (* Leave the old proof at the root *)
+                           info.proof.edit_addr [];
                            let proof = get_item info modname (List.hd item) in
                               Shell_state.set_so_var_context shell (Some (proof.edit_get_terms ()));
-                              proof
-                  in
-
-                  (* Leave the old proof at the root *)
-                  info.proof.edit_addr [];
-                  (* go down the proof with pf_path *)
-                  proof.edit_addr (List.map int_of_string (List.tl item));
-                  info.proof <- proof;
+                              proof.edit_addr (List.map int_of_string (List.tl item));
+                              info.proof <- proof
+                        with exn -> begin
+                           (* Bring things back to where they were *)
+                           let dir = info.dir in
+                              if (dir <> []) && (List.hd dir = modname) then info.dir <- [modname] else info.dir <- [];
+                              chdir info false verbose dir;
+                              raise exn
+                        end;
+                  end;
                   info.dir <- dir
                end
 
