@@ -118,10 +118,6 @@ struct
    open RewriteUtil
    open RewriteDebug
 
-   type term = TermType.term
-   type stack = RewriteTypes.stack
-   type rwterm = RewriteTypes.rwterm
-
    let rec print_term_list out = function
       term :: terms ->
          output_string out ", ";

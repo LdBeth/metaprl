@@ -41,7 +41,6 @@ open Refine_error_sig
 open Rewrite_type_sig
 open Rewrite_util_sig
 open Rewrite_debug_sig
-open Rewrite_compile_contractum_sig
 
 module MakeRewriteCompileContractum
    (TermType : TermSig)
@@ -85,11 +84,12 @@ module MakeRewriteCompileContractum
     with type rstack = RewriteTypes.rstack)
    (RewriteDebug : RewriteDebugSig
     with type rstack = RewriteTypes.rstack)
-  : RewriteCompileContractumSig
-    with type term = TermType.term
-    with type rstack = RewriteTypes.rstack
-    with type rwterm = RewriteTypes.rwterm
-    with type strict = RewriteTypes.strict
+: sig
+   open RewriteTypes
+
+   val compile_so_contractum : strict -> rstack array -> term -> string array * rwterm
+   val compile_so_contracta : strict -> rstack array -> term list -> string array * rwterm list
+end
 
 (*
  * -*-

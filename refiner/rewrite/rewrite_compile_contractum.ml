@@ -113,11 +113,6 @@ struct
    open RewriteUtil
    open RewriteDebug
 
-   type term = TermType.term
-   type rstack = RewriteTypes.rstack
-   type rwterm = RewriteTypes.rwterm
-   type strict = RewriteTypes.strict = Strict | Relaxed
-
    let compile_bname strict enames stack n =
       if array_rstack_fo_mem n stack then
          enames, StackName (array_rstack_fo_index n stack)

@@ -26,8 +26,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 open Opname
@@ -40,7 +40,6 @@ open Refine_error_sig
 
 open Rewrite_type_sig
 open Rewrite_util_sig
-open Rewrite_compile_redex_sig
 
 module MakeRewriteCompileRedex
    (TermType : TermSig)
@@ -81,12 +80,12 @@ module MakeRewriteCompileRedex
     with type address = TermAddr.address)
    (RewriteUtil : RewriteUtilSig
     with type term = TermType.term
-    with type rstack = RewriteTypes.rstack) :
-   RewriteCompileRedexSig
-   with type term = TermType.term
-   with type rstack = RewriteTypes.rstack
-   with type rwterm = RewriteTypes.rwterm
-   with type strict = RewriteTypes.strict
+    with type rstack = RewriteTypes.rstack)
+: sig
+   open RewriteTypes
+
+   val compile_so_redex : strict -> string array -> term list -> rstack array * rwterm list
+end
 
 (*
  * -*-

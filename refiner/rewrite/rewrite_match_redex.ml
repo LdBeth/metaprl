@@ -113,11 +113,6 @@ struct
    open RewriteUtil
    open RewriteDebug
 
-   type term = TermType.term
-   type address = TermAddr.address
-   type stack = RewriteTypes.stack
-   type rwterm = RewriteTypes.rwterm
-
    let rec extract_bvars stack = function
       [] -> []
     | v::tl ->

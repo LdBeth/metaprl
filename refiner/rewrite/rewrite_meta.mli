@@ -26,8 +26,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Alksey Nogin <nogin@cs.caltech.edu>
  *)
 
 open Opname
@@ -38,7 +38,6 @@ open Refine_error_sig
 
 open Rewrite_type_sig
 open Rewrite_util_sig
-open Rewrite_meta_sig
 
 module MakeRewriteMeta
    (TermType : TermSig)
@@ -66,11 +65,24 @@ module MakeRewriteMeta
     with type term = TermType.term
     with type bound_term = TermType.bound_term)
    (RewriteTypes : RewriteTypesSig
+    with type operator = TermType.operator
     with type level_exp = TermType.level_exp
     with type object_id = TermType.object_id)
-  : RewriteMetaSig
-    with type operator = TermType.operator
-    with type rewrite_rule = RewriteTypes.rewrite_rule
+: sig
+   open RewriteTypes
+
+   (*
+    * See if a rule may apply to a particular term
+    * described by its operator and it arities.
+    *)
+   val relevant_rule : operator -> int list -> rewrite_rule -> bool
+
+   (*
+    * Get some info for the evaluator.
+    *)
+   val rewrite_operator : rewrite_rule -> operator
+   val rewrite_eval_flags : rewrite_rule -> (int * bool) list
+end
 
 (*
  * -*-

@@ -26,10 +26,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
+open String_set
 open Opname
 open Term_sig
 open Term_base_sig
@@ -41,7 +42,6 @@ open Refine_error_sig
 open Rewrite_type_sig
 open Rewrite_util_sig
 open Rewrite_debug_sig
-open Rewrite_match_redex_sig
 
 module MakeRewriteMatchRedex
    (TermType : TermSig)
@@ -89,11 +89,11 @@ module MakeRewriteMatchRedex
    (RewriteDebug : RewriteDebugSig
     with type rwterm = RewriteTypes.rwterm
     with type varname = RewriteTypes.varname)
-: RewriteMatchRedexSig
-  with type term = TermType.term
-  with type address = TermAddr.address
-  with type stack = RewriteTypes.stack
-  with type rwterm = RewriteTypes.rwterm
+: sig
+   open RewriteTypes
+
+   val match_redex : int array -> stack array -> StringSet.t -> term -> term list -> rwterm list -> unit
+end
 
 (*
  * -*-

@@ -68,6 +68,7 @@ module MakeRewriteMeta
     with type term = TermType.term
     with type bound_term = TermType.bound_term)
    (RewriteTypes : RewriteTypesSig
+    with type operator = TermType.operator
     with type level_exp = TermType.level_exp
     with type object_id = TermType.object_id)
    =
@@ -77,9 +78,6 @@ struct
    open TermMan
    open RefineError
    open RewriteTypes
-
-   type operator = TermType.operator
-   type rewrite_rule = RewriteTypes.rewrite_rule
 
    (*
     * See if an operator generalizes another.

@@ -26,10 +26,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
+open String_set
 open Opname
 open Term_sig
 open Term_base_sig
@@ -41,7 +42,6 @@ open Refine_error_sig
 open Rewrite_type_sig
 open Rewrite_util_sig
 open Rewrite_debug_sig
-open Rewrite_build_contractum_sig
 
 module MakeRewriteBuildContractum
    (TermType : TermSig)
@@ -90,10 +90,17 @@ module MakeRewriteBuildContractum
    (RewriteDebug : RewriteDebugSig
     with type rwterm = RewriteTypes.rwterm
     with type varname = RewriteTypes.varname)
-: RewriteBuildContractumSig
-  with type term = TermType.term
-  with type stack = RewriteTypes.stack
-  with type rwterm = RewriteTypes.rwterm
+: sig
+   open RewriteTypes
+
+   (*
+    * Main function to build the contractum.
+    *
+    * It should not ever raise any exceptions (unless it detects a bug).
+    * Modifies the entries in the string array argument!
+    *)
+   val build_contractum : string array -> StringSet.t -> stack array -> rwterm -> term
+end
 
 (*
  * -*-

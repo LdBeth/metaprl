@@ -110,11 +110,6 @@ struct
    open RewriteTypes
    open RewriteUtil
 
-   type term = TermType.term
-   type rstack = RewriteTypes.rstack
-   type rwterm = RewriteTypes.rwterm
-   type strict = RewriteTypes.strict
-
    (*
     *
     * The bvars is an association list of the binding
