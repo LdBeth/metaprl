@@ -197,10 +197,19 @@ think whether it's true and if not, then define dprod differently.
 BUILD SYSTEM
 
 7.1) Dependencies between .prla, .prlb, .cmiz, .cmoz, etc., are all messed up
-   Solution: have MetaPRL maintain a file in each directory
-     with the list of valid files.  Have only one of .prla, .prlb, or .cmoz file
-     present at any time.  These files should not be in CVS.
-   Better solution: keep only one .prl file, can contain either binary or
-     ASCII.  Make CVS check that file is in ASCII before a commit.
+Solution: have MetaPRL maintain a file in each directory
+with the list of valid files.  Have only one of .prla, .prlb, or .cmoz file
+present at any time.  These files should not be in CVS.
 
-7.2) Make sure saving .prl* files is done safely (not in place).
+Better solution: keep only one .prl file, can contain either binary or
+ASCII.  Make CVS check that file is in ASCII before a commit.
+
+Another problem is that when .prla is removed from the repository and
+after "cvs update" removes it from the working copy, the old .prlb
+becomes active instead of being deleted.
+
+7.2) (fixed)
+
+7.3) We need to do something that works with both old versions of Make as well as
+with the new "jobserver" versions without printing all the annoing warnings and
+falling back to -j1.
