@@ -258,7 +258,7 @@ struct
             eval_include mplib;
             List.iter eval_include (Shell_state.get_includes ());
             let _ = Toploop.execute_phrase false Format.std_formatter
-               (Ptop_dir ("install_printer", Pdir_ident (Ldot (Ldot (Lident "Shell_state", "ShellState"), "term_printer")))) in
+               (Ptop_dir ("install_printer", Pdir_ident (Ldot (Lident "Shell_state", "term_printer")))) in
             let _ = Toploop.execute_phrase false Format.std_formatter
                (Ptop_def [{ pstr_desc = Pstr_open (Lident "Mp"); pstr_loc = Location.none }]) in
             let _ = Tactic.main_loop () in
