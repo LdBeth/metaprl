@@ -3,8 +3,7 @@
  *)
 
 open Refiner.Refiner.TermType
-open Refine
-open Refiner
+open Refiner.Refiner.Refine
 
 open Filter_type
 open Filter_summary_type
@@ -61,6 +60,10 @@ module MakeExtract (Convert : ConvertProofSig) :
 
 (*
  * $Log$
+ * Revision 1.13  1998/07/03 21:04:17  nogin
+ * Specified the full "path" to the Refine module:
+ * open Refiner.Refiner.Refine
+ *
  * Revision 1.12  1998/07/02 22:24:48  jyh
  * Created term_copy module to copy and normalize terms.
  *
