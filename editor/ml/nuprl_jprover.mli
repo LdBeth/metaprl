@@ -36,7 +36,9 @@ val jprover_result_to_term : (string * term * term) list -> term
 val jprover : term list * term -> (string * term * term) list
 val jprover_hook : term -> term
 
+(* vars below were used for debugging *)
+(*
 val myconcl :  term ref
 val mytermj :  term ref
 val myhyps :  (term list) ref
-
+*)

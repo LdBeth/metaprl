@@ -529,29 +529,33 @@ open Nuprl
 
 
 module NuprlRun = struct
- 
-let run_nuprl (():unit) =
-  special_error_handler (function () -> (library_open_and_loop_eval "MetaPRL" refine_ehook))
-  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
+  
+  let run_nuprl (():unit) =
+    special_error_handler (function () -> (library_open_and_loop_eval "MetaPRL" refine_ehook))
+      (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
   let run_library name =
-  special_error_handler (function () -> (library_open_and_loop_eval name refine_ehook))
-  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
+    special_error_handler (function () -> (library_open_and_loop_eval name refine_ehook))
+      (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
   let run_jprover name =
-  special_error_handler (function () -> (library_open_and_loop_eval name Nuprl_jprover.jprover_hook))
-  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
+    special_error_handler (function () -> (library_open_and_loop_eval name Nuprl_jprover.jprover_hook))
+      (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
   let run_connection lport mport host name =
-  special_error_handler (function () -> (library_open_and_loop_eval' lport mport host name refine_ehook))
-  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
-  
+    special_error_handler (function () -> (library_open_and_loop_eval' lport mport host name refine_ehook))
+      (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
+      
   let run_connection_with_hook lport mport host name rhook =
-  special_error_handler (function () -> (library_open_and_loop_eval' lport mport host name rhook))
-  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
-  
+    special_error_handler (function () -> (library_open_and_loop_eval' lport mport host name rhook))
+      (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
+      
   let run_dummy_connection lport mport host name =
-  special_error_handler (function () -> (library_open_and_loop_eval' lport mport host name (let dumf x = (Mbterm.print_term x; (if nuprl_is_all_term x then Mbterm.print_term ivoid_term else Mbterm.print_term (itoken_term "foo")); x) in dumf)))
-  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
+    special_error_handler 
+      (function () -> (library_open_and_loop_eval' lport mport host name 
+			 (let f x = (Mbterm.print_term x; 
+				     (if nuprl_is_all_term x then Mbterm.print_term ivoid_term 
+				     else Mbterm.print_term (itoken_term "foo")); x) in f)))
+      (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
 end

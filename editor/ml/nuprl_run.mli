@@ -37,11 +37,11 @@
 *)
 
 module NuprlRun :
-sig
-	val run_nuprl : unit -> unit
-	val run_library : string -> unit
-	val run_jprover : string -> unit
-	val run_connection : int (*library*) -> int -> string (*host*)-> string -> unit
-	val run_dummy_connection : int (*library*) -> int -> string (*host*)-> string -> unit
-	val run_connection_with_hook : int (*library*) -> int -> string (*host*)-> string -> (Refiner.Refiner.Term.term -> Refiner.Refiner.Term.term) -> unit
-end
+    sig
+      val run_nuprl : unit -> unit
+      val run_library : string -> unit
+      val run_jprover : string -> unit
+      val run_connection : int (*library*) -> int -> string (*host*)-> string -> unit
+      val run_dummy_connection : int (*library*) -> int -> string (*host*)-> string -> unit
+      val run_connection_with_hook : int (*library*) -> int -> string (*host*)-> string -> (Refiner.Refiner.Term.term -> Refiner.Refiner.Term.term) -> unit
+    end
