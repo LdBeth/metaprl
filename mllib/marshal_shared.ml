@@ -67,8 +67,8 @@ open Marshal_sig
 (*
  * Tags for references to the table.
  *)
-#define SHARED_GET      0
-#define SHARED_SET      1
+DEFINE SHARED_GET = 0
+DEFINE SHARED_SET = 1
 
 (*
  * We need some C helper functions.

@@ -5,7 +5,7 @@ ROOT := ..
 INCLUDE := -I .
 
 # C preprocessing
-OCAMLFLAGS = -pp "$(CPP)"
+OCAMLFLAGS = -pp "$(CAMLP4MACRO)"
 
 # Types files
 MLZFILES :=\
