@@ -1,0 +1,62 @@
+Import qw( env );
+
+$env = $env->clone(
+    INCPATH	=> [@{$env->{INCPATH}}, "../refbase"]
+);
+
+Command $env 'term_sig.ml', 'term_simple_sig.mlz', qq(
+	sed -e "s,TermSimpleSig,TermSig," -e "s,type level_exp_var =.*,type level_exp_var," -e "s,and level_exp =.*,and level_exp," -e "s,and param =.*,and param," -e "s,and operator =.*,and operator," %1 > %>
+);
+
+Default qw ( term_sig.ml );
+
+OCamlSources $env
+	'refine_error_sig.mlz',
+	'term_sig.ml',
+	'term_simple_sig.mlz',
+	'term_base_sig.mlz',
+	'term_op_sig.mlz',
+	'term_man_sig.mlz',
+	'term_addr_sig.mlz',
+	'term_subst_sig.mlz',
+	'term_shape_sig.mlz',
+	'term_eval_sig.mlz',
+	'term_meta_sig.mlz',
+	'rewrite_sig.mlz',
+	'refine_sig.mlz',
+	'term_base_minimal_sig.mlz',
+	'term_subst_minimal_sig.mlz',
+	'term_man_minimal_sig.mlz',
+	'refine_minimal_sig.mlz',
+	'termmod_sig.mlz',
+	'term_hash_sig.mlz',
+	'term_norm_sig.mlz',
+	'termmod_hash_sig.mlz',
+	'refiner_sig.mlz';
+
+OCamlLibrary $env 'refsig',
+	'refine_error_sig',
+	'term_simple_sig',
+	'term_sig',
+	'term_base_sig',
+	'term_op_sig',
+	'term_man_sig',
+	'term_addr_sig',
+	'term_subst_sig',
+	'term_shape_sig',
+	'term_eval_sig',
+	'term_meta_sig',
+	'rewrite_sig',
+	'refine_sig',
+	'term_base_minimal_sig',
+	'term_subst_minimal_sig',
+	'term_man_minimal_sig',
+	'refine_minimal_sig',
+	'termmod_sig',
+	'term_hash_sig',
+	'term_norm_sig',
+	'termmod_hash_sig',
+	'refiner_sig';
+
+## Add the library to the default target list
+Default qw( refsig.cmxa );

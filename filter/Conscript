@@ -1,0 +1,15 @@
+Import qw( env );
+
+$env = $env->clone(
+	INCPATH	=> [@{$env->{INCPATH}}, "#mllib",
+		    "#refiner/refbase", "#refiner/refsig", "#refiner/term_gen",
+		    "#refiner/refiner", "#refiner/reflib", "#library", "#ensemble"]
+);
+
+Export qw( env );
+
+Build qw(
+	base/Conscript
+ 	boot/Conscript
+	filter/Conscript
+);

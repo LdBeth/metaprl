@@ -1,0 +1,63 @@
+Import qw( env );
+
+$env = $env->clone(
+	INCPATH	=> [@{$env->{INCPATH}}, "/usr/lib/camlp4"],
+	OCAMLCFLAGS => "$env->{OCAMLCFLAGS} -pp '%CAMLP4MACRO'",
+    	PPFLAGS     => "q_MLast.cmo pa_extend.cmo $env->{PPFLAGS}"
+);
+
+Command $env 'infix.ml', 'infix.pre.ml', qq(
+	camlp4 pa_o.cmo pa_op.cmo pr_o.cmo pa_extend.cmo q_MLast.cmo %1 | sed -e 's,"KEYWORD",keyword,' > %>
+);
+
+OCamlSources $env
+	'filter_type.mlz',
+	'filter_summary_type.mlz',
+	'filter_buffer.ml',
+	'mLast_util.ml',
+	'free_vars.ml',
+	'infix.ml',
+	'filter_ast.ml',
+	'filter_hash.ml',
+	'filter_util.ml',
+	'filter_comment.ml',
+	'filter_ocaml.ml',
+	'filter_exn.ml',
+	'filter_summary.ml',
+	'filter_summary_io.ml',
+	'filter_summary_util.ml',
+	'filter_cache_fun.ml',
+	'filter_magic.ml',
+	'filter_cache.ml',
+	'filter_prog.ml',
+	'term_grammar.ml',
+	'filter_grammar.ml',
+	'filter_spell.ml';
+
+
+OCamlLibrary $env 'base',
+	'filter_type',
+	'filter_summary_type',
+	'filter_buffer',
+	'mLast_util',
+	'free_vars',
+	'infix',
+	'filter_ast',
+	'filter_hash',
+	'filter_util',
+	'filter_comment',
+	'filter_ocaml',
+	'filter_exn',
+	'filter_summary',
+	'filter_summary_io',
+	'filter_summary_util',
+	'filter_cache_fun',
+	'filter_magic',
+	'filter_cache',
+	'filter_prog',
+	'term_grammar',
+	'filter_grammar',
+	'filter_spell';
+
+## Add the library to the default target list
+Default qw( base.cmxa );

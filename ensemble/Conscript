@@ -1,0 +1,24 @@
+Import qw( env );
+
+$env = $env->clone(
+    INCPATH	=> [@{$env->{INCPATH}}, "#mllib", "#refiner/refiner"]
+);
+
+Command $env 'thread_refiner.ml', 'thread_refiner_null.ml', qq(
+	%LNCOM
+);
+
+OCamlSources $env
+	'remote_sig.mlz',
+	'thread_refiner_sig.mlz',
+	'thread_refiner_null.ml',
+	'thread_refiner.ml';
+
+OCamlLibrary $env 'ensemble',
+	'remote_sig',
+	'thread_refiner_sig',
+	'thread_refiner_null',
+	'thread_refiner';
+
+## Add the library to the default target list
+Default qw( ensemble.cmxa );

@@ -1,0 +1,28 @@
+Import qw( env );
+
+$env = $env->clone(
+	INCPATH	=> [@{$env->{INCPATH}}, "../base", "../boot"],
+	OCAMLC => "$env->{OCAMLC} -I /usr/lib/camlp4",
+	OCAMLCFLAGS => "$env->{OCAMLCFLAGS} -pp '%CAMLP4MACRO'",
+    	PPFLAGS     => "q_MLast.cmo pa_extend.cmo $env->{PPFLAGS}",
+	MLLIBS => "unix.cmxa threads.cmxa camlp4.cmxa odyl.cmxa pa_o.cmx pr_dump.cmx pa_extend.cmx q_MLast.cmx"
+);
+
+OCamlSources $env
+	'filter_parse.ml',
+	'filter_main.ml',
+	'filter_bin.ml',
+	'filter_convert.ml',
+	'prlcomp.ml';
+
+OCamlLibrary $env 'filter',
+	'filter_parse',
+	'filter_main',
+	'filter_bin',
+	'filter_convert',
+	'prlcomp';
+
+OCamlProgram $env 'camlp4n', 'filter_parse', 'filter_main';
+
+## Add the library to the default target list
+Default qw( filter.cmxa camlp4n );

@@ -1,0 +1,27 @@
+Import qw( env );
+
+$env = $env->clone(
+    INCPATH	=> [@{$env->{INCPATH}}, "#lib", "#mllib", "../refbase", "../refsig"],
+    PPFLAGS     => "$env->{PPFLAGS} -Irefiner/refsig"
+);
+
+OCamlSources $env
+	'term_man_gen.ml',
+	'term_addr_gen.ml',
+	'term_shape_gen.ml',
+	'term_meta_gen.ml',
+	'term_hash.ml',
+	'term_header_constr.ml',
+	'term_norm.ml';
+
+OCamlLibrary $env 'term_gen',
+	'term_man_gen',
+	'term_addr_gen',
+	'term_shape_gen',
+	'term_meta_gen',
+	'term_hash',
+	'term_header_constr',
+	'term_norm';
+
+## Add the library to the default target list
+Default qw( term_gen.cmxa );

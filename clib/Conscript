@@ -1,0 +1,48 @@
+## Import the default build environment
+Import qw( env );
+
+## Clone the default environment.
+$cenv = new cons(
+    CC          => 'gcc',
+    CFLAGS	=> '-Wall -O2 -g',
+    CPPPATH     => '/usr/lib/ocaml:/usr/local/lib/ocaml:/usr/lib/ocaml/byterun'
+);
+
+## Declare the module sources in this directory that will be built
+Objects $cenv
+	'print_symbols.c',
+	'marshal_shared.c',
+	'truncate.c',
+	'putenv.c',
+	'execvp.c',
+	'profile.c',
+	'exit.c',
+	'debug.c',
+	'ml_debug.c',
+	'getrusage.c',
+	'register.c',
+	'mmap.c',
+	'readline.c',
+	'termsize.c',
+	'locale.c';
+
+Library $cenv 'clib.a',
+	'print_symbols.c',
+	'marshal_shared.c',
+	'truncate.c',
+	'putenv.c',
+	'execvp.c',
+	'profile.c',
+	'exit.c',
+	'debug.c',
+	'ml_debug.c',
+	'getrusage.c',
+	'register.c',
+	'mmap.c',
+	'readline.c',
+	'termsize.c',
+	'locale.c';
+
+## Add the library to the default target list
+Default qw( clib.a );
+

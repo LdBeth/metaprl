@@ -53,7 +53,7 @@ functor (Hyps : HypsSig) -> struct
 
    type result = Example of (var*int) list | Cycle of addr list
    type dist = Disconnected | Int of int * (addr list)
-   
+
    let maxd d1 d2 = match (d1,d2) with
        (Disconnected,Disconnected) -> d1
        | (Disconnected,Int _) -> d2
@@ -86,7 +86,7 @@ functor (Hyps : HypsSig) -> struct
            set cij coord (maxd (Int(const,[a])) (get cij coord))
        in
        begin
-           iter h f;        
+           iter h f;
            cij
        end
 
@@ -140,22 +140,23 @@ module TermHyps =
 functor (TermType : Refiner) ->
 functor (Term : Term_base_sig.TermBaseSig with type term=TermType.term
                                          and type term'=TermType.term') ->
-functor (TermMan : Term_man_sig.TermManSig with type term=TermType.term) -> 
+functor (TermMan : Term_man_sig.TermManSig with type term=TermType.term) ->
 *)
 struct
 
     open TermType
     open Term
+    open TermOp
 
     type var = term
     type cmp = var * var * int
     type hyps = term * (int array)
     type addr = int
 
-    let get_cmp (h,m) a = 
+    let get_cmp (h,m) a =
        let (_,t)=TermMan.nth_hyp h m.(a) in
-       let (_,[v1;v_and_c]) = dest_simple_term t in
-       let (_,[v2;c]) = dest_simple_term v_and_c in
+       let v1, v_and_c = two_subterms t in
+       let v2, c = two_subterms v_and_c in
 (*       let t' : TermType.term' = Term.dest_term c in
        let { term_op = op ; term_terms = tl } = t' in
        let {op_params=[param]} = dest_op op in
@@ -202,7 +203,7 @@ module Test = struct
     ("v2","v3",2);
     ("v2","v2",-3)
     ]
-                                    
+
     let v = solve h (*;("ok",Array.of_list ["ok"]))
                  with ArrayTools.NotFound(a,b) ->(a,b) *)
 end

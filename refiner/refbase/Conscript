@@ -1,0 +1,13 @@
+Import qw( env );
+
+$env = $env->clone(
+);
+
+OCamlSources $env
+	'opname.ml';
+
+OCamlLibrary $env 'refbase',
+	'opname';
+
+## Add the library to the default target list
+Default qw( refbase.cmxa );

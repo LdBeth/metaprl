@@ -1,0 +1,48 @@
+Import qw( env );
+
+$env = $env->clone(
+    INCPATH	=> [@{$env->{INCPATH}}, "#mllib", "#refiner/refbase", "#refiner/refsig", "#refiner/refiner"]
+);
+
+OCamlSources $env
+	'lib_term.ml',
+	'utils.ml',
+	'int32.ml',
+	'nuprl5.ml',
+	'registry.ml',
+	'mathBus.ml',
+	'mbterm.ml',
+	'basic.ml',
+	'socketIo.ml',
+	'link.ml',
+	'ascii_scan.ml',
+	'db.ml',
+	'tentfunctor.ml',
+	'oidtable.ml',
+	'definition.ml',
+	'orb.ml',
+	'library.ml',
+	'library_type_base.ml';
+
+OCamlLibrary $env 'library',
+	'lib_term',
+	'utils',
+	'int32',
+	'nuprl5',
+	'registry',
+	'mathBus',
+	'mbterm',
+	'basic',
+	'socketIo',
+	'link',
+	'ascii_scan',
+	'db',
+	'tentfunctor',
+	'oidtable',
+	'definition',
+	'orb',
+	'library',
+	'library_type_base';
+
+## Add the library to the default target list
+Default qw( library.cmxa );

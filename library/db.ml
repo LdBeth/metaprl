@@ -191,24 +191,24 @@ let rec scan_item stype scanner =
   | CNumeral -> Parameter (scan_numeral_parameter scanner)
 
 and scan_numeral_parameter scanner =
- 
+
  (*error ["break"] [] []; *)
  let mp256 = num_of_int 256 and mp0 = num_of_int 0 and mp1 = num_of_int 1 in
- 
+
  let code = scan_cur_byte scanner.scanner in
  (*print_string " code = "; print_string (string_of_int code);*)
   let rec aux i mpexp acc =
-    
+
    if i = 0
       then acc
    else (scan_bump scanner.scanner;
-         let c = scan_cur_byte scanner.scanner in 
+         let c = scan_cur_byte scanner.scanner in
          (
          aux (i - 1) (mult_num mpexp mp256)
                (add_num acc (mult_num mpexp (num_of_int c)))))
 
   in
-  
+
   let value = aux code mp1 mp0 in
 
     	 (* print_string " scanned numeral ";
@@ -221,7 +221,7 @@ and scan_numeral_parameter scanner =
          scan_next scanner.scanner;
          scan_byte scanner.scanner icolon;
 
-          (*let c = scan_cur_byte scanner.scanner in 
+          (*let c = scan_cur_byte scanner.scanner in
           print_string " code = "; print_string (string_of_int c);
           scan_whitespace !myscanner ;
           if scan_at_byte_p scanner.scanner icolon then scan_bump scanner.scanner;
@@ -307,7 +307,7 @@ and scan_parameter scanner =
    | Term p -> print_string "Term"
    | Binding p -> print_string "Binding"
    | Opid p -> print_string p; print_string "Opid");
-   
+
    error ["scan_parameter"; "not"] [] []
    )
 
@@ -405,7 +405,7 @@ and scan_bound_terms scanner =
 
 and scan_term scanner =
  (* print_string " st "; *)
- 
+
  let code = scan_cur_byte scanner.scanner in
    if compression_code_p code
       then match (scan_compressed code scanner) with
@@ -528,7 +528,7 @@ let mk_real_param_from_strings stp value ptype =
   | "b" -> ( ParamList [ (make_param (Token "bool"))
 			; if (stringeq value "false") or (stringeq value "F") then
 			  make_param (Number (Mp_num.num_of_int 0))
-			  else if (stringeq value "true") or (stringeq value "T") then 
+			  else if (stringeq value "true") or (stringeq value "T") then
 			  make_param (Number (Mp_num.num_of_int 1))
 			  else error ["real_parameter_from_string"; value] [] []
 		      ])
@@ -894,7 +894,7 @@ let read_disk_levels () =
 (*
 let db_lib_read stamp object_type =
   let sterm = stamp_to_term stamp and oterm = istring_term object_type in
-   Orb.eval_args_to_term tid sterm [oterm]
+   orb.eval_args_to_term tid sterm [oterm]
 *)
 
 

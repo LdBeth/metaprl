@@ -1,0 +1,33 @@
+Import qw( env );
+
+$env = $env->clone(
+    INCPATH	=> [@{$env->{INCPATH}}, "#mllib", "../refbase", "../refsig", "../term_gen"],
+    PPFLAGS     => "$env->{PPFLAGS} -Irefiner/refsig"
+);
+
+OCamlSources $env
+	'term_ds_sig.mlz',
+	'term_ds.ml',
+	'term_base_ds.ml',
+	'term_op_ds.ml',
+	'term_unif_ds.ml',
+	'rob_ds.ml',
+	'term_subst_ds.ml',
+	'term_eval_ds.ml',
+	'term_addr_ds.ml',
+	'term_man_ds.ml';
+
+OCamlLibrary $env 'term_ds',
+	'term_ds_sig',
+	'term_ds',
+	'term_base_ds',
+	'term_op_ds',
+	'term_unif_ds',
+	'rob_ds',
+	'term_subst_ds',
+	'term_eval_ds',
+	'term_addr_ds',
+	'term_man_ds';
+
+## Add the library to the default target list
+Default qw( term_ds.cmxa );

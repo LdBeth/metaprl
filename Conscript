@@ -1,0 +1,54 @@
+#### Conscript
+#### David Bustos
+###
+### This is the top-level Conscript file.  Conscript files set up dependencies
+### on a per-directory basis.  This one creates a default build environment
+### and moves into subdirectories for the rest.
+
+
+### Default environment
+
+$native = 1;	# 0 for bytecodes, 1 for native
+
+## Cons environments come from the cons module.
+$env = new cons(
+    ## Overrides
+    OCAMLC	=> $native ? "ocamlopt.opt" : "ocamlc",	# The OCaml compiler
+    SUFOBJ	=> $native ? ".cmx"  : ".cmo",		# Object suffix
+    SUFLIB	=> $native ? ".cmxa" : ".cma",		# Library suffix
+
+    SUFSRC	=> ".ml",	# The suffix for source files
+    SUFSIG	=> ".mli",	# The suffix for signature files
+    SUFCSIG	=> ".cmi",	# The suffix for compiled signature files
+
+    OCAMLCFLAGS => "-thread",					# Basic options
+    OCAMLCOM	=> "%OCAMLC %OCAMLCFLAGS %_IFLAGS -c %1",	# How to compile files
+    SIGCOM	=> "%OCAMLC %OCAMLCFLAGS %_IFLAGS -c %1",	# How to compile signatures
+    LINKCOM	=> "%OCAMLC %OCAMLCFLAGS -o %> %MLLIBS %< %CCLIBS",	# How to link objects
+    ARCOM	=> "%OCAMLC %OCAMLCFLAGS -a -o %> %<",	# How to archive objects
+    LEXCOM	=> "ocamllex %1",		# How to lex a file
+    YACCCOM	=> "ocamlyacc %1",		# How to yacc a file
+    LNCOM       => "ln -sf %1:f %>",		# How to link a file
+
+    PPFLAGS     => "",
+    CAMLP4MACRO => "camlp4o %PPFLAGS",
+    CAMLP4MACROPRINT => "camlp4o pr_o.cmo %PPFLAGS",
+
+    ENV  => {
+      PATH      => $ENV{'PATH'}        # Use user's path instead of the cons default
+      },
+
+);
+
+## Export env for use by the rest of the Conscript files
+Export qw( env );
+
+## Execute the given Conscript files
+Build qw(
+	clib/Conscript
+	mllib/Conscript
+	refiner/Conscript
+	library/Conscript
+	ensemble/Conscript
+	filter/Conscript
+);

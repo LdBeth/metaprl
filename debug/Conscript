@@ -1,0 +1,16 @@
+Import qw( env );
+
+$env = $env->clone(
+    INCPATH	=> [@{$env->{INCPATH}}, "#lib"]
+);
+
+OCamlSources $env
+	'debug_symbols.ml',
+	'debug.ml';
+
+OCamlLibrary $env 'debug',
+	'debug_symbols',
+	'debug';
+
+## Add the library to the default target list
+Default qw( debug.cmxa );

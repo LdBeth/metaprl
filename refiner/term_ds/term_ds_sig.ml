@@ -88,7 +88,7 @@ sig
     * Subst (BSubst) - delayed simultanious substitution
     * Hashed descriptor: a descriptor into the global hash table
     *
-    * Please read docs/term_ds_safety.txt if you plan to change 
+    * Please read docs/term_ds_safety.txt if you plan to change
     * and/or modify any code that changes mutable fields.
     *)
    type term_subst = (string * term) list
@@ -174,7 +174,7 @@ sig
    (*
     * Simultaneous delayed substitution.
     * These two functions would behave incorrectly if the term_subst mentions
-    * the same variable more than once. Use Term_subst_ds.subst when there is
+    * the same variable more than once. Use term_subst_ds.subst when there is
     * a possibility of duplicates.
     *)
    val do_term_subst : term_subst -> term -> term
