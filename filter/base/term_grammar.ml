@@ -1059,12 +1059,6 @@ struct
       sl_implies:
          [[ "=>" -> "implies" ]];
 
-      sl_all:
-         [[ "all" -> "all" ]];
-
-      sl_exists:
-         [[ "exst" -> "exists" ]];
-
       sl_open_quantify:
          [[ "forany" -> "all"
           | "thereis" -> "exists"
