@@ -396,29 +396,73 @@ val get_resource : global_resource -> string -> Obj.t
 Parsing (using the syntax I presented in the newsgroup - see
 news://news.metaprl.org/3B2773C6.3000403@CS.Cornell.EDU ):
 
+0. Resource declaration in an interface:
+
+resource (<data>, <result>) <name>
+
+will expand to
+
+<name>_resource: global_resource -> <result>
+
 1. Resource declaration in implementation.
 
-resource (<data>, <result>) <name> = expr
+resource (<data>, <info>, <result>) <name> = expr
 
 Will expand to
 
-let _$<name>_resource = (Mp_resource.create expr) : ('info, 'result, 'data )
-Mp_resource.info
+let _ = Mp_resource.create_resource "<name>"
+   (expr : (<info>, <result>, <data>) Mp_resource.resource_info);;
+let <name>_resource r =
+   Obj.obj (Mp_resource.get_resource r "<name>")
 
 2. Resource improvement:
 
 improve_resource <name> with <exp>
 
 Will expand to
-let _$<name>_resource = Mp_resource.improve _$<name>_resource (<expr> :
-<data>)
+let _ = Mp_resource.improve "<name>" (Obj.repr (<expr>: <data>))
 
 3. Bookmarking at a rule:
 
-rule xx will create
+rule xx will (among other things)
 
-4. Resource annotation functions.
+Mp_resource.bookmark "xx"
+
+4. At the end of each theory:
+
+let _ =
+   Mp_resource.finish_theory "theory_name"
+
+5. Resource annotation functions.
 
 a. Interface:
 
-resource_arg
+resource_arg <name> : <type>
+
+will produce the following declaration:
+
+val $<name>_resource_arg : <type> -> <data>
+(where <data> is taken from the resource declaration for <name>)
+
+Question: do you think it would be better to have it return <data> list, not
+just <data>?
+
+b. I propose to add support for the following implementation declaration:
+
+resource_arg <name> = <expr>
+
+which will expand to the following:
+
+let $<name>_resource_arg = <expr>
+
+c. After that all the resource annotations would use the last declared
+resource_arg to convert the annotation to <data> (or <data> list) that would
+then be used to improve the named resource.
+
+In other words,
+rule xx {| <name> expr |}
+
+will expand (among other things) to
+
+improve_resource <name> with
+   (Appropriate_theory.$<name>_resource_arg (xx, expr))
