@@ -261,7 +261,7 @@ type t =
    { mutable gram_info : info }
 (* %%MAGICEND%% *)
 
-let gram_magic = 0x18b24ef1
+let gram_magic = 0x30da61ba
 
 let empty_name = ".empty"
 
