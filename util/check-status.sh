@@ -3,8 +3,15 @@
 # WARNING: Do not run this script directly!
 # Run the util/check-status script instead.
 
-REMOTE_DIR=ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/logs/
+REMOTE_DIR=http://files.metaprl.org/logs/
 ST_NAME=status_all
+if [ -x /usr/bin/wget ]; then
+   GET=/usr/bin/wget
+elif [ -x /usr/bin/lftpget ]; then
+   GET=/usr/bin/lftpget
+else
+   GET=wget
+fi
 
 if [ ! -d "$1" ]; then
    echo '$1' should be a directory!
@@ -25,7 +32,7 @@ until [ -n "$LOG" -a -f "$LOG" -a -s "$LOG" ]; do
    fi
    SUFFIX=`date -d "$DAYS days ago" +-%Y.%m.%d.txt`
    LOG=$LOGS$SUFFIX
-   (cd $TMPDIR; ncftpget $REMOTE_LOGS$SUFFIX 2>&1)>/dev/null
+   (cd $TMPDIR; $GET $REMOTE_LOGS$SUFFIX 2>&1)>/dev/null
    DAYS=`expr "$DAYS" + 1`
 done
 TEMP=`mktemp /tmp/mkstatus.XXXXXX`

@@ -2,7 +2,7 @@ To run MetaPRL for the first time:
 
    0. Make sure that you have ocaml (including camlp4) installed.
       If you are using RedHat Linux, you can download ocaml RPM from
-      ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/RPM/
+      http://files.metaprl.org/RPM/
       Otherwise you need to build camlp4 from sources yourself,
       applying the patches from the patches directory.
 
