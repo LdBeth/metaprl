@@ -789,7 +789,7 @@ struct
                sovar_case
          else if is_context_term t then
             let v, t, conts, ts = dest_context t in
-               List.fold_left aux (SymbolSet.add_list (SymbolSet.add vars v) conts) ts
+               List.fold_left aux (SymbolSet.add_list (SymbolSet.add vars v) conts) (t::ts)
          else
             List.fold_left aux_bterm vars (dest_term t).term_terms
       and aux_bterm vars bt =
