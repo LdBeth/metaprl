@@ -85,6 +85,7 @@ sig
    val nth_concl_addr : term -> int -> address
    val nth_clause_addr : term -> int -> address
    val hyp_range_addr : term -> int -> address
+   val hyp_indices_addr : term -> int -> address * address
    val concl_range_addr : term -> int -> address
    val replace_goal : term -> term -> term          (* One concl *)
 

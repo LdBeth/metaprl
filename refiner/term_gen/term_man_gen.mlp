@@ -529,12 +529,40 @@ struct
       nth_clause_addr_aux (fun count -> make_nth_clause_addr nth_hd_address count i) t
 
    (*
+    * Count the hyps.
+    *)
+   let num_hyps_name = "num_hyps"
+
+   let num_hyps t =
+      let rec aux i term =
+         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
+            if Opname.eq opname hyp_opname then
+               let term = match_hyp num_hyps_name t bterms in
+                  aux (i + 1) term
+            else if Opname.eq opname context_opname then
+               let term = match_context num_hyps_name t bterms in
+                  aux (i + 1) term
+            else if Opname.eq opname concl_opname then
+               i
+            else
+               ref_raise(RefineError (num_hyps_name, TermMatchError (t, "malformed sequent")))
+      in
+         aux 0 (goal_of_sequent t)
+
+   (*
     * Range functions for contexts in the sequent.
     * We don't check the values because we don't know
     * the position within the sequent.
     *)
    let hyp_range_addr t i =
       nth_tl_address i
+
+   let hyp_indices_addr t i =
+      let count = num_hyps t in
+      if i < 0 then
+         nth_tl_address (count + i), nth_tl_address ((-1) - i)
+      else
+         nth_tl_address (i - 1), nth_tl_address (count - i)
 
    let concl_range_addr t i =
       nth_tl_address i
@@ -585,27 +613,6 @@ struct
                ref_raise(RefineError (nth_concl_name, TermMatchError (t, "malformed sequent")))
       in
          aux (pred i) (goal_of_sequent t)
-
-   (*
-    * Count the hyps.
-    *)
-   let num_hyps_name = "num_hyps"
-
-   let num_hyps t =
-      let rec aux i term =
-         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
-            if Opname.eq opname hyp_opname then
-               let term = match_hyp num_hyps_name t bterms in
-                  aux (i + 1) term
-            else if Opname.eq opname context_opname then
-               let term = match_context num_hyps_name t bterms in
-                  aux (i + 1) term
-            else if Opname.eq opname concl_opname then
-               i
-            else
-               ref_raise(RefineError (num_hyps_name, TermMatchError (t, "malformed sequent")))
-      in
-         aux 0 (goal_of_sequent t)
 
    (*
     * Collect the vars.

@@ -354,10 +354,28 @@ struct
             ref_raise(RefineError (nth_clause_addr_name, TermMatchError (t, "not a sequent")))
 
    (*
+    * Count the hyps.
+    *)
+   let num_hyps_name = "Term_man_ds.num_hyps"
+   let num_hyps t =
+      match get_core t with
+         Sequent s ->
+            SeqHyp.length s.sequent_hyps
+       | _ ->
+            ref_raise(RefineError (num_hyps_name, TermMatchError (t, "not a sequent")))
+
+   (*
     * Addresses to be used in sequent rewriting.
     *)
    let hyp_range_addr t i =
       HypAddr i
+   
+   let hyp_indices_addr t i =
+      let count = num_hyps t in
+      if i < 0 then
+         HypAddr (count + i), HypAddr ((-1) - i)
+      else
+         HypAddr (i - 1), HypAddr (count - i)
 
    let concl_range_addr t i =
       GoalAddr i
@@ -398,17 +416,6 @@ struct
                      ref_raise(RefineError (nth_concl_name, TermMatchError (t, "not enough hyps")))
              | _ ->
                   ref_raise(RefineError (nth_concl_name, TermMatchError (t, "not a sequent")))
-
-   (*
-    * Count the hyps.
-    *)
-   let num_hyps_name = "Term_man_ds.num_hyps"
-   let num_hyps t =
-      match get_core t with
-         Sequent s ->
-            SeqHyp.length s.sequent_hyps
-       | _ ->
-            ref_raise(RefineError (num_hyps_name, TermMatchError (t, "not a sequent")))
 
    (*
     * Collect the vars.
