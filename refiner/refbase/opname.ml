@@ -3,6 +3,9 @@
  * they may be hash-consed.
  *
  * $Log$
+ * Revision 1.3  1998/06/12 18:36:29  jyh
+ * Working factorial proof.
+ *
  * Revision 1.2  1998/06/01 13:54:44  jyh
  * Proving twice one is two.
  *
@@ -41,6 +44,13 @@ open Debug
 let _ =
    if !debug_load then
       eprintf "Loading Opname%t" eflush
+
+let debug_opname =
+   create_debug (**)
+      { debug_name = "opname";
+        debug_description = "display opname construction";
+        debug_value = false
+      }
 
 (************************************************************************
  * TYPES                                                                *

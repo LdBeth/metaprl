@@ -4,14 +4,43 @@
 
 include Itt_theory
 
+open Conversionals
+open Itt_rfun
+open Itt_bool
+open Itt_int
+open Itt_int_bool
+
 declare guard{'a}
+declare fact{'i}
 
 primrw fold : 'a <--> guard{'a}
 
-primrw test : ind{2; m, z. 'm; 1; m, z. 0} <--> 1
+primrw reduceFact : fact{'i} <--> fix{f. lambda{i. ifthenelse{eq_int{'i; 0}; 1; .'i *@ 'f ('i -@ 1)}}} 'i
+
+primrw test : fact{10} <--> 3628800
+
+dform fact_df : parens :: "prec"[prec_apply] :: fact{'i} =
+   `"fact" " " slot{'i}
+
+let redexC =
+   firstC [betaReduction;
+           reduceEQInt;
+           reduceFact;
+           boolTrue;
+           boolFalse;
+           ifthenelseTrue;
+           ifthenelseFalse;
+           reduceAdd;
+           reduceSub;
+           reduceMul;
+           reduceDiv;
+           fix]
 
 (*
  * $Log$
+ * Revision 1.9  1998/06/12 18:36:15  jyh
+ * Working factorial proof.
+ *
  * Revision 1.8  1998/06/12 13:45:18  jyh
  * D tactic works, added itt_bool.
  *

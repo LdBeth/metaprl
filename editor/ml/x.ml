@@ -22,13 +22,19 @@ open Test;;
 load "test";;
 cd "test.test";;
 
-(*
-refine rw (higherC (betaReduction andthenC reduceAdd)) 0;;
+refine rw (higherC reduceFact) 0;;
 down 0;;
-*)
+
+refine rw (repeatC (higherC redexC)) 0;;
+down 0;;
+
+refine dT 0;;
 
 (*
  * $Log$
+ * Revision 1.3  1998/06/12 18:36:18  jyh
+ * Working factorial proof.
+ *
  * Revision 1.2  1998/06/12 13:45:20  jyh
  * D tactic works, added itt_bool.
  *

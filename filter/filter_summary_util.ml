@@ -18,7 +18,6 @@ let _ =
    if !debug_load then
       eprintf "Loading Filter_summary_util%t" eflush
 
-
 (*
  * Extract the context var arguments.
  *)
@@ -124,6 +123,9 @@ let mem_resource { resource_name = name } resources =
 
 (*
  * $Log$
+ * Revision 1.11  1998/06/12 18:36:24  jyh
+ * Working factorial proof.
+ *
  * Revision 1.10  1998/06/12 13:46:40  jyh
  * D tactic works, added itt_bool.
  *

@@ -167,7 +167,6 @@ let set_debug name flag =
          (* Try a C function *)
          try ml_debug name flag with
             Failure "ml_debug" ->
-               eprintf "Debug.set_debug: no such variable: %s%t" name eflush;
                raise (Failure "set_debug")
    in
       search !info
@@ -252,6 +251,9 @@ let debug_load = create_debug (**)
 
 (*
  * $Log$
+ * Revision 1.8  1998/06/12 18:36:26  jyh
+ * Working factorial proof.
+ *
  * Revision 1.7  1998/06/12 13:46:46  jyh
  * D tactic works, added itt_bool.
  *

@@ -289,6 +289,8 @@ struct
     * Add a map to the table.
     *)
    let add_opname cache str name =
+      if !debug_opname then
+         eprintf "Filter_cache_fun.add_opname: %s.%s%t" str (Simple_print.string_of_opname name) eflush;
       Hashtbl.add cache.optable str name
 
    (*
@@ -464,7 +466,7 @@ struct
       let opprefix = make_opname path in
 
       (* Get all the sub-summaries *)
-      let inline_component (item, _) resources =
+      let inline_component resources (item, _) =
          match item with
             Module (n, _) ->
                (* The contained summaries become top level *)
@@ -477,6 +479,9 @@ struct
           | Opname { opname_name = str; opname_term = t } ->
                (* Hash this name to the full opname *)
                let opname = Opname.mk_opname str opprefix in
+                  if !debug_opname then
+                     eprintf "Filter_cache_fun.inline_sig_components: add opname %s.%s%t" (**)
+                        str (Simple_print.string_of_opname opprefix) eflush;
                   Hashtbl.add cache.optable str opname;
                   resources
 
@@ -495,7 +500,7 @@ struct
           | _ ->
                resources
       in
-      let this_resources, par_resources = List.fold_right inline_component items ([], []) in
+      let this_resources, par_resources = List.fold_left inline_component ([], []) items in
       let this_resources = Sort.list compare_resources this_resources in
          merge_resources this_resources par_resources
 
@@ -528,7 +533,7 @@ struct
           | _ ->
                ()
       in
-         List_util.rev_iter inline_component items
+         List.iter inline_component items
 
    and inline_sig_module arg path =
       let cache, inline_hook, vals = arg in
@@ -682,6 +687,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.16  1998/06/12 18:36:22  jyh
+ * Working factorial proof.
+ *
  * Revision 1.15  1998/06/12 13:46:24  jyh
  * D tactic works, added itt_bool.
  *

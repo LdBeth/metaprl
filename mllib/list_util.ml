@@ -73,7 +73,8 @@ let exists2 f l1 l2 =
 let map2 f l1 l2 =
    let rec map = function
       h1::t1, h2::t2 ->
-         f h1 h2 :: map (t1, t2)
+         let h = f h1 h2 in
+            h :: map (t1, t2)
     | [], [] ->
          []
     | _ ->
@@ -554,6 +555,9 @@ let existsp = List.exists
 
 (*
  * $Log$
+ * Revision 1.14  1998/06/12 18:36:28  jyh
+ * Working factorial proof.
+ *
  * Revision 1.13  1998/06/12 13:46:52  jyh
  * D tactic works, added itt_bool.
  *

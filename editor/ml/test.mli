@@ -4,14 +4,24 @@
 
 include Itt_theory
 
+open Conversionals
+
 open MLast
 
 declare guard{'a}
+declare fact{'i}
+
+rewrite reduceFact : fact{'i} <--> (fix{f. lambda{i. ifthenelse{eq_int{'i; 0}; 1; .'i *@ 'f ('i -@ 1)}}} 'i)
 
 rewrite fold : 'a <--> guard{'a}
 
+val redexC : conv
+
 (*
  * $Log$
+ * Revision 1.5  1998/06/12 18:36:16  jyh
+ * Working factorial proof.
+ *
  * Revision 1.4  1998/06/12 13:45:19  jyh
  * D tactic works, added itt_bool.
  *

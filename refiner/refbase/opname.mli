@@ -17,8 +17,16 @@ val dest_opname : opname -> string list
 val flat_opname : opname -> string
 
 (*
+ * Debugging.
+ *)
+val debug_opname : bool ref
+
+(*
  *
  * $Log$
+ * Revision 1.2  1998/06/12 18:36:30  jyh
+ * Working factorial proof.
+ *
  * Revision 1.1  1998/05/28 15:00:19  jyh
  * Partitioned refiner into subdirectories.
  *
