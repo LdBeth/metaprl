@@ -24,6 +24,8 @@ if $(not $(defined VERBOSE))
 #
 .INCLUDE: mk/defaults
 
+OCAMLFLAGS = $(DEFAULT_OCAMLFLAGS)
+
 #
 # Win32-specific config.
 # Read the config file.
@@ -119,14 +121,14 @@ if $(not $(file-exists $(CAMLLIB)/parsetree.cmi))
    exit(1)
 
 if $(BYTE_ENABLED)
-   if $(not $(file-exists $(CAMLP4LIB)/camlp4.cma))
+   if $(not $(and $(file-exists $(CAMLP4LIB)/camlp4.cma), $(file-exists $(CAMLP4LIB)/pa_op.cmo)))
       eprint(!!! The file $(CAMLP4LIB)/camlp4.cma does not exist \(or is not readable\))
       eprint(!!! Please consult doc/htmlman/mp-install.html \(http://metaprl.org/install.html\))
       eprint(!!! for instructions on compiling OCaml and setting the CAMLP4LIB variable)
       exit(1)
 
 if $(NATIVE_ENABLED)
-   if $(not $(file-exists $(CAMLP4LIB)/camlp4.cmxa))
+   if $(not $(and $(file-exists $(CAMLP4LIB)/camlp4.cmxa), $(file-exists $(CAMLP4LIB)/pa_op.cmx)))
       eprint(!!! The file $(CAMLP4LIB)/camlp4.cmxa does not exist \(or is not readable\))
       eprint(!!! Please consult doc/htmlman/mp-install.html \(http://metaprl.org/install.html\))
       eprint(!!! for instructions on compiling OCaml and setting the CAMLP4LIB variable)

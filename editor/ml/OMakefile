@@ -220,7 +220,7 @@ $(MP).opt: $(OPT_DEPS) $(TCMXFILES)
 # Generate the mp_version.ml file
 #
 make_mp_version$(EXE): make_mp_version.ml
-	$(OCAMLC) -o $@ unix.cma $<
+	$(OCAMLC) $(OCAMLCFLAGS) -o $@ unix.cma $<
 
 mp_version.ml: make_mp_version$(EXE) $(ALL_DEPS)
 	$(CURRENT_EXEC_DIR)make_mp_version -version $(MP_VERSION) -refiner $(REFINER) -terms $(TERMS) > $@

@@ -171,7 +171,7 @@ check_versions:: mk/config mk/config.local check_omake
 		echo '!!! for instructions on compiling OCaml and setting the CAMLLIB variable'; echo '!!!';\
 		exit 1;\
 	fi
-	@if [ ! -r $(CAMLP4LIB)/camlp4.cma ]; then \
+	@if [ ! -r $(CAMLP4LIB)/camlp4.cma ] || [ ! -r $(CAMLP4LIB)/pa_op.cma ]; then \
 		echo '!!! The file $(CAMLP4LIB)/camlp4.cma does not exist (or is not readable)!'; echo '!!!';\
 		echo '!!! Please consult doc/htmlman/mp-install.html (http://metaprl.org/install.html)';\
 		echo '!!! for instructions on compiling OCaml and setting the CAMLP4LIB variable'; echo '!!!';\
@@ -179,7 +179,7 @@ check_versions:: mk/config mk/config.local check_omake
 	fi
 
 check_versions_opt:: mk/config mk/config.local check_omake
-	@if [ ! -r $(CAMLP4LIB)/camlp4.cmxa ]; then \
+	@if [ ! -r $(CAMLP4LIB)/camlp4.cmxa ] || [ ! -r $(CAMLP4LIB)/pa_op.cmx ]; then \
 		echo '!!! The file $(CAMLP4LIB)/camlp4.cmxa does not exist (or is not readable)!'; echo '!!!';\
 		echo '!!! Please consult doc/htmlman/mp-install.html (http://metaprl.org/install.html)';\
 		echo '!!! for instructions on compiling OCaml and setting the CAMLP4LIB variable'; echo '!!!';\

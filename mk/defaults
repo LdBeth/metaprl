@@ -27,6 +27,8 @@ THEORIES_ALL = base ocaml_doc itt ocaml_sos fol czf phobos sil tptp fir experime
 CAMLLIB_DEFAULT=/usr/lib/ocaml
 CAMLP4LIB_DEFAULT=$(CAMLLIB_DEFAULT)/camlp4
 
+DEFAULT_OCAMLFLAGS=-warn-error A -w A
+
 #
 # Defaults for the mk/config variables
 #

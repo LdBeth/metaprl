@@ -211,8 +211,8 @@ ifndef SLOPPY_DEPENDENCIES
    SLOPPY_DEPENDENCIES = false
 endif
 
-OCAMLC := $(OCAMLC) -warn-error A -w A
-OCAMLOPT := $(OCAMLOPT) -warn-error A -w A
+OCAMLC := $(OCAMLC) $(DEFAULT_OCAMLFLAGS)
+OCAMLOPT := $(OCAMLOPT) $(DEFAULT_OCAMLFLAGS)
 SUPPORT_INCL := -I $(ROOT)/support/display -I $(ROOT)/support/shell -I $(ROOT)/support/tactics
 
 ifeq ($(ENSROOT),undefined)

@@ -245,35 +245,35 @@ let mk_command () =
 (*
  * Arguments.
  *)
-let spec =
-   ["-I", String add_include, "add an directory to the path for include files";
-    "-E", Set preprocess_flag, "preprocess only";
-    "-opt", Set optimize_flag, "use the optimizing compiler";
-    "-v", Unit (fun () -> verbose_mode := 1), "set verbose mode";
-    "-V", Unit (fun () -> verbose_mode := 2), "set verbose mode";
-    "-g", Unit (add_argv "-g"), "include debugging information";
-    "-p", Unit (add_argv "-p"), "include profiling information";
-    "-c", Unit (add_argv "-c"), "produce object file";
-    "-o", String (add_string_argv "-o"), "specify output file";
-    "-a", Unit (add_argv "-a"), "produce archive file";
-    "-S", Unit (add_argv "-S"), "do not remove the assembly file";
-    "-rectypes", Unit (add_argv "-rectypes"), "all arbitrary recursive definitions";
-    "-export", Unit set_export, "create ASCII export file";
-    "-compact", Unit (add_argv "-compact"), "produce a smaller but slower code";
-    "-custom", Unit (add_argv "-custom"), "generate custom executable";
-    "-ccopt", String (add_string_argv "-ccopt"), "C option";
-    "-cclib", String (add_string_argv "-cclib"), "C library";
-    "-impl", Unit (add_argv "-impl"), "compile file as a .ml file";
-    "-inline", String (add_string_argv "-inline"), "Inline level";
-    "-intf", Unit (add_argv "-intf"), "compile file as an .mli file";
-    "-linkall", Unit (add_argv "-linkall"), "specify link";
-    "-pp", String (add_string_argv "-pp"), "add an extra preprocessor";
-    "-thread", Unit (add_argv "-thread"), "compile with support for threads";
-    "-lib", String set_lib, "set the library directory";
-    "-noassert", Unit (add_argv "-noassert"), "Don't compile assertion checks";
-    "-warn-error", String (fun s ->
-          add_argv "-warn-error" ();
-          add_argv s ()), "treat OCaml warnings as errors"]
+let spec = [
+   "-I", String add_include, "add an directory to the path for include files";
+   "-E", Set preprocess_flag, "preprocess only";
+   "-opt", Set optimize_flag, "use the optimizing compiler";
+   "-v", Unit (fun () -> verbose_mode := 1), "set verbose mode";
+   "-V", Unit (fun () -> verbose_mode := 2), "set verbose mode";
+   "-g", Unit (add_argv "-g"), "include debugging information";
+   "-p", Unit (add_argv "-p"), "include profiling information";
+   "-c", Unit (add_argv "-c"), "produce object file";
+   "-o", String (add_string_argv "-o"), "specify output file";
+   "-a", Unit (add_argv "-a"), "produce archive file";
+   "-S", Unit (add_argv "-S"), "do not remove the assembly file";
+   "-rectypes", Unit (add_argv "-rectypes"), "all arbitrary recursive definitions";
+   "-export", Unit set_export, "create ASCII export file";
+   "-compact", Unit (add_argv "-compact"), "produce a smaller but slower code";
+   "-custom", Unit (add_argv "-custom"), "generate custom executable";
+   "-ccopt", String (add_string_argv "-ccopt"), "C option";
+   "-cclib", String (add_string_argv "-cclib"), "C library";
+   "-impl", Unit (add_argv "-impl"), "compile file as a .ml file";
+   "-inline", String (add_string_argv "-inline"), "Inline level";
+   "-intf", Unit (add_argv "-intf"), "compile file as an .mli file";
+   "-linkall", Unit (add_argv "-linkall"), "specify link";
+   "-pp", String (add_string_argv "-pp"), "add an extra preprocessor";
+   "-thread", Unit (add_argv "-thread"), "compile with support for threads";
+   "-lib", String set_lib, "set the library directory";
+   "-noassert", Unit (add_argv "-noassert"), "Don't compile assertion checks";
+   "-warn-error", String (add_string_argv "-warn-error"), "Treat OCaml warnings as errors";
+   "-w", String (add_string_argv "-w"), "Enable or disable OCaml warnings";
+]
 
 (*
  * Print the command line.

@@ -18,7 +18,7 @@ LIBMACRO = $(file $(LIB)/macro.cmo)
 # The MetaPRL macro preprocessor
 #
 macro.cmo: macro.ml
-	$(OCAMLC) -pp "camlp4o -I $(CAMLP4LIB) pa_extend.cmo q_MLast.cmo" -I $(CAMLP4LIB) -c macro.ml
+	$(OCAMLC) $(OCAMLCFLAGS) -pp "camlp4o -I $(CAMLP4LIB) pa_extend.cmo q_MLast.cmo" -I $(CAMLP4LIB) -c macro.ml
 
 $(LIBMACRO): $(MACROCMO)
 	$(CP) $< $@
