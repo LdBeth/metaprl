@@ -60,10 +60,12 @@ struct
    open TermAddr
    open RewriteTypes
 
+   type strict  = RewriteTypes.strict
    type rwterm  = RewriteTypes.rwterm
    type rstack  = RewriteTypes.rstack
    type stack   = RewriteTypes.stack
    type varname = RewriteTypes.varname
+   type rwcontractum = RewriteTypes.rwcontractum
 
    (*
     * Name in the stack.
@@ -137,7 +139,7 @@ struct
     | CVar (v, conts, i) ->
          sprintf "CVar %s<%s>[%d]" (string_of_symbol v) (string_of_conts conts) i
     | PVar (v, _) ->
-         "PVar " ^ (string_of_symbol v) ^ ":*"
+         "PVar " ^ string_of_symbol v ^ ":*"
 
    let print_rstack out stack =
       let print_item item =
@@ -308,10 +310,42 @@ struct
 
    and print_sop out op =
       let op' = dest_op op in
-      output_string out (string_of_opname op'.op_name);
-      if op'.op_params <> [] then fprintf out "[%a]" print_sparam_list op'.op_params
+         output_string out (string_of_opname op'.op_name);
+         if op'.op_params <> [] then
+            fprintf out "[%a]" print_sparam_list op'.op_params
 
    let print_prog = print_prog 0
+
+   let print_strict out strict =
+      let s =
+         match strict with
+            Strict -> "Strict"
+          | Relaxed -> "Relaxed"
+      in
+         fprintf out "%s" s
+
+   let print_any_array print out l =
+      match l with
+         [||] ->
+            ()
+       | [|x|] ->
+            print out x
+       | _ ->
+            let len = Array.length l in
+               fprintf out "@[<b 3>%a" print l.(0);
+               for i = 1 to pred len do
+                  fprintf out ",@ %a" print l.(i)
+               done;
+               fprintf out "@]"
+
+   let print_contractum out con =
+      match con with
+         RWCFunction _ ->
+            fprintf out "<function>"
+       | RWCTerm (progs, vars) ->
+            fprintf out "@[<v 3>[%a]" (print_any_array output_symbol) vars;
+            List.iter (fun prog -> fprintf out "@ %a" print_prog prog) progs;
+            fprintf out "@]"
 end
 
 (*

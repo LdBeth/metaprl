@@ -49,7 +49,9 @@ struct
    type seq_hyps = TermType.seq_hyps
 
    (* See refsig/rewrite_sig.mlz for explanaition *)
-   type strict = Strict | Relaxed
+   type strict =
+      Strict
+    | Relaxed
 
    (*
     * For matching level expressions.

@@ -33,6 +33,7 @@
  *)
 
 open Lm_symbol
+open Lm_printf
 
 module type RewriteSig =
 sig
@@ -142,6 +143,12 @@ sig
     *)
    val rewrite_operator : rewrite_rule -> operator
    val rewrite_eval_flags : rewrite_rule -> (int * bool) list
+
+   (*
+    * For debugging.
+    *)
+   val print_rewrite_redex : out_channel -> rewrite_redex -> unit
+   val print_rewrite_rule : out_channel -> rewrite_rule -> unit
 end
 
 (*

@@ -108,6 +108,7 @@ struct
    open RewriteCompileContractum
    open RewriteMatchRedex
    open RewriteBuildContractum
+   open RewriteDebug
 
    (************************************************************************
     * TYPES                                                                *
@@ -203,9 +204,10 @@ struct
                ()
       in
       let bnames =
-         if (rw.rr_strict==Strict) then
+         if rw.rr_strict == Strict then
             SymbolSet.union bnames (free_vars_set goal)
-         else SymbolSet.empty
+         else
+            SymbolSet.empty
       in
       let gstack = Array.create rw.rr_gstacksize StackVoid in
          IFDEF VERBOSE_EXN THEN
@@ -399,6 +401,32 @@ struct
           | _ ->
                failwith "compile_redex: too many redices"
 
+   (*
+    * Printing.
+    *)
+   let print_rewrite_redex out redex =
+      let { redex_stack = stack;
+            redex_redex = redex
+          } = redex
+      in
+         fprintf out "@[<hv 3>Redex:@ @[<v 3>Stack:@ %a@]@ @[<v 3>Terms:" print_rstack stack;
+         List.iter (fun prog -> fprintf out "@ %a" print_prog prog) redex;
+         fprintf out "@]@]"
+
+   let print_rewrite_rule out rw =
+      let { rr_redex = redex;
+            rr_gstacksize = size;
+            rr_contractum = con;
+            rr_strict = strict
+          } = rw
+      in
+         fprintf out "@[<hv 0>@[<hv 3>RewriteRule {";
+         fprintf out "@ @[<v 3>Redex:";
+         List.iter (fun prog -> fprintf out "@ %a" print_prog prog) redex;
+         fprintf out "@]@ Size = %d" size;
+         fprintf out "@ @[<v 3>Contractum:%a@]" print_contractum con;
+         fprintf out "@ Mode = %a" print_strict strict;
+         fprintf out "@]@ }@]"
 end
 
 (*

@@ -42,6 +42,8 @@ module MakeRewriteDebug
    (TermAddr : TermAddrSig with module AddrTypes = TermType)
    (RefineError : RefineErrorSig with module ErrTypes.Types = TermType):
    RewriteDebugSig
+   with type strict = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr).strict
+   with type rwcontractum = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr).rwcontractum
    with type rwterm = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr).rwterm
    with type rstack = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr).rstack
    with type stack  = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr).stack

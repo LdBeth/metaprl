@@ -33,6 +33,8 @@ open Lm_printf
 
 module type RewriteDebugSig =
 sig
+   type strict
+   type rwcontractum
    type rwterm
    type rstack
    type stack
@@ -43,6 +45,8 @@ sig
    val print_rstack : out_channel -> rstack array -> unit
    val print_stack_item : out_channel -> stack -> unit
    val print_stack : out_channel -> stack array -> unit
+   val print_contractum : out_channel -> rwcontractum -> unit
+   val print_strict : out_channel -> strict -> unit
    val rstack_item_str : rstack -> string
 end
 
