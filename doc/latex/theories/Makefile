@@ -25,6 +25,7 @@ INPUTS = ../inputs/metaprl.bib\
 
 TEXTHEORIES=\
 	base\
+	fol\
 	itt\
 	czf
 

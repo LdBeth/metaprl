@@ -33,7 +33,9 @@ if [ "`echo "$REPOSITORY" | cut -b1`" = "/" ]; then
 fi
 
 if [ -z $URLVIEW ]; then
-   if [ -x /usr/bin/netscape ]; then
+   if [ -x /usr/bin/mozilla ]; then
+      URLVIEW=/usr/bin/mozilla
+   elif [ -x /usr/bin/netscape ]; then
       URLVIEW=/usr/bin/netscape
    else
       URLVIEW="xterm -e lynx"
