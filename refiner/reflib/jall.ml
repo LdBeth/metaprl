@@ -3176,9 +3176,10 @@ let rec solve  ftree redord connections p po slist (pred,succs) orr_flag =
             else
              rback @ (tot  ftree redord connections pnew newslist)
          | PNull -> 
+            let new_redord = update p.name redord in 
 	     let (c1,c2) = select_connection (p.name) connections newslist in 
 	       if (c1= "none" & c2 ="none") then 
-                 rback @ (tot  ftree redord connections pnew newslist) 
+                 rback @ (tot  ftree new_redord connections pnew newslist) 
                else 
                  let (ass_pos,inst_pos) = 
 (* need the pol=O position ass_pos of the connection for later permutation *)
@@ -3256,12 +3257,11 @@ let reconstruct ftree redord sigmaQ connections logic calculus =
   let bproof,beta_exp,closures = construct_beta_proof ftree connections in 
    let (opt_bproof,min_connections) = bproof_purity bproof in 
 begin
-(*   print_endline "";
-   print_endline ("Beta proof with number of closures = "^(string_of_int closures)^" and number of beta expansions = "^(string_of_int beta_exp));
-*)
-(*   print_endline "";
    print_endline "";
-   print_beta_proof bproof;
+   print_endline ("Beta proof with number of closures = "^(string_of_int closures)^" and number of beta expansions = "^(string_of_int beta_exp));
+   print_endline "";
+   print_endline "";
+(*   print_beta_proof bproof;
    print_endline "";
    print_endline "";
    print_endline "Optimal beta proof: ";
@@ -5054,13 +5054,13 @@ let rec try_multiplicity ftree ordering pos_n mult logic =
    Failure("fail1") -> 
     let new_mult = mult+1 in  
      begin 
-(*     Format.open_box 0;
+     Format.open_box 0;
      Format.force_newline ();
      Format.print_string "Multiplicity Fail: ";
       Format.print_string ("Try new multiplicity "^(string_of_int new_mult));
      Format.force_newline ();
      Format.print_flush ();
-*)
+
        let (new_ftree,new_ordering,new_pos_n) = 
          add_multiplicity ftree pos_n new_mult logic in    
         if (new_ftree = ftree) then 
