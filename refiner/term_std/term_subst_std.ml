@@ -242,56 +242,6 @@ struct
        | _ ->
             p1 = p2
 
-   let rec equal_term_debug vars t t' =
-      match t, t' with
-         { term_op = { op_name = opname1; op_params = [Var v] };
-           term_terms = []
-         },
-         { term_op = { op_name = opname2; op_params = [Var v'] };
-           term_terms = []
-         } when Opname.eq opname1 var_opname & Opname.eq opname2 var_opname ->
-            let flag = List_util.check_assoc v v' vars in
-               if flag = false then
-                  eprintf "alpha_equal_term: failed var %s <> %s%t" v v' eflush;
-               flag
-       | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
-         { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
-            let flag =
-               (Opname.eq name1 name2)
-               & (List.length params1 = List.length params2)
-               & (List_util.for_all2 equal_params params1 params2)
-               & (equal_bterms_debug vars bterms1 bterms2)
-            in
-               if flag = false then
-                  eprintf "alpha_equal_term: failed terms\n\t%a\n\t%a%t" (**)
-                     debug_print t
-                     debug_print t'
-                     eflush;
-               flag
-
-   and equal_bterms_debug vars bterms1 bterms2 =
-      let equal_bterm = fun
-         { bvars = bvars1; bterm = term1 }
-         { bvars = bvars2; bterm = term2 } ->
-            let flag =
-               (List.length bvars1 = List.length bvars2)
-               & (equal_term_debug (List_util.zip_list vars bvars1 bvars2) term1 term2)
-            in
-               if flag = false then
-                  eprintf "alpha_equal_bterm: failed\n\t%a.%a\n\t%a.%a%t" (**)
-                     print_string_list bvars1 debug_print term1
-                     print_string_list bvars2 debug_print term2
-                     eflush;
-               flag
-      in
-      let flag =
-         (List.length bterms1 = List.length bterms2)
-         & (List_util.for_all2 equal_bterm bterms1 bterms2)
-      in
-         if flag = false then
-            eprintf "alpha_equal_bterm: failed bterms:\n";
-         flag
-
    let rec equal_term vars t t' =
       match t, t' with
          { term_op = { op_name = opname1; op_params = [Var v] };
@@ -321,7 +271,7 @@ struct
       IFDEF VERBOSE_EXN THEN
          if !debug_alpha_equal then
             try
-               let result = equal_term (*_debug*) [] t1 t2 in
+               let result = equal_term [] t1 t2 in
                eprintf "alpha_equal: %b:\n%a\n%a%t" result debug_print t1 debug_print t2 eflush;
                result
             with Failure _ ->

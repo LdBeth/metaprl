@@ -68,48 +68,6 @@ let new_eqns_var eqs v = String_util.vnewname v (StringSet.mem (collect_vars eqs
 
 let is_free_var v t = StringSet.mem (free_vars_set t) v
 
-(*
- * Collect all binding vars.
- *)
-let rec binding_vars_term t bvars =
-   binding_vars_bterms bvars (dest_term t).term_terms
-
-and binding_vars_bterms bvars = function
-   bt::l ->
-      let bt = dest_bterm bt in 
-      binding_vars_bterms (binding_vars_term bt.bterm (List.fold_left StringSet.add bvars bt.bvars)) l
- | [] -> bvars
-
-let rec binding_vars_set t =
-   if is_var_term t then
-      StringSet.empty
-   else if is_sequent_term t then
-      let seq = explode_sequent t in
-         let hyps = seq.sequent_hyps in
-         let len = SeqHyp.length hyps in
-         let rec coll_hyps i =
-            if i = len then binding_vars_term seq.sequent_args StringSet.empty else
-               match SeqHyp.get hyps i with
-                  Hypothesis (v,t) ->
-                     binding_vars_term t (StringSet.add (coll_hyps (succ i)) v)
-                | Context (v,ts) ->
-                     List.fold_right binding_vars_term ts (coll_hyps (succ i))
-         in
-         let goals = seq.sequent_goals in
-         let len = SeqGoal.length goals in
-         let rec coll_goals i =
-            if i = len then coll_hyps 0 else
-               binding_vars_term (SeqGoal.get goals i) (coll_goals (succ i))
-         in coll_goals 0
-   else 
-      binding_vars_bterms StringSet.empty (dest_term t).term_terms
-
-let binding_vars t =
-   StringSet.elements (binding_vars_set t)
-
-let add_vars vars term =
-   StringSet.union vars (free_vars_set term)
-
 (******************
  * MM UNIFICATION *
  ******************)
