@@ -28,11 +28,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 open File_base_type
+
+exception Bad_magic of string
 
 (*
  * Type used for common info.

@@ -28,8 +28,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 open Printf
@@ -89,6 +89,8 @@ struct
        }]
 end
 
+exception Bad_magic of string
+
 (*
  * The Combo contans all the data to construct a FileBaseInfoSig.
  * We won't overwrite a file if it has the wrong magic number.
@@ -119,6 +121,8 @@ module MakeSingletonCombo (Info : FileTypeInfoSig) :
             with
                Sys_error _ ->
                   ()
+             | Not_found ->
+                  raise (Bad_magic filename)
 
          let write magics magic filename info =
             let _ = check magics magic filename in
@@ -138,7 +142,10 @@ module MakeSingletonCombo (Info : FileTypeInfoSig) :
                   let magic = input_binary_int inx in
                      (input_value inx : t), List_util.find_index magic magics
                with
-                  exn ->
+                  Not_found ->
+                     close_in inx;
+                     raise (Bad_magic filename)
+                | exn ->
                      close_in inx;
                      raise (Sys_error "load_file")
       end)

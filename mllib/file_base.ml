@@ -133,7 +133,7 @@ struct
    let newest_spec specs dir name =
       match specs with
          [] ->
-            raise Not_found
+            raise(Invalid_argument("File_base.newest_spec"))
        | [spec] ->
             let time =
                try
@@ -220,7 +220,7 @@ struct
          [] ->
             if !debug_file_base then
                eprintf "File_base.load_specific: %s: not found%t" name eflush;
-            raise Not_found
+            raise(Invalid_argument("File_base.load_specific"))
        | dir::path' ->
             if !debug_file_base then
                eprintf "File_base.load_specific: try %s/%s%t" dir name eflush;

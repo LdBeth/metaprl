@@ -26,8 +26,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 open Printf
@@ -38,6 +38,7 @@ open Rformat
 open Dform
 open Dform_print
 open Simple_print.SimplePrint
+open File_type_base
 
 open Filter_ocaml
 open Filter_type
@@ -112,6 +113,20 @@ let rec format_exn db buf exn =
          format_string buf "Empty module path:";
          format_space buf;
          format_string buf s
+    | Bad_magic s ->
+         format_string buf "File ";
+         format_string buf s;
+         format_string buf " has a wrong magic number.";
+         format_newline buf;
+         format_string buf "This means that is is either not a MetaPRL file";
+         format_newline buf;
+         format_string buf "or is not compatible with the version of the MetaPRL you are trying to use.";
+         format_newline buf;
+         format_string buf "If you are sure this file does not contain any unsaved data, delete it.";
+         format_newline buf;
+         format_string buf "If it does contain unsaved data, you might need to get a different version of MetaPRL";
+         format_newline buf;
+         format_string buf "and possibly export the data to a different format."
     | Stdpp.Exc_located ((start, finish), exn) ->
          format_string buf "Chars ";
          format_int buf start;
