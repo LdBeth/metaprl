@@ -30,7 +30,9 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+
 open Set_sig
+open Format
 
 (************************************************************************
  * TYPES                                                                *
@@ -567,8 +569,26 @@ let create
    (*
     * Debugging.
     *)
-   let print _ =
-      ()
+   let rec print_aux arg = function
+      Leaf ->
+         print_space ();
+         print_string "Leaf"
+    | Node (key, data, left, right, size) ->
+         print_space ();
+         print_string "(";
+         open_hvbox 0;
+         ord_print arg key data;
+         print_string ":";
+         print_int size;
+         print_aux arg left;
+         print_aux arg right;
+         print_string ")";
+         close_box ()
+   in
+
+   let print table =
+      print_aux table.splay_arg table.splay_tree
+   
    in
       { create = create;
         is_empty = is_empty;

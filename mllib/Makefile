@@ -66,6 +66,7 @@ LMFILES :=\
 	hash_set\
 	small_set\
 	debug_string_sets\
+   debug_tables\
 	string_set\
 	flist\
 	cycle_dag\
