@@ -4,7 +4,7 @@ open List
 open Utils
 open Opname
 open Term
-open BigInt
+open Int32
 open Nuprl5
 
 (*
@@ -195,7 +195,7 @@ type stamp = {term: term;
 	      process_id: string;
 	      transaction_seq: int;
 	      seq: int;
-	      time: bigint
+	      time: int32
 	      }
 
 let print_stamp s =
@@ -288,10 +288,10 @@ let make_stamp pid tseq seq time =
 
 let new_stamp () = 
   stamp_data.count <- stamp_data.count + 1;
-  make_stamp stamp_data.pid stamp_data.count stamp_data.count (BigInt.mk_bint (time()))
+  make_stamp stamp_data.pid stamp_data.count stamp_data.count (Int32.mk_bint (time()))
 
 let get_stamp () = 
-  make_stamp stamp_data.pid stamp_data.count stamp_data.count (BigInt.mk_bint (time()))
+  make_stamp stamp_data.pid stamp_data.count stamp_data.count (Int32.mk_bint (time()))
 
 let sequence () = 
   stamp_data.count <- stamp_data.count + 1;
@@ -313,9 +313,9 @@ let tid () =
    should try other tests and make outcome more apparent ie print test ok
  *)
 let test () = 
- let s1 = (make_stamp "goo" 2 1 (BigInt.create 2))
- and s2 = (make_stamp "moo" 1 2 (BigInt.create 2))
- and s3 = (make_stamp "goo" 2 2 (BigInt.create 3))
+ let s1 = (make_stamp "goo" 2 1 (Int32.create 2))
+ and s2 = (make_stamp "moo" 1 2 (Int32.create 2))
+ and s3 = (make_stamp "goo" 2 2 (Int32.create 3))
    in (in_transaction_p s3 s1) & 
       (transaction_less s1 s3) &
       (transaction_less s3 s2) 

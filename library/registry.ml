@@ -1,109 +1,89 @@
+ 
+ 
+open Int32
 (* In this simple implementation, a registry is a collection of hash
- * tables, one or two for each registry type.  There are two
- * registries, one for the global information, and one for the local
- * information.
- *)
-open BigInt
+   * tables, one or two for each registry type.  There are two
+   * registries, one for the global information, and one for the local
+   * information.
+   *)
 
-type tb = Uni of (string, bigint) Hashtbl.t
-  | Bi of (string, bigint) Hashtbl.t*(bigint, string) Hashtbl.t
-type regtbl = (string, tb) Hashtbl.t
+type tb = Uni of (string, int32) Hashtbl.t
+  | Bi of (string, int32) Hashtbl.t * (int32, string) Hashtbl.t
+type regtb = (string, tb) Hashtbl.t
       
-type  regval =  bigint option
-type regid = string option
-      
-let global_registry = (Hashtbl.create 7:regtbl)
-let local_registry = (Hashtbl.create 7:regtbl)
+let global_registry = (Hashtbl.create 3:regtb)
+let local_registry = (Hashtbl.create 3:regtb)
 
-let registry_types = []
+let registry_types = ref []
 
 (*
  * Allow the registry file to be specified in an environment variable.
  *)
-let registry_file_ref = Env_arg.string (**)
-                           "registry"
-                           "/usr/u/nuprl/nuprl5/bin/reg-file.txt"
-                           "The registry file defines the MathBus syntax"
-                           (fun _ s v -> s := v)
+let registry_file_ref = ref (*Env_arg.string 
+                           "registry"*)
+                           "/amd/noon/y/nuprl/nuprl4i/nuprl5L/nuprl-light/library/reg-file-test.txt"
+                          (* "The registry file defines the MathBus syntax"
+                           (fun _ s v -> s := v)*)
 
 let registry_file = !registry_file_ref
 
 let define_registry_type label bidirectional = 
-  if (List.mem label registry_types) then ()
+  if (List.mem label !registry_types) then ()
   else 
     begin
+      registry_types := label::!registry_types;
       Hashtbl.add local_registry label
-        (if bidirectional then
-	   Bi ((Hashtbl.create 10), (Hashtbl.create 10))
+	(if bidirectional then
+	  Bi ((Hashtbl.create 10), (Hashtbl.create 10))
 	else Uni (Hashtbl.create 10));
       
-      Hashtbl.add global_registry label (if bidirectional then
-	Bi ((Hashtbl.create 10), (Hashtbl.create 10))
-      else Uni (Hashtbl.create 10));
+      Hashtbl.add global_registry label 
+	(if bidirectional then
+	  Bi ((Hashtbl.create 10), (Hashtbl.create 10))
+      	else Uni (Hashtbl.create 10));
       
-      let registry_types  = label::registry_types in  ()
-    end  ;;
+    end;;
       
 
-define_registry_type "StringId" true  ;;
-define_registry_type "SubTypes" false  ;;
+define_registry_type "StringId" true;;
+define_registry_type "SubTypes" false;;
 
 let clear_registry globalp localp =
   begin
     if globalp then
       Hashtbl.clear global_registry
     else ();
-    if localp then
+    if localp then 
       Hashtbl.clear local_registry
     else ()
   end
 
- (*params are string*)	 
 let registry_lookup_value id regtype =
-  match (Hashtbl.find local_registry regtype)  with
-    Uni h -> let l = Hashtbl.find_all h id in
-    if List.length l > 0 then Some (List.hd l)
-    else (match (Hashtbl.find global_registry regtype)  with
-      Uni h -> let l = Hashtbl.find_all h id in
-      if List.length l > 0 then Some (List.hd l)
-      else  None
-    | Bi (h1, h2) -> let l = Hashtbl.find_all h1 id in
-      if List.length l > 0 then Some (List.hd l)
-      else  None)
-  | Bi (h1, h2) -> let l = Hashtbl.find_all h1 id in
-    if List.length l > 0 then Some (List.hd l)
-    else (match (Hashtbl.find global_registry regtype)  with
-      Uni h -> let l = Hashtbl.find_all h id in
-      if List.length l > 0 then Some (List.hd l)
-      else None
-    |Bi (h1, h2) -> let l = Hashtbl.find_all h1 id in
-      if List.length l > 0 then Some (List.hd l)
-      else  None)
-     
-(*param are string*)	 
+  match (Hashtbl.find local_registry regtype) with
+    Uni h -> (try Hashtbl.find h id with
+      Not_found -> (match (Hashtbl.find global_registry regtype) with
+      	Uni h -> Hashtbl.find h id
+      | Bi (h1, h2) -> Hashtbl.find h1 id))
+  | Bi (h1, h2) -> (try Hashtbl.find h1 id with
+      Not_found -> (match (Hashtbl.find global_registry regtype) with
+    	Uni h -> Hashtbl.find h id
+      | Bi (h1, h2) -> Hashtbl.find h1 id))
+
 let registry_lookup_identifier regtype value =
   match (Hashtbl.find local_registry regtype) with
-    Uni h ->
-      failwith "Not a bidirectional registry property"
-  | Bi (h1, h2) ->
-      let v = Hashtbl.find_all  h2 value in
-      if  (List.length v) > 0 then Some (List.hd v)
-      else match (Hashtbl.find global_registry regtype) with
+    Uni h -> failwith "Not a bidirectional registry property"
+  | Bi (h1, h2) -> (try Hashtbl.find h2 value with
+      Not_found -> (match (Hashtbl.find global_registry regtype) with
 	Uni h -> failwith "Not a bidirectional registry property"
-      | Bi (h1, h2) -> let p = Hashtbl.find_all h2 value in
-	if List.length  p > 0 then Some (List.hd p)
-	else  None
+      | Bi (h1, h2) -> Hashtbl.find h2 value))
      
-
-(*param are string*)	 
 let registry_store_local id regtype value =
   match (Hashtbl.find local_registry regtype) with
     Uni h -> Hashtbl.add h id value
   | Bi (h1, h2) -> (Hashtbl.add h1 id value;
 		    Hashtbl.add h2 value id)
      
-       
-
+ 
 (*;; Load a registry file*)
 let read_string stream =
   let s = String.create 100 in
@@ -115,17 +95,19 @@ let read_string stream =
     | c ->  (String.set s i c; readstring (i + 1) false) in
   readstring 0 true 
 			     
-let read_number stream =
+let read_int32 stream =
   let s = read_string stream in
-  create (int_of_string s)
-
+  let value = (int_of_string s) in
+ if value < -9 then (*LAL hack-subtypes can be neg...number too big to convert from string*)
+  (print_int value; failwith "fg" )(*"not yet ready to read in int32s"*)
+ else int32_of_int value
 
 let read_registry =
   let stream = open_in registry_file in
   let p = (read_string stream) in
   let rec loop ident =
     if ident = "" then close_in stream
-    else  let a = (read_string stream) in let b = (read_number stream) in
+    else  let a = (read_string stream) in let b = (read_int32 stream) in
     registry_store_local ident a b;
     loop (read_string stream)
   in loop p

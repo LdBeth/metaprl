@@ -1,6 +1,6 @@
 open Term
 open Opname
-open BigInt
+open Int32
 
 
 let nuprl5_opname = mk_opname "!nuprl5_implementation!" nil_opname
@@ -11,7 +11,7 @@ let make_bool_parameter b =
   make_param (ParmList
 		[(make_param (Token "bool")); (make_param (Number (Num.Int (if b then 1 else 0))))])
 let make_time_parameter time =
-  let (a, b) = dest_bigint time in
+  let (a, b) = dest_int32 time in
   make_param (ParmList
 		[(make_param (Token "time")); (make_param (Number (Num.Int a))); (make_param (Number (Num.Int b)))])
 
@@ -40,7 +40,7 @@ let destruct_time_parameter p =
     ParmList [h; a; b] -> (match (dest_param h) with
       Token s -> if s = "time" then (match (dest_param a) with
 	Number (Num.Int i) -> (match (dest_param b) with
-	  Number (Num.Int k) -> make_bigint (i, k)
+	  Number (Num.Int k) -> make_int32 (i, k)
       	| _ -> raise (Invalid_argument "destruct_time_parameter"))
       | _ -> raise (Invalid_argument "destruct_time_parameter"))
       else raise (Invalid_argument "destruct_time_parameter")

@@ -27,7 +27,7 @@ CCLIBS = -cclib -lunix -cclib -lnums
 # Library files
 LMFILES :=\
 	utils\
-	bigInt\
+	int32\
 	nuprl5\
 	registry\
 	mathBus\
@@ -53,7 +53,11 @@ install:: $(MAIN).cma
 	$(INSTALL) $(MAIN).cma $(NLLIB)
 
 clean::
-	del -f *.p4* *.pp*
+	rm -f *.p4* *.pp*
+
+# Add dependency for parser
+$(addsuffix .cmiz, $(MFILES)) $(addsuffix .cmoz, $(MFILES)): $(REF_ROOT)/filter/prlcomp.cma
+$(addsuffix .p4i, $(MFILES)) $(addsuffix .p4, $(MFILES)): $(REF_ROOT)/filter/prlcomp.cma
 
 # Real makefile
 include $(REF_ROOT)/mk/config

@@ -1,0 +1,64 @@
+Term StringId 0x00002000
+Term SubTypes 0
+
+Bindings StringId 0x00002001
+Bindings SubTypes 0
+
+Level StringId 0x00002002
+Level SubTypes 0
+
+Token StringId 0x00002003
+Token SubTypes -1
+
+Variable StringId 0x00002004
+Variable SubTypes -1
+
+LevelVariable StringId 0x00002005
+LevelVariable SubTypes 0
+
+TermIndex StringId 0x00002006
+TermIndex SubTypes -1
+
+MLevel StringId 0x00002007
+MLevel SubTypes -1
+
+MToken StringId 0x00002008
+MToken SubTypes -1
+
+MVariable StringId 0x00002009
+MVariable SubTypes -1
+
+MLongInteger StringId 0x0000200A
+MLongInteger SubTypes -1
+
+MString StringId 0x0000200B
+MString SubTypes -1
+
+ObjectId StringId 0x0000200C
+ObjectId SubTypes 0
+
+ParmList StringId 0x0000200D
+ParmList SubTypes 0
+
+Void StringId 0x00000000
+Void SubTypes -1
+
+Null StringId 0x00000001
+Null SubTypes 0
+
+String StringId 0x00000002
+String SubTypes -1
+
+LongInteger StringId 0x00000003
+LongInteger SubTypes -1
+
+Sequence StringId 0x00000105
+Sequence SubTypes 0
+
+RegistryStoreLocal StringId 0x00000106
+RegistryStoreLocal SubTypes 2
+
+Attributes StringId 0x00000006
+Attributes SubTypes 0
+
+

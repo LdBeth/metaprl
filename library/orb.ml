@@ -440,6 +440,7 @@ let connect_aux orb host hsock sock =
           
 
 let connect orb host hsock sock =
+
   db_init "/usr/u/nuprl/nuprl5/NuPrlDB";	
   let link = connect_aux orb host hsock sock in
   let tcon = { link = link; orb = orb; ro_address = [] } in

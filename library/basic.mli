@@ -1,6 +1,6 @@
  
 open Term
-open BigInt
+open Int32
 
 (*
  * common terms
@@ -54,7 +54,7 @@ type stamp = {term: term;
 	      process_id: string;
 	      transaction_seq: int;
 	      seq: int;
-	      time: bigint
+	      time: int32
 	      }
 
 val print_stamp		: stamp -> unit
