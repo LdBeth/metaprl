@@ -1,10 +1,12 @@
 The directions below outline the process for compiling MetaPRL under Mac OS
 X.  They were developed by Brian Emre Aydemir (emre@cs.caltech.edu) when he
-had temporary access to a machine running Mac OS X.  So if something doesn't
-quite work... *shrug*.
+had temporary access to a machine running Mac OS X.  Issues that Brian could
+not resolve are listed at the end of this file.
 
 Note: All the commands below need to be run from a command line, such as
 the Terminal program in /Applications/Utilities.
+
+---------------------------------------------------------------------------
 
 0. If you have not already installed the Apple Developer Tools, you will
    need to download them.  If you have an Apple Developer Connection (ADC)
@@ -53,8 +55,8 @@ the Terminal program in /Applications/Utilities.
 
 2. The OCaml install in the previous step should look like it completed
    without any significant errors.  Unfortunately, this isn't the case.
-   (We're unsure whose fault this is.)  If the OCaml libraries were
-   installed into lib/ocaml, you'll need to run the following two commands:
+   (I'm unsure whose fault this is.)  If the OCaml libraries were installed
+   into lib/ocaml, you'll need to run the following two commands:
 
       ranlib lib/ocaml/camlp4/camlp4.a
       ranlib lib/ocaml/camlp4/odyl.a
@@ -88,26 +90,47 @@ the Terminal program in /Applications/Utilities.
 
       editor/ml/mpopt
 
-   Note the output will be unreadable unless you use the fonts in
+---------------------------------------------------------------------------
+
+Known issues that Brian (emre@cs.caltech.edu) could not resolve:
+
+1. Fonts:  The MetaPRL toploop looks pretty bad unless you use a font that
+   has all the necessary Unicode characters.  Unfortunately, I do not know
+   of any that come with Mac OS X or MetaPRL.  The fonts in
 
       editor/fonts/ttf
 
-   To install the fonts, copy them into a fonts directory, such as
+   seem to work pretty well, although some characters are missing and others
+   appear to be incorrect (such as the 'element of' symbol).  These fonts
+   can be installed by copying to a
 
-      /Users/your-user-name/Library/Fonts
+      Libarary/Fonts
 
-   or
+   folder and unpacking them using the 'gunzip' program.
 
-      /Library/Fonts
+   The default Monaco font also works fairly well, although 'subscript'
+   characters look quite odd.
 
-   and then unzip them (using the 'gunzip' program).  Set the Terminal
-   program to use those fonts.  They will be called 'MetaPRL Luxi Mono' in
-   the font selection dialogs.  You may need to logout and then log back in
-   for the fonts to show up.
+   In either case, you may want to fiddle with the font size and character
+   spacing in the Font dialog (under the 'Font' menu, choose 'Show Fonts').
+   Enabling anti-aliasing may also help (in the 'Terminal menu', chose
+   'Window Settings...', and then look under 'Display').
 
-   Anti-aliasing significantly improves the display of these fonts.  It can
-   be enabled in the 'Window Settings...' dialog in the 'Terminal' menu.
+2. status_all ():  This issue is a bit more worrisome.  Attempting to run
 
-   Note: You may want to save your work often in the toploop.  The Terminal
-   application seems to be prone to crashing when using the MetaPRL fonts
-   (at least in emre's experience).
+      status_all ();;
+
+   from the '/' directory of the toploop causes the following uncaught
+   exception to be raised:
+
+      # status_all ();;
+      ... [lots of output ommitted] ...
+      Module: /itt_grouplikeobj
+      Failure("Failed to find the specified format of itt_grouplikeobj")
+      Uncaught exception: Failure("Failed to find the specified format of
+                                   itt_grouplikeobj")
+      #
+
+   This happens in both the bytecode and native-code toploops.  The
+   status_all logs for MetaPRL, as of this writing, did not display this
+   error.  [The behavior above happens with THEORIES=all in mk/config.]
