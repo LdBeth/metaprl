@@ -12,23 +12,22 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ *
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
  *)
 
 open Printf
@@ -57,6 +56,7 @@ let _ =
       r.Gc.minor_heap_size <- 196608;
       r.Gc.major_heap_increment <- 393216;
       r.Gc.space_overhead <- 70;
+      r.Gc.stack_limit <- 524288;
       Gc.set r
 
 (************************************************************************
@@ -116,7 +116,7 @@ and normalize_opname opname =
       opname
    else
       let res = make_opname opname.opname_name
-      in 
+      in
          opname.opname_name <- res.opname_name;
          opname.opname_token <- opname_token;
          res
@@ -165,7 +165,7 @@ let eq op1 op2 =
 let dst_opname = function
    { opname_name = n :: name } -> n, { opname_token = opname_token; opname_name = name }
  | _ -> raise (Invalid_argument "dst_opname")
- 
+
 let dest_opname { opname_name = name } =
    name
 

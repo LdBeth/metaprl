@@ -230,6 +230,11 @@ PARSER & FILTER
 5.6) (2000.05.30) Resource annotations on axioms (rules that have neither parameters nor
 assumptions) are currently silently ignored.
 
+5.7) (2001.07.18 nogin) Currently .prla ASCII IO requires stack size
+proportional to the file size. This means that we will have a stack overflow
+if .prla file is too big (I already had to increase the stack size because of
+that). We should try to rewrite that code in a tail-recusive way.
+
 RULES & REWRITES
 
 6.1) Fixed

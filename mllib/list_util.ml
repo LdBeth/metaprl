@@ -623,8 +623,7 @@ let remove_suffix l suffix =
 let rec rev_iter f = function
    h::t ->
       rev_iter f t;
-      f h;
-      ()
+      ignore (f h)
  | [] ->
       ()
 
