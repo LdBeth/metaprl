@@ -21,7 +21,7 @@ cat << end_of_cat
 TERMS=$TERMS
 
 #
-# What representation to use for hypothesis and conclisions lists
+# What representation to use for hypothesis and conclusion lists
 # Possible values: Array, Splay (for splay trees)
 # If not sure, use Array
 #
@@ -53,7 +53,7 @@ CCC=$CCC
 # Recomended value - between #_of_processors and 2 * #_of_processors
 # On mojave.cs.cornell.edu and tulare.cs.cornell.edu use 4.
 #
-# WARNING: Their is some problem with make 3.77 that prevents it
+# WARNING: There is a problem with make 3.77 that prevents it
 # from understanding our Makefiles correctly. If you have make 3.77
 # (run make -v to be sure), use MAKE_JOBS=1
 #

@@ -816,7 +816,7 @@ struct
       let parent_lazy = ParentLazy arg in
       let rec collect labels goals =
          match labels, goals with
-         label :: lt, goal :: gt ->
+            label :: lt, goal :: gt ->
                let label =
                   match label with
                      Some label ->
@@ -936,7 +936,6 @@ struct
                raise tactic_of_rewrite_exn1
           | _ ->
                raise tactic_of_rewrite_exn2
-
 
    (*
     * Convert a conditional rewrite to a tactic.
