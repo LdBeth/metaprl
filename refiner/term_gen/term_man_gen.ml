@@ -747,6 +747,12 @@ struct
    let mk_xrewrite_term = mk_dep0_dep0_term xrewrite_op
    let dest_xrewrite = dest_dep0_dep0_term xrewrite_op
 
+   let rec is_inside_sequent t =
+      is_concl_term t || is_hyp_term t ||
+      (is_context_term t &&
+         let _, t, _, _ = dest_context t in
+            is_inside_sequent t)
+
    let rec context_vars_term vars t =
       let t' = dest_term t in
       let op = dest_op t'.term_op in
@@ -754,7 +760,7 @@ struct
             let v, t, _, args = dest_context t in
             let ints, addrs = vars in
             let vars =
-               if is_concl_term t || is_hyp_term t then
+               if is_inside_sequent t then
                   (SymbolSet.add ints v), addrs
                else
                   ints, (SymbolSet.add addrs v)
