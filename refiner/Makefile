@@ -75,6 +75,8 @@ $(MAINLIB).cmxa: $(CMXFILES)
 
 $(CMALIBS): lib
 
+$(CMXFILES): optlib
+
 #
 # Standard build rules
 #
