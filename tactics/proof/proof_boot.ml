@@ -2111,8 +2111,9 @@ struct
          node_count_ext (rcount, succ ncount) ext
     | Compose { comp_goal = goal; comp_subgoals = subgoals } ->
          node_count_subgoals_ext (node_count_ext (rcount, succ ncount) goal) subgoals
-    | RuleBox { rule_extract = goal; rule_subgoals = subgoals } ->
-         node_count_subgoals_ext (node_count_ext (succ rcount, succ ncount) goal) subgoals
+    | RuleBox ri as node ->
+         if not ri.rule_extract_normalized then ignore (normalize node);
+         node_count_subgoals_ext (node_count_ext (succ rcount, succ ncount) ri.rule_extract) ri.rule_subgoals
     | Pending f ->
          node_count_ext (rcount, ncount) (f ())
     | Locked ext ->
@@ -2124,12 +2125,8 @@ struct
     | [] ->
          counts
 
-   let node_count { pf_node = node } =
-      if !debug_proof then begin
-         eprintf "Counting nodes of:\n";
-         print_ext node
-      end;
-      node_count_ext (0, 0) (normalize node)
+   let node_count pf =
+      node_count_ext (0, 0) pf.pf_node
 
    (*
     * Kreitz the tree into a single node.
