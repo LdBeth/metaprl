@@ -1,28 +1,52 @@
 #
 # Libraries
 #
-DIR := doc/latex/theories
-ROOT := ../../..
-TEXINPUTS := ../inputs:$(TEXINPUTS)
+DIR = doc/latex/theories
+ROOT = ../../..
+ifndef TEXINPUTS
+	TEXINPUTS = ../inputs:.:
+else
+	TEXINPUTS = ../inputs:$(TEXINPUTS)
+endif
 
 include $(ROOT)/mk/preface
+
+.PHONY: doc
 
 all: doc
 opt: doc
 
-doc:	metaprl.bib
-	(cd $(ROOT)/editor/ml; make tex)
-	touch all-theories.ind
-	pdflatex all-theories
-	bibtex all-theories
-	pdflatex all-theories
-	pdflatex all-theories
-	makeindex all-theories
-	pdflatex all-theories
-	cp all-theories.pdf $(ROOT)/doc/ps/theories/theories.pdf
+INPUTS = ../inputs/metaprl.bib\
+	../inputs/metaprl.tex\
+	all-theories.tex
 
-metaprl.bib: ../inputs/metaprl.bib
-	$(LN) ../inputs/metaprl.bib .
+TEXTHEORIES=\
+	base\
+	fol\
+	itt\
+	czf
+
+TEXFILES = $(addsuffix /theory.tex, $(TEXTHEORIES))\
+	$(addsuffix /theory-body.tex, $(TEXTHEORIES))
+
+doc:
+	+ @ $(MAKE) -C $(ROOT)/editor/ml TEXTHEORIES="$(TEXTHEORIES)" tex
+	+ @ $(MAKE) $(ROOT)/doc/ps/theories/theories.pdf
+
+all-theories.pdf: $(INPUTS) $(TEXFILES)
+	touch all-theories.ind
+	TEXINPUTS=$(TEXINPUTS) pdflatex all-theories
+	if [ grep -q \\\citation all-theories.aux ]; then \
+   	TEXINPUTS=$(TEXINPUTS) bibtex all-theories; \
+		TEXINPUTS=$(TEXINPUTS) pdflatex all-theories; \
+		TEXINPUTS=$(TEXINPUTS) pdflatex all-theories; \
+	fi
+	TEXINPUTS=$(TEXINPUTS) makeindex all-theories
+	TEXINPUTS=$(TEXINPUTS) pdflatex all-theories
+	cp -a all-theories.pdf $(ROOT)/doc/ps/theories/theories.pdf
+
+$(ROOT)/doc/ps/theories/theories.pdf: all-theories.pdf
+	$(CP) all-theories.pdf $@
 
 clean::
 	$(RM) *.log *.aux *.idx *.ilg *.ind *.pdf

@@ -104,11 +104,11 @@ TCMXFILES = $(addsuffix .cmx, $(TOPFILES))
 # Otherwise, use the null refiner.
 #
 ifneq ($(ENSROOT),undefined)
-    CMALIBS_ens = $(ROOT)/lib/trefiner_ens.cma
-    CMXALIBS_ens = $(ROOT)/lib/trefiner_ens.cmxa
+	CMALIBS_ens = $(ROOT)/lib/trefiner_ens.cma
+	CMXALIBS_ens = $(ROOT)/lib/trefiner_ens.cmxa
 else
-    CMALIBS_ens = $(ROOT)/lib/trefiner_null.cma
-    CMXALIBS_ens = $(ROOT)/lib/trefiner_null.cmxa
+	CMALIBS_ens = $(ROOT)/lib/trefiner_null.cma
+	CMXALIBS_ens = $(ROOT)/lib/trefiner_null.cmxa
 endif
 
 ########################################################################
@@ -241,20 +241,31 @@ mp_version.cmi: mp_version.mli
 #
 TEXDIR=$(ROOT)/doc/latex/theories
 
-TEXTHEORIES=\
-	base\
-	fol\
-	itt\
-	czf
+ifndef TEXTHEORIES
+	TEXTHEORIES=\
+		base\
+		fol\
+		itt\
+		czf
+endif
 
 TEXFILES=$(addprefix $(TEXDIR)/, $(addsuffix /theory.tex, $(TEXTHEORIES)))
 
-.PHONY: tex
+.PHONY: tex texbyte texopt do_tex
 
-tex: $(TEXFILES)
+tex:
+	+ @ if [ -f $(MP).opt ]; then $(MAKE) texopt; else $(MAKE) texbyte; fi
 
-$(TEXDIR)/%/theory.tex: $(MP).top $(TEXDIR)/%/print.ml
-	./mptop $(TEXDIR)/$*/print.ml
+texbyte:
+	+ @ $(MAKE) TEXBIN=$(MP).top TEXPROG=./mptop do_tex
+
+texopt:
+	+ @ $(MAKE) TEXBIN=$(MP).opt TEXPROG=./mpopt do_tex
+
+do_tex: $(TEXFILES)
+
+$(TEXDIR)/%/theory.tex: $(TEXBIN) $(TEXDIR)/%/print.ml
+	$(TEXPROG) $(TEXDIR)/$*/print.ml
 
 # Real makefile
 include $(ROOT)/mk/rules
