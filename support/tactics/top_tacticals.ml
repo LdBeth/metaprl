@@ -184,10 +184,13 @@ let prefix_orelseT = Tacticals.prefix_orelseT
 let prefix_andalsoT = Tacticals.prefix_andalsoT
 let prefix_orthenT = Tacticals.prefix_orthenT
 let firstT = Tacticals.firstT
-let prefix_thenT = Tacticals.prefix_thenT
 let prefix_thenLT = Tacticals.prefix_thenLT
 let seqT = Tacticals.seqT
 let seqOnSameConclT = Tacticals.seqOnSameConclT
+
+let prefix_thenT tac1 tac2 = 
+   if tac1 == idT then tac2 else if tac2 == idT then tac1 else
+      Tacticals.prefix_thenT tac1 tac2
 
 doc <:doc<
    @begin[doc]
@@ -468,21 +471,22 @@ let seqOnMT = Tacticals.seqOnMT
 let completeMT = Tacticals.completeMT
 let labProgressT = Tacticals.labProgressT
 
-let thinMatchT thinT assum =
+let thinMatchT thin_many assum =
    funT (fun p ->
    let goal = Sequent.goal p in
    let index = Match_seq.match_hyps
       (explode_sequent goal)
       (explode_sequent assum) in
-   let rec tac j =
-      if j = 0 then idT else
-         match index.(pred j) with
-            Some _ -> tac (pred j)
+   let rec tac i j =
+      if i = 0 then if j > 1 then thin_many 1 j else idT else
+         match index.(pred i) with
+            Some _ -> 
+               let tac = tac (pred i) 1 in
+                  if j > 1 then thin_many (succ i) j thenT tac else tac
           | None ->
-               let tac = tac (pred j) in
-                  if tac == idT then thinT j else thinT j thenT tac
+               tac (pred i) (succ j)
    in
-      tac (Sequent.hyp_count p))
+      tac (Sequent.hyp_count p) 1)
 
 let nameHypT i v =
    funT (fun p ->
