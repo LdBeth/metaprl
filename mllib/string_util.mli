@@ -72,6 +72,14 @@ val split : char -> string -> string list
 val split_set : string -> string -> string list
 
 (*
+ * Quote strings that contains unprintable characters, spaces or qoutes.
+ * unquote(quote (s)) = s 
+ * When s does not have any special characters, quote(s) == s
+ *)
+val quote: string -> string
+val unquote: string -> string
+
+(*
  * Find a new name (usually - for a variable) avoiding those where the predicate is true
  *)
 val vnewname : string -> (string -> bool) -> string

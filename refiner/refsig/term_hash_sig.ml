@@ -130,6 +130,7 @@ sig
 
    module HashTerm : Hashtbl.S with type key = term_index
    module HashBTerm : Hashtbl.S with type key = bound_term_header
+   module HashHyp : Hashtbl.S with type key = hypothesis_header
 
 end
 

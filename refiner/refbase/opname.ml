@@ -161,6 +161,11 @@ let eq op1 op2 =
 (*
  * Destructor.
  *)
+
+let dst_opname = function
+   { opname_name = n :: name } -> n, { opname_token = opname_token; opname_name = name }
+ | _ -> raise (Invalid_argument "dst_opname")
+ 
 let dest_opname { opname_name = name } =
    name
 

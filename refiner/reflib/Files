@@ -5,6 +5,8 @@ REFLIB_FILES :=\
 	term_copy_weak\
 	term_copy2_weak\
 	term_io\
+	ascii_io_sig\
+	ascii_io\
 	ml_format_sig\
 	ml_format\
 	ml_print_sig\

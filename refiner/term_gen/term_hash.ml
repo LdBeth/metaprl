@@ -318,6 +318,27 @@ struct
    end
 
    module HashBTerm = Hashtbl.Make (HashedBTerm)
+
+   module HashedHyp =
+   struct
+
+      type t = hypothesis_header
+
+      let equal h1 h2 = match h1,h2 with
+         Hypothesis (v1,t1), Hypothesis (v2,t2) ->
+            v1=v2 && HashedTerm.equal t1 t2
+       | Context (v1, ts1), Context (v2, ts2) ->
+            v1=v2 && List_util.for_all2 HashedTerm.equal ts1 ts2
+       | _ -> false
+
+      let hash = function
+         Hypothesis (v,t) ->
+            ((Hashtbl.hash v) + (65599 * (HashedTerm.hash t))) land 0x3FFFFFFF
+       | Context (v,ts) ->
+            ((Hashtbl.hash v) * 65599 + Hashtbl.hash (List.map HashedTerm.hash ts)) land 0x3FFFFFFF
+   end
+
+   module HashHyp = Hashtbl.Make (HashedHyp)
    
 end
 

@@ -221,6 +221,61 @@ let split_set c s =
    in
       loop 0 0
 
+external is_printable: char -> bool = "is_printable"
+
+let rec is_simple l i s =
+   if (i=l) then true else match String.unsafe_get s i with
+      '"' | '\\' | '\n' | '\t' | ' ' -> false
+    | c -> is_printable c && is_simple l (succ i) s
+
+let quote s = 
+   if s<>"" && is_simple (String.length s) 0 s then s
+   else "\"" ^ (String.escaped s) ^ "\""
+
+let rec unquote_aux l i s =
+   if (l=i) then raise (Invalid_argument "unquote");
+   match String.unsafe_get s i with
+      '\\' -> 
+         let i = succ i in
+         if (l=i) then raise (Invalid_argument "unquote");
+         begin match String.unsafe_get s i with
+            '\\' -> '\\' :: unquote_aux l (succ i) s
+          | 'n' -> '\n' :: unquote_aux l (succ i) s
+          | 't' -> '\t' :: unquote_aux l (succ i) s
+          | '"' -> '"' :: unquote_aux l (succ i) s
+          | ('0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9') as c1 ->
+               let i = succ i in
+               if (l=i) then raise (Invalid_argument "unquote");
+               begin match String.unsafe_get s i with
+                  ('0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9') as c2 ->
+                     let i = succ i in
+                     if (l=i) then raise (Invalid_argument "unquote");
+                     begin match String.unsafe_get s i with
+                        ('0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9') as c3 ->
+                           Char.chr ((Char.code c3) + (Char.code c2) * 10 + (Char.code c1) * 100 - 5328) :: unquote_aux l (succ i) s
+                      | _ -> raise (Invalid_argument "unquote")
+                     end
+                | _ -> raise (Invalid_argument "unquote")
+               end
+          | _ -> raise (Invalid_argument "unquote")
+         end
+    | '"' -> []
+    | c -> c :: unquote_aux l (succ i) s
+
+let rec unsafe_set_chars s i = function
+   [] -> ()
+ | c :: chars ->
+      String.unsafe_set s i c;
+      unsafe_set_chars s (succ i) chars
+
+let unquote s =
+   if s = "" then raise (Invalid_argument "unquote");
+   if s.[0]<>'"' then s else
+   let chars = unquote_aux (String.length s) 1 s in
+   let s' = String.create (List.length chars) in
+   unsafe_set_chars s' 0 chars;
+   s'
+
 let newname v i =
    v ^ "_" ^ (string_of_int i)
 

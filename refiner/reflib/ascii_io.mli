@@ -1,6 +1,5 @@
 (*
- * Opnames are basically just lists of strings, although
- * they may be hash-consed.
+ * This module defines functions used to read and write terms in a robust ASCII-based format
  *
  * ----------------------------------------------------------------
  *
@@ -27,41 +26,27 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Alexey Nogin
+ * nogin@cs.cornell.edu
+ *
  *)
 
-type atom
-type opname
+open Termmod_hash_sig
+open Ascii_io_sig
 
-(* Constructors *)
-val nil_opname : opname
-val mk_opname : string -> opname -> opname
-val make_opname : string list -> opname
+module MakeAsciiIO (TM: TermModuleHashSig) : 
+   AsciiIOSig
+   with type term = TM.TermType.term
+   with type param = TM.TermType.param
+   with type bound_term = TM.TermType.bound_term
+   with type hypothesis = TM.TermType.hypothesis
+   with type esequent = TM.TermType.esequent
 
-(* Atoms are always equal iff they are pointer equal *)
-val intern : opname -> atom
+module AsciiIO :
+   AsciiIOSig
+   with type term = Refiner.Refiner.TermType.term
+   with type param = Refiner.Refiner.TermType.param
+   with type bound_term = Refiner.Refiner.TermType.bound_term
+   with type hypothesis = Refiner.Refiner.TermType.hypothesis
+   with type esequent = Refiner.Refiner.TermType.esequent
 
-(* Opnames should always be compared with this equality *)
-val eq : opname -> opname -> bool
-
-(* Opnames can be normalized when they are unmarshaled *)
-val normalize_opname : opname -> opname
-
-(* Destructors *)
-val dst_opname : opname -> string * opname
-val dest_opname : opname -> string list
-val string_of_opname : opname -> string
-
-(*
- * Debugging.
- *)
-val debug_opname : bool ref
-
-(*
- * -*-
- * Local Variables:
- * Caml-master: "manager"
- * End:
- * -*-
- *)
