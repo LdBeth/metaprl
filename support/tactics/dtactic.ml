@@ -1,19 +1,19 @@
-doc <:doc< 
+doc <:doc<
    @begin[spelling]
    ElimArgsOption IntroArgsOption SelectOption ThinOption
    selT dT ext intro
    @end[spelling]
-  
+
    @begin[doc]
    @module[Dtactic]
-  
+
    The @tactic[dT] tactic is the cornerstone of reasoning in
    most logics; it provides generic application of introduction
    elimination reasoning.  The @hrefmodule[Dtactic] defines a @emph{generic}
    resource that can be used to add introduction and elimination reasoning.
    In addition, it add resource @emph{annotations} that can be used in rule
    definitions to add them automatically to the @tt[dT] resources.
-  
+
    The @tt[dT] tactic uses two resources.  The @resource[intro]
    is used to collect introduction rules; and the @resource[elim]
    is used to collect elimination rules.  The components of both resources
@@ -22,15 +22,15 @@ doc <:doc<
    @hrefresource[elim] takes a tactic of type @code{int -> tactic} (the
    tactic takes the number of the hypothesis to which it applies), and the
    @hrefresource[intro] takes a tactic of type @code{tactic}.
-  
+
    The (@hreftactic[dT] $i$) tactic is a generic tactic that takes the clause number
    of the clause (either hypothesis or conclusion) to ``decompose,'' and it
    applies the most appropriate entry from the resources.
-  
+
    The resources also allow resource annotations in rule definitions.
    Typically, the annotation is added to explicit introduction or
    elimination rules, like the following:
-  
+
    $$
    @defrule[and_intro]{
        @tt["{| intro [ ] |}"] @Gamma;
@@ -38,14 +38,14 @@ doc <:doc<
           <<sequent(nil){ <H> >- 'B }>>;
        <<sequent(nil){ <H> >- <:doc<A @wedge B>> }>>}
    $$
-  
+
    Once this rule is defined, an application of the tactic (@hreftactic[dT] 0)
    to a conjunction will result in an application of the @hrefrule[and_intro]
    rule.
-  
+
    The resource annotations take a list of optional arguments.  The
    @hrefresource[intro] takes arguments of the following type:
-  
+
    @begin[center]
    @begin[verbatim]
    type intro_option =
@@ -55,11 +55,11 @@ doc <:doc<
     | CondMustComplete of tactic_arg -> bool
    @end[verbatim]
    @end[center]
-  
+
    The @tt[SelectOption] is used for rules that require a selection argument.
    For instance, the disjunction introduction rule has two forms for the left
    and right-hand forms.
-  
+
    $$
    @defrule[or_intro_left]{
       @tt["{| intro [SelectOption 1] |}"] @Gamma;
@@ -67,7 +67,7 @@ doc <:doc<
           @cr <<sequent(nil){ <H> >- 'A }>>;
       <<sequent(nil){ <H> >- <:doc<A @wedge B>> }>>}
    $$
-  
+
    $$
    @defrule[or_intro_right]{
      @tt["{| intro [SelectOption 2] |}"] @Gamma;
@@ -75,15 +75,15 @@ doc <:doc<
         <<sequent(nil){ <H> >- 'B }>>;
      <<sequent(nil){ <H> >- <:doc<A @wedge B>> }>>}
    $$
-  
+
    These options require @hreftactic[selT] arguments: the left rule is applied with
    @tt{selT 1 (dT 0)} and the right rule is applied with @tt{selT 2 (dT 0)}.
-  
+
    The @tt[IntroArgsOption] is used to @emph{infer} arguments to the rule.
    The function argument takes the current goal and a subterm, and it provides
    an argument list that can be used in the rule application.  The @code{term option}
    entry describes the subterm to be used for the second function argument.
-  
+
    The @tt[AutoMustComplete] option can be used to indicate that the
    @hreftactic[autoT] tactic should not use this rule unless it is capable
    of finishing the proof on its own. This option can be used to mark irreversible
@@ -92,9 +92,9 @@ doc <:doc<
 
    The @tt[CondMustComplete] option is a conditional version of @tt[AutoMustComplete];
    it is used to pass in a predicate controlling when to activate the @tt[AutoMustComplete].
-  
+
    The @hrefresource[elim_resource] options are defined with the following type:
-  
+
    @begin[center]
    @begin[verbatim]
    type elim_option =
@@ -102,52 +102,52 @@ doc <:doc<
     | ElimArgsOption of (tactic_arg -> term -> term list) * term option
    @end[verbatim]
    @end[center]
-  
+
    The @tt[ElimArgsOption] provides arguments in the same way as the
    @tt[IntroArgsOption].  The @tt[ThinOption] is an argument that provides an
    optional tactic to ``thin'' the hypothesis after application of the
    elimination rule.
-  
+
    The @hreftactic[dT] resources are implemented as tables that store
    the term descriptions and tactics for ``decomposition''
    reasoning.  The @hreftactic[dT] tactic select the most appropriate
    rule for a given goal and applies it.  The @tt{(dT 0)} tactic
    is added to the @hrefresource[auto_resource] by default.
    @end[doc]
-  
+
    ---------------------------------------------------------------
-  
+
    @begin[license]
-  
+
    This file is part of MetaPRL, a modular, higher order
    logical framework that provides a logical programming
    environment for OCaml and other languages.
-  
+
    See the file doc/index.html for information on Nuprl,
    OCaml, and more information about this system.
-  
+
    Copyright (C) 1998 Jason Hickey, Cornell University
-  
+
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
    as published by the Free Software Foundation; either version 2
    of the License, or (at your option) any later version.
-  
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-  
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-  
+
    Author: Jason Hickey @email{jyh@cs.caltech.edu}
    Modified by: Aleksey Nogin @email{nogin@cs.cornell.edu}
    @end[license]
 >>
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    @parents
    @end[doc]
@@ -174,6 +174,7 @@ open Tactic_type
 open Tactic_type.Tacticals
 
 open Auto_tactic
+open Simp_typeinf
 open Typeinf
 open Mptop
 
@@ -262,7 +263,7 @@ let intro_compact entries =
    in
 
    (* Compile the select version of the tactic *)
-   let compile_select name entries = 
+   let compile_select name entries =
       funT (fun p ->
          let sel =
             try get_sel_arg p with
@@ -278,7 +279,7 @@ let intro_compact entries =
    in
 
    (* Compile the most general form *)
-   let compile_general name normal select = 
+   let compile_general name normal select =
       funT (fun p ->
          begin try assoc name (get_sel_arg p) select with
             RefineError _ ->
@@ -320,7 +321,7 @@ let rec first_with_argT i = function
 
 let rec compact_elim_data = function
    [] | [_] as entry -> entry
- | tac :: tacs -> 
+ | tac :: tacs ->
       let same_term tac' = alpha_equal tac.info_term tac'.info_term in
       let tacs1, tacs2 = List.partition same_term tacs in
       let tacs = List.map (fun tac -> tac.info_value) (tac::tacs1) in
@@ -474,7 +475,7 @@ let process_intro_resource_annotation name context_args term_args _ statement (p
                   auto_aux tl
              | [] ->
                     (fun p -> ())
-            in 
+            in
             let check_auto = auto_aux options
             in
                funT (fun p ->
@@ -591,7 +592,7 @@ let process_elim_resource_annotation name context_args term_args _ statement (pr
             let thin_incr = (check_thin_nums thin_nums) - hnum in
             argfunT (fun i p ->
                let tac = Tactic_type.Tactic.tactic_of_rule pre_tactic [| i |] (term_args i p)
-               in 
+               in
                   if get_thinning_arg p then
                      tac thenT tryT (thinT (i + thin_incr))
                   else
@@ -679,6 +680,7 @@ let resource auto += [ {
 
 let elim_typeinf t = ElimArgsOption (infer_type_args, Some t)
 let intro_typeinf t = IntroArgsOption (infer_type_args, Some t)
+let simp_intro_typeinf t = IntroArgsOption (simp_infer_type_args, Some t)
 let elim_typeinf_plusone t = ElimArgsOption (infer_type_2args, Some t)
 let intro_typeinf_plusone t = IntroArgsOption (infer_type_2args, Some t)
 let univ_arg_fun p _ = [get_univ_arg p]

@@ -3,6 +3,10 @@
  * This is mostly an incomplete type inference algorithm, but
  * it is used to perform basic inference.
  *
+ * The structure of this code is similar to the Simp_typeinf
+ * module, but this implementation includes support for a broader
+ * set of heuristics.
+ *
  * ----------------------------------------------------------------
  *
  * This file is part of MetaPRL, a modular, higher order

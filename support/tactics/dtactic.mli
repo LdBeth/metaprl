@@ -76,6 +76,7 @@ val in_auto : tactic_arg -> bool (* Returns true what we are in weakAutoT, but n
 topval dForT : int -> tactic
 
 val intro_typeinf : term -> intro_option
+val simp_intro_typeinf : term -> intro_option
 val elim_typeinf : term -> elim_option
 val intro_typeinf_plusone : term -> intro_option
 val elim_typeinf_plusone : term -> elim_option

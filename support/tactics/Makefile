@@ -20,6 +20,7 @@ MPFILES =\
 	var\
 	top_tacticals\
 	top_conversionals\
+	simp_typeinf\
 	typeinf\
 	auto_tactic\
 	dtactic\

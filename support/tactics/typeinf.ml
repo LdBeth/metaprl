@@ -189,9 +189,9 @@ let infer tbl =
    let rec aux consts decls eqs opt_eqs defs t =
       if is_var_term t then
          let v = dest_var t in
-            try eqs, opt_eqs, defs, List.assoc v decls
-            with Not_found ->
-               raise (RefineError ("typeinf", StringStringError ("Undeclared variable", v)))
+            try eqs, opt_eqs, defs, List.assoc v decls with
+               Not_found ->
+                  raise (RefineError ("typeinf", StringStringError ("Undeclared variable", v)))
       else
          let inf =
             try snd (lookup tbl t) with
