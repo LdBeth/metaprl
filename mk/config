@@ -13,7 +13,7 @@
 # Config
 #
 ifndef LOCALBIN
-   LOCALBIN := /usr/local/bin
+   LOCALBIN := $(NLBIN)
 endif
 ifndef CAMLP4LIB
    CAMLP4LIB := /usr/local/lib/camlp4
@@ -35,10 +35,10 @@ ifndef OCAMLOPT
    OCAMLOPT := ocamlopt
 endif
 ifndef PRLC
-   PRLC := prlc
+   PRLC := $(LOCALBIN)/prlc
 endif
 
-OCAMLDEP := ocamldep
+OCAMLDEP := $(LOCALBIN)/ocamldep
 OCAMLCFLAGS := $(INCLUDE) $(OCAMLFLAGS)
 OCAMLOPTFLAGS := $(INCLUDE) $(OCAMLFLAGS)
 CAMLP4OFLAGS := $(INCLUDE)

@@ -24,15 +24,20 @@ DIRS :=\
 	library\
 	filter\
 	theories/tactic\
+	theories/ocaml\
 	theories/base\
-	theories/itt\
-	theories/rewrite
+	editor/ml
 
-.PHONY: all install depend clean
+.PHONY: all prlc install depend clean
 
 all:
-	@for i in $(DIRS); do\
-		if (echo Making $$i...; cd $$i; $(MAKE) $@); then true; else exit 1; fi;\
+	@echo "Choose a target:"
+	@echo "   prlc: makes the Nuprl-Light compiler"
+	@echo "   install: install the compiler, and compile the theories"
+
+prlc:
+	@for i in $(PRLC); do\
+		if (echo Making $$i...; cd $$i; $(MAKE) all); then true; else exit 1; fi;\
 	done
 
 install:
@@ -48,9 +53,4 @@ clean:
 depend:
 	@for i in $(DIRS); do\
 		if (echo Making $$i...; cd $$i; touch Makefile.dep; $(MAKE) $@); then true; else exit 1; fi;\
-	done
-
-prlc:
-	@for i in $(PRLC); do\
-		if (echo Making $$i...; cd $$i; $(MAKE) install); then true; else exit 1; fi;\
 	done

@@ -12,7 +12,7 @@ MAIN := prlc
 # Flags
 #
 REF_ROOT := ../
-INCLUDE := -I ../clib -I ../mllib -I ../refiner -I ../library -I /usr/local/lib/camlp4
+INCLUDE := -I ../clib -I ../mllib -I ../refiner -I ../library -I $(CAMLP4LIB)
 OCAMLFLAGS := -pp "camlp4o q_MLast.cmo pa_extend.cmo"
 
 # Type files
@@ -90,7 +90,7 @@ CCLIBS :=\
 #
 CAMLP4N := camlp4n
 CAMLP4O := camlp4o
-CAMLP4LIB := /usr/local/lib/camlp4
+# CAMLP4LIB := /usr/local/lib/camlp4
 
 STANDARD_LIBS =\
 	$(CAMLLIB)/unix.cma\

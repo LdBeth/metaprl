@@ -85,6 +85,7 @@ NL = nl
 
 all: $(MAIN).cma $(NL).run
 opt: $(MAIN).cmxa $(NL)
+install:: all
 
 $(NL).run: $(CMOBJS)
 	$(OCAMLMKTOP) -g -o $@ -custom -linkall $(CMOBJS) $(CCLIBS)
