@@ -81,6 +81,9 @@ sig
     * File parsing.
     *)
    val stream_of_channel : t -> in_channel -> char Stream.t
+   val set_prompt : t -> string -> unit
+   val set_prompt2 : t -> string -> unit
+   val stdin_stream : t -> char Stream.t
    val get_text : int * int -> string
    val wrap : t -> (Lexing.lexbuf -> 'a) -> Lexing.lexbuf -> 'a
    val set_file : t -> string -> unit

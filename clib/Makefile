@@ -17,7 +17,8 @@ LCFILES :=\
 	ml_debug\
 	getrusage\
 	register\
-	mmap
+	mmap\
+	readline
 
 # Name of library
 MAIN := clib

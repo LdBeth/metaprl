@@ -284,14 +284,11 @@ struct
          while !loop do
             let state =
                if prompt then
-                  begin
-                     output_string stdout "# ";
-                     flush stdout;
-                     !current_state
-                  end
+                  !current_state
                else
                   state
             in
+               State.set_prompt state "# ";
                State.reset_terms state;
                try
                   match State.synchronize state (Grammar.Entry.parse Pcaml.top_phrase) instream with
@@ -349,7 +346,7 @@ struct
    let main_loop_aux state =
       match State.get_input_files () with
          [] ->
-            let instream = State.stream_of_channel state stdin in
+            let instream = State.stdin_stream state in
                printf "%s\n%t" version eflush;
                toploop state true instream
         | files ->

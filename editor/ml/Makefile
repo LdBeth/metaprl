@@ -193,11 +193,11 @@ CMXOBJS =\
 
 BYTE_CCLIBS =\
 	-cclib $(ROOT)/lib/clib-byte$(EXT_LIB)\
-	$(CCLIBS_ens)
+	$(OTHER_CCLIBS)
 
 NATIVE_CCLIBS =\
 	-cclib $(ROOT)/lib/clib-native$(EXT_LIB)\
-	$(CCLIBS_ens)
+	$(OTHER_CCLIBS)
 
 # Name of main librariws
 MAIN = meta-prl
@@ -207,15 +207,15 @@ all: $(MAIN).cma $(MP).top $(MP).run
 opt: $(MAIN).cmxa $(MP).opt
 install:: all
 
-$(MP).run: $(CMOBJS) $(RCMOFILES) $(CMADEPS) $(THREADSLIB)
+$(MP).run: $(CMOBJS) $(RCMOFILES) $(CMADEPS) $(THREADSLIB) $(ROOT)/lib/clib-byte$(EXT_LIB)
 	$(RM) $@
 	$(OCAMLMKTOP) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(CMOBJS) $(RCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS)
 
-$(MP).top: $(TCMOBJS) $(TCMOFILES) $(TCMADEPS) $(THREADSLIB)
+$(MP).top: $(TCMOBJS) $(TCMOFILES) $(TCMADEPS) $(THREADSLIB) $(ROOT)/lib/clib-byte$(EXT_LIB)
 	$(RM) $@
 	$(OCAMLCP) $(OCAMLCFLAGS) -o $@ -custom -linkall $(OCAMLCPOPT) $(THREADS) $(TCMOBJS) $(TCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS)
 
-$(MP).opt: $(CMXOBJS) $(TCMXFILES) $(OPTTHREADSLIB)
+$(MP).opt: $(CMXOBJS) $(TCMXFILES) $(OPTTHREADSLIB) $(ROOT)/lib/clib-native$(EXT_LIB)
 	$(RM) $@
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ -linkall $(THREADS) $(CMXOBJS) $(TCMXFILES) $(NATIVE_CCLIBS) $(OPTTHREADS)
 

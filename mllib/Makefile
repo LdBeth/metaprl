@@ -28,6 +28,7 @@ MLZFILES :=\
 # Library files
 LMFILES :=\
 	$(MLZFILES)\
+	readline\
 	mp_debug\
 	mp_pervasives\
 	mmap\
@@ -66,7 +67,7 @@ LMFILES :=\
 	hash_set\
 	small_set\
 	debug_string_sets\
-   debug_tables\
+	debug_tables\
 	string_set\
 	flist\
 	cycle_dag\

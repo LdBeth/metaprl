@@ -17,6 +17,9 @@ MP_VERSION=0.6.0
 #
 CAML_VERSIONS=2.03 2.04
 
+# All the names for "yes"
+YESFLAGS=1 true True t T TRUE Y y yes Yes YES
+
 ifndef TERMS
    TERMS=undefined
 endif
@@ -41,25 +44,7 @@ endif
 ifndef TESTS
    TESTS=no
 endif
-ifeq ($(TESTS),yes)
-   TESTS=YES
-endif
-ifeq ($(TESTS),y)
-   TESTS=YES
-endif
-ifeq ($(TESTS),Y)
-   TESTS=YES
-endif
-ifeq ($(TESTS),Yes)
-   TESTS=YES
-endif
-ifeq ($(TESTS),true)
-   TESTS=YES
-endif
-ifeq ($(TESTS),1)
-   TESTS=YES
-endif
-ifeq ($(TESTS),TRUE)
+ifneq (,$(findstring $(TESTS),$(YESFLAGS)))
    TESTS=YES
 endif
 ifndef CCC
@@ -76,6 +61,21 @@ endif
 ifeq ($(OSTYPE),solaris)
    OSTYPE=Solaris
 endif 
+
+#
+# Use readline by default on Linux
+#
+ifndef READLINE
+    ifeq ($(OSTYPE),Linux)
+        READLINE=YES
+    else
+        READLINE=NO
+    endif
+endif
+ifneq (,$(findstring $(READLINE),$(YESFLAGS)))
+   READLINE=YES
+   OTHER_CCLIBS := $(OTHER_CCLIBS) -cclib -lreadline
+endif
 
 #
 # Theory directories to compile

@@ -591,6 +591,45 @@ struct
          Stream.from read
 
    (*
+    * Wrap the input channel so that we can recover input.
+    * Use the readline package.  Input is always from stdin.
+    *)
+   let stdin_prompt = ref "# "
+   let stdin_prompt2 = ref "  "
+
+   let set_prompt _ prompt =
+      stdin_prompt := prompt
+
+   let set_prompt2 _ prompt =
+      stdin_prompt2 := prompt
+
+   let stdin_stream state =
+      let buf = create_buffer () in
+      let refill loc =
+         let str = unsynchronize state Readline.readline !stdin_prompt ^ "\n" in
+            stdin_prompt := !stdin_prompt2;
+            buf.buf_index <- 0;
+            buf.buf_buffer <- str;
+            push_buffer state loc (String.length str) str
+      in
+      let rec read loc =
+         let { buf_index = index; buf_buffer = buffer } = buf in
+            if index = String.length buffer then
+               try
+                  refill loc;
+                  read loc
+               with
+                  End_of_file ->
+                     None
+            else
+               let c = buffer.[index] in
+                  buf.buf_index <- index + 1;
+                  Some c
+      in
+         reset_input state;
+         Stream.from read
+
+   (*
     * Wrap the toplevel input function.
     * Replace the buffer filler so that we record all the input.
     *)

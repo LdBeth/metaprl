@@ -116,7 +116,7 @@ depend: check_config
 
 mk/config: mk/make_config.sh
 	@echo Making mk/config...
-	@TERMS="$(TERMS)" REFINER="$(REFINER)" MAKE_JOBS="$(MAKE_JOBS)" MAKE_OPTS="$(MAKE_OPTS)" SEQ_SET="$(SEQ_SET)" CCC="$(CCC)" ENSROOT="$(ENSROOT)" OCAMLSRC="$(OCAMLSRC)" THEORIES="$(THEORIES)" TESTS="$(TESTS)" mk/make_config.sh > mk/config
+	@TERMS="$(TERMS)" REFINER="$(REFINER)" MAKE_JOBS="$(MAKE_JOBS)" MAKE_OPTS="$(MAKE_OPTS)" SEQ_SET="$(SEQ_SET)" CCC="$(CCC)" ENSROOT="$(ENSROOT)" OCAMLSRC="$(OCAMLSRC)" THEORIES="$(THEORIES)" TESTS="$(TESTS)" READLINE="$(READLINE)" mk/make_config.sh > mk/config
 
 check_config::check_versions mk/config
 	@if [ $(TERMS) != ds -a $(TERMS) != std ]; then\

@@ -48,6 +48,11 @@ REFINER=$REFINER
 THEORIES=$THEORIES
 
 #
+# Use GNU readline package (available on Linux at least).
+#
+READLINE=$READLINE
+
+#
 # C compiler
 #
 CCC=$CCC

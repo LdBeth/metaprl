@@ -147,11 +147,13 @@ CMALIBS =\
 
 BYTE_CCLIBS = $(PRLCOMP).cmo \
 	-cclib -lunix\
-	-cclib $(ROOT)/clib/clib-byte$(EXT_LIB)
+	-cclib $(ROOT)/clib/clib-byte$(EXT_LIB)\
+	$(OTHER_CCLIBS)
 
 NATIVE_CCLIBS = $(PRLCOMP).cmx \
 	-cclib -lunix\
-	-cclib $(ROOT)/clib/clib-native$(EXT_LIB)
+	-cclib $(ROOT)/clib/clib-native$(EXT_LIB)\
+	$(OTHER_CCLIBS)
 
 #
 # Libraries for camlp4n
