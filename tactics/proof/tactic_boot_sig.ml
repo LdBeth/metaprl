@@ -1135,10 +1135,8 @@ sig
    val applyAllC : conv list -> conv
 
    (*
-    * Repeat the conversion until nothing more happens.
+    * Repeat the conversion.
     *)
-
-   val whileProgressC : conv -> conv
    val untilFailC : conv -> conv
    val repeatC : conv -> conv
    val repeatForC : int -> conv -> conv

@@ -200,10 +200,6 @@ doc <:doc<
    The (@tt[untilFailC] $c$) conversion applies conversion $c$ repeatedly
    until it fails. It catches all exception and never fails itself.}
 
-   @item{@conv[whileProgressC];
-   The (@tt[whileProgressC] $c$) conversion applies conversion $c$ repeatedly
-   while it makes a progress. If $c$ fails then  @tt[whileProgressC] also fails.}
-
    @item{@conv[repeatC];
    The (@tt[repeatC] $c$) conversion applies conversion $c$ repeatedly
    until it fails, or until it fails to make progress.}
@@ -225,7 +221,6 @@ let prefix_orelseC = Tactic_type.Conversionals.prefix_orelseC
 let tryC = Tactic_type.Conversionals.tryC
 let firstC = Tactic_type.Conversionals.firstC
 let untilFailC = Tactic_type.Conversionals.untilFailC
-let whileProgressC = Tactic_type.Conversionals.whileProgressC
 let repeatC = Tactic_type.Conversionals.repeatC
 let repeatForC = Tactic_type.Conversionals.repeatForC
 let ifEqualC = Tactic_type.Conversionals.ifEqualC

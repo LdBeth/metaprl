@@ -200,24 +200,19 @@ struct
    (*
     * Repeat the conversion until nothing more happens.
     *)
-   let whileProgressC conv =
+   let repeatC conv =
       let repeatCE env =
          let rec repeat t env =
             let t' = env_term env in
                if alpha_equal t t' then
-                  idC
+                  failC
                else
-                  prefix_thenC conv (funC (repeat t'))
+                  tryC (prefix_thenC conv (funC (repeat t')))
          in
          let t = env_term env in
-            prefix_thenC conv (funC (repeat t))
+            tryC (prefix_thenC conv (funC (repeat t)))
       in
          funC repeatCE
-
-   (*
-    * Repeat the conversion until fails nothing more happens.
-    *)
-   let repeatC conv = whileProgressC (tryC conv)
 
    (*
     * Repeat the conversion until fails.

@@ -78,7 +78,6 @@ topval sweepUpC : conv -> conv
 topval sweepDnC : conv -> conv
 topval firstC : conv list -> conv
 topval applyAllC : conv list -> conv
-topval whileProgressC : conv -> conv
 topval untilFailC : conv -> conv
 topval repeatC : conv -> conv
 topval repeatForC : int -> conv -> conv

@@ -617,3 +617,8 @@ section
    THEORYNAME = other
    THEORYDESCR = Miscellaneous Theories
    .SUBDIRS: $(THEORY_DIRS)
+
+if $(NATIVE_ENABLED)
+   .PHONY: check_status
+   check_status: util/check-status util/check-status.sh editor/ml/mp.opt editor/ml/mpopt editor/ml/mpconfig
+      util/check-status
