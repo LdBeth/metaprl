@@ -4,7 +4,7 @@
 # Term module to use: ds or std\n\
 # If not sure, use ds\n\
 #\n\
-TERMS=$TERMS \n\
+TERMS=$TERMS\n\
 \n\
 #\n\
 # What representation to use for hypothesis and conclisions lists\n\
