@@ -1,12 +1,9 @@
 (*
- * This is the simple term module, where the
- * implementation of the term mirrors the interface.
- * Destructors are identiy functions.
- *
+ * This is the module that implements delayed substitution, 
+ * keeps track of free variables and does some sharing.
  *)
 
 open Printf
-
 open Debug
 open Opname
 
@@ -15,7 +12,19 @@ open Opname
  *)
 let _ =
    if !debug_load then
-      eprintf "Loading Term%t" eflush
+      eprintf "Loading Term_ds%t" eflush
+
+(************************************************************************
+ * Sets of strings                                                      *
+ ************************************************************************)
+
+module OrderedString =
+    struct
+      type t = string
+      let compare = Pervasives.compare
+    end
+
+module StringSet = Set.Make (OrderedString)
 
 (************************************************************************
  * Type definitions                                                     *
@@ -26,13 +35,15 @@ let _ =
  * vars, plus a constant offset.
  *)
 type level_exp_var' = { le_var : string; le_offset : int }
+type level_exp_var = level_exp_var'
 
-and level_exp' = { le_const : int; le_vars : level_exp_var list }
+type level_exp'= { le_const : int; le_vars : level_exp_var list }
+type level_exp = level_exp'
 
 (*
  * Parameters have a number of simple types.
  *)
-and param' =
+type param' =
    Number of Num.num
  | String of string
  | Token of string
@@ -43,6 +54,8 @@ and param' =
  | MToken of string
  | MLevel of string
  | MVar of string
+
+   (* Special Nuprl5 values *)
  | ObId of object_id
  | ParmList of param list
    
@@ -58,43 +71,39 @@ and param' =
  | MEqual of param * param
  | MNotEqual of param * param
 
+and object_id = param list
+and param = param'
+
 (*
  * An operator combines a name with a list of parameters.
  * The order of params is significant.
  *)
-and object_id = param list
-
-and operator' = { op_name : opname; op_params : param list }
+type operator' = { op_name : opname; op_params : param list }
+type operator = operator'
 
 (*
  * A term has an operator, and a finite number of subterms
- * that may be bound.
+ * that may be bound. 
+ *
+ * free_vars - set of the free variables
+ *
+ * Subst - delayed substitution
  *)
+
+type term_subst = (string * term) list
+and term_core =
+   Term of term' |
+   Subst of term * term_subst
+and term = { free_vars : StringSet.t; mutable core : term_core }
+and bound_term_core =
+   BTerm of bound_term' |
+   BSubst of bound_term * term_subst
+and bound_term = { bfree_vars : StringSet.t; mutable bcore: bound_term_core }
 and term' = { term_op : operator; term_terms : bound_term list }
 and bound_term' = { bvars : string list; bterm : term }
 
 (*
- * Level expression have offsets from level expression
- * vars, plus a constant offset.
- *)
-and level_exp_var = level_exp_var'
-and level_exp = level_exp'
-and param = param'
-and operator = operator'
-
-and term = term'
-and bound_term = bound_term'
-
-type term_subst = (string * term) list
-
-(*
- * General exception for term destruction.
- *)
-exception TermMatch of string * term * string
-
-(*
- * An address of a subterm is an int list describing the path.
- * In NthPath, the flag is true if the car should be taken.
+ * Address of a subterm.
  *)
 type address =
    Path of int list
@@ -103,812 +112,260 @@ type address =
 exception IncorrectAddress of address * term
 exception BadAddressPrefix of address * address
 exception BadMatch of term * term
+exception TermMatch of string * term * string
+
+(************************************************************************
+ * Free variables, substitution                                         *
+ ************************************************************************)
+
+let bterms_free_vars = 
+   List.fold_left 
+      (fun s bt -> StringSet.union s bt.bfree_vars) 
+      StringSet.empty
+
+let subst_free_vars = 
+   List.fold_left 
+      (fun s (v,t) -> StringSet.union s t.free_vars) 
+      StringSet.empty
+
+let do_term_subst sub t =
+   match List_util.filter (fun (v,_) -> StringSet.mem v t.free_vars) sub with
+      [] -> t|
+      sub' ->
+         {free_vars = 
+            StringSet.union
+               (List.fold_right
+                  StringSet.remove
+                  (fst (List.split sub'))
+                  t.free_vars)
+               (subst_free_vars sub');
+          core = Subst (t,sub')}
+
+let subst t tl vl = do_term_subst (List.combine vl tl) t
+
+let do_bterm_subst sub bt =
+   match List_util.filter (fun (v,_) -> StringSet.mem v bt.bfree_vars) sub with
+      [] -> bt|
+      sub' ->
+         {bfree_vars =
+            StringSet.union
+               (List.fold_right
+                  StringSet.remove
+                  (fst (List.split sub'))
+                  bt.bfree_vars)
+               (subst_free_vars sub');
+          bcore = BSubst (bt,sub')}
+
+let is_free_var v t = StringSet.mem v t.free_vars
+
+let free_vars t = StringSet.elements t.free_vars
+
+let free_vars_terms = function
+   [] -> [] |
+   hd::tl ->
+      StringSet.elements 
+         (List.fold_left 
+            (function vars -> function trm -> StringSet.union vars trm.free_vars)
+            hd.free_vars tl)
+
+(************************************************************************
+ * Variables in pure terms                                              *
+ ************************************************************************)
+
+let var_opname = make_opname ["var"]
+
+(*
+ * See if a term is a variable.
+ *)
+let is_var_term_nods = function
+   { term_op = { op_name = opname; op_params = [Var v] };
+     term_terms = []
+   } when opname == var_opname -> true
+ | _ -> false
+
+(*
+ * Destructor for a variable.
+ *)
+let dest_var_nods = function
+   { term_op = { op_name = opname; op_params = [Var v] };
+     term_terms = []
+   } when opname == var_opname -> v
+  | t -> raise (TermMatch ("dest_var", {free_vars = bterms_free_vars t.term_terms; core = Term t}, ""))
 
 (************************************************************************
  * Term de/constructors                                                 *
  ************************************************************************)
 
+let rec dest_term t = 
+   match t.core with
+      Term tt -> tt |
+      Subst (tt,sub) -> 
+         let ttt = dest_term tt in
+         let t4 = 
+            try dest_term (List.assoc (dest_var_nods ttt) sub)
+            with _ -> 
+               {term_op = ttt.term_op; 
+                term_terms = List.map (do_bterm_subst sub) ttt.term_terms}
+         in
+            t.core <- Term t4;
+            t4
+
+let var_subst t t2 v = 
+   if StringSet.mem v t.free_vars 
+      then 
+         { free_vars = StringSet.union t2.free_vars (StringSet.remove v t.free_vars);
+           core = Subst (t,[(v,t2)])}
+      else t
+
 (*
- * These are basically identity functions for this implementation.
+ * Make a variable.
  *)
-let mk_term op bterms = { term_op = op; term_terms = bterms }
+let mk_var_term v =
+   { free_vars = StringSet.add v StringSet.empty;
+     core = Term
+      { term_op = { op_name = var_opname; op_params = [Var v] };
+        term_terms = [] }}
 
-let make_term term = term
+let make_term t = 
+   try mk_var_term (dest_var_nods t)
+   with _ ->
+      {free_vars = bterms_free_vars t.term_terms;
+       core = Term t}
 
-let dest_term term = term
+let mk_term op bterms = 
+   {free_vars = bterms_free_vars bterms;
+    core = Term { term_op = op; term_terms = bterms }}
 
 let mk_op name params = { op_name = name; op_params = params }
 
-let make_op op = op
 
-let dest_op op = op
+let make_bterm bt =
+   { bfree_vars = List.fold_right StringSet.remove bt.bvars bt.bterm.free_vars;
+     bcore = BTerm bt }
 
-let mk_bterm bvars term = { bvars = bvars; bterm = term }
+let mk_bterm vars term =
+   { bfree_vars = List.fold_right StringSet.remove vars term.free_vars;
+     bcore = BTerm {bvars = vars; bterm = term }}
 
-let make_bterm bterm = bterm
+(*
+ * New variable production.
+ * renames are the variables to be renamed,
+ * and av is a list list of variables to avoid.
+ * Our algorithm is slow and simple: just append an
+ * index and increment until no more collisions.
+ *)
 
-let dest_bterm bterm = bterm
+let rec new_var av v i =
+   let v' = v ^ "_" ^ (string_of_int i) in
+   if (StringSet.mem v' av)
+      then new_var av v (succ i)
+      else v'
 
-let make_param param = param
+and new_vars av = function 
+   [] -> ([],[]) |
+   v::vt ->
+      match (new_vars av vt) with
+         (vs,ts) -> 
+            let v' = new_var av v 0 in
+            ((v,v')::vs, (v,mk_var_term v')::ts)
 
-let dest_param param = param
+let rec dest_bterm bt = 
+   match bt.bcore with
+      BTerm tt -> tt |
+      BSubst (tt,sub) -> 
+         let ttt = dest_bterm tt in
+         let t4 =
+            match ttt.bvars with
+               [] -> { bvars = []; bterm = do_term_subst sub ttt.bterm } |
+               bvrs -> 
+                  let sub_fvars = subst_free_vars sub in
+                  let capt_vars = List_util.filter (function v -> StringSet.mem v sub_fvars) bvrs in
+                  match capt_vars with
+            (* 
+             * Unefficiency : in [] case do_term_subst will go collecting
+             * free variables of sub to get the
+             * list of free variables of bterm, but it may be more efficient to take 
+             * union of bt.free_vars and (bvrs intersect ttt.bterm.free_vars)
+             * 
+             * Similar inefficiency in the "captured" case.
+             *)
+                     [] -> { bvars = bvrs; bterm = do_term_subst sub ttt.bterm } |
+                     captured -> 
+                        let avoidvars = StringSet.union sub_fvars ttt.bterm.free_vars in
+                        let (vs,ts) = new_vars avoidvars captured in
+                        { bvars = 
+                           List.map 
+                              (function v ->
+                                 try List.assoc v vs
+                                 with Not_found -> v)
+                              bvrs;
+                          bterm = 
+                           do_term_subst sub (do_term_subst ts ttt.bterm)}
+         in
+            bt.bcore <- BTerm t4;
+            t4
+
+let no_bvars =
+   List.for_all
+      (function bt ->
+        match dest_bterm bt with
+           { bvars = [] } -> true |
+           _ -> false)
+
+let dest_simple_bterm term bt =
+   match dest_bterm bt with
+      { bvars = []; bterm = tt } -> tt |
+      _ -> raise (TermMatch ("dest_simple_bterm", term, "bvars exist"))
+
+let dest_simple_bterms term = 
+   List.map (function bt -> dest_simple_bterm term bt)
+
+let mk_simple_bterm term =
+   { bfree_vars = term.free_vars; 
+     bcore = BTerm { bvars = []; bterm = term }}
 
 let mk_level_var v i =
    { le_var = v; le_offset = i }
 
-let make_level_var v = v
-
-let dest_level_var v = v
-
 let mk_level i l =
    { le_const = i; le_vars = l }
 
-let make_level l = l
+let subterms_of_term t =
+   List.map (fun bt -> (dest_bterm bt).bterm) (dest_term t).term_terms
 
-let dest_level l = l
+(*
+ * Collect all binding vars.
+ *)
+let rec binding_vars_term bvars = function t ->
+   binding_vars_bterms bvars (dest_term t).term_terms
 
-let make_object_id object_id  = object_id 
-let dest_object_id object_id  = object_id
- 
+and binding_vars_bterms bvars = function
+   btrm::l ->
+      let bt = dest_bterm btrm in
+      binding_vars_bterms (binding_vars_term (List_util.union bt.bvars bvars) bt.bterm) l
+   | [] -> bvars
+
+let binding_vars = binding_vars_term []
+
 (*
  * Operator names.
  *)
-let opname_of_term = function
-   { term_op = { op_name = name } } -> name
+let opname_of_term t = (dest_term t).term_op.op_name
 
 (*
- * Get the subterms.
- * None of the subterms should be bound.
+ * Trivial ones
  *)
-let subterms_of_term t =
-   List.map (fun { bterm = t } -> t) t.term_terms
 
-(************************************************************************
- * Tools for "simple" terms                                             *
- ************************************************************************)
-
-(*
- * Native terms are injected into the "perv" module.
- *)
-let xperv = make_opname ["Perv"]
-
-(*
- * "Simple" terms have no parameters and no binding variables.
- *)
-let is_simple_term_opname name = function
-   { term_op = { op_name = name'; op_params = [] };
-     term_terms = bterms
-   } when name' = name ->
-      let rec aux = function
-         { bvars = []; bterm = _ }::t -> aux t
-       | _::t -> false
-       | [] -> true
-      in
-         aux bterms
- | _ -> false
-
-let mk_any_term op terms =
-   let aux t =
-      { bvars = []; bterm = t }
-   in
-      { term_op = op; term_terms = List.map aux terms }
-   
-let mk_simple_term name terms =
-   mk_any_term { op_name = name; op_params = [] } terms
-
-let dest_simple_term = function
-   ({ term_op = { op_name = name; op_params = [] };
-      term_terms = bterms
-    } : term) as t -> 
-      let aux = function
-         { bvars = []; bterm = t } -> t
-       | _ -> raise (TermMatch ("dest_simple_term", t, "binding vars exist"))
-      in
-         name, List.map aux bterms
- | t -> raise (TermMatch ("dest_simple_term", t, "params exist"))
-
-let dest_simple_term_opname name = function
-   ({ term_op = { op_name = name'; op_params = [] };
-      term_terms = bterms
-    } : term) as t -> 
-      if name = name' then
-         let aux = function
-            { bvars = []; bterm = t } -> t
-          | _ -> raise (TermMatch ("dest_simple_term_opname", t, "binding vars exist"))
-         in
-            List.map aux bterms
-      else
-         raise (TermMatch ("dest_simple_term_opname", t, "opname mismatch"))
- | t -> raise (TermMatch ("dest_simple_term_opname", t, "params exist"))
-
-(*
- * Terms with one subterm
- *)
-let is_dep0_term opname = function
-   { term_op = { op_name = opname'; op_params = [] };
-     term_terms = [{ bvars = [] }]
-   } -> opname' = opname
- | _ -> false
-
-let mk_dep0_term opname t =
-   { term_op = { op_name = opname; op_params = [] };
-     term_terms = [{ bvars = []; bterm = t }]
-   }
-
-let dest_dep0_term opname = function
-   { term_op = { op_name = opname'; op_params = [] };
-     term_terms = [{ bvars = []; bterm = t }]
-   } when opname' = opname -> t
- | t -> raise (TermMatch ("dest_dep0_term", t, ""))
-   
-let one_subterm = function
-   ({ term_terms = [{ bvars = []; bterm = t }]} : term) -> t
- | t -> raise (TermMatch ("one_subterm", t, ""))
-
-(*
- * Terms with two subterms.
- *)
-let is_dep0_dep0_term opname = function
-   { term_op = { op_name = opname'; op_params = [] };
-     term_terms = [{ bvars = [] }; { bvars = [] }]
-   } -> opname' = opname
- | _ -> false
-
-let mk_dep0_dep0_term opname = fun
-   t1 t2 ->
-      { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = []; bterm = t1 };
-                      { bvars = []; bterm = t2 }]
-      }
-
-let dest_dep0_dep0_term opname = function
-   { term_op = { op_name = opname'; op_params = [] };
-     term_terms = [{ bvars = []; bterm = t1 };
-                   { bvars = []; bterm = t2 }]
-   } when opname' = opname -> t1, t2
- | t -> raise (TermMatch ("dest_dep0_dep0_term", t, ""))
-   
-let two_subterms = function
-   ({ term_terms = [{ bvars = []; bterm = a };
-                    { bvars = []; bterm = b }]} : term) -> a, b
- | t -> raise (TermMatch ("two_subterms", t, ""))
-
-(*
- * Terms with three subterms.
- *)
-let is_dep0_dep0_dep0_term opname = function
-   { term_op = { op_name = opname'; op_params = [] };
-     term_terms = [{ bvars = [] }; { bvars = [] }; { bvars = [] }]
-   } -> opname' = opname
- | _ -> false
-
-let mk_dep0_dep0_dep0_term opname = fun
-   t1 t2 t3  ->
-      { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = []; bterm = t1 };
-                      { bvars = []; bterm = t2 };
-                      { bvars = []; bterm = t3 }]
-      }
-
-let dest_dep0_dep0_dep0_term opname = function
-   { term_op = { op_name = opname'; op_params = [] };
-     term_terms = [{ bvars = []; bterm = t1 };
-                   { bvars = []; bterm = t2 };
-                   { bvars = []; bterm = t3 }]
-   } when opname' = opname -> t1, t2, t3
- | t -> raise (TermMatch ("dest_dep0_dep0_dep0_term", t, ""))
-   
-let three_subterms = function
-   { term_terms = [{ bvars = []; bterm = a };
-                   { bvars = []; bterm = b };
-                   { bvars = []; bterm = c }]} ->
-      a, b, c
- | t -> raise (TermMatch ("three_subterms", t, ""))
-
-let four_subterms = function
-   { term_terms = [{ bvars = []; bterm = a };
-                   { bvars = []; bterm = b };
-                   { bvars = []; bterm = c };
-                   { bvars = []; bterm = d }]} ->
-      a, b, c, d
- | t ->
-      raise (TermMatch ("four_subterms", t, ""))
-
-let five_subterms = function
-   { term_terms = [{ bvars = []; bterm = a };
-                   { bvars = []; bterm = b };
-                   { bvars = []; bterm = c };
-                   { bvars = []; bterm = d };
-                   { bvars = []; bterm = e }]} ->
-      a, b, c, d, e
- | t ->
-      raise (TermMatch ("four_subterms", t, ""))
-
-(************************************************************************
- * Nonsimple but useful forms                                           *
- ************************************************************************)
-
-(*
- * One string param.
- *)
-let is_string_term opname = function
-   { term_op = { op_name = opname'; op_params = [String _] };
-     term_terms = []
-   } when opname == opname' ->
-      true
- | _ ->
-      false
-
-let dest_string_term opname = function
-   { term_op = { op_name = opname'; op_params = [String s] };
-     term_terms = []
-   } when opname == opname' ->
-      s
- | t ->
-      raise (TermMatch ("dest_string_term", t, "not a string term"))
-
-let dest_string_param = function
-   { term_op = { op_params = String s :: _ } } ->
-      s
- | t ->
-      raise (TermMatch ("dest_string_param", t, "no string parameter"))
-
-let mk_string_term opname s =
-   { term_op = { op_name = opname; op_params = [String s] }; term_terms = [] }
-
-(*
- * One string parameter, and one simple subterm.
- *)
-let is_string_dep0_term opname = function
-   { term_op = { op_name = opname'; op_params = [String _] };
-     term_terms = [{ bvars = [] }]
-   } when opname == opname' -> true
- | _ -> false
-
-let dest_string_dep0_term opname = function
-   { term_op = { op_name = opname'; op_params = [String s] };
-     term_terms = [{ bvars = []; bterm = t }]
-   } when opname == opname' -> s, t
- | t -> raise (TermMatch ("dest_string_dep0_term", t, ""))
-
-let mk_string_dep0_term opname = fun
-   s t ->
-      { term_op = { op_name = opname; op_params = [String s] };
-        term_terms = [{ bvars = []; bterm = t }]
-      }
-
-(*
- * Two string parameters, and one simple subterm.
- *)
-let is_string_string_dep0_term opname = function
-   { term_op = { op_name = opname'; op_params = [String _; String _] };
-     term_terms = [{ bvars = [] }]
-   } when opname == opname' ->
-      true
- | _ ->
-      false
-
-let dest_string_string_dep0_term opname = function
-   { term_op = { op_name = opname'; op_params = [String s1; String s2] };
-     term_terms = [{ bvars = []; bterm = t }]
-   } when opname == opname' ->
-      s1, s2, t
- | t ->
-      raise (TermMatch ("dest_string_string_dep0_term", t, ""))
-
-let dest_string_string_dep0_any_term = function
-   { term_op = { op_name = opname'; op_params = [String s1; String s2] };
-     term_terms = [{ bvars = []; bterm = t }]
-   } ->
-      s1, s2, t
- | t ->
-      raise (TermMatch ("dest_string_string_dep0_any_term", t, ""))
-
-let mk_string_string_dep0_term opname = fun
-   s1 s2 t ->
-      { term_op = { op_name = opname; op_params = [String s1; String s2] };
-        term_terms = [{ bvars = []; bterm = t }]
-      }
-
-(*
- * Two number parameters and one subterm.
- *)
-let is_number_number_dep0_term opname = function
-   { term_op = { op_name = opname'; op_params = [Number _; Number _] };
-     term_terms = [{ bvars = [] }]
-   } when opname == opname' ->
-      true
- | _ ->
-      false
-
-let dest_number_number_dep0_term opname = function
-   { term_op = { op_name = opname'; op_params = [Number s1; Number s2] };
-     term_terms = [{ bvars = []; bterm = t }]
-   } when opname == opname' ->
-      s1, s2, t
- | t ->
-      raise (TermMatch ("dest_number_number_dep0_term", t, ""))
-
-let dest_number_number_dep0_any_term = function
-   { term_op = { op_name = opname'; op_params = [Number s1; Number s2] };
-     term_terms = [{ bvars = []; bterm = t }]
-   } ->
-      s1, s2, t
- | t ->
-      raise (TermMatch ("dest_number_number_dep0_any_term", t, ""))
-
-let mk_number_number_dep0_term opname = fun
-   s1 s2 t ->
-      { term_op = { op_name = opname; op_params = [Number s1; Number s2] };
-        term_terms = [{ bvars = []; bterm = t }]
-      }
-
-(*
- * Two string parameters, two subterms.
- *)
-let is_string_string_dep0_dep0_term opname = function
-   { term_op = { op_name = opname'; op_params = [String _; String _] };
-     term_terms = [{ bvars = [] }; { bvars = [] }]
-   } when opname == opname' ->
-      true
- | _ ->
-      false
-
-let dest_string_string_dep0_dep0_term opname = function
-   { term_op = { op_name = opname'; op_params = [String s1; String s2] };
-     term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }]
-   } when opname == opname' ->
-      s1, s2, t1, t2
- | t ->
-      raise (TermMatch ("dest_string_string_dep0_dep0_term", t, ""))
-
-let dest_string_string_dep0_dep0_any_term = function
-   { term_op = { op_name = opname'; op_params = [String s1; String s2] };
-     term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }]
-   } ->
-      s1, s2, t1, t2
- | t ->
-      raise (TermMatch ("dest_string_string_dep0_dep0_any_term", t, ""))
-
-let mk_string_string_dep0_dep0_term opname = fun
-   s1 s2 t1 t2 ->
-      { term_op = { op_name = opname; op_params = [String s1; String s2] };
-        term_terms = [{ bvars = []; bterm = t1 }; { bvars = []; bterm = t2 }]
-      }
-
-(*
- * One number param.
- *)
-let is_number_term opname = function
-   { term_op = { op_name = opname'; op_params = [Number _] };
-     term_terms = []
-   } when opname == opname' -> true
- | _ -> false
-
-let dest_number_term opname = function
-   { term_op = { op_name = opname'; op_params = [Number n] };
-     term_terms = []
-   } when opname == opname' -> n
- | t -> raise (TermMatch ("dest_number_term", t, ""))
-
-let dest_number_any_term = function
-   { term_op = { op_params = [Number n] };
-     term_terms = []
-   } ->
-      n
- | t ->
-      raise (TermMatch ("dest_number_any_term", t, ""))
-
-let mk_number_term opname = function
-   n ->
-      { term_op = { op_name = opname; op_params = [Number n] };
-        term_terms = []
-      }
-
-(*
- * One universe param.
- *)
-let is_univ_term opname = function
-   { term_op = { op_name = opname'; op_params = [Level _] };
-     term_terms = []
-   } when opname == opname' -> true
- | _ -> false
-
-let dest_univ_term opname = function
-   { term_op = { op_name = opname'; op_params = [Level n] };
-     term_terms = []
-   } when opname == opname' -> n
- | t -> raise (TermMatch ("dest_univ_term", t, ""))
-
-let mk_univ_term opname = function
-   n ->
-      { term_op = { op_name = opname; op_params = [Level n] };
-        term_terms = []
-      }
-
-(*
- * One token param.
- *)
-let is_token_term opname = function
-   { term_op = { op_name = opname'; op_params = [Token _] };
-     term_terms = []
-   } when opname == opname' -> true
- | _ -> false
-
-let dest_token_term opname = function
-   { term_op = { op_name = opname'; op_params = [Token n] };
-     term_terms = []
-   } when opname == opname' -> n
- | t -> raise (TermMatch ("dest_token_term", t, ""))
-
-let mk_token_term opname = function
-   n ->
-      { term_op = { op_name = opname; op_params = [Token n] };
-        term_terms = []
-      }
-
-(*
- * Bound term.
- *)
-let is_dep1_term opname = function
-   { term_op = { op_name = opname'; op_params = [] };
-     term_terms = [{ bvars = [_] }]
-   } when opname' = opname -> true
- | _ -> false
-
-let mk_dep1_term opname = fun
-   v t -> { term_op = { op_name = opname; op_params = [] };
-            term_terms = [{ bvars = [v]; bterm = t }]
-          }
-
-let dest_dep1_term opname = function
-   { term_op = { op_name = opname'; op_params = [] };
-     term_terms = [{ bvars = [v]; bterm = t }]
-   } when opname' = opname -> v, t
- | t -> raise (TermMatch ("dest_dep1_term", t, ""))
-
-let is_dep0_dep1_term opname = function
-   { term_op = { op_name = opname'; op_params = [] };
-     term_terms = [{ bvars = [] }; { bvars = [_] }]
-   } when opname' = opname -> true
- | _ -> false
-
-let is_dep0_dep1_any_term = function
-   { term_op = { op_params = [] };
-     term_terms = [{ bvars = [] }; { bvars = [_] }]
-   } -> true
- | _ -> false
-
-let mk_dep0_dep1_term opname = fun
-   v t1 t2 -> { term_op = { op_name = opname; op_params = [] };
-                term_terms = [{ bvars = []; bterm = t1 };
-                              { bvars = [v]; bterm = t2 }]
-              }
-
-let mk_dep0_dep1_any_term op = fun
-   v t1 t2 -> { term_op = op;
-                term_terms = [{ bvars = []; bterm = t1 };
-                              { bvars = [v]; bterm = t2 }]
-              }
-
-let dest_dep0_dep1_term opname = function
-   { term_op = { op_name = opname'; op_params = [] };
-     term_terms = [{ bvars = []; bterm = t1 };
-                   { bvars = [v]; bterm = t2 }]
-   } when opname' = opname -> v, t1, t2
- | t -> raise (TermMatch ("dest_dep0_dep1_term", t, ""))
-
-let dest_dep0_dep1_any_term = function
-   { term_op = { op_params = [] };
-     term_terms = [{ bvars = []; bterm = t1 };
-                   { bvars = [v]; bterm = t2 }]
-   } -> v, t1, t2
- | t -> raise (TermMatch ("dest_dep0_dep1_any_term", t, ""))
-
-(*
- * First subterm of arity 2.
- *)
-let is_dep2_dep0_term opname = function
-   { term_op = { op_name = opname'; op_params = [] };
-     term_terms = [{ bvars = [_; _] }; { bvars = [] }]
-   } when opname' = opname -> true
- | _ -> false
-
-let mk_dep2_dep0_term opname = fun
-   v1 v2 t1 t2 -> { term_op = { op_name = opname; op_params = [] };
-                term_terms = [{ bvars = [v1; v2]; bterm = t1 };
-                              { bvars = []; bterm = t2 }]
-              }
-
-let dest_dep2_dep0_term opname = function
-   { term_op = { op_name = opname'; op_params = [] };
-     term_terms = [{ bvars = [v1; v2]; bterm = t1 };
-                   { bvars = []; bterm = t2 }]
-   } when opname' = opname -> v1, v2, t1, t2
- | t -> raise (TermMatch ("dest_dep2_dep0_term", t, ""))
-
-(*
- * Second subterm of arity 2.
- *)
-let is_dep0_dep2_term opname = function
-   { term_op = { op_name = opname'; op_params = [] };
-     term_terms = [{ bvars = [] }; { bvars = [_; _] }]
-   } when opname' = opname -> true
- | _ -> false
-
-let mk_dep0_dep2_term opname = fun
-   v1 v2 t1 t2 -> { term_op = { op_name = opname; op_params = [] };
-                term_terms = [{ bvars = []; bterm = t1 };
-                              { bvars = [v1; v2]; bterm = t2 }]
-              }
-
-let dest_dep0_dep2_term opname = function
-   { term_op = { op_name = opname'; op_params = [] };
-     term_terms = [{ bvars = []; bterm = t1 };
-                   { bvars = [v1; v2]; bterm = t2 }]
-   } when opname' = opname -> v1, v2, t1, t2
- | t -> raise (TermMatch ("dest_dep0_dep2_term", t, ""))
-
-(*
- * Three subterms.
- *)
-let is_dep0_dep2_dep2_term opname = function
-   { term_op = { op_name = opname'; op_params = [] };
-     term_terms = [{ bvars = [] }; { bvars = [_; _] }; { bvars = [_; _] }]
-   } when opname' = opname -> true
- | _ -> false
-
-let mk_dep0_dep2_dep2_term opname = fun
-   t0 v11 v12 t1 v21 v22 t2 -> { term_op = { op_name = opname; op_params = [] };
-                       term_terms = [{ bvars = []; bterm = t0 };
-                                     { bvars = [v11; v12]; bterm = t1 };
-                                     { bvars = [v21; v22]; bterm = t2 }]
-                     }
-
-let dest_dep0_dep2_dep2_term opname = function
-   { term_op = { op_name = opname'; op_params = [] };
-     term_terms = [{ bvars = []; bterm = t0 };
-                   { bvars = [v11; v12]; bterm = t1 };
-                   { bvars = [v21; v22]; bterm = t2 }]
-   } when opname' = opname -> t0, v11, v12, t1, v21, v22, t2
- | t -> raise (TermMatch ("dest_dep0_dep2_dep2_term", t, ""))
-
-(*
- * Four subterms.
- *)
-let is_dep0_dep2_dep0_dep2_term opname = function
-   { term_op = { op_name = opname'; op_params = [] };
-     term_terms = [{ bvars = [] }; { bvars = [_; _] }; { bvars = [] }; { bvars = [_; _] }]
-   } when opname' = opname -> true
- | _ -> false
-
-let mk_dep0_dep2_dep0_dep2_term opname = fun
-   t0 v11 v12 t1 base v21 v22 t2 -> { term_op = { op_name = opname; op_params = [] };
-                                      term_terms = [{ bvars = []; bterm = t0 };
-                                                    { bvars = [v11; v12]; bterm = t1 };
-                                                    { bvars = []; bterm = base };
-                                                    { bvars = [v21; v22]; bterm = t2 }]
-                                    }
-
-let dest_dep0_dep2_dep0_dep2_term opname = function
-   { term_op = { op_name = opname'; op_params = [] };
-     term_terms = [{ bvars = []; bterm = t0 };
-                   { bvars = [v11; v12]; bterm = t1 };
-                   { bvars = []; bterm = base };
-                   { bvars = [v21; v22]; bterm = t2 }]
-   } when opname' = opname -> t0, v11, v12, t1, base, v21, v22, t2
- | t -> raise (TermMatch ("dest_dep0_dep2_dep0_dep2_term", t, ""))
-
-(*
- * Three subterms.
- *)
-let is_dep0_dep0_dep1_term opname = function
-   { term_op = { op_name = opname'; op_params = [] };
-     term_terms = [{ bvars = [] }; { bvars = [] }; { bvars = [_] }]
-   } when opname' == opname ->
-      true
- | _ ->
-      false
-
-let mk_dep0_dep0_dep1_term opname = fun
-   t0 t1 v2 t2 -> { term_op = { op_name = opname; op_params = [] };
-                       term_terms = [{ bvars = []; bterm = t0 };
-                                     { bvars = []; bterm = t1 };
-                                     { bvars = [v2]; bterm = t2 }]
-                     }
-
-let dest_dep0_dep0_dep1_term opname = function
-   { term_op = { op_name = opname'; op_params = [] };
-     term_terms = [{ bvars = []; bterm = t0 };
-                   { bvars = []; bterm = t1 };
-                   { bvars = [v2]; bterm = t2 }]
-   } when opname' == opname ->
-      t0, t1, v2, t2
- | t ->
-      raise (TermMatch ("dest_dep0_dep0_dep1_term", t, ""))
-
-let is_dep0_dep0_dep1_any_term = function
-   { term_terms = [{ bvars = [] }; { bvars = [] }; { bvars = [_] }] } ->
-      true
- | _ ->
-      false
-
-let mk_dep0_dep0_dep1_any_term op = fun
-   t0 t1 v2 t2 -> { term_op = op;
-                    term_terms = [{ bvars = []; bterm = t0 };
-                                  { bvars = []; bterm = t1 };
-                                  { bvars = [v2]; bterm = t2 }]
-                  }
-
-let dest_dep0_dep0_dep1_any_term = function
-   { term_terms = [{ bvars = []; bterm = t0 };
-                   { bvars = []; bterm = t1 };
-                   { bvars = [v2]; bterm = t2 }]
-   } ->
-      t0, t1, v2, t2
- | t ->
-      raise (TermMatch ("dest_dep0_dep0_dep1_any_term", t, ""))
-
-let is_dep0_dep1_dep1_term opname = function
-   { term_op = { op_name = opname'; op_params = [] };
-     term_terms = [{ bvars = [] }; { bvars = [_] }; { bvars = [_] }]
-   } when opname' = opname -> true
- | _ -> false
-
-let mk_dep0_dep1_dep1_term opname = fun
-   t0 v1 t1 v2 t2 -> { term_op = { op_name = opname; op_params = [] };
-                       term_terms = [{ bvars = []; bterm = t0 };
-                                     { bvars = [v1]; bterm = t1 };
-                                     { bvars = [v2]; bterm = t2 }]
-                     }
-
-let dest_dep0_dep1_dep1_term opname = function
-   { term_op = { op_name = opname'; op_params = [] };
-     term_terms = [{ bvars = []; bterm = t0 };
-                   { bvars = [v1]; bterm = t1 };
-                   { bvars = [v2]; bterm = t2 }]
-   } when opname' = opname -> t0, v1, t1, v2, t2
- | t -> raise (TermMatch ("dest_dep0_dep1_dep1_term", t, ""))
-
-(*
- * Three subterms.
- *)
-let is_dep0_dep0_dep3_term opname = function
-   { term_op = { op_name = opname'; op_params = [] };
-     term_terms = [{ bvars = [] }; { bvars = [] }; { bvars = [_; _; _] }]
-   } when opname' = opname -> true
- | _ -> false
-
-let mk_dep0_dep0_dep3_term opname = fun
-   t0 t1 v1 v2 v3 t2 -> { term_op = { op_name = opname; op_params = [] };
-                          term_terms = [{ bvars = []; bterm = t0 };
-                                        { bvars = []; bterm = t1 };
-                                        { bvars = [v1; v2; v3]; bterm = t2 }]
-                        }
-
-let dest_dep0_dep0_dep3_term opname = function
-   { term_op = { op_name = opname'; op_params = [] };
-     term_terms = [{ bvars = []; bterm = t0 };
-                   { bvars = []; bterm = t1 };
-                   { bvars = [v1; v2; v3]; bterm = t2 }]
-   } when opname' = opname -> t0, t1, v1, v2, v3, t2
- | t -> raise (TermMatch ("dest_dep0_dep0_dep3_term", t, ""))
-
-(*
- * One subterm with opname.
- *)
-let is_one_bsubterm opname = function
-   { term_op = { op_name = opname'; op_params = [] };
-     term_terms = [_]
-   } when opname' = opname -> true
- | _ -> false
-
-let dest_one_bsubterm opname = function
-   { term_op = { op_name = opname'; op_params = [] };
-     term_terms = [bterm]
-   } when opname' = opname -> bterm
- | t -> raise (TermMatch ("dest_one_bsubterm", t, ""))
-
-let mk_one_bsubterm opname = fun
-   bterm -> { term_op = { op_name = opname; op_params = [] }; term_terms = [bterm] }
-
-(************************************************************************
- * ZIP/UNZIP                                                            *
- ************************************************************************)        
-
-(*
- * Unzipping means that we want to recursively destruct a
- * right associative type.
- *)
-let unzip_rassoc opname =
-   let rec aux = function
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [{ bvars = []; bterm = a }; { bvars = []; bterm = b }]
-      } when opname' = opname ->
-         a::(aux b)
-    | t -> [t]
-   in
-      aux
-
-let unzip_lassoc opname =
-   let rec aux = function
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [{ bvars = []; bterm = a }; { bvars = []; bterm = b }]
-      } when opname' = opname ->
-         (aux a) @ [b]
-    | t -> [t]
-   in
-      aux
-
-let unzip_dep_rassoc opname =
-   let rec aux = function
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [{ bvars = []; bterm = a }; { bvars = [v]; bterm = b }]
-      } when opname' = opname ->
-         (v, a)::(aux b)
-    | t -> ["", t]
-   in
-      aux
-
-let unzip_dep_lassoc opname =
-   let rec aux = function
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [{ bvars = []; bterm = a }; { bvars = [v]; bterm = b }]
-      } when opname' = opname ->
-         (aux a) @ [v, b]
-    | t -> ["", t]
-   in
-      aux
-
-let zip_rassoc opname =
-   let rec aux = function
-      [] -> raise (Invalid_argument "zip_rassoc")
-    | [h] -> h
-    | h::t ->
-         { term_op = { op_name = opname; op_params = [] };
-           term_terms = [{ bvars = []; bterm = h }; { bvars = []; bterm = aux t }]
-         }
-   in
-      aux
-
-let zip_lassoc opname t =
-   let rec aux t = function
-      [] -> t
-    | h::tl ->
-         let t' = { term_op = { op_name = opname; op_params = [] };
-                    term_terms = [{ bvars = []; bterm = t }; { bvars = []; bterm = h }]
-                  }
-         in
-            aux t' tl
-   in
-      match t with
-         [] -> raise (Invalid_argument "zip_lassoc")
-       | hd::tl -> aux hd tl
-            
-let zip_dep_rassoc opname =
-   let rec aux = function
-      [] -> raise (Invalid_argument "zip_rassoc")
-    | [v, h] -> h
-    | (v, h)::t ->
-         { term_op = { op_name = opname; op_params = [] };
-           term_terms = [{ bvars = []; bterm = h }; { bvars = [v]; bterm = aux t }]
-         }
-   in
-      aux
-
-let zip_dep_lassoc opname t =
-   let rec aux t = function
-      [] -> t
-    | (v, h)::tl ->
-         let t' = { term_op = { op_name = opname; op_params = [] };
-                    term_terms = [{ bvars = []; bterm = t }; { bvars = [v]; bterm = h }]
-                  }
-         in
-            aux t' tl
-   in
-      match t with
-         [] -> raise (Invalid_argument "zip_lassoc")
-       | (v, h)::tl -> aux h tl
+let dest_object_id o = o
+let make_object_id o = o
+let dest_level_var v = v
+let make_level_var v = v
+let dest_level l = l
+let make_level l = l
+let dest_param p = p
+let make_param p = p
+let dest_op o = o
+let make_op o = o
 
 (************************************************************************
  * Level expressions                                                    *
@@ -984,64 +441,40 @@ let level_cumulativity = fun
  * Variables                                                            *
  ************************************************************************)
 
-let var_opname = make_opname ["var"]
-
 (*
  * See if a term is a variable.
  *)
-let is_var_term = function
-   { term_op = { op_name = opname; op_params = [Var v] };
-     term_terms = []
-   } when opname == var_opname -> true
- | _ -> false
+let is_var_term t = is_var_term_nods (dest_term t)
 
 (*
  * Destructor for a variable.
  *)
-let dest_var = function
-   { term_op = { op_name = opname; op_params = [Var v] };
-     term_terms = []
-   } when opname == var_opname -> v
-  | t -> raise (TermMatch ("dest_var", t, ""))
-
-(*
- * Make a variable.
- *)
-let mk_var_term v =
-   { term_op = { op_name = var_opname; op_params = [Var v] };
-     term_terms = []
-   }
+let dest_var t = dest_var_nods (dest_term t)
 
 let mk_var_op v = { op_name = var_opname; op_params = [Var v] }
 
 (*
  * Second order variables have subterms.
  *)
-let is_so_var_term = function
-   ({ term_op = { op_name = opname; op_params = [Var(_)] }; term_terms = bterms } : term)
-   when opname == var_opname ->
-      List.for_all (function { bvars = [] } -> true | _ -> false) bterms
+let is_so_var_term t = match dest_term t with
+   { term_op = { op_name = opname; op_params = [Var(_)] }; term_terms = bterms }
+   when opname == var_opname -> no_bvars bterms
  | _ -> false
 
-let dest_so_var = function
-   ({ term_op = { op_name = opname; op_params = [Var(v)] };
+let dest_so_var t = match dest_term t with
+   { term_op = { op_name = opname; op_params = [Var(v)] };
       term_terms = bterms
-    } : term) as term when opname == var_opname ->
-      v, List.map (function { bvars = []; bterm = t } -> t | _ ->
-            raise (TermMatch ("dest_so_var", term, "bvars exist")))
-      bterms
- | term -> raise (TermMatch ("dest_so_var", term, "not a so_var"))
+   } when opname == var_opname ->
+      v, dest_simple_bterms t bterms
+ | term -> raise (TermMatch ("dest_so_var", t, "not a so_var"))
 
 (*
  * Second order variable.
  *)
 let mk_so_var_term v terms =
-   let mk_bterm term =
-      { bvars = []; bterm = term }
-   in
+   make_term 
       { term_op = { op_name = var_opname; op_params = [Var(v)] };
-        term_terms = List.map mk_bterm terms
-      }
+        term_terms = List.map mk_simple_bterm terms }
 
 (*
  * Second order context, contains a context term, plus
@@ -1049,117 +482,44 @@ let mk_so_var_term v terms =
  *)
 let context_opname = make_opname ["context"]
 
-let is_context_term = function
-   ({ term_op = { op_name = opname; op_params = [Var _] }; term_terms = bterms } : term)
-   when opname == context_opname ->
-      List.for_all (function { bvars = [] } -> true | _ -> false) bterms
+let is_context_term t = match dest_term t with
+   { term_op = { op_name = opname; op_params = [Var _] }; term_terms = bterms }
+   when opname == context_opname -> no_bvars bterms
  | term -> false
 
-let dest_context = function
-   ({ term_op = { op_name = opname; op_params = [Var v] };
-      term_terms = { bvars = []; bterm = term' }::bterms
-    } : term) as term when opname == context_opname ->
-      v, term', List.map (function { bvars = []; bterm = t } -> t
-       | _ ->
-            raise (TermMatch ("dest_context", term, "bvars exist")))
-      bterms
- | term -> raise (TermMatch ("dest_context", term, "not a context"))
+let dest_context term = match dest_term term with
+   { term_op = { op_name = opname; op_params = [Var v] };
+      term_terms = bterm :: bterms
+    } when opname == context_opname ->
+      v, dest_simple_bterm term bterm, 
+         dest_simple_bterms term bterms
+ | _ -> raise (TermMatch ("dest_context", term, "not a context"))
 
 let mk_context_term v term terms =
-   let mk_bterm term =
-      { bvars = []; bterm = term }
-   in
+   make_term 
       { term_op = { op_name = context_opname; op_params = [Var v] };
-        term_terms = (mk_bterm term)::(List.map mk_bterm terms)
-      }
+        term_terms = (mk_simple_bterm term)::(List.map mk_simple_bterm terms) }
 
-(*
- * Rewrite
- *)
-let xrewrite_op = mk_opname "rewrite" xperv
+let rec context_vars_term cvars t = match dest_term t with
+   { term_op = { op_name = opname; op_params = [Var v] };
+     term_terms = bterms
+   } when opname == context_opname ->
+      let cvars' =
+         if List.mem v cvars then
+            cvars
+         else
+            v::cvars
+      in
+         context_vars_bterms cvars' bterms
+ | { term_terms = bterms } ->
+      context_vars_bterms cvars bterms
 
-let is_xrewrite_term = is_dep0_dep0_term xrewrite_op
-let mk_xrewrite_term = mk_dep0_dep0_term xrewrite_op
-let dest_xrewrite = dest_dep0_dep0_term xrewrite_op
+and context_vars_bterms cvars = function
+   bt::l ->
+      context_vars_bterms (context_vars_term cvars (dest_bterm bt).bterm) l
+ | [] -> cvars
 
-(************************************************************************
- * PRIMITIVE FORMS                                                      *
- ************************************************************************)
-
-(*
- * Lists.
- *)
-let xnil_opname = mk_opname "nil" xperv
-let xcons_opname = mk_opname "cons" xperv
-
-let xnil_term = mk_simple_term xnil_opname []
-let is_xnil_term t = t = xnil_term
-
-let is_xcons_term = is_dep0_dep0_term xcons_opname
-let mk_xcons_term = mk_dep0_dep0_term xcons_opname
-let dest_xcons = dest_dep0_dep0_term xcons_opname
-
-let rec is_xlist_term = function
-   { term_op = { op_name = opname; op_params = [] };
-     term_terms = [{ bvars = []; bterm = _ };
-                   { bvars = []; bterm = b }]
-   } when opname == xcons_opname -> is_xlist_term b
- | { term_op = { op_name = opname; op_params = [] }; term_terms = [] } when opname == xnil_opname -> true
- | _ -> false
-
-let dest_xlist t =
-   let rec aux = function
-      { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = []; bterm = a };
-                      { bvars = []; bterm = b }]
-      } when opname == xcons_opname -> a::(aux b)
-    | { term_op = { op_name = opname; op_params = [] }; term_terms = [] } when opname == xnil_opname -> []
-    | _ -> raise (TermMatch ("dest_xlist", t, "not a list"))
-   in
-       aux t
-
-let rec mk_xlist_term = function
-   h::t ->
-      { term_op = { op_name = xcons_opname; op_params = [] };
-        term_terms = [{ bvars = []; bterm = h };
-                      { bvars = []; bterm = mk_xlist_term t }]
-      }
- | [] ->
-      xnil_term
-
-(*
- * Strings.
- *)
-let string_opname = mk_opname "string" xperv
-
-let is_xstring_term = function
-   { term_op = { op_name = opname; op_params = [String _] };
-     term_terms = []
-   } when opname == string_opname ->
-      true
- | _ ->
-      false
-
-let dest_xstring = function
-   { term_op = { op_name = opname; op_params = [String s] };
-     term_terms = []
-   } when opname == string_opname ->
-      s
- | t ->
-      raise (TermMatch ("dest_xstring", t, "not a string"))
-
-let mk_xstring_term s =
-   { term_op = { op_name = string_opname; op_params = [String s] };
-     term_terms = []
-   }
-
-(****************************************
- * LAMBDA                               *
- ****************************************)
-
-let xlambda_opname = mk_opname "lambda" xperv
-
-let mk_xlambda_term = mk_dep1_term xlambda_opname
+let context_vars = context_vars_term []
 
 (************************************************************************
  * Subterm addressing                                                   *
@@ -1177,46 +537,47 @@ let nth_cdr_addr i = NthPath (i, false)
 (*
  * Compute arities of subterms.
  *)
-let subterm_arities { term_terms = terms } =
-   let aux { bvars = vars } = List.length vars in
-      List.map aux terms
+let subterm_arities term =
+   let aux bterm = List.length (dest_bterm bterm).bvars in
+      List.map aux (dest_term term).term_terms
 
 (*
  * Get a subterm.
  *)
-let term_subterm term = function
-   (Path addr) as a ->
-      begin
-         let rec aux t = function
-            [] -> t
-          | i::tl -> aux (List.nth t.term_terms i).bterm tl
-         in
-            try aux term addr with
-               Not_found -> raise (IncorrectAddress (a, term))
-      end
- | (NthPath (addr, flag)) as a ->
-      begin
-         let rec aux t = function
-            0 ->
-               if flag then
-                  match t with
-                     { term_terms = { bterm = h }::_ } -> h
-                   | _ -> raise (IncorrectAddress (a, term))
-               else
-                  t
-          | i ->
-               begin
-                  match t.term_terms with
-                     [{ bterm = bterm }] ->
-                        aux bterm (i - 1)
-                   | _::{ bterm = bterm }::_ ->
-                        aux bterm (i - 1)
-                   | _ ->
-                        raise (IncorrectAddress (a, term))
-               end
-         in
-            aux term addr
-      end
+let term_subterm term = 
+   function
+      (Path addr) as a ->
+         begin
+            let rec aux t = function
+               [] -> t
+             | i::tl -> aux (dest_bterm (List.nth (dest_term t).term_terms i)).bterm tl
+            in
+               try aux term addr with
+                  Not_found -> raise (IncorrectAddress (a, term))
+         end
+    | (NthPath (addr, flag)) as a ->
+         begin
+            let rec aux t = function
+               0 ->
+                  if flag then
+                     match dest_term t with
+                        { term_terms = bterm::_ } -> (dest_bterm bterm).bterm
+                      | _ -> raise (IncorrectAddress (a, term))
+                  else
+                     t
+             | i ->
+                  begin
+                     match (dest_term t).term_terms with
+                        [bterm] ->
+                           aux (dest_bterm bterm).bterm (i - 1)
+                      | _::bterm::_ ->
+                           aux (dest_bterm bterm).bterm (i - 1)
+                      | _ ->
+                           raise (IncorrectAddress (a, term))
+                  end
+            in
+               aux term addr
+         end
 
 let apply_fun_at_addr f a term =
    match a with
@@ -1225,15 +586,13 @@ let apply_fun_at_addr f a term =
             let rec aux t = function
                [] -> f t
              | i::tl ->
-                  match t with
+                  match dest_term t with
                      { term_op = op; term_terms = bterms } ->
-                        { term_op = op;
-                          term_terms =
-                             let f { bvars = vars; bterm = term } =
-                                { bvars = vars; bterm = aux term tl }
-                             in
-                                List_util.replacef_nth i f bterms
-                        }
+                        let f bt =
+                           let bterm = dest_bterm bt in
+                           mk_bterm bterm.bvars (aux bterm.bterm tl)
+                        in
+                        mk_term op (List_util.replacef_nth i f bterms)
             in
                try aux term addr with
                   Not_found -> raise (IncorrectAddress (a, term))
@@ -1243,28 +602,25 @@ let apply_fun_at_addr f a term =
             let rec aux t = function
                0 ->
                   if flag then
-                     match t with
+                     match dest_term t with
                         { term_op = op;
-                          term_terms = { bvars = vars; bterm = term }::bterms
+                          term_terms = btrm::bterms
                         } ->
-                           { term_op = op;
-                             term_terms = { bvars = vars; bterm = f term }::bterms
-                           }
+                           let bt = dest_bterm btrm in
+                           mk_term op ((mk_bterm bt.bvars (f bt.bterm))::bterms)
                       | _ ->
                            raise (IncorrectAddress (a, term))
                   else
                      f t
              | i ->
                   begin
-                     match t with
-                        { term_op = op; term_terms = [{ bvars = vars; bterm = term }] } ->
-                           { term_op = op;
-                             term_terms = [{ bvars = vars; bterm = aux term (i - 1) }]
-                           }
-                      | { term_op = op; term_terms = h::{ bvars = vars; bterm = term }::bterms } ->
-                           { term_op = op;
-                             term_terms = h::{ bvars = vars; bterm = aux term (i - 1) }::bterms
-                           }
+                     match dest_term t with
+                        { term_op = op; term_terms = [btrm] } ->
+                           let bt = dest_bterm btrm in
+                           mk_term op [mk_bterm bt.bvars (aux bt.bterm (pred i))]
+                      | { term_op = op; term_terms = h::btrm::bterms } ->
+                           let bt = dest_bterm btrm in
+                           mk_term op (h::(mk_bterm bt.bvars (aux bt.bterm (pred i)))::bterms)
                       | _ ->
                            raise (IncorrectAddress (a, term))
                   end
@@ -1363,108 +719,6 @@ let string_of_address = function
          "[" ^ (aux addr) ^ "]"
 
 (************************************************************************
- * Free variable calculations                                           *
- ************************************************************************)
-
-(*
- * Calculate the list of free variables.
- * Also count second order variables.
- * Just recursively descend the term, keeping track
- * of bound variables.
- *)
-let rec free_vars_term gvars bvars = function
-   { term_op = { op_name = opname; op_params = [Var(v)] }; term_terms = bterms } when opname == var_opname ->
-      (* This is a variable *)
-      let gvars' = if List.mem v bvars or List.mem v gvars then
-                      gvars
-                   else
-                      v::gvars
-      in
-         free_vars_bterms gvars' bvars bterms
- | { term_terms = bterms } ->
-      free_vars_bterms gvars bvars bterms
-
-and free_vars_bterms gvars bvars = function
-   { bvars = vars; bterm = term}::l ->
-      let bvars' = vars @ bvars in
-      let gvars' = free_vars_term gvars bvars' term in
-         free_vars_bterms gvars' bvars l
-
- | [] -> gvars
-
-(* Actual function *)
-let free_vars = free_vars_term [] []
-
-(* Collect over a list of terms *)
-let free_vars_terms =
-   let rec aux gvars = function
-      [] -> gvars
-    | t::r -> aux (free_vars_term gvars [] t) r
-   in
-      aux []
-
-(*
- * See if a variable is free.
- *)
-let is_free_var v =
-   let rec free_vars_term bvars = function
-      { term_op = { op_name = opname; op_params = [Var v'] };
-        term_terms = []
-      } when opname == var_opname ->
-         v' = v
-    | { term_terms = bterms } ->
-         free_vars_bterms bvars bterms
-
-   and free_vars_bterms bvars = function
-      { bvars = bvars'; bterm = term }::t ->
-         if List.mem v bvars' then
-            free_vars_bterms bvars t
-         else
-            (free_vars_term (bvars' @ bvars) term) or (free_vars_bterms bvars t)
-            
-    | [] -> false
-   in
-      free_vars_term []
-
-(*
- * Similar operation on contexts.
- *)
-let rec context_vars_term cvars = function
-   { term_op = { op_name = opname; op_params = [Var v] };
-     term_terms = bterms
-   } when opname == context_opname ->
-      let cvars' =
-         if List.mem v cvars then
-            cvars
-         else
-            v::cvars
-      in
-         context_vars_bterms cvars' bterms
- | { term_terms = bterms } ->
-      context_vars_bterms cvars bterms
-
-and context_vars_bterms cvars = function
-   { bterm = t }::l ->
-      context_vars_bterms (context_vars_term cvars t) l
- | [] -> cvars
-
-let context_vars = context_vars_term []
-
-(*
- * Collect all binding vars.
- *)
-let rec binding_vars_term bvars = function
-   { term_terms = bterms } ->
-      binding_vars_bterms bvars bterms
-
-and binding_vars_bterms bvars = function
-   { bvars = vars; bterm = t }::l ->
-      binding_vars_bterms (binding_vars_term (List_util.union vars bvars) t) l
- | [] -> bvars
-
-let binding_vars = binding_vars_term []
-
-(************************************************************************
  * ALPHA EQUALITY                                                       *
  ************************************************************************)
 
@@ -1478,8 +732,16 @@ let equal_params p1 p2 =
     | _ ->
          p1 = p2
 
-let rec equal_term vars t t' =
-   match t, t' with
+let rec join_vars vars = function
+   ([],[]) -> vars |
+   (v1::vt1,v2::vt2) -> 
+      if (v1=v2) 
+         then join_vars vars (vt1,vt2)
+         else (v1,v2)::(join_vars vars (vt1,vt2)) |
+   _ -> raise (Invalid_argument ("join_vars"))
+
+let rec equal_term_main vars t t' =
+   match (dest_term t, dest_term t') with
       { term_op = { op_name = opname1; op_params = [Var v] };
         term_terms = []
       },
@@ -1492,17 +754,30 @@ let rec equal_term vars t t' =
          end
     | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
       { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
-         name1 = name2
+         name1 == name2
                  & List_util.for_all2 equal_params params1 params2
                  & equal_bterms vars bterms1 bterms2
 
-and equal_bterms vars bterms1 bterms2 =
-   let equal_bterm = fun
-      { bvars = bvars1; bterm = term1 }
-      { bvars = bvars2; bterm = term2 } ->
-         equal_term (List_util.zip_list vars bvars1 bvars2) term1 term2
-   in
-      List_util.for_all2 equal_bterm bterms1 bterms2
+and equal_term = function
+   [] ->
+      (function t1  ->
+         function t2 ->
+            (t1 == t2) || equal_term_main [] t1 t2) |
+   vars -> equal_term_main vars
+
+and equal_bterm_main vars btrm1 btrm2 =
+   let bt1 = dest_bterm btrm1 in
+   let bt2 = dest_bterm btrm2 in
+   equal_term (join_vars vars (bt1.bvars,bt2.bvars)) bt1.bterm bt2.bterm
+
+and equal_bterm = function
+   [] -> 
+      (function bt1 ->
+         function bt2 ->
+            (bt1 == bt2) || equal_bterm_main [] bt1 bt2) |
+   vars -> equal_bterm_main vars 
+
+and equal_bterms vars = List_util.for_all2 (equal_bterm vars)
 
 let alpha_equal t1 t2 =
    try equal_term [] t1 t2 with
@@ -1516,183 +791,39 @@ let alpha_equal_vars (t, v) (t', v') =
  * Check the following:
  *   that t' = t[terms[v''/v''']/v]
  *)
-let equal_comp vars' =
-   let rec equal_comp_term vars = function
-      { term_op = { op_name = opname; op_params = [Var v] };
-        term_terms = []
-      }, t' when opname == var_opname ->
-         begin
-            try equal_term vars' t' (List.assoc v vars) with
-               Not_found ->
-                  begin
-                     match t' with
-                        { term_op = { op_name = opname; op_params = [Var v'] };
-                          term_terms = []
-                        } when opname == var_opname -> v = v'
-                      | _ -> false
-                  end
-         end
-    | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
-      { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
-         name1 = name2 & params1 = params2 & equal_comp_bterms vars bterms1 bterms2
+let rec equal_comp vars' vars t t' = match dest_term t with 
+   { term_op = { op_name = opname; op_params = [Var v] };
+     term_terms = []
+   } when opname == var_opname ->
+      (try equal_term vars' t' (List.assoc v vars) with
+         Not_found ->
+            begin
+               match dest_term t' with
+                  { term_op = { op_name = opname; op_params = [Var v'] };
+                    term_terms = []
+                  } when opname == var_opname -> v = v'
+                | _ -> false
+            end)
+ | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 } ->
+      (function
+         { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
+         name1 = name2 & params1 = params2 & equal_comp_bterms vars' vars bterms1 bterms2)
+      (dest_term t')
 
-   and equal_comp_bterms vars bterms1 bterms2 =
-      let equal_comp_bterm = fun
-         { bvars = bvars1; bterm = term1 }
-         { bvars = bvars2; bterm = term2 } ->
-            equal_comp_term (List_util.zip_list vars bvars1 (List.map mk_var_term bvars2)) (term1, term2)
-      in
-         List_util.for_all2 equal_comp_bterm bterms1 bterms2
+and equal_comp_bterms vars' vars bterms1 bterms2 =
+   let equal_comp_bterm btrm1 btrm2 =
+      let bt1 = dest_bterm btrm1 and
+          bt2 = dest_bterm btrm2 in
+      equal_comp vars'
+         (List_util.zip_list vars bt1.bvars (List.map mk_var_term bt2.bvars)) 
+         bt1.bterm bt2.bterm
    in
-       equal_comp_term
+      List_util.for_all2 equal_comp_bterm bterms1 bterms2
    
 let alpha_equal_match (t, v) (t', v'', v''', terms) =
-   try equal_comp (List_util.zip v''' v'') (List_util.zip v terms) (t, t') with
+   try equal_comp (List_util.zip v''' v'') (List_util.zip v terms) t t'  with
       Invalid_argument _ -> false
 
-(************************************************************************
- * Substitution                                                         *
- ************************************************************************)
-
-(*
- * Utilities for subst.
- *)
-let rec fsubtract l = function
-   [] -> l
- | h::t ->
-      fsubtract (List_util.subtract l h) t
-
-(*
- * Add a var list.
- *)
-let add_renames_terms r l =
-   let rec aux = function
-      [] -> l
-    | v::t -> (mk_var_term v)::(aux t)
-   in
-      aux r
-
-(*
- * Add a var list onto free vars.
- *)
-let add_renames_fv r l =
-   let rec aux = function
-      [] -> l
-    | v::t -> [v]::(aux t)
-   in
-      aux r
-
-(*
- * New variable production.
- * renames are the variables to be renamed,
- * and fv is a list list of variables to avoid.
- * Our algorithm is slow and simple: just append an
- * index and increment until no more collisions.
- *)
-let new_vars renames fv =
-   let rec new_var v i =
-      (* Try the new value *)
-      let rec mem' v = function
-         [] -> false
-       | h::t -> List.mem v h
-      in
-      let v' = v ^ (string_of_int i) in
-         if mem' v' fv then
-            new_var v (i + 1)
-         else
-            v'
-   in
-   let rec aux fv = function
-      [] -> []
-    | v::t ->
-         (* Rename the first one, then add it to free vars *)
-         let v' = new_var v 1 in
-            v'::(aux ([v']::fv) t)
-   in
-      aux fv renames
-
-(*
- * First order simultaneous substitution.
- *)
-let subst term terms vars =
-   let rec subst_term terms fv vars = function
-      { term_op = { op_name = opname; op_params = [Var(v)] }; term_terms = [] } as t when opname == var_opname->
-         (* Var case *)
-         begin
-            try List.nth terms (List_util.find_index v vars) with
-               Not_found ->
-                  t
-         end
-    | { term_op = op; term_terms = bterms } ->
-         (* Other term *)
-         { term_op = op; term_terms = subst_bterms terms fv vars bterms }
-
-   and subst_bterms terms fv vars bterms =
-      (* When subst through bterms, catch binding occurrences *)
-      let rec subst_bterm = function
-         { bvars = []; bterm = term } ->
-            (* Optimize the common case *)
-            { bvars = []; bterm = subst_term terms fv vars term }
-
-       | { bvars = bvars; bterm = term } ->
-            (* First subtract bound instances *)
-            let flags = List.map (function v -> List.mem v bvars) vars in
-            let vars' = List_util.remove_elements flags vars in
-            let fv' = List_util.remove_elements flags fv in
-            let terms' = List_util.remove_elements flags terms in
-
-            (* If any of the binding variables are free, rename them *)
-            let renames = List_util.subtract bvars (fsubtract bvars fv') in
-               if renames <> [] then
-                  let fv'' = (free_vars term)::fv' in
-                  let renames' = new_vars renames fv'' in
-                     { bvars = subst_bvars renames' renames bvars;
-                       bterm = subst_term
-                           (add_renames_terms renames' terms')
-                           (add_renames_fv renames' fv')
-                           (renames @ vars')
-                           term
-                     }
-               else
-                  { bvars = bvars;
-                    bterm = subst_term terms' fv' vars' term
-                  }
-      in
-         List.map subst_bterm bterms
-
-   and subst_bvars renames' renames bvars =
-      let subst_bvar v =
-         try List.nth renames' (List_util.find_index v renames) with
-            Not_found -> v
-      in
-         List.map subst_bvar bvars
-
-   in
-      subst_term terms (List.map free_vars terms) vars term
-
-(*
- * Inverse substitution.
- *)
-let var_subst t t' v =
-   let { term_op = { op_name = opname } } = t' in
-   let vt = mk_var_term v in
-   let rec subst_term = function
-      { term_op = { op_name = opname'; op_params = params };
-        term_terms = bterms
-      } as t ->
-         (* Check if this is the same *)
-         if opname' == opname & alpha_equal t t' then
-            vt
-         else
-            { term_op = { op_name = opname'; op_params = params };
-              term_terms = List.map subst_bterm bterms
-            }
-            
-   and subst_bterm { bvars = vars; bterm = term } =
-      { bvars = vars; bterm = subst_term term }
-   in
-      subst_term t
-                     
 (************************************************************************
  * UNIFICATION                                                          *
  ************************************************************************)
@@ -1712,14 +843,17 @@ let rev_assoc v =
       aux
 
 let rec zip_cons l = function
-   v1::t1, v2::t2 -> zip_cons ((v1, v2)::l) (t1, t2)
+   v1::t1, v2::t2 -> 
+      if (v1=v2) 
+         then zip_cons l (t1,t2)
+         else zip_cons ((v1, v2)::l) (t1, t2)
  | [], [] -> l
  | _ -> raise (Invalid_argument "zip_cons")
 
 (*
  * Unify two terms.
  *)
-let rec unify_terms subst bvars = function
+let rec unify_terms subst bvars tm1 tm2 = match (dest_term tm1, dest_term tm2) with
    ({ term_op = { op_name = opname; op_params = [Var v] };
       term_terms = []
     } as t1), t2
@@ -1727,19 +861,19 @@ let rec unify_terms subst bvars = function
       (* t1 is a variable *)
       begin
          try
-            if (List.assoc v bvars) = (dest_var t2) then
+            if (List.assoc v bvars) = (dest_var_nods t2) then
                subst
             else
-               raise (BadMatch (t1, t2))
+               raise (BadMatch (tm1, tm2))
          with
             Not_found ->
                begin
-                  try unify_terms subst bvars (List.assoc v subst, t2) with
+                  try unify_terms subst bvars (List.assoc v subst) tm2 with
                      Not_found ->
-                        (v, t2)::subst
+                        (v, tm2)::subst
                end
           | TermMatch _ ->
-               raise (BadMatch (t1, t2))
+               raise (BadMatch (tm1, tm2))
       end
          
  | t1, ({ term_op = { op_name = opname; op_params = [Var v] };
@@ -1749,19 +883,19 @@ let rec unify_terms subst bvars = function
       (* t2 is a variable *)
       begin
          try
-            if (rev_assoc v bvars) = (dest_var t1) then
+            if (rev_assoc v bvars) = (dest_var_nods t1) then
                subst
             else
-               raise (BadMatch (t1, t2))
+               raise (BadMatch (tm1, tm2))
          with
             Not_found ->
                begin
-                  try unify_terms subst bvars (t1, List.assoc v subst) with
+                  try unify_terms subst bvars tm1 (List.assoc v subst) with
                      Not_found ->
-                        (v, t1)::subst
+                        (v, tm1)::subst
                end
           | TermMatch _ ->
-               raise (BadMatch (t1, t2))
+               raise (BadMatch (tm1, tm2))
       end
          
  | ({ term_op = { op_name = opname1; op_params = params1 };
@@ -1773,215 +907,21 @@ let rec unify_terms subst bvars = function
       (* General case *)
       if opname1 == opname2 & params1 = params2 then
          try unify_bterms subst bvars (bterms1, bterms2) with
-            Invalid_argument _ -> raise (BadMatch (t1, t2))
+            Invalid_argument _ -> raise (BadMatch (tm1, tm2))
       else
-         raise (BadMatch (t1, t2))
+         raise (BadMatch (tm1, tm2))
             
 and unify_bterms subst bvars = function
-   ({ bvars = vars1; bterm = term1 }::tl1),
-   ({ bvars = vars2; bterm = term2 }::tl2) ->
-      let subst' = unify_terms subst (zip_cons bvars (vars1, vars2)) (term1, term2) in
+   (btrm1::tl1), (btrm2::tl2) ->
+      let bt1 = dest_bterm btrm1
+      and bt2 = dest_bterm btrm2 in
+      let subst' = unify_terms subst (zip_cons bvars (bt1.bvars, bt2.bvars)) bt1.bterm bt2.bterm in
          unify_bterms subst' bvars (tl1, tl2)
  | [], [] -> subst
  | _ -> raise (Invalid_argument "unify_bterms")
 
 let unify subst t1 t2 =
-   List.rev (unify_terms subst [] (t1, t2))
-
-(*************************
- * Sequents              *                                              *
- *************************)
-
-(* Sequents operator name *)
-let hyp_opname = mk_opname "hyp" xperv
-let concl_opname = mk_opname "concl" xperv
-let sequent_opname = mk_opname "sequent" xperv
-
-(* Dependent hypotheses *)
-let is_hyp_term = is_dep0_dep1_term hyp_opname
-let mk_hyp_term = mk_dep0_dep1_term hyp_opname
-let dest_hyp = dest_dep0_dep1_term hyp_opname
-
-(* Conclusions *)
-let is_concl_term = is_dep0_dep0_term concl_opname
-let mk_concl_term = mk_dep0_dep0_term concl_opname
-let dest_concl = dest_dep0_dep0_term concl_opname
-
-(* Sequent wrapper *)
-let is_sequent_term = is_simple_term_opname sequent_opname
-let mk_sequent_term = mk_simple_term sequent_opname
-let dest_sequent = dest_simple_term_opname sequent_opname
-let goal_of_sequent = function
-   { term_op = { op_name = name; op_params = [] };
-     term_terms = { bvars = []; bterm = t }::_
-   } when name == sequent_opname ->
-      t
- | t -> raise (TermMatch ("goal_of_sequent", t, ""))
-
-let null_concl = mk_simple_term concl_opname []
-
-(*
- * Find the address of the conclusion.
- *)
-let concl_addr t =
-   let rec aux' i = function
-      { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = [] }; { bvars = []; bterm = term }]
-      } ->
-         if opname == concl_opname then
-            aux' (i + 1) term
-         else
-            i
-    | _ ->
-         i
-   in
-   let rec aux i = function
-      { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = [] }; { bvars = [_]; bterm = term }]
-      } when opname == hyp_opname ->
-         aux (i + 1) term
-    | { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = [] }; { bvars = []; bterm = term }]
-      } ->
-         if opname == concl_opname then
-            i, aux' 0 term
-         else if opname == hyp_opname then
-            aux (i + 1) term
-         else
-            raise (TermMatch ("concl_addr", t, ""))
-    | _ -> raise (TermMatch ("concl_addr", t, ""))
-   in
-      aux 0 (goal_of_sequent t)
-   
-(*
- * Fast access to hyp and concl.
- *)
-let nth_hyp t i =
-   let rec aux i = function
-      { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = []; bterm = t }; { bvars = [x]; bterm = term }]
-      } when opname == hyp_opname ->
-         if i = 0 then
-            x, t
-         else
-            aux (i - 1) term
-    | { term_op = { op_name = opname } } when opname == concl_opname ->
-         raise Not_found
-    | _ -> raise (TermMatch ("nth_hyp", t, ""))
-   in
-      aux i (goal_of_sequent t)
-
-let nth_concl t i =
-   let rec aux i = function
-      { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = []; bterm = _ }; { bvars = [_]; bterm = term }]
-      } when opname == hyp_opname ->
-         aux i term
-    | { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = []; bterm = t }; { bvars = []; bterm = term }]
-      } when opname == concl_opname ->
-         if i = 0 then
-            t
-         else
-            aux (i - 1) term
-    | { term_op = { op_name = opname } } when opname == concl_opname ->
-         raise Not_found
-    | _ -> raise (TermMatch ("nth_concl", t, ""))
-   in
-      aux i (goal_of_sequent t)
-
-(*
- * Count the hyps.
- *)
-let num_hyps t =
-   let rec aux i = function
-      { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = []; bterm = t }; { bvars = [x]; bterm = term }]
-      } when opname == hyp_opname ->
-         aux (i + 1) term
-    | _ ->
-         i
-   in
-      aux 0 (goal_of_sequent t)
-
-(*
- * Collect the vars.
- *)
-let declared_vars t =
-   let rec aux vars = function
-      { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = []; bterm = t }; { bvars = [x]; bterm = term }]
-      } when opname == hyp_opname ->
-         aux (x::vars) term
-    | _ ->
-         vars
-   in
-      aux [] (goal_of_sequent t)
-
-(*
- * Collect the vars.
- *)
-let declarations t =
-   let rec aux vars = function
-      { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = []; bterm = t }; { bvars = [x]; bterm = term }]
-      } when opname == hyp_opname ->
-         aux ((x, t)::vars) term
-    | _ ->
-         vars
-   in
-      aux [] (goal_of_sequent t)
-
-(*
- * Get the number of the hyp with the given var.
- *)
-let get_decl_number t v =
-   let rec aux i = function
-      { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = []; bterm = t }; { bvars = [x]; bterm = term }]
-      } when opname == hyp_opname ->
-         if x = v then
-            i
-         else
-            aux (i + 1) term
-    | _ ->
-         raise Not_found
-   in
-      aux 0 (goal_of_sequent t)
-
-(*
- * See if a var is free in the rest of the sequent.
- *)
-let is_free_seq_var i v t =
-   let rec aux i t =
-      if i = 0 then
-         is_free_var v t
-      else
-         match t with
-            { term_op = { op_name = opname; op_params = [] };
-              term_terms = [{ bvars = []; bterm = _ }; { bvars = [_]; bterm = term }]
-            } when opname == hyp_opname ->
-               aux (i - 1) term
-          | _ -> raise (Invalid_argument "is_free_seq_var")
-   in
-      aux i (goal_of_sequent t)
-
-(*
- * Generate a list of sequents with replaced goals.
- *)
-let rec replace_concl seq goal =
-   match seq with
-      { term_op = { op_name = opname; op_params = [] };
-        term_terms = [{ bvars = []; bterm = t1 }; { bvars = v1; bterm = t2 }]
-      } when opname == hyp_opname ->
-         { term_op = { op_name = hyp_opname; op_params = [] };
-           term_terms = [{ bvars = []; bterm = t1 }; { bvars = v1; bterm = replace_concl t2 goal }]
-         }
-    | _ ->
-         goal
-
-let replace_goal seq goal =
-   replace_concl (mk_concl_term goal null_concl) seq
+   List.rev (unify_terms subst [] t1 t2)
 
 (************************************************************************
  * NORMALIZATION                                                        *
@@ -1989,19 +929,19 @@ let replace_goal seq goal =
 
 (*
  * "Normalization" means producing a canonical version of the term,
- * not reduction.  Right now, this just means rehashing the opname.
+ * not reduction. Right now, this just means rehashing the opname,
+ * doing all substitutions and copying it all into an unshared location.
  *)
-let rec normalize_term = function
-   { term_op = { op_name = name; op_params = params }; term_terms = bterms } ->
-      { term_op = { op_name = normalize_opname name;
-                    op_params = params
-                  };
-        term_terms = List.map normalize_bterm bterms
-      }
+let rec normalize_term trm =
+   let t = dest_term trm in
+   let op = t.term_op in
+   mk_term 
+      { op_name = normalize_opname op.op_name; op_params = op.op_params }
+      (List.map normalize_bterm t.term_terms)
       
-and normalize_bterm = function
-   { bvars = vars; bterm = t } ->
-      { bvars = vars; bterm = normalize_term t }
+and normalize_bterm btrm =
+   let bt = dest_bterm btrm in
+   mk_bterm bt.bvars (normalize_term bt.bterm)
 
 (************************************************************************
  * EFFICIENCY                                                           *
@@ -2031,7 +971,9 @@ and shape_param =
  * When computing the shape, we don't allow meta-parameters.
  * Raises Invalid_argument if this happens.
  *)
-let shape_of_term { term_op = { op_name = name; op_params = params }; term_terms = bterms } =
+let shape_of_term trm =
+   let t = dest_term trm in
+   let op = t.term_op in
    let param_type = function
       Number _ -> ShapeNumber
     | String _ -> ShapeString
@@ -2046,12 +988,12 @@ let shape_of_term { term_op = { op_name = name; op_params = params }; term_terms
     | _ ->
          raise (Invalid_argument "Term.shape_of_term")
    in
-   let bterm_type { bvars = vars } =
-      List.length vars
+   let bterm_type bt =
+      List.length (dest_bterm bt).bvars
    in
-      { shape_opname = name;
-        shape_params = List.map param_type params;
-        shape_arities = List.map bterm_type bterms
+      { shape_opname = op.op_name;
+        shape_params = List.map param_type op.op_params;
+        shape_arities = List.map bterm_type t.term_terms
       }
 
 let print_shape out { shape_opname = name; shape_params = params; shape_arities = arities } =
@@ -2087,6 +1029,1087 @@ let print_shape out { shape_opname = name; shape_params = params; shape_arities 
       output_string out "}"
  
 (*
+ * This is the module that implements simple functions 
+ * for manipuating terms with simple shapes
+ *)
+
+(************************************************************************
+ * Tools for "simple" terms                                             *
+ ************************************************************************)
+
+(*
+ * "Simple" terms have no parameters and no binding variables.
+ *)
+let is_simple_term_opname name t = match dest_term t with
+   { term_op = { op_name = name'; op_params = [] };
+     term_terms = bterms
+   } when name' = name -> no_bvars bterms
+ | _ -> false
+
+let mk_any_term op terms = mk_term op (List.map mk_simple_bterm terms)
+   
+let mk_simple_term name terms =
+   mk_any_term { op_name = name; op_params = [] } terms
+
+let dest_simple_term t = match dest_term t with
+   { term_op = { op_name = name; op_params = [] };
+      term_terms = bterms } -> 
+         name, dest_simple_bterms t bterms
+ | _ -> raise (TermMatch ("dest_simple_term", t, "params exist"))
+
+let dest_simple_term_opname name t = match dest_term t with
+   { term_op = { op_name = name'; op_params = [] };
+      term_terms = bterms } -> 
+      if name = name' then dest_simple_bterms t bterms
+      else
+         raise (TermMatch ("dest_simple_term_opname", t, "opname mismatch"))
+ | _ -> raise (TermMatch ("dest_simple_term_opname", t, "params exist"))
+
+(*
+ * Terms with one subterm
+ *)
+let is_dep0_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bt]
+   } when opname' = opname -> (dest_bterm bt).bvars = []
+ | _ -> false
+
+let mk_dep0_term opname t =
+   { free_vars = t.free_vars;
+     core = Term 
+      { term_op = { op_name = opname; op_params = [] }; 
+        term_terms = [mk_simple_bterm t]}}
+
+let dest_dep0_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bt]
+   } when opname' = opname -> dest_simple_bterm t bt
+ | _ -> raise (TermMatch ("dest_dep0_term", t, ""))
+   
+let one_subterm t = match dest_term t with
+   { term_terms = [bt]}  -> dest_simple_bterm t bt
+ | _ -> raise (TermMatch ("one_subterm", t, ""))
+
+(*
+ * Terms with two subterms.
+ *)
+let is_dep0_dep0_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bt1; bt2] 
+   } when opname' = opname -> 
+      (dest_bterm bt1).bvars = [] && (dest_bterm bt2).bvars = []
+ | _ -> false
+
+let mk_dep0_dep0_term opname t1 t2 = 
+   { free_vars = StringSet.union t1.free_vars t2.free_vars;
+     core = Term
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = [mk_simple_bterm t1; mk_simple_bterm t2]}}
+
+let dest_dep0_dep0_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bt1 ; bt2 ]
+   } when opname' = opname -> 
+      let destr = dest_simple_bterm t in
+      destr bt1, destr bt2
+ | _ -> raise (TermMatch ("dest_dep0_dep0_term", t, ""))
+   
+let two_subterms t = match dest_term t with
+   { term_terms = [bt1; bt2]} -> 
+      let destr = dest_simple_bterm t in
+      destr bt1, destr bt2
+ | _ -> raise (TermMatch ("two_subterms", t, ""))
+
+(*
+ * Terms with three subterms.
+ *)
+let is_dep0_dep0_dep0_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = ([b1; b2; b3] as bterms)
+   } when opname' = opname -> no_bvars bterms
+ | _ -> false
+
+let mk_dep0_dep0_dep0_term opname t1 t2 t3 =
+   { free_vars = StringSet.union t1.free_vars (StringSet.union t2.free_vars t3.free_vars);
+     core = Term
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = 
+         [mk_simple_bterm t1; mk_simple_bterm t2; mk_simple_bterm t3]}}
+
+let dest_dep0_dep0_dep0_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bt1; bt2; bt3]
+   } when opname' = opname -> 
+      let destr = dest_simple_bterm t in
+      destr bt1, destr bt2, destr bt3
+ | _ -> raise (TermMatch ("dest_dep0_dep0_dep0_term", t, ""))
+   
+let three_subterms t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bt1; bt2; bt3] 
+   } ->
+      let destr = dest_simple_bterm t in
+      destr bt1, destr bt2, destr bt3
+ | _ -> raise (TermMatch ("three_subterms", t, ""))
+
+let four_subterms t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bt1; bt2; bt3; bt4] 
+   } ->
+      let destr = dest_simple_bterm t in
+      destr bt1, destr bt2, destr bt3, destr bt4
+ | _ -> raise (TermMatch ("four_subterms", t, ""))
+
+let five_subterms t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bt1; bt2; bt3; bt4; bt5] 
+   } ->
+      let destr = dest_simple_bterm t in
+      destr bt1, destr bt2, destr bt3, destr bt4, destr bt5
+ | _ -> raise (TermMatch ("five_subterms", t, ""))
+
+(************************************************************************
+ * Nonsimple but useful forms                                           *
+ ************************************************************************)
+
+(*
+ * One string param.
+ *)
+let is_string_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [String _] };
+     term_terms = []
+   } when opname == opname' ->
+      true
+ | _ ->
+      false
+
+let dest_string_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [String s] };
+     term_terms = []
+   } when opname == opname' ->
+      s
+ | _ ->
+      raise (TermMatch ("dest_string_term", t, "not a string term"))
+
+let dest_string_param t = match dest_term t with
+   { term_op = { op_params = String s :: _ } } ->
+      s
+ | _ ->
+      raise (TermMatch ("dest_string_param", t, "no string parameter"))
+
+let mk_string_term opname s =
+   { free_vars = StringSet.empty;
+     core = Term
+      { term_op = { op_name = opname; op_params = [String s] }; term_terms = [] }}
+
+(*
+ * One string parameter, and one simple subterm.
+ *)
+let is_string_dep0_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [String _] };
+     term_terms = [bt]
+   } when opname == opname' -> (dest_bterm bt).bvars = []
+ | _ -> false
+
+let dest_string_dep0_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [String s] };
+     term_terms = [bt]
+   } when opname == opname' -> s, dest_simple_bterm t bt
+ | _ -> raise (TermMatch ("dest_string_dep0_term", t, ""))
+
+let mk_string_dep0_term opname s t =
+   { free_vars = t.free_vars;
+     core = Term
+      { term_op = { op_name = opname; op_params = [String s] };
+        term_terms = [mk_simple_bterm t] }}
+
+(*
+ * Two string parameters, and one simple subterm.
+ *)
+let is_string_string_dep0_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [String _; String _] };
+     term_terms = [bt]
+   } when opname == opname' -> (dest_bterm bt).bvars = []
+ | _ ->
+      false
+
+let dest_string_string_dep0_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [String s1; String s2] };
+     term_terms = [bt]
+   } when opname == opname' ->
+      s1, s2, dest_simple_bterm t bt
+ | _ ->
+      raise (TermMatch ("dest_string_string_dep0_term", t, ""))
+
+let dest_string_string_dep0_any_term t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [String s1; String s2] };
+     term_terms = [bt]
+   } ->
+      s1, s2, dest_simple_bterm t bt
+ | _ ->
+      raise (TermMatch ("dest_string_string_dep0_any_term", t, ""))
+
+let mk_string_string_dep0_term opname s1 s2 t =
+   { free_vars = t.free_vars;
+     core = Term
+      { term_op = { op_name = opname; op_params = [String s1; String s2] };
+        term_terms = [mk_simple_bterm t] }}
+
+(*
+ * Two number parameters and one subterm.
+ *)
+let is_number_number_dep0_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [Number _; Number _] };
+     term_terms = [ bt ]
+   } when opname == opname' -> (dest_bterm bt).bvars = []
+ | _ ->
+      false
+
+let dest_number_number_dep0_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [Number s1; Number s2] };
+     term_terms = [bt]
+   } when opname == opname' ->
+      s1, s2, dest_simple_bterm t bt
+ | _ ->
+      raise (TermMatch ("dest_number_number_dep0_term", t, ""))
+
+let dest_number_number_dep0_any_term t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [Number s1; Number s2] };
+     term_terms = [bt]
+   } ->
+      s1, s2, dest_simple_bterm t bt
+ | _ ->
+      raise (TermMatch ("dest_number_number_dep0_any_term", t, ""))
+
+let mk_number_number_dep0_term opname s1 s2 t =
+   { free_vars = t.free_vars;
+     core = Term
+      { term_op = { op_name = opname; op_params = [Number s1; Number s2] };
+        term_terms = [mk_simple_bterm t]}}
+
+(*
+ * Two string parameters, two subterms.
+ *)
+let is_string_string_dep0_dep0_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [String _; String _] };
+     term_terms = [bt1;bt2]
+   } when opname == opname' ->
+      (dest_bterm bt1).bvars = [] && (dest_bterm bt2).bvars = []
+ | _ ->
+      false
+
+let dest_string_string_dep0_dep0_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [String s1; String s2] };
+     term_terms = [bt1;bt2]
+   } when opname == opname' ->
+      let destr = dest_simple_bterm t in
+      s1, s2, destr bt1, destr bt2
+ | _ ->
+      raise (TermMatch ("dest_string_string_dep0_dep0_term", t, ""))
+
+let dest_string_string_dep0_dep0_any_term t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [String s1; String s2] };
+     term_terms = [bt1;bt2]
+   } ->
+      let destr = dest_simple_bterm t in
+      s1, s2, destr bt1, destr bt2
+ | _ ->
+      raise (TermMatch ("dest_string_string_dep0_dep0_any_term", t, ""))
+
+let mk_string_string_dep0_dep0_term opname s1 s2 t1 t2 =
+   { free_vars = StringSet.union t1.free_vars t2.free_vars;
+     core = Term
+      { term_op = { op_name = opname; op_params = [String s1; String s2] };
+        term_terms = [mk_simple_bterm t1; mk_simple_bterm t2]}}
+
+(*
+ * One number param.
+ *)
+let is_number_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [Number _] };
+     term_terms = []
+   } when opname == opname' -> true
+ | _ -> false
+
+let dest_number_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [Number n] };
+     term_terms = []
+   } when opname == opname' -> n
+ | _ -> raise (TermMatch ("dest_number_term", t, ""))
+
+let dest_number_any_term t = match dest_term t with
+   { term_op = { op_params = [Number n] };
+     term_terms = []
+   } ->
+      n
+ | _ ->
+      raise (TermMatch ("dest_number_any_term", t, ""))
+
+let mk_number_term opname n =
+   { free_vars = StringSet.empty;
+     core = Term
+      { term_op = { op_name = opname; op_params = [Number n] };
+        term_terms = [] }}
+
+(*
+ * One universe param.
+ *)
+let is_univ_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [Level _] };
+     term_terms = []
+   } when opname == opname' -> true
+ | _ -> false
+
+let dest_univ_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [Level n] };
+     term_terms = []
+   } when opname == opname' -> n
+ | _ -> raise (TermMatch ("dest_univ_term", t, ""))
+
+let mk_univ_term opname n =
+   { free_vars = StringSet.empty;
+     core = Term
+      { term_op = { op_name = opname; op_params = [Level n] };
+        term_terms = [] }}
+
+(*
+ * One token param.
+ *)
+let is_token_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [Token _] };
+     term_terms = []
+   } when opname == opname' -> true
+ | _ -> false
+
+let dest_token_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [Token n] };
+     term_terms = []
+   } when opname == opname' -> n
+ | _ -> raise (TermMatch ("dest_token_term", t, ""))
+
+let mk_token_term opname n =
+   { free_vars = StringSet.empty;
+     core = Term 
+      { term_op = { op_name = opname; op_params = [Token n] };
+        term_terms = [] }}
+
+(*
+ * Bound term.
+ *)
+let is_dep1_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bt]
+   } when opname' = opname -> 
+      begin
+         match (dest_bterm bt).bvars with
+            [_] -> true
+          | _ -> false
+      end
+ | _ -> false
+
+let mk_dep1_term opname v t =
+   let fv = StringSet.remove v t.free_vars in
+   { free_vars = fv;
+     core = Term
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = 
+         [{ bfree_vars = fv;
+            bcore = BTerm { bvars = [v]; bterm = t }}]}}
+
+let dest_dep1_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bt]
+   } when opname' = opname -> 
+      begin
+         match dest_bterm bt with
+            { bvars = [v]; bterm = t } -> v,t
+          | _ -> raise (TermMatch ("dest_dep1_term", t, ""))
+      end 
+ | _ -> raise (TermMatch ("dest_dep1_term", t, ""))
+
+let is_dep0_dep1_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bt1;bt2]
+   } when opname' = opname -> 
+      if (dest_bterm bt1).bvars = []
+         then match (dest_bterm bt2).bvars with
+            [_] -> true
+          | _ -> false
+         else false
+ | _ -> false
+
+let is_dep0_dep1_any_term t = match dest_term t with
+   { term_op = { op_params = [] };
+     term_terms = [bt1;bt2] } -> 
+       if (dest_bterm bt1).bvars = []
+         then match (dest_bterm bt2).bvars with
+            [_] -> true
+          | _ -> false
+         else false
+ | _ -> false
+
+let mk_dep0_dep1_term opname v t1 t2 =
+   let fv2 = StringSet.remove v t2.free_vars in
+   { free_vars = StringSet.union t1.free_vars fv2;
+     core = Term
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = 
+            [ mk_simple_bterm t1; 
+              { bfree_vars = fv2;
+                bcore = BTerm { bvars = [v]; bterm = t2 }}]}}
+
+let mk_dep0_dep1_any_term op v t1 t2 =
+   let fv2 = StringSet.remove v t2.free_vars in
+   { free_vars = StringSet.union t1.free_vars fv2;
+     core = Term
+      { term_op = op;
+        term_terms = 
+            [ mk_simple_bterm t1;
+              { bfree_vars = fv2;
+                bcore = BTerm { bvars = [v]; bterm = t2 }}]}}
+
+let dest_dep0_dep1_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bt1;bt2]
+   } when opname' = opname -> 
+   begin match (dest_bterm bt1, dest_bterm bt2) with
+      ({ bvars = []; bterm = t1 }, { bvars = [v]; bterm = t2 }) ->
+         v, t1, t2
+    | _ -> raise (TermMatch ("dest_dep0_dep1_term", t, ""))
+   end
+ | _ -> raise (TermMatch ("dest_dep0_dep1_term", t, ""))
+
+let dest_dep0_dep1_any_term t = match dest_term t with
+   { term_op = { op_params = [] };
+     term_terms = [bt1;bt2] } -> 
+      begin match (dest_bterm bt1, dest_bterm bt2) with
+         ({ bvars = []; bterm = t1 }, { bvars = [v]; bterm = t2 }) ->
+            v, t1, t2
+       | _ -> raise (TermMatch ("dest_dep0_dep1_term", t, ""))
+      end
+ | _ -> raise (TermMatch ("dest_dep0_dep1_any_term", t, ""))
+
+(*
+ * First subterm of arity 2.
+ *)
+let is_dep2_dep0_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bt1;bt2]
+   } when opname' = opname -> 
+      if (dest_bterm bt2).bvars = []
+         then match (dest_bterm bt1).bvars with
+            [_;_] -> true
+          | _ -> false
+         else false
+ | _ -> false
+
+let mk_dep2_dep0_term opname v1 v2 t1 t2 =
+   let fv1 = StringSet.remove v1 (StringSet.remove v2 t1.free_vars) in
+   { free_vars = StringSet.union fv1 t2.free_vars;
+     core = Term
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = 
+         [{ bfree_vars = fv1;
+            bcore = BTerm { bvars = [v1; v2]; bterm = t1 }};
+          mk_simple_bterm t2]}}
+
+let dest_dep2_dep0_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bt1; bt2] 
+   } when opname' = opname ->
+      begin match (dest_bterm bt1, dest_bterm bt2) with
+         ({ bvars = [v1; v2]; bterm = t1 },
+          { bvars = []; bterm = t2 }) -> v1, v2, t1, t2
+       | _ -> raise (TermMatch ("dest_dep2_dep0_term", t, ""))
+      end
+ | _ -> raise (TermMatch ("dest_dep2_dep0_term", t, ""))
+
+(*
+ * Second subterm of arity 2.
+ *)
+let is_dep0_dep2_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bt1; bt2]
+   } when opname' = opname -> 
+      if (dest_bterm bt1).bvars = []
+         then match (dest_bterm bt2).bvars with
+            [_;_] -> true
+          | _ -> false
+         else false
+ | _ -> false
+
+let mk_dep0_dep2_term opname v1 v2 t1 t2 =
+   let fv2 = StringSet.remove v1 (StringSet.remove v2 t2.free_vars) in
+   { free_vars = StringSet.union t1.free_vars fv2;
+     core = Term
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = 
+         [mk_simple_bterm t1;
+          { bfree_vars = fv2;
+            bcore = BTerm { bvars = [v1; v2]; bterm = t2 }}]}}
+
+let dest_dep0_dep2_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bt1;bt2]
+   } when opname' = opname ->
+      begin match (dest_bterm bt1, dest_bterm bt2) with
+         ({ bvars = []; bterm = t1 },
+          { bvars = [v1; v2]; bterm = t2 }) -> v1, v2, t1, t2
+       | _ -> raise (TermMatch ("dest_dep0_dep2_term", t, ""))
+      end
+ | _ -> raise (TermMatch ("dest_dep0_dep2_term", t, ""))
+
+(*
+ * Three subterms.
+ *)
+let is_dep0_dep2_dep2_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bt1;bt2;bt3]
+   } when opname' = opname ->
+      if (dest_bterm bt1).bvars = []
+         then match ((dest_bterm bt2).bvars, (dest_bterm bt3).bvars) with
+            ([_;_], [_;_]) -> true
+          | _ -> false
+         else false
+ | _ -> false
+
+let mk_dep0_dep2_dep2_term opname t0 v11 v12 t1 v21 v22 t2 =
+   mk_term 
+      { op_name = opname; op_params = [] }
+      [mk_simple_bterm t0;
+       mk_bterm [v11; v12] t1;
+       mk_bterm [v21; v22] t2]
+
+let dest_dep0_dep2_dep2_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bt1; bt2; bt3]
+   } when opname' = opname -> 
+      begin
+         match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3) with
+            ({ bvars = []; bterm = t0 },
+             { bvars = [v11; v12]; bterm = t1 },
+             { bvars = [v21; v22]; bterm = t2 }) 
+               -> t0, v11, v12, t1, v21, v22, t2
+          | _ -> raise (TermMatch ("dest_dep0_dep2_dep2_term", t, ""))
+      end
+ | _ -> raise (TermMatch ("dest_dep0_dep2_dep2_term", t, ""))
+
+(*
+ * Four subterms.
+ *)
+let is_dep0_dep2_dep0_dep2_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bt1; bt2; bt3; bt4]
+   } when opname' = opname -> 
+      begin match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3, dest_bterm bt4) with
+         ({ bvars = [] }, { bvars = [_; _] }, { bvars = [] }, { bvars = [_; _] }) -> true
+       | _ -> false
+      end
+ | _ -> false
+
+let mk_dep0_dep2_dep0_dep2_term opname t0 v11 v12 t1 base v21 v22 t2 =
+      mk_term 
+         { op_name = opname; op_params = [] }
+         [mk_simple_bterm t0;
+          mk_bterm [v11; v12] t1;
+          mk_simple_bterm base;
+          mk_bterm [v21; v22] t2]
+
+let dest_dep0_dep2_dep0_dep2_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bt1; bt2; bt3; bt4]
+   } when opname' = opname -> 
+      begin match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3, dest_bterm bt4) with
+         ({ bvars = []; bterm = t0 },
+          { bvars = [v11; v12]; bterm = t1 },
+          { bvars = []; bterm = base },
+          { bvars = [v21; v22]; bterm = t2 }) ->
+            t0, v11, v12, t1, base, v21, v22, t2
+       | _ -> raise (TermMatch ("dest_dep0_dep2_dep0_dep2_term", t, ""))
+      end
+ | _ -> raise (TermMatch ("dest_dep0_dep2_dep0_dep2_term", t, ""))
+
+(*
+ * Three subterms.
+ *)
+let is_dep0_dep0_dep1_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bt1; bt2; bt3]
+   } when opname' == opname ->
+      begin match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3) with
+         ({ bvars = [] }, { bvars = [] }, { bvars = [_] }) -> true
+       | _ -> false
+      end
+ | _ -> false
+
+let mk_dep0_dep0_dep1_term opname t0 t1 v2 t2 =
+   let fv2 = StringSet.remove v2 t2.free_vars in
+   { free_vars = StringSet.union t0.free_vars 
+                                 (StringSet.union t1.free_vars fv2);
+     core = Term
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = 
+         [mk_simple_bterm t0;
+          mk_simple_bterm t1;
+          { bfree_vars = fv2;
+            bcore = BTerm { bvars = [v2]; bterm = t2 }}]}}
+
+let dest_dep0_dep0_dep1_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bt1; bt2; bt3]
+   } when opname' == opname ->
+      begin match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3) with
+         ({ bvars = []; bterm = t0 },
+          { bvars = []; bterm = t1 },
+          { bvars = [v2]; bterm = t2 }) -> t0, t1, v2, t2
+       | _ -> raise (TermMatch ("dest_dep0_dep0_dep1_term", t, ""))
+      end
+ | _ ->
+      raise (TermMatch ("dest_dep0_dep0_dep1_term", t, ""))
+
+let is_dep0_dep0_dep1_any_term t = match dest_term t with
+   { term_terms = [bt1; bt2; bt3] } ->
+      begin match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3) with
+         ({ bvars = [] }, { bvars = [] }, { bvars = [_] }) -> true
+       | _ -> false
+      end
+ | _ -> false
+
+let mk_dep0_dep0_dep1_any_term op t0 t1 v2 t2 =
+   let fv2 = StringSet.remove v2 t2.free_vars in
+   { free_vars = StringSet.union t0.free_vars 
+                                 (StringSet.union t1.free_vars fv2);
+     core = Term
+      { term_op = op;
+        term_terms = 
+         [mk_simple_bterm t0;
+          mk_simple_bterm t1;
+          { bfree_vars = fv2;
+            bcore = BTerm { bvars = [v2]; bterm = t2 }}]}}
+
+let dest_dep0_dep0_dep1_any_term t = match dest_term t with
+   { term_terms = [bt1; bt2; bt3] } ->
+      begin match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3) with
+         ({ bvars = []; bterm = t0 },
+          { bvars = []; bterm = t1 },
+          { bvars = [v2]; bterm = t2 }) -> t0, t1, v2, t2
+       | _ -> raise (TermMatch ("dest_dep0_dep0_dep1_any_term", t, ""))
+      end
+ | _ ->
+      raise (TermMatch ("dest_dep0_dep0_dep1_any_term", t, ""))
+
+let is_dep0_dep1_dep1_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bt1; bt2; bt3]
+   } when opname' = opname -> 
+      begin match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3) with
+         ({ bvars = [] }, { bvars = [_] }, { bvars = [_] }) -> true
+       | _ -> false
+      end
+ | _ -> false
+
+let mk_dep0_dep1_dep1_term opname t0 v1 t1 v2 t2 =
+   mk_term 
+      { op_name = opname; op_params = [] }
+      [mk_simple_bterm t0;
+       mk_bterm [v1] t1;
+       mk_bterm [v2] t2]
+
+let dest_dep0_dep1_dep1_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bt1; bt2; bt3]
+   } when opname' = opname ->
+      begin match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3) with
+         ({ bvars = []; bterm = t0 },
+          { bvars = [v1]; bterm = t1 },
+          { bvars = [v2]; bterm = t2 }) -> t0, v1, t1, v2, t2
+       | _ -> raise (TermMatch ("dest_dep0_dep1_dep1_term", t, ""))
+      end
+ | _ -> raise (TermMatch ("dest_dep0_dep1_dep1_term", t, ""))
+
+(*
+ * Three subterms.
+ *)
+let is_dep0_dep0_dep3_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bt1; bt2; bt3]
+   } when opname' = opname -> 
+      begin match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3) with
+         ({ bvars = [] }, { bvars = [] }, { bvars = [_; _; _] }) -> true
+       | _ -> false
+      end
+ | _ -> false
+
+let mk_dep0_dep0_dep3_term opname t0 t1 v1 v2 v3 t2 = 
+   mk_term
+      { op_name = opname; op_params = [] }
+      [mk_simple_bterm t0;
+       mk_simple_bterm t1;
+       mk_bterm [v1; v2; v3] t2]
+
+let dest_dep0_dep0_dep3_term opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bt1; bt2; bt3]
+   } when opname' = opname -> 
+      begin match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3) with
+         ({ bvars = []; bterm = t0 },
+          { bvars = []; bterm = t1 },
+          { bvars = [v1; v2; v3]; bterm = t2 })
+            -> t0, t1, v1, v2, v3, t2
+       | _ -> raise (TermMatch ("dest_dep0_dep0_dep3_term", t, ""))
+      end
+ | _ -> raise (TermMatch ("dest_dep0_dep0_dep3_term", t, ""))
+
+(*
+ * One subterm with opname.
+ *)
+let is_one_bsubterm opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [_]
+   } when opname' = opname -> true
+ | _ -> false
+
+let dest_one_bsubterm opname t = match dest_term t with
+   { term_op = { op_name = opname'; op_params = [] };
+     term_terms = [bterm]
+   } when opname' = opname -> bterm
+ | _ -> raise (TermMatch ("dest_one_bsubterm", t, ""))
+
+let mk_one_bsubterm opname bt =
+   { free_vars = bt.bfree_vars;
+     core = Term
+      { term_op = { op_name = opname; op_params = [] }; 
+        term_terms = [bt] }}
+
+(************************************************************************
+ * PRIMITIVE FORMS                                                      *
+ ************************************************************************)
+
+let xperv = make_opname ["Perv"]
+
+(*
+ * Lists.
+ *)
+let xnil_opname = mk_opname "nil" xperv
+let xcons_opname = mk_opname "cons" xperv
+
+let xnil_term = mk_simple_term xnil_opname []
+let is_xnil_term t = t = xnil_term
+
+let is_xcons_term = is_dep0_dep0_term xcons_opname
+let mk_xcons_term = mk_dep0_dep0_term xcons_opname
+let dest_xcons = dest_dep0_dep0_term xcons_opname
+
+let rec is_xlist_term t = match dest_term t with
+   { term_op = { op_name = opname; op_params = [] };
+     term_terms = [bt1; bt2] 
+   } when opname == xcons_opname -> 
+      begin match (dest_bterm bt1, dest_bterm bt2) with
+         ({ bvars = []; bterm = _ }, { bvars = []; bterm = b }) ->
+            is_xlist_term b
+       | _ -> false
+      end
+ | { term_op = { op_name = opname; op_params = [] }; term_terms = [] } when opname == xnil_opname -> true
+ | _ -> false
+
+let dest_xlist t =
+   let rec aux trm = match dest_term trm with
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = [bt1; bt2]
+      } when opname == xcons_opname -> 
+         begin match (dest_bterm bt1, dest_bterm bt2) with 
+            ({ bvars = []; bterm = a },
+             { bvars = []; bterm = b }) -> a::(aux b)
+          | _ -> raise (TermMatch ("dest_xlist", t, "not a list"))
+         end
+    | { term_op = { op_name = opname; op_params = [] }; term_terms = [] } when opname == xnil_opname -> []
+    | _ -> raise (TermMatch ("dest_xlist", t, "not a list"))
+   in
+       aux t
+
+let rec mk_xlist_term = function
+   h::t ->
+      mk_term 
+         { op_name = xcons_opname; op_params = [] }
+         [mk_simple_bterm h ; mk_simple_bterm (mk_xlist_term t)]
+ | [] ->
+      xnil_term
+
+(*
+ * Strings.
+ *)
+let string_opname = mk_opname "string" xperv
+
+let is_xstring_term t = match dest_term t with
+   { term_op = { op_name = opname; op_params = [String _] };
+     term_terms = []
+   } when opname == string_opname ->
+      true
+ | _ ->
+      false
+
+let dest_xstring t = match dest_term t with
+   { term_op = { op_name = opname; op_params = [String s] };
+     term_terms = []
+   } when opname == string_opname ->
+      s
+ | _ ->
+      raise (TermMatch ("dest_xstring", t, "not a string"))
+
+let mk_xstring_term s =
+   { free_vars = StringSet.empty;
+     core = Term
+      { term_op = { op_name = string_opname; op_params = [String s] };
+        term_terms = [] }}
+
+(****************************************
+ * LAMBDA                               *
+ ****************************************)
+
+let xlambda_opname = mk_opname "lambda" xperv
+
+let mk_xlambda_term = mk_dep1_term xlambda_opname
+
+(*************************
+ * Sequents              *                                              *
+ *************************)
+
+(* Sequents operator name *)
+let hyp_opname = mk_opname "hyp" xperv
+let concl_opname = mk_opname "concl" xperv
+let sequent_opname = mk_opname "sequent" xperv
+
+(* Dependent hypotheses *)
+let is_hyp_term = is_dep0_dep1_term hyp_opname
+let mk_hyp_term = mk_dep0_dep1_term hyp_opname
+let dest_hyp = dest_dep0_dep1_term hyp_opname
+
+(* Conclusions *)
+let is_concl_term = is_dep0_dep0_term concl_opname
+let mk_concl_term = mk_dep0_dep0_term concl_opname
+let dest_concl = dest_dep0_dep0_term concl_opname
+
+(* Sequent wrapper *)
+let is_sequent_term = is_simple_term_opname sequent_opname
+let mk_sequent_term = mk_simple_term sequent_opname
+let dest_sequent = dest_simple_term_opname sequent_opname
+let goal_of_sequent t = match dest_term t with
+   { term_op = { op_name = name; op_params = [] };
+     term_terms = bt::_
+   } when name == sequent_opname ->
+      dest_simple_bterm t bt
+ | _ -> raise (TermMatch ("goal_of_sequent", t, ""))
+
+let null_concl = mk_simple_term concl_opname []
+
+(*
+ * Find the address of the conclusion.
+ *)
+let concl_addr t =
+   let rec aux' i trm = match dest_term trm with
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = [bt1; bt2]
+      } when opname == concl_opname ->
+         begin match (dest_bterm bt1, dest_bterm bt2) with
+            ({ bvars = [] }, { bvars = []; bterm = term }) -> aux' (i + 1) term
+          | _ -> i
+         end
+    | _ ->
+         i
+   in
+   let rec aux i trm = match dest_term trm with
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = [bt1; bt2]
+      } when opname == hyp_opname ->
+         begin match (dest_bterm bt1, dest_bterm bt2) with
+            ({ bvars = [] }, { bvars = [_]; bterm = term }) -> aux (i + 1) term
+          | ({ bvars = [] }, { bvars = []; bterm = term }) -> aux (i + 1) term
+          | _ -> raise (TermMatch ("concl_addr", t, ""))
+         end
+    | { term_op = { op_name = opname; op_params = [] };
+        term_terms = [bt1; bt2]
+      } when opname == concl_opname ->
+         begin match (dest_bterm bt1, dest_bterm bt2) with
+            ({ bvars = [] }, { bvars = []; bterm = term }) -> (i, aux' 0 term)
+          | _ -> raise (TermMatch ("concl_addr", t, ""))
+         end 
+    | _ -> raise (TermMatch ("concl_addr", t, ""))
+   in
+      aux 0 (goal_of_sequent t)
+   
+(*
+ * Fast access to hyp and concl.
+ *)
+let nth_hyp t i =
+   let rec aux i trm = match dest_term trm with
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = [bt1; bt2]
+      } when opname == hyp_opname -> 
+         begin match (dest_bterm bt1, dest_bterm bt2) with
+            ({ bvars = []; bterm = t }, { bvars = [x]; bterm = term }) ->
+               if i = 0 then
+                  x, t
+               else
+                  aux (i - 1) term
+          | _ -> raise (TermMatch ("nth_hyp", t, ""))
+         end
+    | { term_op = { op_name = opname } } when opname == concl_opname ->
+         raise Not_found
+    | _ -> raise (TermMatch ("nth_hyp", t, ""))
+   in
+      aux i (goal_of_sequent t)
+
+let nth_concl t i =
+   let rec aux i trm = match dest_term trm with
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = [bt1; bt2]
+      } when opname == hyp_opname ->
+         begin match (dest_bterm bt1, dest_bterm bt2) with
+            ({ bvars = []; bterm = _ }, { bvars = [_]; bterm = term }) ->
+               aux i term
+          | _ -> raise (TermMatch ("nth_concl", t, ""))
+         end
+    | { term_op = { op_name = opname; op_params = [] };
+        term_terms = [bt1; bt2]
+      } when opname == concl_opname ->
+         begin match (dest_bterm bt1, dest_bterm bt2) with
+            ({ bvars = []; bterm = t }, { bvars = []; bterm = term }) ->
+               if i = 0 then
+                  t
+               else
+                  aux (i - 1) term
+          | _ -> raise Not_found
+         end
+    | { term_op = { op_name = opname } } when opname == concl_opname ->
+         raise Not_found
+    | _ -> raise (TermMatch ("nth_concl", t, ""))
+   in
+      aux i (goal_of_sequent t)
+
+(*
+ * Count the hyps.
+ *)
+let num_hyps t =
+   let rec aux i trm = match dest_term trm with
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = [bt1; bt2]
+      } when opname == hyp_opname ->
+         begin match (dest_bterm bt1, dest_bterm bt2) with
+            ({ bvars = []; bterm = t }, { bvars = [x]; bterm = term }) ->
+               aux (i + 1) term
+          | _ -> i
+         end
+    | _ -> i
+   in
+      aux 0 (goal_of_sequent t)
+
+(*
+ * Collect the vars.
+ *)
+let declared_vars t =
+   let rec aux vars trm = match dest_term trm with
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = [bt1; bt2]
+      } when opname == hyp_opname ->
+         begin match (dest_bterm bt1, dest_bterm bt2) with
+            ({ bvars = []; bterm = t }, { bvars = [x]; bterm = term }) ->
+               aux (x::vars) term
+          | _ -> vars
+         end
+    | _ -> vars
+   in
+      aux [] (goal_of_sequent t)
+
+(*
+ * Collect the vars.
+ *)
+let declarations t =
+   let rec aux vars trm = match dest_term trm with
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = [bt1; bt2]
+      } when opname == hyp_opname ->
+         begin match (dest_bterm bt1, dest_bterm bt2) with
+            ({ bvars = []; bterm = t }, { bvars = [x]; bterm = term }) ->
+               aux ((x, t)::vars) term
+          | _ -> vars
+         end
+    | _ -> vars
+   in
+      aux [] (goal_of_sequent t)
+
+(*
+ * Get the number of the hyp with the given var.
+ *)
+let get_decl_number t v =
+   let rec aux i trm = match dest_term trm with
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = [bt1; bt2]
+      } when opname == hyp_opname ->
+         begin match (dest_bterm bt1, dest_bterm bt2) with
+            ({ bvars = []; bterm = t }, { bvars = [x]; bterm = term }) ->
+               if x = v then
+                  i
+               else
+                  aux (i + 1) term
+          | _ -> raise Not_found
+         end
+    | _ -> raise Not_found
+   in
+      aux 0 (goal_of_sequent t)
+
+(*
+ * See if a var is free in the rest of the sequent.
+ *)
+let is_free_seq_var i v t =
+   let rec aux i t =
+      if i = 0 then
+         is_free_var v t
+      else
+         match dest_term t with
+            { term_op = { op_name = opname; op_params = [] };
+              term_terms = [bt1; bt2]
+            } when opname == hyp_opname ->
+               begin match (dest_bterm bt1, dest_bterm bt2) with
+                  ({ bvars = []; bterm = _ }, { bvars = [_]; bterm = term }) -> 
+                     aux (i - 1) term
+                | _ -> raise (Invalid_argument "is_free_seq_var")
+               end
+          | _ -> raise (Invalid_argument "is_free_seq_var")
+   in
+      aux i (goal_of_sequent t)
+
+(*
+ * Generate a list of sequents with replaced goals.
+ *)
+let rec replace_concl seq goal =
+   match dest_term seq with
+      { term_op = { op_name = opname; op_params = [] };
+        term_terms = [bt1; bt2]
+      } when opname == hyp_opname ->
+         begin match (dest_bterm bt1, dest_bterm bt2) with
+            ({ bvars = []; bterm = t1 }, { bvars = v1; bterm = t2 }) ->
+               mk_term 
+                  { op_name = hyp_opname; op_params = [] }
+                  [ mk_simple_bterm t1; 
+                    mk_bterm v1 (replace_concl t2 goal) ]
+          | _ -> goal
+         end
+    | _ -> goal
+
+let replace_goal seq goal =
+   replace_concl (mk_concl_term goal null_concl) seq
+
+
+(*
+ * Rewrite
+ *)
+let xrewrite_op = mk_opname "rewrite" xperv
+
+let is_xrewrite_term = is_dep0_dep0_term xrewrite_op
+let mk_xrewrite_term = mk_dep0_dep0_term xrewrite_op
+let dest_xrewrite = dest_dep0_dep0_term xrewrite_op
+
+(*
  * ``Special'' terms to be used in reduction rules
  *
  * "canon_var" plays the same role as "var" in reduction rules but 
@@ -2104,7 +2127,7 @@ let canon_var_opname = mk_opname "canon_var" xperv
 (*
  * See if a term is a "canon_var".
  *)
-let is_canon_var_term = function
+let is_canon_var_term t = match dest_term t with
    { term_op = { op_name = opname; op_params = [Var v] };
      term_terms = []
    } when opname == canon_var_opname -> true
@@ -2113,19 +2136,20 @@ let is_canon_var_term = function
 (*
  * Destructor for a "canon_var".
  *)
-let dest_canon_var = function
+let dest_canon_var t = match dest_term t with
    { term_op = { op_name = opname; op_params = [Var v] };
      term_terms = []
    } when opname == canon_var_opname -> v
-  | t -> raise (TermMatch ("dest_canon_var", t, ""))
+  | _ -> raise (TermMatch ("dest_canon_var", t, ""))
 
 (*
  * Make a "canon_var".
  *)
 let mk_canon_var_term v =
-   { term_op = { op_name = canon_var_opname; op_params = [Var v] };
-     term_terms = []
-   }
+   { free_vars = StringSet.add v StringSet.empty;
+     core = Term
+      { term_op = { op_name = canon_var_opname; op_params = [Var v] };
+        term_terms = []}}
    
 let subst_opname = mk_opname "subst" xperv
 
@@ -2135,13 +2159,15 @@ let subst_opname = mk_opname "subst" xperv
 
 let rec is_subst_term_args = function
    [],[] -> true
- | var::vars,{bvars = []}::bterms -> is_subst_term_args (vars,bterms) 
+ | var::vars,bt::bterms -> 
+      (dest_bterm bt).bvars = [] && is_subst_term_args (vars,bterms) 
  | _ -> false
 
-let is_subst_term = function
+let is_subst_term t = match dest_term t with
    { term_op = { op_name = opname; op_params = [] };
-     term_terms = {bvars = vars; bterm = main_term}::bterms
-   } when opname == subst_opname -> is_subst_term_args (vars,bterms)
+     term_terms = bt::bterms
+   } when opname == subst_opname -> 
+      is_subst_term_args ((dest_bterm bt).bvars,bterms)
  | _ -> false
 
 (*
@@ -2150,16 +2176,18 @@ let is_subst_term = function
 
 let rec dest_subst_args t = function
    [],[] -> [],[]
- | var::vars,{bvars = []; bterm = term}::bterms -> 
+ | var::vars,bt::bterms -> 
       let tail = dest_subst_args t (vars,bterms) in
-      (var::fst tail),(term::snd tail)
+      (var::fst tail),((dest_simple_bterm t bt)::snd tail)
  | _ -> raise (TermMatch ("dest_subst", t, ""))
 
-let dest_subst = function
+let dest_subst t = match dest_term t with
    { term_op = { op_name = opname; op_params = [] };
-     term_terms = {bvars = vars; bterm = main_term}::bterms
-   } as t when opname == subst_opname -> (main_term, dest_subst_args t (vars,bterms))
-  | t -> raise (TermMatch ("dest_subst", t, ""))
+     term_terms = btrm::bterms
+   } when opname == subst_opname -> 
+      let bt = dest_bterm btrm in
+      (bt.bterm, dest_subst_args t (bt.bvars,bterms))
+  | _ -> raise (TermMatch ("dest_subst", t, ""))
 
 (*
  * Make a "subst" term.
@@ -2168,207 +2196,38 @@ let dest_subst = function
 let mk_subst_term main_term subst =
    let sub = List.split subst in
    let vars = fst sub in
-   let terms = List.map (function term -> {bvars=[]; bterm = term}) (snd sub) in
-   { term_op = { op_name = subst_opname; op_params = [] };
-     term_terms = {bvars=vars; bterm=main_term}::terms
-   }
+   let terms = List.map mk_simple_bterm (snd sub) in
+   mk_term
+      { op_name = subst_opname; op_params = [] }
+      (mk_bterm vars main_term::terms)
 
 let make_subst_term main_term vars trms =
    if List.length vars != List.length trms then raise (Invalid_argument "make_subst_term") else
-   let terms = List.map (function term -> {bvars=[]; bterm = term}) trms in
-   { term_op = { op_name = subst_opname; op_params = [] };
-     term_terms = {bvars=vars; bterm=main_term}::terms
-   }
+   let terms = List.map mk_simple_bterm trms in
+   mk_term
+      { op_name = subst_opname; op_params = [] }
+      (mk_bterm vars main_term::terms)
 
 let make_1subst_term main_term v t =
-   { term_op = { op_name = subst_opname; op_params = [] };
-     term_terms = [ {bvars=[v]; bterm=main_term};{bvars=[]; bterm=t} ]
-   }
+   let fvm = StringSet.remove v main_term.free_vars in
+   { free_vars = StringSet.union fvm t.free_vars; 
+     core = Term
+      { term_op = { op_name = subst_opname; op_params = [] };
+        term_terms = 
+         [ { bfree_vars = fvm;
+             bcore = BTerm {bvars=[v]; bterm=main_term}};
+           { bfree_vars = t.free_vars;
+             bcore = BTerm {bvars=[]; bterm=t}}]}}
 
 let make_2subst_term main_term v1 v2 t1 t2 =
-   { term_op = { op_name = subst_opname; op_params = [] };
-     term_terms = [ {bvars=[v1;v2]; bterm=main_term};{bvars=[]; bterm=t1};{bvars=[]; bterm=t2} ]
-   }
-
-(*
- * $Log$
- * Revision 1.22  1998/05/25 15:22:31  nogin
- * Use == for comparing opnames
- *
- * Revision 1.21  1998/05/25 05:19:12  nogin
- * Fixed more typos
- *
- * Revision 1.20  1998/05/22 19:03:04  nogin
- * Fixed a typo in rev_assoc
- *
- * Revision 1.19  1998/05/18 18:28:09  nogin
- * Removed standardize_apart function, compare_* functions
- *     and BadParamMatch exception
- *
- * Revision 1.18  1998/05/01 14:59:37  jyh
- * Updating display forms.
- *
- * Revision 1.17  1998/04/29 20:53:36  jyh
- * Initial working display forms.
- *
- * Revision 1.16  1998/04/29 14:48:23  jyh
- * Added ocaml_sos.
- *
- * Revision 1.15  1998/04/28 21:38:09  jyh
- * Adjusted uppercasing.
- *
- * Revision 1.14  1998/04/24 02:42:58  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.13  1998/04/23 20:04:42  jyh
- * Initial rebuilt editor.
- *
- * Revision 1.12  1998/04/21 19:54:22  jyh
- * Upgraded refiner for program extraction.
- *
- * Revision 1.11  1998/04/17 01:31:18  jyh
- * Editor is almost constructed.
- *
- * Revision 1.10  1998/03/20 22:16:21  eli
- * Eli: Changed integer parameters to Num.num's.
- *
- * Revision 1.9  1998/02/21 20:58:21  jyh
- * Two phase parse/extract.
- *
- * Revision 1.8  1998/02/19 17:13:39  jyh
- * Splitting filter_parse.
- *
- * Revision 1.7  1998/02/12 23:34:50  jyh
- * Modifed term module.
- *
- * Revision 1.6  1997/09/12 17:21:45  jyh
- * Added MLast <-> term conversion.
- * Splitting filter_parse into two phases:
- *    1. Compile into Filter_summary
- *    2. Compile Filter_summary into code.
- *
- * Revision 1.5  1997/08/16 00:18:58  nogin
- *  * Added several functions (used in evaluator)
- *  * Fixed mk_dep0_dep2_dep0_dep2_term
- *
- * Revision 1.4  1997/08/07 19:43:49  jyh
- * Updated and added Lori's term modifications.
- * Need to update all pattern matchings.
- *
- * Revision 1.3  1997/08/07 19:08:18  lolorigo
- * added ObId and ParmList parameter types
- *
-; Revision 1.2  1997/08/06  16:18:14  jyh
-; This is an ocaml version with subtyping, type inference,
-; d and eqcd tactics.  It is a basic system, but not debugged.
-;
- * Revision 1.1  1997/04/28 15:51:42  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- * Revision 1.25  1996/11/13 22:58:10  jyh
- * Initial version of forward/backward chaining cache.
- *
- * Revision 1.24  1996/10/23 15:17:58  jyh
- * First working version of dT tactic.
- *
- * Revision 1.23  1996/09/25 22:52:03  jyh
- * Initial "tactical" commit.
- *
- * Revision 1.22  1996/09/02 19:43:26  jyh
- * Semi working package management.
- *
- * Revision 1.21  1996/05/21 02:14:21  jyh
- * This is a semi-working version before Wisconsin vacation.
- *
- * Revision 1.20  1996/04/11 13:29:46  jyh
- * This is the final version with the old syntax for terms.
- *
- * Revision 1.19  1996/04/07 18:24:55  jyh
- * This is an intermediate commit while adjusting the dforms.
- * We intend that dform printers just return a list of terms.
- *
- * Revision 1.18  1996/03/30 01:37:56  jyh
- * Initial version of ITT.
- *
- * Revision 1.17  1996/03/28 02:58:26  jyh
- * Prelim checkin for an partial version of the refiner document in the
- * first version of README.tex.
- *
- * Revision 1.16  1996/03/25 20:51:02  jyh
- * Intermediate commit while modifying grammer.  Restricting
- * ML hooks to condition terms.
- *
- * Revision 1.15  1996/03/11 18:34:44  jyh
- * The filterModule module is untested, but it seems to work
- * correctly on most inputs, except for mlbegin ... mlend expressions.
- * That's the next task.
- *
- * Revision 1.14  1996/03/08 15:41:01  jyh
- * This version works for most constructs except for ML rewrites.
- * The next step will be to break apart the rewriter so that
- * redices and contracta can be compiled separately.
- *
- * Revision 1.13  1996/03/05 19:48:45  jyh
- * Preliminary version with logical framework.
- *
- * Revision 1.12  1996/02/25 15:16:24  jyh
- * This is a partial checkin as filterModule is being developed.
- * After the meta-logical framework is developed, sequent.* will go away.
- *
- * Revision 1.11  1996/02/19 18:47:13  jyh
- * Updating format.prl
- *
- * Revision 1.10  1996/02/18 23:32:38  jyh
- * Changin Format module to more Nuprl-like format.
- *
- * Revision 1.9  1996/02/14 03:51:57  jyh
- * This is a version common to Caml-Light and Caml-Special-Light.
- *
- * Revision 1.8  1996/02/13 21:33:13  jyh
- * This is an intermediate checkin while matching is being added to the rewriter.
- *
- * Revision 1.7  1996/02/10 20:20:03  jyh
- * Initial checkin of filter (prlcomp).
- *
- * Revision 1.6  1996/02/07 23:41:52  jyh
- * First working version in CamlSpecialLight.
- *
- * Revision 1.5  1996/02/07 17:34:14  jyh
- * This is Version 0 of the refiner in Caml-Light.  At this point,
- * Caml-Light becomes a branch, and main development will be
- * in Caml-Special-Light.
- *
- * Revision 1.4  1996/02/05 18:15:14  jyh
- * Merge context rewrites onto the main branch.
- *
- * Revision 1.3.4.1  1996/02/05 06:09:58  jyh
- * This version has the rewriter with contexts, and Rule application
- * in Sequent.ml, but it is not fully debugged.
- *
- * Revision 1.3  1996/01/31 20:02:59  jyh
- * Generalizing rewriter to work on Sequents.
- *
- * Revision 1.2  1996/01/26 20:15:17  jyh
- * This version has a complete rewriter using the simple term structure.
- * Next implement sequents and refinement.
- *
- * Revision 1.1  1995/12/06 16:43:23  jyh
- * This is an ML version of a term rewriting system.
- * This checkin is partial, and provides a rewriter on
- * regular terms.
- *
- * -*-
- * Local Variables:
- * Caml-master: "refiner.run"
- * End:
- * -*-
- *)
+   let fvm = StringSet.remove v1 (StringSet.remove v2 main_term.free_vars) in
+   { free_vars = StringSet.union fvm (StringSet.union t1.free_vars t2.free_vars); 
+     core = Term
+      { term_op = { op_name = subst_opname; op_params = [] };
+        term_terms = 
+         [ { bfree_vars = fvm;
+             bcore = BTerm {bvars=[v1;v2]; bterm=main_term}};
+           { bfree_vars = t1.free_vars;
+             bcore = BTerm {bvars=[]; bterm=t1}};
+           { bfree_vars = t2.free_vars;
+             bcore = BTerm {bvars=[]; bterm=t2}}]}}
