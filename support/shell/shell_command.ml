@@ -176,6 +176,8 @@ let print_gc_stats () =
    Gc.print_stat Pervasives.stdout;
    Pervasives.flush Pervasives.stdout
 
+let gc_compact = Gc.compact
+
 let set_tex_file = Shell_tex.set_file
 
 let ls s =

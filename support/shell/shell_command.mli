@@ -103,6 +103,7 @@ topval set_debug : string -> bool -> unit
 topval stop_gmon : unit -> unit
 topval restart_gmon : unit -> unit
 topval print_gc_stats : unit -> unit
+topval gc_compact : unit -> unit
 topval println : string -> unit
 topval eprintln : string -> unit
 
