@@ -237,14 +237,18 @@ where n is the number of hypotheses in the initial goal
 * onAllClausesT : (int -> tactic) -> tactic
 = onAllHypsT tac thenT onConclT tac
 
+* onAllAssumT : (int -> tactic) -> tactic
+= onHypsT [1..n]
+where n is the number of assumptions in the initial goal
+
 * tryOnAllHypsT : (int -> tactic) -> tactic
 = onAllHypsT (function i -> tryT (tac i))
 
 * tryOnAllClausesT : (int -> tactic) -> tactic
 = onAllClausesT (function i -> tryT (tac i))
 
-* onAllMHypsT, onAllMClausesT, tryOnAllMHypsT, tryOnAllMClausesT:
-as the above four functions, but using onMHypsT
+* onAllMHypsT, onAllMClausesT, onAllMAssumT, tryOnAllMHypsT, tryOnAllMClausesT:
+as the above five functions, but using onMHypsT
 
 * onSomeAssumT : (int -> tactic) -> tactic
 Tries to apply the argument to [1..n] (where n is the number of
@@ -301,18 +305,26 @@ It tries to rewrite the term at that point.
 Applies the given conversion to the sequent clause named by the int
 argument.
 
-* rwh : conv -> int -> tactic
-= rw (higherC conv) i
-
-* rwa : conv list -> int -> tactic
-= rw (applyAllC convs)
-
 * rwc : conv -> int -> int -> tactic
 (rwc conv assump clause) applies the conversion to the given clause of
 the given assumption.
 
-* rwch : conv -> int -> int -> tactic
-rwch conv = rwc (higherC conv)
+* rwAll : conv -> tactic
+Applies the convertion to all clauses of the goal sequent.
+
+* rwcAll : conv -> int -> tactic
+Applies the convertion to all clauses of the givem assumptiom.
+
+* rwAllAll : conv -> tactic
+Applies the convertion to all clauses of all assumption and to the goal
+sequent.
+
+* rwh, rwch, rwhAll, rwchAll, rwhAllAll are the same as rw, rwc, rwAll, rwcAll, rwAllAll,
+but use (higherC conv).
+
+* rwa, rwca, rwaAll, rwcaAll, rwaAllAll are the same as rw, rwc, rwAll, rwcAll, rwAllAll,
+but have (conv list) as an argument and use (applyAllC convs) instead of conv.
+use (higherC conv).
 
 * thenC (infix) : conv -> conv -> conv
 Apply the first conversion and then the second.
@@ -384,8 +396,6 @@ Apply the first conversion from the list that succeeds.
 = sweepUpC (firstC convs)
 Apply all conversions to all terms possible from outermost to
 innermost (it does not apply conversions recursively).
-
-
 
 * untilFailC : conv -> conv
 Apply the conversion repeatedly until it fails.
