@@ -6,7 +6,6 @@ BASE_FILES =\
 	infix\
 	filter_hash\
 	filter_util\
-	filter_comment\
 	filter_ocaml\
 	filter_exn\
 	filter_summary\
