@@ -1980,6 +1980,9 @@ struct
     * PROOF COPYING                                                        *
     ************************************************************************)
 
+   let changed_warning =
+      ":\n\twas recently changed, potential mismatch with an existing proof."
+
    (*
     * Each of these functions takes two arguments:
     * the entry that was parsed from the .ml file,
@@ -1998,7 +2001,7 @@ struct
                             rw_proof = proof
                   }, _) ->
                if not (alpha_equal rw.rw_redex redex & alpha_equal rw.rw_contractum contractum) then
-                  eprintf "copy_proof: warning: rewrites %s do not match%t" rw.rw_name eflush;
+                  eprintf "Copy_proof: warning: rewrite %s%s%t" rw.rw_name changed_warning eflush;
                { rw with rw_proof = copy_proof rw.rw_proof proof }
           | _ ->
                rw
@@ -2030,7 +2033,7 @@ struct
                   or not (alpha_equal redex1 redex2)
                   or not (alpha_equal contractum1 contractum2)
                then
-                  eprintf "copy_proof: warning: cond_rewrites %s do not match%t" name eflush;
+                  eprintf "Copy_proof: warning: cond_rewrite %s%s%t" name changed_warning eflush;
                { crw_name = name;
                  crw_params = params1;
                  crw_args = args1;
@@ -2054,7 +2057,7 @@ struct
                   }, _) ->
                if not (meta_alpha_equal rule.rule_stmt stmt) then
                   begin
-                     eprintf "copy_proof: warning: rules %s do not match%t" rule.rule_name eflush;
+                     eprintf "Copy_proof: warning: rule %s%s%t" rule.rule_name changed_warning eflush;
                      if !debug_match then
                         begin
                            eprintf "Term 1:\n\t";
