@@ -293,7 +293,7 @@ CONVERTC  = $(SET_MPLIB) $(CONVERT)
 #
 # Add dependency scanning for .ppo files
 #
-.SCANNER: %.ppo: %.ml $(OCAMLDEP)
+.SCANNER: %.ppo: %.ml $(squashed-dependencies %.mli) $(OCAMLDEP)
     $(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLINCLUDES) $(replacesuffixes .ppo, .ml, $^)
 
 #
