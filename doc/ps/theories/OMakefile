@@ -4,7 +4,6 @@
 # so if you want the documentation, run "omake tex" or "omake doc"
 # in the MetaPRL root directory.
 #
-doc: theories.ps theories.pdf
 
 #
 # Clean up
