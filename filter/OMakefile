@@ -149,11 +149,6 @@ section
     OCAML_LINK_FLAGS += -linkall # XXX: http://caml.inria.fr/bin/caml-bugs?selectid=3439 workaround
 
     OCamlProgramInstall($(MPINSTALL), $(LIB), $(CAMLP4N), $(CAMLP4N_FILES))
-
-section
-    OCAML_LIBS += $(CAMLP4_LIBS)
-    OCAML_LINK_FLAGS += -linkall # XXX: http://caml.inria.fr/bin/caml-bugs?selectid=3439 workaround
-
     OCamlProgramInstall($(MPINSTALL), $(LIB), $(CAMLP4O), $(CAMLP4O_FILES))
 
 section
