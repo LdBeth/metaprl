@@ -126,7 +126,8 @@ REFINER
 4.2) Repeated bound variables (when the same variable is bound more than once) is
 handled incorrectly. For example, thinning rule does not check if the variable
 is bound only once (which may be used to prove incorrect results). This is probably the
-same bug as 3.3
+same bug as 3.3 (see also 4.11)
+
 
 4.3) rwh does not do matching correctly - for example, it allows to use reduceEta
 on <<lambda{x.('x 'x)}>>. This may be already fixed by the "strict" rewriter mode.
@@ -173,6 +174,14 @@ For example we should not be able to write rules with the subgoal of the form:
 or
  ('t+'s : sequent ['ext] { 'H >- 'T }) --> ....
 
+4.11) (2001.06 kopylov)
+If the goal sequent has a second-order variable with two repated variables then
+it cannot be applied correctly.
+E.g. dintersectionElimination should be as folloing:
+   prim dintersectionElimination {| elim_resource [] |} 'H 'J  bind{a,b.'T['a;'b]}:
+      [main] ('t['a; 'b] :
+      sequent ['ext] { 'H; x: disect{'A; y.'B['y]}; 'J['x];  a:'A; b: 'B['a]  >- 'T['a;'b] }) -->
+      sequent ['ext] { 'H; x: disect{'A; y.'B['y]}; 'J['x] >- 'T['x;'x] } = 't['x; 'x]
 
 
 PARSER & FILTER
