@@ -150,7 +150,7 @@ dform comment_block_df1 : comment_block{'t} =
    't
 
 dform comment_term_df1 : comment_term{'t} =
-   slot["noparens"]{'t}
+   't
 
 doc <:doc<
    @begin[doc]
@@ -298,7 +298,7 @@ dform module_df1 : mode[tex] :: "module"[name:s] =
    izone `"\\labelmodule{" slot[name:s] `"}{" ezone slot[name:s] izone `"}" ezone
 
 dform module_df2 : mode[html] :: "module"[name:s] =
-   html_anchor[name:s]{html_head[2]{slot[name:s]}}
+   html_head[2]{html_anchor[name:s]{slot[name:s]}}
 
 dform module_df3 : except_mode[tex] :: except_mode[html] :: "module"[name:s] =
    com_hbreak bf[name:s] com_hbreak com_hbreak
@@ -327,7 +327,7 @@ dform chapter_df1 : mode[tex] :: "chapter"[name:s]{'t} =
    izone `"\\labelchapter{" slot[name:s] `"}{" ezone 't izone `"}" ezone
 
 dform chapter_df2 : mode[html] :: "chapter"[name:s]{'t} =
-   html_anchor[name:s]{html_head[1]{'t}}
+   html_head[1]{html_anchor[name:s]{'t}}
 
 dform chapter_df3 : except_mode[tex] :: except_mode[html] :: "chapter"[name:s]{'t} =
    com_hbreak bf{'t} com_hbreak com_hbreak
@@ -336,7 +336,7 @@ dform section_df1 : mode[tex] :: "section"[name:s]{'t} =
    izone `"\\labelsection{" slot[name:s] `"}{" ezone 't izone `"}" ezone
 
 dform section_df2 : mode[html] :: "section"[name:s]{'t} =
-   html_anchor[name:s]{html_head[2]{'t}}
+   html_head[2]{html_anchor[name:s]{'t}}
 
 dform section_df3 : except_mode[tex] :: except_mode[html] :: "section"[name:s]{'t} =
    com_hbreak bf{'t} com_hbreak com_hbreak
@@ -345,7 +345,7 @@ dform subsection_df1 : mode[tex] :: "subsection"[name:s]{'t} =
    izone `"\\labelsubsection{" slot[name:s] `"}{" ezone 't izone `"}" ezone
 
 dform subsection_df2 : mode[html] :: "subsection"[name:s]{'t} =
-   html_anchor[name:s]{html_head[3]{'t}}
+   html_head[3]{html_anchor[name:s]{'t}}
 
 dform subsection_df3 : except_mode[tex] :: except_mode[html] :: "subsection"[name:s]{'t} =
    com_hbreak bf{'t} com_hbreak com_hbreak
@@ -354,7 +354,7 @@ dform subsubsection_df1 : mode[tex] :: "subsubsection"[name:s]{'t} =
    izone `"\\labelsubsubsection{" slot[name:s] `"}{" ezone 't izone `"}" ezone
 
 dform subsubsection_df2 : mode[html] :: "subsubsection"[name:s]{'t} =
-   html_anchor[name:s]{html_head[4]{'t}}
+   html_head[4]{html_anchor[name:s]{'t}}
 
 dform subsubsection_df3 : except_mode[tex] :: except_mode[html] :: "subsubsection"[name:s]{'t} =
    com_hbreak bf{'t} com_hbreak com_hbreak
@@ -1205,7 +1205,7 @@ dform math_hbox_df1 : mode[tex] :: math_hbox{'t} =
    izone `"\\hbox{" ezone 't izone `"}" ezone
 
 dform math_hbox_df2 : except_mode[tex] :: math_hbox{'t} =
-   slot{'t}
+   't
 
 dform math_mbox_df1 : mode[tex] :: math_mbox{'t} =
    izone `"\\mbox{" ezone 't izone `"}" ezone
