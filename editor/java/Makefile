@@ -78,15 +78,15 @@ endif
 JAVAC = javac -g
 
 #
-# Rebuild from scratch
-#
-main: $(MAIN).java clean
-	$(JAVAC) $(MAIN).java
-
-#
 # Library
 #
 ifeq ($(TYPE),Unix)
+
+#
+# Rebuild from scratch
+#
+main: clean $(PACKAGE)/$(MAIN).java
+	$(JAVAC) $(PACKAGE)/$(MAIN).java
 
 $(PACKAGE)/$(MAIN).java:
 	mkdir -p `dirname $(PACKAGE)`
@@ -112,6 +112,12 @@ clean:
 	rm -rf edu
 
 else
+
+#
+# Rebuild from scratch
+#
+main: $(MAIN).java clean
+	$(JAVAC) $(MAIN).java
 
 $(MAIN).jar: $(CFILES) $(MAIN).man
 	(cd ../../../../..; jar cmf $(PACKAGE)/$(MAIN).man $(PACKAGE)/$(MAIN).jar $(PACKAGE)/*.class)
