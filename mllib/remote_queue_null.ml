@@ -30,10 +30,10 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-
 open Printf
-open Lm_debug
 
+open Lm_debug
+open Lm_threads
 open Lm_thread_util
 
 let debug_queue =

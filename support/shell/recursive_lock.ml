@@ -31,6 +31,7 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Lm_threads
 
 (*
  * The data we need for the lock.

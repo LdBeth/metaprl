@@ -21,7 +21,7 @@ if $(not $(defined VERBOSE))
 #
 # We always need threads
 #
-OCAMLFLAGS += -thread
+# OCAMLFLAGS += -thread
 
 #
 # Win32-specific config.
@@ -195,11 +195,10 @@ OCAMLDEP = $(file bin/ocamldep$(EXE))
     $(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLINCLUDES) $(set $(replacesuffixes .cmi .cmo .cmx, .mli .ml .ml, $^))
 
 #
-# MetaPRL is always compiled with threads.
+# Do not compile MetaPRL with threads.
 #
-THREADS_ENABLED = true
-OCAMLFLAGS = $(OCAMLFLAGS) -thread
-THREADSLIB = threads
+THREADS_ENABLED = false
+THREADSLIB =
 
 #
 # Directories using our custom scanner, but otherwise config is normal

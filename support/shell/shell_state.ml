@@ -29,11 +29,11 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-
 open Printf
 open Lexing
 
 open Lm_debug
+open Lm_threads
 
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta

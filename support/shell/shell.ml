@@ -32,7 +32,6 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-
 extends Mptop
 extends Proof_edit
 extends Package_info
@@ -43,7 +42,9 @@ extends Shell_root
 extends Shell_p4_sig
 
 open Printf
+
 open Lm_debug
+open Lm_threads
 
 open Opname
 open Precedence

@@ -27,6 +27,8 @@
  *
  * Author: Yegor Bryukhov, Alexey Nogin
  *)
+open Lm_threads
+
 open Termmod_hash_sig
 
 open Term_copy_weak

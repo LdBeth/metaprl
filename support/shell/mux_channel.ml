@@ -32,9 +32,10 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-
 open Printf
+
 open Lm_debug
+open Lm_threads
 
 (************************************************************************
  * TYPES                                                                *

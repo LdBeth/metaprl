@@ -41,7 +41,9 @@
 extends Summary
 
 open Printf
+
 open Lm_debug
+open Lm_threads
 
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.RefineError
