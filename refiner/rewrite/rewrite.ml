@@ -245,7 +245,7 @@ struct
     | SOVarPattern (s, _, 0) -> RewriteTermType, s
     | SOVarPattern (s, _, _)
     | SOVarInstance (s, _, _) -> RewriteFunType, s
-    | CVar s -> RewriteContextType, s
+    | CVar (s, _, _) -> RewriteContextType, s
     | PVar (s, ShapeNumber) -> RewriteNumType, s
     | FOVar s | PVar (s, ShapeVar) -> RewriteVarType, s
     | PVar (s, (ShapeString | ShapeToken)) -> RewriteStringType, s

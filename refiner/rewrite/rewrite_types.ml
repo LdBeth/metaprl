@@ -143,7 +143,7 @@ struct
    (*
     * During redex compilation, we keep track of
     * second order variables and binding variables.
-    * We keep the so arg length for checking.
+    * We keep the so conts and arg length for checking.
     *)
    type rstack =
       FreeFOVarPattern of var
@@ -151,7 +151,7 @@ struct
     | SOVarPattern of var * var list * int
     | SOVarInstance of var * var list * int
     | FOVar of var
-    | CVar of var
+    | CVar of var * var list * int
     | PVar of var * shape_param
 
    (*

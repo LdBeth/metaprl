@@ -346,11 +346,13 @@ struct
                    * Second order context and the v is bound.
                    * We generate a substitution instance.
                    *)
+                  let index = array_rstack_c_index v stack in
+                  check_arity v conts (List.length subterms) stack.(index);
                   List.iter (check_cont v bconts) conts;
                   let enames, subterms =
                      compile_so_contractum_terms strict enames stack bconts bvars subterms
                   in
-                  let term = RWSeqContextInstance (array_rstack_c_index v stack, subterms) in
+                  let term = RWSeqContextInstance (index, subterms) in
                   let enames, hyps, goals =
                      compile_so_contractum_sequent_inner strict enames stack (v::bconts) bvars (i + 1) len hyps goals
                   in

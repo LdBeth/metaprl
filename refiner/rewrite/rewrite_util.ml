@@ -120,8 +120,9 @@ struct
     * Check the arity of a variable.
     *)
    let check_arity v conts arity = function
-      SOVarPattern  (_, conts', i)
-    | SOVarInstance (_, conts', i) ->
+      SOVarPattern  (v', conts', i)
+    | SOVarInstance (v', conts', i)
+    | CVar (v', conts', i) when Lm_symbol.eq v v' ->
          if conts <> conts' then
             REF_RAISE(RefineError ("Rewrite_util.check_arity", StringVarError("bound contexts mismatch", v)));
          if arity <> i then
@@ -132,7 +133,7 @@ struct
    let rec rstack_check_arity v conts arity = function
       [] ->
          raise (Invalid_argument "Rewrite_util.rstack_check_arity")
-    | ((FreeFOVarPattern v' | FreeFOVarInstance v' | SOVarPattern (v', _, _) | SOVarInstance (v', _, _) | FOVar v' | CVar v' | PVar (v', _)) as h) :: t ->
+    | ((FreeFOVarPattern v' | FreeFOVarInstance v' | SOVarPattern (v', _, _) | SOVarInstance (v', _, _) | FOVar v' | CVar (v', _, _) | PVar (v', _)) as h) :: t ->
          if Lm_symbol.eq v' v then check_arity v conts arity h else rstack_check_arity v conts arity t
 
    (*
@@ -144,7 +145,7 @@ struct
     | SOVarPattern (v, _, _)
     | SOVarInstance (v, _, _)
     | FOVar v
-    | CVar v
+    | CVar (v, _, _)
     | PVar (v, _) ->
          v
 
@@ -178,7 +179,7 @@ struct
     | _ -> false
 
    let rstack_c_mem_prop v = function
-      CVar v' -> Lm_symbol.eq v v'
+      CVar (v', _, _) -> Lm_symbol.eq v v'
     | _ -> false
 
    let rstack_mem v = List.exists (rstack_mem_prop v)

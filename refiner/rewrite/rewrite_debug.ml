@@ -129,13 +129,13 @@ struct
     | FreeFOVarInstance v ->
          "FreeFOVarInstance " ^ string_of_symbol v
     | SOVarPattern (v, conts, i) ->
-         sprintf "SOVarPattern %s<%s>[%d]" (string_of_conts conts) (string_of_symbol v) i
+         sprintf "SOVarPattern %s<%s>[%d]" (string_of_symbol v) (string_of_conts conts) i
     | SOVarInstance (v, conts, i) ->
-         sprintf "SOVarInstance %s<%s>[%d]" (string_of_conts conts) (string_of_symbol v) i
+         sprintf "SOVarInstance %s<%s>[%d]" (string_of_symbol v) (string_of_conts conts) i
     | FOVar v ->
          "FOVar " ^ (string_of_symbol v)
-    | CVar v ->
-         "CVar " ^ (string_of_symbol v)
+    | CVar (v, conts, i) ->
+         sprintf "CVar %s<%s>[%d]" (string_of_symbol v) (string_of_conts conts) i
     | PVar (v, _) ->
          "PVar " ^ (string_of_symbol v) ^ ":*"
 

@@ -211,7 +211,7 @@ struct
                (* All the vars should be free variables *)
                let vars' = List.map (var_index bvars) vars in
                let index = List.length stack in
-               let stack = stack @ [CVar v] in
+               let stack = stack @ [CVar (v, conts, List.length vars)] in
                let stack, term = compile_so_redex_term allow_so_patterns restrict addrs stack svars ((v,index)::bconts) bvars term in
                let term = RWSOContext(Lm_array_util.index v addrs, index, term, vars') in
                let restrict_free = if restrict then Lm_list_util.subtract (List.map bvar_ind bvars) vars' else [] in
@@ -351,11 +351,12 @@ struct
                   REF_RAISE(RefineError ("is_context_term", RewriteBoundSOVar v))
                else
                let stack, term, ind =
-                  if instance then
+                  if instance then begin
+                     rstack_check_arity v conts (List.length terms) stack;
                      let stack, terms = compile_so_redex_terms false restrict addrs stack svars bconts bvars terms in
                      let ind = rstack_c_index v stack in
                         stack, RWSeqContextInstance (ind, terms), ind
-                  else
+                  end else
                      let index =
                         if i = mc then
                            if Lm_array_util.mem v addrs then
@@ -370,7 +371,7 @@ struct
                      in
                      (* All the vars should be free variables *)
                      let vars' = List.map (var_index bvars) terms in
-                     let stack = stack @ [CVar v] in
+                     let stack = stack @ [CVar (v, conts, List.length terms)] in
                      let restrict_free = if restrict then Lm_list_util.subtract (List.map bvar_ind bvars) vars' else [] in
                      let restrict_conts = if restrict then restricted_conts v bconts conts else [] in
                      let stack_ind = List.length stack - 1 in
@@ -423,7 +424,7 @@ struct
          ()
 
    let rec stack_cvars i = function
-      CVar v :: tl -> (v, i) :: stack_cvars (i + 1) tl
+      CVar (v, _, _) :: tl -> (v, i) :: stack_cvars (i + 1) tl
     | _ :: tl -> stack_cvars (i + 1) tl
     | [] -> []
 
