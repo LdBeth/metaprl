@@ -11,21 +11,21 @@
 You will need four packages:</P>
 
 <OL>
-  <LI>Objective Caml: our version contains a small patch to install
-  interface files needed by MetaPRL to evaluate programs in
-  the toploop and a native code profiler patch.
+  <LI>Objective Caml: our version contains a small
+  native code profiler patch.
   <LI>CamlP4: our version contains a small patch to compile the
-  CamlP4 distribution in native code.
+  CamlP4 distribution in native code, native code profiler patch
+  and a patch to install interface files needed by MetaPRL to evaluate programs in the toploop
   <LI>Ensemble: you need Ensemble only if you want to use the distributed
   prover.
   <LI>MetaPRL
 </OL>
 
 <P>All source modules are available as source, and RedHat 5.x
-RPM packages files for Linux x86. There is also a Win32 distribution
+RPM packages files for Linux x86 at <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/RPM/">ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/RPM/</A>. There is also a Win32 distribution
 that we'll be placing online soon (if you don't see it contact
 <A HREF="mailto:jyh@cs.cornell.edu">Jason Hickey</A>). You will
-need the Cygnus Systems GNU-Win32 distribution.</P>
+need the Cygnus Systems GNU-Win32 distribution.</P> If your are going to build OCaml and/or Camlp4 yourself, you can get our patches at <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/patches/">ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/patches/</A>
 
 <H4>CVS sources</H4>
 
@@ -59,7 +59,7 @@ You can find more information on CVS at
 
 <H4>Installation and configuration</H4>
 
-<P>To install OCaml and CamlP4, unpack the distributions. The
+<P>To install OCaml and CamlP4, unpack the distributions, apply the <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/patches/">patches</A>. The
 <TT>INSTALL</TT> files describe the process of installation.</P>
 
 <P>To install Ensemble, unpack the distrubution, and edit the
