@@ -154,6 +154,9 @@ let handle_event info code name vecl =
 (*
  * See if anything can be done with the client.
  *)
+let msg_counter = ref 0
+let size_counter = ref 0
+
 let poll_client info =
    let { ens_pipe = pipe; ens_client = client; ens_up_queue = up_queue } = info in
       match client with
@@ -168,10 +171,13 @@ let poll_client info =
             in
             let try_recv () =
                let raw_read buf off len =
+                  msg_counter := succ !msg_counter;
+                  size_counter := !size_counter + len;
                   Mbuf.allocl iovec_name buf off len
                in
                   match Mmap_pipe.read pipe raw_read with
                      Some (code, name, data) ->
+                        eprintf "Msg: %d: %d%t" !msg_counter !size_counter eflush;
                         handle_event info code name data
                    | None ->
                         ()

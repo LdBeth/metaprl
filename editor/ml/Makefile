@@ -83,42 +83,16 @@ TCMXFILES = $(addsuffix .cmx, $(TOPFILES))
 # ENSEMBLE
 ########################################################################
 
+#
+# If Ensemble is configured, used the Ensemble refiner.
+# Otherwise, use the null refiner.
+#
 ifdef ENSROOT
-    xCMADEPS_ens =\
-        $(ENSROOT)/lib/$(HOSTTYPE)/socket.cma\
-        $(ENSROOT)/lib/$(HOSTTYPE)/crypto.cma\
-	$(ENSROOT)/lib/$(HOSTTYPE)/_nulldynlink.cmo\
-        $(ENSROOT)/lib/$(HOSTTYPE)/libenscore.cma\
-        $(ENSROOT)/lib/$(HOSTTYPE)/libensmin.cma\
-        $(ENSROOT)/lib/$(HOSTTYPE)/libensrest.cma
-
-    xCMXADEPS_ens =\
-        $(ENSROOT)/lib/$(HOSTTYPE)/socket.cmxa\
-        $(ENSROOT)/lib/$(HOSTTYPE)/crypto.cmxa\
-	$(ENSROOT)/lib/$(HOSTTYPE)/_nulldynlink.cmx\
-        $(ENSROOT)/lib/$(HOSTTYPE)/libenscore.cmxa\
-        $(ENSROOT)/lib/$(HOSTTYPE)/libensmin.cmxa\
-        $(ENSROOT)/lib/$(HOSTTYPE)/libensrest.cmxa
-
-    CMALIBS_ens =\
-        $(ROOT)/lib/trefiner_ens.cma
-
-    CMXALIBS_ens =\
-        $(ROOT)/lib/trefiner_ens.cmxa
-
-    xCCLIBS_ens =\
-        -ccopt -L$(ENSROOT)/lib/$(HOSTTYPE)\
-        -cclib -lsock\
-        -cclib -lcryptoc
+    CMALIBS_ens = $(ROOT)/lib/trefiner_ens.cma
+    CMXALIBS_ens = $(ROOT)/lib/trefiner_ens.cmxa
 else
-    #
-    # If Ensemble is not configured, use the null refiner.
-    #
-    CMALIBS_ens =\
-	$(ROOT)/lib/trefiner_null.cma
-
-    CMXALIBS_ens =\
-	$(ROOT)/lib/trefiner_null.cmxa
+    CMALIBS_ens = $(ROOT)/lib/trefiner_null.cma
+    CMXALIBS_ens = $(ROOT)/lib/trefiner_null.cmxa
 endif
 
 ########################################################################
@@ -228,8 +202,12 @@ TCMOBJS =\
 CMXOBJS =\
 	$(CMXALIBS)
 
-CCLIBS =\
-	-cclib $(ROOT)/lib/clib$(EXT_LIB)\
+BYTE_CCLIBS =\
+	-cclib $(ROOT)/lib/clib-byte$(EXT_LIB)\
+	$(CCLIBS_ens)
+
+NATIVE_CCLIBS =\
+	-cclib $(ROOT)/lib/clib-native$(EXT_LIB)\
 	$(CCLIBS_ens)
 
 # Name of main librariws
@@ -242,15 +220,15 @@ install:: all
 
 $(MP).run: $(CMOBJS) $(RCMOFILES) $(CMADEPS)
 	$(RM) $@
-	$(OCAMLMKTOP) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(CMOBJS) $(RCMOFILES) $(CCLIBS) $(LIBTHREADS)
+	$(OCAMLMKTOP) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(CMOBJS) $(RCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS)
 
 $(MP).top: $(TCMOBJS) $(TCMOFILES) $(TCMADEPS)
 	$(RM) $@
-	$(OCAMLC) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(TCMOBJS) $(TCMOFILES) $(CCLIBS) $(LIBTHREADS)
+	$(OCAMLC) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(TCMOBJS) $(TCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS)
 
 $(MP).opt: $(CMXOBJS) $(TCMXFILES)
 	$(RM) $@
-	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ -linkall $(THREADS) $(CMXOBJS) $(TCMXFILES) $(CCLIBS) $(OPTTHREADS)
+	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ -linkall $(THREADS) $(CMXOBJS) $(TCMXFILES) $(NATIVE_CCLIBS) $(OPTTHREADS)
 
 clean::
 	$(RM) -f *.p4* *.pp* mp_version.ml

@@ -81,8 +81,15 @@ ifdef ENSROOT
 
     CMXALIBS_serv = $(CMXADEPS_serv)
 
-    CCLIBS_serv =\
-	-cclib $(ROOT)/lib/clib.a\
+    BYTE_CCLIBS_serv =\
+	-cclib $(ROOT)/lib/clib-byte.a\
+	-cclib -lunix\
+        -ccopt -L$(ENSROOT)/lib/$(HOSTTYPE)\
+        -cclib -lsock\
+        -cclib -lcryptoc
+
+    NATIVE_CCLIBS_serv =\
+	-cclib $(ROOT)/lib/clib-native.a\
 	-cclib -lunix\
         -ccopt -L$(ENSROOT)/lib/$(HOSTTYPE)\
         -cclib -lsock\
@@ -122,7 +129,7 @@ RENS_LIB = $(ROOT)/lib/$(ENS_LIB)
 ROPT_ENS_LIB = $(ROOT)/lib/$(OPT_ENS_LIB) $(ROOT)/lib/$(LIB)_ens$(EXT_LIB)
 
 $(MPSERVER).run: $(CMIFILES_serv) $(CMOFILES_serv) $(CMADEPS_serv)
-	$(OCAMLC) -custom -o $@ $(OCAMLCFLAGS) $(CMALIBS_serv) $(CMOFILES_serv) $(CCLIBS_serv)
+	$(OCAMLC) -custom -o $@ $(OCAMLCFLAGS) $(CMALIBS_serv) $(CMOFILES_serv) $(BYTE_CCLIBS_serv)
 
 $(RENS_LIB): $(ENS_LIB)
 	$(LN) $(ROOT)/$(DIR)/$(ENS_LIB) $@

@@ -2142,21 +2142,31 @@ struct
                unlock_printer ()
             end
       in
-      let event = Remote.select sched.sched_remote (schedule_events sched) in
-         if !debug_sync then
-            begin
-               lock_printer ();
-               eprintf "Thread_Refiner.sched_main_loop: handling event%t" eflush;
-               unlock_printer ()
-            end;
-         handle_event sched event;
+      let _ =
+         match Remote.select sched.sched_remote (schedule_events sched) with
+            None ->
+               if !debug_sync then
+                  begin
+                     lock_printer ();
+                     eprintf "Thread_Refiner.sched_main_loop: timeout%t" eflush;
+                     unlock_printer ()
+                  end
+          | Some event ->
+               if !debug_sync then
+                  begin
+                     lock_printer ();
+                     eprintf "Thread_Refiner.sched_main_loop: handling event%t" eflush;
+                     unlock_printer ()
+                  end;
+               handle_event sched event
+      in
          schedule sched;
          sched_main_loop sched
 
    (*
     * Create a refiner.
     *)
-         external identity : unit -> unit = "%identity"
+   external identity : unit -> unit = "%identity"
 
    let create printer =
       let printer = (fun out _ -> output_string out "#") in

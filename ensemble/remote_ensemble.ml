@@ -375,7 +375,7 @@ struct
                    | Queue.UpcallView ->
                         ()
                end;
-               select queue events
+               None
           | MessageEvent x ->
                (* Cleanup pending locks that are no longer being waited for
                match queue.queue_lock, queue.queue_lock_pending with
@@ -385,7 +385,7 @@ struct
                      Queue.cancel queue.queue_queue lock;
                      x
                 | _ -> *)
-                     x
+                     Some x
 
    (*
     * Start the main loop.

@@ -294,7 +294,7 @@ struct
        | [] ->
             Thread_event.select 0 block_events
       in
-         poll [] events
+         Some (poll [] events)
 
    (*
     * Start the main loop.

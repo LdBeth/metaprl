@@ -309,9 +309,6 @@ let rec decompPropDecideHyp1T max_depth count i p =
        else if is_imp_and_term term then
           (* {C & D => B} => {C => D => B} *)
           d_and_impT i thenT ifNotWT (internalPropDecideT max_depth count)
-       else if is_imp_or_term term then
-          (* {C or D => B} => {(C => B) & (D => B)} *)
-          d_or_impT i thenT ifNotWT (internalPropDecideT max_depth count)
        else if is_imp_imp_term term then
           (* {(C => D) => B} => {D => B} *)
           d_imp_impT i thenT ifNotWT (internalPropDecideT max_depth count)
@@ -321,12 +318,9 @@ let rec decompPropDecideHyp1T max_depth count i p =
 
 and decompPropDecideHyp2T max_depth count i p =
    let term = snd (Sequent.nth_hyp p i) in
-      (if is_implies_term term then
-          let t, _ = dest_implies term in
-             if is_hyp_term p t then
-                dT i thenT thinT i thenT ifNotWT (internalPropDecideT max_depth count)
-             else
-                failT
+      (if is_imp_or_term term then
+          (* {C or D => B} => {(C => B) & (D => B)} *)
+          d_or_impT i thenT ifNotWT (internalPropDecideT max_depth count)
        else
           failT) p
 
@@ -335,9 +329,9 @@ and decompPropDecideHyp3T max_depth count i p =
       (if is_implies_term term then
           let t, _ = dest_implies term in
              if is_hyp_term p t then
-                failT
-             else
                 dT i thenT thinT i thenT ifNotWT (internalPropDecideT max_depth count)
+             else
+                failT
        else
           failT) p
 

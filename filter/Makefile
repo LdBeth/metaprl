@@ -99,9 +99,13 @@ CMALIBS =\
 	$(THREADSLIB)\
 	$(CMADEPS)
 
-CCLIBS =\
+BYTE_CCLIBS =\
 	-cclib -lunix\
-	-cclib $(ROOT)/clib/clib$(EXT_LIB)
+	-cclib $(ROOT)/clib/clib-byte$(EXT_LIB)
+
+NATIVE_CCLIBS =\
+	-cclib -lunix\
+	-cclib $(ROOT)/clib/clib-native$(EXT_LIB)
 
 #
 # Libraries for camlp4n
@@ -161,7 +165,8 @@ CAMLP4O_CMXOBJS =\
 	$(CAMLP4LIB)/q_MLast.cmx\
 	$(CMXFILES_CAMLP4)
 
-CAMLP4X_CCLIBS = $(CCLIBS)
+CAMLP4X_BYTE_CCLIBS = $(BYTE_CCLIBS)
+CAMLP4X_NATIVE_CCLIBS = $(NATIVE_CCLIBS)
 
 #
 # Files for binary compiler.
@@ -189,7 +194,8 @@ PRLCO_CMXOBJS =\
 	$(CAMLP4LIB)/pr_o.cmx\
 	$(CMXFILES_PRLC)
 
-PRLCX_CCLIBS = $(CCLIBS)
+PRLCX_BYTE_CCLIBS = $(BYTE_CCLIBS)
+PRLCX_NATIVE_CCLIBS = $(NATIVE_CCLIBS)
 
 all: lib
 
@@ -260,37 +266,37 @@ install:: $(MAIN).cma $(LCMIFILES) $(CAMLP4N).run $(CAMLP4O).run $(PRLCN).run $(
 # Compile a special camlp4 to run Nuprl.
 #
 $(CAMLP4N).run: $(CAMLP4N_CMOBJS)
-	$(OCAMLC) $(PROFILE) -o $@ -linkall -custom $(CAMLP4N_CMOBJS) $(CAMLP4X_CCLIBS) $(LIBTHREADS)
+	$(OCAMLC) $(PROFILE) -o $@ -linkall -custom $(CAMLP4N_CMOBJS) $(CAMLP4X_BYTE_CCLIBS) $(LIBTHREADS)
 
 $(CAMLP4O).run: $(CAMLP4O_CMOBJS)
-	$(OCAMLC) $(PROFILE) -o $@ -linkall -custom $(CAMLP4O_CMOBJS) $(CAMLP4X_CCLIBS) $(LIBTHREADS)
+	$(OCAMLC) $(PROFILE) -o $@ -linkall -custom $(CAMLP4O_CMOBJS) $(CAMLP4X_BYTE_CCLIBS) $(LIBTHREADS)
 
 #
 # Binary compiler
 #
 $(PRLCN).run: $(PRLCN_CMOBJS)
-	$(OCAMLC) $(PROFILE) -o $@ -custom $(PRLCN_CMOBJS) $(PRLCX_CCLIBS) $(LIBTHREADS)
+	$(OCAMLC) $(PROFILE) -o $@ -custom $(PRLCN_CMOBJS) $(PRLCX_BYTE_CCLIBS) $(LIBTHREADS)
 
 $(PRLCO).run: $(PRLCO_CMOBJS)
-	$(OCAMLC) $(PROFILE) -o $@ -custom $(PRLCO_CMOBJS) $(PRLCX_CCLIBS) $(LIBTHREADS)
+	$(OCAMLC) $(PROFILE) -o $@ -custom $(PRLCO_CMOBJS) $(PRLCX_BYTE_CCLIBS) $(LIBTHREADS)
 
 #
 # Compile a special camlp4 to run Nuprl.
 #
 $(CAMLP4N).opt: $(CAMLP4N_CMXOBJS)
-	$(OCAMLOPT) $(PROFILE) -o $@ -linkall $(CAMLP4N_CMXOBJS) $(CAMLP4X_CCLIBS) $(OPTTHREADS)
+	$(OCAMLOPT) $(PROFILE) -o $@ -linkall $(CAMLP4N_CMXOBJS) $(CAMLP4X_NATIVE_CCLIBS) $(OPTTHREADS)
 
 $(CAMLP4O).opt: $(CAMLP4O_CMXOBJS)
-	$(OCAMLOPT) $(PROFILE) -o $@ -linkall $(CAMLP4O_CMXOBJS) $(CAMLP4X_CCLIBS) $(OPTTHREADS)
+	$(OCAMLOPT) $(PROFILE) -o $@ -linkall $(CAMLP4O_CMXOBJS) $(CAMLP4X_NATIVE_CCLIBS) $(OPTTHREADS)
 
 #
 # Binary compiler
 #
 $(PRLCN).opt: $(PRLCN_CMXOBJS)
-	$(OCAMLOPT) $(PROFILE) -o $@ $(PRLCN_CMXOBJS) $(PRLCX_CCLIBS) $(OPTTHREADS)
+	$(OCAMLOPT) $(PROFILE) -o $@ $(PRLCN_CMXOBJS) $(PRLCX_NATIVE_CCLIBS) $(OPTTHREADS)
 
 $(PRLCO).opt: $(PRLCO_CMXOBJS)
-	$(OCAMLOPT) $(PROFILE) -o $@ $(PRLCO_CMXOBJS) $(PRLCX_CCLIBS) $(OPTTHREADS)
+	$(OCAMLOPT) $(PROFILE) -o $@ $(PRLCO_CMXOBJS) $(PRLCX_NATIVE_CCLIBS) $(OPTTHREADS)
 
 #
 # Infix file is preprocessed.

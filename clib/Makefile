@@ -30,18 +30,22 @@ LCFILES :=\
 # Name of library
 MAIN := clib
 
-all: $(ROOT)/lib/$(MAIN)$(EXT_LIB)
+all: $(ROOT)/lib/$(MAIN)-byte$(EXT_LIB)
 
-opt: $(ROOT)/lib/$(MAIN)$(EXT_LIB)
+opt: $(ROOT)/lib/$(MAIN)-native$(EXT_LIB)
 
-install:: $(MAIN)$(EXT_LIB)
-	$(INSTALL) $(MAIN)$(EXT_LIB) $(MPLIB)
+install:: $(MAIN)-byte$(EXT_LIB) $(MAIN)-native$(EXT_LIB)
+	$(INSTALL) $(MAIN)-byte$(EXT_LIB) $(MPLIB)
+	$(INSTALL) $(MAIN)-native$(EXT_LIB) $(MPLIB)
 
 #
 # Installation
 #
-$(ROOT)/lib/$(MAIN)$(EXT_LIB): $(MAIN)$(EXT_LIB)
-	$(LN) $(ROOT)/$(DIR)/$(MAIN)$(EXT_LIB) $@
+$(ROOT)/lib/$(MAIN)-byte$(EXT_LIB): $(MAIN)-byte$(EXT_LIB)
+	$(LN) $(ROOT)/$(DIR)/$(MAIN)-byte$(EXT_LIB) $@
+
+$(ROOT)/lib/$(MAIN)-native$(EXT_LIB): $(MAIN)-native$(EXT_LIB)
+	$(LN) $(ROOT)/$(DIR)/$(MAIN)-native$(EXT_LIB) $@
 
 #
 # Patched OCaml files

@@ -1318,6 +1318,7 @@ struct
                      end;
                   handle_queue_cast info unlocked local remote shares
       end;
+      send_upcall info UpcallView;
       unlock_info info
 
    (*

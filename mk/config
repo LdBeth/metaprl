@@ -39,6 +39,8 @@ ifdef PROFILE
 else
    CFLAGS = -g $(CINCLUDE) -I$(CAMLLIB) -D_REENTRANT
 endif
+NATIVE_CFLAGS = -DNATIVE_CODE
+BYTE_CFLAGS =
 CC = gcc
 RM = rm -f
 INSTALL = /bin/cp -pf
@@ -100,7 +102,8 @@ CMXFILES     = $(sort $(MP_CMXFILES) $(MP2_CMXFILES) $(LCMXFILES) $(MCMXFILES))
 CMAFILES     = $(addsuffix .cma,  $(MLLIBS))
 CMXAFILES    = $(addsuffix .cmxa, $(MLLIBS))
 
-OFILES       = $(addsuffix $(EXT_OBJ), $(LCFILES))
+BOFILES      = $(addsuffix -byte$(EXT_OBJ), $(LCFILES))
+NOFILES      = $(addsuffix -native$(EXT_OBJ), $(LCFILES))
 CFILES       = $(addsuffix .c, $(LCFILES))
 
 RMLIFILES    = $(addprefix $(ROOT)/lib/, $(LMLIFILES))
@@ -120,7 +123,11 @@ PMLIFILES    = $(addsuffix _verb.mli, $(MLPFILES)) $(addsuffix _simp.mli, $(MLPF
 
 .SUFFIXES: .cma .cmx .cmo .cmi .ml .mli .mll .mly
 
-$(MAIN)$(EXT_LIB): $(OFILES)
+$(MAIN)-byte$(EXT_LIB): $(BOFILES)
+	ar r $@ $?
+	ranlib $@
+
+$(MAIN)-native$(EXT_LIB): $(NOFILES)
 	ar r $@ $?
 	ranlib $@
 
@@ -131,14 +138,14 @@ $(MAIN).cmxa: $(LCMXFILES) $(MP_CMXFILES)
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -a -o $@ $(LCMXFILES) $(MP_CMXFILES)
 
 $(MAIN).run: $(CMAFILES) $(CMADEPS) $(PCMOFILES)
-	$(OCAMLCP) -custom $(OCAMLCFLAGS) -o $@ $(OCAMLCPOPT) $(CMALIBS) $(CMAFILES) $(PCMOFILES) $(CCLIBS) $(LIBTHREADS)
+	$(OCAMLCP) -custom $(OCAMLCFLAGS) -o $@ $(OCAMLCPOPT) $(CMALIBS) $(CMAFILES) $(PCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS)
 	if [ -f $(MAIN).run.exe ]; then\
 		mv $(MAIN).run.exe $(MAIN).run.bak;\
 		mv $(MAIN).run.bak $(MAIN).run;\
 	fi
 
 $(MAIN).opt: $(CMXAFILES) $(CMXDEPS) $(PCMXFILES)
-	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ $(CMXAFILES) $(CMXLIBS) $(PCMXFILES) $(CCLIBS) $(OPTTHREADS)
+	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ $(CMXAFILES) $(CMXLIBS) $(PCMXFILES) $(NATIVE_CCLIBS) $(OPTTHREADS)
 	if [ -f $(MAIN).exe ]; then\
 		mv $(MAIN).exe $(MAIN).bak;\
 		mv $(MAIN).bak $(MAIN);\
@@ -228,11 +235,17 @@ $(REG_CMXFILES): %.cmx: %.ml %.cmi
 	$(CPP) $(INCLUDE) $*.mlip > $@
 	chmod 444 $@
 
-%.o: %.c
-	$(CC) $(CFLAGS) -c $*.c
+%-byte.o: %.c
+	$(CC) $(BYTE_CFLAGS) $(CFLAGS) -c $*.c -o $@
 
-%.p.o: %.c
-	$(CC) -p $(CFLAGS) -c $*.c -o $@
+%-native.o: %.c
+	$(CC) $(NATIVE_CFLAGS) $(CFLAGS) -c $*.c -o $@
+
+%-byte.p.o: %.c
+	$(CC) -p $(BYTE_CFLAGS) $(CFLAGS) -c $*.c -o $@
+
+%-native.p.o: %.c
+	$(CC) -p $(NATIVE_CFLAGS) $(CFLAGS) -c $*.c -o $@
 
 #
 clean::

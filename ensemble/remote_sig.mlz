@@ -171,7 +171,7 @@ sig
    (*
     * Scheduling.
     *)
-   val select : ('a, 'b, 'c) t -> 'd event list -> 'd
+   val select : ('a, 'b, 'c) t -> 'd event list -> 'd option
 
    (*
     * Start the main loop.
