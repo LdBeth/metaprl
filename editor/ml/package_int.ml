@@ -47,8 +47,7 @@ include Package_type
  * Show that the file is loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Package_int%t" eflush
+   show_loading "Loading Package_int%t"
 
 (************************************************************************
  * TYPES                                                                *

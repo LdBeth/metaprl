@@ -38,8 +38,7 @@ open Mp_pervasives
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading File_util%t" eflush
+   show_loading "Loading File_util%t"
 
 (* Can't open and can't find a file *)
 exception CantOpen of string

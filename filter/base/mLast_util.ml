@@ -42,8 +42,7 @@ open MLast
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading MLast_util%t" eflush
+   show_loading "Loading MLast_util%t"
 
 
 (*

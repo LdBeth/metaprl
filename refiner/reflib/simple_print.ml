@@ -42,8 +42,7 @@ open Refiner_sig
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Simple_print%t" eflush
+   show_loading "Loading Simple_print%t"
 
 let debug_simple_print =
    create_debug (**)

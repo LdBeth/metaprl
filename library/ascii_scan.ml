@@ -36,8 +36,7 @@ open Stream
 open Basic
 
 let _ =
-   if !debug_load then
-      eprintf "Loading Ascii_scan%t" eflush
+   show_loading "Loading Ascii_scan%t"
 
 let isemicolon	= code ';'
 let icolon	= code ':'

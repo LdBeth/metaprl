@@ -44,8 +44,7 @@ open Ml_print
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Ml_file%t" eflush
+   show_loading "Loading Ml_file%t"
 
 (************************************************************************
  * FILE                                                                 *

@@ -59,8 +59,7 @@ open Rewrite_meta
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Rewrite%t" eflush
+   show_loading "Loading Rewrite%t"
 
 let debug_rewrite = load_debug "rewrite"
 

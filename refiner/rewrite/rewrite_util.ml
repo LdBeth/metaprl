@@ -45,8 +45,7 @@ open Rewrite_type_sig
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Rewrite_util%t" eflush
+   show_loading "Loading Rewrite_util%t"
 
 let debug_rewrite =
    create_debug (**)

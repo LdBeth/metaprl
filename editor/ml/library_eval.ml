@@ -51,8 +51,7 @@ exception LibraryException of string
 let itt_bug = ref true
 
 let _ =
-   if !debug_load then
-      eprintf "Loading Library_eval%t" eflush
+   show_loading "Loading Library_eval%t"
 
 let library = null_oref()
 let connection = null_oref()

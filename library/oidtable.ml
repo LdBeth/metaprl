@@ -29,8 +29,7 @@ open Printf
 open Mp_debug
 
 let _ =
-   if !debug_load then
-      eprintf "Loading Oidtable%t" eflush
+   show_loading "Loading Oidtable%t"
 
 
  open Basic

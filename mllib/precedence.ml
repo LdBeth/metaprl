@@ -41,8 +41,7 @@ open Imp_dag
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Precedence%t" eflush
+   show_loading "Loading Precedence%t"
 
 (************************************************************************
  * TYPES                                                                *

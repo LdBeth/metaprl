@@ -68,8 +68,7 @@ open Filter_magic
  * Show loading of the file.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Filter_parse%t" eflush
+   show_loading "Loading Filter_parse%t"
 
 let debug_filter_parse =
    create_debug (**)

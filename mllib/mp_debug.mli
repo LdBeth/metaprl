@@ -30,10 +30,8 @@
  * jyh@cs.cornell.edu
  *)
 
-(*
- * Particular debug variables.
- *)
-val debug_load : bool ref
+(* if "load" debug is true, `show_load (s ^ "%t")' will print s to stderr and flush stderr *)
+val show_loading : ((out_channel -> unit) -> unit, out_channel, unit) format -> unit
 
 (*
  * Info about debug variables.

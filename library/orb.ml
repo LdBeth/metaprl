@@ -47,8 +47,7 @@ open Db
 open Definition
 
 let _ =
-   if !debug_load then
-      eprintf "Loading Orb%t" eflush
+   show_loading "Loading Orb%t"
 
 
 (*

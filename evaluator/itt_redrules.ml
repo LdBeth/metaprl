@@ -34,8 +34,7 @@ open Evaluator
  * Show that the file is loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Itt_redrules%t" eflush
+   show_loading "Loading Itt_redrules%t"
 
 include Itt_theory
 

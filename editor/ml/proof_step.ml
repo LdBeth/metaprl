@@ -60,8 +60,7 @@ open Proof_type
  * Show that the file is loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Proof_step%t" eflush
+   show_loading "Loading Proof_step%t"
 
 let debug_io_tactic =
    create_debug (**)

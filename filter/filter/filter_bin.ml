@@ -52,8 +52,7 @@ open Filter_prog
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Filter_bin%t" eflush
+   show_loading "Loading Filter_bin%t"
 
 
 (*

@@ -51,8 +51,7 @@ open List
 open Opname
 
 let _ =
-   if !debug_load then
-      eprintf "Loading Db%t" eflush
+   show_loading "Loading Db%t"
 
 let mask_p mask code  = (((land) code mask) = mask)
 

@@ -37,8 +37,7 @@ open List
 open Db
 
 let _ =
-   if !debug_load then
-      eprintf "Loading Definition%t" eflush
+   show_loading "Loading Definition%t"
 
 let idescription_parameter = make_param (Token "!description")
 let idescription_op sys = mk_nuprl5_op [idescription_parameter; sys]

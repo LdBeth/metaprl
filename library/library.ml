@@ -40,8 +40,7 @@ open Orb
 open Definition
 
 let _ =
-   if !debug_load then
-      eprintf "Loading Library%t" eflush
+   show_loading "Loading Library%t"
 
 type transaction_type = SAVE | RESTORE | LOCAL | REMOTE
 

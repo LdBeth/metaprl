@@ -9,8 +9,7 @@ open Mp_debug
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Ctype%t" eflush
+   show_loading "Loading Ctype%t"
 
 (* Character lists *)
 let lowerchars = "abcdefghijklmnopqrstuvwxyz"

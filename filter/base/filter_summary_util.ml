@@ -44,8 +44,7 @@ open Filter_type
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Filter_summary_util%t" eflush
+   show_loading "Loading Filter_summary_util%t"
 
 (*
  * Extract the context var arguments.

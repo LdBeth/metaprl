@@ -55,8 +55,7 @@ open Rewrite_debug_sig
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Rewrite_debug%t" eflush
+   show_loading "Loading Rewrite_debug%t"
 
 module MakeRewriteCompileRedex
    (TermType : TermSig)

@@ -42,8 +42,7 @@ open Refine_error_sig
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Term%t" eflush
+   show_loading "Loading Term%t"
 
 (*
  * Type of terms.

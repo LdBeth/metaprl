@@ -38,8 +38,7 @@ open Refiner.Refiner.TermEval
  * Show that the file is loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Evaluator%t" eflush
+   show_loading "Loading Evaluator%t"
 
 type eval_rule = term  * (param' list -> term)
 

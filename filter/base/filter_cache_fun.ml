@@ -54,8 +54,7 @@ open Filter_summary_io
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Filter_cache_fun%t" eflush
+   show_loading "Loading Filter_cache_fun%t"
 
 let debug_filter_cache =
    create_debug (**)

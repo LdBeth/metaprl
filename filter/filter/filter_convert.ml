@@ -52,8 +52,7 @@ open Filter_prog
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Convert%t" eflush
+   show_loading "Loading Convert%t"
 
 (*
  * Include directories.

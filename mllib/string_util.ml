@@ -36,8 +36,7 @@ open Mp_debug
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading String_util%t" eflush
+   show_loading "Loading String_util%t"
 
 let debug_string =
    create_debug (**)

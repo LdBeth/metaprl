@@ -40,8 +40,7 @@ open Lib_term  (* allows Lib_term.dest_term on special terms - I replaced all in
 
 
 let _ =
-   if !debug_load then
-      eprintf "Loading Basic%t" eflush
+   show_loading "Loading Basic%t"
 
 let inteq i j = (i = j)
 let nullp l = l = []

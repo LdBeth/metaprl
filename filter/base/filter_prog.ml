@@ -55,8 +55,7 @@ open Filter_summary
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Filter_prog%t" eflush
+   show_loading "Loading Filter_prog%t"
 
 let debug_filter_prog =
    create_debug (**)
@@ -484,8 +483,7 @@ let rec curry loc vars expr =
 
 (*
  * Print a message on loading, and catch errors.
- *    if !Debug.debug_load then
- *       Printf.eprintf "Loading name%t" eflush;
+ *    Mp_debug.show_loading "Loading name%t";
  *    try e with
  *       exn ->
  *          Refine_exn.print_exn name exn
@@ -503,14 +501,10 @@ let wrap_exn loc name e =
    let wrapped = <:expr< try $e$ with [ $list: [exn_patt, None, printer]$ ] >> in
 
    (* Print a message before the execution *)
-   let debug_load_ref = <:expr< $uid: "Mp_debug"$ . $lid: "debug_load"$ >> in
-   let debug_load = <:expr< $debug_load_ref$ . $lid: "val"$ >> in
-   let eflush = <:expr< $uid: "Mp_debug"$ . $lid: "eflush"$ >> in
+   let show_loading = <:expr< $uid: "Mp_debug"$ . $lid: "show_loading"$ >> in
    let msg = <:expr< $str: "Loading " ^ name ^ "%t"$ >> in
-   let eprintf = <:expr< $uid: "Printf"$ . $lid: "eprintf"$ >> in
-   let print_msg = <:expr< $eprintf$ $msg$ $eflush$ >> in
-   let debug = <:expr< if $debug_load$ then $print_msg$ else $unit_expr$ >> in
-      <:expr< do $list: [ debug ]$ return $wrapped$ >>
+   let loading_msg = <:expr< $show_loading$ $msg$ >> in
+      <:expr< do $list: [ loading_msg ]$ return $wrapped$ >>
 
 (*
  * Param expression.

@@ -30,8 +30,7 @@ open Printf
 open Mp_debug
 
 let _ =
-   if !debug_load then
-      eprintf "Loading Utils%t" eflush
+   show_loading "Loading Utils%t"
 
 type 'a oref = {mutable ocontents : 'a option}
 

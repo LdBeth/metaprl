@@ -62,8 +62,7 @@ open Mp_debug
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Rformat%t" eflush
+   show_loading "Loading Rformat%t"
 
 let debug_rformat =
    create_debug (**)

@@ -47,8 +47,7 @@ open Refiner.Refiner.RefineError
  * Show loading of the file.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Resource%t" eflush
+   show_loading "Loading Resource%t"
 
 let debug_resource =
    create_debug (**)

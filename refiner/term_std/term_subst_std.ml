@@ -46,8 +46,7 @@ IFDEF VERBOSE_EXN THEN
  * Show that the file is loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Term_subst_std%t" eflush
+   show_loading "Loading Term_subst_std%t"
 
 let debug_alpha_equal =
    create_debug (**)

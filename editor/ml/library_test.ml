@@ -44,8 +44,7 @@ open Ascii_scan
 open Library_type_base
 
 let _ =
-   if !debug_load then
-      eprintf "Loading Test%t" eflush
+   show_loading "Loading Test%t"
 
 exception NoTest
 exception Test of string

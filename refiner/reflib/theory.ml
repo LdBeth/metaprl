@@ -42,8 +42,7 @@ open Dform_print
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Theory%t" eflush
+   show_loading "Loading Theory%t"
 
 (*
  * Info is saved in this format.

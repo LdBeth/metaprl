@@ -40,8 +40,7 @@ open Opname
 open Registry
 
 let _ =
-   if !debug_load then
-      eprintf "Loading Mbterm%t" eflush
+   show_loading "Loading Mbterm%t"
 
 let use_table = ref true
 

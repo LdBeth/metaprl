@@ -47,8 +47,7 @@ open Filter_type
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Filter_util%t" eflush
+   show_loading "Loading Filter_util%t"
 
 
 (************************************************************************

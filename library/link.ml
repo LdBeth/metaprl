@@ -14,8 +14,7 @@ open Mbterm
 open Nuprl5
 
 let _ =
-   if !debug_load then
-      eprintf "Loading Link%t" eflush
+   show_loading "Loading Link%t"
 
 (* old mapping method
  * type hook = (term -> term -> bool) ref * (term -> term) ref

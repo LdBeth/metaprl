@@ -43,8 +43,7 @@ open Ml_format_sig
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Ml_format%t" eflush
+   show_loading "Loading Ml_format%t"
 
 module FormatTerm =
 struct

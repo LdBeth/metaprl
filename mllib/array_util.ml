@@ -9,8 +9,7 @@ open Mp_debug
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Array_util%t" eflush
+   show_loading "Loading Array_util%t"
 
 (*
  * Parts for collecting arrays.

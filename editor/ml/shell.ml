@@ -70,8 +70,7 @@ open Shell_p4_sig
  * Show that the file is loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Shell%t" eflush
+   show_loading "Loading Shell%t"
 
 let debug_refine = load_debug "refine"
 
@@ -94,8 +93,7 @@ external stop_gmon : unit -> unit = "stop_gmon"
 module Shell (ShellP4 : ShellP4Sig) =
 struct
    let _ =
-      if !debug_load then
-         eprintf "Loading Shell module%t" eflush
+      show_loading "Loading Shell module%t"
 
    (************************************************************************
     * TYPES                                                                *

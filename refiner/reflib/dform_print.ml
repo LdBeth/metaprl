@@ -41,8 +41,7 @@ open Dform
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Dform_print%t" eflush
+   show_loading "Loading Dform_print%t"
 
 (************************************************************************
  * TYPES                                                                *

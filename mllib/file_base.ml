@@ -42,8 +42,7 @@ open File_base_type
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading File_base%t" eflush
+   show_loading "Loading File_base%t"
 
 let debug_file_base =
    create_debug (**)

@@ -58,8 +58,7 @@ open Package
  * Show that the file is loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Package_df%t" eflush
+   show_loading "Loading Package_df%t"
 
 (*
  * Our display parameters.

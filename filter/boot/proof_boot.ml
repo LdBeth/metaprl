@@ -92,8 +92,7 @@ open Sequent_boot
  * Show that the file is loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Proof%t" eflush
+   show_loading "Loading Proof%t"
 
 let debug_proof =
    create_debug (**)

@@ -29,8 +29,7 @@ open Printf
 open Mp_debug
 
 let _ =
-   if !debug_load then
-      eprintf "Loading BigInt%t" eflush
+   show_loading "Loading BigInt%t"
 
  (*module type BigIntSig =
 sig

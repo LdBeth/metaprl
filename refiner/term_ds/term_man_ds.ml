@@ -47,8 +47,7 @@ open Term_addr_ds
  * Show that the file is loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Term_man_gen%t" eflush
+   show_loading "Loading Term_man_gen%t"
 
 let debug_address =
    create_debug (**)

@@ -62,8 +62,7 @@ open Filter_ocaml
  * Show that the file is loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Shell_rule%t" eflush
+   show_loading "Loading Shell_rule%t"
 
 let debug_refine = load_debug "refine"
 

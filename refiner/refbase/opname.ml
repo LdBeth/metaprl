@@ -39,8 +39,7 @@ open Gc
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Opname%t" eflush
+   show_loading "Loading Opname%t"
 
 let debug_opname =
    create_debug (**)

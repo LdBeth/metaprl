@@ -36,8 +36,7 @@ open Mp_pervasives
 open Int32
 
 let _ =
-   if !debug_load then
-      eprintf "Loading Registry%t" eflush
+   show_loading "Loading Registry%t"
 
 (*
  * jyh: we need documentation for these types.

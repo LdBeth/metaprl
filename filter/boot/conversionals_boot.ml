@@ -51,8 +51,7 @@ open Sequent_boot
  * Debug statement.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Tacticals%t" eflush
+   show_loading "Loading Tacticals%t"
 
 let debug_conv =
    create_debug (**)

@@ -32,8 +32,7 @@ open Mp_debug
 open Basic
 
 let _ =
-   if !debug_load then
-      eprintf "Loading Object_id%t" eflush
+   show_loading "Loading Object_id%t"
 
 type object_id = param list
 

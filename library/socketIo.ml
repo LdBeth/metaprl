@@ -29,8 +29,7 @@ open Printf
 open Mp_debug
 
 let _ =
-   if !debug_load then
-      eprintf "Loading SocketIo%t" eflush
+   show_loading "Loading SocketIo%t"
 
 
 let open_client port host =

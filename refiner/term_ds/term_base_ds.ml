@@ -41,8 +41,7 @@ open Term_ds
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Term_ds%t" eflush
+   show_loading "Loading Term_ds%t"
 
 let debug_subst =
    create_debug (**)

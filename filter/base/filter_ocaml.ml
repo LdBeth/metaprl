@@ -43,8 +43,7 @@ open Refiner_sig
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Filter_ocaml%t" eflush
+   show_loading "Loading Filter_ocaml%t"
 
 let debug_ocaml =
    create_debug (**)

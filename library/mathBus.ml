@@ -35,8 +35,7 @@ open Registry
 open Int32
 
 let _ =
-   if !debug_load then
-      eprintf "Loading MathBus%t" eflush
+   show_loading "Loading MathBus%t"
 
 type mbnode = Mbint of int32 | Mnode of mbterm
  and mbterm = mbnode array ;;

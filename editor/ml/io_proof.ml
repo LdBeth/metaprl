@@ -53,8 +53,7 @@ open Io_proof_type
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Filter_proof%t" eflush
+   show_loading "Loading Filter_proof%t"
 
 (************************************************************************
  * PRINTING                                                             *

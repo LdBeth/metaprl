@@ -36,8 +36,7 @@ open Mp_debug
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Filename_util%t" eflush
+   show_loading "Loading Filename_util%t"
 
 (*
  * A pathname is a list of strings.

@@ -45,8 +45,7 @@ open Term_std
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Term%t" eflush
+   show_loading "Loading Term%t"
 
 (*
  * Simple term module.

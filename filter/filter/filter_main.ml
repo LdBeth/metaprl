@@ -40,8 +40,7 @@ open Filter_parse
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Filter_main%t" eflush
+   show_loading "Loading Filter_main%t"
 
 (*
  * string -> path commands

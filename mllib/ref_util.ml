@@ -36,8 +36,7 @@ open Mp_debug
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Ref_util%t" eflush
+   show_loading "Loading Ref_util%t"
 
 (*
  * Stack operations.

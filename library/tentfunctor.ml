@@ -31,8 +31,7 @@ open Printf
 open Mp_debug
 
 let _ =
-   if !debug_load then
-      eprintf "Loading TentFunctor%t" eflush
+   show_loading "Loading TentFunctor%t"
 
 module type OID_TYPE =
  sig

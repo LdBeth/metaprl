@@ -66,8 +66,7 @@ open Display_term
  * Show that the file is loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Proof_edit%t" eflush
+   show_loading "Loading Proof_edit%t"
 
 let debug_edit =
    create_debug (**)

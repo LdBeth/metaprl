@@ -49,8 +49,7 @@ open Filter_ocaml
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Filter_summary%t" eflush
+   show_loading "Loading Filter_summary%t"
 
 let debug_summary =
    create_debug (**)

@@ -34,8 +34,7 @@ open Opname
 open Mp_num
 
 let _ =
-   if !debug_load then
-      eprintf "Loading Nuprl5%t" eflush
+   show_loading "Loading Nuprl5%t"
 
 let nuprl5_opname = mk_opname "!nuprl5_implementation!" nil_opname
 

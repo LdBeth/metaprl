@@ -57,8 +57,7 @@ open Shell_sig
  * Show that the file is loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Display_textf%t" eflush
+   show_loading "Loading Display_textf%t"
 
 (*
  * Display the package DAG.

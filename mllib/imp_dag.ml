@@ -44,8 +44,7 @@ open Dag
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Imp_dag%t" eflush
+   show_loading "Loading Imp_dag%t"
 
 module ImpDag =
 struct

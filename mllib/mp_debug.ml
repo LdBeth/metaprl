@@ -287,6 +287,8 @@ let debug_load = create_debug (**)
                       debug_value = false
                     }
 
+let show_loading s = if !debug_load then Printf.eprintf s eflush
+
 (*
  * -*-
  * Local Variables:

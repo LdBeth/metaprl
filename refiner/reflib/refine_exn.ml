@@ -50,8 +50,7 @@ open Dform_print
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Refine_exn%t" eflush
+   show_loading "Loading Refine_exn%t"
 
 (*
  * Default printer uses the Simple_print.

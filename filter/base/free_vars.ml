@@ -38,8 +38,7 @@ open Mp_debug
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Free_vars%t" eflush
+   show_loading "Loading Free_vars%t"
 
 
 (*

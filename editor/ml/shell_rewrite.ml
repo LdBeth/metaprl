@@ -61,8 +61,7 @@ open Filter_ocaml
  * Show that the file is loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Shell_rewrite%t" eflush
+   show_loading "Loading Shell_rewrite%t"
 
 (*
  * This is the actual rewrite object.

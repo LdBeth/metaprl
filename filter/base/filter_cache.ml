@@ -58,8 +58,7 @@ open Filter_magic
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Filter_cache%t" eflush
+   show_loading "Loading Filter_cache%t"
 
 
 (************************************************************************

@@ -14,10 +14,7 @@ open Utils
 open Library
 
 let _ =
-  if !debug_load then
-    eprintf "Loading Library_type_base%t" eflush
-
-
+   show_loading "Loading Library_type_base%t"
 
 let library = null_oref()
 let connection = null_oref()

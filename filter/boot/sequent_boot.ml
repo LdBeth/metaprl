@@ -43,8 +43,7 @@ open Tactic_boot
  * Debug statement.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Sequent%t" eflush
+   show_loading "Loading Sequent%t"
 
 module Sequent =
 struct

@@ -40,8 +40,7 @@ open MLast
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Filter_hash%t" eflush
+   show_loading "Loading Filter_hash%t"
 
 
 (*

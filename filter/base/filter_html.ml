@@ -52,8 +52,7 @@ open Filter_summary
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Filter_html%t" eflush
+   show_loading "Loading Filter_html%t"
 
 
 (*************************************************************************

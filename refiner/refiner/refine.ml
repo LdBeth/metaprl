@@ -80,8 +80,7 @@ open Refine_sig
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Refine%t" eflush
+   show_loading "Loading Refine%t"
 
 let debug_refiner =
    create_debug (**)

@@ -68,8 +68,7 @@ open Package_sig
  * Show that the file is loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Package_info%t" eflush
+   show_loading "Loading Package_info%t"
 
 let debug_package_info =
    create_debug (**)

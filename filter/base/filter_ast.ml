@@ -40,8 +40,7 @@ open Ml_format
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Filter_ast%t" eflush
+   show_loading "Loading Filter_ast%t"
 
 
 (*

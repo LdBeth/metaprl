@@ -9,8 +9,7 @@ open Mp_debug
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Bitset%t" eflush
+   show_loading "Loading Bitset%t"
 
 let int_size = 30
 

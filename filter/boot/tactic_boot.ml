@@ -68,8 +68,7 @@ open Tactic_boot_sig
  * Show that the file is loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Tactic_type%t" eflush
+   show_loading "Loading Tactic_type%t"
 
 let debug_tactic =
    create_debug (**)

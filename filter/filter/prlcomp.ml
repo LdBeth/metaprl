@@ -56,8 +56,7 @@ open Filter_magic
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Prlcomp%t" eflush;
+   show_loading "Loading Prlcomp%t";
    Debug_set.init ()
 
 (*

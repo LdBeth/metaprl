@@ -39,8 +39,7 @@ open Opname
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Term_ds%t" eflush
+   show_loading "Loading Term_ds%t"
 
 module TermType =
 struct

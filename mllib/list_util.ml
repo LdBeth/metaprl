@@ -36,8 +36,7 @@ open Mp_debug
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading List_util%t" eflush
+   show_loading "Loading List_util%t"
 
 (*
  * Exception for operations that have no effect.

@@ -45,8 +45,7 @@ open Ml_print_sig
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading ML_print%t" eflush
+   show_loading "Loading ML_print%t"
 
 module MakePrinter (File : FileSig) =
 struct

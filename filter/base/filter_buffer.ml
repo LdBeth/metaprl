@@ -38,8 +38,7 @@ open Mp_debug
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Buffer%t" eflush
+   show_loading "Loading Buffer%t"
 
 type t =
    { mutable buf_str : string;

@@ -42,8 +42,7 @@ open Refiner.Refiner.TermShape
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Term_stable%t" eflush
+   show_loading "Loading Term_stable%t"
 
 (************************************************************************
  * TYPES                                                                *

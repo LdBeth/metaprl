@@ -51,8 +51,7 @@ open Filter_summary
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Term_grammar%t" eflush
+   show_loading "Loading Term_grammar%t"
 
 let debug_grammar =
    create_debug (**)

@@ -48,8 +48,7 @@ open MLast_util
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Filter_comment%t" eflush
+   show_loading "Loading Filter_comment%t"
 
 
 (************************************************************************

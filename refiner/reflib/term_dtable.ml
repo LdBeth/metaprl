@@ -58,8 +58,7 @@ open Refiner.Refiner.Rewrite
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Term_dtable%t" eflush
+   show_loading "Loading Term_dtable%t"
 
 let debug_rewrite = load_debug "rewrite"
 

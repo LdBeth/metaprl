@@ -57,8 +57,7 @@ open Simple_print.SimplePrint
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Term_table%t" eflush
+   show_loading "Loading Term_table%t"
 
 let debug_term_table =
    create_debug (**)

@@ -12,8 +12,7 @@ open Mp_debug
  * Show the file loading.
  *)
 let _ =
-   if !debug_load then
-      eprintf "Loading Env_arg%t" eflush
+   show_loading "Loading Env_arg%t"
 
 (*
  * Type of variable setting functions.
