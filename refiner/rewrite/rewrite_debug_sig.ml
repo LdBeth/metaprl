@@ -29,6 +29,7 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
+open Lm_symbol
 
 module type RewriteDebugSig =
 sig
@@ -38,6 +39,8 @@ sig
    type varname
 
    val print_varname : out_channel -> varname -> unit
+   val print_var_list : out_channel -> var list -> unit
+   val print_var_set : out_channel -> SymbolSet.t -> unit
    val print_prog : out_channel -> rwterm -> unit
    val print_rstack : out_channel -> rstack array -> unit
    val print_stack_item : out_channel -> stack -> unit

@@ -328,13 +328,19 @@ struct
             match SeqHyp.get hyps i with
                HypBinding (v, _) ->
                   if SymbolSet.mem all_bvars v then
-                     raise(Invalid_argument("Rewrite_match_redex.check_sequent_hyps: binding clash in a sequent. Please let Aleksey Nogin know if this happens to you."));
+                     begin
+                        eprintf "Sequent vars: %a in { %a }%t" print_symbol v print_var_set all_bvars eflush
+(*
+                        raise(Invalid_argument("Rewrite_match_redex.check_sequent_hyps: binding clash in a sequent. Please let Aleksey Nogin know if this happens to you."))
+*)
+                     end;
                   SymbolSet.add all_bvars v
              | Context (v, _, _) ->
                   SymbolSet.add all_bvars v
-             | Hypothesis _ -> all_bvars
+             | Hypothesis _ ->
+                  all_bvars
          in
-            check_sequent_hyps hyps all_bvars len (i+1)
+            check_sequent_hyps hyps all_bvars len (i + 1)
 
    (*
     * Check that the terms are all equivalent under the given instantiations
@@ -386,13 +392,7 @@ struct
                   sequent_goals = goals
                 } = explode_sequent t
             in
-               begin
-                  try check_sequent_hyps hyps all_bvars (SeqHyp.length hyps) 0
-                  with (Invalid_argument _) as exn -> begin
-                     eprintf "Rewrite.match_redex.RWSequent: check_sequent_hyps failed on %a with bvars=%a%t" debug_print t print_symbol_list (SymbolSet.to_list all_bvars) eflush;
-                     raise exn
-                  end
-               end;
+               check_sequent_hyps hyps all_bvars (SeqHyp.length hyps) 0;
                match_redex_term addrs stack all_bvars arg' arg;
                match_redex_sequent_hyps addrs stack goals' goals all_bvars hyps' hyps 0 (SeqHyp.length hyps)
 

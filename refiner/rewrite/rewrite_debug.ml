@@ -107,6 +107,16 @@ struct
    let print_var_list = print_symbol_list
 
    (*
+    * Print a set of variables.
+    *)
+   let print_var_set out s =
+      ignore (SymbolSet.fold (fun first v ->
+                    if not first then
+                       output_string out ", ";
+                    print_symbol out v;
+                    false) true s)
+
+   (*
     * Print a stack item.
     * We can't print terms.
     *)
