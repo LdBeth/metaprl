@@ -160,6 +160,7 @@ let set_lib () =
 module FSummary = Filter_summary.FilterSummaryTerm (Refiner.Refiner);;
 module FTerm = Refiner.Refiner.Term
 module FTermCopy = Term_copy2_weak.TermCopy2Weak (Refiner.Refiner) (Refiner_io)
+let term_of_meta_term = FSummary.term_of_meta_term
 
 (*
  * Raw versions to file marshal the Filter_summary.info directly to the
@@ -355,7 +356,7 @@ struct
          Interface info ->
             let convert =
                { term_f = TTermCopy.convert;
-                 meta_term_f = (fun t -> TTermCopy.convert (FSummary.term_of_meta_term t));
+                 meta_term_f = (fun t -> TTermCopy.convert (term_of_meta_term t));
                  proof_f = (fun _ t -> unit_term);
                  resource_f = TOCaml.term_of_resource_sig resource_op;
                  ctyp_f = term_of_type;
@@ -400,7 +401,7 @@ struct
          Implementation info ->
             let convert =
                { term_f = TTermCopy.convert;
-                 meta_term_f = (fun t -> TTermCopy.convert (FSummary.term_of_meta_term t));
+                 meta_term_f = (fun t -> TTermCopy.convert (term_of_meta_term t));
                  proof_f = (fun name pf -> marshal_proof name (Convert.to_term arg) pf);
                  resource_f = term_of_expr;
                  ctyp_f = term_of_type;

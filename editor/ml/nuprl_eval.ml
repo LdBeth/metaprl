@@ -44,9 +44,6 @@ open Shell_sig
 
 open Shell
 
-open Filter_summary
-module FilterSummaryTerm = FilterSummaryTerm (Refiner.Refiner)
-
 module Nuprl (Shell : ShellSig) = struct
   open Shell
 
@@ -156,7 +153,7 @@ module Nuprl (Shell : ShellSig) = struct
 
   let mp_objc_to_term oc =
     let (name, status, metagoal, params) = oc in
-    FilterSummaryTerm.term_of_meta_term metagoal
+    Filter_cache.term_of_meta_term metagoal
 
   let term_to_msequent t =
     match dest_term t with
