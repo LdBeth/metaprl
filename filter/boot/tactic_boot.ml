@@ -312,9 +312,8 @@ struct
    (*
     * Server is created at file execution time.
     *)
-   let print_tactic_arg out { ref_goal = goal } =
-      let goal, _ = dest_msequent goal in
-      let goal = TermMan.nth_concl goal 0 in
+   let print_tactic_arg out arg =
+      let goal = TermMan.nth_concl (msequent_goal arg.ref_goal) 0 in
          debug_print out goal
 
    (*
@@ -408,20 +407,18 @@ struct
    (*
     * Access to the sequent.
     *)
-   let msequent { ref_goal = seq } =
-      seq
+   let msequent arg = arg.ref_goal
 
-   let goal { ref_goal = goal } =
-      fst (dest_msequent goal)
+   let goal arg =
+      msequent_goal arg.ref_goal
 
-   let nth_hyp { ref_goal = goal } i =
-      TermMan.nth_hyp (fst (dest_msequent goal)) i
+   let nth_hyp arg i =
+      TermMan.nth_hyp (msequent_goal arg.ref_goal) i
 
-   let nth_concl { ref_goal = goal } i =
-      TermMan.nth_concl (fst (dest_msequent goal)) i
+   let nth_concl arg i =
+      TermMan.nth_concl (msequent_goal arg.ref_goal) i
 
-   let label { ref_label = label } =
-      label
+   let label arg = arg.ref_label
 
    (*
     * Modify the argument.

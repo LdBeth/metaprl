@@ -532,6 +532,8 @@ struct
    let dest_msequent mseq =
       mseq.mseq_goal, mseq.mseq_hyps
 
+   let msequent_goal mseq = mseq.mseq_goal
+
    let msequent_free_vars mseq =
       match mseq.mseq_vars with
          FreeVars vars ->
