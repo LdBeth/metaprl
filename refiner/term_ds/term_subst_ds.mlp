@@ -108,7 +108,7 @@ struct
                (function vars -> function trm -> StringSet.union vars trm.free_vars)
                hd.free_vars tl)
    let rec context_vars_term cvars t = match dest_term t with
-      { term_op = { imp_op_name = opname; imp_op_params = [Var v] };
+      { term_op = { op_name = opname; op_params = [Var v] };
         term_terms = bterms
       } when opname == context_opname ->
          let cvars' =
@@ -157,18 +157,18 @@ struct
 
    let rec equal_term_main vars t t' =
       match (dest_term t, dest_term t') with
-         { term_op = { imp_op_name = opname1; imp_op_params = [Var v] };
+         { term_op = { op_name = opname1; op_params = [Var v] };
            term_terms = []
          },
-         { term_op = { imp_op_name = opname2; imp_op_params = [Var v'] };
+         { term_op = { op_name = opname2; op_params = [Var v'] };
            term_terms = []
          } when opname1 == var_opname & opname2 == var_opname ->
             begin
                try List.assoc v vars = v' with
                   Not_found -> v = v'
             end
-       | { term_op = { imp_op_name = name1; imp_op_params = params1 }; term_terms = bterms1 },
-         { term_op = { imp_op_name = name2; imp_op_params = params2 }; term_terms = bterms2 } ->
+       | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
+         { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
             name1 == name2
                     & List_util.for_all2 equal_params params1 params2
                     & List_util.for_all2 (equal_bterm vars) bterms1 bterms2
@@ -212,7 +212,7 @@ struct
 
    let eq_comp_var v t =
       match dest_term t with
-         { term_op = { imp_op_name = opname; imp_op_params = [Var v'] };
+         { term_op = { op_name = opname; op_params = [Var v'] };
            term_terms = []
          } when opname == var_opname ->
             v' = v
@@ -221,7 +221,7 @@ struct
 
    let rec equal_comp vars' vars t t' =
       match dest_term t with
-         { term_op = { imp_op_name = opname; imp_op_params = [Var v] };
+         { term_op = { op_name = opname; op_params = [Var v] };
            term_terms = []
          } when opname == var_opname ->
             assert (**)
@@ -234,7 +234,7 @@ struct
             (try equal_term vars' t' (List.assoc v vars) with
                 Not_found ->
                    match dest_term t' with
-                      { term_op = { imp_op_name = opname; imp_op_params = [Var v'] };
+                      { term_op = { op_name = opname; op_params = [Var v'] };
                         term_terms = []
                       } when opname == var_opname ->
                          assert (**)
@@ -246,8 +246,8 @@ struct
                          not (List_util.assoc_in_range eq_comp_var v' vars) & v = v'
                     | _ ->
                          false)
-       | { term_op = { imp_op_name = name1; imp_op_params = params1 }; term_terms = bterms1 } ->
-            let { term_op = { imp_op_name = name2; imp_op_params = params2 };
+       | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 } ->
+            let { term_op = { op_name = name2; op_params = params2 };
                   term_terms = bterms2
                 } = dest_term t'
             in
@@ -310,7 +310,7 @@ struct
     * Unify two terms.
     *)
    let rec unify_terms subst bvars tm1 tm2 = match (dest_term tm1, dest_term tm2) with
-      ({ term_op = { imp_op_name = opname; imp_op_params = [Var v] };
+      ({ term_op = { op_name = opname; op_params = [Var v] };
          term_terms = []
        } as t1), t2
       when opname == var_opname ->
@@ -332,7 +332,7 @@ struct
                   raise_generic_exn
          end
 
-    | t1, ({ term_op = { imp_op_name = opname; imp_op_params = [Var v] };
+    | t1, ({ term_op = { op_name = opname; op_params = [Var v] };
              term_terms = []
            } as t2)
       when opname == var_opname ->
@@ -354,10 +354,10 @@ struct
                   raise_generic_exn
          end
 
-    | ({ term_op = { imp_op_name = opname1; imp_op_params = params1 };
+    | ({ term_op = { op_name = opname1; op_params = params1 };
          term_terms = bterms1
        } as t1),
-      ({ term_op = { imp_op_name = opname2; imp_op_params = params2 };
+      ({ term_op = { op_name = opname2; op_params = params2 };
          term_terms = bterms2
        } as t2) ->
          (* General case *)

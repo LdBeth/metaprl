@@ -61,7 +61,7 @@ sig
     * The order of params is significant.
     *)
    type operator' = { op_name : opname; op_params : param list }
-   type operator =  { mutable imp_op_name : opname; imp_op_params : param list }
+   type operator =  operator'
 
    (*
     * A term has an operator, and a finite number of subterms
@@ -147,8 +147,6 @@ sig
    val dest_simple_bterm : term -> bound_term -> term
    val dest_simple_bterms : term -> bound_term list -> term list
 
-   val normalize_term : term -> unit
-
    (* Projections *)
    val opname_of_term : term -> opname
    val subterms_of_term : term -> term list
@@ -209,6 +207,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/07/02 22:25:04  jyh
+ * Created term_copy module to copy and normalize terms.
+ *
  * Revision 1.1  1998/07/02 18:36:03  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

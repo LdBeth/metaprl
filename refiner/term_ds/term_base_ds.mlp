@@ -142,7 +142,7 @@ struct
     * See if a term is a variable.
     *)
    let is_var_term_nods = function
-      { term_op = { imp_op_name = opname; imp_op_params = [Var v] };
+      { term_op = { op_name = opname; op_params = [Var v] };
         term_terms = []
       } when opname == var_opname -> true
     | _ -> false
@@ -151,7 +151,7 @@ struct
     * Destructor for a variable.
     *)
    let dest_var_nods = function
-      { term_op = { imp_op_name = opname; imp_op_params = [Var v] };
+      { term_op = { op_name = opname; op_params = [Var v] };
         term_terms = []
       } when opname == var_opname -> v
      | _ -> raise Not_var
@@ -180,7 +180,7 @@ struct
    let mk_var_term v =
       { free_vars = StringSet.make v;
         core = Term
-         { term_op = { imp_op_name = var_opname; imp_op_params = [Var v] };
+         { term_op = { op_name = var_opname; op_params = [Var v] };
            term_terms = [] }}
 
    let make_term t =
@@ -193,7 +193,7 @@ struct
       {free_vars = bterms_free_vars bterms;
        core = Term { term_op = op; term_terms = bterms }}
 
-   let mk_op name params = { imp_op_name = name; imp_op_params = params }
+   let mk_op name params = { op_name = name; op_params = params }
 
    let make_bterm bt =
       { bfree_vars = List.fold_right StringSet.remove bt.bvars bt.bterm.free_vars;
@@ -313,22 +313,20 @@ struct
    (*
     * Operator names.
     *)
-   let opname_of_term t = (dest_term t).term_op.imp_op_name
+   let opname_of_term t = (dest_term t).term_op.op_name
 
    (* These are trivial identity functions *)
 
-   let make_op { op_name = opname; op_params = params } =
-      { imp_op_name = opname; imp_op_params = params }
-   let dest_op { imp_op_name = opname; imp_op_params = params } =
-      { op_name = opname; op_params = params}
-   let make_param p = p
-   let dest_param p = p
-   let make_level l = l
-   let dest_level l = l
-   let make_level_var v = v
-   let dest_level_var v = v
-   let make_object_id i = i
-   let dest_object_id i = i
+   external make_op : operator' -> operator = "%identity"
+   external dest_op : operator -> operator' = "%identity"
+   external make_param : param' -> param = "%identity"
+   external dest_param : param -> param' = "%identity"
+   external make_level : level_exp' -> level_exp = "%identity"
+   external dest_level : level_exp -> level_exp' = "%identity"
+   external make_level_var : level_exp_var' -> level_exp_var = "%identity"
+   external dest_level_var : level_exp_var -> level_exp_var' = "%identity"
+   external make_object_id : param list -> object_id = "%identity"
+   external dest_object_id : object_id -> param list = "%identity"
 
    (************************************************************************
     * Variables                                                            *
@@ -348,18 +346,18 @@ struct
       with
          Not_var -> ref_raise(RefineError ("dest_var_nods", TermMatchError (t, "not a var")))
 
-   let mk_var_op v = { imp_op_name = var_opname; imp_op_params = [Var v] }
+   let mk_var_op v = { op_name = var_opname; op_params = [Var v] }
 
    (*
     * Second order variables have subterms.
     *)
    let is_so_var_term t = match dest_term t with
-      { term_op = { imp_op_name = opname; imp_op_params = [Var(_)] }; term_terms = bterms }
+      { term_op = { op_name = opname; op_params = [Var(_)] }; term_terms = bterms }
       when opname == var_opname -> no_bvars bterms
     | _ -> false
 
    let dest_so_var t = match dest_term t with
-      { term_op = { imp_op_name = opname; imp_op_params = [Var(v)] };
+      { term_op = { op_name = opname; op_params = [Var(v)] };
          term_terms = bterms
       } when opname == var_opname ->
          v, dest_simple_bterms t bterms
@@ -370,7 +368,7 @@ struct
     *)
    let mk_so_var_term v terms =
       mk_term
-         { imp_op_name = var_opname; imp_op_params = [Var(v)] }
+         { op_name = var_opname; op_params = [Var(v)] }
          (List.map mk_simple_bterm terms)
 
    (*
@@ -381,7 +379,7 @@ struct
 
    let is_context_term t =
       match dest_term t with
-         { term_op = { imp_op_name = opname; imp_op_params = [Var _] };
+         { term_op = { op_name = opname; op_params = [Var _] };
            term_terms = bterms
          } when opname == context_opname ->
             bterms <> [] & no_bvars bterms
@@ -390,7 +388,7 @@ struct
 
    let dest_context term =
       match dest_term term with
-         { term_op = { imp_op_name = opname; imp_op_params = [Var v] };
+         { term_op = { op_name = opname; op_params = [Var v] };
            term_terms = bterms
          } when opname == context_opname ->
             let rec collect term = function
@@ -414,27 +412,8 @@ struct
        | h::t ->
             mk_simple_bterm h :: collect term t
       in
-      let op = { imp_op_name = context_opname; imp_op_params = [Var v] } in
+      let op = { op_name = context_opname; op_params = [Var v] } in
          mk_term op (collect term terms)
-
-   (************************************************************************
-    * NORMALIZATION                                                        *
-    ************************************************************************)
-
-   (*
-    * "Normalization" means producing a canonical version of the term,
-    * not reduction. Right now, this just means rehashing the opname,
-    * doing all substitutions and copying it all into an unshared location.
-    *)
-   let rec normalize_term trm =
-      let t = dest_term trm in
-      let op = t.term_op in
-         op.imp_op_name <- normalize_opname op.imp_op_name;
-         List.iter normalize_bterm t.term_terms
-
-   and normalize_bterm btrm =
-      let bt = dest_bterm btrm in
-         normalize_term bt.bterm
 
    (************************************************************************
     * Tools for "simple" terms                                             *
@@ -444,7 +423,7 @@ struct
     * "Simple" terms have no parameters and no binding variables.
     *)
    let is_simple_term_opname name t = match dest_term t with
-      { term_op = { imp_op_name = name'; imp_op_params = [] };
+      { term_op = { op_name = name'; op_params = [] };
         term_terms = bterms
       } when name' == name -> no_bvars bterms
     | _ -> false
@@ -452,16 +431,16 @@ struct
    let mk_any_term op terms = mk_term op (List.map mk_simple_bterm terms)
 
    let mk_simple_term name terms =
-      mk_any_term { imp_op_name = name; imp_op_params = [] } terms
+      mk_any_term { op_name = name; op_params = [] } terms
 
    let dest_simple_term t = match dest_term t with
-      { term_op = { imp_op_name = name; imp_op_params = [] };
+      { term_op = { op_name = name; op_params = [] };
          term_terms = bterms } ->
             name, dest_simple_bterms t bterms
     | _ -> ref_raise(RefineError ("dest_simple_term", TermMatchError (t, "params exist")))
 
    let dest_simple_term_opname name t = match dest_term t with
-      { term_op = { imp_op_name = name'; imp_op_params = [] };
+      { term_op = { op_name = name'; op_params = [] };
          term_terms = bterms } ->
          if name == name' then dest_simple_bterms t bterms
          else

@@ -8,7 +8,7 @@ open Printf
 
 open Debug
 open Opname
-open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Resource
 
 open File_base_type
@@ -66,15 +66,15 @@ struct
    type sig_ctyp  = SigMarshal.ctyp
    type sig_expr  = SigMarshal.expr
    type sig_item  = SigMarshal.item
-   type sig_info  = (sig_proof, sig_ctyp, sig_expr, sig_item) module_info
-   type sig_elem  = (sig_proof, sig_ctyp, sig_expr, sig_item) summary_item
+   type sig_info  = (term, meta_term, sig_proof, sig_ctyp, sig_expr, sig_item) module_info
+   type sig_elem  = (term, meta_term, sig_proof, sig_ctyp, sig_expr, sig_item) summary_item
 
    type str_proof = StrMarshal.proof
    type str_ctyp  = StrMarshal.ctyp
    type str_expr  = StrMarshal.expr
    type str_item  = StrMarshal.item
-   type str_info  = (str_proof, str_ctyp, str_expr, str_item) module_info
-   type str_elem  = (str_proof, str_ctyp, str_expr, str_item) summary_item
+   type str_info  = (term, meta_term, str_proof, str_ctyp, str_expr, str_item) module_info
+   type str_elem  = (term, meta_term, str_proof, str_ctyp, str_expr, str_item) summary_item
 
    type select = Base.select
 
@@ -524,7 +524,7 @@ struct
       let this_resources = Sort.list compare_resources this_resources in
          merge_resources this_resources par_resources
 
-   and inline_str_components arg path self (items : (str_proof, str_ctyp, str_expr, str_item) summary_item_loc list) =
+   and inline_str_components arg path self (items : (term, meta_term, str_proof, str_ctyp, str_expr, str_item) summary_item_loc list) =
       let cache, _, _ = arg in
 
       (* Get the opname for this path *)
@@ -724,6 +724,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.19  1998/07/02 22:24:43  jyh
+ * Created term_copy module to copy and normalize terms.
+ *
  * Revision 1.18  1998/06/22 19:45:18  jyh
  * Rewriting in contexts.  This required a change in addressing,
  * and the body of the context is the _last_ subterm, not the first.

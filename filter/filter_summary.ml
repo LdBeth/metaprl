@@ -52,17 +52,17 @@ let debug_summary =
  * A MagicBlock is a block of code that we use to compute
  * a magic number.  The magic number changes whenever the code changes.
  *)
-type ('proof, 'ctyp, 'expr, 'item) summary_item =
-   Rewrite of 'proof rewrite_info
- | CondRewrite of 'proof cond_rewrite_info
- | Axiom of 'proof axiom_info
- | Rule of 'proof rule_info
- | Opname of opname_info
- | MLTerm of 'expr mlterm_info
- | Condition of 'expr mlterm_info
+type ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item =
+   Rewrite of ('term, 'proof) rewrite_info
+ | CondRewrite of ('term, 'proof) cond_rewrite_info
+ | Axiom of ('term, 'proof) axiom_info
+ | Rule of ('term, 'meta_term, 'proof) rule_info
+ | Opname of 'term opname_info
+ | MLTerm of ('term, 'expr) mlterm_info
+ | Condition of ('term, 'expr) mlterm_info
  | Parent of 'ctyp parent_info
- | Module of string * ('proof, 'ctyp, 'expr, 'item) module_info
- | DForm of 'expr dform_info
+ | Module of string * ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info
+ | DForm of ('term, 'expr) dform_info
  | Prec of string
  | PrecRel of prec_rel_info
  | Id of int
@@ -74,32 +74,32 @@ type ('proof, 'ctyp, 'expr, 'item) summary_item =
 (*
  * Proof is type unit in interface.
  *)
-and 'proof rewrite_info =
+and ('term, 'proof) rewrite_info =
    { rw_name : string;
-     rw_redex : term;
-     rw_contractum : term;
+     rw_redex : 'term;
+     rw_contractum : 'term;
      rw_proof : 'proof
    }
 
-and 'proof cond_rewrite_info =
+and ('term, 'proof) cond_rewrite_info =
    { crw_name : string;
-     crw_params : param list;
-     crw_args : term list;
-     crw_redex : term;
-     crw_contractum : term;
+     crw_params : 'term param list;
+     crw_args : 'term list;
+     crw_redex : 'term;
+     crw_contractum : 'term;
      crw_proof : 'proof
    }
 
-and 'proof axiom_info =
+and ('term, 'proof) axiom_info =
    { axiom_name : string;
-     axiom_stmt : term;
+     axiom_stmt : 'term;
      axiom_proof : 'proof
    }
 
-and 'proof rule_info =
+and ('term, 'meta_term, 'proof) rule_info =
    { rule_name : string;
-     rule_params : param list;
-     rule_stmt : meta_term;
+     rule_params : 'term param list;
+     rule_stmt : 'meta_term;
      rule_proof : 'proof
    }
 
@@ -117,27 +117,27 @@ and 'ctyp parent_info =
  * An mlterm is a term that has an ML procedure for its rewrite.
  * The definition is not required in the interface.
  *)
-and 'expr mlterm_info =
-   { mlterm_term : term;
-     mlterm_contracta : term list;
+and ('term, 'expr) mlterm_info =
+   { mlterm_term : 'term;
+     mlterm_contracta : 'term list;
      mlterm_def : ('expr * 'expr) option
    }
 
-and opname_info =
+and 'term opname_info =
    { opname_name : string;
-     opname_term : term
+     opname_term : 'term
    }
 
 (*
  * Dform descriptions.
  * The definition is not required in the interface.
  *)
-and 'expr dform_info =
+and ('term, 'expr) dform_info =
    { dform_name : string;
      dform_modes : string list;
      dform_options : dform_option list;
-     dform_redex : term;
-     dform_def : 'expr dform_def
+     dform_redex : 'term;
+     dform_def : ('term, 'expr) dform_def
    }
 
 and dform_option =
@@ -145,15 +145,15 @@ and dform_option =
  | DFormPrec of string
  | DFormParens
 
-and 'expr dform_def =
+and ('term, 'expr) dform_def =
    NoDForm
- | TermDForm of term
- | MLDForm of 'expr dform_ml_def
+ | TermDForm of 'term
+ | MLDForm of ('term, 'expr) dform_ml_def
 
-and 'expr dform_ml_def =
+and ('term, 'expr) dform_ml_def =
    { dform_ml_printer : string;
      dform_ml_buffer : string;
-     dform_ml_contracta : term list;
+     dform_ml_contracta : 'term list;
      dform_ml_code : 'expr
    }
 
@@ -184,32 +184,34 @@ and 'item magic_info =
      magic_code : 'item list
    }
 
-and param =
+and 'term param =
    ContextParam of string
  | VarParam of string
- | TermParam of term
-
-(*
- * Pair it with a location.
- *)
-and ('proof, 'ctyp, 'expr, 'item) summary_item_loc =
-   ('proof, 'ctyp, 'expr, 'item) summary_item * (int * int)
+ | TermParam of 'term
 
 (*
  * The info about a specific module is just a list of items.
  *)
-and ('proof, 'ctyp, 'expr, 'item) module_info =
-   { info_list : ('proof, 'ctyp, 'expr, 'item) summary_item_loc list }
+and ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info =
+   { info_list : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item_loc list }
+
+(*
+ * Pair it with a location.
+ *)
+and ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item_loc =
+   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item * (int * int)
 
 (*
  * Conversion functions.
  *)
-type ('proof1, 'ctyp1, 'expr1, 'item1, 'proof2, 'ctyp2, 'expr2, 'item2) convert =
-   { term_f : term -> term;
-     proof_f : string -> 'proof1 -> 'proof2;
-     ctyp_f  : 'ctyp1  -> 'ctyp2;
-     expr_f  : 'expr1  -> 'expr2;
-     item_f  : 'item1  -> 'item2
+and ('term1, 'meta_term1, 'proof1, 'ctyp1, 'expr1, 'item1,
+      'term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) convert =
+   { term_f       : 'term1 -> 'term2;
+     meta_term_f  : 'meta_term1 -> 'meta_term2;
+     proof_f      : string -> 'proof1 -> 'proof2;
+     ctyp_f       : 'ctyp1  -> 'ctyp2;
+     expr_f       : 'expr1  -> 'expr2;
+     item_f       : 'item1  -> 'item2
    }
 
 (************************************************************************
@@ -618,23 +620,14 @@ let convert_resource convert
 (*
  * Normalize all terms in the info.
  *)
-let summary_map convert =
+let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'ctyp1, 'expr1, 'item1,
+                            'term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) convert)
+=
    (* Map the terms inside of params *)
    let param_map = function
       TermParam t -> TermParam (convert.term_f t)
-    | p -> p
-   in
-
-   (* Map the terms inside of meta_term's *)
-   let rec mterm_map = function
-      MetaTheorem t ->
-         MetaTheorem (convert.term_f t)
-    | MetaImplies (t1, t2) ->
-         MetaImplies (mterm_map t1, mterm_map t2)
-    | MetaFunction (s, t1, t2) ->
-         MetaFunction (s, mterm_map t1, mterm_map t2)
-    | MetaIff (t1, t2) ->
-         MetaIff (mterm_map t1, mterm_map t2)
+    | VarParam s -> VarParam s
+    | ContextParam s -> ContextParam s
    in
 
    (* Map a summary item *)
@@ -679,7 +672,7 @@ let summary_map convert =
             } ->
                Rule { rule_name = name;
                       rule_params = List.map param_map params;
-                      rule_stmt = mterm_map t;
+                      rule_stmt = convert.meta_term_f t;
                       rule_proof = convert.proof_f name pf
                }
 
@@ -858,7 +851,7 @@ let dest_dform_def convert t =
       if opname == dform_none_op then
          NoDForm
       else if opname == dform_term_op then
-         TermDForm (one_subterm t)
+         TermDForm (convert.term_f (one_subterm t))
       else if opname == dform_ml_op then
          let printer, buffer, cons, expr = dest_string_string_dep0_dep0_any_term t in
             MLDForm { dform_ml_printer   = printer;
@@ -901,37 +894,13 @@ let dest_string_param_list t =
       List.map dest_string_param (dest_xlist t)
 
 (*
- * Meta term destruction.
- *)
-let meta_theorem_op     = mk_opname "meta_theorem"
-let meta_implies_op     = mk_opname "meta_implies"
-let meta_function_op    = mk_opname "meta_function"
-let meta_iff_op         = mk_opname "meta_iff"
-
-let rec dest_meta_term t =
-   let opname = opname_of_term t in
-      if opname == meta_theorem_op then
-         MetaTheorem (one_subterm t)
-      else if opname == meta_implies_op then
-         let a, b = two_subterms t in
-            MetaImplies (dest_meta_term a, dest_meta_term b)
-      else if opname == meta_function_op then
-         let v, a, b = three_subterms t in
-            MetaFunction (v, dest_meta_term a, dest_meta_term b)
-      else if opname == meta_iff_op then
-         let a, b = two_subterms t in
-            MetaIff (dest_meta_term a, dest_meta_term b)
-      else
-         raise (Failure "term is not a meta term")
-
-(*
  * Get a parameter.
  *)
 let context_param_op    = mk_opname "context_param"
 let var_param_op        = mk_opname "var_param"
 let term_param_op       = mk_opname "term_param"
 
-let dest_param t =
+let dest_param convert t =
    let string_param = function
       [param] ->
          begin
@@ -951,15 +920,15 @@ let dest_param t =
       else if opname == var_param_op then
          VarParam (string_param params)
       else if opname == term_param_op then
-         TermParam (one_subterm t)
+         TermParam (convert.term_f (one_subterm t))
       else
          raise (Failure "Illegal parameter")
 
 (*
  * Get the parameter list.
  *)
-let dest_params t =
-   List.map dest_param (dest_xlist t)
+let dest_params convert t =
+   List.map (dest_param convert) (dest_xlist t)
 
 (*
  * Collect a rewrite.
@@ -968,8 +937,8 @@ let rec dest_rewrite convert t =
    let name = dest_string_param t in
    let redex, contractum, proof = three_subterms t in
       Rewrite { rw_name = name;
-                rw_redex = redex;
-                rw_contractum = contractum;
+                rw_redex = convert.term_f redex;
+                rw_contractum = convert.term_f contractum;
                 rw_proof = convert.proof_f name proof
       }
 
@@ -980,10 +949,10 @@ and dest_cond_rewrite convert t =
    let name = dest_string_param t in
    let params, args, redex, contractum, proof = five_subterms t in
       CondRewrite { crw_name = name;
-                    crw_params = dest_params params;
-                    crw_args = dest_xlist args;
-                    crw_redex = redex;
-                    crw_contractum = contractum;
+                    crw_params = dest_params convert params;
+                    crw_args = List.map convert.term_f (dest_xlist args);
+                    crw_redex = convert.term_f redex;
+                    crw_contractum = convert.term_f contractum;
                     crw_proof = convert.proof_f name proof
       }
 
@@ -994,7 +963,7 @@ and dest_axiom convert t =
    let name = dest_string_param t in
    let stmt, proof = two_subterms t in
       Axiom { axiom_name = name;
-              axiom_stmt = stmt;
+              axiom_stmt = convert.term_f stmt;
               axiom_proof = convert.proof_f name proof
       }
 
@@ -1005,8 +974,8 @@ and dest_rule convert t =
    let name = dest_string_param t in
    let params, stmt, proof = three_subterms t in
       Rule { rule_name = name;
-             rule_params = dest_params params;
-             rule_stmt = dest_meta_term stmt;
+             rule_params = dest_params convert params;
+             rule_stmt = convert.meta_term_f stmt;
              rule_proof = convert.proof_f name proof
       }
 
@@ -1017,7 +986,7 @@ and dest_opname convert t =
    let name = dest_string_param t in
    let term = one_subterm t in
       Opname { opname_name = name;
-               opname_term = term
+               opname_term = convert.term_f term
       }
 
 (*
@@ -1025,8 +994,8 @@ and dest_opname convert t =
  *)
 and dest_mlterm convert t =
    let term, cons, expr = three_subterms t in
-      MLTerm { mlterm_term = term;
-               mlterm_contracta = dest_xlist cons;
+      MLTerm { mlterm_term = convert.term_f term;
+               mlterm_contracta = List.map convert.term_f (dest_xlist cons);
                mlterm_def = dest_opt_pair (convert_expr_pair convert) expr
       }
 
@@ -1035,8 +1004,8 @@ and dest_mlterm convert t =
  *)
 and dest_condition convert t =
    let term, cons, expr = three_subterms t in
-      Condition { mlterm_term = term;
-                  mlterm_contracta = dest_xlist cons;
+      Condition { mlterm_term = convert.term_f term;
+                  mlterm_contracta = List.map convert.term_f (dest_xlist cons);
                   mlterm_def = dest_opt_pair (convert_expr_pair convert) expr
       }
 (*
@@ -1067,7 +1036,7 @@ and dest_dform convert t =
       DForm { dform_name = name;
               dform_modes = modes;
               dform_options =  options;
-              dform_redex = redex;
+              dform_redex = convert.term_f redex;
               dform_def = dest_dform_def convert def
       }
 
@@ -1145,7 +1114,8 @@ and dest_summary_item convert t =
    SummaryItem (convert.item_f (one_subterm t))
 
 and dest_term_aux
-    (convert : (term, term, term, term, 'proof, 'ctyp, 'expr, 'item) convert)
+    (convert : (term, term, term, term, term, term,
+                'term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) convert)
     (t : term) =
    let opname = opname_of_term t in
       try
@@ -1195,7 +1165,8 @@ and dest_term_aux
             None
 
 and dest_term_loc
-    (convert : (term, term, term, term, 'proof, 'ctyp, 'expr, 'item) convert)
+    (convert : (term, term, term, term, term, term,
+                'term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) convert)
     (t : term) =
    let t, loc = dest_loc t in
       match dest_term_aux convert t with
@@ -1208,10 +1179,11 @@ and dest_term_loc
  * Make a module from the term list.
  *)
 and of_term_list
-    (convert : (term, term, term, term, 'proof, 'ctyp, 'expr, 'item) convert)
+    (convert : (term, term, term, term, term, term,
+                'term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) convert)
     (terms : term list) =
    let items = List_util.some_map (dest_term_loc convert) terms in
-      ({ info_list = List.rev items } : ('proof, 'ctyp, 'expr, 'item) module_info)
+      ({ info_list = List.rev items } : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info)
 
 (**************
  * CONSTRUCTION
@@ -1257,16 +1229,16 @@ let mk_strings_term opname l =
 (*
  * Parameters.
  *)
-let mk_param = function
+let mk_param convert = function
    ContextParam s ->
       mk_string_param_term context_param_op s []
  | VarParam s ->
       mk_string_param_term var_param_op s []
  | TermParam t ->
-      mk_simple_term term_param_op [t]
+      mk_simple_term term_param_op [convert.term_f t]
 
-let mk_params params =
-   mk_xlist_term (List.map mk_param params)
+let mk_params convert params =
+   mk_xlist_term (List.map (mk_param convert) params)
 
 (*
  * Display form options.
@@ -1289,7 +1261,7 @@ let mk_dform_def convert = function
    NoDForm ->
       mk_simple_term dform_none_op []
  | TermDForm t ->
-      mk_simple_term dform_term_op [t]
+      mk_simple_term dform_term_op [convert.term_f t]
  | MLDForm { dform_ml_printer = printer;
              dform_ml_buffer = buffer;
              dform_ml_contracta = cons;
@@ -1298,19 +1270,6 @@ let mk_dform_def convert = function
       let cons = mk_xlist_term (List.map convert.term_f cons) in
       let expr = convert.expr_f expr in
          mk_string_string_dep0_dep0_term dform_ml_op printer buffer cons expr
-
-(*
- * Meta terms.
- *)
-let rec mk_meta_term = function
-   MetaTheorem t ->
-      mk_simple_term meta_theorem_op [t]
- | MetaImplies (a, b) ->
-      mk_simple_term meta_implies_op [mk_meta_term a; mk_meta_term b]
- | MetaFunction (v, a, b) ->
-      mk_simple_term meta_function_op [v; mk_meta_term a; mk_meta_term b]
- | MetaIff (a, b) ->
-      mk_simple_term meta_iff_op [mk_meta_term a; mk_meta_term b]
 
 (*
  * Precedence relation.
@@ -1335,8 +1294,14 @@ let mk_prec_rel_term rel left right =
 let rec term_of_summary_item convert t =
    mk_simple_term summary_item_op [convert.item_f t]
 
-and term_of_rewrite convert { rw_name = name; rw_redex = redex; rw_contractum = con; rw_proof = pf } =
-   mk_string_param_term rewrite_op name [redex; con; convert.proof_f name pf]
+and term_of_rewrite convert { rw_name = name;
+                              rw_redex = redex;
+                              rw_contractum = con;
+                              rw_proof = pf
+    } =
+   mk_string_param_term rewrite_op name [convert.term_f redex;
+                                         convert.term_f con;
+                                         convert.proof_f name pf]
 
 and term_of_cond_rewrite convert { crw_name = name;
                                    crw_params = params;
@@ -1345,36 +1310,47 @@ and term_of_cond_rewrite convert { crw_name = name;
                                    crw_contractum = con;
                                    crw_proof = pf
     } =
-   mk_string_param_term cond_rewrite_op name [mk_params params;
-                                              mk_xlist_term args;
-                                              redex;
-                                              con;
+   mk_string_param_term cond_rewrite_op name [mk_params convert params;
+                                              mk_xlist_term (List.map convert.term_f args);
+                                              convert.term_f redex;
+                                              convert.term_f con;
                                               convert.proof_f name pf]
 
 and term_of_axiom convert { axiom_name = name; axiom_stmt = t; axiom_proof = pf } =
-   mk_string_param_term axiom_op name [t; convert.proof_f name pf]
+   mk_string_param_term axiom_op name [convert.term_f t; convert.proof_f name pf]
 
 and term_of_rule convert { rule_name = name;
                            rule_params = params;
                            rule_stmt = t;
                            rule_proof = pf
     } =
-   mk_string_param_term rule_op name [mk_params params; mk_meta_term t; convert.proof_f name pf]
+   mk_string_param_term rule_op name [mk_params convert params;
+                                      convert.meta_term_f t;
+                                      convert.proof_f name pf]
 
-and term_of_opname { opname_name = name; opname_term = term } =
-   mk_string_param_term opname_op name [term]
+and term_of_opname convert { opname_name = name; opname_term = term } =
+   mk_string_param_term opname_op name [convert.term_f term]
 
-and term_of_mlterm convert { mlterm_term = term; mlterm_contracta = cons; mlterm_def = expr_opt } =
-   mk_simple_term mlterm_op [term;
-                             mk_xlist_term cons;
+and term_of_mlterm convert { mlterm_term = term;
+                             mlterm_contracta = cons;
+                             mlterm_def = expr_opt
+    } =
+   mk_simple_term mlterm_op [convert.term_f term;
+                             mk_xlist_term (List.map convert.term_f cons);
                              mk_opt_pair (convert_expr_pair convert) expr_opt ]
 
-and term_of_condition convert { mlterm_term = term; mlterm_contracta = cons; mlterm_def = expr_opt } =
-   mk_simple_term condition_op [term;
-                                mk_xlist_term cons;
+and term_of_condition convert { mlterm_term = term;
+                                mlterm_contracta = cons;
+                                mlterm_def = expr_opt
+    } =
+   mk_simple_term condition_op [convert.term_f term;
+                                mk_xlist_term (List.map convert.term_f cons);
                                 mk_opt_pair (convert_expr_pair convert) expr_opt ]
 
-and term_of_parent convert { parent_name = path; parent_opens = opens; parent_resources = resources } =
+and term_of_parent convert { parent_name = path;
+                             parent_opens = opens;
+                             parent_resources = resources
+    } =
    mk_simple_term parent_op (**)
       [mk_strings_term parent_op path;
        mk_xlist_term (List.map (mk_strings_term parent_op) opens);
@@ -1391,7 +1367,9 @@ and term_of_dform convert { dform_name = name;
     } =
    let modes = List.map mk_dform_mode modes in
    let options = List.map mk_dform_opt options in
-      mk_string_param_term dform_op name [mk_xlist_term (modes @ options); redex; mk_dform_def convert def]
+      mk_string_param_term dform_op name [mk_xlist_term (modes @ options);
+                                          convert.term_f redex;
+                                          mk_dform_def convert def]
 
 and term_of_prec p =
    mk_string_param_term prec_op p []
@@ -1421,7 +1399,8 @@ and term_of_magic_block convert { magic_name = name; magic_code = items } =
 (*
  * Convert the items to a term.
  *)
-and term_list_aux (convert : ('proof, 'ctyp, 'expr, 'item, term, term, term, term) convert) = function
+and term_list_aux (convert : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item, term,
+                              term, term, term, term, term) convert) = function
    SummaryItem t ->
       term_of_summary_item convert t
  | Rewrite rw ->
@@ -1433,7 +1412,7 @@ and term_list_aux (convert : ('proof, 'ctyp, 'expr, 'item, term, term, term, ter
  | Rule rw ->
       term_of_rule convert rw
  | Opname opname ->
-      term_of_opname opname
+      term_of_opname convert opname
  | MLTerm t ->
       term_of_mlterm convert t
  | Condition cond ->
@@ -1460,8 +1439,9 @@ and term_list_aux (convert : ('proof, 'ctyp, 'expr, 'item, term, term, term, ter
 and term_list_loc convert (t, loc) =
    mk_loc loc (term_list_aux convert t)
 
-and term_list (convert : ('proof, 'ctyp, 'expr, 'item, term, term, term, term) convert)
-    ({ info_list = info } : ('proof, 'ctyp, 'expr, 'item) module_info) =
+and term_list (convert : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
+                          term, term, term, term, term, term) convert)
+    ({ info_list = info } : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info) =
    (List.map (term_list_loc convert) (List.rev info) : term list)
 
 (************************************************************************
@@ -1499,8 +1479,8 @@ let check_params int_params imp_params =
  * Check that a rewrite is justified.
  *)
 let check_rewrite
-    (info : 'proof1 rewrite_info)
-    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+    (info : ('term1, 'proof1) rewrite_info)
+    (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let { rw_name = name; rw_redex = redex; rw_contractum = con } = info in
    let rec search = function
       [] ->
@@ -1529,8 +1509,8 @@ let check_rewrite
  * Conditions in implementation must be weaker than in the interface.
  *)
 let check_cond_rewrite
-    (info : 'proof1 cond_rewrite_info)
-    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+    (info : ('term, 'proof1) cond_rewrite_info)
+    (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let { crw_name = name;
          crw_params = params;
          crw_args = args;
@@ -1569,8 +1549,8 @@ let check_cond_rewrite
  * Axiom must be more general.
  *)
 let check_axiom
-    (info : 'proof1 axiom_info)
-    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+    (info : ('term1, 'proof1) axiom_info)
+    (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let { axiom_name = name; axiom_stmt = stmt } = info in
    let rec search = function
       [] ->
@@ -1594,8 +1574,8 @@ let check_axiom
  * Rule must be more general.
  *)
 let check_rule
-    (info : 'proof1 rule_info)
-    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+    (info : ('term1, 'meta_term1, 'proof1) rule_info)
+    (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let { rule_name = name; rule_params = params; rule_stmt = stmt } = info in
    let rec search = function
       [] ->
@@ -1625,8 +1605,8 @@ let check_rule
  * Opnames must be equal.
  *)
 let check_opname
-    (info : opname_info)
-    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+    (info : 'term1 opname_info)
+    (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let { opname_name = name; opname_term = term } = info in
    let rec search = function
       [] ->
@@ -1653,8 +1633,8 @@ let string_of_term t =
    string_of_opname_list (Opname.dest_opname (opname_of_term t))
 
 let check_mlterm
-    ({ mlterm_term = term } : 'expr1 mlterm_info)
-    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+    ({ mlterm_term = term } : ('term1, 'expr1) mlterm_info)
+    (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let rec search = function
       [] ->
          implem_error (sprintf "MLTerm %s: not implemented" (string_of_term term))
@@ -1672,8 +1652,8 @@ let check_mlterm
  * Coniditions must match.
  *)
 let check_condition
-    ({ mlterm_term = term } : 'expr1 mlterm_info)
-    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+    ({ mlterm_term = term } : ('term1, 'expr1) mlterm_info)
+    (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let rec search = function
       [] ->
          implem_error (sprintf "Condition %s: not implemented" (string_of_term term))
@@ -1692,7 +1672,7 @@ let check_condition
  *)
 let check_parent
     (path : module_path)
-    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+    (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let rec search = function
       [] ->
          implem_error (sprintf "Include %s: not implemented" (string_of_path path))
@@ -1712,7 +1692,7 @@ let check_parent
 let check_dform
     (tags : dform_option list)
     (term : term)
-    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+    (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let rec search = function
       [] ->
          implem_error (sprintf "DForm %s: not implemented" (string_of_term term))
@@ -1735,7 +1715,7 @@ let check_dform
  * Precedence declaration.
  *)
 let check_prec (name : string)
-    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+    (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let rec search = function
       [] ->
          implem_error (sprintf "Prec %s: not implemented" name)
@@ -1754,7 +1734,7 @@ let check_prec (name : string)
  *)
 let check_resource
     (info : 'ctyp1 resource_info)
-    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+    (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let { resource_name = name } = info in
    let rec search = function
       [] ->
@@ -1773,7 +1753,7 @@ let check_resource
  * Infix declarations.
  *)
 let check_infix (name : string)
-    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+    (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let rec search = function
       [] ->
          implem_error (sprintf "Infix %s: not implemented" name)
@@ -1790,7 +1770,8 @@ let check_infix (name : string)
 (*
  * Match the ids.
  *)
-let check_id (id : int) (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+let check_id (id : int)
+    (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let rec search = function
       [] ->
          implem_error "Id: not implemented"
@@ -1809,8 +1790,8 @@ let check_id (id : int) (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item
  *)
 let rec check_module
     (name : string)
-    (info : ('proof1, 'ctyp1, 'expr1, 'item1) module_info)
-    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+    (info : ('term1, 'meta_term1, 'proof1, 'ctyp1, 'expr1, 'item1) module_info)
+    (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
    let rec search = function
       [] ->
          implem_error (sprintf "Module %s: not implemented" name)
@@ -1830,8 +1811,8 @@ let rec check_module
  * Check that an item is implemented.
  *)
 and check_implemented
-    (implem : ('proof2, 'ctyp2, 'expr2, 'item2) summary_item list)
-    ((interf : ('proof1, 'ctyp1, 'expr1, 'item1) summary_item), _) =
+    (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list)
+    ((interf : ('term1, 'meta_term1, 'proof1, 'ctyp1, 'expr1, 'item1) summary_item), _) =
    match interf with
       SummaryItem _ ->
          ()
@@ -1877,6 +1858,9 @@ and check_implementation { info_list = implem } { info_list = interf } =
 
 (*
  * $Log$
+ * Revision 1.29  1998/07/02 22:24:49  jyh
+ * Created term_copy module to copy and normalize terms.
+ *
  * Revision 1.28  1998/07/02 18:34:58  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

@@ -56,7 +56,7 @@ struct
     * of bound variables.
     *)
    let rec free_vars_term gvars bvars = function
-      { term_op = { imp_op_name = opname; imp_op_params = [Var v] }; term_terms = bterms } when opname == var_opname ->
+      { term_op = { op_name = opname; op_params = [Var v] }; term_terms = bterms } when opname == var_opname ->
          (* This is a variable *)
          let gvars' =
             if List.mem v bvars or List.mem v gvars then
@@ -93,7 +93,7 @@ struct
     *)
    let is_free_var v =
       let rec free_vars_term bvars = function
-         { term_op = { imp_op_name = opname; imp_op_params = [Var v'] };
+         { term_op = { op_name = opname; op_params = [Var v'] };
            term_terms = []
          } when opname == var_opname ->
             v' = v
@@ -115,7 +115,7 @@ struct
     * Similar operation on contexts.
     *)
    let rec context_vars_term cvars = function
-      { term_op = { imp_op_name = opname; imp_op_params = [Var v] };
+      { term_op = { op_name = opname; op_params = [Var v] };
         term_terms = bterms
       } when opname == context_opname ->
          let cvars' =
@@ -165,18 +165,18 @@ struct
 
    let rec equal_term vars t t' =
       match t, t' with
-         { term_op = { imp_op_name = opname1; imp_op_params = [Var v] };
+         { term_op = { op_name = opname1; op_params = [Var v] };
            term_terms = []
          },
-         { term_op = { imp_op_name = opname2; imp_op_params = [Var v'] };
+         { term_op = { op_name = opname2; op_params = [Var v'] };
            term_terms = []
          } when opname1 == var_opname & opname2 == var_opname ->
             begin
                try List.assoc v vars = v' with
                   Not_found -> v = v'
             end
-       | { term_op = { imp_op_name = name1; imp_op_params = params1 }; term_terms = bterms1 },
-         { term_op = { imp_op_name = name2; imp_op_params = params2 }; term_terms = bterms2 } ->
+       | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
+         { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
             name1 == name2
                      & List_util.for_all2 equal_params params1 params2
                      & equal_bterms vars bterms1 bterms2
@@ -203,7 +203,7 @@ struct
     *)
    let eq_comp_var v t =
       match dest_term t with
-         { term_op = { imp_op_name = opname; imp_op_params = [Var v'] };
+         { term_op = { op_name = opname; op_params = [Var v'] };
            term_terms = []
          } when opname == var_opname ->
             v' = v
@@ -212,22 +212,22 @@ struct
 
    let equal_comp vars' =
       let rec equal_comp_term vars = function
-         { term_op = { imp_op_name = opname; imp_op_params = [Var v] };
+         { term_op = { op_name = opname; op_params = [Var v] };
            term_terms = []
          }, t' when opname == var_opname ->
             begin
                try equal_term vars' t' (List.assoc v vars) with
                   Not_found ->
                      match t' with
-                        { term_op = { imp_op_name = opname; imp_op_params = [Var v'] };
+                        { term_op = { op_name = opname; op_params = [Var v'] };
                           term_terms = []
                         } when opname == var_opname ->
                            not (List_util.assoc_in_range eq_comp_var v' vars) & v = v'
                       | _ ->
                            false
             end
-       | { term_op = { imp_op_name = name1; imp_op_params = params1 }; term_terms = bterms1 },
-         { term_op = { imp_op_name = name2; imp_op_params = params2 }; term_terms = bterms2 } ->
+       | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
+         { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
             name1 == name2 & params1 = params2 & equal_comp_bterms vars bterms1 bterms2
 
       and equal_comp_bterms vars bterms1 bterms2 =
@@ -311,7 +311,7 @@ struct
     *)
    let subst term terms vars =
       let rec subst_term terms fv vars = function
-         { term_op = { imp_op_name = opname; imp_op_params = [Var(v)] }; term_terms = [] } as t
+         { term_op = { op_name = opname; op_params = [Var(v)] }; term_terms = [] } as t
          when opname == var_opname->
             (* Var case *)
             begin
@@ -370,17 +370,17 @@ struct
     * Inverse substitution.
     *)
    let var_subst t t' v =
-      let { term_op = { imp_op_name = opname } } = t' in
+      let { term_op = { op_name = opname } } = t' in
       let vt = mk_var_term v in
       let rec subst_term = function
-         { term_op = { imp_op_name = opname'; imp_op_params = params };
+         { term_op = { op_name = opname'; op_params = params };
            term_terms = bterms
          } as t ->
             (* Check if this is the same *)
             if opname' == opname & alpha_equal t t' then
                vt
             else
-               { term_op = { imp_op_name = opname'; imp_op_params = params };
+               { term_op = { op_name = opname'; op_params = params };
                  term_terms = List.map subst_bterm bterms
                }
 
@@ -417,7 +417,7 @@ struct
     * Unify two terms.
     *)
    let rec unify_terms subst bvars = function
-      ({ term_op = { imp_op_name = opname; imp_op_params = [Var v] };
+      ({ term_op = { op_name = opname; op_params = [Var v] };
          term_terms = []
        } as t1), t2
       when opname == var_opname ->
@@ -437,7 +437,7 @@ struct
                   end
          end
 
-    | t1, ({ term_op = { imp_op_name = opname; imp_op_params = [Var v] };
+    | t1, ({ term_op = { op_name = opname; op_params = [Var v] };
              term_terms = []
            } as t2)
       when opname == var_opname ->
@@ -457,10 +457,10 @@ struct
                   end
          end
 
-    | ({ term_op = { imp_op_name = opname1; imp_op_params = params1 };
+    | ({ term_op = { op_name = opname1; op_params = params1 };
          term_terms = bterms1
        } as t1),
-      ({ term_op = { imp_op_name = opname2; imp_op_params = params2 };
+      ({ term_op = { op_name = opname2; op_params = params2 };
          term_terms = bterms2
        } as t2) ->
          (* General case *)
@@ -566,6 +566,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/07/02 22:25:17  jyh
+ * Created term_copy module to copy and normalize terms.
+ *
  * Revision 1.1  1998/07/02 18:36:43  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

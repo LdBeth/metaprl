@@ -35,22 +35,6 @@ struct
     ************************************************************************)
 
    (*
-    * Normalize all the inner terms.
-    *)
-   let rec normalize_mterm = function
-      MetaTheorem t ->
-         normalize_term t
-    | MetaImplies (a, b) ->
-         normalize_mterm a;
-         normalize_mterm b
-    | MetaFunction (_, a, b) ->
-         normalize_mterm a;
-         normalize_mterm b
-    | MetaIff (a, b) ->
-         normalize_mterm a;
-         normalize_mterm b
-
-   (*
     * Unzip a metaimplication into a list of terms.
     *)
    let rec unzip_mimplies = function
@@ -177,6 +161,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/07/02 22:25:10  jyh
+ * Created term_copy module to copy and normalize terms.
+ *
  * Revision 1.1  1998/07/02 18:36:25  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

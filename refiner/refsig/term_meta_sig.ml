@@ -18,8 +18,6 @@ sig
    (*
     * Some operations on meta_term.
     *)
-   val normalize_mterm : meta_term -> unit
-
    val binding_vars : meta_term -> string list
    val context_vars : meta_term -> string list
    val meta_alpha_equal : meta_term -> meta_term -> bool
@@ -32,6 +30,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.5  1998/07/02 22:25:00  jyh
+ * Created term_copy module to copy and normalize terms.
+ *
  * Revision 1.4  1998/07/02 18:35:53  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

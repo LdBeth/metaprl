@@ -9,7 +9,7 @@ open Printf
 
 open Debug
 
-open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 
 open Filter_type
 open Filter_summary
@@ -43,7 +43,7 @@ sig
    type ctyp
    type item
 
-   val extract : (proof, ctyp, expr, item) module_info ->
+   val extract : (term, meta_term, proof, ctyp, expr, item) module_info ->
       (module_path * ctyp resource_info) list ->
       string -> (item * (int * int)) list
    val compile : (item * (int * int)) list -> unit
@@ -219,6 +219,9 @@ let _ = Printexc.catch main ()
 
 (*
  * $Log$
+ * Revision 1.12  1998/07/02 22:24:41  jyh
+ * Created term_copy module to copy and normalize terms.
+ *
  * Revision 1.11  1998/06/22 19:45:17  jyh
  * Rewriting in contexts.  This required a change in addressing,
  * and the body of the context is the _last_ subterm, not the first.

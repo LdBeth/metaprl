@@ -52,13 +52,6 @@ sig
    val make_object_id : param list -> object_id
    val dest_object_id : object_id  ->  param list
 
-   (*
-    * A term should be "normalized" after it is read back in from a
-    * file.  This function normalizes all opnames.  It is done in place,
-    * to preserve term sharing.
-    *)
-   val normalize_term : term -> unit
-
    (* Projections *)
    val opname_of_term : term -> opname
    val subterms_of_term : term -> term list
@@ -106,6 +99,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/07/02 22:24:58  jyh
+ * Created term_copy module to copy and normalize terms.
+ *
  * Revision 1.1  1998/07/02 18:35:53  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

@@ -28,7 +28,7 @@ struct
    type level_exp_var = level_exp_var'
    and level_exp = level_exp'
    and param = param'
-   and operator = { mutable imp_op_name : opname; imp_op_params : param list }
+   and operator = operator'
 
    and term = term'
    and bound_term = bound_term'
@@ -98,6 +98,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.13  1998/07/02 22:25:15  jyh
+ * Created term_copy module to copy and normalize terms.
+ *
  * Revision 1.12  1998/07/02 18:36:37  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

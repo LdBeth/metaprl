@@ -220,7 +220,7 @@ sig
    type ctyp
    type item
 
-   val extract : (proof, ctyp, expr, item) module_info ->
+   val extract : (term, meta_term, proof, ctyp, expr, item) module_info ->
       (module_path * ctyp resource_info) list ->
       string -> (item * (int * int)) list
 end
@@ -1048,6 +1048,9 @@ END
 
 (*
  * $Log$
+ * Revision 1.31  1998/07/02 22:24:44  jyh
+ * Created term_copy module to copy and normalize terms.
+ *
  * Revision 1.30  1998/07/02 18:34:54  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

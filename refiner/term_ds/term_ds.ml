@@ -81,7 +81,7 @@ struct
     * The order of params is significant.
     *)
    type operator' = { op_name : opname; op_params : param list }
-   type operator =  { mutable imp_op_name : opname; imp_op_params : param list }
+   type operator =  operator'
 
    (*
     * A term has an operator, and a finite number of subterms

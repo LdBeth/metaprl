@@ -21,7 +21,7 @@ sig
    type level_exp_var = level_exp_var'
    and level_exp = level_exp'
    and param = param'
-   and operator = { mutable imp_op_name : opname; imp_op_params : param list }
+   and operator = operator'
 
    (*
     * A term has an operator, and a finite number of subterms
@@ -101,6 +101,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.6  1998/07/02 22:25:01  jyh
+ * Created term_copy module to copy and normalize terms.
+ *
  * Revision 1.5  1998/07/02 18:35:56  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

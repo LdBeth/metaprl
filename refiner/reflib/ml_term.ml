@@ -4,37 +4,39 @@
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMeta
+open Term_copy
 
 (*
  * Convert to a string.
  *)
-let string_of_term (t : term) =
-   Marshal.to_string t []
+let string_of_term t =
+   Marshal.to_string (denormalize_term t) []
 
 (*
  * Convert from a string.
  *)
 let term_of_string s =
-   let t = (Marshal.from_string s 0 : term) in
-      normalize_term t;
-      t
+   let t = (Marshal.from_string s 0 : Refiner_std.Refiner.TermType.term) in
+      normalize_term t
 
 (*
  * Convert to a string.
  *)
-let string_of_mterm (t : meta_term) =
-   Marshal.to_string t []
+let string_of_mterm t =
+   Marshal.to_string (denormalize_meta_term t) []
 
 (*
  * Convert from a string.
  *)
 let mterm_of_string s =
-   let t = (Marshal.from_string s 0 : meta_term) in
-      normalize_mterm t;
-      t
+   let t = (Marshal.from_string s 0 : Refiner_std.Refiner.TermType.meta_term) in
+      normalize_meta_term t
 
 (*
  * $Log$
+ * Revision 1.3  1998/07/02 22:24:57  jyh
+ * Created term_copy module to copy and normalize terms.
+ *
  * Revision 1.2  1998/06/17 15:46:00  jyh
  * Optimizing compiler.
  *

@@ -20,7 +20,7 @@ sig
    type level_exp_var = level_exp_var'
    and level_exp = level_exp'
    and param = param'
-   and operator =  { mutable imp_op_name : opname; imp_op_params : param list }
+   and operator = operator'
 
    and term = term'
    and bound_term = bound_term'
@@ -140,8 +140,6 @@ sig
    val make_object_id : param list -> object_id
    val dest_object_id : object_id  ->  param list
 
-   val normalize_term : term -> unit
-
    (* Projections *)
    val opname_of_term : term -> opname
    val subterms_of_term : term -> term list
@@ -190,6 +188,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/07/02 22:25:16  jyh
+ * Created term_copy module to copy and normalize terms.
+ *
  * Revision 1.1  1998/07/02 18:36:40  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

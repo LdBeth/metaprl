@@ -48,12 +48,12 @@ sig
    type proof
 
    val extract_sig :
-      (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info ->
+      (term, meta_term, unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info ->
       (module_path * MLast.ctyp resource_info) list ->
       string -> (MLast.sig_item * (int * int)) list
 
    val extract_str :
-      (proof proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info ->
+      (term, meta_term, proof proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info ->
       (module_path * MLast.ctyp resource_info) list ->
       string -> (MLast.str_item * (int * int)) list
 
@@ -62,19 +62,19 @@ sig
     *)
    type t
 
-   val prim_axiom : t -> loc -> 'proof axiom_info -> term -> MLast.str_item list
-   val derived_axiom : t -> loc -> 'proof axiom_info -> MLast.expr -> MLast.str_item list
+   val prim_axiom : t -> loc -> (term, 'proof) axiom_info -> term -> MLast.str_item list
+   val derived_axiom : t -> loc -> (term, 'proof) axiom_info -> MLast.expr -> MLast.str_item list
 
-   val prim_rule : t -> loc -> 'proof rule_info -> term -> MLast.str_item list
-   val derived_rule : t -> loc -> 'proof rule_info -> MLast.expr -> MLast.str_item list
+   val prim_rule : t -> loc -> (term, meta_term, 'proof) rule_info -> term -> MLast.str_item list
+   val derived_rule : t -> loc -> (term, meta_term, 'proof) rule_info -> MLast.expr -> MLast.str_item list
 
-   val prim_rewrite : t -> loc -> 'proof rewrite_info -> MLast.str_item list
-   val derived_rewrite : t -> loc -> 'proof rewrite_info -> MLast.expr -> MLast.str_item list
+   val prim_rewrite : t -> loc -> (term, 'proof) rewrite_info -> MLast.str_item list
+   val derived_rewrite : t -> loc -> (term, 'proof) rewrite_info -> MLast.expr -> MLast.str_item list
 
-   val prim_cond_rewrite : t -> loc -> 'proof cond_rewrite_info -> MLast.str_item list
-   val derived_cond_rewrite : t -> loc -> 'proof cond_rewrite_info -> MLast.expr -> MLast.str_item list
+   val prim_cond_rewrite : t -> loc -> (term, 'proof) cond_rewrite_info -> MLast.str_item list
+   val derived_cond_rewrite : t -> loc -> (term, 'proof) cond_rewrite_info -> MLast.expr -> MLast.str_item list
 
-   val define_dform : t -> loc -> MLast.expr dform_info -> term -> MLast.str_item list
+   val define_dform : t -> loc -> (term, MLast.expr) dform_info -> term -> MLast.str_item list
    val define_prec : t -> loc -> string -> MLast.str_item list
    val define_prec_rel : t -> loc -> prec_rel_info -> MLast.str_item list
    val define_resource : t -> loc -> MLast.ctyp resource_info -> MLast.str_item list
@@ -1698,6 +1698,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.24  1998/07/02 22:24:46  jyh
+ * Created term_copy module to copy and normalize terms.
+ *
  * Revision 1.23  1998/07/02 18:34:56  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

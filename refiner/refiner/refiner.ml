@@ -2,7 +2,7 @@
  * Abstract refiner.
  *)
 
-module Refiner = Refiner_std_simp.Refiner
+module Refiner = Refiner_std.Refiner
 
 open Refiner.RefineError
 
@@ -10,6 +10,9 @@ let _ = Term_exn.set_generic_refiner_exn (RefineError ("generic", GenericError))
 
 (*
  * $Log$
+ * Revision 1.4  1998/07/02 22:24:54  jyh
+ * Created term_copy module to copy and normalize terms.
+ *
  * Revision 1.3  1998/07/02 18:35:27  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

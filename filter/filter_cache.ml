@@ -9,8 +9,10 @@ open Printf
 open Debug
 open Opname
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
+open Term_copy
 
 open File_base_type
 open File_type_base
@@ -58,8 +60,8 @@ type 'a proof_type =
  * and marshalers.
  *)
 type 'a summary_type =
-   Interface of (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
- | Implementation of ('a proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
+   Interface of (term, meta_term, unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
+ | Implementation of (term, meta_term, 'a proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
 
 (*
  * Proof conversion.
@@ -137,11 +139,12 @@ external identity : 'a -> 'a = "%identity"
 let unit_term = mk_simple_term nil_opname []
 
 (*
- * Normalizer.
+ * Save term in term_std format.
  *)
-let normalize info =
+let normalize_info info =
    let convert =
-      { term_f  = (fun t -> normalize_term t; t);
+      { term_f  = normalize_term;
+        meta_term_f = normalize_meta_term;
         proof_f = (fun _ pf -> pf);
         ctyp_f  = identity;
         expr_f  = identity;
@@ -149,6 +152,54 @@ let normalize info =
       }
    in
       summary_map convert info
+
+let denormalize_info info =
+   let convert =
+      { term_f  = denormalize_term;
+        meta_term_f = denormalize_meta_term;
+        proof_f = (fun _ pf -> pf);
+        ctyp_f  = identity;
+        expr_f  = identity;
+        item_f  = identity
+      }
+   in
+      summary_map convert info
+
+(*
+ * Meta term conversions.
+ *)
+let summary_opname = mk_opname "Summary"     nil_opname
+
+let meta_theorem_op     = mk_opname "meta_theorem" summary_opname
+let meta_implies_op     = mk_opname "meta_implies" summary_opname
+let meta_function_op    = mk_opname "meta_function" summary_opname
+let meta_iff_op         = mk_opname "meta_iff" summary_opname
+
+let rec meta_term_of_term t =
+   let opname = opname_of_term t in
+      if opname == meta_theorem_op then
+         MetaTheorem (one_subterm t)
+      else if opname == meta_implies_op then
+         let a, b = two_subterms t in
+            MetaImplies (meta_term_of_term a, meta_term_of_term b)
+      else if opname == meta_function_op then
+         let v, a, b = three_subterms t in
+            MetaFunction (v, meta_term_of_term a, meta_term_of_term b)
+      else if opname == meta_iff_op then
+         let a, b = two_subterms t in
+            MetaIff (meta_term_of_term a, meta_term_of_term b)
+      else
+         raise (Failure "term is not a meta term")
+
+let rec term_of_meta_term = function
+   MetaTheorem t ->
+      mk_simple_term meta_theorem_op [t]
+ | MetaImplies (a, b) ->
+      mk_simple_term meta_implies_op [term_of_meta_term a; term_of_meta_term b]
+ | MetaFunction (v, a, b) ->
+      mk_simple_term meta_function_op [v; term_of_meta_term a; term_of_meta_term b]
+ | MetaIff (a, b) ->
+      mk_simple_term meta_iff_op [term_of_meta_term a; term_of_meta_term b]
 
 (*
  * When a StrFilterCache ot SigFilterCache is
@@ -163,8 +214,6 @@ let term_of_str_item = Filter_ocaml.term_of_str_item comment
 (*
  * Marshaling proofs.
  *)
-let summary_opname = mk_opname "Summary"     nil_opname
-
 let prim_op        = mk_opname "prim"        summary_opname
 let derived_op     = mk_opname "derived"     summary_opname
 let incomplete_op  = mk_opname "incomplete"  summary_opname
@@ -223,6 +272,7 @@ struct
       Interface info ->
          let convert =
             { term_f = identity;
+              meta_term_f = term_of_meta_term;
               proof_f = (fun _ t -> unit_term);
               ctyp_f = term_of_type;
               expr_f = term_of_expr;
@@ -236,6 +286,7 @@ struct
    let unmarshal info =
       let convert =
          { term_f = identity;
+           meta_term_f = meta_term_of_term;
            proof_f = (fun _ t -> ());
            ctyp_f = type_of_term;
            expr_f = expr_of_term;
@@ -251,7 +302,9 @@ end
 module RawSigInfo (Convert : ConvertProofSig) =
 struct
    type select  = select_type
-   type raw     = (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
+   type raw     = (Refiner_std.Refiner.TermType.term,
+                   Refiner_std.Refiner.TermType.meta_term,
+                   unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
    type cooked  = Convert.t summary_type
 
    let select   = InterfaceType
@@ -261,11 +314,11 @@ struct
 
    let marshal = function
       Interface info ->
-         info
+         denormalize_info info
     | Implementation _ ->
          raise (Failure "RawSigInfo.marshal")
    let unmarshal info =
-      Interface (normalize info)
+      Interface (normalize_info info)
 end
 
 (*
@@ -286,6 +339,7 @@ struct
       Implementation info ->
          let convert =
             { term_f = identity;
+              meta_term_f = term_of_meta_term;
               proof_f = (fun name pf -> marshal_proof name Convert.to_term pf);
               ctyp_f = term_of_type;
               expr_f = term_of_expr;
@@ -299,6 +353,7 @@ struct
    let unmarshal info =
       let convert =
          { term_f = identity;
+           meta_term_f = meta_term_of_term;
            proof_f = (fun name pf -> unmarshal_proof name Convert.of_term pf);
            ctyp_f = type_of_term;
            expr_f = expr_of_term;
@@ -314,7 +369,9 @@ end
 module RawStrInfo (Convert : ConvertProofSig) =
 struct
    type select  = select_type
-   type raw     = (Convert.raw proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
+   type raw     = (Refiner_std.Refiner.TermType.term,
+                   Refiner_std.Refiner.TermType.meta_term,
+                   Convert.raw proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
    type cooked  = Convert.t summary_type
 
    let select   = ImplementationType
@@ -325,7 +382,8 @@ struct
    let marshal = function
       Implementation info ->
          let convert =
-            { term_f  = identity;
+            { term_f  = denormalize_term;
+              meta_term_f = denormalize_meta_term;
               proof_f = (fun name proof -> interactive_proof Convert.to_raw name proof);
               ctyp_f  = identity;
               expr_f  = identity;
@@ -337,7 +395,8 @@ struct
          raise (Failure "RawStrInfo.marshal")
    let unmarshal info =
       let convert =
-         { term_f  = (fun t -> normalize_term t; t);
+         { term_f  = normalize_term;
+           meta_term_f = normalize_meta_term;
            proof_f = (fun name proof -> interactive_proof Convert.of_raw name proof);
            ctyp_f  = identity;
            expr_f  = identity;
@@ -365,6 +424,7 @@ struct
       Interface info ->
          let convert =
             { term_f = identity;
+              meta_term_f = term_of_meta_term;
               proof_f = (fun _ _ -> unit_term);
               ctyp_f = term_of_type;
               expr_f = term_of_expr;
@@ -377,6 +437,7 @@ struct
    let unmarshal info =
       let convert =
          { term_f = identity;
+           meta_term_f = meta_term_of_term;
            proof_f = (fun _ t -> ());
            ctyp_f = type_of_term;
            expr_f = expr_of_term;
@@ -404,6 +465,7 @@ struct
       Implementation info ->
          let convert =
             { term_f = identity;
+              meta_term_f = term_of_meta_term;
               proof_f = (fun name pf -> marshal_proof name Convert.to_term pf);
               ctyp_f = term_of_type;
               expr_f = term_of_expr;
@@ -417,6 +479,7 @@ struct
    let unmarshal info =
       let convert =
          { term_f = identity;
+           meta_term_f = meta_term_of_term;
            proof_f = (fun name pf -> unmarshal_proof name Convert.of_term pf);
            ctyp_f = type_of_term;
            expr_f = expr_of_term;
@@ -525,6 +588,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.26  1998/07/02 22:24:42  jyh
+ * Created term_copy module to copy and normalize terms.
+ *
  * Revision 1.25  1998/07/02 18:34:50  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises

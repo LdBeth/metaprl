@@ -170,7 +170,7 @@ struct
 
    let rec is_xlist_term t =
       match dest_term t with
-         { term_op = { imp_op_name = opname; imp_op_params = [] };
+         { term_op = { op_name = opname; op_params = [] };
            term_terms = [bterm1; bterm2]
          } when opname == xcons_opname ->
             begin
@@ -180,7 +180,7 @@ struct
                 | _ ->
                      false
             end
-       | { term_op = { imp_op_name = opname; imp_op_params = [] }; term_terms = [] } when opname == xnil_opname ->
+       | { term_op = { op_name = opname; op_params = [] }; term_terms = [] } when opname == xnil_opname ->
             true
        | _ ->
             false
@@ -188,7 +188,7 @@ struct
    let dest_xlist t =
       let rec aux trm =
          match dest_term trm with
-            { term_op = { imp_op_name = opname; imp_op_params = [] };
+            { term_op = { op_name = opname; op_params = [] };
               term_terms = [bterm1; bterm2]
             } when opname == xcons_opname ->
                begin
@@ -197,7 +197,7 @@ struct
                       { bvars = []; bterm = b }) -> a::(aux b)
                    | _ -> ref_raise(RefineError ("dest_xlist", TermMatchError (t, "not a list")))
                end
-          | { term_op = { imp_op_name = opname; imp_op_params = [] }; term_terms = [] } when opname == xnil_opname ->
+          | { term_op = { op_name = opname; op_params = [] }; term_terms = [] } when opname == xnil_opname ->
                []
           | _ ->
                ref_raise(RefineError ("dest_xlist", TermMatchError (t, "not a list")))
@@ -207,7 +207,7 @@ struct
    let rec mk_xlist_term = function
       h::t ->
          mk_term (**)
-            { imp_op_name = xcons_opname; imp_op_params = [] }
+            { op_name = xcons_opname; op_params = [] }
             [mk_simple_bterm h; mk_simple_bterm (mk_xlist_term t)]
     | [] ->
          xnil_term
@@ -219,7 +219,7 @@ struct
 
    let is_xstring_term t =
       match dest_term t with
-         { term_op = { imp_op_name = opname; imp_op_params = [String _] };
+         { term_op = { op_name = opname; op_params = [String _] };
            term_terms = []
          } when opname == string_opname ->
             true
@@ -228,7 +228,7 @@ struct
 
    let dest_xstring t =
       match dest_term t with
-         { term_op = { imp_op_name = opname; imp_op_params = [String s] };
+         { term_op = { op_name = opname; op_params = [String s] };
            term_terms = []
          } when opname == string_opname ->
             s
@@ -236,7 +236,7 @@ struct
             ref_raise(RefineError ("dest_xstring", TermMatchError (t, "not a string")))
 
    let mk_xstring_term s =
-      let op = { imp_op_name = string_opname; imp_op_params = [String s] } in
+      let op = { op_name = string_opname; op_params = [String s] } in
          mk_term op []
 
    (****************************************
@@ -288,7 +288,7 @@ struct
     *)
    let goal_of_sequent t =
       match dest_term t with
-         { term_op = { imp_op_name = name; imp_op_params = [] };
+         { term_op = { op_name = name; op_params = [] };
            term_terms = [_; bgoal]
          } when name == sequent_opname ->
             dest_simple_bterm t bgoal
@@ -362,7 +362,7 @@ struct
    let explode_sequent_name = "explode_sequent"
    let explode_sequent t =
       let rec collect (args : term) hyps concls term =
-         let { term_op = { imp_op_name = opname }; term_terms = bterms } = dest_term term in
+         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
             if opname == hyp_opname then
                let t, x, term = match_hyp_all explode_sequent_name t bterms in
                   collect args (Hypothesis (x, t) :: hyps) concls term
@@ -392,7 +392,7 @@ struct
    let nth_hyp_addr t n =
       let addr = nth_hd_address n in
       let rec skip_hyps i term =
-         let { term_op = { imp_op_name = opname }; term_terms = bterms } = dest_term term in
+         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
             if opname = hyp_opname then
                let term = match_hyp nth_hyp_addr_name t bterms in
                   if i = 0 then
@@ -422,7 +422,7 @@ struct
             nth_tl_address i
          else
             match dest_term term with
-               { term_op = { imp_op_name = opname };
+               { term_op = { op_name = opname };
                  term_terms = [bterm1; bterm2]
                } when opname == concl_opname ->
                   begin
@@ -436,7 +436,7 @@ struct
                   ref_raise(RefineError (nth_concl_addr_name, (TermMatchError (t, "malformed conclusion"))))
       in
       let rec skip_hyps i term =
-         let { term_op = { imp_op_name = opname }; term_terms = bterms } = dest_term term in
+         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
             if opname == hyp_opname then
                let term = match_hyp nth_concl_addr_name t bterms in
                   skip_hyps (i + 1) term
@@ -458,7 +458,7 @@ struct
    let nth_clause_addr_name = "nth_clause_addr"
    let nth_clause_addr_aux make_address t =
       let rec aux i term =
-         let { term_op = { imp_op_name = opname }; term_terms = bterms } = dest_term term in
+         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
             if opname == hyp_opname then
                let term = match_hyp nth_clause_addr_name t bterms in
                   aux (i + 1) term
@@ -504,7 +504,7 @@ struct
    let nth_hyp_name = "nth_hyp"
    let nth_hyp t i =
       let rec aux i term =
-         let { term_op = { imp_op_name = opname }; term_terms = bterms } = dest_term term in
+         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
             if opname == hyp_opname then
                let t, x, term = match_hyp_all nth_hyp_name t bterms in
                   if i = 0 then
@@ -527,7 +527,7 @@ struct
    let nth_concl_name = "nth_concl"
    let nth_concl t i =
       let rec aux i term =
-         let { term_op = { imp_op_name = opname }; term_terms = bterms } = dest_term term in
+         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
             if opname == hyp_opname then
                let term = match_hyp nth_concl_name t bterms in
                   aux i term
@@ -552,7 +552,7 @@ struct
 
    let num_hyps t =
       let rec aux i term =
-         let { term_op = { imp_op_name = opname }; term_terms = bterms } = dest_term term in
+         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
             if opname == hyp_opname then
                let term = match_hyp num_hyps_name t bterms in
                   aux (i + 1) term
@@ -572,7 +572,7 @@ struct
    let declared_vars_name = "declared_vars"
    let declared_vars t =
       let rec aux vars term =
-         let { term_op = { imp_op_name = opname }; term_terms = bterms } = dest_term term in
+         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
             if opname == hyp_opname then
                let _, x, term = match_hyp_all declared_vars_name t bterms in
                   aux (x :: vars) term
@@ -593,7 +593,7 @@ struct
 
    let get_decl_number t v =
       let rec aux i term =
-         let { term_op = { imp_op_name = opname }; term_terms = bterms } = dest_term term in
+         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
             if opname == hyp_opname then
                let _, x, term = match_hyp_all get_decl_number_name t bterms in
                   if x = v then
@@ -619,7 +619,7 @@ struct
          if i = 0 then
             is_free_var v t
          else
-            let { term_op = { imp_op_name = opname }; term_terms = bterms } = dest_term t in
+            let { term_op = { op_name = opname }; term_terms = bterms } = dest_term t in
                if opname == hyp_opname then
                   let term = match_hyp is_free_seq_var_name t bterms in
                      aux (i - 1) term
@@ -638,7 +638,7 @@ struct
     *)
    let replace_concl_name = "replace_concl"
    let rec replace_concl seq goal =
-      let { term_op = ({ imp_op_name = opname } as op); term_terms = bterms } = dest_term seq in
+      let { term_op = ({ op_name = opname } as op); term_terms = bterms } = dest_term seq in
          if opname == hyp_opname then
             let t, x, term = match_hyp_all replace_concl_name seq bterms in
                mk_term op [mk_simple_bterm t; mk_bterm [x] (replace_concl term goal)]
@@ -686,6 +686,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/07/02 22:25:09  jyh
+ * Created term_copy module to copy and normalize terms.
+ *
  * Revision 1.1  1998/07/02 18:36:22  jyh
  * Refiner modules now raise RefineError exceptions directly.
  * Modules in this revision have two versions: one that raises
