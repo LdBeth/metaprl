@@ -390,13 +390,6 @@ struct
        | _ ->
             REF_RAISE(RefineError ("dest_sequent", TermMatchError (seq, "sequent must have two subterms")))
 
-   let args_of_sequent seq =
-      match dest_simple_term_opname sequent_opname seq with
-         [args; _] ->
-            args
-       | _ ->
-            REF_RAISE(RefineError ("args_of_sequent", TermMatchError (seq, "sequent must have two subterms")))
-
    (*
     * Helper function to unwrap the surrounding sequent term.
     *)

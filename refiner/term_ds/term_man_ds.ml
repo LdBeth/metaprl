@@ -339,13 +339,6 @@ struct
        | _ ->
             REF_RAISE(RefineError ("Term_man_ds.explode_sequent", TermMatchError (t, "not a sequent")))
 
-   let args_of_sequent t =
-      match get_core t with
-         Sequent s ->
-            s.sequent_args
-       | _ ->
-            REF_RAISE(RefineError ("Term_man_ds.args_of_sequent", TermMatchError (t, "not a sequent")))
-
    let rec remove_redundant_hbs vars = function
       [] -> [], vars
     | (Context (_, ts) as hyp :: hyps) as ohyps ->
