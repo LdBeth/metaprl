@@ -55,11 +55,6 @@ struct
     * TOPLEVEL                                                             *
     ************************************************************************)
 
-   let wrap_once f lb =
-      let x = Shell_state.wrap f lb in
-         Toploop.parse_toplevel_phrase := Shell_state.wrap !Toploop.parse_toplevel_phrase;
-         x
-
    (*
     * Wrap a file.
     * We don't need to modify the lexbuf.
@@ -72,23 +67,32 @@ struct
       f lb
 
    (*
-    * Wrap the toplevel.
+    * Wrap the toplevel and file usage.
+    *
+    * Note: the reason we open modules here is that it needs to be done
+    * _after_ the toploop module initializes its environment, and _before_
+    * the user gets a chance to input anything.
     *)
    let _ =
       let wrapped = !Toploop.parse_toplevel_phrase in
+      let open_module m =
+         if
+            try
+               not (Toploop.execute_phrase true Format.std_formatter
+                     (Ptop_def [{ pstr_desc = Pstr_open (Lident m); pstr_loc = Location.none }]))
+            with _ ->
+               true
+         then
+            eprintf "Shell_p4.main: opening module %s failed\n%t" m eflush
+      in
       let motd lb =
          eprintf "\t%s\n%t" Mp_version.version eflush;
-         Toploop.parse_toplevel_phrase := wrap_once wrapped;
+         List.iter open_module [ "Lm_printf"; "Basic_tactics"; "Mp"; "Shell_command" ];
+         Toploop.parse_toplevel_phrase := Shell_state.wrap wrapped;
          !Toploop.parse_toplevel_phrase lb
       in
-         Toploop.parse_toplevel_phrase := motd
-
-   (*
-    * Wrap file usage.
-    *)
-   let _ =
-      let wrapped = !Toploop.parse_use_file in
-         Toploop.parse_use_file := wrap_file wrapped
+         Toploop.parse_toplevel_phrase := motd;
+         Toploop.parse_use_file := wrap_file !Toploop.parse_use_file
 
    (************************************************************************
     * COMPILING TACTICS                                                    *
@@ -218,8 +222,8 @@ struct
    let main _ =
       install_debug_printer Shell_state.print_term_fp;
       let eval_include inc =
-         let _ = Toploop.execute_phrase false Format.std_formatter (Ptop_dir ("directory", Pdir_string inc)) in
-            ()
+         if not (Toploop.execute_phrase false Format.std_formatter (Ptop_dir ("directory", Pdir_string inc))) then
+            invalid_arg ("Shell_p4.main: adding include directory \"" ^ inc ^ "\" failed")
       in
          eval_include (Setup.lib());
          List.iter eval_include (Shell_state.get_includes ());
@@ -228,11 +232,6 @@ struct
                (Ptop_dir ("install_printer", Pdir_ident (Ldot (Lident "Shell_state", "term_printer")))))
          then
             invalid_arg "Shell_p4.main: installing term printer failed";
-         if not
-            (Toploop.execute_phrase false Format.std_formatter
-               (Ptop_def [{ pstr_desc = Pstr_open (Lident "Mp"); pstr_loc = Location.none }]))
-         then
-            invalid_arg "Shell_p4.main: opening Mp module failed";
          Tactic_type.Tactic.main_loop ();
 
          (* Ignore initialization errors *)

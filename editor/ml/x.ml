@@ -30,18 +30,7 @@
  * jyh@cs.cornell.edu
  *)
 
-open Lm_printf
-
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermAddr
-open Refiner.Refiner.Refine
-
-open Tactic_type.Tacticals
-open Tactic_type.Conversionals
-
 open Base_rewrite
-open Dtactic
-open Auto_tactic
 open Itt_rfun
 open Itt_int_base
 open Itt_equal
@@ -51,9 +40,6 @@ open Itt_dprod
 open Itt_prod
 open Itt_prop_decide
 open Itt_bool
-
-open Mp (* Should go away soon! *)
-open Shell
 
 (*
  * -*-

@@ -236,7 +236,7 @@ let synchronize_state f =
    State.write infixes_entry (fun infixes ->
    State.write state_entry (fun state ->
          if not state.state_active then
-            raise (Invalid_argument "Shell_mp.synchronize_state: client call is not within toploop");
+            raise (Invalid_argument "Shell_state.synchronize_state: client call is not within toploop");
          update_infixes infixes state;
          f state))
 
@@ -735,13 +735,15 @@ let rec wrap f lb =
          unsynchronize refill lb;
          push_buffer state lb.lex_abs_pos lb.lex_buffer_len lb.lex_buffer
    in
-   let lb = { lb with refill_buff = refill' } in
-      synchronize_write (fun state ->
+   let f' lb =
+      let state = State.get state_entry in
+         reset_input state;
+         push_buffer state lb.lex_abs_pos lb.lex_buffer_len lb.lex_buffer;
+         let x = f lb in
             reset_input state;
-            push_buffer state lb.lex_abs_pos lb.lex_buffer_len lb.lex_buffer;
-            let x = f lb in
-               reset_input state;
-               x)
+            x
+   in
+      synchronize f' { lb with refill_buff = refill' }
 
 (************************************************************************
  * ARGUMENT COLLECTION                                                  *
