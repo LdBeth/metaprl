@@ -1,15 +1,6 @@
 (*
- * Implementation of sets based on red-black trees.
+ * Set implementation of over an ordered type.
  *)
-
-module type OrderedType =
-sig
-   type t
-
-   val print : t -> unit
-   val compare : t -> t -> int
-end
-
 module type S =
 sig
    type elt
@@ -30,15 +21,7 @@ sig
    val not_mem_filt : t -> elt list -> elt list
    val intersectp : t -> t -> bool
    val of_list : elt list -> t
-
-   val print : t -> unit
 end
-
-module MakeDebug (Ord : OrderedType)
-: S with type elt = Ord.t
-
-module Make (Ord : Set.OrderedType)
-: Nl_set.S with type elt = Ord.t
 
 (*
  * -*-

@@ -2,7 +2,7 @@
  * Implement a set of strings.
  *)
 
-module StringSet : Splay_set.S
+module StringSet : Nl_set.S
                    with type elt = string
 
 (*

@@ -3,7 +3,7 @@
  * set implementation.
  *)
 
-module Make (BigSet : Splay_set.S) =
+module Make (BigSet : Nl_set.S) =
 struct
    (************************************************************************
     * TYPES                                                                *

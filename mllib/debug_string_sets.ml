@@ -1,8 +1,8 @@
 open Printf
 
 module Make
-   (Set1: Splay_set.S with type elt = string)
-   (Set2: Splay_set.S with type elt = string) =
+   (Set1: Nl_set.S with type elt = string)
+   (Set2: Nl_set.S with type elt = string) =
 
 struct
 

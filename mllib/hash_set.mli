@@ -3,7 +3,7 @@
  *)
 
 module Make (Ord : Set.OrderedType)
-: Splay_set.S
+: Nl_set.S
   with type elt = Ord.t
 
 (*
