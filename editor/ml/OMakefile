@@ -55,7 +55,7 @@ if $(TESTS_ENABLED)
    .SUBDIRS: tests
    TESTFILES[] =
    if $(mem itt, $(THEORIES))
-      TESTFILES +=
+      TESTFILES[] +=
          tests/test
          tests/prop-pigeon
       export
