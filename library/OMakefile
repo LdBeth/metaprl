@@ -6,7 +6,8 @@ OCAMLINCLUDES =\
 	-I $(ROOT)/refiner/refbase\
 	-I $(ROOT)/refiner/refsig\
 	-I $(ROOT)/refiner/refiner\
-	-I $(ROOT)/refiner/term_gen
+	-I $(ROOT)/refiner/term_gen\
+	-I $(ROOT)/refiner/reflib
 
 # Libraries
 OCAMLOTHERLIBS = unix
@@ -23,7 +24,6 @@ OCAMLLINKFLAGS =\
 
 # Library files
 LMFILES =\
-	lib_term\
 	utils\
 	lint32\
 	nuprl5\
