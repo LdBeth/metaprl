@@ -644,7 +644,6 @@ let library_environment_close c addr =
 	 "\\args. istring_term (hd (close_environment (tags_of_ienvironment_address_term (hd args)) false ))")
 	[ienvironment_address_term addr])
 
-
 let metaprl_description_term =
   mk_term (mk_nuprl5_op
 		 [make_param (Token "!description"); make_param (Token "metaprl")])
@@ -658,6 +657,8 @@ let jprover_description_term =
 	[ mk_bterm [] (inatural_term 0)
 	; mk_bterm [] (itoken_term "JPROVER")
 	]
+
+let current_description_term = ref metaprl_description_term
 
 let istart_op = mk_nuprl5_op [make_param (Token "!start")]
 
@@ -686,7 +687,7 @@ let start_broadcasts e =
 		     (stamp_to_term e.stamp)
 		     (ienvironment_address_term ((e.connection).orb).lo_address)
 			  (* nfg if we allow mulitple envs *)
-		     metaprl_description_term))
+		     !current_description_term))
 
 	in  print_string "start_broadcasts : ";
 		let _ = orb_broadcast e (broadcasts_of_istart_term
@@ -723,7 +724,7 @@ let open_library_environment connection lib_id ehook =
 
 let join_library_environment con mneumonic ehook =
   
-  let _ = orb_mini_describe con con.ro_address mneumonic metaprl_description_term in (* we ignore remote description now *)
+  let _ = orb_mini_describe con con.ro_address mneumonic !current_description_term in (* we ignore remote description now *)
   orb_mini_connect_environments con con.ro_address mneumonic;
   orb_mini_set_idle con mneumonic false;  
   let env =

@@ -47,6 +47,9 @@ val disconnect	: orb -> connection -> unit
 val orb_close	: orb -> unit
 
 val resource			: environment -> string -> termtable
+val jprover_description_term	: term
+val metaprl_description_term	: term
+val current_description_term	: term ref
 
 val open_library_environment	: connection			
 				-> string			(* "" means new lib env, otherwise -> restore *)

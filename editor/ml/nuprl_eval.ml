@@ -46,8 +46,8 @@ open Shell
 
 module Nuprl (Shell : ShellSig) = struct
   open Shell
-
   exception LibraryException of string
+  
   let itt_bug = ref true
   let _ = show_loading "Loading Nuprl_eval%t"
   let library = null_oref ()
@@ -145,7 +145,6 @@ module Nuprl (Shell : ShellSig) = struct
   let imp_msequent_term a g = mk_term imp_msequent_op [(mk_bterm [] a); (mk_bterm [] g)]
   let imcons_op = (mk_nuprl5_op [make_param (Token "!mcons")])
   let ianno_arg_cons_op = (mk_nuprl5_op [make_param (Token "!anno_arg_cons")])
-
 
   let msequent_to_term mseq =
     let (goal, hyps) = dest_msequent mseq
@@ -269,13 +268,18 @@ module Nuprl (Shell : ShellSig) = struct
 		    (eprintf "Failed cd'ing into thm %s %s%t" name x eflush;
 		     ipair_term (itoken_term x) (itoken_term "Error cd thm : mp_list_module")))
 		  
-              and parents = get_parents_all name !current_shell in
+              and parents = (try (get_parents_all name !current_shell) 
+	      with
+		_ ->
+		  (eprintf "Error! Failed getting parents : %s%t" name eflush;
+		   [])) in
 
 	      (*return cons of parent list (dependencies of the module) and the objects*)
 	      icons_term icons_op
 		(list_to_ilist_map itoken_term parents)
 		
-		(let (w, c, a, rl) = edit_list_module !current_shell name in
+		(let (w, c, a, rl) = (try (edit_list_module !current_shell name) 
+		with _ -> ([], [], [], [])) in
 		mp_edit_term (list_to_ilist_map visit_obj w )
                   (list_to_ilist_map visit_obj c)
                   (list_to_ilist_map visit_obj a)
@@ -325,7 +329,6 @@ module Nuprl (Shell : ShellSig) = struct
 		   mp_prf_term ivoid_term (itext_term "Error: Cd Thm None")
 		     (list_to_ilist [])	(list_to_ilist [])))
 		
-
 	  | {term_op = op; term_terms = symaddr :: addr :: tac :: r } when (opeq op mp_refine_op) ->
 	      (let l = string_list_of_term (term_of_unbound_term symaddr) in
 	      if l = !current_symaddr then ()
@@ -371,8 +374,7 @@ module Nuprl (Shell : ShellSig) = struct
 	      ( (* let l = string_list_of_term (term_of_unbound_term symaddr) in
 		  edit_save_thy !current_shell (hd (tl l)); *)
 	       ivoid_term)
-		
-	       
+			       
 	  | {term_op = op; term_terms = symaddr :: r } when false (*opeq op mp_wip_op*) ->
               let name = hd (tl (map_isexpr_to_list string_of_itoken_term (term_of_unbound_term symaddr))) in
 	      
@@ -403,8 +405,7 @@ module Nuprl (Shell : ShellSig) = struct
                   (list_to_ilist_map thm_to_term c)
                   (list_to_ilist_map thm_to_term a)
                   (rules_to_term rl))
-                
-		
+                		
 	  | {term_op = op; term_terms = symaddr :: mseq :: r} when (opeq op mp_set_thm_op) ->
 	    let l = string_list_of_term (term_of_unbound_term symaddr)
 	    in

@@ -41,6 +41,7 @@ module Nuprl = Nuprl_eval.Nuprl(Shell)
 module NuprlRun = Nuprl_run.NuprlRun(Nuprl)
 
 let run_nuprl = NuprlRun.run_connection
+let run_nuprljp = NuprlRun.run_jprover
 
 (*
  * The possible objects in a package.

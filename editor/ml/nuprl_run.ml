@@ -514,13 +514,16 @@ module NuprlRun (Nuprl : NuprlSig) = struct
       (library_open_and_loop_eval name refine_ehook))
       (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
-  let run_jprover name =
-    special_error_handler (function () -> 
-      (library_open_and_loop_eval name Nuprl_jprover.jprover_hook))
-      (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
+  let run_jprover lport host name dbpath =
+    (Orb.current_description_term := Orb.jprover_description_term;
+     Orb.db_pathname := dbpath;
+     special_error_handler (function () -> 
+       (library_open_and_loop_eval' lport host name Nuprl_jprover.jprover_hook))
+       (fun s t -> print_string s; print_newline(); Mbterm.print_term t))
 
-  let run_connection lport (* mport *) host name dbpath =
-    (Orb.db_pathname := dbpath;
+  let run_connection lport host name dbpath =
+    (Orb.current_description_term := Orb.metaprl_description_term;
+     Orb.db_pathname := dbpath;
      special_error_handler (function () -> 
        (library_open_and_loop_eval' lport host name refine_ehook))
        (fun s t -> print_string s; print_newline(); Mbterm.print_term t))

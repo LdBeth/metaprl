@@ -28,5 +28,5 @@
 open Shell_sig
 open Nuprl_sig
 
-module Nuprl (Shell: ShellSig) : NuprlSig
+module Nuprl (Shell: ShellSig): NuprlSig
 

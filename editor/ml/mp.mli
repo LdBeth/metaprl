@@ -96,6 +96,7 @@ val make_assum : unit -> unit
  * Nuprl5.
  *)
 val run_nuprl : int -> string -> string -> string -> unit
+val run_nuprljp : int -> string -> string -> string -> unit
 val edit_list_modules : unit -> string list
 val edit_list_module_all : string -> string list
 val edit_list_module : string -> string list * string list * string list * string list
@@ -122,15 +123,6 @@ val edit_undo : unit -> unit
  * Need this for the standard toploop.
  *)
 val shell_get_term : int -> term
-
-(* Temporary HACK for Lori *)
-module NuprlRun: sig
-   val run_library : string -> unit  (* uses  NUPRL_HOST and NUPRL_PORT env vars *)
-   val run_jprover : string -> unit  (* uses NUPRL_HOST and NUPRL_PORT env vars *)
-   val run_connection : int (*library*) -> string (*host*) -> string (*library*) -> string (*db*) -> unit
-   val run_dummy_connection : int (*library*) -> string (*host*)-> string -> unit
-   val run_connection_with_hook : int (*library*) -> string (*host*)-> string -> string (*dbpath*) -> (Refiner.Refiner.Term.term -> Refiner.Refiner.Term.term) -> unit
-end
 
 (*
  * -*-

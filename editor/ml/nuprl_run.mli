@@ -25,22 +25,10 @@
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
-(* Updated: to connect jprover to a nuprl application server (i.e. a nuprl refiner)
+(* to connect see quickstart file *)
 
-   # #use "jprover.txt";;
-   # run_connection_with_hook 9620 "nuprl3" "test-appl-server" "/home/nuprl/nuprl5/NuPrlDB-10-2002/" Nuprl_jprover.jprover_hook;;
-
- *)
-
-(* to connect metaprl to nuprl  //This needs to be updated
-
-  # Thread.create run_library "mp_o8" ;;
-  # let f x = Printf.eprintf "Name = %s\n" x; flush stderr; edit_cd_thm name x;;
-
-// Do this for current connect (5/2/03)
-  ./mp.run
-  # open Nuprl_run;;
-  # NuprlRun.run_connection  3998 "baldwin" "lmp_d21" "/home/nuprl/nuprl5/NuPrlDB/";;
+(* hint: for debugging create a thread 
+   # Thread.create run_nuprl ... ;;
 *)
 
 open Nuprl_sig
@@ -48,8 +36,7 @@ open Nuprl_sig
 module NuprlRun (Nuprl: NuprlSig):
     sig
       val run_library : string -> unit  (* uses  NUPRL_HOST and NUPRL_PORT env vars *)
-      val run_jprover : string -> unit  (* uses NUPRL_HOST and NUPRL_PORT env vars *)
+      val run_jprover : int (*library*) -> string (*host*) -> string (*library*) -> string (*db*) -> unit
       val run_connection : int (*library*) -> string (*host*) -> string (*library*) -> string (*db*) -> unit
-      val run_dummy_connection : int (*library*) -> string (*host*)-> string -> unit
       val run_connection_with_hook : int (*library*) -> string (*host*)-> string -> string (*dbpath*) -> (Refiner.Refiner.Term.term -> Refiner.Refiner.Term.term) -> unit
     end
