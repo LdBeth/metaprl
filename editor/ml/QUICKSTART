@@ -3,8 +3,8 @@ QUICK START WITH PROOF EDITOR
 Toploops to use:
 
 for native code --
-  editor/ml/mpopt
   editor/ml/mpxterm  (will start mpopt in a new xterm using a correct font)
+  editor/ml/mpopt
 for bytecode --
   editor/ml/mptop
 for interactive tactic development (bytecode)--
@@ -39,7 +39,7 @@ Navigation in proofs:
    next ();; - go to next unproved leaf in proof/modules (to be implemented).
 
 Proof refinement:
-   refine <tactic>;;  see itt_quickref.txt for ITT tactics.
+   refine <tactic>;;  see doc/itt_quickref.txt for Base Theory and ITT tactics.
 
 Save proof:
 When you cd into some theory for the first time, MetaPRL reads the
