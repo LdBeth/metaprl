@@ -89,8 +89,7 @@ let zT, z =
    in
       zT, z
 
-let _ = load "czf_itt_axioms"
-let _ = cd "czf_itt_axioms.subset_collection"
+let _ = cd "czf_itt_axioms/subset_collection"
 let _ = set_writeable ()
 
 (*

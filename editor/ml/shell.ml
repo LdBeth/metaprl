@@ -643,6 +643,12 @@ struct
       in
          ignore (Package.load packages (get_parse_arg info) name)
 
+   (* Currently load only creates problesm, does not work correctly
+    * HACK!!!
+    *)
+   let fake_load _ _ =
+      raise (Failure "The ``load'' function is currently not supported\nPlease ``cd'' into the theory you want to get loaded")
+
    (*
     * Make a new package.
     * Right now we only allow packages at the top level.
@@ -1133,7 +1139,7 @@ struct
        "pwd",              UnitFunExpr     (fun () -> StringExpr (pwd info));
        "set_tex",          UnitFunExpr     (fun () -> UnitExpr (set_tex info));
        "set_window_width", IntFunExpr      (fun i  -> UnitExpr (set_window_width info i));
-       "load",             StringFunExpr   (fun s  -> UnitExpr (load info s));
+       "load",             StringFunExpr   (fun s  -> UnitExpr (fake_load info s));
        "create_pkg",       StringFunExpr   (fun s  -> UnitExpr (create_pkg info s));
        "save",             UnitFunExpr     (fun () -> UnitExpr (save info));
        "export",           UnitFunExpr     (fun () -> UnitExpr (export info));

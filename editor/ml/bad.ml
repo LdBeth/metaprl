@@ -1,5 +1,6 @@
 (*
- * Include file to load tptp.
+ * On Jan 01, 1999 this file used to produce different results in term_ds and term_std
+ * This was probably fixed long ago, but I kept it just in case.
  *
  * ----------------------------------------------------------------
  *
@@ -30,7 +31,6 @@
  * jyh@cs.cornell.edu
  *)
 
-load "refl_term";;
 cd "refl_term";;
 cd "vmap_length_wf";;
 down 1;;

@@ -69,7 +69,6 @@ open Fol_all_itt
 
 open Mp
 
-let _ = load "fol_all_itt"
 let _ = cd "fol_all_itt"
 
 (*

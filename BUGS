@@ -52,6 +52,14 @@ Failure: undeclared name: fun
 
 (Running this example in mpopt produces similar result).
 
+(Updated on 1999.11.21 by nogin)
+Loading the same theory twice produces similar problems.
+
+As a result, `load'ing a theory and then `cd'ing into it
+(which attempts to load the theory again) does not quite work.
+As a temporary workaround, the "load" function was removed from
+toploop.
+
 2.4) (Confirmed on 1999.09.02 by jyh and nogin)
 There is no way to override display forms right now.
 Could be that term_match_table listing needs to be reversed.

@@ -30,7 +30,6 @@
  * jyh@cs.cornell.edu
  *)
 
-load "refl_term";;
 cd "refl_term/eq_alpha_term_trans";;
 refine timingT (dupRT testT 10);;
 
