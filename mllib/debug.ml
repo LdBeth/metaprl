@@ -127,7 +127,11 @@ let create_debug
                      info.info_info <- Some desc;
                      flag'
                 | Some _ ->
-                     raise (Failure (sprintf "Debug.create_debug: variable '%s' is already created" name))
+                     (*
+                      * Allow multiple creations.
+                      raise (Failure (sprintf "Debug.create_debug: variable '%s' is already created" name))
+                      *)
+                     flag'
             else
                search t
     | [] ->
@@ -257,6 +261,11 @@ let debug_load = create_debug (**)
 
 (*
  * $Log$
+ * Revision 1.10  1998/07/02 18:35:16  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.9  1998/06/22 19:45:26  jyh
  * Rewriting in contexts.  This required a change in addressing,
  * and the body of the context is the _last_ subterm, not the first.

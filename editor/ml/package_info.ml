@@ -4,7 +4,7 @@
  *)
 
 include Tactic_cache
-include Tactic_type
+include Tacticals
 
 include Io_proof
 include Package_type
@@ -17,6 +17,9 @@ open Printf
 open Debug
 open Imp_dag
 
+open Refiner.Refiner.Refine
+open Refiner.Refiner.RefineError
+
 open Theory
 
 open Filter_summary_type
@@ -28,7 +31,7 @@ open Filter_prog
 open Infix
 
 open Tactic_cache
-open Tactic_type
+open Tacticals
 
 open Io_proof_type
 open Io_proof
@@ -48,6 +51,8 @@ let debug_package_info =
         debug_description = "display package operations";
         debug_value = false
       }
+
+let debug_sentinal = load_debug "sentinal"
 
 (************************************************************************
  * TYPES                                                                *
@@ -76,14 +81,7 @@ let debug_item =
 let null_tactic_argument =
    { ref_label = "main";
      ref_args = [];
-     ref_fcache = extract (new_cache ());
-     ref_rsrc =
-        { ref_d =       (fun _ _ -> raise (Failure "d tactic is not implemented"));
-          ref_eqcd =    (fun _ ->   raise (Failure "eqcd tactic is not implemented"));
-          ref_typeinf = (fun _ _ -> raise (Failure "typeinf tactic is not implemented"));
-          ref_squash =  (fun _ ->   raise (Failure "squash tactic is not implemented"));
-          ref_subtype = (fun _ ->   raise (Failure "subtype tactic is not implemented"))
-        }
+     ref_fcache = extract (new_cache ())
    }
 
 (*
@@ -106,7 +104,11 @@ let clear_tactic_argument () =
  * Install a new argument (called when a theory is evaluated).
  *)
 let install_tactic_argument arg =
-   eprintf "Package_info.install_tactic_argument%t" eflush;
+   if !debug_package_info then
+      begin
+         eprintf "Package_info.install_tactic_argument%t" eflush;
+         List.iter (fun (name,_) -> eprintf "\tAttribute: %s%t" name eflush) arg.ref_args
+      end;
    (!tactic_argument) := arg
 
 (*
@@ -125,9 +127,15 @@ let clear_tactics () =
  * Prove an theorem.
  * This dereferences the tactic_argument to get at the resources.
  *)
-let prove name tactics' =
+let prove name tactics' refiner =
    let arg = !tactic_argument in
    let proof = Hashtbl.find io_proofs name in
+   let refiner =
+      try find_refiner refiner name with
+         Not_found ->
+            eprintf "Refiner not found for %s%t" name eflush;
+            raise (RefineError ("Package_info.prove", StringStringError ("refiner not found", name)))
+   in
    let _ = Hashtbl.add tactics name tactics' in
    let _ =
       if !debug_package_info then
@@ -138,7 +146,7 @@ let prove name tactics' =
          end
    in
    let prove () =
-      Proof.check (Proof.proof_of_io_proof !arg tactics' proof)
+      Proof.check (Proof.proof_of_io_proof !arg tactics' (sentinal_of_refiner refiner) proof)
    in
       prove
 
@@ -151,14 +159,17 @@ let pt             = <:expr< $uid: "Proof_type"$ >>
 let ref_label_id   = <:expr< $pt$ . $lid: "ref_label"$ >>
 let ref_args_id    = <:expr< $pt$ . $lid: "ref_args"$ >>
 let ref_fcache_id  = <:expr< $pt$ . $lid: "ref_fcache"$ >>
-let ref_rsrc_id    = <:expr< $pt$ . $lid: "ref_rsrc"$ >>
 
-let tt             = <:expr< $uid: "Tactic_type"$ >>
-let ref_d_id       = <:expr< $tt$ . $lid: "ref_d"$ >>
-let ref_eqcd_id    = <:expr< $tt$ . $lid: "ref_eqcd"$ >>
-let ref_typeinf_id = <:expr< $tt$ . $lid: "ref_typeinf"$ >>
-let ref_squash_id  = <:expr< $tt$ . $lid: "ref_squash"$ >>
-let ref_subtype_id = <:expr< $tt$ . $lid: "ref_subtype"$ >>
+let tt                 = <:expr< $uid: "Tactic_type"$ >>
+
+let int_tactic_arg_id name expr default =
+   <:expr< [ ($str:name$, $tt$ . $uid: "IntTacticArg"$ $expr$) :: $default$ ] >>
+
+let tactic_arg_id     name expr default =
+   <:expr< [ ($str:name$, $tt$ . $uid: "TacticArg"$    $expr$) :: $default$ ] >>
+
+let typeinf_arg_id    name expr default =
+   <:expr< [ ($str:name$, $tt$ . $uid: "TypeinfArg"$   $expr$) :: $default$ ] >>
 
 let cache_default = <:expr< $uid: "Tactic_cache"$ . $lid: "new_cache"$ () >>
 
@@ -228,7 +239,7 @@ let install_tactic_arg_expr resources =
             eprintf "Package_info.install_tactic_arg: resources:\n";
             List.iter print resources
    in
-   let rec get_resource name default =
+   let rec get_resource name f default =
       if !debug_package_info then
          eprintf "Package_info.install_tactic_arg: check for resource %s%t" name eflush;
       let rec search = function
@@ -237,7 +248,7 @@ let install_tactic_arg_expr resources =
                eprintf "Package_info.install_tactic_arg: %s = %s%t" name name' eflush;
             if name = name' then
                let name = "ext_" ^ name in
-                  (<:expr< $lid: name$ . $uid: "Resource"$ . $lid: "resource_extract"$ $lid: name$ >>)
+                  f (<:expr< $lid: name$ . $uid: "Resource"$ . $lid: "resource_extract"$ $lid: name$ >>) default
             else
                search t
        | [] ->
@@ -247,27 +258,17 @@ let install_tactic_arg_expr resources =
    in
    let loc = 0, 0 in
    let label_expr = <:expr< $str: "main"$ >> in
-   let args_expr  = <:expr< [] >> in
-   let cache_expr = get_resource "cache_resource" cache_default in
-   let d_expr = get_resource "d_resource" d_default in
-   let eqcd_expr = get_resource "eqcd_resource" eqcd_default in
-   let typeinf_expr = get_resource "typeinf_resource" typeinf_default in
-   let squash_expr = get_resource "squash_resource" squash_default in
-   let subtype_expr = get_resource "subtype_resource" subtype_default in
-   let rsrc_expr =
-      (<:expr< { $list: [ ref_d_id, d_expr;
-                          ref_eqcd_id, eqcd_expr;
-                          ref_typeinf_id, typeinf_expr;
-                          ref_squash_id, squash_expr;
-                          ref_subtype_id, subtype_expr
-                        ]$
-               } >>)
-   in
+   let cache_expr = get_resource "cache_resource"  (fun cache _ -> cache) cache_default in
+   let args_expr = <:expr< [] >> in
+   let args_expr = get_resource "d_resource"       (int_tactic_arg_id "d")       args_expr in
+   let args_expr = get_resource "eqcd_resource"    (tactic_arg_id     "eqcd")    args_expr in
+   let args_expr = get_resource "typeinf_resource" (typeinf_arg_id    "typeinf") args_expr in
+   let args_expr = get_resource "squash_resource"  (tactic_arg_id     "squash")  args_expr in
+   let args_expr = get_resource "subtype_resource" (tactic_arg_id     "subtype") args_expr in
    let arg_expr =
       (<:expr< { $list: [ ref_label_id, label_expr;
                           ref_args_id, args_expr;
-                          ref_fcache_id, make_extract cache_expr;
-                          ref_rsrc_id, rsrc_expr
+                          ref_fcache_id, make_extract cache_expr
                         ]$
                } >>)
    in
@@ -284,7 +285,7 @@ let install_tactic_arg_expr resources =
 (*
  * Default tactic array includes the initial identity tactic.
  *)
-let null_tactics = ["null", [|"idT", idT|]]
+let null_tactics = []
 
 (************************************************************************
  * IMPLEMENTATION                                                       *
@@ -361,7 +362,7 @@ struct
       let proof = to_raw name proof in
       let tactics = tactics_of_proof proof in
          Hashtbl.add io_proofs name proof;
-         <:expr< $uid: "Package_info"$ . $lid: "prove"$ $str: name$ $tactics$ >>
+         <:expr< $uid: "Package_info"$ . $lid: "prove"$ $str: name$ $tactics$ $lid: "refiner"$ >>
 end
 
 (*
@@ -766,7 +767,7 @@ struct
    (*
     * A new proof cannot be saved.
     *)
-   let new_proof { pack_arg = { ref_label = label; ref_args = args } } hyps goal =
+   let new_proof { pack_arg = { ref_label = label; ref_args = args } } name hyps goal =
       let aterm =
          { aterm_goal = goal;
            aterm_hyps = hyps;
@@ -788,26 +789,40 @@ struct
            proof_extras = []
          }
       in
-         ref (ProofRaw ("null", proof))
+         ref (ProofRaw (name, proof))
 
    (*
     * Convert a proof on demand.
     *)
-   let ped_of_proof { pack_tactics = tactics; pack_arg = arg } proof =
+   let ped_of_proof { pack_name = name; pack_tactics = tactics; pack_arg = arg } proof =
       match !proof with
          ProofEdit ped ->
             ped
-       | ProofRaw (name, proof') ->
+       | ProofRaw (name', proof') ->
             let _ =
                if !debug_package_info then
                   begin
-                     eprintf "Lookup up from tactics in %s\nHere are the choices" name;
+                     eprintf "Attributes are:\n";
+                     List.iter (fun (name, _) -> eprintf "\t%s%t" name eflush) arg.ref_args;
+                     eprintf "Lookup up from tactics in %s.%s\nHere are the choices\n\t" name name';
                      List.iter (fun (name, _) -> eprintf " %s" name) tactics;
                      eflush stderr
                   end
             in
-            let tactics = List.assoc name tactics in
-            let proof' = Proof.proof_of_io_proof arg tactics proof' in
+            let refiner =
+               if !debug_sentinal then
+                  eprintf "Find refiner for %s.%s%t" name name' eflush;
+               try find_refiner (get_theory name).thy_refiner name' with
+                  Not_found ->
+                     raise (RefineError ("ped_of_proof", StringStringError ("refiner not found", name')))
+            in
+            let tactics =
+               try List.assoc name' tactics with
+                  Not_found ->
+                     [|"idT", idT|]
+            in
+            let sentinal = sentinal_of_refiner refiner in
+            let proof' = Proof.proof_of_io_proof arg tactics sentinal proof' in
             let ped = Proof_edit.ped_of_proof [] proof' in
                proof := ProofEdit ped;
                ped
@@ -834,11 +849,16 @@ struct
            pack_arg = !(!tactic_argument)
          }
       in
+         if !debug_package_info then
+            begin
+               eprintf "Build package %s\nTactics are:%t" name eflush;
+               List.iter (fun (name, _) -> eprintf "\t%s%t" name eflush) !tacl
+            end;
          add_implementation pack info;
          info
 
    (*
-    * This function is used to contruct the tactic array when
+    * This function is used to construct the tactic array when
     * a theory is loaded.
     *)
    let loaded_tactics info =
@@ -846,10 +866,11 @@ struct
          (name, h)::t ->
             let exprs =
                match h with
-                  Interactive proof ->
+                  Filter_cache.Interactive proof ->
                      Convert.to_expr name proof :: exprs
-                | Primitive _
-                | Derived _ ->
+                | Filter_cache.Incomplete
+                | Filter_cache.Primitive _
+                | Filter_cache.Derived _ ->
                      exprs
             in
                collect exprs t
@@ -935,6 +956,11 @@ end
 
 (*
  * $Log$
+ * Revision 1.17  1998/07/02 18:34:29  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.16  1998/06/16 16:25:21  jyh
  * Added itt_test.
  *

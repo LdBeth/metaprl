@@ -2,6 +2,8 @@
  * Common types for proofs.
  *)
 
+open Refiner.Refiner.Refine
+
 open Tactic_type
 
 (*
@@ -12,12 +14,16 @@ open Tactic_type
 type tactic_argument =
    { ref_label : string;
      ref_args : attributes;
-     ref_fcache : cache;
-     ref_rsrc : tactic_resources
+     ref_fcache : cache
    }
 
 (*
  * $Log$
+ * Revision 1.2  1998/07/02 18:34:39  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.1  1998/06/09 20:51:19  jyh
  * Propagated refinement changes.
  * New tacticals module.

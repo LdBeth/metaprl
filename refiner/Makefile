@@ -8,8 +8,8 @@ INCLUDE :=
 DIRS :=\
 	refbase\
 	refsig\
-	term_std\
 	term_gen\
+	term_std\
 	term_ds\
 	refiner\
 	reflib
@@ -58,8 +58,8 @@ REFLIB_CMXFILES    := $(addprefix reflib/,   $(addsuffix .cmx, $(REFLIB_FILES)))
 CMXFILES :=\
 	$(REFBASE_CMXFILES)\
 	$(REFSIG_CMXFILES)\
-	$(TERM_STD_CMXFILES)\
 	$(TERM_GEN_CMXFILES)\
+	$(TERM_STD_CMXFILES)\
 	$(TERM_DS_CMXFILES)\
 	$(REFINER_CMXFILES)\
 	$(REFLIB_CMXFILES)

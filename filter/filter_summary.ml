@@ -11,10 +11,12 @@ open Debug
 open File_util
 open Opname
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermSubst
 open Refiner.Refiner.TermMeta
+open Refiner.Refiner.RefineError
 open Simple_print
 open Precedence
 
@@ -1188,7 +1190,7 @@ and dest_term_aux
             Some info
       with
          Failure _
-       | TermMatch _ ->
+       | RefineError (_, TermMatchError _) ->
             eprintf "Filter_summary.dest_term: incorrect syntax for %s%t" (string_of_opname opname) eflush;
             None
 
@@ -1875,6 +1877,11 @@ and check_implementation { info_list = implem } { info_list = interf } =
 
 (*
  * $Log$
+ * Revision 1.28  1998/07/02 18:34:58  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.27  1998/06/15 22:32:10  jyh
  * Added CZF.
  *

@@ -24,6 +24,7 @@ type select_type =
 type 'a proof_type =
    Primitive of term
  | Derived of MLast.expr
+ | Incomplete
  | Interactive of 'a
 
 (*
@@ -75,6 +76,11 @@ end
 
 (*
  * $Log$
+ * Revision 1.13  1998/07/02 18:34:51  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.12  1998/06/15 22:32:05  jyh
  * Added CZF.
  *

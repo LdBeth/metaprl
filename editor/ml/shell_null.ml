@@ -8,7 +8,7 @@ open Printf
 open Debug
 
 open Rformat
-open Refiner.Refiner.RefineErrors
+open Refiner.Refiner.RefineError
 
 open Shell_type
 
@@ -49,6 +49,11 @@ let null_object =
 
 (*
  * $Log$
+ * Revision 1.7  1998/07/02 18:34:43  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.6  1998/07/01 04:36:31  nogin
  * Moved Refiner exceptions into a separate module RefineErrors
  *

@@ -7,6 +7,7 @@ open Utils
 open Opname
 open Num
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Nuprl5
 
 let _ =

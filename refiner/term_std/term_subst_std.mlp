@@ -1,15 +1,47 @@
 (*
  * Substitution, alpha equality, and unification.
  *)
+#include "refine_error.h"
 
+open Refine_error_sig
+open Term_std_sig
 open Term_std
 
-module TermSubst =
+module TermSubst
+#ifdef VERBOSE_EXN
+   (Term : TermStdSig
+    with type level_exp_var = TermType.level_exp_var
+    with type level_exp = TermType.level_exp
+    with type param = TermType.param
+    with type operator = TermType.operator
+    with type term = TermType.term
+    with type bound_term = TermType.bound_term
+
+    with type level_exp_var' = TermType.level_exp_var'
+    with type level_exp' = TermType.level_exp'
+    with type object_id = TermType.object_id
+    with type param' = TermType.param'
+    with type operator' = TermType.operator'
+    with type term' = TermType.term'
+    with type bound_term' = TermType.bound_term')
+   (RefineError : RefineErrorSig
+    with type level_exp = TermType.level_exp
+    with type param = TermType.param
+    with type term = TermType.term
+    with type bound_term = TermType.bound_term)
+#endif VERBOSE_EXN
+=
 struct
+#ifdef VERBOSE_EXN
+   open RefineError
+#else
+   open Term_base_std_simp
+#endif
+   open TermType
    open Term
 
-   type term = Term.term
-   type param = Term.param
+   type term = TermType.term
+   type param = TermType.param
 
    type term_subst = (string * term) list
 
@@ -371,7 +403,8 @@ struct
                v1
             else
                aux t
-       | [] -> raise Not_found
+       | [] ->
+            raise Not_found
       in
          aux
 
@@ -394,7 +427,7 @@ struct
                if (List.assoc v bvars) = (dest_var t2) then
                   subst
                else
-                  raise (BadMatch (t1, t2))
+                  raise_generic_exn
             with
                Not_found ->
                   begin
@@ -402,8 +435,6 @@ struct
                         Not_found ->
                            (v, t2)::subst
                   end
-             | TermMatch _ ->
-                  raise (BadMatch (t1, t2))
          end
 
     | t1, ({ term_op = { imp_op_name = opname; imp_op_params = [Var v] };
@@ -416,7 +447,7 @@ struct
                if (rev_assoc v bvars) = (dest_var t1) then
                   subst
                else
-                  raise (BadMatch (t1, t2))
+                  raise_generic_exn
             with
                Not_found ->
                   begin
@@ -424,8 +455,6 @@ struct
                         Not_found ->
                            (v, t1)::subst
                   end
-             | TermMatch _ ->
-                  raise (BadMatch (t1, t2))
          end
 
     | ({ term_op = { imp_op_name = opname1; imp_op_params = params1 };
@@ -437,9 +466,10 @@ struct
          (* General case *)
          if opname1 == opname2 & params1 = params2 then
             try unify_bterms subst bvars (bterms1, bterms2) with
-               Invalid_argument _ -> raise (BadMatch (t1, t2))
+               Invalid_argument _ ->
+                  raise_generic_exn
          else
-            raise (BadMatch (t1, t2))
+            raise_generic_exn
 
    and unify_bterms subst bvars = function
       ({ bvars = vars1; bterm = term1 }::tl1),
@@ -447,10 +477,16 @@ struct
          let subst' = unify_terms subst (zip_cons bvars (vars1, vars2)) (term1, term2) in
             unify_bterms subst' bvars (tl1, tl2)
     | [], [] -> subst
-    | _ -> raise (Invalid_argument "unify_bterms")
+    | _ -> raise_generic_exn
 
    let unify subst t1 t2 =
+#ifdef VERBOSE_EXN
+      try List.rev (unify_terms subst [] (t1, t2)) with
+         RefineError (_, GenericError) ->
+            raise (RefineError ("unify", TermPairMatchError (t1, t2)))
+#else
       List.rev (unify_terms subst [] (t1, t2))
+#endif
 
    (************************************************************************
     * Term generalization                                                  *
@@ -530,6 +566,11 @@ end
 
 (*
  * $Log$
+ * Revision 1.1  1998/07/02 18:36:43  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.6  1998/06/22 19:45:59  jyh
  * Rewriting in contexts.  This required a change in addressing,
  * and the body of the context is the _last_ subterm, not the first.

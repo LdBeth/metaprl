@@ -2,13 +2,12 @@
  * Define a printer for all escaping refiner exceptions.
  *)
 
-open Refiner.Refiner.RefineErrors
+open Refiner.Refiner.RefineError
 open Rformat
 open Dform
 open Dform_print
 
-val format_rewrite_error : dform_base -> buffer -> rewrite_error -> unit
-val format_refine_error : dform_base -> buffer -> refine_error -> unit
+val format_refine_error : dform_base -> buffer -> string -> refine_error -> unit
 val format_exn : dform_base -> buffer -> exn -> unit
 
 val print : dform_base -> ('a -> 'b) -> 'a -> 'b
@@ -16,6 +15,11 @@ val print_exn : dform_mode_base -> out_channel -> string -> exn -> 'a
 
 (*
  * $Log$
+ * Revision 1.3  1998/07/02 18:35:41  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.2  1998/07/01 04:37:03  nogin
  * Moved Refiner exceptions into a separate module RefineErrors
  *

@@ -15,7 +15,7 @@ open Dform
 open Refiner.Refiner
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMan
-open Refiner.Refiner.RefineErrors
+open Refiner.Refiner.RefineError
 open Refiner.Refiner.Refine
 open Opname
 
@@ -23,7 +23,7 @@ open Filter_summary
 open Filter_cache
 open Filter_ocaml
 
-open Tactic_type
+open Tacticals
 open Tactic_cache
 open Shell_type
 open Package_info
@@ -54,25 +54,25 @@ type rw =
  *)
 let seq = << sequent { 'H >- 'rw } >>
 
-let mk_goal arg redex contractum =
+let mk_goal sentinal arg redex contractum =
    let rw = TermMan.replace_goal seq (mk_xrewrite_term redex contractum) in
-   let { ref_label = label; ref_fcache = cache; ref_args = args; ref_rsrc = resources } = arg in
-      Tactic_type.create label { mseq_goal = rw; mseq_hyps = [] } cache args resources
+   let { ref_label = label; ref_fcache = cache; ref_args = args } = arg in
+      Sequent.create sentinal label (mk_msequent rw []) cache args
 
-let mk_cond_goal arg assums redex contractum =
+let mk_cond_goal sentinal arg assums redex contractum =
    let rw = replace_goal seq (mk_xrewrite_term redex contractum) in
    let assums = List.map (replace_goal seq) assums in
-   let { ref_label = label; ref_fcache = cache; ref_args = args; ref_rsrc = resources } = arg in
-      Tactic_type.create label { mseq_goal = rw; mseq_hyps = assums } cache args resources
+   let { ref_label = label; ref_fcache = cache; ref_args = args } = arg in
+      Sequent.create sentinal label (mk_msequent rw assums) cache args
 
-let mk_rw_goal arg assums redex contractum =
+let mk_rw_goal sentinal arg assums redex contractum =
    if assums = [] then
-      mk_goal arg redex contractum
+      mk_goal sentinal arg redex contractum
    else
-      mk_cond_goal arg assums redex contractum
+      mk_cond_goal sentinal arg assums redex contractum
 
-let mk_ped arg params assums redex contractum =
-   Proof_edit.create params (mk_rw_goal arg assums redex contractum)
+let mk_ped arg sentinal params assums redex contractum =
+   Proof_edit.create params (mk_rw_goal sentinal arg assums redex contractum)
 
 (************************************************************************
  * FORMATTING                                                           *
@@ -88,7 +88,8 @@ let comment loc t =
  * Format the tactic text.
  *)
 let format_tac db buf arg =
-   let { mseq_goal = rw; mseq_hyps = hyps } = Tactic_type.msequent arg in
+   let seq = Sequent.msequent arg in
+   let rw, hyps = dest_msequent seq in
    let format_hyp hyp =
       format_term db buf hyp;
       format_newline buf
@@ -103,15 +104,18 @@ let format_tac db buf arg =
 (*
  * A primtive rewrite.
  *)
-let format_prim_rewrite db buf arg params assums redex contractum =
-   let tac = Refine_exn.print db (mk_rw_goal arg assums redex) contractum in
+let format_rewrite_aux s db buf arg sentinal params assums redex contractum =
+   let tac = Refine_exn.print db (mk_rw_goal sentinal arg assums redex) contractum in
       format_tac db buf tac;
       format_newline buf;
-      format_string buf "Primitive";
+      format_string buf s;
       format_newline buf
 
-let format_cond_rewrite db buf arg params assums redex contractum expr =
-   let tac = Refine_exn.print db (mk_rw_goal arg assums redex) contractum in
+let format_prim_rewrite = format_rewrite_aux "Primitive"
+let format_incomplete_rewrite = format_rewrite_aux "Incomplete"
+
+let format_cond_rewrite db buf arg sentinal params assums redex contractum expr =
+   let tac = Refine_exn.print db (mk_rw_goal sentinal arg assums redex) contractum in
       format_tac db buf tac;
       format_newline buf;
       format_string buf "Derived> ";
@@ -150,7 +154,7 @@ let item_of_obj pack name
  *)
 let unit_term = mk_simple_term nil_opname []
 
-let edit pack arg name obj =
+let edit pack sentinal arg name obj =
    let update_ped () =
       obj.rw_ped <- Primitive unit_term
    in
@@ -170,9 +174,11 @@ let edit pack arg name obj =
       in
          match ped with
             Primitive t ->
-               format_prim_rewrite db buf arg params assums redex contractum
+               format_prim_rewrite db buf arg sentinal params assums redex contractum
           | Derived expr ->
-               format_cond_rewrite db buf arg params assums redex contractum expr
+               format_cond_rewrite db buf arg sentinal params assums redex contractum expr
+          | Incomplete ->
+               format_incomplete_rewrite db buf arg sentinal params assums redex contractum
           | Interactive ped ->
                Proof_edit.format db buf ped
    in
@@ -199,6 +205,7 @@ let edit pack arg name obj =
       match obj.rw_ped with
          Interactive ped ->
             save_ped ped
+       | Incomplete
        | Primitive _
        | Derived _ ->
             ()
@@ -209,15 +216,18 @@ let edit pack arg name obj =
             raise (RefineError ("Shell_rewrite.check", StringError "can't check primitive rules"))
        | Derived _ ->
             raise (RefineError ("Shell_rewrite.check", StringError "can't check noninteractive proofs"))
+       | Incomplete ->
+            raise (RefineError ("Shell_rewrite.check", StringError "proof is incomplete"))
        | Interactive ped ->
             try Proof_edit.check_ped ped with
-               RefineError err ->
-                  raise (RefineError (name, GoalError err))
+               RefineError (name', err) ->
+                  raise (RefineError (name, GoalError (name', err)))
    in
    let get_ped obj =
       match obj.rw_ped with
          Primitive _
-       | Derived _ ->
+       | Derived _
+       | Incomplete ->
             raise (RefineError ("Shell_rewrite.get_ped", StringError "proof is not interactive"))
        | Interactive ped ->
             ped
@@ -250,7 +260,8 @@ let edit pack arg name obj =
       let ped =
          match obj.rw_ped with
             Primitive _
-          | Derived _ ->
+          | Derived _
+          | Incomplete ->
                (* Convert to a ped *)
                let { rw_params = params;
                      rw_assums = assums;
@@ -258,7 +269,7 @@ let edit pack arg name obj =
                      rw_contractum = contractum
                    } = obj
                in
-               let ped = mk_ped arg params assums redex contractum in
+               let ped = mk_ped arg sentinal params assums redex contractum in
                   save_ped ped;
                   ped
           | Interactive ped ->
@@ -285,7 +296,7 @@ let edit pack arg name obj =
       }
 
 let create pack name =
-   let proof = Package.new_proof pack [] unit_term in
+   let proof = Package.new_proof pack name [] unit_term in
    let ped = Package.ped_of_proof pack proof in
    let rw =
       { Filter_summary.rw_name = name;
@@ -303,15 +314,25 @@ let create pack name =
         rw_ped = Interactive ped
       }
    in
+   let sentinal =
+      let refiner =
+         try Package.refiner pack with
+            Not_found ->
+               raise (RefineError ("create_rw", StringStringError ("no refiner", name)))
+      in
+         sentinal_of_refiner refiner
+   in
    let arg = Package.argument pack in
       Package.set pack (Filter_summary.Rewrite rw);
-      edit pack arg name obj
+      edit pack sentinal arg name obj
 
 let ped_of_proof pack = function
    Primitive proof ->
       Primitive proof
  | Derived expr ->
       Derived expr
+ | Incomplete ->
+      Incomplete
  | Interactive proof ->
       Interactive (Package.ped_of_proof pack proof)
 
@@ -330,8 +351,16 @@ let view_rw pack
         rw_ped = ped_of_proof pack proof
       }
    in
+   let sentinal =
+      let refiner =
+         try find_refiner (Package.refiner pack) name with
+            Not_found ->
+               raise (RefineError ("view_rw", StringStringError ("no refiner", name)))
+      in
+         sentinal_of_refiner refiner
+   in
    let arg = Package.argument pack in
-      edit pack arg name obj
+      edit pack sentinal arg name obj
 
 let view_crw pack
     { crw_name = name;
@@ -350,11 +379,24 @@ let view_crw pack
         rw_ped = ped_of_proof pack proof
       }
    in
+   let sentinal =
+      let refiner =
+         try find_refiner (Package.refiner pack) name with
+            Not_found ->
+               raise (RefineError ("view_rw", StringStringError ("no refiner", name)))
+      in
+         sentinal_of_refiner refiner
+   in
    let arg = Package.argument pack in
-      edit pack arg name obj
+      edit pack sentinal arg name obj
 
 (*
  * $Log$
+ * Revision 1.16  1998/07/02 18:34:44  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.15  1998/07/01 04:36:32  nogin
  * Moved Refiner exceptions into a separate module RefineErrors
  *

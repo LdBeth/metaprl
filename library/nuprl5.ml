@@ -2,6 +2,7 @@ open Printf
 open Debug
 
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Opname
 open Num
 

@@ -10,7 +10,6 @@ open Refiner.Refiner.Term
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.Rewrite
 open Precedence
-open Rewrite
 open Simple_print
 open Resource
 
@@ -335,6 +334,29 @@ let add_eq_expr loc =
    <:expr< $uid:"Precedence"$ . $lid:"add_eq"$ >>
 
 (*
+ * Each axiom gets a refiner associated with it, with the following name.
+ *)
+let refiner_value loc =
+   <:expr< $lid: local_refiner_id$ . $lid: "val"$ >>
+
+let refiner_let loc =
+   let patt = <:patt< $lid: refiner_id$ >> in
+      <:str_item< value $rec:false$ $list: [ patt, refiner_value loc ]$ >>
+
+(*
+let refiner_name name =
+   name ^ "_refiner"
+
+let refiner_patt loc name =
+   <:patt< $lid: refiner_name name$ >>
+
+let refiner_let_name loc name =
+   let patt = <:patt< $lid: refiner_name name$ >> in
+   let expr = <:expr< $lid: refiner_id$ >> in
+      <:str_item< value $rec:false$ $list: [ patt, expr ]$ >>
+*)
+
+(*
  * Convert between expressions and terms.
  *)
 let expr_of_term loc t =
@@ -450,9 +472,22 @@ let rec parent_path_ctyp loc = function
  | [] ->
       raise (Invalid_argument "parent_path")
 
+(*
+ * Interactive exception.
+ *)
+let interactive_exn loc name =
+      let patt = <:patt< _ >> in
+      let ename = <:expr< $uid:"Refiner"$ . $uid: "Refiner"$ . $uid: "RefineError"$ . $uid: "RefineError"$ >> in
+      let err = <:expr< $uid:"Refiner"$ . $uid: "Refiner"$ . $uid: "RefineError"$ . $uid: "StringError"$ $str: "proof is incomplete"$ >> in
+      let name = <:expr< $str:name$ >> in
+      let err = <:expr< ( $list: [ name; err ]$ ) >> in
+      let exn = <:expr< $ename$ $err$ >> in
+      let body = <:expr< raise $exn$ >> in
+         <:expr< fun [ $list: [ patt, None, body ]$ ] >>
+
 (************************************************************************
  * SIGNATURES                                                           *
- ************************************************************************)
+************************************************************************)
 
 (*
  * Rewrites.
@@ -460,10 +495,12 @@ let rec parent_path_ctyp loc = function
 let declare_rewrite loc { rw_name = name } =
    let ctyp = rewrite_ctyp loc in
       [<:sig_item< value $name$ : $ctyp$ >>]
+      (* <:sig_item< value $refiner_name name$ : $refiner_ctyp loc$ >> *)
 
 let declare_cond_rewrite loc { crw_name = name } =
    let ctyp = cond_rewrite_ctyp loc in
       [<:sig_item< value $name$ : $ctyp$ >>]
+      (* <:sig_item< value $refiner_name name$ : $refiner_ctyp loc$ >>] *)
 
 (*
  * Rules.
@@ -471,10 +508,12 @@ let declare_cond_rewrite loc { crw_name = name } =
 let declare_axiom loc { axiom_name = name } =
    let ctyp = params_ctyp loc (tactic_ctyp loc) [] in
       [<:sig_item< value $name$ : $ctyp$ >>]
+      (* <:sig_item< value $refiner_name name$ : $refiner_ctyp loc$ >>] *)
 
 let declare_rule loc { rule_name = name; rule_params = params } =
    let ctyp = params_ctyp loc (tactic_ctyp loc) params in
       [<:sig_item< value $name$ : $ctyp$ >>]
+      (* <:sig_item< value $refiner_name name$ : $refiner_ctyp loc$ >>] *)
 
 (*
  * Precedence.
@@ -724,7 +763,7 @@ struct
        let name_let =
           <:str_item< value $rec:false$ $list:[ name_patt, rw_body_expr ]$ >>
        in
-          [name_rewrite_let; name_let]
+          [name_rewrite_let; name_let; refiner_let loc (* ; refiner_let_name loc name *)]
 
    let ()  = ()
 
@@ -805,7 +844,7 @@ struct
        let name_let =
           <:str_item< value $rec:false$ $list:[ name_patt, rw_fun_expr ]$ >>
        in
-          [name_rewrite_let; name_let]
+          [name_rewrite_let; name_let; refiner_let loc (* ; refiner_let_name loc name *)]
 
    let () = ()
 
@@ -825,7 +864,9 @@ struct
                          $str:name$ $redex_expr$ $con_expr$ $expr$
                  >>
       in
-         [<:str_item< $exp: wrap_exn loc name expr$ >>]
+         [<:str_item< $exp: wrap_exn loc name expr$ >>;
+          refiner_let loc]
+          (* refiner_let_name loc name *)
 
    let derived_cond_rewrite proc loc
        { crw_name = name;
@@ -844,14 +885,16 @@ struct
                          $str:name$ $params_expr'$
                          $args_expr$ $redex_expr$ $con_expr$ $expr$ >>
       in
-         [<:str_item< $exp: wrap_exn loc name expr$ >>]
+         [<:str_item< $exp: wrap_exn loc name expr$ >>;
+          refiner_let loc]
+          (* refiner_let_name loc name *)
 
    let () = ()
 
    (*
     * Interactive forms.
     *)
-   let interactive_rewrite proc loc
+   let interactive_rewrite_aux proc loc
        { rw_name = name;
          rw_redex = redex;
          rw_contractum = contractum
@@ -860,14 +903,22 @@ struct
       (* Check that this tactic actually works *)
       let redex_expr = expr_of_term loc redex in
       let con_expr = expr_of_term loc contractum in
-      let expr = Convert.to_expr name expr in
       let expr = <:expr< $delayed_rewrite_expr loc$ $lid:local_refiner_id$ (**)
                          $str:name$ $redex_expr$ $con_expr$ $expr$
                  >>
       in
-         [<:str_item< $exp: wrap_exn loc name expr$ >>]
+         [<:str_item< $exp: wrap_exn loc name expr$ >>;
+          refiner_let loc]
+          (* refiner_let_name loc name *)
 
-   let interactive_cond_rewrite proc loc
+   let interactive_rewrite proc loc ({ rw_name = name } as rw) expr =
+      let expr = Convert.to_expr name expr in
+         interactive_rewrite_aux proc loc rw expr
+
+   let incomplete_rewrite proc loc rw =
+      interactive_rewrite_aux proc loc rw (interactive_exn loc "rewrite")
+
+   let interactive_cond_rewrite_aux proc loc
        { crw_name = name;
          crw_params = params;
          crw_args = args;
@@ -880,12 +931,20 @@ struct
       let redex_expr = expr_of_term loc redex in
       let con_expr = expr_of_term loc contractum in
       let params_expr' = <:expr< [| $list:params_expr$ |] >> in
-      let expr = Convert.to_expr name expr in
       let expr = <:expr< $delayed_cond_rewrite_expr loc$ $lid:local_refiner_id$ (**)
                          $str:name$ $params_expr'$
                          $args_expr$ $redex_expr$ $con_expr$ $expr$ >>
       in
-         [<:str_item< $exp: wrap_exn loc name expr$ >>]
+         [<:str_item< $exp: wrap_exn loc name expr$ >>;
+          refiner_let loc]
+          (* refiner_let_name loc name *)
+
+   let interactive_cond_rewrite proc loc ({ crw_name = name } as crw) expr =
+      let expr = Convert.to_expr name expr in
+         interactive_cond_rewrite_aux proc loc crw expr
+
+   let incomplete_cond_rewrite proc loc crw =
+      interactive_cond_rewrite_aux proc loc crw (interactive_exn loc "cond_rewrite")
 
    (*
     * A primitive rule specifies the extract.
@@ -904,7 +963,7 @@ struct
       in
       let axiom_item = (<:str_item< value $rec:false$ $list:[axiom_patt, wrap_exn loc name axiom_value]$ >>) in
       let thm_item = <:str_item< $exp: wrap_exn loc name thm$ >> in
-         [axiom_item; thm_item]
+         [axiom_item; thm_item; refiner_let loc (* ; refiner_let_name loc name *)]
 
    let prim_axiom proc loc ax extract =
       let code = prim_axiom_expr loc in
@@ -918,6 +977,10 @@ struct
    let interactive_axiom proc loc ax expr =
       let code = delayed_axiom_expr loc in
          define_axiom code proc loc ax (Convert.to_expr ax.axiom_name expr)
+
+   let incomplete_axiom proc loc ax =
+      let code = delayed_axiom_expr loc in
+         define_axiom code proc loc ax (interactive_exn loc "axiom")
 
    let () = ()
 
@@ -1002,7 +1065,7 @@ struct
       in
       let rule_def = <:str_item< value $rec:false$ $list:[ name_rule_patt, wrap_exn loc name rule_expr ]$ >> in
       let tac_def = <:str_item< value $rec:false$ $list:[ name_patt, name_value ]$ >> in
-         [rule_def; tac_def]
+         [rule_def; tac_def; refiner_let loc (* ; refiner_let_name loc name *)]
 
    let prim_rule proc loc ax extract =
       let code = prim_rule_expr loc in
@@ -1016,6 +1079,10 @@ struct
    let interactive_rule proc loc ax expr =
       let code = delayed_rule_expr loc in
          define_rule code proc loc ax (Convert.to_expr ax.rule_name expr)
+
+   let incomplete_rule proc loc ax =
+      let code = delayed_rule_expr loc in
+         define_rule code proc loc ax (interactive_exn loc "rule")
 
    let () = ()
 
@@ -1371,8 +1438,9 @@ struct
          let refiner_expr = (<:expr< $join_refiner_expr loc$ $lid: local_refiner_id$ $parent_refiner$ >>) in
          let dformer_expr = (<:expr< $join_mode_base_expr loc$ $lid: local_dformer_id$ $parent_dformer$ >>) in
          let refiner_item = (<:str_item< $exp: refiner_expr$ >>) in
+         let refiner_let  = refiner_let loc in
          let dformer_item = (<:str_item< $exp: dformer_expr$ >>) in
-            [refiner_item; dformer_item]
+            [refiner_item; refiner_let; dformer_item]
       in
       let print_resource resources resource =
          let { resource_name = name } = resource in
@@ -1496,6 +1564,10 @@ struct
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: rwthm: %s%t" name eflush;
             derived_rewrite proc loc rw tac
+       | Rewrite ({ rw_name = name; rw_proof = Incomplete } as rw) ->
+            if !debug_filter_prog then
+               eprintf "Filter_prog.extract_str_item: rwincomplete: %s%t" name eflush;
+            incomplete_rewrite proc loc rw
        | Rewrite ({ rw_name = name; rw_proof = Interactive pf } as rw) ->
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: rwinteractive: %s%t" name eflush;
@@ -1508,6 +1580,10 @@ struct
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: thm condrw: %s%t" name eflush;
             derived_cond_rewrite proc loc crw tac
+       | CondRewrite ({ crw_name = name; crw_proof = Incomplete } as crw) ->
+            if !debug_filter_prog then
+               eprintf "Filter_prog.extract_str_item: interactive condrw: %s%t" name eflush;
+            incomplete_cond_rewrite proc loc crw
        | CondRewrite ({ crw_name = name; crw_proof = Interactive pf } as crw) ->
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: interactive condrw: %s%t" name eflush;
@@ -1520,6 +1596,10 @@ struct
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: thm axiom: %s%t" name eflush;
             derived_axiom proc loc ax tac
+       | Axiom ({ axiom_name = name; axiom_proof = Incomplete } as ax) ->
+            if !debug_filter_prog then
+               eprintf "Filter_prog.extract_str_item: incomplete axiom: %s%t" name eflush;
+            incomplete_axiom proc loc ax
        | Axiom ({ axiom_name = name; axiom_proof = Interactive pf } as ax) ->
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: interactive axiom: %s%t" name eflush;
@@ -1532,6 +1612,10 @@ struct
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: thm rule: %s%t" name eflush;
             derived_rule proc loc rule tac
+       | Rule ({ rule_name = name; rule_proof = Incomplete } as rule) ->
+            if !debug_filter_prog then
+               eprintf "Filter_prog.extract_str_item: incomplete rule: %s%t" name eflush;
+            incomplete_rule proc loc rule
        | Rule ({ rule_name = name; rule_proof = Interactive pf } as rule) ->
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: interactive rule: %s%t" name eflush;
@@ -1614,6 +1698,11 @@ end
 
 (*
  * $Log$
+ * Revision 1.23  1998/07/02 18:34:56  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.22  1998/06/23 22:12:09  jyh
  * Improved rewriter speed with conversion tree and flist.
  *

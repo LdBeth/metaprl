@@ -1,6 +1,10 @@
+#include "refine_error.h"
+
 open Printf
 open Debug
 
+open Refine_error_sig
+open Term_ds_sig
 open Term_ds
 
 (*
@@ -17,14 +21,45 @@ let debug_subst_ds =
         debug_value = false
       }
 
-module TermSubst =
+module TermSubst
+#ifdef VERBOSE_EXN
+   (Term : TermDsSig
+    with type level_exp_var = TermType.level_exp_var
+    with type level_exp = TermType.level_exp
+    with type param = TermType.param
+    with type operator = TermType.operator
+    with type term = TermType.term
+    with type bound_term = TermType.bound_term
+
+    with type level_exp_var' = TermType.level_exp_var'
+    with type level_exp' = TermType.level_exp'
+    with type object_id = TermType.object_id
+    with type param' = TermType.param'
+    with type operator' = TermType.operator'
+    with type term' = TermType.term'
+    with type bound_term' = TermType.bound_term'
+
+    with type term_subst = TermType.term_subst)
+   (RefineError : RefineErrorSig
+    with type level_exp = TermType.level_exp
+    with type param = TermType.param
+    with type term = TermType.term
+    with type bound_term = TermType.bound_term)
+#endif VERBOSE_EXN
+=
 struct
+#ifdef VERBOSE_EXN
+   open RefineError
+#else
+   open Term_base_ds_simp
+#endif
+   open TermType
    open Term
 
-   type term = Term.term
-   type param = Term.param
+   type term = TermType.term
+   type param = TermType.param
 
-   type term_subst = (string * term) list
+   type term_subst = TermType.term_subst
 
    let subst t tl vl =
       assert (if List.length tl = List.length vl then
@@ -285,7 +320,7 @@ struct
                if (List.assoc v bvars) = (dest_var_nods t2) then
                   subst
                else
-                  raise (BadMatch (tm1, tm2))
+                  raise_generic_exn
             with
                Not_found ->
                   begin
@@ -294,7 +329,7 @@ struct
                            (v, tm2)::subst
                   end
              | Not_var ->
-                  raise (BadMatch (tm1, tm2))
+                  raise_generic_exn
          end
 
     | t1, ({ term_op = { imp_op_name = opname; imp_op_params = [Var v] };
@@ -307,7 +342,7 @@ struct
                if (rev_assoc v bvars) = (dest_var_nods t1) then
                   subst
                else
-                  raise (BadMatch (tm1, tm2))
+                  raise_generic_exn
             with
                Not_found ->
                   begin
@@ -316,7 +351,7 @@ struct
                            (v, tm1)::subst
                   end
              | Not_var ->
-                  raise (BadMatch (tm1, tm2))
+                  raise_generic_exn
          end
 
     | ({ term_op = { imp_op_name = opname1; imp_op_params = params1 };
@@ -328,9 +363,9 @@ struct
          (* General case *)
          if opname1 == opname2 & params1 = params2 then
             try unify_bterms subst bvars (bterms1, bterms2) with
-               Invalid_argument _ -> raise (BadMatch (tm1, tm2))
+               Invalid_argument _ -> raise_generic_exn
          else
-            raise (BadMatch (tm1, tm2))
+            raise_generic_exn
 
    and unify_bterms subst bvars = function
       (btrm1::tl1), (btrm2::tl2) ->
@@ -342,7 +377,13 @@ struct
     | _ -> raise (Invalid_argument "unify_bterms")
 
    let unify subst t1 t2 =
+#ifdef VERBOSE_EXN
+      try List.rev (unify_terms subst [] t1 t2) with
+         RefineError (_, GenericError) ->
+            raise (RefineError ("unify", TermPairMatchError (t1, t2)))
+#else
       List.rev (unify_terms subst [] t1 t2)
+#endif
 
    (************************************************************************
     * Term generalization                                                  *

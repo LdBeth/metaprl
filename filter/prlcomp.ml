@@ -228,6 +228,7 @@ let spec =
     "-custom", Unit (add_argv "-custom"), "generate custom executable";
     "-ccopt", String (add_string_argv "-ccopt"), "C option";
     "-cclib", String (add_string_argv "-cclib"), "C library";
+    "-inline", String (add_string_argv "-inline"), "Inline level";
     "-linkall", Unit (add_argv "-linkall"), "specify link";
     "-lib", String set_lib, "set the library directory"]
 
@@ -284,6 +285,11 @@ let _ = Printexc.catch (Unix.handle_unix_error main) ()
 
 (*
  * $Log$
+ * Revision 1.19  1998/07/02 18:35:01  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.18  1998/06/27 02:25:06  nogin
  * Added -compact option
  *

@@ -7,7 +7,6 @@
  * and may contain interactivly generated proofs.
  *)
 
-include Tactic_type
 include Package_type
 include Proof_type
 
@@ -27,7 +26,7 @@ module Package : PackageSig
  * Auxiliary functions for managing resources and proofs.
  *)
 val install_tactic_argument : tactic_argument -> unit
-val prove : string -> (string * tactic) array -> unit -> extract
+val prove : string -> (string * tactic) array -> refiner -> unit -> extract
 
 (*
  * For debugging purposes.
@@ -36,6 +35,11 @@ val debug_item : MLast.str_item ref
 
 (*
  * $Log$
+ * Revision 1.9  1998/07/02 18:34:31  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.8  1998/06/12 13:45:08  jyh
  * D tactic works, added itt_bool.
  *

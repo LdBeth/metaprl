@@ -7,6 +7,7 @@ open Int32
 open Num
 open MathBus
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Opname
 
 let _ =
@@ -143,9 +144,9 @@ let rec param_of_mbparameter mbparameter =
 	      	  Mnode n2-> loop (i-2) ((mk_level_var s (integer_value n2))::l)
 	      	| Mbint b -> failwith "subterm should be a node")
 	      | Mbint b -> failwith "subterm should be a node")
-		
+
 	    in loop nsubterms []
-	
+
       	in make_param (Level (mk_level constant le_vars))
       | Mbint b -> failwith "subterm should be a node"
 
@@ -201,7 +202,7 @@ let bvars_of_mbbindings mbterm =
 	  Mnode n3 -> (string_value n3)
 	| Mbint b -> failwith "bvars_of_mbindings") in
 	loop (index - 1) ("nuprl5_implementation3"::(s1::(s2::(s3::bvars))))
-	
+
     | Mbint b -> failwith "bvars_of_mbindings"
   in loop (mbnode_nSubtermsq mbterm) []
 
@@ -240,7 +241,7 @@ let rec term_of_mbterm mbterm =
 						  (term_of_mbterm n2))::b) in
 		    mk_term (op_of_params (List.rev leaves)) bterms
 		  | Mbint b -> raise (Invalid_argument " subterm should be a node"))
-		
+
 	 	else
 		  (match mbterm.(i+ 1) with
 		    Mnode n2 -> loop1 (i + 2) ((mk_bterm (bvars_of_mbbindings n)
@@ -256,7 +257,7 @@ let rec term_of_mbterm mbterm =
       else loop (index + 1) ((param_of_mbparameter node)::leaves)
     | Mbint b -> raise (Invalid_argument " subterm should be a node") in
   loop 1 []
-	
+
 
 (* printing functions *)
 
@@ -278,7 +279,7 @@ let rec print_param param =
       {le_const = i; le_vars = vars } ->
 	(print_string "{"; print_int i ;print_string " [";
 	 loop vars)
-	
+
   in aux (dest_level p)
   | Var p -> (print_string p ; print_string ":v ")
   | ObId p -> (print_string "["; List.map print_param (dest_object_id p); print_string "]";
@@ -308,11 +309,11 @@ let rec print_term term =
   print_string "("; List.map print_subterms (List.map dest_bterm bterms);
   print_string ")" ;
   ()
-		
+
 
 (*LAL TODO: conditionalize on whether or not nuprl 5 implementation term-not needed*)
 (*LAL ok, done on nuprl side*)
-	
+
 
 let write_node_to_file node filename =
   let out_channel = open_out filename in

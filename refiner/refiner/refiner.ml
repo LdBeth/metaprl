@@ -2,10 +2,19 @@
  * Abstract refiner.
  *)
 
-module Refiner = Refiner_ds.Refiner
+module Refiner = Refiner_std_simp.Refiner
+
+open Refiner.RefineError
+
+let _ = Term_exn.set_generic_refiner_exn (RefineError ("generic", GenericError))
 
 (*
  * $Log$
+ * Revision 1.3  1998/07/02 18:35:27  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.2  1998/06/12 20:46:07  jyh
  * Switched to term_ds.
  *

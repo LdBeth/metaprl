@@ -53,13 +53,14 @@ endif
 # PROFILE = -p
 OCAMLDEP = $(ROOT)/bin/ocamldep
 OCAMLCFLAGS = $(INCLUDE) $(OCAMLFLAGS)
-OCAMLOPTFLAGS = $(INCLUDE) $(OCAMLFLAGS) $(PROFILE)
+OCAMLOPTFLAGS = $(INCLUDE) $(OCAMLFLAGS) $(PROFILE) -inline 5
 CAMLP4OFLAGS = $(INCLUDE)
 CFLAGS = -g -I$(CAMLLIB)
 CC = gcc
 RM = rm
 INSTALL = /bin/cp -pf
 CP = /bin/cp -pf
+CPP = /lib/cpp -traditional
 
 # For cleaning the directory
 ifdef MAIN
@@ -112,6 +113,11 @@ RCMIFILES    = $(addprefix $(ROOT)/lib/, $(CMIFILES))
 RCMAFILES    = $(addprefix $(ROOT)/lib/, $(addsuffix .cma, $(INSTALL_LIBS)))
 RCMXAFILES   = $(addprefix $(ROOT)/lib/, $(addsuffix .cmxa, $(INSTALL_LIBS)))
 RAFILES      = $(addprefix $(ROOT)/lib/, $(addsuffix .a, $(INSTALL_LIBS)))
+
+ZMLFILES     = $(addsuffix .ml, $(MLZFILES))
+ZMLIFILES    = $(addsuffix .mli, $(MLZFILES))
+PMLFILES     = $(addsuffix _verb.ml, $(MLPFILES)) $(addsuffix _simp.ml, $(MLPFILES))
+PMLIFILES    = $(addsuffix _verb.mli, $(MLPFILES)) $(addsuffix _simp.mli, $(MLPFILES))
 
 # Instructions to make
 .PHONY: all lib opt clean depend install
@@ -207,11 +213,32 @@ $(REG_CMXFILES): %.cmx: %.ml %.cmi
 	$(CP) $*.mlz $@
 	chmod 444 $@
 
+%_verb.ml: %.mlp
+	rm -f $@
+	$(CPP) $(INCLUDE) -DVERBOSE_EXN $*.mlp > $@
+	chmod 444 $@
+
+%_verb.mli: %.mlip
+	rm -f $@
+	$(CPP) $(INCLUDE) -DVERBOSE_EXN $*.mlip > $@
+	chmod 444 $@
+
+%_simp.ml: %.mlp
+	rm -f $@
+	$(CPP) $(INCLUDE) $*.mlp > $@
+	chmod 444 $@
+
+%_simp.mli: %.mlip
+	rm -f $@
+	$(CPP) $(INCLUDE) $*.mlip > $@
+	chmod 444 $@
+
 %.o: %.c
 	$(CC) $(CFLAGS) -c $*.c
 
 clean::
 	rm -f *.cm* *.z* *.o *.a *~ *.bak *.output $(CLEAN_MAIN)
+	rm -f gmon.out $(ZMLFILES) $(ZMLIFILES) $(PMLFILES) $(PMLIFILES)
 
 depend:: $(MLFILES) $(MLIFILES)
 	rm -f Makefile.tmp

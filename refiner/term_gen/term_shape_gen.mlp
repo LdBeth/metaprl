@@ -9,9 +9,17 @@ open Printf
 
 open Opname
 open Term_simple_sig
+open Term_base_sig
 
-module TermShape (Term : TermSimpleSig) =
+module TermShape (**)
+   (TermType : TermSimpleSig)
+   (Term : TermBaseSig
+    with type term = TermType.term
+    with type term' = TermType.term'
+    with type bound_term = TermType.bound_term
+    with type bound_term' = TermType.bound_term') =
 struct
+   open TermType
    open Term
 
    type term = Term.term

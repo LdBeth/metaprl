@@ -7,9 +7,11 @@ open Printf
 open Debug
 open Opname
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
+open Refiner.Refiner.RefineError
 open Ml_string
 open Simple_print
 
@@ -671,7 +673,7 @@ struct
                             let v, subterms = dest_so_var t in
                                mk_context_term v (proc_hyps tl) subterms
                          with
-                            TermMatch _ ->
+                            RefineError (_, TermMatchError _) ->
                                Stdpp.raise_with_loc loc (**)
                                   (Failure (sprintf "Not a variable: %s" (Simple_print.string_of_term t)))
              in
@@ -913,6 +915,11 @@ end
 
 (*
  * $Log$
+ * Revision 1.13  1998/07/02 18:35:02  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.12  1998/06/15 22:32:16  jyh
  * Added CZF.
  *

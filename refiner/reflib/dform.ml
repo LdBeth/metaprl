@@ -10,6 +10,7 @@ open Precedence
 open Rformat
 open Opname
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.Rewrite
@@ -655,6 +656,11 @@ let string_of_mterm base mterm =
 
 (*
  * $Log$
+ * Revision 1.5  1998/07/02 18:35:38  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.4  1998/06/15 22:32:32  jyh
  * Added CZF.
  *

@@ -1,5 +1,11 @@
-TERM_STD_FILES :=\
-	term_std\
+TERM_STD_PFILES :=\
+	term_base_std\
 	term_op_std\
 	term_subst_std\
 	term_eval_std
+
+TERM_STD_FILES :=\
+	term_std_sig\
+	term_std\
+	$(addsuffix _verb, $(TERM_STD_PFILES))\
+	$(addsuffix _simp, $(TERM_STD_PFILES))

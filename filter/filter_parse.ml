@@ -10,10 +10,11 @@ open Pcaml
 open Debug
 open Refiner.Refiner
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.Rewrite
-open Refiner.Refiner.Refine
+open Refiner.Refiner.RefineError
 open Precedence
 open Simple_print
 open Resource
@@ -113,7 +114,6 @@ let _ =
    if !debug_load then
       eprintf "Loading Filter_parse%t" eflush
 
-
 (************************************************************************
  * QUOTATIONS                                                           *
  ************************************************************************)
@@ -124,7 +124,9 @@ let _ =
 let term_exp s =
    let cs = Stream.of_string s in
    let t = Grammar.Entry.parse TermGrammar.term_eoi cs in
-      build_ml_term (0, 0) t
+   let s = Ml_term.string_of_term t in
+   let loc = 0, 0 in
+      <:expr< $uid: "Ml_term"$ . $lid: "term_of_string"$ $str: s$ >>
 
 let term_patt s =
    raise (Failure "Filter_parse.term_patt: not implemented yet")
@@ -197,12 +199,12 @@ let get_string_param loc t =
                   String s ->
                      s
                 | _ ->
-                     Stdpp.raise_with_loc loc (Term.TermMatch ("get_string_param", t, "param type"))
+                     Stdpp.raise_with_loc loc (RefineError ("get_string_param", TermMatchError (t, "param type")))
             end
        | { op_params = [] } ->
-            Stdpp.raise_with_loc loc (Term.TermMatch ("get_string_param", t, "no params"))
+            Stdpp.raise_with_loc loc (RefineError ("get_string_param", TermMatchError (t, "no params")))
        | _ ->
-            Stdpp.raise_with_loc loc (Term.TermMatch ("get_string_param", t, "too many params"))
+            Stdpp.raise_with_loc loc (RefineError ("get_string_param", TermMatchError (t, "too many params")))
 
 (************************************************************************
  * GENERIC CONSTRUCTION                                                 *
@@ -772,6 +774,9 @@ let define_prim proc loc name params args goal extract =
 let define_thm proc loc name params args goal tac =
    define_rule proc loc name params args goal (Derived tac)
 
+let define_int_thm proc loc name params args goal =
+   define_rule proc loc name params args goal Incomplete
+
 (************************************************************************
  * GRAMMAR EXTENSION                                                    *
  ************************************************************************)
@@ -921,6 +926,10 @@ EXTEND
              (args, goal) = opt_binding_arglist; "="; tac = expr ->
           define_thm (StrFilter.get_proc loc) loc name params args goal.aterm tac;
           empty_str_item loc
+        | "interactive"; name = LIDENT; params = optarglist; ":"; (**)
+             (args, goal) = opt_binding_arglist ->
+          define_int_thm (StrFilter.get_proc loc) loc name params args goal.aterm;
+          empty_str_item loc
         | "mlterm"; t = quote_term; rewrite_equal; code = expr; "|"; ext = expr ->
           StrFilter.declare_mlterm (StrFilter.get_proc loc) loc t (Some (code, ext));
           empty_str_item loc
@@ -1039,6 +1048,11 @@ END
 
 (*
  * $Log$
+ * Revision 1.30  1998/07/02 18:34:54  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.29  1998/06/22 19:45:19  jyh
  * Rewriting in contexts.  This required a change in addressing,
  * and the body of the context is the _last_ subterm, not the first.

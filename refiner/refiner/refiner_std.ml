@@ -4,21 +4,28 @@
 
 module Refiner =
 struct
-   module Term = Term_std.Term
-   module TermOp = Term_op_std.TermOp
-   module TermSubst = Term_subst_std.TermSubst
-   module TermAddr = Term_addr_gen.TermAddr (Term) (TermOp)
-   module TermMan = Term_man_gen.TermMan (Term) (TermOp) (TermAddr) (TermSubst)
-   module TermShape = Term_shape_gen.TermShape (Term)
-   module TermEval = Term_eval_std.TermEval
-   module TermMeta = Term_meta_gen.TermMeta (Term) (TermSubst)
-   module RefineErrors = Refine_errors.RefineErrors (Term) (TermAddr) (TermMeta)
-   module Rewrite = Rewrite.Rewrite (Term) (TermMan) (TermAddr) (TermSubst) (RefineErrors)
-   module Refine = Refine.Refine (Term) (TermMan) (TermSubst) (TermAddr) (TermMeta) (Rewrite) (RefineErrors)
+   module TermType = Term_std.TermType
+   module AddressType = Term_addr_gen_verb.MakeAddressType (TermType)
+   module RefineError = Refine_error.MakeRefineError (TermType) (AddressType)
+   module Term = Term_base_std_verb.Term (RefineError)
+   module TermOp = Term_op_std_verb.TermOp (Term) (RefineError)
+   module TermSubst = Term_subst_std_verb.TermSubst (Term) (RefineError)
+   module TermAddr = Term_addr_gen_verb.TermAddr (TermType) (Term) (TermOp) (RefineError)
+   module TermMan = Term_man_gen_verb.TermMan (TermType) (Term) (TermOp) (TermAddr) (TermSubst) (RefineError)
+   module TermShape = Term_shape_gen_verb.TermShape (TermType) (Term)
+   module TermEval = Term_eval_std_verb.TermEval (Term) (RefineError)
+   module TermMeta = Term_meta_gen_verb.TermMeta (TermType) (Term) (TermSubst) (RefineError)
+   module Rewrite = Rewrite_verb.Rewrite (TermType) (Term) (TermMan) (TermAddr) (TermSubst) (RefineError)
+   module Refine = Refine.Refine (TermType) (Term) (TermMan) (TermSubst) (TermAddr) (TermMeta) (Rewrite) (RefineError)
 end
 
 (*
  * $Log$
+ * Revision 1.6  1998/07/02 18:35:31  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.5  1998/07/01 04:36:55  nogin
  * Moved Refiner exceptions into a separate module RefineErrors
  *

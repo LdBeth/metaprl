@@ -1,9 +1,12 @@
 # Flags
 ROOT := ../..
-INCLUDE := -I $(ROOT)/mllib -I ../refbase -I ../refsig
+INCLUDE := -I $(ROOT)/mllib -I ../refbase -I ../refsig -I ../term_gen
 
 # Library files
 include Files
+MLPFILES := $(TERM_STD_PFILES)
+MLZFILES := term_std_sig
+
 LMFILES := $(TERM_STD_FILES)
 
 # Name of library
@@ -29,3 +32,5 @@ opt: $(MAIN).cmxa $(RMLIFILES) $(RCMIFILES)
 install:: $(MAIN).cma $(CMIFILES)
 	$(INSTALL) $(MLIFILES) $(CMIFILES) $(NLLIB)
 
+clean::
+	rm -f *_simp.* *_verb.*

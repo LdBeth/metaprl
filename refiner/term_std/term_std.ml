@@ -8,6 +8,7 @@ open Printf
 
 open Debug
 open Opname
+open Refine_error_sig
 
 (*
  * Show the file loading.
@@ -17,14 +18,10 @@ let _ =
       eprintf "Loading Term%t" eflush
 
 (*
- * Simple term module.
+ * Type of terms.
  *)
-module Term =
+module TermType =
 struct
-   (************************************************************************
-    * Type definitions                                                     *
-    ************************************************************************)
-
    (*
     * The type are just the naive types.
     *)
@@ -89,290 +86,23 @@ struct
    and bound_term' = { bvars : string list; bterm : term }
 
    (*
-    * Level expression have offsets from level expression
-    * vars, plus a constant offset.
+    * The terms in the framework include
+    * a meta-implication and met-iff.
     *)
-
-   type term_subst = (string * term) list
-
-   (*
-    * General exception for term destruction.
-    *)
-   exception TermMatch of string * term * string
-   exception BadMatch of term * term
-
-   (************************************************************************
-    * DEBUGGING                                                            *
-    ************************************************************************)
-
-   (*
-    * Printer is installed by client.
-    *)
-   let print_term = ref (fun _ _ -> raise (Failure "Term_ds.print_term: printer not installed"))
-
-   let debug_print out t =
-      !print_term out t
-
-   let install_debug_printer f =
-      print_term := f
-
-   (************************************************************************
-    * Term de/constructors                                                 *
-    ************************************************************************)
-
-   (*
-    * These are basically identity functions for this implementation.
-    *)
-   let mk_term op bterms = { term_op = op; term_terms = bterms }
-
-   let make_term term = term
-
-   let dest_term term = term
-
-   let mk_op name params =
-      { imp_op_name = name; imp_op_params = params }
-
-   let make_op { op_name = name; op_params = params } =
-      { imp_op_name = name; imp_op_params = params }
-
-   let dest_op { imp_op_name = name; imp_op_params = params } =
-      { op_name = name; op_params = params }
-
-   let mk_bterm bvars term = { bvars = bvars; bterm = term }
-
-   let make_bterm bterm = bterm
-
-   let dest_bterm bterm = bterm
-
-   let make_param param = param
-
-   let dest_param param = param
-
-   let mk_level_var v i =
-      { le_var = v; le_offset = i }
-
-   let make_level_var v = v
-
-   let dest_level_var v = v
-
-   let mk_level i l =
-      { le_const = i; le_vars = l }
-
-   let make_level l = l
-
-   let dest_level l = l
-
-   let make_object_id object_id  = object_id
-
-   let dest_object_id object_id  = object_id
-
-   (*
-    * Operator names.
-    *)
-   let opname_of_term = function
-      { term_op = { imp_op_name = name } } ->
-         name
-
-   (*
-    * Get the subterms.
-    * None of the subterms should be bound.
-    *)
-   let subterms_of_term t =
-      List.map (fun { bterm = t } -> t) t.term_terms
-
-   let subterm_count { term_terms = terms } =
-      List.length terms
-
-   let subterm_arities { term_terms = terms } =
-      List.map (fun { bvars = vars } -> List.length vars) terms
-
-   (************************************************************************
-    * Variables                                                            *
-    ************************************************************************)
-
-   let var_opname = make_opname ["var"]
-
-   (*
-    * See if a term is a variable.
-    *)
-   let is_var_term = function
-      { term_op = { imp_op_name = opname; imp_op_params = [Var v] };
-        term_terms = []
-      } when opname == var_opname -> true
-    | _ -> false
-
-   (*
-    * Destructor for a variable.
-    *)
-   let dest_var = function
-      { term_op = { imp_op_name = opname; imp_op_params = [Var v] };
-        term_terms = []
-      } when opname == var_opname -> v
-    | t -> raise (TermMatch ("dest_var", t, ""))
-
-   (*
-    * Make a variable.
-    *)
-   let mk_var_term v =
-      { term_op = { imp_op_name = var_opname; imp_op_params = [Var v] };
-        term_terms = []
-      }
-
-   let mk_var_op v = { imp_op_name = var_opname; imp_op_params = [Var v] }
-
-   (*
-    * Second order variables have subterms.
-    *)
-   let is_so_var_term = function
-      ({ term_op = { imp_op_name = opname; imp_op_params = [Var(_)] }; term_terms = bterms } : term)
-      when opname == var_opname ->
-         List.for_all (function { bvars = [] } -> true | _ -> false) bterms
-    | _ -> false
-
-   let dest_so_var = function
-      ({ term_op = { imp_op_name = opname; imp_op_params = [Var(v)] };
-         term_terms = bterms
-       } : term) as term when opname == var_opname ->
-         v, List.map (function { bvars = []; bterm = t } -> t | _ ->
-               raise (TermMatch ("dest_so_var", term, "bvars exist")))
-         bterms
-    | term -> raise (TermMatch ("dest_so_var", term, "not a so_var"))
-
-   (*
-    * Second order variable.
-    *)
-   let mk_so_var_term v terms =
-      let mk_bterm term =
-         { bvars = []; bterm = term }
-      in
-         { term_op = { imp_op_name = var_opname; imp_op_params = [Var(v)] };
-           term_terms = List.map mk_bterm terms
-         }
-
-   (*
-    * Second order context, contains a context term, plus
-    * binding variables like so vars.
-    *)
-   let context_opname = make_opname ["context"]
-
-   let is_context_term = function
-      ({ term_op = { imp_op_name = opname; imp_op_params = [Var _] }; term_terms = bterms } : term)
-      when opname == context_opname ->
-         List.for_all (function { bvars = [] } -> true | _ -> false) bterms
-    | term ->
-         false
-
-   let dest_context = function
-      ({ term_op = { imp_op_name = opname; imp_op_params = [Var v] };
-         term_terms = bterms
-       } : term) as term when opname == context_opname ->
-         let rec collect = function
-            [{ bvars = []; bterm = t }] ->
-               [], t
-          | { bvars = []; bterm = t } :: tl ->
-               let args, term = collect tl in
-                  t :: args, term
-          | _ ->
-               raise (TermMatch ("dest_context", term, "bvars exist"))
-         in
-         let args, term = collect bterms in
-            v, term, args
-    | term ->
-         raise (TermMatch ("dest_context", term, "not a context"))
-
-   let mk_context_term v term terms =
-      let rec collect term = function
-         [] ->
-            [{ bvars = []; bterm = term }]
-       | h::t ->
-            { bvars = []; bterm = h } :: collect term t
-      in
-         { term_op = { imp_op_name = context_opname; imp_op_params = [Var v] };
-           term_terms = collect term terms
-         }
-
-   (************************************************************************
-    * Simple terms                                                         *
-    ************************************************************************)
-
-   (*
-    * "Simple" terms have no parameters and no binding variables.
-    *)
-   let is_simple_term_opname name = function
-      { term_op = { imp_op_name = name'; imp_op_params = [] };
-        term_terms = bterms
-      } when name' == name ->
-         let rec aux = function
-            { bvars = []; bterm = _ }::t -> aux t
-          | _::t -> false
-          | [] -> true
-         in
-            aux bterms
-    | _ -> false
-
-   let mk_any_term op terms =
-      let aux t =
-         { bvars = []; bterm = t }
-      in
-         { term_op = op; term_terms = List.map aux terms }
-
-   let mk_simple_term name terms =
-      mk_any_term { imp_op_name = name; imp_op_params = [] } terms
-
-   let dest_simple_term = function
-      ({ term_op = { imp_op_name = name; imp_op_params = [] };
-         term_terms = bterms
-       } : term) as t ->
-         let aux = function
-            { bvars = []; bterm = t } -> t
-          | _ -> raise (TermMatch ("dest_simple_term", t, "binding vars exist"))
-         in
-            name, List.map aux bterms
-    | t ->
-         raise (TermMatch ("dest_simple_term", t, "params exist"))
-
-   let dest_simple_term_opname name = function
-      ({ term_op = { imp_op_name = name'; imp_op_params = [] };
-         term_terms = bterms
-       } : term) as t ->
-         if name == name' then
-            let aux = function
-               { bvars = []; bterm = t } -> t
-             | _ -> raise (TermMatch ("dest_simple_term_opname", t, "binding vars exist"))
-            in
-               List.map aux bterms
-         else
-            raise (TermMatch ("dest_simple_term_opname", t, "opname mismatch"))
-    | t ->
-         raise (TermMatch ("dest_simple_term_opname", t, "params exist"))
-
-   (*
-    * Bound terms.
-    *)
-   let mk_simple_bterm bterm =
-      { bvars = []; bterm = bterm }
-
-   let dest_simple_bterm t = function
-      { bvars = []; bterm = bterm } ->
-         bterm
-    | _ ->
-         raise (TermMatch ("dest_simple_bterm", t, "bterm is not simple"))
-
-   (*
-    * "Normalization" means producing a canonical version of the term,
-    * not reduction.  Right now, this just means rehashing the opname.
-    *)
-   let rec normalize_term = function
-      { term_op = op; term_terms = bterms } ->
-         op.imp_op_name <- normalize_opname op.imp_op_name;
-         List.iter normalize_bterm bterms
-
-   and normalize_bterm { bterm = t } =
-      normalize_term t
+   type meta_term =
+      MetaTheorem of term
+    | MetaImplies of meta_term * meta_term
+    | MetaFunction of term * meta_term * meta_term
+    | MetaIff of meta_term * meta_term
 end
 
 (*
  * $Log$
+ * Revision 1.12  1998/07/02 18:36:37  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.11  1998/06/22 19:45:57  jyh
  * Rewriting in contexts.  This required a change in addressing,
  * and the body of the context is the _last_ subterm, not the first.

@@ -11,7 +11,7 @@ open Refiner.Refiner.Term
 open Refiner.Refiner.TermAddr
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.Rewrite
-open Refiner.Refiner.RefineErrors
+open Refiner.Refiner.RefineError
 open Rformat
 open Simple_print
 open Dform
@@ -89,55 +89,10 @@ let format_match_type db buf printers = function
       printers.format_bterm db buf bt
 
 (*
- * Rewrite error.
- *)
-let format_rewrite_error db buf printers = function
-   BoundSOVar s ->
-      format_string buf "BoundSoVar:";
-      format_space buf;
-      format_string buf s
- | FreeSOVar s ->
-      format_string buf "FreeSOVar:";
-      format_space buf;
-      format_string buf s
- | BoundParamVar s ->
-      format_string buf "BoundParamVar:";
-      format_space buf;
-      format_string buf s
- | FreeParamVar s ->
-      format_string buf "FreeParamVar:";
-      format_space buf;
-      format_string buf s
- | BadRedexParam p ->
-      format_string buf "BadRedexParam:";
-      format_space buf;
-      printers.format_param db buf p
- | NoRuleOperator ->
-      format_string buf "NoRuleOperator"
- | BadMatch t ->
-      format_string buf "BadMatch:";
-      format_space buf;
-      format_match_type db buf printers t
- | AllSOInstances s ->
-      format_string buf "AllSOInstances:";
-      format_space buf;
-      format_string buf s
- | MissingContextArg s ->
-      format_string buf "MissingContextArg:";
-      format_space buf;
-      format_string buf s
- | StackError _ ->
-      format_string buf "StackError"
- | RewriteStringError s ->
-      format_string buf "StringError:";
-      format_space buf;
-      format_string buf s
-
-(*
  * Print a refinement error.
  *)
-let format_refine_error db buf printers error =
-   let rec format indent (name, error) =
+let format_refine_error db buf printers name error =
+   let rec format indent name error =
       format_newline buf;
       for i = 0 to indent do
          format_char buf ' ';
@@ -145,7 +100,9 @@ let format_refine_error db buf printers error =
       format_string buf name;
       format_string buf ": ";
       match error with
-         StringError s ->
+         GenericError ->
+            format_string buf "Generic refiner error"
+       | StringError s ->
             format_string buf s
        | IntError i ->
             format_int buf i
@@ -163,30 +120,26 @@ let format_refine_error db buf printers error =
             format_string buf s;
             format_space buf;
             printers.format_term db buf t
-       | GoalError e ->
-            format (indent + 3) e
-       | SecondError e ->
-            format (indent + 3) e
-       | SubgoalError (i, e) ->
+       | GoalError (name, e) ->
+            format (indent + 3) name e
+       | SecondError (name, e) ->
+            format (indent + 3) name e
+       | SubgoalError (i, name, e) ->
             format_int buf i;
             format_space buf;
-            format (indent + 3) e
-       | PairError (e1, e2) ->
-            format (indent + 3) e1;
-            format (indent + 3) e2
-       | RewriteAddressError (a, e) ->
-            format_address buf a;
-            format_space buf;
-            format (indent + 3) e
-       | RewriteError e ->
-            format_rewrite_error db buf printers e
+            format (indent + 3) name e
+       | PairError (name1, e1, name2, e2) ->
+            format (indent + 3) name1 e1;
+            format (indent + 3) name2 e2
        | NodeError (s, t, el) ->
             format_string buf s;
             format_space buf;
             printers.format_term db buf t
-       | TermMatchError (s1, t, s2) ->
-            format_string buf s1;
-            format_string buf ": ";
+       | AddressError (addr, t) ->
+            format_address buf addr;
+            format_space buf;
+            printers.format_term db buf t
+       | TermMatchError (t, s2) ->
             format_string buf s2;
             format_newline buf;
             printers.format_term db buf t
@@ -194,71 +147,81 @@ let format_refine_error db buf printers error =
             printers.format_term db buf t1;
             format_newline buf;
             printers.format_term db buf t2
-       | AddressError (addr, t) ->
-            format_address buf addr;
-            format_space buf;
-            printers.format_term db buf t
        | MetaTermMatchError mt ->
             printers.format_mterm db buf mt
+       | RewriteBoundSOVar s ->
+            format_string buf "BoundSoVar:";
+            format_space buf;
+            format_string buf s
+       | RewriteFreeSOVar s ->
+            format_string buf "FreeSOVar:";
+            format_space buf;
+            format_string buf s
+       | RewriteSOVarArity s ->
+            format_string buf "SOVarArity:";
+            format_space buf;
+            format_string buf s
+       | RewriteBoundParamVar s ->
+            format_string buf "BoundParamVar:";
+            format_space buf;
+            format_string buf s
+       | RewriteFreeParamVar s ->
+            format_string buf "FreeParamVar:";
+            format_space buf;
+            format_string buf s
+       | RewriteBadRedexParam p ->
+            format_string buf "BadRedexParam:";
+            format_space buf;
+            printers.format_param db buf p
+       | RewriteNoRuleOperator ->
+            format_string buf "NoRuleOperator"
+       | RewriteBadMatch t ->
+            format_string buf "BadMatch:";
+            format_space buf;
+            format_match_type db buf printers t
+       | RewriteAllSOInstances s ->
+            format_string buf "AllSOInstances:";
+            format_space buf;
+            format_string buf s
+       | RewriteMissingContextArg s ->
+            format_string buf "MissingContextArg:";
+            format_space buf;
+            format_string buf s
+       | RewriteStringError s ->
+            format_string buf "StringError:";
+            format_space buf;
+            format_string buf s
+       | RewriteAddressError (a, name, e) ->
+            format_address buf a;
+            format_space buf;
+            format (indent + 3) name e
+       | RewriteFreeContextVars vars ->
+            format_string buf "FreeContextVars: ";
+            format_strings buf vars
    in
-      format 0 error
+      format 0 name error
 
 (*
  * Convert an exception to a string.
  *)
-let format_exn db buf printers error =
+let format_exn db buf printers exn =
    let format = function
-      RefineError msg ->
+      RefineError (name, msg) ->
          format_string buf "Refine error:";
          format_space buf;
-         format_refine_error db buf printers msg
-    | FreeContextVars vars ->
-         format_string buf "FreeContextVars:";
-         format_space buf;
-         format_strings buf vars
-    | RewriteErr msg ->
-         format_string buf "Rewrite error:";
-         format_space buf;
-         format_rewrite_error db buf printers msg
-    | Term.TermMatch (s1, t, s2) ->
-         format_string buf "TermMatch:";
-         format_space buf;
-         format_string buf s1;
-         format_space buf;
-         printers.format_term db buf t;
-         format_space buf;
-         format_string buf s2
-    | IncorrectAddress (a, t) ->
-         format_string buf "Incorrect address:";
-         format_space buf;
-         format_address buf a;
-         format_space buf;
-         printers.format_term db buf t
-    | Term.BadMatch (t1, t2) ->
-         format_string buf "Terms do not match:";
-         format_space buf;
-         printers.format_term db buf t1;
-         format_space buf;
-         printers.format_term db buf t2
-    | MetaTermMatch t ->
-         format_string buf "Meta term does not match:";
-         format_space buf;
-         printers.format_mterm db buf t
+         format_refine_error db buf printers name msg
     | exn ->
          format_string buf (Printexc.to_string exn)
    in
       format_pushm buf 4;
-      format error;
+      format exn;
       format_popm buf
 
 (*
  * Formatting.
  *)
-let format_rewrite_error db buf error =
-   format_rewrite_error db buf dform_printers error
-
-let format_refine_error db buf error =
-   format_refine_error db buf dform_printers error
+let format_refine_error db buf name error =
+   format_refine_error db buf dform_printers name error
 
 let format_exn db buf exn =
    format_exn db buf dform_printers exn
@@ -293,6 +256,11 @@ let print_exn db out s exn =
 
 (*
  * $Log$
+ * Revision 1.4  1998/07/02 18:35:40  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.3  1998/07/01 04:37:01  nogin
  * Moved Refiner exceptions into a separate module RefineErrors
  *

@@ -16,7 +16,9 @@ open Refiner.Refiner.Term
 open Refiner.Refiner.Refine
 open Rformat
 open Dform
-open Tactic_type
+
+open Sequent
+open Tacticals
 
 (*
  * The is the state of the current proof.
@@ -76,6 +78,11 @@ val expand_ped : dform_base -> t -> unit
 
 (*
  * $Log$
+ * Revision 1.7  1998/07/02 18:34:36  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.6  1998/06/15 22:31:48  jyh
  * Added CZF.
  *

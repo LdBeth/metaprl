@@ -61,7 +61,7 @@ sig
    val fun_rewrite : term -> (term -> term) -> rewrite_rule
 
    (* Apply a rewrite to a term *)
-   val apply_rewrite : rewrite_rule -> address array * string array ->
+   val apply_rewrite : rewrite_rule -> address array * string array * string list list ->
       term list -> term list * string array
 
    (*
@@ -79,6 +79,11 @@ end
 
 (*
  * $Log$
+ * Revision 1.4  1998/07/02 18:35:51  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.3  1998/07/01 04:37:10  nogin
  * Moved Refiner exceptions into a separate module RefineErrors
  *

@@ -11,8 +11,10 @@ open Debug
 open Opname
 open Refiner.Refiner
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
+open Refiner.Refiner.RefineError
 
 (*
  * Show the file loading.
@@ -248,7 +250,7 @@ let dest_tbl code table t =
    try (Hashtbl.find table (opname_of_term t)) t with
       Not_found ->
          raise (FormatError ("Filter_ocaml.dest_" ^ code ^ " : unrecognized opname", t))
-    | TermMatch (_, t, s) ->
+    | (RefineError (_, TermMatchError (t, s))) ->
          raise (FormatError ("Filter_ocaml.dest_" ^ code ^ " : " ^ s, t))
 
 
@@ -1817,6 +1819,11 @@ let term_of_class = mk_class
 
 (*
  * $Log$
+ * Revision 1.17  1998/07/02 18:34:52  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.16  1998/06/06 02:31:53  nogin
  * Commented out the parts of the code that are not compatible
  * with the Camlp4 1.07.02+1

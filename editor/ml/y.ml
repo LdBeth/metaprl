@@ -12,18 +12,20 @@ open Refiner.Refiner.Refine
 open Tacticals
 open Conversionals
 
+open Base_dtactic
 open Base_rewrite
 open Itt_rfun
 open Itt_int
 open Itt_union
 open Itt_equal
 open Itt_struct
+open Itt_w
 
 open Shell
 open Test
 
 open Czf_itt_set
-open Czf_itt_wf
+(*
 open Czf_itt_true
 open Czf_itt_false
 open Czf_itt_or
@@ -33,6 +35,8 @@ open Czf_itt_all
 open Czf_itt_exists
 open Czf_itt_dall
 open Czf_itt_dexists
+open Czf_itt_set_ind
+*)
 
 (*
  * Proof saving.
@@ -52,16 +56,17 @@ let zT, z =
    in
       zT, z
 
-let _ = load "czf_itt_split"
-let _ = cd "czf_itt_split"
-(*
-let _ = load "czf_itt_axioms"
-let _ = cd "czf_itt_axioms.set_induction"
-*)
+let _ = load "czf_itt_set"
+let _ = cd "czf_itt_set.isset_member"
 let _ = set_writeable ()
 
 (*
  * $Log$
+ * Revision 1.3  1998/07/02 18:34:48  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.2  1998/06/23 22:12:08  jyh
  * Improved rewriter speed with conversion tree and flist.
  *

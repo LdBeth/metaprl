@@ -3,6 +3,7 @@
  *)
 
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Basic
 
 open Utils
@@ -52,7 +53,7 @@ let refine_req_p t = opeq refiner_op (operator_of_term t)
 let refine_args t =
    match dest_term t with
 	{term_op = op; term_terms = goal :: tac :: r } when (opeq op refiner_op)
-	
+
           -> (term_of_unbound_term goal, term_of_unbound_term tac)
 
     | _ -> error ["eval"; "op"; "unrecognized"] [] [t]
@@ -93,7 +94,7 @@ let library_open_and_loop_eval name rhook =
 
   library_open_eval name rhook;
 
-  (unwind_error	
+  (unwind_error
      (function () -> library_loop_eval ();
 	library_close ())
      (function () -> library_close ()))

@@ -9,6 +9,7 @@ open Debug
 open Rformat
 open Opname
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Refiner.Refiner.TermAddr
 open Refiner.Refiner.TermMeta
 
@@ -427,6 +428,11 @@ let _ = install_debug_printer print_simple_term_fp
 
 (*
  * $Log$
+ * Revision 1.3  1998/07/02 18:35:42  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.2  1998/06/22 19:45:42  jyh
  * Rewriting in contexts.  This required a change in addressing,
  * and the body of the context is the _last_ subterm, not the first.

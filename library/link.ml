@@ -7,6 +7,7 @@ open Printf
 open Debug
 
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open MathBus
 open SocketIo
 open Mbterm
@@ -72,7 +73,7 @@ let recv ((in_channel, out_channel), socket) =
   in
   Unix.set_nonblock (Unix.descr_of_in_channel in_channel);
   term
-	
+
 (* LAL set nonblocking before/after nohang instead*)
 
 (* opens local_socket, connects to remote, returns Unidirectional link*)
@@ -106,12 +107,12 @@ let send ((in_channel, out_channel), socket) term =
    Sys_error e -> (Unix.sleep 1; tf ()) in
    tf ()
 
-(*	
-let recv_nohang ((in_channel, out_channel), socket) =	
+(*
+let recv_nohang ((in_channel, out_channel), socket) =
 	 try (Some (term_of_mbterm (read_node in_channel))) with
 	 Unix.Unix_error (e, s1, s2) when ((e = Unix.EWOULDBLOCK) or (e = Unix.EAGAIN)) -> None*)
 
-let recv_nohang ((in_channel, out_channel), socket) =	
+let recv_nohang ((in_channel, out_channel), socket) =
   let {Unix.st_dev = x; Unix.st_ino = y; Unix.st_kind = z;
 	Unix.st_perm = o; Unix.st_nlink = p; Unix.st_uid = q; Unix.st_gid = r;
 	Unix.st_rdev = s; Unix.st_size = size; Unix.st_atime = m;
@@ -121,6 +122,6 @@ let recv_nohang ((in_channel, out_channel), socket) =
   if size = 0 then None else (Some (term_of_mbterm (read_node in_channel)))
 
 
-			
+
 
 

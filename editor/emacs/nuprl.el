@@ -278,7 +278,7 @@ buffer."
 ;  (make-local-variable 'nuprl-debug-arrow2)
 
   ;; Set the font
-  (set-default-font "nuprl-13")
+  (set-default-font "nl12")
   (standard-display-8bit 128 255)
 
   ;; Fire it up
@@ -479,14 +479,13 @@ and collect it into a display if necessary"
 	     (setq nuprl-display-mode (nuprl-get-display-name line))
 	     (delete-region start nstart))
 
+	    ((nuprl-is-scroll-command line)
+	     ;; Scroll the window
+	     (delete-region start nstart))
+
 	    ((nuprl-is-debug-command line)
 	     ;; Display the file in the other window
 	     (delete-region start nstart))
-
-	    ((eq (string-match "# Nuprl-Light: " line) 0)
-	     ;; Send initialization
-	     (nuprl-send-initialization (substring line 15))
-	     (set-marker start nstart))
 
 	    (t
 	     ;; This is a normal line: just skip it
@@ -831,6 +830,22 @@ the NuPRL buffer, and the second is the line of the view command."
   (nuprl-show-buffer nuprl-proof-buffer))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; SCROLL
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;
+;; Scroll the window so that this line is at the top
+;;
+(defun nuprl-is-scroll-command (line)
+  "Scroll the window to the top if the line matches."
+  (let ((cols (length line)))
+    (cond ((and (= cols 1) (= (aref line 0) ?\014))
+	   (message "Line feed"))
+
+	  ;; Not a degger command
+	  (t nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; DEBUG
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -934,14 +949,6 @@ if this line specifies one"
   (when nuprl-debug-arrow2
 	(delete-overlay nuprl-debug-arrow2)
 	(setq nuprl-debug-arrow2 nil)))
-
-;;
-;; Prompt line?
-;;
-(defun nuprl-send-initialization (line)
-  "Detect is a line is the nuprl prompt line"
-  (setq line (concat "     " line "\n"))
-  (nuprl-simple-send (current-buffer) line))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; TRAILER

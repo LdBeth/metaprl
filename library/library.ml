@@ -5,6 +5,7 @@ open Debug
 open Utils
 open List
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Refiner.Refiner.TermSubst
 open Basic
 (*open Tent *)
@@ -55,10 +56,10 @@ let disconnect c = Orb.disconnect (oref_val orbr) c
 
 
 (*	test_ehook
- *	
+ *
  *	  - add : term -> term -> term list
- *	
- *	
+ *
+ *
  *)
 
 let faux_mbs bterms =
@@ -156,7 +157,7 @@ let lib_new c s =
 	; environment =
 	     open_library_environment
 		c
-		s	
+		s
 		test_ehook
 	}
 
@@ -166,7 +167,7 @@ let join c tags =
 	; environment =
 	     join_library_environment
 		c
-		tags	
+		tags
 		test_ehook
 	}
 
@@ -175,7 +176,7 @@ let join_eval c tags ehook =
 	; environment =
 	     join_library_environment
 		c
-		tags	
+		tags
 		ehook
 	}
 
@@ -231,7 +232,7 @@ let restore c cookie f =
       lib.environment
       tid
       (function t ->
-	let transaction =	
+	let transaction =
 		{ library = lib
 		; tbegin = term_to_stamp (stamp_of_icallback_term t)
 		; tent_collect = []
@@ -450,13 +451,13 @@ let eval_m t m =
   eval_args t.library.environment t.tid
 				(fst m)
 				(snd m)
-				
+
 let eval_m_to_term t m =
   require_remote_transaction t;
   eval_args_to_term t.library.environment t.tid
 				(fst m)
 				(snd m)
-				
+
 let eval = eval_m
 let eval_to_term = eval_m_to_term
 let eval_to_string t m = string_of_istring_term (eval_m_to_term t (string_return m))
@@ -660,5 +661,5 @@ let descendent t oid names =
      then oid
      else try aux (assoc (hd names) (children t oid)) (tl names)
 	  with Not_found -> error ("child" :: "Not_found" :: names) [oid] []
-  in aux oid names	
+  in aux oid names
 

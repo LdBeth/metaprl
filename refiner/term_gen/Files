@@ -1,5 +1,10 @@
-TERM_GEN_FILES :=\
+TERM_GEN_PFILES :=\
 	term_man_gen\
 	term_addr_gen\
 	term_shape_gen\
 	term_meta_gen
+
+TERM_GEN_FILES :=\
+	term_exn\
+	$(addsuffix _verb, $(TERM_GEN_PFILES))\
+	$(addsuffix _simp, $(TERM_GEN_PFILES))

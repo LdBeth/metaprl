@@ -1,0 +1,50 @@
+(*
+ * Define terms.  This is the standard straighforward definition.
+ *)
+
+open Opname
+open Refine_error_sig
+open Term_ds_sig
+open Term_base_sig
+open Term_ds
+
+module Term (**)
+#ifdef VERBOSE_EXN
+   (RefineError : RefineErrorSig
+    with type level_exp = TermType.level_exp
+    with type param = TermType.param
+    with type term = TermType.term
+    with type bound_term = TermType.bound_term)
+#endif VERBOSE_EXN
+: TermDsSig
+  with type level_exp_var = TermType.level_exp_var
+  with type level_exp = TermType.level_exp
+  with type param = TermType.param
+  with type operator = TermType.operator
+  with type term = TermType.term
+  with type bound_term = TermType.bound_term
+
+  with type level_exp_var' = TermType.level_exp_var'
+  with type level_exp' = TermType.level_exp'
+  with type object_id = TermType.object_id
+  with type param' = TermType.param'
+  with type operator' = TermType.operator'
+  with type term' = TermType.term'
+  with type bound_term' = TermType.bound_term'
+
+  with type term_subst = TermType.term_subst
+
+(*
+ * $Log$
+ * Revision 1.1  1998/07/02 18:36:00  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
+ *
+ * -*-
+ * Local Variables:
+ * Caml-master: "refiner.run"
+ * End:
+ * -*-
+ *)

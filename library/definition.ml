@@ -4,6 +4,7 @@ open Debug
 
 open Basic
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Nuprl5
 open List
 open Db
@@ -125,39 +126,39 @@ end
 (*
  *	due to the difficulties of initializing class instances I think using
  *	classes may not be best.
- *	
+ *
  *	  - unroll from sub -> super, ie new a term, term would be !a with a subterm for super.
  *	      * class a term = val ata = fa term val atb = ga term end
  *	      * class b term = inherit a (bb term) val bta = fb term val btb = gb term end
  *	    not bad except initializer funcs fa and ga, not flexible enough, for example
- *	    one might want to produce some intermediate data structure from term and used that	
+ *	    one might want to produce some intermediate data structure from term and used that
  *	    to init ata and atb. Could make values mutable and do provide/import.
- *	
+ *
  *	Winner: see bot haven't considered variants.
  *	  - unroll from super -> sub. impossible except via provide/import.
  *	      * Accept provide/import then have super class define a subterm method and
  *		things work pretty well?
  *	  Ugly but effective.
- *	
+ *
  *  	Not better might be to use records where sub class contains a super class
- *	
+ *
  *	a = { t :term }
  *  	b = { x : 'a; y : 'b, super :a}
- *	
+ *
  *	make_b t =
  *	  let (super, bterm) = make_a t in
  *  	     let foo = f bterm in { x = g foo, y = h foo, super = super}
- *  	
+ *
  *	this works well for constructing but is messy when accesing super record values.
- *  	
+ *
  *	x : b
  *	term_of = b.super.term
- *  	
+ *
  *	however can not make a list of two derived records without defining variant class.
  *	this is getting very tedious.
  *	OTOH is it common to have a list of heterogeneous derived records?
  *
- *	
+ *
  *	maybe functors would help here.
  *	Haven't considered variant types where subtype is parameterized supertype :
  *	  - ugly to acces subtype data as have to match however good polymorphism.
@@ -188,17 +189,17 @@ end
 (*
  *	definitions will be subclassed but need to be able to recover subclass
  *	from a superclass.
- *	
+ *
  *	one method is to parameterize class so that substance class is available.
  *	and to use a variant to hold the superclasses instead of referring to the subclass.
- *	
+ *
  *	Have a choice :
  *	  - parameterize by substance,
  *	      * slightly cooler (more typesafe?)
- *	
+ *
  *	  - substance variant.
  *	      * less complicated.
- *	
+ *
  *)
 
 (* exception UnexpectedSubstanceType of substance_type *)

@@ -7,6 +7,7 @@ open Printf
 open Debug
 open Opname
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMeta
 open Ml_format_sig
 
@@ -477,6 +478,11 @@ end
 
 (*
  * $Log$
+ * Revision 1.3  1998/07/02 18:35:39  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.2  1998/06/01 13:54:56  jyh
  * Proving twice one is two.
  *

@@ -1,0 +1,56 @@
+(*
+ * Substituion, alpha equality, and unification.
+ *)
+
+open Refine_error_sig
+open Term_subst_sig
+open Term_std_sig
+open Term_std
+
+module TermSubst (**)
+#ifdef VERBOSE_EXN
+   (Term : TermStdSig
+    with type level_exp_var = TermType.level_exp_var
+    with type level_exp = TermType.level_exp
+    with type param = TermType.param
+    with type operator = TermType.operator
+    with type term = TermType.term
+    with type bound_term = TermType.bound_term
+
+    with type level_exp_var' = TermType.level_exp_var'
+    with type level_exp' = TermType.level_exp'
+    with type object_id = TermType.object_id
+    with type param' = TermType.param'
+    with type operator' = TermType.operator'
+    with type term' = TermType.term'
+    with type bound_term' = TermType.bound_term')
+   (RefineError : RefineErrorSig
+    with type level_exp = TermType.level_exp
+    with type param = TermType.param
+    with type term = TermType.term
+    with type bound_term = TermType.bound_term)
+#endif VERBOSE_EXN
+ : TermSubstSig
+   with type term = TermType.term
+   with type param = TermType.param
+
+(*
+ * $Log$
+ * Revision 1.1  1998/07/02 18:36:42  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
+ * Revision 1.1  1998/05/28 15:02:46  jyh
+ * Partitioned refiner into subdirectories.
+ *
+ * Revision 1.1  1998/05/27 15:15:01  jyh
+ * Functorized the refiner over the Term module.
+ *
+ *
+ * -*-
+ * Local Variables:
+ * Caml-master: "refiner"
+ * End:
+ * -*-
+ *)

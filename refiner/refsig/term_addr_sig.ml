@@ -1,14 +1,11 @@
 (*
- *
+ * Addressed operations on terms.
  *)
 
 module type TermAddrSig =
 sig
    type term
    type address
-
-   (* Subterm addressing *)
-   exception IncorrectAddress of address * term
 
    (*
     * Constructors.
@@ -34,12 +31,18 @@ sig
     *)
    val term_subterm :  term -> address -> term
    val replace_subterm : term -> address -> term -> term
-   val apply_fun_at_addr : (term -> term) -> address -> (term -> term)
-   val apply_fun_arg_at_addr : (term -> term * 'a) -> address -> (term -> term * 'a)
+   val replace_bound_subterm : term -> address -> string list list -> (string list list -> term) -> term
+   val apply_fun_at_addr : (string list list -> term -> term) -> address -> string list list -> term -> term
+   val apply_fun_arg_at_addr : (string list list -> term -> term * 'a) -> address -> string list list -> term -> term * 'a
 end
 
 (*
  * $Log$
+ * Revision 1.7  1998/07/02 18:35:52  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.6  1998/06/22 19:45:45  jyh
  * Rewriting in contexts.  This required a change in addressing,
  * and the body of the context is the _last_ subterm, not the first.

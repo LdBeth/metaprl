@@ -3,6 +3,7 @@ open Debug
 
 
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMan
 open Basic
 open Filename
@@ -263,7 +264,7 @@ and scan_bound_term scanner =
 	  else if (scan_at_byte_p scanner.scanner idot)
 		then ((scan_next scanner.scanner);
 			 mk_bterm (scanner.stb s) (scan_term scanner))
-	
+
 	  else if (scan_at_byte_p scanner.scanner ilcurly)
 		then mk_bterm []
 			(let op = (make_operator s (scan_parameters scanner)) in
@@ -295,7 +296,7 @@ and scan_term scanner =
 	    |_ -> error ["read_term"; "term"] [] []
       else let op = (scan_operator scanner) in
 		let bterms = (scan_bound_terms scanner) in
-			mk_term op bterms	
+			mk_term op bterms
 
 
 
@@ -499,7 +500,7 @@ let rec string_to_parameter s ptype =
 	| 'a' ->  (mk_meta_param_from_strings ss ptype)
 
 	| _ -> error ["string_to_parameter"; s; ptype][][])
-	
+
 
 
 let make_session_scanner stream =
@@ -520,7 +521,7 @@ let extract_level_string_updates level inparms =
 			; parms := tl (tl (tl !parms)))
 		else if stringeq s "nuprl5_implementation2"
 		   then (level_assign level (Binding (extract_binding2 (tl !parms)))
-			; parms := tl (tl !parms))		
+			; parms := tl (tl !parms))
 		else if stringeq s "nuprl5_implementation1"
 		   then (level_assign level (Binding (extract_binding2 (tl !parms)))
 			; parms := tl !parms)
@@ -634,11 +635,11 @@ let size_of_ilevel_term t =
 
 (*
  *	have assoc table of indices to levels and persist terms.
- *	
+ *
  *	<loaded>	: {stamp; int; levels} list
- *	
+ *
  *	<disk>		: {int; term(* persist-term *)} list
- *	
+ *
  *)
 
 let disk_levels = ref ([] : ((int * term) list))
@@ -662,7 +663,7 @@ let loaded_level_find_stamp s =
 	!loaded_levels)
      then !found
      else raise Not_found
-	
+
 let loaded_levels_update index stamp levels =
  loaded_levels := (index, (stamp, levels)) :: !loaded_levels
 
@@ -756,8 +757,8 @@ let read_disk_levels () =
 			 -> (match dest_op (operator_of_term (term_of_unbound_term li)) with
 			      { op_name = _; op_params = [id; index]}
 			      -> (dest_int_param index, term_of_unbound_term dp) :: aux()
-			     |_ -> error ["read_disk_levels"][][term])				
-			 |_ -> error ["read_disk_levels"][][term]				
+			     |_ -> error ["read_disk_levels"][][term])
+			 |_ -> error ["read_disk_levels"][][term]
 
 	in disk_levels := aux ())
   "levels" "lst"

@@ -9,6 +9,7 @@ open Debug
 
 open Opname
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
 open Rformat
@@ -16,7 +17,7 @@ open Dform
 
 open Filter_ocaml
 
-open Tactic_type
+open Tacticals
 open Io_proof_type
 
 (*
@@ -64,7 +65,7 @@ and normalize_child = function
 and normalize_aterm { aterm_goal = goal; aterm_hyps = hyps; aterm_args = args } =
    normalize_term goal;
    List.iter normalize_term hyps;
-   List.iter normalize_attribute args
+   List.iter Tactic_type.normalize_attribute args
 
 (************************************************************************
  * PRINTING                                                             *
@@ -265,29 +266,30 @@ and term_of_aterm
    mk_simple_term proof_aterm_op [goal;
                                   mk_xlist_term hyps;
                                   mk_simple_string_term proof_aterm_op label [];
-                                  mk_xlist_term (List.map term_of_attribute args)]
+                                  mk_xlist_term (List_util.some_map term_of_attribute args)]
 
 and term_of_attribute (name, att) =
    match att with
-      TermArg t ->
-         mk_simple_string_term proof_term_arg_op name [t]
-    | TypeArg t ->
-         mk_simple_string_term proof_type_arg_op name [t]
-    | IntArg i ->
-         mk_string_int_term proof_int_arg_op name i
-    | BoolArg flag ->
+      Tactic_type.TermArg t ->
+         Some (mk_simple_string_term proof_term_arg_op name [t])
+    | Tactic_type.TypeArg t ->
+         Some (mk_simple_string_term proof_type_arg_op name [t])
+    | Tactic_type.IntArg i ->
+         Some (mk_string_int_term proof_int_arg_op name i)
+    | Tactic_type.BoolArg flag ->
          let s =
             if flag then
                "true"
             else
                "false"
          in
-            mk_string_string_term proof_bool_arg_op name s
-    | SubstArg t ->
-         mk_simple_string_term proof_subst_arg_op name [t]
-    | TacticArg tac ->
-         eprintf "Saved proof has a tactic argument that will not be saved.%t" eflush;
-         mk_simple_string_term proof_tactic_arg_op name []
+            Some (mk_string_string_term proof_bool_arg_op name s)
+    | Tactic_type.SubstArg t ->
+         Some (mk_simple_string_term proof_subst_arg_op name [t])
+    | Tactic_type.TacticArg _
+    | Tactic_type.IntTacticArg _
+    | Tactic_type.TypeinfArg _ ->
+         None
 
 (*
  * Convert the term back into a proof.
@@ -348,22 +350,19 @@ and attribute_of_term t =
    let op = opname_of_term t in
       if op == proof_term_arg_op then
          let name, t = dest_string_dep0_term op t in
-            name, TermArg t
+            name, Tactic_type.TermArg t
       else if op == proof_type_arg_op then
          let name, t = dest_string_dep0_term op t in
-            name, TypeArg t
+            name, Tactic_type.TypeArg t
       else if op == proof_int_arg_op then
          let name, i = dest_string_int_term t in
-            name, IntArg i
+            name, Tactic_type.IntArg i
       else if op == proof_bool_arg_op then
          let name, flag = dest_string_string_term t in
-            name, BoolArg (flag <> "false")
+            name, Tactic_type.BoolArg (flag <> "false")
       else if op == proof_subst_arg_op then
          let name, t = dest_string_dep0_term op t in
-            name, SubstArg t
-      else if op == proof_tactic_arg_op then
-         let name = dest_string_term op t in
-            name, TacticArg (Tacticals.failWithT "can't restore tactic from file")
+            name, Tactic_type.SubstArg t
       else
          raise (Failure "Filter_proof.attribute_of_term")
 
@@ -378,10 +377,12 @@ let tactics_of_proof proof =
    let hash = Hashtbl.create 107 in
    let rec collect_proof
        { proof_step = step;
-         proof_children = children
+         proof_children = children;
+         proof_extras = extras
        } =
       collect_proof_step step;
-      List.iter collect_proof_child children
+      List.iter collect_proof_child children;
+      List.iter collect_proof extras
 
    and collect_proof_step = function
       ProofStep { step_ast = ast; step_text = text } ->
@@ -410,6 +411,11 @@ let tactics_of_proof proof =
 
 (*
  * $Log$
+ * Revision 1.6  1998/07/02 18:34:27  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.5  1998/06/15 22:28:58  jyh
  * Added CZF.
  *

@@ -49,6 +49,10 @@ sig
    val mk_dep0_dep2_term : opname -> string -> string -> term -> term -> term
    val dest_dep0_dep2_term : opname -> term -> string * string * term * term
 
+   val is_dep0_dep3_term : opname -> term -> bool
+   val mk_dep0_dep3_term : opname -> string -> string -> string -> term -> term -> term
+   val dest_dep0_dep3_term : opname -> term -> string * string * string * term * term
+
    val is_dep2_dep0_term : opname -> term -> bool
    val mk_dep2_dep0_term : opname -> string -> string -> term -> term -> term
    val dest_dep2_dep0_term : opname -> term -> string * string * term * term
@@ -117,6 +121,11 @@ end
 
 (*
  * $Log$
+ * Revision 1.4  1998/07/02 18:35:55  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.3  1998/06/15 21:58:05  jyh
  * Added a few new functions.
  *

@@ -11,14 +11,47 @@
  *
  *)
 
+#include "refine_error.h"
+
 open Opname
+open Refine_error_sig
+open Term_ds_sig
 open Term_ds
 
-module TermEval =
+module TermEval
+#ifdef VERBOSE_EXN
+   (Term : TermDsSig
+    with type level_exp_var = TermType.level_exp_var
+    with type level_exp = TermType.level_exp
+    with type param = TermType.param
+    with type operator = TermType.operator
+    with type term = TermType.term
+    with type bound_term = TermType.bound_term
+
+    with type level_exp_var' = TermType.level_exp_var'
+    with type level_exp' = TermType.level_exp'
+    with type object_id = TermType.object_id
+    with type param' = TermType.param'
+    with type operator' = TermType.operator'
+    with type term' = TermType.term'
+    with type bound_term' = TermType.bound_term')
+   (RefineError : RefineErrorSig
+    with type level_exp = TermType.level_exp
+    with type param = TermType.param
+    with type term = TermType.term
+    with type bound_term = TermType.bound_term)
+#endif VERBOSE_EXN
+=
 struct
+#ifdef VERBOSE_EXN
+   open RefineError
+#else
+   open Term_base_ds_simp
+#endif
+   open TermType
    open Term
 
-   type term = Term.term
+   type term = TermType.term
 
    (*
     * Manifest terms are injected into the "perv" module.
@@ -43,7 +76,7 @@ struct
       { term_op = { imp_op_name = opname; imp_op_params = [Var v] };
         term_terms = []
       } when opname == canon_var_opname -> v
-     | _ -> raise (TermMatch ("dest_canon_var", t, ""))
+     | _ -> ref_raise(RefineError ("dest_canon_var", TermMatchError (t, "bad arity")))
 
    (*
     * Make a "canon_var".
@@ -82,7 +115,7 @@ struct
     | var::vars,bt::bterms ->
          let tail = dest_subst_args t (vars,bterms) in
          (var::fst tail),((dest_simple_bterm t bt)::snd tail)
-    | _ -> raise (TermMatch ("dest_subst", t, ""))
+    | _ -> ref_raise(RefineError ("dest_subst", TermMatchError (t, "bad arity")))
 
    let dest_subst t = match dest_term t with
       { term_op = { imp_op_name = opname; imp_op_params = [] };
@@ -90,7 +123,7 @@ struct
       } when opname == subst_opname ->
          let bt = dest_bterm btrm in
          (bt.bterm, dest_subst_args t (bt.bvars,bterms))
-     | _ -> raise (TermMatch ("dest_subst", t, ""))
+     | _ -> ref_raise(RefineError ("dest_subst", TermMatchError (t, "bad arity")))
 
    (*
     * Make a "subst" term.

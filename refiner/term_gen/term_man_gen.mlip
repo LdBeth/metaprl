@@ -2,7 +2,9 @@
  * Manifest terms.
  *)
 
+open Refine_error_sig
 open Term_simple_sig
+open Term_base_sig
 open Term_op_sig
 open Term_addr_sig
 open Term_subst_sig
@@ -10,6 +12,13 @@ open Term_man_sig
 
 module TermMan (**)
    (Term : TermSimpleSig)
+   (TermBase : TermBaseSig
+    with type term = Term.term
+    with type term' = Term.term'
+    with type bound_term = Term.bound_term
+    with type bound_term' = Term.bound_term'
+    with type operator = Term.operator
+    with type operator' = Term.operator')
    (TermOp : TermOpSig
     with type term = Term.term)
    (TermAddr : TermAddrSig
@@ -17,6 +26,9 @@ module TermMan (**)
    (TermSubst : TermSubstSig
     with type term = Term.term
     with type param = Term.param)
+   (RefineError : RefineErrorSig
+    with type term = Term.term
+    with type address = TermAddr.address)
 : TermManSig
   with type term = Term.term
   with type operator = Term.operator
@@ -25,6 +37,11 @@ module TermMan (**)
 
 (*
  * $Log$
+ * Revision 1.1  1998/07/02 18:36:21  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.2  1998/06/03 22:19:36  jyh
  * Nonpolymorphic refiner.
  *

@@ -1,5 +1,11 @@
-TERM_DS_FILES :=\
-	term_ds\
+TERM_DS_PFILES :=\
+	term_base_ds\
 	term_op_ds\
 	term_subst_ds\
 	term_eval_ds
+
+TERM_DS_FILES :=\
+	term_ds_sig\
+	term_ds\
+	$(addsuffix _verb, $(TERM_DS_PFILES))\
+	$(addsuffix _simp, $(TERM_DS_PFILES))

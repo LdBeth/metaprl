@@ -30,16 +30,19 @@
 
 include Io_proof_type
 include Proof_type
-include Tactic_type
+include Tacticals
 
 include Proof_step
 
 open Refiner.Refiner.Term
-open Refiner.Refiner.RefineErrors
+open Refiner.Refiner.Refine
+open Refiner.Refiner.RefineError
 open Dform
 
+open Sequent
+open Tacticals
+
 open Io_proof_type
-open Tactic_type
 open Proof_type
 
 (* Abstract type *)
@@ -93,7 +96,7 @@ exception Match
  * We overload the refinement error to give the location of
  * the error.
  *)
-exception ProofRefineError of t * refine_error
+exception ProofRefineError of t * string * refine_error
 
 (*
  * Constructors
@@ -119,6 +122,7 @@ val subgoals : t -> tactic_arg list
 
 val item : t -> item
 val children : t -> child list
+val extras : t -> t list
 
 val parent : t -> t
 val main : t -> t
@@ -161,10 +165,15 @@ val expand : dform_base -> t -> t
  * IO
  *)
 val io_proof_of_proof : t -> proof
-val proof_of_io_proof : tactic_argument -> (string * tactic) array -> proof -> t
+val proof_of_io_proof : tactic_argument -> (string * tactic) array -> sentinal -> proof -> t
 
 (*
  * $Log$
+ * Revision 1.13  1998/07/02 18:34:34  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.12  1998/07/01 04:36:26  nogin
  * Moved Refiner exceptions into a separate module RefineErrors
  *

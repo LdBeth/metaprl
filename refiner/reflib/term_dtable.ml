@@ -255,7 +255,7 @@ let find_entry
     (entries : 'a info_entry list)
     (t : term list) =
    let match_entry { info_rw = rw; info_value = v } =
-      let t2, _ = apply_rewrite rw ([||], [||]) t in
+      let t2, _ = apply_rewrite rw ([||], [||], []) t in
       let t2', arg = f' (t2, t) in
          v (map_pair f t2') arg
    in
@@ -303,6 +303,11 @@ let lookup { ext_lrtable = lrbase;
 
 (*
  * $Log$
+ * Revision 1.4  1998/07/02 18:35:44  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.3  1998/06/09 20:52:19  jyh
  * Propagated refinement changes.
  * New tacticals module.

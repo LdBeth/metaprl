@@ -5,7 +5,7 @@
  *
  *)
 
-include Tactic_type
+include Tacticals
 include Io_proof_type
 include Proof_type
 
@@ -13,8 +13,10 @@ open Refiner.Refiner.Term
 open Refiner.Refiner.Refine
 open Dform
 
+open Sequent
+open Tacticals
+
 open Io_proof_type
-open Tactic_type
 open Proof_type
 
 (* Abstract type for steps *)
@@ -46,10 +48,18 @@ val expand : dform_base -> t -> t
 
 (* IO *)
 val io_step_of_step : t -> proof_step
-val step_of_io_step : tactic_argument -> (string, tactic) Hashtbl.t -> proof_step -> t
+val step_of_io_step : tactic_argument -> (string, tactic) Hashtbl.t -> sentinal -> proof_step -> t
+
+(* Debug *)
+val debug_io_tactic : bool ref
 
 (*
  * $Log$
+ * Revision 1.12  1998/07/02 18:34:38  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.11  1998/06/09 20:51:18  jyh
  * Propagated refinement changes.
  * New tacticals module.

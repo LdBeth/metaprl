@@ -9,7 +9,7 @@ include Package_df
 open Filter_cache
 open Filter_summary
 
-open Tactic_type
+open Tacticals
 open Shell_type
 open Package_info
 
@@ -33,6 +33,11 @@ val view_rule :
 
 (*
  * $Log$
+ * Revision 1.2  1998/07/02 18:34:47  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.1  1998/06/15 22:31:56  jyh
  * Added CZF.
  *

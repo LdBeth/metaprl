@@ -104,7 +104,7 @@ install:: all
 
 $(NL).run: $(CMOBJS)
 	rm -f $@
-	$(OCAMLMKTOP) -g -o $@ -custom -linkall $(CMOBJS) $(CCLIBS)
+	$(OCAMLMKTOP) -o $@ -custom -linkall $(CMOBJS) $(CCLIBS)
 
 clean::
 	$(RM) -f *.p4* *.pp*

@@ -4,6 +4,7 @@ INCLUDE := -I $(ROOT)/mllib -I ../refbase -I ../refsig
 
 # Library files
 include Files
+MLPFILES := $(TERM_GEN_PFILES)
 LMFILES := $(TERM_GEN_FILES)
 
 # Name of library

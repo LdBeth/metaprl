@@ -8,6 +8,7 @@ open Debug
 open Opname
 open Refiner.Refiner
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMeta
 open Ml_file
 open Simple_print
@@ -131,6 +132,11 @@ let output_path oport =
 
 (*
  * $Log$
+ * Revision 1.6  1998/07/02 18:35:00  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.5  1998/05/27 15:13:11  jyh
  * Functorized the refiner over the Term module.
  *

@@ -50,6 +50,7 @@ type select_type =
 type 'a proof_type =
    Primitive of term
  | Derived of MLast.expr
+ | Incomplete
  | Interactive of 'a
 
 (*
@@ -166,6 +167,7 @@ let summary_opname = mk_opname "Summary"     nil_opname
 
 let prim_op        = mk_opname "prim"        summary_opname
 let derived_op     = mk_opname "derived"     summary_opname
+let incomplete_op  = mk_opname "incomplete"  summary_opname
 let interactive_op = mk_opname "interactive" summary_opname
 
 let marshal_proof name to_term = function
@@ -173,6 +175,8 @@ let marshal_proof name to_term = function
       mk_simple_term prim_op [t]
  | Derived expr ->
       mk_simple_term derived_op [term_of_expr expr]
+ | Incomplete ->
+      mk_simple_term incomplete_op []
  | Interactive expr ->
       mk_simple_term interactive_op [to_term name expr]
 
@@ -183,6 +187,8 @@ let unmarshal_proof name of_term t =
          Primitive expr
       else if opname == derived_op then
          Derived (expr_of_term expr)
+      else if opname == incomplete_op then
+         Incomplete
       else if opname == interactive_op then
          Interactive (of_term name (one_subterm t))
       else
@@ -194,6 +200,8 @@ let interactive_proof to_raw name proof =
          Primitive t
     | Derived expr ->
          Derived expr
+    | Incomplete ->
+         Incomplete
     | Interactive pf ->
          Interactive (to_raw name pf)
 
@@ -517,6 +525,11 @@ end
 
 (*
  * $Log$
+ * Revision 1.25  1998/07/02 18:34:50  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.24  1998/06/16 16:25:29  jyh
  * Added itt_test.
  *

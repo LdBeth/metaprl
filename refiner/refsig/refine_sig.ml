@@ -43,10 +43,7 @@ sig
     *
     * Each hyp is labelled by its first argument.
     *)
-   type msequent =
-      { mseq_goal : term;
-        mseq_hyps : term list
-      }
+   type msequent
 
    (************************************************************************
     * PROOFS AND VALIDATIONS                                               *
@@ -58,9 +55,21 @@ sig
     *)
    type extract
 
+   (*
+    * A checker is used to help make sure that the
+    * refiner dependencies are respected.  However,
+    * the real dependency checker checks the extract.
+    *)
+   type sentinal
+
    (************************************************************************
     * TACTICS                                                              *
     ************************************************************************)
+
+   (*
+    * Empty checker for just trying refinements.
+    *)
+   val any_sentinal : sentinal
 
    (*
     * A tactic is the reverse form of validation.
@@ -70,14 +79,11 @@ sig
     * Tactics operate on lists of terms.  These lists
     * represent meta-implications: the head term
     * is the goal, and the remainder are the assumptions.
-    *
-    * safe_tactic is a subtype of (term -> term list)
-    * where the inference is always correct.
     *)
    type tactic
 
    (* Tactic application *)
-   val refine : tactic -> msequent -> msequent list * extract
+   val refine : sentinal -> tactic -> msequent -> msequent list * extract
 
    (* Compose extract tree *)
    val compose : extract -> extract list -> extract
@@ -149,8 +155,16 @@ sig
    val corelserw : cond_rewrite -> cond_rewrite -> cond_rewrite
 
    (************************************************************************
-    * UTILITIES                                                            *
+    * META SEQUENT                                                         *
     ************************************************************************)
+
+   (*
+    * Con/de-structors.
+    *)
+   val mk_msequent : term -> term list -> msequent
+   val dest_msequent : msequent -> term * term list
+   val dest_msequent_vars : msequent -> string list * term * term list
+
    (*
     * Alpha equality on sequent objects.
     * Tactic argument is ignored
@@ -189,6 +203,11 @@ sig
     * for the arguments are included.
     *)
    val term_of_extract : refiner -> extract -> term list -> term
+
+   (*
+    * Get a checker from the refiner.
+    *)
+   val sentinal_of_refiner : refiner -> sentinal
 
    (*
     * An axiom is a term that is true.
@@ -340,8 +359,8 @@ sig
    (*
     * Merge refiners.
     *)
-   val join_refiner : refiner ref -> refiner -> unit
    val label_refiner : refiner ref -> string -> unit
+   val join_refiner : refiner ref -> refiner -> unit
 
    (************************************************************************
     * DESTRUCTION                                                          *
@@ -396,10 +415,16 @@ sig
     *)
    val is_null_refiner : refiner -> bool
    val dest_refiner : refiner -> refiner_item * refiner
+   val find_refiner : refiner -> string -> refiner
 end
 
 (*
  * $Log$
+ * Revision 1.8  1998/07/02 18:35:49  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.7  1998/07/01 04:37:08  nogin
  * Moved Refiner exceptions into a separate module RefineErrors
  *

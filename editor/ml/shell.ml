@@ -5,7 +5,7 @@
  *    2. Creation, inspection of items in modules.
  *)
 
-include Tactic_type
+include Tacticals
 
 include Proof_edit
 include Package_info
@@ -20,14 +20,14 @@ open Printf
 open Debug
 
 open Refiner.Refiner.Term
-open Refiner.Refiner.RefineErrors
+open Refiner.Refiner.RefineError
 open Dform
 open Dform_print
 open Rformat
 
 open Filter_summary
 
-open Tactic_type
+open Tacticals
 
 open Proof_type
 open Package_type
@@ -663,25 +663,6 @@ let fold_all () =
       print_exn set ()
 
 (************************************************************************
- * TACTICS                                                              *
- ************************************************************************)
-
-let resources () =
-   (Package.argument (get_current_package info)).ref_rsrc
-
-let dT i p =
-   (resources ()).ref_d i p
-
-let subtypeT p =
-   (resources ()).ref_subtype p
-
-let squashT p =
-   (resources ()).ref_squash p
-
-let eqcdT p =
-   (resources ()).ref_eqcd p
-
-(************************************************************************
  * INITIALIZATION                                                       *
  ************************************************************************)
 
@@ -713,6 +694,11 @@ let init () =
 (*
  *
  * $Log$
+ * Revision 1.16  1998/07/02 18:34:41  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.15  1998/07/01 04:36:29  nogin
  * Moved Refiner exceptions into a separate module RefineErrors
  *

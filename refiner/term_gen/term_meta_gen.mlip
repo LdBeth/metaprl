@@ -2,19 +2,32 @@
  * Meta-terms include implications, etc.
  *)
 
+open Refine_error_sig
 open Term_sig
+open Term_base_sig
 open Term_subst_sig
 open Term_meta_sig
 
-module TermMeta
-   (Term : TermSig)
+module TermMeta (**)
+   (TermType : TermSig)
+   (Term : TermBaseSig
+    with type term = TermType.term)
    (TermSubst : TermSubstSig
-    with type term = Term.term)
-       : TermMetaSig
-   with type term = Term.term
+    with type term = TermType.term)
+   (RefineError : RefineErrorSig
+    with type term = TermType.term
+    with type meta_term = TermType.meta_term)
+: TermMetaSig
+  with type term = TermType.term
+  with type meta_term = TermType.meta_term
 
 (*
  * $Log$
+ * Revision 1.1  1998/07/02 18:36:24  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.2  1998/06/01 13:55:26  jyh
  * Proving twice one is two.
  *

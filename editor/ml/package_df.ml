@@ -69,6 +69,7 @@ let convert_impl =
          t
     | Derived expr ->
          term_of_expr expr
+    | Incomplete
     | Interactive _ ->
          null_term
    in
@@ -126,6 +127,11 @@ let format_packages buf pack =
 
 (*
  * $Log$
+ * Revision 1.7  1998/07/02 18:34:28  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.6  1998/05/28 13:45:39  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

@@ -30,18 +30,18 @@
  *      this rewrite can only be applied in a sequent
  *      calculus, and it means:
  *         p: (H >> x in A # B) --> (C:[pair(x.1, x.2)] <--> C:[x])
- *
  *)
-
 open Printf
 open Debug
 
+open Opname
 open Term_sig
+open Term_base_sig
 open Term_man_sig
 open Term_subst_sig
 open Term_addr_sig
 open Term_meta_sig
-open Refine_errors_sig
+open Refine_error_sig
 open Rewrite_sig
 open Refine_sig
 
@@ -59,33 +59,43 @@ let debug_refiner =
         debug_value = false
       }
 
+let debug_sentinal =
+   create_debug (**)
+      { debug_name = "sentinal";
+        debug_description = "Display sentinal operations";
+        debug_value = false
+      }
+
 module Refine (**)
-   (Term : TermSig)
+   (TermType : TermSig)
+   (Term : TermBaseSig
+    with type term = TermType.term)
    (TermMan : TermManSig
-    with type term = Term.term)
+    with type term = TermType.term)
    (TermSubst : TermSubstSig
-    with type term = Term.term)
+    with type term = TermType.term)
    (TermAddr : TermAddrSig
-    with type term = Term.term)
+    with type term = TermType.term)
    (TermMeta : TermMetaSig
-    with type term = Term.term)
+    with type term = TermType.term)
    (Rewrite : RewriteSig
-    with type term = Term.term
+    with type term = TermType.term
     with type address = TermAddr.address)
-   (RefineErrors : RefineErrorsSig
-    with type term = Term.term
+   (RefineError : RefineErrorSig
+    with type term = TermType.term
     with type address = TermAddr.address
-    with type meta_term = TermMeta.meta_term) = 
+    with type meta_term = TermMeta.meta_term) =
 struct
+   open TermType
    open Term
    open TermMan
    open TermSubst
    open TermAddr
    open TermMeta
    open Rewrite
-   open RefineErrors
+   open RefineError
 
-   type term = Term.term
+   type term = TermType.term
    type address = TermAddr.address
    type meta_term = TermMeta.meta_term
 
@@ -112,11 +122,10 @@ struct
     * Each hyp is labelled by its first argument.
     *)
    type msequent =
-      { mseq_goal : term;
+      { mseq_vars : string list;
+        mseq_goal : term;
         mseq_hyps : term list
       }
-
-   type 'a tactic_arg = msequent * 'a
 
    (************************************************************************
     * TYPES                                                                *
@@ -272,23 +281,31 @@ struct
       }
 
    (*
-    * The safe_tactic type is the basic refinement type, and every
-    * element of safe_tactic always produces "correct" refinements
-    * by construction.  In other words, only primitive rules can
-    * be directly injected into the safe_tactic type, and all else is
-    * by composition.
-    *
-    * Note: the first argument should really be type msequent,
-    * but it is more efficient to use ('a msequent) because
-    * the coercion ('a msequent -> msequent) costs a needless
-    * memory allocation.
+    * This has a similar function.
+    * It checks to see if justifications are justifiable.
     *)
-   and tactic = msequent -> msequent list * ext_just
+   type sentinal =
+      { sent_rewrite : rewrite_refiner -> unit;
+        sent_cond_rewrite : cond_rewrite_refiner -> unit;
+        sent_ml_rewrite : ml_rewrite_refiner -> unit;
+        sent_axiom : axiom_refiner -> unit;
+        sent_rule : rule_refiner -> unit;
+        sent_ml_rule : ml_rule_refiner -> unit
+      }
+
+   (*
+    * The tactic type is the basic refinement type, and every
+    * element of tactic always produces "correct" refinements
+    * by construction.  In other words, only primitive rules can
+    * be directly injected into the tactic type, and all else is
+    * by composition.
+    *)
+   type tactic = sentinal -> msequent -> msequent list * ext_just
 
    (*
     * A rewrite replaces a term with another term.
     *)
-   and rw = term -> term * refiner
+   type rw = sentinal -> term -> term * refiner
 
    (*
     * A conditional rewrite takes a goal, then applies the rewrite
@@ -296,14 +313,14 @@ struct
     * the rewrite is being applied to, and the second is the
     * particular subterm to be rewritted.
     *)
-   and cond_rewrite = term -> term -> term * term list * ext_just
+   type cond_rewrite = sentinal -> string list list -> term -> term -> term * term list * ext_just
 
    (*
     * These are the forms created at compile time.
     *)
-   and prim_tactic = address array * string array -> term list -> tactic
-   and prim_rewrite = rw
-   and prim_cond_rewrite = string array * term list -> cond_rewrite
+   type prim_tactic = address array * string array -> term list -> tactic
+   type prim_rewrite = rw
+   type prim_cond_rewrite = string array * term list -> cond_rewrite
 
    (*
     * For destruction.
@@ -355,6 +372,21 @@ struct
     * SEQUENT OPERATIONS                                                   *
     ************************************************************************)
 
+   (*
+    * Free var calculations when the sequent is constructed.
+    *)
+   let mk_msequent goal subgoals =
+      { mseq_goal = goal;
+        mseq_hyps = subgoals;
+        mseq_vars = free_vars_terms (goal :: subgoals)
+      }
+
+   let dest_msequent { mseq_goal = goal; mseq_hyps = hyps } =
+      goal, hyps
+
+   let dest_msequent_vars { mseq_vars = vars; mseq_goal = goal; mseq_hyps = hyps } =
+      vars, goal, hyps
+
     (*
      * Check that all the hyps in the list are equal.
      *)
@@ -403,15 +435,15 @@ struct
     * The application is doubled: the first argument is
     * for type tactic, and the second is for type safe_tactic.
     *)
-   let refine (tac : tactic) (seq : msequent) =
-      let subgoals, just = tac seq in
+   let refine sent (tac : tactic) (seq : msequent) =
+      let subgoals, just = tac sent seq in
          subgoals, { ext_goal = seq; ext_just = just; ext_subgoals = subgoals }
 
    (*
     * NTH_HYP
     * The base tactic proves by assumption.
     *)
-   let nth_hyp i seq =
+   let nth_hyp i sent seq =
       let { mseq_goal = goal; mseq_hyps = hyps } = seq in
          try
             if alpha_equal (List.nth hyps i) goal then
@@ -446,23 +478,21 @@ struct
    (*
     * Convert a rewrite to a tactic.
     *)
-   let rwtactic (rw : rw) (seq : msequent) =
-      let { mseq_goal = goal; mseq_hyps = hyps } = seq in
-      let goal, refiner = rw goal in
-         [{ mseq_goal = goal; mseq_hyps = hyps }],
+   let rwtactic (rw : rw) sent (seq : msequent) =
+      let { mseq_vars = vars; mseq_goal = goal; mseq_hyps = hyps } = seq in
+      let goal, refiner = rw sent goal in
+         [{ mseq_vars = vars; mseq_goal = goal; mseq_hyps = hyps }],
          SingleJust { ext_names = [||]; ext_params = []; ext_refiner = refiner }
 
    (*
     * Apply a rewrite at an address.
     *)
-   let rwaddr addr rw t =
-      try apply_fun_arg_at_addr rw addr t with
-         RefineError x ->
-            raise (RefineError ("rwaddr", RewriteAddressError (addr, x)))
+   let rwaddr addr rw sent t =
+      apply_fun_arg_at_addr (fun _ t -> rw sent t) addr [] t
 
    (*
     * Invert the rewrite.
-    * jyh: we don't really need thi, because
+    * jyh: we don't really need this, because
     * we can make use of rewrite subgoals.
    let foldrw rw t' t =
       let t'', refiner =
@@ -479,25 +509,25 @@ struct
    (*
     * Composition is supplied for efficiency.
     *)
-   let andthenrw rw1 rw2 t =
+   let andthenrw rw1 rw2 sent t =
       let t', refiner =
-         try rw1 t with
-            RefineError x ->
-               raise (RefineError ("andthenrw", GoalError x))
+         try rw1 sent t with
+            RefineError (name, x) ->
+               raise (RefineError ("andthenrw", GoalError (name, x)))
       in
       let t'', refiner' =
-         try rw2 t' with
-            RefineError x ->
-               raise (RefineError ("andthenrw", SecondError x))
+         try rw2 sent t' with
+            RefineError (name, x) ->
+               raise (RefineError ("andthenrw", SecondError (name, x)))
       in
          t'', PairRefiner (refiner, refiner')
 
-   let orelserw rw1 rw2 t =
-      try rw1 t with
-         RefineError x ->
-            try rw2 t with
-               RefineError y ->
-                  raise (RefineError ("orelserw", PairError (x, y)))
+   let orelserw rw1 rw2 sent t =
+      try rw1 sent t with
+         RefineError (name1, x) ->
+            try rw2 sent t with
+               RefineError (name2, y) ->
+                  raise (RefineError ("orelserw", PairError (name1, x, name2, y)))
 
    (************************************************************************
     * CONDITIONAL REWRITES                                                 *
@@ -506,35 +536,35 @@ struct
    (*
     * Inject a regular rewrite as a conditional rewrite.
     *)
-   let mk_cond_rewrite rw seq t =
-      let arg, refiner = rw t in
+   let mk_cond_rewrite rw sent _ _ t =
+      let arg, refiner = rw sent t in
          arg, [], SingleJust { ext_names = [||]; ext_params = []; ext_refiner = refiner }
 
    (*
     * Apply the rewrite to an addressed term.
     *)
-   let crwaddr addr crw seq t =
+   let crwaddr addr crw sent bvars seq t =
       try
          let t, (subgoals, just) =
-            let f t =
-               let t, subgoals, just = crw seq t in
+            let f sent bvars t =
+               let t, subgoals, just = crw sent bvars seq t in
                   t, (subgoals, just)
             in
-               apply_fun_arg_at_addr f addr t
+               apply_fun_arg_at_addr (f sent) addr bvars t
          in
             t, subgoals, just
       with
-         RefineError x ->
-            raise (RefineError ("crwaddr", RewriteAddressError (addr, x)))
+         RefineError (name, x) ->
+            raise (RefineError ("crwaddr", RewriteAddressError (addr, name, x)))
 
    (*
     * Apply a conditional rewrite.
     *)
-   let crwtactic (rw : cond_rewrite) (seq : msequent) =
-      let { mseq_goal = goal; mseq_hyps = hyps } = seq in
-      let t', subgoals, just = rw goal goal in
+   let crwtactic (rw : cond_rewrite) (sent : sentinal) (seq : msequent) =
+      let { mseq_vars = vars; mseq_goal = goal; mseq_hyps = hyps } = seq in
+      let t', subgoals, just = rw sent [vars] goal goal in
       let mk_subgoal subgoal =
-         { mseq_goal = subgoal; mseq_hyps = hyps }
+         { mseq_vars = vars; mseq_goal = subgoal; mseq_hyps = hyps }
       in
       let subgoals' = List.map mk_subgoal (t' :: subgoals) in
          subgoals', just
@@ -542,25 +572,25 @@ struct
    (*
     * Composition is supplied for efficiency.
     *)
-   let candthenrw crw1 crw2 seq t =
+   let candthenrw crw1 crw2 sent bvars seq t =
       let t', subgoals, just =
-         try crw1 seq t with
-            RefineError x ->
-               raise (RefineError ("candthenrw", GoalError x))
+         try crw1 sent bvars seq t with
+            RefineError (name, x) ->
+               raise (RefineError ("candthenrw", GoalError (name, x)))
       in
       let t'', subgoals', just' =
-         try crw2 seq t' with
-            RefineError x ->
-               raise (RefineError ("candthenrw", SecondError x))
+         try crw2 sent bvars seq t' with
+            RefineError (name, x) ->
+               raise (RefineError ("candthenrw", SecondError (name, x)))
       in
          t'', subgoals @ subgoals', PairJust (just, just')
 
-   let corelserw crw1 crw2 seq t =
-      try crw1 seq t with
-         RefineError x ->
-            try crw2 seq t with
-               RefineError y ->
-                  raise (RefineError ("corelserw", PairError (x, y)))
+   let corelserw crw1 crw2 sent bvars seq t =
+      try crw1 sent bvars seq t with
+         RefineError (name1, x) ->
+            try crw2 sent bvars seq t with
+               RefineError (name2, y) ->
+                  raise (RefineError ("corelserw", PairError (name1, x, name2, y)))
 
    (************************************************************************
     * UTILITIES                                                            *
@@ -588,59 +618,65 @@ struct
     *)
    let find_refiner refiner name =
       let rec search refiners refiner =
-         if List.memq refiner refiners then
-            raise Not_found;
-         let refiners = refiner :: refiners in
-            match refiner with
-               NullRefiner ->
-                  raise Not_found
-             | AxiomRefiner { axiom_name = n; axiom_refiner = next } as r ->
-                  if n = name then
-                     r
-                  else
-                     search refiners next
-             | PrimAxiomRefiner { pax_refiner = next } ->
+         match refiner with
+            NullRefiner ->
+               refiners, None
+          | AxiomRefiner { axiom_name = n; axiom_refiner = next } as r ->
+               if n = name then
+                  refiners, Some r
+               else
+                  search refiners next
+          | PrimAxiomRefiner { pax_refiner = next } ->
+               search refiners next
+
+          | RuleRefiner { rule_name = n; rule_refiner = next } as r ->
+               if n = name then
+                  refiners, Some r
+               else
+                  search refiners next
+          | PrimRuleRefiner { prule_refiner = next } ->
+               search refiners next
+          | MLRuleRefiner { ml_rule_refiner = next } ->
+               search refiners next
+
+          | RewriteRefiner { rw_name = n; rw_refiner = next } as r ->
+               if n = name then
+                  refiners, Some r
+               else
+                  search refiners next
+          | PrimRewriteRefiner { prw_refiner = next } ->
+               search refiners next
+
+          | CondRewriteRefiner { crw_name = n; crw_refiner = next } as r ->
+               if n = name then
+                  refiners, Some r
+               else
+                  search refiners next
+          | PrimCondRewriteRefiner { pcrw_refiner = next } ->
+               search refiners next
+          | MLRewriteRefiner { ml_rw_name = n; ml_rw_refiner = next } as r ->
+               if n = name then
+                  raise (RefineError (n, StringError "ML rewrites can't be justified"))
+               else
                   search refiners next
 
-             | RuleRefiner { rule_name = n; rule_refiner = next } as r ->
-                  if n = name then
-                     r
-                  else
-                     search refiners next
-             | PrimRuleRefiner { prule_refiner = next } ->
-                  search refiners next
-             | MLRuleRefiner { ml_rule_refiner = next } ->
-                  search refiners next
-
-             | RewriteRefiner { rw_name = n; rw_refiner = next } as r ->
-                  if n = name then
-                     r
-                  else
-                     search refiners next
-             | PrimRewriteRefiner { prw_refiner = next } ->
-                  search refiners next
-
-             | CondRewriteRefiner { crw_name = n; crw_refiner = next } as r ->
-                  if n = name then
-                     r
-                  else
-                     search refiners next
-             | PrimCondRewriteRefiner { pcrw_refiner = next } ->
-                  search refiners next
-             | MLRewriteRefiner { ml_rw_name = n; ml_rw_refiner = next } as r ->
-                  if n = name then
-                     raise (RefineError (n, StringError "ML rewrites can't be justified"))
-                  else
-                     search refiners next
-
-             | LabelRefiner (_, next) ->
-                  search refiners next
-             | PairRefiner (next1, next2) ->
-                  try search refiners next1 with
-                     Not_found ->
-                        search refiners next2
+          | LabelRefiner (_, next) as r ->
+               if List.memq r refiners then
+                  refiners, None
+               else
+                  search (r :: refiners) next
+          | PairRefiner (next1, next2) ->
+               match search refiners next1 with
+                  refiners, None ->
+                     search refiners next2
+                | x ->
+                     x
       in
-         search [] refiner
+         match search [] refiner with
+            _, Some v ->
+               v
+          | _ ->
+               raise Not_found
 
    (************************************************************************
     * EXTRACTION                                                           *
@@ -661,44 +697,46 @@ struct
             Not_found ->
                Hashtbl.add hash name info
       in
-      let rec insert = function
+      let rec insert refiners = function
          PrimAxiomRefiner pax ->
             let { pax_axiom = { axiom_name = name }; pax_refiner = next } = pax in
                maybe_add axioms name pax;
-               insert next
+               insert refiners next
        | PrimRuleRefiner prule ->
             let { prule_rule = { rule_name = name }; prule_refiner = next } = prule in
                maybe_add rules name prule;
-               insert next
+               insert refiners next
        | PrimRewriteRefiner prw ->
             let { prw_rewrite = { rw_name = name }; prw_refiner = next  } = prw in
                maybe_add rewrites name prw;
-               insert next
+               insert refiners next
        | PrimCondRewriteRefiner pcrw ->
             let { pcrw_rewrite = { crw_name = name }; pcrw_refiner = next  } = pcrw in
                maybe_add cond_rewrites name pcrw;
-               insert next
+               insert refiners next
        | AxiomRefiner { axiom_refiner = next } ->
-            insert next
+            insert refiners next
        | RuleRefiner { rule_refiner = next } ->
-            insert next
+            insert refiners next
        | RewriteRefiner { rw_refiner = next } ->
-            insert next
+            insert refiners next
        | CondRewriteRefiner { crw_refiner = next } ->
-            insert next
+            insert refiners next
        | MLRewriteRefiner { ml_rw_refiner = next } ->
-            insert next
+            insert refiners next
        | MLRuleRefiner { ml_rule_refiner = next } ->
-            insert next
-       | LabelRefiner (_, next) ->
-            insert next
+            insert refiners next
+       | LabelRefiner (_, next) as r ->
+            if List.memq r refiners then
+               refiners
+            else
+               insert (r :: refiners) next
        | PairRefiner (next1, next2) ->
-            insert next1;
-            insert next2
+            insert (insert refiners next1) next2
        | NullRefiner ->
-            ()
+            refiners
       in
-      let _ = insert refiner in
+      let _ = insert [] refiner in
          { hash_axiom = axioms;
            hash_rule = rules;
            hash_rewrite = rewrites;
@@ -740,7 +778,7 @@ struct
          }
 
    (*
-    * Also check the matching.
+    * Also sent the matching.
     *)
    let check_of_find { find_axiom = find_axiom;
                        find_rule = find_rule;
@@ -908,29 +946,184 @@ struct
       in
          fst (construct [] just)
 
+   (*
+    * An empty sentinal for trying refinements.
+    *)
+   let any_sentinal =
+      let null _ =
+         ()
+      in
+         { sent_rewrite = null;
+           sent_cond_rewrite = null;
+           sent_ml_rewrite = null;
+           sent_axiom = null;
+           sent_rule = null;
+           sent_ml_rule = null
+         }
+
+   (*
+    * The sentinal uses a hashtable to lookup valid inferences.
+    *)
+   let sentinal_of_refiner refiner =
+      let rewrites = Hashtbl.create 19 in
+      let cond_rewrites = Hashtbl.create 19 in
+      let ml_rewrites = Hashtbl.create 19 in
+      let axioms = Hashtbl.create 19 in
+      let rules = Hashtbl.create 19 in
+      let ml_rules = Hashtbl.create 19 in
+      let rec insert refiners = function
+         PrimAxiomRefiner { pax_refiner = next } ->
+            insert refiners next
+       | PrimRuleRefiner { prule_refiner = next } ->
+            insert refiners next
+       | PrimRewriteRefiner { prw_refiner = next } ->
+            insert refiners next
+       | PrimCondRewriteRefiner { pcrw_refiner = next } ->
+            insert refiners next
+       | AxiomRefiner ax ->
+            let { axiom_name = name; axiom_refiner = next } = ax in
+               if !debug_sentinal then
+                  eprintf "sentinal_of_refiner: add axiom %s%t" name eflush;
+               Hashtbl.add axioms name ax;
+               insert refiners next
+       | RuleRefiner rule ->
+            let { rule_name = name; rule_refiner = next } = rule in
+               if !debug_sentinal then
+                  eprintf "sentinal_of_refiner: add rule %s%t" name eflush;
+               Hashtbl.add rules name rule;
+               insert refiners next
+       | RewriteRefiner rw ->
+            let { rw_name = name; rw_refiner = next } = rw in
+               if !debug_sentinal then
+                  eprintf "sentinal_of_refiner: add rewrite %s%t" name eflush;
+               Hashtbl.add rewrites name rw;
+               insert refiners next
+       | CondRewriteRefiner crw ->
+            let { crw_name = name; crw_refiner = next } = crw in
+               if !debug_sentinal then
+                  eprintf "sentinal_of_refiner: add cond_rewrite %s%t" name eflush;
+               Hashtbl.add cond_rewrites name crw;
+               insert refiners next
+       | MLRewriteRefiner mlrw ->
+            let { ml_rw_name = name; ml_rw_refiner = next } = mlrw in
+               if !debug_sentinal then
+                  eprintf "sentinal_of_refiner: add ML rewrite %s%t" name eflush;
+               Hashtbl.add ml_rewrites name mlrw;
+               insert refiners next
+       | MLRuleRefiner mlrule ->
+            let { ml_rule_arg = arg; ml_rule_refiner = next } = mlrule in
+            let opname = opname_of_term arg in
+               if !debug_sentinal then
+                  eprintf "sentinal_of_refiner: add ML rule %s%t" (string_of_opname opname) eflush;
+               Hashtbl.add ml_rules opname mlrule;
+               insert refiners next
+       | LabelRefiner (_, next) as r ->
+            if List.memq r refiners then
+               refiners
+            else
+               insert (r :: refiners) next
+       | PairRefiner (next1, next2) ->
+            insert (insert refiners next1) next2
+       | NullRefiner ->
+            refiners
+      in
+      let _ = insert [] refiner in
+      let check_axiom ax =
+         let name = ax.axiom_name in
+            if Hashtbl.find axioms name == ax then
+               begin
+                  if !debug_sentinal then
+                     eprintf "check_axiom: found rewrite %s%t" name eflush
+               end
+            else
+               begin
+                  eprintf "check_axiom: sentinal failed %s%t" name eflush;
+                  raise (RefineError ("check_axiom",
+                                      StringStringError ("axiom is not valid in this context", name)))
+               end
+      in
+      let check_rule rule =
+         let name = rule.rule_name in
+            if Hashtbl.find rules name == rule then
+               begin
+                  if !debug_sentinal then
+                     eprintf "check_rule: found rule %s%t" name eflush
+               end
+            else
+               begin
+                  eprintf "check_rule: sentinal failed %s%t" name eflush;
+                  raise (RefineError ("check_rule",
+                                      StringStringError ("rule is not valid in this context", name)))
+               end
+      in
+      let check_ml_rule ml_rule =
+         let opname = opname_of_term ml_rule.ml_rule_arg in
+            if Hashtbl.find ml_rules opname == ml_rule then
+               begin
+                  if !debug_sentinal then
+                     eprintf "check_ml_rule: found rule %s%t" (string_of_opname opname) eflush
+               end
+            else
+               begin
+                  eprintf "check_ml_rule: sentinal failed: %s%t" (string_of_opname opname) eflush;
+                  raise (RefineError ("check_ml_rule",
+                                      StringTermError ("ML rule is not valid in this context",
+                                                       ml_rule.ml_rule_arg)))
+               end
+      in
+      let check_rewrite rw =
+         let name = rw.rw_name in
+            if Hashtbl.find rewrites name == rw then
+               begin
+                  if !debug_sentinal then
+                     eprintf "check_rewrite: found rewrite %s%t" name eflush
+               end
+            else
+               begin
+                  eprintf "check_rewrite: sentinal failed %s%t" name eflush;
+                  raise (RefineError ("check_rewrite",
+                                      StringStringError ("rewrite is not valid in this context", name)))
+               end
+      in
+      let check_cond_rewrite crw =
+         let name = crw.crw_name in
+            if Hashtbl.find cond_rewrites name == crw then
+               begin
+                  if !debug_sentinal then
+                     eprintf "check_rule: found cond_rewrite %s%t" name eflush
+               end
+            else
+               begin
+                  eprintf "check_cond_rewrite: sentinal failed %s%t" name eflush;
+                  raise (RefineError ("check_cond_rewrite",
+                                      StringStringError ("conditional rewrite is not valid in this context", name)))
+            end
+      in
+      let check_ml_rewrite mlrw =
+         let name = mlrw.ml_rw_name in
+            if Hashtbl.find ml_rewrites name == mlrw then
+               begin
+                  if !debug_sentinal then
+                     eprintf "check_ml_rewrite: found rewrite %s%t" name eflush
+               end
+            else
+               begin
+                  eprintf "check_ml_rewrite: sentinal failed %s%t" name eflush;
+                  raise (RefineError ("check_ml_rewrite",
+                                      StringStringError ("ML rewrite is not valid in this context", name)))
+               end
+      in
+         { sent_rewrite = check_rewrite;
+           sent_cond_rewrite = check_cond_rewrite;
+           sent_ml_rewrite = check_ml_rewrite;
+           sent_axiom = check_axiom;
+           sent_rule = check_rule;
+           sent_ml_rule = check_ml_rule
+         }
+
    (************************************************************************
     * AXIOM                                                                *
     ************************************************************************)
-
-   (*
-    * We wrap the rewrite to map the exceptions.
-    *)
-   let apply_rewrite name rw addrs_names terms =
-      try Rewrite.apply_rewrite rw addrs_names terms with
-         RewriteErr error ->
-            raise (RefineError (name, RewriteError error))
-       | Term.TermMatch (s1, t, s2) ->
-            raise (RefineError (name, TermMatchError (s1, t, s2)))
-       | Term.BadMatch (t1, t2) ->
-            raise (RefineError (name, TermPairMatchError (t1, t2)))
-       | TermAddr.IncorrectAddress (addr, t) ->
-            raise (RefineError (name, AddressError (addr, t)))
-       | TermMeta.MetaTermMatch t ->
-            raise (RefineError (name, MetaTermMatchError t))
-       | Invalid_argument s ->
-            raise (RefineError (name, StringStringError ("Invalid_argument", s)))
-       | Failure s ->
-            raise (RefineError (name, StringStringError ("Failure", s)))
 
    (*
     * An theorem is a special case of a rule, where to
@@ -943,25 +1136,29 @@ struct
          [] ->
             true
        | l ->
-            raise (FreeContextVars l)
+            raise (RefineError ("check_axiom", RewriteFreeContextVars l))
 
    let add_axiom refiner name term =
       if !debug_refiner then
          eprintf "Refiner.add_axiom: %s%t" name eflush;
-      let refiner' =
-         AxiomRefiner { axiom_name = name;
-                        axiom_term = term;
-                        axiom_refiner = refiner
+      let ref_axiom =
+         { axiom_name = name;
+           axiom_term = term;
+           axiom_refiner = refiner
          }
       in
-      let tac _ _ { mseq_goal = goal; mseq_hyps = hyps } =
+      let refiner' = AxiomRefiner ref_axiom in
+      let tac _ _ (sent : sentinal) { mseq_goal = goal; mseq_hyps = hyps } =
          if alpha_equal (nth_concl goal 0) term then
-            [], SingleJust { ext_names = [||]; ext_params = []; ext_refiner = refiner' }
+            begin
+               sent.sent_axiom ref_axiom;
+               [], SingleJust { ext_names = [||]; ext_params = []; ext_refiner = refiner' }
+            end
          else
-            raise (Term.TermMatch ("refine_axiom", goal, name))
+            raise (RefineError ("refine_axiom", TermMatchError (goal, name)))name
       in
          check_axiom term;
-         refiner', tac
+         refiner', (tac : prim_tactic)
 
    let add_prim_axiom refiner name term =
       if !debug_refiner then
@@ -1010,23 +1207,20 @@ struct
          eprintf "Refiner.add_rule: %s%t" name eflush;
       let terms = unzip_mimplies mterm in
       let subgoals, goal = List_util.split_last terms in
-      let seq = { mseq_goal = goal; mseq_hyps = subgoals } in
-      let rw =
-         try Rewrite.term_rewrite (addrs, names) (goal :: params) subgoals with
-            RewriteErr error ->
-               raise (RefineError (name, RewriteError error))
-      in
-      let refiner' =
-         RuleRefiner { rule_name = name;
-                       rule_count = List.length subgoals;
-                       rule_rule = seq;
-                       rule_refiner = refiner
+      let seq = mk_msequent goal subgoals in
+      let rw = Rewrite.term_rewrite (addrs, names) (goal :: params) subgoals in
+      let ref_rule =
+         { rule_name = name;
+           rule_count = List.length subgoals;
+           rule_rule = seq;
+           rule_refiner = refiner
          }
       in
-      let tac addrs_names params { mseq_goal = goal; mseq_hyps = hyps } =
-         let subgoals, names' = apply_rewrite name rw addrs_names (goal :: params) in
+      let refiner' = RuleRefiner ref_rule in
+      let tac (addrs, names) params sent { mseq_vars = vars; mseq_goal = goal; mseq_hyps = hyps } =
+         let subgoals, names' = apply_rewrite rw (addrs, names, [vars]) (goal :: params) in
          let make_subgoal subgoal =
-            { mseq_goal = subgoal; mseq_hyps = hyps }
+            { mseq_vars = vars; mseq_goal = subgoal; mseq_hyps = hyps }
          in
          let just =
             SingleJust { ext_names = names';
@@ -1034,9 +1228,10 @@ struct
                          ext_refiner = refiner'
             }
          in
+            sent.sent_rule ref_rule;
             List.map make_subgoal subgoals, just
       in
-         refiner', tac
+         refiner', (tac : prim_tactic)
 
    (*
     * Theorem for a previous theorem or rule.
@@ -1058,13 +1253,9 @@ struct
          in
             aux 0
       in
-      let rw =
-         try Rewrite.term_rewrite ([||], [||]) (create_redex vars args :: params) [result] with
-            RewriteErr error ->
-               raise (RefineError (name, RewriteError error))
-      in
+      let rw = Rewrite.term_rewrite ([||], [||]) (create_redex vars args :: params) [result] in
       let compute_ext vars params args =
-         match apply_rewrite name rw ([||], [||]) (create_redex vars args :: params) with
+         match apply_rewrite rw ([||], [||], []) (create_redex vars args :: params) with
             [c], x when Array.length x = 0 ->
                c
           | _ ->
@@ -1114,17 +1305,18 @@ struct
    let add_ml_rule refiner arg rule =
       if !debug_refiner then
          eprintf "Refiner.add_ml_rule%t" eflush;
-      let refiner' =
-         MLRuleRefiner { ml_rule_arg = arg;
-                         ml_rule_rule = rule;
-                         ml_rule_refiner = refiner
+      let ref_ml_rule =
+         { ml_rule_arg = arg;
+           ml_rule_rule = rule;
+           ml_rule_refiner = refiner
          }
       in
+      let refiner' = MLRuleRefiner ref_ml_rule in
       let { ml_rule_rewrite = rw } = rule in
-      let tac (_, names) params { mseq_goal = goal; mseq_hyps = hyps } =
+      let tac (_, names) params sent { mseq_vars = vars; mseq_goal = goal; mseq_hyps = hyps } =
          let subgoals = rw (names, params) goal in
          let make_subgoal subgoal =
-            { mseq_goal = subgoal; mseq_hyps = hyps }
+            { mseq_vars = vars; mseq_goal = subgoal; mseq_hyps = hyps }
          in
          let just =
             SingleJust { ext_names = names;
@@ -1132,9 +1324,10 @@ struct
                          ext_refiner = refiner'
             }
          in
+            sent.sent_ml_rule ref_ml_rule;
             List.map make_subgoal subgoals, just
       in
-         refiner', tac
+         refiner', (tac : prim_tactic)
 
    (*
     * Just do the checking.
@@ -1142,11 +1335,7 @@ struct
    let check_rule name addrs names params mterm =
       let terms = unzip_mimplies mterm in
       let subgoals, goal = List_util.split_last terms in
-      let rw =
-         try Rewrite.term_rewrite (addrs, names) (goal::params) subgoals with
-            RewriteErr error ->
-               raise (RefineError (name, RewriteError error))
-      in
+      let rw = Rewrite.term_rewrite (addrs, names) (goal::params) subgoals in
          true
 
    (************************************************************************
@@ -1157,11 +1346,7 @@ struct
     * See if the rewrite will compile.
     *)
    let check_rewrite name vars params subgoals redex contractum =
-      let rw =
-         try Rewrite.term_rewrite ([||], vars) (redex::params) [contractum] with
-            RewriteErr error ->
-               raise (RefineError (name, RewriteError error))
-      in
+      let rw = Rewrite.term_rewrite ([||], vars) (redex::params) [contractum] in
          true
 
    (*
@@ -1171,27 +1356,25 @@ struct
    let add_rewrite refiner name redex contractum =
       if !debug_refiner then
          eprintf "Refiner.add_rewrite: %s%t" name eflush;
-      let rw =
-         try Rewrite.term_rewrite ([||], [||]) [redex] [contractum] with
-            RewriteErr error ->
-               raise (RefineError (name, RewriteError error))
-      in
-      let refiner' =
-         RewriteRefiner { rw_name = name;
-                          rw_rewrite = redex, contractum;
-                          rw_refiner = refiner
+      let rw = Rewrite.term_rewrite ([||], [||]) [redex] [contractum] in
+      let ref_rewrite =
+         { rw_name = name;
+           rw_rewrite = redex, contractum;
+           rw_refiner = refiner
          }
       in
-      let rw t =
-         match apply_rewrite name rw ([||], [||]) [t] with
+      let refiner' = RewriteRefiner ref_rewrite in
+      let rw sent t =
+         match apply_rewrite rw ([||], [||], []) [t] with
             [t'], _ ->
+               sent.sent_rewrite ref_rewrite;
                t', refiner'
           | [], _ ->
                raise (Failure "Refine.add_rewrite: no contracta")
           | _ ->
                raise (Failure "Refine.add_Rewrite: multiple contracta")
       in
-         refiner', rw
+         refiner', (rw : prim_rewrite)
 
    let add_prim_rewrite refiner name redex contractum =
       if !debug_refiner then
@@ -1250,23 +1433,21 @@ struct
    let add_cond_rewrite refiner name vars params subgoals redex contractum =
       if !debug_refiner then
          eprintf "Refiner.add_cond_rewrite: %s%t" name eflush;
-      let rw =
-         try Rewrite.term_rewrite ([||], vars) (redex::params) [contractum] with
-            RewriteErr error ->
-               raise (RefineError (name, RewriteError error))
-      in
-      let refiner' =
-         CondRewriteRefiner { crw_name = name;
-                              crw_count = List.length subgoals;
-                              crw_rewrite = subgoals, redex, contractum;
-                              crw_refiner = refiner
+      let rw = Rewrite.term_rewrite ([||], vars) (redex::params) [contractum] in
+      let ref_crw =
+         { crw_name = name;
+           crw_count = List.length subgoals;
+           crw_rewrite = subgoals, redex, contractum;
+           crw_refiner = refiner
          }
       in
-      let rw' (vars, params) seq t =
+      let refiner' = CondRewriteRefiner ref_crw in
+      let rw' (vars, params) (sent : sentinal) (bvars : string list list) seq t =
          (* BUG: is alpha variance compute correctly by replace_goal? *)
          let subgoals' = List.map (replace_goal seq) subgoals in
-            match apply_rewrite name rw ([||], vars) (t :: params) with
+            match apply_rewrite rw ([||], vars, bvars) (t :: params) with
                [t'], names ->
+                  sent.sent_cond_rewrite ref_crw;
                   t',
                   subgoals',
                   SingleJust { ext_names = names;
@@ -1278,7 +1459,7 @@ struct
              | _ ->
                   raise (Failure "Refine.add_cond_rewrite: multiple contracta")
       in
-         refiner', rw'
+         refiner', (rw' : prim_cond_rewrite)
 
    let add_prim_cond_rewrite refiner name vars params subgoals redex contractum =
       if !debug_refiner then
@@ -1331,23 +1512,26 @@ struct
     * An ML rewrite.
     *)
    let add_ml_rewrite refiner name subgoals rw =
-      let refiner' =
-         MLRewriteRefiner { ml_rw_name = name;
-                            ml_rw_rewrite = rw;
-                            ml_rw_refiner = refiner
+      let ref_crw =
+         { ml_rw_name = name;
+           ml_rw_rewrite = rw;
+           ml_rw_refiner = refiner
          }
       in
-      let rw' ((vars, params) as args) seq t =
+      let refiner' = MLRewriteRefiner ref_crw in
+      let rw' ((vars, params) as args) sent bvars seq t =
          let subgoals' = List.map (replace_goal seq) subgoals in
          let t' = rw args t in
-         let just = SingleJust { ext_names = vars;
-                                 ext_params = params;
-                                 ext_refiner = refiner'
-                    }
+         let just =
+            SingleJust { ext_names = vars;
+                         ext_params = params;
+                         ext_refiner = refiner'
+            }
          in
+            sent.sent_ml_rewrite ref_crw;
             t', subgoals', just
       in
-         refiner', rw'
+         refiner', (rw' : prim_cond_rewrite)
 
    (************************************************************************
     * API FUNCTIONS                                                        *
@@ -1424,7 +1608,7 @@ struct
    let create_cond_rewrite refiner name vars params args redex contractum =
       let refiner', rw = add_cond_rewrite !refiner name vars params args redex contractum in
          refiner := refiner';
-         rw
+         (rw : prim_cond_rewrite)
 
    let prim_cond_rewrite refiner name vars params args redex contractum =
       refiner := add_prim_cond_rewrite !refiner name vars params args redex contractum
@@ -1501,6 +1685,11 @@ end
 
 (*
  * $Log$
+ * Revision 1.9  1998/07/02 18:35:22  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.8  1998/07/01 04:36:50  nogin
  * Moved Refiner exceptions into a separate module RefineErrors
  *

@@ -2,28 +2,48 @@
  * Subterm addressing                                                   *
  ************************************************************************)
 
+#include "refine_error.h"
+
+open Refine_error_sig
 open Term_sig
+open Term_base_sig
 open Term_op_sig
 
-module TermAddr (**)
-   (Term : TermSig)
-   (TermOp : TermOpSig
-    with type term = Term.term) =
+(*
+ * Address of a subterm.
+ *)
+type addr =
+   Path of int list
+ | NthClause of int * bool
+ | Compose of addr * addr
+
+module MakeAddressType (TermType : TermSig) =
 struct
+   type t = addr
+end
+
+module TermAddr (**)
+   (TermType : TermSig)
+   (Term : TermBaseSig
+    with type term = TermType.term
+    with type term' = TermType.term'
+    with type bound_term = TermType.bound_term
+    with type bound_term' = TermType.bound_term'
+    with type operator = TermType.operator
+    with type operator' = TermType.operator')
+   (TermOp : TermOpSig
+    with type term = TermType.term)
+   (RefineError : RefineErrorSig
+    with type term = TermType.term
+    with type address = addr) =
+struct
+   open TermType
    open Term
    open TermOp
+   open RefineError
 
-   type term = Term.term
-
-   (*
-    * Address of a subterm.
-    *)
-   type address =
-      Path of int list
-    | NthClause of int * bool
-    | Compose of address * address
-
-   exception IncorrectAddress of address * term
+   type term = TermType.term
+   type address = addr
 
    (*
     * Constructor.
@@ -50,7 +70,7 @@ struct
        | (hd::tl, _) ->
             getnth a term tl (pred i)
        | ([], _) ->
-            raise (IncorrectAddress (a, term))
+            ref_raise(RefineError ("getnth", AddressError (a, term)))
 
    (*
     * Follow an explicit path.
@@ -74,7 +94,7 @@ struct
                   else
                      (dest_bterm bterm).bterm
              | _ ->
-                  raise (IncorrectAddress (a, term))
+                  ref_raise(RefineError ("term_subterm_nthpath", AddressError (a, term)))
          else
             t
     | i ->
@@ -88,7 +108,7 @@ struct
                   else
                      term_subterm_nthpath a term flag (dest_bterm bterm2).bterm (i - 1)
              | _ ->
-               raise (IncorrectAddress (a, term))
+               ref_raise(RefineError ("term_subterm_nthpath", AddressError (a, term)))
 
    (*
     * Get the subterm for any type of path.
@@ -107,83 +127,98 @@ struct
     * Capture is not taken into account.  This function
     * allows the replacement to compute an extra value.
     *)
-   let rec path_replace_term a term f t = function
+   let fail_addr (addr, term) =
+      ref_raise(RefineError ("replace_term", AddressError (addr, term)))
+
+   let rec path_replace_term fail f bvars t = function
       i::tl ->
          let { term_op = op; term_terms = bterms } = dest_term t in
-         let bterms, arg = path_replace_bterm a term f tl i bterms in
+         let bterms, arg = path_replace_bterm fail f tl i bvars bterms in
             mk_term op bterms, arg
     | [] ->
-         f t
+         f bvars t
 
-   and path_replace_bterm a term f tl i btrms = match (i,btrms) with
-      (0, bterm::bterms) ->
-         let { bvars = vars; bterm = trm } = dest_bterm bterm in
-         let term, arg = path_replace_term a term f trm tl in
-            mk_bterm vars term :: bterms, arg
-    | (_, bterm::bterms) ->
-         let bterms, arg = path_replace_bterm a term f tl (pred i) bterms in
-            bterm :: bterms, arg
-    | _ ->
-         raise (IncorrectAddress (a,term))
+   and path_replace_bterm fail f tl i bvars bterms =
+      match i, bterms with
+         (0, bterm :: bterms) ->
+            let { bvars = vars; bterm = term } = dest_bterm bterm in
+            let term, arg = path_replace_term fail f (vars :: bvars) term tl in
+               mk_bterm vars term :: bterms, arg
+       | (_, bterm :: bterms) ->
+            let bterms, arg = path_replace_bterm fail f tl (i - 1) bvars bterms in
+               bterm :: bterms, arg
+       | _, [] ->
+            fail_addr fail
 
-   let rec nthpath_replace_term a term flag f t i =
+   let rec nthpath_replace_term fail flag f bvars t i =
       if i = 0 then
          if flag then
             match dest_term t with
                { term_op = op; term_terms = bterm :: bterms } ->
                   if (dest_op op).op_name == context_opname then
-                     f t
+                     f bvars t
                   else
                      let { bvars = vars; bterm = term } = dest_bterm bterm in
-                     let term, arg = f term in
+                     let term, arg = f (vars :: bvars) term in
                      let bterm = mk_bterm vars term in
                         mk_term op (bterm :: bterms), arg
              | _ ->
-                  raise (IncorrectAddress (a, term))
+                  fail_addr fail
          else
-            f t
+            f bvars t
       else
          match dest_term t with
             { term_op = op; term_terms = [bterm] } ->
                (* Always take subterm if there is only one *)
                let { bvars = vars; bterm = trm } = dest_bterm bterm in
-               let term, arg = nthpath_replace_term a term flag f trm (i - 1) in
+               let term, arg = nthpath_replace_term fail flag f (vars :: bvars) trm (i - 1) in
                let bterm = mk_bterm vars term in
                   mk_term op [bterm], arg
           | { term_op = op; term_terms = ((bterm1 :: bterm2 :: bterms) as bterms') } ->
                if (dest_op op).op_name == context_opname then
                   let args, bterm = List_util.split_last bterms' in
-                  let { bvars = vars; bterm = trm } = dest_bterm bterm in
-                  let term, arg = nthpath_replace_term a term flag f trm (i - 1) in
+                  let { bvars = vars; bterm = term } = dest_bterm bterm in
+                  let term, arg = nthpath_replace_term fail flag f (vars :: bvars) term (i - 1) in
                   let bterm = mk_bterm vars term in
                      mk_term op (args @ [bterm]), arg
                else
                   let { bvars = vars; bterm = term' } = dest_bterm bterm2 in
-                  let term, arg = nthpath_replace_term a term flag f term' (i - 1) in
+                  let term, arg = nthpath_replace_term fail flag f (vars :: bvars) term' (i - 1) in
                   let bterm = mk_bterm vars term in
                      mk_term op (bterm1 :: bterm :: bterms), arg
           | _ ->
-               raise (IncorrectAddress (a, term))
+               fail_addr fail
 
-   let rec apply_fun_arg_at_addr f a term =
-      match a with
+   let rec apply_fun_arg_at_addr_aux fail f addr bvars term =
+      match addr with
          Path addr ->
-            path_replace_term a term f term addr
+            path_replace_term fail f bvars term addr
        | NthClause (addr, flag) ->
-            nthpath_replace_term a term flag f term addr
+            nthpath_replace_term fail flag f bvars term addr
        | Compose (addr1, addr2) ->
-            apply_fun_arg_at_addr (apply_fun_arg_at_addr f addr2) addr1 term
+            apply_fun_arg_at_addr_aux fail (**)
+               (apply_fun_arg_at_addr_aux fail f addr2) addr1 bvars term
 
-   let add_unit_arg f t =
-      f t, ()
+   let apply_fun_arg_at_addr f addr bvars term =
+      apply_fun_arg_at_addr_aux (addr, term) f addr bvars term
 
-   let apply_fun_at_addr f a term =
-      fst (apply_fun_arg_at_addr (add_unit_arg f) a term)
+   let add_unit_arg f bvars t =
+      f bvars t, ()
 
-   let replace_subterm_aux subterm term = subterm
+   let apply_fun_at_addr f addr bvars term =
+      fst (apply_fun_arg_at_addr (add_unit_arg f) addr bvars term)
 
-   let replace_subterm term a subterm =
-         apply_fun_at_addr (replace_subterm_aux subterm) a term
+   let replace_subterm_aux subterm bvars term =
+      subterm
+
+   let replace_subterm term addr subterm =
+         apply_fun_at_addr (replace_subterm_aux subterm) addr [] term
+
+   let replace_bound_subterm_aux f bvars term =
+      f bvars
+
+   let replace_bound_subterm term addr bvars f =
+      apply_fun_at_addr (replace_bound_subterm_aux f) addr bvars term
 
    (*
     * Print address as a string.

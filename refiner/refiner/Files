@@ -1,7 +1,13 @@
+REFINER_PFILES :=\
+	rewrite
+
 REFINER_FILES :=\
-	refine_errors\
-	rewrite\
+	$(addsuffix _verb, $(REFINER_PFILES))\
+	$(addsuffix _simp, $(REFINER_PFILES))\
 	refine\
+	refine_error\
 	refiner_std\
+	refiner_std_simp\
 	refiner_ds\
+	refiner_ds_simp\
 	refiner

@@ -6,7 +6,7 @@
  *)
 
 include Io_proof_type
-include Tactic_type
+include Tacticals
 include Proof_type
 
 open Printf
@@ -14,15 +14,17 @@ open Debug
 open Refiner.Refiner
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp
-open Refiner.Refiner.RefineErrors
+open Refiner.Refiner.RefineError
 open Refiner.Refiner.Refine
 open Opname
 open Dform
 open Rformat
 open Refine_exn
 
+open Sequent
+open Tacticals
+
 open Io_proof_type
-open Tactic_type
 open Proof_type
 
 (*
@@ -31,6 +33,13 @@ open Proof_type
 let _ =
    if !debug_load then
       eprintf "Loading Proof_step%t" eflush
+
+let debug_io_tactic =
+   create_debug (**)
+      { debug_name = "io_tactic";
+        debug_description = "Display tactic lookups";
+        debug_value = false
+      }
 
 (************************************************************************
  * TYPES                                                                *
@@ -76,9 +85,9 @@ let tactic { step_tactic = tac } = tac
  * Make an error term.
  * Just a string.
  *)
-let mk_error_subgoal db arg err =
+let mk_error_subgoal db arg name err =
    let buf = new_buffer () in
-   let _ = format_refine_error db buf err in
+   let _ = format_refine_error db buf name err in
    let t = mk_string_term nil_opname (print_to_string 80 buf) in
       set_concl arg t
 
@@ -109,12 +118,12 @@ let expand db step =
                  step_subgoals = subgoals'
                }
       with
-         RefineError err ->
+         RefineError (name, err) ->
             { step_goal = goal;
               step_text = text;
               step_ast = ast;
               step_tactic = tac;
-              step_subgoals = [mk_error_subgoal db goal err]
+              step_subgoals = [mk_error_subgoal db goal name err]
             }
 
 let check step =
@@ -136,21 +145,38 @@ let check step =
 (*
  * Throw away extra information from the goal.
  *)
+let rec io_attributes = function
+   [] ->
+      []
+ | (name, h)::t ->
+      match h with
+         Tactic_type.TermArg _
+       | Tactic_type.TypeArg _
+       | Tactic_type.IntArg _
+       | Tactic_type.BoolArg _
+       | Tactic_type.SubstArg _ ->
+            (name, h) :: io_attributes t
+       | Tactic_type.TacticArg _
+       | Tactic_type.IntTacticArg _
+       | Tactic_type.TypeinfArg _ ->
+            io_attributes t
+
 let aterm_tactic_arg_of_goal arg =
-   let { mseq_goal = goal; mseq_hyps = hyps } = Tactic_type.msequent arg in
+   let seq = Sequent.msequent arg in
+   let goal, hyps = dest_msequent seq in
       { aterm_goal = goal;
         aterm_hyps = hyps;
-        aterm_label = Tactic_type.label arg;
-        aterm_args = Tactic_type.attributes arg
+        aterm_label = Sequent.label arg;
+        aterm_args = io_attributes (Sequent.attributes arg)
       }
 
-let goal_of_aterm_tactic_arg resources fcache
+let goal_of_aterm_tactic_arg fcache args sentinal
     { aterm_goal = goal;
       aterm_hyps = hyps;
       aterm_label = label;
-      aterm_args = args
+      aterm_args = args'
     } =
-   Tactic_type.create label { mseq_goal = goal; mseq_hyps = hyps} fcache args resources
+   Sequent.create sentinal label (mk_msequent goal hyps) fcache (args' @ args)
 
 (*
  * Throw away information.
@@ -170,21 +196,32 @@ let io_step_of_step
 (*
  * Add the resource information.
  *)
-let step_of_io_step { ref_fcache = fcache; ref_rsrc = resources } tactics
+let step_of_io_step { ref_fcache = fcache; ref_args = args } tactics sentinal
     { Io_proof_type.step_goal = goal;
       Io_proof_type.step_subgoals = subgoals;
       Io_proof_type.step_text = text;
       Io_proof_type.step_ast = ast
     } =
-   { step_goal = goal_of_aterm_tactic_arg resources fcache goal;
-     step_subgoals = List.map (goal_of_aterm_tactic_arg resources fcache) subgoals;
+   { step_goal = goal_of_aterm_tactic_arg fcache args sentinal goal;
+     step_subgoals = List.map (goal_of_aterm_tactic_arg fcache args sentinal) subgoals;
      step_text = text;
      step_ast = ast;
-     step_tactic = Hashtbl.find tactics text
+     step_tactic =
+        (if !debug_io_tactic then
+            eprintf "Finding tactic '%s'%t" text eflush;
+         let tac = Hashtbl.find tactics text in
+            if !debug_io_tactic then
+               eprintf "Found tactic%t" eflush;
+            tac)
    }
 
 (*
  * $Log$
+ * Revision 1.17  1998/07/02 18:34:37  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.16  1998/07/01 04:36:28  nogin
  * Moved Refiner exceptions into a separate module RefineErrors
  *

@@ -18,12 +18,14 @@ open Debug
 
 open Refiner.Refiner
 open Refiner.Refiner.Term
-open Refiner.Refiner.RefineErrors
+open Refiner.Refiner.RefineError
 open Refiner.Refiner.Refine
 open Rformat
 open Dform
 
-open Tactic_type
+open Sequent
+open Tacticals
+
 open Proof_step
 open Proof
 
@@ -69,7 +71,7 @@ type t =
 (*
  * Line that delineates proofs.
  *)
-let hline = "\n--------------------------------------------------------------------------------\n"
+let hline = "\012----------------------------------------\n"
 let bline = "\n++++++++++\n"
 
 (************************************************************************
@@ -148,7 +150,7 @@ let proof_status = function
 (*
  * Display the subgoals in order.
  *)
-let display_children db buf =
+let display_children db buf children =
    let rec aux i = function
       h::t ->
 	 let status, goal =
@@ -172,7 +174,34 @@ let display_children db buf =
     | [] ->
          ()
    in
-      aux 1
+      aux 1 children
+
+(*
+ * Display the extra subgoals.
+ *)
+let display_extras db buf extras =
+   let rec aux = function
+      h::t ->
+	 let status = Proof.node_status h in
+         let goal = Proof.goal h in
+         let goal = Sequent.goal goal in
+	    (* format_string buf "\n-<subgoal>-\n"; *)
+            format_char buf (proof_status status);
+            format_string buf " * ";
+	    format_pushm buf 0;
+	    format_term db buf goal;
+	    format_popm buf;
+	    format_newline buf;
+	    aux t
+    | [] ->
+         ()
+   in
+      match extras with
+         [] ->
+            ()
+       | extras ->
+            format_string buf "-----\n";
+            aux extras
 
 (*
  * Status is displayed as two lines.  The upper
@@ -207,7 +236,8 @@ let display_status buffer status =
  * and no tactic.
  *)
 let display_goal db buffer goal status =
-   let { mseq_goal = goal'; mseq_hyps = hyps } = Sequent.msequent goal in
+   let seq = Sequent.msequent goal in
+   let goal', hyps = dest_msequent seq in
       (* Display the current address *)
       format_string buffer hline;
       display_status buffer status;
@@ -243,9 +273,11 @@ let display_goal db buffer goal status =
  *)
 let display_proof db buffer pf =
    let pf_goal = Proof.goal pf in
-   let { mseq_goal = goal; mseq_hyps = hyps } = Sequent.msequent pf_goal in
+   let seq = Sequent.msequent pf_goal in
+   let goal, hyps = dest_msequent seq in
    let item = Proof.item pf in
    let children = Proof.children pf in
+   let extras = Proof.extras pf in
    let status = Proof.status pf in
       (* Display the current address *)
       format_string buffer hline;
@@ -286,6 +318,7 @@ let display_proof db buffer pf =
 
       (* Subgoals *)
       display_children db buffer children;
+      display_extras db buffer extras;
       format_string buffer bline
 
 (*
@@ -318,7 +351,7 @@ let format db buffer { ped_goal = goal; ped_undo = undo } =
  *)
 let refine_ped ped text ast tac =
    let { ped_goal = goal; ped_undo = undo; ped_stack = stack } = ped in
-   let subgoals, _ = Tactic_type.refine tac goal in
+   let subgoals, _ = Tacticals.refine tac goal in
    let step = Proof_step.create goal subgoals text ast tac in
    let pf' =
       match undo with
@@ -335,7 +368,6 @@ let refine_ped ped text ast tac =
    in
    let ped' = { ped_proof = pf'; ped_select = PedGoal } in
    let stack' = ped' :: stack in
-   let _ = eprintf "Proof_edit.refine_ped: done%t" eflush in
       ped.ped_undo <- stack';
       ped.ped_stack <- stack'
 
@@ -492,12 +524,12 @@ let check_ped ped =
        | ped' :: _ ->
             let { ped_proof = pf } = ped' in
                try Proof.check pf with
-                  Proof.ProofRefineError (pf', err) ->
+                  Proof.ProofRefineError (pf', name, err) ->
                      let ped' = { ped_proof = pf'; ped_select = PedGoal } in
                      let stack = ped' :: stack in
                         ped.ped_undo <- stack;
                         ped.ped_stack <- stack;
-                        raise (RefineError err)
+                        raise (RefineError (name, err))
 
 (*
  * When the proof is expanded, we make a dulicate.
@@ -517,6 +549,11 @@ let expand_ped df ped =
 
 (*
  * $Log$
+ * Revision 1.14  1998/07/02 18:34:35  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.13  1998/07/01 04:36:27  nogin
  * Moved Refiner exceptions into a separate module RefineErrors
  *

@@ -31,7 +31,7 @@
  *
  *)
 
-include Tactic_type
+include Tacticals
 
 include Io_proof_type
 include Proof_type
@@ -43,10 +43,13 @@ open Debug
 open Refiner.Refiner
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermSubst
-open Refiner.Refiner.RefineErrors
+open Refiner.Refiner.RefineError
 open Refiner.Refiner.Refine
 open Refine_exn
-open Tactic_type
+
+open Sequent
+open Tacticals
+
 open Proof_type
 
 (*
@@ -140,7 +143,7 @@ exception Match
  * We overload the refinement error to give the location of
  * the error.
  *)
-exception ProofRefineError of t * refine_error
+exception ProofRefineError of t * string * refine_error
 
 (************************************************************************
  * CONSTRUCTORS                                                         *
@@ -236,6 +239,25 @@ let children
          []
    in
       collect 1 children
+
+(*
+ * Get the extra subgoals.
+ * The addresses are not really correct, since extras are
+ * not addressable.
+ *)
+let extras
+    { pf_root = root;
+      pf_address = addr;
+      pf_node = { node_children = children; node_extras = extras }
+    } =
+   let rec collect i = function
+      h :: t ->
+         { pf_root = root; pf_address = addr @ [i]; pf_node = h }
+         :: collect (i + 1) t
+    | [] ->
+         []
+   in
+      collect (List.length children + 1) extras
 
 (*
  * Select the next node specified by the next int in the address.
@@ -834,7 +856,7 @@ let check { pf_root = root; pf_address = addr; pf_node = node } =
              | Node node ->
                   check_node (0 :: addr') node
          else
-            raise (ProofRefineError (mk_pf addr' node, ("Proof.check", StringError "Proof is not complete")))
+            raise (ProofRefineError (mk_pf addr' node, "Proof.check", StringError "Proof is not complete"))
       in
       let rec fold_child i = function
          child :: childt ->
@@ -843,19 +865,19 @@ let check { pf_root = root; pf_address = addr; pf_node = node } =
             []
       in
       let extl = fold_child 1 children in
-         try Tactic_type.compose ext extl with
-            RefineError err ->
-               raise (ProofRefineError (mk_pf addr' node, err))
+         try Tacticals.compose ext extl with
+            RefineError (name, err) ->
+               raise (ProofRefineError (mk_pf addr' node, name, err))
 
    and check_step addr' node step =
       try Proof_step.check step with
-         RefineError err ->
-            raise (ProofRefineError (mk_pf (List.tl addr') node, err))
+         RefineError (name, err) ->
+            raise (ProofRefineError (mk_pf (List.tl addr') node, name, err))
 
    and check_child addr' node = function
       ChildGoal goal ->
          (* This can't happen if the status were set correctly *)
-         raise (ProofRefineError (mk_pf addr' node, ("Proof.check", StringError "Proof is not complete")))
+         raise (ProofRefineError (mk_pf addr' node, "Proof.check", StringError "Proof is not complete"))
     | ChildNode node ->
          check_node addr' node
    in
@@ -911,14 +933,31 @@ let io_status_of_status = function
  | Complete ->
       Io_proof_type.StatusComplete
 
+let rec io_attributes = function
+   [] ->
+      []
+ | (name, h)::t ->
+      match h with
+         Tactic_type.TermArg _
+       | Tactic_type.TypeArg _
+       | Tactic_type.IntArg _
+       | Tactic_type.BoolArg _
+       | Tactic_type.SubstArg _ ->
+            (name, h) :: io_attributes t
+       | Tactic_type.TacticArg _
+       | Tactic_type.IntTacticArg _
+       | Tactic_type.TypeinfArg _ ->
+            io_attributes t
+
 let rec io_child_of_child = function
    ChildGoal goal ->
-      let { mseq_goal = t; mseq_hyps = hyps } = Tactic_type.msequent goal in
+      let seq = Sequent.msequent goal in
+      let t, hyps = dest_msequent seq in
          Io_proof_type.ChildGoal (**)
             { Io_proof_type.aterm_goal = t;
               Io_proof_type.aterm_hyps = hyps;
-              Io_proof_type.aterm_label = Tactic_type.label goal;
-              Io_proof_type.aterm_args = Tactic_type.attributes goal
+              Io_proof_type.aterm_label = Sequent.label goal;
+              Io_proof_type.aterm_args = io_attributes (Sequent.attributes goal)
             }
  | ChildNode node ->
       Io_proof_type.ChildProof (io_proof_of_node node)
@@ -957,8 +996,8 @@ let status_of_io_status = function
  | Io_proof_type.StatusComplete ->
       Complete
 
-let proof_of_io_proof arg tacs pf =
-   let { ref_fcache = fcache; ref_rsrc = resources } = arg in
+let proof_of_io_proof arg tacs sentinal pf =
+   let { ref_fcache = fcache; ref_args = args } = arg in
    let hash = Hashtbl.create (max (Array.length tacs) 17) in
    let _ = Array.iter (function (name, tac) -> Hashtbl.add hash name tac) tacs in
    let rec child_of_io_child = function
@@ -966,15 +1005,15 @@ let proof_of_io_proof arg tacs pf =
          { Io_proof_type.aterm_goal = goal;
            Io_proof_type.aterm_hyps = hyps;
            Io_proof_type.aterm_label = label;
-           Io_proof_type.aterm_args = args
+           Io_proof_type.aterm_args = args'
          } ->
-         ChildGoal (Tactic_type.create label { mseq_goal = goal; mseq_hyps = hyps } fcache args resources)
+         ChildGoal (Sequent.create sentinal label (mk_msequent goal hyps) fcache (args' @ args))
     | Io_proof_type.ChildProof pf ->
          ChildNode (node_of_io_proof pf)
 
    and item_of_io_node = function
       Io_proof_type.ProofStep step ->
-         Step (Proof_step.step_of_io_step arg hash step)
+         Step (Proof_step.step_of_io_step arg hash sentinal step)
     | Io_proof_type.ProofNode node ->
          Node (node_of_io_proof node)
 
@@ -998,6 +1037,11 @@ let proof_of_io_proof arg tacs pf =
 
 (*
  * $Log$
+ * Revision 1.16  1998/07/02 18:34:33  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.15  1998/07/01 04:36:24  nogin
  * Moved Refiner exceptions into a separate module RefineErrors
  *

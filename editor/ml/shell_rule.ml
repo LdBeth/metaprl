@@ -16,7 +16,7 @@ open Refiner.Refiner
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
-open Refiner.Refiner.RefineErrors
+open Refiner.Refiner.RefineError
 open Refiner.Refiner.Refine
 open Opname
 
@@ -24,7 +24,7 @@ open Filter_summary
 open Filter_cache
 open Filter_ocaml
 
-open Tactic_type
+open Tacticals
 open Tactic_cache
 open Shell_type
 open Package_info
@@ -54,12 +54,12 @@ type info =
  * Make a rewrite goal from the assumptions,
  * and the rewrite.
  *)
-let mk_rule_goal arg assums goal =
-   let { ref_label = label; ref_fcache = cache; ref_args = args; ref_rsrc = resources } = arg in
-      Tactic_type.create label { mseq_goal = goal; mseq_hyps = assums } cache args resources
+let mk_rule_goal sentinal arg assums goal =
+   let { ref_label = label; ref_fcache = cache; ref_args = args } = arg in
+      Sequent.create sentinal label (mk_msequent goal assums) cache args
 
-let mk_ped arg params assums goal =
-   Proof_edit.create params (mk_rule_goal arg assums goal)
+let mk_ped sentinal arg params assums goal =
+   Proof_edit.create params (mk_rule_goal sentinal arg assums goal)
 
 (************************************************************************
  * FORMATTING                                                           *
@@ -75,7 +75,8 @@ let comment loc t =
  * Format the tactic text.
  *)
 let format_tac db buf arg =
-   let { mseq_goal = rw; mseq_hyps = hyps } = Tactic_type.msequent arg in
+   let seq = Sequent.msequent arg in
+   let rw, hyps = dest_msequent seq in
    let format_hyp hyp =
       format_term db buf hyp;
       format_newline buf
@@ -90,15 +91,18 @@ let format_tac db buf arg =
 (*
  * A primtive rewrite.
  *)
-let format_prim_rule db buf arg params assums goal =
-   let tac = Refine_exn.print db (mk_rule_goal arg assums) goal in
+let format_rule_aux s db buf sentinal arg params assums goal =
+   let tac = Refine_exn.print db (mk_rule_goal sentinal arg assums) goal in
       format_tac db buf tac;
       format_newline buf;
-      format_string buf "Primitive";
+      format_string buf s;
       format_newline buf
 
-let format_cond_rule db buf arg params assums goal expr =
-   let tac = Refine_exn.print db (mk_rule_goal arg assums) goal in
+let format_prim_rule = format_rule_aux "Primitive"
+let format_incomplete_rule = format_rule_aux "Incomplete"
+
+let format_cond_rule db buf sentinal arg params assums goal expr =
+   let tac = Refine_exn.print db (mk_rule_goal sentinal arg assums) goal in
       format_tac db buf tac;
       format_newline buf;
       format_string buf "Derived> ";
@@ -134,7 +138,7 @@ let item_of_obj pack name
  *)
 let unit_term = mk_simple_term nil_opname []
 
-let edit pack arg name obj =
+let edit pack sentinal arg name obj =
    let update_ped () =
       obj.rule_ped <- Primitive unit_term
    in
@@ -152,9 +156,11 @@ let edit pack arg name obj =
       in
          match ped with
             Primitive t ->
-               format_prim_rule db buf arg params assums goal
+               format_prim_rule db buf sentinal arg params assums goal
           | Derived expr ->
-               format_cond_rule db buf arg params assums goal expr
+               format_cond_rule db buf sentinal arg params assums goal expr
+          | Incomplete ->
+               format_incomplete_rule db buf sentinal arg params assums goal
           | Interactive ped ->
                Proof_edit.format db buf ped
    in
@@ -181,7 +187,8 @@ let edit pack arg name obj =
          Interactive ped ->
             save_ped ()
        | Primitive _
-       | Derived _ ->
+       | Derived _
+       | Incomplete ->
             ()
    in
    let edit_check () =
@@ -190,15 +197,18 @@ let edit pack arg name obj =
             raise (RefineError ("Shell_rule.check", StringError "can't check primitive rules"))
        | Derived _ ->
             raise (RefineError ("Shell_rule.check", StringError "can't check noninteractive proofs"))
+       | Incomplete ->
+            raise (RefineError ("Shell_rule.check", StringError "proof is incomplete"))
        | Interactive ped ->
             try Proof_edit.check_ped ped with
-               RefineError err ->
-                  raise (RefineError (name, GoalError err))
+               RefineError (name', err) ->
+                  raise (RefineError (name, GoalError (name', err)))
    in
    let get_ped obj =
       match obj.rule_ped with
          Primitive _
-       | Derived _ ->
+       | Derived _
+       | Incomplete ->
             raise (RefineError ("Shell_rule.get_ped", StringError "proof is not interactive"))
        | Interactive ped ->
             ped
@@ -231,14 +241,15 @@ let edit pack arg name obj =
       let ped =
          match obj.rule_ped with
             Primitive _
-          | Derived _ ->
+          | Derived _
+          | Incomplete ->
                (* Convert to a ped *)
                let { rule_params = params;
                      rule_assums = assums;
                      rule_goal = goal
                    } = obj
                in
-               let proof = Package.new_proof pack assums goal in
+               let proof = Package.new_proof pack name assums goal in
                let ped = Package.ped_of_proof pack proof in
                   obj.rule_proof <- Interactive proof;
                   obj.rule_ped <- Interactive ped;
@@ -273,7 +284,7 @@ let edit pack arg name obj =
       }
 
 let create pack name =
-   let proof = Package.new_proof pack [] unit_term in
+   let proof = Package.new_proof pack name [] unit_term in
    let ped = Package.ped_of_proof pack proof in
    let rule =
       { Filter_summary.axiom_name = name;
@@ -289,15 +300,25 @@ let create pack name =
         rule_ped = Interactive ped
       }
    in
+   let sentinal =
+      let refiner =
+         try Package.refiner pack with
+            Not_found ->
+               raise (RefineError ("create_rw", StringStringError ("no refiner", name)))
+      in
+         sentinal_of_refiner refiner
+   in
    let arg = Package.argument pack in
       Package.set pack (Filter_summary.Axiom rule);
-      edit pack arg name obj
+      edit pack sentinal arg name obj
 
 let ped_of_proof pack = function
    Primitive proof ->
       Primitive proof
  | Derived expr ->
       Derived expr
+ | Incomplete ->
+      Incomplete
  | Interactive proof ->
       Interactive (Package.ped_of_proof pack proof)
 
@@ -314,8 +335,16 @@ let view_axiom pack
         rule_ped = ped_of_proof pack proof
       }
    in
+   let sentinal =
+      let refiner =
+         try find_refiner (Package.refiner pack) name with
+            Not_found ->
+               raise (RefineError ("view_rw", StringStringError ("no refiner", name)))
+      in
+         sentinal_of_refiner refiner
+   in
    let arg = Package.argument pack in
-      edit pack arg name obj
+      edit pack sentinal arg name obj
 
 let view_rule pack
     { Filter_summary.rule_name = name;
@@ -333,11 +362,24 @@ let view_rule pack
         rule_ped = ped_of_proof pack proof
       }
    in
+   let sentinal =
+      let refiner =
+         try find_refiner (Package.refiner pack) name with
+            Not_found ->
+               raise (RefineError ("view_rw", StringStringError ("no refiner", name)))
+      in
+         sentinal_of_refiner refiner
+   in
    let arg = Package.argument pack in
-      edit pack arg name obj
+      edit pack sentinal arg name obj
 
 (*
  * $Log$
+ * Revision 1.4  1998/07/02 18:34:46  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.3  1998/07/01 04:36:33  nogin
  * Moved Refiner exceptions into a separate module RefineErrors
  *

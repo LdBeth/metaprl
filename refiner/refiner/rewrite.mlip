@@ -6,35 +6,52 @@
  *)
 
 open Term_sig
+open Term_base_sig
 open Term_man_sig
 open Term_addr_sig
 open Term_subst_sig
 open Term_meta_sig
-open Refine_errors_sig
+open Refine_error_sig
 open Rewrite_sig
 
 module Rewrite (**)
-   (Term : TermSig)
+   (TermType : TermSig)
+   (Term : TermBaseSig
+    with type term = TermType.term
+    with type term' = TermType.term'
+    with type bound_term = TermType.bound_term
+    with type bound_term' = TermType.bound_term'
+    with type operator = TermType.operator
+    with type operator' = TermType.operator'
+    with type param = TermType.param
+    with type param' = TermType.param'
+    with type level_exp = TermType.level_exp
+    with type level_exp' = TermType.level_exp'
+    with type object_id = TermType.object_id)
    (TermMan : TermManSig
-    with type term = Term.term)
+    with type term = TermType.term)
    (TermAddr : TermAddrSig
-    with type term = Term.term)
+    with type term = TermType.term)
    (TermSubst : TermSubstSig
-    with type term = Term.term) 
-   (RefineErrors : RefineErrorsSig
-    with type term = Term.term
-    with type param = Term.param
-    with type level_exp = Term.level_exp
-    with type bound_term = Term.bound_term
-    with type address = TermAddr.address) :
-   RewriteSig
-   with type term = Term.term
-   with type level_exp = Term.level_exp
-   with type operator = Term.operator
-   with type address = TermAddr.address
+    with type term = TermType.term)
+   (RefineError : RefineErrorSig
+    with type level_exp = TermType.level_exp
+    with type param = TermType.param
+    with type term = TermType.term
+    with type bound_term = TermType.bound_term)
+: RewriteSig
+  with type term = TermType.term
+  with type level_exp = TermType.level_exp
+  with type operator = TermType.operator
+  with type address = TermAddr.address
 
 (*
  * $Log$
+ * Revision 1.1  1998/07/02 18:35:37  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.2  1998/07/01 04:36:58  nogin
  * Moved Refiner exceptions into a separate module RefineErrors
  *

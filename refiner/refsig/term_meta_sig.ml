@@ -13,18 +13,7 @@ sig
     * Have to import the type of terms.
     *)
    type term
-
-   (*
-    * The terms in the meta-logical framework include
-    * a meta-implication and met-iff.
-    *)
-   type meta_term =
-      MetaTheorem of term
-    | MetaImplies of meta_term * meta_term
-    | MetaFunction of term * meta_term * meta_term
-    | MetaIff of meta_term * meta_term
-
-   exception MetaTermMatch of meta_term
+   type meta_term
 
    (*
     * Some operations on meta_term.
@@ -43,6 +32,11 @@ end
 
 (*
  * $Log$
+ * Revision 1.4  1998/07/02 18:35:53  jyh
+ * Refiner modules now raise RefineError exceptions directly.
+ * Modules in this revision have two versions: one that raises
+ * verbose exceptions, and another that uses a generic exception.
+ *
  * Revision 1.3  1998/06/15 21:58:04  jyh
  * Added a few new functions.
  *

@@ -9,6 +9,7 @@ open Utils
 open Nuprl5
 open Link
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermType
 open Refiner.Refiner.TermOp
 open Basic
 
@@ -25,7 +26,7 @@ let _ =
 
 (*
  * 	Some simplyfying assumtpions FTTB :
- * 	
+ *
  * 	 only one library per Nuprl-Light Process.
  * 	 only connected to a single Library process and a single environment in the process.
  *
@@ -40,9 +41,9 @@ let _ =
  *)
 
 
-(* 	
+(*
  *	environment is local library state's handle to remote environment.
- *	
+ *
  *)
 
 type connection =
@@ -76,7 +77,7 @@ and environment =
 and orb =
 	{ lo_address	: string list
 	; mutable connections	: connection list	(* remote orb *)
-	; mutable environments	: environment list	
+	; mutable environments	: environment list
 	}
 
 
@@ -232,7 +233,7 @@ let broadcast_eval env tstamp commit_stamp bcasts =
 		{ op_name = opn; op_params = [id; ttype] } when parmeq id ipassport_param
 		  -> (try apply_broadcast
 				(resource env (dest_token_param ttype))
-				(term_of_unbound_term bcast)				
+				(term_of_unbound_term bcast)
 				(term_of_unbound_term desc)
 				tstamp (*(term_to_stamp (term_of_unbound_term stamp))*)
 				commit_stamp
@@ -316,7 +317,7 @@ let rec bus_wait c tid ehook =
 			   (local_eval ehook
 					(term_of_unbound_term (hd bterms))))
 		  ; ivoid_term)
-			
+
       	    | Some ttid ->
 		  (Link.send c.link
 	           (if not (tideq ttid (term_of_unbound_term (hd (tl (bterms)))) )
@@ -412,7 +413,7 @@ let command_of_iconfigure_term t =
 
 
 let default_ehook t = error ["orb"; "RequestNotExpected"] [] []
-	
+
 (* orb-send-configure orb-send-configure-blink *)
 let config_send c term =
   let rsp = bus_eval c [] (iconfigure_term term) ivoid_term default_ehook in
@@ -469,7 +470,7 @@ let connect_aux orb host hsock sock =
 
 let connect orb host hsock sock =
 
-  db_init "/usr/u/nuprl/nuprl5/NuPrlDBa" true;	
+  db_init "/usr/u/nuprl/nuprl5/NuPrlDBa" true;
   let link = connect_aux orb host hsock sock in
   let tcon = { link = link; orb = orb; ro_address = [] } in
     config_send_state tcon (iinform_term (ienvironment_address_term orb.lo_address));
@@ -526,7 +527,7 @@ let iml_woargs_term result_p term =
 		[mk_bterm [] term])
 
 let iml_term result_p term terms =
- mk_term (iml_op	
+ mk_term (iml_op
 		[ make_bool_parameter false
 		; make_bool_parameter result_p
 		])
@@ -638,7 +639,7 @@ let start_broadcasts e =
       (irequest_term
         (istart_term (itable_types_term (map fst e.resources) e.re_address)
 		     (stamp_to_term e.stamp)
-		     (ienvironment_address_term ((e.connection).orb).lo_address)	
+		     (ienvironment_address_term ((e.connection).orb).lo_address)
 			  (* nfg if we allow mulitple envs *)
 		     nl0_description))
 
@@ -656,7 +657,7 @@ let stop_broadcasts e =
       (irevoke_term
         (istart_term (itable_types_term (map fst e.resources) e.re_address)
 		     (stamp_to_term e.stamp)
-		     (ienvironment_address_term ((e.connection).orb).lo_address)	
+		     (ienvironment_address_term ((e.connection).orb).lo_address)
 			  (* nfg if we allow mulitple envs *)
 		     ivoid_term))
 
@@ -777,7 +778,7 @@ let eval_args_to_term e tid t tl =
  *	Not sure if this shouldn't be
  *	... -> (term -> term) -> ... instead of
  *	... -> (term -> unit) -> ...
- *	
+ *
  *	Actually keep this and add another set of funcs if need to return a value.
  *	This keeps result wrappers (eg !ack) in orb.
  *)
@@ -819,7 +820,7 @@ let eval_with_callback e tid f t =
 	   tid
 	   (function term ->
 		(f (cmd_of_icommand_term term)); iack_term)
- ; ()	
+ ; ()
 
 let eval_to_term_with_callback e tid f t =
  (orb_eval true e (iml_expression_term true t [])
@@ -830,7 +831,7 @@ let eval_args_with_callback e tid f t tl =
   orb_eval false e (iml_expression_term false t tl)
 	   tid
 	   (function term -> (f (cmd_of_icommand_term term)); iack_term)
- ; ()	
+ ; ()
 
 let eval_args_to_term_with_callback e tid f t tl =
  (orb_eval true e (iml_expression_term true t tl)
@@ -866,4 +867,4 @@ let orb_req_loop env =
   done
 
 
-	
+
