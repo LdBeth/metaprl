@@ -17,7 +17,7 @@ open Term
 exception FormatError of string * term
 
 (************************************************************************
- * BASIC TERM OPERATIONS						*
+ * BASIC TERM OPERATIONS                                                *
  ************************************************************************)
 
 (*
@@ -37,7 +37,7 @@ let one_subterm s t =
       one_subterm t
 
 (************************************************************************
- * TERM DESTRUCTORS							*
+ * TERM DESTRUCTORS                                                     *
  ************************************************************************)
 
 (*
@@ -309,7 +309,7 @@ and dest_try_expr t =
    let loc = dest_loc t in
       match subterms_of_term t with
          e :: pwel ->
-   	    <:expr< try $dest_expr e$ with [ $list: List.map dest_pwe pwel$ ] >>
+            <:expr< try $dest_expr e$ with [ $list: List.map dest_pwe pwel$ ] >>
        | [] ->
             raise (FormatError ("try needs an argument", t))
 
@@ -843,111 +843,111 @@ and add_ctf  name f = add_tbl ctf_table  name f
 and add_cf   name f = add_tbl cf_table   name f
 
 (************************************************************************
- * OPERATOR NAMES							*
+ * OPERATOR NAMES                                                       *
  ************************************************************************)
 
-let expr_char_op		= add_expr "char" 		dest_char_expr
-let expr_float_op		= add_expr "float"		dest_float_expr
-let expr_int_op			= add_expr "int"		dest_int_expr
+let expr_char_op                = add_expr "char"               dest_char_expr
+let expr_float_op               = add_expr "float"              dest_float_expr
+let expr_int_op                 = add_expr "int"                dest_int_expr
 let expr_string_op              = add_expr "string"             dest_string_expr
-let expr_lid_op			= add_expr "lid"		dest_lid_expr
-let expr_uid_op			= add_expr "uid"		dest_uid_expr
+let expr_lid_op                 = add_expr "lid"                dest_lid_expr
+let expr_uid_op                 = add_expr "uid"                dest_uid_expr
 
-let expr_proj_op 		= add_expr "proj"		dest_proj_expr
-let expr_apply_op 		= add_expr "apply"		dest_apply_expr
-let expr_array_subscript_op 	= add_expr "array_subscript"	dest_array_subscript_expr
-let expr_array_op 		= add_expr "array"		dest_array_expr
-let expr_assign_op		= add_expr "assign"		dest_assign_expr
-let expr_coerce_class_op	= add_expr "coerce_class"	dest_coerce_class_expr
-let expr_upto_op		= add_expr "for_upto"		dest_upto_expr
-let expr_downto_op		= add_expr "for_downto"		dest_downto_expr
-let expr_fun_op			= add_expr "fun"      	        dest_fun_expr
-let expr_if_op			= add_expr "if"			dest_if_expr
-let expr_letrec_op		= add_expr "letrec"		dest_letrec_expr
-let expr_let_op			= add_expr "let"		dest_let_expr
-let expr_match_op		= add_expr "match"		dest_match_expr
-let expr_new_op			= add_expr "new"		dest_new_expr
-let expr_stream_op		= add_expr "stream"		dest_stream_expr
-let expr_record_op		= add_expr "record"		dest_record_expr
-let expr_seq_op			= add_expr "sequence"		dest_seq_expr
-let expr_select_op		= add_expr "select"		dest_select_expr
-let expr_string_subscript_op	= add_expr "string_subscript"	dest_string_subscript_expr
-let expr_try_op			= add_expr "try"		dest_try_expr
-let expr_tuple_op		= add_expr "tuple"		dest_tuple_expr
-let expr_cast_op		= add_expr "cast"		dest_cast_expr
-let expr_while_op		= add_expr "while"		dest_while_expr
+let expr_proj_op                = add_expr "proj"               dest_proj_expr
+let expr_apply_op               = add_expr "apply"              dest_apply_expr
+let expr_array_subscript_op     = add_expr "array_subscript"    dest_array_subscript_expr
+let expr_array_op               = add_expr "array"              dest_array_expr
+let expr_assign_op              = add_expr "assign"             dest_assign_expr
+let expr_coerce_class_op        = add_expr "coerce_class"       dest_coerce_class_expr
+let expr_upto_op                = add_expr "for_upto"           dest_upto_expr
+let expr_downto_op              = add_expr "for_downto"         dest_downto_expr
+let expr_fun_op                 = add_expr "lambda_pattern"     dest_fun_expr
+let expr_if_op                  = add_expr "if"                 dest_if_expr
+let expr_letrec_op              = add_expr "letrec"             dest_letrec_expr
+let expr_let_op                 = add_expr "let"                dest_let_expr
+let expr_match_op               = add_expr "match"              dest_match_expr
+let expr_new_op                 = add_expr "new"                dest_new_expr
+let expr_stream_op              = add_expr "stream"             dest_stream_expr
+let expr_record_op              = add_expr "record"             dest_record_expr
+let expr_seq_op                 = add_expr "sequence"           dest_seq_expr
+let expr_select_op              = add_expr "select"             dest_select_expr
+let expr_string_subscript_op    = add_expr "string_subscript"   dest_string_subscript_expr
+let expr_try_op                 = add_expr "try"                dest_try_expr
+let expr_tuple_op               = add_expr "tuple"              dest_tuple_expr
+let expr_cast_op                = add_expr "cast"               dest_cast_expr
+let expr_while_op               = add_expr "while"              dest_while_expr
 
-let patt_int_op			= add_patt "patt_int"           dest_int_patt
-let patt_string_op		= add_patt "patt_string"        dest_string_patt
-let patt_char_op		= add_patt "patt_char"          dest_char_patt
-let patt_lid_op			= add_patt "patt_lid"           dest_lid_patt
-let patt_uid_op			= add_patt "patt_uid"           dest_uid_patt
-let patt_proj_op		= add_patt "patt_proj"          dest_proj_patt
-let patt_as_op			= add_patt "patt_as"            dest_as_patt
-let patt_wildcard_op		= add_patt "patt_wildcard"      dest_wildcard_patt
-let patt_apply_op		= add_patt "patt_apply"         dest_apply_patt
-let patt_choice_op		= add_patt "patt_choice"        dest_choice_patt
-let patt_range_op		= add_patt "patt_range"         dest_range_patt
-let patt_record_op		= add_patt "patt_record"        dest_record_patt
-let patt_tuple_op		= add_patt "patt_tuple"         dest_tuple_patt
-let patt_cast_op		= add_patt "patt_cast"          dest_cast_patt
+let patt_int_op                 = add_patt "patt_int"           dest_int_patt
+let patt_string_op              = add_patt "patt_string"        dest_string_patt
+let patt_char_op                = add_patt "patt_char"          dest_char_patt
+let patt_lid_op                 = add_patt "patt_lid"           dest_lid_patt
+let patt_uid_op                 = add_patt "patt_uid"           dest_uid_patt
+let patt_proj_op                = add_patt "patt_proj"          dest_proj_patt
+let patt_as_op                  = add_patt "patt_as"            dest_as_patt
+let patt_wildcard_op            = add_patt "patt_wildcard"      dest_wildcard_patt
+let patt_apply_op               = add_patt "patt_apply"         dest_apply_patt
+let patt_choice_op              = add_patt "patt_choice"        dest_choice_patt
+let patt_range_op               = add_patt "patt_range"         dest_range_patt
+let patt_record_op              = add_patt "patt_record"        dest_record_patt
+let patt_tuple_op               = add_patt "patt_tuple"         dest_tuple_patt
+let patt_cast_op                = add_patt "patt_cast"          dest_cast_patt
 
 let type_lid_op                 = add_type "type_lid"           dest_lid_type
 let type_uid_op                 = add_type "type_uid"           dest_uid_type
-let type_proj_op		= add_type "type_proj"          dest_proj_type
-let type_as_op			= add_type "type_as"            dest_as_type
-let type_wildcard_op		= add_type "type_wildcard"      dest_wildcard_type
-let type_apply_op		= add_type "type_apply_op"      dest_apply_type
+let type_proj_op                = add_type "type_proj"          dest_proj_type
+let type_as_op                  = add_type "type_as"            dest_as_type
+let type_wildcard_op            = add_type "type_wildcard"      dest_wildcard_type
+let type_apply_op               = add_type "type_apply_op"      dest_apply_type
 let type_fun_op                 = add_type "type_fun_op"        dest_fun_type
-let type_class_id_op		= add_type "type_class_id"      dest_class_id_type
-let type_param_op		= add_type "type_param"         dest_param_type
-let type_equal_op		= add_type "type_equal"         dest_equal_type
-let type_object_tt_op		= add_type "type_object_tt"     dest_object_tt_type
-let type_object_ff_op		= add_type "type_object_ff"     dest_object_ff_type
-let type_record_op		= add_type "type_record"        dest_record_type
-let type_list_op		= add_type "type_list"          dest_list_type
-let type_prod_op		= add_type "type_prod"          dest_prod_type
+let type_class_id_op            = add_type "type_class_id"      dest_class_id_type
+let type_param_op               = add_type "type_param"         dest_param_type
+let type_equal_op               = add_type "type_equal"         dest_equal_type
+let type_object_tt_op           = add_type "type_object_tt"     dest_object_tt_type
+let type_object_ff_op           = add_type "type_object_ff"     dest_object_ff_type
+let type_record_op              = add_type "type_record"        dest_record_type
+let type_list_op                = add_type "type_list"          dest_list_type
+let type_prod_op                = add_type "type_prod"          dest_prod_type
 
 let sig_class_op		= add_sig "sig_class"           dest_class_sig
-let sig_subsig_op		= add_sig "sig_subsig"          dest_subsig_sig
-let sig_exception_op		= add_sig "sig_exception"       dest_exception_sig
-let sig_external_op		= add_sig "sig_external"        dest_external_sig
-let sig_module_op		= add_sig "sig_module"          dest_module_sig
-let sig_module_type_op		= add_sig "sig_module_type"     dest_module_type_sig
-let sig_open_op			= add_sig "sig_open"            dest_open_sig
-let sig_type_op			= add_sig "sig_type"            dest_type_sig
-let sig_value_op		= add_sig "sig_value"           dest_value_sig
+let sig_subsig_op               = add_sig "sig_subsig"          dest_subsig_sig
+let sig_exception_op            = add_sig "sig_exception"       dest_exception_sig
+let sig_external_op             = add_sig "sig_external"        dest_external_sig
+let sig_module_op               = add_sig "sig_module"          dest_module_sig
+let sig_module_type_op          = add_sig "sig_module_type"     dest_module_type_sig
+let sig_open_op                 = add_sig "sig_open"            dest_open_sig
+let sig_type_op                 = add_sig "sig_type"            dest_type_sig
+let sig_value_op                = add_sig "sig_value"           dest_value_sig
 
-let str_class_op		= add_str "str_class"           dest_class_str
-let str_substruct_op		= add_str "str_substruct"       dest_substruct_str
-let str_exception_op		= add_str "str_exception"       dest_exception_str
-let str_expr_op			= add_str "str_expr"            dest_expr_str
-let str_external_op		= add_str "str_external"        dest_external_str
-let str_module_op		= add_str "str_module"          dest_module_str
-let str_module_type_op		= add_str "str_module_type"     dest_module_type_str
-let str_open_op			= add_str "str_open"            dest_open_str
-let str_type_op			= add_str "str_type"            dest_type_str
-let str_letrec_op		= add_str "str_letrec"          dest_letrec_str
-let str_let_op			= add_str "str_let"             dest_let_str
+let str_class_op                = add_str "str_class"           dest_class_str
+let str_substruct_op            = add_str "str_substruct"       dest_substruct_str
+let str_exception_op            = add_str "str_exception"       dest_exception_str
+let str_expr_op                 = add_str "str_expr"            dest_expr_str
+let str_external_op             = add_str "str_external"        dest_external_str
+let str_module_op               = add_str "str_module"          dest_module_str
+let str_module_type_op          = add_str "str_module_type"     dest_module_type_str
+let str_open_op                 = add_str "str_open"            dest_open_str
+let str_type_op                 = add_str "str_type"            dest_type_str
+let str_letrec_op               = add_str "str_letrec"          dest_letrec_str
+let str_let_op                  = add_str "str_let"             dest_let_str
 
-let mt_lid_op			= add_mt "mt_lid"               dest_lid_mt
-let mt_uid_op			= add_mt "mt_uid"               dest_uid_mt
-let mt_proj_op			= add_mt "mt_proj"              dest_proj_mt
+let mt_lid_op                   = add_mt "mt_lid"               dest_lid_mt
+let mt_uid_op                   = add_mt "mt_uid"               dest_uid_mt
+let mt_proj_op                  = add_mt "mt_proj"              dest_proj_mt
 let mt_apply_op                 = add_mt "mt_apply"             dest_apply_mt
-let mt_functor_op		= add_mt "mt_functor"           dest_functor_mt
-let mt_sig_op			= add_mt "mt_sig"               dest_sig_mt
-let mt_type_with_op		= add_mt "mt_type_with"         dest_with_mt
+let mt_functor_op               = add_mt "mt_functor"           dest_functor_mt
+let mt_sig_op                   = add_mt "mt_sig"               dest_sig_mt
+let mt_type_with_op             = add_mt "mt_type_with"         dest_with_mt
 
-let wc_type_op     		= add_wc "wc_type"              dest_type_wc
-let wc_module_op   		= add_wc "wc_module"            dest_module_wc
+let wc_type_op                  = add_wc "wc_type"              dest_type_wc
+let wc_module_op                = add_wc "wc_module"            dest_module_wc
 
-(* let me_lid_op			= add_me "me_lid"               dest_lid_me *)
-let me_uid_op			= add_me "me_uid"               dest_uid_me
-let me_proj_op			= add_me "me_proj"              dest_proj_me
-let me_apply_op			= add_me "me_apply"             dest_apply_me
-let me_functor_op		= add_me "me_functor"           dest_functor_me
-let me_struct_op		= add_me "me_struct"            dest_struct_me
-let me_cast_op			= add_me "me_cast"              dest_cast_me
+(* let me_lid_op                   = add_me "me_lid"               dest_lid_me *)
+let me_uid_op                   = add_me "me_uid"               dest_uid_me
+let me_proj_op                  = add_me "me_proj"              dest_proj_me
+let me_apply_op                 = add_me "me_apply"             dest_apply_me
+let me_functor_op               = add_me "me_functor"           dest_functor_me
+let me_struct_op                = add_me "me_struct"            dest_struct_me
+let me_cast_op                  = add_me "me_cast"              dest_cast_me
 
 let class_type_op		= mk_ocaml_op "class_type"
 
@@ -1066,81 +1066,85 @@ let mk_var opname loc s =
 (*
  * Compute a hash value from the struct.
  *)
-let rec mk_expr expr =
+let rec mk_expr comment expr =
    let loc = loc_of_expr expr in
+   let term =
       match expr with
          (<:expr< $e1$ . $e2$ >>) ->
-            mk_simple_term expr_proj_op loc [mk_expr e1; mk_expr e2]
+            mk_simple_term expr_proj_op loc [mk_expr comment e1; mk_expr comment e2]
        | (<:expr< $e1$ $e2$ >>) ->
-            mk_simple_term expr_apply_op loc [mk_expr e1; mk_expr e2]
+            mk_simple_term expr_apply_op loc [mk_expr comment e1; mk_expr comment e2]
        | (<:expr< $e1$ .( $e2$ ) >>) ->
-            mk_simple_term expr_array_subscript_op loc [mk_expr e1; mk_expr e2]
+            mk_simple_term expr_array_subscript_op loc [mk_expr comment e1; mk_expr comment e2]
        | (<:expr< [| $list:el$ |] >>) ->
-            mk_simple_term expr_array_op loc [mk_list (List.map mk_expr el)]
+            mk_simple_term expr_array_op loc [mk_list (List.map (mk_expr comment) el)]
        | (<:expr< $e1$ := $e2$ >>) ->
-            mk_simple_term expr_assign_op loc [mk_expr e1; mk_expr e2]
+            mk_simple_term expr_assign_op loc [mk_expr comment e1; mk_expr comment e2]
        | (<:expr< $chr:c$ >>) ->
             mk_loc_string expr_char_op loc (String.make 1 c)
        | (<:expr< ( $e$ :> $t$ ) >>) ->
-            mk_simple_term expr_coerce_class_op loc [mk_expr e; mk_type t]
+            mk_simple_term expr_coerce_class_op loc [mk_expr comment e; mk_type comment t]
        | (<:expr< $flo:s$ >>) ->
             mk_loc_string expr_float_op loc s
        | (<:expr< for $s$ = $e1$ $to:b$ $e2$ do $list:el$ done >>) ->
             let op = if b then expr_upto_op else expr_downto_op in
             let op_loc = mk_op_loc op loc in
-            let el' = mk_list_term (List.map mk_expr el) in
-                mk_dep0_dep0_dep1_any_term op_loc (mk_expr e1) (mk_expr e2) s el'
+            let el' = mk_list_term (List.map (mk_expr comment) el) in
+                mk_dep0_dep0_dep1_any_term op_loc (mk_expr comment e1) (mk_expr comment e2) s el'
        | (<:expr< fun [ $list:pwel$ ] >>) ->
-            mk_simple_term expr_fun_op loc (List.map mk_pwe pwel)
+            mk_simple_term expr_fun_op loc (List.map (mk_pwe comment) pwel)
        | (<:expr< if $e1$ then $e2$ else $e3$ >>) ->
-            mk_simple_term expr_if_op loc [mk_expr e1; mk_expr e1; mk_expr e3]
+            mk_simple_term expr_if_op loc [mk_expr comment e1; mk_expr comment e1; mk_expr comment e3]
        | (<:expr< $int:s$ >>) ->
             mk_loc_int expr_int_op loc s
        | (<:expr< let $rec:b$ $list:pel$ in $e$ >>) ->
             let op = if b then expr_letrec_op else expr_let_op in
-               mk_simple_term op loc ((List.map mk_pe pel) @ [mk_expr e])
+               mk_simple_term op loc ((List.map (mk_pe comment) pel) @ [mk_expr comment e])
        | (<:expr< $lid:s$ >>) ->
             mk_var expr_lid_op loc s
        | (<:expr< match $e$ with [ $list:pwel$ ] >>) ->
-            mk_simple_term expr_match_op loc (mk_expr e :: List.map mk_pwe pwel)
+            mk_simple_term expr_match_op loc (mk_expr comment e :: List.map (mk_pwe comment) pwel)
        | (<:expr< new $e$ >>) ->
-            mk_simple_term expr_new_op loc [mk_expr e]
+            mk_simple_term expr_new_op loc [mk_expr comment e]
        | (<:expr< {< $list:sel$ >} >>) ->
-            mk_simple_term expr_stream_op loc (List.map mk_se sel)
+            mk_simple_term expr_stream_op loc (List.map (mk_se comment) sel)
        | (<:expr< { $list:eel$ } >>) ->
-            mk_simple_term expr_record_op loc (List.map mk_ee eel)
+            mk_simple_term expr_record_op loc (List.map (mk_ee comment) eel)
        | (<:expr< do $list:el$ return $e$ >>) ->
-            mk_simple_term expr_seq_op loc (List.map mk_expr el @ [mk_expr e])
+            mk_simple_term expr_seq_op loc (List.map (mk_expr comment) el @ [mk_expr comment e])
        | (<:expr< $e$ # $i$ >>) ->
-            mk_simple_term expr_select_op loc [mk_expr e; mk_string expr_string_op i]
+            mk_simple_term expr_select_op loc [mk_expr comment e; mk_string expr_string_op i]
        | (<:expr< $e1$ .[ $e2$ ] >>) ->
-            mk_simple_term expr_string_subscript_op loc [mk_expr e1; mk_expr e2]
+            mk_simple_term expr_string_subscript_op loc [mk_expr comment e1; mk_expr comment e2]
        | (<:expr< $str:s$ >>) ->
             mk_loc_string expr_string_op loc s
        | (<:expr< try $e$ with [ $list:pwel$ ] >>) ->
-            mk_simple_term expr_try_op loc (mk_expr e :: List.map mk_pwe pwel)
+            mk_simple_term expr_try_op loc (mk_expr comment e :: List.map (mk_pwe comment) pwel)
        | (<:expr< ( $list:el$ ) >>) ->
-            mk_simple_term expr_tuple_op loc (List.map mk_expr el)
+            mk_simple_term expr_tuple_op loc (List.map (mk_expr comment) el)
        | (<:expr< ( $e$ : $t$ ) >>) ->
-            mk_simple_term expr_cast_op loc [mk_expr e; mk_type t]
+            mk_simple_term expr_cast_op loc [mk_expr comment e; mk_type comment t]
        | (<:expr< $uid:s$ >>) ->
             mk_var expr_uid_op loc s
        | (<:expr< while $e$ do $list:el$ done >>) ->
-            mk_simple_term expr_while_op loc [mk_expr e; mk_list_term (List.map mk_expr el)]
+            mk_simple_term expr_while_op loc [mk_expr comment e; mk_list_term (List.map (mk_expr comment) el)]
        | MLast.ExAnt (_, e) ->
             Stdpp.raise_with_loc loc (Failure "Filter_ocaml.mk_expr: encountered an ExAnt")
+   in
+      comment loc term
       
-and mk_patt patt =
+and mk_patt comment patt =
    let loc = loc_of_patt patt in
+   let term =
       match patt with
          (<:patt< $p1$ . $p2$ >>) ->
-            mk_simple_term patt_proj_op loc [mk_patt p1; mk_patt p2]
+            mk_simple_term patt_proj_op loc [mk_patt comment p1; mk_patt comment p2]
        | (<:patt< ( $p1$ as $p2$ ) >>) ->
-            mk_simple_term patt_as_op loc [mk_patt p1; mk_patt p2]
+            mk_simple_term patt_as_op loc [mk_patt comment p1; mk_patt comment p2]
        | (<:patt< _ >>) ->
             mk_simple_term patt_wildcard_op loc []
        | (<:patt< $p1$ $p2$ >>) ->
-            mk_simple_term patt_apply_op loc [mk_patt p1; mk_patt p2]
+            mk_simple_term patt_apply_op loc [mk_patt comment p1; mk_patt comment p2]
        | (<:patt< $chr:c$ >>) ->
             mk_loc_string patt_char_op loc (String.make 1 c)
        | (<:patt< $int:s$ >>) ->
@@ -1148,152 +1152,169 @@ and mk_patt patt =
        | (<:patt< $lid:i$ >>) ->
             mk_var patt_lid_op loc i
        | (<:patt< $p1$ | $p2$ >>) ->
-            mk_simple_term patt_choice_op loc [mk_patt p1; mk_patt p2]
+            mk_simple_term patt_choice_op loc [mk_patt comment p1; mk_patt comment p2]
        | (<:patt< $p1$ .. $p2$ >>) ->
-            mk_simple_term patt_range_op loc [mk_patt p1; mk_patt p2]
+            mk_simple_term patt_range_op loc [mk_patt comment p1; mk_patt comment p2]
        | (<:patt< { $list:ppl$ } >>) ->
-            mk_simple_term patt_record_op loc (List.map mk_pp ppl)
+            mk_simple_term patt_record_op loc (List.map (mk_pp comment) ppl)
        | (<:patt< $str:s$ >>) ->
             mk_loc_string patt_string_op loc s
        | (<:patt< ( $list:pl$ ) >>) ->
-            mk_simple_term patt_tuple_op loc (List.map mk_patt pl)
+            mk_simple_term patt_tuple_op loc (List.map (mk_patt comment) pl)
        | (<:patt< ( $p$ : $t$ ) >>) ->
-            mk_simple_term patt_cast_op loc [mk_patt p; mk_type t]
+            mk_simple_term patt_cast_op loc [mk_patt comment p; mk_type comment t]
        | (<:patt< $uid:s$ >>) ->
             mk_var patt_uid_op loc s
        | MLast.PaAnt (_, p) ->
             Stdpp.raise_with_loc loc (Failure "Filter_ocaml:mk_patt: encountered PaAnt")
+   in
+      comment loc term
       
-and mk_type t =
+and mk_type comment t =
    let loc = loc_of_ctyp t in
+   let term =
       match t with
          (<:ctyp< $t1$ . $t2$ >>) ->
-            mk_simple_term type_proj_op loc [mk_type t1; mk_type t2]
+            mk_simple_term type_proj_op loc [mk_type comment t1; mk_type comment t2]
        | (<:ctyp< $t1$ as $t2$ >>) ->
-            mk_simple_term type_as_op loc [mk_type t1; mk_type t2]
+            mk_simple_term type_as_op loc [mk_type comment t1; mk_type comment t2]
        | (<:ctyp< _ >>) ->
             mk_simple_term type_wildcard_op loc []
        | (<:ctyp< $t1$ $t2$ >>) ->
-            mk_simple_term type_apply_op loc [mk_type t1; mk_type t2]
+            mk_simple_term type_apply_op loc [mk_type comment t1; mk_type comment t2]
        | (<:ctyp< $t1$ -> $t2$ >>) ->
-            mk_simple_term type_fun_op loc [mk_type t1; mk_type t2]
+            mk_simple_term type_fun_op loc [mk_type comment t1; mk_type comment t2]
        | (<:ctyp< # $i$ >>) ->
-            mk_simple_term type_class_id_op loc [mk_type i]
+            mk_simple_term type_class_id_op loc [mk_type comment i]
        | (<:ctyp< $lid:s$ >>) ->
             mk_var type_lid_op loc s
        | (<:ctyp< '$s$ >>) ->
             mk_loc_string type_param_op loc s
        | (<:ctyp< $t1$ == $t2$ >>) ->
-            mk_simple_term type_equal_op loc [mk_type t1; mk_type t2]
+            mk_simple_term type_equal_op loc [mk_type comment t1; mk_type comment t2]
        | (<:ctyp< < $list:stl$ $dd:b$ > >>) ->
             let op = if b then type_object_tt_op else type_object_ff_op in
-               mk_simple_term op loc (List.map mk_st stl)
+               mk_simple_term op loc (List.map (mk_st comment) stl)
        | (<:ctyp< { $list:sbtl$ } >>) ->
-            mk_simple_term type_record_op loc (List.map mk_sbt sbtl)
+            mk_simple_term type_record_op loc (List.map (mk_sbt comment) sbtl)
        | (<:ctyp< [ $list:stll$ ] >>) ->
-            mk_simple_term type_list_op loc (List.map mk_stl stll)
+            mk_simple_term type_list_op loc (List.map (mk_stl comment) stll)
        | (<:ctyp< ( $list:tl$ ) >>) ->
-            mk_simple_term type_prod_op loc (List.map mk_type tl)
+            mk_simple_term type_prod_op loc (List.map (mk_type comment) tl)
        | (<:ctyp< $uid:s$ >>) ->
             mk_var type_uid_op loc s
+   in
+      comment loc term
       
-and mk_sig_item si =
+and mk_sig_item comment si =
    let loc = loc_of_sig_item si in
+   let term =
       match si with
          (<:sig_item< class $list:ctl$ >>) ->
-            mk_simple_term sig_class_op loc (List.map mk_class_type ctl)
+            mk_simple_term sig_class_op loc (List.map (mk_class_type comment) ctl)
        | (<:sig_item< declare $list:sil$ end >>) ->
-            mk_simple_term sig_subsig_op loc (List.map mk_sig_item sil)
+            mk_simple_term sig_subsig_op loc (List.map (mk_sig_item comment) sil)
        | (<:sig_item< exception $s$ of $list:tl$ >>) ->
-            mk_simple_named_term sig_exception_op loc s (List.map mk_type tl)
+            mk_simple_named_term sig_exception_op loc s (List.map (mk_type comment) tl)
        | (<:sig_item< external $s$ : $t$ = $list:sl$ >>) ->
-            mk_simple_named_term sig_external_op loc s (mk_type t :: List.map mk_simple_string sl)
+            mk_simple_named_term sig_external_op loc s (mk_type comment t :: List.map mk_simple_string sl)
        | (<:sig_item< module $s$ : $mt$ >>) ->
-            mk_simple_named_term sig_module_op loc s [mk_module_type mt]
+            mk_simple_named_term sig_module_op loc s [mk_module_type comment mt]
        | (<:sig_item< module type $s$ = $mt$ >>) ->
-            mk_simple_named_term sig_module_type_op loc s [mk_module_type mt]
+            mk_simple_named_term sig_module_type_op loc s [mk_module_type comment mt]
        | (<:sig_item< open $sl$ >>) ->
             mk_simple_term sig_open_op loc (List.map mk_simple_string sl)
        | (<:sig_item< type $list:ssltl$ >>) ->
-            mk_simple_term sig_type_op loc (List.map mk_sslt ssltl)
+            mk_simple_term sig_type_op loc (List.map (mk_sslt comment) ssltl)
        | (<:sig_item< value $s$ : $t$ >>) ->
-            mk_simple_named_term sig_value_op loc s [mk_type t]
+            mk_simple_named_term sig_value_op loc s [mk_type comment t]
+   in
+      comment loc term
       
-and mk_str_item si =
+and mk_str_item comment si =
    let loc = loc_of_str_item si in
+   let term =
       match si with
          (<:str_item< class $list:cdl$ >>) ->
-            mk_simple_term str_class_op loc (List.map mk_class cdl)
+            mk_simple_term str_class_op loc (List.map (mk_class comment) cdl)
        | (<:str_item< declare $list:stl$ end >>) ->
-            mk_simple_term str_substruct_op loc (List.map mk_str_item stl)
+            mk_simple_term str_substruct_op loc (List.map (mk_str_item comment) stl)
        | (<:str_item< exception $s$ of $list:tl$ >>) ->
-            mk_simple_named_term str_exception_op loc s (List.map mk_type tl)
+            mk_simple_named_term str_exception_op loc s (List.map (mk_type comment) tl)
        | (<:str_item< $exp:e$ >>) ->
-            mk_simple_term str_expr_op loc [mk_expr e]
+            mk_simple_term str_expr_op loc [mk_expr comment e]
        | (<:str_item< external $s$ : $t$ = $list:sl$ >>) ->
-            mk_simple_named_term str_external_op loc s (mk_type t :: List.map mk_simple_string sl)
+            mk_simple_named_term str_external_op loc s (mk_type comment t :: List.map mk_simple_string sl)
        | (<:str_item< module $s$ = $me$ >>) ->
-            mk_simple_named_term str_module_op loc s [mk_module_expr me]
+            mk_simple_named_term str_module_op loc s [mk_module_expr comment me]
        | (<:str_item< module type $s$ = $mt$ >>) ->
-            mk_simple_named_term str_module_type_op loc s [mk_module_type mt]
+            mk_simple_named_term str_module_type_op loc s [mk_module_type comment mt]
        | (<:str_item< open $sl$ >>) ->
             mk_simple_term str_open_op loc (List.map mk_simple_string sl)
        | (<:str_item< type $list:ssltl$ >>) ->
-            mk_simple_term str_type_op loc (List.map mk_sslt ssltl)
+            mk_simple_term str_type_op loc (List.map (mk_sslt comment) ssltl)
        | (<:str_item< value $rec:b$ $list:pel$ >>) ->
             let op = if b then str_letrec_op else str_let_op in
-      	       mk_simple_term op loc (List.map mk_pe pel)
-          
-and mk_module_type mt =
+               mk_simple_term op loc (List.map (mk_pe comment) pel)
+   in
+      comment loc term
+
+and mk_module_type comment mt =
    let loc = loc_of_module_type mt in
+   let term =
       match mt with
          (<:module_type< $mt1$ . $mt2$ >>) ->
-            mk_simple_term mt_proj_op loc [mk_module_type mt1; mk_module_type mt2]
+            mk_simple_term mt_proj_op loc [mk_module_type comment mt1; mk_module_type comment mt2]
        | (<:module_type< $mt1$ $mt2$ >>) ->
-            mk_simple_term mt_apply_op loc [mk_module_type mt1; mk_module_type mt2]
+            mk_simple_term mt_apply_op loc [mk_module_type comment mt1; mk_module_type comment mt2]
        | (<:module_type< functor ( $s$ : $mt1$ ) -> $mt2$ >>) ->
             let op_loc = mk_op_loc mt_functor_op loc in
-               mk_dep0_dep1_any_term op_loc s (mk_module_type mt1) (mk_module_type mt2)
+               mk_dep0_dep1_any_term op_loc s (mk_module_type comment mt1) (mk_module_type comment mt2)
        | (<:module_type< $lid:i$ >>) ->
             mk_var mt_lid_op loc i
        | (<:module_type< sig $list:sil$ end >>) ->
-            mk_simple_term mt_sig_op loc (List.map mk_sig_item sil)
+            mk_simple_term mt_sig_op loc (List.map (mk_sig_item comment) sil)
        | (<:module_type< $uid:i$ >>) ->
             mk_var mt_uid_op loc i
        | (<:module_type< $mt$ with $list:wcl$ >>) ->
-            mk_simple_term mt_type_with_op loc (mk_module_type mt :: List.map mk_wc wcl)
+            mk_simple_term mt_type_with_op loc (mk_module_type comment mt :: List.map (mk_wc comment) wcl)
+   in
+      comment loc term
       
-and mk_wc = function
+and mk_wc comment = function
    WcTyp (loc, sl1, sl2, t) ->
       let sl1' = mk_list_term (List.map mk_simple_string sl1) in
       let sl2' = mk_list_term (List.map mk_simple_string sl2) in
-         mk_simple_term wc_type_op loc [sl1'; sl2'; mk_type t]
+         comment loc (mk_simple_term wc_type_op loc [sl1'; sl2'; mk_type comment t])
  | WcMod (loc, sl1, mt) ->
       let sl1' = mk_list_term (List.map mk_simple_string sl1) in
-         mk_simple_term wc_module_op loc [sl1'; mk_module_type mt]
+         comment loc (mk_simple_term wc_module_op loc [sl1'; mk_module_type comment mt])
 
-and mk_module_expr me =
+and mk_module_expr comment me =
    let loc = loc_of_module_expr me in
+   let term =
       match me with
          (<:module_expr< $me1$ . $me2$ >>) ->
-            mk_simple_term me_proj_op loc [mk_module_expr me1; mk_module_expr me2]
+            mk_simple_term me_proj_op loc [mk_module_expr comment me1; mk_module_expr comment me2]
        | (<:module_expr< $me1$ $me2$ >>) ->
-            mk_simple_term me_apply_op loc [mk_module_expr me1; mk_module_expr me2]
+            mk_simple_term me_apply_op loc [mk_module_expr comment me1; mk_module_expr comment me2]
        | (<:module_expr< functor ( $s$ : $mt$ ) -> $me$ >>) ->
             let op_loc = mk_op_loc me_functor_op loc in
-               mk_dep0_dep1_any_term op_loc s (mk_module_type mt) (mk_module_expr me)
+               mk_dep0_dep1_any_term op_loc s (mk_module_type comment mt) (mk_module_expr comment me)
 (*
        | (<:module_expr< $lid:i$ >>) ->
             mk_var me_lid_op loc i
 *)
        | (<:module_expr< struct $list:sil$ end >>) ->
-            mk_simple_term me_struct_op loc (List.map mk_str_item sil)
+            mk_simple_term me_struct_op loc (List.map (mk_str_item comment) sil)
        | (<:module_expr< ( $me$ : $mt$) >>) ->
-            mk_simple_term me_cast_op loc [mk_module_expr me; mk_module_type mt]
+            mk_simple_term me_cast_op loc [mk_module_expr comment me; mk_module_type comment mt]
        | (<:module_expr< $uid:i$ >>) ->
             mk_var me_uid_op loc i
+   in
+      comment loc term
       
-and mk_class_type
+and mk_class_type comment
   { ctLoc = loc;
     ctNam = s;
     ctPrm = sl;
@@ -1304,25 +1325,25 @@ and mk_class_type
     ctCls = b2 } =
    mk_simple_named_term class_type_op loc s
 	[ mk_list_term (List.map mk_simple_string sl);
-	  mk_list_term (List.map mk_type tl);
+	  mk_list_term (List.map (mk_type comment) tl);
           mk_string_opt expr_string_op so;
- 	  mk_list_term (List.map mk_ctf ctfl);
+ 	  mk_list_term (List.map (mk_ctf comment) ctfl);
 	  mk_bool b1;
 	  mk_bool b2]
 
-and mk_ctf = function
+and mk_ctf comment = function
    CtCtr (loc, s, t) ->
-      mk_simple_term ctf_ctr_op loc [mk_simple_string s; mk_type t]
+      mk_simple_term ctf_ctr_op loc [mk_simple_string s; mk_type comment t]
  | CtInh (loc, t) ->
-      mk_simple_term ctf_inh_op loc [mk_type t]
+      mk_simple_term ctf_inh_op loc [mk_type comment t]
  | CtMth (loc, s, t) ->
-      mk_simple_term ctf_mth_op loc [mk_simple_string s; mk_type t]
+      mk_simple_term ctf_mth_op loc [mk_simple_string s; mk_type comment t]
  | CtVal (loc, s, b1, b2, ot) ->
-      mk_simple_term ctf_val_op loc [mk_simple_string s; mk_bool b1; mk_bool b2; mk_type_opt ot]
+      mk_simple_term ctf_val_op loc [mk_simple_string s; mk_bool b1; mk_bool b2; mk_type_opt comment ot]
  | CtVir (loc, s, t) ->
-      mk_simple_term ctf_vir_op loc [mk_simple_string s; mk_type t]
+      mk_simple_term ctf_vir_op loc [mk_simple_string s; mk_type comment t]
 
-and mk_class
+and mk_class comment
   { cdLoc = loc;
     cdNam = s;
     cdPrm = sl1;
@@ -1332,60 +1353,69 @@ and mk_class
     cdFld = cfl;
     cdVir = b1;
     cdCls = b2 } =
-   mk_simple_named_term class_op loc s
-	[ mk_list_term (List.map mk_simple_string sl1);
-	  mk_list_term (List.map mk_patt pl1);
-          mk_string_opt expr_string_op so1;
-	  mk_string_opt expr_string_op so2;
- 	  mk_list_term (List.map mk_cf cfl);
-	  mk_bool b1;
-	  mk_bool b2]
+   let term =
+      mk_simple_named_term class_op loc s
+           [ mk_list_term (List.map mk_simple_string sl1);
+             mk_list_term (List.map (mk_patt comment) pl1);
+             mk_string_opt expr_string_op so1;
+             mk_string_opt expr_string_op so2;
+             mk_list_term (List.map (mk_cf comment) cfl);
+             mk_bool b1;
+             mk_bool b2]
+   in
+      comment loc term
 
-and mk_cf = function
-   CfCtr (loc, s, t) ->
-      mk_simple_term cf_ctr_op loc [mk_simple_string s; mk_type t]
- | CfInh (loc, t, e, so) ->
-      mk_simple_term cf_inh_op loc [mk_type t; mk_expr e; mk_string_opt expr_string_op so]
- | CfMth (loc, s, e) ->
-      mk_simple_term cf_mth_op loc [mk_simple_string s; mk_expr e]
- | CfVal (loc, s, b1, b2, eo) ->
-      mk_simple_term cf_val_op loc [mk_simple_string s; mk_bool b1; mk_bool b2; mk_expr_opt eo]
- | CfVir (loc, s, t) ->
-      mk_simple_term cf_vir_op loc [mk_simple_string s; mk_type t]
-
+and mk_cf comment cf =
+   let loc, term =
+      match cf with
+         CfCtr (loc, s, t) ->
+            loc, mk_simple_term cf_ctr_op loc [mk_simple_string s; mk_type comment t]
+       | CfInh (loc, t, e, so) ->
+            loc, mk_simple_term cf_inh_op loc [mk_type comment t; mk_expr comment e; mk_string_opt expr_string_op so]
+       | CfMth (loc, s, e) ->
+            loc, mk_simple_term cf_mth_op loc [mk_simple_string s; mk_expr comment e]
+       | CfVal (loc, s, b1, b2, eo) ->
+            loc, mk_simple_term cf_val_op loc [mk_simple_string s; mk_bool b1; mk_bool b2; mk_expr_opt comment eo]
+       | CfVir (loc, s, t) ->
+            loc, mk_simple_term cf_vir_op loc [mk_simple_string s; mk_type comment t]
+   in
+      comment loc term
+      
 (*
  * Combined forms.
  *)
-and mk_expr_opt x = mk_opt mk_expr x
+and mk_expr_opt comment x = mk_opt (mk_expr comment) x
 
-and mk_type_opt x = mk_opt mk_type x
+and mk_type_opt comment x = mk_opt (mk_type comment) x
 
-and mk_pwe (patt, with_expr, expr) =
-   Term.mk_simple_term pwe_op [mk_patt patt; mk_expr_opt with_expr; mk_expr expr]
+and mk_pwe comment (patt, with_expr, expr) =
+   Term.mk_simple_term pwe_op [mk_patt comment patt;
+                               mk_expr_opt comment with_expr;
+                               mk_expr comment expr]
 
-and mk_pe (patt, expr) =
-   Term.mk_simple_term pe_op [mk_patt patt; mk_expr expr]
+and mk_pe comment (patt, expr) =
+   Term.mk_simple_term pe_op [mk_patt comment patt; mk_expr comment expr]
 
-and mk_se (s, e) =
-   Term.mk_simple_term se_op [mk_simple_string s; mk_expr e]
+and mk_se comment (s, e) =
+   Term.mk_simple_term se_op [mk_simple_string s; mk_expr comment e]
 
-and mk_ee (e1, e2) =
-   Term.mk_simple_term ee_op [mk_expr e1; mk_expr e2]
+and mk_ee comment (e1, e2) =
+   Term.mk_simple_term ee_op [mk_expr comment e1; mk_expr comment e2]
 
-and mk_pp (p1, p2) =
-   Term.mk_simple_term pp_op [mk_patt p1; mk_patt p2]
+and mk_pp comment (p1, p2) =
+   Term.mk_simple_term pp_op [mk_patt comment p1; mk_patt comment p2]
 
-and mk_st (s, t) =
-   Term.mk_simple_term st_op [mk_simple_string s; mk_type t]
+and mk_st comment (s, t) =
+   Term.mk_simple_term st_op [mk_simple_string s; mk_type comment t]
 
-and mk_sbt (s, b, t) =
-   Term.mk_simple_term sbt_op [mk_simple_string s; mk_bool b; mk_type t]
+and mk_sbt comment (s, b, t) =
+   Term.mk_simple_term sbt_op [mk_simple_string s; mk_bool b; mk_type comment t]
 
-and mk_stl (s, tl) =
-   Term.mk_simple_term stl_op (mk_simple_string s :: List.map mk_type tl)
+and mk_stl comment (s, tl) =
+   Term.mk_simple_term stl_op (mk_simple_string s :: List.map (mk_type comment) tl)
 
-and mk_sslt (s, sl, t) =
-   Term.mk_simple_term sslt_op (mk_simple_string s :: (List.map mk_simple_string sl @ [ mk_type t ]))
+and mk_sslt comment (s, sl, t) =
+   Term.mk_simple_term sslt_op (mk_simple_string s :: (List.map mk_simple_string sl @ [ mk_type comment t ]))
 
 and mk_bool flag =
    Term.mk_simple_term (if flag then true_op else false_op) []
@@ -1421,6 +1451,9 @@ let term_of_class = mk_class
 
 (*
  * $Log$
+ * Revision 1.5  1998/02/19 17:13:57  jyh
+ * Splitting filter_parse.
+ *
  * Revision 1.4  1998/02/18 18:46:14  jyh
  * Initial ocaml semantics.
  *

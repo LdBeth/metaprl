@@ -12,27 +12,29 @@ OCAMLFLAGS := -pp "camlp4o q_MLast.cmo pa_extend.cmo"
 MLZFILES :=\
 	filter_type\
 	filter_summary_type\
-	filter_process_type\
-	filter_summary_param
+	filter_process_type
 
 # Program files
 MFILES :=\
 	filter_debug\
+	buffer\
+	mLast_util\
 	free_vars\
 	filter_type\
 	infix\
 	filter_ast\
 	filter_hash\
 	filter_util\
+	filter_comment\
 	filter_ocaml\
 	filter_summary\
 	filter_summary_type\
 	filter_summary_io\
+	filter_cache_fun\
 	filter_cache\
-	filter_summary_param\
-	filter_summary_modules\
 	term_grammar\
 	filter_process_type\
+	filter_summary_util\
 	filter_parse\
 	filter_main
 

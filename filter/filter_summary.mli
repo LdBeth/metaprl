@@ -16,118 +16,234 @@ open Filter_type
 (*
  * A module_base contains information about a collection of modules.
  * A module_info contains information about a specific module.
+ *
+ * 'proof: type of proofs for rewrites, etc.
+ * 'ctyp: type of type definitions for resources
+ * 'expr: type of expressions used in ML definitions
+ * 'item: type of summary items
  *)
-type 'a module_info
-     
+type ('proof, 'ctyp, 'expr, 'item) module_info
+
 (*
- * The summary contains information about
- *     1. included modules
- *     2. new theorems
- *     3. new terms
+ * The summary contains information about everything in the file.
+ * We use the summary for both interfaces and implementations.
+ * If the implementation requires a term for the definition,
+ * we use a term option so that the term does not have to be
+ * provided in the interface.
+ *
+ * A MagicBlock is a block of code that we use to compute
+ * a magic number.  The magic number changes whenever the code changes.
  *)
-type 'a summary_item =
-   Rewrite of 'a rewrite_info
- | CondRewrite of 'a cond_rewrite_info
- | Axiom of 'a axiom_info
- | Rule of 'a rule_info
+type ('proof, 'ctyp, 'expr, 'item) summary_item =
+   Rewrite of 'proof rewrite_info
+ | CondRewrite of 'proof cond_rewrite_info
+ | Axiom of 'proof axiom_info
+ | Rule of 'proof rule_info
  | Opname of opname_info
- | MLTerm of term
- | Condition of term
+ | MLTerm of 'expr mlterm_info
+ | Condition of 'expr mlterm_info
  | Parent of module_path
- | Module of string * 'a module_info
- | DForm of dform_info
+ | Module of string * ('proof, 'ctyp, 'expr, 'item) module_info
+ | DForm of 'expr dform_info
  | Prec of string
+ | PrecRel of prec_rel_info
  | Id of int
- | Resource of resource_info
- | InheritedResource of resource_info
+ | Resource of 'ctyp resource_info
  | Infix of string
- | SummaryItem of term
-   
-and 'a rewrite_info =
+ | SummaryItem of 'item
+ | MagicBlock of 'item magic_info
+
+(*
+ * Proof is type unit in interface.
+ *)
+and 'proof rewrite_info =
    { rw_name : string;
      rw_redex : term;
      rw_contractum : term;
-     rw_proof : 'a
+     rw_proof : 'proof
    }
-and 'a cond_rewrite_info =
+
+and 'proof cond_rewrite_info =
    { crw_name : string;
      crw_params : param list;
      crw_args : term list;
      crw_redex : term;
      crw_contractum : term;
-     crw_proof : 'a
+     crw_proof : 'proof
    }
-and 'a axiom_info =
+
+and 'proof axiom_info =
    { axiom_name : string;
      axiom_stmt : term;
-     axiom_proof : 'a
+     axiom_proof : 'proof
    }
-and 'a rule_info =
+
+and 'proof rule_info =
    { rule_name : string;
      rule_params : param list;
      rule_stmt : meta_term;
-     rule_proof : 'a
+     rule_proof : 'proof
    }
+
+(*
+ * An mlterm is a term that has an ML procedure for its rewrite.
+ * The definition is not required in the interface.
+ *)
+and 'expr mlterm_info =
+   { mlterm_term : term;
+     mlterm_def : 'expr option
+   }
+
 and opname_info =
    { opname_name : string;
      opname_term : term
    }
-and dform_info =
-   { dform_options : term list;
+
+(*
+ * Dform descriptions.
+ * The definition is not required in the interface.
+ *)
+and 'expr dform_info =
+   { dform_modes : string list;
+     dform_options : dform_option list;
      dform_redex : term;
-     dform_def : term option
+     dform_def : 'expr dform_def
    }
-and resource_info =
+
+and dform_option =
+   DFormInheritPrec
+ | DFormPrec of string
+ | DFormParens
+
+and 'expr dform_def =
+   NoDForm
+ | TermDForm of term
+ | MLDForm of 'expr dform_ml_def
+
+and 'expr dform_ml_def =
+   { dform_ml_printer : string;
+     dform_ml_buffer : string;
+     dform_ml_code : 'expr
+   }
+
+(*
+ * Define a precedence relation.
+ *)
+and prec_rel_info =
+   { prec_rel : Precedence.relation;
+     prec_left : string;
+     prec_right : string
+   }
+
+(*
+ * Resource descriptions.
+ *)
+and 'ctyp resource_info =
    { resource_name : string;
-     resource_extract_type : MLast.ctyp;
-     resource_improve_type : MLast.ctyp;
-     resource_data_type : MLast.ctyp
+     resource_extract_type : 'ctyp;
+     resource_improve_type : 'ctyp;
+     resource_data_type : 'ctyp
    }
+
+(*
+ * Magic block needs a variable to bind the magic number to.
+ *)
+and 'item magic_info =
+   { magic_name : string;
+     magic_code : 'item list
+   }
+
 and param =
    ContextParam of string
  | VarParam of string
  | TermParam of term
 
+(*
+ * Conversion functions.
+ *)
+type ('proof1, 'ctyp1, 'expr1, 'item1, 'proof2, 'ctyp2, 'expr2, 'item2) convert =
+   { term_f : term -> term;
+     proof_f : 'proof1 -> 'proof2;
+     ctyp_f  : 'ctyp1  -> 'ctyp2;
+     expr_f  : 'expr1  -> 'expr2;
+     item_f  : 'item1  -> 'item2
+   }
+
 (************************************************************************
- * INTERFACE								*
+ * Interface								*
  ************************************************************************)
 
 (* Creation *)
-val find_sub_module : 'a module_info -> module_path -> 'a module_info
+val find_sub_module : ('proof, 'ctyp, 'expr, 'item) module_info ->
+   module_path ->
+   ('proof, 'ctyp, 'expr, 'item) module_info
 
-val new_module_info : unit -> 'a module_info
-val info_items : 'a module_info -> 'a summary_item list
-val normalize_info : 'a module_info -> ('a -> 'a) -> 'a module_info
+val new_module_info : unit -> ('proof, 'ctyp, 'expr, 'item) module_info
+
+val info_items : ('proof, 'ctyp, 'expr, 'item) module_info ->
+   ('proof, 'ctyp, 'expr, 'item) summary_item list
 
 (* Access *)
-val find_axiom : 'a module_info -> string -> 'a summary_item option
-val find_rewrite : 'a module_info -> string -> 'a summary_item option
-val find_mlterm : 'a module_info -> term -> 'a summary_item option
-val find_condition : 'a module_info -> term -> 'a summary_item option
-val find_dform : 'a module_info -> term -> 'a summary_item option
-val find_prec : 'a module_info -> string -> 'a summary_item option
-val find_id : 'a module_info -> int
+val find_axiom : ('proof, 'ctyp, 'expr, 'item) module_info ->
+   string ->
+   ('proof, 'ctyp, 'expr, 'item) summary_item option
 
-val get_resources : 'a module_info -> resource_info list
-val get_infixes : 'a module_info -> string list
+val find_rewrite : ('proof, 'ctyp, 'expr, 'item) module_info ->
+   string ->
+   ('proof, 'ctyp, 'expr, 'item) summary_item option
+
+val find_mlterm : ('proof, 'ctyp, 'expr, 'item) module_info ->
+   term ->
+   ('proof, 'ctyp, 'expr, 'item) summary_item option
+
+val find_condition : ('proof, 'ctyp, 'expr, 'item) module_info ->
+   term ->
+   ('proof, 'ctyp, 'expr, 'item) summary_item option
+
+val find_dform : ('proof, 'ctyp, 'expr, 'item) module_info ->
+   term ->
+   ('proof, 'ctyp, 'expr, 'item) summary_item option
+
+val find_prec : ('proof, 'ctyp, 'expr, 'item) module_info ->
+   string ->
+   ('proof, 'ctyp, 'expr, 'item) summary_item option
+
+val find_id : ('proof, 'ctyp, 'expr, 'item) module_info -> int
+
+val get_resources : ('proof, 'ctyp, 'expr, 'item) module_info ->
+   'ctyp resource_info list
+
+val get_infixes : ('proof, 'ctyp, 'expr, 'item) module_info ->
+   string list
 
 (* Update *)
-val add_command : 'a module_info -> 'a summary_item -> 'a module_info * int
-val set_commands : 'a module_info -> 'a summary_item list -> 'a module_info
-val get_command : 'a module_info -> int -> 'a summary_item
+val add_command : ('proof, 'ctyp, 'expr, 'item) module_info ->
+   ('proof, 'ctyp, 'expr, 'item) summary_item ->
+   ('proof, 'ctyp, 'expr, 'item) module_info
 
 (* Utilities *)
 val collect_cvars : param list -> string array
 val collect_vars : param list -> string array
 val collect_non_vars : param list -> term list
-val proof_map : (string -> 'a -> 'b) -> 'a module_info -> 'b module_info
-val term_list : (string -> 'a -> term) -> 'a module_info -> term list
-val of_term_list : (string -> term -> 'a) -> term list -> 'a module_info
+val summary_map :
+   ('proof1, 'ctyp1, 'expr1, 'item1, 'proof2, 'ctyp2, 'expr2, 'item2) convert ->
+   ('proof1, 'ctyp1, 'expr1, 'item1) module_info ->
+   ('proof2, 'ctyp2, 'expr2, 'item2) module_info
+val term_list :
+   ('proof, 'ctyp, 'expr, 'item, term, term, term, term) convert ->
+   ('proof, 'ctyp, 'expr, 'item) module_info ->
+   term list
+val of_term_list :
+   (term, term, term, term, 'proof, 'ctyp, 'expr, 'item) convert ->
+   term list ->
+   ('proof, 'ctyp, 'expr, 'item) module_info
 
 (*
  * Interface checking.
  *)
-val check_implementation : 'a module_info -> 'a module_info -> unit
+val check_implementation : ('proof, 'ctyp, 'expr, 'item) module_info ->
+   ('proof, 'ctyp, 'expr, 'item) module_info ->
+   unit
 
 (*
  * Module paths.
@@ -138,11 +254,14 @@ val output_path : out_channel -> module_path -> unit
 (*
  * Debugging.
  *)
-val eprint_command : 'a summary_item -> unit
-val eprint_info : 'a module_info -> unit
+val eprint_command : ('proof, 'ctyp, 'expr, 'item) summary_item -> unit
+val eprint_info : ('proof, 'ctyp, 'expr, 'item) module_info -> unit
 
 (*
  * $Log$
+ * Revision 1.5  1998/02/19 17:14:01  jyh
+ * Splitting filter_parse.
+ *
  * Revision 1.4  1998/02/12 23:38:15  jyh
  * Added support for saving intermediate files to the library.
  *

@@ -9,6 +9,8 @@ open Printf
 
 open Debug
 
+open Term
+
 open File_base_type
 
 open Filter_type
@@ -20,10 +22,9 @@ open Filter_summary_type
  * This just improves the FileBase so we can have
  * nested modules.
  *)
-module MakeSummaryBase (Types : SummaryTypesSig)
-   (FileBase : FileBaseSig
-               with type cooked = Types.proof module_info
-               with type select = Types.select) =
+module MakeSummaryBase
+   (Address : AddressSig)
+   (FileBase : FileBaseSig with type cooked = Address.t) =
 struct
    (************************************************************************
     * TYPES                                                                *
@@ -32,13 +33,13 @@ struct
    (*
     * Save the proof and tag types.
     *)
-   type proof = Types.proof
+   type cooked = FileBase.cooked
    type select = FileBase.select
    
    type info =
       { info_root : FileBase.info;
         info_path : module_path;
-        mutable info_info : proof module_info
+        mutable info_info : cooked
       }
    
    type t = FileBase.t
@@ -66,7 +67,7 @@ struct
             raise (EmptyModulePath "Filter_summary_io.find")
        | name'::path ->
             let info = FileBase.find base (String.uncapitalize name') select in
-            let info' = find_sub_module (FileBase.info base info) path in
+            let info' = Address.find_sub_module (FileBase.info base info) path in
                { info_root = info;
                  info_path = name;
                  info_info = info'
@@ -78,7 +79,7 @@ struct
    let find_match base info select =
       let { info_root = root; info_path = path } = info in
       let root' = FileBase.find_match base root select in
-      let info = find_sub_module (FileBase.info base root') info.info_path in
+      let info = Address.find_sub_module (FileBase.info base root') info.info_path in
          { info_root = root';
            info_path = path;
            info_info = info
@@ -88,7 +89,7 @@ struct
     * Create an empty info.
     *)
    let create_info base select dir file =
-      let data = new_module_info () in
+      let data = Address.create () in
          { info_root = FileBase.create_info base data select dir file;
            info_path = [String.capitalize file];
            info_info = data
@@ -118,7 +119,7 @@ struct
    
    let sub_info base { info_info = info; info_path = path; info_root = root } name =
       let path' = path @ [name] in
-      let info' = find_sub_module info path' in
+      let info' = Address.find_sub_module info path' in
          { info_info = info';
            info_path = path';
            info_root = root
@@ -148,6 +149,9 @@ end
    
 (*
  * $Log$
+ * Revision 1.3  1998/02/19 17:14:01  jyh
+ * Splitting filter_parse.
+ *
  * Revision 1.2  1997/08/06 16:17:34  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

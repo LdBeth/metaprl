@@ -4,15 +4,49 @@
  *
  *)
 
+open Term
+
 open Filter_summary_type
 
-module MakeFilterCache (Base : SummaryBaseSig) :
-   SummaryCacheSig
-   with type proof = Base.proof
-   with type select = Base.select
+(*
+ * For this compiler, we only use two summaries.
+ *)
+type select_type =
+   InterfaceType
+ | ImplementationType
 
 (*
+ * The summary_cache for interfaces and implementations.
+ *)
+module SigFilterCache :
+   SummaryCacheSig
+   with type sig_proof  = unit
+   with type sig_ctyp   = MLast.ctyp
+   with type sig_expr   = MLast.expr
+   with type sig_item   = MLast.sig_item
+   with type str_proof  = unit
+   with type str_ctyp   = MLast.ctyp
+   with type str_expr   = MLast.expr
+   with type str_item   = MLast.sig_item
+   with type select = select_type
+   
+module StrFilterCache :
+   SummaryCacheSig
+   with type sig_proof  = unit
+   with type sig_ctyp   = MLast.ctyp
+   with type sig_expr   = MLast.expr
+   with type sig_item   = MLast.sig_item
+   with type str_proof  = MLast.expr
+   with type str_ctyp   = MLast.ctyp
+   with type str_expr   = MLast.expr
+   with type str_item   = MLast.str_item
+   with type select = select_type
+   
+(*
  * $Log$
+ * Revision 1.3  1998/02/19 17:13:55  jyh
+ * Splitting filter_parse.
+ *
  * Revision 1.2  1997/08/06 16:17:28  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

@@ -11,7 +11,6 @@ open Term
 open Opname
 
 open File_base_type
-open File_type_base
 
 open Filter_type
 open Filter_summary
@@ -22,6 +21,16 @@ open Filter_summary
 type module_name = string
 
 (*
+ * This module just provides subaddressing of its objects.
+ *)
+module type AddressSig =
+sig
+   type t
+   val create : unit -> t
+   val find_sub_module : t -> module_path -> t
+end
+
+(*
  * This is a module base that loads modules automatically
  * given a directory path to look for module files.
  * The proof type must be specified (so we know what kind
@@ -30,12 +39,11 @@ type module_name = string
 module type SummaryBaseSig =
 sig
    (*
-    * proof: the info is all represented as type proof module_info
     * select: a type of tags for typecase on the info
     * info: an abstract type for represeting modules in this base
     * t: the database type
     *)
-   type proof
+   type cooked
    type select
    type info
    type t
@@ -51,8 +59,8 @@ sig
    val save : t -> info -> unit
    
    (* Info about a module *)
-   val info : t -> info -> proof module_info
-   val set_info : t -> info -> proof module_info -> unit
+   val info : t -> info -> cooked
+   val set_info : t -> info -> cooked -> unit
    val sub_info : t -> info -> string -> info
    val name : t -> info -> module_name
    val pathname : t -> info -> module_path
@@ -63,31 +71,72 @@ end
 
 (*
  * This module just contains types to express sharing contraints.
+ * We need all four type arguments to module_info.
  *)
-module type SummaryTypesSig =
+module type MarshalSig =
 sig
+   (* These are the types used for module_info *)
    type proof
+   type ctyp
+   type expr
+   type item
+
+   (* Type and id for this module *)
    type select
+   val select : select
+
+   (* Marshaling *)
+   type cooked
+   val marshal : (proof, ctyp, expr, item) module_info -> cooked
+   val unmarshal : cooked -> (proof, ctyp, expr, item) module_info
 end
 
 (*
  * This is an enhanced SummaryBase.
+ * It caches the following items:
+ *    1. opnames in the current module
+ *    2. infix operators in the current module
+ *    3. resources in the current module
+ *    4. summary of the current module, recorded as a module_info
+ *
+ * The cache also takes care of recursively opening parent modules
+ * when a module is opened.  All the opnames of the parents are
+ * recorded in the current module.  A hook function is allowed that
+ * can be called as the parents are opened.
+ *
+ * The summary cache operates on (proof, ctyp, expr, item) module_info, but
+ * the signature type is allowed to differ from the type being constructed.
+ * The sig_* types parameterize the signatures, and the str_* types
+ * parameterize the module_info being constructed.
  *)
 module type SummaryCacheSig =
 sig
    (*
-    * proof: the info is all represented as type proof module_info
+    * proof, ctyp, expr, item: parameters to module_info
     * select: a type of tags for typecase on the info
     * info: an abstract type for represeting modules in this base
     * t: the database type
     *)
-   type proof
+   type sig_proof
+   type sig_ctyp
+   type sig_expr
+   type sig_item
+   type sig_elem = (sig_proof, sig_ctyp, sig_expr, sig_item) summary_item
+   type sig_info = (sig_proof, sig_ctyp, sig_expr, sig_item) module_info
+   
+   type str_proof
+   type str_ctyp
+   type str_expr
+   type str_item
+   type str_elem = (str_proof, str_ctyp, str_expr, str_item) summary_item
+   type str_info = (str_proof, str_ctyp, str_expr, str_item) module_info
+   
    type select
    type info
    type t
    
    (* Hook that is called whenever a module is loaded *)
-   type 'a hook = info -> module_path * proof module_info -> 'a -> 'a
+   type 'a hook = info -> module_path * sig_info -> 'a -> 'a
 
    (* Creation *)
    val create : string list -> t
@@ -95,14 +144,14 @@ sig
    
    (* Loading *)
    val create_cache : t -> module_name -> select -> select -> info
-   val load : t -> module_name -> select -> select -> 'a hook -> 'a -> info * 'a 
+   (* val load : t -> module_name -> select -> select -> 'a hook -> 'a -> info * 'a *)
    val save : info -> unit
 
    (* Access *)
-   val info : info -> proof module_info
-   val sub_info : info -> module_path -> proof module_info
+   val info : info -> str_info
+   val sub_info : info -> module_path -> sig_info
 
-   (* Expand a partial path specification to a complte one *)
+   (* Expand a partial path specification to a complete one *)
    val expand_path : info -> module_path -> module_path
 
    (* Opname management *)
@@ -113,31 +162,34 @@ sig
    val mk_opname : info -> string list -> opname
 
    (* Inherited access for module_info *)
-   val find_axiom : info -> string -> proof summary_item option
-   val find_rewrite : info -> string -> proof summary_item option
-   val find_mlterm : info -> term -> proof summary_item option
-   val find_condition : info -> term -> proof summary_item option
-   val find_dform : info -> term -> proof summary_item option
+   val find_axiom : info -> string -> str_elem option
+   val find_rewrite : info -> string -> str_elem option
+   val find_mlterm : info -> term -> str_elem option
+   val find_condition : info -> term -> str_elem option
+   val find_dform : info -> term -> str_elem option
    val find_prec : info -> string -> bool
-   val resources : info -> (module_path * resource_info) list
+   val resources : info -> (module_path * str_ctyp resource_info) list
 
    (*
     * Update.
-    * add_command returns a number that can be used to
-    * look up the command.  (Sorry, but we need this so that
-    * the commands can be embeddied in MLast).
     *)
-   val add_command : info -> proof summary_item -> int
-   val set_commands : info -> proof summary_item list -> unit
-   val get_command : info -> int -> proof summary_item
-   val add_resource : info -> module_path -> resource_info -> unit
+   val add_command : info -> str_elem -> unit
+   val add_resource : info -> module_path -> str_ctyp resource_info -> unit
    val add_prec : info -> string -> unit
-
-   val inline_module : info -> module_path -> 'a hook -> 'a -> proof module_info * 'a
+   
+   (*
+    * An inlined module includes its opnames in the current
+    * space.  This function recursively inlines all modules in
+    * the hierarchy, calling the hook on each.
+    *)
+   val inline_module : info -> module_path -> 'a hook -> 'a -> sig_info * 'a
 end
 
 (*
  * $Log$
+ * Revision 1.3  1998/02/19 17:14:04  jyh
+ * Splitting filter_parse.
+ *
  * Revision 1.2  1997/09/12 17:21:39  jyh
  * Added MLast <-> term conversion.
  * Splitting filter_parse into two phases:

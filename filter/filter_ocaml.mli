@@ -24,15 +24,18 @@ val class_of_term : term -> class_decl
 
 (*
  * MLast to term.
+ *
+ * The extra (MLast.loc -> term -> term) argument is used to annoate the results.
+ * It is mapped over all terms postfix order.
  *)
-val term_of_expr : expr -> term
-val term_of_patt : patt -> term
-val term_of_type : ctyp -> term
-val term_of_sig_item : sig_item -> term
-val term_of_str_item : str_item -> term
-val term_of_module_type : module_type -> term
-val term_of_module_expr : module_expr -> term
-val term_of_class : class_decl -> term
+val term_of_expr : (MLast.loc -> term -> term) -> expr -> term
+val term_of_patt : (MLast.loc -> term -> term) -> patt -> term
+val term_of_type : (MLast.loc -> term -> term) -> ctyp -> term
+val term_of_sig_item : (MLast.loc -> term -> term) -> sig_item -> term
+val term_of_str_item : (MLast.loc -> term -> term) -> str_item -> term
+val term_of_module_type : (MLast.loc -> term -> term) -> module_type -> term
+val term_of_module_expr : (MLast.loc -> term -> term) -> module_expr -> term
+val term_of_class : (MLast.loc -> term -> term) -> class_decl -> term
 
 (*
  * Specific values useful for writing
@@ -59,6 +62,9 @@ val dest_var : term -> string
 
 (*
  * $Log$
+ * Revision 1.4  1998/02/19 17:13:58  jyh
+ * Splitting filter_parse.
+ *
  * Revision 1.3  1998/02/12 23:38:10  jyh
  * Added support for saving intermediate files to the library.
  *

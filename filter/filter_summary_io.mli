@@ -5,6 +5,8 @@
  *
  *)
 
+open Term
+
 open File_base_type
 
 open Filter_summary
@@ -13,16 +15,18 @@ open Filter_summary_type
 (*
  * Create a summary base for a specific format.
  *)
-module MakeSummaryBase (Types : SummaryTypesSig)
-   (FileBase : FileBaseSig
-            with type cooked = Types.proof module_info
-            with type select = Types.select) :
+module MakeSummaryBase
+   (Address : AddressSig)
+   (FileBase : FileBaseSig with type cooked = Address.t) :
       (SummaryBaseSig
-       with type proof = Types.proof
-       with type select = Types.select)
+       with type cooked = FileBase.cooked
+       with type select = FileBase.select)
 
 (*
  * $Log$
+ * Revision 1.3  1998/02/19 17:14:01  jyh
+ * Splitting filter_parse.
+ *
  * Revision 1.2  1997/08/06 16:17:34  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

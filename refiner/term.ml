@@ -373,6 +373,39 @@ let mk_string_dep0_term opname = fun
       }
 
 (*
+ * One string parameter, and one simple subterm.
+ *)
+let is_string_string_dep0_term opname = function
+   { term_op = { op_name = opname'; op_params = [String _; String _] };
+     term_terms = [{ bvars = [] }]
+   } when opname = opname' ->
+      true
+ | _ ->
+      false
+
+let dest_string_string_dep0_term opname = function
+   { term_op = { op_name = opname'; op_params = [String s1; String s2] };
+     term_terms = [{ bvars = []; bterm = t }]
+   } when opname = opname' ->
+      s1, s2, t
+ | t ->
+      raise (TermMatch ("dest_string_string_dep0_term", t, ""))
+
+let dest_string_string_dep0_any_term = function
+   { term_op = { op_name = opname'; op_params = [String s1; String s2] };
+     term_terms = [{ bvars = []; bterm = t }]
+   } ->
+      s1, s2, t
+ | t ->
+      raise (TermMatch ("dest_string_string_dep0_term", t, ""))
+
+let mk_string_string_dep0_term opname = fun
+   s1 s2 t ->
+      { term_op = { op_name = opname; op_params = [String s1; String s2] };
+        term_terms = [{ bvars = []; bterm = t }]
+      }
+
+(*
  * One number param.
  *)
 let is_number_term opname = function
@@ -2400,6 +2433,9 @@ let make_2subst_term main_term v1 v2 t1 t2 =
 
 (*
  * $Log$
+ * Revision 1.8  1998/02/19 17:13:39  jyh
+ * Splitting filter_parse.
+ *
  * Revision 1.7  1998/02/12 23:34:50  jyh
  * Modifed term module.
  *

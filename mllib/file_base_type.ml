@@ -128,7 +128,21 @@ sig
 end
 
 (*
+ * Allow arbitrary IO.
+ *)
+module type IOSig =
+sig
+   type t
+
+   val write : int -> string -> t -> unit
+   val read : int -> string -> t
+end
+
+(*
  * $Log$
+ * Revision 1.2  1998/02/19 17:13:21  jyh
+ * Splitting filter_parse.
+ *
  * Revision 1.1  1998/02/18 18:46:47  jyh
  * Initial ocaml semantics.
  *

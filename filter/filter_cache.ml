@@ -10,488 +10,401 @@ open Debug
 open Opname
 open Term
 
+open File_base_type
+open File_type_base
+
 open Filter_debug
 open Filter_type
 open Filter_util
+open Filter_ocaml
 open Filter_summary
 open Filter_summary_type
 open Filter_summary_io
+open Filter_cache_fun
+
+(************************************************************************
+ * CONFIG                                                               *
+ ************************************************************************)
 
 (*
- * Make the enhanced base from a normal summary base.
+ * We save in three modes:
+ *    1. Save to the library
+ *    2. Save to the filesystem
+ *       a. store raw data to files
+ *       b. store data as terms
  *)
-module MakeFilterCache (Base : SummaryBaseSig) :
-   (SummaryCacheSig
-    with type proof = Base.proof
-    with type select = Base.select) =
-struct
-   (************************************************************************
-    * TYPES                                                                *
-    ************************************************************************)
+let nolib  = ref false
+let nofile = ref false
+let noraw  = ref false
 
-   (*
-    * Base types.
-    *)
-   type proof = Base.proof
-   type select = Base.select
-   type t = Base.t
+let set_lib _ _ v =
+   if v then
+      begin
+         nofile := true;
+         nolib := false
+      end
+   else
+      nolib := true
 
-   (*
-    * This is the extra info we keep for each module.
-    * 1. There is an opname translator that maps strings
-    *    to complete opnames.
-    * 2. Collect all the precedences
-    * 3. Collect all the resources
-    * 4. A list of all inlined modules
-    * 5. The current module_info
-    *)
-   type info =
-      { opprefix : opname;
-        optable : (string, opname) Hashtbl.t;
+let set_file _ _ v =
+   if v then
+      nolib := true
+   else
+      begin
+         nofile := true;
+         noraw := true
+      end
 
-        (* Names of precedences in this module *)
-        mutable precs : string list;
+let set_raw _ _ v =
+   if v then
+      begin
+         nofile := false;
+         noraw := false
+      end
+   else
+      noraw := true
 
-        (* List of resources, and where they come from *)
-        mutable resources : (module_path * resource_info) list;
+let _ = Env_arg.bool "lib"    false "Use the Nuprl5 library"  set_lib
+let _ = Env_arg.bool "file"   true  "Use the filesystem"      set_file
+let _ = Env_arg.bool "raw"    false "Use the raw filesystem"  set_raw
 
-        (*
-         * Summaries of modules.
-         * load_path is search path for finding module summaries from the filesystem.
-         * summaries is the list of inlined module summaries
-         * modules is the list of modules that have been inlined
-         * new_summary is the summary of this module.
-         *)
-        mutable summaries : Base.info list;
-        mutable info : proof module_info;
-
-        (*
-         * Self summary, and type of modules to inline.
-         *)
-        self : Base.info;
-        select : select;
-
-        (*
-         * Keep a link to the summary base.
-         *)
-        base : Base.t
-      }
-
-   (* Hook that is called whenever a module is loaded *)
-   type 'a hook = info -> module_path * proof module_info -> 'a -> 'a
-   
-   (************************************************************************
-    * BASE OPERATIONS                                                      *
-    ************************************************************************)
-   
-   (*
-    * Create the bases.
-    *)
-   let create = Base.create
-   let set_path = Base.set_path
-
-   (*
-    * Take a partial pathname and expand it with all the intervening modules.
-    * This function works within a summary.  Raises Not_found on failure.
-    *)
-   let expand_in_summary =
-      let rec aux path sum = function
-         [modname] ->
-            (* If only one name left, it should name a term *)
-            let rec search = function
-               ((Opname { opname_name = str })::tl) when str = modname ->
-                  modname :: path
-             | _::tl ->
-                  search tl
-             | [] ->
-                  raise Not_found
-            in
-               search (info_items sum)
-
-       | modname::tl ->
-            (* Modname should name a module in the current summary *)
-            let rec search path' = function
-               Module (n, sum'')::sum' ->
-                  (* Check if this name matches *)
-                  let path'' = n :: path' in
-                     if n = modname then
-                        aux path'' sum'' tl
-                     else
-                        begin
-                           try search path'' (info_items sum'') with
-                              Not_found -> search path' sum'
-                        end
-             | _::sum' ->
-                  search path' sum'
-             | [] ->
-                  raise Not_found
-            in
-               search path (info_items sum)
-
-       | [] ->
-            raise (Invalid_argument "expand_in_summary")
-      in
-      let aux path sum =
-         if debug_filter_cache then
-            eprintf "Filter_cache.expand_in_summary: %s%t" (string_of_path path) eflush;
-         let path' = List.rev (aux [] sum path) in
-            if debug_filter_cache then
-               eprintf "Filter_cache.expand_in_summary: expanded to %s%t" (string_of_path path') eflush;
-            path'
-      in
-         aux
-
-   (*
-    * Expand the summary across all the opened modules.
-    * Search for the head module in the list of modules, and
-    * if that fails, search for the module in all submodules.
-    *)
-   let expand_path cache path =
-      if debug_filter_cache then
-         eprintf "Filter_cache.expand_path: %s%t" (string_of_path path) eflush;
-      let { base = base } = cache in
-         match path with
-            modname::modpath ->
-               (* First search for head module in top level modules *)
-               let rec head_search = function
-                  [] ->
-                     raise Not_found
-                | info::t ->
-                     let modname' = Base.name base info in
-                        if modname' = modname then
-                           Some info
-                        else
-                           head_search t
-               in
-               let rec mod_search = function
-                  [] ->
-                     raise Not_found
-                | info::tl ->
-                     let modname' = Base.name base info in
-                        try modname' :: (expand_in_summary path (Base.info base info)) with
-                           Not_found -> mod_search tl
-               in
-               let summaries = cache.summaries in
-               let path' =
-                  match head_search summaries with
-                     Some info ->
-                        modname :: (expand_in_summary modpath (Base.info base info))
-                   | None ->
-                        mod_search summaries
-               in
-                  path'
-          | [] ->
-               raise (Invalid_argument "expand_path")
-
-   (************************************************************************
-    * OPERATOR NAME TABLE                                                  *
-    ************************************************************************)
-
-   (*
-    * These are the standard opnames.
-    * This should change at some point; either
-    * by moving these opnames into a global file,
-    * or by making nothing global.
-    *)
-   let standard_opnames =
-      ["lzone"; "hzone"; "szone"; "ezone";
-       "break"; "sbreak"; "space"; "hspace"; "newline";
-       "pushm"; "popm"; "pushfont"; "popfont";
-       "parens"; "prec"; "mode"; "slot";
-       "sequent"; "hyp"; "concl"; "var"]
-
-   (*
-    * Make a new hashtable for mapping opnames.
-    *)
-   let create_optable () =
-      let t = Hashtbl.create 79 in
-      let add s =
-         Hashtbl.add t s (make_opname [s])
-      in
-         List.iter add standard_opnames;
-         t
-
-   (*
-    * Get an opname.
-    *)
-   let optable cache = function
-      str ->
-         Hashtbl.find cache.optable str
-
-   (*
-    * Get the prefix.
-    *)
-   let op_prefix cache =
-      cache.opprefix
-
-   (*
-    * Add a map to the table.
-    *)
-   let add_opname cache str name =
-      Hashtbl.add cache.optable str name
-
-   (*
-    * Remove the map.
-    *)
-   let rm_opname cache str =
-      Hashtbl.remove cache.optable str
-
-   (*
-    * Construct an opname.
-    * If there is only one word, then this opname is declared in the current
-    * module.  Otherwise it is prefixed by one or more module names, which
-    * specify it more exactly.
-    *)
-   let mk_opname cache = function
-      [] ->
-         raise (Invalid_argument "mk_opname")
-   
-    | [str] ->
-         (* Name in this module *)
-         begin
-            try optable cache str with
-               Not_found ->
-                  raise (Failure (sprintf "undeclared name: %s" str))
-         end
-   
-    | path ->
-         (* The head serves to specify the name more precisely *)
-         let path' =
-            try expand_path cache path with
-               Not_found ->
-                  raise (BadCommand ("no object with name: " ^ (string_of_opname_list path)))
-         in
-            make_opname (List.rev path')
-   
-   (************************************************************************
-    * ACCESS                                                               *
-    ************************************************************************)
-
-   (*
-    * Projection.
-    *)
-   let info { info = info } = info
-
-   (*
-    * Find a summary in a list.
-    *)
-   let find_summary cache name =
-      let { base = base; summaries = summaries } = cache in
-      let rec search = function
-         h::t ->
-            let name' = Base.name base h in
-               if name' = name then
-                  Some (Base.info base h)
-               else
-                  search t
-       | [] ->
-            None
-      in
-         search summaries
-
-   (*
-    * Find a summry by its module path.
-    *)
-   let find_summarized_module cache path =
-      let { base = base; summaries = summaries } = cache in
-      let rec search = function
-         info::tl ->
-            let fullname = Base.pathname base info in
-               if fullname = path then
-                  Some info
-               else
-                  search tl
-       | [] -> None
-      in
-         search summaries
-
-   (*
-    * Get a previous module.
-    *)
-   let sub_info cache path =
-      match find_summarized_module cache path with
-         None ->
-            raise Not_found
-       | Some info ->
-            Base.info cache.base info
-
-   (*
-    * Inherited access.
-    *)
-   let find_axiom cache     = Filter_summary.find_axiom cache.info
-   let find_rewrite cache   = Filter_summary.find_rewrite cache.info
-   let find_mlterm cache    = Filter_summary.find_mlterm cache.info
-   let find_condition cache = Filter_summary.find_condition cache.info
-   let find_dform cache     = Filter_summary.find_dform cache.info
-   let find_prec cache name = List.mem name cache.precs
-   let resources cache = cache.resources
-
-   (************************************************************************
-    * UPDATE                                                               *
-    ************************************************************************)
-
-   (*
-    * Add a command to the summary.
-    *)
-   let add_command cache item =
-      let info', index = Filter_summary.add_command cache.info item in
-         cache.info <- info';
-         index
-   
-   let set_commands cache items =
-      let info' = Filter_summary.set_commands cache.info items in
-         cache.info <- info'
-   
-   let get_command cache index =
-      Filter_summary.get_command cache.info index
-
-   (*
-    * Add a precedence.
-    *)
-   let add_prec cache s =
-      cache.precs <- s :: cache.precs
-
-   (*
-    * Add a resource.
-    * Eliminate duplicates.
-    *)
-   let add_resource cache path rsrc =
-      let { resource_name = name } = rsrc in
-      let rec rsrc_member = function
-         (path', rsrc')::t ->
-            if path' = path & rsrc'.resource_name = name then
-               true
-            else
-               rsrc_member t
-       | [] ->
-            false
-      in
-         if not (rsrc_member cache.resources) then
-            cache.resources <- (path, rsrc) :: cache.resources
-
-   (*
-    * Inline a module into the current one.
-    *)
-   let rec inline_components' arg path self items =
-      let cache, _, _ = arg in
-
-      (* Get the opname for this path *)
-      let opprefix = make_opname path in
-
-      (* Get all the sub-summaries *)
-      let inline_component = function
-         Module (n, _) ->
-            (* The contained summaries become top level *)
-            let info' = Base.sub_info cache.base self n in
-               cache.summaries <- info' :: cache.summaries
-
-       | Opname { opname_name = str; opname_term = t } ->
-            (* Hash this name to the full opname *)
-            let opname = Opname.mk_opname str opprefix in
-               Hashtbl.add cache.optable str opname
+(************************************************************************
+ * IO MODULES                                                           *
+ ************************************************************************)
 
 (*
- * NOTE: check for missing prec in the implementation,
- * if the interface defines it.
-       | Prec name ->
-            (* This becomes a local prec *)
-            cache.precs <- name :: cache.precs
-*)
+ * For this compiler, we only use two summaries.
+ *)
+type select_type =
+   InterfaceType
+ | ImplementationType
 
-       | Parent path' ->
-            (* Recursive inline of all ancestors *)
-            inline_module' arg path';
-            ()
+(*
+ * This is the common summary type for interface between IO
+ * and marshalers.
+ *)
+type summary_type =
+   Interface of (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
+ | Implementation of (MLast.expr, MLast.ctyp, MLast.expr, MLast.str_item) module_info
 
-       | _ ->
-            ()
-      in
-         List_util.rev_iter inline_component items
-
-   and inline_module' arg path =
-      let cache, inline_hook, vals = arg in
-         if debug_filter_cache then
-            eprintf "FilterCache.inline_module': %s%t" (string_of_path path) eflush;
-         match find_summarized_module cache path with
-            None ->
-               if debug_filter_cache then
-                  eprintf "FilterCache.inline_module': finding: %s%t" (string_of_path path) eflush;
-               let { base = base; select = select; summaries = summaries } = cache in
-               let info = Base.find base path select in
-               let info' = Base.info base info in
-                  if debug_resource then
-                     begin
-                        eprintf "Summary: %s%t" (string_of_path path) eflush;
-                        eprint_info (Base.info base info)
-                     end;
-
-                  (* This module gets listed in the inline stack *)
-                  cache.summaries <- info :: summaries;
-
-                  (* Inline the subparts *)
-                  inline_components' arg path info (info_items info');
-
-                  (* Call the hook *)
-                  vals := inline_hook cache (path, info') !vals;
-
-                  info
-
-          | Some info ->
-               if debug_filter_cache then
-                  eprintf "FilterCache.inline_module': %s: already loaded%t" (string_of_path path) eflush;
-               info
-
-   let inline_module cache path inline_hook arg =
-      let vals = ref arg in
-      let info = inline_module' (cache, inline_hook, vals) path in
-         Base.info cache.base info, !vals
-   
-   (*
-    * To create, need:
-    *    1. module_base
-    *    2. Load path
-    *)
-   let create_cache base name self_select child_select =
-      { opprefix = Opname.mk_opname (String.capitalize name) nil_opname;
-        optable = create_optable ();
-        precs = [];
-        summaries = [];
-        resources = [];
-        info = new_module_info ();
-        select = child_select;
-        self = Base.create_info base self_select "." name;
-        base = base
-      }
-   
-   (*
-    * When a cache is loaded, we follow the steps to inline
-    * the file into a new cache.
-    *)
-   let load base (name : module_name) (my_select : select) (child_select : select) (hook : 'a hook) (arg : 'a) =
-      let vals = ref arg in
-      let path = [name] in
-      let cache = create_cache base name my_select child_select in
-      let info = Base.find base path my_select in
-      let info' = Base.info base info in
-         cache.summaries <- [info];
-         inline_components' (cache, hook, vals) path info (info_items info');
-         cache, hook cache (path, info') !vals
-   
-   (*
-    * Save the cache.
-    *)
-   let save cache =
-      let { base = base; self = self; info = info } = cache in
-         if debug_filter_cache then
-            eprintf "Filter_cache.save: begin%t" eflush;
-         Base.set_info base self info;
-         Base.save base self;
-         if debug_filter_cache then
-            eprintf "Filter_cache.save: done%t" eflush
+(*
+ * Types of objects that are stored in the files.
+ *)
+module FileTypes =
+struct
+   type select = select_type
+   type cooked = summary_type
 end
 
 (*
+ * Identity used for term normalization.
+ *)
+let identity x = x
+
+(*
+ * Unit term used for interfaces.
+ *)
+let unit_term = mk_simple_term nil_opname []
+
+(*
+ * When a StrFilterCache ot SigFilterCache is
+ * saved, comments are not saved.
+ *)
+let comment loc t = t
+let term_of_expr = Filter_ocaml.term_of_expr comment
+let term_of_type = Filter_ocaml.term_of_type comment
+let term_of_sig_item = Filter_ocaml.term_of_sig_item comment
+let term_of_str_item = Filter_ocaml.term_of_str_item comment
+
+(*
+ * Term signatures.
+ *)
+module TermSigInfo =
+struct
+   type select = select_type
+   type raw    = term
+   type cooked = summary_type
+   
+   let select   = InterfaceType
+   let suffix   = "cmit"
+   let magic    = 0x73ac6be1
+   let disabled = nofile
+
+   let marshal = function
+      Interface info ->
+         let convert =
+            { term_f = identity;
+              proof_f = (fun t -> unit_term);
+              ctyp_f = term_of_type;
+              expr_f = term_of_expr;
+              item_f = term_of_sig_item
+            }
+         in
+            mk_xlist_term (term_list convert info)
+    | Implementation _ ->
+         raise (Failure "TermSigInfo.unmarshal")
+
+   let unmarshal info =
+      let convert =
+         { term_f = identity;
+           proof_f = (fun t -> ());
+           ctyp_f = type_of_term;
+           expr_f = expr_of_term;
+           item_f = sig_item_of_term
+         }
+      in
+         Interface (of_term_list convert (dest_xlist info))
+end
+
+(*
+ * Raw signatures.
+ *)
+module RawSigInfo =
+struct
+   type select  = select_type
+   type raw     = (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
+   type cooked  = summary_type
+   
+   let select   = InterfaceType
+   let suffix   = "cmiz"
+   let magic    = 0x73ac6be2
+   let disabled = noraw
+
+   let marshal = function
+      Interface info ->
+         info
+    | Implementation _ ->
+         raise (Failure "RawSigInfo.marshal")
+   let unmarshal info =
+      Interface info
+end
+
+(*
+ * Term implementations.
+ *)
+module TermStrInfo =
+struct
+   type select = select_type
+   type raw    = term
+   type cooked = summary_type
+   
+   let select   = ImplementationType
+   let suffix   = "cmot"
+   let magic    = 0x73ac6be3
+   let disabled = nofile
+
+   let marshal = function
+      Implementation info ->
+         let convert =
+            { term_f = identity;
+              proof_f = term_of_expr;
+              ctyp_f = term_of_type;
+              expr_f = term_of_expr;
+              item_f = term_of_str_item
+            }
+         in
+            mk_xlist_term (term_list convert info)
+    | Interface _ ->
+         raise (Failure "TermStrInfo.marshal")
+
+   let unmarshal info =
+      let convert =
+         { term_f = identity;
+           proof_f = expr_of_term;
+           ctyp_f = type_of_term;
+           expr_f = expr_of_term;
+           item_f = str_item_of_term
+         }
+      in
+         Implementation (of_term_list convert (dest_xlist info))
+end
+
+(*
+ * Raw implementation.
+ *)
+module RawStrInfo =
+struct
+   type select  = select_type
+   type raw     = (MLast.expr, MLast.ctyp, MLast.expr, MLast.str_item) module_info
+   type cooked  = summary_type
+   
+   let select   = ImplementationType
+   let suffix   = "cmoz"
+   let magic    = 0x73ac6be4
+   let disabled = noraw
+
+   let marshal = function
+      Implementation info ->
+         info
+    | Interface _ ->
+         raise (Failure "RawStrInfo.marshal")
+   let unmarshal info =
+      Implementation info
+end
+
+(*
+ * Library interfaces.
+ *)
+module LibSigInfo =
+struct
+   type select  = select_type
+   type raw     = term
+   type cooked  = summary_type
+   
+   let select   = InterfaceType
+   let suffix   = "cmit"
+   let magic    = 0x73ac6be5
+   let disabled = nolib
+
+   let marshal = function
+      Interface info ->
+         let convert =
+            { term_f = identity;
+              proof_f = (fun t -> unit_term);
+              ctyp_f = term_of_type;
+              expr_f = term_of_expr;
+              item_f = term_of_sig_item
+            }
+         in
+            mk_xlist_term (term_list convert info)
+    | Implementation _ ->
+         raise (Failure "LibSigInfo.marshal")
+   let unmarshal info =
+      let convert =
+         { term_f = identity;
+           proof_f = (fun t -> ());
+           ctyp_f = type_of_term;
+           expr_f = expr_of_term;
+           item_f = sig_item_of_term
+         }
+      in
+         Interface (of_term_list convert (dest_xlist info))
+end
+
+(*
+ * Library implementations.
+ *)
+module LibStrInfo =
+struct
+   type select  = select_type
+   type raw     = term
+   type cooked  = summary_type
+   
+   let select   = ImplementationType
+   let suffix   = "cmoz"
+   let magic    = 0x73ac6be6
+   let disabled = nolib
+
+   let marshal = function
+      Implementation info ->
+         let convert =
+            { term_f = identity;
+              proof_f = term_of_expr;
+              ctyp_f = term_of_type;
+              expr_f = term_of_expr;
+              item_f = term_of_str_item
+            }
+         in
+            mk_xlist_term (term_list convert info)
+    | Interface _ ->
+         raise (Failure "LibStrInfo.marshal")
+
+   let unmarshal info =
+      let convert =
+         { term_f = identity;
+           proof_f = expr_of_term;
+           ctyp_f = type_of_term;
+           expr_f = expr_of_term;
+           item_f = str_item_of_term
+         }
+      in
+         Implementation (of_term_list convert (dest_xlist info))
+end
+
+(*
+ * MArshaler to get interfaces.
+ *)
+module SigMarshal =
+struct
+   type proof = unit
+   type ctyp  = MLast.ctyp
+   type expr  = MLast.expr
+   type item  = MLast.sig_item
+
+   type select = select_type
+   let select = InterfaceType
+
+   type cooked = summary_type
+
+   let marshal info =
+      Interface info
+   let unmarshal = function
+      Interface info ->
+         info
+    | Implementation _ ->
+         raise (Failure "SigMarshal.unmarshal")
+end
+
+(*
+ * Select a submodule.
+ *)
+module SigAddress =
+struct
+   type t = summary_type
+   let create () = Interface (new_module_info ())
+   let find_sub_module info path =
+      SigMarshal.marshal (Filter_summary.find_sub_module (SigMarshal.unmarshal info) path)
+end
+
+(*
+ * Marshaler to get implementations.
+ *)
+module StrMarshal =
+struct
+   type proof = MLast.expr
+   type ctyp  = MLast.ctyp
+   type expr  = MLast.expr
+   type item  = MLast.str_item
+
+   type select = select_type
+   let select = InterfaceType
+
+   type cooked = summary_type
+   let marshal info =
+      Implementation info
+   let unmarshal = function
+      Implementation info ->
+         info
+    | Interface _ ->
+         raise (Failure "SigMarshal.unmarshal")
+end
+
+(*
+ * Build up the cache.
+ *)
+module RawSigCombo    = MakeSingletonCombo (RawSigInfo)
+module RawStrCombo    = MakeSingletonCombo (RawStrInfo)
+module TermSigCombo   = MakeSingletonCombo (TermSigInfo)
+module TermStrCombo   = MakeSingletonCombo (TermStrInfo)
+module LibSigCombo    = MakeSingletonCombo (LibSigInfo)
+module LibStrCombo    = MakeSingletonCombo (LibStrInfo)
+module RawCombo       = CombineCombo (FileTypes) (RawSigCombo)  (RawStrCombo)
+module TermCombo      = CombineCombo (FileTypes) (TermSigCombo) (TermStrCombo)
+module LibCombo       = CombineCombo (FileTypes) (LibSigCombo)  (LibStrCombo)
+module FileCombo      = CombineCombo (FileTypes) (RawCombo)     (TermCombo)
+module Combo          = CombineCombo (FileTypes) (FileCombo)    (LibCombo)
+
+module FileBase       = MakeFileBase    (FileTypes)  (Combo)
+module SummaryBase    = MakeSummaryBase (SigAddress) (FileBase)
+
+module SigFilterCache = MakeFilterCache (SigMarshal) (SigMarshal) (SummaryBase)
+module StrFilterCache = MakeFilterCache (SigMarshal) (StrMarshal) (SummaryBase)
+
+(*
  * $Log$
+ * Revision 1.5  1998/02/19 17:13:55  jyh
+ * Splitting filter_parse.
+ *
  * Revision 1.4  1998/02/18 18:46:12  jyh
  * Initial ocaml semantics.
  *

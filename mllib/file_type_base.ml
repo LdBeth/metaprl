@@ -22,7 +22,8 @@ type ('select, 'cooked) common_info = ('select, 'cooked) file_info list
 (*
  * The Combo contans all the data to construct a FileBaseInfoSig.
  *)
-module MakeSingletonCombo (Info : FileTypeInfoSig) :
+module MakeIOSingletonCombo (IO : IOSig) (Info : FileTypeInfoSig
+                                          with type raw = IO.t) :
    (FileTypeComboSig
     with type cooked = Info.cooked
     with type select = Info.select
@@ -33,31 +34,10 @@ struct
    type info = (select, cooked) common_info
 
    let marshal magic filename info =
-      let outx = open_out_bin filename in
-         try
-            output_binary_int outx magic;
-            output_value outx (Info.marshal info);
-            close_out outx
-         with
-            exn ->
-               close_out outx;
-               raise exn
+      IO.write magic filename (Info.marshal info)
    
    let unmarshal magic filename =
-      let inx = open_in_bin filename in
-         try
-            let magic' = input_binary_int inx in
-               if magic = magic' then
-                  Info.unmarshal (input_value inx : Info.raw)
-               else
-                  begin
-                     close_in inx;
-                     raise (Sys_error "load_file")
-                  end
-         with
-            exn ->
-               close_in inx;
-               raise (Sys_error "load_file")
+      Info.unmarshal (IO.read magic filename)
    
    let info =
       [{ info_marshal = marshal;
@@ -68,6 +48,47 @@ struct
          info_select = Info.select
        }]
 end
+
+(*
+ * The Combo contans all the data to construct a FileBaseInfoSig.
+ *)
+module MakeSingletonCombo (Info : FileTypeInfoSig) :
+   (FileTypeComboSig
+    with type cooked = Info.cooked
+    with type select = Info.select
+    with type info = (Info.select, Info.cooked) common_info) =
+   MakeIOSingletonCombo (**)
+      (struct
+                            type t = Info.raw
+
+                            let write magic filename info =
+                                     let outx = open_out_bin filename in
+                                        try
+                                           output_binary_int outx magic;
+                                           output_value outx (info : t);
+                                           close_out outx
+                                        with
+            exn ->
+               close_out outx;
+               raise exn
+
+               let read magic filename =
+      let inx = open_in_bin filename in
+         try
+            let magic' = input_binary_int inx in
+               if magic = magic' then
+                  (input_value inx : t)
+               else
+                  begin
+                     close_in inx;
+                     raise (Sys_error "load_file")
+                  end
+         with
+            exn ->
+               close_in inx;
+               raise (Sys_error "load_file")
+                            end)
+   (Info)
 
 (*
  * Extend a Combo with new data.
@@ -125,6 +146,9 @@ module MakeFileBase (Types : FileTypeSummarySig)
 
 (*
  * $Log$
+ * Revision 1.4  1998/02/19 17:13:21  jyh
+ * Splitting filter_parse.
+ *
  * Revision 1.3  1998/02/18 18:46:49  jyh
  * Initial ocaml semantics.
  *

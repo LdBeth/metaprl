@@ -8,13 +8,10 @@ open Term
 val set_include_path : string list -> unit
  
 (*
- * The interpretation function on terms.
- * BUG: this should be a read-time resource.
- *)
-val set_interp : (term -> term) -> unit
-
-(*
  * $Log$
+ * Revision 1.3  1998/02/19 17:13:59  jyh
+ * Splitting filter_parse.
+ *
  * Revision 1.2  1998/01/27 23:04:19  jyh
  * Adding OCaml1.07 syntax.
  *

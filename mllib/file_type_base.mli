@@ -9,11 +9,18 @@ open File_base_type
 (*
  * Type used for common info.
  *)
-type ('select, 'cooked) common_info = ('select, 'cooked) file_info list
+type ('select, 'cooked) common_info
 
 (*
  * Combo construction.
  *)
+module MakeIOSingletonCombo (IO : IOSig) (Info : FileTypeInfoSig
+                                          with type raw = IO.t) :
+   FileTypeComboSig
+   with type cooked = Info.cooked
+   with type select = Info.select
+   with type info = (Info.select, Info.cooked) common_info
+
 module MakeSingletonCombo (Info : FileTypeInfoSig) :
    FileTypeComboSig
    with type cooked = Info.cooked
@@ -48,6 +55,9 @@ module MakeFileBase (Types : FileTypeSummarySig)
 
 (*
  * $Log$
+ * Revision 1.3  1998/02/19 17:13:21  jyh
+ * Splitting filter_parse.
+ *
  * Revision 1.2  1998/02/12 23:35:19  jyh
  * Generalized file base to allow the library.
  *
