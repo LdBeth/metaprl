@@ -28,3 +28,6 @@ OCamlLibraryInstall($(MPINSTALL), $(LIB), refine, $(REFINER_FILES))
 #
 clean:
     $(CLEAN) refiner.ml
+
+realclean:
+    $(REALCLEAN) refiner.ml

@@ -16,3 +16,6 @@ OCamlLibraryInstall($(MPINSTALL), $(LIB), reflib, $(REFLIB_FILES))
 #
 clean:
     $(CLEAN)
+
+realclean:
+    $(REALCLEAN)

@@ -84,3 +84,6 @@ OCamlLibraryInstall($(MPINSTALL), $(LIB), util, $(FILES))
 #
 clean:
     $(CLEAN)
+
+realclean:
+    $(REALCLEAN)

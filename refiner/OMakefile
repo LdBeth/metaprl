@@ -56,3 +56,6 @@ OCamlLibraryCopy($(MPINSTALL), $(LIB), refiner, $(EMPTY))
 #
 clean:
     $(CLEAN)
+
+realclean:
+    $(REALCLEAN)

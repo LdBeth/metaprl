@@ -35,3 +35,6 @@ install: $(BINDEP)
 
 clean:
 	$(RM) *.cm* *~ ocamldep.ml *.o *.exe Makefile.dep ocamldep
+
+realclean:
+	$(RM) *.cm* *~ ocamldep.ml *.o *.exe Makefile.dep ocamldep

@@ -16,3 +16,6 @@ OCamlLibraryInstall($(MPINSTALL), $(LIB), termstd, $(TERM_STD_FILES))
 #
 clean:
     $(CLEAN)
+
+realclean:
+    $(REALCLEAN)
