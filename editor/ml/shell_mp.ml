@@ -210,7 +210,7 @@ struct
     *)
    let toploop =
       let rsrc = Mptop.ext_toploop_resource in
-         ref (rsrc.resource_extract rsrc)
+         ref (Mp_resource.extract rsrc)
 
    (*
     * Set the module.
@@ -225,9 +225,9 @@ struct
                eprintf "Module %s: commands not found%t" name eflush;
                Mptop.ext_toploop_resource
       in
-      let rsrc = toploop_add rsrc commands in
-      let rsrc = toploop_add rsrc ["shell_get_term", IntFunExpr (fun i -> TermExpr (shell_get_term i))] in
-         toploop := rsrc.resource_extract rsrc
+      let rsrc = Mp_resource.improve_list rsrc commands in
+      let rsrc = Mp_resource.improve_list rsrc ["shell_get_term", IntFunExpr (fun i -> TermExpr (shell_get_term i))] in
+         toploop := Mp_resource.extract rsrc
 
    (************************************************************************
     * ARGUMENT COLLECTION                                                  *

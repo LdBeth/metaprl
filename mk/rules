@@ -64,7 +64,7 @@ endif
 #
 ifeq ($(CC),gcc)
    CCDEPEND=-MM
-   CPPFLAGS := -C -traditional -nostdinc -nostdinc++ $(CPPFLAGS) -xc
+   CPPFLAGS := -traditional -nostdinc -nostdinc++ $(CPPFLAGS) -xc
    CPP = $(CC) -E $(CPPFLAGS) 
 else
 ifeq ($(OSTYPE),solaris)

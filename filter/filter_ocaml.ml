@@ -531,6 +531,11 @@ and dest_while_expr t =
    let e, el = two_subterms t in
       <:expr< while $dest_expr e$ do $list: List.map dest_expr (subterms_of_term el)$ done >>
 
+and dest_xnd_expr t =
+   let loc, s = dest_loc_string t in
+   let e = one_subterm "dest_xnd_expr" t in
+      MLast.ExXnd (loc, s, dest_expr e)
+
 and dest_fun_aux t =
    let dest_pwe t =
       let p, e = dest_patt t in
@@ -654,6 +659,12 @@ and dest_uid_patt t =
    let loc, t = dest_loc_term t in
       <:patt< $uid:dest_var t$ >>, t
 
+and dest_xnd_patt t =
+   let loc, s = dest_loc_string t in
+   let p = one_subterm "dest_xnd_patt" t in
+   let p, t = dest_patt p in
+      MLast.PaXnd (loc, s, p), t
+
 and dest_patt_triple t =
    let p1, t = dest_patt (one_subterm "dest_patt_triple" t) in
    let p2, t = dest_patt (one_subterm "dest_patt_triple" t) in
@@ -746,6 +757,11 @@ and dest_prod_type t =
 and dest_uid_type t =
    let loc = dest_loc t in
       <:ctyp< $uid:dest_var t$ >>
+
+and dest_xnd_type t =
+   let loc, s = dest_loc_string t in
+   let t = one_subterm "dest_xnd_type" t in
+      MLast.TyXnd (loc, s, dest_type t)
 
 (*
  * Signatures.
@@ -1042,6 +1058,11 @@ and dest_sig_ct t =
    let t, ctfl = two_subterms t in
       CtSig (loc, dest_type_opt t, List.map dest_ctf (dest_xlist ctfl))
 
+and dest_xnd_ct t =
+   let loc, s = dest_loc_string t in
+   let ct = one_subterm "dest_xnd_ct" t in
+      CtXnd (loc, s, dest_ct t)
+
 and dest_app_ce t =
    let loc = dest_loc t in
    let ce, el = two_subterms t in
@@ -1080,6 +1101,11 @@ and dest_tyc_ce t =
    let loc = dest_loc t in
    let ce, ct = two_subterms t in
       CeTyc (loc, dest_ce ce, dest_ct ct)
+
+and dest_xnd_ce t =
+   let loc, s = dest_loc_string t in
+   let ce = one_subterm "dest_xnd_ce" t in
+      CeXnd (loc, s, dest_ce ce)
 
 and dest_ctr_ctf t =
    let loc = dest_loc t in
@@ -1252,6 +1278,7 @@ let expr_try_op                 = add_expr "try"                dest_try_expr
 let expr_tuple_op               = add_expr "tuple"              dest_tuple_expr
 let expr_cast_op                = add_expr "cast"               dest_cast_expr
 let expr_while_op               = add_expr "while"              dest_while_expr
+let expr_xnd_op                 = add_expr "xnd"                dest_xnd_expr
 
 let patt_int_op                 = add_patt "patt_int"           dest_int_patt
 let patt_string_op              = add_patt "patt_string"        dest_string_patt
@@ -1268,6 +1295,7 @@ let patt_record_op              = add_patt "patt_record"        dest_record_patt
 let patt_tuple_op               = add_patt "patt_tuple"         dest_tuple_patt
 let patt_array_op               = add_patt "patt_array"         dest_array_patt
 let patt_cast_op                = add_patt "patt_cast"          dest_cast_patt
+let patt_xnd_op                 = add_patt "patt_xnd"           dest_xnd_patt
 
 let type_lid_op                 = add_type "type_lid"           dest_lid_type
 let type_uid_op                 = add_type "type_uid"           dest_uid_type
@@ -1284,6 +1312,7 @@ let type_object_ff_op           = add_type "type_object_ff"     dest_object_ff_t
 let type_record_op              = add_type "type_record"        dest_record_type
 let type_list_op                = add_type "type_list"          dest_list_type
 let type_prod_op                = add_type "type_prod"          dest_prod_type
+let type_xnd_op                 = add_type "type_xnd"           dest_xnd_type
 
 let sig_class_sig_op		= add_sig "sig_class_sig"       dest_class_sig_sig
 let sig_class_type_op		= add_sig "sig_class_type"      dest_class_sig_type
@@ -1332,6 +1361,7 @@ let me_cast_op                  = add_me "me_cast"              dest_cast_me
 let ct_con_op                   = add_ct "class_type_con"       dest_con_ct
 let ct_fun_op                   = add_ct "class_type_fun"       dest_fun_ct
 let ct_sig_op                   = add_ct "class_type_sig"       dest_sig_ct
+let ct_xnd_op                   = add_ct "class_type_xnd"       dest_xnd_ct
 
 let ce_app_op                   = add_ce "class_expr_app"       dest_app_ce
 let ce_con_op                   = add_ce "class_expr_con"       dest_con_ce
@@ -1339,6 +1369,7 @@ let ce_fun_op                   = add_ce "class_expr_fun"       dest_fun_ce
 let ce_let_op                   = add_ce "class_expr_let"       dest_let_ce
 let ce_str_op                   = add_ce "class_expr_str"       dest_str_ce
 let ce_tyc_op                   = add_ce "class_expr_tyc"       dest_tyc_ce
+let ce_xnd_op                   = add_ce "class_expr_xnd"       dest_xnd_ce
 
 let ctf_ctr_op                  = add_ctf "class_type_ctr"      dest_ctr_ctf
 let ctf_inh_op                  = add_ctf "class_type_inh"      dest_inh_ctf
@@ -1580,6 +1611,8 @@ let rec mk_expr vars comment expr =
             mk_var expr_uid_op vars loc s
        | (<:expr< while $e$ do $list:el$ done >>) ->
             mk_simple_term expr_while_op loc [mk_expr vars comment e; mk_list_term (List.map (mk_expr vars comment) el)]
+       | MLast.ExXnd (_, s, e) ->
+            mk_simple_named_term expr_xnd_op loc s [mk_expr vars comment e]
    in
       comment ExprTerm loc term
 
@@ -1618,6 +1651,8 @@ and mk_patt vars comment patt tailf =
             mk_simple_term patt_cast_op loc [mk_patt vars comment p tailf; mk_type comment t']
        | (<:patt< $uid:s$ >>) ->
             mk_var_term patt_uid_op vars loc s (tailf vars)
+       | MLast.PaXnd (_, s, p) ->
+            mk_simple_named_term patt_xnd_op loc s [mk_patt vars comment p tailf]
        | (<:patt< $anti: p$ >>) ->
             raise_with_loc loc (Failure "Filter_ocaml:mk_patt: encountered PaAnt")
    in
@@ -1706,6 +1741,8 @@ and mk_type comment t =
             mk_simple_term type_prod_op loc [mk_xlist_term (List.map (mk_type comment) tl)]
        | (<:ctyp< $uid:s$ >>) ->
             mk_var type_uid_op [] loc s
+       | MLast.TyXnd (_, s, t) ->
+            mk_simple_named_term type_xnd_op loc s [mk_type comment t]
    in
       comment TypeTerm loc term
 
@@ -1888,6 +1925,8 @@ and mk_ce vars comment = function
       mk_simple_term ce_tyc_op (num_of_loc loc) (**)
          [mk_ce vars comment ce;
           mk_ct comment ct]
+ | MLast.CeXnd (loc, s, ce) ->
+      mk_simple_named_term ce_xnd_op (num_of_loc loc) s [mk_ce vars comment ce]
 
 and mk_ct comment = function
    CtCon (loc, sl, tl) ->
@@ -1902,6 +1941,8 @@ and mk_ct comment = function
       mk_simple_term ct_sig_op (num_of_loc loc) (**)
          [mk_type_opt comment t;
           mk_xlist_term (List.map (mk_ctf comment) ctfl)]
+ | CtXnd (loc, s, ct) ->
+      mk_simple_named_term ct_xnd_op (num_of_loc loc) s [mk_ct comment ct]
 
 and mk_ctf comment = function
    CgCtr (loc, s, t) ->

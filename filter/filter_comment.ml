@@ -209,6 +209,7 @@ let fold_class_expr locs ce =
        | MLast.CeLet (loc, b, pel, ce) -> loc
        | MLast.CeStr (loc, p, cfl) -> loc
        | MLast.CeTyc (loc, ce, ct) -> loc
+       | MLast.CeXnd (loc, s, ce) -> loc
    in
       loc :: locs
 
@@ -218,6 +219,7 @@ let fold_class_type locs ct =
          MLast.CtCon (loc, sl, tl) -> loc
        | MLast.CtFun (loc, t, ct) -> loc
        | MLast.CtSig (loc, t, ctfl) -> loc
+       | MLast.CtXnd (loc, s, ct) -> loc
    in
       loc :: locs
 

@@ -11,21 +11,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -283,10 +283,10 @@ let dformer_ctyp loc =
    <:ctyp< $uid:"Dform_print"$ . $lid:"dform_mode_base"$ >>
 
 let resource_rsrc_ctyp loc =
-   <:ctyp< $uid:"Mp_resource"$ . $lid:"rsrc"$ >>
+   <:ctyp< $uid:"Mp_resource"$ . $lid:"t"$ >>
 
 let resource_join_expr loc =
-   <:expr< $uid:"Mp_resource"$ . $lid:"resource_join"$ >>
+   <:expr< $uid:"Mp_resource"$ . $lid:"join"$ >>
 
 let ext_resource_name name =
    "ext_" ^ name
@@ -528,7 +528,7 @@ let interactive_exn loc name =
  *)
 let toploop_rewrite loc name =
    let patt = <:patt< $lid: "toploop_resource"$ >> in
-   let expr = <:expr< $lid: "toploop_resource"$ . $uid: "Mp_resource"$ . $lid: "resource_improve"$
+   let expr = <:expr< $uid: "Mp_resource"$ . $lid: "improve"$
                       $lid: "toploop_resource"$
                       ($str: name$, $uid: "Mptop"$ . $uid: "ConvExpr"$ $lid: name$) >>
    in
@@ -603,7 +603,7 @@ let add_toploop_item loc name ctyp =
    in
    let expr = collect 0 <:expr< $lid: name$ >> ctyp in
    let patt = <:patt< $lid: "toploop_resource"$ >> in
-   let expr = <:expr< $lid: "toploop_resource"$ . $uid: "Mp_resource"$ . $lid: "resource_improve"$
+   let expr = <:expr< $uid: "Mp_resource"$ . $lid: "improve"$
                       $lid: "toploop_resource"$ ($str: name$, $expr$)
               >>
    in
@@ -1556,7 +1556,7 @@ struct
                if !debug_resource then
                   eprintf "Filter_prog.define_parent: join resource %s.%s%t" (string_of_path path) name eflush
             in
-            let rsrc_val = <:expr< $name_expr$ . $resource_join_expr loc$ $name_expr$ $parent_value$ >> in
+            let rsrc_val = <:expr< $resource_join_expr loc$ $name_expr$ $parent_value$ >> in
                (resources, <:str_item< value $rec:false$ $list:[ name_patt, rsrc_val ]$ >>)
          else
             (*
@@ -1624,7 +1624,7 @@ struct
       let loc = 0, 0 in
       let bind_of_resource { resource_name = name' } =
          let patt = <:patt< $lid: ext_resource_name name'$ >> in
-         let expr = <:expr< $lid: name'$ . $uid: "Mp_resource"$ . $lid: "resource_close"$ $lid: name'$ $str:name$ >> in
+         let expr = <:expr< $uid: "Mp_resource"$ . $lid: "close"$ $lid: name'$ $str:name$ >> in
             patt, expr
       in
       let values = List.map bind_of_resource resources in

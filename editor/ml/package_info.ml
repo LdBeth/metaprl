@@ -665,7 +665,7 @@ struct
       let cache =
          try
             let rsrc = Base_cache.get_resource modname in
-               rsrc.resource_extract rsrc
+               Mp_resource.extract rsrc
          with
             Not_found ->
                Tactic_cache.new_cache ()
@@ -674,39 +674,39 @@ struct
 
    let lazy_reduce modname () =
       let rsrc = Conversionals.get_resource modname in
-         rsrc.resource_extract rsrc
+         Mp_resource.extract rsrc
 
    let lazy_dtactic modname () =
       let rsrc = Base_dtactic.get_resource modname in
-         rsrc.resource_extract rsrc
+         Mp_resource.extract rsrc
 
    let lazy_trivial modname () =
       let rsrc = Base_auto_tactic.get_trivial_resource modname in
-         rsrc.resource_extract rsrc
+         Mp_resource.extract rsrc
 
    let lazy_auto modname () =
       let rsrc = Base_auto_tactic.get_auto_resource modname in
-         rsrc.resource_extract rsrc
+         Mp_resource.extract rsrc
 
    let lazy_eqcd modname () =
       let rsrc = Itt_equal.get_resource modname in
-         rsrc.resource_extract rsrc
+         Mp_resource.extract rsrc
 
    let lazy_tsubst modname () =
       let rsrc = Typeinf.get_typeinf_subst_resource modname in
-         rsrc.resource_extract rsrc
+         Mp_resource.extract rsrc
 
    let lazy_typeinf modname () =
       let rsrc = Typeinf.get_typeinf_resource modname in
-         rsrc.resource_extract rsrc
+         Mp_resource.extract rsrc
 
    let lazy_squash modname () =
       let rsrc = Itt_squash.get_resource modname in
-         rsrc.resource_extract rsrc
+         Mp_resource.extract rsrc
 
    let lazy_subtype modname () =
       let rsrc = Itt_subtype.get_resource modname in
-         rsrc.resource_extract rsrc
+         Mp_resource.extract rsrc
 
    let get_tactic_arg modname =
       let cache = Tactic_type.make_cache (lazy_cache modname) in
