@@ -49,6 +49,7 @@ open Opname
 open Term_sig
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
 
 open Simple_print.SimplePrint
@@ -60,6 +61,9 @@ open Filter_util
  *)
 let dest_fso_var_string t =
    string_of_symbol (dest_fso_var t)
+
+let xconcl_opname = mk_opname "xconcl" (mk_opname "Perv" nil_opname)
+let is_xconcl_term = is_no_subterms_term xconcl_opname
 
 (*
  * Turn a term into a pattern expression.
@@ -126,19 +130,20 @@ let build_term_patt loc term =
    (* Bterm patterns *)
    let bterms =
       List.map (fun bterm ->
-         let { bvars = bvars; bterm = t } = dest_bterm bterm in
-         let _ =
-            if not (is_fso_var_term t) then
-               raise (Invalid_argument ("term_patt: subterms must be variables\n" ^ string_of_term term))
-         in
-         let v = dest_fso_var t in
-         let bvars_rhs =
-            List.fold_right (fun v l ->
-                             <:patt< [$lid: string_of_symbol v$ :: $l$] >>) bvars <:patt< [] >>
-         in
-            <:patt< { Term_sig.bvars = $bvars_rhs$;
-                      Term_sig.bterm = $lid: string_of_symbol v$
-                    } >>) bterms
+            let { bvars = bvars; bterm = t } = dest_bterm bterm in
+               if is_fso_var_term t then
+                  let v = dest_fso_var t in
+                  let bvars_rhs =
+                     List.fold_right (fun v l ->
+                         <:patt< [$lid: string_of_symbol v$ :: $l$] >>) bvars <:patt< [] >>
+                  in
+                     <:patt< { Term_sig.bvars = $bvars_rhs$;
+                               Term_sig.bterm = $lid: string_of_symbol v$
+                      } >>
+               else if is_xconcl_term t then
+                  <:patt< _ >>
+               else
+                  raise (Invalid_argument ("term_patt: subterms must be variables\n" ^ string_of_term term))) bterms
    in
    let bterms = List.fold_right (fun x l -> <:patt< [$x$ :: $l$] >>) bterms <:patt< [] >> in
 
@@ -190,7 +195,14 @@ let build_sequent_patt loc t =
    let hyps = build_hyps hyps in
 
    (* Collect the goals *)
-   let concl = <:patt< $lid: dest_fso_var_string concl$ >> in
+   let concl =
+      if is_fso_var_term concl then
+         <:patt< $lid: dest_fso_var_string concl$ >>
+      else if is_xconcl_term concl then
+         <:patt< _ >>
+      else
+         raise (Invalid_argument ("term_patt: subterms must be variables\n" ^ string_of_term concl))
+   in
       <:patt< Refiner.Refiner.TermType.MatchSequent ($opname$, $args$, $hyps$, $concl$) >>
 
 (*
