@@ -368,6 +368,9 @@ if $(equal $(OSTYPE), Win32)
     export
 else
     OTHER_CCLIBS = -cclib -lreadline -cclib -lncurses -cclib -ltermcap -cclib -lssl
+    if $(equal $(MACHINE), Power Macintosh)
+        OTHER_CCLIBS += -cclib -lcrypto
+	export
     export
 
 #
