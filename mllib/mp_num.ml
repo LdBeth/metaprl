@@ -200,7 +200,7 @@ let eq_num i j =
 let compare_num i j =
    match i, j with
       Int i, Int j ->
-         i - j
+         Pervasives.compare i j
     | Int i, Big_int j ->
          compare_big_int (big_int_of_int i) j
     | Big_int i, Int j ->
