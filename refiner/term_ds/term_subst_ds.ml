@@ -259,6 +259,8 @@ struct
               | Some vars -> equal_term vars s1.sequent_concl s2.sequent_concl)
        | SOVar(v,conts,ts), SOVar(v',conts',ts') ->
             v=v' && conts = conts' && Lm_list_util.for_all2 (equal_term vars) ts ts'
+       | SOContext(v,t,conts,ts), SOContext(v',t',conts',ts') ->
+            v=v' && conts = conts' && equal_term (remove_var v vars) t t' && Lm_list_util.for_all2 (equal_term vars) ts ts'
        | _ -> false )
 
    and equal_bterms vars btrms1 btrms2 =
@@ -280,7 +282,7 @@ struct
                else None
           | Context (v1,conts1,ts1), Context (v2,conts2,ts2) ->
             if v1=v2 && conts1 = conts2 && Lm_list_util.for_all2 (equal_term vars) ts1 ts2 then
-               equal_hyps hyps1 hyps2 vars (succ i)
+               equal_hyps hyps1 hyps2 (remove_var v1 vars) (succ i)
             else None
           | _ -> None
 
@@ -293,6 +295,8 @@ struct
                (v1=v2)
           | SOVar(v1, conts1, ts1), SOVar(v2, conts2, ts2) ->
                v1=v2 && conts1=conts2 && Lm_list_util.for_all2 (equal_term []) ts1 ts2
+          | SOContext(v1, t1, conts1, ts1), SOContext(v2, t2, conts2, ts2) ->
+               v1=v2 && conts1=conts2 && equal_term [] t1 t2 && Lm_list_util.for_all2 (equal_term []) ts1 ts2
           | _ ->
                false
       IN
@@ -333,7 +337,7 @@ struct
     * var_subst t t' v
     * is to substitute v for occurrences of the term t' in t.
     *)
-   let rec var_subst t t' fv v =
+   let rec var_subst t' fv v t =
       if alpha_equal t t' then
          mk_var_term v
       else
@@ -343,7 +347,9 @@ struct
                  if bterms == bterms' then t else mk_term op bterms'
          | FOVar _ -> t
          | SOVar(v', conts, ts) ->
-               core_term (SOVar(v', conts, List.map (fun t -> var_subst t t' fv v) ts))
+              core_term (SOVar(v', conts, List.map (var_subst t' fv v) ts))
+         | SOContext(v', t, conts, ts) ->
+              core_term (SOContext(v', var_subst t' fv v t, conts, List.map (var_subst t' fv v) ts))
          | Sequent _ -> raise (Invalid_argument "Term_ds.var_subst: sequents not supported")
          | Hashed _ | Subst _ -> fail_core "var_subst"
 
@@ -357,11 +363,11 @@ struct
 
    and var_subst_bterm bt t' fv v =
       let bt = dest_bterm_and_rename bt fv in
-      let term' = var_subst bt.bterm t' fv v in
+      let term' = var_subst t' fv v bt.bterm in
          if bt.bterm == term' then bt else mk_bterm bt.bvars term'
 
    let var_subst t t' v =
-      var_subst t t' (SymbolSet.add (free_vars_set t') v) v
+      var_subst t' (SymbolSet.add (free_vars_set t') v) v t
 
    let print_string_pair out (v1, v2) =
       fprintf out "%s:%a" v1 debug_print v2
@@ -393,6 +399,9 @@ struct
                   equal_fun f bvars sub s1.sequent_concl s2.sequent_concl)
        | SOVar(v1, conts1, ts1), SOVar(v2, conts2, ts2) ->
             v1=v2 && conts1 = conts2 && Lm_list_util.for_all2 (equal_fun f bvars sub) ts1 ts2
+       | SOContext(v1, t1, conts1, ts1), SOContext(v2, t2, conts2, ts2) ->
+            v1=v2 && conts1 = conts2 && equal_fun f ((v1,v1)::bvars) sub t1 t2 &&
+               Lm_list_util.for_all2 (equal_fun f bvars sub) ts1 ts2
        | _ -> false
 
    and equal_fun_bterms f bvars sub bterms1 bterms2 =
@@ -412,7 +421,7 @@ struct
                else None
           | Context (v1,conts1,ts1), Context (v2,conts2,ts2) ->
             if v1=v2 && conts1 = conts2 && Lm_list_util.for_all2 (equal_fun f bvars sub) ts1 ts2 then
-               equal_fun_hyps hyps1 hyps2 f bvars sub (succ i)
+               equal_fun_hyps hyps1 hyps2 f ((v1,v2)::bvars) sub (succ i)
             else None
           | _ -> None
 
@@ -470,6 +479,8 @@ struct
                match_bterms subst bvars bterms1 bterms2
        | SOVar(v1, cs1, ts1), SOVar(v2, cs2, ts2) when v1=v2 && cs1 = cs2 ->
             match_term_lists subst bvars ts1 ts2
+       | SOContext(v1, t1, cs1, ts1), SOContext(v2, t2, cs2, ts2) when v1=v2 && cs1 = cs2 ->
+            match_term_lists (match_terms subst ((v1,v1)::bvars) t1 t2) bvars ts1 ts2
        | (Sequent _, _) | (_, Sequent _) ->
             raise(Invalid_argument "Term_subst_ds.match_terms called on a sequent")
        | _ -> RAISE_GENERIC_EXN
@@ -568,6 +579,10 @@ struct
        | SOVar(v, conts, ts) ->
             let ts, index = List.fold_left standardize_terms_step ([], index) ts in
                core_term(SOVar(v, conts, List.rev ts)), index
+       | SOContext(v, t, conts, ts) ->
+            let ts, index = List.fold_left standardize_terms_step ([], index) ts in
+            let t, index = standardize_term index t in
+               core_term(SOContext(v, t, conts, ts)), index
        | Sequent seq ->
             (*
              * XXX: TODO: this could be more efficient if the Array module

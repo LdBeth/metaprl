@@ -38,7 +38,7 @@ open File_type_base
  ************************************************************************
  *
  * Current MD5 hash of the summary-related types (as computed by OMake):
- * FILTER_MD5: 0x4e9264d30e51a5fbb44263412e538eba
+ * FILTER_MD5: 0x15a91d42948e7b8b327045ad4bab2bdd
  *
  * The arguments for pack_version are:
  *    major version number, minor sub-version number, revision number
@@ -69,10 +69,11 @@ open File_type_base
  * Rev 16: removed "Opname" and "Definition" from the summary_item type
  * Rev 17: changed the Filter_grammar definition
  * Rev 18: changed the mseq_vars field in the msequent type definition
+ * Rev 19: in Term_ds, added Context choice to the term_core type
  *)
-let raw_versions = List.map (pack_version 1 0) [18]
+let raw_versions = List.map (pack_version 1 0) [19;18]
 
-let term_versions = List.map (pack_version 1 0) [18;17;16]
+let term_versions = List.map (pack_version 1 0) [19;18;17;16]
 
 (*
  * ASCII IO format revision history:

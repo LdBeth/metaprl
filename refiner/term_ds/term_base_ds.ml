@@ -185,6 +185,10 @@ struct
                      ENDIF
                 | SOVar (v, vs, ts) ->
                      SymbolSet.add_list (terms_free_vars ts) vs
+                | SOContext (v, t, vs, ts) ->
+                     SymbolSet.union
+                        (SymbolSet.add_list (terms_free_vars ts) vs)
+                        (SymbolSet.remove (free_vars_set t) v)
                 | Hashed d ->
                      free_vars_set (Weak_memo.TheWeakMemo.retrieve_hack d)
 
@@ -334,6 +338,9 @@ struct
                 | Term ttt ->
                      Term { term_op = ttt.term_op;
                             term_terms = List.map (do_bterm_subst sub) ttt.term_terms }
+                | SOContext(v, t, conts, ts) ->
+                     check_conts sub conts;
+                     SOContext(v, do_term_subst (subst_remove v sub) t, conts, List.map (do_term_subst sub) ts)
                 | Sequent { sequent_args = args;
                             sequent_hyps = hyps;
                             sequent_concl = concl } ->
@@ -453,6 +460,10 @@ struct
     | [] ->
          xnil_term
 
+   let rec collect_context_bterms v t conts = function
+      [] -> [mk_bterm [v] t; mk_simple_bterm (mk_xlist_term (List.map mk_var_term conts))]
+    | h :: tl -> mk_simple_bterm h :: collect_context_bterms v t conts tl
+
    let rec dest_term t =
       match t.core with
          Term t -> t
@@ -461,6 +472,9 @@ struct
        | SOVar (v, conts, terms) -> {
             term_op = { op_name = var_opname; op_params = [Var v] };
             term_terms = List.map mk_simple_bterm (terms @ [mk_xlist_term (List.map mk_var_term conts)]) }
+       | SOContext (v, t, conts, ts) -> {
+            term_op = { op_name = context_opname; op_params = [Var v] };
+            term_terms = collect_context_bterms v t conts ts }
        | FOVar v ->
              { term_op = { op_name = var_opname; op_params = [Var v] }; term_terms = [] }
        | Subst _ -> let _ = get_core t in dest_term t
@@ -473,6 +487,21 @@ struct
    let dest_simple_bterm = function
       { bvars = []; bterm = tt } -> tt
     | _ -> REF_RAISE(RefineError ("dest_simple_bterm", StringError "bvars exist"))
+
+   let rec collect_context v = function
+      [ { bvars = [v']; bterm = t }; { bvars = []; bterm = conts }] ->
+         [],
+         (if v=v' then
+            t
+         else if SymbolSet.mem (free_vars_set t) v then
+            raise (Invalid_argument "Term_base_ds.collect_context: variable clash")
+         else
+            do_term_subst [v', mk_var_term v] t),
+         (List.map dest_var (dest_xlist conts))
+    | { bvars = []; bterm = hd } :: tl ->
+         let args, t, conts = collect_context v tl in hd :: args, t, conts
+    | _ ->
+         raise(Invalid_argument "Term.base_ds.make_term with context_opname, but the term does not look like a context")
 
    let make_term t =
       if Opname.eq t.term_op.op_name var_opname then
@@ -488,6 +517,13 @@ struct
                   raise(Invalid_argument "Term.base_ds.make_term with var_opname and subterms, but the term does not look like a SO variable")
                end
           | _ -> raise(Invalid_argument "Term.base_ds.make_term with var_opname, but the term does not look like a variable")
+      else if Opname.eq t.term_op.op_name context_opname then
+         match t.term_op.op_params with
+            [Var v] ->
+               let args, term, conts = collect_context v t.term_terms in
+                  core_term (SOContext(v, term, conts, args))
+          | _ ->
+               raise(Invalid_argument "Term.base_ds.make_term with context_opname, but the term does not look like a context")
       else core_term (Term t)
 
    let mk_term op bterms =
@@ -512,6 +548,7 @@ struct
    let rec opname_of_term t = match t.core with
       Term t -> t.term_op.op_name
     | Sequent _ -> sequent_opname
+    | SOContext _ -> context_opname
     | FOVar _ | SOVar _ -> var_opname
     | Subst _ -> let _ = get_core t in opname_of_term t
     | Hashed d -> opname_of_term (Weak_memo.TheWeakMemo.retrieve_hack d)

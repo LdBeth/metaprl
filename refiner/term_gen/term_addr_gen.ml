@@ -145,7 +145,7 @@ struct
    ENDIF
 
    (*
-    * Traslate a [-lenght..-1]U[1..length] index into a [0..length-1] one.
+    * Traslate a [-length..-1]U[1..length] index into a [0..length-1] one.
     *)
    let make_index_name = "make_index"
    let make_index ATERM i length =
@@ -390,7 +390,7 @@ struct
    let subterm_addresses t =
       if is_var_term t then []
       else if is_so_var_term t then let _, _, ts = dest_so_var t in make_path_list (List.length ts)
-      else if is_context_term t then let _, _, _, ts = dest_context t in make_path_list (List.length ts)
+      else if is_context_term t then let _, _, _, ts = dest_context t in make_path_list (List.length ts + 1)
       else if is_sequent_term t then
          let rec aux i term =
             let { term_op = op; term_terms = bterms } = dest_term term in

@@ -86,6 +86,7 @@ struct
     | FOVar of var
     | SOVar of var * var list * term list
     | Hashed of term Weak_memo.TheWeakMemo.descriptor
+    | SOContext of var * term * var list * term list
    and term = { mutable free_vars : lazy_vars; mutable core : term_core }
    and bound_term = bound_term'
    and term' = (operator, bound_term) poly_term

@@ -87,6 +87,11 @@ struct
                None -> false
              | Some i  -> subterm_exists (List.nth terms i) addr
             end
+       | SOContext (_, t, _, terms), (Subterm i) :: addr ->
+            begin match make_index_opt i (List.length terms + 1) with
+               None -> false
+             | Some i  -> subterm_exists (List.nth (terms @ [t]) i) addr
+            end
        | Term t, (Subterm i) :: addr ->
             begin match make_index_opt i (List.length t.term_terms) with
                None -> false
@@ -124,6 +129,7 @@ struct
       else match get_core t with
          FOVar _ -> None
        | SOVar(_,_,terms) -> find_subterm_terms addr arg 1 terms
+       | SOContext(_,t,_,terms) -> find_subterm_terms addr arg 1 (terms @ [t])
        | Term t -> find_subterm_bterms addr arg 1 t.term_terms
        | Sequent s ->
             begin match
@@ -203,6 +209,8 @@ struct
             match (get_core term), hd with
                Term t, Subterm i ->
                   (getnth ATERM t.term_terms i).bterm
+             | SOContext(_, t, _, ts), Subterm i ->
+                  getnth ATERM (ts @ [t]) i
              | SOVar(_, _, ts), Subterm i ->
                   getnth ATERM ts i
              | Sequent s, ArgAddr ->
@@ -238,10 +246,10 @@ struct
                 | Context(_,_,ts) -> make_hyppath_list (List.length ts) (ClauseAddr i) addrs
             )
       in fun t -> match get_core t with
-         Term t ->
-            make_path_list (List.length t.term_terms)
+         Term t -> make_path_list (List.length t.term_terms)
        | FOVar _ -> []
        | SOVar (_, _, ts) -> make_path_list (List.length ts)
+       | SOContext (_, _, _, ts) -> make_path_list (List.length ts + 1)
        | Sequent s ->
             concl_addr :: (make_hyp_list (SeqHyp.length s.sequent_hyps) s.sequent_hyps [[ArgAddr]])
        | Hashed _ | Subst _ -> fail_core "subterm_addresses"
@@ -328,6 +336,11 @@ struct
                let i = make_index FAIL i (List.length ts) in
                let ts, arg = path_replace_terms f i bvars ts in
                   core_term (SOVar(v, conts, ts)), arg
+          | SOContext(v, t, conts, ts), [Subterm i] ->
+               let i = make_index FAIL i (List.length ts + 1) in
+               let ts, arg = path_replace_terms f i bvars (ts @ [t]) in
+               let ts, t = Lm_list_util.split_last ts in
+                  core_term (SOContext(v, t, conts, ts)), arg
           | (_, addr1 :: ( (_::_) as addr2)) ->
                my_name FAIL (my_name FAIL f addr2) [addr1] bvars term
           | _ -> DO_FAIL
@@ -396,6 +409,10 @@ struct
           | SOVar(v, conts, ts) ->
                let ts, args = apply_fun_higher_terms f coll ts in
                   if args == coll then (term,coll) else core_term (SOVar(v, conts, ts)), args
+          | SOContext(v, t, conts, ts) ->
+               let ts, args = apply_fun_higher_terms f coll ts in
+               let t, args = apply_fun_higher_term f args t in
+                  if args == coll then (term,coll) else core_term (SOContext(v, t, conts, ts)), args
           | Sequent s ->
                let arg, args = apply_fun_higher_term f coll s.sequent_args in
                let hyps, args = apply_fun_higher_hyps f args (SeqHyp.to_list s.sequent_hyps) in
@@ -464,6 +481,10 @@ struct
           | SOVar(v, conts, ts) ->
                let ts, args = apply_var_fun_higher_terms f bvars coll ts in
                   if args == coll then (term,coll) else core_term(SOVar(v, conts, ts)), args
+          | SOContext(v, t, conts, ts) ->
+               let ts, args = apply_var_fun_higher_terms f bvars coll ts in
+               let t, args = apply_var_fun_higher_term f (SymbolSet.add bvars v) args t in
+                  if args == coll then (term,coll) else core_term (SOContext(v, t, conts, ts)), args
           | Sequent s -> (*raise(Invalid_argument "Term_addr_ds.apply_var_fun_higher called on a sequent")*)
                let arg, args = apply_var_fun_higher_term f bvars coll s.sequent_args in
                let bvars', hyps, args = apply_var_fun_higher_hyps f bvars args (SeqHyp.to_list s.sequent_hyps) in

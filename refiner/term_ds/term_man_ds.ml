@@ -494,6 +494,8 @@ struct
             MatchTerm (["var"], [MatchVar v], [])
        | SOVar(v,conts,terms) ->
             MatchTerm (["var"], [MatchVar v], List.map mk_simple_bterm terms)
+       | SOContext _ ->
+            explode_term (core_term (Term (dest_term t))) (* XXX HACK! *)
        | Sequent { sequent_args = args;
                    sequent_hyps = hyps;
                    sequent_concl = concl
@@ -539,6 +541,7 @@ struct
        | FOVar _ ->
             true
        | SOVar _
+       | SOContext _
        | Sequent _ ->
             false
        | Subst _
@@ -552,50 +555,18 @@ struct
     * XXX TODO: Eventually contexts should probably have their own
     * choice in the core type.
     *)
-   let is_context_term =
-      let rec is_context_bterms = function
-         []|[_] -> false
-       | [ { bvars = [_] }; { bvars = []; bterm = conts }] -> is_xlist_term conts
-       | { bvars = [] } :: tl -> is_context_bterms tl
+   let is_context_term t =
+      match get_core t with
+         SOContext _ -> true
        | _ -> false
-      in fun t -> match get_core t with
-         Term { term_op = { op_name = opname; op_params = [Var _] };
-                term_terms = bterms
-              } -> Opname.eq opname context_opname && is_context_bterms bterms
-       | _ ->
-            false
 
-   let dest_context =
-      let rec collect v term = function
-         [ { bvars = [v']; bterm = t }; { bvars = []; bterm = conts }] ->
-            [],
-            (if v=v' then
-               t
-            else if is_var_free v t then
-               raise (Invalid_argument "Term_man_ds.dest_context: variable clash")
-            else
-               subst1 t v' (mk_var_term v)),
-            (List.map dest_var (dest_xlist conts))
-       | { bvars = []; bterm = hd } :: tl ->
-            let args, t, conts = collect v term tl in hd :: args, t, conts
-       | _ ->
-            REF_RAISE(RefineError ("dest_context", TermMatchError (term, "not a context")))
-      in fun term -> match dest_term term with
-         { term_op = { op_name = opname; op_params = [Var v] };
-           term_terms = bterms
-         } when Opname.eq opname context_opname ->
-            let args, term, conts = collect v term bterms in v, term, conts, args
-       | _ ->
-            REF_RAISE(RefineError ("dest_context", TermMatchError (term, "not a context")))
+   let dest_context term =
+      match get_core term with
+         SOContext (v, t, conts, ts) -> v, t, conts, ts
+       | _ -> REF_RAISE(RefineError ("dest_context", TermMatchError (term, "not a context")))
 
-   let mk_context_term v term conts terms =
-      let rec collect = function
-         [] ->
-            [mk_bterm [v] term; mk_simple_bterm (mk_xlist_term (List.map mk_var_term conts))]
-       | h::t ->
-            mk_simple_bterm h :: collect t
-      in
-         mk_term (mk_op context_opname [Var v]) (collect terms)
+   let mk_context_term v t conts terms =
+      core_term (SOContext(v, t, conts, terms))
 
    let rec context_vars vars t =
       match get_core t with
@@ -615,10 +586,9 @@ struct
                            List.fold_left context_vars (hyp_context_vars vars (succ i)) ts
             in
                hyp_context_vars vars 0
-       | Term { term_op = { op_name = opname; op_params = [Var v] }; term_terms = bts }
-            when Opname.eq opname Opname.context_opname ->
+       | SOContext(v, t, _, ts) ->
             let ints, addrs = vars in
-               List.fold_left bterm_context_vars (ints, SymbolSet.add addrs v) bts
+               List.fold_left context_vars (ints, SymbolSet.add addrs v) (t::ts)
        | Term { term_terms = bts } ->
             List.fold_left bterm_context_vars vars bts
        | SOVar(_, _, ts) -> List.fold_left context_vars vars ts
@@ -658,10 +628,9 @@ struct
                            hyp_context_vars (context_vars_term_list vars ts) (succ i)
             in
                context_vars_term (hyp_context_vars (context_vars_term vars seq.sequent_args) 0) seq.sequent_concl
-       | Term { term_op = { op_name = opname; op_params = [Var v] }} when Opname.eq opname Opname.context_opname ->
-            let v, term, cons, terms = dest_context t in
-            let vars = SymbolTable.add vars v (false, List.length cons, List.length terms) in
-               context_vars_term (context_vars_term_list vars terms) term
+       | SOContext(v, t, conts, ts) ->
+            let vars = SymbolTable.add vars v (false, List.length conts, List.length ts) in
+               context_vars_term (context_vars_term_list vars ts) t
        | Term { term_terms = bts } ->
             context_vars_bterm_list vars bts
        | FOVar _ ->
@@ -706,6 +675,8 @@ struct
                so_vars_term (hyp_so_vars (so_vars_term vars seq.sequent_args) 0) seq.sequent_concl
        | Term { term_terms = bts } ->
             so_vars_bterm_list vars bts
+       | SOContext (_, t, _, ts) ->
+            so_vars_term_list vars (t :: ts)
        | FOVar _ ->
             vars
        | SOVar (v, cs, ts) ->
@@ -749,6 +720,8 @@ struct
             vars
        | SOVar(_, _, ts) ->
             param_vars_term_list vars ts
+       | SOContext (_, t, _, ts) ->
+            param_vars_term_list vars (t :: ts)
        | Hashed _
        | Subst _ ->
             fail_core "param_vars"
@@ -793,6 +766,8 @@ struct
          FOVar _ -> vars
        | SOVar(v, conts, ts) -> sovar_case
        | Term{term_terms = bts} -> List.fold_left aux_bterm vars bts
+       | SOContext(v, t, conts, ts) ->
+            List.fold_left aux (SymbolSet.add_list (SymbolSet.add vars v) conts) (t::ts)
        | Sequent eseq ->
             aux (
                aux_hyps (

@@ -604,8 +604,8 @@ struct
            core = Term
             { term_op = { op_name = opname; op_params = Quote::params }; term_terms = bterms }
          }
-    | FOVar _ | SOVar _ | Sequent _ ->
-         raise (Invalid_argument "Term_op_ds.quote_term: support for variables and sequents not implemented")
+    | FOVar _ | SOVar _ | Sequent _ | SOContext _ ->
+         raise (Invalid_argument "Term_op_ds.quote_term: support for variables, sequents and contexts not implemented")
     | Subst _ | Hashed _ ->
          fail_core "Term_op_ds.quote_term"
 
@@ -1084,7 +1084,8 @@ struct
          Term trm ->
             make_term { term_op = trm.term_op; term_terms = List.map (bterm_down f) trm.term_terms }
        | FOVar _ -> t
-       | SOVar(v, conts, ts) -> { free_vars = VarsDelayed; core = SOVar(v, conts, List.map (map_down f) ts) }
+       | SOVar(v, conts, ts) -> core_term (SOVar(v, conts, List.map (map_down f) ts))
+       | SOContext(v, t, conts, ts) -> core_term (SOContext(v, map_down f t, conts, List.map (map_down f) ts))
        | Sequent { sequent_hyps = hyps;
                    sequent_concl = concl;
                    sequent_args = args
@@ -1112,7 +1113,8 @@ struct
          Term trm ->
             f (make_term { term_op = trm.term_op; term_terms = List.map (bterm_up f) trm.term_terms })
        | FOVar _ -> f t
-       | SOVar(v, conts, ts) -> f { free_vars = VarsDelayed; core = SOVar(v, conts, List.map (map_up f) ts) }
+       | SOVar(v, conts, ts) -> f (core_term (SOVar(v, conts, List.map (map_up f) ts)))
+       | SOContext(v, t, conts, ts) -> f (core_term (SOContext(v, map_up f t, conts, List.map (map_up f) ts)))
        | Sequent { sequent_hyps = hyps;
                    sequent_concl = concl;
                    sequent_args = args
