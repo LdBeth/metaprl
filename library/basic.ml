@@ -157,7 +157,7 @@ let error sl oids tl =
   print_newline();
   List.iter Mbterm.print_term tl;
 
- raise (Nuprl5_Exception ((String.concat " " sl),(imessage_term ("MetaprlLibrary" :: sl) oids tl)))
+  raise (Nuprl5_Exception ((String.concat " " sl),(imessage_term ("MetaprlLibrary" :: sl) oids tl)))
 
 let special_error_handler body handler =
   try body ()
@@ -173,68 +173,68 @@ let unconditional_error_handler body handler =
   try body ()
   with
     Nuprl5_Exception (s,t) -> handler t
-  |_ ->
-	( () (* TODO dump error to stdout *)
-	; handler (itext_term "Unexpected Metaprl failure"))
-
+  | _ ->
+      ( (); (* TODO dump error to stdout *)
+       handler (itext_term "Unexpected Metaprl failure"))
+	
 let unwind_error body unwind =
   try body ()
   with
     e -> (unwind ()); raise e
-
+	
 let parameters_of_term t =
   match Lib_term.dest_term t with
-   { term_op = op; term_terms = _}
-   -> match dest_op op with
-    { op_name = _; op_params = parms } -> parms
-
+    { term_op = op; term_terms = _}
+    -> match dest_op op with
+      { op_name = _; op_params = parms } -> parms
+	  
 let operator_of_term t =
   match Lib_term.dest_term t with
-   { term_op = op; term_terms = _} -> op
-
+    { term_op = op; term_terms = _} -> op
+	
 let bound_terms_of_term t =
   match Lib_term.dest_term t with
-   { term_op = _; term_terms = bterms} -> bterms
-
+    { term_op = _; term_terms = bterms} -> bterms
+	
 let term_of_unbound_term bterm =
   match dest_bterm bterm with
     { bvars = []; bterm = t } -> t
   | _ -> error ["unbound"; "bound"] [] [(mk_term iterm_op [bterm])]
-
+	
 let unbound_bterm_p bterm =
   match dest_bterm bterm with
     { bvars = []; bterm = _ } -> true
   | _ -> false
-
+	
 let parameter_of_carrier p t =
   match Lib_term.dest_term t with
     { term_op = o; term_terms = []}
-     -> (match dest_op o with
-	  { op_name = opname; op_params = [p'; c] } when (parmeq p p' & nuprl5_opname_p opname)
-	    -> c
-	|_ -> error ["term"; "carrier"; "op"] [] [t; mk_term (mk_nuprl5_op [p]) []])
+    -> (match dest_op o with
+      { op_name = opname; op_params = [p'; c] } when (parmeq p p' & nuprl5_opname_p opname)
+      -> c
+    |_ -> error ["term"; "carrier"; "op"] [] [t; mk_term (mk_nuprl5_op [p]) []])
   |_ -> error ["term"; "carrier"; "subterms"] [] [t]
-
+	
 let parameters_of_carrier p t =
   match Lib_term.dest_term t with
     { term_op = o; term_terms = []}
-     -> (match dest_op o with
-	  { op_name = opname; op_params = p':: r } when (parmeq p p' & nuprl5_opname_p opname)
-	    -> r
-	|_ -> error ["term"; "carrier"; "op"] [] [t; mk_term (mk_nuprl5_op [p]) []])
-  |_ -> error ["term"; "carrier"; "subterms"] [] [t]
-
+    -> (match dest_op o with
+      { op_name = opname; op_params = p':: r } when (parmeq p p' & nuprl5_opname_p opname)
+      -> r
+    | _ -> error ["term"; "carrier"; "op"] [] [t; mk_term (mk_nuprl5_op [p]) []])
+  | _ -> error ["term"; "carrier"; "subterms"] [] [t]
+	
 let token_parameter_to_string p =
   match dest_param p with
     Token s -> s
-  |_ -> error ["parameter"; "token"; "not"] [] []
-
+  | _ -> error ["parameter"; "token"; "not"] [] []
+	
 let ipui_addr_parameter = make_param (Token "!pui_addr")
 let number_of_ipui_addr_term t =
   match dest_param (parameter_of_carrier ipui_addr_parameter t) with
     Number n when Mp_num.is_integer_num n -> Mp_num.int_of_num n
-  |_ -> error ["term"; "!pui_addr"; "parameter type"] [] [t]
-
+  | _ -> error ["term"; "!pui_addr"; "parameter type"] [] [t]
+	
 let number_of_inatural_term t =
   match dest_param (parameter_of_carrier inatural_parameter t) with
     Number n when Mp_num.is_integer_num n -> Mp_num.int_of_num n

@@ -95,6 +95,7 @@ val make_assum : unit -> unit
 (*
  * Nuprl5.
  *)
+val run_nuprl : int -> string -> string -> string -> unit
 val edit_list_modules : unit -> string list
 val edit_list_module_all : string -> string list
 val edit_list_module : string -> string list * string list * string list * string list
