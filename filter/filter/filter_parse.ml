@@ -1379,7 +1379,7 @@ EXTEND
           empty_sig_item loc
 
           (* Grammar *)
-        | "token"; regex = STRING; t = OPT token_expansion ->
+        | "lex_token"; regex = STRING; t = OPT token_expansion ->
           SigFilter.add_token (SigFilter.get_proc loc) loc regex t;
           empty_sig_item loc
 
@@ -1387,7 +1387,7 @@ EXTEND
           SigFilter.add_production (SigFilter.get_proc loc) loc args opt_prec t;
           empty_sig_item loc
 
-        | "token"; assoc = prec_declare; "["; args = LIST0 parsed_term SEP ";"; "]"; rel = prec_relation ->
+        | "lex_token"; assoc = prec_declare; "["; args = LIST0 parsed_term SEP ";"; "]"; rel = prec_relation ->
           SigFilter.input_prec (SigFilter.get_proc loc) loc assoc args rel;
           empty_sig_item loc
 
@@ -1603,7 +1603,7 @@ EXTEND
            empty_str_item loc
 
           (* Grammar *)
-        | "token"; regex = STRING; t = OPT token_expansion ->
+        | "lex_token"; regex = STRING; t = OPT token_expansion ->
           StrFilter.add_token (StrFilter.get_proc loc) loc regex t;
           empty_str_item loc
 
@@ -1611,7 +1611,7 @@ EXTEND
           StrFilter.add_production (StrFilter.get_proc loc) loc args opt_prec t;
           empty_str_item loc
 
-        | "token"; assoc = prec_declare; "["; args = LIST0 parsed_term SEP ";"; "]"; rel = prec_relation ->
+        | "lex_token"; assoc = prec_declare; "["; args = LIST0 parsed_term SEP ";"; "]"; rel = prec_relation ->
           StrFilter.input_prec (StrFilter.get_proc loc) loc assoc args rel;
           empty_str_item loc
 

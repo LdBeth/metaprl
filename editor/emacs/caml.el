@@ -290,7 +290,7 @@ point is outside the region."
     (21 nil &+ \. &)
     (6  nil &+ (alt --> <--> <--) &)
     (5  t   (alt dform condition) & (opt = &))
-    (5  t   (alt prec infix token production parser) &)
+    (5  t   (alt prec infix lex_token production parser) &)
     (5  t   (opt &+) declare & (opt end))
     (5  t   ml_rewrite & : & (opt == &))
     (5  t   (alt define rewrite axiom primrw rule) & : &)
@@ -306,7 +306,7 @@ point is outside the region."
 (defconst caml-initial-terminals
   '(let type val value open extends include exception module
 	dform condition prec declare define rewrite axiom primrw prim
-	infix external magic_block mlterm token production parser)
+	infix external magic_block mlterm lex_token production parser)
   "Tokens that may start a top level production")
 
 (defconst caml-special-terminals
