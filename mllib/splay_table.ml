@@ -1,13 +1,14 @@
 (*
- * This takes the splay set implementation,
- * and generalizes it to functional hashtables.
+ * A splay table is like a functional hash table.
+ * This code is derived from the Splay_set code.
  *)
 module type SplayTableSig =
 sig
    type elt
+   type set
    type 'a t
 
-   val create : unit -> 'a t
+   val create : set -> 'a t
    val add : 'a t -> elt -> 'a -> 'a t
    val union : ('a list -> 'a list -> 'a list) -> 'a t -> 'a t -> 'a t
    val mem : 'a t -> elt -> bool
@@ -19,137 +20,170 @@ sig
 end
 
 (*
+ * Ordering module takes a comparison set.
+ *)
+module type OrdSig =
+sig
+   type t
+   type set
+
+   val union : set -> set -> set
+   val compare : set -> t -> t -> int
+end
+
+(*
  * Build the set from an ordered type.
  *)
-module MakeSplayTable (Ord: Set.OrderedType) =
+module MakeSplayTable (Ord : OrdSig) =
 struct
    (************************************************************************
     * TYPES                                                                *
     ************************************************************************)
 
    type elt = Ord.t
-
-   type 'a tree =
-      Leaf
-    | Node of 'a node
-
-   and 'a node = (elt * 'a list * 'a t * 'a t) ref
+   type set = Ord.set
 
    (*
-    * The int is the total number
-    * of entries in the table.
+    * Table is a binary tree.
+    * Each node has five fields:
+    *    1. a key
+    *    2. a list of values associated with the key
+    *    3. a left child
+    *    4. a right child
+    *    5. the total number of keys in the tree
     *)
-   and 'a t = 'a tree * int
+   type 'a tree =
+      Leaf
+    | Node of elt * 'a list * 'a tree * 'a tree * int
+
+   (*
+    * We keep an argument for the comparison,
+    * and the aplay tree.  The tree is mutable
+    * so that we can rearrange the tree in place.
+    * However, we all splay operations are functional,
+    * and we assume that the rearranged tree can be
+    * assigned atomically to this field.
+    *)
+   type 'a t =
+      { mutable splay_tree : 'a tree;
+        splay_arg : set
+      }
 
    (*
     * Directions are used to define
     * paths in the tree.
     *)
    type 'a direction =
-      Left of 'a node
-    | Right of 'a node
+      Left of 'a tree
+    | Right of 'a tree
+
+   (*
+    * Result of a splay operation.
+    *)
+   type 'a splay_result =
+      SplayFound of 'a tree
+    | SplayNotFound of 'a tree
 
    (************************************************************************
     * IMPLEMENTATION                                                       *
     ************************************************************************)
 
    (*
-    * Rotate the left entry to the root.
-    * The root becomes the right child.
+    * Size of a table.
     *)
-   let rotate_left = function
-      { contents = key,
-                   node_contents,
-                   (Node { contents = left_key,
-                                      left_contents,
-                                      left_left,
-                                      ((_, slr) as left_right)
-                    }, _),
-                   ((_, sr) as right)
-      } as node ->
-         node := left_key,
-                 left_contents,
-                 left_left,
-                 (Node (ref (key,
-                             node_contents,
-                             left_right,
-                             right)),
-                  slr + sr + 1)
+   let cardinality = function
+      Node (_, _, _, _, size) ->
+         size
+    | Leaf ->
+         0
+
+   (*
+    * Add two nodes.
+    *)
+   let new_node key data left right =
+      Node (key, data, left, right, cardinality left + cardinality right + 1)
+
+   (*
+    * Rotate kthe entries so that the child becomes the root.
+    * Return the new left and right children.
+    *)
+   let rotate_left left right = function
+      Node (key, data, _, right', _) ->
+         left, new_node key data right right'
     | _ ->
          raise (Invalid_argument "rotate_left")
 
-   (*
-    * Rotate the right entry to the root.
-    * the root becomes the left child.
-    *)
-   let rotate_right = function
-      { contents = key,
-                   node_contents,
-                   ((_, sl) as left),
-                   (Node { contents = right_key,
-                                     right_contents,
-                                     ((_, srl) as right_left),
-                                     right_right
-                    }, _)
-      } as node ->
-         node := right_key,
-                 right_contents,
-                 (Node (ref (key,
-                             node_contents,
-                             left,
-                             right_left)),
-                  sl + srl + 1),
-                 right_right
+   let rotate_right left right = function
+      Node (key, data, left', _, _) ->
+         new_node key data left left', right
     | _ ->
          raise (Invalid_argument "rotate_right")
+
+   let rotate_left_left left right = function
+      Node (key,
+            data,
+            Node (key_left, data_left, _, left_right, _),
+            right',
+            _) ->
+         left, new_node key_left data_left right (new_node key data left_right right')
+    | _ ->
+         raise (Invalid_argument "rotate_left_left")
+
+   let rotate_right_right left right = function
+      Node (key,
+            data,
+            left',
+            Node (key_right, data_right, right_left, _, _),
+            _) ->
+         new_node key_right data_right (new_node key data left' right_left) left, right
+    | _ ->
+         raise (Invalid_argument "rotate_right_right")
+
+   let rotate_left_right left right = function
+      Node (key,
+            data,
+            Node (key_left, data_left, left_left, _, _),
+            right',
+            _) ->
+         new_node key_left data_left left_left left, new_node key data right right'
+    | _ ->
+         raise (Invalid_argument "rotate_left_right")
+
+   let rotate_right_left left right = function
+      Node (key,
+            data,
+            left',
+            Node (key_right, data_right, _, right_right, _),
+            _) ->
+         new_node key data left' left, new_node key_right data_right right right_right
+    | _ ->
+         raise (Invalid_argument "rotate_right_left")
 
    (*
     * This function performs the action of moving an entry
     * to the root.  The argument is the path to the entry.
     *)
-   let rec lift = function
+   let rec lift key data left right = function
       [] ->
-         ()
+         new_node key data left right
     | [Left parent] ->
-         rotate_left parent
+         let left, right = rotate_left left right parent in
+            new_node key data left right
     | [Right parent] ->
-         rotate_right parent
+         let left, right = rotate_right left right parent in
+            new_node key data left right
     | Left parent :: Left grandparent :: ancestors ->
-         begin
-            rotate_left grandparent;
-            rotate_left grandparent;  (* parent has moved into grandparent's position *)
-            lift ancestors
-         end
+         let left, right = rotate_left_left left right grandparent in
+            lift key data left right ancestors
     | Right parent :: Right grandparent :: ancestors ->
-         begin
-            rotate_right grandparent;
-            rotate_right grandparent;  (* parent has moved into grandparent's position *)
-            lift ancestors
-         end
+         let left, right = rotate_right_right left right grandparent in
+            lift key data left right ancestors
     | Left parent :: Right grandparent :: ancestors ->
-         begin
-            rotate_left parent;
-            rotate_right grandparent;
-            lift ancestors
-         end
+         let left, right = rotate_left_right left right grandparent in
+            lift key data left right ancestors
     | Right parent :: Left grandparent :: ancestors ->
-         begin
-            rotate_right parent;
-            rotate_left grandparent;
-            lift ancestors
-         end
-   
-   let rec lift_right = function
-      [] ->
-         ()
-    | [parent] ->
-         rotate_right parent
-    | parent :: grandparent :: ancestors ->
-         begin
-            rotate_right grandparent;
-            rotate_right grandparent;  (* parent has moved into grandparent's position *)
-            lift_right ancestors
-         end
+         let left, right = rotate_right_left left right grandparent in
+            lift key data left right ancestors
 
    (*
     * Find an entry in the tree.
@@ -158,110 +192,137 @@ struct
     * entry becomes the root, or an adjacent entry
     * becomes the root if the entry is not found.
     *)
-   let rec splay key0 path = function
-      Node ({ contents = key, _, left, right } as node), _ ->
-         let comp = Ord.compare key0 key in
+   let rec splay arg key0 path = function
+      Node (key, data, left, right, _) as node ->
+         let comp = Ord.compare arg key0 key in
             if comp = 0 then
-               begin
-                  lift path;
-                  true
-               end
+               SplayFound (lift key data left right path)
             else if comp < 0 then
                (* node is down the left branch *)
-               splay key0 (Left node :: path) left
+               if left = Leaf then
+                  SplayNotFound (lift key data left right path)
+               else
+                  splay arg key0 (Left node :: path) left
+            else if right = Leaf then
+               SplayNotFound (lift key data left right path)
             else
-               (* node is down the right branch *)
-               splay key0 (Right node :: path) right
+               splay arg key0 (Right node :: path) right
 
-    | (Leaf, _) ->
-         match path with
-            [] ->
-               false
-          | _ :: path' ->
-               lift path';
-               false
-
-   let rec splay_right path = function
-      Node ({ contents = key, _, left, right } as node), _ ->
-         splay_right (node :: path) right
-
-    | (Leaf, _) ->
-         match path with
-            [] ->
-               ()
-          | _ :: path' ->
-               lift_right path'
+    | Leaf ->
+         SplayNotFound Leaf
 
    (*
-    * An empty tree is just a list.
+    * Move the rioghtmost node to the root.
     *)
-   let empty =
-      Leaf, 0
+   let rec lift_right = function
+      Node (key, data, left, Leaf, _) as parent ->
+         key, data, left, Leaf
+    | Node (_, _, _, Node (key, data, left, Leaf, _), _) as parent ->
+         let left, right = rotate_right left Leaf parent in
+            key, data, left, right
+    | Node (_, _, _, Node (_, _, left, right, _), _) as grandparent ->
+         let key, data, left, right = lift_right right in
+         let left, right = rotate_right_right left right grandparent in
+            key, data, left, right
+    | Leaf ->
+         raise (Invalid_argument "lift_right")
 
-   let create () =
-      empty
+   let rec splay_right = function
+      Leaf ->
+         Leaf
+    | node ->
+         let key, data, left, right = lift_right node in
+            new_node key data left right
+
+   (*
+    * An empty tree is just a leaf.
+    *)
+   let empty = Leaf
+
+   let create arg =
+      { splay_tree = empty;
+        splay_arg = arg
+      }
 
    (*
     * Check if a key is listed in the table.
     *)
    let mem t key =
-      splay key [] t
+      let { splay_tree = tree; splay_arg = arg } = t in
+         match splay arg key [] tree with
+            SplayFound tree ->
+               t.splay_tree <- tree;
+               true
+          | SplayNotFound tree ->
+               t.splay_tree <- tree;
+               false
 
    let find t key =
-      if splay key [] t then
-         match t with
-            Node { contents = _, data :: _, _, _ }, _ ->
-               data
-          | _ ->
-               raise (Failure "find")
-      else
-         raise Not_found
+      let { splay_tree = tree; splay_arg = arg } = t in
+         match splay arg key [] tree with
+            SplayFound tree ->
+               begin
+                  t.splay_tree <- tree;
+                  match tree with
+                     Node (_, data :: _, _, _, _) ->
+                        data
+                   | _ ->
+                        raise (Failure "find")
+               end
+          | SplayNotFound tree ->
+               t.splay_tree <- tree;
+               raise Not_found
 
    let find_all t key =
-      if splay key [] t then
-         match t with
-            Node { contents = _, data, _, _ }, _ ->
-               data
-          | _ ->
-               raise (Failure "find")
-      else
-         raise Not_found
+      let { splay_tree = tree; splay_arg = arg } = t in
+         match splay arg key [] tree with
+            SplayFound tree ->
+               begin
+                  t.splay_tree <- tree;
+                  match tree with
+                     Node (_, data, _, _, _) ->
+                        data
+                   | _ ->
+                        raise (Failure "find_all")
+               end
+          | SplayNotFound tree ->
+               t.splay_tree <- tree;
+               raise Not_found
+
 
    (*
     * Add an entry to the table.
     * If the entry already exists,
     * the new value is added to the data.
     *)
-   let add_list t key data =
-      if splay key [] t then
-         match t with
-            Node { contents = key, data', left, right }, size ->
-               Node (ref (key, data @ data', left, right)), size
-          | Leaf, _ ->
-               raise (Failure "add_list")
-      else
-         match t with
-            Node { contents = key', data', ((_, sl) as left), ((_, sr) as right) }, _ ->
-               if Ord.compare key key' < 0 then
-                  (* Root should become right child *)
-                  Node (ref (key,
-                             data,
-                             left,
-                             (Node (ref (key', data', empty, right)), sr + 1))),
-                  sl + sr + 2
-               else
-                  (* Root should become left child *)
-                  Node (ref (key,
-                             data,
-                             (Node (ref (key', data', left, empty)), sl + 1),
-                             right)),
-                  sl + sr + 2
-          | Leaf, _ ->
-               (* Tree is empty, so make a new root *)
-               Node (ref (key, data, empty, empty)), 1
+   let add_list arg tree key data =
+      match splay arg key [] tree with
+         SplayFound tree ->
+            begin
+               match tree with
+                  Node (key, data', left, right, size) ->
+                     Node (key, data @ data', left, right, size)
+                | Leaf ->
+                     raise (Failure "add_list")
+            end
+       | SplayNotFound tree ->
+            begin
+               match tree with
+                  Node (key', data', left, right, size) ->
+                     if Ord.compare arg key key' < 0 then
+                        (* Root should become right child *)
+                        new_node key data left (new_node key' data' empty right)
+                     else
+                        (* Root should become left child *)
+                        new_node key data (new_node key' data left empty) right
+                | Leaf ->
+                        (* Tree is empty, so make a new root *)
+                     new_node key data empty empty
+            end
 
    let add t key data =
-      add_list t key [data]
+      let { splay_tree = tree; splay_arg = arg } = t in
+         { splay_tree = add_list arg tree key [data]; splay_arg = arg }
 
    (*
     * Remove the first entry from the hashtable.
@@ -269,111 +330,119 @@ struct
     * entire entry from the tree.
     *)
    let remove t key =
-      if splay key [] t then
-         match t with
-            Node { contents = key, _ :: data, left, right }, size ->
-               Node (ref (key, data, left, right)), size
-          | Node { contents = _, [], (Leaf, _), right }, _ ->
-               right
-          | Node { contents = _, [], left, (Leaf, _) }, _ ->
-               left
-          | Node { contents = _, [], left, ((_, sr) as right) }, _ ->
+      let { splay_tree = tree; splay_arg = arg } = t in
+      let tree =
+         match splay arg key [] tree with
+            SplayFound tree ->
                begin
-                  splay_right [] left;
-                  match left with
-                     Node { contents = left_key, left_data, ((_, sll) as left_left), (Leaf, _) }, _ ->
-                        Node (ref (left_key, left_data, left_left, right)), 1 + sll + sr
-                   | _ ->
+                  match tree with
+                     Node (key, _ :: data, left, right, size) ->
+                        Node (key, data, left, right, size)
+                   | Node (_, [], Leaf, right, _) ->
+                        right
+                   | Node (_, [], left, Leaf, _) ->
+                        left
+                   | Node (_, [], left, right, _) ->
+                        begin
+                           match splay_right left with
+                              Node (key, data, left_left, Leaf, _) ->
+                                 new_node key data left_left right
+                            | _ ->
+                                 raise (Failure "remove")
+                        end
+                   | Leaf ->
                         raise (Failure "remove")
                end
-          | _ ->
-               raise (Failure "remove")
-      else
-         t
+          | SplayNotFound tree ->
+               tree
+      in
+         { splay_tree = tree; splay_arg = arg }
 
    (*
     * Merge two hashtables.
     * Data fields get concatenated.
     *)
-   let rec union append s1 s2 =
+   let rec union_aux arg append s1 s2 =
       match s1, s2 with
-         (Leaf, _), _ ->
+         Leaf, _ ->
             s2
-       | _, (Leaf, _) ->
+       | _, Leaf ->
             s1
-       | (Node n1, size1), (Node n2, size2) ->
+       | Node (key1, data1, left1, right1, size1),
+         Node (key2, data2, left2, right2, size2) ->
             if size1 >= size2 then
                if size2 = 1 then
-                  let key2, data2, _ ,_ = !n2 in
-                     add_list s1 key2 data2
+                  add_list arg s1 key2 data2
                else
-                  let key1, data1, left1, right1 = !n1 in
-                     if splay key1 [] s2 then
-                        let _, data2, left2, right2 = !n2 in
-                        let (_, sll) as ll = union append left1 left2 in
-                        let (_, srr) as rr = union append right1 right2 in
-                           Node (ref (key1, append data1 data2, ll, rr)), 1 + sll + srr
-                     else
-                        let key2, data2, ((_, sl2) as left2), ((_, sr2) as right2) = !n2 in
-                           if Ord.compare key1 key2 < 0 then
-                              let (_, sll) as ll = union append left1 left2 in
-                              let (_, srr) as rr =
-                                 union append right1 (Node (ref (key2, data2, empty, right2)), succ sr2)
-                              in
-                                 Node (ref (key1, data1, ll, rr)), 1 + sll + srr
-                           else
-                              let (_, sll) as ll =
-                                 union append left1 (Node (ref (key2, data2, left2, empty)), succ sl2)
-                              in
-                              let (_, srr) as rr = union append right1 right2 in
-                                 (Node (ref (key1, data1, ll, rr)), 1 + sll + srr)
-            else if size1 = 1 then
-               let key1, data1, _, _ = !n1 in
-                  add_list s2 key1 data1
-            else
-               let key2, data2, left2, right2 = !n2 in
-                  if splay key2 [] s1 then
-                     let _, data1, left1, right1 = !n1 in
-                     let (_, sll) as ll = union append left2 left1 in
-                     let (_, srr) as rr = union append right2 right1 in
-                        Node (ref (key2, append data1 data2, ll, rr)), 1 + sll + srr
-                  else
-                     let key1, data1, ((_, sl1) as left1), ((_, sr1) as right1) = !n1 in
-                        if Ord.compare key2 key1 < 0 then
-                           let (_, sll) as ll = union append left2 left1 in
-                           let (_, srr) as rr =
-                              union append right2 (Node (ref (key1, data1, empty, right1)), succ sr1)
-                           in
-                              Node (ref (key2, data2, ll, rr)), 1 + sll + srr
+                  match splay arg key1 [] s2 with
+                     SplayFound (Node (key2, data2, left2, right2, _)) ->
+                        let left3 = union_aux arg append left1 left2 in
+                        let right3 = union_aux arg append right1 right2 in
+                           new_node key1 (append data1 data2) left3 right3
+                   | SplayNotFound (Node (key2, data2, left2, right2, _)) ->
+                        if compare key1 key2 < 0 then
+                           let left3 = union_aux arg append left1 left2 in
+                           let right3 = union_aux arg append right1 (new_node key2 data2 empty right2) in
+                              new_node key1 data1 left3 right3
                         else
-                           let (_, sll) as ll =
-                              union append left2 (Node (ref (key1, data1, left1, empty)), succ sl1)
-                           in
-                           let (_, srr) as rr = union append right2 right1 in
-                              Node (ref (key2, data2, ll, rr)), 1 + sll + srr
+                           let left3 = union_aux arg append left1 (new_node key2 data2 left2 empty) in
+                           let right3 = union_aux arg append right1 right2 in
+                              new_node key1 data1 left3 right3
+                   | _ ->
+                        raise (Failure "union")
+            else if size1 = 1 then
+               add_list arg s2 key1 data1
+            else
+               match splay arg key1 [] s1 with
+                  SplayFound (Node (key1, data1, left1, right1, _)) ->
+                     let left3 = union_aux arg append left1 left2 in
+                     let right3 = union_aux arg append right1 right2 in
+                        new_node key2 (append data1 data2) left3 right3
+                | SplayNotFound (Node (key1, data1, left1, right1, _)) ->
+                     if compare key2 key1 < 0 then
+                        let left3 = union_aux arg append left1 left2 in
+                        let right3 = union_aux arg append (new_node key1 data1 empty right1) right2 in
+                           new_node key2 data2 left3 right3
+                     else
+                        let left3 = union_aux arg append (new_node key1 data1 left1 empty) left2 in
+                        let right3 = union_aux arg append right1 right2 in
+                           new_node key2 data2 left3 right3
+                | _ ->
+                     raise (Failure "union")
+
+   let union append s1 s2 =
+      let { splay_tree = tree1; splay_arg = arg1 } = s1 in
+      let { splay_tree = tree2; splay_arg = arg2 } = s2 in
+      let arg = Ord.union arg1 arg2 in
+         { splay_tree = union_aux arg append tree1 tree2;
+           splay_arg = arg
+         }
 
    (*
     * Iterate a function over the hashtable.
     *)
-   let rec iter f = function
-      Node { contents = key, data, left, right }, _ ->
+   let rec iter_aux f = function
+      Node (key, data, left, right, _) ->
          List.iter (f key) data;
-         iter f left;
-         iter f right
-    | Leaf, _ ->
+         iter_aux f left;
+         iter_aux f right
+    | Leaf ->
          ()
+
+   let iter f { splay_tree = t } =
+      iter_aux f t
 
    (*
     * Map a function over the table.
     *)
-   let rec map f = function
-      Node { contents = key, data, left, right }, size ->
-         Node (ref (key,
-                    List.map (f key) data,
-                    map f left,
-                    map f right)), size
-    | Leaf, _ ->
-         Leaf, 0
+   let rec map_aux f = function
+      Node (key, data, left, right, size) ->
+         Node (key, List.map (f key) data, map_aux f left, map_aux f right, size)
+    | Leaf ->
+         Leaf
+
+   let map f { splay_tree = tree; splay_arg = arg } =
+      { splay_tree = map_aux f tree; splay_arg = arg }
 end
 
 (*
