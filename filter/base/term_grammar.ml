@@ -389,6 +389,10 @@ struct
                (* HACK - this is to support ad-hoc I/O form "member" - see TODO 2.14 -2.15 *)
                   { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_opname loc ["equal"]) ty.aterm t.aterm t.aterm }
             ]
+          | [ t1 = noncommaterm; sl_tilde; t2 = noncommaterm ->
+               (* HACK - Perv!rewrite should be eventially replaced by mk_opname loc ["sqeq"] *)
+                  { aname = None; aterm = mk_xrewrite_term t1.aterm t2.aterm }
+            ]
           | "fun" RIGHTA
            [ t1 = noncommaterm; op = sl_arrow; t2 = noncommaterm ->
               mk_type_term loc op t1 t2
@@ -930,6 +934,10 @@ struct
 
       sl_quotient:
          [[ "quot" -> "quot" ]];
+
+      sl_tilde:
+         [[ "~" -> "sqeq"
+          | "sqeq" -> "sqeq" ]];
 
 (*
       sl_bind:

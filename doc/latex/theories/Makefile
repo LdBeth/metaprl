@@ -59,6 +59,7 @@ $(ROOT)/doc/ps/theories/theories.pdf: $(NAME).pdf
 
 clean::
 	$(RM) *.log *.aux *.idx *.ilg *.ind *.pdf *.ps *.dvi *.blg *.bbl *.out
+	$(RM) */theory-body.tex */theory.tex
 
 # Real makefile
 include $(ROOT)/mk/rules

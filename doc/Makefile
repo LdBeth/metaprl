@@ -128,7 +128,8 @@ developer-guide.pdf: $(D-FILES)
 	$(GEN-PDF) $(D-FILES) -f $@
 
 clean::
-	$(RM) $(DOCFILES) *.log *.dvi *.aux *~
+	$(RM) $(DOCFILES) *.log *.dvi *.aux *~ ps/theories/*.ps ps/theories/*.pdf
+	+ @ $(MAKE) -C latex/theories clean
 
 check::
 	env WEBLINTRC=weblintrc weblint .
