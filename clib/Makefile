@@ -16,18 +16,11 @@ LCFILES :=\
 	getrusage
 
 # Name of library
-.PHONY: pthread
-
 MAIN := clib
 
 all: $(ROOT)/lib/$(MAIN)$(EXT_LIB) pthread
 
 opt: $(ROOT)/lib/$(MAIN)$(EXT_LIB) pthread
-
-pthread:
-	if [ -f libpthread-$(HOSTTYPE).lib ]; then\
-		ln -sf $(ROOT)/$(DIR)/libpthread-$(HOSTTYPE).lib $(ROOT)/lib/libpthread.a;\
-	fi
 
 install:: $(MAIN)$(EXT_LIB)
 	$(INSTALL) $(MAIN)$(EXT_LIB) $(MPLIB)
