@@ -541,8 +541,8 @@ PRLFiles(files) =
       $(OCAMLOPT) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
 
    if $(SLOPPY_DEPENDENCIES)
-      %.cmi %.cmiz:  :sloppy: $(CAMLP4N)
-      %.ppo %.cmoz:  :sloppy: $(CAMLP4N)
+      %.cmi %.cmiz:  :squash: $(CAMLP4N)
+      %.ppo %.cmoz:  :squash: $(CAMLP4N)
 
    else
       %.cmi %.cmiz: $(CAMLP4N)
