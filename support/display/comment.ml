@@ -207,7 +207,7 @@ dform tex_comment_white_df1 : mode[tex] :: comment_white =
    izone slot["raw", " "] ezone
 
 dform tex_comment_white_df2 : mode[tex] :: cons{comment_white; cons{comment_white; 't}} =
-   izone slot["raw", "\n\n"] ezone slot{'t}
+   izone slot["raw", "\n\n"] ezone 't
 
 (*
  * Plain version.
@@ -216,7 +216,7 @@ dform normal_comment_white_df1 : except_mode[tex] :: comment_white =
    com_cbreak
 
 dform normal_comment_white_df2 : except_mode[tex] :: cons{comment_white; cons{comment_white; 't}} =
-   com_hbreak slot{'t}
+   com_hbreak 't
 
 dform normal_doc_df2 : except_mode[tex] :: except_mode[src] :: "doc"{'t} =
    info["@begin[doc]"] com_hbreak 't com_hbreak info["@end[doc]"]
@@ -266,7 +266,7 @@ declare "module"{'name}
 doc <:doc< @docoff >>
 
 dform theory_df1 : mode[tex] :: "theory"{'t} =
-   izone `"\\theory{" ezone slot{'t} izone `"}" ezone
+   izone `"\\theory{" ezone 't izone `"}" ezone
 
 dform theory_df2 : except_mode[tex] :: "theory"{'t} =
    com_hbreak bf{'t} com_hbreak com_hbreak
@@ -278,7 +278,7 @@ dform module_df2 : except_mode[tex] :: "module"[name:s] =
    com_hbreak bf[name:s] com_hbreak com_hbreak
 
 dform module_df3 : mode[tex] :: "module"{'name} =
-   izone `"\\module{" ezone slot{'name} izone `"}" ezone
+   izone `"\\module{" ezone 'name izone `"}" ezone
 
 dform module_df4 : except_mode[tex] :: "module"{'name} =
    com_hbreak bf{'name} com_hbreak com_hbreak
@@ -295,25 +295,25 @@ declare subsubsection[name:s]{'t}
 doc <:doc< @docoff >>
 
 dform chapter_df1 : mode[tex] :: "chapter"[name:s]{'t} =
-   izone `"\\labelchapter{" slot[name:s] `"}{" ezone slot{'t} izone `"}" ezone
+   izone `"\\labelchapter{" slot[name:s] `"}{" ezone 't izone `"}" ezone
 
 dform chapter_df2 : except_mode[tex] :: "chapter"[name:s]{'t} =
    com_hbreak bf{'t} com_hbreak com_hbreak
 
 dform section_df1 : mode[tex] :: "section"[name:s]{'t} =
-   izone `"\\labelsection{" slot[name:s] `"}{" ezone slot{'t} izone `"}" ezone
+   izone `"\\labelsection{" slot[name:s] `"}{" ezone 't izone `"}" ezone
 
 dform section_df2 : except_mode[tex] :: "section"[name:s]{'t} =
    com_hbreak bf{'t} com_hbreak com_hbreak
 
 dform subsection_df1 : mode[tex] :: "subsection"[name:s]{'t} =
-   izone `"\\labelsubsection{" slot[name:s] `"}{" ezone slot{'t} izone `"}" ezone
+   izone `"\\labelsubsection{" slot[name:s] `"}{" ezone 't izone `"}" ezone
 
 dform subsection_df2 : except_mode[tex] :: "subsection"[name:s]{'t} =
    com_hbreak bf{'t} com_hbreak com_hbreak
 
 dform subsubsection_df1 : mode[tex] :: "subsubsection"[name:s]{'t} =
-   izone `"\\labelsubsubsection{" slot[name:s] `"}{" ezone slot{'t} izone `"}" ezone
+   izone `"\\labelsubsubsection{" slot[name:s] `"}{" ezone 't izone `"}" ezone
 
 dform subsubsection_df2 : except_mode[tex] :: "subsubsection"[name:s]{'t} =
    com_hbreak bf{'t} com_hbreak com_hbreak
@@ -327,7 +327,7 @@ declare modsection{'t}
 doc <:doc< @docoff >>
 
 dform modsection_df1 : mode[tex] :: modsection{'t} =
-   izone `"\\modsection{" ezone slot{'t} izone `"}" ezone
+   izone `"\\modsection{" ezone 't izone `"}" ezone
 
 dform modsection_df2 : except_mode[tex] :: modsection{'t} =
    com_hbreak bf{'t} com_hbreak com_hbreak
@@ -341,7 +341,7 @@ declare modsubsection{'t}
 doc <:doc< @docoff >>
 
 dform modsubsection_df1 : mode[tex] :: modsubsection{'t} =
-   izone `"\\modsubsection{" ezone slot{'t} izone `"}" ezone
+   izone `"\\modsubsection{" ezone 't izone `"}" ezone
 
 dform modsubsection_df2 : except_mode[tex] :: modsubsection{'t} =
    com_hbreak bf{'t} com_hbreak
@@ -356,7 +356,7 @@ declare hreftarget[name:s]
 doc <:doc< @docoff >>
 
 dform target_df1 : mode[tex] :: target[name:s]{'t} =
-   izone `"\\hreflabeltarget{" slot[name:s] `"}{" ezone slot{'t} izone `"}" ezone
+   izone `"\\hreflabeltarget{" slot[name:s] `"}{" ezone 't izone `"}" ezone
 
 dform target_df2 : except_mode[tex] :: target[name:s]{'t} =
    bf{'t}
@@ -662,7 +662,7 @@ declare phantom{'t}
 doc <:doc< @docoff >>
 
 dform phantom_df1 : mode[tex] :: phantom{'t} =
-   izone `"\\phantom{" slot{'t} `"}" ezone
+   izone `"\\phantom{" 't `"}" ezone
 
 dform phantom_df2 : except_mode[tex] :: phantom{'t} =
    `" "
@@ -691,7 +691,7 @@ dform math_df3 : except_mode[tex] :: math{'t} =
 dform centermath_df1 : centermath[s:s] = centermath{slot[s:s]}
 
 dform centermath_df2 : mode[tex] :: centermath{'t} =
-   izone `"$$" ezone lzone slot{'t} ezone izone `"$$" ezone
+   izone `"$$" ezone lzone 't ezone izone `"$$" ezone
 
 dform centermath_df3 : except_mode[tex] :: centermath{'t} =
    com_hbreak `"$$" it{'t} `"$$" com_hbreak
@@ -799,7 +799,7 @@ dform caption_df1 : mode[tex] :: caption{'caption} =
    izone `"}" ezone
 
 dform caption_df2 : except_mode[tex] :: caption{'caption} =
-   `"caption: " slot{'caption}
+   `"caption: " 'caption
 
 doc <:doc<
    @begin[doc]
@@ -880,10 +880,10 @@ dform item_df2 : except_mode[tex] :: item{'t1; 't2} =
    com_hbreak pushm[3] `"[" 't1 `"]" 't2 popm
 
 dform item_df1 : mode[tex] :: item{'t} =
-   izone `"\\item{}" ezone slot{'t}
+   izone `"\\item{}" ezone 't
 
 dform item_df1 : mode[tex] :: item{'t1; 't2} =
-   izone `"\\item[" ezone slot{'t1} izone `"]" ezone slot{'t2}
+   izone `"\\item[" ezone 't1 izone `"]" ezone 't2
 
 doc <:doc< @doc{ } >>
 declare enumerate{'t}
@@ -900,11 +900,11 @@ dform normal_enumerate_df3 : normal_enumerate{'count; cons{comment_white; 'tl}} 
    normal_enumerate{'count; 'tl}
 
 dform normal_enumerate_df4 : normal_enumerate{'count; cons{comment_term{item{'t}}; 'tl}} =
-   com_hbreak pushm[3] df_length{'count} `"." slot{'t} popm
+   com_hbreak pushm[3] df_length{'count} `"." 't popm
    normal_enumerate{cons{nil; 'count}; 'tl}
 
 dform normal_enumerate_df5 : normal_enumerate{'count; cons{comment_term{item{'t1; 't2}}; 'tl}} =
-   com_hbreak pushm[3] slot{'t1} `"." slot{'t2} popm
+   com_hbreak pushm[3] 't1 `"." 't2 popm
    normal_enumerate{cons{nil; 'count}; 'tl}
 
 dform enumerate_df1 : mode[tex] :: enumerate{'t} =
@@ -1018,19 +1018,19 @@ declare math_emph{'t}
 doc <:doc< @docoff >>
 
 dform math_hbox_df1 : mode[tex] :: math_hbox{'t} =
-   izone `"\\hbox{" ezone slot{'t} izone `"}" ezone
+   izone `"\\hbox{" ezone 't izone `"}" ezone
 
 dform math_hbox_df2 : except_mode[tex] :: math_hbox{'t} =
    slot{'t}
 
 dform math_mbox_df1 : mode[tex] :: math_mbox{'t} =
-   izone `"\\mbox{" ezone slot{'t} izone `"}" ezone
+   izone `"\\mbox{" ezone 't izone `"}" ezone
 
 dform math_mbox_df2 : except_mode[tex] :: math_mbox{'t} =
    slot{'t}
 
 dform math_mathop_df1 : mode[tex] :: math_mathop{'t} =
-   izone `"\\mathop{\\bf " ezone slot{'t} izone `"}" ezone
+   izone `"\\mathop{\\bf " ezone 't izone `"}" ezone
 
 dform math_mathop_df1 : mode[tex] :: math_mathop[text:s] =
    izone `"\\mathop{\\bf " ezone slot[text:s] izone `"}" ezone
@@ -1048,13 +1048,13 @@ dform math_mathrel_df2 : except_mode[tex] :: math_mathrel[text:s] =
    bf[text:s]
 
 dform math_mathrel_df3 : mode[tex] :: math_mathrel{'t} =
-   izone `"\\mathrel{\\bf " ezone slot{'t} izone `"}" ezone
+   izone `"\\mathrel{\\bf " ezone 't izone `"}" ezone
 
 dform math_mathrel_df4 : except_mode[tex] :: math_mathrel{'t} =
    bf{'t}
 
 dform math_tt_df1 : mode[tex] :: math_tt{'t} =
-   izone `"\\mathtt{" ezone slot{'t} izone `"}" ezone
+   izone `"\\mathtt{" ezone 't izone `"}" ezone
 
 dform math_tt_df1 : mode[tex] :: math_tt[text:s] =
    izone `"\\mathtt{" ezone slot[text:s] izone `"}" ezone
@@ -1066,7 +1066,7 @@ dform math_tt_df2 : except_mode[tex] :: math_tt[text:s] =
    tt[text:s]
 
 dform math_bb_df1 : mode[tex] :: math_bb{'t} =
-   izone `"\\mathbb{" ezone slot{'t} izone `"}" ezone
+   izone `"\\mathbb{" ezone 't izone `"}" ezone
 
 dform math_bb_df1 : mode[tex] :: math_bb[text:s] =
    izone `"\\mathbb{" ezone slot[text:s] izone `"}" ezone
@@ -1078,7 +1078,7 @@ dform math_bb_df2 : except_mode[tex] :: math_bb[text:s] =
    bf[text:s]
 
 dform math_bf_df1 : mode[tex] :: math_bf{'t} =
-   izone `"\\mathbf{" ezone slot{'t} izone `"}" ezone
+   izone `"\\mathbf{" ezone 't izone `"}" ezone
 
 dform math_bf_df1 : mode[tex] :: math_bf[text:s] =
    izone `"\\mathbf{ " ezone slot[text:s] izone `"}" ezone
@@ -1096,7 +1096,7 @@ dform math_i_df2 : math_i[text:s] =
    math_it[text:s]
 
 dform math_emph_df1 : mode[tex] :: math_emph{'t} =
-   izone `"\\mathit{" ezone slot{'t} izone `"}" ezone
+   izone `"\\mathit{" ezone 't izone `"}" ezone
 
 dform math_emph_df2 : except_mode[tex] :: math_emph{'t} =
    emph{'t}
@@ -1480,23 +1480,23 @@ doc <:doc< @docoff >>
 
 dform tex_math_subscript_df1 : mode[tex] :: math_subscript{'t1; 't2} =
    izone `"{" ezone
-   slot{'t1}
+   't1
    izone `"}_{" ezone
-   slot{'t2}
+   't2
    izone `"}" ezone
 
 dform tex_math_superscript_df1 : mode[tex] :: math_superscript{'t1; 't2} =
    izone `"{" ezone
-   slot{'t1}
+   't1
    izone `"}^{" ezone
-   slot{'t2}
+   't2
    izone `"}" ezone
 
 dform normal_math_subscript_df1 : except_mode[tex] :: math_subscript{'t1; 't2} =
-   slot{'t1} `"_" slot{'t2}
+   't1 `"_" 't2
 
 dform normal_math_superscript_df1 : except_mode[tex] :: math_superscript{'t1; 't2} =
-   slot{'t1} `"^" slot{'t2}
+   't1 `"^" 't2
 
 doc <:doc<
    @begin[doc]
@@ -1703,11 +1703,11 @@ dform multicolumn_df : mode[tex] :: multicolumn[cols:s, align:s]{'e} =
    izone `"}{" ezone
    slot[align:s]
    izone `"}{" ezone
-   slot{'e}
+   'e
    izone `"}" ezone
 
 dform multicolumn_df2 : except_mode[tex] :: multicolumn[cols:s, align:s]{'e} =
-   slot{'e}
+   'e
 
 dform math_multicolumn_df : math_multicolumn[cols:s, align:s]{'e} =
    multicolumn[cols:s, align:s]{'e}
@@ -1735,7 +1735,7 @@ dform hline_df : mode[tex] :: hline =
 
 dform arraystretch_df1 : mode[tex] :: arraystretch{'e} =
    izone `"\\renewcommand{\\arraystretch}{" ezone
-   slot{'e}
+   'e
    izone `"}" ezone
 
 dform arraystretch_df2 : mode[tex] :: math_arraystretch{'e} =
@@ -1829,16 +1829,16 @@ dform tex_math_rulebox_df1 : mode[tex] :: math_rulebox{'name; 'args; 'hyps; 'goa
 
 dform normal_math_defrule_df1 : except_mode[tex] :: math_defrule[name:s]{'args; 'hyps; 'goal} =
    pushm[3] szone
-   keyword["rule"] `" " slot[name:s] `" " slot{'args} `"=" hspace
-   slot{'hyps} `"-->" hspace
-   slot{'goal}
+   keyword["rule"] `" " slot[name:s] `" " 'args `"=" hspace
+   'hyps `"-->" hspace
+   'goal
    ezone popm
 
 dform normal_math_rulebox_df1 : except_mode[tex] :: math_rulebox{'name; 'args; 'hyps; 'goal} =
    pushm[3] szone
-   slot{'hyps} hspace
-   keyword["BY"] `" " slot{'name} `" " slot{'args} hspace
-   slot{'goal}
+   'hyps hspace
+   keyword["BY"] `" " 'name `" " 'args hspace
+   'goal
    ezone popm
 
 doc <:doc<

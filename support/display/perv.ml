@@ -145,7 +145,7 @@ declare "rewrite"{'redex; 'contractum}
 dform perv_nil_df : "nil" = `""
 
 dform perv_cons_df : "cons"{'car; 'cdr} =
-   slot{'car} slot{'cdr}
+   'car 'cdr
 
 dform perv_string_df : "string"[s:s] =
    `"\"" slot[s:s] `"\""

@@ -154,10 +154,10 @@ dform conts_left_df : mode[tex] :: df_bconts{'conts} =
    izone `"}" ezone
 
 dform var_list_df1 : var_list{cons{'a;'b}} =
-   'a `";" hspace var_list{'b}
+   slot{'a} `";" hspace var_list{'b}
 
 dform var_list_df2 : var_list{cons{'a;nil}} =
-   'a
+   slot{'a}
 
 (* @docoff *)
 
