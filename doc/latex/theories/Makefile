@@ -86,6 +86,7 @@ $(ROOT)/doc/ps/theories/$(GOAL).ps: $(NAME).ps
 clean::
 	$(RM) *.log *.aux *.idx *.ilg *.ind *.pdf *.ps *.dvi *.blg *.bbl *.out
 	$(RM) */theory-body.tex */theory.tex all-bodies.tex
+	$(RM) */*/theory-body.tex */*/theory.tex */*/tr-body.tex */*/tr.tex
 
 # Real makefile
 include $(ROOT)/mk/rules
