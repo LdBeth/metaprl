@@ -37,6 +37,7 @@ open Lm_printf
 open Lm_printf_rbuffer
 open Lm_thread
 
+open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
 

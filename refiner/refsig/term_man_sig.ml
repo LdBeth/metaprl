@@ -38,12 +38,8 @@ open Lm_symbol
 
 module type TermManSig =
 sig
-   type term
-   type operator
-   type level_exp
-   type esequent
-   type hypothesis
-   type match_term
+   module ManTypes : Term_sig.TermSig
+   open ManTypes
 
    (************************************************************************
     * Simplified operations on manifest terms                              *

@@ -55,16 +55,10 @@ let nth_hd_address i =
 
 module TermAddr (**)
    (TermType : TermSig)
-   (Term : TermBaseSig
-    with module TermTypes = TermType)
-   (TermSubst : TermSubstSig
-    with type term = TermType.term)
-   (TermOp : TermOpSig
-    with type term = TermType.term)
-   (TermMan: TermManGenSig
-    with type term = TermType.term
-    with type bound_term = TermType.bound_term
-    with type operator = TermType.operator)
+   (Term : TermBaseSig with module TermTypes = TermType)
+   (TermSubst : TermSubstSig with module SubstTypes = TermType)
+   (TermOp : TermOpSig with module OpTypes = TermType)
+   (TermMan: TermManGenSig with module ManTypes = TermType)
    (RefineError : RefineErrorSig
     with type term = TermType.term
     with type address = addr) =
@@ -75,7 +69,8 @@ struct
    open TermMan
    open RefineError
 
-   type term = TermType.term
+   module AddrTypes = TermType
+
    type address = addr
 
    (*

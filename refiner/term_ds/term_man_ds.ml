@@ -61,13 +61,11 @@ let debug_address =
  *)
 module TermMan (**)
    (Term : TermDsSig with module TermTypes = TermType)
-   (TermOp : TermOpSig
-    with type term = TermType.term)
-   (TermSubst : TermSubstSig
-    with type term = TermType.term
-    with type param = TermType.param)
+   (TermOp : TermOpSig with module OpTypes = TermType)
+   (TermSubst : TermSubstSig with module SubstTypes = TermType)
    (RefineError : RefineErrorSig
-    with type term = TermType.term) =
+    with type term = TermType.term
+    with type level_exp = TermType.level_exp) =
 struct
    open Term
    open TermType
@@ -75,12 +73,7 @@ struct
    open TermSubst
    open RefineError
 
-   type term = TermType.term
-   type operator = TermType.operator
-   type level_exp = TermType.level_exp
-   type esequent = TermType.esequent
-   type hypothesis = TermType.hypothesis
-   type match_term = TermType.match_term
+   module ManTypes = TermType
 
    (************************************************************************
     * Level expressions                                                    *

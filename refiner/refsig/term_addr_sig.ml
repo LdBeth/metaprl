@@ -33,7 +33,9 @@ open Lm_symbol
 
 module type TermAddrSig =
 sig
-   type term
+   module AddrTypes : Term_sig.TermSig
+   open AddrTypes
+
    type address
 
    (*

@@ -35,9 +35,8 @@ open Opname
 
 module type TermOpSig =
 sig
-   type term
-   type operator
-   type level_exp
+   module OpTypes : Term_sig.TermSig
+   open OpTypes
 
    (* Map a function over the term *)
    val map_down : (term -> term) -> term -> term

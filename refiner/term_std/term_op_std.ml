@@ -49,10 +49,7 @@ module TermOp
 struct
    open RefineError
    open TermType
-
-   type term = TermType.term
-   type operator = TermType.operator
-   type level_exp = TermType.level_exp
+   module OpTypes = TermType
 
    (*
     * Helper functins for simple terms.

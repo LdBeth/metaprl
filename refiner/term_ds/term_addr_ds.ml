@@ -54,12 +54,9 @@ type addr =
 
 module TermAddr (**)
    (Term : TermDsSig with module TermTypes = TermType)
-   (TermSubst : TermSubstSig
-    with type term = TermType.term)
-   (TermOp : TermOpSig
-    with type term = TermType.term)
-   (TermMan : TermManSig
-    with type term = TermType.term)
+   (TermSubst : TermSubstSig with module SubstTypes = TermType)
+   (TermOp : TermOpSig with module OpTypes = TermType)
+   (TermMan : TermManSig with module ManTypes = TermType)
    (RefineError : RefineErrorSig
     with type term = TermType.term
     with type address = addr) =
@@ -70,7 +67,8 @@ struct
    open TermSubst
    open RefineError
 
-   type term = TermType.term
+   module AddrTypes = TermType
+
    type address = addr
 
    (*

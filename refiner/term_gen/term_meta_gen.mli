@@ -39,19 +39,13 @@ open Term_meta_sig
 
 module TermMeta (**)
    (TermType : TermSig)
-   (Term : TermBaseSig
-    with module TermTypes = TermType)
-   (TermSubst : TermSubstSig
-    with type term = TermType.term)
-   (TermMan : TermManSig
-    with type term = TermType.term
-    with type esequent = TermType.esequent)
+   (Term : TermBaseSig with module TermTypes = TermType)
+   (TermSubst : TermSubstSig with module SubstTypes = TermType)
+   (TermMan : TermManSig with module ManTypes = TermType)
    (RefineError : RefineErrorSig
     with type term = TermType.term
     with type meta_term = TermType.meta_term)
-: TermMetaSig
-  with type term = TermType.term
-  with type meta_term = TermType.meta_term
+: (TermMetaSig with module MetaTypes = TermType)
 
 (*
  * -*-

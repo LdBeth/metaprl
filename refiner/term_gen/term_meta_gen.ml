@@ -42,13 +42,9 @@ open Lm_symbol
 
 module TermMeta (**)
    (TermType : TermSig)
-   (Term : TermBaseSig
-    with module TermTypes = TermType)
-   (TermSubst : TermSubstSig
-    with type term = TermType.term)
-   (TermMan : TermManSig
-    with type term = TermType.term
-    with type esequent = TermType.esequent)
+   (Term : TermBaseSig with module TermTypes = TermType)
+   (TermSubst : TermSubstSig with module SubstTypes = TermType)
+   (TermMan : TermManSig with module ManTypes = TermType)
    (RefineError : RefineErrorSig
     with type term = TermType.term
     with type meta_term = TermType.meta_term) =
@@ -59,12 +55,7 @@ struct
    open TermSubst
    open RefineError
 
-   (************************************************************************
-    * TYPES                                                                *
-    ************************************************************************)
-
-   type term = TermType.term
-   type meta_term = TermType.meta_term
+   module MetaTypes = TermType
 
    (************************************************************************
     * META-TERMS                                                           *

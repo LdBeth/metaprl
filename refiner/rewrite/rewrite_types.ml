@@ -39,8 +39,7 @@ open Term_sig
 open Term_addr_sig
 
 module MakeRewriteTypes (TermType : TermSig)
-   (TermAddr : TermAddrSig
-    with type term = TermType.term) =
+   (TermAddr : TermAddrSig with module AddrTypes = TermType) =
 struct
    type level_exp = TermType.level_exp
    type object_id = TermType.object_id

@@ -263,7 +263,7 @@
    }
 *)
 
-open Refiner.Refiner.TermSubst
+open Refiner.Refiner.TermType
 
 open Jlogic_sig
 

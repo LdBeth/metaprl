@@ -114,18 +114,11 @@ let debug_rules =
 
 module Refine (**)
    (TermType : TermSig)
-   (Term : TermBaseSig
-    with module TermTypes = TermType)
-   (TermMan : TermManSig
-    with type hypothesis = TermType.hypothesis
-    with type esequent = TermType.esequent
-    with type term = TermType.term)
-   (TermSubst : TermSubstSig
-    with type term = TermType.term)
-   (TermAddr : TermAddrSig
-    with type term = TermType.term)
-   (TermMeta : TermMetaSig
-    with type term = TermType.term)
+   (Term : TermBaseSig with module TermTypes = TermType)
+   (TermMan : TermManSig with module ManTypes = TermType)
+   (TermSubst : TermSubstSig with module SubstTypes = TermType)
+   (TermAddr : TermAddrSig with module AddrTypes = TermType)
+   (TermMeta : TermMetaSig with module MetaTypes = TermType)
    (TermShape : TermShapeSig
     with type term = TermType.term)
    (Rewrite : RewriteSig
@@ -134,7 +127,7 @@ module Refine (**)
    (RefineError : RefineErrorSig
     with type term = TermType.term
     with type address = TermAddr.address
-    with type meta_term = TermMeta.meta_term) =
+    with type meta_term = TermType.meta_term) =
 struct
    open TermType
    open Term
@@ -148,7 +141,7 @@ struct
 
    type term = TermType.term
    type address = TermAddr.address
-   type meta_term = TermMeta.meta_term
+   type meta_term = TermType.meta_term
 
    (*
     * Refinements are on meta-sequents,

@@ -40,7 +40,7 @@ module MakeSimplePrint (Refiner : RefinerSig)
   with type param = Refiner.TermType.param
   with type bound_term = Refiner.TermType.bound_term
   with type address = Refiner.TermAddr.address
-  with type meta_term = Refiner.TermMeta.meta_term
+  with type meta_term = Refiner.TermType.meta_term
 
 module SimplePrint
 : SimplePrintSig
@@ -49,5 +49,5 @@ module SimplePrint
   with type param = Refiner.Refiner.TermType.param
   with type bound_term = Refiner.Refiner.TermType.bound_term
   with type address = Refiner.Refiner.TermAddr.address
-  with type meta_term = Refiner.Refiner.TermMeta.meta_term
+  with type meta_term = Refiner.Refiner.TermType.meta_term
 

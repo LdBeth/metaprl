@@ -42,10 +42,7 @@ module TermOp (**)
     with type param = TermType.param
     with type term = TermType.term
     with type bound_term = TermType.bound_term)
-: TermOpSig
-  with type term = TermType.term
-  with type operator = TermType.operator
-  with type level_exp = TermType.level_exp
+: (TermOpSig with module OpTypes = TermType)
 
 (*
  * -*-

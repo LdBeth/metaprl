@@ -72,10 +72,7 @@ struct
    open TermType
    open Term
 
-   type term = TermType.term
-   type param = TermType.param
-   type bound_term = TermType.bound_term
-   type bound_term' = TermType.bound_term'
+   module SubstTypes = TermType
 
    type term_subst = (var * term) list
 

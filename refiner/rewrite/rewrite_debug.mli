@@ -38,10 +38,8 @@ open Rewrite_debug_sig
 
 module MakeRewriteDebug
    (TermType : TermSig)
-   (Term : TermBaseSig
-    with module TermTypes = TermType)
-   (TermAddr : TermAddrSig
-    with type term = TermType.term)
+   (Term : TermBaseSig with module TermTypes = TermType)
+   (TermAddr : TermAddrSig with module AddrTypes = TermType)
    (RefineError : RefineErrorSig
     with type level_exp = TermType.level_exp
     with type param = TermType.param

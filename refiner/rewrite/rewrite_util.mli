@@ -39,10 +39,8 @@ open Rewrite_util_sig
 
 module MakeRewriteUtil
    (TermType : TermSig)
-   (TermAddr : TermAddrSig
-    with type term = TermType.term)
-   (Term : TermBaseSig
-    with module TermTypes = TermType)
+   (TermAddr : TermAddrSig with module AddrTypes = TermType)
+   (Term : TermBaseSig with module TermTypes = TermType)
    (RefineError : RefineErrorSig
     with type level_exp = TermType.level_exp
     with type param = TermType.param

@@ -1,5 +1,4 @@
-open Refiner.Refiner
-open TermSubst
+open Refiner.Refiner.TermType
 
 (* definition: rules, inferences for LJ, LJmc, and LK *)
 
@@ -21,7 +20,7 @@ sig
 	val is_implies_term : term -> bool
 	val dest_implies : term -> term * term
 	val is_not_term : term -> bool
-	val dest_not : term -> term 
+	val dest_not : term -> term
 
    (* processing the output *)
    type inference

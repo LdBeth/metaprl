@@ -39,10 +39,8 @@ open Term_shape_sig
 
 module TermShape (**)
    (TermType : TermSig)
-   (Term : TermBaseSig
-    with module TermTypes = TermType)
-   (TermMan : TermManSig
-    with type term = TermType.term)
+   (Term : TermBaseSig with module TermTypes = TermType)
+   (TermMan : TermManSig with module ManTypes = TermType)
 : TermShapeSig
   with type term = TermType.term
   with type param = TermType.param

@@ -72,7 +72,7 @@ struct
    type level_exp = TermType.level_exp
    type param = TermType.param
    type bound_term = TermType.bound_term
-   type meta_term = TermMeta.meta_term
+   type meta_term = TermType.meta_term
    type address = TermAddr.address
    type buffer = Lm_rformat.buffer
 

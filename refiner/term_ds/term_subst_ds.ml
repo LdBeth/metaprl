@@ -74,12 +74,9 @@ struct
    open TermType
    open Term
 
-   type term = TermType.term
-   type param = TermType.param
-   type bound_term = TermType.bound_term
-   type bound_term' = TermType.bound_term'
+   module SubstTypes = TermType
 
-   type term_subst = TermType.term_subst
+   type term_subst = (var * term) list
 
    let rec combine_fst_flt_nodups fvs vl tl =
       match vl, tl with

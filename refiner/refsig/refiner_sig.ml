@@ -52,33 +52,15 @@ sig
     *)
    module TermType : TermSig
    module Term : TermBaseSig with module TermTypes = TermType
-
-   module TermOp : TermOpSig
-                   with type term = TermType.term
-                   with type operator = TermType.operator
-                   with type level_exp = TermType.level_exp
-   module TermAddr : TermAddrSig
-                     with type term = TermType.term
-   module TermMan : TermManSig
-                    with type term = TermType.term
-                    with type operator = TermType.operator
-                    with type level_exp = TermType.level_exp
-                    with type esequent = TermType.esequent
-                    with type hypothesis = TermType.hypothesis
-                    with type match_term = TermType.match_term
-   module TermSubst : TermSubstSig
-                      with type term = TermType.term
-                      with type param = TermType.param
-                      with type bound_term = TermType.bound_term
-                      with type bound_term' = TermType.bound_term'
+   module TermOp : TermOpSig with module OpTypes = TermType
+   module TermAddr : TermAddrSig with module AddrTypes = TermType
+   module TermMan : TermManSig with module ManTypes = TermType
+   module TermSubst : TermSubstSig with module SubstTypes = TermType
    module TermShape : TermShapeSig
                       with type term = TermType.term
                       with type param = TermType.param
-   module TermMeta : TermMetaSig
-                     with type term = TermType.term
-                     with type meta_term = TermType.meta_term
-   module TermEval : TermEvalSig
-                     with type term = TermType.term
+   module TermMeta : TermMetaSig with module MetaTypes = TermType
+   module TermEval : TermEvalSig with type term = TermType.term
 
    (*
     * Rewriting and refinement.
@@ -88,10 +70,10 @@ sig
                         with type param = TermType.param
                         with type term = TermType.term
                         with type bound_term = TermType.bound_term
-                        with type address = TermAddr.address
-                        with type meta_term = TermMeta.meta_term
+                        with type meta_term = TermType.meta_term
                         with type seq_hyps = TermType.seq_hyps
                         with type seq_goals = TermType.seq_goals
+                        with type address = TermAddr.address
 
    module Rewrite : RewriteSig
                     with type term = TermType.term
@@ -101,8 +83,8 @@ sig
 
    module Refine : RefineSig
                    with type term = TermType.term
+                   with type meta_term = TermType.meta_term
                    with type address = TermAddr.address
-                   with type meta_term = TermMeta.meta_term
 
    (*
     * Hashing of terms.

@@ -35,7 +35,7 @@ open Term_man_sig
 module type TermManGenSig =
 sig
    include TermManSig
-   type bound_term
+   open ManTypes
 
    val hyp_opname : opname
    val concl_opname : opname

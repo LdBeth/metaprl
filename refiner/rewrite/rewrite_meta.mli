@@ -38,14 +38,9 @@ open Refine_error_sig
 
 module MakeRewriteMeta
    (TermType : TermSig)
-   (TermAddr : TermAddrSig
-     with type term = TermType.term)
-   (Term : TermBaseSig
-    with module TermTypes = TermType)
-   (TermMan : TermManSig
-    with type term = TermType.term
-    with type level_exp = TermType.level_exp
-    with type esequent = TermType.esequent)
+   (TermAddr : TermAddrSig with module AddrTypes = TermType)
+   (Term : TermBaseSig with module TermTypes = TermType)
+   (TermMan : TermManSig with module ManTypes = TermType)
    (RefineError : RefineErrorSig
     with type level_exp = TermType.level_exp
     with type param = TermType.param

@@ -33,10 +33,8 @@ open Lm_symbol
 
 module type TermSubstSig =
 sig
-   type term
-   type param
-   type bound_term
-   type bound_term'
+   module SubstTypes : Term_sig.TermSig
+   open SubstTypes
 
    (*
     * Substitution, matching, unification.

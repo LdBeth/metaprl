@@ -248,6 +248,7 @@ functor (Hyps : HypsSig) -> struct
 end
 
 open Refiner.Refiner
+open TermType
 open Term
 open TermSubst
 

@@ -36,10 +36,8 @@ open Lm_symbol
 
 module type TermManMinimalSig =
 sig
-   type term
-   type esequent
-   type hypothesis
-
+   module ManTypes : Term_sig.TermSig
+   open ManTypes
    (*
     * Sequents.
     * This should be visible only to sequents, but oh well.

@@ -41,8 +41,8 @@ sig
    (*
     * Have to import the type of terms.
     *)
-   type term
-   type meta_term
+   module MetaTypes : Term_sig.TermSig
+   open MetaTypes
 
    (*
     * Some operations on meta_term.

@@ -43,18 +43,10 @@ open Rewrite_sig
 
 module Rewrite (**)
    (TermType : TermSig)
-   (Term : TermBaseSig
-    with module TermTypes = TermType)
-   (TermMan : TermManSig
-    with type term = TermType.term
-    with type level_exp = TermType.level_exp
-    with type esequent = TermType.esequent)
-   (TermAddr : TermAddrSig
-    with type term = TermType.term)
-   (TermSubst : TermSubstSig
-    with type term = TermType.term
-    with type bound_term = TermType.bound_term
-    with type bound_term' = TermType.bound_term')
+   (Term : TermBaseSig with module TermTypes = TermType)
+   (TermMan : TermManSig with module ManTypes = TermType)
+   (TermAddr : TermAddrSig with module AddrTypes = TermType)
+   (TermSubst : TermSubstSig with module SubstTypes = TermType)
    (RefineError : RefineErrorSig
     with type level_exp = TermType.level_exp
     with type param = TermType.param

@@ -55,13 +55,9 @@ let _ =
  *)
 module TermMan (**)
    (Term : TermSig)
-   (TermBase : TermBaseSig
-    with module TermTypes = Term)
-   (TermOp : TermOpSig
-    with type term = Term.term)
-   (TermSubst : TermSubstSig
-    with type term = Term.term
-    with type param = Term.param)
+   (TermBase : TermBaseSig with module TermTypes = Term)
+   (TermOp : TermOpSig with module OpTypes = Term)
+   (TermSubst : TermSubstSig with module SubstTypes = Term)
    (RefineError : RefineErrorSig
     with type term = Term.term) =
 struct
@@ -71,14 +67,7 @@ struct
    open TermSubst
    open RefineError
 
-   type term = Term.term
-   type bound_term = Term.bound_term
-   type operator = Term.operator
-   type level_exp = Term.level_exp
-   type hypothesis = Term.hypothesis
-   type match_term = Term.match_term
-
-   type esequent = Term.esequent
+   module ManTypes = Term
 
    (************************************************************************
     * Level expressions                                                    *

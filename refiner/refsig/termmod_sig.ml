@@ -43,17 +43,9 @@ sig
     * Terms and operations on terms.
     *)
    module TermType : TermSig
-   module Term : TermBaseMinimalSig
-      with module TermTypes = TermType
-
-   module TermSubst: TermSubstMinimalSig
-      with type param = TermType.param
-
-   module TermMan : TermManMinimalSig
-      with type term = TermType.term
-      with type esequent = TermType.esequent
-      with type hypothesis = TermType.hypothesis
-
+   module Term : TermBaseMinimalSig with module TermTypes = TermType
+   module TermSubst: TermSubstMinimalSig with module SubstTypes = TermType
+   module TermMan : TermManMinimalSig with module ManTypes = TermType
    module TermMeta : sig  (* XXX HACK: TermMan is here only for ASCII IO format versions <= 1.0.7 support *)
       val term_of_parsed_term : TermType.term -> TermType.term
    end
@@ -71,17 +63,9 @@ sig
     * Terms and operations on terms.
     *)
    module TermType : TermSig
-   module Term : TermBaseInternalSig
-      with module TermTypes = TermType
-
-   module TermSubst: TermSubstMinimalSig
-      with type param = TermType.param
-
-   module TermMan : TermManMinimalSig
-      with type term = TermType.term
-      with type esequent = TermType.esequent
-      with type hypothesis = TermType.hypothesis
-
+   module Term : TermBaseInternalSig with module TermTypes = TermType
+   module TermSubst: TermSubstMinimalSig with module SubstTypes = TermType
+   module TermMan : TermManMinimalSig with module ManTypes = TermType
    module TermMeta : sig  (* XXX HACK: TermMan is here only for ASCII IO format versions <= 1.0.7 support *)
       val term_of_parsed_term : TermType.term -> TermType.term
    end

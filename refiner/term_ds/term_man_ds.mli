@@ -37,20 +37,12 @@ open Term_man_sig
 
 module TermMan (**)
    (Term : TermDsSig with module TermTypes = TermType)
-   (TermOp : TermOpSig
-    with type term = TermType.term)
-   (TermSubst : TermSubstSig
-    with type term = TermType.term
-    with type param = TermType.param)
+   (TermOp : TermOpSig with module OpTypes = TermType)
+   (TermSubst : TermSubstSig with module SubstTypes = TermType)
    (RefineError : RefineErrorSig
-    with type term = TermType.term)
-: TermManSig
-  with type term = TermType.term
-  with type match_term = TermType.match_term
-  with type operator = TermType.operator
-  with type level_exp = TermType.level_exp
-  with type esequent = TermType.esequent
-  with type hypothesis = TermType.hypothesis
+    with type term = TermType.term
+    with type level_exp = TermType.level_exp)
+: (TermManSig with module ManTypes = TermType)
 
 (*
  * -*-

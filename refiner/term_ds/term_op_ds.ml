@@ -50,10 +50,7 @@ struct
    open RefineError
    open TermType
    open Term
-
-   type term = TermType.term
-   type operator = TermType.operator
-   type level_exp = TermType.level_exp
+   module OpTypes = TermType
 
    (*
     * Terms with no subterms.

@@ -38,23 +38,11 @@ open Term_man_gen_sig
 
 module TermMan (**)
    (Term : TermSig)
-   (TermBase : TermBaseSig
-    with module TermTypes = Term)
-   (TermOp : TermOpSig
-    with type term = Term.term)
-   (TermSubst : TermSubstSig
-    with type term = Term.term
-    with type param = Term.param)
-   (RefineError : RefineErrorSig
-    with type term = Term.term)
-: TermManGenSig
-  with type term = Term.term
-  with type bound_term = Term.bound_term
-  with type operator = Term.operator
-  with type level_exp = Term.level_exp
-  with type esequent = Term.esequent
-  with type hypothesis = Term.hypothesis
-  with type match_term = Term.match_term
+   (TermBase : TermBaseSig with module TermTypes = Term)
+   (TermOp : TermOpSig with module OpTypes = Term)
+   (TermSubst : TermSubstSig with module SubstTypes = Term)
+   (RefineError : RefineErrorSig with type term = Term.term)
+: (TermManGenSig with module ManTypes = Term)
 
 (*
  * -*-
