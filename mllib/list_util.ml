@@ -27,9 +27,10 @@ let rec nth l i =
 (* Filter items out of a list *)
 let rec filter f = function
    [] -> []
- | h::t ->
+ | (h::t) as l ->
       if f h then
-         h::(filter f t)
+         let rem = filter f t in
+         if rem == t then l else h::rem
       else
          filter f t
 

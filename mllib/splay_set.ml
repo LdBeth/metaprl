@@ -190,14 +190,18 @@ let elements = elements_aux []
 
 let rec mem_filt s = function
    [] -> []
- | h::t -> 
-      if mem s h then h::mem_filt s t
+ | (h::t) as l -> 
+      if mem s h 
+         then let rem = mem_filt s t in
+            if rem == t then l else h::rem
          else mem_filt s t
 
 let rec fst_mem_filt s = function
    [] -> []
- | ((v,_) as h)::t -> 
-      if mem s v then h::fst_mem_filt s t
+ | (((v,_) as h)::t) as l -> 
+      if mem s v
+         then let rem = fst_mem_filt s t in
+            if rem == t then l else h::rem
          else fst_mem_filt s t
 
 end
