@@ -254,7 +254,7 @@ struct
     * Compute the redex types.
     *)
    let extract_redex_type = function
-      FOVarPattern s
+      FOVarPattern s -> RewriteTermType s
     | SOVarPattern (s, _)
     | SOVarInstance (s, _) -> RewriteFunType s
     | CVar s -> RewriteContextType s
