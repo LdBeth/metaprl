@@ -46,13 +46,16 @@ let _ =
 (*
  * Extract the context var arguments.
  *)
-let rec collect_cvars = function
-   ContextParam v::t ->
-      v :: collect_cvars t
- | _::t ->
-      collect_cvars t
- | [] ->
-      []
+let collect_cvars =
+   let rec aux = function
+      ContextParam v::t ->
+         v :: aux t
+    | _::t ->
+         aux t
+    | [] ->
+         []
+   in
+      fun l -> Array.of_list (aux l)
 
 let rec collect_terms = function
    TermParam x :: t ->

@@ -31,6 +31,7 @@
  *)
 open Lm_symbol
 
+open Rewrite_sig
 open Refiner.Refiner.TermType
 
 open Filter_type
@@ -38,7 +39,7 @@ open Filter_type
 (*
  * Parameter lists.
  *)
-val collect_cvars : term param list -> var list
+val collect_cvars : term param list -> rewrite_args_spec
 val collect_terms : term param list -> term list
 val split_params : term param list -> var list * term list
 val name_params : term param list -> string list * string list * string list

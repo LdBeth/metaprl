@@ -440,8 +440,6 @@ let pp_print_grammar buf gram =
 (************************************************************************
  * Actual parsing.
  *)
-let null_rw_arg = [||], SymbolSet.empty
-
 let parse gram start loc s =
    let { gram_lexer          = lexer;
          gram_lexer_actions  = lexer_actions;
@@ -470,7 +468,7 @@ let parse gram start loc s =
             Some rw ->
                let arg = mk_lexer_term lexeme args in
                let tok =
-                  match apply_rewrite rw null_rw_arg arg [] with
+                  match apply_rewrite rw empty_args arg [] with
                      [tok] ->
                         tok
                    | _ ->
@@ -489,7 +487,7 @@ let parse gram start loc s =
       let rw = ActionTable.find parser_actions action in
       let arg = mk_simple_term parser_arg_opname args in
       let result =
-         match apply_rewrite rw null_rw_arg arg [] with
+         match apply_rewrite rw empty_args arg [] with
             [tok] ->
                tok
           | _ ->

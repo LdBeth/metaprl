@@ -671,8 +671,7 @@ struct
       let cvars = context_vars args in
       let params' = extract_params cvars params in
       let args', redex, contractum = unzip_rewrite name args in
-      let addrs = Array.of_list (collect_cvars params') in
-         Refine.check_rewrite name addrs (collect_terms params') args' redex contractum;
+         Refine.check_rewrite name (collect_cvars params') (collect_terms params') args' redex contractum;
          CondRewrite { crw_name = name;
                        crw_params = params';
                        crw_args = args';
@@ -751,7 +750,7 @@ struct
                   eprintf "Non vars:\n%a" print_non_vars params';
                   eprintf "Args:\n%a --> %s\n" print_vterms t (string_of_term result)
             end;
-         Refine.check_rule name (Array.of_list (collect_cvars params')) (collect_terms params') (strip_mfunction t);
+         Refine.check_rule name (collect_cvars params') (collect_terms params') (strip_mfunction t);
          if !debug_grammar then
             eprintf "Checked rule: %s%t" name eflush;
 
@@ -1148,7 +1147,7 @@ let define_rule proc loc name
       begin match cmd, extract with
          Rule r, Primitive extract ->
             let _, ext_args, _ = split_mfunction mterm in
-            let addrs = Array.of_list (collect_cvars r.rule_params) in
+            let addrs = collect_cvars r.rule_params in
                Refine.check_prim_rule name addrs (collect_terms r.rule_params) (strip_mfunction mterm) ext_args extract
        | _ -> ()
       end;
