@@ -451,9 +451,6 @@ sig
       unit
    val check_iform :
       string ->            (* name *)
-      rewrite_args_spec -> (* addrs *)
-      term list ->         (* params *)
-      term list ->         (* subgoals *)
       term ->              (* redex *)
       term ->              (* contractum *)
       unit

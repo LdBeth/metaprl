@@ -903,8 +903,8 @@ struct
    let check_dform cache t form =
       Term_ty_infer.check_dform (tenv_of_cache cache) t form
 
-   let check_iform cache mt args =
-      Term_ty_infer.check_iform (tenv_of_cache cache) mt args
+   let check_iform cache mt =
+      Term_ty_infer.check_iform (tenv_of_cache cache) mt
 
    let check_production cache redices contractum =
       Term_ty_infer.check_production (tenv_of_cache cache) redices contractum

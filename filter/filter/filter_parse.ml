@@ -254,9 +254,9 @@ struct
       with_cache_funs loc (fun funs ->
             funs.check_dform redex contractum)
 
-   let check_iform loc mt args =
+   let check_iform loc mt =
       with_cache_funs loc (fun funs ->
-            funs.check_iform mt args)
+            funs.check_iform mt)
 
    let check_production loc redices contractum =
       with_cache_funs loc (fun funs ->
@@ -458,7 +458,7 @@ struct
       begin
          match fst cmd with
             Rewrite { rw_name = name }
-          | InputForm { rw_name = name }
+          | InputForm { iform_name = name }
           | CondRewrite { crw_name = name }
           | Rule { rule_name = name }
           | MLRewrite { mlterm_name = name }
@@ -601,14 +601,6 @@ struct
                 rw_resources  = res
       }
 
-   let simple_input_form proc name redex contractum pf res =
-      InputForm { rw_name       = name;
-                  rw_redex      = redex;
-                  rw_contractum = contractum;
-                  rw_proof      = pf;
-                  rw_resources  = res
-      }
-
    let cond_rewrite proc name params args pf res =
       let cvars = context_vars args in
       let params = extract_params cvars params in
@@ -634,14 +626,16 @@ struct
             (* Conditional rewrite *)
             cond_rewrite proc name params args pf res
 
-   let input_form_command proc name params args pf res =
-      match params, args with
-         [], MetaIff (MetaTheorem redex, MetaTheorem contractum) ->
-            (* This is always a simple rewrite *)
-            redex, contractum, simple_input_form proc name redex contractum pf res
-       | _ ->
-            (* Conditional rewrite *)
-            raise (RefineError ("input_form_command", StringError "conditional input forms are not allowed"))
+   let input_form_command proc name = function
+      MetaIff (MetaTheorem redex, MetaTheorem contractum) ->
+         redex, contractum,
+         InputForm { iform_name       = name;
+                     iform_redex      = redex;
+                     iform_contractum = contractum
+         }
+    | _ ->
+         (* Conditional rewrite *)
+         raise (RefineError ("input_form_command", StringError "input form must be a simple rewrite"))
 
    (*
     * Add the command and return the declaration.
@@ -653,9 +647,9 @@ struct
       with exn ->
          Stdpp.raise_with_loc loc exn
 
-   let declare_input_form proc loc name params args pf res =
+   let declare_input_form proc loc name mt =
       try
-         let redex, contractum, cmd = input_form_command proc name params args pf res in
+         let redex, contractum, cmd = input_form_command proc name mt in
             add_command proc (cmd, loc);
             redex, contractum
       with exn ->
@@ -1351,15 +1345,7 @@ let parse_type_rewrite loc redex contractum =
    TermGrammar.parse_type_rewrite loc redex contractum
 
 (* Don't require the two sides to have the same type *)
-let parse_iform loc name mt tl rs =
-   let mt, tl, f = TermGrammar.parse_iform loc name mt tl in
-   let conv = function
-      v, BindTerm t ->
-         v, BindTerm (f t)
-    | bnd ->
-         bnd
-   in
-      mt, tl, { rs with item_bindings = List.map conv rs.item_bindings }
+let parse_iform = TermGrammar.parse_iform
 
 (* Convert contexts in meta-terms, terms args and resource term bindings *)
 let parse_rule loc name mt tl rs =
@@ -1587,11 +1573,11 @@ EXTEND
            in
              handle_exn f ("rewrite " ^ name) loc;
              empty_sig_item loc
-        | "iform"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
+        | "iform"; name = LIDENT; ":"; t = mterm ->
            let f () =
               let proc = SigFilter.get_proc loc in
-              let t, args, res = parse_iform loc name t args res in
-              let redex, contractum = SigFilter.declare_input_form proc loc name args t () res in
+              let t = parse_iform loc name t in
+              let redex, contractum = SigFilter.declare_input_form proc loc name t in
                  SigFilter.add_iform proc loc redex contractum
            in
               handle_exn f ("iform " ^ name) loc;
@@ -1798,12 +1784,12 @@ EXTEND
            in
               handle_exn f ("prim_rw " ^ name) loc;
               empty_str_item loc
-        | "iform"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
+        | "iform"; name = LIDENT; ":"; t = mterm ->
           let f () =
               let proc = StrFilter.get_proc loc in
-              let t, args, res = parse_iform loc name t args res in
+              let t = parse_iform loc name t in
               let redex, contractum =
-                 StrFilter.declare_input_form (StrFilter.get_proc loc) loc name args t (Primitive xnil_term) res
+                 StrFilter.declare_input_form (StrFilter.get_proc loc) loc name t
               in
                  StrFilter.add_iform proc loc redex contractum
            in

@@ -1701,8 +1701,8 @@ struct
    let check_rewrite _ addrs params subgoals redex contractum =
       ignore(Rewrite.term_rewrite Strict addrs(*empty_args_spec*) (redex::params) (contractum::subgoals))
 
-   let check_iform _ addrs params subgoals redex contractum =
-      ignore(Rewrite.term_rewrite Relaxed addrs(*empty_args_spec*) (redex::params) (contractum::subgoals))
+   let check_iform _ redex contractum =
+      ignore(Rewrite.term_rewrite Relaxed empty_args_spec [redex] [contractum])
 
    (*
     * Create a simple rewrite from a meta-term.

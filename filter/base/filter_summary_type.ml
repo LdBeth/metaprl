@@ -225,7 +225,7 @@ sig
    val check_rewrite        : info -> meta_term -> term list -> unit
    val check_type_rewrite   : info -> term -> term -> unit
    val check_dform          : info -> term -> term -> unit
-   val check_iform          : info -> meta_term -> term list -> unit
+   val check_iform          : info -> check_iform_fun
    val check_production     : info -> term list -> term -> unit
 
    (* Inherited access for module_info *)

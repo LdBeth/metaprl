@@ -1897,11 +1897,10 @@ let check_dform tenv redex contractum =
  * We just care that each term in the iform has a type.
  * There is no effort to match the types.
  *)
-let check_iform tenv mt args =
+let check_iform tenv mt =
    let subst = new_subst Relaxed in
    let subgoals, redex, contractum = unzip_mrewrite mt in
-   let args, venv = venv_of_redices args [redex; contractum] in
-   let subst = check_arg_list tenv venv subst args in
+   let _, venv = venv_of_redices [] [redex; contractum] in
 
    (* It is ok if the types change *)
    let subst, _ = infer_term tenv venv subst redex in

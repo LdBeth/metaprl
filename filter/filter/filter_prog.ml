@@ -501,7 +501,7 @@ let toploop_item_expr loc name ctyp =
 let declare_rewrite loc rw =
    [<:sig_item< value $rw.rw_name$ : $rewrite_ctyp loc$ >>]
 
-let declare_input_form = declare_rewrite
+let declare_input_form loc form = []
 
 let declare_define_term loc _ def =
    [<:sig_item< value $def.term_def_name$ : $rewrite_ctyp loc$ >>]
@@ -581,7 +581,7 @@ let extract_sig_item (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: rewrite: %s%t" name eflush;
          declare_rewrite loc rw
-    | InputForm ({ rw_name = name } as rw) ->
+    | InputForm ({ iform_name = name } as rw) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: input form: %s%t" name eflush;
          declare_input_form loc rw
@@ -918,22 +918,9 @@ let define_rewrite_resources proc loc name redex contractum assums addrs params 
       bindings_let proc loc resources <:expr< do { $list:List.map define_resource resources.item_item$ } >>
 
 (*
- * An input form is a rewrite, but we don't add it to the
- * refiner (input forms have no formal justification).
+ * Input forms will be added to the grammar; no code is necessary for them.
  *)
-let define_input_form proc loc iform =
-   if iform.rw_resources.item_item <> [] then
-      Stdpp.raise_with_loc loc (Invalid_argument "Resource annotations on input forms are not supported yet");
-   let name = iform.rw_name in
-   let create_input_form = <:expr<
-      let $lid:contractum_id$ = $expr_of_term proc loc iform.rw_contractum$ in
-         $refiner_expr loc$.create_input_form $lid:local_refiner_id$ $str:name$ (**)
-            $uid:"false"$ ($expr_of_term proc loc iform.rw_redex$) $lid:contractum_id$
-    >> in
-       [
-          <:str_item< value $lid:name$ = $rewrite_of_pre_rewrite_expr loc$ ($wrap_exn proc loc name create_input_form$) $empty_rw_args loc$ [] >>;
-          toploop_rewrite proc loc name []
-       ]
+let define_input_form proc loc form = []
 
 (*
  * A primitive rewrite is assumed true by fiat.
@@ -1578,7 +1565,7 @@ let extract_str_item proc (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: rwinteractive: %s%t" name eflush;
          interactive_rewrite proc loc rw
-    | InputForm ({ rw_name = name } as rw) ->
+    | InputForm ({ iform_name = name } as rw) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: primrw: %s%t" name eflush;
          define_input_form proc loc rw

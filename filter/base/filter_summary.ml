@@ -150,7 +150,7 @@ let eprint_entry print_info = function
       eprintf "ToploopItem\n"
  | Rewrite { rw_name = name } ->
       eprintf "Rewrite: %s\n" name
- | InputForm { rw_name = name } ->
+ | InputForm { iform_name = name } ->
       eprintf "IForm: %s\n" name
  | CondRewrite { crw_name = name } ->
       eprintf "CondRewrite: %s\n" name
@@ -310,7 +310,7 @@ let find_rewrite { info_list = summary } name =
  *)
 let test_iform name (item, _) =
    match item with
-      InputForm { rw_name = n } ->
+      InputForm { iform_name = n } ->
          n = name
     | _ ->
          false
@@ -465,7 +465,7 @@ let find { info_list = summary } name =
        | Rewrite { rw_name = n }
        | CondRewrite { crw_name = n }
        | MLRewrite { mlterm_name = n }
-       | InputForm { rw_name = n }
+       | InputForm { iform_name = n }
        | MLAxiom { mlterm_name = n }
        | DForm { dform_name = n }
        | Prec n ->
@@ -486,7 +486,7 @@ let set_command info item =
        | Rewrite { rw_name = name }
        | CondRewrite { crw_name = name } ->
             test_rewrite name
-       | InputForm { rw_name = name } ->
+       | InputForm { iform_name = name } ->
             test_iform name
        | MLRewrite { mlterm_name = name } ->
             test_mlrewrite name
@@ -638,12 +638,10 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
                          rw_resources = res_map res;
                }
 
-          | InputForm { rw_name = name; rw_redex = redex; rw_contractum = con; rw_proof = pf ; rw_resources = res } ->
-               InputForm { rw_name = name;
-                           rw_redex = convert.term_f redex;
-                           rw_contractum = convert.term_f con;
-                           rw_proof = convert.proof_f name pf;
-                           rw_resources = res_map res;
+          | InputForm { iform_name = name; iform_redex = redex; iform_contractum = con } ->
+               InputForm { iform_name = name;
+                           iform_redex = convert.term_f redex;
+                           iform_contractum = convert.term_f con
                }
 
           | CondRewrite crw ->
@@ -1027,9 +1025,29 @@ struct
       dest_bnd_item convert (dest_res_inner convert) t
 
    (*
+    * Resources.
+    *)
+   let dest_resource_sig convert t =
+      let name = dest_string_param t in
+      let input, output = two_subterms t in
+      name, {
+         resource_input = convert.ctyp_f input;
+         resource_output = convert.ctyp_f output
+      }
+
+   let dest_resource convert t =
+      Resource (dest_string_param t, convert.resource_f (one_subterm t))
+
+   let dest_improve convert t =
+      Improve {
+         improve_name = dest_string_param t;
+         improve_expr = dest_bnd_expr convert (one_subterm t)
+      }
+
+   (*
     * Collect a rewrite.
     *)
-   let rec dest_rewrite convert t =
+   let dest_rewrite convert t =
       let name = dest_string_param t in
       let redex, contractum, proof, res = four_subterms t in
          { rw_name = name;
@@ -1040,9 +1058,27 @@ struct
          }
 
    (*
+    * Collect a rewrite.
+    * XXX HACK: The "if" is here because iform terms used to have 4 subterms in old files
+    * (ASCII IO format <= 1.0.18)
+    *)
+   let dest_iform convert t =
+      let name = dest_string_param t in
+      let redex, contractum =
+         if is_two_subterm input_form_op t then
+            two_subterms t
+         else
+            let r, c, _, _ = four_subterms t in r, c
+      in
+         { iform_name = name;
+           iform_redex = convert.term_f redex;
+           iform_contractum = convert.term_f contractum;
+         }
+
+   (*
     * Conditional rewrite.
     *)
-   and dest_cond_rewrite convert t =
+   let dest_cond_rewrite convert t =
       let name = dest_string_param t in
       let params, args, redex, contractum, proof, res = six_subterms t in
          CondRewrite { crw_name = name;
@@ -1057,7 +1093,7 @@ struct
    (*
     * Rule.
     *)
-   and dest_rule convert t =
+   let dest_rule convert t =
       let name = dest_string_param t in
       let params, stmt, proof, res = four_subterms t in
          Rule { rule_name = name;
@@ -1067,7 +1103,7 @@ struct
                 rule_resources = dest_res convert res
          }
 
-   and dest_ty_param convert t =
+   let dest_ty_param convert t =
       let name = dest_string_param t in
          match name with
             "n" ->
@@ -1085,13 +1121,13 @@ struct
           | _ ->
                raise (Failure ("illegal class parameter: " ^ name))
 
-   and dest_ty_bterm convert t =
+   let dest_ty_bterm convert t =
       let bvars, bterm = two_subterms t in
          { ty_bvars = List.map convert.term_f (dest_xlist bvars);
            ty_bterm = convert.term_f bterm
          }
 
-   and dest_ty_def convert t =
+   let dest_ty_def convert t =
       let term, opname, params, bterms, ty = five_subterms t in
          { ty_term   = convert.term_f term;
            ty_opname = opname_of_term opname;
@@ -1100,7 +1136,7 @@ struct
            ty_type   = convert.term_f ty
          }
 
-   and dest_term_def convert t =
+   let dest_term_def convert t =
       let name = dest_string_param t in
       let t, res = two_subterms t in
          { term_def_name = name;
@@ -1108,7 +1144,7 @@ struct
            term_def_resources = dest_res convert res
          }
 
-   and dest_typeclass_parent t =
+   let dest_typeclass_parent t =
       let s = dest_string_param t in
          match s with
             "extends" ->
@@ -1120,34 +1156,34 @@ struct
           | _ ->
                raise (Failure ("bad kind parent: " ^ s))
 
-   and dest_declare_typeclass convert t =
+   let dest_declare_typeclass convert t =
       let typeclass_opname, typeclass_type_opname, parent = three_subterms t in
       let typeclass_opname = opname_of_term typeclass_opname in
       let typeclass_type_opname = opname_of_term typeclass_type_opname in
       let parent = dest_typeclass_parent parent in
          DeclareTypeClass (typeclass_opname, typeclass_type_opname, parent)
 
-   and dest_declare_type convert t =
+   let dest_declare_type convert t =
       let ty_def, ty_opname = two_subterms t in
       let ty_def = dest_ty_def convert ty_def in
       let ty_opname = opname_of_term ty_opname in
          DeclareType (ty_def, ty_opname)
 
-   and dest_declare_term convert t =
+   let dest_declare_term convert t =
       DeclareTerm (dest_ty_def convert (one_subterm t))
 
-   and dest_define_term convert t =
+   let dest_define_term convert t =
       let ty_def, term_def = two_subterms t in
          DefineTerm (dest_ty_def convert ty_def, dest_term_def convert term_def)
 
-   and dest_declare_type_rewrite_term convert t =
+   let dest_declare_type_rewrite_term convert t =
       let redex, contractum = two_subterms t in
          DeclareTypeRewrite (convert.term_f redex, convert.term_f contractum)
 
    (*
     * ML Term.
     *)
-   and dest_mlrewrite convert t =
+   let dest_mlrewrite convert t =
       let name = dest_string_param t in
       let params, term, expr, resources = four_subterms t in
          MLRewrite { mlterm_name = name;
@@ -1157,7 +1193,7 @@ struct
                      mlterm_resources = dest_res convert resources
          }
 
-   and dest_mlaxiom convert t =
+   let dest_mlaxiom convert t =
       let name = dest_string_param t in
       let params, term, expr, resources = four_subterms t in
          MLAxiom { mlterm_name = name;
@@ -1172,7 +1208,7 @@ struct
     * XXX HACK: The "if" is here because parent terms used to have 3 subterms in old files
     * (ASCII IO format <= 1.0.8)
     *)
-   and dest_parent convert t =
+   let dest_parent convert t =
       let path, resources =
          if is_dep0_dep0_term parent_op t then
             two_subterms t
@@ -1184,13 +1220,13 @@ struct
                   parent_resources = List.map (dest_resource_sig convert) (dest_xlist resources)
          }
 
-   and dest_summary_item convert t =
+   let dest_summary_item convert t =
       SummaryItem (dest_bnd_item convert convert.item_f (one_subterm t))
 
    (*
     * Enclosed module.
     *)
-   and dest_module convert t =
+   let rec dest_module convert t =
       let name = dest_string_param t in
       let items = dest_xlist (one_subterm t) in
          Module (name, of_term_list convert items)
@@ -1241,26 +1277,6 @@ struct
       let n = (dest_number_any_term t) in
          if Lm_num.is_integer_num n then Id (Lm_num.int_of_num n)
          else raise (Invalid_argument "Filter_summary.dest_id: not an int")
-
-   (*
-    * Resources.
-    *)
-   and dest_resource_sig convert t =
-      let name = dest_string_param t in
-      let input, output = two_subterms t in
-      name, {
-         resource_input = convert.ctyp_f input;
-         resource_output = convert.ctyp_f output
-      }
-
-   and dest_resource convert t =
-      Resource (dest_string_param t, convert.resource_f (one_subterm t))
-
-   and dest_improve convert t =
-      Improve {
-         improve_name = dest_string_param t;
-         improve_expr = dest_bnd_expr convert (one_subterm t)
-      }
 
    (*
     * Magic block of items.
@@ -1326,7 +1342,7 @@ struct
                else if Opname.eq opname mlaxiom_op then
                   dest_mlaxiom convert t
                else if Opname.eq opname input_form_op then
-                  InputForm (dest_rewrite convert t)
+                  InputForm (dest_iform convert t)
                else
                   raise (Failure "term is not found")
             in
@@ -1484,24 +1500,40 @@ struct
    (*
     * Term conversions.
     *)
-   let rec term_of_res expr_f (loc, name, args) =
+   let term_of_res expr_f (loc, name, args) =
       mk_loc_string_term res_op loc name (mk_xlist_term (List.map expr_f args))
 
-   and term_of_resources convert res =
+   let term_of_resources convert res =
       term_of_bindings convert (mk_xlist_term (List.map (term_of_res convert.expr_f) res.item_item)) res.item_bindings
 
-   and term_of_rewrite op convert { rw_name = name;
+   let term_of_resource_sig convert
+      (name, { resource_input = input;
+               resource_output = output
+       }) =
+      mk_string_param_term resource_op name [
+         convert.ctyp_f input;
+         convert.ctyp_f output
+      ]
+
+   let term_of_rewrite convert { rw_name = name;
                                     rw_redex = redex;
                                     rw_contractum = con;
                                     rw_proof = pf;
                                     rw_resources = res
        } =
-      mk_string_param_term op name [convert.term_f redex;
+      mk_string_param_term rewrite_op name [convert.term_f redex;
                                     convert.term_f con;
                                     convert.proof_f name pf;
                                     term_of_resources convert res]
 
-   and term_of_cond_rewrite convert { crw_name = name;
+   let term_of_iform convert { iform_name = name;
+                               iform_redex = redex;
+                               iform_contractum = con
+       } =
+      mk_string_param_term input_form_op name [convert.term_f redex;
+                                    convert.term_f con]
+
+   let term_of_cond_rewrite convert { crw_name = name;
                                       crw_params = params;
                                       crw_args = args;
                                       crw_redex = redex;
@@ -1516,7 +1548,7 @@ struct
                                                  convert.proof_f name pf;
                                                  term_of_resources convert res]
 
-   and term_of_rule convert { rule_name = name;
+   let term_of_rule convert { rule_name = name;
                               rule_params = params;
                               rule_stmt = t;
                               rule_proof = pf;
@@ -1527,7 +1559,7 @@ struct
                                          convert.proof_f name pf;
                                          term_of_resources convert res]
 
-   and term_of_mlrewrite convert { mlterm_name = name;
+   let term_of_mlrewrite convert { mlterm_name = name;
                                    mlterm_params = params;
                                    mlterm_term = term;
                                    mlterm_def = expr_opt;
@@ -1539,7 +1571,7 @@ struct
           mk_opt (mk_bnd_expr convert) expr_opt;
           term_of_resources convert res]
 
-   and term_of_mlaxiom convert { mlterm_name = name;
+   let term_of_mlaxiom convert { mlterm_name = name;
                                  mlterm_params = params;
                                  mlterm_term = term;
                                  mlterm_def = expr_opt;
@@ -1551,14 +1583,14 @@ struct
           mk_opt (mk_bnd_expr convert) expr_opt;
           term_of_resources convert res]
 
-   and term_of_parent convert { parent_name = path;
+   let term_of_parent convert { parent_name = path;
                                 parent_resources = resources
        } =
       mk_simple_term parent_op (**)
          [mk_strings_term parent_op path;
           mk_xlist_term (List.map (term_of_resource_sig convert) resources)]
 
-   and term_of_dform convert { dform_name = name;
+   let term_of_dform convert { dform_name = name;
                                dform_modes = modes;
                                dform_options = options;
                                dform_redex = redex;
@@ -1575,16 +1607,7 @@ struct
                                              convert.term_f redex;
                                              mk_dform_def convert def]
 
-   and term_of_resource_sig convert
-      (name, { resource_input = input;
-               resource_output = output
-       }) =
-      mk_string_param_term resource_op name [
-         convert.ctyp_f input;
-         convert.ctyp_f output
-      ]
-
-   and term_of_typeclass_parent = function
+   let term_of_typeclass_parent = function
       ParentExtends opname ->
          let t = mk_term (mk_op opname []) [] in
             mk_string_param_term parent_kind_op "extends" [t]
@@ -1594,13 +1617,13 @@ struct
     | ParentNone ->
          mk_string_param_term parent_kind_op "none" []
 
-   and term_of_declare_typeclass convert opname type_opname parent =
+   let term_of_declare_typeclass convert opname type_opname parent =
       let t1 = mk_term (mk_op opname []) [] in
       let t2 = mk_term (mk_op type_opname []) [] in
       let p = term_of_typeclass_parent parent in
          mk_simple_term declare_typeclass_op [t1; t2; p]
 
-   and mk_ty_param_term convert param =
+   let mk_ty_param_term convert param =
       match param with
          TyNumber ->
             mk_string_param_term ty_param_op "n" []
@@ -1615,13 +1638,13 @@ struct
        | TyQuote ->
             mk_string_param_term ty_param_op "@" []
 
-   and mk_ty_bterm_term convert bterm =
+   let mk_ty_bterm_term convert bterm =
       let { ty_bvars = bvars; ty_bterm = term } = bterm in
       let bvars = mk_xlist_term (List.map convert.term_f bvars) in
       let term = convert.term_f term in
          mk_simple_term ty_bterm_op [bvars; term]
 
-   and mk_ty_term_term convert ty_term =
+   let mk_ty_term_term convert ty_term =
       let { ty_term   = term;
             ty_opname = opname;
             ty_params = params;
@@ -1636,7 +1659,7 @@ struct
       let ty = convert.term_f ty in
          mk_simple_term ty_term_op [term; opname; params; bterms; ty]
 
-   and mk_term_def_term convert term_def =
+   let mk_term_def_term convert term_def =
       let { term_def_name = name;
             term_def_value = term;
             term_def_resources = res
@@ -1646,39 +1669,39 @@ struct
       let res = term_of_resources convert res in
          mk_string_param_term term_def_op name [term; res]
 
-   and term_of_declare_type convert ty_term ty_opname =
+   let term_of_declare_type convert ty_term ty_opname =
       let term = mk_ty_term_term convert ty_term in
       let ty_opname = mk_term (mk_op ty_opname []) [] in
          mk_simple_term declare_type_op [term; ty_opname]
 
-   and term_of_declare_term convert ty_term =
+   let term_of_declare_term convert ty_term =
       let term = mk_ty_term_term convert ty_term in
          mk_simple_term declare_term_op [term]
 
-   and term_of_define_term convert ty_term term_def =
+   let term_of_define_term convert ty_term term_def =
       let ty_term = mk_ty_term_term convert ty_term in
       let term_def = mk_term_def_term convert term_def in
          mk_simple_term define_term_op [ty_term; term_def]
 
-   and term_of_declare_type_rewrite convert redex contractum =
+   let term_of_declare_type_rewrite convert redex contractum =
       mk_simple_term declare_type_rewrite_op  [convert.term_f redex; convert.term_f contractum]
 
-   and term_of_item convert item =
+   let term_of_item convert item =
       mk_simple_term summary_item_op [term_of_bindings convert (convert.item_f item.item_item) item.item_bindings]
 
    (*
     * Convert the items to a term.
     *)
-   and term_list_aux (convert : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, term,
+   let rec term_list_aux (convert : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, term,
                                  term, term, term, term, term, term) convert) = function
       SummaryItem item ->
          term_of_item convert item
     | ToploopItem item ->
          mk_simple_term toploop_item_op [convert.item_f item]
     | Rewrite rw ->
-         term_of_rewrite rewrite_op convert rw
-    | InputForm rw ->
-         term_of_rewrite input_form_op convert rw
+         term_of_rewrite convert rw
+    | InputForm form ->
+         term_of_iform convert form
     | CondRewrite crw ->
          term_of_cond_rewrite convert crw
     | Rule rw ->
@@ -1798,14 +1821,14 @@ struct
          items
 
    let check_iform loc
-       (info : ('term1, 'proof1, 'expr1) rewrite_info)
+       (info : 'term1 iform_info)
        (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
        (items : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item_loc list) =
-      let { rw_name = name; rw_redex = redex; rw_contractum = con } = info in
+      let { iform_name = name; iform_redex = redex; iform_contractum = con } = info in
       let rec search = function
          [] ->
-            implem_error (sprintf "Rewrite %s: not implemented" name)
-       | InputForm { rw_name = name'; rw_redex = redex'; rw_contractum = con' } :: _ when name = name' ->
+            (InputForm info, loc) :: items
+       | InputForm { iform_name = name'; iform_redex = redex'; iform_contractum = con' } :: _ when name = name' ->
             if alpha_equal redex' redex then
                if alpha_equal con' con then
                   items

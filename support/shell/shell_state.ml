@@ -188,7 +188,7 @@ let check_rewrite_null mt args =
 let check_type_rewrite_null redex contractum =
    raise (Failure "Shell_mp.check_type_rewrite: no current package")
 
-let check_iform_null mt args =
+let check_iform_null mt =
    raise (Failure "Shell_mp.check_iform: no current package")
 
 let check_dform_null redex contractum =
@@ -331,9 +331,9 @@ module TermGrammar = MakeTermGrammar
                exn ->
                   Stdpp.raise_with_loc loc exn)
 
-   let check_iform loc mt args =
+   let check_iform loc mt =
       synchronize_state (function state ->
-            try state.state_check_iform mt args with
+            try state.state_check_iform mt with
                exn ->
                   Stdpp.raise_with_loc loc exn)
 

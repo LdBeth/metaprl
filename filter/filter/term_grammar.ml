@@ -864,18 +864,15 @@ struct
     * are erased after inference.  In the informal
     * code, constraints are legal.
     *)
-   let parse_iform loc name mt args =
-      let mt, args, f = mterms_of_parsed_mterms mt args in
+   let parse_iform loc name mt =
+      let mt, _, f = mterms_of_parsed_mterms mt [] in
 
       (* Check with the refiner for rewrite errors *)
-      let cvars = context_vars mt in
-      let params = extract_params cvars args in
-      let args', redex, contractum = unzip_rewrite name mt in
-      let terms = collect_terms params in
-         Refine.check_iform name (collect_cvars params) terms args' redex contractum;
+      let _, redex, contractum = unzip_rewrite name mt in
+         Refine.check_iform name redex contractum;
          (* Check for type errors *)
-         check_iform loc mt terms;
-         (erase_meta_term mt), (List.map erase_term args), f
+         check_iform loc mt;
+         erase_meta_term mt
 
    let parse_dform loc redex contractum =
       let redex = apply_iforms loc redex in

@@ -174,6 +174,12 @@ type ('term, 'proof, 'expr) rewrite_info =
      rw_resources : ('expr, 'term) resource_def
    }
 
+type 'term iform_info =
+   { iform_name : string;
+     iform_redex : 'term;
+     iform_contractum : 'term
+   }
+
 type ('term, 'proof, 'expr) cond_rewrite_info =
    { crw_name : string;
      crw_params : 'term param list;
@@ -322,7 +328,7 @@ type ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, 'module_info) s
  | ToploopItem of 'item
  | MagicBlock  of 'item magic_info
  | Comment     of 'term
- | InputForm   of ('term, 'proof, 'expr) rewrite_info
+ | InputForm   of 'term iform_info
  | PRLGrammar  of Filter_grammar.t
 
    (* JYH: added opname classes 2004/01/16 *)
@@ -352,7 +358,7 @@ type check_rule_fun         = meta_term -> term list -> unit
 type check_rewrite_fun      = meta_term -> term list -> unit
 type check_type_rewrite_fun = term -> term -> unit
 type check_dform_fun        = term -> term -> unit
-type check_iform_fun        = meta_term -> term list -> unit
+type check_iform_fun        = meta_term -> unit
 type check_production_fun   = term list -> term -> unit
 
 (*
@@ -410,7 +416,7 @@ sig
    val parse_rule           : MLast.loc -> string -> parsed_meta_term -> parsed_term list -> meta_term * term list * (term -> term)
    val parse_rewrite        : MLast.loc -> string -> parsed_meta_term -> parsed_term list -> meta_term * term list * (term -> term)
    val parse_type_rewrite   : MLast.loc -> parsed_term -> parsed_term -> term * term
-   val parse_iform          : MLast.loc -> string -> parsed_meta_term -> parsed_term list -> meta_term * term list * (term -> term)
+   val parse_iform          : MLast.loc -> string -> parsed_meta_term -> meta_term
    val parse_dform          : MLast.loc -> parsed_term -> parsed_term -> term * term
    val parse_production     : MLast.loc -> parsed_term list -> parsed_term -> term list * term
    val parse_define         : MLast.loc -> string -> parsed_term -> parsed_term -> term * term

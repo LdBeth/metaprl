@@ -542,7 +542,7 @@ MPTIME =
 .SCANNER: %.ppo %.cmoz: %.ml $(OCAMLDEP) OCamlGeneratedFilesTarget
     $(OCAMLDEP) $(OCAMLDEPFLAGS) $(PREFIXED_OCAMLINCLUDES) $<
 
-.SCANNER: %.cmiz: %.mli $(OCAMLDEP) OCamlGeneratedFilesTarget
+.SCANNER: %.cmi %.cmiz: %.mli $(OCAMLDEP) OCamlGeneratedFilesTarget
     $(OCAMLDEP) $(OCAMLDEPFLAGS) $(PREFIXED_OCAMLINCLUDES) $<
 
 PRLEnv() =

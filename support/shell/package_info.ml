@@ -567,11 +567,11 @@ let check_type_rewrite pack_info redex contractum =
           | None ->
                raise (NotLoaded pack_info.pack_name))
 
-let check_iform pack_info mt args =
+let check_iform pack_info mt =
    synchronize_node pack_info (fun pack_info ->
          match pack_info.pack_str with
             Some { pack_str_info = info } ->
-               Cache.StrFilterCache.check_iform info mt args
+               Cache.StrFilterCache.check_iform info mt
           | None ->
                raise (NotLoaded pack_info.pack_name))
 

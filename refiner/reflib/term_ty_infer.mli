@@ -79,7 +79,7 @@ val check_rule         : tenv -> meta_term -> term list -> unit
 val check_rewrite      : tenv -> meta_term -> term list -> unit
 val check_type_rewrite : tenv -> term -> term -> unit
 val check_dform        : tenv -> term -> term -> unit
-val check_iform        : tenv -> meta_term -> term list -> unit
+val check_iform        : tenv -> meta_term -> unit
 val check_production   : tenv -> term list -> term -> unit
 
 (*

@@ -163,7 +163,7 @@ doc <:doc<
 >>
 declare "rewrite"[name:s]{'redex : Dform; 'contractum : Dform; 'proof : Dform; 'res : Dform} : Dform
 declare cond_rewrite[name:s]{'params : Dform; 'args : Dform; 'redex : Dform; 'contractum : Dform; 'proof : Dform; 'res : Dform} : Dform
-declare input_form[name:s]{'redex : Dform; 'contractum : Dform; 'proof : Dform; 'res : Dform} : Dform
+declare input_form[name:s]{'redex : Dform; 'contractum} : Dform
 
 doc <:doc<
    @begin[doc]
@@ -454,12 +454,8 @@ dform rewrite_like_df : rewrite_like[name, kind]{'redex; 'contractum; 'v; 'res} 
 dform rewrite_df : "rewrite"[name]{'redex; 'contractum; 'v; 'res} =
    rewrite_like[name, "rewrite"]{'redex; 'contractum; 'v; 'res}
 
-dform iform_df : input_form[name]{'redex; 'contractum; status_primitive{xnil}; 'res} =
-   rewrite_like[name, "input form"]{'redex; 'contractum; xnil; 'res}
-
-(* (nogin) This should not happen, but let's keep this just in case *)
-dform iform_df2 : input_form[name]{'redex; 'contractum; 'v; 'res} =
-   rewrite_like[name, "input form"]{'redex; 'contractum; 'v; 'res}
+dform iform_df : input_form[name]{'redex; 'contractum} =
+   rewrite_like[name, "input form"]{'redex; 'contractum; xnil; xnil}
 
 dform fake_mlrw_df : fake_mlrw[name]{'redex; 'contractum} =
    rewrite_like[name, "ml_rewrite"]{'redex; 'contractum; status_primitive{xnil}; xnil}
