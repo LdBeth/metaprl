@@ -377,19 +377,6 @@ let refiner_let loc =
       <:str_item< value $rec:false$ $list: [ patt, refiner_value loc ]$ >>
 
 (*
-let refiner_name name =
-   name ^ "_refiner"
-
-let refiner_patt loc name =
-   <:patt< $lid: refiner_name name$ >>
-
-let refiner_let_name loc name =
-   let patt = <:patt< $lid: refiner_name name$ >> in
-   let expr = <:expr< $lid: refiner_id$ >> in
-      <:str_item< value $rec:false$ $list: [ patt, expr ]$ >>
-*)
-
-(*
  * Variable names.
  *)
 let exn_id              = "_$exn"
@@ -928,32 +915,32 @@ struct
     * This is a little bogus, but we add rewrites automatically to the
     * toploop resource.
     *)
-   let toploop_rewrite proc loc name =
-      impr_toploop proc loc name <:expr< Mptop.ConvExpr $lid: name$ >>
+   let rec loop_params loc i body base_expr = function
+      h :: t ->
+         let v = "v" ^ string_of_int i in
+         let body = <:expr< $body$ $lid: v$ >> in
+         let v = <:patt< $lid:v$ >> in
+         let expr = <:expr< fun [ $list: [v, None, loop_params loc (succ i) body base_expr t]$ ] >> in
+         let expr =
+            match h with
+               ContextParam _ ->
+                  <:expr< Mptop.AddressFunExpr $expr$ >>
+             | VarParam _ ->
+                  <:expr< Mptop.StringFunExpr $expr$ >>
+             | TermParam _ ->
+                  <:expr< Mptop.TermFunExpr $expr$ >>
+         in
+            expr
+    | [] ->
+         base_expr body
+
+   let toploop_rewrite proc loc name params =
+      let base body = <:expr< Mptop.ConvExpr $body$ >> in
+         impr_toploop proc loc name (loop_params loc 0 <:expr< $lid: name$ >> base params)
 
    let toploop_rule proc loc name params =
-      let rec loop i body = function
-         h :: t ->
-            let v = "v" ^ string_of_int i in
-            let body = <:expr< $body$ $lid: v$ >> in
-            let v = <:patt< $lid:v$ >> in
-            let expr = <:expr< fun [ $list: [v, None, loop (succ i) body t]$ ] >> in
-            let expr =
-               match h with
-                  ContextParam _ ->
-                     <:expr< Mptop.AddressFunExpr $expr$ >>
-                | VarParam _ ->
-                     <:expr< Mptop.StringFunExpr $expr$ >>
-                | TermParam _ ->
-                     <:expr< Mptop.TermFunExpr $expr$ >>
-            in
-               expr
-       | [] ->
-           <:expr< Mptop.TacticExpr $body$ >>
-      in
-      let patt = <:patt< toploop_resource >> in
-      let expr = loop 0 <:expr< $lid: name$ >> params in
-         impr_toploop proc loc name expr
+      let base body = <:expr< Mptop.TacticExpr $body$ >> in
+         impr_toploop proc loc name (loop_params loc 0 <:expr< $lid: name$ >> base params)
 
    (*
     * These are the argument types that can be used as annotations.
@@ -1243,7 +1230,7 @@ struct
        let name_let =
           <:str_item< value $rec:false$ $list:[ name_patt, rw_body_expr ]$ >>
        in
-          [checkpoint_resources loc name; name_rewrite_let; name_let; refiner_let loc; toploop_rewrite proc loc name]
+          [checkpoint_resources loc name; name_rewrite_let; name_let; refiner_let loc; toploop_rewrite proc loc name []]
 
    let ()  = ()
 
@@ -1343,7 +1330,7 @@ struct
        let name_let =
           <:str_item< value $rec:false$ $list:[ name_patt, rw_fun_expr ]$ >>
        in
-          [checkpoint_resources loc name; name_rewrite_let; name_let; refiner_let loc (* ; refiner_let_name loc name *)]
+          [checkpoint_resources loc name; name_rewrite_let; name_let; refiner_let loc; toploop_rewrite proc loc name params]
 
    let () = ()
 
@@ -1485,7 +1472,7 @@ struct
       let name_let =
          <:str_item< value $rec:false$ $list:[ name_patt, rw_fun_expr ]$ >>
       in
-         [checkpoint_resources loc name; name_rewrite_let; name_let; refiner_let loc (* ; refiner_let_name loc name *)]
+         [checkpoint_resources loc name; name_rewrite_let; name_let; refiner_let loc ]
 
    (************************************************************************
     * RULES                                                                *
@@ -1508,7 +1495,7 @@ struct
       in
       let axiom_item = (<:str_item< value $rec:false$ $list:[axiom_patt, wrap_exn loc name axiom_value ]$ >>) in
       let thm_item = <:str_item< $exp: wrap_exn loc name thm$ >> in
-         [checkpoint_resources loc name; axiom_item; thm_item; refiner_let loc (* ; refiner_let_name loc name *)]
+         [checkpoint_resources loc name; axiom_item; thm_item; refiner_let loc ]
 
    let prim_axiom proc loc ax extract =
       let code = prim_axiom_expr loc in
@@ -1770,7 +1757,7 @@ struct
       let name_let =
          <:str_item< value $rec:false$ $list:[ name_patt, rule_fun_expr ]$ >>
       in
-         [checkpoint_resources loc name; name_rule_let; name_let; refiner_let loc (* ; refiner_let_name loc name *)]
+         [checkpoint_resources loc name; name_rule_let; name_let; refiner_let loc]
 
    let create_dform_expr loc modes =
       let string_expr s = <:expr< $str:s$ >> in

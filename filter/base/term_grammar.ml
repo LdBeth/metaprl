@@ -509,6 +509,10 @@ struct
              | op = sl_not; x = noncommaterm ->
                { aname = None; aterm = mk_dep0_term (mk_dep0_opname loc op) x.aterm }
             ]
+          | "ite" LEFTA
+            [ "if"; e1 = noncommaterm; "then"; e2 = noncommaterm; "else"; e3 = noncommaterm ->
+               { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc "ifthenelse") e1.aterm e2.aterm e3.aterm }
+            ]
          ];
 
       (* Term that can be used in application lists *)
