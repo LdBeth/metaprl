@@ -13,26 +13,6 @@ OMakeVersion(0.7.11, 0.7.30)
 # needs.
 #
 
-#
-# JYH: added flags for the C-preprocessor.
-# Requires omake 0.7.12, when we fix it.
-#
-if $(not $(defined OCAMLCPPFLAGS))
-    eprintln(OCAMLCPPFLAGS is not defined.)
-    eprintln(At some point you will want to upgrade omake.)
-    eprintln(Don't do it yet though\, until omake works with the new libmojave.)
-    eprintln(This message will be changed at that point.)
-
-    OCAMLCPPFLAGS =
-
-    %.ml: %.mlp %.h
-        @$(RM) -f $@
-        @echo "(* CAUTION: this is a generated file.  If you edit it, all changes will be lost! *)" > $@
-        $(CPP) $(OCAMLCPPFLAGS) -imacros $*.h $*.mlp >> $@
-        @$(CHMOD) 444 $@
-
-    export
-
 ########################################################################
 # Begin real makefile.
 #
@@ -98,7 +78,6 @@ else
    #
    TERMS = $(TERMS_DEFAULT)
    REFINER = $(REFINER_DEFAULT)
-   FORMAT = $(FORMAT_DEFAULT)
    MAKE_OPTS =
    SEQ_SET = $(SEQ_SET_DEFAULT)
    CCC = $(CCC_DEFAULT)
@@ -115,10 +94,10 @@ else
    NATIVE_PROFILING_ENABLED = false
 
    .INCLUDE: mk/config
-       ROOT="$(ROOT)" TERMS="$(TERMS)" REFINER="$(REFINER)" FORMAT="$(FORMAT)" MAKE_OPTS="$(MAKE_OPTS)" SEQ_SET="$(SEQ_SET)" CCC="$(CCC)" ENSROOT="$(ENSROOT)" OCAMLSRC="$(OCAMLSRC)" THEORIES="$(THEORIES)" TESTS_ENABLED="$(TESTS_ENABLED)" READLINE_ENABLED="$(READLINE_ENABLED)" NCURSES_ENABLED="$(NCURSES_ENABLED)" SLOPPY_DEPENDENCIES="$(SLOPPY_DEPENDENCIES)" NATIVE_ENABLED="$(NATIVE_ENABLED)" BYTE_ENABLED="$(BYTE_ENABLED)" NATIVE_PROFILING_ENABLED="$(NATIVE_PROFILING_ENABLED)" mk/make_config.sh
+       ROOT="$(ROOT)" TERMS="$(TERMS)" REFINER="$(REFINER)" MAKE_OPTS="$(MAKE_OPTS)" SEQ_SET="$(SEQ_SET)" CCC="$(CCC)" ENSROOT="$(ENSROOT)" OCAMLSRC="$(OCAMLSRC)" THEORIES="$(THEORIES)" TESTS_ENABLED="$(TESTS_ENABLED)" READLINE_ENABLED="$(READLINE_ENABLED)" NCURSES_ENABLED="$(NCURSES_ENABLED)" SLOPPY_DEPENDENCIES="$(SLOPPY_DEPENDENCIES)" NATIVE_ENABLED="$(NATIVE_ENABLED)" BYTE_ENABLED="$(BYTE_ENABLED)" NATIVE_PROFILING_ENABLED="$(NATIVE_PROFILING_ENABLED)" mk/make_config.sh
 
    .INCLUDE: mk/config: mk/make_config.sh
-       ROOT="$(ROOT)" TERMS="$(TERMS)" REFINER="$(REFINER)" FORMAT="$(FORMAT)" MAKE_OPTS="$(MAKE_OPTS)" SEQ_SET="$(SEQ_SET)" CCC="$(CCC)" ENSROOT="$(ENSROOT)" OCAMLSRC="$(OCAMLSRC)" THEORIES="$(THEORIES)" TESTS_ENABLED="$(TESTS_ENABLED)" READLINE_ENABLED="$(READLINE_ENABLED)" NCURSES_ENABLED="$(NCURSES_ENABLED)" SLOPPY_DEPENDENCIES="$(SLOPPY_DEPENDENCIES)" NATIVE_ENABLED="$(NATIVE_ENABLED)" BYTE_ENABLED="$(BYTE_ENABLED)" NATIVE_PROFILING_ENABLED="$(NATIVE_PROFILING_ENABLED)" mk/make_config.sh
+       ROOT="$(ROOT)" TERMS="$(TERMS)" REFINER="$(REFINER)" MAKE_OPTS="$(MAKE_OPTS)" SEQ_SET="$(SEQ_SET)" CCC="$(CCC)" ENSROOT="$(ENSROOT)" OCAMLSRC="$(OCAMLSRC)" THEORIES="$(THEORIES)" TESTS_ENABLED="$(TESTS_ENABLED)" READLINE_ENABLED="$(READLINE_ENABLED)" NCURSES_ENABLED="$(NCURSES_ENABLED)" SLOPPY_DEPENDENCIES="$(SLOPPY_DEPENDENCIES)" NATIVE_ENABLED="$(NATIVE_ENABLED)" BYTE_ENABLED="$(BYTE_ENABLED)" NATIVE_PROFILING_ENABLED="$(NATIVE_PROFILING_ENABLED)" mk/make_config.sh
 
    .INCLUDE: mk/config.local
        $(CP) mk/config.local.empty mk/config.local

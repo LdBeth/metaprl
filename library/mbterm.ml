@@ -30,8 +30,6 @@
 open Lm_debug
 open Lm_symbol
 
-open Lm_printf
-
 open Lint32
 open Lm_num
 open MathBus

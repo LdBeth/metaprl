@@ -30,7 +30,7 @@
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 open Lm_symbol
-open Lm_pervasives
+open Lm_printf
 open Lm_linear_set_sig
 
 open Opname

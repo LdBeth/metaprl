@@ -1,7 +1,6 @@
 (*
  * Pretty printer for terms.
  *
- *
  * ----------------------------------------------------------------
  *
  * This file is part of MetaPRL, a modular, higher order
@@ -30,7 +29,7 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-open Lm_pervasives
+open Lm_printf
 
 open Opname
 

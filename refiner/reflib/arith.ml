@@ -33,7 +33,6 @@
  *)
 open Lm_debug
 open Lm_printf
-open Lm_pervasives
 open Lm_num
 
 module type HypsSig = sig

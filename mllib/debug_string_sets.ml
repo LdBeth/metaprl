@@ -1,4 +1,3 @@
-open Lm_pervasives
 open Lm_set_sig
 open Lm_printf
 

@@ -34,7 +34,6 @@
 open Lm_debug
 open Lm_symbol
 open Lm_printf
-open Lm_pervasives
 
 open Term_sig
 open Term_shape_sig

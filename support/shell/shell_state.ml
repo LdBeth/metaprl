@@ -33,7 +33,6 @@
 open Lexing
 
 open Lm_debug
-open Lm_pervasives
 open Lm_printf
 open Lm_threads
 

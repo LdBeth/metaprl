@@ -29,10 +29,10 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Arg
+open Printf
 
 open Lm_debug
-open Arg
-open Lm_printf
 
 open Filter_parse
 

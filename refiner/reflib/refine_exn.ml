@@ -33,7 +33,6 @@ open Lm_debug
 open Lm_symbol
 open Lm_printf
 open Lm_rformat
-open Lm_pervasives
 
 open Term_sig
 open Refine_sig

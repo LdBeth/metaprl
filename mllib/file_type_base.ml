@@ -32,7 +32,6 @@
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 open Lm_debug
-open Lm_printf
 open File_base_type
 
 (*
@@ -131,7 +130,7 @@ module MakeSingletonCombo (Info : FileTypeInfoSig) :
                   try
                      let magic' = input_binary_int inx in
                         if Lm_list_util.find_index magic' magics > magic then
-                           raise (Failure (sprintf "File %s has been modified, write operation failed" filename))
+                           raise (Failure (Printf.sprintf "File %s has been modified, write operation failed" filename))
                   with
                      End_of_file ->
                         close_in inx

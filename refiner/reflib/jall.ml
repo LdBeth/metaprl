@@ -34,7 +34,6 @@ open Lm_debug
 open Lm_symbol
 open Lm_printf
 open Lm_string_set
-open Lm_pervasives
 
 open Refiner.Refiner
 open Term

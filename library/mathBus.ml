@@ -28,7 +28,6 @@
 (*ocaml mathbus implementation*)
 
 open Lm_debug
-open Lm_printf
 
 open Lm_num
 open Registry

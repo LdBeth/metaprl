@@ -34,7 +34,6 @@ open Lm_symbol
 open Lm_printf
 open Lm_rformat
 open Lm_rformat_text
-open Lm_pervasives
 
 open Precedence
 open Opname

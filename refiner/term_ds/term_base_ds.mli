@@ -27,7 +27,6 @@
  *
  * Authors: Alexey Nogin
  *)
-
 open Refine_error_sig
 open Term_ds_sig
 open Term_ds

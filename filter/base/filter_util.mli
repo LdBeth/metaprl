@@ -1,7 +1,6 @@
 (*
  * Common utilities for filtering modules.
  *
- *
  * ----------------------------------------------------------------
  *
  * This file is part of MetaPRL, a modular, higher order
@@ -31,6 +30,7 @@
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 open Lm_symbol
+open Lm_printf
 
 open Opname
 open Refiner.Refiner.TermMeta

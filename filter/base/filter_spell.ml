@@ -22,7 +22,6 @@
  * Author: Jason Hickey
  * jyh@cs.caltech.edu
  *)
-open Lm_pervasives
 open Lm_printf
 
 (*

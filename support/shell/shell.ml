@@ -44,7 +44,6 @@ extends Shell_p4_sig
 open Lm_debug
 open Lm_printf
 open Lm_threads
-open Lm_pervasives
 
 open Opname
 open Precedence

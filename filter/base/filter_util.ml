@@ -30,9 +30,9 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-
 open Lm_debug
 open Lm_printf
+
 open Opname
 open Term_sig
 open Refiner.Refiner

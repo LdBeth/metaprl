@@ -48,7 +48,6 @@
 open Lm_debug
 open Lm_printf
 open Lm_rformat
-open Lm_pervasives
 
 open Dform
 

@@ -30,7 +30,7 @@
  * jyh@cs.cornell.edu
  *
  *)
-open Lm_pervasives
+open Lm_printf
 
 open Precedence
 open Opname

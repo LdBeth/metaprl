@@ -30,7 +30,7 @@
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 open Lm_rformat
-open Lm_pervasives
+open Lm_rprintf
 
 open Dform
 open Simple_print.SimplePrint

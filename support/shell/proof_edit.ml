@@ -41,8 +41,6 @@
 extends Summary
 
 open Lm_debug
-
-open Lm_printf
 open Lm_threads
 
 open Opname
@@ -59,6 +57,9 @@ open Tactic_type.Tacticals
 open Summary
 
 open Java_display_term
+
+let eprintf = Lm_printf.eprintf
+let eflush = Lm_printf.eflush
 
 (*
  * Show that the file is loading.
@@ -170,7 +171,7 @@ let new_window window =
 let update_terminal_width window =
    match window with
       TextWindow info ->
-         info.df_width <- Mp_term.term_width Pervasives.stdout info.df_width;
+         info.df_width <- Mp_term.term_width stdout info.df_width;
          window
     | TexWindow _
     | JavaWindow _

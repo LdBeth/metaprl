@@ -32,7 +32,6 @@
  *)
 open Lm_debug
 open Lm_symbol
-open Lm_pervasives
 open Lm_printf
 open Lm_rformat
 open Lm_rformat_text

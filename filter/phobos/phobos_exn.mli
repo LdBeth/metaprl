@@ -21,8 +21,8 @@
  * Author: Adam Granicz
  * Email: granicz@cs.caltech.edu
  *)
-open Lm_pervasives
 open Lm_rformat
+open Lm_rprintf
 
 open Phobos_type
 open Refiner.Refiner.TermType

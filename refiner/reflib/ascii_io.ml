@@ -34,8 +34,6 @@ open Lm_debug
 open Lm_symbol
 open Lm_string_set
 
-open Lm_printf
-
 open Opname
 
 open Termmod_hash_sig
@@ -46,6 +44,9 @@ let debug_ascii_io =
         debug_description = "report ASCII IO errors verbosely";
         debug_value = false
       }
+
+let eprintf = Lm_printf.eprintf
+let eflush  = Lm_printf.eflush
 
 module MakeAsciiIO (TM: TermModuleHashSig) =
 struct

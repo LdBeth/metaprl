@@ -29,7 +29,7 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-open Lm_pervasives
+open Lm_printf
 
 open Refiner.Refiner.TermType
 
