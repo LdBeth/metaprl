@@ -175,12 +175,14 @@ struct
     | MetaImplies of TType.meta_term IAr.descriptor * TType.meta_term IAr.descriptor
     | MetaFunction of TType.term IAr.descriptor * TType.meta_term IAr.descriptor * TType.meta_term IAr.descriptor
     | MetaIff of TType.meta_term IAr.descriptor * TType.meta_term IAr.descriptor
+    | MetaLabeled of string * TType.meta_term IAr.descriptor
 
    type meta_term_weak_header =
       MetaTheorem_weak of TType.term IAr.weak_descriptor
     | MetaImplies_weak of TType.meta_term IAr.weak_descriptor * TType.meta_term IAr.weak_descriptor
     | MetaFunction_weak of TType.term IAr.weak_descriptor * TType.meta_term IAr.weak_descriptor * TType.meta_term IAr.weak_descriptor
     | MetaIff_weak of TType.meta_term IAr.weak_descriptor * TType.meta_term IAr.weak_descriptor
+    | MetaLabeled_weak of string * TType.meta_term IAr.weak_descriptor
 
    (************************************************************************
     * IMPLEMENTATION                                                       *
@@ -249,6 +251,8 @@ struct
          MetaFunction_weak (IAr.weaking t1, IAr.weaking mt1, IAr.weaking mt2)
     | MetaIff (mt1, mt2) ->
          MetaIff_weak (IAr.weaking mt1, IAr.weaking mt2)
+    | MetaLabeled (l, mt) ->
+         MetaLabeled_weak (l, IAr.weaking mt)
 
    (*
     * Compare that the elements on the lists are equal.

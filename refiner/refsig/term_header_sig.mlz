@@ -171,12 +171,14 @@ sig
     | MetaImplies of meta_term descriptor * meta_term descriptor
     | MetaFunction of term descriptor * meta_term descriptor * meta_term descriptor
     | MetaIff of meta_term descriptor * meta_term descriptor
+    | MetaLabeled of string * meta_term descriptor
 
    type meta_term_weak_header =
       MetaTheorem_weak of term weak_descriptor
     | MetaImplies_weak of meta_term weak_descriptor * meta_term weak_descriptor
     | MetaFunction_weak of term weak_descriptor * meta_term weak_descriptor * meta_term weak_descriptor
     | MetaIff_weak of meta_term weak_descriptor * meta_term weak_descriptor
+    | MetaLabeled_weak of string * meta_term weak_descriptor
 
 
 (*

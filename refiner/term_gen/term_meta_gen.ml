@@ -70,6 +70,8 @@ struct
          [t]
     | MetaImplies (MetaTheorem a, t) ->
          a :: unzip_mimplies t
+    | MetaLabeled (_, t) -> 
+         unzip_mimplies t
     | t -> ref_raise(RefineError ("unzip_mimplies", MetaTermMatchError t))
 
    let rec zip_mimplies = function
@@ -81,14 +83,16 @@ struct
     * Implication with bindings.
     *)
    let rec strip_mfunction = function
-      MetaTheorem t ->
-         MetaTheorem t
+      (MetaTheorem _ ) as t ->
+         t
     | MetaImplies (a, t) ->
          MetaImplies (a, strip_mfunction t)
     | MetaFunction (v, a, t) ->
          MetaImplies (a, strip_mfunction t)
     | MetaIff (t1, t2) ->
          MetaIff (strip_mfunction t1, strip_mfunction t2)
+    | MetaLabeled (l, t) ->
+         MetaLabeled (l, strip_mfunction t)
 
    let unzip_mfunction t =
       let rec collect l = function
@@ -98,6 +102,8 @@ struct
             collect ((None, a) :: l) t
        | MetaFunction (v, MetaTheorem a, t) ->
             collect ((Some v, a) :: l) t
+       | MetaLabeled (_, t) ->
+            collect l t
        | t ->
             ref_raise(RefineError ("unzip_mfunction", MetaTermMatchError t))
       in
@@ -123,6 +129,8 @@ struct
     | MetaImplies(MetaTheorem a, t) ->
          let l, redex, contractum = unzip_mrewrite t in
             a::l, redex, contractum
+    | MetaLabeled (_, t) ->
+         unzip_mrewrite t
     | t -> ref_raise(RefineError ("unzip_mrewrite", MetaTermMatchError t))
 
    (*
@@ -137,6 +145,8 @@ struct
          List_util.union (binding_vars a) (binding_vars b)
     | MetaIff (a, b) ->
          List_util.union (binding_vars a) (binding_vars b)
+    | MetaLabeled (_, t) ->
+         binding_vars t
 
    let rec context_vars = function
       MetaTheorem t ->
@@ -147,36 +157,39 @@ struct
          List_util.union (context_vars a) (context_vars b)
     | MetaIff (a, b) ->
          List_util.union (context_vars a) (context_vars b)
+    | MetaLabeled (_, t) ->
+         context_vars t
 
    (*
     * Induction forms.
     *)
-   let meta_for_all f =
-      let rec aux = function
-         MetaTheorem t -> f t
-       | MetaImplies (a, b) ->
-            aux a & aux b
-       | MetaFunction (v, a, b) ->
-            aux a & aux b
-       | MetaIff (a, b) ->
-            aux a & aux b
-      in
-         aux
+   let rec meta_for_all f = function
+      MetaTheorem t -> f t
+    | MetaImplies (a, b) ->
+         meta_for_all f a & meta_for_all f b
+    | MetaFunction (v, a, b) ->
+         meta_for_all f a & meta_for_all f b
+    | MetaIff (a, b) ->
+         meta_for_all f a & meta_for_all f b
+    | MetaLabeled (_, t) -> 
+         meta_for_all f t
 
-   let meta_for_all2 f t1 t2 =
-      let rec aux = function
+   let rec meta_for_all2 f t1 t2 =
+      match t1, t2 with
          MetaTheorem a1, MetaTheorem a2 ->
             f a1 a2
        | MetaImplies (a1, b1), MetaImplies (a2, b2) ->
-            aux (a1, a2) & aux (b1, b2)
+            meta_for_all2 f a1 a2 & meta_for_all2 f b1 b2
        | MetaFunction (_, a1, b1), MetaFunction (_, a2, b2) ->
-            aux (a1, a2) & aux (b1, b2)
+            meta_for_all2 f a1 a2 & meta_for_all2 f b1 b2
        | MetaIff (a1, b1), MetaIff (a2, b2) ->
-            aux (a1, a2) & aux (b1, b2)
+            meta_for_all2 f a1 a2 & meta_for_all2 f b1 b2
+       | MetaLabeled (_, t), _ ->
+            meta_for_all2 f t t2
+       | _, MetaLabeled (_, t) ->
+            meta_for_all2 f t1 t
        | _ ->
-            ref_raise(Failure "meta_for_all2")
-      in
-         aux (t1, t2)
+         ref_raise(Failure "meta_for_all2")
 
    (*
     * Alpha equality.

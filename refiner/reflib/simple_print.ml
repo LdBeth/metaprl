@@ -383,41 +383,45 @@ struct
    (*
     * MetaTerms.
     *)
-   let format_mterm buf =
-      let rec aux = function
-         MetaTheorem t ->
-            format_term buf t
-       | MetaImplies (a, b) ->
-            format_szone buf;
-            format_pushm buf 0;
-            aux a;
-            format_string buf " -->";
-            format_hspace buf;
-            aux b;
-            format_popm buf;
-            format_ezone buf
-       | MetaFunction (v, a, b) ->
-            format_szone buf;
-            format_pushm buf 0;
-            format_term buf v;
-            format_string buf " : ";
-            aux a;
-            format_string buf " -->";
-            format_hspace buf;
-            aux b;
-            format_popm buf;
-            format_ezone buf
-       | MetaIff (a, b) ->
-            format_szone buf;
-            format_pushm buf 0;
-            aux a;
-            format_string buf " <-->";
-            format_hspace buf;
-            aux b;
-            format_popm buf;
-            format_ezone buf
-      in
-         aux
+   let rec format_mterm buf = function
+      MetaTheorem t ->
+         format_term buf t
+    | MetaImplies (a, b) ->
+         format_szone buf;
+         format_pushm buf 0;
+         format_mterm buf a;
+         format_string buf " -->";
+         format_hspace buf;
+         format_mterm buf b;
+         format_popm buf;
+         format_ezone buf
+    | MetaFunction (v, a, b) ->
+         format_szone buf;
+         format_pushm buf 0;
+         format_term buf v;
+         format_string buf " : ";
+         format_mterm buf a;
+         format_string buf " -->";
+         format_hspace buf;
+         format_mterm buf b;
+         format_popm buf;
+         format_ezone buf
+    | MetaIff (a, b) ->
+         format_szone buf;
+         format_pushm buf 0;
+         format_mterm buf a;
+         format_string buf " <-->";
+         format_hspace buf;
+         format_mterm buf b;
+         format_popm buf;
+         format_ezone buf
+    | MetaLabeled (l, t) ->
+         format_szone buf;
+         format_pushm buf 0;
+         format_string buf ( " ("^l^")" );
+         format_mterm buf t;
+         format_popm buf;
+         format_ezone buf
 
    (************************************************************************
     * INTERFACE                                                            *

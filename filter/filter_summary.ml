@@ -860,6 +860,7 @@ let meta_theorem_op     = mk_opname "meta_theorem"
 let meta_implies_op     = mk_opname "meta_implies"
 let meta_function_op    = mk_opname "meta_function"
 let meta_iff_op         = mk_opname "meta_iff"
+let meta_labeled_op     = mk_opname "meta_labeled"
 
 let rec meta_term_of_term t =
    let opname = opname_of_term t in
@@ -874,8 +875,19 @@ let rec meta_term_of_term t =
       else if Opname.eq opname meta_iff_op then
          let a, b = two_subterms t in
             MetaIff (meta_term_of_term a, meta_term_of_term b)
+      else if Opname.eq opname meta_labeled_op then
+         let t' = dest_term t in
+         let o' = dest_op t'.term_op in
+         match o'.op_params, t'.term_terms with
+            [p], [t] -> 
+               begin match dest_param p, dest_bterm t with
+                  String l, { bvars = []; bterm = t } ->
+                     MetaLabeled (l,meta_term_of_term t)
+                | _ -> raise (Failure "Filter_summary.meta_term_of_term: term is not a meta term")
+               end
+          | _ -> raise (Failure "Filter_summary.meta_term_of_term: term is not a meta term")
       else
-         raise (Failure "term is not a meta term")
+         raise (Failure "Filter_summary.meta_term_of_term: term is not a meta term")
 
 let rec term_of_meta_term = function
    MetaTheorem t ->
@@ -886,6 +898,8 @@ let rec term_of_meta_term = function
       mk_simple_term meta_function_op [v; term_of_meta_term a; term_of_meta_term b]
  | MetaIff (a, b) ->
       mk_simple_term meta_iff_op [term_of_meta_term a; term_of_meta_term b]
+ | MetaLabeled (l, t) ->
+      mk_term (make_op { op_name = meta_labeled_op; op_params = [ make_param (String l) ]}) [mk_simple_bterm (term_of_meta_term t)]
 
 (*************
  * DESTRUCTION

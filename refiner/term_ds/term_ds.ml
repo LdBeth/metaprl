@@ -153,5 +153,6 @@ struct
     | MetaImplies of meta_term * meta_term
     | MetaFunction of term * meta_term * meta_term
     | MetaIff of meta_term * meta_term
+    | MetaLabeled of string * meta_term
 
 end

@@ -178,6 +178,8 @@ struct
     | TermHeader.MetaIff (mt1, mt2) ->
          TType.MetaIff (TheWeakMemo.retrieve info.meta_term_hash info mt1,
                         TheWeakMemo.retrieve info.meta_term_hash info mt2)
+    | TermHeader.MetaLabeled (l, mt) ->
+         TType.MetaLabeled (l, TheWeakMemo.retrieve info.meta_term_hash info mt)
 
    let p_create hash_size array_size =
       {

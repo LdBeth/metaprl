@@ -179,6 +179,7 @@ struct
    let meta_implies_expr = ML_Module_Var (term_type_name @ ["MetaImplies"])
    let meta_function_expr = ML_Module_Var (term_type_name @ ["MetaFunction"])
    let meta_iff_expr = ML_Module_Var (term_type_name @ ["MetaIff"])
+   let meta_labeled_expr = ML_Module_Var (term_type_name @ ["MetaLabeled"])
 
    (************************************************************************
     * PRINTERS                                                             *
@@ -461,6 +462,8 @@ struct
          let mterm = ML_Apply [meta_iff_expr; ML_Tuple [ML_Var va; ML_Var vb]] in
             push ofile (v, mterm);
             v
+    | MetaLabeled (l, t) ->
+         raise (Invalid_argument "Ml_format.print_mterm - nogin: do not know what to write here")
 
    (************************************************************************
     * FILE INTERFACE                                                       *

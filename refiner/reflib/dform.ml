@@ -660,41 +660,46 @@ let string_of_bterm base term =
 (*
  * MetaTerms.
  *)
-let format_mterm base buf =
-   let rec aux = function
-      MetaTheorem t ->
-         format_term base buf t
-    | MetaImplies (a, b) ->
-         format_szone buf;
-         format_pushm buf 0;
-         aux a;
-         format_string buf " -->";
-         format_hspace buf;
-         aux b;
-         format_popm buf;
-         format_ezone buf
-    | MetaFunction (v, a, b) ->
-         format_szone buf;
-         format_pushm buf 0;
-         format_term base buf v;
-         format_string buf " : ";
-         aux a;
-         format_string buf " -->";
-         format_hspace buf;
-         aux b;
-         format_popm buf;
-         format_ezone buf
-    | MetaIff (a, b) ->
-         format_szone buf;
-         format_pushm buf 0;
-         aux a;
-         format_string buf " <-->";
-         format_hspace buf;
-         aux b;
-         format_popm buf;
-         format_ezone buf
-   in
-      aux
+let rec format_mterm base buf = function
+   MetaTheorem t ->
+      format_term base buf t
+ | MetaImplies (a, b) ->
+      format_szone buf;
+      format_pushm buf 0;
+      format_mterm base buf a;
+      format_string buf " -->";
+      format_hspace buf;
+      format_mterm base buf b;
+      format_popm buf;
+      format_ezone buf
+ | MetaFunction (v, a, b) ->
+      format_szone buf;
+      format_pushm buf 0;
+      format_term base buf v;
+      format_string buf " : ";
+      format_mterm base buf a;
+      format_string buf " -->";
+      format_hspace buf;
+      format_mterm base buf b;
+      format_popm buf;
+      format_ezone buf
+ | MetaIff (a, b) ->
+      format_szone buf;
+      format_pushm buf 0;
+      format_mterm base buf a;
+      format_string buf " <-->";
+      format_hspace buf;
+      format_mterm base buf b;
+      format_popm buf;
+      format_ezone buf
+ | MetaLabeled (l, t) ->
+      format_szone buf;
+      format_pushm buf 0;
+      format_string buf ( " ("^l^")" );
+      format_hspace buf;
+      format_mterm base buf t;
+      format_popm buf;
+      format_ezone buf
 
 let print_mterm_fp base out mterm =
    let buf = new_buffer () in

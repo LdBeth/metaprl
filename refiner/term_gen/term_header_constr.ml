@@ -155,5 +155,7 @@ struct
        | FType.MetaIff (mt1, mt2) ->
             TermHeader.MetaIff (TheWeakMemo.lookup meta_term_hash info (make_meta_term_header info mt1),
                                 TheWeakMemo.lookup meta_term_hash info (make_meta_term_header info mt2))
+       | FType.MetaLabeled (l, mt) ->
+            TermHeader.MetaLabeled (l, TheWeakMemo.lookup meta_term_hash info (make_meta_term_header info mt))
 
 end   
