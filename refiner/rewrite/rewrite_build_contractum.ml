@@ -138,6 +138,13 @@ struct
             else
                v
 
+   let rec build_bnames names bnames stack = function
+      [] -> []
+    | [v] -> [build_bname names bnames stack v]
+    | v :: vs ->
+         let v = build_bname names bnames stack v in
+            v :: (build_bnames names (SymbolSet.add bnames v) stack vs)
+
    (*
     * Append the var array.
     *)
@@ -370,7 +377,7 @@ struct
       { rw_bvars = vcount; rw_bnames = []; rw_bterm = term } ->
             mk_bterm [] (build_contractum_term names bnames stack bvars term)
     | { rw_bvars = vcount; rw_bnames = vars; rw_bterm = term } ->
-         let vars' = List.map (build_bname names bnames stack) vars in
+         let vars' = build_bnames names bnames stack vars in
          let bnames' = SymbolSet.add_list bnames vars' in
          let bvars' = append_vars bvars vars' in
             mk_bterm vars' (build_contractum_term names bnames' stack bvars' term)
