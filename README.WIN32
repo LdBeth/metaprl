@@ -1,15 +1,13 @@
 To install MetaPRL on Windows, you will need the following:
 
-1. OCaml (for native Win32), available at http://www.ocaml.org
+1. OCaml (for native Win32), available from http://files.metaprl.org
 
 2. The Omake build system, available at
      http://mojave.caltech.edu/download.html
 
-3. Some OCaml patches for Win32, also available at
-     http://mojave.caltech.edu/download.html
-
-4. GNU emacs for Windows (optional, but recommended), available at
-     http://www.gnu.org
+3 (optional).  The OpenSSL distribution.  You will need this if
+  you plan to use MetaPRL over the network.  Available at
+  http://www.slproweb.com/products/Win32OpenSSL.html
 
 Installation:
 
@@ -31,20 +29,16 @@ Installation:
 
 1. Installating OCaml.
 
-   When installing ocaml, do not install into the directory
-   "C:/Objective Caml", since the build system will interpret this as
-   two files, according to the Unix convention.
+   Unzip the ocaml distribution into the c:\ocaml directory.
+   This is the usual location.  If you install it elsewhere,
+   set the OCAMLLIB environment variable to point to the
+   <ocaml>\lib, where <ocaml> is the directory where you
+   placed the OCaml distribution.
 
    Instead, install it into a directory without spaces in the name.
    For instance, c:/ocaml is a reasonable choice.
 
-2. Adding patches.
-
-   Unpack the patch file, and copy the files into your ocaml distribution.
-   The patches are just a few extra interface files, so that MetaPRL can
-   peek into the OCaml internals.
-
-3. Installing omake.
+2. Installing omake.
 
    To build omake, go to the omake directory, and edit the first
    three lines of Makefile.nt to choose the install location.
@@ -52,30 +46,44 @@ Installation:
 
    ...omake> nmake -f Makefile.nt install
 
-4. Building MetaPRL
+3. Installing OpenSSL (optional).
+
+   Install OpenSSL into c:\OpenSSL (recommended), or some other location.
+
+4. Modify your path.
+
+   You need to include the following three directories in your path.
+      a. <OCaml>/bin
+      b. <omake>/bin
+      c. <OpenSSL>/bin
+
+5. Building MetaPRL
 
    Once ocaml and omake are installed, you should be able to run
    omake in the top-level metaprl directory and have it build
    everything.
 
    ...metaprl> omake
-   ...lots of messages...
+   ...compile messages...
 
    If you get any errors, send mail to onlynews@metaprl.org, and
    we'll try to help you out.
 
-5. Running MetaPRL
+6. Running MetaPRL
 
-   Currently, the MetaPRL executable on Windows is byte-code, since
-   the OCaml folks do not distribute native-code files for CamlP4.
-   We patch this on the Unix version, but the Windows distro uses that
-   pesky proprietary top-loop.
+   MetaPRL can be run with the metaprl/editor/ml/mpopt.bat script.
+   By default, this will prompt you to connect using your browser.
 
-   MetaPRL can be run with the metaprl/editor/ml/mptop.bat script.
+   MetaPRL looks better if you use Mozilla, but you can use IE too.
+   If you choose to use IE, you should install the "Universal font"
+   (ArialUNI.ttf) available in Microsoft Office as an extra option.
 
-6. Running in Emacs.
+A. Running in Emacs.
 
-   Running MetaPRL from a console window is not amusing.
+   You don't have to use the browser.  You can also use the command-line
+   interface by using the command "mpopt.bat -cli".
+
+   However, running MetaPRL from a console window is not amusing.
 
    Running within Emacs is much better.  GNU distributes a native
    version of emacs that you can use.  The main thing you have to do
