@@ -542,8 +542,8 @@ struct
           ]];
 
       amterm:
-         [[ t = singleterm ->
-             match t with
+         [[ t = noncommaterm ->
+             match make_aterm t with
                 { aname = None; aterm = t } ->
                    { vname = None; vterm = MetaTheorem t }
               | { aname = Some n; aterm = t } ->
@@ -670,6 +670,13 @@ struct
                wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") x (make_term e1) (make_term e2))
             | "open";  e1 =  applyterm; "in"; e2 = SELF ->
                wrap_term loc (mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") (Lm_symbol.add "self") (make_term e1) (make_term e2))
+            ]
+          (* short form for sequents *)
+          | "sequent" NONA
+            [ arg = SELF; "{|"; (hyps, concls) = sequent_body; "|}" ->
+                  let arg_bt = [mk_simple_bterm (make_term arg)] in
+                  let arg = mk_term (mk_op (mk_bopname loc ["sequent_arg"] [] arg_bt) []) arg_bt in
+                     wrap_term loc (mk_sequent_term { sequent_args = arg; sequent_hyps = hyps; sequent_goals = concls })
             ]
 
           (* Logical operators *)
