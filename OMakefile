@@ -1,4 +1,9 @@
 #
+# Make sure omake is up-to-date
+#
+OMakeVersion(0.7.0)
+
+#
 # Override the root directory
 #
 OLDROOT = $(ROOT)
