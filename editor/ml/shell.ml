@@ -718,18 +718,17 @@ struct
          print_exn info create name
 
    let create_tptp info name =
-      ()
-(*
       let create name =
          let seq = Tptp_load.load name in
+         let parse_arg = get_parse_arg info in
+         let display_mode = get_display_mode info in
          let package = get_current_package info in
-         let item = Shell_rule.create package name in
+         let item = Shell_rule.create package parse_arg display_mode name in
             item.edit_set_goal seq;
             item.edit_save ();
             touch info
       in
          print_exn info create name
-*)
 
    let create_opname info name =
       let create name =
