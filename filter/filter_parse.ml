@@ -248,6 +248,15 @@ let get_string_param loc t =
 let print_exn f x =
    Filter_exn.print Dform.null_base f x
 
+let print_exn_unit (f : 'a -> unit) x =
+   Filter_exn.print Dform.null_base f x
+
+let print_exn_term (f : 'a -> term) x =
+   Filter_exn.print Dform.null_base f x
+
+let print_exn_item (f : 'a -> ('b * (int * int)) list) x =
+   Filter_exn.print Dform.null_base f x
+
 (*
  * Need some info about types and extraction.
  *)
@@ -336,7 +345,7 @@ struct
          FilterCache.add_command proc.cache (Parent info, loc)
 
    let declare_parent proc loc path =
-      print_exn (declare_parent_error proc loc) path
+      print_exn_unit (declare_parent_error proc loc) path
 
    (*
     * Declare a term.
@@ -356,7 +365,7 @@ struct
          t
 
    let declare_term proc loc arg =
-      print_exn (declare_term_error proc loc) arg
+      print_exn_term (declare_term_error proc loc) arg
 
    (*
     * Define a rewrite in an interface.
@@ -423,17 +432,17 @@ struct
          FilterCache.add_command proc.cache (cmd, loc)
 
    let declare_rewrite proc loc name params args pf res =
-      print_exn (declare_rewrite_error proc loc name params args pf) res
+      print_exn_unit (declare_rewrite_error proc loc name params args pf) res
 
    (*
     * Declare a term, and define a rewrite in one step.
     *)
-   let define_term_error proc loc name redex contractum pf =
+   let define_term_error proc loc name redex contractum pf res =
       let redex' = declare_term proc loc redex in
-         declare_rewrite proc loc name [] (MetaIff (MetaTheorem redex', MetaTheorem contractum)) pf
+         declare_rewrite proc loc name [] (MetaIff (MetaTheorem redex', MetaTheorem contractum)) pf res
 
-   let define_term proc loc name redex contractum pf =
-      print_exn (define_term_error proc loc name redex contractum) pf
+   let define_term proc loc name redex contractum pf res =
+      print_exn_unit (define_term_error proc loc name redex contractum pf) res
 
    (*
     * Declare an axiom in an interface.  This has a similar flavor
@@ -507,8 +516,8 @@ struct
       let cmd = axiom_command proc name params args pf res in
          FilterCache.add_command proc.cache (cmd, loc)
 
-   let declare_axiom proc loc name params args pf =
-      print_exn (declare_axiom_error proc loc name params args) pf
+   let declare_axiom proc loc name params args pf res =
+      print_exn_unit (declare_axiom_error proc loc name params args pf) res
 
    (*
     * Infix directive.
@@ -529,7 +538,7 @@ struct
                                              }, loc)
 
    let declare_mlterm proc loc arg def =
-      print_exn (declare_mlterm_error proc loc arg) def
+      print_exn_unit (declare_mlterm_error proc loc arg) def
 
    (*
     * Declare a condition term for a rule.
@@ -542,7 +551,7 @@ struct
                                              }, loc)
 
    let declare_ml_condition proc loc arg =
-      print_exn (declare_ml_condition_error proc loc) arg
+      print_exn_unit (declare_ml_condition_error proc loc) arg
 
    (*
     * Record a resource.
@@ -603,7 +612,7 @@ struct
          FilterCache.add_command proc.cache (df, loc)
 
    let declare_dform proc loc name options t =
-      print_exn (declare_dform_error proc loc name options) t
+      print_exn_unit (declare_dform_error proc loc name options) t
 
    (*
     * Define a display form expansion.
@@ -624,7 +633,7 @@ struct
                                              }, loc)
 
    let define_dform proc loc name options t expansion =
-      print_exn (define_dform_error proc loc name options t) expansion
+      print_exn_unit (define_dform_error proc loc name options t) expansion
 
    (*
     * An ml dterm is a display form that is computed in ML.
@@ -651,7 +660,7 @@ struct
          FilterCache.add_command proc.cache (DForm info, loc)
 
    let define_ml_dform proc loc name options t printer buffer code =
-      print_exn (define_ml_dform_error proc loc name options t printer buffer) code
+      print_exn_unit (define_ml_dform_error proc loc name options t printer buffer) code
 
    (*
     * Precedence declaration.
@@ -735,7 +744,7 @@ struct
       let f proc =
          FilterCache.save proc.cache suffix
       in
-         print_exn f proc
+         print_exn_unit f proc
 
    (*
     * Extract an item list.
@@ -745,7 +754,7 @@ struct
          (Info.extract sig_info (FilterCache.info proc.cache) (**)
              (FilterCache.resources proc.cache)) proc.name
       in
-         print_exn f proc
+         print_exn_item f proc
 
    (*
     * Check the implementation with its interface.
@@ -874,7 +883,7 @@ let define_rule_error proc loc name
       StrFilter.add_command proc (cmd, loc)
 
 let define_rule proc loc name params args goal extract res =
-   print_exn (define_rule_error proc loc name params args goal extract) res
+   print_exn_unit (define_rule_error proc loc name params args goal extract) res
 
 let define_prim proc loc name params args goal extract =
    define_rule proc loc name params args goal (Primitive extract)
