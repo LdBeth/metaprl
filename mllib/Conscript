@@ -162,4 +162,4 @@ OCamlLibrary $env 'mllib',
 	'comment_parse',
 	'mp_term';
 
-Default "mllib$env->{SUFLIB}";
+#Default "mllib$env->{SUFLIB}";

@@ -60,4 +60,4 @@ OCamlLibrary $env 'base',
 	'filter_spell';
 
 ## Add the library to the default target list
-Default "base$env->{SUFLIB}";
+#Default "base$env->{SUFLIB}";

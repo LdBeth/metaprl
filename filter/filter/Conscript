@@ -58,4 +58,4 @@ OCamlProgram $env   'convert', 'filter_convert';
 OCamlProgram $penv  'prlc', 'prlcomp';
 
 ## Add the library to the default target list
-Default ( "filter$env->{SUFLIB}", "camlp4n", "camlp4o", "prlcn", "prlco", "prlc" );
+#Default ( "filter$env->{SUFLIB}", "camlp4n", "camlp4o", "prlcn", "prlco", "prlc" );

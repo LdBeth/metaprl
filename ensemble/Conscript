@@ -24,4 +24,4 @@ OCamlLibrary $env 'ensemble',
 	'thread_refiner';
 
 ## Add the library to the default target list
-Default "ensemble$env->{SUFLIB}";
+#Default "ensemble$env->{SUFLIB}";

@@ -47,4 +47,4 @@ Library $cenv 'clib.a',
 	'locale.c';
 
 ## Add the library to the default target list
-Default qw( clib.a );
+#Default qw( clib.a );

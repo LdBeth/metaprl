@@ -46,4 +46,4 @@ OCamlLibrary $env 'util',
 OCamlProgram $env 'ocamldep', 'ocamldep';
 
 ## Add the program to the default target list
-Default qw( util.cma ocamldep );
+#Default qw( util.cma ocamldep );

@@ -49,4 +49,4 @@ OCamlLibrary $env 'library',
 	'library_type_base';
 
 ## Add the library to the default target list
-Default "library$env->{SUFLIB}";
+#Default "library$env->{SUFLIB}";

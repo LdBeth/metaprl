@@ -29,4 +29,4 @@ OCamlLibrary $env 'refiner',
    'refiner';
 
 ## Add the library to the default target list
-Default "refiner$env->{SUFLIB}";
+#Default "refiner$env->{SUFLIB}";

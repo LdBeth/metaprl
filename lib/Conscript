@@ -29,4 +29,4 @@ Command $env 'mbs-mpl.txt', "$env->{MP_HASH}/library/mbs-mpl.txt", qq(
 );
 
 ## Add the library to the default target list
-Default qw( camlp4n camlp4o prlcn prlco registry.txt mbs-mpl.txt );
+#Default qw( camlp4n camlp4o prlcn prlco registry.txt mbs-mpl.txt );

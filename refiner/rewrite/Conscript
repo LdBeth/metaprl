@@ -48,4 +48,4 @@ OCamlLibrary $env 'rewrite',
 	'rewrite';
 
 ## Add the library to the default target list
-Default "rewrite$env->{SUFLIB}";
+#Default "rewrite$env->{SUFLIB}";

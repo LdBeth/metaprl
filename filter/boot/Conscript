@@ -35,4 +35,4 @@ OCamlLibrary $env 'boot',
 	'proof_convert';
 
 ## Add the library to the default target list
-Default ( "boot$env->{SUFLIB}" );
+#Default ( "boot$env->{SUFLIB}" );

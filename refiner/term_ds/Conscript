@@ -31,4 +31,4 @@ OCamlLibrary $env 'term_ds',
 	'term_man_ds';
 
 ## Add the library to the default target list
-Default "term_ds$env->{SUFLIB}";
+#Default "term_ds$env->{SUFLIB}";

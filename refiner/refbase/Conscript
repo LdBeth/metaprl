@@ -10,4 +10,4 @@ OCamlLibrary $env 'refbase',
 	'opname';
 
 ## Add the library to the default target list
-Default "refbase$env->{SUFLIB}";
+#Default "refbase$env->{SUFLIB}";
