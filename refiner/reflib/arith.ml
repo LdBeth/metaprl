@@ -43,6 +43,8 @@ module type HypsSig = sig
     val get_const : hyps -> addr -> int
     val compare : var -> var -> bool
     val iter : hyps -> (addr -> cmp -> unit) -> unit
+    val print_hyps : out_channel -> hyps -> unit
+    val print_addr : out_channel -> addr -> unit
 end
 
 module SimpleHyps = struct
@@ -57,6 +59,8 @@ module SimpleHyps = struct
     let get_const h a = let (_,_,c)=get_cmp h a in c
     let compare = (=)
     let iter h f = Array.iteri f h
+    let print_hyps _ _ = ()
+    let print_addr _ _ = ()
 end
 
 module ArrayTools (Hyps: HypsSig) =
@@ -79,6 +83,21 @@ struct
          if compare (Array.get a i) e then i else aux (i+1)
       in aux 0
 end
+
+open Printf
+open Lm_debug
+let debug_graph_arith1 =
+   create_debug (**)
+      { debug_name = "debug_graph_arith1";
+        debug_description = "Report input of solve function";
+        debug_value = false
+      }
+let debug_graph_arith2 =
+   create_debug (**)
+      { debug_name = "debug_graph_arith2";
+        debug_description = "Report output of solve function";
+        debug_value = false
+      }
 
 module Graph =
 functor (Hyps : HypsSig) -> struct
@@ -165,7 +184,33 @@ functor (Hyps : HypsSig) -> struct
            Array.of_list !l
        end
 
-   let solve h = compute h (vars_of_hyps h)
+   let solve h =
+   	let print_dist dst =
+		   match dst with
+		   	Disconnected -> eprintf "Disconnected\n%t" eflush
+		    | Int(d, al) ->
+		    		begin
+			    		eprintf "Int %i|" d;
+			    		List.iter (eprintf "%a:" print_addr) al;
+			    		eprintf "\n%t" eflush
+			    	end
+		in
+		begin
+	   	if !debug_graph_arith1 then
+		   	print_hyps stderr h;
+	   	let result=compute h (vars_of_hyps h) in
+	   	begin
+			   if !debug_graph_arith2 then
+					let (d,dar)=result in
+					begin
+						print_dist d;
+						Array.iter print_dist dar
+					end
+				else
+					();
+				result
+		  	end
+	   end
 end
 
 open Refiner.Refiner
@@ -202,6 +247,17 @@ struct
        Array.iteri f1 ar
 
     let compare = alpha_equal
+
+    let print_hyps oc (h,ar) =
+    	let pr i =
+    		let t=TermMan.nth_hyp h i in
+    		Printf.fprintf oc "%a\n" print_term t
+    	in
+	    	Printf.fprintf oc "hyps:\n";
+   	 	Array.iter pr ar;
+    		flush oc
+
+    let print_addr oc a = fprintf oc "%i" a
 end
 
 let collect f gl =
