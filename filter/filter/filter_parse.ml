@@ -448,18 +448,10 @@ struct
       let infixes = FilterCache.sig_infixes proc.cache path in
       Infix.Set.iter Infix.add (Infix.Set.diff infixes proc.infixes);
       proc.infixes <- Infix.Set.union infixes proc.infixes;
-      let resources = FilterCache.sig_resources proc.cache path in
-      begin if !debug_resource then
-         let print_resources out resources =
-            List.iter (fprintf out " %s") (List.map fst resources)
-         in
-            eprintf "Filter_parse.declare_parent: %s:%a%t" (string_of_path path) print_resources resources eflush
-      end;
-      let info =
-         { parent_name = path;
-           parent_resources = resources
-         }
-      in
+      let info = {
+         parent_name = path;
+         parent_resources = FilterCache.sig_resources proc.cache path;
+      } in
          FilterCache.add_command proc.cache (Parent info, loc)
 
    (*

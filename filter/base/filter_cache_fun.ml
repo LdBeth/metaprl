@@ -158,7 +158,7 @@ struct
         sig_resources : (string * sig_ctyp resource_sig) list;
         sig_infixes : Infix.Set.t;
         sig_opnames : (op_shape * opname) list;
-        sig_includes : sig_summary list
+        sig_includes : sig_summary list;
       }
 
    (*
@@ -557,7 +557,7 @@ struct
       let opprefix = make_opname path in
 
       (* Get all the sub-summaries *)
-      let inline_component rioi (item, _) =
+      let inline_component summ (item, _) =
          match item with
             Module (n, _) ->
                (*
@@ -567,68 +567,62 @@ struct
                 *)
                let base = cache.base in
                let info = Base.sub_info base.lib self n in
-               let info =
-                  { sig_summary = info;
-                    sig_resources = [];
-                    sig_infixes = Infix.Set.empty;
-                    sig_opnames = [];
-                    sig_includes = []
-                  }
+               let info = {
+                  sig_summary = info;
+                  sig_resources = [];
+                  sig_infixes = Infix.Set.empty;
+                  sig_opnames = [];
+                  sig_includes = [];
+               }
                in
                   base.sig_summaries <- info :: base.sig_summaries;
-                  rioi
+                  summ
 
           | Opname { opname_name = str; opname_term = t }
           | Definition { opdef_opname = str; opdef_term = t } ->
                (* Hash this name to the full opname *)
                let opname = Term.opname_of_term t in
-               let resources, infixes, opnames, includes = rioi in
                   if !debug_opname then
                      eprintf "Filter_cache_fun.inline_sig_components: add opname %s%t" (**)
                         (SimplePrint.string_of_opname opname) eflush;
                   let shape = op_shape_of_term str t in
                   Hashtbl.add cache.optable shape opname;
-                  resources, infixes, (shape, opname) :: opnames, includes
+                  { summ with sig_opnames = (shape, opname) :: summ.sig_opnames }
 
           | Parent { parent_name = path } ->
                (* Recursive inline of all ancestors *)
-               let info' = inline_sig_module barg cache path in
-               let resources, infixes, opnames, includes = rioi in
-               let this_resources, par_resources = resources in
-                  (this_resources, merge_resources info'.sig_resources par_resources),
-                  Infix.Set.union infixes info'.sig_infixes,
-                  opnames, (info' :: includes)
+               let info' = inline_sig_module barg cache path in {
+                  summ with
+                  sig_resources = merge_resources info'.sig_resources summ.sig_resources;
+                  sig_infixes = Infix.Set.union summ.sig_infixes info'.sig_infixes;
+                  sig_includes = info' :: summ.sig_includes;
+               }
 
           | Resource (name, r) ->
-               let resources, infixes, opnames, includes = rioi in
-               let this_resources, par_resources = resources in
-                  if not (resource_member name cache.resources) then
-                     cache.resources <- (path, name, r) :: cache.resources;
-                  ((name, r) :: this_resources, par_resources), infixes, opnames, includes
+               if not (resource_member name cache.resources) then
+                  cache.resources <- (path, name, r) :: cache.resources;
+               { summ with sig_resources = merge_resources [name, r] summ.sig_resources }
 
           | Prec p ->
                let precs = cache.precs in
                   if not (List.mem p precs) then
                      cache.precs <- p :: precs;
-                  rioi
+                  summ
 
           | GramUpd upd ->
-               let resources, infixes, opnames, includes = rioi in
-                  resources, Infix.Set.add infixes upd, opnames, includes
+               { summ with sig_infixes = Infix.Set.add summ.sig_infixes upd }
 
           | _ ->
-               rioi
+               summ
       in
-      let (this_resources, par_resources), infixes, opnames, includes =
-         List.fold_left inline_component (([], []), Infix.Set.empty, [], []) items
-      in
-      let this_resources = Sort.list compare_resources this_resources in
-         { sig_summary = self;
-           sig_resources = merge_resources this_resources par_resources;
-           sig_infixes = infixes;
-           sig_opnames = opnames;
-           sig_includes = includes
-         }
+      let summ = {
+         sig_summary = self;
+         sig_resources = [];
+         sig_infixes = Infix.Set.empty;
+         sig_opnames = [];
+         sig_includes = [];
+      } in
+         List.fold_left inline_component summ items
 
    and inline_str_components barg cache path self (items : (term, meta_term, str_proof, str_resource, str_ctyp, str_expr, str_item) summary_item_loc list) =
       (* Get the opname for this path *)
@@ -649,7 +643,7 @@ struct
                     sig_resources = [];
                     sig_infixes = Infix.Set.empty;
                     sig_opnames = [];
-                    sig_includes = []
+                    sig_includes = [];
                   }
                in
                   base.sig_summaries <- info :: base.sig_summaries
