@@ -125,17 +125,6 @@ sig
     * but not vice-versa.
     *)
    val match_terms : term_subst -> term -> term -> term_subst
-
-(***********************)
-   (*
-    * generalization: see if the first term generalizes the second term.
-    * Return the alpha conversion if so, otherwise raise
-    * Failure "generalization"
-    *
-    * generalizes: boolean equivalent of the proceeding
-    *)
-   val generalizes : term -> term -> bool
-   val generalization : (string * string) list -> term -> term -> (string * string) list
 end
 
 (*

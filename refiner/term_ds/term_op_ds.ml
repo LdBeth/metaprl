@@ -712,23 +712,10 @@ struct
            } -> Opname.eq opname' opname
     | _ -> false
 
-   let is_dep1_dep0_any_term t = match get_core t with
-      Term { term_op = { op_params = [] };
-             term_terms = [{bvars=[_]};{bvars=[]}] } -> true
-    | _ -> false
-
    let mk_dep1_dep0_term opname v t1 t2 =
       { free_vars = VarsDelayed;
         core = Term
          { term_op = { op_name = opname; op_params = [] };
-           term_terms =
-               [ { bvars = [v]; bterm = t1 };
-                 { bvars = []; bterm = t2 }]}}
-
-   let mk_dep1_dep0_any_term op v t1 t2 =
-      { free_vars = VarsDelayed;
-        core = Term
-         { term_op = op;
            term_terms =
                [ { bvars = [v]; bterm = t1 };
                  { bvars = []; bterm = t2 }]}}
@@ -743,11 +730,6 @@ struct
        | _ -> REF_RAISE(RefineError ("dest_dep1_dep0_term", TermMatchError (t, "bad arity")))
       end
     | _ -> REF_RAISE(RefineError ("dest_dep1_dep0_term", TermMatchError (t, "bad arity")))
-
-   let dest_dep1_dep0_any_term t = match dest_term t with
-      { term_terms = [{ bvars = [v]; bterm = t1 };
-                      { bvars = []; bterm = t2 }] } -> v, t1, t2
-    | _ -> REF_RAISE(RefineError ("dest_dep1_dep0_any_term", TermMatchError (t, "bad arity")))
 
    (*
     * First subterm of arity 2.
@@ -827,31 +809,6 @@ struct
             REF_RAISE(RefineError ("dest_dep0_dep3_term", TermMatchError (t, "bad arity")))
 
    (*
-    * Three subterms.
-    *)
-   let is_dep0_dep2_dep2_term opname t = match get_core t with
-      Term { term_op = { op_name = opname'; op_params = [] };
-             term_terms = [{bvars=[]};{bvars=[_;_]};{bvars=[_;_]}]
-           } -> Opname.eq opname' opname
-    | _ -> false
-
-   let mk_dep0_dep2_dep2_term opname t0 v11 v12 t1 v21 v22 t2 =
-      mk_term
-         { op_name = opname; op_params = [] }
-         [mk_simple_bterm t0;
-          mk_bterm [v11; v12] t1;
-          mk_bterm [v21; v22] t2]
-
-   let dest_dep0_dep2_dep2_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [{ bvars = []; bterm = t0 };
-                      { bvars = [v11; v12]; bterm = t1 };
-                      { bvars = [v21; v22]; bterm = t2 }]
-      } when Opname.eq opname' opname ->
-          t0, v11, v12, t1, v21, v22, t2
-    | _ -> REF_RAISE(RefineError ("dest_dep0_dep2_dep2_term", TermMatchError (t, "bad arity")))
-
-   (*
     * Four subterms.
     *)
    let is_dep0_dep2_dep0_dep2_term opname t = match get_core t with
@@ -926,53 +883,6 @@ struct
                       { bvars = [v2]; bterm = t2 }] } -> t0, t1, v2, t2
     | _ ->
          REF_RAISE(RefineError ("dest_dep0_dep0_dep1_any_term", TermMatchError (t, "bad arity")))
-
-   (*
-    * Three subterms.
-    *)
-   let is_dep0_dep0_dep2_term opname t = match get_core t with
-      Term { term_op = { op_name = opname'; op_params = [] };
-             term_terms = [{ bvars = [] }; { bvars = [] }; { bvars = [_; _] }]
-           } -> Opname.eq opname' opname
-    | _ -> false
-
-   let mk_dep0_dep0_dep2_term opname t0 t1 v1 v2 t2 =
-      { free_vars = VarsDelayed;
-        core = Term
-         { term_op = { op_name = opname; op_params = [] };
-           term_terms =
-            [mk_simple_bterm t0;
-             mk_simple_bterm t1;
-             { bvars = [v1; v2]; bterm = t2 }]}}
-
-   let dest_dep0_dep0_dep2_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [{ bvars = []; bterm = t0 };
-                      { bvars = []; bterm = t1 };
-                      { bvars = [v1; v2]; bterm = t2 }]
-      } when Opname.eq opname' opname -> t0, t1, v1, v2, t2
-    | _ ->
-         REF_RAISE(RefineError ("dest_dep0_dep0_dep2_term", TermMatchError (t, "bad arity")))
-
-   let is_dep0_dep0_dep2_any_term t = match get_core t with
-      Term { term_terms = [{ bvars = [] }; { bvars = [] }; { bvars = [_; _] }] } -> true
-    | _ -> false
-
-   let mk_dep0_dep0_dep2_any_term op t0 t1 v1 v2 t2 =
-      { free_vars = VarsDelayed;
-        core = Term
-         { term_op = op;
-           term_terms =
-            [mk_simple_bterm t0;
-             mk_simple_bterm t1;
-             { bvars = [v1; v2]; bterm = t2 }]}}
-
-   let dest_dep0_dep0_dep2_any_term t = match dest_term t with
-      { term_terms = [{ bvars = []; bterm = t0 };
-                      { bvars = []; bterm = t1 };
-                      { bvars = [v1; v2]; bterm = t2 }] } -> t0, t1, v1, v2, t2
-    | _ ->
-         REF_RAISE(RefineError ("dest_dep0_dep0_dep2_any_term", TermMatchError (t, "bad arity")))
 
    let is_dep0_dep1_dep1_term opname t = match get_core t with
       Term { term_op = { op_name = opname'; op_params = [] };

@@ -93,11 +93,8 @@ sig
    val dest_dep0_dep1_any_term : term -> string * term * term
 
    val is_dep1_dep0_term : opname -> term -> bool
-   val is_dep1_dep0_any_term : term -> bool
    val mk_dep1_dep0_term : opname -> string -> term -> term -> term
-   val mk_dep1_dep0_any_term : operator -> string -> term -> term -> term
    val dest_dep1_dep0_term : opname -> term -> string * term * term
-   val dest_dep1_dep0_any_term : term -> string * term * term
 
    val is_dep0_dep2_term : opname -> term -> bool
    val mk_dep0_dep2_term : opname -> string -> string -> term -> term -> term
@@ -119,21 +116,9 @@ sig
    val mk_dep0_dep0_dep1_any_term : operator -> term -> term -> string -> term -> term
    val dest_dep0_dep0_dep1_any_term : term -> term * term * string * term
 
-   val is_dep0_dep0_dep2_term : opname -> term -> bool
-   val mk_dep0_dep0_dep2_term : opname -> term -> term -> string -> string -> term -> term
-   val dest_dep0_dep0_dep2_term : opname -> term -> term * term * string * string * term
-
-   val is_dep0_dep0_dep2_any_term : term -> bool
-   val mk_dep0_dep0_dep2_any_term : operator -> term -> term -> string -> string -> term -> term
-   val dest_dep0_dep0_dep2_any_term : term -> term * term * string * string * term
-
    val is_dep0_dep1_dep1_term : opname -> term -> bool
    val mk_dep0_dep1_dep1_term : opname -> term -> string -> term -> string -> term -> term
    val dest_dep0_dep1_dep1_term : opname -> term -> term * string * term * string * term
-
-   val is_dep0_dep2_dep2_term : opname -> term -> bool
-   val mk_dep0_dep2_dep2_term : opname -> term -> string -> string -> term -> string -> string -> term -> term
-   val dest_dep0_dep2_dep2_term : opname -> term -> term * string * string * term * string * string * term
 
    val is_dep0_dep2_dep0_dep2_term : opname -> term -> bool
    val mk_dep0_dep2_dep0_dep2_term : opname -> term -> string -> string -> term -> term -> string -> string -> term -> term

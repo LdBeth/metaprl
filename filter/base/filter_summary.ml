@@ -1515,12 +1515,6 @@ struct
       raise (Failure s)
 
    (*
-    * List version generalizing terms.
-    *)
-   let generalizes_list tl1 tl2 =
-      List_util.for_all2 generalizes tl1 tl2
-
-   (*
     * Check parameter lists.
     *)
    let check_params int_params imp_params =
@@ -1610,8 +1604,8 @@ struct
                   if name = name' then
                      if not (check_params params' params) then
                         implem_error (sprintf "Cond_rewrite %s: param list mismatch" name)
-                     else if not (generalizes_list args' args) then
-                        implem_error (sprintf "Cond_rewrite %s: arg list does not generalize" name)
+                     else if not (List.length args = List.length args' && List.for_all2 alpha_equal args' args) then
+                        implem_error (sprintf "Cond_rewrite %s: arg lists mismatch" name)
                      else if not (alpha_equal redex' redex & alpha_equal contractum contractum') then
                         implem_error (sprintf "Cond_rewrite %s: specification mismatch" name)
                      else
@@ -1964,7 +1958,7 @@ struct
                                 crw_proof = proof2
                   }, _) ->
                if not (check_params params1 params2)
-                  or not (generalizes_list args2 args1)
+                  or not (List.length args2 = List.length args1 && List.for_all2 alpha_equal args2 args1)
                   or not (alpha_equal redex1 redex2)
                   or not (alpha_equal contractum1 contractum2)
                then

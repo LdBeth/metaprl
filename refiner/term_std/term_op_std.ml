@@ -721,20 +721,8 @@ struct
       } when Opname.eq opname' opname -> true
     | _ -> false
 
-   let is_dep1_dep0_any_term = function
-      { term_op = { op_params = [] };
-        term_terms = [{ bvars = [_] }; { bvars = [] }]
-      } -> true
-    | _ -> false
-
    let mk_dep1_dep0_term opname = fun
       v t1 t2 -> { term_op = { op_name = opname; op_params = [] };
-                   term_terms = [{ bvars = [v]; bterm = t1 };
-                                 { bvars = []; bterm = t2 }]
-                 }
-
-   let mk_dep1_dep0_any_term op = fun
-      v t1 t2 -> { term_op = op;
                    term_terms = [{ bvars = [v]; bterm = t1 };
                                  { bvars = []; bterm = t2 }]
                  }
@@ -745,12 +733,6 @@ struct
                       { bvars = []; bterm = t2 }]
       } when Opname.eq opname' opname -> v, t1, t2
     | t -> REF_RAISE(RefineError ("dest_dep1_dep0_term", TermMatchError (t, "bad arity")))
-
-   let dest_dep1_dep0_any_term = function
-      { term_terms = [{ bvars = [v]; bterm = t1 };
-                      { bvars = []; bterm = t2 }]
-      } -> v, t1, t2
-    | t -> REF_RAISE(RefineError ("dest_dep1_dep0_any_term", TermMatchError (t, "bad arity")))
 
    (*
     * First subterm of arity 2.
@@ -818,30 +800,6 @@ struct
       } when Opname.eq opname' opname -> v1, v2, v3, t1, t2
     | t ->
          REF_RAISE(RefineError ("dest_dep0_dep3_term", TermMatchError (t, "bad arity")))
-
-   (*
-    * Three subterms.
-    *)
-   let is_dep0_dep2_dep2_term opname = function
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [{ bvars = [] }; { bvars = [_; _] }; { bvars = [_; _] }]
-      } when Opname.eq opname' opname -> true
-    | _ -> false
-
-   let mk_dep0_dep2_dep2_term opname = fun
-      t0 v11 v12 t1 v21 v22 t2 -> { term_op = { op_name = opname; op_params = [] };
-                          term_terms = [{ bvars = []; bterm = t0 };
-                                        { bvars = [v11; v12]; bterm = t1 };
-                                        { bvars = [v21; v22]; bterm = t2 }]
-                        }
-
-   let dest_dep0_dep2_dep2_term opname = function
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [{ bvars = []; bterm = t0 };
-                      { bvars = [v11; v12]; bterm = t1 };
-                      { bvars = [v21; v22]; bterm = t2 }]
-      } when Opname.eq opname' opname -> t0, v11, v12, t1, v21, v22, t2
-    | t -> REF_RAISE(RefineError ("dest_dep0_dep2_dep2_term", TermMatchError (t, "bad arity")))
 
    (*
     * Four subterms.
@@ -941,55 +899,6 @@ struct
          t0, t1, v2, t2
     | t ->
          REF_RAISE(RefineError ("dest_dep0_dep0_dep1_any_term", TermMatchError (t, "bad arity")))
-   (*
-    * Three subterms.
-    *)
-   let is_dep0_dep0_dep2_term opname = function
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [{ bvars = [] }; { bvars = [] }; { bvars = [_; _] }]
-      } when Opname.eq opname' opname ->
-         true
-    | _ ->
-         false
-
-   let mk_dep0_dep0_dep2_term opname = fun
-      t0 t1 v1 v2 t2 -> { term_op = { op_name = opname; op_params = [] };
-                          term_terms = [{ bvars = []; bterm = t0 };
-                                        { bvars = []; bterm = t1 };
-                                        { bvars = [v1; v2]; bterm = t2 }]
-                        }
-
-   let dest_dep0_dep0_dep2_term opname = function
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [{ bvars = []; bterm = t0 };
-                      { bvars = []; bterm = t1 };
-                      { bvars = [v1; v2]; bterm = t2 }]
-      } when Opname.eq opname' opname ->
-         t0, t1, v1, v2, t2
-    | t ->
-         REF_RAISE(RefineError ("dest_dep0_dep0_dep1_term", TermMatchError (t, "bad arity")))
-
-   let is_dep0_dep0_dep2_any_term = function
-      { term_terms = [{ bvars = [] }; { bvars = [] }; { bvars = [_; _] }] } ->
-         true
-    | _ ->
-         false
-
-   let mk_dep0_dep0_dep2_any_term op = fun
-      t0 t1 v1 v2 t2 -> { term_op = op;
-                       term_terms = [{ bvars = []; bterm = t0 };
-                                     { bvars = []; bterm = t1 };
-                                     { bvars = [v1; v2]; bterm = t2 }]
-                     }
-
-   let dest_dep0_dep0_dep2_any_term = function
-      { term_terms = [{ bvars = []; bterm = t0 };
-                      { bvars = []; bterm = t1 };
-                      { bvars = [v1; v2]; bterm = t2 }]
-      } ->
-         t0, t1, v1, v2, t2
-    | t ->
-         REF_RAISE(RefineError ("dest_dep0_dep0_dep1_any_term", TermMatchError (t, "bad arity")))
 
    let is_dep0_dep1_dep1_term opname = function
       { term_op = { op_name = opname'; op_params = [] };
@@ -1012,9 +921,6 @@ struct
       } when Opname.eq opname' opname -> t0, v1, t1, v2, t2
     | t -> REF_RAISE(RefineError ("dest_dep0_dep1_dep1_term", TermMatchError (t, "bad arity")))
 
-   (*
-    * Three subterms.
-    *)
    let is_dep0_dep0_dep3_term opname = function
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [{ bvars = [] }; { bvars = [] }; { bvars = [_; _; _] }]
