@@ -15,7 +15,7 @@ MLZFILES =\
 #
 include Files
 
-OCamlGeneratedFiles(phobos_lexer.ml  phobos_parser.ml)
+OCamlGeneratedFiles(phobos_lexer.ml phobos_parser.ml phobos_parser.mli)
 
 OCamlLibraryInstall($(MPINSTALL), $(LIB), filterphobos, $(PHOBOS_FILES))
 
@@ -23,6 +23,6 @@ OCamlLibraryInstall($(MPINSTALL), $(LIB), filterphobos, $(PHOBOS_FILES))
 # Clean up
 #
 clean:
-    $(CLEAN) phobos_lexer.ml
+    $(CLEAN) phobos_lexer.ml phobos_parser.ml phobos_parser.mli
 
 all: filterphobos$(LIB_SUFFIX)
