@@ -57,11 +57,11 @@ all-bodies.tex: Makefile
 all-theories.aux: all-bodies.tex
 
 $(NAME).aux: $(INPUTS) $(TEXFILES)
-	TEXINPUTS=$(TEXINPUTS) pdflatex $(NAME)
+	TEXINPUTS=$(TEXINPUTS) latex $(NAME)
 	if grep -q \\\citation $(NAME).aux; then \
 		TEXINPUTS=$(TEXINPUTS) bibtex $(NAME); \
-		TEXINPUTS=$(TEXINPUTS) pdflatex $(NAME); \
-		TEXINPUTS=$(TEXINPUTS) pdflatex $(NAME); \
+		TEXINPUTS=$(TEXINPUTS) latex $(NAME); \
+		TEXINPUTS=$(TEXINPUTS) latex $(NAME); \
 	fi
 
 $(NAME).ind: $(INPUTS) $(TEXFILES)
