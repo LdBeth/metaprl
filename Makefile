@@ -15,7 +15,8 @@ REFINER_DIRS :=\
 	clib\
 	mllib\
 	refiner\
-	library
+	library\
+	debug
 
 MP_DIRS :=\
 	ensemble\

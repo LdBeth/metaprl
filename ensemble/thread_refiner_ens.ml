@@ -67,27 +67,55 @@ let debug_remote =
         debug_value = false
       }
 
+(*
+ * This functions are lifted out for speed, and so that
+ * the marshaler does not get extra suprious values in
+ * the closures for these functions.
+ *)
+module ThreadRefinerTacticals =
+struct
+   (*
+    * These are the values that a tactic_auxctic returns.
+    *)
+   type ('term, 'extract) t =
+      Value of 'term list * 'extract
+    | All1 of ('term, 'extract) tactic * ('term, 'extract) tactic * 'term
+    | All2 of ('term, 'extract) tactic * ('term, 'extract) tactic list * 'term
+    | AllF of ('term, 'extract) tactic * ('term list -> ('term, 'extract) t list) * 'term
+    | First of ('term, 'extract) tactic list * 'term
+
+   and ('term, 'extract) tactic = 'term -> ('term, 'extract) t
+
+   (*
+    * Constructors.
+    *)
+   let create_value args ext =
+      Value (args, ext)
+
+   let first tacs arg =
+      First (tacs, arg)
+
+   let compose1 tac1 tac2 arg =
+      All1 (tac1, tac2, arg)
+
+   let compose2 tac1 tacs2 arg =
+      All2 (tac1, tacs2, arg)
+
+   let composef tac1 tacf arg =
+      AllF (tac1, tacf, arg)
+end
+
 module MakeThreadRefiner (Arg : ThreadRefinerArgSig) =
 struct
-   module Remote = Remote_ensemble.Remote
+   module Remote = Remote_monitor.MakeMonitor (Remote_ensemble.Remote)
 
    (************************************************************************
     * TYPES                                                                *
     ************************************************************************)
 
    type extract = Arg.extract
-
-   (*
-    * These are the values that a tactic returns.
-    *)
-   type 'term t =
-      Value of 'term list * extract
-    | All1 of 'term tactic * 'term tactic * 'term
-    | All2 of 'term tactic * 'term tactic list * 'term
-    | AllF of 'term tactic * ('term list -> 'term t list) * 'term
-    | First of 'term tactic list * 'term
-
-   and 'term tactic = 'term -> 'term t
+   type 'term t = ('term, extract) ThreadRefinerTacticals.t
+   type 'term tactic = ('term, extract) ThreadRefinerTacticals.tactic
 
    (*
     * Shared memory keys.
@@ -301,7 +329,8 @@ struct
     *       the scheduler.
     *)
    type ('term, 'share) scheduler =
-      { sched_printer : out_channel -> 'term -> unit;
+      { sched_nomarshal : unit -> unit;
+        sched_printer : out_channel -> 'term -> unit;
         sched_remote : ('term sched_message, 'term job_message, 'share) Remote.t;
         mutable sched_idle : 'term process list;
         mutable sched_waiting : 'term proc_entry list;
@@ -310,7 +339,7 @@ struct
         mutable sched_pending : 'term pending_entry list;
         mutable sched_roots   : 'term root_entry list;
         mutable sched_locals  : 'term local_entry list;
-        sched_submit : 'term submit_message Thread_event.channel;
+        sched_submit : 'term submit_message Thread_event.channel
       }
 
    (*
@@ -595,15 +624,15 @@ struct
     *)
    let push_goal goal stack =
       match goal with
-         Value (args, ext) ->
+         ThreadRefinerTacticals.Value (args, ext) ->
             pop_success args ext stack
-       | First (tacs, arg) ->
+       | ThreadRefinerTacticals.First (tacs, arg) ->
             OrEntry (tacs, arg) :: stack
-       | All1 (tac1, tac2, arg) ->
+       | ThreadRefinerTacticals.All1 (tac1, tac2, arg) ->
             AndEntryThen1 (tac1, tac2, arg) :: stack
-       | All2 (tac1, tacs2, arg) ->
+       | ThreadRefinerTacticals.All2 (tac1, tacs2, arg) ->
             AndEntryThen2 (tac1, tacs2, arg) :: stack
-       | AllF (tac1, tacf, arg) ->
+       | ThreadRefinerTacticals.AllF (tac1, tacf, arg) ->
             AndEntryThenF (tac1, tacf, arg) :: stack
 
    (*
@@ -665,6 +694,15 @@ struct
    (*
     * Handle a message from the scheduler.
     *)
+   let rec big_stack i = function
+      _ :: t ->
+         if i = 10 then
+            true
+         else
+            big_stack (succ i) t
+    | [] ->
+         false
+
    let rec handle_wakeup proc stack =
       if !debug_schedule then
          begin
@@ -690,27 +728,32 @@ struct
       match stack with
          [ValueEntry (args, ext)] ->
             ProcSuccess (args, ext)
-       | [entry] ->
-            send_stack proc (eval_entry entry [])
        | [] ->
             raise (Invalid_argument "send_stack")
        | stack ->
-            let stack, split = List_util.split_last stack in
-               if !debug_sync then
-                  begin
-                     lock_printer ();
-                     eprintf "Thread_refiner.send_stack: %d sending stack: %d%t" proc.proc_pid (List.length stack) eflush;
-                     print_stack_entry proc.proc_printer split;
-                     unlock_printer ()
-                  end;
-               Thread_event.sync proc.proc_pid (Thread_event.send proc.proc_result (ProcStack split));
-               if !debug_sync then
-                  begin
-                     lock_printer ();
-                     eprintf "Thread_refiner.send_stack: %d done%t" proc.proc_pid eflush;
-                     unlock_printer ()
-                  end;
-               eval_stack proc stack
+            if big_stack 0 stack then
+               let stack, split = List_util.split_last stack in
+                  if !debug_sync then
+                     begin
+                        lock_printer ();
+                        eprintf "Thread_refiner.send_stack: %d sending stack: %d%t" proc.proc_pid (List.length stack) eflush;
+                        print_stack_entry proc.proc_printer split;
+                        unlock_printer ()
+                     end;
+                  Thread_event.sync proc.proc_pid (Thread_event.send proc.proc_result (ProcStack split));
+                  if !debug_sync then
+                     begin
+                        lock_printer ();
+                        eprintf "Thread_refiner.send_stack: %d done%t" proc.proc_pid eflush;
+                        unlock_printer ()
+                     end;
+                  eval_stack proc stack
+            else
+               match stack with
+                  entry :: stack ->
+                     send_stack proc (eval_entry entry stack)
+                | [] ->
+                     raise (Invalid_argument "Thread_refiner_ens.send_stack")
 
    (*
     * Loop until exception is raised.
@@ -1509,7 +1552,7 @@ struct
             raise (Invalid_argument "sched_pop_failure")
 
    (*
-    * Handle client success/failure.  The process if placed on the idle queue.
+    * Handle client success/failure.  The process is placed on the idle queue.
     *)
    let handle_proc_success sched entry args ext =
       if !debug_schedule then
@@ -1801,23 +1844,65 @@ struct
             begin
                match msg with
                   ProcSuccess (args, ext) ->
+                     if true then
+                        begin
+                           lock_printer ();
+                           eprintf "Thread_refiner_ens.handle_event: ProcSuccess%t" eflush;
+                           unlock_printer ()
+                        end;
                      handle_proc_success sched entry args ext
                 | ProcFailure exn ->
+                     if true then
+                        begin
+                           lock_printer ();
+                           eprintf "Thread_refiner_ens.handle_event: ProcFailure%t" eflush;
+                           unlock_printer ()
+                        end;
                      handle_proc_failure sched entry exn
                 | ProcStack stack ->
+                     if true then
+                        begin
+                           lock_printer ();
+                           eprintf "Thread_refiner_ens.handle_event: ProcStack%t" eflush;
+                           unlock_printer ()
+                        end;
                      handle_stack sched entry stack
                 | ProcCanceled ->
+                     if true then
+                        begin
+                           lock_printer ();
+                           eprintf "Thread_refiner_ens.handle_event: ProcCanceled%t" eflush;
+                           unlock_printer ()
+                        end;
                      handle_process_cancelation sched entry
             end
        | SubmitMessage msg ->
+            if true then
+               begin
+                  lock_printer ();
+                  eprintf "Thread_refiner_ens.handle_event: ProcMessage%t" eflush;
+                  unlock_printer ()
+               end;
             handle_submission sched msg
        | ClientMessage (root, msg) ->
+            if true then
+               begin
+                  lock_printer ();
+                  eprintf "Thread_refiner_ens.handle_event: ClientMessage%t" eflush;
+                  unlock_printer ()
+               end;
             begin
                match msg with
                   ClientCancel ->
                      handle_client_cancelation sched root
             end
        | RemoteMessage (remote, msg) ->
+            if true then
+               begin
+                  lock_printer ();
+                  eprintf "Thread_refiner_ens.handle_event: RemoteMessage%t" eflush;
+                  unlock_printer ()
+               end;
             begin
                match msg with
                   JobSuccess (args, ext) ->
@@ -1826,8 +1911,20 @@ struct
                      handle_remote_failure sched remote exn
             end
        | CancelMessage local ->
+            if true then
+               begin
+                  lock_printer ();
+                  eprintf "Thread_refiner_ens.handle_event: CancelMessage%t" eflush;
+                  unlock_printer ()
+               end;
             handle_local_cancelation sched local
        | RequestMessage local ->
+            if true then
+               begin
+                  lock_printer ();
+                  eprintf "Thread_refiner_ens.handle_event: RequestMessage%t" eflush;
+                  unlock_printer ()
+               end;
             handle_local_submission sched local
 
    (************************************************************************
@@ -1896,7 +1993,7 @@ struct
          proc.proc_status <- StatusRunning;
          proc.proc_wakeup <- false;
          set_child_process parent pending (SProcess entry);
-         if !debug_sync then
+         if !debug_sync or true then
             begin
                lock_printer ();
                eprintf "Thread_refiner.start_process: %d%t" proc.proc_pid eflush;
@@ -1935,10 +2032,18 @@ struct
    let start_remote sched ({ pending_arg = msg; pending_parent = parent } as pending) =
       let id = max_remote_id sched.sched_remotes in
       let _ =
-         if !debug_remote then
+         if !debug_remote or true then
             begin
                lock_printer ();
-               eprintf "Thread_refiner.start_remote: %d%t" id eflush;
+               eprintf "Thread_refiner.start_remote: %d:" id;
+               begin
+                  match msg with
+                     SchedTacticArg _ ->
+                        eprintf "tactic"
+                   | SchedThread _ ->
+                        eprintf "goal"
+               end;
+               eflush stderr;
                unlock_printer ()
             end
       in
@@ -2020,7 +2125,7 @@ struct
             end
       in
       let _ =
-         if !debug_sync then
+         if !debug_sync or true then
             begin
                lock_printer ();
                eprintf "Thread_refiner.sched_main_loop: waiting";
@@ -2032,7 +2137,7 @@ struct
             end
       in
       let event = Remote.select sched.sched_remote (schedule_events sched) in
-         if !debug_sync then
+         if !debug_sync or true then
             begin
                lock_printer ();
                eprintf "Thread_Refiner.sched_main_loop: handling event%t" eflush;
@@ -2045,10 +2150,13 @@ struct
    (*
     * Create a refiner.
     *)
+         external identity : unit -> unit = "%identity"
+
    let create printer =
       let printer = (fun out _ -> output_string out "#") in
       let sched =
-         { sched_printer = printer;
+         { sched_nomarshal = identity;
+           sched_printer = printer;
            sched_remote = Remote.create ();
            sched_idle = [];
            sched_waiting = [];
@@ -2069,20 +2177,11 @@ struct
    (*
     * Constructors.
     *)
-   let create_value args ext =
-      Value (args, ext)
-
-   let first tacs arg =
-      First (tacs, arg)
-
-   let compose1 tac1 tac2 arg =
-      All1 (tac1, tac2, arg)
-
-   let compose2 tac1 tacs2 arg =
-      All2 (tac1, tacs2, arg)
-
-   let composef tac1 tacf arg =
-      AllF (tac1, tacf, arg)
+   let create_value = ThreadRefinerTacticals.create_value
+   let first = ThreadRefinerTacticals.first
+   let compose1 = ThreadRefinerTacticals.compose1
+   let compose2 = ThreadRefinerTacticals.compose2
+   let composef = ThreadRefinerTacticals.composef
 
    (*
     * Submit a job to the scheduler.

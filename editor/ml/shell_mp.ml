@@ -266,6 +266,7 @@ struct
       ["-I", Arg.String add_include, "add an directory to the path for include files"]
 
    let _ =
+      Debug_symbols.debug_symbols Sys.argv.(0);
       Arg.current := 0;
       Env_arg.parse spec handle_anon_arg "MetaPRL toploop"
 

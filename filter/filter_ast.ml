@@ -66,7 +66,7 @@ let build_printed_term loc t =
          <:expr< [] >>
    and build_var = function
       [h] ->
-         if Ctype.is_capitalized h then
+         if Mp_ctype.is_capitalized h then
             <:expr< $uid:h$ >>
          else
             <:expr< $lid:h$ >>

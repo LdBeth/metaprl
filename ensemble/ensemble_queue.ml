@@ -175,6 +175,7 @@ struct
          * the keys, so we can delete the entries event after the
          * key is dropped.
          *)
+        mp_marshal : int -> int;
         mutable mp_keys : 'c key Weak.t;
         mutable mp_key_index : int;
         mutable mp_key_numbers : int array;
@@ -334,14 +335,14 @@ struct
       in
          if upcalls <> [] then
             begin
-               if !debug_ensemble then
+               if !debug_ensemble or true then
                   begin
                      lock_printer ();
                      eprintf "Ensemble_queue.issue_upcalls: start%t" eflush;
                      unlock_printer ()
                   end;
                List.iter issue upcalls;
-               if !debug_ensemble then
+               if !debug_ensemble or true then
                   begin
                      lock_printer ();
                      eprintf "Ensemble_queue.issue_upcalls: issued%t" eflush;
@@ -419,7 +420,7 @@ struct
             ()
 
    let install_lock info id =
-      if !debug_ensemble then
+      if !debug_ensemble or true then
          begin
             lock_printer ();
             eprintf "Ensemble_queue.install_lock: %s:%d%t" (**)
@@ -432,6 +433,8 @@ struct
          info.mp_pending_lock <- None;
          if not info.mp_quick_lock then
             send_upcall info (UpcallLock entry)
+         else
+            send_upcall info UpcallView
 
    let cancel_lock info srchand entry =
       let id = entry.entry_id in
@@ -446,6 +449,8 @@ struct
          info.mp_pending_lock <- None;
          if info.mp_quick_lock then
             send_upcall info (UpcallCancel entry)
+         else
+            send_upcall info UpcallView
 
    let handle_lock info srchand id =
       match info.mp_pending_lock with
@@ -517,12 +522,23 @@ struct
             false
 
    let local_result info id x =
+      let print_entry { entry_id = { id_id = id; id_number = number } } =
+         eprintf "(%s, %d)" (Endpt.string_of_id id) number
+      in
       try
+         lock_printer ();
+         eprintf "Ensemble_queue.local_result: try local %s, %d: " (Endpt.string_of_id id.id_id) id.id_number;
+         List.iter print_entry info.mp_local;
+         eflush stderr;
+         unlock_printer ();
          let entry, entries = remove_entry id info.mp_local in
             info.mp_local <- entries;
+            lock_printer ();
+            eprintf "Ensemble_queue.local_result: test for local%t" eflush;
+            unlock_printer ();
             if entry.entry_id.id_id = info.mp_local_state.endpt then
                begin
-                  if !debug_ensemble then
+                  if !debug_ensemble or true then
                      begin
                         lock_printer ();
                         eprintf "Ensemble_queue.local_result: %d%t" (**)
@@ -536,13 +552,13 @@ struct
             ()
 
    let handle_result info srchand id x =
-      if !debug_ensemble then
+      if !debug_ensemble or true then
          begin
             lock_printer ();
             eprintf "Ensemble_queue.handle_result%t" eflush;
             unlock_printer ()
          end;
-      if (remote_result info id x) then
+      if not (remote_result info id x) then
          local_result info id x
 
    (*
@@ -1055,6 +1071,8 @@ struct
    (*
     * Create the initial state for the application.
     *)
+   external identity : int -> int = "%identity"
+
    let open_nl quick ls vs =
       { mp_lock = Mutex.create ();
 
@@ -1063,6 +1081,7 @@ struct
         mp_remote = [];
         mp_index = 0;
 
+        mp_marshal = identity;
         mp_keys = Weak.create 0;
         mp_key_index = 0;
         mp_key_numbers = [||];
@@ -1192,6 +1211,12 @@ struct
          entry
 
    (*
+    * Get the value associated with a handle.
+    *)
+   let arg_of_handle { entry_value = x } =
+      x
+
+   (*
     * Delete an entry in the queue.
     * The entry is not actually deleted until the
     * broadcast message comes back.
@@ -1221,6 +1246,13 @@ struct
                mp_unlocked = unlocked
              } = info
          in
+            lock_printer ();
+            eprintf "Ensemble_queue.lock:";
+            List.iter (fun { entry_id = { id_id = id; id_number = number } } ->
+                  eprintf " (%s, %d)" (Endpt.string_of_id id) number) unlocked;
+            eflush stderr;
+            unlock_printer ();
+
             if pending = None && unlocked <> [] then
                let entry = List.nth unlocked (Random.int (List.length unlocked)) in
                let id = entry.entry_id in
@@ -1235,6 +1267,20 @@ struct
                   send_message info "lock" (Cast (CastLock id));
                   if quick then
                      send_upcall info (UpcallPreLock entry)
+                  else
+                     ()
+            else if pending <> None then
+               begin
+                  lock_printer ();
+                  eprintf "Ensemble_queue.lock: lock already pending%t" eflush;
+                  unlock_printer ()
+               end
+            else if unlocked = [] then
+               begin
+                  lock_printer ();
+                  eprintf "Ensemble_queue.lock: no unlocked entries%t" eflush;
+                  unlock_printer ()
+               end
       end;
       unlock_queue info
 

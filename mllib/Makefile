@@ -11,7 +11,8 @@ MLZFILES :=\
 	dag\
 	remote_queue_sig\
 	remote_lazy_queue_sig\
-	simplehash_sig
+	simplehash_sig\
+	register
 
 # Library files
 LMFILES := $(MLZFILES)\
@@ -28,7 +29,7 @@ LMFILES := $(MLZFILES)\
 	filename_util\
 	mp_big_int\
 	mp_num\
-	ctype\
+	mp_ctype\
 	debug_set\
 	bitset\
 	imp_dag\

@@ -17,7 +17,8 @@ INCLUDE = -I .\
 	-I $(ROOT)/ensemble\
 	-I $(ROOT)/lib\
 	-I $(ROOT)/library\
-	-I $(ENSROOT)/lib\
+	-I $(ROOT)/ocaml_debug\
+	-I $(ENSROOT)/lib/$(HOSTTYPE)\
 	-I $(CAMLP4LIB)
 
 OCAMLDEPFLAGS = -prl
@@ -84,27 +85,21 @@ TCMXFILES = $(addsuffix .cmx, $(TOPFILES))
 ########################################################################
 
 ifdef ENSROOT
-    ifeq ($(OSTYPE), win32)
-        CMADEPS_ens =\
-            $(ENSROOT)/lib/socket-$(HOSTTYPE)-$(OSTYPE).cma\
-            $(ENSROOT)/lib/crypto-$(HOSTTYPE)-$(OSTYPE).cma\
-            $(ENSROOT)/lib/libens-$(HOSTTYPE)-$(OSTYPE).cma
+    CMADEPS_ens =\
+        $(ENSROOT)/lib/$(HOSTTYPE)/socket.cma\
+        $(ENSROOT)/lib/$(HOSTTYPE)/crypto.cma\
+	$(ENSROOT)/lib/$(HOSTTYPE)/_nulldynlink.cmo\
+        $(ENSROOT)/lib/$(HOSTTYPE)/libenscore.cma\
+        $(ENSROOT)/lib/$(HOSTTYPE)/libensmin.cma\
+        $(ENSROOT)/lib/$(HOSTTYPE)/libensrest.cma
 
-        CMXADEPS_ens =\
-            $(ENSROOT)/lib/socket-$(HOSTTYPE)-$(OSTYPE).cmxa\
-            $(ENSROOT)/lib/crypto-$(HOSTTYPE)-$(OSTYPE).cmxa\
-            $(ENSROOT)/lib/libens-$(HOSTTYPE)-$(OSTYPE).cmxa
-    else
-        CMADEPS_ens =\
-            $(ENSROOT)/lib/socket.cma\
-            $(ENSROOT)/lib/crypto.cma\
-            $(ENSROOT)/lib/libens.cma
-
-        CMXADEPS_ens =\
-            $(ENSROOT)/lib/socket-$(HOSTTYPE).cmxa\
-            $(ENSROOT)/lib/crypto-$(HOSTTYPE).cmxa\
-            $(ENSROOT)/lib/libens-$(HOSTTYPE).cmxa
-    endif
+    CMXADEPS_ens =\
+        $(ENSROOT)/lib/$(HOSTTYPE)/socket.cmxa\
+        $(ENSROOT)/lib/$(HOSTTYPE)/crypto.cmxa\
+	$(ENSROOT)/lib/$(HOSTTYPE)/_nulldynlink.cmx\
+        $(ENSROOT)/lib/$(HOSTTYPE)/libenscore.cmxa\
+        $(ENSROOT)/lib/$(HOSTTYPE)/libensmin.cmxa\
+        $(ENSROOT)/lib/$(HOSTTYPE)/libensrest.cmxa
 
     CMALIBS_ens =\
         $(ROOT)/lib/trefiner_ens.cma
@@ -113,9 +108,9 @@ ifdef ENSROOT
         $(ROOT)/lib/trefiner_ens.cmxa
 
     CCLIBS_ens =\
-        -ccopt -L$(ENSROOT)/lib\
-        -cclib -lsock-$(HOSTTYPE)\
-        -cclib -lcryptoc-$(HOSTTYPE)
+        -ccopt -L$(ENSROOT)/lib/$(HOSTTYPE)\
+        -cclib -lsock\
+        -cclib -lcryptoc
 else
     #
     # If Ensemble is not configured, use the null refiner.
@@ -181,6 +176,7 @@ CMADEPS =\
 	$(ROOT)/lib/util.cma\
 	$(ROOT)/lib/refiner.cma\
 	$(ROOT)/lib/library.cma\
+	$(ROOT)/lib/ldsymbols.cma\
 	$(ROOT)/lib/prlc.cma\
 	$(CMALIBS_ens)\
 	$(ROOT)/theories/tactic/tactics.cma\
@@ -203,6 +199,7 @@ TCMADEPS =\
 	$(ROOT)/lib/util.cma\
 	$(ROOT)/lib/refiner.cma\
 	$(ROOT)/lib/library.cma\
+	$(ROOT)/lib/ldsymbols.cma\
 	$(ROOT)/lib/prlc.cma\
 	$(CMALIBS_ens)\
 	$(ROOT)/theories/tactic/tactics.cma\
@@ -235,11 +232,11 @@ CCLIBS =\
 	-cclib $(ROOT)/lib/clib$(EXT_LIB)\
 	$(CCLIBS_ens)
 
-# Name of main libraris
+# Name of main librariws
 MAIN = meta-prl
 MP = mp
 
-all: $(MAIN).cma $(MP).top $(MP).run
+all: $(MAIN).cma $(MP).top # $(MP).run
 opt: $(MAIN).cmxa $(MP).opt
 install:: all
 

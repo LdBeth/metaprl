@@ -6,7 +6,7 @@ include $(ROOT)/mk/preface
 
 INCLUDE :=\
 	-I .\
-	-I $(ENSROOT)/lib\
+	-I $(ENSROOT)/lib/$(HOSTTYPE)\
 	-I $(ROOT)/lib
 
 #
@@ -21,13 +21,17 @@ LMFILES =\
 	thread_refiner_sig
 
 ifdef ENSROOT
+    ENSFILES =\
+	appl_closure\
+	ensemble_queue
+
     LMFILES_ens =\
 	$(LMFILES)\
-	appl_closure\
-	ensemble_queue\
+	$(ENSFILES)\
 	remote_sig\
 	remote_null\
 	remote_ensemble\
+	remote_monitor\
 	thread_refiner_ens
 
     CMOFILES_ens = $(addsuffix .cmo, $(LMFILES_ens))
@@ -65,10 +69,10 @@ RENS_LIB = $(ROOT)/lib/$(ENS_LIB)
 ROPT_ENS_LIB = $(ROOT)/lib/$(OPT_ENS_LIB) $(ROOT)/lib/$(LIB)_ens$(EXT_LIB)
 
 $(RENS_LIB): $(ENS_LIB)
-	ln -sf $(ROOT)/$(DIR)/$(ENS_LIB) $@
+	$(LN) $(ROOT)/$(DIR)/$(ENS_LIB) $@
 
 $(ROOT)/lib/$(OPT_ENS_LIB): $(OPT_ENS_LIB)
-	ln -sf $(ROOT)/$(DIR)/$(OPT_ENS_LIB) $@
+	$(LN) $(ROOT)/$(DIR)/$(OPT_ENS_LIB) $@
 
 $(ROOT)/lib/$(LIB)_ens$(EXT_LIB): $(LIB)_ens$(EXT_LIB)
 	ln -s $(ROOT)/$(DIR)/$(LIB)_ens$(EXT_LIB) $@
@@ -77,13 +81,13 @@ $(LIB)_ens$(EXT_LIB): $(OPT_ENS_LIB)
 
 $(ENS_LIB): $(CMOFILES_ens) thread_refiner.cmi thread_refiner_ens_mod.ml
 	$(RM) thread_refiner.ml
-	ln -sf thread_refiner_ens_mod.ml thread_refiner.ml
+	$(LN) thread_refiner_ens_mod.ml thread_refiner.ml
 	$(OCAMLC) $(OCAMLCFLAGS) -c thread_refiner.ml
 	$(OCAMLC) $(OCAMLCFLAGS) -a -o $@ $(LCMOFILES) $(CMOFILES_ens) thread_refiner.cmo
 
 $(OPT_ENS_LIB): $(CMXFILES_ens) thread_refiner.cmi thread_refiner_ens_mod.ml
 	$(RM) thread_refiner.ml
-	ln -sf thread_refiner_ens_mod.ml thread_refiner.ml
+	$(LN) thread_refiner_ens_mod.ml thread_refiner.ml
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -c thread_refiner.ml
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -a -o $@ $(LCMXFILES) $(CMXFILES_ens) thread_refiner.cmx
 endif
@@ -99,23 +103,23 @@ ROPT_NULL_LIB = $(ROOT)/lib/$(OPT_NULL_LIB)
 ROPT_NULL_LIBA = $(ROOT)/lib/$(OPT_NULL_LIBA)
 
 $(RNULL_LIB): $(NULL_LIB)
-	ln -sf $(ROOT)/$(DIR)/$(NULL_LIB) $@
+	$(LN) $(ROOT)/$(DIR)/$(NULL_LIB) $@
 
 $(ROPT_NULL_LIB): $(OPT_NULL_LIB)
-	ln -sf $(ROOT)/$(DIR)/$(OPT_NULL_LIB) $@
+	$(LN) $(ROOT)/$(DIR)/$(OPT_NULL_LIB) $@
 
 $(ROPT_NULL_LIBA): $(OPT_NULL_LIBA)
-	ln -sf $(ROOT)/$(DIR)/$(OPT_NULL_LIBA) $@
+	$(LN) $(ROOT)/$(DIR)/$(OPT_NULL_LIBA) $@
 
 $(NULL_LIB): $(CMOFILES_null) thread_refiner.cmi thread_refiner_null_mod.ml
 	$(RM) thread_refiner.ml
-	ln -sf thread_refiner_null_mod.ml thread_refiner.ml
+	$(LN) thread_refiner_null_mod.ml thread_refiner.ml
 	$(OCAMLC) $(OCAMLCFLAGS) -c thread_refiner.ml
 	$(OCAMLC) $(OCAMLCFLAGS) -a -o $@ $(LCMOFILES) $(CMOFILES_null) thread_refiner.cmo
 
 $(OPT_NULL_LIB): $(CMXFILES_null) thread_refiner.cmi thread_refiner_null_mod.ml
 	$(RM) thread_refiner.ml
-	ln -sf thread_refiner_null_mod.ml thread_refiner.ml
+	$(LN) thread_refiner_null_mod.ml thread_refiner.ml
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -c thread_refiner.ml
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -a -o $@ $(LCMXFILES) $(CMXFILES_null) thread_refiner.cmx
 
@@ -123,7 +127,7 @@ $(OPT_NULL_LIB): $(CMXFILES_null) thread_refiner.cmi thread_refiner_null_mod.ml
 # Default way to make the thread_refiner.ml
 #
 thread_refiner.ml: thread_refiner_null.ml
-	ln -sf thread_refiner_null.ml $@
+	$(LN) thread_refiner_null.ml $@
 
 #
 # Actual makefile

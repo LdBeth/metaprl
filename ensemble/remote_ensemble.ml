@@ -12,27 +12,29 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
 
 open Printf
 open Mp_debug
+
+open Thread_util
 
 open Remote_queue_sig
 
@@ -115,8 +117,7 @@ struct
    type ('a, 'b, 'c) t =
       { queue_queue : ('a, 'b, 'c) Queue.t;
         queue_upcall : ('a, 'b) Queue.upcall Thread_event.event;
-        mutable queue_lock : ('a, 'b) Queue.lock option;
-        mutable queue_lock_pending : bool;
+        mutable queue_lock : ('a, 'b) Queue.lock list;
         mutable queue_pending : ('a, 'b) handle list;
         mutable queue_local : ('a, 'b) local list
       }
@@ -129,13 +130,12 @@ struct
     * Create a new empty queue.
     *)
    let create () =
-      let queue = Queue.create true in
+      let queue = Queue.create false in
       let event = Queue.event_of_queue queue in
       let queue =
          { queue_queue = queue;
            queue_upcall = event;
-           queue_lock = None;
-           queue_lock_pending = false;
+           queue_lock = [];
            queue_pending = [];
            queue_local = []
          }
@@ -153,6 +153,12 @@ struct
       in
          queue.queue_pending <- hand :: queue.queue_pending;
          hand
+
+   (*
+    * Get the value associated with a handle.
+    *)
+   let arg_of_handle { hand_hand = hand } =
+      Queue.arg_of_handle hand
 
    (*
     * Get the receive event for the handle.
@@ -182,18 +188,20 @@ struct
     *)
    let request queue () =
       match queue.queue_lock with
-         Some lock ->
+         lock :: locks ->
             let local =
                { local_canceled = false;
                  local_lock = lock
                }
             in
-               queue.queue_lock <- None;
+               queue.queue_lock <- locks;
                queue.queue_local <- local :: queue.queue_local;
                PollSuccess local
-       | None ->
+       | [] ->
             (* Issue a lock request to the Queue *)
-            queue.queue_lock_pending <- true;
+            lock_printer ();
+            eprintf "Remote_ensemble.request%t" eflush;
+            unlock_printer ();
             Queue.lock queue.queue_queue;
             PollFailure
 
@@ -276,6 +284,9 @@ struct
             else
                hand' :: remove hands
        | [] ->
+            lock_printer ();
+            eprintf "Remote_ensemble.handle_result: lost result%t" eflush;
+            unlock_printer ();
             []
       in
          queue.queue_pending <- remove queue.queue_pending
@@ -320,9 +331,15 @@ struct
                [Thread_event.wrap queue.queue_upcall (fun msg -> MessageUpcall msg);
                 Thread_event.wrap (Thread_event.choose block_events) (fun msg -> MessageEvent msg)]
             in
-               Thread_event.sync 0 (Thread_event.choose events)
+               lock_printer ();
+               eprintf "Remote_ensemble.select: begin%t" eflush;
+               unlock_printer ();
+               let x = Thread_event.sync 0 (Thread_event.choose events) in
+                  lock_printer ();
+                  eprintf "Remote_ensemble.select: end%t" eflush;
+                  unlock_printer ();
+                  x
       in
-         queue.queue_lock_pending <- false;
          match poll [] events with
             MessageUpcall upcall ->
                begin
@@ -333,9 +350,9 @@ struct
                    | Queue.UpcallResult (hand, x) ->
                         handle_result queue hand x
                    | Queue.UpcallLock lock ->
-                        queue.queue_lock <- Some lock
+                        queue.queue_lock <- lock :: queue.queue_lock
                    | Queue.UpcallPreLock lock ->
-                        queue.queue_lock <- Some lock
+                        queue.queue_lock <- lock :: queue.queue_lock
                    | Queue.UpcallView ->
                         ()
                end;

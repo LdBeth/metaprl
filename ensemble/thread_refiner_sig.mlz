@@ -11,21 +11,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -41,20 +41,37 @@ sig
    val compose : extract -> extract list -> extract
 end
 
+module type ThreadRefinerTacticalsSig =
+sig
+   type ('term, 'extract) t
+   type ('term, 'extract) tactic = 'term -> ('term, 'extract) t
+
+   (* Fold a value *)
+   val create_value : 'term list -> 'extract -> ('term, 'extract) t
+
+   (* First operation that succeeds *)
+   val first : ('term, 'extract) tactic list -> ('term, 'extract) tactic
+
+   (* All operations should succeed *)
+   val compose1 : ('term, 'extract) tactic -> ('term, 'extract) tactic -> ('term, 'extract) tactic
+   val compose2 : ('term, 'extract) tactic -> ('term, 'extract) tactic list -> ('term, 'extract) tactic
+   val composef : ('term, 'extract) tactic -> ('term list -> ('term, 'extract) t list) -> ('term, 'extract) tactic
+end
+
 module type ThreadRefinerSig =
 sig
    (* Access is through a server *)
    type ('term, 'share) server
 
-   (* These are the thread objects *)
+   (*
+    * These are the thread objects.
+    *)
    type 'term t
+   type extract
+   type 'term tactic = 'term -> 'term t
 
    (* Shared values *)
    type 'c key
-
-   (* Arguments are result *)
-   type extract
-   type 'term tactic = 'term -> 'term t
 
    (* Create a server *)
    val create : (out_channel -> 'term -> unit) -> ('term, 'share) server

@@ -372,7 +372,7 @@ struct
    let mk_simple_bterm term =
       { bvars = []; bterm = term }
 
-   external make_bterm : bound_term -> bound_term = "%identity"
+   let make_bterm x = x (* external make_bterm : bound_term -> bound_term = "%identity" *)
 
    let mk_bterm vars term =
       { bvars = vars; bterm = term }
@@ -407,7 +407,7 @@ struct
          let v' = new_var av v 0 in
             ((v,v')::vs, (v,mk_var_term v')::ts)
 
-   external dest_bterm : bound_term -> bound_term = "%identity"
+   let dest_bterm x = x (* external dest_bterm : bound_term -> bound_term = "%identity" *)
 
    let mk_sequent_term seq =
       { free_vars = VarsDelayed; core = Sequent seq }
@@ -507,16 +507,16 @@ struct
 
    (* These are trivial identity functions *)
 
-   external make_op : operator' -> operator = "%identity"
-   external dest_op : operator -> operator' = "%identity"
-   external make_param : param' -> param = "%identity"
-   external dest_param : param -> param' = "%identity"
-   external make_level : level_exp' -> level_exp = "%identity"
-   external dest_level : level_exp -> level_exp' = "%identity"
-   external make_level_var : level_exp_var' -> level_exp_var = "%identity"
-   external dest_level_var : level_exp_var -> level_exp_var' = "%identity"
-   external make_object_id : param list -> object_id = "%identity"
-   external dest_object_id : object_id -> param list = "%identity"
+   let make_op x = x (* external make_op : operator' -> operator = "%identity" *)
+   let dest_op x = x (* external dest_op : operator -> operator' = "%identity" *)
+   let make_param x = x (* external make_param : param' -> param = "%identity" *)
+   let dest_param x = x (* external dest_param : param -> param' = "%identity" *)
+   let make_level x = x (* external make_level : level_exp' -> level_exp = "%identity" *)
+   let dest_level x = x (* external dest_level : level_exp -> level_exp' = "%identity" *)
+   let make_level_var x = x (* external make_level_var : level_exp_var' -> level_exp_var = "%identity" *)
+   let dest_level_var x = x (* external dest_level_var : level_exp_var -> level_exp_var' = "%identity" *)
+   let make_object_id x = x (* external make_object_id : param list -> object_id = "%identity" *)
+   let dest_object_id x = x (* external dest_object_id : object_id -> param list = "%identity" *)
 
    (************************************************************************
     * Variables                                                            *

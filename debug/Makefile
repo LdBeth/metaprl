@@ -1,0 +1,184 @@
+# Flags
+DIR := debug
+ROOT := ..
+
+INCLUDE := -I .
+
+CMALIBS := $(CAMLLIB)/unix.cma
+
+# Shared files
+MLZFILES :=\
+    asttypes\
+    parser_aux
+
+# Library files
+PFILES :=\
+    $(MLZFILES)\
+    ident\
+    config\
+    misc\
+    tbl\
+    primitive\
+    path\
+    types\
+    btype\
+    subst\
+    predef\
+    datarepr\
+    env\
+    lambda\
+    instruct\
+    opcodes\
+    clflags\
+    typedtree\
+    ctype\
+    typeopt\
+    terminfo\
+    linenum\
+    location\
+    matching\
+    translobj\
+    translcore\
+    translclass\
+    translmod\
+    meta\
+    emitcode\
+    runtimedef\
+    symtable\
+    debugger_config\
+    primitives\
+    lexer\
+    input_handling\
+    parser\
+    debugcom\
+    symbols\
+    debug
+
+LMFILES :=\
+	debug_symbols
+
+# Name of library
+MAIN := ldsymbols
+
+INSTALL_LIBS := $(MAIN)
+
+all: lib
+
+#
+# Actual makefile
+#
+include $(ROOT)/mk/config
+include Makefile.dep
+
+#
+# Rules
+#
+DEBUG_FILES :=\
+	debugger_config\
+	primitives\
+	input_handling\
+	debugcom\
+	symbols\
+	parser
+
+TYPING_FILES :=\
+	env\
+	path\
+	types\
+	subst\
+	btype\
+	predef\
+	datarepr\
+	primitive\
+	ident\
+	typedtree\
+	ctype
+
+BYTECOMP_FILES :=\
+	lambda\
+	instruct\
+	typeopt\
+	matching\
+	translclass\
+	translcore\
+	translobj\
+	translmod\
+	meta\
+	emitcode\
+	runtimedef\
+	symtable
+
+UTIL_FILES :=\
+	tbl\
+	config\
+	misc\
+	terminfo
+
+PARSING_FILES :=\
+	linenum\
+	location
+
+asttypes.mlz: $(OCAMLSRC)/parsing/asttypes.mli
+	$(LN) $(OCAMLSRC)/parsing/asttypes.mli $@
+
+parser_aux.mlz: $(OCAMLSRC)/debugger/parser_aux.mli
+	$(LN) $(OCAMLSRC)/debugger/parser_aux.mli $@
+
+opcodes.ml: $(OCAMLSRC)/bytecomp/opcodes.ml
+	$(LN) $(OCAMLSRC)/bytecomp/opcodes.ml $@
+
+opcodes.mli: opcodes.ml
+	sed -e 's,let \(.*\)=.*,val \1 : int,' < opcodes.ml > opcodes.mli
+
+clflags.ml: $(OCAMLSRC)/utils/clflags.ml
+	$(LN) $(OCAMLSRC)/utils/clflags.ml $@
+
+clflags.mli: clflags.ml
+	$(OCAMLC) $(OCAMLCFLAGS) -i clflags.ml > clflags.mli
+
+lexer.ml: $(OCAMLSRC)/debugger/lexer.ml
+	$(LN) $(OCAMLSRC)/debugger/lexer.ml $@
+
+lexer.mli: lexer.ml
+	$(OCAMLC) $(OCAMLCFLAGS) -i lexer.ml > lexer.mli
+
+$(addsuffix .ml, $(DEBUG_FILES)): %.ml: $(OCAMLSRC)/debugger/%.ml
+	$(LN) $(OCAMLSRC)/debugger/$*.ml $@
+
+$(addsuffix .mli, $(DEBUG_FILES)): %.mli: $(OCAMLSRC)/debugger/%.mli
+	$(LN) $(OCAMLSRC)/debugger/$*.mli $@
+
+$(addsuffix .ml, $(TYPING_FILES)): %.ml: $(OCAMLSRC)/typing/%.ml
+	$(LN) $(OCAMLSRC)/typing/$*.ml $@
+
+$(addsuffix .mli, $(TYPING_FILES)): %.mli: $(OCAMLSRC)/typing/%.mli
+	$(LN) $(OCAMLSRC)/typing/$*.mli $@
+
+$(addsuffix .ml, $(BYTECOMP_FILES)): %.ml: $(OCAMLSRC)/bytecomp/%.ml
+	$(LN) $(OCAMLSRC)/bytecomp/$*.ml $@
+
+$(addsuffix .mli, $(BYTECOMP_FILES)): %.mli: $(OCAMLSRC)/bytecomp/%.mli
+	$(LN) $(OCAMLSRC)/bytecomp/$*.mli $@
+
+$(addsuffix .ml, $(UTIL_FILES)): %.ml: $(OCAMLSRC)/utils/%.ml
+	$(LN) $(OCAMLSRC)/utils/$*.ml $@
+
+$(addsuffix .mli, $(UTIL_FILES)): %.mli: $(OCAMLSRC)/utils/%.mli
+	$(LN) $(OCAMLSRC)/utils/$*.mli $@
+
+$(addsuffix .ml, $(PARSING_FILES)): %.ml: $(OCAMLSRC)/parsing/%.ml
+	$(LN) $(OCAMLSRC)/parsing/$*.ml $@
+
+$(addsuffix .mli, $(PARSING_FILES)): %.mli: $(OCAMLSRC)/parsing/%.mli
+	$(LN) $(OCAMLSRC)/parsing/$*.mli $@
+
+
+#
+# Rules
+#
+lib: $(RMLIFILES) $(RCMIFILES) $(RCMAFILES)
+opt: $(RMLIFILES) $(RCMIFILES) $(RCMXAFILES) 
+	@ $(MAKE) $(RAFILES)
+
+install:: $(MAIN).cma $(CMIFILES)
+	$(INSTALL) $(MAIN).cma $(MLIFILES) $(CMIFILES) $(MPLIB)

@@ -1,6 +1,5 @@
 (*
- * Wrap a closure marshaler around the application
- * interface.
+ * Print the function at a value of the PC.
  *
  * ----------------------------------------------------------------
  *
@@ -29,18 +28,13 @@
  *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
+ *
  *)
-
-open Ensemble
-
-val marshal : 'a -> Iovecl.t
-
-val full : 'msg Appl_intf.New.full -> Iovecl.t Appl_intf.New.full
 
 (*
  * -*-
  * Local Variables:
- * Caml-master: "refiner"
+ * Caml-master: "mp.run"
  * End:
  * -*-
  *)

@@ -159,7 +159,7 @@ let _ = Env_arg.bool "lib"    false "Use the Nuprl5 library"  set_lib
 (*
  * Identity used for term normalization.
  *)
-external identity : 'a -> 'a = "%identity"
+let identity x = x (* external identity : 'a -> 'a = "%identity" *)
 
 (*
  * Unit term used for interfaces.

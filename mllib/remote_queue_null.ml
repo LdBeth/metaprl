@@ -12,21 +12,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -109,13 +109,19 @@ struct
     *)
    let issue_upcalls queue upcalls =
       let issue upcall =
-         if !debug_queue then
+         if !debug_queue or true then
             begin
                lock_printer ();
-               eprintf "Remote_queue_null.issue_upcall%t" eflush;
+               eprintf "Remote_queue_null.issue_upcall: begin%t" eflush;
                unlock_printer ()
             end;
-         Thread_event.sync 0 (Thread_event.send queue.queue_chan upcall)
+         Thread_event.sync 0 (Thread_event.send queue.queue_chan upcall);
+         if !debug_queue or true then
+            begin
+               lock_printer ();
+               eprintf "Remote_queue_null.issue_upcall: end%t" eflush;
+               unlock_printer ()
+            end
       in
          List.iter issue upcalls
 
@@ -132,6 +138,12 @@ struct
       Mutex.lock queue.queue_lock;
       queue.queue_unlocked <- x :: queue.queue_unlocked;
       Mutex.unlock queue.queue_lock;
+      x
+
+   (*
+    * Get the value associated with a handle.
+    *)
+   let arg_of_handle x =
       x
 
    (*
@@ -156,14 +168,20 @@ struct
     *)
    let lock queue =
       Mutex.lock queue.queue_lock;
-      if !debug_queue then
+      if !debug_queue or true then
          begin
             lock_printer ();
-            eprintf "Remote_queue_null.lock: %d%t" (List.length queue.queue_unlocked) eflush;
+            eprintf "Remote_queue_null.lock: %d/%d%t" (**)
+               (List.length queue.queue_unlocked)
+               (List.length queue.queue_upcalls)
+               eflush;
             unlock_printer ()
          end;
       match queue.queue_unlocked with
          h :: t ->
+            lock_printer ();
+            eprintf "Remote_queue_null.lock: returned lock%t" eflush;
+            unlock_printer ();
             queue.queue_locked <- h :: queue.queue_locked;
             queue.queue_unlocked <- t;
             send_upcall queue (UpcallLock h);
@@ -212,7 +230,8 @@ struct
    let thread_main_loop queue =
       while true do
          Mutex.lock queue.queue_lock;
-         Condition.wait queue.queue_cond queue.queue_lock;
+         if queue.queue_upcalls = [] then
+            Condition.wait queue.queue_cond queue.queue_lock;
          let upcalls = List.rev queue.queue_upcalls in
             queue.queue_upcalls <- [];
             Mutex.unlock queue.queue_lock;
@@ -238,8 +257,8 @@ struct
       []
 
    let main_loop queue =
-      let _ = Thread.create thread_main_loop queue
-      in ()
+      let _ = Thread.create thread_main_loop queue in
+         ()
 end
 
 (*

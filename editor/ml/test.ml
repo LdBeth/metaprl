@@ -90,6 +90,7 @@ let rec prove_disjunct pigeons p =
           with
              Not_found ->
                 raise (RefineError ("prove_disjunct", StringError "disjunct not provable"))) p
+
 (*
  * Step 4: prove one of the negations.
  *)

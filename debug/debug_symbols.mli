@@ -1,6 +1,5 @@
 (*
- * Wrap a closure marshaler around the application
- * interface.
+ * Load the symbol table and tell the marshaler.
  *
  * ----------------------------------------------------------------
  *
@@ -29,18 +28,15 @@
  *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
+ *
  *)
 
-open Ensemble
-
-val marshal : 'a -> Iovecl.t
-
-val full : 'msg Appl_intf.New.full -> Iovecl.t Appl_intf.New.full
+val debug_symbols : string -> unit
 
 (*
  * -*-
  * Local Variables:
- * Caml-master: "refiner"
+ * Caml-master: "mp.run"
  * End:
  * -*-
  *)

@@ -1,6 +1,5 @@
 (*
- * Wrap a closure marshaler around the application
- * interface.
+ * Wrap a debuggin monitor around the remote queue.
  *
  * ----------------------------------------------------------------
  *
@@ -29,18 +28,17 @@
  *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
+ *
  *)
 
-open Ensemble
+open Remote_sig
 
-val marshal : 'a -> Iovecl.t
-
-val full : 'msg Appl_intf.New.full -> Iovecl.t Appl_intf.New.full
+module MakeMonitor (Remote : RemoteSig) : RemoteSig
 
 (*
  * -*-
  * Local Variables:
- * Caml-master: "refiner"
+ * Caml-master: "mp.run"
  * End:
  * -*-
  *)

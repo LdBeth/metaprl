@@ -58,6 +58,12 @@ let debug_marshal =
  ************************************************************************)
 
 (*
+ * Ensemble doesn't export this.
+ *)
+let ceil_word word =
+   (word + 3) land (lnot 3)
+
+(*
  * For now we do a copy of the marshaled data,
  * from a common buffer.
  *)
@@ -71,7 +77,7 @@ let rec marshal x =
    let len = String.length buf in
       try
          let size = Marshal.to_buffer buf 0 len x [Marshal.Closures] in
-         let size = Trans.ceil_word size in
+         let size = ceil_word size in
          let vecl = Mbuf.allocl "MPSERVER:marshal" buf 0 size in
             if !debug_marshal then
                begin
@@ -82,9 +88,9 @@ let rec marshal x =
             vecl
 
       with
-         Failure _ ->
+         Failure s ->
             lock_printer ();
-            eprintf "Ensemble_queue.marshal: increasing buffer size to %d%t" (2 * len) eflush;
+            eprintf "Ensemble_queue.marshal: %s\n\tincreasing buffer size to %d%t" s (2 * len) eflush;
             unlock_printer ();
             marshal_buf := String.create (2 * len);
             marshal x
