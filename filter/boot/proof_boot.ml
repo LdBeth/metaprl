@@ -2116,6 +2116,11 @@ struct
        | Locked ext ->
             replace_step_rule proof ext step
 
+   let make_goal goal =
+      let mseq' = TermNorm.normalize_msequent goal.ref_goal in
+      if mseq' == goal.ref_goal then Goal goal
+      else Goal {goal with ref_goal = mseq'}
+
    let refine postf proof text expr tac =
       let subgoals, ext = TacticInternal.refine tac (goal proof) in
       let info =
@@ -2125,7 +2130,7 @@ struct
            rule_tactic = (fun () -> tac);
            rule_extract_normalized = false;
            rule_extract = ext;
-           rule_subgoals = List.map (fun goal -> Goal goal) subgoals;
+           rule_subgoals = List.map make_goal subgoals;
            rule_leaves = LazyLeavesDelayed;
            rule_extras = []
          }
@@ -2677,34 +2682,6 @@ struct
    module ProofTerm_io = ProofTerm (Refiner_io);;
 
    (*
-    * HACK!
-    * We hack the recognition of io_proof type for now.
-    * A term_io proof has two fields, and the tag is always zero.
-    *)
-   let term_io_proof_hack proof =
-      let t = Obj.repr proof in
-         if Obj.size t = 2 && Obj.tag t = 0 then
-            begin
-               eprintf "Proof_boot: converting term_io style proof%t" eflush;
-               true
-            end
-         else
-            false
-
-   let io_proof_hack proof =
-      let parse text =
-         raise (Invalid_argument "Proof_boot.proof_hack.parse")
-      in
-      let eval expr =
-         raise (Invalid_argument "Proof_boot.proof_hack.eval")
-      in
-         if term_io_proof_hack proof then
-            let proof = ProofTerm_io.of_term [] Tactic.null_sentinal empty_bookmark parse eval ((Obj.magic proof) : term_io) in
-               io_proof_of_proof true parse eval proof
-         else
-            proof
-
-   (*
     * Term conversions.
     *)
    let to_term = ProofTerm_std.to_term
@@ -2769,7 +2746,7 @@ struct
          eprintf "Counting nodes of:\n";
          print_ext node
       end;
-      node_count_ext (0, 0) node
+      node_count_ext (0, 0) (normalize node)
 
    (*
     * Kreitz the tree into a single node.

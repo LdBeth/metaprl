@@ -99,9 +99,7 @@ struct
     * Get a proof from the raw proof.
     *)
    let of_raw () _ proof =
-      if !debug_convert then
-         eprintf "Creating raw proof%t" eflush;
-      Raw (Proof.io_proof_hack proof)
+      Raw (proof)
 
    (*
     * Convert the proof to a term.

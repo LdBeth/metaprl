@@ -132,9 +132,7 @@ struct
     * Get a proof from the raw proof.
     *)
    let of_raw _ name proof =
-      if !debug_package_info then
-         eprintf "Converting io proof for %s%t" name eflush;
-      ref (ProofRaw (name, Proof.io_proof_hack proof))
+      ref (ProofRaw (name, proof))
 
    (*
     * Convert the proof to a term.
