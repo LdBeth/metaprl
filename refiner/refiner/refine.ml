@@ -483,7 +483,7 @@ struct
             let vars = free_vars_terms (goal :: hyps) in
                mseq.mseq_vars <- FreeVars vars;
                vars
-   
+
    let remove_red_hbs t =
       if is_sequent_term t then
          let eseq = explode_sequent t in
@@ -1015,7 +1015,7 @@ struct
                refiners, Some r
             else
                search refiners next
-       | DefinitionalRewriteRefiner { rw_refiner = next } 
+       | DefinitionalRewriteRefiner { rw_refiner = next }
        | PrimRuleRefiner { prule_refiner = next }
        | PrimRewriteRefiner { prw_refiner = next }
        | PrimCondRewriteRefiner { pcrw_refiner = next } ->
@@ -1595,7 +1595,7 @@ struct
    (* XXX HACK: This is a pretty hackish way of combining things *)
    let is_hackable_sequent t =
       is_sequent_term t && (SeqGoal.length (explode_sequent t).sequent_goals) = 1
-   
+
    let join_ext_arg_hack1 arg assum =
       if is_hackable_sequent assum && not (is_sequent_term arg) then
          replace_goal assum arg
@@ -1609,7 +1609,7 @@ struct
          let process (vars, terms) = function
             Context (c, _) ->
                vars, (Context (c, vars) :: terms)
-          | h -> 
+          | h ->
                let v = match h with
                   HypBinding (v, _) -> v
                 | Hypothesis t -> incr i; "___" ^ (string_of_int !i)
@@ -1635,7 +1635,7 @@ struct
    (*
     * Theorem for a previous theorem or rule.
     * We once again use the rewriter to compute the
-    * extract. 
+    * extract.
     *)
    let compute_rule_ext name addrs params goal args result =
       let args = mk_xlist_term (goal :: args) in
@@ -1643,12 +1643,17 @@ struct
          if !debug_refiner then
             eprintf "Refiner.compute_rule_ext: %s: %a + [%s] [%a] -> %a%t" name print_term args (String.concat ";" (Array.to_list addrs)) (print_any_list print_term) params print_term result eflush
       ENDIF;
+(*
       let rw = Rewrite.term_rewrite Strict addrs (args :: params) [result] in
       let compute_ext addrs params goal args =
          let args = goal :: args in
             List.hd (apply_rewrite rw (addrs, free_vars_terms args) (mk_xlist_term args) params)
       in
          compute_ext
+*)
+      (* BUG: strict rewriting is not working 6/24/03 *)
+      (fun addrs params goal args ->
+           raise (Invalid_argument "JYH: extraction disabled for now"))
 
    let add_prim_rule build name addrs params args result =
       IFDEF VERBOSE_EXN THEN
@@ -1840,7 +1845,7 @@ struct
                 check_bound_vars (List_util.remove v bvars) ts
             else
                REF_RAISE(RefineError ("definitional rewrite", RewriteFreeSOVar v))
-   
+
    let check_def_bterm bt =
       let bt = dest_bterm bt in
          check_bound_vars bt.bvars (snd (dest_so_var bt.bterm))

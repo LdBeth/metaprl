@@ -168,8 +168,7 @@ SUPPORT_INCLUDE = $'(addprefix -I , $(SUPPORT_DIRS))
 #
 DEFAULT_THEORIES = base itt
 
-MC_THEORIES =\
-        mojave/core
+MC_THEORIES = mojave/core
 
 LM_THEORIES = $(if $(equal $(LIBMOJAVE), undefined), $(EMPTY), $(MC_THEORIES))
 
