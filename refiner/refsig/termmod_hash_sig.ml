@@ -31,11 +31,6 @@
  * Author: Alexey Nogin <nogin@cs.cornell.edu>
  *)
 
-open Term_sig
-open Term_base_minimal_sig
-open Term_subst_minimal_sig
-open Term_man_minimal_sig
-open Refine_minimal_sig
 open Term_hash_sig
 open Term_norm_sig
 open Weak_memo
@@ -43,38 +38,7 @@ open Termmod_sig
 
 module type TermModuleHashSig =
 sig
-   (*
-    * Terms and operations on terms.
-    *)
-   module TermType : TermSig
-   module Term : TermBaseMinimalSig
-      with type level_exp_var = TermType.level_exp_var
-      with type level_exp = TermType.level_exp
-      with type param = TermType.param
-      with type operator = TermType.operator
-      with type term = TermType.term
-      with type bound_term = TermType.bound_term
-      with type seq_hyps = TermType.seq_hyps
-      with type seq_goals = TermType.seq_goals
-
-      with type hypothesis = TermType.hypothesis
-      with type level_exp_var' = TermType.level_exp_var'
-      with type level_exp' = TermType.level_exp'
-      with type param' = TermType.param'
-      with type operator' = TermType.operator'
-      with type term' = TermType.term'
-      with type bound_term' = TermType.bound_term'
-
-   module TermSubst : TermSubstMinimalSig
-      with type param = TermType.param
-
-   module TermMan : TermManMinimalSig
-      with type term = TermType.term
-      with type esequent = TermType.esequent
-      with type hypothesis = TermType.hypothesis
-
-   module Refine : RefineMinimalSig
-      with type term = TermType.term
+   include TermModuleSig
 
    module TermHash : TermHashSig
       with type param = TermType.param

@@ -120,6 +120,7 @@ type edit_object =
    { (* Display the object to the screen *)
      edit_display : ls_option list -> unit;
      edit_get_contents : unit -> obj_contents;
+     edit_get_terms : unit -> term list;
 
      (* Copy the object *)
      edit_copy : unit -> edit_object;

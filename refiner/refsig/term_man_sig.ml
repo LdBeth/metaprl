@@ -58,6 +58,22 @@ sig
    val level_le : level_exp -> level_exp -> bool
    val level_lt : level_exp -> level_exp -> bool
 
+   (* A SO variable has has term and context parameters *)
+   val is_so_var_term : term -> bool
+   val dest_so_var : term -> var * var list * term list
+   val mk_so_var_term : var -> var list -> term list -> term
+
+   (* An FO var or an SO var without subterms, but possibly with contexts *)
+   val is_fso_var_term : term -> bool
+   val dest_fso_var : term -> var
+   
+   val is_context_term : term -> bool
+   val dest_context : term -> var * term * var list * term list
+   val mk_context_term : var -> term -> var list -> term list -> term
+
+   (* returns both free contexts and all SO variables *)
+   val free_meta_variables : term -> SymbolSet.t
+
    (*
     * Destruct a term for easy pattern-matching.
     *
@@ -83,7 +99,6 @@ sig
    val num_hyps : term -> int
    val declared_vars : term -> var list
    val get_decl_number : term -> var -> int
-   val is_free_seq_var : int -> var -> term -> bool
    val replace_goal : term -> term -> term     (* Single-concl seqs*)
 
    val is_xrewrite_term : term -> bool

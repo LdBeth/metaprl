@@ -113,7 +113,7 @@ struct
    type hypothesis =
       HypBinding of var * term
     | Hypothesis of term
-    | Context of var * term list
+    | Context of var * var list * term list
 
    type seq_hyps = hypothesis SEQ_SET.linear_set
    type seq_goals = term SEQ_SET.linear_set

@@ -136,6 +136,24 @@ struct
           | _ -> raise(Invalid_argument("Rewrite_match_redex.extract_some_bvars: invalid stack entry"))
          end
 
+   let rec extract_cont_bvars_aux hyps vars i count =
+      if count = 0 then vars else 
+      extract_cont_bvars_aux hyps (**)
+         (match SeqHyp.get hyps i with Context(v,_,_) | HypBinding (v, _) -> (v::vars) | Hypothesis _ -> vars)
+         (i+1) (count-1)
+
+   let rec extract_cont_bvars stack vars = function
+      [] -> vars
+    | v::tl ->
+         begin match stack.(v) with
+            StackSeqContext(_, (ind, count, hyps)) -> extract_cont_bvars_aux hyps (extract_cont_bvars stack vars tl) ind count
+          | StackContext _ -> raise(Invalid_argument "Rewrite_match_redex.extract_cont_bvars: non-sequent contexts not supported")
+          | _ -> raise(Invalid_argument("Rewrite_match_redex.extract_cont_bvars: invalid stack entry"))
+         end
+
+   let extract_stack_bvars stack conts vars =
+      extract_cont_bvars stack (extract_some_bvars stack vars) conts
+
    (*
     * Assign the bvars.
     *)
@@ -308,9 +326,11 @@ struct
       if (i<len) then
          let all_bvars =
             match SeqHyp.get hyps i with
-               HypBinding(v,_) | Context (v,_) ->
+               HypBinding(v,_) ->
                   if SymbolSet.mem all_bvars v then
                      raise(Invalid_argument("Rewrite_match_redex.check_sequent_hyps: binding clash in a sequent. Please let Aleksey Nogin know if this happens to you."));
+                  SymbolSet.add all_bvars v
+             | Context (v, _, _) ->
                   SymbolSet.add all_bvars v
              | Hypothesis _ -> all_bvars
          in
@@ -337,29 +357,27 @@ struct
      *)
    and match_redex_term addrs stack all_bvars t' t =
       match t' with
-         RWFreeVars (t'', vars) ->
-            check_term_free_vars (extract_some_bvars stack vars) t;
+         RWFreeVars (t'', conts, vars) ->
+            check_term_free_vars (extract_stack_bvars stack conts vars) t;
             match_redex_term addrs stack all_bvars t'' t
        | RWComposite { rw_op = op'; rw_bterms = bterms' } ->
-            let term = dest_term t in
-            let op = dest_op term.term_op in
-               IFDEF VERBOSE_EXN THEN
-                  if !debug_rewrite then
-                     eprintf "Rewrite.match_redex.RWComposite: %s[%d](%d)/%a[%d](%d)%t" (**)
-                        (string_of_opname op'.rw_name) (List.length op'.rw_params) (List.length bterms')
-                        debug_print t (List.length op.op_params) (List.length term.term_terms)
-                        eflush
-               ENDIF;
-               if Opname.eq op.op_name op'.rw_name then
-                  begin
-                     match_redex_params_iter stack op'.rw_params op.op_params;
-                     iter2_3 match_redex_bterms addrs stack all_bvars bterms' term.term_terms;
-                     IFDEF VERBOSE_EXN THEN
-                        if !debug_rewrite then
-                           eprintf "Rewrite.match_redex.RWComposite done%t" eflush
-                     ENDIF;
-                  end
-               else
+            if Opname.eq (opname_of_term t) op'.rw_name then begin
+               let term = dest_term t in
+               let params = (dest_op term.term_op).op_params in
+                  IFDEF VERBOSE_EXN THEN
+                     if !debug_rewrite then
+                        eprintf "Rewrite.match_redex.RWComposite: %s[%d](%d)/%a[%d](%d)%t" (**)
+                           (string_of_opname op'.rw_name) (List.length op'.rw_params) (List.length bterms')
+                           debug_print t (List.length params) (List.length term.term_terms)
+                           eflush
+                  ENDIF;
+                  match_redex_params_iter stack op'.rw_params params;
+                  iter2_3 match_redex_bterms addrs stack all_bvars bterms' term.term_terms;
+                  IFDEF VERBOSE_EXN THEN
+                     if !debug_rewrite then
+                        eprintf "Rewrite.match_redex.RWComposite done%t" eflush
+                  ENDIF;
+               end else
                   REF_RAISE(RefineError ("match_redex_term", RewriteBadMatch (TermMatch t)))
 
        | RWSequent (arg', hyps', goals') ->
@@ -504,7 +522,7 @@ struct
             if i <> len then
                REF_RAISE(RefineError ("match_redex_sequent_hyps", RewriteBadMatch (HypMatch hyps)));
             match_redex_sequent_goals addrs stack all_bvars goals' goals 0 (SeqGoal.length goals)
-       | (RWSeqContext (addr, j, l) | RWSeqFreeVarsContext (_, addr, j, l) as hyp') :: hyps' ->
+       | (RWSeqContext (addr, j, l) | RWSeqFreeVarsContext (_, _, addr, j, l) as hyp') :: hyps' ->
             let count = if addr == -1 then len - i else
                let count = addrs.(addr) in
                   if (count > 0 ) then count - 1 else len - i + count
@@ -517,8 +535,8 @@ struct
                REF_RAISE(RefineError ("match_redex_sequent_hyps", StringError "not enough hyps"))
             else
                begin match hyp' with
-                  RWSeqFreeVarsContext (non_free, _, _, _) ->
-                     check_hyp_free_vars (extract_some_bvars stack non_free) hyps i (i+count)
+                  RWSeqFreeVarsContext (rconts, rvars, _, _, _) ->
+                     check_hyp_free_vars (extract_stack_bvars stack rconts rvars) hyps i (i+count)
                 | _ -> ()
                end;
                let bvars = extract_bvars stack l in
@@ -576,13 +594,15 @@ struct
        | Hypothesis term ->
             check_term_free_vars vars term;
             check_hyp_free_vars vars hyps (succ i) len
-       | Context (_, terms) ->
+       | Context (var, _, terms) ->
             List.iter (check_term_free_vars vars) terms;
-            check_hyp_free_vars vars hyps (succ i) len
+            let vars = Lm_list_util.tryremove var vars in
+            if vars != [] then check_hyp_free_vars vars hyps (succ i) len
 
    and check_term_free_vars vars t =
       if is_some_var_free vars t then
-         REF_RAISE(RefineError ("Rewrite_match_redex.check_term_free_vars", RewriteBadMatch (TermMatch t)))
+         REF_RAISE(RefineError ("Rewrite_match_redex.check_term_free_vars",
+            StringTermError("term has free occurrences of some variables it is not allowed to have", t)))
 
    let match_redex addrs stack vars t tl = function
       [] ->

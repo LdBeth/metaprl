@@ -54,6 +54,7 @@ sig
    (*
     * Addressed operations.
     *)
+   val find_subterm : term -> term -> address
    val term_subterm :  term -> address -> term
    val term_subterm_count : term -> address -> int
    val replace_subterm : term -> address -> term -> term

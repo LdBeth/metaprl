@@ -1973,7 +1973,7 @@ let set_msequent extract seq =
              | TermType.Hypothesis hyp ->
                   incr sym;
                   add_hyp extract i (Lm_symbol.add ("HACK" ^ (string_of_int !sym))) hyp
-             | TermType.Context (name, _) ->
+             | TermType.Context (name, _, _) ->
                   add_hyp extract i name context_term
          in
             collect (i + 1) len extract hyps

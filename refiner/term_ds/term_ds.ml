@@ -100,6 +100,7 @@ struct
     | Subst of term * term_subst
     | Sequent of esequent
     | FOVar of var
+    | SOVar of var * var list * term list
     | Hashed of term Weak_memo.TheWeakMemo.descriptor
    and term = { mutable free_vars : lazy_vars; mutable core : term_core }
    and bound_term = bound_term'
@@ -108,7 +109,7 @@ struct
    and hypothesis =
       HypBinding of var * term
     | Hypothesis of term
-    | Context of var * term list
+    | Context of var * var list * term list
    and seq_hyps = hypothesis SEQ_SET.linear_set
    and seq_goals = term SEQ_SET.linear_set
    and esequent =

@@ -34,14 +34,25 @@ open Refine_error_sig
 open Term_sig
 open Term_base_sig
 open Term_subst_sig
+open Term_man_sig
 open Term_meta_sig
 
 module TermMeta (**)
    (TermType : TermSig)
    (Term : TermBaseSig
-    with type term = TermType.term)
+    with type term = TermType.term
+    with type term' = TermType.term'
+    with type bound_term = TermType.bound_term
+    with type bound_term' = TermType.bound_term'
+    with type operator = TermType.operator
+    with type hypothesis = TermType.hypothesis
+    with type seq_hyps = TermType.seq_hyps
+    with type seq_goals = TermType.seq_goals)
    (TermSubst : TermSubstSig
     with type term = TermType.term)
+   (TermMan : TermManSig
+    with type term = TermType.term
+    with type esequent = TermType.esequent)
    (RefineError : RefineErrorSig
     with type term = TermType.term
     with type meta_term = TermType.meta_term)

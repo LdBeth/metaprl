@@ -95,7 +95,7 @@ type rw =
  * shell_rule and shell_rewrite should probably be eventually merged).
  *)
 let hack_arg = mk_simple_term (make_opname ["sequent_arg";"Base_rewrite"]) []
-let hack_hyps = SeqHyp.of_list [Context(Lm_symbol.add "H",[])]
+let hack_hyps = SeqHyp.of_list [Context(Lm_symbol.add "H",[],[])]
 let mk_rewrite_hack term =
    mk_sequent_term { sequent_args = hack_arg; sequent_hyps = hack_hyps; sequent_goals = SeqGoal.of_list [term] }
 
@@ -210,6 +210,9 @@ let rec edit pack parse_arg name window obj =
           | Interactive ped ->
                Proof_edit.format window ped
    in
+   let edit_get_terms () =
+      obj.rw_redex :: obj.rw_contractum :: obj.rw_assums
+   in
    let edit_set_goal t =
       raise (Failure "Shell_rewrite.edit_set_goal: use set_redex or set_contractum")
    in
@@ -322,6 +325,7 @@ let rec edit pack parse_arg name window obj =
    in
       { edit_display = edit_display;
         edit_get_contents = edit_get_contents;
+        edit_get_terms = edit_get_terms;
         edit_copy = edit_copy;
         edit_set_goal = edit_set_goal;
         edit_set_redex = edit_set_redex;

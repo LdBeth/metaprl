@@ -145,9 +145,8 @@ struct
    let is_var_free v =
       let rec free_vars_term bvars = function
          { term_op = { op_name = opname; op_params = [Var v'] };
-           term_terms = []
-         } when Opname.eq opname var_opname ->
-            v' = v
+         } when Opname.eq opname var_opname && v' = v ->
+            true
        | { term_terms = bterms } ->
             free_vars_bterms bvars bterms
 
@@ -168,9 +167,8 @@ struct
    let is_some_var_free vars =
       let rec free_vars_term vars bvars = function
          { term_op = { op_name = opname; op_params = [Var v'] };
-           term_terms = []
-         } when Opname.eq opname var_opname ->
-            List.mem v' vars
+         } when Opname.eq opname var_opname && List.mem v' vars ->
+            true
        | { term_terms = bterms } ->
             free_vars_bterms vars bvars bterms
 
@@ -395,14 +393,13 @@ struct
     * First order simultaneous substitution.
     *)
    let rec subst_term terms fv vars = function
-      { term_op = { op_name = opname; op_params = [Var(v)] }; term_terms = [] } as t
-      when Opname.eq opname var_opname->
+      { term_op = { op_name = opname; op_params = [Var(v)] }; term_terms = bterms } as t
+      when Opname.eq opname var_opname && List.mem v vars ->
          (* Var case *)
-         begin
-            try List.nth terms (Lm_list_util.find_index v vars) with
-               Not_found ->
-                  t
-         end
+         if bterms <> [] then
+            REF_RAISE(RefineError("Term_subst_std.subst_term", StringVarError("substitution captures SO var",v)));
+         List.nth terms (Lm_list_util.find_index v vars)
+    | { term_terms = [] } as t -> t (* Optimization *)
     | { term_op = op; term_terms = bterms } ->
          (* Other term *)
          { term_op = op; term_terms = subst_bterms terms fv vars bterms }

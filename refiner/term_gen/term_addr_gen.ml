@@ -40,6 +40,7 @@ open Lm_debug
 open Refine_error_sig
 open Term_sig
 open Term_base_sig
+open Term_subst_sig
 open Term_op_sig
 open Term_man_gen_sig
 
@@ -66,6 +67,8 @@ module TermAddr (**)
     with type bound_term' = TermType.bound_term'
     with type operator = TermType.operator
     with type operator' = TermType.operator')
+   (TermSubst : TermSubstSig
+    with type term = TermType.term)
    (TermOp : TermOpSig
     with type term = TermType.term)
    (TermMan: TermManGenSig
@@ -77,6 +80,7 @@ module TermAddr (**)
 struct
    open TermType
    open Term
+   open TermSubst
    open TermOp
    open TermMan
    open RefineError
@@ -111,6 +115,26 @@ struct
        | _ ->
             Compose (path1, path2)
 
+   let find_subterm t arg =
+      let rec search addr t =
+         if alpha_equal t arg then
+            Some addr
+         else
+            search_bterms addr 0 (dest_term t).term_terms
+      and search_bterms addr index = function
+         [] ->
+            None
+       | bterm :: bterms ->
+            begin match search (index :: addr) (dest_bterm bterm).bterm with
+               Some _ as result -> result
+             | None -> search_bterms addr (succ index) bterms
+            end
+      in
+         match search [] t with
+            Some addr -> Path (List.rev addr)
+          | None ->
+               REF_RAISE(RefineError ("Term_addr_gen.find_subterm", StringTermError ("subterm can't be found", arg)))
+   
    IFDEF VERBOSE_EXN THEN
       DEFMACRO ATERM = (a, term)
    ELSE
@@ -146,8 +170,8 @@ struct
          if flag then
             match dest_term t with
                { term_op = op } when Opname.eq (dest_op op).op_name context_opname ->
-                  let v, _, subterms = dest_context t in
-                     mk_so_var_term v subterms
+                  let v, _, conts, subterms = dest_context t in
+                     mk_so_var_term v conts subterms
              | { term_op = op; term_terms = bterm :: _ } ->
                   (dest_bterm bterm).bterm
              | _ ->
@@ -161,7 +185,7 @@ struct
                   term_subterm_nthpath ATERM flag (dest_bterm bterm).bterm (i - 1)
              | ((_ :: bterm2 :: _) as bterms) ->
                   if Opname.eq (dest_op op).op_name context_opname then
-                     term_subterm_nthpath ATERM flag (dest_bterm (Lm_list_util.last bterms)).bterm (i - 1)
+                     let _, t, _, _ = dest_context t in term_subterm_nthpath ATERM flag t (i - 1)
                   else
                      term_subterm_nthpath ATERM flag (dest_bterm bterm2).bterm (i - 1)
              | _ ->
@@ -227,13 +251,13 @@ struct
             if flag then
                match dest_term t with
                   { term_op = op } when Opname.eq (dest_op op).op_name context_opname ->
-                     let v, term, subterms = dest_context t in
+                     let v, term, conts, subterms = dest_context t in
                      let slot = mk_var_term v in
-                     let t = mk_context_term v slot subterms in
+                     let t = mk_context_term v slot conts subterms in
                      let t, arg = f BVARS t in
-                     let v1, term1, subterms = dest_context t in
+                     let v1, term1, conts, subterms = dest_context t in
                         if v1 = v && is_var_term term1 && dest_var term1 = v then
-                           mk_context_term v term subterms, arg
+                           mk_context_term v term conts subterms, arg
                         else
                            DO_FAIL
                 | { term_op = op; term_terms = bterm :: bterms } ->
@@ -255,11 +279,10 @@ struct
                      mk_term op [bterm], arg
              | { term_op = op; term_terms = ((bterm1 :: bterm2 :: bterms) as bterms') } ->
                   if Opname.eq (dest_op op).op_name context_opname then
-                     let args, bterm = Lm_list_util.split_last bterms' in
-                     let { bvars = vars; bterm = trm } = dest_bterm bterm in
-                     let term, arg = NTHPATH_REPLACE_TERM FAIL flag f VARS_BVARS trm (i - 1) in
-                     let bterm = mk_bterm vars term in
-                        mk_term op (args @ [bterm]), arg
+                     let v, t, conts, args  = dest_context t in
+                     let vars = [v] in
+                     let t, arg = NTHPATH_REPLACE_TERM FAIL flag f VARS_BVARS t (i - 1) in
+                        mk_context_term v t conts args, arg
                   else
                      let { bvars = vars; bterm = trm } = dest_bterm bterm2 in
                      let term, arg = NTHPATH_REPLACE_TERM FAIL flag f VARS_BVARS trm (i - 1) in

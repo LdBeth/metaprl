@@ -387,12 +387,12 @@ and format_sequent buf format_term term =
                   format_string buf ". ";
                   format_term a
              | Hypothesis a ->
-                  format_space buf;
-                  format_string buf "_. ";
                   format_term a
-             | Context (v, values) ->
+             | Context (v, conts, values) ->
+                  format_string buf "<";
                   format_space buf;
-                  format_term (mk_so_var_term v values)
+                  format_term (mk_so_var_term v conts values);
+                  format_string buf ">"
          in
             format_hyp hyps (i + 1) len
    in
@@ -452,10 +452,13 @@ let base_opname = mk_opname "Base_dform" nil_opname
 
 let sequent_term =
    let opname = mk_opname "sequent" base_opname in
-      mk_simple_term opname [mk_var_term (Lm_symbol.add "ext"); mk_var_term (Lm_symbol.add "hyps")]
+      mk_simple_term opname [mk_so_var_term (Lm_symbol.add "ext") [] []; mk_so_var_term (Lm_symbol.add "hyps") [] []]
 
-let dvar_opname =
-   mk_opname "display_var" base_opname
+let dsovar_opname = mk_opname "df_so_var" base_opname
+let dvar_opname = mk_opname "df_var" base_opname
+let dcont_opname = mk_opname "df_context_var" base_opname
+
+let make_cont v = mk_term (mk_op dcont_opname [make_param (Var v)]) []
 
 (*
  * Print a term to a buffer.
@@ -465,10 +468,13 @@ let format_short_term base shortener =
    let rec print_term' pprec buf eq t =
       (* Convert a variable into a display_var *)
       let t =
-         if is_so_var_term t then
-            let v, terms = dest_so_var t in
-               mk_term (mk_op dvar_opname [make_param (Var v)])
-                       [mk_bterm [] (mk_xlist_term terms)]
+         if is_var_term t then
+            let v = dest_var t in
+               mk_term (mk_op dvar_opname [make_param (Var v)]) []
+         else if is_so_var_term t then
+            let v, conts, terms = dest_so_var t in
+               mk_term (mk_op dsovar_opname [make_param (Var v)])
+                       [mk_simple_bterm (mk_xlist_term (List.map make_cont conts)); mk_simple_bterm (mk_xlist_term terms)]
          else
             t
       in
@@ -700,7 +706,7 @@ let init_list =
    ]
 
 let null_list =
-   let v_bterms = [mk_bterm [] (mk_var_term v_sym) ] in
+   let v_bterms = [mk_bterm [] (mk_so_var_term v_sym [] []) ] in
    let rec aux (name, params, f) =
          let term = mk_term (mk_op (make_opname [name]) (List.map make_param params)) [] in
             { dform_name = name;
@@ -738,10 +744,12 @@ let null_base = create_dfbase []
  ************************************************************************)
 
 let format_quoted_term base buf t =
+   let t = display_term_of_term t in
    format_term buf null_shortener
    (fun t -> format_short_term base null_shortener buf t) t
 
-let format_term base = format_short_term base null_shortener
+let format_term base buf t =
+   format_short_term base null_shortener buf (display_term_of_term t)
 
 let print_term_fp base out term =
    let buf = new_buffer () in

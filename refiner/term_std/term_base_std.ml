@@ -208,6 +208,7 @@ struct
     ************************************************************************)
 
    let var_opname = make_opname ["var"]
+   let context_opname = make_opname ["context"]
 
    (*
     * See if a term is a variable.
@@ -236,81 +237,6 @@ struct
       { term_op = { op_name = var_opname; op_params = [Var v] };
         term_terms = []
       }
-
-   (*
-    * Second order variables have subterms.
-    *)
-   let is_so_var_term = function
-      ({ term_op = { op_name = opname; op_params = [Var(_)] }; term_terms = bterms } : term)
-      when Opname.eq opname var_opname ->
-         List.for_all (function { bvars = [] } -> true | _ -> false) bterms
-    | _ -> false
-
-   let dest_so_var = function
-      ({ term_op = { op_name = opname; op_params = [Var(v)] };
-         term_terms = bterms
-       } : term) as term when Opname.eq opname var_opname ->
-         v, List.map (function
-            { bvars = []; bterm = t } ->
-               t
-          | _ ->
-               REF_RAISE(RefineError ("dest_so_var", TermMatchError (term, "bvars exist"))))
-         bterms
-    | term ->
-         REF_RAISE(RefineError ("dest_so_var", TermMatchError (term, "not a so_var")))
-
-   (*
-    * Second order variable.
-    *)
-   let mk_so_var_term v terms =
-      let mk_bterm term =
-         { bvars = []; bterm = term }
-      in
-         { term_op = { op_name = var_opname; op_params = [Var(v)] };
-           term_terms = List.map mk_bterm terms
-         }
-
-   (*
-    * Second order context, contains a context term, plus
-    * binding variables like so vars.
-    *)
-   let context_opname = make_opname ["context"]
-
-   let is_context_term = function
-      ({ term_op = { op_name = opname; op_params = [Var _] }; term_terms = bterms } : term)
-      when Opname.eq opname context_opname ->
-         List.for_all (function { bvars = [] } -> true | _ -> false) bterms
-    | term ->
-         false
-
-   let dest_context = function
-      { term_op = { op_name = opname; op_params = [Var v] };
-         term_terms = bterms
-       } as term when Opname.eq opname context_opname ->
-         let rec collect = function
-            [{ bvars = []; bterm = t }] ->
-               [], t
-          | { bvars = []; bterm = t } :: tl ->
-               let args, term = collect tl in
-                  t :: args, term
-          | _ ->
-               REF_RAISE(RefineError ("dest_context", TermMatchError (term, "bvars exist")))
-         in
-         let args, term = collect bterms in
-            v, term, args
-    | term ->
-         REF_RAISE(RefineError ("dest_context", TermMatchError (term, "not a context")))
-
-   let mk_context_term v term terms =
-      let rec collect term = function
-         [] ->
-            [{ bvars = []; bterm = term }]
-       | h::t ->
-            { bvars = []; bterm = h } :: collect term t
-      in
-         { term_op = { op_name = context_opname; op_params = [Var v] };
-           term_terms = collect term terms
-         }
 
    (************************************************************************
     * Simple terms                                                         *
@@ -372,6 +298,8 @@ struct
    (*
     * Bound terms.
     *)
+   let is_simple_bterm bt = (bt.bvars = [])
+    
    let mk_simple_bterm bterm =
       { bvars = []; bterm = bterm }
 

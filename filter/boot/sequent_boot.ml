@@ -26,12 +26,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 open Printf
 open Lm_debug
+open Lm_symbol
 
 open Refiner.Refiner
 open Refiner.Refiner.TermType
@@ -111,22 +112,13 @@ struct
    let get_decl_number arg v =
       TermMan.get_decl_number (goal arg) v
 
-   let declared_vars arg =
+   let avoid_vars arg =
       let seq = msequent arg in
-      (* XXX BUG!:
-       * we also should include
-       *    msequent_free_vars seq
-       * but the correct solutions would be to just get rid
-       * of this function altogether
-       *)
       let goal, _ = dest_msequent seq in
-         TermMan.declared_vars goal
+         SymbolSet.add_list (msequent_free_vars seq) (TermMan.declared_vars goal)
 
    let explode_sequent arg =
       TermMan.explode_sequent (goal arg)
-
-   let is_free_seq_var i v p =
-      TermMan.is_free_seq_var (get_pos_hyp_num p i) v (goal p)
 
    (*
     * Argument functions.

@@ -32,6 +32,8 @@
  * Author: Alexey Nogin <nogin@cs.cornell.edu>
  *)
 
+open Lm_symbol
+
 module type TermManMinimalSig =
 sig
    type term
@@ -46,6 +48,10 @@ sig
    val mk_sequent_term : esequent -> term
    val explode_sequent : term -> esequent
    val remove_redundant_hypbindings : hypothesis list -> term list -> hypothesis list
+
+   val is_so_var_term : term -> bool
+   val dest_so_var : term -> var * var list * term list
+   val mk_so_var_term : var -> var list -> term list -> term
 end
 
 (*

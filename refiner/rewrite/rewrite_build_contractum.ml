@@ -190,8 +190,8 @@ struct
          HypBinding (v, subst term vars terms)
     | Hypothesis term ->
          Hypothesis (subst term vars terms)
-    | Context (v, subterms) ->
-         Context (v, List.map (fun t -> subst t vars terms) subterms)
+    | Context (v, conts, subterms) ->
+         Context (v, conts, List.map (fun t -> subst t vars terms) subterms)
 
    let hyp_subst arg terms vars =
       match vars, terms with

@@ -73,14 +73,11 @@ let subst t vars tl =
 let mk_var_term s =
    mk_var_term (Lm_symbol.add s)
 
-let free_vars_list t =
-   List.map string_of_symbol (free_vars_list t)
+let free_vars_list t consts =
+   List.map string_of_symbol (SymbolSet.to_list (SymbolSet.diff (free_vars_set t) consts))
 
-let symbol_set_of_string_set set =
-   SymbolSet.of_list (List.map Lm_symbol.add (StringSet.to_list set))
-
-let unify t1 t2 vars =
-   let subst = unify t1 t2 (symbol_set_of_string_set vars) in
+let unify t1 t2 consts =
+   let subst = unify t1 t2 consts in
       List.map (fun (v, t) -> string_of_symbol v, t) subst
 
 (************************************************************************
@@ -3236,16 +3233,16 @@ struct
             let f_term = List.assoc f tauQ in
             f_term::(collect_assoc r tauQ)
 
-   let rec rec_apply sigmaQ tauQ tau_vars tau_terms =
+   let rec rec_apply consts sigmaQ tauQ tau_vars tau_terms =
       match sigmaQ with
          [] -> [],[]
        | (v,term)::r ->
             let app_term = subst term tau_vars tau_terms in
-            let old_free = free_vars_list term
-            and new_free = free_vars_list app_term  in
+            let old_free = free_vars_list term consts in
+            let new_free = free_vars_list app_term consts in
             let inst_vars = list_diff old_free new_free in
             let inst_terms = collect_assoc inst_vars tauQ in
-            let (rest_sigma,rest_sigma_ordering) = rec_apply r tauQ tau_vars tau_terms in
+            let (rest_sigma,rest_sigma_ordering) = rec_apply consts r tauQ tau_vars tau_terms in
             if inst_terms  = [] then
                ((v,app_term)::rest_sigma),rest_sigma_ordering
             else
@@ -3259,9 +3256,9 @@ struct
    (List.combine sigma_vars apply_terms) @ tauQ
 *)
 
-   let multiply sigmaQ (tauQ : (string * term) list) =
+   let multiply consts sigmaQ (tauQ : (string * term) list) =
       let (tau_vars,tau_terms) = List.split tauQ in
-      let (new_sigmaQ,sigma_ordering)  = rec_apply sigmaQ tauQ tau_vars tau_terms
+      let (new_sigmaQ,sigma_ordering)  = rec_apply consts sigmaQ tauQ tau_vars tau_terms
       and tau_ordering_terms = (List.map (fun x -> [x]) tau_terms) (* for extending ordering_elements *)
       and tau_ordering_vars = (List.map (fun x -> String.sub x 0 (String.index x '_')) tau_vars) in
       let tau_ordering  = (List.combine tau_ordering_vars tau_ordering_terms) in
@@ -3273,14 +3270,14 @@ struct
       let sigma_vars,sigma_terms = List.split sigmaQ in
       (subst term1 sigma_vars sigma_terms),(subst term2 sigma_vars sigma_terms)
 
-   let jqunify term1 term2 sigmaQ =
+   let jqunify consts term1 term2 sigmaQ =
       let app_term1,app_term2 = apply_2_sigmaQ term1 term2 sigmaQ in
 (*  print_term stdout app_term1;
    print_term stdout app_term2;
 *)
       try
-         let tauQ = unify app_term1 app_term2 Lm_string_set.StringSet.empty in
-         let (mult,oel) = multiply sigmaQ tauQ in
+         let tauQ = unify app_term1 app_term2 consts in
+         let (mult,oel) = multiply consts sigmaQ tauQ in
   (*   print_sigmaQ mult; *)
          (mult,oel)
       with
@@ -3911,7 +3908,7 @@ let rec ext_partners con path ext_atom (reduction_partners,extension_partners) a
 
 exception Failed_connections
 
-let path_checker atom_rel atom_sets qprefixes init_ordering logic =
+let path_checker consts atom_rel atom_sets qprefixes init_ordering logic =
 
    let con = connections atom_rel [] in
 (*   print_endline "";
@@ -3935,7 +3932,7 @@ let path_checker atom_rel atom_sets qprefixes init_ordering logic =
 (*       print_endline ("partner path "^(print_set path));
 *)
          (try
-            let (new_sigmaQ,new_ordering_elements) = jqunify (ext_atom.alabel) (try_one.alabel) sigmaQ in
+            let (new_sigmaQ,new_ordering_elements) = jqunify consts (ext_atom.alabel) (try_one.alabel) sigmaQ in
 (* build the orderingQ incrementally from the new added substitution tau of new_sigmaQ *)
             let (relate_pairs,new_orderingQ) = build_orderingQ new_ordering_elements orderingQ in
 (* we make in incremental reflexivity test during the string unification *)
@@ -4342,11 +4339,11 @@ let init_prover ftree =
    (atom_relation,atom_sets,qprefixes)
 
 
-let rec try_multiplicity mult_limit ftree ordering pos_n mult logic =
+let rec try_multiplicity consts mult_limit ftree ordering pos_n mult logic =
    try
       let (atom_relation,atom_sets,qprefixes) = init_prover ftree in
       let ((orderingQ,red_ordering),eqlist,unifier,ext_proof) =
-         path_checker atom_relation atom_sets qprefixes ordering logic in
+         path_checker consts atom_relation atom_sets qprefixes ordering logic in
       (ftree,red_ordering,eqlist,unifier,ext_proof)   (* orderingQ is not needed as return value *)
    with Failed ->
       match mult_limit with
@@ -4368,36 +4365,36 @@ let rec try_multiplicity mult_limit ftree ordering pos_n mult logic =
                raise unprovable
             else
 (*             print_formula_info new_ftree new_ordering new_pos_n;   *)
-               try_multiplicity mult_limit new_ftree new_ordering new_pos_n new_mult logic
+               try_multiplicity consts mult_limit new_ftree new_ordering new_pos_n new_mult logic
 
-let prove mult_limit termlist logic =
+let prove consts mult_limit termlist logic =
    let (ftree,ordering,pos_n) = construct_ftree termlist [] [] 0 (mk_var_term "dummy") in
 (* pos_n = number of positions without new root "w" *)
 (*   print_formula_info ftree ordering pos_n;    *)
-   try_multiplicity mult_limit ftree ordering pos_n 1 logic
+   try_multiplicity consts mult_limit ftree ordering pos_n 1 logic
 
 (********** first-order type theory interface *******************)
 
 let rec renam_free_vars termlist =
    match termlist
-   with [] -> [],[]
+   with [] -> [],[],SymbolSet.empty
     | f::r ->
-         let var_names = free_vars_list f in
+         let consts = free_meta_variables f in
+         let var_names = free_vars_list f consts in
          let string_terms =
-            List.map (fun x -> (mk_string_term free_var_op x)) var_names
+            List.map (mk_string_term free_var_op) var_names
          in
          let mapping = List.combine var_names string_terms
          and new_f = subst f var_names string_terms in
-         let (rest_mapping,rest_renamed) = renam_free_vars r in
+         let (rest_mapping,rest_renamed,rest_conts) = renam_free_vars r in
          let unique_mapping = remove_dups_list (mapping @ rest_mapping) in
-         (unique_mapping,(new_f::rest_renamed))
+         (unique_mapping,(new_f::rest_renamed),SymbolSet.union consts rest_conts)
 
-let rec apply_var_subst term var_subst_list =
-   match var_subst_list with
-      [] -> term
-    | (v,t)::r ->
-         let next_term = var_subst term t v in
-         apply_var_subst next_term r
+let rec apply_var_subst term = function
+   [] -> term
+ | (v,t)::r ->
+      let next_term = var_subst term t v in
+      apply_var_subst next_term r
 
 let rec make_equal_list n list_object =
    if n = 0 then
@@ -4405,7 +4402,7 @@ let rec make_equal_list n list_object =
    else
       list_object::(make_equal_list (n-1) list_object)
 
-let rec create_output rule_list input_map =
+let rec create_output consts rule_list input_map =
    match rule_list with
       [] -> JLogic.empty_inf
     | f::r ->
@@ -4418,8 +4415,8 @@ let rec create_output rule_list input_map =
          let delta_vars = List.map (fun x -> (x^"_jprover")) unique_deltas in
          let delta_map = List.combine delta_vars delta_terms in
          let var_mapping = (input_map @ delta_map) in
-         let frees1 = free_vars_list term1
-         and frees2 = free_vars_list term2 in
+         let frees1 = free_vars_list term1 consts in
+         let frees2 = free_vars_list term2 consts in
          let unique_object = mk_var_term "v0_jprover" in
          let unique_list1 = make_equal_list (List.length frees1) unique_object
          and unique_list2 = make_equal_list (List.length frees2) unique_object
@@ -4430,9 +4427,9 @@ let rec create_output rule_list input_map =
          and new_term2 = apply_var_subst next_term2 var_mapping
          in
 (* kick away the first argument, the position *)
-         (JLogic.append_inf (create_output r input_map) new_term1 new_term2 rule)
+         (JLogic.append_inf (create_output consts r input_map) new_term1 new_term2 rule)
 
-let rec make_test_interface rule_list input_map =
+let rec make_test_interface consts rule_list input_map =
    match rule_list with
       [] -> []
     | f::r ->
@@ -4445,8 +4442,8 @@ let rec make_test_interface rule_list input_map =
          let delta_vars = List.map (fun x -> (x^"_jprover")) unique_deltas in
          let delta_map = List.combine delta_vars delta_terms in
          let var_mapping = (input_map @ delta_map) in
-         let frees1 = free_vars_list term1
-         and frees2 = free_vars_list term2 in
+         let frees1 = free_vars_list term1 consts in
+         let frees2 = free_vars_list term2 consts in
          let unique_object = mk_var_term "v0_jprover" in
          let unique_list1 = make_equal_list (List.length frees1) unique_object
          and unique_list2 = make_equal_list (List.length frees2) unique_object
@@ -4466,20 +4463,20 @@ let rec make_test_interface rule_list input_map =
             let new_term1 = apply_var_subst next_term1 var_mapping
             and new_term2 = apply_var_subst next_term2 var_mapping
             in
-            (pos,(rule,new_term1,new_term2))::(make_test_interface r input_map)
+            (pos,(rule,new_term1,new_term2))::(make_test_interface consts r input_map)
          end
 
 (**************************************************************)
 
 let gen_prover mult_limit logic calculus hyps concls =
-   let (input_map,renamed_termlist) = renam_free_vars (hyps @ concls) in
-   let (ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof) = prove mult_limit renamed_termlist logic in
+   let (input_map,renamed_termlist,consts) = renam_free_vars (hyps @ concls) in
+   let (ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof) = prove consts mult_limit renamed_termlist logic in
    let sequent_proof = reconstruct ftree red_ordering sigmaQ ext_proof logic calculus in
          (* transform types and rename constants *)
      (* we can transform the eigenvariables AFTER proof reconstruction since *)
      (* new delta_0 constants may have been constructed during rule permutation *)
      (* from the LJmc to the LJ proof *)
-   create_output sequent_proof input_map
+   create_output consts sequent_proof input_map
 
 let prover mult_limit hyps concl = gen_prover mult_limit "J" "LJ" hyps [concl]
 
@@ -4497,8 +4494,8 @@ let rec count_axioms seq_list =
 
 let do_prove mult_limit termlist logic calculus =
    try begin
-      let (input_map,renamed_termlist) = renam_free_vars termlist in
-      let (ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof) = prove mult_limit renamed_termlist logic in
+      let (input_map,renamed_termlist,consts) = renam_free_vars termlist in
+      let (ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof) = prove consts mult_limit renamed_termlist logic in
       Format.open_box 0;
       Format.force_newline ();
       Format.force_newline ();
@@ -4549,7 +4546,7 @@ let do_prove mult_limit termlist logic calculus =
       Format.print_flush ();
       let _ = input_char stdin in
       let reconstr_proof = reconstruct ftree red_ordering sigmaQ ext_proof logic calculus in
-      let sequent_proof = make_test_interface reconstr_proof input_map in
+      let sequent_proof = make_test_interface consts reconstr_proof input_map in
       Format.open_box 0;
       Format.force_newline ();
       Format.force_newline ();

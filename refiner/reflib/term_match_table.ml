@@ -134,7 +134,7 @@ let shape_of_term t =
 let simplify_term t =
    let simplify_var t =
       if is_so_var_term t then
-         mk_var_term (fst (dest_so_var t))
+         let v, _, _ = dest_so_var t in mk_var_term v
       else
          t
    in

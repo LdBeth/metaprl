@@ -70,6 +70,10 @@ sig
       with type esequent = TermType.esequent
       with type hypothesis = TermType.hypothesis
 
+   module TermMeta : sig  (* XXX HACK: TermMan is here only for ASCII IO format versions <= 1.0.7 support *)
+      val term_of_parsed_term : TermType.term -> TermType.term
+   end
+
    (*
     * Refiner is included because it defines msequent.
     *)
@@ -108,6 +112,10 @@ sig
       with type term = TermType.term
       with type esequent = TermType.esequent
       with type hypothesis = TermType.hypothesis
+
+   module TermMeta : sig  (* XXX HACK: TermMan is here only for ASCII IO format versions <= 1.0.7 support *)
+      val term_of_parsed_term : TermType.term -> TermType.term
+   end
 
    (*
     * Refiner is included because it defines msequent.

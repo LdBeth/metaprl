@@ -99,26 +99,19 @@ sig
    val subterm_count : term -> int
    val subterm_arities : term -> int list
 
+   (* A few "special" opnames *)
+   val var_opname : opname
+   val context_opname : opname
+   val xperv : opname
+   val sequent_opname : opname
+
    (*
     * A variable is a term with opname "var", and a single
     * var parameter that is the name of the variable.
     *)
-   val var_opname : opname
    val is_var_term : term -> bool
    val dest_var : term -> var
    val mk_var_term : var -> term
-
-   val is_so_var_term : term -> bool
-   val dest_so_var : term -> var * term list
-   val mk_so_var_term : var -> term list -> term
-
-   val context_opname : opname
-   val is_context_term : term -> bool
-   val dest_context : term -> var * term * term list
-   val mk_context_term : var -> term -> term list -> term
-
-   val xperv : opname
-   val sequent_opname : opname
 
    (*
     * Simple terms have no paramaters and
@@ -130,6 +123,7 @@ sig
    val is_simple_term_opname : opname -> term -> bool
    val dest_simple_term_opname : opname -> term -> term list
 
+   val is_simple_bterm : bound_term -> bool
    val mk_simple_bterm : term -> bound_term
    val dest_simple_bterm : bound_term -> term
 

@@ -139,19 +139,20 @@ let mk_opname loc l p a =
 module TermGrammarBefore : TermGrammarSig =
 struct
    let mk_opname = mk_opname
+   let mk_var_contexts _ v _ = None
 
    (*
     * Term grammar.
     *)
    let gram = Pcaml.gram
-   let term_eoi = Grammar.Entry.create gram "term"
-   let term = Grammar.Entry.create gram "term"
+   let term_eoi = Grammar.Entry.create gram "term_eoi"
+   let parsed_term = Grammar.Entry.create gram "parsed_term"
    let quote_term = Grammar.Entry.create gram "quote_term"
    let mterm = Grammar.Entry.create gram "mterm"
    let bmterm = Grammar.Entry.create gram "mterm"
    let singleterm = Grammar.Entry.create gram "singleterm"
    let applytermlist = Grammar.Entry.create gram "applytermlist"
-   let bound_term = Grammar.Entry.create gram "bound_term"
+   let parsed_bound_term = Grammar.Entry.create gram "bound_term"
    let xdform = Grammar.Entry.create gram "xdform"
    let term_con_eoi = Grammar.Entry.create gram "term_con_eoi"
 end
@@ -304,6 +305,15 @@ let bind_item i =
      item_bindings = get_bindings ();
    }
 
+(* Convert contexts in meta-terms, terms args and resource term bindings *)
+let parse_mtlr mt tl rs =
+   let mt, tl, f = mterms_of_parsed_mterms mt tl in
+   let conv = function
+      v, BindTerm t -> v, BindTerm(f t)
+    | bnd -> bnd
+   in
+      mt, tl, { rs with item_bindings = List.map conv rs.item_bindings }
+
 (************************************************************************
  * TERM HACKING                                                         *
  ************************************************************************)
@@ -449,7 +459,7 @@ struct
     *)
    let declare_term_opname proc loc (s, params, bterms) =
       let opname' = Opname.mk_opname s (FilterCache.op_prefix proc.cache) in
-      let t = mk_term (mk_op opname' params) bterms in
+      let t = term_of_parsed_term (mk_term (mk_op opname' params) bterms) in
          FilterCache.update_opname proc.cache s t;
          t
 
@@ -1082,7 +1092,7 @@ EXTEND
           in
              print_exn f "declare" loc;
              empty_sig_item loc
-        | "define"; name = LIDENT; ":"; t = quote_term; "<-->"; def = term ->
+        | "define"; name = LIDENT; ":"; t = quote_term; "<-->"; def = parsed_term ->
            let f () =
              SigFilter.define_term (SigFilter.get_proc loc) loc name t def no_resources
            in
@@ -1090,24 +1100,28 @@ EXTEND
              empty_sig_item loc
         | "rewrite"; name = LIDENT; args = optarglist; ":"; t = mterm ->
            let f () =
+             let t, args, _ = mterms_of_parsed_mterms t args in
              SigFilter.declare_rewrite (SigFilter.get_proc loc) loc name args t () no_resources
            in
              print_exn f "rewrite" loc;
              empty_sig_item loc
-        | "ml_rw"; name = LIDENT; args = optarglist; ":"; t = term ->
+        | "ml_rw"; name = LIDENT; args = optarglist; ":"; t = parsed_term ->
            let f () =
+             let args = List.map term_of_parsed_term args in
              SigFilter.declare_mlrewrite (SigFilter.get_proc loc) loc name args t None no_resources
            in
              print_exn f "ml_rw" loc;
              empty_sig_item loc
         | rule_keyword; name = LIDENT; args = optarglist; ":"; t = mterm ->
            let f () =
+             let t, args, _ = mterms_of_parsed_mterms t args in
              SigFilter.declare_rule (SigFilter.get_proc loc) loc name args t () no_resources
            in
               print_exn f "rule" loc;
               empty_sig_item loc
-        | mlrule_keyword; name = LIDENT; args = optarglist; ":"; t = term ->
+        | mlrule_keyword; name = LIDENT; args = optarglist; ":"; t = parsed_term ->
            let f () =
+              let args = List.map term_of_parsed_term args in
               SigFilter.declare_mlaxiom (SigFilter.get_proc loc) loc name args t None no_resources
            in
               print_exn f "mlrule_keyword" loc;
@@ -1169,7 +1183,7 @@ EXTEND
            in
               print_exn f "comment" loc;
         | tl = applytermlist ->
-           SigFilter.declare_comment (SigFilter.get_proc loc) loc (mk_comment_term tl)
+           SigFilter.declare_comment (SigFilter.get_proc loc) loc (mk_comment_term (List.map term_of_parsed_term tl))
        ]];
 
    str_item:
@@ -1191,7 +1205,7 @@ EXTEND
           in
              print_exn f "declare" loc;
              empty_str_item loc
-        | "define"; name = LIDENT; res = optresources; ":"; t = quote_term; "<-->"; def = term ->
+        | "define"; name = LIDENT; res = optresources; ":"; t = quote_term; "<-->"; def = parsed_term ->
            let f () =
              StrFilter.define_term (StrFilter.get_proc loc) loc name t def res
            in
@@ -1199,67 +1213,78 @@ EXTEND
              empty_str_item loc
         | "prim_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
            let f () =
+              let t, args, res = parse_mtlr t args res in
               StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Primitive xnil_term) res
            in
               print_exn f "prim_rw" loc;
               empty_str_item loc
         | "iform"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
            let f () =
+              let t, args, res = parse_mtlr t args res in
               StrFilter.declare_input_form (StrFilter.get_proc loc) loc name args t (Primitive xnil_term) res
            in
               print_exn f "iform" loc;
               empty_str_item loc
         | "interactive_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
            let f () =
+              let t, args, res = parse_mtlr t args res in
               StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t Incomplete res
            in
               print_exn f "interactive_rw" loc;
               empty_str_item loc
         | "derived_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
            let f () =
+              let t, args, res = parse_mtlr t args res in
               StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t Incomplete res
            in
-              print_exn f "interactive_rw" loc;
+              print_exn f "derived_rw" loc;
               empty_str_item loc
         | "thm_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm; "="; body = expr ->
            let f () =
+              let t, args, res = parse_mtlr t args res in
               StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Derived body) res
            in
               print_exn f "thm_rw" loc;
              empty_str_item loc
-        | "ml_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = bound_term; "="; code = expr ->
+        | "ml_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = parsed_bound_term; "="; code = expr ->
            let f () =
+              let args = List.map term_of_parsed_term args in
               let code = bind_item (wrap_code loc t.aname code) in
                  StrFilter.declare_mlrewrite (StrFilter.get_proc loc) loc name args t.aterm (Some code) res
            in
               print_exn f "ml_rw" loc;
               empty_str_item loc
-        | "prim"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm; "="; extract = term ->
+        | "prim"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm; "="; extract = parsed_term ->
            let f () =
+              let mt, params, res = parse_mtlr mt params res in
               define_prim (StrFilter.get_proc loc) loc name params mt extract res
            in
               print_exn f "prim" loc;
               empty_str_item loc
         | "thm"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm; "="; tac = expr ->
            let f () =
+              let mt, params, res = parse_mtlr mt params res in
               define_thm (StrFilter.get_proc loc) loc name params mt tac res
            in
               print_exn f "thm" loc;
               empty_str_item loc
         | "interactive"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm ->
            let f () =
+              let mt, params, res = parse_mtlr mt params res in
               define_int_thm (StrFilter.get_proc loc) loc name params mt res
            in
               print_exn f "interactive" loc;
               empty_str_item loc
         | "derived"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm ->
            let f () =
+              let mt, params, res = parse_mtlr mt params res in
               define_int_thm (StrFilter.get_proc loc) loc name params mt res
            in
               print_exn f "derived" loc;
               empty_str_item loc
-        | mlrule_keyword; name = LIDENT; res = optresources; args = optarglist; ":"; t = bound_term; "="; code = expr ->
+        | mlrule_keyword; name = LIDENT; res = optresources; args = optarglist; ":"; t = parsed_bound_term; "="; code = expr ->
            let f () =
+              let args = List.map term_of_parsed_term args in
               let code = bind_item (wrap_code loc t.aname code) in
                  StrFilter.declare_mlaxiom (StrFilter.get_proc loc) loc name args t.aterm (Some code) res
            in
@@ -1347,7 +1372,7 @@ EXTEND
            in
               print_exn f "comment" loc
         | tl = applytermlist ->
-           StrFilter.declare_comment (StrFilter.get_proc loc) loc (mk_comment_term tl)
+           StrFilter.declare_comment (StrFilter.get_proc loc) loc (mk_comment_term (List.map term_of_parsed_term tl))
        ]];
 
    mod_ident:
@@ -1393,7 +1418,9 @@ EXTEND
                          List.map (fun expr -> split_application (MLast.loc_of_expr expr) [] expr) el
                     | _ ->
                          [split_application (MLast.loc_of_expr e) [] e]
-                in bind_item e
+                in
+                  (* context in resource term quotations will get converted by parse_mtlr *)
+                  { item_item = e; item_bindings = get_unparsed_bindings (); }
            in
               print_exn f "updresources" loc
       ]];
@@ -1409,7 +1436,7 @@ EXTEND
     *)
    df_options:
       [[ l = LIST1 singleterm SEP "::" ->
-          Lm_list_util.split_last (List.map (function { aterm = t } -> t) l)
+          Lm_list_util.split_last (List.map (function { aterm = t } -> term_of_parsed_term t) l)
        ]];
 
    (*

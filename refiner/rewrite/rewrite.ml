@@ -208,7 +208,7 @@ struct
       if (len=0) then bnames else
          let bnames =
             match SeqHyp.get hyps i with
-               HypBinding (v, _) | Context (v, _) -> SymbolSet.add bnames v
+               HypBinding (v, _) | Context (v, _, _) -> SymbolSet.add bnames v
              | Hypothesis _ -> bnames
          in
             collect_hyp_bnames hyps bnames (len-1) (i+1)
@@ -278,9 +278,10 @@ struct
     * Compute the redex types.
     *)
    let extract_redex_type = function
-      FOVarPattern s -> RewriteTermType, s
-    | SOVarPattern (s, _)
-    | SOVarInstance (s, _) -> RewriteFunType, s
+      FOVarPattern s
+    | SOVarPattern (s, _, 0) -> RewriteTermType, s
+    | SOVarPattern (s, _, _)
+    | SOVarInstance (s, _, _) -> RewriteFunType, s
     | CVar s -> RewriteContextType, s
     | PVar (s, ShapeNumber) -> RewriteNumType, s
     | FOVar s | PVar (s, ShapeVar) -> RewriteVarType, s
@@ -311,7 +312,7 @@ struct
    let extract_exn = RefineError ("extract_redex_values", RewriteStringError "stack entry is not valid")
 
    let extract_redex_values_aux gstack = function
-      FOVarPattern _ ->
+      FOVarPattern _ | SOVarPattern (_, _, 0) ->
          begin
             match gstack with
                StackBTerm (t, []) -> RewriteTerm t

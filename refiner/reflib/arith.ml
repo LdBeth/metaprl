@@ -207,7 +207,7 @@ end
 let collect f gl =
    let sh = (explode_sequent gl).sequent_hyps in
    let aux' h = match h with HypBinding (_,t) | Hypothesis t -> t
-    | Context (s,l) -> (mk_simple_term xperv []) in
+    | Context (_,_,_) -> xnil_term in
    let shl = List.map aux' (SeqHyp.to_list sh) in
    let rec aux src i l =
       match src with

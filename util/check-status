@@ -22,5 +22,5 @@ fi
 if grep -qi '^TESTS *= *YES$' mk/config ; then :; else
    echo "Warning: to make the comparison more adequate, use TESTS=yes in mk/config"
 fi
-ssh -x -n -o BatchMode=yes localhost `pwd`/util/check-status.sh `pwd`&
+ssh -x -n -o BatchMode=yes `whoami`@localhost `pwd`/util/check-status.sh `pwd`&
 date "+%c: check-status.sh spawned, results should be emailed to you in a little while"

@@ -93,20 +93,20 @@ struct
          { term_op = { op_name = opname; op_params = [] };
            term_terms = [mk_simple_bterm t]}}
 
-   let dest_dep0_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [bt]
-      } when Opname.eq opname' opname -> dest_simple_bterm bt
+   let dest_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+           term_terms = [bt]
+         } when Opname.eq opname' opname -> dest_simple_bterm bt
     | _ -> REF_RAISE(RefineError ("dest_dep0_term", TermMatchError (t, "bad arity")))
 
-   let one_subterm t = match dest_term t with
-      { term_terms = [bt]}  -> dest_simple_bterm bt
+   let one_subterm t = match get_core t with
+      Term { term_terms = [bt]}  -> dest_simple_bterm bt
     | _ -> REF_RAISE(RefineError ("one_subterm", TermMatchError (t, "bad arity")))
 
-   let one_subterm_opname opname t = match dest_term t with
-      { term_op = { op_name = opname' }; term_terms = [bt] }
-        when Opname.eq opname' opname  ->
-         dest_simple_bterm bt
+   let one_subterm_opname opname t = match get_core t with
+      Term { term_op = { op_name = opname' }; term_terms = [bt] }
+         when Opname.eq opname' opname  ->
+            dest_simple_bterm bt
     | _ -> REF_RAISE(RefineError ("one_subterm", TermMatchError (t, "bad arity")))
 
    (*
@@ -120,25 +120,24 @@ struct
     | _ -> false
 
    let mk_dep0_dep0_term opname t1 t2 =
-      { free_vars = VarsDelayed;
-        core = Term
-         { term_op = { op_name = opname; op_params = [] };
-           term_terms = [mk_simple_bterm t1; mk_simple_bterm t2]}}
+      core_term (
+         Term {
+               term_op = { op_name = opname; op_params = [] };
+               term_terms = [mk_simple_bterm t1; mk_simple_bterm t2]})
 
-   let dest_dep0_dep0_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [bt1 ; bt2 ]
-      } when Opname.eq opname' opname ->
-         dest_simple_bterm bt1, dest_simple_bterm bt2
+   let dest_dep0_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] }; term_terms = [bt1 ; bt2 ] }
+         when Opname.eq opname' opname ->
+            dest_simple_bterm bt1, dest_simple_bterm bt2
     | _ -> REF_RAISE(RefineError ("dest_dep0_dep0_term", TermMatchError (t, "bad arity")))
 
-   let two_subterms t = match dest_term t with
-      { term_terms = [bt1; bt2]} ->
+   let two_subterms t = match get_core t with
+      Term { term_terms = [bt1; bt2]} ->
          dest_simple_bterm bt1, dest_simple_bterm bt2
     | _ -> REF_RAISE(RefineError ("two_subterms", TermMatchError (t, "bad arity")))
 
-   let two_subterms_opname opname t = match dest_term t with
-      { term_op = { op_name = opname' }; term_terms = [bt1; bt2]}
+   let two_subterms_opname opname t = match get_core t with
+      Term { term_op = { op_name = opname' }; term_terms = [bt1; bt2]}
         when Opname.eq opname' opname ->
          dest_simple_bterm bt1, dest_simple_bterm bt2
     | _ -> REF_RAISE(RefineError ("two_subterms", TermMatchError (t, "bad arity")))
@@ -153,16 +152,15 @@ struct
     | _ -> false
 
    let mk_dep0_dep0_dep0_term opname t1 t2 t3 =
-      { free_vars = VarsDelayed;
-        core = Term
-         { term_op = { op_name = opname; op_params = [] };
-           term_terms =
-            [mk_simple_bterm t1; mk_simple_bterm t2; mk_simple_bterm t3]}}
+      core_term (
+         Term {
+            term_op = { op_name = opname; op_params = [] };
+            term_terms = [mk_simple_bterm t1; mk_simple_bterm t2; mk_simple_bterm t3]})
 
-   let dest_dep0_dep0_dep0_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [bt1; bt2; bt3]
-      } when Opname.eq opname' opname ->
+   let dest_dep0_dep0_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [bt1; bt2; bt3]
+           } when Opname.eq opname' opname ->
          dest_simple_bterm bt1, dest_simple_bterm bt2, dest_simple_bterm bt3
     | _ -> REF_RAISE(RefineError ("dest_dep0_dep0_dep0_term", TermMatchError (t, "bad arity")))
 
@@ -183,10 +181,10 @@ struct
            term_terms =
             [mk_simple_bterm t1; mk_simple_bterm t2; mk_simple_bterm t3; mk_simple_bterm t4]}}
 
-   let dest_dep0_dep0_dep0_dep0_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [bt1; bt2; bt3; bt4]
-      } when Opname.eq opname' opname ->
+   let dest_dep0_dep0_dep0_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [bt1; bt2; bt3; bt4]
+           } when Opname.eq opname' opname ->
          dest_simple_bterm bt1, dest_simple_bterm bt2, dest_simple_bterm bt3, dest_simple_bterm bt4
     | _ -> REF_RAISE(RefineError ("dest_dep0_dep0_dep0_dep0_term", TermMatchError (t, "bad arity")))
 
@@ -214,31 +212,23 @@ struct
            } when Opname.eq opname' opname -> no_bvars bterms
     | _ -> false
 
-   let three_subterms t = match dest_term t with
-      { term_op = { op_name = opname' };
-        term_terms = [bt1; bt2; bt3]
-      } ->
+   let three_subterms t = match get_core t with
+      Term { term_terms = [bt1; bt2; bt3] } ->
          dest_simple_bterm bt1, dest_simple_bterm bt2, dest_simple_bterm bt3
     | _ -> REF_RAISE(RefineError ("three_subterms", TermMatchError (t, "bad arity")))
 
-   let four_subterms t = match dest_term t with
-      { term_op = { op_name = opname' };
-        term_terms = [bt1; bt2; bt3; bt4]
-      } ->
+   let four_subterms t = match get_core t with
+      Term { term_terms = [bt1; bt2; bt3; bt4] } ->
          dest_simple_bterm bt1, dest_simple_bterm bt2, dest_simple_bterm bt3, dest_simple_bterm bt4
     | _ -> REF_RAISE(RefineError ("four_subterms", TermMatchError (t, "bad arity")))
 
-   let five_subterms t = match dest_term t with
-      { term_op = { op_name = opname' };
-        term_terms = [bt1; bt2; bt3; bt4; bt5]
-      } ->
+   let five_subterms t = match get_core t with
+      Term { term_terms = [bt1; bt2; bt3; bt4; bt5] } ->
           dest_simple_bterm bt1, dest_simple_bterm bt2, dest_simple_bterm bt3, dest_simple_bterm bt4, dest_simple_bterm bt5
     | _ -> REF_RAISE(RefineError ("five_subterms", TermMatchError (t, "bad arity")))
 
-   let six_subterms t = match dest_term t with
-      { term_op = { op_name = opname' };
-        term_terms = [bt1; bt2; bt3; bt4; bt5; bt6]
-      } ->
+   let six_subterms t = match get_core t with
+      Term { term_terms = [bt1; bt2; bt3; bt4; bt5; bt6] } ->
           dest_simple_bterm bt1, dest_simple_bterm bt2, dest_simple_bterm bt3, dest_simple_bterm bt4, dest_simple_bterm bt5, dest_simple_bterm bt6
     | _ -> REF_RAISE(RefineError ("six_subterms", TermMatchError (t, "bad arity")))
 
@@ -257,16 +247,14 @@ struct
     | _ ->
          false
 
-   let dest_string_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [String s] };
-        term_terms = []
-      } when Opname.eq opname opname' ->
-         s
+   let dest_string_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [String s] }; term_terms = [] }
+         when Opname.eq opname opname' -> s
     | _ ->
          REF_RAISE(RefineError ("dest_string_term", TermMatchError (t, "not a string term")))
 
-   let dest_string_param t = match dest_term t with
-      { term_op = { op_params = String s :: _ } } ->
+   let dest_string_param t = match get_core t with
+      Term { term_op = { op_params = String s :: _ } } ->
          s
     | _ ->
          REF_RAISE(RefineError ("dest_string_param", TermMatchError (t, "no string parameter")))
@@ -285,10 +273,10 @@ struct
            } -> Opname.eq opname opname'
     | _ -> false
 
-   let dest_string_dep0_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [String s] };
-        term_terms = [bt]
-      } when Opname.eq opname opname' -> s, dest_simple_bterm bt
+   let dest_string_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [String s] };
+             term_terms = [bt]
+           } when Opname.eq opname opname' -> s, dest_simple_bterm bt
     | _ -> REF_RAISE(RefineError ("dest_string_dep0_term", TermMatchError (t, "bad arity")))
 
    let mk_string_dep0_term opname s t =
@@ -307,18 +295,18 @@ struct
     | _ ->
          false
 
-   let dest_string_string_dep0_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [String s1; String s2] };
-        term_terms = [bt]
-      } when Opname.eq opname opname' ->
+   let dest_string_string_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [String s1; String s2] };
+             term_terms = [bt]
+           } when Opname.eq opname opname' ->
          s1, s2, dest_simple_bterm bt
     | _ ->
          REF_RAISE(RefineError ("dest_string_string_dep0_term", TermMatchError (t, "bad arity")))
 
-   let dest_string_string_dep0_any_term t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [String s1; String s2] };
-        term_terms = [bt]
-      } ->
+   let dest_string_string_dep0_any_term t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [String s1; String s2] };
+             term_terms = [bt]
+           } ->
          s1, s2, dest_simple_bterm bt
     | _ ->
          REF_RAISE(RefineError ("dest_string_string_dep0_any_term", TermMatchError (t, "bad arity")))
@@ -339,18 +327,18 @@ struct
     | _ ->
          false
 
-   let dest_number_dep0_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [Number s1] };
-        term_terms = [bt]
-      } when Opname.eq opname opname' ->
+   let dest_number_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [Number s1] };
+             term_terms = [bt]
+           } when Opname.eq opname opname' ->
          s1, dest_simple_bterm bt
     | _ ->
          REF_RAISE(RefineError ("dest_number_dep0_term", TermMatchError (t, "bad arity")))
 
-   let dest_number_dep0_any_term t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [Number s1] };
-        term_terms = [bt]
-      } ->
+   let dest_number_dep0_any_term t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [Number s1] };
+             term_terms = [bt]
+           } ->
          s1, dest_simple_bterm bt
     | _ ->
          REF_RAISE(RefineError ("dest_number_dep0_any_term", TermMatchError (t, "bad arity")))
@@ -369,28 +357,20 @@ struct
          false
 
    let dest_number_dep1_term opname t =
-      match dest_term t with
-         { term_op = { op_name = opname'; op_params = [Number s1] };
-           term_terms = [bt]
-         } when Opname.eq opname opname' ->
-            (match dest_bterm bt with
-                { bvars = [v]; bterm = t } ->
-                   s1, v, t
-              | _ ->
-                   REF_RAISE(RefineError ("dest_number_dep1_term", TermMatchError (t, "bad arity"))))
+      match get_core t with
+         Term { term_op = { op_name = opname'; op_params = [Number s1] };
+                term_terms = [ { bvars = [v]; bterm = t } ]
+              } when Opname.eq opname opname' ->
+            s1, v, t
        | _ ->
             REF_RAISE(RefineError ("dest_number_dep1_term", TermMatchError (t, "bad arity")))
 
    let dest_number_dep1_any_term t =
-      match dest_term t with
-         { term_op = { op_name = opname'; op_params = [Number s1] };
-           term_terms = [bt]
-         } ->
-            (match dest_bterm bt with
-                { bvars = [v]; bterm = t } ->
-                   s1, v, t
-              | _ ->
-                   REF_RAISE(RefineError ("dest_number_dep1_any_term", TermMatchError (t, "bad arity"))))
+      match get_core t with
+         Term { term_op = { op_name = opname'; op_params = [Number s1] };
+                term_terms = [ { bvars = [v]; bterm = t } ]
+              } ->
+            s1, v, t
        | _ ->
             REF_RAISE(RefineError ("dest_number_dep1_any_term", TermMatchError (t, "bad arity")))
 
@@ -410,18 +390,18 @@ struct
     | _ ->
          false
 
-   let dest_number_number_dep0_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [Number s1; Number s2] };
-        term_terms = [bt]
-      } when Opname.eq opname opname' ->
+   let dest_number_number_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [Number s1; Number s2] };
+             term_terms = [bt]
+           } when Opname.eq opname opname' ->
          s1, s2, dest_simple_bterm bt
     | _ ->
          REF_RAISE(RefineError ("dest_number_number_dep0_term", TermMatchError (t, "bad arity")))
 
-   let dest_number_number_dep0_any_term t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [Number s1; Number s2] };
-        term_terms = [bt]
-      } ->
+   let dest_number_number_dep0_any_term t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [Number s1; Number s2] };
+             term_terms = [bt]
+           } ->
          s1, s2, dest_simple_bterm bt
     | _ ->
          REF_RAISE(RefineError ("dest_number_number_dep0_any_term", TermMatchError (t, "bad arity")))
@@ -442,18 +422,18 @@ struct
     | _ ->
          false
 
-   let dest_number_number_string_dep0_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [Number s1; Number s2; String s3] };
-        term_terms = [bt]
-      } when Opname.eq opname opname' ->
+   let dest_number_number_string_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [Number s1; Number s2; String s3] };
+             term_terms = [bt]
+           } when Opname.eq opname opname' ->
          s1, s2, s3, dest_simple_bterm bt
     | _ ->
          REF_RAISE(RefineError ("dest_number_number_dep0_term", TermMatchError (t, "bad arity")))
 
-   let dest_number_number_string_dep0_any_term t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [Number s1; Number s2; String s3] };
-        term_terms = [bt]
-      } ->
+   let dest_number_number_string_dep0_any_term t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [Number s1; Number s2; String s3] };
+             term_terms = [bt]
+           } ->
          s1, s2, s3, dest_simple_bterm bt
     | _ ->
          REF_RAISE(RefineError ("dest_number_number_dep0_any_term", TermMatchError (t, "bad arity")))
@@ -474,19 +454,19 @@ struct
     | _ ->
          false
 
-   let dest_string_string_dep0_dep0_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [String s1; String s2] };
-        term_terms = [bt1;bt2]
-      } when Opname.eq opname opname' ->
+   let dest_string_string_dep0_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [String s1; String s2] };
+             term_terms = [bt1;bt2]
+           } when Opname.eq opname opname' ->
          let destr = dest_simple_bterm in
          s1, s2, destr bt1, destr bt2
     | _ ->
          REF_RAISE(RefineError ("dest_string_string_dep0_dep0_term", TermMatchError (t, "bad arity")))
 
-   let dest_string_string_dep0_dep0_any_term t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [String s1; String s2] };
-        term_terms = [bt1;bt2]
-      } ->
+   let dest_string_string_dep0_dep0_any_term t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [String s1; String s2] };
+             term_terms = [bt1;bt2]
+           } ->
          let destr = dest_simple_bterm in
          s1, s2, destr bt1, destr bt2
     | _ ->
@@ -507,16 +487,14 @@ struct
            } when Opname.eq opname opname' -> true
     | _ -> false
 
-   let dest_number_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [Number n] };
-        term_terms = []
-      } when Opname.eq opname opname' -> n
+   let dest_number_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [Number n] };
+             term_terms = []
+           } when Opname.eq opname opname' -> n
     | _ -> REF_RAISE(RefineError ("dest_number_term", TermMatchError (t, "bad arity")))
 
-   let dest_number_any_term t = match dest_term t with
-      { term_op = { op_params = [Number n] };
-        term_terms = []
-      } ->
+   let dest_number_any_term t = match get_core t with
+      Term { term_op = { op_params = [Number n] }; term_terms = [] } ->
          n
     | _ ->
          REF_RAISE(RefineError ("dest_number_any_term", TermMatchError (t, "bad arity")))
@@ -536,10 +514,10 @@ struct
            } when Opname.eq opname opname' -> true
     | _ -> false
 
-   let dest_univ_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [MLevel n] };
-        term_terms = []
-      } when Opname.eq opname opname' -> n
+   let dest_univ_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [MLevel n] };
+             term_terms = []
+           } when Opname.eq opname opname' -> n
     | _ -> REF_RAISE(RefineError ("dest_univ_term", TermMatchError (t, "")))
 
    let mk_univ_term opname n =
@@ -557,10 +535,10 @@ struct
            } when Opname.eq opname opname' -> true
     | _ -> false
 
-   let dest_token_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [Token n] };
-        term_terms = []
-      } when Opname.eq opname opname' -> n
+   let dest_token_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [Token n] };
+             term_terms = []
+           } when Opname.eq opname opname' -> n
     | _ -> REF_RAISE(RefineError ("dest_token_term", TermMatchError (t, "bad arity")))
 
    let mk_token_term opname n =
@@ -582,10 +560,10 @@ struct
             false
 
    let dest_token_simple_term opname t =
-      match dest_term t with
-         { term_op = { op_name = opname'; op_params = [Token n] };
-           term_terms = terms
-         } when Opname.eq opname opname' ->
+      match get_core t with
+         Term { term_op = { op_name = opname'; op_params = [Token n] };
+                term_terms = terms
+              } when Opname.eq opname opname' ->
             n, List.map dest_simple_bterm terms
        | _ ->
             REF_RAISE(RefineError ("dest_token_term", TermMatchError (t, "bad arity")))
@@ -613,10 +591,10 @@ struct
            term_terms =
             [{ bvars = [v]; bterm = t }]}}
 
-   let dest_dep1_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [{ bvars = [v]; bterm = t }]
-      } when Opname.eq opname' opname -> v,t
+   let dest_dep1_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [{ bvars = [v]; bterm = t }]
+           } when Opname.eq opname' opname -> v,t
     | _ -> REF_RAISE(RefineError ("dest_dep1_term", TermMatchError (t, "bad arity")))
 
    let is_dep1_dep1_term opname t =
@@ -637,11 +615,11 @@ struct
       }
 
    let dest_dep1_dep1_term opname t =
-      match dest_term t with
-         { term_op = { op_name = opname'; op_params = [] };
-           term_terms = [{ bvars = [v1]; bterm = t1 };
-                         { bvars = [v2]; bterm = t2 }]
-         } when Opname.eq opname' opname -> v1, t1, v2, t2
+      match get_core t with
+         Term { term_op = { op_name = opname'; op_params = [] };
+                term_terms = [{ bvars = [v1]; bterm = t1 };
+                              { bvars = [v2]; bterm = t2 }]
+              } when Opname.eq opname' opname -> v1, t1, v2, t2
        | _ ->
             REF_RAISE(RefineError ("dest_dep1_dep1_term", TermMatchError (t, "bad arity")))
 
@@ -658,10 +636,10 @@ struct
            term_terms =
             [{ bvars = [v1;v2]; bterm = t }]}}
 
-   let dest_dep2_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [{ bvars = [v1;v2]; bterm = t }]
-      } when Opname.eq opname' opname -> v1,v2,t
+   let dest_dep2_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [{ bvars = [v1;v2]; bterm = t }]
+           } when Opname.eq opname' opname -> v1,v2,t
     | _ -> REF_RAISE(RefineError ("dest_dep2_term", TermMatchError (t, "bad arity")))
 
    let is_dep0_dep1_term opname t = match get_core t with
@@ -691,10 +669,10 @@ struct
                [ mk_simple_bterm t1;
                  { bvars = [v]; bterm = t2 }]}}
 
-   let dest_dep0_dep1_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [bt1;bt2]
-      } when Opname.eq opname' opname ->
+   let dest_dep0_dep1_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [bt1;bt2]
+           } when Opname.eq opname' opname ->
       begin match (bt1, bt2) with
          ({ bvars = []; bterm = t1 }, { bvars = [v]; bterm = t2 }) ->
             v, t1, t2
@@ -702,9 +680,8 @@ struct
       end
     | _ -> REF_RAISE(RefineError ("dest_dep0_dep1_term", TermMatchError (t, "bad arity")))
 
-   let dest_dep0_dep1_any_term t = match dest_term t with
-      { term_terms = [{ bvars = []; bterm = t1 };
-                      { bvars = [v]; bterm = t2 }] } -> v, t1, t2
+   let dest_dep0_dep1_any_term t = match get_core t with
+      Term { term_terms = [{ bvars = []; bterm = t1 }; { bvars = [v]; bterm = t2 }] } -> v, t1, t2
     | _ -> REF_RAISE(RefineError ("dest_dep0_dep1_any_term", TermMatchError (t, "bad arity")))
 
    let is_dep1_dep0_term opname t = match get_core t with
@@ -721,10 +698,10 @@ struct
                [ { bvars = [v]; bterm = t1 };
                  { bvars = []; bterm = t2 }]}}
 
-   let dest_dep1_dep0_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [bt1; bt2]
-      } when Opname.eq opname' opname ->
+   let dest_dep1_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [bt1; bt2]
+           } when Opname.eq opname' opname ->
       begin match (bt1, bt2) with
          ({ bvars = [v]; bterm = t1 }, { bvars = []; bterm = t2 }) ->
             v, t1, t2
@@ -749,11 +726,11 @@ struct
             [{ bvars = [v1; v2]; bterm = t1 };
              mk_simple_bterm t2]}}
 
-   let dest_dep2_dep0_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [{ bvars = [v1; v2]; bterm = t1 };
-                      { bvars = []; bterm = t2 }]
-      } when Opname.eq opname' opname -> v1, v2, t1, t2
+   let dest_dep2_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [{ bvars = [v1; v2]; bterm = t1 };
+                           { bvars = []; bterm = t2 }]
+           } when Opname.eq opname' opname -> v1, v2, t1, t2
     | _ -> REF_RAISE(RefineError ("dest_dep2_dep0_term", TermMatchError (t, "bad arity")))
 
    (*
@@ -773,11 +750,11 @@ struct
             [mk_simple_bterm t1;
              { bvars = [v1; v2]; bterm = t2 }]}}
 
-   let dest_dep0_dep2_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [{ bvars = []; bterm = t1 };
-                      { bvars = [v1; v2]; bterm = t2 }]
-      } when Opname.eq opname' opname -> v1, v2, t1, t2
+   let dest_dep0_dep2_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [{ bvars = []; bterm = t1 };
+                           { bvars = [v1; v2]; bterm = t2 }]
+           } when Opname.eq opname' opname -> v1, v2, t1, t2
     | _ -> REF_RAISE(RefineError ("dest_dep0_dep2_term", TermMatchError (t, "bad arity")))
 
    (*
@@ -800,11 +777,11 @@ struct
                         { bvars = [v1; v2; v3]; bterm = t2 }]}}
 
    let dest_dep0_dep3_term opname t =
-      match dest_term t with
-         { term_op = { op_name = opname'; op_params = [] };
-           term_terms = [{ bvars = []; bterm = t1 };
-                         { bvars = [v1; v2; v3]; bterm = t2 }]
-         } when Opname.eq opname' opname ->
+      match get_core t with
+         Term { term_op = { op_name = opname'; op_params = [] };
+                term_terms = [{ bvars = []; bterm = t1 };
+                              { bvars = [v1; v2; v3]; bterm = t2 }]
+              } when Opname.eq opname' opname ->
             v1, v2, v3, t1, t2
        | _ ->
             REF_RAISE(RefineError ("dest_dep0_dep3_term", TermMatchError (t, "bad arity")))
@@ -827,13 +804,13 @@ struct
              mk_simple_bterm base;
              mk_bterm [v21; v22] t2]
 
-   let dest_dep0_dep2_dep0_dep2_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [{ bvars = []; bterm = t0 };
-                      { bvars = [v11; v12]; bterm = t1 };
-                      { bvars = []; bterm = base };
-                      { bvars = [v21; v22]; bterm = t2 }]
-      } when Opname.eq opname' opname ->
+   let dest_dep0_dep2_dep0_dep2_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [{ bvars = []; bterm = t0 };
+                           { bvars = [v11; v12]; bterm = t1 };
+                           { bvars = []; bterm = base };
+                           { bvars = [v21; v22]; bterm = t2 }]
+           } when Opname.eq opname' opname ->
          t0, v11, v12, t1, base, v21, v22, t2
     | _ -> REF_RAISE(RefineError ("dest_dep0_dep2_dep0_dep2_term", TermMatchError (t, "bad arity")))
 
@@ -855,12 +832,12 @@ struct
              mk_simple_bterm t1;
              { bvars = [v2]; bterm = t2 }]}}
 
-   let dest_dep0_dep0_dep1_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [{ bvars = []; bterm = t0 };
-                      { bvars = []; bterm = t1 };
-                      { bvars = [v2]; bterm = t2 }]
-      } when Opname.eq opname' opname ->
+   let dest_dep0_dep0_dep1_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [{ bvars = []; bterm = t0 };
+                           { bvars = []; bterm = t1 };
+                           { bvars = [v2]; bterm = t2 }]
+           } when Opname.eq opname' opname ->
          t0, t1, v2, t2
     | _ ->
          REF_RAISE(RefineError ("dest_dep0_dep0_dep1_term", TermMatchError (t, "bad arity")))
@@ -878,10 +855,10 @@ struct
              mk_simple_bterm t1;
              { bvars = [v2]; bterm = t2 }]}}
 
-   let dest_dep0_dep0_dep1_any_term t = match dest_term t with
-      { term_terms = [{ bvars = []; bterm = t0 };
-                      { bvars = []; bterm = t1 };
-                      { bvars = [v2]; bterm = t2 }] } -> t0, t1, v2, t2
+   let dest_dep0_dep0_dep1_any_term t = match get_core t with
+      Term { term_terms = [{ bvars = []; bterm = t0 };
+                           { bvars = []; bterm = t1 };
+                           { bvars = [v2]; bterm = t2 }] } -> t0, t1, v2, t2
     | _ ->
          REF_RAISE(RefineError ("dest_dep0_dep0_dep1_any_term", TermMatchError (t, "bad arity")))
 
@@ -898,12 +875,12 @@ struct
           mk_bterm [v1] t1;
           mk_bterm [v2] t2]
 
-   let dest_dep0_dep1_dep1_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [{ bvars = []; bterm = t0 };
-                      { bvars = [v1]; bterm = t1 };
-                      { bvars = [v2]; bterm = t2 }]
-      } when Opname.eq opname' opname -> t0, v1, t1, v2, t2
+   let dest_dep0_dep1_dep1_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [{ bvars = []; bterm = t0 };
+                           { bvars = [v1]; bterm = t1 };
+                           { bvars = [v2]; bterm = t2 }]
+           } when Opname.eq opname' opname -> t0, v1, t1, v2, t2
     | _ -> REF_RAISE(RefineError ("dest_dep0_dep1_dep1_term", TermMatchError (t, "bad arity")))
 
    let is_dep2_dep2_dep0_dep0_term opname t =
@@ -925,13 +902,13 @@ struct
           mk_simple_bterm t4]
 
    let dest_dep2_dep2_dep0_dep0_term opname t =
-      match dest_term t with
-         { term_op = { op_name = opname'; op_params = [] };
-           term_terms = [{ bvars = [v11; v12]; bterm = t1 };
-                         { bvars = [v21; v22]; bterm = t2 };
-                         { bvars = []; bterm = t3 };
-                         { bvars = []; bterm = t4 }]
-      } when Opname.eq opname' opname -> v11, v12, t1, v21, v22, t2, t3, t4
+      match get_core t with
+         Term { term_op = { op_name = opname'; op_params = [] };
+                term_terms = [{ bvars = [v11; v12]; bterm = t1 };
+                              { bvars = [v21; v22]; bterm = t2 };
+                              { bvars = []; bterm = t3 };
+                              { bvars = []; bterm = t4 }]
+           } when Opname.eq opname' opname -> v11, v12, t1, v21, v22, t2, t3, t4
     | _ -> REF_RAISE(RefineError ("dest_dep2_dep2_dep0_dep0_term", TermMatchError (t, "bad arity")))
 
    (*
@@ -950,12 +927,12 @@ struct
           mk_simple_bterm t1;
           mk_bterm [v1; v2; v3] t2]
 
-   let dest_dep0_dep0_dep3_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [{ bvars = []; bterm = t0 };
-                      { bvars = []; bterm = t1 };
-                      { bvars = [v1; v2; v3]; bterm = t2 }]
-      } when Opname.eq opname' opname -> t0, t1, v1, v2, v3, t2
+   let dest_dep0_dep0_dep3_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [{ bvars = []; bterm = t0 };
+                           { bvars = []; bterm = t1 };
+                           { bvars = [v1; v2; v3]; bterm = t2 }]
+           } when Opname.eq opname' opname -> t0, t1, v1, v2, v3, t2
     | _ -> REF_RAISE(RefineError ("dest_dep0_dep0_dep3_term", TermMatchError (t, "bad arity")))
 
    (*
@@ -967,10 +944,10 @@ struct
            } when Opname.eq opname' opname -> true
     | _ -> false
 
-   let dest_one_bsubterm opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [bterm]
-      } when Opname.eq opname' opname -> bterm
+   let dest_one_bsubterm opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [bterm]
+           } when Opname.eq opname' opname -> bterm
     | _ -> REF_RAISE(RefineError ("dest_one_bsubterm", TermMatchError (t, "bad arity")))
 
    let mk_one_bsubterm opname bt =
@@ -995,6 +972,7 @@ struct
          Term trm ->
             make_term { term_op = trm.term_op; term_terms = List.map (bterm_down f) trm.term_terms }
        | FOVar _ -> t
+       | SOVar(v, conts, ts) -> { free_vars = VarsDelayed; core = SOVar(v, conts, List.map (map_down f) ts) }
        | Sequent _ -> raise (Invalid_argument "Term_op_ds.map_down: sequent code is not implemented")
        | Subst _ | Hashed _ -> fail_core "Term_op_ds.map_down"
 
@@ -1006,6 +984,7 @@ struct
          Term trm ->
             f (make_term { term_op = trm.term_op; term_terms = List.map (bterm_up f) trm.term_terms })
        | FOVar _ -> f t
+       | SOVar(v, conts, ts) -> f { free_vars = VarsDelayed; core = SOVar(v, conts, List.map (map_up f) ts) }
        | Sequent _ -> raise (Invalid_argument "Term_op_ds.map_up: sequent code is not implemented")
        | Subst _ | Hashed _ -> fail_core "Term_op_ds.map_up"
 end

@@ -70,7 +70,7 @@ let try_match_hyps relaxed big small =
       else if (not relaxed) && (big_skip - small_skip) > may_skip then false
       else
          match SeqHyp.get big_hyp big_skip, SeqHyp.get small_hyp small_skip with
-            Context (v1, terms1), Context (v2, terms2) when
+            Context (v1, _, terms1), Context (v2, _, terms2) when
                (v1 = v2) && (List.for_all2 (aev big_vars small_vars) terms1 terms2) ->
                result.(big_skip) <- Some small_skip;
                aux (succ big_skip) (succ small_skip) big_vars small_vars

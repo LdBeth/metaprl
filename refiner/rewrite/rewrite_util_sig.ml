@@ -85,8 +85,8 @@ sig
    (*
     * Consistency in the stack.
     *)
-   val check_arity : var -> int -> rstack -> unit
-   val rstack_check_arity : var -> int -> rstack list -> unit
+   val check_arity : var -> var list -> int -> rstack -> unit
+   val rstack_check_arity : var -> var list -> int -> rstack list -> unit
 
    (*
     * Stack operations.

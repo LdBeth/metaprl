@@ -85,7 +85,7 @@ struct
       match hyp with
          FType.Hypothesis t -> TermHash.Hypothesis (TermHash.p_lookup info (make_term_header info t))
        | FType.HypBinding (v, t) -> TermHash.HypBinding (v, TermHash.p_lookup info (make_term_header info t))
-       | FType.Context (v, trms) -> TermHash.Context (v, List.map (make_context_header info) trms)
+       | FType.Context (v, conts, trms) -> TermHash.Context (v, conts, List.map (make_context_header info) trms)
 
    and make_goal_header info goal =
       TermHash.p_lookup info (make_term_header info goal)
@@ -103,7 +103,12 @@ struct
          { TermHash.bvars = bvs; TermHash.bterm = TermHash.p_lookup info (make_term_header info bterm) }
 
    and make_term_header info t =
-      if FromTerm.TermMan.is_sequent_term t then
+      if FTerm.is_var_term t then
+         TermHash.FOVar(FTerm.dest_var t)
+      else if FromTerm.TermMan.is_so_var_term t then
+         let v, conts, terms = FromTerm.TermMan.dest_so_var t in
+            TermHash.SOVar(v, conts, List.map (make_context_header info) terms)
+      else if FromTerm.TermMan.is_sequent_term t then
          let { FType.sequent_args = arg;
                FType.sequent_hyps = hyps;
                FType.sequent_goals = goals } = FromTerm.TermMan.explode_sequent t

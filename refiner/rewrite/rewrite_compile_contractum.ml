@@ -131,39 +131,45 @@ struct
     | [] ->
          enames, []
 
+   let check_cont c bconts v =
+      if not (List.mem v bconts) then
+         REF_RAISE(RefineError("Rewrite_compile_contractum",RewriteFreeContextVar(v,c)))
+
    let param_error = "Rewrite_compile_contractum.compile_so_contractum_param"
 
    let rec compile_so_contractum_term
           (strict : strict)
           (enames : var list)
           (stack : rstack array)
+          (bconts : var list)
           (bvars : var list)
           (term : term) =
       if is_so_var_term term then
-         let v, subterms = dest_so_var term in
+         let v, conts, subterms = dest_so_var term in
             (* This is a first or second order variable *)
             if List.mem v bvars then
                (* This is a first order variable instance *)
-               if subterms <> [] then
-                  REF_RAISE(RefineError ("Rewrite_compile_contractum.compile_so_contractum_term", RewriteBoundSOVar v))
-               else
+               if is_var_term term then
                   enames, RWCheckVar(Lm_list_util.find_rindex v bvars)
+               else
+                  REF_RAISE(RefineError ("Rewrite_compile_contractum.compile_so_contractum_term", RewriteBoundSOVar v))
 
-            else if array_rstack_so_mem v stack then
+            else if array_rstack_so_mem v stack then begin
                (*
                 * This is a second order variable.
                 * The variable v should be bound, and we generate a
                 * a substitution instance.  Check that the subterm counts
                 * match.
                 *)
+               List.iter (check_cont v bconts) conts;
                let index = array_rstack_so_index v stack in
-               let _ = check_arity v (List.length subterms) stack.(index) in
-               let enames, subterms = compile_so_contractum_terms strict enames stack bvars subterms in
+               check_arity v conts (List.length subterms) stack.(index);
+               let enames, subterms = compile_so_contractum_terms strict enames stack bconts bvars subterms in
                   enames, RWSOSubst(index, subterms)
 
-            else if (strict = Relaxed) &&
+            end else if (strict = Relaxed) &&
                     (array_rstack_mem v stack) &&
-                    (subterms = []) then
+                    (conts = [] && subterms = []) then
                (*
                 * Display forms:
                 * convert a stack element into a variable representation
@@ -183,29 +189,32 @@ struct
 
       else if is_context_term term then
          (* This is a second order context *)
-         let v, term', subterms = dest_context term in
-            if array_rstack_c_mem v stack then
+         let v, term', conts, subterms = dest_context term in
+            if array_rstack_c_mem v stack then begin
                (*
                 * Second order context and the v is bound.
                 * We generate a substitution instance.
                 *)
-               let enames, term' = compile_so_contractum_term strict enames stack bvars term' in
-               let enames, subterms = compile_so_contractum_terms strict enames stack bvars subterms in
-                 enames, RWSOContextSubst(array_rstack_c_index v stack, term', subterms)
+               List.iter (check_cont v bconts) conts;
+               let index = array_rstack_c_index v stack in
+               check_arity v conts (List.length subterms) stack.(index); (* TODO: check_arity does not support contexts yet *)
+               let enames, term' = compile_so_contractum_term strict enames stack bconts bvars term' in
+               let enames, subterms = compile_so_contractum_terms strict enames stack (v::bconts) bvars subterms in
+                 enames, RWSOContextSubst(index, term', subterms)
 
-            else
+            end else
                (* Free second order context *)
                REF_RAISE(RefineError ("Rewrite_compile_contractum.is_context_term", RewriteFreeSOVar v))
 
       else if is_sequent_term term then
          (* Sequents are handled specially *)
-         compile_so_contractum_sequent strict enames stack bvars term
+         compile_so_contractum_sequent strict enames stack bconts bvars term
 
       else
          (* This is a normal term--not a var *)
          let { term_op = op; term_terms = bterms } = dest_term term in
          let { op_name = name; op_params = params } = dest_op op in
-         let enames, bterms' = compile_so_contractum_bterms strict enames stack bvars bterms in
+         let enames, bterms' = compile_so_contractum_bterms strict enames stack bconts bvars bterms in
          if are_sparams params then
                enames, RWCompositeSimple { rws_op = op; rws_bterms = bterms' }
          else
@@ -214,10 +223,10 @@ struct
                                      rw_bterms = bterms'
                                    }
 
-   and compile_so_contractum_terms strict enames stack bvars = function
+   and compile_so_contractum_terms strict enames stack bconts bvars = function
       term :: terms ->
-         let enames, term = compile_so_contractum_term strict enames stack bvars term in
-         let enames, terms = compile_so_contractum_terms strict enames stack bvars terms in
+         let enames, term = compile_so_contractum_term strict enames stack bconts bvars term in
+         let enames, terms = compile_so_contractum_terms strict enames stack bconts bvars terms in
             enames, term :: terms
     | [] ->
          enames, []
@@ -319,16 +328,16 @@ struct
    (*
     * In bterms, have to add these vars to the binding stack.
     *)
-   and compile_so_contractum_bterm strict enames stack bvars bterm =
+   and compile_so_contractum_bterm strict enames stack bconts bvars bterm =
       let { bvars = vars; bterm = term } = dest_bterm bterm in
-      let enames, term' = compile_so_contractum_term strict enames stack (bvars @ vars) term in
+      let enames, term' = compile_so_contractum_term strict enames stack bconts (bvars @ vars) term in
       let enames, vars' = compile_bnames strict enames stack vars in
          enames, { rw_bvars = List.length vars; rw_bnames = vars'; rw_bterm = term' }
 
-   and compile_so_contractum_bterms strict enames stack bvars = function
+   and compile_so_contractum_bterms strict enames stack bconts bvars = function
       bterm :: bterms ->
-         let enames, bterm = compile_so_contractum_bterm strict enames stack bvars bterm in
-         let enames, bterms = compile_so_contractum_bterms strict enames stack bvars bterms in
+         let enames, bterm = compile_so_contractum_bterm strict enames stack bconts bvars bterm in
+         let enames, bterms = compile_so_contractum_bterms strict enames stack bconts bvars bterms in
             enames, bterm :: bterms
     | [] ->
          enames, []
@@ -336,83 +345,84 @@ struct
    (*
     * Contexts are handled specially inside sequents.
     *)
-   and compile_so_contractum_sequent strict enames (stack : rstack array) bvars term =
+   and compile_so_contractum_sequent strict enames (stack : rstack array) bconts bvars term =
       let { sequent_args = arg;
             sequent_hyps = hyps;
             sequent_goals = goals
           } = explode_sequent term
       in
-      let enames, arg = compile_so_contractum_term strict enames stack bvars arg in
+      let enames, arg = compile_so_contractum_term strict enames stack bconts bvars arg in
       let enames, hyps, goals =
-         compile_so_contractum_sequent_inner strict enames stack bvars 0 (SeqHyp.length hyps) hyps goals
+         compile_so_contractum_sequent_inner strict enames stack bconts bvars 0 (SeqHyp.length hyps) hyps goals
       in
          enames, RWSequent (arg, hyps, goals)
 
-   and compile_so_contractum_sequent_inner strict enames stack bvars i len hyps goals =
+   and compile_so_contractum_sequent_inner strict enames stack bconts bvars i len hyps goals =
       if i = len then
          let enames, goals =
-            compile_so_contractum_goals strict enames stack bvars 0 (SeqGoal.length goals) goals
+            compile_so_contractum_goals strict enames stack bconts bvars 0 (SeqGoal.length goals) goals
          in
             enames, [], goals
       else
          match SeqHyp.get hyps i with
-            Context (v, subterms) ->
+            Context (v, conts, subterms) ->
                (* This is a second order context *)
-               if array_rstack_c_mem v stack then
+               if array_rstack_c_mem v stack then begin
                   (*
                    * Second order context and the v is bound.
                    * We generate a substitution instance.
                    *)
+                  List.iter (check_cont v bconts) conts;
                   let enames, subterms =
-                     compile_so_contractum_terms strict enames stack bvars subterms
+                     compile_so_contractum_terms strict enames stack bconts bvars subterms
                   in
                   let term = RWSeqContextSubst (array_rstack_c_index v stack, subterms) in
                   let enames, hyps, goals =
-                     compile_so_contractum_sequent_inner strict enames stack bvars (i + 1) len hyps goals
+                     compile_so_contractum_sequent_inner strict enames stack (v::bconts) bvars (i + 1) len hyps goals
                   in
                      enames, term :: hyps, goals
-               else
+               end else
                   (* Free second order context *)
                   REF_RAISE(RefineError ("Rewrite_compile_contractum.compile_so_contractum_hyp", RewriteFreeSOVar v))
 
           | HypBinding (v, term) ->
                if List.mem v bvars then
                   REF_RAISE(RefineError ("Rewrite_compile_contractum.compile_so_contractum_hyp", StringVarError("double binding", v)));
-               let enames, term = compile_so_contractum_term strict enames stack bvars term in
+               let enames, term = compile_so_contractum_term strict enames stack bconts bvars term in
                let enames, v' = compile_bname strict enames stack v in
                let enames, hyps, goals =
-                  compile_so_contractum_sequent_inner strict enames stack (bvars @ [v]) (i + 1) len hyps goals
+                  compile_so_contractum_sequent_inner strict enames stack bconts (bvars @ [v]) (i + 1) len hyps goals
                in
                let hyp = RWSeqHypBnd (v', term) in
                   enames, hyp :: hyps, goals
 
           | Hypothesis term ->
-               let enames, term = compile_so_contractum_term strict enames stack bvars term in
+               let enames, term = compile_so_contractum_term strict enames stack bconts bvars term in
                let enames, hyps, goals =
-                  compile_so_contractum_sequent_inner strict enames stack bvars (i + 1) len hyps goals
+                  compile_so_contractum_sequent_inner strict enames stack bconts bvars (i + 1) len hyps goals
                in
                let hyp = RWSeqHyp term in
                   enames, hyp :: hyps, goals
 
-   and compile_so_contractum_goals strict enames stack bvars i len goals =
+   and compile_so_contractum_goals strict enames stack bconts bvars i len goals =
       if i = len then
          enames, []
       else
-         let enames, goal = compile_so_contractum_term strict enames stack bvars (SeqGoal.get goals i) in
-         let enames, goals = compile_so_contractum_goals strict enames stack bvars (i + 1) len goals in
+         let enames, goal = compile_so_contractum_term strict enames stack bconts bvars (SeqGoal.get goals i) in
+         let enames, goals = compile_so_contractum_goals strict enames stack bconts bvars (i + 1) len goals in
             enames, goal :: goals
 
    (*
     * Toplevel compilation.
     *)
    let compile_so_contractum strict stack term =
-      let enames, term = compile_so_contractum_term strict [] stack [] term in
+      let enames, term = compile_so_contractum_term strict [] stack [] [] term in
          Array.of_list (List.rev enames), term
 
    let compile_so_contracta strict stack terms =
       let rec compile enames stack = function
          term :: terms ->
-            let enames, term = compile_so_contractum_term strict enames stack [] term in
+            let enames, term = compile_so_contractum_term strict enames stack [] [] term in
             let enames, terms = compile enames stack terms in
                enames, term :: terms
        | [] ->

@@ -25,14 +25,16 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * Authors: Alexey Nogin
+ * Authors: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
 open Refine_error_sig
 open Term_ds_sig
 open Term_ds
+open Term_subst_sig
 open Term_op_sig
 open Term_addr_sig
+open Term_man_sig
 
 type addr =
    Path of int list
@@ -62,7 +64,11 @@ module TermAddr (**)
     with type operator' = TermType.operator'
     with type term' = TermType.term'
     with type bound_term' = TermType.bound_term')
+   (TermSubst : TermSubstSig
+    with type term = TermType.term)
    (TermOp : TermOpSig
+    with type term = TermType.term)
+   (TermMan : TermManSig
     with type term = TermType.term)
    (RefineError : RefineErrorSig
     with type term = TermType.term

@@ -38,6 +38,7 @@ open Lm_debug
 open Opname
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMan
+open Refiner.Refiner.TermMeta
 open Refiner.Refiner.RefineError
 
 open Dform
@@ -80,6 +81,7 @@ type input_buf =
  *)
 type t =
    { mutable state_mk_opname : opname_fun;
+     mutable state_mk_var_contexts : context_fun;
      mutable state_df_base : dform_base;
      mutable state_inline_terms : (int * term) list;
      mutable state_inline_var : int;
@@ -104,8 +106,11 @@ let lock = Recursive_lock.create ()
 (*
  * Default values.
  *)
-let default_mk_opname name =
-   raise (RefineError ("mk_opname", StringStringError (String.concat "." name, "no current package")))
+let mk_opname_null _ =
+   raise (Failure "Shell_mp.mk_opname: no current package")
+
+let mk_var_contexts_null v i =
+   if i=0 then None else raise(Failure "No context know for SO variables (need to specify contexts explicitly when not inside a rule")
 
 let default_saved_tactic =
    let loc = 0, 0 in
@@ -116,7 +121,8 @@ let default_saved_tactic =
  *)
 let create () =
    Mp_resource.recompute_top ();
-   { state_mk_opname = default_mk_opname;
+   { state_mk_opname = mk_opname_null;
+     state_mk_var_contexts =  mk_var_contexts_null;
      state_df_base = Dform.null_base;
      state_inline_terms = [];
      state_inline_var = 0;
@@ -191,18 +197,24 @@ struct
                exn ->
                   Stdpp.raise_with_loc loc exn)
 
+   let mk_var_contexts loc v i =
+      synchronize_state (function state ->
+            try state.state_mk_var_contexts v i with
+               exn ->
+                  Stdpp.raise_with_loc loc exn)
+
    (*
     * Term grammar.
     *)
    let gram = Pcaml.gram
    let term_eoi = Grammar.Entry.create gram "term"
-   let term = Grammar.Entry.create gram "term"
+   let parsed_term = Grammar.Entry.create gram "term"
    let quote_term = Grammar.Entry.create gram "quote_term"
    let mterm = Grammar.Entry.create gram "mterm"
    let bmterm = Grammar.Entry.create gram "bmterm"
    let singleterm = Grammar.Entry.create gram "singleterm"
    let applytermlist = Grammar.Entry.create gram "applytermlist"
-   let bound_term = Grammar.Entry.create gram "bound_term"
+   let parsed_bound_term = Grammar.Entry.create gram "parsed_bound_term"
    let xdform = Grammar.Entry.create gram "xdform"
    let term_con_eoi = Grammar.Entry.create gram "term_con_eoi"
 end
@@ -236,7 +248,7 @@ let term_exp s =
    synchronize_state (fun state ->
          let cs = Stream.of_string s in
          let t = Grammar.Entry.parse TermGrammarBefore.term_eoi cs in
-            save_term state t)
+            save_term state (term_of_parsed_term_with_vars t))
 
 let term_patt s =
    raise (Failure "Shell_mp.term_patt: not implemented yet")
@@ -275,8 +287,8 @@ let print_short_term_fp out t =
          in
          let str = try
             Rformat.line_format Rformat.default_width (fun bf -> Dform.format_term db bf t)
-         with _ ->
-            "unprintable term"
+         with exn ->
+            "unprintable term (printer raised " ^ (Printexc.to_string exn) ^ ")"
          in
             output_string out str;
             flush out)
@@ -307,14 +319,28 @@ let get_tactic state =
 (*
  * Set the opname function.
  *)
-let mk_opname_null _ =
-   raise (Failure "Shell_mp.mk_opname: no current package")
-
 let set_mk_opname state = function
    Some f ->
       state.state_mk_opname <- f
  | None ->
       state.state_mk_opname <- mk_opname_null
+
+let set_so_var_context state = function
+   Some ts ->
+      let delayed_fun v i =
+         let f = context_subst_of_terms ts in
+         let f v i = match f v i with
+            Some _ as conts -> conts
+          | None ->
+               if i = 0 then None else
+                  raise(Failure "Unknown SO variable, please specify contexts explicitly")
+         in
+            state.state_mk_var_contexts <- f;
+            f v i
+      in
+         state.state_mk_var_contexts <- delayed_fun
+ | None ->
+      state.state_mk_var_contexts <- mk_var_contexts_null
 
 (*
  * Set the display base.

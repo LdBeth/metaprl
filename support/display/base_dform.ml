@@ -73,7 +73,9 @@ let _ =
 let debug_dform = load_debug "dform"
 
 (* @terms *)
-declare display_var[ver:v]{'termlist}
+declare df_var[var:v]
+declare df_so_var[var:v]{'conts;'termlist}
+declare df_context_var[name:v]
 declare "sequent"{'arg; 'seq}
 declare bvar{'v}
 declare " "
@@ -95,8 +97,6 @@ declare df_last{'l}
 declare df_concat{'sep;'l}
 declare df_rev_concat{'sep;'l}
 
-declare df_context_var[name:v]
-
 (* same as "szone 'e ezone" *)
 declare szone{'e}
 (* @docoff *)
@@ -108,24 +108,36 @@ declare szone{'e}
  * that correspond to the free variables in the term being represented (in
  * a redex), or terms to be substituted for those variables (in a contractum).
  *
- * Display for mechanism would convert the variable term into a @tt[display_var]
+ * Display for mechanism would convert the variable term into a @tt[df_so_var]
  * term to avoid having to deal with argument lists of arbitrary length.
  *
- * The @tt[tex] mode display form for @tt[display_var] uses some heuristics to split
+ * The @tt[tex] mode display form for @tt[df_so_var] uses some heuristics to split
  * the variable name into the name and the subscript part and is omited from the
  * documentation.
  * @end[doc]
  *)
 declare var_list{'t}
+declare df_bconts{'conts}
 
-dform var_prl_df : mode[prl] :: display_var[v:v]{nil} =
-   slot[v:v]
+dform var_prl_df : df_so_var[v:v]{cons{df_context_var[v:v];nil};nil} = df_var[v:v]
 
-dform var_src_df : mode[src] :: display_var[v:v]{nil} =
-   `"'" slot[v:v]
+dform var_prl_df : mode[prl] :: df_var[v:v] = slot[v:v]
+dform var_src_df : mode[src] :: df_var[v:v] = `"'" slot[v:v]
 
-dform so_var_df : display_var[v:v]{'t} =
-   szone display_var[v:v]{nil} `"[" pushm[0] var_list{'t} popm `"]" ezone
+dform so_var1 : df_so_var[v:v]{cons{df_context_var[v:v];nil};'t} =
+   szone df_var[v:v] `"[" pushm[0] var_list{'t} popm `"]" ezone
+
+dform so_var2 : df_so_var[v:v]{'conts;nil} =
+   szone df_var[v:v] df_bconts{'conts} `"[]" ezone
+
+dform so_var3 : df_so_var[v:v]{'conts;'t} =
+   szone df_var[v:v] df_bconts{'conts} `"[" pushm[0] var_list{'t} popm `"]" ezone
+
+dform conts_left_df : mode[src] :: mode[prl] :: mode[html] :: df_bconts{'conts} =
+   `"<|" df_concat{slot[","]; 'conts} `"|>"
+
+dform conts_left_df : mode[tex] :: df_bconts{'conts} =
+   <<mathmacro["left<"]>> `"|" df_concat{slot[","]; 'conts} `"|" <<mathmacro["right>"]>>
 
 dform var_list_df1 : var_list{cons{'a;'b}} =
    'a `";" hspace var_list{'b}
@@ -192,13 +204,11 @@ let print_tex_var format_term buf header_fun v =
 
 let mk_mathit s = <:con< math_it[$s$:s] >>
 
-ml_dform var_html_df : mode[html] :: display_var[v:v]{nil} format_term buf = fun
-   term ->
-      print_html_var format_term buf mk_mathit (string_of_symbol v)
+ml_dform var_html_df : mode[html] :: df_var[v:v] format_term buf = fun _ ->
+   print_html_var format_term buf mk_mathit (string_of_symbol v)
 
-ml_dform var_tex_df : mode[tex] :: display_var[v:v]{nil} format_term buf = fun
-   term ->
-      print_tex_var format_term buf mk_mathit (string_of_symbol v)
+ml_dform var_tex_df : mode[tex] :: df_var[v:v] format_term buf = fun _ ->
+   print_tex_var format_term buf mk_mathit (string_of_symbol v)
 
 dform cvar_src_df : mode[src] :: df_context_var[v:v] = slot[v:v]
 
@@ -227,8 +237,6 @@ ml_dform cvar_html_df : mode[html] :: df_context_var[v:v] format_term buf = fun
 ml_dform cvar_tex_df : mode[tex] :: df_context_var[v:v] format_term buf = fun
    term ->
       print_tex_var format_term buf context_term (string_of_symbol v)
-
-let bvar_opname = opname_of_term <<bvar{'v}>>
 
 ml_dform bvar_df : mode[src] :: bvar{'v} format_term buf = fun
    term ->
@@ -266,6 +274,12 @@ let format_term_list format_term buf = function
       format_string buf "]";
       format_ezone buf
 
+let make_cont v = <:con< df_context_var[$v$:v] >>
+
+let format_bconts format_term buf v = function
+   [v'] when Lm_symbol.eq v v' -> ()
+ | conts -> format_term buf NOParens <:con< df_bconts{$mk_xlist_term (List.map make_cont conts)$} >>
+
 (*
  * For sequents.
  * In the "format" function,
@@ -299,9 +313,10 @@ ml_dform sequent_src_df : mode["src"] :: "sequent"{'ext; 'seq} format_term buf =
              | Hypothesis a ->
                   format_space buf;
                   format_term buf NOParens a
-             | Context (v, values) ->
+             | Context (v, conts, values) ->
                   format_space buf;
                   format_string buf ("<" ^ string_of_symbol v);
+                  format_bconts format_term buf v conts;
                   format_term_list format_term buf values;
                   format_string buf ">"
          in
@@ -326,8 +341,9 @@ ml_dform sequent_src_df : mode["src"] :: "sequent"{'ext; 'seq} format_term buf =
    in
       format
 
-let format_context format_term buf v values =
+let format_context format_term buf v conts values =
    format_term buf NOParens <:con< df_context_var[$v$:v] >>;
+   format_bconts format_term buf v conts;
    format_term_list format_term buf values
 
 (*
@@ -348,10 +364,10 @@ ml_dform sequent_prl_df : mode["prl"] :: "sequent"{'ext; 'seq} format_term buf =
                format_hbreak buf lead "; ";
             format_term buf NOParens <<popfont>>;
             match SeqHyp.get hyps i with
-               Context (v, values) ->
+               Context (v, conts, values) ->
                   (* This is a context hypothesis *)
                   format_string buf "<"; (* note: U27E8 is much nicer, but not all fonts have it *)
-                  format_context format_term buf v values;
+                  format_context format_term buf v conts values;
                   format_string buf ">"; (* note: U27E9 is much nicer, but not all fonts have it *)
              | HypBinding (v, a) ->
                   format_szone buf;
@@ -412,10 +428,10 @@ ml_dform sequent_html_df : mode["html"] :: "sequent"{'ext; 'seq} format_term buf
             else
                format_hbreak buf lead "; ";
             match SeqHyp.get hyps i with
-               Context (v, values) ->
+               Context (v, conts, values) ->
                   (* This is a context hypothesis *)
                   format_string buf "<";
-                  format_context format_term buf v values;
+                  format_context format_term buf v conts values;
                   format_string buf ">"
              | HypBinding (v, a) ->
                   format_szone buf;
@@ -473,9 +489,9 @@ ml_dform sequent_tex_df : mode["tex"] :: "sequent"{'ext; 'seq} format_term buf =
             else
                format_hbreak buf lead "; ";
             match SeqHyp.get hyps i with
-               Context (v, values) ->
+               Context (v, conts, values) ->
                   format_term buf NOParens <<mathmacro["left<"]>>;
-                  format_context format_term buf v values;
+                  format_context format_term buf v conts values;
                   format_term buf NOParens <<mathmacro["right>"]>>
              | HypBinding (v, a) ->
                   format_szone buf;
@@ -573,7 +589,7 @@ dform df_rev_concat_nil2 : internal :: df_rev_concat{'sep; nil} =
  * Perv!bind
  *)
 dform bind_df : except_mode[src] :: bind{x. 'T} =
-   tt["bind"] `"(" slot{'x} `"." slot{'T} `")"
+   tt["bind"] `"(" slot[x] `"." slot{'T} `")"
 
 (************************************************************************
  * COMMANDS                                                             *

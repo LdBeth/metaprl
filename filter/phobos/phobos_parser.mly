@@ -28,6 +28,7 @@ open Opname
 open Lm_num
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermMan
 open Phobos_type
 open Phobos_constants
 open Phobos_marshal
@@ -109,7 +110,8 @@ let pho_make_var_term (id, pos) =
 
 let pho_make_so_var_term (id, pos) terms =
    let terms = List.map fst terms in
-      mk_so_var_term (Lm_symbol.add id) terms
+   let id = Lm_symbol.add id in
+      mk_so_var_term id [id] terms
 
 let pho_make_bterm id_pos_list pterm =
    let vars = List.map (fun (id, _) -> Lm_symbol.add id) id_pos_list in

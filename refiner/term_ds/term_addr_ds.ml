@@ -39,7 +39,9 @@ open Lm_debug
 open Refine_error_sig
 open Term_ds_sig
 open Term_ds
+open Term_subst_sig
 open Term_op_sig
+open Term_man_sig
 
 (*
  * Address of a subterm.
@@ -72,14 +74,20 @@ module TermAddr (**)
     with type operator' = TermType.operator'
     with type term' = TermType.term'
     with type bound_term' = TermType.bound_term')
+   (TermSubst : TermSubstSig
+    with type term = TermType.term)
    (TermOp : TermOpSig
+    with type term = TermType.term)
+   (TermMan : TermManSig
     with type term = TermType.term)
    (RefineError : RefineErrorSig
     with type term = TermType.term
     with type address = addr) =
 struct
+   open TermMan
    open TermType
    open Term
+   open TermSubst
    open TermOp
    open RefineError
 
@@ -119,6 +127,65 @@ struct
       DEFMACRO ATERM = NOTHING
    ENDIF
 
+   let rec find_subterm_term addr arg t =
+      if alpha_equal t arg then
+         Some (Path (List.rev addr))
+      else match get_core t with
+         FOVar _ -> None
+       | SOVar(_,_,terms) -> find_subterm_terms addr arg 0 terms
+       | Term t -> find_subterm_bterms addr arg 0 t.term_terms
+       | Sequent s ->
+            begin match
+               (if alpha_equal s.sequent_args arg then Some ArgAddr
+                else find_subterm_hyps arg s 0 (SeqHyp.length s.sequent_hyps)),
+               addr
+            with
+               None, _ -> None
+             | res, [] -> res
+             | Some res, _ -> Some(Compose(Path (List.rev addr), res))
+            end
+       | Hashed _ | Subst _ -> fail_core "find_subterm_term"
+
+   and find_subterm_bterms addr arg index = function
+      [] -> None
+    | bterm :: bterms ->
+         begin match find_subterm_term (index :: addr) arg bterm.bterm with
+            Some _ as result -> result
+          | None -> find_subterm_bterms addr arg (succ index) bterms
+         end
+
+   and find_subterm_terms addr arg index = function
+      [] -> None
+    | t :: ts -> 
+         begin match find_subterm_term (index :: addr) arg t with
+            Some _ as result -> result
+          | None -> find_subterm_terms addr arg (succ index) ts
+         end
+         
+   and find_subterm_hyps arg s i len =
+      if i = len then find_subterm_goals arg s 0 (SeqGoal.length s.sequent_goals)
+      else match
+         match SeqHyp.get s.sequent_hyps i with
+            Hypothesis t | HypBinding (_, t) -> find_subterm_term [] arg t
+          | Context(_, _, ts) -> find_subterm_terms [] arg 0 ts
+      with
+         Some(Path[]) -> Some(HypAddr i)
+       | Some addr -> Some(Compose(HypAddr i, addr))
+       | None -> find_subterm_hyps arg s (succ i) len
+
+   and find_subterm_goals arg s i len =
+      if i = len then None else
+      match find_subterm_term [] arg (SeqGoal.get s.sequent_goals i) with
+         Some(Path[]) -> Some(GoalAddr i)
+       | Some addr -> Some(Compose(GoalAddr i, addr))
+       | None -> find_subterm_goals arg s (succ i) len
+
+   let find_subterm t arg =
+      match find_subterm_term [] arg t with
+         Some addr -> addr
+       | None ->
+            REF_RAISE(RefineError ("Term_addr_gen.find_subterm", StringTermError ("subterm can't be found",arg)))
+
    (*
     * Get a subterm.
     *)
@@ -134,29 +201,38 @@ struct
    (*
     * Follow an explicit path.
     *)
+   let term_subterm_name = "Term_addr_ds.term_subterm"
    let rec term_subterm_path ATERM t = function
       [] ->
          t
     | i::tl ->
-         term_subterm_path ATERM (getnth ATERM (dest_term t).term_terms i).bterm tl
+         begin match get_core t with
+            Term t ->
+               term_subterm_path ATERM (getnth ATERM t.term_terms i).bterm tl
+          | SOVar(_, _, ts) ->
+               term_subterm_path ATERM (getnth ATERM ts i) tl
+          | FOVar _ | Sequent _ ->
+               REF_RAISE(RefineError (term_subterm_name, AddressError (a, term)))
+          | Subst _ | Hashed _ ->
+               fail_core term_subterm_name
+         end
 
    (*
     * Get the subterm for any type of path.
     *)
-   let term_subterm_name = "Term_addr_ds.term_subterm"
    let rec term_subterm term a =
       match (get_core term), a with
-         (Term _, Path addr) ->
-            term_subterm_path ATERM term addr
-       | (Sequent s, ArgAddr) ->
+         _, Path path ->
+            term_subterm_path ATERM term path
+       | Sequent s, ArgAddr ->
             s.sequent_args
-       | (Sequent s, HypAddr i) ->
+       | Sequent s, HypAddr i ->
             if i >= 0 && i < SeqHyp.length s.sequent_hyps then
                match SeqHyp.get s.sequent_hyps i with
                   HypBinding (_, t) | Hypothesis t -> t
                 | Context _ -> REF_RAISE(RefineError (term_subterm_name, AddressError (a, term)))
             else REF_RAISE(RefineError (term_subterm_name, AddressError (a, term)))
-       | (Sequent s, GoalAddr i) ->
+       | Sequent s, GoalAddr i ->
             if i >= 0 && i < SeqGoal.length s.sequent_goals then SeqGoal.get s.sequent_goals i
             else REF_RAISE(RefineError (term_subterm_name, AddressError (a, term)))
        | (Sequent s, Compose (HypAddr i, ((Path (j :: path)) as addr2))) ->
@@ -167,32 +243,36 @@ struct
                match SeqHyp.get s.sequent_hyps i with
                   HypBinding (_, t) | Hypothesis t ->
                      term_subterm t addr2
-                | Context (_, subterms) ->
-                     if j >= 0 && j < List.length subterms then
-                        term_subterm (List.nth subterms j) (Path path)
-                     else
-                        REF_RAISE(RefineError (term_subterm_name, AddressError (a, term)))
+                | Context (_, _, subterms) ->
+                     term_subterm_path ATERM (getnth ATERM subterms j) path
             else
                REF_RAISE(RefineError (term_subterm_name, AddressError (a, term)))
-       | (FOVar _, Path []) ->
-            term
-       | (_, Compose (addr1, addr2)) ->
+       | _, Compose (addr1, addr2) ->
             term_subterm (term_subterm term addr1) addr2
        | _ -> REF_RAISE(RefineError (term_subterm_name, AddressError (a, term)))
 
    (*
     * Just get the subterm count.
     *)
+   let term_subterm_count_name = "Term_addr_ds.term_subterm_count"
    let rec term_subterm_path_count ATERM t = function
       [] ->
          subterm_count t
     | i::tl ->
-         term_subterm_path_count ATERM (dest_bterm (getnth ATERM (dest_term t).term_terms i)).bterm tl
+         begin match get_core t with
+            Term t ->
+               term_subterm_path_count ATERM (dest_bterm (getnth ATERM t.term_terms i)).bterm tl
+          | SOVar(_, _, ts) ->
+               term_subterm_path_count ATERM (getnth ATERM ts i) tl
+          | FOVar _ | Sequent _ ->
+               REF_RAISE(RefineError (term_subterm_count_name, AddressError (a, term)))
+          | Subst _ | Hashed _ ->
+               fail_core term_subterm_count_name
+         end
 
-   let term_subterm_count_name = "Term_addr_ds.term_subterm_count"
    let rec term_subterm_count term a =
       match (get_core term), a with
-         (Term _, Path addr) ->
+         _, Path addr ->
             term_subterm_path_count ATERM term addr
        | (Sequent s, ArgAddr) ->
             subterm_count s.sequent_args
@@ -201,7 +281,7 @@ struct
                match SeqHyp.get s.sequent_hyps i with
                   HypBinding (_, t) | Hypothesis t ->
                      subterm_count t
-                | Context (_, subterms) ->
+                | Context (_, _, subterms) ->
                      List.length subterms
             else
                REF_RAISE(RefineError (term_subterm_count_name, AddressError (a, term)))
@@ -218,15 +298,10 @@ struct
                match SeqHyp.get s.sequent_hyps i with
                   HypBinding (_, t) | Hypothesis t ->
                      term_subterm_count t addr2
-                | Context (_, subterms) ->
-                     if j >= 0 && j < List.length subterms then
-                        term_subterm_count (List.nth subterms j) (Path path)
-                     else
-                        REF_RAISE(RefineError (term_subterm_count_name, AddressError (a, term)))
+                | Context (_, _, subterms) ->
+                     term_subterm_path_count ATERM (getnth ATERM subterms j) path
             else
                REF_RAISE(RefineError (term_subterm_count_name, AddressError (a, term)))
-       | (FOVar _, Path []) ->
-            subterm_count term
        | (_, Compose (addr1, addr2)) ->
             term_subterm_count (term_subterm term addr1) addr2
        | _ ->
@@ -255,16 +330,35 @@ struct
    let collect_goal_bvars hyps = collect_hyp_bvars (SeqHyp.length hyps - 1) hyps
 
    let fail_addr (addr, term) =
-      REF_RAISE(RefineError ("apply_*_fun_*", AddressError (addr, term)))
+      REF_RAISE(RefineError ("Term_addr_ds.apply_*_fun_*", AddressError (addr, term)))
 
    DEFMACRO MAKE_PATH_REPLACE_TERM =
       fun FAIL f BVARS t -> function
-         i::tl ->
-            let { term_op = op; term_terms = bterms } = dest_term t in
-            let bterms, arg = PATH_REPLACE_BTERM FAIL f tl i BVARS bterms in
-               mk_term op bterms, arg
+         i::tl -> begin
+            match get_core t with
+               Term t ->
+                  let bterms, arg = PATH_REPLACE_BTERM FAIL f tl i BVARS t.term_terms in
+                     mk_term t.term_op bterms, arg
+             | SOVar(v, conts, ts) ->
+                  let ts, arg = PATH_REPLACE_TERMS FAIL f tl i BVARS ts in
+                     core_term (SOVar(v, conts, ts)), arg
+             | Sequent _ | FOVar _ -> DO_FAIL
+             | Hashed _ | Subst _ -> fail_core "path_replace_term"
+            end
        | [] ->
             f BVARS t
+
+   DEFMACRO MAKE_PATH_REPLACE_TERMS =
+      fun FAIL f tl i BVARS ts ->
+         match i, ts with
+            0, (t::ts) ->
+               let t, arg = PATH_REPLACE_TERM FAIL f BVARS t tl
+                  in (t::ts), arg
+          | _, (t::ts) ->
+               let ts, arg = PATH_REPLACE_TERMS FAIL f tl (pred i) BVARS ts in
+                  (t::ts), arg
+          | _, [] ->
+               DO_FAIL
 
    DEFMACRO MAKE_PATH_REPLACE_BTERM =
       fun FAIL f tl i BVARS bterms ->
@@ -281,9 +375,7 @@ struct
    DEFMACRO APPLY_FUN_AUX MY_NAME =
       fun FAIL f addr BVARS term ->
          match (get_core term, addr) with
-            (Term _, Path addr) ->
-               PATH_REPLACE_TERM FAIL f BVARS term addr
-          | (Sequent s, ArgAddr) ->
+            (Sequent s, ArgAddr) ->
                let term, arg = f BVARS s.sequent_args in
                   mk_sequent_term (**)
                      { sequent_args = term;
@@ -299,13 +391,13 @@ struct
                    | Hypothesis t as hyp ->
                         let term, arg = f HYP_BVARS t in
                            Hypothesis term, arg
-                   | Context (v, subterms) ->
+                   | Context (v, conts, subterms) ->
                         let slot = mk_var_term v in
-                        let t = mk_context_term v slot subterms in
+                        let t = mk_context_term v slot conts subterms in
                         let t, arg = f BVARS t in
-                        let v1, term1, subterms = dest_context t in
+                        let v1, term1, conts, subterms = dest_context t in
                            if v1 = v && is_var_term term1 && dest_var term1 = v then
-                              Context (v, subterms), arg
+                              Context (v, conts, subterms), arg
                            else DO_FAIL
                   in
                   let aux i' hyp' =
@@ -328,8 +420,8 @@ struct
                           sequent_goals = SeqGoal.mapi aux s.sequent_goals
                         }, arg
                else DO_FAIL
-          | (FOVar _, Path []) ->
-               f BVARS term
+          | (_, Path addr) ->
+               PATH_REPLACE_TERM FAIL f BVARS term addr
           | (_, Compose (addr1, addr2)) ->
                MY_NAME FAIL (MY_NAME FAIL f addr2) addr1 BVARS term
           | _ -> DO_FAIL
@@ -341,8 +433,10 @@ struct
    DEFMACRO GOAL_BVARS = NOTHING
    DEFMACRO PATH_REPLACE_TERM = path_replace_term
    DEFMACRO PATH_REPLACE_BTERM = path_replace_bterm
+   DEFMACRO PATH_REPLACE_TERMS = path_replace_terms
 
    let rec path_replace_term = MAKE_PATH_REPLACE_TERM
+   and path_replace_terms = MAKE_PATH_REPLACE_TERMS
    and path_replace_bterm = MAKE_PATH_REPLACE_BTERM
 
    IFDEF VERBOSE_EXN THEN
@@ -372,8 +466,10 @@ struct
    DEFMACRO GOAL_BVARS = (collect_goal_bvars s.sequent_hyps BVARS)
    DEFMACRO PATH_REPLACE_TERM = path_var_replace_term
    DEFMACRO PATH_REPLACE_BTERM = path_var_replace_bterm
+   DEFMACRO PATH_REPLACE_TERMS = path_var_replace_terms
 
    let rec path_var_replace_term = MAKE_PATH_REPLACE_TERM
+   and path_var_replace_terms = MAKE_PATH_REPLACE_TERMS
    and path_var_replace_bterm = MAKE_PATH_REPLACE_BTERM
 
    IFDEF VERBOSE_EXN THEN
@@ -440,15 +536,29 @@ struct
     * Apply the function to the outermost terms where it does not fail.
     *)
    let rec apply_fun_higher_term f coll term =
-      try let (t,arg) = f term in
+      try let t, arg = f term in
              t, (arg::coll)
-      with RefineError _ ->
-            let dt = dest_term term in
-            if dt.term_terms == [] then (term,coll) else
-            let (btrms, args) = apply_fun_higher_bterms f coll dt.term_terms in
-               if args == coll
-               then (term,coll)
-               else (mk_term dt.term_op btrms, args)
+      with RefineError _ -> begin
+         match get_core term with
+            FOVar _ | Term { term_terms = [] } -> (term,coll)
+          | Term bt ->
+               let btrms, args = apply_fun_higher_bterms f coll bt.term_terms in
+                  if args == coll then (term,coll) else (mk_term bt.term_op btrms, args)
+          | SOVar(v, conts, ts) ->
+               let ts, args = apply_fun_higher_terms f coll ts in
+                  if args == coll then (term,coll) else core_term (SOVar(v, conts, ts)), args
+          | Sequent _ -> raise(Invalid_argument "Term_addr_ds.apply_fun_higher called on a sequent")
+          | Hashed _ | Subst _ -> fail_core "apply_fun_higher_term"
+         end
+
+   and apply_fun_higher_terms f coll = function
+      [] -> [], coll
+    | (t :: ts) as all_ts ->
+         let ts_new, args = apply_fun_higher_terms f coll ts in
+         let t_new, args2 = apply_fun_higher_term f args t in
+            if args2 == coll then (all_ts, coll) else
+            let t_new = if args2 == args then t else t_new in
+               (t_new::ts_new, args2)
 
    and apply_fun_higher_bterms f coll = function
       [] ->
@@ -459,16 +569,12 @@ struct
             else
                [mk_bterm bt.bvars bt_new],args
     | (bt::btrms) as bterms ->
-         let (btrms_new, args) = apply_fun_higher_bterms f coll btrms in
-         let (bt_new, args2) = apply_fun_higher_term f args bt.bterm in
+         let btrms_new, args = apply_fun_higher_bterms f coll btrms in
+         let bt_new, args2 = apply_fun_higher_term f args bt.bterm in
             if args2 == coll then (bterms, coll)
             else
-               let bt_new =
-                  if args2 == args
-                  then bt else
-                  mk_bterm bt.bvars bt_new
-               in
-               (bt_new::btrms_new, args2)
+               let bt_new = if args2 == args then bt else mk_bterm bt.bvars bt_new in
+                  (bt_new::btrms_new, args2)
 
    let apply_fun_higher f term = apply_fun_higher_term f [] term
 
@@ -480,14 +586,27 @@ struct
       try
          let t, arg = f bvars term in
             t, arg :: coll
-      with
-         RefineError _ ->
-            let dt = dest_term term in
-            let bterms, args = apply_var_fun_higher_bterms f bvars coll dt.term_terms in
-               if args == coll then
-                  term, coll
-               else
-                  mk_term dt.term_op bterms, args
+      with RefineError _ -> begin
+         match get_core term with
+            FOVar _ | Term { term_terms = [] } -> (term,coll)
+          | Term bt ->
+               let btrms, args = apply_var_fun_higher_bterms f bvars coll bt.term_terms in
+                  if args == coll then (term,coll) else (mk_term bt.term_op btrms, args)
+          | SOVar(v, conts, ts) ->
+               let ts, args = apply_var_fun_higher_terms f bvars coll ts in
+                  if args == coll then (term,coll) else core_term(SOVar(v, conts, ts)), args
+          | Sequent _ -> raise(Invalid_argument "Term_addr_ds.apply_var_fun_higher called on a sequent")
+          | Hashed _ | Subst _ -> fail_core "apply_var_fun_higher_term"
+         end
+
+   and apply_var_fun_higher_terms f bvars coll = function
+      [] -> [], coll
+    | (t :: ts) as all_ts ->
+         let ts_new, args = apply_var_fun_higher_terms f bvars coll ts in
+         let t_new, args2 = apply_var_fun_higher_term f bvars args t in
+            if args2 == coll then (all_ts, coll) else
+            let t_new = if args2 == args then t else t_new in
+               (t_new::ts_new, args2)
 
    and apply_var_fun_higher_bterms f bvars coll = function
       [] ->

@@ -84,7 +84,7 @@ sig
     *
     * free_vars - set of the free variables
     *
-    * Subst (BSubst) - delayed simultanious substitution
+    * Subst - delayed simultanious substitution
     * Hashed descriptor: a descriptor into the global hash table
     *
     * Please read docs/term_ds_safety.txt if you plan to change
@@ -96,6 +96,7 @@ sig
     | Subst of term * term_subst
     | Sequent of esequent
     | FOVar of var
+    | SOVar of var * var list * term list
     | Hashed of term Weak_memo.TheWeakMemo.descriptor
    and term = { mutable free_vars : lazy_vars; mutable core : term_core }
    and bound_term = bound_term'
@@ -104,7 +105,7 @@ sig
    and hypothesis =
       HypBinding of var * term
     | Hypothesis of term
-    | Context of var * term list
+    | Context of var * var list * term list
    and esequent =
       { sequent_args : term;
         sequent_hyps : seq_hyps;
@@ -202,6 +203,7 @@ sig
 
    val get_core : term -> term_core
    val fail_core : string -> 'a
+   val core_term : term_core -> term
    val dest_term : term -> term'
    val make_term : term' -> term
    val mk_op : opname -> param list -> operator
@@ -213,9 +215,9 @@ sig
    val mk_level_var : var -> int -> level_exp_var
    val mk_sequent_term : esequent -> term
 
+   val is_simple_bterm : bound_term -> bool
    val no_bvars : bound_term list -> bool
    val mk_simple_bterm : term -> bound_term
-
    val dest_simple_bterm : bound_term -> term
 
    (* Projections *)
@@ -255,13 +257,14 @@ sig
    val dest_var : term -> var
    val mk_var_term : var -> term
 
-   val is_so_var_term : term -> bool
-   val dest_so_var : term -> var * term list
-   val mk_so_var_term : var -> term list -> term
-
-   val is_context_term : term -> bool
-   val dest_context : term -> var * term * term list
-   val mk_context_term : var -> term -> term list -> term
+   (* xlist terms are needed here to allow SO variable term' representation *)
+   val xnil_opname : opname
+   val xcons_opname : opname
+   val xnil_term : term
+   
+   val is_xlist_term : term -> bool
+   val dest_xlist : term -> term list
+   val mk_xlist_term : term list -> term
 
    (*
     * Simple terms have no paramaters and

@@ -34,7 +34,7 @@ open Printf
 
 open Lm_debug
 
-open Refiner.Refiner.Term
+open Refiner.Refiner.TermMan
 open Mp_resource
 
 open Filter_summary
@@ -106,8 +106,8 @@ let name_params =
  *)
 let extract_params cvars bvars =
    let aux h =
-      if is_var_term h then
-         let v = dest_var h in
+      if is_so_var_term h then
+         let v, conts, terms = dest_so_var h in
             if List.mem v cvars then
                ContextParam v
             else

@@ -100,9 +100,12 @@ let rec format_strings buf = function
  * Format a hypothesis.
  *)
 let format_hypothesis db buf printers = function
-   Context (v, subterms) ->
+   Context (v, conts, subterms) ->
       format_string buf "Context(";
       format_string buf (string_of_symbol v);
+      format_string buf ", <";
+      format_string buf (String.concat ", " (List.map string_of_symbol conts));
+      format_string buf ">";
       List.iter (fun t ->
             format_string buf ", ";
             printers.format_term db buf t;
@@ -279,9 +282,12 @@ let format_refine_error db buf printers name error =
             format_address buf a;
             format_space buf;
             format (indent + 3) name e
-       | RewriteFreeContextVars vars ->
-            format_string buf "FreeContextVars: ";
-            format_strings buf (List.map string_of_symbol vars)
+       | RewriteFreeContextVar(v1,v2) ->
+            format_string buf "FreeContextVar: ";
+            format_string buf (string_of_symbol v1);
+            format_string buf " (in context or variable: ";
+            format_string buf (string_of_symbol v2);
+            format_string buf ")";
    in
       format 0 name error
 

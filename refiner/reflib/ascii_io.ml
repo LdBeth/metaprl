@@ -79,7 +79,8 @@ struct
       io_params : (string,hashed_param) Hashtbl.t;
       io_hyps : (string,hypothesis_header) Hashtbl.t;
       mutable io_seq : (string * term_index * hypothesis_header list) option; (*XXX HACK: field needed for compatibility with file format versions 1.0.6 and below *)
-      io_bterms : (string,bound_term_header) Hashtbl.t
+      io_bterms : (string,bound_term_header) Hashtbl.t;
+      mutable io_old_format : bool; (* XXX HACK: field needed for compatibility with file format versions 1.0.7 and below *)
     }
 
    let new_record () =
@@ -90,7 +91,8 @@ struct
         io_params = Hashtbl.create init_size;
         io_hyps = Hashtbl.create init_size;
         io_bterms = Hashtbl.create init_size;
-        io_seq = None
+        io_seq = None;
+        io_old_format = false;
       } in
       Hashtbl.add r.io_opnames "nil" nil_opname;
       Hashtbl.add r.io_opnames "NIL" nil_opname;
@@ -106,7 +108,24 @@ struct
       (_, name, [op::bterms]) ->
          let (op,params) = Hashtbl.find r.io_ops op in
          let btrms = List.map (Hashtbl.find r.io_bterms) bterms in
-         let t = lookup (Term { op_name = op; op_params = params; term_terms = btrms }) in
+         let t =
+            if op = Refiner.Refiner.Term.var_opname && btrms <> [] then (* XXX HACK: Version <= 1.0.7 compatiility *)
+               let t = retrieve (lookup (Term { op_name = op; op_params = params; term_terms = [] })) in
+               match (dest_op (dest_term t).term_op).TM.TermType.op_params with
+                  [p] ->
+                     begin match dest_param p with
+                        Var v ->
+                           let dest bt =
+                              if bt.bvars = [] then bt.bterm else
+                              raise(Invalid_argument "Ascii_io: invalid old-style variable term")
+                           in
+                              lookup (SOVar(v, [v], List.map dest btrms))
+                      | _ -> raise(Invalid_argument "Ascii_io: invalid old-style variable term")
+                     end
+                | _ -> raise(Invalid_argument "Ascii_io: invalid old-style variable term")
+            else
+               lookup (Term { op_name = op; op_params = params; term_terms = btrms })
+         in
          hash_add_new r.io_terms name t;
          t
     | _ ->
@@ -146,9 +165,14 @@ struct
          fail "add_hyp"
 
    let add_context r = function
-      (_, name, [v::terms]) ->
+      (_, name, [[v];conts;terms]) ->
          let terms = List.map (Hashtbl.find r.io_terms) terms in
-         hash_add_new r.io_hyps name (Context(Lm_symbol.add v,terms))
+         hash_add_new r.io_hyps name (Context(Lm_symbol.add v,List.map Lm_symbol.add conts,terms))
+    | (_, name, [v::terms]) -> (* XXX HACK: format versions <= 1.0.7 compatibility *)
+         let terms = List.map (Hashtbl.find r.io_terms) terms in
+         let v = Lm_symbol.add v in
+         r.io_old_format <- true;
+         hash_add_new r.io_hyps name (Context(v,[v],terms))
     | _ ->
          fail "add_context"
 
@@ -183,6 +207,13 @@ struct
                t
           | _ ->
                fail "add_goal"
+
+   let add_var r = function
+      (_, name, [[var];conts;terms]) ->
+         let t = lookup (SOVar (Lm_symbol.add var, List.map Lm_symbol.add conts, List.map (Hashtbl.find r.io_terms) terms)) in
+            hash_add_new r.io_terms name t;
+            t
+    | _ -> fail "add_var"
 
    let rec level_exp_vars = function
       var::offset::vars ->
@@ -221,8 +252,9 @@ struct
          add_items_aux r items;
          begin match long.[0] with
             'T'|'t' -> ignore (add_term r item)
-          | 'G'|'g' -> ignore (add_goal r item)
+          | 'G'|'g' -> ignore (add_goal r item)  (* XXX: HACK: Version <= 1.0.6 compatibility *)
           | 'S'|'s' -> ignore (add_seq r item)
+          | 'V'|'v' -> ignore (add_var r item)
           | 'B'|'b' -> add_bterm r item
           | 'H'|'h' -> add_hyp r item
           | 'C'|'c' -> add_context r item
@@ -242,6 +274,7 @@ struct
                'T'|'t' -> ignore (add_term r item)
              | 'G'|'g' -> ignore (add_goal r item)
              | 'S'|'s' -> ignore (add_seq r item)
+             | 'V'|'v' -> ignore (add_var r item)
              | 'B'|'b' -> add_bterm r item
              | 'H'|'h' -> add_hyp r item
              | 'C'|'c' -> add_context r item
@@ -263,20 +296,30 @@ struct
          (long,short,_) as item :: items ->
             let r = new_record () in
             add_items r items;
+            let res =
             retrieve (
                match long.[0] with
                   'T'|'t' -> add_term r item
                 | 'G'|'g' -> add_goal r item
                 | 'S'|'s' -> add_seq r item
+                | 'V'|'v' -> add_var r item
                 | _ -> fail ("get_term: " ^ long)
-            )
+            ) in
+            if r.io_old_format then begin 
+               eprintf "Warning: converting a term read from an old .prla file%t" eflush; 
+               TM.TermMeta.term_of_parsed_term res (* XXX HACK: format version <= 1.0.7 support *)
+            end else res
        | [] -> fail "get_term1"
-          end with Not_found -> fail "get_term - not found"
+      end with Not_found -> fail "get_term - empty file"
 
    let get_named_term t name =
       let r = new_record () in
       add_items r !t;
-      retrieve (Hashtbl.find r.io_terms name)
+      let res = retrieve (Hashtbl.find r.io_terms name) in
+      if r.io_old_format then begin 
+         eprintf "Warning: converting a term read from an old .prla file%t" eflush; 
+         TM.TermMeta.term_of_parsed_term res (* XXX HACK: format version <= 1.0.7 support *)
+      end else res
 
    let read_table inx =
       let table = initialize () in
@@ -316,7 +359,7 @@ struct
       out_name_bterm : bound_term -> string * string;
       out_name_hyp : hypothesis -> string * string;
        (* arg+hyps long name, goals long name, short name *)
-      out_name_seq : esequent -> string * string * string;
+      out_name_seq : esequent -> string * string;
       out_line : io_item -> unit
     }
 
@@ -369,14 +412,23 @@ struct
             let tail' = clean_inputs tail in
             let c = Char.uppercase comment.[0] in
             let record' = match c with
-               'T' | 'B' | 'O' | 'G' -> smap_rename record
+               'T' | 'O' | 'G' -> smap_rename record
+             | 'B' -> begin match record with
+                  [(term :: vars)] -> let term' = rename term in if term == term' then record else [(term'::vars)]
+                | _ -> smap_rename record
+               end
              | 'H' -> begin match record with 
                   [[var;name]] -> let name' = rename name in if name == name' then record else [[var;name']]
                 | _ -> smap_rename record
                end   
-             | 'C' | 'N' -> begin match record with
+             | 'N' -> begin match record with
                   [[_;"NIL"]] -> record
                 | [var::rest] -> let rest' = Lm_list_util.smap rename rest in if rest == rest' then record else [var::rest']
+                | _ -> record
+               end
+             | 'C' | 'V' -> begin match record with
+                  [var; conts; terms] -> let terms' = Lm_list_util.smap rename terms in if terms' == terms then record else [var; conts; terms']
+                | [var::rest] -> let rest' = Lm_list_util.smap rename rest in if rest == rest' then record else [var::rest'] (* XXX HACK: format versions <= 1.0.7 compatibility *)
                 | _ -> record
                end
              | _ -> record
@@ -469,7 +521,35 @@ struct
       end
 
    let rec out_term ctrl data t =
-      if is_sequent_term t then
+      if is_so_var_term t && not (is_var_term t) then (*XXX is_var_term is temporary here *)
+         let v, conts, ts = dest_so_var t in
+         let ts_names, ts_inds = List.split (List.map (out_term ctrl data) ts) in
+         let ind = lookup (SOVar(v, conts, ts_inds)) in
+         let v = string_of_symbol v in let conts = List.map string_of_symbol conts in
+         try
+            let name = HashTerm.find data.out_terms ind in
+            if not (StringSet.mem data.new_names name) then begin (* XXX HACK: check_old replacement for versions <= 1.0.7 *)
+               (* This item existed in the old version of the file *)
+               data.new_names <- StringSet.add data.new_names name;
+               match Hashtbl.find_all data.old_items name with
+                  (_, _, [[v2]; conts2; ts_names2]) :: _ when v = v2 && conts = conts2 && ts_names = ts_names2 ->
+                     data.io_names <- StringSet.add data.io_names name;
+                     data.out_items <- Old name :: data.out_items
+                | (l,_,([_;_;_] as io_data)) :: _ when (l.[0]='V') || (l.[0]='v') ->
+                     data.out_items <- New (l, name, io_data) :: data.out_items
+                | (l, name, _) :: _ ->  (* XXX HACK: version <= 1.0.7 *)
+                     l.[0] <- 'V';
+                     data.out_items <- New (l, name, [[v]; conts; ts_names]) :: data.out_items
+                | _ ->
+                     fail ("out_term - SO variable entry " ^ name ^ " was invalid")
+            end;
+            (name, ind)
+         with Not_found ->
+            let name = rename v data in
+            HashTerm.add data.out_terms ind name;
+            data.out_items <- New ("V" ^ v, name, [[v]; conts; ts_names]) :: data.out_items;
+            (name, ind)
+      else if is_sequent_term t then
          let seq = explode_sequent t in
          let (arg_name, arg_ind) = out_term ctrl data seq.sequent_args in
          let hyps = List.map (out_hyp ctrl data) (SeqHyp.to_list seq.sequent_hyps) in
@@ -481,7 +561,7 @@ struct
          let i_data2 = List.map fst hyps in
          try
             let name = HashTerm.find data.out_terms ind in
-            if not (StringSet.mem data.new_names name) then begin
+            if not (StringSet.mem data.new_names name) then begin (* XXX HACK: check_old replacement for versions <= 1.0.7 *)
                (* This item existed in the old version of the file *)
                data.new_names <- StringSet.add data.new_names name;
                match Hashtbl.find_all data.old_items name with
@@ -493,17 +573,17 @@ struct
                 | (_,_,[[io_arg]; io_data2; io_data3]) :: _ when io_data2 = i_data2 && io_data3 = i_data3 ->
                      data.io_names <- StringSet.add data.io_names name;
                      data.out_items <- Old name :: data.out_items
-                | (l,_,([_;_] as io_data)) :: _ when (l.[0]='S') || (l.[0]='s') ->
+                | (l,_,([_;_;_] as io_data)) :: _ when (l.[0]='S') || (l.[0]='s') ->
                      data.out_items <- New (l, name, io_data) :: data.out_items
                 | _ ->
                      fail ("out_term - sequent entry " ^ name ^ " was invalid")
             end;
             (name, ind)
          with Not_found ->
-            let (hyps_lname, goals_lname, name) = ctrl.out_name_seq seq in
+            let lname, name = ctrl.out_name_seq seq in
             let name = rename name data in
             HashTerm.add data.out_terms ind name;
-            data.out_items <- New ("S" ^ hyps_lname, name, [[arg_name]; i_data2; i_data3]) :: data.out_items;
+            data.out_items <- New ("S" ^ lname, name, [[arg_name]; i_data2; i_data3]) :: data.out_items;
             (name, ind)
       else
          let t' = dest_term t in
@@ -544,10 +624,10 @@ struct
                New ("H" ^ lname, name, i_data) :: data.out_items;
             (name, hyp)
       end
-    | TermType.Context (v,ts) as h -> begin
+    | TermType.Context (v,conts,ts) as h -> begin
          let terms = List.map (out_term ctrl data) ts in
-         let hyp = Context (v, List.map snd terms) in
-         let i_data = [string_of_symbol v :: (List.map fst terms)] in
+         let hyp = Context (v, conts, List.map snd terms) in
+         let i_data = [[string_of_symbol v]; List.map string_of_symbol conts; List.map fst terms] in
          try
             let name = HashHyp.find data.out_hyps hyp in
             check_old data name i_data;
@@ -682,7 +762,7 @@ struct
    let simple_name_term _ = "","t"
    let simple_name_bterm _ = "","b"
    let simple_name_hyp _ = "","h"
-   let simple_name_seq _ = "","","s"
+   let simple_name_seq _ = "","s"
 
    let output_aux strs =
       String.concat " " (List.map Lm_string_util.quote strs)

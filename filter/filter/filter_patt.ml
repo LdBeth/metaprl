@@ -58,8 +58,7 @@ open Filter_util
  * Utilities.
  *)
 let dest_so_var_string t =
-   let v, _ = dest_so_var t in
-      string_of_symbol v
+   let v, _, _ = dest_so_var t in string_of_symbol v
 
 (*
  * Turn a term into a pattern expression.
@@ -127,7 +126,7 @@ let build_term_patt loc t =
             if not (is_so_var_term t) then
                raise (Invalid_argument "term_patt: subterms must be variables")
          in
-         let v, _ = dest_so_var t in
+         let v, _, _ = dest_so_var t in
          let bvars_rhs = List.fold_right (fun v l -> <:patt< [$lid: string_of_symbol v$ :: $l$] >>) bvars <:patt< [] >> in
             <:patt< { Refiner.Refiner.TermType.bvars = $bvars_rhs$;
                       Refiner.Refiner.TermType.bterm = $lid: string_of_symbol v$
@@ -167,10 +166,10 @@ let build_sequent_patt loc t =
        | Hypothesis t :: hyps ->
             let t = dest_so_var_string t in
                <:patt< [Refiner.Refiner.TermType.Hypothesis $lid:t$ :: $build_hyps hyps$] >>
-       | [Context (v, _)] ->
+       | [Context (v, _, _)] ->
             let v = string_of_symbol v in
                <:patt< $lid:v$ >>
-       | Context (v, _) :: _ ->
+       | Context (v, _, _) :: _ ->
             raise (Invalid_argument ("Context var " ^ string_of_symbol v ^ " should be the final hyp"))
    in
    let hyps = build_hyps hyps in

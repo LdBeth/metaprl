@@ -314,9 +314,30 @@ type ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, 'module_info) s
  | Definition of ('term, 'expr) opname_definition
 
 (*
- * This type defines what info do we need during parsing to identify an opname
+ * These type define what info do we need during parsing to identify opnames and context bindings
+ * The context_fun should return the Some list when the SO variable bindings are known from the proof context
  *)
 type opname_fun = string list -> shape_param list -> int list -> Opname.opname
+type context_fun = var -> int -> var list option
+
+(*
+ * Grammars to extend.
+ *)
+module type TermGrammarSig =
+sig
+   val mk_opname : MLast.loc -> opname_fun
+   val mk_var_contexts : MLast.loc -> context_fun
+   val term_eoi : term Grammar.Entry.e
+   val parsed_term : term Grammar.Entry.e
+   val quote_term : quote_term Grammar.Entry.e
+   val mterm : meta_term Grammar.Entry.e
+   val bmterm : meta_term Grammar.Entry.e
+   val singleterm : aterm Grammar.Entry.e
+   val applytermlist : (term list) Grammar.Entry.e
+   val parsed_bound_term : aterm Grammar.Entry.e
+   val xdform : term Grammar.Entry.e
+   val term_con_eoi : (term, MLast.expr) term_constructor Grammar.Entry.e
+end
 
 (*
  * -*-

@@ -91,8 +91,12 @@ let new_var v vars =
 let maybe_new_var v vars =
    if List.mem v vars then
       new_var v vars
-   else
-      v
+   else v
+
+let maybe_new_var_set v vars =
+   if SymbolSet.mem vars v then
+      new_name v (SymbolSet.mem vars)
+   else v
 
 let maybe_new_vars vars vars' =
    let rec aux l l' = function
@@ -104,10 +108,10 @@ let maybe_new_vars vars vars' =
       aux vars' [] vars
 
 let maybe_new_var_arg p v =
-   let vars = Sequent.declared_vars p in
-      maybe_new_var v vars
+   let vars = Sequent.avoid_vars p in
+      maybe_new_var_set v vars
 
-let bv = Lm_symbol.add "bnd"
+let bv = Lm_symbol.add "vv"
 
 let var_subst_to_bind t1 t2 =
    let vs = free_vars_set t1 in

@@ -48,10 +48,13 @@ Hypothesis:
 H<long_name> <short_name> <variable> <term_short_name>
 
 Context hyp:
-C<long_name> <short_name> <variable> [<term_short_name_1> ... <term_short_name_n>]
+C<long_name> <short_name> <variable>\\ [<var_1> ... <var_n>]\\ [<term_short_name_1> ... <term_short_name_n>]
 
 Sequent:
-S<long_name> <short_name> <arg_term_short_name> [<hyp_1_short_name> ... <hyp_n_short_name>]\\ [<goal_1_short_name> ... <goal_n_short_name>]
+S<long_name> <short_name> <arg_term_short_name>\\ [<hyp_1_short_name> ... <hyp_n_short_name>]\\ [<goal_1_short_name> ... <goal_n_short_name>]
+
+SO Variable:
+V<long_name> <short_name> <variable>\\ [<var_1> ... <var_n>]\\ [<term_short_name_1> ... <term_short_name_n>]
 
 Operator:
 O<long_name> <short_name> <opname_short_name> [<param_short_name_1> ... <param_short_name_n>]
@@ -130,7 +133,7 @@ sig
       out_name_bterm : bound_term -> string * string;
       out_name_hyp : hypothesis -> string * string;
        (* arg+hyps long name, goals long name, short name *)
-      out_name_seq : esequent -> string * string * string;
+      out_name_seq : esequent -> string * string;
       out_line : io_item -> unit
     }
 
@@ -142,7 +145,7 @@ sig
    val simple_name_term : term -> string * string
    val simple_name_bterm : bound_term -> string * string
    val simple_name_hyp : hypothesis -> string * string
-   val simple_name_seq : esequent -> string * string * string
+   val simple_name_seq : esequent -> string * string
    val simple_output_line : out_channel -> io_item -> unit
 
    (* io_control uning simple_* functions *)

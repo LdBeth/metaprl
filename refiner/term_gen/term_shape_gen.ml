@@ -38,6 +38,7 @@ open Printf
 open Opname
 open Term_sig
 open Term_base_sig
+open Term_man_sig
 open Term_shape_sig
 
 module TermShape (**)
@@ -50,21 +51,43 @@ module TermShape (**)
     with type operator = TermType.operator
     with type operator' = TermType.operator'
     with type param = TermType.param
-    with type param' = TermType.param'
-   ) =
+    with type param' = TermType.param')
+   (TermMan : TermManSig
+    with type term = TermType.term) =
 struct
    open TermType
    open Term
+   open TermMan
 
    type term = Term.term
    type param = Term.param
 
-   type shape =
-      { shape_opname : opname;
-        shape_params : shape_param list;
-        shape_arities : int list
-      }
+   type shape = {
+      shape_opname : opname;
+      shape_params : shape_param list;
+      shape_arities : int list
+   }
 
+   (*
+    * Shapes for special terms.
+    * XXX HACK/TODO: shape type should probably be a choice type
+    *)
+   let sequent_shape = {
+      shape_opname = sequent_opname;
+      shape_params = [];
+      shape_arities = [0; 1];
+   }
+
+   let var_shape = {
+      shape_opname = var_opname;
+      shape_params = [ShapeVar];
+      shape_arities = []
+   }
+
+   let so_var_shape =
+      let zero _ = 0 in
+         fun terms -> { var_shape with shape_arities = List.map zero terms }
+      
    (*
     * Fold together meta-parameters and parameters.
     *)
@@ -82,6 +105,9 @@ struct
       List.length (dest_bterm bt).bvars
 
    let shape_of_term trm =
+      if is_var_term trm then var_shape else
+      if is_so_var_term trm then let _,_,ts = dest_so_var trm in so_var_shape ts else
+      if is_sequent_term trm then sequent_shape else
       let t = dest_term trm in
       let op = dest_op t.term_op in
          { shape_opname = op.op_name;

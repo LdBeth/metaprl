@@ -96,7 +96,7 @@ DEFTOPMACRO BODY =
     | RWSOSubst of int * rwterm list
     | RWSOContext of int * int * rwterm * int list
     | RWSOContextSubst of int * rwterm * rwterm list
-    | RWFreeVars of rwterm * int list
+    | RWFreeVars of rwterm * int list * int list
     | RWCheckVar of int
     | RWStackVar of int
     | RWError
@@ -119,7 +119,7 @@ DEFTOPMACRO BODY =
     | RWSeqHyp of rwterm
     | RWSeqContext of int * int * int list
     | RWSeqContextSubst of int * rwterm list
-    | RWSeqFreeVarsContext of int list * int * int * int list
+    | RWSeqFreeVarsContext of int list * int list * int * int * int list
 
    and varname =
       StackName of int
@@ -137,8 +137,8 @@ DEFTOPMACRO BODY =
     *)
    type rstack =
       FOVarPattern of var
-    | SOVarPattern of var * int
-    | SOVarInstance of var * int
+    | SOVarPattern of var * var list * int
+    | SOVarInstance of var * var list * int
     | FOVar of var
     | CVar of var
     | PVar of var * shape_param

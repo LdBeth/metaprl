@@ -118,8 +118,7 @@ struct
       if vl=[] then t else
       match combine_fst_flt_nodups (free_vars_set t) vl tl with
          [] -> t
-       | sub ->
-            {free_vars = VarsDelayed; core = Subst (t,sub)}
+       | sub -> core_term (Subst (t,sub))
 
    let rec fst_flt_nodups fvs = function
       [v,t] as l ->
@@ -138,13 +137,12 @@ struct
     | s ->
          begin match fst_flt_nodups (free_vars_set t) s with
             [] -> t
-          | sub ->
-               {free_vars = VarsDelayed; core = Subst (t,sub)}
+          | sub -> core_term (Subst (t,sub))
          end
 
    let subst1 term v t =
       if SymbolSet.mem (free_vars_set term) v then
-         {free_vars = VarsDelayed; core = Subst (term,[v,t])}
+         core_term (Subst (term,[v,t]))
       else
          term
 
@@ -203,21 +201,22 @@ struct
                if i = len then binding_vars_term seq.sequent_args else
                   match SeqHyp.get hyps i with
                      HypBinding (v,t) ->
-                        binding_vars_union t (SymbolSet.add (coll_hyps (succ i)) v)
+                        binding_vars_union (SymbolSet.add (coll_hyps (succ i)) v) t
                    | Hypothesis (t) ->
-                        binding_vars_union t (coll_hyps (succ i))
-                   | Context (v,[]) ->
+                        binding_vars_union (coll_hyps (succ i)) t
+                   | Context (_,_,[]) ->
                         coll_hyps (succ i)
-                   | Context (v,ts) ->
-                        List.fold_right binding_vars_union ts (coll_hyps (succ i))
+                   | Context (_,_,ts) ->
+                        List.fold_left binding_vars_union (coll_hyps (succ i)) ts
             in
             let goals = seq.sequent_goals in
             let len = SeqGoal.length goals in
             let rec coll_goals i =
                if i = len then coll_hyps 0 else
-                  binding_vars_union (SeqGoal.get goals i) (coll_goals (succ i))
+                  binding_vars_union (coll_goals (succ i)) (SeqGoal.get goals i)
             in coll_goals 0
        | FOVar _ -> SymbolSet.empty
+       | SOVar(_, _, ts) -> List.fold_left binding_vars_union SymbolSet.empty ts
        | Subst _ -> ignore (get_core t); binding_vars_term t
        | Hashed d ->
             binding_vars_term (Weak_memo.TheWeakMemo.retrieve_hack d)
@@ -235,7 +234,7 @@ struct
     | bt::l ->
          SymbolSet.union (binding_vars_bterm bt) (binding_vars_bterms l)
 
-   and binding_vars_union t vars = SymbolSet.union (binding_vars_term t) vars
+   and binding_vars_union vars t = SymbolSet.union (binding_vars_term t) vars
 
    let binding_vars t =
       SymbolSet.to_list (binding_vars_term t)
@@ -278,7 +277,7 @@ struct
                if i = len then [] else
                match SeqHyp.get hyps i with
                   HypBinding (_,h) | Hypothesis h -> context_vars h @ hyp_context_vars (succ i)
-                | Context (v,ts) -> v :: (terms_context_vars ts @ hyp_context_vars (succ i))
+                | Context (v,_,ts) -> v :: (terms_context_vars ts @ hyp_context_vars (succ i))
             in let goals = seq.sequent_goals in
             let len = SeqGoal.length goals in
             let rec goals_context_vars i =
@@ -286,7 +285,8 @@ struct
                   (context_vars (SeqGoal.get goals i) @ goals_context_vars (succ i))
             in (context_vars seq.sequent_args) @ (hyp_context_vars 0) @ (goals_context_vars 0)
        | Term { term_terms = bts } ->
-            terms_context_vars (List.map (fun bt -> bt.bterm ) bts)
+            terms_context_vars (List.map (fun bt -> bt.bterm) bts)
+       | SOVar(_, _, ts) -> terms_context_vars ts
        | _ -> []
 
    (************************************************************************
@@ -347,6 +347,8 @@ struct
             Opname.eq name1 name2
                     & Lm_list_util.for_all2 equal_params params1 params2
                     & equal_bterms vars bterms1 bterms2
+       | SOVar(v,conts,ts), SOVar(v',conts',ts') ->
+            v=v' && conts = conts' && Lm_list_util.for_all2 (equal_term vars) ts ts'
        | _ -> false )
 
    and equal_bterms vars btrms1 btrms2 =
@@ -370,8 +372,8 @@ struct
                   let vars = if v1=v2 then remove_var v1 vars else (v1,v2)::vars in
                      equal_hyps hyps1 hyps2 vars (succ i)
                else None
-          | Context (v1,ts1), Context (v2,ts2) ->
-            if v1=v2 && Lm_list_util.for_all2 (equal_term vars) ts1 ts2 then
+          | Context (v1,conts1,ts1), Context (v2,conts2,ts2) ->
+            if v1=v2 && conts1 = conts2 && Lm_list_util.for_all2 (equal_term vars) ts1 ts2 then
                equal_hyps hyps1 hyps2 vars (succ i)
             else None
           | _ -> None
@@ -385,32 +387,32 @@ struct
       LETMACRO BODY =
          match get_core t1, get_core t2 with
             Term _, Term _ ->
-               (try equal_term [] t1 t2 with
-                  Failure _ -> false)
+               equal_term [] t1 t2
           | Sequent s1, Sequent s2 ->
-               (try
-                  (SeqHyp.length s1.sequent_hyps = SeqHyp.length s2.sequent_hyps) &&
-                  (SeqGoal.length s1.sequent_goals = SeqGoal.length s2.sequent_goals) &&
-                  (equal_term [] s1.sequent_args s2.sequent_args) &&
-                  (match equal_hyps s1.sequent_hyps s2.sequent_hyps [] 0 with
-                      None -> false
-                    | Some vars -> equal_goals s1.sequent_goals s2.sequent_goals vars (SeqGoal.length s1.sequent_goals - 1))
-                with
-                   Failure _ ->
-                      false)
+               (SeqHyp.length s1.sequent_hyps = SeqHyp.length s2.sequent_hyps) &&
+               (SeqGoal.length s1.sequent_goals = SeqGoal.length s2.sequent_goals) &&
+               (equal_term [] s1.sequent_args s2.sequent_args) &&
+               (match equal_hyps s1.sequent_hyps s2.sequent_hyps [] 0 with
+                   None -> false
+                 | Some vars -> equal_goals s1.sequent_goals s2.sequent_goals vars (SeqGoal.length s1.sequent_goals - 1))
           | FOVar v1, FOVar v2 ->
                (v1=v2)
+          | SOVar(v1, conts1, ts1), SOVar(v2, conts2, ts2) ->
+               v1=v2 && conts1=conts2 && Lm_list_util.for_all2 (equal_term []) ts1 ts2
           | _ ->
                false
       IN
-      IFDEF VERBOSE_EXN THEN
-         let result = BODY in
-            if !debug_alpha_equal then
-               eprintf "alpha_equal: %b:\n%a\n%a%t" result debug_print t1 debug_print t2 eflush;
-            result
-      ELSE
-         BODY
-      ENDIF
+      try
+         IFDEF VERBOSE_EXN THEN
+            let result = BODY in
+               if !debug_alpha_equal then
+                  eprintf "alpha_equal: %b:\n%a\n%a%t" result debug_print t1 debug_print t2 eflush;
+               result
+         ELSE
+            BODY
+         ENDIF
+      with
+         Failure _ -> false
 
    let alpha_equal_vars t v t' v' =
       LETMACRO BODY = try equal_term (Lm_list_util.zip v v') t t' with
@@ -438,12 +440,15 @@ struct
     *)
    let rec var_subst t t' v =
       if alpha_equal t t' then mk_var_term v
-      else match t with
-              {core = Term { term_op = op; term_terms = bterms}} ->
-                 let bterms' = var_subst_bterms bterms t' v in
-                    if bterms == bterms' then t else mk_term op bterms'
-            | { core = FOVar v } -> t
-            | _ -> raise (Invalid_argument "Term_ds.var_subst: this is not supposed to happen")
+      else match t.core with
+           Term { term_op = op; term_terms = bterms} ->
+              let bterms' = var_subst_bterms bterms t' v in
+                 if bterms == bterms' then t else mk_term op bterms'
+         | FOVar _ -> t
+         | SOVar(v', conts, ts) ->
+               core_term (SOVar(v', conts, List.map (fun t -> var_subst t t' v) ts))
+         | Sequent _ -> raise (Invalid_argument "Term_ds.var_subst: sequents not supported")
+         | Hashed _ | Subst _ -> raise (Invalid_argument "Term_ds.var_subst: this is not supposed to happen")
 
    and var_subst_bterms bterms t' v =
       match bterms with
@@ -493,6 +498,8 @@ struct
             Opname.eq t1.term_op.op_name t2.term_op.op_name &&
             Lm_list_util.for_all2 equal_params t1.term_op.op_params t2.term_op.op_params &&
             equal_fun_bterms f bvars sub t1.term_terms t2.term_terms
+       | SOVar(v1, conts1, ts1), SOVar(v2, conts2, ts2) ->
+            v1=v2 && conts1 = conts2 && Lm_list_util.for_all2 (equal_fun f bvars sub) ts1 ts2
        | _ -> false
 
    and equal_fun_bterms f bvars sub bterms1 bterms2 =
@@ -538,37 +545,35 @@ struct
             RAISE_GENERIC_EXN
 
    let rec match_terms subst bvars tm1 tm2 =
-      if is_var_term tm1 then
-         let v = dest_var tm1 in
-            try
-               let v' = List.assoc v bvars in
-                  if v' = dest_var tm2 then
-                     subst
-                  else
-                     RAISE_GENERIC_EXN
+      match get_core tm1, get_core tm2 with
+         FOVar v, FOVar v'
+            when List.mem_assoc v bvars && v' = List.assoc v bvars -> subst
+       | FOVar v, _ ->
+            begin try
+               let tm1 = List.assoc v subst in
+                  if equal_term bvars tm1 tm2 then subst
+                     else RAISE_GENERIC_EXN
             with
                Not_found ->
-                  try
-                     let tm1 = List.assoc v subst in
-                        if equal_term bvars tm1 tm2 then subst
-                        else RAISE_GENERIC_EXN
-                  with
-                     Not_found ->
-                        check_bvars (free_vars_set tm2) bvars;
-                        (v, tm2) :: subst
-      else
-         let { term_op = { op_name = opname1; op_params = params1 };
-               term_terms = bterms1
-             } = dest_term tm1
-         in
-         let { term_op = { op_name = opname2; op_params = params2 };
-               term_terms = bterms2
-             } = dest_term tm2
-         in
-            if Opname.eq opname1 opname2 & params1 = params2 then
+                  check_bvars (free_vars_set tm2) bvars;
+                  (v, tm2) :: subst
+            end
+       | Term { term_op = { op_name = opname1; op_params = params1 }; term_terms = bterms1 },
+         Term { term_op = { op_name = opname2; op_params = params2 }; term_terms = bterms2 }
+            when Opname.eq opname1 opname2 & params1 = params2 ->
                match_bterms subst bvars bterms1 bterms2
-            else
-               RAISE_GENERIC_EXN
+       | SOVar(v1, cs1, ts1), SOVar(v2, cs2, ts2) when v1=v2 && cs1 = cs2 ->
+            match_term_lists subst bvars ts1 ts2
+       | (Sequent _, _) | (_, Sequent _) ->
+            raise(Invalid_argument "Term_subst_ds.match_terms called on a sequent")
+       | _ -> RAISE_GENERIC_EXN
+
+   and match_term_lists subst bvars ts1 ts2 =
+      match ts1, ts2 with
+         (t1 :: tl1), (t2 :: tl2) ->
+            match_term_lists (match_terms subst bvars t1 t2) bvars tl1 tl2
+       | [], [] -> subst
+       | _ -> RAISE_GENERIC_EXN
 
    and match_bterms subst bvars bterms1 bterms2 =
       match bterms1, bterms2 with
@@ -577,10 +582,8 @@ struct
                match_terms subst (zip_cons bvars bt1.bvars bt2.bvars) bt1.bterm bt2.bterm
             in
                match_bterms subst' bvars tl1 tl2
-       | [], [] ->
-            subst
-       | _ ->
-            RAISE_GENERIC_EXN
+       | [], [] -> subst
+       | _ -> RAISE_GENERIC_EXN
 
    let match_terms subst t1 t2 =
       LETMACRO BODY = List.rev (match_terms subst [] t1 t2)
@@ -621,20 +624,26 @@ struct
       let t, index = standardize_term index t in
          { bvars = bvars; bterm = t }, index
 
+   and standardize_bterms_step (bterms, index) bterm =
+      let bterm, index = standardize_bterm index bterm in
+         bterm :: bterms, index
+
+   and standardize_terms_step (terms, index) term =
+      let term, index = standardize_term index term in
+         term :: terms, index
+
    and standardize_term index t =
       match get_core t with
          Term { term_op = op; term_terms = bterms } ->
-            let bterms, index =
-               List.fold_left (fun (bterms, index) bterm ->
-                  let bterm, index = standardize_bterm index bterm in
-                     bterm :: bterms, index) ([], index) bterms
-            in
-            let t = mk_term op (List.rev bterms) in
-               t, index
+            let bterms, index = List.fold_left standardize_bterms_step ([], index) bterms in
+               mk_term op (List.rev bterms), index
        | FOVar _ ->
             t, index
-       | _ ->
-          raise (Invalid_argument "standardize_term")
+       | SOVar(v, conts, ts) ->
+            let ts, index = List.fold_left standardize_terms_step ([], index) ts in
+               core_term(SOVar(v, conts, List.rev ts)), index
+       | Sequent _ -> raise (Invalid_argument "standardize_term")
+       | Subst _| Hashed _ -> fail_core "standardize_term"
 
    let standardize t =
       fst (standardize_term 0 t)

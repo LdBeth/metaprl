@@ -28,12 +28,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 open Term_sig
 open Term_base_sig
+open Term_man_sig
 open Term_shape_sig
 
 module TermShape (**)
@@ -46,8 +47,9 @@ module TermShape (**)
     with type operator = TermType.operator
     with type operator' = TermType.operator'
     with type param = TermType.param
-    with type param' = TermType.param'
-   )
+    with type param' = TermType.param')
+   (TermMan : TermManSig
+    with type term = TermType.term)
 : TermShapeSig
   with type term = Term.term
   with type param = Term.param

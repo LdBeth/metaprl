@@ -504,7 +504,7 @@ let nameHypT i v =
                else begin match hyp' with
                   Hypothesis hyp' -> Hypothesis (subst1 hyp' v' vt)
                 | HypBinding (vv,hyp') -> HypBinding (vv, subst1 hyp' v' vt)
-                | Context (vv, ts) -> Context (vv, List.map s1 ts)
+                | Context (vv, conts, ts) -> Context (vv, conts, List.map s1 ts)
                end
             in
                { eseq with sequent_hyps = SeqHyp.mapi map eseq.sequent_hyps;

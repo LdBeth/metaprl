@@ -121,7 +121,7 @@ sig
    type hypothesis =
       HypBinding of var * term
     | Hypothesis of term
-    | Context of var * term list
+    | Context of var * var list * term list
 
    type seq_hyps
    type seq_goals

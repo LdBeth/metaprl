@@ -779,9 +779,13 @@ sig
    (*
     * Get info about the sequent.
     *)
-   val declared_vars : tactic_arg -> var list
    val explode_sequent : tactic_arg -> TermType.esequent
-   val is_free_seq_var : int -> var -> tactic_arg -> bool
+
+   (*
+    * Variables to avoid clashing with
+    * This function is informal and does not have a clear semantics
+    *)
+   val avoid_vars : tactic_arg -> SymbolSet.t
 
    (*
     * Argument functions.

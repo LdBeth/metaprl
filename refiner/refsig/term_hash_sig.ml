@@ -65,7 +65,7 @@ sig
       type hypothesis_header =
          Hypothesis of term_index
        | HypBinding of var * term_index
-       | Context of var * term_index list
+       | Context of var * var list * term_index list
 
       type bound_term_header =
          { bvars: var list;
@@ -87,6 +87,8 @@ sig
       type term_header =
          Term of true_term_header
        | Seq of seq_header
+       | FOVar of var
+       | SOVar of var * var list * term_index list
 
       type meta_term_header =
          MetaTheorem of term_index

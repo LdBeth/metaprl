@@ -933,59 +933,61 @@ struct
          print_exn info sync info
 
    let rec apply_all info f time clean_res =
-      let apply_all_exn info =
+      let dir = info.dir in
+      let apply_it item mod_name name =
+         (try Shell_state.set_so_var_context info.shell (Some (item.edit_get_terms ())) with _ -> ());
+         (try f item (get_db info) with _ -> ());
+         if clean_res then Mp_resource.clear_results (mod_name, name)
+      in
+      let rec apply_all_exn time =
          let parse_arg = get_parse_arg info in
          let display_mode = get_display_mode info in
          match info.package with
             Some pack ->
                touch info;
-               let apply_it item name =
-                  begin try f item (get_db info) with
-                     _ -> ()
-                  end;
-                  if clean_res then Mp_resource.clear_results (Package.name pack, name)
+               let mod_name = Package.name pack in
+               let apply_item = function
+                  Rewrite rw, _ ->
+                     if !debug_shell then eprintf "Rewrite %s%t" rw.rw_name eflush;
+                     apply_it (Shell_rewrite.view_rw pack parse_arg display_mode rw) mod_name rw.rw_name
+                | CondRewrite crw, _ ->
+                     if !debug_shell then eprintf "CondRewrite %s%t" crw.crw_name eflush;
+                     apply_it (Shell_rewrite.view_crw pack parse_arg display_mode crw) mod_name crw.crw_name
+                | Rule rl, _ ->
+                     if !debug_shell then eprintf "Rule %s%t" rl.rule_name eflush;
+                     apply_it (Shell_rule.view_rule pack parse_arg display_mode rl) mod_name rl.rule_name
+                | _ ->
+                     ()
                in
-               let apply_item (item, _) =
-                  match item with
-                     Rewrite rw ->
-                        if !debug_shell then eprintf "Rewrite %s%t" rw.rw_name eflush;
-                        apply_it (Shell_rewrite.view_rw pack parse_arg display_mode rw) rw.rw_name
-                   | CondRewrite crw ->
-                        if !debug_shell then eprintf "CondRewrite %s%t" crw.crw_name eflush;
-                        apply_it (Shell_rewrite.view_crw pack parse_arg display_mode crw) crw.crw_name
-                   | Rule rl ->
-                        if !debug_shell then eprintf "Rule %s%t" rl.rule_name eflush;
-                        apply_it (Shell_rule.view_rule pack parse_arg display_mode rl) rl.rule_name
-                   | _ ->
-                        ()
-               in
-               let start = Unix.times () in
-               let start_time = Unix.gettimeofday () in
-               let _ = List.iter apply_item (info_items (Package.info pack parse_arg)) in
-               let finish = Unix.times () in
-               let finish_time = Unix.gettimeofday () in
+               let items = info_items (Package.info pack parse_arg) in
                if time then
-                  eprintf "User time %f; System time %f; Real time %f%t" (**)
-                     ((finish.Unix.tms_utime +. finish.Unix.tms_cutime)
-                      -. (start.Unix.tms_utime +. start.Unix.tms_cstime))
-                     ((finish.Unix.tms_stime +. finish.Unix.tms_cstime)
-                      -. (start.Unix.tms_stime +. finish.Unix.tms_cstime))
-                     (finish_time -. start_time)
-                     eflush
+                  let start = Unix.times () in
+                  let start_time = Unix.gettimeofday () in
+                  let _ = List.iter apply_item items in
+                  let finish = Unix.times () in
+                  let finish_time = Unix.gettimeofday () in
+                     eprintf "User time %f; System time %f; Real time %f%t" (**)
+                        ((finish.Unix.tms_utime +. finish.Unix.tms_cutime)
+                         -. (start.Unix.tms_utime +. start.Unix.tms_cstime))
+                        ((finish.Unix.tms_stime +. finish.Unix.tms_cstime)
+                         -. (start.Unix.tms_stime +. finish.Unix.tms_cstime))
+                        (finish_time -. start_time)
+                        eflush
                else
-                  ()
+                  List.iter apply_item items
 
           | None ->
                let expand pack =
                   let name = Package.name pack in
                      eprintf "Entering %s%t" name eflush;
                      chdir info false [name];
-                     apply_all info f false clean_res
+                     apply_all_exn false
                in
                   List.iter expand (all_packages());
-                  chdir info false []
       in
-         print_exn info apply_all_exn info
+         print_exn info apply_all_exn time;
+         chdir info false [];
+         chdir info false dir
 
    and expand_all info =
       let f item db =
@@ -1006,6 +1008,7 @@ struct
             set_packages info;
             Shell_state.set_dfbase shell None;
             Shell_state.set_mk_opname shell None;
+            Shell_state.set_so_var_context shell None;
             Shell_state.set_module shell "shell"
        | (modname :: item) as dir ->
             (* change module only if in another (or at top) *)
@@ -1029,19 +1032,20 @@ struct
                begin
                   (* top of module *)
                   info.dir <- dir;
+                  Shell_state.set_so_var_context shell None;
                   set_package info modname
                end
             else
                begin
                   (* select an item (if not there already), then go down the proof. *)
                   let proof =
-                     if info.dir = []
-                        or List.tl info.dir = []
-                        or List.hd (List.tl info.dir) <> List.hd item
-                     then
-                        set_item info modname (List.hd item)
-                     else
-                        info.proof
+                     match info.dir with
+                        old_modname::old_item::_ when old_modname = modname && old_item = List.hd item ->
+                           info.proof
+                      | _ ->
+                           let proof = set_item info modname (List.hd item) in
+                              Shell_state.set_so_var_context shell (Some (proof.edit_get_terms ()));
+                              proof
                   in
 
                   (* go down the proof with pf_path *)

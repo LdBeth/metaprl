@@ -167,15 +167,15 @@ check_versions_opt:: mk/config mk/config.local
 
 check_config::check_versions mk/config mk/config.local
 	@if [ $(TERMS) != ds -a $(TERMS) != std ]; then\
-		echo "ERROR: Invalid TERMS variable, edit mk/config file before running make"; \
+		echo "ERROR: the TERMS variable is currenly set to an invalid value, please fix it in mk/config file"; \
 		exit 1; \
 	fi
 	@if [ $(REFINER) != SIMPLE -a $(REFINER) != VERBOSE ]; then\
-		echo "ERROR: Invalid REFINER variable, edit mk/config file before running make"; \
+		echo "ERROR: the REFINER variable is currenly set to an invalid value, please fix it in mk/config file"; \
 		exit 1; \
 	fi
 	@if [ $(SEQ_SET) != Lm_array -a $(SEQ_SET) != Lm_splay ]; then\
-		echo "ERROR: Invalid SEQ_SET variable, edit mk/config file before running make"; \
+		echo "ERROR: the SEQ_SET variable is currenly set to an invalid value, please fix it in mk/config file"; \
 		exit 1; \
 	fi
 

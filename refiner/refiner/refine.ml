@@ -1608,8 +1608,8 @@ struct
       if is_hackable_sequent t then
          let seq = explode_sequent t in
          let process (vars, terms) = function
-            Context (c, _) ->
-               vars, (Context (c, vars) :: terms)
+            Context (c, conts, _) ->
+               vars, (Context (c, conts, vars) :: terms)
           | h ->
                let v = match h with
                   HypBinding (v, _) -> v
@@ -1617,11 +1617,11 @@ struct
                 | Context _ -> Lm_symbol.add ""
                in
                   incr i;
-                  (mk_var_term v :: vars), (HypBinding (v, mk_so_var_term (Lm_symbol.make "__" !i) vars) :: terms)
+                  (mk_var_term v :: vars), (HypBinding (v, mk_so_var_term (Lm_symbol.make "__" !i) [Lm_symbol.add "TODO"] vars) :: terms)
          in
          let vars, hyps = List.fold_left process ([],[]) (SeqHyp.to_list seq.sequent_hyps) in
          let goal = incr i; SeqGoal.get seq.sequent_goals 0 in
-         let goal = if vars <> [] && is_var_term goal then mk_so_var_term (Lm_symbol.make "__" !i) vars else goal in
+         let goal = if vars <> [] && is_var_term goal then mk_so_var_term (Lm_symbol.make "__" !i) [Lm_symbol.add "TODO"] vars else goal in
             mk_sequent_term { seq with sequent_hyps = SeqHyp.of_list (List.rev hyps); sequent_goals = SeqGoal.of_list [goal] }
       else t
 
@@ -1849,7 +1849,8 @@ struct
 
    let check_def_bterm bt =
       let bt = dest_bterm bt in
-         check_bound_vars bt.bvars (snd (dest_so_var bt.bterm))
+      let _, _, terms = dest_so_var bt.bterm in
+         check_bound_vars bt.bvars terms
 
    let add_def_rewrite build name redex contractum =
       IFDEF VERBOSE_EXN THEN

@@ -397,29 +397,6 @@ let rec get_sel_arg = function
       None
 
 (*
- * This function needs to be moved into the term module.
- *)
-let find_subterm t arg =
-   let rec search addr t =
-      if alpha_equal t arg then
-         addr
-      else
-         let { term_terms = bterms } = dest_term t in
-            search_bterms addr 0 bterms
-   and search_bterms addr index = function
-      [] ->
-         raise Not_found
-    | bterm :: bterms ->
-         let { bterm = t } = dest_bterm bterm in
-            try search (index :: addr) t with
-               Not_found ->
-                  search_bterms addr (succ index) bterms
-   in
-      try make_address (List.rev (search [] t)) with
-         Not_found ->
-            raise (RefineError ("Dtactic.improve_intro.find_subterm", StringTermError ("subterm can't be found", arg)))
-
-(*
  * Improve the intro resource from a rule.
  *)
 let in_auto p =

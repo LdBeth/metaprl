@@ -32,6 +32,7 @@
 open Refine_error_sig
 open Term_sig
 open Term_base_sig
+open Term_subst_sig
 open Term_op_sig
 open Term_addr_sig
 open Term_man_gen_sig
@@ -47,6 +48,8 @@ module TermAddr (**)
     with type bound_term' = TermType.bound_term'
     with type operator = TermType.operator
     with type operator' = TermType.operator')
+   (TermSubst : TermSubstSig
+    with type term = TermType.term)
    (TermOp : TermOpSig
     with type term = TermType.term)
    (TermMan: TermManGenSig

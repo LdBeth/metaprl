@@ -125,7 +125,7 @@ struct
     | RewriteStringError of string
     | RewriteStringOpnameOpnameError of string * opname * opname
     | RewriteAddressError of address * string * refine_error
-    | RewriteFreeContextVars of var list
+    | RewriteFreeContextVar of var * var
 
    (*
     * Every error is paired with the name of

@@ -1941,37 +1941,17 @@ struct
     * Copy the cond_rewrite proof.
     *)
    let copy_crw_proof copy_proof crw info2 =
-      let { crw_name = name;
-            crw_params = params1;
-            crw_args = args1;
-            crw_redex = redex1;
-            crw_contractum = contractum1;
-            crw_proof = proof1;
-            crw_resources = res1;
-          } = crw
-      in
       CondRewrite (
-         match find_rewrite info2 name with
-            Some (CondRewrite { crw_params = params2;
-                                crw_args = args2;
-                                crw_redex = redex2;
-                                crw_contractum = contractum2;
-                                crw_proof = proof2
+         match find_rewrite info2 crw.crw_name with
+            Some (CondRewrite { crw_redex = redex;
+                                crw_contractum = contractum;
+                                crw_proof = proof
                   }, _) ->
-               if not (check_params params1 params2)
-                  or not (List.length args2 = List.length args1 && List.for_all2 alpha_equal args2 args1)
-                  or not (alpha_equal redex1 redex2)
-                  or not (alpha_equal contractum1 contractum2)
+               if not (alpha_equal crw.crw_redex redex)
+                  or not (alpha_equal crw.crw_contractum contractum)
                then
-                  eprintf "Copy_proof: warning: cond_rewrite %s%s%t" name changed_warning eflush;
-               { crw_name = name;
-                 crw_params = params1;
-                 crw_args = args1;
-                 crw_redex = redex1;
-                 crw_contractum = contractum1;
-                 crw_proof = copy_proof proof1 proof2;
-                 crw_resources = res1;
-               }
+                  eprintf "Copy_proof: warning: cond_rewrite %s%s%t" crw.crw_name changed_warning eflush;
+               { crw with crw_proof = copy_proof crw.crw_proof proof }
           | _ ->
                crw
       )

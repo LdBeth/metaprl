@@ -291,13 +291,134 @@ struct
       let op = mk_op string_opname [make_param (String s)] in
          mk_term op [mk_bterm [] t]
 
-   (****************************************
-    * Binging                              *
-    ****************************************)
+   (*
+    * Second order variables have contexts and subterms.
+    *)
+   let is_so_var_term t =
+      let t = dest_term t in
+         match dest_op t.term_op, t.term_terms with
+            { op_name = opname; op_params = [p] }, ((_ :: _) as bterms)
+               when Opname.eq opname var_opname ->
+                  (match dest_param p with Var _ -> true | _ -> false) &&
+                  List.for_all is_simple_bterm bterms && is_xlist_term (dest_bterm (Lm_list_util.last bterms)).bterm
+          | _ -> false
 
+   let dest_so_var t =
+      let t' = dest_term t in
+         match dest_op t'.term_op, t'.term_terms with
+            { op_name = opname; op_params = [p] }, ((_ :: _) as bterms)
+               when Opname.eq opname var_opname ->
+                  begin match dest_param p with
+                     Var v -> 
+                        let bterms, conts = Lm_list_util.split_last bterms in
+                           v, List.map dest_var (dest_xlist (dest_simple_bterm conts)), List.map dest_simple_bterm bterms
+                   | _ -> REF_RAISE(RefineError ("dest_so_var", TermMatchError (t, "non-var param")))
+                  end
+          | _ ->
+            REF_RAISE(RefineError ("dest_so_var", TermMatchError (t, "not a so_var")))
+
+   let is_fso_var_term t =
+      let t = dest_term t in
+         match dest_op t.term_op, t.term_terms with
+            { op_name = opname; op_params = [p] }, []
+               when Opname.eq opname var_opname ->
+                  (match dest_param p with Var _ -> true | _ -> false)
+          | { op_name = opname; op_params = [p] }, [bt]
+               when Opname.eq opname var_opname ->
+                  (match dest_param p with Var _ -> true | _ -> false) &&
+                  is_simple_bterm bt && is_xlist_term (dest_bterm bt).bterm
+          | _ -> false
+
+   let dest_fso_var t =
+      let t' = dest_term t in
+         match dest_op t'.term_op, t'.term_terms with
+            { op_name = opname; op_params = [p] }, []
+               when Opname.eq opname var_opname ->
+                  begin match dest_param p with
+                     Var v -> v
+                   | _ -> REF_RAISE(RefineError ("dest_fso_var", TermMatchError (t, "non-var param")))
+                  end
+          | { op_name = opname; op_params = [p] }, [bt]
+               when Opname.eq opname var_opname && is_simple_bterm bt && is_xlist_term (dest_bterm bt).bterm ->
+                  begin match dest_param p with
+                     Var v -> v
+                   | _ -> REF_RAISE(RefineError ("dest_fso_var", TermMatchError (t, "non-var param")))
+                  end
+          | _ ->
+            REF_RAISE(RefineError ("dest_fso_var", TermMatchError (t, "not a FO or 0-arg SO var")))
+
+   (*
+    * Second order variable.
+    *)
+   let mk_so_var_term v conts terms =
+      let terms = terms @ [mk_xlist_term (List.map mk_var_term conts)] in
+         mk_term (mk_op var_opname [make_param(Var v)]) (List.map mk_simple_bterm terms)
+
+   (* Binging *)
    let xbind_opname = mk_opname "bind" xperv
    let is_xbind_term = is_dep1_term xbind_opname
    let mk_xbind_term = mk_dep1_term xbind_opname
+
+    (*
+    * Second order context, contains a context term, plus
+    * binding variables like so vars.
+    *)
+   let is_context_term =
+      let rec is_context_bterms = function
+         []|[_] -> 
+            false
+       | [main_term; conts] ->
+            begin match dest_bterm main_term with
+               { bvars = [_] } -> is_simple_bterm conts && is_xlist_term (dest_simple_bterm conts)
+              | _ -> false
+            end
+       | bt :: tl ->
+            is_simple_bterm bt && is_context_bterms tl
+      in fun t ->
+      let t' = dest_term t in
+         match dest_op t'.term_op with
+            { op_name = opname; op_params = [p] } when Opname.eq opname context_opname ->
+               begin match dest_param p with
+                  Var _ -> is_context_bterms t'.term_terms
+                | _ -> false
+               end
+          | _ -> false
+
+   let dest_context t =
+      let t' = dest_term t in
+         match dest_op t'.term_op with
+            { op_name = opname; op_params = [p] } when Opname.eq opname context_opname ->
+               begin match dest_param p, t'.term_terms with
+                  Var v,((_::_::_) as bts) ->
+                     let rec collect = function 
+                        [] | [_] -> REF_RAISE(RefineError ("dest_context", TermMatchError (t, "not enough subterms")))
+                      | [main_term; conts] ->
+                           begin match dest_bterm main_term with
+                              { bvars = [v']; bterm = t } ->
+                                 [], (if v=v' then t else subst1 t v' (mk_var_term v)), List.map dest_var (dest_xlist (dest_simple_bterm conts))
+                            | _ ->
+                                 REF_RAISE(RefineError ("dest_context", TermMatchError (t, "wrong bvars")))
+                           end
+                      | bt :: tl ->
+                           let args, term, conts = collect tl in
+                              (dest_simple_bterm bt) :: args, term, conts
+                     in
+                     let args, term, conts = collect bts in
+                        v, term, conts, args
+                | _ ->
+                  REF_RAISE(RefineError ("dest_context", TermMatchError (t, "not a context")))
+              end
+           | _ ->
+               REF_RAISE(RefineError ("dest_context", TermMatchError (t, "not a context")))
+
+   let mk_context_term v term conts terms =
+      let rec collect term = function
+         [] ->
+            [mk_bterm [v] term; mk_simple_bterm (mk_xlist_term (List.map mk_var_term conts))]
+       | h::t ->
+            mk_simple_bterm h :: collect term t
+      in
+         mk_term (mk_op context_opname [make_param (Var v)]) (collect term terms)
 
    (*************************
     * Sequents              *                                              *
@@ -332,7 +453,7 @@ struct
 
    let rec remove_redundant_hbs vars = function
       [] -> [], vars
-    | Context (_, ts) as hyp :: hyps ->
+    | Context (_, _, ts) as hyp :: hyps ->
          let hyps, vars = remove_redundant_hbs vars hyps in
             (hyp :: hyps), SymbolSet.union (free_vars_terms ts) vars
     | Hypothesis(t) as hyp :: hyps ->
@@ -363,14 +484,14 @@ struct
                   then new_name fake_var (SymbolSet.mem vars)
                   else fake_var
                in mk_hyp_term v t' (mk_sequent_inner_term hyps goals vars (i + 1) len)
-          | Context (v, subterms) ->
-               mk_context_term v (mk_sequent_inner_term hyps goals vars (i + 1) len) subterms
+          | Context (v, conts, subterms) ->
+               mk_context_term v (mk_sequent_inner_term hyps goals vars (i + 1) len) conts subterms
 
    let rec hyp_vars vars = function
       [] ->
          vars
-    | Context (v, ts) :: hyps ->
-         hyp_vars (SymbolSet.add (SymbolSet.union (free_vars_terms ts) vars) v) hyps
+    | Context (v, conts, ts) :: hyps ->
+         hyp_vars (SymbolSet.add (SymbolSet.add_list (SymbolSet.union (free_vars_terms ts) vars) conts) v) hyps
     | Hypothesis(t) :: hyps ->
          hyp_vars (SymbolSet.union (free_vars_set t) vars) hyps
     | HypBinding (v, t) :: hyps ->
@@ -476,8 +597,8 @@ struct
                let t, x, term = match_hyp_all explode_sequent_name t bterms in
                   collect args (HypBinding (x, t) :: hyps) concls term
             else if Opname.eq opname context_opname then
-               let name, term, args' = dest_context term in
-                  collect args (Context (name, args') :: hyps) concls term
+               let name, term, conts, args' = dest_context term in
+                  collect args (Context (name, conts, args') :: hyps) concls term
             else if Opname.eq opname concl_opname then
                if bterms = [] then
                   (*
@@ -645,30 +766,6 @@ struct
          aux 1 (goal_of_sequent t)
 
    (*
-    * See if a var is free in the rest of the sequent.
-    *)
-   let is_free_seq_var_name = "is_free_seq_var"
-   let is_free_seq_var i v t =
-      let rec aux i t =
-         if i = 0 then
-            is_var_free v t
-         else
-            let { term_op = op; term_terms = bterms } = dest_term t in
-            let opname = (dest_op op).op_name in
-               if Opname.eq opname hyp_opname then
-                  let term = match_hyp is_free_seq_var_name t bterms in
-                     aux (i - 1) term
-               else if Opname.eq opname context_opname then
-                  let term = match_context is_free_seq_var_name t bterms in
-                     aux (i - 1) term
-               else if Opname.eq opname concl_opname then
-                  REF_RAISE(RefineError (is_free_seq_var_name, TermMatchError (t, "index is not a hypothesis")))
-               else
-                  REF_RAISE(RefineError (is_free_seq_var_name, TermMatchError (t, "malformed sequent")))
-      in
-         aux i (goal_of_sequent t)
-
-   (*
     * Generate a list of sequents with replaced goals.
     *)
    let replace_concl_name = "replace_concl"
@@ -679,8 +776,8 @@ struct
             let t, x, term = match_hyp_all replace_concl_name seq bterms in
                mk_term op [mk_simple_bterm t; mk_bterm [x] (replace_concl term goal)]
          else if Opname.eq opname context_opname then
-            let name, term, args = dest_context seq in
-               mk_context_term name (replace_concl term goal) args
+            let name, term, conts, args = dest_context seq in
+               mk_context_term name (replace_concl term goal) conts args
          else if Opname.eq opname concl_opname then
             goal
          else
@@ -699,6 +796,17 @@ struct
    let is_xrewrite_term = is_dep0_dep0_term xrewrite_op
    let mk_xrewrite_term = mk_dep0_dep0_term xrewrite_op
    let dest_xrewrite = dest_dep0_dep0_term xrewrite_op
+
+   let rec free_meta_variables vars t =
+      if is_so_var_term t then
+         let v, conts, ts = dest_so_var t in
+            SymbolSet.add (List.fold_left free_meta_variables (SymbolSet.add_list vars conts) ts) v
+      else
+         List.fold_left free_meta_variables_bterm vars (dest_term t).term_terms
+
+   and free_meta_variables_bterm vars bt = free_meta_variables vars (dest_bterm bt).bterm
+
+   let free_meta_variables = free_meta_variables SymbolSet.empty
 
    (************************************************************************
     * General term destruction.

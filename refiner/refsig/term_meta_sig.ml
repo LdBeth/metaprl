@@ -55,6 +55,18 @@ sig
    val unzip_mfunction : meta_term -> (string list * term option * term) list * term
    val zip_mfunction : (term option * term) list -> term -> meta_term
    val strip_mfunction : meta_term -> meta_term
+
+   (*
+    * During parsing and display, the default contexts are "encoded"
+    * as a singleton list containing just the variable itself
+    *)
+   val term_of_parsed_term : term -> term
+   val term_of_parsed_term_with_vars : term -> term
+   val display_term_of_term : term -> term
+   val mterm_of_parsed_mterm : meta_term -> meta_term
+   val mterms_of_parsed_mterms : meta_term -> term list -> meta_term * term list * (term -> term)
+   (* finds all SO variables in a term and uses them *)
+   val context_subst_of_terms : term list -> var -> int -> var list option
 end
 
 (*

@@ -215,47 +215,17 @@ struct
    (*
     * Lists.
     *)
-   let xnil_opname = mk_opname "nil" xperv
-   let xcons_opname = mk_opname "cons" xperv
+   let xnil_opname = xnil_opname
+   let xcons_opname = xcons_opname
+   let xnil_term = xnil_term
+   let is_xlist_term = is_xlist_term
+   let dest_xlist = dest_xlist
+   let mk_xlist_term = mk_xlist_term
 
-   let xnil_term = mk_simple_term xnil_opname []
    let is_xnil_term = is_no_subterms_term xnil_opname
-
    let is_xcons_term = is_dep0_dep0_term xcons_opname
    let mk_xcons_term = mk_dep0_dep0_term xcons_opname
    let dest_xcons = dest_dep0_dep0_term xcons_opname
-
-   let rec is_xlist_term t =
-      match get_core t with
-         Term { term_op = { op_name = opname; op_params = [] };
-                term_terms = [{ bvars = []; bterm = _ }; { bvars = []; bterm = b }]
-         } -> Opname.eq opname xcons_opname
-       | Term { term_op = { op_name = opname; op_params = [] }; term_terms = [] } -> Opname.eq opname xnil_opname
-       | _ ->
-            false
-
-   let dest_xlist t =
-      let rec aux trm =
-         match dest_term trm with
-            { term_op = { op_name = opname; op_params = [] };
-              term_terms = [{ bvars = []; bterm = a };
-                            { bvars = []; bterm = b }]
-            } when Opname.eq opname xcons_opname ->
-               a::(aux b)
-          | { term_op = { op_name = opname; op_params = [] }; term_terms = [] } when Opname.eq opname xnil_opname ->
-               []
-          | _ ->
-               REF_RAISE(RefineError ("dest_xlist", TermMatchError (t, "not a list")))
-      in
-         aux t
-
-   let rec mk_xlist_term = function
-      h::t ->
-         mk_term (**)
-            { op_name = xcons_opname; op_params = [] }
-            [mk_simple_bterm h; mk_simple_bterm (mk_xlist_term t)]
-    | [] ->
-         xnil_term
 
    (*
     * Strings.
@@ -342,7 +312,7 @@ struct
 
    let rec remove_redundant_hbs vars = function
       [] -> [], vars
-    | (Context (_, ts) as hyp :: hyps) as ohyps ->
+    | (Context (_, _, ts) as hyp :: hyps) as ohyps ->
          let hyps', vars = remove_redundant_hbs vars hyps in
             (if hyps'==hyps then ohyps else hyp :: hyps'), SymbolSet.union (free_vars_terms ts) vars
     | (Hypothesis(t) as hyp :: hyps) as ohyps ->
@@ -476,37 +446,6 @@ struct
        | _ ->
             REF_RAISE(RefineError (get_decl_number_name, TermMatchError (t, "not a sequent")))
 
-   (*
-    * See if a var is free in the rest of the sequent.
-    *)
-   let is_free_seq_var_name = "Term_man_ds.is_free_seq_var"
-   let is_free_seq_var i v t =
-      match get_core t with
-         Sequent s ->
-            let hyps = s.sequent_hyps in
-            let hlen = SeqHyp.length hyps in
-            let rec is_free_hyp_var i =
-               if i = hlen then
-                  let goals = s.sequent_goals in
-                  let rec is_free_concl_var i =
-                     if i < 0 then
-                        false
-                     else
-                        is_var_free v (SeqGoal.get goals i) || is_free_concl_var (pred i)
-                  in
-                     is_free_concl_var (SeqGoal.length goals - 1)
-               else
-                  (match SeqHyp.get hyps i with
-                     HypBinding (_, t) | Hypothesis t ->
-                        is_var_free v t
-                   | Context (v,ts) ->
-                        List.exists (is_var_free v) ts)
-                  || (is_free_hyp_var (succ i))
-            in
-               is_free_hyp_var i
-       | _ ->
-            REF_RAISE(RefineError (is_free_seq_var_name, TermMatchError (t, "not a sequent")))
-
    let replace_goal_name = "Term_man_ds.replace_goal"
    let replace_goal t goal =
       match get_core t with
@@ -557,14 +496,93 @@ struct
                MatchTerm (op, params, t.term_terms)
        | FOVar v ->
             MatchTerm (["var"], [MatchVar v], [])
+       | SOVar(v,conts,terms) ->
+            MatchTerm (["var"], [MatchVar v], List.map mk_simple_bterm terms)
        | Sequent { sequent_args = args;
                    sequent_hyps = hyps;
                    sequent_goals = goals
          } ->
             MatchSequent (args, SeqHyp.to_list hyps, SeqGoal.to_list goals)
-       | Subst _
-       | Hashed _ ->
+       | Subst _ | Hashed _ ->
             fail_core "explode_term"
+
+   (*****************************************
+    * SO variables and contexts             *
+    *****************************************)
+   let is_so_var_term t = match get_core t with
+      FOVar _ | SOVar _ -> true
+    | _ -> false
+
+   let dest_so_var t = match get_core t with
+      FOVar v -> v,[],[]
+    | SOVar(v,cs,ts) -> v,cs,ts
+    | _ -> REF_RAISE(RefineError ("dest_so_var", TermMatchError (t, "not a so_var")))
+
+   let mk_so_var_term v cs ts = core_term (SOVar (v,cs,ts))
+
+   let is_fso_var_term t = match get_core t with
+      FOVar _ | SOVar (_, _, []) -> true
+    | _ -> false
+
+   let dest_fso_var t = match get_core t with
+      FOVar v | SOVar(v,_,[]) -> v
+    | _ -> REF_RAISE(RefineError ("dest_so_var", TermMatchError (t, "not a so_var")))
+
+   (*
+    * Second order context, contains a context term, plus
+    * binding variables like so vars.
+    * 
+    * XXX TODO: Eventually contexts should probably have their own
+    * choice in the core type.
+    *)
+   let is_context_term =
+      let rec is_context_bterms = function
+         []|[_] -> false
+       | [ { bvars = [_] }; { bvars = []; bterm = conts }] -> is_xlist_term conts
+       | { bvars = [] } :: tl -> is_context_bterms tl
+       | _ -> false
+      in fun t -> match get_core t with
+         Term { term_op = { op_name = opname; op_params = [Var _] };
+                term_terms = bterms
+              } -> Opname.eq opname context_opname && is_context_bterms bterms
+       | _ ->
+            false
+
+   let dest_context =
+      let rec collect v term = function
+         [ { bvars = [v']; bterm = t }; { bvars = []; bterm = conts }] ->
+            [], (if v=v' then t else subst1 t v' (mk_var_term v)), List.map dest_var (dest_xlist conts)
+       | { bvars = []; bterm = hd } :: tl ->
+            let args, t, conts = collect v term tl in hd :: args, t, conts
+       | _ ->
+            REF_RAISE(RefineError ("dest_context", TermMatchError (term, "not a context")))
+      in fun term -> match dest_term term with
+         { term_op = { op_name = opname; op_params = [Var v] };
+           term_terms = bterms
+         } when Opname.eq opname context_opname ->
+            let args, term, conts = collect v term bterms in v, term, conts, args
+       | _ ->
+            REF_RAISE(RefineError ("dest_context", TermMatchError (term, "not a context")))
+
+   let mk_context_term v term conts terms =
+      let rec collect term = function
+         [] ->
+            [mk_bterm [v] term; mk_simple_bterm (mk_xlist_term (List.map mk_var_term conts))]
+       | h::t ->
+            mk_simple_bterm h :: collect term t
+      in
+         mk_term (mk_op context_opname [Var v]) (collect term terms)
+
+   let rec free_meta_variables vars t = match get_core t with
+      FOVar _ -> vars
+    | SOVar(v, conts, ts) -> SymbolSet.add (List.fold_left free_meta_variables (SymbolSet.add_list vars conts) ts) v
+    | Term{term_terms = bts} -> List.fold_left free_meta_variables_bterm vars bts
+    | Sequent _ -> raise (Invalid_argument "Term_man_ds.free_meta_variables: sequents not supported")
+    | Hashed _ | Subst _ -> fail_core "free_meta_variables"
+
+   and free_meta_variables_bterm vars bt = free_meta_variables vars bt.bterm
+
+   let free_meta_variables = free_meta_variables SymbolSet.empty
 
    (************************************************************************
     * Rewrite rules                                                        *

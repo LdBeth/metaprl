@@ -107,7 +107,7 @@ sig
    type hypothesis =
       HypBinding of var * term
     | Hypothesis of term
-    | Context of var * term list
+    | Context of var * var list * term list
 
    type seq_hyps = hypothesis SEQ_SET.linear_set
    type seq_goals = term SEQ_SET.linear_set
@@ -215,14 +215,6 @@ sig
    val dest_var : term -> var
    val mk_var_term : var -> term
 
-   val is_so_var_term : term -> bool
-   val dest_so_var : term -> var * term list
-   val mk_so_var_term : var -> term list -> term
-
-   val is_context_term : term -> bool
-   val dest_context : term -> var * term * term list
-   val mk_context_term : var -> term -> term list -> term
-
    (*
     * Simple terms have no paramaters and
     * all subterms have no binding vars.
@@ -233,6 +225,7 @@ sig
    val is_simple_term_opname : opname -> term -> bool
    val dest_simple_term_opname : opname -> term -> term list
 
+   val is_simple_bterm : bound_term -> bool
    val mk_simple_bterm : term -> bound_term
    val dest_simple_bterm : bound_term -> term
 

@@ -61,10 +61,11 @@ val get_term : int -> term
  * TOPLOOP FUNCTIONS                    *
  ****************************************)
 
-(*
- * This is the opname function used when terms are built.
- *)
+(* This is the opname function used when terms are built. *)
 val set_mk_opname : t -> opname_fun option -> unit
+
+(* Scan (lazily) terms for SO variable contexts and use that for SO var parsing *)
+val set_so_var_context : t -> term list option -> unit
 
 (*
  * Set the current module.

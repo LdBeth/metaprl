@@ -125,24 +125,6 @@ let raise_spelling_error () =
       end
 
 (*
- * Grammars to extend.
- *)
-module type TermGrammarSig =
-sig
-   val mk_opname : MLast.loc -> string list -> shape_param list -> int list -> opname
-   val term_eoi : term Grammar.Entry.e
-   val term : term Grammar.Entry.e
-   val quote_term : quote_term Grammar.Entry.e
-   val mterm : meta_term Grammar.Entry.e
-   val bmterm : meta_term Grammar.Entry.e
-   val singleterm : aterm Grammar.Entry.e
-   val applytermlist : (term list) Grammar.Entry.e
-   val bound_term : aterm Grammar.Entry.e
-   val xdform : term Grammar.Entry.e
-   val term_con_eoi : (term, MLast.expr) term_constructor Grammar.Entry.e
-end
-
-(*
  * Build the grammar.
  *)
 module MakeTermGrammar (TermGrammar : TermGrammarSig) =
@@ -344,6 +326,9 @@ struct
       in
          List.map check l
 
+   let get_var_contexts loc v terms =
+      match mk_var_contexts loc v (List.length terms) with Some conts -> conts | None -> [v]
+
    (************************************************************************
     * QUOTATIONS                                                           *
     ************************************************************************)
@@ -494,7 +479,7 @@ struct
     ************************************************************************)
 
    EXTEND
-      GLOBAL: term_eoi term quote_term mterm bmterm singleterm applytermlist bound_term xdform term_con_eoi;
+      GLOBAL: term_eoi parsed_term quote_term mterm bmterm singleterm applytermlist parsed_bound_term xdform term_con_eoi;
 
       (*
        * Meta-terms include meta arrows.
@@ -604,6 +589,11 @@ struct
        *)
       term_eoi: [[ x = term; EOI -> x ]];
 
+      parsed_term: [[ t = term -> term_of_parsed_term t ]];
+
+      parsed_bound_term:
+         [[ t = bound_term -> { t with aterm = term_of_parsed_term t.aterm } ]];
+
       term:
          [[ x = aterm ->
                x.aterm
@@ -628,10 +618,10 @@ struct
            "ite" LEFTA
             [ "if"; e1 = noncommaterm; "then"; e2 = noncommaterm; "else"; e3 = noncommaterm ->
                { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc "ifthenelse") e1.aterm e2.aterm e3.aterm }
-            | "let"; x = word_or_string; sl_equal; e1 = applyterm; "in"; e2 = noncommaterm ->
-               { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") (Lm_symbol.add x) e1.aterm e2.aterm }
-            | e2 = noncommaterm; "where";  x = word_or_string; sl_equal; e1 = noncommaterm ->
-               { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") (Lm_symbol.add x) e1.aterm e2.aterm }
+            | "let"; x = var; sl_equal; e1 = applyterm; "in"; e2 = noncommaterm ->
+               { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") x e1.aterm e2.aterm }
+            | e2 = noncommaterm; "where";  x = var; sl_equal; e1 = noncommaterm ->
+               { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") x e1.aterm e2.aterm }
             | "open";  e1 =  applyterm; "in"; e2 = noncommaterm ->
                { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") (Lm_symbol.add "self") e1.aterm e2.aterm }
             ]
@@ -651,14 +641,14 @@ struct
             ]
           | "quantify" LEFTA
             [ (* all/exists*)
-               op = sl_quantify; v = word_or_string; sl_colon; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
-                  { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) (Lm_symbol.add v) t1.aterm t2.aterm }
+               op = sl_quantify; v = var; sl_colon; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
+                  { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) v t1.aterm t2.aterm }
             |(* dall/dexists*)
-               op = sl_quantify; v = word_or_string; sl_set_in; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
-                  { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc  ("d"^op)) (Lm_symbol.add v) t1.aterm t2.aterm }
+               op = sl_quantify; v = var; sl_set_in; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
+                  { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc  ("d"^op)) v t1.aterm t2.aterm }
             |(* sall/sexists*)
-              op = sl_quantify; v = word_or_string; sl_period; t2 = noncommaterm ->
-                  { aname = None; aterm = mk_dep1_term (mk_dep1_opname loc ("s"^op)) (Lm_symbol.add v) t2.aterm }
+              op = sl_quantify; v = var; sl_period; t2 = noncommaterm ->
+                  { aname = None; aterm = mk_dep1_term (mk_dep1_opname loc ("s"^op)) v t2.aterm }
             |(* thereis/forall *)
               op = sl_open_quantify; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
                   { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) (Lm_symbol.add "self") t1.aterm t2.aterm }
@@ -733,14 +723,14 @@ struct
             ]
           | "isect" RIGHTA
             [ (* Isect x: A. B[x], Union x:A. B[x]  - intersection, union of family of types *)
-               op = sl_Isect; v = word_or_string; sl_colon; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
-                        { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) (Lm_symbol.add v) t1.aterm t2.aterm }
+               op = sl_Isect; v = var; sl_colon; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
+                        { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) v t1.aterm t2.aterm }
              | (* A union B, A isect B, x: A isect B[x]  - binary union, intersection and dependent intersection *)
                t1 = noncommaterm; op = sl_isect; t2 = noncommaterm ->
                mk_type_term loc op t1 t2
              |(* quot x,y: t1 // t2  - quotient type *)
-               op = sl_quotient; x = word_or_string; sl_comma; y = word_or_string; sl_colon; t1 = noncommaterm; sl_double_slash; t2 = noncommaterm ->
-               { aname = None; aterm = mk_dep0_dep2_term (mk_dep0_dep2_opname loc op) (Lm_symbol.add x) (Lm_symbol.add y) t1.aterm t2.aterm }
+               op = sl_quotient; x = var; sl_comma; y = var; sl_colon; t1 = noncommaterm; sl_double_slash; t2 = noncommaterm ->
+               { aname = None; aterm = mk_dep0_dep2_term (mk_dep0_dep2_opname loc op) x y t1.aterm t2.aterm }
             ]
           | "plus" RIGHTA
             [  (* t1 +[g] t2  - algebraic plus *)
@@ -955,12 +945,11 @@ struct
                      aterm = r0
                    }
              (* sets {x:A | P[x]} *)
-           | sl_open_curly; v =  word_or_string; sl_colon; ty = aterm; sl_pipe; b = aterm; sl_close_curly ->
+           | sl_open_curly; v = word_or_string; sl_colon; ty = aterm; sl_pipe; b = aterm; sl_close_curly ->
              { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc "set") (Lm_symbol.add v) ty.aterm b.aterm }
              (* very dependent functions {f | x:A -> B[x]} *)
            | sl_open_curly; f =  word_or_string; sl_pipe; t = aterm; sl_close_curly ->
-             let f = Lm_symbol.add f in
-             let t = t.aterm in
+             let t = t.aterm in let f = Lm_symbol.add f in
              let rfun_op = mk_dep0_dep2_opname loc "rfun" in
              let t' =
                 if is_dep0_dep1_term (mk_dep0_dep1_opname loc "fun") t then
@@ -975,11 +964,17 @@ struct
                 { aname = None; aterm = t' }
           ]];
 
+      var: [[ v = word_or_string -> Lm_symbol.add v ]];
+
       varterm:
-         [[ sl_single_quote; v = word_or_string ->
-             mk_var_term (Lm_symbol.add v)
-           | sl_single_quote; v = word_or_string; sl_open_brack; terms = opttermlist; sl_close_brack ->
-             mk_so_var_term (Lm_symbol.add v) terms
+         [[ sl_single_quote; v = var ->
+             begin match mk_var_contexts loc v 0 with Some conts -> mk_so_var_term v conts [] | None -> mk_var_term v end
+           | sl_single_quote; v = var; sl_contexts_left; conts = LIST0 var SEP ";"; sl_contexts_right ->
+               mk_so_var_term v conts []
+           | sl_single_quote; v = var; sl_contexts_left; conts = LIST0 var SEP ";"; sl_contexts_right; sl_open_brack; terms = opttermlist; sl_close_brack ->
+               mk_so_var_term v conts terms
+           | sl_single_quote; v = var; sl_open_brack; terms = opttermlist; sl_close_brack ->
+               mk_so_var_term v (get_var_contexts loc v terms) terms
           ]];
 
       quote_term:
@@ -1134,8 +1129,9 @@ struct
           ]];
 
       hyp:
-         [[ "<"; name = word_or_string; args=optbrtermlist; ">" ->
-             Context(Lm_symbol.add name, args)
+         [[ "<"; name = var; conts = OPT contslist; args=optbrtermlist; ">" ->
+             let conts = match conts with Some conts -> conts | None -> get_var_contexts loc name args in
+             Context(name, conts, args)
           | v = word_or_string; rest = hyp_suffix ->
               rest v
           | t = aterm ->
@@ -1150,6 +1146,8 @@ struct
           | ->
                fun op -> Hypothesis (mk_term (mk_op (mk_opname loc [op] [] []) []) [])
           ]];
+
+      contslist: [[ sl_contexts_left; vl = LIST0 var SEP ";" ; sl_contexts_right -> vl ]];
 
       optbrtermlist:
          [[ tl = OPT brtermlist ->
@@ -1172,7 +1170,7 @@ struct
 
       df_item:
          [[ t = singleterm ->
-             t.aterm
+             term_of_parsed_term t.aterm
            | sl_back_quote; name = STRING ->
              mk_xstring_term (Token.eval_string name)
           ]];
@@ -1312,6 +1310,9 @@ struct
 
 
       (* Terminals *)
+      sl_contexts_left: [[ "<|" -> () ]];
+      sl_contexts_right: [[ "|>" -> () ]];
+      
       sl_meta_left_right_arrow:
          [[ "<-->" -> () ]];
 

@@ -64,12 +64,12 @@ struct
    type hypothesis_header =
       Hypothesis of term_index
     | HypBinding of var * term_index
-    | Context of var * term_index list
+    | Context of var * var list * term_index list
 
    type hypothesis_weak_header =
       Hypothesis_weak of TType.term WM.weak_descriptor
     | HypBinding_weak of var * TType.term WM.weak_descriptor
-    | Context_weak of var * TType.term WM.weak_descriptor list
+    | Context_weak of var * var list * TType.term WM.weak_descriptor list
 
    type bound_term_header =
       { bvars: var list;
@@ -108,10 +108,14 @@ struct
    type term_header =
       Term of true_term_header
     | Seq of seq_header
+    | FOVar of var
+    | SOVar of var * var list * term_index list
 
    type term_weak_header =
       Term_weak of true_term_weak_header
     | Seq_weak of seq_weak_header
+    | FOVar_weak of var
+    | SOVar_weak of var * var list * TType.term WM.weak_descriptor list
 
    type meta_term_header =
       MetaTheorem of term_index
@@ -157,7 +161,7 @@ struct
       match hyp with
          Hypothesis t -> Hypothesis_weak (WM.weaken t)
        | HypBinding (v, t) -> HypBinding_weak (v, WM.weaken t)
-       | Context (v, trms) -> Context_weak (v, List.map WM.weaken trms)
+       | Context (v, conts, trms) -> Context_weak (v, conts, List.map WM.weaken trms)
 
    let weak_hyp_header' = weak_hyp_header ()
 
@@ -176,6 +180,8 @@ struct
                        seq_goals_weak = List.map WM.weaken goals
             }
        | Term th -> Term_weak (weak_tterm_header' th)
+       | FOVar v -> FOVar_weak v
+       | SOVar (v, conts, trms) -> SOVar_weak (v, conts, List.map WM.weaken trms)
 
    let weak_meta_term_header _ mt =
       match mt with
@@ -210,7 +216,7 @@ struct
       match hyp1, hyp2 with
          Hypothesis_weak t1,       Hypothesis_weak t2        ->            t1 == t2
        | HypBinding_weak (v1,t1),  HypBinding_weak (v2,t2)   -> v1 = v2 && t1 == t2
-       | Context_weak    (v1,ts1), Context_weak    (v2,ts2)  -> v1 = v2 && list_mem_eq ts1 ts2
+       | Context_weak    (v1,conts1,ts1), Context_weak    (v2,conts2,ts2)  -> v1 = v2 && conts1 = conts2 && list_mem_eq ts1 ts2
        | _ -> false
 
    let compare_tterm_header
@@ -227,6 +233,8 @@ struct
             (arg1 == arg2)
             && list_compare (compare_hyp_header) hyp1 hyp2
             && list_mem_eq goal1 goal2
+       | FOVar_weak v1, FOVar_weak v2 -> v1 = v2
+       | SOVar_weak (v1,conts1,ts1), SOVar_weak (v2,conts2,ts2)  -> v1 = v2 && conts1 = conts2 && list_mem_eq ts1 ts2
        | _ -> false
 
    let compare_meta_term_header mt_a mt_b =
@@ -265,7 +273,7 @@ struct
       match hyp with
          Hypothesis t -> TType.Hypothesis (WM.retrieve info.term_hash info t)
        | HypBinding (v, t) -> TType.HypBinding (v, WM.retrieve info.term_hash info t)
-       | Context (v, trms) -> TType.Context (v, List.map (WM.retrieve info.term_hash info) trms)
+       | Context (v, conts, trms) -> TType.Context (v, conts, List.map (WM.retrieve info.term_hash info) trms)
 
    let p_constr_tterm info { op_name = op; op_params = params; term_terms = bterms } =
       TTerm.make_term
@@ -281,6 +289,8 @@ struct
               TType.sequent_goals = TTerm.SeqGoal.of_list (List.map (WM.retrieve info.term_hash info) goals)
             }
        | Term th -> p_constr_tterm info th
+       | FOVar v -> TTerm.mk_var_term v
+       | SOVar (v, conts, trms) -> ToTerm.TermMan.mk_so_var_term v conts (List.map (WM.retrieve info.term_hash info) trms)
 
    let p_constr_meta_term info mt =
       match mt with
@@ -399,8 +409,8 @@ struct
             HashedTerm.equal t1 t2
        | HypBinding (v1,t1), HypBinding (v2,t2) ->
             v1=v2 && HashedTerm.equal t1 t2
-       | Context (v1, ts1), Context (v2, ts2) ->
-            v1=v2 && Lm_list_util.for_all2 HashedTerm.equal ts1 ts2
+       | Context (v1, conts1, ts1), Context (v2, conts2, ts2) ->
+            v1=v2 && conts1 = conts2 && Lm_list_util.for_all2 HashedTerm.equal ts1 ts2
        | _ -> false
 
       let hash = function
@@ -408,8 +418,8 @@ struct
             (65599 * (HashedTerm.hash t)) land 0x3FFFFFFF
        | HypBinding (v,t) ->
             ((Hashtbl.hash v) + (65599 * (HashedTerm.hash t))) land 0x3FFFFFFF
-       | Context (v,ts) ->
-            ((Hashtbl.hash v) * 65599 + Hashtbl.hash (List.map HashedTerm.hash ts)) land 0x3FFFFFFF
+       | Context (v,conts,ts) ->
+            (((Hashtbl.hash v) + (Hashtbl.hash conts)) * 65599 + Hashtbl.hash (List.map HashedTerm.hash ts)) land 0x3FFFFFFF
    end
 
    module HashHyp = Hashtbl.Make (HashedHyp)

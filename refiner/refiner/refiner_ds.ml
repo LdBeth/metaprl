@@ -40,11 +40,11 @@ struct
    module Term = Term_base_ds.Term (RefineError)
    module TermOp = Term_op_ds.TermOp (Term) (RefineError)
    module TermSubst = Term_subst_ds.TermSubst (Term) (RefineError)
-   module TermAddr = Term_addr_ds.TermAddr (Term) (TermOp) (RefineError)
    module TermMan = Term_man_ds.TermMan (Term) (TermOp) (TermSubst) (RefineError)
-   module TermShape = Term_shape_gen.TermShape (TermType) (Term)
+   module TermAddr = Term_addr_ds.TermAddr (Term) (TermSubst) (TermOp) (TermMan) (RefineError)
+   module TermShape = Term_shape_gen.TermShape (TermType) (Term) (TermMan)
    module TermEval = Term_eval_ds.TermEval (Term) (RefineError)
-   module TermMeta = Term_meta_gen.TermMeta (TermType) (Term) (TermSubst) (RefineError)
+   module TermMeta = Term_meta_gen.TermMeta (TermType) (Term) (TermSubst) (TermMan) (RefineError)
    module Rewrite = Rewrite.Rewrite (TermType) (Term) (TermMan) (TermAddr) (TermSubst) (RefineError)
    module Refine = Refine.Refine (TermType) (Term) (TermMan) (TermSubst) (TermAddr) (TermMeta) (TermShape) (Rewrite) (RefineError)
    module TermMod = struct
@@ -52,6 +52,7 @@ struct
       module Term = Term
       module TermSubst = TermSubst
       module TermMan = TermMan
+      module TermMeta = TermMeta (* XXX HACK: TermMan is here only for ASCII IO format versions <= 1.0.7 support *)
       module Refine = Refine
    end
    module TermHash = Term_hash.TermHash (TermMod)

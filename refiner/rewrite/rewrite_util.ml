@@ -124,12 +124,12 @@ struct
     * Upgrade a second-order instance to a pattern
     *)
    let rec rstack_upgrade v = function
-      (SOVarInstance (v', i))::t when v' = v ->
-         (SOVarPattern (v, i))::t
-    | ((SOVarPattern (v', _))::t as stack) when v' = v ->
+      (SOVarInstance (v', conts, i))::t when Lm_symbol.eq v' v ->
+         (SOVarPattern (v, conts, i))::t
+    | ((SOVarPattern (v', _, _))::t as stack) when Lm_symbol.eq v' v ->
          stack
-    | (FOVarPattern v')::t when v' = v ->
-         (SOVarPattern (v, 0))::t
+    | (FOVarPattern v')::t when Lm_symbol.eq v' v ->
+         (SOVarPattern (v, [], 0))::t
     | h::t ->
          h::(rstack_upgrade v t)
     | [] ->
@@ -138,51 +138,55 @@ struct
    (*
     * Check the arity of a variable.
     *)
-   let check_arity v arity = function
+   let check_arity v conts arity = function
       FOVarPattern _ ->
+         if conts <> [] then
+            REF_RAISE(RefineError ("Rewrite_util.check_arity", StringVarError("bound contexts mismatch", v)));
          if arity <> 0 then
             REF_RAISE(RefineError ("Rewrite_util.check_arity", RewriteSOVarArity v))
-    | SOVarPattern  (_, i)
-    | SOVarInstance (_, i) ->
+    | SOVarPattern  (_, conts', i)
+    | SOVarInstance (_, conts', i) ->
+         if conts <> conts' then
+            REF_RAISE(RefineError ("Rewrite_util.check_arity", StringVarError("bound contexts mismatch", v)));
          if arity <> i then
             REF_RAISE(RefineError ("Rewrite_util.check_arity", RewriteSOVarArity v))
     | _ ->
          REF_RAISE(RefineError ("Rewrite_util.check_arity", RewriteSOVarArity v))
          
-   let rec rstack_check_arity v arity = function
+   let rec rstack_check_arity v conts arity = function
       [] ->
          raise (Invalid_argument "Rewrite_util.rstack_check_arity")
-    | ((FOVarPattern v' | SOVarPattern (v', _) | SOVarInstance (v', _) | FOVar v' | CVar v' | PVar (v', _)) as h) :: t ->
-         if v' = v then check_arity v arity h else rstack_check_arity v arity t
+    | ((FOVarPattern v' | SOVarPattern (v', _, _) | SOVarInstance (v', _, _) | FOVar v' | CVar v' | PVar (v', _)) as h) :: t ->
+         if Lm_symbol.eq v' v then check_arity v conts arity h else rstack_check_arity v conts arity t
 
    (*
     * Membership functions.
     *)
    let rstack_var = function
       FOVarPattern v
-    | SOVarPattern (v, _)
-    | SOVarInstance (v, _)
+    | SOVarPattern (v, _, _)
+    | SOVarInstance (v, _, _)
     | FOVar v
     | CVar v
     | PVar (v, _) ->
          v
 
    let rstack_mem_prop v rs =
-      rstack_var (rs) = v
+      Lm_symbol.eq (rstack_var rs) v
 
    let rstack_so_mem_prop v = function
       FOVarPattern v'
-    | SOVarPattern (v', _)
-    | SOVarInstance (v', _) ->
-         v = v'
+    | SOVarPattern (v', _, _)
+    | SOVarInstance (v', _, _) ->
+         Lm_symbol.eq v v'
     | _ -> false
 
    let rstack_pattern_mem_prop v = function
-      FOVarPattern v' | SOVarPattern (v', _) -> v = v'
+      FOVarPattern v' | SOVarPattern (v', _, _) -> Lm_symbol.eq v v'
     | _ -> false
 
    let rstack_fo_mem_prop v = function
-      FOVar v' -> v = v'
+      FOVar v' -> Lm_symbol.eq v v'
     | _ -> false
 
    let rstack_p_mem_prop shape v = function
@@ -190,7 +194,7 @@ struct
     | _ -> false
 
    let rstack_c_mem_prop v = function
-      CVar v' -> v = v'
+      CVar v' -> Lm_symbol.eq v v'
     | _ -> false
 
    let rstack_mem v = List.exists (rstack_mem_prop v)

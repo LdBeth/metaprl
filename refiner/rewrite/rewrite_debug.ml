@@ -146,16 +146,19 @@ struct
          fprintf out "Stack: %d%t" (Array.length stack) eflush;
          Array.iter print_item stack
 
+   let string_of_conts conts =
+      String.concat "," (List.map string_of_symbol conts)
+
    (*
     * Redex stack names.
     *)
    let rstack_item_str = function
       FOVarPattern v ->
          "FOVarPattern " ^ string_of_symbol v
-    | SOVarPattern (v, i) ->
-         sprintf "SOVarPattern %s[%d]" (string_of_symbol v) i
-    | SOVarInstance (v, i) ->
-         sprintf "SOVarInstance %s[%d]" (string_of_symbol v) i
+    | SOVarPattern (v, conts, i) ->
+         sprintf "SOVarPattern %s<%s>[%d]" (string_of_conts conts) (string_of_symbol v) i
+    | SOVarInstance (v, conts, i) ->
+         sprintf "SOVarInstance %s<%s>[%d]" (string_of_conts conts) (string_of_symbol v) i
     | FOVar v ->
          "FOVar " ^ (string_of_symbol v)
     | CVar v ->
@@ -285,8 +288,8 @@ struct
                i
                (print_prog (tabstop + 3)) t
                (print_prog_list (tabstop + 3)) tl
-       | RWFreeVars (t,il) ->
-            fprintf out "RWFreeVars [%a]\n%a" print_int_list il (print_prog (tabstop+3)) t
+       | RWFreeVars (t,il1,il2) ->
+            fprintf out "RWFreeVars <%a> [%a]\n%a" print_int_list il1 print_int_list il2 (print_prog (tabstop+3)) t
        | RWCheckVar i ->
             fprintf out "RWCheckVar %d\n" i
        | RWStackVar i ->
@@ -322,9 +325,9 @@ struct
        | RWSeqHyp t ->
             fprintf out "RWSeqHyp: \n%a" (**)
                (print_prog (tabstop + 3)) t
-       | RWSeqFreeVarsContext (il', i, j, il) ->
-            fprintf out "RWSeqFreeVarsContext (%a: %d, %d, [%a])\n"
-               print_int_list il' i j print_int_list il
+       | RWSeqFreeVarsContext (ilc, ilv, i, j, il) ->
+            fprintf out "RWSeqFreeVarsContext (<%a>%a): %d, %d, [%a]\n"
+               print_int_list ilc print_int_list ilv i j print_int_list il
 
    and print_seq_prog tabstop out items =
       List.iter (print_seq_prog_item tabstop out) items

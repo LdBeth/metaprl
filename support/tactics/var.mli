@@ -36,6 +36,7 @@ open Refiner.Refiner.Term
 (* Generate a new var different from any in the list *)
 val new_var           : var -> var list -> var
 val maybe_new_var     : var -> var list -> var
+val maybe_new_var_set : var -> SymbolSet.t -> var
 val maybe_new_vars    : var list -> var list -> var list
 val maybe_new_var_arg : tactic_arg -> var -> var
 

@@ -212,6 +212,23 @@ struct
          format_char buf ']';
          format_popm buf
 
+   (* Bound contexts list *)
+   let rec format_contexts buf conts =
+      format_pushm buf 1;
+      format_string buf "<|";
+      format_contextlist buf conts;
+      format_string buf "|>";
+      format_popm buf
+
+   and format_contextlist buf = function
+      [] -> ()
+    | [v] -> format_quoted_var buf v
+    | v::vs ->
+         format_quoted_var buf v;
+         format_string buf ";";
+         format_space buf;
+         format_contextlist buf vs
+
    (* Print a single bterm *)
    let rec format_bterm buf bterm =
       if !debug_simple_print then
@@ -260,43 +277,21 @@ struct
    and format_term buf term =
       if !debug_simple_print then
          eprintf "Simple_print.format_term%t" eflush;
-      if is_so_var_term term then
-         let _ =
-            if !debug_simple_print then
-               eprintf "Simple_print.format_term: got a variable%t" eflush
-         in
-         let v, subterms = dest_so_var term in
-         let rec format_termlist = function
-            [] -> ()
-          | [h] -> format_term buf h
-          | h::t ->
-               format_term buf h;
-               format_char buf ';';
-               format_space buf;
-               format_termlist t
-         in
-         let format_terms = function
-            [] -> ()
-          | _::_ as subterms ->
-               format_string buf "[";
-               format_pushm buf 0;
-               format_termlist subterms;
-               format_string buf "]";
-               format_popm buf
-         in
+      if is_var_term term then begin
+          format_char buf '\'';
+          format_quoted_var buf (dest_var term)
+      end else if is_so_var_term term then begin
+         if !debug_simple_print then
+            eprintf "Simple_print.format_term: got a variable%t" eflush;
+         let v, conts, subterms = dest_so_var term in
             if !debug_simple_print then
                eprintf "Simple_print.format_term: var: %a%t" print_symbol v eflush;
-            if subterms = [] then
-               format_char buf '\'';
             format_quoted_var buf v;
-            if !debug_simple_print then
-               eprintf "Simple_print.format_terms%t" eflush;
-            format_terms subterms
-      else if is_sequent_term term then
-         let _ =
-            if !debug_simple_print then
-               eprintf "Simple_print.format_term: got a sequent%t" eflush
-         in
+            if conts <> [v] then format_contexts buf conts;
+            format_terms buf subterms
+      end else if is_sequent_term term then begin
+         if !debug_simple_print then
+            eprintf "Simple_print.format_term: got a sequent%t" eflush;
          let seq = explode_sequent term in
          let hyps = seq.sequent_hyps in
          let len = SeqHyp.length hyps in
@@ -322,10 +317,11 @@ struct
                            format_term buf t;
                            format_popm buf
                         end
-                   | Context (v,ts) ->
+                   | Context (v,conts,ts) ->
                         begin
                            format_string buf ("<" ^ (string_of_symbol v));
-                           format_termlist buf ts;
+                           if conts <> [v] then format_contexts buf conts;
+                           format_terms buf ts;
                            format_string buf (">");
                         end
                end;
@@ -355,12 +351,10 @@ struct
             format_pushm buf 5;
             format_goals 0;
             format_popm buf
-      else
+      end else begin
          (* Standard term *)
-         let _ =
-            if !debug_simple_print then
-               eprintf "Simple_print.format_term: regular term%t" eflush
-         in
+         if !debug_simple_print then
+            eprintf "Simple_print.format_term: regular term%t" eflush;
          let { term_op = op; term_terms = bterms } = dest_term term in
          let { op_name = name; op_params = params } = dest_op op in
             if !debug_simple_print then
@@ -370,25 +364,28 @@ struct
             format_params buf params;
             format_bterms buf bterms;
             format_popm buf
+      end
 
    (*
     * List of terms.
     *)
-   and format_termlist buf l =
-      let rec aux = function
-         [] -> ()
-       | [h] -> format_term buf h
-       | h::t ->
-            format_term buf h;
-            format_string buf ";";
-            format_space buf;
-            aux t
-      in
+   and format_terms buf = function
+      [] -> ()
+    | _::_ as subterms ->
          format_pushm buf 1;
          format_string buf "[";
-         aux l;
+         format_termlist buf subterms;
          format_string buf "]";
          format_popm buf
+   
+   and format_termlist buf = function
+      [] -> ()
+    | [h] -> format_term buf h
+    | h::t ->
+         format_term buf h;
+         format_string buf ";";
+         format_space buf;
+         format_termlist buf t
 
    (*
     * MetaTerms.

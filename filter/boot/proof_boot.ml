@@ -1773,9 +1773,8 @@ struct
          } ->
             let t = goal_ext goal in
             let new_goal =
-               try Filter_exn.print dforms (fun () -> snd (TacticInternal.refine (tac ()) t)) () with
-                  RefineError _ ->
-                     goal
+               try Filter_exn.print dforms (fun () -> snd (TacticInternal.refine (tac ()) t)) ()
+               with _ -> goal
             in
             let leaves = leaves_ext new_goal in
             let subgoals, extras = update_subgoals leaves subgoals extras in

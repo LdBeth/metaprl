@@ -172,6 +172,9 @@ let rec edit pack parse_arg name window obj =
           | Interactive ped ->
                Proof_edit.format window ped
    in
+   let edit_get_terms () =
+      obj.rule_goal :: obj.rule_assums
+   in
    let edit_set_goal t =
       obj.rule_goal <- t;
       update_ped ()
@@ -291,6 +294,7 @@ let rec edit pack parse_arg name window obj =
    in
       { edit_display = edit_display;
         edit_get_contents = edit_get_contents;
+        edit_get_terms = edit_get_terms;
         edit_copy = edit_copy;
         edit_set_goal = edit_set_goal;
         edit_set_redex = edit_set_redex;

@@ -324,20 +324,8 @@ let rec edit pack_info parse_arg window =
    let edit_copy () =
       edit pack_info parse_arg (new_window window)
    in
-   let edit_set_goal goal =
-      raise_edit_error "no goal"
-   in
-   let edit_set_redex redex =
-      raise_edit_error "no redex"
-   in
-   let edit_set_contractum contractum =
-      raise_edit_error "no contractum"
-   in
-   let edit_set_assumptions assum =
-      raise_edit_error "no assumptions"
-   in
-   let edit_set_params params =
-      raise_edit_error "no params"
+   let not_a_rule _ =
+      raise_edit_error "this is not a rule or rewrite"
    in
    let edit_save () =
       Package.save pack_info
@@ -380,12 +368,13 @@ let rec edit pack_info parse_arg window =
    in
       { edit_display = edit_display;
         edit_get_contents = edit_get_contents;
+        edit_get_terms = not_a_rule;
         edit_copy = edit_copy;
-        edit_set_goal = edit_set_goal;
-        edit_set_redex = edit_set_redex;
-        edit_set_contractum = edit_set_contractum;
-        edit_set_assumptions = edit_set_assumptions;
-        edit_set_params = edit_set_params;
+        edit_set_goal = not_a_rule;
+        edit_set_redex = not_a_rule;
+        edit_set_contractum = not_a_rule;
+        edit_set_assumptions = not_a_rule;
+        edit_set_params = not_a_rule;
         edit_save = edit_save;
         edit_check = edit_check;
         edit_expand = edit_expand;

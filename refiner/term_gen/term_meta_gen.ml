@@ -35,21 +35,36 @@ INCLUDE "refine_error.mlh"
 open Refine_error_sig
 open Term_sig
 open Term_base_sig
+open Term_man_sig
 open Term_meta_sig
 open Term_subst_sig
+
+open Lm_symbol
 
 module TermMeta (**)
    (TermType : TermSig)
    (Term : TermBaseSig
-    with type term = TermType.term)
+    with type term = TermType.term
+    with type term' = TermType.term'
+    with type bound_term = TermType.bound_term
+    with type bound_term' = TermType.bound_term'
+    with type operator = TermType.operator
+    with type hypothesis = TermType.hypothesis
+    with type seq_hyps = TermType.seq_hyps
+    with type seq_goals = TermType.seq_goals)
    (TermSubst : TermSubstSig
     with type term = TermType.term)
+   (TermMan : TermManSig
+    with type term = TermType.term
+    with type esequent = TermType.esequent)
    (RefineError : RefineErrorSig
     with type term = TermType.term
     with type meta_term = TermType.meta_term) =
 struct
    open TermType
    open Term
+   open TermMan
+   open TermSubst
    open RefineError
 
    (************************************************************************
@@ -209,6 +224,181 @@ struct
       try meta_for_all2 TermSubst.alpha_equal t1 t2 with
          Failure "meta_for_all2" ->
             false
+
+   (************************************************************************
+    * BOUND CONTEXTS "MAGIC"                                               *
+    ************************************************************************)
+
+   (* 
+    * Go down the term, mapping the context bindings
+    * f knows how to map contexts; f' knows what to do with free FO variables
+    *)
+   let convert_contexts f f' =
+      let rec convert_term bvars fvars bconts t =
+         if is_var_term t then
+            let v = dest_var t in if SymbolSet.mem fvars v then f' t v bconts else t
+         else if is_so_var_term t then
+            let v,conts,terms = dest_so_var t in
+            if SymbolSet.mem bvars v then
+               if terms = [] then mk_var_term v else
+                  (* raise Invalid_argument *)
+               begin
+                  Printf.eprintf "warning : bound SO var parsed%t" Lm_debug.eflush;
+                  t
+               end
+            else
+               let conts' = f bconts v conts in
+               let terms' = Lm_list_util.smap (convert_term bvars fvars bconts) terms in
+               if conts' == conts && terms == terms' then t else mk_so_var_term v conts' terms'
+          else if is_context_term t then
+            let v,ct,conts,terms = dest_context t in
+            let ct' = convert_term bvars fvars (v::bconts) ct in
+            let conts' = f bconts v conts in
+            let terms' = Lm_list_util.smap (convert_term bvars fvars bconts) terms in
+            if ct == ct && conts' == conts && terms == terms' then t else mk_context_term v ct' conts' terms'
+          else if is_sequent_term t then
+            let eseq = explode_sequent t in
+            let arg' = convert_term bvars fvars bconts eseq.sequent_args in
+            let hyps = SeqHyp.to_list eseq.sequent_hyps in
+            let goals = SeqGoal.to_list eseq.sequent_goals in
+            let hyps', goals' = convert_hyps bvars fvars bconts goals hyps in
+            if arg' == eseq.sequent_args && hyps' == hyps && goals' == goals then t
+            else mk_sequent_term {
+               sequent_args = arg'; sequent_hyps = SeqHyp.of_list hyps'; sequent_goals = SeqGoal.of_list goals'
+            }
+         else
+            let t' = dest_term t in
+            let bts' = Lm_list_util.smap (convert_bterm bvars fvars bconts) t'.term_terms in
+            if bts' == t'.term_terms then t else mk_term t'.term_op bts'
+
+      and convert_bterm bvars fvars bconts bt =
+         let bt' = dest_bterm bt in
+         let t' = convert_term (SymbolSet.add_list bvars bt'.bvars)(SymbolSet.subtract_list fvars bt'.bvars) bconts bt'.bterm in
+         if t' == bt'.bterm then bt else mk_bterm bt'.bvars t'
+
+      and convert_hyps bvars fvars bconts goals = function
+         [] -> [], Lm_list_util.smap (convert_term bvars fvars bconts) goals
+       | ((Hypothesis t) as hd :: tl) as hyps ->
+            let t' = convert_term bvars fvars bconts t in
+            let tl', goals' = convert_hyps bvars fvars bconts goals tl in
+            (if t'==t && tl' == tl then hyps else
+            let hd' = if t' == t then hd else Hypothesis t' in
+               hd' :: tl'), goals'
+       | ((HypBinding (v, t)) as hd :: tl) as hyps ->
+            let t' = convert_term bvars fvars bconts t in
+            let tl', goals' = convert_hyps (SymbolSet.add bvars v) (SymbolSet.remove fvars v) bconts goals tl in
+            (if t'==t && tl' == tl then hyps else
+            let hd' = if t' == t then hd else HypBinding(v, t') in
+               hd' :: tl'), goals'
+      | (Context (c, conts, terms) as hd :: tl) as hyps ->
+            let conts' = f bconts c conts in
+            let terms' = Lm_list_util.smap (convert_term bvars fvars bconts) terms in
+            let tl', goals' = convert_hyps bvars fvars (c::bconts) goals tl in
+            let hd' = if conts' == conts && terms == terms' then hd else Context (c, conts', terms') in
+            (if hd' == hd && tl' == tl then hyps else hd'::tl'), goals'
+      in
+         fun t -> convert_term SymbolSet.empty (free_vars_set t) [] t
+
+   let rec convert_mterm f = function
+      (MetaTheorem t) as mt ->
+         let t' = f t in if t' == t then mt else MetaTheorem t'
+    | (MetaImplies(mt1, mt2)) as mt ->
+         let mt2' = convert_mterm f mt2 in let mt1' = convert_mterm f mt1 in
+            if mt1' == mt1 && mt2' == mt2 then mt else MetaImplies(mt1',mt2')
+    | (MetaFunction(t,mt1, mt2)) as mt ->
+         let mt2' = convert_mterm f mt2 in let mt1' = convert_mterm f mt1 in let t' = f t in
+            if t' == t && mt1' == mt1 && mt2' == mt2 then mt else MetaFunction(t',mt1',mt2')
+    | (MetaIff(mt1, mt2)) as mt ->
+         let mt1' = convert_mterm f mt1 in let mt2' = convert_mterm f mt2 in
+            if mt1' == mt1 && mt2' == mt2 then mt else MetaIff(mt1',mt2')
+    | (MetaLabeled(l,mt1)) as mt ->
+         let mt1' = convert_mterm f mt1 in if mt1' == mt1 then mt else MetaLabeled(l,mt1')
+
+   (* Diring parsing and display, the default contexts are "encoded" as a singleton list containing just the variable itself *)
+   let context_of_parsed_contexts bconts v = function
+      [v'] when Lm_symbol.eq v v' -> bconts
+    | conts -> conts
+
+   let display_context_of_contexts bconts v conts =
+      if bconts = conts then [v] else conts
+
+   (* Actual term convertors *)
+   let term_of_parsed_term =
+      convert_contexts context_of_parsed_contexts (fun _ v conts -> mk_so_var_term v conts [])
+
+   let term_of_parsed_term_with_vars =
+      convert_contexts context_of_parsed_contexts (fun t _ _ -> t)
+
+   let display_term_of_term =
+      convert_contexts display_context_of_contexts (fun _ v _ -> mk_so_var_term v [] [])
+
+   (* create a fresh term convertor with memoization *)
+   let create_term_parser () =
+      let map = ref SymbolTable.empty in
+      let context_of_parsed_contexts bconts v = function
+         [v'] when Lm_symbol.eq v v' ->
+            if SymbolTable.mem !map v then SymbolTable.find !map v else begin
+               map:=SymbolTable.add !map v bconts;
+               bconts
+            end
+       | conts -> 
+            if not (SymbolTable.mem !map v) then
+               map:=SymbolTable.add !map v conts;
+            conts
+      and deal_with_a_var _ v conts =
+         let conts =
+            if SymbolTable.mem !map v then SymbolTable.find !map v else begin
+               map:=SymbolTable.add !map v conts;
+               conts
+            end
+         in mk_so_var_term v conts []
+      in
+         convert_contexts context_of_parsed_contexts deal_with_a_var
+
+   let mterm_of_parsed_mterm mt =
+      convert_mterm (create_term_parser ()) mt
+
+   let mterms_of_parsed_mterms mt ts =
+      let parse = create_term_parser () in
+      let mt = convert_mterm parse mt in (* The order is important here! *)
+         mt, List.map parse ts, parse
+
+   let context_subst_of_terms ts =
+      let map = ref SymbolTable.empty in
+      let rec scan_term t =
+         if not (is_var_term t) then begin
+            if is_so_var_term t then
+               let v, conts, ts = dest_so_var t in upd_map v conts ts
+            else if is_sequent_term t then begin
+               let eseq = explode_sequent t in
+                  scan_term eseq.sequent_args;
+                  SeqHyp.iter scan_hyp eseq.sequent_hyps;
+                  SeqGoal.iter scan_term eseq.sequent_goals
+            end else
+               List.iter scan_bterm (dest_term t).term_terms
+         end
+      and scan_bterm bt = scan_term (dest_bterm bt).bterm
+      and scan_hyp = function
+         Hypothesis t | HypBinding(_, t) -> scan_term t
+       | Context (v, conts, ts) -> upd_map v conts ts
+      and upd_map v conts ts =
+         if SymbolTable.mem !map v then begin
+            let i, conts' = SymbolTable.find !map v in
+               if i <> (List.length ts) || conts' <> conts then
+                  raise (Invalid_argument "context_subst_of_terms: mismatch")
+         end else
+            map:=SymbolTable.add !map v (List.length ts, conts);
+         List.iter scan_term ts
+      in
+      let _ = List.iter scan_term ts in
+      let map = ! map in
+         fun v i ->
+            if SymbolTable.mem map v then
+               let i', conts = SymbolTable.find map v in
+                  if i <> i' then
+                     raise(Failure "Variable arity mismatch");
+                  Some conts
+            else None
 end
 
 (*
