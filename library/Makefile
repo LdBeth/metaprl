@@ -1,8 +1,8 @@
 IODIR = /usr/u/nuprl/nuprl4i/nuprl5L/nuprl-light/refiner
 IO = -I $(IODIR)
 
-mytop	:	io.cma library.cma test.cmo term.cmo
-		ocamlmktop -custom -o mytop unix.cma io.cma library.cma test.cmo term.cmo -cclib -lunix   
+mytop	:	io.cma library.cma test.cmo $(IODIR)/term.cmo
+		ocamlmktop -custom -o mytop unix.cma io.cma library.cma test.cmo $(IODIR)/term.cmo -cclib -lunix   
 
 #	Create test executable
 #test :	io.cma library.cma test.cmo
