@@ -1054,6 +1054,7 @@ sig
    val prefix_thenC : conv -> conv -> conv
    val prefix_orelseC : conv -> conv -> conv
    val addrC : int list -> conv -> conv
+   val addrLiteralC : address -> conv -> conv
    val idC : conv
    val foldC : term -> conv -> conv
    val makeFoldC : term -> conv -> conv
