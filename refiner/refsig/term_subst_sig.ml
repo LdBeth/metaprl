@@ -44,7 +44,7 @@ sig
     * the first term match terms in the second,
     * but not vice-versa.
     *)
-   val unify : term_subst -> term -> term -> term_subst
+   val unify : term_subst -> string list -> term -> term -> term_subst
    val match_terms : term_subst -> term -> term -> term_subst
 
    (*
