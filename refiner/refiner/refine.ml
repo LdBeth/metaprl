@@ -718,11 +718,11 @@ struct
    let crwaddr addr (crw: cond_rewrite) sent bvars t =
       DEFINE body =
          let t', (subgoals, just) =
-            let f sent bvars t =
+            let f bvars t =
                let t, subgoals, just = crw sent bvars t in
                   t, (subgoals, just)
             in
-               apply_var_fun_arg_at_addr (f sent) addr bvars t
+               apply_var_fun_arg_at_addr f addr bvars t
          in
             t', CondRewriteSubgoalsAddr (addr, subgoals), CondRewriteAddress (t, addr, just, t')
       IN
