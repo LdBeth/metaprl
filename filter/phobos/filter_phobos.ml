@@ -57,7 +57,14 @@ let debug_filter_phobos =
  * External sources.
  *)
 let ext_exp s =
-   let t = Phobos_exn.catch (term_of_string [] !Phobos_state.mp_grammar_filename) s in
+   let grammar_filename =
+      try
+         Sys.getenv "LANG_FILE"
+      with
+         Not_found ->
+            !Phobos_state.mp_grammar_filename
+   in
+   let t = Phobos_exn.catch (term_of_string [] grammar_filename) s in
       expr_of_term (0, 0) t
 
 let ext_patt s =
@@ -71,6 +78,18 @@ let exts_exp _ s =
       Simple_print.SimplePrint.string_of_term t
 
 let _ = Quotation.add "exts" (Quotation.ExStr exts_exp)
+
+let _ =
+   try
+      let s = Sys.getenv "DEBUG_PHOBOS" in
+         match s with
+            "off" | "no" | "0" | "-" ->
+               Phobos_state.debug_phobos := false
+          | _ ->
+               Phobos_state.debug_phobos := true
+   with
+      Not_found ->
+         ()
 
 (*
  * -*-
