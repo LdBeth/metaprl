@@ -2170,10 +2170,10 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p1_1, p1_2 = p1 in
          merge merge_bool "TermAddr.subterm_exists" (wrap2 TermAddr1.subterm_exists p0_1 p1_1) (wrap2 TermAddr2.subterm_exists p0_2 p1_2)
 
-      let find_subterm (p0 : term) (p1 : term) =
+      let find_subterm (p0 : term) (p1 : (term -> SymbolSet.t -> bool)) =
          let p0_1, p0_2 = p0 in
-         let p1_1, p1_2 = p1 in
-         merge merge_address "TermAddr.find_subterm" (wrap2 TermAddr1.find_subterm p0_1 p1_1) (wrap2 TermAddr2.find_subterm p0_2 p1_2)
+         let p1_1, p1_2 = split_taf p1 in
+         merge merge_addresss "TermAddr.find_subterm" (wrap2 TermAddr1.find_subterm p0_1 p1_1) (wrap2 TermAddr2.find_subterm p0_2 p1_2)
 
       let term_subterm (p0 : term) (p1 : address) =
          let p0_1, p0_2 = p0 in
@@ -2222,6 +2222,10 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          let p0_1, p0_2 = p0 in
          merge merge_addresss "TermAddr.subterm_addresses" (wrap1 TermAddr1.subterm_addresses p0_1) (wrap1 TermAddr2.subterm_addresses p0_2)
 
+      let strip_address (p0 : addr_item list) (p1 : address) =
+         let p1_1, p1_2 = p1 in
+         merge merge_address "TermAddr.strip_address" (wrap2 TermAddr1.strip_address p0 p1_1) (wrap2 TermAddr2.strip_address p0 p1_2)
+
       let apply_fun_higher (p0 : (term -> term * 'a)) (p1 : term) =
          let p0_1, p0_2 = split_ttaf p0 in
          let p1_1, p1_2 = p1 in
@@ -2240,9 +2244,6 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          (merge_term "TermAddr.apply_var_fun_higher - 0" res0_1 res0_2),
          (merge_poly "TermAddr.apply_var_fun_higher - 1" res1_1 res1_2)
 
-      let strip_address (p0 : addr_item list) (p1 : address) =
-         let p1_1, p1_2 = p1 in
-         merge merge_address "TermAddr.strip_address" (wrap2 TermAddr1.strip_address p0 p1_1) (wrap2 TermAddr2.strip_address p0 p1_2)
    end
 
    module TermMan = struct

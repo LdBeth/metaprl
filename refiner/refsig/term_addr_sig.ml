@@ -109,9 +109,10 @@ sig
     * All functions (including apply*fun_higher), except for subterm_exists,
     * when given an address that does not exist in a term, may chose to pick
     * a "random" existing address or to raise a RefineError.
+    * In all the functions below SymbolSet.t stands for binding vars.
     *)
    val subterm_exists : term -> address -> bool
-   val find_subterm : term -> term -> address
+   val find_subterm : term -> (term -> SymbolSet.t -> bool) -> address list
    val term_subterm :  term -> address -> term
    val replace_subterm : term -> address -> term -> term
    val apply_fun_at_addr : (term -> term) -> address -> term -> term

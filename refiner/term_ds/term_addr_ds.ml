@@ -123,55 +123,48 @@ struct
           | _ -> false
          end
 
-   let rec find_subterm_term addr arg t =
-      if alpha_equal t arg then
-         Some (List.rev addr)
-      else match get_core t with
-         FOVar _ -> None
-       | SOVar(_,_,terms) -> find_subterm_terms addr arg 1 terms
-       | SOContext(_,t,_,terms) -> find_subterm_terms addr arg 1 (terms @ [t])
-       | Term t -> find_subterm_bterms addr arg 1 t.term_terms
-       | Sequent s ->
-            begin match
-               find_subterm_term (ArgAddr :: addr) arg s.sequent_args with
-                  None ->
-                     find_subterm_hyps addr arg s 0 (SeqHyp.length s.sequent_hyps)
-                | found -> found
-            end
-       | Hashed _ | Subst _ -> fail_core "find_subterm_term"
+   let rec find_subterm_term vars addrs addr arg t =
+      let addrs = if arg t vars then (List.rev addr) :: addrs else addrs in
+         match get_core t with
+            FOVar _ -> addrs
+          | SOVar(_,_,terms) -> find_subterm_terms vars addrs addr arg 1 terms
+          | SOContext(v,t,_,terms) ->
+               let addrs = find_subterm_terms vars addrs addr arg 1 terms in
+               let addr = Subterm ((List.length terms) + 1) :: addr in
+                  find_subterm_term (SymbolSet.add vars v) addrs addr arg t
+          | Term t -> find_subterm_bterms vars addrs addr arg 1 t.term_terms
+          | Sequent s ->
+               let addrs = find_subterm_term vars addrs (ArgAddr :: addr) arg s.sequent_args in
+                  find_subterm_hyps vars addrs addr arg s 0 (SeqHyp.length s.sequent_hyps)
+          | Hashed _ | Subst _ -> fail_core "find_subterm_term"
 
-   and find_subterm_bterms addr arg index = function
-      [] -> None
+   and find_subterm_bterms vars addrs addr arg index = function
+      [] -> addrs
     | bterm :: bterms ->
-         begin match find_subterm_term (Subterm index :: addr) arg bterm.bterm with
-            Some _ as result -> result
-          | None -> find_subterm_bterms addr arg (succ index) bterms
-         end
+         let addrs = find_subterm_term (SymbolSet.add_list vars bterm.bvars) addrs (Subterm index :: addr) arg bterm.bterm in
+            find_subterm_bterms vars addrs addr arg (succ index) bterms
 
-   and find_subterm_terms addr arg index = function
-      [] -> None
+   and find_subterm_terms vars addrs addr arg index = function
+      [] -> addrs
     | t :: ts ->
-         begin match find_subterm_term (Subterm index :: addr) arg t with
-            Some _ as result -> result
-          | None -> find_subterm_terms addr arg (succ index) ts
-         end
+         let addrs = find_subterm_term vars addrs (Subterm index :: addr) arg t in
+            find_subterm_terms vars addrs addr arg (succ index) ts
 
-   and find_subterm_hyps addr arg s i len =
-      if i = len then find_subterm_term (ClauseAddr 0 :: addr) arg s.sequent_concl
-      else match
-         let addr = ClauseAddr (i + 1) :: addr in
-         match SeqHyp.get s.sequent_hyps i with
-            Hypothesis (_, t) -> find_subterm_term addr arg t
-          | Context(_, _, ts) -> find_subterm_terms addr arg 1 ts
-      with
-         None -> find_subterm_hyps addr arg s (succ i) len
-       | found -> found
+   and find_subterm_hyps vars addrs addr arg s i len =
+      if i = len then
+         find_subterm_term vars addrs (ClauseAddr 0 :: addr) arg s.sequent_concl
+      else
+         let addr' = ClauseAddr (i + 1) :: addr in
+            match SeqHyp.get s.sequent_hyps i with
+              Hypothesis (v, t) ->
+                 let addrs = find_subterm_term vars addrs addr' arg t in
+                    find_subterm_hyps (SymbolSet.add vars v) addrs addr arg s (succ i) len
+            | Context(v, _, ts) ->
+                 let addrs = find_subterm_terms vars addrs addr' arg 1 ts in
+                    find_subterm_hyps (SymbolSet.add vars v) addrs addr arg s (succ i) len
 
    let find_subterm t arg =
-      match find_subterm_term [] arg t with
-         Some addr -> addr
-       | None ->
-            REF_RAISE(RefineError ("Term_addr_ds.find_subterm: subterm can't be found", Term2Error (arg, t)))
+      List.rev (find_subterm_term SymbolSet.empty [] [] arg t)
 
    (*
     * Traslate a [-lenght..-1]U[1..length] index into a [0..length-1] one.

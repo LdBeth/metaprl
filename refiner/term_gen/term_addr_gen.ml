@@ -76,24 +76,17 @@ struct
          REF_RAISE (RefineError ("Term_addr_gen.split_clause_address", StringError "address is not a sequent address"))
 
    let find_subterm t arg =
-      let rec search addr t =
-         if alpha_equal t arg then
-            Some addr
-         else
-            search_bterms addr 1 (dest_term t).term_terms
-      and search_bterms addr index = function
-         [] ->
-            None
+      let rec search vars addrs addr t =
+         let addrs = if arg t vars then (List.rev addr) :: addrs else addrs in
+            search_bterms vars addrs addr 1 (dest_term t).term_terms
+      and search_bterms vars addrs addr index = function
+         [] -> addrs
        | bterm :: bterms ->
-            begin match search (Subterm index :: addr) (dest_bterm bterm).bterm with
-               Some _ as result -> result
-             | None -> search_bterms addr (succ index) bterms
-            end
+            let bterm = dest_bterm bterm in
+            let addrs = search (SymbolSet.add_list vars bterm.bvars) addrs (Subterm index :: addr) bterm.bterm in
+               search_bterms vars addrs addr (succ index) bterms
       in
-         match search [] t with
-            Some addr -> List.rev addr
-          | None ->
-               REF_RAISE(RefineError ("Term_addr_gen.find_subterm: subterm can't be found", Term2Error (arg, t)))
+         List.rev (search SymbolSet.empty [] [] t)
 
    (*
     * A version of the nth_hyp capable of returning the context term.

@@ -1,12 +1,21 @@
 #!/usr/bin/perl -w
 
-if ($#ARGV != 0) {
-    die "Usage: gen_refiner_debug.pl Modname < interface";
-};
+#
+# The "user-maintained" part of this script consists of two hash tables -
+# "merges" and "splits".
+#
 
-$modname = shift;
-
-$line = "";
+#
+# The "merges" table defines a "merge" function for each type that can appear
+# as a return type for one of the refiner function.
+#
+# Syntax:
+#    $merges{"type"} = "function";
+#
+# The function should be defined in the "MERGES" section of refiner_debug.ml
+# and should have the type
+#    string -> type(Refiner1) -> type(Refiner2) -> type(Refiner)
+#
 
 $merges{"operator"}="merge_op";
 $merges{"operator'"}="merge_op'";
@@ -42,6 +51,21 @@ $merges{"(string list * term option * term) list * term"} = "merge_sltotlt";
 $merges{"'a"} = "merge_poly";
 $merges{"'a list"} = "merge_poly";
 $merges{"term -> term"} = $merges{"ml_rewrite"} = "merge_ttf";
+$merges{"object_id"} = $merges{"param list"};
+
+#
+# The "splits" table defines a "split" function for each type that can appear
+# as an input type for one of the refiner function.
+#
+# Syntax:
+#    $splits{"type"} = "function";
+#
+# The function should be defined in the "SPLITS" section of refiner_debug.ml
+# and should have the type
+#    type(Refiner) -> type(Refiner1) * type(Refiner2)
+#
+# The empty string value is an optimization that stands for "fun v -> v, v"
+#
 
 # Non-refiner types
 foreach my $ty ("bool", "int", "var", "opname", "out_channel", "formatter", "string", "Lm_num.num", "SymbolSet.t", "'a", "unit", "strict", "rewrite_args_spec", "addr_item", "(int * int) SymbolTable.t", "(bool * int * int) SymbolTable.t") {
@@ -73,10 +97,17 @@ $splits{"SymbolSet.t -> term -> term"} = "split_attf";
 $splits{"unit -> extract"} = "split_utriv";
 $splits{"term -> term * 'a"} = "split_ttaf";
 $splits{"SymbolSet.t -> term -> term * 'a"} = "split_attaf";
-$splits{"term -> 'a -> bool"} = "split_taf";
+$splits{"term -> 'a -> bool"} = $splits{"term -> SymbolSet.t -> bool"} = "split_taf";
 
-$merges{"object_id"} = $merges{"param list"};
 $splits{"object_id"} = $splits{"param list"};
+
+if ($#ARGV != 0) {
+    die "Usage: gen_refiner_debug.pl Modname < interface";
+};
+
+$modname = shift;
+
+$line = "";
 
 sub do_split($$) {
     my ($type, $arg) = @_;

@@ -330,8 +330,13 @@ let process_intro_resource_annotation name args term_args statement (pre_tactic,
                         None ->
                            Sequent.concl
                       | Some arg ->
-                           let addr = find_subterm t arg in
-                              (fun p -> term_subterm (Sequent.concl p) addr)
+                           begin match find_subterm t (fun t _ -> alpha_equal t arg) with
+                              addr :: _ ->
+                                 (fun p -> term_subterm (Sequent.concl p) addr)
+                            | [] ->
+                                 raise (RefineError("intro annotation",
+                                    StringTermError("term not found in the conclusion", arg)))
+                           end
                   in
                      (fun p -> f p (get_arg p))
              | None ->
@@ -402,8 +407,13 @@ let process_elim_resource_annotation name args term_args statement (pre_tactic, 
                               None ->
                                  (fun p i -> Sequent.nth_hyp p i)
                             | Some arg ->
-                                 let addr = find_subterm t arg in
-                                    (fun p i -> term_subterm (Sequent.nth_hyp p i) addr)
+                                 begin match find_subterm t (fun t _ -> alpha_equal t arg) with
+                                    addr :: _ ->
+                                       (fun p i -> term_subterm (Sequent.nth_hyp p i) addr)
+                                 | [] ->
+                                       raise (RefineError("intro annotation",
+                                          StringTermError("term not found in the conclusion", arg)))
+                                 end
                         in
                            (fun i p -> f p (get_arg p i))
                    | None ->
