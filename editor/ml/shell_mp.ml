@@ -189,16 +189,21 @@ struct
       let print_exn exn =
          let df = Shell_state.get_dfbase () in
          let buf = new_buffer () in
-            begin
+            let need_popm =
                match exn with
                   Stdpp.Exc_located _
                 | Pcaml.Qerror _ ->
-                     inflush ()
+                     inflush ();
+                     false
                 | _ ->
-                     format_string buf "Uncaught exception: "
-            end;
+                     format_pushm buf 2;
+                     format_string buf "Uncaught exception: ";
+                     format_newline buf;
+                     true
+            in
             Filter_exn.format_exn df buf exn;
             output_rbuffer stderr buf;
+            if need_popm then format_popm buf;
             eflush stderr
       in
       let catch =
