@@ -50,8 +50,8 @@ open Tactic_type
 open Tacticals
 open Conversionals
 open Var
-open Base_dtactic
-open Base_auto_tactic
+open Dtactic
+open Auto_tactic
 
 open Itt_equal
 open Itt_logic

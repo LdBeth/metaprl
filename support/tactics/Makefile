@@ -16,9 +16,13 @@ MLZFILES =\
 # Library files
 MPFILES =\
 	tactic_cache\
+	base_cache\
 	var\
 	top_tacticals\
 	top_conversionals\
+	typeinf\
+	auto_tactic\
+	dtactic\
 
 # Name of main libraris
 MAIN = theory

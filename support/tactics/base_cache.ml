@@ -1,5 +1,5 @@
 (*
- * Testing.
+ * Define a cache resource.
  *
  * ----------------------------------------------------------------
  *
@@ -11,86 +11,66 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
 
-open Printf
-open Mp_debug
+extends Tactic_cache
+extends Summary
 
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermAddr
-open Refiner.Refiner.Refine
+open Refiner.Refiner
+open Mp_resource
 
-open Tacticals
-open Conversionals
+open Tactic_cache
+open Tactic_type.Tacticals
 
-open Typeinf
-open Dtactic
-open Auto_tactic
-open Itt_rfun
-open Itt_fun
-open Itt_int
-open Itt_logic
-open Itt_dprod
-open Itt_union
-open Itt_equal
-open Itt_struct
-open Itt_w
-open Itt_derive
+(************************************************************************
+ * TYPES                                                                *
+ ************************************************************************)
 
-open Mp
-open Test
+type cache_rule =
+   Forward of tactic frule
+ | Backward of tactic brule
 
-open Czf_itt_set
-open Czf_itt_eq
-open Czf_itt_member
-open Czf_itt_sep
-open Czf_itt_union
-open Czf_itt_map
-open Czf_itt_all
-open Czf_itt_exists
-open Czf_itt_dall
-open Czf_itt_dexists
-open Czf_itt_sall
-open Czf_itt_sexists
-open Czf_itt_rel
+type cache = tactic Tactic_cache.cache
+
+(************************************************************************
+ * IMPLEMENTATION                                                       *
+ ************************************************************************)
 
 (*
- * Proof saving.
+ * Add a rule.
  *)
-let zT, z =
-   let pf = ref None in
-   let zT p =
-      pf := Some p;
-      idT p
-   in
-   let z () =
-      match !pf with
-         Some p ->
-            p
-       | None ->
-            raise Not_found
-   in
-      zT, z
+let improve_data cache info =
+   match info with
+      Forward info ->
+         add_frule cache info
+    | Backward info ->
+         add_brule cache info
 
-let _ = cd "czf_itt_axioms/subset_collection"
-let _ = set_writeable ()
+(*
+ * Resource.
+ *)
+let resource cache = Functional {
+   fp_empty = empty_cache;
+   fp_add = improve_data;
+   fp_retr = (fun x -> x)
+}
 
 (*
  * -*-

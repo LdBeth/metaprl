@@ -419,7 +419,7 @@ conversion to apply.
 = repeatC (higherC reduceTopC)
 
 ----------------------------------------
-base_dtactic:
+dtactic:
 
 * dT : int -> tactic
 Tries to "destruct" the given sequent clause.  This is a
@@ -437,21 +437,7 @@ with "and thins"; you can avoid this deletion with
 Applies (dT 0) the given number of times on "main" subgoals.
 
 ----------------------------------------
-base_rewrite:
-
-* d_rewrite_axiomT : int -> tactic
-If the argument is 0, this solves a goal with a conclusion of the form
-<< "rewrite"{'x; 'x} >>.  It is part of the trivialT tactic.
-
-* rewriteT : term -> tactic
-(rewriteT << "rewrite"{'a; 'b} >>) changes occurrences of << 'a >> in
-the conclusion to << 'b >>.  If you want to substitute for some but
-not all occurrences of << 'a >>, you can wrap the tactic in
-(withT << bind{x. 'C['x]} >> ...), where the conclusion must be
-<< 'C['a] >>.
-
-----------------------------------------
-base_auto_tactic:
+auto_tactic:
 
 Auto family of tactics perform resource-based automated reasoning.
 They apply all the all the available tactics in turn, until none of
@@ -483,6 +469,20 @@ macro "tac ttca" instead of "tryAutoT tac".
 
 * byDefT : conv -> tactic
 Applies conv everywhere, then runs autoT.
+
+----------------------------------------
+base_rewrite:
+
+* d_rewrite_axiomT : int -> tactic
+If the argument is 0, this solves a goal with a conclusion of the form
+<< "rewrite"{'x; 'x} >>.  It is part of the trivialT tactic.
+
+* rewriteT : term -> tactic
+(rewriteT << "rewrite"{'a; 'b} >>) changes occurrences of << 'a >> in
+the conclusion to << 'b >>.  If you want to substitute for some but
+not all occurrences of << 'a >>, you can wrap the tactic in
+(withT << bind{x. 'C['x]} >> ...), where the conclusion must be
+<< 'C['a] >>.
 
 ----------------------------------------
 itt_equal:

@@ -67,8 +67,8 @@ itt_squash 66
 base_theory 67
 base_rewrite 68
 base_cache 69
-base_dtactic 70
-base_auto_tactic 71
+dtactic 70
+auto_tactic 71
 summary 72
 base_dform 73
 nuprl_font 74
@@ -108,7 +108,7 @@ slot 107
 !text 108
 !req 109
 !token 110
-Base_auto_tactic 111
+Auto_tactic 111
 Base_dform 112
 Nuprl_font 113
 Ocaml_str_df 114
@@ -132,7 +132,7 @@ Itt_void 131
 Sequent 132
 Base_rewrite 133
 Base_cache 134
-Base_dtactic 135
+Dtactic 135
 Typeinf 136
 Summary 137
 Mptop 138
