@@ -259,6 +259,7 @@ type ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item, 'module_info) summary_item
  | SummaryItem of 'item
  | ToploopItem of 'item
  | MagicBlock of 'item magic_info
+ | Comment of 'term
 
 (*
  * -*-

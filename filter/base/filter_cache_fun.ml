@@ -299,7 +299,7 @@ struct
     *)
    let standard_opnames =
       ["lzone"; "hzone"; "szone"; "izone"; "tzone"; "ezone";
-       "hbreak"; "sbreak"; "space"; "hspace"; "newline";
+       "hbreak"; "sbreak"; "cbreak"; "space"; "hspace"; "newline";
        "pushm"; "popm"; "pushfont"; "popfont";
        "parens"; "prec"; "internal"; "mode"; "except_mode"; "slot";
        "sequent"; "hyp"; "concl"; "var"; "context"]
@@ -777,6 +777,13 @@ struct
          add_command cache (Id id, (0, 0));
          check_implementation cache.info sig_info;
          sig_info
+
+   (*
+    * Parse the comments in the sig.
+    *)
+   let parse_comments cache parse_comment =
+      let { info = info } = cache in
+         cache.info <- FilterSummaryTerm.parse_comments parse_comment info
 
    (*
     * Copy the proofs from the summary.

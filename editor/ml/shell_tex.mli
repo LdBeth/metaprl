@@ -1,16 +1,9 @@
 (*
- * Parser for PRL files.
+ * Imperative TeX file.
  *
  * ----------------------------------------------------------------
  *
- * This file is part of MetaPRL, a modular, higher order
- * logical framework that provides a logical programming
- * environment for OCaml and other languages.
- *
- * See the file doc/index.html for information on Nuprl,
- * OCaml, and more information about this system.
- *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 2000 Jason Hickey, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -27,22 +20,27 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * jyh@cs.caltech.edu
  *)
 
-open Refiner.Refiner.Term
+(*
+ * Open an output file with the given name.
+ *)
+val set_file : string -> unit
 
-(* Add an include directory *)
-val set_include_path : string list -> unit
-
-(* Initialization *)
-val init : unit -> unit
-val close : unit -> unit
+(*
+ * Printer interface for opening and closing the
+ * output file.  In open_file, if the name has not
+ * been specified with set_file previously, the
+ * file output.tex is used instead.
+ *)
+val open_file : unit -> out_channel
+val close_file : out_channel -> unit
 
 (*
  * -*-
  * Local Variables:
- * Caml-master: "refiner"
+ * Caml-master: "compile"
  * End:
  * -*-
  *)

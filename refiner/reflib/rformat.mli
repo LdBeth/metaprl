@@ -71,6 +71,7 @@ val clear_buffer : 'tag buffer -> unit
 (*
  * Breaks.
  *)
+val format_cbreak : 'tag buffer -> string -> string -> unit
 val format_sbreak : 'tag buffer -> string -> string -> unit
 val format_hbreak : 'tag buffer -> string -> string -> unit
 val format_space : 'tag buffer -> unit
@@ -91,6 +92,7 @@ val format_tzone : 'tag buffer -> 'tag -> unit
  * Margins.
  *)
 val format_pushm : 'tag buffer -> int -> unit
+val format_pushm_str : 'tag buffer -> string -> unit
 val format_popm : 'tag buffer -> unit
 
 (*
@@ -98,6 +100,7 @@ val format_popm : 'tag buffer -> unit
  *)
 val format_char : 'tag buffer -> char -> unit
 val format_string : 'tag buffer -> string -> unit
+val format_raw_string : 'tag buffer -> string -> unit
 val format_quoted_string : 'tag buffer -> string -> unit
 val format_int : 'tag buffer -> int -> unit
 val format_num : 'tag buffer -> Mp_num.num -> unit

@@ -226,6 +226,11 @@ let sbreak = function
       format_sbreak buf yes no
  | _ -> raise (Invalid_argument "Dform.sbreak")
 
+let cbreak = function
+   { dform_items = [RewriteString yes; RewriteString no]; dform_buffer = buf } ->
+      format_cbreak buf yes no
+ | _ -> raise (Invalid_argument "Dform.sbreak")
+
 let space { dform_buffer = buf } =
    format_space buf
 
@@ -238,6 +243,8 @@ let newline { dform_buffer = buf } =
 let pushm = function
    { dform_items = [RewriteInt i]; dform_buffer = buf } ->
       format_pushm buf i
+ | { dform_items = [RewriteString s]; dform_buffer = buf } ->
+      format_pushm_str buf s
  | { dform_items = []; dform_buffer = buf } ->
       format_pushm buf 0
  | _ -> raise (Invalid_argument "Dform.pushm")
@@ -256,6 +263,7 @@ let popfont _ =
  *)
 let init_list =
    ["sbreak", [MString "y"; MString "n"], sbreak;
+    "cbreak", [MString "y"; MString "n"], cbreak;
     "hbreak", [MString "y"; MString "n"], hbreak;
     "space", [], space;
     "hspace", [], hspace;
@@ -266,6 +274,7 @@ let init_list =
     "izone", [], izone;
     "ezone", [], ezone;
     "pushm", [MNumber "i"], pushm;
+    "pushm", [MString "s"], pushm;
     "pushm", [], pushm;
     "popm", [], popm;
     "pushfont", [MString "plain"], pushfont;
@@ -592,6 +601,10 @@ let slot { dform_items = items; dform_printer = printer; dform_buffer = buf } =
          if !debug_dform then
             eprintf "Dform.slot: %s%t" s eflush;
          format_string buf s
+    | [RewriteString raw; RewriteString s] ->
+         if !debug_dform then
+            eprintf "Dform.slot: %s%t" s eflush;
+         format_raw_string buf s
     | [RewriteLevel l] ->
          if !debug_dform then
             eprintf "Dform.slot: level%t" eflush;
@@ -650,10 +663,18 @@ let null_base =
         dform_print = DFormPrinter slot
       }
    in
+   let slot_entry5 =
+      { dform_name = "slot_entry5";
+        dform_pattern = mk_term (mk_op slot_opname [make_param (MString "raw"); make_param (MString "eq")]) [];
+        dform_options = [DFormInternal];
+        dform_print = DFormPrinter slot
+      }
+   in
    let base = add_dform base slot_entry1 in
    let base = add_dform base slot_entry2 in
    let base = add_dform base slot_entry3 in
    let base = add_dform base slot_entry4 in
+   let base = add_dform base slot_entry5 in
       base
 
 let is_null_dfbase = equal_tables null_base

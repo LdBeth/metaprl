@@ -159,6 +159,8 @@ let eprint_entry print_info = function
       eprintf "Id: 0x%08x\n" id
  | MagicBlock { magic_name = name } ->
       eprintf "Magic: %s\n" name
+ | Comment t ->
+      eprintf "Comment\n"
 
 (*
  * Non-recursive print.
@@ -518,12 +520,10 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'ctyp1, 'expr1, 'item1
     | ContextParam s -> ContextParam s
    in
 
-   let res_map = function
-   (*
+   let rec res_map = function
       [] -> []
-    | [(name, exprs)::tl] ->
-         name, List.map convert.expr_f exprs :: res_map tl
-   *) _ -> [] (* we should not use res_map until we recreate .prlb files *)
+    | (loc, name, exprs) :: tl ->
+         (loc, name, List.map convert.expr_f exprs) :: res_map tl
    in
 
    (* Map a summary item *)
@@ -708,6 +708,9 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'ctyp1, 'expr1, 'item1
                MagicBlock { magic_name = name;
                             magic_code = List.map convert.item_f items
                }
+
+          | Comment t ->
+               Comment (convert.term_f t)
       in
          item, loc
 
@@ -760,6 +763,7 @@ struct
    let prec_op                     = mk_opname "prec"
    let prec_rel_op                 = mk_opname "prec_rel"
    let id_op                       = mk_opname "id"
+   let comment_op                  = mk_opname "comment"
    let resource_op                 = mk_opname "resource"
    let infix_op                    = mk_opname "infix"
    let magic_block_op              = mk_opname "magic_block"
@@ -1132,6 +1136,12 @@ struct
          | _ -> raise (Failure "dest_id: can't handle things other than Mp_num.Int")
 
    (*
+    * Documentation.
+    *)
+   and dest_comment convert t =
+      Comment (convert.term_f (one_subterm t))
+
+   (*
     * Resource.
     *)
    and dest_resource_aux convert t =
@@ -1203,6 +1213,8 @@ struct
                   dest_prec_rel convert t
                else if Opname.eq opname id_op then
                   dest_id convert t
+               else if Opname.eq opname comment_op then
+                  dest_comment convert t
                else if Opname.eq opname resource_op then
                   dest_resource convert t
                else if Opname.eq opname infix_op then
@@ -1484,6 +1496,9 @@ struct
    and term_of_id id =
       mk_number_term id_op (Mp_num.Int id)
 
+   and term_of_comment convert t =
+      mk_simple_term comment_op [convert.term_f t]
+
    and term_of_resource convert
        { resource_name = name;
          resource_extract_type = extract;
@@ -1543,6 +1558,8 @@ struct
          term_of_infix op
     | MagicBlock magic ->
          term_of_magic_block convert magic
+    | Comment t ->
+         term_of_comment convert t
 
    and term_list_loc convert (t, loc) =
       mk_loc loc (term_list_aux convert t)
@@ -1949,7 +1966,8 @@ struct
             check_infix name implem
        | Id id ->
             check_id id implem
-       | MagicBlock _ ->
+       | MagicBlock _
+       | Comment _ ->
             ()
 
    (*
@@ -1958,6 +1976,30 @@ struct
     *)
    and check_implementation { info_list = implem } { info_list = interf } =
       List.iter (check_implemented (List.map fst implem)) interf
+
+   (************************************************************************
+    * COMMENT PARSING                                                      *
+    ************************************************************************)
+
+   (*
+    * Parse each of the comments.
+    *)
+   let parse_comments parse_comment { info_list = info } =
+      let rec parse = function
+         item :: items ->
+            let items = parse items in
+            let item =
+               match item with
+                  Comment t, loc ->
+                     Comment (parse_comment loc t), loc
+                | _ ->
+                     item
+            in
+               item :: items
+       | [] ->
+            []
+      in
+         { info_list = parse info }
 
    (************************************************************************
     * PROOF COPYING                                                        *
@@ -2102,6 +2144,8 @@ struct
                   PrecRel r
              | Id i ->
                   Id i
+             | Comment t ->
+                  Comment t
              | Resource r ->
                   Resource r
              | Infix s ->

@@ -325,7 +325,7 @@ struct
    let unit_term = TTerm.mk_simple_term nil_opname []
 
    (*
-    * When a StrFilterCache ot SigFilterCache is
+    * When a StrFilterCache or SigFilterCache is
     * saved, comments are not saved.
     *)
    let comment _ _ t = t

@@ -162,8 +162,8 @@ struct
          eprintf "Simple_print.format_param%t" eflush;
       match dest_param p with
          Number n -> format_num buf n; format_string buf ":n"
-       | String s -> format_char buf '"'; format_string buf s; format_char buf '"'; format_string buf ":s"
-       | Token t -> format_char buf '"'; format_string buf t; format_char buf '"'; format_string buf ":t"
+       | String s -> format_char buf '"'; format_string buf (String.escaped s); format_char buf '"'; format_string buf ":s"
+       | Token t -> format_char buf '"'; format_string buf (String.escaped t); format_char buf '"'; format_string buf ":t"
        | Var v -> format_char buf '"'; format_string buf v; format_char buf '"'; format_string buf ":v"
        | MNumber v -> format_string buf v; format_string buf ":n"
        | MString v -> format_string buf v; format_string buf ":s"

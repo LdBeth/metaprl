@@ -44,6 +44,7 @@ open File_base_type
 open Refiner_io
 open Refiner.Refiner
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
@@ -84,6 +85,13 @@ let debug_dform =
         debug_value = false
       }
 
+let debug_spell =
+   create_debug (**)
+      { debug_name = "spell";
+        debug_description = "check spelling";
+        debug_value = false
+      }
+
 (************************************************************************
  * PATHS                                                                *
  ************************************************************************)
@@ -95,6 +103,48 @@ let include_path = ref ["."]
 
 let set_include_path path =
    include_path := path
+
+(*
+ * Spelling.
+ *)
+let mispelled = ref []
+
+let init () =
+   if !debug_spell then
+      Filter_spell.init ()
+
+let close () =
+   let rec print col word = function
+      h :: t ->
+         if h = word then
+            print col word t
+         else
+            let len = String.length h in
+            let col =
+               if col + len >= 80 then
+                  begin
+                     eprintf "\n\t%s" h;
+                     len + 9
+                  end
+               else
+                  begin
+                     eprintf " %s" h;
+                     col + len + 1
+                  end
+            in
+               print col h t
+    | [] ->
+         ()
+   in
+   let l = Sort.list (<) !mispelled in
+      mispelled := [];
+      if l <> [] then
+         begin
+            eprintf "The following words may be mispelled:";
+            print 80 "" l;
+            eflush stderr;
+            raise (Failure "spelling")
+         end
 
 (************************************************************************
  * TERM GRAMMAR                                                         *
@@ -116,15 +166,17 @@ let mk_opname_ref =
    ref ((fun _ -> raise (Failure "Filter_parse.mk_opname is unititialized"))
         : string list -> Opname.opname)
 
+let mk_opname loc l =
+   try !mk_opname_ref l with
+      exn ->
+         Stdpp.raise_with_loc loc exn
+
 (*
  * Base term grammar.
  *)
 module TermGrammarBefore : TermGrammarSig =
 struct
-   let mk_opname loc l =
-      try !mk_opname_ref l with
-         exn ->
-            Stdpp.raise_with_loc loc exn
+   let mk_opname = mk_opname
 
    (*
     * Term grammar.
@@ -153,6 +205,10 @@ open TermGrammar
 (*
  * String -> string translator.
  *)
+let parse_term s =
+   let cs = Stream.of_string s in
+      Grammar.Entry.parse TermGrammar.term_eoi cs
+
 let term_exp s =
    let cs = Stream.of_string s in
    let t = Grammar.Entry.parse TermGrammar.term_eoi cs in
@@ -196,8 +252,20 @@ let contractum_exp s =
 let contractum_patt s =
    raise (Failure "Filter_parse.term_patt: not implemented yet")
 
+(*
+ * Documentation strings are converted to identifable ocaml code.
+ *)
+let string_exp s =
+   let loc = 0, 0 in
+      <:expr< $str:s$ >>
+
+let string_patt s =
+   let loc = 0, 0 in
+      <:patt< $str: s$ >>
+
 let _ = Quotation.add "term" (Quotation.ExAst (term_exp, term_patt))
 let _ = Quotation.add "con" (Quotation.ExAst (contractum_exp, contractum_patt))
+let _ = Quotation.add "string" (Quotation.ExAst (string_exp, string_patt))
 let _ = Quotation.default := "term"
 
 (************************************************************************
@@ -237,6 +305,95 @@ let get_string_param loc t =
             Stdpp.raise_with_loc loc (RefineError ("Filter_parse.get_string_param", TermMatchError (t, "no params")))
        | _ ->
             Stdpp.raise_with_loc loc (RefineError ("Filter_parse.get_string_param", TermMatchError (t, "too many params")))
+
+(*
+ * Make a term with a string parameter.
+ *)
+let mk_string_param_term opname s terms =
+   let param = make_param (String s) in
+   let op = mk_op opname [param] in
+   let bterms = List.map (fun t -> mk_bterm [] t) terms in
+      mk_term op bterms
+
+(*
+ * Terms for representing comments.
+ *)
+let mk_comment_opname =
+   let op = Opname.mk_opname "Comment" Opname.nil_opname in
+      fun s -> Opname.mk_opname s op
+
+let comment_white_op = mk_comment_opname "comment_white"
+let comment_string_op = mk_comment_opname "comment_string"
+let comment_block_op = mk_comment_opname "comment_block"
+let comment_term_op = mk_comment_opname "comment_term"
+
+(*
+ * Parse a comment string.
+ *)
+type spelling =
+   SpellOff
+ | SpellOn
+ | SpellAdd
+
+let parse_comment loc t =
+   (*
+    * Convert the result of the Comment_parse.
+    *)
+   let rec build_comment_term spelling = function
+      Comment_parse.White ->
+         mk_simple_term comment_white_op []
+    | Comment_parse.String s ->
+         if !debug_spell then
+            begin
+               match spelling with
+                  SpellOff ->
+                     ()
+                | SpellAdd ->
+                     Filter_spell.add s
+                | SpellOn ->
+                     if not (Filter_spell.check s) then
+                        mispelled := s :: !mispelled
+            end;
+         mk_string_param_term comment_string_op s []
+    | Comment_parse.Term (opname, params, args) ->
+         let spelling =
+            if !debug_spell then
+               match opname with
+                  ["spelling"] ->
+                     SpellAdd
+                | ["misspelled"]
+                | ["math_misspelled"] ->
+                     SpellOff
+                | _ ->
+                     spelling
+            else
+               spelling
+         in
+         let opname = mk_opname loc opname in
+         let params = List.map (fun s -> make_param (String s)) params in
+         let args = List.map (fun t -> mk_simple_bterm (build_term spelling t)) args in
+         let op = mk_op opname params in
+         let t = mk_term op args in
+            mk_simple_term comment_term_op [t]
+    | Comment_parse.Block items ->
+         mk_simple_term comment_block_op [build_term spelling items]
+    | Comment_parse.Quote (tag, s) ->
+         if tag = "" then
+            mk_simple_term comment_term_op [parse_term s]
+         else
+            mk_string_param_term comment_string_op s []
+
+   and build_term spelling tl =
+      mk_xlist_term (List.map (build_comment_term spelling) tl)
+   in
+   let s = dest_string_param t in
+   let loc1, loc2 = loc in
+   let items =
+      try Comment_parse.parse s with
+         Comment_parse.Parse_error (s, loc1', loc2') ->
+            Stdpp.raise_with_loc (loc1 + loc1', loc1 + loc2') (ParseError s)
+   in
+      mk_simple_term comment_term_op [build_term SpellOn items]
 
 (*
  * Wrap a code block with a binding variable.
@@ -684,6 +841,12 @@ struct
       FilterCache.add_command proc.cache (ToploopItem item, loc)
 
    (*
+    * A toplevel structured comment is converted to a term.
+    *)
+   let declare_comment proc loc s =
+      FilterCache.add_command proc.cache (Comment (mk_string_param_term comment_string_op s []), loc)
+
+   (*
     * A magic block computes a hash value from the definitions
     * in the block.
     *)
@@ -748,6 +911,9 @@ struct
       (* Check that implementation matches interface *)
       let sig_info = FilterCache.check proc.cache alt_select in
       let _ =
+         (* Read the comments *)
+         FilterCache.parse_comments proc.cache parse_comment;
+
          (* Also copy the proofs if they exist *)
          if proc.select = ImplementationType then
             let name = proc.name in
@@ -935,7 +1101,7 @@ EXTEND
                    <:str_item< declare $list: []$ end >> ->
                       ()
                  | _ ->
-                      StrFilter.add_command (StrFilter.get_proc loc) (SummaryItem s, loc);
+                      StrFilter.add_command (StrFilter.get_proc loc) (SummaryItem s, loc)
              end;
              s, loc
           in
@@ -1033,6 +1199,12 @@ EXTEND
               SigFilter.declare_topval (SigFilter.get_proc loc) loc <:sig_item< value $name$ : $t$ >>
            in
               print_exn f "topval" loc;
+              empty_sig_item loc
+        | com = COMMENT ->
+           let f () =
+              StrFilter.declare_comment (StrFilter.get_proc loc) loc com
+           in
+              print_exn f "comment" loc;
               empty_sig_item loc
        ]];
 
@@ -1183,6 +1355,12 @@ EXTEND
               StrFilter.define_magic_block (StrFilter.get_proc loc) loc name st
            in
               print_exn f "magic_block" loc;
+              empty_str_item loc
+        | com = COMMENT ->
+           let f () =
+              StrFilter.declare_comment (StrFilter.get_proc loc) loc com
+           in
+              print_exn f "comment" loc;
               empty_str_item loc
        ]];
 

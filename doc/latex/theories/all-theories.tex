@@ -1,0 +1,35 @@
+% -*- Mode: fundamental -*-
+\documentclass{article}
+
+%
+% Ludica-Bright fonts
+%
+\usepackage{lucidbry}
+%\usepackage[ansinew]{texnansi}
+%\usepackage[LY1]{fontenc}
+
+%
+% Hyperlinks
+%
+\usepackage{hyperref}
+
+%
+% Definitions.
+%
+\input{metaprl}
+\makeindex
+
+\begin{document}
+
+\sloppy
+\input{base/theory-body.tex}
+\input{fol/theory-body.tex}
+\input{itt/theory-body.tex}
+\input{czf/theory-body.tex}
+\input{all-theories.ind}
+
+\input{all-theories.ind}
+\bibliographystyle{alpha}
+\bibliography{metaprl}
+
+\end{document}

@@ -222,6 +222,7 @@ sig
       (term, term, term, term, term, term, 'term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) convert ->
       term list ->
       ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info
+
    (*
     * Interface checking.
     *)
@@ -234,6 +235,11 @@ sig
       ('proof1 -> 'proof2 -> 'proof1) ->
       (term, meta_term, 'proof1, 'ctyp1, 'expr1, 'item1) module_info ->
       (term, meta_term, 'proof2, 'ctyp2, 'expr2, 'item2) module_info ->
+      (term, meta_term, 'proof1, 'ctyp1, 'expr1, 'item1) module_info
+
+   val parse_comments :
+      (int * int -> term -> term) ->
+      (term, meta_term, 'proof1, 'ctyp1, 'expr1, 'item1) module_info ->
       (term, meta_term, 'proof1, 'ctyp1, 'expr1, 'item1) module_info
 end
 

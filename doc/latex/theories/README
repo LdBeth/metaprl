@@ -1,0 +1,5 @@
+This directory contains documentation of the
+MetaPRL theories compiled in LaTeX format.
+
+The documentation is generated with "make".
+Use it to generate a new documentation file.

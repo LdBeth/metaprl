@@ -424,7 +424,7 @@ struct
       let rsrc =
          try Mptop.get_resource name with
             Not_found ->
-               eprintf "Module %s: commands not found%t" name eflush;
+               eprintf "Module %s: Mptop commands not found%t" name eflush;
                Mptop.ext_toploop_resource
       in
       let rsrc = Mp_resource.improve_list rsrc commands in

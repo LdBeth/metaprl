@@ -185,6 +185,7 @@ sig
    val create_cache : t -> module_name -> select -> select -> info
    val load : t -> arg -> module_name -> select -> select -> 'a hook -> 'a -> alt_suffix -> info * 'a
    val check : info -> arg -> select -> sig_info
+   val parse_comments : info -> (loc -> term -> term) -> unit
    val copy_proofs : info -> arg -> (str_proof -> str_proof -> str_proof) -> unit
    val set_mode : info -> summary_mode -> unit
    val save : info -> arg -> alt_suffix -> unit

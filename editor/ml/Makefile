@@ -39,6 +39,7 @@ MPFILES =\
 	proof_edit\
 	package_sig\
 	package_info\
+	shell_tex\
 	shell_sig\
 	shell_rewrite\
 	shell_rule\
@@ -234,6 +235,26 @@ mp_version.cmx: $(CMXOBJS) $(CMXADEPS) $(TCMXADEPS) mp_version.cmi Makefile
 
 mp_version.cmi: mp_version.mli
 	$(OCAMLC) $(OCAMLCFLAGS) mp_version.mli
+
+#
+# TeX
+#
+TEXDIR=$(ROOT)/doc/latex/theories
+
+TEXTHEORIES=\
+	base\
+	fol\
+	itt\
+	czf
+
+TEXFILES=$(addprefix $(TEXDIR)/, $(addsuffix /theory.tex, $(TEXTHEORIES)))
+
+.PHONY: tex
+
+tex: $(TEXFILES)
+
+$(TEXDIR)/%/theory.tex: $(MP).top $(TEXDIR)/%/print.ml
+	./mptop $(TEXDIR)/$*/print.ml
 
 # Real makefile
 include $(ROOT)/mk/rules

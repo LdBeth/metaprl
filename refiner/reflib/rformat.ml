@@ -6,6 +6,9 @@
  *    format_sbreak str str': soft break is taken if necessary
  *        if taken, str is printed after the current line
  *        if not, str' is printed
+ *    format_cbreak str str': soft break is taken only if the very next word causes a break
+ *        if taken, str is printed after the current line
+ *        if not, str' is printed
  *    format_hbreak str str': hard breaks are taken in groups
  *        if taken, str is printed
  *        if not, str' is printed
@@ -84,7 +87,7 @@ type 'tag zone_tag =
  | SZoneTag
  | IZoneTag
  | TZoneTag of 'tag
- | MZoneTag of int
+ | MZoneTag of int * string
 
 (*
  * A print command is
@@ -94,12 +97,14 @@ type 'tag zone_tag =
  *      a. the number of the corresponding zone
  *      b. a string to append to the current line if the break is taken
  *      c. a string to append if it is not
+ *      d. a string to append to the next line if the break is taken
  *
  *   3. a soft SBreak
  *      Soft breaks are optional, and all are independent of one another
  *      a. a unique number
  *      b. a string to append to the current line if the break is taken
  *      c. a string to append if it is not
+ *      d. a string to append to the next line if the break is taken
  *
  *   4. zone control
  *      LZone: no line breaks are allowed in a linear zone
@@ -118,6 +123,7 @@ type 'tag print_command =
     * HBreak is a break that is always taken.
     *)
  | Break of int * int * int * string * string
+ | CBreak of int * int * int * string * string
  | HBreak
 
    (*
@@ -134,7 +140,7 @@ and 'tag formatted_info =
      formatted_breaks : bool array;     (* Flags for breaks that were taken *)
      formatted_col : int;               (* Starting column *)
      formatted_maxx : int;              (* Max layout column *)
-     formatted_lmargin : int;           (* Left margin provided by environment *)
+     formatted_lmargin : int * string;  (* Left margin provided by environment *)
      formatted_search : bool            (* Was this zone formatted in linear mode? *)
    }
 
@@ -206,7 +212,7 @@ and 'tag root =
 type 'tag printer =
    { print_string : string -> unit;
      print_invis : string -> unit;
-     print_tab : int -> unit;
+     print_tab : int * string -> unit;
      print_begin_block : 'tag buffer -> int -> unit;
      print_end_block : 'tag buffer -> int -> unit;
      print_begin_tag : 'tag buffer -> 'tag -> unit;
@@ -353,7 +359,10 @@ let format_tzone buf tag =
    push_zone buf (TZoneTag tag)
 
 let format_pushm buf off =
-   push_zone buf (MZoneTag off)
+   push_zone buf (MZoneTag (off, String.make off ' '))
+
+let format_pushm_str buf s =
+   push_zone buf (MZoneTag (String.length s, s))
 
 (*
  * End the zone by popping the last entry off the stack.
@@ -458,6 +467,15 @@ let rec get_hard_binder buf =
    in
       search (get_formatting_stack buf).formatting_stack
 
+let format_cbreak buf str str' =
+   let l = String.length str in
+   let l' = String.length str' in
+      try
+         push_command buf (CBreak (get_soft_binder buf, l, l', str, str'))
+      with
+         NoBinder ->
+            ()
+
 let format_sbreak buf str str' =
    let l = String.length str in
    let l' = String.length str' in
@@ -497,6 +515,9 @@ let format_char buf c =
 (*
  * Check for newlines in the string.
  *)
+let format_raw_string buf s =
+   push_command buf (Text (String.length s, s))
+
 let rec format_string buf s =
    try
        let i = String_util.strchr s '\n' in
@@ -616,11 +637,29 @@ let get_formatted buf =
            formatted_breaks = Array.create (succ index) false;
            formatted_col = 0;
            formatted_maxx = 0;
-           formatted_lmargin = 0;
+           formatted_lmargin = 0, "";
            formatted_search = false
          }
     | Formatting _ ->
          raise (Invalid_argument "Rformat.get_formatted")
+
+(*
+ * Search for the next Text item.
+ *)
+let rec next_text_len = function
+   Text (len, _) :: _ when len > 0 ->
+      len
+ | Inline buf :: t when buf.buf_tag <> IZoneTag ->
+      let { unformatted_commands = commands } = get_unformatted buf in
+      let len = next_text_len commands in
+         if len = 0 then
+            next_text_len t
+         else
+            len
+ | _ :: t ->
+      next_text_len t
+ | [] ->
+      0
 
 (*
  * Breaks are never taken in a linear zone.
@@ -638,11 +677,14 @@ let rec search_lzone buf lmargin rmargin col maxx search =
              | Break (_, _, notake_len, _, _) ->
                   let col = col + notake_len in
                      col, max col maxx
+             | CBreak (_, _, notake_len, _, _) ->
+                  let col = col + notake_len in
+                     col, max col maxx
              | HBreak ->
                   let col = succ col in
                      col, max col maxx
              | Inline buf' ->
-                  search_zone buf' lmargin rmargin col maxx [||] search
+                  search_lzone buf' lmargin rmargin col maxx search
          in
             if search && col >= rmargin then
                raise MarginError;
@@ -670,7 +712,7 @@ let rec search_lzone buf lmargin rmargin col maxx search =
  * function is both for tagged zones, and as the inner
  * search of hard/soft breaking zones.
  *)
-and search_tzone buf lmargin rmargin col maxx breaks search =
+and search_tzone buf ((lmargin, _) as lmargin') rmargin col maxx breaks search =
    if !debug_rformat then
       eprintf "Rformat.search_tzone%t" eflush;
    let rec collect col maxx search = function
@@ -682,6 +724,31 @@ and search_tzone buf lmargin rmargin col maxx breaks search =
                      if search && col >= rmargin then
                         raise MarginError;
                      collect col (max col maxx) search t
+
+             | CBreak (index, take_len, notake_len, _, _) ->
+                  if !debug_rformat then
+                     eprintf "CBreak col=%d rmargin=%d search=%b index=%d breaks=%b%t" col rmargin search index breaks.(index) eflush;
+                  if search then
+                     (* Searching for margin error in linear mode *)
+                     let col = col + notake_len in
+                        if col >= rmargin then
+                           raise MarginError;
+                        collect col (max col maxx) true t
+
+                  else if breaks.(index) then
+                     (* Break has been chosen, and we are not searching *)
+                     collect (lmargin + take_len) maxx search t
+
+                  else
+                     let len = next_text_len t in
+                     let col' = col + notake_len in
+                        if col' + len >= rmargin then
+                           begin
+                              breaks.(index) <- true;
+                              collect (lmargin + take_len) maxx false t
+                           end
+                        else
+                           collect (col + notake_len) (max col' maxx) false t
 
              | Break (index, take_len, notake_len, _, _) ->
                   if !debug_rformat then
@@ -712,7 +779,7 @@ and search_tzone buf lmargin rmargin col maxx breaks search =
                   collect lmargin maxx search t
 
              | Inline buf' ->
-                  let col, maxx = search_zone buf' lmargin rmargin col maxx breaks search in
+                  let col, maxx = search_zone buf' lmargin' rmargin col maxx breaks search in
                      collect col maxx search t
          end
 
@@ -726,7 +793,7 @@ and search_tzone buf lmargin rmargin col maxx breaks search =
         formatted_breaks = breaks;
         formatted_col = col;
         formatted_maxx = maxx;
-        formatted_lmargin = lmargin;
+        formatted_lmargin = lmargin';
         formatted_search = search
       }
    in
@@ -773,9 +840,11 @@ and search_zone buf lmargin rmargin col maxx breaks search =
     | TZoneTag _ ->
          (* Tag doesn't affect the breaking *)
          search_tzone buf lmargin rmargin col maxx breaks search
-    | MZoneTag off ->
+    | MZoneTag (off, str) ->
          (* Adjust the left margin *)
-         search_tzone buf (col + off) rmargin col maxx breaks search
+         let lmargin, str' = lmargin in
+         let lmargin = col + off, str' ^ str in
+            search_tzone buf lmargin rmargin col maxx breaks search
 
 (*
  * Calculate all the line breaks.
@@ -784,7 +853,7 @@ let compute_breaks buf width =
    if !debug_rformat then
       eprintf "Rformat.compute_breaks%t" eflush;
    flush_formatting buf;
-   search_zone buf 0 width 0 0 [||] false
+   search_zone buf (0, "") width 0 0 [||] false
 
 (*
  * Refresh a buffer.
@@ -848,6 +917,15 @@ let rec print_lzone buf rmargin col printer =
                   else
                      col
 
+             | CBreak (_, _, notake_len, _, notake) ->
+                  if col + notake_len <= rmargin then
+                     begin
+                        printer.print_string notake;
+                        print (col + notake_len) t
+                     end
+                  else
+                     col
+
              | HBreak ->
                   if succ col <= rmargin then
                      begin
@@ -858,7 +936,7 @@ let rec print_lzone buf rmargin col printer =
                      col
 
              | Inline buf' ->
-                  print (print_zone buf' rmargin col printer true) t
+                  print (print_lzone buf' rmargin col printer) t
          end
 
     | [] ->
@@ -875,7 +953,7 @@ and print_tzone buf rmargin col printer =
       eprintf "Rformat.print_tzone%t" eflush;
    let { formatted_commands = commands;
          formatted_breaks = breaks;
-         formatted_lmargin = lmargin
+         formatted_lmargin = ((lmargin', str) as lmargin)
        } = get_formatted buf
    in
    let rec print col = function
@@ -891,7 +969,20 @@ and print_tzone buf rmargin col printer =
                      begin
                         printer.print_tab lmargin;
                         printer.print_string take;
-                        print lmargin t
+                        print lmargin' t
+                     end
+                  else
+                     begin
+                        printer.print_string notake;
+                        print (col + notake_len) t
+                     end
+
+             | CBreak (index, take_len, notake_len, take, notake) ->
+                  if breaks.(index) then
+                     begin
+                        printer.print_tab lmargin;
+                        printer.print_string take;
+                        print lmargin' t
                      end
                   else
                      begin
@@ -901,7 +992,7 @@ and print_tzone buf rmargin col printer =
 
              | HBreak ->
                   printer.print_tab lmargin;
-                  print lmargin t
+                  print lmargin' t
 
              | Inline buf' ->
                   print (print_zone buf' rmargin col printer false) t
@@ -940,9 +1031,12 @@ and print_zone buf rmargin col printer linear =
               print_end_tag = print_arg2_invis
             }
          in
-            print_tzone buf rmargin col printer
+            if linear then
+               print_lzone buf rmargin col printer
+            else
+               print_tzone buf rmargin col printer
 
-    | MZoneTag off ->
+    | MZoneTag (off, str) ->
          printer.print_begin_block buf (col + off);
          let col = print_tzone buf rmargin col printer in
             printer.print_end_block buf (col + off);
@@ -970,11 +1064,9 @@ let make_channel_printer out =
    let print_string s =
       output_string out s
    in
-   let print_tab i =
+   let print_tab (_, str) =
       output_char out '\n';
-      for j = 0 to pred i do
-         output_char out ' '
-      done
+      output_string out str
    in
       { print_string = print_string;
         print_invis = print_arg1_invis;
@@ -993,8 +1085,8 @@ let make_string_printer () =
    let print_string s =
       strings := s :: !strings
    in
-   let print_tab i =
-      strings := ("\n" ^ String.make i ' ') :: !strings
+   let print_tab (_, str) =
+      strings := ("\n" ^ str) :: !strings
    in
    let printer =
       { print_string = print_string;
@@ -1122,7 +1214,7 @@ let html_tab_line buf =
  * Compute all pending tabstops,
  * then push the line and the new tabstop.
  *)
-let html_tab buf col =
+let html_tab buf (col, _) =
    if col = 0 then
       begin
          html_push_line buf;
@@ -1206,7 +1298,7 @@ type 'tag tex_buffer =
 (*
  * Have to escape special characters.
  *)
-let tex_escape_string s =
+let tex_escape_string linebreaks s =
    let len = String.length s in
    let rec collect i j =
       if j = len then
@@ -1240,6 +1332,8 @@ let tex_escape_string s =
                collect_escape i j "\\verb+\\+"
           | '$' ->
                collect_escape i j "\\$"
+          | '%' ->
+               collect_escape i j "\\%"
           | _ ->
                collect i (succ j)
    and collect_escape i j s' =
@@ -1266,7 +1360,7 @@ let tex_line buf =
    let rec collect line = function
       (vis, h) :: t ->
          if vis then
-            collect (tex_escape_string h ^ line) t
+            collect (tex_escape_string true h ^ line) t
          else
             collect (h ^ line) t
     | [] ->
@@ -1288,6 +1382,7 @@ let tex_visible buf =
 let tex_push_line buf =
    let line = tex_line buf in
       output_string buf.tex_out line;
+      output_string buf.tex_out "\\\\\n";
       buf.tex_current_line <- []
 
 (*
@@ -1301,11 +1396,11 @@ let tex_tab_line buf =
  * Compute all pending tabstops,
  * then push the line and the new tabstop.
  *)
-let tex_tab buf col =
+let tex_tab buf (col, _) =
    if col = 0 then
       begin
          tex_push_line buf;
-         output_string buf.tex_out "\\\\\n";
+         buf.tex_current_line <- [false, "\\\\\n"];
          buf.tex_prefix <- ""
       end
    else
@@ -1317,10 +1412,9 @@ let tex_tab buf col =
             else
                String.sub tabline 0 col
          in
-         let spacer = sprintf "\\phantom{%s}" (tex_escape_string prefix) in
+         let spacer = sprintf "\\phantom{%s}" (tex_escape_string false prefix) in
             buf.tex_prefix <- prefix;
-            output_string buf.tex_out "\\\\\n";
-            output_string buf.tex_out spacer
+            buf.tex_current_line <- [false, spacer]
 
 (*
  * Begin a tagged block.
@@ -1396,7 +1490,9 @@ let print_to_html rmargin buf out =
  *)
 let print_to_tex rmargin buf out =
    let get_info, printer = make_tex_printer out in
-      print_to_printer buf rmargin printer
+      output_string out "\\iftex\\begin{tabbing}\n";
+      print_to_printer buf rmargin printer;
+      output_string out "\\end{tabbing}\\fi\n"
 
 (*
  * -*-

@@ -1052,6 +1052,10 @@ let extract_sig_item (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: id: 0x%08x%t" id eflush;
          []
+    | Comment e ->
+         if !debug_filter_prog then
+            eprintf "Filter_prog.extract_sig_item: comment%t" eflush;
+         []
     | Infix name ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: infix: %s%t" name eflush;
@@ -2327,6 +2331,10 @@ struct
        | Id _ ->
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: id%t" eflush;
+            []
+       | Comment _ ->
+            if !debug_filter_prog then
+               eprintf "Filter_prog.extract_str_item: comment%t" eflush;
             []
        | Infix _ ->
             if !debug_filter_prog then

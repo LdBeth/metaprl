@@ -93,8 +93,10 @@ let main () =
    Arg.current := 1;
    Env_arg.parse spec add_anon_arg "MetaPRL compiler";
    set_include_path !include_path;
+   Filter_parse.init ();
    try
-      Filter_exn.print Dform.null_base !Odyl_main.go ()
+      Filter_exn.print Dform.null_base !Odyl_main.go ();
+      Filter_parse.close ()
    with
       exn ->
          remove_output_file ();

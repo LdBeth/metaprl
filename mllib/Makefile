@@ -84,7 +84,8 @@ LMFILES :=\
 	weak_memo\
 	permutations\
 	mp_inet\
-	http_server
+	http_server\
+	comment_parse
 
 # Name of library
 MAIN := util
@@ -105,7 +106,7 @@ include Makefile.dep
 # Rules
 #
 lib: $(RMLIFILES) $(RCMIFILES) $(RCMAFILES)
-opt: $(RMLIFILES) $(RCMIFILES) $(RCMXAFILES) 
+opt: $(RMLIFILES) $(RCMIFILES) $(RCMXAFILES)
 	@ $(MAKE) $(RAFILES)
 
 install:: $(MAIN).cma $(CMIFILES)

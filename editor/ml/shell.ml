@@ -387,6 +387,9 @@ struct
           | MagicBlock _ ->
                eprintf "Editing magic block '/%s/%s' not implemented%t" modname name eflush;
                raise (Failure "view")
+          | Comment _ ->
+               eprintf "Editing comment '/%s/%s' not implemented%t" modname name eflush;
+               raise (Failure "view")
       in
          (* Leave the current proof at the root *)
          info.proof.edit_addr [];
@@ -451,6 +454,8 @@ struct
                      (LsRewrites :: options)
                 | 'u' ->
                      (LsUnjustified :: options)
+                | 'a' ->
+                     (LsAll :: options)
                 | _ ->
                      raise (RefineError ("ls", StringStringError ("unrecognized option", s)))
             in
@@ -1143,16 +1148,21 @@ struct
          set i
 
    (*
-    * HACK!!!  This is for testing until the opnames get fixed.
+    * TeX functions.
     *)
-   and expand_thy info thy =
-      match Unix.fork () with
-         0 ->
-            ignore (cd info thy);
+   and set_tex_file info name =
+      Shell_tex.set_file name
+
+   and print_theory info name =
+      let f () =
+         let mode = info.df_mode in
+            info.df_mode <- "tex";
+            ignore (cd info ("/" ^ name));
             expand_all info;
-            exit 0
-       | pid ->
-            ignore (Unix.waitpid [] pid)
+            view info ".";
+            info.df_mode <- mode
+      in
+         print_exn info f ()
 
    (*
     * Commands.
@@ -1212,14 +1222,15 @@ struct
        "make_assum",       UnitFunExpr     (fun () -> UnitExpr (make_assum info));
        "sync",             UnitFunExpr     (fun () -> UnitExpr (sync info));
        "expand_all",       UnitFunExpr     (fun () -> UnitExpr (expand_all info));
-       "expand_thy",       StringFunExpr   (fun s  -> UnitExpr (expand_thy info s));
        "check_all",        UnitFunExpr     (fun () -> UnitExpr (check_all info));
        "clean_all",        UnitFunExpr     (fun () -> UnitExpr (clean_all info));
        "squash_all",       UnitFunExpr     (fun () -> UnitExpr (squash_all info));
        "set_debug",        StringFunExpr   (fun s  -> BoolFunExpr (fun b -> UnitExpr (set_debug s b)));
        "stop_gmon",        UnitFunExpr     (fun () -> UnitExpr (stop_gmon ()));
        "restart_gmon",     UnitFunExpr     (fun () -> UnitExpr (restart_gmon ()));
-       "print_gc_stats",   UnitFunExpr     (fun () -> UnitExpr (Gc.print_stat stdout))]
+       "print_gc_stats",   UnitFunExpr     (fun () -> UnitExpr (Gc.print_stat stdout));
+       "set_tex_file",     StringFunExpr   (fun s  -> UnitExpr (set_tex_file info s));
+       "print_theory",     StringFunExpr   (fun s  -> UnitExpr (print_theory info s))]
 
    (************************************************************************
     * NUPRL5 INTERFACE                                                     *

@@ -114,7 +114,7 @@ let create_window = function
    DisplayText (base, mode) ->
       TextWindow { df_base = base; df_mode = mode; df_width = 80 }
  | DisplayTex base ->
-      TexWindow { df_base = base; df_mode = "tex"; df_width = 80 }
+      TexWindow { df_base = base; df_mode = "tex"; df_width = 70 }
  | DisplayGraphical (port, base) ->
       let menu = Display_term.create_term port base in
          ProofWindow { pw_port = port; pw_base = base; pw_menu = menu }
@@ -142,9 +142,10 @@ let display_term pack window term =
     | TexWindow { df_base = base; df_mode = mode; df_width = width } ->
          let df = get_mode_base base mode in
          let buf = Rformat.new_buffer () in
+         let out = Shell_tex.open_file () in
             Dform.format_term df buf term;
-            Rformat.print_to_tex width buf stdout;
-            flush stdout
+            Rformat.print_to_tex width buf out;
+            Shell_tex.close_file out
     | ProofWindow { pw_menu = menu } ->
          Display_term.set_dir menu ("/" ^ Package.name pack);
          Display_term.set menu term
@@ -165,17 +166,8 @@ open FilterSummaryTerm
 (*
  * This comment function removes expressions.
  *)
-let comment =
-   let loc = 0, 0 in
-   let null_term = mk_var_term "..." in
-   let comment ttype _ t =
-      match ttype with
-         ExprTerm ->
-            null_term
-       | _ ->
-            t
-   in
-      comment
+let comment _ _ t =
+   t
 
 let identity x       = x
 let term_of_expr     = term_of_expr [] comment
@@ -196,7 +188,7 @@ let convert_intf =
 let convert_impl =
    let convert_proof _ = function
       Primitive t ->
-         mk_var_term "!"
+         mk_so_var_term "!" [t]
     | Derived expr ->
          mk_var_term "?"
     | Incomplete ->
@@ -241,6 +233,12 @@ let term_of_implementation pack filter parse_arg =
 (*
  * Filter the entries for ls.
  *)
+let is_not_summary_item = function
+   SummaryItem _ ->
+      false
+ | _ ->
+      true
+
 let is_rewrite_item = function
    Rewrite _
  | CondRewrite _
@@ -295,13 +293,15 @@ let compile_ls_predicate = function
 
 let rec mk_ls_filter predicate = function
    LsAll :: tl ->
-      mk_ls_filter predicate tl
+      mk_ls_filter [] tl
  | LsRewrites :: tl ->
       mk_ls_filter (is_rewrite_item :: predicate) tl
  | LsRules :: tl ->
       mk_ls_filter (is_rule_item :: predicate) tl
  | LsUnjustified :: tl ->
       mk_ls_filter (is_unjustified_item :: predicate) tl
+ | LsNoSummaryItems :: tl ->
+      mk_ls_filter (is_not_summary_item :: predicate) tl
  | [] ->
       compile_ls_predicate predicate
 
@@ -320,7 +320,7 @@ let raise_edit_error s =
  *)
 let rec edit pack_info parse_arg window =
    let edit_display options =
-      display_term pack_info window (term_of_implementation pack_info (mk_ls_filter [] options) parse_arg)
+      display_term pack_info window (term_of_implementation pack_info (mk_ls_filter [is_not_summary_item] options) parse_arg)
    in
    let edit_copy () =
       edit pack_info parse_arg (new_window window)
