@@ -1,0 +1,154 @@
+<html><head><title>UI Design Goals and Ideas</title></head>
+<body><h1>UI Design Goals and Ideas</h1>
+<h2>Overview</h2>
+We want a UI that
+<ul><li>Is general enough to allow us to connect it to Omega, MetaPRL, NuPRL
+(and possibly other proof assistants) equally easy.
+<li>Simple enough for the beginners; it should work from an applet without
+requiring any additional downloads (provided the user already has JVM version
+&gt;= 1.3).
+<li>Powerful and flexible enough to allow access to most of the features of
+the prover.
+</ul>
+<h2>Design requirements</h2>
+We want the UI to be able to display the following kinds of items:
+<ul><li>Theory listing
+<li>Proof node
+<li>Graph of a proof structure
+<li>Menu (global, local, submenu, etc)</li><br>
+<b>Question:</b> How about listing <i>of</i> theories, do we want a special
+item type for that?<br>
+<b>Question:</b> We have discussed that want to allow editing of certain items in a theory (e.g
+comments, code objects, possibly - theorem statements). Do we want to allow
+editing them in a theory listing, or do we want to have a special item
+type (or types?) for an editable display of such objects?<br>
+<b>Question:</b> In particular, do we need a special kind of item for a
+theorem, or will the top-level proof node be sufficient. In other words, when
+we select a theorem in a theory listing, should it bring the top-level proof
+node, or some intermediate theorem display, or should it be prover-specific?
+</ul>
+with the following requirements
+<ul><li>Each kind of items should be displayed in a way appropriate for that
+kind of items. This probably means that each particular window should only
+be used to display items of one kind.
+<li>Whenever we are displaying terms, we should do it in a way that is
+consistent with their internal structure.
+<li>Term display should allow <i>structured</i> selection (e.g. copy&amp;paste
+of subterms).
+<li>All the displays should allow appropriate navigation.
+<li>Theory listing display should allow displaying and editing plain-ASCII
+theory items (such as comments, code, etc).
+<li>In the proof node display, each subterm of a goal term should allow a
+proof menu to be associated with it (supplied by the prover when requested by
+UI, not a part of the proof node item).
+<li>The method (tactic) used to generate a node should be displayed as a part
+of the node and should be editable. The subgoals of a node (at least in the
+case of a sequent calculus) should be displayed there as well.<br>
+<b>Question:</b> What should be displayed in the proof node display in case of
+a natural deduction calculus?
+<li>In addition to default ("pretty printed") representation, the prover may
+be capable of providing alternative representations of some items - for
+example, verbalized representation, source ("input") representation of terms,
+etc. The UI should not assume the prover supports some particular
+representation (except for the default one), but should be capable of
+requesting and displaying those that the prover does support.
+<li> All communication should be initiated by the UI (to avoid firewall
+problems, etc), preferably in the form of HTTP GET and POST requests
+(including <a href="http://www.xmlrpc.org/">XML-RPC</a> queries).
+<li>Whenever UI initiates an action that causes the prover to change some of
+the items currently being displayed, the UI should be able to update the
+displayed items
+<ul><li>without UI having to refresh every single displayed item, even those
+that are completely unrelated to the one being changed
+<li>without the prover having to know the complete set of items being displayed
+</ul></ul>
+
+<h2>Design ideas</h2>
+<ul><li>Whenever a UI wants to display some item, it would ask for that item
+by name and the prover generates an appropriate representation of the item in
+the appropriate markup language (HTML or XML with <a
+href="http://www.mathweb.org/omdoc/">OMDOC</A> representation of terms).
+<li>In the representation of the item the prover would include the appropriate
+links to other objects to allow the navigation, all the navigation (with a few
+exceptions - see below) should be done this way. Some of the links would point
+to other items and some links would be "active" (e.g activating these links
+would cause the prover to make some action).<br>
+For example,
+<ul><li>A representation for a theory listing should include links for all
+"top-level" items of that theory that we want to be able to navigate into.
+<li>A menu would include links to submenu items as well as "active" links for
+all menu entries.
+</ul>
+<li>In case we are displaying a term and we want to associate a menu with each
+subterm, it does not make sense to actually provide a link for each of the
+subterms. We should probably only provide a "base" link in that case, and UI
+should know how to address the subterms properly.
+<li>The prover should have a hierarchical namespace for the items the UI is
+going to display. Since most of the names are communicated to UI as links, UI
+does not need to know much about how the namespace is structured and each
+prover should be able to come up with its own up to the following
+restrictions:
+<ul><li>The names should have the form of the URLs (this will simplify the
+integration with the HTTP protocol).
+<li>There should be a standard name for the top-level global menu (each
+submenu will be provided as a link in the global submenu).
+<li>The namespace should be hierarchical, using the <tt>/</tt> symbol as a
+separator (this is needed to simplify the communication of updates, see
+below). The hierarchy should correspond to the internal "dependencies" between
+items. For example
+<ul><li>A theory listing item could be named
+<tt>http://<i>host</i>/<i>theory</i>/</tt>
+<li>A top-level node of a theorem could be named
+<tt>http://<i>host</i>/<i>theory</i>/<i>theorem</i>/</tt> and so forth
+</ul>
+<li>URLs should have well-defined suffixes "separated from the rest by a
+<tt>.</tt> or by a <tt>?</tt>. The suffix should specify what kind of the item
+it is and which representation it is in. The first is necessary in order for
+the UI to know how to display the item (but we could use the HTTP
+<tt>Content-type</tt> field instead), the second is necessary so that UI
+could request alternative representations without the prover having to give
+links to them all the time
+<li>The subterms of a term should be addressed in a standard way and the menu
+items associated with the subterms of a goal term in a proof node item should
+be named according with this addressing.
+<li>
+</ul>
+<li>(?) When a UI sends the prover an "action" URL, the prover should respond
+with (among other things) a list of names of the items that have changed and
+should be updated if they are currently displayed. The prover would only give
+the URLs of the "top-level" items that have changed and the UI should
+understand that all the items "below" in the name hierarchy than those that
+were mentioned by the prover could have changed and should be updated as well.
+</ul>
+
+<h2>Organizational questions</h2>
+<ul><li>Do we have a name for the UI?
+<li>Is it time to create a CVS repository for the project (and put this
+document there, for example)?
+<li>Where should we create the repository - Omega CVS server or MetaPRL CVS
+server?<br>
+The advantages of the MetaPRL server:
+<ul>
+<li>Better "anti-firewall" setup - CVS is available on ports 80 and 3000, this
+allows access through more firewalls then other setups.
+<li>CVSWeb access for browsing the code and its history (see <a
+href="http://cvs.metaprl.org:12000/cvsweb/meta-prl/">http://cvs.metaprl.org:12000/cvsweb/meta-prl/</a>
+for an example).
+<li>CVS Commit messages forwarded to the mailing list and archived on the Web
+(linked to the CVSWeb; see <a
+href="http://cvs.cs.cornell.edu:12000/commitlogs/meta-prl/current.html">http://cvs.cs.cornell.edu:12000/commitlogs/meta-prl/current.html</a>
+for an example.
+<li>Direct CVS -&gt; HTTP for serving web pages stored on CVS (see, for
+example, <a
+href="http://cvs.metaprl.org:12000/metaprl/default.html">http://cvs.metaprl.org:12000/metaprl/default.html</a>
+- it is being checkout of CVS as you access it).
+<li>Highly secure server, lots of disk space, daily backups.
+<li>A separate administrative control - the project would have a separate
+set of accounts, that are not shared with anything else.
+</ul>
+The advantaged of the Omega server:
+<ul><li>More convenient for Omega group.
+<li>???
+</ul>
+</ul>
+
