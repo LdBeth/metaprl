@@ -65,13 +65,13 @@ open Weak_memo
 
 open Opname
 open Refiner.Refiner
-open Refiner.Refiner.TermType
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermOp
-open Refiner.Refiner.TermMan
-open Refiner.Refiner.TermSubst
-open Refiner.Refiner.RefineError
-open Refiner.Refiner.Refine
+open TermType
+open Term
+open TermOp
+open TermMan
+open TermSubst
+open RefineError
+open Refine
 open Refine_exn
 
 open Refiner_sig
@@ -114,13 +114,6 @@ let debug_proof_pending =
    create_debug (**)
       { debug_name = "proof_pending";
         debug_description = "show proof Pending operations";
-        debug_value = false
-      }
-
-let debug_unjustified =
-   create_debug (**)
-      { debug_name = "unjustified";
-        debug_description = "show how Unjustified nodes are created";
         debug_value = false
       }
 
@@ -233,7 +226,7 @@ struct
     * PROOF PRINTING                                                       *
     ************************************************************************)
 
-   let format_proof db buf { pf_root = root; pf_address = addr; pf_node = node } =
+   let format_proof db buf proof =
       let rec format_addr buf = function
          [i] ->
             format_int buf i
@@ -245,14 +238,14 @@ struct
             ()
       in
          format_string buf "Proof: [";
-         format_addr buf addr;
+         format_addr buf proof.pf_address;
          format_string buf "]";
          format_hspace buf;
-         format_extract db buf root;
+         format_extract db buf proof.pf_root;
          format_hspace buf;
          format_string buf "Node:";
          format_hspace buf;
-         format_extract db buf node
+         format_extract db buf proof.pf_node
 
    let print_ext ext =
       let buf = Rformat.new_buffer () in
@@ -893,14 +886,32 @@ struct
 
    let match_subgoals = match_subgoals_general (find_leaf tactic_arg_alpha_equal)
 
+   let tactic_arg_match arg1 arg2 =
+      let g1 = msequent_goal arg1.ref_goal in
+      let g2 = msequent_goal arg2.ref_goal in
+      try
+         let e1 = explode_sequent g1 in
+         let e2 = explode_sequent g2 in
+         begin try
+            ignore(Match_seq.match_hyps e1 e2);
+            true
+         with RefineError _ ->
+            ignore(Match_seq.match_hyps e2 e1);
+            true
+         end
+      with RefineError _ ->
+         false
+
    let find_leaf_guess leaf subgoals =
       match find_leaf tactic_arg_alpha_equal leaf subgoals with
          Goal _, _ ->
-            begin match find_leaf tactic_arg_alpha_equal_concl leaf subgoals with
-               RuleBox rb, subgoals ->
-                  RuleBox { rb with rule_extract = Goal leaf}, subgoals
-             | answer ->
-                  answer
+            begin match
+               match find_leaf tactic_arg_match leaf subgoals with
+                  Goal _, _ -> find_leaf tactic_arg_alpha_equal_concl leaf subgoals
+                | answer -> answer
+            with
+               RuleBox rb, subgoals -> RuleBox { rb with rule_extract = Goal leaf}, subgoals
+             | answer -> answer
             end
        | answer ->
             answer
@@ -1662,27 +1673,22 @@ struct
    (*
     * Set the goal of the current node.
     *)
-   let set_goal_ext proof node mseq =
+   let set_goal_ext node mseq =
       let goal = goal_ext node in
-      if Refine.msequent_alpha_equal mseq goal.ref_goal then
-         node
-      else
-         let arg = Goal { goal with ref_goal = mseq } in
-         (* Take special care if this is the root node *)
-         match proof with
-            { pf_address = [];
-              pf_root = RuleBox ri } ->
-               RuleBox { ri with
-                         rule_status = LazyStatusDelayed;
-                         rule_extract_normalized = true;
-                         rule_extract = arg;
-                         rule_leaves = LazyLeavesDelayed;
-               }
-          | _ ->
-               arg
+      let arg = Goal { goal with ref_goal = mseq } in
+      match node with
+         RuleBox ri ->
+            RuleBox { ri with
+               rule_status = LazyStatusDelayed;
+               rule_extract_normalized = true;
+               rule_extract = arg;
+               rule_leaves = LazyLeavesDelayed;
+            }
+       | _ ->
+         arg
 
    let set_goal postf proof mseq =
-      let node = set_goal_ext proof proof.pf_node mseq in
+      let node = set_goal_ext proof.pf_node mseq in
          fold_proof postf proof node
 
    (*
@@ -1696,16 +1702,16 @@ struct
       let from_node = index_ext proof node [] from_addr in
       let to_proof = index proof to_addr in
       let goal = goal proof in
-      let from_node = set_goal_ext to_proof from_node goal.ref_goal in
+      let from_node = set_goal_ext from_node goal.ref_goal in
       let to_proof = fold_proof postf to_proof from_node in
          index to_proof address
 
    (*
     * Paste an alternate proof at this location.
     *)
-   let paste postf to_proof { pf_node = from_node } =
+   let paste postf to_proof from_proof =
       let goal = goal to_proof in
-      let from_node = set_goal_ext to_proof from_node goal.ref_goal in
+      let from_node = set_goal_ext from_proof.pf_node goal.ref_goal in
          fold_proof postf to_proof from_node
 
    (*
@@ -2582,19 +2588,7 @@ struct
          IOGoal arg ->
             Goal (make_tactic_arg arg)
        | IOUnjustified (goal, subgoals) ->
-            let make_tactic_arg =
-               if !debug_unjustified then begin
-                  function goal ->
-                     let res = make_tactic_arg goal in
-                     if (squash_attributes res.ref_attributes) <> empty_attribute then begin
-                        let buf = Rformat.new_buffer () in
-                        format_arg !debug_base buf res;
-                        eprintf "Warning: Proof_boot.proof_of_io_proof: an attribute list in unjustified node was non-empty after IO:\n%t%t"
-                        (print_to_channel default_width buf) eflush
-                     end;
-                     res
-               end else make_tactic_arg
-            in Unjustified (make_tactic_arg goal, List.map make_tactic_arg subgoals)
+            Unjustified (make_tactic_arg goal, List.map make_tactic_arg subgoals)
        | IOExtractNthHyp (goal, i) ->
             ExtractNthHyp (make_tactic_arg goal, i)
        | IOExtractCut (goal, term, cut_lemma, cut_then) ->

@@ -867,15 +867,15 @@ struct
     * Two args are equal if their goals are equal.
     * Other arguments are ignored.
     *)
-   let tactic_arg_alpha_equal { ref_goal = goal1 } { ref_goal = goal2 } =
-      msequent_alpha_equal goal1 goal2
+   let tactic_arg_alpha_equal arg1 arg2 =
+      msequent_alpha_equal arg1.ref_goal arg2.ref_goal
 
    (*
     * Match only the goals.
     *)
-   let tactic_arg_alpha_equal_concl { ref_goal = goal1 } { ref_goal = goal2 } =
-      let goal1 = msequent_goal goal1 in
-      let goal2 = msequent_goal goal2 in
+   let tactic_arg_alpha_equal_concl arg1 arg2 =
+      let goal1 = msequent_goal arg1.ref_goal in
+      let goal2 = msequent_goal arg2.ref_goal in
       let goal1 =
          if TermMan.is_sequent_term goal1 then
             TermMan.nth_concl goal1 1

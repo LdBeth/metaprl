@@ -50,13 +50,6 @@ open Tactic_boot.TacticType
 open Tactic_boot.TacticInternalType
 open Tactic_boot.TacticInternal
 
-let debug_unjustified =
-   create_debug (**)
-      { debug_name = "unjustified";
-        debug_description = "show how Unjustified nodes are created";
-        debug_value = false
-      }
-
 let test_arg name goal =
    if (squash_attributes goal.ref_attributes) <> empty_attribute then begin
       let buf = new_buffer () in
@@ -523,10 +516,6 @@ struct
       Goal arg ->
          HeadGoal (ext_add_tactic_arg info arg)
     | Unjustified (goal, subgoals) ->
-         if !debug_unjustified then begin
-            test_arg "ext_make_extract_header" goal;
-            List.iter (test_arg "ext_make_extract_header") subgoals
-         end;
          HeadUnjustified (ext_add_tactic_arg info goal, List.map (ext_add_tactic_arg info) subgoals)
     | Extract (goal, subgoals, _) ->
          HeadUnjustified (ext_add_tactic_arg info goal, List.map (ext_add_tactic_arg info) subgoals)
@@ -663,14 +652,7 @@ struct
       HeadGoal arg ->
          Goal (ext_retrieve_tactic_arg info arg)
     | HeadUnjustified (goal, subgoals) ->
-         let retrieve_tactic_arg =
-            if !debug_unjustified then
-               function goal ->
-                  let res = ext_retrieve_tactic_arg info goal in
-                  test_arg "ext_make_extract" res;
-                  res
-            else
-               ext_retrieve_tactic_arg info
+         let retrieve_tactic_arg = ext_retrieve_tactic_arg info
          in
             Unjustified (retrieve_tactic_arg goal, List.map retrieve_tactic_arg subgoals)
     | HeadWrapped (label, ext) ->
