@@ -275,7 +275,7 @@ let dtest connection =
 
 
 let looptest connection =
-  let lib = join connection ["NuprlLight"] in
+  let lib = join connection ["nltest"] in 
     (unwind_error
       (function () -> 
 
@@ -472,11 +472,14 @@ let jointest remote_port local_port =
 ;;
 
 
-special_error_handler (function () -> testascii "BOLVERK" 3444 4352)
+special_error_handler (function () -> testascii "LOCKE" 5289 5289)
   (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
 
 (*
+special_error_handler (function () -> testall "LOCKE" 5289 2895)
+ (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
+
 
 special_error_handler (function () -> 
 			( Db.db_init "/usr/u/nuprl/nuprl5/NuPrlDBa" true	
@@ -486,18 +489,11 @@ special_error_handler (function () ->
  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
 
-
 special_error_handler (function () -> 
 			( maybe_lib_open()
 			; Mbterm.print_term (Db.session_string_to_term "l!l{1:n}ltvoid()t")
 			;()))
  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
-
-special_error_handler
-  (function () ->
- 	   Mbterm.print_term (Db.string_to_term "!level_assoc(!l{0:n};!data_persist{STATIC:t}(!stamp{6740:n,3091287743:time,44:n,1900031899_3D6C_B8413DA9:t}))")
-	   ;())
-  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
 special_error_handler
   (function () ->

@@ -79,12 +79,15 @@ let level_add l itemf =
       item
 
 let level_assign l item = 
- (*  (match item with
+  (* 
+  (match item with
    Parameter p -> print_string "Parameter"
    | Operator p -> print_string "Operator"
    | Term p -> print_string "Term"
    | Binding p -> print_string "Binding"
-   | Opid p -> print_string "Opid"); *)
+   | Opid p -> print_string "Opid");
+  *)
+
   set l.items (level_allocate_slot l) item
 
   
@@ -134,13 +137,11 @@ let make_operator opid parameters =
      else mk_nuprl5_op ((make_param (Token opid)) :: parameters)
 
 
-let scan_binding scanner = (scanner.stb (scan_string scanner.scanner))
-
 
 let rec scan_item stype scanner =
   match stype with
     COpid -> Opid (scan_string scanner.scanner)
-  | CBinding -> Binding (scan_binding scanner)
+  | CBinding -> (* print_string " scan compressed binding "; *) Binding (scan_binding scanner)
   | CParameter -> Parameter (scan_parameter scanner)
   | COperator -> Operator (scan_operator scanner)
   | CTerm -> Term (scan_term scanner)
@@ -148,13 +149,23 @@ let rec scan_item stype scanner =
 and scan_compressed code scanner =
  if (compression_add_byte_p code)
     then (scan_next scanner.scanner;
+	 (* print_string " scan compressed add "; *)
 	 levels_assign scanner code (function () -> scan_item (type_of_byte code) scanner))
     else (scan_bump scanner.scanner;
+	 (* print_string " scan compressed index "; *)
 	 let r = levels_lookup scanner
 			       (level_of_byte code)
 			       (index_of_bytes code (scan_cur_byte scanner.scanner)) in
 	   scan_next scanner.scanner;
 	   r)
+
+and scan_binding scanner = 
+ let code = (scan_cur_byte scanner.scanner) in
+  if compression_code_p code
+    then match (scan_compressed code scanner) with
+	    Binding sl  -> sl
+	  |_ -> error ["read_term"; "binding"] [] []
+    else (scanner.stb (scan_string scanner.scanner))
 
 and scan_parameter scanner =
  let code = (scan_cur_byte scanner.scanner) in
@@ -162,7 +173,17 @@ and scan_parameter scanner =
   if compression_code_p code
     then match (scan_compressed code scanner) with
 	    Parameter p -> p
-	|_ -> error ["read_term"; "parameter"] [] []
+	| item -> 
+
+  ((match item with
+   Parameter p -> print_string "Parameter"
+   | Operator p -> print_string "Operator"
+   | Term p -> print_string "Term"
+   | Binding p -> print_string "Binding"
+   | Opid p -> print_string p; print_string "Opid"); 
+	error ["read_term"; "parameter"] [] []
+   )
+
     else let s = (scan_string scanner.scanner) in
 	  scan_byte scanner.scanner icolon;
 	  scanner.stp s (scan_string scanner.scanner)
@@ -180,7 +201,15 @@ and scan_operator scanner =
   if compression_code_p code
     then match (scan_compressed code scanner) with
 	    Operator op -> op
-	|_ -> error ["read_term"; "operator"] [] []
+	  | Opid s  -> (make_operator s (scan_parameters scanner))
+	  |_ -> error ["read_term"; "operator"] [] []
+
+	(*
+	| Binding sl  -> error (flatten [["read_term"; "operator"; "binding"]; sl]) [] []
+	| Parameter p -> error ["read_term"; "operator"; "op"] [] [mk_term (make_operator "fu" [p])[]]
+	| Term t  -> error ["read_term"; "operator"; "term"] [] [t]
+	*)
+
     else (let opid = (scan_string scanner.scanner) in
 	  let parms = (scan_parameters scanner) in
 	    (make_operator opid parms))
@@ -202,11 +231,12 @@ and scan_bound_term scanner =
 		 else error ["read_term"; "bound term"; "opid"] [] [])
 	  | Binding binding ->
 		(if scan_at_byte_p scanner.scanner icomma
-		    then mk_bterm (flatten (binding :: (scan_delimited_list
+		    then 
+			let bindings = (flatten (binding :: (scan_delimited_list
 							scanner.scanner
 							(function () -> (scan_binding scanner))
 							icomma idot icomma)))
-			          (scan_term scanner)
+			  in mk_bterm bindings (scan_term scanner)
 		 else if (scan_at_byte_p scanner.scanner idot)
 		    then mk_bterm binding (scan_next scanner.scanner; scan_term scanner)
 		 else error ["read_term"; "bound term"; "binding"] [] [])
@@ -657,12 +687,15 @@ and read_static_level_aux scanner =
    add_new_level_aux (size_of_ilevel_term ilevel) scanner;
    
    let level = nth scanner.levels lindex in
-     (* may need to patch in the short term later *)    
  
-     extract_level_string_updates level (parameters_of_term (session_read_term scanner));
+     (* parameters_of_term will include the embedded nuprl5 opid as first parameter
+	since this is a nuprl5_implementation term
+     *)
+     extract_level_string_updates level (tl (parameters_of_term (session_read_term scanner)));
 
+     (*	ditto *)
      map (function p -> level_assign level (Parameter p))
-	 (parameters_of_term (session_read_term scanner));
+	 (tl (parameters_of_term (session_read_term scanner)));
 
      map (function opt -> level_assign level (Operator (operator_of_term (term_of_unbound_term opt))))
 	 (bound_terms_of_term (session_read_term scanner));
@@ -695,6 +728,7 @@ let session_maybe_read_term scanner =
   else Some (session_read_term scanner)
  
 let db_read_ascii stamp otype =
+ (* Mbterm.print_term (stamp_to_term stamp); print_string otype; *)
  with_open_file
    (function in_channel ->
      session_read_term (make_session_scanner (Stream.of_channel in_channel)))
