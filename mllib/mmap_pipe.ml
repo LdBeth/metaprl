@@ -148,7 +148,7 @@ let search_server dir =
       let filename = sprintf "%s/%d" dir i in
       let sockname = filename ^ sock_suffix in
          try
-            Unix.stat sockname;
+            let _ = Unix.stat sockname in
 
             (* File exists, so try connecting *)
             let sock = Unix.socket Unix.PF_UNIX Unix.SOCK_STREAM 0 in
@@ -280,6 +280,12 @@ let client_socket { mmap_socket = client } =
     | None ->
          raise (Invalid_argument "client_socket")
 
+let try_write sock buf =
+   try
+      let _ = Unix.write sock buf 0 1 in ()
+   with Unix.Unix_error _ -> 
+      ()
+
 (*
  * Open a client connection for the server.
  *)
@@ -289,7 +295,7 @@ let open_client mmap =
          (* Only one client is allowed *)
          let sock, _ = Unix.accept server in
             char_buf.[0] <- Char.chr 0;
-            (try Unix.write sock char_buf 0 1 with Unix.Unix_error _ -> 0);
+            try_write sock char_buf;
             Unix.close sock;
             false
 
@@ -301,7 +307,7 @@ let open_client mmap =
          (* We're free, so accept this client *)
          let sock, _ = Unix.accept server in
             char_buf.[0] <- Char.chr 1;
-            (try Unix.write sock char_buf 0 1 with Unix.Unix_error _ -> 0);
+            try_write sock char_buf;
             set_int buf (0 + full_offset) 0;
             set_int buf (length + full_offset) 0;
             mmap.mmap_socket <- Some sock;
@@ -365,7 +371,7 @@ let write mmap code name raw_write =
                   String.blit name 0 buf (woffset + name_offset) name_length;
                   set_int buf (woffset + data_length_offset) data_size;
                   set_int buf (woffset + full_offset) 1;
-                  (try Unix.write sock buf 0 1 with Unix.Unix_error _ -> 0);
+                  try_write sock buf;
                   if !debug_pipe then
                      eprintf "Mmap_pipe.write: succeeded%t" eflush;
                   true
@@ -406,7 +412,7 @@ let read mmap raw_read =
                let offset = ceil_word (name_offset + name_length) in
                let data = raw_read buf (roffset + offset) data_length in
                   set_int buf (roffset + full_offset) 0;
-                  (try Unix.write sock char_buf 0 1 with Unix.Unix_error _ -> 0);
+                  try_write sock char_buf;
                   if !debug_pipe then
                      eprintf "Mmap_pipe.read: succeeded%t" eflush;
                   Some (code, name, data)

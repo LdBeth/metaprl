@@ -30,7 +30,7 @@
  * jyh@cs.cornell.edu
  *)
 
-val putenv : string -> int
+val putenv : string -> unit
 
 (*
  * We make our own, because somehow the win32 version seems to fail.

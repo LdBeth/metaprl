@@ -30,10 +30,14 @@
  * jyh@cs.cornell.edu
  *)
 
-external putenv : string -> int = "caml_putenv"
+external c_putenv : string -> int = "caml_putenv"
 
 external execv : string -> string array -> unit = "caml_execv"
 external execvp : string -> string array -> unit = "caml_execvp"
+
+let putenv e = 
+   if c_putenv e = -1
+      then raise (Failure "Punix.putenv")
 
 (*
  * -*-

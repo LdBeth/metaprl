@@ -160,8 +160,7 @@ let set_includes () =
    let var = sprintf "MP_INCLUDE=%s" (squash !includes) in
       if !verbose_mode > 0 then
          eprintf "%s%t" var eflush;
-      Punix.putenv var;
-      ()
+      Punix.putenv var
 
 (*
  * Executable names.

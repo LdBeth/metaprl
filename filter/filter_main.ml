@@ -73,8 +73,7 @@ let remove_output_file () =
 
 let set_lib s =
    let var = sprintf "MPLIB=%s" s in
-      Punix.putenv var;
-      ()
+      Punix.putenv var
 
 let add_anon_arg arg =
    ()

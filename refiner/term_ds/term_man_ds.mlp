@@ -362,7 +362,7 @@ struct
          Sequent s ->
             SeqHyp.length s.sequent_hyps
        | Subst _ ->
-            get_core t;
+            let _ = get_core t in
             num_hyps t
        | _ ->
             ref_raise(RefineError (num_hyps_name, TermMatchError (t, "not a sequent")))
@@ -403,7 +403,7 @@ struct
                   else
                      ref_raise(RefineError (nth_hyp_name, TermMatchError (t, "not enough hyps")))
        | Subst _ ->
-            get_core t;
+            let _ = get_core t in
             nth_hyp t i
        | _ ->
             ref_raise(RefineError (nth_hyp_name, TermMatchError (t, "not a sequent")))

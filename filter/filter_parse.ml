@@ -973,7 +973,7 @@ EXTEND
           SigFilter.declare_parent (SigFilter.get_proc loc) loc path;
           empty_sig_item loc
         | "declare"; t = quote_term ->
-          SigFilter.declare_term (SigFilter.get_proc loc) loc t;
+          let _ = SigFilter.declare_term (SigFilter.get_proc loc) loc t in
           empty_sig_item loc
         | "define"; name = LIDENT; ":"; t = quote_term; "<-->"; def = term ->
           SigFilter.define_term (SigFilter.get_proc loc) loc name t def ();
@@ -1021,7 +1021,7 @@ EXTEND
           StrFilter.declare_parent (StrFilter.get_proc loc) loc path;
           empty_str_item loc
         | "declare"; t = quote_term ->
-          StrFilter.declare_term (StrFilter.get_proc loc) loc t;
+          let _ = StrFilter.declare_term (StrFilter.get_proc loc) loc t in
           empty_str_item loc
         | "primrw"; name = LIDENT; args = optarglist; ":"; t = mterm ->
           StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Primitive xnil_term);
