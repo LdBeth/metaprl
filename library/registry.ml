@@ -1,11 +1,9 @@
-
-
-open BigInt
 (* In this simple implementation, a registry is a collection of hash
-   * tables, one or two for each registry type.  There are two
-   * registries, one for the global information, and one for the local
-   * information.
-   *)
+ * tables, one or two for each registry type.  There are two
+ * registries, one for the global information, and one for the local
+ * information.
+ *)
+open BigInt
 
 type tb = Uni of (string, bigint) Hashtbl.t
   | Bi of (string, bigint) Hashtbl.t*(bigint, string) Hashtbl.t
@@ -19,7 +17,16 @@ let local_registry = (Hashtbl.create 7:regtbl)
 
 let registry_types = []
 
-let registry_file = "/usr/u/nuprl/nuprl5/bin/reg-file.txt"
+(*
+ * Allow the registry file to be specified in an environment variable.
+ *)
+let registry_file_ref = Env_arg.string (**)
+                           "registry"
+                           "/usr/u/nuprl/nuprl5/bin/reg-file.txt"
+                           "The registry file defines the MathBus syntax"
+                           (fun _ s v -> s := v)
+
+let registry_file = !registry_file_ref
 
 let define_registry_type label bidirectional = 
   if (List.mem label registry_types) then ()

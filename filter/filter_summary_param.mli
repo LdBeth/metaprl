@@ -23,6 +23,9 @@ type proof_type =
 
 (*
  * $Log$
+ * Revision 1.1  1998/02/18 18:46:24  jyh
+ * Initial ocaml semantics.
+ *
  * Revision 1.1  1998/02/12 23:38:17  jyh
  * Added support for saving intermediate files to the library.
  *

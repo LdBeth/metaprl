@@ -6,7 +6,7 @@ open Term
 open Opname
 open Filter_type
 open Filter_summary_type
-open Filter_summary_spec
+open Filter_summary_param
 open Filter_cache
 
 (************************************************************************
@@ -43,6 +43,9 @@ val mk_opname : FilterCache.info -> MLast.loc -> string list -> opname
 
 (*
  * $Log$
+ * Revision 1.1  1998/02/18 18:46:21  jyh
+ * Initial ocaml semantics.
+ *
  * Revision 1.3  1998/02/12 23:38:20  jyh
  * Added support for saving intermediate files to the library.
  *

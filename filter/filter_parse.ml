@@ -36,8 +36,8 @@ open Filter_ocaml
 open Filter_summary
 open Filter_summary_io
 open Filter_cache
-open Filter_summary_util
-open Filter_summary_spec
+open Filter_summary_param
+open Filter_summary_modules
 open Filter_process_type
 
 (************************************************************************
@@ -90,7 +90,11 @@ let rewrite_ctyp loc =
    <:ctyp< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"rw"$ '$"a"$ >>
 
 let cond_rewrite_ctyp loc =
-   <:ctyp< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"cond_rewrite"$ '$"a"$ >>
+   let result = <:ctyp< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"cond_rewrite"$ '$"a"$ >> in
+   let sarray = <:ctyp< $lid:"array"$ $lid:"string"$ >> in
+   let term = <:ctyp< $lid:"list"$ ($uid:"Term"$ . $lid:"term"$) >> in
+   let arg = <:ctyp< ($sarray$ * $term$) >> in
+      <:ctyp< $arg$ -> $result$ >>
 
 let create_rewrite_expr loc =
    <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"create_rewrite"$ >>
@@ -1920,7 +1924,9 @@ EXTEND
        ]];
    
    str_item:
-      [[ "include"; path = mod_ident ->
+      [[ "jyh_test"; t = TermGrammar.term ->
+          raise (Failure "jyh")
+        | "include"; path = mod_ident ->
           define_parent (get_proc loc) loc (str_open loc) path
         | "declare"; t = quote_term ->
           fst (declare_str_term (get_proc loc) loc t)
@@ -2068,8 +2074,8 @@ EXTEND
    
    (*
     * Add the ML parts of the terms.
-    *)
-   term:
+    *
+   exterm:
       [[ "ml_expr"; e = expr ->
           !interp (term_of_expr e)
         | "ml_patt"; p = patt ->
@@ -2085,10 +2091,14 @@ EXTEND
         | "ml_module_expr"; me = module_expr ->
           !interp (term_of_module_expr me)
        ]];
+    *)
 END
 
 (*
  * $Log$
+ * Revision 1.7  1998/02/18 18:46:15  jyh
+ * Initial ocaml semantics.
+ *
  * Revision 1.6  1998/02/12 23:38:12  jyh
  * Added support for saving intermediate files to the library.
  *

@@ -25,6 +25,9 @@ MAIN := util
 all: $(MAIN).cma
 opt: $(MAIN).cmxa
 
+install:: $(MAIN).cma $(CMIFILES)
+	$(INSTALL) $(MAIN).cma $(CMIFILES) $(NLLIB)
+
 # Actual makefile
 include ../mk/config
 include Makefile.dep

@@ -100,7 +100,10 @@ let bool name default info set =
          set name v flag
    in
    let arg_set name v =
-      Arg.Set v
+      if default then
+         Arg.Clear v
+      else
+         Arg.Set v
    in
       general name default info env_set arg_set
 
@@ -117,6 +120,9 @@ let parse spec usage errmsg =
 
 (*
  * $Log$
+ * Revision 1.3  1998/02/18 18:46:42  jyh
+ * Initial ocaml semantics.
+ *
  * Revision 1.2  1997/11/12 22:28:17  jyh
  * Small changes for NT.
  *

@@ -36,7 +36,7 @@ end
 module MakeTermGrammar (TermGrammar : TermGrammarSig) =
 struct
    open TermGrammar
-
+   
    (************************************************************************
     * TYPES                                                                *
     ************************************************************************)
@@ -608,6 +608,8 @@ struct
              [], tupelize loc h
            | h = bhead; sl_period; t = term ->
              check_bvars h, t
+           | sl_period; t = term ->
+             [], t
           ]];
       
       bhead:
@@ -895,6 +897,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.4  1998/02/18 18:46:33  jyh
+ * Initial ocaml semantics.
+ *
  * Revision 1.3  1997/09/08 15:02:21  jyh
  * This version compiles Ensemble.
  *

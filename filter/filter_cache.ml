@@ -196,7 +196,7 @@ struct
    let standard_opnames =
       ["lzone"; "hzone"; "szone"; "ezone";
        "break"; "sbreak"; "space"; "hspace"; "newline";
-       "pushm"; "popm";
+       "pushm"; "popm"; "pushfont"; "popfont";
        "parens"; "prec"; "mode"; "slot";
        "sequent"; "hyp"; "concl"; "var"]
 
@@ -492,6 +492,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.4  1998/02/18 18:46:12  jyh
+ * Initial ocaml semantics.
+ *
  * Revision 1.3  1997/09/12 17:21:35  jyh
  * Added MLast <-> term conversion.
  * Splitting filter_parse into two phases:

@@ -130,8 +130,8 @@ struct
    let find_spec select =
       let rec search = function
          io::tl ->
-            let { info_select = select' } = io in
-               if select' = select then
+            let { info_select = select'; info_disabled = disabled } = io in
+               if select' = select & not !disabled then
                   io
                else
                   search tl
@@ -192,7 +192,7 @@ struct
    
    (*
     * Save a module specification.
-    * This saves the entrie root.
+    * Try saving in all the valid formats until one of them succeeds.
     *)
    let save base info =
       let { info_dir = dir; info_file = file; info_type = select; info_info = data } = info in
@@ -261,6 +261,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.3  1998/02/18 18:46:43  jyh
+ * Initial ocaml semantics.
+ *
  * Revision 1.2  1998/02/12 23:35:15  jyh
  * Generalized file base to allow the library.
  *

@@ -13,13 +13,13 @@ open Term
  * version of the file.
  *)
 let library_set magic filename =
-   raise (Sys_error "storing a file to the library is not implemented")
+   raise (Failure "storing a file to the library is not implemented")
 
 (*
  * Get a file from the library.
  *)
 let library_get magic filename =
-   raise (Sys_error "retriving a file from the library is not implemented")
+   raise (Failure "retriving a file from the library is not implemented")
 
 (*
  * This "combo" is the module that defines how to fetch
@@ -51,6 +51,7 @@ struct
    let info =
       [{ info_marshal = marshal;
          info_unmarshal = unmarshal;
+         info_disabled = Info.disabled;
          info_suffix = Info.suffix;
          info_magic = Info.magic;
          info_select = Info.select
@@ -59,6 +60,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/02/18 18:46:37  jyh
+ * Initial ocaml semantics.
+ *
  * Revision 1.1  1998/02/12 23:35:44  jyh
  * Added base Nuprl-Light interface to the library.
  *

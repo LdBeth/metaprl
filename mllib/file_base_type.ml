@@ -17,6 +17,7 @@ type file_name = string
 type ('select, 'cooked) file_info =
    { info_marshal : int -> string -> 'cooked -> unit;
      info_unmarshal : int -> string -> 'cooked;
+     info_disabled : bool ref;
      info_select : 'select;
      info_suffix : string;
      info_magic : int
@@ -101,6 +102,7 @@ sig
    val select : select
    val suffix : string
    val magic : int
+   val disabled : bool ref
    
    (* Conversion functions *)
    val marshal : cooked -> raw
@@ -127,6 +129,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.1  1998/02/18 18:46:47  jyh
+ * Initial ocaml semantics.
+ *
  * Revision 1.2  1998/02/12 23:35:17  jyh
  * Generalized file base to allow the library.
  *

@@ -21,9 +21,14 @@ DIRS :=\
 	theories/itt\
 	theories/rewrite
 
-.PHONY: all depend clean
+.PHONY: all install depend clean
 
 all:
+	@for i in $(DIRS); do\
+		if (echo Making $$i...; cd $$i; $(MAKE) $@); then true; else exit 1; fi;\
+	done
+
+install:
 	@for i in $(DIRS); do\
 		if (echo Making $$i...; cd $$i; $(MAKE) $@); then true; else exit 1; fi;\
 	done

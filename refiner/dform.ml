@@ -205,6 +205,12 @@ let pushm = function
 let popm { dform_buffer = buf } =
    format_popm buf
 
+let pushfont _ =
+   ()
+
+let popfont _ =
+   ()
+
 (*
  * Install the commands.
  *)
@@ -220,7 +226,9 @@ let init_list =
     "ezone", [], ezone;
     "pushm", [MNumber "i"], pushm;
     "pushm", [], pushm;
-    "popm", [], popm]
+    "popm", [], popm;
+    "pushfont", [MString "plain"], pushfont;
+    "popfont", [], popfont]
 
 (*
  * The "slot" term is special because it has a subterm.
@@ -560,6 +568,9 @@ let string_of_mterm base mterm =
 
 (*
  * $Log$
+ * Revision 1.2  1998/02/18 18:46:52  jyh
+ * Initial ocaml semantics.
+ *
  * Revision 1.1  1997/04/28 15:51:16  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

@@ -2,7 +2,11 @@
  * Convert between terms and ocaml asts.
  *)
 
+open Printf
+
 open MLast
+
+open Debug
 
 open Opname
 open Term
@@ -20,6 +24,17 @@ exception FormatError of string * term
  * OCaml operators.
  *)
 let mk_ocaml_op s = mk_opname s nil_opname
+
+let one_subterm s t =
+   if false then
+      begin
+         eprintf "one_subterm: %s: begin: %s%t" s (Simple_print.string_of_term t) eflush;
+         let t = one_subterm t in
+            eprintf "one_subterm: done%t" eflush;
+            t
+      end
+   else
+      one_subterm t
 
 (************************************************************************
  * TERM DESTRUCTORS							*
@@ -76,7 +91,7 @@ let dest_opt f =
          if op == none_op then
             None
          else
-            Some (f (one_subterm t))
+            Some (f (one_subterm "dest_opt" t))
    in
       dest
 
@@ -93,7 +108,7 @@ let dest_string_opt =
  * Variables are wrapped.
  *)
 let dest_var t =
-   Term.dest_var (one_subterm t)
+   Term.dest_var t (* (one_subterm "dest_var" t) *)
 
 (*
  * Integers are also wrapped.
@@ -183,7 +198,7 @@ and dest_array_subscript_expr t =
 
 and dest_array_expr t =
    let loc = dest_loc t in
-   let el = List.map dest_expr (dest_list (one_subterm t)) in
+   let el = List.map dest_expr (dest_list (one_subterm "dest_array_expr" t)) in
       <:expr< [| $list:el$ |] >>
 
 and dest_assign_expr t =
@@ -204,7 +219,7 @@ and dest_coerce_class_expr t =
 
 and dest_float_expr t =
    let loc = dest_loc t in
-      <:expr< $flo: dest_string (one_subterm t)$ >>
+      <:expr< $flo: dest_string (one_subterm "dest_float_expr" t)$ >>
 
 and dest_upto_expr t =
    let loc = dest_loc t in
@@ -258,7 +273,7 @@ and dest_match_expr t =
 
 and dest_new_expr t =
    let loc = dest_loc t in
-      <:expr< new $dest_expr (one_subterm t)$ >>
+      <:expr< new $dest_expr (one_subterm "dest_new_expr" t)$ >>
 
 and dest_stream_expr t =
    let loc = dest_loc t in
@@ -487,12 +502,12 @@ and dest_external_sig t =
 
 and dest_module_sig t =
    let loc, s = dest_loc_string t in
-   let mt = one_subterm t in
+   let mt = one_subterm "dest_module_sig" t in
       <:sig_item< module $s$ : $dest_mt mt$ >>
 
 and dest_module_type_sig t =
    let loc, s = dest_loc_string t in
-   let mt = one_subterm t in
+   let mt = one_subterm "dest_module_type_sig" t in
       <:sig_item< module type $s$ = $dest_mt mt$ >>
 
 and dest_open_sig t =
@@ -507,7 +522,7 @@ and dest_type_sig t =
 
 and dest_value_sig t =
    let loc, s = dest_loc_string t in
-   let t = one_subterm t in
+   let t = one_subterm "dest_value_sig" t in
       <:sig_item< value $s$ : $dest_type t$ >>
 
 (*
@@ -530,7 +545,7 @@ and dest_exception_str t =
 
 and dest_expr_str t =
    let loc = dest_loc t in
-      <:str_item< $exp: dest_expr (one_subterm t)$ >>
+      <:str_item< $exp: dest_expr (one_subterm "dest_expr_str" t)$ >>
 
 and dest_external_str t =
    let loc, s = dest_loc_string t in
@@ -542,12 +557,12 @@ and dest_external_str t =
 
 and dest_module_str t =
    let loc, s = dest_loc_string t in
-   let me = one_subterm t in
+   let me = one_subterm "dest_module_str" t in
       <:str_item< module $s$ = $dest_me me$ >>
 
 and dest_module_type_str t =
    let loc, s = dest_loc_string t in
-   let mt = one_subterm t in
+   let mt = one_subterm "dest_module_type_str" t in
       <:str_item< module type $s$ = $dest_mt mt$ >>
 
 and dest_open_str t =
@@ -685,7 +700,7 @@ and dest_ctr_ctf t =
 
 and dest_inh_ctf t =
    let loc = dest_loc t in
-   let t = one_subterm t in
+   let t = one_subterm "dest_inh_ctf" t in
       CtInh (loc, dest_type t)
 
 and dest_mth_ctf t =
@@ -1406,6 +1421,9 @@ let term_of_class = mk_class
 
 (*
  * $Log$
+ * Revision 1.4  1998/02/18 18:46:14  jyh
+ * Initial ocaml semantics.
+ *
  * Revision 1.3  1998/02/12 23:38:09  jyh
  * Added support for saving intermediate files to the library.
  *

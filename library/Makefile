@@ -48,8 +48,11 @@ LMFILES :=\
 # Name of main libraris
 MAIN = library
 
-all: $(MAIN).cma $(MAIN).run
+all: $(MAIN).cma
 opt: $(MAIN).cmxa
+
+install:: $(MAIN).cma
+	$(INSTALL) $(MAIN).cma $(NLLIB)
 
 clean::
 	del -f *.p4* *.pp*

@@ -10,6 +10,13 @@
 #
 
 #
+# Config
+#
+ifndef LOCALBIN
+   LOCALBIN := /usr/local/bin
+endif
+
+#
 # OCAML commands
 #
 ifndef CAMLP4
@@ -21,30 +28,55 @@ endif
 ifndef OCAMLOPT
    OCAMLOPT := ocamlopt
 endif
-OCAMLDEP := /usr/local/bin/ocamldep
-OCAMLCFLAGS := $(OCAMLFLAGS) $(INCLUDE) -g
-OCAMLOPTFLAGS := $(OCAMLFLAGS) $(INCLUDE)
+ifndef PRLC
+   PRLC := prlc
+endif
+
+OCAMLDEP := $(LOCALBIN)/ocamldep
+OCAMLCFLAGS := $(INCLUDE) -g $(OCAMLFLAGS)
+OCAMLOPTFLAGS := $(INCLUDE) $(OCAMLFLAGS)
 CAMLP4OFLAGS := $(INCLUDE)
 CFLAGS = -g -I$(CAMLLIB)
 CC = gcc
+RM = rm
+INSTALL = install
 
 # Library file names
-MLFILES   := $(addsuffix .ml,   $(LMFILES) $(MFILES) $(PFILES))
-MLIFILES  := $(addsuffix .mli,  $(LMFILES) $(MFILES) $(PFILES))
-LCMOFILES := $(addsuffix .cmo,  $(LMFILES))
-LCMXFILES := $(addsuffix .cmx,  $(LMFILES))
-CMOFILES  := $(addsuffix .cmo,  $(MFILES))
-CMXFILES  := $(addsuffix .cmo,  $(MFILES))
-PCMOFILES := $(addsuffix .cmo,  $(PFILES))
-PCMXFILES := $(addsuffix .cmo,  $(PFILES))
-CMAFILES  := $(addsuffix .cma,  $(MLLIBS))
-CMXAFILES := $(addsuffix .cmxa, $(MLLIBS))
+MLFILES      := $(addsuffix .ml,   $(NLFILES) $(LMFILES) $(MFILES) $(PFILES))
+MLIFILES     := $(addsuffix .mli,  $(NLFILES) $(LMFILES) $(MFILES) $(PFILES))
 
-OFILES    := $(addsuffix .o, $(LCFILES))
-CFILES    := $(addsuffix .c, $(LCFILES))
+NL_CMIFILES  := $(addsuffix .cmi,  $(NLFILES))
+NL_CMOFILES  := $(addsuffix .cmo,  $(NLFILES))
+NL_CMIZFILES := $(addsuffix .cmiz, $(NLFILES))
+NL_CMOZFILES := $(addsuffix .cmoz, $(NLFILES))
+NL_CMXFILES  := $(addsuffix .cmx,  $(NLFILES))
+
+LCMOFILES    := $(addsuffix .cmo,  $(LMFILES))
+LCMIFILES    := $(addsuffix .cmi,  $(LMFILES))
+LCMXFILES    := $(addsuffix .cmx,  $(LMFILES))
+MCMIFILES    := $(addsuffix .cmi,  $(MFILES))
+MCMOFILES    := $(addsuffix .cmo,  $(MFILES))
+MCMXFILES    := $(addsuffix .cmx,  $(MFILES))
+PCMIFILES    := $(addsuffix .cmi,  $(PFILES))
+PCMOFILES    := $(addsuffix .cmo,  $(PFILES))
+PCMXFILES    := $(addsuffix .cmx,  $(PFILES))
+
+REG_CMIFILES := $(LCMIFILES) $(MCMIFILES) $(PCMIFILES)
+REG_CMOFILES := $(LCMOFILES) $(MCMOFILES) $(PCMOFILES)
+REG_CMXFILES := $(LCMXFILES) $(MCMXFILES) $(PCMXFILES)
+
+CMIFILES     := $(NL_CMIFILES) $(LCMIFILES) $(MCMIFILES)
+CMOFILES     := $(NL_CMOFILES) $(LCMOFILES) $(MCMOFILES)
+CMXFILES     := $(NL_CMXFILES) $(LCMXFILES) $(MCMXFILES)
+
+CMAFILES     := $(addsuffix .cma,  $(MLLIBS))
+CMXAFILES    := $(addsuffix .cmxa, $(MLLIBS))
+
+OFILES       := $(addsuffix .o, $(LCFILES))
+CFILES       := $(addsuffix .c, $(LCFILES))
 
 # Instructions to make
-.PHONY: all opt clean depend
+.PHONY: all opt clean depend install
 .PRECIOUS: %.cmo %.cmi %.cmx %.ml %.mli
 
 .SUFFIXES: .cma .cmx .cmo .cmi .ml .mli .mll .mly
@@ -53,11 +85,11 @@ $(MAIN).a: $(OFILES)
 	ar r $@ $?
 	ranlib $@
 
-$(MAIN).cma: $(LCMOFILES)
-	$(OCAMLC) $(OCAMLCFLAGS) -a -o $@ $(LCMOFILES)
+$(MAIN).cma: $(LCMOFILES) $(NL_CMOFILES)
+	$(OCAMLC) $(OCAMLCFLAGS) -a -o $@ $(LCMOFILES) $(NL_CMOFILES)
 
-$(MAIN).cmxa: $(LCMXFILES)
-	$(OCAMLOPT) $(OCAMLCFLAGS) -o -o $@ $(LCMXFILES)
+$(MAIN).cmxa: $(LCMXFILES) $(ML_CMXFILES)
+	$(OCAMLOPT) $(OCAMLCFLAGS) -o -o $@ $(LCMXFILES) $(NL_CMXFILES)
 
 $(MAIN).run: $(CMAFILES) $(CMADEPS) $(PCMOFILES)
 	$(OCAMLC) -custom $(OCAMLCFLAGS) -o $@ $(CMALIBS) $(CMAFILES) $(PCMOFILES) $(CCLIBS)
@@ -73,20 +105,34 @@ $(MAIN): $(CMXAFILES) $(CMXDEPS) $(PCMXFILES)
 		mv $(MAIN).bak $(MAIN);\
 	fi
 
-%.cmo: %.ml %.cmi
+#
+# No default action for install
+#
+install::
+
+$(NL_CMOFILES): %.cmo: %.ml %.cmi
+	$(PRLC) $(OCAMLCFLAGS) -c $*.ml
+
+$(NL_CMIFILES): %.cmi: %.mli
+	$(PRLC) $(OCAMLCFLAGS) -c $*.mli
+
+$(NL_CMXFILES): %.cmx: %.ml $.mli
+	$(PRLC) $(OCAMLOPTFLAGS) -c $*.ml
+
+$(REG_CMOFILES): %.cmo: %.ml %.cmi
 	$(OCAMLC) $(OCAMLCFLAGS) -c $*.ml
 
-%.cmi: %.mli
+$(REG_CMIFILES): %.cmi: %.mli
 	$(OCAMLC) $(OCAMLCFLAGS) -c $*.mli
 
-%.cmx: %.ml $.mli
+$(REG_CMXFILES): %.cmx: %.ml $.mli
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -c $*.ml
 
 %.p4i: %.mli
-	$(CAMLP4) $(CAMLP4OFLAGS) $*.mli > $*.p4i
+	$(PRLC) $(INCLUDE) -E $*.mli > $*.p4i
 
 %.p4: %.ml
-	$(CAMLP4) $(CAMLP4OFLAGS) $*.ml > $*.p4
+	$(PRLC) $(INCLUDE) -E $*.ml > $*.p4
 
 %.ml: %.mll
 	rm -f $@

@@ -12,7 +12,7 @@ open Filter_type
 open Filter_util
 open Filter_summary
 open Filter_summary_io
-open Filter_summary_spec
+open Filter_summary_param
 open Filter_cache
 open Filter_ocaml
 
@@ -22,6 +22,15 @@ open File_type_base
 (************************************************************************
  * FILTER CACHE                                                         *
  ************************************************************************)
+
+(*
+ * Set this option if you don't want to use files.
+ *)
+let set_bool name f v =
+   f := v
+
+let nolib = Env_arg.bool "nolib" false "Do not use the Nuprl5 library" set_bool
+let nofile = Env_arg.bool "nofile" false "Do not use the filesystem" set_bool
 
 (*
  * Build the cache.
@@ -41,6 +50,7 @@ struct
    let select = InterfaceType
    let suffix = "cmiz"
    let magic = 0x73ac6be1
+   let disabled = nofile
    let marshal info =
       let marshal_proof kind = function
          InterfaceProof ->
@@ -64,6 +74,7 @@ struct
    let select = ImplementationType
    let suffix = "cmoz"
    let magic = 0x73ac6be2
+   let disabled = nofile
    let marshal info =
       let marshal_proof kind = function
          InterfaceProof ->
@@ -87,6 +98,7 @@ struct
    let select = InterfaceType
    let suffix = "cmiz"
    let magic = 0x73ac6be3
+   let disabled = nolib
    let marshal info =
       let marshal_proof kind = function
          InterfaceProof ->
@@ -110,6 +122,7 @@ struct
    let select = ImplementationType
    let suffix = "cmoz"
    let magic = 0x73ac6be2
+   let disabled = nolib
    let marshal info =
       let marshal_proof kind = function
          InterfaceProof ->
@@ -139,7 +152,7 @@ module FileCombo = File_type_base.CombineCombo (FileTypes) (FileImplementationCo
 module LibraryCombo = File_type_base.CombineCombo (FileTypes) (LibraryImplementationCombo) (LibraryInterfaceCombo)
 module Combo = File_type_base.CombineCombo (FileTypes) (FileCombo) (LibraryCombo)
 
-module FileBase = MakeFileBase (FileTypes) (LibraryCombo)
+module FileBase = MakeFileBase (FileTypes) (Combo)
 module SummaryBase = MakeSummaryBase (SummaryTypes) (FileBase)
 module FilterCache = MakeFilterCache (SummaryBase)
 
@@ -205,6 +218,9 @@ let params_ctyp loc ctyp params =
 
 (*
  * $Log$
+ * Revision 1.1  1998/02/18 18:46:19  jyh
+ * Initial ocaml semantics.
+ *
  * Revision 1.3  1998/02/12 23:38:18  jyh
  * Added support for saving intermediate files to the library.
  *

@@ -26,10 +26,10 @@ open Debug
 (*
  * Environment.
  *)
-let string_set _ s v =
-   s := v
-
-let root = Env_arg.string "root" ".." "root directory of Nuprl-light" string_set
+let lib =
+   try Sys.getenv "NLLIB" with
+      Not_found ->
+         "/usr/local/lib/nuprl-light"
 
 (*
  * Preprocess?
@@ -41,24 +41,9 @@ let verbose_mode = ref 0
 (*
  * Files.
  *)
-let camlp4 () =
-   ["camlp4";
-    "pa_o.cmo";
-    "pa_op.cmo";
-    "pr_o.cmo";
-    "pa_extend.cmo";
-    "q_MLast.cmo";
-    sprintf "%s/mllib/util.cma" !root;
-    sprintf "%s/refiner/refiner.cma" !root;
-    sprintf "%s/library/library.cma" !root;
-    sprintf "%s/filter/prlcomp.cma" !root;
-    sprintf "%s/filter/filter_main.cmo" !root]
+let camlp4 = [Filename.concat lib "camlp4o.run"]
 
-let ocamlc () =
-   ["ocamlc";
-    "-pp";
-    sprintf "camlp4 pa_o.cmo pa_op.cmo pr_dump.cmo pa_extend.cmo q_MLast.cmo %s/mllib/util.cma %s/refiner/refiner.cma %s/library/library.cma %s/filter/prlcomp.cma %s/filter/filter_main.cmo"
-    !root !root !root !root !root]
+let ocamlc = ["ocamlc"; "-I"; lib; "-pp"; Filename.concat lib "camlp4n.run"]
 
 (*
  * Collect argument list.
@@ -142,9 +127,9 @@ let main () =
    let _ = set_includes () in
    let argv =
       if !preprocess_flag then
-         camlp4 () @ !argv
+         camlp4 @ !argv
       else
-         ocamlc () @ !argv
+         ocamlc @ !argv
    in
    let argv' = Array.of_list argv in
    let _ =
@@ -169,6 +154,9 @@ let _ = Printexc.catch (Unix.handle_unix_error main) ()
 
 (*
  * $Log$
+ * Revision 1.7  1998/02/18 18:46:32  jyh
+ * Initial ocaml semantics.
+ *
  * Revision 1.6  1998/02/12 23:38:21  jyh
  * Added support for saving intermediate files to the library.
  *

@@ -34,9 +34,14 @@ struct
 
    let marshal magic filename info =
       let outx = open_out_bin filename in
-         output_binary_int outx magic;
-         output_value outx (Info.marshal info);
-         close_out outx
+         try
+            output_binary_int outx magic;
+            output_value outx (Info.marshal info);
+            close_out outx
+         with
+            exn ->
+               close_out outx;
+               raise exn
    
    let unmarshal magic filename =
       let inx = open_in_bin filename in
@@ -50,13 +55,14 @@ struct
                      raise (Sys_error "load_file")
                   end
          with
-            End_of_file ->
+            exn ->
                close_in inx;
                raise (Sys_error "load_file")
    
    let info =
       [{ info_marshal = marshal;
          info_unmarshal = unmarshal;
+         info_disabled = Info.disabled;
          info_suffix = Info.suffix;
          info_magic = Info.magic;
          info_select = Info.select
@@ -119,6 +125,9 @@ module MakeFileBase (Types : FileTypeSummarySig)
 
 (*
  * $Log$
+ * Revision 1.3  1998/02/18 18:46:49  jyh
+ * Initial ocaml semantics.
+ *
  * Revision 1.2  1998/02/12 23:35:18  jyh
  * Generalized file base to allow the library.
  *
