@@ -27,7 +27,6 @@ open Phobos_constants
 open Phobos_exn
 open Phobos_util
 open Phobos_debug
-open Xstr_search
 
 (*
  * Tokenizer.
@@ -155,24 +154,46 @@ and do_tokenize name buf regexps loptions =
    List.rev !tokens
 
 let create_lenv gst loptions =
-   let split_regexps regexps =
-      let tmp =
-         List.map (fun (ignore, ((id, _), _), regexp, rewrites) ->
-               (ignore, id, [regexp]), (id, rewrites)) regexps
-      in
-      let regexps = List.map fst tmp in
-      let rewrites = List.map snd tmp in
-      let lex_rewrite_table =
-         List.fold_left (fun lex_rewrite_table (id, rewrites) ->
-            lex_rewrite_add_or_replace_list lex_rewrite_table (Terminal id) rewrites) lex_rewrite_empty rewrites
-      in
-         regexps, lex_rewrite_table
+   let tmp =
+      List.map (fun (ignore, ((id, _), _), regexp, rewrites) ->
+            (ignore, id, [regexp]), (id, rewrites)) gst.grammar_token_rules
    in
-   let regexps, lex_rewrite_table = split_regexps gst.grammar_token_rules in
+   let regexps = List.map fst tmp in
+   let rewrites = List.map snd tmp in
+   let lex_rewrite_table =
+      List.fold_left (fun lex_rewrite_table (id, rewrites) ->
+         lex_rewrite_add_or_replace_list lex_rewrite_table (Terminal id) rewrites) lex_rewrite_empty rewrites
+   in
       { lexer_regexps = regexps;
         lexer_options = loptions;
         lexer_rewrites = lex_rewrite_table
       }
+
+let unquote s =
+   let len = String.length s in
+   let rec aux prefix i j =
+      if j = len then
+         prefix ^ (String.sub s i (j - i))
+      else if s.[j] = '\\' then
+         if j = len - 1 then
+            raise(Invalid_argument "Phobos_tokenizer.unquote: unterminated quotation")
+         else
+            let esc =
+               match s.[j+1] with
+                  'n' | '\n' -> "\n"
+                | 't' | '\t' -> "\t"
+                | '\\' -> "\\"
+                | '\'' -> "'"
+                | '"' -> "\""
+                | c -> "\\" ^ (String.make 1 c)
+            in
+            let prefix = prefix ^ (String.sub s i (j - i)) ^ esc in
+            let j = j + 2 in
+               aux prefix j j
+      else
+         aux prefix i (j+1)
+   in
+      aux "" 0 0
 
 let create_clenv
    { lexer_regexps = regexps;
@@ -181,17 +202,7 @@ let create_clenv
    } =
    let regexps =
       (* Replace special characters in regular expressions *)
-      List.map (fun (ignore, id, regexps) ->
-         let regexps =
-            List.map (fun regexp ->
-               let regexp = replace_substring regexp ["\\n"] (fun _ _ -> "\n") in
-               let regexp = replace_substring regexp ["\\t"] (fun _ _ -> "\t") in
-               let regexp = replace_substring regexp ["\\'"] (fun _ _ -> "'") in
-               let regexp = replace_substring regexp ["\\\""] (fun _ _ -> "\"") in
-               let regexp = replace_substring regexp ["\\\\"] (fun _ _ -> "\\") in
-                  regexp) regexps
-         in
-            ignore, id, regexps) regexps
+      List.map (fun (ignore, id, regexps) -> (ignore, id, List.map unquote regexps)) regexps
    in
    let disjunction_of regexps =
       let empty_string = "" in

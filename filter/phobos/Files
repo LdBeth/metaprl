@@ -1,5 +1,4 @@
 PHOBOS_FILES =\
-	xstr_search\
 	phobos_header\
 	phobos_state\
 	phobos_type\
