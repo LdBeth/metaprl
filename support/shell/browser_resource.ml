@@ -241,7 +241,7 @@ let extract info =
    let () =
       bprintf macros_buf "\tvar buttoncommands = new Array();\n";
       StringTable.iter (fun id s ->
-            bprintf macros_buf "\tbuttoncommands['%s'] = \"%s\";\n" id (String.escaped s)) buttoncommands;
+               bprintf macros_buf "\tbuttoncommands['%s'] = \"%s\";\n" id (String.escaped s)) buttoncommands;
 
       bprintf macros_buf "\tvar menus = new Array();\n";
       StringTable.iter (fun name items ->
@@ -319,13 +319,13 @@ let add_sessions state info ids =
                   List.fold_left (fun items (pid, cwd) ->
                         let pid_id, i = Lm_thread_shell.dest_pid pid in
                            if pid_id = browser_id then
-                              let label = sprintf "Session %d (%s)" i cwd in
-                              let label =
+                              let key =
                                  if pid = id then
-                                    "&#8227;" ^ label
+                                    "&#8227;"
                                  else
-                                    label
+                                    "-"
                               in
+                              let label = sprintf "%s Session %d (%s)" key i cwd in
                               let item =
                                  { command_label = label;
                                    command_value = sprintf "Session(%d)" i
@@ -461,9 +461,16 @@ let menubar_init =
     << menuitem["file", "Restart",    "Command('!restart')"] >>;
     << menuitem["file", "CVS Update", "Command('!cvs \"update\"')"] >>;
     << menuitem["file", "Save",       "Command('save ()')"] >>;
+    << menuitem["file", "-",          ""] >>;
     << menuitem["file", "New Window", "NewWindow()"] >>;
     << menuitem["file", "New Session", "NewSession()"] >>;
     << menu["edit", "Edit"] >>;
+    << menuitem["edit", "Copy", "Command('copy \"clipboard\"')"] >>;
+    << menuitem["edit", "Paste", "Command('paste \"clipboard\"')"] >>;
+    << menuitem["edit", "-", ""] >>;
+    << menuitem["edit", "Undo", "Command('undo ()')"] >>;
+    << menuitem["edit", "Redo", "Command('redo ()')"] >>;
+    << menuitem["edit", "-", ""] >>;
     << menu["view", "View"] >>;
     << menu["dir", "Directory"] >>;
     << menuitem["dir", "Refresh", "Command('ls \"\"')"] >>;

@@ -36,7 +36,11 @@ function MenuSetItems(ids, labels, commands)
         var text = '';
         for(var i = 0; i < ids.length; i++) {
             var id = ids[i];
-            text += '<div class="menuitem" id="' + id +  '">' + labels[id] + '</div>';
+            var label = labels[id];
+            if(label == '-')
+                text += '<div class="menurule"></div>';
+            else
+                text += '<div class="menuitem" id="' + id +  '">' + label + '</div>';
         }
         menufloat.innerHTML = text;
         menucommands = commands;

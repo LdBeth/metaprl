@@ -296,6 +296,19 @@ TD.menulabelhover {
     width: 80px
 }
 
+DIV.menurule {
+    background: white;
+    margin: 0px;
+    padding: 0px;
+    height: 0px;
+    border-width: 1px;
+    border-style: solid;
+    border-top-color: #6666aa;
+    border-bottom-color: white;
+    border-left-color: white;
+    border-right-color: white
+}
+
 DIV.menuitem {
     width: 100%
 }
