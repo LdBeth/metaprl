@@ -17,7 +17,7 @@ include mk/preface
 #    theories/czf: Aczel's contructive set theory
 #    editor/ml: interactive proof editor
 #
-REFINER_DIRS =\
+REFINER_DIRS :=\
 	clib\
 	mllib\
 	refiner\
@@ -25,8 +25,13 @@ REFINER_DIRS =\
 	debug\
 	ensemble
 
+DEP_DIRS :=\
+	refiner\
+	filter\
+
 ifneq ($(LIBMOJAVE),undefined)
-	PDIRS = $(LIBMOJAVE)
+	 REFINER_DIRS := $(LIBMOJAVE) $(REFINER_DIRS)
+	DEP_DIRS := $(LIBMOJAVE) $(DEP_DIRS)
 endif
 
 DIRS = $(REFINER_DIRS) filter $(MP_DIRS) editor/ml
@@ -38,25 +43,19 @@ DIRS = $(REFINER_DIRS) filter $(MP_DIRS) editor/ml
 
 all: check_config
 	+@if (echo Making util...; $(MAKE) -C util -f Makefile $@); then true; else exit 1; fi
-ifdef PDIRS
-	+@for i in $(PDIRS); do\
+	+@for i in $(DIRS); do if [ -f $$i/Makefile.prl ]; then\
 		if (echo Making $$i...; $(MAKE) -C $$i -f Makefile.prl $@); then true; else exit 1; fi;\
-	done
-endif
-	+@for i in $(DIRS); do\
+	else\
 		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
-	done
+	fi; done
 
 opt: check_config
 	+@if (echo Making util...; $(MAKE) -C util -f Makefile $@); then true; else exit 1; fi
-ifdef PDIRS
-	+@for i in $(PDIRS); do\
+	+@for i in $(DIRS); do if [ -f $$i/Makefile.prl ]; then\
 		if (echo Making $$i...; $(MAKE) -C $$i -f Makefile.prl $@); then true; else exit 1; fi;\
-	done
-endif
-	+@for i in $(DIRS); do\
+	else\
 		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
-	done
+	fi; done
 
 profile_clean:
 	+@for i in $(REFINER_DIRS) editor/ml; do\
@@ -115,31 +114,30 @@ profile_opt_mem: check_config
 
 install: check_config
 	+@if (echo Making util...; $(MAKE) -C util -f Makefile $@); then true; else exit 1; fi
-ifdef PDIRS
-	+@for i in $(PDIRS); do\
+	+@for i in $(DIRS); do if [ -f $$i/Makefile.prl ]; then\
 		if (echo Making $$i...; $(MAKE) -C $$i -f Makefile.prl $@); then true; else exit 1; fi;\
-	done
-endif
-	+@for i in $(DIRS); do\
+	else\
 		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
-	done
+	fi; done
 
 clean:
 	+@for i in lib bin doc util $(DIRS); do if [ -d $$i ]; then\
-		if (echo Cleaning $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
+		if [ -f $$i/Makefile.prl ]; then\
+			if (echo Cleaning $$i...; $(MAKE) -C $$i -f Makefile.prl $@); then true; else exit 1; fi;\
+		else\
+			if (echo Cleaning $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
+		fi\
 	fi; done
-ifdef PDIRS
-	+@for i in $(PDIRS); do\
-		if (echo Making $$i...; $(MAKE) -C $$i -f Makefile.prl $@); then true; else exit 1; fi;\
-	done
-endif
 
 depend: check_config
-	+@for i in $(PDIRS) $(DIRS); do\
+	+@for i in $(DIRS); do\
 		if (echo Making $$i...; cd $$i && $(RM) Makefile.dep); then true; else exit 1; fi;\
 	done
-	+@$(MAKE) -C refiner depend
-	+@$(MAKE) -C filter depend
+	+@for i in $(DEP_DIRS); do if [ -f $$i/Makefile.prl ]; then\
+		if (echo Making $$i...; $(MAKE) -C $$i -f Makefile.prl $@); then true; else exit 1; fi;\
+	else\
+		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
+	fi; done
 
 mk/config: mk/make_config.sh
 	@echo Making mk/config...
