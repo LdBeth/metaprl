@@ -45,18 +45,22 @@ let contains_rules = ref false
 (*
  * These are the implicit names.
  *)
+let prl_cmi_names = [
+   "Tactic_type";
+   "Precedence";
+   "Refiner";
+   "Mp_resource";
+]
+
 let prl_names = [
    "Obj";
    "Lm_debug";
-   "Refiner";
    "Refine_exn";
    "Theory";
    "Dform";
-   "Mp_resource";
-   "Precedence";
-   "Tactic_type";
    "Tactic_boot_sig";
-]
+   "Ml_term"
+] @ prl_cmi_names
 
 (*
  * These are the names used by "topval" declarations
@@ -290,14 +294,15 @@ let file_dependencies source_file =
     free_structures := StringSet.empty;
     prl_structures := StringSet.empty;
     includes := StringSet.empty;
-    let ic =
-       if source_file != "-" then
-          open_in source_file
-       else begin
-          print_endline "Reading from stdin...";
-          stdin
-       end
+    let basename, is_impl =
+       if Filename.check_suffix source_file ".ml" then
+          Filename.chop_suffix source_file ".ml", true
+       else if Filename.check_suffix source_file ".mli" then
+          Filename.chop_suffix source_file ".mli", false
+       else
+          raise(Invalid_argument("Unknown suffix in a file " ^ source_file))
     in
+    let ic = open_in source_file in
     let lb = Lexing.from_channel ic in
     main lb;
     free_structures := StringSet.union !free_structures !prl_structures;
@@ -306,14 +311,13 @@ let file_dependencies source_file =
        print_newline ()
     end else begin
     if !prl_flag then
-      List.iter add_structure prl_names;
+       List.iter add_structure (if is_impl then prl_names else prl_cmi_names);
     if !prl_flag && !contains_topval then
       List.iter add_structure topval_names;
     if !prl_flag && !contains_rules then
       List.iter add_structure rule_names;
     let includes = StringSet.fold find_include !includes [] in
-    if Filename.check_suffix source_file ".ml" then begin
-      let basename = Filename.chop_suffix source_file ".ml" in
+    if is_impl then begin
       let init_deps,init_ppo_dep =
         if Sys.file_exists (basename ^ ".mli")
         then let cmi_name = basename ^ ".cmi" in (([cmi_name], [cmi_name]), [basename ^ ".cmiz"])
@@ -347,14 +351,11 @@ let file_dependencies source_file =
       print_dependencies (basename ^ ".cmo") cmo_deps;
       if !prl_flag then print_dependencies (basename ^ ".ppo") ppo_deps;
       print_dependencies (basename ^ ".cmx") cmx_deps
-    end else
-    if Filename.check_suffix source_file ".mli" then begin
-      let basename = Filename.chop_suffix source_file ".mli" in
+    end else begin
       print_dependencies (basename ^ ".cmi") (StringSet.fold find_dependency_cmi !free_structures includes);
       if !omake_flag && !prl_flag then
          print_dependencies (basename ^ ".cmiz") (StringSet.fold find_dependency_cmiz !prl_structures [])
-    end else
-      raise(Invalid_argument("Unknown suffix in a file " ^ source_file))
+    end;
     end;
     close_in ic
   with Sys_error _ ->
