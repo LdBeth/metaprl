@@ -1757,23 +1757,34 @@ struct
       [] ->
          ()
     | v::ts ->
+         if not (is_var_term v) then
+            REF_RAISE(RefineError ("Definitional rewrite", StringTermError("subterm arguments must be bound variables", v)));
          let v = dest_var v in
             if List.mem v bvars then
                 check_bound_vars (Lm_list_util.remove v bvars) ts
             else
-               REF_RAISE(RefineError ("definitional rewrite", RewriteFreeSOVar v))
+               REF_RAISE(RefineError ("Definitional rewrite", RewriteFreeSOVar v))
 
    let check_def_bterm bt =
       let bt = dest_bterm bt in
+      if not (is_so_var_term bt.bterm) then
+         REF_RAISE(RefineError ("Definitional rewrite", StringTermError("subterms must be SO variables", bt.bterm)));
       let _, _, terms = dest_so_var bt.bterm in
          check_bound_vars bt.bvars terms
+
+   let check_def_redex name redex =
+       List.iter check_def_bterm (dest_term redex).term_terms
+
+   let check_definition name redex contractum =
+      check_def_redex name redex;
+      check_rewrite name [] [] redex contractum
 
    let definitional_rewrite build name redex contractum =
       IFDEF VERBOSE_EXN THEN
          if !debug_refiner then
             eprintf "Refiner.definitional_rewrite: %s%t" name eflush
       ENDIF;
-      let _ = List.iter check_def_bterm (dest_term redex).term_terms in
+         check_def_redex name redex;
          justify_rewrite build name redex contractum PDefined
 
    (*

@@ -585,6 +585,7 @@ struct
     *)
    let define_term proc loc name ((s,_,_) as term_spec) contractum res =
       let t = declare_term_opname proc loc term_spec in
+         Refine.check_definition name t contractum;
          FilterCache.add_command proc.cache (Definition {
             opdef_name = name;
             opdef_opname = s;

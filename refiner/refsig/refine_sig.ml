@@ -442,9 +442,14 @@ sig
       (unit -> extract) -> (* proof *)
       unit
    val check_rewrite :
-      string ->            (* string *)
+      string ->            (* name *)
       term list ->         (* params *)
       term list ->         (* subgoals *)
+      term ->              (* redex *)
+      term ->              (* contractum *)
+      unit
+   val check_definition :
+      string ->            (* name *)
       term ->              (* redex *)
       term ->              (* contractum *)
       unit
