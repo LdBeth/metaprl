@@ -39,6 +39,13 @@ open String_set
 
 open Termmod_hash_sig
 
+let debug_ascii_io =
+   create_debug (**)
+      { debug_name = "ascii_io";
+        debug_description = "report ASCII IO errors verbosely";
+        debug_value = false
+      }
+
 module MakeAsciiIO (TM: TermModuleHashSig) =
 struct
    open TM
@@ -196,9 +203,9 @@ struct
     | _ ->
          fail "add_param"
 
-   let rec add_items r = function
+   let rec add_items_aux r = function
       (long,_,_) as item :: items ->
-         add_items r items;
+         add_items_aux r items;
          begin match long.[0] with
             'T'|'t' -> ignore (add_term r item)
           | 'G'|'g' -> ignore (add_goal r item)
@@ -212,6 +219,29 @@ struct
           | _ -> fail ("add_items: " ^ long)
          end
     | [] -> ()
+
+   let rec add_items_debug r = function
+      (long,_,_) as item :: items ->
+         add_items_debug r items;
+         begin try
+            match long.[0] with
+               'T'|'t' -> ignore (add_term r item)
+             | 'G'|'g' -> ignore (add_goal r item)
+             | 'B'|'b' -> add_bterm r item
+             | 'H'|'h' -> add_hyp r item
+             | 'C'|'c' -> add_context r item
+             | 'S'|'s' -> add_seq r item
+             | 'O'|'o' -> add_op r item
+             | 'N'|'n' -> add_name r item
+             | 'P'|'p' -> add_param r item
+             | _ -> fail ("add_items: " ^ long)
+         with 
+            Not_found -> fail ("add_items_debug: " ^ long)
+         end
+    | [] -> ()
+
+   let add_items r items =
+      if !debug_ascii_io then add_items_debug r items else add_items_aux r items
 
    let get_term t =
       try begin match !t with
