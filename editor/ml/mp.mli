@@ -30,7 +30,6 @@
  * jyh@cs.cornell.edu
  *)
 
-open Refiner.Refiner.TermType
 open Refiner.Refiner.Refine
 
 open Tactic_type.Tacticals

@@ -34,7 +34,6 @@
 open Lm_debug
 open Opname
 open Refiner.Refiner
-open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMeta
 open Filter_type

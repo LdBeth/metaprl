@@ -7,7 +7,7 @@ TMP2=`mktemp /tmp/clop2.XXXXXX`
 grep -r -l --include=\*.ml --include=\*.mli --include=\*.mlz --include=\*.mll --include=\*.mly '^ *open ' . > $TMP
 omake || exit 1
 while read FILE; do
-   BINFILE=`echo $FILE|sed -e 's/\.mli$/.cmi/' -e 's/\.mlz$/.cmi/' -e 's/\.ml.*$/.cmx/'`
+   BINFILE=`echo $FILE|sed -e 's/\.mli$/.cmi/' -e 's/\.mlz$/.cmi/' -e 's/\.ml.*$/.cmo/'`
    if [ "$BINFILE" == "$FILE" ]; then 
       echo "$FILE" "???"
       exit 1
@@ -15,8 +15,8 @@ while read FILE; do
    if [ ! -e "$BINFILE" ]; then
       echo "Skiping file $FILE as it is not compiled by \"omake\""
    else
-      if echo "$BINFILE" | grep -q cmx; then
-         PPO=`echo $BINFILE|sed -e 's/\.cmx$/.ppo/'`
+      if echo "$BINFILE" | grep -q cmo; then
+         PPO=`echo $BINFILE|sed -e 's/\.cmo$/.ppo/'`
       else
          PPO=""
       fi

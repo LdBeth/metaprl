@@ -30,7 +30,6 @@
  * jyh@cs.cornell.edu
  *)
 
-open Refiner.Refiner.TermType
 
 open Tactic_type.Tactic
 open Shell_p4_sig

@@ -32,7 +32,6 @@
 
 open Refiner.Refiner.RefineError
 
-open Thread_refiner_sig
 
 module ThreadRefinerTacticals =
 struct

@@ -31,28 +31,22 @@
  *)
 
 open Printf
-open Lexing
 
 open Longident
 open Parsetree
 
 open Lm_debug
-open Lm_pervasives
 
 open Pcaml
 
-open Toploop
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.RefineError
 
-open Filter_ast
-open Term_grammar
 open Filter_grammar
 
 open Tactic_type
 open Tactic_type.Tacticals
-open Shell_p4_sig
 
 (*
  * Ref cell for returning the tactic value.
