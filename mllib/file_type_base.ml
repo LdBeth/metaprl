@@ -42,24 +42,26 @@ struct
    type cooked = Info.cooked
    type info = (select, cooked) common_info
 
-   let marshal magic filename info =
-      IO.write magic filename (Info.marshal info)
+   let marshal magics magic filename info =
+      IO.write magics magic filename (Info.marshal info)
 
-   let unmarshal magic filename =
-      Info.unmarshal (IO.read magic filename)
+   let unmarshal magics filename =
+      let t, magic = IO.read magics filename in
+         Info.unmarshal t, magic
 
    let info =
       [{ info_marshal = marshal;
          info_unmarshal = unmarshal;
          info_disabled = Info.disabled;
          info_suffix = Info.suffix;
-         info_magic = Info.magic;
+         info_magics = Info.magics;
          info_select = Info.select
        }]
 end
 
 (*
  * The Combo contans all the data to construct a FileBaseInfoSig.
+ * We won't overwrite a file if it has the wrong magic number.
  *)
 module MakeSingletonCombo (Info : FileTypeInfoSig) :
    (FileTypeComboSig
@@ -70,10 +72,28 @@ module MakeSingletonCombo (Info : FileTypeInfoSig) :
       (struct
          type t = Info.raw
 
-         let write magic filename info =
+         let check magics magic filename =
+            try
+               let inx = open_in_bin filename in
+                  try
+                     let magic' = input_binary_int inx in
+                        if List_util.find_index magic' magics > magic then
+                           raise (Failure (sprintf "File %s has been modified, write operation failed" filename))
+                  with
+                     End_of_file ->
+                        close_in inx
+                   | exn ->
+                        close_in inx;
+                        raise exn
+            with
+               Sys_error _ ->
+                  ()
+
+         let write magics magic filename info =
+            let _ = check magics magic filename in
             let outx = open_out_bin filename in
                try
-                  output_binary_int outx magic;
+                  output_binary_int outx (List.nth magics magic);
                   output_value outx (info : t);
                   close_out outx
                with
@@ -81,17 +101,11 @@ module MakeSingletonCombo (Info : FileTypeInfoSig) :
                      close_out outx;
                      raise exn
 
-         let read magic filename =
+         let read magics filename =
             let inx = open_in_bin filename in
                try
-                  let magic' = input_binary_int inx in
-                     if magic = magic' then
-                        (input_value inx : t)
-                     else
-                        begin
-                           close_in inx;
-                           raise (Sys_error "load_file")
-                        end
+                  let magic = input_binary_int inx in
+                     (input_value inx : t), List_util.find_index magic magics
                with
                   exn ->
                      close_in inx;
@@ -102,15 +116,16 @@ module MakeSingletonCombo (Info : FileTypeInfoSig) :
 (*
  * Extend a Combo with new data.
  *)
-module CombineCombo (Types : FileTypeSummarySig)
-(Info : FileTypeComboSig
-        with type cooked = Types.cooked
-        with type select = Types.select
-        with type info = (Types.select, Types.cooked) common_info)
-(Combo : FileTypeComboSig
-         with type cooked = Types.cooked
-         with type select = Types.select
-         with type info = (Types.select, Types.cooked) common_info) :
+module CombineCombo (**)
+   (Types : FileTypeSummarySig)
+   (Info : FileTypeComboSig
+    with type cooked = Types.cooked
+    with type select = Types.select
+    with type info = (Types.select, Types.cooked) common_info)
+   (Combo : FileTypeComboSig
+    with type cooked = Types.cooked
+    with type select = Types.select
+    with type info = (Types.select, Types.cooked) common_info) :
    (FileTypeComboSig
     with type cooked = Types.cooked
     with type select = Types.select
@@ -155,6 +170,9 @@ module MakeFileBase (Types : FileTypeSummarySig)
 
 (*
  * $Log$
+ * Revision 1.8  1998/06/15 22:32:23  jyh
+ * Added CZF.
+ *
  * Revision 1.7  1998/06/01 13:54:37  jyh
  * Proving twice one is two.
  *

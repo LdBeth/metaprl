@@ -157,7 +157,7 @@ let contractum_exp patt s =
       let t = Grammar.Entry.parse TermGrammar.term_eoi cs in
       let index = List.length !contracta in
          contracta := t :: !contracta;
-         sprintf "(Rewrite.make_contractum contractum_%d %s)" index stack_id
+         sprintf "(Refiner.Refiner.Rewrite.make_contractum contractum_%d %s)" index stack_id
    else
       Stdpp.raise_with_loc (0, String.length s) (Failure "not in a rewrite block")
 
@@ -245,6 +245,13 @@ struct
       }
 
    (*
+    * We may be able to do better sometime, but for now
+    * we print the terms using the default display forms.
+    *)
+   let print_exn f x =
+      Filter_exn.print Dform.null_base f x
+
+   (*
     * When a module is inlined, add the resources and infixes.
     *)
    let inline_hook root_path cache (path, info) paths =
@@ -261,7 +268,7 @@ struct
     *       a. adds the resources
     *       b. adds the infix directives.
     *)
-   let declare_parent proc loc path =
+   let declare_parent_error proc loc path =
       (* Lots of errors can occur here *)
       let _, opens = FilterCache.inline_module proc.cache path (inline_hook path) [] in
       let resources = FilterCache.sig_resources proc.cache path in
@@ -283,6 +290,9 @@ struct
       in
          FilterCache.add_command proc.cache (Parent info, loc)
 
+   let declare_parent proc loc path =
+      print_exn (declare_parent_error proc loc) path
+
    (*
     * Declare a term.
     * This defines a new opname,
@@ -292,13 +302,16 @@ struct
     * This command is used both for signature items
     * as well as structure items.
     *)
-   let declare_term proc loc (s, params, bterms) =
+   let declare_term_error proc loc (s, params, bterms) =
       let opname' = Opname.mk_opname s (FilterCache.op_prefix proc.cache) in
       let t = mk_term (mk_op opname' params) bterms in
          FilterCache.rm_opname proc.cache s;
          FilterCache.add_opname proc.cache s opname';
          FilterCache.add_command proc.cache (Opname { opname_name = s; opname_term = t }, loc);
          t
+
+   let declare_term proc loc arg =
+      print_exn (declare_term_error proc loc) arg
 
    (*
     * Define a rewrite in an interface.
@@ -358,16 +371,22 @@ struct
    (*
     * Add the command and return the declaration.
     *)
-   let declare_rewrite proc loc name params args pf =
+   let declare_rewrite_error proc loc name params args pf =
       let cmd = rewrite_command proc name params args pf in
          FilterCache.add_command proc.cache (cmd, loc)
+
+   let declare_rewrite proc loc name params args pf =
+      print_exn (declare_rewrite_error proc loc name params args) pf
 
    (*
     * Declare a term, and define a rewrite in one step.
     *)
-   let define_term proc loc name redex contractum pf =
+   let define_term_error proc loc name redex contractum pf =
       let redex' = declare_term proc loc redex in
          declare_rewrite proc loc name [] (MetaIff (MetaTheorem redex', MetaTheorem contractum)) pf
+
+   let define_term proc loc name redex contractum pf =
+      print_exn (define_term_error proc loc name redex contractum) pf
 
    (*
     * Declare an axiom in an interface.  This has a similar flavor
@@ -436,9 +455,12 @@ struct
        | _ ->
             cond_axiom proc name params args pf
 
-   let declare_axiom proc loc name params args pf =
+   let declare_axiom_error proc loc name params args pf =
       let cmd = axiom_command proc name params args pf in
          FilterCache.add_command proc.cache (cmd, loc)
+
+   let declare_axiom proc loc name params args pf =
+      print_exn (declare_axiom_error proc loc name params args) pf
 
    (*
     * Infix directive.
@@ -451,22 +473,28 @@ struct
     * Declare an ML term rewrite.
     * There is no definition.
     *)
-   let declare_mlterm proc loc ((name, _, _) as t) def =
+   let declare_mlterm_error proc loc ((name, _, _) as t) def =
       let t' = declare_term proc loc t in
          FilterCache.add_command proc.cache (MLTerm { mlterm_term = t';
                                                       mlterm_contracta = end_rewrite ();
                                                       mlterm_def = def
                                              }, loc)
 
+   let declare_mlterm proc loc arg def =
+      print_exn (declare_mlterm_error proc loc arg) def
+
    (*
     * Declare a condition term for a rule.
     *)
-   let declare_ml_condition proc loc ((name, _, _) as t) =
+   let declare_ml_condition_error proc loc ((name, _, _) as t) =
       let t' = declare_term proc loc t in
          FilterCache.add_command proc.cache (Condition { mlterm_term = t';
                                                          mlterm_contracta = end_rewrite ();
                                                          mlterm_def = None
                                              }, loc)
+
+   let declare_ml_condition proc loc arg =
+      print_exn (declare_ml_condition_error proc loc) arg
 
    (*
     * Record a resource.
@@ -514,7 +542,7 @@ struct
    (*
     * Dform declaration.
     *)
-   let declare_dform proc loc name options t =
+   let declare_dform_error proc loc name options t =
       let modes, options' = get_dform_options proc loc options in
       let df =
          DForm { dform_name = name;
@@ -526,6 +554,9 @@ struct
       in
          FilterCache.add_command proc.cache (df, loc)
 
+   let declare_dform proc loc name options t =
+      print_exn (declare_dform_error proc loc name options) t
+
    (*
     * Define a display form expansion.
     *
@@ -535,7 +566,7 @@ struct
     *      dform_print = DFormExpansion expansion
     *    }
     *)
-   let define_dform proc loc name options t expansion =
+   let define_dform_error proc loc name options t expansion =
       let modes, options' = get_dform_options proc loc options in
          FilterCache.add_command proc.cache (DForm { dform_name = name;
                                                      dform_modes = modes;
@@ -544,12 +575,15 @@ struct
                                                      dform_def = TermDForm expansion
                                              }, loc)
 
+   let define_dform proc loc name options t expansion =
+      print_exn (define_dform_error proc loc name options t) expansion
+
    (*
     * An ml dterm is a display form that is computed in ML.
     *
     * Within the body, terms may expand to contracta.
     *)
-   let define_ml_dform proc loc name options t printer buffer code =
+   let define_ml_dform_error proc loc name options t printer buffer code =
       let modes, options' = get_dform_options proc loc options in
       let ml_def =
          { dform_ml_printer = printer;
@@ -567,6 +601,9 @@ struct
          }
       in
          FilterCache.add_command proc.cache (DForm info, loc)
+
+   let define_ml_dform proc loc name options t printer buffer code =
+      print_exn (define_ml_dform_error proc loc name options t printer buffer) code
 
    (*
     * Precedence declaration.
@@ -660,6 +697,11 @@ end
 module Convert : ConvertProofSig =
 struct
    type t = unit
+   type raw = unit
+   let to_raw pf =
+      raise (Failure "Filter_parse.Convert.to_raw: interactive proofs can't be compiled")
+   let of_raw pf =
+      raise (Failure "Filter_parse.Convert.of_raw: interactive proofs can't be compiled")
    let to_expr expr =
       raise (Failure "Filter_parse.Convert.to_expr: interactive proofs can't be compiled")
    let to_term expr =
@@ -995,6 +1037,9 @@ END
 
 (*
  * $Log$
+ * Revision 1.28  1998/06/15 22:32:08  jyh
+ * Added CZF.
+ *
  * Revision 1.27  1998/06/12 13:46:31  jyh
  * D tactic works, added itt_bool.
  *

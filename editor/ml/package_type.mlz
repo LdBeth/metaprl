@@ -14,6 +14,7 @@ include Proof_type
 
 open Opname
 open Refiner.Refiner
+open Refiner.Refiner.Term
 open Dform_print
 
 open Filter_summary
@@ -93,6 +94,7 @@ sig
     *)
    val status  : package -> status
    val set_status : package -> status -> unit
+   val touch : package -> unit
 
    (*
     * Access to the cache.
@@ -105,16 +107,21 @@ sig
    val info : package -> (proof proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
    val sig_info : package -> (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
    val find : package -> string -> (proof proof_type, MLast.ctyp, MLast.expr, MLast.str_item) summary_item
+   val set : package -> (proof proof_type, MLast.ctyp, MLast.expr, MLast.str_item) summary_item -> unit
 
    (*
     * This is the starting info for new proofs.
     *)
    val argument : package -> tactic_argument
+   val new_proof : package -> term list -> term -> proof
    val ped_of_proof : package -> proof -> Proof_edit.t
 end
 
 (*
  * $Log$
+ * Revision 1.11  1998/06/15 22:31:43  jyh
+ * Added CZF.
+ *
  * Revision 1.10  1998/06/09 20:51:14  jyh
  * Propagated refinement changes.
  * New tacticals module.

@@ -65,6 +65,9 @@ type 'a summary_type =
 module type ConvertProofSig =
 sig
    type t
+   type raw
+   val to_raw  : string -> t -> raw
+   val of_raw  : string -> raw -> t
    val to_expr : string -> t -> MLast.expr
    val to_term : string -> t -> term
    val of_term : string -> term -> t
@@ -124,7 +127,7 @@ let _ = Env_arg.bool "lib"    false "Use the Nuprl5 library"  set_lib
 (*
  * Identity used for term normalization.
  *)
-let identity x = x
+external identity : 'a -> 'a = "%identity"
 
 (*
  * Unit term used for interfaces.
@@ -136,7 +139,7 @@ let unit_term = mk_simple_term nil_opname []
  *)
 let normalize info =
    let convert =
-      { term_f  = normalize_term;
+      { term_f  = (fun t -> normalize_term t; t);
         proof_f = (fun _ pf -> pf);
         ctyp_f  = identity;
         expr_f  = identity;
@@ -184,6 +187,15 @@ let unmarshal_proof name of_term t =
       else
          raise (Failure "Filter_cache.unmarshal")
 
+let interactive_proof to_raw name proof =
+   match proof with
+      Primitive t ->
+         Primitive t
+    | Derived expr ->
+         Derived expr
+    | Interactive pf ->
+         Interactive (to_raw name pf)
+
 (*
  * Term signatures.
  *)
@@ -195,7 +207,7 @@ struct
 
    let select   = InterfaceType
    let suffix   = "cmit"
-   let magic    = 0x73ac6be1
+   let magics   = [0x73ac6be1; 0x63ac6be1]
    let disabled = nofile
 
    let marshal = function
@@ -235,7 +247,7 @@ struct
 
    let select   = InterfaceType
    let suffix   = "cmiz"
-   let magic    = 0x73ac6be2
+   let magics   = [0x73ac6be2; 0x63ac6be2]
    let disabled = noraw
 
    let marshal = function
@@ -258,7 +270,7 @@ struct
 
    let select   = ImplementationType
    let suffix   = "cmot"
-   let magic    = 0x73ac6be3
+   let magics   = [0x73ac6be3; 0x63ac6be3]
    let disabled = nofile
 
    let marshal = function
@@ -293,21 +305,37 @@ end
 module RawStrInfo (Convert : ConvertProofSig) =
 struct
    type select  = select_type
-   type raw     = (Convert.t proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
+   type raw     = (Convert.raw proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
    type cooked  = Convert.t summary_type
 
    let select   = ImplementationType
    let suffix   = "cmoz"
-   let magic    = 0x73ac6be4
+   let magics   = [0x73ac6be4; 0x63ac6be4]
    let disabled = noraw
 
    let marshal = function
       Implementation info ->
-         info
+         let convert =
+            { term_f  = identity;
+              proof_f = (fun name proof -> interactive_proof Convert.to_raw name proof);
+              ctyp_f  = identity;
+              expr_f  = identity;
+              item_f  = identity
+            }
+         in
+            summary_map convert info
     | Interface _ ->
          raise (Failure "RawStrInfo.marshal")
    let unmarshal info =
-      Implementation (normalize info)
+      let convert =
+         { term_f  = (fun t -> normalize_term t; t);
+           proof_f = (fun name proof -> interactive_proof Convert.of_raw name proof);
+           ctyp_f  = identity;
+           expr_f  = identity;
+           item_f  = identity
+         }
+      in
+         Implementation (summary_map convert info)
 end
 
 (*
@@ -321,7 +349,7 @@ struct
 
    let select   = InterfaceType
    let suffix   = "cmit"
-   let magic    = 0x73ac6be5
+   let magics   = [0x73ac6be5; 0x63ac6be5]
    let disabled = nolib
 
    let marshal = function
@@ -360,7 +388,7 @@ struct
 
    let select   = ImplementationType
    let suffix   = "cmot"
-   let magic    = 0x73ac6be6
+   let magics   = [0x73ac6be6; 0x63ac6be6]
    let disabled = nolib
 
    let marshal = function
@@ -488,6 +516,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.23  1998/06/15 22:32:03  jyh
+ * Added CZF.
+ *
  * Revision 1.22  1998/06/01 13:52:47  jyh
  * Proving twice one is two.
  *

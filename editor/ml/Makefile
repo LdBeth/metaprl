@@ -8,6 +8,7 @@ INCLUDE = -I .\
 	-I $(ROOT)/theories/ocaml\
 	-I $(ROOT)/theories/base\
 	-I $(ROOT)/theories/itt\
+	-I $(ROOT)/theories/czf\
 	-I $(ROOT)/lib\
 	-I $(CAMLP4LIB)
 
@@ -34,6 +35,7 @@ NLFILES :=\
 	shell_type\
 	shell_null\
 	shell_rewrite\
+	shell_rule\
 	shell_p4\
 	shell\
 	test
@@ -75,6 +77,7 @@ CMADEPS =\
 	$(ROOT)/theories/ocaml/ocaml_df.cma\
 	$(ROOT)/theories/base/base.cma\
 	$(ROOT)/theories/itt/itt.cma\
+	$(ROOT)/theories/czf/czf.cma\
 	$(CAMLP4LIB)/pa_o.cmo\
 	$(CAMLP4LIB)/pa_op.cmo\
 	$(MAIN).cma
@@ -84,6 +87,7 @@ CMALIBS =\
 
 CMOBJS =\
 	$(CMALIBS)\
+	test.cmo\
 	nl.cmo
 
 CCLIBS =\

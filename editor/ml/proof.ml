@@ -341,6 +341,9 @@ let status { pf_root = root; pf_address = addr } =
    in
       search root addr
 
+let node_status { pf_node = { node_status = status } } =
+   status
+
 (************************************************************************
  * UPDATES                                                              *
  ************************************************************************)
@@ -647,17 +650,17 @@ let replace_child pf i { pf_node = child' } =
          if alpha_equal (Sequent.goal goal) goal' then
             ChildNode child'
          else
-            raise Match
+            raise (RefineError ("replace_child", StringTermError ("ChildGoal: goals are not equal", goal')))
     | ChildNode node ->
          if alpha_equal (Sequent.goal (node_goal node)) goal' then
             ChildNode child'
          else
-            raise Match
+            raise (RefineError ("replace_child", StringTermError ("ChildNode: goals are not equal", goal')))
    in
    let children' =
       try List_util.replacef_nth i replace children with
          Failure "replacef_nth" ->
-            raise Match
+            raise (RefineError ("replace_child", StringIntError ("index is out of bounds", i)))
    in
    let status' = compute_status item children' in
    let node' =
@@ -994,6 +997,9 @@ let proof_of_io_proof arg tacs pf =
 
 (*
  * $Log$
+ * Revision 1.14  1998/06/15 22:31:44  jyh
+ * Added CZF.
+ *
  * Revision 1.13  1998/06/12 13:45:09  jyh
  * D tactic works, added itt_bool.
  *

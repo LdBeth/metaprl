@@ -42,6 +42,8 @@ let _ =
    if !debug_load then
       eprintf "Loading Shell%t" eflush
 
+let debug_refine = load_debug "refine"
+
 (************************************************************************
  * TYPES                                                                *
  ************************************************************************)
@@ -137,6 +139,23 @@ let get_current_package info =
          raise (RefineError ("Shell.get_current_package", StringError "no current package"))
 
 (*
+ * Update the timestamp.
+ *)
+let touch () =
+   let pack = get_current_package info in
+      try Package.touch pack with
+         Failure "touch" ->
+            eprintf "The module %s is read-only.  Use set_writeable () to change it.%t" (Package.name pack) eflush;
+            raise (Failure "touch")
+
+(*
+ * Change the status so that we can write to the file.
+ *)
+let set_writeable () =
+   let pack = get_current_package info in
+      Package.set_status pack Modified
+
+(*
  * Term printer.
  *)
 let print_term dbase t =
@@ -165,6 +184,10 @@ let print_exn f x =
 let parse_path dir name =
    if name = "." then
       dir
+   else if name = ".." then
+      try fst (List_util.split_last dir) with
+         Failure "split_last" ->
+            []
    else if String.length name <> 0 & name.[0] = '.' then
       String_util.split '.' name
    else
@@ -194,15 +217,12 @@ let set_item modname name =
       match item with
          Rewrite rw ->
             Shell_rewrite.view_rw pack rw
-       | CondRewrite _ ->
-            eprintf "Editing conditional rewrite '%s.%s' not implemented%t" modname name eflush;
-            raise (Failure "view")
-       | Axiom _ ->
-            eprintf "Editing axiom '%s.%s' not implemented%t" modname name eflush;
-            raise (Failure "view")
-       | Rule _ ->
-            eprintf "Editing rule '%s.%s' not implemented%t" modname name eflush;
-            raise (Failure "view")
+       | CondRewrite crw ->
+            Shell_rewrite.view_crw pack crw
+       | Axiom ax ->
+            Shell_rule.view_axiom pack ax
+       | Rule rule ->
+            Shell_rule.view_rule pack rule
        | Opname _ ->
             eprintf "Editing opname '%s.%s' not supported%t" modname name eflush;
             raise (Failure "view")
@@ -443,72 +463,84 @@ let save_all () =
  *)
 let create_rw name =
    let create name =
+      touch ();
       raise (RefineError ("Shell.create_rw", StringError "not implemented"))
    in
       print_exn create name
 
 let create_axiom name =
    let create name =
+      touch ();
       raise (RefineError ("Shell.create_axiom", StringError "not implemented"))
    in
       print_exn create name
 
 let create_thm name =
    let create name =
+      touch ();
       raise (RefineError ("Shell.create_thm", StringError "not implemented"))
    in
       print_exn create name
 
 let create_opname name =
    let create name =
+      touch ();
       raise (RefineError ("Shell.create_opname", StringError "not implemented"))
    in
       print_exn create name
 
 let create_condition name =
    let create name =
+      touch ();
       raise (RefineError ("Shell.create_condition", StringError "not implemented"))
    in
       print_exn create name
 
 let create_parent name =
    let create name =
+      touch ();
       raise (RefineError ("Shell.create_parent", StringError "not implemented"))
    in
       print_exn create name
 
 let create_dform name =
    let create name =
+      touch ();
       raise (RefineError ("Shell.create_dform", StringError "not implemented"))
    in
       print_exn create name
 
 let create_prec name =
    let create name =
+      touch ();
       raise (RefineError ("Shell.create_prec", StringError "not implemented"))
    in
       print_exn create name
 
 let create_prec_rul name =
    let create name =
+      touch ();
       raise (RefineError ("Shell.create_prec_rel", StringError "not implemented"))
    in
       print_exn create name
 
 let create_resource name =
    let create name =
+      touch ();
       raise (RefineError ("Shell.create_resources", StringError "not implemented"))
    in
       print_exn create name
 
 let create_infix name =
    let create name =
+      touch ();
       raise (RefineError ("Shell.create_infix", StringError "not implemented"))
    in
       print_exn create name
 
 let create_ml name =
    let create name =
+      touch ();
       raise (RefineError ("Shell.create_ml", StringError "not implemented"))
    in
       print_exn create name
@@ -518,6 +550,7 @@ let create_ml name =
  *)
 let set_goal t =
    let set t =
+      touch ();
       info.proof.edit_set_goal t;
       display_proof ()
    in
@@ -525,6 +558,7 @@ let set_goal t =
 
 let set_redex t =
    let set t =
+      touch ();
       info.proof.edit_set_redex t;
       display_proof ()
    in
@@ -532,6 +566,7 @@ let set_redex t =
 
 let set_contractum t =
    let set t =
+      touch ();
       info.proof.edit_set_contractum t;
       display_proof ()
    in
@@ -539,6 +574,7 @@ let set_contractum t =
 
 let set_assumptions tl =
    let set t =
+      touch ();
       info.proof.edit_set_assumptions tl;
       display_proof ()
    in
@@ -546,6 +582,7 @@ let set_assumptions tl =
 
 let set_params pl =
    let set t =
+      touch ();
       info.proof.edit_set_params pl;
       display_proof ()
    in
@@ -572,9 +609,9 @@ let root () =
    in
       print_exn set ()
 
-let up () =
+let up i =
    let set () =
-      info.proof.edit_up ();
+      info.proof.edit_up i;
       display_proof ()
    in
       print_exn set ()
@@ -587,15 +624,23 @@ let down i =
       print_exn set i
 
 let refine tac =
-   let str, ast = Shell_p4.get_tactic () in
-   let set (str, ast, tac) =
-      info.proof.edit_refine str ast tac;
-      display_proof ()
+   let set () =
+      let str, ast = Shell_p4.get_tactic () in
+         touch ();
+         if !debug_refine then
+            eprintf "Starting refinement%t" eflush;
+         info.proof.edit_refine str ast tac;
+         if !debug_refine then
+            eprintf "Displaying proof%t" eflush;
+         display_proof ();
+         if !debug_refine then
+            eprintf "Proof displayed%t" eflush
    in
-      print_exn set (str, ast, tac)
+      print_exn set ()
 
 let undo () =
    let set () =
+      touch ();
       info.proof.edit_undo ();
       display_proof ()
    in
@@ -603,6 +648,7 @@ let undo () =
 
 let fold () =
    let set () =
+      touch ();
       info.proof.edit_fold ();
       display_proof ()
    in
@@ -610,6 +656,7 @@ let fold () =
 
 let fold_all () =
    let set () =
+      touch ();
       info.proof.edit_fold_all ();
       display_proof ()
    in
@@ -666,6 +713,9 @@ let init () =
 (*
  *
  * $Log$
+ * Revision 1.14  1998/06/15 22:31:49  jyh
+ * Added CZF.
+ *
  * Revision 1.13  1998/06/12 13:45:12  jyh
  * D tactic works, added itt_bool.
  *

@@ -11,6 +11,8 @@ open Opname
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
+open Rformat
+open Dform
 
 open Filter_ocaml
 
@@ -24,6 +26,114 @@ let _ =
    if !debug_load then
       eprintf "Loading Filter_proof%t" eflush
 
+(************************************************************************
+ * PROOF NORMALIZATION                                                  *
+ ************************************************************************)
+
+(*
+ * Normalize all the terms in the proof.
+ * BUG: there is a lot of sharing in the terms,
+ * and this function should avoid repeating the normalization
+ * on terms that have already been normalized.
+ *)
+let rec normalize_proof
+    { proof_step = node;
+      proof_children = children;
+      proof_extras = extras
+    } =
+   normalize_node node;
+   List.iter normalize_child children;
+   List.iter normalize_proof extras
+
+and normalize_node = function
+   ProofStep step ->
+      normalize_step step
+ | ProofNode proof ->
+      normalize_proof proof
+
+and normalize_step { step_goal = goal; step_subgoals = subgoals } =
+   normalize_aterm goal;
+   List.iter normalize_aterm subgoals
+
+and normalize_child = function
+   ChildGoal goal ->
+      normalize_aterm goal
+ | ChildProof proof ->
+      normalize_proof proof
+
+and normalize_aterm { aterm_goal = goal; aterm_hyps = hyps; aterm_args = args } =
+   normalize_term goal;
+   List.iter normalize_term hyps;
+   List.iter normalize_attribute args
+
+(************************************************************************
+ * PRINTING                                                             *
+ ************************************************************************)
+
+(*
+ * Print the proof.
+ * This is really for debugging.
+ *)
+let print_proof db proof =
+   let buf = new_buffer () in
+   let format_list format l =
+      List.iter (fun x -> format_newline buf; format x) l
+   in
+   let rec format_proof { proof_status = status;
+                          proof_step = node;
+                          proof_children = children
+       } =
+      format_status status;
+      format_newline buf;
+      format_node node;
+      format_list format_child children
+   and format_status = function
+      StatusBad ->
+         format_string buf "Bad"
+    | StatusPartial ->
+         format_string buf "Partial"
+    | StatusAsserted ->
+         format_string buf "Asserted"
+    | StatusComplete ->
+         format_string buf "Complete"
+   and format_node = function
+      ProofStep step ->
+         format_step step
+    | ProofNode proof ->
+         format_string buf "   ";
+         format_pushm buf 0;
+         format_proof proof;
+         format_popm buf
+   and format_child = function
+      ChildGoal goal ->
+         format_string buf "Goal: ";
+         format_pushm buf 0;
+         format_aterm goal;
+         format_popm buf
+    | ChildProof proof ->
+         format_string buf "   ";
+         format_pushm buf 0;
+         format_proof proof;
+         format_popm buf
+   and format_step { step_goal = goal;
+                     step_subgoals = subgoals;
+                     step_text = text
+       } =
+      format_aterm goal;
+      format_newline buf;
+      format_string buf "BY ";
+      format_string buf text;
+      format_list format_aterm subgoals
+   and format_aterm { aterm_goal = goal } =
+      format_term db buf goal
+   in
+      format_proof proof;
+      print_to_channel 120 buf stdout;
+      flush stdout
+
+(************************************************************************
+ * TERM CONVERSION                                                      *
+ ************************************************************************)
 
 let summary_opname         = mk_opname "Summary" nil_opname
 
@@ -300,6 +410,9 @@ let tactics_of_proof proof =
 
 (*
  * $Log$
+ * Revision 1.5  1998/06/15 22:28:58  jyh
+ * Added CZF.
+ *
  * Revision 1.4  1998/06/09 20:51:09  jyh
  * Propagated refinement changes.
  * New tacticals module.

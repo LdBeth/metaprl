@@ -15,12 +15,12 @@ type file_name = string
  * File type selection info.
  *)
 type ('select, 'cooked) file_info =
-   { info_marshal : int -> string -> 'cooked -> unit;
-     info_unmarshal : int -> string -> 'cooked;
+   { info_marshal : int list -> int -> string -> 'cooked -> unit;
+     info_unmarshal : int list -> string -> 'cooked * int;
      info_disabled : bool ref;
      info_select : 'select;
      info_suffix : string;
-     info_magic : int
+     info_magics : int list
    }
 
 (*
@@ -63,6 +63,8 @@ sig
    val find : t -> file_name -> select -> info
    val find_match : t -> info -> select -> info
    val save : t -> info -> unit
+   val magic : t -> info -> int
+   val set_magic : t -> info -> int -> unit
    val save_as : t -> cooked -> select -> dir_name -> file_name -> info
    val create_info : t -> cooked -> select -> dir_name -> file_name -> info
 
@@ -101,7 +103,7 @@ sig
    (* File type selection info *)
    val select : select
    val suffix : string
-   val magic : int
+   val magics : int list
    val disabled : bool ref
 
    (* Conversion functions *)
@@ -134,12 +136,15 @@ module type IOSig =
 sig
    type t
 
-   val write : int -> string -> t -> unit
-   val read : int -> string -> t
+   val write : int list -> int -> string -> t -> unit
+   val read : int list -> string -> t * int
 end
 
 (*
  * $Log$
+ * Revision 1.4  1998/06/15 22:32:22  jyh
+ * Added CZF.
+ *
  * Revision 1.3  1998/06/01 13:54:36  jyh
  * Proving twice one is two.
  *

@@ -55,7 +55,7 @@ let maybe_lib_open () =
  ; ()
 
 
-				
+
 let lib_get () =
    maybe_lib_open ();
    oref_val library
@@ -67,13 +67,13 @@ let lib_get () =
  * version of the file.
  *)
 
-let library_set magic filename term =
+let library_set magics magic filename term =
   print_string "hello";
   (with_transaction (lib_get())
 
     (function t ->
       let root = (root t "Files") in
-	
+
 	(* make filename dir if none *)
 	let dir = try (descendent t root [filename])
 		    with _ -> (let ndir = make_directory t root filename in
@@ -82,28 +82,27 @@ let library_set magic filename term =
 	  in
 
 	  (* store term in filename at magic *)
-	  ninsert_leaf t dir (string_of_int magic) "TERM" term))
+	  ninsert_leaf t dir (string_of_int (List.nth magics magic)) "TERM" term))
 
   ; ()
 
 
-	
+
 
 (*
  * Get a term from the library.
+ * BUG: Rich, we need to search the magic numbers from the end.
  *)
 
-let library_get magic filename =
+let library_get magics filename =
   print_string "hello g";
   with_transaction (lib_get())
 
    (function t ->
-     let root = (root t "Files") in
-
-       let obid = (descendent t root [filename; (string_of_int magic)])
-	 in
-
-	   get_term t obid)
+         let root = (root t "Files") in
+         let magic = List.hd magics in
+         let obid = (descendent t root [filename; (string_of_int magic)]) in
+            get_term t obid, magic)
 
 (*
  * This "combo" is the module that defines how to fetch
@@ -119,6 +118,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.9  1998/06/15 22:32:18  jyh
+ * Added CZF.
+ *
  * Revision 1.8  1998/05/28 13:46:45  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

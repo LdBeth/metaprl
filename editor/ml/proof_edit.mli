@@ -27,7 +27,7 @@ type t
  * Constructors.
  *)
 val create : Filter_summary.param list -> tactic_arg -> t
-val ped_of_proof : Proof.t -> t
+val ped_of_proof : Filter_summary.param list -> Proof.t -> t
 val set_params : t -> Filter_summary.param list -> unit
 val ped_arg : t -> tactic_arg
 
@@ -59,7 +59,7 @@ val fold_all_ped : t -> unit
 (*
  * Navigation.
  *)
-val up_ped : t -> unit
+val up_ped : t -> int -> unit
 val down_ped : t -> int -> unit
 val root_ped : t -> unit
 
@@ -76,6 +76,9 @@ val expand_ped : dform_base -> t -> unit
 
 (*
  * $Log$
+ * Revision 1.6  1998/06/15 22:31:48  jyh
+ * Added CZF.
+ *
  * Revision 1.5  1998/05/28 13:45:52  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

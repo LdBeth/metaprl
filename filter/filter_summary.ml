@@ -347,95 +347,103 @@ let parents { info_list = summary } =
       collect summary
 
 (*
- * Find an axiom from the summary.
+ * Test for an axiom.
  *)
+let test_axiom name (item, _) =
+   match item with
+      Axiom { axiom_name = n } ->
+         n = name
+    | Rule { rule_name = n } ->
+         n = name
+    | _ ->
+         false
+
 let find_axiom { info_list = summary } name =
-   let test (item, _) =
-      match item with
-         Axiom { axiom_name = n } ->
-            n = name
-       | Rule { rule_name = n } ->
-            n = name
-       | _ ->
-            false
-   in
-      try Some (List_util.find test summary) with
-         _ -> None
+   try Some (List_util.find (test_axiom name) summary) with
+      Not_found ->
+         None
 
 (*
  * Find a rewrite in the summary.
  *)
+let test_rewrite name (item, _) =
+   match item with
+      Rewrite { rw_name = n } ->
+         n = name
+    | CondRewrite { crw_name = n } ->
+         n = name
+    | _ ->
+         false
+
 let find_rewrite { info_list = summary } name =
-   let test (item, _) =
-      match item with
-         Rewrite { rw_name = n } ->
-            n = name
-       | CondRewrite { crw_name = n } ->
-            n = name
-       | _ ->
-            false
-   in
-      try Some (List_util.find test summary) with
-         _ -> None
+   try Some (List_util.find (test_rewrite name) summary) with
+      Not_found ->
+         None
 
 (*
  * Find a condition.
  *)
+let test_mlterm t =
+   let name = opname_of_term t in
+      (fun (item, _) ->
+            match item with
+               MLTerm { mlterm_term = t' } ->
+                  opname_of_term t' = name
+             | _ ->
+                  false)
+
 let find_mlterm { info_list = summary } t =
-   let name = opname_of_term t in
-   let test (item, _) =
-      match item with
-         MLTerm { mlterm_term = t' } ->
-            opname_of_term t' = name
-       | _ ->
-            false
-   in
-      try Some (List_util.find test summary) with
-         _ -> None
+   try Some (List_util.find (test_mlterm t) summary) with
+      Not_found ->
+         None
 
 (*
  * Find a condition.
  *)
-let find_condition { info_list = summary } t =
+let test_condition t =
    let name = opname_of_term t in
-   let test (item, _) =
-      match item with
-         Condition { mlterm_term = t' } ->
-            opname_of_term t' = name
-       | _ ->
-            false
-   in
-      try Some (List_util.find test summary) with
-         _ -> None
+      (fun (item, _) ->
+            match item with
+               Condition { mlterm_term = t' } ->
+                  opname_of_term t' = name
+             | _ ->
+                  false)
+
+let find_condition { info_list = summary } t =
+   try Some (List_util.find (test_condition t) summary) with
+      Not_found ->
+         None
 
 (*
  * Find a display form.
  *)
-let find_dform { info_list = summary } t =
+let test_dform t =
    let name = opname_of_term t in
-   let test (item, _) =
-      match item with
-         DForm { dform_options = options; dform_redex = t' } ->
-            generalizes t t'
-       | _ ->
-            false
-   in
-      try Some (List_util.find test summary) with
-         _ -> None
+      (fun (item, _) ->
+            match item with
+               DForm { dform_options = options; dform_redex = t' } ->
+                  generalizes t t'
+             | _ ->
+                  false)
+
+let find_dform { info_list = summary } t =
+   try Some (List_util.find (test_dform t) summary) with
+      _ -> None
 
 (*
  * Find a precedence.
  *)
+let test_prec name (item, _) =
+   match item with
+      Prec s ->
+         s = name
+    | _ ->
+         false
+
 let find_prec { info_list = summary } name =
-   let test (item, _) =
-      match item with
-         Prec s ->
-            s = name
-       | _ ->
-            false
-   in
-      try Some (List_util.find test summary) with
-         _ -> None
+   try Some (List_util.find (test_prec name) summary) with
+      Not_found ->
+         None
 
 (*
  * Find the identifier.
@@ -483,6 +491,31 @@ let get_infixes { info_list = summary } =
       search summary
 
 (*
+ * Get the proofs.
+ *)
+let get_proofs { info_list = summary } =
+   let rec collect proofs = function
+      (h, _)::t ->
+         let proofs =
+            match h with
+               Axiom { axiom_name = name; axiom_proof = pf } ->
+                  (name, pf) :: proofs
+             | Rule { rule_name = name; rule_proof = pf } ->
+                  (name, pf) :: proofs
+             | Rewrite { rw_name = name; rw_proof = pf } ->
+                  (name, pf) :: proofs
+             | CondRewrite { crw_name = name; crw_proof = pf } ->
+                  (name, pf) :: proofs
+             | _ ->
+                  proofs
+         in
+            collect proofs t
+    | [] ->
+         List.rev proofs
+   in
+      collect [] summary
+
+(*
  * Find any item, by name.
  *)
 let find { info_list = summary } name =
@@ -508,6 +541,33 @@ let find { info_list = summary } name =
             false
    in
       List_util.find test summary
+
+(*
+ * Set an item by name.
+ *)
+let set_command info item =
+   let test =
+      match fst item with
+         Axiom { axiom_name = name } ->
+            test_axiom name
+       | Rule { rule_name = name } ->
+            test_axiom name
+       | Rewrite { rw_name = name } ->
+            test_rewrite name
+       | CondRewrite { crw_name = name } ->
+            test_rewrite name
+       | MLTerm { mlterm_term = t } ->
+            test_mlterm t
+       | Condition { mlterm_term = t } ->
+            test_condition t
+       | DForm { dform_redex = redex } ->
+            test_dform redex
+       | Prec s ->
+            test_prec s
+       | _ ->
+            (fun _ -> false)
+   in
+      { info_list = List_util.replace_first test item info.info_list }
 
 (************************************************************************
  * CREATION/MODIFICATION						*
@@ -712,9 +772,6 @@ let summary_map convert =
  *)
 let add_command { info_list = info } item =
    { info_list = item::info }
-
-let replace_command { info_list = info } item1 item2 =
-   { info_list = List_util.replaceq item1 item2 info }
 
 (************************************************************************
  * TERMS                                                                *
@@ -1818,6 +1875,9 @@ and check_implementation { info_list = implem } { info_list = interf } =
 
 (*
  * $Log$
+ * Revision 1.27  1998/06/15 22:32:10  jyh
+ * Added CZF.
+ *
  * Revision 1.26  1998/06/12 13:46:36  jyh
  * D tactic works, added itt_bool.
  *

@@ -95,6 +95,12 @@ struct
          }
 
    (*
+    * Set the new magic number.
+    *)
+   let set_magic base { info_root = root } magic =
+      FileBase.set_magic base root magic
+
+   (*
     * Create an empty info.
     *)
    let create_info base select dir file =
@@ -158,6 +164,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.9  1998/06/15 22:32:13  jyh
+ * Added CZF.
+ *
  * Revision 1.8  1998/06/01 13:53:15  jyh
  * Proving twice one is two.
  *

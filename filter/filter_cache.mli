@@ -32,6 +32,9 @@ type 'a proof_type =
 module type ConvertProofSig =
 sig
    type t
+   type raw
+   val to_raw  : string -> t -> raw
+   val of_raw  : string -> raw -> t
    val to_expr : string -> t -> MLast.expr
    val to_term : string -> t -> term
    val of_term : string -> term -> t
@@ -72,6 +75,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.12  1998/06/15 22:32:05  jyh
+ * Added CZF.
+ *
  * Revision 1.11  1998/06/01 13:52:49  jyh
  * Proving twice one is two.
  *

@@ -53,6 +53,22 @@ let set_lib s =
       lib := s
 
 (*
+ * See if the first file is newer than the second.
+ *)
+let file_newer file1 file2 =
+   try
+      let { Unix.st_mtime = mtime1 } = Unix.stat file1 in
+         try
+            let { Unix.st_mtime = mtime2 } = Unix.stat file2 in
+               mtime1 > mtime2
+         with
+            Unix.Unix_error _ ->
+               true
+   with
+      Unix.Unix_error _ ->
+         false
+
+(*
  * Collect argument list.
  *)
 let argv = ref []
@@ -60,23 +76,42 @@ let argv = ref []
 let add_arg arg =
    argv := !argv @ [arg]
 
-let add_anon_arg arg =
-   if Filename.check_suffix arg ".cmiz" or
-      Filename.check_suffix arg ".cmit"
-   then
+let add_binary_arg code name =
+   binary_flag := true;
+   argv := !argv @ [code; name]
+
+let add_binary_if_newer code arg o_file raw_file term_file =
+   if file_newer arg o_file then
+      add_arg arg
+   else if file_newer raw_file o_file then
       begin
-         binary_flag := true;
-         argv := !argv @ ["-intf"; arg]
+         eprintf "File %s is newer than %s, compiling raw file%t" raw_file o_file eflush;
+         add_binary_arg code raw_file
       end
-   else if Filename.check_suffix arg ".cmoz" or
-           Filename.check_suffix arg ".cmot"
-   then
+   else if file_newer term_file o_file then
       begin
-         binary_flag := true;
-         argv := !argv @ ["-impl"; arg]
+         eprintf "File %s is newer than %s, compiling term file%t" term_file o_file eflush;
+         add_binary_arg code raw_file
       end
    else
       add_arg arg
+
+let add_anon_arg arg =
+   if Filename.check_suffix arg ".cmiz" or Filename.check_suffix arg ".cmit" then
+      add_binary_arg "-intf" arg
+   else if Filename.check_suffix arg ".cmoz" or Filename.check_suffix arg ".cmot" then
+      add_binary_arg "-impl" arg
+   else if Filename.check_suffix arg ".ml" then
+      let root = Filename.chop_suffix arg ".ml" in
+         add_binary_if_newer "-impl" arg (root ^ ".cmo") (root ^ ".cmoz") (root ^ ".cmot")
+   else if Filename.check_suffix arg ".mli" then
+      let root = Filename.chop_suffix arg ".mli" in
+         add_binary_if_newer "-intf" arg (root ^ ".cmo") (root ^ ".cmiz") (root ^ ".cmit")
+   else
+      begin
+         eprintf "Don't know how to compile %s, aborting%t" arg eflush;
+         raise (Failure "add_anon_arg")
+      end
 
 let add_argv arg () =
    add_arg arg
@@ -235,6 +270,9 @@ let _ = Printexc.catch (Unix.handle_unix_error main) ()
 
 (*
  * $Log$
+ * Revision 1.16  1998/06/15 22:32:15  jyh
+ * Added CZF.
+ *
  * Revision 1.15  1998/06/03 22:19:18  jyh
  * Nonpolymorphic refiner.
  *

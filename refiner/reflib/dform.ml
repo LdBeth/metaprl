@@ -362,7 +362,7 @@ let format_short_term base shortener =
    (* Print a single term, ignoring lookup errors *)
    let rec print_term' pprec buf eq t =
       (* Check for a display form entry *)
-      let stack, items, { df_name = name; df_precedence = pr'; df_printer = printer } = lookup base t in
+      let stack, items, { df_name = name; df_precedence = pr'; df_printer = printer } = lookup "format_short_term" base t in
       let pr, parenflag =
          if pr' = inherit_prec then
             begin
@@ -655,6 +655,9 @@ let string_of_mterm base mterm =
 
 (*
  * $Log$
+ * Revision 1.4  1998/06/15 22:32:32  jyh
+ * Added CZF.
+ *
  * Revision 1.3  1998/06/12 18:36:32  jyh
  * Working factorial proof.
  *

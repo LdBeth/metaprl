@@ -69,6 +69,7 @@ type t =
  * Line that delineates proofs.
  *)
 let hline = "\n--------------------------------------------------------------------------------\n"
+let bline = "\n++++++++++\n"
 
 (************************************************************************
  * OPERATIONS                                                           *
@@ -84,10 +85,10 @@ let create params t =
      ped_stack = []
    }
 
-let ped_of_proof pf =
+let ped_of_proof params pf =
    let ped = { ped_proof = pf; ped_select = PedGoal } in
    let stack = [ped] in
-      { ped_params = [];
+      { ped_params = params;
         ped_goal = Proof.goal pf;
         ped_undo = stack;
         ped_stack = stack
@@ -135,20 +136,31 @@ let ped_arg { ped_goal = goal } =
  ************************************************************************)
 
 (*
+ * Turn the status into a char.
+ *)
+let proof_status = function
+   Proof.Bad -> '-'
+ | Proof.Partial -> '#'
+ | Proof.Asserted -> '!'
+ | Proof.Complete -> '*'
+
+(*
  * Display the subgoals in order.
  *)
 let display_children db buf =
    let rec aux i = function
       h::t ->
-	 let goal =
+	 let status, goal =
 	    match h with
 	       Proof.ChildTerm goal ->
-                  goal
+                  Proof.Partial, goal
 	     | Proof.ChildProof pf ->
-                  Proof.goal pf
+                  Proof.node_status pf, Proof.goal pf
 	 in
          let goal = Sequent.goal goal in
 	    (* format_string buf "\n-<subgoal>-\n"; *)
+            format_char buf (proof_status status);
+            format_char buf ' ';
 	    format_int buf i;
 	    format_string buf ". ";
 	    format_pushm buf 0;
@@ -171,13 +183,7 @@ let display_status buffer status =
       (s::st, a::at) ->
 	 let s' = string_of_int a in
 	 let l = String.length s' in
-	 let code =
-	    match s with
-	       Proof.Bad -> '-'
-	     | Proof.Partial -> '#'
-	     | Proof.Asserted -> '!'
-	     | Proof.Complete -> '*'
-	 in
+	 let code = proof_status s in
 	    format_char buffer code;
 	    format_string buffer (String.make l ' ');
 	    format_status (st, at)
@@ -203,6 +209,10 @@ let display_goal db buffer goal status =
    (* Display the current address *)
    format_string buffer hline;
    display_status buffer status;
+   format_string buffer "....";
+   format_string buffer (Sequent.label goal);
+   format_string buffer "....";
+   format_newline buffer;
 
    (* Goal *)
    (* format_string buffer "\n-<main>-\n"; *)
@@ -213,19 +223,24 @@ let display_goal db buffer goal status =
    (* format_string buffer "\n\n-<beginrule>-\n"; *)
    format_string buffer "BY \n";
    (* format_string buffer "-<endrule>-\n" *)
-   format_string buffer hline
+   format_string buffer bline
 
 (*
  * Display a proof with an inference.
  *)
 let display_proof db buffer pf =
-   let goal = Sequent.goal (Proof.goal pf) in
+   let pf_goal = Proof.goal pf in
+   let goal = Sequent.goal pf_goal in
    let item = Proof.item pf in
    let children = Proof.children pf in
    let status = Proof.status pf in
       (* Display the current address *)
       format_string buffer hline;
       display_status buffer status;
+      format_string buffer "....";
+      format_string buffer (Sequent.label pf_goal);
+      format_string buffer "....";
+      format_newline buffer;
 
       (* Goal *)
       (* format_string buffer "\n-<main>-\n"; *)
@@ -244,10 +259,10 @@ let display_proof db buffer pf =
                format_string buffer "BY <proof>\n"
       end;
       (* format_string buffer "-<endrule>-\n"; *)
-      format_string buffer hline;
 
       (* Subgoals *)
-      display_children db buffer children
+      display_children db buffer children;
+      format_string buffer bline
 
 (*
  * Display the current proof.
@@ -296,6 +311,7 @@ let refine_ped ped text ast tac =
    in
    let ped' = { ped_proof = pf'; ped_select = PedGoal } in
    let stack' = ped' :: stack in
+   let _ = eprintf "Proof_edit.refine_ped: done%t" eflush in
       ped.ped_undo <- stack';
       ped.ped_stack <- stack'
 
@@ -366,26 +382,34 @@ let root_ped ped =
 (*
  * Move to the parent goal.
  *)
-let up_ped ped =
-   let { ped_undo = undo; ped_stack = stack } = ped in
-      match undo with
-         [] ->
-            ()
-       | { ped_proof = pf; ped_select = select }::_ ->
-            let pf' =
-               match select with
-                  PedChild _ ->
+let up_ped ped i =
+   if i > 0 then
+      let { ped_undo = undo; ped_stack = stack } = ped in
+         match undo with
+            [] ->
+               ()
+          | { ped_proof = pf; ped_select = select }::_ ->
+               let rec climb i pf =
+                  if i = 0 then
                      pf
-                | PedGoal ->
-                     try Proof.parent pf with
-                        Failure "parent" ->
-                           pf
-            in
-            let ped' = { ped_proof = pf'; ped_select = PedGoal } in
-            let stack' = ped' :: stack in
-               ped.ped_goal <- Proof.goal pf';
-               ped.ped_undo <- stack';
-               ped.ped_stack <- stack'
+                  else
+                     climb (i - 1) (Proof.parent pf)
+               in
+               let pf =
+                  match select with
+                     PedChild _ ->
+                        pf
+                   | PedGoal ->
+                        try Proof.parent pf with
+                           Failure "parent" ->
+                              pf
+               in
+               let pf = climb (i - 1) pf in
+               let ped' = { ped_proof = pf; ped_select = PedGoal } in
+               let stack' = ped' :: stack in
+                  ped.ped_goal <- Proof.goal pf;
+                  ped.ped_undo <- stack';
+                  ped.ped_stack <- stack'
 
 (*
  * Move to a child.
@@ -396,25 +420,36 @@ let rec down_ped ped i =
          [] ->
             ()
        | { ped_proof = pf; ped_select = select }::_ ->
-            let child =
-               try List.nth (Proof.children pf) i with
-                  Not_found ->
-                     raise (RefineError ("down_ped", StringError "Bad child index"))
-            in
-               match child with
-                  Proof.ChildProof pf' ->
+            if i <= 0 then
+               match Proof.item pf with
+                  Proof.ProofStep _ ->
+                     raise (RefineError ("down_ped", StringError "Proof is not nested"))
+                | Proof.ProofProof pf' ->
                      let ped' = { ped_proof = pf'; ped_select = PedGoal } in
                      let stack' = ped' :: stack in
                         ped.ped_goal <- Proof.goal pf';
                         ped.ped_undo <- stack';
                         ped.ped_stack <- stack'
-                | Proof.ChildTerm goal ->
-                     (* This is a leaf *)
-                     let ped' = { ped_proof = pf; ped_select = PedChild i } in
-                     let stack' = ped' :: stack in
-                        ped.ped_goal <- goal;
-                        ped.ped_undo <- stack';
-                        ped.ped_stack <- stack'
+            else
+               let child =
+                  try List.nth (Proof.children pf) (i - 1) with
+                     Not_found ->
+                        raise (RefineError ("down_ped", StringError "Bad child index"))
+               in
+                  match child with
+                     Proof.ChildProof pf' ->
+                        let ped' = { ped_proof = pf'; ped_select = PedGoal } in
+                        let stack' = ped' :: stack in
+                           ped.ped_goal <- Proof.goal pf';
+                           ped.ped_undo <- stack';
+                           ped.ped_stack <- stack'
+                   | Proof.ChildTerm goal ->
+                        (* This is a leaf *)
+                        let ped' = { ped_proof = pf; ped_select = PedChild (i - 1) } in
+                        let stack' = ped' :: stack in
+                           ped.ped_goal <- goal;
+                           ped.ped_undo <- stack';
+                           ped.ped_stack <- stack'
 
 (************************************************************************
  * PROOF CHECKING                                                       *
@@ -458,6 +493,9 @@ let expand_ped df ped =
 
 (*
  * $Log$
+ * Revision 1.11  1998/06/15 22:31:47  jyh
+ * Added CZF.
+ *
  * Revision 1.10  1998/06/12 13:45:10  jyh
  * D tactic works, added itt_bool.
  *

@@ -28,6 +28,7 @@ val set_window_width : int -> unit
  *)
 val load : string -> unit
 val create_pkg : string -> unit
+val set_writeable : unit -> unit
 val save : unit -> unit
 val save_all : unit -> unit
 
@@ -69,7 +70,7 @@ val expand : unit -> unit
  * Proof editing.
  *)
 val root : unit -> unit
-val up : unit -> unit
+val up : int -> unit
 val down : int -> unit
 val refine : tactic -> unit
 val undo : unit -> unit
@@ -90,6 +91,9 @@ val subtypeT : tactic
 
 (*
  * $Log$
+ * Revision 1.9  1998/06/15 22:31:50  jyh
+ * Added CZF.
+ *
  * Revision 1.8  1998/06/12 13:45:14  jyh
  * D tactic works, added itt_bool.
  *

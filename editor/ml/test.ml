@@ -23,21 +23,24 @@ dform fact_df : parens :: "prec"[prec_apply] :: fact{'i} =
    `"fact" " " slot{'i}
 
 let redexC =
-   firstC [betaReduction;
+   firstC [reduceBeta;
            reduceEQInt;
            reduceFact;
-           boolTrue;
-           boolFalse;
-           ifthenelseTrue;
-           ifthenelseFalse;
+           reduceBoolTrue;
+           reduceBoolFalse;
+           reduceIfthenelseTrue;
+           reduceIfthenelseFalse;
            reduceAdd;
            reduceSub;
            reduceMul;
            reduceDiv;
-           fix]
+           reduceFix]
 
 (*
  * $Log$
+ * Revision 1.11  1998/06/15 22:31:58  jyh
+ * Added CZF.
+ *
  * Revision 1.10  1998/06/12 20:46:01  jyh
  * Switched to term_ds.
  *

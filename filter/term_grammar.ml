@@ -677,7 +677,7 @@ struct
              in
                 if !debug_grammar then
                    eprintf "Constructing sequent: %d, %d%t" (List.length hyps) (List.length concl) eflush;
-                mk_sequent_term (proc_hyps hyps :: args)
+                mk_sequent_term (proc_hyps hyps) (mk_xlist_term args)
           ]];
 
       hyp:
@@ -913,6 +913,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.12  1998/06/15 22:32:16  jyh
+ * Added CZF.
+ *
  * Revision 1.11  1998/06/12 13:46:41  jyh
  * D tactic works, added itt_bool.
  *

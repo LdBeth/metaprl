@@ -49,7 +49,8 @@ struct
       { mutable info_info : cooked;
         info_type : select;
         info_dir : string;
-        info_file : string
+        info_file : string;
+        mutable info_magic : int
       }
 
    (*
@@ -99,12 +100,12 @@ struct
    let load_file base spec dir name =
       let { info_unmarshal = unmarshal;
             info_suffix = suffix;
-            info_magic = magic;
+            info_magics = magics;
             info_select = select
           } = spec
       in
       let filename = sprintf "%s/%s.%s" dir name suffix in
-      let info = unmarshal magic filename in
+      let info, magic = unmarshal magics filename in
       let _ =
          if !debug_file_base then
             eprintf "File_base.load_file: loaded file %s%t" filename eflush
@@ -113,7 +114,8 @@ struct
          { info_info = info;
            info_file = name;
            info_type = select;
-           info_dir = dir
+           info_dir = dir;
+           info_magic = magic
          }
       in
          add_info base info';
@@ -211,14 +213,28 @@ struct
                load_file base (find_spec select) dir file
 
    (*
+    * Set the magic number.
+    *)
+   let magic _ { info_magic = magic } =
+      magic
+
+   let set_magic _ info magic =
+      let { info_type = select } = info in
+      let { info_magics = magics } = find_spec select in
+         if magic < List.length magics then
+            info.info_magic <- magic
+         else
+            raise (Invalid_argument "set_magic")
+
+   (*
     * Save a module specification.
     * Try saving in all the valid formats until one of them succeeds.
     *)
    let save base info =
-      let { info_dir = dir; info_file = file; info_type = select; info_info = data } = info in
-      let { info_magic = magic; info_marshal = marshal; info_suffix = suffix } = find_spec select in
+      let { info_dir = dir; info_file = file; info_type = select; info_info = data; info_magic = magic } = info in
+      let { info_magics = magics; info_marshal = marshal; info_suffix = suffix } = find_spec select in
       let filename = sprintf "%s/%s.%s" dir file suffix in
-         marshal magic filename data
+         marshal magics magic filename data
 
    (*
     * Inject a new module.
@@ -243,7 +259,8 @@ struct
          { info_info = data;
            info_type = select;
            info_dir = dir;
-           info_file = file
+           info_file = file;
+           info_magic = 0
          }
       in
       let _ =
@@ -285,6 +302,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.9  1998/06/15 22:32:21  jyh
+ * Added CZF.
+ *
  * Revision 1.8  1998/06/12 13:46:51  jyh
  * D tactic works, added itt_bool.
  *

@@ -366,6 +366,7 @@ struct
    (*
     * Inherited access.
     *)
+   let proofs cache         = Filter_summary.get_proofs cache.info
    let parents cache        = Filter_summary.parents cache.info
    let find cache           = Filter_summary.find cache.info
    let find_axiom cache     = Filter_summary.find_axiom cache.info
@@ -402,6 +403,9 @@ struct
     *)
    let add_command cache item =
       cache.info <- Filter_summary.add_command cache.info item
+
+   let set_command cache item =
+      cache.info <- Filter_summary.set_command cache.info item
 
    (*
     * Add a resource.
@@ -664,6 +668,20 @@ struct
          check_implementation cache.info sig_info
 
    (*
+    * Upgrade the file mode.
+    *)
+   let set_mode cache mode =
+      let magic =
+         match mode with
+            CompiledSummary ->
+               0
+          | InteractiveSummary ->
+               1
+      in
+      let { base = { lib = base }; self = self } = cache in
+         Base.set_magic base self magic
+
+   (*
     * Save the cache.
     *)
    let save cache =
@@ -687,6 +705,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.17  1998/06/15 22:32:06  jyh
+ * Added CZF.
+ *
  * Revision 1.16  1998/06/12 18:36:22  jyh
  * Working factorial proof.
  *

@@ -130,6 +130,21 @@ let rec replace_nth i x = function
  | [] ->
       raise (Failure "replace_nth")
 
+let rec replace_first f x = function
+   h::t ->
+      if f h then
+         x :: t
+      else
+         h :: replace_first f x t
+ | [] ->
+      raise Not_found
+
+let rec replace_all f x = function
+   h::t ->
+      (if f h then x else h) :: (replace_all f x t)
+ | [] ->
+      []
+
 (*
  * Functional replacement.
  *)
@@ -467,13 +482,43 @@ let fold_left f x l = fold_left_aux f x [] l
 let allp = List.for_all
 let existsp = List.exists
 
-let rec rev_iter2 f a b = match (a,b) with
-   ([],[]) -> ()
- | (ha::ta,hb::tb) -> rev_iter2 f ta tb; f ha hb
- | _ -> raise (Invalid_argument "List_util.rev_iter2")
+let iter2 f al bl =
+   let rec apply = function
+      h1::t1, h2::t2 ->
+         f h1 h2;
+         apply (t1, t2)
+    | [], [] ->
+         ()
+    | _ ->
+         raise (Failure "iter2")
+   in
+      apply (al, bl)
+
+let rec rev_iter2 f a b =
+   match (a,b) with
+      ([], []) -> ()
+    | (ha::ta, hb::tb) -> rev_iter2 f ta tb; f ha hb
+    | _ -> raise (Failure "List_util.rev_iter2")
+
+(*
+ * Fold left over two lists.
+ *)
+let fold_left2 f x al bl =
+   let rec apply x = function
+      (h1::t1, h2::t2) ->
+         apply (f x h1 h2) (t1, t2)
+    | [], [] ->
+         x
+    | _ ->
+         raise (Failure "fold_left2")
+   in
+      apply x (al, bl)
 
 (*
  * $Log$
+ * Revision 1.18  1998/06/15 22:32:24  jyh
+ * Added CZF.
+ *
  * Revision 1.17  1998/06/14 00:58:38  nogin
  * Do not define helper functions inside a function
  *

@@ -123,6 +123,7 @@ val children : t -> child list
 val parent : t -> t
 val main : t -> t
 val status : t -> (status * int) list
+val node_status : t -> status
 val address : t -> address
 
 (*
@@ -164,6 +165,9 @@ val proof_of_io_proof : tactic_argument -> (string * tactic) array -> proof -> t
 
 (*
  * $Log$
+ * Revision 1.11  1998/06/15 22:31:46  jyh
+ * Added CZF.
+ *
  * Revision 1.10  1998/06/09 20:51:16  jyh
  * Propagated refinement changes.
  * New tacticals module.

@@ -53,6 +53,7 @@ sig
    (* Creation *)
    val create : string list -> t
    val set_path : t -> string list -> unit
+   val set_magic : t -> info -> int -> unit
    val create_info : t -> select -> dir_name -> file_name -> info
 
    (* Loading and saving *)
@@ -111,6 +112,10 @@ end
  * The sig_* types parameterize the signatures, and the str_* types
  * parameterize the module_info being constructed.
  *)
+type summary_mode =
+   CompiledSummary
+ | InteractiveSummary
+
 module type SummaryCacheSig =
 sig
    (*
@@ -148,6 +153,7 @@ sig
    val create_cache : t -> module_name -> select -> select -> info
    val load : t -> module_name -> select -> select -> 'a hook -> 'a -> info * 'a
    val check : info -> select -> unit
+   val set_mode : info -> summary_mode -> unit
    val save : info -> unit
 
    (* Access *)
@@ -177,6 +183,7 @@ sig
    val find_prec : info -> string -> bool
    val resources : info -> (module_path * str_ctyp resource_info) list
    val parents : info -> module_path list
+   val proofs : info -> (string * str_proof) list
 
    (* These are the resources for an included parent *)
    val sig_resources : info -> module_path -> str_ctyp resource_info list
@@ -185,6 +192,7 @@ sig
     * Update.
     *)
    val add_command : info -> (str_elem * loc) -> unit
+   val set_command : info -> (str_elem * loc) -> unit
    val add_resource : info -> str_ctyp resource_info -> unit
    val add_prec : info -> string -> unit
 
@@ -203,6 +211,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.14  1998/06/15 22:32:14  jyh
+ * Added CZF.
+ *
  * Revision 1.13  1998/06/12 13:46:39  jyh
  * D tactic works, added itt_bool.
  *

@@ -21,6 +21,7 @@ DIRS :=\
 	theories/ocaml\
 	theories/base\
 	theories/itt\
+	theories/czf\
 	editor/ml
 
 .PHONY: all install depend clean

@@ -16,6 +16,8 @@ val existsp : ('a -> bool) -> 'a list -> bool
 val for_all2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 val exists2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 val map2 : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
+val fold_left2 : ('a -> 'b -> 'c -> 'a) -> 'a -> 'b list -> 'c list -> 'a
+val iter2 : ('a -> 'b -> unit) -> 'a list -> 'b list -> unit
 
 (* Remove items marked by a vector of bools *)
 val remove_elements : bool list -> 'a list -> 'a list
@@ -29,6 +31,9 @@ val replacef_nth : int -> ('a -> 'a) -> 'a list -> 'a list
 val replacef_arg_nth : int -> ('a -> 'a * 'b) -> 'a list -> 'a list * 'b
 val replace_nth : int -> 'a -> 'a list -> 'a list
 val replaceq : 'a -> 'a -> 'a list -> 'a list
+val replace_first : ('a -> bool) -> 'a -> 'a list -> 'a list
+val replace_all : ('a -> bool) -> 'a -> 'a list -> 'a list
+
 val remove_nth : int -> 'a list -> 'a list
 val insert_nth : int -> 'a -> 'a list -> 'a list
 val removeq : 'a -> 'a list -> 'a list
@@ -76,6 +81,9 @@ val fst_split : ('a * 'b) list -> 'a list
 
 (*
  * $Log$
+ * Revision 1.11  1998/06/15 22:32:25  jyh
+ * Added CZF.
+ *
  * Revision 1.10  1998/06/13 22:48:11  nogin
  * Added rev_iter2
  *

@@ -57,9 +57,9 @@ let debug_package_info =
  * The proofs are saved in the summary as Io_proof.proof,
  * but we also construct Proof_edit.t structures on demand.
  *)
-type proof_info =
+type 'a proof_info =
    ProofRaw of string * proof
- | ProofEdit of Proof_edit.t
+ | ProofEdit of 'a
 
 (************************************************************************
  * REFERENCES                                                           *
@@ -129,6 +129,14 @@ let prove name tactics' =
    let arg = !tactic_argument in
    let proof = Hashtbl.find io_proofs name in
    let _ = Hashtbl.add tactics name tactics' in
+   let _ =
+      if !debug_package_info then
+         begin
+            eprintf "Added tactics for %s\n" name;
+            Array.iter (fun (name, _) -> eprintf "\t%s\n" name) tactics';
+            eflush stderr
+         end
+   in
    let prove () =
       Proof.check (Proof.proof_of_io_proof !arg tactics' proof)
    in
@@ -272,9 +280,19 @@ let install_tactic_arg_expr resources =
          eprintf "Install tactic arg%t" eflush;
       <:str_item< $exp: install_expr$ >>
 
+(*
+ * Default tactic array includes the initial identity tactic.
+ *)
+let null_tactics = ["null", [|"idT", idT|]]
+
 (************************************************************************
  * IMPLEMENTATION                                                       *
  ************************************************************************)
+
+(*
+ * For debugging, we keep a display form base.
+ *)
+let debug_forms = ref Dform_print.null_mode_base
 
 (*
  * The proofs are marshaled into the file as IO_proof.proof.
@@ -284,24 +302,45 @@ struct
    (*
     * The type of proofs.
     *)
-   type t = proof_info ref
+   type t = Proof_edit.t proof_info ref
+   type raw = proof
 
    (*
     * Get a raw proof from the proof.
     *)
-   let raw_proof proof =
+   let to_raw name proof =
       match !proof with
          ProofRaw (_, proof) ->
             proof
        | ProofEdit ped ->
-            Proof.io_proof_of_proof (Proof_edit.proof_of_ped ped)
+            let proof = Proof.io_proof_of_proof (Proof.main (Proof_edit.proof_of_ped ped)) in
+               if !debug_package_info then
+                  begin
+                     eprintf "Converting the ped back to a regular proof: %s%t" name eflush;
+                     let db = Dform_print.get_mode_base !debug_forms "prl" in
+                        Io_proof.print_proof db proof
+                  end;
+               proof
+
+   (*
+    * Get a proof from the raw proof.
+    *)
+   let of_raw name proof =
+      normalize_proof proof;
+      if !debug_package_info then
+         begin
+            eprintf "Converting io proof for %s%t" name eflush;
+            let db = Dform_print.get_mode_base !debug_forms "prl" in
+               Io_proof.print_proof db proof
+         end;
+      ref (ProofRaw (name, proof))
 
    (*
     * Convert the proof to a term.
     * We just save the io representation.
     *)
-   let to_term _ proof =
-      term_of_proof (raw_proof proof)
+   let to_term name proof =
+      term_of_proof (to_raw name proof)
 
    (*
     * Convert back to a proof.
@@ -318,9 +357,10 @@ struct
     *)
    let to_expr name proof =
       let loc = 0, 0 in
-      let proof = raw_proof proof in
+      let proof = to_raw name proof in
       let tactics = tactics_of_proof proof in
-         <:expr< $lid: "Package_info"$ . $lid: "prove"$ $str: name$ $tactics$ >>
+         Hashtbl.add io_proofs name proof;
+         <:expr< $uid: "Package_info"$ . $lid: "prove"$ $str: name$ $tactics$ >>
 end
 
 (*
@@ -363,7 +403,7 @@ struct
    (*
     * Proof is either in raw form, or it is editable.
     *)
-   type proof = proof_info ref
+   type proof = Proof_edit.t proof_info ref
 
    (*
     * Create the cache.
@@ -377,7 +417,7 @@ struct
            pack_name = name;
            pack_sig = None;
            pack_info = None;
-           pack_tactics = [];
+           pack_tactics = null_tactics;
            pack_arg = null_tactic_argument
          }
       in
@@ -442,8 +482,11 @@ struct
    (*
     * Get the list of display forms.
     *)
-   let dforms { pack_name = name } =
+   let get_dforms name =
       (get_theory name).thy_dformer
+
+   let dforms { pack_name = name } =
+      get_dforms name
 
    (*
     * Get the name of the package.
@@ -473,6 +516,16 @@ struct
       pack.pack_status <- status
 
    (*
+    * "Touch" the package, meaning update its writable status.
+    *)
+   let touch pack =
+      match pack.pack_status with
+         ReadOnly ->
+            raise (Failure "touch")
+       | _ ->
+            pack.pack_status <- Modified
+
+   (*
     * Get the items in the module.
     *)
    let info = function
@@ -495,6 +548,14 @@ struct
       match info with
          { pack_info = Some info } ->
             fst (Cache.StrFilterCache.find info name)
+       | { pack_info = None; pack_name = name } ->
+            raise (NotLoaded name)
+
+   let set info item =
+      eprintf "Setting item%t" eflush;
+      match info with
+         { pack_info = Some info } ->
+            Cache.StrFilterCache.set_command info (item, (0, 0))
        | { pack_info = None; pack_name = name } ->
             raise (NotLoaded name)
 
@@ -626,7 +687,7 @@ struct
                           pack_sig = Some sig_info;
                           pack_info = None;
                           pack_name = name;
-                          pack_tactics = [];
+                          pack_tactics = null_tactics;
                           pack_arg = null_tactic_argument
                         }
                      in
@@ -688,7 +749,7 @@ struct
            pack_info = Some (Cache.StrFilterCache.create_cache pack.pack_cache (**)
                                 name ImplementationType InterfaceType);
            pack_name = name;
-           pack_tactics = [];
+           pack_tactics = null_tactics;
            pack_arg = null_tactic_argument
          }
       in
@@ -702,6 +763,33 @@ struct
       arg
 
    (*
+    * A new proof cannot be saved.
+    *)
+   let new_proof { pack_arg = { ref_label = label; ref_args = args } } hyps goal =
+      let aterm =
+         { aterm_goal = goal;
+           aterm_hyps = hyps;
+           aterm_label = label;
+           aterm_args = args
+         }
+      in
+      let step =
+         { step_goal = aterm;
+           step_subgoals = [aterm];
+           step_ast = (<:expr< $lid: "idT"$ >>);
+           step_text = "idT"
+         }
+      in
+      let proof =
+         { proof_status = StatusPartial;
+           proof_step = ProofStep step;
+           proof_children = [ChildGoal aterm];
+           proof_extras = []
+         }
+      in
+         ref (ProofRaw ("null", proof))
+
+   (*
     * Convert a proof on demand.
     *)
    let ped_of_proof { pack_tactics = tactics; pack_arg = arg } proof =
@@ -709,17 +797,29 @@ struct
          ProofEdit ped ->
             ped
        | ProofRaw (name, proof') ->
+            let _ =
+               if !debug_package_info then
+                  begin
+                     eprintf "Lookup up from tactics in %s\nHere are the choices" name;
+                     List.iter (fun (name, _) -> eprintf " %s" name) tactics;
+                     eflush stderr
+                  end
+            in
             let tactics = List.assoc name tactics in
             let proof' = Proof.proof_of_io_proof arg tactics proof' in
-            let ped = Proof_edit.ped_of_proof proof' in
+            let ped = Proof_edit.ped_of_proof [] proof' in
                proof := ProofEdit ped;
                ped
+
+   let proof_of_ped _ proof ped =
+      proof := ProofEdit ped;
+      proof
 
    (*
     * Build the package from its info.
     *)
    let build_package pack name status info =
-      let tacl = ref [] in
+      let tacl = ref null_tactics in
       let add name tactics =
          Ref_util.push (name, tactics) tacl
       in
@@ -735,6 +835,33 @@ struct
       in
          add_implementation pack info;
          info
+
+   (*
+    * This function is used to contruct the tactic array when
+    * a theory is loaded.
+    *)
+   let loaded_tactics info =
+      let rec collect exprs = function
+         (name, h)::t ->
+            let exprs =
+               match h with
+                  Interactive proof ->
+                     Convert.to_expr name proof :: exprs
+                | Primitive _
+                | Derived _ ->
+                     exprs
+            in
+               collect exprs t
+       | [] ->
+            List.rev exprs
+      in
+      let proofs = Cache.StrFilterCache.proofs info in
+      let exprs = collect [] proofs in
+      let mk_item expr =
+         let loc = 0, 0 in
+            (<:str_item< $exp: expr$ >>)
+      in
+         List.map mk_item exprs
 
    (*
     * Load a package.
@@ -767,7 +894,9 @@ struct
          let item =
             if is_theory_loaded name then
                let open_item = (<:str_item< open $[ mod_name ]$ >>) in
-               let mod_expr = (<:module_expr< struct $list: [ open_item; arg_item ]$ end >>) in
+               let _ = debug_forms := get_dforms name in
+               let items = open_item :: loaded_tactics info @ [arg_item] in
+               let mod_expr = (<:module_expr< struct $list: items$ end >>) in
                let dumb_name = "Arg" ^ mod_name in
                   (<:str_item< module $dumb_name$ = $mod_expr$ >>)
             else
@@ -779,10 +908,11 @@ struct
          let _ = debug_item := item in
          let pt_item = Ast2pt.str_item item [] in
             if Toploop.execute_phrase false (Ptop_def pt_item) then
-               let info = build_package pack name status info in
+               let info' = build_package pack name status info in
                   clear_proofs ();   (* so these can be garbage collected *)
                   clear_tactics ();
-                  info
+                  Cache.StrFilterCache.set_mode info InteractiveSummary;
+                  info'
             else
                raise (Failure "Package_info.load: evaluation failed")
       with
@@ -798,12 +928,15 @@ struct
           *)
        | Typecore.Error (_, err) ->
              Typecore.report_error err;
-             eflush stderr;
+             eflush stdout;
              raise (Failure "Package_info.load: load failed")
 end
 
 (*
  * $Log$
+ * Revision 1.15  1998/06/15 22:31:42  jyh
+ * Added CZF.
+ *
  * Revision 1.14  1998/06/12 13:45:06  jyh
  * D tactic works, added itt_bool.
  *

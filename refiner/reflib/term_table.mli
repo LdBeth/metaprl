@@ -17,7 +17,7 @@ type 'a term_table
 val new_table : unit -> 'a term_table
 val insert : 'a term_table -> term -> 'a -> 'a term_table
 val join_tables : 'a term_table -> 'a term_table -> 'a term_table
-val lookup : 'a term_table -> term -> rewrite_stack * rewrite_item list * 'a
+val lookup : string -> 'a term_table -> term -> rewrite_stack * rewrite_item list * 'a
 
 (*
  * Destruction.
@@ -32,6 +32,9 @@ val dest_table : 'a term_table -> 'a table_entry * 'a term_table
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/15 22:32:35  jyh
+ * Added CZF.
+ *
  * Revision 1.1  1998/05/28 15:01:25  jyh
  * Partitioned refiner into subdirectories.
  *

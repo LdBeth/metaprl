@@ -19,12 +19,13 @@ type edit_object =
      edit_set_contractum : term -> unit;
      edit_set_assumptions : term list -> unit;
      edit_set_params : Filter_summary.param list -> unit;
+     edit_save : unit -> unit;
      edit_check : unit -> extract;
      edit_expand : dform_base -> unit;
 
      (* Navigation of there is a proof *)
      edit_root : unit -> unit;
-     edit_up : unit -> unit;
+     edit_up : int -> unit;
      edit_down : int -> unit;
      edit_refine : string -> MLast.expr -> tactic -> unit;
      edit_undo : unit -> unit;
@@ -34,6 +35,9 @@ type edit_object =
 
 (*
  * $Log$
+ * Revision 1.6  1998/06/15 22:31:57  jyh
+ * Added CZF.
+ *
  * Revision 1.5  1998/06/01 13:52:34  jyh
  * Proving twice one is two.
  *

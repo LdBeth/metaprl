@@ -9,6 +9,8 @@ open Printf
 
 open Debug
 
+open Refiner.Refiner.Term
+
 open Filter_type
 open Filter_summary
 open Filter_summary_type
@@ -88,13 +90,36 @@ end
  *)
 module Convert : ConvertProofSig =
 struct
-   type t = unit
-   let to_expr expr =
-      raise (Failure "Filter_bin.Convert.to_expr: interactive proofs can't be compiled")
-   let to_term expr =
-      raise (Failure "Filter_bin.Convert.to_term: interactive proofs can't be compiled")
-   let of_term term =
-      raise (Failure "Filter_bin.Convert.of_term: interactive proofs can't be compiled")
+   type raw = Obj.t
+   type t =
+      Term of term
+    | Raw of Obj.t
+
+   let to_raw _ = function
+      Raw t ->
+         t
+    | Term t ->
+         raise (Failure "Filter_bin.Convert.to_raw: interactive term proof can't be converted to raw")
+
+   let of_raw _ t =
+      Raw t
+
+   let to_expr _ t =
+      let loc = 0, 0 in
+      let body =
+         <:expr< raise ( $uid: "Failure"$ $str: "Filter_bin.Convert.to_expr: not implemented"$ ) >>
+      in
+      let patt = <:patt< _ >> in
+         <:expr< fun [ $list: [ patt, None, body ]$ ] >>
+
+   let to_term _ = function
+      Term t ->
+         t
+    | Raw t ->
+         raise (Failure "Filter_bin.Convert.to_raw: interactive raw proof can't be converted to term")
+
+   let of_term _ t =
+      Term t
 end
 
 (*
@@ -160,9 +185,9 @@ let process_file file =
  * Argument specification.
  *)
 let spec =
-   ["-I", String add_include, "add an directory to the path for include files";
-    "-intf", String process_file, "compile an interface file";
-    "-impl", String process_file, "compile an implementation file"]
+   ["-I", Arg.String add_include, "add an directory to the path for include files";
+    "-intf", Arg.String process_file, "compile an interface file";
+    "-impl", Arg.String process_file, "compile an implementation file"]
 
 (*
  * Everything standard is taken care of.
@@ -177,6 +202,9 @@ let _ = Printexc.catch main ()
 
 (*
  * $Log$
+ * Revision 1.10  1998/06/15 22:32:02  jyh
+ * Added CZF.
+ *
  * Revision 1.9  1998/06/01 13:52:45  jyh
  * Proving twice one is two.
  *

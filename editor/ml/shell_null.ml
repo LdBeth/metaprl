@@ -21,7 +21,7 @@ let _ =
 
 let null_object =
    let edit_format _ buf =
-      format_string buf "No object"
+      format_string buf "There is no object to edit"
    in
    let one_error _ =
       raise (RefineError ("Shell_null.null_object", StringError "no current object"))
@@ -35,6 +35,7 @@ let null_object =
         edit_set_contractum = one_error;
         edit_set_assumptions = one_error;
         edit_set_params = one_error;
+        edit_save = one_error;
         edit_check = one_error;
         edit_expand = one_error;
         edit_root = one_error;
@@ -48,6 +49,9 @@ let null_object =
 
 (*
  * $Log$
+ * Revision 1.5  1998/06/15 22:31:51  jyh
+ * Added CZF.
+ *
  * Revision 1.4  1998/06/12 13:45:15  jyh
  * D tactic works, added itt_bool.
  *

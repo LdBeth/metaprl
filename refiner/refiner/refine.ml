@@ -53,7 +53,7 @@ let _ =
 
 let debug_refiner =
    create_debug (**)
-      { debug_name = "refiner";
+      { debug_name = "refine";
         debug_description = "Display refinement operations";
         debug_value = false
       }
@@ -1510,6 +1510,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.5  1998/06/15 22:32:29  jyh
+ * Added CZF.
+ *
  * Revision 1.4  1998/06/12 13:46:54  jyh
  * D tactic works, added itt_bool.
  *

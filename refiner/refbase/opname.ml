@@ -3,6 +3,9 @@
  * they may be hash-consed.
  *
  * $Log$
+ * Revision 1.4  1998/06/15 22:32:27  jyh
+ * Added CZF.
+ *
  * Revision 1.3  1998/06/12 18:36:29  jyh
  * Working factorial proof.
  *
@@ -81,8 +84,10 @@ let mk_opname s name =
 
 let make_opname =
    let rec aux = function
-      [] -> nil_opname
-    | h::t -> mk_opname h (aux t)
+      [] ->
+         nil_opname
+    | h::t ->
+         mk_opname h (aux t)
    in
       aux
 

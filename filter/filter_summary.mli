@@ -235,6 +235,9 @@ val get_resources : ('proof, 'ctyp, 'expr, 'item) module_info ->
 val get_infixes : ('proof, 'ctyp, 'expr, 'item) module_info ->
    string list
 
+val get_proofs : ('proof, 'ctyp, 'expr, 'item) module_info ->
+   (string * 'proof) list
+
 val find : ('proof, 'ctyp, 'expr, 'item) module_info ->
    string ->
    ('proof, 'ctyp, 'expr, 'item) summary_item_loc
@@ -247,8 +250,7 @@ val add_command : ('proof, 'ctyp, 'expr, 'item) module_info ->
    ('proof, 'ctyp, 'expr, 'item) summary_item_loc ->
    ('proof, 'ctyp, 'expr, 'item) module_info
 
-val replace_command : ('proof, 'ctyp, 'expr, 'item) module_info ->
-   ('proof, 'ctyp, 'expr, 'item) summary_item_loc ->
+val set_command : ('proof, 'ctyp, 'expr, 'item) module_info ->
    ('proof, 'ctyp, 'expr, 'item) summary_item_loc ->
    ('proof, 'ctyp, 'expr, 'item) module_info
 
@@ -337,6 +339,9 @@ val debug_summary : bool ref
 
 (*
  * $Log$
+ * Revision 1.17  1998/06/15 22:32:11  jyh
+ * Added CZF.
+ *
  * Revision 1.16  1998/06/12 13:46:38  jyh
  * D tactic works, added itt_bool.
  *

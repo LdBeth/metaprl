@@ -43,6 +43,7 @@ type rw =
      mutable rw_assums : term list;
      mutable rw_redex : term;
      mutable rw_contractum : term;
+     rw_proof : Package.proof proof_type;
      mutable rw_ped : Proof_edit.t proof_type
    }
 
@@ -117,6 +118,33 @@ let format_cond_rewrite db buf arg params assums redex contractum expr =
       format_newline buf
 
 (*
+ * Build an item from the object.
+ *)
+let item_of_obj pack name
+    { rw_params = params;
+      rw_assums = assums;
+      rw_redex = redex;
+      rw_contractum = contractum;
+      rw_proof = proof
+    } ped =
+   if params = [] & assums = [] then
+      Filter_summary.Rewrite (**)
+         { Filter_summary.rw_name = name;
+           Filter_summary.rw_redex = redex;
+           Filter_summary.rw_contractum = contractum;
+           Filter_summary.rw_proof = proof
+         }
+   else
+      Filter_summary.CondRewrite (**)
+         { Filter_summary.crw_name = name;
+           Filter_summary.crw_params = params;
+           Filter_summary.crw_args = assums;
+           Filter_summary.crw_redex = redex;
+           Filter_summary.crw_contractum = contractum;
+           Filter_summary.crw_proof = proof
+         }
+
+(*
  * The object has a package in scope.
  *)
 let unit_term = mk_simple_term nil_opname []
@@ -124,6 +152,11 @@ let unit_term = mk_simple_term nil_opname []
 let edit pack arg name obj =
    let update_ped () =
       obj.rw_ped <- Primitive unit_term
+   in
+   let save_ped ped =
+      let item = item_of_obj pack name obj ped in
+         Package.set pack item;
+         obj.rw_ped <- Interactive ped
    in
    let edit_format db buf =
       (* Convert to a term *)
@@ -161,6 +194,14 @@ let edit pack arg name obj =
       obj.rw_params <- pl;
       update_ped ()
    in
+   let edit_save () =
+      match obj.rw_ped with
+         Interactive ped ->
+            save_ped ped
+       | Primitive _
+       | Derived _ ->
+            ()
+   in
    let edit_check () =
       match obj.rw_ped with
          Primitive _ ->
@@ -186,8 +227,8 @@ let edit pack arg name obj =
    let edit_root () =
       Proof_edit.root_ped (get_ped obj)
    in
-   let edit_up () =
-      Proof_edit.up_ped (get_ped obj)
+   let edit_up i =
+      Proof_edit.up_ped (get_ped obj) i
    in
    let edit_down i =
       Proof_edit.down_ped (get_ped obj) i
@@ -217,7 +258,7 @@ let edit pack arg name obj =
                    } = obj
                in
                let ped = mk_ped arg params assums redex contractum in
-                  obj.rw_ped <- Interactive ped;
+                  save_ped ped;
                   ped
           | Interactive ped ->
                ped
@@ -230,6 +271,7 @@ let edit pack arg name obj =
         edit_set_contractum = edit_set_contractum;
         edit_set_assumptions = edit_set_assumptions;
         edit_set_params = edit_set_params;
+        edit_save = edit_save;
         edit_check = edit_check;
         edit_expand = edit_expand;
         edit_root = edit_root;
@@ -242,15 +284,26 @@ let edit pack arg name obj =
       }
 
 let create pack name =
+   let proof = Package.new_proof pack [] unit_term in
+   let ped = Package.ped_of_proof pack proof in
+   let rw =
+      { Filter_summary.rw_name = name;
+        Filter_summary.rw_redex = unit_term;
+        Filter_summary.rw_contractum = unit_term;
+        Filter_summary.rw_proof = Interactive proof
+      }
+   in
    let obj =
       { rw_assums = [];
         rw_params = [];
         rw_redex = unit_term;
         rw_contractum = unit_term;
-        rw_ped = Primitive unit_term
+        rw_proof = Interactive proof;
+        rw_ped = Interactive ped
       }
    in
    let arg = Package.argument pack in
+      Package.set pack (Filter_summary.Rewrite rw);
       edit pack arg name obj
 
 let ped_of_proof pack = function
@@ -272,6 +325,7 @@ let view_rw pack
         rw_params = [];
         rw_redex = redex;
         rw_contractum = contractum;
+        rw_proof = proof;
         rw_ped = ped_of_proof pack proof
       }
    in
@@ -291,6 +345,7 @@ let view_crw pack
         rw_params = params;
         rw_redex = redex;
         rw_contractum = contractum;
+        rw_proof = proof;
         rw_ped = ped_of_proof pack proof
       }
    in
@@ -299,6 +354,9 @@ let view_crw pack
 
 (*
  * $Log$
+ * Revision 1.14  1998/06/15 22:31:53  jyh
+ * Added CZF.
+ *
  * Revision 1.13  1998/06/12 13:45:17  jyh
  * D tactic works, added itt_bool.
  *

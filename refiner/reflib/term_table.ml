@@ -15,6 +15,7 @@ open Printf
 open Debug
 open Opname
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.TermShape
@@ -143,9 +144,23 @@ let dest_table { tbl_items = items } =
             entry, { tbl_items = tl; tbl_base = None }
 
 (*
+ * When a term is inserted, we have to simplify it so that the rewriter does
+ * not complain.
+ *)
+let simplify_term t =
+   let simplify_var t =
+      if is_so_var_term t then
+         mk_var_term (fst (dest_so_var t))
+      else
+         t
+   in
+      map_up simplify_var t
+
+(*
  * Add an entry.
  *)
 let insert { tbl_items = items } t v =
+   let t = simplify_term t in
    let redex = compile_redex [||] t in
    let entry =
       { info_term = t;
@@ -215,14 +230,42 @@ let collect_entries { tbl_items = items } =
          let tables, entries = tables_entries in
             match h with
                Entry info ->
+                  if !debug_term_table then
+                     eprintf "Term_table.collect_entries: %s%t" (Simple_print.string_of_term info.info_term) eflush;
                   insert_item (tables, info :: entries) t
              | Table table ->
+                  if !debug_term_table then
+                     eprintf "Term_table.collect_entries: Table%t" eflush;
                   if List.memq table tables then
                      insert_item tables_entries t
                   else
-                     insert_item (insert_item (table :: tables, entries) table) t
+                     let tables, entries = insert_item tables_entries table in
+                        insert_item (table :: tables, entries) t
    in
       snd (insert_item ([], []) items)
+
+(*
+ * Go through and print the entries.
+ *)
+let print_entries { tbl_items = items } =
+   let rec print_item tables = function
+      [] ->
+         tables
+    | h::t ->
+         match h with
+            Entry info ->
+               eprintf "Term_table.print_entries: %s%t" (Simple_print.string_of_term info.info_term) eflush;
+               print_item tables t
+          | Table table ->
+               eprintf "Term_table.print_entries: Table%t" eflush;
+               if List.memq table tables then
+                  print_item tables t
+               else
+                  let tables = print_item tables table in
+                     print_item (table :: tables) t
+   in
+      print_item [] items;
+      ()
 
 (*
  * Collect subterms entries into three kinds:
@@ -415,12 +458,12 @@ let rec execute prog stack =
 (*
  * Lookup an entry.
  *)
-let lookup table t =
+let lookup name table t =
    let base = get_base table in
    let shape = shape_of_term t in
    let _ =
       if !debug_term_table then
-         eprintf "Term_table.lookup: %s%t" (string_of_term t) eflush
+         eprintf "Term_table.lookup: %s: %s%t" name (string_of_term t) eflush
    in
    let prog = Hashtbl.find base shape in
    let stack = (subterms_of_term t) @ [end_marker] in
@@ -445,15 +488,23 @@ let lookup table t =
                   stack, items, v
             with
                _ ->
+                  if !debug_term_table then
+                     eprintf "Term_table.lookup: %s failed%t" (string_of_term t') eflush;
                   search tl
          end
     | [] ->
          raise Not_found
    in
-      search items
+   let triple = search items in
+      if !debug_term_table then
+         eprintf "Term_table.lookup: %s found%t" (string_of_term t) eflush;
+      triple
 
 (*
  * $Log$
+ * Revision 1.4  1998/06/15 22:32:34  jyh
+ * Added CZF.
+ *
  * Revision 1.3  1998/06/12 13:47:03  jyh
  * D tactic works, added itt_bool.
  *
