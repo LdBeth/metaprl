@@ -480,6 +480,15 @@ section
     %.cmo: $(MACROPP)
     %.cmx: $(MACROPP)
 
+    MACROPPOPTS =
+    OCAMLPPFLAGS = -pp "$(MACROPP) $`(MACROPPOPTS)"
+
+    %.p4: %.ml $(MACROPRINT)
+        $(MACROPRINT) $(MACROPPOPTS) $< > $@
+
+    %.p4i: %.mli $(MACROPRINT)
+        $(MACROPRINT) $(MACROPPOPTS) $< > $@
+
     # These directories use the macro preprocessor
     CamlSubDirs(mllib)
 

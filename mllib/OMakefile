@@ -1,6 +1,3 @@
-# C preprocessing
-OCAMLFLAGS = $(OCAMLFLAGS) -pp $(MACROPP)
-
 # Types files
 MLZFILES[] =
    file_base_type
