@@ -273,11 +273,6 @@ struct
       }
 
    (*
-    * Utilities.
-    *)
-   let comment _ _ t = t
-
-   (*
     * Build weak headers.
     *)
    let weaken_term = TermCopy2.weaken
