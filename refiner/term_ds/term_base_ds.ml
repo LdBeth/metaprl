@@ -377,7 +377,7 @@ struct
                (* XXX: These would not be needed if new_name was guaranteed unique *)
                let sub_vars = SymbolSet.add sub_vars v' in
                let all_vars = SymbolSet.add all_vars v' in
-                  hyps_subst hyps len sub all_vars sub_vars (Hypothesis (v', t) :: new_hyps) (i + 1)
+                  hyps_subst hyps len sub all_vars sub_vars (Hypothesis (v', t') :: new_hyps) (i + 1)
             else
                let hyp = if t == t' then hyp else Hypothesis (v, t') in
                   hyps_subst hyps len sub all_vars sub_vars (hyp :: new_hyps) (i + 1)
