@@ -522,25 +522,25 @@ struct
       else if is_so_var_term t then let _, _, ts = dest_so_var t in make_path_list (List.length ts)
       else if is_context_term t then let _, _, _, ts = dest_context t in make_path_list (List.length ts)
       else if is_sequent_term t then
-         let rec aux i term =
+         let rec aux addrs i term =
             let { term_op = op; term_terms = bterms } = dest_term term in
             let opname = (dest_op op).op_name in
                if Opname.eq opname hyp_opname then
-                  nth_hd_address i :: aux (i + 1) (match_hyp subterm_addresses_name t bterms)
+                  aux (addrs @ [nth_hd_address i]) (i + 1) (match_hyp subterm_addresses_name t bterms)
                else if Opname.eq opname context_opname then
                   let _, term, _, ts = dest_context term in
-                     (List.map (compose_address (nth_hd_address i)) (make_path_list (List.length ts))) @
-                     (aux (i + 1) term)
+                     let addrs' = List.map (compose_address (nth_hd_address i)) (make_path_list (List.length ts)) in
+                        aux (addrs@addrs') (i + 1) term
                else if Opname.eq opname concl_opname then
                   match bterms with
                      [bt] when is_simple_bterm bt ->
-                        [nth_hd_address i; Path[0]] (* arg address *)
+                        (nth_hd_address i) :: (addrs @ [Path[0]]) (* Path 0 is the arg address *)
                    | _ ->
                         REF_RAISE(RefineError (subterm_addresses_name, TermMatchError (t, "malformed sequent")))
                else
                   REF_RAISE(RefineError (subterm_addresses_name, TermMatchError (t, "malformed sequent")))
          in
-            aux 1 (body_of_sequent t)
+            aux [] 1 (body_of_sequent t)
       else make_path_list (List.length (dest_term t).term_terms)
 
 end

@@ -238,15 +238,15 @@ if $(NATIVE_ENABLED)
       eprintln(!!!)
       exit(1)
 
-if $(not $(or $(equal $(TERMS), ds), $(equal $(TERMS), std)))
+if $(not $(mem $(TERMS), std ds))
    eprintln(ERROR: the TERMS variable is currently set to an invalid value "$(TERMS)"\, please fix it in the mk/config file)
    exit(1)
 
-if $(not $(or $(equal $(REFINER), SIMPLE), $(equal $(REFINER), VERBOSE)))
+if $(not $(mem $(REFINER), SIMPLE VERBOSE))
    eprintln(ERROR: the REFINER variable is currently set to an invalid value "$(REFINER)"\, please fix it in the mk/config file)
    exit(1)
 
-if $(not $(or $(equal $(SEQ_SET), Lm_array), $(equal $(SEQ_SET), Lm_splay)))
+if $(not $(mem $(SEQ_SET), Lm_array Lm_splay))
    eprintln(ERROR: the SEQ_SET variable is currently set to an invalid value "$(SEQ_SET)"\, please fix it in the mk/config file)
    exit(1)
 
