@@ -11,13 +11,16 @@ OCAMLINCLUDES =\
 	-I ../term_gen\
 	-I ../term_ds
 
-OCamlLibraryInstall($(MPINSTALL), $(LIB), rewrite, $(REWRITE_FILES))
-
 #
 # Special files
 #
 rewrite_type_sig.mlz: rewrite_types.ml $(OCAMLMACROS)
 	$(CAMLP4MACROPRINT) -intf rewrite_types.ml -o $@
+
+#
+# Rewriter library
+#
+OCamlLibraryInstall($(MPINSTALL), $(LIB), rewrite, $(REWRITE_FILES))
 
 #
 # Clean up
