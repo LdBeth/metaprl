@@ -69,8 +69,8 @@ type dform_mode_base =
 (*
  * Empty mode base.
  *)
-let null_mode_base =
-   { all_base = { base_list = []; base_includes = []; base_cached = None}; mode_bases = [] }
+let null_base = { base_list = []; base_includes = []; base_cached = None}
+let null_mode_base = { all_base = null_base; mode_bases = [] }
 
 let finish_base =
    let count = ref 0 in fun base ->
@@ -82,11 +82,12 @@ let finish_base =
 (*
  * Get a particular mode base.
  *)
-let get_mode_base { all_base = all; mode_bases = bases } name =
+let get_mode_base mbase name =
    let base =
-      try List.assoc name bases with
+      if (name = "raw") then null_base else
+      try List.assoc name mbase.mode_bases with
          Not_found ->
-            all
+            mbase.all_base
    in match base.base_cached with
       Some base -> base
     | None ->
@@ -145,7 +146,9 @@ let create_dform all include_mode mode_names b info =
    (* See if any new modes are created *)
    let { all_base = all_base; mode_bases = mode_bases } = !b in
    let rec compute_new_mode_bases mode_bases' = function
-      mode::modes ->
+      "raw" :: _ ->
+         raise (Invalid_argument("Dform_print.create_dform: raw mode can not have display forms"))
+    | mode::modes ->
          let mode_bases'' =
             try List.assoc mode mode_bases'; mode_bases' with
                Not_found -> (mode, all_base)::mode_bases'

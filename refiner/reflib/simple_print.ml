@@ -312,15 +312,15 @@ struct
                         end
                    | Hypothesis t ->
                         begin
-                           format_string buf "_ :";
-                           format_pushm buf 1;
+                           format_pushm buf 0;
                            format_term buf t;
                            format_popm buf
                         end
                    | Context (v,ts) ->
                         begin
-                           format_string buf v;
+                           format_string buf ("<" ^ v);
                            format_termlist buf ts;
+                           format_string buf (">");
                         end
                end;
                format_popm buf;
