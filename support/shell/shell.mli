@@ -54,7 +54,7 @@ topval abort : unit -> unit
 topval cd : string -> string
 topval refresh : unit -> unit
 topval pwd : unit -> string
-topval root : unit -> unit
+topval root : unit -> string
 topval up : int -> unit
 topval down : int -> unit
 

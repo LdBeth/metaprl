@@ -32,6 +32,19 @@ open Shell_sig
 open Shell_util
 
 (*
+ * Mount descriptions.
+ *)
+type shell_mount =
+   MountRoot
+ | MountModule of string
+ | MountProof of string * string
+
+type shell_dir =
+   DirRoot
+ | DirModule of string
+ | DirProof of string * string * string list
+
+(*
  * This is the info we need for each subshell.
  * The subshells can be threaded; we must make this shell
  * thread-safe.
@@ -48,7 +61,7 @@ type shell =
      mutable shell_df_mode       : string;
 
      (* Current module and path and proof *)
-     mutable shell_dir           : string list;
+     mutable shell_dir           : shell_dir;
      mutable shell_package       : Package_info.package option;
      mutable shell_proof         : edit_object
    }

@@ -145,7 +145,7 @@ let default_shell =
         shell_label          = "current";
         shell_width          = 80;
         shell_df_mode        = dfmode;
-        shell_dir            = [];
+        shell_dir            = DirRoot;
         shell_package        = None;
         shell_proof          = proof;
         shell_needs_refresh  = false
@@ -177,7 +177,7 @@ let set_current_session session_info =
              } = session_info
          in
             shell.shell_id              <- id;
-            shell.shell_dir             <- dir;
+            shell.shell_dir             <- dir_of_path dir;
             shell.shell_needs_refresh   <- true;
             add_linebuffer_strings session.session_history history;
             add_linebuffer_buffers session.session_messages messages;
@@ -248,7 +248,7 @@ let flush () =
          in
          let session =
             { session_info_id       = id;
-              session_info_dir      = dir;
+              session_info_dir      = path_of_dir dir;
               session_info_label    = label;
               session_info_options  = string_of_ls_options options;
               session_info_history  = strings_of_linebuffer history;

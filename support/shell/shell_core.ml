@@ -52,17 +52,6 @@ let debug_shell =
         debug_value = false
       }
 
-(*
- * Turn a path to an absolute string.
- *)
-let rec string_of_path = function
-   [n] ->
-      "/" ^ n
- | h::t ->
-      "/" ^ h ^ string_of_path t
- | [] ->
-      "/"
-
 let mk_dep_name opname =
    "/" ^ String.concat "/" (List.rev (dest_opname opname))
 
@@ -150,48 +139,8 @@ let touch shell =
             end
 
 (************************************************************************
- * VIEWING                                                              *
- ************************************************************************)
-
-(*
- * Turn a string into a path, relative to info.dir.
- * The string is "/"-separated; "." means current directory, ".." its
- * parent, "..." its grandparent etc.
- * Also, "~" refers to the second level from top, e.g. cd "~" goes to
- * the current module.
+ * Process control.
  *)
-let parse_path info name =
-   let home =
-      match info.shell_dir with
-         [] ->
-            []
-       | modname :: _ ->
-            [modname]
-   in
-   let rec aux dir names =
-      match names with
-         [] -> dir
-       | ""::ns -> aux dir ns
-       | "~"::ns -> aux home ns
-       | n::ns when (Lm_string_util.for_all (fun c -> c = '.') n) ->
-            (* Remove |n| elements from dir's tail *)
-            let head = try (fst (Lm_list_util.split_list ((List.length dir) - (String.length n) + 1) dir))
-                       with Failure "split_list" -> []
-            in aux head ns
-       | n::ns -> aux (dir @ [n]) ns
-   in
-      aux (if String.length name <> 0 & name.[0] = '/' then [] else info.shell_dir)
-      (Lm_string_util.split "/" name)
-
-(*
- * Window width.
- *)
-let set_window_width shell i =
-   shell.shell_width <- max !Mp_term.min_screen_width i
-
-(************************************************************************
- * PROCESS CONTROL                                                      *
- ************************************************************************)
 
 (*
  * Show current process id.
@@ -218,47 +167,9 @@ let jobs shell =
 let fg shell pid =
    Lm_thread_shell.set_pid pid
 
-(*
- * Interface to the HTTP shell.
+(************************************************************************
+ * Package management.
  *)
-let get_ls_options shell =
-   Session.get_view_options ()
-
-let get_view_options shell =
-   string_of_ls_options (get_ls_options ())
-
-let set_view_options shell s =
-   Session.add_view_options s
-
-let clear_view_options shell s =
-   Session.clear_view_options s
-
-let get_shortener shell =
-   match shell.shell_package with
-      Some pkg ->
-         let mk_opname = Package_info.mk_opname pkg in
-         let shortener opname params bterms =
-            match Opname.dest_opname opname with
-               h :: _ ->
-                  let params = List.map param_type params in
-                  let arities = List.map (fun bterm -> List.length (dest_bterm bterm).bvars) bterms in
-                  let opname' = mk_opname [h] params arities in
-                     if Opname.eq opname' opname then
-                        h
-                     else
-                        Opname.string_of_opname opname
-             | [] ->
-                  "$"
-         in
-            shortener
-    | None ->
-         let shortener opname _ _ =
-            Opname.string_of_opname opname
-         in
-            shortener
-
-let pwd shell =
-   string_of_path shell.shell_dir
 
 (*
  * Update the current item being edited.
@@ -346,48 +257,6 @@ let get_item parse_arg info modname name =
             raise (Failure "view")
 
 (*
- * Display the current proof.
- *)
-let display_proof info proof options =
-   proof.edit_display options
-
-(*
- * Display the "root" directory.
- * This is just a list of the "important" packages.
- *)
-let view_packages info options =
-   let proof = Shell_root.view packages (get_display_mode info) in
-      display_proof info proof options
-
-(*
- * Display a particular package.
- *)
-let view_package parse_arg info name options =
-   let pack = Package_info.get packages name in
-   let display_mode = get_display_mode info in
-   let proof = Shell_package.view pack parse_arg display_mode in
-      display_proof info proof options
-
-(*
- * View an item in a package.
- *)
-let view_item info modname name options =
-   display_proof info info.shell_proof options
-
-(*
- * General purpose displayer.
- *)
-let view parse_arg shell options name =
-   let dir = parse_path shell name in
-      match dir with
-         [] ->
-            view_packages shell options
-       | [modname] ->
-            view_package parse_arg shell modname options
-       | modname :: item :: _ ->
-            view_item shell modname item options
-
-(*
  * Filename for the current shell.
  *)
 let filename parse_arg shell =
@@ -397,9 +266,15 @@ let filename parse_arg shell =
     | None ->
          None
 
+(*
+ * Display the current proof.
+ *)
+let display_proof info proof options =
+   proof.edit_display options
+
 (************************************************************************
- * OBJECTS                                                              *
- ************************************************************************)
+ * Objects.
+ *)
 
 (*
  * Creation functions.
@@ -490,7 +365,7 @@ let set_params shell pl =
 
 let check shell =
    match shell with
-      { shell_package = Some pack; shell_dir = mod_name :: name :: _ } ->
+      { shell_package = Some pack; shell_dir = DirProof (mod_name, name, _) } ->
          begin
             try
                let deps = Refine.compute_dependencies (Package_info.get_refiner pack) (make_opname [name; mod_name]) in
@@ -586,16 +461,96 @@ let interpret shell command =
    display_proof shell shell.shell_proof LsOptionSet.empty
 
 (************************************************************************
- * Directory management.
+ * Directories and mounting.
  *)
 
 (*
- * Mount descriptions.
+ * Get the string version of the current directory.
  *)
-type mount_info =
-   MountRoot
- | MountModule of string
- | MountProof of string * string
+let string_of_dir dir =
+   match dir with
+      DirRoot ->
+         "/"
+    | DirModule modname ->
+         "/" ^ modname
+    | DirProof (modname, itemname, rest) ->
+         Lm_string_util.prepend "/" (modname :: itemname :: rest)
+
+(*
+ * Home directory for the current directory.
+ *)
+let home_of_dir dir =
+   match dir with
+      DirRoot
+    | DirModule _ ->
+         dir
+    | DirProof (modname, _, _) ->
+         DirModule modname
+
+(*
+ * Turn the directory into a simple string path.
+ *)
+let path_of_dir dir =
+   match dir with
+      DirRoot ->
+         []
+    | DirModule modname ->
+         [modname]
+    | DirProof (modname, itemname, subdir) ->
+         modname :: itemname :: subdir
+
+let dir_of_path path =
+   match path with
+      [] ->
+         DirRoot
+    | [modname] ->
+         DirModule modname
+    | modname :: itemname :: subdir ->
+         DirProof (modname, itemname, subdir)
+
+(*
+ * Turn a string into a path, relative to the current directory.
+ *
+ * The string is "/"-separated;
+ *     "." means current directory,
+ *     ".." its parent,
+ *     "..." its grandparent etc.
+ *
+ * "~" refers to the second level from top.
+ *)
+let parse_path shell name =
+   let home_dir = path_of_dir (home_of_dir shell.shell_dir) in
+   let updir rev_dir count =
+      let length = List.length rev_dir in
+         if count >= List.length rev_dir then
+            []
+         else
+            Lm_list_util.nth_tl count rev_dir
+   in
+   let rec collect rev_dir names =
+      match names with
+         [] ->
+            rev_dir
+       | "" :: ns ->
+            collect rev_dir ns
+       | "~" :: ns ->
+            collect home_dir ns
+       | n :: ns ->
+            if (Lm_string_util.for_all (fun c -> c = '.') n) then
+               let count = String.length n in
+               let rev_dir = updir rev_dir (count - 1) in
+                  collect rev_dir ns
+            else
+               collect (n :: rev_dir) ns
+   in
+   let rev_dir =
+      if String.length name <> 0 && name.[0] = '/' then
+         []
+      else
+         List.rev (path_of_dir shell.shell_dir)
+   in
+   let path = Lm_string_util.split "/" name in
+      dir_of_path (List.rev (collect rev_dir path))
 
 (*
  * Mount the root directory.
@@ -613,25 +568,33 @@ let mount_root parse_arg shell need_shell verbose =
  * Helper for mounting a module.
  *)
 let mount_current_module modname parse_arg shell need_shell verbose =
-   if shell.shell_dir = [] || List.hd shell.shell_dir <> modname then
-      begin
-         (* Make sure the module name is well-formed *)
-         if modname <> String.uncapitalize modname then
-            raise (Failure "Shell.chdir: module name should not be capitalized");
+   let update =
+      match shell.shell_dir with
+         DirRoot ->
+            true
+       | DirModule modname'
+       | DirProof (modname', _, _) ->
+            modname' <> modname
+   in
+      if update then
+         begin
+            (* Make sure the module name is well-formed *)
+            if modname <> String.uncapitalize modname then
+               raise (Failure "Shell.chdir: module name should not be capitalized");
 
-         (* See if the theory exists *)
-         let _ = Theory.get_theory modname in
-         let pkg = Package_info.load packages parse_arg modname in
-            if need_shell && not (shell_package pkg) then
-               failwith ("Module " ^ modname ^ " does not contain shell commands");
-            shell.shell_package <- Some pkg;
-            Shell_state.set_dfbase (Some (get_db shell));
-            Shell_state.set_mk_opname (Some (Package_info.mk_opname pkg));
-            Shell_state.set_infixes (Some (Package_info.get_infixes pkg));
-            Shell_state.set_module modname;
-            if verbose then
-               eprintf "Module: /%s%t" modname eflush
-      end
+            (* See if the theory exists *)
+            let _ = Theory.get_theory modname in
+            let pkg = Package_info.load packages parse_arg modname in
+               if need_shell && not (shell_package pkg) then
+                  failwith ("Module " ^ modname ^ " does not contain shell commands");
+               shell.shell_package <- Some pkg;
+               Shell_state.set_dfbase (Some (get_db shell));
+               Shell_state.set_mk_opname (Some (Package_info.mk_opname pkg));
+               Shell_state.set_infixes (Some (Package_info.get_infixes pkg));
+               Shell_state.set_module modname;
+               if verbose then
+                  eprintf "Module: /%s%t" modname eflush
+         end
 
 (*
  * Actually mount the module.
@@ -661,23 +624,22 @@ let mount_proof modname itemname parse_arg shell need_shell verbose =
  * The mount function returns a description of the
  * mount point, and the mount function.
  *)
-let mount path =
-   match path with
-      [] ->
+let mount_of_dir dir =
+   match dir with
+      DirRoot ->
          MountRoot, mount_root, []
-    | [modname] ->
+    | DirModule modname ->
          MountModule modname, mount_module modname, []
-    | modname :: itemname :: rest ->
+    | DirProof (modname, itemname, rest) ->
          MountProof (modname, itemname), mount_proof modname itemname, rest
 
 (*
  * When the mount point changes,
  * the old mount point may need to be unmounted.
  *)
-let umount shell info =
-   match info with
+let umount shell mount =
+   match mount with
       MountProof (modname, itemname) ->
-         (* When leaving a proof, cd to the root *)
          shell.shell_proof.edit_addr []
     | MountModule _
     | MountRoot ->
@@ -688,8 +650,8 @@ let umount shell info =
  *)
 let rec chdir parse_arg shell need_shell verbose path =
    let dir = shell.shell_dir in
-   let old_mount_name, _, _ = mount dir in
-   let new_mount_name, mount, subdir = mount path in
+   let old_mount_name, _, _ = mount_of_dir dir in
+   let new_mount_name, mount, subdir = mount_of_dir path in
       try
          (* Change the mount point if needed *)
          if new_mount_name <> old_mount_name then
@@ -706,12 +668,12 @@ let rec chdir parse_arg shell need_shell verbose path =
 
          (* Print directory *)
          if verbose then
-            eprintf "CWD: %s@." (string_of_path path)
+            eprintf "CWD: %s@." (string_of_dir path)
       with
          exn ->
             (* Some kind of failure happened, so change back to where we came from *)
-            eprintf "Chdir failed: %s@." (string_of_path path);
-            eprintf "Current dir: %s@." (string_of_path dir);
+            eprintf "Chdir failed: %s@." (string_of_dir path);
+            eprintf "Current dir: %s@." (string_of_dir dir);
             chdir parse_arg shell false verbose dir;
             raise exn
 
@@ -720,8 +682,117 @@ let rec chdir parse_arg shell need_shell verbose path =
  *)
 let refresh parse_arg shell =
    let dir = shell.shell_dir in
-      shell.shell_dir <- [];
+      shell.shell_dir <- DirRoot;
       chdir parse_arg shell true true dir
+
+let cd parse_arg shell name =
+   chdir parse_arg shell true true (parse_path shell name);
+   string_of_dir shell.shell_dir
+
+let root parse_arg shell =
+   let dir = shell.shell_dir in
+   let dir =
+      match dir with
+         DirRoot
+       | DirModule _ ->
+            dir
+       | DirProof (modname, itemname, _) ->
+            DirProof (modname, itemname, [])
+   in
+      chdir parse_arg shell true true dir;
+      string_of_dir shell.shell_dir
+
+let pwd shell =
+   string_of_dir shell.shell_dir
+
+(************************************************************************
+ * Viewing.
+ *)
+
+(*
+ * Window width.
+ *)
+let set_window_width shell i =
+   shell.shell_width <- max !Mp_term.min_screen_width i
+
+(*
+ * Interface to the HTTP shell.
+ *)
+let get_ls_options shell =
+   Session.get_view_options ()
+
+let get_view_options shell =
+   string_of_ls_options (get_ls_options ())
+
+let set_view_options shell s =
+   Session.add_view_options s
+
+let clear_view_options shell s =
+   Session.clear_view_options s
+
+let get_shortener shell =
+   match shell.shell_package with
+      Some pkg ->
+         let mk_opname = Package_info.mk_opname pkg in
+         let shortener opname params bterms =
+            match Opname.dest_opname opname with
+               h :: _ ->
+                  let params = List.map param_type params in
+                  let arities = List.map (fun bterm -> List.length (dest_bterm bterm).bvars) bterms in
+                  let opname' = mk_opname [h] params arities in
+                     if Opname.eq opname' opname then
+                        h
+                     else
+                        Opname.string_of_opname opname
+             | [] ->
+                  "$"
+         in
+            shortener
+    | None ->
+         let shortener opname _ _ =
+            Opname.string_of_opname opname
+         in
+            shortener
+
+(*
+ * Display the "root" directory.
+ * This is just a list of the "important" packages.
+ *)
+let view_packages info options =
+   let proof = Shell_root.view packages (get_display_mode info) in
+      display_proof info proof options
+
+(*
+ * Display a particular package.
+ *)
+let view_package parse_arg info name options =
+   let pack = Package_info.get packages name in
+   let display_mode = get_display_mode info in
+   let proof = Shell_package.view pack parse_arg display_mode in
+      display_proof info proof options
+
+(*
+ * View an item in a package.
+ *)
+let view_item info modname name options =
+   display_proof info info.shell_proof options
+
+(*
+ * General purpose displayer.
+ *)
+let view parse_arg shell options name =
+   let dir = parse_path shell name in
+      match dir with
+         DirRoot ->
+            view_packages shell options
+       | DirModule modname ->
+            view_package parse_arg shell modname options
+       | DirProof (modname, item, _) ->
+            view_item shell modname item options
+
+(************************************************************************
+ * Proof operations.
+ *)
 
 (*
  * Apply a function to all elements.
@@ -783,7 +854,7 @@ let rec apply_all parse_arg shell f (modifies : bool) (time : bool) (clean_res :
                let expand pack =
                   let name = Package_info.name pack in
                      eprintf "Entering %s%t" name eflush;
-                     chdir parse_arg shell false true [name];
+                     chdir parse_arg shell false true (DirModule name);
                      apply_all_exn false
                in
                   List.iter expand (all_packages ())
@@ -791,24 +862,20 @@ let rec apply_all parse_arg shell f (modifies : bool) (time : bool) (clean_res :
       apply_all_exn time;
       refresh parse_arg shell
 
-and expand_all parse_arg shell =
+let expand_all parse_arg shell =
    let f item db =
       item.edit_interpret ProofExpand
    in
       apply_all parse_arg shell f false true true
 
-and cd parse_arg shell name =
-   chdir parse_arg shell true true (parse_path shell name);
-   string_of_path shell.shell_dir
-
 (*
  * TeX functions.
  *)
-and print_theory parse_arg shell name =
+let print_theory parse_arg shell name =
    let mode = shell.shell_df_mode in
    let dir = shell.shell_dir in
       shell.shell_df_mode <- "tex";
-      chdir parse_arg shell false true [name];
+      chdir parse_arg shell false true (DirModule name);
       expand_all parse_arg shell;
       view parse_arg shell (LsOptionSet.singleton LsAll) ".";
       shell.shell_df_mode <- mode;
@@ -828,17 +895,17 @@ let extract parse_arg shell path () =
 
 let term_of_extract shell terms =
    match shell with
-      { shell_package = Some pack; shell_dir = mod_name :: name :: _ } ->
+      { shell_package = Some pack; shell_dir = DirProof (mod_name, name, _) } ->
          Refine.extract_term (Package_info.get_refiner pack) (make_opname [name;mod_name]) terms
     | _ ->
          raise (Failure "Shell.term_of_extract only works inside a proof")
 
 let edit_find info i =
    match info.shell_dir with
-      modname :: name :: _ ->
-         let dir = modname :: name :: (List.map string_of_int (info.shell_proof.edit_find i)) in
+      DirProof (modname, name, _) ->
+         let dir = DirProof (modname, name, List.map string_of_int (info.shell_proof.edit_find i)) in
             info.shell_dir <- dir;
-            string_of_path dir
+            string_of_dir dir
    | _ ->
          raise (Invalid_argument "Shell.find_subgoal: not in a proof")
 
@@ -852,13 +919,13 @@ let edit_find info i =
  *)
 let create_pkg parse_arg shell name =
    match parse_path shell name with
-      [modname] ->
+      DirModule modname ->
          (* Top level *)
          let _ = Package_info.create_package packages parse_arg modname in
             view parse_arg shell LsOptionSet.empty name
-    | [] ->
+    | DirRoot ->
          raise (Failure "Shell.create_package: can't create root package")
-    | _ ->
+    | DirProof _ ->
          raise (Failure "Shell.create_package: packages can't be nested right now")
 
 (*

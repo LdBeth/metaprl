@@ -27,6 +27,7 @@ MPFILES =\
 	shell_tex\
 	shell_package\
 	shell_root\
+	shell_fs\
 	mptop\
 	shell_state\
 	shell_internal_sig\

@@ -58,8 +58,10 @@ val set_window_width : shell -> int -> unit
 val touch : shell -> unit
 val mk_dep_name : opname -> string
 
-val parse_path : shell -> string -> string list
-val string_of_path : string list -> string
+val parse_path : shell -> string -> shell_dir
+val string_of_dir : shell_dir -> string
+val path_of_dir : shell_dir -> string list
+val dir_of_path : string list -> shell_dir
 val pwd : shell -> string
 
 val get_ls_options : shell -> LsOptionSet.t
@@ -68,9 +70,10 @@ val set_view_options : shell -> string -> unit
 val clear_view_options : shell -> string -> unit
 
 val view : parse_arg -> shell -> LsOptionSet.t -> string -> unit
-val chdir : parse_arg -> shell -> bool -> bool -> string list -> unit
+val chdir : parse_arg -> shell -> bool -> bool -> shell_dir -> unit
 val apply_all : parse_arg -> shell -> (edit_object -> dform_base -> unit) -> bool -> bool -> bool -> unit
 val cd : parse_arg -> shell -> string -> string
+val root : parse_arg -> shell -> string
 val refresh : parse_arg -> shell -> unit
 
 val set_goal : shell -> term -> unit
@@ -100,7 +103,7 @@ val refine : shell -> tactic -> unit
 
 val print_theory : parse_arg -> shell -> string -> unit
 
-val extract : parse_arg -> shell -> string list -> unit -> Refiner.Refiner.Refine.extract
+val extract : parse_arg -> shell -> shell_dir -> unit -> Refiner.Refiner.Refine.extract
 val term_of_extract : shell -> term list -> term
 
 val edit_find : shell -> int -> string

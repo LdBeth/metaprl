@@ -126,7 +126,7 @@ let display_term window term =
  * Error handler.
  *)
 let raise_edit_error s =
-   raise (RefineError ("Shell_root", StringError s))
+   raise (RefineError ("Shell_fs", StringError s))
 
 (*
  * Build the shell interface.
@@ -169,16 +169,16 @@ let rec edit pack window =
       ()
    in
    let edit_info () =
-      raise_edit_error "no info for the root packages"
+      raise_edit_error "no info for the fs packages"
    in
    let edit_refine _ _ _ =
-      raise_edit_error "can't refine the root packages"
+      raise_edit_error "can't refine the fs packages"
    in
    let edit_interpret command =
       raise_edit_error "this is not a proof"
    in
    let edit_get_contents () =
-      raise_edit_error "can only retrieve contents of an individual item, not of a root package"
+      raise_edit_error "can only retrieve contents of an individual item, not of a fs package"
    in
       { edit_display = edit_display;
         edit_get_contents = edit_get_contents;

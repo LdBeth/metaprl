@@ -80,8 +80,9 @@ let debug_shell  = load_debug "shell"
 type commands =
    { mutable init : unit -> unit;
      mutable cd : string -> string;
+     mutable root : unit -> string;
      mutable refresh : unit -> unit;
-     mutable pwd : unit -> string list;
+     mutable pwd : unit -> string;
      mutable set_dfmode : string -> unit;
      mutable create_pkg : string -> unit;
      mutable backup : unit -> unit;
@@ -114,6 +115,7 @@ let uninitialized _ = raise (Invalid_argument "The Shell module has not been ins
 let commands =
    { init = uninitialized;
      cd = uninitialized;
+     root = uninitialized;
      refresh = uninitialized;
      pwd = uninitialized;
      set_dfmode = uninitialized;
@@ -368,7 +370,7 @@ struct
                let f obj _ =
                   objs := obj.edit_get_contents () :: !objs
                in
-                  chdir parse_arg shell false false [mname];
+                  chdir parse_arg shell false false (DirModule mname);
                   apply_all parse_arg shell f false false false;
                   List.rev !objs)
 
@@ -388,13 +390,13 @@ struct
                            collect t
                in
                let opens = collect (info_items (get_info shell mname)) in
-                  chdir parse_arg shell false false [mname; name];
+                  chdir parse_arg shell false false (DirProof (mname, name, []));
                   ignore (ShellP4.eval_opens opens))
 
       let create_thm mname name =
          synchronize (fun shell ->
                ignore (get_info shell mname);
-               chdir parse_arg shell false false [mname];
+               chdir parse_arg shell false false (DirModule mname);
                let package = get_current_package shell in
                let item = Shell_rule.create package parse_arg (get_display_mode shell) name in
                   item.edit_save ();
@@ -404,7 +406,7 @@ struct
       let create_rw mname name =
          synchronize (fun shell ->
                ignore (get_info shell mname);
-               chdir parse_arg shell false false [mname];
+               chdir parse_arg shell false false (DirModule mname);
                let package = get_current_package shell in
                let item = Shell_rule.create package parse_arg (get_display_mode shell) name in
                   item.edit_save ();
@@ -567,6 +569,12 @@ struct
       let backup_all         = wrap_unit backup_all
 
       (*
+       * Extraction (JYH: I think this is for testing).
+       *)
+      let extract shell path =
+         extract parse_arg shell (dir_of_path path)
+
+      (*
        * Refresh packages at startup.
        *)
       let init () =
@@ -582,8 +590,9 @@ struct
             raise (Invalid_argument "The Shell module was initialized twice");
          commands.init                <- init;
          commands.cd                  <- wrap_arg cd;
+         commands.root                <- wrap_unit_arg root;
          commands.refresh             <- refresh;
-         commands.pwd                 <- (fun () -> synchronize (fun shell -> shell.shell_dir));
+         commands.pwd                 <- pwd;
          commands.set_dfmode          <- set_dfmode;
          commands.create_pkg          <- wrap_arg create_pkg;
          commands.backup              <- wrap_unit backup;
@@ -603,7 +612,7 @@ struct
          commands.create_ax_statement <- wrap_arg create_ax_statement;
          commands.refine              <- wrap refine;
          commands.print_theory        <- wrap_arg print_theory;
-         commands.extract             <- (fun path () -> synchronize (fun shell -> extract parse_arg shell path ()));
+         commands.extract             <- wrap extract;
          commands.term_of_extract     <- wrap term_of_extract;
          commands.get_view_options    <- get_view_options;
          commands.set_view_options    <- set_view_options;
@@ -654,7 +663,7 @@ let print_gc_stats () =
 let init () = commands.init ()
 let cd s = commands.cd s
 let refresh () = commands.refresh ()
-let pwd _ = string_of_path (commands.pwd ())
+let pwd () = commands.pwd ()
 let set_dfmode s = commands.set_dfmode s
 let create_pkg s = commands.create_pkg s
 let backup _ = commands.backup ()
@@ -717,13 +726,7 @@ let down i =
    ignore (cd (string_of_int i));
    ls ""
 
-let root () =
-   match commands.pwd () with
-      modname::item::_ ->
-         ignore (cd ("/" ^ modname ^ "/" ^ item));
-         ls ""
-    | _ ->
-         eprintf "Can not go to the proof root: not inside a proof%t" eflush
+let root () = commands.root ()
 
 let status item =
    let name, status, _, _ = item.edit_get_contents () in
