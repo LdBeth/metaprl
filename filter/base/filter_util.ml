@@ -27,8 +27,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 open Lm_debug
@@ -81,17 +81,17 @@ let unzip_rewrite name =
 (*
  * Split the function into var names and a simple mterm.
  *)
-let split_mfunction mterm =
-   let subgoals, goal = unzip_mfunction mterm in
+let split_mfunction =
    let collect (labels', ext, t) (i, labels, exts, terms) =
       let ext = match ext with
          Some ext -> ext
        | None -> Refine.make_wildcard_ext_arg i t
       in
          succ i, labels' :: labels, ext :: exts, t :: terms
-   in
-   let _, labels, exts, terms = List.fold_right collect subgoals (1, [], [], []) in
-      labels, exts, zip_mimplies terms goal
+   in fun mterm ->
+      let subgoals, goal = unzip_mfunction mterm in
+      let _, labels, exts, terms = List.fold_right collect subgoals (1, [], [], []) in
+         labels, exts, zip_mimplies terms goal
 
 (************************************************************************
  * OPNAMES                                                              *

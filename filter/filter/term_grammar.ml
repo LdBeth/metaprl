@@ -118,6 +118,19 @@ let raise_spelling_error () =
          Stdpp.raise_with_loc loc (Failure ("spelling (" ^ word ^ ")"))
       end
 
+let create_meta_function t left right =
+   let t =
+      (*
+       * XXX HACK: we assume that extracts from sequents must be sequents of the same shape
+       * And whenever users specify a non-sequent extract, they must be meaning to specify a
+       * conclusion of a sequent.
+       * There is a complimentary HACK in Filter_parse.parse_mtlre
+       *)
+      let left = unfold_mlabeled "Term_grammar.create_meta_function" left in
+         if is_sequent_term left && not (is_sequent_term t) then replace_goal left t else t
+   in
+      MetaFunction(t, left, right)
+
 (*
  * Build the grammar.
  *)
@@ -469,7 +482,7 @@ struct
     ************************************************************************)
 
    EXTEND
-      GLOBAL: term_eoi parsed_term quote_term mterm bmterm singleterm applytermlist parsed_bound_term xdform term_con_eoi;
+      GLOBAL: term_eoi term parsed_term quote_term mterm bmterm singleterm applytermlist parsed_bound_term xdform term_con_eoi;
 
       (*
        * Meta-terms include meta arrows.
@@ -506,7 +519,7 @@ struct
                      { vname = None; vterm = t } ->
                         { vname = None; vterm = MetaImplies (t, t2.vterm) }
                    | { vname = Some n; vterm = t } ->
-                        { vname = None; vterm = MetaFunction (n, t, t2.vterm) }
+                        { vname = None; vterm = create_meta_function n  t  t2.vterm }
                end
             ]
           | "meta_rev_implies" RIGHTA
@@ -516,7 +529,7 @@ struct
                      { vname = None; vterm = t } ->
                         { vname = None; vterm = MetaImplies (t, t2.vterm) }
                    | { vname = Some n; vterm = t } ->
-                        { vname = None; vterm = MetaFunction (n, t, t2.vterm) }
+                        { vname = None; vterm = create_meta_function n t t2.vterm }
                end
             ]
           | "meta_iff" LEFTA
@@ -547,7 +560,7 @@ struct
                      { vname = None; vterm = t } ->
                         { vname = None; vterm = MetaImplies (t, t2.vterm) }
                    | { vname = Some n; vterm = t } ->
-                        { vname = None; vterm = MetaFunction (n, t, t2.vterm) }
+                        { vname = None; vterm = create_meta_function n t t2.vterm }
                end
             ]
           | "meta_rev_implies" RIGHTA
@@ -557,7 +570,7 @@ struct
                      { vname = None; vterm = t } ->
                         { vname = None; vterm = MetaImplies (t, t2.vterm) }
                    | { vname = Some n; vterm = t } ->
-                        { vname = None; vterm = MetaFunction (n, t, t2.vterm) }
+                        { vname = None; vterm = create_meta_function n t t2.vterm }
                end
             ]
           | "meta_iff" LEFTA

@@ -141,6 +141,7 @@ struct
     *)
    let gram = Pcaml.gram
    let term_eoi = Grammar.Entry.create gram "term_eoi"
+   let term = Grammar.Entry.create gram "term"
    let parsed_term = Grammar.Entry.create gram "parsed_term"
    let quote_term = Grammar.Entry.create gram "quote_term"
    let mterm = Grammar.Entry.create gram "mterm"
@@ -312,6 +313,25 @@ let parse_mtlr mt tl rs =
     | bnd -> bnd
    in
       mt, tl, { rs with item_bindings = List.map conv rs.item_bindings }
+
+(* Same as parse_mtlr, but with extract term as well *)
+let parse_mtlre mt tl rs extract =
+   let mt, tl, f = mterms_of_parsed_mterms mt tl in
+   let conv = function
+      v, BindTerm t -> v, BindTerm(f t)
+    | bnd -> bnd
+   in
+   let extract =
+      (*
+       * XXX HACK: we assume that extracts from sequents must be sequents of the same shape
+       * And whenever users specify a non-sequent extract, they must be meaning to specify a
+       * conclusion of a sequent.
+       * There is a complimentary HACK in Term_grammar.create_meta_function
+       *)
+      let _, goal = unzip_mfunction mt in
+         if is_sequent_term goal && not (is_sequent_term extract) then replace_goal goal extract else extract
+   in
+      mt, tl, { rs with item_bindings = List.map conv rs.item_bindings }, f extract
 
 (************************************************************************
  * TERM HACKING                                                         *
@@ -610,11 +630,7 @@ struct
                   eprintf "Non vars:\n%a" print_non_vars params';
                   eprintf "Args:\n%a --> %s\n" print_vterms t (string_of_term result)
             end;
-         Refine.check_rule (**)
-            name
-            (Array.of_list (collect_cvars params'))
-            (collect_terms params')
-            (strip_mfunction t);
+         Refine.check_rule name (Array.of_list (collect_cvars params')) (collect_terms params') (strip_mfunction t);
          if !debug_grammar then
             eprintf "Checked rule: %s%t" name eflush;
 
@@ -949,6 +965,13 @@ let define_rule proc loc name
     (res : ((MLast.expr, term) resource_def)) =
    try
       let cmd = StrFilter.rule_command proc name params mterm extract res in
+      begin match cmd, extract with
+         Rule r, Primitive extract ->
+            let _, ext_args, _ = split_mfunction mterm in
+            let addrs = Array.of_list (collect_cvars r.rule_params) in
+               Refine.check_prim_rule name addrs (collect_terms r.rule_params) (strip_mfunction mterm) ext_args extract
+       | _ -> ()
+      end;
       StrFilter.add_command proc (cmd, loc)
    with exn ->
       Stdpp.raise_with_loc loc exn
@@ -1252,9 +1275,9 @@ EXTEND
            in
               print_exn f "ml_rw" loc;
               empty_str_item loc
-        | "prim"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm; "="; extract = parsed_term ->
+        | "prim"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm; "="; extract = term ->
            let f () =
-              let mt, params, res = parse_mtlr mt params res in
+              let mt, params, res, extract = parse_mtlre mt params res extract in
               define_prim (StrFilter.get_proc loc) loc name params mt extract res
            in
               print_exn f "prim" loc;

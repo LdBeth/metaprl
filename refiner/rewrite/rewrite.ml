@@ -122,7 +122,7 @@ struct
    module RewriteDebug = MakeRewriteDebug (TermType) (Term) (TermAddr) (RefineError) (RewriteTypes)
    module RewriteCompileRedex =
       MakeRewriteCompileRedex (TermType) (Term) (TermMan) (TermAddr) (**)
-         (TermSubst) (RefineError) (RewriteTypes) (RewriteUtil)
+         (TermSubst) (RefineError) (RewriteTypes) (RewriteUtil) (RewriteDebug)
    module RewriteCompileContractum =
       MakeRewriteCompileContractum (TermType) (Term) (TermMan) (TermAddr) (**)
          (TermSubst) (RefineError) (RewriteTypes) (RewriteUtil) (RewriteDebug)

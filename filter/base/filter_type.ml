@@ -328,6 +328,7 @@ sig
    val mk_opname : MLast.loc -> opname_fun
    val mk_var_contexts : MLast.loc -> context_fun
    val term_eoi : term Grammar.Entry.e
+   val term : term Grammar.Entry.e
    val parsed_term : term Grammar.Entry.e
    val quote_term : quote_term Grammar.Entry.e
    val mterm : meta_term Grammar.Entry.e

@@ -1028,7 +1028,7 @@ struct
     * Get the term from an extract.
     * This will fail if some of the rules are not justified.
     *)
-   let term_of_extract_nocheck refiner ext (args : term list) =
+   let term_of_extract refiner ext (args : term list) =
       let find = find_of_refiner refiner in
       (* XXX HACK: this approach of building a closure on-the-fly is probably too inefficient *)
       let rec construct (rest : (term list -> term) list) = function
@@ -1222,7 +1222,7 @@ struct
                let eseq = explode_sequent t in
                let _, vars, conts, hyps = List.fold_left fold (vars,[],[],[]) (SeqHyp.to_list eseq.sequent_hyps) in
                let goal = mk_so_var_term v conts vars in
-                  mk_sequent_term { eseq with sequent_hyps = SeqHyp.of_list hyps; sequent_goals = SeqGoal.of_list [goal] }
+                  mk_sequent_term { eseq with sequent_hyps = SeqHyp.of_list (List.rev hyps); sequent_goals = SeqGoal.of_list [goal] }
             else mk_so_var_term v [] []
 
    let make_wildcard_ext_args =
@@ -1279,46 +1279,6 @@ struct
        | _ ->
             (* Only the above can be user-provable and can be returned by find_sentinel *)
             raise (Invalid_argument "find_sentinal")
-
-   (* XXX HACK: This is a pretty hackish way of combining things *)
-   let is_hackable_sequent t =
-      is_sequent_term t && (SeqGoal.length (explode_sequent t).sequent_goals) = 1
-
-   let join_ext_arg_hack1 arg assum =
-      if is_hackable_sequent assum && not (is_sequent_term arg) then
-         replace_goal assum arg
-      else arg
-
-   let hack_terms_away =
-      let i = ref 0 in
-      fun t ->
-      if is_hackable_sequent t then
-         let seq = explode_sequent t in
-         let process (vars, terms) = function
-            Context (c, conts, _) ->
-               vars, (Context (c, conts, vars) :: terms)
-          | h ->
-               let v = match h with
-                  HypBinding (v, _) -> v
-                | Hypothesis t -> incr i; Lm_symbol.make "___" !i
-                | Context _ -> Lm_symbol.add ""
-               in
-                  incr i;
-                  (mk_var_term v :: vars), (HypBinding (v, mk_so_var_term (Lm_symbol.make "__" !i) [Lm_symbol.add "TODO"] vars) :: terms)
-         in
-         let vars, hyps = List.fold_left process ([],[]) (SeqHyp.to_list seq.sequent_hyps) in
-         let goal = incr i; SeqGoal.get seq.sequent_goals 0 in
-         let goal = if vars <> [] && is_var_term goal then mk_so_var_term (Lm_symbol.make "__" !i) [Lm_symbol.add "TODO"] vars else goal in
-            mk_sequent_term { seq with sequent_hyps = SeqHyp.of_list (List.rev hyps); sequent_goals = SeqGoal.of_list [goal] }
-      else t
-
-   let join_ext_arg_hack arg assum =
-      hack_terms_away (join_ext_arg_hack1 arg assum)
-
-   let term_of_extract refiner ext args =
-      if (List.length ext.ext_goal.mseq_hyps) <> (List.length args) then
-         raise (Invalid_argument "Refine.term_of_extract: wrong number of term arguments");
-      term_of_extract_nocheck refiner ext (List.map2 join_ext_arg_hack1 args ext.ext_goal.mseq_hyps)
 
    let extract_term refiner opname args =
       match find_refiner refiner opname with
@@ -1415,27 +1375,165 @@ struct
       DepSet.elements (compute_deps_set refiner opname)
 
    (*
-    * Theorem for a previous theorem or rule.
+    * We use a simple rewriter-like bytecode for bringing extraction args together.
+    *)
+   type ext_cmd =
+      ECBind
+    | ECRename of int
+    | ECRenameLast
+    | ECSkip of int
+    | ECSkipCont of int
+    | ECRestart
+
+   (*
+    * Extract for a previous theorem or rule.
     * We once again use the rewriter to compute the
     * extract.
     *)
-   let compute_rule_ext name addrs params goal args result =
-      let args = mk_xlist_term (goal :: args) in
-      IFDEF VERBOSE_EXN THEN
-         if !debug_refiner then
-            eprintf "Refiner.compute_rule_ext: %s: %a + [%s] [%a] -> %a%t" name print_term args (String.concat ";" (List.map string_of_symbol (Array.to_list addrs))) (print_any_list print_term) params print_term result eflush
-      ENDIF;
-(*
-      let rw = Rewrite.term_rewrite Strict addrs (args :: params) [result] in
-      let compute_ext addrs params goal args =
-         let args = goal :: args in
-            List.hd (apply_rewrite rw (addrs, free_vars_terms args) (mk_xlist_term args) params)
+   let compute_rule_ext =
+      let rec skip_hyps = function
+         (HypBinding _| Hypothesis _) :: rest ->
+            let i, rest = skip_hyps rest in i + 1, rest
+       | rest ->
+            1, rest
       in
-         compute_ext
-*)
-      (* BUG: extraction still needs work *)
-      (fun addrs params goal args ->
-           raise (Invalid_argument "extraction disabled for now"))
+      let rec prog_of_hyps addrs all_ghyps ghyps ahyps =
+         match ghyps, ahyps with
+            _, [] ->
+               []
+          | (HypBinding _| Hypothesis _) :: rest, _ ->
+               let i, rest = skip_hyps rest in
+                  ECSkip i :: (prog_of_hyps addrs all_ghyps rest ahyps)
+          | _, (HypBinding _| Hypothesis _) :: rest ->
+               ECBind :: prog_of_hyps addrs all_ghyps ghyps rest
+          | [Context(c,_,_)], (Context(c',_,_) :: rest) when c = c' ->
+               ECRenameLast :: prog_of_hyps addrs all_ghyps [] rest
+          | ([] | [Context _]), Context (c, _, _)::_ ->
+               if List.exists (function Context(c', _, _) -> c=c' | _ -> false) all_ghyps then
+                  ECRestart :: prog_of_hyps addrs all_ghyps all_ghyps ahyps
+               else
+                  REF_RAISE(RefineError("compute_rule_ext", StringVarError("Free context variable", c)))
+          | (Context(c,_,_)) :: rest, (Context(c',_,_) :: rest') when c = c' ->
+               let i =
+                  try Lm_array_util.index c addrs
+                  with Not_found ->
+                     REF_RAISE(RefineError("compute_rule_ext", StringVarError("Free context variable", c)))
+               in
+                  ECRename i :: prog_of_hyps addrs all_ghyps rest rest'
+          | (Context(c,_,_)) :: rest, _ ->
+               let i =
+                  try Lm_array_util.index c addrs
+                  with Not_found ->
+                     REF_RAISE(RefineError("compute_rule_ext", StringVarError("Free context variable", c)))
+               in
+                  ECSkipCont i :: prog_of_hyps addrs all_ghyps rest ahyps
+      in
+      let get_hyps t =
+         SeqHyp.to_list (explode_sequent t).sequent_hyps
+      in
+      let mk_arg_prog addrs goal arg =
+         let ghyps = get_hyps goal in
+            prog_of_hyps addrs ghyps ghyps (get_hyps arg)
+      in
+      let simple_combine _ goal args =
+         mk_xlist_term (goal :: args)
+      in
+      let bv = Lm_symbol.add "v" in
+      let rec add_hyp_bindings vars = function
+         ((Context _ | HypBinding _) as hyp :: rest) as hyps ->
+            let rest' = add_hyp_bindings vars rest in
+               if rest' == rest then hyps else hyp :: rest'
+       | Hypothesis t :: rest ->
+            let v = Lm_symbol.new_name bv (SymbolSet.mem vars) in
+               HypBinding(v, t) :: add_hyp_bindings (SymbolSet.add vars v) rest
+       | [] -> []
+      in
+      let add_bindings t =
+         let eseq = explode_sequent t in
+         let hyps = SeqHyp.to_list eseq.sequent_hyps in
+         let hyps' = add_hyp_bindings (SymbolSet.add_list (free_vars_set t) (declared_vars t)) hyps in
+            if hyps' == hyps then t else mk_sequent_term { eseq with sequent_hyps = SeqHyp.of_list hyps' }
+      in
+      (* Debugging output *)
+      let string_of_prog_item = function
+         ECBind -> "Bind"
+       | ECSkip i -> "Skip(" ^ (string_of_int i) ^ ")"
+       | ECSkipCont i -> "SkipCount(" ^ (string_of_int i) ^ ")"
+       | ECRename i -> "Rename(" ^ (string_of_int i) ^ ")"
+       | ECRenameLast -> "RenameLast"
+       | ECRestart -> "Restart"
+      in
+      let apply_arg_prog addrs goal arg prog =
+         let goalh = (explode_sequent goal).sequent_hyps in
+         let glen = SeqHyp.length goalh in
+         let argh = (explode_sequent arg).sequent_hyps in
+         let alen = SeqHyp.length argh in
+         let rec aux goal_ind t arg_ind = function
+            [] -> t
+          | ECBind :: rest ->
+               let v =
+                  if arg_ind >= alen then REF_RAISE(RefineError("compute_rule_ext", StringError("not enough hyps")));
+                  match SeqHyp.get argh arg_ind with
+                     Hypothesis _ -> bv
+                   | HypBinding(v, _) -> v
+                   | Context _ -> REF_RAISE(RefineError("compute_rule_ext", StringError("expected hyp, got context")))
+               in
+                  aux goal_ind (mk_xbind_term v t) (arg_ind + 1) rest
+          | ECSkip i :: rest ->
+               aux (goal_ind + i) t arg_ind rest
+          | ECSkipCont i :: rest ->
+               let count = addrs.(i) in
+               let count = if (count > 0 ) then count - 1 else glen - goal_ind + count in
+                  aux (goal_ind + count) t arg_ind rest
+          | ECRename i :: rest -> 
+               let count = addrs.(i) in
+               let count = if (count > 0 ) then count - 1 else glen - goal_ind + count in
+                  rename goal_ind t arg_ind rest count 
+          | ECRenameLast :: rest ->
+               rename goal_ind t arg_ind rest (glen - goal_ind)
+          | ECRestart :: rest ->
+               aux 0 t arg_ind rest
+         and rename goal_ind t arg_ind prog count =
+            if count = 0 then aux goal_ind t arg_ind prog else
+            let t =
+               if arg_ind >= alen || goal_ind >= glen then
+                  REF_RAISE(RefineError("compute_rule_ext", StringError("not enough hyps")));
+               match SeqHyp.get goalh goal_ind, SeqHyp.get argh arg_ind with
+                  HypBinding(vh, _), HypBinding(ah, _) ->
+                     subst1 t ah (mk_var_term vh)
+                | HypBinding _, Hypothesis _ -> t
+                | Context(c1, _, _), Context(c2, _, _) when c1=c2 -> t
+                | _ -> REF_RAISE(RefineError("compute_rule_ext", StringError("expected hyps, got something wrong")))
+            in
+               rename (goal_ind + 1) t (arg_ind + 1) prog (count - 1)
+         in aux 0 (nth_concl arg 1) 0 prog
+      in
+      let id_combine _ goal _ = goal in
+      fun name addrs params goal args result ->
+         let combine =
+            if args = [] then id_combine
+            else if is_sequent_term goal then
+               let arg_progs = List.map (mk_arg_prog addrs goal) args in
+               let args_length = List.length args in
+               fun addrs goal args ->
+                  if List.length args <> args_length then
+                     REF_RAISE(RefineError("compute_rule_ext", StringError "wrong number of extract inputs"));
+                  let goal = add_bindings goal in
+                  let args = List.map2 (apply_arg_prog addrs goal) args arg_progs in
+                     replace_goal goal (simple_combine () (nth_concl goal 1) args)
+            else simple_combine
+         in
+         let goal = combine (Array.create (Array.length addrs) 2) goal args in
+         IFDEF VERBOSE_EXN THEN
+            if !debug_refiner then
+               eprintf "Refiner.compute_rule_ext: %s: %a + [%s] [%a] -> %a%t" name print_term goal (String.concat ";" (List.map string_of_symbol (Array.to_list addrs))) (print_any_list print_term) params print_term result eflush
+         ENDIF;
+         let rw = Rewrite.term_rewrite Strict addrs (goal :: params) [result] in
+         if !debug_refiner then eprintf "\nDone\n%t" eflush;
+         let compute_ext addrs params goal args =
+            List.hd (apply_rewrite rw (addrs, free_vars_terms args) (combine addrs goal args) params)
+         in
+            compute_ext
 
    let justify_rule build name addrs params goal subgoals proof =
       let opname = mk_opname name build.build_opname in
@@ -1462,12 +1560,13 @@ struct
             eprintf "Refiner.prim_rule: %s%t" name eflush
       ENDIF;
       let subgoals, goal = unzip_mimplies mterm in
-         (* XXX BUG TODO: in addition to doing join_ext_arg_hack,
-          * we need to make sure the args are "univeral" and will always match *)
+         (*
+          * XXX BUG TODO: we need to make sure the args are "universal" and will always match
+          * r.rule_rule.mseq_hyps and the result is a sequent whenever r.rule_rule.mseq_goal is
+          * a sequent.
+          *)
          if (List.length subgoals) <> (List.length args) then
             raise (Invalid_argument "Refine.add_prim_rule: wrong number of term arguments");
-         let args = List.map2 join_ext_arg_hack args subgoals in
-         let result = join_ext_arg_hack1 result goal in
          let compute_ext = compute_rule_ext name addrs params goal args result in
             justify_rule build name addrs params goal subgoals (PPrim compute_ext)
 
@@ -1496,7 +1595,7 @@ struct
       in
       let compute_ext ext =
          let args = make_wildcard_ext_args subgoals in
-            compute_rule_ext name addrs params goal args (term_of_extract_nocheck build.build_refiner ext args)
+            compute_rule_ext name addrs params goal args (term_of_extract build.build_refiner ext args)
       in
       let dp = {
          pf_get_extract = wrap_extf build check_ext name extf;
@@ -1548,6 +1647,18 @@ struct
          ignore (Rewrite.term_rewrite Strict addrs (goal::params) subgoals);
          List.iter (fun p -> if is_var_term p && not (SymbolSet.mem vars (dest_var p)) then
             REF_RAISE(RefineError("check_rule", StringVarError("Unused parameter", dest_var p)))) params
+
+   let check_prim_rule name addrs params mterm args result =
+      check_rule name addrs params mterm;        
+      let subgoals, goal = unzip_mimplies mterm in
+      (*
+       * XXX BUG TODO: we need to make sure the args are "universal" and will always match
+       * r.rule_rule.mseq_hyps and the result is a sequent whenever r.rule_rule.mseq_goal is
+       * a sequent.
+       *)
+      if (List.length subgoals) <> (List.length args) then
+         raise (Invalid_argument "Refine.add_prim_rule: wrong number of term arguments");
+      let _ = compute_rule_ext name addrs params goal args result in ()
 
    (************************************************************************
     * REWRITE                                                              *
@@ -1677,7 +1788,7 @@ struct
    let hack_hyps = SeqHyp.of_list [Context(Lm_symbol.add "H",[],[])]
    let mk_rewrite_hack term =
       mk_sequent_term { sequent_args = hack_arg; sequent_hyps = hack_hyps; sequent_goals = SeqGoal.of_list [term] }
-   
+
    let delayed_rewrite build name redex contractum extf =
       IFDEF VERBOSE_EXN THEN
          if !debug_refiner then

@@ -40,6 +40,7 @@ open Refine_error_sig
 
 open Rewrite_type_sig
 open Rewrite_util_sig
+open Rewrite_debug_sig
 
 module MakeRewriteCompileRedex
    (TermType : TermSig)
@@ -81,6 +82,10 @@ module MakeRewriteCompileRedex
    (RewriteUtil : RewriteUtilSig
     with type term = TermType.term
     with type rstack = RewriteTypes.rstack)
+   (RewriteDebug : RewriteDebugSig
+    with type rwterm = RewriteTypes.rwterm
+    with type rstack = RewriteTypes.rstack
+    with type varname = RewriteTypes.varname)
 : sig
    open RewriteTypes
 

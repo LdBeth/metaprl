@@ -206,6 +206,7 @@ struct
     *)
    let gram = Pcaml.gram
    let term_eoi = Grammar.Entry.create gram "term"
+   let term = Grammar.Entry.create gram "term"
    let parsed_term = Grammar.Entry.create gram "term"
    let quote_term = Grammar.Entry.create gram "quote_term"
    let mterm = Grammar.Entry.create gram "mterm"

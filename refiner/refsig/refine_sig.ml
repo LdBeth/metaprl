@@ -290,8 +290,13 @@ sig
     * for the arguments are included.
     *)
    val extract_term : refiner -> opname -> term list -> term
-   val make_wildcard_ext_arg : int -> term -> term
    val compute_dependencies : refiner -> opname -> (dependency * opname) list
+
+   (*
+    * Helper function - create an extract arg for an assum for which we do not care about extract
+    * int arg is the number of the assum (used to create a unique variable name).
+    *)
+   val make_wildcard_ext_arg : int -> term -> term
 
    (*
     * Get a checker from the refiner.
@@ -328,6 +333,14 @@ sig
       var array ->         (* addrs *)
       term list ->         (* params *)
       meta_term ->         (* rule definition *)
+      unit
+   val check_prim_rule :
+      string ->            (* name *)
+      var array ->         (* addrs *)
+      term list ->         (* params *)
+      meta_term ->         (* rule definition *)
+      term list ->         (* extract args (bindings) *)
+      term ->              (* extract *)
       unit
 
    val prim_rule : build ->

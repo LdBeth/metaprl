@@ -126,10 +126,10 @@ sig
    (* Apply a rewrite to a term *)
    val apply_rewrite :
       rewrite_rule -> (* rule *)
-      rewrite_args -> (* contexts, variable names, bound variables *)
+      rewrite_args -> (* contexts, bound variables *)
       term ->         (* redex *)
       term list ->    (* parameters *)
-      term list       (* contracta, actual variable names that were matched *)
+      term list       (* contracta *)
 
    (*
     * See if a rule may apply to a particular term
