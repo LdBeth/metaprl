@@ -24,10 +24,7 @@ To run MetaPRL for the first time:
       or
       % cd editor/ml; ./mpopt  (native code)
 
-Refer to 
+Refer to doc/htmlman/install.html or to
 http://ensemble01.cs.cornell.edu:12000/cvsweb/~checkout~/meta-prl/doc/htmlman/install.html
 for more information.
 
-TODO:
-
-1. Sequent variable naming convention (for example, look at capture in cut rule).
