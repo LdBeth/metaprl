@@ -195,7 +195,7 @@ doc <:doc<
   
    @item{@conv[untilFailC];
    The (@tt[untilFailC] $c$) conversion applies conversion $c$ repeatedly
-   until it fails. It catches all exception and never fails itself}
+   until it fails. It catches all exception and never fails itself.}
   
    @item{@conv[whileProgressC];
    The (@tt[whileProgressC] $c$) conversion applies conversion $c$ repeatedly
@@ -227,7 +227,7 @@ doc <:doc<
    through the subterms of a clause for applicable rewrites.
   
    @begin[description]
-   @item{@conv[someSubC];
+   @item{@conv[someSubC], @conv[allSubC];
    The most general of these is the (@tt[someSubC]  $c$) conversion,
    which tries applying conversion $c$ to all of the immediate subterms of
    the clause.  It succeeds if $c$ succeeds on any of the subterms@; it
@@ -246,7 +246,7 @@ doc <:doc<
    @item{@conv[higherC];
    The (@tt[higherC] $c$) conversion searches for the outermost
    occurrences of subterms in the clause where conversion $c$
-   applies.  It's definition uses @tt[someSubC].
+   applies.  Its definition uses @tt[someSubC].
   
    @begin[center]
    @code{let rec higherC c = c orelseC (someSubC (higherC c))}
@@ -283,7 +283,7 @@ doc <:doc<
   
    @item{@conv[rwa], @conv[rwca], @conv[rwaAll], @conv[rwcaAll], @conv[rwaAllAll];
    The @tt[rwa],  @tt[rwca], @tt[rwaAll], @tt[rwcaAll],
-   @tt[rwaAllAll] functions takes a list of conversions and
+   @tt[rwaAllAll] functions take a list of conversions and
    apply the @tt[applyAllC] conversion. For example, the tactic (@tt{rwa $convs$ $i$})
    is equivalent to (@tt{rw (applyAllC $convs$) $i$}).}
   
@@ -375,14 +375,14 @@ doc <:doc<
    @hrefmodule[Itt_union] adds the @hrefrewrite[reduceDecideInl] rewrite with
    redex $(@bf{match}@space @i[inl](a)@space @bf{with}@space
                   @i[inl](u) @rightarrow b[u]
-                  | @i[inr](v) @rightarrow c[v])$
+                  | @i[inr](v) @rightarrow c[v])$.
   
    In modules that @tt{extends} these three theories, the @tt[reduceC]
    conversion will recursively search for applications of these three
    rewrites in an attempt to fully reduce the term.
   
    The implementation of the @tt{reduce_resource} and the @tt[reduceC]
-   conversion rely on tables to store the shape of redices, together with the
+   conversion relies on tables to store the shape of redices, together with the
    conversions for the reduction.
   
    @docoff

@@ -126,7 +126,7 @@ doc <:doc<
    closure) and the @it{resources} are the complete list of resources
    defined or used by the module.
   
-   The @tt[opname] term described a @bf{declare}
+   The @tt[opname] term describes a @bf{declare}
    statement.  The @it{term} is the term being declared, and the @it{name} is
    the operator name of the declaration.
 
@@ -146,7 +146,7 @@ doc <:doc<
    @begin[doc]
    Rewrites are defined with the @tt[rewrite] and @tt[cond_rewrite]
    terms.  The @it{redex} and @it{contractum} define the rewrite; the @it{proof} is
-   the proof of the rewrite (which is empty if the rewrite is primitive).  for the conditional
+   the proof of the rewrite (which is empty if the rewrite is primitive).  For the conditional
    rewrite the @it[params] and @it[args] are the terms the defined the assumptions
    under which the rewrite is valid.  The @it{name} is the name of the rewrite.
    @end[doc]
@@ -158,7 +158,7 @@ doc <:doc<
    @begin[doc]
    Rules are defined using the @tt[rule] term.
    The @it[stmt] is the statement of the rule, and @it{proof}
-   is it's proof.  The rule also includes a @it[param] list that defines the subgoals
+   is its proof.  The rule also includes a @it[param] list that defines the subgoals
    of the rule and the @it[res] list of resource annotations.
    @end[doc]
 >>
@@ -268,7 +268,7 @@ declare "href"[command:s]{'t}
 
 doc <:doc< 
    @begin[doc]
-   A proof has a goal define with the @tt[goal] term,
+   A proof has a goal defined with the @tt[goal] term,
    where the @it{status} is the status of the proof, the @tt{label} is the label
    of the outermost proof node, the @it[assums] are the assumptions (the subgoals)
    of the theorem being proved, and the @it{goal} is the goal term.

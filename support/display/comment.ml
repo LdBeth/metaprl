@@ -20,7 +20,7 @@ doc <:doc<
    contain terms, which begin with the @tt{@@} character.
    
    @begin[verbatim]
-   @opname[s1, ..., sm]{t1; ...; tn},
+   @opname[s1, ..., sm]{t1; ...; tn}
    @end[verbatim]
    
    The @tt[opname] is an operator name.  The usual quantification can be
@@ -50,7 +50,7 @@ doc <:doc<
    parsed in a similar manner to normal mode, but the `_' and `^' characters
    are significant in math mode (they are normal text in normal mode).
    The `_' term identifies a subscript operation, and the `^' term
-   denotes a superscript. The 
+   denotes a superscript.
 
    The @tt["<:doc< ... >>"] quotation can also contain the standard
    @tt["<< ... >>"] inside (which would imply math mode), and @emph{vice versa}.
@@ -824,7 +824,7 @@ dform quotation_df2 : except_mode[tex] :: quotation{'t} =
 
 doc <:doc< 
    @begin[doc]
-   Footnotes uses the @code{@footnote} form.
+   Footnotes use the @code{@footnote} form.
    @end[doc]
 >>
 declare footnote{'t}
@@ -986,7 +986,7 @@ doc <:doc<
    The @tt[tt] term displays its contents in a @tt{fixed-width} font;
    the @tt[bf] term displays the contents in a @bf{bold font}; the
    @tt[i] and @tt[it] terms display their contents in an
-   @i[italic] font; and the @tt[emph] term @emph{emphasizes} it's
+   @i[italic] font; and the @tt[emph] term @emph{emphasizes} its
    contents.
    @end[doc]
 >>
@@ -1098,7 +1098,7 @@ dform math_emph_df2 : except_mode[tex] :: math_emph{'t} =
 declare math_Type
 
 doc <:doc< 
-   @doc{The following terms defines some common math symbols.}
+   @doc{The following terms define some common math symbols.}
 >>
 declare math_colon
 declare math_rightarrow

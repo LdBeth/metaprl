@@ -135,7 +135,7 @@ doc <:doc<
    @begin[doc]
    Toplevel values are added to the @Comment!resource[toploop_resource] resource.
    The argument has type @code{string * top_expr}, which includes
-   the string name of the value, and it's value.
+   the string name of the value, and its value.
    @docoff
    @end[doc]
 >>

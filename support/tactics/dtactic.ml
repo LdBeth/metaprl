@@ -110,7 +110,7 @@ doc <:doc<
 
    The @hreftactic[dT] resources are implemented as tables that store
    the term descriptions and tactics for ``decomposition''
-   reasoning.  The @hreftactic[dT] tactic select the most appropriate
+   reasoning.  The @hreftactic[dT] tactic selects the most appropriate
    rule for a given goal and applies it.  The @tt{(dT 0)} tactic
    is added to the @hrefresource[auto_resource] by default.
    @end[doc]

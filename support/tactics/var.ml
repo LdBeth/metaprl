@@ -17,7 +17,7 @@ doc <:doc<
    ``similar'' to $v$, but not contained in $@i[vars]$.  In this
    case ``similar'' means that the variable has the same name, but
    it may have a numerical suffix to make it distinct. @tt[maybe_] forms attempt to
-   use the priginal name, if possible, and only append the suffix when necessary.
+   use the original name, if possible, and only append the suffix when necessary.
    @end[doc]
 
    ----------------------------------------------------------------
