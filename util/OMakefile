@@ -3,8 +3,8 @@
 #
 .SCANNER: %
 
-misc.cmo:
-misc.cmx:
+misc.cmo: misc.cmi
+misc.cmx: misc.cmi
 ocamldep.cmo: misc.cmi
 ocamldep.cmx: misc.cmi misc.cmx
 

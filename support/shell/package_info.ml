@@ -1,6 +1,6 @@
 (*
  * This is the information about modules.
- * Its really derived from Filter_cache
+ * It is really derived from Filter_cache
  *
  * ----------------------------------------------------------------
  *

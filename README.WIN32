@@ -1,0 +1,84 @@
+To install MetaPRL on Windows, you will need the following:
+
+1. OCaml (for native Win32), available at http://www.ocaml.org
+
+2. The Omake build system, available at
+     http://mojave.caltech.edu/omake
+
+3. Some OCaml patches for Win32, available at
+     http://mojave.caltech.edu/ocaml-3.06-win32-patch.zip
+
+4. GNU emacs for Windows (optional, but recommended), available at
+     http://www.gnu.org
+
+Installation:
+
+0. Getting started.
+
+   As mentioned on the OCaml site, you need to have Microsoft Visual C/C++
+   installed, as well as the Microsoft Macro Assembler.
+
+   Install these first if you haven't already.  When you install VC++,
+   the installer will ask you whether to create environment variables
+   for running the compiler on the command line.  You should say yes.
+
+   If you already ran the installer, and did not say yes, a script
+   with the appropriate environment variables is in the directory
+   VC98/bin/VCVARS32.BAT
+
+   You need to make sure the compiler _and_ the macro assembler are
+   both in your path.
+
+1. Installating OCaml.
+
+   When installing ocaml, do not install into the directory
+   "C:/Objective Caml", since the build system will interpret this as
+   two files, according to the Unix convention.
+
+   Instead, install it into a directory without spaces in the name.
+   For instance, c:/ocaml is a reasonable choice.
+
+2. Adding patches.
+
+   Unpack the patch file, and copy the files into your ocaml distribution.
+   The patches are just a few extra interface files, so that MetaPRL can
+   peek into the OCaml internals.
+
+3. Installing omake.
+
+   To build omake, go to the omake directory, and edit the first
+   three lines of Makefile.nt to choose the install location.
+   Then run the following command:
+
+   ...omake> nmake -f Makefile.nt install
+
+4. Building MetaPRL
+
+   Once ocaml and omake are installed, you should be able to run
+   omake in the top-level metaprl directory and have it build
+   everything.
+
+   ...metaprl> omake
+   ...lots of messages...
+
+   If you get any errors, send mail to onlynews@metaprl.org, and
+   we'll try to help you out.
+
+5. Running MetaPRL
+
+   Currently, the MetaPRL executable on Windows is byte-code, since
+   the OCaml folks do not distribute native-code files for CamlP4.
+   We patch this on the Unix version, but the Windows distro uses that
+   pesky proprietary top-loop.
+
+   MetaPRL can be run with the metaprl/editor/ml/mptop.bat script.
+
+6. Running in Emacs.
+
+   Running MetaPRL from a console window is not amusing.
+
+   Running within Emacs is much better.  GNU distributes a native
+   version of emacs that you can use.  The main thing you have to do
+   is tell emacs to use a en_US.UTF-8 unicode font.
+
+   I'll tell you how to do this when I figure it out for myself.

@@ -4,13 +4,49 @@
 
 #include <stdio.h>
 
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <unistd.h>
-
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
+
+#ifdef WIN32
+
+/*
+ * Not implemented on Win32.
+ */
+value ml_getrusage(value unit_val)
+{
+    CAMLparam1(unit_val);
+    CAMLlocal1(rval);
+    int i;
+
+    rval = alloc_tuple(16);
+    for(i = 0; i != 16; i++)
+        Field(rval, i) = Val_unit;
+    Field(rval, 0) = copy_double(0.0);
+    Field(rval, 1) = copy_double(0.0);
+    Field(rval, 2) = Val_int(0);
+    Field(rval, 3) = Val_int(0);
+    Field(rval, 4) = Val_int(0);
+    Field(rval, 5) = Val_int(0);
+    Field(rval, 6) = Val_int(0);
+    Field(rval, 7) = Val_int(0);
+    Field(rval, 8) = Val_int(0);
+    Field(rval, 9) = Val_int(0);
+    Field(rval, 10) = Val_int(0);
+    Field(rval, 11) = Val_int(0);
+    Field(rval, 12) = Val_int(0);
+    Field(rval, 13) = Val_int(0);
+    Field(rval, 14) = Val_int(0);
+    Field(rval, 15) = Val_int(0);
+
+    CAMLreturn(rval);
+}
+
+#else /* not WIN32 */
+
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <unistd.h>
 
 /* JDS: this isn't defined in any OCaml header, seems to be 
         an internal function.  Oh well... *shrug* */
@@ -56,6 +92,4 @@ value ml_getrusage(value unit_val)
 
     CAMLreturn(rval);
 }
-
-
-
+#endif

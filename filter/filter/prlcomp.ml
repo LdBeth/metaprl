@@ -186,8 +186,14 @@ let exe_name =
       else
          (fun name -> name)
 
-let ocamlc_exe   = exe_name "ocamlc.opt"
-let ocamlopt_exe = exe_name "ocamlopt.opt"
+let ocamlc_name, ocamlopt_name =
+    if Sys.os_type = "Win32" then
+        "ocamlc", "ocamlopt"
+    else
+        "ocamlc.opt", "ocamlopt.opt"
+
+let ocamlc_exe   = exe_name ocamlc_name
+let ocamlopt_exe = exe_name ocamlopt_name
 let camlp4o_exe  = exe_name "camlp4o"
 let camlp4n_exe  = exe_name "camlp4n"
 let prlcn_exe    = exe_name "prlcn"

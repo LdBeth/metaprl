@@ -38,6 +38,7 @@ if $(equal $(OLDROOT), $(ROOT))
        #
        NATIVE_ENABLED=false
        BYTE_ENABLED=true
+       CFLAGS += /MT
 
        #
        # CAMLLIB should be set in the environment
@@ -54,13 +55,17 @@ if $(equal $(OLDROOT), $(ROOT))
        #
        CAMLLIB = $(dir /usr/lib/ocaml)
        CAMLP4LIB = $(dir $(CAMLLIB)/camlp4)
+
+       #
+       # Generic CC options
+       #
+       CC = $(CCC)
+       CFLAGS = -Wall -g -O2
        export
 
     #
-    # Generic CC options
+    # Include the generic caml library
     #
-    CC = $(CCC)
-    CFLAGS = -Wall -g -O2
     INCLUDES += -I$(CAMLLIB)
 
     export
@@ -93,7 +98,10 @@ MPINSTALL = mp.install
 # Always use -linkall on libraries
 #
 OCAML_LIB_FLAGS = $(OCAML_LIB_FLAGS) -linkall
-OTHER_CCLIBS = -cclib -lreadline -cclib -lncurses -cclib -ltermcap
+OTHER_CCLIBS =
+if $(not $(equal $(OSTYPE), Win32))
+    OTHER_CCLIBS = -cclib -lreadline -cclib -lncurses -cclib -ltermcap
+    export
 
 #
 # Directories needing only the standard config
@@ -172,8 +180,8 @@ PRLC = $(file lib/prlc$(EXE))
 if true
     # Use prlc, not ocamlc
     if $(equal $(OSTYPE), Win32)
-        OCAMLC = set MPLIB=$(LIB) && $(PRLC)
-        OCAMLOPT = set MPLIB=$(LIB) && $(PRLC) -opt
+        OCAMLC = set MPLIB=$(LIB)&& $(PRLC)
+        OCAMLOPT = set MPLIB=$(LIB)&& $(PRLC) -opt
         export
     else
         OCAMLC = MPLIB=$(LIB) $(PRLC)
