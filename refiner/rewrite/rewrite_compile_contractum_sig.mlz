@@ -37,8 +37,8 @@ sig
    type rwterm
    type strict
 
-   val compile_so_contractum : strict -> string array -> rstack array -> term -> string array * rwterm
-   val compile_so_contracta : strict -> string array -> rstack array -> term list -> string array * rwterm list
+   val compile_so_contractum : strict -> rstack array -> term -> string array * rwterm
+   val compile_so_contracta : strict -> rstack array -> term list -> string array * rwterm list
 end
 
 (*

@@ -1887,15 +1887,13 @@ struct
       let arglist =
          match Refine.dest_extract ext with
             AtomicExtract { just_addrs = addrs;
-                            just_names = names;
                             just_params = params;
                             just_refiner = opname
             } ->
                let addrs = Array.map (fun addr -> IntArg addr) addrs in
-               let names = Array.map (fun name -> StringArg name) names in
                let params = Array.of_list (List.map (fun t -> TermArg t) params) in
                let name = [|StringArg (string_of_opname opname)|] in
-                  GeneralArgList (Array.concat [name; addrs; names; params])
+                  GeneralArgList (Array.concat [name; addrs; params])
 
           | RewriteExtract _ ->
                NoneArgList "<rewrite>"
@@ -1934,14 +1932,12 @@ struct
    let make_crw_extract_expr addr ext =
       let arglist =
          match Refine.dest_crw_extract ext with
-            AtomicCondRewriteExtract { cjust_names = names;
-                                       cjust_params = params;
+            AtomicCondRewriteExtract { cjust_params = params;
                                        cjust_refiner = opname
             } ->
-               let names = Array.map (fun name -> StringArg name) names in
                let params = Array.of_list (List.map (fun t -> TermArg t) params) in
                let name = [|StringArg (string_of_opname opname)|] in
-                  GeneralArgList (Array.concat [name; names; params])
+                  GeneralArgList (Array.concat [name; params])
           | ReverseCondRewriteExtract _ ->
                StringArgList ("foldC", "<conditional-rewrite>")
           | ComposeCondRewriteExtract _ ->

@@ -57,19 +57,11 @@ let rec collect_cvars = function
  | [] ->
       []
 
-let rec collect_vars = function
-   VarParam v::t ->
-      v :: collect_vars t
- | _::t ->
-      collect_vars t
- | [] ->
-      []
-
-let rec collect_non_vars = function
+let rec collect_terms = function
    TermParam x :: t ->
-      x :: collect_non_vars t
+      x :: collect_terms t
  | _ :: t ->
-      collect_non_vars t
+      collect_terms t
  | [] ->
       []
 
@@ -78,18 +70,16 @@ let rec collect_non_vars = function
  *)
 let rec split_params = function
    h::t ->
-      let cvars, tvars, tparams = split_params t in
+      let cvars, tparams = split_params t in
          begin
             match h with
                ContextParam v ->
-                  v :: cvars, tvars, tparams
-             | VarParam v ->
-                  cvars, v :: tvars, tparams
+                  v :: cvars, tparams
              | TermParam t ->
-                  cvars, tvars, t :: tparams
+                  cvars, t :: tparams
          end
  | [] ->
-      [], [], []
+      [], []
 
 (*
  * Give names to all the parameters.
@@ -97,25 +87,22 @@ let rec split_params = function
 let name_params =
    let rec loop i = function
       h::t ->
-         let aids, cids, tids, xids = loop (i + 1) t in
+         let aids, cids, xids = loop (i + 1) t in
          let name = "id_" ^ (string_of_int i) in
             begin
                match h with
                   ContextParam _ ->
-                     name :: aids, name :: cids, tids, xids
-                | VarParam _ ->
-                     name :: aids, cids, name :: tids, xids
+                     name :: aids, name :: cids, xids
                 | TermParam _ ->
-                     name :: aids, cids, tids, name :: xids
+                     name :: aids, cids, name :: xids
             end
     | [] ->
-         [], [], [], []
+         [], [], []
    in
       loop 0
 
 (*
- * Distinguish between context var parameters, var names,
- * and other parameters.
+ * Distinguish between context var parameters, and other parameters.
  *)
 let extract_params cvars bvars =
    let aux h =
@@ -123,8 +110,6 @@ let extract_params cvars bvars =
          let v = dest_var h in
             if List.mem v cvars then
                ContextParam v
-            else if List.mem v bvars then
-               VarParam v
             else
                TermParam h
       else

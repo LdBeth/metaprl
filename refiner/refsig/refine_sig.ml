@@ -64,27 +64,25 @@ sig
    (*
     * An ML rewrite replaces a term with another.
     *)
-   type ml_extract = (string array * term list) -> term list -> term
+   type ml_extract = term list -> term list -> term
 
    type ml_rewrite = term -> term
 
    type ml_cond_rewrite =
-      string array ->                                (* Names *)
-      StringSet.t ->                                 (* Free vars in the msequent *)
-      term list ->                                   (* Params *)
-      term ->                                        (* Term to rewrite *)
-      term * term list * string array * ml_extract   (* Extractor is returned *)
+      StringSet.t ->                           (* Free vars in the msequent *)
+      term list ->                             (* Params *)
+      term ->                                  (* Term to rewrite *)
+      term * term list * ml_extract            (* Extractor is returned *)
 
    (*
     * A condition relaces an goal with a list of subgoals,
     * and it provides a function to compute the extract.
     *)
    type ml_rule =
-      int array ->                                   (* sequent context addresses *)
-      string array ->                                (* variable names *)
-      msequent ->                                    (* goal *)
-      term list ->                                   (* params *)
-      msequent list * string array * ml_extract      (* subgoals, new variable names *)
+      int array ->                             (* sequent context addresses *)
+      msequent ->                              (* goal *)
+      term list ->                             (* params *)
+      msequent list *  ml_extract              (* subgoals, new variable names *)
 
    (************************************************************************
     * SENTINALS                                                            *
@@ -284,9 +282,9 @@ sig
     * These are the forms created at compile time with
     * extra arguments.
     *)
-   type prim_tactic = int array * string array -> term list -> tactic
+   type prim_tactic = int array -> term list -> tactic
    type prim_rewrite = rw
-   type prim_cond_rewrite = string array * term list -> cond_rewrite
+   type prim_cond_rewrite = term list -> cond_rewrite
 
    (*
     * Get the term corresponding to an extract.
@@ -314,7 +312,6 @@ sig
    val create_rule : build ->
       string ->            (* name *)
       string array ->      (* addrs *)
-      string array ->      (* vars *)
       term list ->         (* params *)
       meta_term ->         (* rule definition *)
       prim_tactic
@@ -324,28 +321,24 @@ sig
    val check_rule :
       string ->            (* name *)
       string array ->      (* addrs *)
-      string array ->      (* vars *)
       term list ->         (* params *)
       meta_term ->         (* rule definition *)
       unit
 
    val prim_rule : build ->
       string ->                    (* name *)
-      string array ->              (* vars *)
       term list ->                 (* params *)
       term list ->                 (* args (binding vars) *)
       term ->                      (* extract *)
       unit
    val derived_rule : build ->
       string ->                    (* name *)
-      string array ->              (* vars *)
       term list ->                 (* params *)
       term list ->                 (* args (binding vars) *)
       extract ->                   (* derived justification *)
       unit
    val delayed_rule : build ->
       string ->                    (* name *)
-      string array ->              (* vars *)
       term list ->                 (* params *)
       term list ->                 (* args (binding vars) *)
       (unit -> extract) ->         (* derived justification *)
@@ -388,7 +381,6 @@ sig
 
    val create_cond_rewrite : build ->
       string ->            (* name *)
-      string array ->      (* vars *)
       term list ->         (* params *)
       term list ->         (* subgoals *)
       term ->              (* redex *)
@@ -399,7 +391,6 @@ sig
       prim_cond_rewrite
    val prim_cond_rewrite : build ->
       string ->            (* name *)
-      string array ->      (* vars *)
       term list ->         (* params *)
       term list ->         (* subgoals *)
       term ->              (* redex *)
@@ -407,7 +398,6 @@ sig
       unit
    val derived_cond_rewrite : build ->
       string ->            (* name *)
-      string array ->      (* vars *)
       term list ->         (* params *)
       term list ->         (* subgoals *)
       term ->              (* redex *)
@@ -416,7 +406,6 @@ sig
       unit
    val delayed_cond_rewrite : build ->
       string ->            (* name *)
-      string array ->      (* vars *)
       term list ->         (* params *)
       term list ->         (* subgoals *)
       term ->              (* redex *)
@@ -425,7 +414,6 @@ sig
       unit
    val check_rewrite :
       string ->            (* string *)
-      string array ->      (* vars *)
       term list ->         (* params *)
       term list ->         (* subgoals *)
       term ->              (* redex *)
@@ -450,7 +438,6 @@ sig
    type atomic_just =
       { just_goal : msequent;
         just_addrs : int array;
-        just_names : string array;
         just_params : term list;
         just_refiner : opname;
         just_subgoals : msequent list
@@ -480,7 +467,6 @@ sig
 
    type cond_rewrite_here =
       { cjust_goal : term;
-        cjust_names : string array;
         cjust_params : term list;
         cjust_refiner : opname;
         cjust_subgoal_term : term;

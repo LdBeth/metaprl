@@ -508,7 +508,6 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
    (* Map the terms inside of params *)
    let param_map = function
       TermParam t -> TermParam (convert.term_f t)
-    | VarParam s -> VarParam s
     | ContextParam s -> ContextParam s
    in
 
@@ -900,7 +899,6 @@ struct
     * Get a parameter.
     *)
    let context_param_op    = mk_opname "context_param"
-   let var_param_op        = mk_opname "var_param"
    let term_param_op       = mk_opname "term_param"
 
    let dest_param convert t =
@@ -920,8 +918,6 @@ struct
       let { op_name = opname; op_params = params } = dest_op op in
          if Opname.eq opname context_param_op then
             ContextParam (string_param params)
-         else if Opname.eq opname var_param_op then
-            VarParam (string_param params)
          else if Opname.eq opname term_param_op then
             TermParam (convert.term_f (one_subterm t))
          else
@@ -929,9 +925,15 @@ struct
 
    (*
     * Get the parameter list.
+    * XXX HACK: the try part is only there for backwards compativility with
+    * old files (ASCII formats v. 1.0.0 and 1.0.0)
     *)
    let dest_params convert t =
-      List.map (dest_param convert) (dest_xlist t)
+      try
+         List.map (dest_param convert) (dest_xlist t)
+      with
+         Failure _ ->
+            []
 
    (*
     * Get the list of resource updates
@@ -1268,8 +1270,6 @@ struct
    let mk_param convert = function
       ContextParam s ->
          mk_string_param_term context_param_op s []
-    | VarParam s ->
-         mk_string_param_term var_param_op s []
     | TermParam t ->
          mk_simple_term term_param_op [convert.term_f t]
 
@@ -1551,7 +1551,6 @@ struct
       let check int_param imp_param =
          match int_param, imp_param with
             ContextParam _, ContextParam _
-          | VarParam _, VarParam _
           | TermParam _, TermParam _ ->
                true
           | _ ->

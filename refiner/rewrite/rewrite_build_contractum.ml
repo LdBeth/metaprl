@@ -142,16 +142,7 @@ struct
     * names is the list of argument names.
     *)
    let build_bname names bnames stack = function
-      ArgName i ->
-         IFDEF VERBOSE_EXN THEN
-            if !debug_rewrite then
-               eprintf "ArgName %d (%s, avoid [%a])%t" i names.(i) print_string_list (StringSet.elements bnames) eflush
-         ENDIF;
-         let v = names.(i) in
-            if StringSet.mem bnames v then
-               let v = vnewname v (StringSet.mem bnames) in names.(i) <- v; v
-            else v
-    | StackName i ->
+      StackName i ->
          begin
             IFDEF VERBOSE_EXN THEN
                if !debug_rewrite then

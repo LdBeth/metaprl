@@ -39,10 +39,9 @@ open Filter_type
  * Parameter lists.
  *)
 val collect_cvars : term param list -> string list
-val collect_vars : term param list -> string list
-val collect_non_vars : term param list -> term list
-val split_params : term param list -> string list * string list * term list
-val name_params : term param list -> string list * string list * string list * string list
+val collect_terms : term param list -> term list
+val split_params : term param list -> string list * term list
+val name_params : term param list -> string list * string list * string list
 val extract_params : string list -> string list -> term list -> term param list
 
 (*

@@ -505,7 +505,7 @@ struct
     *)
    let simple_rewrite proc name redex contractum pf res =
       (* Check that rewrite will succeed *)
-      Refine.check_rewrite name [||] [] [] redex contractum;
+      Refine.check_rewrite name [] [] redex contractum;
 
       (* Construct the command *)
       Rewrite { rw_name = name;
@@ -517,7 +517,7 @@ struct
 
    let simple_input_form proc name redex contractum pf res =
       (* Check that rewrite will succeed *)
-      Refine.check_rewrite name [||] [] [] redex contractum;
+      Refine.check_rewrite name [] [] redex contractum;
 
       (* Construct the command *)
       InputForm { rw_name = name;
@@ -536,8 +536,7 @@ struct
          (* Check the rewrite *)
          Refine.check_rewrite (**)
             name
-            (Array.of_list (collect_vars params'))
-            (collect_non_vars params')
+            (collect_terms params')
             args' redex contractum;
 
          (* Construct the command *)
@@ -613,7 +612,7 @@ struct
          flush stderr
 
    let print_non_vars out params =
-      print_terms out (collect_non_vars params)
+      print_terms out (collect_terms params)
 
    let rule_command proc name params t pf res =
       (* Extract context names *)
@@ -635,8 +634,7 @@ struct
          Refine.check_rule (**)
             name
             (Array.of_list (collect_cvars params'))
-            (Array.of_list (collect_vars params'))
-            (collect_non_vars params')
+            (collect_terms params')
             (strip_mfunction t);
          if !debug_grammar then
             eprintf "Checked rule: %s%t" name eflush;

@@ -211,7 +211,7 @@ struct
 
    let select   = InterfaceType
    let suffix   = Convert.interface_suffix
-   let magics   = [0x73ac6be2; int_raw_sig_magic]
+   let magics   = [0x73ac6be6; int_raw_sig_magic]
    let disabled = noraw
 
    let marshal arg = function
@@ -254,7 +254,7 @@ struct
 
    let select   = ImplementationType
    let suffix   = Convert.implementation_suffix
-   let magics   = [0x73ac6be5; int_raw_str_magic]
+   let magics   = [0x73ac6be7; int_raw_str_magic]
    let disabled = noraw
 
    let interactive_proof to_raw name proof =
@@ -484,7 +484,7 @@ struct
 
    let ascii_major = 1
    let ascii_minor = 0
-   let ascii_revs   = [1;0]
+   let ascii_revs  = [2;1;0] (* Filter_summary has a HACK needed to read some rev 0-1 files *)
 
    let sig_magics = List.map (magic_of_version ascii_major ascii_minor) ascii_revs
    let str_magics = List.map (magic_of_version ascii_major ascii_minor) ascii_revs

@@ -357,7 +357,6 @@ let refiner_let loc =
  *)
 let exn_id              = "_$exn"
 let term_id             = "_$term"
-let bvars_id            = "_$bvars"
 let args_id             = "_$args"
 let redex_id            = "_$redex"
 let contractum_id       = "_$contractum"
@@ -368,7 +367,6 @@ let term_id             = "_$term"
 let x_id                = "_$x"
 let cvars_id            = "_$cvars"
 let bvars_id            = "_$bvars"
-let tvars_id            = "_$tvars"
 let avars_id            = "_$avars"
 let bnames_id           = "_$bnames"
 let info_id             = "_$info"
@@ -447,8 +445,6 @@ let wrap_exn loc name e =
 let param_expr loc = function
    ContextParam s ->
       <:expr< Filter_summary.ContextParam $str:s$ >>
- | VarParam v ->
-      <:expr< Filter_summary.VarParam $str:v$ >>
  | TermParam t ->
       let t' = expr_of_term loc t in
          <:expr< Filter_summary.TermParam $t'$ >>
@@ -466,8 +462,6 @@ let params_ctyp loc ctyp params =
             match h with
                ContextParam _ ->
                   <:ctyp< int >>
-             | VarParam _ ->
-                  <:ctyp< string >>
              | TermParam _ ->
                   <:ctyp< Refiner.Refiner.Term.term >>
          in
@@ -899,8 +893,6 @@ struct
             match h with
                ContextParam _ ->
                   <:expr< Mptop.IntFunExpr $expr$ >>
-             | VarParam _ ->
-                  <:expr< Mptop.StringFunExpr $expr$ >>
              | TermParam _ ->
                   <:expr< Mptop.TermFunExpr $expr$ >>
          in
@@ -1075,22 +1067,22 @@ struct
     *
     * This is the code we create:
     *    let term = $expr_of_term redex$ in
-    *    let bvars = [| $bvars$ |] in
     *    let args = [| redex :: List.map expr_of_term args$ |] in
-    *    let redex = compile_redices bvars args in
+    *    let redex = compile_redices args in
     *       code
     *)
-   let define_ml_program proc loc strict_expr bvars args tname redex code =
+   let define_ml_program proc loc strict_expr args tname redex code =
       (* Identifier names *)
       let term_patt = <:patt< $lid:term_id$ >> in
-      let bvars_patt = <:patt< $lid:bvars_id$ >> in
       let args_patt  = <:patt< $lid:args_id$ >> in
       let redex_patt= <:patt< $lid:redex_id$ >> in
       let term_expr = expr_of_term loc redex in
       let string_expr s = <:expr< $str:s$ >> in
 
       let redex_expr =
-         <:expr< $compile_redices_expr loc$ $strict_expr loc$ $lid:bvars_id$ $lid:args_id$ >>
+         (* XXX We should actually pass the context args array, not just [||], but that 
+            is only needed for ml_rules and that code is dead anyway... *)
+         <:expr< $compile_redices_expr loc$ $strict_expr loc$ [||] $lid:args_id$ >>
       in
       let redex_let =
          <:expr< let $rec:false$ $list:[redex_patt,
@@ -1103,14 +1095,8 @@ struct
       let args_let =
          <:expr< let $rec:false$ $list:[args_patt, args_expr]$ in $redex_let$ >>
       in
-      let bvars_expr =
-         <:expr< [| $list: List.map string_expr bvars$ |] >>
-      in
-      let bvars_let =
-         <:expr< let $rec:false$ $list:[bvars_patt, bvars_expr]$ in $args_let$ >>
-      in
       let term_let =
-         <:expr< let $rec:false$ $list:[term_patt, term_expr]$ in $bvars_let$ >>
+         <:expr< let $rec:false$ $list:[term_patt, term_expr]$ in $args_let$ >>
       in
          term_let
 
@@ -1266,7 +1252,6 @@ struct
       let redex_expr    = <:expr< $lid:redex_id$ >> in
       let con_expr      = <:expr< $lid:contractum_id$ >> in
       let cvars_patt    = <:patt< $lid:cvars_id$ >> in
-      let bvars_patt    = <:patt< $lid:bvars_id$ >> in
       let params_patt   = <:patt< $lid:params_id$ >> in
       let subgoals_patt = <:patt< $lid:subgoals_id$ >> in
       let redex_patt    = <:patt< $lid:redex_id$ >> in
@@ -1277,36 +1262,33 @@ struct
       let lid_expr s = <:expr< $lid:s$ >> in
 
       (* Expressions *)
-      let cvars, bvars, tparams = split_params params in
-      let all_ids, cvar_ids, bvar_ids, tparam_ids = name_params params in
+      let cvars, tparams = split_params params in
+      let all_ids, cvar_ids, tparam_ids = name_params params in
       let cvars_expr = List.map string_expr cvars in
       let cvars_expr' = <:expr< [| $list:cvars_expr$ |] >> in
-      let bvars_expr = List.map string_expr bvars in
-      let bvars_expr' = <:expr< [| $list:bvars_expr$ |] >> in
       let params_expr = list_expr loc (expr_of_term loc) tparams in
       let subgoals_expr = list_expr loc (expr_of_term loc) args in
       let redex_expr = expr_of_term loc redex in
       let con_expr = expr_of_term loc contractum in
       let create_expr =
          <:expr< $create_cond_rewrite_expr loc$ $lid:local_refiner_id$ $str:name$ (**)
-            $lid:bvars_id$ $lid:params_id$ $lid:subgoals_id$ $lid:redex_id$ $lid:contractum_id$ >>
+            $lid:params_id$ $lid:subgoals_id$ $lid:redex_id$ $lid:contractum_id$ >>
       in
       let prim_expr =
          match expr with
             Some expr ->
                <:expr< $code$ $lid:local_refiner_id$ $str:name$ (**)
-                  $lid:bvars_id$ $lid:params_id$ $lid:subgoals_id$ $lid:redex_id$ $lid:contractum_id$ $expr$ >>
+                  $lid:params_id$ $lid:subgoals_id$ $lid:redex_id$ $lid:contractum_id$ $expr$ >>
           | None ->
                <:expr< $code$ $lid:local_refiner_id$ $str:name$ (**)
-                  $lid:bvars_id$ $lid:params_id$ $lid:subgoals_id$ $lid:redex_id$ $lid:contractum_id$ >>
+                  $lid:params_id$ $lid:subgoals_id$ $lid:redex_id$ $lid:contractum_id$ >>
       in
       let rw_fun_expr =
          let addr_expr id = <:expr< $lid:id$ >> in
          let cvars_id_expr = <:expr< [| $list:List.map addr_expr cvar_ids$ |] >> in
-         let bvars_id_expr = <:expr< [| $list:List.map lid_expr bvar_ids$ |] >> in
          let tparams_ids_expr = list_expr loc lid_expr tparam_ids in
          let body = <:expr< $rewrite_of_cond_rewrite_expr loc$ $lid:rw_id$
-                                ( $list:[ bvars_id_expr; tparams_ids_expr ]$ ) >>
+                                 $tparams_ids_expr$ >>
          in
             fun_expr loc all_ids body
       in
@@ -1314,7 +1296,6 @@ struct
       (* Let construction *)
       let body =
          <:expr< let $rec:false$ $list:[ cvars_patt, cvars_expr';
-                                         bvars_patt, bvars_expr';
                                          params_patt, params_expr;
                                          subgoals_patt, subgoals_expr;
                                          redex_patt, redex_expr;
@@ -1397,15 +1378,13 @@ struct
       let lid_patt s = <:patt< $lid:s$ >> in
       let lid_expr s = <:expr< $lid:s$ >> in
 
-      let cvars, bvars, tparams = split_params params in
-      let all_ids, cvar_ids, bvar_ids, tparam_ids = name_params params in
+      let cvars, tparams = split_params params in
+      let all_ids, cvar_ids, tparam_ids = name_params params in
       let cvars_expr = List.map string_expr cvars in
       let cvars_expr' = <:expr< [| $list:cvars_expr$ |] >> in
-      let bvars_expr = List.map string_expr bvars in
-      let bvars_expr' = <:expr< [| $list:bvars_expr$ |] >> in
       let params_expr = list_expr loc (expr_of_term loc) tparams in
       let redex_expr = expr_of_term loc redex in
-      let simple_flag = params = [] && bvars = [] in
+      let simple_flag = params = [] in
       let create_ml_rewrite_expr =
          if simple_flag then
             create_ml_rewrite_expr loc
@@ -1445,19 +1424,17 @@ struct
             [names_id; bnames_id; params_id; seq_id; goal_id]
       in
       let rewrite_let  = <:expr< let $rec:false$ $list:[ rewrite_patt, curry loc args_id rewrite_body ]$ in $info_let$ >> in
-      let body = define_ml_program proc loc strict_expr bvars tparams name redex rewrite_let in
+      let body = define_ml_program proc loc strict_expr tparams name redex rewrite_let in
 
       let rw_fun_expr =
          let addr_expr id = <:expr< $lid:id$ >> in
          let cvars_id_expr = <:expr< [| $list:List.map addr_expr cvar_ids$ |] >> in
-         let bvars_id_expr = <:expr< [| $list:List.map lid_expr bvar_ids$ |] >> in
          let tparams_ids_expr = list_expr loc lid_expr tparam_ids in
          let body =
             if simple_flag then
                <:expr< $rewrite_of_rewrite_expr loc$ $lid:rw_id$ >>
             else
-               <:expr< $rewrite_of_cond_rewrite_expr loc$ $lid:rw_id$
-                                ( $list:[ bvars_id_expr; tparams_ids_expr ]$ ) >>
+               <:expr< $rewrite_of_cond_rewrite_expr loc$ $lid:rw_id$ $tparams_ids_expr$ >>
          in
             fun_expr loc all_ids body
       in
@@ -1475,7 +1452,7 @@ struct
     * The Tactic_type.pre_tactic is passed as an argument,
     * along with the params, so that we can figure out its type.
     *)
-   let define_rule_resources proc loc name cvars_id tvars_id avars_id params_id assums_id resources name_rule_expr =
+   let define_rule_resources proc loc name cvars_id avars_id params_id assums_id resources name_rule_expr =
       let define_resource (loc, name', args) =
          let input = res_type proc loc name' in
          let arg_expr =
@@ -1490,7 +1467,7 @@ struct
          let process_type = <:ctyp< Mp_resource.annotation_processor '$anno_name$ $input$ >> in
          let process_expr = <:expr< ($lid:process_name$ : $process_type$) >> in
          let expr =
-            <:expr< $process_expr$ $str:name$ $lid:cvars_id$ $lid:tvars_id$ $lid:avars_id$ $lid:params_id$ $lid:assums_id$ $arg_expr$ >>
+            <:expr< $process_expr$ $str:name$ $lid:cvars_id$ $lid:avars_id$ $lid:params_id$ $lid:assums_id$ $arg_expr$ >>
          in
             impr_resource proc loc name' expr
       in
@@ -1500,17 +1477,15 @@ struct
     * Split var params from regular params.
     * let name_rule =
     *    let cvars = cvars_expr
-    *    and tvars = tvars_expr
-    *    and avars = avars_expr
     *    and params = tparams_expr
     *    and assums = assums_expr
     *    and extract = extract_expr
     *    in
-    *    let rule = create_rule refiner "name" cvars tvars params assums
-    *    and _ = prim_rule refiner "name" tvars params avars extract
+    *    let rule = create_rule refiner "name" cvars params assums
+    *    and _ = prim_rule refiner "name" params avars extract
     *    in
     *       compile_rule !refiner rule
-    * let name params x = tactic_of_rule name_rule ([| cvars |], [| vars |]) [non_vars] x
+    * let name params x = tactic_of_rule name_rule [| cvars |] [non_vars] x
     *)
    let define_rule want_checkpoint code proc loc
        { rule_name = name;
@@ -1526,12 +1501,10 @@ struct
 
       (* Expressions *)
       let name_rule_id = "_$" ^ name ^ "_rule" in
-      let cvars, tvars, tparams = split_params params in
-      let all_ids, cvar_ids, tvar_ids, tparam_ids = name_params params in
+      let cvars, tparams = split_params params in
+      let all_ids, cvar_ids, tparam_ids = name_params params in
       let cvars_expr = List.map string cvars in
       let cvars_expr' = <:expr< [| $list:cvars_expr$ |] >> in
-      let tvars_expr = List.map string tvars in
-      let tvars_expr' = <:expr< [| $list:tvars_expr$ |] >> in
       let labels, avars, mterm = split_mfunction stmt in
       let labels_expr = list_expr loc (expr_of_label loc) labels in
       let avars_expr = list_expr loc (expr_of_term loc) avars in
@@ -1539,16 +1512,16 @@ struct
       let assums_expr = expr_of_mterm loc mterm in
       let axiom_value =
          <:expr< $create_rule_expr loc$ $lid:local_refiner_id$ $str:name$ (**)
-            $lid:cvars_id$ $lid:tvars_id$ $lid:params_id$ $lid:assums_id$ >>
+            $lid:cvars_id$ $lid:params_id$ $lid:assums_id$ >>
       in
       let thm_value =
          <:expr< $code$ $lid:local_refiner_id$ $str:name$ (**)
-            $lid:tvars_id$ $lid:params_id$ $lid:avars_id$ $lid:extract_id$ >>
+            $lid:params_id$ $lid:avars_id$ $lid:extract_id$ >>
       in
-      let cvars_patt, tvars_patt, avars_patt, params_patt, assums_patt,
+      let cvars_patt, avars_patt, params_patt, assums_patt,
           extract_patt, rule_patt, name_patt, name_rule_patt,
           name_rule_expr, labels_patt, wild_patt =
-         lid_patt cvars_id, lid_patt tvars_id, lid_patt avars_id,
+         lid_patt cvars_id, lid_patt avars_id,
          lid_patt params_id, lid_patt assums_id, lid_patt extract_id,
          lid_patt rule_id, lid_patt name, lid_patt name_rule_id,
          lid_expr name_rule_id, lid_patt labels_id, <:patt< _ >>
@@ -1556,23 +1529,20 @@ struct
       let name_value =
          let addr_expr id = <:expr< $lid:id$ >> in
          let cvars_id_expr = <:expr< [| $list:List.map addr_expr cvar_ids$ |] >> in
-         let tvars_id_expr = <:expr< [| $list:List.map lid_expr tvar_ids$ |] >> in
          let tparams_ids_expr = list_expr loc lid_expr tparam_ids in
          let body = <:expr< $tactic_of_rule_expr loc$ $name_rule_expr$
-                            ( $list:[ cvars_id_expr; tvars_id_expr ]$ )
-                            $tparams_ids_expr$ $lid:x_id$ >>
+                            $cvars_id_expr$ $tparams_ids_expr$ $lid:x_id$ >>
          in
             fun_expr loc (all_ids @ [x_id]) body
       in
       let rule_expr = <:expr< $compile_rule_expr loc$ $lid:local_refiner_id$ $lid:labels_id$ $lid:rule_id$ >> in
       let resource_exprs =
          define_rule_resources proc loc name (**)
-            cvars_id tvars_id params_id avars_id assums_id
+            cvars_id params_id avars_id assums_id
             resources name_rule_expr
       in
       let rule_expr =
          (<:expr< let $rec:false$ $list:[ cvars_patt, cvars_expr';
-                                          tvars_patt, tvars_expr';
                                           avars_patt, avars_expr;
                                           params_patt, tparams_expr;
                                           assums_patt, assums_expr;
@@ -1630,7 +1600,7 @@ struct
     *          ml_rewrite_extract = extract
     *        }
     *     in
-    *        create_ml_rewrite refiner name info
+    *        create_ml_rule refiner name info
     * let name x = rewrite_of_cond_rewrite name_rewrite x
     *)
    let define_ml_rule want_checkpoint proc loc
@@ -1656,12 +1626,10 @@ struct
 
       let goal_id, rule_expr = beta_reduce_var goal_id rule_expr in
 
-      let cvars, bvars, tparams = split_params params in
-      let all_ids, cvar_ids, bvar_ids, tparam_ids = name_params params in
+      let cvars, tparams = split_params params in
+      let all_ids, cvar_ids, tparam_ids = name_params params in
       let cvars_expr = List.map string_expr cvars in
       let cvars_expr' = <:expr< [| $list:cvars_expr$ |] >> in
-      let bvars_expr = List.map string_expr bvars in
-      let bvars_expr' = <:expr< [| $list:bvars_expr$ |] >> in
       let params_expr = list_expr loc (expr_of_term loc) tparams in
       let redex_expr = expr_of_term loc redex in
 
@@ -1672,7 +1640,7 @@ struct
          <:expr< let $rec:false$ $list:[info_patt, rule_val_expr]$ in $create_expr$ >>
       in
       let rule_patt =
-         <:patt< ( [| $list:List.map lid_patt_ cvars$ |], [| $list:List.map lid_patt_ bvars$ |] ) >>
+         <:patt< [| $list:List.map lid_patt_ cvars$ |] >>
       in
       let wild_patt = <:patt< _ >> in
       let wild_expr = <:expr< failwith "bad match" >> in
@@ -1691,15 +1659,14 @@ struct
       let rule_body = <:expr< let $rec:false$ $list:[ rule_patt, rule_expr ]$ in $rule_body$ >> in
       let rule_patt = <:patt< $lid:rule_id$ >> in
       let rule_let  = <:expr< let $rec:false$ $list:[ rule_patt, curry loc [addrs_id; names_id; goal_id; params_id] rule_body ]$ in $info_let$ >> in
-      let body = define_ml_program proc loc strict_expr cvars tparams name redex rule_let in
+      let body = define_ml_program proc loc strict_expr tparams name redex rule_let in
 
       let rule_fun_expr =
          let addr_expr id = <:expr< $lid:id$ >> in
          let cvars_id_expr = <:expr< [| $list:List.map addr_expr cvar_ids$ |] >> in
-         let tvars_id_expr = <:expr< [| $list:List.map lid_expr bvar_ids$ |] >> in
          let tparams_ids_expr = list_expr loc lid_expr tparam_ids in
          let body = <:expr< $tactic_of_rule_expr loc$ $lid:name_rule_id$
-                            ( $list:[ cvars_id_expr; tvars_id_expr ]$ )
+                            ( $list:[ cvars_id_expr ]$ )
                             $tparams_ids_expr$ $lid:x_id$ >>
          in
             fun_expr loc (all_ids @ [x_id]) body
@@ -1875,7 +1842,7 @@ struct
       let dprinter_let_expr =
          <:expr< let $rec:false$ $list:[ dprinter_patt, dprinter_fun_expr ]$ in $body_expr$ >>
       in
-      let expr = define_ml_program proc loc relaxed_expr [] [] name t dprinter_let_expr in
+      let expr = define_ml_program proc loc relaxed_expr [] name t dprinter_let_expr in
          [<:str_item< $exp:expr$ >>]
 
    let _ = ()

@@ -157,8 +157,8 @@ struct
    type rewrite_rule = RewriteTypes.rewrite_rule
    type rewrite_redex = RewriteTypes.rewrite_redex
 
-   type rewrite_args_spec = string array * string array
-   type rewrite_args = int array * string array * StringSet.t
+   type rewrite_args_spec = string array
+   type rewrite_args = int array * StringSet.t
 
    (*
     * Types for redex matching.
@@ -195,8 +195,8 @@ struct
 
    let opname_exn = RefineError ("Rewrite.apply_rewrite", RewriteStringError "opnames do not match")
 
-   let empty_args_spec = [||], [||]
-   let empty_args = [||], [||], StringSet.empty
+   let empty_args_spec = [||]
+   let empty_args = [||], StringSet.empty
 
    let rec collect_hyp_bnames hyps bnames len i =
       if (len=0) then bnames else 
@@ -219,7 +219,7 @@ struct
     * To do the rewrite. match agaist the redex, then
     * instantiate the contractum.
     *)
-   let apply_rewrite rw (addrs, names, bnames) goal params =
+   let apply_rewrite rw (addrs, bnames) goal params =
       let _ =
          (* Check the opnames to short-circuit applications that quickly fail *)
          match rw.rr_redex with
@@ -255,7 +255,7 @@ struct
                   let bnames = if (rw.rr_strict==Strict) then
                      collect_bnames gstack bnames rw.rr_gstacksize 0
                      else StringSet.empty
-                  in List.map (build_contractum (Array.append names enames) bnames gstack) con
+                  in List.map (build_contractum (Array.copy enames) bnames gstack) con
              | RWCFunction f ->
                   if params == [] then
                      [f goal]
@@ -380,9 +380,9 @@ struct
    (*
     * Compile redex and contractum, and form a rewrite rule.
     *)
-   let term_rewrite strict (addrs, names) redex contracta =
+   let term_rewrite strict addrs redex contracta =
       let stack, redex' = compile_so_redex strict addrs redex in
-      let enames, contracta' = compile_so_contracta strict names stack contracta in
+      let enames, contracta' = compile_so_contracta strict stack contracta in
          { rr_redex = redex';
            rr_contractum = RWCTerm (contracta', enames);
            rr_gstacksize = Array.length stack;
@@ -415,14 +415,6 @@ struct
           | _ ->
                failwith "compile_redex: too many redices"
 
-   (*
-    * Compile a contractum, given the previous redex.
-    *)
-   let compile_contractum { redex_stack = stack } contractum =
-      let enames, contractum = compile_so_contractum Relaxed [||] stack contractum in
-         { con_contractum = contractum;
-           con_new_vars = enames;
-         }
 end
 
 (*

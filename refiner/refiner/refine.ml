@@ -157,16 +157,15 @@ struct
    (*
     * An ML rewrite replaces a term with another.
     *)
-   type ml_extract = (string array * term list) -> term list -> term
+   type ml_extract = term list -> term list -> term
 
    type ml_rewrite = term -> term
 
    type ml_cond_rewrite =
-      string array ->                                   (* Names *)
-         StringSet.t ->                                 (* Free vars in the msequent *)
-         term list ->                                   (* Params *)
-         term ->                                        (* Term to rewrite *)
-         term * term list * string array * ml_extract   (* Extractor is returned *)
+      StringSet.t ->                                 (* Free vars in the msequent *)
+      term list ->                                   (* Params *)
+      term ->                                        (* Term to rewrite *)
+      term * term list * ml_extract   (* Extractor is returned *)
 
    (*
     * A condition relaces an goal with a list of subgoals,
@@ -174,10 +173,9 @@ struct
     *)
    type ml_rule =
       int array ->                                   (* sequent context addresses *)
-      string array ->                                (* variable names *)
       msequent ->                                    (* goal *)
       term list ->                                   (* params *)
-      msequent list * string array * ml_extract      (* subgoals, new variable names *)
+      msequent list * ml_extract      (* subgoals, new variable names *)
 
    (************************************************************************
     * TYPES                                                                *
@@ -235,7 +233,6 @@ struct
    and atomic_just =
       { just_goal : msequent;
         just_addrs : int array;
-        just_names : string array;
         just_params : term list;
         just_refiner : opname;
         just_subgoals : msequent list
@@ -272,7 +269,6 @@ struct
 
    and cond_rewrite_here =
       { cjust_goal : term;
-        cjust_names : string array;
         cjust_params : term list;
         cjust_refiner : opname;
         cjust_subgoal_term : term;
@@ -339,7 +335,7 @@ struct
         rule_refiner : refiner
       }
    and prim_rule_refiner =
-      { mutable prule_proof : (string array -> term list -> term list -> term) proof;
+      { mutable prule_proof : (term list -> term list -> term) proof;
         prule_rule : rule_refiner;
         prule_refiner : refiner
       }
@@ -456,9 +452,9 @@ struct
    (*
     * These are the forms created at compile time.
     *)
-   type prim_tactic = int array * string array -> term list -> tactic
+   type prim_tactic = int array -> term list -> tactic
    type prim_rewrite = rw
-   type prim_cond_rewrite = string array * term list -> cond_rewrite
+   type prim_cond_rewrite = term list -> cond_rewrite
 
    (*
     * For destruction.
@@ -690,7 +686,7 @@ struct
     * Turn the rewrite into a tactic.
     *)
    let rwtactic i rw sent mseq =
-      let { mseq_vars = vars; mseq_hyps = hyps; mseq_goal = goal } = mseq in
+      let { mseq_hyps = hyps; mseq_goal = goal } = mseq in
       let t =
          if i = 0 then
             goal
@@ -1560,20 +1556,20 @@ struct
       in
 
       let rec construct args (rest : (term list -> term) list) = function
-         SingleJust { just_names = names; just_params = params; just_refiner = name } ->
+         SingleJust { just_params = params; just_refiner = name } ->
             begin
                match find_refiner name with
                   RuleRefiner r ->
                      let { rule_count = count } = r in
                      let extracts = count_args args rest count in
-                        rule_proof (find_rule r) names params extracts
+                        rule_proof (find_rule r) params extracts
                 | _ ->
                      raise invalid_exn
             end
        | ComposeJust (just, justl) ->
             construct args (partition_rest rest justl) just
-       | MLJust ({ just_names = names; just_params = params; just_refiner = name }, f) ->
-            f (names, params) (all_args args rest)
+       | MLJust ({ just_params = params; just_refiner = name }, f) ->
+            f params (all_args args rest)
        | RewriteJust (_, just, _) ->
             check_rewrite just;
             one_arg args rest
@@ -1796,7 +1792,7 @@ struct
     * where each T must be a term, and the arity is arbitrary,
     * and there are no dependencies.
     *)
-   let add_rule build name addrs names params mterm =
+   let add_rule build name addrs params mterm =
       IFDEF VERBOSE_EXN THEN
          if !debug_refiner then
             eprintf "Refiner.add_rule: %s%t" name eflush
@@ -1805,7 +1801,7 @@ struct
       let terms = unzip_mimplies mterm in
       let subgoals, goal = List_util.split_last terms in
       let seq = mk_msequent goal subgoals in
-      let rw = Rewrite.term_rewrite Strict (addrs, names) (goal :: params) subgoals in
+      let rw = Rewrite.term_rewrite Strict addrs (goal :: params) subgoals in
       let opname = mk_opname name opname in
       let ref_rule =
          { rule_name = opname;
@@ -1815,9 +1811,9 @@ struct
          }
       in
       let refiner' = RuleRefiner ref_rule in
-      let tac (addrs, names) params sent mseq =
+      let tac addrs params sent mseq =
          let vars = msequent_free_vars mseq in
-         let subgoals = apply_rewrite rw (addrs, names, vars) mseq.mseq_goal params in
+         let subgoals = apply_rewrite rw (addrs, vars) mseq.mseq_goal params in
          let make_subgoal subgoal =
             { mseq_vars = FreeVars vars; mseq_goal = subgoal; mseq_hyps = mseq.mseq_hyps }
          in
@@ -1825,7 +1821,6 @@ struct
          let just =
             SingleJust { just_goal = mseq;
                          just_addrs = addrs;
-                         just_names = names;
                          just_params = params;
                          just_refiner = opname;
                          just_subgoals = subgoals
@@ -1843,7 +1838,7 @@ struct
     * term of the form:
     *    lambda(a. lambda(b. ... cons(arg1; cons(arg2; ... cons(argn, nil)))))
     *)
-   let compute_rule_ext name vars params args result =
+   let compute_rule_ext name params args result =
    (* BUG!!!!!!!!!!!
     * This code was completely wrong (see BUGS 4.4 and 4.10) and was producing stupid
       errors.
@@ -1875,11 +1870,11 @@ struct
       in
          compute_ext
    *)
-   fun vars params args ->
+   fun params args ->
       (* Return dummy answer *)
       result
 
-   let add_prim_rule build name vars params args result =
+   let add_prim_rule build name params args result =
       IFDEF VERBOSE_EXN THEN
          if !debug_refiner then
             eprintf "Refiner.add_prim_theorem: %s%t" name eflush
@@ -1887,7 +1882,7 @@ struct
       let { build_opname = opname; build_refiner = refiner } = build in
          match find_refiner refiner (mk_opname name opname) with
             RuleRefiner r ->
-               let compute_ext = compute_rule_ext name vars params args result in
+               let compute_ext = compute_rule_ext name params args result in
                   PrimRuleRefiner { prule_proof = Extracted compute_ext;
                                     prule_rule = r;
                                     prule_refiner = refiner
@@ -1895,7 +1890,7 @@ struct
           | _ ->
                REF_RAISE(RefineError (name, StringError "not a rule"))
 
-   let add_delayed_rule build name vars params args ext =
+   let add_delayed_rule build name params args ext =
       IFDEF VERBOSE_EXN THEN
          if !debug_refiner then
             eprintf "Refiner.delayed_rule: %s%t" name eflush
@@ -1912,7 +1907,7 @@ struct
                         REF_RAISE(RefineError (name, StringError "extract does not match"))
                   in
                   let t = term_of_extract refiner ext args in
-                     compute_rule_ext name vars params args t
+                     compute_rule_ext name params args t
                in
                   PrimRuleRefiner { prule_proof = Delayed compute_ext;
                                     prule_rule = r;
@@ -1937,12 +1932,11 @@ struct
            ml_rule_refiner = refiner
          }
       in
-      let tac (addrs, names) params sent mseq =
-         let subgoals, names, ext = rw addrs names mseq params in
+      let tac addrs params sent mseq =
+         let subgoals, ext = rw addrs mseq params in
          let just =
             MLJust ({ just_goal = mseq;
                       just_addrs = addrs;
-                      just_names = names;
                       just_params = params;
                       just_refiner = opname;
                       just_subgoals = subgoals
@@ -1956,11 +1950,17 @@ struct
    (*
     * Just do the checking.
     *)
-   let check_rule name addrs names params mterm =
+   let check_rule name addrs params mterm =
       let terms = unzip_mimplies mterm in
       let subgoals, goal = List_util.split_last terms in
-      let _ = Rewrite.term_rewrite Strict (addrs, names) (goal::params) subgoals in
-         ()
+         ignore (Rewrite.term_rewrite Strict addrs (goal::params) subgoals)
+      (*
+       * XXX HACK: This is a weird thing to check and we do not really have to.
+       * The 3 lines below should go away once we are used to no longer having var args.
+       *)
+      ; let vars = free_vars_terms terms in
+        if List.exists (fun p -> is_var_term p && not (StringSet.mem vars (dest_var p))) params then
+           REF_RAISE(RefineError("check_rule", StringError("Unused var param")))
 
    (************************************************************************
     * REWRITE                                                              *
@@ -1969,8 +1969,8 @@ struct
    (*
     * See if the rewrite will compile.
     *)
-   let check_rewrite name vars params subgoals redex contractum =
-      ignore(Rewrite.term_rewrite Strict ([||], vars) (redex::params) [contractum])
+   let check_rewrite name params subgoals redex contractum =
+      ignore(Rewrite.term_rewrite Strict empty_args_spec (redex::params) [contractum])
 
    (*
     * Create a simple rewrite from a meta-term.
@@ -2122,13 +2122,13 @@ struct
    (*
     * Conditional rewrite.
     *)
-   let add_cond_rewrite build name vars params subgoals redex contractum =
+   let add_cond_rewrite build name params subgoals redex contractum =
       IFDEF VERBOSE_EXN THEN
          if !debug_refiner then
             eprintf "Refiner.add_cond_rewrite: %s%t" name eflush
       ENDIF;
       let { build_opname = opname; build_refiner = refiner } = build in
-      let rw = Rewrite.term_rewrite Strict ([||], vars) (redex::params) (contractum :: subgoals) in
+      let rw = Rewrite.term_rewrite Strict empty_args_spec (redex::params) (contractum :: subgoals) in
       let opname = mk_opname name opname in
       let ref_crw =
          { crw_name = opname;
@@ -2138,18 +2138,17 @@ struct
          }
       in
       let refiner' = CondRewriteRefiner ref_crw in
-      let rw' (vars, params) (sent : sentinal) (bvars : StringSet.t) t =
+      let rw' params (sent : sentinal) (bvars : StringSet.t) t =
          IFDEF VERBOSE_EXN THEN
             if !debug_rewrites then
                eprintf "Refiner: applying conditional rewrite %s to %a with bvars = [%a] %t" name print_term t print_string_list (StringSet.elements bvars) eflush;
          ENDIF;
-         match apply_rewrite rw ([||], vars, bvars) t params with
+         match apply_rewrite rw ([||], bvars) t params with
             (t' :: subgoals) ->
                sent.sent_cond_rewrite ref_crw;
                   t',
                   CondRewriteSubgoals subgoals,
                   CondRewriteHere { cjust_goal = t;
-                                    cjust_names = vars;
                                     cjust_params = params;
                                     cjust_refiner = opname;
                                     cjust_subgoal_term = t';
@@ -2160,7 +2159,7 @@ struct
       in
          refiner', (rw' : prim_cond_rewrite)
 
-   let add_prim_cond_rewrite build name vars params subgoals redex contractum =
+   let add_prim_cond_rewrite build name params subgoals redex contractum =
       IFDEF VERBOSE_EXN THEN
          if !debug_refiner then
             eprintf "Refiner.add_prim_cond_rewrite: %s%t" name eflush
@@ -2181,7 +2180,7 @@ struct
           | _ ->
                REF_RAISE(RefineError (name, StringError "not a conditional rewrite"))
 
-   let add_delayed_cond_rewrite build name vars params subgoals redex contractum ext =
+   let add_delayed_cond_rewrite build name params subgoals redex contractum ext =
       IFDEF VERBOSE_EXN THEN
          if !debug_refiner then
             eprintf "Refiner.add_delayed_cond_rewrite: %s%t" name eflush
@@ -2229,13 +2228,12 @@ struct
          }
       in
       let refiner' = MLCondRewriteRefiner ref_crw in
-      let rw (vars, params) (sent : sentinal) (bvars : StringSet.t) t =
-         let t', subgoals, names, ext = rw vars bvars params t in
+      let rw params (sent : sentinal) (bvars : StringSet.t) t =
+         let t', subgoals, ext = rw bvars params t in
             sent.sent_ml_cond_rewrite ref_crw;
             t',
             CondRewriteSubgoals subgoals,
             CondRewriteML ({ cjust_goal = t;
-                             cjust_names = names;
                              cjust_params = params;
                              cjust_refiner = opname;
                              cjust_subgoal_term = t';
@@ -2251,20 +2249,20 @@ struct
    (*
     * Rules.
     *)
-   let create_rule build name addrs names params mterm =
-      let refiner, tac = add_rule build name addrs names params mterm in
+   let create_rule build name addrs params mterm =
+      let refiner, tac = add_rule build name addrs params mterm in
          build.build_refiner <- refiner;
          tac
 
-   let prim_rule build name vars params args result =
-      build.build_refiner <-  add_prim_rule build name vars params args result
+   let prim_rule build name params args result =
+      build.build_refiner <-  add_prim_rule build name params args result
 
-   let delayed_rule build name vars params args extf =
-      build.build_refiner <- add_delayed_rule build name vars params args extf
+   let delayed_rule build name params args extf =
+      build.build_refiner <- add_delayed_rule build name params args extf
 
-   let derived_rule build name vars params args ext =
+   let derived_rule build name params args ext =
       let extf () = ext in
-      let refiner = add_delayed_rule build name vars params args extf in
+      let refiner = add_delayed_rule build name params args extf in
          check refiner;
          build.build_refiner <- refiner
 
@@ -2303,20 +2301,20 @@ struct
    (*
     * Condiitional rewrites.
     *)
-   let create_cond_rewrite build name vars params args redex contractum =
-      let refiner, rw = add_cond_rewrite build name vars params args redex contractum in
+   let create_cond_rewrite build name params args redex contractum =
+      let refiner, rw = add_cond_rewrite build name params args redex contractum in
          build.build_refiner <- refiner;
          (rw : prim_cond_rewrite)
 
-   let prim_cond_rewrite build name vars params args redex contractum =
-      build.build_refiner <- add_prim_cond_rewrite build name vars params args redex contractum
+   let prim_cond_rewrite build name params args redex contractum =
+      build.build_refiner <- add_prim_cond_rewrite build name params args redex contractum
 
-   let delayed_cond_rewrite build name vars params args redex contractum extf =
-      build.build_refiner <- add_delayed_cond_rewrite build name vars params args redex contractum extf
+   let delayed_cond_rewrite build name params args redex contractum extf =
+      build.build_refiner <- add_delayed_cond_rewrite build name params args redex contractum extf
 
-   let derived_cond_rewrite build name vars params args redex contractum ext =
+   let derived_cond_rewrite build name params args redex contractum ext =
       let extf () = ext in
-      let refiner = add_delayed_cond_rewrite build name vars params args redex contractum extf in
+      let refiner = add_delayed_cond_rewrite build name params args redex contractum extf in
          check refiner;
          build.build_refiner <- refiner
 

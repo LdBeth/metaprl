@@ -67,12 +67,12 @@ sig
     | RewriteNum of Mp_num.num
     | RewriteLevel of level_exp
 
-   (* Names of the contexts and variables to be passed as arguments *)
-   type rewrite_args_spec = string array * string array
+   (* Names of the contexts to be passed as arguments *)
+   type rewrite_args_spec = string array
 
    (* Sizes (+1) for sequent contexts, strings for new variable names, bound variables *)
    (* Non-positive sizes mean counting the hyps to skip from the end *)
-   type rewrite_args = int array * string array * StringSet.t
+   type rewrite_args = int array * StringSet.t
 
    (*
     * In "Strict" mode the rewriter should behave as described in the

@@ -331,7 +331,7 @@ sig
     *)
    val compile_rule : build -> string option list -> prim_tactic -> pre_tactic
    val compile_labeled_rule : build -> prim_tactic -> pre_tactic
-   val tactic_of_rule : pre_tactic -> int array * string array -> term list -> tactic
+   val tactic_of_rule : pre_tactic -> int array -> term list -> tactic
 
    (*
     * Also convert rewrites.
@@ -1025,7 +1025,7 @@ sig
     * Create a conversion from a conditional rewrite.
     * This function is required by filter_prog.
     *)
-   val rewrite_of_cond_rewrite : prim_cond_rewrite -> string array * term list -> conv
+   val rewrite_of_cond_rewrite : prim_cond_rewrite -> term list -> conv
 end
 
 module type RewriteInternalSig =

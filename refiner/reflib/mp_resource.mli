@@ -66,7 +66,6 @@ type global_resource
 type ('annotation, 'input) annotation_processor =
    string ->          (* Name of the new rule *)
    string array ->    (* Names of the context vars *)
-   string array ->    (* Names of the new variables *)
    term list ->       (* Arguments *)
    term list ->       (* Parameters *)
    meta_term ->       (* Rule statement *)

@@ -123,7 +123,6 @@ DEFTOPMACRO BODY =
 
    and varname =
       StackName of int
-    | ArgName of int
     | SaveName of int
 
    (*

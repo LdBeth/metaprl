@@ -92,8 +92,6 @@ struct
    let print_varname out = function
       StackName i ->
          fprintf out "stack:%d" i
-    | ArgName i ->
-         fprintf out "arg:%d" i
     | SaveName i ->
          fprintf out "save:%d" i
 

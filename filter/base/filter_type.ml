@@ -212,7 +212,6 @@ and 'item magic_info =
 
 and 'term param =
    ContextParam of string
- | VarParam of string
  | TermParam of 'term
 
 (*
