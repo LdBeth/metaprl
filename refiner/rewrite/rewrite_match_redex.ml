@@ -115,17 +115,13 @@ struct
    type stack = RewriteTypes.stack
    type rwterm = RewriteTypes.rwterm
 
-   (*
-    * Get the vars from their indices.
-    *)
-   let extract_bvar stack v =
-      match stack.(v) with
-         StackString s ->
-            s
-       | _ ->
-            REF_RAISE(RefineError ("extract_bvar", RewriteStringError "stack entry is not a string"))
-
-   let extract_bvars stack l = List.map (extract_bvar stack) l
+   let rec extract_bvars stack = function
+      [] -> []
+    | v::tl ->
+         begin match stack.(v) with
+            StackString s -> s::(extract_bvars stack tl)
+          | _ -> REF_RAISE(RefineError ("extract_bvar", RewriteStringError "stack entry is not a string"))
+         end
 
    (*
     * Assign the bvars.

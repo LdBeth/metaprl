@@ -449,7 +449,8 @@ struct
    (*
     * A rewrite replaces a term with another term.
     *)
-   type rw = sentinal -> term -> term * rewrite_just
+   type rw_arg1 = sentinal and rw_arg2 = term and rw_val = term * rewrite_just
+   type rw = rw_arg1 -> rw_arg2 -> rw_val
 
    (*
     * A conditional rewrite takes a goal, then applies the rewrite
@@ -457,7 +458,9 @@ struct
     * the rewrite is being applied to, and the second is the
     * particular subterm to be rewritted.
     *)
-   type cond_rewrite = sentinal -> string list list -> term -> term * cond_rewrite_subgoals * cond_rewrite_just
+   type crw_arg1 = sentinal and crw_arg2 = string list list and crw_arg3 = term
+   type crw_val = term * cond_rewrite_subgoals * cond_rewrite_just
+   type cond_rewrite = crw_arg1 -> crw_arg2 -> crw_arg3 -> crw_val
 
    (*
     * These are the forms created at compile time.

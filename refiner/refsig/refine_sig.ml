@@ -151,7 +151,8 @@ sig
    (*
     * A normal rewrite can be applied to a term to rewrite it.
     *)
-   type rw
+   type rw_arg1 and rw_arg2 and rw_val
+   type rw = rw_arg1 -> rw_arg2 -> rw_val
 
    (* Rewrite application *)
    val rw_refine : sentinal -> rw -> term -> term * rw_extract
@@ -201,7 +202,8 @@ sig
     * be proved.  A conditional rewrite is valid only in a sequent
     * calculus.
     *)
-   type cond_rewrite
+   type crw_arg1 and crw_arg2 and crw_arg3 and crw_val
+   type cond_rewrite = crw_arg1 -> crw_arg2 -> crw_arg3 -> crw_val
 
    (* Conditional rewrite application *)
    val crw_refine : sentinal -> cond_rewrite -> msequent -> term -> term * crw_extract
