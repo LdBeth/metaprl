@@ -390,7 +390,7 @@ OCamlGeneratedFiles(files) =
 #
 # For theory files, generate intermediate .ppo files
 #
-%.ppo %.cmoz: %.ml $(CAMLP4N) :optional: %.prla :effects: %.prlb
+%.ppo %.cmoz: %.ml $(CAMLP4N) %.cmiz :optional: %.prla :effects: %.prlb
         $(CAMLP4NC) $(CAMLP4NFLAGS) -o $*.ppo $<
 
 %.cmi %.cmiz: %.mli
