@@ -15,12 +15,11 @@ value caml_term_size(value arg)
     struct winsize ws;
 
     /* Get the terminal size, return None on failure */
-    if(ioctl(0, TIOCGWINSZ, &ws) < 0) {
-        CAMLreturn Val_unit;
-    }
+    if(ioctl(0, TIOCGWINSZ, &ws) < 0)
+        failwith("termsize: standard input is not a terminal");
 
     /* Return the pair of numbers */
-    buf = alloc_small(2, 1);
+    buf = alloc_small(2, 0);
     Field(buf, 0) = Val_int(ws.ws_row);
     Field(buf, 1) = Val_int(ws.ws_col);
     CAMLreturn buf;

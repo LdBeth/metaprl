@@ -22,26 +22,15 @@
  * Author: Jason Hickey
  * jyh@cs.caltech.edu
  *)
-
-type winsize =
-   NoSize
- | SomeSize of int * int
-
-external c_term_size : unit -> winsize = "caml_term_size"
-
-let term_size () =
-   match c_term_size () with
-      NoSize ->
-         raise (Failure "Mp_term.term_size: standard input is not a terminal")
-    | SomeSize (rows, cols) ->
-         rows, cols
+external term_size : unit -> int * int = "caml_term_size"
 
 let term_width width =
-   match c_term_size () with
-      NoSize ->
-         width
-    | SomeSize (_, cols) ->
+   try
+      let _, cols = term_size () in
          max cols width
+   with
+      Failure _ ->
+         width
 
 (*
  * -*-

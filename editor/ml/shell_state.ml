@@ -281,8 +281,9 @@ struct
    let print_term state t =
       let db = state.state_df_base in
       let buf = Rformat.new_buffer () in
+      let width = Mp_term.term_width 80 in
          Dform.format_term db buf t;
-         Rformat.print_to_channel 80 buf stdout;
+         Rformat.print_to_channel width buf stdout;
          flush stdout
 
    let print_term_fp out t =
@@ -295,8 +296,9 @@ struct
                      Dform.null_base
             in
             let buf = Rformat.new_buffer () in
+            let width = Mp_term.term_width 80 in
                Dform.format_term db buf t;
-               Rformat.print_to_channel 80 buf out;
+               Rformat.print_to_channel width buf out;
                flush out)
 
    let term_printer t =

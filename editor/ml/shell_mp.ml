@@ -300,6 +300,7 @@ struct
                   Stdpp.Exc_located ((start, finish), exn) ->
                      let df = State.get_dfbase state in
                      let buf = new_buffer () in
+                     let width = Mp_term.term_width 80 in
                         format_string buf "chars ";
                         format_int buf start;
                         format_string buf "-";
@@ -312,7 +313,7 @@ struct
                             | exn ->
                                  Filter_exn.format_exn df buf exn
                         end;
-                        print_to_channel 80 buf stderr;
+                        print_to_channel width buf stderr;
                         eflush stderr
                 | End_of_file ->
                      loop := false
@@ -327,9 +328,10 @@ struct
                 | exn ->
                      let df = State.get_dfbase state in
                      let buf = new_buffer () in
+                     let width = Mp_term.term_width 80 in
                         format_string buf "uncaught exception: ";
                         Filter_exn.format_exn df buf exn;
-                        print_to_channel 80 buf stderr;
+                        print_to_channel width buf stderr;
                         eflush stderr
          done
 
