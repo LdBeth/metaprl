@@ -151,7 +151,9 @@ sig
    val is_fsymb_n : node -> bool
    val links_fsymb_n : node -> sacktype -> StringSet.t -> bool
    val fsymboper_n : node -> sacktype -> StringSet.t -> TermType.operator
-   val succs : node -> sacktype -> StringSet.t -> node list
+   val successors : node -> sacktype -> StringSet.t -> node list
+   val substfree : string -> node -> sacktype -> StringSet.t -> bool
+
 end
 
 
