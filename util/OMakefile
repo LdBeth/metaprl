@@ -1,0 +1,32 @@
+#
+# Don't try to scan files in this directory
+#
+.SCANNER: %
+
+misc.cmo:
+misc.cmx:
+ocamldep.cmo: misc.cmi
+ocamldep.cmx: misc.cmi misc.cmx
+
+#
+# The MetaPRL macro preprocessor
+#
+macro.cmo: macro.ml
+	$(OCAMLC) -pp "camlp4o pa_extend.cmo q_MLast.cmo" -I `camlp4 -where` -c macro.ml
+
+$(LIB)/macro.cmo: macro.cmo
+	$(LN) $,(in $(LIB), $(file macro.cmo)) $(LIB)/macro.cmo
+
+#
+# We also use our own version of ocamldep
+#
+OCamlProgram(ocamldep, misc ocamldep)
+
+#
+# Phony targets
+#
+install: ocamldep
+	$(CP) -pf ocamldep $(MPBIN)
+
+clean:
+	$(RM) *.cm* *~ ocamldep.ml *.o Makefile.dep ocamldep
