@@ -97,17 +97,7 @@ In particular, this breaks lots of proofs in itt_collection.
 
 REFINER
 
-4.1) (Confirmed 1999.10.08 by nogin)
-There is no clear semantics for the hidden hypothesis. As a result,
-many rules deal with hidden hypothesis incorrectly. Currently, one
-can prove 0=1 using those unsound rules.
-
-In Nuprl the semantics of hidden hypothesis is that the variable introduced
-by a hidden hypothesis may not appear in the extract. In MetaPRL we want to be
-able to use derived rules before we have proven them which means that we want to
-be able to use them before we know their extracts.
-
-See also TODO #6.02
+4.1) (fixed)
 
 4.2) Repeated bound variables (when the same variable is bound more than once) is
 handled incorrectly. For example, thinning rule does not check if the variable
@@ -147,6 +137,9 @@ them to be more efficient).
 When autoT is ran on <<sequent [squash] { >- "type"{'O} } >> (with no assumtions),
 MetaPRL seems to go into an infinite loop and because of the BUG 2.7, mpopt would crash
 with segmentation fault!
+
+4.9) (2000.08.13 nogin)
+Something is still leaking "with" arguments into RuleBox'es.
 
 PARSER & FILTER
 
