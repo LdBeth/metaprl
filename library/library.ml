@@ -43,7 +43,7 @@ let connect remote_host remote_port local_port =
 
 let disconnect c = Orb.disconnect (oref_val orbr) c
 
-let lib_open c s =
+let lib_new c s =
 	{ transactions = []
 	; environment =
 	     open_library_environment
@@ -140,25 +140,42 @@ let leave lib =
 
 let with_transaction lib f =
   let result = null_oref ()
-  and tid = tid() in
+  and tid = tid() 
+  and maybefailed = null_oref() in
 
+  (* failures in callback are caught, saved, and rethown. orb will catch and pass back to v5
+     which will then fail original call, which will then throw a different failure.
+     The second throw is caught and the saved failure is throw in its place.
+  *)
+  try
   ((eval_with_callback
     lib.environment
     tid
     (function t -> 
       ( ( oref_set result 
+	(try
 	  (f	{ library = lib
 		; tbegin = term_to_stamp t
 		; tent_collect = []
 		; ttype = REMOTE
 		; tid = tid
 		; cookie = ""
-		}))
+		})
+	with e -> oref_set maybefailed e; raise e)
+	)
 	)
       ; ())
     (itext_term "NL0_transaction ()"));
 
-  oref_val result)
+
+  if oref_p maybefailed
+	then raise (oref_val maybefailed)
+	else oref_val result)
+
+  with e -> 
+	if oref_p maybefailed
+	   then raise (oref_val maybefailed)
+	   else raise e
 
 
 let with_local_transaction lib f =
@@ -386,7 +403,7 @@ let get_properties_ap = null_ap (itext_term "\oid . property_list_to_term (get_p
 let get_properties t oid =
   term_to_properties
     (eval_to_term t
-      (oid_ap put_properties_ap oid))
+      (oid_ap get_properties_ap oid))
 
 
 let make_root_ap = null_ap (itext_term "dag_make_root ")

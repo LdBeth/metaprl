@@ -21,7 +21,7 @@ exception Testfailed
 let oiljgs connection = 
 
   let cookie = ref "" in
-  let lib = lib_open connection "testall" in
+  let lib = lib_new connection "testall" in
     (unwind_error
       (function () -> 
 	(* test put *)
@@ -82,6 +82,67 @@ let seri connection cookie =
 
       !ncookie
 
+exception Pleasefail
+
+(* join after close, then ... *)
+let ptest connection =
+  let lib = join connection ["testall"] in
+    (unwind_error
+      (function () -> 
+	(* test get *)
+	let doid = (with_transaction lib
+		   (function t ->
+			 let oid = root t "demo" in 
+			   if not (1 = number_of_inatural_term (get_term t (child t oid "test1")))
+			        then (print_string "check"; raise (Test "check"))
+			   ; oid)) in
+
+	
+	let noid = (with_transaction lib
+		     (function t ->
+ 		       create t "TERM" (Some (inatural_term 2)) [("foo", inatural_term 3)] ))
+	in
+  	  try
+	  (with_transaction lib
+	    (function t ->
+	      (* monkey with properties and then fail*)		
+	      (let ps = get_properties t noid in
+
+		put_properties t noid (("goo", inatural_term 4) :: ps);
+		if not (3 = number_of_inatural_term (get_property t noid "foo"))
+		   then raise Testfailed;
+		if not (4 = number_of_inatural_term (get_property t noid "goo"))
+		   then raise Testfailed;
+
+		put_property t noid "foo" (inatural_term 5);
+		if not (5 = number_of_inatural_term (get_property t noid "foo"))
+		   then raise Testfailed;
+
+		remove_property t noid "goo";
+                (let failp = ref false in 
+		  (try (get_property t noid "goo"); () with e -> failp := true);
+		  if (not !failp) then raise Testfailed);
+
+ 		raise Pleasefail)))
+		
+	  with
+	    Pleasefail -> 
+	     (with_transaction lib
+	      (function t ->
+		(if not (3 = number_of_inatural_term (get_property t noid "foo"))
+		   then raise Testfailed
+		   else ())))
+	   | e -> raise e;
+
+     (lib_close lib); ())
+
+     (function () -> (lib_close lib); (raise Testfailed)))
+
+  ; print_newline()
+  ; print_endline "property test successful, (the failures were part of the test)."
+
+
+
   
 let testall remote_port local_port =
  print_newline(); 
@@ -95,6 +156,7 @@ let testall remote_port local_port =
       (function () -> 
 	  cookie := oiljgs connection
 	; cookie := seri connection !cookie
+	; ptest connection
 	)
       (function () -> disconnect connection; (raise Testfailed)))
 
@@ -150,7 +212,7 @@ let test remote_port local_port =
 
     unwind_error
       (function () ->
-        (let lib = lib_open connection "nuprl-light" in
+        (let lib = lib_new connection "nuprl-light" in
 
  	  unwind_error
 	    (function () -> (demo lib))

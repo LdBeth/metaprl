@@ -18,16 +18,23 @@
 
  val disconnect	: connection -> unit
 
- val lib_open	: connection -> string (* mnemonic *) -> library
- val lib_close	: library -> string (* cookie *)
-
- val join	: connection -> string (* mnemonic *) list -> library
- val leave	: library -> unit
 
  (*	
+  *	Library instances:
+  *	
+  *	lib_new	: creates new instance of a library.
+  *	join	: finds latest instance of library using mnemonic.
+  *	restore	: restores named instance of library.
+  *	save	: marks a restorable instance of a library.
+  *	leave	: leaves library instance running but kills all local state
+  *		  associated with it.
+  *	lib_close : kill instance of library. join or restore can be used recover.
+  *	
+  *	The mnemonic should be something distinquishing you from othe users.
+  *	
   *	save/restore allows one to synch local data with library state.
   *	At the moment, Import/Export require remote eval, thus
-  *	slow. If this becomes an important feature than it can
+  *	slow. If this becomes an important feature then it can
   *	be improved.
   *	
   *	oid_export only works in scope of callback from save.
@@ -41,6 +48,13 @@
   *	OTOH, save may be called any number of times while a lib is open or joined.
   *
   *)
+
+
+ val lib_new	: connection -> string (* mnemonic *) -> library
+ val lib_close	: library -> string (* cookie *)
+
+ val join	: connection -> string (* mnemonic *) list -> library
+ val leave	: library -> unit
 
  val restore	: connection -> string (* cookie *) -> (transaction -> unit) -> library
  val save	: library -> (transaction -> unit) -> string (* cookie *)
@@ -72,9 +86,9 @@
   *	The goal is that data required for refinement is distributed and thus no
   *	communication is required with the library during refinement.
   *	
-  *	At the moment, any function requiring a transaction arg is not local, ie
-  *	there is no distributed data. Functions labeled as local should eventually
-  *	be local.
+  *	BEWARE : failing out of a transaction undoes all modifications to library
+  *	  by the transaction. If needed, I can supply a commit call to make changes
+  *	  persist .
   *)
 
  val with_transaction		: library -> (transaction -> 'a) -> 'a
@@ -129,7 +143,7 @@
 				-> object_id
 
  (* delete'd objects do not go away until unreferenced and garbage collected.
-  *  delete_strong'd objects go away immediately even if referenced.
+  * delete_strong'd objects go away immediately even if referenced.
   *)
  val delete		: transaction -> object_id -> unit
  val delete_strong	: transaction -> object_id -> unit
@@ -183,7 +197,13 @@
   *	
   *	The native nuprl5 library functions will not detect tree corruptions.
   * 	
-  * 	Removing a directory recursively removes the contents.
+  * 	Removing a directory recursively removes the contents:
+  *	Root directories are created as uncollectable. Subdirectories and leafs
+  *	are created as collectable. Thus, if a directory is removed, the loss of
+  *	pointers to its children may allow them to be collected.
+  *	
+  *	To force deletion of contents delete_strong would need to be called
+  *	on each member.
   * 
   *)
 
@@ -197,6 +217,7 @@
  (* We allow insertion of objects into the tree. The object inserted may be a dir.
   * If an insertion would cause a cycle, then an error is thrown. 
   *)
+ (* NB: cycle prevention not yet implemented. *)
 
  val make_leaf		: transaction -> object_id -> string -> object_id
  val remove_leaf	: transaction -> object_id -> string -> unit
@@ -206,7 +227,7 @@
 				-> string (* type *) -> term
 				-> object_id
 
- (* cycle prevention not yet implemented. *)
+ (* NB: cycle prevention not yet implemented. *)
  val insert		: transaction -> object_id -> string -> object_id -> unit
 
  val roots		: transaction (* local *) -> (string * object_id) list
@@ -218,8 +239,13 @@
  val child		: transaction (* local *) -> object_id -> string -> object_id
  val descendent		: transaction (* local *) -> object_id -> string list -> object_id
 
-(*
 
+
+
+
+
+
+(*
  val find_root_path	: transaction (* local *) -> object_id -> string list
  val find_root_paths	: transaction (* local *) -> object_id -> (string list) list
 

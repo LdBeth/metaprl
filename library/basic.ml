@@ -73,8 +73,9 @@ exception Nuprl5_Exception of (string * term)
 let error sl oids tl = 
   print_string (String.concat " " sl);
   print_newline();
+  map Mbterm.print_term tl;
 
-  raise (Nuprl5_Exception ((String.concat " " sl),(imessage_term ("NuprlLightLibrary" :: sl) oids tl)))
+ raise (Nuprl5_Exception ((String.concat " " sl),(imessage_term ("NuprlLightLibrary" :: sl) oids tl)))
 
 let special_error_handler body handler =
   try body ()
@@ -155,12 +156,11 @@ let string_of_itoken_term t =
     Token s -> s
   |_ -> error ["term"; "!string"; "parameter type"] [] [t]
 
-open Mbterm
 
 let oid_of_ioid_term t =
   match dest_param (parameter_of_carrier ioid_parameter t) with
     ObId o -> o
-  |_ -> print_string "failing here"; print_term t;
+  |_ -> print_string "failing here"; Mbterm.print_term t;
  print_newline(); error ["term"; "!oid"; "parameter type"] [] [t]
 
 let dest_obid_param p =

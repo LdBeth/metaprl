@@ -436,7 +436,7 @@ let connect_aux orb host hsock sock =
           
 
 let connect orb host hsock sock =
-  db_init (new_stamp ()) "/usr/u/nuprl/nuprl4i/nuprl5/NuPrlDB";	
+  db_init (new_stamp ()) "/usr/u/nuprl/nuprl5/NuPrlDB";	
   let link = connect_aux orb host hsock sock in
   let tcon = { link = link; orb = orb; ro_address = [] } in
     config_send_state tcon (iinform_term (ienvironment_address_term orb.lo_address));
@@ -562,8 +562,7 @@ let library_environment_join c tags =
   address_of_ienvironment_address_term
     (connection_eval_args c 
 	(itext_term
-	  "\l. (ienvironment_address_term (orb_match_local_environment (tags_of_ienvironment_address_term (hd l))))")
-
+	  "\l. (ienvironment_address_term (library_open (tags_of_ienvironment_address_term (hd l))))")
 	[ienvironment_address_term tags]
 	)
     
