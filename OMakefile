@@ -12,7 +12,7 @@ BIN     = $(dir bin)
 # we assume that the variables in the mk/config
 # file have been set in the project root.
 #
-if $(equal $(OLDROOT), $(dir .))
+if $(equal $(OLDROOT), $(ROOT))
     #
     # Read the config file.
     # If the config file does not exist, then create one.
@@ -32,7 +32,7 @@ if $(equal $(OLDROOT), $(dir .))
     #
     CC = $(CCC)
     CFLAGS = -Wall -g -O2
-    INCLUDES = $(INCLUDES) -I$(CAMLLIB)
+    INCLUDES += -I$(CAMLLIB)
 
     export
 
@@ -122,7 +122,7 @@ if true
 #
 DEFAULT_THEORIES = tactic ocaml base itt
 LM_THEORIES = $(if $(equal $(LIBMOJAVE), undefined), $(EMPTY), mc experimental/compile)
-ALL_THEORIES = tactic ocaml base ocaml_doc itt ocaml_sos fol czf phobos mc sil $(LM_THEORIES)
+ALL_THEORIES = tactic ocaml base ocaml_doc itt ocaml_sos fol czf phobos sil $(LM_THEORIES)
 
 #
 # Commands to compile theory files
