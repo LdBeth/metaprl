@@ -84,9 +84,9 @@ struct
    open RefineError
    open RewriteTypes
 
-   type rwterm = RewriteTypes.rwterm
-   type rstack = RewriteTypes.rstack
-   type stack = RewriteTypes.stack
+   type rwterm  = RewriteTypes.rwterm
+   type rstack  = RewriteTypes.rstack
+   type stack   = RewriteTypes.stack
    type varname = RewriteTypes.varname
 
    (*

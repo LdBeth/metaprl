@@ -626,7 +626,7 @@ struct
     * Find the address of the hyp. Numbers start with 1
     * We just check to make sure the address is valid.
     *)
-   let nth_hyp_addr_name = "Term_man_ds.nth_hyp_addr"
+   let nth_hyp_addr_name = "Term_addr_ds.nth_hyp_addr"
    let nth_hyp_addr t n =
       if n <= 0 then
          REF_RAISE(RefineError (nth_hyp_addr_name, StringError "negative address"))
@@ -643,7 +643,7 @@ struct
    (*
     * Find the address of the conclusion. Numbers start with 1
     *)
-   let nth_concl_addr_name = "Term_man_ds.nth_concl_addr"
+   let nth_concl_addr_name = "Term_addr_ds.nth_concl_addr"
    let nth_concl_addr t n =
       if n <= 0 then
          REF_RAISE(RefineError (nth_concl_addr_name, StringError "negative address"))

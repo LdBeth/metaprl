@@ -69,6 +69,9 @@ val create_table :
    ('a info_entry list -> 'b info_entry list) ->
    'b term_table
 
+val print_term_match : term list -> unit
+val eval_term_match : term -> unit
+
 (*
  * Create a resource_info that can be used to create a resource
  * As an input this function takes a compactor (same as the second arg to

@@ -127,18 +127,18 @@ struct
                let hyp_count = SeqHyp.length hyps in
                let goal_count = SeqGoal.length goals in
                let rec subGoalC conv i =
-                  if i = goal_count then
+                  if i > goal_count then
                      addrLiteralC arg_addr conv
                   else
                      prefix_orelseC (addrLiteralC (nth_concl_addr t i) conv) (subGoalC conv (i + 1))
                in
                let rec subHypC conv i =
-                  if i = hyp_count then
-                     subGoalC conv 0
+                  if i > hyp_count then
+                     subGoalC conv 1
                   else
                      prefix_orelseC (addrLiteralC (nth_hyp_addr t i) conv) (subHypC conv (i + 1))
                in
-                  subHypC conv 0
+                  subHypC conv 1
             else
                (* A normal term *)
                let count = subterm_count t in
@@ -167,18 +167,18 @@ struct
                let hyp_count = SeqHyp.length hyps in
                let goal_count = SeqGoal.length goals in
                let rec subGoalC conv i =
-                  if i = goal_count then
+                  if i > goal_count then
                      addrLiteralC arg_addr conv
                   else
                      prefix_thenC (addrLiteralC (nth_concl_addr t i) conv) (subGoalC conv (i + 1))
                in
                let rec subHypC conv i =
-                  if i = hyp_count then
-                     subGoalC conv 0
+                  if i > hyp_count then
+                     subGoalC conv 1
                   else
                      prefix_thenC (addrLiteralC (nth_hyp_addr t i) conv) (subHypC conv (i + 1))
                in
-                  subHypC conv 0
+                  subHypC conv 1
             else
                (* A normal term *)
                let count = subterm_count t in

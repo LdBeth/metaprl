@@ -40,6 +40,7 @@ sig
    val print_varname : out_channel -> varname -> unit
    val print_prog : out_channel -> rwterm -> unit
    val print_rstack : out_channel -> rstack array -> unit
+   val print_stack_item : out_channel -> stack -> unit
    val print_stack : out_channel -> stack array -> unit
    val rstack_item_str : rstack -> string
 end

@@ -310,6 +310,7 @@ struct
     *    4. A param variable becaome the param that was matched.
     *)
    let extract_exn = RefineError ("extract_redex_values", RewriteStringError "stack entry is not valid")
+   let extract_exn_seq_context = RefineError ("extract_redex_values", RewriteStringError "can't extract an entry from a sequent context")
 
    let extract_redex_values_aux gstack = function
       FOVarPattern _ | SOVarPattern (_, _, 0) ->
@@ -332,7 +333,10 @@ struct
             match gstack with
                StackContext (l, t, addr) ->
                   RewriteContext (fun c l' -> subst (replace_subterm t addr c) l l')
-             | _ -> REF_RAISE(extract_exn)
+             | StackSeqContext _ ->
+                  RewriteContext (fun _ _ -> REF_RAISE(extract_exn_seq_context))
+             | _ ->
+                  REF_RAISE(extract_exn)
          end
     | PVar (_, ShapeNumber) ->
          RewriteNum begin

@@ -287,7 +287,7 @@ let format_bconts format_term buf v = function
  *    cflag is true if the last term was a conclusion
  *    t is the term to be printed.
  *)
-ml_dform sequent_src_df : mode["src"] :: "sequent"{'ext; 'seq} format_term buf =
+ml_dform sequent_src_df : mode["src"] :: sequent ('ext) { <H> >- 'concl } format_term buf =
    let rec format_goal goals i len =
       if i <> len then
          begin
@@ -352,7 +352,7 @@ let format_context format_term buf v conts values =
  * display form to be implemented in ML.
  * @end[doc]
  *)
-ml_dform sequent_prl_df : mode["prl"] :: "sequent"{'ext; 'seq} format_term buf =
+ml_dform sequent_prl_df : mode["prl"] :: sequent ('ext) { <H> >- 'concl } format_term buf =
    let rec format_hyp hyps i len =
       if i <> len then
          let lead = (string_of_int (succ i)) ^ ". " in
@@ -418,7 +418,7 @@ ml_dform sequent_prl_df : mode["prl"] :: "sequent"{'ext; 'seq} format_term buf =
    in
       format
 
-ml_dform sequent_html_df : mode["html"] :: "sequent"{'ext; 'seq} format_term buf =
+ml_dform sequent_html_df : mode["html"] :: sequent ('ext) { <H> >- 'concl } format_term buf =
    let rec format_hyp hyps i len =
       if i <> len then
          let lead = (string_of_int (succ i)) ^ ". " in

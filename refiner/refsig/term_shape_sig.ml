@@ -31,6 +31,7 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
+open Format
 
 type shape_param =
    ShapeNumber
@@ -46,9 +47,11 @@ sig
    type shape
 
    val shape_of_term : term -> shape
-   val print_shape : out_channel -> shape -> unit
    val eq : shape -> shape -> bool
    val param_type : param -> shape_param
+
+   val print_shape : out_channel -> shape -> unit
+   val pp_print_shape : formatter -> shape -> unit
 end
 
 (*

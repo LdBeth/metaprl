@@ -222,17 +222,6 @@ struct
       in
       let catch =
          if backtrace then
-            (fun f ->
-                  try f () with
-                     End_of_file ->
-                        loop := false
-
-                   | RefineError (_, ToploopIgnoreError) ->
-                        ()
-
-                   | RefineError _ as exn ->
-                        print_exn exn)
-         else
             begin
                eprintf "*** Note: uncaught exceptions will cause MetaPRL to exit%t" eflush;
                (fun f ->
@@ -243,9 +232,20 @@ struct
                       | RefineError (_, ToploopIgnoreError) ->
                            ()
 
-                      | exn ->
+                      | RefineError _ as exn ->
                            print_exn exn)
             end
+         else
+            (fun f ->
+                  try f () with
+                     End_of_file ->
+                        loop := false
+
+                   | RefineError (_, ToploopIgnoreError) ->
+                        ()
+
+                   | exn ->
+                        print_exn exn)
       in
          while !loop do
             let state =

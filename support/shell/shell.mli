@@ -106,6 +106,12 @@ val extract : string list -> unit -> Refine.extract
 topval term_of_extract : term list -> term
 
 (*
+ * Additional debugging.
+ *)
+topval print_term_match : term list -> unit
+topval eval_term_match : term -> unit
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "editor.top"

@@ -62,32 +62,32 @@ struct
    type term = Term.term
    type param = Term.param
 
-   type shape = {
-      shape_opname : opname;
-      shape_params : shape_param list;
-      shape_arities : int list
-   }
+   type shape =
+      { shape_opname : opname;
+        shape_params : shape_param list;
+        shape_arities : int list
+      }
 
    (*
     * Shapes for special terms.
     * XXX HACK/TODO: shape type should probably be a choice type
     *)
-   let sequent_shape = {
-      shape_opname = sequent_opname;
-      shape_params = [];
-      shape_arities = [0; 1];
-   }
+   let sequent_shape =
+      { shape_opname = sequent_opname;
+        shape_params = [];
+        shape_arities = [0; 1];
+      }
 
-   let var_shape = {
-      shape_opname = var_opname;
-      shape_params = [ShapeVar];
-      shape_arities = []
-   }
+   let var_shape =
+      { shape_opname = var_opname;
+        shape_params = [ShapeVar];
+        shape_arities = []
+      }
 
    let so_var_shape =
       let zero _ = 0 in
          fun terms -> { var_shape with shape_arities = List.map zero terms }
-      
+
    (*
     * Fold together meta-parameters and parameters.
     *)
@@ -159,4 +159,36 @@ struct
          print_arity out arities;
          output_string out "}"
 
+   let pp_print_shape out { shape_opname = name; shape_params = params; shape_arities = arities } =
+      let pp_print_param out param =
+         let s =
+            match param with
+               ShapeNumber ->
+                  "N"
+             | ShapeString ->
+                  "S"
+             | ShapeToken  ->
+                  "T"
+             | ShapeLevel  ->
+                  "L"
+             | ShapeVar    ->
+                  "V"
+         in
+            Format.pp_print_string out s
+      in
+      let pp_print_params out params =
+         List.iter (pp_print_param out) params
+      in
+      let rec pp_print_arity out = function
+         [i] ->
+            Format.fprintf out "%d" i
+       | i::t ->
+            Format.fprintf out "%d;%a" i pp_print_arity t
+       | [] ->
+            ()
+      in
+         Format.fprintf out "%s[%a]{%a}" (**)
+            (string_of_opname name)
+            pp_print_params params
+            pp_print_arity arities
 end

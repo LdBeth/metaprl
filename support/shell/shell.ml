@@ -1581,6 +1581,12 @@ let check_all () =
       apply_all f true true
 
 (*
+ * Additional debugging.
+ *)
+let print_term_match = Term_match_table.print_term_match
+let eval_term_match = Term_match_table.eval_term_match
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "editor.top"

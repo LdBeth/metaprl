@@ -19,12 +19,6 @@ if $(not $(defined VERBOSE))
 OCAMLFLAGS += -thread
 
 #
-# Make bytecode version too
-#
-NATIVE_ENABLED = false
-BYTE_ENABLED = true
-
-#
 # Library suffix
 #
 if $(NATIVE_ENABLED)

@@ -484,7 +484,7 @@ let format_short_term base shortener =
                    df_printer = printer;
                    df_external = is_external
           } =
-            lookup base (if is_sequent_term t then sequent_term else t)
+            lookup base t
       in
       let pr, parenflag =
          if pr' = inherit_prec then
