@@ -496,7 +496,7 @@ struct
     | StringExpr s ->
          fprintf out "%s : string\n" s
     | TermExpr t ->
-         print_term t
+         fprintf out "%s : term\n" (string_of_term t)
     | TacticExpr _ ->
          fprintf out "- : tactic\n"
     | ConvExpr _ ->
