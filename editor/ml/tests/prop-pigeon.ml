@@ -37,7 +37,7 @@ open Printf
 open Lm_debug
 
 open Splay_table
-open Lm_string_set
+open Lm_symbol
 
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
@@ -60,21 +60,6 @@ open Itt_struct
 (************************************************************************
  * SPECIALIZED DECISION PROCEDURE                                       *
  ************************************************************************)
-
-(*
- * Table for associating pigeon locations with hyp numbers.
- *)
-module StringTableBase =
-struct
-   type elt = string
-   type data = int
-
-   let compare s1 s2 = Pervasives.compare s1 s2
-   let append l1 l2 = l1 @ l2
-   let print _ _ = ()
-end
-
-module PigeonTable = MakeTable (StringTableBase)
 
 let dT i = thinningT false (dT i)
 
@@ -102,7 +87,7 @@ let rec prove_disjunct pigeons = funT (fun p ->
          orelseT (selT 2 (dT 0) thenMT prove_disjunct pigeons thenWT prove_wf)
       else
          try
-            nthHypT (PigeonTable.find pigeons (dest_var t))
+            nthHypT (SymbolTable.find pigeons (dest_var t))
          with
             Not_found ->
                raise (RefineError ("prove_disjunct", StringError "disjunct not provable")))
@@ -121,7 +106,7 @@ let rec forward_chain pigeons = argfunT (fun i p ->
       if is_implies_term t then
          let t, _ = dest_implies t in
             try
-               let j = PigeonTable.find pigeons (dest_var t) in
+               let j = SymbolTable.find pigeons (dest_var t) in
                   dT i thenLT [nthHypT j; forward_chain pigeons (pred i)]
             with
                Not_found ->
@@ -137,7 +122,7 @@ let rec forward_chain pigeons = argfunT (fun i p ->
 let rec collect_pigeons pigeons i p =
    let  t = Sequent.nth_hyp p i in
       if is_var_term t then
-         collect_pigeons (PigeonTable.add pigeons (dest_var t) i) (pred i) p
+         collect_pigeons (SymbolTable.add pigeons (dest_var t) i) (pred i) p
       else
          pigeons
 
@@ -161,7 +146,7 @@ let prove3T pigeons =
 
 let prove2T = funT (fun p ->
    let length = Sequent.hyp_count p in
-   let pigeons = collect_pigeons PigeonTable.empty length p in
+   let pigeons = collect_pigeons SymbolTable.empty length p in
       forward_chain pigeons length thenT prove3T pigeons)
 
 let proveT = funT (fun p ->
