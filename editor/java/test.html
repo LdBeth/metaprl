@@ -1,0 +1,47 @@
+<html>
+<head>
+    <title>NuprlTerm Applet</title>
+</head>
+
+<body bgcolor="#ffffff">
+<center>
+    <h1>NuprlTerm</h1>
+    <applet code="NetscapeApplet" width=640>
+	<param name="ApplicationClass" value="NuprlTerm">
+	<param name="term" value="if">
+    </applet>
+    <applet code="NetscapeApplet" width=640 height=100>
+	<param name="ApplicationClass" value="NuprlTerm">
+	<param name="term" value="if">
+    </applet>
+</center>
+</body>
+
+<!--
+<term>
+;;
+;; Opname table
+;;
+(opname if    "ifthenelse")
+(opname eq    "eq_int")
+(opname number "natural-number")
+
+(term eq   (eq () i j))
+(term if   (if () (eq () i j) (number ((number 1))) (number ((number 2)))))
+(term nat  (number ((number 1))))
+(term test (show () if if if if if))
+
+(display eq_int (eq () x y) x (string " = ") y)
+(display if     (if () "x" "y" "z")
+   (push) (push 1200) (szone)
+   (font bold) (string "if ") (font)
+   "x"
+   (font bold) (string " then") (font) (break soft " ")
+   "y" (pop) (break soft " ")
+   (push 1200) (font bold) (string "else") (font) (break soft " ")
+   "z" (pop) (pop))
+(display nat     (number ((mnumber "i"))) "i")
+</term>
+-->
+
+</html>
