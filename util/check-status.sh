@@ -68,5 +68,5 @@ else
 echo ""
 echo BUILD FAILED!
 fi
- ) | mail -s "MetaPRL proofs status update" "$LOGNAME"
+ ) | mail -s "MetaPRL proofs status update (`hostname -s`, `pwd`)" "$LOGNAME"
 rm -rf $TMPDIR

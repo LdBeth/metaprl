@@ -6,4 +6,4 @@ echo 'set_dfmode "src";; status_all ();;' | \
 cat $TIME
 rm -f $TIME
 gawk -F ' proof [(]| rule boxes,| primitive steps' -f util/status-all.awk < $TEMP
-cat $TEMP
+gawk -F"[[:blank:]\`']+" '/Module: / {MOD=$2}; /^Status:/ { $2 = MOD "/" $2 }; {print $0}' < $TEMP
