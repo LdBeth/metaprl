@@ -1,4 +1,4 @@
-
+   
 
 
 open Refiner.Refiner
@@ -5098,6 +5098,13 @@ let rec apply_var_subst term var_subst_list =
 
 
 
+let rec make_equal_list n list_object = 
+  if n = 0 then 
+   []
+  else 
+   list_object::(make_equal_list (n-1) list_object)
+
+
 let rec make_nuprl_interface rule_list nuprl_map =
   match rule_list with 
    [] -> []
@@ -5111,12 +5118,19 @@ let rec make_nuprl_interface rule_list nuprl_map =
           let delta_vars = List.map (fun x -> (x^"_jprover")) unique_deltas in 
           let delta_map = List.combine delta_vars delta_terms in 
           let var_mapping = (nuprl_map @ delta_map) in 
-           let new_term1 = apply_var_subst term1 var_mapping
-           and new_term2 = apply_var_subst term2 var_mapping
+let frees1 = free_vars term1
+and frees2 = free_vars term2 in 
+ let unique_object = mk_var_term "v0_jprover" in 
+   let unique_list1 = make_equal_list (List.length frees1) unique_object
+   and unique_list2 = make_equal_list (List.length frees2) unique_object
+   in
+    let next_term1 = subst term1 unique_list1 frees1
+    and next_term2 = subst term2 unique_list2 frees2 in 
+           let new_term1 = apply_var_subst next_term1 var_mapping
+           and new_term2 = apply_var_subst next_term2 var_mapping
       in 
 (* kick away the first argument, the position *)
      ((ruletable rule),new_term1,new_term2)::(make_nuprl_interface r nuprl_map)
-
 
 
 let rec make_test_interface rule_list nuprl_map =
@@ -5132,11 +5146,27 @@ let rec make_test_interface rule_list nuprl_map =
           let delta_vars = List.map (fun x -> (x^"_jprover")) unique_deltas in 
           let delta_map = List.combine delta_vars delta_terms in 
           let var_mapping = (nuprl_map @ delta_map) in 
-           let new_term1 = apply_var_subst term1 var_mapping
-           and new_term2 = apply_var_subst term2 var_mapping
+let frees1 = free_vars term1
+and frees2 = free_vars term2 in 
+ let unique_object = mk_var_term "v0_jprover" in 
+   let unique_list1 = make_equal_list (List.length frees1) unique_object
+   and unique_list2 = make_equal_list (List.length frees2) unique_object
+   in
+ begin
+  print_endline "";
+  print_endline "";
+  print_stringlist frees1;
+  print_endline "";
+  print_stringlist frees2;
+  print_endline "";
+  print_endline "";
+   let next_term1 = subst term1 unique_list1 frees1
+   and next_term2 = subst term2 unique_list2 frees2 in 
+           let new_term1 = apply_var_subst next_term1 var_mapping
+           and new_term2 = apply_var_subst next_term2 var_mapping
       in 
      (pos,(rule,new_term1,new_term2))::(make_test_interface r nuprl_map)
-
+end
 
 
 
