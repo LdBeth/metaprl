@@ -162,7 +162,8 @@ doc <:doc<
    @end[doc]
 >>
 declare "rewrite"[name:s]{'redex : Dform; 'contractum : Dform; 'proof : Dform; 'res : Dform} : Dform
-declare "cond_rewrite"[name:s]{'params : Dform; 'args : Dform; 'redex : Dform; 'contractum : Dform; 'proof : Dform; 'res : Dform} : Dform
+declare cond_rewrite[name:s]{'params : Dform; 'args : Dform; 'redex : Dform; 'contractum : Dform; 'proof : Dform; 'res : Dform} : Dform
+declare input_form[name:s]{'redex : Dform; 'contractum : Dform; 'proof : Dform; 'res : Dform} : Dform
 
 doc <:doc<
    @begin[doc]
@@ -438,15 +439,27 @@ dform resource_defs_dfs : resource_defs[start:n, finish:n, name:s]{'args} =
 (*
  * Display a simple rewrite.
  *)
-dform rewrite_df : "rewrite"[name:s]{'redex; 'contractum; 'v; 'res} =
+declare rewrite_like[name:s, kind:s]{'redex : Dform; 'contractum : Dform; 'v : Dform; 'res : Dform} : Dform
+
+dform rewrite_like_df : rewrite_like[name, kind]{'redex; 'contractum; 'v; 'res} =
    szone pushm[4]
-   ensuremath{'v} info[" rewrite"] " " szone rewrite_name[name:s] resources{'res} keyword[":"] ezone hspace
+   ensuremath{'v} " " info[kind:s] " " szone rewrite_name[name:s] resources{'res} keyword[":"] ezone hspace
    szone pushm[0]
    szone ensuremath{slot{'redex}} ezone
    hbreak["   ", " "] ensuremath{longleftrightarrow} hspace
    szone ensuremath{slot{'contractum}} ezone
    popm ezone
    popm ezone
+
+dform rewrite_df : "rewrite"[name]{'redex; 'contractum; 'v; 'res} =
+   rewrite_like[name, "rewrite"]{'redex; 'contractum; 'v; 'res}
+
+dform iform_df : input_form[name]{'redex; 'contractum; status_primitive{xnil}; 'res} =
+   rewrite_like[name, "input form"]{'redex; 'contractum; xnil; 'res}
+
+(* (nogin) This should not happen, but let's keep this just in case *)
+dform iform_df2 : input_form[name]{'redex; 'contractum; 'v; 'res} =
+   rewrite_like[name, "input form"]{'redex; 'contractum; 'v; 'res}
 
 dform int_param_df : except_mode[src] :: "int_param"[name:v] =
    df_context_var[name:v]
@@ -822,7 +835,7 @@ dform status_complete : status_complete =
    keyword["*"]
 
 dform status_primitive : status_primitive{'t} =
-   szone keyword["!"] `"[" slot{'t} "]" ezone
+   szone keyword["!"] `"[" slot{'t} `"]" ezone
 
 dform status_interactive : status_interactive[rules:n,nodes:n]{'status} =
    'status `"[" slot[rules:n] `"," slot[nodes:n] `"]"

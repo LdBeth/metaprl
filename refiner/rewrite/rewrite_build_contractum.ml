@@ -261,6 +261,7 @@ struct
                                   vars terms
                             end
                       ENDIF;
+                   (* XXX BUG: This subst is too late! *)
                    subst term vars terms
               | _ ->
                    raise(Invalid_argument("Rewrite_build_contractum.build_contractum_term: stack entry is not valid"))
