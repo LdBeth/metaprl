@@ -1,6 +1,5 @@
 <HTML>
 <HEAD>
-  <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
   <TITLE>MetaPRL Display Forms</TITLE>
 </HEAD>
 <BODY BGCOLOR="#ffffff">
@@ -37,11 +36,11 @@ in the <I>uniform</I> syntax; the term must be defined with the
 is another term that is the display form expansion. Term display
 is a process of <I>evaluation</I>: a term is displayed by selecting
 the closest-matching display form, replacing it with its expansion,
-and recursively displaying the result. Nuturally, there is a condition
+and recursively displaying the result. Naturally, there is a condition
 for termination, and the definition uses a syntax that includes
 terms representing strings, line breaking information, and other
 <I>control</I> terms, as well as recursive display. The <I>options</I>
-provide information about <I>predecedence</I> and <I>parenthesization</I>.</P>
+provide information about <I>precedence</I> and <I>parenthesization</I>.</P>
 
 <P>Display is part of the <I>logical</I> context of a module,
 and different modules can define different display mechanisms.
@@ -230,7 +229,7 @@ gives the pattern for terms defined with this display.</P>
 defined as a sequence of terms for each part of the display. The
 <TT>slot</TT> for is used to parenthesize recursive display, so
 that the <TT>slot{'t1}</TT> in the <TT>and_df</TT> display form
-places parenteses around the <TT>'t1</TT> subterm if the precedence
+places parentheses around the <TT>'t1</TT> subterm if the precedence
 is <I>less</I> that <TT>prec_and</TT>. The string <TT>`&quot;
 &quot;</TT> is a <I>literal</I> string that is printed verbatim;
 in this case a space character.</P>
@@ -264,22 +263,22 @@ The <TT>inherit</TT> option is an alternative to <TT>prec[</TT><I>prec</I><TT>]<
 it specifies that the precedence should be inherited from the
 context. The <TT>inherit</TT>option is used for creating <I>transparent</I>
 display form, such as the <TT>slot</TT> term, which passes the
-precedence ot its context to its subterm.</P>
+precedence of its context to its subterm.</P>
 
-<H4>The <TT>slot</TT> epression</H4>
+<H4>The <TT>slot</TT> expression</H4>
 
 <P>The <TT>slot</TT> performs the precedence computation for parenthesizing
-subterms. The general slot stntax includes an optional parameter:</P>
+subterms. The general slot syntax includes an optional parameter:</P>
 
 <BLOCKQUOTE>
   <P><TT>slot[</TT><I>option</I><TT>]{</TT><I>subterm</I><TT>}</TT></P>
 </BLOCKQUOTE>
 
 <P>The <I>option</I> is a string parameter, with two possible
-values: <TT>slot[&quot;le&quot;:s]{</TT><I>t</I><TT>}</TT>, specifies
+values: <TT>slot[&quot;le&quot;]{</TT><I>t</I><TT>}</TT>, specifies
 that subterm <I>t</I> should be parenthesized if its precedence
 is less than <I>or equal to</I> the precedence of the enclosing
-term. The <TT>slot[&quot;lt&quot;:s]{</TT><I>t</I><TT>}</TT> term
+term. The <TT>slot[&quot;lt&quot;]{</TT><I>t</I><TT>}</TT> term
 specifies that the term <I>t</I> should be parenthesized only
 if its precedence is strictly less than the precedence of the
 current term. If the slot option is not given, the value defaults
@@ -290,14 +289,10 @@ If the slot body is empty, the parameter is displayed using a
 &quot;standard&quot; display:</P>
 
 <UL>
-  <LI><TT>slot[<I>i</I>:n]</TT> displays the number <I>i</I> in
-  decimal,
-  <LI><TT>slot[<I>s</I>:s]</TT> display the string <I>s</I> without
-  quotes,
-  <LI><TT>slot[<I>t</I>:t]</TT> displays the string <I>t</I> without
-  quotes,
-  <LI><TT>slot[<I>v</I>:v]</TT> displays the string <I>v</I> for
-  the variable,
+  <LI><TT>slot[<I>&quot;s&quot;</I>]</TT> displays string <I>s</I>
+  without quotes,
+  <LI><TT>slot[<I>p</I>]</TT> coerses the parameter <I>p</I> to a string
+  and displays it without quotes,
   <LI><TT>slot[<I>l</I>:l]</TT> displays the level expression in
   normalized form.
 </UL>
@@ -305,7 +300,7 @@ If the slot body is empty, the parameter is displayed using a
 <H4>Literals</H4>
 
 <P>The <TT>`&quot;<I>s</I>&quot;</TT> form displays the string
-<I>s</I>. It is equivalent to <TT>slot[<I>s</I>:s]</TT>.</P>
+<I>s</I>. It is equivalent to <TT>slot[<I>&quot;s&quot;</I>]</TT>.</P>
 
 <H4>Line breaking and <I>zones</I></H4>
 
@@ -346,7 +341,7 @@ and <TT>hbreak[</TT><I>inline</I><TT>:s,</TT><I>take</I><TT>:s]</TT>.
 The <I>inline</I> string specifies a string to be displayed if
 the break is <I>not</I> taken, and the <I>take</I> string is printed
 <I>before</I> the end of the line if the line break is taken.
-The string arguments can be ommitted; they default to the empty
+The string arguments can be omitted; they default to the empty
 string <TT>&quot;&quot;</TT>. For convenience, the <TT>hspace</TT>
 term is defined in the <TT>Nuprl_font</TT> module as <TT>hbreak[&quot;
 &quot;:s,&quot;&quot;:s]</TT>.</P>
@@ -380,7 +375,7 @@ term defined in the module <TT>Itt_bool</TT>.</P>
 <P>This is a fairly complicated display form. The options specify
 that the <TT>ifthenelse</TT> term may be parenthesized, and it
 has precedence <TT>prec_or</TT>. The display immediately pushes
-the current left magin, and enters a soft zone so that the <TT>ifthenelse
+the current left margin, and enters a soft zone so that the <TT>ifthenelse
 </TT>is either displayed on a single line, or all display breaks
 are taken. The <TT>push_indent</TT> term pushes the left margin
 again to indent the body of the <TT>ifthenelse</TT>; it is defined
@@ -391,8 +386,8 @@ by a possible line break. The <I>body</I> of the conditional is
 displayed in an additional soft zone. After the body is displayed,
 the margin is popped so that a line break will return to the margin
 for the conditional. The <I>else</I> string is printed and the
-left margin ispushed again for the body of the <I>else</I>. Once
-the else-body is displayed, both soft zone are timinated, and
+left margin is pushed again for the body of the <I>else</I>. Once
+the else-body is displayed, both soft zone are terminated, and
 both margins are popped, returning the display state to its original
 state.</P>
 

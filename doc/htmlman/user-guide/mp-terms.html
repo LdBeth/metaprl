@@ -1,6 +1,5 @@
 <HTML>
 <HEAD>
-  <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
   <TITLE>MetaPRL Terms</TITLE>
 </HEAD>
 <BODY BGCOLOR="#ffffff">
@@ -68,7 +67,7 @@ syntax:</P>
         ::=</TD> 
         <TD WIDTH="70%">
         var <TT>:n</TT> | var<TT>:s</TT> | var<TT>:t</TT>
-        | var <TT>:v</TT> | var <TT>:l</TT></TD> 
+        | var <TT>:v</TT></TD> 
       </TR>
       <TR>
         <TD WIDTH="21%">
@@ -91,7 +90,8 @@ enclosed in double-quotes, and a <I>number</I> is any sequence
 of digits. A <I>var</I> is a simple literal. The <B>bterms</B>
 and <B>params</B> lists use the semicolon (<TT>;</TT>) as a separator
 character, and the <I>vars</I> list uses a comma (<TT>,</TT>)
-as a separator character.</P>
+as a separator character. <TT>:s</TT> in parameters and meta-parameters
+can be omitted.</P>
 
 <P>The <I>operator</I> represents the <I>name</I> of a term, which
 includes constant values defined by the parameters. The <I>opname</I>
@@ -108,7 +108,7 @@ are defined with the syntax <TT>variable[&quot;v&quot;:v]</TT>
 (which represents the variable <I>v</I>). <I>Second-order</I>
 variables represent terms with substitutions (second order variables
 are used to define computational rewrites and inference rules).
-The syntax of second-order variables represents substituions with
+The syntax of second-order variables represents substitutions with
 subterms. For example, the term <TT>variable[&quot;v&quot;:v]{variable[&quot;v1&quot;:v];
 variable[&quot;v2&quot;:v]}</TT> is a second-order variable with
 two variables <I>v1</I> and <I>v2</I> as subterms.</P>
@@ -202,7 +202,7 @@ module defines syntax for function abstraction and application.</P>
 
 <P><I>Binding</I> variables are simple literals (so they are not
 quoted). The meta-syntax for <TT>lambda</TT> includes a second
-order variable, indictaing that the variable <TT>'x</TT> is <I>bound</I>
+order variable, indicating that the variable <TT>'x</TT> is <I>bound</I>
 in the body <TT>'b['x]</TT> of the function. The following function
 is an example of valid syntax in the <TT>Itt_rfun</TT> module:</P>
 
@@ -228,11 +228,11 @@ are some of the types defined in the <TT>Itt_logic</TT> module:</P>
 <H3>Simplified Syntax</H3>
 
 <P>The uniform syntax is verbose: each term contains an operator,
-and brackets for subterms. The verbosity can obscure the menaing
+and brackets for subterms. The verbosity can obscure the meaning
 implied by term expressions. The page on <A HREF="mp-dform.html">display
 forms</A> discusses the pretty-printing mechanism for displaying
 terms. The parser also provides a simplified syntax for commonly
-occurring terms. The following tables list the simplied syntax
+occurring terms. The following tables list the simplified syntax
 in the left column, and the right column gives term in the uniform
 syntax. The simplified form is just an abbreviation; the term
 must still be declared. For example, the use of the term <TT>true
