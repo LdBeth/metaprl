@@ -31,7 +31,7 @@
  *)
 
 load "refl_term";;
-cd "refl_term/eq_alpha_term_trans";;
+cd "refl_term";;
 
 (*
  * -*-

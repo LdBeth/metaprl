@@ -113,6 +113,8 @@ sig
    val fold : unit -> unit
    val fold_all : unit -> unit
    val kreitz : unit -> unit
+   val sync : unit -> unit
+   val expand_all : unit -> unit
 
    (*
     * Nuprl5 interface.

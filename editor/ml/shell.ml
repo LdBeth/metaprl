@@ -688,6 +688,76 @@ struct
          print_exn set ()
 
    (*
+    * Load all the ped's for the current module.
+    * This is mainly for preparing for performance testing.
+    *)
+   let sync () =
+      match info.package with
+         Some pkg ->
+            let ped_of_proof = function
+               Filter_cache.Primitive _
+             | Filter_cache.Derived _
+             | Filter_cache.Incomplete ->
+                  ()
+             | Filter_cache.Interactive proof ->
+                  let _ = Package.ped_of_proof pkg proof in
+                     ()
+            in
+            let sync_item (item, _) =
+               match item with
+                  Rewrite { rw_proof = proof } ->
+                     ped_of_proof proof
+                | CondRewrite { crw_proof = proof } ->
+                     ped_of_proof proof
+                | Axiom { axiom_proof = proof } ->
+                     ped_of_proof proof
+                | Rule { rule_proof = proof } ->
+                     ped_of_proof proof
+                | _ ->
+                     ()
+            in
+               List.iter sync_item (info_items (Package.info pkg))
+       | None ->
+            eprintf "sync: no current package%t" eflush
+
+   let expand_all () =
+      match info.package with
+         Some pack ->
+            let expand item =
+               try item.edit_expand (get_db null_mode_base) with
+                  RefineError _ ->
+                     ()
+            in
+            let expand_item (item, _) =
+               match item with
+                  Rewrite rw ->
+                     expand (Shell_rewrite.view_rw pack rw)
+                | CondRewrite crw ->
+                     expand (Shell_rewrite.view_crw pack crw)
+                | Axiom ax ->
+                     expand (Shell_rule.view_axiom pack ax)
+                | Rule rule ->
+                     expand (Shell_rule.view_rule pack rule)
+                | _ ->
+                     ()
+            in
+            let start = Unix.times () in
+            let start_time = Unix.gettimeofday () in
+            let _ = List.iter expand_item (info_items (Package.info pack)) in
+            let finish = Unix.times () in
+            let finish_time = Unix.gettimeofday () in
+               eprintf "User time %f; System time %f; Real time %f%t" (**)
+                  ((finish.Unix.tms_utime +. finish.Unix.tms_cutime)
+                   -. (start.Unix.tms_utime +. start.Unix.tms_cstime))
+                  ((finish.Unix.tms_stime +. finish.Unix.tms_cstime)
+                   -. (start.Unix.tms_stime +. finish.Unix.tms_cstime))
+                  (finish_time -. start_time)
+                  eflush
+
+       | None ->
+            eprintf "expand_all: no current package%t" eflush
+
+   (*
     * Change directory.
     *)
    let rec cd name =
@@ -702,26 +772,30 @@ struct
                   ShellP4.set_mk_opname None;
              | modname :: item ->
                   (* change module only if in another (or at top) *)
-                  if (info.dir = []) or ((List.hd info.dir) <> modname) then begin
-                     let pkg = Package.get info.packages modname in
-                        info.package <- Some pkg;
-                        ShellP4.set_df (Some (get_db null_mode_base));
-                        ShellP4.set_mk_opname (Some (Package.mk_opname pkg));
-                        ShellP4.set_module modname commands;
-                  end;
-                  if (item = []) then begin
-                     (* top of module *)
-                     info.dir <- dir;
-                     info.proof <- Shell_null.null_object
-                  end else begin
-                     (* select an item (if not there already), then go down the proof. *)
-                   if ((info.dir = []) or ((List.tl info.dir) = []) or
-                         ((List.hd (List.tl info.dir)) <> (List.hd item))) then
-                        set_item modname (List.hd item);
-                     (* go down the proof with pf_path *)
-                     info.proof.edit_addr (List.map int_of_string (List.tl item));
-                     info.dir <- dir
-                  end;
+                  if (info.dir = []) or ((List.hd info.dir) <> modname) then
+                     begin
+                        let pkg = Package.get info.packages modname in
+                           info.package <- Some pkg;
+                           ShellP4.set_df (Some (get_db null_mode_base));
+                           ShellP4.set_mk_opname (Some (Package.mk_opname pkg));
+                           ShellP4.set_module modname commands;
+                     end;
+                  if (item = []) then
+                     begin
+                        (* top of module *)
+                        info.dir <- dir;
+                        info.proof <- Shell_null.null_object
+                     end
+                  else
+                     begin
+                        (* select an item (if not there already), then go down the proof. *)
+                        if ((info.dir = []) or ((List.tl info.dir) = []) or
+                            ((List.hd (List.tl info.dir)) <> (List.hd item))) then
+                           set_item modname (List.hd item);
+                        (* go down the proof with pf_path *)
+                        info.proof.edit_addr (List.map int_of_string (List.tl item));
+                        info.dir <- dir
+                     end
          end;
          pwd ()
 
@@ -790,7 +864,9 @@ struct
        "undo",             UnitFunExpr     (fun () -> UnitExpr (undo ()));
        "fold",             UnitFunExpr     (fun () -> UnitExpr (fold ()));
        "fold_all",         UnitFunExpr     (fun () -> UnitExpr (fold_all ()));
-       "kreitz",           UnitFunExpr     (fun () -> UnitExpr (kreitz ()))]
+       "kreitz",           UnitFunExpr     (fun () -> UnitExpr (kreitz ()));
+       "sync",             UnitFunExpr     (fun () -> UnitExpr (sync ()));
+       "expand_all",       UnitFunExpr     (fun () -> UnitExpr (expand_all ()))]
 
    (************************************************************************
     * NUPRL5 INTERFACE                                                     *

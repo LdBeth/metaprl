@@ -544,11 +544,11 @@ let root_ped ped =
  *)
 let up_ped ped i =
    if i > 0 then
-      let { ped_undo = undo; ped_stack = stack } = ped in
+      let { ped_undo = undo } = ped in
          match undo with
             [] ->
                ()
-          | { ped_proof = pf; ped_select = select }::_ ->
+          | { ped_proof = pf; ped_select = select }::stack ->
                let rec climb i pf =
                   if i = 0 then
                      pf
@@ -617,11 +617,11 @@ let down_ped_aux ped stack pf i =
                ped.ped_stack <- stack'
 
 let down_ped ped i =
-   let { ped_undo = undo; ped_stack = stack } = ped in
+   let { ped_undo = undo } = ped in
       match undo with
          [] ->
             ()
-       | { ped_proof = pf }::_ ->
+       | { ped_proof = pf }::stack ->
             down_ped_aux ped stack pf i
 
 let addr_ped ped addr =
@@ -630,11 +630,11 @@ let addr_ped ped addr =
          root_ped ped
     | _ ->
          let addr, last = List_util.split_last addr in
-         let { ped_undo = undo; ped_stack = stack } = ped in
+         let { ped_undo = undo } = ped in
             match undo with
                [] ->
                   ()
-             | { ped_proof = pf }::_ ->
+             | { ped_proof = pf }::stack ->
                   let pf = Proof.index (Proof.main pf) addr in
                      down_ped_aux ped stack pf last
 
