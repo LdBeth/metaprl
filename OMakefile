@@ -359,18 +359,32 @@ LMINSTALL = $(MPINSTALL)
 #
 # Always use -linkall on libraries
 #
-OCAML_LIB_FLAGS = $(OCAML_LIB_FLAGS) -linkall
-OTHER_CCLIBS =
-if $(equal $(OSTYPE), Win32)
-    if $(SSL_ENABLED)
-        OTHER_CCLIBS = -cclib c:/OpenSSL/lib/VC/ssleay32.lib -cclib c:/OpenSSL/lib/VC/libeay32.lib
+OCAML_LIB_FLAGS += -linkall
+
+if $(SSL_ENABLED)
+    if $(equal $(OSTYPE), Win32)
+        OCAML_LINK_FLAGS += -cclib c:/OpenSSL/lib/VC/ssleay32.lib -cclib c:/OpenSSL/lib/VC/libeay32.lib
+        CFLAGS += -Ic:/OpenSSL/include
         export
+    else
+        OCAML_LINK_FLAGS += -cclib -lcrypto -cclib -lssl
+        CFLAGS += -I/usr/kerberos/include
+        export
+
     export
-else
-    OTHER_CCLIBS = -cclib -lreadline -cclib -lncurses -cclib -ltermcap -cclib -lssl
-    if $(equal $(MACHINE), Power Macintosh)
-        OTHER_CCLIBS += -cclib -lcrypto
-	export
+
+if $(READLINE_ENABLED)
+    CFLAGS += \
+        -DREADLINE\
+        -DRL_COMPLETION_MATCHES=rl_completion_matches\
+        -DRL_CP_TYPE=rl_compentry_func_t\
+        -DRL_CPP_TYPE=rl_completion_func_t
+    OCAML_LINK_FLAGS += -cclib -lreadline
+    export
+
+if $(NCURSES_ENABLED)
+    CFLAGS += -DNCURSES
+    OCAML_LINK_FLAGS += -cclib -lncurses
     export
 
 #

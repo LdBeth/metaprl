@@ -182,11 +182,9 @@ NATIVE_CLIBS = $(addsuffix $(EXT_LIB), $(CLIBS))
 
 BYTE_CCLIBS =\
         $(addprefix -cclib , $(BYTE_CLIBS))\
-        $(OTHER_CCLIBS)
 
 NATIVE_CCLIBS =\
         $(addprefix -cclib , $(NATIVE_CLIBS))\
-        $(OTHER_CCLIBS)
 
 #
 # Dependencies for the 3 versions of MetaPRL

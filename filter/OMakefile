@@ -150,8 +150,6 @@ PRLCO_FILES =\
 #
 # Compile a special camlp4 to run Nuprl.
 #
-OCAML_LINK_FLAGS = $(OCAML_LINK_FLAGS) $(OTHER_CCLIBS)
-
 if true
     OCAML_LIBS = $(OCAML_LIBS) $(CAMLP4N_LIBS)
     OCAML_LINK_FLAGS = $(OCAML_LINK_FLAGS) -linkall
