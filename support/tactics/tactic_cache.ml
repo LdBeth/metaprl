@@ -64,7 +64,6 @@
  *)
 open Lm_symbol
 open Lm_debug
-open Refiner.Refiner
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMan

@@ -36,8 +36,6 @@ open Term_addr_sig
 open Refine_error_sig
 open Rewrite_debug_sig
 
-open Rewrite_types
-
 module MakeRewriteDebug
    (TermType : TermSig)
    (Term : TermBaseSig

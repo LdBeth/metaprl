@@ -42,8 +42,6 @@ open Refiner_sig
 open Refiner_io
 open Mp_resource
 
-open Dform
-
 (*
  * Visible types.
  *)

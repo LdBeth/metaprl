@@ -10,7 +10,7 @@
  * See the file doc/index.html for information on Nuprl,
  * OCaml, and more information about this system.
  *
- * Copyright (C) 1999 Jason Hickey, Cornell University
+ * Copyright (C) 1999-2004 MetaPRL Group
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,8 +26,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.caltech.edu>
+ *              Nathaniel Gray <n8gray@caltech.edu>
  *)
 open Printf
 open Lexing
@@ -37,10 +38,8 @@ open Lm_threads
 
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
-open Refiner.Refiner.RefineError
 
 open Dform
-
 open Filter_type
 open Term_grammar
 

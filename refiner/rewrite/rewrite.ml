@@ -110,7 +110,6 @@ struct
     * MODULES                                                              *
     ************************************************************************)
 
-   open TermType
    open Term
    open TermMan
    open TermAddr

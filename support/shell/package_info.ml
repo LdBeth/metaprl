@@ -37,7 +37,6 @@ open Printf
 open Lm_debug
 open Lm_threads
 open Lm_imp_dag
-open Lm_string_set
 
 open File_base_type
 
@@ -45,14 +44,11 @@ open Refiner.Refiner.Refine
 open Refiner.Refiner.RefineError
 open Theory
 
-open Filter_type
 open Filter_summary_type
-open Filter_summary
 open Filter_cache
 open Filter_util
 
 open Tactic_type
-
 open Package_sig
 
 (*

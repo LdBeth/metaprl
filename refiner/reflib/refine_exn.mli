@@ -32,7 +32,6 @@
 
 open Refiner.Refiner.RefineError
 open Dform
-open Dform_print
 
 val format_refine_error : dform_base -> buffer -> string -> refine_error -> unit
 val format_exn : dform_base -> buffer -> exn -> unit
