@@ -3115,6 +3115,23 @@ let rec select_pos search_po po redord ftree connections slist logic calculus ca
 
 
 
+let rec get_position_in_tree pname treelist =
+  match treelist with 
+   [] -> raise (Failure "invalid argument")
+  |f::r -> 
+    (match f with 
+      Empty -> get_position_in_tree pname r
+     |NodeAt(pos) -> 
+        if pos.name = pname then 
+          pos 
+        else 
+          get_position_in_tree pname r
+     |NodeA(pos,suctrees) -> 
+         get_position_in_tree pname ((Array.to_list suctrees) @ r)
+
+     )
+
+
 (* total corresponds to tot in the thesis, 
    tot simulates the while-loop, solve is the rest *)
 
@@ -3161,19 +3178,28 @@ let rec solve  ftree redord connections p po slist (pred,succs) orr_flag =
 	       if (c1= "none" & c2 ="none") then 
                  rback @ (tot  ftree redord connections pnew newslist) 
                else 
-                 let ass_pos =   (* need the pol=O position of the connection for later permutation *)
+                 let (ass_pos,inst_pos) = 
+(* need the pol=O position ass_pos of the connection for later permutation *)
+(* need the pol=I position inst_pos for NuPRL instantiation *)
                    if p.name = c1 then 
                      if p.pol = O then
-                       c1 
+                       (c1,c2) 
                      else 
-                       c2
+                       (c2,c1)
                    else (* p.name = c2 *)
                      if p.pol = O then 
-                       c2
+                       (c2,c1)
                    else 
-                        c1
+                       (c1,c2)
                 in
-                rback @ [(("",ass_pos),(build_rule p p csigmaQ orr_flag calculus))] (* one possibility of recursion end *)
+let inst_p = 
+  if inst_pos = p.name then 
+    p
+  else
+   get_position_in_tree inst_pos [ftree] 
+in 
+  rback @ [(("",ass_pos),(build_rule inst_p inst_p csigmaQ orr_flag calculus))] 
+   (* one possibility of recursion end *)
          | Alpha -> 
              rback @ ((("",p.name),(build_rule p p csigmaQ orr_flag calculus))::(tot  ftree redord connections pnew newslist))
          | Delta -> 
