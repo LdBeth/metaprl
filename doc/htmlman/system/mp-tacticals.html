@@ -88,7 +88,7 @@ following functions:</P>
 <B>val</B> get_type      : tactic_arg -&gt; string -&gt; term
 <B>val</B> get_int       : tactic_arg -&gt; string -&gt; int
 <B>val</B> get_bool      : tactic_arg -&gt; string -&gt; bool
-<B>val</B> get_subst     : tactic_arg -&gt; term_subst
+<B>val</B> get_subst     : tactic_arg -&gt; term_subst</PRE>
 </BLOCKQUOTE>
 
 <P>Each attribute is associated with a string (the &quot;name&quot;
@@ -103,7 +103,7 @@ to modify the attribute list during refinement:</P>
 <B>val</B> withTypeT : string -&gt; term -&gt; tactic -&gt; tactic
 <B>val</B> withBoolT : string -&gt; bool -&gt; tactic -&gt; tactic
 <B>val</B> withIntT : string -&gt; int -&gt; tactic -&gt; tactic
-<B>val</B> withSubstT : term_subst -&gt; tactic -&gt; tactic
+<B>val</B> withSubstT : term_subst -&gt; tactic -&gt; tactic</PRE>
 </BLOCKQUOTE>
 
 <P>Not all of the attributes can be modified: some are constant
