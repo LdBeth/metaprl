@@ -403,7 +403,7 @@ dform implementation_df : "implementation"{'body} =
    popm ezone
 
 dform location_df : "location"[start:n, finish:n]{'body} =
-   slot{'body}
+   'body
 
 (*
  * Resource annotations
@@ -830,10 +830,10 @@ dform child_df1 : internal :: child_df{'number; goal_list{'child}} =
 dform child_df2 : internal :: child_df{cons{goal{'status; 'label; 'assums; 'goal}; 'tl}} =
    'label 'goal
 
-dform tactic_arg_df1 : internal :: tactic_arg[label:s]{'goal;'args;'parents} =
+dform tactic_arg_df1 : internal :: tactic_arg[label:s]{'goal; 'args; 'parents} =
    szone `"[" slot[label:s] `"] " pushm 'goal popm ezone
 
-dform tactic_arg_df2 : internal :: tactic_arg[label:s]{'goal;'args;'parents} =
+dform tactic_arg_df2 : internal :: tactic_arg[label:s]{'goal; 'args; 'parents} =
    szone `"[" slot[label:s] `"] " pushm 'goal ezone `" " popm szone `"with args " pushm `"<" 'args `">" popm ezone
 
 (*

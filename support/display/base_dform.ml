@@ -646,7 +646,7 @@ dform semicolon_df : internal :: ";" = `";"
 dform newline_df : internal :: "\\" = \newline
 
 dform szone_df : internal :: szone{'e} =
-   szone slot{'e} ezone
+   szone 'e ezone
 
 (*
  * -*-
