@@ -40,6 +40,7 @@ open Lm_string_set
 open Precedence
 open Opname
 open Term_sig
+open Rewrite_sig
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermOp

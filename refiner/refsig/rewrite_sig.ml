@@ -35,6 +35,35 @@
 open Lm_symbol
 open Lm_printf
 
+(* Names of the sequent and regular contexts to be passed as arguments *)
+type rewrite_args_spec = var array
+
+(* Sizes (+1) for sequent contexts, bound variables *)
+(* Non-positive sizes mean counting the hyps to skip from the end *)
+type rewrite_args = int array * SymbolSet.t
+
+(*
+ * In "Strict" mode the rewriter should behave as described in the
+ * "Sequent Schemata" paper @cite[NH02],@cite[Section 3]{Nog02}
+ * In "Strict" mode the rewriter is guaranteed to always preserve
+ * the binding structure on the terms, no matter what rules are being
+ * applied.
+ * (XXX Note: right now it does not behave quite that way, but it's
+ * a bug).
+ *
+ * The "Relaxed" mode is a hack that does not have an exact semantics.
+ *
+ * Basically, "Strict" mode means that whenever a pattern specifies a binding
+ * occurence explicitly, all the bound occurrences have to be also explicitly
+ * specified. In "Strict" mode, <<lambda{x.'t}>> would only match a term
+ * where "t" does not have * free instances of "x". In "Relaxed" mode there
+ * is no such restriction.
+ *
+ * By default, the rules and rewrites are compiled in "Strict" mode
+ * and display forms - in "Relaxed" mode
+ *)
+type strict = Strict | Relaxed
+
 module type RewriteSig =
 sig
    (* Import the term types *)
@@ -73,35 +102,6 @@ sig
     | RewriteNum of Lm_num.num rewrite_param
     | RewriteLevel of level_exp
 
-   (* Names of the contexts to be passed as arguments *)
-   type rewrite_args_spec = var array
-
-   (* Sizes (+1) for sequent contexts, bound variables *)
-   (* Non-positive sizes mean counting the hyps to skip from the end *)
-   type rewrite_args = int array * SymbolSet.t
-
-   (*
-    * In "Strict" mode the rewriter should behave as described in the
-    * "Sequent Schemata" paper @cite[NH02],@cite[Section 3]{Nog02}
-    * In "Strict" mode the rewriter is guaranteed to always preserve
-    * the binding structure on the terms, no matter what rules are being
-    * applied.
-    * (XXX Note: right now it does not behave quite that way, but it's
-    * a bug).
-    *
-    * The "Relaxed" mode is a hack that does not have an exact semantics.
-    *
-    * Basically, "Strict" mode means that whenever a pattern specifies a binding
-    * occurence explicitly, all the bound occurrences have to be also explicitly
-    * specified. In "Strict" mode, <<lambda{x.'t}>> would only match a term
-    * where "t" does not have * free instances of "x". In "Relaxed" mode there
-    * is no such restriction.
-    *
-    * By default, the rules and rewrites are compiled in "Strict" mode
-    * and display forms - in "Relaxed" mode
-    *)
-   type strict = Strict | Relaxed
-
    (* Rewrites with no arguments *)
    val empty_args_spec : rewrite_args_spec
    val empty_args : rewrite_args
@@ -109,8 +109,8 @@ sig
    (*
     * Separate analysis.
     *)
-   val compile_redex : strict -> var array -> term -> rewrite_redex
-   val compile_redices : strict -> var array -> term list -> rewrite_redex
+   val compile_redex : strict -> rewrite_args_spec -> term -> rewrite_redex
+   val compile_redices : strict -> rewrite_args_spec -> term list -> rewrite_redex
    val extract_redex_types : rewrite_redex -> (rewrite_type * var) list
    val test_redex_applicability :
       rewrite_redex -> int array ->

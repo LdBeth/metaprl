@@ -648,7 +648,7 @@ struct
     *)
    let simple_rewrite proc name redex contractum pf res =
       (* Check that rewrite will succeed *)
-      Refine.check_rewrite name [||] [] [] redex contractum;
+      Refine.check_rewrite name empty_args_spec [] [] redex contractum;
 
       (* Construct the command *)
       Rewrite { rw_name = name;
@@ -659,7 +659,7 @@ struct
       }
 
    let simple_input_form proc name redex contractum pf res =
-      Refine.check_rewrite name [||] [] [] redex contractum;
+      Refine.check_rewrite name empty_args_spec [] [] redex contractum;
       InputForm { rw_name = name;
                   rw_redex = redex;
                   rw_contractum = contractum;
@@ -878,7 +878,7 @@ struct
          if !debug_dform && modes = Dform.AllModes then
             eprintf "Warning: display form %s - no modes specified%t" name eflush;
          begin try
-            ignore (term_rewrite Relaxed empty_args_spec [t] [expansion])
+            ignore (term_rewrite Rewrite_sig.Relaxed empty_args_spec [t] [expansion])
          with
             exn ->
                Stdpp.raise_with_loc loc exn

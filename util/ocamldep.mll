@@ -35,17 +35,14 @@ let term_depth = ref 0
 (* Source quotations *)
 
 let contains_source_quot = ref false
-
-(* MetaPRL topval declarations *)
-
 let contains_topval = ref false
+let contains_rules = ref false
 
 (*
  * These are the implicit names.
  *)
 let prl_names = [
    "Obj";
-   "Lm_symbol";
    "Lm_debug";
    "Refiner";
    "Refine_exn";
@@ -62,6 +59,15 @@ let prl_names = [
 let topval_names = [
    "Mptop";
    "Shell_sig";
+]
+
+(*
+ * These are the names used by rule/rewrite implementation
+ *)
+let rule_names = [
+   "Shell_command";
+   "Lm_symbol";
+   "Rewriter_sig";
 ]
 
 }
@@ -81,9 +87,8 @@ rule main = parse
       { prl_struct_name lexbuf; main lexbuf }
   | "topval" white+
       { contains_topval := true; main lexbuf }
-  (* Interactive rules and rewrites are justified via Shell *)
-  | white "interactive" white+ | white "interactive_rw" white+ | white "derived" white+
-      { add_structure "Shell"; main lexbuf }
+  | white "prim" white+ | white "prim_rw" white+ | white "interactive" white+ | white "interactive_rw" white+ | white "derived" white+
+      { contains_topval := true; contains_rules := true ; main lexbuf }
   | modname '.'
       { let s = Lexing.lexeme lexbuf in
         add_structure(String.sub s 0 (String.length s - 1));
@@ -257,6 +262,7 @@ let print_dependencies target_file deps =
 let file_dependencies source_file =
   try
     contains_topval := false;
+    contains_rules := false;
     contains_source_quot := false;
     free_structures := StringSet.empty;
     prl_structures := StringSet.empty;
@@ -279,6 +285,8 @@ let file_dependencies source_file =
       List.iter add_structure prl_names;
     if !prl_flag && !contains_topval then
       List.iter add_structure topval_names;
+    if !prl_flag && !contains_rules then
+      List.iter add_structure rule_names;
     if Filename.check_suffix source_file ".ml" then begin
       let basename = Filename.chop_suffix source_file ".ml" in
       let init_deps,init_ppo_dep =

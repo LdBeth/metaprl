@@ -30,10 +30,10 @@
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 open Lm_printf
+open Rewrite_sig
 
 module type RewriteDebugSig =
 sig
-   type strict
    type rwcontractum
    type rwterm
    type rstack

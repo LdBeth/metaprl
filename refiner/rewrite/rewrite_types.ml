@@ -37,6 +37,7 @@ open Term_shape_sig
 
 open Term_sig
 open Term_addr_sig
+open Rewrite_sig
 
 module MakeRewriteTypes (TermType : TermSig)
    (TermAddr : TermAddrSig with module AddrTypes = TermType) =
@@ -47,11 +48,6 @@ struct
    type operator = TermType.operator
    type address = TermAddr.address
    type seq_hyps = TermType.seq_hyps
-
-   (* See refsig/rewrite_sig.mlz for explanaition *)
-   type strict =
-      Strict
-    | Relaxed
 
    (*
     * For matching level expressions.

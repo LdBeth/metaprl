@@ -48,6 +48,7 @@ open Term_subst_sig
 open Term_shape_sig
 open Refine_error_sig
 
+open Rewrite_sig
 open Rewrite_util_sig
 open Rewrite_debug_sig
 open Rewrite_types
@@ -83,7 +84,6 @@ struct
    open RewriteUtil
    open RewriteDebug
 
-   type strict = RewriteTypes.strict
    type rwterm = RewriteTypes.rwterm
 
    let compile_bname strict enames stack n =

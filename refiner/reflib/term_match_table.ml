@@ -44,6 +44,7 @@ open Lm_printf
 open Opname
 
 open Term_sig
+open Rewrite_sig
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp
@@ -285,7 +286,7 @@ and seq_add_to_choice prog knd lst =
  *)
 let add_item tbl t v =
    let t = simplify_term t in
-   let item = compile { info_redex = compile_redex Relaxed [||] t; info_value = v } [] [t] in
+   let item = compile { info_redex = compile_redex Relaxed empty_args_spec t; info_value = v } [] [t] in
       add_prog tbl item
 
 let add_map tbl t1 t2 v =

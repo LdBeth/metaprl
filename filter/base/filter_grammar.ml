@@ -270,7 +270,7 @@ let add_token gram id s contractum_opt =
       match contractum_opt with
          Some contractum ->
             let redex = mk_lexer_redex arity in
-               Some (term_rewrite Relaxed [||] [redex] [contractum])
+               Some (term_rewrite Rewrite_sig.Relaxed empty_args_spec [redex] [contractum])
        | None ->
             None
    in
@@ -292,7 +292,7 @@ let add_production gram id args opt_prec contractum =
    let name = shape_of_term contractum in
    let parse = Parser.add_production parse id name ops opt_prec in
    let redex = mk_simple_term parser_arg_opname args in
-   let rw = term_rewrite Relaxed [||] [redex] [contractum] in
+   let rw = term_rewrite Rewrite_sig.Relaxed empty_args_spec [redex] [contractum] in
    let actions = ActionTable.add actions id rw in
       { gram with gram_name           = None;
                   gram_parser         = parse;

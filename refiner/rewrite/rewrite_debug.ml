@@ -40,6 +40,7 @@ open Term_sig
 open Term_base_sig
 open Term_addr_sig
 open Refine_error_sig
+open Rewrite_sig
 
 (*
  * Show the file loading.
@@ -60,7 +61,6 @@ struct
    open TermAddr
    open RewriteTypes
 
-   type strict  = RewriteTypes.strict
    type rwterm  = RewriteTypes.rwterm
    type rstack  = RewriteTypes.rstack
    type stack   = RewriteTypes.stack

@@ -38,6 +38,7 @@ open Term_addr_sig
 open Term_subst_sig
 open Refine_error_sig
 
+open Rewrite_sig
 open Rewrite_util_sig
 open Rewrite_debug_sig
 open Rewrite_types
@@ -60,9 +61,7 @@ module MakeRewriteCompileRedex
    open RewriteUtil
    open RewriteDebug
 
-   type strict = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr).strict
-
-   val compile_so_redex : strict -> var array -> term list -> rstack array * rwterm list
+   val compile_so_redex : strict -> rewrite_args_spec -> term list -> rstack array * rwterm list
 end
 
 (*

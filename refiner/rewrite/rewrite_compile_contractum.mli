@@ -38,6 +38,7 @@ open Term_addr_sig
 open Term_subst_sig
 open Refine_error_sig
 
+open Rewrite_sig
 open Rewrite_util_sig
 open Rewrite_debug_sig
 open Rewrite_types
@@ -56,7 +57,6 @@ module MakeRewriteCompileContractum
     with type rstack = MakeRewriteTypes(TermType)(TermAddr).rstack)
 : sig
    open RewriteUtil
-   type strict = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr).strict
    type rwterm = Rewrite_types.MakeRewriteTypes(TermType)(TermAddr).rwterm
 
    val compile_so_contractum : strict -> rstack array -> term -> var array * rwterm

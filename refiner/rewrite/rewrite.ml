@@ -47,6 +47,7 @@ open Term_subst_sig
 open Term_shape_sig
 open Refine_error_sig
 
+open Rewrite_sig
 open Rewrite_types
 open Rewrite_util
 open Rewrite_debug
@@ -122,9 +123,6 @@ struct
    type rewrite_rule = RewriteTypes.rewrite_rule
    type rewrite_redex = RewriteTypes.rewrite_redex
 
-   type rewrite_args_spec = var array
-   type rewrite_args = int array * SymbolSet.t
-
    (*
     * Types for redex matching.
     *)
@@ -148,8 +146,6 @@ struct
     | RewriteString of string rewrite_param
     | RewriteNum of Lm_num.num rewrite_param
     | RewriteLevel of level_exp
-
-   type strict = RewriteTypes.strict = Strict | Relaxed
 
    (************************************************************************
     * IMPORTS                                                              *
@@ -379,7 +375,7 @@ struct
     * Make a ML function rewrite.
     *)
    let fun_rewrite strict redex f =
-      let stack, redex' = compile_so_redex strict [||] [redex] in
+      let stack, redex' = compile_so_redex strict empty_args_spec [redex] in
          { rr_redex = redex';
            rr_contractum = RWCFunction f;
            rr_gstacksize = Array.length stack;

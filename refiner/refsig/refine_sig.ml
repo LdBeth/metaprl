@@ -41,6 +41,7 @@
 open Lm_symbol
 
 open Opname
+open Rewrite_sig
 
 (*
  * Raised when an incomplete proof is manupulated as if it was complete.
@@ -320,7 +321,7 @@ sig
     *)
    val create_rule : build ->
       string ->            (* name *)
-      var array ->         (* addrs *)
+      rewrite_args_spec -> (* addrs *)
       term list ->         (* params *)
       meta_term ->         (* rule definition *)
       prim_tactic
@@ -329,13 +330,13 @@ sig
       prim_tactic
    val check_rule :
       string ->            (* name *)
-      var array ->         (* addrs *)
+      rewrite_args_spec -> (* addrs *)
       term list ->         (* params *)
       meta_term ->         (* rule definition *)
       unit
    val check_prim_rule :
       string ->            (* name *)
-      var array ->         (* addrs *)
+      rewrite_args_spec -> (* addrs *)
       term list ->         (* params *)
       meta_term ->         (* rule definition *)
       term list ->         (* extract args (bindings) *)
@@ -344,7 +345,7 @@ sig
 
    val prim_rule : build ->
       string ->                    (* name *)
-      var array ->                 (* addrs *)
+      rewrite_args_spec ->         (* addrs *)
       term list ->                 (* params *)
       meta_term ->                 (* rule definition *)
       term list ->                 (* extract args (bindings) *)
@@ -352,7 +353,7 @@ sig
       unit
    val derived_rule : build ->
       string ->                    (* name *)
-      var array ->                 (* addrs *)
+      rewrite_args_spec ->         (* addrs *)
       term list ->                 (* params *)
       meta_term ->                 (* rule definition *)
       unit ->                      (* placeholder *)
@@ -360,7 +361,7 @@ sig
       unit
    val delayed_rule : build ->
       string ->                    (* name *)
-      var array ->                 (* addrs *)
+      rewrite_args_spec ->         (* addrs *)
       term list ->                 (* params *)
       meta_term ->                 (* rule definition *)
       unit ->                      (* placeholder *)
@@ -409,7 +410,7 @@ sig
 
    val create_cond_rewrite : build ->
       string ->            (* name *)
-      var array ->         (* addrs *)
+      rewrite_args_spec -> (* addrs *)
       term list ->         (* params *)
       term list ->         (* subgoals *)
       term ->              (* redex *)
@@ -443,7 +444,7 @@ sig
       unit
    val check_rewrite :
       string ->            (* name *)
-      var array ->         (* addrs *)
+      rewrite_args_spec -> (* addrs *)
       term list ->         (* params *)
       term list ->         (* subgoals *)
       term ->              (* redex *)

@@ -1827,7 +1827,7 @@ struct
 
    let check_definition name redex contractum =
       check_def_redex name redex;
-      check_rewrite name [||] [] [] redex contractum
+      check_rewrite name empty_args_spec [] [] redex contractum
 
    let definitional_rewrite build name redex contractum =
       IFDEF VERBOSE_EXN THEN

@@ -49,6 +49,7 @@ open Term_subst_sig
 open Term_shape_sig
 open Refine_error_sig
 
+open Rewrite_sig
 open Rewrite_util_sig
 open Rewrite_debug_sig
 open Rewrite_types
@@ -83,8 +84,6 @@ struct
    open RefineError
    open RewriteTypes
    open RewriteUtil
-
-   type strict = RewriteTypes.strict
 
    type state =
       { st_addrs : var array;

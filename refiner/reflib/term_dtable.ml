@@ -171,7 +171,7 @@ let empty_dtable = []
  * Add an entry.
  *)
 let insert_aux t1 t2 v =
-   let rw = term_rewrite Relaxed empty_args_spec t1 t2 in
+   let rw = term_rewrite Rewrite_sig.Relaxed empty_args_spec t1 t2 in
    let template = List.map shape_of_term t1 in
       { info_pattern = template;
         info_rw = rw;
