@@ -176,7 +176,7 @@ let unconditional_error_handler body handler =
     Nuprl5_Exception (s,t) -> handler t
   |_ ->
 	( () (* TODO dump error to stdout *)
-	; handler (itext_term "Unexpected Nuprl Light failure"))
+	; handler (itext_term "Unexpected Metaprl failure"))
 
 let unwind_error body unwind =
   try body ()

@@ -170,7 +170,7 @@ let nuprl_dest_not term =
 
 let nuprl_dest_or term = 
    match Lib_term.dest_term term with
-   { term_op = term_op'; term_terms = [left ; right] } 
+   { term_op = term_op'; term_terms = [left; right] } 
     when term_op' = (mk_nuprl5_simple_op "or") -> 
       (match dest_bterm left with
       { bvars = []; bterm = t1 } ->
@@ -183,7 +183,7 @@ let nuprl_dest_or term =
 
 let nuprl_dest_implies term = 
    match Lib_term.dest_term term with
-   { term_op = term_op'; term_terms = [tp ; prop] } 
+   { term_op = term_op'; term_terms = [tp; prop] } 
     when term_op' = (mk_nuprl5_simple_op "implies") -> 
       (match dest_bterm tp with
       { bvars = []; bterm = t1 } ->
@@ -196,7 +196,7 @@ let nuprl_dest_implies term =
 
 let nuprl_dest_and term = 
    match Lib_term.dest_term term with
-   { term_op = term_op'; term_terms = [left ; right] } 
+   { term_op = term_op'; term_terms = [left; right] } 
     when term_op' = (mk_nuprl5_simple_op "and") -> 
       (match dest_bterm left with
       { bvars = []; bterm = t1 } ->

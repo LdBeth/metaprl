@@ -325,7 +325,7 @@ let idyneval_term_p t =
       when Opname.eq nuprl5_opname opname & parmeq id idyneval_param -> true
       | _ -> false
      )
-  | _ -> false
+  (* | _ -> false *)
 
 
 let children_of_idirectory_term t =

@@ -73,4 +73,4 @@ let replace_nuprl_var_terms term = term
   
 let jprover_hook t = 
   mytermj := t;
- jprover_result_to_term (jprover ((Basic.map_isexpr_to_list replace_nuprl_var_terms (Basic.hd_of_icons_term Basic.icons_op t)), (replace_nuprl_var_terms (Basic.tl_of_icons_term Basic.icons_op t))))
+ jprover_result_to_term (jprover ((Basic.map_isexpr_to_list (function a -> a) (Basic.hd_of_icons_term Basic.icons_op t)), (replace_nuprl_var_terms (Basic.tl_of_icons_term Basic.icons_op t))))
