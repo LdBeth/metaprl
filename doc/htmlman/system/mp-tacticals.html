@@ -82,15 +82,12 @@ argument. This values are typically used:</P>
 following functions:</P>
 
 <BLOCKQUOTE>
-  <PRE><B>val</B> get_term       : tactic_arg -&gt; string -&gt; term
-<B>val</B> get_type       : tactic_arg -&gt; string -&gt; term
-<B>val</B> get_int        : tactic_arg -&gt; string -&gt; int
-<B>val</B> get_bool       : tactic_arg -&gt; string -&gt; bool
-<B>val</B> get_subst      : tactic_arg -&gt; term_subst
-<B>val</B> get_tactic     : tactic_arg -&gt; string -&gt; tactic
-<B>val</B> get_int_tactic : tactic_arg -&gt; string -&gt; (int -&gt; tactic)
-<B>val</B> get_arg_tactic : tactic_arg -&gt; string -&gt; (tactic_arg -&gt; tactic)
-<B>val</B> get_typeinf    : tactic_arg -&gt; string -&gt; (unify_subst -&gt; term -&gt; unify_subst * term)</PRE>
+<PRE><B>val</B> get_term      : tactic_arg -&gt; string -&gt; term
+<B>val</B> get_term_list : tactic_arg -&gt; string -&gt; term list
+<B>val</B> get_type      : tactic_arg -&gt; string -&gt; term
+<B>val</B> get_int       : tactic_arg -&gt; string -&gt; int
+<B>val</B> get_bool      : tactic_arg -&gt; string -&gt; bool
+<B>val</B> get_subst     : tactic_arg -&gt; term_subst
 </BLOCKQUOTE>
 
 <P>Each attribute is associated with a string (the &quot;name&quot;
@@ -101,11 +98,11 @@ to modify the attribute list during refinement:</P>
 <BLOCKQUOTE>
   <PRE><B>val</B> setLabelT : string -&gt; tactic
 <B>val</B> withTermT : string -&gt; term -&gt; tactic -&gt; tactic
+<B>val</B> withTermListT : string -&gt; term list -&gt; tactic -&gt; tactic
 <B>val</B> withTypeT : string -&gt; term -&gt; tactic -&gt; tactic
 <B>val</B> withBoolT : string -&gt; bool -&gt; tactic -&gt; tactic
 <B>val</B> withIntT : string -&gt; int -&gt; tactic -&gt; tactic
 <B>val</B> withSubstT : term_subst -&gt; tactic -&gt; tactic
-<B>val</B> withTacticT : string -&gt; tactic -&gt; tactic -&gt; tactic</PRE>
 </BLOCKQUOTE>
 
 <P>Not all of the attributes can be modified: some are constant

@@ -88,16 +88,17 @@ D-FILES = $(addprefix htmlman/developer-guide/, $(addsuffix .html, $(DEVELOPER-G
 GENERATED-FILES =\
 	introduction\
 	user-guide\
-	tutorial\
 	system\
-	developer-guide
+	developer-guide\
+	#tutorial
 
 DOCFILES = $(addsuffix .ps, $(GENERATED-FILES)) $(addsuffix .pdf, $(GENERATED-FILES))
 
 .PHONY: all opt latex clean check ocaml-book
 
-all: $(DOCFILES) latex ocaml-book
+all: html-docs latex ocaml-book
 opt: all
+html-docs: $(DOCFILES)
 
 introduction.ps: $(W-FILES)
 	$(GEN-PS) $(W-FILES) -f $@
