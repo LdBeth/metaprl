@@ -29,7 +29,8 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-#include "refine_error.h"
+
+INCLUDE "refine_error.mlh"
 
 open Refine_error_sig
 open Term_sig
@@ -71,7 +72,7 @@ struct
     | MetaTheorem a ->
          a
     | t ->
-         ref_raise(RefineError (name, MetaTermMatchError t))
+         REF_RAISE(RefineError (name, MetaTermMatchError t))
 
    let rec unzip_mlabeled name labels = function
       MetaLabeled (l, t) ->
@@ -79,7 +80,7 @@ struct
     | MetaTheorem a ->
          List.rev labels, a
     | t ->
-         ref_raise(RefineError (name, MetaTermMatchError t))
+         REF_RAISE(RefineError (name, MetaTermMatchError t))
 
    let rec unzip_mimplies = function
       MetaTheorem t ->
@@ -88,7 +89,7 @@ struct
          unfold_mlabeled "unzip_mimplies" a :: unzip_mimplies t
     | MetaLabeled (_, t) ->
          unzip_mimplies t
-    | t -> ref_raise(RefineError ("unzip_mimplies", MetaTermMatchError t))
+    | t -> REF_RAISE(RefineError ("unzip_mimplies", MetaTermMatchError t))
 
    let rec zip_mimplies = function
       [h] -> MetaTheorem h
@@ -121,7 +122,7 @@ struct
        | MetaTheorem a ->
             List.rev l, a
        | t ->
-            ref_raise(RefineError ("unzip_mfunction", MetaTermMatchError t))
+            REF_RAISE(RefineError ("unzip_mfunction", MetaTermMatchError t))
       in
          collect [] t
 
@@ -148,7 +149,7 @@ struct
     | MetaLabeled (_, t) ->
          unzip_mrewrite t
     | t ->
-         ref_raise(RefineError ("unzip_mrewrite", MetaTermMatchError t))
+         REF_RAISE(RefineError ("unzip_mrewrite", MetaTermMatchError t))
 
    (*
     * Calculate context vars.

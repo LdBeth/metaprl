@@ -2,7 +2,7 @@
  * Subterm addressing                                                   *
  ************************************************************************)
 
-#include "refine_error.h"
+INCLUDE "refine_error.mlh"
 
 open Printf
 open Mp_debug
@@ -71,7 +71,7 @@ struct
          i
     | Path _
     | Compose _ ->
-         ref_raise(RefineError ("depth_of_address", StringError "address is not a sequent address"))
+         REF_RAISE(RefineError ("depth_of_address", StringError "address is not a sequent address"))
 
    let rec clause_of_address = function
       NthClause (i, _) ->
@@ -79,7 +79,7 @@ struct
     | Compose (addr, _) ->
          clause_of_address addr
     | Path _ ->
-         ref_raise(RefineError ("depth_of_address", StringError "address is not a sequent address"))
+         REF_RAISE(RefineError ("depth_of_address", StringError "address is not a sequent address"))
 
    let compose_address path1 path2 =
       match path1 with
@@ -88,11 +88,11 @@ struct
        | _ ->
             Compose (path1, path2)
 
-#ifdef VERBOSE_EXN
-#  define ATERM a term
-#else
-#  define ATERM
-#endif
+   IFDEF VERBOSE_EXN THEN
+      DEFMACRO ATERM = (a, term)
+   ELSE
+      DEFMACRO ATERM = NOTHING
+   ENDIF
 
    (*
     * Get a subterm.
@@ -104,7 +104,7 @@ struct
        | (hd::tl, _) ->
             getnth ATERM tl (pred i)
        | ([], _) ->
-            ref_raise(RefineError ("getnth", AddressError (a, term)))
+            REF_RAISE(RefineError ("getnth", AddressError (a, term)))
 
    (*
     * Follow an explicit path.
@@ -128,7 +128,7 @@ struct
                   else
                      (dest_bterm bterm).bterm
              | _ ->
-                  ref_raise(RefineError ("term_subterm_nthpath", AddressError (a, term)))
+                  REF_RAISE(RefineError ("term_subterm_nthpath", AddressError (a, term)))
          else
             t
     | i ->
@@ -142,7 +142,7 @@ struct
                   else
                      term_subterm_nthpath ATERM flag (dest_bterm bterm2).bterm (i - 1)
              | _ ->
-                  ref_raise(RefineError ("term_subterm_nthpath", AddressError (a, term)))
+                  REF_RAISE(RefineError ("term_subterm_nthpath", AddressError (a, term)))
 
    (*
     * Get the subterm for any type of path.
@@ -164,127 +164,148 @@ struct
     * Capture is not taken into account.  This function
     * allows the replacement to compute an extra value.
     *)
-#ifdef VERBOSE_EXN
-#  define FAIL fail
-#  define DO_FAIL fail_addr fail
-#else
-#  define FAIL
-#  define DO_FAIL raise_generic_exn
-#endif
+
+   IFDEF VERBOSE_EXN THEN
+      DEFMACRO FAIL = fail
+      DEFMACRO DO_FAIL = fail_addr fail
+   ELSE
+      DEFMACRO FAIL = NOTHING
+      DEFMACRO DO_FAIL = RAISE_GENERIC_EXN
+   ENDIF
 
    let fail_addr (addr, term) =
-      ref_raise(RefineError ("apply_*_fun_*", AddressError (addr, term)))
+      REF_RAISE(RefineError ("apply_*_fun_*", AddressError (addr, term)))
 
-#define APPLY_FUN \
-   let rec path_replace_term FAIL f BVARS t = function \
-      i::tl -> \
-         let { term_op = op; term_terms = bterms } = dest_term t in \
-         let bterms, arg = path_replace_bterm FAIL f tl i BVARS bterms in \
-            mk_term op bterms, arg \
-    | [] -> \
-         f BVARS t \
-\
-   and path_replace_bterm FAIL f tl i BVARS bterms = \
-      match i, bterms with \
-         (0, bterm :: bterms) -> \
-            let { bvars = vars; bterm = term } = dest_bterm bterm in \
-            let term, arg = path_replace_term FAIL f VARS_BVARS term tl in \
-               mk_bterm vars term :: bterms, arg \
-       | (_, bterm :: bterms) -> \
-            let bterms, arg = path_replace_bterm FAIL f tl (i - 1) BVARS bterms in \
-               bterm :: bterms, arg \
-       | _, [] -> \
-            DO_FAIL \
-\
-   let rec nthpath_replace_term FAIL flag f BVARS t i = \
-      if i = 0 then \
-         if flag then \
-            match dest_term t with \
-               { term_op = op; term_terms = bterm :: bterms } -> \
-                  if Opname.eq (dest_op op).op_name context_opname then \
-                     f BVARS t \
-                  else \
-                     let { bvars = vars; bterm = term } = dest_bterm bterm in \
-                     let term, arg = f VARS_BVARS term in \
-                     let bterm = mk_bterm vars term in \
-                        mk_term op (bterm :: bterms), arg \
-             | _ -> \
-                  DO_FAIL \
-         else \
-            f BVARS t \
-      else \
-         match dest_term t with \
-            { term_op = op; term_terms = [bterm] } -> \
-               (* Always take subterm if there is only one *) \
-               let { bvars = vars; bterm = trm } = dest_bterm bterm in \
-               let term, arg = nthpath_replace_term FAIL flag f VARS_BVARS trm (i - 1) in \
-               let bterm = mk_bterm vars term in \
-                  mk_term op [bterm], arg \
-          | { term_op = op; term_terms = ((bterm1 :: bterm2 :: bterms) as bterms1) } -> \
-               if Opname.eq (dest_op op).op_name context_opname then \
-                  let args, bterm = List_util.split_last bterms1 in \
-                  let { bvars = vars; bterm = trm } = dest_bterm bterm in \
-                  let term, arg = nthpath_replace_term FAIL flag f VARS_BVARS trm (i - 1) in \
-                  let bterm = mk_bterm vars term in \
-                     mk_term op (args @ [bterm]), arg \
-               else \
-                  let { bvars = vars; bterm = trm } = dest_bterm bterm2 in \
-                  let term, arg = nthpath_replace_term FAIL flag f VARS_BVARS trm (i - 1) in \
-                  let bterm = mk_bterm vars term in \
-                     mk_term op (bterm1 :: bterm :: bterms), arg \
-          | _ -> \
+   DEFMACRO MAKE_PATH_REPLACE_TERM =
+      fun FAIL f BVARS t -> function
+         i::tl ->
+            let { term_op = op; term_terms = bterms } = dest_term t in
+            let bterms, arg = PATH_REPLACE_BTERM FAIL f tl i BVARS bterms in
+               mk_term op bterms, arg
+       | [] ->
+            f BVARS t
+
+   DEFMACRO MAKE_PATH_REPLACE_BTERM =
+      fun FAIL f tl i BVARS bterms ->
+         match i, bterms with
+            (0, bterm :: bterms) ->
+               let { bvars = vars; bterm = term } = dest_bterm bterm in
+               let term, arg = PATH_REPLACE_TERM FAIL f VARS_BVARS term tl in
+                  mk_bterm vars term :: bterms, arg
+          | (_, bterm :: bterms) ->
+               let bterms, arg = PATH_REPLACE_BTERM FAIL f tl (i - 1) BVARS bterms in
+                  bterm :: bterms, arg
+          | _, [] ->
                DO_FAIL
 
-#define APPLY_FUN_AUX\
-   let rec apply_fun_arg_at_addr_aux FAIL f addr BVARS term = \
-      match addr with \
-         Path addr -> \
-            path_replace_term FAIL f BVARS term addr \
-       | NthClause (addr, flag) -> \
-            nthpath_replace_term FAIL flag f BVARS term addr \
-       | Compose (addr1, addr2) -> \
-            apply_fun_arg_at_addr_aux FAIL (**) \
-               (apply_fun_arg_at_addr_aux FAIL f addr2) addr1 BVARS term
+   DEFMACRO MAKE_NTHPATH_REPLACE_TERM =
+      fun FAIL flag f BVARS t i ->
+         if i = 0 then
+            if flag then
+               match dest_term t with
+                  { term_op = op; term_terms = bterm :: bterms } ->
+                     if Opname.eq (dest_op op).op_name context_opname then
+                        f BVARS t
+                     else
+                        let { bvars = vars; bterm = term } = dest_bterm bterm in
+                        let term, arg = f VARS_BVARS term in
+                        let bterm = mk_bterm vars term in
+                           mk_term op (bterm :: bterms), arg
+                | _ ->
+                     DO_FAIL
+            else
+               f BVARS t
+         else
+            match dest_term t with
+               { term_op = op; term_terms = [bterm] } ->
+                  (* Always take subterm if there is only one *)
+                  let { bvars = vars; bterm = trm } = dest_bterm bterm in
+                  let term, arg = NTHPATH_REPLACE_TERM FAIL flag f VARS_BVARS trm (i - 1) in
+                  let bterm = mk_bterm vars term in
+                     mk_term op [bterm], arg
+             | { term_op = op; term_terms = ((bterm1 :: bterm2 :: bterms) as bterms1) } ->
+                  if Opname.eq (dest_op op).op_name context_opname then
+                     let args, bterm = List_util.split_last bterms1 in
+                     let { bvars = vars; bterm = trm } = dest_bterm bterm in
+                     let term, arg = NTHPATH_REPLACE_TERM FAIL flag f VARS_BVARS trm (i - 1) in
+                     let bterm = mk_bterm vars term in
+                        mk_term op (args @ [bterm]), arg
+                  else
+                     let { bvars = vars; bterm = trm } = dest_bterm bterm2 in
+                     let term, arg = NTHPATH_REPLACE_TERM FAIL flag f VARS_BVARS trm (i - 1) in
+                     let bterm = mk_bterm vars term in
+                        mk_term op (bterm1 :: bterm :: bterms), arg
+             | _ ->
+                  DO_FAIL
 
-#ifdef VERBOSE_EXN
-#  define APPLY_FUN_MAIN APPLY_FUN_AUX\
-   let apply_fun_arg_at_addr f addr BVARS term = \
-      apply_fun_arg_at_addr_aux (addr, term) f addr BVARS term
-#else
-#  define apply_fun_arg_at_addr_aux apply_fun_arg_at_addr
-#  define APPLY_FUN_MAIN APPLY_FUN_AUX
-#endif
+   DEFMACRO APPLY_FUN_AUX MY_NAME =
+      fun FAIL f addr BVARS term ->
+         match addr with
+            Path addr ->
+               PATH_REPLACE_TERM FAIL f BVARS term addr
+          | NthClause (addr, flag) ->
+               NTHPATH_REPLACE_TERM FAIL flag f BVARS term addr
+          | Compose (addr1, addr2) ->
+               MY_NAME FAIL (MY_NAME FAIL f addr2) addr1 BVARS term
 
-#define APPLY_FUN_NOARG \
-   let add_unit_arg f BVARS t = \
-      f BVARS t, () \
-\
-   let apply_fun_at_addr f addr BVARS term = \
+   DEFMACRO BVARS = NOTHING
+   DEFMACRO VARS_BVARS = NOTHING
+   DEFMACRO PATH_REPLACE_TERM = path_replace_term
+   DEFMACRO PATH_REPLACE_BTERM = path_replace_bterm
+   DEFMACRO NTHPATH_REPLACE_TERM = nthpath_replace_term
+
+   let rec path_replace_term = MAKE_PATH_REPLACE_TERM
+   and path_replace_bterm = MAKE_PATH_REPLACE_BTERM
+   let rec nthpath_replace_term = MAKE_NTHPATH_REPLACE_TERM
+
+   IFDEF VERBOSE_EXN THEN
+      let rec apply_fun_arg_at_addr_aux =
+         APPLY_FUN_AUX apply_fun_arg_at_addr_aux
+
+      let apply_fun_arg_at_addr =
+         fun f addr BVARS term ->
+            apply_fun_arg_at_addr_aux (addr, term) f addr BVARS term
+   ELSE
+      let rec apply_fun_arg_at_addr =
+         APPLY_FUN_AUX apply_fun_arg_at_addr
+   ENDIF
+
+   let add_unit_arg f BVARS t =
+      f BVARS t, ()
+
+   let apply_fun_at_addr f addr BVARS term =
       fst (apply_fun_arg_at_addr (add_unit_arg f) addr BVARS term)
 
-#define BVARS
-#define VARS_BVARS
-      APPLY_FUN
-      APPLY_FUN_MAIN
-      APPLY_FUN_NOARG
-#undef BVARS
-#undef VARS_BVARS
-#define BVARS bvars
-#define VARS_BVARS (vars::bvars)
-#define path_replace_term path_var_replace_term
-#define path_replace_bterm path_var_replace_bterm
-#define nthpath_replace_term nthpath_var_replace_term
-#ifdef VERBOSE_EXN
-#  define apply_fun_arg_at_addr_aux apply_var_fun_at_addr_aux
-#endif
-#define apply_fun_arg_at_addr apply_var_fun_arg_at_addr
-#define add_unit_arg add_var_unit_arg
-#define apply_fun_at_addr apply_var_fun_at_addr
-      APPLY_FUN
-      APPLY_FUN_MAIN
-      APPLY_FUN_NOARG
-#undef apply_fun_arg_at_addr
-#undef apply_fun_at_addr
+   UNDEF BVARS
+   UNDEF VARS_BVARS
+
+   DEFMACRO BVARS = bvars
+   DEFMACRO VARS_BVARS = vars :: bvars
+   DEFMACRO PATH_REPLACE_TERM = path_var_replace_term
+   DEFMACRO PATH_REPLACE_BTERM = path_var_replace_bterm
+   DEFMACRO NTHPATH_REPLACE_TERM = nthpath_var_replace_term
+
+   let rec path_var_replace_term = MAKE_PATH_REPLACE_TERM
+   and path_var_replace_bterm = MAKE_PATH_REPLACE_BTERM
+   let rec nthpath_var_replace_term = MAKE_NTHPATH_REPLACE_TERM
+
+   IFDEF VERBOSE_EXN THEN
+      let rec apply_var_fun_at_addr_aux =
+         APPLY_FUN_AUX apply_var_fun_at_addr_aux
+
+      let apply_var_fun_arg_at_addr =
+         fun f addr BVARS term ->
+            apply_var_fun_at_addr_aux (addr, term) f addr BVARS term
+   ELSE
+      let rec apply_var_fun_arg_at_addr =
+         APPLY_FUN_AUX apply_var_fun_arg_at_addr
+   ENDIF
+
+   let add_var_unit_arg f BVARS t =
+      f BVARS t, ()
+
+   let apply_var_fun_at_addr f addr BVARS term =
+      fst (apply_var_fun_arg_at_addr (add_var_unit_arg f) addr BVARS term)
 
    let replace_subterm_aux subterm term =
       subterm
@@ -407,3 +428,4 @@ struct
    let apply_var_fun_higher f bvars term =
       apply_var_fun_higher_term f bvars [] term
 end
+

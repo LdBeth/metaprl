@@ -30,7 +30,7 @@
  * Modified by: Alexey Nogin
  *)
 
-#include "refine_error.h"
+INCLUDE "refine_error.mlh"
 
 open Printf
 open Mp_debug
@@ -247,12 +247,12 @@ struct
                   match (dest_bterm bterm1, dest_bterm bterm2) with
                      ({ bvars = []; bterm = a },
                       { bvars = []; bterm = b }) -> a::(aux b)
-                   | _ -> ref_raise(RefineError ("dest_xlist", TermMatchError (t, "not a list")))
+                   | _ -> REF_RAISE(RefineError ("dest_xlist", TermMatchError (t, "not a list")))
                end
           | { term_op = { op_name = opname; op_params = [] }; term_terms = [] } when Opname.eq opname xnil_opname ->
                []
           | _ ->
-               ref_raise(RefineError ("dest_xlist", TermMatchError (t, "not a list")))
+               REF_RAISE(RefineError ("dest_xlist", TermMatchError (t, "not a list")))
       in
          aux t
 
@@ -285,7 +285,7 @@ struct
          } when Opname.eq opname string_opname ->
             s
        | _ ->
-            ref_raise(RefineError ("dest_xstring", TermMatchError (t, "not a string")))
+            REF_RAISE(RefineError ("dest_xstring", TermMatchError (t, "not a string")))
 
    let mk_xstring_term s =
       let op = { op_name = string_opname; op_params = [String s] } in
@@ -319,10 +319,10 @@ struct
                   { bvars = []; bterm = t } ->
                      s, t
                 | _ ->
-                     ref_raise(RefineError ("dest_xstring_dep0_term", TermMatchError (t, "not a string with one subterm")))
+                     REF_RAISE(RefineError ("dest_xstring_dep0_term", TermMatchError (t, "not a string with one subterm")))
             end
        | _ ->
-            ref_raise(RefineError ("dest_xstring_dep0_term", TermMatchError (t, "not a string with one subterm")))
+            REF_RAISE(RefineError ("dest_xstring_dep0_term", TermMatchError (t, "not a string with one subterm")))
 
    let mk_xstring_dep0_term s t =
       let op = { op_name = string_opname; op_params = [String s] } in
@@ -388,14 +388,14 @@ struct
          [args; goal] ->
             goal, args
        | _ ->
-            ref_raise(RefineError ("dest_sequent", TermMatchError (seq, "sequent must have two subterms")))
+            REF_RAISE(RefineError ("dest_sequent", TermMatchError (seq, "sequent must have two subterms")))
 
    let args_of_sequent seq =
       match dest_simple_term_opname sequent_opname seq with
          [args; _] ->
             args
        | _ ->
-            ref_raise(RefineError ("args_of_sequent", TermMatchError (seq, "sequent must have two subterms")))
+            REF_RAISE(RefineError ("args_of_sequent", TermMatchError (seq, "sequent must have two subterms")))
 
    (*
     * Helper function to unwrap the surrounding sequent term.
@@ -407,7 +407,7 @@ struct
          } when Opname.eq name sequent_opname ->
             dest_simple_bterm bgoal
        | _ ->
-            ref_raise(RefineError ("goal_of_sequent", TermMatchError (t, "not a sequent")))
+            REF_RAISE(RefineError ("goal_of_sequent", TermMatchError (t, "not a sequent")))
 
    (*
     * Get the second term in the hyp.
@@ -419,10 +419,10 @@ struct
                ({ bvars = [] }, { bvars = [_]; bterm = term }) ->
                   term
              | _ ->
-                  ref_raise(RefineError (name, TermMatchError (t, "malformed hypothesis")))
+                  REF_RAISE(RefineError (name, TermMatchError (t, "malformed hypothesis")))
          end
     | _ ->
-         ref_raise(RefineError (name, TermMatchError (t, "malformed hypothesis")))
+         REF_RAISE(RefineError (name, TermMatchError (t, "malformed hypothesis")))
 
    let match_hyp_all name t = function
       [bterm1; bterm2] ->
@@ -431,20 +431,20 @@ struct
                ({ bvars = []; bterm = t }, { bvars = [x]; bterm = term }) ->
                   t, x, term
              | _ ->
-                  ref_raise(RefineError (name, TermMatchError (t, "malformed hypothesis")))
+                  REF_RAISE(RefineError (name, TermMatchError (t, "malformed hypothesis")))
          end
     | _ ->
-         ref_raise(RefineError (name, TermMatchError (t, "malformed hypothesis")))
+         REF_RAISE(RefineError (name, TermMatchError (t, "malformed hypothesis")))
 
    let match_context name t = function
       [] ->
-         ref_raise(RefineError (name, TermMatchError (t, "malformed context")))
+         REF_RAISE(RefineError (name, TermMatchError (t, "malformed context")))
     | bterms ->
          match dest_bterm (List_util.last bterms) with
             { bvars = []; bterm = term } ->
                term
           | _ ->
-               ref_raise(RefineError (name, TermMatchError (t, "malformed context")))
+               REF_RAISE(RefineError (name, TermMatchError (t, "malformed context")))
 
    let match_concl name t = function
       [bterm1; bterm2] ->
@@ -453,10 +453,10 @@ struct
                ({ bvars = [] }, { bvars = []; bterm = term }) ->
                   term
              | _ ->
-                  ref_raise(RefineError (name, TermMatchError (t, "malformed conclusion")))
+                  REF_RAISE(RefineError (name, TermMatchError (t, "malformed conclusion")))
          end
     | _ ->
-         ref_raise(RefineError (name, TermMatchError (t, "malformed conclusion")))
+         REF_RAISE(RefineError (name, TermMatchError (t, "malformed conclusion")))
 
    let match_concl_all name t = function
       [bterm1; bterm2] ->
@@ -465,10 +465,10 @@ struct
                ({ bvars = []; bterm = t }, { bvars = []; bterm = term }) ->
                   t, term
              | _ ->
-                  ref_raise(RefineError (name, TermMatchError (t, "malformed conclusion")))
+                  REF_RAISE(RefineError (name, TermMatchError (t, "malformed conclusion")))
          end
     | _ ->
-         ref_raise(RefineError (name, TermMatchError (t, "malformed conclusion")))
+         REF_RAISE(RefineError (name, TermMatchError (t, "malformed conclusion")))
 
    (*
     * Explode the sequent into a list of hyps and concls.
@@ -493,7 +493,7 @@ struct
                   let goal, term = match_concl_all explode_sequent_name t bterms in
                      collect args hyps (goal :: concls) term
             else
-               ref_raise(RefineError (explode_sequent_name, TermMatchError (t, "malformed sequent")))
+               REF_RAISE(RefineError (explode_sequent_name, TermMatchError (t, "malformed sequent")))
       in
       let goal, args = dest_sequent_outer_term t in
          collect args [] [] goal
@@ -522,7 +522,7 @@ struct
                   else
                      skip_hyps (i - 1) term
             else
-               ref_raise(RefineError (nth_hyp_addr_name, TermMatchError (t, "not enough hyps")))
+               REF_RAISE(RefineError (nth_hyp_addr_name, TermMatchError (t, "not enough hyps")))
       in
          skip_hyps n (goal_of_sequent t)
 
@@ -548,10 +548,10 @@ struct
                         ({ bvars = [] }, { bvars = []; bterm = term }) ->
                            skip_concl (i + 1) (n - 1) term
                       | _ ->
-                           ref_raise(RefineError (nth_concl_addr_name, TermMatchError (t, "malformed conclusion")))
+                           REF_RAISE(RefineError (nth_concl_addr_name, TermMatchError (t, "malformed conclusion")))
                   end
              | _ ->
-                  ref_raise(RefineError (nth_concl_addr_name, (TermMatchError (t, "malformed conclusion"))))
+                  REF_RAISE(RefineError (nth_concl_addr_name, (TermMatchError (t, "malformed conclusion"))))
       in
       let rec skip_hyps i term =
          let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
@@ -565,7 +565,7 @@ struct
                let term = match_concl nth_concl_addr_name t bterms in
                   skip_concl i n term
             else
-               ref_raise(RefineError (nth_concl_addr_name, TermMatchError (t, "malformed sequent")))
+               REF_RAISE(RefineError (nth_concl_addr_name, TermMatchError (t, "malformed sequent")))
       in
          skip_hyps 0 (goal_of_sequent t)
 
@@ -586,7 +586,7 @@ struct
             else if Opname.eq opname concl_opname then
                make_address i
             else
-               ref_raise(RefineError (nth_clause_addr_name, TermMatchError (t, "malformed sequent")))
+               REF_RAISE(RefineError (nth_clause_addr_name, TermMatchError (t, "malformed sequent")))
       in
          aux 1 (goal_of_sequent t)
 
@@ -618,7 +618,7 @@ struct
             else if Opname.eq opname concl_opname then
                i
             else
-               ref_raise(RefineError (num_hyps_name, TermMatchError (t, "malformed sequent")))
+               REF_RAISE(RefineError (num_hyps_name, TermMatchError (t, "malformed sequent")))
       in
          aux 0 (goal_of_sequent t)
 
@@ -656,13 +656,13 @@ struct
             else if Opname.eq opname context_opname then
                let term = match_context nth_hyp_name t bterms in
                   if i = 0 then
-                     ref_raise(RefineError (nth_hyp_name, TermMatchError (t, "nth hyp is a context var")))
+                     REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "nth hyp is a context var")))
                   else
                      aux (i - 1) term
             else if Opname.eq opname concl_opname then
-               ref_raise(RefineError ("nth_hyp", StringError "hyp is out of range"))
+               REF_RAISE(RefineError ("nth_hyp", StringError "hyp is out of range"))
             else
-               ref_raise(RefineError (nth_hyp_name, TermMatchError (t, "malformed sequent")))
+               REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "malformed sequent")))
       in
          aux (pred i) (goal_of_sequent t)
 
@@ -683,7 +683,7 @@ struct
                   else
                      aux (i - 1) term
             else
-               ref_raise(RefineError (nth_concl_name, TermMatchError (t, "malformed sequent")))
+               REF_RAISE(RefineError (nth_concl_name, TermMatchError (t, "malformed sequent")))
       in
          aux (pred i) (goal_of_sequent t)
 
@@ -703,7 +703,7 @@ struct
             else if Opname.eq opname concl_opname then
                vars
             else
-               ref_raise(RefineError (declared_vars_name, TermMatchError (t, "malformed sequent")))
+               REF_RAISE(RefineError (declared_vars_name, TermMatchError (t, "malformed sequent")))
       in
          aux [] (goal_of_sequent t)
 
@@ -725,9 +725,9 @@ struct
                let term = match_context get_decl_number_name t bterms in
                   aux (i + 1) term
             else if Opname.eq opname concl_opname then
-               ref_raise(RefineError (get_decl_number_name, TermMatchError (t, "declaration not found")))
+               REF_RAISE(RefineError (get_decl_number_name, TermMatchError (t, "declaration not found")))
             else
-               ref_raise(RefineError (get_decl_number_name, TermMatchError (t, "malformed sequent")))
+               REF_RAISE(RefineError (get_decl_number_name, TermMatchError (t, "malformed sequent")))
       in
          aux 1 (goal_of_sequent t)
 
@@ -748,9 +748,9 @@ struct
                   let term = match_context is_free_seq_var_name t bterms in
                      aux (i - 1) term
                else if Opname.eq opname concl_opname then
-                  ref_raise(RefineError (is_free_seq_var_name, TermMatchError (t, "index is not a hypothesis")))
+                  REF_RAISE(RefineError (is_free_seq_var_name, TermMatchError (t, "index is not a hypothesis")))
                else
-                  ref_raise(RefineError (is_free_seq_var_name, TermMatchError (t, "malformed sequent")))
+                  REF_RAISE(RefineError (is_free_seq_var_name, TermMatchError (t, "malformed sequent")))
       in
          aux i (goal_of_sequent t)
 
@@ -769,7 +769,7 @@ struct
          else if Opname.eq opname concl_opname then
             goal
          else
-            ref_raise(RefineError (replace_concl_name, TermMatchError (seq, "malformed sequent")))
+            REF_RAISE(RefineError (replace_concl_name, TermMatchError (seq, "malformed sequent")))
 
    let replace_goal_name = "replace_goal"
    let replace_goal seq goal =
