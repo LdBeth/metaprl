@@ -72,7 +72,7 @@ doc <:doc<
    @parents
    @end[doc]
 >>
-extends Shell
+extends Mptop
 doc <:doc< @docoff >>
 
 open Lm_debug

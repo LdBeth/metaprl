@@ -95,7 +95,7 @@ doc <:doc<
    @parents
    @end[doc]
 >>
-extends Shell
+extends Mptop
 extends Top_tacticals
 extends Top_conversionals
 doc <:doc< @docoff >>

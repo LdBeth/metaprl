@@ -37,9 +37,6 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-
-extends Shell
-
 open Mp_resource
 open Refiner.Refiner.Term
 open Tactic_type.Tactic

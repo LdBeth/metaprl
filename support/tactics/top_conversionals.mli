@@ -31,7 +31,7 @@
  * Modified By: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
-extends Shell
+extends Mptop
 
 open Refiner.Refiner.Refine
 open Mp_resource
