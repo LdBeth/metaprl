@@ -125,7 +125,7 @@ functor (Hyps : HypsSig) -> struct
        (Disconnected,Disconnected) -> d1
        | (Disconnected,Int _) -> d2
        | (Int _, Disconnected) -> d1
-       | (Int (i1,a1), Int (i2,a2)) -> if gt_num i1 i2 then d1 else d2
+       | (Int (i1,a1), Int (i2,a2)) -> if gt_num i2 i1 then d2 else d1
 
    let pos_dist d = match d with
        Disconnected -> false
