@@ -296,7 +296,7 @@ module Nuprl = struct
 	    list_to_ilist (map itoken_term (edit_list_modules !current_shell))
 
 	  | {term_op = op; term_terms = symaddr :: r } when (opeq op mp_list_module_all_op) ->
-	    let name = hd (map_isexpr_to_list string_of_itoken_term (term_of_unbound_term symaddr)) in
+	    let name = hd (tl (map_isexpr_to_list string_of_itoken_term (term_of_unbound_term symaddr))) in
 	    let f x = (edit_cd_thm !current_shell name x;
 		       let (tac, goal, subgoals, extras) = edit_node !current_shell [] in
 		       ipair_term (itoken_term x) (msequent_to_term goal))
@@ -307,7 +307,8 @@ module Nuprl = struct
 	      (list_to_ilist_map f (edit_list_module_all !current_shell name))
 	       
 	  | {term_op = op; term_terms = symaddr :: r } when (opeq op mp_list_module_op) ->
-            let name = hd (map_isexpr_to_list string_of_itoken_term (term_of_unbound_term symaddr)) in
+            let name = hd (tl (map_isexpr_to_list string_of_itoken_term 
+				 (term_of_unbound_term symaddr))) in
 	    let f x = (edit_cd_thm !current_shell name x;
 		      let (tac, goal, subgoals, extras) = edit_node !current_shell [] in
 		      ipair_term (itoken_term x) (msequent_to_term goal))

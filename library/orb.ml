@@ -723,7 +723,7 @@ let open_library_environment connection lib_id ehook =
 
 let join_library_environment con mneumonic ehook =
   
-  let _ = orb_mini_describe con con.ro_address mneumonic jprover_description_term in (* we ignore remote description now *)
+  let _ = orb_mini_describe con con.ro_address mneumonic metaprl_description_term in (* we ignore remote description now *)
   orb_mini_connect_environments con con.ro_address mneumonic;
   orb_mini_set_idle con mneumonic false;  
   let env =

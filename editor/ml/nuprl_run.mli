@@ -37,8 +37,10 @@
   # Thread.create run_library "mp_o8" ;;
   # let f x = Printf.eprintf "Name = %s\n" x; flush stderr; edit_cd_thm name x;;
 
+// Do this for current connect (5/2/03)
+  ./mp.run
   # open Nuprl_run;;
-  # NuprlRun.run_connection  3998 4992 "baldwin" "lmp_d21" "/home/nuprl/nuprl5/NuPrlDB/";;
+  # NuprlRun.run_connection  3998 "baldwin" "lmp_d21" "/home/nuprl/nuprl5/NuPrlDB/";;
 *)
 
 module NuprlRun :
