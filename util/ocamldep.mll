@@ -135,15 +135,18 @@ let rec find_file name = function
 
 let find_dependency_cmi modname deps =
    try
-      ((find_file (String.uncapitalize modname) [".mli"; ".cmi"])^".cmi")::deps
+      ((find_file (String.uncapitalize modname) [".mli"; ".cmi"; ".mlz"])^".cmi")::deps
+   with Not_found -> begin try
+      ((find_file (String.uncapitalize modname) [".ml"; ".cmo"; ".cmx"])^".cmo")::deps
    with Not_found ->
       deps
+   end
 
 let find_dependency_cmo_cmx modname (cmo_deps,cmx_deps) =
    let name = String.uncapitalize modname in
    let cmi_file =
       try
-         Some ((find_file name [".mli"; ".cmi"])^".cmi")
+         Some ((find_file name [".mli"; ".cmi"; ".mlz"])^".cmi")
       with Not_found ->
          None
    in
@@ -159,7 +162,7 @@ let find_dependency_cmo_cmx modname (cmo_deps,cmx_deps) =
     | Some cmi, None ->
          cmi :: cmo_deps, cmi :: cmx_deps
     | None, Some cmx ->
-         cmo_deps, cmx :: cmx_deps
+         ((Filename.chop_suffix cmx "cmx")^"cmo") :: cmo_deps, cmx :: cmx_deps
     | None, None ->
          cmo_deps, cmx_deps
 
