@@ -63,4 +63,5 @@ Build qw(
 	lib/Conscript
 	theories/Conscript
 	editor/Conscript
+	mc/Conscript
 );

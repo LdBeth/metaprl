@@ -186,7 +186,16 @@ let load_debug name =
          else
             search t
     | [] ->
-         raise (Failure (sprintf "Debug.load_debug: variable '%s' has not been created" name))
+         (* raise (Failure (sprintf "Debug.load_debug: variable '%s' has not been created" name)) *)
+         let flag = ref false in
+         let info' =
+            { info_name = name;
+              info_info = None;
+              info_flag = ref false
+            }
+         in
+            info := info' :: !info;
+            flag
    in
       search !info
 
