@@ -166,11 +166,6 @@ type shortener = opname -> param list -> bound_term list -> string
  ************************************************************************)
 
 (*
- * "slot" term has special meaning.
- *)
-let slot_opname = mk_opname "slot" nil_opname
-
-(*
  * We use a special precedence to specify that a form should
  * inherit the precedence of its parent.
  *)
@@ -768,6 +763,8 @@ let slot df =
 (*
  * Install initial commands.
  *)
+let slot_opname = mk_opname "slot" xperv
+
 let y_sym = Lm_symbol.add "y"
 let n_sym = Lm_symbol.add "n"
 let t_sym = Lm_symbol.add "t"
@@ -798,7 +795,7 @@ let init_list =
     "pushm",    [], pushm;
     "popm",     [], popm;
     "pushfont", [MString plain_sym], pushfont;
-    "popfont",  [MString plain_sym], popfont;
+    "popfont",  [], popfont;
     "slot",     [MString raw_sym; MString s_sym], slot;
     "slot",     [MString s_sym], slot;
     "slot",     [MLevel (mk_var_level_exp l_sym)], slot;
@@ -809,7 +806,7 @@ let init_list =
 let null_list =
    let v_bterms = [mk_bterm [] (mk_so_var_term v_sym [] [])] in
    let rec aux (name, params, f) =
-      let term = mk_term (mk_op (make_opname [name]) (List.map make_param params)) [] in
+      let term = mk_term (mk_op (mk_opname name xperv) (List.map make_param params)) [] in
          { dform_modes = PrimitiveModes;
            dform_name = name;
            dform_pattern = term;

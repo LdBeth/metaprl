@@ -46,6 +46,37 @@ declare "bind"{x,y,z,u,v. 'b}
 declare "bind"{x,y,z,u,v,w. 'b}
 declare "bind"{x,y,z,u,v,w,t. 'b}
 declare "bind"{x,y,z,u,v,w,t,s. 'b}
+declare sbreak[yes, no]
+declare cbreak[yes, no]
+declare hbreak[yes, no]
+declare space
+declare hspace
+declare newline
+declare lzone
+declare szone
+declare hzone
+declare izone
+declare azone
+declare ezone
+declare tzone[tag]
+declare pushm[n:n]
+declare pushm[s]
+declare pushm (* = pushm[0] *)
+declare popm
+declare pushfont[font]
+declare popfont
+declare slot[raw, s]
+declare slot[s]
+declare slot[l:l]
+declare slot[tok:t]
+declare slot[n:n]
+declare slot[v:v]
+declare slot[eq]{'t}
+declare slot{'t}
+declare parens
+declare mode[mode]
+declare except_mode[mode]
+declare "prec"[p]
 
 val mk_bind1_term : var -> term -> term
 val is_bind1_term : term -> bool

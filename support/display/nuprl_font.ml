@@ -393,7 +393,7 @@ dform bf_begin_df : mode[prl] :: bf_begin =
    pushfont["bf"]
 
 dform bf_end_df : mode[prl] :: bf_end =
-   popfont["bf"]
+   popfont
 
 dform bf_df1 : bf[text:s] =
    bf_begin slot[text:s] bf_end
@@ -411,7 +411,7 @@ dform monospaced_begin_df : mode[prl] :: monospaced_begin =
    pushfont["monospaced"]
 
 dform monospaced_end_df : mode[prl] :: monospaced_end =
-   popfont["monospaced"]
+   popfont
 
 dform monospaced_df1 : monospaced[text:s] =
    monospaced_begin slot[text:s] monospaced_end
@@ -429,7 +429,7 @@ dform it_begin_df : mode[prl] :: it_begin =
    pushfont["it"]
 
 dform it_end_df : mode[prl] :: it_end =
-   popfont["it"]
+   popfont
 
 dform it_df1 : it[text:s] =
    it_begin slot[text:s] it_end
@@ -599,7 +599,7 @@ dform info_begin_df : mode[prl] :: info_begin =
    pushfont["bf"]
 
 dform info_end_df : mode[prl] :: info_end =
-   popfont["bf"]
+   popfont
 
 let not_alnum c = not (is_alnum c)
 

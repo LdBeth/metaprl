@@ -327,58 +327,10 @@ struct
     ************************************************************************)
 
    (*
-    * These are the standard opnames.
-    * XXX This should change at some point; either
-    * by moving these opnames into a global file,
-    * or by making nothing global.
-    *)
-   let standard_opnames =
-      ["lzone",    [], [];
-       "hzone",    [], [];
-       "szone",    [], [];
-       "izone",    [], [];
-       "azone",    [], [];
-       "ezone",    [], [];
-       "space",    [], [];
-       "hspace",   [], [];
-       "newline",  [], [];
-       "popm",     [], [];
-       "pushfont", [ShapeString], [];
-       "popfont",  [ShapeString], [];
-       "parens" ,  [], [];
-
-       (* Some params *)
-       "cbreak",      [ShapeString; ShapeString], [];
-       "hbreak",      [ShapeString; ShapeString], [];
-       "sbreak",      [ShapeString; ShapeString], [];
-       "mode",        [ShapeString], [];
-       "except_mode", [ShapeString], [];
-       "prec",        [ShapeString], [];
-       "tzone",       [ShapeString], [];
-
-       (* Multi-shape operators *)
-       "slot",        [ShapeString], [];
-       "slot",        [ShapeVar], [];
-       "slot",        [ShapeToken], [];
-       "slot",        [ShapeLevel] , [];
-       "slot",        [ShapeNumber], [];
-       "slot",        [ShapeString; ShapeString], [];
-       "slot",        [ShapeString], [0];
-       "slot",        [], [0];
-       "pushm",       [], [];
-       "pushm",       [ShapeNumber], [];
-       "pushm",       [ShapeString], []]
-
-   (*
     * Make a new hashtable for mapping opnames.
     *)
    let create_optable () =
-      let t = Hashtbl.create 79 in
-      let add (s, ps, ar) =
-         Hashtbl.add t { sh_name=s; sh_params=ps; sh_arities=ar} (mk_opname s nil_opname)
-      in
-         List.iter add standard_opnames;
-         t
+      Hashtbl.create 79
 
    (*
     * Get an opname.

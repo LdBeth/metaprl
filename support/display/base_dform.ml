@@ -384,7 +384,7 @@ let format_seq_prl format_term buf =
                format_hbreak buf lead ""
             else
                format_hbreak buf lead "; ";
-            format_term buf NOParens <<popfont["bf"]>>;
+            format_term buf NOParens <<popfont>>;
             match SeqHyp.get hyps i with
                Context (v, conts, values) ->
                   raise (Invalid_argument "Base_dform.format_seq_prl: internal error")
