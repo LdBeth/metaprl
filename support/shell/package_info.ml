@@ -449,7 +449,7 @@ let find pack_info arg name =
 let set pack_info arg item =
    auto_loading_str arg pack_info (function
       { pack_str = Some { pack_str_info = info } } ->
-         Cache.StrFilterCache.set_command info (item, (0, 0))
+         Cache.StrFilterCache.set_command info (item, dummy_loc)
     | { pack_str = None; pack_name = name } ->
          raise (NotLoaded name))
 
