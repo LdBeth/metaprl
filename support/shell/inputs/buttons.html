@@ -1,0 +1,27 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+    <head>
+        <title>%%TITLE%%: %%LOCATION%%</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<link rel="stylesheet" type="text/css" href="/inputs/style.css">
+        %%STYLE%%
+        <script type="text/javascript">
+        <!-- Hide this text from old browsers --
+	session = new Array();
+	%%SESSION%%
+        macros = new Array();
+	%%BUTTONSMACROS%%
+	-->
+	</script>
+    </head>
+
+    <body id="buttonsbody" onload="parent.LoadButtons(session)">
+        <font style="visibility:hidden"># </font>
+        <input type=button value="Submit" onclick="parent.ButtonSubmit();">
+        <input type=button name="togglebutton" value="Long" onclick="parent.ToggleInputArea(this);">
+        %%BUTTONS%%
+	<select id="historybox" onchange="parent.MenuCommand(macros, this, false)">
+	%%HISTORY%%
+	</select>
+    </body>
+</html>
