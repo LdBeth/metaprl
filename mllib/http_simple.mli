@@ -74,7 +74,7 @@ val parse_post_body : content_type -> string -> (string * string) list
 type 'a start_handler   = t -> 'a -> 'a
 type 'a connect_handler = t -> 'a -> output -> input -> string list -> request_header_entry list -> string -> 'a
 
-val serve_http : 'a start_handler -> 'a connect_handler -> 'a -> int option -> unit
+val serve_http : 'a start_handler -> 'a connect_handler -> 'a -> int -> unit
 
 (*
  * Get the info for the server.

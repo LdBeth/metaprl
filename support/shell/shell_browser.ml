@@ -60,7 +60,7 @@ let debug_http =
  * We may start this as a web service.
  *)
 let browser_flag   = Env_arg.bool "browser" false "start a browser service" Env_arg.set_bool_bool
-let browser_port   = Env_arg.int "port" None "start browser services on this port" Env_arg.set_int_option_int
+let browser_port   = Env_arg.int "port" 0 "start browser services on this port" Env_arg.set_int_int
 let browser_string = Env_arg.string "browser_command" None "browser to start on startup" Env_arg.set_string_option_string
 
 module ShellBrowser (ShellArg : ShellSig) =
@@ -432,11 +432,11 @@ struct
           | None ->
                let info =
                   { browser_directories = Browser_state.get_directories buffer;
-                    browser_files = Browser_state.get_files buffer;
-                    browser_history = Browser_state.get_history buffer;
-                    browser_options = ShellArg.get_view_options shell;
-                    browser_id = id;
-                    browser_sessions = session_count
+                    browser_files       = Browser_state.get_files buffer;
+                    browser_history     = Browser_state.get_history buffer;
+                    browser_options     = ShellArg.get_view_options shell;
+                    browser_id          = id;
+                    browser_sessions    = session_count
                   }
                in
                   session.session_state <- Some info;
@@ -682,19 +682,10 @@ struct
          print_redirect_page outx SeeOtherCode uri
 
    (*
-    * External files get the .proxyedit suffix.
-    *)
-   let chop_proxyedit_suffix filename =
-      let suf = ".proxyedit" in
-         if Filename.check_suffix filename suf then
-            Filename.chop_suffix filename suf
-         else
-            filename
-
-   (*
     * Ship out a local file.
     *)
    let print_internal_edit_page server state filename outx =
+      let filename = filename_of_proxyedit filename in
       let table = table_of_state state in
       let table = BrowserTable.add_string table title_sym "Edit File" in
       let table = BrowserTable.add_string table file_sym filename in
@@ -712,7 +703,7 @@ struct
       let buf = Buffer.create 100 in
 
       (* Strip the .proxyedit *)
-      let filename = chop_proxyedit_suffix filename in
+      let filename = filename_of_proxyedit filename in
          try
             bprintf buf "host = \"%s\"\n" (String.escaped host);
             bprintf buf "port = %d\n" port;
@@ -733,6 +724,15 @@ struct
             print_internal_edit_page
       in
          edit server state filename outx
+
+   (*
+    * Print the edit done page.
+    *)
+   let print_edit_done_page out state =
+      let table = table_of_state state in
+      let table = BrowserTable.add_string table title_sym "MetaPRL Editing Done Page" in
+      let table = BrowserTable.add_string table response_sym state.state_response in
+         print_translated_file_to_http out table "edit-done.html"
 
    let print_file_page server state filename outx =
       print_metaprl_file_to_http outx filename
@@ -942,7 +942,10 @@ struct
          eprintf "Put: %s@." uri;
       match decode_uri state uri with
          FileURI filename ->
-            save_root_file filename body
+            if save_root_file filename body then
+               print_edit_done_page outx state
+            else
+               print_error_page outx NotFoundCode
        | InputURI _
        | LoginURI _
        | UnknownURI _
@@ -1003,10 +1006,12 @@ struct
                in
                   (match content with
                       Some content ->
-                         save_root_file filename content
+                         if save_root_file filename content then
+                            print_edit_done_page outx state
+                         else
+                            print_error_page outx NotFoundCode
                     | None ->
-                         ());
-                  print_redisplay_page edit_uri server state session outx
+                         print_error_page outx BadRequestCode)
           | InputURI _
           | LoginURI _
           | UnknownURI _
@@ -1248,6 +1253,8 @@ struct
             }
          in
          let state = update_challenge state in
+         let options = string_of_ls_options (Browser_state.get_options session.session_buffer) in
+            ShellArg.set_view_options shell options;
             ShellArg.refresh_packages ();
             ShellArg.set_dfmode shell "html";
             serve_http http_start http_connect state !browser_port

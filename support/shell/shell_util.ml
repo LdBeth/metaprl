@@ -198,6 +198,11 @@ let ls_options_clear options s =
              | LsDefault ->
                   options) options s
 
+(*
+ * Default options.
+ *)
+let ls_options_default = ls_options_of_string "prR!"
+
 (*!
  * @docoff
  *

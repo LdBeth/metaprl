@@ -21,6 +21,7 @@ INPUTS =\
 	mojave.js\
 	frameset.js\
 	edit.html\
+	edit-done.html\
 	edit.js\
 	edit-help.html\
 	menubutton.gif\

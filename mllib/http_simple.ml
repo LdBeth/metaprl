@@ -52,7 +52,7 @@ let eflush out =
 (*
  * The server info is just the socket.
  *)
-type t = Lm_inet.server
+type t = Lm_ssl.t
 
 (*
  * The output is a SSL channel.
@@ -825,9 +825,9 @@ let rec read_body inx header =
 (*
  * Handle a connection to the server.
  *)
-let handle server ssl connect info =
-   let inx  = Lm_ssl.in_channel_of_ssl ssl in
-   let outx = Lm_ssl.out_channel_of_ssl ssl in
+let handle server client connect info =
+   let inx  = Lm_ssl.in_channel_of_ssl client in
+   let outx = Lm_ssl.out_channel_of_ssl client in
    let line = Lm_ssl.input_line inx in
    let _ =
       if !debug_http then
@@ -860,46 +860,12 @@ let serve connect server info =
    (* Catch sigpipe *)
    let () = catch_sigpipe () in
 
-   (* Start SSL *)
-   let passwd_name, dh_name =
-      let mplib =
-         try Sys.getenv "MPLIB" with
-            Not_found ->
-               raise (Invalid_argument "Http_simple.serve: MPLIB is not defined")
-      in
-      let passwd_name = Filename.concat mplib "server.pem" in
-      let dh_name = Filename.concat mplib "dh.pem" in
-         if not (Sys.file_exists passwd_name) then
-            raise (Invalid_argument (sprintf "Http_simple.serve: SSL certificate file %s does not exist" passwd_name));
-         if not (Sys.file_exists dh_name) then
-            raise (Invalid_argument (sprintf "Http_simple.serve: SSL certificate file %s does not exist" dh_name));
-         passwd_name, dh_name
-   in
-   let context = Lm_ssl.create_server passwd_name dh_name in
-
    (* Serve as a secure connection *)
    let rec serve info =
-      let client = Lm_inet.accept server in
-      let fd = Lm_inet.file_descr_of_client client in
-      let () =
-         if !debug_http then
-            eprintf "Httpd_simple: connection on fd=%d%t" (Obj.magic fd) eflush
-      in
+      let client = Lm_ssl.accept server in
       let info =
          (* Ignore errors when the connection is handled *)
-         try
-            let ssl = Lm_ssl.create_ssl context in
-               try
-                  Lm_ssl.set_fd ssl fd;
-                  Lm_ssl.accept ssl;
-                  let info = handle server ssl connect info in
-                     Lm_ssl.shutdown ssl;
-                     info
-               with
-                  exn ->
-                     Lm_ssl.shutdown ssl;
-                     raise exn
-         with
+         try handle server client connect info with
             Unix.Unix_error _
           | Sys_error _
           | Failure _
@@ -909,13 +875,13 @@ let serve connect server info =
                info
       in
       let () =
-         try Unix.shutdown fd Unix.SHUTDOWN_ALL with
-            Unix.Unix_error _ ->
+         try Lm_ssl.shutdown client with
+            Failure _ ->
                ()
       in
       let () =
-         try Unix.close fd with
-            Unix.Unix_error _ ->
+         try Lm_ssl.close client with
+            Failure _ ->
                ()
       in
          serve info
@@ -931,16 +897,45 @@ let serve connect server info =
  * Server without threads.
  *)
 let serve_http start connect info port =
-   let inet = Lm_inet.serve port in
-   let info = start inet info in
-      serve connect inet info
+   let passwd_name, dh_name =
+      let mplib =
+         try Sys.getenv "MPLIB" with
+            Not_found ->
+               raise (Invalid_argument "Http_simple.serve: MPLIB is not defined")
+      in
+      let passwd_name = Filename.concat mplib "server.pem" in
+      let dh_name = Filename.concat mplib "dh.pem" in
+         if not (Sys.file_exists passwd_name) then
+            raise (Invalid_argument (sprintf "Http_simple.serve: SSL certificate file %s does not exist" passwd_name));
+         if not (Sys.file_exists dh_name) then
+            raise (Invalid_argument (sprintf "Http_simple.serve: SSL certificate file %s does not exist" dh_name));
+         passwd_name, dh_name
+   in
+   let ssl = Lm_ssl.socket passwd_name in
+   let () =
+      Lm_ssl.bind ssl Unix.inet_addr_any port;
+      Lm_ssl.listen ssl dh_name 10
+   in
+   let info = start ssl info in
+      serve connect ssl info
+
+(*
+ * Get the string name of an addr.
+ *)
+let string_of_inet_addr addr =
+   if addr = Unix.inet_addr_any then
+      Unix.gethostname ()
+   else
+      try (Unix.gethostbyaddr addr).Unix.h_name with
+         Not_found ->
+            Unix.string_of_inet_addr addr
 
 (*
  * Get the actual port number.
  *)
-let http_info inet =
-   let host, port = Lm_inet.get_server_host inet in
-      { http_host = host;
+let http_info ssl =
+   let host, port = Lm_ssl.getsockname ssl in
+      { http_host = string_of_inet_addr host;
         http_port = port
       }
 

@@ -73,6 +73,7 @@ val get_files       : t -> string list
  * Set the current ls options.
  *)
 val set_options     : t -> LsOptionSet.t -> unit
+val get_options     : t -> LsOptionSet.t
 
 (*
  * This function should be used while output is begin diverted.

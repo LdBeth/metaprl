@@ -141,7 +141,8 @@ let unix_of_dos s =
 let save_root_file filename contents =
    let contents = unix_of_dos contents in
       eprintf "save_root_file: %s@." filename;
-      eprintf "%s$@." contents
+      eprintf "%s$@." contents;
+      true
 
 (*
  * Browser table.

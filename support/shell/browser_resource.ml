@@ -104,6 +104,19 @@ type browser_state =
    }
 
 (************************************************************************
+ * Proxyedit names.
+ *)
+
+let proxyedit_of_filename name =
+   name ^ "/" ^ "info.prl"
+
+let filename_of_proxyedit name =
+   if Filename.basename name = "info.prl" then
+      Filename.dirname name
+   else
+      name
+
+(************************************************************************
  * Implementation.
  *)
 
@@ -327,7 +340,7 @@ let add_edit state info =
                   List.fold_left (fun items file ->
                         let item =
                            { command_label = "Open " ^ Filename.basename file;
-                             command_value = sprintf "Edit(%b, '/session/%d/edit/%s.proxyedit')" flag id file
+                             command_value = sprintf "Edit(%b, '/session/%d/edit/%s')" flag id (proxyedit_of_filename file)
                            }
                         in
                            item :: items) items files

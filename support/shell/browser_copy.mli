@@ -61,7 +61,7 @@ val basename_sym    : symbol
  *)
 val string_of_lib_file               : string -> string
 val string_of_root_file              : string -> string
-val save_root_file                   : string -> string -> unit
+val save_root_file                   : string -> string -> bool
 
 (*
  * Translate a file.

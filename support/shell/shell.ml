@@ -297,7 +297,7 @@ struct
            shell_proof = proof;
            shell_shell = shell;
            shell_pid = create_pid ();
-           shell_view_options = ls_options_of_string "prR!"
+           shell_view_options = ls_options_default
          }
 
    (*

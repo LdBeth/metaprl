@@ -116,16 +116,16 @@ let print_info out info =
 (*
  * Connect to the server.
  *)
-let connect info =
+let connect info keyfile =
    let { info_host = machine;
          info_port = port;
        } = info
    in
-   let fd = Unix.socket Unix.PF_INET Unix.SOCK_STREAM 0 in
+   let fd = Lm_ssl.socket keyfile in
    let () =
       try
          let addr = Unix.inet_addr_of_string machine in
-            Unix.connect fd (Unix.ADDR_INET (addr, port))
+            Lm_ssl.connect fd addr port
       with
          Failure _ ->
             let addrs = (Unix.gethostbyname info.info_host).Unix.h_addr_list in
@@ -136,7 +136,7 @@ let connect info =
                else
                   try
                      let addr = addrs.(i) in
-                        Unix.connect fd (Unix.ADDR_INET (addr, port))
+                        Lm_ssl.connect fd addr port
                   with
                      exn ->
                         search exn (succ i)
@@ -163,16 +163,15 @@ let put_file info =
       output_string outx key;
       close_out outx
    in
-   let fd = connect info in
-   let context = Lm_ssl.create_client keyfile in
-   let ssl = Lm_ssl.create_ssl context in
+   let fd = connect info keyfile in
    let () =
-      Lm_ssl.set_fd ssl fd;
-      Lm_ssl.connect ssl
+      try Unix.unlink keyfile with
+         Unix.Unix_error _ ->
+            ()
    in
-   let out = Lm_ssl.out_channel_of_ssl ssl in
+   let out = Lm_ssl.out_channel_of_ssl fd in
    let in_length = (Unix.stat filename).Unix.st_size in
-   let in_file = open_in filename in
+   let in_file = open_in_bin filename in
 
    (* Send the request *)
    let () =
@@ -193,8 +192,8 @@ let put_file info =
    in
       close_in in_file;
       Lm_ssl.flush out;
-      Lm_ssl.shutdown ssl;
-      Unix.close fd
+      Lm_ssl.shutdown fd;
+      Lm_ssl.close fd
 
 (*
  * Edit a file.
@@ -208,7 +207,7 @@ let edit_file info =
 
    (* Save the file *)
    let () =
-      let outx = open_out_bin filename in
+      let outx = open_out filename in
          output_string outx content;
          close_out outx
    in
@@ -226,6 +225,8 @@ let edit_file info =
       if exit_ok then
          try put_file info with
             exn ->
+               eprintf "Put_file: %s failed%t" name eflush;
+
                (* Create an error file *)
                let errorfile = filename ^ ".txt" in
                let outx = open_out errorfile in
@@ -243,11 +244,6 @@ let () =
    match Sys.argv with
       [|_; filename|] ->
          let args = parse_file filename in
-         let () =
-            eprintf "Reading input from %s%t" filename eflush;
-            List.iter (fun (v, x) ->
-                  eprintf "Input: %s = %s%t" v x eflush) args
-         in
          let () =
             try Unix.unlink filename with
                Unix.Unix_error _ ->
@@ -297,7 +293,6 @@ let () =
               info_content  = List.assoc "content" args
             }
          in
-            print_info stderr info;
             edit_file info
     | _ ->
          eprintf "usage: medit <filename>\n";

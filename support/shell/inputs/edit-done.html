@@ -9,18 +9,10 @@
         %%STYLE%%
     </head>
 
-    <body id="editbody" onload="OnLoad()">
+    <body id="editbody" onload="Cancel()">
     <h2>Edit: <span class="editfile">%%FILE%%</span></h2>
-    <a href="/inputs/edit-help.html">How can I use my own editor to edit this file?</a>
-
     <p>
-    <form name="commandform" method="post" action="./info.prl">
-    <p>
-    <textarea name="content" rows=24 cols=80>%%CONTENT%%</textarea>
-    </p>
-    <input type="submit" name="submit" value="Submit changes">
+    Editing is done, click the following button to quit.
     <input type="button" name="cancel" value="Cancel" onclick="Cancel()">
-    </form>
-    </p>
     </body>
 </html>

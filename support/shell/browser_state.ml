@@ -339,6 +339,42 @@ let read_stringtable_from_home name =
     | Sys_error s ->
          LineTable.empty
 
+(*
+ * Save the ls_options to a file in the user's
+ * home directory.
+ *)
+let save_options_to_home options name =
+   try
+      let home = Sys.getenv "HOME" in
+      let filename = Filename.concat home name in
+      let out = Pervasives.open_out filename in
+         output_string out (string_of_ls_options options);
+         close_out out
+   with
+      Not_found ->
+         eprintf "Home directory not defined@."
+    | Sys_error s ->
+         eprintf "Can't write %s@." s
+
+(*
+ * Save the ls_options to a file in the user's
+ * home directory.
+ *)
+let read_options_from_home name =
+   try
+      let home = Sys.getenv "HOME" in
+      let filename = Filename.concat home name in
+      let inx = Pervasives.open_in filename in
+      let options = ls_options_of_string (input_line inx) in
+         close_in inx;
+         options
+   with
+      Not_found ->
+         eprintf "Home directory not defined@.";
+         ls_options_default
+    | Sys_error s ->
+         ls_options_default
+
 (************************************************************************
  * The browser state.
  *)
@@ -362,6 +398,7 @@ type t =
 let history_filename     = ".metaprl/history"
 let files_filename       = ".metaprl/files"
 let directories_filename = ".metaprl/directories"
+let options_filename     = ".metaprl/options"
 
 (*
  * Term output is directed to the "current" buffer.
@@ -378,14 +415,18 @@ let create () =
      info_message        = LineBuffer.create ();
      info_content_buffer = new_buffer ();
      info_content_table  = StringTable.empty;
-     info_options        = LsOptionSet.empty
+     info_options        = read_options_from_home options_filename
    }
 
 (*
  * Set the options.
  *)
 let set_options info options =
-   info.info_options <- options
+   info.info_options <- options;
+   save_options_to_home options options_filename
+
+let get_options info =
+   info.info_options
 
 (*
  * Get the HTML tagger from the current state.

@@ -53,6 +53,7 @@ val string_of_ls_options : LsOptionSet.t -> string
 val ls_options_of_string : string -> LsOptionSet.t
 val ls_options_add : LsOptionSet.t -> string -> LsOptionSet.t
 val ls_options_clear : LsOptionSet.t -> string -> LsOptionSet.t
+val ls_options_default : LsOptionSet.t
 
 (*!
  * @docoff
