@@ -1112,7 +1112,7 @@ and of_term_list
     (convert : (term, term, term, term, 'proof, 'ctyp, 'expr, 'item) convert)
     (terms : term list) =
    let items = List_util.some_map (dest_term_loc convert) terms in
-      ({ info_list = items } : ('proof, 'ctyp, 'expr, 'item) module_info)
+      ({ info_list = List.rev items } : ('proof, 'ctyp, 'expr, 'item) module_info)
 
 (**************
  * CONSTRUCTION
@@ -1363,7 +1363,7 @@ and term_list_loc convert (t, loc) =
 
 and term_list (convert : ('proof, 'ctyp, 'expr, 'item, term, term, term, term) convert)
     ({ info_list = info } : ('proof, 'ctyp, 'expr, 'item) module_info) =
-   (List.map (term_list_loc convert) info : term list)
+   (List.map (term_list_loc convert) (List.rev info) : term list)
 
 (************************************************************************
  * SUBTYPING                                                            *
@@ -1778,6 +1778,9 @@ and check_implementation { info_list = implem } { info_list = interf } =
 
 (*
  * $Log$
+ * Revision 1.20  1998/04/30 14:20:19  jyh
+ * Updating term_table.
+ *
  * Revision 1.19  1998/04/29 20:53:26  jyh
  * Initial working display forms.
  *

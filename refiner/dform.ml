@@ -504,7 +504,7 @@ let format_short_term base shortener =
          eprintf "Dform: %s%t" (string_of_term t) eflush;
       try print_term' pprec buf eq t with
          Not_found ->
-            if true or !debug_dform then
+            if !debug_dform then
                begin
                   let flag = !debug_dform in
                      eprintf "Default display form: %s%t" (string_of_term t) eflush;
@@ -512,7 +512,11 @@ let format_short_term base shortener =
                      (try lookup base (terms_of_slot t); () with _ -> ());
                      debug_dform := flag
                end;
-            format_term buf shortener (print_term max_prec buf NOParens) t
+            (* format_term buf shortener (print_term max_prec buf NOParens) t *)
+            let rec format t =
+               format_term buf shortener format t
+            in
+               format t
 
    (* Print an entry in the list of terms being displayed *)
    and print_entry pprec buf eq =
@@ -647,6 +651,9 @@ let string_of_mterm base mterm =
 
 (*
  * $Log$
+ * Revision 1.8  1998/04/30 14:20:23  jyh
+ * Updating term_table.
+ *
  * Revision 1.7  1998/04/29 20:53:32  jyh
  * Initial working display forms.
  *

@@ -557,7 +557,7 @@ and dest_module_type_sig t =
 
 and dest_open_sig t =
    let loc = dest_loc t in
-   let sl = subterms_of_term t in
+   let sl = dest_xlist (one_subterm "dest_open_sig" t) in
       <:sig_item< open $List.map dest_string sl$ >>
 
 and dest_type_sig t =
@@ -612,7 +612,7 @@ and dest_module_type_str t =
 
 and dest_open_str t =
    let loc = dest_loc t in
-   let sl = subterms_of_term t in
+   let sl = dest_xlist (one_subterm "dest_open_str" t) in
       <:str_item< open $List.map dest_string sl$ >>
 
 and dest_type_str t =
@@ -1268,7 +1268,7 @@ and mk_sig_item comment si =
        | (<:sig_item< module type $s$ = $mt$ >>) ->
             mk_simple_named_term sig_module_type_op loc s [mk_module_type comment mt]
        | (<:sig_item< open $sl$ >>) ->
-            mk_simple_term sig_open_op loc (List.map mk_simple_string sl)
+            mk_simple_term sig_open_op loc [mk_xlist_term (List.map mk_simple_string sl)]
        | (<:sig_item< type $list:ssltl$ >>) ->
             mk_simple_term sig_type_op loc (List.map (mk_sslt comment) ssltl)
        | (<:sig_item< value $s$ : $t$ >>) ->
@@ -1295,7 +1295,7 @@ and mk_str_item comment si =
        | (<:str_item< module type $s$ = $mt$ >>) ->
             mk_simple_named_term str_module_type_op loc s [mk_module_type comment mt]
        | (<:str_item< open $sl$ >>) ->
-            mk_simple_term str_open_op loc (List.map mk_simple_string sl)
+            mk_simple_term str_open_op loc [mk_xlist_term (List.map mk_simple_string sl)]
        | (<:str_item< type $list:ssltl$ >>) ->
             mk_simple_term str_type_op loc (List.map (mk_sslt comment) ssltl)
        | (<:str_item< value $rec:b$ $list:pel$ >>) ->
@@ -1504,6 +1504,9 @@ let term_of_class = mk_class
 
 (*
  * $Log$
+ * Revision 1.10  1998/04/30 14:20:16  jyh
+ * Updating term_table.
+ *
  * Revision 1.9  1998/04/29 14:48:01  jyh
  * Added ocaml_sos.
  *

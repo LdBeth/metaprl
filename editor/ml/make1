@@ -1,0 +1,7 @@
+#!/bin/sh
+(cd ../../refiner; echo refiner; make; cp refiner.cma /usr/local/lib/nuprl-light)
+# (cd ../../filter; echo filter; make)
+(cd ../../theories/tactic; echo tactic; make)
+(cd ../../theories/ocaml; echo ocaml; make)
+(cd ../../theories/base; echo base; make)
+(cd ../../editor/ml; echo editor; make)

@@ -139,7 +139,7 @@ let insert { tbl_items = items } tl v =
         info_value = v
       }
    in
-      if !debug_dform then
+      if true or !debug_dform then
          eprintf "Term_table.insert: %d (%a)%t" (Term_template.to_int template) print_terms tl eflush;
       { tbl_items = Entry entry :: items; tbl_base = None }
 
@@ -245,6 +245,9 @@ let lookup tbl tl =
 
 (*
  * $Log$
+ * Revision 1.7  1998/04/30 14:20:27  jyh
+ * Updating term_table.
+ *
  * Revision 1.6  1998/04/29 20:53:38  jyh
  * Initial working display forms.
  *
