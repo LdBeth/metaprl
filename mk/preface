@@ -41,6 +41,9 @@ endif
 ifndef TESTS
    TESTS=no
 endif
+ifeq ($(TESTS),yes)
+   TESTS=YES
+endif
 ifeq ($(TESTS),y)
    TESTS=YES
 endif
