@@ -1,8 +1,0 @@
-#!/bin/csh -f
-
-foreach i (`find . -name "*.prlb" -print`)
-   set cmoz = $i:r.cmoz
-   if(! -f $cmoz) then
-      echo $cmoz
-   endif
-end
