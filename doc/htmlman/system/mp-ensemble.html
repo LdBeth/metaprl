@@ -83,8 +83,8 @@ subgoals <I>t1, ..., tn</I>. The second tactic <TT>tac2</TT> is
 applied to each of these subgoals, and the subgoals it produces
 are concatenated to form the final result.</P>
 
-<P><CENTER><IMG ALT="andthen1" SRC="andthen1.gif" WIDTH="291" HEIGHT="151" ALIGN="BOTTOM"
-BORDER="0"></CENTER></P>
+<P ALIGN="CENTER"><IMG ALT="andthen1" SRC="andthen1.gif" WIDTH="291" HEIGHT="151" ALIGN="BOTTOM"
+BORDER="0"></P>
 
 <P>The <TT>andthen2</TT> tactic is similar to the <TT>anthen1</TT>
 tactic, but it allows different tactics to be applied to the subgoals.
@@ -92,16 +92,16 @@ The tactic <TT>(andthen2 tac [tac1; tac2; ...; tacn])</TT> tactic
 requires that the <TT>tac</TT> tactic produce exactly <TT>n</TT>
 subgoals, and <TT>tac<I>i</I></TT> is applied to subgoal <I><TT>i</TT></I>.</P>
 
-<P><CENTER><IMG ALT="andthen2" SRC="andthen2.gif" WIDTH="298" HEIGHT="176" ALIGN="BOTTOM"
-BORDER="0"></CENTER></P>
+<P ALIGN="CENTER"><IMG ALT="andthen2" SRC="andthen2.gif" WIDTH="298" HEIGHT="176" ALIGN="BOTTOM"
+BORDER="0"></P>
 
 <P>The <CODE><TT>choose</TT></CODE> tactical allows searching
 with tactics. The tactic <TT>(choose [tac1; tac2; ...; tacn])</TT>
 applies each tactic <TT>tac1</TT>, <TT>tac2</TT>, <TT>...</TT>
 in turn until the first one succeeds.</P>
 
-<P><CENTER><IMG ALT="choose" SRC="choose.gif" WIDTH="285" HEIGHT="118" ALIGN="BOTTOM"
-BORDER="0"></CENTER></P>
+<P ALIGN="CENTER"><IMG ALT="choose" SRC="choose.gif" WIDTH="285" HEIGHT="118" ALIGN="BOTTOM"
+BORDER="0"></P>
 
 <H2>Scheduler</H2>
 
@@ -141,22 +141,22 @@ proof tree to the scheduler. The closed circles in the diagram
 correspond to unfinished goals; the open circles are finished
 goals that have been associated with a value.</P>
 
-<P><CENTER><IMG ALT="consume" SRC="consume.gif" WIDTH="414" HEIGHT="156" ALIGN="BOTTOM"
-BORDER="0"></CENTER></P>
+<P ALIGN="CENTER"><IMG ALT="consume" SRC="consume.gif" WIDTH="414" HEIGHT="156" ALIGN="BOTTOM"
+BORDER="0"></P>
 
 <P>When a thread is finished, it performs the <B>return</B> operation
 to give the result to the scheduler. The scheduler can also <B>cancel</B>
 a thread, if the job is no longer needed.</P>
 
-<P><CENTER><IMG ALT="return" SRC="return.gif" WIDTH="473" HEIGHT="120" ALIGN="BOTTOM"
-BORDER="0"></CENTER></P>
+<P ALIGN="CENTER"><IMG ALT="return" SRC="return.gif" WIDTH="473" HEIGHT="120" ALIGN="BOTTOM"
+BORDER="0"></P>
 
 <P>The client has three operations it can perform. It may <B>submit</B>
 a job, it can <B>cancel</B> a job, and a value can be <B>return</B>ed
 from from scheduler to the client.</P>
 
-<P><CENTER><IMG ALT="server" SRC="server.gif" WIDTH="415" HEIGHT="156" ALIGN="BOTTOM"
-BORDER="0"></CENTER></P>
+<P ALIGN="CENTER"><IMG ALT="server" SRC="server.gif" WIDTH="415" HEIGHT="156" ALIGN="BOTTOM"
+BORDER="0"></P>
 
 <P>The scheduler is implemented in the module <TT>Thread_refiner_ens</TT>.
 The scheduler maintains a constant sized pool of threads that

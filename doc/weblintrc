@@ -1,4 +1,6 @@
 disable directory-index
+disable lower-case
 
 enable img-size
 enable bad-link
+enable upper-case
