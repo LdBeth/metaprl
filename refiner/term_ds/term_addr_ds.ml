@@ -509,4 +509,18 @@ struct
    let apply_var_fun_higher f bvars term =
       apply_var_fun_higher_term f bvars [] term
 
+
+   (*
+    * Strip the initial part of an address.
+    *)
+   let rec strip_address items addr =
+      match items, addr with
+         [], _ -> addr
+       | item1 :: items, item2 :: addr ->
+            if item1 = item2 then
+               strip_address items addr
+            else
+               REF_RAISE(RefineError ("strip_address", StringError "addresses do not match"))
+       | _, [] ->
+            REF_RAISE(RefineError ("strip_address", StringError "address is too short"))
 end

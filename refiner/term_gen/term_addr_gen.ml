@@ -413,5 +413,18 @@ struct
             concl_addr :: aux 1 (body_of_sequent t)
       else make_path_list (List.length (dest_term t).term_terms)
 
+   (*
+    * Strip the initial part of an address.
+    *)
+   let rec strip_address items addr =
+      match items, addr with
+         [], _ -> addr
+       | item1 :: items, item2 :: addr ->
+            if item1 = item2 then
+               strip_address items addr
+            else
+               REF_RAISE(RefineError ("strip_address", StringError "addresses do not match"))
+       | _, [] ->
+            REF_RAISE(RefineError ("strip_address", StringError "address is too short"))
 end
 

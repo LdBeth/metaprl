@@ -125,6 +125,11 @@ sig
    val subterm_addresses : term -> address list
 
    (*
+    * Strip the initial part of an address.
+    *)
+   val strip_address : addr_item list -> address -> address
+
+   (*
     * higherC low-level implementation
     *)
    val apply_fun_higher : (term -> term * 'a) -> term -> term * 'a list

@@ -2237,6 +2237,9 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          (merge_term "TermAddr.apply_var_fun_higher - 0" res0_1 res0_2),
          (merge_poly "TermAddr.apply_var_fun_higher - 1" res1_1 res1_2)
 
+      let strip_address (p0 : addr_item list) (p1 : address) =
+         let p1_1, p1_2 = p1 in
+         merge merge_address "TermAddr.strip_address" (wrap2 TermAddr1.strip_address p0 p1_1) (wrap2 TermAddr2.strip_address p0 p1_2)
    end
 
    module TermMan = struct
