@@ -234,32 +234,46 @@ let create_cert name =
       Unix.Unix_error (err, _, _) ->
          raise (Failure ("Setup.create_cert: certificate file " ^ name ^ " is not accessible: " ^ (Unix.error_message err)))
 
+(*
+ * BUG JYH: this is a temporary hack.
+ * Need to find a cleaner solution to no SSL.
+ *)
 let server_pem =
    let writer () =
-      let file = Filename.concat (certs_dir ()) "server.pem" in
-         create_cert file;
-         file
+      if Lm_ssl.enabled then
+         let file = Filename.concat (certs_dir ()) "server.pem" in
+            create_cert file;
+            file
+      else
+         "/setup-error/server.pem"
    in
       delay "Setup.server_pem" (wrap_umask077 writer)
 
 let client_pem =
    let writer () =
-      let file = Filename.concat (certs_dir ()) "client.pem" in
-         create_cert file;
-         file
+      if Lm_ssl.enabled then
+         let file = Filename.concat (certs_dir ()) "client.pem" in
+            create_cert file;
+            file
+      else
+         "/setup-error/client.pem"
    in
       delay "Setup.client_pem" (wrap_umask077 writer)
 
 let dh_pem =
    let writer () =
-      let name = Filename.concat (certs_dir ()) "dh.pem" in
-         if not (Sys.file_exists name) then begin
-            eprintf "Creating certificate file %s%t" name eflush;
-            execute_openssl [|"openssl"; "dhparam"; "-2"; "-out"; name|];
-         end;
-         try access name [F_OK;R_OK]; name with
-            Unix.Unix_error (err, _, _) ->
-               raise (Failure ("Setup.create_cert: certificate file " ^ name ^ " is not accessible: " ^ (Unix.error_message err)))
+      if Lm_ssl.enabled then
+         let name = Filename.concat (certs_dir ()) "dh.pem" in
+            if not (Sys.file_exists name) then
+               begin
+                  eprintf "Creating certificate file %s%t" name eflush;
+                  execute_openssl [|"openssl"; "dhparam"; "-2"; "-out"; name|];
+               end;
+            try access name [F_OK;R_OK]; name with
+               Unix.Unix_error (err, _, _) ->
+                  raise (Failure ("Setup.create_cert: certificate file " ^ name ^ " is not accessible: " ^ (Unix.error_message err)))
+      else
+         "/setup-error/dh.pem"
    in
       delay "Setup.dh_pem" (wrap_umask077 writer)
 
