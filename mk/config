@@ -36,6 +36,9 @@ endif
 ifndef OCAMLC
    OCAMLC = ocamlc$(EXE)
 endif
+ifndef OCAMLCP
+   OCAMLCP=$(OCAMLC)
+endif
 ifndef OCAMLMKTOP
    OCAMLMKTOP = ocamlmktop
 endif
@@ -164,7 +167,7 @@ $(NL_CMXFILES): %.cmx: %.ml %.cmi
 	$(PRLC) $(OCAMLOPTFLAGS) -c $*.ml
 
 $(REG_CMOFILES): %.cmo: %.ml %.cmi
-	$(OCAMLC) $(OCAMLCFLAGS) -c $*.ml
+	$(OCAMLCP) $(OCAMLCFLAGS) -c $*.ml
 
 $(REG_CMIFILES): %.cmi: %.mli
 	$(OCAMLC) $(OCAMLCFLAGS) -c $*.mli
