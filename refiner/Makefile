@@ -165,7 +165,7 @@ $(REFINER_CMIFILES): %.cmi: %.mli
 	cd refiner; $(MAKE) all
 
 $(REFINER_CMOFILES): %.cmo: %.ml
-	cd refsig; $(MAKE) all
+	cd refiner; $(MAKE) all
 
 $(REFLIB_CMIFILES): %.cmi: %.mli
 	cd reflib; $(MAKE) all
@@ -203,7 +203,7 @@ clean::
 depend::
 	rm -f Makefile.tmp
 	touch Makefile.tmp
-	$(ROOT)/bin/ocamldep $(IDIRS) $(MLFILES) $(MLIFILES) >> Makefile.tmp
+	$(ROOT)/bin/ocamldep $(IDIRS) -I ../mllib $(MLFILES) $(MLIFILES) >> Makefile.tmp
 	mv Makefile.tmp Makefile.dep
 	@for i in $(DIRS); do\
 		if (echo Making $$i...; cd $$i; touch Makefile.dep; $(MAKE) $@); then true; else exit 1; fi;\
