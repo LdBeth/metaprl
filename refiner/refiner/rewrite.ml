@@ -1427,7 +1427,7 @@ struct
          (* Check the opnames to short-circuit matches that quickly fail *)
          match redex, terms with
             (RWComposite { rw_op = { rw_name = opname1 } } :: _, t :: _) ->
-               if not (opname1 == opname_of_term t) then
+               if opname1 != opname_of_term t then
                   raise (RewriteError (BadMatch (TermMatch t)))
           | _ ->
                ()
@@ -1678,6 +1678,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.10  1998/06/27 02:21:40  nogin
+ * .
+ *
  * Revision 1.9  1998/06/23 22:12:14  jyh
  * Improved rewriter speed with conversion tree and flist.
  *
