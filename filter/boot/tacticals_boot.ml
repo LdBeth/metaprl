@@ -598,6 +598,11 @@ struct
    (*
     * Try forms.
     *)
+   let tryOnClausesT clauses tac =
+      onClausesT clauses (function i -> tryT (tac i))
+
+   let tryOnHypsT = tryOnClausesT
+
    let tryOnAllHypsT tac =
       onAllHypsT (function i -> tryT (tac i))
 

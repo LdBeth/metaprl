@@ -948,6 +948,8 @@ sig
 
    val onClausesT : int list -> (int -> tactic) -> tactic
    val onHypsT : int list -> (int -> tactic) -> tactic
+   val tryOnClausesT : int list -> (int -> tactic) -> tactic
+   val tryOnHypsT : int list -> (int -> tactic) -> tactic
 
    val onMClausesT : int list -> (int -> tactic) -> tactic
    val onMHypsT : int list -> (int -> tactic) -> tactic
