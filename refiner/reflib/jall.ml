@@ -3422,13 +3422,13 @@ struct
             apply_r3 fs ft rt rest_eq sigma
          else if r_4 fs ft rt then
             apply_r4 fs ft rt rest_eq sigma
-         else if r_5 fs ft rt then
+         else if r_5 fs rt then
             apply_r5 fs ft rt rest_eq sigma
          else if r_6 fs ft rt then
             (try
                apply_r6 fs ft rt rest_eq sigma
             with Not_unifiable ->
-               if r_7 fs ft rt then (* r7 applicable if r6 was and tr6 = C2t' *)
+               if r_7 fs rt then (* r7 applicable if r6 was and tr6 = C2t' *)
                   (try
                      apply_r7 fs ft rt rest_eq sigma
                   with Not_unifiable ->
@@ -3439,7 +3439,7 @@ struct
 (* but looking at the transformation rules, r10 should be tried at last in any case *)
                   apply_r10 fs ft rt rest_eq sigma  (* r10 always applicable r6 was *)
             )
-         else if r_7 fs ft rt then  (* not r6 and r7 possible if z <> [] *)
+         else if r_7 fs rt then  (* not r6 and r7 possible if z <> [] *)
             (try
                apply_r7 fs ft rt rest_eq sigma
             with Not_unifiable ->
@@ -3449,7 +3449,7 @@ struct
             (try
                apply_r8 fs ft rt rest_eq sigma
             with Not_unifiable ->
-               if r_10 fs ft rt then (* r10 applicable if r8 was and tr8 <> [] *)
+               if r_10 fs rt then (* r10 applicable if r8 was and tr8 <> [] *)
                   apply_r10 fs ft rt rest_eq sigma
                else
                   raise Not_unifiable (* simply back propagation *)
@@ -3458,13 +3458,13 @@ struct
             (try
                apply_r9 fs ft rt rest_eq sigma
             with Not_unifiable ->
-               if r_10 fs ft rt then (* r10 applicable if r9 was and tr9 <> [] *)
+               if r_10 fs rt then (* r10 applicable if r9 was and tr9 <> [] *)
                   apply_r10 fs ft rt rest_eq sigma
                else
                   raise Not_unifiable (* simply back propagation *)
             )
          else
-            if r_10 fs ft rt then  (* not ri, i<10, and r10 possible if for instance *)
+            if r_10 fs rt then  (* not ri, i<10, and r10 possible if for instance *)
                          (* (s=[] and x=v1) or (z<>[] and xt=C1V1t') *)
                apply_r10 fs ft rt rest_eq sigma
             else  (* NO rule applicable *)
