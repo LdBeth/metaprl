@@ -49,10 +49,10 @@ sig
    val extract_redex_types : rewrite_redex -> rewrite_type list
    val apply_redex :
       rewrite_redex -> address array ->
-      term list -> rewrite_stack
+      term -> term list -> rewrite_stack
    val apply_redex' :
       rewrite_redex -> address array ->
-      term list -> rewrite_stack * rewrite_item list
+      term -> term list -> rewrite_stack * rewrite_item list
    val make_contractum : rewrite_contractum -> rewrite_stack -> term
 
    (* Rewrite constructor/destructors *)
@@ -62,7 +62,7 @@ sig
 
    (* Apply a rewrite to a term *)
    val apply_rewrite : rewrite_rule -> address array * string array * string list list ->
-      term list -> term list * string array
+      term -> term list -> term list * string array
 
    (*
     * See if a rule may apply to a particular term

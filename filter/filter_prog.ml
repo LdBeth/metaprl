@@ -1172,7 +1172,7 @@ struct
          <:expr< $create_ml_rule_expr loc$ $lid:local_refiner_id$ $term_expr$ $mlrec_expr$ >>
       in
       let stack_value_expr =
-         <:expr< $apply_redex_expr loc$ $redex_expr$ $nil_array loc$ [ $value_expr$ :: [] ] >>
+         <:expr< $apply_redex_expr loc$ $redex_expr$ $nil_array loc$ $value_expr$  [] >>
       in
       let value_value_expr =
          <:expr< $construct_redex_expr loc$ $nil_array loc$ $nil_list loc$ [ $arg_expr$ :: [] ] >>

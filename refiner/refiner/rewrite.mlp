@@ -1301,25 +1301,29 @@ struct
 
          | _ -> ref_raise(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
 
-    and match_redex_bterms addrs stack bt' bt =
-        match bt', dest_bterm bt with
-            { rw_bvars = vars'; rw_bnames = names; rw_bterm = bterm' },
-            { bvars = vars; bterm = bterm } ->
-               set_bvars stack names vars;
-               if vars' = List.length vars then
-                  match_redex_term addrs stack bterm' bterm
-               else
-                  ref_raise(RefineError ("match_redex_bterms", RewriteBadMatch (BTermMatch bt)))
+   and match_redex_bterms addrs stack bt' bt =
+       match bt', dest_bterm bt with
+          { rw_bvars = vars'; rw_bnames = names; rw_bterm = bterm' },
+          { bvars = vars; bterm = bterm } ->
+             set_bvars stack names vars;
+             if vars' = List.length vars then
+                match_redex_term addrs stack bterm' bterm
+             else
+                ref_raise(RefineError ("match_redex_bterms", RewriteBadMatch (BTermMatch bt)))
 
-    let match_redex addrs stack progs tl =
+   let match_redex addrs stack t tl = function
+      [] -> 
+         ref_raise(RefineError ("match_redex", StringError "progs list is empty"))
+    | prg::progs ->
 #ifdef VERBOSE_EXN
-       if !debug_rewrite then
-          begin
-             eprintf "match_redex: %d%t" (List.length progs) eflush;
-             List.iter (print_prog stderr) progs
-          end;
+      if !debug_rewrite then
+         begin
+            eprintf "match_redex: %d%t" (List.length progs) eflush;
+            List.iter (print_prog stderr) (prg::progs)
+         end;
 #endif
-       List.iter2 (match_redex_term addrs stack) progs tl
+      match_redex_term addrs stack prg t;
+      if tl!=[] then List.iter2 (match_redex_term addrs stack) progs tl
 
    (*
     * The contractum is built as a second order substitution.
@@ -1631,12 +1635,12 @@ struct
          rr_contractum = contractum;
          rr_namer = namer;
          rr_gstacksize = gstacksize
-       } (addrs, names, bnames) terms =
+       } (addrs, names, bnames) goal params =
       let _ =
          (* Check the opnames to short-circuit applications that quickly fail *)
-         match redex, terms with
-            (RWComposite { rw_op = { rw_name = opname1 } } :: _, t :: _) ->
-               if opname1 != opname_of_term t then
+         match redex with
+            RWComposite { rw_op = { rw_name = opname1 } } :: _ ->
+               if opname1 != opname_of_term goal then
                   ref_raise(opname_exn)
           | _ ->
                ()
@@ -1646,7 +1650,7 @@ struct
          if !debug_rewrite then
             eprintf "Rewrite.apply_rewrite: match_redex%t" eflush;
 #endif
-         match_redex addrs gstack redex terms;
+         match_redex addrs gstack goal params redex;
 #ifdef VERBOSE_EXN
          if !debug_rewrite then
             eprintf "Rewrite.apply_rewrite: namer%t" eflush;
@@ -1659,7 +1663,7 @@ struct
                      if Array.length enames = 0 then
                         names
                      else
-                        let vars = free_vars_terms terms in
+                        let vars = free_vars_terms (goal::params) in
                         let enames = contracta_enames vars bnames enames in
                            Array.append names enames
                   in
@@ -1669,11 +1673,9 @@ struct
 #endif
                      List.map (build_contractum names bnames gstack) con, names'
              | RWCFunction f ->
-                  match terms with
-                     [t] ->
-                        [f t], names'
-                   | _ ->
-                        ref_raise(RefineError ("apply_rewrite", RewriteBadMatch (TermMatch xnil_term)))
+                  if params == []
+                     then [f goal], names'
+                     else ref_raise(RefineError ("apply_rewrite", RewriteBadMatch (TermMatch xnil_term)))
          in
 #ifdef VERBOSE_EXN
             if !debug_rewrite then
@@ -1778,14 +1780,14 @@ struct
    (*
     * Match with a redex, and extract the forms to be bound.
     *)
-   let apply_redex { redex_stack = stack; redex_redex = redex } addrs terms =
+   let apply_redex { redex_stack = stack; redex_redex = redex } addrs term terms =
       let gstack = Array.create (Array.length stack) StackVoid in
-         match_redex addrs gstack redex terms;
+         match_redex addrs gstack term terms redex;
          gstack
 
-   let apply_redex' { redex_stack = stack; redex_redex = redex } addrs terms =
+   let apply_redex' { redex_stack = stack; redex_redex = redex } addrs term terms =
       let gstack = Array.create (Array.length stack) StackVoid in
-         match_redex addrs gstack redex terms;
+         match_redex addrs gstack term terms redex;
          gstack, extract_redex_values gstack stack
 
    (*

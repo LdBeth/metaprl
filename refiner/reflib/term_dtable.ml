@@ -255,16 +255,17 @@ let find_entry
     (f : term * term -> 'a)
     (f' : term list * term list -> term list * (term * term))
     (entries : 'a info_entry list)
-    (t : term list) =
+    (t : term) 
+    (tl : term list) =
    let match_entry { info_rw = rw; info_value = v } =
       let t2, _ =
          let debug = !debug_rewrite in
          let _ = debug_rewrite := false in
-         let x = apply_rewrite rw ([||], [||], []) t in
+         let x = apply_rewrite rw ([||], [||], []) t tl in
             debug_rewrite := debug;
             x
       in
-      let t2', arg = f' (t2, t) in
+      let t2', arg = f' (t2, t::tl) in
          v (map_pair f t2') arg
    in
    let rec aux = function
@@ -286,25 +287,24 @@ let find_entry
  * the left-to-right rules,
  * then right-to-left rules.
  *)
-let lookup { ext_lrtable = lrbase;
+let rec lookup { ext_lrtable = lrbase;
              ext_rltable = rlbase;
              ext_dtable = dbase
     } t1 t2 =
    let rec aux (t1, t2) =
-      let arg = [t1; t2] in
       let temp1 = shape_of_term t1 in
       let temp2 = shape_of_term t2 in
       let template = [temp1; temp2] in
          try
-            find_entry aux shift_pair (Hashtbl.find dbase template) arg
+            find_entry aux shift_pair (Hashtbl.find dbase template) t1 [t2]
          with
             Not_found ->
                begin
                   try
-                     find_entry aux shift_snd (Hashtbl.find lrbase [temp1]) [t1]
+                     find_entry aux shift_snd (Hashtbl.find lrbase [temp1]) t1 []
                   with
                      Not_found ->
-                        find_entry aux shift_fst (Hashtbl.find rlbase [temp2]) [t2]
+                        find_entry aux shift_fst (Hashtbl.find rlbase [temp2]) t2 []
                end
    in
       aux (t1, t2)

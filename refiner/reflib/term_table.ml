@@ -491,7 +491,7 @@ let lookup name table t =
                let stack, items =
                   let debug = !debug_rewrite in
                   let _ = debug_rewrite := false in
-                  let x = apply_redex' redex [||] [t] in
+                  let x = apply_redex' redex [||] t [] in
                      debug_rewrite := debug;
                      x
                in

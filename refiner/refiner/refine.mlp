@@ -1280,7 +1280,7 @@ struct
       in
       let refiner' = RuleRefiner ref_rule in
       let tac (addrs, names) params sent { mseq_vars = vars; mseq_goal = goal; mseq_hyps = hyps } =
-         let subgoals, names' = apply_rewrite rw (addrs, names, [vars]) (goal :: params) in
+         let subgoals, names' = apply_rewrite rw (addrs, names, [vars]) goal params in
          let make_subgoal subgoal =
             { mseq_vars = vars; mseq_goal = subgoal; mseq_hyps = hyps }
          in
@@ -1317,7 +1317,7 @@ struct
       in
       let rw = Rewrite.term_rewrite ([||], [||]) (create_redex vars args :: params) [result] in
       let compute_ext vars params args =
-         match apply_rewrite rw ([||], [||], []) (create_redex vars args :: params) with
+         match apply_rewrite rw ([||], [||], []) (create_redex vars args) params with
             [c], x when Array.length x = 0 ->
                c
           | _ ->
@@ -1435,7 +1435,7 @@ struct
       in
       let refiner' = RewriteRefiner ref_rewrite in
       let rw sent t =
-         match apply_rewrite rw ([||], [||], []) [t] with
+         match apply_rewrite rw ([||], [||], []) t [] with
             [t'], _ ->
                sent.sent_rewrite ref_rewrite;
                t', refiner'
@@ -1520,7 +1520,7 @@ struct
       let refiner' = CondRewriteRefiner ref_crw in
       let rw' (vars, params) (sent : sentinal) (bvars : string list list) seq t =
          (* BUG: is alpha variance compute correctly by replace_goal? *)
-         match apply_rewrite rw ([||], vars, bvars) (t :: params) with
+         match apply_rewrite rw ([||], vars, bvars) t params with
             (t' :: subgoals), names ->
                let subgoals' = List.map (replace_goal seq) subgoals in
                   sent.sent_cond_rewrite ref_crw;
