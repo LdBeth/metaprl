@@ -9,6 +9,13 @@
 \usepackage{nameref}
 \usepackage{hyperref}
 
+%% EMRE's hack to override LNCS style.
+\let\Figure=\figure
+\let\endFigure=\endfigure
+\renewenvironment{figure}
+   {\begin{Figure}[tbp]}
+   {\end{Figure}}
+
 %\commentfalse
 
 \begin{document}
