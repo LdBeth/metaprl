@@ -223,7 +223,7 @@ Expand aliases etc...  (the good stuff is in here.)"
               args
               (null (cdr args))
               (eq (aref (car args) (1- (length input))) ?/)
-              (setq input (concat "cd(\"" (car args) "\");ls()")))
+              (setq input (concat "ignore(cd\"" (car args) "\");ls()")))
          ;; Append a prompt-directory synchronization command.
          (if (string-match metaprl-dir-command input)
            (setq input (concat input " ; " metaprl-dir-sync)))
@@ -313,6 +313,6 @@ special prompt will be displayed, and alias convertion will be performed."
         ;; Just for convenience
         (setq default-directory "~/meta-prl/editor/ml/")))))
 
-(provide 'meta-prl)
+(provide 'prl-hack)
 
-;;; meta-prl.el ends here
+;;; prl-hack.el ends here
