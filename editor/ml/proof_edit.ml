@@ -20,21 +20,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -167,6 +167,66 @@ let ped_goal { ped_proof = pf; ped_select = select } =
  *)
 let ped_arg { ped_goal = goal } =
    goal
+
+(*
+ * Get the current proof item.
+ *)
+let ped_item { ped_undo = undo } =
+   match undo with
+      { ped_proof = pf; ped_select = select } :: _ ->
+         begin
+            match select with
+               PedGoal ->
+                  Some (Proof.item pf)
+             | PedChild _ ->
+                  None
+         end
+    | [] ->
+         None
+
+let ped_tactic ped =
+   match ped_item ped with
+      Some (ProofStep step) ->
+         Some (Proof_step.text step,
+               Proof_step.ast step,
+               Proof_step.tactic step)
+    | _ ->
+         None
+
+(*
+ * Subgoals.
+ *)
+let ped_children { ped_undo = undo } =
+   match undo with
+      { ped_proof = pf; ped_select = select } :: _ ->
+         begin
+            let goal_of_child = function
+               Proof.ChildTerm t ->
+                  t
+             | Proof.ChildProof pf ->
+                  Proof.goal pf
+            in
+               match select with
+                  PedGoal ->
+                     List.map goal_of_child (Proof.children pf)
+                | PedChild _ ->
+                     []
+         end
+    | [] ->
+         []
+
+let ped_extras { ped_undo = undo } =
+   match undo with
+      { ped_proof = pf; ped_select = select } :: _ ->
+         begin
+            match select with
+               PedGoal ->
+                  List.map Proof.goal (Proof.extras pf)
+             | PedChild _ ->
+                  []
+         end
+    | [] ->
+         []
 
 (************************************************************************
  * DISPLAY                                                              *
@@ -504,42 +564,69 @@ let up_ped ped i =
 (*
  * Move to a child.
  *)
-let rec down_ped ped i =
-   let { ped_undo = undo; ped_stack = stack } = ped in
-      match undo with
-         [] ->
-            ()
-       | { ped_proof = pf; ped_select = select }::_ ->
-            if i <= 0 then
-               match Proof.item pf with
-                  Proof.ProofStep _ ->
-                     raise (RefineError ("down_ped", StringError "Proof is not nested"))
-                | Proof.ProofProof pf' ->
+let down_ped_aux ped stack pf i =
+   if i <= 0 then
+      match Proof.item pf with
+         Proof.ProofStep _ ->
+            raise (RefineError ("down_ped", StringError "Proof is not nested"))
+       | Proof.ProofProof pf' ->
+            let ped' = { ped_proof = pf'; ped_select = PedGoal } in
+            let stack' = ped' :: stack in
+               ped.ped_goal <- Proof.goal pf';
+               ped.ped_undo <- stack';
+               ped.ped_stack <- stack'
+   else
+      let children = Proof.children pf in
+      let length = List.length children in
+         if i <= length then
+            let child = List.nth (Proof.children pf) (i - 1) in
+               match child with
+                  Proof.ChildProof pf' ->
                      let ped' = { ped_proof = pf'; ped_select = PedGoal } in
                      let stack' = ped' :: stack in
                         ped.ped_goal <- Proof.goal pf';
                         ped.ped_undo <- stack';
                         ped.ped_stack <- stack'
-            else
-               let child =
-                  try List.nth (Proof.children pf) (i - 1) with
-                     Not_found ->
-                        raise (RefineError ("down_ped", StringError "Bad child index"))
-               in
-                  match child with
-                     Proof.ChildProof pf' ->
-                        let ped' = { ped_proof = pf'; ped_select = PedGoal } in
-                        let stack' = ped' :: stack in
-                           ped.ped_goal <- Proof.goal pf';
-                           ped.ped_undo <- stack';
-                           ped.ped_stack <- stack'
-                   | Proof.ChildTerm goal ->
+                | Proof.ChildTerm goal ->
                         (* This is a leaf *)
-                        let ped' = { ped_proof = pf; ped_select = PedChild (i - 1) } in
-                        let stack' = ped' :: stack in
-                           ped.ped_goal <- goal;
-                           ped.ped_undo <- stack';
-                           ped.ped_stack <- stack'
+                     let ped' = { ped_proof = pf; ped_select = PedChild (i - 1) } in
+                     let stack' = ped' :: stack in
+                        ped.ped_goal <- goal;
+                        ped.ped_undo <- stack';
+                        ped.ped_stack <- stack'
+         else
+            let pf' =
+               try List.nth (Proof.extras pf) (i - length - 1) with
+                  Not_found ->
+                     raise (RefineError ("down_ped", StringError "Bad child index"))
+            in
+            let ped' = { ped_proof = pf'; ped_select = PedGoal } in
+            let stack' = ped' :: stack in
+               ped.ped_goal <- Proof.goal pf';
+               ped.ped_undo <- stack';
+               ped.ped_stack <- stack'
+
+let down_ped ped i =
+   let { ped_undo = undo; ped_stack = stack } = ped in
+      match undo with
+         [] ->
+            ()
+       | { ped_proof = pf }::_ ->
+            down_ped_aux ped stack pf i
+
+let addr_ped ped addr =
+   match addr with
+      [] ->
+         root_ped ped
+    | _ ->
+         let addr, last = List_util.split_last addr in
+         let { ped_undo = undo; ped_stack = stack } = ped in
+            match undo with
+               [] ->
+                  ()
+             | { ped_proof = pf }::_ ->
+                  let pf = Proof.index (Proof.main pf) addr in
+                     down_ped_aux ped stack pf last
 
 (************************************************************************
  * PROOF CHECKING                                                       *

@@ -11,21 +11,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -55,8 +55,12 @@ type edit_object =
      edit_root : unit -> unit;
      edit_up : int -> unit;
      edit_down : int -> unit;
+     edit_addr : int list -> unit;
      edit_goal : unit -> tactic_arg;
+     edit_children : unit -> tactic_arg list;
+     edit_extras : unit -> tactic_arg list;
      edit_refine : string -> MLast.expr -> tactic -> unit;
+     edit_tactic : unit -> (string * MLast.expr * tactic) option;
      edit_undo : unit -> unit;
      edit_fold : unit -> unit;
      edit_fold_all : unit -> unit

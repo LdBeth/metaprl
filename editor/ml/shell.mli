@@ -11,21 +11,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -37,6 +37,7 @@ include Shell_rewrite
 include Shell_rule
 
 open Refiner.Refiner.Term
+open Refiner.Refiner.Refine
 
 open Tacticals
 
@@ -111,6 +112,17 @@ sig
    val undo : unit -> unit
    val fold : unit -> unit
    val fold_all : unit -> unit
+
+   (*
+    * Nuprl5 interface.
+    *)
+   val edit_list_modules : unit -> string list
+   val edit_list_module : string -> string list
+   val edit_create_thm : string -> string -> msequent -> unit
+   val edit_cd_thm : string -> string -> unit
+   val edit_refine : int list -> string -> msequent * msequent list * msequent list
+   val edit_node : int list -> string option * msequent * msequent list * msequent list
+   val edit_undo : unit -> unit
 end
 
 (*

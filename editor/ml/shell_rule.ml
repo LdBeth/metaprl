@@ -11,21 +11,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -250,6 +250,9 @@ let edit pack sentinal arg name obj =
    let edit_root () =
       Proof_edit.root_ped (get_ped obj)
    in
+   let edit_addr addr =
+      Proof_edit.addr_ped (get_ped obj) addr
+   in
    let edit_up i =
       Proof_edit.up_ped (get_ped obj) i
    in
@@ -292,6 +295,15 @@ let edit pack sentinal arg name obj =
    let edit_goal () =
       Proof_edit.ped_arg (get_ped ())
    in
+   let edit_tactic () =
+      Proof_edit.ped_tactic (get_ped ())
+   in
+   let edit_children () =
+      Proof_edit.ped_children (get_ped ())
+   in
+   let edit_extras () =
+      Proof_edit.ped_extras (get_ped ())
+   in
    let edit_refine text ast tac =
       if !debug_refine then
          eprintf "Shell_rule.edit_refine: starting refinement%t" eflush;
@@ -311,7 +323,11 @@ let edit pack sentinal arg name obj =
         edit_root = edit_root;
         edit_up = edit_up;
         edit_down = edit_down;
+        edit_addr = edit_addr;
         edit_goal = edit_goal;
+        edit_tactic = edit_tactic;
+        edit_children = edit_children;
+        edit_extras = edit_extras;
         edit_refine = edit_refine;
         edit_undo = edit_undo;
         edit_fold = edit_fold;

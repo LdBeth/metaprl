@@ -14,21 +14,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -46,6 +46,7 @@ open Printf
 open Nl_debug
 
 open Refiner.Refiner.Term
+open Refiner.Refiner.Refine
 open Refiner.Refiner.RefineError
 open Dform
 open Dform_print
@@ -740,6 +741,99 @@ struct
        "undo", UnitFunExpr (fun () -> UnitExpr (undo ()));
        "fold", UnitFunExpr (fun () -> UnitExpr (fold ()));
        "fold_all", UnitFunExpr (fun () -> UnitExpr (fold_all ()))]
+
+   (************************************************************************
+    * NUPRL5 INTERFACE                                                     *
+    ************************************************************************)
+
+   (*
+    * Return the list of all module names.
+    *)
+   let edit_list_modules () =
+      List.map Package.name (Package.packages info.packages)
+
+   let edit_list_module name =
+      let pack =
+         try Package.get info.packages name with
+            Failure _ ->
+               eprintf "Loading package %s%t" name eflush;
+               Package.load info.packages name
+      in
+      let rec collect = function
+         [] ->
+            []
+       | (h, _) :: t ->
+            let names = collect t in
+               match h with
+                  Rewrite { rw_name = name } -> name :: names
+                | CondRewrite { crw_name = name } -> name :: names
+                | Axiom { axiom_name = name } -> name :: names
+                | Rule { rule_name = name } -> name :: names
+                | _ -> names
+      in
+         collect (info_items (Package.info pack))
+
+   (*
+    * Create a new thm.
+    *)
+   let edit_cd_thm mname name =
+      cd ("/" ^ "mname" ^ "/" ^ "name");
+      ()
+
+   let edit_create_thm mname name seq =
+      cd ("/" ^ mname);
+      let create name =
+         let package = get_current_package info in
+         let item = Shell_rule.create package name in
+         let goal, assums = dest_msequent seq in
+            item.edit_set_assumptions assums;
+            item.edit_set_goal goal;
+            item.edit_save ();
+            touch ()
+      in
+         print_exn create name;
+         edit_cd_thm mname name
+
+   (*
+    * Return the current node.
+    *)
+   let edit_addr addr =
+      let set addr =
+         info.proof.edit_down addr
+      in
+         print_exn set addr
+
+   let edit_node addr =
+      let proof = info.proof in
+         proof.edit_addr addr;
+         let tac =
+            match proof.edit_tactic () with
+               Some (str, _, _) ->
+                  Some str
+             | None ->
+                  None
+         in
+         let goal = Sequent.msequent (proof.edit_goal ()) in
+         let children = List.map Sequent.msequent (proof.edit_children ()) in
+         let extras = List.map Sequent.msequent (proof.edit_extras ()) in
+            tac, goal, children, extras
+
+   let edit_refine addr str =
+      let proof = info.proof in
+      let refine () =
+         let expr = ShellP4.parse_string str in
+         let tac = ShellP4.eval_tactic expr in
+            proof.edit_addr addr;
+            proof.edit_refine str expr tac;
+            let goal = Sequent.msequent (proof.edit_goal ()) in
+            let children = List.map Sequent.msequent (proof.edit_children ()) in
+            let extras = List.map Sequent.msequent (proof.edit_extras ()) in
+               goal, children, extras
+      in
+         print_exn refine ()
+
+   let edit_undo () =
+      info.proof.edit_undo ()
 
    (************************************************************************
     * INITIALIZATION                                                       *

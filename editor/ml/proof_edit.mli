@@ -19,21 +19,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -60,6 +60,10 @@ val create : term Filter_summary.param list -> tactic_arg -> t
 val ped_of_proof : term Filter_summary.param list -> Proof.t -> t
 val set_params : t -> term Filter_summary.param list -> unit
 val ped_arg : t -> tactic_arg
+val ped_item : t -> Proof.item option
+val ped_children : t -> tactic_arg list
+val ped_extras : t -> tactic_arg list
+val ped_tactic : t -> (string * MLast.expr * tactic) option
 
 (*
  * Destructors.
@@ -93,6 +97,7 @@ val fold_all_ped : t -> unit
 val up_ped : t -> int -> unit
 val down_ped : t -> int -> unit
 val root_ped : t -> unit
+val addr_ped : t -> int list -> unit
 
 (*
  * Check the proof and return its extract.
