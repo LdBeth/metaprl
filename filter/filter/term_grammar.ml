@@ -1736,7 +1736,9 @@ struct
 
       sequent_body:
          [[ hyps = LIST0 hyp SEP ";"; sl_turnstile; concl = OPT term ->
-               (SeqHyp.of_list hyps, concl_of_opt_concl concl)
+               SeqHyp.of_list hyps, concl_of_opt_concl concl
+          | hyps = LIST0 hyp SEP ";" ->
+               SeqHyp.of_list hyps, xconcl_term
           ]];
 
       hyp:

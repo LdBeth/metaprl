@@ -1490,8 +1490,8 @@ and infer_sovar_term tenv venv info subst e =
          TypeSoVar (ty_cvars, ty_args, ty_res) ->
             ty_cvars, ty_args, ty_res
        | ty ->
-            raise (RefineError (sprintf "Term_ty_infer.infer_sovar_term: wanted %d cvars, %d args" cvars_len args_len,
-                                Term2Error (e, term_of_ty ty)))
+            let debug = sprintf "Term_ty_infer.infer_sovar_term: wanted %d cvars, %d args" cvars_len args_len in
+               raise_term2_error debug subst info e (term_of_ty ty)
    in
    let cvars_len' = List.length ty_cvars' in
    let args_len' = List.length ty_args' in

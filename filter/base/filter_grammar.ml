@@ -880,7 +880,10 @@ let parse parse_quotation gram start loc s =
          Lexing.pos_bol   = char
        } = loc
    in
+(*
    let input = Lm_channel.of_loc_string filename line char s in
+ *)
+   let input = Lm_channel.of_loc_string filename 1 0 s in
 
    (* Get the lexer *)
    let lexer =
