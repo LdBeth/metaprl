@@ -1187,7 +1187,7 @@ struct
       ENDIF;
       let subgoals, goal = unzip_mimplies mterm in
       let seq = mk_msequent goal subgoals in
-      let rw = Rewrite.term_rewrite Strict CaptureArgs addrs (goal :: params) subgoals in
+      let rw = Rewrite.term_rewrite Strict addrs (goal :: params) subgoals in
       let opname = mk_opname name build.build_opname in
       let tac addrs params sent mseq =
          let vars = msequent_free_vars mseq in
@@ -1207,9 +1207,9 @@ struct
          let subgoals = List.map make_subgoal subgoals in
          let just =
             RuleJust { just_goal = mseq;
-                       just_addrs = addrs;
-                       just_params = params;
-                       just_refiner = opname;
+                         just_addrs = addrs;
+                         just_params = params;
+                         just_refiner = opname;
             }
          in
             sent.sent_rule opname seq;
@@ -1496,7 +1496,7 @@ struct
             if !debug_refine then
                eprintf "Refiner.compute_rule_ext: %s: %a + [%s] [%a] -> %a%t" name print_term goal (String.concat ";" (List.map string_of_symbol (Array.to_list addrs))) (print_any_list print_term) params print_term result eflush
          ENDIF;
-         let rw = Rewrite.term_rewrite Strict CaptureArgs addrs (goal :: params) [result] in
+         let rw = Rewrite.term_rewrite Strict addrs (goal :: params) [result] in
          if !debug_refine then eprintf "\nDone\n%t" eflush;
          fun addrs' params' goal' args' ->
             DEFINE compute = List.hd (apply_rewrite rw (addrs', free_vars_terms args') (combine addrs' goal' args') params') IN
@@ -1687,7 +1687,7 @@ struct
    let check_rule _ addrs params mterm =
       let subgoals, goal = unzip_mimplies mterm in
       let vars = free_vars_terms (goal::subgoals) in
-         ignore (Rewrite.term_rewrite Strict CaptureArgs addrs (goal::params) subgoals);
+         ignore (Rewrite.term_rewrite Strict addrs (goal::params) subgoals);
          List.iter (fun p -> if is_var_term p && not (SymbolSet.mem vars (dest_var p)) then
             REF_RAISE(RefineError("check_rule", StringVarError("Unused parameter", dest_var p)))) params
 
@@ -1705,7 +1705,7 @@ struct
     * See if the rewrite will compile.
     *)
    let check_rewrite _ addrs params subgoals redex contractum =
-      ignore(Rewrite.term_rewrite Strict ClosedArgs addrs(*empty_args_spec*) (redex::params) (contractum::subgoals))
+      ignore(Rewrite.term_rewrite Strict addrs(*empty_args_spec*) (redex::params) (contractum::subgoals))
 
    (*
     * Create a simple rewrite from a meta-term.
@@ -1716,7 +1716,7 @@ struct
          if !debug_refine then
             eprintf "Refiner.create_rewrite: %s%t" name eflush
       ENDIF;
-      let rw = Rewrite.term_rewrite Strict ClosedArgs empty_args_spec [redex] [contractum] in
+      let rw = Rewrite.term_rewrite Strict empty_args_spec [redex] [contractum] in
       let opname = mk_opname name build.build_opname in
       let pre_rewrite = { pre_rw_redex = redex; pre_rw_contractum = contractum } in
       let rw sent t =
@@ -1761,7 +1761,7 @@ struct
             eprintf "Refiner.create_input_form: %s%t" name eflush
       ENDIF;
       let strictp = if strict then Strict else Relaxed in
-      let rw = Rewrite.term_rewrite strictp ClosedArgs empty_args_spec [redex] [contractum] in
+      let rw = Rewrite.term_rewrite strictp empty_args_spec [redex] [contractum] in
       let opname = mk_opname name build.build_opname in
       let rw sent t =
          IFDEF VERBOSE_EXN THEN
@@ -1907,7 +1907,7 @@ struct
          if !debug_refine then
             eprintf "Refiner.create_cond_rewrite: %s%t" name eflush
       ENDIF;
-      let rw = Rewrite.term_rewrite Strict ClosedArgs addrs (redex::params) (contractum :: subgoals) in
+      let rw = Rewrite.term_rewrite Strict addrs (redex::params) (contractum :: subgoals) in
       let opname = mk_opname name build.build_opname in
       let pre_crw = {
          pre_crw_redex = redex;

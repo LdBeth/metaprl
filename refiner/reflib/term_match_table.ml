@@ -285,13 +285,13 @@ and seq_add_to_choice prog knd lst =
  *)
 let add_item tbl t v =
    let t = simplify_term t in
-   let item = compile { info_redex = compile_redex Relaxed CaptureArgs [||] t; info_value = v } [] [t] in
+   let item = compile { info_redex = compile_redex Relaxed [||] t; info_value = v } [] [t] in
       add_prog tbl item
 
 let add_map tbl t1 t2 v =
    let t1 = simplify_term t1 in
    let t2 = List.map simplify_term t2 in
-   let item = compile { info_redex = term_rewrite Relaxed CaptureArgs empty_args_spec [t1] t2 ; info_value = v } [] [t1] in
+   let item = compile { info_redex = term_rewrite Relaxed empty_args_spec [t1] t2 ; info_value = v } [] [t1] in
       add_prog tbl item
 
 let table_resource_info extract =

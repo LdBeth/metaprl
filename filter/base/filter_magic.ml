@@ -38,7 +38,7 @@ open File_type_base
  ************************************************************************
  *
  * Current MD5 hash of the summary-related types (as computed by OMake):
- * FILTER_MD5: 0x63768bf03792ce4e9884bd4beb4d7599
+ * FILTER_MD5: 0xd5437b34e70be91a092f70dbd255a759
  *
  * The arguments for pack_version are:
  *    major version number, minor sub-version number, revision number

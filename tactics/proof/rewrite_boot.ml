@@ -232,7 +232,7 @@ struct
                      let redex, _ = dest_msequent redex in
                      let rw' =
                         try
-                           term_rewrite Strict ClosedArgs empty_args_spec [redex] [contractum]
+                           term_rewrite Strict empty_args_spec [redex] [contractum]
                         with RefineError(n, err) ->
                            Refine_exn.stderr_exn "" (RefineError("Rewrite_boot.makeFoldC", PairError("creating a rewrite from term to term failed",TermPairError(redex,contractum), n, err)))
                      in

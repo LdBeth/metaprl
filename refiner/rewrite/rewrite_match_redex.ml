@@ -103,12 +103,14 @@ struct
          in
             s :: extract_bvars stack tl
 
-   let rec extract_some_bvars stack = function
-      [] -> []
-    | v::tl ->
-         match stack.(v) with
-            StackVar v -> v :: extract_some_bvars stack tl
-          | _ -> raise(Invalid_argument("Rewrite_match_redex.extract_some_bvars: invalid stack entry"))
+   let check_var_restrictions stack vars v =
+      match stack.(v) with
+         StackVar v ->
+            if SymbolSet.mem vars v then
+                  REF_RAISE(RefineError ("check_var_restrictions",
+                     StringVarError("Variable appears free where it is not allowed to", v)))
+       | _ ->
+            raise(Invalid_argument("Rewrite_match_redex.check_var_restrictions: internal error"))
 
    let rec bvars_of_cont hyps vars i count =
       if count = 0 then
@@ -117,54 +119,72 @@ struct
          let vars = match SeqHyp.get hyps i with Context(v, _, _) | Hypothesis (v, _) -> SymbolSet.add vars v in
             bvars_of_cont hyps vars (i + 1) (count - 1)
 
-   let rec extract_cont_bvars_aux hyps vars i count =
-      if count = 0 then
-         vars
-      else
-         extract_cont_bvars_aux hyps (**)
-            (match SeqHyp.get hyps i with
+   let rec check_cont_bvars_hyps hyps vars i count =
+      if count > 0 then begin
+         begin
+            match SeqHyp.get hyps i with
                 Context(v, _, _)
               | Hypothesis (v, _) ->
-                   v::vars)
-            (i + 1) (count - 1)
+                  if SymbolSet.mem vars v then
+                     REF_RAISE(RefineError ("check_cont_bvars_hyps",
+                        StringVarError("Variable appears free where it is not allowed to", v)))
+         end;
+         check_cont_bvars_hyps hyps vars (i+1) (count-1)
+      end
 
-   let rec extract_cont_bvars stack vars = function
-      [] -> vars
-    | v::tl ->
-         begin
-            match stack.(v) with
-               StackSeqContext (_, (ind, count, hyps)) -> extract_cont_bvars_aux hyps (extract_cont_bvars stack vars tl) ind count
-             | StackContext _ -> raise (Invalid_argument "Rewrite_match_redex.extract_cont_bvars: non-sequent contexts not supported")
-             | StackITerm _   -> raise (Invalid_argument "Rewrite_match_redex.extract_cont_bvars: invalid stack entry: StackITerm")
-             | StackBTerm _   -> raise (Invalid_argument "Rewrite_match_redex.extract_cont_bvars: invalid stack entry: StackBTerm")
-             | StackLevel _   -> raise (Invalid_argument "Rewrite_match_redex.extract_cont_bvars: invalid stack entry: StackLevel")
-             | StackVar _     -> raise (Invalid_argument "Rewrite_match_redex.extract_cont_bvars: invalid stack entry: StackVar")
-             | StackString _  -> raise (Invalid_argument "Rewrite_match_redex.extract_cont_bvars: invalid stack entry: StackString")
-             | StackNumber _  -> raise (Invalid_argument "Rewrite_match_redex.extract_cont_bvars: invalid stack entry: StackNumber")
-             | StackVoid      -> raise (Invalid_argument "Rewrite_match_redex.extract_cont_bvars: invalid stack entry: StackVoid")
-         end
+   let restrict_context_vars stack vars v =
+      match stack.(v) with
+         StackVoid ->
+            stack.(v) <- StackContextRestrict(vars)
+       | StackContextRestrict(vars') ->
+            stack.(v) <- StackContextRestrict(SymbolSet.union vars' vars)
+       | StackSeqContext (_, (ind, count, hyps)) ->
+            check_cont_bvars_hyps hyps vars ind count
+       | StackContext _ ->
+            (* XXX: TODO *)
+            raise (Invalid_argument "Rewrite_match_redex.restrict_context_vars: non-sequent contexts not supported")
+       | StackITerm _
+       | StackBTerm _
+       | StackLevel _
+       | StackVar _
+       | StackString _
+       | StackNumber _  -> raise (Invalid_argument "Rewrite_match_redex.restrict_context_vars: internal error")
 
-   let extract_stack_bvars stack conts vars =
-      extract_cont_bvars stack (extract_some_bvars stack vars) conts
+   let restrict_vars stack var_set conts vars =
+      List.iter (check_var_restrictions stack var_set) vars;
+      List.iter (restrict_context_vars stack var_set) conts
 
-   let check_term_free_vars vars t =
+   let check_free_vars_set vars t =
       if is_some_var_free vars t then
-         REF_RAISE(RefineError ("Rewrite_match_redex.check_term_free_vars",
+         REF_RAISE(RefineError ("Rewrite_match_redex.check_free_vars_set",
                                 StringTermError("term has free occurrences of some variables it is not allowed to have", t)))
 
-   let rec check_hyp_free_vars vars hyps i len =
-      if i <> len then
+   let rec hyp_free_vars vars hyps min i =
+      if i = min then
+         vars
+      else
+         let i = i - 1 in
          match SeqHyp.get hyps i with
             Hypothesis (var, term) ->
-               check_term_free_vars vars term;
-               let vars = Lm_list_util.tryremove var vars in
-                  if vars != [] then
-                     check_hyp_free_vars vars hyps (succ i) len
-          | Context (var, _, terms) ->
-               List.iter (check_term_free_vars vars) terms;
-               let vars = Lm_list_util.tryremove var vars in
-                  if vars != [] then
-                     check_hyp_free_vars vars hyps (succ i) len
+               hyp_free_vars (SymbolSet.union (SymbolSet.remove vars var) (free_vars_set term)) hyps min i
+          | Context (var, conts, terms) ->
+               let vars = SymbolSet.add_list (SymbolSet.union (SymbolSet.remove vars var) (free_vars_terms terms)) conts in
+                  hyp_free_vars vars hyps min i
+
+   let rec hyp_compute_sub hyps all_bvars i count sub =
+      if count = 0 then
+         sub
+      else match SeqHyp.get hyps i with
+         Hypothesis (v, _) ->
+            if SymbolSet.mem all_bvars v then
+               let v' = new_name v (SymbolSet.mem all_bvars) in
+                  hyp_compute_sub hyps (SymbolSet.add all_bvars v') (i+1) (count-1) ((v, mk_var_term v') ::sub)
+            else
+               hyp_compute_sub hyps (SymbolSet.add all_bvars v) (i+1) (count-1) sub
+       | Context (v, _, _) ->
+            if SymbolSet.mem all_bvars v then
+               REF_RAISE(RefineError("Rewrite_match_redex.hyp_compute_sub", StringVarError("Context variable occures freely where it is not allowed", v)));
+            hyp_compute_sub hyps (SymbolSet.add all_bvars v) (i+1) (count-1) sub
 
    let check_instance_term vars t =
       if SymbolSet.intersectp vars (free_vars_set t) then
@@ -207,6 +227,13 @@ struct
    let hyp_apply_subst sub = function
       Hypothesis (v, t) -> Hypothesis (v, apply_subst sub t)
     | Context(v, conts, ts) -> Context (v, conts, Lm_list_util.smap (apply_subst sub) ts)
+
+   let hyp_apply_and_rename_subst sub = function
+      Hypothesis (v, t) ->
+         let v' = if List.mem_assoc v sub then dest_var (List.assoc v sub) else v in
+            Hypothesis (v', apply_subst sub t)
+   | Context(v, conts, ts) ->
+         Context (v, conts, Lm_list_util.smap (apply_subst sub) ts)
 
    (*
     * Matching functions.
@@ -366,13 +393,13 @@ struct
     | [] ->
          ()
 
-   (*
-    * Match a term against the redex.
-    *)
+    (*
+     * Match a term against the redex.
+     *)
    and match_redex_term addrs stack all_bvars t' t =
       match t' with
          RWFreeVars (t'', conts, vars) ->
-            check_term_free_vars (extract_stack_bvars stack conts vars) t;
+            restrict_vars stack (free_vars_set t) conts vars;
             match_redex_term addrs stack all_bvars t'' t
        | RWComposite { rw_op = op'; rw_bterms = bterms' } ->
             if Opname.eq (opname_of_term t) op'.rw_name then
@@ -432,9 +459,7 @@ struct
        | RWMatchFreeFOVar (i, cs, vs) ->
             begin
                let v = dest_var t in
-                  if List.mem v (extract_stack_bvars stack cs vs) then
-                     (* XXX: Abusing RewriteBoundSOVar a bit *)
-                     REF_RAISE(RefineError("match_redex_term", RewriteBoundSOVar v));
+                  restrict_vars stack (SymbolSet.singleton v) cs vs;
                   match stack.(i) with
                      StackVoid ->
                         stack.(i) <- StackVar v
@@ -515,7 +540,15 @@ struct
 
        | RWSOContext (addr, i, term', l) ->
             (* Pull an address out of the addr argument *)
+            (* XXX: TODO *)
             let addr' = raise(Invalid_argument("Non-sequent contexts not currently supported")) addr in
+               begin match stack.(i) with
+                  StackVoid -> ()
+                | StackContextRestrict (vars) ->
+                     (* XXX: TODO *)
+                     raise(Invalid_argument "Delayed restriction on non-sequent contexts not currently supported")
+                | _ -> raise(Invalid_argument "Rewrite_match_redex: RWSOContext: internal error")
+               end;
                IFDEF VERBOSE_EXN THEN
                   if !debug_rewrite then
                      eprintf "Rewrite.match_redex.RWSOContext: %s%t" (string_of_address addr') eflush
@@ -575,11 +608,20 @@ struct
                begin
                   match hyp' with
                      RWSeqFreeVarsContext (rconts, rvars, _, _, _) ->
-                        check_hyp_free_vars (extract_stack_bvars stack rconts rvars) hyps i (i+count)
-                   | _ ->
-                        ()
+                        restrict_vars stack (hyp_free_vars SymbolSet.empty hyps i (i+count)) rconts rvars
+                   | _ -> ()
                end;
                let bvars = extract_bvars stack l in
+               let sub =
+                  match stack.(j) with
+                     StackVoid -> []
+                   | StackContextRestrict (vars) ->
+                        hyp_compute_sub hyps (SymbolSet.union vars all_bvars) i count []
+                   | _ -> raise(Invalid_argument "Rewrite_match_redex.match_redex_sequent_hyps : internal error")
+               in
+               (* XXX: BUG? hyp_apply_and_rename_subst is not exactly right :-( *)
+               let hyps = if sub = [] then hyps else SeqHyp.lazy_apply (hyp_apply_and_rename_subst sub) hyps in
+               let concl = if sub = [] then concl else apply_subst sub concl in
                let all_bvars = bvars_of_cont hyps all_bvars i count in
                   stack.(j) <- StackSeqContext (bvars, (i, count, hyps));
                   match_redex_sequent_hyps addrs stack concl' concl all_bvars hyps' hyps (i+count) len
@@ -682,8 +724,8 @@ struct
                   List.iter (print_prog stderr) (prog::progs)
                end
          ENDIF;
-         match_redex_term addrs stack vars prog t;
-         iter2_3 match_redex_term addrs stack vars progs tl
+         iter2_3 match_redex_term addrs stack vars progs tl;
+         match_redex_term addrs stack vars prog t
 end
 
 (*

@@ -149,13 +149,7 @@ struct
     | RewriteNum of Lm_num.num rewrite_param
     | RewriteLevel of level_exp
 
-   type strict = RewriteTypes.strict =
-      Strict
-    | Relaxed
-
-   type capture_args = RewriteTypes.capture_args =
-      CaptureArgs
-    | ClosedArgs
+   type strict = RewriteTypes.strict = Strict | Relaxed
 
    (************************************************************************
     * IMPORTS                                                              *
@@ -372,8 +366,8 @@ struct
    (*
     * Compile redex and contractum, and form a rewrite rule.
     *)
-   let term_rewrite strict capture_arg_contexts addrs redex contracta =
-      let stack, redex' = compile_so_redex strict capture_arg_contexts addrs redex in
+   let term_rewrite strict addrs redex contracta =
+      let stack, redex' = compile_so_redex strict addrs redex in
       let enames, contracta' = compile_so_contracta strict stack contracta in
          { rr_redex = redex';
            rr_contractum = RWCTerm (contracta', enames);
@@ -384,23 +378,23 @@ struct
    (*
     * Make a ML function rewrite.
     *)
-   let fun_rewrite strict capture_arg_contexts redex f =
-      let stack, redex' = compile_so_redex strict capture_arg_contexts [||] [redex] in
+   let fun_rewrite strict redex f =
+      let stack, redex' = compile_so_redex strict [||] [redex] in
          { rr_redex = redex';
            rr_contractum = RWCFunction f;
            rr_gstacksize = Array.length stack;
-           rr_strict = strict
+           rr_strict = strict;
          }
 
    (*
     * Compile just the redex.
     *)
-   let compile_redices strict capture_arg_contexts addrs redices =
-      let stack, redices = compile_so_redex strict capture_arg_contexts addrs redices in
+   let compile_redices strict addrs redices =
+      let stack, redices = compile_so_redex strict addrs redices in
          { redex_stack = stack; redex_redex = redices }
 
-   let compile_redex strict capture_arg_context addrs redex =
-      let redex = compile_redices strict capture_arg_context addrs [redex] in
+   let compile_redex strict addrs redex =
+      let redex = compile_redices strict addrs [redex] in
          match redex.redex_redex with
             [_] ->
                redex

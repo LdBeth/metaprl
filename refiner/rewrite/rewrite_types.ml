@@ -54,24 +54,6 @@ struct
     | Relaxed
 
    (*
-    * The capture_arg_contexts is normally used in rules.
-    * For example, in the following rule, the argument
-    * is intended to be interpreted as being
-    * within the sequent context.
-    *
-    *    prim concl_subst TyEqual{'t1; 't2} :
-    *       sequent { <H> >- TyEqual{'t1; 't2} } -->
-    *       sequent { <H> >- 'e in 't2 } -->
-    *       sequent { <H> >- 'e in 't1 }
-    *
-    * Rewrites are different--the args are intended to
-    * be closed, so this flag should be false.
-    *)
-   type capture_args =
-      CaptureArgs
-    | ClosedArgs
-
-   (*
     * For matching level expressions.
     *)
    (* %%MAGICBEGIN%% *)
@@ -176,23 +158,6 @@ struct
     | PVar of var * shape_param
 
    (*
-    * During reduction, we keep a stack of objects of all the
-    * possible types.
-    *)
-   type stack =
-      StackVoid
-    | StackNumber of Lm_num.num
-    | StackString of string
-    | StackVar of var
-    | StackLevel of level_exp
-    | StackBTerm of term * var list
-    | StackITerm of (term * rwterm list) list
-    | StackContext of var list * term * address
-    | StackSeqContext of var list * hyp_array
-
-   type rewrite_stack = stack array
-
-   (*
     * A contractum can be a term to be instantiated,
     * or it can be a function to be called.
     *)
@@ -228,6 +193,25 @@ struct
         con_new_vars : var array
       }
    (* %%MAGICEND%% *)
+
+   (*
+    * During reduction, we keep a stack of objects of all the
+    * possible types.
+    *)
+   type stack =
+      StackVoid
+    | StackNumber of Lm_num.num
+    | StackString of string
+    | StackVar of var
+    | StackLevel of level_exp
+    | StackBTerm of term * var list
+    | StackITerm of (term * rwterm list) list
+    | StackContext of var list * term * address
+    | StackSeqContext of var list * hyp_array
+    | StackContextRestrict of SymbolSet.t
+
+   type rewrite_stack = stack array
+
 end
 
 (*

@@ -106,6 +106,8 @@ struct
     | StackSeqContext (vars, (i, len, _)) ->
          fprintf out "SeqContext (%a/(%d,%d))" (**)
             output_symbol_list vars i len
+    | StackContextRestrict (vars) ->
+         fprintf out "ContextRestrict (%a)" output_symbol_list (SymbolSet.to_list vars)
 
    (*
     * Stack is printed on lines.

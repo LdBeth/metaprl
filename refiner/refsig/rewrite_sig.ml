@@ -102,24 +102,6 @@ sig
     *)
    type strict = Strict | Relaxed
 
-   (*
-    * The capture_args is normally used in rules.
-    * For example, in the following rule, the argument
-    * is intended to be interpreted as being
-    * within the sequent context.
-    *
-    *    prim concl_subst TyEqual{'t1; 't2} :
-    *       sequent { <H> >- TyEqual{'t1; 't2} } -->
-    *       sequent { <H> >- 'e in 't2 } -->
-    *       sequent { <H> >- 'e in 't1 }
-    *
-    * Rewrites are different--the args are intended to
-    * be closed.
-    *)
-   type capture_args =
-      CaptureArgs
-    | ClosedArgs
-
    (* Rewrites with no arguments *)
    val empty_args_spec : rewrite_args_spec
    val empty_args : rewrite_args
@@ -127,16 +109,20 @@ sig
    (*
     * Separate analysis.
     *)
-   val compile_redex : strict -> capture_args -> var array -> term -> rewrite_redex
-   val compile_redices : strict -> capture_args -> var array -> term list -> rewrite_redex
+   val compile_redex : strict -> var array -> term -> rewrite_redex
+   val compile_redices : strict -> var array -> term list -> rewrite_redex
    val extract_redex_types : rewrite_redex -> (rewrite_type * var) list
-   val test_redex_applicability : rewrite_redex -> int array -> term -> term list -> unit
-   val apply_redex : rewrite_redex -> int array -> term -> term list -> rewrite_item list
+   val test_redex_applicability :
+      rewrite_redex -> int array ->
+      term -> term list -> unit
+   val apply_redex :
+      rewrite_redex -> int array ->
+      term -> term list -> rewrite_item list
 
    (* Rewrite constructor/destructors *)
-   val term_rewrite : strict -> capture_args -> rewrite_args_spec ->
+   val term_rewrite : strict -> rewrite_args_spec ->
       term list -> term list -> rewrite_rule
-   val fun_rewrite : strict -> capture_args -> term -> (term -> term) -> rewrite_rule
+   val fun_rewrite : strict -> term -> (term -> term) -> rewrite_rule
 
    (* Apply a rewrite to a term *)
    val apply_rewrite :
