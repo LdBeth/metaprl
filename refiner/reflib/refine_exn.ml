@@ -247,7 +247,7 @@ let format_refine_error db buf printers name error =
             format_space buf;
             format_string buf (string_of_symbol s);
             format_ezone buf;
-            format_explanation buf "Meta-variables (second-order, context, and free first-order ones) that occur in assumptions of a rule, but not in its conclusion need to occur in rule argument(s)."
+            format_explanation buf "Meta-variables (second-order, context, and free first-order ones) that occur in assumptions of a rule (right hand side of a rewrite), but not in rule conclusion (left hand side of a rewrite) need to occur in rule (rewrite) argument(s)."
        | RewriteSOVarArity s ->
             format_string buf "SOVarArity:";
             format_space buf;
@@ -273,7 +273,8 @@ let format_refine_error db buf printers name error =
        | RewriteAllSOInstances s ->
             format_string buf "AllSOInstances:";
             format_space buf;
-            format_string buf (string_of_symbol s)
+            format_string buf (string_of_symbol s);
+            format_explanation buf "Second-order variables that take arguments need to occur in such a position that the exact \"address\" of the arguments can be deduced. In oder words, each second variable that occurs in a rule/rewrite need to occur in either arguments of the rule conclusion (left hand side of the rewrite) in such a way that all its arguments are distinct bound variables and not being itself inside an argument to a meta-variable."
        | RewriteMissingContextArg s ->
             format_string buf "MissingContextArg:";
             format_space buf;
