@@ -369,7 +369,7 @@ let compute_dtree table =
    (* Compile the hastable into a collection of programs *)
    let base' = Hashtbl.create 97 in
    let compile_entries template entries =
-      Hashtbl.add base' template (compile_prog (List.rev !entries))
+      Hashtbl.add base' template (compile_prog !entries)
    in
       Hashtbl.iter compile_entries base;
       base'

@@ -41,6 +41,8 @@ sig
     * higherC low-level implementation
     *)
    val apply_fun_higher : (term -> term * 'a) -> term -> term * 'a list
+   val apply_var_fun_higher : (string list list -> term -> term * 'a) ->
+      string list list -> term -> term * 'a list
 end
 
 (*

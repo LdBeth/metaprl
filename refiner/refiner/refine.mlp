@@ -201,6 +201,7 @@ struct
     | MLRewriteRefiner of ml_rewrite_refiner
 
     | PairRefiner of refiner * refiner
+    | ListRefiner of refiner list
     | LabelRefiner of string * refiner
 
    and axiom_refiner =
@@ -494,6 +495,14 @@ struct
       apply_fun_arg_at_addr (rw sent) addr t
 
    (*
+    * Apply the rewrite to the outermost terms where it
+    * does not fail.
+    *)
+   let rwhigher rw sent t =
+      let t, refiners = apply_fun_higher (rw sent) t in
+         t, ListRefiner refiners
+
+   (*
     * Invert the rewrite.
     * jyh: we don't really need this, because
     * we can make use of rewrite subgoals.
@@ -580,6 +589,29 @@ struct
          RefineError (name, x) ->
             raise (RefineError ("crwaddr", RewriteAddressError (addr, name, x)))
 #endif
+
+   (*
+    * Apply the rewrite at the outermost terms where it does not fail.
+    *)
+   let crwhigher crw sent bvars seq t =
+      let t, args =
+         let f sent bvars t =
+            let t, subgoals, just = crw sent bvars seq t in
+               t, (subgoals, just)
+         in
+            apply_var_fun_higher (f sent) bvars t
+      in
+      let rec flatten = function
+         [subgoals, just] ->
+            subgoals, just
+       | (subgoals, just) :: tl ->
+            let subgoals', just' = flatten tl in
+               subgoals @ subgoals', PairJust (just, just')
+       | [] ->
+            raise (RefineError ("crwhigher", StringError "operation made no progress"))
+      in
+      let subgoals, just = flatten args in
+         t, subgoals, just
 
    (*
     * Apply a conditional rewrite.
@@ -703,11 +735,27 @@ struct
                else
                   search (r :: refiners) next
           | PairRefiner (next1, next2) ->
-               match search refiners next1 with
-                  refiners, None ->
-                     search refiners next2
-                | x ->
-                     x
+               begin
+                  match search refiners next1 with
+                     refiners, None ->
+                        search refiners next2
+                   | x ->
+                        x
+               end
+          | ListRefiner refiners' ->
+               let rec search' refiners = function
+                  refiner :: tl ->
+                     begin
+                        match search refiners refiner with
+                           refiners, None ->
+                              search' refiners tl
+                         | x ->
+                              x
+                     end
+                | [] ->
+                     refiners, None
+               in
+                  search' refiners refiners'
       in
          match search [] refiner with
             _, Some v ->
@@ -770,6 +818,8 @@ struct
                insert (r :: refiners) next
        | PairRefiner (next1, next2) ->
             insert (insert refiners next1) next2
+       | ListRefiner refiners' ->
+            List.fold_left insert refiners refiners'
        | NullRefiner ->
             refiners
       in
@@ -1073,6 +1123,8 @@ struct
                insert (r :: refiners) next
        | PairRefiner (next1, next2) ->
             insert (insert refiners next1) next2
+       | ListRefiner refiners' ->
+            List.fold_left insert refiners refiners'
        | NullRefiner ->
             refiners
       in
@@ -1097,7 +1149,7 @@ struct
       let check_rule rule = check_sentinal rules rule.rule_name rule in
       let check_ml_rule ml_rule =
          let opname = opname_of_term ml_rule.ml_rule_arg in
-            if try Hashtbl.find ml_rules opname == ml_rule with Not_found -> false 
+            if try Hashtbl.find ml_rules opname == ml_rule with Not_found -> false
                then
 #ifdef VERBOSE_EXN
                   if !debug_sentinal then
@@ -1706,6 +1758,9 @@ struct
 
     | PairRefiner (par, r) ->
          RIParent par, r
+    | ListRefiner refs ->
+         (* List are never constructed by the user *)
+         raise (Invalid_argument "dest_refiner")
     | LabelRefiner (name, r) ->
          RILabel name, r
 end

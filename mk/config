@@ -238,8 +238,12 @@ $(REG_CMXFILES): %.cmx: %.ml %.cmi
 %.o: %.c
 	$(CC) $(CFLAGS) -c $*.c
 
+#
+# Don't remove *.cmoz or *.cmot files because they
+# may contain proofs.
+#
 clean::
-	rm -f *.cm* *.z* *.o *.a *~ *.bak *.output $(CLEAN_MAIN)
+	rm -f *.cmi* *.cmo *.z* *.o *.a *~ *.bak *.output $(CLEAN_MAIN)
 	rm -f gmon.out $(ZMLFILES) $(ZMLIFILES) $(PMLFILES) $(PMLIFILES)
 
 depend:: $(MLFILES) $(MLIFILES)

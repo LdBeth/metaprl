@@ -1,0 +1,155 @@
+\documentclass{article}
+
+\usepackage{proof}
+
+\begin{document}
+
+\section{Nuprl-Light Description}
+
+Nuprl-Light has these features that distinguish it from other provers.
+
+\begin{itemize}
+\item
+The theory structure is modular.  Different theories are defined as
+separate modules.  Current theories include:
+\begin{enumerate}
+\item
+ITT: Nuprl type theory,
+\item
+CZF: Aczel's constructive set theory,
+\item
+LF: initial implementation of Edinburgh Logical Framework.
+\end{enumerate}
+
+Theories can be {\em related\/} by showing how proofs from one
+theory can be transformed to proofs in the other.  Theories are
+defined by their collection of inference rules and computational
+rewrite rules.  The relation is given by defining a model, and
+deriving the rules.
+
+For instance, CZF is derived from ITT.  The relation is given by
+defining the type of sets as a W-type in ITT, and then showing that
+the CZF rules are valid rules in ITT.
+
+\item
+Nuprl-Light has close ties to the programming language.  Nuprl-Light
+builds in the OCaml language, and Nuprl-Light modules are defined on
+top of the OCaml module system.  As a result, Nuprl-Light supports
+arbitrary interleaving of formal statements and program code.
+
+\item
+Inheritance of formal properties and tactics.  Nuprl-Light is a
+tactic-based theorem prover like Nuprl, but tactics are defined
+relative to the module system.  The ITT theory defines a collection of
+standard taactics that are specific to ITT.  These tactics are
+available in CZF, but CZF also defines new tactics that are available
+only in CZF.
+\end{itemize}
+
+\section{Long Term Goals}
+
+\subsection{Proof Procedures}
+Incorporation of proof procedures, especially thos that generate
+proofs for their results.  These include:
+\begin{description}
+\item[Arithmetic]
+SupInf, Loop Residue, Omega test.
+\item[Model checkers]
+Hardware checkers like espresso,
+software checker like Holtzman's SPIN.
+\item[Symbolic manipulation].
+\end{description}
+
+Currently there is a framework for incorporating arithemtic into ITT,
+in the itt\_arith module.  This module provides a normalized
+representation of a sequent.  This representation can be used to
+implement procedures like SupInf.
+
+\subsection{Proof automation}
+The current tactics in Nuprl-Light are pretty simple (including D,
+Eqcd, etc).  There is no Auto tactic.  With the module system we should
+be able to provide sophisticated automation procedures that rely on
+domain-specific knowledge.
+
+\subsection{Domain-specific theories}
+Some problems can use a simpler logic that the full ITT.  These
+domain-specific logics allow different types of proof search.  For
+example, some problems are expressible in first-order logic, which has
+efficient proof procedures, and simplified well-formedness
+restrictions.
+
+\subsection{Relations between theories}
+We already have a relation to CZF.  Other interesting relations are to
+other systems, like HOL, PVS, Coq, and Isabelle.  Sophisticaated
+relations like these would allow us to import results from these
+systems into Nuprl-Light.
+
+\subsection{Reflection}
+We want to be able to express reflection in Nuprl-Light.  The module
+system allows the theory to be reflected to be precisely defined, and
+we can develop reflection incrementally starting with small
+subtheories of ITT.
+
+Among other things, reflection would allow us to give a formal account
+of procedures like SupInf, and to make proof-theoretic arguments,
+including arguments about computational complexity.
+
+\subsection{Closer ties to ML}
+The semantics of OCaml is given in theories/ocaml and
+theories/ocaml\_sos.  These can be developed further to give a stronger
+connection between the formal Nuprl-Light theories and OCaml,
+including
+\begin{itemize}
+\item
+operational semantics,
+\item
+Relation to ITT.
+\end{itemize}
+
+\section{Problems}
+
+Here are some short-term problems.
+
+\subsection{Arithmetic and decision procedures}
+We don't have any tactics for arithmetic.  We have implemented a
+SupInf algorithm in ML, and we have the framework for adding SupInf to
+Nuprl-Light (in the itt\_arith module).  The next step is to provide a
+version of SupInf that produces a primitive Nuprl-Light proof when it
+is successful.
+
+This is related to the general problem of decision procedures, and
+eventually the problem of reflection.
+
+\subsection{Proof automation}
+In general we need more sophisticated tactics to automate proofs
+search.  Specific problems are proof automation for (intutionistic)
+propositional logic, first-order logic, which we may be able to extend
+to higher-order logics.
+
+The initial goal would be to have tactics that solve problems in
+propositional logic, for example.  Eventually, we would incorporate
+these into Nuprl-Light's forward chaining mechanism, which would allow
+them to run in the background, watching for solvable goals.
+
+\subsection{Derived Rules}
+Right now, derivations are by backward-chaining only.  That is,
+suppose we are deriving an elimination rule like the following.
+
+$$\infer{\Gamma, A \Rightarrow B, \Delta \vdash T}{\Gamma A
+  \Rightarrow B, \Delta \vdash A & \Gamma, A
+  \Rightarrow B, \Delta, B \vdash T}$$
+
+The method of proof allows for backward chaining from the goal
+$\Gamma, A \Rightarrow B, \Delta \vdash T$, but it does not allow any
+forward chaining from the assumptions.  Some larger examples are given
+in the CZF theory.
+
+The problem is figure out and implement a forward chaining mechanism.
+
+\subsection{Theory redundancy}
+Figure out howmuch of the ITT theory is redundant and derive proofs
+for the redundant parts.  For example, and the rules for non-dependent
+functions are derivable from dependent functions.
+
+\end{document}
+

@@ -53,7 +53,6 @@
   (modify-syntax-entry ?\) ")(4" caml-mode-syntax-table)
   (modify-syntax-entry ?* ". 23" caml-mode-syntax-table)
   (modify-syntax-entry ?\' "'" caml-mode-syntax-table)
-  (modify-syntax-entry ?\\ "\\" caml-mode-syntax-table)
 
   ;; Make all these symbols part of punctuation class.
   ;; "Operators" are a sequence of punctuation chars.
@@ -70,7 +69,8 @@
   (modify-syntax-entry ?/ "." caml-mode-syntax-table)
   (modify-syntax-entry ?$ "." caml-mode-syntax-table)
   (modify-syntax-entry ?% "." caml-mode-syntax-table)
-  (modify-syntax-entry ?\; "." caml-mode-syntax-table))
+  (modify-syntax-entry ?\; "." caml-mode-syntax-table)
+  (modify-syntax-entry ?\\ "." caml-mode-syntax-table))
 
 ;;
 ;; No abbreviations in this mode.
@@ -484,6 +484,9 @@ Return nil if there are no more tokens"
 	   (cons 'token (point)))
 	  ((looking-at caml-comment-start)
 	   (cons 'comment (caml-comment-end)))
+	  ((or (looking-at "^#") (looking-at "\\\\$"))
+	   (end-of-line)
+	   (cons 'comment (point)))
 	  (t
 	   ;; Try reading an operator
 	   (skip-syntax-forward ".")

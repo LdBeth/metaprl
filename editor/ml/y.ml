@@ -27,10 +27,12 @@ open Test
 
 open Czf_itt_small
 open Czf_itt_set
-(*
+open Czf_itt_empty
+open Czf_itt_union
 open Czf_itt_true
 open Czf_itt_false
 open Czf_itt_or
+(*
 open Czf_itt_and
 open Czf_itt_implies
 open Czf_itt_all
@@ -42,7 +44,6 @@ open Czf_itt_set_ind
 
 (*
  * Proof saving.
- *)
 let zT, z =
    let pf = ref None in
    let zT p =
@@ -57,9 +58,10 @@ let zT, z =
             raise Not_found
    in
       zT, z
+ *)
 
-let _ = load "czf_itt_set"
-let _ = cd "czf_itt_set.set_elim"
+let _ = load "czf_itt_union"
+let _ = cd "czf_itt_union.union_isset"
 let _ = set_writeable ()
 
 (*

@@ -108,6 +108,11 @@ sig
    val rwaddr : address -> rw -> rw
 
    (*
+    * Apply the rewrite to the outermost where it does not fail.
+    *)
+   val rwhigher : rw -> rw
+
+   (*
     * Convert a rewrite that likes to examine its argument.
     *)
    val rwtactic : rw -> tactic
@@ -139,6 +144,11 @@ sig
     * Ask for the current sequent, and for the term be rewritten.
     *)
    val crwaddr : address -> cond_rewrite -> cond_rewrite
+
+   (*
+    * Apply the rewrite to the outermost terms where it does not fail.
+    *)
+   val crwhigher : cond_rewrite -> cond_rewrite
 
    (*
     * Application of a conditional rewrite.

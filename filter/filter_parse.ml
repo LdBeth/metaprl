@@ -965,6 +965,9 @@ EXTEND
         | "primrw"; name = LIDENT; args = optarglist; ":"; t = mterm ->
           StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Primitive xnil_term);
           empty_str_item loc
+        | "interactive_rw"; name = LIDENT; args = optarglist; ":"; t = mterm ->
+          StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t Incomplete;
+          empty_str_item loc
         | "rwthm"; name = LIDENT; args = optarglist; ":"; t = mterm; "="; body = expr ->
           StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Derived body);
           empty_str_item loc

@@ -52,7 +52,7 @@ type rw =
  * Make a rewrite goal from the assumptions,
  * and the rewrite.
  *)
-let seq = << sequent { 'H >- 'rw } >>
+let seq = << sequent ['ext] { 'H >- 'rw } >>
 
 let mk_goal sentinal arg redex contractum =
    let rw = TermMan.replace_goal seq (mk_xrewrite_term redex contractum) in

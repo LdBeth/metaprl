@@ -721,11 +721,11 @@ struct
     *       rw
     * let name x = rewrite_of_rewrite name_rewrite x
     *)
-   let prim_rewrite proc loc
+   let define_rewrite code proc loc
        { rw_name = name;
          rw_redex = redex;
          rw_contractum = contractum
-       } =
+       } expr =
       (* Names *)
       let rw_id      = name ^ "_rewrite" in
       let rw_expr    = <:expr< $lid:rw_id$ >> in
@@ -746,8 +746,13 @@ struct
             $lid:"redex"$ $lid:"contractum"$ >>
       in
       let prim_expr =
-         <:expr< $prim_rewrite_expr loc$ $lid:local_refiner_id$ $str:name$ (**)
-            $lid:"redex"$ $lid:"contractum"$ >>
+         match expr with
+            Some expr ->
+               <:expr< $code$ $lid:local_refiner_id$ $str:name$ (**)
+                  $lid:"redex"$ $lid:"contractum"$ $expr$ >>
+          | None ->
+               <:expr< $code$ $lid:local_refiner_id$ $str:name$ (**)
+                  $lid:"redex"$ $lid:"contractum"$ >>
       in
       let rw_body_expr = <:expr< $rewrite_of_rewrite_expr loc$ $lid:rw_id$ >> in
 
@@ -784,13 +789,13 @@ struct
     *       rw
     * let name x = rewrite_of_cond_rewrite name_rewrite x
     *)
-   let prim_cond_rewrite proc loc
+   let define_cond_rewrite code proc loc
        { crw_name       = name;
          crw_params     = params;
          crw_args       = args;
          crw_redex      = redex;
          crw_contractum = contractum
-       } =
+       } expr =
       (* Names *)
       let rw_id         = name ^ "_rewrite" in
       let rw_expr       = <:expr< $lid:rw_id$ >> in
@@ -828,8 +833,13 @@ struct
             $lid:"bvars"$ $lid:"params"$ $lid:"subgoals"$ $lid:"redex"$ $lid:"contractum"$ >>
       in
       let prim_expr =
-         <:expr< $prim_cond_rewrite_expr loc$ $lid:local_refiner_id$ $str:name$ (**)
-            $lid:"bvars"$ $lid:"params"$ $lid:"subgoals"$ $lid:"redex"$ $lid:"contractum"$ >>
+         match expr with
+            Some expr ->
+               <:expr< $code$ $lid:local_refiner_id$ $str:name$ (**)
+                  $lid:"bvars"$ $lid:"params"$ $lid:"subgoals"$ $lid:"redex"$ $lid:"contractum"$ $expr$ >>
+          | None ->
+               <:expr< $code$ $lid:local_refiner_id$ $str:name$ (**)
+                  $lid:"bvars"$ $lid:"params"$ $lid:"subgoals"$ $lid:"redex"$ $lid:"contractum"$ >>
       in
       let rw_fun_expr =
          let addr_expr id = <:expr< $lid:id$ >> in
@@ -866,103 +876,38 @@ struct
 
    let () = ()
 
+   let prim_rewrite proc loc rw =
+      define_rewrite (prim_rewrite_expr loc) proc loc rw None
+
+   let prim_cond_rewrite proc loc crw =
+      define_cond_rewrite (prim_cond_rewrite_expr loc) proc loc crw None
+
    (*
     * Justify a rewrite with a tactic.
     *)
-   let derived_rewrite proc loc
-       { rw_name = name;
-         rw_redex = redex;
-         rw_contractum = contractum
-       }
-       expr =
-      (* Check that this tactic actually works *)
-      let redex_expr = expr_of_term loc redex in
-      let con_expr = expr_of_term loc contractum in
-      let expr = <:expr< $derived_rewrite_expr loc$ $lid:local_refiner_id$ (**)
-                         $str:name$ $redex_expr$ $con_expr$ $expr$
-                 >>
-      in
-         [<:str_item< $exp: wrap_exn loc name expr$ >>;
-          refiner_let loc]
-          (* refiner_let_name loc name *)
+   let derived_rewrite proc loc rw expr =
+      define_rewrite (derived_rewrite_expr loc) proc loc rw (Some expr)
 
-   let derived_cond_rewrite proc loc
-       { crw_name = name;
-         crw_params = params;
-         crw_args = args;
-         crw_redex = redex;
-         crw_contractum = contractum
-       }
-       expr =
-      let params_expr = List.map (param_expr loc) params in
-      let args_expr = list_expr loc (expr_of_term loc) args in
-      let redex_expr = expr_of_term loc redex in
-      let con_expr = expr_of_term loc contractum in
-      let params_expr' = <:expr< [| $list:params_expr$ |] >> in
-      let expr = <:expr< $derived_cond_rewrite_expr loc$ $lid:local_refiner_id$ (**)
-                         $str:name$ $params_expr'$
-                         $args_expr$ $redex_expr$ $con_expr$ $expr$ >>
-      in
-         [<:str_item< $exp: wrap_exn loc name expr$ >>;
-          refiner_let loc]
-          (* refiner_let_name loc name *)
-
-   let () = ()
+   let derived_cond_rewrite proc loc crw expr =
+      define_cond_rewrite (derived_cond_rewrite_expr loc) proc loc crw (Some expr)
 
    (*
     * Interactive forms.
     *)
-   let interactive_rewrite_aux proc loc
-       { rw_name = name;
-         rw_redex = redex;
-         rw_contractum = contractum
-       }
-       expr =
-      (* Check that this tactic actually works *)
-      let redex_expr = expr_of_term loc redex in
-      let con_expr = expr_of_term loc contractum in
-      let expr = <:expr< $delayed_rewrite_expr loc$ $lid:local_refiner_id$ (**)
-                         $str:name$ $redex_expr$ $con_expr$ $expr$
-                 >>
-      in
-         [<:str_item< $exp: wrap_exn loc name expr$ >>;
-          refiner_let loc]
-          (* refiner_let_name loc name *)
+   let interactive_rewrite proc loc rw expr =
+      define_rewrite (delayed_rewrite_expr loc) proc loc rw (Some (Convert.to_expr rw.rw_name expr))
 
-   let interactive_rewrite proc loc ({ rw_name = name } as rw) expr =
-      let expr = Convert.to_expr name expr in
-         interactive_rewrite_aux proc loc rw expr
+   let interactive_cond_rewrite proc loc crw expr =
+      define_cond_rewrite (delayed_cond_rewrite_expr loc) proc loc crw (Some (Convert.to_expr crw.crw_name expr))
 
+   (*
+    * Incomplete forms.
+    *)
    let incomplete_rewrite proc loc rw =
-      interactive_rewrite_aux proc loc rw (interactive_exn loc "rewrite")
-
-   let interactive_cond_rewrite_aux proc loc
-       { crw_name = name;
-         crw_params = params;
-         crw_args = args;
-         crw_redex = redex;
-         crw_contractum = contractum
-       }
-       expr =
-      let params_expr = List.map (param_expr loc) params in
-      let args_expr = list_expr loc (expr_of_term loc) args in
-      let redex_expr = expr_of_term loc redex in
-      let con_expr = expr_of_term loc contractum in
-      let params_expr' = <:expr< [| $list:params_expr$ |] >> in
-      let expr = <:expr< $delayed_cond_rewrite_expr loc$ $lid:local_refiner_id$ (**)
-                         $str:name$ $params_expr'$
-                         $args_expr$ $redex_expr$ $con_expr$ $expr$ >>
-      in
-         [<:str_item< $exp: wrap_exn loc name expr$ >>;
-          refiner_let loc]
-          (* refiner_let_name loc name *)
-
-   let interactive_cond_rewrite proc loc ({ crw_name = name } as crw) expr =
-      let expr = Convert.to_expr name expr in
-         interactive_cond_rewrite_aux proc loc crw expr
+      define_rewrite (delayed_rewrite_expr loc) proc loc rw (Some (interactive_exn loc "rewrite"))
 
    let incomplete_cond_rewrite proc loc crw =
-      interactive_cond_rewrite_aux proc loc crw (interactive_exn loc "cond_rewrite")
+      define_cond_rewrite (delayed_cond_rewrite_expr loc) proc loc crw (Some (interactive_exn loc "rewrite"))
 
    (*
     * A primitive rule specifies the extract.

@@ -152,7 +152,7 @@ struct
    and varname =
       StackName of int
     | ArgName of int
-    | SaveName of string
+    | SaveName of int
 
    (*
     * During redex compilation, we keep track of
@@ -189,7 +189,7 @@ struct
     * or it can be a function to be called.
     *)
    type rwcontractum =
-      RWCTerm of rwterm list
+      RWCTerm of rwterm list * string array
     | RWCFunction of (term -> term)
 
    (*
@@ -217,7 +217,9 @@ struct
       }
 
    type rewrite_contractum =
-      { con_contractum : rwterm }
+      { con_contractum : rwterm;
+        con_new_vars : string array
+      }
 
    (*
     * Types for redex matching.
@@ -383,8 +385,8 @@ struct
          fprintf out "stack:%d" i
     | ArgName i ->
          fprintf out "arg:%d" i
-    | SaveName s ->
-         fprintf out "save:%s" s
+    | SaveName i ->
+         fprintf out "save:%d" i
 
    (*
     * List separated by semicolons.
@@ -754,7 +756,8 @@ struct
     * This is the final version.
     *)
    let rec compile_so_redex_aux addrs stack = function
-      [] -> stack, []
+      [] ->
+         stack, []
     | term::t ->
          let stack', term' = compile_so_redex_term addrs stack [] term in
          let stack'', terms' = compile_so_redex_aux addrs stack' t in
@@ -763,26 +766,40 @@ struct
    let check_stack = function
       SOVarInstance (n, _) ->
          ref_raise(RefineError ("check_stack", RewriteAllSOInstances n))
-    | _ -> ()
+    | _ ->
+         ()
 
    let compile_so_redex addrs t =
       let stack, terms = compile_so_redex_aux addrs [] t in
-      List.iter check_stack stack;
-      Array.of_list stack, terms
+         List.iter check_stack stack;
+         Array.of_list stack, terms
 
    (*
     * When the contractum is compiled, the redex has already been
     * compiled, and the stack contains a list of the special variables.
     *)
-   let compile_bname names stack n =
+   let compile_bname names enames stack n =
       if Array_util.mem n names then
-         ArgName (Array_util.index n names)
+         enames, ArgName (Array_util.index n names)
       else if array_rstack_fo_mem n stack then
-         StackName (array_rstack_fo_index n stack)
+         enames, StackName (array_rstack_fo_index n stack)
       else
-         SaveName n
+         (n :: enames), SaveName (List.length enames + Array.length names)
 
-   let rec compile_so_contractum_term names stack bvars term =
+   let rec compile_bnames names enames stack = function
+      bname :: bnames ->
+         let enames, bname = compile_bname names enames stack bname in
+         let enames, bnames = compile_bnames names enames stack bnames in
+            enames, bname :: bnames
+    | [] ->
+         enames, []
+
+   let rec compile_so_contractum_term
+          (names : string array)
+          (enames : string list)
+          (stack : rstack array)
+          (bvars : string list)
+          (term : term) =
       if is_so_var_term term then
          let v, subterms = dest_so_var term in
             (* This is a first or second order variable *)
@@ -791,7 +808,7 @@ struct
                if subterms <> [] then
                   ref_raise(RefineError ("compile_so_contractum_term", RewriteBoundSOVar v))
                else
-                  RWCheckVar(List_util.find_index v bvars)
+                  enames, RWCheckVar(List_util.find_index v bvars)
 
             else if array_rstack_so_mem v stack then
                (*
@@ -802,13 +819,12 @@ struct
                 *)
                let index = array_rstack_so_index v stack in
                let v' = stack.(index) in
-               let _ = v' = FOVar "x" in
-               RWSOSubst(array_rstack_so_index v stack,
-                         List.map (compile_so_contractum_term names stack bvars) subterms)
+               let enames, subterms = compile_so_contractum_terms names enames stack bvars subterms in
+                  enames, RWSOSubst(array_rstack_so_index v stack, subterms)
 
             else if array_rstack_fo_mem v stack & subterms = [] then
                (* This variable represents a binding occurrence *)
-               RWStackVar (array_rstack_fo_index v stack)
+               enames, RWStackVar (array_rstack_fo_index v stack)
 
             else
                (* This is a second order variable that is free *)
@@ -822,10 +838,9 @@ struct
                 * Second order context and the v is bound.
                 * We generate a substitution instance.
                 *)
-               RWSOContextSubst(
-                  array_rstack_c_index v stack,
-                  compile_so_contractum_term names stack bvars term',
-                  List.map (compile_so_contractum_term names stack bvars) subterms)
+               let enames, term' = compile_so_contractum_term names enames stack bvars term' in
+               let enames, subterms = compile_so_contractum_terms names enames stack bvars subterms in
+                 enames, RWSOContextSubst(array_rstack_c_index v stack, term', subterms)
 
             else
                (* Free second order context *)
@@ -835,12 +850,19 @@ struct
          (* This is a normal term--not a var *)
          let { term_op = op; term_terms = bterms } = dest_term term in
          let { op_name = name; op_params = params } = dest_op op in
-            (* This is a normal term *)
          let params' = List.map (compile_so_contractum_param stack) params in
-         let bterms' = List.map (compile_so_contractum_bterm names stack bvars) bterms in
-            RWComposite { rw_op = { rw_name = name; rw_params = params' };
-                          rw_bterms = bterms'
-            }
+         let enames, bterms' = compile_so_contractum_bterms names enames stack bvars bterms in
+            enames, RWComposite { rw_op = { rw_name = name; rw_params = params' };
+                                  rw_bterms = bterms'
+                                }
+
+   and compile_so_contractum_terms names enames stack bvars = function
+      term :: terms ->
+         let enames, term = compile_so_contractum_term names enames stack bvars term in
+         let enames, terms = compile_so_contractum_terms names enames stack bvars terms in
+            enames, term :: terms
+    | [] ->
+         enames, []
 
    (*
     * We also compile parameters, and bind meta-variables.
@@ -919,13 +941,35 @@ struct
    (*
     * In bterms, have to add these vars to the binding stack.
     *)
-   and compile_so_contractum_bterm names stack bvars bterm =
+   and compile_so_contractum_bterm names enames stack bvars bterm =
       let { bvars = vars; bterm = term } = dest_bterm bterm in
-      let term' = compile_so_contractum_term names stack (bvars @ vars) term in
-      let vars' = List.map (compile_bname names stack) vars in
-         { rw_bvars = List.length vars; rw_bnames = vars'; rw_bterm = term' }
+      let enames, term' = compile_so_contractum_term names enames stack (bvars @ vars) term in
+      let enames, vars' = compile_bnames names enames stack vars in
+         enames, { rw_bvars = List.length vars; rw_bnames = vars'; rw_bterm = term' }
 
-   let compile_so_contractum names stack = compile_so_contractum_term names stack []
+   and compile_so_contractum_bterms names enames stack bvars = function
+      bterm :: bterms ->
+         let enames, bterm = compile_so_contractum_bterm names enames stack bvars bterm in
+         let enames, bterms = compile_so_contractum_bterms names enames stack bvars bterms in
+            enames, bterm :: bterms
+    | [] ->
+         enames, []
+
+   let compile_so_contractum names stack term =
+      let enames, term = compile_so_contractum_term names [] stack [] term in
+         Array.of_list (List.rev enames), term
+
+   let compile_so_contracta names stack terms =
+      let rec compile names enames stack = function
+         term :: terms ->
+            let enames, term = compile_so_contractum_term names enames stack [] term in
+            let enames, terms = compile names enames stack terms in
+               enames, term :: terms
+       | [] ->
+            enames, []
+      in
+      let enames, terms = compile names [] stack terms in
+         Array.of_list (List.rev enames), terms
 
    (*
     * Naming function.
@@ -983,10 +1027,10 @@ struct
    let term_rewrite (addrs, names) redex contracta =
       let stack, redex' = compile_so_redex addrs redex in
       let namer = compute_namer stack names in
-      let contracta' = List.map (compile_so_contractum names stack) contracta in
+      let enames, contracta' = compile_so_contracta names stack contracta in
          { rr_redex = redex';
            rr_namer = namer;
-           rr_contractum = RWCTerm contracta';
+           rr_contractum = RWCTerm (contracta', enames);
            rr_gstacksize = Array.length stack
          }
 
@@ -997,7 +1041,7 @@ struct
       let stack, redex' = compile_so_redex [||] [redex] in
          { rr_redex = redex';
            rr_namer = (fun stack names -> names);
-           rr_contractum = RWCFunction(f);
+           rr_contractum = RWCFunction f;
            rr_gstacksize = Array.length stack
          }
 
@@ -1020,8 +1064,10 @@ struct
     * Compile a contractum, given the previous redex.
     *)
    let compile_contractum { redex_stack = stack } contractum =
-      let contractum = compile_so_contractum [||] stack contractum in
-         { con_contractum = contractum }
+      let enames, contractum = compile_so_contractum [||] stack contractum in
+         { con_contractum = contractum;
+           con_new_vars = enames
+         }
 
    (************************************************************************
     * REWRITE RULE APPLICATION
@@ -1281,9 +1327,11 @@ struct
     * and the name it has been renamed to.  Whenever a second
     * order term is instantiated, we do a calculation of
     * the variables to be renamed, and send it back up.
+    *
+    * In this function, we map variable names.
+    * bnames is the name of the current bound variables.
+    * names is the list of argument names.
     *)
-
-   (* Map name specifications to names *)
    let build_bname names bnames stack = function
       ArgName i ->
          let v = names.(i) in
@@ -1306,8 +1354,8 @@ struct
              | x ->
                   ref_raise(RefineError ("build_bname", RewriteStringError "stack entry is not a string"))
          end
-    | SaveName n ->
-         n
+    | SaveName i ->
+         names.(i)
 
    (*
     * Append the var array.
@@ -1537,6 +1585,41 @@ struct
    let build_contractum names bnames stack =
       build_contractum_term names bnames stack [||]
 
+   (*
+    * Compute names for the new variables in the contractum.
+    * The arguments are the variables we want to avoid.
+    *
+    * This is a prettyslow function but it is not used
+    * often.
+    *)
+   let contracta_enames vars bnames enames =
+      let var_name vars bnames v =
+         let rec check_bnames v = function
+            bnames :: tl ->
+               if List.mem v bnames then
+                  true
+               else
+                  check_bnames v tl
+          | [] ->
+               false
+         in
+         let check vars bnames v =
+            List.mem v vars or check_bnames v bnames
+         in
+         let rec new_var vars bnames v i =
+            let v' = v ^ string_of_int 1 in
+               if check vars bnames v' then
+                  new_var vars bnames v (i + 1)
+               else
+                  v'
+         in
+            if check vars bnames v then
+               new_var vars bnames v 1
+            else
+               v
+      in
+         Array.map (var_name vars bnames) enames
+
    let opname_exn = RefineError ("Rewrite.apply_rewrite", RewriteStringError "opnames do not match")
 
    (*
@@ -1571,12 +1654,20 @@ struct
          let names' = namer gstack names in
          let result =
             match contractum with
-               RWCTerm con ->
+               RWCTerm (con, enames) ->
+                  let names =
+                     if Array.length enames = 0 then
+                        names
+                     else
+                        let vars = free_vars_terms terms in
+                        let enames = contracta_enames vars bnames enames in
+                           Array.append names enames
+                  in
 #ifdef VERBOSE_EXN
-                  if !debug_rewrite then
-                     eprintf "Rewrite.apply_rewrite: build_contractum%t" eflush;
+                     if !debug_rewrite then
+                        eprintf "Rewrite.apply_rewrite: build_contractum%t" eflush;
 #endif
-                  List.map (build_contractum names bnames gstack) con, names'
+                     List.map (build_contractum names bnames gstack) con, names'
              | RWCFunction f ->
                   match terms with
                      [t] ->

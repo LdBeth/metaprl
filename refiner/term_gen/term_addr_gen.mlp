@@ -4,6 +4,9 @@
 
 #include "refine_error.h"
 
+open Printf
+open Debug
+
 open Refine_error_sig
 open Term_sig
 open Term_base_sig
@@ -58,9 +61,13 @@ struct
       NthClause (i, false)
 
    let compose_address path1 path2 =
-      Compose (path1, path2)
+      match path1 with
+         Path [] ->
+            path2
+       | _ ->
+            Compose (path1, path2)
 
-#ifdef VERBOSE_EXN 
+#ifdef VERBOSE_EXN
 #  define ATERM a term
 #else
 #  define ATERM
@@ -114,7 +121,7 @@ struct
                   else
                      term_subterm_nthpath ATERM flag (dest_bterm bterm2).bterm (i - 1)
              | _ ->
-               ref_raise(RefineError ("term_subterm_nthpath", AddressError (a, term)))
+                  ref_raise(RefineError ("term_subterm_nthpath", AddressError (a, term)))
 
    (*
     * Get the subterm for any type of path.
@@ -228,7 +235,7 @@ struct
             nthpath_replace_term flag f BVARS term addr \
        | Compose (addr1, addr2) -> \
             apply_fun_arg_at_addr \
-               (apply_fun_arg_at_addr f addr2) addr1 BVARS term
+            (apply_fun_arg_at_addr f addr2) addr1 BVARS term
 #endif
 
 #define APPLY_FUN_NOARG \
@@ -240,9 +247,9 @@ struct
 
 #define BVARS
 #define VARS_BVARS
-APPLY_FUN
-APPLY_FUN_MAIN
-APPLY_FUN_NOARG
+      APPLY_FUN
+      APPLY_FUN_MAIN
+      APPLY_FUN_NOARG
 #undef BVARS
 #undef VARS_BVARS
 #define BVARS bvars
@@ -254,9 +261,9 @@ APPLY_FUN_NOARG
 #define apply_fun_arg_at_addr apply_var_fun_arg_at_addr
 #define add_unit_arg add_var_unit_arg
 #define apply_fun_at_addr apply_var_fun_at_addr
-APPLY_FUN
-APPLY_FUN_MAIN
-APPLY_FUN_NOARG
+      APPLY_FUN
+      APPLY_FUN_MAIN
+      APPLY_FUN_NOARG
 #undef apply_fun_arg_at_addr
 #undef apply_fun_at_addr
 
@@ -264,7 +271,7 @@ APPLY_FUN_NOARG
       subterm
 
    let replace_subterm term addr subterm =
-         apply_fun_at_addr (replace_subterm_aux subterm) addr term
+      apply_fun_at_addr (replace_subterm_aux subterm) addr term
 
    let replace_bound_subterm_aux f bvars term =
       f bvars
@@ -302,9 +309,9 @@ APPLY_FUN_NOARG
          collect_string_of_path_address addr
     | NthClause (addr, flag) ->
          (if flag then
-            collect_string_of_nthpath_address_true
-         else
-            collect_string_of_nthpath_address_false) addr
+             collect_string_of_nthpath_address_true
+          else
+             collect_string_of_nthpath_address_false) addr
     | Compose (addr1, addr2) ->
          let addr1 = collect_string_of_address addr1 in
          let addr2 = collect_string_of_address addr2 in
@@ -318,26 +325,61 @@ APPLY_FUN_NOARG
    let string_of_address addr =
       "[" ^ collect_string_of_address addr ^ "]"
 
+   (*
+    * Apply the function to the outermost terms where it does not fail.
+    *)
    let rec apply_fun_higher_term f coll term =
       try let (t,arg) = f term in
-         t, (arg::coll)
+             t, (arg::coll)
       with RefineError _ ->
-         let dt = dest_term term in
-         let (btrms, args) = apply_fun_higher_bterms f coll dt.term_terms in
-         if args == coll 
-            then (term,coll)
-            else (mk_term dt.term_op btrms, args)
+            let dt = dest_term term in
+            let (btrms, args) = apply_fun_higher_bterms f coll dt.term_terms in
+               if args == coll
+               then (term,coll)
+               else (mk_term dt.term_op btrms, args)
 
    and apply_fun_higher_bterms f coll = function
-      [] -> 
+      [] ->
          ([],coll)
     | (bt::btrms) as bterms ->
          let (btrms_new, args) = apply_fun_higher_bterms f coll btrms in
          let dbt = dest_bterm bt in
          let (bt_new, args) = apply_fun_higher_term f args dbt.bterm in
-         if args == coll 
-            then (bterms, coll) 
+            if args == coll
+            then (bterms, coll)
             else ((mk_bterm dbt.bvars bt_new)::btrms_new, args)
 
    let apply_fun_higher f term = apply_fun_higher_term f [] term
+
+   (*
+    * Apply the function at the outermost terms where it does not fail,
+    * and also pass in binding variables.
+    *)
+   let rec apply_var_fun_higher_term f bvars coll term =
+      try
+         let t, arg = f bvars term in
+            t, arg :: coll
+      with
+         RefineError _ ->
+            let dt = dest_term term in
+            let bterms, args = apply_var_fun_higher_bterms f bvars coll dt.term_terms in
+               if args == coll then
+                  term, coll
+               else
+                  mk_term dt.term_op bterms, args
+
+   and apply_var_fun_higher_bterms f bvars coll = function
+      [] ->
+         [], coll
+    | (bterm :: bterms) as bterms' ->
+         let bterms_new, args = apply_var_fun_higher_bterms f bvars coll bterms in
+         let { bvars = bvars'; bterm = term } = dest_bterm bterm in
+         let bterm_new, args = apply_var_fun_higher_term f (bvars' :: bvars) args term in
+            if args == coll then
+               bterms, coll
+            else
+               (mk_bterm bvars' bterm_new) :: bterms_new, args
+
+   let apply_var_fun_higher f bvars term =
+      apply_var_fun_higher_term f bvars [] term
 end
