@@ -273,7 +273,7 @@ struct
                   if !debug_subst then
                       begin
                          eprintf "RWSOSubst2: %a%t" debug_print term eflush;
-                         iter2 (fun name term ->
+                         List.iter2 (fun name term ->
                                eprintf "\t%s: %a%t" name debug_print term eflush) (**)
                             vars terms
                       end
@@ -312,7 +312,7 @@ struct
                          if !debug_subst then
                             begin
                                eprintf "RWSOContextSubst: %a%t" debug_print term eflush;
-                               iter2 (fun name term ->
+                               List.iter2 (fun name term ->
                                      eprintf "\t%s: %a%t" name debug_print term eflush) (**)
                                   vars terms
                             end

@@ -1131,6 +1131,18 @@ struct
          set i
 
    (*
+    * HACK!!!  This is for testing until the opnames get fixed.
+    *)
+   and expand_thy info thy =
+      match Unix.fork () with
+         0 ->
+            ignore (cd info thy);
+            expand_all info;
+            exit 0
+       | pid ->
+            ignore (Unix.waitpid [] pid)
+
+   (*
     * Commands.
     *)
    and commands info =
@@ -1188,6 +1200,7 @@ struct
        "make_assum",       UnitFunExpr     (fun () -> UnitExpr (make_assum info));
        "sync",             UnitFunExpr     (fun () -> UnitExpr (sync info));
        "expand_all",       UnitFunExpr     (fun () -> UnitExpr (expand_all info));
+       "expand_thy",       StringFunExpr   (fun s  -> UnitExpr (expand_thy info s));
        "check_all",        UnitFunExpr     (fun () -> UnitExpr (check_all info));
        "clean_all",        UnitFunExpr     (fun () -> UnitExpr (clean_all info));
        "squash_all",       UnitFunExpr     (fun () -> UnitExpr (squash_all info));
