@@ -114,10 +114,14 @@ struct
    (*
     * We save summaries with inherited attributes.
     * The resources are always sorted in order of their names.
+    *
+    * This is a "compressed" version of the complete info
+    * for the file.
     *)
    type sig_summary =
       { sig_summary : Base.info;
-        sig_resources : sig_ctyp resource_info list
+        sig_resources : sig_ctyp resource_info list;
+        sig_opnames : (string, opname) Hashtbl.t
       }
 
    (*
@@ -142,6 +146,7 @@ struct
    type info =
       { opprefix : opname;
         optable : (string, opname) Hashtbl.t;
+        mutable summaries : sig_summary list;
 
         (* Names of precedences in this module *)
         mutable precs : string list;
@@ -516,49 +521,61 @@ struct
       let opprefix = make_opname path in
 
       (* Get all the sub-summaries *)
-      let inline_component resources (item, _) =
+      let inline_component resources_opnames (item, _) =
          match item with
             Module (n, _) ->
-               (* The contained summaries become top level *)
+               (*
+                * The contained summaries become top level.
+                * BUG: this code needs to compute resources
+                * and opnames correctly if we want nested modules.
+                *)
                let base = cache.base in
                let info = Base.sub_info base.lib self n in
-               let info = { sig_summary = info; sig_resources = [] } in
+               let info = { sig_summary = info; sig_resources = []; sig_opnames = Hashtbl.create 1 } in
                   base.sig_summaries <- info :: base.sig_summaries;
-                  resources
+                  resources_opnames
 
           | Opname { opname_name = str; opname_term = t } ->
                (* Hash this name to the full opname *)
                let opname = Opname.mk_opname str opprefix in
+               let resources, opnames = resources_opnames in
                   if !debug_opname then
                      eprintf "Filter_cache_fun.inline_sig_components: add opname %s%t" (**)
                         (SimplePrint.string_of_opname opname) eflush;
                   Hashtbl.add cache.optable str opname;
-                  resources
+                  Hashtbl.add opnames str opname;
+                  resources_opnames
 
           | Parent { parent_name = path } ->
                (* Recursive inline of all ancestors *)
-               let { sig_resources = resources' } = inline_sig_module barg arg path in
+               let { sig_resources = resources'; sig_opnames = opnames' } = inline_sig_module barg arg path in
+               let resources, opnames = resources_opnames in
                let this_resources, par_resources = resources in
-                  this_resources, merge_resources resources' par_resources
+                  Hashtbl_util.add_hashtbl opnames opnames';
+                  (this_resources, merge_resources resources' par_resources), opnames
 
           | Resource rsrc ->
+               let resources, opnames = resources_opnames in
                let this_resources, par_resources = resources in
                   if not (resource_member rsrc cache.resources) then
                      cache.resources <- (path, rsrc) :: cache.resources;
-                  rsrc :: this_resources, par_resources
+                  (rsrc :: this_resources, par_resources), opnames
 
           | Prec p ->
                let precs = cache.precs in
                   if not (List.mem p precs) then
                      cache.precs <- p :: precs;
-                  resources
+                  resources_opnames
 
           | _ ->
-               resources
+               resources_opnames
       in
-      let this_resources, par_resources = List.fold_left inline_component ([], []) items in
+      let (this_resources, par_resources), opnames = List.fold_left inline_component (([], []), Hashtbl.create 17) items in
       let this_resources = Sort.list compare_resources this_resources in
-         merge_resources this_resources par_resources
+         { sig_summary = self;
+           sig_resources = merge_resources this_resources par_resources;
+           sig_opnames = opnames
+         }
 
    and inline_str_components barg arg path self (items : (term, meta_term, str_proof, str_ctyp, str_expr, str_item) summary_item_loc list) =
       let cache, _, _ = arg in
@@ -570,10 +587,13 @@ struct
       let inline_component (item, _) =
          match item with
             Module (n, _) ->
-               (* The contained summaries become top level *)
+               (*
+                * The contained summaries become top level.
+                * BUG: see BUG in inline_sig_components above.
+                *)
                let base = cache.base in
                let info = Base.sub_info base.lib self n in
-               let info = { sig_summary = info; sig_resources = [] } in
+               let info = { sig_summary = info; sig_resources = []; sig_opnames = Hashtbl.create 1 } in
                   base.sig_summaries <- info :: base.sig_summaries
 
           | Opname { opname_name = str; opname_term = t } ->
@@ -596,32 +616,37 @@ struct
 
    and inline_sig_module barg arg path =
       let cache, inline_hook, vals = arg in
+      let base = cache.base.lib in
+      let base_info =
+         try Base.find base barg path SigMarshal.select AnySuffix with
+            Not_found ->
+               eprintf "Can't find module %s%t" (string_of_path path) eflush;
+               raise Not_found
+      in
          if !debug_filter_cache then
             eprintf "FilterCache.inline_module': %s%t" (string_of_path path) eflush;
          try
             let info = find_summarized_sig_module cache path in
                if !debug_filter_cache then
                   eprintf "FilterCache.inline_module': %s: already loaded%t" (string_of_path path) eflush;
+               if not (List.memq info cache.summaries) then
+                  begin
+                     Hashtbl_util.add_hashtbl cache.optable info.sig_opnames;
+                     cache.summaries <- info :: cache.summaries
+                  end;
                info
          with
             Not_found ->
                if !debug_filter_cache then
                   eprintf "FilterCache.inline_module': finding: %s%t" (string_of_path path) eflush;
-               let { base = { lib = base } } = cache in
+               let info' = SigMarshal.unmarshal (Base.info base base_info) in
                let info =
-                  try Base.find base barg path SigMarshal.select AnySuffix with
-                     Not_found ->
-                        eprintf "Can't find module %s%t" (string_of_path path) eflush;
-                        raise Not_found
-               in
-               let info' = SigMarshal.unmarshal (Base.info base info) in
-               let resources =
                   (* Inline the subparts *)
-                  inline_sig_components barg arg path info (info_items info')
+                  inline_sig_components barg arg path base_info (info_items info')
                in
-               let info = { sig_summary = info; sig_resources = resources } in
                   (* This module gets listed in the inline stack *)
                   cache.base.sig_summaries <- info :: cache.base.sig_summaries;
+                  cache.summaries <- info :: cache.summaries;
 
                   (* Call the hook *)
                   if !debug_filter_cache then
@@ -650,6 +675,7 @@ struct
    let create_cache base name self_select child_select =
       { opprefix = Opname.mk_opname (String.capitalize name) nil_opname;
         optable = create_optable ();
+        summaries = [];
         precs = [];
         resources = [];
         info = new_module_info ();
@@ -660,7 +686,7 @@ struct
       }
 
    (*
-    * When a cache is loaded, we follow the steps to inline
+    * When a cache is loaded follow the steps to inline
     * the file into a new cache.
     *)
    let load base barg (name : module_name) (my_select : select) (child_select : select) (hook : 'a hook) (arg : 'a) suffix =
@@ -677,6 +703,7 @@ struct
       let cache =
          { opprefix = Opname.mk_opname (String.capitalize name) nil_opname;
            optable = create_optable ();
+           summaries = [];
            precs = [];
            resources = [];
            info = info';
@@ -707,13 +734,18 @@ struct
     * Get the signature for the module.
     *)
    let sig_info cache barg alt_select =
-      let { base = base; self = self; name = name } = cache in
+      let { base = base; self = self; name = name; optable = optable } = cache in
       let { lib = lib; sig_summaries = summaries } = base in
       let info =
          try (find_summarized_sig_module cache [name]).sig_summary with
             Not_found ->
                let info = Base.find_match lib barg self alt_select AnySuffix in
-               let sum = { sig_summary = info; sig_resources = List.map snd cache.resources } in
+               let sum =
+                  { sig_summary = info;
+                    sig_resources = List.map snd cache.resources;
+                    sig_opnames = optable
+                  }
+               in
                   base.sig_summaries <- sum :: summaries;
                   info
       in

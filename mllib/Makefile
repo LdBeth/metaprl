@@ -43,6 +43,7 @@ LMFILES :=\
 	ref_util\
 	file_util\
 	filename_util\
+	hashtbl_util\
 	list_neq_append\
 	mp_id\
 	large_array\
