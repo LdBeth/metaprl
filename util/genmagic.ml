@@ -35,13 +35,7 @@ open Printf
  *)
 let genmagic filename =
    let digest = Digest.file filename in
-   let digest =
-      ((Char.code digest.[0]) lsl 24)
-      lor ((Char.code digest.[1]) lsl 16)
-      lor ((Char.code digest.[2]) lsl 8)
-      lor (Char.code digest.[3])
-   in
-      printf "0x%08x\n" digest
+      printf "0x%s\n" (Digest.to_hex digest)
 
 (*
  * Compute magic numbers for all the files.
