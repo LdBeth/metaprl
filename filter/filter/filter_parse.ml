@@ -942,6 +942,12 @@ EXTEND
           in
              print_exn f "include" loc;
              empty_sig_item loc
+        | "derive"; path = mod_ident ->
+          let f () =
+             SigFilter.declare_parent (SigFilter.get_proc loc) loc path
+          in
+             print_exn f "include" loc;
+             empty_sig_item loc
         | "declare"; t = quote_term ->
           let f () =
              ignore (SigFilter.declare_term (SigFilter.get_proc loc) loc t)
@@ -1030,6 +1036,12 @@ EXTEND
           in
              print_exn f "include" loc;
              empty_str_item loc
+        | "derive"; path = mod_ident ->
+          let f () =
+             StrFilter.declare_parent (StrFilter.get_proc loc) loc path
+          in
+             print_exn f "include" loc;
+             empty_str_item loc
         | "declare"; t = quote_term ->
           let f () =
              ignore (StrFilter.declare_term (StrFilter.get_proc loc) loc t)
@@ -1043,6 +1055,12 @@ EXTEND
               print_exn f "prim_rw" loc;
               empty_str_item loc
         | "interactive_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
+           let f () =
+              StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t Incomplete res
+           in
+              print_exn f "interactive_rw" loc;
+              empty_str_item loc
+        | "derived_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
            let f () =
               StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t Incomplete res
            in
@@ -1073,6 +1091,12 @@ EXTEND
               print_exn f "thm" loc;
               empty_str_item loc
         | "interactive"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm ->
+           let f () =
+              define_int_thm (StrFilter.get_proc loc) loc name params mt res
+           in
+              f ();
+              empty_str_item loc
+        | "derived"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm ->
            let f () =
               define_int_thm (StrFilter.get_proc loc) loc name params mt res
            in
