@@ -33,6 +33,7 @@
 open Lm_debug
 open Lm_symbol
 open Lm_printf
+open Lm_printf_rbuffer
 open Lm_rformat
 open Lm_rformat_text
 

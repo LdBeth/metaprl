@@ -42,7 +42,7 @@ extends Shell_root
 extends Shell_p4_sig
 
 open Lm_debug
-open Lm_printf
+open Lm_rprintf
 open Lm_threads
 
 open Opname

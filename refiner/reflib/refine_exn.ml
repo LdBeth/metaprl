@@ -31,7 +31,7 @@
  *)
 open Lm_debug
 open Lm_symbol
-open Lm_printf
+open Lm_rprintf
 open Lm_rformat
 
 open Term_sig

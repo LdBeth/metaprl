@@ -60,6 +60,7 @@
  *)
 open Lm_debug
 open Lm_printf
+open Lm_printf_rbuffer
 open Lm_threads
 
 open Opname
