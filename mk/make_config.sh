@@ -115,6 +115,8 @@ OCAMLSRC=$OCAMLSRC
 # the refiner will not force theory files to be recompiled.  If
 # in doubt, you should use "false".
 #
+# This is not fully implemented yet.
+#
 SLOPPY_DEPENDENCIES=$SLOPPY_DEPENDENCIES
 
 #
