@@ -68,7 +68,7 @@ type ('annotation, 'input) annotation_processor =
    term list ->       (* Term parameters *)
    meta_term ->       (* Rule statement *)
    'annotation ->     (* Extra arguments, will include Tactic.pre_tactic *)
-   'input
+   'input list
 
 type ('annotation, 'input) rw_annotation_processor =
    string ->          (* Name of the new rewrite *)
@@ -78,7 +78,7 @@ type ('annotation, 'input) rw_annotation_processor =
    var array ->       (* Names of the context vars parameters *)
    term list ->       (* Term arguments *)
    'annotation ->     (* Extra arguments, will include Refine.prim_rewrite *)
-   'input
+   'input list
 
 (************************************************************************
  * IMPLEMENTATION                                                       *

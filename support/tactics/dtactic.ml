@@ -214,7 +214,7 @@ type elim_option =
    ThinOption of (int -> tactic)
  | ElimArgsOption of (tactic_arg -> term -> term list) * term option
 
-type intro_item = string * int option * bool * tactic
+type intro_item = string * int option * auto_type * tactic
 
 (************************************************************************
  * IMPLEMENTATION                                                       *
@@ -244,15 +244,25 @@ let extract_elim_data =
       in firstiT i tacs))
 
 let in_auto p =
-   (Sequent.get_bool_arg p "d_auto") = (Some true)
+   match Sequent.get_int_arg p "d_auto" with
+      Some 0 | Some 1 -> true
+    | _ -> false
 
 let extract_intro_data =
-   let select_intro sel in_auto (_, sel', mst_complete, _) =
-      (not (mst_complete && in_auto)) &&
-      match sel, sel' with
+   let select_intro sel in_auto_type (_, sel', auto_type, _) =
+      (match in_auto_type, auto_type with
+         Some 0, AutoTrivial
+       | Some 1, AutoNormal
+       | Some 2, AutoComplete
+       | None, _
+         -> true
+       | _
+         -> false)
+      &&
+      (match sel, sel' with
          _, None -> true
        | Some i, Some i' when i = i' -> true
-       | _ -> false
+       | _ -> false)
    in
    let extract (name, _, _, tac) =
       if !debug_dtactic then eprintf "Dtactic: intro: found %s%t" name eflush; tac
@@ -265,7 +275,7 @@ let extract_intro_data =
       let sel_arg = get_sel_arg p in
       let tacs =
          try
-            lookup_bucket tbl (select_intro sel_arg (in_auto p)) t
+            lookup_bucket tbl (select_intro sel_arg (Sequent.get_int_arg p "d_auto")) t
          with
             Not_found ->
                let sel_err =
@@ -300,7 +310,8 @@ let rec get_sel_arg = function
  * Improve the intro resource from a rule.
  *)
 let process_intro_resource_annotation name context_args term_args statement (pre_tactic, options) =
-   let goal = TermMan.explode_sequent (snd (unzip_mfunction statement)) in
+   let assums, goal = unzip_mfunction statement in
+   let goal = TermMan.explode_sequent goal in
    let t =
       match SeqHyp.to_list goal.sequent_hyps with
          [ Context _ ] ->
@@ -337,26 +348,31 @@ let process_intro_resource_annotation name context_args term_args statement (pre
                                  raise (RefineError (name, StringIntError ("wrong number of arguments", length')));
                               args)
    in
-   let tac =
       match context_args with
          [||] ->
-            let auto_exn = RefineError("intro_annotation " ^ name, StringError("not appropriate in weakAutoT")) in
+            let tac = funT (fun p -> Tactic_type.Tactic.tactic_of_rule pre_tactic [||] (term_args p)) in
+            let sel_opts = get_sel_arg options in
             let rec auto_aux = function
-               AutoMustComplete :: _ (* Will record into the table, no need to double-check *)
-             | [] ->
-                  funT (fun p -> Tactic_type.Tactic.tactic_of_rule pre_tactic [||] (term_args p))
+               [] ->
+                  [t, (name, sel_opts, (if assums = [] then AutoTrivial else AutoNormal), tac)]
+             | AutoMustComplete :: _ ->
+                  [t, (name, sel_opts, AutoComplete, tac)]
              | CondMustComplete f :: _ ->
-                  funT (fun p ->
-                     if f p && (in_auto p) then raise auto_exn
-                     else Tactic_type.Tactic.tactic_of_rule pre_tactic [||] (term_args p))
+                  let auto_exn = RefineError("intro_annotation " ^ name, StringError("not appropriate in weakAutoT")) in
+                  let tac' =
+                     funT (fun p ->
+                        if f p then raise auto_exn
+                        else Tactic_type.Tactic.tactic_of_rule pre_tactic [||] (term_args p))
+                  in [
+                     t, (name, sel_opts, AutoNormal, tac');
+                     t, (name, sel_opts, AutoComplete, tac)
+                  ]
              | _ :: tl ->
                   auto_aux tl
             in
                auto_aux options
        | _ ->
             raise (Invalid_argument (sprintf "Dtactic.intro: %s: not an introduction rule" name))
-   in
-      t, (name, get_sel_arg options, List.mem AutoMustComplete options, tac)
 
 (*
  * Compile an elimination tactic.
@@ -458,18 +474,18 @@ let process_elim_resource_annotation name context_args term_args statement (pre_
              | _ ->
                   raise (Invalid_argument (sprintf "Dtactic: %s: not an elimination rule" name))
          in
-            t, tac
+            [t, tac]
     | _ ->
          raise (Invalid_argument (sprintf "Dtactic.improve_elim: %s: must be an elimination rule" name))
 
 let wrap_intro tac =
-   ("wrap_intro", None, false, tac)
+   ("wrap_intro", None, AutoNormal, tac)
 
 let mustSelectT = funT (fun p ->
    raise (RefineError("Dtactic.mustSelectT", StringTermError ("Select (selT) argument required", Sequent.concl p))))
 
 let intro_must_select =
-   ("mustSelectT", None, false, mustSelectT)
+   ("mustSelectT", None, AutoNormal, mustSelectT)
 
 (*
  * Resources
@@ -477,7 +493,7 @@ let intro_must_select =
 let resource (term * (int -> tactic), int -> tactic) elim =
    table_resource_info extract_elim_data
 
-let resource (term * (string * int option * bool * tactic), tactic) intro =
+let resource (term * intro_item, tactic) intro =
    table_resource_info extract_intro_data
 
 let dT =
@@ -496,7 +512,7 @@ let rec dForT i =
 (*
  * By default, dT 0 should always make progress.
  *)
-let d_prec = create_auto_prec [trivial_prec] []
+let d_prec = create_auto_prec [trivial_prec] [nth_hyp_prec]
 let d_elim_prec = create_auto_prec [trivial_prec; d_prec] []
 
 let eq_exn = RefineError ("dT", StringError "elim rule not suitable for autoT")
@@ -522,14 +538,19 @@ let auto_dT =
          dT i thenT check_num_equalT (num_equal t p) t)
 
 let resource auto += [ {
+   auto_name = "dT trivial";
+   auto_prec = d_prec;
+   auto_tac = withIntT "d_auto" 0 (dT 0);
+   auto_type = AutoTrivial;
+}; {
    auto_name = "dT";
    auto_prec = d_prec;
-   auto_tac = withBoolT "d_auto" true (dT 0);
+   auto_tac = withIntT "d_auto" 1 (dT 0);
    auto_type = AutoNormal;
 }; {
    auto_name = "dT complete";
    auto_prec = d_prec;
-   auto_tac = withBoolT "d_auto" false (dT 0);
+   auto_tac = withIntT "d_auto" 2 (dT 0);
    auto_type = AutoComplete;
 }; {
    auto_name = "dT elim-complete";

@@ -877,7 +877,7 @@ let define_rewrite_resources proc loc name redex contractum assums addrs params 
       in
       let process_name = "process_" ^ name' ^ "_resource_rw_annotation" in
       let anno_name = "$" ^ name' ^ "_resource_annotation" in
-         impr_resource proc loc name' <:expr<
+         impr_resource_list proc loc name' <:expr<
             ($lid:process_name$ : Mp_resource.rw_annotation_processor '$anno_name$ $input$)
                $str:name$ $redex$ $contractum$ $assums$ $addrs$ $params$ $arg_expr$
          >>
@@ -1113,7 +1113,7 @@ let define_rule_resources proc loc name cvars_id params_id assums_id resources n
       in
       let process_name = "process_" ^ name' ^ "_resource_annotation" in
       let anno_name = "$" ^ name' ^ "_resource_annotation" in
-         impr_resource proc loc name' <:expr<
+         impr_resource_list proc loc name' <:expr<
             ($lid:process_name$ : Mp_resource.annotation_processor '$anno_name$ $input$)
                $str:name$ $lid:cvars_id$ $lid:params_id$ $lid:assums_id$ $arg_expr$
          >>

@@ -209,9 +209,9 @@ let process_nth_hyp_resource_annotation name context_args term_args statement pr
    let assums, goal = unzip_mfunction statement in
       match context_args, term_args, List.map (fun (_, _, t) -> explode t) assums, explode goal with
          [| _ |], [], [], ([ Context _; Hypothesis(_,t1); Context _ ], [t2]) ->
-            (t1, t2, fun i -> Tactic_type.Tactic.tactic_of_rule pre_tactic [| i |] [])
+            [t1, t2, fun i -> Tactic_type.Tactic.tactic_of_rule pre_tactic [| i |] []]
        | [||], [], [ [Context _], [t1] ], ( [Context _], [t2]) ->
-            (t1, t2, fun i -> Tactic_type.Tactic.tactic_of_rule pre_tactic [||] [] thenT nthHypT i)
+            [t1, t2, fun i -> Tactic_type.Tactic.tactic_of_rule pre_tactic [||] [] thenT nthHypT i]
        | _ ->
             raise (Invalid_argument (sprintf "Auto_tactic.improve_nth_hyp: %s: is not an appropriate rule" name))
 
@@ -390,13 +390,14 @@ let repeatWithRwsT convs tac  = repeatT (firstT (List.map (fun conv-> progressT 
  * Trivial is in auto tactic.
  *)
 let trivial_prec = create_auto_prec [] []
+let nth_hyp_prec = create_auto_prec [trivial_prec] []
 
 (*
  * Some trivial tactics.
  *)
 let resource auto += {
    auto_name = "nthHypT/nthAssumT";
-   auto_prec = trivial_prec;
+   auto_prec = nth_hyp_prec;
    auto_tac = onSomeHypT nthHypT orelseT onSomeAssumT nthAssumT;
    auto_type = AutoTrivial;
 }

@@ -50,7 +50,7 @@ type elim_option =
    ThinOption of (int -> tactic)  (* Thin the eliminated hyp, unless overridden *)
  | ElimArgsOption of (tactic_arg -> term -> term list) * term option
 
-type intro_item = string * int option * bool * tactic
+type intro_item = string * int option * auto_type * tactic
 
 resource (term * (int -> tactic), int -> tactic) elim
 resource (term * intro_item, tactic) intro
@@ -69,8 +69,6 @@ val intro_must_select : intro_item
 val d_prec : auto_prec
 
 topval dT : int -> tactic
-
-val in_auto : tactic_arg -> bool (* Returns true what we are in weakAutoT, but not strongAutoT *)
 
 (*
  * Run dT 0 so many times.
