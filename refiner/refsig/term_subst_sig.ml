@@ -93,8 +93,9 @@ sig
    (*
     * Get the list of free variables.
     *)
-   val is_free_var : string -> term -> bool
-   val is_free_var_list : string list -> term list -> bool
+   val is_var_free : string -> term -> bool
+   val is_some_var_free : string list -> term -> bool
+   val is_some_var_free_list : string list -> term list -> bool
    val free_vars : term -> string list
    val free_vars_terms : term list -> string list
    val context_vars : term -> string list

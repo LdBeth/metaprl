@@ -737,7 +737,7 @@ struct
    let is_free_seq_var i v t =
       let rec aux i t =
          if i = 0 then
-            is_free_var v t
+            is_var_free v t
          else
             let { term_op = { op_name = opname }; term_terms = bterms } = dest_term t in
                if Opname.eq opname hyp_opname then

@@ -146,7 +146,7 @@ struct
    (*
     * See if a variable is free.
     *)
-   let is_free_var v =
+   let is_var_free v =
       let rec free_vars_term bvars = function
          { term_op = { op_name = opname; op_params = [Var v'] };
            term_terms = []
@@ -169,7 +169,7 @@ struct
    (*
     * See if any of the variables are free in the terms.
     *)
-   let is_free_var_list vars terms =
+   let is_some_var_free vars =
       let rec free_vars_term vars bvars = function
          { term_op = { op_name = opname; op_params = [Var v'] };
            term_terms = []
@@ -188,7 +188,10 @@ struct
        | [] ->
             false
       in
-         List.exists (free_vars_term vars []) terms
+         free_vars_term vars []
+
+   let is_some_var_free_list vars =
+         List.exists (is_some_var_free vars)
 
    (*
     * Similar operation on contexts.

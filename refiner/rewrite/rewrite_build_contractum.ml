@@ -197,7 +197,7 @@ struct
 
    let avoid_capture hyps i len terms =
       let hyp_vars = collect_hyp_vars [] hyps i len in
-         if is_free_var_list hyp_vars terms then
+         if is_some_var_free_list hyp_vars terms then
             begin
                IFDEF VERBOSE_EXN THEN
                   if !debug_rewrite then

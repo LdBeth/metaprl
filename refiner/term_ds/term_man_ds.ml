@@ -534,15 +534,15 @@ struct
                      if i < 0 then
                         false
                      else
-                        is_free_var v (SeqGoal.get goals i) || is_free_concl_var (pred i)
+                        is_var_free v (SeqGoal.get goals i) || is_free_concl_var (pred i)
                   in
                      is_free_concl_var (SeqGoal.length goals - 1)
                else
                   (match SeqHyp.get hyps i with
                      Hypothesis (v',t) ->
-                        is_free_var v t
+                        is_var_free v t
                    | Context (v,ts) ->
-                        List.exists (is_free_var v) ts)
+                        List.exists (is_var_free v) ts)
                   || (is_free_hyp_var (succ i))
             in
                is_free_hyp_var i

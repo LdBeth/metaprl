@@ -119,7 +119,7 @@ struct
       ENDIF;
       do_term_subst (List.combine vl tl) t
 
-   let is_free_var v t = StringSet.mem (term_free_vars t) v
+   let is_var_free v t = StringSet.mem (term_free_vars t) v
 
    let free_vars t = StringSet.elements (term_free_vars t)
 
@@ -186,13 +186,19 @@ struct
    let free_vars_terms terms =
       StringSet.elements (free_vars_set terms)
 
-   let is_free_var_list vars terms =
+   let is_some_var_free vars term =
       match vars with
          [] ->
             false
        | _ ->
-            let free_set = free_vars_set terms in
-               List.exists (fun v -> StringSet.mem free_set v) vars
+            List.exists (StringSet.mem (term_free_vars term)) vars
+
+   let is_some_var_free_list vars terms =
+      match vars with
+         [] ->
+            false
+       | _ ->
+            List.exists (StringSet.mem (free_vars_set terms)) vars
 
    let context_vars t =
       match get_core t with

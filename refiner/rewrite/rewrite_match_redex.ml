@@ -529,14 +529,14 @@ struct
          Hypothesis (var, term) ->
             check_term_free_vars vars term;
             let vars = List_util.tryremove var vars in
-            check_hyp_free_vars vars hyps (succ i) len
+            if vars != [] then check_hyp_free_vars vars hyps (succ i) len
        | Context (var, terms) ->
             List.iter (check_term_free_vars vars) terms;
             check_hyp_free_vars vars hyps (succ i) len
             
    and check_term_free_vars vars t =
-      if List_util.intersects vars (free_vars t) then
-         REF_RAISE(RefineError ("match_redex_term", RewriteBadMatch (TermMatch t)))
+      if is_some_var_free vars t then
+         REF_RAISE(RefineError ("Rewrite_match_redex.check_term_free_vars", RewriteBadMatch (TermMatch t)))
 
    let match_redex addrs stack t tl = function
       [] ->
