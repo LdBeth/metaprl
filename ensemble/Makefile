@@ -91,14 +91,19 @@ endif
 #
 NULL_LIB = $(LIB)_null.cma
 OPT_NULL_LIB = $(LIB)_null.cmxa
+OPT_NULL_LIBA = $(LIB)_null.a
 RNULL_LIB = $(ROOT)/lib/$(NULL_LIB)
 ROPT_NULL_LIB = $(ROOT)/lib/$(OPT_NULL_LIB)
+ROPT_NULL_LIBA = $(ROOT)/lib/$(OPT_NULL_LIBA)
 
 $(RNULL_LIB): $(NULL_LIB)
 	ln -sf $(ROOT)/$(DIR)/$(NULL_LIB) $@
 
 $(ROPT_NULL_LIB): $(OPT_NULL_LIB)
 	ln -sf $(ROOT)/$(DIR)/$(OPT_NULL_LIB) $@
+
+$(ROPT_NULL_LIBA): $(OPT_NULL_LIBA)
+	ln -sf $(ROOT)/$(DIR)/$(OPT_NULL_LIBA) $@
 
 $(NULL_LIB): $(CMOFILES_null) thread_refiner.cmi thread_refiner_null_mod.ml
 	rm -f thread_refiner.ml
@@ -126,6 +131,7 @@ include Makefile.dep
 
 lib: $(RMLIFILES) $(RCMIFILES) $(RMLIFILES2) $(RCMIFILES2) $(RCMAFILES) $(RNULL_LIB) $(RENS_LIB)
 opt: $(RMLIFILES) $(RCMIFILES) $(RMLIFILES2) $(RCMIFILES2) $(RCMXAFILES) $(ROPT_NULL_LIB) $(ROPT_ENS_LIB)
+	@$(MAKE) $(ROPT_NULL_LIBA)
 
 install:: $(MAIN).cma $(CMIFILES)
 	$(INSTALL) $(MAIN).cma $(MAIN).cmxa $(MLIFILES) $(CMIFILES) $(NLLIB)
