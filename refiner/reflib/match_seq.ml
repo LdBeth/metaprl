@@ -62,10 +62,13 @@ let match_hyps big small =
                result.(big_skip) <- Some small_skip;
                aux (succ big_skip) (succ small_skip) big_vars small_vars
           | Hypothesis (v1, t1), Hypothesis (v2, t2) ->
-               if alpha_equal_vars  t1 big_vars t2 small_vars then begin
-                  result.(big_skip) <- Some small_skip;
-                  aux (succ big_skip) (succ small_skip) (v1::big_vars) (v2::small_vars)
-               end else
+               if alpha_equal_vars  t1 big_vars t2 small_vars then
+                  if aux (succ big_skip) (succ small_skip) (v1::big_vars) (v2::small_vars) then begin
+                     result.(big_skip) <- Some small_skip;
+                     true
+                  end else
+                     aux (succ big_skip) small_skip big_vars small_vars
+               else
                   aux (succ big_skip) small_skip big_vars small_vars
           | Hypothesis _, Context _ ->
                aux (succ big_skip) small_skip big_vars small_vars
