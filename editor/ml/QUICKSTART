@@ -1,0 +1,121 @@
+QUICK START WITH PROOF EDITOR
+
+Toploops to use:
+
+for bytecode --
+  editor/ml/mptop
+  editor/ml/mp   (with   #use "x.ml";; as the first command, 
+                  not recommended for beginners)
+for native code --
+  editor/ml/mpopt
+
+Navigation:
+
+ls: string -> unit
+    lists the contents of the current  module (theory, proof)
+  Variants:
+  ls "";;   -- lists everything (in proof lists current proof node),
+  ls "R";;  -- lists rules,
+  ls "r";;  -- lists rewrites, 
+  ls "u";;  -- lists everything unproved.
+
+pwd ();;   returnes current path in the _loaded_module_ tree.  
+
+cd: string -> unit
+    provides navigation in the loaded module tree.
+   Examples:
+   cd "itt_int_base"
+   cd "/";;
+   cd "..";;
+   cd "<rulename/rwname>";; --   cd to the proof of the rule/rewrite.
+
+Navigation in proofs:
+   root ();;
+   down <subgoal number> ;;
+   up <number of levels>;;
+
+   next ();; - go to next unproved leaf in proof/modules (to be implemented).
+
+Proof refinement:
+   refine <tactic>;;  see itt_quickref.txt for ITT tactics.
+
+Save proof:
+When you cd into some theory for the first time, MetaPRL reads the
+newest among the .prla, .prlb and .cmoz
+  save ();;  -- current module in .prlb file  
+                (but only if it was modified; for local use),  
+  save_all ();; -- all modified modules,
+  export ();; -- in .prla file (for cvs, ...)
+------------------------
+  export() function: 
+  Note that it uses the old .prla file as a part of
+  input (it tries to keep as many lines as possible unchanged to be more
+  CVS-friendly), so if you exported the same theory several times between
+  commits, it may be a good idea to
+  1) Start MetaPRL and load the theory
+  2) save() (just in case)
+  3) Remove the .prla file and do a CVS update to get the old version of
+  it.
+  4) Do export()
+  5) commit.
+-------------------------
+ 
+Proof checking:
+
+   check ();; check_all ();;  -- not imlpemented yet.
+
+Proof expansion:
+   expand ();; expand_all ();;	
+     --  re-runs the proof (that's at and under the current node you are at);
+         re-runs all proofs in a module.
+
+WHERE AND HOW TO TRY:
+
+  As long as you have TESTS=yes in mk/config, it's easier to just use
+  itt_test for tests.
+  1) Check the variable TESTS in mk/config.
+  2) Check itt_test.ml to contain lines
+
+     include itt_theory
+     open Refiner.Refiner.TermType
+     open Tactic_type.Tacticals
+     open Tactic_type.Conversionals
+
+  and itt_test.mli    --
+
+     open Refiner.Refiner.TermType
+     open Tactic_type.Tacticals
+     open Tactic_type.Conversionals
+
+  3) Write  your rules/rewrites there and try to prove them.
+  Use emacs interface and editor/prl-hack.el for good printing.
+
+
+HOW TO USE prl-hack.el
+
+Once:
+  1) You need the mp12 font to be instaled. It is in editor/fonts directory. 
+  2) Make a symbolic link in your home directory to meta-prl/   :
+       cd
+       ln -s <path>/meta-prl/ ./   
+
+Every time:
+  3) Start emacs.
+  4) Load prl_hack (in emacs, M-... usually means Alt-... ):
+       M-x load-file                                  
+       meta-prl/editor/emacs/prl-hack.el   
+     
+     Comments:
+               3+4) alternative:
+               emacs -l meta-prl/editor/emacs/prl-hack.el
+
+               Another substitution for 4):
+               Add the following line to your ~/.emacs
+               (load-file "~/meta-prl/editor/emacs/prl-hack.el")
+
+  5) Start the shell for MetaPrl in emacs (uses mp12 font) :
+       M-x meta-prl    
+  6) In this shell cd to meta-prl/editor/ml/ and 
+     start any toploop  (mptop, mp,  mpopt)
+       
+
