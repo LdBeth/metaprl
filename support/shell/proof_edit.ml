@@ -341,7 +341,7 @@ let kreitz_ped ped =
  * Expansion never fails, but it may change the status of the proof.
  *)
 let expand_ped dforms ped =
-   push_proof ped (Proof.expand (update_fun ped) (Filter_exn.print dforms) (proof_of_ped ped))
+   push_proof ped (Proof.expand (update_fun ped) (Filter_exn.print dforms None) (proof_of_ped ped))
 
 (*
  * Check a proof.

@@ -156,18 +156,20 @@ let rec format_exn db buf = function
 (*
  * Print an exception if it occurs, then reraise it.
  *)
-let print_exn db out exn =
-   let buf = new_buffer () in
-      format_exn db buf exn;
-      format_newline buf;
-      print_to_channel default_width buf stderr;
-      flush stderr;
-      raise exn
-
-let print db f x =
+let print db s f x =
    try f x with
       exn ->
-         print_exn db stderr exn
+         begin match s with
+            None -> ()
+          | Some s -> output_string stderr s;
+         end;
+         let buf = new_buffer () in
+            format_exn db buf exn;
+            format_newline buf;
+            print_to_channel default_width buf stderr;
+            flush stderr;
+            raise exn
+
 
 (*
  * -*-

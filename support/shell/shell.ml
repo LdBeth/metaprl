@@ -165,7 +165,7 @@ let default_mode_base =
  * Display possible exceptions.
  *)
 let print_exn_db db f x =
-   try Filter_exn.print db f x with
+   try Filter_exn.print db None f x with
       RefineError _ ->
          raise (RefineError ("Shell", ToploopIgnoreError))
 

@@ -170,11 +170,7 @@ let term_exp s =
 let term_patt s =
    let cs = Stream.of_string s in
    let t = Grammar.Entry.parse term_eoi cs in
-      try
-         Filter_patt.build_term_patt t
-      with exn ->
-         eprintf "Can not build a patten out of a term:\n\t%a%t" (Filter_exn.print_exn Dform.null_base) exn eflush;
-         raise exn
+      Filter_exn.print Dform.null_base (Some "Can not build a patten out of a term:\n") Filter_patt.build_term_patt t
 
 let _ = Quotation.add "term" (Quotation.ExAst (term_exp, term_patt))
 let _ = Quotation.default := "term"
@@ -375,9 +371,8 @@ let wrap_code loc v body =
  * we print the terms using the default display forms.
  *)
 let print_exn f s (start, stop) =
-   if !debug_filter_parse then
-      eprintf "Filter_parse.%s (%d, %d)%t" s start stop eflush;
-   Filter_exn.print Dform.null_base f ()
+   let s = sprintf "Processing %s (%d, %d):\n" s start stop in
+      Filter_exn.print Dform.null_base (Some s) f ()
 
 (*
  * Need some info about types and extraction.
@@ -1107,28 +1102,28 @@ EXTEND
              let t, args, _ = mterms_of_parsed_mterms t args in
              SigFilter.declare_rewrite (SigFilter.get_proc loc) loc name args t () no_resources
            in
-             print_exn f "rewrite" loc;
+             print_exn f ("rewrite " ^ name) loc;
              empty_sig_item loc
         | "ml_rw"; name = LIDENT; args = optarglist; ":"; t = parsed_term ->
            let f () =
              let args = List.map term_of_parsed_term args in
              SigFilter.declare_mlrewrite (SigFilter.get_proc loc) loc name args t None no_resources
            in
-             print_exn f "ml_rw" loc;
+             print_exn f ("ml_rw " ^ name) loc;
              empty_sig_item loc
         | rule_keyword; name = LIDENT; args = optarglist; ":"; t = mterm ->
            let f () =
              let t, args, _ = mterms_of_parsed_mterms t args in
              SigFilter.declare_rule (SigFilter.get_proc loc) loc name args t () no_resources
            in
-              print_exn f "rule" loc;
+              print_exn f ("rule " ^ name) loc;
               empty_sig_item loc
         | mlrule_keyword; name = LIDENT; args = optarglist; ":"; t = parsed_term ->
            let f () =
               let args = List.map term_of_parsed_term args in
               SigFilter.declare_mlaxiom (SigFilter.get_proc loc) loc name args t None no_resources
            in
-              print_exn f "mlrule_keyword" loc;
+              print_exn f ("mlrule " ^ name) loc;
              empty_sig_item loc
         | "resource"; "("; input = ctyp; ","; output = ctyp; ")"; name = LIDENT ->
            let f () =
@@ -1139,44 +1134,44 @@ EXTEND
                  SigFilter.declare_resource proc loc name r;
                  SigFilter.define_resource proc loc name r
            in
-              print_exn f "resource" loc;
+              print_exn f ("resource " ^ name) loc;
               empty_sig_item loc
         | "dform"; name = LIDENT; ":"; options = df_options ->
            let f () =
               let options', t = options in
                  SigFilter.declare_dform (SigFilter.get_proc loc) loc name options' t;
            in
-              print_exn f "dform" loc;
+              print_exn f ("dform " ^ name) loc;
               empty_sig_item loc
         | "infix"; name = ident ->
            let f () =
               SigFilter.declare_gupd (SigFilter.get_proc loc) loc (Infix name)
            in
-              print_exn f "infix" loc;
+              print_exn f ("infix " ^ name) loc;
               empty_sig_item loc
         | "suffix"; name = ident ->
            let f () =
               SigFilter.declare_gupd (SigFilter.get_proc loc) loc (Suffix name)
            in
-              print_exn f "suffix" loc;
+              print_exn f ("suffix " ^ name) loc;
               empty_sig_item loc
         | "prec"; name = LIDENT ->
            let f () =
               SigFilter.declare_prec (SigFilter.get_proc loc) loc name
            in
-              print_exn f "prec" loc;
+              print_exn f ("prec " ^ name) loc;
               empty_sig_item loc
         | "topval"; name = LIDENT; ":"; t = ctyp ->
            let f () =
               SigFilter.declare_topval (SigFilter.get_proc loc) loc <:sig_item< value $name$ : $t$ >>
            in
-              print_exn f "topval" loc;
+              print_exn f ("topval " ^ name) loc;
               empty_sig_item loc
         | "topval"; "("; name = operator; ")"; ":"; t = ctyp ->
            let f () =
               SigFilter.declare_topval (SigFilter.get_proc loc) loc <:sig_item< value $name$ : $t$ >>
            in
-              print_exn f "topval" loc;
+              print_exn f ("topval " ^ name) loc;
               empty_sig_item loc
         | "doc"; doc_sig ->
            empty_sig_item loc
@@ -1219,42 +1214,42 @@ EXTEND
            let f () =
              StrFilter.define_term (StrFilter.get_proc loc) loc name t def res
            in
-             print_exn f "define" loc;
+             print_exn f ("define " ^ name) loc;
              empty_str_item loc
         | "prim_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
            let f () =
               let t, args, res = parse_mtlr t args res in
               StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Primitive xnil_term) res
            in
-              print_exn f "prim_rw" loc;
+              print_exn f ("prim_rw " ^ name) loc;
               empty_str_item loc
         | "iform"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
            let f () =
               let t, args, res = parse_mtlr t args res in
               StrFilter.declare_input_form (StrFilter.get_proc loc) loc name args t (Primitive xnil_term) res
            in
-              print_exn f "iform" loc;
+              print_exn f ("iform " ^ name) loc;
               empty_str_item loc
         | "interactive_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
            let f () =
               let t, args, res = parse_mtlr t args res in
               StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t Incomplete res
            in
-              print_exn f "interactive_rw" loc;
+              print_exn f ("interactive_rw " ^ name) loc;
               empty_str_item loc
         | "derived_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
            let f () =
               let t, args, res = parse_mtlr t args res in
               StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t Incomplete res
            in
-              print_exn f "derived_rw" loc;
+              print_exn f ("derived_rw " ^ name) loc;
               empty_str_item loc
         | "thm_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm; "="; body = expr ->
            let f () =
               let t, args, res = parse_mtlr t args res in
               StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Derived body) res
            in
-              print_exn f "thm_rw" loc;
+              print_exn f ("thm_rw " ^ name) loc;
              empty_str_item loc
         | "ml_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = parsed_bound_term; "="; code = expr ->
            let f () =
@@ -1262,35 +1257,35 @@ EXTEND
               let code = bind_item (wrap_code loc t.aname code) in
                  StrFilter.declare_mlrewrite (StrFilter.get_proc loc) loc name args t.aterm (Some code) res
            in
-              print_exn f "ml_rw" loc;
+              print_exn f ("ml_rw " ^ name) loc;
               empty_str_item loc
         | "prim"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm; "="; extract = term ->
            let f () =
               let mt, params, res, extract = parse_mtlre mt params res extract in
               define_prim (StrFilter.get_proc loc) loc name params mt extract res
            in
-              print_exn f "prim" loc;
+              print_exn f ("prim " ^ name) loc;
               empty_str_item loc
         | "thm"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm; "="; tac = expr ->
            let f () =
               let mt, params, res = parse_mtlr mt params res in
               define_thm (StrFilter.get_proc loc) loc name params mt tac res
            in
-              print_exn f "thm" loc;
+              print_exn f ("thm " ^ name) loc;
               empty_str_item loc
         | "interactive"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm ->
            let f () =
               let mt, params, res = parse_mtlr mt params res in
               define_int_thm (StrFilter.get_proc loc) loc name params mt res
            in
-              print_exn f "interactive" loc;
+              print_exn f ("interactive " ^ name) loc;
               empty_str_item loc
         | "derived"; name = LIDENT; res = optresources; params = optarglist; ":"; mt = bmterm ->
            let f () =
               let mt, params, res = parse_mtlr mt params res in
               define_int_thm (StrFilter.get_proc loc) loc name params mt res
            in
-              print_exn f "derived" loc;
+              print_exn f ("derived " ^ name) loc;
               empty_str_item loc
         | mlrule_keyword; name = LIDENT; res = optresources; args = optarglist; ":"; t = parsed_bound_term; "="; code = expr ->
            let f () =
@@ -1298,13 +1293,13 @@ EXTEND
               let code = bind_item (wrap_code loc t.aname code) in
                  StrFilter.declare_mlaxiom (StrFilter.get_proc loc) loc name args t.aterm (Some code) res
            in
-              print_exn f "mlrule" loc;
+              print_exn f ("mlrule " ^ name) loc;
               empty_str_item loc
         | "let"; "resource"; name = LIDENT; "="; code = expr ->
            let f () =
               StrFilter.define_resource (StrFilter.get_proc loc) loc name code
            in
-              print_exn f "resource" loc;
+              print_exn f ("resource " ^ name) loc;
               empty_str_item loc
         | "let"; "resource"; name = LIDENT; "+=" ; code = expr ->
            let f () =
@@ -1313,39 +1308,39 @@ EXTEND
                  improve_expr = (bind_item code);
               }
            in
-              print_exn f "improve_resource" loc;
+              print_exn f (name ^ "resource improvement") loc;
               empty_str_item loc
         | "dform"; name = LIDENT; ":"; options = df_options; "="; form = xdform ->
            let f () =
               let options', t = options in
                  StrFilter.define_dform (StrFilter.get_proc loc) loc name options' t form
            in
-              print_exn f "dform" loc;
+              print_exn f ("dform " ^ name) loc;
               empty_str_item loc
         | "ml_dform"; name = LIDENT; ":"; options = df_options; buf = LIDENT; format = LIDENT; "="; code = expr ->
            let f () =
               let options', t = options in
                  StrFilter.define_ml_dform (StrFilter.get_proc loc) loc name options' t buf format (bind_item code)
            in
-              print_exn f "ml_dform" loc;
+              print_exn f ("ml_dform " ^ name) loc;
               empty_str_item loc
         | "infix"; name = ident ->
            let f () =
               StrFilter.declare_gupd (StrFilter.get_proc loc) loc (Infix name)
            in
-              print_exn f "infix" loc;
+              print_exn f ("infix " ^ name) loc;
               empty_str_item loc
         | "suffix"; name = ident ->
            let f () =
               StrFilter.declare_gupd (StrFilter.get_proc loc) loc (Suffix name)
            in
-              print_exn f "suffix" loc;
+              print_exn f ("suffix " ^ name) loc;
               empty_str_item loc
         | "prec"; name = LIDENT ->
            let f () =
               StrFilter.declare_prec (StrFilter.get_proc loc) loc name
            in
-              print_exn f "prec" loc;
+              print_exn f ("prec " ^ name) loc;
               empty_str_item loc
         | "prec"; name1 = LIDENT; "<"; name2 = LIDENT ->
            let f () =
