@@ -10,10 +10,7 @@ To compile Nuprl-Light for the first time:
       % setenv CAMLLIB /usr/lib/ocaml
       % setenv CAMLP4LIB /usr/lib/camlp4
 
-   2. Make the dependencies:
-      % make depend
-
-   3. Build it
+   2. Build it
       % make
 
 TODO:
