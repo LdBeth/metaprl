@@ -16,8 +16,7 @@ cat << end_of_cat
 
 # Term module to use: ds or std
 # See doc/htmlman/developer-guide/term_modules.html or 
-# http://ensemble01.cs.cornell.edu:12000/cvsweb/~checkout~/meta-prl/doc/htmlman/developer-guide/
-term_modules.html
+# http://ensemble01.cs.cornell.edu:12000/cvsweb/~checkout~/meta-prl/doc/htmlman/developer-guide/term_modules.html
 # for more information.
 # If not sure, use ds
 #
