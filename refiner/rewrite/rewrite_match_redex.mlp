@@ -166,15 +166,6 @@ struct
          ()
 
    (*
-    * Get a sequence of hyps from the sequent.
-    *)
-   let extract_sequent_terms count hyps i len =
-      if count + i > len then
-         ref_raise(RefineError ("extract_sequent_terms", StringError "not enough hyps"))
-      else
-         i + count, (i, count, hyps)
-
-   (*
     * Get the hyp of a sequent.
     * Should not be a context.
     *)
@@ -448,10 +439,12 @@ struct
                         eprintf "RWSeqContext (%d, %d, [%a])%t" count j print_int_list l eflush
                   in
 #endif
-                  let i, terms = extract_sequent_terms count hyps i len in
-                  let bvars = extract_bvars stack l in
-                     stack.(j) <- StackSeqContext (bvars, terms);
-                     match_redex_sequent_hyps addrs stack hyps' hyps i len
+                  if count + i > len then
+                     ref_raise(RefineError ("match_redex_sequent_hyps", StringError "not enough hyps"))
+                  else
+                     let bvars = extract_bvars stack l in
+                        stack.(j) <- StackSeqContext (bvars, (i, count, hyps));
+                        match_redex_sequent_hyps addrs stack hyps' hyps (i+count) len
 
              | RWSeqHyp (name, term') ->
 #ifdef VERBOSE_EXN
