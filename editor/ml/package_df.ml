@@ -85,7 +85,8 @@ let format_interface mode buf pack =
    let db = get_mode_base dbase mode in
    let tl = term_list convert_intf (Package.sig_info pack) in
    let t = mk_simple_term interface_op [mk_xlist_term tl] in
-      format_term db buf t
+      format_term db buf t;
+      format_newline buf
 
 (*
  * Display the entire package.
@@ -95,7 +96,8 @@ let format_implementation mode buf pack =
    let db = get_mode_base dbase mode in
    let tl = term_list convert_impl (Package.info pack) in
    let t = mk_simple_term implementation_op [mk_xlist_term tl] in
-      format_term db buf t
+      format_term db buf t;
+      format_newline buf
 
 (*
  * Display the package DAG, using indentition.
@@ -122,6 +124,9 @@ let format_packages buf pack =
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/29 20:53:09  jyh
+ * Initial working display forms.
+ *
  * Revision 1.3  1998/04/24 02:41:24  jyh
  * Added more extensive debugging capabilities.
  *

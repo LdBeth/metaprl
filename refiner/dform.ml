@@ -61,7 +61,8 @@ type dform_option =
  * This is the info needed for each display form.
  *)
 type dform_info =
-   { dform_pattern : term;
+   { dform_name : string;
+     dform_pattern : term;
      dform_options : dform_option list;
      dform_print : dform_printer
    }
@@ -75,7 +76,8 @@ type df_printer =
  | DFPrinter of (dform_printer_info -> unit)
 
 type dform_item =
-   { df_precedence : precedence;
+   { df_name : string;
+     df_precedence : precedence;
      df_printer : df_printer
    }
 
@@ -98,6 +100,23 @@ type dform_entry =
 let slot_opname = mk_opname "slot" nil_opname
 
 (*
+ * Get subterms of a slot.
+ *)
+let terms_of_slot t =
+   if opname_of_term t == slot_opname then
+      try
+         match dest_simple_term t with
+            _, [_] ->
+               [t]
+          | _, tl ->
+               tl
+      with
+         Term.TermMatch _ ->
+            [t]
+   else
+      [t]
+
+(*
  * We use a special precedence to specify that a form should
  * inherit the precedence of its parent.
  *)
@@ -106,7 +125,8 @@ let inherit_prec = new_prec ()
 (*
  * Display form installation.
  *)
-let add_dform base { dform_pattern = t;
+let add_dform base { dform_name = name;
+                     dform_pattern = t;
                      dform_options = options;
                      dform_print = printer
                    } =
@@ -127,13 +147,7 @@ let add_dform base { dform_pattern = t;
                  process_options (prec, true) t
    in
    let prec = process_options (min_prec, false) options in
-   let tl =
-      if opname_of_term t == slot_opname then
-         let { term_terms = bterms } = dest_term t in
-            List.map (fun bterm -> (dest_bterm bterm).bterm) bterms
-      else
-         [t]
-   in
+   let tl = terms_of_slot t in
    let printer' =
       match printer with
          DFormExpansion e ->
@@ -143,7 +157,7 @@ let add_dform base { dform_pattern = t;
        | DFormPrinter f ->
             DFPrinter f
    in
-      insert base tl { df_precedence = prec; df_printer = printer' }
+      insert base tl { df_name = name; df_precedence = prec; df_printer = printer' }
 
 (*
  * Join two bases.
@@ -159,7 +173,7 @@ let dest_dfbase base =
    let info, base' = dest_table base in
    let info' =
       match info with
-         TableEntry (tl, { df_precedence = pr; df_printer = p }) ->
+         TableEntry (tl, { df_name = name; df_precedence = pr; df_printer = p }) ->
             let options =
                if pr = max_prec then
                   []
@@ -182,7 +196,8 @@ let dest_dfbase base =
                 | DFPrinter p -> 
                      DFormPrinter p
             in
-               DFormEntry { dform_pattern = t;
+               DFormEntry { dform_name = name;
+                            dform_pattern = t;
                             dform_options = options;
                             dform_print = printer
                }
@@ -264,11 +279,9 @@ let init_list =
 (*
  * The "slot" term is special because it has a subterm.
  *)
-let slot = function
-   { dform_items = [RewriteString parens; RewriteTerm body];
-     dform_printer = printer;
-     dform_buffer = buf
-   } ->
+let slot { dform_items = items; dform_printer = printer; dform_buffer = buf } =
+   match items with
+      [RewriteString parens; RewriteTerm body] ->
       let eq =
          match parens with
             "le" -> LEParens
@@ -276,11 +289,14 @@ let slot = function
           | _ -> NOParens
       in
          printer buf eq body
- | { dform_items = [RewriteTerm body];
-     dform_printer = printer;
-     dform_buffer = buf
-   } ->
+ | [RewriteTerm body] ->
+      if !debug_dform then
+         eprintf "Dform.slot: %s%t" (string_of_term body) eflush;
       printer buf NOParens body
+ | [RewriteString s] ->
+      if !debug_dform then
+         eprintf "Dform.slot: %s%t" s eflush;
+      format_string buf s
  | _ ->
       raise (Invalid_argument "slot")
 
@@ -292,7 +308,8 @@ let null_base =
       (name, params, f)::t ->
          let term = mk_term (mk_op (make_opname [name]) (List.map make_param params)) [] in
          let entry =
-            { dform_pattern = term;
+            { dform_name = name;
+              dform_pattern = term;
               dform_options = [DFormInheritPrec];
               dform_print = DFormPrinter f
             }
@@ -303,7 +320,8 @@ let null_base =
    in
    let base = aux init_list in
    let slot_entry1 =
-      { dform_pattern =
+      { dform_name = "slot_entry1";
+        dform_pattern =
            mk_term (mk_op slot_opname [make_param (MString "eq")])
               [mk_bterm [] (mk_var_term "v")];
         dform_options = [DFormInheritPrec];
@@ -311,15 +329,25 @@ let null_base =
       }
    in
    let slot_entry2 =
-      { dform_pattern =
+      { dform_name = "slot_entry2";
+        dform_pattern =
            mk_term (mk_op slot_opname [])
               [mk_bterm [] (mk_var_term "v")];
         dform_options = [DFormInheritPrec];
         dform_print = DFormPrinter slot
       }
    in
-   let base' = add_dform base slot_entry1 in
-      add_dform base' slot_entry2
+   let slot_entry3 =
+      { dform_name = "slot_entry3";
+        dform_pattern = mk_term (mk_op slot_opname [make_param (MString "eq")]) [];
+        dform_options = [];
+        dform_print = DFormPrinter slot
+      }
+   in
+   let base = add_dform base slot_entry1 in
+   let base = add_dform base slot_entry2 in
+   let base = add_dform base slot_entry3 in
+      base
 
 let is_null_dfbase = equal_tables null_base
 
@@ -426,14 +454,8 @@ let format_short_term base shortener =
    (* Print a single term, ignoring lookup errors *)
    let rec print_term' pprec buf eq t =
       (* Check for a display form entry *)
-      let tl =
-         if opname_of_term t == slot_opname then
-            let { term_terms = bterms } = dest_term t in
-               List.map (fun bterm -> (dest_bterm bterm).bterm) bterms
-         else
-            [t]
-      in
-      let stack, items, { df_precedence = pr'; df_printer = printer } = lookup base tl in
+      let tl = terms_of_slot t in
+      let stack, items, { df_name = name; df_precedence = pr'; df_printer = printer } = lookup base tl in
       let pr, parenflag =
          if pr' = inherit_prec then
             pprec, false
@@ -456,20 +478,21 @@ let format_short_term base shortener =
          begin
             match printer with
                DFPrinter f ->
-                  let entry = { dform_term = t;
-                                dform_stack = stack;
-                                dform_items = items;
-                                dform_printer = print_entry pr;
-                                dform_buffer = buf
-                              }
+                  let entry =
+                     { dform_term = t;
+                       dform_stack = stack;
+                       dform_items = items;
+                       dform_printer = print_term pr;
+                       dform_buffer = buf
+                     }
                   in
                      if !debug_dform then
-                        eprintf "Dform expanded to: %s%t" (string_of_opname (opname_of_term t)) eflush;
+                        eprintf "Dform fun %s: %s%t" name (string_of_term t) eflush;
                      f entry
              | DFExpansion c ->
                   let t = make_contractum c stack in
                      if !debug_dform then
-                        eprintf "Dform expanded to: %s%t" (string_of_opname (opname_of_term t)) eflush;
+                        eprintf "Dform %s: %s%t" name (string_of_term t) eflush;
                      print_entry pr buf eq t
          end;
          if parenflag then
@@ -477,10 +500,18 @@ let format_short_term base shortener =
 
    (* If there is no template, use the standard printer *)
    and print_term pprec buf eq t =
+      if !debug_dform then
+         eprintf "Dform: %s%t" (string_of_term t) eflush;
       try print_term' pprec buf eq t with
          Not_found ->
-            if !debug_dform then
-               eprintf "Default display form: %s%t" (string_of_opname (opname_of_term t)) eflush;
+            if true or !debug_dform then
+               begin
+                  let flag = !debug_dform in
+                     eprintf "Default display form: %s%t" (string_of_term t) eflush;
+                     debug_dform := true;
+                     (try lookup base (terms_of_slot t); () with _ -> ());
+                     debug_dform := flag
+               end;
             format_term buf shortener (print_term max_prec buf NOParens) t
 
    (* Print an entry in the list of terms being displayed *)
@@ -491,7 +522,7 @@ let format_short_term base shortener =
                if is_xstring_term hd then
                   let s = dest_xstring hd in
                      if !debug_dform then
-                        eprintf "Dform: %s%t" s eflush;
+                        eprintf "Dform string: %s%t" s eflush;
                      format_string buf s
                else
                   print_term pprec buf eq hd;
@@ -616,6 +647,9 @@ let string_of_mterm base mterm =
 
 (*
  * $Log$
+ * Revision 1.7  1998/04/29 20:53:32  jyh
+ * Initial working display forms.
+ *
  * Revision 1.6  1998/04/29 14:48:14  jyh
  * Added ocaml_sos.
  *

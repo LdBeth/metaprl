@@ -83,6 +83,19 @@ type 'a table_entry =
  ************************************************************************)
 
 (*
+ * Term printing.
+ *)
+let rec print_terms out = function
+   [h] ->
+      output_string out (string_of_term h)
+ | h::t ->
+      output_string out (string_of_term h);
+      output_string out "; ";
+      print_terms out t
+ | [] ->
+      ()
+
+(*
  * Empty table contains nothing.
  *)
 let new_table () = { tbl_items = []; tbl_base = None }
@@ -126,7 +139,9 @@ let insert { tbl_items = items } tl v =
         info_value = v
       }
    in
-      { tbl_items = (Entry entry)::items; tbl_base = None }
+      if !debug_dform then
+         eprintf "Term_table.insert: %d (%a)%t" (Term_template.to_int template) print_terms tl eflush;
+      { tbl_items = Entry entry :: items; tbl_base = None }
 
 (*
  * Join another table.
@@ -151,9 +166,11 @@ let compute_base entries =
             Not_found -> []
       in
       let gen_filter { info_terms = terms' } =
-         List_util.for_all2 generalizes terms terms'
+         not (List_util.for_all2 generalizes terms terms')
       in
-      let entries' = info :: (List_util.filter gen_filter entries) in
+      let entries' = info :: List_util.filter gen_filter entries in
+         if !debug_dform then
+            eprintf "Term_table.compute_base: %d (%a)%t" (Term_template.to_int pattern) print_terms terms eflush;
          Hashtbl.remove base pattern;
          Hashtbl.add base pattern entries'
    in
@@ -196,21 +213,10 @@ let get_base = function
  * Second level of lookup.
  *)
 let find_entry entries tl =
-   let match_entry { info_terms = tl'; info_redex = redex; info_value = v } =
+   let match_entry { info_terms = tl'; info_pattern = pattern; info_redex = redex; info_value = v } =
       if !debug_dform then
-         begin
-            let rec print_terms out = function
-               [h] ->
-                  output_string out (string_of_term h)
-             | h::t ->
-                  output_string out (string_of_term h);
-                  output_string out "; ";
-                  print_terms out t
-             | [] ->
-                  ()
-            in
-               eprintf "Term_table.find_entry.match_entry: (%a)%t" print_terms tl' eflush;
-         end;
+         eprintf "Term_table.find_entry.match_entry: %d (%a)%t" (**)
+            (Term_template.to_int pattern) print_terms tl' eflush;
       let stack, items = apply_redex' redex [||] tl in
          stack, items, v
    in
@@ -239,6 +245,9 @@ let lookup tbl tl =
 
 (*
  * $Log$
+ * Revision 1.6  1998/04/29 20:53:38  jyh
+ * Initial working display forms.
+ *
  * Revision 1.5  1998/04/29 14:48:30  jyh
  * Added ocaml_sos.
  *

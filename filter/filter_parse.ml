@@ -524,10 +524,11 @@ struct
    (*
     * Dform declaration.
     *)
-   let declare_dform proc loc options t =
+   let declare_dform proc loc name options t =
       let modes, options' = get_dform_options proc loc options in
       let df =
-         DForm { dform_modes = modes;
+         DForm { dform_name = name;
+                 dform_modes = modes;
                  dform_options = options';
                  dform_redex = t;
                  dform_def = NoDForm
@@ -544,9 +545,10 @@ struct
     *      dform_print = DFormExpansion expansion
     *    }
     *)
-   let define_dform proc loc options t expansion =
+   let define_dform proc loc name options t expansion =
       let modes, options' = get_dform_options proc loc options in
-         FilterCache.add_command proc.cache (DForm { dform_modes = modes;
+         FilterCache.add_command proc.cache (DForm { dform_name = name;
+                                                     dform_modes = modes;
                                                      dform_options = options';
                                                      dform_redex = t;
                                                      dform_def = TermDForm expansion
@@ -557,7 +559,7 @@ struct
     *
     * Within the body, terms may expand to contracta.
     *)
-   let define_ml_dform proc loc options t printer buffer code =
+   let define_ml_dform proc loc name options t printer buffer code =
       let modes, options' = get_dform_options proc loc options in
       let ml_def =
          { dform_ml_printer = printer;
@@ -567,7 +569,8 @@ struct
          }
       in
       let info =
-         { dform_modes = modes;
+         { dform_name = name;
+           dform_modes = modes;
            dform_options = options';
            dform_redex = t;
            dform_def = MLDForm ml_def
@@ -751,7 +754,13 @@ EXTEND
       [[ s = sig_item; OPT ";;" ->
           if !debug_filter_parse then
              eprintf "Filter_parse.interf_item: adding item%t" eflush;
-          SigFilter.add_command (SigFilter.get_proc loc) (SummaryItem s, loc);
+          begin
+             match s with
+                <:sig_item< declare $list: []$ end >> ->
+                   ()
+              | _ ->
+                   SigFilter.add_command (SigFilter.get_proc loc) (SummaryItem s, loc)
+          end;
           s, loc
        ]];
    
@@ -770,7 +779,13 @@ EXTEND
    
    implem_item:
       [[ s = str_item; OPT ";;" ->
-          StrFilter.add_command (StrFilter.get_proc loc) (SummaryItem s, loc);
+          begin
+             match s with
+                <:str_item< declare $list: []$ end >> ->
+                   ()
+              | _ ->
+                   StrFilter.add_command (StrFilter.get_proc loc) (SummaryItem s, loc);
+          end;
           s, loc
        ]];
 
@@ -804,9 +819,9 @@ EXTEND
                resource_data_type = data
              };
           empty_sig_item loc
-        | "dform"; options = df_options ->
+        | "dform"; name = LIDENT; ":"; options = df_options ->
           let options', t = options in
-             SigFilter.declare_dform (SigFilter.get_proc loc) loc options' t;
+             SigFilter.declare_dform (SigFilter.get_proc loc) loc name options' t;
              empty_sig_item loc
         | "infix"; name = ident ->
           SigFilter.declare_infix (SigFilter.get_proc loc) loc name;
@@ -849,13 +864,13 @@ EXTEND
                resource_data_type = data
              };
           empty_str_item loc
-        | "dform"; options = df_options; "="; form = xdform ->
+        | "dform"; name = LIDENT; ":"; options = df_options; "="; form = xdform ->
           let options', t = options in
-             StrFilter.define_dform (StrFilter.get_proc loc) loc options' t form;
+             StrFilter.define_dform (StrFilter.get_proc loc) loc name options' t form;
              empty_str_item loc
-        | "mldform"; options = df_options; buf = LIDENT; format = LIDENT; "="; code = expr ->
+        | "mldform"; name = LIDENT; ":"; options = df_options; buf = LIDENT; format = LIDENT; "="; code = expr ->
           let options', t = options in
-             StrFilter.define_ml_dform (StrFilter.get_proc loc) loc options' t buf format code;
+             StrFilter.define_ml_dform (StrFilter.get_proc loc) loc name options' t buf format code;
              empty_str_item loc
         | "infix"; name = ident ->
           StrFilter.declare_infix (StrFilter.get_proc loc) loc name;
@@ -1003,6 +1018,9 @@ END
 
 (*
  * $Log$
+ * Revision 1.21  1998/04/29 20:53:20  jyh
+ * Initial working display forms.
+ *
  * Revision 1.20  1998/04/28 18:30:12  jyh
  * ls() works, adding display.
  *

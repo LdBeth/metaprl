@@ -21,7 +21,8 @@ NLFILES :=\
 	shell_null\
 	shell_rewrite\
 	shell_p4\
-	shell
+	shell\
+	test
 
 MFILES :=
 

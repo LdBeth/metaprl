@@ -115,7 +115,8 @@ and opname_info =
  * The definition is not required in the interface.
  *)
 and 'expr dform_info =
-   { dform_modes : string list;
+   { dform_name : string;
+     dform_modes : string list;
      dform_options : dform_option list;
      dform_redex : term;
      dform_def : 'expr dform_def
@@ -330,6 +331,9 @@ val eprint_info : ('proof, 'ctyp, 'expr, 'item) module_info -> unit
 
 (*
  * $Log$
+ * Revision 1.11  1998/04/29 20:53:29  jyh
+ * Initial working display forms.
+ *
  * Revision 1.10  1998/04/21 19:53:43  jyh
  * Upgraded refiner for program extraction.
  *

@@ -122,7 +122,8 @@ and opname_info =
  * The definition is not required in the interface.
  *)
 and 'expr dform_info =
-   { dform_modes : string list;
+   { dform_name : string;
+     dform_modes : string list;
      dform_options : dform_option list;
      dform_redex : term;
      dform_def : 'expr dform_def
@@ -241,8 +242,8 @@ let eprint_entry print_info = function
  | Module (name, { info_list = info }) ->
       eprintf "Module: %s\n" name;
       print_info info
- | DForm { dform_redex = t } ->
-      eprintf "Dform: %s\n" (string_of_term t)
+ | DForm { dform_name = name } ->
+      eprintf "Dform: %s\n" name
  | Prec name ->
       eprintf "Precedence: %s\n" name
  | PrecRel { prec_rel = rel; prec_left = left; prec_right = right } ->
@@ -607,7 +608,8 @@ let summary_map convert =
           | Module (name, info) ->
                Module (name, map info)
       
-          | DForm { dform_modes = modes;
+          | DForm { dform_name = name;
+                    dform_modes = modes;
                     dform_options = options;
                     dform_redex = redex;
                     dform_def = def
@@ -629,7 +631,8 @@ let summary_map convert =
                                   dform_ml_code = convert.expr_f code
                         }
                in
-                  DForm { dform_modes = modes;
+                  DForm { dform_name = name;
+                          dform_modes = modes;
                           dform_options = options;
                           dform_redex = convert.term_f redex;
                           dform_def = def'
@@ -795,16 +798,8 @@ let dest_opt_pair f t =
  * All parameters should be strings.
  *)
 let dest_string_param_list t =
-   let { term_op = op } = dest_term t in
-   let { op_params = params } = dest_op op in
-   let dest_string param =
-      match dest_param param with
-         String s ->
-            s
-       | _ ->
-            raise (Failure "Parameter is not a string")
-   in
-      List.map dest_string params
+   let l = dest_xlist t in
+      List.map dest_string_param (dest_xlist t)
 
 (*
  * Meta term destruction.
@@ -968,8 +963,10 @@ and dest_module convert t =
  *)
 and dest_dform convert t =
    let options, redex, def = three_subterms t in
+   let name = dest_string_param t in
    let modes, options = dest_dform_opt (dest_xlist options) in
-      DForm { dform_modes = modes;
+      DForm { dform_name = name;
+              dform_modes = modes;
               dform_options =  options;
               dform_redex = redex;
               dform_def = dest_dform_def convert def
@@ -1156,9 +1153,7 @@ let mk_string_param_term opname s terms =
  * Make a term with only strings parameters.
  *)
 let mk_strings_term opname l =
-   let params = List.map (fun s -> make_param (String s)) l in
-   let op = mk_op opname params in
-      mk_term op []
+   mk_xlist_term (List.map (fun s -> mk_string_param_term opname s []) l)
 
 (*
  * Parameters.
@@ -1289,14 +1284,15 @@ and term_of_parent convert { parent_name = path; parent_opens = opens; parent_re
 and term_of_module convert name info =
    mk_string_param_term module_op name [mk_xlist_term (term_list convert info)]
 
-and term_of_dform convert { dform_modes = modes;
+and term_of_dform convert { dform_name = name;
+                            dform_modes = modes;
                             dform_options = options;
                             dform_redex = redex;
                             dform_def = def
     } =
    let modes = List.map mk_dform_mode modes in
    let options = List.map mk_dform_opt options in
-      mk_simple_term dform_op [mk_xlist_term (modes @ options); redex; mk_dform_def convert def]
+      mk_string_param_term dform_op name [mk_xlist_term (modes @ options); redex; mk_dform_def convert def]
 
 and term_of_prec p =
    mk_string_param_term prec_op p []
@@ -1782,6 +1778,9 @@ and check_implementation { info_list = implem } { info_list = interf } =
 
 (*
  * $Log$
+ * Revision 1.19  1998/04/29 20:53:26  jyh
+ * Initial working display forms.
+ *
  * Revision 1.18  1998/04/29 14:48:04  jyh
  * Added ocaml_sos.
  *

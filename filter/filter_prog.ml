@@ -28,15 +28,6 @@ let _ =
       eprintf "Loading Filter_prog%t" eflush
 
 (*
- * Empty sig_item.
- *)
-let list_sig_item loc l =
-   <:sig_item< declare $list:l$ end >>
-
-let list_str_item loc l =
-   <:str_item< declare $list:l$ end >>
-
-(*
  * Axiom.
  *)
 let create_axiom_expr loc =
@@ -165,6 +156,9 @@ let resource_rsrc_ctyp loc =
 
 let resource_join_expr loc =
    <:expr< $uid:"Resource"$ . $lid:"resource_join"$ >>
+
+let dform_name_expr loc =
+   <:expr< $uid:"Dform"$ . $lid:"dform_name"$ >>
 
 let dform_pattern_expr loc =
    <:expr< $uid:"Dform"$ . $lid:"dform_pattern"$ >>
@@ -994,18 +988,21 @@ let () = ()
  *    }
  *)
 let define_dform proc loc
-    { dform_modes = modes;
+    { dform_name = name;
+      dform_modes = modes;
       dform_options = options;
       dform_redex = t
     }
     expansion =
    let string_expr s = <:expr< $str:s$ >> in
+   let name_expr = <:expr< $str: name$ >> in
    let modes_expr = list_expr loc string_expr modes in
    let options_expr = list_expr loc (dform_option_expr loc) options in
    let expansion_expr = <:expr< $dform_expansion_expr loc$ $build_ml_term loc expansion$ >> in
    let t_expr = build_ml_term loc t in
    let rec_value =
-      <:expr< { $list:[ dform_pattern_expr loc, t_expr;
+      <:expr< { $list:[ dform_name_expr loc, name_expr;
+                        dform_pattern_expr loc, t_expr;
                         dform_options_expr loc, options_expr;
                         dform_print_expr loc, expansion_expr ]$ } >>
    in
@@ -1078,7 +1075,8 @@ let rewrite_type_patt loc = function
  *                                 }
  *)
 let define_ml_dform proc loc
-    { dform_modes = modes;
+    { dform_name = name;
+      dform_modes = modes;
       dform_options = options;
       dform_redex = t
     }
@@ -1089,6 +1087,7 @@ let define_ml_dform proc loc
     } =
    (* Dform info *)
    let string_expr s = <:expr< $str:s$ >> in
+   let name_expr = <:expr< $str: name$ >> in
    let modes_expr = list_expr loc string_expr modes in
    let options_expr = list_expr loc (dform_option_expr loc) options in
 
@@ -1119,7 +1118,8 @@ let define_ml_dform proc loc
    (* Build the program *)
    let dprinter = <:expr< $dform_printer_expr loc$ $dprinter_expr$ >> in
    let rec_value =
-      <:expr< { $list:[ dform_pattern_expr loc, term_expr;
+      <:expr< { $list:[ dform_name_expr loc, name_expr;
+                        dform_pattern_expr loc, term_expr;
                         dform_options_expr loc, options_expr;
                         dform_print_expr loc, dprinter ]$ } >>
    in
@@ -1395,6 +1395,9 @@ let extract_str info resources name =
    
 (*
  * $Log$
+ * Revision 1.12  1998/04/29 20:53:23  jyh
+ * Initial working display forms.
+ *
  * Revision 1.11  1998/04/28 18:30:17  jyh
  * ls() works, adding display.
  *

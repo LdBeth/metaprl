@@ -55,7 +55,8 @@ type dform_option =
  * This is the info needed for each display form.
  *)
 type dform_info =
-   { dform_pattern : term;
+   { dform_name : string;
+     dform_pattern : term;
      dform_options : dform_option list;
      dform_print : dform_printer
    }
@@ -110,6 +111,9 @@ val string_of_mterm : dform_base -> meta_term -> string
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/29 20:53:34  jyh
+ * Initial working display forms.
+ *
  * Revision 1.1  1997/04/28 15:51:17  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

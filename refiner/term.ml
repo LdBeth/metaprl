@@ -1132,9 +1132,7 @@ let rec mk_xlist_term = function
                       { bvars = []; bterm = mk_xlist_term t }]
       }
  | [] ->
-      { term_op = { op_name = xnil_opname; op_params = [] };
-        term_terms = []
-      }
+      xnil_term
 
 (*
  * Strings.
@@ -2527,6 +2525,9 @@ let make_2subst_term main_term v1 v2 t1 t2 =
 
 (*
  * $Log$
+ * Revision 1.17  1998/04/29 20:53:36  jyh
+ * Initial working display forms.
+ *
  * Revision 1.16  1998/04/29 14:48:23  jyh
  * Added ocaml_sos.
  *

@@ -164,7 +164,7 @@ let of_term t =
                   print_arities arities
                   eflush
          end;
-      Hashtbl.hash t
+      Hashtbl.hash_param 25 250 t
 
 let of_term_list tl =
    let tl = List.map local_compute_template tl in
@@ -183,10 +183,18 @@ let of_term_list tl =
             in
                List.iter print_template tl
          end;
-      Hashtbl.hash tl
+      Hashtbl.hash_param 25 250 tl
+
+(*
+ * Trivial conversion to int.
+ *)
+let to_int t = t
 
 (*
  * $Log$
+ * Revision 1.7  1998/04/29 20:53:40  jyh
+ * Initial working display forms.
+ *
  * Revision 1.6  1998/04/29 14:48:34  jyh
  * Added ocaml_sos.
  *
