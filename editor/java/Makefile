@@ -1,6 +1,7 @@
 #
 # Files in this application
 #
+
 FILES :=\
 	Target\
 	NuprlDebug\
@@ -49,15 +50,57 @@ PACKAGE := edu/cornell/cs/jyh/nuprl
 all: $(MAIN).jar
 opt: $(MAIN).jar
 
+ifndef OSTYPE
+   OSTYPE=
+endif
+ifeq ($(OSTYPE),linux)
+   OSTYPE=Linux
+endif
+ifeq ($(OSTYPE),solaris)
+   OSTYPE=Solaris
+endif
+ifeq ($(OSTYPE),win32)
+   TYPE=win
+endif
+ifeq ($(OSTYPE),cygwin32)
+   TYPE=win
+endif
+
+ifeq ($(OSTYPE),Linux)
+   TYPE=Unix
+endif
+ifeq ($(Solaris),Linux)
+   TYPE=Unix
+endif
+
+JAVAC = javac -g
+
 #
 # Rebuild from scratch
 #
 main: $(MAIN).java clean
-	javac -g $(MAIN).java
+	$(JAVAC) $(MAIN).java
 
 #
 # Library
 #
+ifeq ($(TYPE),Unix)
+
+$(PACKAGE)/Nuprl.java:
+	mkdir -p `dirname $(PACKAGE)`
+	ln -s `pwd` $(PACKAGE)
+
+$(MAIN).jar: $(CFILES) Nuprl.man $(PACKAGE)/Nuprl.java
+	jar cmf $(PACKAGE)/Nuprl.man $(PACKAGE)/$(MAIN).jar $(PACKAGE)/*.class
+
+#
+# Rule for compiling Java
+#
+%.class: %.java $(PACKAGE)/Nuprl.java
+	$(JAVAC) $*.java
+
+else
+
 $(MAIN).jar: $(CFILES) Nuprl.man
 	(cd ../../../../..; jar cmf $(PACKAGE)/Nuprl.man $(PACKAGE)/$(MAIN).jar $(PACKAGE)/*.class)
 
@@ -65,7 +108,9 @@ $(MAIN).jar: $(CFILES) Nuprl.man
 # Rule for compiling Java
 #
 %.class: %.java
-	javac -g $*.java
+	$(JAVAC) $*.java
+
+endif
 
 #
 # Clean everything
