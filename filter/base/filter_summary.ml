@@ -828,46 +828,8 @@ struct
    module SimplePrint = Simple_print.MakeSimplePrint (ToTerm);;
    open SimplePrint
 
-   let rec meta_term_of_term t =
-      let opname = opname_of_term t in
-         if Opname.eq opname meta_theorem_op then
-            MetaTheorem (one_subterm t)
-         else if Opname.eq opname meta_implies_op then
-            let a, b = two_subterms t in
-               MetaImplies (meta_term_of_term a, meta_term_of_term b)
-         else if Opname.eq opname meta_function_op then
-            let v, a, b = three_subterms t in
-               MetaFunction (v, meta_term_of_term a, meta_term_of_term b)
-         else if Opname.eq opname meta_iff_op then
-            let a, b = two_subterms t in
-               MetaIff (meta_term_of_term a, meta_term_of_term b)
-         else if Opname.eq opname meta_labeled_op then
-            let t' = dest_term t in
-            let o' = dest_op t'.term_op in
-            match o'.op_params, t'.term_terms with
-               [p], [t] ->
-                  begin match dest_param p, dest_bterm t with
-                     String l, { bvars = []; bterm = t } ->
-                        MetaLabeled (l, meta_term_of_term t)
-                   | Var l, { bvars = []; bterm = t } ->
-                        MetaLabeled (string_of_symbol l, meta_term_of_term t)
-                   | _ -> raise (Failure "Filter_summary.meta_term_of_term: term is not a meta term")
-                  end
-             | _ -> raise (Failure "Filter_summary.meta_term_of_term: term is not a meta term")
-         else
-            raise (Failure "Filter_summary.meta_term_of_term: term is not a meta term")
-
-   let rec term_of_meta_term = function
-      MetaTheorem t ->
-         mk_simple_term meta_theorem_op [t]
-    | MetaImplies (a, b) ->
-         mk_simple_term meta_implies_op [term_of_meta_term a; term_of_meta_term b]
-    | MetaFunction (v, a, b) ->
-         mk_simple_term meta_function_op [v; term_of_meta_term a; term_of_meta_term b]
-    | MetaIff (a, b) ->
-         mk_simple_term meta_iff_op [term_of_meta_term a; term_of_meta_term b]
-    | MetaLabeled (l, t) ->
-         mk_term (make_op { op_name = meta_labeled_op; op_params = [ make_param (String l) ]}) [mk_simple_bterm (term_of_meta_term t)]
+   let meta_term_of_term = meta_term_of_term
+   let term_of_meta_term = term_of_meta_term
 
    (*************
     * DESTRUCTION

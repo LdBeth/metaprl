@@ -87,6 +87,12 @@ sig
    val encode_free_var : var -> term
    val is_encoded_free_var : term -> bool
    val decode_free_var : term -> var
+
+   (*
+    * Conversion to terms.
+    *)
+   val meta_term_of_term : term -> meta_term
+   val term_of_meta_term : meta_term -> term
 end
 
 (*

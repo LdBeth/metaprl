@@ -93,6 +93,30 @@ val mk_proof_term : term -> term -> term -> term -> term -> term
 val dest_rule_box : term -> string
 val dest_proof : term -> term * term * term * term * term
 
+(************************************************************************
+ * Export the declarations.
+ * JYH: we probably want to export nearly all of these terms
+ * eventually, but we need to decide how to control the namespace.
+ *)
+doc <:doc<
+   @begin[doc]
+   Rules and axioms are described with @emph{meta}-terms.
+   The meta-terms are defined inductively:
+   a term (a @tt[meta_theorem]) is a meta-term,
+   and given two meta-terms $A$ and $B$, so are the
+   meta-implication @tt[meta_implies], the meta-@misspelled{bi}-implication
+   @tt[meta_iff], and the dependent meta-function @tt{meta_function}
+   where @it[arg] is a variable quantified over $A$ and bound in $B$.  The
+   @tt{meta_labeled} term is used to add a label to a meta-term.
+   @end[doc]
+>>
+declare "meta_theorem"{'A : Dform} : Dform
+declare "meta_implies"{'A : Dform; 'B : Dform} : Dform
+declare "meta_function"{'arg : Dform; 'A : Dform; 'B : Dform} : Dform
+declare "meta_iff"{'A : Dform; 'B : Dform} : Dform
+declare "meta_labeled"[label:s]{'meta : Dform} : Dform
+doc <:doc< @docoff >>
+
 (*
  * -*-
  * Local Variables:

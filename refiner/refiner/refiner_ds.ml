@@ -49,7 +49,7 @@ struct
    module TermAddr = Term_addr_ds.TermAddr (Term) (TermSubst) (TermOp) (TermMan) (RefineError)
    module TermShape = Term_shape_gen.TermShape (TermType) (Term) (TermMan)
    module TermTy = Term_ty_gen.TermTy (TermType) (Term) (TermMan) (TermSubst)
-   module TermMeta = Term_meta_gen.TermMeta (TermType) (Term) (TermSubst) (TermMan) (RefineError)
+   module TermMeta = Term_meta_gen.TermMeta (TermType) (Term) (TermSubst) (TermOp) (TermMan) (RefineError)
    module Rewrite = Rewrite.Rewrite (TermType) (Term) (TermOp) (TermMan) (TermAddr) (TermSubst) (RefineError)
    module Refine = Refine.Refine (TermType) (Term) (TermMan) (TermSubst) (TermAddr) (TermMeta) (TermShape) (Rewrite) (RefineError)
    module TermMod = struct
