@@ -179,6 +179,13 @@ declare "LaTeX"
 declare "MartinLof"
 
 (*
+ * Color.
+ *)
+declare color[name:s]
+declare pagecolor[name:s]
+declare colorbox[name:s]{'t}
+
+(*
  * @begin[doc]
  * The @code{phantom} term produces white space, equivalent in width
  * to the term being typeset.
@@ -194,12 +201,17 @@ declare math{'t}
 declare centermath[s:s]
 declare centermath{'t}
 
+declare minipage[width:s]{'t}
+declare minipage[width:s,pos:s]{'t}
 declare code[text:s]
 declare verbatim[text:s]
+declare iverbatim[text:s]
 declare email[text:s]
 declare center{'t}
 declare figure[label:s]{'t}
+declare figure[label:s,pos:s]{'t}
 declare caption{'caption}
+declare indent{'t}
 declare quote{'t}
 declare quotation{'t}
 declare footnote{'t}

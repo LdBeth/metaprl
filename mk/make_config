@@ -111,6 +111,11 @@ NATIVE_PROFILING_ENABLED = $(NATIVE_PROFILING_ENABLED)
 
     CONFIG3 = $"""
 #
+# You may want to use a custom LaTeX command
+#
+LATEX = $(LATEX)
+
+#
 # Whether to compile in various test theories and files (true/false)
 #
 TESTS_ENABLED = $(TESTS_ENABLED)

@@ -716,6 +716,37 @@ dform phantom_df2 : except_mode[tex] :: phantom{'t} =
 
 doc <:doc<
    @begin[doc]
+   The following color commands use named colors.  You need to define
+   these colors using @code{\definecolor} in your preamble.
+   @end[doc]
+>>
+declare color[name:s]
+declare pagecolor[name:s]
+declare colorbox[name:s]{'t}
+doc <:doc< @docoff >>
+
+dform color_df1 : mode[tex] :: color[name:s] =
+   izone `"\\color{" slot[name:s] `"}" ezone
+
+dform color_df2 : except_mode[tex] :: color[name:s] =
+   `""
+
+dform pagecolor_df1 : mode[tex] :: pagecolor[name:s] =
+   izone `"\\color{" slot[name:s] `"}" ezone
+
+dform pagecolor_df2 : except_mode[tex] :: pagecolor[name:s] =
+   `""
+
+dform colorbox_df1 : mode[tex] :: colorbox[name:s]{'t} =
+   izone `"\\colorbox{" slot[name:s] `"}{" ezone
+   't
+   izone `"}\n" ezone
+
+dform colorbox_df2 : except_mode[tex] :: colorbox[name:s]{'t} =
+   't
+
+doc <:doc<
+   @begin[doc]
    @emph{Math mode} is entered with the @code{$text$} and @code{$$text$$}
    forms.  The @code{$text$} form produces a @tt{math} term, and the
    @code{$$text$$} form produces a @tt{centermath} term.
@@ -766,6 +797,32 @@ dform code_df3 : except_mode[tex] :: except_mode[html] :: code[s:s] =
 
 doc <:doc<
    @begin[doc]
+     The @tt[minipage] term encloses a block of text that should be
+     treated like a page.
+   @end[doc]
+>>
+declare minipage[width:s]{'t}
+declare minipage[width:s,pos:s]{'t}
+doc <:doc< @docoff >>
+
+dform minipage_df1 : mode[tex] :: minipage[width:s]{'t} =
+   izone `"\\begin{minipage}{" slot[width:s] `"}" ezone
+   't
+   izone `"\\end{minipage}" ezone
+
+dform minipage_df2 : mode[tex] :: minipage[width:s,pos:s]{'t} =
+   izone `"\\begin{minipage}[" slot[pos:s] `"]{" slot[width:s] `"}" ezone
+   't
+   izone `"\\end{minipage}" ezone
+
+dform minipage_df3 : except_mode[tex] :: minipage[width:s]{'t} =
+   't
+
+dform minipage_df4 : except_mode[tex] :: minipage[width:s,pos:s]{'t} =
+   't
+
+doc <:doc<
+   @begin[doc]
    The @tt[verbatim] term encloses a block of verbatim text.
    @end[doc]
 >>
@@ -776,6 +833,22 @@ dform verbatim_df1 : mode[tex] :: verbatim[s:s] =
    izone `"\\begin{verbatim}\n" slot["raw", s:s] `"\n\\end{verbatim}" ezone
 
 dform verbatim_df2 : except_mode[tex] :: verbatim[s:s] =
+   tt[s:s]
+
+doc <:doc<
+   @begin[doc]
+   The @tt[iverbatim] term encloses a block of verbatim text, indented.
+   @end[doc]
+>>
+declare iverbatim[text:s]
+doc <:doc< @docoff >>
+
+dform iverbatim_df1 : mode[tex] :: iverbatim[s:s] =
+   izone `"\n\n\\begin{quote}\\begin{minipage}{3in}\\begin{verbatim}\n"
+   slot["raw", s:s]
+   `"\n\\end{verbatim}\\end{minipage}\\end{quote}\n\n" ezone
+
+dform iverbatim_df2 : except_mode[tex] :: iverbatim[s:s] =
    tt[s:s]
 
 doc <:doc<
@@ -831,6 +904,7 @@ doc <:doc<
    @end[doc]
 >>
 declare figure[label:s]{'t}
+declare figure[label:s,pos:s]{'t}
 declare caption{'caption}
 doc <:doc< @docoff >>
 
@@ -840,7 +914,16 @@ dform figure_df1 : mode[tex] :: figure[label:s]{'t} =
    izone `"\\labelfigure{" ezone slot[label:s]
    izone `"}\\end{figure}" ezone
 
-dform figure_df2 : except_mode[tex] :: figure[label:s]{'t} =
+dform figure_df2 : mode[tex] :: figure[label:s,pos:s]{'t} =
+   izone `"\\begin{figure}[" slot[pos:s] `"]" ezone
+   't
+   izone `"\\labelfigure{" ezone slot[label:s]
+   izone `"}\\end{figure}" ezone
+
+dform figure_df3 : except_mode[tex] :: figure[label:s]{'t} =
+   hspace 't hspace
+
+dform figure_df4 : except_mode[tex] :: figure[label:s,pos:s]{'t} =
    hspace 't hspace
 
 dform caption_df1 : mode[tex] :: caption{'caption} =
@@ -850,6 +933,29 @@ dform caption_df1 : mode[tex] :: caption{'caption} =
 
 dform caption_df2 : except_mode[tex] :: caption{'caption} =
    `"caption: " 'caption
+
+doc <:doc<
+   @begin[doc]
+   Add extra indentation with the @code{@quote} form.
+   The usual usage is as a begin/end pair.
+
+   @begin[verbatim]
+   @begin[indent]
+   text
+   @end[indent]
+   @end[verbatim]
+
+   Each line of the text in the @tt{indent} block is indented.
+   @end[doc]
+>>
+declare indent{'t}
+doc <:doc< @docoff >>
+
+dform indent_df1 : mode[tex] :: indent{'t} =
+   izone `"\\begin{indent}" ezone 't izone `"\\end{indent}" ezone
+
+dform indent_df2 : except_mode[tex] :: indent{'t} =
+   hspace 't hspace
 
 doc <:doc<
    @begin[doc]

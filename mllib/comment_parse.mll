@@ -424,7 +424,7 @@ and escape = parse
  * Literal forms.
  *)
 and code_string_brace = parse
-   newline optwhite '*'
+   newline
       { CodeString "\n" }
  | '}'
       { CodeEnd }
@@ -434,8 +434,9 @@ and code_string_brace = parse
       { parse_error_buf "code string is not terminated" lexbuf }
 
 and code_string_end = parse
-   newline optwhite '*'
+   newline
       { CodeString "\n" }
+ | "@end[iverbatim]"
  | "@end[verbatim]"
  | "@end[literal]"
  | "@end[html]"
@@ -670,7 +671,8 @@ and parse_term mode s buf =
          in
             (* Mode cases *)
             match opname, params, args with
-                ["begin"], [["verbatim" as tag]], []
+                ["begin"], [["iverbatim" as tag]], []
+              | ["begin"], [["verbatim" as tag]], []
               | ["begin"], [["literal" as tag]], []
               | ["begin"], [["html" as tag]], [] ->
                    let s = parse_code_block buf in

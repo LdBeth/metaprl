@@ -561,7 +561,7 @@ Theory(files) =
 # Add the inputs directory to the search path.
 #
 INPUTSDIR = $(dir doc/latex/inputs)
-TEXINPUTS += $(INPUTSDIR)
+TEXINPUTS += $(INPUTSDIR)//
 
 #
 # Directory that store the .ps and .pdf files
@@ -590,7 +590,7 @@ TheoryDocument(docname, theories) =
     # Contents of the print.ml file
     #
     $(docname)_print.ml:
-        echo 'set_tex_file "$(docname).tex";; $(add-quoted-wrapper print_theory , ;;, $(THEORIES))' > $@
+        $(echo set_tex_file "$(docname).tex";; $(add-quoted-wrapper print_theory , ;;, $(THEORIES))) > $@
 
     #
     # Get MetaPRL to generate the .tex files
