@@ -1,17 +1,22 @@
 (*
  * Build a set using a red-black tree.
  * Every node in the tree is colored either black or red.
- * A read black tree has the following invariants:
+ * A red-black tree has the following invariants:
  *    1. Every leaf is colored black
  *    2. All children of every red node are black.
  *    3. Every path from the root to a leaf has the
  *       same number of black nodes as every other path.
+ *    4. The root is always black.
  *
  * We get some corollaries:
  *    1. The longest path from the root to a leaf is
  *       at most twice as long as the shortest path.
  *    2. Both children of a red node are either leaves,
  *       or they are both not.
+ *
+ * This code is meant to be fast, so all the cases have
+ * been expanded, and the insert and delete functions are
+ * long (12 cases for insert, 18 for delete in lift_black).
  *)
 open Format
 
@@ -1029,50 +1034,6 @@ struct
     ************************************************************************)
 
    (*
-    * Build a path into a tree.
-    *)
-   let rec initial_path path node =
-      match node with
-         Black (_, Leaf, _, _) ->
-            Left node :: path
-       | Red (_, Leaf, _, _) ->
-            Left node :: path
-       | Black (_, left, _, _) ->
-            initial_path (Left node :: path) left
-       | Red (_, left, _, _) ->
-            initial_path (Left node :: path) left
-       | Leaf ->
-            raise (Invalid_argument "initial_path")
-
-   let key_of_path = function
-      Left (Black (key, _, _, _)) :: _ ->
-         key
-    | Left (Red (key, _, _, _)) :: _ ->
-         key
-    | Right (Black (key, _, _, _)) :: _ ->
-         key
-    | Right (Red (key, _, _, _)) :: _ ->
-         key
-    | _ ->
-         raise (Invalid_argument "key_of_path")
-
-   let rec next_path = function
-      Left (Black (_, _, Leaf, _)) :: path ->
-         next_path path
-    | Left (Red (_, _, Leaf, _)) :: path ->
-         next_path path
-    | Left (Black (_, _, right, _)) :: path ->
-         initial_path path right
-    | Left (Red (_, _, right, _)) :: path ->
-         initial_path path right
-    | Right  _ :: path ->
-         next_path path
-    | [] ->
-         raise Not_found
-    | _ ->
-         raise (Invalid_argument "next_path")
-
-   (*
     * Get the elements of the list.
     *)
    let rec to_list_aux elements = function
@@ -1156,10 +1117,65 @@ struct
     * Union flattens the two trees,
     * merges them, then creates a new tree.
     *)
+   let rec union_aux s1 = function
+      Black (key, left, right, _) ->
+         union_aux (add key (union_aux s1 left)) right
+    | Red (key, left, right, _) ->
+         union_aux (add key (union_aux s1 left)) right
+    | Leaf ->
+         s1
+
    let union s1 s2 =
-      let elements1 = to_list s1 in
-      let elements2 = to_list s2 in
-         of_list (merge [] elements1 elements2)
+      let size1 = cardinality s1 in
+      let size2 = cardinality s2 in
+         if size1 < size2 then
+            union_aux s2 s1
+         else
+            union_aux s1 s2
+
+   (*
+    * Build a path into a tree.
+    *)
+   let rec initial_path path node =
+      match node with
+         Black (_, Leaf, _, _) ->
+            Left node :: path
+       | Red (_, Leaf, _, _) ->
+            Left node :: path
+       | Black (_, left, _, _) ->
+            initial_path (Left node :: path) left
+       | Red (_, left, _, _) ->
+            initial_path (Left node :: path) left
+       | Leaf ->
+            raise (Invalid_argument "initial_path")
+
+   let key_of_path = function
+      Left (Black (key, _, _, _)) :: _ ->
+         key
+    | Left (Red (key, _, _, _)) :: _ ->
+         key
+    | Right (Black (key, _, _, _)) :: _ ->
+         key
+    | Right (Red (key, _, _, _)) :: _ ->
+         key
+    | _ ->
+         raise (Invalid_argument "key_of_path")
+
+   let rec next_path = function
+      Left (Black (_, _, Leaf, _)) :: path ->
+         next_path path
+    | Left (Red (_, _, Leaf, _)) :: path ->
+         next_path path
+    | Left (Black (_, _, right, _)) :: path ->
+         initial_path path right
+    | Left (Red (_, _, right, _)) :: path ->
+         initial_path path right
+    | Right  _ :: path ->
+         next_path path
+    | [] ->
+         raise Not_found
+    | _ ->
+         raise (Invalid_argument "next_path")
 
    (*
     * See if two sets intersect.
