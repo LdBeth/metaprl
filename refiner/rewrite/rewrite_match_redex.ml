@@ -137,7 +137,7 @@ struct
          end
 
    let rec extract_cont_bvars_aux hyps vars i count =
-      if count = 0 then vars else 
+      if count = 0 then vars else
       extract_cont_bvars_aux hyps (**)
          (match SeqHyp.get hyps i with Context(v,_,_) | HypBinding (v, _) -> (v::vars) | Hypothesis _ -> vars)
          (i+1) (count-1)
@@ -323,10 +323,10 @@ struct
     * XXX: Checks whether we can assume hyp vars are always OK.
     *)
    let rec check_sequent_hyps hyps all_bvars len i =
-      if (i<len) then
+      if i < len then
          let all_bvars =
             match SeqHyp.get hyps i with
-               HypBinding(v,_) ->
+               HypBinding (v, _) ->
                   if SymbolSet.mem all_bvars v then
                      raise(Invalid_argument("Rewrite_match_redex.check_sequent_hyps: binding clash in a sequent. Please let Aleksey Nogin know if this happens to you."));
                   SymbolSet.add all_bvars v
