@@ -5,13 +5,15 @@ sig
 
    val empty : t
    val is_empty : t -> bool
-   val mem : elt -> t -> bool
+   val mem : t -> elt -> bool
    val add : elt -> t -> t
    val make : elt -> t
    val remove : elt -> t -> t
    val union : t -> t -> t
    val elements : t -> elt list
    val cardinal : t -> int
+   val mem_filt : t -> elt list -> elt list
+   val fst_mem_filt : t -> (elt * 'a) list -> (elt * 'a) list
 end
 
 module Make (Ord: Set.OrderedType) =
@@ -100,7 +102,7 @@ let is_empty = function
     (LEAF,_) -> true
   | _ -> false
 
-let mem key t =
+let mem t key =
    splay (Ord.compare key) t
 
 let add key t =
@@ -185,5 +187,17 @@ let rec elements_aux coll = function
    x::(elements_aux (elements_aux coll l) r)
 
 let elements = elements_aux []
+
+let rec mem_filt s = function
+   [] -> []
+ | h::t -> 
+      if mem s h then h::mem_filt s t
+         else mem_filt s t
+
+let rec fst_mem_filt s = function
+   [] -> []
+ | ((v,_) as h)::t -> 
+      if mem s v then h::fst_mem_filt s t
+         else fst_mem_filt s t
 
 end

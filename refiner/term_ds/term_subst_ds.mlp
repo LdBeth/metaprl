@@ -69,7 +69,7 @@ struct
                  end);
       do_term_subst (List.combine vl tl) t
 
-   let is_free_var v t = StringSet.mem v t.free_vars
+   let is_free_var v t = StringSet.mem t.free_vars v
 
    let free_vars t = StringSet.elements t.free_vars
 
@@ -146,6 +146,7 @@ struct
     | _ -> raise (Invalid_argument ("join_vars"))
 
    let rec equal_term vars t t' =
+      let vars = StringSet.fst_mem_filt t.free_vars vars in
       (vars == [] && t==t') || (
       match (dest_term t, dest_term t') with
          { term_op = { op_name = opname1; op_params = [Var v] };
@@ -170,7 +171,9 @@ struct
       let bt2 = dest_bterm btrm2 in
       equal_term (join_vars vars (bt1.bvars,bt2.bvars)) bt1.bterm bt2.bterm)
 
-   let alpha_equal = equal_term []
+   let alpha_equal t1 t2 = 
+      try equal_term [] t1 t2 with
+         Invalid_argument _ -> false
 
    let alpha_equal_vars (t, v) (t', v') =
       try equal_term (List_util.zip v v') t t' with

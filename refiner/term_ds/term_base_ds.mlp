@@ -100,7 +100,7 @@ struct
             List.iter (fun (v, t) -> eprintf "\t%s: %a%t" v debug_print t eflush) sub
          end;
 #endif
-      match List_util.filter (fun (v,_) -> StringSet.mem v t.free_vars) sub with
+      match StringSet.fst_mem_filt t.free_vars sub with
          [] -> t
        | sub' ->
             {free_vars =
@@ -113,7 +113,7 @@ struct
              core = Subst (t,sub')}
 
    let do_bterm_subst sub bt =
-      match List_util.filter (fun (v,_) -> StringSet.mem v bt.bfree_vars) sub with
+      match StringSet.fst_mem_filt bt.bfree_vars sub with
          [] -> bt
        | sub' ->
             {bfree_vars =
@@ -215,7 +215,7 @@ struct
 
    let rec new_var av v i =
       let v' = v ^ "_" ^ (string_of_int i) in
-      if (StringSet.mem v' av)
+      if (StringSet.mem av v')
          then new_var av v (succ i)
          else v'
 
@@ -241,13 +241,13 @@ struct
                           core = Subst (btrm,sub) }}
                 | bvrs ->
                      let sub_fvars = subst_free_vars sub in
-                     let capt_vars = List_util.filter (function v -> StringSet.mem v sub_fvars) bvrs in
+                     let capt_vars = StringSet.mem_filt sub_fvars bvrs in
                      match capt_vars with
                         [] ->
                            let rec aux = function
                               [] -> bt.bfree_vars
                             | v::t ->
-                               if StringSet.mem v btrm.free_vars
+                               if StringSet.mem btrm.free_vars v
                                   then StringSet.add v (aux t)
                                   else aux t
                            in

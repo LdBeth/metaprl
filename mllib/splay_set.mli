@@ -5,13 +5,15 @@ sig
 
    val empty : t
    val is_empty : t -> bool
-   val mem : elt -> t -> bool
+   val mem : t -> elt -> bool
    val add : elt -> t -> t
    val make : elt -> t
    val remove : elt -> t -> t
    val union : t -> t -> t
    val elements : t -> elt list
    val cardinal : t -> int
+   val mem_filt : t -> elt list -> elt list
+   val fst_mem_filt : t -> (elt * 'a) list -> (elt * 'a) list
 end
 
 module Make (Ord: Set.OrderedType) : S with type elt = Ord.t
