@@ -30,8 +30,6 @@
  * jyh@cs.cornell.edu
  *)
 
-include Base_theory
-
 (*
  * -*-
  * Local Variables:

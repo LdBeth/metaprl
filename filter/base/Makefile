@@ -59,7 +59,7 @@ opt: $(MAIN).cmxa $(RMLIFILES) $(RCMIFILES) Files
 install:: $(MAIN).cma $(CMIFILES)
 	$(INSTALL) $(MLIFILES) $(CMIFILES) $(MPLIB)
 
-Makefile.dep: Files
+Makefile.dep: Files infix.ml
 
 clean::
 	$(RM) infix.ml

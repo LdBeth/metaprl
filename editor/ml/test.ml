@@ -30,9 +30,10 @@
  * jyh@cs.cornell.edu
  *)
 
-include Base_theory
+include Itt_theory
 
-let x = 21
+interactive qq 'H :
+   sequent ['ext] { 'H; x: int; y: int >- decidable{equal{int;'x;'y}} }
 
 (*
  * -*-

@@ -110,7 +110,7 @@ clean::
 	done
 
 depend::
-	$(RM) Makefile.dep
+	@$(RM) Makefile.dep
 	@for i in $(DIRS); do\
 		if (echo Making refiner/$$i...; cd $$i && $(RM) Makefile.dep); then true; else exit 1; fi;\
 	done

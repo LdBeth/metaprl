@@ -1,7 +1,7 @@
 #
 # No special includes
 #
-DIR := filter/boot
+DIR := filter/filter
 ROOT := ../..
 
 include $(ROOT)/mk/preface
@@ -10,13 +10,9 @@ INCLUDE = -I . -I $(ROOT)/lib -I $(CAMLP4LIB)
 
 OCAMLFLAGS = -pp "camlp4o$(EXE) q_MLast.cmo pa_extend.cmo"
 
-# Type files
-MLZFILES :=\
-	tactic_boot_sig
-
 # Library files
 include Files
-LMFILES = $(BOOT_FILES)
+LMFILES = $(FILTER_FILES)
 
 # Name of main libraries
 MAIN = filterlib
@@ -37,4 +33,3 @@ install:: $(MAIN).cma $(CMIFILES)
 	$(INSTALL) $(MLIFILES) $(CMIFILES) $(MPLIB)
 
 Makefile.dep: Files
-

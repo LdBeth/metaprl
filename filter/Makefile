@@ -30,12 +30,15 @@ OCAMLFLAGS = -pp "camlp4o$(EXE) q_MLast.cmo pa_extend.cmo"
 # Recursive make
 #########################################################################
 
-DIRS :=\
+LIBDIRS :=\
 	base\
-	boot
+	boot\
 
-SUB_CMALIBS := $(addsuffix /filterlib.cma, $(DIRS))
-SUB_CMXALIBS := $(addsuffix /filterlib.cmxa, $(DIRS))
+DIRS := $(LIBDIRS)\
+	filter
+
+SUB_CMALIBS := $(addsuffix /filterlib.cma, $(LIBDIRS))
+SUB_CMXALIBS := $(addsuffix /filterlib.cmxa, $(LIBDIRS))
 
 all: lib 
 	@ $(MAKE) $(ROOT)/lib/$(MAINLIB).cma
@@ -44,9 +47,9 @@ opt:: optlib
 	@ $(MAKE) $(ROOT)/lib/$(MAINLIB).cmxa 
 	@ $(MAKE) $(ROOT)/lib/$(MAINLIB)$(EXT_LIB)
 
-
 include base/Files
 include boot/Files
+include filter/Files
 
 BASE_CMXFILES   := $(addprefix base/, $(addsuffix .cmx, $(BASE_FILES)))
 BOOT_CMXFILES   := $(addprefix boot/, $(addsuffix .cmx, $(BOOT_FILES)))
@@ -90,7 +93,7 @@ clean::
 	done
 
 depend::
-	$(RM) Makefile.dep
+	@$(RM) Makefile.dep
 	@for i in $(DIRS); do\
 		if (echo Making filter/$$i...; cd $$i && $(RM) Makefile.dep); then true; else exit 1; fi;\
 	done
@@ -100,20 +103,14 @@ depend::
 ########################################################################
 
 MFILES_CAMLP4 =\
-	filter_parse\
-	filter_main
+	filter/filter_parse\
+	filter/filter_main
 
 MFILES_PRLC =\
-	filter_bin
+	filter/filter_bin
 
 MFILES_CONVERT =\
-	convert
-
-MFILES =\
-	filter_parse\
-	filter_main\
-	filter_bin\
-	convert
+	filter/convert
 
 CMOFILES_CAMLP4 = $(addsuffix .cmo, $(MFILES_CAMLP4))
 CMXFILES_CAMLP4 = $(addsuffix .cmx, $(MFILES_CAMLP4))
@@ -123,7 +120,7 @@ CMOFILES_CONVERT = $(addsuffix .cmo, $(MFILES_CONVERT))
 CMXFILES_CONVERT = $(addsuffix .cmx, $(MFILES_CONVERT))
 
 PFILES =\
-	prlcomp
+	filter/prlcomp
 
 #
 # Libraries for prlc
@@ -266,7 +263,6 @@ PRLCX_NATIVE_CCLIBS = $(NATIVE_CCLIBS)
 # Included files
 #
 include $(ROOT)/mk/rules
-include Makefile.dep
 
 #
 # Rules
