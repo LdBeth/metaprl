@@ -89,6 +89,7 @@ sig
                       with type param = TermType.param
    module TermShape : TermShapeSig
                       with type term = TermType.term
+                      with type param = TermType.param
    module TermMeta : TermMetaSig
                      with type term = TermType.term
                      with type meta_term = TermType.meta_term

@@ -45,12 +45,16 @@ module TermShape (**)
     with type term = TermType.term
     with type term' = TermType.term'
     with type bound_term = TermType.bound_term
-    with type bound_term' = TermType.bound_term') =
+    with type bound_term' = TermType.bound_term'
+    with type param = TermType.param
+    with type param' = TermType.param'
+   ) =
 struct
    open TermType
    open Term
 
    type term = Term.term
+   type param = Term.param
 
    type shape =
       { shape_opname : opname;
@@ -68,18 +72,19 @@ struct
    (*
     * Fold together meta-parameters and parameters.
     *)
-   let param_type = function
-      Number _ -> ShapeNumber
-    | String _ -> ShapeString
-    | Token _ -> ShapeToken
-    | Var _ -> ShapeVar
-    | MNumber _ -> ShapeNumber
-    | MString _ -> ShapeString
-    | MToken _ -> ShapeToken
-    | MLevel _ -> ShapeLevel
-    | MVar _ -> ShapeVar
-    | _ ->
-         raise (Invalid_argument "Term.shape_of_term")
+   let param_type p =
+      match dest_param p with
+         Number _ -> ShapeNumber
+       | String _ -> ShapeString
+       | Token _ -> ShapeToken
+       | Var _ -> ShapeVar
+       | MNumber _ -> ShapeNumber
+       | MString _ -> ShapeString
+       | MToken _ -> ShapeToken
+       | MLevel _ -> ShapeLevel
+       | MVar _ -> ShapeVar
+       | _ ->
+            raise (Invalid_argument "Term.shape_of_term")
 
    let bterm_type bt =
       List.length (dest_bterm bt).bvars
