@@ -44,28 +44,28 @@ open Package_info
 val create :
    package ->
    parse_arg ->
-   display_mode ->
+   display_fun ->
    string ->
    edit_object
 
 val view_rule :
    package ->
    parse_arg ->
-   display_mode ->
+   display_fun ->
    (term, meta_term, proof proof_type, MLast.expr) rule_info ->
    edit_object
 
 val view_rw :
    package ->
    parse_arg ->
-   display_mode ->
+   display_fun ->
    (term, proof proof_type, MLast.expr) rewrite_info ->
    edit_object
 
 val view_crw :
    package ->
    parse_arg ->
-   display_mode ->
+   display_fun ->
    (term, proof proof_type, MLast.expr) cond_rewrite_info ->
    edit_object
 

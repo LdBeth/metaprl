@@ -84,6 +84,7 @@ type commands =
      mutable refresh : unit -> unit;
      mutable pwd : unit -> string;
      mutable set_dfmode : string -> unit;
+     mutable set_dftype : display_type -> unit;
      mutable create_pkg : string -> unit;
      mutable backup : unit -> unit;
      mutable backup_all : unit -> unit;
@@ -122,6 +123,7 @@ let commands =
      refresh = uninitialized;
      pwd = uninitialized;
      set_dfmode = uninitialized;
+     set_dftype = uninitialized;
      create_pkg = uninitialized;
      backup = uninitialized;
      backup_all = uninitialized;
@@ -570,6 +572,7 @@ struct
       let clear_view_options = wrap      clear_view_options
       let get_shortener      = wrap_unit get_shortener
       let set_dfmode         = wrap      set_dfmode
+      let set_dftype         = wrap      set_dftype
       let set_window_width   = wrap      set_window_width
       let flush              = wrap_unit flush
 

@@ -35,11 +35,11 @@ open Shell_sig
  * Make a root object.
  *)
 val create :
-   display_mode ->
+   display_fun ->
    edit_object
 
 val view :
-   display_mode ->
+   display_fun ->
    edit_object
 
 (*

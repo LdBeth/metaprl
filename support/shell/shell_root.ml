@@ -10,7 +10,7 @@
  * See the file doc/index.html for information on Nuprl,
  * OCaml, and more information about this system.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1998-2004 MetaPRL Group, Cornell University and Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,8 +26,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 extends Shell_sig
 extends Package_info
@@ -38,85 +38,6 @@ open Dform
 
 open Summary
 open Shell_sig
-
-(************************************************************************
- * TYPES                                                                *
- ************************************************************************)
-
-(*
- * A window is either a text window or an HTML window.
- *)
-type text_window =
-   { df_base : dform_mode_base;
-     df_mode : string;
-     mutable df_width : int
-   }
-
-type window =
-   TextWindow of text_window
- | TexWindow of text_window
- | BrowserWindow of text_window
-
-(************************************************************************
- * WINDOWS                                                              *
- ************************************************************************)
-
-(*
- * Create a window from the description.
- *)
-let create_window = function
-   DisplayText (base, mode) ->
-      TextWindow { df_base = base; df_mode = mode; df_width = 80 }
- | DisplayTex base ->
-      TexWindow { df_base = base; df_mode = "tex"; df_width = 80 }
- | DisplayBrowser base ->
-      BrowserWindow { df_base = base; df_mode = "html"; df_width = 80 }
-
-(*
- * Update the width based on the terminal.
- *)
-let update_terminal_width window =
-   match window with
-      TextWindow info ->
-         info.df_width <- Mp_term.term_width Pervasives.stdout info.df_width;
-         window
-    | TexWindow _
-    | BrowserWindow _ ->
-         window
-
-(*
- * Copy the window.
- *)
-let new_window = function
-   TextWindow _
- | TexWindow _
- | BrowserWindow _ as window ->
-      window
-
-(*
- * Display a term in the window.
- *)
-let display_term window term =
-   match update_terminal_width window with
-      TextWindow { df_base = base; df_mode = mode; df_width = width } ->
-         let df = get_mode_base base mode in
-         let buf = Lm_rformat.new_buffer () in
-            Dform.format_term df buf term;
-            Lm_rformat_text.print_text_channel width buf stdout;
-            flush stdout
-    | TexWindow { df_base = base; df_mode = mode; df_width = width } ->
-         let df = get_mode_base base mode in
-         let buf = Lm_rformat.new_buffer () in
-            Dform.format_term df buf term;
-            Lm_rformat_tex.print_tex_channel width buf stdout;
-            flush stdout
-    | BrowserWindow { df_base = base; df_mode = mode } ->
-         let buf = Lm_rformat.new_buffer () in
-         let df = get_mode_base base mode in
-         let df = save_slot_terms df in
-         let () = Dform.format_term df buf term in
-         let terms = get_slot_terms df in
-            Session.set_main buf terms
 
 (************************************************************************
  * SHELL INTERFACE                                                      *
@@ -131,15 +52,15 @@ let raise_edit_error s =
 (*
  * Build the shell interface.
  *)
-let rec edit pack window =
+let rec edit pack get_dfm =
    let edit_display _ =
       (* Display the roots of the package *)
       let packs = Package_info.packages pack in
       let term = mk_packages_term (List.map (fun root -> mk_package_term (Package_info.name root)) packs) in
-         display_term window term
+         Proof_edit.display_term (get_dfm ()) term
    in
    let edit_copy () =
-      edit pack (new_window window)
+      edit pack get_dfm
    in
    let not_a_rule _ =
       raise_edit_error "this is not a rule or rewrite"
@@ -197,8 +118,7 @@ let rec edit pack window =
         edit_fs_cwd = edit_fs_cwd
       }
 
-let create pack window =
-   edit pack (create_window window)
+let create = edit
 
 (*
  * Note: in this particular case, view is the same as create.

@@ -43,15 +43,6 @@ open Filter_type
 open Shell_util
 
 (*
- * Create either in text mode,
- * or in window mode.
- *)
-type display_mode =
-   DisplayText of dform_mode_base * string
- | DisplayTex of dform_mode_base
- | DisplayBrowser of dform_mode_base
-
-(*
  * These are the values that we recognize in MetaPRL toploop.
  *)
 type top_expr =
@@ -146,6 +137,26 @@ type proof_command =
  | ProofMakeAssum
  | ProofClean
  | ProofSquash
+
+(*
+ * Display state
+ *)
+type display_type =
+   DisplayText
+ | DisplayTex
+ | DisplayBrowser
+
+(*
+ * Full display information
+ *)
+type display_method = {
+   df_type : display_type;
+   df_base : dform_mode_base;
+   df_mode : string;
+   df_width : int;
+}
+
+type display_fun = unit -> display_method
 
 (*
  * Info for proof-type objects.
@@ -275,6 +286,7 @@ sig
 
    (* General display options *)
    val set_dfmode : string -> unit
+   val set_dftype : display_type -> unit
    val set_window_width : int -> unit
 
    (* Evaluate a string in the current shell *)

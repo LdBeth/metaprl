@@ -160,23 +160,33 @@ let linetable_of_strings strings =
  * Shell entry.
  *)
 let default_shell =
-   let port = None in
-   let dfmode = "prl" in
-   let display_mode = DisplayText (default_mode_base, dfmode) in
-   let proof = Shell_root.create packages display_mode in
-      { shell_width          = 80;
-        shell_df_mode        = dfmode;
-        shell_dir            = DirRoot;
+   let info_ref = ref None in
+   let get_dfm () =
+      match !info_ref with
+         None -> raise (Invalid_argument "Shell_current: internal error")
+       | Some { shell_df_method = dfm } -> dfm
+   in
+   let proof = Shell_root.create packages get_dfm in
+   let info =
+      { shell_dir            = DirRoot;
         shell_package        = None;
         shell_proof          = proof;
-        shell_needs_refresh  = false
+        shell_needs_refresh  = false;
+        shell_df_method      =
+           { df_mode  = "prl";
+             df_base  = default_mode_base;
+             df_width = 80;
+             df_type  = DisplayText;
+           };
       }
+   in
+      info_ref := Some info;
+      info
 
 let fork_shell shell =
-   let { shell_proof = old_proof } = shell in
-      { shell with shell_proof = old_proof.edit_copy ();
-                   shell_needs_refresh = true
-      }
+   { shell with shell_proof = shell.shell_proof.edit_copy ();
+                shell_needs_refresh = true
+   }
 
 let shell_entry = State.private_val "Shell_current.shell_entry" default_shell fork_shell
 

@@ -36,7 +36,7 @@ open Shell_sig
  *)
 val create :
    Package_info.t ->
-   display_mode ->
+   display_fun ->
    edit_object
 
 (*
@@ -44,7 +44,7 @@ val create :
  *)
 val view :
    Package_info.t ->
-   display_mode ->
+   display_fun ->
    edit_object
 
 (*

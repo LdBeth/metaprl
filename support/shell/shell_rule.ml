@@ -155,7 +155,7 @@ let unit_term = mk_simple_term nil_opname []
 
 let rec edit pack parse_arg name window obj =
    let edit_copy () =
-      edit pack parse_arg name (Proof_edit.new_window window) { obj with rule_name = obj.rule_name }
+      edit pack parse_arg name window { obj with rule_name = obj.rule_name }
    in
    let update_ped () =
       obj.rule_ped <- Primitive unit_term
@@ -344,14 +344,6 @@ let rec edit pack parse_arg name window obj =
         edit_fs_cwd = edit_fs_cwd
       }
 
-let create_window = function
-   DisplayText (base, mode) ->
-      Proof_edit.create_text_window base mode
- | DisplayTex base ->
-      Proof_edit.create_tex_window base
- | DisplayBrowser base ->
-      Proof_edit.create_browser_window base
-
 let create pack parse_arg window name =
    let obj =
       { rule_assums = [];
@@ -363,7 +355,7 @@ let create pack parse_arg window name =
         rule_name = name
       }
    in
-      edit pack parse_arg name (create_window window) obj
+      edit pack parse_arg name window obj
 
 let ped_of_proof pack parse_arg goal = function
    Primitive proof ->
@@ -394,7 +386,7 @@ let view_rule pack parse_arg window
         rule_name = name
       }
    in
-      edit pack parse_arg name (create_window window) obj
+      edit pack parse_arg name window obj
 
 let view_rw pack parse_arg window
     { rw_name = name;
@@ -413,7 +405,7 @@ let view_rw pack parse_arg window
         rule_name = name;
       }
    in
-      edit pack parse_arg name (create_window window) obj
+      edit pack parse_arg name window obj
 
 let view_crw pack parse_arg window
     { crw_name = name;
@@ -434,7 +426,7 @@ let view_crw pack parse_arg window
         rule_name = name;
       }
    in
-      edit pack parse_arg name (create_window window) obj
+      edit pack parse_arg name window obj
 
 (*
  * -*-

@@ -110,14 +110,12 @@ val ped_status : ped Filter_summary_type.proof_type -> obj_status
 (************************************************************************
  * Display.
  *)
-type window
-
 type incomplete_ped =
    Primitive of tactic_arg
  | Incomplete of tactic_arg
  | Derived of tactic_arg * MLast.expr
 
-val interpret : window -> ped -> proof_command -> unit
+val interpret : display_fun -> ped -> proof_command -> unit
 
 (*
  * Check the proof and return its extract.
@@ -127,30 +125,21 @@ val interpret : window -> ped -> proof_command -> unit
  *    expand_proof: check as much of the proof as possible,
  *       no exceptions are raised
  *)
-val check_ped              : window -> Refine.refiner -> opname -> ped -> ref_status
-val refiner_extract_of_ped : window -> ped -> Refine.extract
-val print_exn              : window -> ('a -> 'b) -> 'a -> 'b
+val check_ped              : display_fun -> Refine.refiner -> opname -> ped -> ref_status
+val refiner_extract_of_ped : display_fun -> ped -> Refine.extract
+val print_exn              : display_fun -> ('a -> 'b) -> 'a -> 'b
 
 (*
- * Create text or HTML.
+ * Display utilities
  *)
-val create_text_window    : dform_mode_base -> string -> window
-val create_tex_window     : dform_mode_base -> window
-val create_browser_window : dform_mode_base -> window
-
-(*
- * Create a new window.
- * On text displays, this does nothing.
- * On graphics displays, this allocates a new
- * window, but may not immediately display it.
- *)
-val new_window : window -> window
+val display_term : display_method -> term -> unit
+val display_term_newline : display_method -> term -> unit
 
 (*
  * Display the goals.
  *)
-val format_incomplete : window -> incomplete_ped -> unit
-val format : window -> ped -> unit
+val format_incomplete : display_fun -> incomplete_ped -> unit
+val format : display_fun -> ped -> unit
 
 (*
  * -*-

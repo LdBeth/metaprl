@@ -475,6 +475,7 @@ struct
             }
          in
             Top.set_dfmode "html";
+            Top.set_dftype DisplayBrowser;
             Top.refresh ();
             session.session_menu_version <- succ session.session_menu_version;
             session.session_state        <- None;
@@ -1479,6 +1480,7 @@ struct
             Lm_thread_shell.with_pid main_pid (fun () ->
                   Top.init ();
                   Top.set_dfmode "html";
+                  Top.set_dftype DisplayBrowser;
                   Top.refresh ();
                   State.write session_entry maybe_invalidate_directory) ();
             serve_http http_start http_connect state !browser_port;

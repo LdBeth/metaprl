@@ -49,86 +49,6 @@ open Shell_sig
 open Shell_util
 
 (************************************************************************
- * TYPES                                                                *
- ************************************************************************)
-
-(*
- * A window is either a text window or an HTML window.
- *)
-type text_window =
-   { df_base : dform_mode_base;
-     df_mode : string;
-     mutable df_width : int
-   }
-
-type window =
-   TextWindow of text_window
- | TexWindow of text_window
- | BrowserWindow of text_window
-
-(************************************************************************
- * WINDOWS                                                              *
- ************************************************************************)
-
-(*
- * Create a window from the description.
- *)
-let create_window = function
-   DisplayText (base, mode) ->
-      TextWindow { df_base = base; df_mode = mode; df_width = 80 }
- | DisplayTex base ->
-      TexWindow { df_base = base; df_mode = "tex"; df_width = 60 }
- | DisplayBrowser base ->
-      BrowserWindow { df_base = base; df_mode = "html"; df_width = 70 }
-
-(*
- * Update the width based on the terminal.
- *)
-let update_terminal_width window =
-   match window with
-      TextWindow info ->
-         info.df_width <- Mp_term.term_width Pervasives.stdout info.df_width;
-         window
-    | TexWindow _
-    | BrowserWindow _ ->
-         window
-
-(*
- * Copy the window.
- *)
-let new_window = function
-   TextWindow _
- | TexWindow _
- | BrowserWindow _ as window ->
-      window
-
-(*
- * Display a term in the window.
- *)
-let display_term pack window term =
-   match update_terminal_width window with
-      TextWindow { df_base = base; df_mode = mode; df_width = width } ->
-         let df = get_mode_base base mode in
-         let buf = Lm_rformat.new_buffer () in
-            Dform.format_term df buf term;
-            Lm_rformat_text.print_text_channel width buf stdout;
-            flush stdout
-    | TexWindow { df_base = base; df_mode = mode; df_width = width } ->
-         let df = get_mode_base base mode in
-         let buf = Lm_rformat.new_buffer () in
-         let out = Shell_tex.open_file () in
-            Dform.format_term df buf term;
-            Lm_rformat_tex.print_tex_channel width buf out;
-            Shell_tex.close_file out
-    | BrowserWindow { df_base = base; df_mode = mode } ->
-         let buf = Lm_rformat.new_buffer () in
-         let df = get_mode_base base mode in
-         let df = save_slot_terms df in
-         let () = Dform.format_term df buf term in
-         let terms = get_slot_terms df in
-            Session.set_main buf terms
-
-(************************************************************************
  * FORMATTING                                                           *
  ************************************************************************)
 
@@ -348,12 +268,12 @@ let edit_addr = function
 (*
  * Build the shell interface.
  *)
-let rec edit pack_info parse_arg window =
+let rec edit pack_info parse_arg get_dfm =
    let edit_display options =
-      display_term pack_info window (term_of_implementation pack_info (mk_ls_filter options) parse_arg)
+      Proof_edit.display_term (get_dfm ()) (term_of_implementation pack_info (mk_ls_filter options) parse_arg)
    in
    let edit_copy () =
-      edit pack_info parse_arg (new_window window)
+      edit pack_info parse_arg get_dfm
    in
    let edit_save () =
       Package_info.save parse_arg pack_info
@@ -387,12 +307,8 @@ let rec edit pack_info parse_arg window =
         edit_fs_cwd = edit_fs_cwd
       }
 
-let create pack parse_arg window =
-   let window = create_window window in
-      edit pack parse_arg window
-
-let view pack parse_arg window =
-   edit pack parse_arg (create_window window)
+let create = edit
+let view = edit
 
 (*
  * -*-

@@ -50,9 +50,10 @@ val get_current_package : shell -> Package_info.package
 
 val get_db : shell -> dform_base
 val default_mode_base : Mp_resource.bookmark
-val get_display_mode : shell -> display_mode
+val get_display_mode : shell -> display_fun
 val get_shortener : shell -> opname -> param list -> bound_term list -> string
 val set_dfmode : shell -> string -> unit
+val set_dftype : shell -> display_type -> unit
 val set_window_width : shell -> int -> unit
 
 val touch : shell -> unit

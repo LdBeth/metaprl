@@ -75,7 +75,7 @@ let all_packages () =
 let default_mode_base = Mp_resource.theory_bookmark "summary"
 
 (*
- * Get the current "prl" printing base.
+ * Get the current printing base.
  *)
 let get_dfbase info =
    match info.shell_package with
@@ -88,22 +88,24 @@ let get_dfbase info =
             eprintf "Restoring default display forms%t" eflush;
          default_mode_base
 
-let get_display_mode info =
-   let dfbase = get_dfbase info in
-      match info.shell_df_mode with
-         "tex" ->
-            DisplayTex dfbase
-       | "html" ->
-            DisplayBrowser dfbase
-       | mode ->
-            DisplayText (dfbase, mode)
+let get_display_mode info () =
+   info.shell_df_method
 
 let get_db info =
    let dfbase = get_dfbase info in
-      get_mode_base dfbase info.shell_df_mode
+      get_mode_base dfbase info.shell_df_method.df_mode
+
+let update_dfbase info =
+   let dfbase = get_dfbase info in
+      info.shell_df_method <- { info.shell_df_method with df_base = dfbase };
+      Shell_state.set_dfbase (Some (get_mode_base dfbase info.shell_df_method.df_mode))
 
 let set_dfmode info mode =
-   info.shell_df_mode <- mode
+   info.shell_df_method <- { info.shell_df_method with df_mode = mode };
+   Shell_state.set_dfbase (Some (get_mode_base info.shell_df_method.df_base mode))
+
+let set_dftype info dft =
+   info.shell_df_method <- { info.shell_df_method with df_type = dft }
 
 (*
  * Get the resource collection.
@@ -594,8 +596,8 @@ let parse_path shell name =
 let mount_root parse_arg shell need_shell verbose =
    let proof = Shell_root.view packages (get_display_mode shell) in
       shell.shell_package <- None;
+      update_dfbase shell;
       shell.shell_proof <- proof;
-      Shell_state.set_dfbase None;
       Shell_state.set_mk_opname None;
       Shell_state.set_so_var_context None;
       Shell_state.set_infixes None;
@@ -607,8 +609,8 @@ let mount_root parse_arg shell need_shell verbose =
 let mount_fs parse_arg shell need_shell verbose =
    let proof = Shell_fs.view (get_display_mode shell) in
       shell.shell_package <- None;
+      update_dfbase shell;
       shell.shell_proof <- proof;
-      Shell_state.set_dfbase None;
       Shell_state.set_mk_opname None;
       Shell_state.set_so_var_context None;
       Shell_state.set_infixes None;
@@ -639,7 +641,7 @@ let mount_current_module modname parse_arg shell need_shell verbose =
                if need_shell && not (shell_package pack) then
                   failwith ("Module " ^ modname ^ " does not contain shell commands");
                shell.shell_package <- Some pack;
-               Shell_state.set_dfbase (Some (get_db shell));
+               update_dfbase shell;
                Shell_state.set_mk_opname (Some (Package_info.mk_opname pack));
                Shell_state.set_infixes (Some (Package_info.get_infixes pack));
                Shell_state.set_module modname;
@@ -775,7 +777,7 @@ let fs_cwd shell =
  * Window width.
  *)
 let set_window_width shell i =
-   shell.shell_width <- max !Mp_term.min_screen_width i
+   shell.shell_df_method <- {shell.shell_df_method with df_width = max !Mp_term.min_screen_width i}
 
 (*
  * Interface to the HTTP shell.
@@ -904,13 +906,13 @@ let expand_all parse_arg shell =
  * TeX functions.
  *)
 let print_theory parse_arg shell name =
-   let mode = shell.shell_df_mode in
+   let dfm = shell.shell_df_method in
    let dir = shell.shell_dir in
-      shell.shell_df_mode <- "tex";
+      shell.shell_df_method <- { dfm with df_type = DisplayTex; df_width = 60; df_mode = "tex" };
       chdir parse_arg shell false true (DirModule name);
       expand_all parse_arg shell;
       view parse_arg shell (LsOptionSet.singleton LsAll);
-      shell.shell_df_mode <- mode;
+      shell.shell_df_method <- dfm;
       chdir parse_arg shell false false dir
 
 let extract parse_arg shell path () =

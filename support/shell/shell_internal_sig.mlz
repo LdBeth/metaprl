@@ -50,8 +50,7 @@ type shell =
      mutable shell_needs_refresh : bool;
 
      (* Display *)
-     mutable shell_width         : int;
-     mutable shell_df_mode       : string;
+     mutable shell_df_method     : display_method;
 
      (* Current module and path and proof *)
      mutable shell_dir           : shell_dir;

@@ -39,13 +39,13 @@ open Package_info
 val create :
    package ->
    parse_arg ->
-   display_mode ->
+   display_fun ->
    edit_object
 
 val view :
    package ->
    parse_arg ->
-   display_mode ->
+   display_fun ->
    edit_object
 
 (*

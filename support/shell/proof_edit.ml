@@ -82,72 +82,6 @@ let debug_show_all_subgoals =
       }
 
 (************************************************************************
- * DISPLAY
- ************************************************************************)
-
-(*
- * A window is either a text window or an HTML window.
- *)
-type text_window =
-   { df_base  : dform_mode_base;
-     df_mode  : string;
-     mutable df_width : int
-   }
-
-type window =
-   BrowserWindow of text_window
- | TextWindow of text_window
- | TexWindow of text_window
-
-type incomplete_ped =
-   Primitive of tactic_arg
- | Incomplete of tactic_arg
- | Derived of tactic_arg * MLast.expr
-
-(*
- * Create a new window.
- *)
-let create_text_window base mode =
-   TextWindow { df_base = base;
-                df_mode = mode;
-                df_width = 80
-   }
-
-let create_tex_window base =
-   TexWindow { df_base = base;
-               df_mode = "tex";
-               df_width = 80
-   }
-
-let create_browser_window base =
-   BrowserWindow { df_base = base;
-                   df_mode = "html";
-                   df_width = 80
-   }
-
-(*
- * Fork the current window.
- *)
-let new_window window =
-   match window with
-      BrowserWindow _
-    | TextWindow _
-    | TexWindow _ ->
-         window
-
-(*
- * Update the width based on the terminal.
- *)
-let update_terminal_width window =
-   match window with
-      TextWindow info ->
-         info.df_width <- Mp_term.term_width stdout info.df_width;
-         window
-    | TexWindow _
-    | BrowserWindow _ ->
-         window
-
-(************************************************************************
  * TYPES                                                                *
  ************************************************************************)
 
@@ -164,6 +98,11 @@ type ped =
    { mutable ped_undo : ped_proof list;
      mutable ped_stack : ped_proof list
    }
+
+type incomplete_ped =
+   Primitive of tactic_arg
+ | Incomplete of tactic_arg
+ | Derived of tactic_arg * MLast.expr
 
 (************************************************************************
  * CONVERSION TO TERMS                                                  *
@@ -299,49 +238,11 @@ let term_of_incomplete proof =
       mk_proof_term goal (mk_goal_list_term [goal]) (term_of_proof_status status) text xnil_term
 
 (*
- * Display the current proof.
- *    0. Display the status
- *    1. Display the goal
- *    2. Display the rule
- *    3. Display the subgoals
- *)
-let format_aux window proof =
-   match update_terminal_width window with
-      TextWindow { df_width = width; df_base = dfbase; df_mode = mode } ->
-         let df = get_mode_base dfbase mode in
-         let buf = Lm_rformat.new_buffer () in
-            Dform.format_term df buf proof;
-            Lm_rformat.format_newline buf;
-            Lm_rformat_text.print_text_channel width buf stdout;
-            flush stdout
-    | TexWindow { df_width = width; df_base = dfbase; df_mode = mode } ->
-         let df = get_mode_base dfbase mode in
-         let buf = Lm_rformat.new_buffer () in
-            Dform.format_term df buf proof;
-            Lm_rformat.format_newline buf;
-            Lm_rformat_tex.print_tex_channel width buf stdout;
-            flush stdout
-    | BrowserWindow { df_base = dfbase; df_mode = mode } ->
-         let buf = Lm_rformat.new_buffer () in
-         let df = get_mode_base dfbase mode in
-         let df = save_slot_terms df in
-         let () = Dform.format_term df buf proof in
-         let terms = get_slot_terms df in
-            Lm_rformat.format_newline buf;
-            Session.set_main buf terms
-
-(*
  * Display the error.
  *)
-let print_exn window f x =
-   let df =
-      match window with
-         TextWindow { df_base = base; df_mode = mode }
-       | TexWindow { df_base = base; df_mode = mode }
-       | BrowserWindow { df_base = base; df_mode = mode } ->
-            get_mode_base base mode
-   in
-      Filter_exn.print_exn df None f x
+let print_exn get_dfm f x =
+   let dfm = get_dfm () in
+      Filter_exn.print_exn (get_mode_base dfm.df_base dfm.df_mode) None f x
 
 (************************************************************************
  * OPERATIONS                                                           *
@@ -660,11 +561,35 @@ let interpret window ped item =
  * Display.
  *)
 
-let format window ped =
-   format_aux window (term_of_proof (proof_of_ped ped))
+let display_term_aux newline dfm term =
+   let df = get_mode_base dfm.df_base dfm.df_mode in
+   let buf = Lm_rformat.new_buffer () in
+   match dfm.df_type with
+      DisplayText ->
+         Dform.format_term df buf term;
+         if newline then Lm_rformat.format_newline buf;
+         let width = Mp_term.term_width Pervasives.stdout dfm.df_width in
+         Lm_rformat_text.print_text_channel (Mp_term.term_width Pervasives.stdout dfm.df_width) buf stdout;
+         flush stdout
+    | DisplayTex ->
+         Dform.format_term df buf term;
+         if newline then Lm_rformat.format_newline buf;
+         Lm_rformat_tex.print_tex_channel dfm.df_width buf stdout;
+         flush stdout
+    | DisplayBrowser ->
+         let df = save_slot_terms df in
+            Dform.format_term df buf term;
+            if newline then Lm_rformat.format_newline buf;
+            Session.set_main buf (get_slot_terms df)
 
-let format_incomplete window proof =
-   format_aux window (term_of_incomplete proof)
+let display_term = display_term_aux false
+let display_term_newline = display_term_aux true
+
+let format get_dfm ped =
+   display_term_newline (get_dfm()) (term_of_proof (proof_of_ped ped))
+
+let format_incomplete get_dfm proof =
+   display_term_newline (get_dfm()) (term_of_incomplete proof)
 
 (*
  * -*-
