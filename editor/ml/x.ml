@@ -22,11 +22,13 @@ open Itt_struct
 open Itt_logic
 open Itt_dprod
 open Itt_prod
+open Itt_prop_decide
 
 open Nl
+
 open Test
 
-let _ = set_debug "prove_int" true
+let _ = set_debug "prop_decide" true
 
 let zi i =
   (let z = goal() in

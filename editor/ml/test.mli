@@ -2,11 +2,9 @@
  * Display all the elements in a particular theory.
  *)
 
-include Itt_theory
+include Itt_logic
 
 open Tacticals
-
-val proveIntT : tactic
 
 (*
  * -*-
