@@ -486,7 +486,7 @@ struct
          let bterms_new, args = apply_var_fun_higher_bterms f bvars coll bterms in
          let bterm_new, args = apply_var_fun_higher_term f (bvars' :: bvars) args term in
             if args == coll then
-               bterms, coll
+               bterms', coll
             else
                (mk_bterm bvars' bterm_new) :: bterms_new, args
 
