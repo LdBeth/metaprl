@@ -23,7 +23,7 @@ CAMLP4_VERSIONS=3.04_for_MetaPRL-0.7.1
 YESFLAGS=1 true True t T TRUE Y y yes Yes YES
 
 DEFAULT_THEORIES = tactic ocaml base itt
-ALL_THEORIES = tactic ocaml base itt ocaml_sos fol czf mc sil reflect_itt tptp
+ALL_THEORIES = tactic ocaml base itt ocaml_sos fol czf mc sil tptp
 # Do not compile yet: ocaml_doc lf
 
 ifndef TERMS
