@@ -76,7 +76,7 @@ struct
     * Make a "canon_var".
     *)
    let mk_canon_var_term v =
-      { free_vars = StringSet.add v StringSet.empty;
+      { free_vars = Vars (StringSet.make v);
         core = Term
          { term_op = { op_name = canon_var_opname; op_params = [Var v] };
            term_terms = []}}
@@ -139,23 +139,21 @@ struct
          (mk_bterm vars main_term::terms)
 
    let make_1subst_term main_term v t =
-      let fvm = StringSet.remove v main_term.free_vars in
-      { free_vars = StringSet.union fvm t.free_vars;
+      { free_vars = VarsDelayed;
         core = Term
          { term_op = { op_name = subst_opname; op_params = [] };
            term_terms =
-            [ { bfree_vars = fvm;
+            [ { bfree_vars = VarsDelayed;
                 bcore = BTerm {bvars=[v]; bterm=main_term}};
               { bfree_vars = t.free_vars;
                 bcore = BTerm {bvars=[]; bterm=t}}]}}
 
    let make_2subst_term main_term v1 v2 t1 t2 =
-      let fvm = StringSet.remove v1 (StringSet.remove v2 main_term.free_vars) in
-      { free_vars = StringSet.union fvm (StringSet.union t1.free_vars t2.free_vars);
+      { free_vars = VarsDelayed;
         core = Term
          { term_op = { op_name = subst_opname; op_params = [] };
            term_terms =
-            [ { bfree_vars = fvm;
+            [ { bfree_vars = VarsDelayed;
                 bcore = BTerm {bvars=[v1;v2]; bterm=main_term}};
               { bfree_vars = t1.free_vars;
                 bcore = BTerm {bvars=[]; bterm=t1}};

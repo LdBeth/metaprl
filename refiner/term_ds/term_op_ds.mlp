@@ -85,7 +85,7 @@ struct
     | _ -> false
 
    let mk_dep0_dep0_term opname t1 t2 =
-      { free_vars = StringSet.union t1.free_vars t2.free_vars;
+      { free_vars = VarsDelayed;
         core = Term
          { term_op = { op_name = opname; op_params = [] };
            term_terms = [mk_simple_bterm t1; mk_simple_bterm t2]}}
@@ -114,7 +114,7 @@ struct
     | _ -> false
 
    let mk_dep0_dep0_dep0_term opname t1 t2 t3 =
-      { free_vars = StringSet.union t1.free_vars (StringSet.union t2.free_vars t3.free_vars);
+      { free_vars = VarsDelayed;
         core = Term
          { term_op = { op_name = opname; op_params = [] };
            term_terms =
@@ -182,7 +182,7 @@ struct
          ref_raise(RefineError ("dest_string_param", TermMatchError (t, "no string parameter")))
 
    let mk_string_term opname s =
-      { free_vars = StringSet.empty;
+      { free_vars = Vars StringSet.empty;
         core = Term
          { term_op = { op_name = opname; op_params = [String s] }; term_terms = [] }}
 
@@ -301,7 +301,7 @@ struct
          ref_raise(RefineError ("dest_string_string_dep0_dep0_any_term", TermMatchError (t, "bad arity")))
 
    let mk_string_string_dep0_dep0_term opname s1 s2 t1 t2 =
-      { free_vars = StringSet.union t1.free_vars t2.free_vars;
+      { free_vars = VarsDelayed;
         core = Term
          { term_op = { op_name = opname; op_params = [String s1; String s2] };
            term_terms = [mk_simple_bterm t1; mk_simple_bterm t2]}}
@@ -330,7 +330,7 @@ struct
          ref_raise(RefineError ("dest_number_any_term", TermMatchError (t, "bad arity")))
 
    let mk_number_term opname n =
-      { free_vars = StringSet.empty;
+      { free_vars = Vars StringSet.empty;
         core = Term
          { term_op = { op_name = opname; op_params = [Number n] };
            term_terms = [] }}
@@ -351,7 +351,7 @@ struct
     | _ -> ref_raise(RefineError ("dest_univ_term", TermMatchError (t, "")))
 
    let mk_univ_term opname n =
-      { free_vars = StringSet.empty;
+      { free_vars = Vars StringSet.empty;
         core = Term
          { term_op = { op_name = opname; op_params = [Level n] };
            term_terms = [] }}
@@ -372,7 +372,7 @@ struct
     | _ -> ref_raise(RefineError ("dest_token_term", TermMatchError (t, "bad arity")))
 
    let mk_token_term opname n =
-      { free_vars = StringSet.empty;
+      { free_vars = Vars StringSet.empty;
         core = Term
          { term_op = { op_name = opname; op_params = [Token n] };
            term_terms = [] }}
@@ -399,7 +399,7 @@ struct
             ref_raise(RefineError ("dest_token_term", TermMatchError (t, "bad arity")))
 
    let mk_token_simple_term opname n terms =
-      { free_vars = StringSet.empty;
+      { free_vars = Vars StringSet.empty;
         core = Term { term_op = { op_name = opname; op_params = [Token n] };
                       term_terms = List.map mk_simple_bterm terms
                }
@@ -420,12 +420,11 @@ struct
     | _ -> false
 
    let mk_dep1_term opname v t =
-      let fv = StringSet.remove v t.free_vars in
-      { free_vars = fv;
+      { free_vars = VarsDelayed;
         core = Term
          { term_op = { op_name = opname; op_params = [] };
            term_terms =
-            [{ bfree_vars = fv;
+            [{ bfree_vars = VarsDelayed;
                bcore = BTerm { bvars = [v]; bterm = t }}]}}
 
    let dest_dep1_term opname t = match dest_term t with
@@ -461,23 +460,21 @@ struct
     | _ -> false
 
    let mk_dep0_dep1_term opname v t1 t2 =
-      let fv2 = StringSet.remove v t2.free_vars in
-      { free_vars = StringSet.union t1.free_vars fv2;
+      { free_vars = VarsDelayed;
         core = Term
          { term_op = { op_name = opname; op_params = [] };
            term_terms =
                [ mk_simple_bterm t1;
-                 { bfree_vars = fv2;
+                 { bfree_vars = VarsDelayed;
                    bcore = BTerm { bvars = [v]; bterm = t2 }}]}}
 
    let mk_dep0_dep1_any_term op v t1 t2 =
-      let fv2 = StringSet.remove v t2.free_vars in
-      { free_vars = StringSet.union t1.free_vars fv2;
+      { free_vars = VarsDelayed;
         core = Term
          { term_op = op;
            term_terms =
                [ mk_simple_bterm t1;
-                 { bfree_vars = fv2;
+                 { bfree_vars = VarsDelayed;
                    bcore = BTerm { bvars = [v]; bterm = t2 }}]}}
 
    let dest_dep0_dep1_term opname t = match dest_term t with
@@ -516,12 +513,11 @@ struct
     | _ -> false
 
    let mk_dep2_dep0_term opname v1 v2 t1 t2 =
-      let fv1 = StringSet.remove v1 (StringSet.remove v2 t1.free_vars) in
-      { free_vars = StringSet.union fv1 t2.free_vars;
+      { free_vars = VarsDelayed;
         core = Term
          { term_op = { op_name = opname; op_params = [] };
            term_terms =
-            [{ bfree_vars = fv1;
+            [{ bfree_vars = VarsDelayed;
                bcore = BTerm { bvars = [v1; v2]; bterm = t1 }};
              mk_simple_bterm t2]}}
 
@@ -551,13 +547,12 @@ struct
     | _ -> false
 
    let mk_dep0_dep2_term opname v1 v2 t1 t2 =
-      let fv2 = StringSet.remove v1 (StringSet.remove v2 t2.free_vars) in
-      { free_vars = StringSet.union t1.free_vars fv2;
+      { free_vars = VarsDelayed;
         core = Term
          { term_op = { op_name = opname; op_params = [] };
            term_terms =
             [mk_simple_bterm t1;
-             { bfree_vars = fv2;
+             { bfree_vars = VarsDelayed;
                bcore = BTerm { bvars = [v1; v2]; bterm = t2 }}]}}
 
    let dest_dep0_dep2_term opname t = match dest_term t with
@@ -591,13 +586,12 @@ struct
             false
 
    let mk_dep0_dep3_term opname v1 v2 v3 t1 t2 =
-      let fv2 = StringSet.remove v1 (StringSet.remove v2 (StringSet.remove v3 t2.free_vars)) in
-         { free_vars = StringSet.union t1.free_vars fv2;
+         { free_vars = VarsDelayed;
            core = Term
                   { term_op = { op_name = opname; op_params = [] };
                     term_terms =
                        [mk_simple_bterm t1;
-                        { bfree_vars = fv2;
+                        { bfree_vars = VarsDelayed;
                           bcore = BTerm { bvars = [v1; v2; v3]; bterm = t2 }}]}}
 
    let dest_dep0_dep3_term opname t =
@@ -700,15 +694,13 @@ struct
     | _ -> false
 
    let mk_dep0_dep0_dep1_term opname t0 t1 v2 t2 =
-      let fv2 = StringSet.remove v2 t2.free_vars in
-      { free_vars = StringSet.union t0.free_vars
-                                    (StringSet.union t1.free_vars fv2);
+      { free_vars = VarsDelayed;
         core = Term
          { term_op = { op_name = opname; op_params = [] };
            term_terms =
             [mk_simple_bterm t0;
              mk_simple_bterm t1;
-             { bfree_vars = fv2;
+             { bfree_vars = VarsDelayed;
                bcore = BTerm { bvars = [v2]; bterm = t2 }}]}}
 
    let dest_dep0_dep0_dep1_term opname t = match dest_term t with
@@ -733,15 +725,13 @@ struct
     | _ -> false
 
    let mk_dep0_dep0_dep1_any_term op t0 t1 v2 t2 =
-      let fv2 = StringSet.remove v2 t2.free_vars in
-      { free_vars = StringSet.union t0.free_vars
-                                    (StringSet.union t1.free_vars fv2);
+      { free_vars = VarsDelayed;
         core = Term
          { term_op = op;
            term_terms =
             [mk_simple_bterm t0;
              mk_simple_bterm t1;
-             { bfree_vars = fv2;
+             { bfree_vars = VarsDelayed;
                bcore = BTerm { bvars = [v2]; bterm = t2 }}]}}
 
    let dest_dep0_dep0_dep1_any_term t = match dest_term t with

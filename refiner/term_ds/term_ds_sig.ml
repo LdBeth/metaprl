@@ -77,11 +77,11 @@ sig
       Term of term'
     | Subst of term * term_subst
     | Sequent of esequent
-   and term = { free_vars : StringSet.t; mutable core : term_core }
+   and term = { mutable free_vars : lazy_vars; mutable core : term_core }
    and bound_term_core =
       BTerm of bound_term'
     | BSubst of bound_term * term_subst
-   and bound_term = { bfree_vars : StringSet.t; mutable bcore: bound_term_core }
+   and bound_term = { mutable bfree_vars : lazy_vars; mutable bcore: bound_term_core }
    and term' = { term_op : operator; term_terms : bound_term list }
    and bound_term' = { bvars : string list; bterm : term }
    and hypothesis =
@@ -94,6 +94,9 @@ sig
       }
    and seq_hyps = hypothesis array
    and seq_goals = term array
+   and lazy_vars =
+      Vars of StringSet.t
+    | VarsDelayed
 
    (*
     * The terms in the framework include
@@ -123,6 +126,7 @@ sig
    type esequent
    type seq_hyps
    type seq_goals
+   type string_set
 
    type hypothesis
    type level_exp_var'
@@ -149,6 +153,9 @@ sig
    (*
     * simultaneous delayed substitution
     *)
+   val term_free_vars: term -> string_set
+   val bterm_free_vars: bound_term -> string_set
+
    val do_term_subst : term_subst -> term -> term
    val do_bterm_subst : term_subst -> bound_term -> bound_term
 

@@ -50,6 +50,7 @@ struct
    type esequent = TermType.esequent
    type seq_hyps = TermType.seq_hyps
    type seq_goals = TermType.seq_goals
+   type string_set = TermType.StringSet.t
 
    type hypothesis = TermType.hypothesis
    type level_exp_var' = TermType.level_exp_var'
@@ -134,15 +135,72 @@ struct
     * Free variables, substitution                                         *
     ************************************************************************)
 
-   let rec bterms_free_vars = function
-      [] -> StringSet.empty
-    | [bt] -> bt.bfree_vars
-    | bt::tl -> StringSet.union (bterms_free_vars tl) bt.bfree_vars
+   let rec term_free_vars t =
+      match t.free_vars with
+         Vars vars -> vars
+       | VarsDelayed ->
+            let vars =
+               match t.core with
+                  Term t -> bterms_free_vars t.term_terms
+                | Sequent seq ->
+                     StringSet.union
+                        (term_free_vars seq.sequent_args)
+                        (hyp_fv
+                           seq.sequent_hyps
+                           (SeqHyp.length seq.sequent_hyps - 1)
+                           (goal_fv seq.sequent_goals (SeqGoal.length seq.sequent_goals - 1)));
+                | Subst (t,sub) ->
+                     StringSet.union
+                        (List.fold_right
+                           StringSet.remove
+                           (List_util.fst_split sub)
+                           (term_free_vars t))
+                        (subst_free_vars sub);
+            in t.free_vars <- Vars vars; vars
+   
+   and bterm_free_vars bt =
+      match bt.bfree_vars with
+         Vars vars -> vars
+       | VarsDelayed ->
+            let vars =
+               match bt.bcore with
+                  BTerm bt -> List.fold_right StringSet.remove bt.bvars (term_free_vars bt.bterm)
+                | BSubst (bt,sub) ->
+                     StringSet.union
+                        (List.fold_right
+                           StringSet.remove
+                           (List_util.fst_split sub)
+                           (bterm_free_vars bt))
+                        (subst_free_vars sub);
+            in bt.bfree_vars <- Vars vars; vars
 
-   let rec subst_free_vars = function
+   and bterms_free_vars = function
       [] -> StringSet.empty
-    | [(v,t)] -> t.free_vars
-    | (v,t)::tl -> StringSet.union (subst_free_vars tl) t.free_vars
+    | [bt] -> bterm_free_vars bt
+    | bt::tl -> StringSet.union (bterms_free_vars tl) (bterm_free_vars bt)
+
+   and goal_fv goals i =
+      if i < 0 then StringSet.empty else
+      StringSet.union (term_free_vars (SeqGoal.get goals i)) (goal_fv goals (pred i))
+
+   and terms_free_vars = function
+      [] -> StringSet.empty
+    | [t] -> term_free_vars t
+    | t::tl -> StringSet.union (terms_free_vars tl) (term_free_vars t)
+
+   and hyp_fv hyps i fvs =
+      if i < 0 then fvs else
+      hyp_fv hyps (pred i) (
+      match SeqHyp.get hyps i with
+         Hypothesis (v,t) ->
+            StringSet.union (term_free_vars t) (StringSet.remove v fvs)
+       | Context (v,subterms) ->
+            StringSet.union fvs (terms_free_vars subterms))
+
+   and subst_free_vars = function
+      [] -> StringSet.empty
+    | [(v,t)] -> term_free_vars t
+    | (v,t)::tl -> StringSet.union (subst_free_vars tl) (term_free_vars t)
 
    let do_term_subst sub t =
 #ifdef VERBOSE_EXN
@@ -150,35 +208,21 @@ struct
          begin
             eprintf "do_term_subst: %a%t" debug_print t eflush;
             eprintf "\tfree_vars:";
-            List.iter (fun name -> eprintf " %s" name) (StringSet.elements t.free_vars);
+            List.iter (fun name -> eprintf " %s" name) (StringSet.elements (term_free_vars t));
             eflush stderr;
             List.iter (fun (v, t) -> eprintf "\t%s: %a%t" v debug_print t eflush) sub
          end;
 #endif
-      match StringSet.fst_mem_filt t.free_vars sub with
+      match StringSet.fst_mem_filt (term_free_vars t) sub with
          [] -> t
        | sub' ->
-            {free_vars =
-               StringSet.union
-                  (List.fold_right
-                     StringSet.remove
-                     (List_util.fst_split sub')
-                     t.free_vars)
-                  (subst_free_vars sub');
-             core = Subst (t,sub')}
+            {free_vars = VarsDelayed; core = Subst (t,sub')}
 
    let do_bterm_subst sub bt =
-      match StringSet.fst_mem_filt bt.bfree_vars sub with
+      match StringSet.fst_mem_filt (bterm_free_vars bt) sub with
          [] -> bt
        | sub' ->
-            {bfree_vars =
-               StringSet.union
-                  (List.fold_right
-                     StringSet.remove
-                     (List_util.fst_split sub')
-                  bt.bfree_vars)
-                     (subst_free_vars sub');
-             bcore = BSubst (bt,sub')}
+            {bfree_vars = VarsDelayed; bcore = BSubst (bt,sub')}
 
    (************************************************************************
     * De/Constructors                                                 *
@@ -256,7 +300,7 @@ struct
     * Make a variable.
     *)
    let mk_var_term v =
-      { free_vars = StringSet.make v;
+      { free_vars = Vars (StringSet.make v);
         core = Term
          { term_op = { op_name = var_opname; op_params = [Var v] };
            term_terms = [] }}
@@ -267,15 +311,14 @@ struct
       } when Opname.eq opname var_opname ->
          mk_var_term v
     | t ->
-         {free_vars = bterms_free_vars t.term_terms;
-          core = Term t}
+         {free_vars = VarsDelayed; core = Term t}
 
    let mk_term op bterms =
       match op, bterms with
          { op_name = opname; op_params = [Var v] }, [] when Opname.eq opname var_opname ->
             mk_var_term v
        | _ ->
-            { free_vars = bterms_free_vars bterms;
+            { free_vars = VarsDelayed;
               core = Term { term_op = op; term_terms = bterms }}
 
    let mk_op name params = { op_name = name; op_params = params }
@@ -285,12 +328,10 @@ struct
         bcore = BTerm { bvars = []; bterm = term }}
 
    let make_bterm bt =
-      { bfree_vars = List.fold_right StringSet.remove bt.bvars bt.bterm.free_vars;
-        bcore = BTerm bt }
+      { bfree_vars = VarsDelayed; bcore = BTerm bt }
 
    let mk_bterm vars term =
-      { bfree_vars = List.fold_right StringSet.remove vars term.free_vars;
-        bcore = BTerm {bvars = vars; bterm = term }}
+      { bfree_vars = VarsDelayed; bcore = BTerm {bvars = vars; bterm = term }}
 
    (*
     * Second order context, contains a context term, plus
@@ -320,23 +361,22 @@ struct
         term_terms = [mk_simple_bterm args; mk_simple_bterm goal] }
 
    let null_concl =
-      { free_vars = StringSet.empty;
+      { free_vars = Vars StringSet.empty;
         core = Term { term_op = { op_name = concl_opname; op_params = [] }; term_terms = [] }}
 
    let mk_concl_term t1 t2 =
-      { free_vars = StringSet.union t1.free_vars t2.free_vars;
+      { free_vars = VarsDelayed;
         core = Term
          { term_op = { op_name = concl_opname; op_params = [] };
            term_terms = [mk_simple_bterm t1; mk_simple_bterm t2] }}
 
    let mk_hyp_term v t1 t2 =
-      let fv2 = StringSet.remove v t2.free_vars in
-      { free_vars = StringSet.union t1.free_vars fv2;
+      { free_vars = VarsDelayed;
         core = Term
          { term_op = { op_name = hyp_opname; op_params = [] };
            term_terms =
             [ mk_simple_bterm t1;
-              { bfree_vars = fv2;
+              { bfree_vars = VarsDelayed;
                 bcore = BTerm
                  { bvars = [v]; bterm = t2 }}]}}
 
@@ -410,19 +450,11 @@ struct
                      let capt_vars = StringSet.mem_filt sub_fvars bvrs in
                      match capt_vars with
                         [] ->
-                           let rec aux = function
-                              [] -> bt.bfree_vars
-                            | v::t ->
-                               if StringSet.mem btrm.free_vars v
-                                  then StringSet.add v (aux t)
-                                  else aux t
-                           in
-                              { bvars = bvrs;
-                                bterm =
-                                 { free_vars = aux bvrs;
-                                   core = Subst (btrm,sub) }}
+                           { bvars = bvrs;
+                             bterm =
+                              { free_vars = VarsDelayed; core = Subst (btrm,sub) }}
                       | _ ->
-                           let avoidvars = StringSet.union sub_fvars btrm.free_vars in
+                           let avoidvars = StringSet.union sub_fvars (term_free_vars btrm) in
                            let (vs,ts) = new_vars avoidvars capt_vars in
                            let new_t = do_term_subst ts btrm in
                            { bvars =
@@ -432,45 +464,13 @@ struct
                                     with Not_found -> v)
                                  bvrs;
                               bterm =
-                                 { free_vars =
-                                    StringSet.union
-                                       (List.fold_right
-                                          StringSet.remove
-                                          (List_util.fst_split sub)
-                                          new_t.free_vars)
-                                       sub_fvars;
-                                   core = Subst (new_t,sub) }}
+                                 { free_vars = VarsDelayed; core = Subst (new_t,sub) }}
             in
                bt.bcore <- BTerm t4;
                t4
 
-   let rec goal_fv goals i =
-      if i < 0 then StringSet.empty else
-      StringSet.union (SeqGoal.get goals i).free_vars (goal_fv goals (pred i))
-
-   let rec terms_free_vars = function
-      [] -> StringSet.empty
-    | [t] -> t.free_vars
-    | t::tl -> StringSet.union (terms_free_vars tl) t.free_vars
-
-   let rec hyp_fv hyps i fvs =
-      if i < 0 then fvs else
-      hyp_fv hyps (pred i) (
-      match SeqHyp.get hyps i with
-         Hypothesis (v,t) ->
-            StringSet.union t.free_vars (StringSet.remove v fvs)
-       | Context (v,subterms) ->
-            StringSet.union fvs (terms_free_vars subterms))
-
    let mk_sequent_term seq =
-      { free_vars =
-         StringSet.union
-            seq.sequent_args.free_vars
-            (hyp_fv
-               seq.sequent_hyps
-               (SeqHyp.length seq.sequent_hyps - 1)
-               (goal_fv seq.sequent_goals (SeqGoal.length seq.sequent_goals - 1)));
-        core = Sequent seq }
+      { free_vars = VarsDelayed; core = Sequent seq }
 
    let rec no_bvars = function
       [] -> true
@@ -596,7 +596,7 @@ struct
     *)
    let mk_so_var_term v terms =
       let bterms = List.map mk_simple_bterm terms in
-      { free_vars = bterms_free_vars bterms;
+      { free_vars = VarsDelayed;
         core = Term
          { term_op = { op_name = var_opname; op_params = [Var(v)] };
            term_terms = bterms }}

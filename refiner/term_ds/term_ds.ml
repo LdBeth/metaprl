@@ -97,11 +97,11 @@ struct
       Term of term'
     | Subst of term * term_subst
     | Sequent of esequent
-   and term = { free_vars : StringSet.t; mutable core : term_core }
+   and term = { mutable free_vars : lazy_vars; mutable core : term_core }
    and bound_term_core =
       BTerm of bound_term'
     | BSubst of bound_term * term_subst
-   and bound_term = { bfree_vars : StringSet.t; mutable bcore: bound_term_core }
+   and bound_term = { mutable bfree_vars : lazy_vars; mutable bcore: bound_term_core }
    and term' = { term_op : operator; term_terms : bound_term list }
    and bound_term' = { bvars : string list; bterm : term }
    and hypothesis =
@@ -114,6 +114,9 @@ struct
         sequent_hyps : seq_hyps;
         sequent_goals : seq_goals
       }
+   and lazy_vars =
+      Vars of StringSet.t
+    | VarsDelayed
 
    (*
     * The terms in the framework include
