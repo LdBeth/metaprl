@@ -365,7 +365,7 @@ struct
        | Sequent _ ->
             raise (Invalid_argument "Term_base_ds.dest_term: dest_term called on a sequent")
        | FOVar v -> 
-             term_op = { op_name = var_opname; op_params = [Var v] }; term_terms = [] }
+             { term_op = { op_name = var_opname; op_params = [Var v] }; term_terms = [] }
        | Subst _ -> get_core t; dest_term t
 
    (*
