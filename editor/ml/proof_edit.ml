@@ -400,7 +400,7 @@ let rec down_ped ped i =
                      (* This is a leaf *)
                      let ped' = { ped_proof = pf; ped_select = PedChild i } in
                      let stack' = ped' :: stack in
-                        ped.ped_goal <- Proof.goal pf;
+                        ped.ped_goal <- goal;
                         ped.ped_undo <- stack';
                         ped.ped_stack <- stack'
 
@@ -446,6 +446,9 @@ let expand_ped df ped =
 
 (*
  * $Log$
+ * Revision 1.8  1998/06/01 19:53:10  jyh
+ * Working addition proof.  Removing polymorphism from refiner(?)
+ *
  * Revision 1.7  1998/06/01 13:52:21  jyh
  * Proving twice one is two.
  *

@@ -2,6 +2,9 @@
  * Addressed operations on terms.
  *)
 
+open Printf
+open Debug
+
 open Term_std
 open Term_op_std
 
@@ -31,7 +34,7 @@ struct
     *)
    let make_address l = Path l
 
-   let make_seq_address i = NthPath (i + 1, true)
+   let make_seq_address i = NthPath (i + 1, false)
 
    let nth_cdr_addr i = NthPath (i, false)
 
@@ -61,12 +64,22 @@ struct
                0 ->
                   if flag then
                      match t with
-                        { term_terms = { bterm = h }::_ } -> h
-                      | _ -> raise (IncorrectAddress (a, term))
+                        { term_terms = { bterm = h }::_ } ->
+                           if !debug_rewrite then
+                              eprintf "Term_addr_std.term_subterm: got subterm%t" eflush;
+                           h
+                      | _ ->
+                           raise (IncorrectAddress (a, term))
                   else
-                     t
+                     begin
+                        if !debug_rewrite then
+                           eprintf "Term_addr_std.term_subterm: got subterm%t" eflush;
+                        t
+                     end
              | i ->
                   begin
+                     if !debug_rewrite then
+                        eprintf "Term_addr_std.term_subterm: %d%t" i eflush;
                      match t.term_terms with
                         [{ bterm = bterm }] ->
                            aux bterm (i - 1)
@@ -229,6 +242,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.4  1998/06/01 19:53:49  jyh
+ * Working addition proof.  Removing polymorphism from refiner(?)
+ *
  * Revision 1.3  1998/06/01 13:55:28  jyh
  * Proving twice one is two.
  *

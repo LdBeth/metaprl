@@ -304,6 +304,9 @@ struct
 
    let subterms_of_term t =
       List.map (fun bt -> (dest_bterm bt).bterm) (dest_term t).term_terms
+   
+   let subterm_count t =
+      List.length (dest_term t).term_terms
 
    (*
     * Operator names.

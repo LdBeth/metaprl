@@ -121,61 +121,49 @@ let _ = Quotation.default := "term"
  ************************************************************************)
 
 (*
- * We wrap the toplevel so that we can get the text associated with a
- * location.  We save the text in the input_buffers during each toplevel read.
+ * Save the text in the input_buffers during each toplevel read.
  *)
-let input_buffers = ref []
+type info =
+   Buffered of (int * int * string) list
+ | Filename of string
+ | File of in_channel
 
-let rec wrap f lb =
-   let { refill_buff = refill;
-         lex_buffer = buffer;
-         lex_buffer_len = len;
-         lex_abs_pos = abs_pos;
-         lex_start_pos = start_pos;
-         lex_curr_pos = curr_pos;
-         lex_last_pos = last_pos;
-         lex_last_action = last_action;
-         lex_eof_reached = eof_reached
-       } = lb
-   in
-   let refill' lb =
-      lb.lex_buffer <- String.copy lb.lex_buffer;
-      refill lb;
-      let { lex_buffer = buffer;
-            lex_buffer_len = len;
-            lex_abs_pos = abs_pos;
-            lex_start_pos = start_pos;
-            lex_curr_pos = curr_pos
-          } = lb
-      in
-         Ref_util.push (abs_pos, len, buffer) input_buffers
-   in
-   let lb =
-      { refill_buff = refill';
-        lex_buffer = buffer;
-        lex_buffer_len = len;
-        lex_abs_pos = abs_pos;
-        lex_start_pos = start_pos;
-        lex_curr_pos = curr_pos;
-        lex_last_pos = last_pos;
-        lex_last_action = last_action;
-        lex_eof_reached = eof_reached
-      }
-   in
-      input_buffers := [(abs_pos, len, buffer)];
-      let x = f lb in
-         input_buffers := [];
-         x
+let input_info = ref (Buffered [])
 
-let wrap_once f lb =
-   let x = wrap f lb in
-      Toploop.parse_toplevel_phrase := wrap !Toploop.parse_toplevel_phrase;
-      x
+(*
+ * Push a new value into the buffer.
+ *)
+let push_buffer abs len buf =
+   match !input_info with
+      Buffered l ->
+         input_info := Buffered ((abs, len, buf) :: l)
+    | _ ->
+         raise (Failure "Shell_p4.push_buffer")
+
+(*
+ * Reset the input to the buffered state.
+ *)
+let reset_input () =
+   let _ =
+      match !input_info with
+         File input ->
+            close_in input
+       | _ ->
+            ()
+   in
+      input_info := Buffered []
+
+(*
+ * Set the file to read from.
+ *)
+let set_file name =
+   reset_input ();
+   input_info := Filename name
 
 (*
  * Get the text associated with a location.
  *)
-let get_text (start, finish) =
+let get_buffered_text (start, finish) bufs =
    let count = finish - start in
    let s = String.create count in
    let rec collect count = function
@@ -201,12 +189,110 @@ let get_text (start, finish) =
             raise (Failure "collect")
    in
       try
-         collect count !input_buffers;
+         collect count bufs;
          s
       with
          Failure "collect" ->
             eprintf "Can't recover input, characters (%d, %d)%t" start finish eflush;
             raise (Failure "get_text")
+
+(*
+ * Get the text from the file.
+ *)
+let get_file_text (start, finish) input =
+   let buf = String.create (finish - start) in
+      try
+         seek_in input start;
+         really_input input buf 0 (finish - start);
+         buf
+      with
+         End_of_file ->
+            eprintf "Can't recover input, characters (%d, %d)%t" start finish eflush;
+            raise (Failure "get_file_text")
+
+(*
+ * Get the text from the input.
+ *)
+let get_text loc =
+   match !input_info with
+      Buffered bufs ->
+         get_buffered_text loc bufs
+    | Filename name ->
+         begin
+            try
+               let input = open_in name in
+                  input_info := File input;
+                  get_file_text loc input
+            with
+               Sys_error _ ->
+                  let start, finish = loc in
+                     eprintf "Can't recover input, file %s, characters (%d, %d)%t" name start finish eflush;
+                     raise (Failure "get_text")
+         end
+    | File input ->
+         get_file_text loc input
+
+(*
+ * Wrap the toplevel input function.
+ * Replace the buffer filler so that we record all the input.
+ *)
+let rec wrap f lb =
+   let { refill_buff = refill;
+         lex_buffer = buffer;
+         lex_buffer_len = len;
+         lex_abs_pos = abs_pos;
+         lex_start_pos = start_pos;
+         lex_curr_pos = curr_pos;
+         lex_last_pos = last_pos;
+         lex_last_action = last_action;
+         lex_eof_reached = eof_reached
+       } = lb
+   in
+   let refill' lb =
+      lb.lex_buffer <- String.copy lb.lex_buffer;
+      refill lb;
+      let { lex_buffer = buffer;
+            lex_buffer_len = len;
+            lex_abs_pos = abs_pos;
+            lex_start_pos = start_pos;
+            lex_curr_pos = curr_pos
+          } = lb
+      in
+         push_buffer abs_pos len buffer;
+   in
+   let lb =
+      { refill_buff = refill';
+        lex_buffer = buffer;
+        lex_buffer_len = len;
+        lex_abs_pos = abs_pos;
+        lex_start_pos = start_pos;
+        lex_curr_pos = curr_pos;
+        lex_last_pos = last_pos;
+        lex_last_action = last_action;
+        lex_eof_reached = eof_reached
+      }
+   in
+      reset_input ();
+      push_buffer abs_pos len buffer;
+      let x = f lb in
+         reset_input ();
+         x
+
+let wrap_once f lb =
+   let x = wrap f lb in
+      Toploop.parse_toplevel_phrase := wrap !Toploop.parse_toplevel_phrase;
+      x
+
+(*
+ * Wrap a file.
+ * We don't need to modify the lexbuf.
+ * Instead, we'll get the chars from the file.
+ * Unfortunately, we don't close the file once we're done, because the
+ * input hasn't been evaluated yet.
+ *)
+let wrap_file f lb =
+   set_file !Toploop.input_name;
+   f lb
 
 (*
  * Wrap the toplevel.
@@ -219,6 +305,13 @@ let _ =
       !Toploop.parse_toplevel_phrase lb
    in
       Toploop.parse_toplevel_phrase := motd
+
+(*
+ * Wrap file usage.
+ *)
+let _ =
+   let wrapped = !Toploop.parse_use_file in
+      Toploop.parse_use_file := wrap_file wrapped
 
 (************************************************************************
  * TACTIC SAVING                                                        *
@@ -259,6 +352,9 @@ END
 
 (*
  * $Log$
+ * Revision 1.5  1998/06/01 19:53:11  jyh
+ * Working addition proof.  Removing polymorphism from refiner(?)
+ *
  * Revision 1.4  1998/06/01 13:52:30  jyh
  * Proving twice one is two.
  *

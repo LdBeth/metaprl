@@ -8,10 +8,13 @@ declare guard{'a}
 
 primrw fold : 'a <--> guard{'a}
 
-primrw test : apply{.Itt_rfun!lambda{x. 'x +@ 'x}; 1} <--> 2
+primrw test : Itt_rfun!apply{.Itt_rfun!lambda{x. 'x +@ 'x}; 1} <--> 2
 
 (*
  * $Log$
+ * Revision 1.7  1998/06/01 19:53:12  jyh
+ * Working addition proof.  Removing polymorphism from refiner(?)
+ *
  * Revision 1.6  1998/06/01 13:52:36  jyh
  * Proving twice one is two.
  *

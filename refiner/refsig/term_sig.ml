@@ -121,6 +121,7 @@ sig
    (* Projections *)
    val opname_of_term : term -> opname
    val subterms_of_term : term -> term list
+   val subterm_count : term -> int
 
    (*
     * A variable is a term with opname "var", and a single
@@ -152,6 +153,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.3  1998/06/01 19:53:44  jyh
+ * Working addition proof.  Removing polymorphism from refiner(?)
+ *
  * Revision 1.2  1998/06/01 13:55:17  jyh
  * Proving twice one is two.
  *

@@ -112,6 +112,7 @@ sig
    (* Projections *)
    val opname_of_term : term -> opname
    val subterms_of_term : term -> term list
+   val subterm_count : term -> int
 
    (*
     * A variable is a term with opname "var", and a single
@@ -146,6 +147,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.3  1998/06/01 19:53:52  jyh
+ * Working addition proof.  Removing polymorphism from refiner(?)
+ *
  * Revision 1.2  1998/05/30 19:18:49  nogin
  * Eliminated white space in empty lines.
  *

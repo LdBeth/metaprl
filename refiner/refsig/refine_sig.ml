@@ -125,6 +125,9 @@ sig
 
    (*
     * The basic composition tacticals.
+    * All these tacticals are redundant.  Everything could
+    * be defined in terms of the compose function.
+    *
     * orelse: try the first, if it fails try the second (same args)
     * andthen: run the first then the second, passing args
     * andthenL: run the first, then the list of tactics on each subgoal
@@ -151,12 +154,12 @@ sig
    type 'a rw = 'a rewrite_arg -> 'a safe_rewrite
 
    (*
-    * Convert a rewrite that likes to examine its argument.
+    * Apply a rewrite to a subterm of the goal.
     *)
    val rwaddr : address -> 'a rw -> 'a rw
 
    (*
-    * Apply a rewrite to a subterm of the goal.
+    * Convert a rewrite that likes to examine its argument.
     *)
    val rwtactic : 'a rw -> 'a tactic
 
@@ -164,6 +167,7 @@ sig
     * Composition of rewrites.
     *)
    val andthenrw : 'a rw -> 'a rw -> 'a rw
+   val orelserw : 'a rw -> 'a rw -> 'a rw
 
    (************************************************************************
     * CONDITIONAL REWRITE                                                  *
@@ -203,6 +207,7 @@ sig
     * Sequence two conditional rewrites.
     *)
    val candthenrw : 'a cond_rewrite -> 'a cond_rewrite -> 'a cond_rewrite
+   val corelserw : 'a cond_rewrite -> 'a cond_rewrite -> 'a cond_rewrite
 
    (************************************************************************
     * UTILITIES                                                            *
@@ -465,6 +470,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/01 19:53:42  jyh
+ * Working addition proof.  Removing polymorphism from refiner(?)
+ *
  * Revision 1.1  1998/05/28 15:01:35  jyh
  * Partitioned refiner into subdirectories.
  *

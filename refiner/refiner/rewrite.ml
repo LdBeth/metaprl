@@ -852,6 +852,8 @@ struct
 
             | RWSOContext (addr, i, term', l) ->
                  (* Pull an address out of the addr argument *)
+                 if !debug_rewrite then
+                    eprintf "Rewrite.match_redex.RWSOContext: begin%t" eflush;
                  let addr' = addrs.(addr) in
                  let term = term_subterm t addr' in
                     if !debug_rewrite then
@@ -1347,6 +1349,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.3  1998/06/01 19:53:40  jyh
+ * Working addition proof.  Removing polymorphism from refiner(?)
+ *
  * Revision 1.2  1998/06/01 13:54:46  jyh
  * Proving twice one is two.
  *

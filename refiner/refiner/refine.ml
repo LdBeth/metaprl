@@ -661,6 +661,13 @@ struct
       in
          t'', PairRefiner (refiner, refiner')
 
+   let orelserw rw1 rw2 (_, args) t =
+      try rw1 (t, args) t with
+         RefineError x ->
+            try rw2 (t, args) t with
+               RefineError y ->
+                  raise (RefineError (PairError ("orelserw", x, y)))
+
    (************************************************************************
     * CONDITIONAL REWRITES                                                 *
     ************************************************************************)
@@ -728,6 +735,14 @@ struct
                raise (RefineError (SecondError ("candthenrw", x)))
       in
          t'', subgoals @ subgoals', PairJust (just, just')
+
+   let corelserw rw1 rw2 (_, _, args) seq t =
+      let arg = seq, t, args in
+         try rw1 arg seq t with
+            RefineError x ->
+               try rw2 arg seq t with
+                  RefineError y ->
+                     raise (RefineError (PairError ("candthenrw", x, y)))
 
    (************************************************************************
     * UTILITIES                                                            *
@@ -1681,6 +1696,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/01 19:53:37  jyh
+ * Working addition proof.  Removing polymorphism from refiner(?)
+ *
  * Revision 1.1  1998/05/28 15:00:23  jyh
  * Partitioned refiner into subdirectories.
  *

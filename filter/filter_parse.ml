@@ -1006,6 +1006,10 @@ EXTEND
           make_infix loc op t1 t2
         | t1 = expr; op = "thenPT"; t2 = expr ->
           make_infix loc op t1 t2
+        | t1 = expr; op = "andthenC"; t2 = expr ->
+          make_infix loc op t1 t2
+        | t1 = expr; op = "orelseC"; t2 = expr ->
+          make_infix loc op t1 t2
        ]];
 
    (*
@@ -1032,6 +1036,9 @@ END
 
 (*
  * $Log$
+ * Revision 1.26  1998/06/01 19:53:25  jyh
+ * Working addition proof.  Removing polymorphism from refiner(?)
+ *
  * Revision 1.25  1998/06/01 13:53:03  jyh
  * Proving twice one is two.
  *

@@ -160,6 +160,9 @@ struct
     *)
    let subterms_of_term t =
       List.map (fun { bterm = t } -> t) t.term_terms
+   
+   let subterm_count { term_terms = terms } =
+      List.length terms
 
    (************************************************************************
     * Variables                                                            *
@@ -326,6 +329,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.4  1998/06/01 19:53:51  jyh
+ * Working addition proof.  Removing polymorphism from refiner(?)
+ *
  * Revision 1.3  1998/06/01 13:55:32  jyh
  * Proving twice one is two.
  *
