@@ -440,12 +440,15 @@ let connection_eval_string c s result_p =
 
 let connection_eval_args c t tl  =
   let result = bus_eval c c.ro_address 
- 			(iml_expression_term false t tl)
+ 			(iml_expression_term true t tl)
 			(tid ())
 			default_ehook in
-    ((if (ifail_term_p result)
-      then error ["orb"; "connection"; "eval"] [] [result])
-    ; ())
+    if (ifail_term_p result)
+      then error ["orb"; "connection"; "eval"] [] [result]
+      else if ivalue_term_p result
+	  then (result_of_iresult_term result)
+	  else error ["orb"; "eval"; "value"; "not"] [] [result]
+
 
 
 let nl0_open_library_environment c lib_id = 
@@ -453,7 +456,7 @@ let nl0_open_library_environment c lib_id =
     (connection_eval_string c ("NL0_open_library_environment \"" ^ lib_id ^ "\"") true)
     
 let nl0_close_library_environment c addr = 
-  (connection_eval_args c
+  string_of_istring_term (connection_eval_args c
 			(itext_term "NL0_close_library_environment") 
 			[ienvironment_address_term addr])
     
@@ -529,11 +532,11 @@ let open_library_environment connection lib_id bhook ehook =
 
 let close_library_environment e =
   stop_broadcasts e;
-  nl0_close_library_environment e.connection e.re_address;
-  let orb = e.connection.orb in
-    orb.environments <- remove e orb.environments;
-   ()
-
+  let s = nl0_close_library_environment e.connection e.re_address in
+    (let orb = e.connection.orb in
+      orb.environments <- remove e orb.environments);
+    s
+ 
 
 (* orb-eval (<expression>) : <result> *)
 

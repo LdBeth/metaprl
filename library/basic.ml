@@ -26,6 +26,11 @@ let itoken_parameter = make_param (Token "!token")
 let itoken_op p =  mk_nuprl5_op [itoken_parameter; p]
 let itoken_term s = mk_term (itoken_op (make_param (Token s))) []
 
+(* !string{s} *)
+let istring_parameter = make_param (Token "!string")
+let istring_op p =  mk_nuprl5_op [istring_parameter; p]
+let istring_term s = mk_term (istring_op (make_param (String s))) []
+
 (* !text{s} *)
 let itext_parameter = make_param (Token "!text")
 let itext_op p = mk_nuprl5_op [itext_parameter; p]
@@ -57,6 +62,9 @@ let ivoid_term = mk_term (mk_nuprl5_op [make_param (Token "!void")]) []
 exception Nuprl5_Exception of (string * term)
 
 let error sl oids tl = 
+  print_string (String.concat " " sl);
+  print_newline();
+
   raise (Nuprl5_Exception ((String.concat " " sl),(imessage_term ("NuprlLightLibrary" :: sl) oids tl)))
 
 let special_error_handler body handler =
@@ -121,6 +129,11 @@ let string_of_itext_term t =
   match dest_param (parameter_of_carrier itext_parameter t) with
     String s -> s
   |_ -> error ["term"; "!text"; "parameter type"] [] [t]
+
+let string_of_istring_term t =
+  match dest_param (parameter_of_carrier istring_parameter t) with
+    String s -> s
+  |_ -> error ["term"; "!string"; "parameter type"] [] [t]
 
 open Mbterm
 

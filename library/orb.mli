@@ -24,7 +24,7 @@ val open_library_environment	: connection
 				-> (term -> term) 		(* local eval *)
 				-> environment
 
-val close_library_environment	: environment -> unit
+val close_library_environment	: environment -> string
 
 (*
 val open_library_environment	: connection		

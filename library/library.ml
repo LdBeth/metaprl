@@ -61,6 +61,19 @@ let lib_open c =
  * NL0_save () -> <stamp-term{begin}>
  *)
 
+let temp_lib_open c s =
+	{ transactions = []
+	; environment =
+	     open_library_environment
+		c
+		s	
+		(fun ts acs b -> 
+		  match b with
+		      [] -> ()
+		      |_ -> (error ["library"; "BroadcastsNotCurrentlySupported"] [] [iterm_bterms b]))
+		(* todo ivoid_term is kludge. need to find a type for error that allows this??? *)
+		(function t -> (error ["library"; "LocalEvalNotCurrentlySupported"] [] [t]))
+	}
 
 
 let save l f =
@@ -148,6 +161,9 @@ let oid_import transaction s =
 let lib_close lib =
  close_library_environment lib.environment
 
+let temp_lib_close lib =
+ close_library_environment lib.environment
+
 
 let with_transaction lib f =
   let result = null_oref ()
@@ -204,6 +220,12 @@ let delete_strong t oid =
 		(itext_term "NL0_delete_strong")
 		[ (ioid_term oid) ])
 
+let delete t oid =
+  require_remote_transaction t;
+  (eval_args t.library.environment t.tid
+		(itext_term "NL0_delete")
+		[ (ioid_term oid) ])
+
 let put_term t oid term =
   require_remote_transaction t;
   (eval_args t.library.environment t.tid
@@ -220,19 +242,29 @@ let get_term t oid =
 		])
   
 
-let put_property l oid s term =
-  (eval_args l.environment (tid ())
-		(itext_term "NL0_put_prop")
+let put_property t oid s term =
+  require_remote_transaction t;
+  (eval_args t.library.environment t.tid
+		(itext_term "NL0_put_property")
 		[ (ioid_term oid)
-		; (itext_term s)
+		; (itoken_term s)
 		; term
 		])
   
-let get_property l oid s =
-  (eval_args_to_term l.environment (tid ())
-		(itext_term "NL0_get_prop")
+let remove_property t oid s =
+  require_remote_transaction t;
+  (eval_args t.library.environment t.tid
+		(itext_term "NL0_put_property")
 		[ (ioid_term oid)
-		; (itext_term s)
+		; (itoken_term s)
+		])
+
+let get_property t oid s =
+  require_remote_transaction t;
+  (eval_args_to_term t.library.environment t.tid
+		(itext_term "NL0_get_property")
+		[ (ioid_term oid)
+		; (itoken_term s)
 		])
   
 

@@ -17,6 +17,11 @@
 
  val disconnect	: connection -> unit
 
+ val temp_lib_open	: connection -> string -> library
+ (* string must be string returned from a lib_close or "" *)
+ val temp_lib_close	: library -> string
+
+(*
  val lib_open	: connection -> library
 
  val save	: library -> (transaction -> unit) -> string
@@ -29,7 +34,7 @@
  (* only works in scope of restore *)	
 
  val lib_close	: library -> unit
-
+	*)
 
  (*
   *	Transactions : all library functions must be called from within a
@@ -76,19 +81,17 @@
  (* delete'd objects do not go away until unreferenced and garbage collected.
   *  delete_strong'd objects go away immediately even if referenced.
   *)
-(*
  val delete		: transaction -> object_id -> unit
-*)
  val delete_strong	: transaction -> object_id -> unit
 
  val put_term		: transaction -> object_id -> term -> unit
  val get_term		: transaction -> object_id -> term
 
-(*
  val put_property 	: transaction -> object_id -> string -> term -> unit
  val get_property 	: transaction -> object_id -> string -> term
  val remove_property 	: transaction -> object_id -> string -> unit
 
+(*
  val get_properties 	: transaction -> object_id -> (string * term) list
  val put_properties 	: transaction -> object_id -> (string * term) list -> unit
 *)
@@ -141,6 +144,7 @@
 
 (*
  val make_root		: transaction -> string -> object_id
+ val remove_root	: transaction -> object_id -> unit
 
  val make_directory	: transaction -> object_id -> string -> object_id
  val remove_directory	: transaction -> object_id -> string -> unit

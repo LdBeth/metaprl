@@ -99,3 +99,5 @@ val option_of_ioption_term	: term -> term option
 val iproperty_term		: (string * term) -> term
 val property_of_iproperty_term	: term -> (string * term)
 
+val istring_term		: string -> term
+val string_of_istring_term	: term -> string
