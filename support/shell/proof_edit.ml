@@ -572,10 +572,11 @@ let display_term_aux newline dfm term =
          Lm_rformat_text.print_text_channel (Mp_term.term_width Pervasives.stdout dfm.df_width) buf stdout;
          flush stdout
     | DisplayTex ->
-         Dform.format_term df buf term;
-         if newline then Lm_rformat.format_newline buf;
-         Lm_rformat_tex.print_tex_channel dfm.df_width buf stdout;
-         flush stdout
+         let out = Shell_tex.open_file () in
+            Dform.format_term df buf term;
+            if newline then Lm_rformat.format_newline buf;
+            Lm_rformat_tex.print_tex_channel dfm.df_width buf out;
+            Shell_tex.close_file out
     | DisplayBrowser ->
          let df = save_slot_terms df in
             Dform.format_term df buf term;
