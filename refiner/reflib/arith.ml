@@ -156,7 +156,7 @@ struct
     let get_cmp (h,m) a =
        let (_,t)=TermMan.nth_hyp h m.(a) in
        let v1, v_and_c = two_subterms t in
-       let v2, c = two_subterms v_and_c in
+       let c, v2 = two_subterms v_and_c in
 (*       let t' : TermType.term' = Term.dest_term c in
        let { term_op = op ; term_terms = tl } = t' in
        let {op_params=[param]} = dest_op op in
@@ -209,9 +209,3 @@ module Test = struct
 end
 
 module TG = Graph(TermHyps)
-
-
-
-
-
-
