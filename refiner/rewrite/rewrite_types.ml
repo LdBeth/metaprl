@@ -32,6 +32,7 @@
  *)
 
 open Opname
+#ifndef MLZ
 open Term_sig
 open Term_addr_sig
 
@@ -44,6 +45,15 @@ struct
    type term = TermType.term
    type address = TermAddr.address
    type seq_hyps = TermType.seq_hyps
+#else
+module type RewriteTypesSig =
+sig
+   type level_exp
+   type object_id
+   type term
+   type address
+   type seq_hyps
+#endif
 
    (*
     * For matching level expressions.
@@ -78,6 +88,8 @@ struct
     *    RWSOVar matches any term
     *    RWSOContext matches a second order context with an addressed subterm
     *    RWCheckVar matches the specific bound variable
+    *    RWFreeVars enforces restrictions on free instances
+    *       of some variables. This is generated only in "strict" mode.
     * In a contractum:
     *    RWComposite construct a term with the given pattern
     *    RWSOMatch matches an instantiated second order variable
@@ -93,6 +105,7 @@ struct
     | RWSOSubst of int * rwterm list
     | RWSOContext of int * int * rwterm * int list
     | RWSOContextSubst of int * rwterm * rwterm list
+    | RWFreeVars of rwterm * int list
     | RWCheckVar of int
     | RWStackVar of int
     | RWError

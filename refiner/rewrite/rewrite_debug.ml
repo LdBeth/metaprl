@@ -285,6 +285,8 @@ struct
                i
                (print_prog (tabstop + 3)) t
                (print_prog_list (tabstop + 3)) tl
+       | RWFreeVars (t,il) ->
+            fprintf out "RWFreeVars [%a]\n%a" print_int_list il (print_prog (tabstop+3)) t
        | RWCheckVar i ->
             fprintf out "RWCheckVar %d\n" i
        | RWStackVar i ->

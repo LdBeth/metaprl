@@ -322,7 +322,11 @@ struct
      *)
    let rec match_redex_term addrs stack t' t =
       match t' with
-         RWComposite { rw_op = op'; rw_bterms = bterms' } ->
+         RWFreeVars (t'',vars) ->
+            if List_util.intersects (extract_bvars stack vars) (free_vars t) then
+               ref_raise(RefineError ("match_redex_term", RewriteBadMatch (TermMatch t)));
+            match_redex_term addrs stack t'' t
+       | RWComposite { rw_op = op'; rw_bterms = bterms' } ->
             let term = dest_term t in
             let op = dest_op term.term_op in
 #ifdef VERBOSE_EXN

@@ -36,3 +36,8 @@ install:: $(MAIN).cma $(CMIFILES)
 
 Makefile.dep: Files
 
+rewrite_type_sig.mlz: rewrite_types.ml
+	$(CPP) -DMLZ rewrite_types.ml >$@
+
+clean::
+	$(RM) rewrite_type_sig.mlz

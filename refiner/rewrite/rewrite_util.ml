@@ -180,6 +180,11 @@ struct
     | SOVarInstance (v', _) -> v = v'
     | _ -> false
 
+   let rstack_pattern_mem_prop v = function
+      FOVarPattern v' -> v = v'
+    | SOVarPattern (v', _) -> v = v'
+    | _ -> false
+
    let rstack_fo_mem_prop v = function
       FOVar v' -> v = v'
     | _ -> false
@@ -196,6 +201,7 @@ struct
 
    let rstack_mem v = List.exists (rstack_mem_prop v)
    let rstack_so_mem v = List.exists (rstack_so_mem_prop v)
+   let rstack_pattern_mem v = List.exists (rstack_pattern_mem_prop v)
    let rstack_fo_mem v = List.exists (rstack_fo_mem_prop v)
    let rstack_p_mem v = List.exists (rstack_p_mem_prop v)
    let rstack_c_mem v = List.exists (rstack_c_mem_prop v)

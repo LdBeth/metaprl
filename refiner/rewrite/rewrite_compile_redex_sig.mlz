@@ -35,8 +35,8 @@ sig
    type term
    type rstack
    type rwterm
-
-   val compile_so_redex : string array -> term list -> rstack array * rwterm list
+   
+   val compile_so_redex : bool -> string array -> term list -> rstack array * rwterm list
 end
 
 (*

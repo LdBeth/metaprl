@@ -51,6 +51,7 @@ sig
     *)
    val rstack_mem : string -> rstack list -> bool
    val rstack_so_mem : string -> rstack list -> bool
+   val rstack_pattern_mem : string -> rstack list -> bool
    val rstack_fo_mem : string -> rstack list -> bool
    val rstack_p_mem : string -> rstack list -> bool
    val rstack_c_mem : string -> rstack list -> bool
