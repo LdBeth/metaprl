@@ -254,10 +254,13 @@ struct
 		 | _, Right sub2 -> treeMergeLeft f tree1 sub2
 		 | Left sub1,Pair(left,right) -> (treeMergeLeft f sub1 left)
 		 | Right sub1,Pair(left,right) -> (treeMergeLeft f sub1 right)
+(* These cases seem to be unused.
+   Last two of them seem to cover first two
 		 | Pair(left1,right1),Pair(Ignore,right2) -> treeMergeLeft f right1 right2
 		 | Pair(left1,right1),Pair(left2,Ignore) -> treeMergeLeft f left1 left2
 		 | Pair(Ignore,right1),Pair(left2,right2) -> treeMergeLeft f right1 right2
 		 | Pair(left1,Ignore),Pair(left2,right2) -> treeMergeLeft f left1 left2
+ *)
 		 | Pair(left1,Ignore),Leaf _ -> treeMergeLeft f left1 tree2
 		 | Pair(Ignore,right1),Leaf _ -> treeMergeLeft f right1 tree2
 		 | Pair(left1,right1),Pair(left2,right2) -> Pair(treeMergeLeft f left1 left2, treeMergeLeft f right1 right2)
@@ -275,10 +278,13 @@ struct
 		 | Right sub1, _ -> treeMergeRight f sub1 tree2
 		 | Pair(left,right),Left sub2 -> (*Left*)(treeMergeRight f left sub2)
 		 | Pair(left,right),Right sub2 -> (*Right*)(treeMergeRight f right sub2)
+(* These cases seem to be unused.
+   First two of them seem to cover last two
 		 | Pair(left1,right1),Pair(Ignore,right2) -> treeMergeRight f right1 right2
 		 | Pair(left1,right1),Pair(left2,Ignore) -> treeMergeRight f left1 left2
 		 | Pair(Ignore,right1),Pair(left2,right2) -> treeMergeRight f right1 right2
 		 | Pair(left1,Ignore),Pair(left2,right2) -> treeMergeRight f left1 left2
+ *)
 		 | Leaf _,Pair(left2,Ignore) -> treeMergeRight f tree1 left2
 		 | Leaf _,Pair(Ignore,right2) -> treeMergeLeft f tree1 right2
 		 | Pair(left1,right1),Pair(left2,right2) -> Pair(treeMergeRight f left1 left2, treeMergeRight f right1 right2)
