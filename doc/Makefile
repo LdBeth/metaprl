@@ -94,7 +94,9 @@ GENERATED-FILES =\
 
 DOCFILES = $(addsuffix .ps, $(GENERATED-FILES)) $(addsuffix .pdf, $(GENERATED-FILES))
 
-all: $(DOCFILES)
+.PHONY: all opt latex clean check
+
+all: $(DOCFILES) latex
 opt: all
 
 introduction.ps: $(W-FILES)
@@ -126,6 +128,10 @@ developer-guide.ps: $(D-FILES)
 
 developer-guide.pdf: $(D-FILES)
 	$(GEN-PDF) $(D-FILES) -f $@
+
+latex::
+	+ @if [ -f ../editor/ml/mp.opt ]; then $(MAKE) -C .. opt; else $(MAKE) -C .. all; fi
+	+ @ $(MAKE) -C latex/theories
 
 clean::
 	$(RM) $(DOCFILES) *.log *.dvi *.aux *~ ps/theories/*.ps ps/theories/*.pdf

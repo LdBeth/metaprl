@@ -33,7 +33,7 @@ DIRS = $(REFINER_DIRS) filter $(MP_DIRS) editor/ml
 .PHONY: all opt
 .PHONY: profile_all profile_clean profile_byte filter profile profile_opt profile_mem profile_mem_opt
 .PHONY: install depend clean check_config
-.PHONY: documentation docs doc
+.PHONY: documentation docs doc latex theories.pdf all-theories.pdf
 
 all: check_config
 	+@for i in $(DIRS); do\
@@ -147,3 +147,9 @@ docs::
 
 doc: docs
 documentation: docs
+
+latex::
+	+@$(MAKE) -C doc latex
+
+theories.pdf: latex
+all-theories.pdf: latex
