@@ -1363,10 +1363,10 @@ EXTEND
            in
               print_exn f ("dform " ^ name) loc;
               empty_str_item loc
-        | "ml_dform"; name = LIDENT; ":"; options = df_options; buf = LIDENT; format = LIDENT; "="; code = expr ->
+        | "ml_dform"; name = LIDENT; ":"; options = df_options; format = LIDENT; buf = LIDENT; "="; code = expr ->
            let f () =
               let options', t = options in
-                 StrFilter.define_ml_dform (StrFilter.get_proc loc) loc name options' t buf format (bind_item code)
+                 StrFilter.define_ml_dform (StrFilter.get_proc loc) loc name options' t format buf (bind_item code)
            in
               print_exn f ("ml_dform " ^ name) loc;
               empty_str_item loc
