@@ -162,24 +162,28 @@ struct
                     ToRefiner.Term.SeqHyp.init (FromRefiner.Term.SeqHyp.length hyps) (make_hyp info hyps);
                  ToRefiner.TermType.sequent_goals =
                     ToRefiner.Term.SeqGoal.init (FromRefiner.Term.SeqGoal.length goals) (make_goal info goals)
-            }
-      else let { FromRefiner.TermType.term_op = op; FromRefiner.TermType.term_terms = bterms } = FromRefiner.Term.dest_term t in
-         TTerm
-            { ToRefiner.TermType.term_op = Memo.apply info.copy_operator info op;
-              ToRefiner.TermType.term_terms = List.map (Memo.apply info.copy_bterm info) bterms }
+               }
+      else
+         let { FromRefiner.TermType.term_op = op; FromRefiner.TermType.term_terms = bterms } = FromRefiner.Term.dest_term t
+         in
+            TTerm
+               { ToRefiner.TermType.term_op = Memo.apply info.copy_operator info op;
+                 ToRefiner.TermType.term_terms = List.map (Memo.apply info.copy_bterm info) bterms }
 
    let do_make_term _ = function
       TTerm t -> ToRefiner.Term.make_term t
     | TSeq s -> ToRefiner.TermMan.mk_sequent_term s
 
    let make_bterm info bterm =
-      let { FromRefiner.TermType.bvars = bvars; FromRefiner.TermType.bterm = bterm } = FromRefiner.Term.dest_bterm bterm in
+      let { FromRefiner.TermType.bvars = bvars; FromRefiner.TermType.bterm = bterm } = FromRefiner.Term.dest_bterm bterm
+      in
          { ToRefiner.TermType.bvars = bvars;
            ToRefiner.TermType.bterm = Memo.apply info.copy_term info bterm
          }
 
    let make_operator info op =
-      let { FromRefiner.TermType.op_name = opname; FromRefiner.TermType.op_params = params } = FromRefiner.Term.dest_op op in
+      let { FromRefiner.TermType.op_name = opname; FromRefiner.TermType.op_params = params } = FromRefiner.Term.dest_op op
+      in
          { ToRefiner.TermType.op_name = normalize_opname opname;
            ToRefiner.TermType.op_params = List.map (Memo.apply info.copy_param info) params
          }
@@ -216,13 +220,15 @@ struct
             ToRefiner.TermType.MNotEqual (Memo.apply info.copy_param info p11, Memo.apply info.copy_param info p21)
 
    let make_level info level =
-      let { FromRefiner.TermType.le_const = c; FromRefiner.TermType.le_vars = vars } = FromRefiner.Term.dest_level level in
+      let { FromRefiner.TermType.le_const = c; FromRefiner.TermType.le_vars = vars } = FromRefiner.Term.dest_level level
+      in
          { ToRefiner.TermType.le_const = c;
            ToRefiner.TermType.le_vars = List.map (Memo.apply info.copy_level_var info) vars
          }
 
    let make_level_var info lvar =
-      let { FromRefiner.TermType.le_var = var; FromRefiner.TermType.le_offset = offset } = FromRefiner.Term.dest_level_var lvar in
+      let { FromRefiner.TermType.le_var = var; FromRefiner.TermType.le_offset = offset } = FromRefiner.Term.dest_level_var lvar
+      in
          { ToRefiner.TermType.le_var = var;
            ToRefiner.TermType.le_offset = offset
          }
@@ -231,7 +237,7 @@ struct
     * Create the memo tables.
     *)
    let create () =
-      { copy_level_var  = Memo.create (**)
+      { copy_level_var = Memo.create (**)
            make_level_var
            (fun _ t -> ToRefiner.Term.make_level_var t)
            compare_level_var;
@@ -272,14 +278,14 @@ struct
          ToRefiner.TermType.MetaTheorem (Memo.apply info.copy_term info t)
     | FromRefiner.TermType.MetaImplies (t1, t2) ->
          ToRefiner.TermType.MetaImplies (copy_meta_term info t1,
-                             copy_meta_term info t2)
+                                         copy_meta_term info t2)
     | FromRefiner.TermType.MetaFunction (t1, mt1, mt2) ->
          ToRefiner.TermType.MetaFunction (Memo.apply info.copy_term info t1,
-                              copy_meta_term info mt1,
-                              copy_meta_term info mt2)
+                                          copy_meta_term info mt1,
+                                          copy_meta_term info mt2)
     | FromRefiner.TermType.MetaIff (mt1, mt2) ->
          ToRefiner.TermType.MetaIff (copy_meta_term info mt1,
-                         copy_meta_term info mt2)
+                                     copy_meta_term info mt2)
 
 
    (*
