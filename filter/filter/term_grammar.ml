@@ -1032,6 +1032,8 @@ struct
              make_param (String (Token.eval_string w))
            | n = sl_number ->
              make_param (Number n)
+           | "-"; n = sl_number ->
+             make_param (Number (Lm_num.mult_num n (Lm_num.num_of_int (-1))))
           ]
           | [ p = param; sl_colon; w = sl_word ->
                cast_param p w
