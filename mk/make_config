@@ -66,24 +66,6 @@ REFINER = $(REFINER)
 THEORIES = $(THEORIES)
 
 #
-# If you included mmc in the theories list, you should define
-# the extensions and backends you want to compile.
-#
-# You may define
-#     MMC_EXTENSIONS = all
-#     MMC_BACKENDS = all
-# if you want to include everything.
-#
-# If you did not specify mmc in the THEORIES, these
-# values are ignored.
-#
-MMC_EXTENSIONS = $(MMC_EXTENSIONS)
-MMC_BACKENDS = $(MMC_BACKENDS)
-
-PMC_EXTENSIONS = $(PMC_EXTENSIONS)
-PMC_BACKENDS = $(PMC_BACKENDS)
-
-#
 # The OpenSSL package (available in Linux at least) (true/false)
 # Note: the browser interface currently does not work without SSL.
 #
