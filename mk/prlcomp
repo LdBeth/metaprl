@@ -49,6 +49,6 @@ PrlC(command) =
    # Put together the command
    # JYH: not sure if this should be hardcoded as CAMLP4N.
    #
-   COMMAND = $(command) -I $(LIB) -pp "$(CAMLP4N) $(OCAMLINCLUDES)"
+   COMMAND = $(command) -I $(LIB) -pp "$(CAMLP4N) $(PREFIXED_OCAMLINCLUDES)"
 
    return($(ENV) $(COMMAND))

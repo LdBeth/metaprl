@@ -1,7 +1,7 @@
 #
 # Make sure omake is up-to-date
 #
-OMakeVersion(0.8.1)
+OMakeVersion(0.8.7)
 
 ########################################################################
 # Begin real makefile.
@@ -179,8 +179,7 @@ OCAML_OTHER_LIBS += unix
 
 if $(THREADS_ENABLED)
     THREADS = -thread
-    OCAMLCFLAGS += $(THREADS)
-    OCAMLOPTFLAGS += $(THREADS)
+    OCAMLFLAGS += $(THREADS)
     OCAML_OTHER_LIBS += threads
     THREADSLIB = $(CAMLLIB)/threads/threads.cma
     OPTTHREADSLIB = $(CAMLLIB)/threads/threads.cmxa
@@ -314,7 +313,7 @@ else
 #
 # Include the generic caml library
 #
-INCLUDES += -I$(CAMLLIB)
+INCLUDES += $(CAMLLIB)
 
 #
 # Generic phony targets
@@ -352,11 +351,11 @@ OCAML_LIB_FLAGS += -linkall
 if $(SSL_ENABLED)
     if $(equal $(OSTYPE), Win32)
         OCAML_LINK_FLAGS += -cclib c:/OpenSSL/lib/VC/ssleay32.lib -cclib c:/OpenSSL/lib/VC/libeay32.lib
-        CFLAGS += /DSSL_ENABLED -Ic:/OpenSSL/include
+        CFLAGS += /DSSL_ENABLED c:/OpenSSL/include
         export
     else
         OCAML_LINK_FLAGS += -cclib -lcrypto -cclib -lssl
-        CFLAGS += -DSSL_ENABLED -I/usr/kerberos/include
+        CFLAGS += -DSSL_ENABLED /usr/kerberos/include
         export
 
     export
@@ -395,10 +394,10 @@ OCAMLDEPFLAGS += -omake
 #
 .SUBDIRS: libmojave
 
-OCAMLINCLUDES +=\
-   -I $(dir libmojave/stdlib)\
-   -I $(dir libmojave/util)\
-   -I $(dir libmojave/unix)\
+OCAMLINCLUDES[] +=
+   $(dir libmojave/stdlib)
+   $(dir libmojave/util)
+   $(dir libmojave/unix)
 
 ########################################################################
 # Refiner building
@@ -421,21 +420,21 @@ section
     # These directories use the macro preprocessor
     .SUBDIRS: mllib
 
-    OCAMLINCLUDES +=\
-        -I $(dir mllib)\
+    OCAMLINCLUDES[] +=
+        $(dir mllib)
 
     .SUBDIRS: refiner
 
-OCAMLINCLUDES +=\
-    -I $(dir mllib)\
+OCAMLINCLUDES[] +=
+    $(dir mllib)
 
 .SUBDIRS: proxyedit
 
-OCAMLINCLUDES +=\
-    -I $(dir refiner/refsig)\
-    -I $(dir refiner/refbase)\
-    -I $(dir refiner/refiner)\
-    -I $(dir refiner/reflib)\
+OCAMLINCLUDES[] +=
+    $(dir refiner/refsig)
+    $(dir refiner/refbase)
+    $(dir refiner/refiner)
+    $(dir refiner/reflib)
 
 ########################################################################
 # Generic directories with no special options
@@ -444,16 +443,16 @@ OCAMLINCLUDES +=\
 .SUBDIRS: library debug $(ENSEMBLE_DIR) tactics/proof
 
 # Add camlp4 library to include path
-OCAMLINCLUDES +=\
-    -I $(CAMLP4LIB)\
-    -I $(dir library)\
-    -I $(dir tactics/proof)\
+OCAMLINCLUDES[] +=
+    $(CAMLP4LIB)
+    $(dir library)
+    $(dir tactics/proof)
 
 .SUBDIRS: filter
 
-OCAMLINCLUDES +=\
-    -I $(dir filter/base)\
-    -I $(dir filter/filter)\
+OCAMLINCLUDES[] +=
+    $(dir filter/base)
+    $(dir filter/filter)
 
 ########################################################################
 # Theory building
@@ -472,18 +471,18 @@ if $(NATIVE_PROFILING_ENABLED)
 CAMLP4N = $(file $(LIB)/camlp4n$(EXE))
 CAMLP4O = $(file $(LIB)/camlp4o$(EXE))
 CONVERT = $(file $(BIN)/convert$(EXE))
-CAMLP4NFLAGS = $'(OCAMLINCLUDES)
-CAMLP4OFLAGS = $'(OCAMLINCLUDES)
+CAMLP4NFLAGS = $'(PREFIXED_OCAMLINCLUDES)
+CAMLP4OFLAGS = $'(PREFIXED_OCAMLINCLUDES)
 MPTIME =
 
 #
 # Add dependency scanning for .ppo files
 #
 .SCANNER: %.ppo %.cmoz: %.ml $(OCAMLDEP)
-    $(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLINCLUDES) $<
+    $(OCAMLDEP) $(OCAMLDEPFLAGS) $(PREFIXED_OCAMLINCLUDES) $<
 
 .SCANNER: %.cmi %.cmiz: %.mli $(OCAMLDEP)
-    $(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLINCLUDES) $<
+    $(OCAMLDEP) $(OCAMLDEPFLAGS) $(PREFIXED_OCAMLINCLUDES) $<
 
 #
 # OCamlGeneratedFiles need to be redefined to include .ppo
@@ -501,26 +500,25 @@ OCamlGeneratedFiles(files) =
         $(WrapC $(CAMLP4N)) $(CAMLP4NFLAGS) -o $*.ppo $*.ml
 
 %.cmi %.cmiz: %.mli
-        $(PrlC $(OCAMLC)) $(OCAMLCFLAGS) $(OCAMLPPFLAGS) $(OCAMLINCLUDES) -c $<
+        $(PrlC $(OCAMLC)) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(OCAMLPPFLAGS) $(PREFIXED_OCAMLINCLUDES) -c $<
 
 %.cmo: %.ppo
-        $(OCAMLC) $(OCAMLCFLAGS) $(OCAMLINCLUDES) -c -impl $<
+        $(OCAMLC) $(OCAMLFLAGS) $(OCAMLCFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
 
 %.cmx %$(EXT_OBJ): %.ppo
-        $(OCAMLOPT) $(OCAMLOPTFLAGS) $(OCAMLINCLUDES) -c -impl $<
+        $(OCAMLOPT) $(OCAMLFLAGS) $(OCAMLOPTFLAGS) $(PREFIXED_OCAMLINCLUDES) -c -impl $<
 
 %.p4i: %.mli $(CAMLP4O)
-        $(WrapC $(CAMLP4O)) $(OCAMLINCLUDES) $*.mli > $@
+        $(WrapC $(CAMLP4O)) $(PREFIXED_OCAMLINCLUDES) $*.mli > $@
 
 %.p4: %.ml $(CAMLP4O)
-        $(WrapC $(CAMLP4O)) $(OCAMLINCLUDES) $*.ml > $@
+        $(WrapC $(CAMLP4O)) $(PREFIXED_OCAMLINCLUDES) $*.ml > $@
 
 #
 # Support directories
 #
 SUPPORT = $(dir support)
 SUPPORT_DIRS = $(dir $(addprefix $(SUPPORT)/, display shell tactics))
-SUPPORT_INCLUDE = $'(addprefix -I , $(SUPPORT_DIRS))
 
 #
 # Add the extra dependencies.  If sloppy dependencies
@@ -597,7 +595,7 @@ TheoryDocument(docname, theories) =
     # Get MetaPRL to generate the .tex files
     #
     $(docname).tex $(docname)-body.tex: $(MP) $(CMOZFILES) $(docname)_print.ml
-        $(WrapC $(MP)) $(OCAMLINCLUDES) -batch $(docname)_print.ml
+        $(WrapC $(MP)) $(PREFIXED_OCAMLINCLUDES) -batch $(docname)_print.ml
 
 #
 # Format the document and copy it to the DOCDIR directory.

@@ -1,8 +1,8 @@
-CAMLP4INCLUDES = -I../refsig
+CAMLP4INCLUDES = ../refsig
 
-OCAMLINCLUDES +=\
-	-I ../refbase\
-	-I ../refsig
+OCAMLINCLUDES[] +=
+	../refbase
+	../refsig
 
 OCamlLibraryInstall(all, $(LIB), termgen, $(TERM_GEN_FILES))
 

@@ -1,7 +1,7 @@
-MLZFILES=$(REFSIG_FILES)
+MLZFILES = $(REFSIG_FILES)
 
-OCAMLINCLUDES +=\
-	-I ../refbase
+OCAMLINCLUDES[] +=
+	../refbase
 
 OCamlLibraryInstall(all, $(LIB), refsig, $(REFSIG_FILES))
 

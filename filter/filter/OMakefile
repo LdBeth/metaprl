@@ -1,9 +1,9 @@
 #
 # No special includes
 #
-OCAMLINCLUDES +=\
-	-I ../base\
-	-I ../phobos
+OCAMLINCLUDES[] +=
+	../base
+	../phobos
 
 #
 # Library files

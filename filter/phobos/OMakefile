@@ -1,8 +1,8 @@
 #
 # Standard includes
 #
-OCAMLINCLUDES +=\
-	-I ../base\
+OCAMLINCLUDES[] +=
+	../base
 
 #
 # Type files

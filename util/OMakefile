@@ -35,7 +35,7 @@ clean:
 # Macros
 #
 OCAML_LIBS += $(CAMLP4LIB)/odyl $(CAMLP4LIB)/camlp4
-OCAMLINCLUDES += -I $(CAMLP4LIB)
+OCAMLINCLUDES += $(CAMLP4LIB)
 OCAML_LINK_FLAGS += -linkall
 OCAMLFLAGS += -pp "$(CAMLP4R) -I $(CAMLP4LIB) -nolib"
 

@@ -70,8 +70,8 @@ NATIVE_CCLIBS_serv =\
     -cclib -lsock\
     -cclib -lcryptoc
 
-OCAMLINCLUDES +=\
-       -I $(ENSROOT)/lib/$(HOSTTYPE)\
+OCAMLINCLUDES[] +=
+       $(ENSROOT)/lib/$(HOSTTYPE)
 
 #
 # Name of the server

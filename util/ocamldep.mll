@@ -327,5 +327,3 @@ let _ =
      "-native", Arg.Unit (fun () -> ()), "compatibility with OCaml distribtion (ignored)"
     ] file_dependencies usage;
   exit 0
-
-}

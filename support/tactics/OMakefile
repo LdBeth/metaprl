@@ -1,7 +1,7 @@
 #
 # Don't need any libraries.
 #
-OCAMLINCLUDES += -I . -I ../display -I ../shell
+OCAMLINCLUDES += ../display ../shell
 
 # Common files
 MLZFILES =

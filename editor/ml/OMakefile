@@ -1,9 +1,9 @@
 #
 # MetaPRL editor.
 #
-OCAMLINCLUDES +=\
-        -I $(ROOT)/$(ENSEMBLE_DIR)\
-        $'(addprefix -I , $(MP_DIRS))
+OCAMLINCLUDES[] +=
+        $(ROOT)/$(ENSEMBLE_DIR)
+        $(MP_DIRS)
 
 # Name of main librariws
 MP = mp
