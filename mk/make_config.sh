@@ -20,6 +20,11 @@ SEQ_SET=$SEQ_SET\n\
 REFINER=$REFINER\n\
 \n\
 #\n\
+# C compiler\n\
+#\n\
+CCC=$CCC\n\
+\n\
+#\n\
 # How many compile jobs to start simultaneously\n\
 # Recomended value - between #_of_processors and 2 * #_of_processors\n\
 # On mojave.cs.cornell.edu and tulare.cs.cornell.edu use 4.

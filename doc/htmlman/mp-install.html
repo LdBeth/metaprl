@@ -62,8 +62,8 @@ You can find more information on CVS at
 <P>If your are not using 
 <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/RPM/">the provided RPMs</A>, then in order
 to install OCaml and CamlP4 download and 
-unpack the distributions, than apply the <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/patches/">patches</A>. The
-<TT>INSTALL</TT> files in the distributions describe rest of the installation process.</P>
+unpack the distributions, than apply the <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/patches/">patches</A>. After that proceed as described in the 
+<TT>INSTALL</TT> files in the distributions. </P>
 
 <P>To install Ensemble, unpack the distrubution, and edit the
 <TT>&lt;ensemble&gt;/mk/config.mk</TT> file. You will want to
@@ -76,11 +76,22 @@ directory. More information on Ensemble is available at the
 Home Page</A>.</P>
 
 <P>You may need to set your environment variables <TT>CAMLLIB</TT> and <TT>CAMLP4LIB</TT> to point to the directories where you have installed OCaml and Camlp4 files. The defaults are <TT>/usr/lib/ocaml</TT> and <TT>/usr/lib/camlp4</TT> respectively. If you are using Ensemble, set <TT>ENSROOT=&lt;root of the ensemble source tree&gt;</TT>
+Also, go to the OCaml source tree and copy the folowing files:
+<UL><TT>
+<LI>parsing/location.cmi
+<LI>parsing/location.mli
+<LI>parsing/longident.cmi
+<LI>parsing/longident.mli
+<LI>parsing/parsetree.cmi
+<LI>parsing/parsetree.mli
+<LI>typing/typecore.cmi
+<LI>typing/typecore.mli</TT>
+</UL> into the <TT>$CAMLLIB</TT> directory
+
 </P>
 
 <P>To install MetaPRL, unpack the distribution into some directory
-<TT>&lt;meta-prl&gt;</TT> and edit the <TT>&lt;meta-prt&gt;mk/config</TT>file. Then
-you can build the distribution with these steps:</P>
+<TT>&lt;meta-prl&gt;</TT> and build the distribution with these steps:</P>
 
 <BLOCKQUOTE>
 <TT>% cd &lt;meta-prl&gt;<BR>

@@ -15,8 +15,9 @@ value caml_execv(value command, value argv)
 {
     char *command_str = String_val(command);
     int len = Wosize_val(argv);
-    char *argv_str[len + 1];
+    char **argv_str=malloc((len+1)*sizeof (char *));
     int i;
+    value v;
     for(i = 0; i != len; i++)
         argv_str[i] = String_val(Field(argv, i));
     argv_str[i] = 0;
@@ -25,14 +26,16 @@ value caml_execv(value command, value argv)
         fprintf(stderr, "%s ", argv_str[i]);
     putc('\n', stderr);
 #endif
-    return Val_int(execv(command_str, argv_str));
+    v = Val_int(execv(command_str, argv_str));
+    free (argv_str);
+    return v;
 }
 
 value caml_execvp(value command, value argv)
 {
     char *command_str = String_val(command);
     int len = Wosize_val(argv);
-    const char *argv_str[len + 1];
+    char **argv_str=malloc((len+1)*sizeof (char *));
     int i;
     for(i = 0; i != len; i++)
         argv_str[i] = String_val(Field(argv, i));
@@ -46,10 +49,15 @@ value caml_execvp(value command, value argv)
     {
         int code = spawnvp(_P_OVERLAY, command_str, argv_str);
         perror("execvp");
+        free(argv_str);
         return Val_int(code);
     }
 #else
-    return Val_int(execvp(command_str, argv_str));
+    { 
+      value v = Val_int(execvp(command_str, argv_str));
+      free (argv_str);
+      return v;
+    }
 #endif
 }
 

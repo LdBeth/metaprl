@@ -1,9 +1,9 @@
-/*
+(*
  * We duplicate the modules, with verbose
  * and simplified error reporting.
  *
  * Can't do this with the module system unfortunately.
- */
+ *)
 #define raise_generic_exn       (raise generic_refiner_exn)
 
 #ifdef SIMPLE_EXN

@@ -28,11 +28,14 @@ struct debug_info {
     int *flag;
 };
 
-static struct debug_info info[] = {
-    /* { "c_adpcm",          "Compression code",                             &debug_adpcm }, */
-};
+/* #define INFO_LEN  1 */
 
-#define INFO_LEN        (sizeof(info) / sizeof(*info))
+#ifdef INFO_LEN
+static struct debug_info info[INFO_LEN] = {
+    { "c_adpcm",          "Compression code",                             &debug_adpcm }
+};
+#endif
+
 
 /*
  * Modify a particular variable.
@@ -40,6 +43,8 @@ static struct debug_info info[] = {
  */
 value ml_debug(value name, value flag)
 {
+
+#ifdef INFO_LEN
     char *l_name;
     int l_flag, i;
 
@@ -51,8 +56,9 @@ value ml_debug(value name, value flag)
             return Int_val(0);
         }
     }
+#endif
 
-    // Did not find it
+    /* Did not find it */
     failwith("ml_debug");
     return Val_int(0);
 }
@@ -64,6 +70,7 @@ value ml_debug(value name, value flag)
 value ml_get_debug(value name, value flag)
 {
     value rval;
+#ifdef INFO_LEN
     char *l_name;
     int l_flag, i;
 
@@ -90,6 +97,7 @@ value ml_get_debug(value name, value flag)
 #undef dinfo
     Pop_roots();
     if(rval == 0)
+#endif
         failwith("ml_get_debug");
     return rval;
 }
@@ -100,6 +108,7 @@ value ml_get_debug(value name, value flag)
  */
 value ml_debuggers(value unit)
 {
+#ifdef INFO_LEN
     value rval;
     int i;
 
@@ -133,5 +142,8 @@ value ml_debuggers(value unit)
     rval = rinfo;
     Pop_roots();
     return rval;
+#else
+    return Atom(0);
+#endif
 }
 

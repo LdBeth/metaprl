@@ -15,7 +15,7 @@ MAIN := reflib
 CCLIBS := -cclib -lnums
 
 # C preprocessor
-OCAMLFLAGS = -pp "$(CPP) $(INCLUDE)"
+OCAMLFLAGS = -pp "$(CPP) -I../refsig"
 
 all: lib
 

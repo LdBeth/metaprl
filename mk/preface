@@ -21,6 +21,10 @@ endif
 ifndef SEQ_SET
    SEQ_SET=undefined
 endif
+ifndef CCC
+   CCC=gcc
+endif
+CC=$(CCC)
 
 #
 # Options for simp and verb variations

@@ -192,7 +192,7 @@ static Mmap *mmap_open(const char *name, int perm, int mode,
     }
     infop->fd = fd;
     infop->size = MAX_SIZE;
-    infop->data = mmap((char *) 0, MAX_SIZE, prot, MAP_FILE | MAP_SHARED, fd, 0);
+    infop->data = mmap((char *) 0, MAX_SIZE, prot, MAP_SHARED, fd, 0);
     if(infop->data == (char *) -1) {
         close(fd);
         free(infop);

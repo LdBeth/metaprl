@@ -14,14 +14,12 @@ To run MetaPRL for the first time:
       % setenv CAMLP4LIB /usr/lib/camlp4
       By defaut, /usr/lib/ocaml and /usr/lib/camlp4 are used
 
-   2. Edit mk/config file
-
-   3. Build it
+   2. Build it
       % make    (bytecode version)
       or
       % make opt  (native code version - compiles slower, but runs faster)
 
-   4. Run it
+   3. Run it
       % cd editor/ml; ./mptop  (bytecode)
       or
       % cd editor/ml; ./mpopt  (native code)
