@@ -1592,11 +1592,13 @@ struct
       let { name = name;
             base = base;
             info = info;
-            select = my_select
+            select = my_select;
+            grammar = grammar
           } = cache
       in
       let path = [name] in
       let info' = Base.find_file base.lib barg path my_select AnySuffix in
+      let _ = Filter_grammar.prepare_to_marshal grammar in
       let _ =
          (* Save the .prlb if it doesn't exist *)
          Base.set_magic base.lib info' 1;
@@ -1625,6 +1627,7 @@ struct
       let base_info = Base.find_file base barg path my_select (OnlySuffixes ["prlb"]) in
       let str_info = StrMarshal.unmarshal (Base.info base base_info) in
       let info  = FilterSummaryTerm.copy_proofs revert_proof info str_info in
+      let grammar = Filter_grammar.prepare_to_marshal grammar name in
          (* Save the .prlb to the .cmoz *)
          Base.set_info base self (StrMarshal.marshal info);
          Base.set_magic base self 1;
@@ -1650,11 +1653,12 @@ struct
     *)
    let save cache barg suffix =
       let { base = { lib = base }; name = name; self = self; info = info; grammar = grammar } = cache in
+      let grammar = Filter_grammar.prepare_to_marshal grammar name in
       let info =
          if Filter_grammar.is_modified grammar then
             let pos = { Lexing.dummy_pos with Lexing.pos_fname = Base.file_name base self } in
             let loc = pos, pos in
-               Filter_summary.add_command info (PRLGrammar (Filter_grammar.prepare_to_marshal grammar name), loc)
+               Filter_summary.add_command info (PRLGrammar grammar, loc)
          else
             info
       in
