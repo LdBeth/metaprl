@@ -41,6 +41,10 @@ type 'pos ftree = Empty |
 
 
 
+
+
+
+
 type atom  = {aname : string; 
 	      aaddress : int list;
               aprefix : string list;
@@ -57,10 +61,6 @@ type atom_relations = atom * atom list * atom list
 
 
 
-
-
-
-
 (* definition: rules, inferences for LJ, LJmc, and LK *)
 
 type rule = Ax | Andr | Andl | Orr | Orr1 | Orr2 | Orl | Impr | Impl | Negr | Negl |
@@ -72,6 +72,15 @@ type rule = Ax | Andr | Andl | Orr | Orr1 | Orr2 | Orl | Impr | Impl | Negr | Ne
 
 type inf = rule * term  * term
 
+
+
+(* proof tree for pretty print and permutation *)
+
+
+type 'inf ptree = PEmpty | 
+                  PNodeAx of 'inf |
+                  PNodeA of 'inf * 'inf ptree | 
+                  PNodeB of 'inf * 'inf ptree * 'inf ptree;;
 
 
 
@@ -414,6 +423,23 @@ let print_ftree ftree =
  end;;
 
 
+let rec print_treelist treelist = 
+  match treelist with 
+   [] -> 
+    print_endline "END";
+   |f::r -> 
+    begin
+     print_ftree f;
+     Format.open_box 0;
+     print_endline "";
+     print_endline "";
+     print_endline "NEXT TREE";
+     print_endline "";     
+     print_endline "";
+     print_treelist r;
+     Format.print_flush ()
+    end
+
 
 
 
@@ -493,6 +519,23 @@ let rec print_pairlist pairlist =
 
 
 
+let rec print_triplelist triplelist = 
+ match triplelist with 
+  [] -> Format.print_string ""
+ |((a,b),i)::rest -> 
+   begin
+    Format.print_break 1 1;
+    Format.print_string ("(("^a^","^b^"),"^(string_of_int i)^")");
+    print_triplelist rest
+   end
+
+
+
+
+
+
+
+
 let print_pos_n  pos_n =
   Format.print_int pos_n
 
@@ -512,78 +555,11 @@ begin
  print_endline "";
  Format.print_flush ()
 end
- 
-
-(************ END printing functions  *********************************)
-
-
-
-(************** PROOF RECONSTRUCTION without redundancy deletion ******************************)
-
-
-
-(* proof tree for pretty print only *)
-
-
-type 'inf ptree = PEmpty | 
-                  PNodeAx of 'inf |
-                  PNodeA of 'inf * 'inf ptree | 
-                  PNodeB of 'inf * 'inf ptree * 'inf ptree;;
 
 
 
 
-
-(* build the proof tree from a list of inference rules *)
-
-let rec unclosed subtree =  
-    match subtree with 
-       PEmpty -> true 
-     | PNodeAx(y) -> false
-     | PNodeA(y,left) -> (unclosed left)
-     | PNodeB(y,left,right) -> (or) (unclosed left) (unclosed right);;
-   
-
-
-let rec extend prooftree element =  
-   match prooftree with 
-     PEmpty -> 
-       let (rule,formula,term) = element in 
-         if rule = Ax then  
-          PNodeAx(element)
-         else 
-           if List.mem rule [Andr; Orl; Impl] then 
-              PNodeB(element,PEmpty,PEmpty)
-           else 
-              PNodeA(element,PEmpty)
-   | PNodeAx(y) -> 
-        PEmpty           (* that's only for  exhaustive pattern matching *)
-   | PNodeA(y, left) -> 
-        PNodeA(y, (extend left element))
-   | PNodeB(y, left, right) -> 
-        if (unclosed left) then 
-          PNodeB(y, (extend left element), right)
-        else 
-          PNodeB(y, left, (extend right element));;
-
-
-let rec bptree prooftree nodelist nax= 
-   match nodelist with 
-    [] -> prooftree,nax
-   |  (rule,formula,term)::rest -> 
-      let newax =  
-       if rule = Ax then 
-         1
-       else
-         0
-      in 
-        bptree (extend prooftree (rule,formula,term)) rest (nax+newax);; 
-
-
-let bproof nodelist = 
-     bptree PEmpty nodelist 0
-
-
+(* print sequent proof tree *)
 
 
 
@@ -608,14 +584,14 @@ let ruletable r =
 
 
 
-let pp_rule (r,formula,term) tab = 
+let pp_rule (pos,r,formula,term) tab = 
   let rep = ruletable r in  
    if List.mem rep ["Alll";"Allr";"Exl";"Exr"] then 
         begin
 	  Format.open_box 0;
 (*	  Format.force_newline (); *)
 	  Format.print_break tab 0;
-	  Format.print_string (rep^" ");
+	  Format.print_string (pos^": "^rep^" ");
 	  Format.print_flush ();
 (*	  Format.print_break tab 0; 
 	  Format.force_newline (); 
@@ -638,7 +614,7 @@ let pp_rule (r,formula,term) tab =
         begin
 	  Format.open_box 0;
 	  Format.print_break tab 0;
-	  Format.print_string (rep^" ");
+	  Format.print_string (pos^": "^rep^" ");
 	  Format.print_flush ();
 	  Format.open_box 0;
 (*	  Format.print_break tab 0; *)
@@ -682,24 +658,24 @@ let rec tpp seqtree tab addr =
  match seqtree with 
  | PEmpty -> raise (Failure "Invalid argument")
  | PNodeAx(rule) ->
-    let (r,p,pa) = rule in  
+    let (pos,r,p,pa) = rule in  
      begin 
-      pp_rule (r,p,pa) tab;
+      pp_rule (pos,r,p,pa) tab;
 (*      Format.force_newline (); *)
 (*      let mult = get_r_chain addr in  *)
 (*        Format.print_break 100 (tab - (3 * mult)) *)
      end
  | PNodeA(rule,left) -> 
-   let (r,p,pa) = rule in  
+   let (pos,r,p,pa) = rule in  
         begin
-         pp_rule (r,p,pa) tab;
+         pp_rule (pos,r,p,pa) tab;
          tpp left tab addr  
         end
  | PNodeB(rule,left,right) -> 
-   let (r,p,pa) = rule in  
+   let (pos,r,p,pa) = rule in  
        let newtab = tab + 3 in 
         begin
-         pp_rule (r,p,pa) tab;
+         pp_rule (pos,r,p,pa) tab;
 (*	 Format.force_newline (); *)
 (*       Format.print_break 100 newtab; *)
          (tpp left newtab (addr^"l"));
@@ -725,6 +701,285 @@ let tt seqtree =
 
 
 
+
+(************ END printing functions  *********************************)
+
+
+(************* permutation ljmc -> lj *********************************)
+
+
+
+
+
+(* build the proof tree from a list of inference rules *)
+
+let rec unclosed subtree =  
+    match subtree with 
+       PEmpty -> true 
+     | PNodeAx(y) -> false
+     | PNodeA(y,left) -> (unclosed left)
+     | PNodeB(y,left,right) -> (or) (unclosed left) (unclosed right);;
+   
+
+
+let rec extend prooftree element =  
+   match prooftree with 
+     PEmpty -> 
+       let (pos,rule,formula,term) = element in 
+         if rule = Ax then  
+          PNodeAx(element)
+         else 
+           if List.mem rule [Andr; Orl; Impl] then 
+              PNodeB(element,PEmpty,PEmpty)
+           else 
+              PNodeA(element,PEmpty)
+   | PNodeAx(y) -> 
+        PEmpty           (* that's only for  exhaustive pattern matching *)
+   | PNodeA(y, left) -> 
+        PNodeA(y, (extend left element))
+   | PNodeB(y, left, right) -> 
+        if (unclosed left) then 
+          PNodeB(y, (extend left element), right)
+        else 
+          PNodeB(y, left, (extend right element));;
+
+
+let rec bptree prooftree nodelist nax= 
+   match nodelist with 
+    [] -> prooftree,nax
+   |((_,pos),(rule,formula,term))::rest -> (* kick away the first argument *)
+      let newax =  
+       if rule = Ax then 
+         1
+       else
+         0
+      in 
+        bptree (extend prooftree (pos,rule,formula,term)) rest (nax+newax);; 
+
+
+let bproof nodelist = 
+     bptree PEmpty nodelist 0
+
+
+
+
+
+
+
+
+
+
+
+
+let rec list_diff del_list check_list = 
+ match del_list with 
+  [] -> []
+ |f::r -> 
+   if List.mem f check_list then 
+     list_diff r check_list
+   else
+     f::(list_diff r check_list)
+
+
+
+
+let rec get_successor_pos treelist = 
+  match treelist with 
+    [] -> []
+   |f::r -> 
+    (
+     match f with 
+      Empty -> get_successor_pos r
+     |NodeAt(_) -> raise (Failure "invalid argument") 
+     |NodeA(pos,_) -> 
+       pos::(get_successor_pos r)
+    )
+
+
+
+let rec get_formula_tree ftreelist f predflag = 
+ match ftreelist with 
+  [] -> raise (Failure "invalid argument")
+ |ftree::rest_trees -> 
+   (match ftree with 
+     Empty -> get_formula_tree rest_trees f predflag
+    |NodeAt(_) -> get_formula_tree rest_trees f predflag 
+    |NodeA(pos,suctrees) -> 
+      if predflag = "pred" then 
+       if pos.pt = Gamma then 
+         let succs = get_successor_pos (Array.to_list suctrees) in 
+           if List.mem f succs then
+             NodeA(pos,suctrees),succs
+           else 
+             get_formula_tree ((Array.to_list suctrees) @ rest_trees) f predflag
+       else
+         get_formula_tree ((Array.to_list suctrees) @ rest_trees) f predflag
+      else (* predflag = "" *)
+        if pos = f then 
+         NodeA(pos,suctrees),[]
+        else
+         get_formula_tree ((Array.to_list suctrees) @ rest_trees) f predflag
+    )
+
+
+let rec get_formula_treelist ftree po = 
+  match po with 
+   [] -> [] 
+  |f::r -> 
+(* a posistion in po has either stype Gamma_0,Psi_0,Phi_0 (non-atomic), or it has *)
+(* ptype Alpha (or on the right), since there was a deadlock for proof reconstruction in LJ*)
+    if List.mem f.st [Phi_0;Psi_0] then 
+      let (stree,_) = get_formula_tree [ftree] f "" in 
+       stree::(get_formula_treelist ftree r) 
+    else 
+     if f.st = Gamma_0 then 
+      let (predtree,succs) = get_formula_tree [ftree] f "pred" in 
+       let new_po = list_diff r succs in 
+        predtree::(get_formula_treelist ftree new_po)
+     else 
+       if f.pt = Alpha then (* same as first case, or on the right *)
+        let (stree,_) = get_formula_tree [ftree] f "" in 
+          stree::(get_formula_treelist ftree r) 
+       else raise (Failure "non-admissible open position")
+
+
+
+
+
+
+let rec build_formula_rel dir_treelist slist predname = 
+
+
+let rec build_renamed_gamma_rel dtreelist predname posname d = 
+  match dtreelist with 
+    [] -> [],[] 
+  |(x,ft)::rdtlist -> 
+    let rest_rel,rest_ren = build_renamed_gamma_rel rdtlist predname posname d  in 
+   (
+    match ft with 
+      Empty ->   (* may have empty successors due to purity in former reconstruction steps *)
+       rest_rel,rest_ren 
+     |NodeAt(_) -> 
+        raise (Failure "Invalid argument") (* gamma_0 position never is atomic *)
+     |NodeA(spos,suctrees) -> 
+      if List.mem spos.name slist then  
+(* the gamma_0 position is really unsolved *)
+(* this is only relevant for the gamma_0 positions in po *)
+       let new_name = (posname^"_"^spos.name) (* make new unique gamma name *) in 
+        let new_srel_el = ((predname,new_name),d)
+        and new_rename_el = (spos.name,new_name)  (* gamma_0 position as key first *) in 
+          let (srel,sren) = build_formula_rel [(x,ft)] slist new_name in 
+            ((new_srel_el::srel) @ rest_rel),((new_rename_el::sren) @ rest_ren)
+      else
+       rest_rel,rest_ren 
+    )
+
+
+in
+  match dir_treelist with 
+    [] -> [],[]
+   |(d,f)::dir_r -> 
+    let (rest_rel,rest_renlist) = build_formula_rel dir_r slist predname in 
+      match f with 
+       Empty -> 
+        print_endline "Hello, an empty subtree!!!!!!";
+        rest_rel,rest_renlist
+      |NodeAt(pos) -> 
+         (((predname,pos.name),d)::rest_rel),rest_renlist
+      |NodeA(pos,suctrees) -> 
+        (match pos.pt with 
+          Alpha | Beta -> 
+           let dtreelist = 
+            if (pos.pt = Alpha) & (pos.op = Neg) then 
+              [(1,suctrees.(0))]
+            else 
+             let st1 = suctrees.(0) 
+             and st2 = suctrees.(1) in 
+              [(1,st1);(2,st2)]
+           in 
+            let (srel,sren) = build_formula_rel dtreelist slist pos.name in 
+              ((((predname,pos.name),d)::srel) @ rest_rel),(sren @ rest_renlist)
+         |Delta -> 
+           let st1 = suctrees.(0) in 
+            let (srel,sren) = build_formula_rel [(1,st1)] slist pos.name in 
+              ((((predname,pos.name),d)::srel) @ rest_rel),(sren @ rest_renlist)
+         |Psi|Phi -> 
+           let succlist = Array.to_list suctrees in 
+            let dtreelist = (List.map (fun x -> (d,x)) succlist) in 
+              let (srel,sren) = build_formula_rel dtreelist slist predname in 
+                (srel @ rest_rel),(sren @ rest_renlist)
+         |Gamma -> 
+            let n = Array.length suctrees 
+            and succlist = (Array.to_list suctrees) in 
+             let dtreelist = (List.map (fun x -> (1,x)) succlist) in 
+(*                if (nonemptys suctrees 0 n) = 1  then 
+                 let (srel,sren) = build_formula_rel dtreelist slist pos.name in 
+                   ((((predname,pos.name),d)::srel) @ rest_rel),(sren @ rest_renlist)
+                else (* we have more than one gamma instance, which means renaming *)
+*)
+                  let (srel,sren) = build_renamed_gamma_rel dtreelist predname pos.name d in 
+                    (srel @ rest_rel),(sren @ rest_renlist)
+         |PNull -> 
+           raise (Failure "invalid argument")
+         )		    
+       
+
+
+let rec rename_gamma ljmc_proof rename_list = 
+  match ljmc_proof with 
+    [] -> [] 
+   |((inst,pos),(rule,formula,term))::r -> 
+      if List.mem rule [Alll;Exr] then 
+        let new_gamma = List.assoc inst rename_list in 
+         ((inst,new_gamma),(rule,formula,term))::(rename_gamma r rename_list)
+      else
+       ((inst,pos),(rule,formula,term))::(rename_gamma r rename_list)
+    
+
+
+let  permute_ljmc ftree po slist ljmc_proof = 
+ (* ftree/po are the formula tree / open positions of the sequent that caused deadlock and permutation *) 
+  print_endline "!!!!!!!!!!!!!Permutation TO DO!!!!!!!!!"; 
+ (* the open positions in po are either phi_0, psi_0, or gamma_0 positions *)
+ (* since proof reconstruction was a deadlock in LJ *)    
+   let po_treelist = get_formula_treelist ftree po in 
+    let dir_treelist = List.map (fun x -> (1,x)) po_treelist in 
+     let (formula_rel,rename_list) = build_formula_rel dir_treelist slist "dummy" in 
+      let renamed_ljmc_proof = rename_gamma ljmc_proof rename_list in 
+       let (ptree,ax) =  bproof renamed_ljmc_proof in 
+           (* this is a direct formula relation, comprising left/right subformula *)
+begin
+   print_treelist po_treelist;
+   print_endline "";
+   print_endline "";
+   print_triplelist formula_rel;
+   print_endline "";
+   print_endline "";
+   print_pairlist rename_list;
+   print_endline "";
+   print_endline "";
+   tt ptree;
+   renamed_ljmc_proof
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(************** PROOF RECONSTRUCTION without redundancy deletion ******************************)
 
 
 
@@ -962,15 +1217,19 @@ let rec update pname redord =
 
 (*  rule construction *)
 
-let rec selectQ spos_name csigmaQ =
+let rec selectQ_rec spos_var csigmaQ =
  match csigmaQ  with 
-  [] ->  mk_var_term spos_name   (* dynamic completion of csigmaQ *)
+  [] ->  mk_var_term spos_var   (* dynamic completion of csigmaQ *)
  |(var,term)::r -> 
-   if spos_name=var then 
+   if spos_var=var then 
      term
    else 
-     selectQ  spos_name r
+     selectQ_rec spos_var r
   
+
+let selectQ spos_name csigmaQ =
+  let spos_var = spos_name^"_jprover" in 
+      selectQ_rec spos_var csigmaQ 
 
 
 let apply_sigmaQ term sigmaQ = 
@@ -1190,7 +1449,7 @@ let rec do_split gamma_diff sigmaQ =
   match sigmaQ with 
     [] -> [] 
    |(v,term)::r -> 
-     if List.mem v gamma_diff then 
+     if (List.mem (String.sub v 0 (String.index v '_')) gamma_diff) then 
        do_split gamma_diff r 
      else
        (v,term)::(do_split gamma_diff r)
@@ -1268,14 +1527,6 @@ let rec localize_sigma zw_sigma ass_delta_diff =
 
 
 
-let rec list_diff old_free new_free = 
- match old_free with 
-  [] -> []
- |f::r -> 
-   if List.mem f new_free then 
-     list_diff r new_free
-   else
-     f::(list_diff r new_free)
 
 
 
@@ -1636,7 +1887,7 @@ let rec solve  ftree redord connections p po slist (pred,succs) orr_flag =
        if p.st = Gamma_0 then 
         begin
 (* 	 print_endline "that's the gamma rule";  *)
-         [(build_rule pred p csigmaQ orr_flag calculus)]
+         [((p.name,pred.name),(build_rule pred p csigmaQ orr_flag calculus))]
         end 
          else 
           []
@@ -1664,16 +1915,28 @@ let rec solve  ftree redord connections p po slist (pred,succs) orr_flag =
             else
              rback @ (tot  ftree redord connections pnew newslist)
          | PNull -> 
-	     let c = select_connection (p.name) connections newslist in 
-	       if c = ("none","none") then 
+	     let (c1,c2) = select_connection (p.name) connections newslist in 
+	       if (c1= "none" & c2 ="none") then 
                  rback @ (tot  ftree redord connections pnew newslist) 
                else 
-                rback @ [(build_rule p p csigmaQ orr_flag calculus)] (* one possibility of recursion end *)
+                 let ass_pos =   (* need the pol=O position of the connection for later permutation *)
+                   if p.name = c1 then 
+                     if p.pol = O then
+                       c1 
+                     else 
+                       c2
+                   else (* p.name = c2 *)
+                     if p.pol = O then 
+                       c2
+                   else 
+                        c1
+                in
+                rback @ [(("",ass_pos),(build_rule p p csigmaQ orr_flag calculus))] (* one possibility of recursion end *)
          | Alpha -> 
-             rback @ ((build_rule p p csigmaQ orr_flag calculus)::(tot  ftree redord connections pnew newslist))
+             rback @ ((("",p.name),(build_rule p p csigmaQ orr_flag calculus))::(tot  ftree redord connections pnew newslist))
          | Delta -> 
             let sp = List.hd succs in
-              rback @ ((build_rule p sp csigmaQ orr_flag calculus)::(tot ftree redord connections pnew newslist))
+              rback @ ((("",p.name),(build_rule p sp csigmaQ orr_flag calculus))::(tot ftree redord connections pnew newslist))
          | Beta  ->  
 (*             print_endline "split_in"; *)
             let (ft1,red1,conn1,uslist1),(ft2,red2,conn2,uslist2) = 
@@ -1684,7 +1947,7 @@ let rec solve  ftree redord connections p po slist (pred,succs) orr_flag =
 (*           print_endline "compute p1 out";	      *)
               let p2 = total  ft2 red2 conn2 sigmaQ2 uslist2 logic calculus in 
 (*           print_endline "compute p2 out";	      *)
-		 rback @ [(build_rule p p csigmaQ orr_flag calculus)] @ p1 @ p2  (* second possibility of recursion end *)
+		 rback @ [(("",p.name),(build_rule p p csigmaQ orr_flag calculus))] @ p1 @ p2  (* second possibility of recursion end *)
 in       
  (try 
   let (p,orr_flag) = select_pos po po redord ftree connections slist logic calculus [] 
@@ -1709,7 +1972,9 @@ in
      solve ftree rednew connections p po slist (pred,succs) orr_flag
    with
      Failure("gamma deadlock") -> 
-       failwith "permutation"
+       let ljmc_subproof =  total ftree redord connections csigmaQ slist "J" "LJmc" in 
+          permute_ljmc ftree po slist ljmc_subproof
+           (* the permuaiton result will be appended to the lj proof constructed so far *)
     |Failure("overall deadlock") ->
        failwith "redundancy"  (* this possibility should of course be eliminated *)
    )
@@ -1719,10 +1984,6 @@ let po  = compute_open [ftree] slist in
   tot ftree redord connections po slist;;
 
 
-let  permute_ljmc ljmc_proof = 
-(*  print_endline "!!!!!!!!!!!!!Permutation TO DO!!!!!!!!!"; *)
-   ljmc_proof
-
 
 let reconstruct ftree redord sigmaQ connections logic calculus =  
  (* let complete_sigmaQ = build_sigmaQ sigmaQ ftree in  --- is done dynamically during build_rule *)
@@ -1730,25 +1991,13 @@ let reconstruct ftree redord sigmaQ connections logic calculus =
     let redord2 = (update newroot_name redord) in   (* otherwise we would have a deadlock *)
       let (init_tree,init_redord,init_connections,init_unsolved_list) = 
          purity ftree redord2 connections unsolved_list in 
-      if calculus = "LJ" then 
-(* For LJ, permutation may become necessary in the FO-case *) 
         (try 
             total init_tree init_redord init_connections sigmaQ 
                   init_unsolved_list logic calculus
          with 
-           Failure("permutation") -> 
-             let ljmc_proof =  total init_tree init_redord init_connections sigmaQ 
-                                   init_unsolved_list logic "LJmc" 
-             in 
-              permute_ljmc ljmc_proof
-         | Failure("redundancy") ->     (* should not occur *)
+          Failure("redundancy") ->     (* should not occur *)
              failwith "not_reconstructible"
          )
-       else 
-(* Othewise, no problem should occur *)
-         total init_tree init_redord init_connections sigmaQ 
-               init_unsolved_list logic calculus
- 
 
 
 
@@ -1977,7 +2226,8 @@ let rec rec_apply sigmaQ tauQ tau_vars tau_terms =
      if inst_terms  = [] then 
        ((v,app_term)::rest_sigma),rest_sigma_ordering
      else 
-       ((v,app_term)::rest_sigma),((v,inst_terms)::rest_sigma_ordering)
+       let ordering_v = String.sub v 0 (String.index v '_') in 
+        ((v,app_term)::rest_sigma),((ordering_v,inst_terms)::rest_sigma_ordering)
 
 
 
@@ -1992,8 +2242,9 @@ let rec rec_apply sigmaQ tauQ tau_vars tau_terms =
 let multiply sigmaQ tauQ = 
  let (tau_vars,tau_terms) = List.split tauQ in
    let (new_sigmaQ,sigma_ordering)  = rec_apply sigmaQ tauQ tau_vars tau_terms 
-   and tau_ordering_terms = (List.map (fun x -> [x]) tau_terms) (* for extending ordering_elements *) in 
-      let tau_ordering  = (List.combine tau_vars tau_ordering_terms) in 
+   and tau_ordering_terms = (List.map (fun x -> [x]) tau_terms) (* for extending ordering_elements *) 
+   and tau_ordering_vars = (List.map (fun x -> String.sub x 0 (String.index x '_')) tau_vars) in
+      let tau_ordering  = (List.combine tau_ordering_vars tau_ordering_terms) in 
         ((new_sigmaQ @ tauQ),
          (sigma_ordering @ tau_ordering)
         )
@@ -2755,8 +3006,8 @@ let update_position position m replace_n subst_list mult =
     let nx = rename_pos x m in 
      let nsubst_list = 
       if b=Gamma_0 then 
-        let vx = mk_var_term x
-        and vnx = mk_var_term nx in 
+        let vx = mk_var_term (x^"_jprover")
+        and vnx = mk_var_term (nx^"_jprover") in 
          (vx,vnx)::subst_list 
       else
       if b=Delta_0 then 
@@ -3284,7 +3535,7 @@ let dual_pol pol =
 let check_subst_term (variable,old_term) pos_name stype = 
     if (List.mem stype [Gamma_0;Delta_0]) then 
      let new_variable = 
-       if stype = Gamma_0 then (mk_var_term pos_name) 
+       if stype = Gamma_0 then (mk_var_term (pos_name^"_jprover")) 
          else
           (mk_string_term (make_opname ["jprover";pos_name]) pos_name)
      in
@@ -3515,7 +3766,7 @@ let rec try_multiplicity ftree ordering pos_n mult logic =
 let prove termlist logic = 
  let (ftree,ordering,pos_n) = construct_ftree termlist [] [] 0 (mk_var_term "dummy") in 
   (* pos_n = number of positions without new root "w" *) 
-(*   print_formula_info ftree ordering pos_n;   *)
+(*   print_formula_info ftree ordering pos_n;    *)
    (try 
      try_multiplicity ftree ordering pos_n 1 logic 
     with 
@@ -3546,7 +3797,7 @@ let rec make_nuprl_interface rule_list =
  match rule_list with 
    [] -> []
   |f::r -> 
-    let (rule,term1,term2) = f in
+    let (pos,(rule,term1,term2)) = f in (* kick away the first argument, the position *)
      ((ruletable rule),term1,term2)::(make_nuprl_interface r)
 
 
