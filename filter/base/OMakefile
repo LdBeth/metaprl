@@ -41,7 +41,7 @@ ExtractMagic(in, out) =
    stdout = $(fopen $(out), w)
    awk($(in))
    case $'FILTER_MD5:'
-      print($4)
+      print($(nth $(sub $(NF), 1), $*))
    close($(stdout))
 
 #
