@@ -161,20 +161,20 @@ struct
     | RWQuote ->
          fprintf out "q"
     | RWMNumber i ->
-         fprintf out "@%d:n" i
+         fprintf out "@@%d:n" i
     | RWMString i ->
-         fprintf out "@%d:s" i
+         fprintf out "@@%d:s" i
     | RWMToken i ->
-         fprintf out "@%d:t" i
+         fprintf out "@@%d:t" i
     | RWMLevel1 i ->
-         fprintf out "@%d:l" i
+         fprintf out "@@%d:l" i
     | RWMLevel2 { rw_le_const = c; rw_le_vars = vars } ->
          fprintf out "(%d" c;
          List.iter (fun { rw_le_var = v; rw_le_offset = o } ->
                fprintf out " [%d %d]" v o) vars;
          fprintf out ")"
     | RWMVar i ->
-         fprintf out "@%d:v" i
+         fprintf out "@@%d:v" i
     | RWObId id ->
          fprintf out "ObId"
     | RWParamList pl ->
