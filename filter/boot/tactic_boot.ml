@@ -241,7 +241,8 @@ struct
     | Identity of tactic_arg
 
    and compose_info =
-      { mutable comp_status : lazy_status;
+      { mutable normalized : bool;
+        mutable comp_status : lazy_status;
         comp_goal : extract;
         comp_subgoals : extract list;
         mutable comp_leaves : lazy_leaves;
@@ -320,7 +321,8 @@ struct
     * Composition function on extracts.
     *)
    let compose ext extl =
-      Compose { comp_status = LazyStatusDelayed;
+      Compose { normalized = false;
+                comp_status = LazyStatusDelayed;
                 comp_goal = ext;
                 comp_subgoals = extl;
                 comp_leaves = LazyLeavesDelayed;

@@ -640,7 +640,8 @@ struct
     | HeadWrapped (label, ext) ->
          Wrapped (ext_retrieve_arglist info label, ext_retrieve_extract info ext)
     | HeadCompose (goal, subgoals, extras) ->
-         Compose { comp_status = LazyStatusDelayed;
+         Compose { normalized = false;
+                   comp_status = LazyStatusDelayed;
                    comp_goal = ext_retrieve_extract info goal;
                    comp_subgoals = List.map (ext_retrieve_extract info) subgoals;
                    comp_leaves = LazyLeavesDelayed;

@@ -697,6 +697,13 @@ let rec fold_left2 f x al bl =
     | _ ->
          raise (Failure "List_util.fold_left2")
 
+let rec smap f = function
+   [] -> []
+ | (hd::tl) as l ->
+      let hd' = f hd in
+      let tl' = smap f tl in
+      if (hd==hd')&&(tl==tl') then l else hd'::tl'
+
 (*
  * -*-
  * Local Variables:

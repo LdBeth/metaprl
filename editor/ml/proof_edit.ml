@@ -196,6 +196,22 @@ let rotate_ped ped i =
          raise (RefineError ("rotate_ped", StringIntError ("argument is out of range", i)));
       push_proof ped (List.nth goals i)
 
+let rec str_expr = function
+   Proof.ExprGoal ->
+      "<goal>"
+ | Proof.ExprIdentity ->
+      "<identity>"
+ | Proof.ExprUnjustified ->
+      "<unjustified>"
+ | Proof.ExprExtract arg ->
+      "<extract>"
+ | Proof.ExprCompose expr ->
+      (str_expr expr) ^ " <then...>"
+ | Proof.ExprWrapped arg ->
+      "<wrapped>"
+ | Proof.ExprRule (text, _) ->
+      text
+
 let edit_info_of_ped ped =
    let { Proof.step_goal = goal;
          Proof.step_expr = expr;
@@ -203,27 +219,10 @@ let edit_info_of_ped ped =
          Proof.step_extras = extras
        } = item_of_ped ped
    in
-   let expr =
-      match expr with
-         Proof.ExprGoal ->
-            "<goal>"
-       | Proof.ExprIdentity ->
-            "<identity>"
-       | Proof.ExprUnjustified ->
-            "<unjustified>"
-       | Proof.ExprExtract arg ->
-            "<extract>"
-       | Proof.ExprCompose ->
-            "<compose>"
-       | Proof.ExprWrapped arg ->
-            "<wrapped>"
-       | Proof.ExprRule (text, _) ->
-            text
-   in
    let goal = List.hd goal in
    let subgoals = List.map List.hd subgoals in
       { edit_goal = Proof.goal goal;
-        edit_expr = expr;
+        edit_expr = str_expr expr;
         edit_subgoals = List.map Proof.goal subgoals;
         edit_extras = List.map Proof.goal extras
       }
@@ -534,12 +533,31 @@ let term_of_arg = function
 let term_of_arglist args =
    Summary.mk_arglist_term (List.map term_of_arg (Tactic.expand_arglist args))
 
+let rec rule_term_of_text = function
+   Proof.ExprGoal ->
+      mk_rule_box_string_term "<goal>"
+ | Proof.ExprIdentity ->
+      mk_rule_box_string_term "<identity>"
+ | Proof.ExprUnjustified ->
+      mk_rule_box_string_term "<unjustified>"
+ | Proof.ExprExtract args ->
+      mk_rule_box_term (term_of_arglist args)
+ | Proof.ExprCompose expr ->
+      append_rule_box (rule_term_of_text expr) "<then...>"
+ | Proof.ExprWrapped args ->
+      mk_rule_box_term (term_of_arglist args)
+ | Proof.ExprRule (text, _) ->
+      mk_rule_box_string_term text
 (*
  * Display a proof with an inference.
  *)
 let term_of_proof proof =
-   if !debug_edit then
-      eprintf "Proof_edit.term_of_proof: begin%t" eflush;
+   if !debug_edit then begin
+      let buf = Rformat.new_buffer () in
+      let _ = Proof.format_proof Dform.null_base buf proof in
+      let prf = Rformat.print_to_string 80 buf in
+      eprintf "Proof_edit.term_of_proof: begin:\n%s%t" prf eflush
+   end;
    let { Proof.step_goal = goal;
          Proof.step_expr = expr;
          Proof.step_subgoals = subgoals;
@@ -550,30 +568,13 @@ let term_of_proof proof =
    let goal = mk_goal_list_term (List.map term_of_proof_arg goal) in
    let subgoals = List.map (fun l -> mk_goal_list_term (List.map term_of_proof_arg l)) subgoals in
    let extras = List.map term_of_proof_arg extras in
-   let text =
-      match expr with
-         Proof.ExprGoal ->
-            mk_rule_box_string_term "<goal>"
-       | Proof.ExprIdentity ->
-            mk_rule_box_string_term "<identity>"
-       | Proof.ExprUnjustified ->
-            mk_rule_box_string_term "<unjustified>"
-       | Proof.ExprExtract args ->
-            mk_rule_box_term (term_of_arglist args)
-       | Proof.ExprCompose ->
-            mk_rule_box_string_term "<compose>"
-       | Proof.ExprWrapped args ->
-            mk_rule_box_term (term_of_arglist args)
-       | Proof.ExprRule (text, _) ->
-            mk_rule_box_string_term text
-   in
    let subgoals = 
       (* HACK!!! *)
       let l = List.length subgoals in
       if l < 20 then mk_subgoals_term subgoals extras
       else mk_xlist_term [ mk_string_arg_term "\n\n<<"; mk_int_arg_term l; mk_string_arg_term " subgoals (output suppressed)>>"]
    in
-   let x = mk_proof_term main goal text subgoals in
+   let x = mk_proof_term main goal (rule_term_of_text expr) subgoals in
       if !debug_edit then
          eprintf "Proof_edit.term_of_proof: done%t" eflush;
       x

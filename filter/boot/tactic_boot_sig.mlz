@@ -198,7 +198,8 @@ sig
     | Identity of tactic_arg
 
    and compose_info =
-      { mutable comp_status : lazy_status;
+      { mutable normalized : bool;
+        mutable comp_status : lazy_status;
         comp_goal : extract;
         comp_subgoals : extract list;
         mutable comp_leaves : lazy_leaves;
@@ -503,7 +504,7 @@ sig
     | ExprIdentity
     | ExprUnjustified
     | ExprExtract of arglist
-    | ExprCompose
+    | ExprCompose of step_expr
     | ExprWrapped of arglist
     | ExprRule of string * MLast.expr
 
@@ -535,8 +536,15 @@ sig
     * IMPLEMENTATION                                                       *
     ************************************************************************)
 
+   (*
+    * Make sure all the compositions are left-assotiatoive.
+    * Remove unnecessary identities.
+    *)
+   val normalize : extract -> extract
+
    (********************************
     * CONSTRUCTION
+    * Gets extract, normalizes it and creates a proof object
     *)
    val create : tactic_arg -> proof
 
@@ -569,7 +577,7 @@ sig
 
    (*
     * Get the complete info for the current proof.
-    * This will raise ProofRefineError if the proof is a leaf.
+    * This will retirn a normalized info or raise ProofRefineError if extract is atomic.
     *)
    val info : proof -> step_info
 
