@@ -65,6 +65,7 @@ INCLUDES="\
 	-I ../../theories/mmc/util\
 	-I ../../theories/mmc/base\
 	-I ../../theories/mmc/core\
+	-I ../../theories/mmc/extensions/direct\
 	-I ../../theories/mmc/extensions/arithmetic\
 	-I ../../theories/mmc/extensions/arithmetic_integer\
 	-I ../../theories/mmc/extensions/array\
