@@ -410,6 +410,19 @@ let view_crw pack parse_arg window
    in
       edit pack parse_arg name window obj
 
+let view_def pack parse_arg window def =
+   let goal = mk_rw_goal [] def.opdef_term def.opdef_definition in
+   let proof = Primitive (mk_xrewrite_term def.opdef_term def.opdef_definition) in
+      edit pack parse_arg def.opdef_name window {
+         rule_assums = [];
+         rule_params = [];
+         rule_goal = GRewrite (def.opdef_term, def.opdef_definition);
+         rule_proof = proof;
+         rule_ped = ped_of_proof pack parse_arg goal proof;
+         rule_resources = def.opdef_resources;
+         rule_name = def.opdef_name;
+      }
+
 (*
  * -*-
  * Local Variables:

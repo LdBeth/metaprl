@@ -611,13 +611,13 @@ dform df_last_df2 : df_last{cons{'a; nil}} =
 (*
  * List concatenation
  *)
-dform df_concat_cons : df_concat{'sep; cons{'hd; 'tl}} =
+dform df_concat_cons : mode[src] :: mode[html] :: mode[prl] :: df_concat{'sep; cons{'hd; 'tl}} =
    slot{'hd} 'sep df_concat{'sep;'tl}
 
-dform df_concat_nil : df_concat{'sep; cons{'hd; nil}} =
+dform df_concat_nil : mode[src] :: mode[html] :: mode[prl] :: df_concat{'sep; cons{'hd; nil}} =
    slot{'hd}
 
-dform df_concat_nil2 : df_concat{'sep; nil} =
+dform df_concat_nil2 : mode[src] :: mode[html] :: mode[prl] :: df_concat{'sep; nil} =
    `""
 
 (*

@@ -218,6 +218,8 @@ let get_item parse_arg info modname name =
             Shell_rule.view_crw pack parse_arg display_mode crw
        | Rule rl ->
             Shell_rule.view_rule pack parse_arg display_mode rl
+       | Definition def ->
+            Shell_rule.view_def pack parse_arg display_mode def
        | Opname _ ->
             eprintf "Editing opname '/%s/%s' not supported%t" modname name eflush;
             raise (Failure "view")
@@ -266,9 +268,6 @@ let get_item parse_arg info modname name =
             raise (Failure "view")
        | InputForm _ ->
             eprintf "Editing input form '/%s/%s' not implemented%t" modname name eflush;
-            raise (Failure "view")
-       | Definition _ ->
-            eprintf "Editing definition '/%s/%s' not implemented%t" modname name eflush;
             raise (Failure "view")
 
 (*

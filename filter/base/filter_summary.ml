@@ -428,6 +428,7 @@ let find { info_list = summary } name =
        | CondRewrite { crw_name = n }
        | MLRewrite { mlterm_name = n }
        | InputForm { rw_name = n }
+       | Definition { opdef_name = n }
        | MLAxiom { mlterm_name = n }
        | DForm { dform_name = n }
        | Prec n ->

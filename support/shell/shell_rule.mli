@@ -69,6 +69,13 @@ val view_crw :
    (term, proof proof_type, MLast.expr) cond_rewrite_info ->
    edit_object
 
+val view_def :
+   package ->
+   parse_arg ->
+   display_fun ->
+   (term, MLast.expr) opname_definition ->
+   edit_object
+
 (*
  * -*-
  * Local Variables:
