@@ -1023,25 +1023,25 @@ EXTEND
         | "declare"; t = quote_term ->
           let _ = StrFilter.declare_term (StrFilter.get_proc loc) loc t in
           empty_str_item loc
-        | "primrw"; name = LIDENT; args = optarglist; ":"; t = mterm ->
+        | "primrw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
           StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Primitive xnil_term);
           empty_str_item loc
-        | "interactive_rw"; name = LIDENT; args = optarglist; ":"; t = mterm ->
+        | "interactive_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
           StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t Incomplete;
           empty_str_item loc
         | "rwthm"; name = LIDENT; args = optarglist; ":"; t = mterm; "="; body = expr ->
           StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Derived body);
           empty_str_item loc
-        | "prim"; name = LIDENT; params = optarglist; ":"; (**)
+        | "prim"; name = LIDENT; res = optresources; params = optarglist; ":"; (**)
              (args, goal) = opt_binding_arglist; "="; (**)
              extract = term ->
           define_prim (StrFilter.get_proc loc) loc name params args goal.aterm extract;
           empty_str_item loc
-        | "thm"; name = LIDENT; params = optarglist; ":"; (**)
+        | "thm"; name = LIDENT; res = optresources; params = optarglist; ":"; (**)
              (args, goal) = opt_binding_arglist; "="; tac = expr ->
           define_thm (StrFilter.get_proc loc) loc name params args goal.aterm tac;
           empty_str_item loc
-        | "interactive"; name = LIDENT; params = optarglist; ":"; (**)
+        | "interactive"; name = LIDENT; res = optresources; params = optarglist; ":"; (**)
              (args, goal) = opt_binding_arglist ->
           define_int_thm (StrFilter.get_proc loc) loc name params args goal.aterm;
           empty_str_item loc
@@ -1112,6 +1112,30 @@ EXTEND
         | arg = bound_term; args = LIST0 bound_term; ":"; goal = singleterm ->
           arg :: args, goal
        ]];
+   
+   (* The optional list of resources to update *)
+   optresources:
+      [[ ores = OPT [ "{|"; res = LIST0 updresource SEP ";"; "|}" -> res ] ->
+          match ores with
+             Some ores -> ores
+           | None -> []
+      ]];
+
+   updresource:
+      [[ name = LIDENT; args = LIST0 resarg ->
+          name, args (* should be an application *)
+      ]];
+
+   resarg:
+      [[ i = INT ->
+          ResourceInt (int_of_string i)
+       | s = LIDENT ->
+          ResourceString s
+       | s = STRING ->
+          ResourceString s
+       | t = term ->
+          ResourceTerm t
+      ]];
 
    (*
     * Equality beginning a rewrite block.

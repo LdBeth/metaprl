@@ -76,6 +76,14 @@ type module_path = string list
 type aterm = { aname : term option; aterm : term }
 
 (*
+ * Arguments for the resource update function.
+ *)
+type resource_arg =
+   ResourceInt of int
+ | ResourceString of string
+ | ResourceTerm of term
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "manager"
