@@ -727,7 +727,6 @@ struct
     * Get the number of the hyp with the given var.
     *)
    let get_decl_number_name = "get_decl_number"
-
    let get_decl_number t v =
       let rec aux i term =
          let { term_op = op; term_terms = bterms } = dest_term term in
@@ -745,6 +744,27 @@ struct
                REF_RAISE(RefineError (get_decl_number_name, TermMatchError (t, "declaration not found")))
             else
                REF_RAISE(RefineError (get_decl_number_name, TermMatchError (t, "malformed sequent")))
+      in
+         aux 1 (goal_of_sequent t)
+
+   let get_hyp_number_name = "get_hyp_number"
+   let get_hyp_number t hyp =
+      let rec aux i term =
+         let { term_op = op; term_terms = bterms } = dest_term term in
+         let opname = (dest_op op).op_name in
+            if Opname.eq opname hyp_opname then
+               let hyp', _, term = match_hyp_all get_hyp_number_name t bterms in
+                  if alpha_equal hyp hyp' then
+                     i
+                  else
+                     aux (i + 1) term
+            else if Opname.eq opname context_opname then
+               let term = match_context op get_hyp_number_name t bterms in
+                  aux (i + 1) term
+            else if Opname.eq opname concl_opname then
+               REF_RAISE(RefineError (get_hyp_number_name, TermMatchError (t, "declaration not found")))
+            else
+               REF_RAISE(RefineError (get_hyp_number_name, TermMatchError (t, "malformed sequent")))
       in
          aux 1 (goal_of_sequent t)
 

@@ -467,6 +467,12 @@ let process_elim_resource_annotation name context_args term_args statement (pre_
 let wrap_intro tac =
    ("wrap_intro", None, false, tac)
 
+let mustSelectT = funT (fun p ->
+   raise (RefineError("Dtactic.mustSelectT", StringTermError ("Select (selT) argument required", Sequent.concl p))))
+
+let intro_must_select =
+   ("mustSelectT", None, false, mustSelectT)
+
 (*
  * Resources
  *)

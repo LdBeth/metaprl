@@ -96,6 +96,7 @@ sig
    val num_hyps : term -> int
    val declared_vars : term -> var list
    val get_decl_number : term -> var -> int
+   val get_hyp_number : term -> term -> int
    val replace_goal : term -> term -> term     (* Single-concl seqs*)
 
    val is_xrewrite_term : term -> bool

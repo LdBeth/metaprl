@@ -422,6 +422,25 @@ struct
        | _ ->
             REF_RAISE(RefineError (get_decl_number_name, TermMatchError (t, "not a sequent")))
 
+   let get_hyp_number_name = "Term_man_ds.get_hyp_number"
+   let get_hyp_number t hyp =
+      match get_core t with
+         Sequent s ->
+            let hyps = s.sequent_hyps in
+            let rec aux i =
+               if i = 0 then
+                  REF_RAISE(RefineError (get_hyp_number_name, TermMatchError (t, "declaration not found")))
+               else
+                  match SeqHyp.get hyps (i - 1) with
+                     Hypothesis (_, hyp') when alpha_equal hyp hyp' ->
+                        i
+                  | _ ->
+                        aux (i - 1)
+            in
+               aux (SeqHyp.length hyps)
+       | _ ->
+            REF_RAISE(RefineError (get_hyp_number_name, TermMatchError (t, "not a sequent")))
+
    let replace_goal_name = "Term_man_ds.replace_goal"
    let replace_goal t goal =
       match get_core t with

@@ -106,6 +106,9 @@ struct
    let get_decl_number arg v =
       TermMan.get_decl_number (goal arg) v
 
+   let get_hyp_number arg t =
+      TermMan.get_hyp_number (goal arg) t
+
    let avoid_vars arg =
       let seq = msequent arg in
       let goal, _ = dest_msequent seq in

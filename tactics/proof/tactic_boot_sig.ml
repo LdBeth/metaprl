@@ -728,6 +728,7 @@ sig
    val clause_addr : tactic_arg -> int -> address
    val assum_clause_addr : tactic_arg -> int -> int -> address
    val get_decl_number : tactic_arg -> var -> int
+   val get_hyp_number : tactic_arg -> term -> int
    val hyp_count : tactic_arg -> int
    val assum_hyp_count : tactic_arg -> int -> int
    val get_pos_hyp_num : tactic_arg -> int -> int

@@ -61,6 +61,7 @@ val process_intro_resource_annotation :
    (Tactic.pre_tactic * intro_option list, term * intro_item) annotation_processor
 
 val wrap_intro : tactic -> intro_item
+val intro_must_select : intro_item
 
 (*
  * The inherited d tactic.
