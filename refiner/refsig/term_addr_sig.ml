@@ -32,8 +32,10 @@ sig
    val term_subterm :  term -> address -> term
    val replace_subterm : term -> address -> term -> term
    val replace_bound_subterm : term -> address -> string list list -> (string list list -> term) -> term
-   val apply_fun_at_addr : (string list list -> term -> term) -> address -> string list list -> term -> term
-   val apply_fun_arg_at_addr : (string list list -> term -> term * 'a) -> address -> string list list -> term -> term * 'a
+   val apply_fun_at_addr : (term -> term) -> address -> term -> term
+   val apply_fun_arg_at_addr : (term -> term * 'a) -> address -> term -> term * 'a
+   val apply_var_fun_at_addr : (string list list -> term -> term) -> address -> string list list -> term -> term
+   val apply_var_fun_arg_at_addr : (string list list -> term -> term * 'a) -> address -> string list list -> term -> term * 'a
 end
 
 (*

@@ -491,7 +491,7 @@ struct
     * Apply a rewrite at an address.
     *)
    let rwaddr addr rw sent t =
-      apply_fun_arg_at_addr (fun _ t -> rw sent t) addr [] t
+      apply_fun_arg_at_addr (rw sent) addr t
 
    (*
     * Invert the rewrite.
@@ -572,7 +572,7 @@ struct
                let t, subgoals, just = crw sent bvars seq t in
                   t, (subgoals, just)
             in
-               apply_fun_arg_at_addr (f sent) addr bvars t
+               apply_var_fun_arg_at_addr (f sent) addr bvars t
          in
             t, subgoals, just
 #ifdef VERBOSE_EXN
