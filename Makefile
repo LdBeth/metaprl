@@ -136,6 +136,9 @@ check_config::mk/config
 		exit 1; \
 	fi
 
+realclean::
+	mk/cvs_realclean.sh
+
 docs::
 	@make -C doc all
 
