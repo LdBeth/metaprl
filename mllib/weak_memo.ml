@@ -70,7 +70,8 @@ struct
         compare_header = cmp_hd;
         make_result = mk_rslt;
         index_table = tbl;
-        image_array = IAr.create iar_size (gc tbl);
+	(* Real GC temporarily removed due error in it*)
+        image_array = IAr.create iar_size (*(gc tbl)*) (fun _ -> (-1,[]));
       }
 
    let ar_get ar d =
