@@ -10,7 +10,7 @@ The rules for calculating free variables sets are simple:
    its term_terms
  - Free variables set of an ordinary bound_term contains all variables of 
    its bterm excepts for those that become bound in this bound_term (its bvars).
- - Free variables set of a TVar v is a singleton set consisting of v.
+ - Free variables set of a FOVar v is a singleton set consisting of v.
  - Free variables set of a substitution is equal to the free variables set
    of the result of this substitution (cf. also Note 2)
 
@@ -26,10 +26,10 @@ Example:
                     { opname = "equal"; term_terms =
                         [ { bfree_vars = {"x"}; bcore = BTerm
                             { bvars = []; bterm = 
-                                { free_vars = {"x"}; core = TVar "x" } } };
+                                { free_vars = {"x"}; core = FOVar "x" } } };
                           { bfree_vars = {"y"}; bcore = BTerm
                             { bvars = []; bterm = 
-                                { free_vars = {"y"}; core = TVar "y" } } } ] } } } } ] } }
+                                { free_vars = {"y"}; core = FOVar "y" } } } ] } } } } ] } }
 
 (Here ``opaname = "..."'' is used as an abbrevation for 
    ``term_op = {op_opname = "..."; op_params = []}'' )
@@ -38,12 +38,12 @@ Notes:
 
 1) Term_ds tries to distinguish a first-order variable "x" (has a free occurrence
 of "x") and 0-ary second-order variable "x" (does not have any free variables).
-FO variable "x" is represented as a "special" term (core = TVar "x") while 
+FO variable "x" is represented as a "special" term (core = FOVar "x") while 
 SO variable "x" is represented as a "usual" term (core = Term t, where t 
 is a term with opname "var", parameter (Var "x") and no subterms)
 
 Since both are indistinguishable in the Term_std, sometimes Term_ds would use
-TVar "x" (and consider it a free occurrence of "x") when "x" is actually an SO
+FOVar "x" (and consider it a free occurrence of "x") when "x" is actually an SO
 variable.
 
 2) When the Subst (or BSubst) is created, we first remove all "garbage" from
