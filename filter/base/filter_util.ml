@@ -89,12 +89,14 @@ let unzip_rewrite name =
  *)
 let split_mfunction mterm =
    let subgoals, goal = unzip_mfunction mterm in
-   let collect pair (i, labels, vars, terms) =
-      match pair with
-         labels', Some v, t ->
-            i, labels' :: labels, v :: vars, t :: terms
-       | labels', None, t ->
-            succ i, labels' :: labels, (mk_var_term ("_" ^ (string_of_int i))) :: vars, t :: terms
+   let collect (labels', ext, t) (i, labels, vars, terms) =
+      let ext = match ext with
+         Some v -> v
+       | None -> mk_var_term ("_" ^ (string_of_int i))
+      in
+         (* XXX HACK: we use join_ext_arg_hack here to "catch" unused hyp binding before they
+            are eliminated. The real solution should be passing the whole meta-term to the refiner *)
+         succ i, labels' :: labels, (Refine.join_ext_arg_hack ext t) :: vars, t :: terms
    in
    let _, labels, vars, terms = List.fold_right collect subgoals (0, [], [], []) in
       labels, vars, zip_mimplies terms goal

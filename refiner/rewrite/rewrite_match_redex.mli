@@ -88,6 +88,7 @@ module MakeRewriteMatchRedex
     with type rstack = RewriteTypes.rstack)
    (RewriteDebug : RewriteDebugSig
     with type rwterm = RewriteTypes.rwterm
+    with type stack = RewriteTypes.stack
     with type varname = RewriteTypes.varname)
 : sig
    open RewriteTypes

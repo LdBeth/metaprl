@@ -141,7 +141,8 @@ struct
     | RWSeqFreeVarsContext (rs, i, l, vs) -> RWSeqFreeVarsContext (v::rs, i, l, vs)
     | RWSeqHypBnd (v', RWFreeVars(t, rs)) -> RWSeqHypBnd (v', RWFreeVars(t, v::rs))
     | RWSeqHypBnd (v', t) -> RWSeqHypBnd (v', RWFreeVars(t, [v]))
-    | _ -> raise(Invalid_argument("Rewrite_compile_redex.restrict_free_hyp"))
+    | RWSeqContextMatch _ as c -> c (* XXX BUG TODO: should actually restrict! *)
+    | _ -> raise(Invalid_argument("Rewrite_compile_redex.restrict_free_in_hyp"))
 
    (* Add an extra free variable restriction to a term *)
    let restrict_free_in_term v = function
@@ -340,10 +341,16 @@ struct
       else
          match SeqHyp.get hyps i with
             Context (v, vars) ->
-               if rstack_mem v stack then
+               if rstack_c_mem v stack then
+                  let index = rstack_c_index v stack in
+                  let stack, terms = compile_so_redex_terms false strict addrs stack bvars vars in
+                  let stack, hyps, goals = compile_so_redex_sequent_inner strict addrs stack bvars (i + 1) len hyps goals in
+                  (* XXX BUG: strictly speaking, should check fro free vars here *)
+                     stack, RWSeqContextMatch(index,terms) :: hyps, goals 
+               else if rstack_mem v stack then
                   (* The context should have a unique name *)
-                  REF_RAISE(RefineError ("is_context_term", RewriteBoundSOVar v));
-               let index =
+                  REF_RAISE(RefineError ("is_context_term", RewriteBoundSOVar v))
+               else let index =
                   if i = (len - 1) then
                      if Array_util.mem v addrs then
                         REF_RAISE(RefineError ("compile_so_redex_sequent_inner", StringStringError("Context at the end of the sequent does not need to be passed in as an argument",v)))
@@ -371,7 +378,7 @@ struct
                   stack, term :: hyps, goals
 
           | HypBinding (v, term) ->
-               if rstack_mem v stack then
+               if List.mem_assoc v bvars then
                   REF_RAISE(RefineError ("compile_so_redex_sequent_inner", StringStringError ("repeated variable", v)));
                let stack, term = compile_so_redex_term true strict addrs stack bvars term in
                let l = List.length stack in

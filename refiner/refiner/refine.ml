@@ -112,6 +112,7 @@ module Refine (**)
     with type term = TermType.term
     with type seq_hyps = TermType.seq_hyps
     with type seq_goals = TermType.seq_goals
+    with type hypothesis = TermType.hypothesis
     with type bound_term' = TermType.bound_term'
     with type bound_term = TermType.bound_term)
    (TermMan : TermManSig
@@ -166,9 +167,10 @@ struct
       }
 
    (*
-    * An ML rewrite replaces a term with another.
+    * Term extract computation.
+    * inputs: rule parameters (addrs, terms), goal, subgoal extracts
     *)
-   type ml_extract = term list -> term list -> term
+   type term_extract = int array -> term list -> term -> term list -> term
 
    type ml_rewrite = term -> term
 
@@ -176,7 +178,7 @@ struct
       StringSet.t ->                                 (* Free vars in the msequent *)
       term list ->                                   (* Params *)
       term ->                                        (* Term to rewrite *)
-      term * term list * ml_extract   (* Extractor is returned *)
+      term * term list * term_extract                (* Extractor is returned *)
 
    (*
     * A condition relaces an goal with a list of subgoals,
@@ -186,7 +188,7 @@ struct
       int array ->                                   (* sequent context addresses *)
       msequent ->                                    (* goal *)
       term list ->                                   (* params *)
-      msequent list * ml_extract      (* subgoals, new variable names *)
+      msequent list * term_extract                   (* subgoals, extractor *)
 
    (************************************************************************
     * TYPES                                                                *
@@ -235,7 +237,7 @@ struct
 
    and ext_just =
       SingleJust of single_just
-    | MLJust of single_just * ml_extract
+    | MLJust of single_just * term_extract
     | RewriteJust of msequent * rewrite_just * msequent
     | CondRewriteJust of msequent * cond_rewrite_just * msequent list
     | ComposeJust of ext_just * ext_just list
@@ -274,7 +276,7 @@ struct
 
    and cond_rewrite_just =
       CondRewriteHere of cond_rewrite_here
-    | CondRewriteML of cond_rewrite_here * ml_extract
+    | CondRewriteML of cond_rewrite_here * term_extract
     | CondRewriteReverse of cond_rewrite_just
     | CondRewriteCompose of cond_rewrite_just * cond_rewrite_just
     | CondRewriteAddress of term * address * cond_rewrite_just * term
@@ -324,7 +326,7 @@ struct
         rule_refiner : refiner
       }
    and prim_rule_refiner =
-      { mutable prule_proof : (term list -> term list -> term) proof;
+      { mutable prule_proof : term_extract proof;
         prule_rule : rule_refiner;
         prule_refiner : refiner
       }
@@ -1314,11 +1316,9 @@ struct
     * Get the term from an extract.
     * This will fail if some of the rules are not justified.
     *)
-   let term_of_extract refiner ext (args : term list) =
+   let term_of_extract_nocheck refiner ext (args : term list) =
       if ext.ext_subgoals <> [] then
          raise (Invalid_argument "Refine.term_of_extract: called on an unfinished proof");
-      if (List.length ext.ext_goal.mseq_hyps) <> (List.length args) then
-         raise (Invalid_argument "Refine.term_of_extract: wrong number of term arguments");
       let find = find_of_hash (hash_refiner refiner) in
       (* XXX BUG: We never call check_rewrite/check_cond_rewrite, but we should *)
       let { check_rule = find_rule;
@@ -1331,20 +1331,21 @@ struct
       in
       (* XXX HACK: this approach of building a closure on-the-fly is very inefficient *)
       let rec construct (rest : (term list -> term) list) = function
-         SingleJust { just_params = params; just_refiner = name } ->
+         SingleJust just ->
              let rule =
                (* XXX Nogin: I am not sure this code is correct/best way of doing it *)
-               match find.find_refiner name with
+               match find.find_refiner just.just_refiner with
                   RuleRefiner r -> find_rule r
                 | PrimRuleRefiner r -> r
                 | _ ->
-                     raise (Invalid_argument("Refine.term_of_extract: extract refers to a non-rule: " ^ (string_of_opname name)))
+                     raise (Invalid_argument "Refine.term_of_extract: extract refers to a non-rule")
                in
-                  fun args -> rule_proof rule params (all_args args rest)
+                  fun args -> rule_proof rule just.just_addrs just.just_params just.just_goal.mseq_goal (all_args args rest)
        | ComposeJust (just, justl) ->
             construct (partition_rest rest justl) just
-       | MLJust ({ just_params = params; just_refiner = name }, f) ->
-            fun args -> f params (all_args args rest)
+       | MLJust (just, f) ->
+            (* XXX BUG: just.just_refiner needs to be checked! *)
+            fun args -> f just.just_addrs just.just_params just.just_goal.mseq_goal (all_args args rest)
        | RewriteJust (_, just, _) ->
             check_rewrite just;
             List.hd rest
@@ -1591,50 +1592,65 @@ struct
             (* Only the above can be user-provable and can be returned by find_sentinel *)
             raise (Invalid_argument "find_sentinal")
 
+   (* XXX HACK: This is a pretty hackish way of combining things *)
+   let is_hackable_sequent t =
+      is_sequent_term t && (SeqGoal.length (explode_sequent t).sequent_goals) = 1
+   
+   let join_ext_arg_hack1 arg assum =
+      if is_hackable_sequent assum && not (is_sequent_term arg) then
+         replace_goal assum arg
+      else arg
+
+   let hack_terms_away =
+      let i = ref 0 in
+      fun t ->
+      if is_hackable_sequent t then
+         let seq = explode_sequent t in
+         let process (vars, terms) = function
+            Context (c, _) ->
+               vars, (Context (c, vars) :: terms)
+          | h -> 
+               let v = match h with
+                  HypBinding (v, _) -> v
+                | Hypothesis t -> incr i; "___" ^ (string_of_int !i)
+                | Context _ -> ""
+               in
+                  incr i;
+                  (mk_var_term v :: vars), (HypBinding (v, mk_so_var_term ("__" ^ (string_of_int !i)) vars) :: terms)
+         in
+         let vars, hyps = List.fold_left process ([],[]) (SeqHyp.to_list seq.sequent_hyps) in
+         let goal = incr i; SeqGoal.get seq.sequent_goals 0 in
+         let goal = if vars <> [] && is_var_term goal then mk_so_var_term ("__" ^ (string_of_int !i)) vars else goal in
+            mk_sequent_term { seq with sequent_hyps = SeqHyp.of_list (List.rev hyps); sequent_goals = SeqGoal.of_list [goal] }
+      else t
+
+   let join_ext_arg_hack arg assum =
+      hack_terms_away (join_ext_arg_hack1 arg assum)
+
+   let term_of_extract refiner ext args =
+      if (List.length ext.ext_goal.mseq_hyps) <> (List.length args) then
+         raise (Invalid_argument "Refine.term_of_extract: wrong number of term arguments");
+      term_of_extract_nocheck refiner ext (List.map2 join_ext_arg_hack1 args ext.ext_goal.mseq_hyps)
+
    (*
     * Theorem for a previous theorem or rule.
     * We once again use the rewriter to compute the
-    * extract.  The subextracts are shaped into a
-    * term of the form:
-    *    lambda(a. lambda(b. ... cons(arg1; cons(arg2; ... cons(argn, nil)))))
+    * extract. 
     *)
-   let compute_rule_ext name params args result =
-   (* BUG!!!!!!!!!!!
-    * This code was completely wrong (see BUGS 4.4 and 4.10) and was producing stupid
-      errors.
-      It is disabled for now
-    *) (*
-      (* Create redex term *)
-      let l = Array.length vars in
-      let create_redex vars args =
-         let args' = mk_xlist_term args in
-         let rec aux j =
-            if j < l then
-               mk_xbind_term vars.(j) (aux (j + 1))
-            else
-               args'
-         in
-            aux 0
-      in
+   let compute_rule_ext name addrs params goal args result =
+      let args = mk_xlist_term (goal :: args) in
       IFDEF VERBOSE_EXN THEN
          if !debug_refiner then
-            eprintf "Refiner.compute_rule_ext: %s: %a + params -> %a%t" name print_term (create_redex vars args) print_term result eflush
+            eprintf "Refiner.compute_rule_ext: %s: %a + [%s] [%a] -> %a%t" name print_term args (String.concat ";" (Array.to_list addrs)) (print_any_list print_term) params print_term result eflush
       ENDIF;
-      let rw = Rewrite.term_rewrite Strict empty_args_spec (create_redex vars args :: params) [result] in
-      let compute_ext vars params args =
-         match apply_rewrite rw empty_args (create_redex vars args) params with
-            [c], x when Array.length x = 0 ->
-               c
-          | _ ->
-               raise (Invalid_argument "Refine.add_prim_theorem.compute_ext: faulty extract")
+      let rw = Rewrite.term_rewrite Strict addrs (args :: params) [result] in
+      let compute_ext addrs params goal args =
+         let args = goal :: args in
+            List.hd (apply_rewrite rw (addrs, free_vars_terms args) (mk_xlist_term args) params)
       in
          compute_ext
-   *)
-   fun params args ->
-      (* Return dummy answer *)
-      result
 
-   let add_prim_rule build name params args result =
+   let add_prim_rule build name addrs params args result =
       IFDEF VERBOSE_EXN THEN
          if !debug_refiner then
             eprintf "Refiner.add_prim_theorem: %s%t" name eflush
@@ -1642,7 +1658,11 @@ struct
       let { build_opname = opname; build_refiner = refiner } = build in
          match find_refiner refiner (mk_opname name opname) with
             RuleRefiner r ->
-               let compute_ext = compute_rule_ext name params args result in
+               (* XXX BUG TODO: in addition to doing join_ext_arg_hack,
+                * we need to make sure the args are "univeral" and will always match *)
+               let args = List.map2 join_ext_arg_hack args r.rule_rule.mseq_hyps in
+               let result = join_ext_arg_hack1 result r.rule_rule.mseq_goal in
+               let compute_ext = compute_rule_ext name addrs params r.rule_rule.mseq_goal args result in
                   PrimRuleRefiner { prule_proof = Extracted compute_ext;
                                     prule_rule = r;
                                     prule_refiner = refiner
@@ -1650,7 +1670,7 @@ struct
           | _ ->
                REF_RAISE(RefineError (name, StringError "not a rule"))
 
-   let add_delayed_rule build name params args ext =
+   let add_delayed_rule build name addrs params args ext =
       IFDEF VERBOSE_EXN THEN
          if !debug_refiner then
             eprintf "Refiner.delayed_rule: %s%t" name eflush
@@ -1660,14 +1680,11 @@ struct
             RuleRefiner r ->
                let compute_ext () =
                   let ext = ext () in
-                  let { rule_rule = goal } = r in
-                  let { ext_goal = goal'; ext_subgoals = subgoals } = ext in
-                  let _ =
-                     if not (msequent_alpha_equal goal' goal) or subgoals <> [] then
+                     if not (msequent_alpha_equal ext.ext_goal r.rule_rule) then begin
+                        eprintf "Rule:%t[%a] --> %a%tExtract%t[%a] --> %a%t" eflush (print_any_list print_term) r.rule_rule.mseq_hyps print_term r.rule_rule.mseq_goal eflush eflush (print_any_list print_term) ext.ext_goal.mseq_hyps  print_term ext.ext_goal.mseq_goal eflush;
                         REF_RAISE(RefineError (name, StringError "extract does not match"))
-                  in
-                  let t = term_of_extract refiner ext args in
-                     compute_rule_ext name params args t
+                     end;
+                     compute_rule_ext name addrs params r.rule_rule.mseq_goal args (term_of_extract_nocheck refiner ext args)
                in
                   PrimRuleRefiner { prule_proof = Delayed compute_ext;
                                     prule_rule = r;
@@ -1864,7 +1881,7 @@ struct
                         { mseq_goal = goal; mseq_hyps = [] },
                         [{ mseq_goal = subgoal; mseq_hyps = [] }] ->
                            if alpha_equal goal redex & alpha_equal subgoal contractum then
-                              term_of_extract refiner ext []
+                              term_of_extract_nocheck refiner ext []
                            else
                               REF_RAISE(RefineError (name, StringError "extract does not match"))
                       | _ ->
@@ -1988,7 +2005,7 @@ struct
                      if equal_hyps goal_hyps sub_hyps &
                         List_util.for_all2 alpha_equal (redex :: contractum :: subgoals) (goal :: subgoals)
                      then
-                        ignore (term_of_extract refiner ext [])
+                        ignore (term_of_extract_nocheck refiner ext [])
                      else
                         REF_RAISE(RefineError (name, StringError "derivation does not match"))
                in
@@ -2042,15 +2059,15 @@ struct
          build.build_refiner <- refiner;
          tac
 
-   let prim_rule build name params args result =
-      build.build_refiner <-  add_prim_rule build name params args result
+   let prim_rule build name addrs params args result =
+      build.build_refiner <-  add_prim_rule build name addrs params args result
 
-   let delayed_rule build name params args extf =
-      build.build_refiner <- add_delayed_rule build name params args extf
+   let delayed_rule build name addrs params args extf =
+      build.build_refiner <- add_delayed_rule build name addrs params args extf
 
-   let derived_rule build name params args ext =
+   let derived_rule build name addrs params args ext =
       let extf () = ext in
-      let refiner = add_delayed_rule build name params args extf in
+      let refiner = add_delayed_rule build name addrs params args extf in
          check refiner;
          build.build_refiner <- refiner
 

@@ -306,6 +306,9 @@ struct
       match item with
          RWSeqContext (i, j, il) ->
             fprintf out "RWSeqContext (%d, %d, [%a])\n" i j print_int_list il
+       | RWSeqContextMatch (i, tl) ->
+            fprintf out "RWSeqContextMatch (%d)\n%a" (**)
+               i (print_prog_list (tabstop + 3)) tl
        | RWSeqContextSubst (i, tl) ->
             fprintf out "RWSeqContextSubst (%d)\n%a" (**)
                i (print_prog_list (tabstop + 3)) tl

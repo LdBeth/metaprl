@@ -63,8 +63,9 @@ sig
 
    (*
     * An ML rewrite replaces a term with another.
+    * inputs: rule parameters (addrs, terms), goal, subgoal extracts
     *)
-   type ml_extract = term list -> term list -> term
+   type term_extract = int array -> term list -> term -> term list -> term
 
    type ml_rewrite = term -> term
 
@@ -72,7 +73,7 @@ sig
       StringSet.t ->                           (* Free vars in the msequent *)
       term list ->                             (* Params *)
       term ->                                  (* Term to rewrite *)
-      term * term list * ml_extract            (* Extractor is returned *)
+      term * term list * term_extract          (* Extractor is returned *)
 
    (*
     * A condition relaces an goal with a list of subgoals,
@@ -82,7 +83,7 @@ sig
       int array ->                             (* sequent context addresses *)
       msequent ->                              (* goal *)
       term list ->                             (* params *)
-      msequent list *  ml_extract              (* subgoals, new variable names *)
+      msequent list *  term_extract            (* subgoals, new variable names *)
 
    (************************************************************************
     * SENTINALS                                                            *
@@ -317,6 +318,8 @@ sig
     *)
    val term_of_extract : refiner -> extract -> term list -> term
 
+   val join_ext_arg_hack : term -> term -> term (* hack; will go away *)
+
    (*
     * Get a checker from the refiner.
     *)
@@ -356,18 +359,21 @@ sig
 
    val prim_rule : build ->
       string ->                    (* name *)
+      string array ->              (* addrs *)
       term list ->                 (* params *)
       term list ->                 (* args (binding vars) *)
       term ->                      (* extract *)
       unit
    val derived_rule : build ->
       string ->                    (* name *)
+      string array ->              (* addrs *)
       term list ->                 (* params *)
       term list ->                 (* args (binding vars) *)
       extract ->                   (* derived justification *)
       unit
    val delayed_rule : build ->
       string ->                    (* name *)
+      string array ->              (* addrs *)
       term list ->                 (* params *)
       term list ->                 (* args (binding vars) *)
       (unit -> extract) ->         (* derived justification *)

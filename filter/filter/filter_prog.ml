@@ -1064,7 +1064,7 @@ let define_rule want_checkpoint code proc loc
       let $lid:name_rule_id$ = 
          $tactic_type_expr loc$.compile_rule $lid:local_refiner_id$ $lid:labels_id$ $lid:rule_id$
       in let _ = do {
-         $code$ $lid:local_refiner_id$ $str:name$ $lid:params_id$ $lid:avars_id$ $lid:extract_id$;
+         $code$ $lid:local_refiner_id$ $str:name$ $lid:cvars_id$ $lid:params_id$ $lid:avars_id$ $lid:extract_id$;
          $list:define_rule_resources proc loc name cvars_id params_id avars_id assums_id resources name_rule_expr$
       }
          in $name_rule_expr$
