@@ -214,6 +214,13 @@ let get_string_param loc t =
  ************************************************************************)
 
 (*
+ * We may be able to do better sometime, but for now
+ * we print the terms using the default display forms.
+ *)
+let print_exn f x =
+   Filter_exn.print Dform.null_base f x
+
+(*
  * Need some info about types and extraction.
  *)
 module type FilterInfoSig =
@@ -260,13 +267,6 @@ struct
         select : FilterCache.select;
         name : string
       }
-
-   (*
-    * We may be able to do better sometime, but for now
-    * we print the terms using the default display forms.
-    *)
-   let print_exn f x =
-      Filter_exn.print Dform.null_base f x
 
    (*
     * When a module is inlined, add the resources and infixes.
@@ -700,20 +700,26 @@ struct
    (*
     * Save the summary.
     *)
-   let save proc =
-      print_exn FilterCache.save proc.cache
+   let save proc suffix =
+      let f proc =
+         FilterCache.save proc.cache suffix
+      in
+         print_exn f proc
 
    (*
     * Extract an item list.
     *)
    let extract sig_info proc =
-      print_exn (Info.extract sig_info (FilterCache.info proc.cache) (**)
-                    (FilterCache.resources proc.cache)) proc.name
+      let f proc =
+         (Info.extract sig_info (FilterCache.info proc.cache) (**)
+             (FilterCache.resources proc.cache)) proc.name
+      in
+         print_exn f proc
 
    (*
     * Check the implementation with its interface.
     *)
-   let check_aux proc alt_select =
+   let check_error proc alt_select =
       (* Check that implementation matches interface *)
       let sig_info = FilterCache.check proc.cache alt_select in
       let _ =
@@ -729,7 +735,7 @@ struct
          sig_info
 
    let check proc alt_select =
-      print_exn (check_aux proc) alt_select
+      print_exn (check_error proc) alt_select
 end
 
 (*
@@ -824,7 +830,7 @@ module StrFilter = MakeFilter (StrFilterInfo) (Cache.StrFilterCache)
 (*
  * A primitive rule specifies the extract.
  *)
-let define_rule proc loc name
+let define_rule_error proc loc name
     (params : term list)
     (args : aterm list)
     (goal : term)
@@ -834,6 +840,9 @@ let define_rule proc loc name
    let mterm = zip_mfunction assums goal in
    let cmd = StrFilter.axiom_command proc name params mterm extract in
       StrFilter.add_command proc (cmd, loc)
+
+let define_rule proc loc name params args goal extract =
+   print_exn (define_rule_error proc loc name params args goal) extract
 
 let define_prim proc loc name params args goal extract =
    define_rule proc loc name params args goal (Primitive extract)

@@ -63,13 +63,13 @@ let main () =
    Arg.current := 1;
    Env_arg.parse spec add_anon_arg "Nuprl-Light compiler";
    set_include_path !include_path;
-      try Filter_exn.print Dform.null_base !Odyl_main.go () with
+      try !Odyl_main.go () with
          exn ->
             remove_output_file ();
             raise exn
 
 let _ =
-   Printexc.catch main ()
+   Filter_exn.print Dform.null_base main ()
 
 (*
  * -*-
