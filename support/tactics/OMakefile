@@ -1,7 +1,7 @@
 #
 # Don't need any libraries.
 #
-OCAMLINCLUDES = -I . -I ../display -I ../shell -I $(CAMLP4LIB)
+OCAMLINCLUDES += -I . -I ../display -I ../shell
 
 # Common files
 MLZFILES =

@@ -218,18 +218,8 @@ $(MP).opt: $(CMXOBJS) $(TCMXFILES) $(OPTTHREADSLIB) $(NATIVE_CLIBS) $(ARDEPS) $(
 #
 # Generate the mp_version.ml file
 #
-if true
-	LIBS =
-	OCAMLC = ocamlc
-	OCAMLOPT = ocamlopt
-	OCAML_OTHER_LIBS = unix
-
-	make_mp_version.o:
-	make_mp_version.cmo:
-	make_mp_version.cmi:
-	make_mp_version.cmx:
-
-	OCamlProgram(make_mp_version, make_mp_version)
+make_mp_version$(EXE): make_mp_version.ml
+	$(OCAMLC) -o $@ unix.cma $<
 
 mp_version.ml: make_mp_version$(EXE) $(CMOBJS) $(filter-out mp_version.%, $(RCMOFILES)) $(CMADEPS) $(TCMOBJS) $(filter-out mp_version.%, $(TCMOFILES)) $(TCMADEPS) mp_version.cmi $(ROOT)/mk/defaults $(OCAMLMACROS)
 	make_mp_version -version $(MP_VERSION) -refiner $(REFINER) -terms $(TERMS) > $@
