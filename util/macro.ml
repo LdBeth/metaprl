@@ -79,12 +79,12 @@ EXTEND
        | "UNDEFINE"; c = UIDENT -> SdUnd c ]];
    str_item_def_undef:
       [[ d = def_undef -> d
-       | si = Pcaml.str_item -> SdStr si ]];
+       | si = str_item -> SdStr si ]];
 END
 
 let _ =
-   add_option "-D" (Arg.String define)   "<string>   Define for ifdef's." ;
-   add_option "-U" (Arg.String undefine) "<string>   Undefine for ifdef's."
+   add_option "-D" (Arg.String define)   "<string>   Define for IFDEF's." ;
+   add_option "-U" (Arg.String undefine) "<string>   Undefine for IFDEF's."
 
 
 (*****************************************************************************)
@@ -508,6 +508,8 @@ let rec patt2expr patt =
             eprintf "could not convert pattern to expression at %d-%d.\n" b e;
             exit 1
 
+let include_dirs = ref ["./"]
+
 EXTEND
    (*
     * Macro definitions come first.
@@ -539,16 +541,38 @@ EXTEND
        | "INCLUDE"; file = STRING ->
             (* INCLUDE "file" will parse this file and insert the results in
              * the current AST using the StDcl that was added for such things
-             * exactly *)
+             * exactly.  This is copied from camlp4/argl.ml's process. *)
+            let file =
+               try (List.find (fun dir -> Sys.file_exists (dir ^ file))
+                              !include_dirs)
+                   ^ file
+               with Not_found -> file in
+            let old_name = !input_file in
             let ic = open_in_bin file in
+            let clear() = close_in ic in
             let cs = Stream.of_channel ic in
-            let phr = try Grammar.Entry.parse Pcaml.implem cs
-                      with x -> close_in ic; raise x
+            let _ = input_file := file in
+            let phr = try Grammar.Entry.parse implem cs
+                      with x -> clear(); raise x
             in
-               close_in ic;
+               clear();
+               (* Note: input_file isn't restored above when on an error. *)
+               input_file := old_name;
                StDcl (loc, List.map fst phr)
        | (* This is where macros are expanded *)
          si = NEXT -> process_str_item si
        ]];
 END
 
+let _ =
+   add_option
+      "-I"
+      (Arg.String
+          (fun str ->
+              if str <> "" then
+                 let str = if String.get str ((String.length str)-1) = '/' then
+                              str
+                           else
+                              str ^ "/" in
+                    include_dirs := !include_dirs @ [str]))
+      "<string>   Add a path for INCLUDE." ;
