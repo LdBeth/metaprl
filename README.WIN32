@@ -62,11 +62,17 @@ Installation:
 5. Building MetaPRL
 
    Once ocaml and omake are installed, you should be able to run
-   omake in the top-level metaprl directory and have it build
-   everything.
+   omake in the top-level metaprl directory.
 
    ...metaprl> omake
    ...compile messages...
+
+   After you run omake for the first time, it will create the mk/config
+   file (as well as an empty mk/config.local file) that you will need
+   to customize, before the omake process can continue. The mk/config
+   file is self-documenting. Make sure your mk/config setting match
+   your installation---for example, if you do not have OpenSSL installed,
+   set "SSL_ENABLED" to "false".
 
    If you get any errors, send mail to onlynews@metaprl.org, and
    we'll try to help you out.
