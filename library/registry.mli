@@ -32,10 +32,13 @@ type regtb
 
 val global_registry: regtb
 val local_registry: regtb
+val token_table: (string, int) Hashtbl.t  
+val index_table: (int, string) Hashtbl.t  
 
 val registry_types: string list ref
 
 val registry_file: string
+val token_file: string
 
 val define_registry_type: string -> bool -> unit
 
@@ -50,6 +53,7 @@ val read_string: in_channel -> string
 val read_int32 : in_channel -> int32
 
 val read_registry: unit
+val read_tokens: unit
 
  (*val default_registry_files: unit ->
 

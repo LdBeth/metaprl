@@ -28,6 +28,7 @@
 open Printf
 open Mp_debug
 open Mp_pervasives
+open Mp_num
 
 
 open Refiner.Refiner.Term
@@ -63,15 +64,16 @@ let index_of_bytes b c = ((b land 0x0F) lsl 8) + c
 
 let level_of_byte b = ((b land 0x30) lsr 4)
 
-type catetype =   COpid  | CBinding | CParameter | COperator | CTerm
+type catetype =   COpid  | CBinding | CParameter | COperator | CTerm | CNumeral
 
 let catetypes =
-  let a = create 5 COpid in
+  let a = create 6 COpid in
     set a 0 COpid;
     set a 1 CBinding;
     set a 2 CParameter;
     set a 3 COperator;
     set a 4 CTerm;
+    set a 5 CNumeral;
 
     a
 
@@ -183,11 +185,56 @@ let rec scan_item stype scanner =
   | COperator -> Operator (scan_operator scanner)
   | CTerm -> Term (scan_term scanner)
 
+and scan_numeral_parameter scanner =
+ let l = scan_cur_byte scanner.scanner in
+ let mp256 = num_of_int 256 in
+
+  let rec aux i mpexp acc =
+   scan_next scanner.scanner;
+   if i = 0
+      then acc
+      else aux (i - 1) (mult_num mpexp mp256)
+               (add_num acc (mult_num mpexp (num_of_int (scan_cur_byte scanner.scanner))))
+
+   in
+
+  let n = aux l (num_of_int 1) (num_of_int 0) in
+    scan_byte scanner.scanner icolon;
+    let ptype = (scan_string scanner.scanner) in
+      match ptype with "n" -> (Number n)
+      | "time" -> (ParamList [(make_param (Token "time"));
+                          (make_param (Number n))])
+      | _ -> error ["read_term"; "numeral_parameter"; "MetaPRL"; ptype] [] []
+
+
+and scan_numeral_parameter_old scanner = 
+ let l = scan_cur_byte scanner.scanner in
+ let mp256 = num_of_int 256 in
+
+  let rec aux i acc = 
+   scan_next scanner.scanner;
+   if i = 0 
+      then acc
+      else aux (i - 1) (add_num (mult_num acc mp256) (num_of_int (scan_cur_byte scanner.scanner)))
+   in
+
+  let n = aux l mp256 in
+    scan_byte scanner.scanner icolon;
+    let ptype = (scan_string scanner.scanner) in
+      match ptype with "n" -> (Number n)
+      | "time" -> (ParamList [(make_param (Token "time"));
+			  (make_param (Number n))])
+      | _ -> error ["read_term"; "numeral_parameter"; "MetaPRL"; ptype] [] []
+
+
 and scan_compressed code scanner =
  if (compression_add_byte_p code)
-    then (scan_next scanner.scanner;
-	 (* print_string " scan compressed add "; *)
-	 levels_assign scanner code (function () -> scan_item (type_of_byte code) scanner))
+    then let ctype = (type_of_byte code) in
+          scan_next scanner.scanner;
+          if ctype = CNumeral
+	    then Parameter (make_param (scan_numeral_parameter scanner))
+	    else ((* print_string " scan compressed add "; *)
+		  levels_assign scanner code (function () -> scan_item ctype scanner))
     else (scan_bump scanner.scanner;
 	 (* print_string " scan compressed index "; *)
 	 let r = levels_lookup scanner

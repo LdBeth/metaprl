@@ -37,6 +37,8 @@ open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Nuprl5
 
+
+
 let _ =
    if !debug_load then
       eprintf "Loading Basic%t" eflush
@@ -562,8 +564,4 @@ let property_of_iproperty_term pt =
     |_ -> error ["iproperty"; "term"; "not"; ""] [] [pt]
 
 
-
-
-
-
-
+let debug_term = ref ivoid_term

@@ -37,10 +37,13 @@ open MathBus
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Opname
+open Registry
 
 let _ =
    if !debug_load then
       eprintf "Loading Mbterm%t" eflush
+
+let use_table = ref true
 
 exception InvalidMathBusLabel of (int32 * int32)
 
@@ -52,6 +55,8 @@ let mbs_Level = numeric_label "Level"
 let mbs_ObjectId = numeric_label "ObjectId"
 let mbs_ParamList = numeric_label "ParmList"
 let mbs_TermIndex = numeric_label "TermIndex"
+let mbs_TokenIndex = numeric_label "TokenIndex"
+let mbs_StringIndex = numeric_label "StringIndex"
 let mbs_MString = numeric_label "MString"
 let mbs_MLongInteger = numeric_label "MLongInteger"
 let mbs_MVariable = numeric_label "MVariable"
@@ -70,8 +75,8 @@ let param_of_opname opname =
 let rec mbparameter_of_param param =
   match (dest_param param) with
     Number p -> mb_number p
-  | String p -> mb_string p
-  | Token p -> mb_stringq p mbs_Token
+  | String p -> if !use_table then (let v = (try Hashtbl.find token_table p with Not_found -> 0) in if v=0 then (mb_string p) else mb_integerq v mbs_StringIndex) else mb_string p
+  | Token p -> if !use_table then (let v = (try Hashtbl.find token_table p with Not_found -> 0) in if v=0 then (mb_stringq p mbs_Token) else mb_integerq v mbs_TokenIndex) else mb_stringq p mbs_Token
   | Level p ->
       let aux = function
 	  {le_const = i; le_vars = vars } ->
@@ -142,6 +147,9 @@ let rec param_of_mbparameter mbparameter =
   if bequal b mbs_String then make_param (String (string_value mbparameter))
   else if bequal b mbs_Variable then make_param (Var (string_value mbparameter))
   else if bequal b mbs_Token then make_param (Token (string_value mbparameter))
+  else if bequal b mbs_TokenIndex then make_param (Token (Hashtbl.find index_table (integer_value mbparameter)))
+  else if bequal b mbs_StringIndex then make_param (String (Hashtbl.find index_table (integer_value mbparameter)))
+  else if bequal b mbs_TermIndex then make_param (String (Hashtbl.find index_table (integer_value mbparameter)))
   else if bequal b mbs_LongInteger then
     let n = number_value mbparameter in make_param (Number n)
   else if bequal b mbs_ParamList then

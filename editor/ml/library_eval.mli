@@ -69,6 +69,7 @@ val library_open_and_loop_eval	: string -> (term -> term -> term list) -> unit
 
 (*	a trivial refiner hook for testing : *)
 val faux_refine : term -> term -> term list
+val itt_bug : bool ref
 
 
 

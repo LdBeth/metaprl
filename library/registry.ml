@@ -67,6 +67,12 @@ let registry_file =
       Not_found ->
          raise (Failure "environment variable MPLIB is not defined")
 
+let token_table = (Hashtbl.create 3)
+let index_table = (Hashtbl.create 3)
+let token_file = try Filename.concat (Sys.getenv "MPLIB") "mbs-mpl.txt" with
+      Not_found ->
+         raise (Failure "environment variable MPLIB is not defined")
+
 (*
  * Define a particular type of registry.
  *)
@@ -253,3 +259,14 @@ let generate_registry_declarations ofile file =
 
 *)
 
+let read_tokens =
+   let stream = open_in token_file in
+   let p = read_string stream in
+   let rec loop ident =
+      if ident = "" then
+         close_in stream
+      else
+         let a = int_of_string (read_string stream) in
+            (Hashtbl.add token_table ident a; Hashtbl.add index_table a ident; loop (read_string stream))
+   in
+      loop p

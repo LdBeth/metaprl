@@ -61,4 +61,8 @@ RegistryStoreLocal SubTypes 2
 Attributes StringId 0x00000006
 Attributes SubTypes 0
 
+TokenIndex StringId 0x00002010
+TokenIndex SubTypes -1
 
+StringIndex StringId 0x00002011
+StringIndex SubTypes -1

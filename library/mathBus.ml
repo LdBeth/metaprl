@@ -41,6 +41,9 @@ let _ =
 type mbnode = Mbint of int32 | Mnode of mbterm
  and mbterm = mbnode array ;;
 
+
+let use_unicode = ref false
+
 let minimum_global_numeric_label = create 0X0000
 let maximum_global_numeric_label = lbor (lbsl (create 0X00FF) 16) (create 0XFFFF)
 let minimum_local_numeric_label = lbsl (create 0X0100) 16
@@ -61,6 +64,8 @@ let numeric_label string = registry_lookup_value string "StringId" ;;
 let mBS_Attributes = numeric_label "Attributes"
 let mbs_String = numeric_label "String"
 let mbs_LongInteger = numeric_label "LongInteger"
+let mbs_Token = numeric_label "Token"
+
 
 (* ;; Subterm_Types returns the subtypes of a node ie. which sub_terms are
    ;; 32_bit integers and which are nodes themselves. The meansings are:
@@ -233,7 +238,7 @@ let mb_number num =
 *)
 
 let mb_number num =
-   print_string "m n "; print_string (string_of_num num);
+   (*print_string "m n "; print_string (string_of_num num);*)
   let a = abs_num num and b = num_of_int 1000000000 in
   let rec loop c l =
     if Mp_num.lt_num c b then
@@ -367,25 +372,9 @@ let ttbit_twos_complement = lbsl (create 1) 32
 (* The following packs ASCII strings into 32_bit words, two characters
 ;; to a word.  So, every other byte is 0.  This is leave room for the
 ;; Unicode encoding that I will put in soon.*)
-let mb_string s =
-  let len = String.length s in
-  let node = make_mbnode mbs_String (((1+ len) asr 1) + 1) in
-  Array.set node 1 (Mbint (create len));
-  for i = 0 to (len/2)
-  do let j = 2 + i in
-  if j <= (((1+ len) asr 1) + 1)
-  then match node.(j) with
-    Mbint b -> Array.set node j
-	(Mbint (if 1+ (i * 2) < len then
-	  lbor (lbsl (create (Char.code (String_util.get "MathBus.mb_string" s (2 * i)))) 16)
-	    (create (Char.code (String_util.get "MathBus.mb_string" s (1+ (2 * i)))))
-	else lbsl (create (Char.code (String_util.get "MathBus.mb_string" s (2 * i)))) 16))
-  | Mnode n -> failwith "mb_string";
-  done;
-  node
 
 
-let mb_stringq s num_id =
+let mb_stringq_with_unicode s num_id =
   let len = String.length s in
   let node = make_mbnode num_id (((1+ len) asr 1) + 1) in
   Array.set node 1 (Mbint (create len));
@@ -395,15 +384,40 @@ let mb_stringq s num_id =
   then match node.(j) with
     Mbint b -> Array.set node j
 	(Mbint (if (1+ (i * 2))< len then
-	  lbor (lbsl (create (Char.code (String_util.get "MathBus.mb_stringq" s (2 * i)))) 16)
+	  lbor (lbsl (create (Char.code (String_util.get "MathBus.mb_stringq" s (2 * i)))) 16) 
 	    (create (Char.code  (String_util.get "MathBus.mb_stringq" s (1+ (2 * i)))))
 	else lbsl (create (Char.code (String_util.get "MathBus.mb_stringq" s (2 * i)))) 16))
   | Mnode n -> failwith "mb_string";
+
   done;
   node
 
+let mb_stringq s num_id =
+  if !use_unicode then mb_stringq_with_unicode s num_id
+  else let len = String.length s in
+  let m = len mod 4 in let d = (len - m) / 4 in let a = if (m = 0) then (1 + d) else (2 + d)
+  in let node = make_mbnode num_id a in
+  Array.set node 1 (Mbint (create len));
+  let rec loop i j = 
+  if (1 + i) > len then () else
+  (match node.(j) with
+    Mbint b -> (Array.set node j
+	(Mbint 
+	  (lbor (lbor (lbsl (create (Char.code (String_util.get "MathBus.mb_string" s i))) 24)
+	             (if (i + 2) > len then (create 0) 
+			else (lbsl (create (Char.code (String_util.get "MathBus.mb_string" s (1 + i)))) 16)))
+	       (lbor (if (i + 3) > len then (create 0) else (lbsl (create (Char.code (String_util.get "MathBus.mb_string" s (2 + i)))) 8))
+		     (if (i + 4) > len then (create 0) else (create (Char.code (String_util.get "MathBus.mb_string" s (3 + i)))))))); loop (i + 4) (1 + j))
+  | Mnode n -> failwith "mb_string") in
+  loop 0 2;
+	
+  node
 
-let string_value node =
+let mb_string s =
+  if !use_unicode then mb_stringq_with_unicode s mbs_String
+  else mb_stringq s mbs_String
+
+let string_value_with_unicode node =
   match (mbnode_subtermq node 1) with
     Mbint b -> let (x, y) = dest_int32 b in
     let str = if y < 0 then failwith "string_value" else String_util.create "MathBus.string_value" y in
@@ -411,10 +425,32 @@ let string_value node =
       if (i >= y) or (j > (mbnode_nSubterms node)) then str else
       (match node.(j) with
 	Mbint c -> let (a, b) = dest_int32 c in
-	(String_util.set "MathBus.string_value" str i (Char.chr a);
+	(String_util.set "MathBus.string_value_with_unicode" str i (Char.chr a);
 	 if (i + 1) < y then
-	   String_util.set "MathBus.string_value" str (i + 1) (Char.chr b);
+	   String_util.set "MathBus.string_value_with_unicode" str (i + 1) (Char.chr b);
 	 loop (i + 2) (j + 1))
+      | Mnode n -> failwith "string_value") in
+    loop 0 2
+  | Mnode n -> failwith "string_value"
+
+  
+let string_value node =
+  if !use_unicode then string_value_with_unicode node
+  else match (mbnode_subtermq node 1) with
+    Mbint b -> let (x, y) = dest_int32 b in
+    let str = if y < 0 then failwith "string_value" else String_util.create "MathBus.string_value" y in
+    let rec loop i j =
+      if (i >= y) or (j > (mbnode_nSubterms node)) then str else
+      (match node.(j) with
+	Mbint c -> let (a, b) = dest_int32 c in let a1 = (a asr 8) land 0xFF and a2 = a land 0xFF and b1 = (b asr 8) land 0xFF and b2 = b land 0xFF in
+	(String_util.set "MathBus.string_value" str i (Char.chr a1);
+	 if (i + 1) < y then
+	   String_util.set "MathBus.string_value" str (i + 1) (Char.chr a2);
+	 if (i + 2) < y then
+	   String_util.set "MathBus.string_value" str (i + 2) (Char.chr b1);
+	 if (i + 3) < y then
+	   String_util.set "MathBus.string_value" str (i + 3) (Char.chr b2);
+	 loop (i + 4) (j + 1))
       | Mnode n -> failwith "string_value") in
     loop 0 2
   | Mnode n -> failwith "string_value"
@@ -428,7 +464,7 @@ let rec print_node node =
       print_string (string_of_num (number_value node));
       print_char '}'
     end
-  else if bequal b mbs_String then
+  else if (bequal b mbs_String) or (bequal b mbs_Token) then
     print_string (string_value node)
   else
     begin
@@ -446,6 +482,7 @@ let rec print_node node =
 	      | Mnode n -> failwith "print node bint")
       	    else (match (mbnode_subtermq node i) with
 	      Mbint b -> (print_char '('; print_string (registry_lookup_identifier "StringId" b); print_char ')')
+
       	    | Mnode n -> failwith "print node bint") in
       loop_over_subterms node loop
     end
@@ -617,7 +654,7 @@ let write_32bit num stream =
 	(write_byte64 0xFD stream;
 	 write_byte64 (b asr 8) stream;
 	 write_byte64 (0xFF land b) stream)
-      else if b <= 0xFF then
+      else if a <= 0xFF then
         (write_byte64 0xFE stream;
          write_byte64 a stream;
          write_byte64 (b asr 8) stream;
@@ -749,7 +786,7 @@ let rec rwrite_node node stream =
   let nSubterms = (create (mbnode_nSubterms node)) in
   (write_32bit op stream;
   write_32bit nSubterms stream;
-  let lp i typ =
+  let loop i typ =
     (match typ with
       None -> (match (mbnode_subtermq node i) with
 	Mnode n ->
@@ -760,7 +797,7 @@ let rec rwrite_node node stream =
 	  write_32bit b2 stream
       | Mnode n2 -> failwith "rwrite2"))
   in
-  loop_over_subterms node lp)
+  loop_over_subterms node loop)
 
 
 

@@ -101,6 +101,7 @@ let connect_callback link =
 
 
 let send ((in_channel, out_channel), socket) term =
+  Basic.debug_term := term;
   write_node (mbterm_of_term term) out_channel;
   let rec tf () =
    try flush out_channel with

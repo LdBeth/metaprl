@@ -31,7 +31,7 @@ open Refiner.Refiner.Term
 open Opname
 open MathBus
 
-
+val use_table : bool ref
 val term_of_mbterm: mbterm -> term
 val mbterm_of_term: term -> mbterm
 

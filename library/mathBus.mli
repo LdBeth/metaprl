@@ -36,6 +36,8 @@ open Registry
 type mbnode =   Mbint of int32 | Mnode of mbterm
  and mbterm = mbnode array
 
+val use_unicode:  bool ref
+
 val stream_mode: string
 
 val make_mbnode:  int32 -> int -> mbterm
@@ -70,17 +72,16 @@ val numeric_label: string -> int32
 val symbolic_label: int32 ->  string
 
 val mbs_String: int32
+val mbs_Token: int32
 val mbs_LongInteger: int32
 val mBS_Attributes: int32
 
 
 (*debugging purposes*)
-(*
-val mbnode_nsubterms: mbnode -> int
-val declare_local_stringid: string -> int32 -> int32
-val mbnode_subterm: mbNode -> int -> mbnode
-val global_assign:
-val loop_over_subterms: mbterm -> (int -> string -> unit) -> unit
+
+val mbnode_nSubterms: mbterm -> int
+val mbnode_subterm: mbterm -> int -> mbnode
+val loop_over_subterms: mbterm -> (int -> string option -> unit) -> unit
 
 val  minimum_global_numeric_label:  int32
 val  maximum_global_numeric_label: int32
@@ -99,6 +100,6 @@ val    base64_char_count: int ref
 val    base64_icount: int ref
 val    base64_ibuffer: int ref
 val   cnt: int ref
-val subterm_types: int32 ->  regval
-*)
+
+
 
