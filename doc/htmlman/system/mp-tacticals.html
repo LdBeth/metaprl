@@ -37,7 +37,7 @@ cache, and various annotations that are inherited in the proof
 tree. The <TT>tactic</TT> type is defined as:</P>
 
 <BLOCKQUOTE>
-  <P><B><TT>type</TT></B><TT> tactic = tactic_arg -&gt; tactic_value</TT></P>
+  <PRE><B>type</B> tactic = tactic_arg -&gt; tactic_value</PRE>
 </BLOCKQUOTE>
 
 <P>The following operations are defined on values of type <TT>tactic_arg</TT>.</P>
@@ -109,7 +109,8 @@ to modify the attribute list during refinement:</P>
 </BLOCKQUOTE>
 
 <P>Not all of the attributes can be modified: some are constant
-values that are initialized by the proof editor when a proof tree</P>
+values that are initialized by the proof editor when a proof tree
+is constructed.</P>
 
 <H2>Simple tactics</H2>
 
@@ -136,15 +137,14 @@ in the proof of the derived rule for <TT>and_elim</TT>, has one
 assumption:</P>
 
 <BLOCKQUOTE>
-  <P><TT>sequent { 'H; y: 'A; z: 'B; 'J[('y, 'z)] &gt;- 'C[('y,
-  'z)] }</TT></P>
+  <PRE>sequent { 'H; y: 'A; z: 'B; 'J[('y, 'z)] &gt;- 'C[('y, 'z)] }</PRE>
 </BLOCKQUOTE>
 
 <P>and it has three initial hypotheses: the hypotheses of the
 goal sequent:</P>
 
 <BLOCKQUOTE>
-  <P><TT>'H</TT>, <TT>x: 'A &amp; 'B</TT>, and <TT>'J['x]</TT>.</P>
+  <P><TT>'H</TT>, <TT>x: 'A &amp; 'B</TT> and <TT>'J['x]</TT>.</P>
 </BLOCKQUOTE>
 
 <P>The <TT>tacticals</TT> module defines a tactic for a proof
@@ -153,7 +153,7 @@ valid in all logics; the <TT>ITT</TT> version is in the module
 <TT>Itt_struct</TT>):</P>
 
 <BLOCKQUOTE>
-  <P><B><TT>topval</TT></B><TT> nthAssumT : int -&gt; tactic</TT></P>
+  <PRE><B>topval</B> nthAssumT : int -&gt; tactic</PRE>
 </BLOCKQUOTE>
 
 <P>This tactic proves a goal only if it matches the assumption
@@ -206,12 +206,12 @@ tac2)</TT> first applies <TT>tac1</TT>. If <TT>tac1</TT> fails,
 the result is discarded. The <TT>tac2</TT> tactic is applied to
 the resulting subgoal.</P>
 
-<P>The <TT>thenT</TT> tactic is used for tactic sequencing. An
+<P>The <TT>thenT</TT> tactical is used for tactic sequencing. An
 application of <TT>(tac1 thenT tac2)</TT> first applies <TT>tac1</TT>
 to the goal, and then applies <TT>tac2</TT> to all the subgoals.
 The sequence fails if either <TT>tac1</TT> or <TT>tac2</TT> fail.</P>
 
-<P>The <TT>thenLT</TT> tacticals performs sequencing, but it
+<P>The <TT>thenLT</TT> tactical also performs sequencing, but it
 allows different tactics to be applied to the subgoals generated
 by the first tactic. When <TT>(tac thenLT [tac</TT><I>1</I><TT>;
 ...; tac</TT><I>n</I><TT>])</TT> is applied, <TT>tac</TT> must
@@ -220,10 +220,10 @@ to subgoal <I>i</I>. The tactic fails if any of the tactics fail,
 or the number of subgoals is not equal to the length of the tactic
 list.</P>
 
-<P>The <TT>thenFLT</TT> tactic is similar to <TT>thenLT</TT>,
+<P>The <TT>thenFLT</TT> tactical is similar to <TT>thenLT</TT>,
 but it allows the use of a function to compute the tactic list.
-The type <TT>tactic</TT> is defined as <TT>tactic_arg -&gt; tactic_list</TT>;
-the <TT>thenFLT</TT> tactic performs the partial tactic application
+The type <TT>tactic</TT> is defined as <TT>tactic_arg -&gt; tactic_value</TT>;
+the <TT>thenFLT</TT> tactical performs the partial tactic application
 for the subgoal list.</P>
 
 <H2>Conditional tactics and looping</H2>
@@ -243,7 +243,7 @@ node, otherwise the second tactic is applied. The <TT>ifThenT</TT>
 tactic is similar, with the following equivalence:</P>
 
 <BLOCKQUOTE>
-  <P><TT>ifThenT pred tac = ifT pred tac idT.</TT></P>
+  <PRE>ifThenT pred tac = ifT pred tac idT.</PRE>
 </BLOCKQUOTE>
 
 <P>The <TT>whileT</TT> and <TT>untilT</TT> tacticals perform the

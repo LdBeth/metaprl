@@ -15,14 +15,13 @@ definition of <I>beta</I> reduction defines a conversion called
 <TT>beta</TT>:</P>
 
 <BLOCKQUOTE>
-  <P><B><TT>rewrite</TT></B><TT> beta : (lambda{x. 'b['x]} 'a)
-  &lt;--&gt; 'b['a].</TT></P>
+  <PRE><B>rewrite</B> beta : (lambda{x. 'b['x]} 'a) &lt;--&gt; 'b['a].</PRE>
 </BLOCKQUOTE>
 
 <P>The ML conversion has the following type:</P>
 
 <BLOCKQUOTE>
-  <P><B><TT>val</TT></B><TT> beta : conv</TT></P>
+  <PRE><B>val</B> beta : conv</PRE>
 </BLOCKQUOTE>
 
 <H2>Conversion application</H2>
@@ -31,7 +30,7 @@ definition of <I>beta</I> reduction defines a conversion called
 function:</P>
 
 <BLOCKQUOTE>
-  <P><B><TT>topval</TT></B><TT> rw : conv -&gt; int -&gt; tactic</TT></P>
+  <PRE><B>topval</B> rw : conv -&gt; int -&gt; tactic</PRE>
 </BLOCKQUOTE>
 
 <P>The <TT>rw</TT> function assumes the conversion is being applied
@@ -41,7 +40,7 @@ an additional function <TT>rwh</TT> to perform rewriting on the
 &quot;higher&quot; occurrences of subterms.</P>
 
 <BLOCKQUOTE>
-  <P><B><TT>topval</TT></B><TT> rwh : conv -&gt; int -&gt; tactic</TT></P>
+  <PRE><B>topval</B> rwh : conv -&gt; int -&gt; tactic</PRE>
 </BLOCKQUOTE>
 
 <P>For example, beta conversion is performed in the following
@@ -140,7 +139,7 @@ The following conversionals provide search strategies.</P>
 <B>topval</B> allSubC : conv -&gt; conv</PRE>
 </BLOCKQUOTE>
 
-<P>These two conversions apply their arguments to the <I>subterms</I>
+<P>These two conversions apply their arguments to the immediate <I>subterms</I>
 of the current goal. The <TT>(someSubC conv)</TT> conversion applies
 <TT>conv</TT> to subterms from left-to-right, succeeding when
 the first rewrite succeeds. The <TT>(allSubC conv)</TT> applies
@@ -152,18 +151,20 @@ the first rewrite succeeds. The <TT>(allSubC conv)</TT> applies
 </BLOCKQUOTE>
 
 <P>The <TT>higherC</TT> conversion searches for the <I>outermost</I>
-terms where a rewrite is successful. It is defined by recursion:</P>
+terms where a rewrite is successful. It may defined by recursion:</P>
 
 <BLOCKQUOTE>
-  <PRE><B>let</B> higherC conv = conv orelseC (allSubC conv)</PRE>
+  <PRE><B>let</B> higherC conv = conv orelseC (allSubC (higherC conv))</PRE>
 </BLOCKQUOTE>
+
+<P>Since higherC conversional is used very often, MetaPRL provides a
+highly tuned efficient implementation of rewriting using higherC conversionals</P>
 
 <P>The <TT>lowerC</TT> conversion searches for the <I>innermost</I>
 terms:</P>
 
 <BLOCKQUOTE>
-  <P><B><TT>let</TT></B><TT> lowerC conv = (allSubC conv) orelseC
-  conv</TT></P>
+  <PRE><B>let</B> lowerC conv = (allSubC (lowerC conv)) orelseC conv</PRE>
 </BLOCKQUOTE>
 
 <P>The <TT>repeatC</TT> conversion applies a conversion until
