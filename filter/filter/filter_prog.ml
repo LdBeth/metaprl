@@ -79,7 +79,11 @@ type t = {
    imp_arg : Convert.t;
    imp_name : string;
    mutable imp_resources : (string * MLast.ctyp) list;
-   imp_all_resources : (module_path * string * MLast.ctyp resource_sig) list
+   imp_all_resources : (module_path * string * MLast.ctyp resource_sig) list;
+   mutable imp_terms : term list;
+   mutable imp_num_terms : int;
+   mutable imp_meta_terms : meta_term list;
+   mutable imp_num_meta_terms : int;
 }
 
 (*
@@ -99,11 +103,20 @@ type wrap_arg =
 (*
  * Convert between expressions and terms.
  *)
-let expr_of_term loc t =
-   <:expr< Ml_term.term_of_string $str: String.escaped (Ml_term.string_of_term t)$ >>
+let global_term_var = "_$globterms"
+let global_meta_term_var = "_$globmterms"
 
-let expr_of_mterm loc t =
-   <:expr< Ml_term.mterm_of_string $str: String.escaped (Ml_term.string_of_mterm t)$ >>
+let expr_of_term proc loc t =
+   proc.imp_terms <- t::proc.imp_terms;
+   let num = proc.imp_num_terms in
+      proc.imp_num_terms <- num + 1;
+      <:expr< $lid:global_term_var$.($int:(string_of_int num)$) >>
+
+let expr_of_meta_term proc loc t =
+   proc.imp_meta_terms <- t::proc.imp_meta_terms;
+   let num = proc.imp_num_meta_terms in
+      proc.imp_num_meta_terms <- num + 1;
+      <:expr< $lid:global_meta_term_var$.($int:(string_of_int num)$) >>
 
 (************************************************************************
  * SYNTAX                                                               *
@@ -258,9 +271,7 @@ let redex_id            = "_$redex"
 let contractum_id       = "_$contractum"
 let params_id           = "_$params"
 let subgoals_id         = "_$subgoals"
-let extract_id          = "_$extract"
 let term_id             = "_$term"
-let x_id                = "_$x"
 let cvars_id            = "_$cvars"
 let avars_id            = "_$avars"
 let bnames_id           = "_$bnames"
@@ -270,14 +281,12 @@ let extract_id          = "_$extract"
 let stack_id            = "_$stack"
 let names_id            = "_$names"
 let goal_id             = "_$goal"
-let seq_id              = "_$seq"
 let assums_id           = "_$assums"
 let rule_id             = "_$rule"
 let addrs_id            = "_$addrs"
 let msequent_goal_id    = "_$mseq_goal"
 let msequent_hyps_id    = "_$mseq_hyps"
 let dprinter_id         = "_$dprinter"
-let labels_id           = "_$labels"
 let rule_name_id        = "_$rule_name"
 
 let expr_of_label loc = function
@@ -598,20 +607,20 @@ let rec mk_string_list_expr loc = function
  | hd::tl ->
       <:expr< $lid:"::"$ $str:hd$ $mk_string_list_expr loc tl$ >>
 
-let binding_let loc (v, bnd) =
+let binding_let proc loc (v, bnd) =
    <:patt< $lid:v$ >>,
    match bnd with
       BindTerm t ->
-         expr_of_term loc t
+         expr_of_term proc loc t
     | BindOpname op ->
          <:expr< Opname.make_opname $mk_string_list_expr loc (Opname.dest_opname op)$ >>
 
-let bindings_let loc bnd_expr expr =
+let bindings_let proc loc bnd_expr expr =
    if bnd_expr.item_bindings = [] then expr
-   else <:expr< let $list:List.map (binding_let loc) (List.rev bnd_expr.item_bindings)$ in $expr$ >>
+   else <:expr< let $list:List.map (binding_let proc loc) (List.rev bnd_expr.item_bindings)$ in $expr$ >>
 
-let expr_of_bnd_expr loc expr =
-   bindings_let loc expr expr.item_item
+let expr_of_bnd_expr proc loc expr =
+   bindings_let proc loc expr expr.item_item
 
 (************************************************************************
  * TOP LOOP                                                             *
@@ -792,12 +801,12 @@ let wrap_toploop_item loc name ctyp expr =
  *)
 let define_ml_program proc loc strict_expr args tname redex bnd_expr code =
    <:expr<
-      let $lid:term_id$ = $expr_of_term loc redex$ in
-      let $lid:args_id$ = [ $lid:term_id$ :: $list_expr loc (expr_of_term loc) args$ ] in
+      let $lid:term_id$ = $expr_of_term proc loc redex$ in
+      let $lid:args_id$ = [ $lid:term_id$ :: $list_expr loc (expr_of_term proc loc) args$ ] in
       (* XXX BUG? We should actually pass the context args array, not just [||], but that 
          is only needed for ml_rules and that code is dead anyway... *)
       let $lid:redex_id$ = Refiner.Refiner.Rewrite.compile_redices $strict_expr loc$ [||] $lid:args_id$ in
-         $bindings_let loc bnd_expr code$
+         $bindings_let proc loc bnd_expr code$
    >>
 
 (************************************************************************
@@ -829,7 +838,7 @@ let define_rewrite_resources proc loc name redex contractum assums params resour
             ($lid:process_name$ : Mp_resource.rw_annotation_processor '$anno_name$ $input$)
                $str:name$ $redex$ $contractum$ $assums$ $params$ $arg_expr$
          >>
-   in bindings_let loc resources <:expr< do { $list:List.map define_resource resources.item_item$ } >>
+   in bindings_let proc loc resources <:expr< do { $list:List.map define_resource resources.item_item$ } >>
 
 (*
  * An input form is a rewrite, but we don't add it to the
@@ -839,15 +848,13 @@ let define_input_form want_checkpoint proc loc iform =
    if iform.rw_resources.item_item <> [] then
       Stdpp.raise_with_loc loc (Invalid_argument "Resource annotations on input forms are not supported yet");
    let name = iform.rw_name in
-   let rw_id = "_$" ^ name ^ "_rewrite" in
    let create_input_form = <:expr<
-      let $lid:redex_id$ = $expr_of_term loc iform.rw_redex$ in
-      let $lid:contractum_id$ = $expr_of_term loc iform.rw_contractum$ in
-         $refiner_expr loc$.create_input_form $lid:local_refiner_id$ $str:name$ $lid:redex_id$ $lid:contractum_id$
+      let $lid:contractum_id$ = $expr_of_term proc loc iform.rw_contractum$ in
+         $refiner_expr loc$.create_input_form $lid:local_refiner_id$ $str:name$ (**)
+            ($expr_of_term proc loc iform.rw_redex$) $lid:contractum_id$
     >> in
        checkpoint_resources want_checkpoint loc name [
-          <:str_item< value $lid:rw_id$ = $wrap_exn proc loc name create_input_form$ >>;
-          <:str_item< value $lid:name$ = $rewrite_of_pre_rewrite_expr loc$ $lid:rw_id$ [] >>;
+          <:str_item< value $lid:name$ = $rewrite_of_pre_rewrite_expr loc$ ($wrap_exn proc loc name create_input_form$) [] >>;
           toploop_rewrite proc loc name []
        ]
 
@@ -858,7 +865,6 @@ let define_rewrite want_checkpoint code proc loc rw expr =
    let name = rw.rw_name in
    let rw_id  = "_$" ^ name ^ "_rewrite" in
    let rw_id_expr = <:expr< $lid:rw_id$ >> in
-   let rw_id_patt = <:patt< $lid:rw_id$ >> in
    let redex = <:expr< $lid:redex_id$ >> in
    let contractum = <:expr< $lid:contractum_id$ >> in
    let nil = <:expr< [] >> in
@@ -870,9 +876,9 @@ let define_rewrite want_checkpoint code proc loc rw expr =
             <:expr< $code$ $lid:local_refiner_id$ $str:name$ $redex$ $contractum$ >>
    in
    let create_rw = <:expr<
-      let $lid:redex_id$ = $expr_of_term loc rw.rw_redex$ in
-      let $lid:contractum_id$ = $expr_of_term loc rw.rw_contractum$ in
-      let $rw_id_patt$ = 
+      let $lid:redex_id$ = $expr_of_term proc loc rw.rw_redex$ in
+      let $lid:contractum_id$ = $expr_of_term proc loc rw.rw_contractum$ in
+      let $lid:rw_id$ = 
          $refiner_expr loc$.create_rewrite $lid:local_refiner_id$ $str:name$ $redex$ $contractum$ in
       let _ = do { 
          $prim_expr$; 
@@ -881,8 +887,7 @@ let define_rewrite want_checkpoint code proc loc rw expr =
          $rw_id_expr$
     >> in
        checkpoint_resources want_checkpoint loc name [
-          <:str_item< value $rw_id_patt$ = $wrap_exn proc loc name create_rw$ >>;
-          <:str_item< value $lid:name$ = $rewrite_of_pre_rewrite_expr loc$ $rw_id_expr$ $nil$ >>;
+          <:str_item< value $lid:name$ = $rewrite_of_pre_rewrite_expr loc$ ($wrap_exn proc loc name create_rw$) $nil$ >>;
           refiner_let loc;
           toploop_rewrite proc loc name []
        ]
@@ -918,10 +923,10 @@ let define_cond_rewrite want_checkpoint code proc loc crw expr =
          $rewrite_of_pre_rewrite_expr loc$ $rw_id_expr$ $list_expr loc lid_expr tparam_ids$ >>
    in
    let create_expr = <:expr<
-      let $lid:params_id$ = $list_expr loc (expr_of_term loc) tparams$ in
-      let $lid:subgoals_id$ = $list_expr loc (expr_of_term loc) crw.crw_args$ in
-      let $lid:redex_id$ = $expr_of_term loc crw.crw_redex$ in
-      let $lid:contractum_id$ = $expr_of_term loc crw.crw_contractum$ in
+      let $lid:params_id$ = $list_expr loc (expr_of_term proc loc) tparams$ in
+      let $lid:subgoals_id$ = $list_expr loc (expr_of_term proc loc) crw.crw_args$ in
+      let $lid:redex_id$ = $expr_of_term proc loc crw.crw_redex$ in
+      let $lid:contractum_id$ = $expr_of_term proc loc crw.crw_contractum$ in
       let $rw_id_patt$ =
          $refiner_expr loc$.create_cond_rewrite $lid:local_refiner_id$ $str:name$ (**)
             $params_expr$ $subgoals_expr$ $redex$ $contractum$
@@ -989,8 +994,8 @@ let define_ml_rewrite want_checkpoint proc loc mlrw rewrite_expr =
    if cvars <> [] then
       Stdpp.raise_with_loc loc (Invalid_argument ("rewrites can not have context variables"));
    let all_ids, cvar_ids, tparam_ids = name_params params in
-   let params_expr = list_expr loc (expr_of_term loc) tparams in
-   let redex_expr = expr_of_term loc mlrw.mlterm_term in
+   let params_expr = list_expr loc (expr_of_term proc loc) tparams in
+   let redex_expr = expr_of_term proc loc mlrw.mlterm_term in
    let simple_flag = params = [] in
    let create_ml_rewrite_expr =
       if simple_flag then
@@ -1021,7 +1026,7 @@ let define_ml_rewrite want_checkpoint proc loc mlrw rewrite_expr =
       if simple_flag then
          [goal_id]
       else
-         [names_id; bnames_id; params_id; seq_id; goal_id]
+         [names_id; bnames_id; params_id; goal_id]
    in
    let rewrite_let = <:expr<
       let $lid:rewrite_id$ = $fun_expr loc args_id rewrite_body$ in
@@ -1030,9 +1035,8 @@ let define_ml_rewrite want_checkpoint proc loc mlrw rewrite_expr =
    >> in
    let body = define_ml_program proc loc strict_expr tparams name mlrw.mlterm_term rewrite_expr rewrite_let in
       checkpoint_resources want_checkpoint loc name [
-         <:str_item< value $lid:rw_id$ = $wrap_exn proc loc name body $>>;
          <:str_item< value $name_patt$ =
-            $rewrite_of_pre_rewrite_expr loc$ $lid:rw_id$ $list_expr loc lid_expr tparam_ids$ >>; 
+            $rewrite_of_pre_rewrite_expr loc$ ($wrap_exn proc loc name body $) $list_expr loc lid_expr tparam_ids$ >>; 
          refiner_let loc
       ]
 
@@ -1062,7 +1066,7 @@ let define_rule_resources proc loc name cvars_id avars_id params_id assums_id re
             ($lid:process_name$ : Mp_resource.annotation_processor '$anno_name$ $input$)
                $str:name$ $lid:cvars_id$ $lid:avars_id$ $lid:params_id$ $lid:assums_id$ $arg_expr$
          >>
-   in bindings_let loc resources <:expr< do { $list:List.map define_resource resources.item_item$ } >>
+   in bindings_let proc loc resources <:expr< do { $list:List.map define_resource resources.item_item$ } >>
 
 let define_rule want_checkpoint code proc loc
     { rule_name = name;
@@ -1089,18 +1093,16 @@ let define_rule want_checkpoint code proc loc
    in
    let rule_expr = <:expr<
       let $lid:cvars_id$ = [| $list: List.map string_expr cvars$ |] in
-      let $lid:avars_id$ = $list_expr loc (expr_of_term loc) avars$ in
-      let $lid:params_id$ = $list_expr loc (expr_of_term loc) tparams$ in
-      let $lid:assums_id$ = $expr_of_mterm loc mterm$ in
-      let $lid:labels_id$ = $list_expr loc (expr_of_label loc) labels$ in
-      let $lid:extract_id$ = $extract$ in
+      let $lid:avars_id$ = $list_expr loc (expr_of_term proc loc) avars$ in
+      let $lid:params_id$ = $list_expr loc (expr_of_term proc loc) tparams$ in
+      let $lid:assums_id$ = $expr_of_meta_term proc loc mterm$ in
       let $lid:rule_id$ = 
          $refiner_expr loc$.create_rule $lid:local_refiner_id$ $str:name$ $lid:cvars_id$ $lid:params_id$ $lid:assums_id$
       in
       let $lid:name_rule_id$ = 
-         $tactic_type_expr loc$.compile_rule $lid:local_refiner_id$ $lid:labels_id$ $lid:rule_id$
+         $tactic_type_expr loc$.compile_rule $lid:local_refiner_id$ ($list_expr loc (expr_of_label loc) labels$) $lid:rule_id$
       in let _ = do {
-         $code$ $lid:local_refiner_id$ $str:name$ $lid:cvars_id$ $lid:params_id$ $lid:avars_id$ $lid:extract_id$;
+         $code$ $lid:local_refiner_id$ $str:name$ $lid:cvars_id$ $lid:params_id$ $lid:avars_id$ $extract$;
          $define_rule_resources proc loc name cvars_id params_id avars_id assums_id resources name_rule_expr$
       }
          in $name_rule_expr$
@@ -1114,7 +1116,7 @@ let define_rule want_checkpoint code proc loc
 
 let prim_rule proc loc ax extract =
    let code = prim_rule_expr loc in
-   let extract_expr = expr_of_term loc extract in
+   let extract_expr = expr_of_term proc loc extract in
       define_rule false code proc loc ax extract_expr
 
 let derived_rule proc loc ax tac =
@@ -1150,8 +1152,8 @@ let define_ml_rule want_checkpoint proc loc
    let cvars, tparams = split_params params in
    let all_ids, cvar_ids, tparam_ids = name_params params in
    let cvars_expr = <:expr< [| $list: List.map string_expr cvars$ |] >> in
-   let params_expr = list_expr loc (expr_of_term loc) tparams in
-   let redex_expr = expr_of_term loc redex in
+   let params_expr = list_expr loc (expr_of_term proc loc) tparams in
+   let redex_expr = expr_of_term proc loc redex in
 
    let create_expr =
       <:expr< $tactic_type_expr loc$.compile_labeled_rule $lid:local_refiner_id$ (**)
@@ -1195,7 +1197,7 @@ let define_ml_rule want_checkpoint proc loc
    let name_rule_let =
       <:str_item< value $rule_patt$ = $wrap_exn proc loc (name ^ "_rule") body$ >>
    in
-   let name_let = <:str_item< value $name_patt$ = $bindings_let loc code rule_fun_expr$ >> in
+   let name_let = <:str_item< value $name_patt$ = $bindings_let proc loc code rule_fun_expr$ >> in
       checkpoint_resources want_checkpoint loc name [name_rule_let; name_let; refiner_let loc]
 
 let create_dform_expr loc modes =
@@ -1212,9 +1214,9 @@ let define_dform proc loc df expansion =
    let expr = <:expr< 
       $create_dform_expr loc df.dform_modes$ $lid:local_dformer_id$ {
          $dform_name_patt loc$ = $str: df.dform_name$;
-         $dform_pattern_patt loc$ = $expr_of_term loc df.dform_redex$;
+         $dform_pattern_patt loc$ = $expr_of_term proc loc df.dform_redex$;
          $dform_options_patt loc$ = $list_expr loc (dform_option_expr loc) df.dform_options$;
-         $dform_print_patt loc$ = Dform.DFormExpansion $expr_of_term loc expansion$
+         $dform_print_patt loc$ = Dform.DFormExpansion $expr_of_term proc loc expansion$
       }
    >> in
       [<:str_item< $exp: wrap_exn proc loc df.dform_name expr$ >>]
@@ -1327,7 +1329,7 @@ let rec is_list_expr = function
  | _ -> false
 
 let improve_resource proc loc { improve_name = name; improve_expr = expr } =
-   let expr' = expr_of_bnd_expr loc expr in
+   let expr' = expr_of_bnd_expr proc loc expr in
    let improve_expr =
       if is_list_expr expr.item_item then impr_resource_list proc loc name expr'
       else impr_resource proc loc name expr'
@@ -1379,14 +1381,14 @@ let implem_toploop info =
    in
       collect (info_items info)
 
-let define_summary_item loc = function
+let define_summary_item proc loc = function
    { item_bindings = []; item_item = item } ->
       [item]
  | { item_bindings = bnds; item_item = <:str_item< value $list:[patt,expr]$ >> } ->
-      let expr = <:expr< let $list:List.map (binding_let loc) (List.rev bnds)$ in $expr$ >> in
+      let expr = <:expr< let $list:List.map (binding_let proc loc) (List.rev bnds)$ in $expr$ >> in
          [<:str_item< value $list:[patt, expr]$ >>]
  | { item_bindings = bnds; item_item = item } ->
-      [<:str_item< value $list:List.map (binding_let loc) (List.rev bnds)$ >>; item]
+      [<:str_item< value $list:List.map (binding_let proc loc) (List.rev bnds)$ >>; item]
 
 (*
  * This function creates str_items for the toploop.
@@ -1443,8 +1445,14 @@ let define_magic_block proc loc { magic_name = name; magic_code = stmts } =
  * Prolog declares the refiner and dformer.
  *)
 let implem_prolog proc loc name =
-   [<:str_item< value $lid:local_refiner_id$ = $refiner_expr loc$ . null_refiner $str: name$ and
-                      $lid:local_dformer_id$ = ref Dform_print.null_mode_base >>]
+   let term_let =
+      if proc.imp_terms = [] && proc.imp_meta_terms = [] then [] else 
+      let marshalled_terms = Ml_term.string_of_term_lists (List.rev proc.imp_terms) (List.rev proc.imp_meta_terms) in
+         [<:str_item< value ($lid:global_term_var$, $lid:global_meta_term_var$) =
+                         Ml_term.term_arrays_of_string $str:String.escaped marshalled_terms$>>]
+   in
+   <:str_item< value $lid:local_refiner_id$ = $refiner_expr loc$ . null_refiner $str: name$
+               and   $lid:local_dformer_id$ = ref Dform_print.null_mode_base >> :: term_let
 
 (*
  * Trailing declarations.
@@ -1560,7 +1568,7 @@ let extract_str_item proc (item, loc) =
     | SummaryItem item ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: summary item%t" eflush;
-         define_summary_item loc item
+         define_summary_item proc loc item
     | ToploopItem item ->
          raise(Invalid_argument "Filter_prog.extract_str_item: we should not have ToploopItem in str")
     | MagicBlock block ->
@@ -1585,12 +1593,16 @@ let extract_str arg sig_info info resources name =
                 imp_toploop = implem_toploop sig_info;
                 imp_arg = arg;
                 imp_name = name;
-                imp_all_resources = resources
+                imp_all_resources = resources;
+                imp_terms = [];
+                imp_num_terms = 0;
+                imp_meta_terms = [];
+                imp_num_meta_terms = 0;
               }
    in
-   let prolog = implem_prolog proc (0, 0) name in
    let items = List_util.flat_map (extract_str_item proc) (info_items info) in
    let items = wrap_summary_items proc items in
+   let prolog = implem_prolog proc (0, 0) name in
    let postlog = implem_postlog proc (0, 0) in
       List.map (fun item -> item, (0, 0)) (prolog @ items @ postlog)
 

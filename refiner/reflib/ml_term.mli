@@ -27,18 +27,15 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMeta
 
-val term_of_string : string -> term
-val string_of_term : term -> string
-
-val mterm_of_string : string -> meta_term
-val string_of_mterm : meta_term -> string
+val term_arrays_of_string : string -> term array * meta_term array
+val string_of_term_lists : term list -> meta_term list -> string
 
 (*
  * -*-

@@ -1,7 +1,7 @@
 #!/bin/sh
 $MAKE -s clean
 
-find . -name \*.prlb -exec rm -f "{}" \;
+find . -name \*.prlb -or -name '.#*' -exec rm -f "{}" \;
 
 function clean () {
    if [ -f "$1/CVS/Entries" ]; then

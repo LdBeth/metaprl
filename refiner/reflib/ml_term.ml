@@ -26,19 +26,20 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 open Refiner_io
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMeta
+open Refiner.Refiner.TermMan
 open Term_io
 
 (*
  * Header.
  *)
-let magic = "MP-Caml3.02 term:"
+let magic = "MP-Caml3.06 terms:"
 let magic_len = String.length magic
 
 let check_magic s =
@@ -48,28 +49,17 @@ let check_magic s =
 (*
  * Convert to a string.
  *)
-let string_of_term t =
-   magic ^ (Marshal.to_string (denormalize_term t) [])
+let string_of_term_lists ts mts =
+   let terms = List.map denormalize_term ts, List.map denormalize_meta_term mts
+      in magic ^ (Marshal.to_string terms [])
 
 (*
  * Convert from a string.
  *)
-let term_of_string s =
+let term_arrays_of_string s =
    check_magic s;
-   normalize_term (Marshal.from_string s magic_len : Refiner_io.TermType.term)
-
-(*
- * Convert to a string.
- *)
-let string_of_mterm t =
-   magic ^ (Marshal.to_string (denormalize_meta_term t) [])
-
-(*
- * Convert from a string.
- *)
-let mterm_of_string s =
-   check_magic s;
-   normalize_meta_term (Marshal.from_string s magic_len : Refiner_io.TermType.meta_term)
+   let ts, mts = (Marshal.from_string s magic_len : Refiner_io.TermType.term list * Refiner_io.TermType.meta_term list) in
+      Array.of_list (List.map normalize_term ts), Array.of_list (List.map normalize_meta_term mts)
 
 (*
  * -*-

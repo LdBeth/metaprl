@@ -625,7 +625,8 @@ struct
     *)
    let mk_var_aux opname vars loc s l =
       let v =
-         if List.mem s vars then
+         (* XXX HACK: internal "_$" vars are always vars *)
+         if List.mem s vars || (s.[0] = '_' && s.[1] = '$') then
             mk_var_term s
          else
             mk_string_term opname s
