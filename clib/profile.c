@@ -4,11 +4,14 @@
 
 #ifdef PROF
 #include <sys/gmon.h>
+extern void moncontrol (int mode);
+int mp_gmon_status = 1;
 #endif
 
 value stop_gmon (value var) {
 #ifdef PROF
    _mcleanup ();
+	mp_gmon_status = 0;
 #endif
    return Val_unit;
 }
@@ -16,13 +19,12 @@ value stop_gmon (value var) {
 value restart_gmon (value var)
 {
 #ifdef PROF
-   u_long lowpc=_gmonparam.lowpc;
-   u_long highpc=_gmonparam.highpc;
-
-   _mcleanup ();
-   monstartup (lowpc,highpc);
+	if (mp_gmon_status) {
+		moncontrol(0);
+		moncontrol(1);
+	}
 #endif
-   
+
    return Val_unit;
 }
 
