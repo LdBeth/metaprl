@@ -681,7 +681,7 @@ let replace_command { info_list = info } item1 item2 =
  * These are the possible opnames.
  *)
 let mk_opname =
-   let op = Opname.mk_opname "summary" Opname.nil_opname in
+   let op = Opname.mk_opname "Summary" Opname.nil_opname in
       fun s -> Opname.mk_opname s op
 
 let rewrite_op                  = mk_opname "rewrite"
@@ -1782,6 +1782,9 @@ and check_implementation { info_list = implem } { info_list = interf } =
 
 (*
  * $Log$
+ * Revision 1.17  1998/04/28 21:38:01  jyh
+ * Adjusted uppercasing.
+ *
  * Revision 1.16  1998/04/24 19:38:32  jyh
  * Updated debugging.
  *

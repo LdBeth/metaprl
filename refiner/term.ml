@@ -177,7 +177,7 @@ let subterms_of_term t =
 (*
  * Native terms are injected into the "perv" module.
  *)
-let xperv = make_opname ["perv"]
+let xperv = make_opname ["Perv"]
 
 (*
  * "Simple" terms have no parameters and no binding variables.
@@ -1823,6 +1823,7 @@ let compare_pattern_operators = fun
 
 (*
  * Recursive computation of alpha equality.
+ * BUG: fix equality on parameters.
  *)
 let rec equal_term vars t t' =
    match t, t' with
@@ -2518,6 +2519,9 @@ let make_2subst_term main_term v1 v2 t1 t2 =
 
 (*
  * $Log$
+ * Revision 1.15  1998/04/28 21:38:09  jyh
+ * Adjusted uppercasing.
+ *
  * Revision 1.14  1998/04/24 02:42:58  jyh
  * Added more extensive debugging capabilities.
  *

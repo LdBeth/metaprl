@@ -20,7 +20,7 @@ let _ =
       eprintf "Loading Filter_proof%t" eflush
 
 
-let summary_opname = mk_opname "summary" nil_opname
+let summary_opname = mk_opname "Summary" nil_opname
 
 let interface_op           = mk_opname "interface"         summary_opname
 let implementation_op      = mk_opname "implementation"    summary_opname
@@ -271,6 +271,9 @@ let tactics_of_proof proof =
 
 (*
  * $Log$
+ * Revision 1.6  1998/04/28 21:37:59  jyh
+ * Adjusted uppercasing.
+ *
  * Revision 1.5  1998/04/24 19:38:31  jyh
  * Updated debugging.
  *

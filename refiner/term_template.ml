@@ -1,34 +1,5 @@
 (*
  * This module computes term templates for use by hashtables.
- *
- * $Log$
- * Revision 1.4  1998/04/28 18:30:50  jyh
- * ls() works, adding display.
- *
- * Revision 1.3  1998/04/24 02:43:05  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.2  1997/09/12 17:21:47  jyh
- * Added MLast <-> term conversion.
- * Splitting filter_parse into two phases:
- *    1. Compile into Filter_summary
- *    2. Compile Filter_summary into code.
- *
- * Revision 1.1  1997/04/28 15:51:48  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- * Revision 1.1  1996/11/13 22:59:16  jyh
- * Initial version of forward/backward chaining cache.
- *
  *)
 
 open Printf
@@ -101,7 +72,7 @@ let print_params out params =
 
 let print_arities out arities =
    let print_arity (arity, op) =
-      fprintf out "(%d, %s)" arity (string_of_opname op)
+      output_string out (string_of_int arity)
    in
    let length = Array.length arities in
    let rec print i =
@@ -110,7 +81,7 @@ let print_arities out arities =
             print_arity arities.(i);
             if i <> length - 1 then
                begin
-                  output_string out ", ";
+                  output_string out ",";
                   print (i + 1)
                end
          end
@@ -125,7 +96,8 @@ let local_compute_template t =
    let { op_name = opname; op_params = params } = dest_op op in
    let compute_arity bterm =
       let { bvars = bvars; bterm = t } = dest_bterm bterm in
-         List.length bvars, opname_of_term t
+         List.length bvars, nil_opname (* opname_of_term t *)
+
    in
    let rec compute_param l = function
       [] ->
@@ -196,6 +168,37 @@ let compute_template t =
       Hashtbl.hash t
 
 (*
+ * $Log$
+ * Revision 1.5  1998/04/28 21:38:13  jyh
+ * Adjusted uppercasing.
+ *
+ * Revision 1.4  1998/04/28 18:30:50  jyh
+ * ls() works, adding display.
+ *
+ * Revision 1.3  1998/04/24 02:43:05  jyh
+ * Added more extensive debugging capabilities.
+ *
+ * Revision 1.2  1997/09/12 17:21:47  jyh
+ * Added MLast <-> term conversion.
+ * Splitting filter_parse into two phases:
+ *    1. Compile into Filter_summary
+ *    2. Compile Filter_summary into code.
+ *
+ * Revision 1.1  1997/04/28 15:51:48  jyh
+ * This is the initial checkin of Nuprl-Light.
+ * I am porting the editor, so it is not included
+ * in this checkin.
+ *
+ * Directories:
+ *     refiner: logic engine
+ *     filter: front end to the Ocaml compiler
+ *     editor: Emacs proof editor
+ *     util: utilities
+ *     mk: Makefile templates
+ *
+ * Revision 1.1  1996/11/13 22:59:16  jyh
+ * Initial version of forward/backward chaining cache.
+ *
  * -*-
  * Local Variables:
  * Caml-master: "editor.run"

@@ -156,7 +156,7 @@ let term_of_str_item = Filter_ocaml.term_of_str_item comment
 (*
  * Marshaling proofs.
  *)
-let summary_opname = mk_opname "summary"     nil_opname
+let summary_opname = mk_opname "Summary"     nil_opname
 
 let prim_op        = mk_opname "prim"        summary_opname
 let derived_op     = mk_opname "derived"     summary_opname
@@ -471,6 +471,9 @@ module StrFilterCache = MakeFilterCache (SigMarshal) (StrMarshal) (SummaryBase)
 
 (*
  * $Log$
+ * Revision 1.17  1998/04/28 21:37:56  jyh
+ * Adjusted uppercasing.
+ *
  * Revision 1.16  1998/04/24 19:38:16  jyh
  * Updated debugging.
  *

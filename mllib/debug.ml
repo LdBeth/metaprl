@@ -1,50 +1,5 @@
 (*
  * Debugging utilities.
- *
- * $Log$
- * Revision 1.4  1998/04/28 18:30:24  jyh
- * ls() works, adding display.
- *
- * Revision 1.3  1998/04/24 02:42:26  jyh
- * Added more extensive debugging capabilities.
- *
- * Revision 1.2  1998/02/23 14:46:30  jyh
- * First implementation of binary file compilation.
- *
- * Revision 1.1  1997/08/06 16:17:52  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
- * Revision 1.1  1997/04/28 15:51:15  jyh
- * This is the initial checkin of Nuprl-Light.
- * I am porting the editor, so it is not included
- * in this checkin.
- *
- * Directories:
- *     refiner: logic engine
- *     filter: front end to the Ocaml compiler
- *     editor: Emacs proof editor
- *     util: utilities
- *     mk: Makefile templates
- *
- * Revision 1.5  1996/03/08 15:40:36  jyh
- * This version works for most constructs except for ML rewrites.
- * The next step will be to break apart the rewriter so that
- * redices and contracta can be compiled separately.
- *
- * Revision 1.4  1996/02/25 15:16:07  jyh
- * This is a partial checkin as filterModule is being developed.
- * After the meta-logical framework is developed, sequent.* will go away.
- *
- * Revision 1.3  1996/02/18 23:32:25  jyh
- * Changin Format module to more Nuprl-like format.
- *
- * Revision 1.2  1996/02/14 03:51:48  jyh
- * This is a version common to Caml-Light and Caml-Special-Light.
- *
- * Revision 1.1  1996/02/13 21:32:03  jyh
- * This is an intermediate checkin while matching is being added to the rewriter.
- *
  *)
 
 open Printf
@@ -135,6 +90,53 @@ let eflush out =
    flush out
 
 (*
+ * $Log$
+ * Revision 1.5  1998/04/28 21:38:06  jyh
+ * Adjusted uppercasing.
+ *
+ * Revision 1.4  1998/04/28 18:30:24  jyh
+ * ls() works, adding display.
+ *
+ * Revision 1.3  1998/04/24 02:42:26  jyh
+ * Added more extensive debugging capabilities.
+ *
+ * Revision 1.2  1998/02/23 14:46:30  jyh
+ * First implementation of binary file compilation.
+ *
+ * Revision 1.1  1997/08/06 16:17:52  jyh
+ * This is an ocaml version with subtyping, type inference,
+ * d and eqcd tactics.  It is a basic system, but not debugged.
+ *
+ * Revision 1.1  1997/04/28 15:51:15  jyh
+ * This is the initial checkin of Nuprl-Light.
+ * I am porting the editor, so it is not included
+ * in this checkin.
+ *
+ * Directories:
+ *     refiner: logic engine
+ *     filter: front end to the Ocaml compiler
+ *     editor: Emacs proof editor
+ *     util: utilities
+ *     mk: Makefile templates
+ *
+ * Revision 1.5  1996/03/08 15:40:36  jyh
+ * This version works for most constructs except for ML rewrites.
+ * The next step will be to break apart the rewriter so that
+ * redices and contracta can be compiled separately.
+ *
+ * Revision 1.4  1996/02/25 15:16:07  jyh
+ * This is a partial checkin as filterModule is being developed.
+ * After the meta-logical framework is developed, sequent.* will go away.
+ *
+ * Revision 1.3  1996/02/18 23:32:25  jyh
+ * Changin Format module to more Nuprl-like format.
+ *
+ * Revision 1.2  1996/02/14 03:51:48  jyh
+ * This is a version common to Caml-Light and Caml-Special-Light.
+ *
+ * Revision 1.1  1996/02/13 21:32:03  jyh
+ * This is an intermediate checkin while matching is being added to the rewriter.
+ *
  * -*-
  * Local Variables:
  * Caml-master: "refiner.run"

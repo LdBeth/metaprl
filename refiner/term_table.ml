@@ -26,6 +26,8 @@ open Term_util
 open Term_template
 open Rewrite
 
+open Simple_print
+
 (*
  * Show the file loading.
  *)
@@ -190,7 +192,9 @@ let get_base = function
  * Second level of lookup.
  *)
 let find_entry entries t =
-   let match_entry { info_redex = redex; info_value = v } =
+   let match_entry { info_term = t'; info_redex = redex; info_value = v } =
+      if !debug_dform then
+         eprintf "Term_table.find_entry.match_entry: %s%t" (string_of_term t') eflush;
       let stack, items = apply_redex' redex [||] t in
          stack, items, v
    in
@@ -198,7 +202,8 @@ let find_entry entries t =
       h::t ->
          begin
             try match_entry h with
-               _ -> aux t
+               _ ->
+                  aux t
          end
     | [] ->
          raise Not_found
@@ -218,6 +223,9 @@ let lookup tbl t =
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/28 21:38:11  jyh
+ * Adjusted uppercasing.
+ *
  * Revision 1.3  1998/04/28 18:30:49  jyh
  * ls() works, adding display.
  *
