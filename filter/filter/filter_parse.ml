@@ -1682,7 +1682,7 @@ EXTEND
              handle_exn f "production" loc;
              empty_sig_item loc
 
-        | "lex_prec"; assoc = prec_declare; "["; args = LIST0 parsed_term SEP ";"; "]"; rel = prec_relation ->
+        | "lex_prec"; assoc = prec_declare; "["; args = LIST1 parsed_term SEP ";"; "]"; rel = prec_relation ->
           let f () =
              SigFilter.input_prec (SigFilter.get_proc loc) loc assoc args rel;
           in
@@ -1987,7 +1987,7 @@ EXTEND
              handle_exn f "production" loc;
              empty_str_item loc
 
-        | "lex_prec"; assoc = prec_declare; "["; args = LIST0 parsed_term SEP ";"; "]"; rel = prec_relation ->
+        | "lex_prec"; assoc = prec_declare; "["; args = LIST1 parsed_term SEP ";"; "]"; rel = prec_relation ->
           let f () =
              StrFilter.input_prec (StrFilter.get_proc loc) loc assoc args rel;
           in

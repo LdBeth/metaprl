@@ -573,20 +573,6 @@ struct
     * QUOTATIONS                                                           *
     ************************************************************************)
 
-   let pho_grammar_filename =
-      try
-         Sys.getenv "LANG_FILE"
-      with
-         Not_found ->
-            !Phobos_state.mp_grammar_filename
-
-   let pho_desc_grammar_filename =
-      try
-         Sys.getenv "DESC_LANG_FILE"
-      with
-         Not_found ->
-            !Phobos_state.mp_desc_grammar_filename
-
    let dest_quot quot =
       try
          let i = String.index quot ':' in
@@ -627,11 +613,7 @@ struct
       if nm = curr then
          Stdpp.raise_with_loc loc (Failure (nm ^ " quotation inside a " ^ curr ^ " quotation"));
       match nm with
-         "ext" ->
-            Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s
-       | "desc"->
-            Phobos_exn.catch (Phobos_compile.term_of_string [] pho_desc_grammar_filename) s
-       | "term"
+         "term"
        | "" ->
             (try
                 let cs = Stream.of_string s in
@@ -1087,8 +1069,6 @@ struct
       term:
          [[ x = aterm ->
                get_aterm loc x
-          ]|[ s = ANTIQUOT ->
-               Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s
          ]];
 
       aterm:
@@ -1443,8 +1423,9 @@ struct
             | x = QUOTATION ->
                let name, s = dest_quot x in
                   parse_quotation loc "term" name s
-            | s = ANTIQUOT ->
-               Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s
+            | x = ANTIQUOT ->
+               let name, s = dest_quot x in
+                  parse_quotation loc "term" name s
             | "("; t = aterm; ")" ->
                get_aterm loc t
           ]];

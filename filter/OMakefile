@@ -16,17 +16,15 @@ MAINPROG = prlc
 # Recursive make
 #########################################################################
 
-CamlSubDirs(base phobos filter)
+CamlSubDirs(base filter)
 
 #
 # Build combined libraries from subdirs
 #
 include base/Files
-include phobos/Files
 
 SUB_FILES[] =
     $(addprefix base/, $(BASE_FILES))
-    $(addprefix phobos/, $(PHOBOS_FILES))
     filter/term_grammar
 
 OCamlLibrary($(MAINLIB), $(SUB_FILES))

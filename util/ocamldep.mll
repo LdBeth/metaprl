@@ -38,7 +38,6 @@ let term_depth = ref 0
 
 (* Source quotations *)
 
-let contains_source_quot = ref false
 let contains_topval = ref false
 let contains_rules = ref false
 
@@ -85,7 +84,6 @@ let white = [' ' '\010' '\013' '\009' '\012']
 let modname = ['A'-'Z' '\192'-'\214' '\216'-'\222' ]
               (['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255'
                 '\'' '0'-'9' ]) *
-let source_quote = "<:ext<"
 let quotestart = '<' ':' (['a'-'z'])+ '<'
 let filename = (['A'-'Z' 'a'-'z' '_' '-' '.' '0'-'9' '/'])*
 
@@ -107,8 +105,6 @@ rule main = parse
         main lexbuf }
   | "\""
       { string lexbuf; main lexbuf }
-  | source_quote
-      { source_quot lexbuf; contains_source_quot := true; main lexbuf }
   | "(*" | "<<" | quotestart
       { comment_depth := 1; comment lexbuf; main lexbuf }
   | "'" [^ '\\'] "'"
@@ -159,15 +155,6 @@ and comment = parse
   | _
       { comment lexbuf }
 
-(* There are no nested source quotations *)
-(* Inside source quotations we do not obey strings or escaped characters,
-   since they may not exist according to the source syntax rules *)
-and source_quot = parse
-  | ">>" | eof
-      { () }
-  | _
-      { source_quot lexbuf }
-
 and string = parse
     '"'
       { () }
@@ -190,8 +177,6 @@ let prl_flag = ref false
 let omake_flag = ref false
 let ml_topval_flag = ref true
 let modules_flag = ref false
-
-let syntaxdef_prereq = "syntax.pho"
 
 let find_in_path path name name' =
    let rec try_dir = function
@@ -290,7 +275,6 @@ let file_dependencies source_file =
   try
     contains_topval := false;
     contains_rules := false;
-    contains_source_quot := false;
     free_structures := StringSet.empty;
     prl_structures := StringSet.empty;
     includes := StringSet.empty;
@@ -328,9 +312,6 @@ let file_dependencies source_file =
          if !omake_flag then
             StringSet.fold find_dependency_cmiz !prl_structures init_ppo_dep
          else cmo_deps
-      in
-      let ppo_deps =
-         if !contains_source_quot then syntaxdef_prereq :: ppo_deps else ppo_deps
       in
       (* XXX HACK: since we can not check whether the corresponding .mli contains "topval",
          in prl mode we always assume dependencies - at least on the .cmi
