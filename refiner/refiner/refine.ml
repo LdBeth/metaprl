@@ -567,16 +567,19 @@ struct
    (*
     * The base tactic proves by assumption.
     *)
+   let rec get_nth hyps i =
+      match hyps, i with
+         h::_, 0 -> h
+       | _::tl, _ -> get_nth tl (pred i)
+       | _ -> REF_RAISE(RefineError ("nth_hyp", IntError i))
+
    let nth_hyp i sent seq =
       let { mseq_goal = goal; mseq_hyps = hyps } = seq in
-         try
-            if alpha_equal (List.nth hyps i) goal then
+	 if i<0 then REF_RAISE(RefineError ("nth_hyp", IntError i)) else
+            if alpha_equal (get_nth hyps i) goal then
                [], NthHypJust (seq, i)
             else
                REF_RAISE(RefineError ("nth_hyp", StringError "hyp mismatch"))
-         with
-            Failure "nth" ->
-               REF_RAISE(RefineError ("nth_hyp", IntError i))
 
    (*
     * Cut rule.
