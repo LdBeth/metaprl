@@ -282,7 +282,8 @@ let expr_of_label loc = function
  *       exn ->
  *          Refine_exn.print_exn name exn
  *)
-let wrap_exn loc name e =
+let wrap_exn proc loc name e =
+   let name = (String.capitalize proc.imp_name) ^ "." ^ name in
    <:expr< 
       do { 
          (* Print a message before the execution *)
@@ -809,7 +810,7 @@ let define_input_form want_checkpoint proc loc iform =
          $refiner_expr loc$.create_input_form $lid:local_refiner_id$ $str:name$ $lid:redex_id$ $lid:contractum_id$
     >> in
        checkpoint_resources want_checkpoint loc name [
-          <:str_item< value $lid:rw_id$ = $wrap_exn loc name create_input_form$ >>;
+          <:str_item< value $lid:rw_id$ = $wrap_exn proc loc name create_input_form$ >>;
           <:str_item< value $lid:name$ = $rewrite_of_pre_rewrite_expr loc$ $lid:rw_id$ [] >>;
           toploop_rewrite proc loc name []
        ]
@@ -844,7 +845,7 @@ let define_rewrite want_checkpoint code proc loc rw expr =
          $rw_id_expr$
     >> in
        checkpoint_resources want_checkpoint loc name [
-          <:str_item< value $rw_id_patt$ = $wrap_exn loc name create_rw$ >>;
+          <:str_item< value $rw_id_patt$ = $wrap_exn proc loc name create_rw$ >>;
           <:str_item< value $lid:name$ = $rewrite_of_pre_rewrite_expr loc$ $rw_id_expr$ $nil$ >>;
           refiner_let loc;
           toploop_rewrite proc loc name []
@@ -895,7 +896,7 @@ let define_cond_rewrite want_checkpoint code proc loc crw expr =
          $rw_id_expr$
     >> in
        checkpoint_resources want_checkpoint loc name [
-          <:str_item< value $rw_id_patt$ = $wrap_exn loc name create_expr $ >>;
+          <:str_item< value $rw_id_patt$ = $wrap_exn proc loc name create_expr $ >>;
           <:str_item< value $lid:name$ = $rw_fun_expr$ >>;
           refiner_let loc;
           toploop_rewrite proc loc name crw.crw_params
@@ -993,7 +994,7 @@ let define_ml_rewrite want_checkpoint proc loc mlrw rewrite_expr =
    >> in
    let body = define_ml_program proc loc strict_expr tparams name mlrw.mlterm_term rewrite_let in
       checkpoint_resources want_checkpoint loc name [
-         <:str_item< value $lid:rw_id$ = $wrap_exn loc name body $>>;
+         <:str_item< value $lid:rw_id$ = $wrap_exn proc loc name body $>>;
          <:str_item< value $name_patt$ =
             $rewrite_of_pre_rewrite_expr loc$ $lid:rw_id$ $list_expr loc lid_expr tparam_ids$ >>; 
          refiner_let loc
@@ -1069,7 +1070,7 @@ let define_rule want_checkpoint code proc loc
          in $name_rule_expr$
    >> in
       checkpoint_resources want_checkpoint loc name [
-         <:str_item< value $lid:name_rule_id$ = $wrap_exn loc name rule_expr$ >>; 
+         <:str_item< value $lid:name_rule_id$ = $wrap_exn proc loc name rule_expr$ >>; 
          <:str_item< value $lid:name$ = $name_value$ >>; 
          refiner_let loc; 
          toploop_rule proc loc name params
@@ -1156,7 +1157,7 @@ let define_ml_rule want_checkpoint proc loc
 
    let rule_patt = <:patt< $lid:name_rule_id$ >> in
    let name_rule_let =
-      <:str_item< value $rec:false$ $list:[ rule_patt, wrap_exn loc (name ^ "_rule") body ]$ >>
+      <:str_item< value $rec:false$ $list:[ rule_patt, wrap_exn proc loc (name ^ "_rule") body ]$ >>
    in
    let name_let =
       <:str_item< value $rec:false$ $list:[ name_patt, rule_fun_expr ]$ >>
@@ -1182,7 +1183,7 @@ let define_dform proc loc df expansion =
          $dform_print_patt loc$ = Dform.DFormExpansion $expr_of_term loc expansion$
       }
    >> in
-      [<:str_item< $exp: wrap_exn loc df.dform_name expr$ >>]
+      [<:str_item< $exp: wrap_exn proc loc df.dform_name expr$ >>]
 
 (*
  * Precedence definition relation.
@@ -1207,7 +1208,7 @@ let define_prec_rel proc loc
             <:expr< $add_lt_expr loc$ $lid:s'$ $lid:s$ >>
    in
    let name = sprintf "%s..%s" s s' in
-      [<:str_item< $exp:wrap_exn loc name expr$ >>]
+      [<:str_item< $exp:wrap_exn proc loc name expr$ >>]
 
 (*
  * Pattern to match rewrite destruction.
