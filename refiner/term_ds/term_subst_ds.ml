@@ -402,7 +402,14 @@ struct
        | [] -> bterms
 
    and var_subst_bterm bt t' v =
-      if List.mem v bt.bvars then bt
+      if List.mem v bt.bvars then
+         let vars = List.fold_right StringSet.add bt.bvars (free_vars_set bt.bterm) in
+         let v' = String_util.vnewname v (StringSet.mem vars) in
+         let rename var = if var = v then v' else var in
+         let bt' = subst1 bt.bterm v (mk_var_term v') in
+         let bt'' = var_subst bt' t' v in
+            if (bt''==bt') then bt
+            else mk_bterm (List_util.smap rename bt.bvars) bt''
       else let term' = var_subst bt.bterm t' v in
               if bt.bterm == term' then bt else mk_bterm bt.bvars term'
 

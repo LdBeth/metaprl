@@ -278,7 +278,7 @@ struct
    let rec new_vars av = function
       [] -> ([],[])
     | v::vt ->
-         let v' = String_util.vnewname v (StringSet. mem av) in
+         let v' = String_util.vnewname v (StringSet.mem av) in
          let (vs,ts) = (new_vars (StringSet.add v' av) vt) in
             ((v,v')::vs, (v,mk_var_term v')::ts)
 
