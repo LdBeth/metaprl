@@ -2853,17 +2853,13 @@ let rec do_split gamma_diff sigmaQ =
 
 (* make a term list out of a bterm list *)
 
-let rec collect_subterms tterms =
- match tterms with
+let rec collect_subterms = function
    [] -> []
   |bt::r ->
     let dbt = dest_bterm bt in
      (dbt.bterm)::(collect_subterms r)
 
-
-
-let rec collect_delta_terms termlist =
- match termlist with
+let rec collect_delta_terms = function
    [] -> []
   |t::r ->
    let dt = dest_term t in
@@ -2884,10 +2880,6 @@ let rec collect_delta_terms termlist =
              else
                let sub_terms = collect_subterms tterms in
                  collect_delta_terms (sub_terms @ r)
-
-
-
-
 
 let rec check_delta_terms (v,term) ass_delta_diff dterms =
   match ass_delta_diff with
@@ -3777,39 +3769,17 @@ let multiply sigmaQ tauQ =
          (sigma_ordering @ tau_ordering)
         )
 
-
-
-
-
-
-
-
-let make_eq_list term1 term2 =
- let dt1 = dest_term term1
- and dt2 = dest_term term2 in
-  let tt1 = dt1.term_terms
-  and tt2 = dt2.term_terms in
-   let term1list = collect_subterms tt1
-   and term2list = collect_subterms tt2 in
-     eqnlist_append_eqns eqnlist_empty (List.combine term1list term2list)
-
-
-
 let apply_2_sigmaQ term1 term2 sigmaQ =
  let sigma_vars,sigma_terms = List.split sigmaQ in
   (subst term1 sigma_vars sigma_terms),(subst term2 sigma_vars sigma_terms)
 
-
-
 let jqunify term1 term2 sigmaQ =
  let app_term1,app_term2 = apply_2_sigmaQ term1 term2 sigmaQ in
- begin
 (*  print_term stdout app_term1;
   print_term stdout app_term2;
 *)
-  let eqnlist = make_eq_list app_term1 app_term2 in
-  (try
-   let tauQ = unify_mm_eqnl eqnlist String_set.StringSet.empty in
+  try
+   let tauQ = unify_mm app_term1 app_term2 String_set.StringSet.empty in
     let (mult,oel) = multiply sigmaQ tauQ in
   (*   print_sigmaQ mult; *)
      (mult,oel)
@@ -3817,40 +3787,20 @@ let jqunify term1 term2 sigmaQ =
     RefineError _  ->  (* any unification failure *)
 (*    print_endline "fo-unification fail"; *)
      failwith "fail1"   (* new connection, please *)
-  )
- end
-
-
-
 
 (* ************ T-STRING UNIFICATION ******************************** *)
-
-
-
-
 
 let is_const name  =
   (String.get name 0) = 'c'
 
-
 let is_var name  =
   (String.get name 0) = 'v'
-
-
 
 let r_1 s ft rt =
   (s = []) & (ft = []) & (rt = [])
 
-
-
-
-
 let r_2 s ft rt =
   (s = []) & (ft = []) & (List.length rt >= 1)
-
-
-
-
 
 let r_3 s ft rt =
   if ft=[] then
@@ -4907,18 +4857,10 @@ let rec compute_atomlist_relations worklist ftree alist =  (* last version of al
    let first_relations = compute_atom_relations first ftree alist in
      first_relations::(compute_atomlist_relations rest ftree alist)
 
-
-
-let atom_op atom =
- let dat = dest_term atom in
-   (dat.term_op)
-
-
-
 let atom_record position prefix =
  let aname = (position.name) in
   let aprefix = (List.append prefix [aname]) in (* atom position is last element in prefix *)
-   let aop = (atom_op  (position.label)) in
+   let aop = (dest_term position.label).term_op in
      ({aname=aname; aaddress=(position.address); aprefix=aprefix; apredicate=aop;
        apol=(position.pol); ast=(position.st); alabel=(position.label)})
 
