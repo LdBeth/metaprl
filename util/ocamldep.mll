@@ -323,7 +323,8 @@ let _ =
      "-omake", Arg.Set omake_flag, "add dependencies on PRL files";
      "-noprl", Arg.Clear prl_flag, "do not add dependencies for PRL files";
      "-notopval", Arg.Clear ml_topval_flag, "do not add topval dependencies for .ml files";
-     "-modules", Arg.Set modules_flag, "print modules"
+     "-modules", Arg.Set modules_flag, "print modules";
+     "-native", Arg.Unit (fun () -> ()), "compatibility with OCaml distribtion (ignored)"
     ] file_dependencies usage;
   exit 0
 

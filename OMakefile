@@ -38,6 +38,7 @@ if $(not $(defined VERBOSE))
 # omake options
 #
 ABORT_ON_DEPENDENCY_ERRORS = true
+OCAMLDEPFLAGS =
 
 #
 # Configuration defaults
