@@ -124,6 +124,13 @@ val dest_bterm : bound_term -> bound_term_nods
 val mk_level : int -> level_exp_var list -> level_exp
 val mk_level_var : string -> int -> level_exp_var
 
+val no_bvars : bound_term list -> bool
+val mk_simple_bterm : term -> bound_term
+
+(* string and term only necessary to raise the appropriate exception *)
+val dest_simple_bterm : term -> bound_term -> term
+val dest_simple_bterms : term -> bound_term list -> term list
+
 val normalize_term : term -> term
 
 (* Addresses *)

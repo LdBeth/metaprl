@@ -308,13 +308,13 @@ let no_bvars =
            { bvars = [] } -> true |
            _ -> false)
 
-let dest_simple_bterm name term bt =
+let dest_simple_bterm term bt =
    match dest_bterm bt with
       { bvars = []; bterm = tt } -> tt |
-      _ -> raise (TermMatch (name, term, "bvars exist"))
+      _ -> raise (TermMatch ("dest_simple_bterm", term, "bvars exist"))
 
-let dest_simple_bterms name term = 
-   List.map (function bt -> dest_simple_bterm name term bt)
+let dest_simple_bterms term = 
+   List.map (function bt -> dest_simple_bterm term bt)
 
 let mk_simple_bterm term =
    { bfree_vars = term.free_vars; 
@@ -446,7 +446,7 @@ let dest_so_var t = match dest_term t with
    { term_op = { op_name = opname; op_params = [Var(v)] };
       term_terms = bterms
    } when opname == var_opname ->
-      v, dest_simple_bterms "dest_so_var" t bterms
+      v, dest_simple_bterms t bterms
  | term -> raise (TermMatch ("dest_so_var", t, "not a so_var"))
 
 (*
@@ -472,8 +472,8 @@ let dest_context term = match dest_term term with
    { term_op = { op_name = opname; op_params = [Var v] };
       term_terms = bterm :: bterms
     } when opname == context_opname ->
-      v, dest_simple_bterm "dest_context" term bterm, 
-         dest_simple_bterms "dest_context" term bterms
+      v, dest_simple_bterm term bterm, 
+         dest_simple_bterms term bterms
  | _ -> raise (TermMatch ("dest_context", term, "not a context"))
 
 let mk_context_term v term terms =

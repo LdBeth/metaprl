@@ -13,6 +13,8 @@ LMFILES :=\
 	rformat\
 	opname\
 	term\
+   term_ds\
+	term_ds_simple\
 	term_util\
 	simple_print\
 	ml_format_sig\
