@@ -25,4 +25,5 @@ REFLIB_FILES =\
 	jall\
 	term_order\
 	arith\
-	supinf
+	supinf\
+	env_boot

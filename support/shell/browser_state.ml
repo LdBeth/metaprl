@@ -37,6 +37,8 @@ open Lm_thread
 
 open Refiner.Refiner.Term
 
+open Env_boot
+
 open Shell_util
 
 (************************************************************************
@@ -366,7 +368,11 @@ let read_options_from_home name =
       let home = Sys.getenv "HOME" in
       let filename = Filename.concat home name in
       let inx = Pervasives.open_in filename in
-      let options = ls_options_of_string (input_line inx) in
+      let options =
+         try ls_options_of_string (input_line inx) with
+            End_of_file ->
+               ls_options_default
+      in
          close_in inx;
          options
    with
@@ -499,32 +505,32 @@ let resolve_symlink filename =
 let strip_root filename =
    match filename with
       Some filename ->
-         (try
-             let root = Sys.getenv "MP_ROOT" ^ "/" in
-             let root_len = String.length root in
-             let file_len = String.length filename in
-             let convert c =
-                if c = '\\' then
-                   '/'
-                else
-                   c
-             in
-             let rec matches i =
-                if i = root_len then
-                   true
-                else
-                   convert root.[i] = convert filename.[i] && matches (succ i)
-             in
-             let file =
-                if root_len < file_len && matches 0 then
-                   String.sub filename root_len (file_len - root_len)
-                else
-                   filename
-             in
-                (* eprintf "Root: %s Filename: %s Stripped: %s\n%t" root filename file flush; *)
-                Some file
-          with
-             Not_found ->
+         (match mproot with
+             Some root ->
+                let root = root ^ "/" in
+                let root_len = String.length root in
+                let file_len = String.length filename in
+                let convert c =
+                   if c = '\\' then
+                      '/'
+                   else
+                      c
+                in
+                let rec matches i =
+                   if i = root_len then
+                      true
+                   else
+                      convert root.[i] = convert filename.[i] && matches (succ i)
+                in
+                let file =
+                   if root_len < file_len && matches 0 then
+                      String.sub filename root_len (file_len - root_len)
+                   else
+                      filename
+                in
+                   (* eprintf "Root: %s Filename: %s Stripped: %s\n%t" root filename file flush; *)
+                   Some file
+           | None ->
                 Some filename)
     | None ->
          None

@@ -28,6 +28,9 @@ extends Mptop
 
 open Lm_config
 open Lm_format
+
+open Env_boot
+
 open Shell_syscall_sig
 
 (*
@@ -122,12 +125,17 @@ let handle_syscall command =
             perform_command s
 
 let state =
-   { shell_handler = handle_syscall;
-     shell_root = (try Sys.getenv "MP_ROOT" with
-                      Not_found ->
-                         ".");
-     shell_dir = "."
-   }
+   let root =
+      match mproot with
+         Some root ->
+            root
+       | None ->
+            "."
+   in
+      { shell_handler = handle_syscall;
+        shell_root = root;
+        shell_dir = "."
+      }
 
 let set_syscall_handler f =
    state.shell_handler <- f

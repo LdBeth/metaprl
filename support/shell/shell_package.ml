@@ -224,9 +224,6 @@ let default_filter = function
 let is_any_item _ =
    true
 
-let is_no_item _ =
-   false
-
 let is_rewrite_item = function
    Rewrite _
  | CondRewrite _
@@ -256,9 +253,9 @@ let is_formal_item = function
  | Rule _
  | MLAxiom  _
  | Definition _
- | Parent _
  | Opname _ ->
       true
+ | Parent _
  | SummaryItem _
  | Improve _
  | Resource _
@@ -323,10 +320,10 @@ let mk_ls_filter options =
                   is_rewrite_item :: predicate
              | LsRules ->
                   is_rule_item :: predicate
-             | LsParent ->
-                  is_parent_item :: predicate
              | LsUnjustified ->
                   is_unjustified_item :: predicate
+             | LsParent ->
+                  is_parent_item :: predicate
              | LsFormal ->
                   is_formal_item :: predicate
              | LsDefault ->
@@ -335,8 +332,6 @@ let mk_ls_filter options =
                   is_display_item :: predicate
              | LsInformal ->
                   is_informal_item :: predicate
-             | LsNone ->
-                  is_no_item :: predicate
              | LsHandles
              | LsExternalEditor ->
                   predicate) [] options
@@ -364,13 +359,7 @@ let edit_addr = function
  *)
 let rec edit pack_info parse_arg window =
    let edit_display options =
-      let options =
-         if LsOptionSet.is_empty options then
-            LsOptionSet.singleton LsDefault
-         else
-            options
-      in
-         display_term pack_info window (term_of_implementation pack_info (mk_ls_filter options) parse_arg)
+      display_term pack_info window (term_of_implementation pack_info (mk_ls_filter options) parse_arg)
    in
    let edit_copy () =
       edit pack_info parse_arg (new_window window)

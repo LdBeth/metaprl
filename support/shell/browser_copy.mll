@@ -32,6 +32,8 @@ open Lm_thread
 open Http_server_type
 open Http_simple
 
+open Env_boot
+
 open Browser_sig
 
 (*
@@ -61,18 +63,6 @@ let command_sym     = Lm_symbol.add "COMMAND"
 (*
  * Open the file as a channel.
  *)
-let mplib =
-   try Some (Sys.getenv "MPLIB") with
-      Not_found ->
-         eprintf "Shell_browser.print_file: the MPLIB environment variable is not defined@.";
-         None
-
-let mproot =
-   try Some (Sys.getenv "MP_ROOT") with
-      Not_found ->
-         eprintf "Shell_browser.print_file: the MP_ROOT environment variable is not defined@.";
-         None
-
 let in_channel_of_file mplib name =
    match mplib with
       None ->

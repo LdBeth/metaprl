@@ -351,26 +351,27 @@ let add_edit state info =
  * Add the options.
  *)
 let view_table =
-   ['H', "",  "term handles";
-    'f', "",  "Formal content";
-    'R', "-", "Rules";
-    'r', "-", "Rewrites";
-    'u', "-", "Unjustified content";
-    'i', "",  "Informal content";
-    'd', "-", "Display forms"]
+   ['H', "",  "Show Term Handles",              "Hide Term Handles";
+    'u', "",  "Show Only Unjustified Content",  "Hide Everything";
+    'f', "",  "Show Formal Content",            "Hide Formal Content";
+    'R', "-", "Show Rules",                     "Hide Rules";
+    'r', "-", "Show Rewrites",                  "Hide Rewrites";
+    'i', "",  "Show Informal Content",          "Hide Informal Content";
+    'p', "-", "Show Parents",                   "Hide Parents";
+    'd', "-", "Show Display Forms",             "Hide Display Forms"]
 
 let add_view info view =
    try
       menu_replace info "view" (fun menu ->
             let items =
-               List.fold_left (fun items (flag, pre, name) ->
+               List.fold_left (fun items (flag, pre, show, hide) ->
                      let item =
                         if String.contains view flag then
-                           { command_label = sprintf "%s Hide %s" pre name;
+                           { command_label = sprintf "%s %s" pre hide;
                              command_value = sprintf "Command('clear_view_options \"%c\"')" flag
                            }
                         else
-                           { command_label = sprintf "%s Show %s" pre name;
+                           { command_label = sprintf "%s %s" pre show;
                              command_value = sprintf "Command('set_view_options \"%c\"')" flag
                            }
                      in

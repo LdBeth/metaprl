@@ -1466,7 +1466,14 @@ let save_all _ =
       List.iter save (all_packages ())
 
 let ls s =
-   commands.view (ls_options_of_string s) "."
+   let options = ls_options_of_string s in
+   let options =
+      if LsOptionSet.is_empty options then
+         LsOptionSet.singleton LsDefault
+      else
+         options
+   in
+      commands.view (ls_options_of_string s) "."
 
 let view name =
    commands.view LsOptionSet.empty name

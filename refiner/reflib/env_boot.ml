@@ -1,5 +1,5 @@
 (*
- * Some utilities for the shell.
+ * Values for MetaPRL environment variables.
  *
  * ----------------------------------------------------------------
  *
@@ -24,35 +24,19 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
+open Lm_printf
 
-(*
- * Options to the "ls" command.
- *)
-type ls_option =
-   LsRewrites
- | LsRules
- | LsUnjustified
- | LsDisplay
- | LsDefault
- | LsFormal
- | LsInformal
- | LsParent
- | LsAll
+let mplib =
+   try Some (Sys.getenv "MPLIB") with
+      Not_found ->
+         eprintf "Mp_env_boot.print_file: the MPLIB environment variable is not defined@.";
+         None
 
-   (*
-    * Browser-only modes:
-    *   LsHandles: display handles to allow selection of arbitrary subterms.
-    *)
- | LsHandles
- | LsExternalEditor
-
-module LsOptionSet : Lm_set_sig.LmSet with type elt = ls_option
-
-val string_of_ls_options : LsOptionSet.t -> string
-val ls_options_of_string : string -> LsOptionSet.t
-val ls_options_add : LsOptionSet.t -> string -> LsOptionSet.t
-val ls_options_clear : LsOptionSet.t -> string -> LsOptionSet.t
-val ls_options_default : LsOptionSet.t
+let mproot =
+   try Some (Sys.getenv "MP_ROOT") with
+      Not_found ->
+         eprintf "Mp_env_boot.print_file: the MP_ROOT environment variable is not defined@.";
+         None
 
 (*!
  * @docoff

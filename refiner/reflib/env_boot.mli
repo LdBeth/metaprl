@@ -1,5 +1,5 @@
 (*
- * Some utilities for the shell.
+ * Environment variables.
  *
  * ----------------------------------------------------------------
  *
@@ -25,34 +25,8 @@
  * @end[license]
  *)
 
-(*
- * Options to the "ls" command.
- *)
-type ls_option =
-   LsRewrites
- | LsRules
- | LsUnjustified
- | LsDisplay
- | LsDefault
- | LsFormal
- | LsInformal
- | LsParent
- | LsAll
-
-   (*
-    * Browser-only modes:
-    *   LsHandles: display handles to allow selection of arbitrary subterms.
-    *)
- | LsHandles
- | LsExternalEditor
-
-module LsOptionSet : Lm_set_sig.LmSet with type elt = ls_option
-
-val string_of_ls_options : LsOptionSet.t -> string
-val ls_options_of_string : string -> LsOptionSet.t
-val ls_options_add : LsOptionSet.t -> string -> LsOptionSet.t
-val ls_options_clear : LsOptionSet.t -> string -> LsOptionSet.t
-val ls_options_default : LsOptionSet.t
+val mplib : string option
+val mproot : string option
 
 (*!
  * @docoff
