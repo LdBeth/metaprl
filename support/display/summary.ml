@@ -138,15 +138,18 @@ doc <:doc<
    expands to and @it[res] lists the resource annotations.
    @end[doc]
 >>
+declare type ShapeClass -> Dform
+declare shape_normal : ShapeClass
+declare shape_iform : ShapeClass
 declare "parent"{'path : Dform; 'resources : Dform} : Dform
-declare "declare_kind"{'term : Dform; 'parent : Dform} : Dform
-declare "declare_type"{'term : Dform} : Dform
-declare "declare_term"{'term : Dform} : Dform
-declare "define_term"{'term : Dform; 'def : Dform} : Dform
+declare declare_typeclass{'shape : ShapeClass; 'term : Dform; 'ty: Dform; 'parent : Dform} : Dform
+declare declare_type{'shape : ShapeClass; 'term : Dform; 'ty: Dform} : Dform
+declare declare_term{'shape : ShapeClass; 'term : Dform} : Dform
+declare define_term{'shape : ShapeClass; 'term : Dform; 'def : Dform} : Dform
 declare "ty_term"{'term : Dform; 'opname : Dform; 'params : Dform; 'bterms : Dform; 'ty : Dform} : Dform
 declare "term_def"[name:s]{'def : Dform; 'res : Dform} : Dform
-declare "parent_kind"[name:s] : Dform
-declare "parent_kind"[name:s]{'parent : Dform} : Dform
+declare parent_kind[name:s] : Dform
+declare parent_kind[name:s]{'parent : Dform} : Dform
 
 doc <:doc< @docoff >>
 declare "parent"[name:s] : Dform
@@ -501,24 +504,35 @@ dform displayed_as_df : except_mode[tex] :: displayed_as{'t} =
 dform displayed_as_df : mode[tex] :: displayed_as{'t} =
    szone info["(displayed as"] hspace `"``" ensuremath{slot["decl"]{'t}} `"''" info[")"] ezone
 
-dform declare_kind_df : "declare_kind"{'term; 'parent} =
+dform shape_normal_df : shape_normal = `""
+dform shape_iform_df : shape_iform = info["iform"] " "
+
+dform parent_kind_none : parent_kind["none"] = `""
+
+dform parend_kind_extends : parent_kind["extends"]{'ty} =
+   `" ->" hspace slot{'ty}
+
+dform parend_kind_include : parent_kind["include"]{'ty} =
+   `" <-" hspace slot{'ty}
+
+dform declare_typeclass_df : "declare_typeclass"{'shape; 'term; 'parent; 'ty} =
    pushm[4] szone
-   info["declare class"] " " szone tt{slot["raw"]{'term}} hspace displayed_as{'term} ezone
+   info["declare typeclass"] " " 'shape szone tt{slot["raw"]{'term}} hspace displayed_as{'term} 'ty ezone
    ezone popm
 
-dform declare_type_df : "declare_type"{'info} =
+dform declare_type_df : "declare_type"{'shape; 'info; 'ty} =
    pushm[4] szone
-   info["declare type"] " " 'info
+   info["declare type"] " " 'shape 'info `" ->" hspace slot{'ty}
    ezone popm
 
-dform declare_term_df : "declare_term"{'info} =
+dform declare_term_df : "declare_term"{'shape; 'info} =
    pushm[4] szone
-   info["declare"] " " 'info
+   info["declare"] " " 'shape 'info
    ezone popm
 
-dform define_term_df : "define_term"{'info; term_def[name:s]{'contractum; 'res}} =
+dform define_term_df : "define_term"{'shape; 'info; term_def[name:s]{'contractum; 'res}} =
    pushm[4] szone
-      info["define"] " " szone rewrite_name[name:s] resources{'res} keyword[":"] ezone hspace
+      info["define"] " " 'shape szone rewrite_name[name:s] resources{'res} keyword[":"] ezone hspace
       szone pushm[4]
          'info `" " ensuremath{longleftrightarrow}
          hspace ensuremath{slot{'contractum}}
@@ -539,7 +553,7 @@ dform ty_con_term_df : ty_constraint{Term} = `""
 
 dform class_term_df : "ty_term"{'term; 'opname; 'params; 'bterms; 'ty} =
    pushm[4] szone
-   szone tt{slot["raw"]{'term}} ty_constraint{'ty} ezone hspace displayed_as{'term}
+   szone tt{slot["raw"]{'term}} hspace displayed_as{'term} ezone ty_constraint{'ty}
    popm ezone
 
 dform class_term_df : "ty_term"{'term; 'opname; 'params; 'bterms; ty_sequent{'ty_hyp; 'ty_concl; 'ty_seq}} =
