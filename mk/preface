@@ -116,12 +116,12 @@ check_versions::
 ifndef CAMLP4
    CAMLP4 = camlp4o$(EXE)
 check_versions::
-	@VERSIONS="$(CAML_VERSIONS)" $(ROOT)/mk/check_version.sh $(CAMLP4) CAMLP4 "Camlp4 version"
+	@VERSIONS="$(CAML_VERSIONS)" $(ROOT)/mk/check_version.sh $(CAMLP4) "" CAMLP4 "Camlp4 version"
 endif
 ifndef OCAMLC
    OCAMLC = ocamlc$(EXE)
 check_versions::
-	@VERSIONS="$(CAML_VERSIONS)" $(ROOT)/mk/check_version.sh $(OCAMLC) OCAMLC "The Objective Caml compiler, version"
+	@VERSIONS="$(CAML_VERSIONS)" $(ROOT)/mk/check_version.sh $(OCAMLC) "" OCAMLC "The Objective Caml compiler, version"
 endif
 ifndef OCAMLCP
    OCAMLCP = $(OCAMLC)
@@ -129,12 +129,12 @@ endif
 ifndef OCAMLMKTOP
    OCAMLMKTOP = ocamlmktop
 check_versions::
-	@VERSIONS="$(CAML_VERSIONS)" $(ROOT)/mk/check_version.sh $(OCAMLMKTOP) OCAMLMKTOP "The Objective Caml compiler, version"
+	@VERSIONS="$(CAML_VERSIONS)" $(ROOT)/mk/check_version.sh $(OCAMLMKTOP) "-o /dev/null" $OCAMLMKTOP "The Objective Caml compiler, version"
 endif
 ifndef OCAMLOPT
    OCAMLOPT = ocamlopt$(EXE)
 check_versions::
-	@VERSIONS="$(CAML_VERSIONS)" $(ROOT)/mk/check_version.sh $(OCAMLOPT) OCAMLOPT "The Objective Caml native-code compiler, version"
+	@VERSIONS="$(CAML_VERSIONS)" $(ROOT)/mk/check_version.sh $(OCAMLOPT) "" OCAMLOPT "The Objective Caml native-code compiler, version"
 endif
 ifndef OCAMLLEX
    OCAMLLEX = ocamllex$(EXE)
