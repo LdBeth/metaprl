@@ -409,6 +409,7 @@ struct
              { aname = None; aterm = mk_pair_term loc x.aterm y.aterm }
           ]
          ];
+
       noncommaterm:
          [
            "ite" LEFTA
@@ -439,48 +440,61 @@ struct
             [ (* all/exists*)
                op = sl_quantify; v = word_or_string; sl_colon; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
                   { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) v t1.aterm t2.aterm }
-              (* dall/dexists*)
-             | op = sl_quantify; v = word_or_string; sl_set_in; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
+            |(* dall/dexists*)
+               op = sl_quantify; v = word_or_string; sl_set_in; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
                   { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc  ("d"^op)) v t1.aterm t2.aterm }
-              (* sall/sexists*)
-             | op = sl_quantify; v = word_or_string; sl_period; t2 = noncommaterm ->
+            |(* sall/sexists*)
+              op = sl_quantify; v = word_or_string; sl_period; t2 = noncommaterm ->
                   { aname = None; aterm = mk_dep1_term (mk_dep1_opname loc ("s"^op)) v t2.aterm }
-              (* thereis/forall *)
-             | op = sl_open_quantify; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
+            |(* thereis/forall *)
+              op = sl_open_quantify; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
                   { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) "self" t1.aterm t2.aterm }
             ]
           | "neg"
             [ op = sl_not; x = noncommaterm ->
                { aname = None; aterm = mk_dep0_term (mk_dep0_opname loc op) x.aterm }
             ]
+
           (* Relations *)
           | "equal" NONA
-            [ t1 = noncommaterm; op = sl_equal_rel; t2 = NEXT; sl_in; ty = noncommaterm ->
+            [ (* t1 = t2 in ty,   t1 <> t2 in ty -- (in)equality in type *)
+              t1 = noncommaterm; (op,_) = sl_equal_rel; t2 = NEXT; sl_in; ty = noncommaterm ->
                { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc op) ty.aterm t1.aterm t2.aterm }
-            | t = noncommaterm; op = sl_in; ty = noncommaterm ->
+            | (* t1 in ty  *)
+              t = noncommaterm; op = sl_in; ty = noncommaterm ->
                (* HACK - this is to support ad-hoc I/O form "member" - see TODO 2.14 -2.15 *)
                   { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc "equal") ty.aterm t.aterm t.aterm }
-            | t1 = noncommaterm; op = sl_equal_rel; t2 = NEXT ->
-               { aname = None; aterm = mk_dep0_dep0_term (mk_dep0_dep0_opname loc op) t1.aterm t2.aterm }
-            | t1 = noncommaterm; sl_tilde; t2 = noncommaterm ->
+            | (* t1 = t2, t1 <> t2  *)
+              t1 = noncommaterm; (op,_) = sl_equal_rel; t2 = NEXT ->
+                mk_arith_term loc op t1 t2
+              (* t1 =[g] t2, t1 <>[g] t2  - algebraic relations for g *)
+            | t1 = noncommaterm; (_,op) = sl_equal_rel; sl_open_brack; g = aterm; sl_close_brack; t2 = noncommaterm ->
+               { aname = None; aterm = make_application loc [mk_field_term loc g.aterm op; t1.aterm; t2.aterm] }
+            | (* t1 ~ t2 - squiggle equality  *)
+              t1 = noncommaterm; sl_tilde; t2 = noncommaterm ->
                (* HACK - Perv!rewrite should be eventially replaced by mk_opname loc ["sqeq"] *)
                (* { aname = None; aterm = mk_dep0_dep0_term (mk_dep0_dep0_opname loc "sqeq") t1.aterm t2.aterm } *)
                   { aname = None; aterm = mk_xrewrite_term t1.aterm t2.aterm }
-            | t1 = noncommaterm; op = sl_set_in; t2 = noncommaterm ->
+            | (* t1 In t2  - membership for set theory *)
+              t1 = noncommaterm; op = sl_set_in; t2 = noncommaterm ->
                { aname = None; aterm = mk_dep0_dep0_term (mk_dep0_dep0_opname loc op) t1.aterm t2.aterm }
             ]
           | "compare" NONA
-            [ t1 = noncommaterm; op = sl_less_than; t2 = noncommaterm ->
+            [ (* t1 =@ t2, t1 <>@ t2, t1 <@ t2, t1 >@ t2, ...  - integer relations as booleans *)
+               t1 = noncommaterm; op = sl_arith_rel; t2 = noncommaterm ->
                mk_arith_term loc op t1 t2
-             | t1 = noncommaterm; op = sl_less_equal; t2 = noncommaterm ->
+            |(* t1 < t2, t1 > t2, ...  - integer relations as propositions *)
+               t1 = noncommaterm; (op,_) = sl_rel;  t2 = noncommaterm ->
                mk_arith_term loc op t1 t2
-             | t1 = noncommaterm; op = sl_greater_equal; t2 = noncommaterm ->
-               mk_arith_term loc op t1 t2
-             | t1 = noncommaterm; op = sl_greater_than; t2 = noncommaterm ->
-               mk_arith_term loc op t1 t2
-             | t1 = noncommaterm; op = sl_label_rel;  t2 = noncommaterm ->
+            |(* t1 ^= t2, t1 ^<> t2, t1 ^< t2, t1 ^> t2, ...  - algebraic relations for self *)
+               t1 = noncommaterm; op = sl_label_self_rel;  t2 = noncommaterm ->
                { aname = None; aterm = make_application loc [mk_field_self_term loc op; t1.aterm; t2.aterm] }
+            |(* t1 <[g] t2, t1 >[g] t2, ...  - algebraic relations for g *)
+               t1 = noncommaterm; (_,op) = sl_rel; sl_open_brack; g = aterm; sl_close_brack; t2 = noncommaterm ->
+               { aname = None; aterm = make_application loc [mk_field_term loc g.aterm op; t1.aterm; t2.aterm] }
             ]
+
+
           (* Other operations *)
           | "cons" RIGHTA
             [ t1 = noncommaterm; op = sl_double_colon; t2 = noncommaterm ->
@@ -494,45 +508,59 @@ struct
             [ t1 = noncommaterm; op = sl_left_arrow; t2 = noncommaterm ->
                mk_arith_term loc op t2 t1
             ]
-          | "union" RIGHTA
-            [ t1 = noncommaterm; op = sl_plus; t2 = noncommaterm ->
-               mk_arith_term loc op t1 t2
-            ]
-          | "prod" RIGHTA
-            [ t1 = noncommaterm; op = sl_star; t2 = noncommaterm ->
-               mk_type_term loc op t1 t2
-            ]
           | "isect" LEFTA
             [  op = sl_isect; v = word_or_string; sl_colon; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
                         { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) v t1.aterm t2.aterm }
              | op = sl_quotient; x = word_or_string; sl_comma; y = word_or_string; sl_colon; t1 = noncommaterm; sl_double_slash; t2 = noncommaterm ->
                { aname = None; aterm = mk_dep0_dep2_term (mk_dep0_dep2_opname loc op) x y t1.aterm t2.aterm }
             ]
-          | "add" LEFTA
-            [ t1 = noncommaterm; op = sl_add; t2 = noncommaterm ->
+          | "plus" RIGHTA
+            [  (* t1 +[g] t2  - algebraic plus *)
+               t1 = noncommaterm; sl_plus; sl_open_brack; g = aterm;  sl_close_brack; t2 = noncommaterm ->
+               { aname = None; aterm = make_application loc [mk_field_term loc g.aterm "+"; t1.aterm; t2.aterm] }
+             | (* t1 + t2 - disjoint union *)
+               t1 = noncommaterm; op = sl_plus; t2 = noncommaterm ->
                mk_arith_term loc op t1 t2
-             | t1 = noncommaterm; op = sl_sub; t2 = noncommaterm ->
-               mk_arith_term loc op t1 t2
-             | t1 = noncommaterm; op = sl_label_add;  t2 = noncommaterm ->
+             | (* t1 ^+ t2   - algebraic plus for self *)
+               t1 = noncommaterm; op = sl_label_self_plus;  t2 = noncommaterm ->
                { aname = None; aterm = make_application loc [mk_field_self_term loc op; t1.aterm; t2.aterm] }
+            ]
+          | "add" LEFTA
+            [ (* t1 +@ t2, t1 -@ t2 - integer plus, minus *)
+               t1 = noncommaterm; op = sl_arith_add; t2 = noncommaterm ->
+               mk_arith_term loc op t1 t2
+            |(* t1 ^- t2   - algebraic minus for self *)
+               t1 = noncommaterm; op = sl_label_self_minus;  t2 = noncommaterm ->
+               { aname = None; aterm = make_application loc [mk_field_self_term loc op; t1.aterm; t2.aterm] }
+            |(* t1 -[g] t2   - algebraic minus for g *)
+               t1 = noncommaterm; op = sl_add; sl_open_brack; g = aterm; sl_close_brack; t2 = noncommaterm ->
+               { aname = None; aterm = make_application loc [mk_field_term loc g.aterm op; t1.aterm; t2.aterm] }
             ]
           | "uminus"
             [ op = sl_minus; x = noncommaterm ->
                { aname = None; aterm = mk_dep0_term (mk_dep0_opname loc op) x.aterm }
             ]
-          | "mul" LEFTA
-            [ t1 = noncommaterm; op = sl_mul; t2 = noncommaterm ->
-               mk_arith_term loc op t1 t2
-             | t1 = noncommaterm; op = sl_div; t2 = noncommaterm ->
-               mk_arith_term loc op t1 t2
-             | t1 = noncommaterm; op = sl_rem; t2 = noncommaterm ->
-               mk_arith_term loc op t1 t2
-             | t1 = noncommaterm; op = sl_label_mul;  t2 = noncommaterm ->
+          | "prod" RIGHTA
+            [  (* t1 *[g] t2  - algebraic multiplication (e.g. group operation) *)
+               t1 = noncommaterm; sl_star; sl_open_brack; g = aterm;  sl_close_brack; t2 = noncommaterm ->
+               { aname = None; aterm = make_application loc [mk_field_term loc g.aterm "*"; t1.aterm; t2.aterm] }
+             | (* t1 * t2 - type product *)
+               t1 = noncommaterm; op = sl_star; t2 = noncommaterm ->
+               mk_type_term loc op t1 t2
+             |(* t1 ^* t2   - algebraic multiplication for self *)
+               t1 = noncommaterm; op = sl_label_self_star;  t2 = noncommaterm ->
                { aname = None; aterm = make_application loc [mk_field_self_term loc op; t1.aterm; t2.aterm] }
             ]
-          | "power" RIGHTA
-            [ t1 = noncommaterm; op = sl_power_l; t2 = noncommaterm ->
+          | "mul" LEFTA
+            [ (* t1 *@ t2, t1 /@ t2, t1 %@ t2  - integer multiplication, division, reminder *)
+               t1 = noncommaterm; op = sl_arith_mul; t2 = noncommaterm ->
+               mk_arith_term loc op t1 t2
+            |(* t1 ^/ t2   - algebraic division for self *)
+               t1 = noncommaterm; op = sl_label_self_div;  t2 = noncommaterm ->
                { aname = None; aterm = make_application loc [mk_field_self_term loc op; t1.aterm; t2.aterm] }
+            |(* t1 /[g] t2   - algebraic right division for g *)
+               t1 = noncommaterm; op = sl_div; sl_open_brack; g = aterm; sl_close_brack; t2 = noncommaterm ->
+               { aname = None; aterm = make_application loc [mk_field_term loc g.aterm op; t1.aterm; t2.aterm] }
             ]
           | "apply" LEFTA
             [ t = applyterm ->
@@ -540,17 +568,8 @@ struct
              | t = applyterm; l = applytermlist ->
                { aname = None; aterm = make_application loc (t.aterm :: l) }
             ]
-          | "record_field" LEFTA
-            [ r = noncommaterm; sl_field; lab = word_or_string  ->
-             { aname = None;
-               aterm = mk_field_term loc r.aterm lab
-             }
-            | sl_field; lab = word_or_string  ->
-             { aname = None;
-               aterm = mk_field_self_term loc lab
-             }
-           ]
          ];
+
 
 
       (* Term that can be used in application lists *)
@@ -567,6 +586,39 @@ struct
                     { aname = Some (mk_var_term name); aterm = t.aterm }
                | _ ->
                     Stdpp.raise_with_loc loc (ParseError "illegal binding variable")
+           ]
+          | "power" RIGHTA
+            [ (* t1 ^@ t2  - integer power *)
+               t1 = applyterm; op = sl_arith_power; t2 = applyterm ->
+               mk_arith_term loc op t1 t2
+            |(* t1 ^^ t2   - algebraic power for self *)
+               t1 = applyterm; op = sl_label_self_power;  t2 = applyterm ->
+               { aname = None; aterm = make_application loc [mk_field_self_term loc op; t1.aterm; t2.aterm] }
+            |(* t1 ^[g] t2   - algebraic power for g *)
+               t1 = applyterm; op = sl_power; sl_open_brack; g = aterm; sl_close_brack; t2 = applyterm ->
+               { aname = None; aterm = make_application loc [mk_field_term loc g.aterm op; t1.aterm; t2.aterm] }
+            |(* r ^ lab - field selection for records *)
+              r = applyterm; sl_power; lab = word_or_string  ->
+             { aname = None;
+               aterm = mk_field_term loc r.aterm lab
+             }
+            |(* r ^ lab := t - field update for records *)
+               r = applyterm; sl_power; lab = word_or_string; sl_assign; t = noncommaterm  ->
+             { aname = None;
+               aterm = mk_term (mk_op (mk_opname loc ["rcrd"] [ShapeToken] [0;0])
+                               [make_param (Token lab )])  [mk_simple_bterm t.aterm; mk_simple_bterm  r.aterm]
+             }
+            |(* ^ lab  - field selection for self *)
+              sl_power; lab = word_or_string  ->
+             { aname = None;
+               aterm = mk_field_self_term loc lab
+             }
+            |(* ^ lab - field update for records *)
+               sl_power; lab = word_or_string; sl_assign; t = noncommaterm   ->
+             { aname = None;
+               aterm = mk_term (mk_op (mk_opname loc ["rcrd"] [ShapeToken] [0;0])
+                               [make_param (Token lab )])  [mk_simple_bterm t.aterm; mk_simple_bterm  (mk_var_term "self")]
+             }
            ]
           | [ t = nonwordterm ->
                t
@@ -621,8 +673,6 @@ struct
          [[ (* vars *)
              v = varterm ->
              { aname = None; aterm = v }
-           | sl_wild_card ->
-             { aname = None; aterm = mk_var_term (mk_gensym ()) }
 
              (* Abbreviations *)
            | i = sl_number ->
@@ -636,6 +686,7 @@ struct
              (* Parenthesized terms *)
            | sl_open_paren; t = aterm; sl_close_paren ->
              t
+             (* records {x1=a1;x2=a2;...} *)
            | sl_open_curly; lab = word_or_string; sl_equal; t = aterm; r = LIST0 rcrdterm; sl_close_curly ->
                 let r0 =   mk_term (mk_op (mk_opname loc ["rcrd"] [ShapeToken] [0])
                                [make_param (Token lab )])  [mk_simple_bterm t.aterm] in
@@ -646,6 +697,7 @@ struct
                    { aname = None;
                      aterm = List.fold_left aux r0 r
                    }
+             (* record typess {x1:A1;x2:a2;...} *)
            | sl_open_curly; lab = word_or_string; sl_colon; t = aterm; ";"; r = LIST0 recordterm SEP ";"; sl_close_curly ->
                 let r0 =   mk_term (mk_op (mk_opname loc ["record"] [ShapeToken] [0])
                                [make_param (Token lab )])  [mk_simple_bterm t.aterm] in
@@ -659,6 +711,7 @@ struct
                    { aname = None;
                      aterm = List.fold_left aux r0 r
                    }
+             (* single record types {x1:A1} *)
            | sl_open_curly; lab = word_or_string; sl_colon; t = aterm; sl_close_curly ->
                 let r0 =   mk_term (mk_op (mk_opname loc ["record"] [ShapeToken] [0])
                                [make_param (Token lab )])  [mk_simple_bterm t.aterm]
@@ -666,8 +719,10 @@ struct
                    { aname = None;
                      aterm = r0
                    }
+             (* sets {x:A | P[x]} *)
            | sl_open_curly; v =  word_or_string; sl_colon; ty = aterm; sl_pipe; b = aterm; sl_close_curly ->
              { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc "set") v ty.aterm b.aterm }
+             (* very dependent functions {f | x:A -> B[x]} *)
            | sl_open_curly; f =  word_or_string; sl_pipe; t = aterm; sl_close_curly ->
              let t = t.aterm in
              let rfun_op = mk_dep0_dep2_opname loc "rfun" in
@@ -957,9 +1012,6 @@ struct
       sl_back_quote:
          [[ "`" -> () ]];
 
-      sl_wild_card:
-         [[ "_" -> () ]];
-
       sl_sequent:
          [[ "sequent" -> () ]];
 
@@ -969,31 +1021,35 @@ struct
       sl_exclamation:
          [[ "!" -> () ]];
 
-      sl_add:
-         [[ "+@" -> "add" ]];
+      sl_assign:
+         [[ ":=" -> "assign" ]];
 
-      sl_sub:
-         [[ "-@" -> "sub" ]];
+      sl_equal:
+         [[ "=" -> () ]];
 
-      sl_mul:
-         [[ "*@" -> "mul" ]];
+      sl_equal_rel:
+         [[ "=" -> "equal","="
+          | "<>" -> "nequal","<>"
+          ]];
 
-      sl_div:
-         [[ "/@" -> "div" ]];
 
-      sl_rem:
-         [[ "%@" -> "rem" ]];
+      sl_rel:
+         [[ "<" -> "lt","<"
+          | ">" -> "gt",">"
+          | "<=" -> "le", "<="
+          | ">=" -> "ge", ">="
+          ]];
 
-      sl_plus:
-         [[ "+" -> "union" ]];
+      sl_arith_rel:
+         [[ "=@" -> "beq_int"
+          | "<@" -> "lt_bool"
+          | ">@" -> "gt_bool"
+          | "<=@" -> "le_bool"
+          | ">=@" -> "ge_bool"
+          | "<>@" -> "bneq_int"
+          ]];
 
-      sl_minus:
-         [[ "-" -> "minus" ]];
-
-      sl_field:
-         [[ "^" -> "field" ]];
-
-      sl_label_rel:
+      sl_label_self_rel:
          [[ "^=" -> "="
           | "^<" -> "<"
           | "^>" -> ">"
@@ -1002,48 +1058,60 @@ struct
           | "^<>" -> "<>"
           ]];
 
-      sl_label_add:
-         [[ "^+" -> "+"
-          | "^-" -> "-"
-          ]];
+      sl_plus:
+         [[ "+" -> "union" ]];
 
-      sl_label_mul:
-         [[ "^*" -> "*"
-          | "^/" -> "/"
-          ]];
+      sl_add: (* other operations with addition prioruty *)
+         [[ "-" -> "-" ]];
 
-      sl_power_l:
-         [[ "^^" -> "^" ]];
+      sl_minus: (* unary minus *)
+         [[ "-" -> "minus" ]];
 
+      sl_arith_add:
+         [[ "+@" -> "add"
+          | "-@" -> "sub" ]];
+
+      sl_label_self_plus:
+         [[ "^+" -> "+"]];
+
+      sl_label_self_minus:
+         [[ "^-" -> "-"]];
 
       sl_star:
          [[ "*" -> "prod" ]];
+
+      sl_div:
+         [[ "/" -> "/"
+          ]];
+
+      sl_arith_mul:
+         [[ "*@" -> "mul"
+          | "/@" -> "div"
+          | "%@" -> "rem" ]];
+
+      sl_label_self_star:
+         [[ "^*" -> "*"
+          ]];
+
+      sl_label_self_div:
+         [[ "^/" -> "/"
+          ]];
+
+      sl_power:
+         [[ "^" -> "^" ]];
+
+      sl_arith_power:
+         [[ "^@" -> "power" ]];
+
+      sl_label_self_power:
+         [[ "^^" -> "^" ]];
+
 
       sl_arrow:
          [[ "->" -> "fun" ]];
 
       sl_left_arrow:
          [[ "<-" -> "fun" ]];
-
-      sl_less_than:
-         [[ "<" -> "lt" ]];
-
-      sl_less_equal:
-         [[ "<=" -> "le" ]];
-
-      sl_greater_than:
-         [[ ">" -> "gt" ]];
-
-      sl_greater_equal:
-         [[ ">=" -> "ge" ]];
-
-      sl_equal:
-         [[ "=" -> () ]];
-
-      sl_equal_rel:
-         [[ "=" -> "equal"
-          | "<>" -> "nequal"
-          ]];
 
       sl_not:
          [[ "neg" -> "not" ]];
