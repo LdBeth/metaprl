@@ -535,11 +535,6 @@ sig
    type saf' = Affine of af | Max of saf*saf | Min of saf*saf
 	and saf = source * saf'
 
-   type 'a step =
-      Assert of string * saf * saf * 'a
-    |   Transitive of string * saf * saf * saf
-    | Tactic of string * 'a
-
    val affine: af -> saf
    val min: saf -> saf -> saf
    val max: saf -> saf -> saf
@@ -590,11 +585,6 @@ struct
 
    type saf' = Affine of af | Max of saf*saf | Min of saf*saf
 	and saf = source * saf'
-
-   type 'a step =
-      Assert of string * saf * saf * 'a
-    | Transitive of string * saf * saf * saf
-    | Tactic of string * 'a
 
 	let getSource (s,f') = s
 	let setSource s (_,f) = (s,f)
