@@ -422,21 +422,23 @@ let get_formatting_head buf =
  *)
 let push_command buf command =
    let entry = get_formatting_head buf in
-   let () =
-      match command, entry.formatting_buf.buf_tag with
-         Text (len, _), IZoneTag ->
-            let root = buf.buf_root in
-            let { root_bound = bound;
-                  root_count = count
-                } = root
-            in
-               if count >= bound then
-                  raise BufferOverflow;
-               root.root_count <- count + len
-       | _ ->
-            ()
+   let len =
+      match command with
+         Text (len, _) -> len
+       | _ -> 0
    in
-      entry.formatting_commands <- command :: entry.formatting_commands
+   let root = buf.buf_root in
+   let { root_bound = bound;
+         root_count = count
+       } = root
+   in
+      entry.formatting_commands <- command :: entry.formatting_commands;
+      if count >= bound then begin
+         let stack = get_formatting_stack buf in
+         while List.length stack.formatting_stack > 2 do format_ezone buf done;
+         raise BufferOverflow
+      end;
+      root.root_count <- count + len
 
 (*
  * Set the bound in the buffer.
@@ -1631,26 +1633,29 @@ let print_to_tex rmargin buf out =
 let line_format length fmt_fun =
    if length < 3 then
       raise (Invalid_argument "Rformat.line_format");
-
    let buf = new_buffer () in
-   let s =
+   let s, overflow =
       format_bound buf length;
       format_lzone buf;
-      (try fmt_fun buf with
-          BufferOverflow ->
-             ());
+      let over =
+         try fmt_fun buf; false
+         with BufferOverflow -> true
+      in
       format_ezone buf;
-      print_to_string length buf
+      print_to_string length buf, over
    in
    let len = String.length s in
-      if len > length then
-         let s = String.sub s 0 length in
-            s.[length - 3] <- '.';
-            s.[length - 2] <- '.';
-            s.[length - 1] <- '.';
-            s
-      else
-         s
+   let s =
+      if len > length then String.sub s 0 length
+      else if len < length then s ^ (String.make (length - len) ' ')
+      else s
+   in
+      if overflow or len > length then begin
+         s.[length - 3] <- '.';
+         s.[length - 2] <- '.';
+         s.[length - 1] <- '.'
+      end;
+      s
 
 (*
  * -*-
