@@ -231,9 +231,9 @@ let term_of_implementation pack filter parse_arg =
 (*
  * Filter the entries for ls.
  *)
-let is_not_summary_item = function
-   SummaryItem _ | Improve _ | Resource _ -> false
- | _ -> true
+let default_filter = function
+   Rewrite _ | CondRewrite _ | MLRewrite _ | Rule _ | MLAxiom  _ | Definition _ | Parent _ | Opname _ | Comment _ | Resource _ -> true
+ | _ -> false
 
 let is_rewrite_item = function
    Rewrite _ | CondRewrite _ | MLRewrite _ | Definition _ -> true
@@ -250,17 +250,15 @@ let is_formal_item = function
  | ToploopItem _ | Infix _ | Prec _ | DForm _ | Module _ | Id _ | PrecRel _ ->
       false
 
-let is_unjustified_item item =
-   let proof =
-      match item with
-         Rewrite { rw_proof = proof }
-       | CondRewrite { crw_proof = proof }
-       | Rule { rule_proof = proof } ->
-            proof
-       | _ ->
-            Primitive xnil_term
-   in
-      match proof with
+let is_display_item = function
+   Opname _ | Infix _ | Prec _ | DForm _ | InputForm _ -> true
+ | _ -> false
+
+let is_unjustified_item = function
+   Rewrite { rw_proof = proof }
+ | CondRewrite { crw_proof = proof }
+ | Rule { rule_proof = proof } ->
+      begin match proof with
          Primitive _
        | Derived _ ->
             false
@@ -272,6 +270,9 @@ let is_unjustified_item item =
                   false
              | _ ->
                   true
+      end
+ | _ ->
+      false
 
 (*
  * Conjoin all the predicates.
@@ -293,8 +294,10 @@ let rec mk_ls_filter predicate = function
       mk_ls_filter (is_unjustified_item :: predicate) tl
  | LsFormal :: tl ->
       mk_ls_filter (is_formal_item :: predicate) tl
- | LsNoSummaryItems :: tl ->
-      mk_ls_filter (is_not_summary_item :: predicate) tl
+ | LsDefault :: tl ->
+      mk_ls_filter (default_filter :: predicate) tl
+ | LsDisplay :: tl ->
+      mk_ls_filter (is_display_item :: predicate) tl
  | [] ->
       compile_ls_predicate predicate
 
@@ -313,7 +316,8 @@ let raise_edit_error s =
  *)
 let rec edit pack_info parse_arg window =
    let edit_display options =
-      display_term pack_info window (term_of_implementation pack_info (mk_ls_filter [is_not_summary_item] options) parse_arg)
+      let options = if options = [] then [LsDefault] else options in
+         display_term pack_info window (term_of_implementation pack_info (mk_ls_filter [] options) parse_arg)
    in
    let edit_copy () =
       edit pack_info parse_arg (new_window window)

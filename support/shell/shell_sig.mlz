@@ -55,7 +55,8 @@ type ls_option =
    LsRewrites
  | LsRules
  | LsUnjustified
- | LsNoSummaryItems
+ | LsDisplay
+ | LsDefault
  | LsFormal
  | LsAll
 

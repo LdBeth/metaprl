@@ -1513,6 +1513,8 @@ let ls s =
                   (LsFormal :: options)
              | 'a' ->
                   (LsAll :: options)
+             | 'd' ->
+                  (LsDisplay :: options)
              | _ ->
                   raise (RefineError ("ls", StringStringError ("unrecognized option", s)))
          in
