@@ -66,6 +66,16 @@ Could be that term_match_table listing needs to be reversed.
 
 2.5) Display form mode generality is not working.
 
+2.6) (Added 2000.02.21 by nogin)
+When a list of subgoals is too big, displaying used to take a while. The current
+workaround is to only display subgoals when there are <20 of them. We need to
+find a better solution - in particular we should take into account subgoal sizes, not only
+the number of subgoals. 
+
+It may be a good idea to implement a generic display-form mechanism to allow limiting
+the number of lines a sertain term would occupy. On the other hand, such an approach
+would only save the time to output the display form, but not the time to produce it.
+
 REWRITER
 
 3.1) If a variable is bound in a context, rewriter may handle it incorrectly.

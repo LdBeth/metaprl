@@ -567,7 +567,12 @@ let term_of_proof proof =
        | Proof.ExprRule (text, _) ->
             mk_rule_box_string_term text
    in
-   let subgoals = mk_subgoals_term subgoals extras in
+   let subgoals = 
+      (* HACK!!! *)
+      let l = List.length subgoals in
+      if l < 20 then mk_subgoals_term subgoals extras
+      else mk_xlist_term [ mk_string_arg_term "\n\n<<"; mk_int_arg_term l; mk_string_arg_term " subgoals (output suppressed)>>"]
+   in
    let x = mk_proof_term main goal text subgoals in
       if !debug_edit then
          eprintf "Proof_edit.term_of_proof: done%t" eflush;
