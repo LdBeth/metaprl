@@ -1,0 +1,12 @@
+set_tex_file "../../doc/latex/theories/experimental/compile/theory.tex";;
+print_theory "m_doc_intro";;
+print_theory "m_doc_parsing";;
+print_theory "m_doc_ir";;
+print_theory "m_doc_cps";;
+print_theory "m_doc_closure";;
+print_theory "m_doc_opt";;
+print_theory "m_doc_x86_asm";;
+print_theory "m_doc_x86_codegen";;
+print_theory "m_doc_x86_regalloc";;
+print_theory "m_doc_x86_opt";;
+print_theory "m_doc_summary";;

@@ -20,7 +20,7 @@
  * Read a line into a string buffer.
  * Returns a string option, None at EOF.
  */
-value caml_readline(value prompt_arg)
+value prl_readline(value prompt_arg)
 {
     CAMLparam1(prompt_arg);
     CAMLlocal2(v, b);

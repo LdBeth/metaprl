@@ -38,6 +38,9 @@ endif
 ifndef SEQ_SET
    SEQ_SET=Array
 endif
+ifndef LIBMOJAVE
+   LIBMOJAVE=undefined
+endif
 ifndef ENSROOT
    ENSROOT=undefined
 endif

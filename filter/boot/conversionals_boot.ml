@@ -175,6 +175,21 @@ struct
          funC sweepDnCE
 
    (*
+    * These are the same but don't allow failure.
+    *)
+   let rec sweepUpFailC rw =
+      let sweepUpCE e =
+         prefix_thenC (allSubC (sweepUpFailC rw)) rw
+      in
+         funC sweepUpCE
+
+   let rec sweepDnFailC rw =
+      let sweepDnCE e =
+         prefix_thenC rw (allSubC (sweepDnFailC rw))
+      in
+         funC sweepDnCE
+
+   (*
     * Use the first conversion that works.
     *)
    let rec firstC = function

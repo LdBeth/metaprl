@@ -27,6 +27,9 @@ theories:
 ocaml:
 	+ @ $(MAKE) NAME=book2 GOAL=ocaml-book TEXTHEORIES=ocaml_doc doc
 
+compile:
+	+ @ $(MAKE) NAME=m-paper GOAL=m-paper TEXTHEORIES=experimental/compile doc
+
 all: doc
 opt: doc
 
@@ -39,6 +42,7 @@ TEXFILES = $(addsuffix /theory.tex, $(TEXTHEORIES))\
 
 doc:
 	+ @ $(MAKE) -C $(ROOT)/editor/ml TEXTHEORIES="$(TEXTHEORIES)" tex
+	+ @ $(MAKE) NAME=$(NAME) GOAL=$(GOAL) TEXTHEORIES="$(TEXTHEORIES)" $(ROOT)/doc/ps/theories/$(GOAL).ps
 	+ @ $(MAKE) NAME=$(NAME) GOAL=$(GOAL) TEXTHEORIES="$(TEXTHEORIES)" $(ROOT)/doc/ps/theories/$(GOAL).pdf
 
 ALLBODIES=$(addprefix \input{, $(addsuffix /theory-body.tex}, $(TEXTHEORIES)))
@@ -64,11 +68,17 @@ $(NAME).pdf: $(INPUTS) $(TEXFILES) $(NAME).ind
 	TEXINPUTS=$(TEXINPUTS) pdflatex $(NAME)
 	echo $(NAME).pdf : `grep -a '/Type /Page$$' $(NAME).pdf | wc -l` pages 1>&2
 
+$(NAME).ps: $(INPUTS) $(TEXFILES) $(NAME).dvi
+	dvips -o $@ $(NAME).dvi
+
 $(NAME).dvi: $(INPUTS) $(TEXFILES) $(NAME).ind
 	TEXINPUTS=$(TEXINPUTS) latex $(NAME)
 
 $(ROOT)/doc/ps/theories/$(GOAL).pdf: $(NAME).pdf
 	$(CP) $(NAME).pdf $@
+
+$(ROOT)/doc/ps/theories/$(GOAL).ps: $(NAME).ps
+	$(CP) $(NAME).ps $@
 
 clean::
 	$(RM) *.log *.aux *.idx *.ilg *.ind *.pdf *.ps *.dvi *.blg *.bbl *.out

@@ -1192,6 +1192,12 @@ sig
    val sweepDnC : conv -> conv
 
    (*
+    * Same, but don't allow failures.
+    *)
+   val sweepUpFailC : conv -> conv
+   val sweepDnFailC : conv -> conv
+
+   (*
     * Use the first conversion that works.
     *)
    val firstC : conv list -> conv

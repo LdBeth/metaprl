@@ -332,7 +332,10 @@ let parse_comment loc t =
                   ["spelling"] ->
                      SpellAdd
                 | ["misspelled"]
-                | ["math_misspelled"] ->
+                | ["math_misspelled"]
+                | ["license"]
+                | ["url"]
+                | ["comment"] ->
                      SpellOff
                 | _ ->
                      spelling

@@ -1,0 +1,164 @@
+% This is "sig-alternate.tex" V1.3 OCTOBER 2002
+% This file should be compiled with V1.6 of "sig-alternate.cls" OCTOBER 2002
+%
+% This example file demonstrates the use of the 'sig-alternate.cls'
+% V1.6 LaTeX2e document class file. It is for those submitting
+% articles to ACM Conference Proceedings WHO DO NOT WISH TO
+% STRICTLY ADHERE TO THE SIGS (PUBS-BOARD-ENDORSED) STYLE.
+% The 'sig-alternate.cls' file will produce a similar-looking,
+% albeit, 'tighter' paper resulting in, invariably, fewer pages.
+%
+% ----------------------------------------------------------------------------------------------------------------
+% This .tex file (and associated .cls V1.6) produces:
+%       1) The Permission Statement
+%       2) The Conference (location) Info information
+%       3) The Copyright Line with ACM data
+%       4) NO page numbers
+%
+% as against the acm_proc_article-sp.cls file which
+% DOES NOT produce 1) thru' 3) above.
+%
+% Using 'sig-alternate.cls' you have control, however, from within
+% the source .tex file, over both the CopyrightYear
+% (defaulted to 2002) and the ACM Copyright Data
+% (defaulted to X-XXXXX-XX-X/XX/XX).
+% e.g.
+% \CopyrightYear{2003} will cause 2002 to appear in the copyright line.
+% \crdata{0-12345-67-8/90/12} will cause 0-12345-67-8/90/12 to appear in the copyright line.
+%
+% ---------------------------------------------------------------------------------------------------------------
+% This .tex source is an example which *does* use
+% the .bib file (from which the .bbl file % is produced).
+% REMEMBER HOWEVER: After having produced the .bbl file,
+% and prior to final submission, you *NEED* to 'insert'
+% your .bbl file into your source .tex file so as to provide
+% ONE 'self-contained' source file.
+%
+% ================= IF YOU HAVE QUESTIONS =======================
+% Questions regarding the SIGS styles, SIGS policies and
+% procedures, Conferences etc. should be sent to
+% Adrienne Griscti (griscti@acm.org)
+%
+% Technical questions _only_ to
+% Gerald Murray (murray@acm.org)
+% ===============================================================
+%
+% For tracking purposes - this is V1.3 - OCTOBER 2002
+
+% EMRE: use the preprint option to get rid of the silly ACM copyright.
+\documentclass[preprint]{sig-alternate}
+
+\usepackage{hyperref}
+\usepackage{makeidx}
+\makeindex
+
+\input{../inputs/metaprl}
+\setlength{\commentwidth}{0.5\textwidth}
+\addtolength{\commentwidth}{-0.5\columnsep}
+
+\renewcommand{\bottomfraction}{0.2}
+\renewcommand{\floatpagefraction}{0.9}
+
+%\commentfalse
+
+\begin{document}
+
+% EMRE: What to put instead of the ACM copyright.
+\toappearbox{Submitted to ICFP 2003, Uppsala, Sweden.}
+
+%
+% --- Author Metadata here ---
+%\conferenceinfo{ICFP}{'03 Uppsala, Sweden}
+%\CopyrightYear{2003} % Allows default copyright year (2000) to be over-ridden - IF NEED BE.
+%\crdata{0-12345-67-8/90/01}  % Allows default copyright data (0-89791-88-6/97/05) to be over-ridden - IF NEED BE.
+% --- End of Author Metadata ---
+
+\title{Formal Compiler Implementation in a Logical Framework\titlenote{A technical report version
+  of this paper will be available shortly as Caltech technical report
+  caltechCSTR:2003.002 at \url{http://caltechcstr.library.caltech.edu}}}
+
+%
+% You need the command \numberofauthors to handle the "boxing"
+% and alignment of the authors under the title, and to add
+% a section for authors number 4 through n.
+%
+% Up to the first three authors are aligned under the title;
+% use the \alignauthor commands below to handle those names
+% and affiliations. Add names, affiliations, addresses for
+% additional authors as the argument to \additionalauthors;
+% these will be set for you without further effort on your
+% part as the last section in the body of your article BEFORE
+% References or any Appendices.
+
+\numberofauthors{1}
+%
+% You can go ahead and credit authors number 4+ here;
+% their names will appear in a section called
+% "Additional Authors" just before the Appendices
+% (if there are any) or Bibliography (if there
+% aren't)
+
+% Put no more than the first THREE authors in the \author command
+\author{
+%
+% The command \alignauthor (no curly braces needed) should
+% precede each author name, affiliation/snail-mail address and
+% e-mail address. Additionally, tag each line of
+% affiliation/address with \affaddr, and tag the
+%% e-mail address with \email.
+\alignauthor Jason Hickey, Aleksey Nogin, Adam Granicz, and Brian Aydemir \thanks{This
+  work was supported in part by the DoD Multidisciplinary
+  University Research Initiative (MURI) program administered by the
+  Office of Naval Research (ONR) under Grant N00014-01-1-0765, the
+  Defense Advanced Research Projects Agency (DARPA), the United States
+  Air Force, the Lee Center, and by NSF Grant CCR 0204193.}\\
+       \affaddr{California Institute of Technology}\\
+       \affaddr{1200 E. California Blvd.}\\
+       \affaddr{Pasadena, CA 91125, USA}\\
+       \email{\{jyh,nogin,granicz,emre\}@cs.caltech.edu}
+}
+\date{28 March 2003}
+\maketitle
+
+\begin{abstract}
+The task of designing and implementing a compiler can be a
+difficult and error-prone process.  In this paper, we present a new
+approach based on the use of higher-order abstract syntax and term
+rewriting in a logical framework.  All program transformations, from
+parsing to code generation, are cleanly isolated and specified as term
+rewrites.  This has several advantages.  The correctness of the
+compiler depends solely on a small set of rewrite rules that are
+written in the language of formal mathematics.  In addition, the logical
+framework guarantees the preservation of scoping, and it automates
+many frequently-occurring tasks including substitution and rewriting
+strategies.  As we show, compiler development in a logical framework
+can be \emph{easier} than in a general-purpose language like ML, in
+part because of automation, and also because the framework provides
+extensive support for examination, validation, and debugging of the
+compiler transformations.  The paper is organized around a case study,
+using the \MetaPRL{} logical framework to compile an ML-like language to
+Intel x86 assembly.  We also present a scoped formalization of x86
+assembly in which all registers are immutable.
+
+\end{abstract}
+
+% A category with the (minimum) three required fields
+%\category{H.4}{Information Systems Applications}{Miscellaneous}
+%A category including the fourth, optional field follows...
+%\category{D.2.8}{Software Engineering}{Metrics}[complexity measures, performance measures]
+%\terms{Delphi theory}
+
+% EMRE: We don't strictly need keywords for this conference.
+% \keywords{formal compilers}
+
+\sloppy
+
+\input{experimental/compile/theory-body.tex}
+
+\bibliographystyle{abbrv}
+\bibliography{../inputs/rc}
+
+\printindex
+
+\balancecolumns
+\end{document}

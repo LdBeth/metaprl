@@ -96,7 +96,7 @@ TCMOFILES = $(addsuffix .cmo, $(TOPFILES))
 TCMXFILES = $(addsuffix .cmx, $(TOPFILES))
 
 ########################################################################
-# ENSEMBLE
+# ENSEMBLE, LIBMOJAVE
 ########################################################################
 
 #
@@ -104,11 +104,22 @@ TCMXFILES = $(addsuffix .cmx, $(TOPFILES))
 # Otherwise, use the null refiner.
 #
 ifneq ($(ENSROOT),undefined)
-	CMALIBS_ens = $(ROOT)/lib/trefiner_ens.cma
-	CMXALIBS_ens = $(ROOT)/lib/trefiner_ens.cmxa
+	CMALIBS_ext := $(ROOT)/lib/trefiner_ens.cma
+	CMXALIBS_ext := $(ROOT)/lib/trefiner_ens.cmxa
 else
-	CMALIBS_ens = $(ROOT)/lib/trefiner_null.cma
-	CMXALIBS_ens = $(ROOT)/lib/trefiner_null.cmxa
+	CMALIBS_ext := $(ROOT)/lib/trefiner_null.cma
+	CMXALIBS_ext := $(ROOT)/lib/trefiner_null.cmxa
+endif
+
+#
+# If LIBMOJAVE is available, use it
+#
+
+ifneq ($(LIBMOJAVE),undefined)
+	CMALIBS_ext := $(ROOT)/lib/lm.cma $(CMALIBS_ext)
+	CMXALIBS_ext := $(ROOT)/lib/lm.cxma $(CMXALIBS_ext)
+	BYTE_CCLIBS := -cclib $(ROOT)/lib/cutil-byte$(EXT_LIB)
+	NATIVE_CCLIBS := -cclib $(ROOT)/lib/cutil-native$(EXT_LIB)
 endif
 
 ########################################################################
@@ -121,7 +132,7 @@ CMXDEPS =\
 	$(ROOT)/lib/util.cmxa\
 	$(ROOT)/lib/refiner.cmxa\
 	$(ROOT)/lib/library.cmxa\
-	$(CMXALIBS_ens)\
+	$(CMXALIBS_ext)\
 	$(ROOT)/lib/prlc.cmxa\
 	$(addsuffix /theory.cmxa, $(MP_DIRS))\
 	mp.cmxa
@@ -137,7 +148,7 @@ CMXADEPS =\
 	$(ROOT)/lib/util.cmxa\
 	$(ROOT)/lib/refiner.cmxa\
 	$(ROOT)/lib/library.cmxa\
-	$(CMXALIBS_ens)\
+	$(CMXALIBS_ext)\
 	$(ROOT)/lib/prlc.cmxa\
 	$(addsuffix /theory.cmxa, $(MP_DIRS))\
 	$(CAMLP4LIB)/pa_o.cmx\
@@ -156,7 +167,7 @@ CMADEPS =\
 	$(ROOT)/lib/util.cma\
 	$(ROOT)/lib/refiner.cma\
 	$(ROOT)/lib/library.cma\
-	$(CMALIBS_ens)\
+	$(CMALIBS_ext)\
 	$(ROOT)/lib/prlc.cma\
 	$(addsuffix /theory.cma, $(MP_DIRS))\
 	$(CAMLP4LIB)/pa_o.cmo\
@@ -171,7 +182,7 @@ TCMADEPS =\
 	$(ROOT)/lib/util.cma\
 	$(ROOT)/lib/refiner.cma\
 	$(ROOT)/lib/library.cma\
-	$(CMALIBS_ens)\
+	$(CMALIBS_ext)\
 	$(ROOT)/lib/prlc.cma\
 	$(addsuffix /theory.cma, $(MP_DIRS))\
 	$(CAMLP4LIB)/pa_o.cmo\
@@ -193,11 +204,11 @@ TCMOBJS =\
 CMXOBJS =\
 	$(CMXALIBS)
 
-BYTE_CCLIBS =\
+BYTE_CCLIBS := $(BYTE_CCLIBS)\
 	-cclib $(ROOT)/lib/clib-byte$(EXT_LIB)\
 	$(OTHER_CCLIBS)
 
-NATIVE_CCLIBS =\
+NATIVE_CCLIBS := $(NATIVE_CCLIBS)\
 	-cclib $(ROOT)/lib/clib-native$(EXT_LIB)\
 	$(OTHER_CCLIBS)
 

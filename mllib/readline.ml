@@ -33,7 +33,7 @@
 (*
  * C function returns None at EOF
  *)
-external caml_readline : string -> string option = "caml_readline"
+external caml_readline : string -> string option = "prl_readline"
 
 (*
  * Convert option to exception in ML version.

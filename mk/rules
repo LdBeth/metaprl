@@ -95,18 +95,35 @@ ifdef MAIN
    CLEAN_MAIN = $(MAIN)
 endif
 
+# Most of MetaPRL uses the same LMIFILES as LMFILES
+ifndef LMIFILES
+	LMIFILES := $(LMFILES)
+endif
+ifndef MPIFILES
+	MPIFILES := $(MPFILES)
+endif
+ifndef MP2IFILES
+	MP2IFILES := $(MP2FILES)
+endif
+ifndef MIFILES
+	MIFILES := $(MFILES)
+endif
+ifndef PIFILES
+	PIFILES := $(PFILES)
+endif
+
 # Library file names
 MLFILES      = $(sort $(addsuffix .ml,   $(MPFILES) $(MP2FILES) $(LMFILES) $(MFILES) $(PFILES)))
-MLIFILES     = $(sort $(addsuffix .mli,  $(MPFILES) $(MP2FILES) $(LMFILES) $(MFILES) $(PFILES)))
+MLIFILES     = $(sort $(addsuffix .mli,  $(MPIFILES) $(MP2IFILES) $(LMIFILES) $(MIFILES) $(PIFILES)))
 
-MP_CMIFILES  = $(addsuffix .cmi,  $(MPFILES))
+MP_CMIFILES  = $(addsuffix .cmi,  $(MPIFILES))
 MP_CMOFILES  = $(addsuffix .cmo,  $(MPFILES))
 MP_CMXFILES  = $(addsuffix .cmx,  $(MPFILES))
 MP_PPOFILES  = $(addsuffix .ppo,  $(MPFILES))
 MP_PRLAFILES = $(addsuffix .prla, $(MPFILES))
 MP_PRLBFILES = $(addsuffix .prlb, $(MPFILES))
 
-MP2_CMIFILES  = $(addsuffix .cmi,  $(MP2FILES))
+MP2_CMIFILES  = $(addsuffix .cmi,  $(MP2IFILES))
 MP2_CMOFILES  = $(addsuffix .cmo,  $(MP2FILES))
 MP2_CMXFILES  = $(addsuffix .cmx,  $(MP2FILES))
 MP2_PPOFILES  = $(addsuffix .ppo,  $(MP2FILES))
@@ -114,20 +131,20 @@ MP2_PRLAFILES = $(addsuffix .prla, $(MP2FILES))
 MP2_PRLBFILES = $(addsuffix .prlb, $(MP2FILES))
 
 LCMOFILES    = $(addsuffix .cmo,  $(LMFILES))
-LCMIFILES    = $(addsuffix .cmi,  $(LMFILES))
+LCMIFILES    = $(addsuffix .cmi,  $(LMIFILES))
 LCMXFILES    = $(addsuffix .cmx,  $(LMFILES))
-MCMIFILES    = $(addsuffix .cmi,  $(MFILES))
+MCMIFILES    = $(addsuffix .cmi,  $(MIFILES))
 MCMOFILES    = $(addsuffix .cmo,  $(MFILES))
 MCMXFILES    = $(addsuffix .cmx,  $(MFILES))
-PCMIFILES    = $(addsuffix .cmi,  $(PFILES))
+PCMIFILES    = $(addsuffix .cmi,  $(PIFILES))
 PCMOFILES    = $(addsuffix .cmo,  $(PFILES))
 PCMXFILES    = $(addsuffix .cmx,  $(PFILES))
 
-LMLIFILES    = $(addsuffix .mli,  $(LMFILES))
+LMLIFILES    = $(addsuffix .mli,  $(LMIFILES))
 LMLFILES     = $(addsuffix .ml,   $(LMFILES))
 MMLFILES     = $(addsuffix .mli,  $(MFILES))
-MMLIFILES    = $(addsuffix .ml,   $(MFILES))
-PMLIFILES    = $(addsuffix .mli,  $(PFILES))
+MMLIFILES    = $(addsuffix .ml,   $(MIFILES))
+PMLIFILES    = $(addsuffix .mli,  $(PIFILES))
 PMLFILES     = $(addsuffix .ml,   $(PFILES))
 
 REG_CMIFILES = $(sort $(LCMIFILES) $(MCMIFILES) $(PCMIFILES))
@@ -214,7 +231,7 @@ $(RAFILES): $(ROOT)/lib/%$(EXT_LIB): %$(EXT_LIB)
 $(MP_CMIFILES) $(MP2_CMIFILES): %.cmi: %.mli $(ROOT)/mk/config
 	MPLIB=$(MPLIB) LC_ALL=C $(MPTIME) $(PRLC) $(OCAMLCFLAGS) -c $*.mli
 
-$(MP_PPOFILES) $(MP2_PPOFILES): %.ppo: %.cmi %.ml $(ROOT)/mk/config
+$(MP_PPOFILES) $(MP2_PPOFILES): %.ppo: %.ml $(ROOT)/mk/config
 	MPLIB=$(MPLIB) LC_ALL=C $(MPTIME) $(CAMLP4N) $(CAMLP4NFLAGS) $*.ml -o $*.ppo
 
 $(MP_PRLAFILES) $(MP2_PRLAFILES): %.prla: %.cmoz $(ROOT)/mk/config
@@ -223,19 +240,19 @@ $(MP_PRLAFILES) $(MP2_PRLAFILES): %.prla: %.cmoz $(ROOT)/mk/config
 $(MP_PRLBFILES) $(MP2_PRLBFILES): %.prlb: %.prla $(ROOT)/mk/config
 	MPLIB=$(MPLIB) LC_ALL=C $(MPTIME) $(CONVERT) $(INCLUDE) -raw -impl $*.prla
 
-$(MP_CMOFILES) $(MP2_CMOFILES): %.cmo: %.ppo %.cmi $(ROOT)/mk/config
+$(MP_CMOFILES) $(MP2_CMOFILES): %.cmo: %.ppo $(ROOT)/mk/config
 	$(MPTIME) $(OCAMLC) $(OCAMLCFLAGS) -c -impl $*.ppo
 
-$(MP_CMXFILES) $(MP2_CMXFILES): %.cmx: %.ppo %.cmi $(ROOT)/mk/config
+$(MP_CMXFILES) $(MP2_CMXFILES): %.cmx: %.ppo $(ROOT)/mk/config
 	$(MPTIME) $(OCAMLOPT) $(OCAMLOPTFLAGS) -c -impl $*.ppo
 
-$(REG_CMOFILES): %.cmo: %.ml %.cmi $(ROOT)/mk/config
+$(REG_CMOFILES): %.cmo: %.ml $(ROOT)/mk/config
 	$(MPTIME) $(OCAMLCP) $(OCAMLCFLAGS) -c $(OCAMLCPOPT) $*.ml
 
 $(REG_CMIFILES): %.cmi: %.mli $(ROOT)/mk/config
 	$(MPTIME) $(OCAMLC) $(OCAMLCFLAGS) -c $*.mli
 
-$(REG_CMXFILES): %.cmx: %.ml %.cmi $(ROOT)/mk/config
+$(REG_CMXFILES): %.cmx: %.ml $(ROOT)/mk/config
 	$(MPTIME) $(OCAMLOPT) $(OCAMLOPTFLAGS) -c $*.ml
 
 %.p4i: %.mli $(ROOT)/mk/config
@@ -277,9 +294,6 @@ clean::
 	$(RM) *.run *.top *.opt *.cma *.cmxa *.cmx *.cmi* *.cmo* *.z* *.o *.a *~ *.bak *.output $(CLEAN_MAIN)
 	$(RM) gmon.out $(ZMLFILES) $(ZMLIFILES) Makefile.dep
 
-Makefile.dep: Makefile $(ROOT)/mk/config $(ROOT)/mk/preface $(ROOT)/mk/rules
-	+@if [ -f $(OCAMLDEP) ]; then touch Makefile.dep; $(MAKE) depend; fi
-
 depend:: $(MLFILES) $(MLIFILES)
 	$(RM) Makefile.tmp
 	touch Makefile.tmp
@@ -290,3 +304,6 @@ ifneq ($(CFILES),)
 	$(MPTIME) $(CC) $(CFLAGS) $(CCDEPEND) $(CFILES) >> Makefile.tmp
 endif
 	mv Makefile.tmp Makefile.dep
+
+Makefile.dep: Makefile $(ROOT)/mk/config $(ROOT)/mk/preface $(ROOT)/mk/rules
+	+@if [ -f $(OCAMLDEP) ]; then touch Makefile.dep; $(MAKE) depend; fi
