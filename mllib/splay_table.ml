@@ -52,19 +52,16 @@ type ('elt, 'data) tree =
  | Node of 'elt * 'data list * ('elt, 'data) tree * ('elt, 'data) tree * int
 
 (*
- * We keep an argument for the comparison,
- * and the aplay tree.  The tree is mutable
+ * The tree is mutable
  * so that we can rearrange the tree in place.
  * However, we all splay operations are functional,
  * and we assume that the rearranged tree can be
  * assigned atomically to this field.
  *)
-type ('arg, 'elt, 'data) table =
-   { mutable splay_tree : ('elt, 'data) tree;
-     splay_arg : 'arg
-   }
+type ('elt, 'data) table =
+   ('elt, 'data) tree ref
 
-type ('arg, 'elt, 'data) t = ('arg, 'elt, 'data) table
+type ('elt, 'data) t = ('elt, 'data) table
 
 (*
  * Directions are used to define
@@ -85,9 +82,8 @@ type ('elt, 'data) splay_result =
  * Build the set from an ordered type.
  *)
 let create
-    (ord_print : 'arg -> 'elt -> 'data list -> unit)
-    (ord_union : 'arg -> 'arg -> 'arg)
-    (ord_compare : 'arg -> 'elt -> 'elt -> int)
+    (ord_print : 'elt -> 'data list -> unit)
+    (ord_compare : 'elt -> 'elt -> int)
     (ord_append : 'data list -> 'data list -> 'data list) =
 
    (*
@@ -100,8 +96,8 @@ let create
          0
    in
 
-   let cardinal { splay_tree = tree } =
-      cardinality tree
+   let cardinal tree =
+      cardinality !tree
    in
 
    (*
@@ -142,9 +138,9 @@ let create
     * entry becomes the root, or an adjacent entry
     * becomes the root if the entry is not found.
     *)
-   let rec splay arg key0 path = function
+   let rec splay key0 path = function
       Node (key, data, left, right, _) as node ->
-         let comp = ord_compare arg key0 key in
+         let comp = ord_compare key0 key in
             if comp = 0 then
                SplayFound (lift key data left right path)
             else if comp < 0 then
@@ -152,11 +148,11 @@ let create
                if left = Leaf then
                   SplayNotFound (lift key data left right path)
                else
-                  splay arg key0 (Left node :: path) left
+                  splay key0 (Left node :: path) left
             else if right = Leaf then
                SplayNotFound (lift key data left right path)
             else
-               splay arg key0 (Right node :: path) right
+               splay key0 (Right node :: path) right
 
     | Leaf ->
          SplayNotFound Leaf
@@ -184,22 +180,14 @@ let create
    in
 
    let is_empty = function
-      { splay_tree = Leaf } ->
+      { contents = Leaf } ->
          true
     | _ ->
          false
    in
 
-   let create arg =
-      { splay_tree = empty;
-        splay_arg = arg
-      }
-   in
-
-   let make arg key data =
-      { splay_tree = Node (key, data, Leaf, Leaf, 1);
-        splay_arg = arg
-      }
+   let make key data =
+      ref (Node (key, data, Leaf, Leaf, 1))
    in
 
    (*
@@ -212,8 +200,8 @@ let create
          elements
    in
 
-   let to_list { splay_tree = tree } =
-      to_list_aux [] tree
+   let to_list tree =
+      to_list_aux [] !tree
    in
 
    let elements = to_list
@@ -241,7 +229,7 @@ let create
                   len)
    in
 
-   let of_list arg elements =
+   let of_list elements =
       let tree =
          match elements with
             [] ->
@@ -253,27 +241,27 @@ let create
                let length = Array.length elements in
                   of_array elements 0 length
       in
-         { splay_arg = arg; splay_tree = tree }
+         ref tree
    in
 
    (*
     * Check if a key is listed in the table.
     *)
    let mem t key =
-      match splay t.splay_arg key [] t.splay_tree with
+      match splay key [] !t with
          SplayFound tree ->
-            t.splay_tree <- tree;
+            t := tree;
             true
        | SplayNotFound tree ->
-            t.splay_tree <- tree;
+            t := tree;
             false
    in
 
    let find t key =
-      match splay t.splay_arg key [] t.splay_tree with
+      match splay key [] !t with
          SplayFound tree ->
             begin
-               t.splay_tree <- tree;
+               t := tree;
                match tree with
                   Node (_, data :: _, _, _, _) ->
                      data
@@ -281,15 +269,15 @@ let create
                      raise (Invalid_argument "Splay_table.find")
             end
        | SplayNotFound tree ->
-            t.splay_tree <- tree;
+            t := tree;
             raise Not_found
    in
 
    let find_all t key =
-      match splay t.splay_arg key [] t.splay_tree with
+      match splay key [] !t with
          SplayFound tree ->
             begin
-               t.splay_tree <- tree;
+               t := tree;
                match tree with
                   Node (_, data, _, _, _) ->
                      data
@@ -297,7 +285,7 @@ let create
                      raise (Invalid_argument "Splay_table.find_all")
             end
        | SplayNotFound tree ->
-            t.splay_tree <- tree;
+            t := tree;
             raise Not_found
    in
 
@@ -306,8 +294,8 @@ let create
     * If the entry already exists,
     * the new value is added to the data.
     *)
-   let add_list arg tree key data =
-      match splay arg key [] tree with
+   let add_list tree key data =
+      match splay key [] tree with
          SplayFound tree ->
             begin
                match tree with
@@ -320,7 +308,7 @@ let create
             begin
                match tree with
                   Node (key', data', left, right, size) ->
-                     if ord_compare arg key key' < 0 then
+                     if ord_compare key key' < 0 then
                         (* Root should become right child *)
                         new_node key data left (new_node key' data' empty right)
                      else
@@ -333,8 +321,7 @@ let create
    in
 
    let add t key data =
-      let arg = t.splay_arg in
-      { splay_tree = add_list arg t.splay_tree key [data]; splay_arg = arg }
+      ref (add_list !t key [data])
    in
 
    (*
@@ -343,25 +330,24 @@ let create
     * entire entry from the tree.
     *)
    let remove t key =
-      let arg = t.splay_arg in
-      match splay arg key [] t.splay_tree with
+      match splay key [] !t with
          SplayFound tree ->
             begin
                match tree with
                   Node (_, [_], Leaf, right, _) ->
-                     { splay_tree = right; splay_arg = arg }
+                     ref right
                 | Node (_, [_], left, Leaf, _) ->
-                     { splay_tree = left; splay_arg = arg }
+                     ref left
                 | Node (_, [_], left, right, _) ->
                      let key, data, left_left = lift_right left in
-                     { splay_tree = new_node key data left_left right; splay_arg = arg }
+                     ref (new_node key data left_left right)
                 | Node (key, _ :: data, left, right, size) ->
-                     { splay_tree = Node (key, data, left, right, size); splay_arg = arg }
+                     ref (Node (key, data, left, right, size))
                 | _ ->
                      raise (Invalid_argument "Splay_table.remove")
             end
        | SplayNotFound tree ->
-            t.splay_tree <- tree;
+            t := tree;
             t
    in
 
@@ -369,7 +355,7 @@ let create
     * Merge two hashtables.
     * Data fields get concatenated.
     *)
-   let rec union_aux arg s1 s2 =
+   let rec union_aux s1 s2 =
       match s1, s2 with
          Leaf, _ ->
             s2
@@ -379,52 +365,47 @@ let create
          Node (key2, data2, left2, right2, size2) ->
             if size1 >= size2 then
                if size2 = 1 then
-                  add_list arg s1 key2 data2
+                  add_list s1 key2 data2
                else
-                  match splay arg key1 [] s2 with
+                  match splay key1 [] s2 with
                      SplayFound (Node (key2, data2, left2, right2, _)) ->
-                        let left3 = union_aux arg left1 left2 in
-                        let right3 = union_aux arg right1 right2 in
+                        let left3 = union_aux left1 left2 in
+                        let right3 = union_aux right1 right2 in
                            new_node key1 (ord_append data1 data2) left3 right3
                    | SplayNotFound (Node (key2, data2, left2, right2, _)) ->
                         if compare key1 key2 < 0 then
-                           let left3 = union_aux arg left1 left2 in
-                           let right3 = union_aux arg right1 (new_node key2 data2 empty right2) in
+                           let left3 = union_aux left1 left2 in
+                           let right3 = union_aux right1 (new_node key2 data2 empty right2) in
                               new_node key1 data1 left3 right3
                         else
-                           let left3 = union_aux arg left1 (new_node key2 data2 left2 empty) in
-                           let right3 = union_aux arg right1 right2 in
+                           let left3 = union_aux left1 (new_node key2 data2 left2 empty) in
+                           let right3 = union_aux right1 right2 in
                               new_node key1 data1 left3 right3
                    | _ ->
                         raise (Invalid_argument "Splay_table.union")
             else if size1 = 1 then
-               add_list arg s2 key1 data1
+               add_list s2 key1 data1
             else
-               match splay arg key2 [] s1 with
+               match splay key2 [] s1 with
                   SplayFound (Node (key1, data1, left1, right1, _)) ->
-                     let left3 = union_aux arg left1 left2 in
-                     let right3 = union_aux arg right1 right2 in
+                     let left3 = union_aux left1 left2 in
+                     let right3 = union_aux right1 right2 in
                         new_node key2 (ord_append data1 data2) left3 right3
                 | SplayNotFound (Node (key1, data1, left1, right1, _)) ->
                      if compare key2 key1 < 0 then
-                        let left3 = union_aux arg left1 left2 in
-                        let right3 = union_aux arg (new_node key1 data1 empty right1) right2 in
+                        let left3 = union_aux left1 left2 in
+                        let right3 = union_aux (new_node key1 data1 empty right1) right2 in
                            new_node key2 data2 left3 right3
                      else
-                        let left3 = union_aux arg (new_node key1 data1 left1 empty) left2 in
-                        let right3 = union_aux arg right1 right2 in
+                        let left3 = union_aux (new_node key1 data1 left1 empty) left2 in
+                        let right3 = union_aux right1 right2 in
                            new_node key2 data2 left3 right3
                 | _ ->
                      raise (Invalid_argument "Splay_table.union")
    in
 
    let union s1 s2 =
-      let { splay_tree = tree1; splay_arg = arg1 } = s1 in
-      let { splay_tree = tree2; splay_arg = arg2 } = s2 in
-      let arg = ord_union arg1 arg2 in
-         { splay_tree = union_aux arg tree1 tree2;
-           splay_arg = arg
-         }
+      ref (union_aux !s1 !s2)
    in
 
    (*
@@ -465,27 +446,27 @@ let create
    (*
     * See if two sets intersect.
     *)
-   let rec intersect_aux arg path1 path2 =
+   let rec intersect_aux path1 path2 =
       let key1 = key_of_path path1 in
       let key2 = key_of_path path2 in
-      let comp = ord_compare arg key1 key2 in
+      let comp = ord_compare key1 key2 in
          if comp = 0 then
             true
          else if comp < 0 then
-            intersect_aux arg (next_path path1) path2
+            intersect_aux (next_path path1) path2
          else
-            intersect_aux arg path1 (next_path path2)
+            intersect_aux path1 (next_path path2)
    in
 
-   let intersectp { splay_arg = arg; splay_tree = s1 } { splay_tree = s2 } =
-      match s1, s2 with
+   let intersectp s1 s2 =
+      match !s1, !s2 with
          Leaf, _
        | _, Leaf ->
             false
-       | _ ->
+       | s1, s2 ->
             let path1 = initial_path [] s1 in
             let path2 = initial_path [] s2 in
-               try intersect_aux arg path1 path2 with
+               try intersect_aux path1 path2 with
                   Not_found ->
                      false
    in
@@ -502,8 +483,8 @@ let create
          ()
    in
 
-   let iter f { splay_tree = t } =
-      iter_aux f t
+   let iter f t =
+      iter_aux f !t
    in
 
    (*
@@ -516,8 +497,8 @@ let create
          Leaf
    in
 
-   let map f { splay_tree = tree; splay_arg = arg } =
-      { splay_tree = map_aux f tree; splay_arg = arg }
+   let map f tree =
+      ref (map_aux f !tree)
    in
 
 
@@ -569,7 +550,7 @@ let create
    (*
     * Debugging.
     *)
-   let rec print_aux arg = function
+   let rec print_aux = function
       Leaf ->
          print_space ();
          print_string "Leaf"
@@ -577,20 +558,20 @@ let create
          print_space ();
          print_string "(";
          open_hvbox 0;
-         ord_print arg key data;
+         ord_print key data;
          print_string ":";
          print_int size;
-         print_aux arg left;
-         print_aux arg right;
+         print_aux left;
+         print_aux right;
          print_string ")";
          close_box ()
    in
 
    let print table =
-      print_aux table.splay_arg table.splay_tree
-   
+      print_aux !table
+
    in
-      { create = create;
+      { empty = ref empty;
         is_empty = is_empty;
         mem = mem;
         add = add;
@@ -612,7 +593,7 @@ let create
 
 module Create =
 struct
-   type ('arg, 'elt, 'data) t = ('arg, 'elt, 'data) table
+   type ('elt, 'data) t = ('elt, 'data) table
 
    let create = create
 end

@@ -68,8 +68,8 @@ type ('elt, 'data) tree =
  * The tree is always balanced, so we don't need
  * extra mutable fields.
  *)
-type ('arg, 'elt, 'data) table = 'arg * ('elt, 'data) tree
-type ('arg, 'elt, 'data) t = ('arg, 'elt, 'data) table
+type ('elt, 'data) table = ('elt, 'data) tree
+type ('elt, 'data) t = ('elt, 'data) table
 
 (*
  * Path into the tree.
@@ -83,14 +83,13 @@ type ('elt, 'data) path =
  * Make the set.
  *)
 let create
-    (ord_print : 'arg -> 'elt -> 'data list -> unit)
-    (ord_union : 'arg -> 'arg -> 'arg)
-    (ord_compare : 'arg -> 'elt -> 'elt -> int)
+    (ord_print : 'elt -> 'data list -> unit)
+    (ord_compare : 'elt -> 'elt -> int)
     (ord_append : 'data list -> 'data list -> 'data list) =
    (*
     * Size of a table.
     *)
-   let cardinality = function
+   let cardinal = function
       Red (_, _, _, _, size) ->
          size
     | Black (_, _, _, _, size) ->
@@ -99,19 +98,15 @@ let create
          0
    in
 
-   let cardinal (_, tree) =
-      cardinality tree
-   in
-
    (*
     * Add two nodes.
     *)
    let new_black key data left right =
-      Black (key, data, left, right, cardinality left + cardinality right + 1)
+      Black (key, data, left, right, cardinal left + cardinal right + 1)
    in
 
    let new_red key data left right =
-      Red (key, data, left, right, cardinality left + cardinality right + 1)
+      Red (key, data, left, right, cardinal left + cardinal right + 1)
    in
 
    (************************************************************************
@@ -190,59 +185,59 @@ let create
    (*
     * Check that all the nodes are sorted.
     *)
-   let rec check_sort_lt arg key = function
+   let rec check_sort_lt key = function
       Black (key', _, left, right, _) ->
-         if ord_compare arg key' key >= 0 then
+         if ord_compare key' key >= 0 then
             raise (Failure "Red_black_table.check_sort");
-         check_sort_lt arg key' left;
-         check_sort_gt_lt arg key' key right
+         check_sort_lt key' left;
+         check_sort_gt_lt key' key right
 
     | Red (key', _, left, right, _) ->
-         if ord_compare arg key' key >= 0 then
+         if ord_compare key' key >= 0 then
             raise (Failure "Red_black_table.check_sort");
-         check_sort_lt arg key' left;
-         check_sort_gt_lt arg key' key right
+         check_sort_lt key' left;
+         check_sort_gt_lt key' key right
 
     | Leaf ->
          ()
 
-   and check_sort_gt arg key = function
+   and check_sort_gt key = function
       Black (key', _, left, right, _) ->
-         if ord_compare arg key' key <= 0 then
+         if ord_compare key' key <= 0 then
             raise (Failure "Red_black_table.check_sort");
-         check_sort_gt_lt arg key key' left;
-         check_sort_gt arg key right
+         check_sort_gt_lt key key' left;
+         check_sort_gt key right
 
     | Red (key', _, left, right, _) ->
-         if ord_compare arg key' key <= 0 then
+         if ord_compare key' key <= 0 then
             raise (Failure "Red_black_table.check_sort");
-         check_sort_gt_lt arg key key' left;
-         check_sort_gt arg key right
+         check_sort_gt_lt key key' left;
+         check_sort_gt key right
 
     | Leaf ->
          ()
 
-   and check_sort_gt_lt arg key key' = function
+   and check_sort_gt_lt key key' = function
       Black (key'', _, left, right, _) ->
-         if ord_compare arg key'' key <= 0 || ord_compare arg key'' key' >= 0 then
+         if ord_compare key'' key <= 0 || ord_compare key'' key' >= 0 then
             raise (Failure "Red_black_table.check_sort");
-         check_sort_gt_lt arg key key'' left;
-         check_sort_gt_lt arg key'' key' right
+         check_sort_gt_lt key key'' left;
+         check_sort_gt_lt key'' key' right
 
     | Red (key'', _, left, right, _) ->
-         if ord_compare arg key'' key <= 0 || ord_compare arg key'' key' >= 0 then
+         if ord_compare key'' key <= 0 || ord_compare key'' key' >= 0 then
             raise (Failure "Red_black_table.check_sort");
-         check_sort_gt_lt arg key key'' left;
-         check_sort_gt_lt arg key'' key' right
+         check_sort_gt_lt key key'' left;
+         check_sort_gt_lt key'' key' right
 
     | Leaf ->
          ()
    in
 
-   let check_sort arg = function
+   let check_sort = function
       Black (key, _, left, right, _) ->
-         check_sort_lt arg key left;
-         check_sort_gt arg key right
+         check_sort_lt key left;
+         check_sort_gt key right
     | Red _ ->
          raise (Failure "Red_black_table.check_sort: root is red")
     | Leaf ->
@@ -252,20 +247,20 @@ let create
    (*
     * Perform all the checks.
     *)
-   let check ((arg, tree) as s) =
+   let check tree =
       let _ =
          check_red tree;
          check_black tree;
-         check_sort arg tree;
+         check_sort tree;
          check_size tree
       in
-         s
+         tree
    in
 
    (*
     * Print the tree.
     *)
-   let rec print_aux arg tree =
+   let rec print_aux tree =
       print_space ();
       match tree with
          Black (key, data, left, right, size) ->
@@ -273,11 +268,11 @@ let create
             open_hvbox 0;
             print_string "Black";
             print_space ();
-            ord_print arg key data;
+            ord_print key data;
             print_string ":";
             print_int size;
-            print_aux arg left;
-            print_aux arg right;
+            print_aux left;
+            print_aux right;
             print_string ")";
             close_box ()
 
@@ -286,11 +281,11 @@ let create
             open_hvbox 0;
             print_string "Red";
             print_space ();
-            ord_print arg key data;
+            ord_print key data;
             print_string ":";
             print_int size;
-            print_aux arg left;
-            print_aux arg right;
+            print_aux left;
+            print_aux right;
             print_string ")";
             close_box ()
 
@@ -298,35 +293,35 @@ let create
             print_string "Leaf"
    in
 
-   let print (arg, tree) =
-      print_aux arg tree
+   let print tree =
+      print_aux tree
    in
 
-   let print_path_entry arg = function
+   let print_path_entry = function
       Left tree ->
          print_space ();
          print_string "Left";
          open_hvbox 0;
-         print_aux arg tree;
+         print_aux tree;
          close_box ()
     | Right tree ->
          print_space ();
          print_string "Right";
          open_hvbox 0;
-         print_aux arg tree;
+         print_aux tree;
          close_box ()
 
     | Delete tree ->
          print_space ();
          print_string "Delete";
          open_hvbox 1;
-         print_aux arg tree;
+         print_aux tree;
          close_box ()
    in
 
-   let print_path arg path =
+   let print_path path =
       open_vbox 0;
-      List.iter (print_path_entry arg) path;
+      List.iter print_path_entry path;
       print_newline ()
    in
 
@@ -337,10 +332,10 @@ let create
    (*
     * Insert an entry into the tree.
     *)
-   let rec insert (arg : 'arg) (key : 'elt) (dataf : 'data list -> 'data list) = function
+   let rec insert (key : 'elt) (dataf : 'data list -> 'data list) = function
       Black (key0, data0, left0, right0, size0) ->
          begin
-            let comp = ord_compare arg key key0 in
+            let comp = ord_compare key key0 in
                if comp = 0 then
                   Black (key0, dataf data0, left0, right0, size0)
 
@@ -351,17 +346,17 @@ let create
                         (*
                          * Ok even if child becomes red.
                          *)
-                        new_black key0 data0 (insert arg key dataf left0) right0
+                        new_black key0 data0 (insert key dataf left0) right0
 
                    | Red (key1, data1, left1, right1, size1) ->
-                        let comp = ord_compare arg key key1 in
+                        let comp = ord_compare key key1 in
                            if comp = 0 then
                               Black (key0, data0,
                                      Red (key1, dataf data1, left1, right1, size1),
                                      right0,
                                      size0)
                            else if comp < 0 then
-                              match insert arg key dataf left1, right0 with
+                              match insert key dataf left1, right0 with
                                  Red _ as node, Red (key2, data2, left2, right2, size2) ->
                                     (*
                                      * Recoloring:
@@ -403,7 +398,7 @@ let create
                                        right0
 
                            else
-                              match insert arg key dataf right1, right0 with
+                              match insert key dataf right1, right0 with
                                  Red _ as node, Red (key2, data2, left2, right2, size2) ->
                                     (*
                                      * Recoloring:
@@ -456,17 +451,17 @@ let create
                         (*
                          * Node can be replaced even if it becomes red.
                          *)
-                        new_black key0 data0 left0 (insert arg key dataf right0)
+                        new_black key0 data0 left0 (insert key dataf right0)
 
                    | Red (key2, data2, left2, right2, size2) ->
-                        let comp = ord_compare arg key key2 in
+                        let comp = ord_compare key key2 in
                            if comp = 0 then
                               Black (key0, data0, left0,
                                      Red (key2, dataf data2, left2, right2, size2),
                                      size0)
 
                            else if comp < 0 then
-                              match left0, insert arg key dataf left2 with
+                              match left0, insert key dataf left2 with
                                  Red (key1, data1, left1, right1, size1), (Red _ as node) ->
                                     (*
                                      * Recoloring:
@@ -512,7 +507,7 @@ let create
                                        (new_red key2 data2 node3 right2)
 
                            else
-                              match left0, insert arg key dataf right2 with
+                              match left0, insert key dataf right2 with
                                  Red (key1, data1, left1, right1, size1), (Red _ as node) ->
                                     (*
                                      * Recoloring:
@@ -567,13 +562,13 @@ let create
    (*
     * Add an element to the set.
     *)
-   let add_aux (arg : 'arg) (key : 'elt) (dataf : 'data list -> 'data list) (tree : ('elt, 'data) tree) =
+   let add_aux (key : 'elt) (dataf : 'data list -> 'data list) (tree : ('elt, 'data) tree) =
       let tree =
          match tree with
             Leaf ->
                Black (key, dataf [], Leaf, Leaf, 1)
           | node ->
-               match insert arg key dataf node with
+               match insert key dataf node with
                   Red (key, data, left, right, size) ->
                      Black (key, data, left, right, size)
                 | tree ->
@@ -582,25 +577,25 @@ let create
          (tree : ('elt, 'data) tree)
    in
 
-   let add ((arg, tree) : ('arg, 'elt, 'data) t) (key : 'elt) (data : 'data) =
+   let add (tree : ('elt, 'data) t) (key : 'elt) (data : 'data) =
       let append tl =
          data :: tl
       in
-         arg, add_aux arg key append tree
+         add_aux key append tree
    in
 
-   let add_list_aux (arg : 'arg) (key : 'elt) (data : 'data list) (tree : ('elt, 'data) tree) =
+   let add_list_aux (key : 'elt) (data : 'data list) (tree : ('elt, 'data) tree) =
       let append = function
          [] ->
             data
        | tl ->
             ord_append data tl
       in
-         add_aux arg key append tree
+         add_aux key append tree
    in
 
-   let add_list (key : 'elt) (data : 'data list) ((arg, tree) : ('arg, 'elt, 'data) t) =
-      add_list_aux arg key data tree
+   let add_list (key : 'elt) (data : 'data list) (tree : ('elt, 'data) t) =
+      add_list_aux key data tree
    in
 
    (************************************************************************
@@ -610,29 +605,29 @@ let create
    (*
     * Return the data for the entry.
     *)
-   let rec find_aux arg key = function
+   let rec find_aux key = function
       Black (key0, data0, left0, right0, _) ->
-         let comp = ord_compare arg key key0 in
+         let comp = ord_compare key key0 in
             if comp = 0 then
                data0
             else if comp < 0 then
-               find_aux arg key left0
+               find_aux key left0
             else
-               find_aux arg key right0
+               find_aux key right0
     | Red (key0, data0, left0, right0, _) ->
-         let comp = ord_compare arg key key0 in
+         let comp = ord_compare key key0 in
             if comp = 0 then
                data0
             else if comp < 0 then
-               find_aux arg key left0
+               find_aux key left0
             else
-               find_aux arg key right0
+               find_aux key right0
     | Leaf ->
          raise Not_found
    in
 
-   let find_all (arg, tree) key =
-      find_aux arg key tree
+   let find_all tree key =
+      find_aux key tree
    in
 
    let find s key =
@@ -650,10 +645,10 @@ let create
    (*
     * Construct a path during the removal.
     *)
-   let rec delete arg key filter path node =
+   let rec delete key filter path node =
       match node with
          Black (key0, data0, left0, right0, size0) ->
-            let comp = ord_compare arg key key0 in
+            let comp = ord_compare key key0 in
                if comp = 0 then
                   match filter data0 with
                      [] ->
@@ -669,11 +664,11 @@ let create
                    | data0 ->
                         restore path (Black (key0, data0, left0, right0, size0))
                else if comp < 0 then
-                  delete arg key filter (Left node :: path) left0
+                  delete key filter (Left node :: path) left0
                else
-                  delete arg key filter (Right node :: path) right0
+                  delete key filter (Right node :: path) right0
        | Red (key0, data0, left0, right0, size0) ->
-            let comp = ord_compare arg key key0 in
+            let comp = ord_compare key key0 in
                if comp = 0 then
                   match filter data0 with
                      [] ->
@@ -687,9 +682,9 @@ let create
                    | data0 ->
                         restore path (Red (key0, data0, left0, right0, size0))
                else if comp < 0 then
-                  delete arg key filter (Left node :: path) left0
+                  delete key filter (Left node :: path) left0
                else
-                  delete arg key filter (Right node :: path) right0
+                  delete key filter (Right node :: path) right0
        | Leaf ->
             raise Not_found
 
@@ -1137,14 +1132,14 @@ let create
    (*
     * Remove the item.
     *)
-   let remove ((arg, tree) as s) key =
-      try arg, delete arg key (fun _ -> []) [] tree with
+   let remove tree key =
+      try delete key (fun _ -> []) [] tree with
          Not_found ->
-            s
+            tree
    in
 
-   let filter (arg, tree) key filter =
-      arg, delete arg key filter [] tree
+   let filter tree key filter =
+      delete key filter [] tree
    in
 
    (************************************************************************
@@ -1163,7 +1158,7 @@ let create
          elements
    in
 
-   let to_list (arg, tree) =
+   let to_list tree =
       to_list_aux [] tree
    in
 
@@ -1177,16 +1172,16 @@ let create
          elements
    in
 
-   let rec merge arg elements elements1 elements2 =
+   let rec merge elements elements1 elements2 =
       match elements1, elements2 with
          ((key1, data1) as hd1) :: tl1, ((key2, data2) as hd2) :: tl2 ->
-            let comp = ord_compare arg key1 key2 in
+            let comp = ord_compare key1 key2 in
                if comp = 0 then
-                  merge arg ((key1, ord_append data1 data2) :: elements) tl1 tl2
+                  merge ((key1, ord_append data1 data2) :: elements) tl1 tl2
                else if comp < 0 then
-                  merge arg (hd1 :: elements) tl1 elements2
+                  merge (hd1 :: elements) tl1 elements2
                else
-                  merge arg (hd2 :: elements) elements1 tl2
+                  merge (hd2 :: elements) elements1 tl2
        | _, [] ->
             reverse elements1 elements
        | [], _ ->
@@ -1233,7 +1228,7 @@ let create
                    len)
    in
 
-   let of_list arg elements =
+   let of_list elements =
       let tree =
          match elements with
             [] ->
@@ -1246,34 +1241,33 @@ let create
                let max_depth = pred (log2 1 (succ length)) in
                   of_array 0 max_depth elements 0 length
       in
-         arg, tree
+         tree
    in
 
    (*
     * Union flattens the two trees,
     * merges them, then creates a new tree.
     *)
-   let rec union_aux (arg : 'arg) (s1 : ('elt, 'data) tree) (s2 : ('elt, 'data) tree) =
+   let rec union_aux (s1 : ('elt, 'data) tree) (s2 : ('elt, 'data) tree) =
       match s2 with
          Black (key, data, left, right, _) ->
-            union_aux arg (add_list_aux arg key data (union_aux arg s1 left)) right
+            union_aux (add_list_aux key data (union_aux s1 left)) right
        | Red (key, data, left, right, _) ->
-            union_aux arg (add_list_aux arg key data (union_aux arg s1 left)) right
+            union_aux (add_list_aux key data (union_aux s1 left)) right
        | Leaf ->
             s1
    in
 
-   let union (arg1, s1) (arg2, s2) =
-      let size1 = cardinality s1 in
-      let size2 = cardinality s2 in
-      let arg = ord_union arg1 arg2 in
+   let union s1 s2 =
+      let size1 = cardinal s1 in
+      let size2 = cardinal s2 in
       let s =
          if size1 < size2 then
-            union_aux arg s2 s1
+            union_aux s2 s1
          else
-            union_aux arg s1 s2
+            union_aux s1 s2
       in
-         arg, s
+         s
    in
 
    (*
@@ -1326,19 +1320,19 @@ let create
    (*
     * See if two sets intersect.
     *)
-   let rec intersect_aux arg path1 path2 =
+   let rec intersect_aux path1 path2 =
       let key1 = key_of_path path1 in
       let key2 = key_of_path path2 in
-      let comp = ord_compare arg key1 key2 in
+      let comp = ord_compare key1 key2 in
          if comp = 0 then
             true
          else if comp < 0 then
-            intersect_aux arg (next_path path1) path2
+            intersect_aux (next_path path1) path2
          else
-            intersect_aux arg path1 (next_path path2)
+            intersect_aux path1 (next_path path2)
    in
 
-   let intersectp (arg, s1) (_, s2) =
+   let intersectp s1 s2 =
       match s1, s2 with
          Leaf, _
        | _, Leaf ->
@@ -1346,7 +1340,7 @@ let create
        | _ ->
             let path1 = initial_path [] s1 in
             let path2 = initial_path [] s2 in
-               try intersect_aux arg path1 path2 with
+               try intersect_aux path1 path2 with
                   Not_found ->
                      false
    in
@@ -1358,69 +1352,65 @@ let create
    (*
     * Search without reorganizing the tree.
     *)
-   let rec mem_aux arg tree key =
+   let rec mem_aux tree key =
       match tree with
          Black (key', _, left, right, _) ->
-            let comp = ord_compare arg key key' in
+            let comp = ord_compare key key' in
                if comp = 0 then
                   true
                else if comp < 0 then
-                  mem_aux arg left key
+                  mem_aux left key
                else
-                  mem_aux arg right key
+                  mem_aux right key
 
        | Red (key', _, left, right, _) ->
-            let comp = ord_compare arg key key' in
+            let comp = ord_compare key key' in
                if comp = 0 then
                   true
                else if comp < 0 then
-                  mem_aux arg left key
+                  mem_aux left key
                else
-                  mem_aux arg right key
+                  mem_aux right key
 
        | Leaf ->
             false
    in
 
-   let mem (arg, tree) key =
-      mem_aux arg tree key
+   let mem tree key =
+      mem_aux tree key
    in
 
    (*
     * An empty tree is just a leaf.
     *)
-   let create arg = (arg, Leaf)
+   let empty = Leaf
    in
 
    let is_empty = function
-      _, Leaf ->
+      Leaf ->
          true
     | _ ->
          false
    in
 
-   let make arg key data =
-      arg, Black (key, data, Leaf, Leaf, 1)
+   let make key data =
+      Black (key, data, Leaf, Leaf, 1)
    in
 
    (*
     * Iterate a function over the hashtable.
     *)
-   let rec iter_aux f = function
+   let rec iter f = function
       Black (key, data, left, right, _) ->
-         iter_aux f left;
+         iter f left;
          List.iter (f key) data;
-         iter_aux f right
+         iter f right
     | Red (key, data, left, right, _) ->
-         iter_aux f left;
+         iter f left;
          List.iter (f key) data;
-         iter_aux f right
+         iter f right
     | Leaf ->
          ()
-   in
-
-   let iter f (_, tree) =
-      iter_aux f tree
    in
 
    let rec map_aux f = function
@@ -1438,8 +1428,8 @@ let create
            Leaf
    in
 
-   let map f (arg, tree) =
-      arg, map_aux f tree
+   let map f tree =
+      map_aux f tree
    in
 
    (*
@@ -1486,7 +1476,7 @@ let create
          else
             fst_mem_filt s t
    in
-      { create = create;
+      { empty = empty;
         is_empty = is_empty;
         mem = mem;
         add = add;
@@ -1508,7 +1498,7 @@ let create
 
 module Create =
 struct
-   type ('arg, 'elt, 'data) t = ('arg, 'elt, 'data) table
+   type ('elt, 'data) t = ('elt, 'data) table
 
    let create = create
 end

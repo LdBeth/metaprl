@@ -35,18 +35,17 @@ open Set_sig
 (*
  * Create a table.
  *)
-type ('arg, 'elt, 'data) table
+type ('elt, 'data) table
 
-val create : ('arg, 'elt, 'data, ('arg, 'elt, 'data) table) table_create_type
+val create : ('elt, 'data, ('elt, 'data) table) table_create_type
 
 (*
  * Module version.
  *)
 module MakeTable (TableBase : TableBaseSig)
 : TableSig
-  with type t = (TableBase.set, TableBase.elt, TableBase.data) table
+  with type t = (TableBase.elt, TableBase.data) table
   with type elt = TableBase.elt
-  with type set = TableBase.set
   with type data = TableBase.data
 
 (*

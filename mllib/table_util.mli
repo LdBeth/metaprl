@@ -34,8 +34,7 @@ open Set_sig
 
 module MakeTable (Create : TableCreateSig) (Base : TableBaseSig)
 : TableSig
-  with type t = (Base.set, Base.elt, Base.data) Create.t
-  with type set = Base.set
+  with type t = ( Base.elt, Base.data) Create.t
   with type elt = Base.elt
   with type data = Base.data
 

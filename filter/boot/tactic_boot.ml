@@ -210,7 +210,7 @@ struct
     | ParentLazy of tactic_arg
     | ParentSet of tactic_arg * parents
 
-   and parents = (unit, tactic_arg) Term_eq_table.msequent_table
+   and parents = tactic_arg Term_eq_table.msequent_table
 
    and tactic_value = (tactic_arg, arglist, extract) ThreadRefiner.t
 
@@ -298,11 +298,7 @@ struct
     *)
    module ParentBase =
    struct
-      type set = unit
       type data = tactic_arg
-
-      let union () () =
-         ()
 
       let append data1 data2 =
          data1 @ data2

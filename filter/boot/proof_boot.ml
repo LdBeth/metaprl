@@ -214,11 +214,7 @@ struct
     *)
    module CacheBase =
    struct
-      type set = unit
       type data = extract
-
-      let union () () =
-         ()
 
       let append = List_util.unionq
    end
@@ -228,7 +224,7 @@ struct
    (*
     * Cache is actually imperative.
     *)
-   let cache = ref (Cache.create ())
+   let cache = ref (Cache.empty)
 
    let cache_lock = Mutex.create ()
 
@@ -598,7 +594,7 @@ struct
        | ParentSet (_, set) ->
             set
        | ParentNone ->
-            ParentTable.create ()
+            ParentTable.empty
 
    (*
     * Remove duplicates in a list of tactic args.
@@ -1804,7 +1800,7 @@ struct
          let goal = goal_ext ext in
             Cache.add set goal.ref_goal ext
       in
-         fold_down_root add_extract (Cache.create ()) proof
+         fold_down_root add_extract Cache.empty proof
 
    (*
     * Remove extracts that occur in the parent set.

@@ -67,13 +67,11 @@ open Itt_struct
 module StringTableBase =
 struct
    type elt = string
-   type set = StringSet.t
    type data = int
 
-   let union = StringSet.union
-   let compare _ s1 s2 = Pervasives.compare s1 s2
+   let compare s1 s2 = Pervasives.compare s1 s2
    let append l1 l2 = l1 @ l2
-   let print _ _ _ = ()
+   let print _ _ = ()
 end
 
 module PigeonTable = MakeTable (StringTableBase)
@@ -163,7 +161,7 @@ let prove3T pigeons p =
 
 let prove2T p =
    let length = Sequent.hyp_count p in
-   let pigeons = collect_pigeons (PigeonTable.create StringSet.empty) length p in
+   let pigeons = collect_pigeons PigeonTable.empty length p in
       (forward_chain pigeons length thenT prove3T pigeons) p
 
 let proveT p =

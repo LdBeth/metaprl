@@ -31,8 +31,6 @@
  * Author: Yegor Bryukhov
  *)
 
-open Splay_table
-
 module type WeakMemoSig =
 sig
    (*

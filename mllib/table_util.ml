@@ -34,20 +34,19 @@ open Set_sig
 
 module MakeTable (Create : TableCreateSig) (Base : TableBaseSig) =
 struct
-   type set = Base.set
    type elt = Base.elt
    type data = Base.data
-   type t = (set, elt, data) Create.t
+   type t = (elt, data) Create.t
 
    (*
     * Get the methods.
     *)
-   let methods = Create.create Base.print Base.union Base.compare Base.append
+   let methods = Create.create Base.print Base.compare Base.append
 
    (*
     * Now project them.
     *)
-   let create = methods.create
+   let empty = methods.empty
    let add = methods.add
    let union = methods.union
    let mem = methods.mem

@@ -35,15 +35,12 @@ module MakeTable
    (Base : TableBaseSig)
    (Table1: TableSig
                with type elt = Base.elt
-               with type set = Base.set
                with type data = Base.data)
    (Table2: TableSig
                with type elt = Base.elt
-               with type set = Base.set
                with type data = Base.data)
       : TableSig
            with type elt = Base.elt
-           with type set = Base.set
            with type data = Base.data
 
 (*

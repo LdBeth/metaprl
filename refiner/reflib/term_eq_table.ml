@@ -39,10 +39,8 @@ open Termmod_hash_sig
  *)
 module type TableBaseSig =
 sig
-   type set
    type data
 
-   val union : set -> set -> set
    val append : data list -> data list -> data list
 end
 
@@ -54,9 +52,9 @@ struct
    (*
     * Build from splay tables.
     *)
-   type ('arg, 'data) term_table = ('arg, Term.TermNorm.term_index, 'data) Splay_table.table
-   type ('arg, 'data) meta_term_table = ('arg, Term.TermNorm.meta_term_index, 'data) Splay_table.table
-   type ('arg, 'data) msequent_table = ('arg, Term.TermNorm.msequent_index, 'data) Splay_table.table
+   type 'data term_table = (Term.TermNorm.term_index, 'data) Splay_table.table
+   type 'data meta_term_table = (Term.TermNorm.meta_term_index, 'data) Splay_table.table
+   type 'data msequent_table = (Term.TermNorm.msequent_index, 'data) Splay_table.table
 
    module MakeTable = Splay_table.MakeTable
 
@@ -78,12 +76,10 @@ struct
    module MakeSetInfo (Base : TableBaseSig) (Extra : TableBaseExtraSig) =
    struct
       type elt = Extra.index
-      type set = Base.set
       type data = Base.data
 
-      let print _ _ _ = ()
-      let union = Base.union
-      let compare _ x y = Extra.compare x y
+      let print _ _ = ()
+      let compare x y = Extra.compare x y
       let append = Base.append
    end
 
@@ -95,11 +91,10 @@ struct
       module Table = MakeTable (MakeSetInfo (Base) (Extra))
 
       type elt = Extra.term
-      type set = Base.set
       type data = Base.data
-      type t = (set, Extra.index, data) table
+      type t = (Extra.index, data) table
 
-      let create = Table.create
+      let empty = Table.empty
       let add table term data = Table.add table (Extra.hash term) data
       let union = Table.union
       let mem table term = Table.mem table (Extra.hash term)
@@ -161,9 +156,9 @@ end
  *)
 module EqTables = MakeEqTables (Refiner.Refiner)
 
-type ('arg, 'data) term_table = ('arg, 'data) EqTables.term_table
-type ('arg, 'data) meta_term_table = ('arg, 'data) EqTables.meta_term_table
-type ('arg, 'data) msequent_table = ('arg, 'data) EqTables.msequent_table
+type 'data term_table = 'data EqTables.term_table
+type 'data meta_term_table = 'data EqTables.meta_term_table
+type 'data msequent_table = 'data EqTables.msequent_table
 
 module MakeTermTable = EqTables.MakeTermTable
 module MakeMetaTermTable = EqTables.MakeMetaTermTable

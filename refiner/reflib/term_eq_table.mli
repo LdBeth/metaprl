@@ -37,73 +37,65 @@ open Refiner_sig
  *)
 module type TableBaseSig =
 sig
-   type set
    type data
 
-   val union : set -> set -> set
    val append : data list -> data list -> data list
 end
 
 module MakeEqTables (Term : RefinerSig) :
 sig
-   type ('arg, 'data) term_table
-   type ('arg, 'data) meta_term_table
-   type ('arg, 'data) msequent_table
+   type 'data term_table
+   type 'data meta_term_table
+   type 'data msequent_table
 
    module MakeTermTable
       (Base : TableBaseSig)
    : Set_sig.TableSig
-     with type t = (Base.set, Base.data) term_table
+     with type t = Base.data term_table
      with type elt = Term.TermNorm.term
-     with type set = Base.set
      with type data = Base.data
 
    module MakeMetaTermTable
       (Base : TableBaseSig)
    : Set_sig.TableSig
-     with type t = (Base.set, Base.data) meta_term_table
+     with type t = Base.data meta_term_table
      with type elt = Term.TermNorm.meta_term
-     with type set = Base.set
      with type data = Base.data
 
    module MakeMsequentTable
       (Base : TableBaseSig)
    : Set_sig.TableSig
-     with type t = (Base.set, Base.data) msequent_table
+     with type t = Base.data msequent_table
      with type elt = Term.TermNorm.msequent
-     with type set = Base.set
      with type data = Base.data
 end
 
 (*
  * Normal modules.
  *)
-type ('arg, 'data) term_table
-type ('arg, 'data) meta_term_table
-type ('arg, 'data) msequent_table
+type 'data term_table
+type 'data meta_term_table
+type 'data msequent_table
 
 module MakeTermTable
    (Base : TableBaseSig)
 : Set_sig.TableSig
-  with type t = (Base.set, Base.data) term_table
+  with type t = Base.data term_table
   with type elt = Refiner.Refiner.TermNorm.term
-  with type set = Base.set
   with type data = Base.data
 
 module MakeMetaTermTable
    (Base : TableBaseSig)
 : Set_sig.TableSig
-  with type t = (Base.set, Base.data) meta_term_table
+  with type t = Base.data meta_term_table
   with type elt = Refiner.Refiner.TermNorm.meta_term
-  with type set = Base.set
   with type data = Base.data
 
 module MakeMsequentTable
    (Base : TableBaseSig)
 : Set_sig.TableSig
-  with type t = (Base.set, Base.data) msequent_table
+  with type t = Base.data msequent_table
   with type elt = Refiner.Refiner.TermNorm.msequent
-  with type set = Base.set
   with type data = Base.data
 
 (*

@@ -247,7 +247,6 @@ sig
    module ParentTable
    : Set_sig.TableSig
      with type t = parents
-     with type set = unit
      with type elt = msequent
      with type data = tactic_arg
 end

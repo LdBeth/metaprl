@@ -142,9 +142,9 @@ end
 (*
  * The record of methods.
  *)
-type ('arg, 'elt, 'data, 'table) table_methods =
-   { create : 'arg -> 'table;
-     make : 'arg -> 'elt -> 'data list -> 'table;
+type ('elt, 'data, 'table) table_methods =
+   { empty : 'table;
+     make : 'elt -> 'data list -> 'table;
      is_empty : 'table -> bool;
      mem : 'table -> 'elt -> bool;
      add : 'table -> 'elt -> 'data -> 'table;
@@ -159,7 +159,7 @@ type ('arg, 'elt, 'data, 'table) table_methods =
      mem_filt : 'table -> 'elt list -> 'elt list;
      not_mem_filt : 'table -> 'elt list -> 'elt list;
      intersectp : 'table -> 'table -> bool;
-     of_list : 'arg -> ('elt * 'data list) list -> 'table;
+     of_list : ('elt * 'data list) list -> 'table;
 
      (* Debugging *)
      print : 'table -> unit
@@ -168,35 +168,32 @@ type ('arg, 'elt, 'data, 'table) table_methods =
 (*
  * Creation functions.
  *)
-type ('arg, 'elt, 'data, 'table) table_create_type =
-   ('arg -> 'elt -> 'data list -> unit) ->              (* printer *)
-   ('arg -> 'arg -> 'arg) ->                            (* union *)
-   ('arg -> 'elt -> 'elt -> int) ->                     (* comparison function *)
+type ('elt, 'data, 'table) table_create_type =
+   ('elt -> 'data list -> unit) ->              (* printer *)
+   ('elt -> 'elt -> int) ->                     (* comparison function *)
    ('data list -> 'data list -> 'data list) ->          (* append during union *)
-   ('arg, 'elt, 'data, 'table) table_methods
+   ('elt, 'data, 'table) table_methods
 
 (*
  * Module containing a creation function.
  *)
 module type TableCreateSig =
 sig
-   type ('arg, 'elt, 'data) t
+   type ('elt, 'data) t
 
-   val create : ('arg, 'elt, 'data, ('arg, 'elt, 'data) t) table_create_type
+   val create : ('elt, 'data, ('elt, 'data) t) table_create_type
 end
 
 (*
- * Ordering module takes a comparison set.
+ * Ordering module.
  *)
 module type TableBaseSig =
 sig
    type elt
-   type set
    type data
 
-   val print : set -> elt -> data list -> unit
-   val union : set -> set -> set
-   val compare : set -> elt -> elt -> int
+   val print : elt -> data list -> unit
+   val compare : elt -> elt -> int
    val append : data list -> data list -> data list
 end
 
@@ -206,11 +203,10 @@ end
 module type TableSig =
 sig
    type elt
-   type set
    type data
    type t
 
-   val create : set -> t
+   val empty :  t
    val add : t -> elt -> data -> t
    val union : t -> t -> t
    val mem : t -> elt -> bool
