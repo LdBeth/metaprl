@@ -193,7 +193,7 @@ struct
    let eval_tactic state =
       State.synchronize state (function expr ->
             let loc = 0, 0 in
-            let expr = (<:expr< $uid: "Shell_p4"$ . $lid: "install_tactic"$ $expr$ >>) in
+            let expr = (<:expr< Shell_p4.install_tactic $expr$ >>) in
             let item = (<:str_item< $exp: expr$ >>) in
             let pt_item = Ast2pt.str_item item [] in
                eval_tactic_once (ref (OnceInitial pt_item)))
@@ -249,7 +249,7 @@ struct
 
       str_item:
          [[ "refine"; e = refine_item ->
-             let e = <:expr< $uid:"Mp"$ . $lid:"refine"$ $e$ >> in
+             let e = <:expr< Mp.refine $e$ >> in
                 <:str_item< $exp: e$ >>
           ]];
 

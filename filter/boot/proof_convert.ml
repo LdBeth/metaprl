@@ -170,13 +170,11 @@ struct
          eprintf "Converting proof to expr%t" eflush;
       let loc = 0, 0 in
       let unit_patt = <:patt< () >> in
-      let error_expr = <:expr< raise ( $uid: "Refiner"$ . $uid: "Refiner"$ . $uid: "RefineError"$ . $uid: "RefineError"$
-                                       ($str: "Proof_convert.to_expr"$,
-                                              ($uid:"Refiner"$
-                                               . $uid: "Refiner"$
-                                               . $uid: "RefineError"$
-                                               . $uid: "StringError"$
-                                               $str: "interactive proofs not implemented"$))) >>
+      let error_expr = <:expr<
+         raise ( Refiner.Refiner.RefineError.RefineError
+                   ("Proof_convert.to_expr",
+                    (Refiner.Refiner.RefineError.StringError
+                     "interactive proofs not implemented"))) >>
       in
          <:expr< fun [ $list: [unit_patt, None, error_expr]$ ] >>
 end

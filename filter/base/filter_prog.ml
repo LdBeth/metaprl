@@ -98,203 +98,203 @@ end
  * Axiom.
  *)
 let refiner_expr loc =
-   <:expr< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"Refine"$ >>
+   <:expr< Refiner.Refiner.Refine >>
 
 let refiner_patt loc =
-   <:patt< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"Refine"$ >>
+   <:patt< Refiner.Refiner.Refine >>
 
 let refiner_ctyp loc =
-   <:ctyp< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"Refine"$ >>
+   <:ctyp< Refiner.Refiner.Refine >>
 
 let rewriter_expr loc =
-   <:expr< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"Rewrite"$ >>
+   <:expr< Refiner.Refiner.Rewrite >>
 
 let rewriter_patt loc =
-   <:patt< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"Rewrite"$ >>
+   <:patt< Refiner.Refiner.Rewrite >>
 
 let tactic_type_expr loc =
-   <:expr< $uid:"Tactic_type"$ . $uid: "Tactic"$ >>
+   <:expr< Tactic_type.Tactic >>
 
 let tactic_type_ctyp loc =
-   <:ctyp< $uid:"Tactic_type"$ . $uid: "Tactic"$ >>
+   <:ctyp< Tactic_type.Tactic >>
 
 let rewrite_type_expr loc =
-   <:expr< $uid:"Tactic_type"$ . $uid: "Rewrite"$ >>
+   <:expr< Tactic_type.Rewrite >>
 
 let rewrite_type_ctyp loc =
-   <:ctyp< $uid:"Tactic_type"$ . $uid: "Rewrite"$ >>
+   <:ctyp< Tactic_type.Rewrite >>
 
 let dest_msequent_expr loc =
-   <:expr< $refiner_expr loc$ . $lid: "dest_msequent"$ >>
+   <:expr< $refiner_expr loc$ . dest_msequent >>
 
 let create_axiom_expr loc =
-   <:expr< $refiner_expr loc$ . $lid:"create_axiom"$ >>
+   <:expr< $refiner_expr loc$ . create_axiom >>
 
 let prim_axiom_expr loc =
-   <:expr< $refiner_expr loc$ . $lid:"prim_axiom"$ >>
+   <:expr< $refiner_expr loc$ . prim_axiom >>
 
 let derived_axiom_expr loc =
-   <:expr< $refiner_expr loc$ . $lid:"derived_axiom"$ >>
+   <:expr< $refiner_expr loc$ . derived_axiom >>
 
 let delayed_axiom_expr loc =
-   <:expr< $refiner_expr loc$ . $lid:"delayed_axiom"$ >>
+   <:expr< $refiner_expr loc$ . delayed_axiom >>
 
 (*
  * Rule.
  *)
 let create_rule_expr loc =
-   <:expr< $refiner_expr loc$ . $lid:"create_rule"$ >>
+   <:expr< $refiner_expr loc$ . create_rule >>
 
 let prim_rule_expr loc =
-   <:expr< $refiner_expr loc$ . $lid:"prim_rule"$ >>
+   <:expr< $refiner_expr loc$ . prim_rule >>
 
 let derived_rule_expr loc =
-   <:expr< $refiner_expr loc$ . $lid:"derived_rule"$ >>
+   <:expr< $refiner_expr loc$ . derived_rule >>
 
 let delayed_rule_expr loc =
-   <:expr< $refiner_expr loc$ . $lid:"delayed_rule"$ >>
+   <:expr< $refiner_expr loc$ . delayed_rule >>
 
 let create_ml_rule_expr loc =
-   <:expr< $refiner_expr loc$ . $lid:"create_ml_rule"$ >>
+   <:expr< $refiner_expr loc$ . create_ml_rule >>
 
 let compile_rule_expr loc =
-   <:expr< $tactic_type_expr loc$ . $lid:"compile_rule"$ >>
+   <:expr< $tactic_type_expr loc$ . compile_rule >>
 
 let compile_labeled_rule_expr loc =
-   <:expr< $tactic_type_expr loc$ . $lid:"compile_labeled_rule"$ >>
+   <:expr< $tactic_type_expr loc$ . compile_labeled_rule >>
 
 let tactic_of_rule_expr loc =
-   <:expr< $tactic_type_expr loc$ . $lid:"tactic_of_rule"$ >>
+   <:expr< $tactic_type_expr loc$ . tactic_of_rule >>
 
 let tactic_ctyp loc =
-   <:ctyp< $tactic_type_ctyp loc$ . $lid:"tactic"$ >>
+   <:ctyp< $tactic_type_ctyp loc$ . tactic >>
 
 (*
  * Rewrite.
  *)
 let rewrite_ctyp loc =
-   <:ctyp< $rewrite_type_ctyp loc$ . $lid:"conv"$ >>
+   <:ctyp< $rewrite_type_ctyp loc$ . conv >>
 
 let create_rewrite_expr loc =
-   <:expr< $refiner_expr loc$ . $lid:"create_rewrite"$ >>
+   <:expr< $refiner_expr loc$ . create_rewrite >>
 
 let prim_rewrite_expr loc =
-   <:expr< $refiner_expr loc$ . $lid:"prim_rewrite"$ >>
+   <:expr< $refiner_expr loc$ . prim_rewrite >>
 
 let derived_rewrite_expr loc =
-   <:expr< $refiner_expr loc$ . $lid:"derived_rewrite"$ >>
+   <:expr< $refiner_expr loc$ . derived_rewrite >>
 
 let delayed_rewrite_expr loc =
-   <:expr< $refiner_expr loc$ . $lid:"delayed_rewrite"$ >>
+   <:expr< $refiner_expr loc$ . delayed_rewrite >>
 
 let create_ml_rewrite_expr loc =
-   <:expr< $refiner_expr loc$ . $lid:"create_ml_rewrite"$ >>
+   <:expr< $refiner_expr loc$ . create_ml_rewrite >>
 
 let create_ml_cond_rewrite_expr loc =
-   <:expr< $refiner_expr loc$ . $lid:"create_ml_cond_rewrite"$ >>
+   <:expr< $refiner_expr loc$ . create_ml_cond_rewrite >>
 
 let rewrite_of_rewrite_expr loc =
-   <:expr< $rewrite_type_expr loc$ . $lid:"rewrite_of_rewrite"$ >>
+   <:expr< $rewrite_type_expr loc$ . rewrite_of_rewrite >>
 
 (*
  * Conditional rewrite.
  *)
 let cond_rewrite_ctyp loc =
-   <:ctyp< $rewrite_type_ctyp loc$ . $lid:"conv"$ >>
+   <:ctyp< $rewrite_type_ctyp loc$ . conv >>
 
 (*
-   let sarray = <:ctyp< $lid:"array"$ $lid:"string"$ >> in
-   let term = <:ctyp< $lid:"list"$ ($uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"Term"$ . $lid:"term"$) >> in
+   let sarray = <:ctyp< array string >> in
+   let term = <:ctyp< list (Refiner.Refiner.Term.term) >> in
    let arg = <:ctyp< ($sarray$ * $term$) >> in
       <:ctyp< $arg$ -> $rewrite_ctyp loc$ >>
  *)
 
 let create_cond_rewrite_expr loc =
-   <:expr< $refiner_expr loc$ . $lid:"create_cond_rewrite"$ >>
+   <:expr< $refiner_expr loc$ . create_cond_rewrite >>
 
 let prim_cond_rewrite_expr loc =
-   <:expr< $refiner_expr loc$ . $lid:"prim_cond_rewrite"$ >>
+   <:expr< $refiner_expr loc$ . prim_cond_rewrite >>
 
 let derived_cond_rewrite_expr loc =
-   <:expr< $refiner_expr loc$ . $lid:"derived_cond_rewrite"$ >>
+   <:expr< $refiner_expr loc$ . derived_cond_rewrite >>
 
 let delayed_cond_rewrite_expr loc =
-   <:expr< $refiner_expr loc$ . $lid:"delayed_cond_rewrite"$ >>
+   <:expr< $refiner_expr loc$ . delayed_cond_rewrite >>
 
 let rewrite_of_cond_rewrite_expr loc =
-   <:expr< $rewrite_type_expr loc$ . $lid:"rewrite_of_cond_rewrite"$ >>
+   <:expr< $rewrite_type_expr loc$ . rewrite_of_cond_rewrite >>
 
 let apply_redex_expr loc =
-   <:expr< $rewriter_expr loc$ . $lid:"apply_redex"$ >>
+   <:expr< $rewriter_expr loc$ . apply_redex >>
 
 let construct_redex_expr loc =
-   <:expr< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"TermMan"$ . $lid:"construct_redex"$ >>
+   <:expr< Refiner.Refiner.TermMan.construct_redex >>
 
 let compile_redex_expr loc =
-   <:expr< $rewriter_expr loc$ . $lid:"compile_redex"$ >>
+   <:expr< $rewriter_expr loc$ . compile_redex >>
 
 let compile_redices_expr loc =
-   <:expr< $rewriter_expr loc$ . $lid:"compile_redices"$ >>
+   <:expr< $rewriter_expr loc$ . compile_redices >>
 
 let compile_contractum_expr loc =
-   <:expr< $rewriter_expr loc$ . $lid:"compile_contractum"$ >>
+   <:expr< $rewriter_expr loc$ . compile_contractum >>
 
 let make_contractum_expr loc =
-   <:expr< $rewriter_expr loc$ . $lid:"make_contractum"$ >>
+   <:expr< $rewriter_expr loc$ . make_contractum >>
 
 let strict_expr loc =
-   <:expr< $rewriter_expr loc$ . $uid:"Strict"$ >>
+   <:expr< $rewriter_expr loc$ . Strict >>
 
 let relaxed_expr loc =
-   <:expr< $rewriter_expr loc$ . $uid:"Relaxed"$ >>
+   <:expr< $rewriter_expr loc$ . Relaxed >>
 
 (*
  * Other expressions.
  *)
 let thy_name_expr loc =
-   <:expr< $uid:"Theory"$ . $lid:"thy_name"$ >>
+   <:expr< Theory.thy_name >>
 
 let thy_refiner_expr loc =
-   <:expr< $uid:"Theory"$ . $lid:"thy_refiner"$ >>
+   <:expr< Theory.thy_refiner >>
 
 let thy_dformer_expr loc =
-   <:expr< $uid:"Theory"$ . $lid:"thy_dformer"$ >>
+   <:expr< Theory.thy_dformer >>
 
 let record_theory_expr loc =
-   <:expr< $uid:"Theory"$ . $lid:"record_theory"$ >>
+   <:expr< Theory.record_theory >>
 
 let label_refiner_expr loc =
-   <:expr< $refiner_expr loc$ . $lid:"label_refiner"$ >>
+   <:expr< $refiner_expr loc$ . label_refiner >>
 
 let refiner_ctyp loc =
-   <:ctyp< $refiner_ctyp loc$ . $lid:"refiner"$ >>
+   <:ctyp< $refiner_ctyp loc$ . refiner >>
 
 let join_refiner_expr loc =
-   <:expr< $refiner_expr loc$ . $lid:"join_refiner"$ >>
+   <:expr< $refiner_expr loc$ . join_refiner >>
 
 let join_mode_base_expr loc =
-   <:expr< $uid:"Dform_print"$ . $lid:"join_mode_base"$ >>
+   <:expr< Dform_print.join_mode_base >>
 
 let dformer_ctyp loc =
-   <:ctyp< $uid:"Dform_print"$ . $lid:"dform_mode_base"$ >>
+   <:ctyp< Dform_print.dform_mode_base >>
 
 let resource_rsrc_ctyp loc =
-   <:ctyp< $uid:"Mp_resource"$ . $lid:"t"$ >>
+   <:ctyp< Mp_resource.t >>
 
 let resource_join_expr loc =
-   <:expr< $uid:"Mp_resource"$ . $lid:"join"$ >>
+   <:expr< Mp_resource.join >>
 
 let resource_create_expr loc =
-   <:expr< $uid:"Mp_resource"$ . $lid:"create"$ >>
+   <:expr< Mp_resource.create >>
 
 let resource_improve_expr loc =
-   <:expr< $uid:"Mp_resource"$ . $lid:"improve"$ >>
+   <:expr< Mp_resource.improve >>
 
 let resource_list_improve_expr loc =
-   <:expr< $uid:"Mp_resource"$ . $lid:"improve_list"$ >>
+   <:expr< Mp_resource.improve_list >>
 
 let resource_improve_arg_expr loc =
-   <:expr< $uid:"Mp_resource"$ . $lid:"improve_arg"$ >>
+   <:expr< Mp_resource.improve_arg >>
 
 let _resource name =
    let l = String.length name in
@@ -312,58 +312,58 @@ let resource_name_patt loc name =
    <:patt< $lid: _resource name$ >>
 
 let dform_name_expr loc =
-   <:expr< $uid:"Dform"$ . $lid:"dform_name"$ >>
+   <:expr< Dform.dform_name >>
 
 let dform_pattern_expr loc =
-   <:expr< $uid:"Dform"$ . $lid:"dform_pattern"$ >>
+   <:expr< Dform.dform_pattern >>
 
 let dform_options_expr loc =
-   <:expr< $uid:"Dform"$ . $lid:"dform_options"$ >>
+   <:expr< Dform.dform_options >>
 
 let dform_print_expr loc =
-   <:expr< $uid:"Dform"$ . $lid:"dform_print"$ >>
+   <:expr< Dform.dform_print >>
 
 let dform_term_patt loc =
-   <:patt< $uid:"Dform"$ . $lid:"dform_term"$ >>
+   <:patt< Dform.dform_term >>
 
 let dform_printer_patt loc =
-   <:patt< $uid:"Dform"$ . $lid:"dform_printer"$ >>
+   <:patt< Dform.dform_printer >>
 
 let dform_items_patt loc =
-   <:patt< $uid:"Dform"$ . $lid:"dform_items"$ >>
+   <:patt< Dform.dform_items >>
 
 let dform_buffer_patt loc =
-   <:patt< $uid:"Dform"$ . $lid:"dform_buffer"$ >>
+   <:patt< Dform.dform_buffer >>
 
 let dform_expansion_expr loc =
-   <:expr< $uid:"Dform"$ . $uid:"DFormExpansion"$ >>
+   <:expr< Dform.DFormExpansion >>
 
 let dform_printer_expr loc =
-   <:expr< $uid:"Dform"$ . $uid:"DFormPrinter"$ >>
+   <:expr< Dform.DFormPrinter >>
 
 let dform_parens_expr loc =
-   <:expr< $uid:"Dform"$ . $uid:"DFormParens"$ >>
+   <:expr< Dform.DFormParens >>
 
 let dform_internal_expr loc =
-   <:expr< $uid:"Dform"$ . $uid:"DFormInternal"$ >>
+   <:expr< Dform.DFormInternal >>
 
 let dform_prec_expr loc s =
-   <:expr< $uid:"Dform"$ . $uid:"DFormPrec"$ $lid:s$ >>
+   <:expr< Dform.DFormPrec $lid:s$ >>
 
 let dform_inherit_prec_expr loc =
-   <:expr< $uid:"Dform"$ . $uid:"DFormInheritPrec"$ >>
+   <:expr< Dform.DFormInheritPrec >>
 
 let dform_inherit_prec_expr loc =
-   <:expr< $uid:"Dform"$ . $uid:"DFormInheritPrec"$ >>
+   <:expr< Dform.DFormInheritPrec >>
 
 let create_dform_modes_expr loc =
-   <:expr< $uid:"Dform_print"$ . $lid:"create_dform_modes"$ >>
+   <:expr< Dform_print.create_dform_modes >>
 
 let create_dform_except_modes_expr loc =
-   <:expr< $uid:"Dform_print"$ . $lid:"create_dform_except_modes"$ >>
+   <:expr< Dform_print.create_dform_except_modes >>
 
 let create_dform_all_expr loc =
-   <:expr< $uid:"Dform_print"$ . $lid:"create_dform_all"$ >>
+   <:expr< Dform_print.create_dform_all >>
 
 let refiner_id = "refiner"
 let dformer_id = "dformer"
@@ -373,10 +373,10 @@ let local_dformer_id = "_$global_dformer"
 let stack_id = "_$rewrite_stack"
 
 let null_refiner_expr loc name =
-   <:expr< $refiner_expr loc$ . $lid:"null_refiner"$ $str: name$ >>
+   <:expr< $refiner_expr loc$ . null_refiner $str: name$ >>
 
 let null_mode_base_expr loc =
-   <:expr< $uid:"Dform_print"$ . $lid:"null_mode_base"$ >>
+   <:expr< Dform_print.null_mode_base >>
 
 let nil_array loc =
    <:expr< [| $list:[]$ |] >>
@@ -385,22 +385,22 @@ let nil_list loc =
    <:expr< [] >>
 
 let precedence_ctyp loc =
-   <:ctyp< $uid:"Precedence"$ . $lid:"precedence"$ >>
+   <:ctyp< Precedence.precedence >>
 
 let new_prec_expr loc =
-   <:expr< $uid:"Precedence"$ . $lid:"new_prec"$ >>
+   <:expr< Precedence.new_prec >>
 
 let add_lt_expr loc =
-   <:expr< $uid:"Precedence"$ . $lid:"add_lt"$ >>
+   <:expr< Precedence.add_lt >>
 
 let add_eq_expr loc =
-   <:expr< $uid:"Precedence"$ . $lid:"add_eq"$ >>
+   <:expr< Precedence.add_eq >>
 
 (*
  * Each axiom gets a refiner associated with it, with the following name.
  *)
 let refiner_value loc =
-   <:expr< $uid: "Refiner"$ . $uid: "Refiner"$ . $uid: "Refine"$ . $lid: "refiner_of_build"$ $lid: local_refiner_id$ >>
+   <:expr< Refiner.Refiner.Refine.refiner_of_build $lid: local_refiner_id$ >>
 
 let refiner_let loc =
    let patt = <:patt< $lid: refiner_id$ >> in
@@ -461,17 +461,17 @@ let rule_name_id        = "_$rule_name"
  *)
 let expr_of_term loc t =
    let s = Ml_term.string_of_term t in
-   <:expr< $uid: "Ml_term"$ . $lid: "term_of_string"$ $str: s$ >>
+   <:expr< Ml_term.term_of_string $str: s$ >>
 
 let expr_of_mterm loc t =
    let s = Ml_term.string_of_mterm t in
-   <:expr< $uid: "Ml_term"$ . $lid: "mterm_of_string"$ $str: s$ >>
+   <:expr< Ml_term.mterm_of_string $str: s$ >>
 
 let expr_of_label loc = function
    [] ->
-      <:expr< $uid:"None"$ >>
+      <:expr< None >>
  | h :: _ ->
-      <:expr< $uid:"Some"$ $str: h$ >>
+      <:expr< Some $str: h$ >>
 
 let expr_of_contractum loc index =
    <:expr< $make_contractum_expr loc$ $lid:sprintf "%s%d" contractum_id index$ $lid:stack_id$ >>
@@ -501,13 +501,13 @@ let wrap_exn loc name e =
    (* Wrap the body to catch exceptions *)
    let exn_patt = <:patt< $lid: exn_id$ >> in
    let exn_expr = <:expr< $lid: exn_id$ >> in
-   let stderr = <:expr< $uid: "Pervasives"$ . $lid: "stderr"$ >> in
-   let dform = <:expr< $lid: local_dformer_id$ . $lid: "val"$ >> in
-   let printer = <:expr< $uid: "Refine_exn"$ . $lid: "print_exn"$ $dform$ $stderr$ $str: name$ $exn_expr$ >> in
+   let stderr = <:expr< Pervasives.stderr >> in
+   let dform = <:expr< $lid: local_dformer_id$ . val >> in
+   let printer = <:expr< Refine_exn.print_exn $dform$ $stderr$ $str: name$ $exn_expr$ >> in
    let wrapped = <:expr< try $e$ with [ $list: [exn_patt, None, printer]$ ] >> in
 
    (* Print a message before the execution *)
-   let show_loading = <:expr< $uid: "Mp_debug"$ . $lid: "show_loading"$ >> in
+   let show_loading = <:expr< Mp_debug.show_loading >> in
    let msg = <:expr< $str: "Loading " ^ name ^ "%t"$ >> in
    let loading_msg = <:expr< $show_loading$ $msg$ >> in
       <:expr< do $list: [ loading_msg ]$ return $wrapped$ >>
@@ -517,12 +517,12 @@ let wrap_exn loc name e =
  *)
 let param_expr loc = function
    ContextParam s ->
-      <:expr< $uid:"Filter_summary"$ . $uid:"ContextParam"$ $str:s$ >>
+      <:expr< Filter_summary.ContextParam $str:s$ >>
  | VarParam v ->
-      <:expr< $uid:"Filter_summary"$ . $uid:"VarParam"$ $str:v$ >>
+      <:expr< Filter_summary.VarParam $str:v$ >>
  | TermParam t ->
       let t' = expr_of_term loc t in
-         <:expr< $uid:"Filter_summary"$ . $uid:"TermParam"$ $t'$ >>
+         <:expr< Filter_summary.TermParam $t'$ >>
 
 (*
  * Create function type.
@@ -536,11 +536,11 @@ let params_ctyp loc ctyp params =
          let arg_type =
             match h with
                ContextParam _ ->
-                  <:ctyp< $lid:"Refiner"$ . $uid:"Refiner"$ . $uid:"TermAddr"$ . $lid:"address"$ >>
+                  <:ctyp< Refiner.Refiner.TermAddr.address >>
              | VarParam _ ->
-                  <:ctyp< $lid:"string"$ >>
+                  <:ctyp< string >>
              | TermParam _ ->
-                  <:ctyp< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"Term"$ . $lid:"term"$ >>
+                  <:ctyp< Refiner.Refiner.Term.term >>
          in
             <:ctyp< $arg_type$ -> $ctyp'$ >>
    in
@@ -584,11 +584,11 @@ let rec parent_path_ctyp loc = function
 let interactive_exn loc name =
    let patt = <:patt< _ >> in
 (*
-   let ename = <:expr< $uid:"Refiner"$ . $uid: "Refiner"$ . $uid: "RefineError"$ . $uid: "RefineError"$ >> in
-   let err = <:expr< $uid:"Refiner"$ . $uid: "Refiner"$ . $uid: "RefineError"$ . $uid: "StringError"$ $str: "proof is incomplete"$ >> in
+   let ename = <:expr< Refiner.Refiner.RefineError.RefineError >> in
+   let err = <:expr< Refiner.Refiner.RefineError.StringError "proof is incomplete" >> in
    let body = <:expr< raise ($ename$ ($str: name$, $err$)) >> in
  *)
-   let body = <:expr< raise ($uid:"Failure"$ $str: "interactive proof"$) >> in
+   let body = <:expr< raise (Failure "interactive proof") >> in
       <:expr< fun [ $list: [ patt, None, body ]$ ] >>
 
 (*
@@ -596,10 +596,10 @@ let interactive_exn loc name =
  * toploop resource.
  *)
 let toploop_rewrite loc name =
-   let patt = <:patt< $lid: "toploop_resource"$ >> in
+   let patt = <:patt< toploop_resource >> in
    let expr = <:expr< $resource_improve_expr loc$
                       $lid: "toploop_resource"$
-                      ($str: name$, $uid: "Mptop"$ . $uid: "ConvExpr"$ $lid: name$) >>
+                      ($str: name$, Mptop.ConvExpr $lid: name$) >>
    in
       <:str_item< value $rec: false$ $list: [ patt, expr ]$ >>
 
@@ -613,17 +613,17 @@ let toploop_rule loc name params =
          let expr =
             match h with
                ContextParam _ ->
-                  <:expr< $uid:"Mptop"$ . $uid:"AddressFunExpr"$ $expr$ >>
+                  <:expr< Mptop.AddressFunExpr $expr$ >>
              | VarParam _ ->
-                  <:expr< $uid:"Mptop"$ . $uid:"StringFunExpr"$ $expr$ >>
+                  <:expr< Mptop.StringFunExpr $expr$ >>
              | TermParam _ ->
-                  <:expr< $uid:"Mptop"$ . $uid:"TermFunExpr"$ $expr$ >>
+                  <:expr< Mptop.TermFunExpr $expr$ >>
          in
             expr
     | [] ->
-        <:expr< $uid:"Mptop"$ . $uid:"TacticExpr"$ $body$ >>
+        <:expr< Mptop.TacticExpr $body$ >>
    in
-   let patt = <:patt< $lid: "toploop_resource"$ >> in
+   let patt = <:patt< toploop_resource >> in
    let expr = loop 0 <:expr< $lid: name$ >> params in
    let expr = <:expr< $resource_improve_expr loc$
                       $lid: "toploop_resource"$
@@ -653,14 +653,14 @@ type wrap_arg =
  * Build the wrap code.
  *)
 let wrap_tactic_expr loc =
-   <:expr< $uid: "Tactic_type"$ . $uid: "Tacticals"$ . $lid: "wrapT"$ >>
+   <:expr< Tactic_type.Tacticals.wrapT >>
 
 let wrap_optimized loc name arglist_name vars expr =
    let name = <:expr< $str:name$ >> in
       if vars = [] then
-         <:expr< $wrap_tactic_expr loc$ ($uid: "Tactic_type"$ . $uid: "TacticType"$ . $uid: arglist_name$ $name$ ) $expr$ >>
+         <:expr< $wrap_tactic_expr loc$ (Tactic_type.TacticType . $uid:arglist_name$ $name$ ) $expr$ >>
       else
-         <:expr< $wrap_tactic_expr loc$ ($uid: "Tactic_type"$ . $uid: "TacticType"$ . $uid: arglist_name$ ( $list:name :: vars$ )) $expr$ >>
+         <:expr< $wrap_tactic_expr loc$ (Tactic_type.TacticType . $uid:arglist_name$ ( $list:name :: vars$ )) $expr$ >>
 
 let wrap_arg loc arg v =
    let s =
@@ -676,10 +676,10 @@ let wrap_arg loc arg v =
        | TermListArg ->
             "TermListArg"
    in
-      <:expr< $uid:"Tactic_type"$ . $uid:"TacticType"$ . $uid:s$ $v$ >>
+      <:expr< Tactic_type.TacticType. $uid:s$ $v$ >>
 
 let wrap_general loc name wrap vars expr =
-      <:expr< $wrap_tactic_expr loc$ ($uid: "Tactic_type"$ . $uid: "TacticType"$ . $uid: "GeneralArgList"$
+      <:expr< $wrap_tactic_expr loc$ (Tactic_type.TacticType.GeneralArgList
                                      [| $list:List.map2 (wrap_arg loc) wrap vars$ |])
               $expr$ >>
 
@@ -758,7 +758,7 @@ let wrap_expr loc name wrap expr =
  *)
 let wrap_toploop_item loc name ctyp expr =
    let rec collect wrap = function
-      <:ctyp< $lid: "tactic"$ >> ->
+      <:ctyp< tactic >> ->
          wrap_expr loc name (List.rev wrap) expr
     | <:ctyp< $t1$ -> $t2$ >> ->
          collect_fun wrap t1 t2
@@ -766,15 +766,15 @@ let wrap_toploop_item loc name ctyp expr =
          expr
    and collect_fun wrap t1 t2 =
       match t1 with
-         <:ctyp< $lid: "bool"$ >> ->
+         <:ctyp< bool >> ->
             collect (BoolArg :: wrap) t2
-       | <:ctyp< $lid: "int"$ >> ->
+       | <:ctyp< int >> ->
             collect (IntArg :: wrap) t2
-       | <:ctyp< $lid: "string"$ >> ->
+       | <:ctyp< string >> ->
             collect (StringArg :: wrap) t2
-       | <:ctyp< $lid: "term"$ >> ->
+       | <:ctyp< term >> ->
             collect (TermArg :: wrap) t2
-       | <:ctyp< $lid: "list"$ $lid: "term"$ >> ->
+       | <:ctyp< list $lid: "term"$ >> ->
             collect (TermListArg :: wrap) t2
        | _ ->
             expr
@@ -786,19 +786,19 @@ let wrap_toploop_item loc name ctyp expr =
  *)
 let add_toploop_item loc name ctyp =
    let rec collect index expr = function
-      <:ctyp< $lid: "unit"$ >> ->
+      <:ctyp< unit >> ->
          mptop "UnitExpr" expr
-    | <:ctyp< $lid: "bool"$ >> ->
+    | <:ctyp< bool >> ->
          mptop "BoolExpr" expr
-    | <:ctyp< $lid: "int"$ >> ->
+    | <:ctyp< int >> ->
          mptop "IntExpr" expr
-    | <:ctyp< $lid: "string"$ >> ->
+    | <:ctyp< string >> ->
          mptop "StringExpr" expr
-    | <:ctyp< $lid: "term"$ >> ->
+    | <:ctyp< term >> ->
          mptop "TermExpr" expr
-    | <:ctyp< $lid: "tactic"$ >> ->
+    | <:ctyp< tactic >> ->
          mptop "TacticExpr" expr
-    | <:ctyp< $lid: "conv"$ >> ->
+    | <:ctyp< conv >> ->
          mptop "ConvExpr" expr
     | <:ctyp< $t1$ -> $t2$ >> ->
          collect_fun index expr t1 t2
@@ -806,47 +806,47 @@ let add_toploop_item loc name ctyp =
          raise_toploop_exn loc
    and collect_fun index expr t1 t2 =
       match t1 with
-         <:ctyp< $lid: "unit"$ >> ->
+         <:ctyp< unit >> ->
             mpfun index "UnitFunExpr" expr t1
-       | <:ctyp< $lid: "bool"$ >> ->
+       | <:ctyp< bool >> ->
             mpfun index "BoolFunExpr" expr t2
-       | <:ctyp< $lid: "int"$ >> ->
+       | <:ctyp< int >> ->
             mpfun index "IntFunExpr" expr t2
-       | <:ctyp< $lid: "string"$ >> ->
+       | <:ctyp< string >> ->
             mpfun index "StringFunExpr" expr t2
-       | <:ctyp< $lid: "term"$ >> ->
+       | <:ctyp< term >> ->
             mpfun index "TermFunExpr" expr t2
-       | <:ctyp< $lid: "tactic"$ >> ->
+       | <:ctyp< tactic >> ->
             mpfun index "TacticFunExpr" expr t2
-       | <:ctyp< $lid: "conv"$ >> ->
+       | <:ctyp< conv >> ->
             mpfun index "ConvFunExpr" expr t2
-       | <:ctyp< $lid: "address"$ >>
-       | <:ctyp< $lid: "list"$ $lid: "int"$ >> ->
+       | <:ctyp< address >>
+       | <:ctyp< list $lid: "int"$ >> ->
             mpfun index "AddrFunExpr" expr t2
-       | <:ctyp< $lid: "list"$ $lid: "string"$ >> ->
+       | <:ctyp< list $lid: "string"$ >> ->
             mpfun index "StringListFunExpr" expr t2
-       | <:ctyp< $lid: "list"$ $lid: "term"$ >> ->
+       | <:ctyp< list $lid: "term"$ >> ->
             mpfun index "TermListFunExpr" expr t2
-       | <:ctyp< $lid: "list"$ $lid: "tactic"$ >> ->
+       | <:ctyp< list $lid: "tactic"$ >> ->
             mpfun index "TacticListFunExpr" expr t2
-       | <:ctyp< $lid: "list"$ $lid: "conv"$ >> ->
+       | <:ctyp< list $lid: "conv"$ >> ->
             mpfun index "ConvListFunExpr" expr t2
-       | <:ctyp< $lid: "int"$ -> $lid: "tactic"$ >> ->
+       | <:ctyp< int -> $lid: "tactic"$ >> ->
             mpfun index "IntTacticFunExpr" expr t2
        | _ ->
             raise_toploop_exn loc
    and mptop name expr =
-      <:expr< $uid: "Mptop"$ . $uid: name$ $expr$ >>
+      <:expr< Mptop. $uid: name$ $expr$ >>
    and mpfun index name expr t2 =
       let v = sprintf "v%d" index in
       let patt = <:patt< $lid: v$ >> in
       let expr = collect (index + 1) <:expr< $expr$ $lid: v$ >> t2 in
-         <:expr< $uid: "Mptop"$ . $uid: name$ (fun [ $list: [ patt, None, expr ]$ ]) >>
+         <:expr< Mptop. $uid: name$ (fun [ $list: [ patt, None, expr ]$ ]) >>
    in
    let expr = collect 0 <:expr< $lid: name$ >> ctyp in
-   let patt = <:patt< $lid:"toploop_resource"$ >> in
+   let patt = <:patt< toploop_resource >> in
    let expr = <:expr< $resource_improve_expr loc$
-                      $lid: "toploop_resource"$ ($str: name$, $expr$)
+                      toploop_resource ($str: name$, $expr$)
               >>
    in
       patt, expr
@@ -1147,7 +1147,7 @@ struct
       let label_resource name =
          let name_expr = resource_name_expr loc name in
          let name_patt = resource_name_patt loc name in
-         let expr = <:expr< $uid:"Mp_resource"$ . $lid:"label"$ $name_expr$ $lid:rule_name_id$>> in
+         let expr = <:expr< Mp_resource.label $name_expr$ $lid:rule_name_id$>> in
             name_patt, expr
       in
       let resources = proc.imp_resources in
@@ -1788,7 +1788,7 @@ struct
          <:patt< ( [| $list:List.map lid_patt_ cvars$ |], [| $list:List.map lid_patt_ bvars$ |] ) >>
       in
       let wild_patt = <:patt< _ >> in
-      let wild_expr = <:expr< $lid:"failwith"$ $str:"bad match"$ >> in
+      let wild_expr = <:expr< failwith "bad match" >> in
       let rule_expr =
          <:expr< match ( $lid:addrs_id$ , $lid:names_id$ ) with
                  [ $list: [rule_patt, None, rule_expr; wild_patt, None, wild_expr]$ ] >>
@@ -1896,17 +1896,17 @@ struct
     *)
    let rewrite_type_patt loc = function
       RewriteTermType name ->
-         <:patt< $rewriter_patt loc$ . $uid:"RewriteTerm"$ $lid:name$ >>
+         <:patt< $rewriter_patt loc$ . RewriteTerm $lid:name$ >>
     | RewriteFunType name ->
-         <:patt< $rewriter_patt loc$ . $uid:"RewriteFun"$ $lid:name$ >>
+         <:patt< $rewriter_patt loc$ . RewriteFun $lid:name$ >>
     | RewriteContextType name ->
-         <:patt< $rewriter_patt loc$ . $uid:"RewriteContext"$ $lid:name$ >>
+         <:patt< $rewriter_patt loc$ . RewriteContext $lid:name$ >>
     | RewriteStringType name ->
-         <:patt< $rewriter_patt loc$ . $uid:"RewriteString"$ $lid:name$ >>
+         <:patt< $rewriter_patt loc$ . RewriteString $lid:name$ >>
     | RewriteNumType name ->
-         <:patt< $rewriter_patt loc$ . $uid:"RewriteNum"$ $lid:name$ >>
+         <:patt< $rewriter_patt loc$ . RewriteNum $lid:name$ >>
     | RewriteLevelType name ->
-         <:patt< $rewriter_patt loc$ . $uid:"RewriteLevel"$ $lid:name$ >>
+         <:patt< $rewriter_patt loc$ . RewriteLevel $lid:name$ >>
 
    (*
     * An ml dterm is a display form that is computed in ML.
@@ -1982,7 +1982,7 @@ struct
                            dform_buffer_patt loc, buffer_patt ]$ } >>
       in
       let wild_patt = <:patt< _ >> in
-      let wild_code = <:expr< $lid:"failwith"$ $str:"bad match"$ >> in
+      let wild_code = <:expr< failwith "bad match" >> in
       let code_expr = <:expr< $code$ $lid:term_id$ >> in
       let dprinter_fun_expr =
          <:expr< fun [ $list:[dprinter_rec_patt, None, code_expr; wild_patt, None, wild_code]$ ] >>
@@ -2158,7 +2158,7 @@ struct
     *)
    let implem_prolog proc loc name =
       let refiner_val = <:expr< $null_refiner_expr loc name$ >> in
-      let dformer_val = <:expr< $lid:"ref"$ $null_mode_base_expr loc$ >> in
+      let dformer_val = <:expr< ref $null_mode_base_expr loc$ >> in
       let refiner_patt = <:patt< $lid:local_refiner_id$ >> in
       let dformer_patt = <:patt< $lid:local_dformer_id$ >> in
          [<:str_item< value $rec:false$ $list:[ refiner_patt, refiner_val; dformer_patt, dformer_val ]$ >>]
@@ -2170,7 +2170,7 @@ struct
       let loc = 0, 0 in
       let bind_of_resource name' =
          let patt = <:patt< $lid: ext_resource_name name'$ >> in
-         let expr = <:expr< $uid: "Mp_resource"$ . $lid: "close"$ $lid:_resource name'$ $str:name$ >> in
+         let expr = <:expr< Mp_resource.close $lid:_resource name'$ $str:name$ >> in
             patt, expr
       in
       let values = List.map bind_of_resource resources in
@@ -2199,7 +2199,7 @@ struct
       let thy = <:expr< $record_theory_expr loc$ $thy_rec$ >> in
       let refiner_patt = <:patt< $lid:refiner_id$ >> in
       let dformer_patt = <:patt< $lid:dformer_id$ >> in
-      let dformer_val = <:expr< $lid:local_dformer_id$ . $lid:"val"$ >> in
+      let dformer_val = <:expr< $lid:local_dformer_id$ . val >> in
       let label_expr = <:expr< $label_refiner_expr loc$ $lid:local_refiner_id$ $str:name$ >> in
           [implem_resources proc.imp_resources name;
           (<:str_item< value $rec:false$
