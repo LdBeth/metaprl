@@ -328,10 +328,10 @@ INCLUDES += $(CAMLLIB)
 #
 MLZFILES =
 MLPFILES =
-CLEAN = $`(RM) $`(file *.opt *.run *.o *.obj *.lib *.cm* *.a *~ .*~ .\#* *.ppo *.p4i *.p4o .version.* $`(addsuffix .ml, $(MLZFILES)) $`(addsuffix .mli, $(MLZFILES)) $`(addsuffix .ml, $(MLPFILES)))
+CLEAN = $`(RM) $`(file *.opt *.run *.o *.obj *.lib *.cm* *.a *~ .*~ .\#* *.ppo *.p4i *.p4o .version.* *.omc $`(addsuffix .ml, $(MLZFILES)) $`(addsuffix .mli, $(MLZFILES)) $`(addsuffix .ml, $(MLPFILES)))
 
 clean:
-    $(CLEAN) $(file bin/ocamldep$(EXE) lib/camlp4* bin/convert$(EXE) bin/proxyedit$(EXE) lib/*.cm* lib/*.ml* lib/*.txt lib/*.dat lib/*.a lib/macrop* bin/prlc* lib/*.html lib/*.js lib/*.css lib/*.gif lib/*.pem lib/metaprl-ssl.config)
+    $(CLEAN) $(file bin/ocamldep$(EXE) lib/camlp4* bin/convert$(EXE) bin/proxyedit$(EXE) lib/*.cm* lib/*.ml* lib/*.txt lib/*.dat lib/*.a lib/macrop* bin/prlc* lib/*.html lib/*.js lib/*.css lib/*.gif lib/*.pem lib/metaprl-ssl.config mk/*.omc)
 
 realclean: clean
     -$`(RM) $(file theories/*/*.prlb theories/*/*/*.prlb theories/*/*/*/*.prlb) # XXX: This is a temporary HACK
@@ -600,7 +600,7 @@ TheoryDocumentInstall(name, theories) =
 #
 # Also clean up the TeX files in the subdirectories
 #
-CLEAN += *.log *.aux *.idx *.ilg *.ind *.pdf *.ps *.dvi *.blg *.bbl *.out *.toc
+CLEAN += $`(file *.log *.aux *.idx *.ilg *.ind *.pdf *.ps *.dvi *.blg *.bbl *.out *.toc)
 
 ########################################################################
 # Subdirectories to build
