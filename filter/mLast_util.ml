@@ -278,12 +278,12 @@ and fold_class_type_field iter x ctf =
             fold_type iter x t
        | CtInh (loc, t) ->
             fold_type iter x t
-       | CtMth (loc, s, t) ->
-            fold_type iter x t
+(*       | CtMth (loc, s, t) ->
+            fold_type iter x t   *)
        | CtVal (loc, s, b1, b2, ot) ->
             fold_type_opt iter x ot
-       | CtVir (loc, s, t) ->
-            fold_type iter x t
+(*       | CtVir (loc, s, t) ->
+            fold_type iter x t *)
 
 and fold_class iter x
   ({ cdLoc = loc;
@@ -307,12 +307,12 @@ and fold_class_field iter x cf =
             fold_type iter x t
        | CfInh (loc, t, e, so) ->
             fold_expr iter (fold_type iter x t) e
-       | CfMth (loc, s, e) ->
-            fold_expr iter x e
+(*       | CfMth (loc, s, e) ->
+            fold_expr iter x e  *)
        | CfVal (loc, s, b1, b2, eo) ->
             fold_expr_opt iter x eo
-       | CfVir (loc, s, t) ->
-            fold_type iter x t
+(*       | CfVir (loc, s, t) ->
+            fold_type iter x t *)
 
 (*
  * Combined forms.
@@ -354,6 +354,10 @@ and fold_sslt iter x (s, sl, t) =
 
 (*
  * $Log$
+ * Revision 1.6  1998/06/06 02:31:54  nogin
+ * Commented out the parts of the code that are not compatible
+ * with the Camlp4 1.07.02+1
+ *
  * Revision 1.5  1998/06/01 13:53:21  jyh
  * Proving twice one is two.
  *

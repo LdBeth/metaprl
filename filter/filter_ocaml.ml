@@ -887,9 +887,11 @@ and dest_inh_ctf t =
       CtInh (loc, dest_type t)
 
 and dest_mth_ctf t =
+   raise (Failure "dest_mth_ctf: not implemented")
+(* BUG: fix this function.  CtMth takes four arguments.
    let loc = dest_loc t in
    let s, t = two_subterms t in
-      CtMth (loc, dest_string s, dest_type t)
+      CtMth (loc, dest_string s, dest_type t) *)
 
 and dest_val_ctf t =
    let loc = dest_loc t in
@@ -897,9 +899,11 @@ and dest_val_ctf t =
       CtVal (loc, dest_string s, dest_bool b1, dest_bool b2, dest_type_opt ot)
 
 and dest_vir_ctf t =
+   raise (Failure "dest_vir_ctf: not implemented")
+(* BUG: fix this function.  CtVir takes four arguments.
    let loc = dest_loc t in
    let s, t = two_subterms t in
-      CtVir (loc, dest_string s, dest_type t)
+      CtVir (loc, dest_string s, dest_type t) *)
 
 (*
  * Classes.
@@ -932,9 +936,11 @@ and dest_inh_cf t =
       CfInh (loc, dest_type t, dest_expr e, dest_string_opt so)
 
 and dest_mth_cf t =
+   raise (Failure "dest_mth_cf: not implemented")
+(* BUG: fix this function.  CtMth takes four arguments.
    let loc = dest_loc t in
    let s, e = two_subterms t in
-      CfMth (loc, dest_string s, dest_expr e)
+      CfMth (loc, dest_string s, dest_expr e) *)
 
 and dest_val_cf t =
    let loc = dest_loc t in
@@ -942,9 +948,11 @@ and dest_val_cf t =
       CfVal (loc, dest_string s, dest_bool b1, dest_bool b2, dest_expr_opt eo)
 
 and dest_vir_cf t =
+   raise (Failure "dest_vir_cf: not implemented")
+(* BUG: fix this function.  CtVir takes four arguments.
    let loc = dest_loc t in
    let s, t = two_subterms t in
-      CfVir (loc, dest_string s, dest_type t)
+      CfVir (loc, dest_string s, dest_type t)  *)
 
 (*
  * Utilities.
@@ -1585,12 +1593,12 @@ and mk_ctf comment = function
       mk_simple_term ctf_ctr_op (num_of_loc loc) [mk_simple_string s; mk_type comment t]
  | CtInh (loc, t) ->
       mk_simple_term ctf_inh_op (num_of_loc loc) [mk_type comment t]
- | CtMth (loc, s, t) ->
-      mk_simple_term ctf_mth_op (num_of_loc loc) [mk_simple_string s; mk_type comment t]
+(* | CtMth (loc, s, t) ->
+      mk_simple_term ctf_mth_op (num_of_loc loc) [mk_simple_string s; mk_type comment t] *)
  | CtVal (loc, s, b1, b2, ot) ->
       mk_simple_term ctf_val_op (num_of_loc loc) [mk_simple_string s; mk_bool b1; mk_bool b2; mk_type_opt comment ot]
- | CtVir (loc, s, t) ->
-      mk_simple_term ctf_vir_op (num_of_loc loc) [mk_simple_string s; mk_type comment t]
+(* | CtVir (loc, s, t) ->
+      mk_simple_term ctf_vir_op (num_of_loc loc) [mk_simple_string s; mk_type comment t] *)
 
 and mk_class comment
   { cdLoc = loc;
@@ -1631,15 +1639,15 @@ and mk_cf comment cf =
        | CfInh (loc, t, e, so) ->
             let loc = (num_of_loc loc) in
             loc, mk_simple_term cf_inh_op loc [mk_type comment t; mk_expr [] comment e; mk_string_opt expr_string_op so]
-       | CfMth (loc, s, e) ->
+(*       | CfMth (loc, s, e) ->
             let loc = (num_of_loc loc) in
-            loc, mk_simple_term cf_mth_op loc [mk_simple_string s; mk_expr [] comment e]
+            loc, mk_simple_term cf_mth_op loc [mk_simple_string s; mk_expr [] comment e] *)
        | CfVal (loc, s, b1, b2, eo) ->
             let loc = (num_of_loc loc) in
             loc, mk_simple_term cf_val_op loc [mk_simple_string s; mk_bool b1; mk_bool b2; mk_expr_opt [] comment eo]
-       | CfVir (loc, s, t) ->
+(*       | CfVir (loc, s, t) ->
             let loc = (num_of_loc loc) in
-            loc, mk_simple_term cf_vir_op loc [mk_simple_string s; mk_type comment t]
+            loc, mk_simple_term cf_vir_op loc [mk_simple_string s; mk_type comment t] *)
    in
       comment loc term
 
@@ -1809,6 +1817,10 @@ let term_of_class = mk_class
 
 (*
  * $Log$
+ * Revision 1.16  1998/06/06 02:31:53  nogin
+ * Commented out the parts of the code that are not compatible
+ * with the Camlp4 1.07.02+1
+ *
  * Revision 1.15  1998/06/01 13:53:00  jyh
  * Proving twice one is two.
  *

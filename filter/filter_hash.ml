@@ -265,12 +265,12 @@ and hash_class_field index = function
       hash_string (hash_type (hash index 0x6ebb5387) t) s
  | CfInh (_, t, e, s) ->
       hash_type (hash_expr (hash_string_opt (hash index 0x113fee9d) s) e) t
- | CfMth (_, s, e) ->
-      hash_string (hash_expr (hash index 0x4ab006da) e) s
+(* | CfMth (_, s, e) ->
+      hash_string (hash_expr (hash index 0x4ab006da) e) s *)
  | CfVal (_, s, b1, b2, eo) ->
       hash_string (hash_bool (hash_bool (hash_expr_opt (hash index 0x6d82d28f) eo) b2) b1) s
- | CfVir (_, s, t) ->
-      hash_string (hash_type (hash index 0x60a53407) t) s
+(* | CfVir (_, s, t) ->
+      hash_string (hash_type (hash index 0x60a53407) t) s *)
 
 and hash_class_type index
   { ctNam = name;
@@ -295,12 +295,12 @@ and hash_class_field_type index = function
       hash_string (hash_type (hash index 0x362be7cd) t) s
  | CtInh (_, t) ->
       hash_type (hash index 0x1779e662) t
- | CtMth (_, s, t) ->
-      hash_string (hash_type (hash index 0x028b2e41) t) s
+(* | CtMth (_, s, t) ->
+      hash_string (hash_type (hash index 0x028b2e41) t) s *)
  | CtVal (_, s, b1, b2, ot) ->
       hash_string (hash_bool (hash_bool (hash_type_opt (hash index 0x3be81fa) ot) b2) b1) s
- | CtVir (_, s, t) ->
-      hash_string (hash_type (hash index 0x2730112a) t) s
+(* | CtVir (_, s, t) ->
+      hash_string (hash_type (hash index 0x2730112a) t) s *)
 
 (*
  * Combined forms.
@@ -342,6 +342,10 @@ and hash_sslt index (s, sl, t) =
 
 (*
  * $Log$
+ * Revision 1.9  1998/06/06 02:31:52  nogin
+ * Commented out the parts of the code that are not compatible
+ * with the Camlp4 1.07.02+1
+ *
  * Revision 1.8  1998/06/01 13:52:56  jyh
  * Proving twice one is two.
  *

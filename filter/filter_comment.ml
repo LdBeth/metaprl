@@ -176,9 +176,9 @@ let fold_class_field locs field =
       match field with
          CfCtr (loc, _, _) -> loc
        | CfInh (loc, _, _, _) -> loc
-       | CfMth (loc, _, _) -> loc
+(*       | CfMth (loc, _, _) -> loc  *)
        | CfVal (loc, _, _, _, _) -> loc
-       | CfVir (loc, _, _) -> loc
+(*       | CfVir (loc, _, _) -> loc  *)
    in
       loc :: locs
 
@@ -190,9 +190,9 @@ let fold_class_type_field locs field =
       match field with
          CtCtr (loc, _, _) -> loc
        | CtInh (loc, _) -> loc
-       | CtMth (loc, _, _) -> loc
+(*       | CtMth (loc, _, _) -> loc *)
        | CtVal (loc, _, _, _, _) -> loc
-       | CtVir (loc, _, _) -> loc
+(*       | CtVir (loc, _, _) -> loc *)
    in
       loc :: locs
 
@@ -277,6 +277,10 @@ let get = Hashtbl.find
 
 (*
  * $Log$
+ * Revision 1.6  1998/06/06 02:31:52  nogin
+ * Commented out the parts of the code that are not compatible
+ * with the Camlp4 1.07.02+1
+ *
  * Revision 1.5  1998/06/01 13:52:53  jyh
  * Proving twice one is two.
  *
