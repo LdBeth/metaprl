@@ -110,9 +110,9 @@ let add key t =
          (NODE {contents = (key', ((_,sl) as left), ((_,sr) as right)) }, _ ) ->
             if Ord.compare key key' < 0 then
                (* left *)
-               (NODE (ref (key, left, (NODE (ref (key', empty, right)), succ sr))),1+sl+sr)
+               (NODE (ref (key, left, (NODE (ref (key', empty, right)), succ sr))),2+sl+sr)
             else
-               (NODE (ref (key, (NODE (ref (key', left, empty)), succ sl), right)),1+sl+sr)
+               (NODE (ref (key, (NODE (ref (key', left, empty)), succ sl), right)),2+sl+sr)
        | (LEAF,_) -> (NODE (ref (key, empty, empty)),1)
 
 let make key = (NODE (ref (key, empty, empty)),1)
