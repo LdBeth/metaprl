@@ -210,7 +210,7 @@ sig
       (term, meta_term, 'proof1, 'resource1, 'ctyp1, 'expr1, 'item1) module_info
 
    val parse_comments :
-      (int * int -> term -> term) ->
+      (MLast.loc -> term -> term) ->
       (term, meta_term, 'proof1, 'resource1, 'ctyp1, 'expr1, 'item1) module_info ->
       (term, meta_term, 'proof1, 'resource1, 'ctyp1, 'expr1, 'item1) module_info
 end
