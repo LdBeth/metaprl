@@ -946,7 +946,6 @@ sig
    val onClauseT : int -> (int -> tactic) -> tactic
    val onHypT : int -> (int -> tactic) -> tactic
    val onConclT : (int -> tactic) -> tactic
-   val pos_hypT : (int -> tactic) -> int -> tactic
 
    val onClausesT : int list -> (int -> tactic) -> tactic
    val onHypsT : int list -> (int -> tactic) -> tactic

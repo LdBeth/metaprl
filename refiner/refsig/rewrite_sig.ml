@@ -71,6 +71,7 @@ sig
    type rewrite_args_spec = string array * string array
 
    (* Sizes (+1) for sequent contexts, strings for new variable names, bound variables *)
+   (* Non-positive sizes mean counting the hyps to skip from the end *)
    type rewrite_args = int array * string array * StringSet.t
 
    (*

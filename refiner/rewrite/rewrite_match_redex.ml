@@ -510,10 +510,8 @@ struct
             all_bvars
        | (RWSeqContext (addr, j, l) | RWSeqFreeVarsContext (_, addr, j, l) as hyp') :: hyps' ->
             let count = if addr == -1 then len - i else 
-               let count = addrs.(addr) - 1 in
-               if (count < 0) then
-                  REF_RAISE(RefineError ("match_redex_sequent_hyps", StringError "hyp count argument must be positive"));
-                     count
+               let count = addrs.(addr) in
+                  if (count > 0 ) then count - 1 else len - i + count
             in
             IFDEF VERBOSE_EXN THEN
                if !debug_rewrite then
