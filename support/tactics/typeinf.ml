@@ -243,6 +243,13 @@ let infer_type_args p t =
    in
       [t]
 
+let infer_type_2args p t =
+   match get_with_args p with
+      [_] as l ->
+         infer_type p t :: l
+    | l ->
+         l
+
 let vnewname consts defs v =
    String_util.vnewname v (fun v -> StringSet.mem consts v || List.mem_assoc v defs)
 

@@ -77,6 +77,7 @@ resource (typeinf_resource_info, typeinf_func) typeinf
  *)
 val infer_type : tactic_arg -> term -> term
 val infer_type_args : tactic_arg -> term -> term list
+val infer_type_2args : tactic_arg -> term -> term list (* need two args; first can be inferred *)
 
 (* finalizes the type using all the eqautions collected,
  * returns the new eqs and opt_eqs *)

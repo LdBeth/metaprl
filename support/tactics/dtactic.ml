@@ -669,6 +669,8 @@ let resource auto += [ {
 
 let elim_typeinf t = ElimArgsOption (infer_type_args, Some t)
 let intro_typeinf t = IntroArgsOption (infer_type_args, Some t)
+let elim_typeinf_plusone t = ElimArgsOption (infer_type_2args, Some t)
+let intro_typeinf_plusone t = IntroArgsOption (infer_type_2args, Some t)
 let univ_arg_fun p _ = [get_univ_arg p]
 let elim_univ_arg = ElimArgsOption (univ_arg_fun, None)
 let intro_univ_arg = IntroArgsOption (univ_arg_fun, None)
