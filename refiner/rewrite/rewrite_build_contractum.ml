@@ -490,44 +490,27 @@ struct
    let build_contractum names bnames stack prog =
       build_contractum_term names bnames stack [||] prog
 
-   (*
-    * Compute names for the new variables in the contractum.
-    * The arguments are the variables we want to avoid.
-    *
-    * This is a pretty slow function but it is not used
-    * often.
-    *)
+   let rec check_bnames v = function
+      bnames :: tl ->
+         if List.mem v bnames then
+            true
+         else
+            check_bnames v tl
+    | [] ->
+         false
+
+   let check vars bnames v =
+      List.mem v vars or check_bnames v bnames
+
+   let var_name vars bnames v =
+      if check vars bnames v then
+         String_util.vnewname v (check vars bnames)
+      else
+         v
+
    let contracta_enames vars bnames enames =
-      let var_name vars bnames v =
-         let rec check_bnames v = function
-            bnames :: tl ->
-               if List.mem v bnames then
-                  true
-               else
-                  check_bnames v tl
-          | [] ->
-               false
-         in
-         let check vars bnames v =
-            List.mem v vars or check_bnames v bnames
-         in
-         let rec new_var vars bnames v i =
-            let v' = v ^ string_of_int i in
-#ifdef VERBOSE_EXN
-               if !debug_rewrite then
-                  eprintf "contracta_enames: try new name %s%t" v' eflush;
-#endif
-               if check vars bnames v' then
-                  new_var vars bnames v (i + 1)
-               else
-                  v'
-         in
-            if check vars bnames v then
-               new_var vars bnames v 1
-            else
-               v
-      in
-         Array.map (var_name vars bnames) enames
+      Array.map (var_name vars bnames) enames
+
 end
 
 (*

@@ -122,17 +122,8 @@ struct
    let bname i _ =
       StackName i
 
-   let rec bnames i = function
-      h::t -> (StackName i)::(bnames (i + 1) t)
-    | [] -> []
-
-   (* Add new bvars *)
    let new_bvar_item i v =
       (v, i)
-
-   let rec new_bvar_items i = function
-      h::t -> (h, i)::(new_bvar_items (i + 1) t)
-    | [] -> []
 
    (* Determine if a term is a bound variable *)
    let is_bound_var bvars v =
@@ -274,16 +265,27 @@ struct
          let stack', bterm' = compile_so_redex_bterm addrs stack bvars bterm in
          let stack'', bterms' = compile_so_redex_bterms addrs stack' bvars bterms in
             stack'', bterm'::bterms'
+   
+   (* This is not absolutely safe - we may accidentally "capture" an SO variable *)
+   and rename_repeated_vars i stack bnames bvars term = function
+      [] ->
+         stack,bnames,bvars,term
+    | v::vs ->
+         let v',term' =
+            if rstack_mem v stack then
+               let fvs = free_vars term in
+               let v' = String_util.vnewname v (fun v -> (rstack_mem v stack) || (List.mem v fvs)) in
+               v', subst term [mk_var_term v'] [v]
+            else v,term
+         in
+         rename_repeated_vars (succ i) (stack @ [FOVar v']) (bnames @ [bname i v']) (bvars @ [new_bvar_item i v']) term' vs
 
    and compile_so_redex_bterm addrs stack bvars bterm =
       let { bvars = vars; bterm = term } = dest_bterm bterm in
-      let stack' = stack @ (List.map (fun v -> FOVar v) vars) in
-      let l = List.length stack in
-      let bvars' = bvars @ (new_bvar_items l vars) in
-
+      let stack', bnames, bvars', term' = rename_repeated_vars (List.length stack) stack [] bvars term vars in
       (* Compile the term *)
-      let stack'', term' = compile_so_redex_term addrs stack' bvars' term in
-         stack'', { rw_bvars = List.length vars; rw_bnames = bnames l vars; rw_bterm = term' }
+      let stack'', term'' = compile_so_redex_term addrs stack' bvars' term' in
+         stack'', { rw_bvars = List.length vars; rw_bnames = bnames; rw_bterm = term'' }
 
    (*
     * The contexts are handled differently within sequents.
@@ -327,9 +329,11 @@ struct
                      stack, term :: hyps, goals
                else
                   (* No argument for this context *)
-                  ref_raise(RefineError ("is_context_term", RewriteMissingContextArg v))
+                  ref_raise(RefineError ("compile_so_redex_sequent_inner", RewriteMissingContextArg v))
 
           | Hypothesis (v, term) ->
+               if rstack_mem v stack then
+                  ref_raise(RefineError ("compile_so_redex_sequent_inner", StringStringError ("repeated variable", v)));
                let stack, term = compile_so_redex_term addrs stack bvars term in
                let l = List.length stack in
                let stack = stack @ [FOVar v] in
