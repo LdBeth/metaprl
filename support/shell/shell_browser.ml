@@ -43,6 +43,7 @@ open Http_simple
 open Http_server_type
 
 open Browser_copy
+open Browser_state
 open Browser_resource
 open Shell_sig
 open Package_info
@@ -184,14 +185,23 @@ struct
     | FrameURI    of pid * string
     | SessionURI  of pid
     | EditURI     of pid * string
-    | RedirectURI of pid * string
     | OutputURI   of pid
     | CloneURI    of pid
+    | WelcomeURI
 
    (*
     * Find the root job.
     *)
-   let main_pid = Lm_thread_shell.create_or_find "id1" Lm_thread_shell.VisibleJob
+   let main_pid = Lm_thread_shell.create_or_find browser_id 1 Lm_thread_shell.VisibleJob
+
+   let make_pid id =
+      Lm_thread_shell.make_pid browser_id (int_of_string id)
+
+   let dest_pid pid =
+      let s, i = Lm_thread_shell.dest_pid pid in
+         if s <> browser_id then
+            eprintf "Shell_browser.dest_pid: bad process identifier %s@." s;
+         i
 
    (*
     * Decode the URI.
@@ -200,16 +210,16 @@ struct
    let decode_uri state uri =
       match decode_uri uri with
          [] ->
-            RedirectURI (main_pid, "frameset")
+            WelcomeURI
        | ["session"; id]
        | ["session"; id; "frameset"] ->
-            (try FrameURI (Lm_thread_shell.pid_of_string id, "frameset") with
+            (try FrameURI (make_pid id, "frameset") with
                 Failure _
               | Not_found ->
                    eprintf "Bad session: %s@." id;
                    UnknownURI "/")
        | ["session"; id; "frameset"; "clone"] ->
-            (try CloneURI (Lm_thread_shell.pid_of_string id) with
+            (try CloneURI (make_pid id) with
                 Failure _
               | Not_found ->
                    eprintf "Bad session: %s@." id;
@@ -217,22 +227,22 @@ struct
        | ["session"; id1; "frameset"; "session"; id2] ->
             (try
                 (* Check id1, even if we don't use it *)
-                let _ = Lm_thread_shell.pid_of_string id1 in
-                   SessionURI (Lm_thread_shell.pid_of_string id2)
+                let _ = make_pid id1 in
+                   SessionURI (make_pid id2)
              with
                 Failure _
               | Not_found ->
                    eprintf "Bad sessions: %s -> %s@." id1 id2;
                    UnknownURI "/")
        | ["session"; id; "frame"; frame] ->
-            (try FrameURI (Lm_thread_shell.pid_of_string id, frame) with
+            (try FrameURI (make_pid id, frame) with
                 Failure _
               | Not_found ->
                    eprintf "Bad session: %s@." id;
                    UnknownURI "/")
        | "session" :: id :: "content" :: rest ->
             (try
-                let pid = Lm_thread_shell.pid_of_string id in
+                let pid = make_pid id in
                 let dirname = Lm_string_util.prepend "/" rest in
                 let is_dir = uri.[String.length uri - 1] = '/' in
                    ContentURI (pid, dirname, is_dir)
@@ -243,7 +253,7 @@ struct
                    UnknownURI (Lm_string_util.prepend "/" rest))
        | "session" :: id :: "edit" :: rest ->
             (try
-                let pid = Lm_thread_shell.pid_of_string id in
+                let pid = make_pid id in
                 let name = String.concat "/" rest in
                    EditURI (pid, name)
              with
@@ -252,7 +262,7 @@ struct
                    eprintf "Bad session: %s@." id;
                    UnknownURI (Lm_string_util.prepend "/" rest))
        | ["session"; id; "output"] ->
-            (try OutputURI (Lm_thread_shell.pid_of_string id) with
+            (try OutputURI (make_pid id) with
                 Failure _
               | Not_found ->
                    eprintf "Bad session: %s@." id;
@@ -478,20 +488,9 @@ struct
     * Lock the current session.
     *)
    let synchronize_pid pid f =
-      if !debug_lock then
-         eprintf "Locking session %s from thread %d@." (**)
-            (Lm_thread_shell.string_of_pid pid)
-            (Thread.id (Thread.self ()));
       Lm_thread_shell.with_pid pid (fun () ->
-            if !debug_lock then
-               eprintf "Now process %s@." (Lm_thread_shell.string_of_pid (Lm_thread_shell.get_pid ()));
-            let x =
-               State.write session_entry (fun session ->
-                     f session)
-            in
-               if !debug_lock then
-                  eprintf "Unlocking session_entry@.";
-               x) ()
+            State.write session_entry (fun session ->
+                  f session)) ()
 
    (*
     * The session isn't actually needed,
@@ -739,9 +738,9 @@ struct
             session_edit_version    = edit_version
           } = session
       in
+      let id = dest_pid id in
          Printf.bprintf buf "\tvar session = new Array();\n";
-         Printf.bprintf buf "\tsession['location'] = 'https://%s:%d/session/%s/content%s/';\n" (**)
-            host port (Lm_thread_shell.string_of_pid id) cwd;
+         Printf.bprintf buf "\tsession['location'] = 'https://%s:%d/session/%d/content%s/';\n" host port id cwd;
          Printf.bprintf buf "\tsession['menu']     = %d;\n" menu_version;
          Printf.bprintf buf "\tsession['content']  = %d;\n" content_version;
          Printf.bprintf buf "\tsession['message']  = %d;\n" message_version;
@@ -751,7 +750,7 @@ struct
          Printf.bprintf buf "\tsession['file']     = '%s';\n" edit;
          Printf.bprintf buf "\tsession['edit']     = %d;\n" edit_version;
          Printf.bprintf buf "\tsession['external'] = %b;\n" edit_flag;
-         Printf.bprintf buf "\tsession['id']       = '%s';\n" (Lm_thread_shell.string_of_pid id)
+         Printf.bprintf buf "\tsession['id']       = %d;\n" id
 
    (*
     * This is the default printer for each non-content pane.
@@ -820,7 +819,7 @@ struct
              | None ->
                   main_pid
          in
-            BrowserTable.add_string table session_sym (Lm_thread_shell.string_of_pid id)
+            BrowserTable.add_string table session_sym (string_of_int (dest_pid id))
       in
          match session with
             Some session ->
@@ -862,8 +861,7 @@ struct
           } = session
       in
       let uri =
-         sprintf "https://%s:%d/session/%s/%s" (**)
-            host port (Lm_thread_shell.string_of_pid id) (which_uri cwd)
+         sprintf "https://%s:%d/session/%d/%s" host port (dest_pid id) (which_uri cwd)
       in
          if !debug_http then
             eprintf "Redirecting to %s@." uri;
@@ -926,6 +924,14 @@ struct
 
    let print_file_page server state filename outx =
       print_metaprl_file_to_http outx filename
+
+   (*
+    * Welcome page.
+    *)
+   let print_welcome_page out state =
+      let table = table_of_state state in
+      let table = BrowserTable.add_string table title_sym "Welcome to MetaPRL" in
+         print_translated_file_to_http out table "welcome.html"
 
    (*
     * URL names.
@@ -1110,6 +1116,8 @@ struct
       match decode_uri state uri with
          InputURI filename ->
             print_raw_file_to_http outx filename
+       | WelcomeURI ->
+            print_welcome_page outx state
        | LoginURI key ->
             if key = state.state_response then
                print_access_granted_page outx state
@@ -1171,12 +1179,6 @@ struct
                      print_output_page state session outx
                   else
                      print_login_page outx state (Some session))
-       | RedirectURI (pid, uri) ->
-            synchronize_pid pid (fun session ->
-                  if is_valid_response state header then
-                     print_redisplay_page (fun _ -> uri) server state session outx
-                  else
-                     print_login_page outx state (Some session))
        | UnknownURI dirname ->
             print_error_page outx NotFoundCode
 
@@ -1201,7 +1203,7 @@ struct
        | OutputURI _
        | SessionURI _
        | EditURI _
-       | RedirectURI _ ->
+       | WelcomeURI ->
             print_error_page outx BadRequestCode;
             eprintf "Shell_simple_http: bad PUT command@."
 
@@ -1270,7 +1272,7 @@ struct
           | OutputURI _
           | SessionURI _
           | FileURI _
-          | RedirectURI _ ->
+          | WelcomeURI ->
                print_error_page outx BadRequestCode;
                eprintf "Shell_simple_http: bad POST command@."
 
@@ -1474,10 +1476,11 @@ struct
             }
          in
          let state = update_challenge state in
-            Top.init ();
-            Top.set_dfmode "html";
-            Top.refresh ();
-            State.write session_entry maybe_invalidate_directory;
+            Lm_thread_shell.with_pid main_pid (fun () ->
+                  Top.init ();
+                  Top.set_dfmode "html";
+                  Top.refresh ();
+                  State.write session_entry maybe_invalidate_directory) ();
             serve_http http_start http_connect state !browser_port;
             eprintf "Browser service finished@."
 end

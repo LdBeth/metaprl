@@ -643,12 +643,15 @@ struct
    module Main : ShellMainSig =
    struct
       let main () =
-         (*
-          * Note! the main function will call Top.init.
-          *)
-         ShellP4.main ();
-         Shell_current.flush ();
-         Top.backup_all ()
+         let pid =  Lm_thread_shell.create_or_find "shell" 1 Lm_thread_shell.VisibleJob in
+            Lm_thread_shell.set_pid pid;
+
+            (*
+             * Note! the main function will call Top.init.
+             *)
+            ShellP4.main ();
+            Shell_current.flush ();
+            Top.backup_all ()
    end
 end
 

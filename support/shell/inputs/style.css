@@ -374,3 +374,13 @@ DIV.menuitemhover {
     margin: 0px;
     border: 0px
 }
+
+#outputbody {
+   font-family: monospace
+}
+
+/*
+ * Welcome screen.
+ */
+#welcomebody {
+}

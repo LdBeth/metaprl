@@ -29,6 +29,7 @@ open Lm_rprintf
 
 open Line_buffer
 
+open Refiner.Refiner.RefineError
 open Dform
 
 open Shell_sig
@@ -38,6 +39,28 @@ open Session_io
 open Session_sig
 open Shell_internal_sig
 open Session_current
+
+(************************************************************************
+ * Process identifiers.
+ *)
+
+(*
+ * Format strings.
+ *)
+let string_of_pid pid =
+   let id, i = Lm_thread_shell.dest_pid pid in
+      sprintf "%s.%d" id i
+
+let pid_of_string s =
+   try
+      let index = String.rindex s '.' in
+      let id = String.sub s 0 index in
+      let i = int_of_string (String.sub s (succ index) (String.length s - index - 1)) in
+         id, i
+   with
+      Failure _
+    | Not_found ->
+         raise (RefineError ("Shell_current.pid_of_string", StringStringError ("illegal process identifier", s)))
 
 (************************************************************************
  * Formatting.
@@ -186,7 +209,8 @@ let () =
    (* Load all the previous sessions *)
    let sessions = read_sessions () in
       List.iter (fun session ->
-            let pid = Lm_thread_shell.create_or_find session.session_info_id Lm_thread_shell.VisibleJob in
+            let id, i = pid_of_string session.session_info_id in
+            let pid = Lm_thread_shell.create_or_find id i Lm_thread_shell.VisibleJob in
                Lm_thread_shell.with_pid pid (fun () ->
                      set_current_session session) ()) sessions
 
@@ -204,7 +228,7 @@ let flush () =
                session_messages    = messages
              } = session
          in
-         let pid = Lm_thread_shell.string_of_pid (Lm_thread_shell.get_pid ()) in
+         let pid = string_of_pid (Lm_thread_shell.get_pid ()) in
          let session =
             { session_info_id       = pid;
               session_info_dir      = path_of_dir dir;

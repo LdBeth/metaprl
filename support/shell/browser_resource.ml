@@ -33,6 +33,8 @@ open Refiner.Refiner.RefineError
 
 open Mp_resource
 
+open Browser_state
+
 (************************************************************************
  * Different kinds of elements to display.
  *
@@ -105,7 +107,19 @@ type browser_state =
      browser_sessions    : (pid * string) list
    }
 
-let string_of_pid = Lm_thread_shell.string_of_pid
+(************************************************************************
+ * Utilities.
+ *)
+
+let eflush out =
+   output_char out '\n';
+   flush out
+
+let int_of_pid debug pid =
+   let id, i = Lm_thread_shell.dest_pid pid in
+      if id <> browser_id then
+         eprintf "Browser_resource.int_of_pid: %s: non-browser id: %s.%d%t" debug id i eflush;
+      i
 
 (************************************************************************
  * Proxyedit names.
@@ -303,19 +317,23 @@ let add_sessions state info ids =
          menu_replace info "file" (fun menu ->
                let items =
                   List.fold_left (fun items (pid, cwd) ->
-                        let label = sprintf "Session %s (%s)" (string_of_pid pid) cwd in
-                        let label =
-                           if pid = id then
-                              "&#8227;" ^ label
+                        let pid_id, i = Lm_thread_shell.dest_pid pid in
+                           if pid_id = browser_id then
+                              let label = sprintf "Session %d (%s)" i cwd in
+                              let label =
+                                 if pid = id then
+                                    "&#8227;" ^ label
+                                 else
+                                    label
+                              in
+                              let item =
+                                 { command_label = label;
+                                   command_value = sprintf "Session(%d)" i
+                                 }
+                              in
+                                 item :: items
                            else
-                              label
-                        in
-                        let item =
-                           { command_label = label;
-                             command_value = sprintf "Session(%s)" (string_of_pid pid)
-                           }
-                        in
-                           item :: items) menu.menu_items ids
+                              items) menu.menu_items ids
                in
                   { menu with menu_items = items })
       with
@@ -350,8 +368,8 @@ let add_edit state info =
                         let item =
                            { command_label = "Open " ^ Filename.basename file;
                              command_value =
-                                sprintf "Edit(%b, '/session/%s/edit/%s')" (**)
-                                   flag (string_of_pid id) (proxyedit_of_filename file)
+                                sprintf "Edit(%b, '/session/%d/edit/%s')" (**)
+                                   flag (int_of_pid "add_edit" id) (proxyedit_of_filename file)
                            }
                         in
                            item :: items) items files

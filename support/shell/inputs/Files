@@ -3,6 +3,7 @@
 #
 INPUTS =\
 	access.html\
+	access.js\
 	start.html\
 	login.html\
 	login.js\
@@ -37,4 +38,5 @@ INPUTS =\
 	system.html\
 	system.js\
 	output.html\
-	reload.html
+	reload.html\
+	welcome.html

@@ -143,6 +143,24 @@ let touch shell =
  *)
 
 (*
+ * Format strings.
+ *)
+let string_of_pid pid =
+   let id, i = Lm_thread_shell.dest_pid pid in
+      sprintf "%s.%d" id i
+
+let pid_of_string s =
+   try
+      let index = String.rindex s '.' in
+      let id = String.sub s 0 index in
+      let i = int_of_string (String.sub s (succ index) (String.length s - index - 1)) in
+         Lm_thread_shell.make_pid id i
+   with
+      Failure _
+    | Not_found ->
+         raise (RefineError ("Shell_core.pid_of_string", StringStringError ("illegal process identifier", s)))
+
+(*
  * Show current process id.
  *)
 let pid shell =
@@ -157,7 +175,7 @@ let jobs shell =
       ignore (List.fold_left (fun first pid ->
                     if not first then
                        Buffer.add_string buf " ";
-                    Buffer.add_string buf (Lm_thread_shell.string_of_pid pid);
+                    Buffer.add_string buf (string_of_pid pid);
                     false) true pids);
       Buffer.contents buf
 
@@ -165,7 +183,7 @@ let jobs shell =
  * Switch jobs.
  *)
 let fg shell pid =
-   Lm_thread_shell.set_pid pid
+   Lm_thread_shell.set_pid (pid_of_string pid)
 
 (************************************************************************
  * Package management.
