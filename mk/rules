@@ -210,16 +210,16 @@ $(RAFILES): $(ROOT)/lib/%$(EXT_LIB): %$(EXT_LIB)
 	$(LN) ../$(DIR)/$*$(EXT_LIB) $(ROOT)/lib
 
 $(MP_CMIFILES) $(MP2_CMIFILES): %.cmi: %.mli $(ROOT)/mk/config
-	MPLIB=$(MPLIB) $(PRLC) $(OCAMLCFLAGS) -c $*.mli
+	MPLIB=$(MPLIB) LC_ALL=C $(PRLC) $(OCAMLCFLAGS) -c $*.mli
 
 $(MP_PPOFILES) $(MP2_PPOFILES): %.ppo: %.cmi %.ml $(ROOT)/mk/config
-	MPLIB=$(MPLIB) $(CAMLP4N) $(CAMLP4NFLAGS) $*.ml -o $*.ppo
+	MPLIB=$(MPLIB) LC_ALL=C $(CAMLP4N) $(CAMLP4NFLAGS) $*.ml -o $*.ppo
 
 $(MP_PRLAFILES) $(MP2_PRLAFILES): %.prla: %.cmoz $(ROOT)/mk/config
-	MPLIB=$(MPLIB) $(CONVERT) $(INCLUDE) -impl $*.cmoz
+	MPLIB=$(MPLIB) LC_ALL=C $(CONVERT) $(INCLUDE) -impl $*.cmoz
 
 $(MP_PRLBFILES) $(MP2_PRLBFILES): %.prlb: %.prla $(ROOT)/mk/config
-	MPLIB=$(MPLIB) $(CONVERT) $(INCLUDE) -raw -impl $*.prla
+	MPLIB=$(MPLIB) LC_ALL=C $(CONVERT) $(INCLUDE) -raw -impl $*.prla
 
 $(MP_CMOFILES) $(MP2_CMOFILES): %.cmo: %.ppo %.cmi $(ROOT)/mk/config
 	$(OCAMLC) $(OCAMLCFLAGS) -c -impl $*.ppo
@@ -237,10 +237,10 @@ $(REG_CMXFILES): %.cmx: %.ml %.cmi $(ROOT)/mk/config
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -c $*.ml
 
 %.p4i: %.mli $(ROOT)/mk/config
-	MPLIB=$(MPLIB) $(PRLC) $(INCLUDE) -E $*.mli > $*.p4i
+	MPLIB=$(MPLIB) LC_ALL=C $(PRLC) $(INCLUDE) -E $*.mli > $*.p4i
 
 %.p4: %.ml $(ROOT)/mk/config
-	MPLIB=$(MPLIB) $(PRLC) $(INCLUDE) -E $*.ml > $*.p4
+	MPLIB=$(MPLIB) LC_ALL=C $(PRLC) $(INCLUDE) -E $*.ml > $*.p4
 
 %.ml: %.mll $(ROOT)/mk/config
 	$(RM) $@

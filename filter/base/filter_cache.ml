@@ -617,7 +617,7 @@ struct
       in
 
       (* Now write the term *)
-      let newname = filename ^ ".bak" in
+      let newname = filename ^ ".new" in
       let outx = open_out newname in
       let magic = List.hd magics in
       let major, minor, rev = AsciiMagic.version_of_magic magic in

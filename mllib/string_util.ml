@@ -126,7 +126,7 @@ let strchr s c =
          if s.[i] = c then
             i
          else
-            aux (i + 1)
+            aux (succ i)
       else
          raise Not_found
    in
@@ -138,7 +138,7 @@ let strchr s c =
 let for_all f s =
    let len = String.length s in
    let rec check i =
-      (i = len) or (f s.[i] & check (i + 1))
+      (i = len) or (f s.[i] & check (succ i))
    in
       check 0
 
@@ -148,7 +148,7 @@ let for_all f s =
 let mem c s =
    let len = String.length s in
    let rec loop i =
-      (i != len) & (c = s.[i] or loop (i + 1))
+      (i != len) & (c = s.[i] or loop (succ i))
    in
       loop 0
 
@@ -165,7 +165,7 @@ let index_set s set =
             if mem c set then
                i
             else
-               loop (i + 1)
+               loop (succ i)
    in
       loop 0
 
@@ -195,11 +195,11 @@ let split c s =
             [String.sub s i (j - i)]
       else if s.[j] = c then
          if i = j then
-            loop (j + 1) (j + 1)
+            loop (succ j) (succ j)
          else
-            (String.sub s i (j - i)) :: (loop (j + 1) (j + 1))
+            (String.sub s i (j - i)) :: (loop (succ j) (succ j))
       else
-         loop i (j + 1)
+         loop i (succ j)
    in
       loop 0 0
 
@@ -216,13 +216,17 @@ let split_set c s =
             [String.sub s i (j - i)]
       else if mem s.[j] c then
          if i = j then
-            loop (j + 1) (j + 1)
+            loop (succ j) (succ j)
          else
-            (String.sub s i (j - i)) :: (loop (j + 1) (j + 1))
+            (String.sub s i (j - i)) :: (loop (succ j) (succ j))
       else
-         loop i (j + 1)
+         loop i (succ j)
    in
       loop 0 0
+
+let code0 = Char.code '0'
+let codea = Char.code 'a'
+let codeA = Char.code 'A'
 
 (*
  * Turn a string into an argument list.
@@ -236,11 +240,11 @@ let parse_args line =
       else
          match line.[i] with
             ' ' | '\t' | '\n' | '\r' ->
-               skip (i + 1)
+               skip (succ i)
           | '"' ->
-               string 0 (i + 1)
+               string 0 (succ i)
           | _ ->
-               collect i (i + 1)
+               collect i (succ i)
    and collect i j =
       if j = len then
          [String.sub line i (j - i)]
@@ -248,38 +252,45 @@ let parse_args line =
          match line.[j] with
             ' ' | '\t' | '\n' | '\r' ->
                let s = String.sub line i (j - i) in
-                  s :: (skip (j + 1))
+                  s :: (skip (succ j))
           | _ ->
-               collect i (j + 1)
+               collect i (succ j)
    and string j k =
       if k = len then
-         [String.sub buf 0 j]
+         raise (Invalid_argument ("String_util.parse_args: " ^ line))
+         (* [String.sub buf 0 j] *)
       else
          let c = line.[k] in
             if c = '"' then
                let s = String.sub buf 0 j in
-                  s :: (skip (k + 1))
+                  s :: (skip (succ k))
             else if c = '\\' then
-               escape j (k + 1)
+               escape j (succ k)
             else
                begin
                   buf.[j] <- c;
-                  string (j + 1) (k + 1)
+                  string (succ j) (succ k)
                end
    and escape j k =
-       if k = len then
-           [String.sub buf 0 j]
-       else
-           let c =
-              match line.[k] with
-                 't' -> '\t'
-               | 'n' -> '\n'
-               | 'r' -> '\r'
-               | '\\' -> '\\'
-               | c -> c
-           in
-              buf.[j] <- c;
-              string (j + 1) (k + 1)
+      if k = len then
+         raise (Invalid_argument ("String_util.parse_args: " ^ line))
+         (* [String.sub buf 0 j] *)
+      else
+         let c,k =
+            match line.[k] with
+               't' -> '\t', succ k
+             | 'n' -> '\n', succ k
+             | 'r' -> '\r', succ k
+             | '\\' -> '\\', succ k
+             | ('0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9') as c ->
+                  Char.chr (100 * (Char.code c) +
+                            10 * (Char.code line.[succ k]) +
+                            (Char.code line.[k+2]) - 111 * code0),
+                  k+3
+             | c -> c, succ k
+         in
+            buf.[j] <- c;
+            string (succ j) k
    in
    let _ =
       if !debug_string then
@@ -307,7 +318,7 @@ let hexify s =
    let len = String.length s in
    let rec hexify i =
       if i < len then
-         (sprintf "%02x" (Char.code s.[i])) ^ (hexify (i + 1))
+         (sprintf "%02x" (Char.code s.[i])) ^ (hexify (succ i))
       else
          ""
    in
@@ -316,11 +327,11 @@ let hexify s =
 let unhex i =
    match i with
       '0' .. '9' ->
-         (Char.code i) - (Char.code '0')
+         (Char.code i) - code0
     | 'a' .. 'f' ->
-         (Char.code i) - (Char.code 'a') + 10
+         (Char.code i) - codea + 10
     | 'A' .. 'F' ->
-         (Char.code i) - (Char.code 'A') + 10
+         (Char.code i) - codeA + 10
     | _ ->
          raise (Failure "unhexify")
 
@@ -331,7 +342,7 @@ let unhexify s =
          let rec unhexify i j =
             if j < len then
                begin
-                  buf.[i] <- Char.chr ((unhex s.[j]) * 16 + (unhex s.[j + 1]));
+                  buf.[i] <- Char.chr ((unhex s.[j]) * 16 + (unhex s.[succ j]));
                   unhexify (i + 1) (j + 2)
                end
          in
@@ -360,7 +371,7 @@ let rec is_simple l i s =
       true
    else
       match String.unsafe_get s i with
-         '"' | '\\' | '\n' | '\t' | ' ' -> false
+         '"' | '\\' | '\r' | '\n' | '\t' | ' ' -> false
        | c ->
          is_printable c && is_simple l (succ i) s
 
