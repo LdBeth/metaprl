@@ -1721,11 +1721,24 @@ struct
       let opname = mk_opname name build.build_opname in
       let pre_rewrite = { pre_rw_redex = redex; pre_rw_contractum = contractum } in
       let rw sent t =
+         match
          IFDEF VERBOSE_EXN THEN
             if !debug_rewrites then
                eprintf "Refiner: applying simple rewrite %s to %a%t" name print_term t eflush;
-         ENDIF;
-         match apply_rewrite rw empty_args t [] with
+            if !debug_refine then
+               try
+                  apply_rewrite rw empty_args t []
+               with RefineError( loc, err ) ->
+                  raise (RefineError( loc,
+                        PairError(
+                           "Refiner: Rewrite " ^ name ^ " failed on term\n\t", TermError(t),
+                           "reason", err )))
+            else
+               apply_rewrite rw empty_args t []
+         ELSE
+            apply_rewrite rw empty_args t []
+         ENDIF
+         with
             [t'] ->
                sent.sent_rewrite opname pre_rewrite;
                t', RewriteHere (t, opname, t')
