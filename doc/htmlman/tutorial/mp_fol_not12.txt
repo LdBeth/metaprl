@@ -13,12 +13,12 @@ Implementation:
     prec prec_not
     dform not_df : prec[prec_not] :: parens ::  Fol_not!not{'A} = їA
      rewrite unfold_not (їA) ЯЭЭЮ (A ќћ False)
-    * axiom not_type H : [ext] H џ A type ЭЭЮ [ext] H џ (їA) type
-    * axiom not_intro H x :
+    * rule not_type H : [ext] H џ A type ЭЭЮ [ext] H џ (їA) type
+    * rule not_intro H x :
         [ext] H џ A type ЭЭЮ
         [ext] H; x: A џ False ЭЭЮ
         [ext] H џ їA
-    * axiom not_elim H J :
+    * rule not_elim H J :
         [ext] H; x: їA; J[x] џ A ЭЭЮ
         [ext] H; x: їA; J[x] џ C[x]
     let d_not_type = ...

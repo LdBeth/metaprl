@@ -50,8 +50,8 @@ true statements of a logic. An axiom is usually just a term that
 represents a valid proposition. For instance:</P>
 
 <BLOCKQUOTE>
-  <PRE><B>axiom</B> true_ax : true
-<B>axiom</B> identity_ax : int -&gt; int</PRE>
+  <PRE><B>rule</B> true_ax : true
+<B>rule</B> identity_ax : int -&gt; int</PRE>
 </BLOCKQUOTE>
 
 <P>The second axiom states that the <I>proposition</I> <TT>int
@@ -66,7 +66,7 @@ axioms. Most logical statements have the form of a rule. An example
 in a sequent calculus is the rule for implication introduction:</P>
 
 <BLOCKQUOTE>
-  <PRE><B>axiom</B> imp_intro 'H 'x :
+  <PRE><B>rule</B> imp_intro 'H 'x :
     sequent { 'H; x: 'A &gt;- 'B } --&gt;
     sequent { 'H &gt;- 'A =&gt; 'B }</PRE>
 </BLOCKQUOTE>

@@ -1,0 +1,52 @@
+DOCUMENTATION:
+
+1) Documentation suggests to use mp and x.mp
+while mpopt and mptop should be used instead
+
+2) Make system is not documented
+
+EDITOR
+
+1) Shell.cd function tries to expand proofs, it should not
+
+2) Currently there is no way to change the statement of a theorem once
+you started proving it. We ned to be able to do it without 
+erasing the proof. 
+
+3) 
+# load "itt_int";;
+() : unit
+# cd "itt_int";;
+/itt_int : string
+# ls ();;
+uncaught exception: Invalid_argument("Term.shape_of_term")
+
+REFINER
+
+1) There is no clear semantics for the hidden hypothesis. As a result,
+many rules deal with hidden hypothesis incorrectly. Currently, one
+can prove 0=1 using those unsound rules.
+
+2) We do not need both Level variables and Meta-Level variables. Once we
+figure out how to join them together, we no longer need @ for meta in parameters.
+
+3) Repeated bound variables (when the same variable is bound more than once) is
+handled incorrectly. For example, thinning rule does not check if the variable
+is bound only once (which may be used to prove incorrect results).
+
+4) Substitution on sequents seems broken, does not always correctly renames
+variables.
+
+PARSER
+
+1) Rules should be added to toploop. 
+
+2) When rule is added, the appropriate tactic should be added automatically
+(assuming sequent calculus).
+
+3) Some times parser requires too many brackets.
+
+4) The rules without parameters should not require : :, a single colon
+should be sufficient (it means that we should remove an alternative rule
+syntax of
+intaractive name: A1 A2 ... : An)

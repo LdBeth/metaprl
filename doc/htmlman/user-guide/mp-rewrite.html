@@ -61,21 +61,21 @@ and also the argument of the application.</P>
 <H4>Implementations</H4>
 
 <P>Rewrites are <I>implemented</I> with two forms: rewrites that
-are primitive to a logic use the <TT>primrw</TT> form:</P>
+are primitive to a logic use the <TT>prim_rw</TT> form:</P>
 
 <BLOCKQUOTE>
-  <P><B><TT>primrw </TT></B><I>name </I><TT>[</TT><I>params</I><TT>]
+  <P><B><TT>prim_rw </TT></B><I>name </I><TT>[</TT><I>params</I><TT>]
   : [</TT><I>conditiona</I><TT>] </TT><I>redex<TT> </TT></I><TT>&lt;--&gt;
   </TT><I>contractum</I></P>
 </BLOCKQUOTE>
 
 <P>If a declaration is given for the rewrite, the form in the
-<TT>primrw</TT> must be the same (with possible renamining in
+<TT>prim_rw</TT> must be the same (with possible renamining in
 the bound variables).</P>
 
 <P>Rewrites that are derived from previous rules in the logic
 are implemented with the <TT>interactive_rw</TT> form. The definition
-has the same form as the <TT>primrw</TT>:</P>
+has the same form as the <TT>prim_rw</TT>:</P>
 
 <BLOCKQUOTE>
   <P><B><TT>interactive_rw</TT></B><TT> </TT><I>name</I><TT> [</TT><I>params</I><TT>]

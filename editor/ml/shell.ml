@@ -249,8 +249,8 @@ struct
                Shell_rewrite.view_crw pack crw
           | Axiom ax ->
                Shell_rule.view_axiom pack ax
-          | Rule rule ->
-               Shell_rule.view_rule pack rule
+          | Rule rl ->
+               Shell_rule.view_rule pack rl
           | Opname _ ->
                eprintf "Editing opname '/%s/%s' not supported%t" modname name eflush;
                raise (Failure "view")
@@ -740,8 +740,8 @@ struct
                      expand (Shell_rewrite.view_crw pack crw)
                 | Axiom ax ->
                      expand (Shell_rule.view_axiom pack ax)
-                | Rule rule ->
-                     expand (Shell_rule.view_rule pack rule)
+                | Rule rl ->
+                     expand (Shell_rule.view_rule pack rl)
                 | _ ->
                      ()
             in

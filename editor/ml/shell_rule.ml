@@ -344,7 +344,7 @@ let edit pack sentinal arg name obj =
       }
 
 let create pack name =
-   let rule =
+   let rl =
       { Filter_type.axiom_name = name;
         Filter_type.axiom_stmt = unit_term;
         Filter_type.axiom_proof = Incomplete;
@@ -362,7 +362,7 @@ let create pack name =
    in
    let sentinal = Package.sentinal pack in
    let arg = Package.argument pack in
-      (* Package.set pack (Filter_summary.Axiom rule); *)
+      (* Package.set pack (Filter_summary.Axiom rl); *)
       edit pack sentinal arg name obj
 
 let ped_of_proof pack = function

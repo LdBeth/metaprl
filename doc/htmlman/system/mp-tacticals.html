@@ -11,7 +11,7 @@
 and-elimination rule defines a tactic called <TT>and_elim</TT>:</P>
 
 <BLOCKQUOTE>
-  <PRE><B>axiom</B> and_elim 'H 'J 'y 'z :
+  <PRE><B>rule</B> and_elim 'H 'J 'y 'z :
    <B>sequent</B> { 'H; y: 'A; z: 'B; 'J[('y, 'z)] &gt;- C[('y, 'z)] } --&gt;
    <B>sequent</B> { 'H; x: 'A &amp; 'B; 'J['x] &gt;- 'C['x] }</PRE>
 </BLOCKQUOTE>

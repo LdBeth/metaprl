@@ -3366,7 +3366,7 @@ TP
 0 0 Tl
 0 Tc
 0 Tw
-(axiom imp_intro :) Tx 1 50 Tk
+(rule imp_intro :) Tx 1 50 Tk
 (   ) Tx 1 0 Tk
 /_LucidaBrightMathItalic 18 18 -5.8535 Tf
 (!) Tx 1 0 Tk

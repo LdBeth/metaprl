@@ -36,11 +36,11 @@ interface, but for clarity, many of the logics in MetaPRL,
 including <TT>Itt_logic</TT>, include the inference rule declarations
 in their signatures.</P>
 
-<P>Axioms and inference rules are declared with the <TT>axiom</TT>
+<P>Axioms and inference rules are declared with the <TT>rule</TT>
 form. The general syntax is the following:</P>
 
 <BLOCKQUOTE>
-  <P><B><TT>axiom</TT></B><TT> </TT><I>name </I><TT>[</TT><I>params</I><TT>]
+  <P><B><TT>rule</TT></B><TT> </TT><I>name </I><TT>[</TT><I>params</I><TT>]
   : </TT><I>inference</I></P>
 </BLOCKQUOTE>
 
@@ -50,7 +50,7 @@ arguments, and <I>new variable</I> names. The <TT>Itt_struct</TT>
 module contains a basic axiom:</P>
 
 <BLOCKQUOTE>
-  <PRE><B>axiom</B> hypothesis 'H 'J 'x :
+  <PRE><B>rule</B> hypothesis 'H 'J 'x :
    <B>sequent</B> ['ext] { 'H; x: 'A; 'J['x] &gt;- 'A }</PRE>
 </BLOCKQUOTE>
 
@@ -93,15 +93,15 @@ in the <TT>Itt</TT> logic implies two assumptions: that <TT>'A</TT>
 is a type, and that <TT>'A</TT> is true. If <TT>'A</TT> is not
 a type, the assumption is false, so the sequent is trivially true.</P>
 
-<P>Inference rules are also defined using the <TT>axiom</TT> directive.
-An inference is a <I>conditional</I> axiom; it states assumptions
+<P>Inference rules are also defined using the <TT>rule</TT> directive.
+An inference is a <I>conditional</I> rule; it states assumptions
 that must be proved in order for the axiom to hold. Most introduction
 and elimination rules have this form. For example, in the <TT>Itt_logic</TT>
 module, the introduction rule for logical conjunction is stated
 as follows:</P>
 
 <BLOCKQUOTE>
-  <PRE><B>axiom</B> and_intro 'H :
+  <PRE><B>rule</B> and_intro 'H :
    sequent ['ext] { 'H &gt;- 'a1 } --&gt;
    sequent ['ext] { 'H &gt;- 'a2 } --&gt;
    sequent ['ext] { 'H &gt;- &quot;and&quot;{'a1; 'a2} }</PRE>
@@ -165,13 +165,13 @@ following form:</P>
   : </TT><I>inference</I></P>
 </BLOCKQUOTE>
 
-<P>The interactive form has exactly the same form as an <TT>axiom</TT>,
+<P>The interactive form has exactly the same form as an <TT>rule</TT>,
 and it introduces a proof obligation. The proof is constructed
 with the <A HREF="mp-editor.html">proof editor</A>.</P>
 
 <H4>Tactics</H4>
 
-<P>When an <TT>axiom</TT> is declared, the system creates a <I>tactic</I>
+<P>When an <TT>rule</TT> is declared, the system creates a <I>tactic</I>
 that can be used to apply the rule. Tactics are the general reasoning
 mechanism used for interactive proving. Tactics are ML programs,
 and they can be combined with the <I>tacticals</I> in the <A HREF="../system/mp-tacticals.html">system description</A> to provide

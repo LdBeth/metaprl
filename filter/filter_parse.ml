@@ -994,7 +994,7 @@ EXTEND
         | "rewrite"; name = LIDENT; args = optarglist; ":"; t = mterm ->
           SigFilter.declare_rewrite (SigFilter.get_proc loc) loc name args t () [];
           empty_sig_item loc
-        | "axiom"; name = LIDENT; args = optarglist; ":"; t = mterm ->
+        | "rule"; name = LIDENT; args = optarglist; ":"; t = mterm ->
           SigFilter.declare_axiom (SigFilter.get_proc loc) loc name args t () [];
           empty_sig_item loc
         | "mlterm"; t = quote_term ->
@@ -1037,13 +1037,13 @@ EXTEND
         | "declare"; t = quote_term ->
           let _ = StrFilter.declare_term (StrFilter.get_proc loc) loc t in
           empty_str_item loc
-        | "primrw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
+        | "prim_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
           StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Primitive xnil_term) res;
           empty_str_item loc
         | "interactive_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm ->
           StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t Incomplete res;
           empty_str_item loc
-        | "rwthm"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm; "="; body = expr ->
+        | "thm_rw"; name = LIDENT; res = optresources; args = optarglist; ":"; t = mterm; "="; body = expr ->
           StrFilter.declare_rewrite (StrFilter.get_proc loc) loc name args t (Derived body) res;
           empty_str_item loc
         | "prim"; name = LIDENT; res = optresources; params = optarglist; ":"; (**)
