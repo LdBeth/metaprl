@@ -91,9 +91,10 @@ struct
 
    let pp_print_action = pp_print_symbol
 
-   module ActionSet = SymbolSet;;
-
    let choose = max
+
+   let hash = Hashtbl.hash
+   let compare = Lm_symbol.compare
 end;;
 
 module ActionTable = SymbolTable;;
@@ -127,7 +128,19 @@ struct
 
    let pp_print_action = pp_print_bool
 
-   module ActionSet = BoolSet;;
+   let hash b =
+      if b then
+         0x2cf1124
+      else
+         0x5ffa1124
+
+   let compare a b =
+      if a = b then
+         0
+      else if a then
+         1
+      else
+         -1
 
    let choose = max
 end;;
@@ -149,17 +162,15 @@ struct
    let pp_print_symbol buf op =
       pp_print_string buf (to_string op)
 
-   module SymbolCompare =
-   struct
-      type t = symbol
-      let compare = Pervasives.compare
-   end;;
+   let hash_symbol = Hashtbl.hash
+   let compare_symbol = shape_compare
 
-   module SymbolSet = Lm_set.LmMake (SymbolCompare);;
-   module SymbolTable = Lm_map.LmMake (SymbolCompare);;
-   module SymbolMTable = Lm_map.LmMakeList (SymbolCompare);;
+   type action = Action.action
 
-   include Action
+   let hash_action = Action.hash
+   let compare_action = Action.compare
+
+   let pp_print_action = Action.pp_print_action
 end;;
 
 (*
