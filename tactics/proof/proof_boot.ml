@@ -1462,74 +1462,77 @@ struct
     * Compositions also get squashed, but we take care to preserve
     * any paths that lead to rule boxes.
     *)
-   let rec squash_ext node =
-      match node with
-         Goal _
-       | Identity _
-       | Unjustified _ ->
-            false, node
-       | Extract (goal, subgoals, _) ->
-            false, Unjustified (goal, subgoals)
-       | Wrapped (label, node) ->
-            let (flag, node') as res = squash_ext node in
-               if flag then flag, Wrapped (label, node')
-               else res
-       | Compose { comp_goal = goal;
-                   comp_subgoals = subgoals;
-                   comp_extras = extras
-         } ->
-            let flag, goal' = squash_ext goal in
-            let flag, subgoals' = squash_subgoals_ext flag subgoals in
-            let flag, extras' = squash_subgoals_ext flag extras in
-            let leaves = leaves_ext node in
-            let flag = flag || extras' <> [] in
-            let node' =
-               if flag then
-                  Compose { comp_status = LazyStatusDelayed;
-                            comp_goal = goal';
-                            comp_subgoals = subgoals';
-                            comp_extras = extras';
-                            comp_leaves = LazyLeaves leaves
-                  }
-               else
-                  let leaves = leaves_ext node in
-                     Unjustified (goal_ext goal', leaves)
-            in
-               flag, node'
-       | RuleBox { rule_string = text;
+   let rec squash_check_ext = function
+      Goal _
+    | Identity _
+    | Unjustified _
+    | Extract _ ->
+         ()
+    | Wrapped (_, node)
+    | Locked node ->
+         squash_check_ext node
+    | Compose ci ->
+         squash_check_ext ci.comp_goal;
+         List.iter squash_check_ext ci.comp_subgoals;
+         List.iter squash_check_ext ci.comp_extras
+    | Pending f ->
+         squash_check_ext (f ())
+    | RuleBox _ ->
+         raise (Invalid_argument "Proof_boot.squash_ext: the proof is ill-formed: a RuleBox proof contains a RuleBox inside")
+
+   let rec squash_kill_ext = function
+      (Goal _| Identity _ | Unjustified _) as node ->
+         node
+    | Extract (goal, subgoals, _) ->
+         Unjustified (goal, subgoals)
+    | Pending f ->
+         squash_kill_ext (f ())
+    | Locked node ->
+         squash_kill_ext node
+    | node ->
+         squash_check_ext node;
+         Unjustified (goal_ext node, leaves_ext node)
+
+   let rec squash_ext = function
+      (Goal _ | Identity _ | Unjustified _ | Extract _) as node ->
+         squash_kill_ext node
+    | Wrapped (label, node) ->
+         Wrapped (label, squash_ext node)
+    | Compose { comp_goal = goal;
+                comp_subgoals = subgoals;
+                comp_extras = extras
+      } as node ->
+         Compose { comp_status = LazyStatusDelayed;
+                   comp_goal = squash_ext goal;
+                   comp_subgoals = List.map squash_ext subgoals;
+                   comp_extras = List.map squash_ext extras;
+                   comp_leaves = LazyLeaves (leaves_ext node)
+         }
+    | RuleBox { rule_string = text;
+                rule_expr = expr;
+                rule_tactic = tac;
+                rule_extract = goal;
+                rule_subgoals = subgoals;
+                rule_extras = extras;
+                rule_leaves = leaves
+      } ->
+         RuleBox { rule_status = LazyStatusDelayed;
+                   rule_string = text;
                    rule_expr = expr;
                    rule_tactic = tac;
-                   rule_extract = goal;
-                   rule_subgoals = subgoals;
-                   rule_extras = extras;
+                   rule_extract_normalized = false;
+                   rule_extract = squash_kill_ext goal;
+                   rule_subgoals = List.map squash_ext subgoals;
+                   rule_extras = List.map squash_ext extras;
                    rule_leaves = leaves
-         } ->
-            true, RuleBox { rule_status = LazyStatusDelayed;
-                            rule_string = text;
-                            rule_expr = expr;
-                            rule_tactic = tac;
-                            rule_extract_normalized = false;
-                            rule_extract = snd (squash_ext goal);
-                            rule_subgoals = List.map (fun goal -> snd (squash_ext goal)) subgoals;
-                            rule_extras = List.map (fun goal -> snd (squash_ext goal)) extras;
-                            rule_leaves = leaves
-            }
-       | Pending f ->
-            squash_ext (f ())
-       | Locked node ->
-            let flag, node = squash_ext node in
-               flag, Locked node
-
-   and squash_subgoals_ext flag = function
-      goal :: subgoals ->
-         let flag', goal' = squash_ext goal in
-         let flag'', subgoals' = squash_subgoals_ext (flag || flag') subgoals in
-            flag'', goal' :: subgoals'
-    | [] ->
-         flag, []
+         }
+    | Pending f ->
+         squash_ext (f ())
+    | Locked node ->
+         Locked (squash_ext node)
 
    let squash postf pf addr =
-      fold_proof postf pf addr (snd (squash_ext (index pf addr)))
+      fold_proof postf pf addr (squash_ext (index pf addr))
 
    (************************************************************************
     * PROOF CHECKING                                                       *
@@ -1744,7 +1747,7 @@ struct
          (* "Update" the proof by forcing computation of status and leaf nodes. *)
          ignore (status_ext proof);
          ignore (leaves_ext proof);
-         convert (if squash then snd (squash_ext proof) else proof)
+         convert (if squash then squash_ext proof else proof)
 
    (*
     * Convert from an io proof.
