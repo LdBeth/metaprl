@@ -383,7 +383,6 @@ struct
          begin
              match stack.(i) with
                 StackNumber j -> Number j
-              | StackString s -> Number (Mp_num.num_of_string s)
               | StackMString s -> MNumber s
               | t -> REF_RAISE(build_con_exn)
          end
@@ -391,7 +390,6 @@ struct
          begin
              match stack.(i) with
                 StackString s -> String s
-              | StackNumber j -> String (Mp_num.string_of_num j)
               | StackMString s -> MString s
               | t -> REF_RAISE(build_con_exn)
          end
@@ -399,7 +397,6 @@ struct
          begin
              match stack.(i) with
                 StackString s -> Token s
-              | StackNumber j -> String (Mp_num.string_of_num j)
               | StackMString s -> MToken s
               | t -> REF_RAISE(build_con_exn)
          end
@@ -416,7 +413,6 @@ struct
          begin
              match stack.(i) with
                 StackString v -> Var v
-              | StackNumber j -> Var (Mp_num.string_of_num j)
               | StackMString s -> MVar s
               | t -> REF_RAISE(build_con_exn)
          end

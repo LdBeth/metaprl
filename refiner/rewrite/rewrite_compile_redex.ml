@@ -46,6 +46,7 @@ open Term_base_sig
 open Term_man_sig
 open Term_addr_sig
 open Term_subst_sig
+open Term_shape_sig
 open Refine_error_sig
 
 open Rewrite_type_sig
@@ -225,16 +226,19 @@ struct
          let stack'', params' = compile_so_redex_params stack' params in
             stack'', param'::params'
 
-   and meta_param' stack pvar v =
-      if rstack_p_mem v stack then
+   and meta_param' stack ptype v =
+      if rstack_p_mem ptype v stack then
          (* This param is not free, do a match *)
-         stack, rstack_p_index v stack
-      else
+         stack, rstack_p_index ptype v stack
+      else begin
+         if rstack_mem v stack then
+            REF_RAISE(RefineError("meta_param", StringStringError("Parameter meta-variable has different meanings in context",v)));
          (* Add it *)
-         stack @ [pvar v], List.length stack
+         stack @ [PVar (v, ptype)], List.length stack
+      end
 
-   and meta_param stack const pvar v =
-      let stack, v = meta_param' stack pvar v in
+   and meta_param stack const ptype v =
+      let stack, v = meta_param' stack ptype v in
          stack, const v
 
    and meta_level stack l =
@@ -242,11 +246,11 @@ struct
       let vars = List.map dest_level_var vars in
          match c, vars with
             0, [{ le_var = v; le_offset = 0 }] ->
-               meta_param stack (fun l -> RWMLevel1 l) (fun l -> PLVar l) v
+               meta_param stack (fun l -> RWMLevel1 l) ShapeLevel v
           | _ ->
                let rec collect stack = function
                   { le_var = v; le_offset = i } :: tl ->
-                     let stack, v = meta_param' stack (fun l -> PLVar l) v in
+                     let stack, v = meta_param' stack ShapeLevel v in
                      let v = { rw_le_var = v; rw_le_offset = i } in
                      let stack, vars = collect stack tl in
                         stack, v :: vars
@@ -258,11 +262,11 @@ struct
 
    and compile_so_redex_param stack param =
       match dest_param param with
-         MNumber v -> meta_param stack (fun i -> RWMNumber i) (fun v -> PIVar v) v
-       | MString v -> meta_param stack (fun s -> RWMString s) (fun s -> PSVar s) v
-       | MToken v -> meta_param stack (fun t -> RWMToken t) (fun s -> PSVar s) v
+         MNumber v -> meta_param stack (fun i -> RWMNumber i) ShapeNumber v
+       | MString v -> meta_param stack (fun s -> RWMString s) ShapeString v
+       | MToken v -> meta_param stack (fun t -> RWMToken t) ShapeToken v
        | MLevel l -> meta_level stack l
-       | MVar v -> meta_param stack (fun v -> RWMVar v) (fun v -> PSVar v) v
+       | MVar v -> meta_param stack (fun v -> RWMVar v) ShapeVar v
        | Number i -> stack, RWNumber i
        | String s -> stack, RWString s
        | Token t -> stack, RWToken t

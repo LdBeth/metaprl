@@ -181,9 +181,7 @@ struct
     | SOVarInstance (v', _) -> v = v'
     | FOVar v' -> v = v'
     | CVar v' -> v = v'
-    | PIVar v' -> v = v'
-    | PSVar v' -> v = v'
-    | PLVar v' -> v = v'
+    | PVar (v', _) -> v = v'
 
    let rstack_so_mem_prop v = function
       FOVarPattern v' -> v = v'
@@ -200,10 +198,8 @@ struct
       FOVar v' -> v = v'
     | _ -> false
 
-   let rstack_p_mem_prop v = function
-      PIVar v' -> v = v'
-    | PSVar v' -> v = v'
-    | PLVar v' -> v = v'
+   let rstack_p_mem_prop shape v = function
+      PVar (v', shape') -> v = v' && shape = shape'
     | _ -> false
 
    let rstack_c_mem_prop v = function
@@ -214,14 +210,14 @@ struct
    let rstack_so_mem v = List.exists (rstack_so_mem_prop v)
    let rstack_pattern_mem v = List.exists (rstack_pattern_mem_prop v)
    let rstack_fo_mem v = List.exists (rstack_fo_mem_prop v)
-   let rstack_p_mem v = List.exists (rstack_p_mem_prop v)
+   let rstack_p_mem shape v = List.exists (rstack_p_mem_prop shape v)
    let rstack_c_mem v = List.exists (rstack_c_mem_prop v)
 
    let array_rstack_mem v = Array_util.exists (rstack_mem_prop v)
    let array_rstack_so_mem v = Array_util.exists (rstack_so_mem_prop v)
    let array_rstack_fo_mem v = Array_util.exists (rstack_fo_mem_prop v)
    let array_rstack_c_mem v = Array_util.exists (rstack_c_mem_prop v)
-   let array_rstack_p_mem v = Array_util.exists (rstack_p_mem_prop v)
+   let array_rstack_p_mem shape v = Array_util.exists (rstack_p_mem_prop shape v)
 
    (*
     * Indexing.
@@ -229,13 +225,13 @@ struct
    let rstack_index v l = List_util.find_item (rstack_mem_prop v) l
    let rstack_so_index v l = List_util.find_item (rstack_so_mem_prop v) l
    let rstack_fo_index v l = List_util.find_item (rstack_fo_mem_prop v) l
-   let rstack_p_index v l = List_util.find_item (rstack_p_mem_prop v) l
+   let rstack_p_index shape v l = List_util.find_item (rstack_p_mem_prop shape v) l
    let rstack_c_index v l = List_util.find_item (rstack_c_mem_prop v) l
 
    let array_rstack_index v l = Array_util.find_index (rstack_mem_prop v) l
    let array_rstack_so_index v l = Array_util.find_index (rstack_so_mem_prop v) l
    let array_rstack_fo_index v l = Array_util.find_index (rstack_fo_mem_prop v) l
-   let array_rstack_p_index v l = Array_util.find_index (rstack_p_mem_prop v) l
+   let array_rstack_p_index shape v l = Array_util.find_index (rstack_p_mem_prop shape v) l
    let array_rstack_c_index v l = Array_util.find_index (rstack_c_mem_prop v) l
 
    (*

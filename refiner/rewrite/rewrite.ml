@@ -44,6 +44,7 @@ open Term_man_sig
 open Term_addr_sig
 open Term_subst_sig
 open Term_meta_sig
+open Term_shape_sig
 open Refine_error_sig
 
 open Rewrite_types
@@ -162,7 +163,7 @@ struct
     | RewriteFunType of string
     | RewriteContextType of string
     | RewriteStringType of string
-    | RewriteIntType of string
+    | RewriteNumType of string
     | RewriteLevelType of string
 
    type rewrite_item =
@@ -170,7 +171,7 @@ struct
     | RewriteFun of (term list -> term)
     | RewriteContext of (term -> term list -> term)
     | RewriteString of string
-    | RewriteInt of int
+    | RewriteNum of Mp_num.num
     | RewriteLevel of level_exp
 
    type rewrite_namer = rewrite_stack -> string array -> string array
@@ -258,9 +259,9 @@ struct
     | SOVarInstance (s, _) -> RewriteFunType s
     | FOVar s -> RewriteStringType s
     | CVar s -> RewriteContextType s
-    | PIVar s -> RewriteIntType s
-    | PSVar s -> RewriteStringType s
-    | PLVar s -> RewriteLevelType s
+    | PVar (s, ShapeNumber) -> RewriteNumType s
+    | PVar (s, (ShapeString | ShapeToken | ShapeVar)) -> RewriteStringType s
+    | PVar (s, ShapeLevel) -> RewriteLevelType s
 
    let extract_redex_types { redex_stack = stack } =
       let l = Array.length stack in
@@ -315,21 +316,21 @@ struct
                   RewriteContext (fun c l' -> subst (replace_subterm t addr c) l l')
              | _ -> REF_RAISE(extract_exn)
          end
-    | PIVar _ ->
+    | PVar (_, ShapeNumber) ->
          begin
             match gstack with
-               StackNumber i -> RewriteInt (Mp_num.int_of_num i)
+               StackNumber i -> RewriteNum i
              | StackMString s -> RewriteString s
              | _ -> REF_RAISE(extract_exn)
          end
-    | PSVar _ ->
+    | PVar (_, (ShapeString | ShapeToken | ShapeVar)) ->
          begin
             match gstack with
                StackString s -> RewriteString s
              | StackMString s -> RewriteString s
              | _ -> REF_RAISE(extract_exn)
          end
-    | PLVar _ ->
+    | PVar (_, ShapeLevel) ->
          begin
             match gstack with
                StackLevel l -> RewriteLevel l

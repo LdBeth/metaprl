@@ -1911,8 +1911,8 @@ struct
          <:patt< $rewriter_patt loc$ . $uid:"RewriteContext"$ $lid:name$ >>
     | RewriteStringType name ->
          <:patt< $rewriter_patt loc$ . $uid:"RewriteString"$ $lid:name$ >>
-    | RewriteIntType name ->
-         <:patt< $rewriter_patt loc$ . $uid:"RewriteInt"$ $lid:name$ >>
+    | RewriteNumType name ->
+         <:patt< $rewriter_patt loc$ . $uid:"RewriteNum"$ $lid:name$ >>
     | RewriteLevelType name ->
          <:patt< $rewriter_patt loc$ . $uid:"RewriteLevel"$ $lid:name$ >>
 

@@ -38,6 +38,7 @@ open Printf
 open Opname
 open Term_simple_sig
 open Term_base_sig
+open Term_shape_sig
 
 module TermShape (**)
    (TermType : TermSimpleSig)
@@ -61,13 +62,6 @@ struct
         shape_params : shape_param list;
         shape_arities : int list
       }
-
-   and shape_param =
-      ShapeNumber
-    | ShapeString
-    | ShapeToken
-    | ShapeLevel
-    | ShapeVar
 
    (*
     * Fold together meta-parameters and parameters.

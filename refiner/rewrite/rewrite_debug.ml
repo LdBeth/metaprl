@@ -154,12 +154,8 @@ struct
          "FOVar " ^ s
     | CVar s ->
          "CVar " ^ s
-    | PIVar s ->
-         "PIVar " ^ s
-    | PSVar s ->
-         "PSVar " ^ s
-    | PLVar s ->
-         "PLVar " ^ s
+    | PVar (s, _) ->
+         "PVar " ^ s ^":*"
 
    let print_rstack out stack =
       let print_item item =

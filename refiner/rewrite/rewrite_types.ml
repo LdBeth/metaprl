@@ -32,6 +32,8 @@
  *)
 
 open Opname
+open Term_shape_sig
+
 IFIMPLEMENTATION THEN
 open Term_sig
 open Term_addr_sig
@@ -136,9 +138,7 @@ DEFTOPMACRO BODY =
     | SOVarInstance of string * int
     | FOVar of string
     | CVar of string
-    | PIVar of string
-    | PSVar of string
-    | PLVar of string
+    | PVar of string * shape_param
 
    (*
     * During reduction, we keep a stack of objects of all the

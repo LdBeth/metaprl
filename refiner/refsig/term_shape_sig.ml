@@ -28,22 +28,22 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
+
+type shape_param =
+   ShapeNumber
+ | ShapeString
+ | ShapeToken
+ | ShapeLevel
+ | ShapeVar
 
 module type TermShapeSig =
 sig
    type term
    type param
    type shape
-
-   type shape_param =
-      ShapeNumber
-    | ShapeString
-    | ShapeToken
-    | ShapeLevel
-    | ShapeVar
 
    val shape_of_term : term -> shape
    val print_shape : out_channel -> shape -> unit

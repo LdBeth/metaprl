@@ -242,8 +242,8 @@ let newline { dform_buffer = buf } =
    format_newline buf
 
 let pushm = function
-   { dform_items = [RewriteInt i]; dform_buffer = buf } ->
-      format_pushm buf i
+   { dform_items = [RewriteNum n]; dform_buffer = buf } ->
+      format_pushm buf (Mp_num.int_of_num n)
  | { dform_items = [RewriteString s]; dform_buffer = buf } ->
       format_pushm_str buf s
  | { dform_items = []; dform_buffer = buf } ->
@@ -258,28 +258,6 @@ let pushfont _ =
 
 let popfont _ =
    ()
-
-(*
- * Install the commands.
- *)
-let init_list =
-   ["sbreak", [MString "y"; MString "n"], sbreak;
-    "cbreak", [MString "y"; MString "n"], cbreak;
-    "hbreak", [MString "y"; MString "n"], hbreak;
-    "space", [], space;
-    "hspace", [], hspace;
-    "newline", [], newline;
-    "lzone", [], lzone;
-    "szone", [], szone;
-    "hzone", [], hzone;
-    "izone", [], izone;
-    "ezone", [], ezone;
-    "pushm", [MNumber "i"], pushm;
-    "pushm", [MString "s"], pushm;
-    "pushm", [], pushm;
-    "popm", [], popm;
-    "pushfont", [MString "plain"], pushfont;
-    "popfont", [], popfont]
 
 (************************************************************************
  * FORMATTERS                                                           *
@@ -602,10 +580,15 @@ let slot { dform_items = items; dform_printer = printer; dform_buffer = buf } =
          if !debug_dform then
             eprintf "Dform.slot: %s%t" s eflush;
          format_string buf s
-    | [RewriteString raw; RewriteString s] ->
+    | [RewriteString "raw"; RewriteString s] ->
          if !debug_dform then
             eprintf "Dform.slot: %s%t" s eflush;
          format_raw_string buf s
+    | [RewriteNum n] ->
+         let s = Mp_num.string_of_num n in
+         if !debug_dform then
+             eprintf "Dform.slot: %s%t" s eflush;
+         format_string buf s
     | [RewriteLevel l] ->
          if !debug_dform then
             eprintf "Dform.slot: level%t" eflush;
@@ -616,6 +599,32 @@ let slot { dform_items = items; dform_printer = printer; dform_buffer = buf } =
 (*
  * Install initial commands.
  *)
+let init_list =
+   ["sbreak", [MString "y"; MString "n"], sbreak;
+    "cbreak", [MString "y"; MString "n"], cbreak;
+    "hbreak", [MString "y"; MString "n"], hbreak;
+    "space", [], space;
+    "hspace", [], hspace;
+    "newline", [], newline;
+    "lzone", [], lzone;
+    "szone", [], szone;
+    "hzone", [], hzone;
+    "izone", [], izone;
+    "ezone", [], ezone;
+    "pushm", [MNumber "i"], pushm;
+    "pushm", [MString "s"], pushm;
+    "pushm", [], pushm;
+    "popm", [], popm;
+    "pushfont", [MString "plain"], pushfont;
+    "popfont", [], popfont;
+    "slot", [String "raw"; MString "s"], slot;
+    "slot", [MString "s"], slot;
+    "slot", [MLevel (mk_var_level_exp "l")], slot;
+    "slot", [MToken "t"], slot;
+    "slot", [MNumber "n"], slot;
+    "slot", [MVar "v"], slot;
+   ]
+
 let null_base =
    let rec aux = function
       (name, params, f)::t ->
@@ -650,32 +659,8 @@ let null_base =
         dform_print = DFormPrinter slot
       }
    in
-   let slot_entry3 =
-      { dform_name = "slot_entry3";
-        dform_pattern = mk_term (mk_op slot_opname [make_param (MString "eq")]) [];
-        dform_options = [DFormInternal];
-        dform_print = DFormPrinter slot
-      }
-   in
-   let slot_entry4 =
-      { dform_name = "slot_entry4";
-        dform_pattern = mk_term (mk_op slot_opname [make_param (MLevel (mk_var_level_exp "l"))]) [];
-        dform_options = [DFormInternal];
-        dform_print = DFormPrinter slot
-      }
-   in
-   let slot_entry5 =
-      { dform_name = "slot_entry5";
-        dform_pattern = mk_term (mk_op slot_opname [make_param (MString "raw"); make_param (MString "eq")]) [];
-        dform_options = [DFormInternal];
-        dform_print = DFormPrinter slot
-      }
-   in
    let base = add_dform base slot_entry1 in
    let base = add_dform base slot_entry2 in
-   let base = add_dform base slot_entry3 in
-   let base = add_dform base slot_entry4 in
-   let base = add_dform base slot_entry5 in
       base
 
 let is_null_dfbase = equal_tables null_base

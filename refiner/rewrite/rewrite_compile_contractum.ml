@@ -44,6 +44,7 @@ open Term_base_sig
 open Term_man_sig
 open Term_addr_sig
 open Term_subst_sig
+open Term_shape_sig
 open Refine_error_sig
 
 open Rewrite_type_sig
@@ -171,7 +172,7 @@ struct
                 * Display forms:
                 * convert a stack element into a variable representation
                 *)
-               enames, RWStackVar (array_rstack_fo_index v stack)
+               enames, RWStackVar (array_rstack_index v stack)
 
             else
                (* This is a second order variable that is free *)
@@ -231,25 +232,25 @@ struct
    and compile_so_contractum_param stack param =
       match dest_param param with
          MNumber v ->
-            if array_rstack_p_mem v stack then
+            if array_rstack_p_mem ShapeNumber v stack then
                (* New param *)
-               RWMNumber (array_rstack_p_index v stack)
+               RWMNumber (array_rstack_p_index ShapeNumber v stack)
             else
                (* Free param *)
                REF_RAISE(RefineError (param_error, RewriteFreeParamVar v))
 
        | MString v ->
-            if array_rstack_p_mem v stack then
+            if array_rstack_p_mem ShapeString v stack then
                (* New param *)
-               RWMString (array_rstack_p_index v stack)
+               RWMString (array_rstack_p_index ShapeString v stack)
             else
                (* Free param *)
                REF_RAISE(RefineError (param_error, RewriteFreeParamVar v))
 
        | MToken v ->
-            if array_rstack_p_mem v stack then
+            if array_rstack_p_mem ShapeToken v stack then
                (* New param *)
-               RWMToken (array_rstack_p_index v stack)
+               RWMToken (array_rstack_p_index ShapeToken v stack)
             else
                (* Free param *)
                REF_RAISE(RefineError (param_error, RewriteFreeParamVar v))
@@ -259,14 +260,16 @@ struct
             let vars = List.map dest_level_var vars in
                (match c, vars with
                   0, [{ le_var = v; le_offset = 0 }] ->
-                      if array_rstack_p_mem v stack then
-                         RWMLevel1 (array_rstack_p_index v stack)
+                      if array_rstack_p_mem ShapeLevel v stack then
+                         RWMLevel1 (array_rstack_p_index ShapeLevel v stack)
                       else
                          REF_RAISE(RefineError (param_error, RewriteFreeParamVar v))
                  | _ ->
                       let collect { le_var = v; le_offset = off } =
-                         if array_rstack_p_mem v stack then
-                            { rw_le_var = array_rstack_p_index v stack; rw_le_offset = off }
+                         if array_rstack_p_mem ShapeLevel v stack then
+                            { rw_le_var = array_rstack_p_index ShapeLevel v stack;
+                              rw_le_offset = off
+                            }
                          else
                             REF_RAISE(RefineError (param_error, RewriteFreeParamVar v))
                       in
@@ -275,9 +278,9 @@ struct
                          })
 
        | MVar v ->
-            if array_rstack_p_mem v stack then
+            if array_rstack_p_mem ShapeVar v stack then
                (* New param *)
-               RWMVar(array_rstack_p_index v stack)
+               RWMVar(array_rstack_p_index ShapeVar v stack)
             else
                (* Free param *)
                REF_RAISE(RefineError (param_error, RewriteFreeParamVar v))

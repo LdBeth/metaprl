@@ -30,6 +30,8 @@
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
+open Term_shape_sig
+
 module type RewriteUtilSig =
 sig
    type term
@@ -54,13 +56,13 @@ sig
    val rstack_so_mem : string -> rstack list -> bool
    val rstack_pattern_mem : string -> rstack list -> bool
    val rstack_fo_mem : string -> rstack list -> bool
-   val rstack_p_mem : string -> rstack list -> bool
+   val rstack_p_mem : shape_param -> string -> rstack list -> bool
    val rstack_c_mem : string -> rstack list -> bool
 
    val array_rstack_mem : string -> rstack array -> bool
    val array_rstack_so_mem : string -> rstack array -> bool
    val array_rstack_fo_mem : string -> rstack array -> bool
-   val array_rstack_p_mem : string -> rstack array -> bool
+   val array_rstack_p_mem : shape_param -> string -> rstack array -> bool
    val array_rstack_c_mem : string -> rstack array -> bool
 
    (*
@@ -69,13 +71,13 @@ sig
    val rstack_index : string -> rstack list -> int
    val rstack_so_index : string -> rstack list -> int
    val rstack_fo_index : string -> rstack list -> int
-   val rstack_p_index : string -> rstack list -> int
+   val rstack_p_index : shape_param -> string -> rstack list -> int
    val rstack_c_index : string -> rstack list -> int
 
    val array_rstack_index : string -> rstack array -> int
    val array_rstack_so_index : string -> rstack array -> int
    val array_rstack_fo_index : string -> rstack array -> int
-   val array_rstack_p_index : string -> rstack array -> int
+   val array_rstack_p_index : shape_param -> string -> rstack array -> int
    val array_rstack_c_index : string -> rstack array -> int
 
    (*

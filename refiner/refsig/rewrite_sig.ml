@@ -56,7 +56,7 @@ sig
     | RewriteFunType of string
     | RewriteContextType of string
     | RewriteStringType of string
-    | RewriteIntType of string
+    | RewriteNumType of string
     | RewriteLevelType of string
 
    type rewrite_item =
@@ -64,7 +64,7 @@ sig
     | RewriteFun of (term list -> term)
     | RewriteContext of (term -> term list -> term)
     | RewriteString of string
-    | RewriteInt of int
+    | RewriteNum of Mp_num.num
     | RewriteLevel of level_exp
 
    type rewrite_namer = rewrite_stack -> string array -> string array

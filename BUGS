@@ -54,6 +54,10 @@ before it has a chance to overflow the stack.
      "Implementation" in the listing header (or it should at least tell what exactly
      it is listing).
 
+2.9) Display form mechanism does not give a way to distinguish between parameters
+     and meta-parameters. Because of that terms with meta-parameters will very
+     often display wrong.
+
 REWRITER
 
 (We are currently in the process of rethinking how exactly we want to do rewriting.
