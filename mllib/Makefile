@@ -30,6 +30,7 @@ LMFILES :=\
 	file_base\
 	file_type_base\
 	splay_set\
+	splay_table\
 	flist\
 	memo
 
