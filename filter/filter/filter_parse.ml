@@ -1039,7 +1039,7 @@ EXTEND
           let f () =
              StrFilter.declare_parent (StrFilter.get_proc loc) loc path
           in
-             print_exn f "include" loc;
+             print_exn f "derive" loc;
              empty_str_item loc
         | "declare"; t = quote_term ->
           let f () =

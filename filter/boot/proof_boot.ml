@@ -241,17 +241,9 @@ struct
          format_popm buf
 
     | Unjustified (goal, subgoals) ->
-         format_string buf "Unjustified"
-
+         format_step buf db "Unjustified" goal subgoals
     | Extract (goal, subgoals, _) ->
-         format_pushm buf 2;
-         format_string buf "Extract:";
-         format_hspace buf;
-         format_arg db buf goal;
-         format_hspace buf;
-         format_string buf "->...";
-         format_popm buf
-
+         format_step buf db "Extract" goal subgoals
     | ExtractRewrite _ ->
          format_string buf "ExtractRewrite"
     | ExtractCondRewrite _ ->
@@ -309,6 +301,26 @@ struct
          format_string buf "Locked:";
          format_hspace buf;
          format_ext db buf ext;
+         format_popm buf
+
+   and format_step buf db name goal subgoals =
+         format_pushm buf 2;
+         format_string buf (name ^":");
+         format_hspace buf;
+         format_arg db buf goal;
+         format_hspace buf;
+         format_string buf "->";
+         if subgoals==[] then
+            format_string buf " []"
+         else begin
+            format_pushm buf 3;
+            let f_sg sg =
+               format_hspace buf;
+               format_arg db buf sg;
+               format_string buf ";";
+           in List.iter f_sg subgoals;
+               format_popm buf
+         end;
          format_popm buf
 
    and format_goal_subgoals db buf goal subgoals extras =
@@ -538,58 +550,57 @@ struct
          [], ext -> ext
        | _ -> raise (Invalid_argument "Proof_boot.replace_subg")
 
-   let rec normalize = function
+   let rec normalize ext = match ext with
       Pending f ->
          normalize (f ())
-    | Wrapped (l,e) as ext ->
+    | Wrapped (l,e) ->
          let e' = normalize e in
          if (e == e') then ext else Wrapped (l,e')
-    | (Compose ci) as ext ->
-         let res =
-            let c_goal = normalize ci.comp_goal in
-            let c_subgs = normalize_list ci.comp_subgoals in begin
-               match c_goal with
-                  Identity goal ->
-                     begin match c_subgs with
-                        [subg] -> replace_goal subg goal
-                      | _ ->
-                           print_ext ext;
-                           raise (Invalid_argument "Proof_boot.normalize - nogin: according to my understanding, this is not supposed to happen")
-                     end
-                | _ when all_identity c_subgs ->
-                     replace_subg c_goal c_subgs
-                | Compose ci' ->
-                     Compose {
-                        comp_status = LazyStatusDelayed;
-                        comp_goal = ci'.comp_goal;
-                        comp_subgoals = join_subgoals ci'.comp_subgoals c_subgs;
-                        comp_leaves = LazyLeavesDelayed;
-                        comp_extras = ci.comp_extras @ ci'.comp_extras
-                     }
-                | RuleBox _ ->
-                     print_ext ext;
-                     raise (Invalid_argument "Proof_boot.normalize - nogin: according to my understanding, this is not supposed to happen")
-                | _ ->
-                     if (c_goal==ci.comp_goal) && (c_subgs == ci.comp_subgoals) then ext else
-                     Compose { ci with comp_goal = c_goal; comp_subgoals = c_subgs }
+    | (Compose ci) ->
+         let c_goal = normalize ci.comp_goal in
+         let c_subgs = normalize_list ci.comp_subgoals in begin
+            match c_goal with
+               Identity goal ->
+                  begin match c_subgs with
+                     [subg] -> replace_goal subg goal
+                   | _ ->
+                        print_ext ext;
+                        raise (Invalid_argument "Proof_boot.normalize - nogin: according to my understanding, this is not supposed to happen")
+                  end
+             | _ when all_identity c_subgs ->
+                  replace_subg c_goal c_subgs
+             | Compose ci' ->
+                  Compose {
+                     comp_status = LazyStatusDelayed;
+                     comp_goal = ci'.comp_goal;
+                     comp_subgoals = join_subgoals ci'.comp_subgoals c_subgs;
+                     comp_leaves = LazyLeavesDelayed;
+                     comp_extras = ci.comp_extras @ ci'.comp_extras
+                  }
+             | RuleBox _ ->
+                  print_ext ext;
+                  raise (Invalid_argument "Proof_boot.normalize - nogin: according to my understanding, this is not supposed to happen")
+             | _ ->
+                  if (c_goal==ci.comp_goal) && (c_subgs == ci.comp_subgoals) then ext else
+                  Compose { ci with comp_goal = c_goal; comp_subgoals = c_subgs }
             end 
-         in
+    | (RuleBox ri) ->
+         if not ri.rule_extract_normalized then begin
+            let res = normalize ri.rule_extract in
             if !debug_proof_normalize then begin
-               eprintf "Normalizing Compose:\n";
-               print_ext ext;
-               if res == ext then eprintf "Normalization left it unchanged!%t" eflush 
+               eprintf "Normalizing RuleBox's rule_extract:\n";
+               print_ext ri.rule_extract;
+               if res == ri.rule_extract then eprintf "Normalization left it unchanged!%t" eflush 
                else begin
                   eprintf "Normalized to:\n";
                   print_ext res
                end
-            end; res
-    | (RuleBox ri) as ext ->
-         if not ri.rule_extract_normalized then begin
-            ri.rule_extract <- normalize ri.rule_extract;
+            end;
+            ri.rule_extract <- res;
             ri.rule_extract_normalized <- true
          end;
          ext
-    | ext -> ext
+    | _ -> ext
 
    and normalize_list l = List_util.smap normalize l
 
@@ -717,7 +728,7 @@ struct
     *)
    let rec search_arg arg = function
       hd :: tl ->
-         TacticInternal.tactic_arg_alpha_equal hd arg || search_arg arg tl
+         tactic_arg_alpha_equal hd arg || search_arg arg tl
     | [] ->
          false
 
@@ -1390,71 +1401,27 @@ struct
    (*
     * Build a tactic arg from an msequent returned from the extract.
     *)
-   let replace_msequent
-       { ref_label = label;
-         ref_parent = parent;
-         ref_attributes = attributes;
-         ref_sentinal = sentinal
-       } goal =
-      { ref_goal = goal;
-        ref_label = label;
-        ref_parent = parent;
-        ref_attributes = attributes;
-        ref_sentinal = sentinal
-      }
+   let replace_msequent arg goal =
+      { arg with ref_goal = goal }
 
-   let replace_msequent_goal
-       { ref_goal = goal;
-         ref_label = label;
-         ref_parent = parent;
-         ref_attributes = attributes;
-         ref_sentinal = sentinal
-       } goal' =
-      let goal, hyps = dest_msequent goal in
+   let replace_msequent_goal arg goal' =
+      let goal, hyps = dest_msequent arg.ref_goal in
       let goal = mk_msequent goal' hyps in
-         { ref_goal = goal;
-           ref_label = label;
-           ref_parent = parent;
-           ref_attributes = attributes;
-           ref_sentinal = sentinal
-         }
+         { arg with ref_goal = goal }
 
-   let replace_msequent_addr goal addr goal' =
+   let replace_msequent_addr arg addr goal' =
       if TermAddr.is_null_address addr then
-         replace_msequent_goal goal goal'
+         replace_msequent_goal arg goal'
       else
-         let { ref_goal = goal;
-               ref_label = label;
-               ref_parent = parent;
-               ref_attributes = attributes;
-               ref_sentinal = sentinal
-             } = goal
-         in
-         let goal, hyps = dest_msequent goal in
+         let goal, hyps = dest_msequent arg.ref_goal in
          let goal = TermAddr.replace_subterm goal addr goal' in
          let goal = mk_msequent goal hyps in
-            { ref_goal = goal;
-              ref_label = label;
-              ref_parent = parent;
-              ref_attributes = attributes;
-              ref_sentinal = sentinal
-            }
+            { arg with ref_goal = goal }
 
-   let cut_goal
-       { ref_goal = goal;
-         ref_label = label;
-         ref_parent = parent;
-         ref_attributes = attributes;
-         ref_sentinal = sentinal
-       } hyp =
-      let goal, hyps = dest_msequent goal in
+   let cut_goal arg hyp =
+      let goal, hyps = dest_msequent arg.ref_goal in
       let goal = mk_msequent goal (hyps @ [hyp]) in
-         { ref_goal = goal;
-           ref_label = label;
-           ref_parent = parent;
-           ref_attributes = attributes;
-           ref_sentinal = sentinal
-         }
+         { arg with ref_goal = goal }
 
    (*
     * Get the goals and subgoals of the Refine.extract and
@@ -1809,45 +1776,23 @@ struct
     * Set the goal of the current node.
     *)
    let set_goal_ext proof node mseq =
-      let { ref_goal = goal;
-            ref_label = label;
-            ref_parent = parent;
-            ref_attributes = attributes;
-            ref_sentinal = sentinal
-          } = goal_ext node
-      in
-         if Refine.msequent_alpha_equal mseq goal then
-            node
-         else
-            let arg =
-               Goal { ref_goal = mseq;
-                      ref_label = label;
-                      ref_parent = parent;
-                      ref_attributes = attributes;
-                      ref_sentinal = sentinal
+      let goal = goal_ext node in
+      if Refine.msequent_alpha_equal mseq goal.ref_goal then
+         node
+      else
+         let arg = Goal { goal with ref_goal = mseq } in
+         (* Take special care if this is the root node *)
+         match proof with
+            { pf_address = [];
+              pf_root = RuleBox ri } ->
+               RuleBox { ri with
+                         rule_status = LazyStatusDelayed;
+                         rule_extract_normalized = true;
+                         rule_extract = arg;
+                         rule_leaves = LazyLeavesDelayed;
                }
-            in
-               (* Take special care if this is the root node *)
-               match proof with
-                  { pf_address = [];
-                    pf_root = RuleBox { rule_string = text;
-                                        rule_expr = expr;
-                                        rule_tactic = tac;
-                                        rule_subgoals = subgoals;
-                                        rule_extras = extras
-                              } } ->
-                     RuleBox { rule_status = LazyStatusDelayed;
-                               rule_string = text;
-                               rule_expr = expr;
-                               rule_tactic = tac;
-                               rule_extract_normalized = true;
-                               rule_extract = arg;
-                               rule_subgoals = subgoals;
-                               rule_leaves = LazyLeavesDelayed;
-                               rule_extras = extras
-                     }
-                | _ ->
-                     arg
+          | _ ->
+               arg
 
    let set_goal postf proof mseq =
       let node = set_goal_ext proof proof.pf_node mseq in
@@ -2472,7 +2417,7 @@ struct
     * Ask the refiner for the extract term.
     *)
    let term_of_proof refiner proof terms =
-      TacticInternal.term_of_extract refiner proof.pf_node terms
+      term_of_extract refiner proof.pf_node terms
 
    (*
     * Re-expand all the rule boxes.
@@ -2603,7 +2548,7 @@ struct
          (<:expr< $lid:id_text$ >>)
       in
          (fun () -> expr)
-   let id_tac () = TacticInternal.idT
+   let id_tac () = idT
 
    (*
     * Build a proof from an IO proof.
@@ -2768,9 +2713,9 @@ struct
     * raw attributes, and the sentinal will be invalid when we read it
     * back in.
     *)
-   let io_proof_of_proof _ _ proof =
+   let io_proof_of_proof squash _ _ proof =
       let parents = ref [] in
-      let rec make_tactic_arg arg =
+      let rec make_tactic_arg_sq squash arg =
          try
             List.assq arg !parents
          with
@@ -2778,7 +2723,7 @@ struct
                let { ref_goal = goal;
                      ref_label = label;
                      ref_parent = parent;
-                     ref_attributes = args
+                     ref_attributes = attrs
                    } = arg
                in
                let parent =
@@ -2789,69 +2734,78 @@ struct
                         Some (make_tactic_arg parent)
                    | ParentSet (parent, _) ->
                         Some (make_tactic_arg parent)
-               in
-               let args = TacticInternal.squash_attributes args in
-               let arg' =
+               in let arg' =
                   { simp_goal = goal;
                     simp_label = label;
                     simp_parent = parent;
-                    simp_attributes = args
+                    simp_attributes = if squash then empty_attribute else squash_attributes attrs
                   }
                in
                   parents := (arg, arg') :: !parents;
                   arg'
+         and make_tactic_arg arg = make_tactic_arg_sq false arg
+         and make_tactic_arg_squash arg = make_tactic_arg_sq true arg
       in
-      let rec convert = function
-         Goal arg ->
-            IOGoal (make_tactic_arg arg)
-       | Unjustified (goal, subgoals) ->
-            IOUnjustified (make_tactic_arg goal, List.map make_tactic_arg subgoals)
-       | Extract (goal, subgoals, _) ->
-            IOUnjustified (make_tactic_arg goal, List.map make_tactic_arg subgoals)
-       | ExtractRewrite (goal, subgoal, _, _) ->
-            IOUnjustified (make_tactic_arg goal, [make_tactic_arg subgoal])
-       | ExtractCondRewrite (goal, subgoals, _, _) ->
-            IOUnjustified (make_tactic_arg goal, List.map make_tactic_arg subgoals)
-       | ExtractNthHyp (goal, i) ->
-            IOExtractNthHyp (make_tactic_arg goal, i)
-       | ExtractCut (goal, term, cut_lemma, cut_then) ->
-            IOExtractCut (make_tactic_arg goal,
-                          term,
-                          make_tactic_arg cut_lemma,
-                          make_tactic_arg cut_then)
-       | Wrapped (args, node) ->
-            IOWrapped (args, convert node)
-       | Compose { comp_status = status;
-                   comp_goal = goal;
-                   comp_subgoals = subgoals;
-                   comp_extras = extras
-         } ->
-            IOCompose { io_comp_status = status;
-                        io_comp_goal = convert goal;
-                        io_comp_subgoals = List.map convert subgoals;
-                        io_comp_extras = List.map convert extras
-            }
-       | RuleBox { rule_status = status;
-                   rule_string = text;
-                   rule_extract = goal;
-                   rule_subgoals = subgoals;
-                   rule_extras = extras
-         } ->
-            IORuleBox { io_rule_status = status;
-                        io_rule_string = text;
-                        io_rule_goal = convert goal;
-                        io_rule_subgoals = List.map convert subgoals;
-                        io_rule_extras = List.map convert extras
-            }
-       | Pending f ->
-            convert (f ())
-       | Locked node ->
-            convert node
-       | Identity arg ->
-            IOIdentity (make_tactic_arg arg)
+      let rec convert arg =
+         if !debug_proof then begin
+            eprintf "IO convertion of:\n";
+            print_ext arg
+         end;
+         let res = match arg with
+            Goal arg ->
+               IOGoal (make_tactic_arg arg)
+          | Unjustified (goal, subgoals) ->
+               IOUnjustified (make_tactic_arg_squash goal, List.map make_tactic_arg_squash subgoals)
+          | Extract (goal, subgoals, _) ->
+               IOUnjustified (make_tactic_arg goal, List.map make_tactic_arg subgoals)
+          | ExtractRewrite (goal, subgoal, _, _) ->
+               IOUnjustified (make_tactic_arg goal, [make_tactic_arg subgoal])
+          | ExtractCondRewrite (goal, subgoals, _, _) ->
+               IOUnjustified (make_tactic_arg goal, List.map make_tactic_arg subgoals)
+          | ExtractNthHyp (goal, i) ->
+               IOExtractNthHyp (make_tactic_arg goal, i)
+          | ExtractCut (goal, term, cut_lemma, cut_then) ->
+               IOExtractCut (make_tactic_arg goal,
+                             term,
+                             make_tactic_arg cut_lemma,
+                             make_tactic_arg cut_then)
+          | Wrapped (args, node) ->
+               IOWrapped (args, convert node)
+          | Compose { comp_status = status;
+                      comp_goal = goal;
+                      comp_subgoals = subgoals;
+                      comp_extras = extras
+            } ->
+               IOCompose { io_comp_status = status;
+                           io_comp_goal = convert goal;
+                           io_comp_subgoals = List.map convert subgoals;
+                           io_comp_extras = List.map convert extras
+               }
+          | RuleBox { rule_status = status;
+                      rule_string = text;
+                      rule_extract = goal;
+                      rule_subgoals = subgoals;
+                      rule_extras = extras
+            } ->
+               IORuleBox {
+                  io_rule_status = status;
+                  io_rule_string = text;
+                  io_rule_goal = convert goal;
+                  io_rule_subgoals = List.map convert subgoals;
+                  io_rule_extras = List.map convert extras }
+          | Pending f ->
+               convert (f ())
+          | Locked node ->
+               convert node
+          | Identity arg ->
+               IOIdentity (make_tactic_arg arg)
+         in
+            if !debug_proof then
+               eprintf "\__ IO convertion done.\n%t" eflush;
+            res
       in
          update proof;
-         convert (snd (squash_ext proof.pf_node))
+         convert (if squash then snd (squash_ext proof.pf_node) else proof.pf_node)
 
    (*
     * Convert from an io proof.
@@ -2882,7 +2836,7 @@ struct
                      simp_attributes = args
                    } = arg
                in
-               let args = TacticInternal.update_attributes args raw_attributes in
+               let args = update_attributes args raw_attributes in
                let parent =
                   match parent with
                      None ->
@@ -3061,10 +3015,10 @@ struct
       in
          if old_io_proof_hack proof then
             let proof = proof_of_old_io_proof [] Tactic.null_sentinal parse eval ((Obj.magic proof) : old_proof) in
-               io_proof_of_proof parse eval proof
+               io_proof_of_proof true parse eval proof
          else if term_io_proof_hack proof then
             let proof = ProofTerm_io.of_term [] Tactic.null_sentinal parse eval ((Obj.magic proof) : term_io) in
-               io_proof_of_proof parse eval proof
+               io_proof_of_proof true parse eval proof
          else
             proof
 
@@ -3081,7 +3035,7 @@ struct
       ProofTerm_std.to_term parse eval (proof_of_io_proof [] Tactic.null_sentinal parse eval proof)
 
    let io_proof_of_term parse eval term =
-      io_proof_of_proof [] Tactic.null_sentinal (ProofTerm_std.of_term [] Tactic.null_sentinal parse eval term)
+      io_proof_of_proof true [] Tactic.null_sentinal (ProofTerm_std.of_term [] Tactic.null_sentinal parse eval term)
 
    (*
     * Convert the IO proof
@@ -3091,7 +3045,7 @@ struct
 
    let io_proof_of_term_io parse eval term =
       let proof = ProofTerm_io.of_term [] Tactic.null_sentinal parse eval term in
-         io_proof_of_proof [] Tactic.null_sentinal proof
+         io_proof_of_proof true [] Tactic.null_sentinal proof
 
    (************************************************************************
     * PROOF OPERATIONS                                                     *
@@ -3186,7 +3140,7 @@ struct
             let subnodes = List.map (kreitz_ext proof) subgoals in
             let text = sprintf "%s thenLT [%s]" text (concat_text subnodes) in
             let expr = (<:expr< $lid: "prefix_thenLT"$ $expr ()$ $concat_ast subnodes$ >>) in
-            let tac = TacticInternal.prefix_thenLT (tac ()) (List.map (fun (_, _, tac, _) -> tac) subnodes) in
+            let tac = prefix_thenLT (tac ()) (List.map (fun (_, _, tac, _) -> tac) subnodes) in
             let subgoals = concat_subgoals subnodes in
                text, expr, tac, subgoals
 

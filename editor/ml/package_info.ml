@@ -128,7 +128,7 @@ struct
          ProofRaw (_, proof) ->
             arg, proof
        | ProofEdit ((parse, eval) as arg, ped) ->
-            let proof = Proof.io_proof_of_proof parse eval (Proof.root (Proof_edit.proof_of_ped ped)) in
+            let proof = Proof.io_proof_of_proof true parse eval (Proof.root (Proof_edit.proof_of_ped ped)) in
                if !debug_package_info then
                   eprintf "Converting the ped back to a regular proof: %s%t" name eflush;
                arg, proof

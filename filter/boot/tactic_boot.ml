@@ -238,9 +238,11 @@ struct
     | Wrapped of arglist * extract
     | Compose of compose_info
     | RuleBox of rule_info
-    | Pending of (unit -> extract)
+    | Pending of pending_extract
     | Locked of extract
     | Identity of tactic_arg
+
+   and pending_extract = unit -> extract
 
    and compose_info =
       { mutable comp_status : lazy_status;
@@ -391,6 +393,10 @@ struct
          format_space buf;
          format_string buf "]"
 
+   let format_bool buf b =
+      let s = if b then "tt" else "ff" in
+      format_string buf s
+
    let format_attrs db buf attrs =
       format_pushm buf 2;
       format_string buf "<";
@@ -398,12 +404,23 @@ struct
       format_alist "term_lists" buf (format_tlist db) attrs.attr_term_lists;
       format_alist "types" buf (format_term db) attrs.attr_types;
       format_alist "ints" buf format_int attrs.attr_ints;
-      (* format_alist "bools" buf format_bool attrs.attr_bools; *)
+      format_alist "bools" buf format_bool attrs.attr_bools;
       format_alist "strings" buf format_string attrs.attr_strings;
-      format_alist "types" buf (format_term db) attrs.attr_subst;
+      format_alist "substs" buf (format_term db) attrs.attr_subst;
       format_popm buf;
       format_space buf;
       format_string buf ">"
+
+   let empty_attribute = 
+      { attr_terms      = [];
+        attr_term_lists = [];
+        attr_types      = [];
+        attr_ints       = [];
+        attr_bools      = [];
+        attr_strings    = [];
+        attr_subst      = [];
+        attr_keys       = []
+      }
 
    (*
     * Create an initial tactic_arg for a proof.
@@ -422,44 +439,10 @@ struct
       }
 
    let squash_attributes attrs =
-      let { attr_terms = terms;
-            attr_term_lists = term_lists;
-            attr_types = types;
-            attr_ints = ints;
-            attr_bools = bools;
-            attr_strings = strings;
-            attr_subst = subst
-          } = attrs
-      in
-         { attr_terms = terms;
-           attr_term_lists = term_lists;
-           attr_types = types;
-           attr_ints = ints;
-           attr_bools = bools;
-           attr_strings = strings;
-           attr_subst = subst;
-           attr_keys = []
-         }
+      { attrs with attr_keys = [] }
 
    let update_attributes attrs raws =
-      let { attr_terms = terms;
-            attr_term_lists = term_lists;
-            attr_types = types;
-            attr_ints = ints;
-            attr_bools = bools;
-            attr_strings = strings;
-            attr_subst = subst
-          } = attrs
-      in
-         { attr_terms = terms;
-           attr_term_lists = term_lists;
-           attr_types = types;
-           attr_ints = ints;
-           attr_bools = bools;
-           attr_strings = strings;
-           attr_subst = subst;
-           attr_keys = List_util.some_map (function (name, RawObject k)   -> Some (name, k) | _ -> None) raws
-         }
+      { attrs with attr_keys = List_util.some_map (function (name, RawObject k)   -> Some (name, k) | _ -> None) raws }
 
    let create sentinal label goal attributes =
       { ref_goal = goal;
@@ -492,49 +475,14 @@ struct
     * Modify the argument.
     *)
    let set_goal arg goal =
-      let { ref_goal = seq;
-            ref_label = label;
-            ref_parent = parent;
-            ref_attributes = attributes;
-            ref_sentinal = sentinal
-          } = arg
-      in
-         { ref_goal = mk_msequent goal (snd (dest_msequent seq));
-           ref_label = label;
-           ref_parent = parent;
-           ref_attributes = attributes;
-           ref_sentinal = sentinal
-         }
+      { arg with ref_goal = mk_msequent goal (snd (dest_msequent arg.ref_goal)) }
 
    let set_concl arg concl =
-      let { ref_goal = seq;
-            ref_label = label;
-            ref_parent = parent;
-            ref_attributes = attributes;
-            ref_sentinal = sentinal
-          } = arg
-      in
-      let goal, hyps = dest_msequent seq in
-         { ref_goal = mk_msequent (replace_goal goal concl) hyps;
-           ref_label = label;
-           ref_parent = parent;
-           ref_attributes = attributes;
-           ref_sentinal = sentinal
-         }
+      let goal, hyps = dest_msequent arg.ref_goal in
+         { arg with ref_goal = mk_msequent (replace_goal goal concl) hyps }
 
    let set_label arg label =
-      let { ref_goal = goal;
-            ref_parent = parent;
-            ref_attributes = attributes;
-            ref_sentinal = sentinal
-          } = arg
-      in
-         { ref_goal = goal;
-           ref_label = label;
-           ref_parent = parent;
-           ref_attributes = attributes;
-           ref_sentinal = sentinal
-         }
+      { arg with ref_label = label }
 
    (************************************************************************
     * SENTINAL                                                             *

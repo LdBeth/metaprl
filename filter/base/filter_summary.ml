@@ -1958,31 +1958,18 @@ struct
     * Copy a rewrite proof if it exists.
     *)
    let copy_rw_proof copy_proof rw info2 =
-      let { rw_name = name;
-            rw_redex = redex1;
-            rw_contractum = contractum1;
-            rw_proof = proof1;
-            rw_resources = res1;
-          } = rw
-      in
-      let rw =
-         match find_rewrite info2 name with
-            Some (Rewrite { rw_redex = redex2;
-                            rw_contractum = contractum2;
-                            rw_proof = proof2
+      Rewrite (
+         match find_rewrite info2 rw.rw_name with
+            Some (Rewrite { rw_redex = redex;
+                            rw_contractum = contractum;
+                            rw_proof = proof
                   }, _) ->
-               if not (alpha_equal redex1 redex2 & alpha_equal contractum1 contractum2) then
-                  eprintf "copy_proof: warning: rewrites %s do not match%t" name eflush;
-               { rw_name = name;
-                 rw_redex = redex1;
-                 rw_contractum = contractum1;
-                 rw_proof = copy_proof proof1 proof2;
-                 rw_resources = res1
-               }
+               if not (alpha_equal rw.rw_redex redex & alpha_equal rw.rw_contractum contractum) then
+                  eprintf "copy_proof: warning: rewrites %s do not match%t" rw.rw_name eflush;
+               { rw with rw_proof = copy_proof rw.rw_proof proof }
           | _ ->
                rw
-      in
-         Rewrite rw
+      )
 
    (*
     * Copy the cond_rewrite proof.
@@ -1997,7 +1984,7 @@ struct
             crw_resources = res1;
           } = crw
       in
-      let crw =
+      CondRewrite (
          match find_rewrite info2 name with
             Some (CondRewrite { crw_params = params2;
                                 crw_args = args2;
@@ -2021,82 +2008,56 @@ struct
                }
           | _ ->
                crw
-      in
-         CondRewrite crw
+      )
 
    (*
     * Copy the axioms.
     *)
    let copy_axiom_proof copy_proof ax info2 =
-      let { axiom_name = name;
-            axiom_stmt = stmt1;
-            axiom_proof = proof1;
-            axiom_resources = res1
-          } = ax
-      in
-      let ax =
-         match find_axiom info2 name with
-            Some (Axiom { axiom_stmt = stmt2;
-                          axiom_proof = proof2
+      Axiom (
+         match find_axiom info2 ax.axiom_name with
+            Some (Axiom { axiom_stmt = stmt;
+                          axiom_proof = proof
                   }, _) ->
-               if not (alpha_equal stmt1 stmt2) then
-                  eprintf "copy_proof: warning: axioms %s do not match%t" name eflush;
-               { axiom_name = name;
-                 axiom_stmt = stmt1;
-                 axiom_proof = copy_proof proof1 proof2;
-                 axiom_resources = res1
-               }
+               if not (alpha_equal ax.axiom_stmt stmt) then
+                  eprintf "copy_proof: warning: axioms %s do not match%t" ax.axiom_name eflush;
+               { ax with axiom_proof = copy_proof ax.axiom_proof proof }
           | _ ->
                ax
-      in
-         Axiom ax
+      )
 
    (*
     * Copy the proof in a rule.
     *)
    let copy_rule_proof copy_proof rule info2 =
-      let { rule_name = name;
-            rule_params = params1;
-            rule_stmt = stmt1;
-            rule_proof = proof1;
-            rule_resources = res1
-          } = rule
-      in
-      let rule =
-         match find_axiom info2 name with
-            Some (Rule { rule_params = params2;
-                         rule_stmt = stmt2;
-                         rule_proof = proof2
+      Rule (
+         match find_axiom info2 rule.rule_name with
+            Some (Rule { rule_stmt = stmt;
+                         rule_proof = proof
                   }, _) ->
-               if not (meta_alpha_equal stmt1 stmt2) then
+               if not (meta_alpha_equal rule.rule_stmt stmt) then
                   begin
-                     eprintf "copy_proof: warning: rules %s do not match%t" name eflush;
+                     eprintf "copy_proof: warning: rules %s do not match%t" rule.rule_name eflush;
                      if !debug_match then
                         begin
                            eprintf "Term 1:\n\t";
-                           prerr_simple_mterm stmt1;
+                           prerr_simple_mterm rule.rule_stmt;
                            eflush stderr;
                            eprintf "Term 2:\n\t";
-                           prerr_simple_mterm stmt2;
+                           prerr_simple_mterm stmt;
                            eflush stderr
                         end
                   end;
-               { rule_name = name;
-                 rule_params = params1;
-                 rule_stmt = stmt1;
-                 rule_proof = copy_proof proof1 proof2;
-                 rule_resources = res1
-               }
+               { rule with rule_proof = copy_proof rule.rule_proof proof }
           | _ ->
                rule
-      in
-         Rule rule
+      )
 
    (*
     * Copy the proofs from the second implementation into the first.
     *)
    let rec copy_proofs copy_proof { info_list = info1 } info2 =
-      let copy copy_proof (item, loc) =
+      let copy (item, loc) =
          let item =
             match item with
                Rewrite rw ->
@@ -2138,7 +2099,7 @@ struct
          in
             item, loc
       in
-         { info_list = List.map (copy copy_proof) info1 }
+         { info_list = List.map copy info1 }
 
    and copy_module_proof copy_proof name info info2 =
       match find_module info2 name with

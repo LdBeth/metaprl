@@ -189,9 +189,11 @@ sig
     | Wrapped of arglist * extract
     | Compose of compose_info
     | RuleBox of rule_info
-    | Pending of (unit -> extract)
+    | Pending of pending_extract
     | Locked of extract
     | Identity of tactic_arg
+
+   and pending_extract = unit -> extract
 
    and compose_info =
       { mutable comp_status : lazy_status;
@@ -372,8 +374,10 @@ sig
     * Construct attributes.
     *)
    val attribute_info_of_raw_attributes : raw_attributes -> attribute_info
-   val squash_attributes : attribute_info -> attribute_info
    val update_attributes : attribute_info -> raw_attributes -> attribute_info
+
+   val empty_attribute : attribute_info (* No attribites *)
+   val squash_attributes : attribute_info -> attribute_info (* Squash away raw attributes, but keep the rest *)
 
    val format_attrs : Dform.dform_base -> term Rformat.buffer -> attribute_info -> unit
 
@@ -723,6 +727,7 @@ sig
       proof
 
    val io_proof_of_proof :
+      bool ->                      (* Whether to squash away the primitive proof tree *)
       (string -> MLast.expr) ->    (* Parser *)
       (MLast.expr -> tactic) ->    (* Evaluator *)
       proof ->
