@@ -772,8 +772,13 @@ struct
       output_char out '\t';
       output_string out (Lm_ctype.quote str2);
       output_char out '\t';
-      output_string out (String.concat "\\\\ " (List.map output_aux strs));
-      output_char out '\n'
+      let s = (String.concat "\\\\ " (List.map output_aux strs)) in
+      let l = String.length s - 1 in
+         if l>=0 && s.[l] = ' ' then begin
+            s.[l] <- '\n'; output_string out s
+         end else begin
+            output_string out s; output_char out '\n'
+         end
 
    let make_simple_control out =
     { out_name_op = simple_name_op;
