@@ -136,6 +136,15 @@ let get_bind_from_arg_or_hyp_subst p i t =
       var_subst_to_bind (Sequent.nth_hyp p i) t
 
 (*
+ * Symbol generation.
+ *)
+let new_symbol_term v =
+   mk_var_term (new_symbol v)
+
+let new_symbol_string_term s =
+   mk_var_term (new_symbol_string s)
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "editor.run"

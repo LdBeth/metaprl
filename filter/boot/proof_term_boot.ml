@@ -246,7 +246,7 @@ struct
          'ext_arglist,    'term_arglist,
          'ext_parents,    'term_parents,
          'ext_tactic_arg, 'term_tactic_arg,
-         'ext_extract, 'term_extract) memo =
+         'ext_extract,    'term_extract) memo =
       { attribute       : (args_info * ('ext_attribute,  'term_attribute,
                                         'ext_attributes, 'term_attributes,
                                         'ext_arglist,    'term_arglist,

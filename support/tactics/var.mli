@@ -44,6 +44,10 @@ val var_subst_to_bind : term -> term -> term
 val get_bind_from_arg_or_concl_subst : tactic_arg -> term -> term
 val get_bind_from_arg_or_hyp_subst : tactic_arg -> int -> term -> term
 
+(* New variable generation *)
+val new_symbol_term : var -> term
+val new_symbol_string_term : string -> term
+
 (*
  * -*-
  * Local Variables:

@@ -94,9 +94,6 @@ resource (simp_typeinf_resource_info, simp_typeinf_func) simp_typeinf
 val simp_infer_type : tactic_arg -> term -> term * term
 val simp_infer_type_args : tactic_arg -> term -> term list
 
-(* creates a "fresh" variable name *)
-val gensym : unit -> ty_var
-
 (*
  * -*-
  * Local Variables:

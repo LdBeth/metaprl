@@ -116,7 +116,10 @@ if $(not $(equal $(OSTYPE), Win32))
 #
 OCAMLDEP = $(file bin/ocamldep$(EXE))
 
-.SCANNER: %.cmi %.cmo %.cmx: $(OCAMLDEP)
+.SCANNER: %.cmi: %.mli $(OCAMLDEP)
+    $(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLINCLUDES) $(set $(replacesuffixes .cmi .cmo .cmx, .mli .ml .ml, $^))
+
+.SCANNER: %.cmo %.cmx: %.ml $(OCAMLDEP)
     $(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLINCLUDES) $(set $(replacesuffixes .cmi .cmo .cmx, .mli .ml .ml, $^))
 
 #

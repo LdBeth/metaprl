@@ -147,8 +147,8 @@ ENDIF
          * For debugging, this is the total number of tables
          * that have been created before this table.
          *)
-        name: string;
-        id: int
+        name : string;
+        id : int
       }
 
    (************************************************************************
@@ -156,14 +156,16 @@ ENDIF
     ************************************************************************)
 
    (*
-    * HAsh code for the descriptor.
+    * Hash code for the descriptor.
     *)
-   let wd_hash i = i
+   let wd_hash i =
+      i
 
    (*
     * Release the anchor for possible GC.
     *)
-   let weaken d = d.descriptor
+   let weaken d =
+      d.descriptor
 
    (*
     * Total number of weak tables.

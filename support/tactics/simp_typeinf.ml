@@ -163,12 +163,6 @@ let simp_infer_type_args p t =
       [t]
 
 (*
- * Generating new symbols.
- *)
-let gensym () =
-   new_symbol_string "$ty"
-
-(*
  * -*-
  * Local Variables:
  * Caml-master: "editor.run"
