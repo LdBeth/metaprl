@@ -1,0 +1,70 @@
+
+open Object_id
+open Term
+
+
+(*
+ * common terms
+ *)
+
+val itoken_term		: string -> term
+val inatural_term	: int -> term
+val itext_term		: string -> term
+val ioid_term		: object_id -> term
+
+val imessage_term	: string list -> object_id list -> term list -> term
+
+val iterm_term		: term -> term
+val iterm_bterms	: bound_term list -> term
+
+val ivoid_term		: term
+
+val number_of_inatural_term : term -> int
+val oid_of_ioid_term	: term -> object_id
+
+val parameters_of_term		: term -> param list
+val token_parameter_to_string	: param -> string
+
+(*
+ * failure
+ *)
+
+(* throws Exception Nuprl5 of Term *)
+val error		: string list -> object_id list -> term list -> 'a
+
+(* catches Exception Nuprl5 of Term *) 
+val error_handler	: (unit -> 'b) -> (term -> 'b) -> 'b
+
+val unconditional_error_handler : (unit -> 'b) -> (term -> 'b) -> 'b
+
+val special_error_handler :  (unit -> 'b) -> (string -> term -> 'b) -> 'b
+
+(*
+ * stamps
+ *)
+
+type stamp
+
+val term_to_stamp	: term -> stamp
+val stamp_to_term	: stamp -> term
+  
+(* (in_transaction_p a b) = true <-> (in_transaction_p b a = true) *)
+val in_transaction_p 	: stamp -> stamp -> bool
+
+(* stamps from same library session can be ordered, if stamps from
+ * distinct lib sessions compared then < fails.
+ * transaction_less a b = true when a occured earlier than b.
+ *)
+val transaction_less	: stamp -> stamp -> bool
+
+val new_stamp 		: unit ->  stamp
+val get_stamp 		: unit ->  stamp
+
+val sequence		: unit -> int
+val tid			: unit -> bound_term
+
+val term_of_unbound_term	: bound_term -> term
+val string_of_itext_term	: term -> string
+
+
+val mk_nuprl5_op	: param list -> operator
