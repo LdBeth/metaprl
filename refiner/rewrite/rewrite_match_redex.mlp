@@ -121,7 +121,7 @@ struct
       match stack.(v) with
          StackString s ->
             s
-       | x ->
+       | _ ->
             ref_raise(RefineError ("extract_bvar", RewriteStringError "stack entry is not a string"))
 
    let extract_bvars stack l = List.map (extract_bvar stack) l
@@ -297,19 +297,19 @@ struct
      *)
    let rec match_redex_term addrs stack t' t =
       match t' with
-         RWComposite { rw_op = { rw_name = name'; rw_params = params' }; rw_bterms = bterms' } ->
+         RWComposite { rw_op = op'; rw_bterms = bterms' } ->
             let term = dest_term t in
             let op = dest_op term.term_op in
 #ifdef VERBOSE_EXN
                if !debug_rewrite then
                   eprintf "Rewrite.match_redex.RWComposite: %s[%d](%d)/%a[%d](%d)%t" (**)
-                     (string_of_opname name') (List.length params') (List.length bterms')
+                     (string_of_opname op'.rw_name) (List.length op'.rw_params) (List.length bterms')
                      debug_print t (List.length op.op_params) (List.length term.term_terms)
                      eflush;
 #endif
-               if Opname.eq op.op_name name' then
+               if Opname.eq op.op_name op'.rw_name then
                   begin
-                     match_redex_params_iter stack params' op.op_params;
+                     match_redex_params_iter stack op'.rw_params op.op_params;
                      rev_iter2 (match_redex_bterms addrs stack) bterms' term.term_terms;
 #ifdef VERBOSE_EXN
                      if !debug_rewrite then
@@ -424,13 +424,12 @@ struct
             ref_raise(RefineError ("match_redex_term", RewriteBadMatch (TermMatch t)))
 
    and match_redex_bterms addrs stack bt' bt =
-      match bt', dest_bterm bt with
-         { rw_bvars = vars'; rw_bnames = names; rw_bterm = bterm' },
+      match dest_bterm bt with
          { bvars = vars; bterm = bterm } ->
-            set_bvars stack names vars;
-            if vars' = List.length vars then
-               match_redex_term addrs stack bterm' bterm
-            else
+            if bt'.rw_bvars = List.length vars then begin
+               if vars!=[] then set_bvars stack bt'.rw_bnames vars;
+               match_redex_term addrs stack bt'.rw_bterm bterm
+            end else
                ref_raise(RefineError ("match_redex_bterms", RewriteBadMatch (BTermMatch bt)))
 
    and match_redex_sequent_hyps addrs stack hyps' hyps i len =
