@@ -42,8 +42,10 @@ It may be a good idea to implement a generic display-form mechanism to allow lim
 the number of lines a certain term would occupy. On the other hand, such an approach
 would only save the time to output the display form, but not the time to produce it.
 
-2.7) Native code just coredumps on stack overflow. This is really bad since it does not give
-user a chance to save work. Not sure what can be done about it.
+2.7) Native code just exits with segmentation fault on stack overflow. This is really bad
+since it does not give user a chance to save work.
+We may try to do our own "depth counting" in scheduler and catch too deep recursion
+before it has a chance to overflow the stack.
 
 2.8) When ls is used with non-empty flags (e.g. ls "u"), it should not use the word
      "Implementation" in the listing header (or it should at least tell what exactly
@@ -136,7 +138,8 @@ them to be more efficient).
 
 4.8) (2000.06.09 nogin)
 When autoT is ran on <<sequent [squash] { >- "type"{'O} } >> (with no assumtions),
-MetaPRL crashes with segmentation fault!
+MetaPRL seems to go into an infinite loop and because of the BUG 2.7, mpopt would crash
+with segmentation fault!
 
 PARSER & FILTER
 

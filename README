@@ -30,9 +30,9 @@ To run MetaPRL for the first time:
       % cd editor/ml; ./mpopt  (native code)
 
 Refer to doc/htmlman/install.html or to
-http://cvs.metaprl.org:12000/cvsweb/~checkout~/meta-prl/doc/htmlman/install.html
+http://cvs.metaprl.org:12000/metaprl/install.html
 for more information.
 
 If you plan to write some code, take a look the Developer Guide before you start.
 Go to either doc/htmlman/developer-guide/default.html or to
-http://cvs.metaprl.org:12000/cvsweb/~checkout~/meta-prl/doc/htmlman/developer-guide/default.html
+http://cvs.metaprl.org:12000/metaprl/developer-guide/default.html

@@ -32,7 +32,7 @@
 
 (*
  * See doc/htmlman/developer-guide/debugging.html or
- * http://cvs.metaprl.org:12000/cvsweb/~checkout~/meta-prl/doc/htmlman/developer-guide/debugging.html
+ * http://cvs.metaprl.org:12000/metaprl/developer-guide/debugging.html
  * for more information on how to use this module
  * and on MetaPRL debugging in general.
  *)

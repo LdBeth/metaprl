@@ -16,7 +16,7 @@ cat << end_of_cat
 
 # Term module to use: ds or std
 # See doc/htmlman/developer-guide/term_modules.html or
-# http://cvs.metaprl.org:12000/cvsweb/~checkout~/meta-prl/doc/htmlman/developer-guide/term_modules.html
+# http://cvs.metaprl.org:12000/metaprl/developer-guide/term_modules.html
 # for more information.
 # If not sure, use ds
 #
@@ -32,7 +32,7 @@ SEQ_SET=$SEQ_SET
 #
 # Refiner verbosity: VERBOSE or SIMPLE
 # See doc/htmlman/developer-guide/refiner_verb_and_simp.html or
-# http://cvs.metaprl.org:12000/cvsweb/~checkout~/meta-prl/doc/htmlman/developer-guide/refiner_verb_and_simp.html
+# http://cvs.metaprl.org:12000/metaprl/developer-guide/refiner_verb_and_simp.html
 # for more information.
 # If not sure, use VERBOSE
 #
