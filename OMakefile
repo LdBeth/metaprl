@@ -37,6 +37,11 @@ if $(equal $(OSTYPE), Win32)
       copy mk\config.local.empty mk\config.local
 
    #
+   # cmd.exe does not like ./command paths
+   #
+   CURRENT_DIR =
+
+   #
    # No native-code version of camlp4 on windows
    #
    NATIVE_ENABLED = false
@@ -61,6 +66,12 @@ else
 
    .INCLUDE: mk/config.local
       $(CP) mk/config.local.empty mk/config.local
+
+   #
+   # Current directory, for executables.
+   # That is, the current directory, like ./make_mp_config
+   #
+   CURRENT_DIR = ./
 
    #
    # Location of OCaml root
@@ -157,7 +168,7 @@ clean:
     $(CLEAN) $(file bin/ocamldep$(EXE) lib/camlp4* bin/convert$(EXE) lib/*.cm* lib/*.ml* lib/*.txt lib/*.dat lib/*.a bin/prlc*)
 
 realclean: clean
-    $'(RM) $(file theories/*/*.prlb theories/*/*/*.prlb) # This is a temporary HACK
+    -$'(RM) $(file theories/*/*.prlb theories/*/*/*.prlb) # This is a temporary HACK
     cvs_realclean
 
 #

@@ -234,7 +234,7 @@ make_mp_version$(EXE): make_mp_version.ml
 	$(OCAMLC) -o $@ unix.cma $<
 
 mp_version.ml: make_mp_version$(EXE) $(ALL_DEPS)
-	./make_mp_version -version $(MP_VERSION) -refiner $(REFINER) -terms $(TERMS) > $@
+	$(CURRENT_DIR)make_mp_version -version $(MP_VERSION) -refiner $(REFINER) -terms $(TERMS) > $@
 
 #
 # Phony targets
