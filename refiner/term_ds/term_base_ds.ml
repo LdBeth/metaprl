@@ -29,7 +29,6 @@
  * Authors: Alexey Nogin
  *)
 
-(* open Array_linear_set *)
 INCLUDE "refine_error.mlh"
 
 open Printf

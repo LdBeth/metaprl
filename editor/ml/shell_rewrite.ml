@@ -30,9 +30,6 @@
  * jyh@cs.cornell.edu
  *)
 
-(*
- * open Base_trivial
- *)
 include Shell_sig
 include Package_info
 

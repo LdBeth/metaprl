@@ -32,7 +32,6 @@
  * jyh@cs.cornell.edu
  *)
 
-(* open Array_linear_set *)
 INCLUDE "refine_error.mlh"
 
 open Printf

@@ -38,6 +38,9 @@ OCamlSources $env
 	'filter_convert.ml',
 	'prlcomp.ml';
 
+# filter_mail.ml uses external symbols from clib.a
+Depends $env 'filter_main'.$env->{SUFOBJ}, "#clib/clib.a";
+
 OCamlLibrary $env 'filter',
 	'filter_parse',
 	'filter_main',

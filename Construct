@@ -18,24 +18,62 @@
 #### David's Muy Advanced OCaml Cons Extensions ##############################
 #
 # Revision History
-#  2001/04/22   bustos  Initial version
+#  2001/04/22	bustos	Initial version
 #
-#  2001/05/01   bustos  Allowed for ocamllex files with explicit signatures
+#  2001/05/01	bustos	Allowed for ocamllex files with explicit signatures
 #
-#  2001/05/04   bustos  Added dependency scanning for programs scan::ocamlprog
+#  2001/05/04	bustos	Added dependency scanning for programs scan::ocamlprog
 #
-#  2001/05/05   bustos  Wrote "Revision History"
-#                       Made scan::ocamlprog object-suffix independent
+#  2001/05/05	bustos	Wrote "Revision History"
+#			Made scan::ocamlprog object-suffix independent
 #
-#  2001/05/06   bustos  Updated comments
+#  2001/05/06	bustos	Updated comments
 #
 #  2001/07/03   geoff   Wrote vastly better version of includes()
+#
+#  2002/01/11	bustos	Rewrote:
+#			- Code in builders, rather than scanners
+#			- Timestamps for all files
+#			- Module dependency caching
+#			- Automatic include directory computation
+#			- .output file detection
+#			- Fixed 'inconsistent assumptions over implementation'
+#			  bug
+#
+#  2002/01/14	bustos	*Really* fixed 'inconsistent assumptions...' bug.
+#
+#  2002/03/10	bustos	Adapted for MetaPRL.
+#  			- Recognizes .mlz files.
+#  			- Does not compute include flags.
+#  			- Uses hidden dependencies (HIDDEPS and HIDMODDEPS).
+#  			- Uses ocamldep when available.
+#  			- Preprocesses files before scanning when necessary.
+#  			- Knows that prlc produces .cmiz and .cmoz files.
 
 use strict;
 
-### Finds a file in the same directory as the given file, but with a different
-### suffix.
-sub cons::lookup_sibling {
+package build::command::ocaml;
+
+use vars qw( @ISA %modfiles %moddeps );
+
+# modfiles maps module names to array references.  The arrays contain four
+# file references.  The first is the code for that module, the second is the
+# object file for the module, the third is the signature file (if it exists,
+# undefined if it's not), and the fourth is the compiled signature file.
+
+# moddeps maps module names to array references.  The arrays contain the names
+# of included modules.
+
+BEGIN { @ISA = qw(build::command) }
+
+#
+# Utilities
+#
+
+# Finds a file in the same directory as the given file, but with a different
+# suffix.  Put this into the file package so that we can use it as a method on
+# file objects.
+sub file::lookup_sibling {
     ## Called with a file and a suffix
     my($file,$suffix) = @_;
 
@@ -44,99 +82,25 @@ sub cons::lookup_sibling {
 
 
 ### Returns true if the given environment calls for producing native code.
-sub cons::is_native_env {
+sub is_native_env {
     my($env) = @_;
     $env->{OCAMLC} =~ /^ocamlopt(?:\.opt)?$/o;
 }
 
-
-### This is a QuickScan dependency scanner for OCaml.  It is called for each
-### line of the file being scanned and returns files that the given file
-### depends on.  This one works by looking for "open Module" or "Module." in
-### the text.
-my $ocamlscan = sub {
-        my (@modules);
-
-        s/"[^"]*?"//go; # Remove double quoted strings from $_
-
-        push @modules, /open\s+([A-Z]\w*)/go;                   # Search $_ for "open Module"
-        push @modules, /include\s+([A-Z]\w*)/go;                # Search $_ for "include Module"
-#       push @modules, /module\s+[A-Z]\w*\s+=\s+([A-Z]\w*)/go;  # Search $_ for "module M = Module"
-        push @modules, /([A-Z]\w*)\.\w+/go;                     # Search $_ for "Module.var"
-
-        ## Convert the Modules into filenames and return the list
-        map(("$_.cmi", "$_.cmx"), map(lcfirst $_, @modules));
-};
-
-
-### Sets up build instructions for an OCaml source file with a corresponding
-### signature file.
-sub cons::module_with_signature {
-    ## Called with an environment, a source file, and a signature file
-    my($env, $src, $sig) = @_;
-
-    ## Compute the include flags from $env->{INCPATH}
-    $env->{_IFLAGS} = join(" ", map("-I ".$dir::cwd->lookup($_)->path,
-                                    (".", @{$env->{INCPATH}})));
-
-    ## The compiled signature depends on the signature file
-    my($csig) = cons::lookup_sibling($sig, $env->{SUFCSIG});
-    $csig->bind((find build::command::user($env, $env->{SIGCOM})), $sig);
-
-    ## The object file depends on the source file and the compiled signature
-    my($obj) = cons::lookup_sibling($src, $env->{SUFOBJ});
-    my($builder) = find build::command::user($env, $env->{OCAMLCOM});
-
-    if (! cons::is_native_env($env)) {
-        $obj->bind($builder, ($src, $csig));
-    }
-    else {
-        ## the native compiler also produces a .o file
-        my($natobj) = cons::lookup_sibling($src, ".o");
-        my($multi) = build::multiple->new($builder, [$obj, $natobj]);
-        $obj->bind($multi, ($src, $csig));
-        $natobj->bind($multi, ($src, $csig));
-    }
-
-    ## Scan the signature and the source for other dependencies
-    $sig->{'srcscan',$env} = find scan::quickscan($ocamlscan, $env, $env->{INCPATH});
-    $src->{'srcscan',$env} = find scan::quickscan($ocamlscan, $env, $env->{INCPATH});
+# Returns the name of the module that a file produces.
+sub module_of_file {
+    $_ = ucfirst @_[0]->{entry};
+    s/\..*$//o;
+    $_
 }
 
 
-### Sets up build instructions for an OCaml source file without a
-### corresponding signature file.
-sub cons::module_without_signature {
-    ## Called with an environment and a source file
-    my($env, $src) = @_;
-
-    ## Compute the include flags from $env->{INCPATH}
-    $env->{_IFLAGS} = join(" ", map("-I ".$dir::cwd->lookup($_)->path,
-                                    (".", @{$env->{INCPATH}})));
-
-    ## The object and the compiled signature depend on the source file
-    my($obj) = cons::lookup_sibling($src, $env->{SUFOBJ});
-    my($csig) = cons::lookup_sibling($src, $env->{SUFCSIG});
-    my($builder) = find build::command::user($env, $env->{OCAMLCOM});
-
-    my($multi);
-    if (! cons::is_native_env($env)) {
-        $multi = build::multiple->new($builder, [$obj, $csig]);
-    }
-    else {
-        ## the native compiler also produces a .o file
-        my($natobj) = cons::lookup_sibling($src, ".o");
-        $multi = build::multiple->new($builder, [$csig, $obj, $natobj]);
-        $natobj->bind($multi, $src);
-    }
-
-    $csig->bind($multi, $src);
-    $obj->bind($multi, $src);
-
-    ## Scan the source and the signature for other dependencies
-    $src->{'srcscan',$env} = find scan::quickscan($ocamlscan, $env, $env->{INCPATH});
-}
-
+#
+# User Interface (i.e., functions called from Conscript files)
+#
+# These need to be in the cons package so they can be called as methods of
+# cons environment objects.
+#
 
 ### User interface for setting up build instructions for OCaml sources.  Given
 ### an environment and a list of filenames, it determines the type of each
@@ -145,73 +109,71 @@ sub cons::OCamlSources {
     ## Called with an environment and source filenames
     my($env) = shift;
 
-    ## Get file objects for the filenames
-    my(@srcs) = map($dir::cwd->lookupfile($env->_subst($_)), @_);
-
     ## Loop through the source file objects
-    foreach my $src (@srcs) {
+    foreach my $filename (@_) {
 
-        ## Is this an OCaml source file?
-        if ($src->suffix eq ".ml") {
-            ## Does the corresponding .mli file exist?
-            my($sig) = cons::lookup_sibling($src, $env->{SUFSIG});
+	my $src = $dir::cwd->lookupfile($env->_subst($filename));
+	my $suf = $src->suffix;
 
-            if (-e $sig->path) {        # the signature file exists
-                cons::module_with_signature($env, $src, $sig);
-            }
-            else {                      # the signature file doesn't exist
-                cons::module_without_signature($env, $src);
-            }
-        }
+	## Is this an OCaml source file?
+	if ($suf eq ".ml") {
+	    ## Does the corresponding signature file exist?
+	    my($sig) = $src->lookup_sibling($env->{SUFSIG});
 
-        ## Is this an ocamllex file?
-        elsif ($src->suffix eq ".mll") {
-            ## ocamllex produces an OCaml source file
-            my($mlsrc) = cons::lookup_sibling($src, $env->{SUFSRC});
-            $mlsrc->bind((find build::command::user($env, $env->{LEXCOM})), $src);
+	    ocaml_module($env, $src, $sig->accessible ? $sig : undef);
+	}
 
-            ## Does the corresponding .mli file exist?
-            my($sig) = cons::lookup_sibling($mlsrc, $env->{SUFSIG});
+	## Is this an ocamllex file?
+	elsif ($suf eq ".mll") {
+	    ## ocamllex produces an OCaml source file
+	    my($mlsrc) = $src->lookup_sibling($env->{SUFSRC});
+	    $mlsrc->bind((find build::command::user($env, $env->{LEXCOM})),
+			 $src);
 
-            if (-e $sig->path) {        # the signature file exists
-                cons::module_with_signature($env, $mlsrc, $sig);
-            }
-            else {
-                cons::module_without_signature($env, $mlsrc);
-            }
-        }
+	    ## Does the corresponding .mli file exist?
+	    my($sig) = $mlsrc->lookup_sibling($env->{SUFSIG});
 
-        ## Is this an ocamlyacc file?
-        elsif ($src->suffix eq ".mly") {
-            ## ocamlyacc produces an OCaml source file and a signature file
-            my($mlsrc) = cons::lookup_sibling($src, $env->{SUFSRC});
-            my($sig) = cons::lookup_sibling($src, $env->{SUFSIG});
-            my($builder) = find build::command::user($env, $env->{YACCCOM});
-            my($multi) = build::multiple->new($builder, [$mlsrc, $sig]);
-            $mlsrc->bind($multi, $src);
-            $sig->bind($multi, $src);
+	    ocaml_module($env, $mlsrc, $sig->accessible ? $sig : undef);
+	}
 
-            cons::module_with_signature($env, $mlsrc, $sig);
-        }
+	## Is this an ocamlyacc file?
+	elsif ($suf eq ".mly") {
+	    ## ocamlyacc produces an OCaml source file and a signature file
+	    my @tgt_sufs = ($env->{SUFSRC}, $env->{SUFSIG});
 
-        ## Is this a .mlz file?
-        elsif ($src->suffix eq ".mlz") {
-            ## ocamlyacc produces an OCaml source file and a signature file
-            my($mlsrc) = cons::lookup_sibling($src, $env->{SUFSRC});
-            my($sig) = cons::lookup_sibling($src, $env->{SUFSIG});
-            my($builder) = find build::command::user($env, $env->{LNCOM2});
-            my($multi) = build::multiple->new($builder, [$mlsrc, $sig]);
-            $mlsrc->bind($multi, $src);
-            $sig->bind($multi, $src);
+	    # And maybe a .output file.
+	    if ($env->{YACCCOM} =~ /-v/) { push @tgt_sufs, ('.output') }
 
-            cons::module_with_signature($env, $mlsrc, $sig);
-        }
+	    my @tgts = map($src->lookup_sibling($_), @tgt_sufs);
 
-        ## What kind of file is this?
-        else {
-            my($file) = $src->path;
-            die "Unrecognized file $file\n";    # XXX Should I use die here?
-        }
+	    my $cbuild = find build::command::user($env, $env->{YACCCOM});
+	    my $builder = build::multiple->new($cbuild, \@tgts);
+	    foreach my $tgt (@tgts) { $tgt->bind($builder, $src) };
+
+	    ocaml_module($env, @tgts[0], @tgts[1]);
+	}
+
+	elsif ($suf eq ".mlz") {
+	    if ($env->{OCAMLC} !~ /prlc/) {
+		my $builder = find build::command::user($env, "ln -s %1:f %>");
+		my $real_src = $src->lookup_sibling($env->{SUFSRC});
+		$real_src->bind($builder, $src);
+		ocaml_module($env, $real_src, undef);
+	    } else {
+		my $builder = find build::command::user($env, "ln -s %1:f %>");
+		my $real_src = $src->lookup_sibling($env->{SUFSRC});
+		my $real_sig = $src->lookup_sibling($env->{SUFSIG});
+		$real_src->bind($builder, $src);
+		$real_sig->bind($builder, $src);
+		ocaml_module($env, $real_src, $real_sig);
+	    }
+	}
+
+	## What kind of file is this?
+	else {
+	    my($file) = $src->path;
+	    die "Unrecognized file $file\n";
+	}
     }
 }
 
@@ -223,22 +185,17 @@ sub cons::OCamlProgram {
     ## Called with an environment, a program name, and module names
     my($env, $prog, @modules) = @_;
 
-    ## Get the object for the program
+    ## Get the file for the program
     my($tgt) = $dir::cwd->lookupfile($prog);
 
     ## Get objects for the modules
-    my(@objects);
-    foreach my $name (@modules) {
-        my($obj) = $tgt->{dir}->lookup_accessible($name . $env->{SUFOBJ})
-                    || $tgt->{dir}->lookupfile($name . $env->{SUFLIB});
-        push @objects, ($obj);
-    }
+    my @objects = map {
+	$modfiles{ucfirst $_}->[1] ||
+	    die "OCamlProgram($prog): Don't know where module $_ is.\n"
+    } @modules;
 
     ## The program depends on its module's objects with the linking command
-    $tgt->bind((find build::command::user($env, $env->{LINKCOM})), @objects);
-
-    ## Try out the module scanner
-    $objects[0]->{'srcscan',$env} = find scan::ocamlprog($env, $env->{INCPATH});
+    $tgt->bind((find build::command::ocaml::prog($env)), @objects);
 }
 
 
@@ -258,195 +215,636 @@ sub cons::OCamlLibrary {
 
     ## The library depends on the objects.  Use ARCOM to build it.
     my($builder) = find build::command::user($env, $env->{ARCOM});
-    if (! cons::is_native_env($env)) {
-        $lib->bind($builder, @objects);
+    if (! is_native_env($env)) {
+	$lib->bind($builder, @objects);
     }
     else {
-        ## the native compiler also produces a .a file
-        ## Can't use lookup_sibling here because base_suf won't remove a
-        ## four-letter suffix.
-        my($natlib) = $lib->{dir}->lookupfile("$libname.a");
-        my($multi) = build::multiple->new($builder, [$lib, $natlib]);
-        $lib->bind($multi, @objects);
-        $natlib->bind($multi, @objects);
+	## the native compiler also produces a .a file
+	## Can't use lookup_sibling here because base_suf won't remove a
+	## four-letter suffix.
+	my($natlib) = $lib->{dir}->lookupfile("$libname.a");
+	my($multi) = build::multiple->new($builder, [$lib, $natlib]);
+	$lib->bind($multi, @objects);
+	$natlib->bind($multi, @objects);
     }
 }
 
-###
-### Extra OCaml dependencies
-###
-sub cons::OCamlDepends {
-    my($env) = shift;
-    my($tgt) = $env->_subst(shift);
-    my(@deps) = @_;
-    if (! ref($tgt)) {
-        $tgt = [ $tgt ];
+
+#
+# Given a cons environment, a source file, and a signature file (may be
+# undefined), set up the apropriate bindings.
+#
+sub ocaml_module {
+    my($env, $src, $sig) = @_;
+
+    $env->{_IFLAGS} = join(' ', map('-I '.$dir::cwd->lookup($_)->path,
+				    ('.', @{$env->{INCPATH}})));
+
+    # Get the associated object and compiled signature files
+    my $obj = $src->lookup_sibling($env->{SUFOBJ});
+    my $csig = $src->lookup_sibling($env->{SUFCSIG});
+
+    # Tell the builder about this module
+    module_files(module_of_file($src), $src, $obj, $sig, $csig);
+
+    # Copy HIDMODDEPS from the environment to the source file, since it would
+    # otherwise be inaccessible (frome the source file).
+    $src->{HIDMODDEPS} = $env->{HIDMODDEPS};
+
+    # Look up hidden dependencies so they can pushed onto dependency lists.
+    my @hiddeps = map($dir::cwd->lookupfile($_), split(' ', $env->{HIDDEPS}));
+
+    # Depending on whether there's a signature file and whether we're using
+    # the native compiler, bind derived files to their sources.
+    if (defined $sig) {
+	if ($env->{OCAMLC} !~ /prlc/) {
+	    # We have a signature.  The compiled signature is always produced
+	    # by running the OCaml builder on the signature file
+	    my $builder = find build::command::ocaml($env);
+	    $csig->bind($builder, $sig);
+
+	    push @{$csig->{dep}}, @hiddeps;
+
+	    # The object, on the other hand, will be accompanied by a native
+	    # object file if we're using the native compiler.
+	    if (! is_native_env($env)) {
+		$obj->bind($builder, $src);
+	    }
+	    else {
+		my $natobj = $src->lookup_sibling(".o");
+
+		$builder = build::multiple->new($builder, [$obj, $natobj]);
+
+		$obj->bind($builder, $src);
+		$natobj->bind($builder, $src);
+
+		push @{$natobj->{dep}}, @hiddeps;
+	    }
+
+	    # Make sure the compiled signature is built before the object.
+	    push @{$obj->{dep}}, ($csig, @hiddeps);
+
+	    # The object file (unfortunately) depends on the objects of its
+	    # included modules.
+	    $obj->{depends_on_objects} = 1;
+	} else {
+	    my $csigz = $src->lookup_sibling(".cmiz");
+	    my $objz = $src->lookup_sibling(".cmoz");
+
+	    my $builder = find build::command::ocaml($env);
+	    my $mbuild = build::multiple->new($builder, [$csig, $csigz]);
+	    $csig->bind($mbuild, $sig);
+	    $csigz->bind($mbuild, $sig);
+
+	    if (! $env->{OCAMLC} =~ /-opt/) {
+		my $mbuild = build::multiple->new($builder, [$obj, $objz]);
+		$obj->bind($mbuild, $src);
+		$objz->bind($mbuild, $src);
+	    } else {
+		my $natobj = $src->lookup_sibling(".o");
+
+		my $mbuild = build::multiple->new($builder, [$obj, $natobj, $objz]);
+
+		map { $_->bind($mbuild, $src) } ($obj, $natobj, $objz);
+
+		push @{$natobj->{dep}}, @hiddeps;
+	    }
+
+	    map {push @{$_->{dep}}, @hiddeps} ($csig, $csigz, $obj, $objz);
+
+	    push @{$obj->{dep}}, ($csig);
+
+	    $obj->{depends_on_objects} = 1;
+	}
     }
-    my($t);
-    foreach $t (map($dir::cwd->lookupfile($_ . $env->{SUFSRC}), @$tgt)) {
-        push(@{$t->{ocamldep}}, @deps);
+    else {
+	# No signature.  Everything (object, compiled signature, and possible
+	# native object) is produced by one command.
+
+	my @tgts = ($obj, $csig);
+
+	if (is_native_env($env)) { push @tgts, ($src->lookup_sibling(".o")); }
+
+	my $builder =
+	    build::multiple->new(find build::command::ocaml($env), \@tgts);
+
+	foreach my $tgt (@tgts) {
+	    $tgt->bind($builder, $src);
+
+	    push @{$tgt->{dep}}, @hiddeps;
+
+	    # Since all of the targets are produced with one command, they all
+	    # depend on the objects of their included modules.  See
+	    # build::command::ocaml::includes below for more information.
+	    $tgt->{depends_on_objects} = 1;
+	};
     }
 }
 
-### A scanner for OCaml programs.
-package scan::ocamlprog;
 
-use vars qw( @ISA %scanner );
+#
+# Meat of the builder
+#
 
-BEGIN { @ISA = qw(scan) }
+# Register the files associated with a module in the module directory.
+sub module_files {
+    my($mod, $src, $obj, $sig, $csig) = @_;
+
+    if ($script::ARG{DEBUG} && exists $modfiles{$mod}) {
+	print "module_files: Ieeeee!  I already know about module $mod.\n";
+    }
+
+    $modfiles{$mod} = [$src, $obj, $sig, $csig];
+}
+
+# Return a builder for the given environment.
+sub find {
+    my($class, $env) = @_;
+
+    # I guess we'll just have a different builder for each environment.
+    $env->{_ocaml} || do {
+	my($self) = find build::command($env, $env->{OCAMLCOM});
+	bless ($env->{_ocaml} = $self);
+    }
+}
+
+# Scan a file and return a list of the (names of the) modules it uses.
+sub scan_file {
+    my($self, $src) = @_;
+
+    my %includes;
+
+    # Inform the user, if he wants.
+    print "Scanning ".$src->path."\n" if ($script::ARG{SCAN});
+
+    # If the file needs to be preprocessed, do so
+    my $filename;	# File to scan
+
+    if ($self->{com} =~ /-pp '(.*?)'/) {
+	use File::Temp qw/ tempfile /;
+	my ($fh, $fn) =
+	    tempfile("cons_scan-XXXX", SUFFIX => ".ml", UNLINK => 1);
+	$filename = $fn;
+	my $command = $1;
+	if ($command =~ /\.cmo/) {
+	    $command =~ s/(.*\.cmo)/$1 pr_o.cmo/;
+	} else {
+	    $command .= " pr_o.cmo";
+	}
+	$command .= " " . $src->path . " > $filename";
+	print "Executing `$command' before scanning.\n" if ($script::ARG{DEBUG});
+	system($command);
+    } else {
+	$filename = $src->path;
+    }
+
+    # Scan the file.  Use ocamldep if we know where it is.
+
+    my $ocamldep = $self->{env}->{OCAMLDEP};
+    my @mods;
+
+    if ($ocamldep) {
+	# Make sure it's built
+	my($command) = $ocamldep =~ /\s*(\S*)/;
+	my $bin = $dir::top->lookupfile($command);
+	if ((build $bin) eq 'errors') {
+	    $ocamldep = '';
+	} else {
+	    print "Executing `$ocamldep $filename' to scan.\n" if ($script::ARG{DEBUG});
+	    @mods = split(' ', `$ocamldep $filename`);
+	}
+    }
+
+    if (! $ocamldep) {
+	my %includes;
+
+	die "Couldn't open `".$src->rpath."' for scanning."
+	    unless open(SCAN, $src->rpath);
+
+	while(<SCAN>) {
+	    s/"[^"]*?"//go;		# Remove literal strings from $_
+
+	    # Since the regular expressions here are in list context, they
+	    # return lists of matched strings.  Those strings are then entered
+	    # into the %includes hash, so that its keys will be a uniquified
+	    # list of modules.
+	    foreach (/open\s+([A-Z]\w*)/go,	# Search $_ for "open Module"
+		     /([A-Z]\w*)\.\w+/go)	# Search $_ for "Module.blah"
+	    {
+		$includes{$_} = 1;
+	    }
+	}
+	close(SCAN);
+
+	@mods = keys %includes;
+    }
+
+    return @mods;
+}
+
+#
+# Given an OCaml source file, return a list of the modules it uses.
+#
+sub get_included_modules {
+    my($self, $src) = @_;
+
+    print "get_included_modules(".$src->path.")\n" if ($script::ARG{DEBUG});
+
+    return $self->get_included_modules_for_module(module_of_file($src));
+}
+
+sub get_included_modules_for_module {
+    my($self, $mod) = @_;
+
+    print "get_included_modules_for_module($mod)\n" if ($script::ARG{DEBUG});
+
+    if (exists $moddeps{$mod}) { return @{$moddeps{$mod}} }
+
+    my %includes;
+
+    return () if ! exists $modfiles{$mod};
+
+    my $files = $modfiles{$mod};
+    my $file = $files->[0];
+
+    map { $includes{$_} = 1 } $self->get_included_modules_for_file($file);
+    $file = $files->[2];
+    map { $includes{$_} = 1 } $self->get_included_modules_for_file($file)
+    if (defined $files->[2]);
+
+    my @includes = keys %includes;
+
+    $moddeps{$mod} = \@includes;
+
+    @includes;
+}
+
+sub get_included_modules_for_file {
+    my($self, $file) = @_;
+
+    print "get_included_modules_for_file(".$file->path.")\n"
+	if ($script::ARG{DEBUG});
+
+    # Make sure the file is built, if necessary
+    if ((build $file) eq 'errors') {
+	# XXX Should propogate error here... but how?
+	return ();
+    }
+
+    # Retrieve the list of included modules for this file from the
+    # corresponding .consign file.  I've arranged to have this placed in the
+    # builder_data attribute of the file, through the sig::md5::signature
+    # function.
+    'sig'->signature($file);
+    my $mods = $file->{builder_data};
+
+    my @includes;
+
+    if ($mods) {
+	@includes = ($mods eq '-') ? () : split(' ', $mods);
+    } else {
+	# Either we don't have a list from the .consign file, or the file has
+	# changed since the list was made.
+	@includes = $self->scan_file($file);
+
+	# Cache the resulting list.
+	$file->{builder_data} = (@includes) ? join(' ', @includes) : '-';
+	$sig::hash::dirty{$file->{dir}} = $file->{dir};
+    }
+
+    push @includes, split(' ', $file->{HIDMODDEPS});
+    return @includes;
+}
+
+#
+# Returns a list of modules that the given source files depend on.  The
+# resulting list should be closed with respect to dependencies.
+#
+sub get_included_modules_recursive {
+    my($self, @srcs) = @_;
+
+    print "get_included_modules_recursive(".join(', ', map($_->path, @srcs)).")\n"
+	if ($script::ARG{DEBUG});
+
+    my %modules;	# We'll return the keys of this
+    my @mods;		# This will be a queue of modules to be included
+
+    # Initialize the queue
+    @mods = map { $self->get_included_modules_for_module(module_of_file($_)); } @srcs;
+
+    while (my $mod = pop @mods) {
+	next if exists $modules{$mod};
+
+	$modules{$mod} = 1;
+
+	push @mods, $self->get_included_modules_for_module($mod);
+    }
+
+    keys %modules;
+}
+
+#
+# Return a signature of the dynamic predependencies of $tgt.  Build them, too.
+#
+sub includes {
+    my($self, $tgt) = @_;
+
+    print "includes(".$tgt->path.")\n" if ($script::ARG{DEBUG});
+
+    # Collect the modules included by all sources of $tgt (as keys of %modules).
+    my(%modules);
+    # Apparently map'ing on referenced arrays is a bad idea, so we have to
+    # copy $tgt->{sources}, I guess.
+    my @srcs = @{$tgt->{sources}};
+    map { $modules{$_} = 1 } (map $self->get_included_modules($_), @srcs);
+    map { $modules{$_} = 1 } (split(' ', $tgt->{builder}->{env}->{HIDMODDEPS}));
+
+    my $sig = '';
+
+    # Build and get signatures for the compiled signatures of the included
+    # modules.
+    for my $mod (sort keys %modules) {
+	if (exists $modfiles{$mod}) {
+	    my $modfiles = $modfiles{$mod};
+	    my($csig) = $modfiles->[3];
+	    next if $csig eq $tgt;
+	    if ((build $csig) eq 'errors') {
+		$tgt->{status} = 'errors';
+		return '';
+	    }
+
+	    $sig .= 'sig'->signature($csig);
+
+	    # Possibly build the object for the included module.  This is
+	    # necessary because some OCaml files depend on the implementation
+	    # of their included modules.  Specifically, object files.
+	    #
+	    # We need a more general condition here (than just detecting when
+	    # we're working on an object file) because (thanks to
+	    # build::multiple), sometimes we will be called on a compiled
+	    # signature file and the command which eventually produces it also
+	    # produces an object file (i.e., when there is no explicit
+	    # signature file.)
+	    if ($tgt->{depends_on_objects}) {
+		my $obj = $modfiles->[1];
+		next if $obj eq $tgt;
+		if ((build $obj) eq 'errors') {
+		    $tgt->{status} = 'errors';
+		    return '';
+		}
+
+		$sig .= 'sig'->signature($obj);
+	    }
+	}
+	else {
+	    if ($script::ARG{DEBUG}) {
+		print "includes/build: Don't know where module $mod is.\n";
+	    }
+	}
+    }
+
+    $sig
+}
+
+
+#
+# A builder for OCaml programs.
+#
+package build::command::ocaml::prog;
+
+use vars qw( @ISA );
+
+BEGIN { @ISA = qw(build::command::ocaml) }
 
 sub find {
-    my($class, $env, $pdirs) = @_;
-    if (! defined $pdirs) {
-        $pdirs = [ ];
-    } elsif (ref($pdirs) ne 'ARRAY') {
-        $pdirs = [ split(/$main::PATH_SEPARATOR/o, $pdirs) ];
-    }
-    my @path = map { $dir::cwd->lookupdir($_) } @$pdirs;
-    my($spath) = "@path";
-    $scanner{$spath} || do {
-        my($self) = { env => $env, 'path' => \@path };
-        $scanner{$spath} = bless $self;
+    my($class, $env) = @_;
+
+    $env->{_ocamlprog} || do {
+	my $self = find build::command($env, $env->{LINKCOM});
+	bless ($env->{_ocamlprog} = $self);
     }
 }
 
-### The plan (two versions):
-###
-### 1. Dave's old, horrifically inefficent version:
-###      For each file given, find the corresponding source file.  Scan it and add
-###      the objects corresponding to the included modules to the @sources list of
-###      the target.  Add the corresponding source files to the stack to be
-###      scanned, and continue until the stack is empty.
-###
-### 2. Geoffrey's fast method:
-###      Instead of a list of sources, we generate a dependence dag.  Then we apply
-###      a topological sort to get a correctly ordered list of sources.
-
+#
+# Return a signature of the dynamic predependants of the given target.
+#
 sub includes {
+    my($self, $tgt) = @_;
 
-    ## Invoked with a scanner, a target, and a list of files
-    my($self, $tgt, @files) = @_;
+    my %modules;
+    my @objs = @{$tgt->{sources}};
+    my @srcs = map $_->lookup_sibling($self->{env}->{SUFSRC}), @objs;
+    map { $modules{$_} = 1 }
+	(map $self->get_included_modules_recursive($_), @srcs);
 
-    my($env) = $self->{env};    # Have the environment on hand for easy access
+    my $sig = '';
 
-    my(%signatures);            # signatures of included files
-    my($source);                # iteration variable
+    for my $mod (sort keys %modules) {
+	if (exists $build::command::ocaml::modfiles{$mod}) {
+	    my $modfiles = $build::command::ocaml::modfiles{$mod};
+	    my $obj = $modfiles->[1];
+	    if ((build $obj) eq 'errors') {
+		$tgt->{status} = 'errors';
+		return '';
+	    }
 
-    ## $self->{includes} is the scanner-specific persistent hash of files and
-    ## lists of includes
-    my($inc) = $self->{includes} || ($self->{includes} = {});
+	    $sig .= 'sig'->signature($obj);
+	}
+	else {
+	    if ($script::ARG{DEBUG}) {
+		print "ocaml::prog::includes: Don't know where module $mod is.\n";
+	    }
+	}
+    }
 
-    ## Find sources for the @files given
-    my @work_list = map(cons::lookup_sibling($_, $env->{SUFSRC}), @files);
+    $sig
+}
 
-    my %source_set;
+#
+# Called by file::_build to actually build an object.  Here we use the module
+# dependency information (in %build::command::ocaml::moddeps) to create the
+# topologically-ordered list of objects necessary to build the program, and
+# then defer to build::command::action to actually execute the command.
+#
+sub action {
+    my($self, $tgt) = @_;
 
-    ## For each file in the queue,
-    while ($source = shift @work_list) {
-        next if exists $source_set{$source};   # Already seen it.
-        $source_set{$source} = $source;
+    print "ocaml::prog::action(", $tgt->path, ")\n" if ($script::ARG{DEBUG});
 
+    my $env = $self->{env};
 
-        ## build file and generate includes if necessary
-        unless ($inc->{$source}) {
-            ## Build the object file
-            if ((file::build(cons::lookup_sibling($source, $env->{SUFOBJ}))) eq 'errors') {
-                $tgt->{status} = 'errors';      # tgt inherits build status
-                return ();
-                }
+    my @objs = @{$tgt->{sources}};
 
-            ## Scan the file for included files
-            $inc->{$source} = [map(cons::lookup_sibling($_, $env->{SUFSRC}), $self->scan($source))];
-            }
+    # Build a dependency dag
 
-        ## Compute the signature
-        $signatures{$source} = 'sig'->signature($source->rfile);
+    # Queue of modules to be added to the graph
+    my @mods = map(build::command::ocaml::module_of_file($_), @objs);
 
-        ## Put dependencies onto the work list
-        push(@work_list, @{$inc->{$source}});
+    my %nodes = map { $_ => {deps => [], predepcnt => 0} } @mods;
 
-        ## add dependency edges to the dag
-        for my $s (@{$inc->{$source}}) {
-            $s->{dag_pred}{$source} = $source;
-            $source->{dag_succ}{$s} = $s;
-            }
-        }
+    my %done;
 
-    $tgt->{sources} = [];
+    while (my $mod = pop @mods) {
+	next if exists $done{$mod};
+	$done{$mod} = 1;
+	my @predeps = $self->get_included_modules_for_module($mod);
+	for my $predep (@predeps) {
+	    my $node = $nodes{$predep} ||
+		($nodes{$predep} = {deps => [], predepcnt => 0});
+	    push @{$node->{deps}}, $mod;
+	    ++$nodes{$mod}->{predepcnt};
+	}
+	push @mods, @predeps;
+    }
 
-    ## compute degrees
-    for (values %source_set) {
-      $_->{dag_degree} = values %{$_->{dag_succ}};
-      }
+    # Create a topologically-ordered list of objects
+    @objs = ();
+    my @nopredeps = grep($nodes{$_}->{predepcnt} == 0, keys %nodes);
+    while (my $mod = pop @nopredeps) {
+	my $files = $build::command::ocaml::modfiles{$mod};
+	my $file = $files->[1];
+	push @objs, $file;
+	for my $dep (@{$nodes{$mod}->{deps}}) {
+	    my $node = $nodes{$dep};
+	    --$node->{predepcnt};
+	    if ($node->{predepcnt} == 0) {
+		push @nopredeps, $dep;
+	    }
+	}
+    }
 
-    ## topological sort
-    @work_list = grep($_->{dag_degree} == 0, values %source_set);
-    while ($source = pop @work_list) {
-        push @{$tgt->{sources}}, cons::lookup_sibling($source, $env->{SUFOBJ});
-        for (values %{$source->{dag_pred}}) {
-          push @work_list, $_ unless --$_->{dag_degree};
-          }
-        }
+    # Set the sources of the target to created list
+    $tgt->{sources} = \@objs;
 
-    ## Slap all the signatures together and return it
-    'sig'->collect(sort values %signatures);
+    # Build the target
+    build::command::action($self, $tgt);
 }
 
 
-### Scan a source file and return the list of signature files it includes
-sub scan {
+#
+# The rest of the code redefines functions in cons in order to get it to do
+# what we want.
+#
 
-    ## Called with a scanner and a file to scan
+package sig::md5;
+
+#
+# Redefine sig::md5::signature so that it will store timestamps for all files,
+# even derived ones.  This way we can use timestamps instead of md5 sums for a
+# speedup, and also tell whether the file needs to be rescanned.
+#
+sub signature {
+    if (defined $_[1]->{sig}) {
+	return $_[1]->{sig};
+    }
     my ($self, $file) = @_;
-
-    ## Try to open the file, and return nothing if it doesn't work
-    open(SCAN, $file->rpath) || return ();
-
-    my %includes;       # includes will have the included files
-
-    while(<SCAN>) {
-        s/"[^"]*"//go;  # Remove double quoted strings
-
-        ## Search for "open Module"
-        $includes{$_} = 0 for (/open\s+([A-Z]\w*)/go);
-
-        ## Search for "include Module"
-        $includes{$_} = 0 for (/include\s+([A-Z]\w*)/go);
-
-        # Search $_ for "module M = Module"
-        # $includes{$_} = 0 for (/module\s+[A-Z]\w*\s+=\s+([A-Z]\w*)/go);
-
-        ## Search for "Module.var"
-        $includes{$_} = 0 for (/([A-Z]\w*)\.\w+/go);
-        }
-
-    close(SCAN);
-
-    my @dirs = ($file->{dir}, @{$self->{path}});
-    my @files;
-    for (keys %includes) {
-        my $name = (lcfirst) . '.cmi';
-        for my $dir (@dirs) {
-            my $include = $dir->lookup_accessible($name);
-            if ($include) {
-                push @files, $include unless $include->ignore;
-                last;
-            }
-        }
+    my($path) = $file->path;
+    my($time) = (stat($path))[9];
+    if ($time) {
+	my($sigtime) = sig::hash::in($file);
+	if ($file->is_on_rpath) {
+	    if ($sigtime) {
+		my ($htime, $hsig) = split(' ',$sigtime);
+		if (! $hsig) {
+		    # There was no separate $htime recorded in
+		    # the .consign file, which implies that this
+		    # is a source file in the repository.
+		    # (Source file .consign entries don't record
+		    # $htime.)  Just return the signature that
+		    # someone else conveniently calculated for us.
+		    return $htime;	# actually the signature
+		} else {
+		    if (! $param::rep_sig_times_ok || $htime == $time) {
+			return $file->{sig} = $hsig;
+		    }
+		}
+	    }
+	    return $file->{sig} = $file->path . $time;
+	}
+	if ($sigtime) {
+	    my ($htime, $hsig) = split(' ',$sigtime);
+	    if ($htime eq $time) {
+		return $file->{sig} = $hsig;
+	    }
+	}
+	if (! File::Spec->file_name_is_absolute($path)) {
+	    # A file in the local build directory. Assume we can write
+	    # a signature file for it, and compute the actual source
+	    # signature. We compute the file based on the build path,
+	    # not source path, only because there might be parallel
+	    # builds going on... In principle, we could use the source
+	    # path and only compute this once.
+	    my($sig) = srcsig($path);
+	    sig::hash::out($file, "$time $sig");
+	    # Invalidate the builder_data.
+	    delete $file->{builder_data};
+	    return $file->{sig} = $sig;
+	} else {
+	    return $file->{sig} = $file->{entry} . $time;
+	}
     }
-    for my $name (@{$file->{ocamldep}}) {
-        $name = $name . '.cmi';
-        for my $dir (@dirs) {
-            my $include = $dir->lookup_accessible($name);
-            if ($include) {
-                push @files, $include unless $include->ignore;
-                last;
-            }
-        }
-    }
-
-    @files
+    $file->{sig} = '';
 }
+
+package sig::hash;
+
+#
+# Redefine sig::hash::in so that it sets the builder_data field of the file
+# object to the extra info in the file's .consign entry.
+#
+sub in {
+    my($file)= @_;
+    my($dir) = $file->{dir};
+    my $data = ($dir->{consign} || init($dir))->{$file->{entry}};
+    my @array = split(' ', $data, 3);
+
+    # If there's no extra field, then just return
+    return $data unless $array[2];
+
+    # Set the file's builder_data field to the extra field, but don't mess
+    # with anything that was already there.
+    $file->{builder_data} = $array[2] unless exists $file->{builder_data};
+
+    # Strip off the last field, so we don't repeat this processing.
+    return ($dir->{consign}->{$file->{entry}} = join(' ', ($array[0], $array[1])));
+}
+
+
+#
+# Redefine sig::hash::END so that it writes the latest version of the
+# builder_data for each file into the .consign files.
+#
+sub END {
+    return if $called++; # May be called twice.
+    close(CONSIGN); # in case this came in via ^C.
+    my $dir;
+    for $dir (values %sig::hash::dirty) {
+	my($consign) = $dir->prefix . ".consign";
+	my($constemp) = $consign . ".$$";
+	if (! open(CONSIGN, ">$constemp")) {
+	    die("$0: can't create $constemp ($!)\n");
+	}
+	# Write a new .consign file for this directory
+	my($entry, $data);
+	while (($entry, $data) = each %{$dir->{consign}}) {
+	    my $file = $dir->lookupfile($entry);
+	    $data .= ' ' . $file->{builder_data} if exists $file->{builder_data};
+	    if (! print CONSIGN "$entry:$data\n") {
+		die("$0: error writing to $constemp ($!)\n");
+	    }
+	}
+	close(CONSIGN);
+	if (! rename($constemp, $consign)) {
+	    if (futil::copy($constemp, $consign)) {
+		unlink($constemp);
+	    } else {
+		die("$0: couldn't rename or copy $constemp to $consign " .
+		    "($!)\n");
+	    }
+	}
+    }
+}
+
 
 package script;
 

@@ -33,12 +33,6 @@
  * jyh@cs.cornell.edu
  *)
 
-(*
- * open Dform_print
- * open Refiner
- * open Theory
- * open Mp_resource
- *)
 open Printf
 open Mp_debug
 

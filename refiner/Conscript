@@ -3,7 +3,10 @@ Import qw( env );
 $env = $env->clone(
    INCPATH     => [@{$env->{INCPATH}}, "#mllib"],
    OCAMLCFLAGS => "$env->{OCAMLCFLAGS} -pp '%CAMLP4MACRO'",
-   PPFLAGS     => "$env->{PPFLAGS} ./util/macro.cmo -D$env->{REFINER}_EXN -DSEQ_SET=Array_linear_set"
+   PPFLAGS     => "$env->{PPFLAGS} ./util/macro.cmo -D$env->{REFINER}_EXN -DSEQ_SET=Array_linear_set",
+
+   # Thanks to PPFLAGS, all these files depend on macro.cmo
+   HIDDEPS     => "#util/macro.cmo",
 );
 
 Export qw( env );

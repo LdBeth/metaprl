@@ -50,16 +50,20 @@ let prl_names =
    ["Tactic_type"]
 }
 
+let white = [' ' '\010' '\013' '\009' '\012']
+let modname = ['A'-'Z' '\192'-'\214' '\216'-'\222' ]
+              (['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255'
+                '\'' '0'-'9' ]) *
 rule main = parse
-    "open" [' ' '\010' '\013' '\009' '\012'] +
+    "open" white+
       { struct_name lexbuf; main lexbuf }
-  | "include" [' ' '\010' '\013' '\009' '\012'] +
+  | "include" white+
       { struct_name lexbuf; main lexbuf }
-  | "derive" [' ' '\010' '\013' '\009' '\012'] +
+  | "derive" white+
       { struct_name lexbuf; main lexbuf }
-  | ['A'-'Z' '\192'-'\214' '\216'-'\222' ]
-    (['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255'
-      '\'' '0'-'9' ]) * '.'
+  | "module" white+ modname white+ '=' white+
+      { struct_name lexbuf; main lexbuf }
+  | modname '.'
       { let s = Lexing.lexeme lexbuf in
         add_structure(String.sub s 0 (String.length s - 1));
         main lexbuf }
@@ -79,9 +83,7 @@ rule main = parse
       { main lexbuf }
 
 and struct_name = parse
-    ['A'-'Z' '\192'-'\214' '\216'-'\222' ]
-    (['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255'
-      '\'' '0'-'9' ]) *
+    modname
       { add_structure(Lexing.lexeme lexbuf) }
   | ""
       { () }
@@ -129,6 +131,8 @@ let load_path = ref [""]
 let prl_flag = ref false
 
 let prl_init_flag = ref false
+
+let modules_flag = ref false
 
 let rec find_file name = function
    [] ->
@@ -196,9 +200,21 @@ let print_dependencies target_file deps =
 let file_dependencies source_file =
   try
     free_structure_names := StringSet.empty;
-    let ic = open_in source_file in
+    let ic =
+       if source_file != "-" then
+          open_in source_file
+       else begin
+          print_endline "Reading from stdin...";
+          stdin
+       end
+    in
     let lb = Lexing.from_channel ic in
     main lb;
+    if !modules_flag then begin
+       StringSet.iter (fun s -> print_string s; print_char ' ')
+                      !free_structure_names;
+       print_newline ()
+    end else begin
     if !prl_flag or !prl_init_flag then
       List.iter add_structure prl_init_names;
     if !prl_flag then
@@ -222,6 +238,7 @@ let file_dependencies source_file =
       print_dependencies (basename ^ ".cmi") deps
     end else
       ();
+    end;
     close_in ic
   with Sys_error msg ->
     ()
@@ -237,7 +254,8 @@ let _ =
      "-prl_init", Arg.Set prl_init_flag, "add dependencies for PRL files, no Tactic_type";
      "-noprl_init", Arg.Set prl_init_flag, "add dependencies for PRL files, no Tactic_type";
      "-prl", Arg.Set prl_flag, "add dependencies for PRL files";
-     "-noprl", Arg.Clear prl_flag, "add dependencies for PRL files"
+     "-noprl", Arg.Clear prl_flag, "add dependencies for PRL files";
+     "-modules", Arg.Set modules_flag, "print modules"
     ] file_dependencies usage;
   exit 0
 

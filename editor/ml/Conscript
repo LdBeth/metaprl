@@ -48,11 +48,15 @@ $env = $env->clone(
    OCAMLC => "prlc -opt -I /usr/lib/camlp4",
    OCAMLLINK => "$env->{OCAMLLINK} -I /usr/lib/camlp4",
    MLLIBS => "unix.cmxa threads.cmxa odyl.cmxa camlp4.cmxa pa_o.cmx",
-   CCLIBS => "-cclib clib/clib.a"
+   CCLIBS => "-cclib clib/clib.a",
+
+   # Files compiled with prlc implicitly depend on these files and modules.
+   HIDDEPS => "#filter/filter/prlc",
+   HIDMODDEPS => "Printf Mp_debug Refiner Refine_exn Term Term_util Theory Dform Dform_print Tactic Mp_resource Precedence Filter_summary",
 );
 
 Command $env 'mp_version.ml', "#mk/config", qq(
-   echo -n '(* open Dform_print open Refiner open Theory open Mp_resource *) let version = "'"MetaPRL %MP_VERSION:\\n\\t\\tbuild [`LC_ALL=C LANG=C date`]\\n\\t\\ton `hostname`\\n\\t\\tUses %REFINER Refiner_%TERMS"'"' > %>
+   echo -n 'let version = "'"MetaPRL %MP_VERSION:\\n\\t\\tbuild [`LC_ALL=C LANG=C date`]\\n\\t\\ton `hostname`\\n\\t\\tUses %REFINER Refiner_%TERMS"'"' > %>
 );
 
 OCamlSources $env
@@ -80,11 +84,10 @@ OCamlSources $env
    'nuprl_run.ml',
    'mp_top.ml';
 
-#
-# Always include ITT, Mc_theory, and Fir_test.
-#
-OCamlDepends $env ['mp_top'],
-   'itt_theory', 'mc_theory', 'fir_test';
+# These files use external symbols in #clib/clib.a.
+for my $mod ('mp_top', 'shell', 'shell_mp') {
+    Depends $env $mod.$env->{SUFOBJ}, "#clib/clib.a";
+}
 
 OCamlProgram $env 'mp.opt', 'mp_top';
 

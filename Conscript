@@ -20,7 +20,7 @@ $env = new cons(
     REFINER     => "VERBOSE",
     TERMS       => "ds",
     MC          => "$ENV{'MC_ROOT'}",
-    INCPATH     => ["@{$env->{INCPATH}}"],
+    INCPATH     => [],
 
     ## Overrides
     OCAMLC      => $native ? "ocamlopt.opt" : "ocamlc.opt", # The OCaml compiler
@@ -53,6 +53,8 @@ $env = new cons(
       PATH      => $ENV{'PATH'} # Use user's path instead of the cons default
     },
 
+    # Use this command to scan ML files for dependencies.
+    OCAMLDEP	=> "util/ocamldep -modules",
 );
 
 #

@@ -24,13 +24,6 @@
  *)
 
 (*
- * open Dform_print
- * open Refiner
- * open Theory
- * open Mp_resource
- *)
-
-(*
  * TeX prologue.
  *)
 let tex_prologue = "% -*- Mode: fundamental -*-
