@@ -14,8 +14,8 @@ open Utils
 open Library
 
 let _ =
-   if !debug_load then
-      eprintf "Loading Library_type_base%t" eflush
+  if !debug_load then
+    eprintf "Loading Library_type_base%t" eflush
 
 
 
@@ -25,10 +25,10 @@ let connection = null_oref()
 exception LibraryException of string
 
 let library_close () =
- if oref_p library
-    then (leave (oref_val library);
-	  disconnect (oref_val connection))
-    else raise (LibraryException "Close: No library open.")
+  if oref_p library
+  then (leave (oref_val library);
+	disconnect (oref_val connection))
+  else raise (LibraryException "Close: No library open.")
 
 open Printf
 open Mp_debug
@@ -36,24 +36,21 @@ open Mp_debug
 
 let library_open host localport remoteport =
 
- eprintf "%s %d %d %t" host localport remoteport eflush;
+  eprintf "%s %d %d %t" host localport remoteport eflush;
 
- if oref_p library
-    then raise (LibraryException "Open: Library already open.")
-    else ( oref_set library (join (oref_set connection (connect host localport remoteport))
-				["NuprlLight"])
-	 ; at_exit (function () -> library_close()))   (* nogin: something is strange here *)
- ; ()
+  if oref_p library then 
+    raise (LibraryException "Open: Library already open.")
+  else (let _ = oref_set library (join (oref_set connection (connect host localport remoteport))
+			    ["NuprlLight"]) in
+	at_exit library_close)   (* nogin: something is strange here *)
 
 let maybe_lib_open () =
-
-  (if not (oref_p library)
-     then let host = Sys.getenv "NUPRLLIB_HOST"
-	  and port = int_of_string (Sys.getenv "NUPRLLIB_PORT")
-	  in
-	  library_open host port (port+2))
- ; ()
-
+  if not (oref_p library) then 
+    let host = Sys.getenv "NUPRLLIB_HOST"
+    and port = int_of_string (Sys.getenv "NUPRLLIB_PORT")
+    in
+      library_open host port (port+2)
+  else ()
 
 
 let lib_get () =

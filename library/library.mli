@@ -255,13 +255,13 @@
  val insert_leaf	: transaction
 				-> object_id -> string (* name *)
 				-> string (* type *) -> term
-				-> object_id
+				-> object_id  			(*lal: perhaps should return unit*)
 
  (* overwrites in dir if name exists. *)
  val ninsert_leaf	: transaction
 				-> object_id -> string (* name *)
 				-> string (* type *) -> term
-				-> object_id
+				-> object_id			(*lal: perhaps should return unit*)
 
 
  (* NB: cycle prevention not yet implemented. *)

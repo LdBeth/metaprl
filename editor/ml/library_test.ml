@@ -63,13 +63,13 @@ let oiljgs connection =
     (unwind_error
       (function () ->
 	(* test put *)
-	(with_transaction lib
+	let _ = (with_transaction lib
 	   (function t ->
 	     let oid = make_root t "demo" in
-		insert_leaf t oid "test1" "TERM" (inatural_term 1))
-	; (leave lib)))
+		let _ = insert_leaf t oid "test1" "TERM" (inatural_term 1) in ())) in
+	leave lib)
 
-     (function () -> (lib_close lib); (raise (Testfailed 1))));
+     (function () -> let _ = lib_close lib in raise (Testfailed 1)));
 
   let lib = join connection ["testall"] in
     (unwind_error
@@ -77,16 +77,18 @@ let oiljgs connection =
 	(* test get *)
 	(with_transaction lib
 	   (function t ->
-		 (print_string "oiljgs 1"); (print_string (string_of_int (List.length (roots t))));
+		 print_string "oiljgs 1"; 
+		 print_string (string_of_int (List.length (roots t)));
 		 let oid = root t "demo" in
-		   (print_string "oiljgs 2");
-		   (child t oid "test1"); (print_string "oiljgs 3");
+		   print_string "oiljgs 2";
+		   let _ = child t oid "test1" in 
+		   print_string "oiljgs 3";
 		
 		   if not (1 = number_of_inatural_term (get_term t (child t oid "test1")))
 		        then (print_string "check"; raise (Test "check"))))
 	; cookie := (lib_close lib))
 
-     (function () -> (lib_close lib); (raise (Testfailed 2))));
+     (function () -> let _ = lib_close lib in raise (Testfailed 2)));
 
     print_endline "open insert leave join get successful.";
 
@@ -112,12 +114,12 @@ let seri connection cookie =
 		   (function t ->
 		     child t (root t "demo") "test1") in
 	   ncookie := save lib (function t -> ex := oid_export t oid);
-	   lib_close lib)
+	   let _ = lib_close lib in ())
 	
-      (function () -> lib_close lib));
+      (function () -> let _ = lib_close lib in ()));
 
     let oid = null_oref () in
-    let nlib = restore connection !ncookie (function t -> oref_set oid (oid_import t !ex); ()) in
+    let nlib = restore connection !ncookie (function t -> let _ = oref_set oid (oid_import t !ex) in ()) in
       (unwind_error
 	(function () ->
 	   (with_transaction nlib
@@ -125,7 +127,7 @@ let seri connection cookie =
 		   if not (1 = number_of_inatural_term (get_term t (oref_val oid)))
 		        then (print_string "restore check"; raise (Test "check"))));
 	   ncookie := lib_close nlib)
-        (function () -> lib_close nlib));
+        (function () -> let _ = lib_close nlib in ()));
 
       print_endline "save export restore import successful.";
 
@@ -141,11 +143,13 @@ exception Pleasefail
    put_term get_term
 *)
 
+(* old test purposes *)
+(*
 let ptest connection =
   let lib = join connection ["testall"] in
     (unwind_error
       (function () ->
-	(* test get *)
+	
 	(with_transaction lib
 	 (function t ->
 	  let oid = root t "demo" in
@@ -182,7 +186,7 @@ let ptest connection =
 
 		remove_property t noid "goo";
                 (let failp = ref false in
-		  (try (get_property t noid "goo"); () with e -> failp := true);
+		  (let _ = try (get_property t noid "goo") with e -> failp := true; (ivoid_term) in ());
 		  if (not !failp) then raise (Testfailed 8));
 
  		raise Pleasefail)))
@@ -208,7 +212,7 @@ let ptest connection =
 	(try
 	  let f = (with_transaction lib
 		    (function t ->
-		      (* cause failure by using dead transaction *)
+		      
 		      (function () -> roots t))) in
        	    (f (); raise (Testfailed 115))
 	  with e -> ());
@@ -224,7 +228,7 @@ let ptest connection =
 
   ; print_newline()
   ; print_endline "property test successful, (the failures were part of the test)."
-
+*)
 
 (* make_directory
    insert
@@ -233,12 +237,14 @@ let ptest connection =
    deactivate activate
    roots root children child descendent
 *)
+(* old test purposes *)
+(*
 let dtest connection =
   let lib = join connection ["testall"] in
     (unwind_error
       (function () ->
 	
-	(* test get *)
+	* test get *
 	let doid = (with_transaction lib
 		   (function t ->
 			 let oid = root t "demo" in
@@ -308,11 +314,14 @@ let dtest connection =
   ; print_newline()
   ; print_endline "activate test successful."
 
+*)
 
 
+(* old test purposes *)
+(*
 let looptest connection =
   let lib = join connection ["MetaPRL"] in
-  (* let lib = join connection ["mptestl"] in  *)
+  * let lib = join connection ["mptestl"] in  *
     (unwind_error
       (function () ->
 
@@ -369,7 +378,6 @@ let testascii libhost remote_port local_port =
  ; print_newline()
 ;;
 
-
 let testall libhost remote_port local_port =
  print_newline();
  print_newline();
@@ -394,7 +402,7 @@ let testall libhost remote_port local_port =
  ; print_newline()
  ; print_newline()
 ;;
-
+*)
 
 
 
@@ -433,7 +441,7 @@ let activate_test lib oid =
 					  oid))
 	with e -> raise (Test "Failed")));
  oid
-
+(*
 let test remote_port local_port =
  print_string "Test called ";
  print_newline();
@@ -446,10 +454,10 @@ let test remote_port local_port =
 
  	  unwind_error
 	    (function () -> (demo lib))
-(*
+**
 	    (function () -> (demo lib))
  	    (function () -> (activate_test lib (put_get_test lib (create_test lib) 1)))
-*)
+**
 	    (function () -> lib_close lib);
           lib_close lib))
        (function () -> disconnect connection);
@@ -495,10 +503,10 @@ let jointest remote_port local_port =
         (let lib = join connection ["meta-prl"] in
  	  unwind_error
 	    (function () -> (demo_get_put_test lib))
-(*
+**
 	    (function () -> (demo_get_put_test lib))
 	    (function () -> (demo_put_test lib 289))
-*)
+**
 	    (function () -> leave lib);
           leave lib))
        (function () -> disconnect connection);
@@ -507,6 +515,7 @@ let jointest remote_port local_port =
 
  raise (Test "Join Test Successful")
 ;;
+*)
 open List
 open Refiner.Refiner.Term
 open Library_eval
