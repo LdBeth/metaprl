@@ -261,7 +261,6 @@ declare "term_arg"{'t}
 declare "type_arg"{'t}
 declare "bool_arg"[s:t]
 declare "string_arg"[s:s]
-declare "subst_arg"{'t}
 declare "term_list_arg"{'t}
 declare "arglist"{'t}
 
@@ -656,9 +655,6 @@ dform bool_arg_df : internal :: bool_arg[s:t] =
 dform string_arg_df : internal :: string_arg[s:s] =
    slot[s:s]
 
-dform subst_arg_df : internal :: subst_arg{'t} =
-   't
-
 dform term_list_arg_df : internal :: term_list_arg{'terms} =
    df_concat{slot[" "];'terms}
 
@@ -884,7 +880,6 @@ let mk_term_arg_term t = <:con< term_arg{$t$} >>
 let mk_type_arg_term t = <:con< type_arg{$t$} >>
 let mk_bool_arg_term b = if b then << bool_arg["true":t] >> else << bool_arg["false":t] >>
 let mk_string_arg_term s = <:con< string_arg[$s$:s] >>
-let mk_subst_arg_term t = <:con< subst_arg{$t$} >>
 let mk_term_list_arg_term tl = <:con< term_list_arg{$mk_xlist_term tl$} >>
 let mk_arglist_term tl = <:con< arglist{$mk_xlist_term tl$} >>
 

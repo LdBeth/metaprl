@@ -137,7 +137,6 @@ struct
    let get_int_arg        = TacticInternal.get_int
    let get_bool_arg       = TacticInternal.get_bool
    let get_string_arg     = TacticInternal.get_string
-   let get_subst_arg      = TacticInternal.get_subst
    let get_resource_arg   = TacticInternal.get_resource
 end
 

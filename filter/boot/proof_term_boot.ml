@@ -92,7 +92,6 @@ struct
    let int_arg_op             = mk_opname "arg_int"           summary_opname
    let bool_arg_op            = mk_opname "arg_bool"          summary_opname
    let string_arg_op          = mk_opname "arg_string"        summary_opname
-   let subst_arg_op           = mk_opname "arg_subst"         summary_opname
    let term_list_arg_op       = mk_opname "arg_term_list"     summary_opname
    let named_arg_op           = mk_opname "arg_named"         summary_opname
 
@@ -194,7 +193,6 @@ struct
     | HeadIntArg of int
     | HeadBoolArg of bool
     | HeadStringArg of string
-    | HeadSubstArg of 'term_index
     | HeadTermListArg of 'term_index list
 
    type 'attribute_index attributes_header = (string * 'attribute_index) list
@@ -334,8 +332,6 @@ struct
          HeadBoolArg b
     | HeadStringArg s ->
          HeadStringArg s
-    | HeadSubstArg t ->
-         HeadSubstArg (weaken_term t)
     | HeadTermListArg tl ->
          HeadTermListArg (List.map weaken_term tl)
 
@@ -391,8 +387,7 @@ struct
    let compare_attribute arg1 arg2 =
       match arg1, arg2 with
          HeadTermArg t1, HeadTermArg t2
-       | HeadTypeArg t1, HeadTypeArg t2
-       | HeadSubstArg t1, HeadSubstArg t2 ->
+       | HeadTypeArg t1, HeadTypeArg t2 ->
             compare_terms t1 t2
        | HeadIntArg i1, HeadIntArg i2 ->
             i1 = i2
@@ -480,8 +475,6 @@ struct
          HeadBoolArg b
     | StringArg s ->
          HeadStringArg s
-    | SubstArg t ->
-         HeadSubstArg (ext_add_term t)
     | TermListArg tl ->
          HeadTermListArg (List.map ext_add_term tl)
 
@@ -575,8 +568,6 @@ struct
          BoolArg b
     | HeadStringArg s ->
          StringArg s
-    | HeadSubstArg t ->
-         SubstArg (ext_retrieve_term t)
     | HeadTermListArg tl ->
          TermListArg (List.map ext_retrieve_term tl)
 
@@ -592,8 +583,6 @@ struct
             Tactic.bool_attribute name b
        | StringArg s ->
             Tactic.string_attribute name s
-       | SubstArg t ->
-            Tactic.subst_attribute name t
        | TermListArg tl ->
             Tactic.term_list_attribute name tl
 
@@ -707,8 +696,6 @@ struct
          mk_string_term bool_arg_op (if b then "true" else "false")
     | HeadStringArg s ->
          mk_string_term string_arg_op s
-    | HeadSubstArg t ->
-         mk_simple_term subst_arg_op [term_retrieve_term t]
     | HeadTermListArg tl ->
          mk_simple_term term_list_arg_op [mk_xlist_term (List.map term_retrieve_term tl)]
 
@@ -802,8 +789,6 @@ struct
             HeadBoolArg (dest_string_param t = "true")
          else if Opname.eq op string_arg_op then
             HeadStringArg (dest_string_param t)
-         else if Opname.eq op subst_arg_op then
-            HeadSubstArg (term_add_term (one_subterm t))
          else if Opname.eq op term_list_arg_op then
             HeadTermListArg (List.map term_add_term (dest_xlist (one_subterm t)))
          else

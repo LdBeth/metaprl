@@ -63,7 +63,6 @@ sig
     | IntArg of int
     | BoolArg of bool
     | StringArg of string
-    | SubstArg of term
     | TermListArg of term list
 
    type attributes = (string * attribute) list
@@ -283,7 +282,6 @@ sig
    val int_attribute : string -> int -> raw_attribute
    val bool_attribute : string -> bool -> raw_attribute
    val string_attribute : string -> string -> raw_attribute
-   val subst_attribute : string -> term -> raw_attribute
 
    (*
     * Lift refiner tactics into our tactic type.
@@ -384,7 +382,6 @@ sig
    val get_int       : tactic_arg -> string -> int
    val get_bool      : tactic_arg -> string -> bool
    val get_string    : tactic_arg -> string -> string
-   val get_subst     : tactic_arg -> term_subst
    val get_resource  : tactic_arg -> (global_resource -> 'a) -> 'a
 
    (*
@@ -416,7 +413,6 @@ sig
    val withBoolT : string -> bool -> tactic -> tactic
    val withIntT : string -> int -> tactic -> tactic
    val withStringT : string -> string -> tactic -> tactic
-   val withSubstT : term_subst -> tactic -> tactic
    val wrapT : arglist -> tactic -> tactic
 
    (*
@@ -796,7 +792,6 @@ sig
    val get_int_arg        : tactic_arg -> string -> int
    val get_bool_arg       : tactic_arg -> string -> bool
    val get_string_arg     : tactic_arg -> string -> string
-   val get_subst_arg      : tactic_arg -> term_subst
    val get_resource_arg   : tactic_arg -> (global_resource -> 'a) -> 'a
 end
 
@@ -943,14 +938,12 @@ sig
    val withBoolT : string -> bool -> tactic -> tactic
    val withStringT : string -> string -> tactic -> tactic
    val withIntT : string -> int -> tactic -> tactic
-   val withSubstT : term_subst -> tactic -> tactic
 
    (*
     * Specific argument functions.
     *)
    val withT : term -> tactic -> tactic
    val withTermsT : term list -> tactic -> tactic
-   val usingT : term_subst -> tactic -> tactic
    val atT : term -> tactic -> tactic
    val selT : int -> tactic -> tactic
    val altT : tactic -> tactic

@@ -546,8 +546,6 @@ let term_of_arg = function
       Summary.mk_bool_arg_term b
  | StringArg s ->
       Summary.mk_string_arg_term s
- | SubstArg t ->
-      Summary.mk_subst_arg_term t
  | TermListArg tl ->
       Summary.mk_term_list_arg_term tl
 

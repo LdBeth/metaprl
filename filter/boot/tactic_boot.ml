@@ -114,7 +114,6 @@ struct
     | IntArg of int
     | BoolArg of bool
     | StringArg of string
-    | SubstArg of term
     | TermListArg of term list
 
    type attributes = (string * attribute) list
@@ -162,7 +161,6 @@ struct
     | RawInt of int
     | RawBool of bool
     | RawString of string
-    | RawSubst of term
     | RawSentinal of sentinal
 
    and raw_attribute = string * raw_attribute_info
@@ -180,7 +178,6 @@ struct
         attr_ints       : (string * int) list;
         attr_bools      : (string * bool) list;
         attr_strings    : (string * string) list;
-        attr_subst      : (var * term) list;
         attr_keys       : (string * sentinal) list
       }
 
@@ -329,7 +326,6 @@ struct
         attr_ints       = [];
         attr_bools      = [];
         attr_strings    = [];
-        attr_subst      = [];
         attr_keys       = []
       }
 
@@ -345,7 +341,6 @@ struct
         attr_ints       = Lm_list_util.some_map (function (name, RawInt i)      -> Some (name, i) | _ -> None) attributes;
         attr_bools      = Lm_list_util.some_map (function (name, RawBool b)     -> Some (name, b) | _ -> None) attributes;
         attr_strings    = Lm_list_util.some_map (function (name, RawString s)   -> Some (name, s) | _ -> None) attributes;
-        attr_subst      = Lm_list_util.some_map (function (name, RawSubst t)    -> Some (Lm_symbol.add name, t) | _ -> None) attributes;
         attr_keys       = Lm_list_util.some_map (function (name, RawSentinal k)   -> Some (name, k) | _ -> None) attributes
       }
 
@@ -564,21 +559,18 @@ struct
                                        attr_types = types;
                                        attr_ints = ints;
                                        attr_bools = bools;
-                                       attr_subst = subst
                                      } } =
       (List.map (fun (name, t) -> name, TermArg t) terms)
       @ (List.map (fun (name, t) -> name, TermListArg t) term_lists)
       @ (List.map (fun (name, t) -> name, TypeArg t) types)
       @ (List.map (fun (name, i) -> name, IntArg i) ints)
       @ (List.map (fun (name, b) -> name, BoolArg b) bools)
-      @ (List.map (fun (name, t) -> string_of_symbol name, SubstArg t) subst)
 
    let raw_attributes { ref_attributes = { attr_terms = terms;
                                            attr_term_lists = term_lists;
                                            attr_types = types;
                                            attr_ints = ints;
                                            attr_bools = bools;
-                                           attr_subst = subst;
                                            attr_keys = keys
                                      } } =
       (List.map (fun (name, t) -> name, RawTerm t) terms)
@@ -586,7 +578,6 @@ struct
       @ (List.map (fun (name, t) -> name, RawType t) types)
       @ (List.map (fun (name, i) -> name, RawInt i) ints)
       @ (List.map (fun (name, b) -> name, RawBool b) bools)
-      @ (List.map (fun (name, t) -> string_of_symbol name, RawSubst t) subst)
       @ (List.map (fun (name, t) -> name, RawSentinal t) keys)
 
    (************************************************************************
@@ -657,7 +648,6 @@ struct
       format_alist "ints" buf format_int attrs.attr_ints;
       format_alist "bools" buf format_bool attrs.attr_bools;
       format_alist "strings" buf format_string attrs.attr_strings;
-      format_alist "substs" buf (format_term db) (List.map (fun (n, t) -> string_of_symbol n, t) attrs.attr_subst);
       format_popm buf;
       format_space buf;
       format_string buf ">"
@@ -812,9 +802,6 @@ struct
    let string_attribute name s =
       name, RawString s
 
-   let subst_attribute name t =
-      name, RawSubst t
-
    (*
     * Fetch the attributes.
     *)
@@ -844,9 +831,6 @@ struct
 
    let get_string arg name =
       assoc name arg.ref_attributes.attr_strings
-
-   let get_subst arg =
-      arg.ref_attributes.attr_subst
 
    let get_resource arg get_res =
       get_res arg.ref_bookmark
@@ -1141,12 +1125,6 @@ struct
 
    let withStringT name s =
       withT (fun attr -> { attr with attr_strings = (name, s) :: attr.attr_strings })
-
-   (*
-    * Add some substitutions.
-    *)
-   let withSubstT subst =
-      withT (fun attr -> { attr with attr_subst = subst })
 
    (*
     * Time the tactic.

@@ -658,7 +658,6 @@ struct
    let withBoolT     = TacticInternal.withBoolT
    let withStringT   = TacticInternal.withStringT
    let withIntT      = TacticInternal.withIntT
-   let withSubstT    = TacticInternal.withSubstT
 
    (*
     * Term arguments.
@@ -669,7 +668,6 @@ struct
    (*
     * Other arguments.
     *)
-   let usingT    = withSubstT
    let atT       = withTypeT "univ"
    let selT      = withIntT  "sel"
    let altT      = withBoolT "alt" true

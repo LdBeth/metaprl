@@ -89,7 +89,6 @@ declare "term_arg"{'t}
 declare "type_arg"{'t}
 declare "bool_arg"[s:t]
 declare "string_arg"[s:s]
-declare "subst_arg"{'t}
 declare "term_list_arg"{'t}
 declare "arglist"{'t}
 
@@ -143,7 +142,6 @@ val mk_term_arg_term : term -> term
 val mk_type_arg_term : term -> term
 val mk_bool_arg_term : bool -> term
 val mk_string_arg_term : string -> term
-val mk_subst_arg_term : term -> term
 val mk_term_list_arg_term : term list -> term
 val mk_arglist_term : term list -> term
 
