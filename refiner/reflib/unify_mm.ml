@@ -71,14 +71,15 @@ let is_free_var v t = SymbolSet.mem (free_vars_set t) v
 type fun_name = 
    FunOp of operator
  | FunSOVar of var * var list
- | FunSequent
+ | FunSequent of operator
 
 let my_dest_term t =
    if is_so_var_term t then
       let v, conts, ts = dest_so_var t in
          FunSOVar(v,conts), List.map mk_simple_bterm ts
    else if is_sequent_term t then
-      FunSequent, [mk_simple_bterm (Lib_term.ugly_term_of_sequent_term t)]
+      let t = dest_term (Lib_term.ugly_term_of_sequent_term t) in
+         FunSequent t.term_op, t.term_terms
    else
       let t = dest_term t in
          FunOp t.term_op, t.term_terms
@@ -87,12 +88,8 @@ let my_mk_term op bterms =
    match op with
       FunSOVar(v,conts) ->
          mk_so_var_term v conts (List.map dest_simple_bterm bterms)
-    | FunSequent -> begin
-         match bterms with
-            [bt] ->
-               Lib_term.sequent_term_of_ugly_term (dest_simple_bterm bt)
-          | _ ->
-               raise(Invalid_argument "Unify_mm.my_mk_term")
+    | FunSequent op -> begin
+         Lib_term.sequent_term_of_ugly_term (mk_term op bterms)
       end
     | FunOp op ->
          mk_term op bterms
@@ -186,13 +183,12 @@ let new_ts () = incr init_timestamp_ref;
 
 let opsymb_equal op1 op2 =
    match op1, op2 with
-      FunOp op1, FunOp op2 -> 
+      (FunOp op1, FunOp op2) | (FunSequent op1, FunSequent op2) -> 
          let op1 = dest_op op1 in
          let op2 = dest_op op2 in
             Opname.eq op1.op_name op2.op_name && op1.op_params = op2.op_params
     | FunSOVar(v1,conts1), FunSOVar(v2,conts2) ->
          v1 = v2 && conts1 = conts2
-    | FunSequent, FunSequent -> true
     | _ -> false
 
 (*
@@ -1157,7 +1153,7 @@ let clash_error_aux =
       if i<=0 then [] else slot_bterm :: slot_bterms (i - 1)
    in
    let term_of_op = function
-      { opsymb = FunSequent } -> mk_xstring_term "sequent..."  
+      { opsymb = FunSequent _ } -> mk_xstring_term "sequent..."  
     | op -> my_mk_term op.opsymb (slot_bterms op.oparity_n)
    in
    let term_of_multi = function
