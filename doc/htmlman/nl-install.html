@@ -1,24 +1,24 @@
 <HTML>
 <HEAD>
   <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
-  <TITLE>Download Nuprl-Light</TITLE>
+  <TITLE>Download MetaPRL</TITLE>
 </HEAD>
 <BODY BGCOLOR="#ffffff">
 
-<H3>Download Nuprl-Light</H3>
+<H3>Download MetaPRL</H3>
 
-<P>Nuprl-Light can be downloaded from <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/nuprl-light/">ftp://ftp.cs.cornell.edu/pub/nuprl/nuprl-light/</A>.
+<P>MetaPRL can be downloaded from <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/">ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/</A>.
 You will need four packages:</P>
 
 <OL>
   <LI>Objective Caml: our version contains a small patch to install
-  interface files needed by Nuprl-Light to evaluate programs in
+  interface files needed by MetaPRL to evaluate programs in
   the toploop and a native code profiler patch.
   <LI>CamlP4: our version contains a small patch to compile the
   CamlP4 distribution in native code.
   <LI>Ensemble: you need Ensemble only if you want to use the distributed
   prover.
-  <LI>Nuprl-Light
+  <LI>MetaPRL
 </OL>
 
 <P>All source modules are available as source, and RedHat 5.1
@@ -29,7 +29,7 @@ need the Cygnus Systems GNU-Win32 distribution.</P>
 
 <H4>CVS sources</H4>
 
-<P>If you plan any development in Nuprl-Light, you may consider
+<P>If you plan any development in MetaPRL, you may consider
 using the public CVS repository. This will allow you to have access 
 to the latest changes in the distribution. The normal
 service is read-only, but if you would like to become a contributor
@@ -49,7 +49,7 @@ so you only have to run the login command once.
 <P>Now you can checkout the distribution by running:</P>
 
 <BLOCKQUOTE>
-  <PRE>% cvs -d :pserver:anoncvs@ensemble01.cs.cornell.edu:/cvsroot checkout nuprl-light</PRE>
+  <PRE>% cvs -d :pserver:anoncvs@ensemble01.cs.cornell.edu:/cvsroot checkout MetaPRL</PRE>
 </BLOCKQUOTE>
 
 You can find more information on CVS at 
@@ -69,28 +69,28 @@ by running <TT>make</TT> in the <TT>&lt;ensemble&gt;/opt</TT>
 directory. More information on Ensemble is available at the Ensemble
 Home Page.</P>
 
-<P>To install Nuprl-Light, unpack the distribution into some directory
-<TT>&lt;nuprl-light&gt;</TT>. You need to set the environment
+<P>To install MetaPRL, unpack the distribution into some directory
+<TT>&lt;meta-prl&gt;</TT>. You need to set the environment
 variables <TT>CAMLLIB=&lt;your ocaml lib directory&gt;</TT>, and
 <TT>ENSROOT=&lt;root of the ensemble source tree&gt;</TT>. Then
 you can build the distribution with these steps:</P>
 
 <BLOCKQUOTE>
-  <PRE>% cd &lt;nuprl-light&gt;
+  <PRE>% cd &lt;meta-prl&gt;
 % make depend
 % make all
 or
 % make opt</PRE>
 </BLOCKQUOTE>
 
-<P>The Nuprl-Light program is <TT>&lt;nuprl-light&gt;/editor/ml/nl</TT>.
+<P>The MetaPRL program is <TT>&lt;meta-prl&gt;/editor/ml/nl</TT>.
 You will need to install the &quot;Nuprl font&quot; to be able
-to interact with some sense. The Nuprl font is in <TT>&lt;nuprl-light&gt;/editor/fonts/nl12.bdf</TT>.
-You'll get the best success if you use Nuprl-Light from a shell
+to interact with some sense. The Nuprl font is in <TT>&lt;meta-prl&gt;/editor/fonts/nl12.bdf</TT>.
+You'll get the best success if you use MetaPRL from a shell
 window within Emacs. You can start Emacs with the Nuprl font by
 running <TT>emacs -fn nl12</TT>.</P>
 
-<P>That's it. To navigate the Nuprl-Light logics and programs,
+<P>That's it. To navigate the MetaPRL logics and programs,
 you will need to read the User Guide.
 
 </BODY>
