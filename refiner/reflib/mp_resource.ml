@@ -192,17 +192,21 @@ and collect_include incr name includes =
    let incr, includes = collect_include_aux incr includes data in
       incr, StringSet.add includes name
 
-let rec compute_aux name = function
+let rec compute_aux name top_includes = function
    [] ->
-      empty_bookmark, Table.empty, StringSet.empty
+      empty_bookmark, Table.empty, top_includes
+ | DatInclude name' :: _ when StringSet.mem top_includes name' ->
+      raise (Invalid_argument("Mp_resource: theory " ^ name ^ " extends " ^ name' ^ " twice"))
  | [ DatInclude name' ] ->
       if not (Hashtbl.mem theory_includes name') then compute_data name';
-      (theory_bookmark name'), Table.empty, (Hashtbl.find theory_includes name')
+      let includes = Hashtbl.find theory_includes name' in
+      let includes = StringSet.add (StringSet.union top_includes includes) name' in
+      (theory_bookmark name'), Table.empty, includes
  | DatData data :: tail ->
-      let bookmark, incr , includes = compute_aux name tail in
+      let bookmark, incr , includes = compute_aux name top_includes tail in
       bookmark, List.fold_right add_data data incr, includes
  | DatBookmark bk :: tail ->
-      let bookmark, incr, includes = compute_aux name tail in
+      let bookmark, incr, includes = compute_aux name top_includes tail in
       let bkmrk = (name, bk) in
       if Hashtbl.mem global_bookmarker bkmrk then
          raise (Invalid_argument ("Mp_resource: duplicate bookmark " ^ name ^ "." ^ bk));
@@ -212,12 +216,14 @@ let rec compute_aux name = function
       };
       bkmrk, Table.empty, includes
   | DatInclude name' :: tail ->
-      let bookmark, incr, includes = compute_aux name tail in
+      let bookmark, incr, includes = compute_aux name (StringSet.add top_includes name') tail in
       let incr, includes = collect_include incr name' includes in
       bookmark, incr, includes
 
 and compute_data name =
-   let bookmark, incr, includes = compute_aux name (Hashtbl.find global_data name) in
+   let bookmark, incr, includes =
+      compute_aux name StringSet.empty (Hashtbl.find global_data name)
+   in
       Hashtbl.add theory_includes name includes;
       Hashtbl.add global_bookmarker (theory_bookmark name) {
          inc_bookmark = bookmark;

@@ -400,6 +400,11 @@ sig
       string -> (item * (int * int)) list
 end
 
+module StrLSet = Lm_set.LmMake (struct
+   type t = string list
+   let compare = Pervasives.compare
+end)
+
 (*
  * Make the filter.
  *)
@@ -423,6 +428,8 @@ struct
         select : FilterCache.select;
         name : string;
         mutable names : StringSet.t;
+        mutable parents : StrLSet.t;
+        mutable infixes: Infix.Set.t;
       }
 
    (*
@@ -432,13 +439,15 @@ struct
     *       a. adds the resources
     *       b. adds the infix directives.
     *)
-   let infix_set = ref Infix.Set.empty
    let declare_parent proc loc path =
+      if StrLSet.mem proc.parents path then
+         Stdpp.raise_with_loc loc (Invalid_argument "Same theory extended twice");
+      proc.parents <- StrLSet.add proc.parents path;
       (* Lots of errors can occur here *)
       ignore(FilterCache.inline_module proc.cache () path);
       let infixes = FilterCache.sig_infixes proc.cache path in
-      Infix.Set.iter Infix.add (Infix.Set.diff infixes !infix_set);
-      infix_set := Infix.Set.union infixes !infix_set;
+      Infix.Set.iter Infix.add (Infix.Set.diff infixes proc.infixes);
+      proc.infixes <- Infix.Set.union infixes proc.infixes;
       let resources = FilterCache.sig_resources proc.cache path in
       begin if !debug_resource then
          let print_resources out resources =
@@ -852,6 +861,8 @@ struct
                          select = select;
                          name = module_name;
                          names = StringSet.empty;
+                         parents = StrLSet.empty;
+                         infixes = Infix.Set.empty;
                        }
             in
                mk_opname_ref := FilterCache.mk_opname info;
