@@ -375,12 +375,19 @@ function ButtonLong()
 {
     // Get the current text
     var frame = parent.ruleframe;
-    if(frame) {
-        var ruledoc = frame.document;
-        var text = ruledoc.commandform.command.value;
+    var buttons = parent.buttonsframe;
+    if(frame && buttons) {
+        var form = frame.document.commandform;
+        var toggle = buttons.document.getElementById('toggle');
 
         // Reset the input area
-        ruledoc.commandform.innerHTML = '# <textarea name="command" id="inputarea">' + text + '</textarea>';
+        if (toggle.innerHTML == 'Short') {
+            form.innerHTML = '# <input type="text" name="command" id="inputline" value="' + form.command.value + '">';
+            toggle.innerHTML = 'Long';
+        } else {
+            form.innerHTML = '# <textarea name="command" id="inputarea">' + form.command.value + '</textarea>';
+            toggle.innerHTML = 'Short';
+        }
         ResizeInput();
 
         // For convenience, refocus the input area
