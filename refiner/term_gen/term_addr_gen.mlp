@@ -344,10 +344,15 @@ struct
     | (bt::btrms) as bterms ->
          let (btrms_new, args) = apply_fun_higher_bterms f coll btrms in
          let dbt = dest_bterm bt in
-         let (bt_new, args) = apply_fun_higher_term f args dbt.bterm in
-            if args == coll
-            then (bterms, coll)
-            else ((mk_bterm dbt.bvars bt_new)::btrms_new, args)
+         let (bt_new, args2) = apply_fun_higher_term f args dbt.bterm in
+            if args2 == coll then (bterms, coll)
+            else 
+               let bt_new = 
+                  if args2 == args 
+                  then bt else 
+                  mk_bterm dbt.bvars bt_new 
+               in
+               (bt_new::btrms_new, args2)
 
    let apply_fun_higher f term = apply_fun_higher_term f [] term
 
