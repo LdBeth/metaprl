@@ -122,7 +122,7 @@ struct
          let (op,params) = Hashtbl.find r.io_ops op in
          let btrms = List.map (Hashtbl.find r.io_bterms) bterms in
          let t =
-            if op = var_opname && btrms <> [] then (* XXX HACK: Version <= 1.0.7 compatiility *)
+            if Opname.eq op var_opname && btrms <> [] then (* XXX HACK: Version <= 1.0.7 compatiility *)
                let t = retrieve (lookup (Term { op_name = op; op_params = params; term_terms = [] })) in
                match dest_params (dest_op (dest_term t).term_op).Term_sig.op_params with
                   [Var v] ->
