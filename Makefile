@@ -27,7 +27,7 @@ NL_DIRS :=\
 
 DIRS := $(REFINER_DIRS) $(NL_DIRS) editor/ml
 
-.PHONY: all opt install depend clean profile
+.PHONY: all opt install depend clean profile_all profile_clean profile
 
 all:
 	@for i in $(DIRS); do\
@@ -39,12 +39,17 @@ opt:
 		if (echo Making $$i...; cd $$i; $(MAKE) $@); then true; else exit 1; fi;\
 	done
 
-profile: 
-	$(MAKE) clean
-	$(MAKE) all
+profile_clean: 
 	@for i in $(REFINER_DIRS) editor/ml; do\
-		if (echo Making $$i...; cd $$i; make clean; OCAMLCP=ocamlcp OCAMLMKTOP="ocamlcp -linkall toplevellib.cma" $(MAKE) all); then true; else exit 1; fi;\
+		if (echo Making $$i...; cd $$i; make clean); then true; else exit 1; fi;\
 	done
+
+profile_all: 
+	@for i in $(REFINER_DIRS) editor/ml; do\
+		if (echo Making $$i...; cd $$i; OCAMLCP=ocamlcp OCAMLCPOPT="-p a" $(MAKE) all); then true; else exit 1; fi;\
+	done
+
+profile: clean all profile_all
 
 install:
 	@for i in $(DIRS); do\
