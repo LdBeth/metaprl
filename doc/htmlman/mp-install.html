@@ -59,8 +59,14 @@ You can find more information on CVS at
 
 <H4>Installation and configuration</H4>
 
-<P>To install OCaml and CamlP4, unpack the distributions, apply the <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/patches/">patches</A>. The
-<TT>INSTALL</TT> files describe the process of installation.</P>
+<P>If your are not using 
+<A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/RPM/">the provided RPMs</A>, then in order
+to install OCaml and CamlP4 download and 
+unpack the distributions, apply the <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/patches/">patches</A>. The
+<TT>INSTALL</TT> files in the distributions describe rest of the installation process.</P>
+
+<P>You may need to set your environment variables <TT>CAMLLIB</TT> and <TT>CAMLP4LIB</TT> to point to the directories where you have installed OCaml and Camlp4 files. The defaults are <TT>/usr/lib/ocaml</TT> and <TT>/usr/lib/camlp4</TT> respectively.
+</P>
 
 <P>To install Ensemble, unpack the distrubution, and edit the
 <TT>&lt;ensemble&gt;/mk/config.mk</TT> file. You will want to
