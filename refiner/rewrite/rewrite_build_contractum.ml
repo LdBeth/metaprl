@@ -412,11 +412,11 @@ struct
             bnames, bvars, SeqHyp.collect (List.rev parts)
        | hyp :: hyps ->
             match hyp with
-               RWSeqContextSubst (j, terms) ->
+               RWSeqContextInstance (j, terms) ->
                   begin
                      IFDEF VERBOSE_EXN THEN
                         if !debug_rewrite then
-                           eprintf "-RWSeqContextSubst (%d)%t" j eflush
+                           eprintf "-RWSeqContextInstance (%d)%t" j eflush
                      ENDIF;
                      match stack.(j) with
                         StackSeqContext(vars, hyps') ->
@@ -425,7 +425,7 @@ struct
                            in
                               IFDEF VERBOSE_EXN THEN
                                  if !debug_rewrite then
-                                    eprintf "+RWSeqContextSubst (%d%a)%t" j print_term_list terms eflush
+                                    eprintf "+RWSeqContextInstance (%d%a)%t" j print_term_list terms eflush
                               ENDIF;
                               let i, len, hyps' = hyp_subst hyps' terms vars in
                               let part = Lm_array_util.ArrayArray (hyps', i, len) in

@@ -298,8 +298,8 @@ struct
       match item with
          RWSeqContext (i, j, il) ->
             fprintf out "RWSeqContext (%d, %d, [%a])\n" i j print_int_list il
-       | RWSeqContextSubst (i, tl) ->
-            fprintf out "RWSeqContextSubst (%d)\n%a" (**)
+       | RWSeqContextInstance (i, tl) ->
+            fprintf out "RWSeqContextInstance (%d)\n%a" (**)
                i (print_prog_list (tabstop + 3)) tl
        | RWSeqHypBnd (v, t) ->
             fprintf out "RWSeqHypBnd: %a\n%a" (**)

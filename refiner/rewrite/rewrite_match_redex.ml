@@ -318,18 +318,19 @@ struct
    (*
     * Check that the terms are all equivalent under the given instantiations
     *)
-   let rec check_match addrs stack all_bvars t' vs = function
-      (t, subterms)::tl ->
-         if alpha_equal_fun (match_redex_term_pred addrs stack all_bvars) t' vs t subterms then
-            check_match addrs stack all_bvars t' vs tl
-         else
-            REF_RAISE(RefineError ("check_match", RewriteBadMatch (TermMatch2 (t', t))))
-    | [] ->
-         ()
+   let rec check_match addrs stack all_bvars t' vs t subterms =
+      if not (alpha_equal_fun (match_redex_term_pred addrs stack all_bvars) t' vs t subterms) then
+         REF_RAISE(RefineError ("check_match", RewriteBadMatch (TermMatch2 (t', t))))
 
    and match_redex_term_pred addrs stack all_bvars t t' =
       match_redex_term addrs stack all_bvars t' t;
       true
+
+   and check_matches addrs stack all_bvars t' vs = function
+      (t, subterms) :: tl ->
+         check_match addrs stack all_bvars t' vs t subterms;
+         check_matches addrs stack all_bvars t' vs tl
+    | [] -> ()
 
     (*
      * Match a term against the redex.
@@ -420,12 +421,12 @@ struct
                    | StackITerm l ->
                         IFDEF VERBOSE_EXN THEN
                            if !debug_rewrite then
-                              eprintf "\tRWSOVar: ITerm: check_match%t" eflush
+                              eprintf "\tRWSOVar: ITerm: check_matches%t" eflush
                         ENDIF;
-                        check_match addrs stack all_bvars t vars l;
+                        check_matches addrs stack all_bvars t vars l;
                         IFDEF VERBOSE_EXN THEN
                            if !debug_rewrite then
-                              eprintf "\tRWSOVar: ITerm: check_match: ok%t" eflush
+                              eprintf "\tRWSOVar: ITerm: check_matches: ok%t" eflush
                         ENDIF;
                         stack.(i) <- StackBTerm (t, vars)
                    | _ ->
@@ -444,7 +445,7 @@ struct
                      StackVoid ->
                         stack.(i) <- StackITerm [t, subterms]
                    | StackBTerm (t'', vars'') ->
-                        check_match addrs stack all_bvars t'' vars'' [t, subterms]
+                        check_match addrs stack all_bvars t'' vars'' t subterms
                    | StackITerm l ->
                         stack.(i) <- StackITerm ((t, subterms)::l)
                    | _ ->
@@ -504,16 +505,26 @@ struct
                   eprintf "RWSeqContext/RWSeqFreeVarsContext (%d, %d, [%a])%t" count j print_int_list l eflush
             ENDIF;
             if count + i > len then
-               REF_RAISE(RefineError ("Rewrite_match_redex.match_redex_sequent_hyps", StringError "not enough hypotheses"))
-            else
-               begin match hyp' with
-                  RWSeqFreeVarsContext (rconts, rvars, _, _, _) ->
-                     check_hyp_free_vars (extract_stack_bvars stack rconts rvars) hyps i (i+count)
-                | _ -> ()
-               end;
-               let bvars = extract_bvars stack l in
-                  stack.(j) <- StackSeqContext (bvars, (i, count, hyps));
+               REF_RAISE(RefineError ("Rewrite_match_redex.match_redex_sequent_hyps", StringError "not enough hypotheses"));
+            begin match hyp' with
+               RWSeqFreeVarsContext (rconts, rvars, _, _, _) ->
+                  check_hyp_free_vars (extract_stack_bvars stack rconts rvars) hyps i (i+count)
+             | _ -> ()
+            end;
+            let bvars = extract_bvars stack l in
+               stack.(j) <- StackSeqContext (bvars, (i, count, hyps));
+               match_redex_sequent_hyps addrs stack goals' goals all_bvars hyps' hyps (i+count) len
+
+       | RWSeqContextInstance (j, ts) :: hyps' ->
+            begin match stack.(j) with
+               StackSeqContext (bvars, (k, count, hyps'')) ->
+                  if count + i > len then
+                     REF_RAISE(RefineError ("Rewrite_match_redex.match_redex_sequent_hyps", StringError "not enough hypotheses"));
+                  match_context_instance addrs stack all_bvars hyps i hyps'' k bvars ts count;
                   match_redex_sequent_hyps addrs stack goals' goals all_bvars hyps' hyps (i+count) len
+             | _ ->
+                  raise (Invalid_argument "Rewrite_match_redex.match_redex_sequent_hyps: RWSeqContextInstance: invalid stack entry")
+            end
 
        | RWSeqHypBnd (name, term') :: hyps' ->
             IFDEF VERBOSE_EXN THEN
@@ -542,8 +553,29 @@ struct
              | Context _ ->
                   REF_RAISE(RefineError ("Rewrite_match_redex.match_redex_sequent_hyps", StringIntError ("hypothesis index refers to a context", i)))
             end
-       | RWSeqContextSubst _ :: _ | RWSeqHyp _ :: _ ->
+       | RWSeqHyp _ :: _ ->
             raise(Invalid_argument("Invalid context in redex program"))
+
+   and match_context_instance addrs stack all_bvars hyps i hyps' k bvars ts count =
+      if count = 0 then () else
+      let all_bvars =
+         match SeqHyp.get hyps i, SeqHyp.get hyps' k with
+            (Context _, (Hypothesis _ | HypBinding _)) | ((Hypothesis _ | HypBinding _), Context _) ->
+               REF_RAISE(RefineError ("Rewrite_match_redex.match_context_instance", StringError ("hypothesis/context mismatch")))
+          | Hypothesis t1, Hypothesis t2 ->
+               check_match addrs stack all_bvars t2 bvars t1 ts;
+               all_bvars
+          | HypBinding (v, t1), HypBinding(v', t2) when v=v' && not (List.mem v bvars) ->
+               check_match addrs stack all_bvars t2 bvars t1 ts;
+               (SymbolSet.add all_bvars v)
+          | Context (v, conts, ts1), Context(v', conts', ts2)
+            when v=v' && conts=conts' && (List.length ts1 = List.length ts2) && not (List.mem v bvars) ->
+               List.iter2 (fun t1 t2 -> check_match addrs stack all_bvars t2 bvars t1 ts) ts1 ts2;
+               (SymbolSet.add all_bvars v)
+          | _ ->
+               raise (Invalid_argument "Rewrite_match_redex.match_context_instance: not fully implemented (see bug 165)")
+      in
+         match_context_instance addrs stack all_bvars hyps (i+1) hyps' (k+1) bvars ts (count-1)
 
    and match_redex_sequent_goals addrs stack all_bvars goals' goals i len =
       match goals' with

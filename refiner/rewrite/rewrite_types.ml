@@ -125,7 +125,7 @@ struct
       RWSeqHypBnd of varname * rwterm
     | RWSeqHyp of rwterm
     | RWSeqContext of int * int * int list
-    | RWSeqContextSubst of int * rwterm list
+    | RWSeqContextInstance of int * rwterm list
     | RWSeqFreeVarsContext of int list * int list * int * int * int list
 
    and varname =

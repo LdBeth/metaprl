@@ -356,10 +356,9 @@ struct
             stack, [], goals
       else
          match SeqHyp.get hyps i with
-            Context (v, conts, vars) ->
-               if rstack_c_mem v stack then
-                  raise(Invalid_argument("Rewrite_compile_redex.compile_so_redex_sequent: context " ^ string_of_symbol v ^ " appears more than once in redeces, which is currently unsupported"))
-               else if rstack_mem v stack then
+            Context (v, conts, terms) ->
+               let instance = rstack_c_mem v stack in
+               if not instance && rstack_mem v stack then
                   (* The context should have a unique name *)
                   REF_RAISE(RefineError ("is_context_term", RewriteBoundSOVar v))
                else let index =
@@ -374,20 +373,28 @@ struct
                      else
                         REF_RAISE(RefineError ("compile_so_redex_sequent_inner", RewriteMissingContextArg v))
                in
-               (* All the vars should be free variables *)
-               let vars' = List.map (var_index bvars) vars in
-               let stack = stack @ [CVar v] in
-               let restrict_free = if restrict then Lm_list_util.subtract (List.map bvar_ind bvars) vars' else [] in
-               let restrict_conts = if restrict then restricted_conts v bconts conts else [] in
-               let stack_ind = List.length stack - 1 in
-               let term =
-                  if restrict_free = [] && restrict_conts = [] then
-                     RWSeqContext (index, stack_ind, vars')
+               let stack, term, ind =
+                  if instance then
+                     let stack, terms = compile_so_redex_terms false restrict addrs stack svars bconts bvars terms in
+                     let ind = rstack_c_index v stack in
+                        stack, RWSeqContextInstance (ind, terms), ind
                   else
-                     RWSeqFreeVarsContext (restrict_conts, restrict_free, index, stack_ind, vars')
+                     (* All the vars should be free variables *)
+                     let vars' = List.map (var_index bvars) terms in
+                     let stack = stack @ [CVar v] in
+                     let restrict_free = if restrict then Lm_list_util.subtract (List.map bvar_ind bvars) vars' else [] in
+                     let restrict_conts = if restrict then restricted_conts v bconts conts else [] in
+                     let stack_ind = List.length stack - 1 in
+                     let term =
+                        if restrict_free = [] && restrict_conts = [] then
+                           RWSeqContext (index, stack_ind, vars')
+                        else
+                           RWSeqFreeVarsContext (restrict_conts, restrict_free, index, stack_ind, vars')
+                     in
+                        stack, term, stack_ind
                in
                let stack, hyps, goals =
-                  compile_so_redex_sequent_inner restrict addrs stack svars ((v, stack_ind)::bconts) bvars (i + 1) len mc hyps goals
+                  compile_so_redex_sequent_inner restrict addrs stack svars ((v, ind)::bconts) bvars (i + 1) len mc hyps goals
                in
                   stack, term :: hyps, goals
 
