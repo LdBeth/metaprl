@@ -2023,6 +2023,9 @@ bunion{'A; 'B}
 Rewrites << bunion{'A; 'B} >> to 
 << tunion{bool; x. ifthenelse{'x; 'A; 'B}} >>.
 
+* fold_bunion : conv
+This is the inverse of the above conversion.
+
 This file adds to the dT tactic.
 If the conclusion is of the form 
 << bunion{'A1; 'B1} = bunion{'A2; 'B2} in univ[i:l] >>,
