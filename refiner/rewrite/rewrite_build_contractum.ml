@@ -1,6 +1,6 @@
 (*
  * Build the contractum, given a matched redex.
- * The parts of the redex are sotred in the stack.
+ * The parts of the redex are sorted in the stack.
  *
  * ----------------------------------------------------------------
  *

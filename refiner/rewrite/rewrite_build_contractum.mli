@@ -1,5 +1,5 @@
 (*
- * Utilities used in the rewriter.
+ * Build the contractum, given a matched redex
  *
  * ----------------------------------------------------------------
  *

@@ -1,5 +1,5 @@
 (*
- * Utilities used in the rewriter.
+ * Match against a compiled redex.
  *
  * ----------------------------------------------------------------
  *

@@ -1,5 +1,5 @@
 (*
- * Utilities used in the rewriter.
+ * Compile a redex into a stack representation.
  *
  * ----------------------------------------------------------------
  *

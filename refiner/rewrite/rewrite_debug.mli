@@ -1,5 +1,5 @@
 (*
- * Utilities used in the rewriter.
+ * Debugging functions.
  *
  * ----------------------------------------------------------------
  *

@@ -1,5 +1,5 @@
 (*
- * Utilities used in the rewriter.
+ * Compile the contractum against a redex.
  *
  * ----------------------------------------------------------------
  *
