@@ -95,20 +95,21 @@ struct
     | _ ->
          false
 
-   let rec clause_address_of_address = function
-      (NthClause _) as addr ->
-         addr
-    | Compose (addr, _) ->
-         clause_address_of_address addr
-    | Path _ ->
-         REF_RAISE(RefineError ("clause_address_of_address", StringError "address is not a sequent address"))
-
    let compose_address path1 path2 =
       match path1 with
          Path [] ->
             path2
        | _ ->
             Compose (path1, path2)
+
+   let rec split_clause_address = function
+      (NthClause _) as addr ->
+         addr, Path []
+    | Compose (addr, addr') ->
+         let a1, a2 = split_clause_address addr in
+            a1, compose_address a2 addr'
+    | Path _ ->
+         REF_RAISE(RefineError ("split_clause_address", StringError "address is not a sequent address"))
 
    let find_subterm t arg =
       let rec search addr t =

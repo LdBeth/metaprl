@@ -45,7 +45,7 @@ sig
 
    (* Works only on sequent addresses and their subaddresses. *)
    (* XXX TODO: Should go away once a proper crw mechanism is implemented. *)
-   val clause_address_of_address : address -> address
+   val split_clause_address : address -> address * address
 
    (*
     * Destructors.

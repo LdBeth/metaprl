@@ -117,13 +117,14 @@ struct
        | _ ->
             Compose (path1, path2)
 
-   let rec clause_address_of_address = function
+   let rec split_clause_address = function
       (HypAddr _ | GoalAddr _) as addr ->
-         addr
-    | Compose (addr, _) ->
-         clause_address_of_address addr
+         addr, Null
+    | Compose (addr, addr') ->
+         let a1, a2 = split_clause_address addr in
+            a1, (compose_address a2 addr')
     | _ ->
-         REF_RAISE (RefineError ("Term_addr_ds.clause_address_of_address", StringError "address is not a sequent address"))
+         REF_RAISE (RefineError ("Term_addr_ds.split_clause_address", StringError "address is not a sequent address"))
 
    IFDEF VERBOSE_EXN THEN
       DEFINE ATERM = (a, term)
@@ -220,23 +221,11 @@ struct
             if i >= 0 && i < SeqHyp.length s.sequent_hyps then
                match SeqHyp.get s.sequent_hyps i with
                   Hypothesis (_, t) -> t
-                | Context _ -> REF_RAISE(RefineError (term_subterm_name, AddressError (a, term)))
+                | Context (v, conts, ts) -> core_term (SOVar(v, conts, ts))
             else REF_RAISE(RefineError (term_subterm_name, AddressError (a, term)))
        | Sequent s, GoalAddr i ->
             if i >= 0 && i < SeqGoal.length s.sequent_goals then SeqGoal.get s.sequent_goals i
             else REF_RAISE(RefineError (term_subterm_name, AddressError (a, term)))
-       (* Two special cases to address through contexts. *)
-       | Sequent s, Compose (HypAddr i, (Subterm j as addr')) ->
-            if i >= 0 && i < SeqHyp.length s.sequent_hyps then
-               match SeqHyp.get s.sequent_hyps i with
-                  Hypothesis (_, t) ->
-                     term_subterm t addr'
-                | Context (_, _, subterms) ->
-                     getnth ATERM subterms j
-            else
-               REF_RAISE(RefineError (term_subterm_name, AddressError (a, term)))
-       | Sequent _, Compose (HypAddr i, Compose (Subterm j, addr)) ->
-            term_subterm term (Compose (Compose (HypAddr i, Subterm j), addr))
        | _, Compose (addr1, addr2) ->
             term_subterm (term_subterm term addr1) addr2
        | _ -> REF_RAISE(RefineError (term_subterm_name, AddressError (a, term)))
@@ -335,12 +324,10 @@ struct
                      Hypothesis (v,t) as hyp ->
                         let term, arg = f hyp_bvars t in
                            Hypothesis (v,term), arg
-                   | Context (v, conts, subterms) ->
-                        let slot = mk_var_term v in
-                        let t = mk_context_term v slot conts subterms in
-                        let t, arg = f bvars t in
-                        let v1, term1, conts, subterms = dest_context t in
-                           if v1 = v && is_var_term term1 && dest_var term1 = v then
+                   | Context (v, conts, ts) ->
+                        let t, arg = f bvars (core_term (SOVar(v, conts, ts))) in
+                        let v1, conts, subterms = dest_so_var t in
+                           if v1 = v then
                               Context (v, conts, subterms), arg
                            else DO_FAIL
                   in

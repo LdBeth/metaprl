@@ -669,21 +669,18 @@ struct
        *)
       let replace_subgoal addr t' =
          (* Compute the extra binding variables in the clause *)
-         let seqtest = TermAddr.replace_subterm seq addr t' in
-         let addr' = TermAddr.clause_address_of_address addr in
-         let ttst = term_subterm seqtest addr' in
-         IFDEF VERBOSE_EXN THEN
-            if !debug_rewrites then
-               eprintf "Refine.replace_subgoal %a@%s with %a\n\tTest term: %a%t" print_term seq (TermAddr.string_of_address addr) print_term t' print_term ttst eflush;
-         ENDIF;
-         if SymbolSet.cardinal (free_vars_set ttst) < SymbolSet.cardinal (free_vars_set t') then
-            REF_RAISE(RefineError ("Refine.replace_subgoals", StringWrapError("Invalid context for conditional rewrite application",AddressError(addr,seq))));
-
+         let addr1, addr2 = TermAddr.split_clause_address addr in
+         let tst = term_subterm seq addr1 in
+         let f bvars t =
+            if SymbolSet.intersectp bvars (free_vars_set t') then
+               REF_RAISE(RefineError ("Refine.replace_subgoals", StringWrapError("Invalid context for conditional rewrite application",AddressError(addr,seq))))
+            else t
+         in
+         ignore(TermAddr.apply_var_fun_at_addr f addr2 SymbolSet.empty tst);
          (* Now we can replace the goal without fear *)
-         let seq = replace_goal seq t' in
             { mseq_vars = FreeVarsDelayed;
               mseq_hyps = hyps;
-              mseq_goal = seq
+              mseq_goal = replace_goal seq t';
             }
       in
 
