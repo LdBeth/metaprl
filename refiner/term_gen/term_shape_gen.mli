@@ -32,17 +32,19 @@
  * jyh@cs.cornell.edu
  *)
 
-open Term_simple_sig
+open Term_sig
 open Term_base_sig
 open Term_shape_sig
 
 module TermShape (**)
-   (TermType : TermSimpleSig)
+   (TermType : TermSig)
    (Term : TermBaseSig
     with type term = TermType.term
     with type term' = TermType.term'
     with type bound_term = TermType.bound_term
     with type bound_term' = TermType.bound_term'
+    with type operator = TermType.operator
+    with type operator' = TermType.operator'
     with type param = TermType.param
     with type param' = TermType.param'
    )

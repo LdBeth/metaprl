@@ -32,7 +32,6 @@ open Refine_error_sig
 open Term_ds_sig
 open Term_ds
 open Term_op_sig
-open Term_addr_sig
 open Term_subst_sig
 open Term_man_sig
 
@@ -59,20 +58,15 @@ module TermMan (**)
         with type bound_term' = TermType.bound_term')
    (TermOp : TermOpSig
     with type term = Term.term)
-   (TermAddr : TermAddrSig
-    with type term = Term.term
-    with type address = Term_addr_ds.addr)
    (TermSubst : TermSubstSig
     with type term = Term.term
     with type param = Term.param)
    (RefineError : RefineErrorSig
-    with type term = Term.term
-    with type address = TermAddr.address)
+    with type term = Term.term)
 : TermManSig
   with type term = Term.term
   with type operator = Term.operator
   with type level_exp = Term.level_exp
-  with type address = TermAddr.address
   with type esequent = TermType.esequent
 
 (*

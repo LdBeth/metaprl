@@ -97,13 +97,9 @@ let first_of_option = function
 
 (* Breaking up terms and bound terms *)
 let breakup_term term =
-   let { term_op = operator;
-         term_terms = subterms
-       } = dest_term term
-   in
-   let { op_name = opname; op_params = params } = dest_op operator in
-   let params = List.map dest_param params in
-      opname, params, subterms
+   let term = dest_term term in
+   let op = dest_op term.term_op in
+      op.op_name, dest_params op.op_params, term.term_terms
 
 let breakup_bterm bterm =
    let { bvars = bound_vars;

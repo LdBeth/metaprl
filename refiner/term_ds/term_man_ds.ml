@@ -38,10 +38,8 @@ open Refine_error_sig
 open Term_ds_sig
 open Term_ds
 open Term_op_sig
-open Term_addr_sig
 open Term_subst_sig
 
-open Term_addr_ds
 
 (*
  * Show that the file is loading.
@@ -82,27 +80,21 @@ module TermMan (**)
     with type bound_term' = TermType.bound_term')
    (TermOp : TermOpSig
     with type term = Term.term)
-   (TermAddr : TermAddrSig
-    with type term = Term.term
-    with type address = Term_addr_ds.addr)
    (TermSubst : TermSubstSig
     with type term = Term.term
     with type param = Term.param)
    (RefineError : RefineErrorSig
-    with type term = Term.term
-    with type address = TermAddr.address) =
+    with type term = Term.term) =
 struct
    open Term
    open TermType
    open TermOp
-   open TermAddr
    open TermSubst
    open RefineError
 
    type term = Term.term
    type operator = Term.operator
    type level_exp = Term.level_exp
-   type address = TermAddr.address
    type esequent = TermType.esequent
 
    (************************************************************************
@@ -350,64 +342,6 @@ struct
             s.sequent_args
        | _ ->
             REF_RAISE(RefineError ("Term_man_ds.args_of_sequent", TermMatchError (t, "not a sequent")))
-
-   (*
-    * Find the address of the hyp. Numbers start with 1
-    * We just check to make sure the address is valid.
-    *)
-   let nth_hyp_addr_name = "Term_man_ds.nth_hyp_addr"
-   let nth_hyp_addr t n =
-      if n <= 0 then
-         REF_RAISE(RefineError (nth_hyp_addr_name, StringError "negative address"))
-      else
-         match get_core t with
-            Sequent s ->
-               if n <= SeqHyp.length s.sequent_hyps then
-                  HypAddr (pred n)
-               else
-                  REF_RAISE(RefineError (nth_hyp_addr_name, TermMatchError (t, "not enough hyps")))
-          | _ ->
-               REF_RAISE(RefineError (nth_hyp_addr_name, TermMatchError (t, "not a sequent")))
-
-   (*
-    * Find the address of the conclusion. Numbers start with 1
-    *)
-   let nth_concl_addr_name = "Term_man_ds.nth_concl_addr"
-   let nth_concl_addr t n =
-      if n <= 0 then
-         REF_RAISE(RefineError (nth_concl_addr_name, StringError "negative address"))
-      else
-         match get_core t with
-            Sequent s ->
-               if n <= SeqGoal.length s.sequent_goals then
-                  GoalAddr (pred n)
-               else
-                  REF_RAISE(RefineError (nth_concl_addr_name, TermMatchError (t, "not enough hyps")))
-          | _ ->
-               REF_RAISE(RefineError (nth_concl_addr_name, TermMatchError (t, "not a sequent")))
-
-   (*
-    * Conclusion is number 0,
-    * negative numbers index from last hyp towards first.
-    *)
-   let nth_clause_addr_name = "Term_man_ds.nth_clause_addr"
-   let nth_clause_addr t i =
-      match get_core t with
-         Sequent s ->
-            let hlen = SeqHyp.length s.sequent_hyps in
-               if (i = 0) then
-                  GoalAddr 0
-               else if (i > 0) then
-                  if i <= hlen then
-                     HypAddr (pred i)
-                  else
-                     REF_RAISE(RefineError (nth_clause_addr_name, TermMatchError (t, "not enough hyps")))
-               else if (-i) <= hlen then
-                  HypAddr (hlen + i)
-               else
-                  REF_RAISE(RefineError (nth_clause_addr_name, TermMatchError (t, "not enough hyps for a negative addressing")))
-       | _ ->
-            REF_RAISE(RefineError (nth_clause_addr_name, TermMatchError (t, "not a sequent")))
 
    (*
     * Count the hyps.

@@ -41,7 +41,7 @@ struct
    module TermOp = Term_op_ds.TermOp (Term) (RefineError)
    module TermSubst = Term_subst_ds.TermSubst (Term) (RefineError)
    module TermAddr = Term_addr_ds.TermAddr (Term) (TermOp) (RefineError)
-   module TermMan = Term_man_ds.TermMan (Term) (TermOp) (TermAddr) (TermSubst) (RefineError)
+   module TermMan = Term_man_ds.TermMan (Term) (TermOp) (TermSubst) (RefineError)
    module TermShape = Term_shape_gen.TermShape (TermType) (Term)
    module TermEval = Term_eval_ds.TermEval (Term) (RefineError)
    module TermMeta = Term_meta_gen.TermMeta (TermType) (Term) (TermSubst) (RefineError)

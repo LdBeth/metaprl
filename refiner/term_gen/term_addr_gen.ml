@@ -11,6 +11,7 @@ open Refine_error_sig
 open Term_sig
 open Term_base_sig
 open Term_op_sig
+open Term_man_gen_sig
 
 (*
  * Address of a subterm.
@@ -37,6 +38,9 @@ module TermAddr (**)
     with type operator' = TermType.operator')
    (TermOp : TermOpSig
     with type term = TermType.term)
+   (TermMan: TermManGenSig
+    with type term = TermType.term
+    with type bound_term = TermType.bound_term)
    (RefineError : RefineErrorSig
     with type term = TermType.term
     with type address = addr) =
@@ -44,6 +48,7 @@ struct
    open TermType
    open Term
    open TermOp
+   open TermMan
    open RefineError
 
    type term = TermType.term
@@ -406,5 +411,111 @@ struct
 
    let apply_var_fun_higher f bvars term =
       apply_var_fun_higher_term f bvars [] term
+
+   (*
+    * Find the address of the hyp.
+    * We just check to make sure the address is valid.
+    * Hyps are numbered from 1.
+    *)
+   let nth_hyp_addr_name = "nth_hyp_addr"
+   let nth_hyp_addr t n =
+      let n = pred n in
+      let addr = nth_hd_address n in
+      let rec skip_hyps i term =
+         let { term_op = op; term_terms = bterms } = dest_term term in
+         let opname = (dest_op op).op_name in
+            if Opname.eq opname hyp_opname then
+               let term = match_hyp nth_hyp_addr_name t bterms in
+                  if i = 0 then
+                     addr
+                  else
+                     skip_hyps (i - 1) term
+            else if Opname.eq opname context_opname then
+               let term = match_context nth_hyp_addr_name t bterms in
+                  if i = 0 then
+                     addr
+                  else
+                     skip_hyps (i - 1) term
+            else
+               REF_RAISE(RefineError (nth_hyp_addr_name, TermMatchError (t, "not enough hyps")))
+      in
+         skip_hyps n (goal_of_sequent t)
+
+   (*
+    * Find the address of the conclusion.
+    * This is the address of the concl term whose car is the desired conclusion
+    * not the conclusion itself.
+    *
+    * Conclusions are numbered from 1.
+    *)
+   let nth_concl_addr_name = "nth_concl_addr"
+   let nth_concl_addr t n =
+      let rec skip_concl i n term =
+         if n <= 1 then
+            nth_tl_address i
+         else
+            match dest_term term with
+               { term_op = op; term_terms = [bterm1; bterm2] }
+                  when Opname.eq (dest_op op).op_name concl_opname ->
+                  begin
+                     match dest_bterm bterm1, dest_bterm bterm2 with
+                        ({ bvars = [] }, { bvars = []; bterm = term }) ->
+                           skip_concl (i + 1) (n - 1) term
+                      | _ ->
+                           REF_RAISE(RefineError (nth_concl_addr_name, TermMatchError (t, "malformed conclusion")))
+                  end
+             | _ ->
+                  REF_RAISE(RefineError (nth_concl_addr_name, (TermMatchError (t, "malformed conclusion"))))
+      in
+      let rec skip_hyps i term =
+         let { term_op = op; term_terms = bterms } = dest_term term in
+         let opname = (dest_op op).op_name in
+            if Opname.eq opname hyp_opname then
+               let term = match_hyp nth_concl_addr_name t bterms in
+                  skip_hyps (i + 1) term
+            else if Opname.eq opname context_opname then
+               let term = match_context nth_concl_addr_name t bterms in
+                  skip_hyps (i + 1) term
+            else if Opname.eq opname concl_opname then
+               let term = match_concl nth_concl_addr_name t bterms in
+                  skip_concl i n term
+            else
+               REF_RAISE(RefineError (nth_concl_addr_name, TermMatchError (t, "malformed sequent")))
+      in
+         skip_hyps 0 (goal_of_sequent t)
+   
+   (*
+    * Conclusion is number 0,
+    * negative numbers index from last hyp towards first.
+    *)
+   let nth_clause_addr_name = "nth_clause_addr"
+   let nth_clause_addr_aux make_address t =
+      let rec aux i term =
+         let { term_op = op; term_terms = bterms } = dest_term term in
+         let opname = (dest_op op).op_name in
+            if Opname.eq opname hyp_opname then
+               let term = match_hyp nth_clause_addr_name t bterms in
+                  aux (i + 1) term
+            else if Opname.eq opname context_opname then
+               let term = match_context nth_clause_addr_name t bterms in
+                  aux (i + 1) term
+            else if Opname.eq opname concl_opname then
+               make_address i
+            else
+               REF_RAISE(RefineError (nth_clause_addr_name, TermMatchError (t, "malformed sequent")))
+      in
+         aux 1 (goal_of_sequent t)
+
+   let make_nth_clause_addr nth_address count i =
+      if i < 0 then
+         nth_address (count + i)
+      else if i = 0 then
+         nth_address count
+      else
+         nth_address i
+
+   let nth_clause_addr t i =
+      nth_clause_addr_aux (fun count -> make_nth_clause_addr nth_hd_address count i) t
+   
 end
 

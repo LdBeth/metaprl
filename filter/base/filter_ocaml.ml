@@ -202,9 +202,7 @@ struct
    let dest_loc_string name t =
       if !debug_ocaml then
          eprintf "Filter_ocaml.%s: %a%t" name SimplePrint.print_simple_term_fp t eflush;
-      let { term_op = op } = dest_term t in
-      let { op_params = params } = dest_op op in
-         match List.map dest_param params with
+         match dest_params (dest_op (dest_term t).term_op).op_params with
             [ Number start; Number finish; String s ]
                when (Mp_num.is_integer_num start && Mp_num.is_integer_num finish) ->
                (Mp_num.int_of_num start, Mp_num.int_of_num finish), s
@@ -251,9 +249,7 @@ struct
    let dest_loc_int name t =
       if !debug_ocaml then
          eprintf "Filter_ocaml.%s: %a%t" name SimplePrint.print_simple_term_fp t eflush;
-      let { term_op = op } = dest_term t in
-      let { op_params = params } = dest_op op in
-         match List.map dest_param params with
+         match dest_params (dest_op (dest_term t).term_op).op_params with
             [ Number start; Number finish; Number i ]
                when (Mp_num.is_integer_num start && Mp_num.is_integer_num finish) ->
                (Mp_num.int_of_num start, Mp_num.int_of_num finish), Mp_num.string_of_num i

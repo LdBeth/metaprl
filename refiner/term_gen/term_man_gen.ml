@@ -37,13 +37,10 @@ open Mp_debug
 
 open Opname
 open Refine_error_sig
-open Term_simple_sig
+open Term_sig
 open Term_base_sig
 open Term_op_sig
-open Term_addr_sig
 open Term_subst_sig
-
-open Term_addr_gen
 
 (*
  * Show that the file is loading.
@@ -51,18 +48,11 @@ open Term_addr_gen
 let _ =
    show_loading "Loading Term_man_gen%t"
 
-let debug_address =
-   create_debug (**)
-      { debug_name = "address";
-        debug_description = "show term addressing operations";
-        debug_value = false
-      }
-
 (*
  * Module builds on term implementation.
  *)
 module TermMan (**)
-   (Term : TermSimpleSig)
+   (Term : TermSig)
    (TermBase : TermBaseSig
     with type term = Term.term
     with type term' = Term.term'
@@ -70,32 +60,33 @@ module TermMan (**)
     with type bound_term' = Term.bound_term'
     with type operator = Term.operator
     with type operator' = Term.operator'
+    with type param = Term.param
+    with type param' = Term.param'
+    with type level_exp = Term.level_exp
+    with type level_exp' = Term.level_exp'
+    with type level_exp_var = Term.level_exp_var
+    with type level_exp_var' = Term.level_exp_var'
     with type hypothesis = Term.hypothesis
     with type seq_hyps = Term.seq_hyps
     with type seq_goals = Term.seq_goals)
    (TermOp : TermOpSig
     with type term = Term.term)
-   (TermAddr : TermAddrSig
-    with type term = Term.term
-    with type address = addr)
    (TermSubst : TermSubstSig
     with type term = Term.term
     with type param = Term.param)
    (RefineError : RefineErrorSig
-    with type term = Term.term
-    with type address = TermAddr.address) =
+    with type term = Term.term) =
 struct
    open Term
    open TermBase
    open TermOp
-   open TermAddr
    open TermSubst
    open RefineError
 
    type term = Term.term
+   type bound_term = Term.bound_term
    type operator = Term.operator
    type level_exp = Term.level_exp
-   type address = TermAddr.address
 
    type esequent = Term.esequent
 
@@ -105,105 +96,79 @@ struct
 
    (* Simplified level expression constructors *)
    let mk_const_level_exp i =
-      { le_const = i; le_vars = [] }
+      make_level { le_const = i; le_vars = [] }
 
    let mk_var_level_exp v =
-      { le_const = 0; le_vars = [{ le_var = v; le_offset = 0 }] }
+      make_level { le_const = 0; le_vars = [make_level_var { le_var = v; le_offset = 0 }] }
 
    (*
     * Increment a level exp
     *)
-   let incr_level_exp = function
-      ({ le_const = c; le_vars = vars } : level_exp) ->
-         let add1 = function
-            { le_var = v; le_offset = o } ->
-               { le_var = v; le_offset = o + 1 }
-         in
-            { le_const = c + 1; le_vars = List.map add1 vars }
+   let add1 lv =
+      let lv = dest_level_var lv in
+         make_level_var { lv with le_offset = lv.le_offset + 1 }
 
+   let incr_level_exp l =
+      let l = dest_level l in
+         make_level { le_const = l.le_const + 1; le_vars = List.map add1 l.le_vars }
+
+   let add_off o lv =
+      let lv = dest_level_var lv in
+         make_level_var {lv with le_offset = lv.le_offset + o}
+
+   (* Max of two expressions; sort the variables *)
+   let rec join_lvars o = function
+      (h1::t1 as l1), (h2::t2 as l2) ->
+         let h1' = dest_level_var h1 and h2' = dest_level_var h2 in
+         let v1 = h1'.le_var and v2 = h2'.le_var in
+         if v1 = v2 then
+            make_level_var { h1' with le_offset = max h1'.le_offset (h2'.le_offset + o) }
+               :: join_lvars o (t1, t2)
+         else if v1 < v2 then
+            h1 :: join_lvars o (t1, l2)
+         else if o = 0 then
+            h2 :: join_lvars o (l1, t2)
+         else
+            add_off o h2 :: join_lvars o (l1, t2)
+    | [], l2 ->
+         if o = 0 then
+            l2
+         else
+            List.map (add_off o) l2
+    | l1, [] ->
+               l1
    (*
     * Build a level expression out of the max of two level
     * expressions.
     *)
-   let max_level_exp
-      ({ le_const = c1; le_vars = l1 } : level_exp)
-      ({ le_const = c2; le_vars = l2 } : level_exp)
-      o3 =
-         (* Max of two expressions; sort the variables *)
-         let rec join = function
-            ({ le_var = v1; le_offset = o1 } as h1::t1 as l1),
-            ({ le_var = v2; le_offset = o2 } as h2::t2 as l2) ->
-               if v1 = v2 then
-                  { le_var = v1; le_offset = max o1 (o2 + o3) } :: join (t1, t2)
-               else if v1 < v2 then
-                  h1 :: join (t1, l2)
-               else if o3 = 0 then
-                  h2 :: join (l1, t2)
-               else
-                  { le_var = v2; le_offset = o2 + o3 } :: join (l1, t2)
-          | [], l2 ->
-               if o3 = 0 then
-                  l2
-               else
-                  let add_off { le_var = v2; le_offset = o2 } =
-                     { le_var = v2; le_offset = o2 + o3 }
-                  in
-                     List.map add_off l2
-          | l1, [] ->
-               l1
-         in
-            { le_const = max c1 (c2 + o3); le_vars = join (l1, l2) }
+   let max_level_exp l1 l2 o =
+      let l1 = dest_level l1 in
+      let l2 = dest_level l2 in
+         make_level {
+            le_const = max l1.le_const (l2.le_const + o);
+            le_vars = join_lvars o (l1.le_vars, l2.le_vars)
+         }
 
    (*
     * See if the first level is contained in the second.
     *)
-   let level_le = fun
-      { le_const = const1; le_vars = vars1 }
-      { le_const = const2; le_vars = vars2 } ->
-         let rec caux = function
-            ({ le_var = v1; le_offset = o1 }::t1 as l1),
-            { le_var = v2; le_offset = o2 }::t2 ->
-               if v1 = v2 then
-                  if o1 <= o2 then
-                     caux (t1, t2)
-                  else
-                     false
-               else if v2 < v1 then
-                  caux (l1, t2)
-               else
-                  false
+
+   let rec level_var_cmp cmp = function
+      (lv1::t1 as l1), lv2::t2 ->
+         let lv1 = dest_level_var lv1 and lv2 = dest_level_var lv2 in   
+         let v1 = lv1.le_var and v2 = lv2.le_var in
+            if v1 = v2 then
+               cmp lv1.le_offset lv2.le_offset && level_var_cmp cmp (t1, t2)
+            else (v2 < v1) && level_var_cmp cmp (l1, t2)
           | [], _ -> true
           | _, [] -> false
-         in
-            if const1 <= const2 then
-               caux (vars1, vars2)
-            else
-               false
 
-   let level_lt = fun
-      { le_const = const1; le_vars = vars1 }
-      { le_const = const2; le_vars = vars2 } ->
-         let rec caux = function
-            ({ le_var = v1; le_offset = o1 }::t1 as l1),
-            { le_var = v2; le_offset = o2 }::t2 ->
-               if v1 = v2 then
-                  if o1 < o2 then
-                     caux (t1, t2)
-                  else
-                     false
-               else if v2 < v1 then
-                  caux (l1, t2)
-               else
-                  false
-          | [], _ ->
-               true
-          | _, [] ->
-               false
-         in
-            if const1 < const2 then
-               caux (vars1, vars2)
-            else
-               false
+   let level_cmp cmp l1 l2 =
+      let l1 = dest_level l1 and l2 = dest_level l2 in
+         cmp l1.le_const l2.le_const && level_var_cmp cmp (l1.le_vars, l2.le_vars)
+
+   let level_le = level_cmp (<=)
+   let level_lt = level_cmp (<)
 
    (************************************************************************
     * PRIMITIVE FORMS                                                      *
@@ -224,34 +189,32 @@ struct
 
    let rec is_xlist_term t =
       match dest_term t with
-         { term_op = { op_name = opname; op_params = [] };
-           term_terms = [bterm1; bterm2]
-         } when Opname.eq opname xcons_opname ->
+         { term_op = op; term_terms = [bterm1; bterm2] } ->
             begin
-               match (dest_bterm bterm1, dest_bterm bterm2) with
-                  ({ bvars = []; bterm = _ }, { bvars = []; bterm = b }) ->
-                     is_xlist_term b
+               match dest_bterm bterm1, dest_bterm bterm2, dest_op op  with
+                  { bvars = []; bterm = _ }, { bvars = []; bterm = b }, { op_name = opname; op_params = [] } ->
+                     Opname.eq opname xcons_opname && is_xlist_term b
                 | _ ->
                      false
             end
-       | { term_op = { op_name = opname; op_params = [] }; term_terms = [] } when Opname.eq opname xnil_opname ->
-            true
+       | { term_op = op; term_terms = [] } ->
+            let op = dest_op op in Opname.eq op.op_name xnil_opname && op.op_params = []
        | _ ->
             false
 
    let dest_xlist t =
       let rec aux trm =
          match dest_term trm with
-            { term_op = { op_name = opname; op_params = [] };
-              term_terms = [bterm1; bterm2]
-            } when Opname.eq opname xcons_opname ->
+            { term_op = op; term_terms = [bterm1; bterm2] }
+               when let op = dest_op op in Opname.eq op.op_name xcons_opname && op.op_params = [] ->
                begin
                   match (dest_bterm bterm1, dest_bterm bterm2) with
                      ({ bvars = []; bterm = a },
                       { bvars = []; bterm = b }) -> a::(aux b)
                    | _ -> REF_RAISE(RefineError ("dest_xlist", TermMatchError (t, "not a list")))
                end
-          | { term_op = { op_name = opname; op_params = [] }; term_terms = [] } when Opname.eq opname xnil_opname ->
+          | { term_op = op; term_terms = [] }
+               when let op = dest_op op in Opname.eq op.op_name xnil_opname && op.op_params = [] ->
                []
           | _ ->
                REF_RAISE(RefineError ("dest_xlist", TermMatchError (t, "not a list")))
@@ -261,7 +224,7 @@ struct
    let rec mk_xlist_term = function
       h::t ->
          mk_term (**)
-            { op_name = xcons_opname; op_params = [] }
+            (mk_op xcons_opname [])
             [mk_simple_bterm h; mk_simple_bterm (mk_xlist_term t)]
     | [] ->
          xnil_term
@@ -272,62 +235,56 @@ struct
    let string_opname = mk_opname "string" xperv
 
    let is_xstring_term t =
-      match dest_term t with
-         { term_op = { op_name = opname; op_params = [String _] };
-           term_terms = []
-         } when Opname.eq opname string_opname ->
-            true
-       | _ ->
-            false
+      let t = dest_term t in let op = dest_op t.term_op in
+         match t.term_terms, dest_params op.op_params with
+            [], [String s] -> Opname.eq op.op_name string_opname
+          | _ -> false
 
    let dest_xstring t =
-      match dest_term t with
-         { term_op = { op_name = opname; op_params = [String s] };
-           term_terms = []
-         } when Opname.eq opname string_opname ->
-            s
-       | _ ->
-            REF_RAISE(RefineError ("dest_xstring", TermMatchError (t, "not a string")))
+      let t' = dest_term t in let op = dest_op t'.term_op in
+         match t'.term_terms, dest_params op.op_params with
+            [], [String s] when Opname.eq op.op_name string_opname ->
+               s
+          | _ ->
+               REF_RAISE(RefineError ("dest_xstring", TermMatchError (t, "not a string")))
 
    let mk_xstring_term s =
-      let op = { op_name = string_opname; op_params = [String s] } in
+      let op = mk_op string_opname [make_param (String s)] in
          mk_term op []
 
    (*
     * String with one subterm.
     *)
    let is_xstring_dep0_term t =
-      match dest_term t with
-         { term_op = { op_name = opname; op_params = [String _] };
-           term_terms = [bt]
-         } when Opname.eq opname string_opname ->
-            begin
-               match dest_bterm bt with
-                  { bvars = []; bterm = _ } ->
-                     true
-                | _ ->
-                     false
-            end
+      let t' = dest_term t in let op = dest_op t'.term_op in
+         match t'.term_terms, dest_params op.op_params with
+            [bt], [String s] when Opname.eq op.op_name string_opname ->
+               begin
+                  match dest_bterm bt with
+                     { bvars = []; bterm = _ } ->
+                        true
+                   | _ ->
+                        false
+              end
        | _ ->
             false
 
    let dest_xstring_dep0_term t =
-      match dest_term t with
-         { term_op = { op_name = opname; op_params = [String s] };
-           term_terms = [bt]
-         } when Opname.eq opname string_opname ->
-            begin
-               match dest_bterm bt with
-                  { bvars = []; bterm = t } ->
-                     s, t
-                | _ ->
-                     REF_RAISE(RefineError ("dest_xstring_dep0_term", TermMatchError (t, "not a string with one subterm")))
-            end
+      let t' = dest_term t in let op = dest_op t'.term_op in
+         match t'.term_terms, dest_params op.op_params with
+            [bt], [String s] when Opname.eq op.op_name string_opname ->
+               begin
+                  match dest_bterm bt with
+                     { bvars = []; bterm = t } ->
+                        s, t
+                   | _ ->
+                        REF_RAISE(RefineError ("dest_xstring_dep0_term", TermMatchError (t, "not a string with one subterm")))
+               end
        | _ ->
             REF_RAISE(RefineError ("dest_xstring_dep0_term", TermMatchError (t, "not a string with one subterm")))
 
    let mk_xstring_dep0_term s t =
-      let op = { op_name = string_opname; op_params = [String s] } in
+      let op = mk_op string_opname [make_param (String s)] in
          mk_term op [mk_bterm [] t]
 
    (****************************************
@@ -404,11 +361,10 @@ struct
     * Helper function to unwrap the surrounding sequent term.
     *)
    let goal_of_sequent t =
-      match dest_term t with
-         { term_op = { op_name = name; op_params = [] };
-           term_terms = [_; bgoal]
-         } when Opname.eq name sequent_opname ->
-            dest_simple_bterm bgoal
+      let t' = dest_term t in let op = dest_op t'.term_op in
+         match t'.term_terms, op.op_params with
+            [_; bgoal], [] when Opname.eq op.op_name sequent_opname ->
+               dest_simple_bterm bgoal
        | _ ->
             REF_RAISE(RefineError ("goal_of_sequent", TermMatchError (t, "not a sequent")))
 
@@ -479,7 +435,8 @@ struct
    let explode_sequent_name = "explode_sequent"
    let explode_sequent t =
       let rec collect (args : term) hyps concls term =
-         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
+         let { term_op = op; term_terms = bterms } = dest_term term in
+         let opname = (dest_op op).op_name in
             if Opname.eq opname hyp_opname then
                let t, x, term = match_hyp_all explode_sequent_name t bterms in
                   collect args (Hypothesis (x, t) :: hyps) concls term
@@ -502,116 +459,14 @@ struct
          collect args [] [] goal
 
    (*
-    * Find the address of the hyp.
-    * We just check to make sure the address is valid.
-    * Hyps are numbered from 1.
-    *)
-   let nth_hyp_addr_name = "nth_hyp_addr"
-   let nth_hyp_addr t n =
-      let n = pred n in
-      let addr = nth_hd_address n in
-      let rec skip_hyps i term =
-         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
-            if Opname.eq opname hyp_opname then
-               let term = match_hyp nth_hyp_addr_name t bterms in
-                  if i = 0 then
-                     addr
-                  else
-                     skip_hyps (i - 1) term
-            else if Opname.eq opname context_opname then
-               let term = match_context nth_hyp_addr_name t bterms in
-                  if i = 0 then
-                     addr
-                  else
-                     skip_hyps (i - 1) term
-            else
-               REF_RAISE(RefineError (nth_hyp_addr_name, TermMatchError (t, "not enough hyps")))
-      in
-         skip_hyps n (goal_of_sequent t)
-
-   (*
-    * Find the address of the conclusion.
-    * This is the address of the concl term whose car is the desired conclusion
-    * not the conclusion itself.
-    *
-    * Conclusions are numbered from 1.
-    *)
-   let nth_concl_addr_name = "nth_concl_addr"
-   let nth_concl_addr t n =
-      let rec skip_concl i n term =
-         if n <= 1 then
-            nth_tl_address i
-         else
-            match dest_term term with
-               { term_op = { op_name = opname };
-                 term_terms = [bterm1; bterm2]
-               } when Opname.eq opname concl_opname ->
-                  begin
-                     match dest_bterm bterm1, dest_bterm bterm2 with
-                        ({ bvars = [] }, { bvars = []; bterm = term }) ->
-                           skip_concl (i + 1) (n - 1) term
-                      | _ ->
-                           REF_RAISE(RefineError (nth_concl_addr_name, TermMatchError (t, "malformed conclusion")))
-                  end
-             | _ ->
-                  REF_RAISE(RefineError (nth_concl_addr_name, (TermMatchError (t, "malformed conclusion"))))
-      in
-      let rec skip_hyps i term =
-         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
-            if Opname.eq opname hyp_opname then
-               let term = match_hyp nth_concl_addr_name t bterms in
-                  skip_hyps (i + 1) term
-            else if Opname.eq opname context_opname then
-               let term = match_context nth_concl_addr_name t bterms in
-                  skip_hyps (i + 1) term
-            else if Opname.eq opname concl_opname then
-               let term = match_concl nth_concl_addr_name t bterms in
-                  skip_concl i n term
-            else
-               REF_RAISE(RefineError (nth_concl_addr_name, TermMatchError (t, "malformed sequent")))
-      in
-         skip_hyps 0 (goal_of_sequent t)
-
-   (*
-    * Conclusion is number 0,
-    * negative numbers index from last hyp towards first.
-    *)
-   let nth_clause_addr_name = "nth_clause_addr"
-   let nth_clause_addr_aux make_address t =
-      let rec aux i term =
-         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
-            if Opname.eq opname hyp_opname then
-               let term = match_hyp nth_clause_addr_name t bterms in
-                  aux (i + 1) term
-            else if Opname.eq opname context_opname then
-               let term = match_context nth_clause_addr_name t bterms in
-                  aux (i + 1) term
-            else if Opname.eq opname concl_opname then
-               make_address i
-            else
-               REF_RAISE(RefineError (nth_clause_addr_name, TermMatchError (t, "malformed sequent")))
-      in
-         aux 1 (goal_of_sequent t)
-
-   let make_nth_clause_addr nth_address count i =
-      if i < 0 then
-         nth_address (count + i)
-      else if i = 0 then
-         nth_address count
-      else
-         nth_address i
-
-   let nth_clause_addr t i =
-      nth_clause_addr_aux (fun count -> make_nth_clause_addr nth_hd_address count i) t
-
-   (*
     * Count the hyps.
     *)
    let num_hyps_name = "num_hyps"
 
    let num_hyps t =
       let rec aux i term =
-         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
+         let { term_op = op; term_terms = bterms } = dest_term term in
+         let opname = (dest_op op).op_name in
             if Opname.eq opname hyp_opname then
                let term = match_hyp num_hyps_name t bterms in
                   aux (i + 1) term
@@ -631,7 +486,8 @@ struct
    let nth_hyp_name = "nth_hyp"
    let nth_hyp t i =
       let rec aux i term =
-         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
+         let { term_op = op; term_terms = bterms } = dest_term term in
+         let opname = (dest_op op).op_name in
             if Opname.eq opname hyp_opname then
                let t, x, term = match_hyp_all nth_hyp_name t bterms in
                   if i = 0 then
@@ -653,7 +509,8 @@ struct
 
    let nth_binding t i =
       let rec aux i term =
-         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
+         let { term_op = op; term_terms = bterms } = dest_term term in
+         let opname = (dest_op op).op_name in
             if Opname.eq opname hyp_opname then
                let t, x, term = match_hyp_all nth_hyp_name t bterms in
                   if i = 0 then
@@ -676,7 +533,8 @@ struct
    let nth_concl_name = "nth_concl"
    let nth_concl t i =
       let rec aux i term =
-         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
+         let { term_op = op; term_terms = bterms } = dest_term term in
+         let opname = (dest_op op).op_name in
             if Opname.eq opname hyp_opname then
                let term = match_hyp nth_concl_name t bterms in
                   aux i term
@@ -700,7 +558,8 @@ struct
    let declared_vars_name = "declared_vars"
    let declared_vars t =
       let rec aux vars term =
-         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
+         let { term_op = op; term_terms = bterms } = dest_term term in
+         let opname = (dest_op op).op_name in
             if Opname.eq opname hyp_opname then
                let _, x, term = match_hyp_all declared_vars_name t bterms in
                   aux (x :: vars) term
@@ -721,7 +580,8 @@ struct
 
    let get_decl_number t v =
       let rec aux i term =
-         let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
+         let { term_op = op; term_terms = bterms } = dest_term term in
+         let opname = (dest_op op).op_name in
             if Opname.eq opname hyp_opname then
                let _, x, term = match_hyp_all get_decl_number_name t bterms in
                   if x = v then
@@ -747,7 +607,8 @@ struct
          if i = 0 then
             is_var_free v t
          else
-            let { term_op = { op_name = opname }; term_terms = bterms } = dest_term t in
+            let { term_op = op; term_terms = bterms } = dest_term t in
+            let opname = (dest_op op).op_name in
                if Opname.eq opname hyp_opname then
                   let term = match_hyp is_free_seq_var_name t bterms in
                      aux (i - 1) term
@@ -766,7 +627,8 @@ struct
     *)
    let replace_concl_name = "replace_concl"
    let rec replace_concl seq goal =
-      let { term_op = ({ op_name = opname } as op); term_terms = bterms } = dest_term seq in
+      let { term_op = op; term_terms = bterms } = dest_term seq in
+      let opname = (dest_op op).op_name in
          if Opname.eq opname hyp_opname then
             let t, x, term = match_hyp_all replace_concl_name seq bterms in
                mk_term op [mk_simple_bterm t; mk_bterm [x] (replace_concl term goal)]

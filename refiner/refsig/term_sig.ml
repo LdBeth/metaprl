@@ -34,7 +34,7 @@
 open Opname
 open Refine_error_sig
 
-module type TermSimpleSig =
+module type TermSig =
 sig
    (************************************************************************
     * Types                                                                *
@@ -46,10 +46,10 @@ sig
     * When this file is copied to term_std.mli, the
     * following for type definitions become abstract.
     *)
-   type level_exp_var = level_exp_var'
-   and level_exp = level_exp'
-   and param = param'
-   and operator = operator'
+   type level_exp_var
+   and level_exp
+   and param
+   and operator
 
    (*
     * A term has an operator, and a finite number of subterms

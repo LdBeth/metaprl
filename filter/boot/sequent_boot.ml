@@ -104,10 +104,10 @@ struct
    let nth_binding p i = TacticInternal.nth_binding p (get_pos_hyp_num p i)
 
    let clause_addr p i =
-      TermMan.nth_clause_addr (goal p) i
+      TermAddr.nth_clause_addr (goal p) i
 
    let assum_clause_addr p i j =
-      TermMan.nth_clause_addr (nth_assum p i) j
+      TermAddr.nth_clause_addr (nth_assum p i) j
 
    let get_decl_number arg v =
       TermMan.get_decl_number (goal arg) v

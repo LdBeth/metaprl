@@ -40,7 +40,6 @@ sig
    type term
    type operator
    type level_exp
-   type address
    type esequent
 
    (************************************************************************
@@ -74,18 +73,7 @@ sig
    val declared_vars : term -> string list
    val get_decl_number : term -> string -> int
    val is_free_seq_var : int -> string -> term -> bool
-
-   (*
-    * The nth_*_addr functions are used to
-    * compute addreses for parts of a sequent.
-    * The indexing starts from 1.  Clause 0
-    * refers to the conclusion. Negative numbers in nth_clause_addr
-    * count hypotheses from the end of the list.
-    *)
-   val nth_hyp_addr : term -> int -> address
-   val nth_concl_addr : term -> int -> address
-   val nth_clause_addr : term -> int -> address
-   val replace_goal : term -> term -> term          (* One concl *)
+   val replace_goal : term -> term -> term     (* Single-concl seqs*)
 
    val is_xrewrite_term : term -> bool
    val mk_xrewrite_term : term -> term -> term

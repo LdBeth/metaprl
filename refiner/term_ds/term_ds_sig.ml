@@ -211,6 +211,7 @@ sig
    val dest_op : operator -> operator'
    val make_param : param' -> param
    val dest_param : param -> param'
+   val dest_params : param list -> param' list
    val make_level : level_exp' -> level_exp
    val dest_level : level_exp -> level_exp'
    val make_level_var : level_exp_var' -> level_exp_var

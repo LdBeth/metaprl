@@ -457,6 +457,7 @@ struct
    let dest_op x = x (* external dest_op : operator -> operator' = "%identity" *)
    let make_param x = x (* external make_param : param' -> param = "%identity" *)
    let dest_param x = x (* external dest_param : param -> param' = "%identity" *)
+   let dest_params x = x (* external dest_params : param list -> param' list = "%identity" *)
    let make_level x = x (* external make_level : level_exp' -> level_exp = "%identity" *)
    let dest_level x = x (* external dest_level : level_exp -> level_exp' = "%identity" *)
    let make_level_var x = x (* external make_level_var : level_exp_var' -> level_exp_var = "%identity" *)

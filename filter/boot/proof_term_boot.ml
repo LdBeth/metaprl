@@ -136,18 +136,14 @@ struct
          mk_term op []
 
    let dest_string_string_term t =
-      let { term_op = op } = dest_term t in
-      let { op_params = params } = dest_op op in
-         match List.map dest_param params with
+      match dest_params (dest_op (dest_term t).term_op).op_params with
             [String s1; String s2] ->
                s1, s2
           | _ ->
                raise (Failure "dest_string_string_term")
 
    let dest_int_term t =
-      let { term_op = op } = dest_term t in
-      let { op_params = params } = dest_op op in
-         match List.map dest_param params with
+      match dest_params (dest_op (dest_term t).term_op).op_params with
             [Number n] ->
                Mp_num.int_of_num n
           | _ ->

@@ -82,7 +82,6 @@ sig
                     with type term = TermType.term
                     with type operator = TermType.operator
                     with type level_exp = TermType.level_exp
-                    with type address = TermAddr.address
                     with type esequent = TermType.esequent
    module TermSubst : TermSubstSig
                       with type term = TermType.term

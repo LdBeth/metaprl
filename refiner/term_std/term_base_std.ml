@@ -147,42 +147,34 @@ struct
    let mk_term op bterms = { term_op = op; term_terms = bterms }
 
    let make_term x = x (* external make_term : term' -> term = "%identity" *)
-
    let dest_term x = x (* external dest_term : term -> term' = "%identity" *)
 
    let mk_op name params =
       { op_name = name; op_params = params }
 
    let make_op x = x (* external make_op : operator' -> operator = "%identity" *)
-
    let dest_op x = x (* external dest_op : operator -> operator' = "%identity" *)
 
    let mk_bterm bvars term = { bvars = bvars; bterm = term }
 
    let make_bterm x = x (* external make_bterm : bound_term' -> bound_term = "%identity" *)
-
    let dest_bterm x = x (* external dest_bterm : bound_term -> bound_term' = "%identity" *)
-
    let make_param x = x (* external make_param : param' -> param = "%identity" *)
-
    let dest_param x = x (* external dest_param : param -> param' = "%identity" *)
+   let dest_params x = x (* external dest_params : param list -> param' list = "%identity" *)
 
    let mk_level_var v i =
       { le_var = v; le_offset = i }
 
    let make_level_var x = x (* external make_level_var : level_exp_var' -> level_exp_var = "%identity" *)
-
    let dest_level_var x = x (* external dest_level_var : level_exp_var -> level_exp_var' = "%identity" *)
 
    let mk_level i l =
       { le_const = i; le_vars = l }
 
    let make_level x = x (* external make_level : level_exp' -> level_exp = "%identity" *)
-
    let dest_level x = x (* external dest_level : level_exp -> level_exp' = "%identity" *)
-
    let make_object_id x = x (* external make_object_id : param list -> object_id = "%identity" *)
-
    let dest_object_id x = x (* external dest_object_id : object_id -> param list = "%identity" *)
 
    (*

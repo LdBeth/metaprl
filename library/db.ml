@@ -636,7 +636,7 @@ let make_session_scanner stream =
 
 
 let extract_level_string_updates level inparms =
-     let parms = ref (map dest_param inparms) in
+     let parms = ref (dest_params inparms) in
 	while not (nullp !parms )
 	do (match (hd !parms) with
 	    Token s ->

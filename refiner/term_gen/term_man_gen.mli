@@ -29,16 +29,16 @@
  * Authors: Jason Hickey, Alexey Nogin
  *)
 
+open Opname
 open Refine_error_sig
-open Term_simple_sig
+open Term_sig
 open Term_base_sig
 open Term_op_sig
-open Term_addr_sig
 open Term_subst_sig
-open Term_man_sig
+open Term_man_gen_sig
 
 module TermMan (**)
-   (Term : TermSimpleSig)
+   (Term : TermSig)
    (TermBase : TermBaseSig
     with type term = Term.term
     with type term' = Term.term'
@@ -46,25 +46,27 @@ module TermMan (**)
     with type bound_term' = Term.bound_term'
     with type operator = Term.operator
     with type operator' = Term.operator'
+    with type param = Term.param
+    with type param' = Term.param'
+    with type level_exp = Term.level_exp
+    with type level_exp' = Term.level_exp'
+    with type level_exp_var = Term.level_exp_var
+    with type level_exp_var' = Term.level_exp_var'
     with type hypothesis = Term.hypothesis
     with type seq_hyps = Term.seq_hyps
     with type seq_goals = Term.seq_goals)
    (TermOp : TermOpSig
     with type term = Term.term)
-   (TermAddr : TermAddrSig
-    with type term = Term.term
-    with type address = Term_addr_gen.addr)
    (TermSubst : TermSubstSig
     with type term = Term.term
     with type param = Term.param)
    (RefineError : RefineErrorSig
-    with type term = Term.term
-    with type address = TermAddr.address)
-: TermManSig
+    with type term = Term.term)
+: TermManGenSig
   with type term = Term.term
+  with type bound_term = Term.bound_term
   with type operator = Term.operator
   with type level_exp = Term.level_exp
-  with type address = TermAddr.address
   with type esequent = Term.esequent
 
 (*

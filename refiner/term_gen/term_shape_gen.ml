@@ -29,24 +29,26 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Aleksey Nogin <nogin@cs.cornell.edu>
+ * Modified By: Jason Hickey <jyh@cs.cornell.edu>
  *)
 
 open Printf
 
 open Opname
-open Term_simple_sig
+open Term_sig
 open Term_base_sig
 open Term_shape_sig
 
 module TermShape (**)
-   (TermType : TermSimpleSig)
+   (TermType : TermSig)
    (Term : TermBaseSig
     with type term = TermType.term
     with type term' = TermType.term'
     with type bound_term = TermType.bound_term
     with type bound_term' = TermType.bound_term'
+    with type operator = TermType.operator
+    with type operator' = TermType.operator'
     with type param = TermType.param
     with type param' = TermType.param'
    ) =
@@ -81,7 +83,7 @@ struct
 
    let shape_of_term trm =
       let t = dest_term trm in
-      let op = t.term_op in
+      let op = dest_op t.term_op in
          { shape_opname = op.op_name;
            shape_params = List.map param_type op.op_params;
            shape_arities = List.map bterm_type t.term_terms
