@@ -23,7 +23,6 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Lm_string_set
 open Refiner.Refiner.Term
 open Mp_resource
 
@@ -55,17 +54,32 @@ declare menuitem[menuname:s, label:s, command:s]
  * The resulting info.
  *)
 type browser_info =
-   { browser_styles  : Buffer.t;
-     browser_menubar : Buffer.t;
-     browser_buttons : Buffer.t;
-     browser_menu_macros : string StringTable.t;
-     browser_buttons_macros : string StringTable.t
+   { browser_buf     : Buffer.t;
+     browser_styles  : Buffer.t;
+     browser_macros  : Buffer.t
    }
 
 (*
- * Resources.
+ * The current state of the browser.
  *)
-resource (term, browser_info) browser
+type browser_state =
+   { browser_directories : string list;
+     browser_history     : string list
+   }
+
+(*
+ * Menubar has a default.
+ *)
+val default_menubar_info : browser_state -> browser_info
+val default_commandbar_info : browser_state -> browser_info
+
+(*
+ * There are two menus:
+ *   The menubar goes at the top of the page.
+ *   The commandbar goes by the input area.
+ *)
+resource (term, browser_state -> browser_info) menubar
+resource (term, browser_state -> browser_info) commandbar
 
 (*!
  * @docoff

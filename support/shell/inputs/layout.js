@@ -131,18 +131,48 @@ function LoadRule(session)
  */
 
 /*
+ * Print the command in the rulebox.
+ */
+function Prompt(cmd)
+{
+    parent.rule.document.commandform.command.value = cmd;
+}
+
+/*
+ * Evaluate a command in the rulebox.
+ */
+function Command(cmd)
+{
+    parent.rule.document.commandform.command.value = cmd;
+    parent.rule.document.commandform.submit();
+}
+
+/*
+ * Bring up a URL in another window.
+ */
+function URL(where)
+{
+    window.open(where);
+}
+
+/*
+ * Generic event handler.
+ */
+function HandleCommand(macros, id)
+{
+    var command = 'parent.' + macros[id];
+    eval(command);
+}
+
+/*
  * The user selected a command from a menu.
  */
-function MenuCommand(macros, menu, submit)
+function MenuCommand(macros, menu)
 {
     if(menu.selectedIndex != 0) {
         var id = menu.options[menu.selectedIndex].value;
-        var text = macros[id];
-        var ruledoc = parent.rule.document;
-        ruledoc.commandform.command.value = text;
-        if(submit)
-            parent.rule.document.commandform.submit();
         menu.selectedIndex = 0;
+        HandleCommand(macros, id);
     }
 }
 
@@ -152,10 +182,7 @@ function MenuCommand(macros, menu, submit)
 function ButtonCommand(macros, button)
 {
     var id = button.name;
-    var text = macros[id];
-    var ruledoc = parent.rule.document;
-    ruledoc.commandform.command.value = text;
-    ruledoc.commandform.submit();
+    HandleCommand(macros, id);
 }
 
 /*

@@ -51,7 +51,6 @@ declare button[label:s, command:s]
  * elements that act like buttons.
  *)
 declare menu[menuname:s, label:s]
-declare menubar[menuname:s, label:s]
 declare menuitem[menuname:s, label:s, command:s]
 
 (*
@@ -60,25 +59,26 @@ declare menuitem[menuname:s, label:s, command:s]
 declare style[text:s]
 
 (************************************************************************
- * Resource.
+ * Types.
  *)
 
 (*
  * The resource info.
  *)
-type menu_kind =
-   MenuBar
- | MenuButton
+type command =
+   { command_label : string;
+     command_value : string
+   }
 
 type menu =
-   { menu_kind     : menu_kind;
+   { menu_name     : string;
      menu_label    : string;
-     menu_items    : (string * string) list
+     menu_items    : command list
    }
 
 type info =
-   { info_buttons : (string * string) list;
-     info_menus   : menu StringTable.t;
+   { info_buttons : command list;
+     info_menus   : menu list;
      info_styles  : string list
    }
 
@@ -86,43 +86,67 @@ type info =
  * The resulting info.
  *)
 type browser_info =
-   { browser_styles  : Buffer.t;
-     browser_menubar : Buffer.t;
-     browser_buttons : Buffer.t;
-     browser_menu_macros : string StringTable.t;
-     browser_buttons_macros : string StringTable.t
+   { browser_buf     : Buffer.t;
+     browser_styles  : Buffer.t;
+     browser_macros  : Buffer.t
    }
+
+(*
+ * The current state of the browser.
+ *)
+type browser_state =
+   { browser_directories : string list;
+     browser_history     : string list
+   }
+
+(************************************************************************
+ * Implementation.
+ *)
 
 (*
  * Empty info.
  *)
 let info_empty =
    { info_buttons = [];
-     info_menus = StringTable.empty;
-     info_styles = []
+     info_menus   = [];
+     info_styles  = []
    }
+
+(*
+ * Replace a menu item.
+ *)
+let menu_replace info name f =
+   let rec replace menus =
+      match menus with
+         menu :: menus ->
+            if menu.menu_name = name then
+               f menu :: menus
+            else
+               menu :: replace menus
+       | [] ->
+            raise Not_found
+   in
+      { info with info_menus = replace info.info_menus }
 
 (*
  * Figure out what kind of item to add to the resource.
  *)
 let improve info t =
    match explode_term t with
-      << button[label:s, command:s] >> ->
-         { info with info_buttons = (label, command) :: info.info_buttons }
+      << button[label:s, arg:s] >> ->
+         let command = { command_label = label; command_value = arg } in
+            { info with info_buttons = command :: info.info_buttons }
     | << menu[menuname:s, label:s] >> ->
-         let menu = { menu_kind = MenuButton; menu_label = label; menu_items = [] } in
-            { info with info_menus = StringTable.add info.info_menus menuname menu }
-    | << menubar[menuname:s, label:s] >> ->
-         let menu = { menu_kind = MenuBar; menu_label = label; menu_items = [] } in
-            { info with info_menus = StringTable.add info.info_menus menuname menu }
-    | << menuitem[menuname:s, label:s, command:s] >> ->
-         let menu =
-            try StringTable.find info.info_menus menuname with
-               Not_found ->
-                  raise (RefineError ("Browser_resource.improve", StringTermError ("menu not declared: " ^ menuname, t)))
-         in
-         let menu = { menu with menu_items = (label, command) :: menu.menu_items } in
-            { info with info_menus = StringTable.add info.info_menus menuname menu }
+         let menu = { menu_name = menuname; menu_label = label; menu_items = [] } in
+            { info with info_menus = info.info_menus @ [menu] }
+    | << menuitem[menuname:s, label:s, arg:s] >> ->
+         (try
+             menu_replace info menuname (fun menu ->
+                   let command = { command_label = label; command_value = arg } in
+                      { menu with menu_items = command :: menu.menu_items })
+          with
+             Not_found ->
+                raise (RefineError ("Browser_resource.improve", StringTermError ("menu not declared: " ^ menuname, t))))
     | << style[text:s] >> ->
          { info with info_styles = text :: info.info_styles }
     | _ ->
@@ -139,52 +163,38 @@ let extract info =
    in
 
    (* Collect the button text *)
-   let buttons_buf    = Buffer.create 32 in
-   let buttons_macros = StringTable.empty in
-   let buttons_macros =
-      List.fold_left (fun macros (label, command) ->
+   let buf  = Buffer.create 32 in
+   let macros = StringTable.empty in
+   let macros =
+      List.fold_left (fun macros { command_label = label; command_value = command } ->
             let sym = sprintf "id%d" (StringTable.cardinal macros) in
-               bprintf buttons_buf "<input type=button name=\"%s\" value=\"%s\" onclick=\"parent.ButtonCommand(macros, this);\">\n" sym label;
-               StringTable.add macros sym command) buttons_macros (List.rev buttons)
+            let macros = StringTable.add macros sym command in
+               bprintf buf "<input type=button name=\"%s\" value=\"%s\" onclick=\"parent.ButtonCommand(macros, this);\">\n" sym label;
+               macros) macros (List.rev buttons)
    in
 
    (* Collect the menu text *)
-   let buttons_macros =
-      StringTable.fold (fun macros _ menu ->
-            let { menu_kind = kind; menu_label = label; menu_items = items } = menu in
-               if items = [] || kind <> MenuButton then
-                  macros
-               else
-                  let macros =
-                     bprintf buttons_buf "<select name=\"%s\" onChange=\"parent.MenuCommand(macros, this, true);\">\n" label;
-                     List.fold_left (fun macros (label, command) ->
-                           let sym = sprintf "id%d" (StringTable.cardinal macros) in
-                              bprintf buttons_buf "<option value=\"%s\">%s</option>\n" sym label;
-                              StringTable.add macros sym command) macros (List.rev items)
-                  in
-                     bprintf buttons_buf "</select>\n";
-                     macros) buttons_macros menus
+   let macros =
+      List.fold_left (fun macros menu ->
+            let { menu_label = label; menu_items = items } = menu in
+            let macros =
+               bprintf buf "<select name=\"%s\" onChange=\"parent.MenuCommand(macros, this);\">\n" label;
+               bprintf buf "<option value=\"nop\">%s</option>\n" label;
+               List.fold_left (fun macros { command_label = label; command_value = command } ->
+                     let sym = sprintf "id%d" (StringTable.cardinal macros) in
+                     let macros = StringTable.add macros sym command in
+                        bprintf buf "<option value=\"%s\">%s</option>\n" sym label;
+                        macros) macros (List.rev items)
+            in
+               bprintf buf "</select>\n";
+               macros) macros menus
    in
 
-   (* Collect the menubar *)
-   let menu_buf    = Buffer.create 32 in
-   let menu_macros = StringTable.empty in
-   let menu_macros =
-      StringTable.fold (fun macros _ menu ->
-            let { menu_kind = kind; menu_label = label; menu_items = items } = menu in
-               if kind <> MenuBar then
-                  macros
-               else
-                  let macros =
-                     bprintf menu_buf "<select name=\"%s\" onChange=\"parent.MenuCommand(macros, this, true);\">\n" label;
-                     bprintf menu_buf "<option value=\"\"><b>%s</b></option>\n" label;
-                     List.fold_left (fun macros (label, command) ->
-                           let sym = sprintf "id%d" (StringTable.cardinal macros) in
-                              bprintf menu_buf "<option value=\"%s\">%s</option>\n" sym label;
-                              StringTable.add macros sym command) macros (List.rev items)
-                  in
-                     bprintf menu_buf "</select>\n";
-                     macros) menu_macros menus
+   (* Format the macros *)
+   let macros_buf = Buffer.create 32 in
+   let () =
+      StringTable.iter (fun v s ->
+            bprintf macros_buf "\tmacros['%s'] = \"%s\";\n" v (String.escaped s)) macros
    in
 
    (* Collect the style sheets *)
@@ -194,29 +204,107 @@ let extract info =
             Buffer.add_string style_buf s;
             Buffer.add_char style_buf '\n') (List.rev styles)
    in
-      { browser_menubar = menu_buf;
-        browser_buttons = buttons_buf;
-        browser_styles  = style_buf;
-        browser_menu_macros = menu_macros;
-        browser_buttons_macros = buttons_macros
+      { browser_buf    = buf;
+        browser_styles = style_buf;
+        browser_macros = macros_buf
       }
 
 (*
- * Now, finally, the resource.
+ * Add the directories.
  *)
-let term_collection =
+let add_directories info dirs =
+   try
+      menu_replace info "dir" (fun menu ->
+            let items =
+               List.fold_left (fun items s ->
+                     let item =
+                        { command_label = s;
+                          command_value = sprintf "Command('cd \"%s\"')" s
+                        }
+                     in
+                        item :: items) menu.menu_items dirs
+            in
+               { menu with menu_items = items })
+   with
+      Not_found ->
+         info
+
+(*
+ * Add the history.
+ *)
+let add_history info lines =
+   try
+      menu_replace info "history" (fun menu ->
+            let items =
+               List.fold_left (fun items s ->
+                     let item =
+                        { command_label = s;
+                          command_value = sprintf "Prompt('%s')" s
+                        }
+                     in
+                        item :: items) menu.menu_items lines
+            in
+               { menu with menu_items = items })
+   with
+      Not_found ->
+         info
+
+let extract info state =
+   let { browser_directories = directories;
+         browser_history = history
+       } = state
+   in
+   let info = add_directories info directories in
+   let info = add_history info history in
+      extract info
+
+(************************************************************************
+ * Commandbar.
+ *)
+let commandbar_init =
+   [<< menu["history", "--History--"] >>]
+
+let default_commandbar = List.fold_left improve info_empty commandbar_init
+
+let default_commandbar_info state =
+   extract default_commandbar state
+
+let commandbar_collection =
    Functional (**)
-      { fp_empty = info_empty;
-        fp_add = improve;
-        fp_retr = extract
+      { fp_empty = default_commandbar;
+        fp_add   = improve;
+        fp_retr  = extract
       }
 
-let resource (term, browser_info) browser =
-   term_collection
+let resource (term, browser_state -> browser_info) commandbar =
+   commandbar_collection
 
-let resource browser +=
-    [<< menubar["file", "--File--"] >>;
-     << menuitem["file", "Save", "save ()"] >>]
+(*
+ * Default menubar resource.
+ *)
+let menubar_init =
+   [<< menu["file", "--File--"] >>;
+    << menu["edit", "--Edit--"] >>;
+    << menu["session", "--Session--"] >>;
+    << menu["dir", "--Directory--"] >>;
+    << menuitem["dir", "Refresh", "Command('ls \"\"')"] >>;
+    << menu["help", "--Help--"] >>;
+    << menuitem["help", "MetaPRL Home", "URL('http://www.metaprl.org/')"] >>]
+
+let default_menubar = List.fold_left improve info_empty menubar_init
+
+let default_menubar_info state =
+   extract default_menubar state
+
+let menubar_collection =
+   Functional (**)
+      { fp_empty = default_menubar;
+        fp_add   = improve;
+        fp_retr  = extract
+      }
+
+let resource (term, browser_state -> browser_info) menubar =
+   menubar_collection
 
 (*!
  * @docoff

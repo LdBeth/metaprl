@@ -29,7 +29,6 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-
 open Shell_sig
 
 module ShellBrowser (Shell : ShellSig) : ShellMainSig

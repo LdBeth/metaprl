@@ -548,8 +548,8 @@ let intro_univ_arg = IntroArgsOption (univ_arg_fun, None)
 (*
  * Add autoT to the browser.
  *)
-let resource browser +=
-    << button["dT 0", "refine dT 0"] >>
+let resource commandbar +=
+    << button["dT 0", "Command('refine dT 0')"] >>
 
 (*
  * -*-

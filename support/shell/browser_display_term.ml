@@ -64,8 +64,9 @@ let add_to_buffer queue width buf =
  * The buffer.
  *)
 type t =
-   { info_history : string LineBuffer.t;
-     info_message : buffer LineBuffer.t;
+   { info_history     : string LineBuffer.t;
+     info_directories : string LineBuffer.t;
+     info_message     : buffer LineBuffer.t;
      mutable info_content : buffer
    }
 
@@ -78,9 +79,10 @@ let current = ref None
  * Empty buffer.
  *)
 let create () =
-   { info_history = LineBuffer.create ();
-     info_message = LineBuffer.create ();
-     info_content = new_buffer ()
+   { info_history     = LineBuffer.create ();
+     info_message     = LineBuffer.create ();
+     info_directories = LineBuffer.create ();
+     info_content     = new_buffer ()
    }
 
 (*
@@ -103,6 +105,12 @@ let add_prompt info str =
       LineBuffer.add info.info_history str
 
 (*
+ * Add a directory.
+ *)
+let add_directory info str =
+   LineBuffer.add info.info_directories str
+
+(*
  * Capture output channels.
  *)
 let add_channel message color =
@@ -123,25 +131,24 @@ let format_message info width buf =
          Lm_rformat_html.print_html_buffer width buffer buf) info.info_message
 
 (*
- * Create history.
+ * Get the history.
  *)
-let get_history info macros =
-   let history_buf = Buffer.create 1024 in
-   let () = Buffer.add_string history_buf "<option>--History--</option>\n" in
-   let macros, _ =
-      LineBuffer.fold (fun (macros, last) s ->
-            if s = last then
-               macros, last
-            else
-               let id = Printf.sprintf "id%d" (StringTable.cardinal macros) in
-               let () =
-                  (* BUG JYH: probably need our own escape function *)
-                  Printf.bprintf history_buf "<option value=\"%s\">%s</option>\n" id s
-               in
-               let macros = StringTable.add macros id s in
-                  macros, s) (macros, "") info.info_history
+let get_history info =
+   let history =
+      LineBuffer.fold (fun lines line ->
+            line :: lines) [] info.info_history
    in
-      history_buf, macros
+      List.rev history
+
+(*
+ * Get the directories.
+ *)
+let get_directories info =
+   let dirs =
+      LineBuffer.fold (fun lines line ->
+            line :: lines) [] info.info_directories
+   in
+      List.rev dirs
 
 (*
  * Display a term in the window.

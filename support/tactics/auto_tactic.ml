@@ -399,8 +399,8 @@ let resource auto += {
 (*
  * Add autoT to the browser.
  *)
-let resource browser +=
-    << button["autoT", "refine autoT"] >>
+let resource commandbar +=
+    << button["autoT", "Command('refine autoT')"] >>
 
 (*
  * -*-

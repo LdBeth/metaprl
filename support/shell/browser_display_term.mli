@@ -44,16 +44,22 @@ val create : unit -> t
 val set_main        : Lm_rformat.buffer -> unit
 
 (*
- * Add a prompt to a sepcific buffer.
+ * Add a prompt/directory to a specific buffer.
  *)
 val add_prompt      : t -> string -> unit
+val add_directory   : t -> string -> unit
 
 (*
  * Get the output for display.
  *)
 val format_main     : t -> int -> Buffer.t -> unit
 val format_message  : t -> int -> Buffer.t -> unit
-val get_history     : t -> string StringTable.t -> Buffer.t * string StringTable.t
+
+(*
+ * Get the saved components.
+ *)
+val get_directories : t -> string list
+val get_history     : t -> string list
 
 (*
  * This function should be used while output is begin diverted.

@@ -33,7 +33,6 @@
  *)
 open Lm_debug
 open Lm_symbol
-open Lm_string_set
 open Lm_int_set
 
 open Format
@@ -70,7 +69,7 @@ struct
     *)
    type menu =
       { menu_buffer : Buffer.t;
-        menu_macros : string StringTable.t
+        menu_macros : Buffer.t
       }
 
    (*
@@ -98,9 +97,15 @@ struct
         mutable session_rule_version    : int;
 
         (*
+         * Directory and history info.
+         *)
+        mutable session_state           : browser_state option;
+
+        (*
          * Browser info include menus and styles.
          *)
-        mutable session_browser_info    : browser_info option;
+        mutable session_menubar_info    : browser_info option;
+        mutable session_commandbar_info : browser_info option;
 
         (*
          * Menubar info is computed from browser_info.
@@ -111,12 +116,6 @@ struct
          * Buttons info is computed from browser info.
          *)
         mutable session_buttons         : menu option;
-
-        (*
-         * History is computed from the message window
-         * (in Browser_display_term), and session_buttons.
-         *)
-        mutable session_history         : menu option;
 
         (*
          * Styles are computed from browser_info.
@@ -282,22 +281,26 @@ struct
     * Be sure to increment version numbers.
     *)
    let invalidate_directory session cwd =
-      let { session_menu_version = menu_version;
+      let { session_buffer          = state;
+            session_menu_version    = menu_version;
             session_buttons_version = buttons_version;
             session_content_version = content_version
           } = session
       in
+         Browser_display_term.add_directory state cwd;
+
          session.session_cwd <- cwd;
 
          session.session_menu_version    <- succ menu_version;
          session.session_buttons_version <- succ buttons_version;
          session.session_content_version <- succ content_version;
 
-         session.session_browser_info <- None;
-         session.session_menu    <- None;
-         session.session_buttons <- None;
-         session.session_history <- None;
-         session.session_styles  <- None
+         session.session_state           <- None;
+         session.session_menubar_info    <- None;
+         session.session_commandbar_info <- None;
+         session.session_menu            <- None;
+         session.session_buttons         <- None;
+         session.session_styles          <- None
 
    let maybe_invalidate_directory session =
       let cwd = Shell.pwd session.session_shell in
@@ -317,7 +320,9 @@ struct
          session.session_message_version <- succ message_version;
          session.session_buttons_version <- succ buttons_version;
          session.session_content_version <- succ content_version;
-         session.session_history <- None;
+         session.session_state           <- None;
+         session.session_commandbar_info <- None;
+         session.session_buttons         <- None;
          maybe_invalidate_directory session
 
    (*
@@ -331,21 +336,59 @@ struct
          invalidate_eval session
 
    (*
+    * Get the current state if possible.
+    *)
+   let get_session_state state session =
+      let { session_buffer = buffer;
+            session_state = info
+          } = session
+      in
+         match info with
+            Some state ->
+               state
+          | None ->
+               let info =
+                  { browser_directories = Browser_display_term.get_directories buffer;
+                    browser_history = Browser_display_term.get_history buffer
+                  }
+               in
+                  session.session_state <- Some info;
+                  info
+
+   (*
     * Get the browser info, if possible.
     *)
-   let get_browser_info state session =
-      let info = session.session_browser_info in
+   let get_menubar_info state session =
+      let info = session.session_menubar_info in
          match info with
-            Some _ ->
+            Some info ->
                info
           | None ->
-               (try
-                   let info = Some (get_browser_resource (Shell.get_resource session.session_shell)) in
-                      session.session_browser_info <- info;
-                      info
-                with
-                   Not_found ->
-                      None)
+               let state = get_session_state state session in
+               let f =
+                  try get_menubar_resource (Shell.get_resource session.session_shell) with
+                     Not_found ->
+                        default_menubar_info
+               in
+               let info = f state in
+                  session.session_menubar_info <- Some info;
+                  info
+
+   let get_commandbar_info state session =
+      let info = session.session_commandbar_info in
+         match info with
+            Some info ->
+               info
+          | None ->
+               let state = get_session_state state session in
+               let f =
+                  try get_commandbar_resource (Shell.get_resource session.session_shell) with
+                     Not_found ->
+                        default_commandbar_info
+               in
+               let info = f state in
+                  session.session_commandbar_info <- Some info;
+                  info
 
    (*
     * Get the menubar info.
@@ -353,22 +396,20 @@ struct
    let get_menu state session =
       let info = session.session_menu in
          match info with
-            Some _ ->
+            Some info ->
                info
           | None ->
-               (match get_browser_info state session with
-                   Some { browser_menubar = buffer;
-                          browser_menu_macros = macros
-                   } ->
-                      let info =
-                         Some { menu_buffer = buffer;
-                                menu_macros = macros
-                         }
-                      in
-                         session.session_menu <- info;
-                         info
-                 | None ->
-                      None)
+               let { browser_buf = buffer;
+                     browser_macros = macros
+                   } = get_menubar_info state session
+               in
+               let info =
+                  { menu_buffer = buffer;
+                    menu_macros = macros
+                  }
+               in
+                  session.session_menu <- Some info;
+                  info
 
    (*
     * Get the buttons info.
@@ -376,67 +417,32 @@ struct
    let get_buttons state session =
       let info = session.session_buttons in
          match info with
-            Some _ ->
+            Some info ->
                info
           | None ->
-               (match get_browser_info state session with
-                   Some { browser_buttons = buffer;
-                          browser_buttons_macros = macros
-                   } ->
-                      let info =
-                         Some { menu_buffer = buffer;
-                                menu_macros = macros
-                         }
-                      in
-                         session.session_buttons <- info;
-                         info
-                 | None ->
-                      None)
+               let { browser_buf = buffer;
+                     browser_macros = macros
+                   } = get_commandbar_info state session
+               in
+               let info =
+                  { menu_buffer = buffer;
+                    menu_macros = macros
+                  }
+               in
+                  session.session_buttons <- Some info;
+                  info
 
    (*
     * Get the current CSS.
     *)
    let get_styles state session =
-      let info = session.session_styles in
-         match session.session_styles with
-            Some _ ->
-               info
-          | None ->
-               (match get_browser_info state session with
-                   Some { browser_styles = buffer } ->
-                      let buffer = Some buffer in
-                         session.session_styles <- buffer;
-                         buffer
-                 | None ->
-                      None)
-
-   (*
-    * Get the current history.
-    *)
-   let get_history state session =
-      let { session_history = history;
-            session_buffer = buffer
-          } = session
-      in
-         match history with
-            Some _ ->
-               history
-          | None ->
-               let macros =
-                  match get_buttons state session with
-                     Some { menu_macros = macros } ->
-                        macros
-                   | None ->
-                        StringTable.empty
-               in
-               let buffer, macros = Browser_display_term.get_history buffer macros in
-               let info =
-                  Some { menu_buffer = buffer;
-                         menu_macros = macros
-                  }
-               in
-                  session.session_history <- info;
-                  info
+      match session.session_styles with
+         Some info ->
+            info
+       | None ->
+            let { browser_styles = buffer } = get_commandbar_info state session in
+               session.session_styles <- Some buffer;
+               buffer
 
    (************************************************************************
     * Page production.
@@ -480,13 +486,6 @@ struct
          Printf.bprintf buf "\tsession['rule']     = %d;\n" rule_version
 
    (*
-    * Print the macros set.
-    *)
-   let print_macros macros buf =
-      StringTable.iter (fun s v ->
-            Printf.bprintf buf "\tmacros['%s'] = '%s';\n" s v) macros
-
-   (*
     * This is the default printer for each non-content pane.
     *)
    let print_page server state session out width frame =
@@ -494,7 +493,6 @@ struct
             session_cwd             = cwd;
             session_menu            = menu;
             session_buttons         = buttons;
-            session_history         = history;
             session_styles          = styles
           } = session
       in
@@ -502,25 +500,15 @@ struct
 
       (* Some helper functions *)
       let print_buffer flush buf =
-         match flush state session with
-            Some buf' ->
-               Buffer.add_buffer buf buf'
-          | None ->
-               ()
+         Buffer.add_buffer buf (flush state session)
       in
       let print_menu_buffer flush buf =
-         match flush state session with
-            Some { menu_buffer = buf' } ->
-               Buffer.add_buffer buf buf'
-          | None ->
-               ()
+         let { menu_buffer = buf' } = flush state session in
+            Buffer.add_buffer buf buf'
       in
       let print_menu_macros flush buf =
-         match flush state session with
-            Some { menu_macros = macros } ->
-               print_macros macros buf
-          | None ->
-               ()
+         let { menu_macros = macros } = flush state session in
+            Buffer.add_buffer buf macros
       in
 
       (* General info *)
@@ -540,8 +528,7 @@ struct
 
       (* Buttons *)
       let table = BrowserTable.add_fun    table buttons_sym        (print_menu_buffer get_buttons) in
-      let table = BrowserTable.add_fun    table history_sym        (print_menu_buffer get_history) in
-      let table = BrowserTable.add_fun    table buttons_macros_sym (print_menu_macros get_history) in
+      let table = BrowserTable.add_fun    table buttons_macros_sym (print_menu_macros get_buttons) in
 
       (* Styles *)
       let table = BrowserTable.add_fun    table style_sym          (print_buffer get_styles) in
@@ -891,10 +878,11 @@ struct
               session_message_version = 1;
               session_buttons_version = 1;
               session_rule_version    = 1;
-              session_browser_info    = None;
+              session_state           = None;
+              session_menubar_info    = None;
+              session_commandbar_info = None;
               session_menu            = None;
               session_buttons         = None;
-              session_history         = None;
               session_styles          = None
             }
          in
