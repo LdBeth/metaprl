@@ -36,4 +36,4 @@ if ( ! $?CAMLP4LIB ) then
    setenv CAMLP4LIB /usr/lib/camlp4
 endif
 
-setenv INCLUDES "-I . -I ../../theories/sil -I ../../theories/reflect_itt -I ../../theories/tutorial -I ../../theories/tptp -I ../../theories/fol -I ../../theories/czf -I ../../theories/itt -I ../../theories/base -I ../../theories/ocaml -I ../../theories/ocaml_sos -I ../../theories/tactic -I ../../theories/mc -I ../../theories/fir -I tests -I $CAMLP4LIB"
+setenv INCLUDES "-I . -I ../../theories/sil -I ../../theories/reflect_itt -I ../../theories/tutorial -I ../../theories/tptp -I ../../theories/fol -I ../../theories/czf -I ../../theories/itt -I ../../theories/base -I ../../theories/ocaml -I ../../theories/ocaml_sos -I ../../theories/tactic -I ../../theories/mc -I ../../theories/fir -I ../../theories/phobos -I tests -I $CAMLP4LIB"
