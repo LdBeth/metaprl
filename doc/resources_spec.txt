@@ -167,10 +167,11 @@ val bookmark: 'data data -> string -> 'data data
 val include: 'data data -> string -> 'data data
 
 (* Since theories are processed one-by-one, we can do it imperatively for a
-particular resource. See also Module 5 for a potential value of x_data *)
+particular resource. See also Modules 4&5 for an expected value of x_data *)
 val x_theory_data : x_data data ref (* initially empty *)
 val x_improve : x_data -> unit (* adds to x_theory_data *)
 val x_bookmark: string -> unit
+val x_include: string -> unit
 val x_global_data = x_data global_data
 val x_finish_theory: string -> unit (* adds x_theory_data to x_global_data and
    flushes it *)
@@ -289,9 +290,10 @@ val extract_bookmark:
    1) Try looking up global_processed_data to see if we already know the
    result.
    2) Retrieve the increment, run extract_bookmark for its base.
-   3) Clone the resulting (from 2) proc_result.
-   4) Feed all increment data to cloned proc_result.proc_add
-   5) Return {res_proc=proc_result; res_result=None}
+   3) If increment is non-empty, then
+      a) Clone the proc_result (from 2).
+      b) Feed all increment data to (cloned proc_result).proc_add
+   4) Return {res_proc=proc_result; res_result=None}
 *)
 
 (* extract_bookmark, then get_result *)
@@ -308,17 +310,86 @@ type ('data, 'intermediate, 'result) resource_info =
    Imperative of ('data, 'intermediate, 'result) imperative_processor
  | Functional of ('data, 'intermediate, 'result) functional_processor
 
+(* combines make_imp_proc with make_fun_proc *)
 val make_processor:
    ('data, 'intermediate, 'result) resource_info -> ('data, 'result) processor
 
-Module 5: Dealing with multiple resources with different 'data types.
+In order to better accomodate multimple modules and solve problems 2.1 and
+2.2, we should:
+ - In Module1, take x_data = (string * 'data) where string is the resource name.
+ - In Module2, change the type of inc_increment to be
+      (string, 'data list) Splay_table.t
+This way we first put everything in a single pile, we do bookmark processing
+and duplicate includes elimination in one pass for all the resources and then
+separate the increment (while keeping bookmarks together)
 
-I propose to handle the multitude of 'data types by marshalling all the data
-to strings and keeping it internally as a string.
+Next we need
+type ('data, 'result) really_global_procesed_data =
+   (string, ('data, 'result) global_procesed_data) Hashtbl.t
 
-(* resulting processor would unmarshal data before adding it *)
-val marshal_processor:
-   ('data, 'result) processor -> (string, 'result) processor
+to have a separate processed data table for each resource.
+
+We'll also have:
+
+val x_processed_data: (x_data, x_result) really_global_procesed_data
+
+Module 5: Dealing with multiple resources with different 'data and 'resource
+types.
+
+I propose to handle the multitude of 'data and 'resource types by using the
+Obj.t as x_data and x_resource and using Obj.repr and Obj.obj to convert
+between the Obj.t and the real type. The parser would create the code with
+appropriate type constraints (we know the types from the resource
+declaration), so we can ensure the resource code is still type-checked
+properly.
+
+(* use Obj to hide the types *)
+val untyped_processor:
+   ('data, 'result) processor -> Obj.t, Obj.t processor
+
+So, in the above Modules (except for Module1 - see comments for Module2) we
+will have x_data = x_result = Obj.t
+
+Module 6: the actual exposed interface:
+
+(* From Module1 *)
+val improve : string -> Obj.t -> unit (* takes a resource name and a data *)
+val bookmark: string -> unit (* takes local name *)
+val include: string -> unit (* takes theory name *)
+val finish_theory: string -> unit
+
+(* From Module2 *)
+type bookmark = string * string (* theory name + local name *)
+
+type ('data, 'intermediate, 'result) funct_processor = {
+   fp_empty: 'intermediate:
+   fp_add: 'itermediate -> 'data -> 'intermediate;
+   fp_retr: 'intermediate -> 'result
+}
+
+type ('data, 'intermediate, 'result) imper_processor = {
+   imp_create: unit -> 'intermediate;
+   imp_add: 'intermediate -> 'data -> unit;
+   imp_retr: 'intermediate -> 'result
+}
+
+(* From Module3 *)
+type ('data, 'intermediate, 'result) resource_info =
+   Imperative of ('data, 'intermediate, 'result) imperative_processor
+ | Functional of ('data, 'intermediate, 'result) functional_processor
+
+(* other functions *)
+
+(* combines make_processor with untyped_processor and creates an entry for the
+   named resource in x_processed_data (see Module4) *)
+val create_resource:
+   string -> ('data, 'intermediate, 'result) resource_info -> unit
+
+type global_resource (* = bookmark *)
+val lazy_find : bookmark -> global_resource (* = identity *)
+val get_resource : global_resource -> string -> Obj.t
+(* get_resource would take the global_procesed_data from x_processed_data
+   using the resource name supplied, and run find_bookmark *)
 
 -------------------------------------------------------------------------------
 
