@@ -118,7 +118,7 @@ struct
          mk_term op bterms
 
    let mk_simple_int_term opname i terms =
-      let param = make_param (Number (Mp_num.Int i)) in
+      let param = make_param (Number (Mp_num.num_of_int i)) in
       let op = mk_op opname [param] in
       let bterms = List.map (fun t -> mk_bterm [] t) terms in
          mk_term op bterms
@@ -131,7 +131,7 @@ struct
 
    let mk_string_int_term opname s i =
       let param1 = make_param (String s) in
-      let param2 = make_param (Number (Mp_num.Int i)) in
+      let param2 = make_param (Number (Mp_num.num_of_int i)) in
       let op = mk_op opname [param1; param2] in
          mk_term op []
 

@@ -137,7 +137,7 @@ check_config::check_versions mk/config mk/config.local
 	fi
 
 realclean::
-	mk/cvs_realclean.sh
+	@MAKE="$(MAKE)" MAKEFLAGS="$(MAKEFLAGS)" mk/cvs_realclean.sh
 
 docs::
 	+@$(MAKE) -C doc all

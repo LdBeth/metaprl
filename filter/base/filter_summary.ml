@@ -828,13 +828,17 @@ struct
 
    let dest_loc t =
       match (dest_number_number_dep0_any_term t) with
-          (Mp_num.Int i, Mp_num.Int j, t) -> t, (i, j)
-        | _ -> raise (Failure "dest_loc: location is not an integer")
+         (i, j, t) when Mp_num.is_integer_num i && Mp_num.is_integer_num j ->
+            t, (Mp_num.int_of_num i, Mp_num.int_of_num j)
+       | _ ->
+            raise (Failure "dest_loc: location is not an integer")
 
    let dest_loc_string t =
       match dest_number_number_string_dep0_any_term t with
-          Mp_num.Int i, Mp_num.Int j, s, t -> t, (i, j), s
-        | _ -> raise (Failure "dest_loc_string: location is not an integer")
+         (i, j, s, t) when Mp_num.is_integer_num i && Mp_num.is_integer_num j ->
+            t, (Mp_num.int_of_num i, Mp_num.int_of_num j), s
+       | _ ->
+            raise (Failure "dest_loc_string: location is not an integer")
 
    (*
     * Dform options.
@@ -1136,10 +1140,9 @@ struct
     * Identifier.
     *)
    and dest_id convert t =
-     let n = (dest_number_any_term t) in
-       match n with
-           Mp_num.Int i -> Id i
-         | _ -> raise (Failure "dest_id: can't handle things other than Mp_num.Int")
+      let n = (dest_number_any_term t) in
+         if Mp_num.is_integer_num n then Id (Mp_num.int_of_num n)
+         else raise (Invalid_argument "Filter_summary.dest_id: not an int")
 
    (*
     * Documentation.
@@ -1277,7 +1280,7 @@ struct
     * Make a location.
     *)
    let mk_loc (i, j) t =
-      mk_number_number_dep0_term loc_op (Mp_num.Int i) (Mp_num.Int j) t
+      mk_number_number_dep0_term loc_op (Mp_num.num_of_int i) (Mp_num.num_of_int j) t
 
    (*
     * Make a optional arg.
@@ -1305,7 +1308,7 @@ struct
          mk_term op bterms
 
    let mk_loc_string_term op (start, finish) name t =
-      mk_number_number_string_dep0_term op (Mp_num.Int start) (Mp_num.Int finish) name t
+      mk_number_number_string_dep0_term op (Mp_num.num_of_int start) (Mp_num.num_of_int finish) name t
 
    (*
     * Make a term with only strings parameters.
@@ -1507,7 +1510,7 @@ struct
       mk_prec_rel_term rel left right
 
    and term_of_id id =
-      mk_number_term id_op (Mp_num.Int id)
+      mk_number_term id_op (Mp_num.num_of_int id)
 
    and term_of_comment convert t =
       mk_simple_term comment_op [convert.term_f t]

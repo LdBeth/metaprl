@@ -12,23 +12,22 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ *
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
  *)
 
 open Mp_big_int
@@ -40,8 +39,6 @@ open Mp_big_int
 (*
  * Have simple ints and big ints.
  *)
-type big_int = Mp_big_int.big_int
-
 type num =
    Int of int
  | Big_int of big_int
@@ -124,7 +121,9 @@ let mult_num i j =
 
 let div_num i j =
    match i, j with
-      Int i, Int j ->
+      _ , Int 0 ->
+         raise (Invalid_argument "Mp_num.div_num: division by zero")
+    | Int i, Int j ->
          Int (i / j)
     | Int i, Big_int j ->
          Big_int (div_big_int (big_int_of_int i) j)
@@ -135,7 +134,9 @@ let div_num i j =
 
 let mod_num i j =
    match i, j with
-      Int i, Int j ->
+      _ , Int 0 ->
+         raise (Invalid_argument "Mp_num.mod_num: division by zero")
+    | Int i, Int j ->
          Int (i mod j)
     | Int i, Big_int j ->
          Big_int (mod_big_int (big_int_of_int i) j)
@@ -218,6 +219,11 @@ let gt_num i j =
 
 let ge_num i j =
    compare_num i j >= 0
+
+let is_zero = function
+   Int 0 -> true
+ | Int _ -> false
+ | Big_int i -> is_zero_big_int i
 
 (************************************************************************
  * CONVERSION                                                           *

@@ -1,5 +1,5 @@
 #!/bin/sh
-make -s clean
+$MAKE -s clean
 
 function clean () {
    if [ -f "$1/CVS/Entries" ]; then
@@ -8,7 +8,7 @@ function clean () {
             CVS=`grep "^D/$f/" "$1/CVS/Entries"`
             if [ -n "$CVS" ]; then
                clean "$1/$f"
-            else 
+            else
                if [ "$f" != "CVS" ]; then
                   rm -ir -- "$1/$f"
                fi

@@ -13,23 +13,22 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ *
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
  *)
 
 (************************************************************************
@@ -98,7 +97,8 @@ let rec collect_big_int = function
  | [] ->
       0
 
-let integer_big_int (sign, mag) =
+let integer_big_int ((sign, mag) as i) =
+   if not (is_integer_big_int i) then raise (Invalid_argument "Mp_big_int.integer_big_int: overflow");
    let mag = collect_big_int mag in
       if sign then
          mag
@@ -143,7 +143,7 @@ let rec eq_mag val1 val2 =
       digit1 :: val1, digit2 :: val2 ->
          digit1 = digit2 && eq_mag val1 val2
     | [], [] ->
-         true 
+         true
     | [], val2 ->
          zeros val2
     | val1, [] ->
@@ -327,6 +327,7 @@ let rec div_mag min max num den =
                div_mag mid max num den
 
 let div_big_int (sign1, val1) (sign2, val2) =
+   if zeros val2 then raise (Invalid_argument "Mp_big_int.div_big_int: division by zero");
    sign1 = sign2, div_mag [] val1 val1 val2
 
 let mod_mag num den =
@@ -334,6 +335,7 @@ let mod_mag num den =
       sub_mag false num (mult_mag [] den quo)
 
 let mod_big_int (sign1, val1) (sign2, val2) =
+   if zeros val2 then raise (Invalid_argument "Mp_big_int.mod_big_int: division by zero");
    sign1 = sign2, mod_mag val1 val2
 
 let quo_big_int = div_big_int
@@ -455,6 +457,9 @@ let big_int_of_string s =
          false, collect 1 []
       else
          true, collect 0 []
+
+let is_zero_big_int (_, mag) =
+   zeros mag
 
 (*
  * -*-

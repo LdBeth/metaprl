@@ -171,8 +171,8 @@ struct
 
    let cast_level p =
       match dest_param p with
-         Number (Mp_num.Int n) ->
-           mk_const_level_exp n
+         Number n when Mp_num.is_integer_num n ->
+           mk_const_level_exp (Mp_num.int_of_num n)
        | MLevel l -> l
        | MString v -> level_var v
        | _ -> raise (BadParamCast (p, "l"))

@@ -7,21 +7,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Lori Lorigo, Richard Eaton, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
@@ -98,7 +98,7 @@ let imessage_op parms = mk_nuprl5_op (imessage_parameter :: parms)
 (* !natural{n} *)
 let inatural_parameter = make_param (Token "!natural")
 let inatural_op p = mk_nuprl5_op [inatural_parameter; p]
-let inatural_term i = mk_term (inatural_op (make_param (Number (Mp_num.Int i)))) []
+let inatural_term i = mk_term (inatural_op (make_param (Number (Mp_num.num_of_int i)))) []
 
 (* !token{t} *)
 let itoken_parameter = make_param (Token "!token")
@@ -119,9 +119,9 @@ let ioid_parameter = make_param (Token "!oid")
 let ioid_op p = mk_nuprl5_op [make_param (Token "!oid"); p]
 let ioid_term o = mk_term (ioid_op (make_param (ObId o))) []
 
-let inil_parameter = 
-	make_param (ParamList [(make_param (Token "bool")); 
-			       (make_param (Number (Mp_num.Int 1)))])
+let inil_parameter =
+	make_param (ParamList [(make_param (Token "bool"));
+			       (make_param (Number (Mp_num.num_of_int 1)))])
 
 let iterm_op = mk_nuprl5_op [make_param (Token "!term")]
 
@@ -144,7 +144,6 @@ let ivoid_term_p t =
   { term_op = op; term_terms = []} when opeq op ivoid_op
      -> true
   |_ -> false
-
 
 
 (*
@@ -183,8 +182,6 @@ let unwind_error body unwind =
   with
     e -> (unwind ()); raise e
 
-
-
 let parameters_of_term t =
   match Lib_term.dest_term t with
    { term_op = op; term_terms = _}
@@ -201,16 +198,13 @@ let bound_terms_of_term t =
 
 let term_of_unbound_term bterm =
   match dest_bterm bterm with
-    { bvars = []; bterm = t }
-    -> t
+    { bvars = []; bterm = t } -> t
   | _ -> error ["unbound"; "bound"] [] [(mk_term iterm_op [bterm])]
 
 let unbound_bterm_p bterm =
   match dest_bterm bterm with
-    { bvars = []; bterm = t }
-    -> true
+    { bvars = []; bterm = _ } -> true
   | _ -> false
-
 
 let parameter_of_carrier p t =
   match Lib_term.dest_term t with
@@ -238,12 +232,12 @@ let token_parameter_to_string p =
 let ipui_addr_parameter = make_param (Token "!pui_addr")
 let number_of_ipui_addr_term t =
   match dest_param (parameter_of_carrier ipui_addr_parameter t) with
-    Number (Mp_num.Int n) -> n
+    Number n when Mp_num.is_integer_num n -> Mp_num.int_of_num n
   |_ -> error ["term"; "!pui_addr"; "parameter type"] [] [t]
 
 let number_of_inatural_term t =
   match dest_param (parameter_of_carrier inatural_parameter t) with
-    Number (Mp_num.Int n) -> n
+    Number n when Mp_num.is_integer_num n -> Mp_num.int_of_num n
   |_ -> error ["term"; "!natural"; "parameter type"] [] [t]
 
 let num_of_inatural_term t =
@@ -297,7 +291,7 @@ let dest_token_param p =
 
 let dest_int_param p =
   match dest_param p with
-    Number (Mp_num.Int n) -> n
+    Number n when Mp_num.is_integer_num n -> Mp_num.int_of_num n
   |_ -> error ["parameter"; "int"] [] []
 
 let dest_num_param p =
@@ -347,13 +341,13 @@ let term_to_stamp t =
 	    when (nuprl5_opname_p opname & parmeq istamp istamp_parameter)
          ->
 	(match dest_param ppid with Token pid ->
-	(match dest_param ptseq with Number (Mp_num.Int tseq) ->
-	(match dest_param pseq with Number (Mp_num.Int seq) ->
+	(match dest_param ptseq with Number tseq when Mp_num.is_integer_num tseq ->
+	(match dest_param pseq with Number seq when Mp_num.is_integer_num seq ->
 	       (* print_string "tts "; *)
            {term = t;
             process_id = pid;
-            transaction_seq = tseq;
-            seq = seq;
+            transaction_seq = Mp_num.int_of_num tseq;
+            seq = Mp_num.int_of_num seq;
             time = (try (destruct_time_parameter ptime)
 		    with Invalid_argument "destruct_time_parameter_b"
 				-> error ["stamp"; "term"; "invalid"; "timeb"] [] [t]
@@ -408,9 +402,9 @@ let stamp_data =
 
 let make_stamp pid tseq seq time =
 	{ term = (mk_term (istamp_op
-				[ make_param (Number (Mp_num.Int seq))
+				[ make_param (Number (Mp_num.num_of_int seq))
    				; make_time_parameter time
-				; make_param (Number (Mp_num.Int tseq))
+				; make_param (Number (Mp_num.num_of_int tseq))
    				; make_param (Token pid)
    				])
 			[])
@@ -443,7 +437,7 @@ let itransaction_id_op pl = mk_nuprl5_op (itransaction_id_parameter :: pl)
 let tid () =
     (mk_term
       (itransaction_id_op
-		[ make_param (Number (Mp_num.Int (sequence())))
+		[ make_param (Number (Mp_num.num_of_int (sequence())))
 		; make_param (Token  stamp_data.pid)
 		])
      [])

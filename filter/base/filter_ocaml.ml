@@ -175,8 +175,9 @@ struct
             { op_params = p1 :: p2 :: _ } ->
                begin
                   match dest_param p1, dest_param p2 with
-                     Number (Mp_num.Int start), Number (Mp_num.Int finish) ->
-                       start, finish
+                     Number start, Number finish
+                        when (Mp_num.is_integer_num start && Mp_num.is_integer_num finish) ->
+                       Mp_num.int_of_num start, Mp_num.int_of_num finish
                    | _ ->
                         raise_format_error "dest_loc: needs two numbers" t
                end
@@ -195,8 +196,9 @@ struct
       let { term_op = op } = dest_term t in
       let { op_params = params } = dest_op op in
          match List.map dest_param params with
-            [Number (Mp_num.Int start); Number (Mp_num.Int finish); String s] ->
-               (start, finish), s
+            [ Number start; Number finish; String s ]
+               when (Mp_num.is_integer_num start && Mp_num.is_integer_num finish) ->
+               (Mp_num.int_of_num start, Mp_num.int_of_num finish), s
           | _ ->
                raise_format_error "dest_loc_string: needs two numbers and a string" t
 
@@ -246,8 +248,9 @@ struct
       let { term_op = op } = dest_term t in
       let { op_params = params } = dest_op op in
          match List.map dest_param params with
-            [Number (Mp_num.Int start); Number (Mp_num.Int finish); Number i] ->
-               (start, finish), Mp_num.string_of_num i
+            [ Number start; Number finish; Number i ]
+               when (Mp_num.is_integer_num start && Mp_num.is_integer_num finish) ->
+               (Mp_num.int_of_num start, Mp_num.int_of_num finish), Mp_num.string_of_num i
           | _ ->
                raise_format_error "dest_loc_int: needs three numbers" t
 
@@ -267,7 +270,7 @@ struct
        loc_of_module_expr =
       let loc_of_aux f x =
          let i, j = f x in
-            Mp_num.Int i, Mp_num.Int j
+            Mp_num.num_of_int i, Mp_num.num_of_int j
       in
          loc_of_aux loc_of_expr,
          loc_of_aux loc_of_patt,
@@ -278,14 +281,13 @@ struct
          loc_of_aux loc_of_module_expr
 
    let num_of_loc (i, j) =
-     Mp_num.Int i, Mp_num.Int j
+     Mp_num.num_of_int i, Mp_num.num_of_int j
 
-   let raise_with_loc loc exn =
-     match loc with
-        (Mp_num.Int i, Mp_num.Int j) ->
-           Stdpp.raise_with_loc (i, j) exn
-      | _ ->
-           raise (Failure "Filter_ocaml.raise_with_loc: got a big number")
+   let raise_with_loc (i, j) exn =
+      if Mp_num.is_integer_num i && Mp_num.is_integer_num j then
+         Stdpp.raise_with_loc (Mp_num.int_of_num i, Mp_num.int_of_num j) exn
+      else
+         raise (Failure "Filter_ocaml.raise_with_loc: got a big number")
 
    (*
     * Opnames for record and tuple end markers.
@@ -2022,8 +2024,8 @@ struct
          let sl1' = mk_xlist_term (List.map mk_simple_string sl1) in
          let sl2' = mk_xlist_term (List.map mk_sbb sl2) in
             comment WithClauseTerm loc (mk_simple_term wc_type_op loc [sl1'; sl2'; mk_type comment t])
-    | WcMod ((i, j), sl1, mt) ->
-         let loc = (Mp_num.Int i, Mp_num.Int j) in
+    | WcMod (loc, sl1, mt) ->
+         let loc = num_of_loc loc in
          let sl1' = mk_xlist_term (List.map mk_simple_string sl1) in
             comment WithClauseTerm loc (mk_simple_term wc_module_op loc [sl1'; mk_module_type comment mt])
 
