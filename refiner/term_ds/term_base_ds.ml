@@ -411,6 +411,8 @@ struct
             let hyp = if t == t' then hyp else Hypothesis t' in
                hyps_subst hyps len sub all_vars sub_vars (hyp :: new_hyps) (i + 1)
        | Context (v,conts,ts) as hyp ->
+            if SymbolSet.mem sub_vars v then
+               raise(Invalid_argument "Term_base_ds.get_core: free variable got captured by a context");
             let ts' = Lm_list_util.smap (do_term_subst sub) ts in
             let sub = filter_sub_var v sub in
             let hyp = if ts == ts' then hyp else Context (v, conts, ts) in

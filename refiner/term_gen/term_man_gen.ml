@@ -299,7 +299,7 @@ struct
             { op_name = opname; op_params = [p] }, ((_ :: _) as bterms)
                when Opname.eq opname var_opname ->
                   (match dest_param p with Var _ -> true | _ -> false) &&
-                  List.for_all is_simple_bterm bterms && 
+                  List.for_all is_simple_bterm bterms &&
                   let t = (dest_bterm (Lm_list_util.last bterms)).bterm in
                      is_xlist_term t && List.for_all is_var_term (dest_xlist t)
           | _ -> false
@@ -310,7 +310,7 @@ struct
             { op_name = opname; op_params = [p] }, ((_ :: _) as bterms)
                when Opname.eq opname var_opname ->
                   begin match dest_param p with
-                     Var v -> 
+                     Var v ->
                         let bterms, conts = Lm_list_util.split_last bterms in
                            v, List.map dest_var (dest_xlist (dest_simple_bterm conts)), List.map dest_simple_bterm bterms
                    | _ -> REF_RAISE(RefineError ("Term_man_gen.dest_so_var", TermMatchError (t, "non-var param")))
@@ -366,7 +366,7 @@ struct
     *)
    let is_context_term =
       let rec is_context_bterms = function
-         []|[_] -> 
+         []|[_] ->
             false
        | [main_term; conts] ->
             begin match dest_bterm main_term with
@@ -391,12 +391,17 @@ struct
             { op_name = opname; op_params = [p] } when Opname.eq opname context_opname ->
                begin match dest_param p, t'.term_terms with
                   Var v,((_::_::_) as bts) ->
-                     let rec collect = function 
+                     let rec collect = function
                         [] | [_] -> REF_RAISE(RefineError ("dest_context", TermMatchError (t, "not enough subterms")))
                       | [main_term; conts] ->
                            begin match dest_bterm main_term with
                               { bvars = [v']; bterm = t } ->
-                                 [], (if v=v' then t else subst1 t v' (mk_var_term v)), List.map dest_var (dest_xlist (dest_simple_bterm conts))
+                                 let t =
+                                    if v=v' then t
+                                    else if is_var_free v t then raise (Invalid_argument "Term_man_gen.dest_context: free variable got captured by a context variable")
+                                    else subst1 t v' (mk_var_term v)
+                                 in
+                                    [], t, List.map dest_var (dest_xlist (dest_simple_bterm conts))
                             | _ ->
                                  REF_RAISE(RefineError ("dest_context", TermMatchError (t, "wrong bvars")))
                            end
@@ -552,7 +557,7 @@ struct
          REF_RAISE(RefineError (name, TermMatchError (t, "malformed hypothesis")))
 
    let match_context op name t bterms =
-      let v = 
+      let v =
          match (dest_op op).op_params with
             [p] ->
                begin match dest_param p with
@@ -573,7 +578,7 @@ struct
             end
        | _ :: bterms ->
             aux bterms
-      in 
+      in
          aux bterms
 
    let match_concl name t = function
