@@ -427,7 +427,7 @@ struct
                      c_goal
                 | Compose ci' ->
                      Compose {
-                        comp_status = ci'.comp_status;
+                        comp_status = LazyStatusDelayed;
                         comp_goal = ci'.comp_goal;
                         comp_subgoals = join_subgoals ci'.comp_subgoals c_subgs;
                         comp_leaves = LazyLeavesDelayed;
@@ -656,7 +656,7 @@ struct
          if !debug_proof then begin
             let buf = Rformat.new_buffer () in
             format_hzone buf;
-            format_string buf "Leaves of\n";
+            format_string buf "Leaves of";
             format_space buf;
             format_szone buf;
             format_ext !debug_dbase buf goal;
@@ -669,7 +669,7 @@ struct
             List.iter (format_arg !debug_dbase buf) leaves;
             format_ezone buf;
             print_to_channel 80 buf stderr;
-            flush stderr
+            eprintf "%t" eflush
          end;
          remove_duplicates [] leaves
 
@@ -2301,8 +2301,9 @@ struct
        | ExtractCondRewrite (goal, subgoals, _, _) ->
             false, Unjustified (goal, subgoals)
        | Wrapped (label, node) ->
-            let flag, node' = squash_ext node in
-               flag, Wrapped (label, node')
+            let (flag, node') as res = squash_ext node in
+               if flag then flag, Wrapped (label, node')
+               else res
        | Compose { comp_goal = goal;
                    comp_subgoals = subgoals;
                    comp_extras = extras
@@ -2355,7 +2356,7 @@ struct
          let flag'', subgoals' = squash_subgoals_ext (flag || flag') subgoals in
             flag'', goal' :: subgoals'
     | [] ->
-         false, []
+         flag, []
 
    let squash postf proof =
       fold_proof postf proof (snd (squash_ext proof.pf_node))
@@ -3025,6 +3026,10 @@ struct
          counts
 
    let node_count { pf_node = node } =
+      if !debug_proof then begin
+         eprintf "Counting nodes of:\n";
+         print_ext node
+      end;
       node_count_ext (0, 0) node
 
    (*

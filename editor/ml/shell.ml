@@ -319,10 +319,12 @@ struct
     * Update the current item being edited.
     *)
    let set_packages info =
+      info.proof.edit_addr [];
       info.proof <- Shell_root.view packages (get_display_mode info)
 
    let set_package info modname =
       let pack = Package.get packages modname in
+         info.proof.edit_addr [];
          info.proof <- Shell_package.view pack (get_parse_arg info) (get_display_mode info)
 
    let set_item info modname name =
@@ -386,6 +388,7 @@ struct
                eprintf "Editing magic block '/%s/%s' not implemented%t" modname name eflush;
                raise (Failure "view")
       in
+         info.proof.edit_addr [];
          info.proof <- proof
 
    (*
