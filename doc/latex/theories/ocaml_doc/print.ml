@@ -1,4 +1,4 @@
-set_tex_file "tex/book";;
+set_tex_file "../../doc/latex/theories/ocaml_doc/theory.tex";;
 print_theory "ocaml_doc_intro";;
 print_theory "ocaml_doc_expr1";;
 print_theory "ocaml_doc_var1";;

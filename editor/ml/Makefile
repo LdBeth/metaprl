@@ -241,26 +241,18 @@ mp_version.cmi: mp_version.mli
 #
 TEXDIR=$(ROOT)/doc/latex/theories
 
-ifndef TEXTHEORIES
-	TEXTHEORIES=\
-		base\
-		fol\
-		itt\
-		czf
-endif
-
 TEXFILES=$(addprefix $(TEXDIR)/, $(addsuffix /theory.tex, $(TEXTHEORIES)))
 
 .PHONY: tex texbyte texopt do_tex
 
 tex:
-	+ @ if [ -f $(MP).opt ]; then $(MAKE) texopt; else $(MAKE) texbyte; fi
+	+ @ if [ -f $(MP).opt ]; then $(MAKE) TEXTHEORIES="$(TEXTHEORIES)" texopt; else $(MAKE) TEXTHEORIES="$(TEXTHEORIES)" texbyte; fi
 
 texbyte:
-	+ @ $(MAKE) TEXBIN=$(MP).top TEXPROG=./mptop THELIB=theory.cma do_tex
+	+ @ $(MAKE) TEXTHEORIES="$(TEXTHEORIES)" TEXBIN=$(MP).top TEXPROG=./mptop THELIB=theory.cma do_tex
 
 texopt:
-	+ @ $(MAKE) TEXBIN=$(MP).opt TEXPROG=./mpopt THELIB=theory.cmxa do_tex
+	+ @ $(MAKE) TEXTHEORIES="$(TEXTHEORIES)" TEXBIN=$(MP).opt TEXPROG=./mpopt THELIB=theory.cmxa do_tex
 
 do_tex: $(TEXFILES)
 

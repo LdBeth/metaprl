@@ -94,9 +94,9 @@ GENERATED-FILES =\
 
 DOCFILES = $(addsuffix .ps, $(GENERATED-FILES)) $(addsuffix .pdf, $(GENERATED-FILES))
 
-.PHONY: all opt latex clean check
+.PHONY: all opt latex clean check ocaml-book
 
-all: $(DOCFILES) latex
+all: $(DOCFILES) latex ocaml-book
 opt: all
 
 introduction.ps: $(W-FILES)
@@ -131,7 +131,11 @@ developer-guide.pdf: $(D-FILES)
 
 latex::
 	+ @if [ -f ../editor/ml/mp.opt ]; then $(MAKE) -C .. opt; else $(MAKE) -C .. all; fi
-	+ @ $(MAKE) -C latex/theories
+	+ @ $(MAKE) -C latex/theories theories
+
+ocaml-book::
+	+ @if [ -f ../editor/ml/mp.opt ]; then $(MAKE) -C .. opt; else $(MAKE) -C .. all; fi
+	+ @ $(MAKE) -C latex/theories ocaml
 
 clean::
 	$(RM) $(DOCFILES) *.log *.dvi *.aux *~ ps/theories/*.ps ps/theories/*.pdf

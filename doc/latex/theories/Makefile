@@ -11,18 +11,7 @@ endif
 
 include $(ROOT)/mk/preface
 
-NAME=all-theories
-
-.PHONY: doc
-
-all: doc
-opt: doc
-
-INPUTS = ../inputs/metaprl.bib\
-	../inputs/metaprl.tex\
-	$(NAME).tex
-
-TEXTHEORIES=\
+DEFTEXTHEORIES=\
 	base\
 	fol\
 	itt\
@@ -30,18 +19,34 @@ TEXTHEORIES=\
 	mc\
 	fir
 
+.PHONY: doc theories ocaml
+
+theories:
+	+ @ $(MAKE) NAME=all-theories GOAL=theories TEXTHEORIES="$(DEFTEXTHEORIES)" doc
+
+ocaml:
+	+ @ $(MAKE) NAME=book2 GOAL=ocaml-book TEXTHEORIES=ocaml_doc doc
+
+all: doc
+opt: doc
+
+INPUTS = ../inputs/rc.bib\
+	../inputs/metaprl.tex\
+	$(NAME).tex
+
 TEXFILES = $(addsuffix /theory.tex, $(TEXTHEORIES))\
 	$(addsuffix /theory-body.tex, $(TEXTHEORIES))\
-	all-bodies.tex
 
 doc:
 	+ @ $(MAKE) -C $(ROOT)/editor/ml TEXTHEORIES="$(TEXTHEORIES)" tex
-	+ @ $(MAKE) $(ROOT)/doc/ps/theories/theories.pdf
+	+ @ $(MAKE) NAME=$(NAME) GOAL=$(GOAL) TEXTHEORIES="$(TEXTHEORIES)" $(ROOT)/doc/ps/theories/$(GOAL).pdf
 
 ALLBODIES=$(addprefix \input{, $(addsuffix /theory-body.tex}, $(TEXTHEORIES)))
 
 all-bodies.tex: Makefile
 	echo '$(ALLBODIES)' > $@
+
+all-theories.aux: all-bodies.tex
 
 $(NAME).aux: $(INPUTS) $(TEXFILES)
 	TEXINPUTS=$(TEXINPUTS) pdflatex $(NAME)
@@ -52,7 +57,7 @@ $(NAME).aux: $(INPUTS) $(TEXFILES)
 	fi
 
 $(NAME).ind: $(INPUTS) $(TEXFILES)
-	+ @ $(MAKE) $(NAME).aux
+	+ @ $(MAKE) NAME=$(NAME) TEXTHEORIES="$(TEXTHEORIES)" $(NAME).aux
 	TEXINPUTS=$(TEXINPUTS) makeindex $(NAME)
 
 $(NAME).pdf: $(INPUTS) $(TEXFILES) $(NAME).ind
@@ -62,7 +67,7 @@ $(NAME).pdf: $(INPUTS) $(TEXFILES) $(NAME).ind
 $(NAME).dvi: $(INPUTS) $(TEXFILES) $(NAME).ind
 	TEXINPUTS=$(TEXINPUTS) latex $(NAME)
 
-$(ROOT)/doc/ps/theories/theories.pdf: $(NAME).pdf
+$(ROOT)/doc/ps/theories/$(GOAL).pdf: $(NAME).pdf
 	$(CP) $(NAME).pdf $@
 
 clean::
