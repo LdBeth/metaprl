@@ -224,6 +224,8 @@ declare esq_r
 declare leftarrow
 declare middlearrow
 declare rightarrow
+declare vartriangleleft
+declare vartriangleright
 declare Gamma
 declare Delta
 declare Pi
@@ -697,6 +699,8 @@ dform integral_df		: internal :: mode[prl] :: integral                  = `"∫"
 dform cdot_df                   : internal :: mode[prl] :: cdot                      = `"⋅"
 dform downarrow_df		: internal :: mode[prl] :: downarrow                 = `"↓"
 dform uparrow_df		: internal :: mode[prl] :: uparrow                   = `"↑"
+dform vartriangleleft_df	: internal :: mode[prl] :: vartriangleleft              = `"◁"
+dform vartriangleright_df	: internal :: mode[prl] :: vartriangleright             = `"▷"
 dform alpha_df                  : internal :: mode[prl] :: alpha                     = `"α"
 dform beta_df			: internal :: mode[prl] :: beta                      = `"β"
 dform pi_df			: internal :: mode[prl] :: pi                        = `"π"
@@ -731,6 +735,8 @@ dform integral_df		: internal :: mode[html] :: integral                  = html_
 dform cdot_df                   : internal :: mode[html] :: cdot                      = html_sym["middot"]
 dform downarrow_df		: internal :: mode[html] :: downarrow                 = html_uni[8595]
 dform uparrow_df		: internal :: mode[html] :: uparrow                   = html_uni[8593]
+dform vartriangleleft_df	: internal :: mode[html] :: vartriangleleft              = html_uni[9665]
+dform vartriangleright_df	: internal :: mode[html] :: vartriangleright             = html_uni[9655]
 dform alpha_df                  : internal :: mode[html] :: alpha                     = html_uni[945]
 dform beta_df			: internal :: mode[html] :: beta                      = html_uni[946]
 dform pi_df			: internal :: mode[html] :: pi                        = html_uni[960]
@@ -760,12 +766,14 @@ dform rightarrow_df		: internal :: mode[tex] :: Rightarrow                = math
 dform leftrightarrow_df		: internal :: mode[tex] :: Leftrightarrow            = mathmacro["leftrightarrow"]
 dform ulcorner_df		: internal :: mode[tex] :: ulcorner                  = mathmacro["ulcorner"]
 dform urcorner_df		: internal :: mode[tex] :: urcorner                  = mathmacro["urcorner"]
-dform mid            : internal :: mode[tex] :: mid                       = `"|"
+dform mid			: internal :: mode[tex] :: mid                       = `"|"
 dform vdash_df                  : internal :: mode[tex] :: vdash                     = mathmacro["vdash"]
 dform integral_df		: internal :: mode[tex] :: integral                  = mathmacro["int"]
 dform cdot_df                   : internal :: mode[tex] :: cdot                      = mathmacro["cdot"]
 dform downarrow_df		: internal :: mode[tex] :: downarrow                 = mathmacro["downarrow"]
 dform uparrow_df		: internal :: mode[tex] :: uparrow                   = mathmacro["uparrow"]
+dform vartriangleleft_df	: internal :: mode[tex] :: vartriangleleft              = mathmacro["vartriangleleft"]
+dform vartriangleright_df	: internal :: mode[tex] :: vartriangleright             = mathmacro["vartriangleright"]
 dform alpha_df                  : internal :: mode[tex] :: alpha                     = mathmacro["alpha"]
 dform beta_df			: internal :: mode[tex] :: beta                      = mathmacro["beta"]
 dform pi_df			: internal :: mode[tex] :: pi                        = mathmacro["pi"]

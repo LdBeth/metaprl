@@ -175,6 +175,8 @@ declare perp
 declare leftarrow
 declare middlearrow
 declare rightarrow
+declare vartriangleleft
+declare vartriangleright
 declare Gamma
 declare Delta
 declare Pi
