@@ -125,15 +125,13 @@ struct
     | _ ->
          REF_RAISE (RefineError ("Term_addr_ds.depth_of_address", StringError "address is not a sequent address"))
 
-   let rec clause_of_address = function
-      HypAddr i ->
-         i
-    | GoalAddr i ->
-         -i
+   let rec clause_address_of_address = function
+      (HypAddr _ | GoalAddr _) as addr ->
+         addr
     | Compose (addr, _) ->
-         clause_of_address addr
+         clause_address_of_address addr
     | _ ->
-         REF_RAISE (RefineError ("Term_addr_ds.clause_of_address", StringError "address is not a sequent address"))
+         REF_RAISE (RefineError ("Term_addr_ds.clause_address_of_address", StringError "address is not a sequent address"))
 
    IFDEF VERBOSE_EXN THEN
       DEFMACRO ATERM = (a, term)

@@ -73,13 +73,13 @@ struct
     | Compose _ ->
          REF_RAISE(RefineError ("depth_of_address", StringError "address is not a sequent address"))
 
-   let rec clause_of_address = function
-      NthClause (i, _) ->
-         i
+   let rec clause_address_of_address = function
+      (NthClause _) as addr ->
+         addr
     | Compose (addr, _) ->
-         clause_of_address addr
+         clause_address_of_address addr
     | Path _ ->
-         REF_RAISE(RefineError ("depth_of_address", StringError "address is not a sequent address"))
+         REF_RAISE(RefineError ("clause_address_of_address", StringError "address is not a sequent address"))
 
    let compose_address path1 path2 =
       match path1 with

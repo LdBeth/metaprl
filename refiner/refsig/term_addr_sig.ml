@@ -55,7 +55,7 @@ sig
     * This function only works on sequent addresses.
     *)
    val depth_of_address : address -> int
-   val clause_of_address : address -> int
+   val clause_address_of_address : address -> address
 
    (*
     * Destructors.

@@ -96,6 +96,13 @@ let debug_sentinal =
         debug_value = false
       }
 
+let debug_rewrites =
+   create_debug (**)
+      { debug_name = "rewrites";
+        debug_description = "Display rewrite applications";
+        debug_value = false
+      }
+
 module Refine (**)
    (TermType : TermSig)
    (Term : TermBaseSig
@@ -781,51 +788,23 @@ struct
     * term in question, and then rename to avoid capture in the goal.
     *)
    let replace_subgoals mseq subgoals =
-      let { mseq_hyps = hyps; mseq_goal = t } = mseq in
-
-      (* Get vars for free var calculations *)
-      let declared_vars = TermMan.declared_vars t in
-      let declared_len = List.length declared_vars in
-
-      (* Put a placeholder var in the goal *)
-      let v =
-         let rec search i =
-            let v = "goal_var" ^ string_of_int i in
-               if List.mem v declared_vars then
-                  search (succ i)
-               else
-                  v
-         in
-            search 0
-      in
-      let vt = mk_var_term v in
-      let seq = replace_goal t vt in
+      let { mseq_hyps = hyps; mseq_goal = seq } = mseq in
 
       (*
        * We have to rename sequent vars when we substitute into the goal.
        *)
       let replace_subgoal addr t' =
-         (* Allowed vars are the bindings in the sequent up until the addressed clause *)
-         eprintf "Address: %s%t" (TermAddr.string_of_address addr) eflush;
-         let i = TermAddr.clause_of_address addr in
-         let allowed_vars =
-            if i <= 0 || i >= declared_len then
-               declared_vars
-            else
-               fst (List_util.split_list i declared_vars)
-         in
-
          (* Compute the extra binding variables in the clause *)
-         let _, bound_vars = TermAddr.apply_var_fun_arg_at_addr (fun vars t -> t, vars) addr [] t in
-         let bound_vars = List.flatten bound_vars in
-         let bound_vars = List_util.subtract_multiset bound_vars allowed_vars in
-
-         (* Intersect the bound_vars with the free vars in the term replacement *)
-         let bound_vars = List_util.intersect (free_vars_list t') bound_vars in
-
-         (* Substitute a placeholder into the sequent to rename other binding vars *)
-         let bvars_term = mk_xlist_term (List.map mk_var_term bound_vars) in
-         let seq = subst1 seq v bvars_term in
+         (* HACK!!! This should go away once we implement the crw mechanism properly *)
+         let seqtest = TermAddr.replace_subterm seq addr t' in
+         let addr' = TermAddr.clause_address_of_address addr in
+         let ttst = term_subterm seqtest addr' in
+         IFDEF VERBOSE_EXN THEN
+            if !debug_rewrites then
+               eprintf "Refine.replace_subgoal %a@%s with %a\n\tTest term: %a%t" print_term seq (TermAddr.string_of_address addr) print_term t' print_term ttst eflush;
+         ENDIF;
+         if String_set.StringSet.cardinal (free_vars_set ttst) < String_set.StringSet.cardinal (free_vars_set t') then
+            REF_RAISE(RefineError ("Refine.replace_subgoals", GoalError("Invalid context for conditional rewrite application",AddressError(addr,seq))));
 
          (* Now we can replace the goal without fear *)
          let seq = replace_goal seq t' in
@@ -873,6 +852,10 @@ struct
          else
             REF_RAISE(RefineError ("crwtactic", StringIntError ("hyp is out of range", i)))
       in
+      IFDEF VERBOSE_EXN THEN
+         if !debug_rewrites then
+            eprintf "crwtactic applied to %a%t" print_term t eflush;
+      ENDIF;
       let t', subgoals, just = crw sent [msequent_free_vars seq] t in
       let subgoal =
          if i = 0 then
@@ -2214,6 +2197,10 @@ struct
       in
       let refiner' = RewriteRefiner ref_rewrite in
       let rw sent t =
+         IFDEF VERBOSE_EXN THEN
+            if !debug_rewrites then
+               eprintf "Refiner: applying simple rewrite %s to %a%t" name print_term t eflush;
+         ENDIF;
          match apply_rewrite rw ar0_ar0_null t [] with
             [t'], _ ->
                sent.sent_rewrite ref_rewrite;
@@ -2326,6 +2313,10 @@ struct
       in
       let refiner' = CondRewriteRefiner ref_crw in
       let rw' (vars, params) (sent : sentinal) (bvars : string list list) t =
+         IFDEF VERBOSE_EXN THEN
+            if !debug_rewrites then
+               eprintf "Refiner: applying conditional rewrite %s to %a with bvars = [%a] %t" name print_term t (print_any_list print_string_list) bvars eflush;
+         ENDIF;
          match apply_rewrite rw ([||], vars, bvars) t params with
             (t' :: subgoals), names ->
                sent.sent_cond_rewrite ref_crw;
