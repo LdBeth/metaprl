@@ -566,7 +566,7 @@ Theory(files) =
 # Add the inputs directory to the search path.
 #
 INPUTSDIR = $(dir doc/latex/inputs)
-TEXINPUTS += $(INPUTSDIR)//
+TEXINPUTS += $(INPUTSDIR)
 
 #
 # Directory that store the .ps and .pdf files
@@ -576,7 +576,7 @@ DOCDIR = $(dir doc/ps/theories)
 #
 # Assume these files are always dependencies.
 #
-TEXDEPS += $(file $(INPUTSDIR)/rc.bib $(INPUTSDIR)/metaprl.tex)
+TEXDEPS += $(file $(INPUTSDIR)/rc.bib) $(file $(INPUTSDIR)/metaprl.tex)
 
 #
 # MetaPRL command
