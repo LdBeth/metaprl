@@ -1588,7 +1588,6 @@ struct
    let define_rule_resources proc loc name params cvars_id tvars_id avars_id params_id assums_id resources name_rule_id =
       let define_resource (loc, name', args) =
          let rule_expr = <:expr< $lid:name_rule_id$ >> in
-         let name_patt = <:patt< $lid:name'$ >> in
          let arg_expr =
             match args with
                [] ->
@@ -1599,7 +1598,7 @@ struct
          let name_expr =
             <:expr< $resource_improve_arg_expr loc$ $resource_name_expr loc name'$ $str:name$ $lid:cvars_id$ $lid:tvars_id$ $lid:avars_id$ $lid:params_id$ $lid:assums_id$ $arg_expr$ >>
          in
-            name_patt, name_expr
+            resource_name_patt loc name', name_expr
       in
       let resources_pe = List.map define_resource resources in
       let names = List.map (fun (_, name, _) -> name) resources in
