@@ -43,6 +43,8 @@ open Term_op_sig
 open Term_addr_sig
 open Term_subst_sig
 
+open Term_addr_gen
+
 (*
  * Show that the file is loading.
  *)
@@ -74,7 +76,8 @@ module TermMan (**)
    (TermOp : TermOpSig
     with type term = Term.term)
    (TermAddr : TermAddrSig
-    with type term = Term.term)
+    with type term = Term.term
+    with type address = addr)
    (TermSubst : TermSubstSig
     with type term = Term.term
     with type param = Term.param)

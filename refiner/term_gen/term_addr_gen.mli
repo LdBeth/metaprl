@@ -26,7 +26,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * Authors: Jason Hickey, Alexey Nogin
+ * Authors: Jason Hickey, Aleksey Nogin
  *)
 
 open Refine_error_sig
@@ -35,7 +35,7 @@ open Term_base_sig
 open Term_op_sig
 open Term_addr_sig
 
-module MakeAddressType (TermType : TermSig) : TypeSig
+type addr
 
 module TermAddr (**)
    (TermType : TermSig)
@@ -50,10 +50,18 @@ module TermAddr (**)
     with type term = TermType.term)
    (RefineError : RefineErrorSig
     with type term = TermType.term
-    with type address = MakeAddressType (TermType).t)
+    with type address = addr)
 : TermAddrSig
   with type term = TermType.term
-  with type address = MakeAddressType (TermType).t
+  with type address = addr
+
+(*
+ * Pseudo-addresses for sequent parts
+ * Numeration starts with 1 (0 is sequent arg).
+ * Second form returns the whole "tail" of the sequent, including the current named hyp.
+ *)
+val nth_hd_address : int -> addr
+val nth_tl_address : int -> addr
 
 (*
  * -*-

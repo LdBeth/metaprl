@@ -95,12 +95,6 @@ struct
    let make_address l =
       Path l
 
-   let nth_hd_address i =
-      REF_RAISE (RefineError ("Term_addr_ds.nth_hd_address", StringError "not implemented and should not be used"))
-
-   let nth_tl_address i =
-      REF_RAISE (RefineError ("Term_addr_ds.nth_tl_address", StringError "not implemented and should not be used"))
-
    let is_null_address = function
       Path [] ->
          true
@@ -117,12 +111,11 @@ struct
    (*
     * Turn the address back into a term count.
     *)
-   let depth_of_address = function
-      HypAddr i
-    | GoalAddr i ->
+   let rec depth_of_address = function
+      HypAddr i ->
          i
     | _ ->
-         REF_RAISE (RefineError ("Term_addr_ds.depth_of_address", StringError "address is not a sequent address"))
+         REF_RAISE (RefineError ("Term_addr_ds.depth_of_address", StringError "address is not a hypothsis address"))
 
    let rec clause_address_of_address = function
       (HypAddr _ | GoalAddr _) as addr ->

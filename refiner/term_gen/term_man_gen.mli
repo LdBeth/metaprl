@@ -52,7 +52,8 @@ module TermMan (**)
    (TermOp : TermOpSig
     with type term = Term.term)
    (TermAddr : TermAddrSig
-    with type term = Term.term)
+    with type term = Term.term
+    with type address = Term_addr_gen.addr)
    (TermSubst : TermSubstSig
     with type term = Term.term
     with type param = Term.param)

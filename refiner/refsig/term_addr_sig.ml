@@ -42,19 +42,10 @@ sig
    val compose_address : address -> address -> address
    val is_null_address : address -> bool
 
-   (*
-    * These constructors are specifically for sequents.
-    *   nth_hd_address n: address of the nth clause
-    *   nth_tl_address n: address of all clauses n and larger
-    *)
-   val nth_hd_address : int -> address
-   val nth_tl_address : int -> address
-
-   (*
-    * The rewriter also needs a way to get a term count from an address.
-    * This function only works on sequent addresses.
-    *)
+   (* Term count from an address. Works on hypotheses addresses. *)
    val depth_of_address : address -> int
+
+   (* Works only on sequent addresses and their subaddresses. *)
    val clause_address_of_address : address -> address
 
    (*

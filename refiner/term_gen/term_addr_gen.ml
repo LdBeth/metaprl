@@ -20,10 +20,11 @@ type addr =
  | NthClause of int * bool
  | Compose of addr * addr
 
-module MakeAddressType (TermType : TermSig) =
-struct
-   type t = addr
-end
+let nth_hd_address i =
+   NthClause (i, true)
+
+let nth_tl_address i =
+   NthClause (i, false)
 
 module TermAddr (**)
    (TermType : TermSig)
@@ -54,12 +55,6 @@ struct
    let make_address l =
       Path l
 
-   let nth_hd_address i =
-      NthClause (i, true)
-
-   let nth_tl_address i =
-      NthClause (i, false)
-
    let is_null_address = function
       Path [] ->
          true
@@ -67,11 +62,10 @@ struct
          false
 
    let depth_of_address = function
-      NthClause (i, _) ->
+      NthClause (i, true) ->
          i
-    | Path _
-    | Compose _ ->
-         REF_RAISE(RefineError ("depth_of_address", StringError "address is not a sequent address"))
+    | _  ->
+         REF_RAISE(RefineError ("depth_of_address", StringError "address is not a hypothesis address"))
 
    let rec clause_address_of_address = function
       (NthClause _) as addr ->
@@ -122,11 +116,9 @@ struct
       0 ->
          if flag then
             match dest_term t with
-               { term_op = op; term_terms = bterm :: _ } ->
-                  if Opname.eq (dest_op op).op_name context_opname then
-                     t
-                  else
-                     (dest_bterm bterm).bterm
+               { term_op = op; term_terms = bterm :: _ }
+               when not (Opname.eq (dest_op op).op_name context_opname) ->
+                  (dest_bterm bterm).bterm
              | _ ->
                   REF_RAISE(RefineError ("term_subterm_nthpath", AddressError (a, term)))
          else
@@ -203,14 +195,12 @@ struct
          if i = 0 then
             if flag then
                match dest_term t with
-                  { term_op = op; term_terms = bterm :: bterms } ->
-                     if Opname.eq (dest_op op).op_name context_opname then
-                        f BVARS t
-                     else
-                        let { bvars = vars; bterm = term } = dest_bterm bterm in
-                        let term, arg = f VARS_BVARS term in
-                        let bterm = mk_bterm vars term in
-                           mk_term op (bterm :: bterms), arg
+                  { term_op = op; term_terms = bterm :: bterms }
+                  when not (Opname.eq (dest_op op).op_name context_opname) ->
+                     let { bvars = vars; bterm = term } = dest_bterm bterm in
+                     let term, arg = f VARS_BVARS term in
+                     let bterm = mk_bterm vars term in
+                        mk_term op (bterm :: bterms), arg
                 | _ ->
                      DO_FAIL
             else
