@@ -42,6 +42,7 @@ open Opname
 open Term_sig
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
+open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.TermShape
@@ -315,6 +316,18 @@ let popfont { dform_buffer = buf } =
  * FORMATTERS                                                           *
  ************************************************************************)
 
+(*
+ * Sequents and variables are handled specially.
+ *)
+let base_opname   = mk_opname "Base_dform"     nil_opname
+let dsovar_opname = mk_opname "df_so_var"      base_opname
+let dvar_opname   = mk_opname "df_var"         base_opname
+let dfvar_opname  = mk_opname "df_free_fo_var" base_opname
+let dcont_opname =  mk_opname "df_context"     base_opname
+let dcontv_opname = mk_opname "df_context_var" base_opname
+
+let make_cont v = mk_term (mk_op dcontv_opname [make_param (Var v)]) []
+
 (* List of params *)
 let rec format_paramlist buf = function
    [] ->
@@ -400,8 +413,16 @@ and format_sequent buf format_term term =
             if i <> 0 then
                format_string buf ";"
          in
-         let _ =
+         let hyp =
             match SeqHyp.get hyps i with
+               Hypothesis (v, t) when
+                  Opname.eq (opname_of_term t) dcont_opname && Lm_symbol.to_string v = "" ->
+                     let v, conts, ts = dest_so_var (one_subterm t) in
+                        Context (v, conts, ts)
+             | hyp -> hyp
+         in
+         let () =
+            match hyp with
                Hypothesis (v, a) ->
                   format_space buf;
                   if Lm_symbol.to_string v <> "" then begin
@@ -423,14 +444,19 @@ and format_sequent buf format_term term =
        } = explode_sequent term
    in
       format_szone buf;
-      format_pushm buf 0;
-      format_string buf "sequent ";
+      format_pushm buf 3;
+      format_string buf "sequent";
+      format_space buf;
+      format_string buf "(";
       format_term arg;
-      format_string buf " {";
+      format_string buf ")";
+      format_space buf;
+      format_string buf "{";
       format_hyp hyps 0 (SeqHyp.length hyps);
       format_goal goals 0 (SeqGoal.length goals);
-      format_string buf " }";
       format_popm buf;
+      format_space buf;
+      format_string buf "}";
       format_ezone buf
 
 (*
@@ -458,17 +484,6 @@ and format_term buf (shortener : shortener) printer term =
 (************************************************************************
  * PRINTING                                                             *
  ************************************************************************)
-
-(*
- * Sequents and variables are handled specially.
- *)
-let base_opname   = mk_opname "Base_dform"     nil_opname
-let dsovar_opname = mk_opname "df_so_var"      base_opname
-let dvar_opname   = mk_opname "df_var"         base_opname
-let dfvar_opname  = mk_opname "df_free_fo_var" base_opname
-let dcont_opname  = mk_opname "df_context_var" base_opname
-
-let make_cont v = mk_term (mk_op dcont_opname [make_param (Var v)]) []
 
 (*
  * Mode "src" is treated specially.  It is only allowed if explicitly mentioned.
