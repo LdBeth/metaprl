@@ -208,8 +208,8 @@ struct
                      true
             in
             Filter_exn.format_exn df buf exn;
-            output_rbuffer stderr buf;
             if need_popm then format_popm buf;
+            output_rbuffer stderr buf;
             eflush stderr
       in
       let catch =
@@ -238,7 +238,9 @@ struct
                         ()
 
                    | exn ->
-                        print_exn exn)
+                        (try print_exn exn
+                         with _ ->
+                           eprintf "ERROR: Exception printer raised an exception%t" eflush))
       in
       let () =
          (* Ignore initialization errors *)
