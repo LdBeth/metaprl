@@ -463,7 +463,7 @@ dform cond_rewrite_df : "cond_rewrite"[name:s]{'params; 'args; 'redex; 'contract
    szone pushm[4]
    ensuremath{'proof} info[" rewrite"] " " szone rewrite_name[name:s] resources{'res} df_concat{slot[" "];'params} keyword[":"] ezone hspace ensuremath{'args} " " ensuremath{longrightarrow} hspace
    szone pushm[0]
-   ensuremath{'redex} " " ensuremath{longleftrightarrow} hspace ensuremath{'contractum}
+   ensuremath{slot{'redex}} " " ensuremath{longleftrightarrow} hspace ensuremath{slot{'contractum}}
    popm ezone
    popm ezone
 
@@ -489,7 +489,7 @@ dform definition_df : "definition"[name:s]{'term; 'definition; 'res} =
    szone pushm[4]
    info["define"] " " szone rewrite_name[name:s] resources{'res} keyword[":"] ezone hspace
    szone pushm[4]
-   tt{slot["raw"]{'term}} space displayed_as{'term} `" " ensuremath{longleftrightarrow} hspace ensuremath{'definition}
+   tt{slot["raw"]{'term}} space displayed_as{'term} `" " ensuremath{longleftrightarrow} hspace ensuremath{slot{'definition}}
    popm ezone
    popm ezone
 
@@ -601,7 +601,7 @@ dform suffix_df : "suffix"[name:s] =
    info["suffix"] " " slot[name:s]
 
 dform magic_block_df : "magic_block"[name:s]{'items} =
-   info["magic_block"] " " slot[name:s] keyword[" ="] space slot{'items}
+   info["magic_block"] " " slot[name:s] keyword[" ="] space 'items
 
 dform summary_item_df : "summary_item"{'term} =
    szone{'term}
@@ -613,10 +613,10 @@ dform meta_theorem_df : meta_theorem{'A} =
    slot{'A}
 
 dform meta_implies_df : meta_implies{'A; 'B} =
-   slot{'A} " " longrightarrow hspace slot{'B}
+   slot{'A} " " longrightarrow hspace 'B
 
 dform meta_function_df : meta_function{'arg; 'A; 'B} =
-   szone pushm[0] slot{'arg} keyword[": "] slot{'A} `" " popm ezone longrightarrow hspace slot{'B}
+   szone pushm[0] slot{'arg} keyword[": "] slot{'A} `" " popm ezone longrightarrow hspace 'B
 
 dform meta_labeled_df : meta_labeled[label:s]{'A} =
    keyword["["] slot[label] keyword["] "] slot{'A}

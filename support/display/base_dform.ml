@@ -221,6 +221,7 @@ let print_tex_var format_term buf header_fun v =
       format_ezone buf
 
 let mk_slot s = <:con< slot[$s$:s] >>
+let mk_tslot t = <:con< slot{$t$} >>
 let mk_mathit s = <:con< math_it[$s$:s] >>
 
 ml_dform var_html_df : mode[html] :: df_var[v:v] format_term buf = fun _ ->
@@ -455,7 +456,7 @@ ml_dform sequent_html_df : mode["html"] :: sequent ('ext) { <H> >- 'concl } form
                      format_string buf ":";
                      format_space buf;
                   end;
-                  format_term buf NOParens a;
+                  format_term buf NOParens (mk_tslot a);
                   format_ezone buf
          in
             format_hyp hyps (succ i) len
@@ -465,7 +466,7 @@ ml_dform sequent_html_df : mode["html"] :: sequent ('ext) { <H> >- 'concl } form
          let a = SeqGoal.get goals i in
             if i > 0 then
                format_hbreak buf "; " "  ";
-            format_term buf NOParens a;
+            format_term buf NOParens (mk_tslot a);
             format_goal goals (succ i) len
    in
    let format term =
@@ -482,7 +483,7 @@ ml_dform sequent_html_df : mode["html"] :: sequent ('ext) { <H> >- 'concl } form
             format_hspace buf
          end;
          format_term buf NOParens <<Nuprl_font!vdash>>;
-         format_term buf NOParens arg;
+         format_term buf NOParens (mk_tslot arg);
          format_string buf " ";
          format_pushm buf 0;
          format_goal goals 0 (SeqGoal.length goals);
@@ -604,7 +605,7 @@ dform df_last_df2 : internal :: df_last{cons{'a; nil}} =
  * List concatenation
  *)
 dform df_concat_cons : internal :: df_concat{'sep; cons{'hd; 'tl}} =
-   slot{'hd} slot{'sep} df_concat{'sep;'tl}
+   slot{'hd} 'sep df_concat{'sep;'tl}
 
 dform df_concat_nil : internal :: df_concat{'sep; cons{'hd; nil}} =
    slot{'hd}
@@ -616,7 +617,7 @@ dform df_concat_nil2 : internal :: df_concat{'sep; nil} =
  * List rev_concatenation
  *)
 dform df_rev_concat_cons : internal :: df_rev_concat{'sep; cons{'hd; 'tl}} =
-   df_rev_concat{'sep; 'tl} slot{'sep} slot{'hd}
+   df_rev_concat{'sep; 'tl} 'sep slot{'hd}
 
 dform df_rev_concat_nil : internal :: df_rev_concat{'sep; cons{'hd; nil}} =
    slot{'hd}
