@@ -147,7 +147,7 @@ struct
     *)
    type string_or_term =
       ST_String of string
-    | ST_Term of (term * (int * int))
+    | ST_Term of (term * MLast.loc)
 
    (************************************************************************
     * UTILITIES                                                            *

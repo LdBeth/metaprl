@@ -56,7 +56,7 @@ type ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) summary_item =
  * Pair it with a location.
  *)
 type ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) summary_item_loc =
-   ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) summary_item * (int * int)
+   ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) summary_item * MLast.loc
 
 (************************************************************************
  * Interface								*

@@ -406,7 +406,7 @@ sig
       sig_info ->
       (term, meta_term, proof, resource, ctyp, expr, item) module_info ->
       (module_path * string * ctyp resource_sig) list ->
-      string -> (item * (int * int)) list
+      string -> (item * MLast.loc) list
 end
 
 module StrLSet = Lm_set.LmMake (struct

@@ -93,7 +93,7 @@ and ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info =
  * Pair it with a location.
  *)
 and ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) summary_item_loc =
-   ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) summary_item * (int * int)
+   ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) summary_item * MLast.loc
 
 (************************************************************************
  * PRINTING                                                             *

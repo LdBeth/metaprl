@@ -77,8 +77,8 @@ sig
       (unit -> (term, meta_term, unit, ctyp resource_sig, ctyp, expr, sig_item) module_info) ->
       (term, meta_term, proof, str_resource, ctyp, expr, str_item) module_info ->
       (module_path * string * ctyp resource_sig) list ->
-      string -> (str_item * (int * int)) list
-   val compile : (str_item * (int * int)) list -> unit
+      string -> (str_item * MLast.loc) list
+   val compile : (str_item * MLast.loc) list -> unit
 end
 
 (*

@@ -93,9 +93,9 @@ sig
    (*
     * Common destructors.
     *)
-   val dest_loc : term -> int * int
-   val dest_loc_string : term -> (int * int) * string
-   val dest_loc_int : term -> (int * int) * string
+   val dest_loc : term -> MLast.loc
+   val dest_loc_string : term -> MLast.loc * string
+   val dest_loc_int : term -> MLast.loc * string
    val dest_opt : (term -> 'a) -> term -> 'a option
    val dest_string : term -> string
 
