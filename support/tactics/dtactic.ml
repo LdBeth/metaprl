@@ -163,7 +163,6 @@ doc <:doc< @docoff >>
 open Printf
 open Lm_debug
 
-open Opname
 open Term_sig
 open Refiner.Refiner
 open Refiner.Refiner.TermType
@@ -172,13 +171,11 @@ open Refiner.Refiner.TermAddr
 open Refiner.Refiner.TermSubst
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.RefineError
-open Mp_resource
 open Simple_print
 open Term_match_table
 
 open Tactic_type
 open Tactic_type.Tacticals
-open Top_tacticals
 
 open Auto_tactic
 open Simp_typeinf

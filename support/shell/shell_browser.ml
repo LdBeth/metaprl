@@ -34,14 +34,12 @@
 open Format
 
 open Lm_debug
-open Lm_symbol
 
 open Http_simple
 open Http_server_type
 
 open Browser_copy
 open Shell_sig
-open Package_info
 
 let _ =
    show_loading "Loading Shell HTTP%t"

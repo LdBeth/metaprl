@@ -34,7 +34,6 @@ extends Mptop
 
 open Refiner.Refiner.TermType
 open Tactic_type.Tactic
-open Term_match_table
 
 (*
  * Toploop values.

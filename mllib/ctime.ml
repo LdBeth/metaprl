@@ -22,7 +22,6 @@
  * Author: Jason Hickey
  * jyh@cs.caltech.edu
  *)
-open Lm_debug
 
 (*
  * Blown out representation.

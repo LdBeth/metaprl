@@ -68,7 +68,6 @@ open Refiner.Refiner.TermMan
 open Refiner.Refiner.RefineError
 
 open Tactic_type
-open Term_match_table
 
 doc <:doc<
    @begin[doc]

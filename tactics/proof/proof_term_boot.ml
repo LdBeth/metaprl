@@ -31,11 +31,6 @@
  * Modified By: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
-open Lm_debug
-open Dform
-open Printf
-open Rformat
-
 open Opname
 open Weak_memo
 open Mp_resource

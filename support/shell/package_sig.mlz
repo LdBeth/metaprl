@@ -42,7 +42,6 @@ open Opname
 open Term_shape_sig
 open Refiner.Refiner
 open Refiner.Refiner.TermType
-open Dform
 
 open Filter_type
 open Filter_summary

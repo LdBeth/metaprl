@@ -32,7 +32,6 @@
 open Printf
 
 open Lm_debug
-open Lm_threads
 
 open Http_server_type
 

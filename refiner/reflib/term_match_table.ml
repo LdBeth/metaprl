@@ -45,7 +45,6 @@ open Lm_debug
 open Opname
 
 open Term_sig
-open Refiner.Refiner
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp

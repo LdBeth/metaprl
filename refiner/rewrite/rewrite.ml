@@ -135,7 +135,6 @@ struct
       MakeRewriteMeta (TermType) (TermAddr) (Term) (TermMan) (RefineError)
 
    open RewriteTypes
-   open RewriteDebug
    open RewriteCompileRedex
    open RewriteCompileContractum
    open RewriteMatchRedex
