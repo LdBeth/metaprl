@@ -176,6 +176,7 @@ declare alpha
 declare beta
 declare pi
 declare lambda
+declare Lambda
 declare gamma
 declare delta
 declare rho
@@ -705,6 +706,7 @@ dform alpha_df                  : internal :: mode[prl] :: alpha                
 dform beta_df			: internal :: mode[prl] :: beta                      = `"β"
 dform pi_df			: internal :: mode[prl] :: pi                        = `"π"
 dform lambda_df			: internal :: mode[prl] :: lambda                    = `"λ"
+dform lambda_df			: internal :: mode[prl] :: Lambda                    = `"Λ"
 dform gamma_df			: internal :: mode[prl] :: gamma                     = `"γ"
 dform delta_df			: internal :: mode[prl] :: delta                     = `"δ"
 dform rho_df			: internal :: mode[prl] :: rho                       = `"ρ"
@@ -741,6 +743,7 @@ dform alpha_df                  : internal :: mode[html] :: alpha               
 dform beta_df			: internal :: mode[html] :: beta                      = html_uni[946]
 dform pi_df			: internal :: mode[html] :: pi                        = html_uni[960]
 dform lambda_df			: internal :: mode[html] :: lambda                    = html_uni[955]
+dform lambda_df			: internal :: mode[html] :: Lambda                    = html_uni[923]
 dform gamma_df			: internal :: mode[html] :: gamma                     = html_uni[947]
 dform delta_df			: internal :: mode[html] :: delta                     = html_uni[948]
 dform rho_df			: internal :: mode[html] :: rho                       = html_uni[961]
@@ -778,6 +781,7 @@ dform alpha_df                  : internal :: mode[tex] :: alpha                
 dform beta_df			: internal :: mode[tex] :: beta                      = mathmacro["beta"]
 dform pi_df			: internal :: mode[tex] :: pi                        = mathmacro["pi"]
 dform lambda_df			: internal :: mode[tex] :: lambda                    = mathmacro["lambda"]
+dform lambda_df			: internal :: mode[tex] :: Lambda                    = mathmacro["Lambda"]
 dform gamma_df			: internal :: mode[tex] :: gamma                     = mathmacro["gamma"]
 dform delta_df			: internal :: mode[tex] :: delta                     = mathmacro["delta"]
 dform rho_df			: internal :: mode[tex] :: rho                       = mathmacro["rho"]

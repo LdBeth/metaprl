@@ -130,6 +130,7 @@ declare alpha
 declare beta
 declare pi
 declare lambda
+declare Lambda
 declare gamma
 declare delta
 declare rho
