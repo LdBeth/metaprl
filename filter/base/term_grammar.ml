@@ -899,7 +899,9 @@ struct
       hyp:
          [[ "<"; name = word_or_string; args=optseqargs; ">" ->
              Context(name,args)
-          | bvar = OPT [ name = word_or_string; sl_colon -> name]; t = aterm ->
+             (* XXX HACK!!! OPT sl_period is here to have a way to tell camlp4 that opname *
+              * is not a hyp variabe and it should not expect a : after it                 *)
+          | bvar = OPT [ name = word_or_string; sl_colon -> name]; OPT sl_period; t = aterm ->
              match bvar with
                 Some v ->
                    HypBinding (v, t.aterm)      
