@@ -43,6 +43,7 @@ open Opname
 
 open Term_sig
 open Term_base_sig
+open Term_op_sig
 open Term_man_sig
 open Term_addr_sig
 open Term_subst_sig
@@ -73,6 +74,7 @@ let debug_rewrite = load_debug "rewrite"
 module Rewrite (**)
    (TermType : TermSig)
    (Term : TermBaseSig with module TermTypes = TermType)
+   (TermOp : TermOpSig with module OpTypes = TermType)
    (TermMan : TermManSig with module ManTypes = TermType)
    (TermAddr : TermAddrSig with module AddrTypes = TermType)
    (TermSubst : TermSubstSig with module SubstTypes = TermType)
@@ -97,7 +99,7 @@ struct
    module RewriteUtil = MakeRewriteUtil (TermType) (TermAddr) (Term) (RefineError)
    module RewriteDebug = MakeRewriteDebug (TermType) (Term) (TermAddr) (RefineError)
    module RewriteCompileRedex =
-      MakeRewriteCompileRedex (TermType) (Term) (TermMan) (TermAddr) (**)
+      MakeRewriteCompileRedex (TermType) (Term) (TermOp) (TermMan) (TermAddr) (**)
          (TermSubst) (RefineError) (RewriteUtil) (RewriteDebug)
    module RewriteCompileContractum =
       MakeRewriteCompileContractum (TermType) (Term) (TermMan) (TermAddr) (**)

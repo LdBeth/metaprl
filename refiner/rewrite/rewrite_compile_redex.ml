@@ -42,6 +42,7 @@ open Lm_symbol
 
 open Term_sig
 open Term_base_sig
+open Term_op_sig
 open Term_man_sig
 open Term_addr_sig
 open Term_subst_sig
@@ -62,6 +63,7 @@ let _ =
 module MakeRewriteCompileRedex (**)
    (TermType : TermSig)
    (Term : TermBaseSig with module TermTypes = TermType)
+   (TermOp : TermOpSig with module OpTypes = TermType)
    (TermMan : TermManSig with module ManTypes = TermType)
    (TermAddr : TermAddrSig with module AddrTypes = TermType)
    (TermSubst : TermSubstSig with module SubstTypes = TermType)
@@ -78,6 +80,7 @@ struct
    module RewriteTypes = MakeRewriteTypes(TermType)(TermAddr);;
    open TermType
    open Term
+   open TermOp
    open TermMan
    open TermSubst
    open RefineError
@@ -546,6 +549,26 @@ struct
     | RWSeqContextInstance (i, ts) ->
          RWSeqContextInstance (i, List.map (map_restricts_term restr) ts)
 
+   let xbinder_opname = Opname.mk_opname "xbinder" Opname.xperv
+
+   let rec find_bvars bvars stack = function
+      [] -> bvars
+    | t :: ts when is_dep0_term xbinder_opname t ->
+         let t = dest_dep0_term xbinder_opname t in
+         let bvars =
+            if is_var_term t then
+               let v = dest_var t in
+                  if rstack_freefo_mem v stack then
+                     (v, rstack_freefo_index v stack) :: bvars
+                  else
+                     bvars
+            else
+               bvars
+         in
+            find_bvars bvars stack ts
+    | _ :: ts ->
+         find_bvars bvars stack ts
+
    let compile_so_redex strict params = function
       [] -> [||], []
     | (goal :: args) as allargs ->
@@ -561,13 +584,13 @@ struct
               st_restricts = ref []
             }
          in
-         let stack, args = compile_so_redex_terms st [] args in
-         let st = { st with st_arg = false } in
+         let stack, args' = compile_so_redex_terms st [] args in
+         let st = { st with st_arg = false; st_bvars = find_bvars [] stack args } in
          let stack, goal = compile_so_redex_term st stack goal in
          let () = List.iter check_stack stack in
          let bconts = stack_cvars 0 stack in
          let extra_restricts = Lm_list_util.some_map (filter_restricts bconts) !(st.st_restricts) in
-         let args = if extra_restricts = [] then args else List.map (map_restricts_term extra_restricts) args in
+         let args = if extra_restricts = [] then args' else List.map (map_restricts_term extra_restricts) args' in
             Array.of_list stack, goal :: args
 end
 

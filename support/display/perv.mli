@@ -198,6 +198,8 @@ declare "bind"{a, b, c, d, e. 'z}
 declare "bind"{a, b, c, d, e, f. 'z}
 declare "bind"{a, b, c, d, e, f, g. 'z}
 
+declare xbinder{'e}
+
 (*
  * @begin[doc]
  * The @tt{hyp} and @tt{concl} terms are used to represent

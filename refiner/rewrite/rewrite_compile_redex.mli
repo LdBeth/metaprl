@@ -32,6 +32,7 @@
 
 open Term_sig
 open Term_base_sig
+open Term_op_sig
 open Term_man_sig
 open Term_addr_sig
 open Term_subst_sig
@@ -45,6 +46,7 @@ open Rewrite_types
 module MakeRewriteCompileRedex
    (TermType : TermSig)
    (Term : TermBaseSig with module TermTypes = TermType)
+   (TermOp : TermOpSig with module OpTypes = TermType)
    (TermMan : TermManSig with module ManTypes = TermType)
    (TermAddr : TermAddrSig with module AddrTypes = TermType)
    (TermSubst : TermSubstSig with module SubstTypes = TermType)

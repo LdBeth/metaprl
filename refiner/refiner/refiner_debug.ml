@@ -3233,7 +3233,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    end
 
    module RewriteInt =
-      Rewrite.Rewrite (TermType) (Term) (TermMan) (TermAddr) (TermSubst) (RefineError)
+      Rewrite.Rewrite (TermType) (Term) (TermOp) (TermMan) (TermAddr) (TermSubst) (RefineError)
    module RefineInt =
       Refine.Refine (TermType) (Term) (TermMan) (TermSubst) (TermAddr) (TermMeta) (TermShape) (RewriteInt) (RefineError)
 
