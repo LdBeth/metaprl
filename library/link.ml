@@ -19,7 +19,7 @@ type sockopt = Fd of Unix.file_descr | Null of unit
 
 type link = (in_channel * out_channel) * sockopt
 
-let dest_link ((in_channel, out_channel), socket) = 
+let dest_link ((in_channel, out_channel), socket) =
   match socket with Fd fd -> ((in_channel, out_channel), (Fd fd))
   | Null _ -> ((in_channel, out_channel), (Null ()))
 
@@ -55,14 +55,16 @@ let rec recv ((in_channel, out_channel), socket) =
 
 let recv ((in_channel, out_channel), socket) =
   Unix.clear_nonblock (Unix.descr_of_in_channel in_channel);
-  let term = (term_of_mbterm (read_node in_channel))
+  print_string "in recv";
+  let term = term_of_mbterm (read_node in_channel)
   in
   Unix.set_nonblock (Unix.descr_of_in_channel in_channel);
 
   (* for debugging *)
   print_newline();
-  print_string "recv ";
+  print_string "recv";
   print_newline();
+  Mbterm.print_term term;
 
   term
 
@@ -93,7 +95,7 @@ let send ((in_channel, out_channel), socket) term =
 
   (* for debugging *)
   print_newline();
-  print_string "send ";
+  print_string "send";
   print_newline();
   Mbterm.print_term term;
 

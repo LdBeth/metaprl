@@ -161,13 +161,13 @@ To connect metaprl:
   ML[(lib)] orb_start_accept <xxxx> `mathbus`;;
 
   1) Start editor/ml/mp
-  2) # #use "x.ml"
-  3) # run_nuprl <xxxx> "<hostname>" "<libenv>" "<dbpathname>"
+  2) # #use "x.ml";;
+  3) # run_nuprl <xxxx> "<hostname>" "<libenv>" "<dbpathname>";;
 
 To connect jprover:
 
   Setup the nuprl *refiner* to listen for a connections on port <xxxx>.
-  ML[(lib)] orb_start_accept <xxxx> `mathbus`;;
+  ML[(ref)] orb_start_accept <xxxx> `mathbus`;;
 
   1) Start editor/ml/mp
   2) # #use "x.ml"

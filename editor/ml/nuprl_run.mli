@@ -25,9 +25,9 @@
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
-(* to connect see quickstart file *)
+(* to connect see QUICKSTART file *)
 
-(* hint: for debugging create a thread 
+(* hint: for debugging create a thread
    # Thread.create run_nuprl ... ;;
 *)
 

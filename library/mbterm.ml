@@ -319,6 +319,7 @@ let rec print_param param =
                       print_string ":pl ")
 
 let rec print_term term =
+  print_string "print_term";
   let { term_op = operator; term_terms = bterms} = Lib_term.dest_term term in
   let { op_name = opname; op_params = params } = dest_op operator in
   let print_subterms = function
