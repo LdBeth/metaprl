@@ -436,7 +436,7 @@ struct
    let dest_simple_term_opname name t = match dest_term t with
       { term_op = { op_name = name'; op_params = [] };
          term_terms = bterms } ->
-         if name = name' then dest_simple_bterms t bterms
+         if name == name' then dest_simple_bterms t bterms
          else
             raise (TermMatch ("dest_simple_term_opname", t, "opname mismatch"))
     | _ -> raise (TermMatch ("dest_simple_term_opname", t, "params exist"))

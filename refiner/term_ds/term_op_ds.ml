@@ -18,7 +18,7 @@ struct
    let is_dep0_term opname t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt]
-      } when opname' = opname -> (dest_bterm bt).bvars = []
+      } when opname' == opname -> (dest_bterm bt).bvars = []
     | _ -> false
 
    let mk_dep0_term opname t =
@@ -30,7 +30,7 @@ struct
    let dest_dep0_term opname t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt]
-      } when opname' = opname -> dest_simple_bterm t bt
+      } when opname' == opname -> dest_simple_bterm t bt
     | _ -> raise (TermMatch ("dest_dep0_term", t, ""))
 
    let one_subterm t = match dest_term t with
@@ -43,7 +43,7 @@ struct
    let is_dep0_dep0_term opname t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt1; bt2]
-      } when opname' = opname ->
+      } when opname' == opname ->
          (dest_bterm bt1).bvars = [] && (dest_bterm bt2).bvars = []
     | _ -> false
 
@@ -56,7 +56,7 @@ struct
    let dest_dep0_dep0_term opname t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt1 ; bt2 ]
-      } when opname' = opname ->
+      } when opname' == opname ->
          let destr = dest_simple_bterm t in
          destr bt1, destr bt2
     | _ -> raise (TermMatch ("dest_dep0_dep0_term", t, ""))
@@ -73,7 +73,7 @@ struct
    let is_dep0_dep0_dep0_term opname t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = ([b1; b2; b3] as bterms)
-      } when opname' = opname -> no_bvars bterms
+      } when opname' == opname -> no_bvars bterms
     | _ -> false
 
    let mk_dep0_dep0_dep0_term opname t1 t2 t3 =
@@ -86,7 +86,7 @@ struct
    let dest_dep0_dep0_dep0_term opname t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt1; bt2; bt3]
-      } when opname' = opname ->
+      } when opname' == opname ->
          let destr = dest_simple_bterm t in
          destr bt1, destr bt2, destr bt3
     | _ -> raise (TermMatch ("dest_dep0_dep0_dep0_term", t, ""))
@@ -346,7 +346,7 @@ struct
    let is_dep1_term opname t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt]
-      } when opname' = opname ->
+      } when opname' == opname ->
          begin
             match (dest_bterm bt).bvars with
                [_] -> true
@@ -366,7 +366,7 @@ struct
    let dest_dep1_term opname t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt]
-      } when opname' = opname ->
+      } when opname' == opname ->
          begin
             match dest_bterm bt with
                { bvars = [v]; bterm = t } -> v,t
@@ -377,7 +377,7 @@ struct
    let is_dep0_dep1_term opname t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt1;bt2]
-      } when opname' = opname ->
+      } when opname' == opname ->
          if (dest_bterm bt1).bvars = []
             then match (dest_bterm bt2).bvars with
                [_] -> true
@@ -418,7 +418,7 @@ struct
    let dest_dep0_dep1_term opname t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt1;bt2]
-      } when opname' = opname ->
+      } when opname' == opname ->
       begin match (dest_bterm bt1, dest_bterm bt2) with
          ({ bvars = []; bterm = t1 }, { bvars = [v]; bterm = t2 }) ->
             v, t1, t2
@@ -442,7 +442,7 @@ struct
    let is_dep2_dep0_term opname t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt1;bt2]
-      } when opname' = opname ->
+      } when opname' == opname ->
          if (dest_bterm bt2).bvars = []
             then match (dest_bterm bt1).bvars with
                [_;_] -> true
@@ -463,7 +463,7 @@ struct
    let dest_dep2_dep0_term opname t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt1; bt2]
-      } when opname' = opname ->
+      } when opname' == opname ->
          begin match (dest_bterm bt1, dest_bterm bt2) with
             ({ bvars = [v1; v2]; bterm = t1 },
              { bvars = []; bterm = t2 }) -> v1, v2, t1, t2
@@ -477,7 +477,7 @@ struct
    let is_dep0_dep2_term opname t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt1; bt2]
-      } when opname' = opname ->
+      } when opname' == opname ->
          if (dest_bterm bt1).bvars = []
             then match (dest_bterm bt2).bvars with
                [_;_] -> true
@@ -498,7 +498,7 @@ struct
    let dest_dep0_dep2_term opname t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt1;bt2]
-      } when opname' = opname ->
+      } when opname' == opname ->
          begin match (dest_bterm bt1, dest_bterm bt2) with
             ({ bvars = []; bterm = t1 },
              { bvars = [v1; v2]; bterm = t2 }) -> v1, v2, t1, t2
@@ -512,7 +512,7 @@ struct
    let is_dep0_dep2_dep2_term opname t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt1;bt2;bt3]
-      } when opname' = opname ->
+      } when opname' == opname ->
          if (dest_bterm bt1).bvars = []
             then match ((dest_bterm bt2).bvars, (dest_bterm bt3).bvars) with
                ([_;_], [_;_]) -> true
@@ -530,7 +530,7 @@ struct
    let dest_dep0_dep2_dep2_term opname t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt1; bt2; bt3]
-      } when opname' = opname ->
+      } when opname' == opname ->
          begin
             match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3) with
                ({ bvars = []; bterm = t0 },
@@ -547,7 +547,7 @@ struct
    let is_dep0_dep2_dep0_dep2_term opname t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt1; bt2; bt3; bt4]
-      } when opname' = opname ->
+      } when opname' == opname ->
          begin match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3, dest_bterm bt4) with
             ({ bvars = [] }, { bvars = [_; _] }, { bvars = [] }, { bvars = [_; _] }) -> true
           | _ -> false
@@ -565,7 +565,7 @@ struct
    let dest_dep0_dep2_dep0_dep2_term opname t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt1; bt2; bt3; bt4]
-      } when opname' = opname ->
+      } when opname' == opname ->
          begin match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3, dest_bterm bt4) with
             ({ bvars = []; bterm = t0 },
              { bvars = [v11; v12]; bterm = t1 },
@@ -648,7 +648,7 @@ struct
    let is_dep0_dep1_dep1_term opname t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt1; bt2; bt3]
-      } when opname' = opname ->
+      } when opname' == opname ->
          begin match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3) with
             ({ bvars = [] }, { bvars = [_] }, { bvars = [_] }) -> true
           | _ -> false
@@ -665,7 +665,7 @@ struct
    let dest_dep0_dep1_dep1_term opname t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt1; bt2; bt3]
-      } when opname' = opname ->
+      } when opname' == opname ->
          begin match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3) with
             ({ bvars = []; bterm = t0 },
              { bvars = [v1]; bterm = t1 },
@@ -680,7 +680,7 @@ struct
    let is_dep0_dep0_dep3_term opname t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt1; bt2; bt3]
-      } when opname' = opname ->
+      } when opname' == opname ->
          begin match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3) with
             ({ bvars = [] }, { bvars = [] }, { bvars = [_; _; _] }) -> true
           | _ -> false
@@ -697,7 +697,7 @@ struct
    let dest_dep0_dep0_dep3_term opname t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bt1; bt2; bt3]
-      } when opname' = opname ->
+      } when opname' == opname ->
          begin match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3) with
             ({ bvars = []; bterm = t0 },
              { bvars = []; bterm = t1 },
@@ -713,13 +713,13 @@ struct
    let is_one_bsubterm opname t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [_]
-      } when opname' = opname -> true
+      } when opname' == opname -> true
     | _ -> false
 
    let dest_one_bsubterm opname t = match dest_term t with
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bterm]
-      } when opname' = opname -> bterm
+      } when opname' == opname -> bterm
     | _ -> raise (TermMatch ("dest_one_bsubterm", t, ""))
 
    let mk_one_bsubterm opname bt =

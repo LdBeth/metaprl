@@ -300,7 +300,7 @@ struct
       ({ term_op = { op_name = name'; op_params = [] };
          term_terms = bterms
        } : term) as t ->
-         if name = name' then
+         if name == name' then
             let aux = function
                { bvars = []; bterm = t } -> t
              | _ -> raise (TermMatch ("dest_simple_term_opname", t, "binding vars exist"))
@@ -329,6 +329,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.5  1998/06/02 21:52:00  nogin
+ * Use == for comparing opnames
+ *
  * Revision 1.4  1998/06/01 19:53:51  jyh
  * Working addition proof.  Removing polymorphism from refiner(?)
  *

@@ -29,7 +29,7 @@ struct
    let dest_dep0_term opname = function
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [{ bvars = []; bterm = t }]
-      } when opname' = opname -> t
+      } when opname' == opname -> t
     | t -> raise (TermMatch ("dest_dep0_term", t, ""))
 
    let one_subterm = function
@@ -56,7 +56,7 @@ struct
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [{ bvars = []; bterm = t1 };
                       { bvars = []; bterm = t2 }]
-      } when opname' = opname -> t1, t2
+      } when opname' == opname -> t1, t2
     | t -> raise (TermMatch ("dest_dep0_dep0_term", t, ""))
 
    let two_subterms = function
@@ -86,7 +86,7 @@ struct
         term_terms = [{ bvars = []; bterm = t1 };
                       { bvars = []; bterm = t2 };
                       { bvars = []; bterm = t3 }]
-      } when opname' = opname -> t1, t2, t3
+      } when opname' == opname -> t1, t2, t3
     | t -> raise (TermMatch ("dest_dep0_dep0_dep0_term", t, ""))
 
    let three_subterms = function
@@ -344,7 +344,7 @@ struct
    let is_dep1_term opname = function
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [{ bvars = [_] }]
-      } when opname' = opname -> true
+      } when opname' == opname -> true
     | _ -> false
 
    let mk_dep1_term opname = fun
@@ -355,13 +355,13 @@ struct
    let dest_dep1_term opname = function
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [{ bvars = [v]; bterm = t }]
-      } when opname' = opname -> v, t
+      } when opname' == opname -> v, t
     | t -> raise (TermMatch ("dest_dep1_term", t, ""))
 
    let is_dep0_dep1_term opname = function
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [{ bvars = [] }; { bvars = [_] }]
-      } when opname' = opname -> true
+      } when opname' == opname -> true
     | _ -> false
 
    let is_dep0_dep1_any_term = function
@@ -386,7 +386,7 @@ struct
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [{ bvars = []; bterm = t1 };
                       { bvars = [v]; bterm = t2 }]
-      } when opname' = opname -> v, t1, t2
+      } when opname' == opname -> v, t1, t2
     | t -> raise (TermMatch ("dest_dep0_dep1_term", t, ""))
 
    let dest_dep0_dep1_any_term = function
@@ -402,7 +402,7 @@ struct
    let is_dep2_dep0_term opname = function
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [{ bvars = [_; _] }; { bvars = [] }]
-      } when opname' = opname -> true
+      } when opname' == opname -> true
     | _ -> false
 
    let mk_dep2_dep0_term opname = fun
@@ -415,7 +415,7 @@ struct
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [{ bvars = [v1; v2]; bterm = t1 };
                       { bvars = []; bterm = t2 }]
-      } when opname' = opname -> v1, v2, t1, t2
+      } when opname' == opname -> v1, v2, t1, t2
     | t -> raise (TermMatch ("dest_dep2_dep0_term", t, ""))
 
    (*
@@ -424,7 +424,7 @@ struct
    let is_dep0_dep2_term opname = function
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [{ bvars = [] }; { bvars = [_; _] }]
-      } when opname' = opname -> true
+      } when opname' == opname -> true
     | _ -> false
 
    let mk_dep0_dep2_term opname = fun
@@ -437,7 +437,7 @@ struct
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [{ bvars = []; bterm = t1 };
                       { bvars = [v1; v2]; bterm = t2 }]
-      } when opname' = opname -> v1, v2, t1, t2
+      } when opname' == opname -> v1, v2, t1, t2
     | t -> raise (TermMatch ("dest_dep0_dep2_term", t, ""))
 
    (*
@@ -446,7 +446,7 @@ struct
    let is_dep0_dep2_dep2_term opname = function
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [{ bvars = [] }; { bvars = [_; _] }; { bvars = [_; _] }]
-      } when opname' = opname -> true
+      } when opname' == opname -> true
     | _ -> false
 
    let mk_dep0_dep2_dep2_term opname = fun
@@ -461,7 +461,7 @@ struct
         term_terms = [{ bvars = []; bterm = t0 };
                       { bvars = [v11; v12]; bterm = t1 };
                       { bvars = [v21; v22]; bterm = t2 }]
-      } when opname' = opname -> t0, v11, v12, t1, v21, v22, t2
+      } when opname' == opname -> t0, v11, v12, t1, v21, v22, t2
     | t -> raise (TermMatch ("dest_dep0_dep2_dep2_term", t, ""))
 
    (*
@@ -470,7 +470,7 @@ struct
    let is_dep0_dep2_dep0_dep2_term opname = function
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [{ bvars = [] }; { bvars = [_; _] }; { bvars = [] }; { bvars = [_; _] }]
-      } when opname' = opname -> true
+      } when opname' == opname -> true
     | _ -> false
 
    let mk_dep0_dep2_dep0_dep2_term opname = fun
@@ -487,7 +487,7 @@ struct
                       { bvars = [v11; v12]; bterm = t1 };
                       { bvars = []; bterm = base };
                       { bvars = [v21; v22]; bterm = t2 }]
-      } when opname' = opname -> t0, v11, v12, t1, base, v21, v22, t2
+      } when opname' == opname -> t0, v11, v12, t1, base, v21, v22, t2
     | t -> raise (TermMatch ("dest_dep0_dep2_dep0_dep2_term", t, ""))
 
    (*
@@ -543,7 +543,7 @@ struct
    let is_dep0_dep1_dep1_term opname = function
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [{ bvars = [] }; { bvars = [_] }; { bvars = [_] }]
-      } when opname' = opname -> true
+      } when opname' == opname -> true
     | _ -> false
 
    let mk_dep0_dep1_dep1_term opname = fun
@@ -558,7 +558,7 @@ struct
         term_terms = [{ bvars = []; bterm = t0 };
                       { bvars = [v1]; bterm = t1 };
                       { bvars = [v2]; bterm = t2 }]
-      } when opname' = opname -> t0, v1, t1, v2, t2
+      } when opname' == opname -> t0, v1, t1, v2, t2
     | t -> raise (TermMatch ("dest_dep0_dep1_dep1_term", t, ""))
 
    (*
@@ -567,7 +567,7 @@ struct
    let is_dep0_dep0_dep3_term opname = function
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [{ bvars = [] }; { bvars = [] }; { bvars = [_; _; _] }]
-      } when opname' = opname -> true
+      } when opname' == opname -> true
     | _ -> false
 
    let mk_dep0_dep0_dep3_term opname = fun
@@ -582,7 +582,7 @@ struct
         term_terms = [{ bvars = []; bterm = t0 };
                       { bvars = []; bterm = t1 };
                       { bvars = [v1; v2; v3]; bterm = t2 }]
-      } when opname' = opname -> t0, t1, v1, v2, v3, t2
+      } when opname' == opname -> t0, t1, v1, v2, v3, t2
     | t -> raise (TermMatch ("dest_dep0_dep0_dep3_term", t, ""))
 
    (*
@@ -591,13 +591,13 @@ struct
    let is_one_bsubterm opname = function
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [_]
-      } when opname' = opname -> true
+      } when opname' == opname -> true
     | _ -> false
 
    let dest_one_bsubterm opname = function
       { term_op = { op_name = opname'; op_params = [] };
         term_terms = [bterm]
-      } when opname' = opname -> bterm
+      } when opname' == opname -> bterm
     | t -> raise (TermMatch ("dest_one_bsubterm", t, ""))
 
    let mk_one_bsubterm opname = fun
@@ -606,6 +606,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.4  1998/06/02 21:51:59  nogin
+ * Use == for comparing opnames
+ *
  * Revision 1.3  1998/05/30 19:18:47  nogin
  * Eliminated white space in empty lines.
  *
