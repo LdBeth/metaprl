@@ -54,6 +54,7 @@ Export qw( env );
 
 ## Execute the given Conscript files
 Build qw(
+	util/Conscript
 	clib/Conscript
 	mllib/Conscript
 	refiner/Conscript
