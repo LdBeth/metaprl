@@ -89,7 +89,7 @@ if $(equal $(OSTYPE), Win32)
    #
    # CAMLLIB should be set in the environment
    #
-   CAMLLIB = $(dir $(getenv OCAMLLIB))
+   CAMLLIB = $(dir $(getenv OCAMLLIB, C:\ocaml\lib))
    CAMLP4LIB = $(dir $(CAMLLIB)/camlp4)
    export
 
