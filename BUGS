@@ -91,9 +91,36 @@ Example:
 test{x.test{y.'C['x; 'y]}} <--> 'C[1; 2] 
 rewrites <<test{x.test{x.'x}}>> to 1 instead of 2.
 
+<<<<<<< BUGS
+3.5) (Confirmed on 1999.10.16 by nogin)
+Rewriter should support "strict" matching - in a redex, when a bound variable
+is not explicity mentioned as an argument of a SO variable, the matching term should
+not have free occurences of the correspondent variable. 
+<<<<<<< BUGS
+=======
+
+The "strict" mode would also eliminate the bug no 4.3
+>>>>>>> 1.25
+
+<<<<<<< BUGS
+The "strict" mode would also eliminate the problem rhw bug mentioned below in the REFINER
+section.
+=======
+(1999.10.16, nogin) Currently the "strict" mode is implemented in rewriter,
+but not yet enambled in the refiner.
+>>>>>>> 1.25
+
+<<<<<<< BUGS
+*) Rewriter does not prevent capturing. It should, at least in the "strict" mode.
+
+*) Currently rewriter does not enforce building contractum to be against the same redex
+=======
+=======
+>>>>>>> 1.26
 3.6) Rewriter does not prevent capturing. It should, at least in the "strict" mode.
 
 3.7) Currently rewriter does not enforce building contractum to be against the same redex
+>>>>>>> 1.25
 the contractum was compiled against. Hopefully we never do this wrong, but we still
 should enforce it.
 
@@ -143,12 +170,26 @@ PARSER & FILTER
 
   --jyh: the tactic _is_ defined, but not (yet) added to Mptop toploop.
 
-5.3) Some times parser requires too many brackets.
+*) Some times parser requires too many brackets.
 
+<<<<<<< BUGS
+*) Parsing or printing bug that can be seen using ASCII files:
+   sometimes string arguments in params gets unquoted too many times.
+   Reproduce this bug by loading an old ASCII file, then saving it
+   and seeing that some parameters have been unquoted.
+=======
+5.3) Some times parser requires too many brackets.
+>>>>>>> 1.25
+
+<<<<<<< BUGS
+*) Toploop_resource seems to be added into .p4 file even if
+   base_theory is not included.
+=======
 5.4) Parsing or printing bug that can be seen using ASCII files:
      sometimes string arguments in params gets unquoted too many times.
      Reproduce this bug by loading an old ASCII file, then saving it
      and seeing that some parameters have been unquoted.
+>>>>>>> 1.25
 
 RULES & REWRITES
 
