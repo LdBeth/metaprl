@@ -191,15 +191,19 @@ struct
     ************************************************************************)
 
    (*
-    * Turn a string into a path.
+    * Turn a string into a path, relative to info.dir.
     * The string is "/"-separated; "." means current directory, ".." its
     * parent, "..." its grandparent etc.
+    * Also, "~" refers to the second level from top, e.g. cd "~" goes to
+    * the current module.
     *)
-   let parse_path dir name =
+   let parse_path name =
+      let home = (match info.dir with [] -> [] | modname::_ -> [modname]) in
       let rec aux dir names =
          match names with
             [] -> dir
           | ""::ns -> aux dir ns
+          | "~"::ns -> aux home ns
           | n::ns when (String_util.for_all (fun c -> c = '.') n) ->
                (* Remove |n| elements from dir's tail *)
                let head = try (fst (List_util.split_list ((List.length dir) - (String.length n) + 1) dir))
@@ -207,7 +211,7 @@ struct
                in aux head ns
           | n::ns -> aux (dir @ [n]) ns
       in
-         aux (if String.length name <> 0 & name.[0] = '/' then [] else dir)
+         aux (if String.length name <> 0 & name.[0] = '/' then [] else info.dir)
              (String_util.split '/' name)
 
    (*
@@ -341,16 +345,14 @@ struct
     * General purpose displayer.
     *)
    let view name =
-      let dir = parse_path info.dir name in
+      let dir = parse_path name in
          match dir with
             [] ->
                view_packages ()
           | [modname] ->
                view_package modname
-          | [modname; item] ->
+          | modname :: item :: _ ->
                view_item modname item
-          | modname :: item1 :: item2 :: _ ->
-               raise (Failure ("Shell.view: illegal module name " ^ string_of_path dir))
 
    let ls () =
       view "."
@@ -399,7 +401,7 @@ struct
     *)
    let create_pkg name =
       let create name =
-         match parse_path info.dir name with
+         match parse_path name with
             [modname] ->
                (* Top level *)
                Package.create_package info.packages modname;
@@ -593,26 +595,26 @@ struct
       in
          print_exn set ()
 
-   let root () =
-      let set () =
-         info.proof.edit_root ();
-         display_proof ()
-      in
-         print_exn set ()
-
-   let up i =
-      let set () =
-         info.proof.edit_up i;
-         display_proof ()
-      in
-         print_exn set ()
-
-   let down i =
-      let set i =
-         info.proof.edit_down i;
-         display_proof ()
-      in
-         print_exn set i
+   (* Redefined below as a shortcut for cd
+    * let root () =
+    *    let set () =
+    *       info.proof.edit_root ();
+    *       display_proof ()
+    *    in
+    *       print_exn set ()
+    * let up i =
+    *    let set () =
+    *       info.proof.edit_up i;
+    *       display_proof ()
+    *    in
+    *       print_exn set ()
+    * let down i =
+    *    let set i =
+    *       info.proof.edit_down i;
+    *       display_proof ()
+    *    in
+    *       print_exn set i
+    *)
 
    let refine tac =
       let set () =
@@ -668,79 +670,105 @@ struct
     * Change directory.
     *)
    let rec cd name =
-      let dir = parse_path info.dir name in
+      let dir = parse_path name in
          begin
             match dir with
-               modname :: name ->
-                  let pkg = Package.get info.packages modname in
-                     info.package <- Some pkg;
-                     ShellP4.set_df (Some (get_db null_mode_base));
-                     ShellP4.set_mk_opname (Some (Package.mk_opname pkg));
-                     ShellP4.set_module modname commands;
-                     begin
-                        match name with
-                           [name] ->
-                              set_item modname name;
-                              info.dir <- dir
-                         | [] ->
-                              info.dir <- dir;
-                              info.proof <- Shell_null.null_object
-                         | _ ->
-                              info.dir <- [modname];
-                              eprintf "Recursive modules not implemented%t" eflush;
-                              raise (Failure "cd")
-                     end
-             | [] ->
+               [] ->
+                  (* go to toplevel *)
                   info.dir <- [];
                   info.package <- None;
                   ShellP4.set_df None;
                   ShellP4.set_mk_opname None;
+             | modname :: item ->
+                  (* change module only if in another (or at top) *)
+                  if (info.dir = []) or ((List.hd info.dir) <> modname) then begin
+                     let pkg = Package.get info.packages modname in
+                        info.package <- Some pkg;
+                        ShellP4.set_df (Some (get_db null_mode_base));
+                        ShellP4.set_mk_opname (Some (Package.mk_opname pkg));
+                        ShellP4.set_module modname commands;
+                  end;
+                  if (item = []) then begin
+                     (* top of module *)
+                     info.dir <- dir;
+                     info.proof <- Shell_null.null_object
+                  end else begin
+                     (* select an item (if not there already), then go down the proof. *)
+                     if ((info.dir = []) or ((List.tl info.dir) = []) or
+                         ((List.hd (List.tl info.dir)) <> (List.hd item))) then
+                        set_item modname (List.hd item);
+                     (* go down the proof with pf_path *)
+                     info.proof.edit_addr (List.map int_of_string (List.tl item));
+                     info.dir <- dir
+                  end;
          end;
          pwd ()
+
+   and root () =
+      let set () =
+         cd (String.make ((List.length info.dir)-1) '.');
+         display_proof ()
+      in
+         if (List.length info.dir) >= 2 then
+            print_exn set ()
+
+   and up i =
+      let set () =
+         cd (String.make (i+1) '.');
+         display_proof ()
+      in
+         print_exn set ()
+
+   and down i =
+      let set i =
+         cd (string_of_int i);
+         display_proof ()
+      in
+         print_exn set i
 
    (*
     * Commands.
     *)
    and commands =
-      ["cd", StringFunExpr (fun s -> StringExpr (cd s));
-       "pwd", UnitFunExpr (fun () -> StringExpr (pwd ()));
-       "set_window_width", IntFunExpr (fun i -> UnitExpr (set_window_width i));
-       "load", StringFunExpr (fun s -> UnitExpr (load s));
-       "create_pkg", StringFunExpr (fun s -> UnitExpr (create_pkg s));
-       "save", UnitFunExpr (fun () -> UnitExpr (save ()));
-       "save_all", UnitFunExpr (fun () -> UnitExpr (save_all ()));
-       "create_rw", StringFunExpr (fun s -> UnitExpr (create_rw s));
-       "create_axiom", StringFunExpr (fun s -> UnitExpr (create_axiom s));
-       "create_thm", StringFunExpr (fun s -> UnitExpr (create_thm s));
-       "create_tptp", StringFunExpr (fun s -> UnitExpr (create_tptp s));
-       "create_opname", StringFunExpr (fun s -> UnitExpr (create_opname s));
-       "create_condition", StringFunExpr (fun s -> UnitExpr (create_condition s));
-       "create_parent", StringFunExpr (fun s -> UnitExpr (create_parent s));
-       "create_dform", StringFunExpr (fun s -> UnitExpr (create_dform s));
-       "create_prec", StringFunExpr (fun s -> UnitExpr (create_prec s));
+      ["cd",               StringFunExpr   (fun s  -> StringExpr (cd s));
+       "pwd",              UnitFunExpr     (fun () -> StringExpr (pwd ()));
+       "set_window_width", IntFunExpr      (fun i  -> UnitExpr (set_window_width i));
+       "load",             StringFunExpr   (fun s  -> UnitExpr (load s));
+       "create_pkg",       StringFunExpr   (fun s  -> UnitExpr (create_pkg s));
+       "save",             UnitFunExpr     (fun () -> UnitExpr (save ()));
+       "save_all",         UnitFunExpr     (fun () -> UnitExpr (save_all ()));
+       "create_rw",        StringFunExpr   (fun s  -> UnitExpr (create_rw s));
+       "create_axiom",     StringFunExpr   (fun s  -> UnitExpr (create_axiom s));
+       "create_thm",       StringFunExpr   (fun s  -> UnitExpr (create_thm s));
+       "create_tptp",      StringFunExpr   (fun s  -> UnitExpr (create_tptp s));
+       "create_opname",    StringFunExpr   (fun s  -> UnitExpr (create_opname s));
+       "create_condition", StringFunExpr   (fun s  -> UnitExpr (create_condition s));
+       "create_parent",    StringFunExpr   (fun s  -> UnitExpr (create_parent s));
+       "create_dform",     StringFunExpr   (fun s  -> UnitExpr (create_dform s));
+       "create_prec",      StringFunExpr   (fun s  -> UnitExpr (create_prec s));
        "create_prec_rel", (**)
           StringFunExpr (fun s1 ->
                 StringFunExpr (fun s2 ->
                       StringFunExpr (fun s3 ->
                             UnitExpr (create_prec_rel s1 s2 s3))));
-       "create_resource", StringFunExpr (fun s -> UnitExpr (create_resource s));
-       "create_infix", StringFunExpr (fun s -> UnitExpr (create_infix s));
-       "create_ml", StringFunExpr (fun s -> UnitExpr (create_ml s));
-       "view", StringFunExpr (fun s -> UnitExpr (view s));
-       "ls", UnitFunExpr (fun () -> UnitExpr (ls ()));
-       "set_goal", TermFunExpr (fun t -> UnitExpr (set_goal t));
-       "set_redex", TermFunExpr (fun t -> UnitExpr (set_redex t));
-       "set_contractum", TermFunExpr (fun t -> UnitExpr (set_contractum t));
-       "set_assumptions", TermListFunExpr (fun tl -> UnitExpr (set_assumptions tl));
-       "check", UnitFunExpr (fun () -> UnitExpr (check ()));
-       "expand", UnitFunExpr (fun () -> UnitExpr (expand ()));
-       "root", UnitFunExpr (fun () -> UnitExpr (root ()));
-       "up", IntFunExpr (fun i -> UnitExpr (up i));
-       "down", IntFunExpr (fun i -> UnitExpr (down i));
-       "refine", TacticFunExpr (fun t -> UnitExpr (refine t));
-       "undo", UnitFunExpr (fun () -> UnitExpr (undo ()));
-       "fold", UnitFunExpr (fun () -> UnitExpr (fold ()));
-       "fold_all", UnitFunExpr (fun () -> UnitExpr (fold_all ()))]
+       "create_resource",  StringFunExpr   (fun s  -> UnitExpr (create_resource s));
+       "create_infix",     StringFunExpr   (fun s  -> UnitExpr (create_infix s));
+       "create_ml",        StringFunExpr   (fun s  -> UnitExpr (create_ml s));
+       "view",             StringFunExpr   (fun s  -> UnitExpr (view s));
+       "ls",               UnitFunExpr     (fun () -> UnitExpr (ls ()));
+       "set_goal",         TermFunExpr     (fun t  -> UnitExpr (set_goal t));
+       "set_redex",        TermFunExpr     (fun t  -> UnitExpr (set_redex t));
+       "set_contractum",   TermFunExpr     (fun t  -> UnitExpr (set_contractum t));
+       "set_assumptions",  TermListFunExpr (fun tl -> UnitExpr (set_assumptions tl));
+       "check",            UnitFunExpr     (fun () -> UnitExpr (check ()));
+       "expand",           UnitFunExpr     (fun () -> UnitExpr (expand ()));
+       "root",             UnitFunExpr     (fun () -> UnitExpr (root ()));
+       "up",               IntFunExpr      (fun i  -> UnitExpr (up i));
+       "down",             IntFunExpr      (fun i  -> UnitExpr (down i));
+       "refine",           TacticFunExpr   (fun t  -> UnitExpr (refine t));
+       "undo",             UnitFunExpr     (fun () -> UnitExpr (undo ()));
+       "fold",             UnitFunExpr     (fun () -> UnitExpr (fold ()));
+       "fold_all",         UnitFunExpr     (fun () -> UnitExpr (fold_all ()))]
 
    (************************************************************************
     * NUPRL5 INTERFACE                                                     *
