@@ -163,19 +163,14 @@ let list_patt loc f l =
       map l
 
 (*
- * A multiple argument function.
+ * A multiple argument function (curried)
  *)
-let fun_expr loc ids body =
-   let rec aux = function
+let rec fun_expr loc ids body =
+   match ids with
       h::t ->
-         let patt = <:patt< $lid:h$ >> in
-            (<:expr< fun [ $list:[ patt, None, aux t ]$ ] >>)
+         <:expr< fun $lid:h$ -> $fun_expr loc t body$ >>
     | [] ->
          body
-   in
-      aux ids
-
-let () = ()
 
 (*
  * -*-
