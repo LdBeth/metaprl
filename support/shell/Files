@@ -30,13 +30,6 @@ MPFILES =\
 # Files to copy to the lib directory
 INPUTS =\
 	start.html\
-	frameset.html\
-	shortcommand.html\
-	longcommand.html\
-	content.html\
 	login.html\
 	pagelong.html\
-	pageshort.html\
-	verify.js\
-	cookie.js\
-	md5.js
+	pageshort.html
