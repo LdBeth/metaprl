@@ -51,8 +51,7 @@ Context hyp:
 C<long_name> <short_name> <variable> [<term_short_name_1> ... <term_short_name_n>]
 
 Sequent:
-S<long_name> <short_name> <arg_term_short_name> [<hyp_1_short_name> ... <hyp_n_short_name>]
-G<long_name> <short_name> [<goal_1_short_name> ... <goal_n_short_name>]
+S<long_name> <short_name> <arg_term_short_name> [<hyp_1_short_name> ... <hyp_n_short_name>]\\ [<goal_1_short_name> ... <goal_n_short_name>]
 
 Operator:
 O<long_name> <short_name> <opname_short_name> [<param_short_name_1> ... <param_short_name_n>]
@@ -68,7 +67,6 @@ P<long_name> <short_name> Var <string>
 P<long_name> <short_name> MNumber <string>
 P<long_name> <short_name> MString <string>
 P<long_name> <short_name> MToken <string>
-P<long_name> <short_name> MVar <string>
 P<long_name> <short_name> MLevel <int> [<var_1_string> <off_1_int> ... <var_1_string> <off_1_int>]
 
 Where "long name" is there only there to make the file more readable for the user,
@@ -90,7 +88,7 @@ sig
    type hypothesis
    type esequent
 
-   type io_item = string * string * string list
+   type io_item = string * string * string list list
    type io_table
 
    (*

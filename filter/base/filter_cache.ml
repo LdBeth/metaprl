@@ -89,41 +89,6 @@ sig
 end
 
 (************************************************************************
- * FILE FORMAT VERSIONS SUPPORTED                                       *
- ************************************************************************)
-(*
- * The arguments for pack_version are: major version number, minor sub-version number, revision number
- *)
-
-(*
- * Raw data structures revision history
- *
- * Rev 0: whatever was around when the versioning was added
- * Rev 1: added PRL bindings to several summary items (many types have chaged)
- * Rev 2: variables are now implemented as symbols.
- * Rev 3: got rid of MVar parameters
- *)
-let raw_versions = List.map (pack_version 1 0) [3]
-
-let term_versions = List.map (pack_version 1 0) [3]
-
-(*
- * ASCII IO format revision history:
- *
- * Rev 0: whatever was around when the versioning was added
- * Rev 1: added new hypothesis syntax (hyps with and w/o bindings)
- * Rev 2: removed support for variable name (string) arguments to rules/rewrites
- * Rev 3: added a real summary item for "define" directives (instead of declare + prim_rw implementation)
- * Rev 4: corrected term representation for prec_rel
- * Rev 5: added PRL bindings to several summary items
- * Rev 6: got rid of MVar parameters
- *
- * Filter_summary has a HACK needed to read some rev 0-1 files
- * Ascii_io has a HACK needed to read some rev 0-5 files
- *)
-let ascii_versions = List.map (pack_version 1 0) [6;5;4;3;2;1;0]
-
-(************************************************************************
  * CONFIG                                                               *
  ************************************************************************)
 

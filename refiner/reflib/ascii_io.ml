@@ -61,7 +61,7 @@ struct
    type hypothesis = TM.TermType.hypothesis
    type esequent = TM.TermType.esequent
 
-   type io_item = string * string * string list
+   type io_item = string * string * string list list
    type io_table = io_item list ref
 
    let init_size = 97
@@ -78,7 +78,7 @@ struct
       io_opnames : (string,opname) Hashtbl.t;
       io_params : (string,hashed_param) Hashtbl.t;
       io_hyps : (string,hypothesis_header) Hashtbl.t;
-      mutable io_seq : (string * term_index * hypothesis_header list) option;
+      mutable io_seq : (string * term_index * hypothesis_header list) option; (*XXX HACK: field needed for compatibility with file format versions 1.0.6 and below *)
       io_bterms : (string,bound_term_header) Hashtbl.t
     }
 
@@ -103,7 +103,7 @@ struct
       if Hashtbl.mem tbl key then fail "hash_add_new" else Hashtbl.add tbl key data
 
    let add_term r = function
-      (_, name, op::bterms) ->
+      (_, name, [op::bterms]) ->
          let (op,params) = Hashtbl.find r.io_ops op in
          let btrms = List.map (Hashtbl.find r.io_bterms) bterms in
          let t = lookup (Term { op_name = op; op_params = params; term_terms = btrms }) in
@@ -113,7 +113,7 @@ struct
          fail "add_term"
 
    let add_op r = function
-      (_, name, op::params) ->
+      (_, name, [op::params]) ->
          let op = Hashtbl.find r.io_opnames op in
          let parms = List.map (Hashtbl.find r.io_params) params in
          hash_add_new r.io_ops name (op,parms)
@@ -121,14 +121,14 @@ struct
          fail "add_op"
 
    let add_name r = function
-      (_, name, [nm;op]) ->
+      (_, name, [[nm;op]]) ->
          let op = Hashtbl.find r.io_opnames op in
          hash_add_new r.io_opnames name (mk_opname nm op)
     | _ ->
          fail "add_name"
 
    let add_bterm r = function
-      (_, name, term::vars) ->
+      (_, name, [term::vars]) ->
          let term = Hashtbl.find r.io_terms term in
          let vars = List.map Lm_symbol.add vars in
          hash_add_new r.io_bterms name { bvars = vars; bterm = term }
@@ -136,45 +136,53 @@ struct
          fail "add_bterm"
 
    let add_hyp r = function
-      (_, name, [var;term]) ->
+      (_, name, [[var;term]]) ->
          let term = Hashtbl.find r.io_terms term in
          hash_add_new r.io_hyps name (HypBinding(Lm_symbol.add var,term))
-    | (_, name, [term]) ->
+    | (_, name, [[term]]) ->
          let term = Hashtbl.find r.io_terms term in
          hash_add_new r.io_hyps name (Hypothesis term)
     | _ ->
          fail "add_hyp"
 
    let add_context r = function
-      (_, name, v::terms) ->
+      (_, name, [v::terms]) ->
          let terms = List.map (Hashtbl.find r.io_terms) terms in
          hash_add_new r.io_hyps name (Context(Lm_symbol.add v,terms))
     | _ ->
          fail "add_context"
 
    let add_seq r = function
-      (_, name, args::hyps) ->
+      (_, name, [[args];hyps;goals]) ->
          let args = Hashtbl.find r.io_terms args in
          let hyps = List.map (Hashtbl.find r.io_hyps) hyps in
-         r.io_seq <- Some (name, args, hyps)
+         let goals = List.map (Hashtbl.find r.io_terms) goals in
+         let t = lookup ( Seq { seq_arg = args;
+                                seq_hyps = hyps;
+                                seq_goals = goals
+                              } ) in
+         hash_add_new r.io_terms name t;
+         t
+    | (_, name, [args::hyps]) -> (* XXX HACK: file format versions 1.0.6 and below compatibility mode *)
+         let args = Hashtbl.find r.io_terms args in
+         let hyps = List.map (Hashtbl.find r.io_hyps) hyps in
+         r.io_seq <- Some (name, args, hyps);
+         args
     | _ ->
          fail "add_seq"
 
-   let add_goal r = function
-      (_, name, goals) ->
-         begin match r.io_seq with
-            Some (name',args,hyps) when name = name' ->
-               if name <> name' then fail "add_goal" else
+   let add_goal r (_, name, goals) = (* XXX HACK: function needed only for file format versions 1.0.6 and below compatibility *)
+         match goals, r.io_seq with
+            [goals], Some (name',args,hyps) when name = name' ->
                let goals = List.map (Hashtbl.find r.io_terms) goals in
                let t = lookup ( Seq { seq_arg = args;
                                       seq_hyps = hyps;
                                       seq_goals = goals
                                     } ) in
                hash_add_new r.io_terms name t;
-              t
+               t
           | _ ->
                fail "add_goal"
-         end
 
    let rec level_exp_vars = function
       var::offset::vars ->
@@ -186,23 +194,23 @@ struct
          fail "level_exp_vars"
 
    let add_param r = function
-      (_, name, ["Number"; n]) ->
+      (_, name, [["Number"; n]]) ->
          hash_add_new r.io_params name (constr_param (Number (Lm_num.num_of_string n)))
-    | (_, name, ["String"; s]) ->
+    | (_, name, [["String"; s]]) ->
          hash_add_new r.io_params name (constr_param (String s))
-    | (_, name, ["Token"; s]) ->
+    | (_, name, [["Token"; s]]) ->
          hash_add_new r.io_params name (constr_param (Token s))
-    | (_, name, ["Var"; s]) ->
+    | (_, name, [["Var"; s]]) ->
          hash_add_new r.io_params name (constr_param (Var (Lm_symbol.add s)))
-    | (_, name, ["MNumber"; s]) ->
+    | (_, name, [["MNumber"; s]]) ->
          hash_add_new r.io_params name (constr_param (MNumber (Lm_symbol.add s)))
-    | (_, name, ["MString"; s]) ->
+    | (_, name, [["MString"; s]]) ->
          hash_add_new r.io_params name (constr_param (MString (Lm_symbol.add s)))
-    | (_, name, ["MToken"; s]) ->
+    | (_, name, [["MToken"; s]]) ->
          hash_add_new r.io_params name (constr_param (MToken (Lm_symbol.add s)))
-    | (_, name, ["MVar"; s]) (* XXX HACK: support file versions 1.0.5 and below *) ->
+    | (_, name, [["MVar"; s]]) (* XXX HACK: support file versions 1.0.5 and below *) ->
          hash_add_new r.io_params name (constr_param (Var (Lm_symbol.add s)))
-    | (_, name, "MLevel" :: n :: vars) ->
+    | (_, name, ["MLevel" :: n :: vars]) ->
          let l = make_level { le_const = int_of_string n; le_vars = level_exp_vars vars } in
          hash_add_new r.io_params name (constr_param (MLevel l))
     | _ ->
@@ -214,10 +222,10 @@ struct
          begin match long.[0] with
             'T'|'t' -> ignore (add_term r item)
           | 'G'|'g' -> ignore (add_goal r item)
+          | 'S'|'s' -> ignore (add_seq r item)
           | 'B'|'b' -> add_bterm r item
           | 'H'|'h' -> add_hyp r item
           | 'C'|'c' -> add_context r item
-          | 'S'|'s' -> add_seq r item
           | 'O'|'o' -> add_op r item
           | 'N'|'n' -> add_name r item
           | 'P'|'p' -> add_param r item
@@ -228,15 +236,15 @@ struct
    let rec add_items_debug r = function
       (long,short,rest) as item :: items ->
          add_items_debug r items;
-         eprintf "%s %s %s%t" long short (String.concat " " rest) eflush;
+         eprintf "%s %s %s%t" long short (String.concat "\\\\ " (List.map (String.concat " ") rest)) eflush;
          begin try
             match long.[0] with
                'T'|'t' -> ignore (add_term r item)
              | 'G'|'g' -> ignore (add_goal r item)
+             | 'S'|'s' -> ignore (add_seq r item)
              | 'B'|'b' -> add_bterm r item
              | 'H'|'h' -> add_hyp r item
              | 'C'|'c' -> add_context r item
-             | 'S'|'s' -> add_seq r item
              | 'O'|'o' -> add_op r item
              | 'N'|'n' -> add_name r item
              | 'P'|'p' -> add_param r item
@@ -259,6 +267,7 @@ struct
                match long.[0] with
                   'T'|'t' -> add_term r item
                 | 'G'|'g' -> add_goal r item
+                | 'S'|'s' -> add_seq r item
                 | _ -> fail ("get_term: " ^ long)
             )
        | [] -> fail "get_term1"
@@ -276,11 +285,11 @@ struct
             if String.length line = 0 || line.[0] = '#' then
                collect (succ lineno)
             else
-               let args = Lm_string_util.parse_args line in
+               let args = Lm_string_util.parse_args_list line in
                let _ =
                   match args with
-                     arg1 :: arg2 :: args ->
-                        add_line table (arg1, arg2, args)
+                     (arg1 :: arg2 :: args)::more_args ->
+                        add_line table (arg1, arg2, (args::more_args))
                    | _ ->
                         eprintf "Ascii_io: syntax error on line %d%t" lineno eflush
                in
@@ -345,7 +354,7 @@ struct
       out_bterms = HashBTerm.create init_size;
     }
 
-   let init_data inputs =
+   let init_data (inputs : io_item list ref) =
       let h_reverse = Hashtbl.create 19 in
       let h_rename = Hashtbl.create 19 in
       let rename name =
@@ -353,14 +362,26 @@ struct
             [] -> name
           | name' :: _ ->
                name'
-      in let rec clean_inputs = function
+      in let smap_rename = Lm_list_util.smap (Lm_list_util.smap rename) in
+      let rec clean_inputs = function
          [] -> []
        | ((comment,name,record) as item :: tail) as original ->
             let tail' = clean_inputs tail in
             let c = Char.uppercase comment.[0] in
-            let record' = Lm_list_util.smap rename record in
-            begin match Hashtbl.find_all h_reverse (c, record'), c with
-               [], _ | _, ('S'| 'G' ) ->
+            let record' = match c with
+               'T' | 'B' | 'O' | 'G' -> smap_rename record
+             | 'H' -> begin match record with 
+                  [[var;name]] -> let name' = rename name in if name == name' then record else [[var;name']]
+                | _ -> smap_rename record
+               end   
+             | 'C' | 'N' -> begin match record with
+                  [[_;"NIL"]] -> record
+                | [var::rest] -> let rest' = Lm_list_util.smap rename rest in if rest == rest' then record else [var::rest']
+                | _ -> record
+               end
+             | _ -> record
+            in begin match Hashtbl.find_all h_reverse (c, record'), c with
+               [], _ | _, ('S'| 'G' ) -> (* XXX HACK: S/G exception only needed for format version <= 1.0.6??? *)
                   begin match c with
                      'S'| 'G' -> ()
                    | _ -> Hashtbl.add h_reverse (c, record') name
@@ -456,24 +477,24 @@ struct
          let ind = lookup ( Seq { seq_arg = arg_ind;
                                   seq_hyps = List.map snd hyps;
                                   seq_goals = List.map snd goals } ) in
-         let i_data1 = List.map fst goals in
-         let i_data2 = arg_name :: List.map fst hyps in
+         let i_data3 = List.map fst goals in
+         let i_data2 = List.map fst hyps in
          try
             let name = HashTerm.find data.out_terms ind in
             if not (StringSet.mem data.new_names name) then begin
                (* This item existed in the old version of the file *)
                data.new_names <- StringSet.add data.new_names name;
                match Hashtbl.find_all data.old_items name with
-                  (_,_,io_data2)::(_,_,io_data1)::_
-                     when io_data1=i_data1 && io_data2=i_data2 ->
-                        data.io_names <- StringSet.add data.io_names name;
-                        data.out_items <- Old name :: Old name :: data.out_items
-                        (* We need two "Old name" entries becase sequent is printed on two lines *)
-                | (l2,_,io_data2)::(l1,_,io_data1)::_
+                  (l2,_,io_data2)::(l1,_,io_data1)::_     (* XXX HACK: version <= 1.0.6 *)
                      when (l1.[0]='G' || l1.[0]='g') && (l2.[0]='S' || l2.[0]='s') ->
                         if !debug_ascii_io then
-                           eprintf "ASCII IO: Duplicate sequent entry updated: %s%t" name eflush;
-                        data.out_items <- New (l1, name, i_data1) :: New (l2, name, i_data2) :: data.out_items
+                           eprintf "ASCII IO: old-style sequent entry converted: %s%t" name eflush;
+                        data.out_items <- New (l2, name, [[arg_name];i_data2; i_data3]) :: data.out_items
+                | (_,_,[[io_arg]; io_data2; io_data3]) :: _ when io_data2 = i_data2 && io_data3 = i_data3 ->
+                     data.io_names <- StringSet.add data.io_names name;
+                     data.out_items <- Old name :: data.out_items
+                | (l,_,([_;_] as io_data)) :: _ when (l.[0]='S') || (l.[0]='s') ->
+                     data.out_items <- New (l, name, io_data) :: data.out_items
                 | _ ->
                      fail ("out_term - sequent entry " ^ name ^ " was invalid")
             end;
@@ -482,10 +503,7 @@ struct
             let (hyps_lname, goals_lname, name) = ctrl.out_name_seq seq in
             let name = rename name data in
             HashTerm.add data.out_terms ind name;
-            data.out_items <-
-               New ("G" ^ goals_lname, name, i_data1) ::
-               New ("S" ^ hyps_lname, name, i_data2) ::
-               data.out_items;
+            data.out_items <- New ("S" ^ hyps_lname, name, [[arg_name]; i_data2; i_data3]) :: data.out_items;
             (name, ind)
       else
          let t' = dest_term t in
@@ -494,7 +512,7 @@ struct
          let ind = lookup ( Term { op_name = op;
                                    op_params = params;
                                    term_terms = List.map snd btrms } ) in
-         let i_data = oper_name :: List.map fst btrms in
+         let i_data = [oper_name :: List.map fst btrms] in
          try
             let name = HashTerm.find data.out_terms ind in
             check_old data name i_data;
@@ -512,8 +530,8 @@ struct
          let (t_name, t_ind) = out_term ctrl data t in
          let hyp, i_data = match h with
             TermType.HypBinding(v, _) ->
-               HypBinding (v,t_ind), [string_of_symbol v; t_name]
-          | _ -> Hypothesis t_ind, [t_name]
+               HypBinding (v,t_ind), [[string_of_symbol v; t_name]]
+          | _ -> Hypothesis t_ind, [[t_name]]
          in try
             let name = HashHyp.find data.out_hyps hyp in
             check_old data name i_data;
@@ -529,7 +547,7 @@ struct
     | TermType.Context (v,ts) as h -> begin
          let terms = List.map (out_term ctrl data) ts in
          let hyp = Context (v, List.map snd terms) in
-         let i_data = string_of_symbol v :: (List.map fst terms) in
+         let i_data = [string_of_symbol v :: (List.map fst terms)] in
          try
             let name = HashHyp.find data.out_hyps hyp in
             check_old data name i_data;
@@ -548,7 +566,7 @@ struct
       let (name_name, opname) = out_name ctrl data op'.TermType.op_name in
       let params = List.map (out_param ctrl data) op'.TermType.op_params in
       let op'' = (opname,List.map snd params) in
-      let i_data = name_name :: List.map fst params in
+      let i_data = [name_name :: List.map fst params] in
       try
          let name = Hashtbl.find data.out_ops op'' in
          check_old data name i_data;
@@ -565,7 +583,7 @@ struct
       let bt' = dest_bterm bt in
       let (term_name, term_ind) = out_term ctrl data bt'.TermType.bterm in
       let bt'' = { bvars = bt'.TermType.bvars; bterm = term_ind } in
-      let i_data = term_name :: List.map string_of_symbol bt'.TermType.bvars in
+      let i_data = [term_name :: List.map string_of_symbol bt'.TermType.bvars] in
       try
          let name = HashBTerm.find data.out_bterms bt'' in
          check_old data name i_data;
@@ -583,7 +601,7 @@ struct
       let (name', op') = dst_opname opname in
       let (inner_name, inner_op) = out_name ctrl data op' in
       let op = mk_opname name' inner_op in
-      let i_data = [name';inner_name] in
+      let i_data = [[name';inner_name]] in
       try
          let name = Hashtbl.find data.out_opnames op in
          check_old data name i_data;
@@ -603,7 +621,7 @@ struct
 
    and out_param ctrl data param =
       let param' = constr_param (dest_param param) in
-      let i_data =
+      let i_data = [
          match dest_param param with
             Number n -> ["Number"; Lm_num.string_of_num n]
           | String s -> ["String"; s]
@@ -616,7 +634,7 @@ struct
                let le' = dest_level le in
                "MLevel" :: (string_of_int le'.le_const) :: (map_level_vars le'.le_vars)
           | _ -> fail "out_param"
-      in try
+      ] in try
          let name = Hashtbl.find data.out_params param' in
          check_old data name i_data;
          name, param'
@@ -666,20 +684,15 @@ struct
    let simple_name_hyp _ = "","h"
    let simple_name_seq _ = "","","s"
 
-   let rec output_aux out = function
-      [] -> raise (Invalid_argument "Ascii_io.output_aux")
-    | [str] -> output_string out (Lm_string_util.quote str)
-    | str :: strs ->
-         output_string out (Lm_string_util.quote str);
-         output_char out ' ';
-         output_aux out strs
+   let output_aux strs =
+      String.concat " " (List.map Lm_string_util.quote strs)
 
    let simple_output_line out (str1, str2, strs) =
       output_string out (Lm_string_util.quote str1);
       output_char out '\t';
       output_string out (Lm_string_util.quote str2);
       output_char out '\t';
-      output_aux out strs;
+      output_string out (String.concat "\\\\ " (List.map output_aux strs));
       output_char out '\n'
 
    let make_simple_control out =

@@ -1,5 +1,5 @@
 (*
- * Magic numbers for interactive files.
+ * Version numbers and magic numbers for interactive files.
  *
  * ----------------------------------------------------------------
  *
@@ -26,9 +26,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
+
+val raw_versions : int list
+val term_versions : int list
+val ascii_versions : int list
 
 val int_term_sig_magic : int
 val int_raw_sig_magic  : int
