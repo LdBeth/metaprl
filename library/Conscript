@@ -1,6 +1,6 @@
 Import qw( env );
 
-OCamlSources $env
+OCamlSources $env ##
 	'lib_term.ml',
 	'utils.ml',
 	'lint32.ml',
