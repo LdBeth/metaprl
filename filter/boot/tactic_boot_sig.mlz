@@ -882,6 +882,8 @@ sig
     * is only one subgoal, and there is progress.
     *)
    val progressT : tactic -> tactic
+   val whileProgressT : tactic -> tactic
+   val untilFailT : tactic -> tactic
    val repeatT : tactic -> tactic
    val repeatForT : int -> tactic -> tactic
    val seqOnSameConclT : tactic list -> tactic

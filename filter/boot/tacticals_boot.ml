@@ -184,7 +184,7 @@ struct
     * Repeat, spreading out over subgoals.
     * Stop if there is no progress.
     *)
-   let repeatT tac =
+   let whileProgressT tac =
       let rec aux t p =
          let t' = Sequent.goal p in
             if alpha_equal t t' then
@@ -197,6 +197,19 @@ struct
             prefix_thenT tac (aux t) p
       in
          start
+
+   (*
+    * Repeat, spreading out over subgoals.
+    * Stop when the tactic fails.
+    *)
+   let untilFailT tac =
+      raise (RefineError ("untilFailT", StringError "untilFailT is not implemented"))
+
+   (*
+    * Repeat, spreading out over subgoals.
+    * Stop if there is no progress or the tactic fails.
+    *)
+   let repeatT tac = whileProgressT (tryT tac)
 
    (*
     * Repeat a tactic for a fixed number of times.
@@ -431,7 +444,7 @@ struct
    (*
     * Repeat only on main subgoals.
     *)
-   let repeatMT tac =
+   let whileProgressMT tac =
       let rec aux t p =
          let t' = Sequent.goal p in
             if alpha_equal t t' then
@@ -444,6 +457,8 @@ struct
             prefix_thenMT tac (aux t) p
       in
          start
+
+   let repeatMT tac =  whileProgressMT (tryT tac)
 
    (*
     * Repeat a fixed number of times on main subgoals.

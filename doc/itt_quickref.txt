@@ -90,8 +90,14 @@ Runs the argument tactic.  If the argument tactic succeeds and
 produces a single subgoal which is the same as the original goal, then
 progressT fails.
 
+* whileProgressT : tactic -> tactic
+Repeatedly execute the given tactic on all subgoals while there is a progress.
+
+* untilFailT : tactic -> tactic
+Repeatedly execute the given tactic on all subgoals until it fails.
+
 * repeatT : tactic -> tactic
-Repeatedly execute the given tactic on all subgoals until no more
+Repeatedly execute the given tactic on all subgoals until it fails or no more
 progress is made.
 
 * repeatForT : int -> tactic -> tactic
