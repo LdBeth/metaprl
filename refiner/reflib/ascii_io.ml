@@ -245,7 +245,8 @@ struct
     | [] -> ()
 
    let add_items r items =
-      if !debug_ascii_io then add_items_debug r items else add_items_aux r items
+      if !debug_ascii_io then add_items_debug r items
+      else try add_items_aux r items with Not_found -> fail "add_items"
 
    let get_term t =
       try begin match !t with
@@ -354,13 +355,13 @@ struct
          [] -> []
        | ((comment,name,record) as item :: tail) as original ->
             let tail' = clean_inputs tail in
+            let c = Char.uppercase comment.[0] in
             let record' = List_util.smap rename record in
-            let c = comment.[0] in
-            begin match Hashtbl.find_all h_reverse record', c with
-               [], _ | _, ('S'| 's' | 'G' | 'g') ->
+            begin match Hashtbl.find_all h_reverse (c, record'), c with
+               [], _ | _, ('S'| 'G' ) ->
                   begin match c with
-                     'S'| 's' | 'G' | 'g' -> ()
-                   | _ -> Hashtbl.add h_reverse record' name
+                     'S'| 'G' -> ()
+                   | _ -> Hashtbl.add h_reverse (c, record') name
                   end;
                   let item' =
                      if record==record' then item else (comment,name,record')
