@@ -28,7 +28,7 @@ function Abort()
     /* May need to close this window */
     var abortbutton = parent.GetObject(self, 'abortbutton');
     if(abortbutton.value == 'Abort')
-        location.href = '/inputs/empty.html';
+        location.reload();
     return false;
 }
 
@@ -41,5 +41,6 @@ function OnLoad()
     var outputframe = parent.GetObject(self, 'outputframe');
     outputframe.style.height = (window_height - 50) + 'px';
     outputframe.src = '/session/' + session['id'] + '/output';
+    document.onmouseup = parent.CancelMenu;
 }
 

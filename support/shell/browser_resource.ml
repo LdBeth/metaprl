@@ -402,11 +402,17 @@ let add_edit state info =
                        command_enabled = always_enabled
                      }
                in
-               let items = item :: menu.menu_items in
+               let divider =
+                  { command_label      = "-";
+                    command_value      = "";
+                    command_enabled    = always_enabled
+                  }
+               in
+               let items = divider :: item :: menu.menu_items in
                let items =
                   List.fold_left (fun items file ->
                         let item =
-                           { command_label = "Open " ^ Filename.basename file;
+                           { command_label = "Open " ^ file;
                              command_value =
                                 sprintf "Edit(%b, '/session/%d/edit/%s')"
                                    flag (int_of_pid "add_edit" id) (proxyedit_of_filename file);

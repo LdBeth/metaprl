@@ -43,4 +43,5 @@ function OnLoad()
     var editform = parent.GetObject(this, 'editform');
     if(editform)
         editform.style.height = window_height + 'px';
+    document.onmouseup = parent.CancelMenu;
 }

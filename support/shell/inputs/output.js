@@ -13,6 +13,7 @@ function Bottom()
 function OnStart()
 {
     setTimeout('Bottom()', 1000);
+    document.onmouseup = parent.parent.CancelMenu;
 }
 
 /*
@@ -24,4 +25,3 @@ function OnLoad()
     abortbutton.value = 'Close';
     not_finished = false;
 }
-

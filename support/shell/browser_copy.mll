@@ -389,31 +389,31 @@ let brbuf =
 let html_escape_char info col c =
    match c with
       '<' ->
-	info.info_add_string "&lt;";
-	succ col
+        info.info_add_string "<";
+        succ col
     | '>' ->
-	info.info_add_string "&gt;";
-	succ col
+        info.info_add_string ">";
+        succ col
     | '&' ->
-	info.info_add_string "&amp;";
-	succ col
+        info.info_add_string "&";
+        succ col
     | ' ' ->
-	info.info_add_string "&nbsp;";
-	succ col
+        info.info_add_string " ";
+        succ col
     | '\r'
     | '\n' ->
-	 info.info_add_string brbuf;
+         info.info_add_string brbuf;
          info.info_flush ();
          0
     | '\t' ->
          let col' = (col + 8) land (lnot 7) in
             for i = col to pred col' do
-               info.info_add_string "&nbsp;"
+               info.info_add_string " "
             done;
             col'
     | _ ->
-	info.info_add_char c;
-	succ col
+        info.info_add_char c;
+        succ col
 
 let print_translated_io_buffer_to_http out table name io =
    match in_channel_of_file (Setup.lib ()) name with
@@ -426,7 +426,10 @@ let print_translated_io_buffer_to_http out table name io =
             in
                try ignore (copy 0) with
                   End_of_file ->
-                     ()
+                     info.info_add_string "<p><b>Done</p>"
+                | exn ->
+                     info.info_add_string "<p><b>Aborted</p>";
+                     raise exn
          in
          let table = BrowserTable.add_fun table content_sym print_process in
              print_success_header out OkCode;

@@ -14,8 +14,15 @@ function menulabel_pred(name)
 
 function GetMenuTarget(window, event)
 {
-    var event = mojave.GetEvent(window, event);
-    return mojave.FindTarget(event, menulabel_pred);
+    var target;
+
+    if(mojave) {
+        var event = mojave.GetEvent(window, event);
+        target = mojave.FindTarget(event, menulabel_pred);
+    }
+    else
+        target = null;
+    return target;
 }
 
 /*
@@ -68,8 +75,10 @@ function MenuMouseDown(event)
  */
 function MenuMouseUp(event)
 {
-    event = mojave.GetEvent(window, event);
-    event.cancelBubble = true;
+    if(mojave) {
+        event = mojave.GetEvent(window, event);
+        event.cancelBubble = true;
+    }
 }
 
 /*
