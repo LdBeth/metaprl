@@ -15,6 +15,7 @@ INCLUDE = -I .\
 	-I $(ROOT)/theories/tptp\
 	-I $(ROOT)/ensemble\
 	-I $(ROOT)/lib\
+	-I $(ROOT)/library\
 	-I $(ENSROOT)/lib\
 	-I $(CAMLP4LIB)
 
@@ -55,13 +56,17 @@ NL2FILES =\
 	shell_nl\
 	test\
 	nl\
-	nl_top
+	nl_top\
+	library_eval\
+	library_test
 
 RUNFILES =\
 	nl_version\
 	shell_p4\
 	test\
-	nl
+	nl\
+	library_eval\
+	library_test
 
 TOPFILES =\
 	nl_version\
@@ -172,6 +177,7 @@ CMADEPS =\
 	$(CMADEPS_ens)\
 	$(ROOT)/lib/util.cma\
 	$(ROOT)/lib/refiner.cma\
+	$(ROOT)/lib/library.cma\
 	$(ROOT)/lib/prlc.cma\
 	$(CMALIBS_ens)\
 	$(ROOT)/theories/tactic/tactics.cma\
@@ -192,6 +198,7 @@ TCMADEPS =\
 	$(CMADEPS_ens)\
 	$(ROOT)/lib/util.cma\
 	$(ROOT)/lib/refiner.cma\
+	$(ROOT)/lib/library.cma\
 	$(ROOT)/lib/prlc.cma\
 	$(CMALIBS_ens)\
 	$(ROOT)/theories/tactic/tactics.cma\
