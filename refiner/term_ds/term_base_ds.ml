@@ -219,6 +219,23 @@ struct
 
    let core_term core = { free_vars = VarsDelayed; core = core }
 
+   let rec subst_remove v = function
+      [] -> []
+    | ((v',t)::tl) as sub ->
+         if (Lm_symbol.eq v v') then subst_remove v tl
+         else let rem = subst_remove v tl in
+            if rem == tl then sub else (v',t)::rem
+
+   let subst_filt =
+      let rec aux = function
+         (v1, { core = FOVar v2 } ) :: tl when Lm_symbol.eq v1 v2 ->
+            if tl = [] then []
+            else
+               aux (subst_remove v1 tl)
+       | sub -> sub
+      in
+         fun set sub -> aux (SymbolSet.fst_mem_filt set sub)
+
    let do_term_subst sub t =
       IFDEF VERBOSE_EXN THEN
          if !debug_subst then
@@ -234,7 +251,7 @@ struct
                debug_subst := true
             end
       ENDIF;
-      match SymbolSet.fst_mem_filt (free_vars_set t) sub with
+      match subst_filt (free_vars_set t) sub with
          [] -> t
        | sub' -> core_term (Subst (t,sub'))
 
@@ -281,13 +298,13 @@ struct
       let btrm = bt.bterm in
       match bt.bvars with
          [] ->
-            begin match SymbolSet.fst_mem_filt (free_vars_set btrm) sub with
+            begin match subst_filt (free_vars_set btrm) sub with
                [] -> bt
              | sub ->
                   { bvars = []; bterm = core_term (Subst (btrm,sub))}
             end
        | bvrs ->
-            begin match SymbolSet.fst_mem_filt (free_vars_set btrm)
+            begin match subst_filt (free_vars_set btrm)
                                                (filter_sub_vars bt.bvars sub) with
                [] -> bt
              | sub ->
@@ -311,13 +328,6 @@ struct
 
    let fail_core s =
       raise (Invalid_argument ("Term_ds." ^ s ^ ": get_core returned a Subst or a Hashed"))
-
-   let rec subst_remove v = function
-      [] -> []
-    | ((v',t)::tl) as sub ->
-         if (v = v') then subst_remove v tl
-         else let rem = subst_remove v tl in
-            if rem == tl then sub else (v',t)::rem
 
    let rec check_conts sub = function
       [] -> ()
