@@ -8,6 +8,7 @@ LCFILES :=\
 	truncate\
 	putenv\
 	execvp\
+	exit\
 	debug\
 	ml_debug
 
