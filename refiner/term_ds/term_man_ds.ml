@@ -555,10 +555,36 @@ struct
       FOVar _ -> vars
     | SOVar(v, conts, ts) -> SymbolSet.add (List.fold_left free_meta_variables (SymbolSet.add_list vars conts) ts) v
     | Term{term_terms = bts} -> List.fold_left free_meta_variables_bterm vars bts
-    | Sequent _ -> raise (Invalid_argument "Term_man_ds.free_meta_variables: sequents not supported")
+    | Sequent eseq ->
+         free_meta_variables (
+            free_meta_variables_hyps (
+               free_meta_variables_goals vars eseq.sequent_goals (SeqGoal.length eseq.sequent_goals)
+            ) eseq.sequent_hyps (SeqHyp.length eseq.sequent_hyps)
+         ) eseq.sequent_args
     | Hashed _ | Subst _ -> fail_core "free_meta_variables"
 
    and free_meta_variables_bterm vars bt = free_meta_variables vars bt.bterm
+
+   and free_meta_variables_goals vars goals i =
+      if i = 0 then
+         vars
+      else
+         let i = pred i in
+            free_meta_variables_goals (free_meta_variables vars (SeqGoal.get goals i)) goals i
+
+   and free_meta_variables_hyps vars hyps i =
+      if i = 0 then
+         vars
+      else
+         let i = pred i in
+         let vars =
+            match SeqHyp.get hyps i with
+               Hypothesis(_, t) ->
+                  free_meta_variables vars t
+             | Context(v, conts, ts) ->
+                  List.fold_left free_meta_variables (SymbolSet.add_list (SymbolSet.remove vars v) conts) ts
+         in
+            free_meta_variables_hyps vars hyps i
 
    let free_meta_variables = free_meta_variables SymbolSet.empty
 

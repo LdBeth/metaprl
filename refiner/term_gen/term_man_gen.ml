@@ -787,7 +787,9 @@ struct
       else
          List.fold_left free_meta_variables_bterm vars (dest_term t).term_terms
 
-   and free_meta_variables_bterm vars bt = free_meta_variables vars (dest_bterm bt).bterm
+   and free_meta_variables_bterm vars bt =
+      let bt = dest_bterm bt in
+         free_meta_variables (SymbolSet.subtract_list vars bt.bvars) bt.bterm
 
    let free_meta_variables = free_meta_variables SymbolSet.empty
 
