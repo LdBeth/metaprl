@@ -275,7 +275,7 @@ struct
             use_files state files
 
    let main state =
-      install_debug_printer Shell_state.print_short_term_fp;
+      install_debug_printer Shell_state.print_term_fp;
       Sys.catch_break true;
       Tactic_type.Tactic.main_loop ();
       main_loop_aux state

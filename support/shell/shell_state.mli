@@ -49,7 +49,7 @@ val fork : t -> t
  * toploop is not active.
  *)
 val term_printer : term -> unit  (* uses Format library *)
-val print_short_term_fp : out_channel -> term -> unit
+val print_term_fp : out_channel -> term -> unit
 val set_tactic : string -> MLast.expr -> unit
 val get_term : int -> term
 

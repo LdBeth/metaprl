@@ -85,10 +85,10 @@ open Refine_sig
 let _ =
    show_loading "Loading Refine%t"
 
-let debug_refiner =
+let debug_refine =
    create_debug (**)
       { debug_name = "refine";
-        debug_description = "Display refinement operations";
+        debug_description = "Display refiner and refinement operations";
         debug_value = false
       }
 
@@ -103,6 +103,13 @@ let debug_rewrites =
    create_debug (**)
       { debug_name = "rewrites";
         debug_description = "Display rewrite applications";
+        debug_value = false
+      }
+
+let debug_rules =
+   create_debug (**)
+      { debug_name = "rules";
+        debug_description = "Display rule applications";
         debug_value = false
       }
 
@@ -1240,7 +1247,7 @@ struct
     *)
    let create_rule build name addrs params mterm =
       IFDEF VERBOSE_EXN THEN
-         if !debug_refiner then
+         if !debug_refine then
             eprintf "Refiner.create_rule: %s%t" name eflush
       ENDIF;
       let subgoals, goal = unzip_mimplies mterm in
@@ -1249,6 +1256,15 @@ struct
       let opname = mk_opname name build.build_opname in
       let tac addrs params sent mseq =
          let vars = msequent_free_vars mseq in
+         IFDEF VERBOSE_EXN THEN
+            if !debug_rules then
+               eprintf "Applying rule %s to %a%t" (string_of_opname opname) print_term mseq.mseq_goal eflush;
+         ENDIF;
+         let subgoals = apply_rewrite rw (addrs, vars) mseq.mseq_goal params in
+         IFDEF VERBOSE_EXN THEN
+            if !debug_rules then
+               eprintf "Applied rule %s, got %a%t" (string_of_opname opname) (print_any_list print_term) subgoals eflush;
+         ENDIF;
          let subgoals = apply_rewrite rw (addrs, vars) mseq.mseq_goal params in
          let make_subgoal subgoal =
             { mseq_vars = FreeVars vars; mseq_goal = subgoal; mseq_hyps = mseq.mseq_hyps }
@@ -1525,11 +1541,11 @@ struct
          in
          let goal = combine (Array.create (Array.length addrs) 2) goal args in
          IFDEF VERBOSE_EXN THEN
-            if !debug_refiner then
+            if !debug_refine then
                eprintf "Refiner.compute_rule_ext: %s: %a + [%s] [%a] -> %a%t" name print_term goal (String.concat ";" (List.map string_of_symbol (Array.to_list addrs))) (print_any_list print_term) params print_term result eflush
          ENDIF;
          let rw = Rewrite.term_rewrite Strict addrs (goal :: params) [result] in
-         if !debug_refiner then eprintf "\nDone\n%t" eflush;
+         if !debug_refine then eprintf "\nDone\n%t" eflush;
          let compute_ext addrs params goal args =
             List.hd (apply_rewrite rw (addrs, free_vars_terms args) (combine addrs goal args) params)
          in
@@ -1556,7 +1572,7 @@ struct
 
    let prim_rule build name addrs params mterm args result =
       IFDEF VERBOSE_EXN THEN
-         if !debug_refiner then
+         if !debug_refine then
             eprintf "Refiner.prim_rule: %s%t" name eflush
       ENDIF;
       let subgoals, goal = unzip_mimplies mterm in
@@ -1584,7 +1600,7 @@ struct
 
    let delayed_rule build name addrs params mterm _ extf =
       IFDEF VERBOSE_EXN THEN
-         if !debug_refiner then
+         if !debug_refine then
             eprintf "Refiner.delayed_rule: %s%t" name eflush
       ENDIF;
       let subgoals, goal = unzip_mimplies mterm in
@@ -1614,7 +1630,7 @@ struct
     *)
    let create_ml_rule build name mlr =
       IFDEF VERBOSE_EXN THEN
-         if !debug_refiner then
+         if !debug_refine then
             eprintf "Refiner.add_ml_rule: %s%t" name eflush
       ENDIF;
       let opname = mk_opname name build.build_opname in
@@ -1676,7 +1692,7 @@ struct
     *)
    let create_rewrite build name redex contractum =
       IFDEF VERBOSE_EXN THEN
-         if !debug_refiner then
+         if !debug_refine then
             eprintf "Refiner.create_rewrite: %s%t" name eflush
       ENDIF;
       let rw = Rewrite.term_rewrite Strict empty_args_spec [redex] [contractum] in
@@ -1707,7 +1723,7 @@ struct
     *)
    let create_input_form build name strict redex contractum =
       IFDEF VERBOSE_EXN THEN
-         if !debug_refiner then
+         if !debug_refine then
             eprintf "Refiner.create_input_form: %s%t" name eflush
       ENDIF;
       let strictp = if strict then Strict else Relaxed in
@@ -1748,7 +1764,7 @@ struct
 
    let prim_rewrite build name redex contractum =
       IFDEF VERBOSE_EXN THEN
-         if !debug_refiner then
+         if !debug_refine then
             eprintf "Refiner.prim_rewrite: %s%t" name eflush
       ENDIF;
       justify_rewrite build name redex contractum (PPrim ())
@@ -1781,7 +1797,7 @@ struct
 
    let definitional_rewrite build name redex contractum =
       IFDEF VERBOSE_EXN THEN
-         if !debug_refiner then
+         if !debug_refine then
             eprintf "Refiner.definitional_rewrite: %s%t" name eflush
       ENDIF;
          check_def_redex name redex;
@@ -1802,7 +1818,7 @@ struct
 
    let delayed_rewrite build name redex contractum extf =
       IFDEF VERBOSE_EXN THEN
-         if !debug_refiner then
+         if !debug_refine then
             eprintf "Refiner.delayed_rewrite: %s%t" name eflush
       ENDIF;
       let check_ext = function
@@ -1828,7 +1844,7 @@ struct
     *)
    let create_ml_rewrite build name rw =
       IFDEF VERBOSE_EXN THEN
-         if !debug_refiner then
+         if !debug_refine then
             eprintf "Refiner.create_ml_rewrite: %s%t" name eflush
       ENDIF;
       let opname = mk_opname name build.build_opname in
@@ -1854,7 +1870,7 @@ struct
     *)
    let create_cond_rewrite build name params subgoals redex contractum =
       IFDEF VERBOSE_EXN THEN
-         if !debug_refiner then
+         if !debug_refine then
             eprintf "Refiner.create_cond_rewrite: %s%t" name eflush
       ENDIF;
       let rw = Rewrite.term_rewrite Strict empty_args_spec (redex::params) (contractum :: subgoals) in
@@ -1905,14 +1921,14 @@ struct
 
    let prim_cond_rewrite build name params subgoals redex contractum =
       IFDEF VERBOSE_EXN THEN
-         if !debug_refiner then
+         if !debug_refine then
             eprintf "Refiner.prim_cond_rewrite: %s%t" name eflush
       ENDIF;
       justify_cond_rewrite build name params subgoals redex contractum (PPrim ())
 
    let delayed_cond_rewrite build name params subgoals redex contractum extf =
       IFDEF VERBOSE_EXN THEN
-         if !debug_refiner then
+         if !debug_refine then
             eprintf "Refiner.add_delayed_cond_rewrite: %s%t" name eflush
       ENDIF;
       let check_ext = function
@@ -1940,7 +1956,7 @@ struct
     *)
    let create_ml_cond_rewrite build name rw =
       IFDEF VERBOSE_EXN THEN
-         if !debug_refiner then
+         if !debug_refine then
             eprintf "Refiner.add_ml_cond_rewrite: %s%t" name eflush
       ENDIF;
       let opname = mk_opname name build.build_opname in

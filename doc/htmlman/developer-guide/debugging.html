@@ -80,20 +80,23 @@ are active.</LI>
 
 <H3>Debug variables</H3>
 <!-- The variable list created using
-rgrep -l -R '*.ml' create_debug . | xargs grep -h -A 4 create_debug | tr '\n' % | sed -e 's/\([^-]\)%/\1/g;s/-+%/%/g' | tr % '\n'| gawk -F '"' '{print "<LI><TT>" $2 "</TT>: " $4 "\n" }'|sort -u
+grep -l -r --include='*.ml' create_debug . | xargs grep -h -A 4 create_debug | tr '\n' % | sed -e 's/\([^-]\)%/\1/g;s/-+%/%/g' | tr % '\n' | gawk -F '"' '{print "<LI><TT>" $2 "</TT>: " $4 "\n" }' | sort -u
 and some manual editing
 -->
 The following is the current list of debug variables defined in MetaPRL.
 <UL>
 <LI><TT>address</TT>: show term addressing operations
 <LI><TT>alpha_equal</TT>: display alpha equality operations
-<LI><TT>arith</TT>: display arith operations
 <LI><TT>ascii_io</TT>: report ASCII IO errors verbosely
 <LI><TT>auto</TT>: Display auto tactic operations
 <LI><TT>cache</TT>: Show TPTP cache operations
 <LI><TT>convert</TT>: show proof format conversions
 <LI><TT>conv</TT>: display conversion operation
+<LI><TT>core_reduce</TT>: display reductions during core conversion
+<LI><TT>core_type_infer</TT>: print debugging info during type inference
 <LI><TT>czf_set</TT>: display czf_set operations
+<LI><TT>debug_int_arith</TT>: Print out some debug info as tactics proceed
+<LI><TT>dform_depth</TT>: check zone depth to catch unballanced buffers
 <LI><TT>dform</TT>: show display form formatting
 <LI><TT>dtactic</TT>: display dT tactic operations
 <LI><TT>edit</TT>: show editing commands
@@ -103,22 +106,28 @@ The following is the current list of debug variables defined in MetaPRL.
 <LI><TT>filter_cache</TT>: display cache operations during compiling
 <LI><TT>filter_parse</TT>: display compiling operations
 <LI><TT>filter_path</TT>: display path expansions
+<LI><TT>filter_phobos</TT>: parse external sources
 <LI><TT>filter_prog</TT>: display operations that convert ML to terms
 <LI><TT>free_vars</TT>: Display free variables calculation
+<LI><TT>full_terms</TT>: Print terms fully in debug messages
 <LI><TT>grammar</TT>: display term parsing operations
 <LI><TT>http</TT>: HTTP server operations
 <LI><TT>inet</TT>: Display internet socket operations
 <LI><TT>jprover</TT>: Display Jprover operations
-<LI><TT>load</TT>: Print file and rule names as they are loaded and initialized
+<LI><TT>load</TT>: Print file names as they load
 <LI><TT>lock</TT>: show locking operations
 <LI><TT>match</TT>: print term on proof copying errors
 <LI><TT>memo</TT>: Display memo operations
 <LI><TT>message</TT>: Display Ensemble messages
+<LI><TT>m_reduce</TT>: display reductions during M conversion
 <LI><TT>ocaml</TT>: debug ocaml term parsing
 <LI><TT>opname</TT>: display opname construction
 <LI><TT>outboard</TT>: Ensemble outboard operations
 <LI><TT>package_info</TT>: display package operations
+<LI><TT>phobos</TT>: print debugging information for Phobos
+<LI><TT>phobos</TT>: print Phobos debugging information
 <LI><TT>pipe</TT>: Debug shared memory pipe operations
+<LI><TT>pos</TT>: print verbose position information for debugging
 <LI><TT>proof_normalize</TT>: show proof normalization
 <LI><TT>proof_pending</TT>: show proof Pending operations
 <LI><TT>proof</TT>: show proof operations
@@ -126,12 +135,13 @@ The following is the current list of debug variables defined in MetaPRL.
 <LI><TT>queue</TT>: Remote queue operations
 <LI><TT>queue</TT>: Show remote queue operations
 <LI><TT>reduce</TT>: display reductions
-<LI><TT>refine</TT>: Display refinement operations
+<LI><TT>refine</TT>: Display refiner and refinement operations
 <LI><TT>remote</TT>: Show remote process management
 <LI><TT>resource</TT>: display resource operations
 <LI><TT>rewrites</TT>: Display rewrite applications
 <LI><TT>rewrite</TT>: Term rewriting operations
 <LI><TT>rformat</TT>: display text formatting operations
+<LI><TT>rules</TT>: Display rule applications
 <LI><TT>schedule</TT>: Show thread scheduling
 <LI><TT>sentinal</TT>: Display sentinal operations
 <LI><TT>share</TT>: Display MP Ensemble Application memory sharing
@@ -140,6 +150,7 @@ The following is the current list of debug variables defined in MetaPRL.
 <LI><TT>spell</TT>: check spelling
 <LI><TT>strategy</TT>: Show tactic strategy
 <LI><TT>string</TT>: check string bounds
+<LI><TT>subgoals</TT>: Report subgoals observed with may be some additional info
 <LI><TT>subst_ds</TT>: display term_ds substitution operations
 <LI><TT>subst</TT>: Substition operations
 <LI><TT>subst</TT>: Substitution operations
@@ -150,6 +161,6 @@ The following is the current list of debug variables defined in MetaPRL.
 <LI><TT>term_table</TT>: Display Term_table (term hashtable) operations
 <LI><TT>tptp_prove</TT>: show TPTP proof steps
 <LI><TT>tptp</TT>: show TPTP tactic operations
-<LI><TT>unjustified</TT>: show how Unjustified nodes are created
+<LI><TT>trace_pos</TT>: print position trace for debugging
 </UL>
 

@@ -257,7 +257,7 @@ struct
             let _ = Tactic.main_loop () in
                ()
       in
-         install_debug_printer Shell_state.print_short_term_fp;
+         install_debug_printer Shell_state.print_term_fp;
          Printexc.catch init ()
 end
 

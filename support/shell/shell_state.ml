@@ -46,6 +46,13 @@ open Term_grammar
 
 open Shell_sig
 
+let debug_full_terms =
+   create_debug {
+      debug_name = "full_terms";
+      debug_description = "Print terms fully in debug messages";
+      debug_value = false;
+   }
+
 let debug_lock =
    create_debug (**)
       { debug_name = "lock";
@@ -275,35 +282,32 @@ let print_term state t =
       Rformat.print_to_channel Rformat.default_width buf stdout;
       flush stdout
 
-let print_short_term_fp out t =
-   synchronize_client (fun state ->
-         let db =
-            match state with
-               Some state ->
-                  state.state_df_base
-             | None ->
-                  Dform.null_base
-         in
-         let str = try
-            Rformat.line_format Rformat.default_width (fun bf -> Dform.format_term db bf t)
-         with exn ->
-            "unprintable term (printer raised " ^ (Printexc.to_string exn) ^ ")"
-         in
-            output_string out str;
-            flush out)
+let output_short db out t =
+    let str = try
+       Rformat.line_format Rformat.default_width (fun bf -> Dform.format_term db bf t)
+    with exn ->
+       "unprintable term (printer raised " ^ (Printexc.to_string exn) ^ ")"
+    in
+       output_string out str
+
+let output_long db out t = 
+   let buf = Rformat.new_buffer () in
+      Dform.format_term db buf t;
+      Rformat.print_to_channel Rformat.default_width buf out
+
+let get_dbase = function
+   Some state -> state.state_df_base
+ | None -> Dform.null_base
+   
+let print_term_fp out t =
+   let printer = if !debug_full_terms then output_long else output_short in
+      synchronize_client (fun state -> printer (get_dbase state) out t; flush out)
 
 let term_printer t =
    synchronize_client (fun state ->
-         let db =
-            match state with
-               Some state ->
-                  state.state_df_base
-             | None ->
-                  Dform.null_base
-         in
-            Format.open_box 0;
-            Format.print_string (Dform.string_of_term db t);
-            Format.close_box())
+      Format.open_box 0;
+      Format.print_string (Dform.string_of_term (get_dbase state) t);
+      Format.close_box())
 
 (************************************************************************
  * TOPLOOP FUNCTIONS                                                    *
