@@ -23,12 +23,6 @@ let dest_link ((in_channel, out_channel), socket) =
   match socket with Fd fd -> ((in_channel, out_channel), (Fd fd))
   | Null _ -> ((in_channel, out_channel), (Null ()))
 
-let local_host =
-  let {Unix.h_name = name; Unix.h_aliases = a;
-	Unix.h_addrtype = atype; Unix.h_addr_list = l} =
-    Unix.gethostbyname (Unix.gethostname ())
-  in name
-
 let iconnect_term port host =
   mk_term (mk_op nuprl5_opname
 	     [(make_param (Token "!connect")); (make_param (Number (Lm_num.num_of_int port)));
