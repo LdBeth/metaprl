@@ -200,8 +200,15 @@ let rec compute_aux name top_includes = function
  | [ DatInclude name' ] ->
       if not (Hashtbl.mem theory_includes name') then compute_data name';
       let includes = Hashtbl.find theory_includes name' in
-      let includes = StringSet.add (StringSet.union top_includes includes) name' in
-      (theory_bookmark name'), Table.empty, includes
+      let top_includes' = StringSet.add top_includes name' in
+      if StringSet.intersectp includes top_includes then
+         (* Can not take theory as a whole, have to process its data *)
+         (* XXX: Could be made somewhat more efficient *)
+         let incr, includes = collect_include Table.empty name' top_includes' in
+         empty_bookmark, incr, includes
+      else
+         (* Take theory as a whole *)
+         (theory_bookmark name'), Table.empty, (StringSet.union top_includes' includes)
  | DatData data :: tail ->
       let bookmark, incr , includes = compute_aux name top_includes tail in
       bookmark, List.fold_right add_data data incr, includes
