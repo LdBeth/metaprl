@@ -31,9 +31,6 @@ MLLIB_FILES =\
 	table_util\
 	splay_table\
 	fun_splay_set\
-	red_black_set\
-	red_black_test\
-	red_black_table\
 	hash_set\
 	small_set\
 	debug_string_sets\

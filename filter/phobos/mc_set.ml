@@ -259,7 +259,7 @@ struct
             match left, right with
                Red _, _
              | _, Red _ ->
-                  raise (Failure "Red_black_set.check_red")
+                  raise (Failure "Lm_set.check_red")
 
              | _ ->
                   check_red left;
@@ -292,7 +292,7 @@ struct
          check_black_aux i j right
     | Leaf ->
          if j <> i then
-            raise (Failure "Red_black_set.check_black")
+            raise (Failure "Lm_set.check_black")
 
    let check_black tree =
       check_black_aux (black_depth 0 tree) 0 tree
@@ -303,13 +303,13 @@ struct
    let rec check_sort_lt key = function
       Black (key', left, right, _) ->
          if Ord.compare key' key >= 0 then
-            raise (Failure "Red_black_set.check_sort");
+            raise (Failure "Lm_set.check_sort");
          check_sort_lt key' left;
          check_sort_gt_lt key' key right
 
     | Red (key', left, right, _) ->
          if Ord.compare key' key >= 0 then
-            raise (Failure "Red_black_set.check_sort");
+            raise (Failure "Lm_set.check_sort");
          check_sort_lt key' left;
          check_sort_gt_lt key' key right
 
@@ -319,13 +319,13 @@ struct
    and check_sort_gt key = function
       Black (key', left, right, _) ->
          if Ord.compare key' key <= 0 then
-            raise (Failure "Red_black_set.check_sort");
+            raise (Failure "Lm_set.check_sort");
          check_sort_gt_lt key key' left;
          check_sort_gt key right
 
     | Red (key', left, right, _) ->
          if Ord.compare key' key <= 0 then
-            raise (Failure "Red_black_set.check_sort");
+            raise (Failure "Lm_set.check_sort");
          check_sort_gt_lt key key' left;
          check_sort_gt key right
 
@@ -335,13 +335,13 @@ struct
    and check_sort_gt_lt key key' = function
       Black (key'', left, right, _) ->
          if Ord.compare key'' key <= 0 || Ord.compare key'' key' >= 0 then
-            raise (Failure "Red_black_set.check_sort");
+            raise (Failure "Lm_set.check_sort");
          check_sort_gt_lt key key'' left;
          check_sort_gt_lt key'' key' right
 
     | Red (key'', left, right, _) ->
          if Ord.compare key'' key <= 0 || Ord.compare key'' key' >= 0 then
-            raise (Failure "Red_black_set.check_sort");
+            raise (Failure "Lm_set.check_sort");
          check_sort_gt_lt key key'' left;
          check_sort_gt_lt key'' key' right
 
@@ -353,7 +353,7 @@ struct
          check_sort_lt key left;
          check_sort_gt key right
     | Red _ ->
-         raise (Failure "Red_black_set.check_sort: root is red")
+         raise (Failure "Lm_set.check_sort: root is red")
     | Leaf ->
          ()
 
@@ -596,7 +596,7 @@ struct
 
     | (Red _) as tree ->
          (* Red nodes will not come up *)
-         raise (Invalid_argument "Red_black_set.insert")
+         raise (Invalid_argument "Lm_set.insert")
 
 (*
    let insert key tree =

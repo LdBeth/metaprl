@@ -52,7 +52,7 @@ let debug_resource =
         debug_value = false
       }
 
-module UseTable = Red_black_table
+module Table = StringMTable
 
 (************************************************************************
  * TYPES                                                                *
@@ -72,7 +72,7 @@ type bookmark = string * string
 
 type 'input increment = {
    inc_bookmark: bookmark;
-   inc_increment: (string, 'input) UseTable.table;
+   inc_increment: 'input Table.t
 }
 
 type ('input, 'output) processor = {
@@ -126,19 +126,8 @@ type ('annotation, 'input) rw_annotation_processor =
  * IMPLEMENTATION                                                       *
  ************************************************************************)
 
-module TableBase = struct
-   type elt = string
-   type data = Obj.t
-
-   let compare = Pervasives.compare
-   let append = (@)
-   let print s _ = printf "Resource: %s" s
-end
-
-module Table = UseTable.MakeTable(TableBase)
-
 (* Theory name  ->  theory resources (local + includes names) *)
-let (global_data : (Table.elt * Table.data) global_data) = Hashtbl.create 19
+let (global_data : (Table.key * Obj.t) global_data) = Hashtbl.create 19
 
 let local_data = ref []
 

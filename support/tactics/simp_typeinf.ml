@@ -79,25 +79,8 @@ let _ =
  * Some generic renaming of type variables.
  *)
 type ty_var = var
-
-(*
- * String table.
- *)
-module TyVarBase =
-struct
-   type elt = ty_var
-   type data = term
-
-   let print _ _ =
-      ()
-
-   let compare = Lm_symbol.compare
-
-   let append = (@)
-end
-
-module TyVarSet = SymbolSet
-module TyEnv = Red_black_table.MakeTable (TyVarBase)
+type ty_var_set = SymbolSet.t
+type tenv = term SymbolTable.t
 
 (*
  * A type inference is performed in a type context,
@@ -118,7 +101,7 @@ module TyEnv = Red_black_table.MakeTable (TyVarBase)
  * 2) Updated eqs,
  * 3) a type for the term (that can contain new type variables)
  *)
-type simp_typeinf_func = TyVarSet.t -> TyEnv.t -> eqnlist -> term -> term * eqnlist * term
+type simp_typeinf_func = ty_var_set -> tenv -> eqnlist -> term -> term * eqnlist * term
 
 (*
  * Modular components also get a recursive instance of
@@ -165,7 +148,7 @@ let simp_infer_type p t =
    let consts = free_vars_set t in
    let inf = get_resource_arg p get_simp_typeinf_resource in
       try
-         let t, eqs, ty = inf consts TyEnv.empty eqnlist_empty t in
+         let t, eqs, ty = inf consts SymbolTable.empty eqnlist_empty t in
             typeinf_final consts eqs t ty
       with
          RefineError _ ->

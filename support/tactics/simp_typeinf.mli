@@ -45,10 +45,8 @@ open Tactic_type.Tacticals
  * Some generic renaming of type variables.
  *)
 type ty_var = var
-module TyVarSet : Lm_set.LmSet with type elt = ty_var
-module TyEnv : Set_sig.TableSig
-               with type elt = ty_var
-               with type data = term
+type ty_var_set = SymbolSet.t
+type tenv = term SymbolTable.t
 
 (*
  * A type inference is performed in a type context,
@@ -69,7 +67,7 @@ module TyEnv : Set_sig.TableSig
  * 2) Updated eqs,
  * 3) a type for the term (that can contain new type variables)
  *)
-type simp_typeinf_func = TyVarSet.t -> TyEnv.t -> eqnlist -> term -> term * eqnlist * term
+type simp_typeinf_func = ty_var_set -> tenv -> eqnlist -> term -> term * eqnlist * term
 
 (*
  * Modular components also get a recursive instance of
