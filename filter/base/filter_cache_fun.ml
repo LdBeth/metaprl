@@ -1653,14 +1653,15 @@ struct
     *)
    let save cache barg suffix =
       let { base = { lib = base }; name = name; self = self; info = info; grammar = grammar } = cache in
-      let grammar = Filter_grammar.prepare_to_marshal grammar name in
       let info =
          if Filter_grammar.is_modified grammar then
+            let grammar = Filter_grammar.prepare_to_marshal grammar name in
             let pos = { Lexing.dummy_pos with Lexing.pos_fname = Base.file_name base self } in
             let loc = pos, pos in
                Filter_summary.add_command info (PRLGrammar grammar, loc)
          else
-            info
+            let grammar = Filter_grammar.prepare_to_marshal grammar name in
+               info
       in
          if !debug_filter_cache then
             begin
