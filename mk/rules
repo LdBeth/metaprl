@@ -65,6 +65,7 @@ endif
 NATIVE_CFLAGS = -DNATIVE_CODE
 BYTE_CFLAGS =
 RM = rm -f
+TOUCH = touch
 INSTALL = /bin/cp -pf
 CP = /bin/cp -pf
 LN = ln -sf
@@ -275,6 +276,9 @@ $(REG_CMXFILES): %.cmx: %.ml $(ROOT)/mk/config
 %.mli: %.mlz
 	$(RM) $@
 	$(LN) $*.mlz $@
+
+%.cph: %.pho
+	$(RM) syntax.cph
 
 %-byte.o: %.c $(ROOT)/mk/config
 	$(MPTIME) $(CC) $(BYTE_CFLAGS) $(CFLAGS) -c $*.c -o $@

@@ -26,6 +26,14 @@ let add_structure name =
 
 let comment_depth = ref 0
 
+(* For nested terms *)
+
+let term_depth = ref 0
+
+(* Source quotations *)
+
+let contains_source_quot = ref false
+
 (*
  * These are the implicit names.
  *)
@@ -52,6 +60,7 @@ let white = [' ' '\010' '\013' '\009' '\012']
 let modname = ['A'-'Z' '\192'-'\214' '\216'-'\222' ]
               (['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255'
                 '\'' '0'-'9' ]) *
+let source_quote = "<:ext<"
 let quotestart = '<' ':' (['a'-'z'])+ '<'
 
 rule main = parse
@@ -64,6 +73,8 @@ rule main = parse
         main lexbuf }
   | "\""
       { string lexbuf; main lexbuf }
+  | source_quote
+      { source_quot lexbuf; contains_source_quot := true; main lexbuf }
   | "(*" | "<<" | quotestart
       { comment_depth := 1; comment lexbuf; main lexbuf }
   | "'" [^ '\\'] "'"
@@ -99,6 +110,15 @@ and comment = parse
   | _
       { comment lexbuf }
 
+(* There are no nested source quotations *)
+(* Inside source quotations we do not obey strings or escaped characters,
+   since they may not exist according to the source syntax rules *)
+and source_quot = parse
+  | ">>" | eof
+      { () }
+  | _
+      { source_quot lexbuf }
+
 and string = parse
     '"'
       { () }
@@ -112,6 +132,7 @@ and string = parse
       { string lexbuf }
 
 {
+
 (* Print the dependencies *)
 
 let load_path = ref [""]
@@ -121,6 +142,8 @@ let prl_flag = ref false
 let prl_init_flag = ref false
 
 let modules_flag = ref false
+
+let syntaxdef_prereq = "syntax.cph"
 
 let rec find_file name = function
    [] ->
@@ -190,6 +213,7 @@ let print_dependencies target_file deps =
 
 let file_dependencies source_file =
   try
+    contains_source_quot := false;
     free_structure_names := StringSet.empty;
     let ic =
        if source_file != "-" then
@@ -218,6 +242,12 @@ let file_dependencies source_file =
         else ([], []) in
       let (cmo_deps, cmx_deps) =
         StringSet.fold find_dependency_cmo_cmx !free_structure_names init_deps in
+      let (cmo_deps, cmx_deps) =
+        if !contains_source_quot then
+          syntaxdef_prereq :: cmo_deps, syntaxdef_prereq :: cmx_deps
+        else
+          cmo_deps, cmx_deps
+      in
       print_dependencies (basename ^ ".cmo") cmo_deps;
       print_dependencies (basename ^ ".ppo") cmo_deps;
       print_dependencies (basename ^ ".cmx") cmx_deps
