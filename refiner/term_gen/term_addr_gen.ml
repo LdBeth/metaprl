@@ -198,11 +198,11 @@ struct
    let fail_addr (addr, term) =
       REF_RAISE(RefineError ("apply_*_fun_*", AddressError (addr, term)))
 
-   DEFINE MAKE_REPLACE_BTERM(bvars, vars_bvars, replace_term, replace_bterm) =
+   DEFINE MAKE_REPLACE_BTERM(bvars, dest_bterm, vars_bvars, replace_term, replace_bterm) =
       fun FAIL f addr i bvars bterms ->
          match i, bterms with
             (0, bterm :: bterms) ->
-               let { bvars = vars; bterm = term } = dest_bterm bterm in
+               let { bvars = vars; bterm = term } = dest_bterm in
                let term, arg = replace_term FAIL f addr vars_bvars term in
                   mk_bterm vars term :: bterms, arg
           | (_, bterm :: bterms) ->
@@ -275,7 +275,7 @@ struct
       APPLY_FUN_AUX(apply_fun_arg_at_addr_aux, NOTHING, replace_bterm, hyp_replace_term)
 
    and replace_bterm =
-      MAKE_REPLACE_BTERM(NOTHING, NOTHING, apply_fun_arg_at_addr_aux, replace_bterm)
+      MAKE_REPLACE_BTERM(NOTHING, dest_bterm bterm, NOTHING, apply_fun_arg_at_addr_aux, replace_bterm)
 
    and hyp_replace_term =
       MAKE_HYP_REPLACE_TERM(NOTHING, NOTHING, apply_fun_arg_at_addr_aux, hyp_replace_term)
@@ -297,7 +297,7 @@ struct
       APPLY_FUN_AUX(apply_var_fun_at_addr_aux, bvars, var_replace_bterm, hyp_var_replace_term)
 
    and var_replace_bterm =
-      MAKE_REPLACE_BTERM(bvars, SymbolSet.add_list bvars vars, apply_var_fun_at_addr_aux, var_replace_bterm)
+      MAKE_REPLACE_BTERM(bvars, TermSubst.dest_bterm_and_rename bterm bvars, SymbolSet.add_list bvars vars, apply_var_fun_at_addr_aux, var_replace_bterm)
 
    and hyp_var_replace_term =
       MAKE_HYP_REPLACE_TERM(bvars, SymbolSet.add_list bvars _vars, apply_var_fun_at_addr_aux, hyp_var_replace_term)

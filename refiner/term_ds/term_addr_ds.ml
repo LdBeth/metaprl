@@ -288,12 +288,11 @@ struct
           | _, [] ->
                raise (Invalid_argument "Term_addr_ds.path_replace_terms: internal error")
 
-   DEFINE MAKE_PATH_REPLACE_BTERM(bvars, vars_bvars, path_replace_bterm) =
+   DEFINE MAKE_PATH_REPLACE_BTERM(bvars, zero_case, path_replace_bterm) =
       fun f i bvars bterms ->
          match i, bterms with
-            (0, { bvars = vars; bterm = term } :: bterms) ->
-               let term, arg = f vars_bvars term in
-                  mk_bterm vars term :: bterms, arg
+            (0, bt :: bterms) ->
+               zero_case
           | (_, bterm :: bterms) ->
                let bterms, arg = path_replace_bterm f (pred i) bvars bterms in
                   bterm :: bterms, arg
@@ -346,7 +345,9 @@ struct
           | _ -> DO_FAIL
 
    let rec path_replace_terms = MAKE_PATH_REPLACE_TERMS(NOTHING, path_replace_terms)
-   let rec path_replace_bterm = MAKE_PATH_REPLACE_BTERM(NOTHING, NOTHING, path_replace_bterm)
+   let rec path_replace_bterm = MAKE_PATH_REPLACE_BTERM(NOTHING,
+      (let t, arg = f bt.bterm in mk_bterm bt.bvars t :: bterms, arg),
+      path_replace_bterm)
 
    IFDEF VERBOSE_EXN THEN
       let rec apply_fun_arg_at_addr_aux =
@@ -367,7 +368,11 @@ struct
       fst (apply_fun_arg_at_addr (add_unit_arg f) addr term)
 
    let rec path_var_replace_terms = MAKE_PATH_REPLACE_TERMS(bvars, path_var_replace_terms)
-   let rec path_var_replace_bterm = MAKE_PATH_REPLACE_BTERM(bvars, SymbolSet.add_list bvars vars, path_var_replace_bterm)
+   let rec path_var_replace_bterm = MAKE_PATH_REPLACE_BTERM(bvars,
+      (let bt = TermSubst.dest_bterm_and_rename bt bvars in
+       let t, arg = f (SymbolSet.add_list bvars bt.bvars) bt.bterm in
+          mk_bterm bt.bvars t :: bterms, arg),
+      path_var_replace_bterm)
 
    DEFINE HYP_BVARS = (collect_hyp_bvars (pred i) s.sequent_hyps bvars)
    IFDEF VERBOSE_EXN THEN
