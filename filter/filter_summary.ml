@@ -311,6 +311,24 @@ let find_sub_module summary path =
  ************************************************************************)
 
 (*
+ * List all the parents.
+ *)
+let parents { info_list = summary } =
+   let rec collect = function
+      (item, _) :: t ->
+         begin
+            match item with
+               Parent { parent_name = name } ->
+                  name :: collect t
+             | _ ->
+                  collect t
+         end
+    | [] ->
+         []
+   in
+      collect summary
+
+(*
  * Find an axiom from the summary.
  *)
 let find_axiom { info_list = summary } name =
@@ -1687,6 +1705,9 @@ and check_implementation { info_list = implem } { info_list = interf } =
 
 (*
  * $Log$
+ * Revision 1.11  1998/04/15 22:28:59  jyh
+ * Converting packages from summaries.
+ *
  * Revision 1.10  1998/04/09 18:25:52  jyh
  * Working compiler once again.
  *

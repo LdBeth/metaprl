@@ -152,6 +152,7 @@ sig
 
    (* Access *)
    val info : info -> str_info
+   val name : info -> string
    val filename : t -> info -> string
    val sub_info : info -> module_path -> sig_info
 
@@ -173,6 +174,7 @@ sig
    val find_dform : info -> term -> (str_elem * loc) option
    val find_prec : info -> string -> bool
    val resources : info -> (module_path * str_ctyp resource_info) list
+   val parents : info -> module_path list
 
    (*
     * Update.
@@ -191,6 +193,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.7  1998/04/15 22:29:02  jyh
+ * Converting packages from summaries.
+ *
  * Revision 1.6  1998/04/15 12:40:03  jyh
  * Updating editor packages to Filter_summarys.
  *

@@ -3,7 +3,8 @@ INCLUDE := -I . -I ../../theories/tactic -I $(NLLIB) -I /usr/local/lib/camlp4
 
 # Common files
 MLZFILES :=\
-	edit_type
+	edit_type\
+	package_type
 
 # Library files
 NLFILES :=\
@@ -11,10 +12,9 @@ NLFILES :=\
 	proof_step\
 	proof\
 	proof_edit\
+	package_type\
 	package_info\
-	package_util\
 	package_graph\
-	package_io\
 	display_package\
 	display_package_graph\
 	display_theory_item\

@@ -84,6 +84,7 @@ struct
         mutable summaries : Base.info list;
         mutable info : str_info;
         self : Base.info;
+        name : string;
 
         (*
          * Keep a link to the summary base.
@@ -332,13 +333,14 @@ struct
    (*
     * Inherited access.
     *)
+   let parents              = Filter_summary.parents cache.info
    let find_axiom cache     = Filter_summary.find_axiom cache.info
    let find_rewrite cache   = Filter_summary.find_rewrite cache.info
    let find_mlterm cache    = Filter_summary.find_mlterm cache.info
    let find_condition cache = Filter_summary.find_condition cache.info
    let find_dform cache     = Filter_summary.find_dform cache.info
    let find_prec cache name = List.mem name cache.precs
-   let resources cache = cache.resources
+   let resources cache      = cache.resources
 
    (************************************************************************
     * UPDATE                                                               *
@@ -501,6 +503,7 @@ struct
         resources = [];
         info = new_module_info ();
         self = Base.create_info base self_select "." name;
+        name = name;
         base = base
       }
    
@@ -521,6 +524,7 @@ struct
            resources = [];
            info = info';
            self = info;
+           name = name;
            base = base
          }
       in
@@ -537,6 +541,9 @@ struct
     *)
    let filename base { self = info } =
       Base.file_name base info
+   
+   let name { name = name } =
+      name
 
    (*
     * Check the implementation with its interface.
@@ -566,6 +573,9 @@ end
    
 (*
  * $Log$
+ * Revision 1.6  1998/04/15 22:28:57  jyh
+ * Converting packages from summaries.
+ *
  * Revision 1.5  1998/04/15 12:39:52  jyh
  * Updating editor packages to Filter_summarys.
  *

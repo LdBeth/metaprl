@@ -234,6 +234,9 @@ val get_resources : ('proof, 'ctyp, 'expr, 'item) module_info ->
 val get_infixes : ('proof, 'ctyp, 'expr, 'item) module_info ->
    string list
 
+val parents : ('proof, 'ctyp, 'expr, 'item) module_info ->
+   module_path list
+
 (* Update *)
 val add_command : ('proof, 'ctyp, 'expr, 'item) module_info ->
    ('proof, 'ctyp, 'expr, 'item) summary_item_loc ->
@@ -269,6 +272,9 @@ val eprint_info : ('proof, 'ctyp, 'expr, 'item) module_info -> unit
 
 (*
  * $Log$
+ * Revision 1.8  1998/04/15 22:29:01  jyh
+ * Converting packages from summaries.
+ *
  * Revision 1.7  1998/02/23 14:46:20  jyh
  * First implementation of binary file compilation.
  *

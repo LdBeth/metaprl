@@ -7,9 +7,11 @@
  * and may contain interactivly generated proofs.
  *)
 
-open Filter_summary
+open Refine
+open Dform_print
 
-include Proof
+open Filter_summary
+open Filter_cache
 
 (*
  * Save status of a module.
@@ -44,31 +46,42 @@ sig
     * Filesystem interface.
     * Loaded packages are initially read-only.
     *)
-   val load : t -> module_path -> info
-   val save : info -> unit
+   val create_package : t -> string -> package
+   val load : t -> string -> MLast.str_item
+   val get : t -> string -> package
+   val save : t -> package -> unit
 
    (*
     * Access.
     *)
-   val refiner : t -> refiner
-   val dforms  : t -> dform_mode_base
-   val name    : t -> string
-   val file    : t -> string option
+   val refiner  : package -> Refiner.refiner
+   val dforms   : package -> dform_mode_base
+   val name     : package -> string
+   val filename : t -> package -> string
+   
+   (*
+    * Navigation.
+    *)
+   val parents : t -> package -> package list
+   val children : t -> package -> package list
    
    (*
     * Access to the status.
     *)
-   val status  : info -> status
-   val set_status : info -> status -> unit
+   val status  : package -> status
+   val set_status : package -> status -> unit
    
    (*
     * Collection of objects in the module.
     *)
-   val info : info -> (proof, MLast.ctyp, MLast.expr, MLast.str_item) summary_item list
+   val info : package -> (proof_type, MLast.ctyp, MLast.expr, MLast.str_item) summary_item_loc list
 end
    
 (*
  * $Log$
+ * Revision 1.2  1998/04/15 22:28:50  jyh
+ * Converting packages from summaries.
+ *
  * Revision 1.1  1998/04/15 12:39:38  jyh
  * Updating editor packages to Filter_summarys.
  *
