@@ -35,6 +35,32 @@ Failure: undeclared name: q
 
 in mp.
 
+5) Loading two theories that both include the same theory produces unexpected results.
+For example,
+
+        MetaPRL 0.5.2:
+                build [Sun May 16 16:50:01 EDT 1999]
+                on tulare.cs.cornell.edu
+
+        Camlp4 Parsing version 2.02
+
+# #use "x.ml";;
+# load "itt_dfun";;
+- : unit = ()
+# cd "itt_dfun";;
+- : string = "/itt_dfun"
+# <<'a->'b>>;;
+- : Refiner.Refiner.Term.term = a но b
+# load "itt_list";;
+- : unit = ()
+# cd "/itt_list";;
+- : string = "/itt_list"
+# <<'a->'b>>;;
+# While expanding quotation "term":
+Failure: undeclared name: fun
+
+(Running this example in mpopt produces similar result).
+
 REFINER
 
 1) There is no clear semantics for the hidden hypothesis. As a result,
