@@ -66,8 +66,9 @@ function MenuSetPosition(pos)
 {
     if(menufloat) {
         var y = pos.y;
-        if(menuscroll && pos.y + max_menu_height > window_height)
-            y -= max_menu_height + 10;
+        var menu_height = menufloat.offsetHeight;
+        if(pos.y + menu_height > window_height)
+            y -= menu_height + 10;
         else
             y += menu_slop_y;
         menufloat.style.left = pos.x + 'px';

@@ -297,7 +297,7 @@ TD.menulabelhover {
 }
 
 DIV.menurule {
-    background: white;
+    background: #ECF2FF;
     margin: 0px;
     padding: 0px;
     height: 0px;
@@ -306,7 +306,8 @@ DIV.menurule {
     border-top-color: #6666aa;
     border-bottom-color: white;
     border-left-color: white;
-    border-right-color: white
+    border-right-color: white;
+    overflow: hidden
 }
 
 DIV.menuitem {

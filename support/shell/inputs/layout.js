@@ -4,7 +4,12 @@
  */
 function ButtonFocusTimeout()
 {
-    parent.ruleframe.document.commandform.command.focus();
+    var ruleframe = parent.ruleframe;
+    if(ruleframe) {
+        var commandform = ruleframe.document.commandform;
+        if(commandform)
+            commandform.command.focus();
+    }
 }
 
 function ButtonFocus()
