@@ -1107,6 +1107,7 @@ declare math_leftarrow
 declare math_Leftarrow
 declare math_leftrightarrow
 declare math_Leftrightarrow
+declare math_longrightarrow
 declare math_longleftrightarrow
 
 declare math_le
@@ -1221,6 +1222,12 @@ dform math_Leftrightarrow_df1 : mode[tex] :: math_Leftrightarrow =
 
 dform math_Leftrightarrow_df2 : except_mode[tex] :: math_Leftrightarrow =
    Nuprl_font!Leftrightarrow
+
+dform math_longrightarrow_df1 : mode[tex] :: math_longrightarrow =
+   izone `"\\longrightarrow " ezone
+
+dform math_longrightarrow_df2 : except_mode[tex] :: math_longrightarrow =
+   Nuprl_font!longrightarrow
 
 dform math_longleftrightarrow_df1 : mode[tex] :: math_longleftrightarrow =
    izone `"\\longleftrightarrow " ezone

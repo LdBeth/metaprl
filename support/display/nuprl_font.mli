@@ -68,6 +68,7 @@ declare sub[name:s]
 declare sup{'t}
 declare sup[name:s]
 declare small[name:s]
+declare small{'t}
 declare esquash{'t}
 
 (*

@@ -259,6 +259,7 @@ declare math_leftarrow
 declare math_Leftarrow
 declare math_leftrightarrow
 declare math_Leftrightarrow
+declare math_longrightarrow
 declare math_longleftrightarrow
 
 declare math_le
