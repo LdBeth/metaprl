@@ -26,8 +26,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 open Rformat
@@ -43,58 +43,29 @@ let backtrace =
       Not_found ->
          false
 
-module TacticExn =
-struct
-   (*
-    * Convert an exception to a string.
-    *)
-   let rec format_exn db buf exn =
-      let format = function
-         ExtRefineError (name, proof, ref_error) ->
-            format_szone buf;
-            format_pushm buf 4;
-            format_string buf "ProofError:";
-            format_hspace buf;
-            Refine_exn.format_refine_error db buf name ref_error;
-            format_newline buf;
-            format_extract db buf proof;
-            format_popm buf;
-            format_ezone buf
-
-       | ProofRefineError (name, proof, ref_error) ->
-            format_szone buf;
-            format_pushm buf 4;
-            format_string buf "ProofError:";
-            format_hspace buf;
-            Refine_exn.format_refine_error db buf name ref_error;
-            format_newline buf;
-            format_proof db buf proof;
-            format_popm buf;
-            format_ezone buf
-       | exn ->
-            Refine_exn.format_exn db buf exn
-      in
-         format exn
-
-   (*
-    * Print an exception if it occurs, then reraise it.
-    *)
-   let print_exn db out exn =
-      let buf = new_buffer () in
-         format_exn db buf exn;
-         format_newline buf;
-         print_to_channel default_width buf stderr;
-         flush stderr;
-         raise exn
-
-   let print db f x =
-      if backtrace then
-         f x
-      else
-         try f x with
-            exn ->
-               print_exn db stderr exn
-end
+let format_exn db buf = function
+   ExtRefineError (name, proof, ref_error) ->
+      format_szone buf;
+      format_pushm buf 4;
+      format_string buf "ProofError:";
+      format_hspace buf;
+      Refine_exn.format_refine_error db buf name ref_error;
+      format_newline buf;
+      format_extract db buf proof;
+      format_popm buf;
+      format_ezone buf
+ | ProofRefineError (name, proof, ref_error) ->
+      format_szone buf;
+      format_pushm buf 4;
+      format_string buf "ProofError:";
+      format_hspace buf;
+      Refine_exn.format_refine_error db buf name ref_error;
+      format_newline buf;
+      format_proof db buf proof;
+      format_popm buf;
+      format_ezone buf
+ | exn ->
+         Refine_exn.format_exn db buf exn
 
 (*
  * -*-

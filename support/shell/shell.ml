@@ -166,7 +166,7 @@ let default_mode_base =
  * Display possible exceptions.
  *)
 let print_exn_db db f x =
-   try TacticExn.print db f x with
+   try Filter_exn.print db f x with
       RefineError _ ->
          raise (RefineError ("Shell", ToploopIgnoreError))
 
@@ -268,7 +268,7 @@ struct
             Mutex.unlock global_lock;
             let buf = Rformat.new_buffer () in
             let db = get_db info in
-               TacticExn.format_exn db buf exn;
+               Filter_exn.format_exn db buf exn;
                Rformat.print_to_channel info.width buf stderr;
                flush stderr;
                raise exn

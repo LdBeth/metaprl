@@ -38,7 +38,6 @@ module Tacticals = Tacticals_boot.Tacticals
 module Rewrite = Rewrite_boot.Rewrite
 module Conversionals = Conversionals_boot.Conversionals
 module Proof = Proof_boot.Proof
-module TacticExn = Exn_boot.TacticExn
 
 (*
  * -*-

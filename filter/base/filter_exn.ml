@@ -89,7 +89,6 @@ let rec format_exn db buf = function
       format_string buf s
  | BadCommand s ->
       format_string buf "Bad command:";
-
       format_string buf s
  | EmptyModulePath s ->
       format_string buf "Empty module path:";
@@ -152,7 +151,7 @@ let rec format_exn db buf = function
       format_ezone buf;
       format_popm buf
  | exn ->
-      Refine_exn.format_exn db buf exn
+      Exn_boot.format_exn db buf exn
 
 (*
  * Print an exception if it occurs, then reraise it.

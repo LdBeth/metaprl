@@ -79,9 +79,6 @@ module Proof
   with type attribute = TacticType.attribute
   with type arglist = TacticType.arglist
 
-module TacticExn
-: TacticExnSig
-
 (*
  * -*-
  * Local Variables:

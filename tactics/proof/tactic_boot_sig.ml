@@ -1194,18 +1194,6 @@ sig
 end
 
 (*
- * Print errors.
- *)
-module type TacticExnSig =
-sig
-
-   val format_exn : dform_base -> buffer -> exn -> unit
-
-   val print : dform_base -> ('a -> 'b) -> 'a -> 'b
-   val print_exn : dform_base -> out_channel -> exn -> 'a
-end
-
-(*
  * Proof conversion.
  *)
 module type ConvertProofSig =
