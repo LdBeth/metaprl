@@ -99,11 +99,6 @@ struct
    let get_hyp_number arg t =
       TermMan.get_hyp_number (goal arg) t
 
-   let avoid_vars arg =
-      let seq = msequent arg in
-      let goal, _ = dest_msequent seq in
-         SymbolSet.add_list (msequent_free_vars seq) (TermMan.declared_vars goal)
-
    let explode_sequent arg =
       TermMan.explode_sequent (goal arg)
 

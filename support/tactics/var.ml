@@ -104,10 +104,6 @@ let maybe_new_vars vars vars' =
    in
       aux vars' [] vars
 
-let maybe_new_var_arg p v =
-   let vars = Sequent.avoid_vars p in
-      maybe_new_var_set v vars
-
 let bv = Lm_symbol.add "vv"
 
 let var_subst_to_bind t1 t2 =

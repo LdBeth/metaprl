@@ -38,7 +38,6 @@ val new_var           : var -> var list -> var
 val maybe_new_var     : var -> var list -> var
 val maybe_new_var_set : var -> SymbolSet.t -> var
 val maybe_new_vars    : var list -> var list -> var list
-val maybe_new_var_arg : tactic_arg -> var -> var
 
 (* var_subst_to_bind 'A[t] t = bind{v.'A['v]} *)
 val var_subst_to_bind : term -> term -> term

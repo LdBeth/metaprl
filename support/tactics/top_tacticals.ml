@@ -531,30 +531,30 @@ let thinMatchT thin_many assum =
 
 let nameHypT i v =
    funT (fun p ->
-   let v = Var.maybe_new_var_arg p (Lm_symbol.add v) in
+   let v = Lm_symbol.add v in
    let i = Sequent.get_pos_hyp_num p i - 1 in
-   let goal = Sequent.goal p in
-   let eseq = explode_sequent goal in
-   let eseq =
+   let eseq = Sequent.explode_sequent p in
       match SeqHyp.get eseq.sequent_hyps i with
          Hypothesis (v',hyp) ->
-            let vt = mk_var_term v in
-            let s1 t = subst1 t v' vt in
-            let map i' hyp' =
-               if i'<i then hyp'
-               else if i=i' then Hypothesis(v,hyp)
-               else begin match hyp' with
-                  Hypothesis (vv,hyp') -> Hypothesis (vv, subst1 hyp' v' vt)
-                | Context (vv, conts, ts) -> Context (vv, conts, List.map s1 ts)
-               end
-            in
-               { eseq with sequent_hyps = SeqHyp.mapi map eseq.sequent_hyps;
-                           sequent_concl = s1 eseq.sequent_concl }
-       | _ -> raise(RefineError("nameHypT",StringError "is a context"))
-   in
-   let goal = mk_sequent_term eseq in
-   let a = Sequent.num_assums p + 1 in
-      cutT goal thenLT [removeHiddenLabelT; nthAssumT a])
+            if v' = v then
+                idT
+            else
+               let vt = mk_var_term v in
+               let s1 t = subst1 t v' vt in
+               let map i' hyp' =
+                  if i'<i then hyp'
+                  else if i=i' then Hypothesis(v,hyp)
+                  else begin match hyp' with
+                     Hypothesis (vv,hyp') -> Hypothesis (vv, subst1 hyp' v' vt)
+                   | Context (vv, conts, ts) -> Context (vv, conts, List.map s1 ts)
+                  end
+               in
+               let eseq = { eseq with sequent_hyps = SeqHyp.mapi map eseq.sequent_hyps;
+                                      sequent_concl = subst1 eseq.sequent_concl v' vt } in
+               let goal = mk_sequent_term eseq in
+               let a = Sequent.num_assums p + 1 in
+                  tryT (cutT goal thenLT [removeHiddenLabelT; nthAssumT a])
+       | _ -> raise(RefineError("nameHypT",StringError "is a context")))
 
 let rec nameHypsT is vs =
    match is, vs with

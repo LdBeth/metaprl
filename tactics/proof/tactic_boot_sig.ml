@@ -744,12 +744,6 @@ sig
    val explode_sequent : tactic_arg -> TermType.esequent
 
    (*
-    * Variables to avoid clashing with
-    * This function is informal and does not have a clear semantics
-    *)
-   val avoid_vars : tactic_arg -> SymbolSet.t
-
-   (*
     * Argument functions.
     *)
    val get_term_arg       : tactic_arg -> string -> term
