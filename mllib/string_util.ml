@@ -32,13 +32,8 @@ let strchr s c =
  *)
 let for_all f s =
    let len = String.length s in
-   let rec check i =
-      if i = len then
-         true
-      else if f s.[i] then
-         check (i + 1)
-      else
-         false
+   let rec check i = 
+      (i = len) or (f s.[i] & check (i + 1))
    in
       check 0
 
@@ -48,14 +43,7 @@ let for_all f s =
 let mem c s =
    let len = String.length s in
    let rec loop i =
-      if i = len then
-         false
-      else
-         let c' = s.[i] in
-            if c' = c then
-               true
-            else
-               loop (i + 1)
+      (i < len) & (c = s.[i] or loop (i + 1))
    in
       loop 0
 
@@ -77,7 +65,6 @@ let index_set s set =
       loop 0
 
 let rindex_set s set =
-   let len = String.length s in
    let rec loop i =
       if i < 0 then
          raise Not_found
@@ -131,18 +118,18 @@ let split_set c s =
 (*
  * Concatenate strings.
  *)
-let concat s l =
-   let rec cat = function
-      [h] -> h
-    | h::t ->
-         h ^ s ^ (cat t)
-    | [] ->
-         ""
-   in
-      cat l
+let rec concat s = function
+   [h] -> h
+ | h::t ->
+      h ^ s ^ (concat s t)
+ | [] ->
+      ""
 
 (*
  * $Log$
+ * Revision 1.6  1998/06/14 22:58:52  nogin
+ * Make it faster
+ *
  * Revision 1.5  1998/06/01 13:54:42  jyh
  * Proving twice one is two.
  *
