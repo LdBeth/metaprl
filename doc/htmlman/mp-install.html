@@ -11,31 +11,36 @@
 
 <H2>Downloading MetaPRL</H2>
 
-<P>MetaPRL can be downloaded from <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/">ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/</A>.
-You will need five packages:</P>
+<P>In order to compile and run MetaPRL you are going to need the following packages:</P>
 
 <OL>
   <LI>Objective Caml: our version contains a small
-  native code profiler patch.
+  native code profiler patch and a patch to enable OCaml native-code compiler to compile huge source files 
+  on 32-bit machines.
   <LI>CamlP4: our version contains a small patch to compile the
   CamlP4 distribution in native code, native code profiler patch
   and a patch to install interface files needed by MetaPRL to evaluate programs in the toploop
-  <LI>Ensemble: you need Ensemble only if you want to use the distributed
-  prover.
-  <LI>HTMLDOC: you will need Htmldoc if you want to convert MetaPRL documentation into Postscript or PDF format. Our version contains a small patch to fix a problem with handling of <TT>&lt;PRE&gt;</TT> tags.
-  <LI>MetaPRL
+  <LI>Ensemble: you need Ensemble only if you want to use the distributed prover.
+  <LI>HTMLDOC: you will need Htmldoc if you want to convert MetaPRL documentation into Postscript or PDF format.
+  <LI>MetaPRL sources.
 </OL>
 
-<P>All source modules are available as source, and RedHat 5.x
+<P>OCaml, Camlp4 and Htmldoc are available as source, and RedHat 5.x
 RPM packages files for Linux x86. You can get the listing of available RPMs and download them from <A HREF="http://www.cs.cornell.edu/nogin/RPM/meta-prl/ByName.html">http://www.cs.cornell.edu/nogin/RPM/meta-prl/ByName.html</A>
-or download them directly from <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/RPM/">ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/RPM/</a>.</P>
+or download them directly from <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/RPM/">ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/RPM/</a>.
+If you are going to build OCaml and/or Camlp4 yourself, you can get our patches at <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/patches/">ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/patches/</A></P>
+
+<P>You can download Ensemble from <A HREF="ftp://ftp.cs.cornell.edu/pub/ensemble/">ftp://ftp.cs.cornell.edu/pub/ensemble/</A>.</P>
+
+<P>You should be able to download MetaPRL sources tarball from <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/">ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/</A>,
+but if you plan to participate in MetaPRL development, you should consider using <A HREF="#cvs">the CVS access</A> to MetaPRL sources.</P>
 
 <P>There is also a Win32 distribution
-that we'll be placing online soon (if you don't see it contact
+that we have not placed online yet (if you want it, contact
 <A HREF="mailto:jyh@cs.cornell.edu">Jason Hickey</A>). You will
-need the Cygnus Systems GNU-Win32 distribution.</P> If you are going to build OCaml and/or Camlp4 yourself, you can get our patches at <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/patches/">ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/patches/</A>
+need the Cygnus Systems GNU-Win32 distribution.</P>
 
-<H3>CVS sources</H3>
+<H3><A NAME="cvs">CVS Access to MetaPRL Sources</A></H3>
 
 <p> You can <A TARGET="_top" HREF="http://ensemble01.cs.cornell.edu:12000/cvsweb/meta-prl/">browse the MetaPRL CVS repository</a>.
 
@@ -61,8 +66,8 @@ so you only have to run the login command once.
   <PRE>% cvs -d :pserver:anoncvs@ensemble01.cs.cornell.edu:/cvsroot checkout MetaPRL</PRE>
 </BLOCKQUOTE>
 
-You can find more information on CVS at 
-<A HREF="http://www.cyclic.com/cvs/info.html">Cyclic Software's pages</A>
+<P>You can find more information on CVS from <A HREF="http://cvsbook.red-bean.com/">The CVS Book</A> and at the
+<A HREF="http://www.cyclic.com/cvs/info.html">Cyclic Software's pages</A></P>
 
 <H2>Installation and configuration</H2>
 
@@ -99,7 +104,7 @@ will be created when you run <TT>make</TT> for the first time).
 </P>
 
 <P> If you want to use Htmldoc, download it from
-<A HREF="http://www.easysw.com/~mike/htmldoc/">http://www.easysw.com/~mike/htmldoc/</A></P>
+<A HREF="http://www.easysw.com/htmldoc/">http://www.easysw.com/htmldoc/</A></P>
 
 <P>To install MetaPRL, unpack the distribution into some directory
 <TT>&lt;meta-prl&gt;</TT> and build the distribution with these steps:</P>
