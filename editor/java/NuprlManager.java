@@ -115,6 +115,9 @@ class NuprlManager
 
     void start()
     {
+        if(NuprlDebug.debug_manager)
+            System.err.println("NuprlManager.start: begin");
+
         // Start the communication channel
         bus = new NuprlBus();
         bus.Manage(new NuprlClientManager());
@@ -130,6 +133,10 @@ class NuprlManager
             if(auth.isHostComplete()) {
                 try {
                     state = STATE_COMMAND;
+
+                    if(NuprlDebug.debug_manager)
+                        System.err.println("NuprlManager.start: initializing NuprlClient");
+
                     client = new NuprlClient(bus, auth, new NuprlCommandManager());
                 }
                 catch(NuprlException e) {
@@ -140,6 +147,9 @@ class NuprlManager
             else
                 state = STATE_LOGIN;
         }
+
+        if(NuprlDebug.debug_manager)
+            System.err.println("NuprlManager.start: end");
     }
 
     /**
@@ -155,6 +165,11 @@ class NuprlManager
 
         JDesktopPane desktop = context.getDesktop();
         Dimension size = desktop.getSize();
+        if (bus == null) {
+            if(NuprlDebug.debug_manager)
+               System.err.println("NuprlManager.autoLayout: bus is null");
+            start();
+        }
         switch(state) {
         case STATE_LOGIN:
             autoLayoutLogin(size);
@@ -490,22 +505,31 @@ class NuprlManager
     }
 
     /**
-     * Place the command window in its normal size.
+     * Makes sure command is non-null
      */
-    protected void placeCommand(Dimension size)
+    private void ensureCommandExists()
     {
         // Place it if it does not already exist
         if(command == null || command.isDead()) {
+            System.err.println("New command window");
             try {
                 command = new NuprlCommand(bus, DEFAULT_COMMAND_PORT);
             }
             catch(NuprlException e) {
-                System.err.println("NuprlManager.placeCommand: " + e.stringOfException());
+                System.err.println("NuprlManager.ensureCommandExists: " + e.stringOfException());
                 System.exit(1);
             }
             command.setClient(new NuprlClientManager());
             context.getDesktop().add(command);
         }
+    }
+
+    /**
+     * Place the command window in its normal size.
+     */
+    protected void placeCommand(Dimension size)
+    {
+        ensureCommandExists();
 
         // Small window
         command.setLocation(MARGIN_WIDTH, size.height - COMMAND_HEIGHT - MARGIN_WIDTH);
@@ -517,21 +541,9 @@ class NuprlManager
      */
     protected void expandCommand(Dimension size)
     {
-        // Place it if it does not already exist
-        if(command == null || command.isDead()) {
-            System.err.println("New command window");
-            try {
-                command = new NuprlCommand(bus, DEFAULT_COMMAND_PORT);
-            }
-            catch(NuprlException e) {
-                System.err.println("NuprlManager.expandCommand: " + e.stringOfException());
-                System.exit(1);
-            }
-            command.setClient(new NuprlClientManager());
-            context.getDesktop().add(command);
-        }
+        ensureCommandExists();
 
-        // Small window
+        // Bigger window
         command.setLocation(MARGIN_WIDTH, MARGIN_WIDTH);
         command.setSize(size.width - 2 * MARGIN_WIDTH, size.height - 2 * MARGIN_WIDTH);
     }
@@ -546,11 +558,12 @@ class NuprlManager
     class NuprlLoginTarget
     implements Target
     {
-        public void performCommand(String command, Object obj)
+        public void performCommand(String cmd, Object obj)
         {
             if(client != null)
                 client.Close();
             try {
+                command.setVisible(true);
                 client = new NuprlClient(bus, auth, new NuprlCommandManager());
             }
             catch(NuprlException e) {
@@ -577,7 +590,7 @@ class NuprlManager
         {
             return NuprlConstants.CONTROL_NAME;
         }
-        
+
         /**
          * The default port.
          */
@@ -798,7 +811,7 @@ class NuprlManager
          */
         public void wakeup(NuprlBusEndpoint endpt)
         {
-            if(true || NuprlDebug.debug_manager)
+            if(NuprlDebug.debug_manager)
                 System.err.println("NuprlManager.NuprlCommandEvent.run: begin");
 
             synchronized (bus) {

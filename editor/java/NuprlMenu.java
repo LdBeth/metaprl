@@ -31,6 +31,9 @@ implements NuprlFrame
 
         // Watch for window closings
         addInternalFrameListener(new NuprlMenuListener());
+
+        pack();
+        setVisible(true);
     }
 
     /**

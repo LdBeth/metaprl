@@ -92,7 +92,7 @@ $(PACKAGE)/$(MAIN).java:
 	mkdir -p `dirname $(PACKAGE)`
 	ln -s `pwd` $(PACKAGE)
 
-$(MAIN).jar: $(CFILES) $(MAIN).man $(PACKAGE)/$(MAIN).java
+$(MAIN).jar: $(PACKAGE)/$(MAIN).java $(CFILES) $(MAIN).man
 	jar cmf $(PACKAGE)/$(MAIN).man $(PACKAGE)/$(MAIN).jar $(PACKAGE)/*.class
 
 #

@@ -23,7 +23,7 @@ implements NuprlFrame
     {
         // Some initial setup
         super("ML command window", true, false, true, true);
-        
+
         // Create the text pane and configure it.
         textPane = new NuprlText(bus, NuprlConstants.COMMAND_NAME, port, true, this);
 
@@ -35,6 +35,7 @@ implements NuprlFrame
 
         // Now add the window
         getContentPane().add(textPane);
+        pack();
 
         // Watch for window closings
         addInternalFrameListener(new NuprlCommandListener());

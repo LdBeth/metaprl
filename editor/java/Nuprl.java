@@ -147,7 +147,7 @@ implements WindowListener, ComponentListener, NuprlContext
      */
     public void windowClosing(WindowEvent event)
     {
-        System.exit(0);
+        stop();
     }
 
     /**
@@ -266,11 +266,11 @@ implements WindowListener, ComponentListener, NuprlContext
         public QuitAction() {
             super("Quit");
         }
-          
+
         public void actionPerformed(ActionEvent e) {
             stop();
         }
-    }    
+    }
 
     /*
      * The edit menu allows undo/redo and copy/paste.
@@ -445,7 +445,7 @@ implements WindowListener, ComponentListener, NuprlContext
      */
     public String[][] getParameterInfo()
     {
-        return info;		
+        return info;
     }
 
     /**
@@ -496,11 +496,12 @@ implements WindowListener, ComponentListener, NuprlContext
             started = true;
         }
     }
-	
+
     /**
      * Applet is hidden.
      */
     public void stop()
     {
+        System.exit(0);
     }
 }

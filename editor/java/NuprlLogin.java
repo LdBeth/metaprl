@@ -12,7 +12,7 @@ import javax.swing.text.*;
 
 class NuprlLogin
 extends NuprlInternalFrame
-implements ActionListener 
+implements ActionListener
 {
     /*
      * Four fields for loggin in.
@@ -20,7 +20,7 @@ implements ActionListener
     Document hostname;
     Document username;
     Document password;
-    
+
     /*
      * Store the results in the authorization.
      */
@@ -31,7 +31,7 @@ implements ActionListener
      */
     protected Target login_target;
     protected String login_command;
-    
+
     /**
      * Handle button click.
      */
@@ -105,7 +105,7 @@ implements ActionListener
         userBox.add(userLabel);
         userBox.add(userField);
         component.add(userBox);
-        
+
         JLabel passLabel = new JLabel("Password");
         JPasswordField passField = new JPasswordField(auth.password);
         passLabel.setPreferredSize(labelSize);
@@ -122,5 +122,6 @@ implements ActionListener
         component.add(connectButton);
 
         pack();
+        setVisible(true);
     }
 }

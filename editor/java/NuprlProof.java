@@ -42,6 +42,11 @@ implements NuprlFrame
 
         // Watch for window closings
         addInternalFrameListener(new NuprlProofListener());
+
+        pack();
+        setVisible(true);
+        goal_rule_subgoals.setVisible(true);
+        rule_subgoals.setVisible(true);
     }
 
     /**

@@ -12,14 +12,14 @@ import javax.swing.text.*;
 
 class NuprlHost
 extends NuprlInternalFrame
-implements ActionListener 
+implements ActionListener
 {
     /*
      * Four fields for loggin in.
      */
     Document hostname;
     Document portname;
-    
+
     /*
      * Store the results in the authorization.
      */
@@ -30,7 +30,7 @@ implements ActionListener
      */
     protected Target login_target;
     protected String login_command;
-    
+
     /**
      * Handle button click.
      */
@@ -109,12 +109,13 @@ implements ActionListener
         portBox.add(portLabel);
         portBox.add(portField);
         component.add(portBox);
-        
+
         // Connect button
         JButton connectButton = new JButton("Connect");
         connectButton.addActionListener(this);
         component.add(connectButton);
 
         pack();
+        setVisible(true);
     }
 }
