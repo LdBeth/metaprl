@@ -418,8 +418,7 @@ doc <:doc<
 let identity x = x
 
 let extract_data tbl =
-   let rw e =
-      let t = env_term e in
+   let rw t =
       let conv =
          try
             (* Find and apply the right tactic *)
@@ -434,7 +433,7 @@ let extract_data tbl =
             eprintf "Conversionals: applying %a%t" debug_print t eflush;
          conv
    in
-      funC rw
+      termC rw
 
 let process_reduce_resource_rw_annotation = redex_and_conv_of_rw_annotation "reduce"
 
