@@ -84,7 +84,7 @@ sig
    (*
     * Consistency in the stack.
     *)
-   val check_arity : string -> int -> rstack -> bool
+   val check_arity : string -> int -> rstack -> unit
    val rstack_check_arity : string -> int -> rstack list -> unit
 
    (*

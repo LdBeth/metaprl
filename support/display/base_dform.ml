@@ -360,9 +360,9 @@ ml_dform sequent_prl_df : mode["prl"] :: "sequent"{'ext; 'seq} format_term buf =
             match SeqHyp.get hyps i with
                Context (v, values) ->
                   (* This is a context hypothesis *)
-                  format_string buf "<";
+                  format_string buf "⟨"; (* note: this is U27E8, not "<" *)
                   format_context format_term buf v values;
-                  format_string buf ">";
+                  format_string buf "⟩"; (* note: this is U27E9, not ">" *)
              | HypBinding (v, a) ->
                   format_szone buf;
                   format_pushm buf 0;

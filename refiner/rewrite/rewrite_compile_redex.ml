@@ -164,7 +164,10 @@ struct
                (* This is a second order variable, all subterms are vars *
                 * and we do not have a pattern yet                       *)
                let so_mem = rstack_so_mem v stack in
-               if so_mem then rstack_check_arity v (List.length subterms) stack;
+               if so_mem then 
+                  rstack_check_arity v (List.length subterms) stack
+               else
+                  if rstack_mem v stack then REF_RAISE(RefineError ("compile_so_redex_term", RewriteBoundSOVar v));
                let stack = if so_mem then rstack_upgrade v stack else
                   if subterms = [] then stack @ [FOVarPattern v] else
                      stack @ [SOVarPattern (v, List.length subterms)] in

@@ -139,32 +139,22 @@ struct
     * Check the arity of a variable.
     *)
    let check_arity v arity = function
-      FOVarPattern v' ->
-         if v' = v then
-            if arity = 0 then
-               false
-            else
-               REF_RAISE(RefineError ("Rewrite_util.check_arity", RewriteSOVarArity v))
-         else
-            true
-    | SOVarPattern (v', i)
-    | SOVarInstance (v', i) ->
-         if v' = v then
-            if i = arity then
-               false
-            else
-               REF_RAISE(RefineError ("Rewrite_util.check_arity", RewriteSOVarArity v))
-         else
-            true
+      FOVarPattern _ ->
+         if arity <> 0 then
+            REF_RAISE(RefineError ("Rewrite_util.check_arity", RewriteSOVarArity v))
+    | SOVarPattern  (_, i)
+    | SOVarInstance (_, i) ->
+         if arity <> i then
+            REF_RAISE(RefineError ("Rewrite_util.check_arity", RewriteSOVarArity v))
     | _ ->
-         true
-
+         REF_RAISE(RefineError ("Rewrite_util.check_arity", RewriteSOVarArity v))
+         
    let rec rstack_check_arity v arity = function
       [] ->
          raise (Invalid_argument "Rewrite_util.rstack_check_arity")
-    | h::t ->
-         if check_arity v arity h then
-            rstack_check_arity v arity t
+    | ((FOVarPattern v' | SOVarPattern (v', _) | SOVarInstance (v', _) | FOVar v' | CVar v' | PVar (v', _)) as h) :: t ->
+         if v' = v then check_arity v arity h else rstack_check_arity v arity t
+
    (*
     * Membership functions.
     *)
