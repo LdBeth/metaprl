@@ -1,0 +1,12 @@
+REFSIG_FILES :=\
+	term_sig\
+	term_op_sig\
+	term_man_sig\
+	term_addr_sig\
+	term_subst_sig\
+	term_shape_sig\
+	term_eval_sig\
+	term_meta_sig\
+	rewrite_sig\
+	refine_sig\
+	refiner_sig

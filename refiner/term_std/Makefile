@@ -3,7 +3,7 @@ ROOT := ../..
 INCLUDE := -I $(ROOT)/mllib -I ../refbase -I ../refsig
 
 # Library files
-includes Files
+include Files
 LMFILES := $(TERM_STD_FILES)
 
 # Name of library

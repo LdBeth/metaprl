@@ -1,0 +1,6 @@
+REFINER_FILES :=\
+	rewrite\
+	refine\
+	refiner_std\
+	refiner_ds\
+	refiner
