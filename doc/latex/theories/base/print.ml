@@ -34,6 +34,7 @@ print_theory "base_trivial";;
 print_theory "base_auto_tactic";;
 print_theory "base_dtactic";;
 print_theory "base_rewrite";;
+print_theory "comment";;
 
 (*
  * -*-

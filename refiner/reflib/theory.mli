@@ -46,6 +46,10 @@ type theory =
 (* Save the theory *)
 val record_theory : theory -> unit
 
+(* XXX: bootstrapping HACK:
+ * replace the dforms in a theory with something more complete *)
+val substitute_dforms : string -> string -> unit
+
 (* Get back all the theories that have been recorded *)
 val get_theories : unit -> theory list
 

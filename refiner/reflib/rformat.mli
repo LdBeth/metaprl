@@ -81,6 +81,7 @@ val format_newline : 'tag buffer -> unit
 (*
  * Break zones.
  *)
+val zone_depth   : 'tag buffer -> int
 val format_lzone : 'tag buffer -> unit
 val format_szone : 'tag buffer -> unit
 val format_hzone : 'tag buffer -> unit

@@ -298,31 +298,22 @@ let get_formatting_stack buf =
  *)
 let flush_formatting buf =
    match buf.buf_info with
-      Formatting stack ->
-         let rec flush = function
-            [{ formatting_commands = commands;
-               formatting_index = index
-             }] ->
-               buf.buf_info <- Unformatted { unformatted_commands = List.rev commands;
-                                             unformatted_index = index
-                               }
-          | { formatting_commands = commands;
-              formatting_index = index;
-              formatting_buf = buf
-            } :: tl ->
-               eprintf "Unbalanced buffer%t" eflush;
-               buf.buf_info <- Unformatted { unformatted_commands = List.rev commands;
-                                             unformatted_index = index
-                               };
-               flush tl
-          | [] ->
-               raise (Invalid_argument "Rformat.flush_formatting")
-         in
-            flush stack.formatting_stack
-
+      Formatting { formatting_stack =
+       [{ formatting_commands = commands;
+          formatting_index = index
+        }] } ->
+         buf.buf_info <- Unformatted { unformatted_commands = List.rev commands;
+                                       unformatted_index = index
+                         }
+    | Formatting _ ->
+         raise (Invalid_argument "Rformat.flush_formatting: unballanced buffer (use debug_dform_depth to debug)")
     | Unformatted _
     | Formatted _ ->
          ()
+
+let zone_depth = function
+   Buf { buf_info = Formatting stack } -> List.length stack.formatting_stack - 1
+ | _ -> 0
 
 (*
  * Start a new zone.

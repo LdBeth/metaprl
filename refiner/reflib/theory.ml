@@ -64,6 +64,11 @@ let base = ref ([] : theory list)
 let record_theory thy =
    Ref_util.push thy base
 
+let substitute_dforms orig upd =
+   let df = (List.find (fun b -> b.thy_name = upd) (!base)).thy_dformer in
+   let update b = if b.thy_name = orig then { b with thy_dformer = df } else b in
+      base := List.map update (!base)
+
 (*
  * Get all the theories.
  *)

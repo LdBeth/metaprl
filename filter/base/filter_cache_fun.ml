@@ -329,7 +329,7 @@ struct
 
    (*
     * These are the standard opnames.
-    * This should change at some point; either
+    * XXX This should change at some point; either
     * by moving these opnames into a global file,
     * or by making nothing global.
     *)

@@ -57,6 +57,13 @@ let debug_dform =
         debug_value = false
       }
 
+let debug_dform_depth =
+   create_debug (**)
+      { debug_name = "dform_depth";
+        debug_description = "check zone depth to catch unballanced buffers";
+        debug_value = false
+      }
+
 (************************************************************************
  * TYPES                                                                *
  ************************************************************************)
@@ -190,20 +197,11 @@ let make_dform { dform_name = name;
 (*
  * Commands in initial base.
  *)
-let lzone { dform_buffer = buf } =
-   format_lzone buf
-
-let hzone { dform_buffer = buf } =
-   format_hzone buf
-
-let szone { dform_buffer = buf } =
-   format_szone buf
-
-let izone { dform_buffer = buf } =
-   format_izone buf
-
-let ezone { dform_buffer = buf } =
-   format_ezone buf
+let lzone df = format_lzone df.dform_buffer
+let hzone df = format_hzone df.dform_buffer
+let szone df = format_szone df.dform_buffer
+let izone df = format_izone df.dform_buffer
+let ezone df = format_ezone df.dform_buffer
 
 let hbreak = function
    { dform_items = [RewriteString yes; RewriteString no]; dform_buffer = buf } ->
@@ -220,14 +218,9 @@ let cbreak = function
       format_cbreak buf yes no
  | _ -> raise (Invalid_argument "Dform.sbreak")
 
-let space { dform_buffer = buf } =
-   format_space buf
-
-let hspace { dform_buffer = buf } =
-   format_hspace buf
-
-let newline { dform_buffer = buf } =
-   format_newline buf
+let space df = format_space df.dform_buffer
+let hspace df = format_hspace df.dform_buffer
+let newline df = format_newline df.dform_buffer
 
 let pushm = function
    { dform_items = [RewriteNum n]; dform_buffer = buf } ->
@@ -238,14 +231,9 @@ let pushm = function
       format_pushm buf 0
  | _ -> raise (Invalid_argument "Dform.pushm")
 
-let popm { dform_buffer = buf } =
-   format_popm buf
-
-let pushfont _ =
-   ()
-
-let popfont _ =
-   ()
+let popm df = format_popm df.dform_buffer
+let pushfont _ = ()
+let popfont _ = ()
 
 (************************************************************************
  * FORMATTERS                                                           *
@@ -592,6 +580,16 @@ let slot { dform_items = items; dform_printer = printer; dform_buffer = buf } =
          format_simple_level_exp buf l
     | _ ->
          raise (Invalid_argument "slot")
+
+let slot df =
+   if !debug_dform_depth then
+      let depth = zone_depth df.dform_buffer in begin
+         slot df;
+         if depth != zone_depth df.dform_buffer then
+            let str = line_format default_width ( fun buf -> slot {df with dform_buffer = buf } )
+            in eprintf "Unballanced display form: %s%t" str eflush
+      end
+   else slot df
 
 (*
  * Install initial commands.
