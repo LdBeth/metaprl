@@ -108,6 +108,10 @@ sig
    (* you may find String_util.unquote function useful *)
    val add_line : io_table -> io_item -> unit
    val get_term : io_table -> term
+   
+   (* Just in case we want to read a particulare entry from the .prla file *)
+   val get_named_term : io_table -> string -> term
+   val read_from_file : string -> string -> term
 
    (*
     * OUTPUT

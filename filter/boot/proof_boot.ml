@@ -419,6 +419,125 @@ struct
     | Identity _ :: tl -> all_identity tl
     | _ -> false
 
+   (* Replace the current goal with an equivalent one *)
+   let rec replace_goal node goal =
+      match node with
+         Goal _ | RuleBox _ ->
+            raise (Invalid_argument "Proof_boot.replace_goal")
+       | Unjustified (g,sgs) ->
+            if g==goal then node else Unjustified (goal,sgs)
+       | Extract (g,sgs,ext) ->
+            if g==goal then node else Extract (goal,sgs,ext)
+       | ExtractRewrite (g,sg,addr,ext) ->
+            if g==goal then node else ExtractRewrite (goal,sg,addr,ext)
+       | ExtractCondRewrite (g,sgs,addr,ext) -> 
+            if g==goal then node else ExtractCondRewrite (goal,sgs,addr,ext)
+       | ExtractNthHyp (g,i) ->
+            if g==goal then node else ExtractNthHyp (goal,i)
+       | ExtractCut (g,t,sg1,sg2) ->
+            if g==goal then node else ExtractCut (goal,t,sg1,sg2)
+       | Wrapped (args,ext) ->
+            let res = replace_goal ext goal in
+            if res == ext then node else Wrapped (args,res)
+       | Compose ci ->
+            let ext = ci.comp_goal in
+            let res = replace_goal ext goal in
+            if res == ext then node else 
+            Compose {
+               comp_status = ci.comp_status;
+               comp_goal = res;
+               comp_subgoals = ci.comp_subgoals;
+               comp_leaves = ci.comp_leaves;
+               comp_extras = ci.comp_extras }
+       | Pending f ->
+            replace_goal (f ()) goal
+       | Locked ext ->
+            let res = replace_goal ext goal in
+            if res == ext then node else Locked res
+       | Identity g ->
+            if g==goal then node else Identity goal
+
+   (* Replace subgoals with equivalent ones *)
+
+   let rec replace_list gs = function
+      [] -> gs, []
+    | (sg :: sgs) as all ->
+         begin match gs with
+            sg':: gs ->
+               let gs,sgs' = replace_list gs sgs in
+               if sg == sg' && sgs == sgs' then gs, all else gs, sg'::sgs'
+          | _ -> raise (Invalid_argument "Proof_boot.replace_list")
+         end
+
+   let rec replace_subg_aux gs node =
+      match node with
+         Goal _ | RuleBox _ ->
+            raise (Invalid_argument "Proof_boot.replace_subg_aux")
+       | Unjustified (g,sgs) ->
+            let gs, res = replace_list gs sgs in
+            if res==sgs then gs,node else gs, Unjustified (g,res)
+       | Extract (g,sgs,ext) ->
+            let gs, res = replace_list gs sgs in
+            if res==sgs then gs,node else gs, Extract (g,res,ext)
+       | ExtractRewrite (g,sg,addr,ext) ->
+            begin match gs with
+               res::gs ->
+                  if res==sg then gs,node else gs, ExtractRewrite (g,res,addr,ext)
+             | _ -> raise (Invalid_argument "Proof_boot.replace_subg_aux")
+            end
+       | ExtractCondRewrite (g,sgs,addr,ext) ->
+            let gs, res = replace_list gs sgs in
+            if res==sgs then gs,node else gs, ExtractCondRewrite (g,res,addr,ext)
+       | ExtractNthHyp _ ->
+            gs,node
+       | ExtractCut (g,t,sg1,sg2) ->
+            begin match gs with
+               res1::res2::gs ->
+                  if res1==sg1 && res2==sg2 then gs,node else gs, ExtractCut (g,t,res1,res2)
+             | _ -> raise (Invalid_argument "Proof_boot.replace_subg_aux")
+            end
+       | Wrapped (args,ext) ->
+            let gs, res = replace_subg_aux gs ext in
+            if res==ext then gs, node else gs, Wrapped (args,res)
+       | Compose ci ->
+            let exts = ci.comp_subgoals in
+            let gs,res = replace_subg_list gs exts in
+            if res==exts then gs,node else
+            gs, Compose {
+               comp_status = ci.comp_status;
+               comp_goal = ci.comp_goal;
+               comp_subgoals = res;
+               comp_leaves = LazyLeavesDelayed;
+               comp_extras = ci.comp_extras }
+       | Pending f ->
+            replace_subg_aux gs (f ())
+       | Locked ext ->
+            let gs,res = replace_subg_aux gs ext in
+            if res == ext then gs, node else gs, Locked res
+       | Identity g ->
+            begin match gs with
+               res::gs ->
+                  if g==res then gs, node else gs, Identity res
+             | _ -> raise (Invalid_argument "Proof_boot.replace_subg_aux")
+            end
+
+   and replace_subg_list gs = function
+      [] -> gs, []
+    | (sg :: sgs) as all ->
+         let gs,sg' = replace_subg_aux gs sg in
+         let gs,sgs' = replace_subg_list gs sgs in
+         if sg == sg' && sgs == sgs' then gs, all else gs, sg'::sgs'
+
+   let rec dest_ids = function
+      [] -> []
+    | Identity g :: tl -> g :: (dest_ids tl)
+    | _ -> raise (Invalid_argument "Proof_boot.dest_ids")
+
+   let replace_subg ext sgs =
+      match replace_subg_aux (dest_ids sgs) ext with
+         [], ext -> ext
+       | _ -> raise (Invalid_argument "Proof_boot.replace_subg")
+
    let rec normalize = function
       Pending f ->
          normalize (f ())
@@ -430,15 +549,15 @@ struct
             let c_goal = normalize ci.comp_goal in
             let c_subgs = normalize_list ci.comp_subgoals in begin
                match c_goal with
-                  Identity _ ->
+                  Identity goal ->
                      begin match c_subgs with
-                        [subg] -> subg
+                        [subg] -> replace_goal subg goal
                       | _ ->
                            print_ext ext;
                            raise (Invalid_argument "Proof_boot.normalize - nogin: according to my understanding, this is not supposed to happen")
                      end
                 | _ when all_identity c_subgs ->
-                     c_goal
+                     replace_subg c_goal c_subgs
                 | Compose ci' ->
                      Compose {
                         comp_status = LazyStatusDelayed;
@@ -452,13 +571,7 @@ struct
                      raise (Invalid_argument "Proof_boot.normalize - nogin: according to my understanding, this is not supposed to happen")
                 | _ ->
                      if (c_goal==ci.comp_goal) && (c_subgs == ci.comp_subgoals) then ext else
-                     Compose {
-                        comp_status = ci.comp_status;
-                        comp_goal = c_goal;
-                        comp_subgoals = c_subgs;
-                        comp_leaves = ci.comp_leaves;
-                        comp_extras = ci.comp_extras
-                     }
+                     Compose { ci with comp_goal = c_goal; comp_subgoals = c_subgs }
             end 
          in
             if !debug_proof_normalize then begin
@@ -905,30 +1018,6 @@ struct
     * Replace a child at the given index.
     * Recompute matches among the children.
     *)
-(*
-   let rec append_subgoal node = function
-      h :: t ->
-         h :: append_subgoal node t
-    | [] ->
-         [node]
-
-   let rec insert_subgoal_aux node i = function
-      h :: t ->
-         if i = 0 then
-            if node == h then
-               raise Unchanged
-            else
-               node :: append_subgoal h t
-         else
-            h :: insert_subgoal_aux node (pred i) t
-    | [] ->
-         [node]
-
-   let insert_subgoal node i subgoals extras =
-      try insert_subgoal_aux node i (subgoals @ extras), [] with
-         Unchanged ->
-            subgoals, extras
- *)
    let insert_subgoal node i subgoals extras =
       let len = List.length subgoals in
          if i < len then

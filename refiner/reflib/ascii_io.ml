@@ -257,6 +257,11 @@ struct
        | [] -> fail "get_term1"
           end with Not_found -> fail "get_term - not found"
 
+   let get_named_term t name =
+      let r = new_record () in
+      add_items r !t;
+      retrieve (Hashtbl.find r.io_terms name)
+
    let read_table inx =
       let table = initialize () in
       let rec collect lineno =
@@ -280,6 +285,9 @@ struct
                ()
       in
          table
+
+   let read_from_file file =
+      get_named_term (read_table (open_in file))
 
    (************************************************************************
     * OUTPUT                                                               *

@@ -1101,19 +1101,7 @@ struct
     * Modify the label.
     *)
    let setLabelT name p =
-      let { ref_goal = goal;
-            ref_parent = parent;
-            ref_attributes = attributes;
-            ref_sentinal = sentinal
-          } = p
-      in
-      let p =
-         { ref_goal = goal;
-           ref_label = name;
-           ref_parent = parent;
-           ref_attributes = attributes;
-           ref_sentinal = sentinal
-         }
+      let p = { p with ref_label = name }
       in
          ThreadRefinerTacticals.create_value [p] (Identity p)
 
@@ -1123,182 +1111,41 @@ struct
    let withT f tac p =
       let attributes = p.ref_attributes in
       let attributes' = f attributes in
-      let make_goal
-          { ref_goal = goal;
-            ref_label = name;
-            ref_parent = parent;
-            ref_sentinal = sentinal
-          } =
-         let p =
-            { ref_goal = goal;
-              ref_label = name;
-              ref_parent = parent;
-              ref_attributes = attributes';
-              ref_sentinal = sentinal
-            }
+      let make_goal p =
+         let p' = { p with ref_attributes = attributes' }
          in
-            ThreadRefinerTacticals.create_value [p] (Identity p)
+            ThreadRefinerTacticals.create_value [p'] (Identity p)
       in
       let make_subgoal p =
-         let { ref_goal = goal;
-               ref_label = name;
-               ref_parent = parent;
-               ref_sentinal = sentinal
-             } = p
-         in
-         let p =
-            { ref_goal = goal;
-              ref_label = name;
-              ref_parent = parent;
-              ref_attributes = attributes;
-              ref_sentinal = sentinal
-            }
+         let p = { p with ref_attributes = attributes }
          in
             ThreadRefinerTacticals.create_value [p] (Identity p)
       in
          (prefix_thenT make_goal (prefix_thenT tac make_subgoal)) p
 
    let withTermT name t =
-      withT (fun { attr_terms = terms;
-                   attr_term_lists = term_lists;
-                   attr_types = types;
-                   attr_ints = ints;
-                   attr_bools = bools;
-                   attr_strings = strings;
-                   attr_subst = subst;
-                   attr_keys = keys
-                 } ->
-            { attr_terms = (name, t) :: terms;
-              attr_term_lists = term_lists;
-              attr_types = types;
-              attr_ints = ints;
-              attr_bools = bools;
-              attr_strings = strings;
-              attr_subst = subst;
-              attr_keys = keys
-            })
+      withT (fun attr -> { attr with attr_terms = (name, t) :: attr.attr_terms })
 
    let withTermListT name arg =
-      withT (fun { attr_terms = terms;
-                   attr_term_lists = term_lists;
-                   attr_types = types;
-                   attr_ints = ints;
-                   attr_bools = bools;
-                   attr_strings = strings;
-                   attr_subst = subst;
-                   attr_keys = keys
-                 } ->
-            { attr_terms = terms;
-              attr_term_lists = (name, arg) :: term_lists;
-              attr_types = types;
-              attr_ints = ints;
-              attr_bools = bools;
-              attr_strings = strings;
-              attr_subst = subst;
-              attr_keys = keys
-            })
+      withT (fun attr -> { attr with attr_term_lists = (name, arg) :: attr.attr_term_lists })
 
    let withTypeT name t =
-      withT (fun { attr_terms = terms;
-                   attr_term_lists = term_lists;
-                   attr_types = types;
-                   attr_ints = ints;
-                   attr_bools = bools;
-                   attr_strings = strings;
-                   attr_subst = subst;
-                   attr_keys = keys
-                 } ->
-            { attr_terms = terms;
-              attr_term_lists = term_lists;
-              attr_types = (name, t) :: types;
-              attr_ints = ints;
-              attr_bools = bools;
-              attr_strings = strings;
-              attr_subst = subst;
-              attr_keys = keys
-            })
+      withT (fun attr -> { attr with attr_types = (name, t) :: attr.attr_types })
 
    let withIntT name i =
-      withT (fun { attr_terms = terms;
-                   attr_term_lists = term_lists;
-                   attr_types = types;
-                   attr_ints = ints;
-                   attr_bools = bools;
-                   attr_strings = strings;
-                   attr_subst = subst;
-                   attr_keys = keys
-                 } ->
-            { attr_terms = terms;
-              attr_term_lists = term_lists;
-              attr_types = types;
-              attr_ints = (name, i) :: ints;
-              attr_bools = bools;
-              attr_strings = strings;
-              attr_subst = subst;
-              attr_keys = keys
-            })
+      withT (fun attr -> { attr with attr_ints = (name, i) :: attr.attr_ints })
 
    let withBoolT name flag =
-      withT (fun { attr_terms = terms;
-                   attr_term_lists = term_lists;
-                   attr_types = types;
-                   attr_ints = ints;
-                   attr_bools = bools;
-                   attr_strings = strings;
-                   attr_subst = subst;
-                   attr_keys = keys
-                 } ->
-            { attr_terms = terms;
-              attr_term_lists = term_lists;
-              attr_types = types;
-              attr_ints = ints;
-              attr_bools = (name, flag) :: bools;
-              attr_strings = strings;
-              attr_subst = subst;
-              attr_keys = keys
-            })
+      withT (fun attr -> { attr with attr_bools = (name, flag) :: attr.attr_bools })
 
    let withStringT name s =
-      withT (fun { attr_terms = terms;
-                   attr_term_lists = term_lists;
-                   attr_types = types;
-                   attr_ints = ints;
-                   attr_bools = bools;
-                   attr_strings = strings;
-                   attr_subst = subst;
-                   attr_keys = keys
-                 } ->
-            { attr_terms = terms;
-              attr_term_lists = term_lists;
-              attr_types = types;
-              attr_ints = ints;
-              attr_bools = bools;
-              attr_strings = (name, s) :: strings;
-              attr_subst = subst;
-              attr_keys = keys
-            })
+      withT (fun attr -> { attr with attr_strings = (name, s) :: attr.attr_strings })
 
    (*
     * Add some substitutions.
     *)
    let withSubstT subst =
-      withT (fun { attr_terms = terms;
-                   attr_term_lists = term_lists;
-                   attr_types = types;
-                   attr_ints = ints;
-                   attr_bools = bools;
-                   attr_strings = strings;
-                   attr_keys = keys
-                 } ->
-            { attr_terms = terms;
-              attr_term_lists = term_lists;
-              attr_types = types;
-              attr_ints = ints;
-              attr_bools = bools;
-              attr_strings = strings;
-              attr_subst = subst;
-              attr_keys = keys
-            })
+      withT (fun attr -> { attr with attr_subst = subst })
 
    (*
     * Time the tactic.
