@@ -341,7 +341,7 @@ MLPFILES =
 CLEAN = $'(RM) *.opt *.run *.o *.obj *.lib *.cm* *.a *~ .*~ .\#* *.ppo *.p4i *.p4o .version.* $'(addsuffix .ml, $(MLZFILES)) $'(addsuffix .mli, $(MLZFILES)) $'(addsuffix .ml, $(MLPFILES))
 
 clean:
-    $(CLEAN) $(file bin/ocamldep$(EXE) lib/camlp4* bin/convert$(EXE) bin/proxyedit$(EXE) lib/*.cm* lib/*.ml* lib/*.txt lib/*.dat lib/*.a lib/macrop* bin/prlc*) lib/*.html lib/*.js lib/*.css lib/*.gif lib/*.pem
+    $(CLEAN) $(file bin/ocamldep$(EXE) lib/camlp4* bin/convert$(EXE) bin/proxyedit$(EXE) lib/*.cm* lib/*.ml* lib/*.txt lib/*.dat lib/*.a lib/macrop* bin/prlc* lib/*.html lib/*.js lib/*.css lib/*.gif lib/*.pem lib/metaprl-ssl.config)
 
 realclean: clean
     -$'(RM) $(file theories/*/*.prlb theories/*/*/*.prlb) # XXX: This is a temporary HACK
@@ -491,10 +491,10 @@ MPTIME =
 # Commands for running MetaPRL
 #
 if $(equal $(OSTYPE), Win32)
-    SET_ENV = set MP_ROOT=$(ROOT) && set MPLIB=$(LIB) && set MP_GROUP=$'(THEORYNAME) && set MP_DESCR=$'(THEORYDESCR)
+    SET_ENV = set MP_ROOT=$(ROOT)&& set MPLIB=$(LIB)&& set MP_GROUP=$'(THEORYNAME)&& set MP_DESCR=$'(THEORYDESCR)&&
     export
 else
-    SET_ENV = MP_ROOT=$(ROOT) MPLIB=$(LIB) LC_ALL=C MP_GROUP=$'(THEORYNAME) MP_DESCR="$'(THEORYDESCR)" $(MPTIME)
+    SET_ENV = MP_ROOT=$(ROOT) MPLIB=$(LIB) LC_ALL=C MP_GROUP=$'(THEORYNAME) MP_DESCR='$'(THEORYDESCR)' $(MPTIME)
     export
 
 PRLCC     = $(SET_ENV) $(PRLC)
@@ -644,7 +644,7 @@ CLEAN += *.log *.aux *.idx *.ilg *.ind *.pdf *.ps *.dvi *.blg *.bbl *.out *.toc
 
 section
    THEORYNAME = support
-   THEORYDESCR = MetaPRL Internal \"Helper\" Modules
+   THEORYDESCR = MetaPRL Internal "Helper" Modules
    .SUBDIRS: $(SUPPORT_DIRS) editor/ml
 
 section
