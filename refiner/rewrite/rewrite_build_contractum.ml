@@ -344,6 +344,7 @@ struct
          begin
              match stack.(i) with
                 StackOpname s -> Token s
+              | StackString s -> MToken (Lm_symbol.add s)
               | StackVar v -> MToken v
               | _ -> raise(build_con_exn)
          end
