@@ -110,7 +110,7 @@ struct
           } = queue
       in
       let alength = Array.length lines in
-         for i = 0 to length do
+         for i = 0 to pred length do
             let j = (first + i) mod alength in
                match lines.(j) with
                   Some x -> f x
@@ -140,62 +140,6 @@ struct
       in
          collect x 0
 end
-
-(*
- * Formatting of string buffers.
- *)
-let strings_of_linebuffer queue =
-   let strings =
-      LineBuffer.fold (fun strings s ->
-            s :: strings) [] queue
-   in
-      List.rev strings
-
-(*
- * Format buffers.
- *)
-let strings_of_linebuffer_buffers queue =
-   let buffers =
-      List.rev (LineBuffer.fold (fun buffers buf ->
-                      buf :: buffers) [] queue)
-   in
-   let s = Lm_rformat.marshal_buffers buffers in
-   let len = String.length s in
-   let rec collect strings off =
-      let amount = min (len - off) 32 in
-         if amount = 0 then
-            List.rev strings
-         else
-            let s = Lm_string_util.hexify_sub s off amount in
-               collect (s :: strings) (off + amount)
-   in
-      collect [] 0
-
-(*
- * Add the contents of a file to a (string LineBuffer.t)
- *)
-let add_linebuffer_elements queue elems =
-   List.iter (LineBuffer.add queue) elems
-
-let linebuffer_of_elements elems =
-   let queue = LineBuffer.create () in
-      add_linebuffer_elements queue elems;
-      queue
-
-(*
- * Unmarshal the buffers.
- *)
-let add_linebuffer_buffers queue strings =
-   (* Reconstruct the string *)
-   let s =
-      let buf = Buffer.create 32 in
-         List.iter (fun s ->
-               Buffer.add_string buf (Lm_string_util.unhexify s)) strings;
-         Buffer.contents buf
-   in
-      try add_linebuffer_elements queue (Lm_rformat.unmarshal_buffers s) with
-         Failure _ ->
-            ()
 
 (************************************************************************
  * Directories are maintained as a StringTable.t
@@ -279,34 +223,6 @@ struct
       StringTable.fold (fun x key (_, y) ->
             f x key y) x table
 end
-
-(*
- * Save the contents of a (string LineBuffer.t) to a file in the user's
- * home directory.
- *)
-let strings_of_linetable queue =
-   let strings =
-      LineTable.fold (fun strings dir subdir ->
-            Printf.sprintf "%s#%s" dir subdir :: strings) [] queue
-   in
-      List.rev strings
-
-(*
- * Add the contents of a file to a (string LineBuffer.t)
- *)
-let linetable_of_strings strings =
-   List.fold_left (fun table line ->
-         let dir, subdir =
-            try
-               let index = String.index line '#' in
-               let dir = String.sub line 0 index in
-               let subdir = String.sub line (succ index) (String.length line - index - 1) in
-                  dir, subdir
-            with
-               Not_found ->
-                  line, ""
-         in
-            LineTable.add table dir subdir) LineTable.empty strings
 
 (*!
  * @docoff

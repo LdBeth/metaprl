@@ -48,9 +48,11 @@ module Shell (ShellP4 : ShellP4Sig) : ShellAllSig
 
 (* Quit *)
 topval exit : unit -> unit
+topval abort : unit -> unit
 
 (* Proof navigation. *)
 topval cd : string -> string
+topval refresh : unit -> unit
 topval pwd : unit -> string
 topval root : unit -> unit
 topval up : int -> unit
@@ -78,8 +80,11 @@ topval find_subgoal : int -> string
 
 (* Module commands. *)
 topval create_pkg : string -> unit
+topval backup : unit -> unit
+topval revert : unit -> unit
 topval save : unit -> unit
-topval export : unit -> unit
+topval backup_all : unit -> unit
+topval revert_all : unit -> unit
 topval save_all : unit -> unit
 
 (* Display *)

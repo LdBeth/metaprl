@@ -345,7 +345,8 @@ let add_edit state info =
                   List.fold_left (fun items file ->
                         let item =
                            { command_label = "Open " ^ Filename.basename file;
-                             command_value = sprintf "Edit(%b, '/session/%d/edit/%s')" flag id (proxyedit_of_filename file)
+                             command_value =
+                                sprintf "Edit(%b, '/session/%d/edit/%s')" flag id (proxyedit_of_filename file)
                            }
                         in
                            item :: items) items files

@@ -460,6 +460,7 @@ struct
             }
          in
             Top.set_dfmode "html";
+            Top.refresh ();
             session.session_menu_version <- succ session.session_menu_version;
             session.session_state        <- None;
             session.session_menubar_info <- None;

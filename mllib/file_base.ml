@@ -68,7 +68,7 @@ struct
    type arg = Info.arg
 
    (*
-    * This is the info we keep about modules.
+    * This is the info we keep about each module.
     *)
    type info =
       { mutable info_info : cooked;
@@ -119,6 +119,12 @@ struct
          with
             Not_found ->
                Hashtbl.add table name (ref [info])
+
+   (*
+    * Remove the info (used when a file is reverted).
+    *)
+   let remove_info base info =
+      Hashtbl.remove base.io_table info.info_file
 
    (*
     * Filename for a spec.

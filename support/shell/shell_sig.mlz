@@ -258,6 +258,7 @@ sig
 
    (* Navigation *)
    val chdir        : string -> bool
+   val refresh      : unit -> unit
    val pwd          : unit -> string
    val filename     : unit -> string option
 

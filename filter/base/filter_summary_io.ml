@@ -138,6 +138,12 @@ struct
          }
 
    (*
+    * Remove some info.
+    *)
+   let remove_info base info =
+      FileBase.remove_info base info.info_root
+
+   (*
     * Save a module specification.
     * This can only be called at a root.
     *)

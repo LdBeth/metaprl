@@ -108,6 +108,7 @@ sig
    val set_magic : t -> info -> int -> unit
    val save_as : t -> arg -> cooked -> select -> dir_name -> file_name -> alt_suffix -> info
    val create_info : t -> cooked -> select -> dir_name -> file_name -> info
+   val remove_info : t -> info -> unit
 
    (* Info about the objects *)
    val info : t -> info -> cooked

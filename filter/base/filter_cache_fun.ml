@@ -2,7 +2,6 @@
  * We add a layer to filter Summary, to allow inlined modules
  * and cached info about opnames, axioms, and precedences.
  *
- *
  * ----------------------------------------------------------------
  *
  * This file is part of MetaPRL, a modular, higher order
@@ -155,11 +154,11 @@ struct
     * of a given module, with the last included parent first in the list.
     *)
    type sig_summary =
-      { sig_summary : Base.info;
+      { sig_summary   : Base.info;
         sig_resources : (string * sig_ctyp resource_sig) list;
-        sig_infixes : Infix.Set.t;
-        sig_opnames : (op_shape * opname) list;
-        sig_includes : sig_summary list;
+        sig_infixes   : Infix.Set.t;
+        sig_opnames   : (op_shape * opname) list;
+        sig_includes  : sig_summary list;
       }
 
    (*
@@ -872,6 +871,49 @@ struct
       let info' = StrMarshal.unmarshal (Base.info base.lib info') in
          (* Copy the proofs *)
          cache.info <- FilterSummaryTerm.copy_proofs copy_proof info info'
+
+   (*
+    * Revert the proofs.  This is just a little different:
+    * we force loading from the .prla, and we save the .prlb.
+    *)
+   let revert_proofs cache barg =
+      let revert_proof _ proof =
+         proof
+      in
+      let { name = name;
+            base = base;
+            info = info;
+            select = my_select
+          } = cache
+      in
+      let path = [name] in
+      let info' =
+         try Base.find_file base.lib barg path my_select (OnlySuffixes ["prla"]) with
+            Failure _ ->
+               Base.find_file base.lib barg path my_select (OnlySuffixes ["cmoz"])
+      in
+      let _ =
+         (* Save the .prla to the .prlb *)
+         Base.set_magic base.lib info' 1;
+         Base.save base.lib barg info' (OnlySuffixes ["prlb"])
+      in
+      let info' = StrMarshal.unmarshal (Base.info base.lib info') in
+         cache.info <- FilterSummaryTerm.copy_proofs revert_proof info info'
+
+   (*
+    * JYH: This is unnecessary (I believe).
+    *
+    * Revert to the saved version.
+   let revert base cache =
+      let { name = name; self = self } = cache in
+      let { lib = lib; str_summaries = str_summaries } = base in
+      let path = [name] in
+      let compare info =
+         Base.pathname lib info <> path
+      in
+         base.str_summaries <- List.filter compare str_summaries;
+         Base.remove_info lib self
+    *)
 
    (*
     * Upgrade the file mode.

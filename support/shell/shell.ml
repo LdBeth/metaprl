@@ -82,11 +82,16 @@ let debug_shell  = load_debug "shell"
 type commands =
    { mutable init : unit -> unit;
      mutable cd : string -> string;
+     mutable refresh : unit -> unit;
      mutable pwd : unit -> string list;
      mutable set_dfmode : string -> unit;
      mutable create_pkg : string -> unit;
-     mutable save : unit -> unit;
-     mutable export : unit -> unit;
+     mutable backup : unit -> unit;
+     mutable revert : unit -> unit;
+     mutable save   : unit -> unit;
+     mutable backup_all : unit -> unit;
+     mutable revert_all : unit -> unit;
+     mutable save_all : unit -> unit;
      mutable view : LsOptionSet.t -> string -> unit;
      mutable expand : unit -> unit;
      mutable expand_all : unit -> unit;
@@ -111,11 +116,16 @@ let uninitialized _ = raise (Invalid_argument "The Shell module has not been ins
 let commands =
    { init = uninitialized;
      cd = uninitialized;
+     refresh = uninitialized;
      pwd = uninitialized;
      set_dfmode = uninitialized;
      create_pkg = uninitialized;
+     backup = uninitialized;
+     revert = uninitialized;
      save = uninitialized;
-     export = uninitialized;
+     backup_all = uninitialized;
+     revert_all = uninitialized;
+     save_all = uninitialized;
      view = uninitialized;
      check = uninitialized;
      apply_all = uninitialized;
@@ -297,43 +307,6 @@ struct
             Some (Package_info.filename pack parse_arg)
        | None ->
             None
-
-   (************************************************************************
-    * MODULES                                                              *
-    ************************************************************************)
-
-   (*
-    * Make a new package.
-    * Right now we only allow packages at the top level.
-    *)
-   let create_pkg shell name =
-      match parse_path shell name with
-         [modname] ->
-            (* Top level *)
-            let _ = Package_info.create_package packages parse_arg modname in
-               view shell LsOptionSet.empty name
-       | [] ->
-            raise (Failure "Shell.create_package: can't create root package")
-       | _ ->
-            raise (Failure "Shell.create_package: packages can't be nested right now")
-
-   (*
-    * Save the current package.
-    *)
-   let save shell =
-      match shell.shell_package with
-         Some pack ->
-            Package_info.save pack
-       | None ->
-            ()
-
-   let export shell =
-      touch shell;
-      match shell.shell_package with
-         Some pack ->
-            Package_info.export parse_arg pack
-       | None ->
-            ()
 
    (************************************************************************
     * OBJECTS                                                              *
@@ -550,11 +523,11 @@ struct
                   (* select an item (if not there already), then go down the proof. *)
                   begin
                      match shell.shell_dir with
-                        old_modname::old_item::_ when old_modname = modname && old_item = List.hd item ->
+                        old_modname :: old_item :: _ when old_modname = modname && old_item = List.hd item ->
                            shell.shell_proof.edit_addr (List.map int_of_string (List.tl item))
                       | _ ->
                            try
-                                 (* Leave the old proof at the root *)
+                              (* Leave the old proof at the root *)
                               shell.shell_proof.edit_addr [];
                               let proof = get_item shell modname (List.hd item) in
                                  Shell_state.set_so_var_context (Some (proof.edit_get_terms ()));
@@ -563,7 +536,7 @@ struct
                            with
                               exn ->
                                  begin
-                                       (* Bring things back to where they were *)
+                                    (* Bring things back to where they were *)
                                     let dir = shell.shell_dir in
                                        if (dir <> []) && (List.hd dir = modname) then
                                           shell.shell_dir <- [modname]
@@ -576,6 +549,17 @@ struct
                   shell.shell_dir <- dir
                end
 
+   (*
+    * Refresh the current directory.
+    *)
+   let refresh shell =
+      let dir = shell.shell_dir in
+         shell.shell_dir <- [];
+         chdir shell true true dir
+
+   (*
+    * Apply a function to all elements.
+    *)
    let rec apply_all shell f time clean_res =
       let dir = shell.shell_dir in
       let apply_it item mod_name name =
@@ -693,6 +677,88 @@ struct
             raise (Invalid_argument "Shell.find_subgoal: not in a proof")
 
    (************************************************************************
+    * MODULES                                                              *
+    ************************************************************************)
+
+   (*
+    * Make a new package.
+    * Right now we only allow packages at the top level.
+    *)
+   let create_pkg shell name =
+      match parse_path shell name with
+         [modname] ->
+            (* Top level *)
+            let _ = Package_info.create_package packages parse_arg modname in
+               view shell LsOptionSet.empty name
+       | [] ->
+            raise (Failure "Shell.create_package: can't create root package")
+       | _ ->
+            raise (Failure "Shell.create_package: packages can't be nested right now")
+
+   (*
+    * Save the current package.
+    *)
+   let backup shell =
+      match shell.shell_package with
+         Some pack ->
+            eprintf "Auto-saving %s@." (Package_info.name pack);
+            Package_info.backup pack
+       | None ->
+            ()
+
+   let revert shell =
+      match shell.shell_package with
+         Some pack ->
+            eprintf "Reverting %s@." (Package_info.name pack);
+            Package_info.revert pack;
+            refresh shell
+       | None ->
+            ()
+
+   let save shell =
+      touch shell;
+      match shell.shell_package with
+         Some pack ->
+            eprintf "Saving %s@." (Package_info.name pack);
+            Package_info.save parse_arg pack
+       | None ->
+            ()
+
+   (*
+    * Walk over all packages.
+    *)
+   let backup_all _ =
+      let backup pack =
+         if Package_info.status pack = PackModified then
+            begin
+               eprintf "Auto-saving %s@." (Package_info.name pack);
+               Package_info.backup pack
+            end
+      in
+         List.iter backup (all_packages ())
+
+   let revert_all shell =
+      let revert pack =
+         if Package_info.status pack = PackModified then
+            begin
+               eprintf "Reverting %s@." (Package_info.name pack);
+               Package_info.revert pack
+            end
+      in
+         List.iter revert (all_packages ());
+         refresh shell
+
+   let save_all _ =
+      let save pack =
+         if Package_info.status pack = PackModified then
+            begin
+               eprintf "Saving %s@." (Package_info.name pack);
+               Package_info.save parse_arg pack
+            end
+      in
+         List.iter save (all_packages ())
+
+   (************************************************************************
     * NUPRL5 INTERFACE                                                     *
     ************************************************************************)
 
@@ -722,7 +788,7 @@ struct
                Package_info.info (Package_info.get packages name) parse_arg
 
       let save name =
-         Package_info.save (Package_info.get packages name)
+         Package_info.save parse_arg (Package_info.get packages name)
 
       let list_module_all name =
          synchronize (fun shell ->
@@ -1071,6 +1137,7 @@ struct
       let wrap_unit cmd () =
          synchronize cmd
 
+      let refresh            = wrap_unit refresh
       let pwd                = wrap_unit pwd
       let filename           = wrap_unit filename
       let get_ls_options     = wrap_unit get_ls_options
@@ -1096,30 +1163,35 @@ struct
       let () =
          if commands.cd != uninitialized then
             raise (Invalid_argument "The Shell module was initialized twice");
-         commands.init <- init;
-         commands.cd <- wrap cd;
-         commands.pwd <- (fun () -> synchronize (fun shell -> shell.shell_dir));
-         commands.set_dfmode <- set_dfmode;
-         commands.create_pkg <- wrap create_pkg;
-         commands.save <- wrap_unit save;
-         commands.export <- wrap_unit export;
-         commands.view <- wrap view;
-         commands.check <- wrap_unit check;
-         commands.expand <- wrap_unit expand;
-         commands.expand_all <- wrap_unit expand_all;
-         commands.apply_all <- wrap apply_all;
-         commands.interpret <- wrap interpret;
-         commands.undo <- wrap_unit undo;
-         commands.redo <- wrap_unit redo;
+         commands.init               <- init;
+         commands.cd                 <- wrap cd;
+         commands.refresh            <- refresh;
+         commands.pwd                <- (fun () -> synchronize (fun shell -> shell.shell_dir));
+         commands.set_dfmode         <- set_dfmode;
+         commands.create_pkg         <- wrap create_pkg;
+         commands.backup             <- wrap_unit backup;
+         commands.revert             <- wrap_unit revert;
+         commands.save               <- wrap_unit save;
+         commands.backup_all         <- wrap_unit backup_all;
+         commands.revert_all         <- wrap_unit revert_all;
+         commands.save_all           <- wrap_unit save_all;
+         commands.view               <- wrap view;
+         commands.check              <- wrap_unit check;
+         commands.expand             <- wrap_unit expand;
+         commands.expand_all         <- wrap_unit expand_all;
+         commands.apply_all          <- wrap apply_all;
+         commands.interpret          <- wrap interpret;
+         commands.undo               <- wrap_unit undo;
+         commands.redo               <- wrap_unit redo;
          commands.create_ax_statement <- wrap create_ax_statement;
-         commands.refine <- wrap refine;
-         commands.print_theory <- wrap print_theory;
-         commands.extract <- (fun path () -> synchronize (fun shell -> extract shell path ()));
-         commands.term_of_extract <- wrap term_of_extract;
-         commands.get_view_options <- get_view_options;
-         commands.set_view_options <- set_view_options;
+         commands.refine             <- wrap refine;
+         commands.print_theory       <- wrap print_theory;
+         commands.extract            <- (fun path () -> synchronize (fun shell -> extract shell path ()));
+         commands.term_of_extract    <- wrap term_of_extract;
+         commands.get_view_options   <- get_view_options;
+         commands.set_view_options   <- set_view_options;
          commands.clear_view_options <- clear_view_options;
-         commands.find_subgoal <- wrap edit_find;
+         commands.find_subgoal       <- wrap edit_find;
          ()
    end
 
@@ -1135,7 +1207,8 @@ struct
          refresh_packages ();
          Shell_state.set_module "shell";
          ShellP4.main ();
-         Shell_current.flush ()
+         Shell_current.flush ();
+         backup_all ()
    end
 end
 
@@ -1152,6 +1225,9 @@ external stop_gmon : unit -> unit = "stop_gmon"
  * Toploop functions
  *)
 let exit () = raise End_of_file
+let abort () =
+   Pervasives.exit 126
+
 let set_debug = set_debug
 let print_gc_stats () =
    Lm_rprintf.flush stdout;
@@ -1160,11 +1236,16 @@ let print_gc_stats () =
 
 let init () = commands.init ()
 let cd s = commands.cd s
+let refresh () = commands.refresh ()
 let pwd _ = string_of_path (commands.pwd ())
 let set_dfmode s = commands.set_dfmode s
 let create_pkg s = commands.create_pkg s
+let backup _ = commands.backup ()
+let revert _ = commands.revert ()
 let save _ = commands.save ()
-let export _ = commands.export ()
+let backup_all _ = commands.backup_all ()
+let revert_all _ = commands.revert_all ()
+let save_all _ = commands.save_all ()
 let check _ = commands.check ()
 let expand _ = commands.expand ()
 let expand_all _ = commands.expand_all ()
@@ -1197,13 +1278,6 @@ let clean_all _ = interpret_all ProofClean
 let squash_all _ = interpret_all ProofSquash
 
 let set_tex_file = Shell_tex.set_file
-
-let save_all _ =
-   let save pack =
-      if Package_info.status pack = PackModified then
-         Package_info.save pack
-   in
-      List.iter save (all_packages ())
 
 let ls s =
    let options = ls_options_of_string s in

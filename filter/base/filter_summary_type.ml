@@ -85,6 +85,7 @@ sig
    val set_path : t -> string list -> unit
    val set_magic : t -> info -> int -> unit
    val create_info : t -> select -> dir_name -> file_name -> info
+   val remove_info : t -> info -> unit
 
    (* Loading and saving *)
    val find : t -> arg -> module_path -> select -> alt_suffix -> info
@@ -186,6 +187,7 @@ sig
    val check : info -> arg -> select -> sig_info
    val parse_comments : info -> (loc -> term -> term) -> unit
    val copy_proofs : info -> arg -> (str_proof -> str_proof -> str_proof) -> unit
+   val revert_proofs : info -> arg -> unit
    val set_mode : info -> summary_mode -> unit
    val save : info -> arg -> alt_suffix -> unit
 

@@ -298,10 +298,11 @@ let add_implementation pack_info =
                      raise (Invalid_argument "Package_info/add_implementation")
             in
             let node = ImpDag.insert dag pack_info in
-               if Hashtbl.mem packages name then begin
-                                                    ImpDag.delete dag (Hashtbl.find packages name);
-                                                    Hashtbl.remove packages name
-                                                 end;
+               if Hashtbl.mem packages name then
+                  begin
+                     ImpDag.delete dag (Hashtbl.find packages name);
+                     Hashtbl.remove packages name
+                  end;
                Hashtbl.add packages name node;
                List.iter (insert_parent pack node) parents)
 
@@ -451,10 +452,10 @@ let compare pack1 pack2 =
 
 let packages pack =
    let res = ref [] in
-   synchronize_pack pack (function
-      { pack_dag = dag; pack_packages = packs } ->
-      Hashtbl.iter (fun _ pack -> res := (ImpDag.node_value dag pack):: !res) packs;
-         Sort.list compare !res)
+      synchronize_pack pack (function
+         { pack_dag = dag; pack_packages = packs } ->
+            Hashtbl.iter (fun _ pack -> res := (ImpDag.node_value dag pack):: !res) packs;
+            Sort.list compare !res)
 
 let roots pack =
    synchronize_pack pack (function
@@ -502,29 +503,51 @@ let get pack name =
  * Save a package.
  * This happens only if it is modified.
  *)
-let save pack_info =
-   synchronize_node pack_info (function
-      { pack_status = PackReadOnly; pack_name = name } ->
-         raise (Failure (sprintf "Package_info/save: package '%s' is read-only" name))
-    | { pack_status = PackUnmodified } ->
-         ()
-    | { pack_status = PackIncomplete; pack_name = name } ->
-         raise (Failure (sprintf "Package_info/save: package '%s' is incomplete" name))
-    | { pack_status = PackModified; pack_str = Some { pack_str_info = info; pack_parse = arg } } ->
-         Cache.StrFilterCache.save info arg (OnlySuffixes ["prlb"])
-    | { pack_status = PackModified; pack_str = None } ->
-         raise (Invalid_argument "Package_info.save"))
+let backup pack_info =
+   synchronize_node pack_info (fun package ->
+         match package with
+            { pack_status = PackReadOnly; pack_name = name } ->
+               raise (Failure (sprintf "Package_info.save: package '%s' is read-only" name))
+          | { pack_status = PackUnmodified } ->
+               ()
+          | { pack_status = PackIncomplete; pack_name = name } ->
+               raise (Failure (sprintf "Package_info.save: package '%s' is incomplete" name))
+          | { pack_status = PackModified; pack_str = Some { pack_str_info = info; pack_parse = arg } } ->
+               Cache.StrFilterCache.save info arg (OnlySuffixes ["prlb"]);
+               package.pack_status <- PackUnmodified
+          | { pack_status = PackModified; pack_str = None } ->
+               raise (Invalid_argument "Package_info.save"))
 
-let export arg pack_info =
-   auto_loading_str arg pack_info (function
-      { pack_status = PackReadOnly; pack_name = name } ->
-         raise (Failure (sprintf "Package_info/save: package '%s' is read-only" name))
-    | { pack_status = PackIncomplete; pack_name = name } ->
-         raise (Failure (sprintf "Package_info/save: package '%s' is incomplete" name))
-    | { pack_str = Some { pack_str_info = info } } ->
-         Cache.StrFilterCache.save info arg (OnlySuffixes ["prla"])
-    | { pack_str = None; pack_name = name } ->
-         raise (NotLoaded name))
+(*
+ * Backup a file to the backup directory.
+ *)
+let revert pack_info =
+   synchronize_node pack_info (fun package ->
+         match package with
+            { pack_status = PackReadOnly; pack_name = name } ->
+               raise (Failure (sprintf "Package_info.backup: package '%s' is read-only" name))
+          | { pack_info = pack_entry; pack_str = Some str_info } ->
+               let { pack_str_info = info; pack_parse = parse_arg } = str_info in
+                  Cache.StrFilterCache.revert_proofs info parse_arg;
+                  package.pack_status <- PackUnmodified
+          | { pack_str = None } ->
+               eprintf "File is already reverted@.")
+
+(*
+ * Export the ASCII version of the package.
+ *)
+let save arg pack_info =
+   auto_loading_str arg pack_info (fun package ->
+         match package with
+            { pack_status = PackReadOnly; pack_name = name } ->
+               raise (Failure (sprintf "Package_info.export: package '%s' is read-only" name))
+          | { pack_status = PackIncomplete; pack_name = name } ->
+               raise (Failure (sprintf "Package_info.export: package '%s' is incomplete" name))
+          | { pack_str = Some { pack_str_info = info } } ->
+               Cache.StrFilterCache.save info arg (OnlySuffixes ["prla"]);
+               package.pack_status <- PackUnmodified
+          | { pack_str = None; pack_name = name } ->
+               raise (NotLoaded name))
 
 (*
  * Create an empty package.

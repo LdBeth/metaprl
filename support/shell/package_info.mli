@@ -74,10 +74,11 @@ val refresh : t -> string list -> unit
  * Loaded packages are initially read-only.
  *)
 val create_package : t -> parse_arg -> string -> package
-val load : t -> parse_arg -> string -> package
-val get : t -> string -> package
-val save : package -> unit
-val export : parse_arg -> package -> unit
+val load   : t -> parse_arg -> string -> package
+val get    : t -> string -> package
+val backup : package -> unit
+val revert : package -> unit
+val save   : parse_arg -> package -> unit
 
 (*
  * Access.

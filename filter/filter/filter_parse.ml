@@ -955,6 +955,7 @@ struct
    type item  = MLast.str_item
    type resource = (ctyp, expr) resource_str
    type sig_info = (term, meta_term, unit, MLast.ctyp resource_sig, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
+
    (*
     * Proof copying.
     *)
