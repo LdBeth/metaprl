@@ -15,8 +15,13 @@ type ('a, 'b, 'c) rsrc =
      resource_improve : ('a, 'b, 'c) rsrc -> 'a -> ('a, 'b, 'c) rsrc
    }
 
+val debug_resource : bool ref
+
 (*
  * $Log$
+ * Revision 1.3  1998/06/12 13:55:31  jyh
+ * Modified resources.
+ *
  * Revision 1.1  1998/05/28 22:09:57  jyh
  * Updated Makefiles.
  *
