@@ -1,7 +1,8 @@
-REFINER_FILES =\
-	refine\
-	refine_error\
-	refiner_std\
-	refiner_ds\
-	refiner_io\
-	refiner
+REFINER_FILES[] =
+    refine
+    refine_error
+    refiner_std
+    refiner_ds
+    refiner_io
+    refiner_debug
+    refiner

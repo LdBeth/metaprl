@@ -238,7 +238,7 @@ if $(NATIVE_ENABLED)
       eprintln(!!!)
       exit(1)
 
-if $(not $(mem $(TERMS), std ds))
+if $(not $(mem $(TERMS), std ds both))
    eprintln(ERROR: the TERMS variable is currently set to an invalid value "$(TERMS)"\, please fix it in the mk/config file)
    exit(1)
 
