@@ -157,6 +157,9 @@ type method_name =
    MethodRefine
  | MethodPaste of string
  | MethodUndo
+ | MethodRedo
+ | MethodApplyAll
+ | MethodExpand
 
 (*
  * Info for proof-type objects.
@@ -170,12 +173,14 @@ type edit_info =
 
 (*
  * An editable object.
+ * Whenever the first arg is the string list, it is the cwd relative to the "mount point"
  *)
 type edit_object =
    { (* Display the object to the screen *)
      edit_display      : string list -> LsOptionSet.t -> unit;
      edit_get_contents : string list -> obj_contents;
      edit_get_terms    : unit -> term list;
+     edit_info         : string list -> edit_info;
 
      (* Copy the object *)
      edit_copy         : unit -> edit_object;
@@ -186,20 +191,21 @@ type edit_object =
      edit_set_contractum  : term -> unit;
      edit_set_assumptions : term list -> unit;
      edit_set_params      : term Filter_type.param list -> unit;
-     edit_save            : unit -> unit;
-     edit_get_extract     : unit -> Refine.extract;
-     edit_check           : unit -> ref_status;
 
-     (* Navigation if there is a proof; the first arg is the cwd relative to the "mount point" *)
-     edit_interpret : string list -> proof_command -> unit;
-     edit_undo      : string list -> string list; (* Returns the new (old, actually) relative path *)
-     edit_redo      : string list -> string list; (* Returns the new relative path *)
-     edit_check_addr: string list -> unit; (* Raise exn if the address is not found; must accept an empty list *)
-     edit_info      : string list -> edit_info;
-     edit_find      : string list -> int -> string list; (* find a subgoal; edit_addr is a side-effect *)
+     (* Navigation *)
+     edit_check_addr : string list -> unit; (* Raise exn if the address is not found; must accept an empty list *)
+     edit_find       : string list -> int -> string list; (* find a subgoal; edit_addr is a side-effect *)
+
+     (* Proof operations *)
+     edit_save        : unit -> unit;
+     edit_interpret   : string list -> proof_command -> unit;
+     edit_undo        : string list -> string list; (* Returns the new (old, actually) relative path *)
+     edit_redo        : string list -> string list; (* Returns the new relative path *)
+     edit_get_extract : unit -> Refine.extract;
+     edit_check       : unit -> ref_status;
 
      (* State checking *)
-     edit_is_enabled : method_name -> bool
+     edit_is_enabled : string list -> method_name -> bool
    }
 
 (*

@@ -513,6 +513,9 @@ let paste_is_enabled () =
 let undo_is_enabled () =
    Shell_command.is_enabled MethodUndo
 
+let redo_is_enabled () =
+   Shell_command.is_enabled MethodRedo
+
 let menubar_init =
    [<< menu["file", "File"] >>,                                            always_enabled;
     << menuitem["file", "Rebuild",    "Command('!omake')"] >>,             always_enabled;
@@ -528,7 +531,7 @@ let menubar_init =
     << menuitem["edit", "Paste", "Command('paste \"clipboard\"')"] >>,     paste_is_enabled;
     << menuitem["edit", "-", ""] >>,                                       always_enabled;
     << menuitem["edit", "Undo", "Command('undo ()')"] >>,                  undo_is_enabled;
-    << menuitem["edit", "Redo", "Command('redo ()')"] >>,                  undo_is_enabled;
+    << menuitem["edit", "Redo", "Command('redo ()')"] >>,                  redo_is_enabled;
     << menuitem["edit", "-", ""] >>,                                       always_enabled;
     << menu["view", "View"] >>,                                            always_enabled;
     << menuitem["view", "View Session", "ShowContent()"] >>,               always_enabled;

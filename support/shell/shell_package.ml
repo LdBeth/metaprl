@@ -285,11 +285,15 @@ let rec edit pack_info parse_arg get_dfm =
     * However, it is wise to keep it because
     * we may add more methods.
     *)
-   let edit_is_enabled = function
+   let edit_is_enabled _ = function
       MethodRefine
     | MethodPaste _
-    | MethodUndo ->
+    | MethodUndo
+    | MethodRedo
+    | MethodExpand ->
          false
+    | MethodApplyAll ->
+         true
    in
    let not_a_rule _ =
       raise_edit_error "this is not a rule or rewrite"

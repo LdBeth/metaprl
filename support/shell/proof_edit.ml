@@ -356,9 +356,6 @@ let set_goal ped mseq =
 (*
  * Move down the undo stack.
  *)
-let undo_is_enabled ped =
-   ped.ped_undo <> []
-
 let undo_ped ped addr =
    match ped.ped_undo with
       (proof, addr') :: proofs ->
@@ -444,13 +441,26 @@ let clean_ped ped addr =
 let squash_ped ped addr =
    push_proof ped (Proof.squash (update_fun ped addr) (proof_of_ped ped) addr) addr
 
-let is_enabled_ped ped = function
+let is_enabled_ped ped addr = function
    MethodRefine ->
       true
+ | MethodApplyAll ->
+      false
  | MethodPaste name ->
       paste_is_enabled ped name
  | MethodUndo ->
-      undo_is_enabled ped
+      ped.ped_undo <> []
+ | MethodRedo ->
+      ped.ped_redo <> []
+ | MethodExpand ->
+      begin match status_of_ped ped addr with
+         Proof.StatusBad
+       | Proof.StatusIncomplete ->
+            true
+       | Proof.StatusPartial
+       | Proof.StatusComplete ->
+            false
+      end
 
 (************************************************************************
  * Windowed operations.

@@ -435,10 +435,13 @@ let rec edit get_dfm info =
     * However, it is wise to keep it because
     * we may add more methods.
     *)
-   let edit_is_enabled = function
+   let edit_is_enabled _ = function
       MethodRefine
     | MethodPaste _
-    | MethodUndo ->
+    | MethodUndo
+    | MethodRedo
+    | MethodApplyAll
+    | MethodExpand ->
          false
    in
       { edit_display = edit_display;

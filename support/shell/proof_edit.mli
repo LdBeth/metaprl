@@ -83,7 +83,7 @@ val redo_ped : ped -> Proof.address -> Proof.address
 (*
  * Test whether some methods are enabled.
  *)
-val is_enabled_ped : ped -> method_name -> bool
+val is_enabled_ped : ped -> Proof.address -> method_name -> bool
 
 (*
  * Navigation.

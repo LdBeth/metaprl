@@ -139,11 +139,15 @@ let rec edit pack get_dfm =
     * However, it is wise to keep it because
     * we may add more methods.
     *)
-   let edit_is_enabled = function
+   let edit_is_enabled _ = function
       MethodRefine
     | MethodPaste _
-    | MethodUndo ->
+    | MethodUndo
+    | MethodRedo
+    | MethodExpand ->
          false
+    | MethodApplyAll ->
+         true
    in
       { edit_display = edit_display;
         edit_get_contents = edit_get_contents;
