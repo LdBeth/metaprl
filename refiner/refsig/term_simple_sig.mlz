@@ -14,6 +14,7 @@ sig
    val get : t -> int -> elt
    val make : int -> elt -> t
    val create : int -> elt -> t
+   val init : int -> (int -> elt) -> t
    val to_list : t -> elt list
    val of_list : elt list -> t
 end

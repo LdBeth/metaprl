@@ -12,6 +12,7 @@ open Opname
 
 open Term_sig
 open Term_base_sig
+open Term_man_sig
 open Memo
 
 let debug_memo =
@@ -38,6 +39,9 @@ module MakeTermCopy (**)
     with type operator' = FromType.operator'
     with type term' = FromType.term'
     with type bound_term' = FromType.bound_term')
+   (FromMan : TermManSig
+    with type term = FromType.term
+    with type esequent = FromType.esequent)
    (ToType : TermSig)
    (ToTerm : TermBaseSig
     with type level_exp_var = ToType.level_exp_var
@@ -54,6 +58,9 @@ module MakeTermCopy (**)
     with type operator' = ToType.operator'
     with type term' = ToType.term'
     with type bound_term' = ToType.bound_term')
+   (ToMan : TermManSig
+    with type term = ToType.term
+    with type esequent = ToType.esequent)
 =
 struct
    (************************************************************************
@@ -67,6 +74,8 @@ struct
     * The remember parts are used to remember values that we computed,
     * so that if there is already sharing in the term, we will recover it.
     *)
+   type to_term = TTerm of ToType.term' | TSeq of ToType.esequent
+    
    type t =
       { copy_level_var : (t,
                           FromType.level_exp_var,
@@ -86,7 +95,7 @@ struct
                           ToType.operator) Memo.t;
         copy_term      : (t,
                           FromType.term,
-                          ToType.term',
+                          to_term,
                           ToType.term) Memo.t;
         copy_bterm     : (t,
                           FromType.bound_term,
@@ -95,7 +104,7 @@ struct
       }
 
    (************************************************************************
-    * IMPLEMENTATIOB                                                       *
+    * IMPLEMENTATION                                                       *
     ************************************************************************)
 
    (*
@@ -174,6 +183,34 @@ struct
        { ToType.term_op = op2; ToType.term_terms = bterms2 } =
       op1 == op2 & list_mem_eq bterms1 bterms2
 
+   let rec compare_hyps hyp1 hyp2 i =
+      (i<0) ||
+      ((match (ToType.SeqHyp.get hyp1 i), (ToType.SeqHyp.get hyp2 i) with
+            ToType.Hypothesis (v1,t1), ToType.Hypothesis (v2,t2) ->
+               v1 = v2 && t1 == t2
+          | ToType.Context (v1,ts1), ToType.Context (v2, ts2) ->
+               v1 = v2 && list_mem_eq ts1 ts2
+          | _ -> false) &&
+       (compare_hyps hyp1 hyp2 (pred i)))
+
+   let rec compare_goals goal1 goal2 i =
+      (i<0) ||
+      (((ToType.SeqGoal.get goal1 i) == (ToType.SeqGoal.get goal2 i)) &&
+       (compare_goals goal1 goal2 (pred i)))
+   
+   let compare_tterm t1 t2 =
+      match (t1,t2) with
+         TTerm t1, TTerm t2 -> 
+            compare_term t1 t2
+       | TSeq { ToType.sequent_args = arg1; ToType.sequent_hyps = hyp1; ToType.sequent_goals = goal1},
+         TSeq { ToType.sequent_args = arg2; ToType.sequent_hyps = hyp2; ToType.sequent_goals = goal2} ->
+            (arg1 == arg2) && 
+            (ToType.SeqHyp.length hyp1 = ToType.SeqHyp.length hyp2) &&
+            (compare_hyps hyp1 hyp2 (ToType.SeqHyp.length hyp1 - 1)) &&
+            (ToType.SeqGoal.length goal1 = ToType.SeqGoal.length goal2) &&
+            (compare_goals goal1 goal2 (ToType.SeqGoal.length goal1 - 1))
+       | _ -> false
+            
    let compare_bterm { ToType.bvars = bvars1; ToType.bterm = bterm1 }
        { ToType.bvars = bvars2; ToType.bterm = bterm2 } =
       bvars1 = bvars2 & bterm1 == bterm2
@@ -181,11 +218,38 @@ struct
    (*
     * Copy functions.
     *)
+   let make_hyp info hyps i =
+      match FromType.SeqHyp.get hyps i with
+         FromType.Hypothesis (v,t) ->
+            ToType.Hypothesis (v,Memo.apply info.copy_term info t)
+       | FromType.Context (v,trms) ->
+            ToType.Context (v,List.map (Memo.apply info.copy_term info) trms)
+
+   let make_goal info goals i =
+      Memo.apply info.copy_term info (FromType.SeqGoal.get goals i)
+   
    let make_term info t =
-      let { FromType.term_op = op; FromType.term_terms = bterms } = FromTerm.dest_term t in
-         { ToType.term_op = Memo.apply info.copy_operator info op;
-           ToType.term_terms = List.map (Memo.apply info.copy_bterm info) bterms
-         }
+      if FromMan.is_sequent_term t then 
+         let { FromType.sequent_args = args; 
+               FromType.sequent_hyps = hyps;
+               FromType.sequent_goals = goals } = 
+               (FromMan.explode_sequent t) in
+            TSeq 
+               { ToType.sequent_args = 
+                  Memo.apply info.copy_term info args;
+                 ToType.sequent_hyps = 
+                  ToType.SeqHyp.init (FromType.SeqHyp.length hyps) (make_hyp info hyps);
+                 ToType.sequent_goals = 
+                  ToType.SeqGoal.init (FromType.SeqGoal.length goals) (make_goal info goals)
+            }
+      else let { FromType.term_op = op; FromType.term_terms = bterms } = FromTerm.dest_term t in
+         TTerm 
+            { ToType.term_op = Memo.apply info.copy_operator info op;
+              ToType.term_terms = List.map (Memo.apply info.copy_bterm info) bterms }
+
+   let do_make_term _ = function
+      TTerm t -> ToTerm.make_term t 
+    | TSeq s -> ToMan.mk_sequent_term s
 
    let make_bterm info bterm =
       let { FromType.bvars = bvars; FromType.bterm = bterm } = FromTerm.dest_bterm bterm in
@@ -256,7 +320,7 @@ struct
            ToType.le_vars = List.map (Memo.apply info.copy_level_var info) vars
          }
 
-   and make_level_var info lvar =
+   let make_level_var info lvar =
       let { FromType.le_var = var; FromType.le_offset = offset } = FromTerm.dest_level_var lvar in
          { ToType.le_var = var;
            ToType.le_offset = offset
@@ -284,8 +348,8 @@ struct
            compare_operator;
         copy_term      = Memo.create (**)
            make_term
-           (fun _ t -> ToTerm.make_term t)
-           compare_term;
+           do_make_term
+           compare_tterm;
         copy_bterm     = Memo.create (**)
            make_bterm
            (fun _ t -> ToTerm.make_bterm t)
@@ -334,15 +398,19 @@ module NormalizeTerm =
    MakeTermCopy (**)
       (Refiner_std.Refiner.TermType)
       (Refiner_std.Refiner.Term)
+      (Refiner_std.Refiner.TermMan)
       (Refiner.Refiner.TermType)
       (Refiner.Refiner.Term)
+      (Refiner.Refiner.TermMan)
 
 module DenormalizeTerm =
    MakeTermCopy (**)
       (Refiner.Refiner.TermType)
       (Refiner.Refiner.Term)
+      (Refiner.Refiner.TermMan)
       (Refiner_std.Refiner.TermType)
       (Refiner_std.Refiner.Term)
+      (Refiner_std.Refiner.TermMan)
 
 type normalize = NormalizeTerm.t
 type denormalize = DenormalizeTerm.t

@@ -132,6 +132,7 @@ struct
       let get = Array.get
       let create = Array.create
       let make = Array.make
+      let init = Array.init
       let to_list = Array.to_list
       let of_list = Array.of_list
    end
@@ -144,6 +145,7 @@ struct
       let create = Array.create
       let get = Array.get
       let make = Array.make
+      let init = Array.init
       let to_list = Array.to_list
       let of_list = Array.of_list
    end

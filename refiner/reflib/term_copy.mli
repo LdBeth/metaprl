@@ -7,6 +7,7 @@
 
 open Term_sig
 open Term_base_sig
+open Term_man_sig
 open Memo
 
 module MakeTermCopy (**)
@@ -26,6 +27,9 @@ module MakeTermCopy (**)
     with type operator' = FromType.operator'
     with type term' = FromType.term'
     with type bound_term' = FromType.bound_term')
+   (FromMan : TermManSig
+    with type term = FromType.term
+    with type esequent = FromType.esequent)
    (ToType : TermSig)
    (ToTerm : TermBaseSig
     with type level_exp_var = ToType.level_exp_var
@@ -42,6 +46,9 @@ module MakeTermCopy (**)
     with type operator' = ToType.operator'
     with type term' = ToType.term'
     with type bound_term' = ToType.bound_term')
+   (ToMan : TermManSig
+    with type term = ToType.term
+    with type esequent = ToType.esequent)
 :
 sig
    type t
