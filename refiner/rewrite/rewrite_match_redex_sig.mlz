@@ -37,7 +37,7 @@ sig
    type stack
    type rwterm
 
-   val match_redex : address array -> stack array -> term -> term list -> rwterm list -> unit
+   val match_redex : int array -> stack array -> term -> term list -> rwterm list -> unit
 end
 
 (*

@@ -440,7 +440,7 @@ struct
 
        | RWSOContext (addr, i, term', l) ->
               (* Pull an address out of the addr argument *)
-            let addr' = addrs.(addr) in
+            let addr' = raise(Invalid_argument("Non-sequent contexts not currently supported")) addr in
                IFDEF VERBOSE_EXN THEN
                   if !debug_rewrite then
                      eprintf "Rewrite.match_redex.RWSOContext: %s%t" (string_of_address addr') eflush
@@ -479,25 +479,26 @@ struct
             all_bvars
        | hyp' :: hyps' ->
             match hyp' with
-               RWSeqContext (addr, j, l) ->
-                  let count = depth_of_address addrs.(addr) in
+               RWSeqContext (addr, j, l) 
+             | RWSeqFreeVarsContext (_, addr, j, l) ->
+                  let count = if addr == -1 then len - i else 
+                     let count = addrs.(addr) - 1 in
+                     if (count < 0) then
+                        REF_RAISE(RefineError ("match_redex_sequent_hyps", StringError "hyp count argument must be positive"));
+                     count
+                  in
                   IFDEF VERBOSE_EXN THEN
                      if !debug_rewrite then
-                        eprintf "RWSeqContext (%d, %d, [%a])%t" count j print_int_list l eflush
+                        eprintf "RWSeqContext/RWSeqFreeVarsContext (%d, %d, [%a])%t" count j print_int_list l eflush
                   ENDIF;
                   if count + i > len then
                      REF_RAISE(RefineError ("match_redex_sequent_hyps", StringError "not enough hyps"))
                   else
-                     let bvars = extract_bvars stack l in
-                        stack.(j) <- StackSeqContext (bvars, (i, count, hyps));
-                        match_redex_sequent_hyps addrs stack all_bvars hyps' hyps (i+count) len
-
-             | RWSeqFreeVarsContext (non_free, addr, j, l) ->
-                  let count = depth_of_address addrs.(addr) in
-                  if count + i > len then
-                     REF_RAISE(RefineError ("match_redex_sequent_hyps", StringError "not enough hyps"))
-                  else
-                     check_hyp_free_vars (extract_bvars stack non_free) hyps i (i+count);
+                     begin match hyp' with 
+                        RWSeqFreeVarsContext (non_free, _, _, _) ->
+                           check_hyp_free_vars (extract_bvars stack non_free) hyps i (i+count)
+                      | _ -> ()
+                     end;
                      let bvars = extract_bvars stack l in
                         stack.(j) <- StackSeqContext (bvars, (i, count, hyps));
                         match_redex_sequent_hyps addrs stack all_bvars hyps' hyps (i+count) len

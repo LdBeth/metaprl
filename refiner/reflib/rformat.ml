@@ -1647,10 +1647,11 @@ let line_format length fmt_fun =
    let len = String.length s in
    let s =
       if len > length then String.sub s 0 length
-      else if len < length then s ^ (String.make (length - len) ' ')
+      else if overflow && (len <= (length - 3)) then (s ^ "...")
+      else if overflow && (len < length) then s ^ (String.make (length - len) '.')
       else s
    in
-      if overflow or len > length then begin
+      if (overflow && len > (length - 3)) || len > length then begin
          s.[length - 3] <- '.';
          s.[length - 2] <- '.';
          s.[length - 1] <- '.'

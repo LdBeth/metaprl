@@ -42,9 +42,6 @@ sig
    val compose_address : address -> address -> address
    val is_null_address : address -> bool
 
-   (* Term count from an address. Works on hypotheses addresses. *)
-   val depth_of_address : address -> int
-
    (* Works only on sequent addresses and their subaddresses. *)
    val clause_address_of_address : address -> address
 

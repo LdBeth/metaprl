@@ -593,12 +593,6 @@ struct
       in
          aux 1 (goal_of_sequent t)
 
-   let clause_address i =
-      if (i>0) then
-         nth_hd_address (i-1)
-      else
-         raise (Invalid_argument "Term_man_gen.clause_address - arg must be positive")
-
    let make_nth_clause_addr nth_address count i =
       if i < 0 then
          nth_address (count + i)
@@ -630,24 +624,6 @@ struct
                REF_RAISE(RefineError (num_hyps_name, TermMatchError (t, "malformed sequent")))
       in
          aux 0 (goal_of_sequent t)
-
-   (*
-    * Range functions for contexts in the sequent.
-    * We don't check the values because we don't know
-    * the position within the sequent.
-    *)
-   let hyp_range_addr t i =
-      nth_tl_address i
-
-   let hyp_indices_addr t i =
-      let count = num_hyps t in
-      if i < 0 then
-         nth_tl_address (count + i), nth_tl_address ((-1) - i)
-      else
-         nth_tl_address (i - 1), nth_tl_address (count - i)
-
-   let concl_range_addr t i =
-      nth_tl_address i
 
    (*
     * Fast access to hyp and concl.

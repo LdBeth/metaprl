@@ -68,8 +68,8 @@ sig
    (* Names of the contexts and variables to be passed as arguments *)
    type rewrite_args_spec = string array * string array
 
-   (* Addresses for context terms, strings for new variable names, bound variables *)
-   type rewrite_args = address array * string array * string list list
+   (* Sizes (+1) for sequent contexts, strings for new variable names, bound variables *)
+   type rewrite_args = int array * string array * string list list
 
    (*
     * Specifies whether instances of bound variables should be explicitly mentioned
@@ -93,10 +93,10 @@ sig
    val compile_redices : strict -> string array -> term list -> rewrite_redex
    val extract_redex_types : rewrite_redex -> rewrite_type list
    val test_redex_applicability :
-      rewrite_redex -> address array ->
+      rewrite_redex -> int array ->
       term -> term list -> unit
    val apply_redex :
-      rewrite_redex -> address array ->
+      rewrite_redex -> int array ->
       term -> term list -> rewrite_item list
 
    (* Rewrite constructor/destructors *)

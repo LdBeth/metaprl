@@ -543,6 +543,9 @@ struct
 
    let onConclT tac = tac 0
 
+   let pos_hypT tac i p =
+      tac (Sequent.get_pos_hyp_num p i) p
+
    (*
     * Repeat tactic on all subgoals.
     *)
@@ -742,6 +745,7 @@ struct
       try Sequent.get_bool_arg arg "alt" with
          RefineError _ ->
             false
+
 end
 
 (*

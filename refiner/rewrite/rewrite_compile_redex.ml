@@ -326,31 +326,33 @@ struct
             Context (v, vars) ->
                if rstack_mem v stack then
                   (* The context should have a unique name *)
-                  REF_RAISE(RefineError ("is_context_term", RewriteBoundSOVar v))
-
-               else if Array_util.mem v addrs then
-                  (* All the vars should be free variables *)
-                  let vars' = List.map (var_index bvars) vars in
-                  let stack = stack @ [CVar v] in
-                  let restrict_free = if strict then List_util.subtract (List.map bvar_ind bvars) vars' else [] in
-                  let term =
-                     if restrict_free = [] then
-                        RWSeqContext (Array_util.index v addrs,
-                                      List.length stack - 1,
-                                      vars')
+                  REF_RAISE(RefineError ("is_context_term", RewriteBoundSOVar v));
+               let index =
+                  if i = (len - 1) then
+                     if Array_util.mem v addrs then
+                        REF_RAISE(RefineError ("compile_so_redex_sequent_inner", StringStringError("Context at the end of the sequent does not need to be passed in as an argument",v)))
                      else
-                        RWSeqFreeVarsContext (restrict_free,
-                                              Array_util.index v addrs,
-                                              List.length stack - 1,
-                                              vars')
-                  in
-                  let stack, hyps, goals =
-                     compile_so_redex_sequent_inner strict addrs stack bvars (i + 1) len hyps goals
-                  in
-                     stack, term :: hyps, goals
-               else
-                  (* No argument for this context *)
-                  REF_RAISE(RefineError ("compile_so_redex_sequent_inner", RewriteMissingContextArg v))
+                        -1
+                  else
+                     if Array_util.mem v addrs then
+                        Array_util.index v addrs
+                     else
+                        REF_RAISE(RefineError ("compile_so_redex_sequent_inner", RewriteMissingContextArg v))
+               in
+               (* All the vars should be free variables *)
+               let vars' = List.map (var_index bvars) vars in
+               let stack = stack @ [CVar v] in
+               let restrict_free = if strict then List_util.subtract (List.map bvar_ind bvars) vars' else [] in
+               let term =
+                  if restrict_free = [] then
+                     RWSeqContext (index, List.length stack - 1, vars')
+                  else
+                     RWSeqFreeVarsContext (restrict_free, index, List.length stack - 1, vars')
+               in
+               let stack, hyps, goals =
+                  compile_so_redex_sequent_inner strict addrs stack bvars (i + 1) len hyps goals
+               in
+                  stack, term :: hyps, goals
 
           | Hypothesis (v, term) ->
                if rstack_mem v stack then

@@ -332,7 +332,7 @@ sig
     *)
    val compile_rule : build -> string option list -> prim_tactic -> pre_tactic
    val compile_labeled_rule : build -> prim_tactic -> pre_tactic
-   val tactic_of_rule : pre_tactic -> address array * string array -> term list -> tactic
+   val tactic_of_rule : pre_tactic -> int array * string array -> term list -> tactic
 
    (*
     * Also convert rewrites.
@@ -800,15 +800,14 @@ sig
    val tactic_arg_alpha_equal : tactic_arg -> tactic_arg -> bool
    val tactic_arg_alpha_equal_concl : tactic_arg -> tactic_arg -> bool
 
+   (* All numbering in hypotheses and assumptions starts with 1 *)
+
    (*
     * Get the address of a part of the sequent.
     *)
    val clause_addr : tactic_arg -> int -> address
    val get_decl_number : tactic_arg -> string -> int
    val hyp_count : tactic_arg -> int
-   val hyp_count_addr : tactic_arg -> address
-   val hyp_split_addr : tactic_arg -> int -> address * address
-   val hyp_indices : tactic_arg -> int -> address * address
    val get_pos_hyp_num : tactic_arg -> int -> int
 
    (*
@@ -946,6 +945,7 @@ sig
    val onClauseT : int -> (int -> tactic) -> tactic
    val onHypT : int -> (int -> tactic) -> tactic
    val onConclT : (int -> tactic) -> tactic
+   val pos_hypT : (int -> tactic) -> int -> tactic
 
    val onClausesT : int list -> (int -> tactic) -> tactic
    val onHypsT : int list -> (int -> tactic) -> tactic

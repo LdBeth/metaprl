@@ -61,12 +61,6 @@ struct
     | _ ->
          false
 
-   let depth_of_address = function
-      NthClause (i, true) ->
-         i
-    | _  ->
-         REF_RAISE(RefineError ("depth_of_address", StringError "address is not a hypothesis address"))
-
    let rec clause_address_of_address = function
       (NthClause _) as addr ->
          addr

@@ -108,15 +108,6 @@ struct
        | _ ->
             Compose (path1, path2)
 
-   (*
-    * Turn the address back into a term count.
-    *)
-   let rec depth_of_address = function
-      HypAddr i ->
-         i
-    | _ ->
-         REF_RAISE (RefineError ("Term_addr_ds.depth_of_address", StringError "address is not a hypothsis address"))
-
    let rec clause_address_of_address = function
       (HypAddr _ | GoalAddr _) as addr ->
          addr

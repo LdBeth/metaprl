@@ -172,11 +172,11 @@ struct
     * and it provides a function to compute the extract.
     *)
    type ml_rule =
-      address array ->                                  (* context addresses *)
-         string array ->                                (* variable names *)
-         msequent ->                                    (* goal *)
-         term list ->                                   (* params *)
-         msequent list * string array * ml_extract      (* subgoals, new variable names *)
+      int array ->                                   (* sequent context addresses *)
+      string array ->                                (* variable names *)
+      msequent ->                                    (* goal *)
+      term list ->                                   (* params *)
+      msequent list * string array * ml_extract      (* subgoals, new variable names *)
 
    (************************************************************************
     * TYPES                                                                *
@@ -233,7 +233,7 @@ struct
 
    and atomic_just =
       { just_goal : msequent;
-        just_addrs : Rewrite.address array;
+        just_addrs : int array;
         just_names : string array;
         just_params : term list;
         just_refiner : opname;
@@ -455,7 +455,7 @@ struct
    (*
     * These are the forms created at compile time.
     *)
-   type prim_tactic = address array * string array -> term list -> tactic
+   type prim_tactic = int array * string array -> term list -> tactic
    type prim_rewrite = rw
    type prim_cond_rewrite = string array * term list -> cond_rewrite
 

@@ -468,7 +468,7 @@ let params_ctyp loc ctyp params =
          let arg_type =
             match h with
                ContextParam _ ->
-                  <:ctyp< Refiner.Refiner.TermAddr.address >>
+                  <:ctyp< int >>
              | VarParam _ ->
                   <:ctyp< string >>
              | TermParam _ ->
@@ -901,7 +901,7 @@ struct
          let expr =
             match h with
                ContextParam _ ->
-                  <:expr< Mptop.AddressFunExpr $expr$ >>
+                  <:expr< Mptop.IntFunExpr $expr$ >>
              | VarParam _ ->
                   <:expr< Mptop.StringFunExpr $expr$ >>
              | TermParam _ ->

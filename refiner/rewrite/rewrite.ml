@@ -156,7 +156,7 @@ struct
    type rewrite_redex = RewriteTypes.rewrite_redex
 
    type rewrite_args_spec = string array * string array
-   type rewrite_args = address array * string array * string list list
+   type rewrite_args = int array * string array * string list list
 
    (*
     * Types for redex matching.

@@ -1891,7 +1891,7 @@ struct
                             just_params = params;
                             just_refiner = opname
             } ->
-               let addrs = Array.map (fun addr -> StringArg (TermAddr.string_of_address addr)) addrs in
+               let addrs = Array.map (fun addr -> IntArg addr) addrs in
                let names = Array.map (fun name -> StringArg name) names in
                let params = Array.of_list (List.map (fun t -> TermArg t) params) in
                let name = [|StringArg (string_of_opname opname)|] in

@@ -88,24 +88,6 @@ struct
    let hyp_count arg =
       TermMan.num_hyps (goal arg)
 
-   let hyp_count_addr arg =
-      let goal = goal arg in
-         TermMan.hyp_range_addr goal (TermMan.num_hyps goal)
-
-   let hyp_split_addr arg i =
-      let goal = goal arg in
-      let count = TermMan.num_hyps goal in
-      let j, k =
-         if i < 0 then
-            count + i + 1, (-1) - i
-         else
-            i, count - i
-      in
-         TermMan.hyp_range_addr goal j, TermMan.hyp_range_addr goal k
-
-   let hyp_indices arg i =
-      TermMan.hyp_indices_addr (goal arg) i
-
    let get_pos_hyp_num arg i =
       if i < 0 then
          (hyp_count arg) + i + 1

@@ -65,6 +65,8 @@ sig
    val explode_sequent : term -> esequent
    val args_of_sequent : term -> term
 
+   (* Indexing starts at 1 *)
+   
    val nth_hyp : term -> int -> term
    val nth_binding : term -> int -> string
    val nth_concl : term -> int -> term
@@ -78,21 +80,11 @@ sig
     * compute addreses for parts of a sequent.
     * The indexing starts from 1.  Clause 0
     * refers to the conclusion.
-    *
-    * The range functions provide addresses
-    * that are used for contexts in sequent
-    * rewriting.
     *)
    val nth_hyp_addr : term -> int -> address
    val nth_concl_addr : term -> int -> address
    val nth_clause_addr : term -> int -> address
-   val hyp_range_addr : term -> int -> address
-   val hyp_indices_addr : term -> int -> address * address
-   val concl_range_addr : term -> int -> address
    val replace_goal : term -> term -> term          (* One concl *)
-
-   (* The following function is only intended for use from MP top-loop *)
-   val clause_address : int -> address
 
    val is_xrewrite_term : term -> bool
    val mk_xrewrite_term : term -> term -> term

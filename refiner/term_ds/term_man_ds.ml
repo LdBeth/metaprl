@@ -409,14 +409,6 @@ struct
        | _ ->
             REF_RAISE(RefineError (nth_clause_addr_name, TermMatchError (t, "not a sequent")))
 
-   let clause_address i =
-      if (i = 0) then
-         GoalAddr 0
-      else if (i > 0) then
-         HypAddr (pred i)
-      else
-         raise (Invalid_argument "Term_man_ds.clause_address - arg must be non-negative")
-
    (*
     * Count the hyps.
     *)
@@ -430,22 +422,6 @@ struct
             num_hyps t
        | _ ->
             REF_RAISE(RefineError (num_hyps_name, TermMatchError (t, "not a sequent")))
-
-   (*
-    * Addresses to be used in sequent rewriting.
-    *)
-   let hyp_range_addr t i =
-      HypAddr i
-
-   let hyp_indices_addr t i =
-      let count = num_hyps t in
-      if i < 0 then
-         HypAddr (count + i), HypAddr ((-1) - i)
-      else
-         HypAddr (i - 1), HypAddr (count - i)
-
-   let concl_range_addr t i =
-      GoalAddr i
 
    (*
     * Fast access to hyp and concl. Counting starts from 1.
