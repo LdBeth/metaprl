@@ -39,7 +39,7 @@ TEMP=`mktemp /tmp/mkstatus.XXXXXX`
 umask 002
 cd $1
 rm -f editor/ml/mp.opt
-(( 
+((
 if [ "$2" = "update" ]; then
    echo "*** cvs -n update ***"
    ( cvs -n update 2>&1 ) | grep -v '^cvs server: New directory'
@@ -47,7 +47,7 @@ if [ "$2" = "update" ]; then
 fi
 # cvs -q update 2>&1
 if [ -e .omakedb ]; then
-   omake VERBOSE=1 -S 
+   omake VERBOSE=1 -S editor/ml/mp.opt
 else
    (make -s depend > /dev/null && make -s opt > /dev/null) 2>&1 | egrep -v -- "-jN forced in submake|Makefile.dep: No such file or directory"
 fi
@@ -58,7 +58,7 @@ if diff -q -I '^Expand time:' $TEMP $LOG > /dev/null; then
    echo ""
    echo NO PROOF STATUS CHANGES
    echo ""
-   echo -n Was: 
+   echo -n Was:
    grep '^Expand time:' $LOG
    echo -n Now:
    grep '^Expand time:' $TEMP
