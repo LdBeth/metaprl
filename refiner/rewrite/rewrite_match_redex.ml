@@ -203,20 +203,36 @@ struct
       in
          collect c (List.map dest_level_var vars) vars'
 
+#ifdef VERBOSE_EXN
+#  define PARAM_REASON p
+#else
+#  define PARAM_REASON
+#endif
+
+   let update_redex_param stack i sp PARAM_REASON =
+      match stack.(i) with
+         StackVoid ->
+            stack.(i) <- sp
+       | sp' ->
+            if (sp <> sp') then
+               ref_raise(RefineError ("update_redex_params", RewriteBadMatch (ParamMatch PARAM_REASON)));
+            ()
+           
+
    let match_redex_params stack p' p =
       match p', dest_param p with
            (* Literal matches *)
          RWNumber i, Number j ->
-            if not (i = j) then
+            if (i <> j) then
                ref_raise(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
        | RWString s', String s ->
-            if not (s' = s) then
+            if (s' <> s) then
                ref_raise(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
        | RWToken t', Token t ->
-            if not (t' = t) then
+            if (t' <> t) then
                ref_raise(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
        | RWVar v', Var v ->
-            if not (v' = v) then
+            if (v' <> v) then
                ref_raise(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
 
            (* Variable matches *)
@@ -226,35 +242,35 @@ struct
                eprintf "Rewrite.match_redex_params.RWMNumber: stack(%d)/%d <- %s%t" (**)
                   i (Array.length stack) (Mp_num.string_of_num j) eflush;
 #endif
-            stack.(i) <- StackNumber j
+            update_redex_param stack i (StackNumber j) PARAM_REASON
        | RWMString i, String s ->
 #ifdef VERBOSE_EXN
             if !debug_rewrite then
                eprintf "Rewrite.match_redex_params.RWMString: stack(%d)/%d <- %s%t" (**)
                   i (Array.length stack) s eflush;
 #endif
-            stack.(i) <- StackString s
+            update_redex_param stack i (StackString s) PARAM_REASON
        | RWMToken i, Token t ->
 #ifdef VERBOSE_EXN
             if !debug_rewrite then
                eprintf "Rewrite.match_redex_params.RWMToken: stack(%d)/%d <- %s%t" (**)
                   i (Array.length stack) t eflush;
 #endif
-            stack.(i) <- StackString t
+            update_redex_param stack i (StackString t) PARAM_REASON
        | RWMVar i, Var v ->
 #ifdef VERBOSE_EXN
             if !debug_rewrite then
                eprintf "Rewrite.match_redex_params.RWMVar: stack(%d)/%d <- %s%t" (**)
                   i (Array.length stack) v eflush;
 #endif
-            stack.(i) <- StackString v
+            update_redex_param stack i (StackString v) PARAM_REASON
        | RWMLevel1 i, MLevel l ->
 #ifdef VERBOSE_EXN
             if !debug_rewrite then
                eprintf "Rewrite.match_redex_params.RWMLevel1: stack(%d)/%d%t" (**)
                   i (Array.length stack) eflush;
 #endif
-            stack.(i) <- StackLevel l
+            update_redex_param stack i (StackLevel l) PARAM_REASON
        | RWMLevel2 l', MLevel l ->
 #ifdef VERBOSE_EXN
             if !debug_rewrite then
@@ -268,28 +284,28 @@ struct
                eprintf "Rewrite.match_redex_params.RWMNumber: stack(%d)/%d <- %s%t" (**)
                   i (Array.length stack) s eflush;
 #endif
-            stack.(i) <- StackMString s
+            update_redex_param stack i (StackMString s) PARAM_REASON
        | RWMString i, MString s ->
 #ifdef VERBOSE_EXN
             if !debug_rewrite then
                eprintf "Rewrite.match_redex_params.RWMString: stack(%d)/%d <- %s%t" (**)
                   i (Array.length stack) s eflush;
 #endif
-            stack.(i) <- StackMString s
+            update_redex_param stack i (StackMString s) PARAM_REASON
        | RWMToken i, MToken s ->
 #ifdef VERBOSE_EXN
             if !debug_rewrite then
                eprintf "Rewrite.match_redex_params.RWMToken: stack(%d)/%d <- %s%t" (**)
                   i (Array.length stack) s eflush;
 #endif
-            stack.(i) <- StackMString s
+            update_redex_param stack i (StackMString s) PARAM_REASON
        | RWMVar i, MVar v ->
 #ifdef VERBOSE_EXN
             if !debug_rewrite then
                eprintf "Rewrite.match_redex_params.RWMVar: stack(%d)/%d <- %s%t" (**)
                   i (Array.length stack) v eflush;
 #endif
-            stack.(i) <- StackMString v
+            update_redex_param stack i (StackMString v) PARAM_REASON
 
        | _ -> ref_raise(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
 

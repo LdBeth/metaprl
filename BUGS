@@ -63,11 +63,6 @@ This error also raised when we cd <theory>, and then load <theory>:
 
 REWRITER
 
-*) When redex has repeated meta-parameter, rewriter does not check the parameter
-equality when matching agaings that redex
-
-Example: redex <<add{number[n:n];number[n:n]}>> matches <<add{1;2}>>
-
 *) If a variable is bound in a context, rewriter may handle it incorrectly.
 
 *) If the same variable is bound several times in redex or contractum specification, rewriter
@@ -89,6 +84,10 @@ The "strict" mode would also eliminate the problem rhw bug mentioned below in th
 section.
 
 *) Rewriter does not prevent capturing. It should, at least in the "strict" mode.
+
+*) Currently rewriter does not enforce building contractum to be against the same redex
+the contractum was compiled against. Hopefully we never do this wrong, but we still
+should enforce it.
 
 REFINER
 
