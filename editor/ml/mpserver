@@ -1,4 +1,4 @@
-#1/bin/csh -f
+#!/bin/csh -f
 
 source mpconfig
 
