@@ -513,6 +513,7 @@ struct
                }
             in
                pack_info.pack_str <- Some pack_str;
+               pack_info.pack_status <- Unmodified;
                pack_info.pack_infixes <- StringSet.elements infixes;
                add_implementation pack_info;
                Cache.StrFilterCache.set_mode info InteractiveSummary
@@ -714,7 +715,11 @@ struct
 
    let export arg pack_info =
       auto_loading_str arg pack_info (function
-         { pack_str = Some { pack_str_info = info } } ->
+         { pack_status = ReadOnly; pack_name = name } ->
+            raise (Failure (sprintf "Package_info/save: package '%s' is read-only" name))
+       | { pack_status = Incomplete; pack_name = name } ->
+            raise (Failure (sprintf "Package_info/save: package '%s' is incomplete" name))
+       | { pack_str = Some { pack_str_info = info } } ->
             Cache.StrFilterCache.save info arg (OnlySuffixes ["prla"])
        | { pack_str = None; pack_name = name } ->
             raise (NotLoaded name))
