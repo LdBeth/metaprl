@@ -7,6 +7,11 @@ LIB     = $(dir lib)
 BIN     = $(dir bin)
 
 #
+# Library suffix
+#
+LIB_SUFFIX = $(if $(NATIVE_ENABLED), .cmxa, .cma)
+
+#
 # If this is the root directory of the project,
 # then include the config file.  Otherwise,
 # we assume that the variables in the mk/config
@@ -39,7 +44,7 @@ if $(equal $(OLDROOT), $(ROOT))
 #
 # Generic phony targets
 #
-.PHONY: all opt install clean realclean depend
+.PHONY: all opt install clean realclean depend local
 
 #
 # Default clean line
