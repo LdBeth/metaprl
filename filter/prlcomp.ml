@@ -3,17 +3,17 @@
  *
  * Call it as:
  *    ocamlc -pp "camlp4 pa_o.cmo pa_op.cmo pr_dump.cmo pa_extend.cmo q_ast.cmo\
- *                   $NLLIB/refiner/refiner.cma\
- *                   $NLLIB/filter/prlcomp.cma\
- *                   $NLLIB/filter/filter_main.cmo"
+ *                   $MPLIB/refiner/refiner.cma\
+ *                   $MPLIB/filter/prlcomp.cma\
+ *                   $MPLIB/filter/filter_main.cmo"
  *       $*
  *
  * Set NL_INCLUDE from collection of all -I options.
  * Use "-E" option for preprocessing:
  *     camlp4 pa_o.cmo pa_op.cmo pr_dump.cmo pa_extend.cmo q_ast.cmo\
- *                   $NLLIB/refiner/refiner.cma\
- *                   $NLLIB/filter/prlcomp.cma\
- *                   $NLLIB/filter/filter_main.cmo
+ *                   $MPLIB/refiner/refiner.cma\
+ *                   $MPLIB/filter/prlcomp.cma\
+ *                   $MPLIB/filter/filter_main.cmo
  *                   $*
  *
  * ----------------------------------------------------------------
@@ -79,12 +79,12 @@ let file_interactive name =
  * Environment.
  *)
 let lib =
-   ref (try Sys.getenv "NLLIB" with
+   ref (try Sys.getenv "MPLIB" with
            Not_found ->
-              raise (Invalid_argument "NLLIB environment variable is undefined"))
+              raise (Invalid_argument "MPLIB environment variable is undefined"))
 
 let set_lib s =
-   let var = sprintf "NLLIB=%s" s in
+   let var = sprintf "MPLIB=%s" s in
       if !verbose_mode > 0 then
          eprintf "Setting %s%t" var eflush;
       Punix.putenv var;

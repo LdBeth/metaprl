@@ -30,7 +30,7 @@ pthread:
 	fi
 
 install:: $(MAIN)$(EXT_LIB)
-	$(INSTALL) $(MAIN)$(EXT_LIB) $(NLLIB)
+	$(INSTALL) $(MAIN)$(EXT_LIB) $(MPLIB)
 
 #
 # Installation

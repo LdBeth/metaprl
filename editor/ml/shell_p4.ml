@@ -530,9 +530,9 @@ struct
    let main () =
       let init () =
          let nllib =
-            try Sys.getenv "NLLIB" with
+            try Sys.getenv "MPLIB" with
                Not_found ->
-                  raise (Invalid_argument "NLLIB environment variable in undefined")
+                  raise (Invalid_argument "MPLIB environment variable in undefined")
          in
          let eval_include inc =
             Toploop.execute_phrase false (Ptop_dir ("directory", Pdir_string inc));

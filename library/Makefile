@@ -73,7 +73,7 @@ opt: $(RMLIFILES) $(RCMIFILES) $(RCMXAFILES) $(ROOT)/lib/registry.txt
 	@ $(MAKE) $(RAFILES)
 
 install:: $(MAIN).cma
-	$(INSTALL) $(MAIN).cma registry.txt $(NLLIB)
+	$(INSTALL) $(MAIN).cma registry.txt $(MPLIB)
 
 clean::
 	rm -f *.p4* *.pp*

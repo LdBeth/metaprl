@@ -19,7 +19,7 @@ endif
 #
 # Use the local copy of the library
 #
-setenv NLLIB ../../lib
+setenv MPLIB ../../lib
 
 #
 # Camlp4 directory

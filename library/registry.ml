@@ -63,9 +63,9 @@ let registry_types = ref []
  * The registry file should be stored in the lib directory.
  *)
 let registry_file =
-   try Filename.concat (Sys.getenv "NLLIB") "registry.txt" with
+   try Filename.concat (Sys.getenv "MPLIB") "registry.txt" with
       Not_found ->
-         raise (Failure "environment variable NLLIB is not defined")
+         raise (Failure "environment variable MPLIB is not defined")
 
 (*
  * Define a particular type of registry.

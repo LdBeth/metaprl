@@ -22,8 +22,8 @@ ifndef CAMLP4LIB
    CAMLP4LIB := /usr/lib/camlp4
 endif
 
-ifndef NLLIB
-   NLLIB=$(ROOT)/lib
+ifndef MPLIB
+   MPLIB=$(ROOT)/lib
 endif
 
 #

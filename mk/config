@@ -46,22 +46,22 @@ ifdef MAIN
 endif
 
 # Library file names
-MLFILES      = $(sort $(addsuffix .ml,   $(NLFILES) $(NL2FILES) $(LMFILES) $(MFILES) $(PFILES)))
-MLIFILES     = $(sort $(addsuffix .mli,  $(NLFILES) $(NL2FILES) $(LMFILES) $(MFILES) $(PFILES)))
+MLFILES      = $(sort $(addsuffix .ml,   $(MPFILES) $(MP2FILES) $(LMFILES) $(MFILES) $(PFILES)))
+MLIFILES     = $(sort $(addsuffix .mli,  $(MPFILES) $(MP2FILES) $(LMFILES) $(MFILES) $(PFILES)))
 
-NL_CMIFILES  = $(addsuffix .cmi,  $(NLFILES))
-NL_CMOFILES  = $(addsuffix .cmo,  $(NLFILES))
-NL_CMIZFILES = $(addsuffix .cmiz, $(NLFILES))
-NL_CMOZFILES = $(addsuffix .cmoz, $(NLFILES))
-NL_CMXFILES  = $(addsuffix .cmx,  $(NLFILES))
-NL_PPOFILES  = $(addsuffix .ppo,  $(NLFILES))
+MP_CMIFILES  = $(addsuffix .cmi,  $(MPFILES))
+MP_CMOFILES  = $(addsuffix .cmo,  $(MPFILES))
+MP_CMIZFILES = $(addsuffix .cmiz, $(MPFILES))
+MP_CMOZFILES = $(addsuffix .cmoz, $(MPFILES))
+MP_CMXFILES  = $(addsuffix .cmx,  $(MPFILES))
+MP_PPOFILES  = $(addsuffix .ppo,  $(MPFILES))
 
-NL2_CMIFILES  = $(addsuffix .cmi,  $(NL2FILES))
-NL2_CMOFILES  = $(addsuffix .cmo,  $(NL2FILES))
-NL2_CMIZFILES = $(addsuffix .cmiz, $(NL2FILES))
-NL2_CMOZFILES = $(addsuffix .cmoz, $(NL2FILES))
-NL2_CMXFILES  = $(addsuffix .cmx,  $(NL2FILES))
-NL2_PPOFILES  = $(addsuffix .ppo,  $(NL2FILES))
+MP2_CMIFILES  = $(addsuffix .cmi,  $(MP2FILES))
+MP2_CMOFILES  = $(addsuffix .cmo,  $(MP2FILES))
+MP2_CMIZFILES = $(addsuffix .cmiz, $(MP2FILES))
+MP2_CMOZFILES = $(addsuffix .cmoz, $(MP2FILES))
+MP2_CMXFILES  = $(addsuffix .cmx,  $(MP2FILES))
+MP2_PPOFILES  = $(addsuffix .ppo,  $(MP2FILES))
 
 LCMOFILES    = $(addsuffix .cmo,  $(LMFILES))
 LCMIFILES    = $(addsuffix .cmi,  $(LMFILES))
@@ -84,9 +84,9 @@ REG_CMIFILES = $(sort $(LCMIFILES) $(MCMIFILES) $(PCMIFILES))
 REG_CMOFILES = $(sort $(LCMOFILES) $(MCMOFILES) $(PCMOFILES))
 REG_CMXFILES = $(sort $(LCMXFILES) $(MCMXFILES) $(PCMXFILES))
 
-CMIFILES     = $(sort $(NL_CMIFILES) $(NL2_CMIFILES) $(LCMIFILES) $(MCMIFILES))
-CMOFILES     = $(sort $(NL_CMOFILES) $(NL2_CMOFILES) $(LCMOFILES) $(MCMOFILES))
-CMXFILES     = $(sort $(NL_CMXFILES) $(NL2_CMXFILES) $(LCMXFILES) $(MCMXFILES))
+CMIFILES     = $(sort $(MP_CMIFILES) $(MP2_CMIFILES) $(LCMIFILES) $(MCMIFILES))
+CMOFILES     = $(sort $(MP_CMOFILES) $(MP2_CMOFILES) $(LCMOFILES) $(MCMOFILES))
+CMXFILES     = $(sort $(MP_CMXFILES) $(MP2_CMXFILES) $(LCMXFILES) $(MCMXFILES))
 
 CMAFILES     = $(addsuffix .cma,  $(MLLIBS))
 CMXAFILES    = $(addsuffix .cmxa, $(MLLIBS))
@@ -115,11 +115,11 @@ $(MAIN)$(EXT_LIB): $(OFILES)
 	ar r $@ $?
 	ranlib $@
 
-$(MAIN).cma: $(LCMOFILES) $(NL_CMOFILES)
-	$(OCAMLC) $(OCAMLCFLAGS) -a -o $@ $(LCMOFILES) $(NL_CMOFILES)
+$(MAIN).cma: $(LCMOFILES) $(MP_CMOFILES)
+	$(OCAMLC) $(OCAMLCFLAGS) -a -o $@ $(LCMOFILES) $(MP_CMOFILES)
 
-$(MAIN).cmxa: $(LCMXFILES) $(NL_CMXFILES)
-	$(OCAMLOPT) $(OCAMLOPTFLAGS) -a -o $@ $(LCMXFILES) $(NL_CMXFILES)
+$(MAIN).cmxa: $(LCMXFILES) $(MP_CMXFILES)
+	$(OCAMLOPT) $(OCAMLOPTFLAGS) -a -o $@ $(LCMXFILES) $(MP_CMXFILES)
 
 $(MAIN).run: $(CMAFILES) $(CMADEPS) $(PCMOFILES)
 	$(OCAMLCP) -custom $(OCAMLCFLAGS) -o $@ $(OCAMLCPOPT) $(CMALIBS) $(CMAFILES) $(PCMOFILES) $(CCLIBS) $(LIBTHREADS)
@@ -156,16 +156,16 @@ $(RCMXAFILES): $(ROOT)/lib/%.cmxa: %.cmxa
 $(RAFILES): $(ROOT)/lib/%$(EXT_LIB): %$(EXT_LIB)
 	$(LN) ../$(DIR)/$*$(EXT_LIB) $(ROOT)/lib
 
-$(NL_CMIFILES) $(NL2_CMIFILES): %.cmi: %.mli
-	NLLIB=$(NLLIB) $(PRLC) $(OCAMLCFLAGS) -c $*.mli
+$(MP_CMIFILES) $(MP2_CMIFILES): %.cmi: %.mli
+	MPLIB=$(MPLIB) $(PRLC) $(OCAMLCFLAGS) -c $*.mli
 
-$(NL_PPOFILES) $(NL2_PPOFILES): %.ppo: %.cmi %.ml
+$(MP_PPOFILES) $(MP2_PPOFILES): %.ppo: %.cmi %.ml
 	$(CAMLP4N) $(CAMLP4NFLAGS) $*.ml -o $*.ppo
 
-$(NL_CMOFILES) $(NL2_CMOFILES): %.cmo: %.ppo %.cmi
+$(MP_CMOFILES) $(MP2_CMOFILES): %.cmo: %.ppo %.cmi
 	$(OCAMLC) $(OCAMLCFLAGS) -c -impl $*.ppo
 
-$(NL_CMXFILES) $(NL2_CMXFILES): %.cmx: %.ppo %.cmi
+$(MP_CMXFILES) $(MP2_CMXFILES): %.cmx: %.ppo %.cmi
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -c -impl $*.ppo
 
 $(REG_CMOFILES): %.cmo: %.ml %.cmi
@@ -178,10 +178,10 @@ $(REG_CMXFILES): %.cmx: %.ml %.cmi
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -c $*.ml
 
 %.p4i: %.mli
-	NLLIB=$(NLLIB) $(PRLC) $(INCLUDE) -E $*.mli > $*.p4i
+	MPLIB=$(MPLIB) $(PRLC) $(INCLUDE) -E $*.mli > $*.p4i
 
 %.p4: %.ml
-	NLLIB=$(NLLIB) $(PRLC) $(INCLUDE) -E $*.ml > $*.p4
+	MPLIB=$(MPLIB) $(PRLC) $(INCLUDE) -E $*.ml > $*.p4
 
 %.ml: %.mll
 	$(RM) $@

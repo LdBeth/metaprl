@@ -35,7 +35,7 @@ MLZFILES =\
 	shell_p4_type
 
 # Library files
-NLFILES =\
+MPFILES =\
 	io_proof_type\
 	io_proof\
 	proof_type\
@@ -52,7 +52,7 @@ NLFILES =\
 	shell_p4_type\
 	shell
 
-NL2FILES =\
+MP2FILES =\
 	shell_p4\
 	shell_mp\
 	test\

@@ -17,7 +17,7 @@ REFINER_DIRS :=\
 	refiner\
 	library
 
-NL_DIRS :=\
+MP_DIRS :=\
 	ensemble\
 	theories/tactic\
 	theories/ocaml\
@@ -27,7 +27,7 @@ NL_DIRS :=\
 	theories/reflect_itt\
 	theories/fol
 
-DIRS := $(REFINER_DIRS) filter $(NL_DIRS) editor/ml
+DIRS := $(REFINER_DIRS) filter $(MP_DIRS) editor/ml
 
 .PHONY: all opt install depend clean filter profile_all profile_clean profile_byte profile profile_opt
 
@@ -67,7 +67,7 @@ profile_opt:
 		if (echo Making $$i...; cd $$i; $(MAKE) PROFILE=-p INLINE=0 opt); then true; else exit 1; fi;\
 	done
 	@if (echo Making filter...; cd filter; $(MAKE) PROFILE=-p INLINE=0 profile); then true; else exit 1; fi
-	@for i in $(NL_DIRS) editor/ml; do\
+	@for i in $(MP_DIRS) editor/ml; do\
 		if (echo Making $$i...; cd $$i; $(MAKE) PROFILE=-p INLINE=0 opt); then true; else exit 1; fi;\
 	done
 

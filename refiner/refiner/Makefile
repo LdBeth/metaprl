@@ -29,5 +29,5 @@ lib: $(MAIN).cma $(RMLIFILES) $(RCMIFILES)
 opt: $(MAIN).cmxa $(RMLIFILES) $(RCMIFILES)
 
 install:: $(MAIN).cma $(CMIFILES)
-	$(INSTALL) $(MLIFILES) $(CMIFILES) $(NLLIB)
+	$(INSTALL) $(MLIFILES) $(CMIFILES) $(MPLIB)
 

@@ -233,7 +233,7 @@ opt: $(RMLIFILES) $(RCMIFILES) $(RCMXAFILES) $(CAMLP4N).opt $(CAMLP4O).opt $(PRL
 profile: $(RMLIFILES) $(RCMXAFILES) 
 
 install:: $(MAIN).cma $(LCMIFILES) $(CAMLP4N).run $(CAMLP4O).run $(PRLCN).run $(PRLCO).run $(MAIN).run
-	$(INSTALL) $(MAIN).cma $(LMLIFILES) $(LCMIFILES) $(NLLIB)
+	$(INSTALL) $(MAIN).cma $(LMLIFILES) $(LCMIFILES) $(MPLIB)
 	if [ $(CAMLP4N).opt -nt $(CAMLP4N).run ]; then\
 		$(LN) ../$(DIR)/$(CAMLP4N).opt $(ROOT)/lib/$(CAMLP4N);\
 	else\

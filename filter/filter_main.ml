@@ -72,7 +72,7 @@ let remove_output_file () =
          ()
 
 let set_lib s =
-   let var = sprintf "NLLIB=%s" s in
+   let var = sprintf "MPLIB=%s" s in
       Punix.putenv var;
       ()
 
@@ -82,7 +82,7 @@ let add_anon_arg arg =
 let spec =
    ["-I", String add_include, "add an directory to the path for include files";
     "-o", String set_output_file, "specify output file";
-    "-lib", String set_lib, "specify NLLIB directory"]
+    "-lib", String set_lib, "specify MPLIB directory"]
 
 (*
  * Add the include path.
