@@ -335,7 +335,6 @@ let subgoals_id         = "_$subgoals"
 let term_id             = "_$term"
 let cvars_id            = "_$cvars"
 let bnames_id           = "_$bnames"
-let info_id             = "_$info"
 let rewrite_id          = "_$rewrite"
 let extract_id          = "_$extract"
 let stack_id            = "_$stack"
@@ -1095,8 +1094,7 @@ let define_ml_rewrite want_checkpoint proc loc mlrw rewrite_expr =
    in
    let rewrite_let = <:expr<
       let $lid:rewrite_id$ = $fun_expr loc args_id rewrite_body$ in
-      let $lid:info_id$ = $lid:rewrite_id$ in
-         $create_ml_rewrite_expr$ $lid:local_refiner_id$ $str:name$ $lid:info_id$
+         $create_ml_rewrite_expr$ $lid:local_refiner_id$ $str:name$ $lid:rewrite_id$
    >> in
    let body = define_ml_program proc loc strict_expr tparams name mlrw.mlterm_term rewrite_expr rewrite_let in
       checkpoint_resources want_checkpoint loc name [
@@ -1221,10 +1219,7 @@ let define_ml_rule want_checkpoint proc loc
 
    let create_expr =
       <:expr< $tactic_type_expr loc$.compile_ml_rule $lid:local_refiner_id$ (**)
-               ($create_ml_rule_expr loc$ $lid:local_refiner_id$ $str:name$ $lid:info_id$) >>
-   in
-   let info_let =
-      <:expr< let $lid:info_id$ = $lid:rule_id$ in $create_expr$ >>
+               ($create_ml_rule_expr loc$ $lid:local_refiner_id$ $str:name$ $lid:rule_id$) >>
    in
    let rule_patt =
       <:patt< [| $list:List.map (fun v -> lid_patt_ (string_of_symbol v)) cvars$ |] >>
@@ -1245,7 +1240,7 @@ let define_ml_rule want_checkpoint proc loc
    let rule_expr = <:expr< $dest_msequent_expr loc$ $lid:goal_id$ >> in
    let rule_body = <:expr< let $list:[ rule_patt, rule_expr ]$ in $rule_body$ >> in
    let rule_patt = <:patt< $lid:rule_id$ >> in
-   let rule_let  = <:expr< let $list:[ rule_patt, fun_expr loc [addrs_id; names_id; goal_id; params_id] rule_body ]$ in $info_let$ >> in
+   let rule_let  = <:expr< let $list:[ rule_patt, fun_expr loc [addrs_id; names_id; goal_id; params_id] rule_body ]$ in $create_expr$ >> in
    let body = define_ml_program proc loc strict_expr tparams name redex code rule_let in
 
    let rule_fun_expr =
