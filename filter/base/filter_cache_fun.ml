@@ -637,8 +637,10 @@ struct
       let shapes = cache.shapes in
          if ShapeTable.mem shapes shape then begin
             let watch', shapeclass' = ShapeTable.find shapes shape in
-               if watch' && watch || shapeclass' <> shapeclass then
-                  raise (Failure ("Filter_cache_fun.check_redeclaration: redefining term " ^ SimplePrint.string_of_term t))
+               if watch' && watch then
+                  raise (Failure ("Filter_cache_fun.check_redeclaration: redefining term:\n" ^ SimplePrint.string_of_term t));
+               if shapeclass' <> shapeclass then
+                  raise (Failure ("Filter_cache_fun.check_redeclaration: shape class does not match the interface:\n" ^ SimplePrint.string_of_term t));
          end;
          cache.shapes <- ShapeTable.add shapes shape (watch, shapeclass)
 

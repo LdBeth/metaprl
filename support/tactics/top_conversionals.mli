@@ -110,7 +110,6 @@ topval reduceT : tactic
  * DEBUGGING
  ************************************************************************)
 
-val create_iform : string -> bool -> term -> term -> conv
 val apply_rewrite : tactic_arg -> conv -> term -> term
 
 (*
