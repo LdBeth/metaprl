@@ -670,15 +670,20 @@ dform arglist_df1 : internal :: arglist{'args} =
 declare msequent{'goal; 'assums}
 declare goals_df{'main; 'goal}
 declare goal_list_status{'cache}
+declare cache_status{'status}
 
 dform proof_df : internal :: proof{'main; goal_list{'goal}; 'text; 'subgoals} =
    szone pushm pagebreak goals_df{'main; 'goal} 'text 'subgoals popm ezone
 
 dform goals_df : internal :: goals_df{goal{'status; 'label; 'assums; 'goal}; 'cache} =
-   'status `"[" goal_list_status{'cache} `"]" newline 'label msequent{'goal; 'assums}
+   'status cache_status{goal_list_status{'cache}} newline 'label msequent{'goal; 'assums}
 
 dform goal_df : internal :: goal{'status; 'label; 'assums; 'goal} =
-   'status `"[]" newline 'label msequent{'goal; 'assums}
+   'status cache_status{nil} newline 'label msequent{'goal; 'assums}
+
+(* XXX display of the cache status is turned off since there is no way to access the cache anyway *)
+dform cache_status_df : internal :: cache_status{'status} =
+   (* `"[" 'status `"]" *) `""
 
 dform goal_list_status_df1 : internal :: goal_list_status{cons{goal{goal_status{'status}; 'label; 'assums; 'goal}; cons{'hd; 'tl}}} =
    df_last{'status} `" " goal_list_status{cons{'hd; 'tl}}
