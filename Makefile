@@ -38,7 +38,7 @@ DIRS = $(REFINER_DIRS)\
 
 .PHONY: all opt
 .PHONY: profile_all profile_clean profile_byte filter profile profile_opt profile_mem profile_mem_opt
-.PHONY: install depend clean check_config
+.PHONY: install depend clean check_config check_omake
 .PHONY: documentation docs doc latex theories.pdf all-theories.pdf ocaml-book
 
 all: check_config
@@ -136,14 +136,29 @@ depend: check_config
 		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	fi; done
 
-mk/config: mk/make_config.sh
+mk/config: check_omake mk/make_config.sh
 	@echo Making mk/config...
 	@ROOT="$(ROOT)" TERMS="$(TERMS)" REFINER="$(REFINER)" MAKE_OPTS="$(MAKE_OPTS)" SEQ_SET="$(SEQ_SET)" CCC="$(CCC)" ENSROOT="$(ENSROOT)" OCAMLSRC="$(OCAMLSRC)" THEORIES="$(THEORIES)" TESTS="$(TESTS)" READLINE="$(READLINE)" NCURSES="$(NCURSES)" SLOPPY_DEPENDENCIES="$(SLOPPY_DEPENDENCIES)" mk/make_config.sh
 
-mk/config.local:
+mk/config.local: check_omake
 	@touch mk/config.local
 
-check_versions:: mk/config mk/config.local
+check_omake::
+	@if [ -e .omakedb ]; then \
+		echo '!!!';\
+		echo '!!! This directory was previously built using omake.';\
+		echo '!!! Mixing omake builds with make ones is probably not a good idea.';\
+		echo '!!!';\
+		echo '!!! You have several choices:';\
+        echo '!!!  - continue using omake';\
+        echo '!!!  - run "make realclean" and switch to using make';\
+        echo '!!!  - (not recommended) remove the .omakedb file, run "make depend"';\
+        echo '!!!    and switch to using make';\
+		echo '!!!';\
+		exit 1;\
+	fi
+
+check_versions:: mk/config mk/config.local check_omake
 	@if [ ! -r $(CAMLLIB)/parsetree.cmi ]; then \
 		echo '!!! The file $(CAMLLIB)/parsetree.cmi does not exist (or is not readable)!'; echo '!!!';\
 		echo '!!! Please consult doc/htmlman/mp-install.html (http://metaprl.org/install.html)';\
@@ -157,7 +172,7 @@ check_versions:: mk/config mk/config.local
 		exit 1;\
 	fi
 
-check_versions_opt:: mk/config mk/config.local
+check_versions_opt:: mk/config mk/config.local check_omake
 	@if [ ! -r $(CAMLP4LIB)/camlp4.cmxa ]; then \
 		echo '!!! The file $(CAMLP4LIB)/camlp4.cmxa does not exist (or is not readable)!'; echo '!!!';\
 		echo '!!! Please consult doc/htmlman/mp-install.html (http://metaprl.org/install.html)';\
@@ -165,7 +180,7 @@ check_versions_opt:: mk/config mk/config.local
 		exit 1;\
 	fi
 
-check_config::check_versions mk/config mk/config.local
+check_config::check_omake check_versions mk/config mk/config.local
 	@if [ $(TERMS) != ds -a $(TERMS) != std ]; then\
 		echo "ERROR: the TERMS variable is currenly set to an invalid value, please fix it in mk/config file"; \
 		exit 1; \
