@@ -32,10 +32,13 @@ LMFILES :=\
 	splay_set\
 	splay_table\
 	fun_splay_set\
+	red_black_set\
+	red_black_test\
+	hash_set\
 	small_set\
+	debug_string_sets\
 	string_set\
 	flist\
-	debug_string_sets\
 	cycle_dag\
 	memo
 

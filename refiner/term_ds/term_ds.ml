@@ -26,7 +26,7 @@ struct
          let compare = Pervasives.compare
        end
 
-   module StringSet = Fun_splay_set.Make (OrderedString)
+   module StringSet = Red_black_set.Make (OrderedString)
 
    (************************************************************************
     * Types                                                                *

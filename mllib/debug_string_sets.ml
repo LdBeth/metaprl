@@ -1,6 +1,6 @@
 open Printf
 
-module MakeDebugSet
+module Make
    (Set1: Splay_set.S with type elt = string)
    (Set2: Splay_set.S with type elt = string) =
 
