@@ -297,7 +297,7 @@ struct
             let buf = Rformat.new_buffer () in
                Dform.format_term db buf t;
                Rformat.print_to_channel 80 buf out;
-               flush stdout)
+               flush out)
 
    let print_term_stdout t = print_term_fp stdout t
 
