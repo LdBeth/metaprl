@@ -23,7 +23,7 @@ let tail s =
       Not_found ->
          s
 
-let root s =
+let head s =
    try
       let index = String_util.rindex_set s separators in
          String.sub s 0 index
@@ -31,8 +31,27 @@ let root s =
       Not_found ->
          s
 
+let root s =
+   try
+      let index = String.rindex s '.' in
+         String.sub s 0 index
+   with
+      Not_found ->
+         s
+
+let suffix s =
+   try
+      let index = String.rindex s '.' in
+         String.sub s index (String.length s - index)
+   with
+      Not_found ->
+         ""
+
 (*
  * $Log$
+ * Revision 1.2  1998/04/15 12:40:06  jyh
+ * Updating editor packages to Filter_summarys.
+ *
  * Revision 1.1  1998/02/24 05:33:14  jyh
  * Added filename utilities.
  *

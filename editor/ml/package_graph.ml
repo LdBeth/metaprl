@@ -1,42 +1,16 @@
 (*
  * Compute relationships between theories.
- *
- * $Log$
- * Revision 1.1  1997/08/06 16:17:15  jyh
- * This is an ocaml version with subtyping, type inference,
- * d and eqcd tactics.  It is a basic system, but not debugged.
- *
- * Revision 1.2  1996/10/23 15:17:49  jyh
- * First working version of dT tactic.
- *
- * Revision 1.1  1996/09/02 19:33:16  jyh
- * Semi-working package management.
- *
- * Revision 1.3  1996/06/11 18:22:31  jyh
- * Demo version 0.0
- *
- * Revision 1.2  1996/05/21 02:25:23  jyh
- * This is a semi-working version before Wisconsin vacation.
- *
- * Revision 1.1  1996/05/20 16:59:46  jyh
- * This is an intermediate form of the editor with packages
- * before debugging.  Will be removing theoryGraph files next.
- *
- * Revision 1.1  1996/05/01 15:04:33  jyh
- * This is the initial checkin of the NuprlLight editor.  This editor provides
- * an emacs interface, a library navigator, and a proof editor.
- *
  *)
 
-open Printf;;
-open Util;;
-open Term;;
-open Refine;;
-open ImpDAG;;
-open Theory;;
-open DformPrint;;
-open FilterSummary;;
-open PackageInfo;;
+open Printf
+open Util
+open Term
+open Refine
+open ImpDAG
+open Theory
+open DformPrint
+open FilterSummary
+open PackageInfo
 
 (************************************************************************
  * IMPLEMENTATION                                                       *
@@ -55,7 +29,7 @@ let compute_parents =
                RIParent p -> aux (p::parents) next
              | _ -> aux parents next
    in
-      aux [];;
+      aux []
 
 (*
  * Expand the list of theories to contain all parents also.
@@ -101,7 +75,7 @@ let complete_with_parents =
          else
             packages
    in
-      expand 0;;
+      expand 0
 
 (*
  * Compute the inheritance diagram.
@@ -132,13 +106,13 @@ let compute_inheritance_aux sweep packages =
    let convert mod_info children =
       { pnode_package = mod_info; pnode_children = children }
    in
-      sweep dag convert;;
+      sweep dag convert
 
 let compute_roots =
-   compute_inheritance_aux sweep_up_all;;
+   compute_inheritance_aux sweep_up_all
 
 let compute_leaves =
-   compute_inheritance_aux sweep_down_all;;
+   compute_inheritance_aux sweep_down_all
 
 (*
  * Rather than computing the inheritance graph, compute the definition
@@ -151,9 +125,37 @@ let compute_definition packages =
    let convert mod_info =
       { pnode_package = mod_info; pnode_children = [] }
    in
-      map convert packages;;
+      map convert packages
 
 (*
+ * $Log$
+ * Revision 1.2  1998/04/15 12:39:30  jyh
+ * Updating editor packages to Filter_summarys.
+ *
+ * Revision 1.1  1997/08/06 16:17:15  jyh
+ * This is an ocaml version with subtyping, type inference,
+ * d and eqcd tactics.  It is a basic system, but not debugged.
+ *
+ * Revision 1.2  1996/10/23 15:17:49  jyh
+ * First working version of dT tactic.
+ *
+ * Revision 1.1  1996/09/02 19:33:16  jyh
+ * Semi-working package management.
+ *
+ * Revision 1.3  1996/06/11 18:22:31  jyh
+ * Demo version 0.0
+ *
+ * Revision 1.2  1996/05/21 02:25:23  jyh
+ * This is a semi-working version before Wisconsin vacation.
+ *
+ * Revision 1.1  1996/05/20 16:59:46  jyh
+ * This is an intermediate form of the editor with packages
+ * before debugging.  Will be removing theoryGraph files next.
+ *
+ * Revision 1.1  1996/05/01 15:04:33  jyh
+ * This is the initial checkin of the NuprlLight editor.  This editor provides
+ * an emacs interface, a library navigator, and a proof editor.
+ *
  * -*-
  * Local Variables:
  * Caml-master: "editor.top"

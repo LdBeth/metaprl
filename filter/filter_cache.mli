@@ -6,14 +6,58 @@
 
 open Term
 
-open Filter_cache_type
+open Filter_summary_type
 
-module MakeFilterCache (Proof : ProofSig)
-: FilterCacheSig
-  with type proof = Proof.proof
+(*
+ * For this compiler, we only use two summaries.
+ *)
+type select_type =
+   InterfaceType
+ | ImplementationType
+   
+(*
+ * Proofs are:
+ *   1. primitive terms,
+ *   2. tactics.
+ *   3. inferred from interactive proofs
+ *)
+type proof_type =
+   Primitive of term
+ | Derived of MLast.expr
+ | Interactive of Proof_type.proof
+   
+(*
+ * The summary_cache for interfaces and implementations.
+ *)
+module SigFilterCache :
+   SummaryCacheSig
+   with type sig_proof  = unit
+   with type sig_ctyp   = MLast.ctyp
+   with type sig_expr   = MLast.expr
+   with type sig_item   = MLast.sig_item
+   with type str_proof  = unit
+   with type str_ctyp   = MLast.ctyp
+   with type str_expr   = MLast.expr
+   with type str_item   = MLast.sig_item
+   with type select     = select_type
       
+module StrFilterCache :
+   SummaryCacheSig
+   with type sig_proof  = unit
+   with type sig_ctyp   = MLast.ctyp
+   with type sig_expr   = MLast.expr
+   with type sig_item   = MLast.sig_item
+   with type str_proof  = proof_type
+   with type str_ctyp   = MLast.ctyp
+   with type str_expr   = MLast.expr
+   with type str_item   = MLast.str_item
+   with type select     = select_type
+
 (*
  * $Log$
+ * Revision 1.6  1998/04/15 12:39:50  jyh
+ * Updating editor packages to Filter_summarys.
+ *
  * Revision 1.5  1998/04/13 17:08:29  jyh
  * Adding interactive proofs.
  *

@@ -152,6 +152,7 @@ sig
 
    (* Access *)
    val info : info -> str_info
+   val filename : t -> info -> string
    val sub_info : info -> module_path -> sig_info
 
    (* Expand a partial path specification to a complete one *)
@@ -190,6 +191,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.6  1998/04/15 12:40:03  jyh
+ * Updating editor packages to Filter_summarys.
+ *
  * Revision 1.5  1998/02/23 14:46:24  jyh
  * First implementation of binary file compilation.
  *

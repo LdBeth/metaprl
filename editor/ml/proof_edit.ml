@@ -13,8 +13,9 @@
 
 open Rformat
 open Dform
-open Tactic_type
 open Refine
+
+open Tactic_type
 open Proof_step
 open Proof
 open Edit_type
@@ -94,7 +95,7 @@ let ped_goal { ped_proof = pf; ped_select = select } =
                   raise (Failure "Proof_edit.ped_goal: child is not a leaf")
          with
             Not_found ->
-               raise (Failure "Proof_edit.ped_goal: not such child")
+               raise (Failure "Proof_edit.ped_goal: no such child")
             
 (************************************************************************
  * DISPLAY                                                              *
@@ -237,7 +238,7 @@ let format db buffer { ped_goal = goal; ped_undo = undo } =
 let refine_ped ped text ast tac =
    let { ped_goal = goal; ped_undo = undo; ped_stack = stack } = ped in
    let subgoals = fst (Refiner.refine tac goal) in
-   let step = Proof_step.create goal subgoals text ast tac in
+   let step = Proof_step.create goal subgoals text ast in
    let pf' =
       match undo with
          [] ->
@@ -355,6 +356,9 @@ let rec down_ped ped i =
 
 (*
  * $Log$
+ * Revision 1.2  1998/04/15 12:39:40  jyh
+ * Updating editor packages to Filter_summarys.
+ *
  * Revision 1.1  1997/08/06 16:17:23  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

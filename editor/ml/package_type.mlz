@@ -1,0 +1,81 @@
+(*
+ * The editor collects information about each theory and
+ * summarizes it in a "package".  At start-up, the pre-loaded packages
+ * are collected and presented as read-only theories.
+ *
+ * We can also create interactive packages, which are writable,
+ * and may contain interactivly generated proofs.
+ *)
+
+open Filter_summary
+
+include Proof
+
+(*
+ * Save status of a module.
+ *)
+type status =
+   Unmodified
+ | Modified
+ | ReadOnly
+
+(*
+ * A package is a lot like a FilterCache, but
+ * we remove some of the extra options.
+ *)
+module type PackageSig =
+sig
+   (*
+    * This is the database type.
+    *)
+   type t
+   
+   (*
+    * This is the type of a package.
+    *)
+   type package
+   
+   (*
+    * Create a database.  The argument is the search path.
+    *)
+   val create : string list -> t
+   
+   (*
+    * Filesystem interface.
+    * Loaded packages are initially read-only.
+    *)
+   val load : t -> module_path -> info
+   val save : info -> unit
+
+   (*
+    * Access.
+    *)
+   val refiner : t -> refiner
+   val dforms  : t -> dform_mode_base
+   val name    : t -> string
+   val file    : t -> string option
+   
+   (*
+    * Access to the status.
+    *)
+   val status  : info -> status
+   val set_status : info -> status -> unit
+   
+   (*
+    * Collection of objects in the module.
+    *)
+   val info : info -> (proof, MLast.ctyp, MLast.expr, MLast.str_item) summary_item list
+end
+   
+(*
+ * $Log$
+ * Revision 1.1  1998/04/15 12:39:38  jyh
+ * Updating editor packages to Filter_summarys.
+ *
+ *
+ * -*-
+ * Local Variables:
+ * Caml-master: "editor.top"
+ * End:
+ * -*-
+ *)

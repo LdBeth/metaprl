@@ -19,7 +19,6 @@ OCAMLFLAGS := -pp "camlp4o q_MLast.cmo pa_extend.cmo"
 MLZFILES :=\
 	filter_type\
 	filter_summary_type\
-	filter_cache_type\
 	proof_type
 
 LMFILES :=\
@@ -39,7 +38,6 @@ LMFILES :=\
 	filter_summary_type\
 	filter_summary_io\
 	filter_summary_util\
-	filter_cache_type\
 	filter_cache_fun\
 	filter_cache\
 	filter_prog

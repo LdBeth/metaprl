@@ -2,14 +2,26 @@
  * Conversion form filter_summary to program text.
  *)
 
-open Filter_cache_type
+open Filter_type
+open Filter_summary_type
+open Filter_summary
+open Filter_cache
 
-module MakeFilterProg (Cache : FilterCacheSig)
-: ExtractSig
-  with type proof_type = Cache.proof_type
+val extract_sig :
+   (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info ->
+   (module_path * MLast.ctyp resource_info) list ->
+   string -> (MLast.sig_item * (int * int)) list
+   
+val extract_str :
+   (proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info ->
+   (module_path * MLast.ctyp resource_info) list ->
+   string -> (MLast.str_item * (int * int)) list
 
 (*
  * $Log$
+ * Revision 1.5  1998/04/15 12:40:01  jyh
+ * Updating editor packages to Filter_summarys.
+ *
  * Revision 1.4  1998/04/13 17:08:36  jyh
  * Adding interactive proofs.
  *

@@ -22,457 +22,444 @@ open Filter_summary_type
 open Filter_summary_io
 open Filter_cache_fun
 
+(************************************************************************
+ * IO MODULES                                                           *
+ ************************************************************************)
+
 (*
- * The filter is parameterized by the type of proofs.
+ * For this compiler, we only use two summaries.
  *)
-module type ProofSig =
-sig
-   type proof
+type select_type =
+   InterfaceType
+ | ImplementationType
+
+(*
+ * Proofs are either primitive terms,
+ * or they are tactics.
+ *)
+type proof_type =
+   Primitive of term
+ | Derived of MLast.expr
+ | Interactive of Proof_type.proof
+
+(*
+ * This is the common summary type for interface between IO
+ * and marshalers.
+ *)
+type summary_type =
+   Interface of (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
+ | Implementation of (proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
+
+(*
+ * Types of objects that are stored in the files.
+ *)
+module FileTypes =
+struct
+   type select = select_type
+   type cooked = summary_type
 end
 
-module MakeFilterCache (Proof : ProofSig) =
-struct
-   (************************************************************************
-    * IO MODULES                                                           *
-    ************************************************************************)
-   
-   (*
-    * For this compiler, we only use two summaries.
-    *)
-   type select_type =
-      InterfaceType
-    | ImplementationType
-   
-   (*
-    * Copy the proof type.
-    *)
-   type proof = Proof.proof
-   
-   (*
-    * Proofs are either primitive terms,
-    * or they are tactics.
-    *)
-   type proof_type =
-      Primitive of term
-    | Derived of MLast.expr
-    | Interactive of Proof.proof
-   
-   (*
-    * This is the common summary type for interface between IO
-    * and marshalers.
-    *)
-   type summary_type =
-      Interface of (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
-    | Implementation of (proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
-   
-   (*
-    * Types of objects that are stored in the files.
-    *)
-   module FileTypes =
-   struct
-      type select = select_type
-      type cooked = summary_type
-   end
-   
-   (************************************************************************
-    * CONFIG                                                               *
-    ************************************************************************)
-   
-   (*
-    * We save in three modes:
-    *    1. Save to the library
-    *    2. Save to the filesystem
-    *       a. store raw data to files
-    *       b. store data as terms
-    *)
-   let nolib  = ref false
-   let nofile = ref false
-   let noraw  = ref false
-   
-   let set_lib _ _ v =
-      if v then
-         begin
-            nofile := true;
-            noraw := true;
-            nolib := false
-         end
-      else
-         nolib := true
-   
-   let set_file _ _ v =
-      if v then
-         nolib := true
-      else
-         begin
-            nofile := true;
-            noraw := true
-         end
-   
-   let set_raw _ _ v =
-      if v then
-         begin
-            nofile := false;
-            noraw := false
-         end
-      else
+(************************************************************************
+ * CONFIG                                                               *
+ ************************************************************************)
+
+(*
+ * We save in three modes:
+ *    1. Save to the library
+ *    2. Save to the filesystem
+ *       a. store raw data to files
+ *       b. store data as terms
+ *)
+let nolib  = ref false
+let nofile = ref false
+let noraw  = ref false
+
+let set_lib _ _ v =
+   if v then
+      begin
+         nofile := true;
+         noraw := true;
+         nolib := false
+      end
+   else
+      nolib := true
+
+let set_file _ _ v =
+   if v then
+      nolib := true
+   else
+      begin
+         nofile := true;
          noraw := true
+      end
+
+let set_raw _ _ v =
+   if v then
+      begin
+         nofile := false;
+         noraw := false
+      end
+   else
+      noraw := true
+
+let _ = Env_arg.bool "file"   true  "Use the filesystem"      set_file
+let _ = Env_arg.bool "raw"    false "Use the raw filesystem"  set_raw
+let _ = Env_arg.bool "lib"    false "Use the Nuprl5 library"  set_lib
+
+(************************************************************************
+ * IMPLEMTATION                                                         *
+ ************************************************************************)
+
+(*
+ * Identity used for term normalization.
+ *)
+let identity x = x
+
+(*
+ * Unit term used for interfaces.
+ *)
+let unit_term = mk_simple_term nil_opname []
+
+(*
+ * Normalizer.
+ *)
+let normalize info =
+   let convert =
+      { term_f  = normalize_term;
+        proof_f = identity;
+        ctyp_f  = identity;
+        expr_f  = identity;
+        item_f  = identity
+      }
+   in
+      summary_map convert info
+
+(*
+ * When a StrFilterCache ot SigFilterCache is
+ * saved, comments are not saved.
+ *)
+let comment loc t = t
+let term_of_expr = Filter_ocaml.term_of_expr comment
+let term_of_type = Filter_ocaml.term_of_type comment
+let term_of_sig_item = Filter_ocaml.term_of_sig_item comment
+let term_of_str_item = Filter_ocaml.term_of_str_item comment
+
+(*
+ * Marshaling proofs.
+ *)
+let prim_op = mk_opname "prim" nil_opname
+let derived_op = mk_opname "derived" nil_opname
+
+let marshal_proof = function
+   Primitive t ->
+      mk_simple_term prim_op [t]
+ | Derived expr ->
+      mk_simple_term derived_op [term_of_expr expr]
+ | Interactive pf ->
+      raise (Failure "Filter_cache.marshal_proof(Interactive _): not implemented")
+
+let unmarshal_proof t =
+   let opname = opname_of_term t in
+   let expr = one_subterm t in
+      if opname == prim_op then
+         Primitive expr
+      else if opname == derived_op then
+         Derived (expr_of_term expr)
+      else
+         raise (Failure "Filter_cache.unmarshal")
+
+(*
+ * Term signatures.
+ *)
+module TermSigInfo =
+struct
+   type select = select_type
+   type raw    = term
+   type cooked = summary_type
    
-   let _ = Env_arg.bool "file"   true  "Use the filesystem"      set_file
-   let _ = Env_arg.bool "raw"    false "Use the raw filesystem"  set_raw
-   let _ = Env_arg.bool "lib"    false "Use the Nuprl5 library"  set_lib
-   
-   (************************************************************************
-    * IMPLEMTATION                                                         *
-    ************************************************************************)
-   
-   (*
-    * Identity used for term normalization.
-    *)
-   let identity x = x
-   
-   (*
-    * Unit term used for interfaces.
-    *)
-   let unit_term = mk_simple_term nil_opname []
-   
-   (*
-    * Normalizer.
-    *)
-   let normalize info =
+   let select   = InterfaceType
+   let suffix   = "cmit"
+   let magic    = 0x73ac6be1
+   let disabled = nofile
+
+   let marshal = function
+      Interface info ->
+         let convert =
+            { term_f = identity;
+              proof_f = (fun t -> unit_term);
+              ctyp_f = term_of_type;
+              expr_f = term_of_expr;
+              item_f = term_of_sig_item
+            }
+         in
+            mk_xlist_term (term_list convert info)
+    | Implementation _ ->
+         raise (Failure "TermSigInfo.unmarshal")
+
+   let unmarshal info =
       let convert =
-         { term_f  = normalize_term;
-           proof_f = identity;
-           ctyp_f  = identity;
-           expr_f  = identity;
-           item_f  = identity
+         { term_f = identity;
+           proof_f = (fun t -> ());
+           ctyp_f = type_of_term;
+           expr_f = expr_of_term;
+           item_f = sig_item_of_term
          }
       in
-         summary_map convert info
-   
-   (*
-    * When a StrFilterCache ot SigFilterCache is
-    * saved, comments are not saved.
-    *)
-   let comment loc t = t
-   let term_of_expr = Filter_ocaml.term_of_expr comment
-   let term_of_type = Filter_ocaml.term_of_type comment
-   let term_of_sig_item = Filter_ocaml.term_of_sig_item comment
-   let term_of_str_item = Filter_ocaml.term_of_str_item comment
-   
-   (*
-    * Marshaling proofs.
-    *)
-   let prim_op = mk_opname "prim" nil_opname
-   let derived_op = mk_opname "derived" nil_opname
-   
-   let marshal_proof = function
-      Primitive t ->
-         mk_simple_term prim_op [t]
-    | Derived expr ->
-         mk_simple_term derived_op [term_of_expr expr]
-    | Interactive pf ->
-         raise (Failure "Filter_cache.marshal_proof(Interactive _): not implemented")
-   
-   let unmarshal_proof t =
-      let opname = opname_of_term t in
-      let expr = one_subterm t in
-         if opname == prim_op then
-            Primitive expr
-         else if opname == derived_op then
-            Derived (expr_of_term expr)
-         else
-            raise (Failure "Filter_cache.unmarshal")
-   
-   (*
-    * Term signatures.
-    *)
-   module TermSigInfo =
-   struct
-      type select = select_type
-      type raw    = term
-      type cooked = summary_type
-      
-      let select   = InterfaceType
-      let suffix   = "cmit"
-      let magic    = 0x73ac6be1
-      let disabled = nofile
-   
-      let marshal = function
-         Interface info ->
-            let convert =
-               { term_f = identity;
-                 proof_f = (fun t -> unit_term);
-                 ctyp_f = term_of_type;
-                 expr_f = term_of_expr;
-                 item_f = term_of_sig_item
-               }
-            in
-               mk_xlist_term (term_list convert info)
-       | Implementation _ ->
-            raise (Failure "TermSigInfo.unmarshal")
-   
-      let unmarshal info =
-         let convert =
-            { term_f = identity;
-              proof_f = (fun t -> ());
-              ctyp_f = type_of_term;
-              expr_f = expr_of_term;
-              item_f = sig_item_of_term
-            }
-         in
-            Interface (of_term_list convert (dest_xlist info))
-   end
-   
-   (*
-    * Raw signatures.
-    *)
-   module RawSigInfo =
-   struct
-      type select  = select_type
-      type raw     = (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
-      type cooked  = summary_type
-      
-      let select   = InterfaceType
-      let suffix   = "cmiz"
-      let magic    = 0x73ac6be2
-      let disabled = noraw
-   
-      let marshal = function
-         Interface info ->
-            info
-       | Implementation _ ->
-            raise (Failure "RawSigInfo.marshal")
-      let unmarshal info =
-         Interface (normalize info)
-   end
-   
-   (*
-    * Term implementations.
-    *)
-   module TermStrInfo =
-   struct
-      type select = select_type
-      type raw    = term
-      type cooked = summary_type
-      
-      let select   = ImplementationType
-      let suffix   = "cmot"
-      let magic    = 0x73ac6be3
-      let disabled = nofile
-      
-      let marshal = function
-         Implementation info ->
-            let convert =
-               { term_f = identity;
-                 proof_f = marshal_proof;
-                 ctyp_f = term_of_type;
-                 expr_f = term_of_expr;
-                 item_f = term_of_str_item
-               }
-            in
-               mk_xlist_term (term_list convert info)
-       | Interface _ ->
-            raise (Failure "TermStrInfo.marshal")
-   
-      let unmarshal info =
-         let convert =
-            { term_f = identity;
-              proof_f = unmarshal_proof;
-              ctyp_f = type_of_term;
-              expr_f = expr_of_term;
-              item_f = str_item_of_term
-            }
-         in
-            Implementation (of_term_list convert (dest_xlist info))
-   end
-   
-   (*
-    * Raw implementation.
-    *)
-   module RawStrInfo =
-   struct
-      type select  = select_type
-      type raw     = (proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
-      type cooked  = summary_type
-      
-      let select   = ImplementationType
-      let suffix   = "cmoz"
-      let magic    = 0x73ac6be4
-      let disabled = noraw
-   
-      let marshal = function
-         Implementation info ->
-            info
-       | Interface _ ->
-            raise (Failure "RawStrInfo.marshal")
-      let unmarshal info =
-         Implementation (normalize info)
-   end
-   
-   (*
-    * Library interfaces.
-    *)
-   module LibSigInfo =
-   struct
-      type select  = select_type
-      type raw     = term
-      type cooked  = summary_type
-      
-      let select   = InterfaceType
-      let suffix   = "cmit"
-      let magic    = 0x73ac6be5
-      let disabled = nolib
-   
-      let marshal = function
-         Interface info ->
-            let convert =
-               { term_f = identity;
-                 proof_f = (fun t -> unit_term);
-                 ctyp_f = term_of_type;
-                 expr_f = term_of_expr;
-                 item_f = term_of_sig_item
-               }
-            in
-               mk_xlist_term (term_list convert info)
-       | Implementation _ ->
-            raise (Failure "LibSigInfo.marshal")
-      let unmarshal info =
-         let convert =
-            { term_f = identity;
-              proof_f = (fun t -> ());
-              ctyp_f = type_of_term;
-              expr_f = expr_of_term;
-              item_f = sig_item_of_term
-            }
-         in
-            Interface (of_term_list convert (dest_xlist info))
-   end
-   
-   (*
-    * Library implementations.
-    *)
-   module LibStrInfo =
-   struct
-      type select  = select_type
-      type raw     = term
-      type cooked  = summary_type
-      
-      let select   = ImplementationType
-      let suffix   = "cmot"
-      let magic    = 0x73ac6be6
-      let disabled = nolib
-   
-      let marshal = function
-         Implementation info ->
-            let convert =
-               { term_f = identity;
-                 proof_f = marshal_proof;
-                 ctyp_f = term_of_type;
-                 expr_f = term_of_expr;
-                 item_f = term_of_str_item
-               }
-            in
-               mk_xlist_term (term_list convert info)
-       | Interface _ ->
-            raise (Failure "LibStrInfo.marshal")
-   
-      let unmarshal info =
-         let convert =
-            { term_f = identity;
-              proof_f = unmarshal_proof;
-              ctyp_f = type_of_term;
-              expr_f = expr_of_term;
-              item_f = str_item_of_term
-            }
-         in
-            Implementation (of_term_list convert (dest_xlist info))
-   end
-   
-   (*
-    * MArshaler to get interfaces.
-    *)
-   module SigMarshal =
-   struct
-      type proof = unit
-      type ctyp  = MLast.ctyp
-      type expr  = MLast.expr
-      type item  = MLast.sig_item
-   
-      type select = select_type
-      let select = InterfaceType
-   
-      type cooked = summary_type
-   
-      let marshal info =
-         Interface info
-      let unmarshal = function
-         Interface info ->
-            info
-       | Implementation _ ->
-            raise (Failure "SigMarshal.unmarshal")
-   end
-   
-   (*
-    * Select a submodule.
-    *)
-   module SigAddress =
-   struct
-      type t = summary_type
-      let create () = Interface (new_module_info ())
-      let find_sub_module info path =
-         if path = [] then
-            info
-         else
-            SigMarshal.marshal (Filter_summary.find_sub_module (SigMarshal.unmarshal info) path)
-   end
-   
-   (*
-    * Marshaler to get implementations.
-    *)
-   module StrMarshal =
-   struct
-      type proof = proof_type
-      type ctyp  = MLast.ctyp
-      type expr  = MLast.expr
-      type item  = MLast.str_item
-   
-      type select = select_type
-      let select = ImplementationType
-   
-      type cooked = summary_type
-      let marshal info =
-         Implementation info
-      let unmarshal = function
-         Implementation info ->
-            info
-       | Interface _ ->
-            raise (Failure "StrMarshal.unmarshal")
-   end
-   
-   (*
-    * Build up the cache.
-    *)
-   module RawSigCombo    = MakeSingletonCombo (RawSigInfo)
-   module RawStrCombo    = MakeSingletonCombo (RawStrInfo)
-   module TermSigCombo   = MakeSingletonCombo (TermSigInfo)
-   module TermStrCombo   = MakeSingletonCombo (TermStrInfo)
-   module LibSigCombo    = MakeIOSingletonCombo (Library_type_base.IO) (LibSigInfo)
-   module LibStrCombo    = MakeIOSingletonCombo (Library_type_base.IO) (LibStrInfo)
-   module RawCombo       = CombineCombo (FileTypes) (RawSigCombo)  (RawStrCombo)
-   module TermCombo      = CombineCombo (FileTypes) (TermSigCombo) (TermStrCombo)
-   module LibCombo       = CombineCombo (FileTypes) (LibSigCombo)  (LibStrCombo)
-   module FileCombo      = CombineCombo (FileTypes) (RawCombo)     (TermCombo)
-   module Combo          = CombineCombo (FileTypes) (FileCombo)    (LibCombo)
-   
-   module FileBase       = MakeFileBase    (FileTypes)  (Combo)
-   module SummaryBase    = MakeSummaryBase (SigAddress) (FileBase)
-   
-   module SigFilterCache = MakeFilterCache (SigMarshal) (SigMarshal) (SummaryBase)
-   module StrFilterCache = MakeFilterCache (SigMarshal) (StrMarshal) (SummaryBase)
+         Interface (of_term_list convert (dest_xlist info))
 end
+
+(*
+ * Raw signatures.
+ *)
+module RawSigInfo =
+struct
+   type select  = select_type
+   type raw     = (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
+   type cooked  = summary_type
+   
+   let select   = InterfaceType
+   let suffix   = "cmiz"
+   let magic    = 0x73ac6be2
+   let disabled = noraw
+
+   let marshal = function
+      Interface info ->
+         info
+    | Implementation _ ->
+         raise (Failure "RawSigInfo.marshal")
+   let unmarshal info =
+      Interface (normalize info)
+end
+
+(*
+ * Term implementations.
+ *)
+module TermStrInfo =
+struct
+   type select = select_type
+   type raw    = term
+   type cooked = summary_type
+   
+   let select   = ImplementationType
+   let suffix   = "cmot"
+   let magic    = 0x73ac6be3
+   let disabled = nofile
+   
+   let marshal = function
+      Implementation info ->
+         let convert =
+            { term_f = identity;
+              proof_f = marshal_proof;
+              ctyp_f = term_of_type;
+              expr_f = term_of_expr;
+              item_f = term_of_str_item
+            }
+         in
+            mk_xlist_term (term_list convert info)
+    | Interface _ ->
+         raise (Failure "TermStrInfo.marshal")
+
+   let unmarshal info =
+      let convert =
+         { term_f = identity;
+           proof_f = unmarshal_proof;
+           ctyp_f = type_of_term;
+           expr_f = expr_of_term;
+           item_f = str_item_of_term
+         }
+      in
+         Implementation (of_term_list convert (dest_xlist info))
+end
+
+(*
+ * Raw implementation.
+ *)
+module RawStrInfo =
+struct
+   type select  = select_type
+   type raw     = (proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
+   type cooked  = summary_type
+   
+   let select   = ImplementationType
+   let suffix   = "cmoz"
+   let magic    = 0x73ac6be4
+   let disabled = noraw
+
+   let marshal = function
+      Implementation info ->
+         info
+    | Interface _ ->
+         raise (Failure "RawStrInfo.marshal")
+   let unmarshal info =
+      Implementation (normalize info)
+end
+
+(*
+ * Library interfaces.
+ *)
+module LibSigInfo =
+struct
+   type select  = select_type
+   type raw     = term
+   type cooked  = summary_type
+   
+   let select   = InterfaceType
+   let suffix   = "cmit"
+   let magic    = 0x73ac6be5
+   let disabled = nolib
+
+   let marshal = function
+      Interface info ->
+         let convert =
+            { term_f = identity;
+              proof_f = (fun t -> unit_term);
+              ctyp_f = term_of_type;
+              expr_f = term_of_expr;
+              item_f = term_of_sig_item
+            }
+         in
+            mk_xlist_term (term_list convert info)
+    | Implementation _ ->
+         raise (Failure "LibSigInfo.marshal")
+   let unmarshal info =
+      let convert =
+         { term_f = identity;
+           proof_f = (fun t -> ());
+           ctyp_f = type_of_term;
+           expr_f = expr_of_term;
+           item_f = sig_item_of_term
+         }
+      in
+         Interface (of_term_list convert (dest_xlist info))
+end
+
+(*
+ * Library implementations.
+ *)
+module LibStrInfo =
+struct
+   type select  = select_type
+   type raw     = term
+   type cooked  = summary_type
+   
+   let select   = ImplementationType
+   let suffix   = "cmot"
+   let magic    = 0x73ac6be6
+   let disabled = nolib
+
+   let marshal = function
+      Implementation info ->
+         let convert =
+            { term_f = identity;
+              proof_f = marshal_proof;
+              ctyp_f = term_of_type;
+              expr_f = term_of_expr;
+              item_f = term_of_str_item
+            }
+         in
+            mk_xlist_term (term_list convert info)
+    | Interface _ ->
+         raise (Failure "LibStrInfo.marshal")
+
+   let unmarshal info =
+      let convert =
+         { term_f = identity;
+           proof_f = unmarshal_proof;
+           ctyp_f = type_of_term;
+           expr_f = expr_of_term;
+           item_f = str_item_of_term
+         }
+      in
+         Implementation (of_term_list convert (dest_xlist info))
+end
+
+(*
+ * MArshaler to get interfaces.
+ *)
+module SigMarshal =
+struct
+   type proof = unit
+   type ctyp  = MLast.ctyp
+   type expr  = MLast.expr
+   type item  = MLast.sig_item
+
+   type select = select_type
+   let select = InterfaceType
+
+   type cooked = summary_type
+
+   let marshal info =
+      Interface info
+   let unmarshal = function
+      Interface info ->
+         info
+    | Implementation _ ->
+         raise (Failure "SigMarshal.unmarshal")
+end
+
+(*
+ * Select a submodule.
+ *)
+module SigAddress =
+struct
+   type t = summary_type
+   let create () = Interface (new_module_info ())
+   let find_sub_module info path =
+      if path = [] then
+         info
+      else
+         SigMarshal.marshal (Filter_summary.find_sub_module (SigMarshal.unmarshal info) path)
+end
+
+(*
+ * Marshaler to get implementations.
+ *)
+module StrMarshal =
+struct
+   type proof = proof_type
+   type ctyp  = MLast.ctyp
+   type expr  = MLast.expr
+   type item  = MLast.str_item
+
+   type select = select_type
+   let select = ImplementationType
+
+   type cooked = summary_type
+   let marshal info =
+      Implementation info
+   let unmarshal = function
+      Implementation info ->
+         info
+    | Interface _ ->
+         raise (Failure "StrMarshal.unmarshal")
+end
+
+(*
+ * Build up the cache.
+ *)
+module RawSigCombo    = MakeSingletonCombo (RawSigInfo)
+module RawStrCombo    = MakeSingletonCombo (RawStrInfo)
+module TermSigCombo   = MakeSingletonCombo (TermSigInfo)
+module TermStrCombo   = MakeSingletonCombo (TermStrInfo)
+module LibSigCombo    = MakeIOSingletonCombo (Library_type_base.IO) (LibSigInfo)
+module LibStrCombo    = MakeIOSingletonCombo (Library_type_base.IO) (LibStrInfo)
+module RawCombo       = CombineCombo (FileTypes) (RawSigCombo)  (RawStrCombo)
+module TermCombo      = CombineCombo (FileTypes) (TermSigCombo) (TermStrCombo)
+module LibCombo       = CombineCombo (FileTypes) (LibSigCombo)  (LibStrCombo)
+module FileCombo      = CombineCombo (FileTypes) (RawCombo)     (TermCombo)
+module Combo          = CombineCombo (FileTypes) (FileCombo)    (LibCombo)
+
+module FileBase       = MakeFileBase    (FileTypes)  (Combo)
+module SummaryBase    = MakeSummaryBase (SigAddress) (FileBase)
+
+module SigFilterCache = MakeFilterCache (SigMarshal) (SigMarshal) (SummaryBase)
+module StrFilterCache = MakeFilterCache (SigMarshal) (StrMarshal) (SummaryBase)
 
 (*
  * $Log$
+ * Revision 1.13  1998/04/15 12:39:49  jyh
+ * Updating editor packages to Filter_summarys.
+ *
  * Revision 1.12  1998/04/13 17:08:27  jyh
  * Adding interactive proofs.
  *

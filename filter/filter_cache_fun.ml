@@ -533,6 +533,12 @@ struct
          cache, !vals (* hook cache (path, info') !vals *)
    
    (*
+    * Get the filename of the info.
+    *)
+   let filename base { self = info } =
+      Base.file_name base info
+
+   (*
     * Check the implementation with its interface.
     *)
    let check cache alt_select =
@@ -560,6 +566,9 @@ end
    
 (*
  * $Log$
+ * Revision 1.5  1998/04/15 12:39:52  jyh
+ * Updating editor packages to Filter_summarys.
+ *
  * Revision 1.4  1998/04/09 18:25:49  jyh
  * Working compiler once again.
  *
