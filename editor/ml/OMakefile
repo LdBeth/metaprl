@@ -58,7 +58,8 @@ if $(TESTS_ENABLED)
          $(file tests/test)
          $(file tests/prop-pigeon)
       export
-   TheorySubDirs(tests)
+   if $(TESTFILES)
+      TheorySubDirs(tests)
    export
 
 MP2FILES = $(TESTFILES) $(MP2FILES)
