@@ -31,4 +31,6 @@ REFLIB_FILES =\
 	jlogic_sig\
 	jtunify\
 	jall\
-	arith
+	term_order\
+	arith\
+	supinf

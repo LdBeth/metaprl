@@ -34,30 +34,33 @@
 open Printf
 open Lm_debug
 open Term_sig
+open Lm_num
 
 module type HypsSig = sig
     type var
-    type cmp = var * var * int
-    type hyps
+    type 'a cmp (*= var * var * num*)
+    type 'a hyps
     type addr
-    val get_cmp : hyps -> addr -> cmp
-    val get_v1 : hyps -> addr -> var
-    val get_v2 : hyps -> addr -> var
-    val get_const : hyps -> addr -> int
+    val get_cmp : 'a hyps -> addr -> 'a cmp
+	 val dest_cmp : 'a cmp -> var * var * num
+    val get_v1 : 'a hyps -> addr -> var
+    val get_v2 : 'a hyps -> addr -> var
+    val get_const : 'a hyps -> addr -> num
     val compare : var -> var -> bool
-    val iter : hyps -> (addr -> cmp -> unit) -> unit
-    val print_hyps : out_channel -> hyps -> unit
+    val iter : 'a hyps -> (addr -> 'a cmp -> unit) -> unit
+    val print_hyps : out_channel -> 'a hyps -> unit
     val print_addr : out_channel -> addr -> unit
     val print_var : out_channel -> var -> unit
 end
 
 module SimpleHyps = struct
     type var = string
-    type cmp = var * var * int
-    type hyps = cmp array
+    type 'a cmp = var * var * num
+    type 'a hyps = 'a cmp array
     type addr = int
 
     let get_cmp h a = Array.get h a
+	 let dest_cmp c = c
     let get_v1 h a = let (v,_,_)=get_cmp h a in v
     let get_v2 h a = let (_,v,_)=get_cmp h a in v
     let get_const h a = let (_,_,c)=get_cmp h a in c
@@ -67,6 +70,8 @@ module SimpleHyps = struct
     let print_addr _ _ = ()
     let print_var _ _ = ()
 end
+
+let num0=num_of_int 0
 
 module ArrayTools (Hyps: HypsSig) =
 struct
@@ -114,18 +119,18 @@ functor (Hyps : HypsSig) -> struct
    open Hyps
    open ArrayTool
 
-   type result = Example of (var*int) list | Cycle of addr list
-   type dist = Disconnected | Int of int * (addr list)
+   type result = Example of (var*num) list | Cycle of addr list
+   type dist = Disconnected | Int of num * (addr list)
 
    let maxd d1 d2 = match (d1,d2) with
        (Disconnected,Disconnected) -> d1
        | (Disconnected,Int _) -> d2
        | (Int _, Disconnected) -> d1
-       | (Int (i1,a1), Int (i2,a2)) -> if i1>i2 then d1 else d2
+       | (Int (i1,a1), Int (i2,a2)) -> if gt_num i1 i2 then d1 else d2
 
    let pos_dist d = match d with
        Disconnected -> false
-       | Int (i,_) -> (i>0)
+       | Int (i,_) -> (gt_num i num0)
 
    let add_dist cij n a b c =
        let d1=get cij (n,a,b) in
@@ -134,14 +139,14 @@ functor (Hyps : HypsSig) -> struct
        (Disconnected,Disconnected) -> d1
        | (Disconnected,Int _) -> d1
        | (Int _, Disconnected) -> d2
-       | (Int (i1,a1), Int (i2,a2)) -> Int (i1 + i2, a1 @ a2)
+       | (Int (i1,a1), Int (i2,a2)) -> Int (add_num i1 i2, a1 @ a2)
 
   	let print_dist dst =
 	   match dst with
 	   	Disconnected -> eprintf "Disconnected\n%t" eflush
 	    | Int(d, al) ->
 	    		begin
-		    		eprintf "Int %i|" d;
+		    		eprintf "Int %s|" (string_of_num d);
 		    		List.iter (eprintf "%a:" print_addr) al;
 		    		eprintf "\n%t" eflush;
 		    	end;
@@ -156,8 +161,9 @@ functor (Hyps : HypsSig) -> struct
 (*    let ini (_,i,j) = if i=j then Int (0,[]) else Disconnected in
       let cij=init n n ini in
 *)
-		let cij = Array.create (n*n) Disconnected in
-		let f a (v1,v2,const) =
+		let cij = Array.make (n*n) Disconnected in
+		let f a acmp =
+			let (v1,v2,const) = dest_cmp acmp in
 			let i=find va v1 in
 			let j=find va v2 in
 			let coord=(n,i,j) in
@@ -208,7 +214,7 @@ functor (Hyps : HypsSig) -> struct
       	if List.exists (compare v) l then l
          else v::l
 		in
-		let putc (v1,v2,_) l = putv v1 (putv v2 l) in
+		let putc acmp l = let (v1,v2,_)=dest_cmp acmp in putv v1 (putv v2 l) in
 		let l = ref [] in
 		let put a c = l:=(putc c !l) in
 		begin
@@ -248,8 +254,8 @@ open TermMan
 module TermHyps =
 struct
     type var = term
-    type cmp = var * var * int
-    type hyps = term * (int array)
+    type 'a cmp = var * var * num
+    type 'a hyps = term * (int array)
     type addr = int
 
     let get_cmp (h,m) a =
@@ -261,7 +267,9 @@ struct
        let {op_params=[param]} = dest_op op in
        let Number cval = dest_param param in *)
        let n = TermOp.dest_number_any_term c in
-       (v1,v2,Lm_num.int_of_num n)
+       (v1,v2,n)
+
+	 let dest_cmp c = c
 
     let get_v1 h a = let (v,_,_)=get_cmp h a in v
     let get_v2 h a = let (_,v,_)=get_cmp h a in v
@@ -307,14 +315,14 @@ module Test = struct
     open SG
 
     let h = Array.of_list [
-    ("v1","v2",0);
-    ("v5","v6",3);
-    ("v4","v1",1);
-    ("v1","v5",5);
-    ("v4","v6",1);
-    ("v3","v4",-1);
-    ("v2","v3",2);
-    ("v2","v2",-3)
+    ("v1","v2",num_of_int 0);
+    ("v5","v6",num_of_int 3);
+    ("v4","v1",num_of_int 1);
+    ("v1","v5",num_of_int 5);
+    ("v4","v6",num_of_int 1);
+    ("v3","v4",num_of_int (-1));
+    ("v2","v3",num_of_int 2);
+    ("v2","v2",num_of_int (-3))
     ]
 
     let v = solve h (*;("ok",Array.of_list ["ok"]))
@@ -322,3 +330,50 @@ module Test = struct
 end
 
 module TG = Graph(TermHyps)
+
+type 'a inequality =
+   term * term * num * 'a (* represents  t1 >= t2 + n *)
+
+module TermHyps2 =
+struct
+    type var = term
+    type 'a cmp = 'a inequality
+    type 'a hyps = 'a inequality array
+    type addr = int
+
+    let get_cmp h a = h.(a)
+	 let dest_cmp (t1,t2,n,tac) = (t1,t2,n)
+    let get_v1 h a = let (v,_,_,_)=get_cmp h a in v
+    let get_v2 h a = let (_,v,_,_)=get_cmp h a in v
+    let get_const h a = let (_,_,c,_)=get_cmp h a in c
+    let iter h f =
+       Array.iteri f h
+
+    let compare = alpha_equal
+
+    let print_hyps oc h =
+    	let pr (t1,t2,c,tac) =
+    		Printf.fprintf oc "%a>=%a+%s\n" print_term t1 print_term t2 (string_of_num c)
+    	in
+	    	Printf.fprintf oc "hyps:\n";
+   	 	Array.iter pr h;
+    		flush oc
+
+    let print_addr oc a = fprintf oc "%i" a
+
+    let print_var oc t = fprintf oc "%a" print_term t
+end
+
+module TG2 = Graph(TermHyps2)
+
+open RefineError
+
+let find_contradiction l =
+	let ar=Array.of_list l in
+   match TG2.solve ar with
+      TG2.Int (_,r),_ ->
+         let aux3 i al = (ar.(i))::al in
+         let rl = List.fold_right aux3 r [] in
+         rl
+    | TG2.Disconnected,_ ->
+         raise (RefineError("arithT", StringError "Proof by contradiction - No contradiction found"))
