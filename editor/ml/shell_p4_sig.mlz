@@ -57,7 +57,9 @@ sig
     * toploop is not active.
     *)
    val print_term_fp : out_channel -> term -> unit
+   val print_term_stdout : term -> unit
    val set_tactic : string -> MLast.expr -> unit
+   val get_term : int -> term
 
    (*
     * Toploop functions.

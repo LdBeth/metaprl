@@ -238,7 +238,7 @@ struct
       let v = state.state_inline_var in
          state.state_inline_var <- succ v;
          state.state_inline_terms <- (v, t) :: state.state_inline_terms;
-         (<:expr< $lid: "shell_get_term"$ $int: string_of_int v$ >>)
+         (<:expr< ($lid: "Shell_state"$ . $lid: "ShellState"$ . $lid: "get_term"$) $int: string_of_int v$ >>)
 
    let get_term_state state i =
       try List.assoc i state.state_inline_terms with
@@ -249,7 +249,7 @@ struct
    let get_term i =
       synchronize_client (function
          None ->
-            raise (RefineError ("Shell_mp.shell_get_term", StringError "not in toploop"))
+            raise (RefineError ("Shell_state.get_term", StringError "not in toploop"))
        | Some state ->
             get_term_state state i)
 
@@ -298,6 +298,8 @@ struct
                Dform.format_term db buf t;
                Rformat.print_to_channel 80 buf out;
                flush stdout)
+
+   let print_term_stdout t = print_term_fp stdout t
 
    (************************************************************************
     * TOPLOOP FUNCTIONS                                                    *
