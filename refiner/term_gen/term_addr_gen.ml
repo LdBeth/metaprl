@@ -95,6 +95,27 @@ struct
           | None ->
                REF_RAISE(RefineError ("Term_addr_gen.find_subterm", StringTermError ("subterm can't be found", arg)))
 
+   (*
+    * A version of the nth_hyp capable of returning the context term.
+    *)
+   let nth_hyp_name = "Term_addr_gen.nth_hyp"
+   let nth_hyp t i =
+      if i <= 0 then REF_RAISE(RefineError (nth_hyp_name, StringError "hyp number is not positive"));
+      let rec aux i term =
+         let { term_op = op; term_terms = bterms } = dest_term term in
+         let opname = (dest_op op).op_name in
+            if Opname.eq opname hyp_opname then
+               let t, _, term = match_hyp_all nth_hyp_name t bterms in
+                  if i = 0 then t else aux (i - 1) term
+            else if Opname.eq opname context_opname then
+               if i = 0 then term else aux (i - 1) (match_context op nth_hyp_name t bterms)
+            else if Opname.eq opname concl_opname then
+               REF_RAISE(RefineError (nth_hyp_name, StringError "hyp is out of range"))
+            else
+               REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "malformed sequent")))
+      in
+         aux (pred i) (body_of_sequent t)
+
    let rec subterm_exists t = function
       [] -> true
     | Subterm 0 :: _ ->
@@ -126,7 +147,7 @@ struct
    (*
     * Traslate a [-lenght..-1]U[1..length] index into a [0..length-1] one.
     *)
-   let make_index_name = "getnth"
+   let make_index_name = "make_index"
    let make_index ATERM i length =
       if i > 0 then
          if i > length then
@@ -180,7 +201,7 @@ struct
    DEFINE MAKE_REPLACE_BTERM(bvars, vars_bvars, replace_term, replace_bterm) =
       fun FAIL f addr i bvars bterms ->
          match i, bterms with
-            (1, bterm :: bterms) ->
+            (0, bterm :: bterms) ->
                let { bvars = vars; bterm = term } = dest_bterm bterm in
                let term, arg = replace_term FAIL f addr vars_bvars term in
                   mk_bterm vars term :: bterms, arg

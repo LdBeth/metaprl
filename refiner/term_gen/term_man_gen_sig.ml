@@ -28,7 +28,7 @@
  *
  * Author: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-
+open Lm_symbol
 open Opname
 open Term_man_sig
 
@@ -41,6 +41,7 @@ sig
    val concl_opname : opname
 
    val match_hyp : string -> term -> bound_term list -> term
+   val match_hyp_all : string -> term -> bound_term list -> term * var * term
    val match_context : operator -> string -> term -> bound_term list -> term
    val body_of_sequent : term -> term
    val dest_sequent_outer_term : term -> term * term

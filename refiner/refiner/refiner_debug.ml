@@ -750,13 +750,13 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    let merge_hyp x h1 h2 =
       match h1, h2 with
          Hypothesis (v1, t1), Hypothesis (v2, t2) ->
-            if not (v1 = v2) then
+            if v1 <> v2 then
                report_error x "Hyp variable mismatch";
             Hypothesis (v1, merge_term x t1 t2)
        | Context (v1, vs1, ts1), Context (v2, vs2, ts2) ->
-            if not (v1 = v2) then
+            if v1 <> v2 then
                report_error x "Context variable mismatch";
-            if not (vs1 = vs2) then
+            if vs1 <> vs2 then
                report_error x "Contexts of a context mismatch";
             Context (v1, vs1, merge_terms x ts1 ts2)
        | _ ->
@@ -769,8 +769,34 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          report_error x "SeqHyp.length mismatch on merge";
       hyps1, hyps2
 
+   let merge_and_rename x h1 h2 =
+      if not (SeqHyp1.length h1 = SeqHyp2.length h2) then
+         report_error x "SeqHyp.length mismatch on merge_and_rename";
+      let rec aux l1 l2 sub =
+         match l1, l2 with
+            [], [] -> [], sub
+          | Hypothesis (v1, t1) :: tl1, Hypothesis (v2, t2) :: tl2 ->
+               let t2 = TermSubst2.apply_subst sub t2 in
+               let hyps, sub = aux tl1 tl2 ((v2, Term2.mk_var_term v1) :: sub) in
+                  (Hypothesis (v1, t2) :: hyps), sub
+          | Context (v1, vs1, ts1) :: tl1, Context (v2, vs2, ts2) :: tl2 ->
+               if v1 <> v2 then
+                  report_error x "Context variable mismatch on merge_and_rename";
+               if vs1 <> vs2 then
+                  report_error x "Contexts of a context mismatch on merge_and_rename";
+               let ts2 = List.map (TermSubst2.apply_subst sub) ts2 in
+               let hyps, sub = aux tl1 tl2 sub in
+                 (Context (v1, vs1, ts2) :: hyps), sub
+          | _ -> report_error x "hypothesis kind mismatch on merge_and_rename"
+      in
+         let hyps, sub = aux (SeqHyp1.to_list h1) (SeqHyp2.to_list h2) [] in
+            (h1, (SeqHyp2.of_list hyps)), sub
+
    let merge_esequent x { Type1.sequent_args = a1; Type1.sequent_hyps = h1; Type1.sequent_concl = c1 } { Type2.sequent_args = a2; Type2.sequent_hyps = h2; Type2.sequent_concl = c2 } =
-      { sequent_args = merge_term x a1 a2; sequent_hyps = merge_SeqHyp x h1 h2; sequent_concl = merge_term x c1 c2 }
+      let hyps, sub = merge_and_rename x h1 h2 in {
+         sequent_args = merge_term x a1 a2;
+         sequent_hyps = hyps;
+         sequent_concl = merge_term x c1 (TermSubst2.apply_subst sub c2) }
 
    let merge_match_param x p1 p2 =
       match p1, p2 with
