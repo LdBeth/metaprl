@@ -231,7 +231,8 @@ let spec =
     "-cclib", String (add_string_argv "-cclib"), "C library";
     "-inline", String (add_string_argv "-inline"), "Inline level";
     "-linkall", Unit (add_argv "-linkall"), "specify link";
-    "-lib", String set_lib, "set the library directory"]
+    "-lib", String set_lib, "set the library directory";
+    "-noassert",Unit (add_argv "-noassert"), "Don't compile assertion checks"]
 
 (*
  * Print the command line.
@@ -286,6 +287,9 @@ let _ = Printexc.catch (Unix.handle_unix_error main) ()
 
 (*
  * $Log$
+ * Revision 1.21  1998/07/05 19:14:50  nogin
+ * Added -noassert option to prlc
+ *
  * Revision 1.20  1998/07/03 22:58:40  nogin
  * Added -S option
  *
