@@ -807,16 +807,28 @@ struct
     * Create a new thm.
     *)
    let edit_cd_thm mname name =
-      edit_info mname;
-      cd ("/" ^ mname ^ "/" ^ name);
-      ()
+      let rec collect = function
+         [] ->
+            []
+       | (h, _) :: t ->
+            match h with
+               SummaryItem (<:str_item< open $sl$ >>) ->
+                  sl :: collect t
+             | _ ->
+                  collect t
+      in
+      let opens = collect (info_items (edit_info mname)) in
+         cd ("/" ^ mname ^ "/" ^ name);
+         ShellP4.eval_opens opens;
+         ()
 
    let edit_create_thm mname name =
       edit_info mname;
       cd ("/" ^ mname);
       let create name =
          let package = get_current_package info in
-            Shell_rule.create package name;
+         let item = Shell_rule.create package name in
+            item.edit_save ();
             touch ()
       in
          print_exn create name;

@@ -550,6 +550,17 @@ struct
                flush stdout
             end
 
+   let eval_expr loc expr =
+      let expr = expr_of_ocaml_expr !toploop expr in
+         if !interactive_flag then
+            begin
+               print_expr stdout expr;
+               flush stdout
+            end
+
+   let eval_opens opens =
+      ()
+
    (*
     * Evaluate a directive.
     *)

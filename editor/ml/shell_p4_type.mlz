@@ -72,7 +72,11 @@ sig
     * Compile a tactic.
     *)
    val parse_string : string -> MLast.expr
+   val eval_str_item : MLast.loc -> MLast.str_item -> unit
+   val eval_expr : MLast.loc -> MLast.expr -> unit
    val eval_tactic : MLast.expr -> tactic
+
+   val eval_opens : string list list -> unit
 
    (*
     * Include directory list.

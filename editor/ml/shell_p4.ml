@@ -432,9 +432,21 @@ struct
     | Tactic of tactic
 
    (*
-    * Evaluate a tactic through the toploop.
+    * Evaluate expressions with the toploop.
     *)
-   let eval_tactic_exn = RefineError ("eval_tactic", StringError "evaluation failed")
+   let eval_str_item loc item =
+      let pt_item = Ast2pt.str_item item [] in
+          try
+             if not (Toploop.execute_phrase false (Parsetree.Ptop_def pt_item)) then
+                raise (RefineError ("eval_expr", StringError "evaluation failed"))
+          with
+             Typecore.Error (_, err) ->
+                Typecore.report_error err;
+                eflush stdout;
+                raise (RefineError ("eval_expr", StringError "evaluation failed"))
+
+   let eval_expr loc expr =
+      eval_str_item loc (<:str_item< $exp: expr$ >>)
 
    let eval_tactic expr =
       let loc = 0, 0 in
@@ -448,18 +460,26 @@ struct
                    Some tac ->
                       tac
                  | None ->
-                      raise eval_tactic_exn
+                      raise (RefineError ("eval_tactic", StringError "evaluation failed"))
              else
-                raise eval_tactic_exn
+                raise (RefineError ("eval_tactic", StringError "evaluation failed"))
           with
              Typecore.Error (_, err) ->
                 Typecore.report_error err;
                 eflush stdout;
-                raise eval_tactic_exn
+                raise (RefineError ("eval_tactic", StringError "evaluation failed"))
 
    let parse_string str =
       let instream = Stream.of_string str in
          Grammar.Entry.parse Pcaml.expr instream
+
+   let eval_opens opens =
+      let eval_open path =
+         let loc = 0, 0 in
+            eprintf "Open %a%t" print_string_list path eflush;
+            eval_str_item loc (<:str_item< open $path$ >>)
+      in
+         List.iter eval_open opens
 
    (*
     * Build a delayed-evaluation tactic.
