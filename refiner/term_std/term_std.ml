@@ -42,7 +42,7 @@ open Refine_error_sig
  * Show the file loading.
  *)
 let _ =
-   show_loading "Loading Term%t"
+   show_loading "Loading Term_std%t"
 
 (*
  * Type of terms.

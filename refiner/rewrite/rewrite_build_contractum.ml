@@ -51,7 +51,7 @@ open Rewrite_debug_sig
  * Show the file loading.
  *)
 let _ =
-   show_loading "Loading Rewrite_debug%t"
+   show_loading "Loading Rewrite_build_contractum%t"
 
 let debug_rewrite = load_debug "rewrite"
 let debug_subst = load_debug "subst"

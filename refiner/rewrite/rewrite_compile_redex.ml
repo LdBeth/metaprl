@@ -56,7 +56,7 @@ open Rewrite_debug_sig
  * Show the file loading.
  *)
 let _ =
-   show_loading "Loading Rewrite_debug%t"
+   show_loading "Loading Rewrite_compile_redex%t"
 
 module MakeRewriteCompileRedex
    (TermType : TermSig)
@@ -148,9 +148,9 @@ struct
                (* This is a second order variable, all subterms are vars *
                 * and we do not have a pattern yet                       *)
                let so_mem = rstack_so_mem v stack in
-               if so_mem then rstack_check_arity v (List.length subterms) stack; 
+               if so_mem then rstack_check_arity v (List.length subterms) stack;
                let stack = if so_mem then rstack_upgrade v stack else
-                  if subterms = [] then stack @ [FOVarPattern v] else 
+                  if subterms = [] then stack @ [FOVarPattern v] else
                      stack @ [SOVarPattern (v, List.length subterms)] in
                let v = rstack_so_index v stack in
                let term, restrict_free =
@@ -167,7 +167,7 @@ struct
             (* This is a second order variable instance *)
             else if rstack_so_mem v stack then begin
                rstack_check_arity v (List.length subterms) stack;
-               (* we set allow_so_patterns to false here since the term that is going to 
+               (* we set allow_so_patterns to false here since the term that is going to
                   match the SO variable v may have no free occurences of this argument
                   and this would prevent us from establishing an SO pattern *)
                let stack, terms = compile_so_redex_terms false strict addrs stack bvars subterms in
@@ -279,7 +279,7 @@ struct
          let stack', bterm' = compile_so_redex_bterm allow_so_patterns strict addrs stack bvars bterm in
          let stack'', bterms' = compile_so_redex_bterms allow_so_patterns strict addrs stack' bvars bterms in
             stack'', bterm'::bterms'
-   
+
    (* HACK! This is not absolutely safe - we may accidentally "capture" an SO variable *)
    and rename_repeated_vars i stack bnames bvars term = function
       [] ->

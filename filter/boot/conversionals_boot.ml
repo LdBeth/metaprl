@@ -51,7 +51,7 @@ open Sequent_boot
  * Debug statement.
  *)
 let _ =
-   show_loading "Loading Tacticals%t"
+   show_loading "Loading Conversionals_boot%t"
 
 let debug_conv =
    create_debug (**)

@@ -47,7 +47,7 @@ open Sequent_boot
  * Debug statement.
  *)
 let _ =
-   show_loading "Loading Tacticals%t"
+   show_loading "Loading Tacticals_boot%t"
 
 module Tacticals =
 struct

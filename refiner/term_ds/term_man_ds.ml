@@ -47,7 +47,7 @@ open Term_addr_ds
  * Show that the file is loading.
  *)
 let _ =
-   show_loading "Loading Term_man_gen%t"
+   show_loading "Loading Term_man_ds%t"
 
 let debug_address =
    create_debug (**)

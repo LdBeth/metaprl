@@ -50,7 +50,7 @@ open Rewrite_debug_sig
  * Show the file loading.
  *)
 let _ =
-   show_loading "Loading Rewrite_debug%t"
+   show_loading "Loading Rewrite_match_redex%t"
 
 let debug_rewrite = load_debug "rewrite"
 
@@ -193,7 +193,7 @@ struct
             if (sp <> sp') then
                REF_RAISE(RefineError ("update_redex_params", RewriteBadMatch (ParamMatch PARAM_REASON)));
             ()
-           
+
 
    let match_redex_params stack p' p =
       match p', dest_param p with
@@ -529,7 +529,7 @@ struct
        | Context (var, terms) ->
             List.iter (check_term_free_vars vars) terms;
             check_hyp_free_vars vars hyps (succ i) len
-            
+
    and check_term_free_vars vars t =
       if is_some_var_free vars t then
          REF_RAISE(RefineError ("Rewrite_match_redex.check_term_free_vars", RewriteBadMatch (TermMatch t)))

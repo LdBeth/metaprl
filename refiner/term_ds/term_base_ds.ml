@@ -42,7 +42,7 @@ open String_set
  * Show the file loading.
  *)
 let _ =
-   show_loading "Loading Term_ds%t"
+   show_loading "Loading Term_base_ds%t"
 
 let debug_subst =
    create_debug (**)

@@ -45,7 +45,7 @@ open Term_std
  * Show the file loading.
  *)
 let _ =
-   show_loading "Loading Term%t"
+   show_loading "Loading Term_base_std%t"
 
 (*
  * Simple term module.

@@ -57,7 +57,7 @@ open Simple_print.SimplePrint
  * Show the file loading.
  *)
 let _ =
-   show_loading "Loading Term_table%t"
+   show_loading "Loading Term_match_table%t"
 
 let debug_term_table =
    create_debug (**)

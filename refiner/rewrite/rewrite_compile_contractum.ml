@@ -54,7 +54,7 @@ open Rewrite_debug_sig
  * Show the file loading.
  *)
 let _ =
-   show_loading "Loading Rewrite_debug%t"
+   show_loading "Loading Rewrite_compile_contractum%t"
 
 module MakeRewriteCompileContractum
    (TermType : TermSig)

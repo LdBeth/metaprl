@@ -7,29 +7,29 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Lori Lorigo, Richard Eaton, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Authors: Lori Lorigo, Richard Eaton
- *	
+ *
  *	Compile test.ml : should only be called when library.cma is up-to-date
  * 	ocamlc -c test.ml
  *
  *	Create test executable
  *	ocamlc -o test -custom -I ../../nuprl5/sys/io/mathbus unix.cma io.cma library.cma test.cmo -cclib -lunix
- *	
+ *
  *)
 
 open Printf
@@ -45,14 +45,14 @@ open Ascii_scan
 open Library_type_base
 
 let _ =
-   show_loading "Loading Test%t"
+   show_loading "Loading Nuprl_run%t"
 
 exception NoTest
 exception Test of string
 
 exception Testfailed of int
 
-(* 
+(*
  * insert_leaf
  *)
 
@@ -77,13 +77,13 @@ let oiljgs connection =
 	(* test get *)
 	(with_transaction lib
 	   (function t ->
-		 print_string "oiljgs 1"; 
+		 print_string "oiljgs 1";
 		 print_string (string_of_int (List.length (roots t)));
 		 let oid = root t "demo" in
 		   print_string "oiljgs 2";
-		   let _ = child t oid "test1" in 
+		   let _ = child t oid "test1" in
 		   print_string "oiljgs 3";
-		
+
 		   if not (1 = number_of_inatural_term (get_term t (child t oid "test1")))
 		        then (print_string "check"; raise (Test "check"))))
 	; cookie := (lib_close lib))
@@ -93,7 +93,7 @@ let oiljgs connection =
     print_endline "open insert leave join get successful.";
 
     !cookie
-	
+
 (* restore
    save
    oid_export
@@ -115,7 +115,7 @@ let seri connection cookie =
 		     child t (root t "demo") "test1") in
 	   ncookie := save lib (function t -> ex := oid_export t oid);
 	   let _ = lib_close lib in ())
-	
+
       (function () -> let _ = lib_close lib in ()));
 
     let oid = null_oref () in
@@ -149,7 +149,7 @@ let ptest connection =
   let lib = join connection ["testall"] in
     (unwind_error
       (function () ->
-	
+
 	(with_transaction lib
 	 (function t ->
 	  let oid = root t "demo" in
@@ -157,7 +157,7 @@ let ptest connection =
 	        then (print_string "check"; raise (Test "check"))
 	   ; ()));
 
-	
+
 	let noid = (with_transaction lib
 		     (function t ->
  		       create t "TERM" (Some (inatural_term 2)) [("foo", inatural_term 3)] ))
@@ -165,7 +165,7 @@ let ptest connection =
   	  try
 	  (with_transaction lib
 	    (function t ->
-	      (* monkey with properties and then fail*)		
+	      (* monkey with properties and then fail*)
 	      (let ps = get_properties t noid in
 
 		if not (2 = number_of_inatural_term (get_term t noid))
@@ -190,7 +190,7 @@ let ptest connection =
 		  if (not !failp) then raise (Testfailed 8));
 
  		raise Pleasefail)))
-		
+
 	  with
 	    Pleasefail ->
 	     (with_transaction lib
@@ -212,7 +212,7 @@ let ptest connection =
 	(try
 	  let f = (with_transaction lib
 		    (function t ->
-		      
+
 		      (function () -> roots t))) in
        	    (f (); raise (Testfailed 115))
 	  with e -> ());
@@ -243,7 +243,7 @@ let dtest connection =
   let lib = join connection ["testall"] in
     (unwind_error
       (function () ->
-	
+
 	* test get *
 	let doid = (with_transaction lib
 		   (function t ->
@@ -270,7 +270,7 @@ let dtest connection =
 	   (function t ->
              let toid = child t doid "test" in
 		if (directory_p t toid) then raise (Testfailed 16)));
-	
+
 	(with_transaction lib
 	   (function t ->
              let toid = child t doid "test" in
@@ -306,7 +306,7 @@ let dtest connection =
 		delete_strong t toid;
 		try (get_term t toid; raise (Testfailed 23)) with e -> ()
 	    ));
-		
+
      (lib_close lib); ())
 
      (function () -> (lib_close lib)))
@@ -529,7 +529,7 @@ open Nuprl
 
 
 module NuprlRun = struct
-  
+
   let run_nuprl (():unit) =
     special_error_handler (function () -> (library_open_and_loop_eval "MetaPRL" refine_ehook))
       (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
@@ -545,16 +545,16 @@ module NuprlRun = struct
   let run_connection lport mport host name =
     special_error_handler (function () -> (library_open_and_loop_eval' lport mport host name refine_ehook))
       (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
-      
+
   let run_connection_with_hook lport mport host name rhook =
     special_error_handler (function () -> (library_open_and_loop_eval' lport mport host name rhook))
       (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
-      
+
   let run_dummy_connection lport mport host name =
-    special_error_handler 
-      (function () -> (library_open_and_loop_eval' lport mport host name 
-			 (let f x = (Mbterm.print_term x; 
-				     (if nuprl_is_all_term x then Mbterm.print_term ivoid_term 
+    special_error_handler
+      (function () -> (library_open_and_loop_eval' lport mport host name
+			 (let f x = (Mbterm.print_term x;
+				     (if nuprl_is_all_term x then Mbterm.print_term ivoid_term
 				     else Mbterm.print_term (itoken_term "foo")); x) in f)))
       (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
