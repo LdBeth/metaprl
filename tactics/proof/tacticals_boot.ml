@@ -383,8 +383,8 @@ struct
    let isEmptyOrMainLabel l =
       (l=emptyLabel) or (List.mem l main_labels)
 
-   let isEmptyOrAuxLabel l =
-      (l=emptyLabel) or not (List.mem l main_labels)
+   let isAuxLabel l =
+      not (List.mem l main_labels)
 
    let isWFLabel l =
       (l=wfLabel)
@@ -402,7 +402,7 @@ struct
       prefix_thenLocalLabelT tac1 (ifLabelPredT isEmptyOrMainLabel tac2 tac3)
 
    let prefix_thenAT tac1 tac2 =
-      prefix_thenLocalLabelT tac1 (ifLabelPredT isEmptyOrAuxLabel tac2 idT)
+      prefix_thenLocalLabelT tac1 (ifLabelPredT isAuxLabel tac2 idT)
 
    let prefix_thenWT tac1 tac2 =
       prefix_thenLocalLabelT tac1 (ifWT tac2)
@@ -454,7 +454,7 @@ struct
       thenLLT (function l -> isEmptyOrMainLabel l)
 
    let prefix_thenALT =
-      thenLLT (function l -> isEmptyOrAuxLabel l)
+      thenLLT (function l -> isAuxLabel l)
 
    (************************************************************************
     * LABEL PROGRESS                                                       *
