@@ -15,7 +15,7 @@ val r_7 : string list -> 'a -> string list -> bool
 val r_8 : string list -> 'a list -> string list -> bool
 val r_9 : string list -> 'a list -> string list -> bool
 val r_10 : string list -> 'a -> string list -> bool
-val com_subst : 'a list -> 'a * 'a list -> 'a list
+val com_subst : 'a -> 'a list -> 'a list -> 'a list
 
 (* Debugging *)
 

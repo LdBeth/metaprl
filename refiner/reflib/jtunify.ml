@@ -158,28 +158,27 @@ let r_10 s ft rt =
       (is_var v) && (v <> x)
       && (((List.tl s) =[]) or (is_const x) or ((List.tl rt) <> []))
 
-let rec com_subst slist ((ov,ovlist) as one_subst) =
-   match slist with
-      [] -> raise jprover_bug
-    | f::r ->
-         if f = ov then
-            (ovlist @ r)
-         else
-            f::(com_subst r one_subst)
+let rec com_subst ov ovlist = function
+   [] -> []
+ | f::r as l->
+      if f = ov then
+         (ovlist @ r)
+      else
+         let rest = com_subst ov ovlist r in
+            if rest == r then l else f :: rest
 
-let rec combine subst ((ov,oslist) as one_subst)  =
-   match subst with
-      [] -> []
-    | ((v, slist) as f) :: r ->
-         let rest_combine = (combine r one_subst) in
-         if (List.mem ov slist) then  (* subst assumed to be idemponent *)
-            let com_element = com_subst slist one_subst in
-            ((v,com_element)::rest_combine)
+let rec combine ov oslist = function
+   [] -> []
+ | ((v, slist) as f) :: r ->
+      let com_element = com_subst ov oslist slist in
+      let rest_combine = combine ov oslist r in
+         if com_element == slist then
+            f::rest_combine
          else
-            (f::rest_combine)
+            (v,com_element)::rest_combine
 
-let compose ((n,subst) as sigma) ((ov,oslist) as one_subst) =
-   let com = combine subst one_subst in
+let compose (n,subst) ((ov,oslist) as one_subst) =
+   let com = combine ov oslist subst in
 (* begin
    print_endline "!!!!!!!!!test print!!!!!!!!!!";
    print_subst [one_subst];

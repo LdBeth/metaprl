@@ -3258,20 +3258,18 @@ struct
 
 (* ************ T-STRING UNIFICATION ******************************** *)
 
-   let rec combine subst (ov,oslist)  =
-      match subst with
-         [] -> [],[]
-       | f::r ->
-            let (v,slist) = f in
-            let rest_vlist,rest_combine = (combine r (ov,oslist)) in
-            if (List.mem ov slist) then  (* subst assumed to be idemponent *)
-               let com_element = com_subst slist (ov,oslist) in
-               (v::rest_vlist),((v,com_element)::rest_combine)
-            else
+   let rec combine ov oslist = function
+      [] -> [],[]
+    | ((v, slist) as f)::r ->
+         let com_element = com_subst ov oslist slist in
+         let rest_vlist,rest_combine = combine ov oslist r in
+            if com_element == slist then
                (rest_vlist,(f::rest_combine))
+            else
+               (v::rest_vlist),((v,com_element)::rest_combine)
 
-   let compose (n,subst) one_subst =
-      let trans_vars,com = combine subst one_subst in
+   let compose (n,subst) ((ov,oslist) as one_subst) =
+      let trans_vars,com = combine ov oslist subst in
 (*    begin
    print_endline "!!!!!!!!!test print!!!!!!!!!!";
    print_subst [one_subst];
