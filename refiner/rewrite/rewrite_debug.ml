@@ -105,21 +105,21 @@ struct
     | StackString s ->
          fprintf out "String %s" s
     | StackVar v ->
-         fprintf out "Var %a" print_symbol v
+         fprintf out "Var %a" output_symbol v
     | StackLevel l ->
          fprintf out "Level"
     | StackBTerm (t, vars) ->
-         fprintf out "BTerm %a[%a]" print_term t print_symbol_list vars
+         fprintf out "BTerm %a[%a]" print_term t output_symbol_list vars
     | StackITerm ts ->
          fprintf out "ITerm %a" (print_any_list (fun out (t, subterms) -> fprintf out "%a[%d] " print_term t (List.length subterms))) ts
     | StackContext (vars, t, addr) ->
          fprintf out "Context (%a/%a/%s)" (**)
-            print_symbol_list vars
+            output_symbol_list vars
             print_term t
             (string_of_address addr)
     | StackSeqContext (vars, (i, len, hyps)) ->
          fprintf out "SeqContext (%a/(%d,%d))" (**)
-            print_symbol_list vars i len
+            output_symbol_list vars i len
 
    (*
     * Stack is printed on lines.

@@ -1916,7 +1916,7 @@ struct
       let rw' addrs params (sent : sentinal) (bvars : SymbolSet.t) t =
          IFDEF VERBOSE_EXN THEN
             if !debug_rewrites then
-               eprintf "Refiner: applying conditional rewrite %s to %a with bvars = [%a] %t" name print_term t print_symbol_set bvars eflush;
+               eprintf "Refiner: applying conditional rewrite %s to %a with bvars = [%a] %t" name print_term t output_symbol_set bvars eflush;
          ENDIF;
          match apply_rewrite rw (addrs, bvars) t params with
             (t' :: subgoals) ->

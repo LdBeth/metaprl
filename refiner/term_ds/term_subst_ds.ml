@@ -491,7 +491,7 @@ struct
          if !debug_subst_ds then begin
             eprintf "Term_subst_ds.alpha_equal_fun:\n\t";
             eprintf "\tt: %a\n" debug_print t;
-            eprintf "\tvs: %a\n" print_symbol_list vs;
+            eprintf "\tvs: %a\n" output_symbol_list vs;
             eprintf "\tt': %a\n" debug_print t';
             eprintf "\titems: ...%t" eflush
          end

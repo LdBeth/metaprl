@@ -187,7 +187,7 @@ struct
                      IFDEF VERBOSE_EXN THEN
                         if !debug_fv then begin
                            eprintf "Request for Subst fvs: Term: %a; Subst: " debug_print t;
-                           List.iter (fun (v,t) -> eprintf "(%a : %a) " print_symbol v debug_print t) sub;
+                           List.iter (fun (v,t) -> eprintf "(%a : %a) " output_symbol v debug_print t) sub;
                            eprintf "%t" eflush;
                         end;
                         let res =
@@ -251,7 +251,7 @@ struct
                List.iter (fun name -> eprintf " %s" name) (List.map string_of_symbol (SymbolSet.to_list (free_vars_set t)));
                eflush stderr;
                if sub == [] then eprintf "\t empty substitution\n" else
-               List.iter (fun (v, t) -> eprintf "\t%a: %a\n" print_symbol v debug_print t) sub;
+               List.iter (fun (v, t) -> eprintf "\t%a: %a\n" output_symbol v debug_print t) sub;
                eprintf "}%t" eflush;
                debug_subst := true
             end

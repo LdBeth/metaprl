@@ -171,7 +171,7 @@ struct
       StackName i ->
          IFDEF VERBOSE_EXN THEN
             if !debug_rewrite then
-               eprintf "Rewrite.set_bvars: stack(%d)/%d with %a%t" i (Array.length stack) print_symbol v eflush
+               eprintf "Rewrite.set_bvars: stack(%d)/%d with %a%t" i (Array.length stack) output_symbol v eflush
          ENDIF;
          stack.(i) <- StackVar v
     | _ ->
@@ -277,7 +277,7 @@ struct
             IFDEF VERBOSE_EXN THEN
                if !debug_rewrite then
                   eprintf "Rewrite.match_redex_params.RWMVar: stack(%d)/%d <- %a%t" (**)
-                     i (Array.length stack) print_symbol v eflush
+                     i (Array.length stack) output_symbol v eflush
             ENDIF;
             update_redex_param stack i (StackVar v) PARAM_REASON
        | RWMLevel1 i, MLevel l ->
@@ -298,21 +298,21 @@ struct
             IFDEF VERBOSE_EXN THEN
                if !debug_rewrite then
                   eprintf "Rewrite.match_redex_params.RWMNumber: stack(%d)/%d <- %a%t" (**)
-                     i (Array.length stack) print_symbol s eflush
+                     i (Array.length stack) output_symbol s eflush
             ENDIF;
             update_redex_param stack i (StackVar s) PARAM_REASON
        | RWMString i, MString s ->
             IFDEF VERBOSE_EXN THEN
                if !debug_rewrite then
                   eprintf "Rewrite.match_redex_params.RWMString: stack(%d)/%d <- %a%t" (**)
-                     i (Array.length stack) print_symbol s eflush
+                     i (Array.length stack) output_symbol s eflush
             ENDIF;
             update_redex_param stack i (StackVar s) PARAM_REASON
        | RWMToken i, MToken s ->
             IFDEF VERBOSE_EXN THEN
                if !debug_rewrite then
                   eprintf "Rewrite.match_redex_params.RWMToken: stack(%d)/%d <- %a%t" (**)
-                     i (Array.length stack) print_symbol s eflush
+                     i (Array.length stack) output_symbol s eflush
             ENDIF;
             update_redex_param stack i (StackVar s) PARAM_REASON
 
@@ -389,21 +389,21 @@ struct
                let v = dest_var t in
                   IFDEF VERBOSE_EXN THEN
                      if !debug_rewrite then
-                        eprintf "Rewrite.match_redex.RWCheckVar: %d/%a%t" i print_symbol v eflush
+                        eprintf "Rewrite.match_redex.RWCheckVar: %d/%a%t" i output_symbol v eflush
                   ENDIF;
                   match stack.(i) with
                      StackString v' ->
                         let v' = Lm_symbol.add v' in
                            IFDEF VERBOSE_EXN THEN
                               if !debug_rewrite then
-                                 eprintf "Rewrite.match_redex.RWCheckVar: %a/%a%t" print_symbol v' print_symbol v eflush
+                                 eprintf "Rewrite.match_redex.RWCheckVar: %a/%a%t" output_symbol v' output_symbol v eflush
                            ENDIF;
                            if v' <> v then
                               REF_RAISE(RefineError ("match_redex_term", RewriteBadMatch (VarMatch v)))
                    | StackVar v' ->
                         IFDEF VERBOSE_EXN THEN
                            if !debug_rewrite then
-                              eprintf "Rewrite.match_redex.RWCheckVar: %a/%a%t" print_symbol v' print_symbol v eflush
+                              eprintf "Rewrite.match_redex.RWCheckVar: %a/%a%t" output_symbol v' output_symbol v eflush
                         ENDIF;
                         if v' <> v then
                            REF_RAISE(RefineError ("match_redex_term", RewriteBadMatch (VarMatch v)))

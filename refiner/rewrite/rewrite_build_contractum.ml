@@ -135,7 +135,7 @@ struct
          begin
             IFDEF VERBOSE_EXN THEN
                if !debug_rewrite then
-                  eprintf "StackName %d (avoid [%a])%t" i print_symbol_set bnames eflush
+                  eprintf "StackName %d (avoid [%a])%t" i output_symbol_set bnames eflush
             ENDIF;
             let v =
                match stack.(i) with
@@ -155,7 +155,7 @@ struct
     | SaveName i ->
          IFDEF VERBOSE_EXN THEN
             if !debug_rewrite then
-               eprintf "SaveName %d (%a, avoid [%a])%t" i print_symbol names.(i) print_symbol_set bnames eflush
+               eprintf "SaveName %d (%a, avoid [%a])%t" i output_symbol names.(i) output_symbol_set bnames eflush
          ENDIF;
          let v = names.(i) in
             if SymbolSet.mem bnames v then
@@ -238,7 +238,7 @@ struct
                       begin
                          eprintf "RWSOInstance 2: %a%t" debug_print term eflush;
                          List.iter2 (fun name term ->
-                               eprintf "\t%a: %a%t" print_symbol name debug_print term eflush) (**)
+                               eprintf "\t%a: %a%t" output_symbol name debug_print term eflush) (**)
                             vars terms
                       end
                ENDIF;
@@ -253,7 +253,7 @@ struct
                   StackBTerm(term, vars) ->
                      IFDEF VERBOSE_EXN THEN
                         if !debug_subst then
-                           eprintf "RWSOInstance: BTerm: %a: [%a]%t" debug_print term print_symbol_list vars eflush
+                           eprintf "RWSOInstance: BTerm: %a: [%a]%t" debug_print term output_symbol_list vars eflush
                      ENDIF;
                      subst term vars
                 | _ ->
@@ -277,7 +277,7 @@ struct
                             begin
                                eprintf "RWSOContextSubst: %a%t" debug_print term eflush;
                                List.iter2 (fun name term ->
-                                     eprintf "\t%a: %a%t" print_symbol name debug_print term eflush) (**)
+                                     eprintf "\t%a: %a%t" output_symbol name debug_print term eflush) (**)
                                   vars terms
                             end
                       ENDIF;

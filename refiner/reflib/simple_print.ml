@@ -291,7 +291,7 @@ struct
             eprintf "Simple_print.format_term: got a variable%t" eflush;
          let v, conts, subterms = dest_so_var term in
             if !debug_simple_print then
-               eprintf "Simple_print.format_term: var: %a%t" print_symbol v eflush;
+               eprintf "Simple_print.format_term: var: %a%t" output_symbol v eflush;
             format_quoted_var buf v;
             if conts <> [v] then format_contexts buf conts;
             format_terms buf subterms
@@ -305,7 +305,7 @@ struct
             if i = len then () else
             begin
                format_char buf '\n';
-               format_int buf (i+1);
+               format_int buf (i + 1);
                format_char buf '.';
                format_pushm buf 1;
                begin
