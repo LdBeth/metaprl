@@ -1003,56 +1003,55 @@ struct
     * Search for an axiom by name.
     *)
    let find_refiner refiner name =
-      let rec search refiners refiner =
-         match refiner with
-            NullRefiner ->
-               refiners, None
-          | RuleRefiner { rule_name = n; rule_refiner = next }
-          | RewriteRefiner { rw_name = n; rw_refiner = next }
-          | CondRewriteRefiner { crw_name = n; crw_refiner = next } as r ->
-               if n = name then
-                  refiners, Some r
-               else
-                  search refiners next
-          | DefinitionalRewriteRefiner { rw_refiner = next } 
-          | PrimRuleRefiner { prule_refiner = next }
-          | PrimRewriteRefiner { prw_refiner = next }
-          | PrimCondRewriteRefiner { pcrw_refiner = next } ->
+      let rec search refiners = function
+         NullRefiner ->
+            refiners, None
+       | RuleRefiner { rule_name = n; rule_refiner = next }
+       | RewriteRefiner { rw_name = n; rw_refiner = next }
+       | CondRewriteRefiner { crw_name = n; crw_refiner = next } as r ->
+            if n = name then
+               refiners, Some r
+            else
                search refiners next
-          | MLRuleRefiner { ml_rule_name = n; ml_rule_refiner = next }
-          | MLRewriteRefiner { ml_rw_name = n; ml_rw_refiner = next }
-          | MLCondRewriteRefiner { ml_crw_name = n; ml_crw_refiner = next } ->
-               if n = name then
-                  REF_RAISE(RefineError (string_of_opname n, StringError "ML rules/rewrites can't be justified"))
-               else
-                  search refiners next
-          | LabelRefiner (_, next) as r ->
-               if List.memq r refiners then
+       | DefinitionalRewriteRefiner { rw_refiner = next } 
+       | PrimRuleRefiner { prule_refiner = next }
+       | PrimRewriteRefiner { prw_refiner = next }
+       | PrimCondRewriteRefiner { pcrw_refiner = next } ->
+            search refiners next
+       | MLRuleRefiner { ml_rule_name = n; ml_rule_refiner = next }
+       | MLRewriteRefiner { ml_rw_name = n; ml_rw_refiner = next }
+       | MLCondRewriteRefiner { ml_crw_name = n; ml_crw_refiner = next } ->
+            if n = name then
+               REF_RAISE(RefineError (string_of_opname n, StringError "ML rules/rewrites can't be justified"))
+            else
+               search refiners next
+       | LabelRefiner (_, next) as r ->
+            if List.memq r refiners then
+               refiners, None
+            else
+               search (r :: refiners) next
+       | PairRefiner (next1, next2) ->
+            begin
+               match search refiners next1 with
+                  refiners, None ->
+                     search refiners next2
+                | x ->
+                     x
+            end
+       | ListRefiner refiners' ->
+            let rec search' refiners = function
+               refiner :: tl ->
+                  begin
+                     match search refiners refiner with
+                        refiners, None ->
+                           search' refiners tl
+                      | x ->
+                           x
+                  end
+             | [] ->
                   refiners, None
-               else
-                  search (r :: refiners) next
-          | PairRefiner (next1, next2) ->
-               begin
-                  match search refiners next1 with
-                     refiners, None ->
-                        search refiners next2
-                   | x ->
-                        x
-               end
-          | ListRefiner refiners' ->
-               let rec search' refiners = function
-                  refiner :: tl ->
-                     begin
-                        match search refiners refiner with
-                           refiners, None ->
-                              search' refiners tl
-                         | x ->
-                              x
-                     end
-                | [] ->
-                     refiners, None
-               in
-                  search' refiners refiners'
+            in
+               search' refiners refiners'
       in
          match search [] refiner with
             _, Some v ->
@@ -1315,11 +1314,13 @@ struct
     * Get the term from an extract.
     * This will fail if some of the rules are not justified.
     *)
-   let invalid_exn = Invalid_argument "Refine.term_of_extract: extract is ill-formed"
-   let incomplete_exn = RefineError ("Refine.term_of_extract", StringError "proof is incomplete")
-
-   let term_of_extract refiner { ext_just = just } (args : term list) =
+   let term_of_extract refiner ext (args : term list) =
+      if ext.ext_subgoals <> [] then
+         raise (Invalid_argument "Refine.term_of_extract: called on an unfinished proof");
+      if (List.length ext.ext_goal.mseq_hyps) <> (List.length args) then
+         raise (Invalid_argument "Refine.term_of_extract: wrong number of term arguments");
       let find = find_of_hash (hash_refiner refiner) in
+      (* XXX BUG: We never call check_rewrite/check_cond_rewrite, but we should *)
       let { check_rule = find_rule;
             check_rewrite = find_rewrite;
             check_cond_rewrite = find_cond_rewrite
@@ -1328,64 +1329,38 @@ struct
       let check_rewrite just =
          check_rewrite_just (fun opname -> ignore (find.find_refiner opname)) just
       in
-      let rec construct args (rest : (term list -> term) list) = function
+      (* XXX HACK: this approach of building a closure on-the-fly is very inefficient *)
+      let rec construct (rest : (term list -> term) list) = function
          SingleJust { just_params = params; just_refiner = name } ->
-            begin
+             let rule =
+               (* XXX Nogin: I am not sure this code is correct/best way of doing it *)
                match find.find_refiner name with
-                  RuleRefiner r ->
-                     let { rule_count = count } = r in
-                     let extracts = count_args args rest count in
-                        rule_proof (find_rule r) params extracts
+                  RuleRefiner r -> find_rule r
+                | PrimRuleRefiner r -> r
                 | _ ->
-                     raise invalid_exn
-            end
+                     raise (Invalid_argument("Refine.term_of_extract: extract refers to a non-rule: " ^ (string_of_opname name)))
+               in
+                  fun args -> rule_proof rule params (all_args args rest)
        | ComposeJust (just, justl) ->
-            construct args (partition_rest rest justl) just
+            construct (partition_rest rest justl) just
        | MLJust ({ just_params = params; just_refiner = name }, f) ->
-            f params (all_args args rest)
+            fun args -> f params (all_args args rest)
        | RewriteJust (_, just, _) ->
             check_rewrite just;
-            one_arg args rest
+            List.hd rest
        | Identity ->
-            one_arg args rest
+            List.hd rest
        | NthHypJust (_, i) ->
-            List.nth args i
+            fun args -> List.nth args i
        | CondRewriteJust (_, just, _) ->
-            (List.hd rest) args
+            (* XXX BUG: just needs to be checked! *)
+            List.hd rest
        | CutJust _ ->
             match rest with
                [cut_lemma; cut_then] ->
-                  let lemma_extract = cut_lemma args in
-                     cut_then (args @ [lemma_extract])
-             | _ :: _ :: _ :: _ ->
-                  raise invalid_exn
+                  fun args -> cut_then (args @ [cut_lemma args])
              | _ ->
-                  raise incomplete_exn
-
-      (*
-       * Partitioning of rest list.
-       *)
-      and zero_args = function
-         [] ->
-            ()
-       | _ ->
-            raise invalid_exn
-
-      and one_arg args = function
-         [just] ->
-            just args
-       | [] ->
-            raise incomplete_exn
-       | _ ->
-            raise invalid_exn
-
-      and count_args args rest count =
-         let len = List.length rest in
-            if len = 0 then
-               raise incomplete_exn;
-            if len <> count then
-               raise invalid_exn;
-            List.map (fun r -> r args) rest
+                  raise (Invalid_argument "Refine.term_of_extract: cut extract is ill-formed")
 
       and all_args args rest =
          List.map (fun r -> r args) rest
@@ -1393,18 +1368,16 @@ struct
       and partition_rest rest = function
          just :: justl ->
             let count = just_subgoal_count just in
-            let rest, restl =
-               try List_util.split_list count rest with
-                  Failure _ ->
-                     raise incomplete_exn
-            in
-               (fun args -> construct args rest just) :: partition_rest restl justl
+            let rest, restl = List_util.split_list count rest in
+               (construct rest just) :: partition_rest restl justl
        | [] ->
             if rest <> [] then
-               raise invalid_exn;
+               raise (Invalid_argument "Refine.term_of_extract: combination extract is too long");
             []
       in
-         construct args [] just
+         try construct [] ext.ext_just args
+         with Not_found | Failure _ ->
+            raise (Invalid_argument "Refine.term_of_extract: ill-formed extract (bug!)")
 
    (*
     * An empty sentinal for trying refinements.

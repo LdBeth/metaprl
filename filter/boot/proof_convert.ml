@@ -153,28 +153,6 @@ struct
          eprintf "Creating term_io proof%t" eflush;
       Term_io proof
 
-   (*
-    * When we compile, we extract the tactics into a separate array
-    * so that they can be compiled with the theory.  The term we produce
-    * has type (unit -> extract).  Expands to:
-    *
-    *    (Package_info.prove name tactics)
-    *
-    * BUG: jyh: I backed this out, and right now proofs
-    * always fail.
-    *)
-   let to_expr () name proof =
-      if !debug_convert then
-         eprintf "Converting proof to expr%t" eflush;
-      let loc = 0, 0 in
-      let unit_patt = <:patt< () >> in
-      let error_expr = <:expr<
-         raise ( Refiner.Refiner.RefineError.RefineError
-                   ("Proof_convert.to_expr",
-                    (Refiner.Refiner.RefineError.StringError
-                     "interactive proofs not implemented"))) >>
-      in
-         <:expr< fun [ $list: [unit_patt, None, error_expr]$ ] >>
 end
 
 (*

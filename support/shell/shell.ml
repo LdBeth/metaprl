@@ -47,8 +47,8 @@ open Mp_debug
 
 open Opname
 open Precedence
+open Refiner.Refiner
 open Refiner.Refiner.Term
-open Refiner.Refiner.Refine
 open Refiner.Refiner.RefineError
 open Dform
 open Dform_print
@@ -101,6 +101,8 @@ type commands = {
    mutable refine : tactic -> unit;
    mutable check : unit -> unit;
    mutable check_all : unit -> unit;
+   mutable extract : string list -> unit -> Refine.extract;
+   mutable term_of_extract : term list -> term; (* XXX HACK: temporary interface *)
    mutable status_all : unit -> unit;
    mutable print_theory : string -> unit;
 }
@@ -113,7 +115,7 @@ let commands = {
    check = uninitialized; check_all = uninitialized; expand = uninitialized; expand_all = uninitialized;
    interpret = uninitialized; interpret_all = uninitialized; undo = uninitialized; redo = uninitialized;
    create_ax_statement = uninitialized; refine = uninitialized; status_all = uninitialized;
-   print_theory = uninitialized;
+   print_theory = uninitialized; extract = (fun _ -> uninitialized); term_of_extract = uninitialized;
 }
 
 (************************************************************************
@@ -1111,6 +1113,27 @@ struct
       in
          print_exn info f ()
 
+   let extract info path () =
+      let dir = info.dir in
+      let extract info =
+         try
+            chdir info false path;
+            let res = info.proof.edit_check (get_db info) in
+            chdir info false dir; res
+         with exn ->
+            eprintf "Extracting from /%s failed%t" (String.concat "/" path) eflush;
+            chdir info false dir;
+            raise exn
+      in
+         print_exn info extract info
+
+   let term_of_extract info terms =
+      match info.package with 
+         Some pack ->
+            Refine.term_of_extract (Package.refiner pack) (info.proof.edit_check (get_db info)) terms
+       | None ->
+            raise(Invalid_argument "Shell.term_of_extract only works inside a proof")
+
    (************************************************************************
     * NUPRL5 INTERFACE                                                     *
     ************************************************************************)
@@ -1456,8 +1479,13 @@ struct
       commands.create_ax_statement <- wrap create_ax_statement;
       commands.refine <- wrap refine;
       commands.print_theory <- wrap print_theory;
+      commands.extract <- (fun path () -> extract !current_shell path ());
+      commands.term_of_extract <- wrap term_of_extract;
       ()
 end
+
+let extract path () = commands.extract path ()
+let term_of_extract ts = commands.term_of_extract ts
 
 (*
  * Control profiling.

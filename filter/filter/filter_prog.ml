@@ -342,19 +342,6 @@ let rec parent_path_ctyp loc = function
  | [] ->
       raise (Invalid_argument "parent_path")
 
-(*
- * Interactive exception.
- *)
-let interactive_exn loc name =
-   let patt = <:patt< _ >> in
-(*
-   let ename = <:expr< Refiner.Refiner.RefineError.RefineError >> in
-   let err = <:expr< Refiner.Refiner.RefineError.StringError "proof is incomplete" >> in
-   let body = <:expr< raise ($ename$ ($str: name$, $err$)) >> in
- *)
-   let body = <:expr< raise (Failure "interactive proof") >> in
-      <:expr< fun [ $list: [ patt, None, body ]$ ] >>
-
 let raise_toploop_exn loc =
    Stdpp.raise_with_loc loc (RefineError ("topval", StringError
                                           "The types allowed in toploop expressions are limited.\n\
@@ -780,6 +767,9 @@ let define_ml_program proc loc strict_expr args tname redex code =
  * REWRITES                                                             *
  ************************************************************************)
 
+let extract_expr loc modname name =
+   <:expr< Shell.extract [ $str:modname$; $str:name$ ] >>
+
 (*
  * Define the resources for a rewrite.
  * The Tactic_type.pre_tactic is passed as an argument,
@@ -939,20 +929,11 @@ let derived_cond_rewrite proc loc crw expr =
 (*
  * Interactive forms.
  *)
-let interactive_rewrite proc loc rw expr =
-   define_rewrite true (delayed_rewrite_expr loc) proc loc rw (Some (Convert.to_expr proc.imp_arg rw.rw_name expr))
+let interactive_rewrite proc loc rw =
+   define_rewrite true (delayed_rewrite_expr loc) proc loc rw (Some (extract_expr loc proc.imp_name rw.rw_name))
 
-let interactive_cond_rewrite proc loc crw expr =
-   define_cond_rewrite true (delayed_cond_rewrite_expr loc) proc loc crw (Some (Convert.to_expr proc.imp_arg crw.crw_name expr))
-
-(*
- * Incomplete forms.
- *)
-let incomplete_rewrite proc loc rw =
-   define_rewrite true (delayed_rewrite_expr loc) proc loc rw (Some (interactive_exn loc "rewrite"))
-
-let incomplete_cond_rewrite proc loc crw =
-   define_cond_rewrite true (delayed_cond_rewrite_expr loc) proc loc crw (Some (interactive_exn loc "rewrite"))
+let interactive_cond_rewrite proc loc crw =
+   define_cond_rewrite true (delayed_cond_rewrite_expr loc) proc loc crw (Some (extract_expr loc proc.imp_name crw.crw_name))
 
 (*
  * An ML rewrite performs the same action as a conditional rewrite,
@@ -1103,13 +1084,9 @@ let derived_rule proc loc ax tac =
    let code = derived_rule_expr loc in
       define_rule true code proc loc ax tac
 
-let interactive_rule proc loc ax expr =
+let interactive_rule proc loc ax =
    let code = delayed_rule_expr loc in
-      define_rule true code proc loc ax (Convert.to_expr proc.imp_arg ax.rule_name expr)
-
-let incomplete_rule proc loc ax =
-   let code = delayed_rule_expr loc in
-      define_rule true code proc loc ax (interactive_exn loc "rule")
+      define_rule true code proc loc ax (extract_expr loc proc.imp_name ax.rule_name)
 
 (*
  * An ML rule performs the same action as a normal one,
@@ -1455,14 +1432,10 @@ let extract_str_item proc (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: rwthm: %s%t" name eflush;
          derived_rewrite proc loc rw tac
-    | Rewrite ({ rw_name = name; rw_proof = Incomplete } as rw) ->
-         if !debug_filter_prog then
-            eprintf "Filter_prog.extract_str_item: rwincomplete: %s%t" name eflush;
-         incomplete_rewrite proc loc rw
-    | Rewrite ({ rw_name = name; rw_proof = Interactive pf } as rw) ->
+    | Rewrite ({ rw_name = name; rw_proof = (Interactive _ | Incomplete) } as rw) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: rwinteractive: %s%t" name eflush;
-         interactive_rewrite proc loc rw pf
+         interactive_rewrite proc loc rw
     | InputForm ({ rw_name = name } as rw) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: primrw: %s%t" name eflush;
@@ -1475,14 +1448,10 @@ let extract_str_item proc (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: thm condrw: %s%t" name eflush;
          derived_cond_rewrite proc loc crw tac
-    | CondRewrite ({ crw_name = name; crw_proof = Incomplete } as crw) ->
+    | CondRewrite ({ crw_name = name; crw_proof = (Interactive _|Incomplete) } as crw) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: interactive condrw: %s%t" name eflush;
-         incomplete_cond_rewrite proc loc crw
-    | CondRewrite ({ crw_name = name; crw_proof = Interactive pf } as crw) ->
-         if !debug_filter_prog then
-            eprintf "Filter_prog.extract_str_item: interactive condrw: %s%t" name eflush;
-         interactive_cond_rewrite proc loc crw pf
+         interactive_cond_rewrite proc loc crw
     | MLRewrite ({ mlterm_name = name; mlterm_def = Some rewrite_expr } as mlrw) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: ML rewrite: %s%t" name eflush;
@@ -1499,14 +1468,10 @@ let extract_str_item proc (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: thm rule: %s%t" name eflush;
          derived_rule proc loc rule tac
-    | Rule ({ rule_name = name; rule_proof = Incomplete } as rule) ->
-         if !debug_filter_prog then
-            eprintf "Filter_prog.extract_str_item: incomplete rule: %s%t" name eflush;
-         incomplete_rule proc loc rule
-    | Rule ({ rule_name = name; rule_proof = Interactive pf } as rule) ->
+    | Rule ({ rule_name = name; rule_proof = (Interactive _ | Incomplete) } as rule) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: interactive rule: %s%t" name eflush;
-         interactive_rule proc loc rule pf
+         interactive_rule proc loc rule
     | MLAxiom ({ mlterm_name = name; mlterm_def = Some rule_expr } as mlrule) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: ML axiom: %s%t" name eflush;

@@ -157,26 +157,6 @@ struct
    let of_term_io (parse, eval) name proof =
       ref (ProofRaw (name, Proof.io_proof_of_term_io parse eval proof))
 
-   (*
-    * When we compile, we extract the tactics into a separate array
-    * so that they can be compiled with the theory.  The term we produce
-    * has type (unit -> extract).  Expands to:
-    *
-    *    (Package_info.prove name tactics)
-    *
-    * XXX: BUG: jyh: I backed this out, and right now proofs
-    * always fail.
-    *)
-   let to_expr _ name proof =
-      let loc = 0, 0 in
-      let unit_patt = <:patt< () >> in
-      let error_expr =
-         <:expr< raise ( Refiner.Refiner.RefineError
-                           ("Package_info/to_expr",
-                              (Refiner.Refiner.RefineError.StringError
-                                               "interactive proofs not implemented"))) >>
-      in
-         <:expr< fun [ $list: [unit_patt, None, error_expr]$ ] >>
 end
 
 (*

@@ -275,7 +275,6 @@ sig
 
    val to_raw  : t -> string -> cooked -> raw
    val of_raw  : t -> string -> raw -> cooked
-   val to_expr : t -> string -> cooked -> MLast.expr
    val to_term : t -> string -> cooked -> term
    val of_term : t -> string -> term -> cooked
    val to_term_io : t -> string -> cooked -> Refiner_io.Refiner_io.TermType.term
