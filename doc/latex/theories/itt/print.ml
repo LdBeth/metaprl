@@ -31,6 +31,7 @@ print_theory "itt_subtype";;
 print_theory "itt_void";;
 print_theory "itt_unit";;
 print_theory "itt_atom";;
+print_theory "itt_hide";;
 print_theory "itt_set";;
 print_theory "itt_union";;
 print_theory "itt_rfun";;
