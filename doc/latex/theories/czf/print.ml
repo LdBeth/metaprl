@@ -43,6 +43,19 @@ print_theory "czf_itt_nat";;
 print_theory "czf_itt_rel";;
 print_theory "czf_itt_power";;
 print_theory "czf_itt_axioms";;
+print_theory "czf_itt_group";;
+print_theory "czf_itt_kleingroup";;
+print_theory "czf_itt_abel_group";;
+print_theory "czf_itt_subgroup";;
+print_theory "czf_itt_group_power";;
+print_theory "czf_itt_cyclic_subgroup";;
+print_theory "czf_itt_cyclic_group";;
+print_theory "czf_itt_coset";;
+print_theory "czf_itt_normal_subgroup";;
+print_theory "czf_itt_inv_image";;
+print_theory "czf_itt_hom";;
+print_theory "czf_itt_iso";;
+print_theory "czf_itt_ker";;
 
 (*
  * -*-
