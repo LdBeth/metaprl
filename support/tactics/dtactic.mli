@@ -45,6 +45,7 @@ type intro_option =
    SelectOption of int
  | IntroArgsOption of (tactic_arg -> term -> term list) * term option
  | AutoMustComplete
+ | CondMustComplete of (tactic_arg -> bool)
 
 type elim_option =
    ThinOption of (int -> tactic)  (* Thin the eliminated hyp, unless overridden *)

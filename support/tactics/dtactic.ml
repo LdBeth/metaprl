@@ -52,6 +52,7 @@ doc <:doc<
       SelectOption of int
     | IntroArgsOption of (tactic_arg -> term -> term list) * term option
     | AutoMustComplete
+    | CondMustComplete of tactic_arg -> bool
    @end[verbatim]
    @end[center]
   
@@ -88,6 +89,9 @@ doc <:doc<
    of finishing the proof on its own. This option can be used to mark irreversible
    rules that may take a provable goal and produce potentially unprovable
    subgoals.
+
+   The @tt[CondMustComplete] option is a conditional version of @tt[AutoMustComplete];
+   it is used to pass in a predicate controlling when to activate the @tt[AutoMustComplete].
   
    The @hrefresource[elim_resource] options are defined with the following type:
   
@@ -199,6 +203,7 @@ type intro_option =
    SelectOption of int
  | IntroArgsOption of (tactic_arg -> term -> term list) * term option
  | AutoMustComplete
+ | CondMustComplete of (tactic_arg -> bool)
 
 type elim_option =
    ThinOption of (int -> tactic)
@@ -416,6 +421,10 @@ let find_subterm t arg =
 (*
  * Improve the intro resource from a rule.
  *)
+let in_auto p =
+   try Sequent.get_bool_arg p "d_auto"
+   with RefineError _ -> false
+
 let process_intro_resource_annotation name context_args term_args _ statement (pre_tactic, options) =
    let _, goal = unzip_mfunction statement in
    let t =
@@ -455,17 +464,18 @@ let process_intro_resource_annotation name context_args term_args _ statement (p
    let tac =
       match context_args with
          [||] ->
-            let check_auto =
-               if List.mem AutoMustComplete options then
-                  let exn = RefineError("intro_annotation " ^ name, StringError("not appropriate in autoT")) in
-                   (fun p ->
-                        if
-                           try Sequent.get_bool_arg p "d_auto"
-                           with RefineError _ -> false
-                        then
-                           raise exn)
-               else
-                  (fun p -> ())
+            let auto_exn = RefineError("intro_annotation " ^ name, StringError("not appropriate in autoT")) in
+            let rec auto_aux = function
+               AutoMustComplete :: _ ->
+                  (fun p -> if in_auto p then raise auto_exn)
+             | CondMustComplete f :: _ ->
+                  (fun p -> if f p && in_auto p then raise auto_exn)
+             | _ :: tl ->
+                  auto_aux tl
+             | [] ->
+                    (fun p -> ())
+            in 
+            let check_auto = auto_aux options
             in
                funT (fun p ->
                   check_auto p;
