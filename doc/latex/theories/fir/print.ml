@@ -47,4 +47,3 @@ print_theory "mfir_tr_types";;
 print_theory "mfir_tr_atom";;
 print_theory "mfir_tr_store";;
 print_theory "mfir_tr_exp";;
-print_theory "mfir_test";;
