@@ -1,7 +1,15 @@
 #!/bin/sh
 
-# make sure you add a default value to mk/preface
-# and add this value to the mk/config target in the top-level Makefile
+# If you want to add a new variable to this file (mk/make_config.sh):
+# 
+# 1) add a default value to mk/preface (possibly via mk/default)
+#    and add this value to the mk/config target in the top-level Makefile
+#
+# 2) add a default value to the top-level OMakefile (possibly via mk/default),
+#    add this value to all the mk/config .INCLUDE directives in the
+#    top-level OMakefile
+#
+# 3) generate an updated mk/config.win32
 
 if [ "$ENSROOT"x = x -o ! -d "$ENSROOT" ]; then
    ENSROOT=undefined
@@ -119,9 +127,12 @@ NATIVE_ENABLED=$NATIVE_ENABLED
 BYTE_ENABLED=$BYTE_ENABLED
 
 #
-# Do you want to use precompiled versions of the c libraries?  This may
+# Do you want to use precompiled versions of the C libraries?  This may
 # be necessary on Windows if you don't have a C compiler.  If unsure,
 # set to undefined.
+#
+# If set, must point to a directory (relative to the MetaPRL root) with
+# precompiled C libraries.
 #
 PREBUILT_CLIBS=$PREBUILT_CLIBS
 
