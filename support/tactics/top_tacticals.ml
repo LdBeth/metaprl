@@ -69,8 +69,8 @@ doc <:doc< *********************************************************************
   
    $$
    @rulebox{idT; ;
-     <<sequent{ <H> >- 'T}>>;
-     <<sequent{ <H> >- 'T}>>}
+     <<sequent(nil){ <H> >- 'T}>>;
+     <<sequent(nil){ <H> >- 'T}>>}
    $$}
    @end[description]
   
@@ -132,13 +132,13 @@ doc <:doc<
    $$
    @rulebox{nthAssumT; i;
     @cdot;
-    <<sequent{ <H_1> >- 'T_1}>> @i{(Assumption@space 1)}@cr
+    <<sequent(nil){ <H_1> >- 'T_1}>> @i{(Assumption@space 1)}@cr
     @ldots@cr
-    <<sequent{ <H_i> >- 'T_i}>> @i{(Assumption@space @i{i})}@cr
+    <<sequent(nil){ <H_i> >- 'T_i}>> @i{(Assumption@space @i{i})}@cr
     @ldots@cr
-    <<sequent{ <H_n> >- 'T_n}>> @i{(Assumption@space @i{n})}@cr
+    <<sequent(nil){ <H_n> >- 'T_n}>> @i{(Assumption@space @i{n})}@cr
     @hline
-    <<sequent{ <H_i> >- 'T_i}>>}
+    <<sequent(nil){ <H_i> >- 'T_i}>>}
    $$}
    @end[description]
   
@@ -222,8 +222,8 @@ doc <:doc<
   
    $$
    @rulebox{idT; ;
-     <<sequent{ <H> >- 'T}>>;
-     <<sequent{ <H> >- 'T}>>}
+     <<sequent(nil){ <H> >- 'T}>>;
+     <<sequent(nil){ <H> >- 'T}>>}
    $$
   
    @code{User time 0.000000; System time 0.000000; Real time 0.001778}}
@@ -322,9 +322,9 @@ doc <:doc< *********************************************************************
   
    $$
    @rulebox{selT; 2@space (@tt[dT]@space 0);
-     <<sequent{ <H>; x: 'T_2; <J> >- <:doc<T_1@space @i{Type}>>}>> @cr
-     <<sequent{ <H>; x: 'T_2; <J> >- 'T_2}>>;
-     <<sequent{ <H>; x: 'T_2; <J> >- <:doc<T_1 @vee T_2>>}>>}
+     <<sequent(nil){ <H>; x: 'T_2; <J> >- <:doc<T_1@space @i{Type}>>}>> @cr
+     <<sequent(nil){ <H>; x: 'T_2; <J> >- 'T_2}>>;
+     <<sequent(nil){ <H>; x: 'T_2; <J> >- <:doc<T_1 @vee T_2>>}>>}
    $$}
    @end[description]
   
@@ -348,7 +348,7 @@ doc <:doc< *********************************************************************
    @modsection{Clause selection}
   
    The following tactics are intended for use in a single-conclusion sequent calculus.
-   A sequent <<sequent{x: 'T_1; math_cdots; x: 'T_n >- 'C}>> has
+   A sequent <<sequent(nil){x: 'T_1; math_cdots; x: 'T_n >- 'C}>> has
    $n + 1$ @emph{clauses}.  The hypotheses are clauses $1, @ldots, n$ and the conclusion
    is clause $0$.
   

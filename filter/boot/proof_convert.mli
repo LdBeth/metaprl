@@ -29,7 +29,6 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  *)
 
-open Filter_cache
 open Filter_summary_type
 
 module Convert : ConvertProofSig

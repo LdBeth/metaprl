@@ -34,9 +34,9 @@ doc <:doc<
    $$
    @defrule[and_intro]{
        @tt["{| intro [ ] |}"] @Gamma;
-       <<sequent{ <H> >- 'A }>>@cr
-          <<sequent{ <H> >- 'B }>>;
-       <<sequent{ <H> >- <:doc<A @wedge B>> }>>}
+       <<sequent(nil){ <H> >- 'A }>>@cr
+          <<sequent(nil){ <H> >- 'B }>>;
+       <<sequent(nil){ <H> >- <:doc<A @wedge B>> }>>}
    $$
   
    Once this rule is defined, an application of the tactic (@hreftactic[dT] 0)
@@ -62,17 +62,17 @@ doc <:doc<
    $$
    @defrule[or_intro_left]{
       @tt["{| intro [SelectOption 1] |}"] @Gamma;
-      <<sequent{ <H> >- <:doc<B @Type>> }>>
-          @cr <<sequent{ <H> >- 'A }>>;
-      <<sequent{ <H> >- <:doc<A @wedge B>> }>>}
+      <<sequent(nil){ <H> >- <:doc<B @Type>> }>>
+          @cr <<sequent(nil){ <H> >- 'A }>>;
+      <<sequent(nil){ <H> >- <:doc<A @wedge B>> }>>}
    $$
   
    $$
    @defrule[or_intro_right]{
      @tt["{| intro [SelectOption 2] |}"] @Gamma;
-     <<sequent{ <H> >- <:doc<A @Type>> }>>@cr
-        <<sequent{ <H> >- 'B }>>;
-     <<sequent{ <H> >- <:doc<A @wedge B>> }>>}
+     <<sequent(nil){ <H> >- <:doc<A @Type>> }>>@cr
+        <<sequent(nil){ <H> >- 'B }>>;
+     <<sequent(nil){ <H> >- <:doc<A @wedge B>> }>>}
    $$
   
    These options require @hreftactic[selT] arguments: the left rule is applied with
@@ -308,10 +308,21 @@ let intro_compact entries =
  * Extract a D tactic from the data.
  * The tactic checks for an optable.
  *)
-let identity x = x
+let rec first_with_argT i = function
+   [] -> raise (Invalid_argument "Dtactic.first_with_argT")
+ | [tac] -> tac i
+ | tac :: tacs -> tac i orelseT first_with_argT i tacs
+
+let rec compact_elim_data = function
+   [] | [_] as entry -> entry
+ | tac :: tacs -> 
+      let same_term tac' = alpha_equal tac.info_term tac'.info_term in
+      let tacs1, tacs2 = List.partition same_term tacs in
+      let tacs = List.map (fun tac -> tac.info_value) (tac::tacs1) in
+         { tac with info_value = fun i -> first_with_argT i tacs } :: (compact_elim_data tacs2)
 
 let extract_elim_data data =
-   let tbl = create_table data identity in
+   let tbl = create_table data compact_elim_data in
    argfunT (fun i p ->
       let t = Sequent.nth_hyp p i in
       let tac =

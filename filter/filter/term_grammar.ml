@@ -1110,7 +1110,7 @@ struct
                   sequent_hyps = SeqHyp.of_list hyps;
                   sequent_goals = SeqGoal.of_list concl
                }
-          | sl_sequent; arg = term; sl_open_curly;
+          | sl_sequent; sl_open_paren; arg = term; sl_close_paren; sl_open_curly;
             hyps = LIST0 hyp SEP ";"; sl_turnstile;
             concl = LIST1 term SEP ";"; sl_close_curly ->
                mk_sequent_term {
