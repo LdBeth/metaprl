@@ -31,6 +31,7 @@
  *)
 
 open Refiner.Refiner.TermType
+open Refiner.Refiner.Refine
 
 open Tacticals
 
@@ -96,6 +97,17 @@ val refine : tactic -> unit
 val undo : unit -> unit
 val fold : unit -> unit
 val fold_all : unit -> unit
+
+(*
+ * Nuprl5.
+ *)
+val edit_list_modules : unit -> string list
+val edit_list_module : string -> string list
+val edit_create_thm : string -> string -> msequent -> unit
+val edit_cd_thm : string -> string -> unit
+val edit_refine : int list -> string -> msequent * msequent list * msequent list
+val edit_node : int list -> string option * msequent * msequent list * msequent list
+val edit_undo : unit -> unit
 
 (*
  * -*-

@@ -8,4 +8,4 @@ source nlconfig
 #
 # Start the executable.
 #
-exec ./nl.run -I . -I ../../theories/tptp -I ../../theories/czf -I ../../theories/itt -I ../../theories/base -I ../../theories/ocaml -I ../../theories/tactic -I $CAMLP4LIB $*
+exec ./nl.run -I . -I ../../theories/fol -I ../../theories/tptp -I ../../theories/czf -I ../../theories/itt -I ../../theories/base -I ../../theories/ocaml -I ../../theories/tactic -I $CAMLP4LIB $*

@@ -753,11 +753,12 @@ struct
       List.map Package.name (Package.packages info.packages)
 
    let edit_list_module name =
-      let pack =
-         try Package.get info.packages name with
-            Failure _ ->
+      let info =
+         try Package.info (Package.get info.packages name) with
+            NotLoaded _ ->
                eprintf "Loading package %s%t" name eflush;
-               Package.load info.packages name
+               Package.load info.packages name;
+               Package.info (Package.get info.packages name)
       in
       let rec collect = function
          [] ->
@@ -771,7 +772,7 @@ struct
                 | Rule { rule_name = name } -> name :: names
                 | _ -> names
       in
-         collect (info_items (Package.info pack))
+         collect (info_items info)
 
    (*
     * Create a new thm.
@@ -854,4 +855,3 @@ end
  * End:
  * -*-
  *)
-<
