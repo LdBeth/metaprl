@@ -1471,7 +1471,7 @@ struct
          let compute_ext = compute_rule_ext name addrs params goal args result in
             justify_rule build name addrs params goal subgoals (PPrim compute_ext)
 
-   let wrap_extf build name extf =
+   let wrap_extf build check_ext name extf =
       let opname = mk_opname name build.build_opname in
       let refiner = build.build_refiner in
          fun () ->
@@ -1480,6 +1480,7 @@ struct
                   raise(Invalid_argument ("Sentinals mismatch in extractor function"));
                if ext.ext_subgoals <> [] then
                   raise (Incomplete opname);
+               check_ext ext;
                ext
 
    let delayed_rule build name addrs params mterm _ extf =
@@ -1489,16 +1490,16 @@ struct
       ENDIF;
       let subgoals, goal = unzip_mimplies mterm in
       let mseq = mk_msequent goal subgoals in
-      let compute_ext ext =
-         if not (msequent_alpha_equal ext.ext_goal mseq) then begin
-            eprintf "Rule:%t[%a] --> %a%tExtract%t[%a] --> %a%t" eflush (print_any_list print_term) subgoals print_term goal eflush eflush (print_any_list print_term) ext.ext_goal.mseq_hyps  print_term ext.ext_goal.mseq_goal eflush;
+      let check_ext ext =
+         if not (msequent_alpha_equal ext.ext_goal mseq) then
             REF_RAISE(RefineError (name, StringError "extract does not match"))
-         end;
+      in
+      let compute_ext ext =
          let args = make_wildcard_ext_args subgoals in
             compute_rule_ext name addrs params goal args (term_of_extract_nocheck build.build_refiner ext args)
       in
       let dp = {
-         pf_get_extract = wrap_extf build name extf;
+         pf_get_extract = wrap_extf build check_ext name extf;
          pf_create_proof = compute_ext;
          pf_extract = None;
          pf_proof = None;
@@ -1664,24 +1665,33 @@ struct
       let _ = List.iter check_def_bterm (dest_term redex).term_terms in
          justify_rewrite build name redex contractum PDefined
 
+   (*
+    * Make a rewrite goal from the assumptions,
+    * and the rewrite.
+    * XXX HACK!!! Rewrite sequents should not have hyps (or should not be sequents
+    * at all) once the conditional rewrites are removed from Base_rewrite semantics.
+    * Once that is fixed, this code should probably go away (and, for that matter,
+    * shell_rule and shell_rewrite should probably be eventually merged).
+    *)
+   let hack_arg = mk_simple_term (make_opname ["sequent_arg";"Base_rewrite"]) []
+   let hack_hyps = SeqHyp.of_list [Context(Lm_symbol.add "H",[],[])]
+   let mk_rewrite_hack term =
+      mk_sequent_term { sequent_args = hack_arg; sequent_hyps = hack_hyps; sequent_goals = SeqGoal.of_list [term] }
+   
    let delayed_rewrite build name redex contractum extf =
       IFDEF VERBOSE_EXN THEN
          if !debug_refiner then
             eprintf "Refiner.delayed_rewrite: %s%t" name eflush
       ENDIF;
-      let compute_ext = function
-         { ext_goal = { mseq_goal = goal; mseq_hyps = [] };
-           ext_subgoals = [{ mseq_goal = subgoal; mseq_hyps = [] }]} as ext ->
-            if alpha_equal goal redex & alpha_equal subgoal contractum then
-               ignore(term_of_extract_nocheck build.build_refiner ext [])
-            else
-               REF_RAISE(RefineError (name, StringError "extract does not match"))
+      let check_ext = function
+         { ext_goal = { mseq_goal = goal; mseq_hyps = [] }; ext_subgoals = []}
+         when alpha_equal goal (mk_rewrite_hack (mk_xrewrite_term redex contractum)) -> ()
        | _ ->
-            REF_RAISE(RefineError (name, StringError "bogus proof"))
+            REF_RAISE(RefineError (name, StringError "extract does not match"))
       in
       let dp = {
-         pf_get_extract = wrap_extf build name extf;
-         pf_create_proof = compute_ext;
+         pf_get_extract = wrap_extf build check_ext name extf;
+         pf_create_proof = (fun _ -> ());
          pf_extract = None;
          pf_proof = None;
          pf_dependencies = None;
@@ -1783,23 +1793,17 @@ struct
          if !debug_refiner then
             eprintf "Refiner.add_delayed_cond_rewrite: %s%t" name eflush
       ENDIF;
-      let compute_ext ext =
-         let { ext_goal = goal; ext_subgoals = subgoals' } = ext in
-         let { mseq_goal = goal; mseq_hyps = goal_hyps } = goal in
-         let subgoals', sub_hyps = split_msequent_list subgoals' in
-         let redex = replace_goal goal redex in
-         let contractum = replace_goal goal contractum in
-         let subgoals = List.map (replace_goal goal) subgoals in
-            if equal_hyps goal_hyps sub_hyps &
-               Lm_list_util.for_all2 alpha_equal (redex :: contractum :: subgoals) (goal :: subgoals)
-            then
-               ignore (term_of_extract_nocheck build.build_refiner ext [])
-            else
-               REF_RAISE(RefineError (name, StringError "derivation does not match"))
+      let check_ext = function
+         { ext_goal = {mseq_goal = goal; mseq_hyps = goal_hyps} ; ext_subgoals = [] }
+         when
+            alpha_equal goal (mk_rewrite_hack (mk_xrewrite_term redex contractum)) &&
+            Lm_list_util.for_all2 alpha_equal goal_hyps (List.map mk_rewrite_hack subgoals) -> ()
+       | _ ->
+         REF_RAISE(RefineError(name, StringError "derivation does not match"))
       in
       let dp = {
-         pf_get_extract = wrap_extf build name extf;
-         pf_create_proof = compute_ext;
+         pf_get_extract = wrap_extf build check_ext name extf;
+         pf_create_proof = (fun _ -> ());
          pf_extract = None;
          pf_proof = None;
          pf_dependencies = None;

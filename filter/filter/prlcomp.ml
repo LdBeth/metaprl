@@ -263,8 +263,11 @@ let spec =
     "-custom", Unit (add_argv "-custom"), "generate custom executable";
     "-ccopt", String (add_string_argv "-ccopt"), "C option";
     "-cclib", String (add_string_argv "-cclib"), "C library";
+    "-impl", Unit (add_argv "-impl"), "compile file as a .ml file";
     "-inline", String (add_string_argv "-inline"), "Inline level";
+    "-intf", Unit (add_argv "-intf"), "compile file as an .mli file";
     "-linkall", Unit (add_argv "-linkall"), "specify link";
+    "-pp", String (add_string_argv "-pp"), "add an extra preprocessor";
     "-thread", Unit (add_argv "-thread"), "compile with support for threads";
     "-lib", String set_lib, "set the library directory";
     "-noassert", Unit (add_argv "-noassert"), "Don't compile assertion checks";

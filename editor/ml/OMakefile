@@ -210,25 +210,20 @@ $(MP).opt: $(CMXOBJS) $(TCMXFILES) $(OPTTHREADSLIB) $(NATIVE_CLIBS) $(ARDEPS) $(
 # Dumb Windows doesnt know about quotes
 #
 if $(equal $(OSTYPE), Win32)
-    mp_version.cmo: $(CMOBJS) $(filter-out mp_version.%, $(RCMOFILES)) $(CMADEPS) $(TCMOBJS) $(filter-out mp_version.%, $(TCMOFILES)) $(TCMADEPS) mp_version.cmi $(ROOT)/mk/defaults
-        echo let version = "MetaPRL $(MP_VERSION):\n\t\tbuild [%DATE% %TIME%]\n\t\ton %COMPUTERNAME%\n\t\tUses $(REFINER) Refiner_$(TERMS)" > mp_version.ml
-        $(OCAMLC) -c $(OCAMLCFLAGS) mp_version.ml
-
-    mp_version.cmx: $(CMXOBJS) $(CMXADEPS) mp_version.cmi $(ROOT)/mk/defaults
-        echo let version = "MetaPRL $(MP_VERSION):\n\t\tbuild [%DATE% %TIME%]\n\t\ton %COMPUTERNAME%\n\t\tUses $(REFINER) Refiner_$(TERMS)" > mp_version.ml
-        $(OCAMLOPT) -c $(OCAMLOPTFLAGS) mp_version.ml
-
+    VERSION_FLAGS=-pp "$(CAMLP4MACROPRINT) -D VERSION=\"MetaPRL $(MP_VERSION):\n\t\tbuild [%DATE% %TIME%]\n\t\ton %COMPUTERNAME%\n\t\tUses $(REFINER) Refiner_$(TERMS)\""
+    export
 else
-    mp_version.cmo: $(CMOBJS) $(filter-out mp_version.%, $(RCMOFILES)) $(CMADEPS) $(TCMOBJS) $(filter-out mp_version.%, $(TCMOFILES)) $(TCMADEPS) mp_version.cmi
-        echo let version = \"MetaPRL $(MP_VERSION):\\n\\t\\tbuild [`LC_ALL=C LANG=C date`]\\n\\t\\ton `hostname`\\n\\t\\tUses $(REFINER) Refiner_$(TERMS)\" > mp_version.ml
-        $(OCAMLC) -c $(OCAMLCFLAGS) mp_version.ml
+    VERSION_FLAGS=-pp '$(CAMLP4MACROPRINT) -D "VERSION=\"MetaPRL $(MP_VERSION):\\n\\t\\tbuild [`LC_ALL=C LANG=C date`]\\n\\t\\ton `hostname`\\n\\t\\tUses $(REFINER) Refiner_$(TERMS)\""'
+    export
 
-    mp_version.cmx: $(CMXOBJS) $(CMXADEPS) mp_version.cmi
-        echo let version = \"MetaPRL $(MP_VERSION):\\n\\t\\tbuild [`LC_ALL=C LANG=C date`]\\n\\t\\ton `hostname`\\n\\t\\tUses $(REFINER) Refiner_$(TERMS)\" > mp_version.ml
-        $(OCAMLOPT) -c $(OCAMLOPTFLAGS) mp_version.ml
+mp_version.cmo: $(CMOBJS) $(filter-out mp_version.%, $(RCMOFILES)) $(CMADEPS) $(TCMOBJS) $(filter-out mp_version.%, $(TCMOFILES)) $(TCMADEPS) mp_version.cmi $(ROOT)/mk/defaults $(OCAMLMACROS)
+    $(OCAMLC) $(VERSION_FLAGS) -c $(OCAMLCFLAGS) mp_version.ml
+
+mp_version.cmx: $(CMXOBJS) $(CMXADEPS) mp_version.cmi $(ROOT)/mk/defaults $(OCAMLMACROS)
+    $(OCAMLOPT) $(VERSION_FLAGS) -c $(OCAMLOPTFLAGS) mp_version.ml
 
 mp_version.cmi: mp_version.mli
-        $(OCAMLC) $(OCAMLCFLAGS) mp_version.mli
+    $(OCAMLC) $(OCAMLCFLAGS) -pp cat mp_version.mli
 
 #
 # Phony targets
@@ -239,7 +234,7 @@ else
         .DEFAULT: $(MAIN).cma $(MP).top $(MP).run
 
 clean::
-        $(RM) -f *.p4* *.pp* mp_version.ml
+        $(RM) -f *.p4* *.pp*
         cd tests && $(RM) -f *.p4* *.pp* *.cmx *.cmi* *.cmo* *.o
 
 #

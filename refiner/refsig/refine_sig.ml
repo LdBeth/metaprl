@@ -437,6 +437,11 @@ sig
       unit
 
    (*
+    * HACK: truning rewrites from meta-terms into sequents,
+    *)
+   val mk_rewrite_hack : term -> term
+
+   (*
     * Merge refiners.
     *)
    val label_refiner : build -> string -> refiner

@@ -210,16 +210,16 @@ THREADSLIB = threads
 # Refiner building
 #
 
+# Macro preprocess
+OCAMLMACROS = $(file lib/macro.cmo)
+CAMLP4MACRO = camlp4o $(OCAMLMACROS)
+CAMLP4MACROPRINT = camlp4o -I $(CAMLP4LIB) pr_o.cmo $(OCAMLMACROS)
+
 #
 # For the refiner and mllib directories,
 # add a dependency on the macro processor.
 #
 if true
-    # Add a dependency on the macro preprocess
-    OCAMLMACROS = $(file lib/macro.cmo)
-    CAMLP4MACRO = camlp4o $(OCAMLMACROS)
-    CAMLP4MACROPRINT = camlp4o -I $(CAMLP4LIB) pr_o.cmo $(OCAMLMACROS)
-
     # Add the extra dependency
     %.mli: $(OCAMLMACROS)
     %.ml: $(OCAMLMACROS)

@@ -79,19 +79,6 @@ type rw =
      mutable rw_name : string
    }
 
-(*
- * Make a rewrite goal from the assumptions,
- * and the rewrite.
- * XXX HACK!!! Rewrite sequents should not have hyps (or should not be sequents
- * at all) once the conditional rewrites are removed from Base_rewrite semantics.
- * Once that is fixed, this code should probably go away (and, for that matter,
- * shell_rule and shell_rewrite should probably be eventually merged).
- *)
-let hack_arg = mk_simple_term (make_opname ["sequent_arg";"Base_rewrite"]) []
-let hack_hyps = SeqHyp.of_list [Context(Lm_symbol.add "H",[],[])]
-let mk_rewrite_hack term =
-   mk_sequent_term { sequent_args = hack_arg; sequent_hyps = hack_hyps; sequent_goals = SeqGoal.of_list [term] }
-
 let mk_rw_goal assums redex contractum =
    let rw = mk_rewrite_hack (mk_xrewrite_term redex contractum) in
    let assums = List.map mk_rewrite_hack assums in
