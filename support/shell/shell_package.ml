@@ -142,13 +142,17 @@ let is_formal_item = function
  | MLRewrite _
  | Rule _
  | MLAxiom  _
- | DeclareTypeClass _
- | DeclareType _
- | DefineTerm _
+ | DeclareTypeClass (ShapeNormal, _, _, _)
+ | DeclareType (ShapeNormal, _, _)
+ | DefineTerm (ShapeNormal, _, _)
  | DeclareTypeRewrite _ ->
       true
- | DeclareTerm (_, ty_term) ->
+ | DeclareTerm (ShapeNormal, ty_term) ->
       not (Perv.is_dform_type ty_term)
+ | DeclareTerm (ShapeIForm, _)
+ | DeclareTypeClass (ShapeIForm, _, _, _)
+ | DeclareType (ShapeIForm, _, _)
+ | DefineTerm (ShapeIForm, _, _)
  | Parent _
  | SummaryItem _
  | Improve _
@@ -173,9 +177,13 @@ let is_display_item = function
    MLGramUpd _
  | Prec _
  | DForm _
+ | DeclareTerm (ShapeIForm, _)
+ | DeclareTypeClass (ShapeIForm, _, _, _)
+ | DeclareType (ShapeIForm, _, _)
+ | DefineTerm (ShapeIForm, _, _)
  | InputForm _ ->
       true
- | DeclareTerm (_, ty_term) ->
+ | DeclareTerm (ShapeNormal, ty_term) ->
      Perv.is_dform_type ty_term
  | _ ->
       false

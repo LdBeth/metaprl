@@ -1175,7 +1175,7 @@ struct
    let dest_declare_typeclass convert t =
       let shapeclass, typeclass_opname, typeclass_type_opname, parent =
          match subterms_of_term t with
-            [typeclass_opname; typeclass_type_opname; parent] ->
+            [typeclass_opname; typeclass_type_opname; parent] -> (* XXX: HACK: ASCII IO <= 1.0.20 compatibility *)
                ShapeNormal, typeclass_opname, typeclass_type_opname, parent
           | [shapeclass; typeclass_opname; typeclass_type_opname; parent] ->
                dest_shapeclass_term shapeclass, typeclass_opname, typeclass_type_opname, parent
@@ -1190,7 +1190,7 @@ struct
    let dest_declare_type convert t =
       let shapeclass, ty_def, ty_opname =
          match subterms_of_term t with
-            [ty_def; ty_opname] ->
+            [ty_def; ty_opname] -> (* XXX: HACK: ASCII IO <= 1.0.20 compatibility *)
                ShapeNormal, ty_def, ty_opname
           | [shapeclass; ty_def; ty_opname] ->
                dest_shapeclass_term shapeclass, ty_def, ty_opname
@@ -1204,7 +1204,7 @@ struct
    let dest_declare_term convert t =
       let shapeclass, ty_def =
          match subterms_of_term t with
-            [ty_def] ->
+            [ty_def] -> (* XXX: HACK: ASCII IO <= 1.0.20 compatibility *)
                ShapeNormal, ty_def
           | [shapeclass; ty_def] ->
                dest_shapeclass_term shapeclass, ty_def
@@ -1217,7 +1217,7 @@ struct
    let dest_define_term convert t =
       let shapeclass, ty_def, term_def =
          match subterms_of_term t with
-            [ty_def; term_def] ->
+            [ty_def; term_def] -> (* XXX: HACK: ASCII IO <= 1.0.20 compatibility *)
                ShapeNormal, ty_def, term_def
           | [shapeclass; ty_def; term_def] ->
                dest_shapeclass_term shapeclass, ty_def, term_def

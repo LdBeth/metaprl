@@ -72,10 +72,11 @@ open File_type_base
  * Rev 19: in Term_ds, added Context choice to the term_core type
  * Rev 20: iforms no longer have proofs and resources
  * Rev 21: added "shape" parameters
+ * Rev 22: added iform/normal classification to opname declarations
  *)
-let raw_versions = List.map (pack_version 1 0) [21]
+let raw_versions = List.map (pack_version 1 0) [22]
 
-let term_versions = List.map (pack_version 1 0) [21]
+let term_versions = List.map (pack_version 1 0) [22;21]
 
 (*
  * ASCII IO format revision history:
@@ -101,6 +102,7 @@ let term_versions = List.map (pack_version 1 0) [21]
  * Rev 18: removed "Opname" and "Definition" from the summary_item type
  * Rev 19: iforms no longer have proofs and resources
  * Rev 20: added "shape" parameters
+ * Rev 21: added iform/normal classification to opname declarations
  *
  * Ascii_io has a HACK needed to read some rev 0-5 files
  * Ascii_io has another set of HACKs to read sequents in rev 0-6 files
@@ -115,8 +117,9 @@ let term_versions = List.map (pack_version 1 0) [21]
  * Filter_summary has another HACK needed to read some rev 0-15 files.
  * Filter_summary has another HACK needed to read some rev 0-17 files.
  * Filter_summary has another HACK needed to read some rev 0-18 files.
+ * Filter_summary has another HACK needed to read some rev 0-20 files.
  *)
-let ascii_versions = List.map (pack_version 1 0) [20;19;18;17;16;15;14;13;12;11;10;9;8;7;6;5;4;3;2;1;0]
+let ascii_versions = List.map (pack_version 1 0) [21;20;19;18;17;16;15;14;13;12;11;10;9;8;7;6;5;4;3;2;1;0]
 
 (************************************************************************
  * Magic numbers for interactive files                                  *
