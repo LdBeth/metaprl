@@ -147,17 +147,23 @@ struct
    (*
     * Keep track of the state.
     *)
+   type state_shared =
+      { (* Validation *)
+        mutable shared_challenge : string;
+        mutable shared_response  : string;
+
+        (* Processes *)
+        mutable shared_children  : int list
+      }
+
    type state =
       { state_table     : BrowserTable.t;
         state_mp_dir    : string;
         state_password  : string;
-
-        (* Validation *)
-        mutable state_challenge : string;
-        mutable state_response  : string;
-
-        (* Processes *)
-        mutable state_children  : int list
+        state_shared    : state_shared State.entry;
+        state_challenge : string;
+        state_response  : string;
+        state_children  : int list
       }
 
    (*
@@ -256,18 +262,42 @@ struct
       Lm_string_util.hexify (Digest.string (sprintf "%12.4f" (Unix.gettimeofday ())))
 
    (*
+    * Copy the local field.
+    *)
+   let update_from_shared state shared =
+      let { shared_challenge = challenge;
+            shared_response  = response;
+            shared_children  = children
+          } = shared
+      in
+         { state with state_challenge = challenge;
+                      state_response  = response;
+                      state_children  = children
+         }
+
+   let update_state state =
+      State.read state.state_shared (fun shared ->
+            update_from_shared state shared)
+
+   (*
     * Update the challenge and renew the response.
     *)
    let update_challenge state =
-      let { state_password = password } = state in
+      let { state_password = password;
+            state_shared = shared_entry
+          } = state
+      in
       let challenge = new_challenge () in
       let response = Digest.string (password ^ challenge) in
       let response = Lm_string_util.hexify response in
+      let () =
          if !debug_http then
-            eprintf "@[<v 3>Password is: %s@ Challenge is: %s@ Response is: %s@]@." password challenge response;
-         { state with state_challenge = challenge;
-                      state_response = response
-         }
+            eprintf "@[<v 3>Password is: %s@ Challenge is: %s@ Response is: %s@]@." password challenge response
+      in
+         State.write shared_entry (fun shared ->
+               shared.shared_challenge <- challenge;
+               shared.shared_response <- response;
+               update_from_shared state shared)
 
    (*
     * Get the content-type.
@@ -307,7 +337,9 @@ struct
          try
             let response = search header in
                if !debug_http then
-                  eprintf "Response: %s, Valid response: %s, ok=%b@." response state.state_response (response = state.state_response);
+                  eprintf "Response: %s, Valid response: %s, ok=%b@." (**)
+                     response state.state_response
+                     (response = state.state_response);
                response = state.state_response
          with
             Not_found ->
@@ -428,6 +460,13 @@ struct
       Lm_thread_shell.with_pid pid (fun () ->
             State.write session_entry (fun session ->
                   f session)) ()
+
+   (*
+    * The session isn't actually needed,
+    * but we require it for safety.
+    *)
+   let unsynchronize_session (session : session) f =
+      State.unlock session_entry f
 
    (************************************************************************
     * Lazy state operations.
@@ -716,9 +755,8 @@ struct
 
       (* Styles *)
       let table = BrowserTable.add_fun    table style_sym          (print_buffer get_styles) in
-
-         (* Now print the file *)
-         print_translated_file_to_http out table (frame ^ ".html")
+         unsynchronize_session session (fun () ->
+               print_translated_file_to_http out table (frame ^ ".html"))
 
    (*
     * Print the login page.
@@ -736,7 +774,12 @@ struct
          in
             BrowserTable.add_string table session_sym (string_of_int id)
       in
-         print_translated_file_to_http out table "login.html"
+         match session with
+            Some session ->
+               unsynchronize_session session (fun () ->
+                     print_translated_file_to_http out table "login.html")
+          | None ->
+               print_translated_file_to_http out table "login.html"
 
    (*
     * Print the startup page.  The start page gets the full response.
@@ -773,7 +816,8 @@ struct
       let uri = sprintf "https://%s:%d/session/%d/%s" host port id (which_uri cwd) in
          if !debug_http then
             eprintf "Redirecting to %s@." uri;
-         print_redirect_page outx SeeOtherCode uri
+         unsynchronize_session session (fun () ->
+               print_redirect_page outx SeeOtherCode uri)
 
    (*
     * Ship out a local file.
@@ -784,8 +828,8 @@ struct
       let table = BrowserTable.add_string table title_sym "Edit File" in
       let table = BrowserTable.add_string table file_sym filename in
       let table = BrowserTable.add_string table basename_sym (Filename.basename filename) in
-      let table = BrowserTable.add_string table response_sym state.state_response in
       let table = BrowserTable.add_file table content_sym filename in
+      let table = BrowserTable.add_string table response_sym state.state_response in
          print_translated_file_to_http outx table "edit.html"
 
    let print_external_edit_page server state filename outx =
@@ -793,7 +837,7 @@ struct
             http_port     = port
           } = http_info server
       in
-      let { state_response = response } = state in
+      let response = state.state_response in
       let buf = Buffer.create 100 in
 
       (* Strip the .proxyedit *)
@@ -817,7 +861,8 @@ struct
          else
             print_internal_edit_page
       in
-         edit server state filename outx
+         unsynchronize_session session (fun () ->
+               edit server state filename outx)
 
    (*
     * Print the edit done page.
@@ -951,7 +996,8 @@ struct
       let { session_buffer = buffer } = session in
          Shell_syscall.set_syscall_handler (handle_syscall server state session outx);
          Browser_state.add_prompt  buffer command;
-         Browser_state.synchronize buffer Top.eval (command ^ ";;");
+         unsynchronize_session session (fun () ->
+               Browser_state.synchronize buffer Top.eval (command ^ ";;"));
          Browser_state.set_options buffer (Top.get_ls_options ());
          invalidate_eval session
 
@@ -962,7 +1008,10 @@ struct
       if !debug_http then
          eprintf "Changing directory to %s@." dir;
       let { session_buffer = buffer } = session in
-      let success = Browser_state.synchronize buffer Top.chdir dir in
+      let success =
+         unsynchronize_session session (fun () ->
+               Browser_state.synchronize buffer Top.chdir dir)
+      in
          invalidate_chdir session success;
          success
 
@@ -994,7 +1043,9 @@ struct
       let shortener = Top.get_shortener () in
       let s = Dform.string_of_short_term db shortener term in
       let command = Printf.sprintf "%s << %s >>" command s in
-      let state = { state with state_table = BrowserTable.add_string state.state_table rulebox_sym (String.escaped command) } in
+      let state =
+         { state with state_table = BrowserTable.add_string state.state_table rulebox_sym (String.escaped command) }
+      in
          print_page server state session outx 140 "rule"
 
    (************************************************************************
@@ -1063,7 +1114,7 @@ struct
                   if is_valid_response state header then
                      print_edit_page server state session filename outx
                   else
-                     print_login_page outx state None)
+                     print_login_page outx state (Some session))
        | FileURI filename ->
             if is_valid_response state header then
                print_file_page server state filename outx
@@ -1074,13 +1125,13 @@ struct
                   if is_valid_response state header then
                      print_output_page state session outx
                   else
-                     print_login_page outx state None)
+                     print_login_page outx state (Some session))
        | RedirectURI (pid, uri) ->
             synchronize_pid pid (fun session ->
                   if is_valid_response state header then
                      print_redisplay_page (fun _ -> uri) server state session outx
                   else
-                     print_login_page outx state None)
+                     print_login_page outx state (Some session))
        | UnknownURI dirname ->
             print_error_page outx NotFoundCode
 
@@ -1188,32 +1239,34 @@ struct
     * below.
     *)
    let http_wait server state =
-      let children =
-         List.fold_left (fun children pid ->
-               try
-                  (* Wait for the child *)
-                  let pid', _ = Unix.waitpid [Unix.WNOHANG] pid in
-                     if pid' = pid then
-                        children
-                     else
-                        pid :: children
-               with
-                  Unix.Unix_error _ ->
-                     (* Assume the child is dead *)
-                     children) [] state.state_children
-      in
-         state.state_children <- children
+      if state.state_children <> [] then
+         State.write state.state_shared (fun shared ->
+               let children =
+                  List.fold_left (fun children pid ->
+                        try
+                           (* Wait for the child *)
+                           let pid', _ = Unix.waitpid [Unix.WNOHANG] pid in
+                              if pid' = pid then
+                                 children
+                              else
+                                 pid :: children
+                        with
+                           Unix.Unix_error _ ->
+                              (* Assume the child is dead *)
+                              children) [] shared.shared_children
+               in
+                  shared.shared_children <- children)
 
    (*
     * Handle a connection.
     * We handle only get and post for now.
     *)
    let http_connect server state outx inx args header body =
-      let () =
-         (* Wait for children *)
+      let state =
          http_wait server state;
-
-         (* Process the command *)
+         update_state state
+      in
+      let () =
          match args with
             "get" :: uri :: _ ->
                get server state outx uri header
@@ -1254,7 +1307,8 @@ struct
       let argv = Array.of_list argv in
          try
             let pid = Unix.create_process browser argv Unix.stdin Unix.stdout Unix.stderr in
-               state.state_children <- pid :: state.state_children
+               State.write state.state_shared (fun shared ->
+                     shared.shared_children <- pid :: shared.shared_children)
          with
             Unix.Unix_error _ ->
                eprintf "Shell_browser: could not start browser %s@." browser
@@ -1377,10 +1431,18 @@ struct
    let main () =
       if !browser_flag then
          let mp_dir, password = init_password () in
+         let shared =
+            { shared_challenge = "unknown";
+              shared_response  = "unknown";
+              shared_children  = []
+            }
+         in
+         let shared = State.shared_val "Shell_browser.shared" shared in
          let state =
             { state_table     = BrowserTable.empty;
               state_mp_dir    = mp_dir;
               state_password  = password;
+              state_shared    = shared;
               state_challenge = "unknown";
               state_response  = "unknown";
               state_children  = []

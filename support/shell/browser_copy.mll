@@ -27,6 +27,7 @@
 open Format
 
 open Lm_symbol
+open Lm_thread
 
 open Http_server_type
 open Http_simple
@@ -165,7 +166,7 @@ let save_root_file filename contents =
  * Output functions.
  *)
 type info =
-   { info_add_char : char -> unit;
+   { info_add_char   : char -> unit;
      info_add_string : string -> unit;
      info_add_buffer : Buffer.t -> unit;
      info_add_fun    : (Buffer.t -> unit) -> unit;
@@ -176,7 +177,7 @@ type info =
  * Buffered output.
  *)
 let buffer_info buf =
-   { info_add_char = Buffer.add_char buf;
+   { info_add_char   = Buffer.add_char buf;
      info_add_string = Buffer.add_string buf;
      info_add_buffer = Buffer.add_buffer buf;
      info_add_fun    = (fun f -> f buf);
@@ -272,19 +273,29 @@ end
 
 (*
  * OCaml 3.07 allows lexer functions to have arguments.
- * In the meantime, code this imperatively.
+ * In the meantime, code this imperatively (yuck).
  *)
-let output_buffer = ref (buffer_info (Buffer.create 1))
-let symbol_table = ref BrowserTable.empty
+type lex_info =
+   { mutable lex_buffer : info;
+     mutable lex_table  : BrowserTable.t
+   }
+
+let lex_entry =
+   let default =
+      { lex_buffer = buffer_info (Buffer.create 1);
+        lex_table = BrowserTable.empty
+      }
+   in
+   let fork lex =
+      { lex with lex_table = lex.lex_table }
+   in
+      State.private_val "Browser_copy.lex" default fork
 
 let with_buffer table buf f x =
-   let old_buf = !output_buffer in
-   let old_table = !symbol_table in
-      symbol_table := table;
-      output_buffer := buf;
-      f x;
-      output_buffer := old_buf;
-      symbol_table := old_table
+   State.write lex_entry (fun lex ->
+         lex.lex_buffer <- buf;
+         lex.lex_table <- table;
+         f x)
 }
 
 (*
@@ -300,8 +311,9 @@ rule main = parse
    "%%" name "%%"
    { let s = Lexing.lexeme lexbuf in
      let v = Lm_symbol.add (String.sub s 2 (String.length s - 4)) in
+     let lex = State.get lex_entry in
      let () =
-        try BrowserTable.append_to_buffer !output_buffer !symbol_table v with
+        try BrowserTable.append_to_buffer lex.lex_buffer lex.lex_table v with
            Not_found ->
               (* Ignore unbound symbols *)
               ()
@@ -310,12 +322,14 @@ rule main = parse
    }
  | other
    { let s = Lexing.lexeme lexbuf in
-        (!output_buffer).info_add_string s;
+     let lex = State.get lex_entry in
+        lex.lex_buffer.info_add_string s;
         main lexbuf
    }
  | _
    { let s = Lexing.lexeme lexbuf in
-        (!output_buffer).info_add_string s;
+     let lex = State.get lex_entry in
+        lex.lex_buffer.info_add_string s;
         main lexbuf
    }
  | eof
