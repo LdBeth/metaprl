@@ -235,11 +235,8 @@ struct
     * LAMBDA                               *
     ****************************************)
 
-   let xlambda_opname =
-      mk_opname "lambda" xperv
-
-   let mk_xlambda_term =
-      mk_dep1_term xlambda_opname
+   let xlambda_opname = mk_opname "lambda" xperv
+   let mk_xlambda_term = mk_dep1_term xlambda_opname
 
    (*************************
     * Sequents              *                                              *
@@ -303,8 +300,6 @@ struct
             args
        | _ ->
             ref_raise(RefineError ("args_of_sequent", TermMatchError (seq, "sequent must have two subterms")))
-
-   let null_concl = mk_simple_term concl_opname []
 
    (*
     * Helper function to unwrap the surrounding sequent term.
@@ -465,7 +460,7 @@ struct
                   skip_hyps (i + 1) term
             else if Opname.eq opname context_opname then
                let term = match_context nth_concl_addr_name t bterms in
-                  skip_hyps (i - 1) term
+                  skip_hyps (i + 1) term
             else if Opname.eq opname concl_opname then
                let term = match_concl nth_concl_addr_name t bterms in
                   skip_concl i n term
