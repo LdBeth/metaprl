@@ -63,6 +63,13 @@ open Filter_ocaml
 let _ =
    show_loading "Loading Shell_rewrite%t"
 
+let debug_shell =
+   create_debug (**)
+      { debug_name = "shell";
+        debug_description = "Display shell operations";
+        debug_value = false
+      }
+
 (*
  * This is the actual rewrite object.
  *)
@@ -79,23 +86,21 @@ type rw =
 (*
  * Make a rewrite goal from the assumptions,
  * and the rewrite.
+ * HACK!!! This is here only because we do not do rewrites (esp.
+ * the conditional ones) properly. Once that is fixed,
+ * this code should go away (and, for that matter, shell_rule
+ * and shell_rewrite should probably be eventually merged).
  *)
 let seq = << sequent ['ext] { 'H >- 'rw } >>
 
-let mk_goal redex contractum =
-   let rw = TermMan.replace_goal seq (mk_xrewrite_term redex contractum) in
-      mk_msequent rw []
-
-let mk_cond_goal assums redex contractum =
+let mk_rw_goal assums redex contractum =
    let rw = replace_goal seq (mk_xrewrite_term redex contractum) in
    let assums = List.map (replace_goal seq) assums in
+      if !debug_shell then begin
+         eprintf "Shell_rewrite.mk_rw_goal: [... --> ] %a <--> %a%t"
+            print_term redex print_term contractum eflush;
+      end;
       mk_msequent rw assums
-
-let mk_rw_goal assums redex contractum =
-   if assums = [] then
-      mk_goal redex contractum
-   else
-      mk_cond_goal assums redex contractum
 
 let mk_goal sentinal arg assums redex contractum =
    let { ref_label = label; ref_args = args } = arg in
@@ -282,10 +287,10 @@ let rec edit pack parse_arg sentinal arg name window obj =
                   rw_contractum = contractum
                 } = obj
             in
-            let assums' = List.map (replace_goal seq) assums in
-            let goal' = replace_goal seq (mk_xrewrite_term redex contractum) in
-            let proof = Package.new_proof pack parse_arg name assums goal' in
-            let ped = Package.ped_of_proof pack parse_arg proof (mk_msequent goal' assums) in
+            let mseq = mk_rw_goal assums redex contractum in
+            let goal', assums' = dest_msequent mseq in
+            let proof = Package.new_proof pack parse_arg name assums' goal' in
+            let ped = Package.ped_of_proof pack parse_arg proof mseq in
                obj.rw_proof <- Interactive proof;
                obj.rw_ped <- Interactive ped;
                Proof_edit.set_params ped params;
@@ -378,14 +383,13 @@ let view_rw pack parse_arg window
       Filter_type.rw_proof = proof;
       Filter_type.rw_resources = res
     } =
-   let goal = replace_goal seq (mk_xrewrite_term redex contractum) in
    let obj =
       { rw_assums = [];
         rw_params = [];
         rw_redex = redex;
         rw_contractum = contractum;
         rw_proof = proof;
-        rw_ped = ped_of_proof pack parse_arg (mk_msequent goal []) proof;
+        rw_ped = ped_of_proof pack parse_arg (mk_rw_goal [] redex contractum) proof;
         rw_resources = res
       }
    in
@@ -402,14 +406,13 @@ let view_crw pack parse_arg window
       crw_proof = proof;
       crw_resources = res
     } =
-   let goal = replace_goal seq (mk_xrewrite_term redex contractum) in
    let obj =
       { rw_assums = args;
         rw_params = params;
         rw_redex = redex;
         rw_contractum = contractum;
         rw_proof = proof;
-        rw_ped = ped_of_proof pack parse_arg (mk_msequent goal args) proof;
+        rw_ped = ped_of_proof pack parse_arg (mk_rw_goal args redex contractum) proof;
         rw_resources = res
       }
    in
