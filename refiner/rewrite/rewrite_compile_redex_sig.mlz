@@ -1,0 +1,20 @@
+(*
+ * Compile a redex into a stack representation.
+ *)
+
+module type RewriteCompileRedexSig =
+sig
+   type term
+   type rstack
+   type rwterm
+
+   val compile_so_redex : string array -> term list -> rstack array * rwterm list
+end
+
+(*
+ * -*-
+ * Local Variables:
+ * Caml-master: "refiner"
+ * End:
+ * -*-
+ *)

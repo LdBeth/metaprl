@@ -91,13 +91,27 @@ struct
 
    let binding_vars = binding_vars_term []
 
-   let free_vars_terms = function
-      [] -> []
-    | hd::tl ->
-         StringSet.elements
-         (List.fold_left
-          (function vars -> function trm -> StringSet.union vars trm.free_vars)
-          hd.free_vars tl)
+   let free_vars_set = function
+      [hd] ->
+         hd.free_vars
+    | hd :: tl ->
+         List.fold_left (**)
+            (fun vars term -> StringSet.union vars term.free_vars)
+            hd.free_vars tl
+    | [] ->
+         StringSet.empty
+
+   let free_vars_terms terms =
+      StringSet.elements (free_vars_set terms)
+
+   let is_free_var_list vars terms =
+      match vars with
+         [] ->
+            false
+       | _ ->
+            let free_set = free_vars_set terms in
+               List.exists (fun v -> StringSet.mem free_set v) vars
+
    let rec context_vars_term cvars t = match dest_term t with
                                           { term_op = { op_name = opname; op_params = [Var v] };
                                             term_terms = bterms

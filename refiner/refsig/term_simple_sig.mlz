@@ -99,22 +99,21 @@ sig
     | MetaIff of meta_term * meta_term
 
    (************************************************************************
-    * Sequents                                                             *
+    * SEQUENTS                                                             *
     ************************************************************************)
 
-    type hypothesis =
-       Hypothesis of string * term
-     | Context of string * term list
+   type hypothesis =
+      Hypothesis of string * term
+    | Context of string * term list
 
-    type seq_hyps
-    type seq_goals
+   type seq_hyps
+   type seq_goals
 
-    type esequent =
-       { sequent_args : term;
-         sequent_hyps : seq_hyps;
-         sequent_goals : seq_goals
-       }
-
+   type esequent =
+      { sequent_args : term;
+        sequent_hyps : seq_hyps;
+        sequent_goals : seq_goals
+      }
 end
 
 (*

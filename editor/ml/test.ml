@@ -4,37 +4,19 @@
 
 include Itt_theory
 
-open Conversionals
-open Itt_rfun
-open Itt_bool
-open Itt_int
-open Itt_int_bool
+interactive test_and_intro 'H :
+   sequent ['ext] { 'H >- 'A } -->
+   sequent ['ext] { 'H >- 'B } -->
+   sequent ['ext] { 'H >- 'A & 'B }
 
-declare guard{'a}
-declare fact{'i}
+interactive test_imp_elim 'H 'J 'y :
+   sequent ['ext] { 'H; x: 'A => 'B; 'J['x] >- 'A } -->
+   sequent ['ext] { 'H; x: 'A => 'B; 'J['x]; y: 'B >- 'C['x] } -->
+   sequent ['ext] { 'H; x: 'A => 'B; 'J['x] >- 'C['x] }
 
-primrw fold : 'a <--> guard{'a}
-
-primrw reduceFact : fact{'i} <--> fix{f. lambda{i. ifthenelse{eq_int{'i; 0}; 1; .'i *@ 'f ('i -@ 1)}}} 'i
-
-primrw test : fact{40} <--> 0 (* 815915283247897734345611269596115894272000000000 *)
-
-dform fact_df : parens :: "prec"[prec_apply] :: fact{'i} =
-   `"fact" " " slot{'i}
-
-let redexC =
-   firstC [reduceBeta;
-           reduceEQInt;
-           reduceFact;
-           reduceBoolTrue;
-           reduceBoolFalse;
-           reduceIfthenelseTrue;
-           reduceIfthenelseFalse;
-           reduceAdd;
-           reduceSub;
-           reduceMul;
-           reduceDiv;
-           reduceFix]
+interactive test_and_elim 'H 'J 'u 'v :
+   sequent ['ext] { 'H; u: 'A; v: 'B; 'J['u, 'v] >- 'C['u, 'v] } -->
+   sequent ['ext] { 'H; x: 'A & 'B; 'J['x] >- 'C['x] }
 
 (*
  * -*-

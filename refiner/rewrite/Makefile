@@ -1,7 +1,7 @@
 # Flags
-DIR = refiner/refiner
+DIR = refiner/rewrite
 ROOT = ../..
-INCLUDE := -I ../../mllib -I ../refbase -I ../refsig -I ../term_std -I ../term_gen -I ../term_ds -I ../rewrite
+INCLUDE := -I ../../mllib -I ../refbase -I ../refsig -I ../term_std -I ../term_gen -I ../term_ds
 
 # Library files
 include Files

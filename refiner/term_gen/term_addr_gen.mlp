@@ -60,6 +60,12 @@ struct
    let nth_tl_address i =
       NthClause (i, false)
 
+   let depth_of_address = function
+      NthClause (i, _) ->
+         i
+    | _ ->
+         ref_raise(RefineError ("depth_of_address", StringError "address is not a sequent address"))
+
    let compose_address path1 path2 =
       match path1 with
          Path [] ->
@@ -341,11 +347,11 @@ struct
          let dbt = dest_bterm bt in
          let (bt_new, args2) = apply_fun_higher_term f args dbt.bterm in
             if args2 == coll then (bterms, coll)
-            else 
-               let bt_new = 
-                  if args2 == args 
-                  then bt else 
-                  mk_bterm dbt.bvars bt_new 
+            else
+               let bt_new =
+                  if args2 == args
+                  then bt else
+                  mk_bterm dbt.bvars bt_new
                in
                (bt_new::btrms_new, args2)
 

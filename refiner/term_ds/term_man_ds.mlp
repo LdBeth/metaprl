@@ -350,55 +350,51 @@ struct
        | _ ->
             ref_raise(RefineError (nth_clause_addr_name, TermMatchError (t, "not a sequent")))
 
-   let nth_clause_addrs t il =
-#ifdef VERBOSE_EXN
-      if !debug_address then
-         begin
-            eprintf "Nth_clause_addrs:";
-            Array.iter (fun count -> eprintf " %d" count) il;
-            eflush stderr
-         end;
-#endif
-(*
- * jyh: I had assumed that we could push negative addressing
- * down into the address module, but it turns out to be pretty hard because
- * addresses are relative.
-      nth_clause_addr_aux (fun count -> Array.map (make_nth_clause_addr false count) il) t
- *)
-      Array.map (nth_clause_addr t) il
+   (*
+    * Addresses to be used in sequent rewriting.
+    *)
+   let hyp_range_addr t i =
+      HypAddr i
+
+   let concl_range_addr t i =
+      GoalAddr i
 
    (*
-    * Fast access to hyp and concl. Counting starts from 0.
+    * Fast access to hyp and concl. Counting starts from 1.
     *)
    let nth_hyp_name = "Term_man_ds.nth_hyp"
    let nth_hyp t i =
-      if i < 0 then
+      if i <= 0 then
          ref_raise(RefineError (nth_hyp_name, StringError "negative address"))
       else
-         match get_core t with
-            Sequent s ->
-               if i < SeqHyp.length s.sequent_hyps then
-                  match s.sequent_hyps.(i) with
-                     Hypothesis (v,t) -> (v,t)
-                   | Context _ -> ref_raise(RefineError (nth_hyp_name, TermMatchError (t, "it's a context")))
-               else
-                  ref_raise(RefineError (nth_hyp_name, TermMatchError (t, "not enough hyps")))
-          | _ ->
-               ref_raise(RefineError (nth_hyp_name, TermMatchError (t, "not a sequent")))
+         let i = pred i in
+            match get_core t with
+               Sequent s ->
+                  if i < SeqHyp.length s.sequent_hyps then
+                     match s.sequent_hyps.(i) with
+                        Hypothesis (v, t) ->
+                           (v, t)
+                      | Context _ ->
+                           ref_raise(RefineError (nth_hyp_name, TermMatchError (t, "it's a context")))
+                  else
+                     ref_raise(RefineError (nth_hyp_name, TermMatchError (t, "not enough hyps")))
+             | _ ->
+                  ref_raise(RefineError (nth_hyp_name, TermMatchError (t, "not a sequent")))
 
    let nth_concl_name = "Term_man_ds.nth_concl"
    let nth_concl t i =
-      if i < 0 then
+      if i <= 0 then
          ref_raise(RefineError (nth_concl_name, StringError "negative address"))
       else
-         match get_core t with
-            Sequent s ->
-               if i < SeqGoal.length s.sequent_goals then
-                  s.sequent_goals.(i)
-               else
-                  ref_raise(RefineError (nth_concl_name, TermMatchError (t, "not enough hyps")))
-          | _ ->
-               ref_raise(RefineError (nth_concl_name, TermMatchError (t, "not a sequent")))
+         let i = pred i in
+            match get_core t with
+               Sequent s ->
+                  if i < SeqGoal.length s.sequent_goals then
+                     s.sequent_goals.(i)
+                  else
+                     ref_raise(RefineError (nth_concl_name, TermMatchError (t, "not enough hyps")))
+             | _ ->
+                  ref_raise(RefineError (nth_concl_name, TermMatchError (t, "not a sequent")))
 
    (*
     * Count the hyps.
@@ -444,8 +440,10 @@ struct
                   ref_raise(RefineError (get_decl_number_name, TermMatchError (t, "declaration not found")))
                else
                   match hyps.(i) with
-                     Hypothesis (v',_) when v' = v -> i
-                   | _ -> aux (succ i)
+                     Hypothesis (v',_) when v' = v ->
+                        succ i
+                   | _ ->
+                        aux (succ i)
             in
                aux 0
        | _ ->
@@ -468,15 +466,17 @@ struct
                         false
                      else
                         is_free_var v goals.(i) || is_free_concl_var (pred i)
-                  in is_free_concl_var (SeqGoal.length goals - 1)
+                  in
+                     is_free_concl_var (SeqGoal.length goals - 1)
                else
                   (match hyps.(i) with
-                      Hypothesis (v',t) ->
-                         is_free_var v t
-                    | Context (v,ts) ->
-                         List.exists (is_free_var v) ts) || (is_free_hyp_var (succ i))
+                     Hypothesis (v',t) ->
+                        is_free_var v t
+                   | Context (v,ts) ->
+                        List.exists (is_free_var v) ts)
+                  || (is_free_hyp_var (succ i))
             in
-               is_free_hyp_var (succ i)
+               is_free_hyp_var i
        | _ ->
             ref_raise(RefineError (is_free_seq_var_name, TermMatchError (t, "not a sequent")))
 

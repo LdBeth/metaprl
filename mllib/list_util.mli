@@ -52,6 +52,7 @@ val find_indexq : 'a -> 'a list -> int
 (* Set-like operations *)
 val intersect : 'a list -> 'a list -> 'a list
 val intersectq : 'a list -> 'a list -> 'a list
+val intersects : 'a list -> 'a list -> bool
 val subtract : 'a list -> 'a list -> 'a list
 val subtractq : 'a list -> 'a list -> 'a list
 val union : 'a list -> 'a list -> 'a list

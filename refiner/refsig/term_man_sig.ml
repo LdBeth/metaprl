@@ -43,10 +43,21 @@ sig
    val get_decl_number : term -> string -> int
    val is_free_seq_var : int -> string -> term -> bool
 
+   (*
+    * The nth_*_addr functions are used to
+    * compute addreses for parts of a sequent.
+    * The indexing starts from 1.  Clause 0
+    * refers to the conclusion.
+    *
+    * The range functions provide addresses
+    * that are used for contexts in sequent
+    * rewriting.
+    *)
    val nth_hyp_addr : term -> int -> address
    val nth_concl_addr : term -> int -> address
    val nth_clause_addr : term -> int -> address
-   val nth_clause_addrs : term -> int array -> address array
+   val hyp_range_addr : term -> int -> address
+   val concl_range_addr : term -> int -> address
    val replace_goal : term -> term -> term          (* One concl *)
 
    val is_xrewrite_term : term -> bool

@@ -1,0 +1,545 @@
+(*
+ * Build the contractum, given a matched redex.
+ * The parts of the redex are sotred in the stack.
+ *)
+
+#include "refine_error.h"
+
+open Printf
+open Nl_debug
+open Opname
+open Term_sig
+open Term_base_sig
+open Term_man_sig
+open Term_addr_sig
+open Term_subst_sig
+open Refine_error_sig
+
+open Rewrite_type_sig
+open Rewrite_util_sig
+open Rewrite_debug_sig
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Rewrite_debug%t" eflush
+
+let debug_rewrite = load_debug "rewrite"
+let debug_subst = load_debug "subst"
+
+module MakeRewriteBuildContractum
+   (TermType : TermSig)
+   (Term : TermBaseSig
+    with type term = TermType.term
+    with type term' = TermType.term'
+    with type bound_term = TermType.bound_term
+    with type bound_term' = TermType.bound_term'
+    with type operator = TermType.operator
+    with type operator' = TermType.operator'
+    with type param = TermType.param
+    with type param' = TermType.param'
+    with type level_exp = TermType.level_exp
+    with type level_exp' = TermType.level_exp'
+    with type object_id = TermType.object_id
+    with type seq_hyps = TermType.seq_hyps
+    with type seq_goals = TermType.seq_goals
+    with type hypothesis = TermType.hypothesis)
+   (TermMan : TermManSig
+    with type term = TermType.term
+    with type esequent = TermType.esequent)
+   (TermAddr : TermAddrSig
+    with type term = TermType.term)
+   (TermSubst : TermSubstSig
+    with type term = TermType.term)
+   (RefineError : RefineErrorSig
+    with type level_exp = TermType.level_exp
+    with type param = TermType.param
+    with type term = TermType.term
+    with type bound_term = TermType.bound_term
+    with type seq_hyps = TermType.seq_hyps
+    with type seq_goals = TermType.seq_goals)
+   (RewriteTypes : RewriteTypesSig
+    with type level_exp = TermType.level_exp
+    with type object_id = TermType.object_id
+    with type term = TermType.term
+    with type address = TermAddr.address
+    with type seq_hyps = TermType.seq_hyps)
+   (RewriteUtil : RewriteUtilSig
+    with type term = TermType.term
+    with type rstack = RewriteTypes.rstack)
+   (RewriteDebug : RewriteDebugSig
+    with type rwterm = RewriteTypes.rwterm
+    with type varname = RewriteTypes.varname)
+=
+struct
+   open TermType
+   open Term
+   open TermMan
+   open TermAddr
+   open TermSubst
+   open RefineError
+   open RewriteTypes
+   open RewriteUtil
+   open RewriteDebug
+
+   type term = TermType.term
+   type stack = RewriteTypes.stack
+   type rwterm = RewriteTypes.rwterm
+
+   let rec print_term_list out = function
+      term :: terms ->
+         output_string out ", ";
+         debug_print out term;
+         print_term_list out terms
+    | [] ->
+         ()
+
+   (*
+    * The contractum is built as a second order substitution.
+    * For variable renaming, we keep track of the variable
+    * and the name it has been renamed to.  Whenever a second
+    * order term is instantiated, we do a calculation of
+    * the variables to be renamed, and send it back up.
+    *
+    * In this function, we map variable names.
+    * bnames is the name of the current bound variables.
+    * names is the list of argument names.
+    *)
+   let build_bname names bnames stack = function
+      ArgName i ->
+#ifdef VERBOSE_EXN
+         if !debug_rewrite then
+            eprintf "ArgName %d%t" i eflush;
+#endif
+         let v = names.(i) in
+         let rec check v = function
+            vars :: tl ->
+               if List.mem v vars then
+                  ref_raise(RefineError ("build_bname", RewriteBoundSOVar v))
+               else
+                  check v tl
+          | [] ->
+               ()
+         in
+            check v bnames;
+            v
+    | StackName i ->
+         begin
+#ifdef VERBOSE_EXN
+            if !debug_rewrite then
+               eprintf "StackName %d%t" i eflush;
+#endif
+            match stack.(i) with
+               StackString s ->
+                  s
+             | x ->
+                  ref_raise(RefineError ("build_bname", RewriteStringError "stack entry is not a string"))
+         end
+    | SaveName i ->
+#ifdef VERBOSE_EXN
+         if !debug_rewrite then
+            eprintf "SaveName %d%t" i eflush;
+#endif
+         names.(i)
+
+   (*
+    * Append the var array.
+    *)
+   let append_vars bvars vars =
+      Array.append bvars (Array.of_list vars)
+
+   (*
+    * Perform a substitution on a sequence of hyps.
+    * We explicitely avoid capture.
+    *)
+   let rec collect_hyp_vars vars hyps i len =
+      if len = 0 then
+         vars
+      else
+         match SeqHyp.get hyps i with
+            Hypothesis (v, _) ->
+               collect_hyp_vars (v :: vars) hyps (i + 1) (len - 1)
+          | Context _ ->
+               collect_hyp_vars vars hyps (i + 1) (len - 1)
+
+   let avoid_capture hyps i len terms =
+      let hyp_vars = collect_hyp_vars [] hyps i len in
+         if is_free_var_list hyp_vars terms then
+            begin
+#ifdef VERBOSE_EXN
+               if !debug_rewrite then
+                  eprintf "avoid_capture: capture occurred: %a/%a%t" (**)
+                     print_string_list hyp_vars
+                     print_string_list (free_vars_terms terms)
+                     eflush;
+#endif
+               ref_raise(RefineError ("avoid_capture", StringError "invalid substituion"))
+            end
+
+   let subst_hyp terms vars = function
+      Hypothesis (v, term) ->
+         Hypothesis (v, subst term terms vars)
+    | Context (v, subterms) ->
+         Context (v, List.map (fun t -> subst t terms vars) subterms)
+
+   let hyp_subst arg terms vars =
+      match vars, terms with
+         [], [] ->
+            arg
+       | [v], [t] when is_var_term t && dest_var t = v ->
+            arg
+       | _ ->
+            let i, len, hyps = arg in
+               avoid_capture hyps i len terms;
+               0, len, SeqHyp.sub_map (subst_hyp terms vars) hyps i len
+
+   (*
+    * Build the terms.
+    *    names: variable names provided by argument
+    *    bnames: string list list of all the bound variables in the term
+    *    stack: stack compiled from match_redex
+    *    bvars: array of bound vars explicit in the contractum.
+    *    con: the contractum being constructed.
+    *)
+   let rec build_contractum_term names bnames stack bvars = function
+      RWComposite { rw_op = { rw_name = name; rw_params = params }; rw_bterms = bterms } ->
+         (* Build a regular term from the parts *)
+         mk_term (mk_op name (build_contractum_params stack params)) (**)
+            (build_contractum_bterms names bnames stack bvars bterms)
+
+    | RWSequent (arg, hyps, goals) ->
+         let arg = build_contractum_term names bnames stack bvars arg in
+         let bnames, bvars, hyps = build_contractum_sequent_hyps names bnames stack bvars [] hyps in
+         let goals = List.map (build_contractum_term names bnames stack bvars) goals in
+         let seq =
+            { sequent_args = arg;
+              sequent_hyps = hyps;
+              sequent_goals = SeqGoal.of_list goals
+            }
+         in
+            mk_sequent_term seq
+
+    | RWSOSubst(i, terms) ->
+         begin
+             (*
+              * Instantiate a second order term.
+              * Find its free variables, and rename the binding stack
+              * if necessary.
+              *)
+            let subst term vars =
+               let terms = List.map (build_contractum_term names bnames stack bvars) terms in
+#ifdef VERBOSE_EXN
+               if !debug_subst then
+                   begin
+                      eprintf "RWSOSubst: %a%t" debug_print term eflush;
+                      iter2 (fun name term ->
+                            eprintf "\t%s: %a%t" name debug_print term eflush) (**)
+                         vars terms
+                   end;
+#endif
+               let term = subst term terms vars in
+#ifdef VERBOSE_EXN
+                  if !debug_subst then
+                     eprintf "\t%a%t" debug_print term eflush;
+#endif
+                  term
+            in
+               match stack.(i) with
+                  StackBTerm(term, vars) ->
+#ifdef VERBOSE_EXN
+                     if !debug_subst then
+                        eprintf "RWSOSubst: BTerm: %a\n\t%a%t" debug_print term print_string_list vars eflush;
+#endif
+                     subst term vars
+                | StackITerm ((term, vars, _, _) :: _) ->
+#ifdef VERBOSE_EXN
+                     if !debug_subst then
+                        eprintf "RWSOSubst: ITerm: %a\n\t%a%t" debug_print term print_string_list vars eflush;
+#endif
+                     subst term vars
+                | _ ->
+                     ref_raise(RefineError ("build_contractum_term", RewriteStringError "stack entry is not valid"))
+         end
+
+    | RWSOContextSubst(i, t, terms) ->
+         begin
+             (*
+              * Instantiate a context.
+              *)
+             match stack.(i) with
+                StackContext(vars, term, addr) ->
+                   let term =
+                      replace_subterm term addr (**)
+                         (build_contractum_term names bnames stack bvars t)
+                   in
+                   let terms = List.map (build_contractum_term names bnames stack bvars) terms in
+#ifdef VERBOSE_EXN
+                      if !debug_subst then
+                         begin
+                            eprintf "RWSOContextSubst: %a%t" debug_print term eflush;
+                            iter2 (fun name term ->
+                                  eprintf "\t%s: %a%t" name debug_print term eflush) (**)
+                               vars terms
+                         end;
+#endif
+                   subst term terms vars
+              | _ ->
+                   ref_raise(RefineError ("build_contractum_term", RewriteStringError "stack entry is not valid"))
+         end
+
+    | RWCheckVar i ->
+         (*
+          * This is a bound occurrence.
+          *)
+#ifdef VERBOSE_EXN
+         if !debug_rewrite then
+            eprintf "RWCheckVar: %d/%d%t" i (Array.length bvars) eflush;
+#endif
+         mk_var_term bvars.(i)
+
+    | RWStackVar i ->
+         (*
+          * This is a bound occurrence.
+          *)
+         begin
+#ifdef VERBOSE_EXN
+            if !debug_rewrite then
+               eprintf "RWStackVar: %d%t" i eflush;
+#endif
+            match stack.(i) with
+               StackString s ->
+                  mk_var_term s
+             | x ->
+                  ref_raise(RefineError ("build_contractum_term", RewriteStringError "stack entry is not valid"))
+         end
+
+    | t ->
+         ref_raise(RefineError ("build_contractum_term", RewriteStringError "bad contractum"))
+
+   and build_con_exn = RefineError ("build_contractum_param", RewriteStringError "stack entry is not valid")
+
+   and raise_param p =
+      ref_raise(RefineError ("build_contractum_param", RewriteBadMatch (ParamMatch (make_param p))))
+
+   and build_contractum_param stack = function
+      RWNumber i ->
+         Number i
+    | RWString s ->
+         String s
+    | RWToken s ->
+         Token s
+    | RWLevel l ->
+         Level l
+    | RWVar v ->
+         Var v
+    | RWMNumber i ->
+         begin
+             match stack.(i) with
+                StackNumber j -> Number j
+              | StackString s -> Number (Num.num_of_string s)
+              | StackMString s -> MNumber s
+              | t -> ref_raise(build_con_exn)
+         end
+    | RWMString i ->
+         begin
+             match stack.(i) with
+                StackString s -> String s
+              | StackNumber j -> String (Num.string_of_num j)
+              | StackMString s -> MString s
+              | t -> ref_raise(build_con_exn)
+         end
+    | RWMToken i ->
+         begin
+             match stack.(i) with
+                StackString s -> Token s
+              | StackNumber j -> String (Num.string_of_num j)
+              | StackMString s -> MToken s
+              | t -> ref_raise(build_con_exn)
+         end
+    | RWMLevel i ->
+         begin
+             match stack.(i) with
+                StackLevel l -> Level l
+              | StackMString s -> MLevel s
+              | t -> ref_raise(build_con_exn)
+         end
+    | RWMVar i ->
+         begin
+             match stack.(i) with
+                StackString v -> Var v
+              | StackNumber j -> Var (Num.string_of_num j)
+              | StackMString s -> MVar s
+              | t -> ref_raise(build_con_exn)
+         end
+    | RWSum (p1, p2) ->
+         begin
+             match (build_contractum_param stack p1, build_contractum_param stack p2) with
+                (Number i, Number j) -> Number (Num.add_num i j)
+              | (Number i, p) -> raise_param p
+              | (p, _) -> raise_param p
+         end
+    | RWDiff (p1, p2) ->
+         begin
+             match (build_contractum_param stack p1, build_contractum_param stack p2) with
+                (Number i, Number j) -> Number (Num.sub_num i j)
+              | (Number i, p) -> raise_param p
+              | (p, _) -> raise_param p
+         end
+    | RWProduct (p1, p2) ->
+         begin
+             match (build_contractum_param stack p1, build_contractum_param stack p2) with
+                (Number i, Number j) -> Number (Num.mult_num i j)
+              | (Number i, p) -> raise_param p
+              | (p, _) -> raise_param p
+         end
+    | RWQuotient (p1, p2) ->
+         begin
+             match (build_contractum_param stack p1, build_contractum_param stack p2) with
+                (Number i, Number j) -> Number (Num.quo_num i j)
+              | (Number i, p) -> raise_param p
+              | (p, _) -> raise_param p
+         end
+    | RWRem (p1, p2) ->
+         begin
+             match (build_contractum_param stack p1, build_contractum_param stack p2) with
+                (Number i, Number j) -> Number (Num.mod_num i j)
+              | (Number i, p) -> raise_param p
+              | (p, _) -> raise_param p
+         end
+    | RWLessThan (p1, p2) ->
+         begin
+             match (build_contractum_param stack p1, build_contractum_param stack p2) with
+                (Number i, Number j) -> Token (if i < j then "true" else "false")
+              | (Number i, p) -> raise_param p
+              | (p, _) -> raise_param p
+         end
+    | RWEqual (p1, p2) ->
+         begin
+             match (build_contractum_param stack p1, build_contractum_param stack p2) with
+                (Number i, Number j) -> Token (if i = j then "true" else "false")
+              | (Number i, p) -> raise_param p
+              | (p, _) -> raise_param p
+         end
+    | RWNotEqual (p1, p2) ->
+         begin
+             match (build_contractum_param stack p1, build_contractum_param stack p2) with
+                (Number i, Number j) -> Token (if i = j then "false" else "true")
+              | (Number i, p) -> raise_param p
+              | (p, _) -> raise_param p
+         end
+    | RWObId id ->
+         ObId id
+    | RWParamList l ->
+         ParamList (build_contractum_params stack l)
+
+   and build_contractum_params stack params =
+      let build_contractum_param' p =
+         make_param (build_contractum_param stack p)
+      in
+         List.map build_contractum_param' params
+
+   and build_contractum_bterm names bnames stack bvars = function
+      { rw_bvars = vcount; rw_bnames = vars; rw_bterm = term } ->
+         let vars' = List.map (build_bname names bnames stack) vars in
+            mk_bterm vars' (build_contractum_term names (vars' :: bnames) stack (append_vars bvars vars') term)
+
+   and build_contractum_bterms names bnames stack bvars =
+      List.map (build_contractum_bterm names bnames stack bvars)
+
+   and build_contractum_sequent_hyps names bnames stack bvars parts hyps =
+      match hyps with
+         [] ->
+            bnames, bvars, SeqHyp.collect (List.rev parts)
+       | hyp :: hyps ->
+            match hyp with
+               RWSeqContextSubst (j, terms) ->
+                  begin
+#ifdef VERBOSE_EXN
+                     if !debug_rewrite then
+                        eprintf "-RWSeqContextSubst (%d)%t" j eflush;
+#endif
+                     match stack.(j) with
+                        StackSeqContext(vars, hyps') ->
+                           let terms =
+                              List.map (build_contractum_term names bnames stack bvars) terms
+                           in
+#ifdef VERBOSE_EXN
+                           let _ =
+                              if !debug_rewrite then
+                                 eprintf "+RWSeqContextSubst (%d%a)%t" j print_term_list terms eflush
+                           in
+#endif
+                           let i, len, hyps' = hyp_subst hyps' terms vars in
+                           let part = Array_util.ArrayArray (hyps', i, len) in
+                              build_contractum_sequent_hyps names bnames stack bvars (part :: parts) hyps
+                      | _ ->
+                           ref_raise(RefineError
+                                     ("build_contractum_sequent_hyps",
+                                      RewriteStringError "stack entry is not valid"))
+                  end
+             | RWSeqHyp (v, hyp) ->
+#ifdef VERBOSE_EXN
+                  if !debug_rewrite then
+                     eprintf "RWSeqHyp: (%a)%t" print_varname v eflush;
+#endif
+                  let v = build_bname names bnames stack v in
+                  let bnames = [v] :: bnames in
+                  let bvars = append_vars bvars [v] in
+                  let hyp = build_contractum_term names bnames stack bvars hyp in
+                  let part = Array_util.ArrayElement (Hypothesis (v, hyp)) in
+                     build_contractum_sequent_hyps names bnames stack bvars (part :: parts) hyps
+             | RWSeqContext _ ->
+                  ref_raise(RefineError ("build_contractum_sequent_hyps", StringError "found a sequent context"))
+
+   let build_contractum names bnames stack =
+      build_contractum_term names bnames stack [||]
+
+   (*
+    * Compute names for the new variables in the contractum.
+    * The arguments are the variables we want to avoid.
+    *
+    * This is a pretty slow function but it is not used
+    * often.
+    *)
+   let contracta_enames vars bnames enames =
+      let var_name vars bnames v =
+         let rec check_bnames v = function
+            bnames :: tl ->
+               if List.mem v bnames then
+                  true
+               else
+                  check_bnames v tl
+          | [] ->
+               false
+         in
+         let check vars bnames v =
+            List.mem v vars or check_bnames v bnames
+         in
+         let rec new_var vars bnames v i =
+            let v' = v ^ string_of_int i in
+#ifdef VERBOSE_EXN
+               if !debug_rewrite then
+                  eprintf "contracta_enames: try new name %s%t" v' eflush;
+#endif
+               if check vars bnames v' then
+                  new_var vars bnames v (i + 1)
+               else
+                  v'
+         in
+            if check vars bnames v then
+               new_var vars bnames v 1
+            else
+               v
+      in
+         Array.map (var_name vars bnames) enames
+end
+
+(*
+ * -*-
+ * Local Variables:
+ * Caml-master: "refiner"
+ * End:
+ * -*-
+ *)

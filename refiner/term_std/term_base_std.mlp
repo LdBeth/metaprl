@@ -75,6 +75,9 @@ struct
       let append_list = Array_util.append_list
       let to_list = Array.to_list
       let of_list = Array.of_list
+      let sub_map = Array_util.sub_map
+      let collect = Array_util.collect
+      let iter = Array.iter
    end
 
    module SeqGoal =
@@ -91,8 +94,11 @@ struct
       let append_list = Array_util.append_list
       let to_list = Array.to_list
       let of_list = Array.of_list
+      let sub_map = Array_util.sub_map
+      let collect = Array_util.collect
+      let iter = Array.iter
    end
-   
+
    (************************************************************************
     * DEBUGGING                                                            *
     ************************************************************************)

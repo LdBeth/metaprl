@@ -73,6 +73,8 @@ sig
                         with type bound_term = TermType.bound_term
                         with type address = TermAddr.address
                         with type meta_term = TermMeta.meta_term
+                        with type seq_hyps = TermType.seq_hyps
+                        with type seq_goals = TermType.seq_goals
 
    module Rewrite : RewriteSig
                     with type term = TermType.term

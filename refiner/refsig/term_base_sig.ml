@@ -2,6 +2,10 @@
  * Basic term operations.
  *)
 open Opname
+
+(*
+ * We use read-only arrays for sequents.
+ *)
 module type ROArraySig =
 sig
    type elt
@@ -16,6 +20,10 @@ sig
    val append_list : t -> elt list -> t
    val to_list : t -> elt list
    val of_list : elt list -> t
+   val iter : (elt -> unit) -> t -> unit
+
+   val sub_map : (elt -> elt) -> t -> int -> int -> t
+   val collect : (elt, t) Array_util.array_part list -> t
 end
 
 module type TermBaseSig =

@@ -116,6 +116,30 @@ struct
          free_vars_term []
 
    (*
+    * See if any of the variables are free in the terms.
+    *)
+   let is_free_var_list vars terms =
+      let rec free_vars_term vars bvars = function
+         { term_op = { op_name = opname; op_params = [Var v'] };
+           term_terms = []
+         } when Opname.eq opname var_opname ->
+            List.mem v' vars
+       | { term_terms = bterms } ->
+            free_vars_bterms vars bvars bterms
+
+      and free_vars_bterms vars bvars = function
+         { bvars = bvars'; bterm = term }::t ->
+            let first =
+               let vars = List_util.subtract vars bvars' in
+                  vars <> [] && free_vars_term vars (bvars' @ bvars) term
+            in
+               first or free_vars_bterms vars bvars t
+       | [] ->
+            false
+      in
+         List.exists (free_vars_term vars []) terms
+
+   (*
     * Similar operation on contexts.
     *)
    let rec context_vars_term cvars = function

@@ -79,6 +79,9 @@ struct
       let append_list = Array_util.append_list
       let to_list = Array.to_list
       let of_list = Array.of_list
+      let sub_map = Array_util.sub_map
+      let collect = Array_util.collect
+      let iter = Array.iter
    end
 
    module SeqGoal =
@@ -95,8 +98,11 @@ struct
       let append_list = Array_util.append_list
       let to_list = Array.to_list
       let of_list = Array.of_list
+      let sub_map = Array_util.sub_map
+      let collect = Array_util.collect
+      let iter = Array.iter
    end
-   
+
    (************************************************************************
     * DEBUGGING                                                            *
     ************************************************************************)
@@ -182,7 +188,7 @@ struct
       raise (Invalid_argument ("Term_ds." ^ s ^ ": get_core returned a Subst"))
 
    let rec subst_remove v = function
-      [] -> [] 
+      [] -> []
     | ((v',t)::tl) as sub ->
          if (v = v') then subst_remove v tl
          else let rem = subst_remove v tl in
@@ -208,7 +214,7 @@ struct
                      let new_goals = Array.copy goals in
                      let hlen = Array.length hyps in
                      let rec do_hyps_subst sub i =
-                        if i = hlen then 
+                        if i = hlen then
                            let glen = Array.length goals in
                            let rec do_goals_subst i =
                               if i = glen then
@@ -218,13 +224,13 @@ struct
                               else begin
                                  new_goals.(i) <- do_term_subst sub goals.(i);
                                  do_goals_subst (succ i)
-                              end 
+                              end
                            in do_goals_subst 0
                         else (match hyps.(i) with
                            Hypothesis (v,t) ->
                               new_hyps.(i) <- Hypothesis (v,do_term_subst sub t);
-                              do_hyps_subst (subst_remove v sub) (succ i) 
-                         | Context (v,ts) -> 
+                              do_hyps_subst (subst_remove v sub) (succ i)
+                         | Context (v,ts) ->
                               new_hyps.(i) <- Context (v, List.map (do_term_subst sub) ts);
                               do_hyps_subst sub (succ i)) in
                      do_hyps_subst sub 0
@@ -246,17 +252,17 @@ struct
    let make_term = function
       { term_op = { op_name = opname; op_params = [Var v] };
         term_terms = []
-      } when Opname.eq opname var_opname -> 
+      } when Opname.eq opname var_opname ->
          mk_var_term v
     | t ->
          {free_vars = bterms_free_vars t.term_terms;
           core = Term t}
 
    let mk_term op bterms =
-      match op, bterms with 
+      match op, bterms with
          { op_name = opname; op_params = [Var v] }, [] when Opname.eq opname var_opname ->
             mk_var_term v
-       | _ -> 
+       | _ ->
             { free_vars = bterms_free_vars bterms;
               core = Term { term_op = op; term_terms = bterms }}
 
@@ -293,7 +299,7 @@ struct
    (****************************************************
     * Sequent "ugly" forms - remove when not necessary *
     ****************************************************)
-   
+
    let hyp_opname = mk_opname "hyp" xperv
    let concl_opname = mk_opname "concl" xperv
 
@@ -301,13 +307,13 @@ struct
       { term_op = { op_name = sequent_opname; op_params = [] };
         term_terms = [mk_simple_bterm args; mk_simple_bterm goal] }
 
-   let null_concl = 
+   let null_concl =
       { free_vars = StringSet.empty;
         core = Term { term_op = { op_name = concl_opname; op_params = [] }; term_terms = [] }}
 
    let mk_concl_term t1 t2 =
       { free_vars = StringSet.union t1.free_vars t2.free_vars;
-        core = Term 
+        core = Term
          { term_op = { op_name = concl_opname; op_params = [] };
            term_terms = [mk_simple_bterm t1; mk_simple_bterm t2] }}
 
@@ -316,7 +322,7 @@ struct
       { free_vars = StringSet.union t1.free_vars fv2;
         core = Term
          { term_op = { op_name = hyp_opname; op_params = [] };
-           term_terms = 
+           term_terms =
             [ mk_simple_bterm t1;
               { bfree_vars = fv2;
                 bcore = BTerm
@@ -339,11 +345,11 @@ struct
                mk_context_term v (mk_sequent_inner_term hyps goals (i + 1) len) subterms
 
    (* End of sequent "ugly" forms *)
-   
-   let dest_term t = 
+
+   let dest_term t =
       match get_core t with
          Term t -> t
-       | Sequent 
+       | Sequent
             { sequent_args = args;
               sequent_hyps = hyps;
               sequent_goals = goals
@@ -434,7 +440,7 @@ struct
       [] -> StringSet.empty
     | [t] -> t.free_vars
     | t::tl -> StringSet.union (terms_free_vars tl) t.free_vars
-   
+
    let rec hyp_fv hyps i fvs =
       if i < 0 then fvs else
       hyp_fv hyps (pred i) (
@@ -443,14 +449,14 @@ struct
             StringSet.union t.free_vars (StringSet.remove v fvs)
        | Context (v,subterms) ->
             StringSet.union fvs (terms_free_vars subterms))
-            
+
    let mk_sequent_term seq =
-      { free_vars = 
-         StringSet.union 
-            seq.sequent_args.free_vars 
-            (hyp_fv 
-               seq.sequent_hyps 
-               (SeqHyp.length seq.sequent_hyps - 1) 
+      { free_vars =
+         StringSet.union
+            seq.sequent_args.free_vars
+            (hyp_fv
+               seq.sequent_hyps
+               (SeqHyp.length seq.sequent_hyps - 1)
                (goal_fv seq.sequent_goals (SeqGoal.length seq.sequent_goals - 1)));
         core = Sequent seq }
 
@@ -539,7 +545,7 @@ struct
     * See if a term is a variable.
     *)
 
-   let is_var_term t = 
+   let is_var_term t =
       match get_core t with
          Term { term_op = { op_name = opname; op_params = [Var _] };
                 term_terms = [] } when Opname.eq opname var_opname ->
@@ -579,8 +585,8 @@ struct
    let mk_so_var_term v terms =
       let bterms = List.map mk_simple_bterm terms in
       { free_vars = bterms_free_vars bterms;
-        core = Term 
-         { term_op = { op_name = var_opname; op_params = [Var(v)] }; 
+        core = Term
+         { term_op = { op_name = var_opname; op_params = [Var(v)] };
            term_terms = bterms }}
 
    (*

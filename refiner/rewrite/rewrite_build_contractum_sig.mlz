@@ -1,0 +1,28 @@
+(*
+ * Build the contractum after a match.
+ *)
+
+module type RewriteBuildContractumSig =
+sig
+   type term
+   type stack
+   type rwterm
+
+   (*
+    * New names for the contractum.
+    *)
+   val contracta_enames : string list -> string list list -> string array -> string array
+
+   (*
+    * Main function to build the contractum.
+    *)
+   val build_contractum : string array -> string list list -> stack array -> rwterm -> term
+end
+
+(*
+ * -*-
+ * Local Variables:
+ * Caml-master: "refiner"
+ * End:
+ * -*-
+ *)

@@ -34,6 +34,7 @@ sig
     * Get the list of free variables.
     *)
    val is_free_var : string -> term -> bool
+   val is_free_var_list : string list -> term list -> bool
    val free_vars : term -> string list
    val free_vars_terms : term list -> string list
    val context_vars : term -> string list

@@ -12,6 +12,7 @@ DIRS :=\
 	term_gen\
 	term_std\
 	term_ds\
+	rewrite\
 	refiner\
 	reflib
 

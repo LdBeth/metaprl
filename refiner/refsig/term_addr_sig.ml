@@ -22,6 +22,12 @@ sig
    val nth_tl_address : int -> address
 
    (*
+    * The rewriter also needs a way to get a term count from an address.
+    * This function only works on sequent addresses.
+    *)
+   val depth_of_address : address -> int
+
+   (*
     * Destructors.
     *)
    val string_of_address : address -> string

@@ -1,0 +1,160 @@
+(*
+ * Meta operations on rewrites.
+ *)
+#include "refine_error.h"
+
+open Printf
+open Nl_debug
+open Opname
+open Term_sig
+open Term_base_sig
+open Refine_error_sig
+
+open Rewrite_type_sig
+
+module MakeRewriteMeta
+   (TermType : TermSig)
+   (Term : TermBaseSig
+    with type term = TermType.term
+    with type term' = TermType.term'
+    with type bound_term = TermType.bound_term
+    with type bound_term' = TermType.bound_term'
+    with type operator = TermType.operator
+    with type operator' = TermType.operator'
+    with type param = TermType.param
+    with type param' = TermType.param'
+    with type level_exp = TermType.level_exp
+    with type level_exp' = TermType.level_exp'
+    with type object_id = TermType.object_id)
+   (RefineError : RefineErrorSig
+    with type level_exp = TermType.level_exp
+    with type param = TermType.param
+    with type term = TermType.term
+    with type bound_term = TermType.bound_term)
+   (RewriteTypes : RewriteTypesSig
+    with type level_exp = TermType.level_exp
+    with type object_id = TermType.object_id)
+   =
+struct
+   open TermType
+   open Term
+   open RefineError
+   open RewriteTypes
+
+   type operator = TermType.operator
+   type rewrite_rule = RewriteTypes.rewrite_rule
+
+   (*
+    * See if an operator generalizes another.
+    *)
+   let compare_params p rwp =
+      match dest_param p, rwp with
+         Number a, RWNumber b -> a = b
+       | String a, RWString b -> a = b
+       | Token a, RWToken b -> a = b
+       | Var a, RWVar b -> a = b
+       | Level a, RWLevel b -> a = b
+       | MNumber a, RWNumber b -> true
+       | MNumber a, RWMNumber b -> true
+       | MString a, RWString b -> true
+       | MString a, RWMString b -> true
+       | MToken a, RWToken b -> true
+       | MToken a, RWMToken b -> true
+       | MLevel a, RWLevel b -> true
+       | MLevel a, RWMLevel b -> true
+       | MVar a, RWVar b -> true
+       | MVar a, RWMVar b -> true
+       | _ -> false
+
+   let compare_param_lists = List_util.for_all2 compare_params
+
+   let relevant_operator op rw =
+      match dest_op op, rw with
+         { op_name = name1; op_params = params1 },
+         { rw_name = name2; rw_params = params2 } ->
+            name1 = name2 & compare_param_lists params1 params2
+
+   (*
+    * See if the bterms can be described by these arities.
+    *)
+   let rec relevant_bterms = function
+      arity::arities, { rw_bvars = vars }::t ->
+         if vars = arity then
+            relevant_bterms (arities, t)
+         else
+            false
+    | [], [] -> true
+    | _ -> false
+
+   (*
+    * See if a rule is relevant to a term description.
+    *)
+   let relevant_rule op1 arities = function
+      { rr_redex = (RWComposite { rw_op = op2; rw_bterms = bterms })::_ } ->
+         if relevant_operator op1 op2 then
+            relevant_bterms (arities, bterms)
+         else
+            false
+     | _ -> false
+
+   (*
+    * Get the operator of a rewrite rule.
+    *)
+   let rec convert_param' = function
+      RWNumber i -> Number(i)
+    | RWString s -> String s
+    | RWToken t -> Token t
+    | RWLevel i -> Level i
+    | RWVar v -> Var v
+    | RWMNumber i -> MNumber ("v" ^ (string_of_int i))
+    | RWMString i -> MString ("v" ^ (string_of_int i))
+    | RWMToken i -> MToken ("v" ^ (string_of_int i))
+    | RWMLevel i -> MLevel ("v" ^ (string_of_int i))
+    | RWMVar i -> MVar ("v" ^ (string_of_int i))
+    | RWSum (i, j) -> MSum (convert_param i, convert_param j)
+    | RWDiff (i, j) -> MDiff (convert_param i, convert_param j)
+    | RWProduct (i, j) -> MProduct (convert_param i, convert_param j)
+    | RWQuotient (i, j) -> MQuotient (convert_param i, convert_param j)
+    | RWRem (i, j) -> MRem (convert_param i, convert_param j)
+    | RWLessThan (i, j) -> MLessThan (convert_param i, convert_param j)
+    | RWEqual (i, j) -> MEqual (convert_param i, convert_param j)
+    | RWNotEqual (i, j) -> MNotEqual (convert_param i, convert_param j)
+    | RWObId id -> ObId id
+    | RWParamList l -> ParamList (List.map convert_param l)
+   and convert_param p =
+      make_param (convert_param' p)
+
+   let rewrite_operator = function
+      { rr_redex = (RWComposite { rw_op = { rw_name = name; rw_params = params } })::_ } ->
+           mk_op name (List.map convert_param params)
+    | _ ->
+         ref_raise(RefineError ("rewrite_operator", RewriteNoRuleOperator))
+
+   (*
+    * Get the arities of the subterms.
+    *)
+   let bterm_eval_flags = function
+      { rw_bvars = bvars; rw_bterm = bterm } ->
+         bvars, (if bvars = 0 then
+                     match bterm with
+                        RWSOVar _ ->
+                           true
+                      | _ ->
+                           false
+                  else
+                     false)
+
+   let rewrite_eval_flags = function
+      { rr_redex = (RWComposite { rw_bterms = bterms })::_ } ->
+         List.map bterm_eval_flags bterms
+    | _ ->
+         ref_raise(RefineError ("rewrite_eval_flags", RewriteNoRuleOperator))
+end
+
+(*
+ * -*-
+ * Local Variables:
+ * Caml-master: "refiner"
+ * End:
+ * -*-
+ *)

@@ -7,6 +7,7 @@ open Printf
 open Nl_debug
 
 open Refiner.Refiner
+open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermAddr
 open Refiner.Refiner.TermMeta
@@ -68,6 +69,26 @@ let rec format_strings buf = function
       ()
 
 (*
+ * Format a hypothesis.
+ *)
+let format_hypothesis db buf printers = function
+   Context (v, subterms) ->
+      format_string buf "Context(";
+      format_string buf v;
+      List.iter (fun t ->
+            format_string buf ", ";
+            printers.format_term db buf t;
+            format_newline buf) subterms;
+      format_string buf ")"
+
+ | Hypothesis (v, term) ->
+      format_string buf "Hypothesis(";
+      format_string buf v;
+      format_string buf ", ";
+      printers.format_term db buf term;
+      format_string buf ")"
+
+(*
  * Match type in the rewriter.
  *)
 let format_match_type db buf printers = function
@@ -87,6 +108,16 @@ let format_match_type db buf printers = function
       format_string buf "BTermMatch:";
       format_space buf;
       printers.format_bterm db buf bt
+ | HypMatch hyps ->
+      format_string buf "HypMatch:";
+      format_newline buf;
+      SeqHyp.iter (format_hypothesis db buf printers) hyps
+ | GoalMatch goals ->
+      format_string buf "GoalMatch:";
+      SeqGoal.iter (fun t ->
+            format_string buf ", ";
+            printers.format_term db buf t) goals;
+      format_string buf ")"
 
 (*
  * Print a refinement error.

@@ -1,5 +1,4 @@
 REFINER_PFILES :=\
-	rewrite\
 	refine
 
 REFINER_FILES :=\

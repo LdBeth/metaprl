@@ -18,6 +18,8 @@ with type term = TermType.term
 with type bound_term = TermType.bound_term
 with type meta_term = TermType.meta_term
 with type address = AddressType.t
+with type seq_hyps = TermType.seq_hyps
+with type seq_goals = TermType.seq_goals
 
 (*
  * -*-

@@ -1,20 +1,16 @@
 (*
- * This module specifies rewrite rules, which require second
- * order variables.  Each rule has a "redex" and a "contractum",
- * although rewrites can be performed in either direction.
- *
+ * Utilities used in the rewriter.
  *)
 
+open Opname
 open Term_sig
 open Term_base_sig
-open Term_man_sig
-open Term_addr_sig
-open Term_subst_sig
-open Term_meta_sig
 open Refine_error_sig
-open Rewrite_sig
 
-module Rewrite (**)
+open Rewrite_type_sig
+open Rewrite_util_sig
+
+module MakeRewriteUtil
    (TermType : TermSig)
    (Term : TermBaseSig
     with type term = TermType.term
@@ -28,28 +24,20 @@ module Rewrite (**)
     with type level_exp = TermType.level_exp
     with type level_exp' = TermType.level_exp'
     with type object_id = TermType.object_id)
-   (TermMan : TermManSig
-    with type term = TermType.term)
-   (TermAddr : TermAddrSig
-    with type term = TermType.term)
-   (TermSubst : TermSubstSig
-    with type term = TermType.term)
    (RefineError : RefineErrorSig
     with type level_exp = TermType.level_exp
     with type param = TermType.param
     with type term = TermType.term
     with type bound_term = TermType.bound_term)
-: RewriteSig
-  with type term = TermType.term
-  with type level_exp = TermType.level_exp
-  with type operator = TermType.operator
-  with type address = TermAddr.address
+   (RewriteTypes : RewriteTypesSig) :
+   RewriteUtilSig
+   with type term = TermType.term
+   with type rstack = RewriteTypes.rstack
 
 (*
  * -*-
  * Local Variables:
- * Caml-master: "refiner.run"
+ * Caml-master: "refiner"
  * End:
  * -*-
  *)
-

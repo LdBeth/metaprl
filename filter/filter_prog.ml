@@ -441,7 +441,7 @@ let params_ctyp loc ctyp params =
          let arg_type =
             match h with
                ContextParam _ ->
-                  <:ctyp< $lid:"int"$ >>
+                  <:ctyp< $lid:"Refiner"$ . $uid:"Refiner"$ . $uid:"TermAddr"$ . $lid:"address"$ >>
              | VarParam _ ->
                   <:ctyp< $lid:"string"$ >>
              | TermParam _ ->

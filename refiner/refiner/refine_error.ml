@@ -21,6 +21,8 @@ struct
    type bound_term = TermType.bound_term
    type meta_term = TermType.meta_term
    type address = AddressType.t
+   type seq_hyps = TermType.seq_hyps
+   type seq_goals = TermType.seq_goals
 
    (*
     * Match errors in the rewriter.
@@ -30,6 +32,8 @@ struct
     | VarMatch of string
     | TermMatch of term
     | BTermMatch of bound_term
+    | HypMatch of seq_hyps
+    | GoalMatch of seq_goals
 
    (*
     * We declare the general exception type for all the

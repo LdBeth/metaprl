@@ -13,6 +13,13 @@ let _ =
       eprintf "Loading Array_util%t" eflush
 
 (*
+ * Parts for collecting arrays.
+ *)
+type ('a, 'b) array_part =
+   ArrayElement of 'a
+ | ArrayArray of 'b * int * int
+
+(*
  * Membership in an array.
  *)
 let mem i v =
@@ -99,11 +106,11 @@ let replace a i j = function
       else raise (Invalid_argument "Array_util.replace")
  | hd :: tl ->
       let l = Array.length a in
-      let ij = i + j in 
-      if i>=0 && j>0 && ij<=l then 
+      let ij = i + j in
+      if i>=0 && j>0 && ij<=l then
          let dl = List.length tl - j +1 in
          let res = Array.create (l+dl) hd in
-         for k=0 to (pred i) do 
+         for k=0 to (pred i) do
             Array.unsafe_set res k (Array.unsafe_get a k)
          done;
          for k=ij to (pred l) do
@@ -116,6 +123,86 @@ let replace a i j = function
                aux (succ k) tl
          in aux (succ i) tl
       else raise (Invalid_argument "Array_util.replace")
+
+(*
+ * Map over a subarray.
+ *)
+let sub_map f a i len =
+   if i < 0 || len < 0 || i + len > Array.length a then
+      raise (Invalid_argument "sub_map")
+   else
+      match len with
+         0 ->
+            [||]
+       | 1 ->
+            [| f (Array.unsafe_get a i) |]
+       | len ->
+            let a' = Array.create len (f (Array.unsafe_get a i)) in
+               for j = 1 to len - 1 do
+                  Array.unsafe_set a' j (f (Array.unsafe_get a (i + j)))
+               done;
+               a'
+
+(*
+ * Compute the total length of the parts.
+ * As a side-effect, we raise an exception if
+ * any of the subarrays are ill-defined.
+ *)
+let rec parts_length len = function
+   [] ->
+      len
+ | part :: parts ->
+      match part with
+         ArrayElement _ ->
+            parts_length (len + 1) parts
+       | ArrayArray (a, i, len') ->
+            if i < 0 || len' < 0 || i + len' > Array.length a then
+               raise (Invalid_argument "Array.collect")
+            else
+               parts_length (len + len') parts
+
+(*
+ * Add the parts to the array.
+ * We are guaranteed that the arrays will be in bounds.
+ *)
+let rec collect_append a off = function
+   [] ->
+      a
+ | part :: parts ->
+      match part with
+         ArrayElement x ->
+            Array.unsafe_set a off x;
+            collect_append a (off + 1) parts
+       | ArrayArray (a', i, len) ->
+            if len <> 0 then
+               Array.blit a' i a off len;
+            collect_append a (off + len) parts
+
+(*
+ * Collect function works in two parts.
+ * The first part creates the initial array,
+ * and the second part adds to it.
+ *)
+let rec collect = function
+   [] ->
+      [||]
+ | part :: parts ->
+      match part with
+         ArrayElement x ->
+            let len = parts_length 1 parts in
+            let a' = Array.create len x in
+               collect_append a' 1 parts
+
+       | ArrayArray (a, i, len) ->
+            match len with
+               0 ->
+                  collect parts
+             | len ->
+                  let len' = parts_length len parts in
+                  let a' = Array.create len' a.(i) in
+                     if len > 1 then
+                        Array.blit a (i + 1) a' 1 (len - 1);
+                     collect_append a' len parts
 
 (*
  * -*-

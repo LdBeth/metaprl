@@ -273,6 +273,12 @@ let rec intersectq l = function
          intersectq l t
  | [] -> []
 
+let rec intersects l = function
+   h :: t ->
+      List.mem h l or intersects l t
+ | [] ->
+      false
+
 (*
  * Subtract an element from a list.
  * Quadratic algorithm.

@@ -400,9 +400,11 @@ struct
    (*
     * Find the address of the hyp.
     * We just check to make sure the address is valid.
+    * Hyps are numbered from 1.
     *)
    let nth_hyp_addr_name = "nth_hyp_addr"
    let nth_hyp_addr t n =
+      let n = pred n in
       let addr = nth_hd_address n in
       let rec skip_hyps i term =
          let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
@@ -427,11 +429,13 @@ struct
     * Find the address of the conclusion.
     * This is the address of the concl term whose car is the desired conclusion
     * not the conclusion itself.
+    *
+    * Conclusions are numbered from 1.
     *)
    let nth_concl_addr_name = "nth_concl_addr"
    let nth_concl_addr t n =
       let rec skip_concl i n term =
-         if n = 0 then
+         if n <= 1 then
             nth_tl_address i
          else
             match dest_term term with
@@ -483,7 +487,7 @@ struct
             else
                ref_raise(RefineError (nth_clause_addr_name, TermMatchError (t, "malformed sequent")))
       in
-         aux 1 (goal_of_sequent t)
+         aux 0 (goal_of_sequent t)
 
    let make_nth_clause_addr nth_address count i =
       if i < 0 then
@@ -496,22 +500,16 @@ struct
    let nth_clause_addr t i =
       nth_clause_addr_aux (fun count -> make_nth_clause_addr nth_hd_address count i) t
 
-   let nth_clause_addrs t il =
-#ifdef VERBOSE_EXN
-      if !debug_address then
-         begin
-            eprintf "Nth_clause_addrs:";
-            Array.iter (fun count -> eprintf " %d" count) il;
-            eflush stderr
-         end;
-#endif
-(*
- * jyh: I had assumed that we could push negative addressing
- * down into the address module, but it turns out to be pretty hard because
- * addresses are relative.
-      nth_clause_addr_aux (fun count -> Array.map (make_nth_clause_addr false count) il) t
- *)
-      Array.map (fun i -> nth_tl_address i) il
+   (*
+    * Range functions for contexts in the sequent.
+    * We don't check the values because we don't know
+    * the position within the sequent.
+    *)
+   let hyp_range_addr t i =
+      nth_tl_address i
+
+   let concl_range_addr t i =
+      nth_tl_address i
 
    (*
     * Fast access to hyp and concl.
@@ -533,11 +531,11 @@ struct
                   else
                      aux (i - 1) term
             else if Opname.eq opname concl_opname then
-               raise Not_found
+               ref_raise(RefineError ("nth_hyp", StringError "hyp is out of range"))
             else
                ref_raise(RefineError (nth_hyp_name, TermMatchError (t, "malformed sequent")))
       in
-         aux i (goal_of_sequent t)
+         aux (pred i) (goal_of_sequent t)
 
    let nth_concl_name = "nth_concl"
    let nth_concl t i =
@@ -558,7 +556,7 @@ struct
             else
                ref_raise(RefineError (nth_concl_name, TermMatchError (t, "malformed sequent")))
       in
-         aux i (goal_of_sequent t)
+         aux (pred i) (goal_of_sequent t)
 
    (*
     * Count the hyps.

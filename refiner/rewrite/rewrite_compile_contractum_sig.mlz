@@ -1,0 +1,21 @@
+(*
+ * Compile the contractum against a redex.
+ *)
+
+module type RewriteCompileContractumSig =
+sig
+   type term
+   type rstack
+   type rwterm
+
+   val compile_so_contractum : string array -> rstack array -> term -> string array * rwterm
+   val compile_so_contracta : string array -> rstack array -> term list -> string array * rwterm list
+end
+
+(*
+ * -*-
+ * Local Variables:
+ * Caml-master: "refiner"
+ * End:
+ * -*-
+ *)

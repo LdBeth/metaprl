@@ -29,6 +29,8 @@ sig
     *)
    type meta_term
    type address
+   type seq_hyps
+   type seq_goals
 
    (*
     * Match errors in the rewriter.
@@ -38,6 +40,8 @@ sig
     | VarMatch of string
     | TermMatch of term
     | BTermMatch of bound_term
+    | HypMatch of seq_hyps
+    | GoalMatch of seq_goals
 
    (*
     * We declare the general exception type for all the

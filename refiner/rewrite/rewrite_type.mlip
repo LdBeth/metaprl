@@ -1,0 +1,28 @@
+(*
+ * Types used in the rewriter.
+ *)
+
+open Opname
+open Term_sig
+open Term_addr_sig
+
+open Rewrite_type_sig
+
+module MakeRewriteTypes
+   (TermType : TermSig)
+   (TermAddr : TermAddrSig
+    with type term = TermType.term)
+: RewriteTypesSig
+  with type level_exp = TermType.level_exp
+  with type object_id = TermType.object_id
+  with type term = TermType.term
+  with type address = TermAddr.address
+  with type seq_hyps = TermType.seq_hyps
+
+(*
+ * -*-
+ * Local Variables:
+ * Caml-master: "refiner"
+ * End:
+ * -*-
+ *)
