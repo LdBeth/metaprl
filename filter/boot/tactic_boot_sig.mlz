@@ -1063,6 +1063,8 @@ sig
     *)
    val funC : (env -> conv) -> conv
 
+   val termC : (term -> conv) -> conv
+
    (*
     * Apply a conversion at an address.
     *)
@@ -1142,6 +1144,7 @@ sig
    val makeFoldC : term -> conv -> conv
    val cutC : term -> conv
    val funC : (env -> conv) -> conv
+   val termC : (term -> conv) -> conv
 
    (************************************************************************
     * SEARCH                                                               *

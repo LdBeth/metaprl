@@ -170,6 +170,8 @@ struct
    let funC f =
       FunConv f
 
+   let termC f = funC (fun e -> (f (env_term e)))
+
    (*
     * Apply the conversion at the specified address.
     *)

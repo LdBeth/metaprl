@@ -90,6 +90,7 @@ struct
    let makeFoldC = RewriteInternal.makeFoldC
    let cutC = RewriteInternal.cutC
    let funC = RewriteInternal.funC
+   let termC = RewriteInternal.termC
 
    (************************************************************************
     * SEARCH                                                               *
