@@ -34,7 +34,7 @@
  *    TokQuote ("", text):   << text >>
  *    TokQuote (tag, text):  <:tag< text >>
  *
- * TokName:		     @opname
+ * TokName:        	     @opname
  * TokString s:              any sequence of non-whitespace, non-special chars
  * TokQString s:             any text between double-quotes
  * TokMath s:                any literal text between $
@@ -68,8 +68,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.caltech.edu
+ * Author: Jason Hickey <jyh@cs.caltech.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 {
@@ -227,7 +227,7 @@ exception Parse_error of string * int * int
 
 let parse_error_buf s lexbuf =
    let loc1 = Lexing.lexeme_start lexbuf in
-   let loc2 = Lexing.lexeme_start lexbuf in
+   let loc2 = Lexing.lexeme_end lexbuf in
       raise (Parse_error (s, loc1, loc2))
 
 let parse_error s buf =
@@ -458,7 +458,7 @@ let rec parse_block term mode items buf =
          ItemItem item ->
             parse_block term mode (item :: items) buf
        | ItemSpecial '_' ->
-   	    parse_math_script term mode "math_subscript" items buf
+               parse_math_script term mode "math_subscript" items buf
        | ItemSpecial '^' ->
             parse_math_script term mode "math_superscript" items buf
        | ItemMath flag ->
@@ -514,7 +514,7 @@ and parse_item mode buf =
                let _, items = parse_block [TermMath flag] ModeMath [] buf in
                   ItemItem (Term ([opname], [], [items]))
        | TokName s ->
-	    parse_term mode s buf
+            parse_term mode s buf
        | TokQuote (tag, next) ->
             ItemItem (Quote (tag, next))
        | TokQString s ->
@@ -527,10 +527,10 @@ and parse_item mode buf =
        | TokRightBrace ->
             ItemBrace
        | TokSpecial c ->
-	    if is_special mode c then
+            if is_special mode c then
                ItemSpecial c
             else
-	       ItemItem (String (String.make 1 c))
+               ItemItem (String (String.make 1 c))
        | TokEof ->
             ItemEof
 
@@ -550,7 +550,7 @@ and parse_white is_nl_flag buf =
                parse_white (is_nl_flag || is_nl_flag') buf
        | _ ->
             push_back token buf;
-	    White
+            White
 
 (*
  * Adjacent strings are concatenated.
@@ -601,12 +601,16 @@ and parse_term mode s buf =
    let params = parse_params mode false buf in
       if opname = ["code"] || opname = ["email"] then
          let s = parse_code_arg buf in
-	    ItemItem (Term (opname, [s], []))
+            ItemItem (Term (opname, [s], []))
       else
-         let args = parse_args mode false buf in
-         let args =
+         let args = 
+            if opname = ["mbox"] || opname = ["hbox"] then
+               parse_args ModeNormal false buf
+            else
+               parse_args mode false buf
+         in let args =
             if args = [[]] then
-	       []
+               []
             else
                args
          in
