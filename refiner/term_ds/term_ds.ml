@@ -247,29 +247,34 @@ struct
          BTerm tt -> tt
        | BSubst (tt,sub) -> 
             let ttt = dest_bterm tt in
+            let btrm = ttt.bterm in
             let t4 =
                match ttt.bvars with
                   [] -> 
                      { bvars = []; 
                        bterm = 
                         { free_vars = bt.bfree_vars;
-                          core = Subst (ttt.bterm,sub) }}
+                          core = Subst (btrm,sub) }}
                 | bvrs -> 
                      let sub_fvars = subst_free_vars sub in
                      let capt_vars = List_util.filter (function v -> StringSet.mem v sub_fvars) bvrs in
                      match capt_vars with
-               (*
-                * Unefficiency : in [] case do_term_subst will go collecting
-                * free variables of sub to get the
-                * list of free variables of bterm, but it may be more efficient to take
-                * union of bt.free_vars and (bvrs intersect ttt.bterm.free_vars)
-                *
-                * Similar inefficiency in the "captured" case.
-                *)
-                        [] -> { bvars = bvrs; bterm = do_term_subst sub ttt.bterm }
-                      | captured -> 
-                           let avoidvars = StringSet.union sub_fvars ttt.bterm.free_vars in
-                           let (vs,ts) = new_vars avoidvars captured in
+                        [] -> 
+                           let rec aux = function
+                              [] -> bt.bfree_vars
+                            | v::t ->
+                               if StringSet.mem v btrm.free_vars     
+                                  then StringSet.add v (aux t)
+                                  else aux t
+                           in
+                              { bvars = bvrs; 
+                                bterm = 
+                                 { free_vars = aux bvrs;
+                                   core = Subst (btrm,sub) }}
+                      | _ -> 
+                           let avoidvars = StringSet.union sub_fvars btrm.free_vars in
+                           let (vs,ts) = new_vars avoidvars capt_vars in
+                           let new_t = do_term_subst ts btrm in
                            { bvars =
                               List.map
                                  (function v ->
@@ -277,7 +282,14 @@ struct
                                     with Not_found -> v)
                                  bvrs;
                               bterm =
-                              do_term_subst sub (do_term_subst ts ttt.bterm)}
+                                 { free_vars =
+                                    StringSet.union
+                                       (List.fold_right
+                                          StringSet.remove
+                                          (List_util.fst_split sub)
+                                          new_t.free_vars)
+                                       sub_fvars;
+                                   core = Subst (new_t,sub) }}
             in
                bt.bcore <- BTerm t4;
                t4
