@@ -33,7 +33,7 @@ if $(equal $(OSTYPE), Win32)
       copy mk\config.win32 mk\config
 
    .INCLUDE: mk/config.local
-      copy mk\config.local.empty mk\config.local 
+      copy mk\config.local.empty mk\config.local
 
    #
    # No native-code version of camlp4 on windows
@@ -77,6 +77,41 @@ else
    CC = $(CCC)
    CFLAGS =
    export
+
+#
+# Check the configuration
+#
+if $(not $(file-exists $(CAMLLIB)/parsetree.cmi))
+   eprint(!!! The file $(CAMLLIB)/parsetree.cmi does not exist \(or is not readable\))
+   eprint(!!! Please consult doc/htmlman/mp-install.html \(http://metaprl.org/install.html\))
+   eprint(!!! for instructions on compiling OCaml and setting the CAMLLIB variable)
+   exit(1)
+
+if $(BYTE_ENABLED)
+   if $(not $(file-exists $(CAMLP4LIB)/camlp4.cma))
+      eprint(!!! The file $(CAMLP4LIB)/camlp4.cma does not exist \(or is not readable\))
+      eprint(!!! Please consult doc/htmlman/mp-install.html \(http://metaprl.org/install.html\))
+      eprint(!!! for instructions on compiling OCaml and setting the CAMLP4LIB variable)
+      exit(1)
+
+if $(NATIVE_ENABLED)
+   if $(not $(file-exists $(CAMLP4LIB)/camlp4.cmxa))
+      eprint(!!! The file $(CAMLP4LIB)/camlp4.cmxa does not exist \(or is not readable\))
+      eprint(!!! Please consult doc/htmlman/mp-install.html \(http://metaprl.org/install.html\))
+      eprint(!!! for instructions on compiling OCaml and setting the CAMLP4LIB variable)
+      exit(1)
+
+if $(not $(or $(equal $(TERMS), ds), $(equal $(TERMS), std)))
+   eprint(ERROR: the TERMS variable is currently set to an invalid value "$(TERMS)"\, please fix it in the mk/config file)
+   exit(1)
+
+if $(not $(or $(equal $(REFINER), SIMPLE), $(equal $(REFINER), VERBOSE)))
+   eprint(ERROR: the REFINER variable is currently set to an invalid value "$(REFINER)"\, please fix it in the mk/config file)
+   exit(1)
+
+if $(not $(or $(equal $(SEQ_SET), Lm_array), $(equal $(SEQ_SET), Lm_splay)))
+   eprint(ERROR: the SEQ_SET variable is currently set to an invalid value "$(SEQ_SET)"\, please fix it in the mk/config file)
+   exit(1)
 
 #
 # Library suffix
@@ -142,7 +177,7 @@ if $(not $(equal $(OSTYPE), Win32))
 #
 # Directories needing only the standard config
 #
-.SUBDIRS: clib util 
+.SUBDIRS: clib util
 
 ########################################################################
 # Generic directories with no special options
