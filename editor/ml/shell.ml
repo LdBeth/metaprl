@@ -176,8 +176,8 @@ struct
    let set_db info mode =
       info.df_mode <- mode
 
-   let set_tex info =
-      info.df_mode <- "tex"
+   let set_dfmode mode info =
+      info.df_mode <- mode
 
    (*
     * Create a new sub-shell.
@@ -1164,7 +1164,7 @@ struct
        "fg",               IntFunExpr      (fun i ->  StringExpr (fg info i));
        "cd",               StringFunExpr   (fun s  -> StringExpr (cd info s));
        "pwd",              UnitFunExpr     (fun () -> StringExpr (pwd info));
-       "set_tex",          UnitFunExpr     (fun () -> UnitExpr (set_tex info));
+       "set_dfmode",       StringFunExpr   (fun s ->  UnitExpr (set_dfmode s info));
        "set_window_width", IntFunExpr      (fun i  -> UnitExpr (set_window_width info i));
        "load",             StringFunExpr   (fun s  -> UnitExpr (fake_load info s));
        "create_pkg",       StringFunExpr   (fun s  -> UnitExpr (create_pkg info s));

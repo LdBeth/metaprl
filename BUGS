@@ -55,6 +55,11 @@ before it has a chance to overflow the stack.
 
 REWRITER
 
+(We are currently in the process of rethinking how exactly we want to do rewriting.
+Because of that we stopped doing anything in the middle of reimplementations that left
+some cases working incorrectly. This resulted in several bugs that we should be able
+to fix pretty quickly if somebody would want us to).
+
 3.1) If a variable is bound in a context, rewriter may handle it incorrectly.
 
 3.2) If the same variable is bound several times in redex or contractum specification, rewriter
