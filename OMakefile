@@ -1,7 +1,7 @@
 #
 # Make sure omake is up-to-date
 #
-OMakeVersion(0.7.1)
+OMakeVersion(0.7.2)
 
 #
 # Override the root directory
@@ -223,7 +223,7 @@ OCAMLDEP = $(file bin/ocamldep$(EXE))
 .SCANNER: %.cmi: %.mli $(OCAMLDEP)
     $(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLINCLUDES) $(set $(replacesuffixes .cmi .cmo .cmx, .mli .ml .ml, $^))
 
-.SCANNER: %.cmo %.cmx: %.ml $(OCAMLDEP)
+.SCANNER: %.cmo %.cmx: %.ml $(squashed-dependencies %.mli) $(OCAMLDEP)
     $(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLINCLUDES) $(set $(replacesuffixes .cmi .cmo .cmx, .mli .ml .ml, $^))
 
 #
