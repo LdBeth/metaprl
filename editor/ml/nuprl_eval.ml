@@ -27,25 +27,23 @@
  *)
 
 (*
- * This implements a filesystem interface to the library.
+ * This implements a filesystem interface to the Nuprl library.
  *)
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Refine
 open Basic
-
 open Utils
 open Library
 open Nuprl5
-
 open Printf
 open Mp_debug
 open Mp_num
-
 open Shell_sig
 
 module Shell = Shell.Shell (Shell_mp.ShellP4 (Shell_state.ShellState))
+
 open Shell
 
 module Nuprl = struct
@@ -57,7 +55,7 @@ module Nuprl = struct
   let _ = show_loading "Loading Library_eval%t"
 
   let library = null_oref()
-  let connection = null_oref()
+  let connection = null_oref ()
 
   let library_close () =
     if oref_p library then
@@ -67,13 +65,12 @@ module Nuprl = struct
     else raise (LibraryException "Close: No library open.")
 
   let lib_open_eval env ehook host localport remoteport =
- (* eprintf "%s %d %d %t" host localport remoteport eflush; *)
     if oref_p library then
       raise (LibraryException "Open: Library already open.")
-    else let _ = oref_set library (join_eval (oref_set connection (connect host localport remoteport))
+    else
+      let _ = oref_set library (join_eval (oref_set connection (connect host localport remoteport))
 				     [env]
 				     ehook) in
-    print_string "after join";
     at_exit library_close (* jyh: something is strange here *)
 
 (*
@@ -81,11 +78,11 @@ module Nuprl = struct
    * MetaPRL cmd syntax
    *
    * !mp_list_root{}() returns !tok_cons
-   * !mp_list_module_all{}(tok_cons) returns !cons{}(!cons(!token{thm:t}(); sequent); !cons ...
-   * !mp_list_module{}(tok_cons) returns !mp_edit{}(!cons(!token{thm:t}(); sequent); !cons ...
+   * !mp_list_module_all{}(tok_cons) returns !cons{}(!cons(!token{thm:t}(); sequent); !cons ...)
+   * !mp_list_module{}(tok_cons) returns !mp_edit{}(!cons(!token{thm:t}(); sequent); !cons ...)
    * !mp_thm_create{}(!msequent) returns !void()
    * !mp_create_set{}(!tok_cons; sequent) returns !void()
-   * !mp_set_goal{}(!tok_cons; sequent) returns !void()
+   * !mp_set_goal{}(!tok_cons; sequent) returns !void ()
    * !mp_lookup_proof{}(symaddr) returns !mp_prf(goal; tactic; children; extras) g and ex are sequent, ch are mp_prf
    * !mp_refine{}(symaddr; address; tactic) returns !mp_ref(goal; subgoals; extras) g, subs and ex are sequent terms
    * !mp_undo{}(symb) returns !mp_prf(goal; tactic; children; extras)
@@ -121,7 +118,7 @@ module Nuprl = struct
     match dest_term t with
       {term_op = op; term_terms = goal :: tac :: r } when (opeq op refiner_op)
       -> (term_of_unbound_term goal, term_of_unbound_term tac)
-    | _ -> error ["eval"; "op"; "unrecognized"] [] [t]
+    | _ -> error ["refine_args"; "op"; "unrecognized"] [] [t]
 
   let iinf_sequent_op = mk_nuprl5_op [make_param (Token "!inf_sequent"); Basic.inil_parameter]
   let iinf_sequent_term hyp term = mk_term iinf_sequent_op [(mk_bterm [] hyp); (mk_bterm [""] term)]
@@ -141,7 +138,6 @@ module Nuprl = struct
   let inatural_cons_op = (mk_nuprl5_op [make_param (Token "!natural_cons")])
   let int_list_of_term_old t =
     map_isexpr_to_list_by_op inatural_cons_op number_of_inatural_term t
-
   let ipui_addr_cons_op = mk_nuprl5_op [make_param (Token "!pui_addr_cons")]
 
   let int_list_of_term t =
@@ -154,6 +150,9 @@ module Nuprl = struct
   let imp_msequent_term a g = mk_term imp_msequent_op [(mk_bterm [] a); (mk_bterm [] g)]
   let imcons_op = (mk_nuprl5_op [make_param (Token "!mcons")])
   let ianno_arg_cons_op = (mk_nuprl5_op [make_param (Token "!anno_arg_cons")])
+
+  let mobjc_to_term mobj_list =
+    imp_msequent_term (list_to_ilist_by_op imcons_op []) ivoid_term
 
   let msequent_to_term mseq =
     let (goal, hyps) = dest_msequent mseq
@@ -191,15 +190,14 @@ module Nuprl = struct
   open List
   open List_util
 
-  let get_fl name shell=
-    let rec lp ls lf =
-      if ls = [] then lf
-    (*lal mapping is a hack, inneficient, but needed so union does not produce dups*)
-      else let el = List.map String.uncapitalize (edit_list_parents shell (hd ls)) in
-      lp (union el (tl ls)) (union el lf) in
-    lp [name] [name]
+  let get_flat_list name shell=
+    let rec f l1 l2 =
+      if l1 = [] then l2
+      else let l3 = List.map String.uncapitalize (edit_list_parents shell (hd l1)) in
+      f (union l3 (tl l1)) (union l3 l2) in
+    f [name] [name]
 
-  let idform_op = (mk_nuprl5_op [make_param (Token "!dform")])
+  let idform_op = mk_nuprl5_op [make_param (Token "!dform")]
   let idform_term attr lhs rhs =
     mk_term idform_op [mk_bterm [] attr; mk_bterm [] lhs; mk_bterm [] rhs]
 
@@ -234,24 +232,23 @@ module Nuprl = struct
 		 ("term_to_msequent", (Refiner.Refiner.RefineError.TermMatchError
 					 (t, "malformed metasequent"))))
 
-
   let refine_ehook =
     unconditional_error_handler
       (function () ->
 	(function t ->
-    (* used in undo and lookup cmds *)
 	  let current_shell = ref (get_current_shell ()) in
 	  let rec visit_proof root_il =
 	    let (tac, goal, subgoals, extras) = edit_node !current_shell root_il in
 	    (match tac with
 	      Some s -> let length = List.length subgoals in
 	      let vps i = visit_proof (i :: root_il) in
-	      (mp_prf_term (msequent_to_term goal) (itext_term s)
+	      mp_prf_term (msequent_to_term goal) (itext_term s)
 		 (list_to_ilist (List.map vps (list_of_ints length)))
-		 (list_to_ilist (List.map msequent_to_term extras)))
-	    | None -> (mp_prf_term (msequent_to_term goal) ivoid_term inil_term
-			 (list_to_ilist (List.map msequent_to_term extras)))) in
-	  (match dest_term t with
+		 (list_to_ilist (List.map msequent_to_term extras))
+	    | None -> mp_prf_term (msequent_to_term goal) ivoid_term inil_term
+			 (list_to_ilist (List.map msequent_to_term extras))) in
+	  
+          (match dest_term t with
 	    {term_op = op; term_terms = symaddr :: addr :: tac :: r } when (opeq op mp_refine_op) ->
 	      (let l = string_list_of_term (term_of_unbound_term symaddr)
 	      in if l = !current_symaddr then ()
@@ -259,23 +256,11 @@ module Nuprl = struct
 	      let tactic = string_of_itext_term (term_of_unbound_term tac) in
 	      eprintf "%s %t" tactic eflush;
 
-	      let (gg, subgoals, extras) =
+	      let (msequent, msubgoals, mextras) =
       		edit_refine !current_shell (int_list_of_term (term_of_unbound_term addr)) tactic in
-	      (eprintf "after edit_refine %t" eflush;
-	       mp_ref_term (msequent_to_term gg)
-      		 (list_to_ilist (List.map msequent_to_term subgoals))
-		 (list_to_ilist_by_op ianno_arg_cons_op (List.map msequent_to_term extras))))
-  (* node not needed at command call level*)
-  (*| {term_op = op; term_terms = addr :: tac :: r } when (opeq op mp_node_op) ->
-     let (goal, subgoals, extras) =
-     edit_refine !current_shell
-     (int_list_of_term (term_of_unbound_term addr))
-     (string_of_itext_term tac)
-     in
-     icons_term icons_op (msequent_to_term goal)
-     (icons_term icons_op (list_to_ilist (map msequent_to_term subgoals))
-     (list_to_ilist (List.map msequent_to_term extras)))
-  *)
+	      mp_ref_term (msequent_to_term msequent)
+      		 (list_to_ilist (List.map msequent_to_term msubgoals))
+		 (list_to_ilist_by_op ianno_arg_cons_op (List.map msequent_to_term mextras)))
 
 	  | {term_op = op; term_terms = symaddr :: r } when (opeq op mp_undo_op) ->
 	      (let l = string_list_of_term (term_of_unbound_term symaddr) in
@@ -285,19 +270,19 @@ module Nuprl = struct
 	      visit_proof [])
 
 	  | {term_op = op; term_terms = text :: mli_text :: r } when (opeq op mp_compile_op) ->
-		   (*(Hashtbl.add Toploop.directive_table "natp1" (Toploop.Directive_int (let natp1 d = returnval := inatural_term (1 + d) in natp1)) [])*)
-		   (* could have library write to file since coding for pretty printing
-                      already exists *)
-		   (*  (output_to_file mp_compile_ml_file text;
-		      output_to_file mp_compile_ml_file mli_text;
-		      Unix.system "sh -c make";
+		   (* (Hashtbl.add
+		       Toploop.directive_table
+		       "natp1"
+		       (Toploop.Directive_int (let natp1 d = returnval := inatural_term (1 + d) in natp1)) []) *)
+		   (* could have library write to file since coding for pretty printing already exists *)
+		   (* (output_to_file mp_compile_ml_file text;
+		       output_to_file mp_compile_ml_file mli_text;
+		       Unix.system "sh -c make";
 		   *)
 	      ivoid_term
+	      
 	  | {term_op = op; term_terms = symaddr :: r } when (opeq op mp_save_op) ->
-	      ((*let (b, c) = term_to_symaddr (term_of_unbound_term symaddr) in
-		  if (b, c) = !current_pair then ()
-		  else (current_pair := (b, c); edit_cd_thm !current_shell b c);*)
-               let l = string_list_of_term (term_of_unbound_term symaddr) in
+	      (let l = string_list_of_term (term_of_unbound_term symaddr) in
 	       if l = !current_symaddr then () else
 	       (current_symaddr := l; edit_cd_thm !current_shell (hd (tl l)) (hd (tl (tl l))));
 	       eprintf "saving thm %s %t" (hd (tl (tl l))) eflush;
@@ -306,34 +291,42 @@ module Nuprl = struct
 	       ivoid_term)
 
 	  | {term_op = op; term_terms = symaddr :: r } when (opeq op mp_save_thy_op) ->
-	      ((*let l = string_list_of_term (term_of_unbound_term symaddr) in
-		  edit_save_thy !current_shell (hd (tl l));*)
+	      ( (* let l = string_list_of_term (term_of_unbound_term symaddr) in
+		  edit_save_thy !current_shell (hd (tl l)); *)
 	       ivoid_term)
-	| {term_op = op; term_terms = [] } when (opeq op mp_list_root_op) ->
+		
+	  | {term_op = op; term_terms = [] } when (opeq op mp_list_root_op) ->
 	    list_to_ilist (map itoken_term (edit_list_modules !current_shell))
-	| {term_op = op; term_terms = symaddr :: r } when (opeq op mp_list_module_all_op) ->
-	    let name = (hd (map_isexpr_to_list string_of_itoken_term
-			      (term_of_unbound_term symaddr))) in
+
+	  | {term_op = op; term_terms = symaddr :: r } when (opeq op mp_list_module_all_op) ->
+	    let name = hd (map_isexpr_to_list string_of_itoken_term (term_of_unbound_term symaddr)) in
 	    let f x = (edit_cd_thm !current_shell name x;
 		       let (tac, goal, subgoals, extras) = edit_node !current_shell [] in
 		       ipair_term (itoken_term x) (msequent_to_term goal))
 
-	    and flat_list = get_fl name !current_shell
-	    in icons_term icons_op
+	    and flat_list = get_flat_list name !current_shell in
+	    icons_term icons_op
 	      (list_to_ilist_map itoken_term flat_list)
 	      (list_to_ilist_map f (edit_list_module_all !current_shell name))
-	| {term_op = op; term_terms = symaddr :: r } when (opeq op mp_list_module_op) ->
-	    let name = (hd (map_isexpr_to_list string_of_itoken_term
-			      (term_of_unbound_term symaddr))) in
+	       
+	  | {term_op = op; term_terms = symaddr :: r } when (opeq op mp_list_module_op) ->
+            let name = hd (map_isexpr_to_list string_of_itoken_term (term_of_unbound_term symaddr)) in
 	    let f x = (edit_cd_thm !current_shell name x;
-		       let (tac, goal, subgoals, extras) = edit_node !current_shell [] in
-		       ipair_term (itoken_term x) (msequent_to_term goal))
+		      let (tac, goal, subgoals, extras) = edit_node !current_shell [] in
+		      ipair_term (itoken_term x) (msequent_to_term goal))
 
-	    and flat_list = get_fl name !current_shell
-	    in icons_term icons_op
+	    and f2 x = let obj_contents_list = edit_cd_list_contents !current_shell name in
+		      ipair_term (itoken_term x) (mobjc_to_term obj_contents_list)
+
+            and flat_list = get_flat_list name !current_shell in
+	    icons_term icons_op
 	      (list_to_ilist_map itoken_term flat_list)
 	      (let (w, c, a, rl) = edit_list_module !current_shell name in
-	      mp_edit_term (list_to_ilist_map f w) (list_to_ilist_map f c) (list_to_ilist_map f a) (list_to_ilist_map f rl))
+	       mp_edit_term (list_to_ilist_map f2 w) (* list_to_ilist_map f w *)
+                            (list_to_ilist_map f c)
+                           (list_to_ilist_map f a)
+                           (list_to_ilist_map f2 rl)) (* list_to_ilist_map f rl *)
+                         
 	| {term_op = op; term_terms = symaddr :: r } when (opeq op mp_list_display_op) ->
 	    let ff name =
 	      let f = function (n, modes, attr, model, formats) ->
@@ -377,14 +370,7 @@ module Nuprl = struct
 	      eprintf "TO: %a/%a%t" print_term redex print_term contract eflush;
 	      set_redex !current_shell redex; set_contractum !current_shell contract; ivoid_term)) (*use edit_set?*)
 
- (* cd not needed at command call level*)
- (*
-    | {term_op = op; term_terms = symaddr :: r} when (opeq op mp_cd_thm_op) ->
-    let l = string_list_of_term (term_of_unbound_term symaddr)
-    in
-    (current_symaddr := l; Shell.edit_cd_thm (hd (tl l)) (hd (tl (tl l))); ivoid_term)
- *)
-	| {term_op = op; term_terms = mname :: name :: r} when (opeq op mp_create_op) ->
+ 	| {term_op = op; term_terms = mname :: name :: r} when (opeq op mp_create_op) ->
 	    (edit_create_thm !current_shell (string_of_itoken_term (term_of_unbound_term mname))
 	       (string_of_itoken_term (term_of_unbound_term name));
 	     ivoid_term)
@@ -398,16 +384,17 @@ module Nuprl = struct
 	    let l = string_list_of_term (term_of_unbound_term symaddr)
 	    in
 	    (if l = !current_symaddr then ()
-	    else edit_cd_thm !current_shell (hd l) (hd (tl l));
+	     else edit_cd_thm !current_shell (hd l) (hd (tl l));
 	     visit_proof [])
 
-(* step refine ie for rewrite tactic *)
-(*
-   | {term_op = op; term_terms = goal :: tac :: r} when (opeq op mp_step_refine_op) ->
-   let subgoals, _ = refine (term_of_unbound_term tac) (term_of_unbound_term goal)
-   in list_to_ilist_map id subgoals
-*)
-	| _ -> error ["eval"; "op"; "unrecognized"] [] [t])))
+       (* step refine ie for rewrite tactic *)
+       (*
+        | {term_op = op; term_terms = goal :: tac :: r} when (opeq op mp_step_refine_op) ->
+          let subgoals, _ = refine (term_of_unbound_term tac) (term_of_unbound_term goal)
+          in list_to_ilist_map id subgoals
+	*)
+	     
+	| _ -> error ["refine_ehook"; "op"; "unrecognized"] [] [t])))
 
     (function term -> (function t -> (ifail_term term)))
 

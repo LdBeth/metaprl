@@ -510,10 +510,12 @@ let connect_aux orb host hsock sock =
 	    ; error ["orb"; "connect"; "callback"; "fail"] [] []
 	    )
 
+let db_pathname = ref "/home/nuprl/nuprl5/NuPrlDB";;
 
 let connect orb host hsock sock =
 
-  db_init "/home/nuprl/nuprl5/NuPrlDB" true;
+  print_string "before connect";
+  db_init !db_pathname true;
   let link = connect_aux orb host hsock sock in
   let tcon = { link = link; orb = orb; ro_address = [] } in
     config_send_state tcon (iinform_term (ienvironment_address_term orb.lo_address));
@@ -524,6 +526,7 @@ let connect orb host hsock sock =
 
     let connection =  { link = link; orb = orb; ro_address = address } in
       orb.connections <- (connection :: orb.connections);
+      print_string " after connect";
       connection
 
 let irevoke_parameter = make_param (Token "!revoke")
@@ -722,7 +725,7 @@ let open_library_environment connection lib_id ehook =
 
 let join_library_environment connection tags ehook =
   let lib_env_address = library_environment_join connection tags in
-
+      
     let env =
 	{ connection = connection
 	; re_address = lib_env_address
@@ -733,7 +736,7 @@ let join_library_environment connection tags ehook =
 	} in
     (connection.orb).environments <- env :: connection.orb.environments;
     start_broadcasts env;
-    (*print_string "after sbc";*)
+    print_string "after sbc";
     env
 
 let restore_library_environment connection sstamp ehook =

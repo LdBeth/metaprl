@@ -129,3 +129,5 @@ val request_loop	: environment -> unit
 *)
 
 val orb_req_loop 	: environment -> unit
+
+val db_pathname		: string ref

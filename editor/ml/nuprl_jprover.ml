@@ -51,14 +51,13 @@ struct
       ((Jall.ruletable r), t1, t2) :: inf
 end
 
-
 module Nuprl_JProver = Jall.JProver(Nuprl_JLogic)
 
-let jprover (tlist,concl) =
+let jprover mult_limit (tlist,concl) =
   print_string "calling jprover";
-  Nuprl_JProver.prover (* None *) (Some 2) tlist concl
+  Nuprl_JProver.prover (Some mult_limit) tlist concl
 
-(* jprover fun returns string*term*term list, convert to term *)
+(* jprover function returns string*term*term list, convert to term *)
 
 let ijprover_op = Nuprl5.mk_nuprl5_op [(make_param (Token "jprover"))]
 
@@ -82,27 +81,30 @@ let replace_nuprl_var_terms term = term
 
 let debug_term = ref Basic.ivoid_term
 
-let jprover_hook t =
+let jprover_debug_hook t =
   print_string "calling jprover hook ";
+  let x = Basic.hd_of_icons_term Basic.icons_op t and
+      y = Basic.tl_of_icons_term Basic.icons_op t in
   let result =
   try (jprover_result_to_term
-       (jprover ((Basic.map_isexpr_to_list (function a -> a)
-		    (Basic.hd_of_icons_term Basic.icons_op t)),
-	         (replace_nuprl_var_terms (Basic.tl_of_icons_term Basic.icons_op t)))))
+       (jprover (Basic.number_of_inatural_term x) ((Basic.map_isexpr_to_list (function a -> a)
+		    (Basic.hd_of_icons_term Basic.icons_op y)),
+	         (replace_nuprl_var_terms (Basic.tl_of_icons_term Basic.icons_op y)))))
   with e -> mk_term ijprover_op [] in
   debug_term := result;
-  (*print_newline(); print_string "Result is:  "; Mbterm.print_term result; *)
+  print_newline();
+  print_string "Result is:  ";
+  Mbterm.print_term result;
   let mbterm =
        try Mbterm.mbterm_of_term result with
        e -> (print_string "mbterm failed";
 	     Mbterm.mbterm_of_term (mk_term ijprover_op [])) in
   result
 
-(* old *)
-(*
 let jprover_hook t =
+  let mult_limit = Basic.number_of_inatural_term (Basic.hd_of_icons_term Basic.icons_op t) and
+      term = Basic.tl_of_icons_term Basic.icons_op t in    
   jprover_result_to_term
-    (jprover ((Basic.map_isexpr_to_list (function a -> a)
-		 (Basic.hd_of_icons_term Basic.icons_op t)),
-	      (replace_nuprl_var_terms (Basic.tl_of_icons_term Basic.icons_op t))))
-*)
+    (jprover mult_limit ((Basic.map_isexpr_to_list (function a -> a)
+		 (Basic.hd_of_icons_term Basic.icons_op term)),
+	      (replace_nuprl_var_terms (Basic.tl_of_icons_term Basic.icons_op term))))

@@ -29,11 +29,11 @@
   Thread.create run_library "mp_o8" ;;
   let f x = Printf.eprintf "Name = %s\n" x; flush stderr; edit_cd_thm name x;;
 
-  # #use "nuprl.txt";;
-  # NuprlRun.run_connection  3998 4992 "baldwin" "lmp_d21";;
+  # open Nuprl_run;;
+  # NuprlRun.run_connection  3998 4992 "baldwin" "lmp_d21" "/home/nuprl/fsys/baldwinx/tmp/algebra/nuprldb/";;
 
   # #use "nuprl.txt";;
-  # run_connection_with_hook 4666 5666 "baldwin" "lmp_m20" jprover_hook;;
+  # run_connection_with_hook 4666 5666 "baldwin" "lmp_m20" "/home/nuprl/fsys/baldwinx/tmp/algebra/nuprldb/" Nuprl_jprover.jprover_hook;;
 *)
 
 module NuprlRun :
@@ -41,7 +41,7 @@ module NuprlRun :
       val run_nuprl : unit -> unit
       val run_library : string -> unit
       val run_jprover : string -> unit
-      val run_connection : int (*library*) -> int -> string (*host*)-> string -> unit
+      val run_connection : int (*library*) -> int -> string (*host*) -> string (*library*) -> string (*db*) -> unit
       val run_dummy_connection : int (*library*) -> int -> string (*host*)-> string -> unit
-      val run_connection_with_hook : int (*library*) -> int -> string (*host*)-> string -> (Refiner.Refiner.Term.term -> Refiner.Refiner.Term.term) -> unit
+      val run_connection_with_hook : int (*library*) -> int -> string (*host*)-> string -> string (*dbpath*) -> (Refiner.Refiner.Term.term -> Refiner.Refiner.Term.term) -> unit
     end

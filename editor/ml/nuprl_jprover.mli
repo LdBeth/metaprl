@@ -33,7 +33,7 @@ val jprover_result_to_term : (string * term * term) list -> term
 
 (* sequent calculus, another argument for proof reconstruction *)
 
-val jprover : term list * term -> (string * term * term) list
+val jprover : int -> term list * term -> (string * term * term) list
 val jprover_hook : term -> term
 
 val debug_term : term ref

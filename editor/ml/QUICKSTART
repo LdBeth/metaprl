@@ -131,17 +131,25 @@ Every time:
 
 For Connection to Nuprl5 using Jprover:
 
-  Below we assume that: 
+  * Below we assume that: 
     - Nuprl is running on host, hostname.
     - The Nuprl library environment is named libenv.
-    - Nuprl is listening for connections on port, xxxx.  
+    - Nuprl is listening for connections on port, xxxx.  (in nuprl lib, command is mosa xxxx)
+    - The Nuprl database is at "/home/nuprl/nuprl5/NuPrlDB/"
 
   1) Set the environment variables:  
      NUPRL_HOST = hostname, NUPRL_PORT = xxxx, and MP_PORT.  
      The first 2 are determined by your running nuprl session, and the third 
      is an arbitrary open port number that you will set.
   2) Start editor/ml/mp
-  3) open "Nuprl_run";;
-  4) Execute   NuprlRun.run_jprover "libenv";;
+  3) open Nuprl_run;;
+  4) Execute  NuprlRun.run_jprover "libenv";;
 
   To use jprover from nuprl, simply call the tactic, Jprover, on your proof.
+
+  * Alternatively, don't bother setting environment variables, or worry about the database setting.
+ 
+  1) Start editor/ml/mp
+  2) open Nuprl_run;;
+  3) Execute  NuprlRun.run_connection_with_hook xxxx yyyy hostname libenv "/home/nuprl/fsys/baldwinx/tmp/algebra/nuprldb/" Nuprl_jprover.jprover_hook;;
+*)

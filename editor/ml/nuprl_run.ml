@@ -542,13 +542,15 @@ module NuprlRun = struct
     special_error_handler (function () -> (library_open_and_loop_eval name Nuprl_jprover.jprover_hook))
       (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
-  let run_connection lport mport host name =
+  let run_connection lport mport host name dbpath =
+    (Orb.db_pathname := dbpath;
     special_error_handler (function () -> (library_open_and_loop_eval' lport mport host name refine_ehook))
-      (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
+      (fun s t -> print_string s; print_newline(); Mbterm.print_term t))
 
-  let run_connection_with_hook lport mport host name rhook =
+  let run_connection_with_hook lport mport host name dbpath rhook =
+    (Orb.db_pathname := dbpath;
     special_error_handler (function () -> (library_open_and_loop_eval' lport mport host name rhook))
-      (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
+      (fun s t -> print_string s; print_newline(); Mbterm.print_term t))
 
   let run_dummy_connection lport mport host name =
     special_error_handler
