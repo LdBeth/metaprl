@@ -78,7 +78,7 @@ address can be computed with the <TT>Sequent.hyp_count_addr</TT>
 function.</P>
 
 <P>The next step is to add this tactic to the <TT>dT</TT> tactic.
-This is accomplished by calling the <TT>resource_improve</TT>
+This is accomplished by calling the <TT>Mp_improve</TT>
 method of the <TT>d_resource</TT> resource. Resources are managed
 functionally, and the <TT>d_resource</TT> is improved by binding
 it to a new value.</P>
@@ -89,7 +89,7 @@ it to a new value.</P>
   the definition of </I><TT>d_false_type</TT>:</P>
   <BLOCKQUOTE>
     <PRE><B>let</B> false_type_term = &lt;&lt; &quot;type&quot;{.&quot;false&quot;} &gt;&gt;
-<B>let</B> d_resource = d_resource.resource_improve d_resource
+<B>let</B> d_resource = Mp_resource.resource_improve d_resource
                     (false_type_term, d_false_type)</PRE>
   </BLOCKQUOTE>
 </BLOCKQUOTE>
@@ -115,7 +115,7 @@ the <TT>dT tactic.</TT></P>
          false_elim j k p
 
 <B>let</B> false_term = &lt;&lt; &quot;false&quot; &gt;&gt;
-<B>let</B> d_resource = d_resource.resource_improve d_resource (false_term, d_false)</PRE>
+<B>let</B> d_resource = Mp_resource.resource_improve d_resource (false_term, d_false)</PRE>
   </BLOCKQUOTE>
 </BLOCKQUOTE>
 

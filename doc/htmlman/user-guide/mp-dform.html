@@ -56,10 +56,10 @@ form mechanism for terms in the <TT>Itt_logic</TT> module.</P>
 
 <B>dform </B>true_df : true = `&quot;True&quot;
 <B>dform</B> false_df : false = `&quot;False&quot;
-<B>dform </B>and_df : parens :: prec[&quot;prec_and&quot;] :: and{'t1; 't2} =
+<B>dform </B>and_df : parens :: &quot;prec&quot;[prec_and] :: and{'t1; 't2} =
    slot{'t1} `&quot; &quot; wedge `&quot; &quot; slot{'t2}
 
-<B>dform </B>or_df : parens :: prec[&quot;prec_or&quot;] :: or{'t1; 't2} =
+<B>dform </B>or_df : parens :: &quot;prec&quot;[prec_or] :: or{'t1; 't2} =
    slot{'t1} `&quot; &quot; vee `&quot; &quot; slot{'t2}</PRE>
 </BLOCKQUOTE>
 

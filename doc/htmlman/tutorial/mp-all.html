@@ -97,7 +97,7 @@ the <TT>trivial_resource</TT>.</P>
   resource:</I></P>
   <BLOCKQUOTE>
     <PRE><B>let</B> trivial_resource =
-   trivial_resource.resource_improve trivial_resource (**)
+   Mp_resource.resource_improve trivial_resource (**)
       { auto_name = &quot;nthUnivT&quot;;
         auto_prec = trivial_prec;
         auto_tac = onSomeHypT nthUnivT
@@ -223,7 +223,7 @@ of a universal quantification.</P>
    <B>else</B>
       <B>raise</B> (RefineError (&quot;d_all_type&quot;, StringError &quot;no elimination form&quot;))
 <B>let</B> all_type_term = &lt;&lt; &quot;type&quot;{.&quot;all&quot;{x. 'B['x]}} &gt;&gt;
-<B>let</B> d_resource = d_resource.resource_improve d_resource (all_type_term, d_all_type)</PRE>
+<B>let</B> d_resource = Mp_resource.resource_improve d_resource (all_type_term, d_all_type)</PRE>
   </BLOCKQUOTE>
 </BLOCKQUOTE>
 
@@ -251,7 +251,7 @@ has a similar definition.</P>
       <B>let</B> j, k = Sequent.hyp_indices p i <B>in</B>
          all_elim j k x v y p
 
-<B>let</B> d_resource = d_resource.resource_improve d_resource (all_term, d_all)</PRE>
+<B>let</B> d_resource = Mp_resource.resource_improve d_resource (all_term, d_all)</PRE>
   </BLOCKQUOTE>
 </BLOCKQUOTE>
 

@@ -44,7 +44,7 @@ example of conditional rewriting in the <TT>Itt_int</TT> module:</P>
 
 <BLOCKQUOTE>
   <P><B><TT>rewrite</TT></B><TT> unit : ('i != 0 in int) --&gt;
-  ((i /@ i) &lt;--&gt; 1)</TT></P>
+  (('i /@ 'i) &lt;--&gt; 1)</TT></P>
 </BLOCKQUOTE>
 
 <P><I>Parameters</I> provide extra variables and terms that are
@@ -74,16 +74,16 @@ are primitive to a logic use the <TT>primrw</TT> form:</P>
 the bound variables).</P>
 
 <P>Rewrites that are derived from previous rules in the logic
-are implemented with the <TT>interactiverw</TT> form. The definition
+are implemented with the <TT>interactive_rw</TT> form. The definition
 has the same form as the <TT>primrw</TT>:</P>
 
 <BLOCKQUOTE>
-  <P><B><TT>interactiverw</TT></B><TT> </TT><I>name</I><TT> [</TT><I>params</I><TT>]
+  <P><B><TT>interactive_rw</TT></B><TT> </TT><I>name</I><TT> [</TT><I>params</I><TT>]
   : [</TT><I>conditions</I><TT>] </TT><I>redex</I><TT> &lt;--&gt;
   </TT><I>contractum</I></P>
 </BLOCKQUOTE>
 
-<P>The <TT>interactiverw</TT> form establishes a proof obligation,
+<P>The <TT>interactive_rw</TT> form establishes a proof obligation,
 which may be fulfilled with the proof editor. The rewrite may
 be used whether it has been verified or not. When a logical theory
 is finished, the editor can be used to check for unsatisfied subproofs.

@@ -283,7 +283,7 @@ tactic. The following code implements the automation.</P>
    else
       raise (RefineError (&quot;d_not_type&quot;, StringError &quot;no elimination form&quot;))
 let not_type_term = &lt;&lt; &quot;type&quot;{.&quot;not&quot;{'A}} &gt;&gt;
-let d_resource = d_resource.resource_improve d_resource (not_type_term, d_not_type)
+let d_resource = Mp_resource.resource_improve d_resource (not_type_term, d_not_type)
 let d_not i p =
    if i = 0 then
       let x = Var.maybe_new_vars1 p &quot;x&quot; in
@@ -292,7 +292,7 @@ let d_not i p =
       let j, k = Sequent.hyp_indices p i in
          not_elim j k p
 let not_term = &lt;&lt; &quot;not&quot;{'A} &gt;&gt;
-let d_resource = d_resource.resource_improve d_resource (not_term, d_not)</PRE>
+let d_resource = Mp_resource.resource_improve d_resource (not_term, d_not)</PRE>
   </BLOCKQUOTE>
 </BLOCKQUOTE>
 
