@@ -502,8 +502,18 @@ struct
        | [], [] -> subst
        | _ -> RAISE_GENERIC_EXN
 
+   let rec clean_subst subst = function
+      [] -> subst
+    | (v, t) :: tl ->
+         let subst =
+            match get_core t with
+               FOVar v' when v = v' -> subst
+             | _ -> (v,t) :: subst
+         in
+            clean_subst subst tl
+
    let match_terms subst t1 t2 =
-      DEFINE body = List.rev (match_terms subst [] t1 t2)
+      DEFINE body = clean_subst [] (match_terms subst [] t1 t2)
       IN
       IFDEF VERBOSE_EXN THEN
          try body with

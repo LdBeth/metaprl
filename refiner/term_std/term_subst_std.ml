@@ -523,13 +523,21 @@ struct
        | _ ->
             RAISE_GENERIC_EXN
 
+   let rec clean_subst subst = function
+      [] -> subst
+    | (v, t) :: tl when is_var_term t && (dest_var t) = v ->
+         clean_subst subst tl
+    | s :: tl ->
+         clean_subst (s::subst) tl
+
    let match_terms subst t1 t2 =
+      DEFINE body = clean_subst [] (match_terms subst [] t1 t2) IN
       IFDEF VERBOSE_EXN THEN
-         try List.rev (match_terms subst [] t1 t2) with
+         try body with
             RefineError (_, GenericError) ->
                raise (RefineError ("Term_subst_std.match_terms", TermPairError (t1, t2)))
       ELSE
-         List.rev (match_terms subst [] t1 t2)
+         body
       ENDIF
 
    (************************************************************************
