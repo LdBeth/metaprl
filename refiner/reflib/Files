@@ -26,7 +26,6 @@ REFLIB_FILES :=\
 	term_compare_sig\
 	term_compare\
 	match_seq\
-	Files
-        jlogic_sig\
-        jtunify\
+	jlogic_sig\
+	jtunify\
 	jall\
