@@ -45,7 +45,7 @@ let index i v =
 let exists f v =
    let l = Array.length v in
    let rec aux j =
-      j < l & ( f v.(j) 
+      j < l & ( f v.(j) or
                 aux (j + 1) )
    in
       aux 0
@@ -65,6 +65,9 @@ let find_index f v =
 
 (*
  * $Log$
+ * Revision 1.5  1998/06/14 01:31:47  nogin
+ * Fixed a typo
+ *
  * Revision 1.4  1998/06/14 01:29:37  nogin
  * Make it faster
  *
