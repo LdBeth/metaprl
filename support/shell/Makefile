@@ -31,6 +31,7 @@ MPFILES =\
 	shell_root\
 	recursive_lock\
 	mptop\
+	shell_http\
 	shell_state\
 	shell_p4_sig\
 	shell\

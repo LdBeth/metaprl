@@ -30,8 +30,7 @@ MLZFILES =\
 	nuprl_sig\
 
 # Library files
-MPFILES =\
-	shell_http\
+MPFILES =
 
 MP2FILES =\
 	shell_mp\
@@ -116,7 +115,6 @@ CMXADEPS =\
 	$(CAMLP4LIB)/pa_op.cmx\
 	$(ROOT)/lib/prlc.cmxa\
 	$(addsuffix /theory.cmxa, $(MP_DIRS))\
-	$(MAIN).cmxa
 
 CMXALIBS =\
 	$(CMXADEPS)
@@ -133,7 +131,6 @@ CMADEPS =\
 	$(CAMLP4LIB)/pa_op.cmo\
 	$(ROOT)/lib/prlc.cma\
 	$(addsuffix /theory.cma, $(MP_DIRS))\
-	$(MAIN).cma
 
 TCMADEPS =\
 	$(CAMLP4LIB)/odyl.cma\
@@ -146,7 +143,6 @@ TCMADEPS =\
 	$(CAMLP4LIB)/pa_op.cmo\
 	$(ROOT)/lib/prlc.cma\
 	$(addsuffix /theory.cma, $(MP_DIRS))\
-	$(MAIN).cma
 
 CMALIBS =\
 	$(CMADEPS)
@@ -174,11 +170,10 @@ NATIVE_CCLIBS := $(NATIVE_CCLIBS)\
 	$(OTHER_CCLIBS)
 
 # Name of main librariws
-MAIN = metaprl
 MP = mp
 
-all: $(MAIN).cma $(MP).top $(MP).run
-opt: $(MAIN).cmxa $(MP).opt
+all: $(MP).top $(MP).run
+opt: $(MP).opt
 install:: all
 
 $(MP).run: $(CMOBJS) $(RCMOFILES) $(CMADEPS) $(THREADSLIB) $(ROOT)/lib/clib-byte$(EXT_LIB)

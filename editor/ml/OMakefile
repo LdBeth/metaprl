@@ -6,7 +6,6 @@ OCAMLINCLUDES +=\
         $'(addprefix -I , $(MP_DIRS))
 
 # Name of main librariws
-MAIN = metaprl
 MP = mp
 
 ########################################################################
@@ -18,10 +17,6 @@ MLZFILES =\
         proof_sig\
         display_sig\
         nuprl_sig
-
-# Library files
-MPFILES =\
-        shell_http
 
 MP2FILES =\
         shell_mp\
@@ -53,8 +48,6 @@ TOPFILES =\
         mp_top
 
 OCAML_LINK_FLAGS += -linkall
-
-OCamlLibrary($(MAIN), $(MPFILES))
 
 TESTFILES =
 
@@ -133,13 +126,11 @@ CMXADEPS =\
         $(CAMLP4LIB)/pa_op.cmx\
         $(LIB)/prlc.cmxa\
         $(addsuffix /theory.cmxa, $(MP_DIRS))\
-        $(MAIN).cmxa
 
 ARDEPS =\
         $(BASE_ARS)\
         $(LIB)/prlc$(EXT_LIB)\
         $(addsuffix /theory$(EXT_LIB), $(MP_DIRS))\
-        $(MAIN)$(EXT_LIB)
 
 CMXALIBS =\
         $(CMXADEPS)
@@ -156,7 +147,6 @@ CMADEPS =\
         $(CAMLP4LIB)/pa_op.cmo\
         $(LIB)/prlc.cma\
         $(addsuffix /theory.cma, $(MP_DIRS))\
-        $(MAIN).cma
 
 TCMADEPS =\
         $(CAMLP4LIB)/odyl.cma\
@@ -169,7 +159,6 @@ TCMADEPS =\
         $(CAMLP4LIB)/pa_op.cmo\
         $(LIB)/prlc.cma\
         $(addsuffix /theory.cma, $(MP_DIRS))\
-        $(MAIN).cma
 
 
 CMALIBS =\
@@ -240,10 +229,10 @@ mp_version.ml: make_mp_version$(EXE) $(ALL_DEPS)
 # Phony targets
 #
 if $(NATIVE_ENABLED)
-        .DEFAULT: $(MAIN).cmxa $(MP).opt
+        .DEFAULT: $(MP).opt
 
 if $(BYTE_ENABLED)
-        .DEFAULT: $(MAIN).cma $(MP).top $(MP).run
+        .DEFAULT: $(MP).top $(MP).run
 
 #
 # Clean up
