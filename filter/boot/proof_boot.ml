@@ -257,7 +257,7 @@ struct
          format_pushm buf 2;
          format_string buf "Wrapped";
          begin match Tactic_boot.Tactic.expand_arglist label with
-            StringArg s :: _ -> 
+            StringArg s :: _ ->
                format_hspace buf;
                format_string buf ("["^s^"...]");
                format_hspace buf;
@@ -386,17 +386,9 @@ struct
          format_hspace buf;
          format_ext db buf node
 
-   (*
-    * Debugging.
-    *)
-   let debug_dbase = ref Dform.null_base
-
-   let set_debug_dbase db =
-      debug_dbase := db
-
    let print_ext ext =
       let buf = Rformat.new_buffer () in
-         format_ext !debug_dbase buf ext;
+         format_ext !debug_base buf ext;
          format_newline buf;
          print_to_channel 80 buf stderr;
          flush stderr
@@ -425,7 +417,7 @@ struct
    and count_leaves_aux = function
       goal :: subgoals -> count_leaves goal + count_leaves_aux subgoals
     | [] -> 0
-   
+
    let rec all_identity = function
       [] -> true
     | Identity _ :: tl -> all_identity tl
@@ -442,7 +434,7 @@ struct
             if g==goal then node else Extract (goal,sgs,ext)
        | ExtractRewrite (g,sg,addr,ext) ->
             if g==goal then node else ExtractRewrite (goal,sg,addr,ext)
-       | ExtractCondRewrite (g,sgs,addr,ext) -> 
+       | ExtractCondRewrite (g,sgs,addr,ext) ->
             if g==goal then node else ExtractCondRewrite (goal,sgs,addr,ext)
        | ExtractNthHyp (g,i) ->
             if g==goal then node else ExtractNthHyp (goal,i)
@@ -454,7 +446,7 @@ struct
        | Compose ci ->
             let ext = ci.comp_goal in
             let res = replace_goal ext goal in
-            if res == ext then node else 
+            if res == ext then node else
             Compose {
                comp_status = ci.comp_status;
                comp_goal = res;
@@ -583,14 +575,14 @@ struct
              | _ ->
                   if (c_goal==ci.comp_goal) && (c_subgs == ci.comp_subgoals) then ext else
                   Compose { ci with comp_goal = c_goal; comp_subgoals = c_subgs }
-            end 
+            end
     | (RuleBox ri) ->
          if not ri.rule_extract_normalized then begin
             let res = normalize ri.rule_extract in
             if !debug_proof_normalize then begin
                eprintf "Normalizing RuleBox's rule_extract:\n";
                print_ext ri.rule_extract;
-               if res == ri.rule_extract then eprintf "Normalization left it unchanged!%t" eflush 
+               if res == ri.rule_extract then eprintf "Normalization left it unchanged!%t" eflush
                else begin
                   eprintf "Normalized to:\n";
                   print_ext res
@@ -619,7 +611,7 @@ struct
             comp_subgoals = sghd;
             comp_leaves = LazyLeavesDelayed;
             comp_extras = []
-         } in 
+         } in
             (normalize c) :: (join_subgoals_aux sgtl tl)
 
    (* this is just a counting excersize *)
@@ -797,14 +789,14 @@ struct
             format_string buf "Leaves of";
             format_space buf;
             format_szone buf;
-            format_ext !debug_dbase buf goal;
+            format_ext !debug_base buf goal;
             format_ezone buf;
             format_space buf;
             print_ext goal;
             format_space buf;
             format_string buf "are";
             format_space buf;
-            List.iter (format_arg !debug_dbase buf) leaves;
+            List.iter (format_arg !debug_base buf) leaves;
             format_ezone buf;
             print_to_channel 80 buf stderr;
             eprintf "%t" eflush

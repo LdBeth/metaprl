@@ -345,7 +345,7 @@ struct
           | None ->
                Dform.null_base
       in
-         Tactic_type.Proof.set_debug_dbase df;
+         Dform.debug_base := df;
          state.state_df_base <- df
 
    let get_dfbase state =

@@ -70,8 +70,8 @@ type typeinf_subst_fun = term_subst -> (string option * term) -> term_subst
  * but these equations do not have to be satisfied.
  * 5) defs -  list of the defaults that we should use instead of variables
  * in case there is no other information we can use to figure them out
- * 6) t - a term whose type we want to infer
- * 
+ * 6) t - a term whoose type we want to infer
+ *
  * An inference function returns:
  * Updated eqs, updated opt_eqs, updated defs and a type
  * (that can contain variables)
@@ -553,9 +553,6 @@ sig
    (********************************
     * PRINTING
     *)
-
-   (* Set a dform base for debugging *)
-   val set_debug_dbase : Dform.dform_base -> unit
 
    (* Formatting functions *)
    val format_proof : Dform.dform_base -> term Rformat.buffer -> proof -> unit

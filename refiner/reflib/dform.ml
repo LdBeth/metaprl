@@ -760,6 +760,8 @@ let string_of_mterm base mterm =
       format_mterm base buf mterm;
       print_to_string 80 buf
 
+let debug_base = ref null_base
+
 (*
  * -*-
  * Local Variables:

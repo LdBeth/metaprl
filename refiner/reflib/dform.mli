@@ -121,6 +121,9 @@ val is_null_dfbase : dform_base -> bool
 val equal_dfbases : dform_base -> dform_base -> bool
 (* val dest_dfbase : dform_base -> dform_entry * dform_base *)
 
+(* DEBUGGING *)
+val debug_base : dform_base ref
+
 (************************************************************************
  * PRINTERS                                                             *
  ************************************************************************)
