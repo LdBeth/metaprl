@@ -154,9 +154,9 @@ struct
          eprintf "Simple_print.format_param%t" eflush;
       match dest_param p with
          Number n -> format_num buf n; format_string buf ":n"
-       | String s -> format_quoted_string buf s; format_string buf ":s"
-       | Token t -> format_quoted_string buf t; format_string buf ":t"
-       | Var v -> format_quoted_string buf v; format_string buf ":v"
+       | String s -> format_char buf '"'; format_string buf s; format_char buf '"'; format_string buf ":s"
+       | Token t -> format_char buf '"'; format_string buf t; format_char buf '"'; format_string buf ":t"
+       | Var v -> format_char buf '"'; format_string buf v; format_char buf '"'; format_string buf ":v"
        | MNumber v -> format_string buf v; format_string buf ":n"
        | MString v -> format_string buf v; format_string buf ":s"
        | MToken v -> format_string buf v; format_string buf ":t"
