@@ -83,7 +83,7 @@ let create_window = function
    DisplayText (base, mode) ->
       TextWindow { df_base = base; df_mode = mode; df_width = 80 }
  | DisplayTex base ->
-      TexWindow { df_base = base; df_mode = "tex"; df_width = 70 }
+      TexWindow { df_base = base; df_mode = "tex"; df_width = 60 }
  | DisplayJava (port, base) ->
       let menu = Java_display_term.create_term port base in
          JavaWindow { pw_port = port; pw_base = base; pw_menu = menu }
