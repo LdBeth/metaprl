@@ -90,16 +90,16 @@ struct
     | (v,t)::tl -> StringSet.union (subst_free_vars tl) t.free_vars
 
    let do_term_subst sub t =
-      assert (**)
-         (if !debug_subst then
-             begin
-                eprintf "do_term_subst: %a%t" debug_print t eflush;
-                eprintf "\tfree_vars:";
-                List.iter (fun name -> eprintf " %s" name) (StringSet.elements t.free_vars);
-                eflush stderr;
-                List.iter (fun (v, t) -> eprintf "\t%s: %a%t" v debug_print t eflush) sub
-             end;
-          true);
+#ifdef VERBOSE_EXN
+      if !debug_subst then
+         begin
+            eprintf "do_term_subst: %a%t" debug_print t eflush;
+            eprintf "\tfree_vars:";
+            List.iter (fun name -> eprintf " %s" name) (StringSet.elements t.free_vars);
+            eflush stderr;
+            List.iter (fun (v, t) -> eprintf "\t%s: %a%t" v debug_print t eflush) sub
+         end;
+#endif
       match List_util.filter (fun (v,_) -> StringSet.mem v t.free_vars) sub with
          [] -> t
        | sub' ->

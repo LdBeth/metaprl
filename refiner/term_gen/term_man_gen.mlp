@@ -484,12 +484,14 @@ struct
       nth_clause_addr_aux (fun count -> make_nth_clause_addr nth_hd_address count i) t
 
    let nth_clause_addrs t il =
+#ifdef VERBOSE_EXN
       if !debug_address then
          begin
             eprintf "Nth_clause_addrs:";
             Array.iter (fun count -> eprintf " %d" count) il;
             eflush stderr
          end;
+#endif
 (*
  * jyh: I had assumed that we could push negative addressing
  * down into the address module, but it turns out to be pretty hard because

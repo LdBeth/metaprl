@@ -255,9 +255,11 @@ struct
 
    let alpha_equal t1 t2 =
       let equal_term =
+#ifdef VERBOSE_EXN
          if !debug_alpha_equal then
             equal_term_debug
          else
+#endif
             equal_term
       in
          try equal_term [] t1 t2 with

@@ -942,6 +942,7 @@ struct
       let namer stack' names' =
          (* Compute an array of names to change *)
          let names' = Array.copy names' in
+#ifdef VERBOSE_EXN
             if !debug_rewrite then
                begin
                   print_rstack stderr stack;
@@ -953,15 +954,18 @@ struct
                          | None -> eprintf " %s=*" name) names indices;
                   eflush stderr
                end;
+#endif
             for i = 0 to length - 1 do
                match indices.(i) with
                   Some j ->
                      begin
                         match stack'.(j) with
                            StackString s ->
+#ifdef VERBOSE_EXN
                               if !debug_rewrite then
                                  eprintf "Rewrite.compute_namer: names(%d)/%d <- %s%t" (**)
                                     i (Array.length names') s eflush;
+#endif
                               names'.(i) <- s
                          | x ->
                               ref_raise(RefineError ("compute_namer", RewriteStringError "stack entry is not a string"))
@@ -1039,14 +1043,18 @@ struct
    let set_bvars stack names vars =
       let aux v = function
          StackName i ->
+#ifdef VERBOSE_EXN
             if !debug_rewrite then
                eprintf "Rewrite.set_bvars: stack(%d)/%d%t" i (Array.length stack) eflush;
+#endif
             stack.(i) <- StackString v
        | _ ->
             ()
       in
+#ifdef VERBOSE_EXN
          if !debug_rewrite then
             eprintf "Rewrite.set_bvars %d/%d%t" (List.length vars) (List.length names) eflush;
+#endif
          List.iter2 aux vars names
 
    (*
@@ -1076,17 +1084,21 @@ struct
            RWComposite { rw_op = { rw_name = name'; rw_params = params' }; rw_bterms = bterms' } ->
               let { term_op = op; term_terms = bterms } = dest_term t in
               let { op_name = name; op_params = params } = dest_op op in
+#ifdef VERBOSE_EXN
                  if !debug_rewrite then
                     eprintf "Rewrite.match_redex.RWComposite: %s[%d](%d)/%a[%d](%d)%t" (**)
                        (flat_opname name') (List.length params') (List.length bterms')
                        debug_print t (List.length params) (List.length bterms)
                        eflush;
+#endif
                  if name == name' then
                     begin
                        List.iter2 (match_redex_params stack) params' params;
                        List_util.rev_iter2 (match_redex_bterms addrs stack) bterms' bterms;
+#ifdef VERBOSE_EXN
                        if !debug_rewrite then
                           eprintf "Rewrite.match_redex.RWComposite done%t" eflush;
+#endif
                     end
                  else
                     ref_raise(RefineError ("match_redex_term", RewriteBadMatch (TermMatch t)))
@@ -1094,12 +1106,16 @@ struct
          | RWCheckVar i ->
               begin
                  let v = dest_var t in
+#ifdef VERBOSE_EXN
                     if !debug_rewrite then
                        eprintf "Rewrite.match_redex.RWCheckVar: %d/%s%t" i v eflush;
+#endif
                      match stack.(i) with
                         StackString v' ->
+#ifdef VERBOSE_EXN
                           if !debug_rewrite then
                              eprintf "Rewrite.match_redex.RWCheckVar: %s/%s%t" v' v eflush;
+#endif
                            if v' <> v then
                               ref_raise(RefineError ("match_redex_term", RewriteBadMatch (VarMatch v)))
                       | x ->
@@ -1110,25 +1126,37 @@ struct
               (* Save the term at i *)
               begin
                  let vars = extract_bvars stack l in
+#ifdef VERBOSE_EXN
                     if !debug_rewrite then
                        eprintf "Rewrite.match_redex.RWSOVar: stack(%d)/%d%t" i (Array.length stack) eflush;
+#endif
                     match stack.(i) with
                        StackVoid ->
+#ifdef VERBOSE_EXN
                           if !debug_rewrite then
                              eprintf "\tRWSoVar: Void%t" eflush;
+#endif
                           stack.(i) <- StackBTerm (t, vars)
                      | StackBTerm (t', vars') ->
+#ifdef VERBOSE_EXN
                           if !debug_rewrite then
                              eprintf "\tRWSOVar: Bterm: check_simple_match%t" eflush;
+#endif
                           check_simple_match (t, vars) (t', vars);
+#ifdef VERBOSE_EXN
                           if !debug_rewrite then
                              eprintf "\tRWSOVar: Bterm: check_simple_match: ok%t" eflush;
+#endif
                      | StackITerm l ->
+#ifdef VERBOSE_EXN
                           if !debug_rewrite then
                              eprintf "\tRWSOVar: ITerm: check_match%t" eflush;
+#endif
                           check_match (t, vars) l;
+#ifdef VERBOSE_EXN
                           if !debug_rewrite then
                              eprintf "\tRWSOVar: ITerm: check_match: ok%t" eflush;
+#endif
                           stack.(i) <- StackBTerm (t, vars)
                      | _ ->
                           ref_raise(RefineError ("match_redex_term", RewriteStringError "stack entry is not valid"))
@@ -1138,8 +1166,10 @@ struct
               (* See if the term matches *)
               begin
                  let vars' = extract_bvars stack ivars in
+#ifdef VERBOSE_EXN
                     if !debug_rewrite then
                        eprintf "Rewrite.match_redex.RWSOMatch: stack(%d)/%d%t" i (Array.length stack) eflush;
+#endif
                      match stack.(i) with
                         StackVoid ->
                            stack.(i) <- StackITerm [t, vars', vars, subterms]
@@ -1154,8 +1184,10 @@ struct
          | RWSOContext (addr, i, term', l) ->
               (* Pull an address out of the addr argument *)
               let addr' = addrs.(addr) in
+#ifdef VERBOSE_EXN
               if !debug_rewrite then
                  eprintf "Rewrite.match_redex.RWSOContext: %s%t" (string_of_address addr') eflush;
+#endif
               let term = term_subterm t addr' in
                  if !debug_rewrite then
                     eprintf "Rewrite.match_redex.RWSOContext: stack(%d)/%d%t" i (Array.length stack) eflush;
@@ -1186,29 +1218,39 @@ struct
 
            (* Variable matches *)
          | RWMNumber i, Number j ->
+#ifdef VERBOSE_EXN
               if !debug_rewrite then
                  eprintf "Rewrite.match_redex_params.RWMNumber: stack(%d)/%d <- %s%t" (**)
                     i (Array.length stack) (Num.string_of_num j) eflush;
+#endif
               stack.(i) <- StackNumber j
          | RWMString i, String s ->
+#ifdef VERBOSE_EXN
               if !debug_rewrite then
                  eprintf "Rewrite.match_redex_params.RWMString: stack(%d)/%d <- %s%t" (**)
                     i (Array.length stack) s eflush;
+#endif
               stack.(i) <- StackString s
          | RWMToken i, Token t ->
+#ifdef VERBOSE_EXN
               if !debug_rewrite then
                  eprintf "Rewrite.match_redex_params.RWMToken: stack(%d)/%d <- %s%t" (**)
                     i (Array.length stack) t eflush;
+#endif
               stack.(i) <- StackString t
          | RWMVar i, Var v ->
+#ifdef VERBOSE_EXN
               if !debug_rewrite then
                  eprintf "Rewrite.match_redex_params.RWMVar: stack(%d)/%d <- %s%t" (**)
                     i (Array.length stack) v eflush;
+#endif
               stack.(i) <- StackString v
          | RWMLevel i, Level l ->
+#ifdef VERBOSE_EXN
               if !debug_rewrite then
                  eprintf "Rewrite.match_redex_params.RWMLevel: stack(%d)/%d%t" (**)
                     i (Array.length stack) eflush;
+#endif
               stack.(i) <- StackLevel l
 
          | _ -> ref_raise(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
@@ -1224,11 +1266,13 @@ struct
                   ref_raise(RefineError ("match_redex_bterms", RewriteBadMatch (BTermMatch bt)))
 
     let match_redex addrs stack progs tl =
+#ifdef VERBOSE_EXN
        if !debug_rewrite then
           begin
              eprintf "match_redex: %d%t" (List.length progs) eflush;
              List.iter (print_prog stderr) progs
           end;
+#endif
        List.iter2 (match_redex_term addrs stack) progs tl
 
    (*
@@ -1294,20 +1338,20 @@ struct
               *)
             let subst term vars =
                let terms = List.map (build_contractum_term names bnames stack bvars) terms in
-               let _ =
-                  assert (if !debug_subst then
-                             begin
-                                eprintf "RWSOSubst: %a%t" debug_print term eflush;
-                                List.iter2 (fun name term ->
-                                      eprintf "\t%s: %a%t" name debug_print term eflush) (**)
-                                   vars terms
-                             end;
-                          true)
-               in
+#ifdef VERBOSE_EXN
+               if !debug_subst then
+                   begin
+                      eprintf "RWSOSubst: %a%t" debug_print term eflush;
+                      List.iter2 (fun name term ->
+                            eprintf "\t%s: %a%t" name debug_print term eflush) (**)
+                         vars terms
+                   end;
+#endif
                let term = subst term terms vars in
-                  assert (if !debug_subst then
-                             eprintf "\t%a%t" debug_print term eflush;
-                          true);
+#ifdef VERBOSE_EXN
+                  if !debug_subst then
+                     eprintf "\t%a%t" debug_print term eflush;
+#endif
                   term
             in
                match stack.(i) with
@@ -1330,14 +1374,15 @@ struct
                                  (build_contractum_term names bnames stack bvars t)
                    in
                    let terms = List.map (build_contractum_term names bnames stack bvars) terms in
-                      assert (if !debug_subst then
-                                 begin
-                                    eprintf "RWSOContextSubst: %a%t" debug_print term eflush;
-                                    List.iter2 (fun name term ->
-                                          eprintf "\t%s: %a%t" name debug_print term eflush) (**)
-                                       vars terms
-                                 end;
-                              true);
+#ifdef VERBOSE_EXN
+                      if !debug_subst then
+                         begin
+                            eprintf "RWSOContextSubst: %a%t" debug_print term eflush;
+                            List.iter2 (fun name term ->
+                                  eprintf "\t%s: %a%t" name debug_print term eflush) (**)
+                               vars terms
+                         end;
+#endif
                    subst term terms vars
               | _ ->
                    ref_raise(RefineError ("build_contractum_term", RewriteStringError "stack entry is not valid"))
@@ -1514,17 +1559,23 @@ struct
                ()
       in
       let gstack = Array.create gstacksize StackVoid in
+#ifdef VERBOSE_EXN
          if !debug_rewrite then
             eprintf "Rewrite.apply_rewrite: match_redex%t" eflush;
+#endif
          match_redex addrs gstack redex terms;
+#ifdef VERBOSE_EXN
          if !debug_rewrite then
             eprintf "Rewrite.apply_rewrite: namer%t" eflush;
+#endif
          let names' = namer gstack names in
          let result =
             match contractum with
                RWCTerm con ->
+#ifdef VERBOSE_EXN
                   if !debug_rewrite then
                      eprintf "Rewrite.apply_rewrite: build_contractum%t" eflush;
+#endif
                   List.map (build_contractum names bnames gstack) con, names'
              | RWCFunction f ->
                   match terms with
@@ -1533,8 +1584,10 @@ struct
                    | _ ->
                         ref_raise(RefineError ("apply_rewrite", RewriteBadMatch (TermMatch xnil_term)))
          in
+#ifdef VERBOSE_EXN
             if !debug_rewrite then
                eprintf "Rewrite.apply_rewrite: done%t" eflush;
+#endif
             result
 
    (*

@@ -238,25 +238,21 @@ struct
          { term_op = { op_name = opname; op_params = [Var v] };
            term_terms = []
          } when opname == var_opname ->
-            assert (**)
-               begin
-                  if !debug_subst_ds then
-                     eprintf "Term_subst_ds.equal_comp: check var %s: (%a)%t" (**)
-                        v print_string_pair_list vars eflush;
-                  true
-               end;
+#ifdef VERBOSE_EXN
+           if !debug_subst_ds then
+              eprintf "Term_subst_ds.equal_comp: check var %s: (%a)%t" (**)
+                 v print_string_pair_list vars eflush;
+#endif
             (try equal_term vars' t' (List.assoc v vars) with
                 Not_found ->
                    match dest_term t' with
                       { term_op = { op_name = opname; op_params = [Var v'] };
                         term_terms = []
                       } when opname == var_opname ->
-                         assert (**)
-                            begin
-                               if !debug_subst_ds then
-                                  eprintf "\tCheck with %s%t" v' eflush;
-                               true
-                            end;
+#ifdef VERBOSE_EXN
+                         if !debug_subst_ds then
+                             eprintf "\tCheck with %s%t" v' eflush;
+#endif
                          not (List_util.assoc_in_range eq_comp_var v' vars) & v = v'
                     | _ ->
                          false)
@@ -279,20 +275,18 @@ struct
          List_util.for_all2 equal_comp_bterm bterms1 bterms2
 
    let alpha_equal_match (t, v) (t', v'', v''', terms) =
-      assert (**)
+#ifdef VERBOSE_EXN
+      if !debug_subst_ds then
          begin
-            if !debug_subst_ds then
-               begin
-                  eprintf "Term_subst_ds.alpha_equal_match:\n\t";
-                  eprintf "\tt: %a\n" debug_print t;
-                  eprintf "\tv: %a\n" print_string_list v;
-                  eprintf "\tt': %a\n" debug_print t';
-                  eprintf "\tv'': %a\n" print_string_list v'';
-                  eprintf "\tv''': %a\n" print_string_list v''';
-                  eprintf "\tterms: %a%t" (print_any_list debug_print) terms eflush
-               end;
-            true
+            eprintf "Term_subst_ds.alpha_equal_match:\n\t";
+            eprintf "\tt: %a\n" debug_print t;
+            eprintf "\tv: %a\n" print_string_list v;
+            eprintf "\tt': %a\n" debug_print t';
+            eprintf "\tv'': %a\n" print_string_list v'';
+            eprintf "\tv''': %a\n" print_string_list v''';
+            eprintf "\tterms: %a%t" (print_any_list debug_print) terms eflush
          end;
+#endif
       try equal_comp (List_util.zip v''' v'') (List_util.zip v terms) t t'  with
          Failure _ ->
             false
