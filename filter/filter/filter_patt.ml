@@ -47,6 +47,7 @@ open Lm_debug
 open Opname
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.RefineError
@@ -152,7 +153,7 @@ let build_sequent_patt loc t =
    let goals = SeqGoal.to_list goals in
 
    (* For now, the arg must be a var *)
-   let arg = dest_fso_var_string args in
+   let arg = dest_fso_var_string (one_subterm args) in
 
    (* Collect the hyps: if there is a context, it should be final *)
    let rec build_hyps hyps =
