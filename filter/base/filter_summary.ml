@@ -742,14 +742,14 @@ let res_op                     = mk_opname "resource_defs"
 let opname_op                  = mk_opname "opname"
 let mlrewrite_op               = mk_opname "mlrewrite"
 let mlaxiom_op                 = mk_opname "mlaxiom"
-let parent_op                  = mk_opname "parent2"
+let parent_op                  = mk_opname "parent"
 let module_op                  = mk_opname "module"
 let dform_op                   = mk_opname "dform"
 let prec_op                    = mk_opname "prec"
 let prec_rel_op                = mk_opname "prec_rel"
 let id_op                      = mk_opname "id"
 let comment_op                 = mk_opname "comment"
-let resource_op                = mk_opname "resource2"
+let resource_op                = mk_opname "resource"
 let infix_op                   = mk_opname "infix"
 let magic_block_op             = mk_opname "magic_block"
 let summary_item_op            = mk_opname "summary_item"
@@ -1071,7 +1071,14 @@ struct
       let path, opens, resources = three_subterms t in
          Parent { parent_name = dest_string_param_list path;
                   parent_opens = List.map dest_string_param_list (dest_xlist opens);
-                  parent_resources = List.map (dest_resource_sig convert) (dest_xlist resources)
+                  parent_resources =
+                     try
+                        List.map (dest_resource_sig convert) (dest_xlist resources)
+                     with RefineError _ -> begin
+                        (* HACK!!! This will only happen with an old .prla file *)
+                        (* eprintf "Warning: old syntax for a Summary!resource%t" eflush; *)
+                        []
+                     end
          }
 
    (*

@@ -409,11 +409,11 @@ let rule_name_id        = "_$rule_name"
  *)
 let expr_of_term loc t =
    let s = Ml_term.string_of_term t in
-   <:expr< Ml_term.term_of_string $str: s$ >>
+   <:expr< Ml_term.term_of_string $str: String.escaped s$ >>
 
 let expr_of_mterm loc t =
    let s = Ml_term.string_of_mterm t in
-   <:expr< Ml_term.mterm_of_string $str: s$ >>
+   <:expr< Ml_term.mterm_of_string $str: String.escaped s$ >>
 
 let expr_of_label loc = function
    [] ->

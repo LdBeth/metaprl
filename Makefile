@@ -117,19 +117,18 @@ depend: check_config
 
 mk/config: mk/make_config.sh
 	@echo Making mk/config...
-	@TERMS="$(TERMS)" REFINER="$(REFINER)" MAKE_JOBS="$(MAKE_JOBS)" MAKE_OPTS="$(MAKE_OPTS)" SEQ_SET="$(SEQ_SET)" CCC="$(CCC)" ENSROOT="$(ENSROOT)" OCAMLSRC="$(OCAMLSRC)" THEORIES="$(THEORIES)" TESTS="$(TESTS)" READLINE="$(READLINE)" mk/make_config.sh > mk/config
+	@ROOT="$(ROOT)" TERMS="$(TERMS)" REFINER="$(REFINER)" MAKE_OPTS="$(MAKE_OPTS)" SEQ_SET="$(SEQ_SET)" CCC="$(CCC)" ENSROOT="$(ENSROOT)" OCAMLSRC="$(OCAMLSRC)" THEORIES="$(THEORIES)" TESTS="$(TESTS)" READLINE="$(READLINE)" mk/make_config.sh
 
-check_config::check_versions mk/config
+mk/config.local:
+	@touch mk/config.local
+
+check_config::check_versions mk/config mk/config.local
 	@if [ $(TERMS) != ds -a $(TERMS) != std ]; then\
 		echo "ERROR: Invalid TERMS variable, edit mk/config file before running make"; \
 		exit 1; \
 	fi
 	@if [ $(REFINER) != SIMPLE -a $(REFINER) != VERBOSE ]; then\
 		echo "ERROR: Invalid REFINER variable, edit mk/config file before running make"; \
-		exit 1; \
-	fi
-	@if [ $(MAKE_JOBS) = undefined ]; then\
-		echo "ERROR: Undefined MAKE_JOBS variable, edit mk/config file before running make"; \
 		exit 1; \
 	fi
 	@if [ $(SEQ_SET) != Array -a $(SEQ_SET) != Splay ]; then\

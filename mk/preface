@@ -5,9 +5,10 @@
 #
 
 #
-# User definitions - TERMS, REFINER, MAKE_JOBS, SEQ_SET, ENSROOT, OCAMLSRC, CCC, THEORIES
+# User definitions - TERMS, REFINER, SEQ_SET, ENSROOT, OCAMLSRC, CCC, THEORIES
 #
 include $(ROOT)/mk/config
+include $(ROOT)/mk/config.local
 
 MP_VERSION=0.7.1
 
@@ -26,9 +27,6 @@ ifndef TERMS
 endif
 ifndef REFINER
    REFINER=undefined
-endif
-ifndef MAKE_JOBS
-   MAKE_JOBS=undefined
 endif
 ifndef MAKE_OPTS
    MAKE_OPTS=-s
@@ -101,11 +99,7 @@ ifndef INLINE
    INLINE=5
 endif
 
-ifeq ($(MAKE_JOBS),1)
-	MAKE:=$(MAKE) $(MAKE_OPTS)
-else
-	MAKE:=$(MAKE) -j$(MAKE_JOBS) $(MAKE_OPTS)
-endif
+MAKE:=$(MAKE) $(MAKE_OPTS)
 
 #
 # Config

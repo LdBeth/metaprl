@@ -667,7 +667,7 @@ struct
          [[  w = sl_word ->
              make_param (MString w)
            | w = STRING ->
-             make_param (String w)
+             make_param (String (Token.eval_string w))
            | n = sl_number ->
              make_param (Number n)
           ]
@@ -809,7 +809,7 @@ struct
          [[ t = singleterm ->
              t.aterm
            | sl_back_quote; name = STRING ->
-             mk_xstring_term name
+             mk_xstring_term (Token.eval_string name)
           ]];
 
       (* Terminals *)
@@ -979,7 +979,7 @@ struct
            | name = LIDENT ->
              name
            | name = STRING ->
-             name
+             Token.eval_string name
           ]];
 
       sl_word:
