@@ -1,6 +1,6 @@
 MPFILES =\
    test\
-   tests/prop-pigeon
+   prop-pigeon
 
 clean:
    $(CLEAN)

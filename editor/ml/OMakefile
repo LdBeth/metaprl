@@ -53,9 +53,12 @@ TESTFILES =
 
 if $(TESTS_ENABLED)
    .SUBDIRS: tests
-   TESTFILES =\
-      tests/test\
-      tests/prop-pigeon
+   TESTFILES[] =
+   if $(mem itt, $(THEORIES))
+      TESTFILES +=
+         tests/test
+         tests/prop-pigeon
+      export
    export
 
 MP2FILES = $(TESTFILES) $(MP2FILES)
