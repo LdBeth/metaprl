@@ -166,7 +166,7 @@ struct
                      caux (t1, t2)
                   else
                      false
-               else if v1 < v2 then
+               else if v2 < v1 then
                   caux (l1, t2)
                else
                   false
@@ -181,16 +181,16 @@ struct
    let level_lt = fun
       { le_const = const1; le_vars = vars1 }
       { le_const = const2; le_vars = vars2 } ->
-         let rec caux lt_flag = function
+         let rec caux = function
             ({ le_var = v1; le_offset = o1 }::t1 as l1),
             { le_var = v2; le_offset = o2 }::t2 ->
                if v1 = v2 then
-                  if o1 <= o2 then
-                     caux (lt_flag || o1 < o2) (t1, t2)
+                  if o1 < o2 then
+                     caux (t1, t2)
                   else
                      false
-               else if v1 < v2 then
-                  caux true (l1, t2)
+               else if v2 < v1 then
+                  caux (l1, t2)
                else
                   false
           | [], _ ->
@@ -198,8 +198,8 @@ struct
           | _, [] ->
                false
          in
-            if const1 <= const2 then
-               caux (const1 < const2) (vars1, vars2)
+            if const1 < const2 then
+               caux (vars1, vars2)
             else
                false
 
