@@ -582,7 +582,7 @@ PRLFiles(files) =
 # Support directories
 #
 SUPPORT = $(dir support)
-SUPPORT_DIRS = $(dir $(addprefix $(SUPPORT)/, $(array display, shell, tactics)))
+SUPPORT_DIRS = $(dir $(addprefix $(SUPPORT)/, $(array display, shell, tactics, doc)))
 
 #
 # Add the extra dependencies.  If sloppy dependencies

@@ -1,0 +1,33 @@
+OCAMLINCLUDES[] +=
+    ../display
+    ../shell
+    ../tactics
+
+OCAML_LIB_FLAGS += -linkall
+
+# Library files
+MPFILES[] =
+    doc_declare
+
+Theory($(MPFILES))
+
+#
+# Generate the document
+#
+PRINT_THEORIES[] =
+    doc_declare
+
+TheoryDocument(theory, $(PRINT_THEORIES))
+LaTeXDocumentInstall(tex doc, $(DOCDIR), misc, misc, theory-body)
+
+watch.ps: misc.ps
+    cp $< tmp.ps
+    mv tmp.ps $@
+
+#
+# Clean up
+#
+clean:
+    $(CLEAN) theory.tex theory-body.tex theory_print.ml
+
+all: theory$(LIB_SUFFIX)

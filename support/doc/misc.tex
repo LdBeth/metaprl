@@ -1,0 +1,67 @@
+% -*- Mode: fundamental -*-
+\documentclass{book}
+
+%
+% If you have them, you may want to include the Lucida-Bright fonts.
+%
+% \usepackage{lucidbry}
+% \usepackage[ansinew]{texnansi}
+% \usepackage[LY1]{fontenc}
+
+%
+% Use Times font
+%
+%\usepackage{times}
+%\usepackage{mathtime}
+%\usepackage[ansinew]{texnansi}
+%\usepackage[LY1]{fontenc}
+
+%
+% Set the width
+%
+\setlength{\oddsidemargin}{-0.25 in}
+\setlength{\evensidemargin}{-0.25 in}
+\setlength{\textwidth}{6.0 in}
+
+%
+% Turn this on if you want doublespace mode
+%
+%\usepackage{doublespace}
+
+%
+% Hyperlinks
+%
+\usepackage{hyperref}
+
+%
+% Index
+%
+\usepackage{makeidx}
+\makeindex
+
+%
+% Definitions.
+%
+\input{metaprl}
+
+%
+% Book title
+%
+\title{Miscellaneous documentation}
+\author{MetaPRL group}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\sloppy
+
+\input{theory-body.tex}
+
+\bibliographystyle{plain}
+\bibliography{rc}
+
+\printindex
+
+\end{document}
