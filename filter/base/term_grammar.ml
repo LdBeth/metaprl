@@ -254,6 +254,18 @@ struct
    let mk_arith_term loc name t1 t2 =
       { aname = None; aterm = mk_dep0_dep0_term (mk_dep0_dep0_opname loc name) t1.aterm t2.aterm }
 
+
+   (*
+    * Make record terms
+    *)
+
+   let mk_field_term loc r field =
+                mk_term (mk_op (mk_opname loc ["field"] [ShapeToken] [0])
+                               [make_param (Token field)])  [mk_simple_bterm r]
+
+   let mk_field_self_term loc field =  mk_field_term loc (mk_var_term "self") field
+
+
    (*
     * Check that all are strings.
     *)
@@ -394,9 +406,46 @@ struct
              { aname = None; aterm = mk_pair_term loc x.aterm y.aterm }
           ]
          ];
-
       noncommaterm:
-         [ "equal" LEFTA
+         [
+           "ite" LEFTA
+            [ "if"; e1 = noncommaterm; "then"; e2 = noncommaterm; "else"; e3 = noncommaterm ->
+               { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc "ifthenelse") e1.aterm e2.aterm e3.aterm }
+            | "let"; x = word_or_string; sl_equal; e1 = noncommaterm; "in"; e2 = noncommaterm ->
+               { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") x e1.aterm e2.aterm }
+            | e2 = noncommaterm; "where";  x = word_or_string; sl_equal; e1 = noncommaterm ->
+               { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") x e1.aterm e2.aterm }
+            | "open";  e1 = noncommaterm; "in"; e2 = noncommaterm ->
+               { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc "let") "self" e1.aterm e2.aterm }
+            ]
+
+          (* Logical operators *)
+          | "implies" RIGHTA
+            [ t1 = noncommaterm; op = sl_implies; t2 = noncommaterm ->
+               mk_arith_term loc op t1 t2
+            ]
+          | "or" RIGHTA
+            [ t1 = noncommaterm; op = sl_or; t2 = noncommaterm ->
+               mk_arith_term loc op t1 t2
+            ]
+          | "and" RIGHTA
+            [ t1 = noncommaterm; op = sl_and; t2 = noncommaterm ->
+               mk_arith_term loc op t1 t2
+            ]
+          | "quantify" LEFTA
+            [  op = sl_all; v = word_or_string; sl_colon; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
+                        { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) v t1.aterm t2.aterm }
+             | op = sl_exists; v = word_or_string; sl_colon; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
+                        { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) v t1.aterm t2.aterm }
+             | op = sl_open_quantify; t1 = noncommaterm; sl_period; t2 = noncommaterm -> (* thereis/forall *)
+                        { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) "self" t1.aterm t2.aterm }
+            ]
+          | "neg"
+            [ op = sl_not; x = noncommaterm ->
+               { aname = None; aterm = mk_dep0_term (mk_dep0_opname loc op) x.aterm }
+            ]
+          (* Relations *)
+          | "equal" NONA
             [ t1 = noncommaterm; op = sl_not_equal; t2 = noncommaterm; sl_in; ty = noncommaterm ->
                { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc op) ty.aterm t1.aterm t2.aterm }
              | t1 = noncommaterm; op = sl_equal; t2 = noncommaterm; sl_in; ty = noncommaterm ->
@@ -411,27 +460,7 @@ struct
                (* { aname = None; aterm = mk_dep0_dep0_term (mk_dep0_dep0_opname loc "sqeq") t1.aterm t2.aterm } *)
                   { aname = None; aterm = mk_xrewrite_term t1.aterm t2.aterm }
             ]
-          | "fun" RIGHTA
-           [ t1 = noncommaterm; op = sl_arrow; t2 = noncommaterm ->
-              mk_type_term loc op t1 t2
-           ]
-          | "rev_fun" LEFTA
-            [ t1 = noncommaterm; op = sl_left_arrow; t2 = noncommaterm ->
-               mk_arith_term loc op t2 t1
-            ]
-          | "union" LEFTA
-            [ t1 = noncommaterm; op = sl_plus; t2 = noncommaterm ->
-               mk_arith_term loc op t1 t2
-            ]
-          | "prod" LEFTA
-            [ t1 = noncommaterm; op = sl_star; t2 = noncommaterm ->
-               mk_type_term loc op t1 t2
-            ]
-          | "cons" RIGHTA
-            [ t1 = noncommaterm; op = sl_double_colon; t2 = noncommaterm ->
-               mk_arith_term loc op t1 t2
-            ]
-          | "compare" LEFTA
+          | "compare" NONA
             [ t1 = noncommaterm; op = sl_less_than; t2 = noncommaterm ->
                mk_arith_term loc op t1 t2
              | t1 = noncommaterm; op = sl_less_equal; t2 = noncommaterm ->
@@ -440,60 +469,61 @@ struct
                mk_arith_term loc op t1 t2
              | t1 = noncommaterm; op = sl_greater_than; t2 = noncommaterm ->
                mk_arith_term loc op t1 t2
+             | t1 = noncommaterm; op = sl_label_rel;  t2 = noncommaterm ->
+               { aname = None; aterm = make_application loc [mk_field_self_term loc op; t1.aterm; t2.aterm] }
             ]
-          | "implies" RIGHTA
-            [ t1 = noncommaterm; op = sl_implies; t2 = noncommaterm ->
+          (* Other operations *)
+          | "cons" RIGHTA
+            [ t1 = noncommaterm; op = sl_double_colon; t2 = noncommaterm ->
                mk_arith_term loc op t1 t2
             ]
-          | "or" RIGHTA
-            [ t1 = noncommaterm; op = sl_or; t2 = noncommaterm ->
+          | "fun" RIGHTA
+           [ t1 = noncommaterm; op = sl_arrow; t2 = noncommaterm ->
+              mk_type_term loc op t1 t2
+           ]
+          | "rev_fun" LEFTA
+            [ t1 = noncommaterm; op = sl_left_arrow; t2 = noncommaterm ->
+               mk_arith_term loc op t2 t1
+            ]
+          | "union" RIGHTA
+            [ t1 = noncommaterm; op = sl_plus; t2 = noncommaterm ->
                mk_arith_term loc op t1 t2
             ]
-          | "and" RIGHTA
-            [ t1 = noncommaterm; op = sl_and; t2 = noncommaterm ->
-               mk_arith_term loc op t1 t2
+          | "prod" RIGHTA
+            [ t1 = noncommaterm; op = sl_star; t2 = noncommaterm ->
+               mk_type_term loc op t1 t2
             ]
-          | "add" RIGHTA
+          | "isect" LEFTA
+            [  op = sl_isect; v = word_or_string; sl_colon; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
+                        { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) v t1.aterm t2.aterm }
+             | op = sl_quotient; x = sl_word; sl_comma; y = sl_word; sl_colon; t1 = noncommaterm; sl_double_slash; t2 = noncommaterm ->
+               { aname = None; aterm = mk_dep0_dep2_term (mk_dep0_dep2_opname loc op) x y t1.aterm t2.aterm }
+            ]
+          | "add" LEFTA
             [ t1 = noncommaterm; op = sl_add; t2 = noncommaterm ->
                mk_arith_term loc op t1 t2
              | t1 = noncommaterm; op = sl_sub; t2 = noncommaterm ->
                mk_arith_term loc op t1 t2
+             | t1 = noncommaterm; op = sl_label_add;  t2 = noncommaterm ->
+               { aname = None; aterm = make_application loc [mk_field_self_term loc op; t1.aterm; t2.aterm] }
             ]
-          | "mul" RIGHTA
+          | "uminus"
+            [ op = sl_minus; x = noncommaterm ->
+               { aname = None; aterm = mk_dep0_term (mk_dep0_opname loc op) x.aterm }
+            ]
+          | "mul" LEFTA
             [ t1 = noncommaterm; op = sl_mul; t2 = noncommaterm ->
                mk_arith_term loc op t1 t2
              | t1 = noncommaterm; op = sl_div; t2 = noncommaterm ->
                mk_arith_term loc op t1 t2
              | t1 = noncommaterm; op = sl_rem; t2 = noncommaterm ->
                mk_arith_term loc op t1 t2
+             | t1 = noncommaterm; op = sl_label_mul;  t2 = noncommaterm ->
+               { aname = None; aterm = make_application loc [mk_field_self_term loc op; t1.aterm; t2.aterm] }
             ]
-          | "quantify" LEFTA
-            [ op = sl_all; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
-               begin
-                  match t1 with
-                     { aname = None; aterm = t } ->
-                        raise (ParseError (sprintf "no binding var for %s quantifier" op))
-                   | { aname = Some name; aterm = t } ->
-                        { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) (dest_var name) t t2.aterm }
-               end
-             | op = sl_isect; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
-               begin
-                  match t1 with
-                     { aname = None; aterm = t } ->
-                        raise (ParseError (sprintf "no binding var for %s quantifier" op))
-                   | { aname = Some name; aterm = t } ->
-                        { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) (dest_var name) t t2.aterm }
-               end
-             | op = sl_exists; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
-               begin
-                  match t1 with
-                     { aname = None; aterm = t } ->
-                        raise (ParseError (sprintf "no binding var for %s quantifier" op))
-                   | { aname = Some name; aterm = t } ->
-                        { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) (dest_var name) t t2.aterm }
-               end
-             | op = sl_quotient; x = sl_word; sl_comma; y = sl_word; sl_colon; t1 = noncommaterm; sl_double_slash; t2 = noncommaterm ->
-               { aname = None; aterm = mk_dep0_dep2_term (mk_dep0_dep2_opname loc op) x y t1.aterm t2.aterm }
+          | "power" RIGHTA
+            [ t1 = noncommaterm; op = sl_power_l; t2 = noncommaterm ->
+               { aname = None; aterm = make_application loc [mk_field_self_term loc op; t1.aterm; t2.aterm] }
             ]
           | "apply" LEFTA
             [ t = applyterm ->
@@ -501,17 +531,18 @@ struct
              | t = applyterm; l = applytermlist ->
                { aname = None; aterm = make_application loc (t.aterm :: l) }
             ]
-          | "uminus" RIGHTA
-            [ op = sl_minus; x = noncommaterm ->
-               { aname = None; aterm = mk_dep0_term (mk_dep0_opname loc op) x.aterm }
-             | op = sl_not; x = noncommaterm ->
-               { aname = None; aterm = mk_dep0_term (mk_dep0_opname loc op) x.aterm }
-            ]
-          | "ite" LEFTA
-            [ "if"; e1 = noncommaterm; "then"; e2 = noncommaterm; "else"; e3 = noncommaterm ->
-               { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc "ifthenelse") e1.aterm e2.aterm e3.aterm }
-            ]
+          | "record_field" LEFTA
+            [ r = noncommaterm; sl_field; lab = word_or_string  ->
+             { aname = None;
+               aterm = mk_field_term loc r.aterm lab
+             }
+            | sl_field; lab = word_or_string  ->
+             { aname = None;
+               aterm = mk_field_self_term loc lab
+             }
+           ]
          ];
+
 
       (* Term that can be used in application lists *)
       applyterm:
@@ -563,6 +594,20 @@ struct
              [], bterms
           ]];
 
+
+      rcrdterm:
+         [[ ";"; lab = word_or_string; sl_equal; t = aterm  ->
+               (lab,t)
+         ]];
+
+      recordterm:
+         [[ lab = word_or_string; sl_colon; t = aterm  ->
+             (Some lab,t)
+           ]
+         |[ t = aterm  ->
+             (None,t)
+           ]];
+
       nonwordterm:
          [[ (* vars *)
              v = varterm ->
@@ -582,9 +627,39 @@ struct
              (* Parenthesized terms *)
            | sl_open_paren; t = aterm; sl_close_paren ->
              t
-           | sl_open_curly; v = sl_word; sl_colon; ty = applyterm; sl_pipe; b = aterm; sl_close_curly ->
+           | sl_open_curly; lab = word_or_string; sl_equal; t = aterm; r = LIST0 rcrdterm; sl_close_curly ->
+                let r0 =   mk_term (mk_op (mk_opname loc ["rcrd"] [ShapeToken] [0])
+                               [make_param (Token lab )])  [mk_simple_bterm t.aterm] in
+                let aux = fun r -> function (lab,t) ->
+                           mk_term (mk_op (mk_opname loc ["rcrd"] [ShapeToken] [0;0])
+                               [make_param (Token lab )])  [mk_simple_bterm t.aterm; mk_simple_bterm  r]
+                in
+                   { aname = None;
+                     aterm = List.fold_left aux r0 r
+                   }
+           | sl_open_curly; lab = word_or_string; sl_colon; t = aterm; ";"; r = LIST0 recordterm SEP ";"; sl_close_curly ->
+                let r0 =   mk_term (mk_op (mk_opname loc ["record"] [ShapeToken] [0])
+                               [make_param (Token lab )])  [mk_simple_bterm t.aterm] in
+                let aux = fun r -> function
+                      (Some lab,t) ->
+                           mk_term (mk_op (mk_opname loc ["record"] [ShapeToken] [1;0])
+                               [make_param (Token lab )])  [mk_bterm ["self"] t.aterm; mk_simple_bterm  r]
+                   |  (None,t) ->
+                           mk_dep0_dep1_term (mk_dep0_dep1_opname loc "set") "self" r t.aterm
+                in
+                   { aname = None;
+                     aterm = List.fold_left aux r0 r
+                   }
+           | sl_open_curly; lab = word_or_string; sl_colon; t = aterm; sl_close_curly ->
+                let r0 =   mk_term (mk_op (mk_opname loc ["record"] [ShapeToken] [0])
+                               [make_param (Token lab )])  [mk_simple_bterm t.aterm]
+                in
+                   { aname = None;
+                     aterm = r0
+                   }
+           | sl_open_curly; v =  word_or_string; sl_colon; ty = aterm; sl_pipe; b = aterm; sl_close_curly ->
              { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc "set") v ty.aterm b.aterm }
-           | sl_open_curly; f = sl_word; sl_pipe; t = aterm; sl_close_curly ->
+           | sl_open_curly; f =  word_or_string; sl_pipe; t = aterm; sl_close_curly ->
              let t = t.aterm in
              let rfun_op = mk_dep0_dep2_opname loc "rfun" in
              let t' =
@@ -904,6 +979,32 @@ struct
       sl_minus:
          [[ "-" -> "minus" ]];
 
+      sl_field:
+         [[ "^" -> "field" ]];
+
+      sl_label_rel:
+         [[ "^=" -> "="
+          | "^<" -> "<"
+          | "^>" -> ">"
+          | "^<=" -> "<="
+          | "^>=" -> ">="
+          | "^<>" -> "<>"
+          ]];
+
+      sl_label_add:
+         [[ "^+" -> "+"
+          | "^-" -> "-"
+          ]];
+
+      sl_label_mul:
+         [[ "^*" -> "*"
+          | "^/" -> "/"
+          ]];
+
+      sl_power_l:
+         [[ "^^" -> "^" ]];
+
+
       sl_star:
          [[ "*" -> "prod" ]];
 
@@ -950,6 +1051,11 @@ struct
 
       sl_exists:
          [[ "exst" -> "exists" ]];
+
+      sl_open_quantify:
+         [[ "forany" -> "all"
+          | "thereis" -> "exists"
+          ]];
 
       sl_isect:
          [[ "isect" -> "isect" ]];
