@@ -3,8 +3,8 @@ open Unix
 open List
 open Utils
 open Opname
+open Num
 open Term
-open Int32
 open Nuprl5
 
 (*
@@ -212,7 +212,7 @@ type stamp = {term: term;
 	      process_id: string;
 	      transaction_seq: int;
 	      seq: int;
-	      time: int32
+	      time: num
 	      }
 
 let print_stamp s =
@@ -245,11 +245,23 @@ let term_to_stamp t =
 	(match dest_param ppid with Token pid ->
 	(match dest_param ptseq with Number (Num.Int tseq) -> 
 	(match dest_param pseq with Number (Num.Int seq) ->
+	       (* print_string "tts "; *)
            {term = t;
             process_id = pid;
             transaction_seq = tseq;
             seq = seq;
-            time = destruct_time_parameter ptime}
+            time = (try (destruct_time_parameter ptime)
+		    with Invalid_argument "destruct_time_parameter_b"
+				-> error ["stamp"; "term"; "invalid"; "timeb"] [] [t]
+			| Invalid_argument "destruct_time_parameter_c"
+				-> error ["stamp"; "term"; "invalid"; "timec"] [] [t]
+			| Invalid_argument "destruct_time_parameter_d"
+				-> error ["stamp"; "term"; "invalid"; "timed"] [] [t]
+			| Invalid_argument "destruct_time_parameter_e"
+				-> error ["stamp"; "term"; "invalid"; "timee"] [] [t]
+			|_ -> error ["stamp"; "term"; "invalid"; "time"] [] [t]
+			)
+			}
 	| _ -> error ["stamp"; "term"; "invalid"; "sequence"] [] [t])
 	| _ -> error ["stamp"; "term"; "invalid"; "transaction"] [] [t])
 	| _ -> error ["stamp"; "term"; "invalid"; "pid"] [] [t])
@@ -270,8 +282,8 @@ let transaction_less = fun
   { term = term1; process_id = pid1; seq = seq1; time = time1 }
   { term = term2; process_id = pid2; seq = seq2; time = time2 } -> 
     if not (pid1 = pid2) then error ["stamp"; "less"; "incomparable"] [] [term1; term2]
-    else if (bequal time1 time2) then seq1 < seq2
-         else (blt time1 time2)
+    else if (time1 = time2) then seq1 < seq2
+         else (time1 < time2)
 
 let get_inet_addr =
 	let {h_addr_list=l} = gethostbyname (gethostname ())
@@ -311,10 +323,10 @@ let equal_stamps_p a b =
 
 let new_stamp () = 
   stamp_data.count <- stamp_data.count + 1;
-  make_stamp stamp_data.pid stamp_data.count stamp_data.count (Int32.mk_bint (time()))
+  make_stamp stamp_data.pid stamp_data.count stamp_data.count (num_of_int (time()))
 
 let get_stamp () = 
-  make_stamp stamp_data.pid stamp_data.count stamp_data.count (Int32.mk_bint (time()))
+  make_stamp stamp_data.pid stamp_data.count stamp_data.count (num_of_int (time()))
 
 let sequence () = 
   stamp_data.count <- stamp_data.count + 1;
@@ -336,9 +348,9 @@ let tid () =
    should try other tests and make outcome more apparent ie print test ok
  *)
 let test () = 
- let s1 = (make_stamp "goo" 2 1 (Int32.create 2))
- and s2 = (make_stamp "moo" 1 2 (Int32.create 2))
- and s3 = (make_stamp "goo" 2 2 (Int32.create 3))
+ let s1 = (make_stamp "goo" 2 1 (num_of_int 2))
+ and s2 = (make_stamp "moo" 1 2 (num_of_int 2))
+ and s3 = (make_stamp "goo" 2 2 (num_of_int 3))
    in (in_transaction_p s3 s1) & 
       (transaction_less s1 s3) &
       (transaction_less s3 s2) 

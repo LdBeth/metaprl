@@ -261,7 +261,7 @@ let rec term_of_mbterm mbterm =
 
 let rec print_param param =
   match (dest_param param) with
-    Number p -> (print_int(int_of_num p)  ; print_string ":n ")
+    Number p -> (print_string (string_of_num p)  ; print_string ":n ")
   | String p -> (print_string p ; print_string ":s ")
   | Token p -> (print_string p ; print_string ":t ")
   | Level p -> let rec loop l =

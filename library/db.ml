@@ -66,8 +66,10 @@ let level_allocate_slot l =
          l.items <- nitems
     );
 
+	(* print_string " fill "; print_string (string_of_int fill); print_newline(); *)
+
     (* important that itemf not be called until after index allocated for item. *)
-    l.fill = fill + 1;
+    l.fill <- fill + 1;
     fill
 
 let level_add l itemf =
@@ -77,6 +79,12 @@ let level_add l itemf =
       item
 
 let level_assign l item = 
+ (*  (match item with
+   Parameter p -> print_string "Parameter"
+   | Operator p -> print_string "Operator"
+   | Term p -> print_string "Term"
+   | Binding p -> print_string "Binding"
+   | Opid p -> print_string "Opid"); *)
   set l.items (level_allocate_slot l) item
 
   
@@ -97,6 +105,8 @@ let add_new_level = add_new_level_aux level_array_growth
 let rec levels_assign scanner code itemf =
  let levels = scanner.levels in
  let index = level_of_byte code in
+
+  (* print_string ("Adding to level "); print_string (string_of_int code); *)
   
   if (index >= (List.length levels)) 
      then ( add_new_level scanner
@@ -121,7 +131,7 @@ let make_operator opid parameters =
 				ParmList pl -> pl
 				 | _ -> error ["read_term"; "operator"; "nuprl-light"; "opname"] [] [])))
 		(tl parameters))
-     else mk_nuprl5_op ((make_param (String opid)) :: parameters)
+     else mk_nuprl5_op ((make_param (Token opid)) :: parameters)
 
 
 let scan_binding scanner = (scanner.stb (scan_string scanner.scanner))
@@ -148,6 +158,7 @@ and scan_compressed code scanner =
 
 and scan_parameter scanner =
  let code = (scan_cur_byte scanner.scanner) in
+  (* print_string "code  "; print_string (string_of_int code); *)
   if compression_code_p code
     then match (scan_compressed code scanner) with
 	    Parameter p -> p
@@ -164,12 +175,15 @@ and scan_parameters scanner =
      else []
 
 and scan_operator scanner =
+ (* print_string " sop "; *)
  let code = (scan_cur_byte scanner.scanner) in
   if compression_code_p code
     then match (scan_compressed code scanner) with
 	    Operator op -> op
 	|_ -> error ["read_term"; "operator"] [] []
-    else (make_operator (scan_string scanner.scanner) (scan_parameters scanner))
+    else (let opid = (scan_string scanner.scanner) in
+	  let parms = (scan_parameters scanner) in
+	    (make_operator opid parms))
 
 and scan_bound_term scanner =
  let code = (scan_cur_byte scanner.scanner) in
@@ -180,8 +194,8 @@ and scan_bound_term scanner =
 	  | Opid opid ->
 		(if scan_at_byte_p scanner.scanner ilcurly
 		    then mk_bterm []
-			 (mk_term (make_operator opid (scan_parameters scanner))
-				  (scan_bound_terms scanner))
+			  (let op = (make_operator opid (scan_parameters scanner)) in
+			     mk_term op (scan_bound_terms scanner))
 		 else if (scan_at_byte_p scanner.scanner ilparen)
 		    then mk_bterm [] (mk_term (make_operator opid [])
 						   (scan_bound_terms scanner))
@@ -202,25 +216,29 @@ and scan_bound_term scanner =
     else let s = (scan_string scanner.scanner) in
 	  (* should be match (scan_cur_byte scanner.scanner) with ... *)
 	  if (scan_at_byte_p scanner.scanner icomma)
-		then mk_bterm (flatten ((scanner.stb s)
+		then let bindings = (flatten ((scanner.stb s)
 					  :: (scan_delimited_list
 						scanner.scanner
 						(function () -> (scan_binding scanner))
-						icomma idot icomma)))
-				(scan_term scanner)
+						icomma idot icomma))) in
+			mk_bterm bindings (scan_term scanner)
 	  else if (scan_at_byte_p scanner.scanner idot)
 		then ((scan_next scanner.scanner);
 			 mk_bterm (scanner.stb s) (scan_term scanner))
 	
 	  else if (scan_at_byte_p scanner.scanner ilcurly)
-		then mk_bterm [] (mk_term (make_operator s (scan_parameters scanner))
-				  (scan_bound_terms scanner))
+		then mk_bterm [] 
+			(let op = (make_operator s (scan_parameters scanner)) in
+			 let bterms = (scan_bound_terms scanner) in
+			   (mk_term op bterms))
+
 	  else if (scan_at_byte_p scanner.scanner ilparen)
 		then mk_bterm [] (mk_term (make_operator s [])
 				  (scan_bound_terms scanner))
 	  else error ["read_term"; "bound term"; "lost"] [] []
 
 and scan_bound_terms scanner = 
+  (* print_string " sbt "; *)
   if scan_at_byte_p scanner.scanner ilparen
      then scan_delimited_list scanner.scanner
 			      (function () -> scan_bound_term scanner)
@@ -228,16 +246,19 @@ and scan_bound_terms scanner =
      else []
 
 and scan_term scanner =
+ (* print_string " st "; *)
  let code = scan_cur_byte scanner.scanner in
    if (compression_code_p code)
       then match (scan_compressed code scanner) with
-	      Opid s ->		mk_term (make_operator s (scan_parameters scanner)) 
-					(scan_bound_terms scanner)
+	      Opid s ->		let op = (make_operator s (scan_parameters scanner)) in
+				  mk_term op (scan_bound_terms scanner)
 	    | Operator op ->	mk_term op (scan_bound_terms scanner)
 	    | Term term ->	term
 	    |_ -> error ["read_term"; "term"] [] []
-      else mk_term (scan_operator scanner) (scan_bound_terms scanner)
-  
+      else let op = (scan_operator scanner) in
+		let bterms = (scan_bound_terms scanner) in
+			mk_term op bterms	
+
 
 
 let read_term_aux scanner stb stp =
@@ -341,14 +362,18 @@ let make_le_scanner = make_scanner level_expression_escape_string "\n\t\r "
 
 let mk_real_param_from_strings stp value ptype =
   match ptype with "n" -> (Number (Num.num_of_string value))
-  | "time" -> (ParmList [(make_param (String "time"));
+  | "time" -> (ParmList [(make_param (Token "time"));
 			  (make_param (Number (Num.num_of_string value)))])
   | "t" -> (Token value)
   | "s" -> (String value)
   | "q" -> (ParmList [(make_param (String "quote")); (make_param (String value))])
-  | "b" -> (ParmList [(make_param (String "bool")); (make_param (Number (Num.num_of_string value)))])
+  | "b" -> ( ParmList [ ( make_param (String "bool"))
+			; if value = "false"	 then make_param (Number (Num.num_of_int 0))
+			  else if value = "true" then make_param (Number (Num.num_of_int 1))
+			  else error ["real_parameter_from_string"; value][][]
+		      ])
   | "v" -> (Var value)
-  | "o" -> let term = string_to_trivial_term value stp in
+  | "oid" -> let term = string_to_trivial_term value stp in
     (ObId (stamp_to_object_id (term_to_stamp term)))
   | "l" -> let level = 
       scan_level_expression (make_le_scanner (Stream.of_string value)) in 
@@ -382,6 +407,7 @@ let extract_binding1 pl =
  | t  -> failwith "extract binding 1"
 
 let string_to_bindings value = 
+  
   let l = String.length value in
   if l > ash_length then 
     let v = String.sub value 0 ash_length in
@@ -400,39 +426,46 @@ let string_to_bindings value =
   else [value]
 
 
-let rec string_to_parameter value ptype =
- let l = String.length value in
-  if ash_length < l then 
-    let v = String.sub value 0 ash_length in
-    let l'= String.length v in 
-    let pv = (if v = ascii_special_header then 
-      let c = String.sub v 0 1 and v' = String.sub v 1 (l' - 1) in
-      match c with 
-	"A" -> (ParmList [(make_param (String "extended"));
-			   (make_param (String "slot"));
-			   (make_param (String ptype)); 
-			   (make_param (Token v'))] (*type-of-meta-variable-id v'*)
-		  )
-      | "D" ->  (ParmList [(make_param (String "extended"));
-			    (make_param (String "slot"));
-			    (make_param (String ptype)); 
-			    (make_param (Token v'))])
-      | "S" ->  (ParmList [(make_param (String "extended"));
-			    (make_param (String "slot"));
-			    (make_param (String ptype))
-			  ])
-      | "d" ->  (ParmList [(make_param (String "display"));
-			    (make_param (String "slot"));
-			    (make_param (String ptype));
-			  ])
-      | "a" ->  (mk_meta_param_from_strings value ptype)
-      | "%" ->  (mk_real_param_from_strings string_to_parameter v' ptype)
-      | t -> failwith "unknown special op-param"
-    else (mk_real_param_from_strings string_to_parameter value ptype))
-    in make_param pv
-  else make_param (mk_real_param_from_strings string_to_parameter value ptype)
+let rec string_to_parameter s ptype =
 
-(* end db ascii*)
+  let len = String.length s in
+
+    if (len < 2 or not ('%' = String.get s 0))
+	then make_param (mk_real_param_from_strings string_to_parameter s ptype)
+
+    else 
+     let ss = (String.sub s 2 (len -2)) in
+      make_param
+       (match (String.get s 1) with
+	  '%' -> (mk_real_param_from_strings string_to_parameter ss ptype)
+
+	| 'A' -> (ParmList	[ make_param (String "extended")
+				; make_param (String "slot")
+				; make_param (String ptype)
+				; make_param (Token ss)
+				])
+
+	| 'D' ->  (ParmList	[ make_param (String "extended")
+				; make_param (String "slot")
+				; make_param (String ptype)
+				; make_param (Token ss)
+				])
+
+	| 'S' ->  (ParmList	[ make_param (String "extended")
+				; make_param (String "slot")
+				; make_param (String ptype)
+				])
+
+	| 'd' ->  (ParmList	[ make_param (String "display")
+				; make_param (String ss)
+				; make_param (String ptype)
+				])
+
+	| 'a' ->  (mk_meta_param_from_strings ss ptype)
+
+	| _ -> error ["string_to_parameter"; s; ptype][][])
+	  
+
 
 let make_session_scanner stream =
   new_lscanner
@@ -477,11 +510,12 @@ let idata_persist_term_p t =
  |_ -> false
 
 let stamp_of_idata_persist_term t =
+ (* print_string "soipt "; *)
  match dest_term t with
    { term_op = op; term_terms = [istamp] } 
       -> (match dest_op op with 
 	   { op_name = opname; op_params = [id; ftype] } when idata_persist_param = id
-          -> (term_to_stamp (term_of_unbound_term istamp))
+          -> term_to_stamp (term_of_unbound_term istamp)
      |_ -> error ["stamp_of_idata_persist_file"][][t])
    |_ -> error ["stamp_of_idata_persist_file"][][t]
 
@@ -491,8 +525,8 @@ let stamp_and_type_of_idata_persist_term t =
       -> (match dest_op op with 
 	   { op_name = opname; op_params = [id; ftype] } when idata_persist_param = id
           -> ((term_to_stamp (term_of_unbound_term istamp)), dest_token_param ftype)
-     |_ -> error ["stamp_of_idata_persist_file"][][t])
-   |_ -> error ["stamp_of_idata_persist_file"][][t]
+     |_ -> error ["stamp_and_type_of_idata_persist_file"][][t])
+   |_ -> error ["stamp_and_type_of_idata_persist_file"][][t]
 
 let with_open_persist_file f t =
  match dest_term t with
@@ -575,14 +609,16 @@ let loaded_levels_update index stamp levels =
 
 
 let rec read_levels term index =
+ (* print_string "read_levels "; Mbterm.print_term term; *)
  if idata_persist_term_p term 
-    then let stamp = (stamp_of_idata_persist_term term) in
+    then  let stamp = (stamp_of_idata_persist_term term) in
 	  try (loaded_level_find_stamp stamp)
           with _ -> let levels = read_static_level term in
-		      loaded_levels_update index stamp levels;
-		      levels
-   else try  level_find (index_of_il_term term)
-	with e -> error ["read_levels"; "unknown"] [] [term]
+		      (loaded_levels_update index stamp levels
+		      ; levels)
+   else (unconditional_error_handler 
+	  (function () -> level_find (index_of_il_term term))
+	  (function t -> error ["read_levels"; "unknown"] [] [t; term]))
 
 and level_find index =
     try (loaded_level_find_index index) with _ -> read_levels (disk_levels_assoc index) index
@@ -617,7 +653,7 @@ and session_read_term scanner =
  
   if (scan_at_char_p scanner.scanner 'l')
     then (scan_char scanner.scanner 'l'; 
-	  scanner.levels <- read_levels (session_read_term
+	  scanner.levels <- read_levels (scan_term
 					      (* forget current levels *)
 					      (new_lscanner scanner.scanner scanner.stb scanner.stp))
 					(-1);
@@ -650,13 +686,15 @@ let read_disk_levels () =
        let m = session_maybe_read_term scanner in
         match m with 
  	  None -> []
-	| Some term -> match dest_term term with
-			{ term_op = op; term_terms = [dp]}
-			 -> (match dest_op op with 
+	| Some term -> 	(* (Mbterm.print_term term; *)
+			match dest_term term with
+			{ term_op = op; term_terms = [li; dp]}
+			 -> (match dest_op (operator_of_term (term_of_unbound_term li)) with 
 			      { op_name = _; op_params = [id; index]}
 			      -> (dest_int_param index, term_of_unbound_term dp) :: aux()
 			     |_ -> error ["read_disk_levels"][][term])				
 			 |_ -> error ["read_disk_levels"][][term]				
+
 	in disk_levels := aux ())
   "levels" "lst" 
 
@@ -702,5 +740,10 @@ let db_init master ascp =
  mkdir !process_pathname 999*)
 
 
+let string_to_term s = 
+  scan_term (make_session_scanner (Stream.of_string s))
+
+let session_string_to_term s = 
+  session_read_term (make_session_scanner (Stream.of_string s))
 
 

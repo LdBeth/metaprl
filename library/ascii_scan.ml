@@ -64,6 +64,7 @@ let implode_rev chars =
 
 
 let make_scanner escape white stream =
+ (* print_string "make_scanner  "; *)
  let emptyp = try (empty stream; true) with _ -> false in
  { stream = stream
 
@@ -79,12 +80,16 @@ let make_scanner escape white stream =
 let scan_stream_eof_p s = try (empty s.stream; true) with _ -> false
 
 let scan_bump s =
+ (* print_string (Char.escaped s.cchar); *)
  if s.eofp then error ["scanner"; "bump"; "eof"] [] []
  else if (scan_stream_eof_p s) then s.eofp <- true
  else
    (s.escapep <- false;
     s.cchar <- next s.stream;
     ())
+ (* ; print_string (Char.escaped s.cchar); 
+ print_newline () *)
+
 
 
 let scan_next s =
@@ -98,7 +103,7 @@ let scan_at_eof_p s = s.eofp (*or scan_stream_eof_p s *)
 let scan_escape_p s = s.escapep
 
 let scan_cur_char s = s.cchar
-let scan_at_char_p s c = (not (scan_at_eof_p s)) & (s.cchar = c)
+let scan_at_char_p s c = (not (scan_at_eof_p s)) & (s.cchar = c) & not (scan_escape_p s)
 
 let scan_char s c = 
  if (scan_at_char_p s c) 
@@ -110,7 +115,7 @@ let scan_char s c =
 
 
 let scan_cur_byte s = code s.cchar
-let scan_at_byte_p s c = (not (scan_at_eof_p s)) & (code s.cchar) = c
+let scan_at_byte_p s c = (not (scan_at_eof_p s)) & (code s.cchar) = c  & not (scan_escape_p s)
 
 let scan_byte s c = 
  if (scan_at_byte_p s c) 
@@ -133,12 +138,15 @@ let rec scan_whitespace s =
 
 
 let scan_string s =
+ (* print_string " sstr "; *)
  let acc = ref [] in
  while not (scan_at_eof_p s) & not ((mem s.cchar s.escape) & (not s.escapep))
   do acc := s.cchar :: !acc; scan_next s
   done
 
- ; implode_rev !acc
+ ; (let ss = implode_rev !acc
+    in (* print_string ss; print_newline();  *)
+	ss)
 
 
 (* arg digits are in reverse order *)
@@ -169,13 +177,13 @@ let scan_char_delimited_list s itemf ld rd sep =
 
  scan_char s ld;
 
- if (scan_at_char_p s rd) then []
+ if (scan_at_char_p s rd) then (scan_char s rd; [])
  else let acc = ref [(itemf ())] in
 	while (scan_at_char_p s sep)
 	  do (scan_char s sep); acc := (itemf ()) :: !acc
 	  done;
 	
-	if (scan_at_char_p s rd) then rev !acc
+	if (scan_at_char_p s rd) then (scan_char s rd; rev !acc)
 	else if (scan_at_eof_p s) 
 	  then  error ["scanner"; "delimited_list"; "eof"; Char.escaped rd] [] []
 	else error ["scanner"; "delimited_list"; Char.escaped s.cchar; Char.escaped rd] [] []
@@ -185,13 +193,13 @@ let scan_delimited_list s itemf ld rd sep =
 
  scan_byte s ld;
 
- if (scan_at_byte_p s rd) then []
+ if (scan_at_byte_p s rd) then (scan_byte s rd; [])
  else let acc = ref [(itemf ())] in
 	while (scan_at_byte_p s sep)
 	  do (scan_byte s sep); acc := (itemf ()) :: !acc
 	  done;
 	
-	if (scan_at_byte_p s rd) then rev !acc
+	if (scan_at_byte_p s rd) then (scan_byte s rd; rev !acc)
 	else if (scan_at_eof_p s) 
 	  then  error ["scanner"; "delimited_list"; "eof"; Char.escaped (chr rd)] [] []
 	else error ["scanner"; "delimited_list"; Char.escaped s.cchar; Char.escaped (chr rd)] [] []

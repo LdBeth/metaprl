@@ -1,6 +1,5 @@
  
 open Term
-open Int32
 open Num
 
 (*
@@ -58,7 +57,7 @@ type stamp = {term: term;
 	      process_id: string;
 	      transaction_seq: int;
 	      seq: int;
-	      time: int32
+	      time: num
 	      }
 
 val print_stamp		: stamp -> unit

@@ -28,7 +28,6 @@ open Num
   val scan_bump		: scanner -> unit
 
   val scan_at_eof_p	: scanner -> bool
-  val scan_escape_p	: scanner -> bool
 
 
   (* twould be better if scanner were last arg in following funcs to allow for 

@@ -452,6 +452,35 @@ let jointest remote_port local_port =
 ;;
 
 
+
+special_error_handler (function () -> 
+			( Db.db_init "/usr/u/nuprl/nuprl5/NuPrlDBa" true	
+			; Mbterm.print_term (Db.session_string_to_term "l!l{1:n}ltvoid()t")
+			;()
+			))
+ (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
+
+
+(*
+
+special_error_handler (function () -> 
+			( maybe_lib_open()
+			; Mbterm.print_term (Db.session_string_to_term "l!l{1:n}ltvoid()t")
+			;()))
+ (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
+
+special_error_handler
+  (function () ->
+ 	   Mbterm.print_term (Db.string_to_term "!level_assoc(!l{0:n};!data_persist{STATIC:t}(!stamp{6740:n,3091287743:time,44:n,1900031899_3D6C_B8413DA9:t}))")
+	   ;())
+  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
+
+special_error_handler
+  (function () ->
+ 	   Mbterm.print_term (Db.string_to_term "!level_assoc(!l{0:n};!data_persist{STATIC:t}(!stamp{6740:n,3091287743:time,44:n,1900031899_3D6C_B8413DA9:t}))")
+	   ;())
+  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
+
 special_error_handler
   (function () ->
  	let s = (make_scanner "[|]"  "\n\t\r " (Stream.of_string "[0]")) in
@@ -459,16 +488,11 @@ special_error_handler
 	   ;())
   (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
-(*
-
 
 special_error_handler (function () -> testall "DENEB" 3444 4444)
  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
 special_error_handler (function () -> testall "DENEB" 5289 2895)
- (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
-
-special_error_handler (function () -> maybe_lib_open())
  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
 

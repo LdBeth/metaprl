@@ -392,7 +392,7 @@ let rec print_node node =
   if bequal b (mbs_LongInteger) then
     begin
       print_char '{';
-      print_int (int_of_num (number_value node));
+      print_string (string_of_num (number_value node));
       print_char '}'
     end
   else if bequal b (mbs_String) then

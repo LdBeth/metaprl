@@ -1,7 +1,6 @@
 open Term
 open Opname
-open Int32
-
+open Num
 
 let nuprl5_opname = mk_opname "!nuprl5_implementation!" nil_opname
 
@@ -10,10 +9,10 @@ let nuprl5_opname = mk_opname "!nuprl5_implementation!" nil_opname
 let make_bool_parameter b =
   make_param (ParmList
 		[(make_param (Token "bool")); (make_param (Number (Num.Int (if b then 1 else 0))))])
+
 let make_time_parameter time =
-  let (a, b) = dest_int32 time in
   make_param (ParmList
-		[(make_param (Token "time")); (make_param (Number (Num.Int a))); (make_param (Number (Num.Int b)))])
+		[(make_param (Token "time")); (make_param (Number time))])
 
 let time_parameter_p p =
   match (dest_param p) with
@@ -37,15 +36,14 @@ let bool_parameter_p p =
 
 let destruct_time_parameter p =
   match (dest_param p) with
-    ParmList [h; a; b] -> (match (dest_param h) with
-      Token s -> if s = "time" then (match (dest_param a) with
-	Number (Num.Int i) -> (match (dest_param b) with
-	  Number (Num.Int k) -> make_int32 (i, k)
-      	| _ -> raise (Invalid_argument "destruct_time_parameter"))
-      | _ -> raise (Invalid_argument "destruct_time_parameter"))
-      else raise (Invalid_argument "destruct_time_parameter")
-    | _ -> raise (Invalid_argument "destruct_time_parameter"))
-  | _ -> raise (Invalid_argument "destruct_time_parameter")
+    ParmList [h; n] -> (match (dest_param h) with
+      Token s -> (if s = "time" then (match (dest_param n) with
+	Number i -> i
+      | _ -> raise (Invalid_argument "destruct_time_parameter_b"))
+      else raise (Invalid_argument "destruct_time_parameter_c"))
+    | _ -> raise (Invalid_argument "destruct_time_parameter_d"))
+  | _ -> raise (Invalid_argument "destruct_time_parameter_e")
+
 
 let destruct_bool_parameter p =
   match (dest_param p) with
