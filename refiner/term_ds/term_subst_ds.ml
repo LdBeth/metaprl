@@ -180,16 +180,13 @@ struct
    (*
     * Utilities.
     *)
-   let rev_assoc v =
-      let rec aux = function
-         (v1, v2)::t ->
-            if v2 = v then
-               v1
-            else
-               aux t
-       | [] -> raise Not_found
-      in
-         aux
+   let rec rev_assoc v = function
+      (v1, v2)::t ->
+         if v2 = v then
+            v1
+         else
+            rev_assoc v t
+    | [] -> raise Not_found
 
    let rec zip_cons l = function
       v1::t1, v2::t2 ->
@@ -290,60 +287,58 @@ struct
     *    3. A meta-parameter matches a parameter of
     *       the same parameter type.
     *)
-   let generalization =
-      let rec generalizes_term vars t1 t2 =
-         if is_so_var_term t1 then
-            vars
-         else if is_context_term t1 then
-            if is_context_term t2 then
-               let _, t1', _ = dest_context t1 in
-               let _, t2', _ = dest_context t2 in
-                  generalizes_term vars t1' t2'
+   let rec generalizes_term vars t1 t2 =
+      if is_so_var_term t1 then
+         vars
+      else if is_context_term t1 then
+         if is_context_term t2 then
+            let _, t1', _ = dest_context t1 in
+            let _, t2', _ = dest_context t2 in
+               generalizes_term vars t1' t2'
+         else
+            raise (Failure "generalization")
+      else if is_so_var_term t2 or is_context_term t2 then
+         raise (Failure "generalization")
+      else
+         (* Regular terms *)
+         let { term_op = op1; term_terms = bterms1 } = dest_term t1 in
+         let { term_op = op2; term_terms = bterms2 } = dest_term t2 in
+         let { op_name = name1; op_params = params1 } = dest_op op1 in
+         let { op_name = name2; op_params = params2 } = dest_op op2 in
+            if name1 == name2 then
+               try
+                  List_util.iter2 generalizes_param params1 params2;
+                  List_util.fold_left2 generalizes_bterm vars bterms1 bterms2
+               with
+                  Failure _ ->
+                     raise (Failure "generalization")
             else
                raise (Failure "generalization")
-         else if is_so_var_term t2 or is_context_term t2 then
-            raise (Failure "generalization")
-         else
-            (* Regular terms *)
-            let { term_op = op1; term_terms = bterms1 } = dest_term t1 in
-            let { term_op = op2; term_terms = bterms2 } = dest_term t2 in
-            let { op_name = name1; op_params = params1 } = dest_op op1 in
-            let { op_name = name2; op_params = params2 } = dest_op op2 in
-               if name1 == name2 then
-                  try
-                     List_util.iter2 generalizes_param params1 params2;
-                     List_util.fold_left2 generalizes_bterm vars bterms1 bterms2
-                  with
-                     Failure _ ->
-                        raise (Failure "generalization")
-               else
-                  raise (Failure "generalization")
 
-      and generalizes_param param1 param2 =
-         if param1 <> param2 then
-            raise (Failure "generalization")
+   and generalizes_param param1 param2 =
+      if param1 <> param2 then
+         raise (Failure "generalization")
 
-      and generalizes_bterm vars bterm1 bterm2 =
-         (* Keep track of binding vars *)
-         let { bvars = vars1; bterm = term1 } = dest_bterm bterm1 in
-         let { bvars = vars2; bterm = term2 } = dest_bterm bterm2 in
-         let aux vars v1 v2 =
-            try
-               if v2 = List.assoc v1 vars then
-                  vars
-               else
-                  raise (Failure "generalization")
-            with _ ->
-                  (v1, v2)::vars
-         in
-         let vars' = List.fold_left2 aux vars vars1 vars2 in
-            generalizes_term vars' term1 term2
+   and generalizes_bterm vars bterm1 bterm2 =
+      (* Keep track of binding vars *)
+      let { bvars = vars1; bterm = term1 } = dest_bterm bterm1 in
+      let { bvars = vars2; bterm = term2 } = dest_bterm bterm2 in
+      let aux vars v1 v2 =
+         try
+            if v2 = List.assoc v1 vars then
+               vars
+            else
+               raise (Failure "generalization")
+         with _ ->
+               (v1, v2)::vars
       in
-         (* Start it *)
-         generalizes_term
+      let vars' = List.fold_left2 aux vars vars1 vars2 in
+         generalizes_term vars' term1 term2
+
+   let generalization = generalizes_term
 
    let generalizes t1 t2 =
-      try generalization [] t1 t2; true with
+      try generalizes_term [] t1 t2; true with
          Failure "generalization" ->
             false
 
