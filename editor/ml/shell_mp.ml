@@ -26,8 +26,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 extends Mptop
@@ -258,15 +258,17 @@ struct
    let rec use state name =
       let inx = open_in name in
       let int_flag = State.is_interactive state in
+      let stream = State.stream_of_channel state inx in
+      let flush () = Stream.iter (fun _ -> ()) stream in
          State.set_interactive state false;
-         toploop state false (State.stream_of_channel state inx);
-         State.set_interactive state true;
+         toploop state false stream flush;
+         State.set_interactive state int_flag;
          close_in inx
 
    (*
     * Toploop reads phrases, then prints errors.
     *)
-   and toploop state prompt instream =
+   and toploop state prompt instream inflush =
       let loop = ref true in
          while !loop do
             let state =
@@ -284,28 +286,8 @@ struct
                    | None ->
                         loop := false
                with
-                  Stdpp.Exc_located ((start, finish), exn) ->
-                     let df = State.get_dfbase state in
-                     let buf = new_buffer () in
-                        format_string buf "chars ";
-                        format_int buf start;
-                        format_string buf "-";
-                        format_int buf finish;
-                        format_string buf ": ";
-                        begin
-                           match exn with
-                              Pcaml.Qerror (_, _, exn)
-                            | exn ->
-                                 Filter_exn.format_exn df buf exn
-                        end;
-                        print_to_channel default_width buf stderr;
-                        eflush stderr
-                | End_of_file ->
+                  End_of_file ->
                      loop := false
-
-                | (Pcaml.Qerror _) as exn ->
-                     Pcaml.report_error exn;
-                     eflush stderr
 
                 | RefineError (_, ToploopIgnoreError) ->
                      ()
@@ -313,7 +295,10 @@ struct
                 | exn ->
                      let df = State.get_dfbase state in
                      let buf = new_buffer () in
-                        format_string buf "uncaught exception: ";
+                        begin match exn with
+                           Stdpp.Exc_located _ | Pcaml.Qerror _ -> inflush ()
+                         | _ -> format_string buf "Uncaught exception: ";
+                        end;
                         Filter_exn.format_exn df buf exn;
                         print_to_channel default_width buf stderr;
                         eflush stderr
@@ -332,9 +317,9 @@ struct
    let main_loop_aux state =
       match State.get_input_files () with
          [] ->
-            let instream = State.stdin_stream state in
+            let instream, flush = State.stdin_stream state in
                printf "%s\n%t" version eflush;
-               toploop state true instream
+               toploop state true instream flush
         | files ->
             use_files state files
 

@@ -617,8 +617,12 @@ struct
                   buf.buf_index <- index + 1;
                   Some c
       in
+      let flush () =
+         buf.buf_index <- 0;
+         buf.buf_buffer <- ""
+      in
          reset_input state;
-         Stream.from read
+         Stream.from read, flush
 
    (*
     * Wrap the toplevel input function.
