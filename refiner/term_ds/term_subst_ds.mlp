@@ -383,15 +383,12 @@ struct
    (*
     * Substitution is managed as a DAG.
     *)
-   let make_subst subst =
-      let convert (vars, edge) =
-         match edge with
-            Some edge ->
-               (vars, Some (edge, free_vars edge))
-          | None ->
-               (vars, None)
-      in
-         Cycle_dag.make (List.map convert subst)
+   let convert_subst (vars, edge) =
+      match edge with
+         Some edge ->
+            (vars, Some (edge, free_vars edge))
+       | None ->
+            (vars, None)
 
    let equate_vars subst v1 v2 =
       try
@@ -446,11 +443,9 @@ struct
 
    let unify_empty = []
 
-   let unify_subst_of_subst subst =
-      let convert (v, t) =
-         ([v], Some t)
-      in
-         List.map convert subst
+   let convert_subst_of_subst (v, t) = ([v], Some t)
+      
+   let unify_subst_of_subst subst = List.map convert_subst_of_subst subst
 
    let add_unify_subst v t s =
       ([v], Some t) :: s
@@ -543,7 +538,7 @@ struct
             raise unify_exn
 
    let unify subst constants term1 term2 =
-      get_subst (unify_terms (make_subst subst) constants [] term1 term2)
+      get_subst (unify_terms (Cycle_dag.make (List.map convert_subst subst)) constants [] term1 term2)
 
    (*
     * Matching is like unification, but variable matches
