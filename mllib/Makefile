@@ -85,7 +85,8 @@ LMFILES :=\
 	permutations\
 	mp_inet\
 	http_server\
-	comment_parse
+	comment_parse\
+	mp_term
 
 # Name of library
 MAIN := util

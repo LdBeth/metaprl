@@ -18,7 +18,8 @@ LCFILES :=\
 	getrusage\
 	register\
 	mmap\
-	readline
+	readline\
+	termsize
 
 # Name of library
 MAIN := clib

@@ -568,7 +568,7 @@ let term_of_proof proof =
    let goal = mk_goal_list_term (List.map term_of_proof_arg goal) in
    let subgoals = List.map (fun l -> mk_goal_list_term (List.map term_of_proof_arg l)) subgoals in
    let extras = List.map term_of_proof_arg extras in
-   let subgoals = 
+   let subgoals =
       (* HACK!!! *)
       let l = List.length subgoals in
       if l < 20 then mk_subgoals_term subgoals extras
@@ -618,6 +618,7 @@ let format_aux window proof =
       TextWindow { df_width = width; df_base = dfbase; df_mode = mode } ->
          let df = get_mode_base dfbase mode in
          let buf = Rformat.new_buffer () in
+         let width = Mp_term.term_width width in
             Dform.format_term df buf proof;
             Rformat.format_newline buf;
             Rformat.print_to_channel width buf stdout;
@@ -625,6 +626,7 @@ let format_aux window proof =
     | TexWindow { df_width = width; df_base = dfbase; df_mode = mode } ->
          let df = get_mode_base dfbase mode in
          let buf = Rformat.new_buffer () in
+         let width = Mp_term.term_width width in
             Dform.format_term df buf proof;
             Rformat.format_newline buf;
             Rformat.print_to_tex width buf stdout;
