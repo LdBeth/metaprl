@@ -230,6 +230,7 @@ sig
    val set_command : info -> (str_elem * loc) -> unit
    val add_resource : info -> string -> str_ctyp resource_sig -> unit
    val add_prec : info -> string -> unit
+   val hash : info -> int
 
    (*
     * Debugging.

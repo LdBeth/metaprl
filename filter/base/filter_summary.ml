@@ -502,6 +502,10 @@ let convert_resource convert
       resource_output = convert.ctyp_f output
    }
 
+let hash =
+   let hash_aux (i: int) item = Hashtbl.hash_param 1000 10000 (i, item) in
+      (fun info -> List.fold_left hash_aux 0 info.info_list)
+
 (*
  * Normalize all terms in the info.
  *)

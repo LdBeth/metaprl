@@ -141,6 +141,8 @@ val filter :
    ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info ->
    ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info
 
+val hash : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info -> int
+
 val resource_op : Opname.opname
 
 (*

@@ -894,6 +894,9 @@ struct
       end;
       FilterCache.add_command proc.cache cmd
 
+   let hash proc =
+      FilterCache.hash proc.cache
+
    (*
     * Save the summary.
     *)
@@ -1032,7 +1035,7 @@ EXTEND
       [[ interf_opening; st = LIST0 interf_item; EOI ->
           let f () =
              let proc = SigFilter.get_proc loc in
-             let id = Hashtbl.hash proc in
+             let id = SigFilter.hash proc in
                 SigFilter.add_command proc (Id id, (0, 0));
                 SigFilter.save proc AnySuffix;
                 SigFilter.extract () proc

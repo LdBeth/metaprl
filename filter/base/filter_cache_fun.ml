@@ -182,7 +182,7 @@ struct
     *)
    type info =
       { opprefix : opname;
-        optable : (op_shape, opname) Hashtbl.t;
+        optable : (op_shape, opname) Hashtbl.t; (* Invariant: old entries are replaced, not shadowed *)
         mutable summaries : sig_summary list;
 
         (* Names of precedences in this module *)
@@ -353,7 +353,7 @@ struct
    let create_optable () =
       let t = Hashtbl.create 79 in
       let add (s, ps, ar) =
-         Hashtbl.add t { sh_name=s; sh_params=ps; sh_arities=ar} (mk_opname s nil_opname)
+         Hashtbl.replace t { sh_name=s; sh_params=ps; sh_arities=ar} (mk_opname s nil_opname)
       in
          List.iter add standard_opnames;
          t
@@ -423,8 +423,7 @@ struct
          if !debug_opname then
             eprintf "Filter_cache_fun.update_opname: %s -> %s%t" (**)
                (string_of_shape shape) (SimplePrint.string_of_opname opname) eflush;
-         Hashtbl.remove cache.optable shape;
-         Hashtbl.add cache.optable shape opname
+         Hashtbl.replace cache.optable shape opname
 
    (************************************************************************
     * ACCESS                                                               *
@@ -497,6 +496,16 @@ struct
     *)
    let add_command cache item =
       cache.info <- Filter_summary.add_command cache.info item
+
+   let hash cache =
+      let aux ops op i =
+         (*
+          * Note: since the order is undefinded, the hashes of the individual entries
+          * have to be combined using an assotiative commitative operation
+          *)
+         (Hashtbl.hash_param max_int max_int (ops, op)) lxor i
+      in
+         Hashtbl.fold aux cache.optable (Filter_summary.hash cache.info)
 
    let set_command cache item =
       try cache.info <- Filter_summary.set_command cache.info item with
@@ -586,7 +595,7 @@ struct
                      eprintf "Filter_cache_fun.inline_sig_components: add opname %s%t" (**)
                         (SimplePrint.string_of_opname opname) eflush;
                   let shape = op_shape_of_term str t in
-                  Hashtbl.add cache.optable shape opname;
+                  Hashtbl.replace cache.optable shape opname;
                   { summ with sig_opnames = (shape, opname) :: summ.sig_opnames }
 
           | Parent { parent_name = path } ->
@@ -655,7 +664,7 @@ struct
                   if !debug_opname then
                      eprintf "Filter_cache_fun.inline_sig_components: add opname %s%t" (**)
                         (SimplePrint.string_of_opname opname) eflush;
-                  Hashtbl.add cache.optable (op_shape_of_term str t) opname
+                  Hashtbl.replace cache.optable (op_shape_of_term str t) opname
 
           | Parent { parent_name = path } ->
                (* Recursive inline of all ancestors *)
@@ -707,7 +716,7 @@ struct
       if not (List.memq info cache.summaries) then begin
          Lm_list_util.rev_iter (collect_opnames cache) info.sig_includes;
          let optable = cache.optable in
-         Lm_list_util.rev_iter (fun (str, op) -> Hashtbl.add optable str op) info.sig_opnames;
+         Lm_list_util.rev_iter (fun (str, op) -> Hashtbl.replace optable str op) info.sig_opnames;
          cache.summaries <- info :: cache.summaries
       end
 
