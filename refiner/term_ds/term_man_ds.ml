@@ -548,7 +548,14 @@ struct
    let dest_context =
       let rec collect v term = function
          [ { bvars = [v']; bterm = t }; { bvars = []; bterm = conts }] ->
-            [], (if v=v' then t else subst1 t v' (mk_var_term v)), List.map dest_var (dest_xlist conts)
+            [],
+            (if v=v' then
+               t
+            else if is_var_free v t then
+               raise (Invalid_argument "Term_man_ds.dest_context: variable clash")
+            else
+               subst1 t v' (mk_var_term v)),
+            (List.map dest_var (dest_xlist conts))
        | { bvars = []; bterm = hd } :: tl ->
             let args, t, conts = collect v term tl in hd :: args, t, conts
        | _ ->
@@ -562,13 +569,13 @@ struct
             REF_RAISE(RefineError ("dest_context", TermMatchError (term, "not a context")))
 
    let mk_context_term v term conts terms =
-      let rec collect term = function
+      let rec collect = function
          [] ->
             [mk_bterm [v] term; mk_simple_bterm (mk_xlist_term (List.map mk_var_term conts))]
        | h::t ->
-            mk_simple_bterm h :: collect term t
+            mk_simple_bterm h :: collect t
       in
-         mk_term (mk_op context_opname [Var v]) (collect term terms)
+         mk_term (mk_op context_opname [Var v]) (collect terms)
 
    let rec free_meta_variables vars t = match get_core t with
       FOVar _ -> vars
