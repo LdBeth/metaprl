@@ -302,7 +302,7 @@ let add_directories info dirs =
                List.fold_left (fun items s ->
                      let item =
                         { command_label   = s;
-                          command_value   = sprintf "Command('cd \"%s\"')" s;
+                          command_value   = sprintf "Command('cd \"%s\"')" (Lm_string_util.js_escaped s);
                           command_enabled = always_enabled
                         }
                      in
@@ -323,7 +323,7 @@ let add_history info lines =
                List.fold_left (fun items s ->
                      let item =
                         { command_label   = s;
-                          command_value   = sprintf "Prompt('%s')" s;
+                          command_value   = sprintf "Prompt('%s')" (Lm_string_util.js_escaped s);
                           command_enabled = always_enabled
                         }
                      in
@@ -404,7 +404,7 @@ let add_edit state info =
                            { command_label = "Open " ^ file;
                              command_value =
                                 sprintf "Edit(%b, '/session/%d/edit/%s')"
-                                   flag (int_of_pid "add_edit" id) (proxyedit_of_filename file);
+                                   flag (int_of_pid "add_edit" id) (Lm_string_util.js_escaped (proxyedit_of_filename file));
                              command_enabled = always_enabled
                            }
                         in
