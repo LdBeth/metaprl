@@ -73,7 +73,15 @@ struct
        | FType.MNumber s1 ->           TType.MNumber s1
        | FType.MString s1 ->           TType.MString s1
        | FType.MToken s1 ->            TType.MToken s1
-       | FType.MLevel l1 ->            TType.MLevel (make_level l1)
+       | FType.MLevel l1 ->
+            (* HACK! remove this when we convert to ASCII .prlb files *)
+            if Obj.tag (Obj.repr l1) = Obj.string_tag then
+               TType.MLevel (TTerm.make_level { TType.le_const = 0;
+                                                TType.le_vars = [TTerm.make_level_var { TType.le_var = Obj.magic l1;
+                                                                                        TType.le_offset = 0 }]
+                             })
+            else
+               TType.MLevel (make_level l1)
        | FType.BackwardsCompatibleLevel l1 -> TType.MLevel (make_level l1)
        | FType.MVar s1 ->              TType.MVar s1
        | FType.ObId oid1 ->            TType.ObId (List.map (make_param info) oid1)

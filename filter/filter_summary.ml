@@ -594,34 +594,66 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'ctyp1, 'expr1, 'item1
           | Opname { opname_name = name; opname_term = t } ->
                Opname { opname_name = name; opname_term = convert.term_f t }
 
-          | MLRewrite { mlterm_name = name;
-                        mlterm_params = params;
-                        mlterm_term = term;
-                        mlterm_contracta = cons;
-                        mlterm_def = def;
-                        mlterm_resources = res
-            } ->
-               MLRewrite { mlterm_name = name;
-                           mlterm_params = List.map param_map params;
-                           mlterm_term = convert.term_f term;
-                           mlterm_contracta = List.map convert.term_f cons;
-                           mlterm_def = opt_apply (convert_expr_pair convert) def;
-                           mlterm_resources = res_map res
+          | MLRewrite t ->
+               (* HACK! remove this when we start using ASCII theory files *)
+               let t =
+                  if Obj.size (Obj.repr t) = 3 then
+                     let (term, contracta, def) = Obj.magic t in
+                        { mlterm_name = "unknown";
+                          mlterm_params = [];
+                          mlterm_term = term;
+                          mlterm_contracta = contracta;
+                          mlterm_def = def;
+                          mlterm_resources = []
+                        }
+                  else
+                     t
+               in
+               let { mlterm_name = name;
+                     mlterm_params = params;
+                     mlterm_term = term;
+                     mlterm_contracta = cons;
+                     mlterm_def = def;
+                     mlterm_resources = res
+                   } = t
+               in
+                  MLRewrite { mlterm_name = name;
+                              mlterm_params = List.map param_map params;
+                              mlterm_term = convert.term_f term;
+                              mlterm_contracta = List.map convert.term_f cons;
+                              mlterm_def = opt_apply (convert_expr_pair convert) def;
+                              mlterm_resources = res_map res
                   }
 
-          | MLAxiom { mlterm_name = name;
-                      mlterm_params = params;
-                      mlterm_term = term;
-                      mlterm_contracta = cons;
-                      mlterm_def = def;
-                      mlterm_resources = res
-            } ->
-               MLAxiom { mlterm_name = name;
-                         mlterm_params = List.map param_map params;
-                         mlterm_term = convert.term_f term;
-                         mlterm_contracta = List.map convert.term_f cons;
-                         mlterm_def = opt_apply (convert_expr_pair convert) def;
-                         mlterm_resources = res_map res
+          | MLAxiom t ->
+               (* HACK! remove this when we start using ASCII theory files *)
+               let t =
+                  if Obj.size (Obj.repr t) = 3 then
+                     let (term, contracta, def) = Obj.magic t in
+                        { mlterm_name = "unknown";
+                          mlterm_params = [];
+                          mlterm_term = term;
+                          mlterm_contracta = contracta;
+                          mlterm_def = def;
+                          mlterm_resources = []
+                        }
+                  else
+                     t
+               in
+               let { mlterm_name = name;
+                     mlterm_params = params;
+                     mlterm_term = term;
+                     mlterm_contracta = cons;
+                     mlterm_def = def;
+                     mlterm_resources = res
+                   } = t
+               in
+                  MLAxiom { mlterm_name = name;
+                            mlterm_params = List.map param_map params;
+                            mlterm_term = convert.term_f term;
+                            mlterm_contracta = List.map convert.term_f cons;
+                            mlterm_def = opt_apply (convert_expr_pair convert) def;
+                            mlterm_resources = res_map res
                   }
 
           | Parent { parent_name = path;
