@@ -201,9 +201,17 @@ let prefix_andalsoT = Tacticals.prefix_andalsoT
 let prefix_orthenT = Tacticals.prefix_orthenT
 let firstT = Tacticals.firstT
 let prefix_thenLT = Tacticals.prefix_thenLT
+let prefix_thenFLT = Tacticals.prefix_thenFLT
 let seqT = Tacticals.seqT
 let seqOnSameConclT = Tacticals.seqOnSameConclT
 let prefix_thenT = Tacticals.prefix_thenT
+
+infix orelseT
+infix andalsoT
+infix orthenT
+infix thenLT
+infix thenFLT
+infix thenT
 
 doc <:doc<
    @begin[doc]
@@ -228,6 +236,10 @@ doc <:doc<
 let prefix_then_OnFirstT = Tacticals.prefix_then_OnFirstT
 let prefix_then_OnLastT = Tacticals.prefix_then_OnLastT
 let prefix_then_OnSameConclT = Tacticals.prefix_then_OnSameConclT
+
+infix then_OnFirstT
+infix then_OnLastT
+infix then_OnSameConclT
 
 doc <:doc<
    @begin[doc]
@@ -485,6 +497,14 @@ let repeatMForT = Tacticals.repeatMForT
 let seqOnMT = Tacticals.seqOnMT
 let completeMT = Tacticals.completeMT
 let labProgressT = Tacticals.labProgressT
+
+infix thenMT
+infix thenMLT
+infix thenAT
+infix thenALT
+infix thenWT
+infix thenET
+infix thenPT
 
 let thinMatchT thin_many assum =
    funT (fun p ->

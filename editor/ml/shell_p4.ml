@@ -43,8 +43,6 @@ open Pcaml
 open Refiner.Refiner.Term
 open Refiner.Refiner.RefineError
 
-open Filter_grammar
-
 open Tactic_type
 open Tactic_type.Tacticals
 
@@ -210,12 +208,6 @@ struct
    (************************************************************************
     * SHELL GRAMMAR                                                        *
     ************************************************************************)
-
-   module Unit =
-   struct
-   end
-
-   module Infix = MakeFilterGrammar (Unit)
 
    EXTEND
       GLOBAL: str_item;

@@ -247,11 +247,11 @@ let is_formal_item = function
    Rewrite _ | CondRewrite _ | MLRewrite _ | Rule _ | MLAxiom  _ | Definition _ | Parent _ | Opname _ ->
       true
  | SummaryItem _ | Improve _ | Resource _ | InputForm _ | Comment _ | MagicBlock _
- | ToploopItem _ | Infix _ | Prec _ | DForm _ | Module _ | Id _ | PrecRel _ ->
+ | ToploopItem _ | GramUpd _ | Prec _ | DForm _ | Module _ | Id _ | PrecRel _ ->
       false
 
 let is_display_item = function
-   Opname _ | Infix _ | Prec _ | DForm _ | InputForm _ -> true
+   Opname _ | GramUpd _ | Prec _ | DForm _ | InputForm _ -> true
  | _ -> false
 
 let is_unjustified_item = function

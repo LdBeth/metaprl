@@ -145,6 +145,11 @@ sig
    val mk_opname : package -> string list -> shape_param list -> int list -> opname
 
    (*
+    * Infixes/suffixes declared in the package
+    *)
+   val get_infixes : package -> Infix.Set.t
+
+   (*
     * Collection of objects in the module.
     *)
    val info : package -> parse_arg -> (term, meta_term, proof proof_type, MLast.expr, MLast.ctyp, MLast.expr, MLast.str_item) module_info

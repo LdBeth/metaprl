@@ -49,10 +49,12 @@ open File_type_base
  * Rev 3: got rid of MVar parameters
  * Rev 4: added context args to SO variables and contexts
  * Rev 5: count second--order variables as free variables
+ * Rev 6: added a "suffix" summary item;
+ *        removed the "parent_opens" field from the parent_info type
  *)
-let raw_versions = List.map (pack_version 1 0) [5]
+let raw_versions = List.map (pack_version 1 0) [6]
 
-let term_versions = List.map (pack_version 1 0) [5]
+let term_versions = List.map (pack_version 1 0) [6; 5]
 
 (*
  * ASCII IO format revision history:
@@ -66,14 +68,16 @@ let term_versions = List.map (pack_version 1 0) [5]
  * Rev 6: got rid of MVar parameters
  * Rev 7: worked around of having to split sequents into two ("S" and "G") lines by adding support for the \\ separator
  * Rev 8: added context args to SO variables and contexts
+ * Rev 9: removed the "parent_opens" field from the parent_info type
  *
  * Filter_summary has a HACK needed to read some rev 0-1 files
  * Ascii_io has a HACK needed to read some rev 0-5 files
  * Ascii_io has another set of HACKs to read sequents in rev 0-6 files
  * Ascii_io has yet another set of HACKs to try to guess bound contexts for rev 0-7 files
  * Term_man_minimal_sig has extra stuff for rev 0-7 file support.
+ * Filter_summary has another HACK needed to read rev 0-8 files.
  *)
-let ascii_versions = List.map (pack_version 1 0) [8;7;6;5;4;3;2;1;0]
+let ascii_versions = List.map (pack_version 1 0) [9;8;7;6;5;4;3;2;1;0]
 
 (************************************************************************
  * Magic numbers for interactive files                                  *

@@ -235,6 +235,9 @@ let progressC = Tactic_type.Conversionals.progressC
 let replaceUsingC = Tactic_type.Conversionals.replaceUsingC
 let allSubThenC = Tactic_type.Conversionals.allSubThenC
 
+infix thenC
+infix orelseC
+
 doc <:doc<
    @begin[doc]
    @modsection{Addressing and search}

@@ -98,6 +98,8 @@ doc <:doc<
    @end[doc]
 >>
 extends Shell
+extends Top_tacticals
+extends Top_conversionals
 doc <:doc< @docoff >>
 
 open Printf
@@ -289,8 +291,10 @@ let strongAutoT =
 
 let tcaT = tryT (completeT strongAutoT)
 
-let tryAutoT tac =
+let prefix_ttca tac =
    tac thenT tcaT
+
+suffix ttca
 
 let make_defT conv = rwhAllAll (conv thenC reduceC) (* BUG? : Should be reduceTopC ? *)
 let byDefT conv = make_defT conv thenT autoT

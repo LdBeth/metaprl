@@ -357,12 +357,17 @@ struct
    let get_item info modname name =
       let parse_arg = get_parse_arg info in
       let display_mode = get_display_mode info in
-      let pack = Package.get packages modname in
+      let pack =
+         match info.package with
+            Some pack -> pack
+          | None -> invalid_arg "Shell.get_item: no package"
+      in
       let item =
-         try Package.find pack parse_arg name with
-            Not_found ->
-               eprintf "Item '/%s/%s' not found%t" modname name eflush;
-               raise Not_found
+         try
+            Package.find pack parse_arg name
+         with Not_found ->
+            eprintf "Item '/%s/%s' not found%t" modname name eflush;
+            raise Not_found
       in
          match item with
             Rewrite rw ->
@@ -404,8 +409,8 @@ struct
           | Improve _ ->
                eprintf "Editing resource improvement '/%s/%s' not supported%t" modname name eflush;
                raise (Failure "view")
-          | Infix _ ->
-               eprintf "Editing infix '/%s/%s' not supported%t" modname name eflush;
+          | GramUpd _ ->
+               eprintf "Editing infix/suffix '/%s/%s' not supported%t" modname name eflush;
                raise (Failure "view")
           | SummaryItem _
           | ToploopItem _ ->
@@ -1012,6 +1017,7 @@ struct
             Shell_state.set_dfbase shell None;
             Shell_state.set_mk_opname shell None;
             Shell_state.set_so_var_context shell None;
+            Shell_state.set_infixes shell None;
             Shell_state.set_module shell "shell"
        | (modname :: item) as dir ->
             (* change module only if in another (or at top) *)
@@ -1027,6 +1033,7 @@ struct
                      info.package <- Some pkg;
                      Shell_state.set_dfbase shell (Some (get_db info));
                      Shell_state.set_mk_opname shell (Some (Package.mk_opname pkg));
+                     Shell_state.set_infixes shell (Some (Package.get_infixes pkg));
                      Shell_state.set_module shell modname;
                      if verbose then eprintf "Module: /%s%t" modname eflush;
                end;
@@ -1591,29 +1598,6 @@ let check_all () =
       print_exn_db db (check item) db
    in
       apply_all f true true
-
-(*
- * Additional debugging.
- *)
-let print_term_match = Term_match_table.print_term_match
-let eval_term_match = Term_match_table.eval_term_match
-
-(*
- * Sequent conversions.
-let saveterm = ref None
-
-let term_of_sequent t =
-   let t = Unify_mm.term_of_sequent t in
-      saveterm := Some t;
-      t
-
-let sequent_of_term () =
-   match !saveterm with
-      Some t ->
-         Unify_mm.sequent_of_term t
-    | None ->
-         raise (RefineError ("sequent_of_term", StringError "no saved term"))
- *)
 
 (*
  * -*-

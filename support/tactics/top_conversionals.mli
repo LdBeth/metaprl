@@ -87,6 +87,8 @@ topval replaceUsingC : term -> conv -> conv
 topval progressC : conv -> conv
 topval allSubThenC : conv -> conv -> conv
 
+infix thenC
+infix orelseC
 
 (************************************************************************
  * REDUCTION RESOURCE                                                   *

@@ -2037,7 +2037,7 @@ struct
                      io_rule_extras = extras
          } ->
             let expr = lazy_apply parse text in
-            let tactic = lazy_apply (fun text -> eval (parse text)) text in
+            let tactic = lazy_apply (fun () -> eval (expr ())) () in
                RuleBox { rule_status = LazyStatusDelayed;
                          rule_string = text;
                          rule_expr = expr;

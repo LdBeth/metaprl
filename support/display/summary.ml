@@ -194,6 +194,7 @@ doc <:doc<
    @end[doc]
 >>
 declare "infix"[name:s]
+declare "suffix"[name:s]
 declare "summary_item"{'term}
 doc <:doc< @docoff >>
 
@@ -590,6 +591,9 @@ dform improve_df : "improve"[name]{'expr} =
 
 dform infix_df : "infix"[name:s] =
    info["infix"] " " slot[name:s]
+
+dform suffix_df : "suffix"[name:s] =
+   info["suffix"] " " slot[name:s]
 
 dform magic_block_df : "magic_block"[name:s]{'items} =
    info["magic_block"] " " slot[name:s] keyword[" ="] space slot{'items}

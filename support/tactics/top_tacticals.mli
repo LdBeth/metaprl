@@ -115,6 +115,23 @@ topval doNotThinT : tactic -> tactic
 topval nameHypT : int -> string -> tactic
 topval nameHypsT : int list -> string list -> tactic
 
+infix orelseT
+infix andalsoT
+infix orthenT
+infix thenT
+infix thenLT
+infix thenFLT
+infix then_OnFirstT
+infix then_OnLastT
+infix then_OnSameConclT
+infix thenMT
+infix thenMLT
+infix thenAT
+infix thenALT
+infix thenWT
+infix thenET
+infix thenPT
+
 val thinMatchT : (int -> int -> tactic) -> term -> tactic
 
 (*

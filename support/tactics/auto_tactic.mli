@@ -94,9 +94,10 @@ topval tcaT : tactic (* tryT (completeT strongAutoT) *)
 topval autoT : tactic (* weakAutoT thenT tcaT *)
 
 (*
- * tryAutoT tac is a short for "tac thenT tcaT"
+ * "tac ttca" is a short for "tac thenT tcaT"
  *)
-topval tryAutoT : tactic -> tactic
+topval prefix_ttca : tactic -> tactic
+suffix ttca
 
 topval byDefT: conv -> tactic
 topval byDefsT: conv list -> tactic

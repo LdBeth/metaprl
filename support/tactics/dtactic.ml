@@ -152,6 +152,7 @@ doc <:doc<
    @parents
    @end[doc]
 >>
+extends Top_tacticals
 extends Auto_tactic
 doc <:doc< @docoff >>
 

@@ -93,7 +93,8 @@ type t =
      mutable state_tactic : string * MLast.expr;
      mutable state_toploop : Mptop.top_table;
      mutable state_input_info : info;
-     mutable state_interactive : bool
+     mutable state_interactive : bool;
+     mutable state_infixes : Infix.Set.t;
    }
 
 (*
@@ -107,6 +108,12 @@ let state = ref None
  * Lock modifications to the state.
  *)
 let lock = Recursive_lock.create ()
+
+(*
+ * The infix/suffix mods that we currently have in the grammar.
+ * This is only updated inside synchronize_shell calls
+ *)
+let infixes = ref Infix.Set.empty
 
 (*
  * Default values.
@@ -134,7 +141,8 @@ let create () =
      state_tactic = default_saved_tactic;
      state_toploop = Mptop.get_toploop_resource (Mp_resource.find Mp_resource.top_bookmark) [];
      state_input_info = Buffered [];
-     state_interactive = true
+     state_interactive = true;
+     state_infixes = Infix.Set.empty;
    }
 
 let fork state =
@@ -143,6 +151,13 @@ let fork state =
 (************************************************************************
  * CLIENT FUNCTIONS                                                     *
  ************************************************************************)
+
+let update_infixes state =
+   if !infixes != state.state_infixes then begin
+      Infix.Set.iter Infix.add (Infix.Set.diff state.state_infixes !infixes);
+      Infix.Set.iter Infix.remove (Infix.Set.diff !infixes state.state_infixes);
+      infixes := state.state_infixes
+   end
 
 (*
  * Synchronize the client.
@@ -177,9 +192,10 @@ let synchronize_state f =
    match !state with
       None ->
          ignore (Recursive_lock.unlock lock);
-         raise (Invalid_argument "Shell_mp.synchronize_client: client call is not within toploop")
+         raise (Invalid_argument "Shell_mp.synchronize_state: client call is not within toploop")
     | Some state ->
          try
+            update_infixes state;
             let result = f state in
                ignore (Recursive_lock.unlock lock);
                result
@@ -244,11 +260,7 @@ let get_term_state state i =
          xnil_term
 
 let get_term i =
-   synchronize_client (function
-      None ->
-         raise (RefineError ("Shell_state.get_term", StringError "not in toploop"))
-    | Some state ->
-         get_term_state state i)
+   synchronize_state (fun state -> get_term_state state i)
 
 let term_exp s =
    synchronize_state (fun state ->
@@ -328,6 +340,12 @@ let set_mk_opname state = function
  | None ->
       state.state_mk_opname <- mk_opname_null
 
+let set_infixes state = function
+   Some infs ->
+      state.state_infixes <- infs
+ | None ->
+      state.state_infixes <- Infix.Set.empty
+
 let set_so_var_context state = function
    Some ts ->
       let delayed_fun v i =
@@ -380,6 +398,7 @@ let synchronize state' f x =
       eprintf "Shell_state.synchronize: %d got lock%t" (Thread.id (Thread.self ())) eflush;
    state := Some state';
    try
+      update_infixes state';
       let result = f x in
          state := None;
          if not (Recursive_lock.unlock lock) then
@@ -408,6 +427,7 @@ let unsynchronize state' f x =
          if !debug_lock then
             eprintf "Shell_state.unsynchronize: %d lock reacquired%t" (Thread.id (Thread.self ())) eflush;
          state := Some state';
+         update_infixes state';
          result
    with
       exn ->

@@ -545,7 +545,7 @@ let extract_sig_item (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: magic block%t" eflush;
          declare_magic_block loc block
-    | Opname _ | DForm _ | PrecRel _ | Id _ | Comment _ | Infix _ ->
+    | Opname _ | DForm _ | PrecRel _ | Id _ | Comment _ | GramUpd _ ->
          []
     | MLRewrite item ->
          if !debug_filter_prog then
@@ -1452,6 +1452,9 @@ let define_magic_block proc loc { magic_name = name; magic_code = stmts } =
    let index = List.fold_left Filter_hash.hash_str_item 0 stmts in
       <:str_item< value  $lid:name$ = $int:string_of_int index$ >> :: stmts
 
+let define_prefix loc s =
+   [<:str_item< value _ = $lid:Infix.prefix_name s$ >>]
+
 (*
  * Prolog declares the refiner and dformer.
  *)
@@ -1601,7 +1604,9 @@ let extract_str_item proc (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: magic block%t" eflush;
          define_magic_block proc loc block
-    | Opname _ | Id _ | Comment _ | Infix _ ->
+    | GramUpd (Infix s | Suffix s) ->
+         define_prefix loc s
+    | Opname _ | Id _ | Comment _ ->
          []
     | Module _ ->
          if !debug_filter_prog then

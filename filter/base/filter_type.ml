@@ -193,7 +193,6 @@ type 'term opname_info =
  *)
 type 'ctyp parent_info =
    { parent_name : module_path;
-     parent_opens : module_path list;
      parent_resources : (string * 'ctyp resource_sig) list
    }
 
@@ -280,6 +279,10 @@ type ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'expr1, 'item1,
      item_f       : 'item1  -> 'item2
    }
 
+type grammar_update =
+   Infix of string
+ | Suffix of string
+
 (*
  * The summary contains information about everything in the file.
  * We use the summary for both interfaces and implementations.
@@ -305,7 +308,7 @@ type ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, 'module_info) s
  | Id of int
  | Resource of string * 'resource
  | Improve of ('expr, 'term) improve_info
- | Infix of string
+ | GramUpd of grammar_update
  | SummaryItem of ('item, 'term) bnd_expr
  | ToploopItem of 'item
  | MagicBlock of 'item magic_info

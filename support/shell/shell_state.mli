@@ -60,6 +60,9 @@ val get_term : int -> term
 (* This is the opname function used when terms are built. *)
 val set_mk_opname : t -> opname_fun option -> unit
 
+(* This is the set of grammar infix/suffix mods needed in this state *)
+val set_infixes : t -> Infix.Set.t option -> unit
+
 (* Scan (lazily) terms for SO variable contexts and use that for SO var parsing *)
 val set_so_var_context : t -> term list option -> unit
 

@@ -43,8 +43,6 @@ open Refiner.Refiner.TermAddr
 open Refiner.Refiner.RefineError
 open Rformat
 
-open Filter_grammar
-
 open Mptop
 
 open Exn_boot
@@ -73,12 +71,6 @@ struct
    (************************************************************************
     * SHELL GRAMMAR                                                        *
     ************************************************************************)
-
-   module Unit =
-   struct
-   end
-
-   module Infix = MakeFilterGrammar (Unit)
 
    EXTEND
       GLOBAL: str_item;

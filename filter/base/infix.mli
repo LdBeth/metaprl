@@ -26,13 +26,17 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
-val make_infix : MLast.loc -> string -> MLast.expr -> MLast.expr -> MLast.expr
-val add_infix : string -> unit
-val remove_infix : string -> unit
+open Filter_type
+
+val prefix_name : string -> string
+val add : grammar_update -> unit
+val remove : grammar_update -> unit
+
+module Set : Lm_set_sig.LmSet with type elt = grammar_update
 
 (*
  * -*-

@@ -45,6 +45,7 @@ open Refiner.Refiner.Refine
 open Refiner.Refiner.RefineError
 open Theory
 
+open Filter_type
 open Filter_summary_type
 open Filter_summary
 open Filter_cache
@@ -194,7 +195,7 @@ struct
         mutable pack_status : status;
         mutable pack_sig_info : Cache.StrFilterCache.sig_info option;
         mutable pack_str : pack_str_info option;
-        mutable pack_infixes : string list
+        mutable pack_infixes : Infix.Set.t;
       }
 
    (*
@@ -217,7 +218,7 @@ struct
            pack_status = Incomplete;
            pack_sig_info = None;
            pack_str = None;
-           pack_infixes = []
+           pack_infixes = Infix.Set.empty;
          }
       in
       let find_or_create name =
@@ -320,65 +321,10 @@ struct
                   ImpDag.add_edge pack.pack_dag pnode node
             with
                Not_found ->
-                  raise (Failure "Package_info/maybe_add_package: parent is not defined")
+                  raise (Failure "Package_info.insert_parent: parent is not defined")
          end
     | path ->
          raise (Failure ("Package_info/insert_parent: parent is not toplevel: " ^ string_of_path path))
-
-   (*
-    * Add a signature package.
-    * It adds the package, and creates
-    * the edges to the parents.
-    *)
-   let maybe_add_package pack path sig_info infixes =
-      match path with
-         [name] ->
-            let { pack_dag = dag;
-                  pack_packages = packages
-                } = pack
-            in
-            let node =
-               try
-                  let node = get_package pack name in
-                  let pinfo = ImpDag.node_value dag node in
-                     pinfo.pack_sig_info <- Some sig_info;
-                     if pinfo.pack_status = Incomplete then
-                        pinfo.pack_status <- ReadOnly;
-                     pinfo.pack_infixes <- infixes;
-                     node
-               with
-                  Not_found ->
-                     let pinfo =
-                        { pack_info = pack;
-                          pack_name = name;
-                          pack_status = ReadOnly;
-                          pack_sig_info = Some sig_info;
-                          pack_str = None;
-                          pack_infixes = infixes
-                        }
-                     in
-                     let node = ImpDag.insert dag pinfo in
-                        Hashtbl.add packages name node;
-                        node
-            in
-            let parents = Filter_summary.parents sig_info in
-               List.iter (insert_parent pack node) parents
-       | _ ->
-            raise (Failure "Package_info/maybe_add_package: nested modules are not implemented")
-
-   (*
-    * When a module is inlined, add the resources and infixes.
-    * The info is the _signature_.  Later we may want to replace
-    * it with the implementation.
-    *)
-   let inline_hook pack root_path cache (path, info) infixes =
-      if !debug_package_info then
-         eprintf "Inline_hook: %s, %s%t" (string_of_path root_path) (string_of_path path) eflush;
-
-      (* Add all the infix words and add the package *)
-      let infixes = StringSet.union (StringSet.of_list (get_infixes info)) infixes in
-         maybe_add_package pack path info (StringSet.elements infixes);
-         infixes
 
    (*
     * Add an implementation package.
@@ -406,20 +352,13 @@ struct
    (*
     * Load a package.
     * We search for the description, and load it.
-    * If the ML file has already been loaded, retrieve
-    * the refiner and display forms.  Else construct the code
-    * to be evaluated, and return it.
     *)
    let load_aux arg pack_info =
       let { pack_info = pack; pack_name = name } = pack_info in
       let { pack_cache = cache } = pack in
          try
             let path = [name] in
-            let info, infixes =
-               Cache.StrFilterCache.load cache arg name (**)
-                  ImplementationType InterfaceType
-                  (inline_hook pack path) StringSet.empty AnySuffix
-            in
+            let info = Cache.StrFilterCache.load cache arg name ImplementationType InterfaceType AnySuffix in
             let pack_str =
                { pack_str_info = info;
                  pack_parse = arg
@@ -427,7 +366,7 @@ struct
             in
                pack_info.pack_str <- Some pack_str;
                pack_info.pack_status <- Unmodified;
-               pack_info.pack_infixes <- StringSet.elements infixes;
+               pack_info.pack_infixes <- Cache.StrFilterCache.all_infixes info;
                add_implementation pack_info;
                Cache.StrFilterCache.set_mode info InteractiveSummary
       with
@@ -462,7 +401,7 @@ struct
                        pack_name = name;
                        pack_sig_info = None;
                        pack_str = None;
-                       pack_infixes = []
+                       pack_infixes = Infix.Set.empty
                      }
             in
                auto_load_str arg pack_info;
@@ -587,6 +526,10 @@ struct
              | None ->
                   raise (NotLoaded pack_info.pack_name))
 
+   let get_infixes = function
+      { pack_str = Some _; pack_infixes = infixes } -> infixes
+    | _ -> invalid_arg "Package_info.get_infixes: package not loaded"
+
    (*
     * Get a loaded theory.
     *)
@@ -639,7 +582,7 @@ struct
                                       name ImplementationType InterfaceType;
                                    pack_parse = arg
                             };
-                 pack_infixes = [];
+                 pack_infixes = Infix.Set.empty;
                  pack_name = name
                }
             in

@@ -57,6 +57,7 @@ declare "prec_rel"[op, left, right]
 declare "id"[n:n]
 declare "resource"[name:s]{'expr}
 declare "infix"[name:s]
+declare "suffix"[name:s]
 declare "magic_block"[name:s]{'items}
 declare "summary_item"{'term}
 declare "resource_defs"[name:s]{'res}

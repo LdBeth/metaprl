@@ -137,8 +137,7 @@ end
  *
  * The cache also takes care of recursively opening parent modules
  * when a module is opened.  All the opnames of the parents are
- * recorded in the current module.  A hook function is allowed that
- * can be called as the parents are opened.
+ * recorded in the current module.
  *
  * The summary cache operates on (proof, ctyp, expr, item) module_info, but
  * the signature type is allowed to differ from the type being constructed.
@@ -177,16 +176,13 @@ sig
    type info
    type t
 
-   (* Hook that is called whenever a module is loaded *)
-   type 'a hook = info -> module_path * sig_info -> 'a -> 'a
-
    (* Creation *)
    val create : string list -> t
    val set_path : t -> string list -> unit
 
    (* Loading *)
    val create_cache : t -> module_name -> select -> select -> info
-   val load : t -> arg -> module_name -> select -> select -> 'a hook -> 'a -> alt_suffix -> info * 'a
+   val load : t -> arg -> module_name -> select -> select -> alt_suffix -> info
    val check : info -> arg -> select -> sig_info
    val parse_comments : info -> (loc -> term -> term) -> unit
    val copy_proofs : info -> arg -> (str_proof -> str_proof -> str_proof) -> unit
@@ -220,8 +216,12 @@ sig
    val parents : info -> module_path list
    val proofs : info -> (string * str_proof) list
 
-   (* These are the resources for an included parent *)
+   (* These are the resources and infixes for an included parent *)
    val sig_resources : info -> module_path -> (string * sig_ctyp resource_sig) list
+   val sig_infixes : info -> module_path -> Infix.Set.t
+
+   (* All infixes - own and inherited *)
+   val all_infixes : info -> Infix.Set.t
 
    (*
     * Update.
@@ -241,7 +241,7 @@ sig
     * space.  This function recursively inlines all modules in
     * the hierarchy, calling the hook on each.
     *)
-   val inline_module : info -> arg -> module_path -> 'a hook -> 'a -> sig_info * 'a
+   val inline_module : info -> arg -> module_path -> sig_info
 end
 
 (*

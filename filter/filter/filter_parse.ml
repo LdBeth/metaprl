@@ -52,9 +52,7 @@ open TermMeta
 open Rewrite
 open RefineError
 
-open Infix
 open Term_grammar
-open Filter_grammar
 open Filter_type
 open Filter_util
 open Filter_summary
@@ -433,25 +431,19 @@ struct
       }
 
    (*
-    * When a module is inlined, add the resources and infixes.
-    *)
-   let inline_hook root_path cache (path, info) paths =
-      (* Add all the infix words *)
-      List.iter add_infix (get_infixes info);
-
-      (* Add the path to the list of parents *)
-      path :: paths
-
-   (*
     * Include a parent.
     * This performs the following tasks:
     *    1. incorporates the parents:
     *       a. adds the resources
     *       b. adds the infix directives.
     *)
+   let infix_set = ref Infix.Set.empty
    let declare_parent proc loc path =
       (* Lots of errors can occur here *)
-      let _, opens = FilterCache.inline_module proc.cache () path (inline_hook path) [] in
+      ignore(FilterCache.inline_module proc.cache () path);
+      let infixes = FilterCache.sig_infixes proc.cache path in
+      Infix.Set.iter Infix.add (Infix.Set.diff infixes !infix_set);
+      infix_set := Infix.Set.union infixes !infix_set;
       let resources = FilterCache.sig_resources proc.cache path in
       begin if !debug_resource then
          let print_resources out resources =
@@ -461,7 +453,6 @@ struct
       end;
       let info =
          { parent_name = path;
-           parent_opens = opens;
            parent_resources = resources
          }
       in
@@ -653,9 +644,9 @@ struct
    (*
     * Infix directive.
     *)
-   let declare_infix proc loc s =
-      FilterCache.add_command proc.cache (Infix s, loc);
-      add_infix s
+   let declare_gupd proc loc upd =
+      FilterCache.add_command proc.cache (GramUpd upd, loc);
+      Infix.add upd
 
    (*
     * Declare an ML term rewrite.
@@ -991,15 +982,6 @@ let define_int_thm proc loc name params mterm =
  ************************************************************************)
 
 (*
- * Add the infixes.
- *)
-module Unit =
-struct
-end
-
-module FGrammar = MakeFilterGrammar (Unit)
-
-(*
  * Empty items.
  *)
 let empty_sig_item loc =
@@ -1168,10 +1150,16 @@ EXTEND
               empty_sig_item loc
         | "infix"; name = ident ->
            let f () =
-              SigFilter.declare_infix (SigFilter.get_proc loc) loc name
+              SigFilter.declare_gupd (SigFilter.get_proc loc) loc (Infix name)
            in
               print_exn f "infix" loc;
-             empty_sig_item loc
+              empty_sig_item loc
+        | "suffix"; name = ident ->
+           let f () =
+              SigFilter.declare_gupd (SigFilter.get_proc loc) loc (Suffix name)
+           in
+              print_exn f "suffix" loc;
+              empty_sig_item loc
         | "prec"; name = LIDENT ->
            let f () =
               SigFilter.declare_prec (SigFilter.get_proc loc) loc name
@@ -1343,9 +1331,15 @@ EXTEND
               empty_str_item loc
         | "infix"; name = ident ->
            let f () =
-              StrFilter.declare_infix (StrFilter.get_proc loc) loc name
+              StrFilter.declare_gupd (StrFilter.get_proc loc) loc (Infix name)
            in
               print_exn f "infix" loc;
+              empty_str_item loc
+        | "suffix"; name = ident ->
+           let f () =
+              StrFilter.declare_gupd (StrFilter.get_proc loc) loc (Suffix name)
+           in
+              print_exn f "suffix" loc;
               empty_str_item loc
         | "prec"; name = LIDENT ->
            let f () =

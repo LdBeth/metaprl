@@ -100,9 +100,6 @@ module MakeCompile (**)
     with type arg       = unit) =
 struct
    let compile name =
-      let inline_hook cache (path, info) () =
-         ()
-      in
       let kind, path =
          if Filename.check_suffix name ".cmiz" then
             InterfaceType, Filename.chop_suffix name ".cmiz"
@@ -116,7 +113,7 @@ struct
             raise (Failure "Filter_parse.compile: invalid suffix")
       in
       let cache = FilterCache.create !include_path in
-      let info, _ = FilterCache.load cache () path kind InterfaceType inline_hook () AnySuffix in
+      let info = FilterCache.load cache () path kind InterfaceType AnySuffix in
       let check () =
          FilterCache.check info () InterfaceType
       in

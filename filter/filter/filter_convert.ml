@@ -97,11 +97,8 @@ module MakeConvert (FilterCache : SummaryCacheSig
                                   with type arg = unit) =
 struct
    let convert kind name input_suffix =
-      let inline_hook cache (path, info) () =
-         ()
-      in
       let cache = FilterCache.create !include_path in
-      let info, _ = FilterCache.load cache () name kind InterfaceType inline_hook () input_suffix in
+      let info = FilterCache.load cache () name kind InterfaceType input_suffix in
       let check () =
          FilterCache.check info () InterfaceType
       in

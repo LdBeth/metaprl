@@ -108,7 +108,7 @@ val get_resources : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) 
    (string * 'resource) list
 
 val get_infixes : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info ->
-   string list
+   Infix.Set.t
 
 val get_proofs : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info ->
    (string * 'proof) list

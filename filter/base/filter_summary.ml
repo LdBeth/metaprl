@@ -154,8 +154,8 @@ let eprint_entry print_info = function
       eprintf "Resource: %s\n" name
  | Improve { improve_name = name } ->
       eprintf "Improve %s with ..." name
- | Infix name ->
-      eprintf "Infix: %s\n" name
+ | GramUpd (Infix name | Suffix name) ->
+      eprintf "Infix/Suffix: %s\n" name
  | Id id ->
       eprintf "Id: 0x%08x\n" id
  | MagicBlock { magic_name = name } ->
@@ -387,11 +387,11 @@ let get_infixes { info_list = summary } =
       (h, _)::t ->
          begin
             match h with
-               Infix s -> s::search t
+               GramUpd s -> Infix.Set.add (search t) s
              | _ -> search t
          end
     | [] ->
-         []
+         Infix.Set.empty
    in
       search summary
 
@@ -620,7 +620,7 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
                      dform_def = def
                   }
 
-          | (Prec _ | PrecRel _ | Id _ | Infix _) as item ->
+          | (Prec _ | PrecRel _ | Id _ | GramUpd _) as item ->
                item
 
           | Resource (name, r) ->
@@ -685,6 +685,7 @@ let id_op                      = mk_opname "id"
 let comment_op                 = mk_opname "comment"
 let resource_op                = mk_opname "resource"
 let infix_op                   = mk_opname "infix"
+let suffix_op                  = mk_opname "suffix"
 let magic_block_op             = mk_opname "magic_block"
 let summary_item_op            = mk_opname "summary_item"
 let term_binding_op            = mk_opname "term_binding"
@@ -1025,11 +1026,15 @@ struct
 
    (*
     * Parent declaration.
+    * XXX HACK: The "if" is here because parent terms used to have 3 subterms in old files
+    * (ASCII IO format <= 1.0.8; raw term IO format <= 1.0.5)
     *)
    and dest_parent convert t =
-      let path, opens, resources = three_subterms t in
+      let path, resources =
+         if is_dep0_dep0_term parent_op t then two_subterms t
+         else let p, _, r = three_subterms t in p, r
+      in
          Parent { parent_name = dest_string_param_list path;
-                  parent_opens = List.map dest_string_param_list (dest_xlist opens);
                   parent_resources = List.map (dest_resource_sig convert) (dest_xlist resources)
          }
 
@@ -1165,7 +1170,9 @@ struct
                else if Opname.eq opname improve_op then
                   dest_improve convert t
                else if Opname.eq opname infix_op then
-                  Infix (dest_string_param t)
+                  GramUpd (Infix (dest_string_param t))
+               else if Opname.eq opname suffix_op then
+                  GramUpd (Suffix (dest_string_param t))
                else if Opname.eq opname magic_block_op then
                   dest_magic_block convert t
                else if Opname.eq opname summary_item_op then
@@ -1399,12 +1406,10 @@ struct
           term_of_resources convert res]
 
    and term_of_parent convert { parent_name = path;
-                                parent_opens = opens;
                                 parent_resources = resources
        } =
       mk_simple_term parent_op (**)
          [mk_strings_term parent_op path;
-          mk_xlist_term (List.map (mk_strings_term parent_op) opens);
           mk_xlist_term (List.map (term_of_resource_sig convert) resources)]
 
    and term_of_dform convert { dform_name = name;
@@ -1486,8 +1491,10 @@ struct
          mk_string_param_term resource_op name [convert.resource_f r]
     | Improve { improve_name = name; improve_expr = expr } ->
          mk_string_param_term improve_op name [mk_bnd_expr convert expr]
-    | Infix op ->
+    | GramUpd (Infix op) ->
          mk_string_param_term infix_op op []
+    | GramUpd (Suffix op) ->
+         mk_string_param_term suffix_op op []
     | MagicBlock { magic_name = name; magic_code = items } ->
          mk_string_param_term magic_block_op name [mk_xlist_term (List.map convert.item_f items)]
     | Comment t ->
@@ -1769,12 +1776,15 @@ struct
    (*
     * Infix declarations.
     *)
-   let check_infix (name : string)
+   let check_gupd (upd : grammar_update)
        (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
       let rec search = function
          [] ->
-            implem_error (sprintf "Infix %s: not implemented" name)
-       | (Infix name')::_ when name = name' ->
+            implem_error (
+               match upd with
+                  Infix name -> sprintf "Infix %s: not implemented" name
+                | Suffix name -> sprintf "Suffix %s: not implemented" name)
+       | (GramUpd upd')::_ when upd = upd' ->
             ()
        | _ :: t ->
             search t
@@ -1859,8 +1869,8 @@ struct
             check_resource name implem
        | Improve _ ->
             raise (Invalid_argument "Filter_summary.check_implemented")
-       | Infix name ->
-            check_infix name implem
+       | GramUpd upd ->
+            check_gupd upd implem
        | Id id ->
             check_id id implem
        | Definition def ->
@@ -1997,7 +2007,7 @@ struct
                   copy_module_proof copy_proof name info info2
              | Opname _ | MLRewrite _ | MLAxiom _ | Parent _ | DForm _
              | Prec _ | PrecRel _ | Id _ | Comment _ | Resource _
-             | Improve _ | Infix _ | SummaryItem _ | ToploopItem _
+             | Improve _ | GramUpd _ | SummaryItem _ | ToploopItem _
              | MagicBlock _ | InputForm _ | Definition _ ->
                   item
          in

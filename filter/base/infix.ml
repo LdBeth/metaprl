@@ -32,25 +32,25 @@
  *)
 
 open Pcaml
+open Filter_type
 
 (*
- * Make an infix expression.
+ * The prefix version of the infix expression
  *)
-let make_infix loc op e1 e2 =
-   let lop = "prefix_" ^ op in
-      <:expr< $lid:lop$ $e1$ $e2$ >>
+let prefix_name op =
+   "prefix_" ^ op
 
 (*
  * Add an infix keyword.
- * This is computed in infix.ml.
  *)
 let add_infix (keyword : string) =
    EXTEND
       GLOBAL: expr;
 
-      expr: BEFORE "top" (**)
-         [[ e1 = expr; op = STRING $keyword$; e2 = expr ->
-             make_infix loc op e1 e2
+      expr: LEVEL "expr1"
+         ["expr1" LEFTA
+          [ e1 = expr; op = $keyword$; e2 = expr ->
+               <:expr< $lid:prefix_name op$ $e1$ $e2$ >>
           ]];
    END
 
@@ -60,8 +60,46 @@ let add_infix (keyword : string) =
 let remove_infix (keyword : string) =
    DELETE_RULE
       expr:
-         expr; STRING $keyword$; expr
+         expr; $keyword$; expr
    END
+
+(*
+ * Add an suffix keyword.
+ *)
+let add_suffix (keyword : string) =
+   EXTEND
+      GLOBAL: expr;
+
+      expr: LEVEL "expr1"
+         ["expr1" LEFTA
+          [ e = expr; op = $keyword$ ->
+               <:expr< $lid:prefix_name op$ $e$ >>
+          ]];
+   END
+
+(*
+ * Remove the suffix keyword.
+ *)
+let remove_suffix (keyword : string) =
+   DELETE_RULE
+      expr:
+         expr; $keyword$
+   END
+
+let add = function
+   Infix s -> add_infix s
+ | Suffix s -> add_suffix s
+
+let remove = function
+   Infix s -> remove_infix s
+ | Suffix s -> remove_suffix s
+
+module SetBase = struct
+   type t = grammar_update
+   let compare = Pervasives.compare
+end
+
+module Set = Lm_set.LmMake(SetBase)
 
 (*
  * -*-
