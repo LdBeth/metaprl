@@ -1,11 +1,11 @@
 BEGIN { ctot=0; crb=0; cprim=0; itot=0; trb=0; iprim=0 }
-/is a derived object with a complete proof/ {
+/is a derived object with a complete grounded proof/ {
    ctot++; crb+=$2; cprim+=$3
 }
-/is a derived object with an incomplete proof/ {
+/is a derived object with an .*incomplete.* proof/ {
    itot++; irb+=$2; iprim+=$3
 }
-/complete .ungrounded. proof .* that depends on an incomplete/ {
+/complete .*ungrounded.* proof .* that depends on an incomplete/ {
    utot++; urb+=$2; uprim+=$3
 }
 END {

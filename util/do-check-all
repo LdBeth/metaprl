@@ -1,0 +1,25 @@
+#!/bin/sh
+
+#
+# Run this script to get the proofs status in your current tree.
+#
+# For best results, use THEORIES=all and TESTS_ENABLED=yes (since this is what
+# the nightly run uses).
+#
+
+if [ ! -d editor/ml ]; then
+   echo "Should be ran from MetaPrl root"
+   exit 1
+fi
+if [ ! -f mk/config ]; then
+   echo "You need a valid mk/config"
+   exit 1
+fi
+if grep -qi '^THEORIES *= *ALL$' mk/config ; then :; else
+   echo "Warning: to make the listing more complete, use THEORIES=all in mk/config"
+fi
+if grep -E -qi '^TESTS_ENABLED *= *(YES|true) *$' mk/config ; then :; else
+   echo "Warning: to make the comparison more complete, use TESTS_ENABLED=true in mk/config"
+fi
+ssh -x -n -o BatchMode=yes `whoami`@localhost `pwd`/util/do-check-all.sh `pwd` update&
+date "+%c: do-check-all.sh spawned, results should be emailed to you in a little while"
