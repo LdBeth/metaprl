@@ -326,10 +326,10 @@ CONVERTC  = $(SET_MPLIB) $(CONVERT)
         $(OCAMLOPT) $(OCAMLOPTFLAGS) $(OCAMLINCLUDES) -c -impl $<
 
 %.p4i: %.mli
-        $(PRLCC) $(INCLUDE) -E $*.mli > $@
+        $(PRLCC) $(OCAMLINCLUDES) -E $*.mli > $@
 
 %.p4: %.ml
-        $(PRLCC) $(INCLUDE) -E $*.ml > $@
+        $(PRLCC) $(OCAMLINCLUDES) -E $*.ml > $@
 
 #
 # Support directories
