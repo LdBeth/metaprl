@@ -2573,7 +2573,7 @@ struct
     | MLCondRewriteRefiner { ml_crw_name = n; ml_crw_refiner = r } ->
          RIMLCondRewrite { ri_ml_rw_name = n }, r
 
-    | PairRefiner (par, r) ->
+    | PairRefiner (r, par) ->
          RIParent par, r
     | ListRefiner refs ->
          (* List are never constructed by the user *)

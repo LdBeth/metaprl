@@ -93,6 +93,10 @@ external stop_gmon : unit -> unit = "stop_gmon"
  *)
 module Shell (ShellP4 : ShellP4Sig) =
 struct
+   let _ =
+      if !debug_load then
+         eprintf "Loading Shell module%t" eflush
+
    (************************************************************************
     * TYPES                                                                *
     ************************************************************************)
@@ -382,48 +386,74 @@ struct
    (*
     * Display the current proof.
     *)
-   let display_proof info proof =
-      proof.edit_display ()
+   let display_proof info proof options =
+      proof.edit_display options
 
    (*
     * Display the "root" directory.
     * This is just a list of the "important" packages.
     *)
-   let view_packages info =
+   let view_packages info options =
       let proof = Shell_root.view packages (get_display_mode info) in
-         display_proof info proof
+         display_proof info proof options
 
    (*
     * Display a particular package.
     *)
-   let view_package info name =
+   let view_package info name options =
       let pack = Package.get packages name in
       let parse_arg = get_parse_arg info in
       let display_mode = get_display_mode info in
       let proof = Shell_package.view pack parse_arg display_mode in
-         display_proof info proof
+         display_proof info proof options
 
    (*
     * View an item in a package.
     *)
-   let view_item info modname name =
-      display_proof info info.proof
+   let view_item info modname name options =
+      display_proof info info.proof options
 
    (*
     * General purpose displayer.
     *)
-   let view info name =
+   let view info options name =
       let dir = parse_path info name in
          match dir with
             [] ->
-               view_packages info
+               view_packages info options
           | [modname] ->
-               view_package info modname
+               view_package info modname options
           | modname :: item :: _ ->
-               view_item info modname item
+               view_item info modname item options
 
-   let ls info =
-      print_exn info (view info) "."
+   let ls info s =
+      let len = String.length s in
+      let rec collect options i =
+         if i = len then
+            List.rev options
+         else
+            let options =
+               match s.[i] with
+                  '-' ->
+                     options
+                | 'R' ->
+                     (LsRules :: options)
+                | 'r' ->
+                     (LsRewrites :: options)
+                | 'u' ->
+                     (LsUnjustified :: options)
+                | _ ->
+                     raise (RefineError ("ls", StringStringError ("unrecognized option", s)))
+            in
+               collect options (succ i)
+      in
+      let view () =
+         view info (collect [] 0) "."
+      in
+         print_exn info view ()
+
+   let view info name =
+      view info [] name
 
    (*
     * Window width.
@@ -559,7 +589,7 @@ struct
    let set_port port =
       global.port <- port;
       try
-         print_exn global ls global
+         print_exn global (fun info -> ls info "") global
       with
          exn ->
             ()
@@ -581,7 +611,7 @@ struct
                            ()
                   end;
                   ShellP4.eval_expr shell.shell text;
-                  ls shell) text
+                  ls shell "") text
          with
             exn ->
                ()
@@ -752,7 +782,7 @@ struct
       let set t =
          touch info;
          info.proof.edit_set_goal t;
-         display_proof info info.proof
+         display_proof info info.proof []
       in
          print_exn info set t
 
@@ -760,7 +790,7 @@ struct
       let set t =
          touch info;
          info.proof.edit_set_redex t;
-         display_proof info info.proof
+         display_proof info info.proof []
       in
          print_exn info set t
 
@@ -768,7 +798,7 @@ struct
       let set t =
          touch info;
          info.proof.edit_set_contractum t;
-         display_proof info info.proof
+         display_proof info info.proof []
       in
          print_exn info set t
 
@@ -776,7 +806,7 @@ struct
       let set t =
          touch info;
          info.proof.edit_set_assumptions tl;
-         display_proof info info.proof
+         display_proof info info.proof []
       in
          print_exn info set tl
 
@@ -784,14 +814,14 @@ struct
       let set t =
          touch info;
          info.proof.edit_set_params pl;
-         display_proof info info.proof
+         display_proof info info.proof []
       in
          print_exn info set pl
 
    let check info =
       let set info =
          let _ = info.proof.edit_check () in
-            display_proof info info.proof
+            display_proof info info.proof []
       in
          print_exn info set info
 
@@ -802,7 +832,7 @@ struct
          let _ = info.proof.edit_expand (get_db info) in
          let finish = Unix.times () in
          let finish_time = Unix.gettimeofday () in
-            display_proof info info.proof;
+            display_proof info info.proof [];
             eprintf "User time %f; System time %f; Real time %f%t" (**)
                ((finish.Unix.tms_utime +. finish.Unix.tms_cutime)
                 -. (start.Unix.tms_utime +. start.Unix.tms_cstime))
@@ -844,7 +874,7 @@ struct
             if !debug_refine then
                eprintf "Displaying proof%t" eflush;
             if ShellP4.is_interactive info.shell then
-               display_proof info info.proof;
+               display_proof info info.proof [];
             if !debug_refine then
                eprintf "Proof displayed%t" eflush
       in
@@ -864,7 +894,7 @@ struct
       let set info =
          touch info;
          info.proof.edit_undo ();
-         display_proof info info.proof
+         display_proof info info.proof []
       in
          print_exn info set info
 
@@ -872,25 +902,35 @@ struct
       let set info =
          touch info;
          info.proof.edit_redo ();
-         display_proof info info.proof
+         display_proof info info.proof []
       in
          print_exn info set info
+
+   let interpret info command =
+      let set info =
+         touch info;
+         info.proof.edit_interpret command;
+         display_proof info info.proof []
+      in
+         print_exn info set info
+
+   let nop info =
+      interpret info ProofNop
 
    let unfold info =
-      let set info =
-         touch info;
-         info.proof.edit_unfold ();
-         display_proof info info.proof
-      in
-         print_exn info set info
+      interpret info ProofUnfold
 
    let kreitz info =
-      let set info =
-         touch info;
-         info.proof.edit_kreitz ();
-         display_proof info info.proof
-      in
-         print_exn info set info
+      interpret info ProofKreitz
+
+   let copy info s =
+      interpret info (ProofCopy s)
+
+   let paste info s =
+      interpret info (ProofPaste s)
+
+   let make_assum info =
+      interpret info ProofMakeAssum
 
    (*
     * Load all the ped's for the current module.
@@ -1021,7 +1061,7 @@ struct
    and root info =
       let set info =
          let _ = cd info (String.make ((List.length info.dir) - 1) '.') in
-            display_proof info info.proof
+            display_proof info info.proof []
       in
          if List.length info.dir >= 2 then
             set info
@@ -1029,14 +1069,14 @@ struct
    and up info i =
       let set info =
          let _ = cd info (String.make (i + 1) '.') in
-            display_proof info info.proof
+            display_proof info info.proof []
       in
          set info
 
    and down info i =
       let set i =
          let _ = cd info (string_of_int i) in
-            display_proof info info.proof
+            display_proof info info.proof []
       in
          set i
 
@@ -1073,7 +1113,7 @@ struct
        "create_infix",     StringFunExpr   (fun s  -> UnitExpr (create_infix info s));
        "create_ml",        StringFunExpr   (fun s  -> UnitExpr (create_ml info s));
        "view",             StringFunExpr   (fun s  -> UnitExpr (view info s));
-       "ls",               UnitFunExpr     (fun () -> UnitExpr (ls info));
+       "ls",               StringFunExpr   (fun s  -> UnitExpr (ls info s));
        "set_goal",         TermFunExpr     (fun t  -> UnitExpr (set_goal info t));
        "set_redex",        TermFunExpr     (fun t  -> UnitExpr (set_redex info t));
        "set_contractum",   TermFunExpr     (fun t  -> UnitExpr (set_contractum info t));
@@ -1086,8 +1126,12 @@ struct
        "refine",           TacticFunExpr   (fun t  -> UnitExpr (refine info t));
        "undo",             UnitFunExpr     (fun () -> UnitExpr (undo info));
        "redo",             UnitFunExpr     (fun () -> UnitExpr (redo info));
+       "nop",              UnitFunExpr     (fun () -> UnitExpr (nop info));
        "unfold",           UnitFunExpr     (fun () -> UnitExpr (unfold info));
        "kreitz",           UnitFunExpr     (fun () -> UnitExpr (kreitz info));
+       "copy",             StringFunExpr   (fun s  -> UnitExpr (copy info s));
+       "paste",            StringFunExpr   (fun s  -> UnitExpr (paste info s));
+       "make_assum",       UnitFunExpr     (fun () -> UnitExpr (make_assum info));
        "sync",             UnitFunExpr     (fun () -> UnitExpr (sync info));
        "expand_all",       UnitFunExpr     (fun () -> UnitExpr (expand_all info));
        "set_debug",        StringFunExpr   (fun s  -> BoolFunExpr (fun b -> UnitExpr (set_debug s b)));

@@ -165,7 +165,7 @@ sig
    (*
     * This is the starting info for new proofs.
     *)
-   val argument : package -> parse_arg -> tactic_argument
+   val argument : package -> parse_arg -> string -> tactic_argument
    val new_proof : package -> parse_arg -> string -> term list -> term -> proof
    val ped_of_proof : package -> parse_arg -> proof -> msequent -> ped
    val status_of_proof : proof -> Proof.status

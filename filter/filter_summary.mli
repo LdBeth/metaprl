@@ -135,6 +135,11 @@ val summary_map :
    ('term1, 'meta_term1, 'proof1, 'ctyp1, 'expr1, 'item1) module_info ->
    ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) module_info
 
+val filter :
+   (('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item_loc -> bool) ->
+   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info ->
+   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info
+
 (*
  * Term conversion.
  *)

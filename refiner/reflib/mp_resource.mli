@@ -80,7 +80,8 @@ val create : ('info, 'result, 'data, 'arg) info -> 'data -> ('info, 'result, 'da
  * Update a resource.
  *)
 val join : ('info, 'result, 'data, 'arg) t -> ('info, 'result, 'data, 'arg) t -> ('info, 'result, 'data, 'arg) t
-val extract : ('info, 'result, 'data, 'arg) t -> 'result
+val extract : ('info, 'result, 'data, 'arg) t -> string -> 'result
+val extract_top : ('info, 'result, 'data, 'arg) t -> 'result
 val improve : ('info, 'result, 'data, 'arg) t -> 'info -> ('info, 'result, 'data, 'arg) t
 val improve_arg : ('info, 'result, 'data, 'arg) t ->
    string ->
@@ -91,6 +92,7 @@ val improve_arg : ('info, 'result, 'data, 'arg) t ->
    meta_term ->
    'arg ->
    ('info, 'result, 'data, 'arg) t
+val label : ('info, 'result, 'data, 'arg) t -> string -> ('info, 'result, 'data, 'arg) t
 val close : ('info, 'result, 'data, 'arg) t -> string -> ('info, 'result, 'data, 'arg) t
 val wrap : ('info, 'result, 'data, 'arg) t -> ('data -> 'data) -> ('info, 'result, 'data, 'arg) t
 
@@ -100,7 +102,7 @@ val wrap : ('info, 'result, 'data, 'arg) t -> ('data -> 'data) -> ('info, 'resul
 val improve_list : ('info, 'result, 'data, 'arg) t -> 'info list -> ('info, 'result, 'data, 'arg) t
 
 (*
- * Get a resource by name.
+ * Get the module by name.
  *)
 val find : ('info, 'result, 'data, 'arg) t -> string -> ('info, 'result, 'data, 'arg) t
 

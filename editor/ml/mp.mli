@@ -73,7 +73,7 @@ val create_ml : string -> unit
  * An object is not installed until it is checked.
  *)
 val view : string -> unit
-val ls : unit -> unit
+val ls : string -> unit
 
 (*
  * Editing commands.
@@ -95,6 +95,12 @@ val down : int -> unit
 val goal : unit -> tactic_arg
 val refine : tactic -> unit
 val undo : unit -> unit
+val redo : unit -> unit
+val nop : unit -> unit
+val unfold : unit -> unit
+val copy : string -> unit
+val paste : string -> unit
+val make_assum : unit -> unit
 
 (*
  * Nuprl5.

@@ -49,11 +49,20 @@ type display_mode =
  | DisplayGraphical of Mux_channel.session * dform_mode_base
 
 (*
+ * Options to the "ls" command.
+ *)
+type ls_option =
+   LsRewrites
+ | LsRules
+ | LsUnjustified
+ | LsAll
+
+(*
  * An editable object.
  *)
 type edit_object =
    { (* Display the object to the screen *)
-     edit_display : unit -> unit;
+     edit_display : ls_option list -> unit;
 
      (* Copy the object *)
      edit_copy : unit -> edit_object;
@@ -69,6 +78,7 @@ type edit_object =
      edit_expand : dform_base -> unit;
 
      (* Navigation if there is a proof *)
+     edit_interpret : proof_command -> unit;
      edit_root : unit -> unit;
      edit_up : int -> unit;
      edit_down : int -> unit;
@@ -77,8 +87,6 @@ type edit_object =
      edit_addr : int list -> unit;
      edit_info : unit -> edit_info;
      edit_refine : string -> MLast.expr -> tactic -> unit;
-     edit_unfold : unit -> unit;
-     edit_kreitz : unit -> unit
    }
 
 (*
@@ -147,7 +155,7 @@ sig
     * An object is not installed until it is checked.
     *)
    val view : t -> string -> unit
-   val ls : t -> unit
+   val ls : t -> string -> unit
 
    (*
     * Editing commands.
@@ -169,6 +177,12 @@ sig
    val goal : t -> tactic_arg
    val refine : t -> tactic -> unit
    val undo : t -> unit
+   val redo : t -> unit
+   val nop : t -> unit
+   val unfold : t -> unit
+   val copy : t -> string -> unit
+   val paste : t -> string -> unit
+   val make_assum : t -> unit
    val kreitz : t -> unit
    val sync : t -> unit
    val expand_all : t -> unit

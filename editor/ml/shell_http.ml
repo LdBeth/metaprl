@@ -35,6 +35,10 @@ open Mp_debug
 
 open Shell_sig
 
+let _ =
+   if !debug_load then
+      eprintf "Loading Shell HTTP%t" eflush
+
 let debug_http =
    create_debug (**)
       { debug_name = "http";

@@ -33,8 +33,21 @@
 open Printf
 open Mp_debug
 
+let _ =
+   if !debug_load then
+      eprintf "Loading Mp_top%t" eflush
+
 module Shell = Shell.Shell (Shell_mp.ShellP4 (Shell_state.ShellState))
+
+let _ =
+   if !debug_load then
+      eprintf "Loaded Shell%t" eflush
+
 module ShellHTTP = Shell_http.ShellHTTP (Shell)
+
+let _ =
+   if !debug_load then
+      eprintf "Starting main loop%t" eflush
 
 let _ = ShellHTTP.main ()
 

@@ -452,6 +452,7 @@ let msequent_hyps_id    = "_$mseq_hyps"
 let printer_id          = "_$printer"
 let dprinter_id         = "_$dprinter"
 let labels_id           = "_$labels"
+let rule_name_id        = "_$rule_name"
 
 (*
  * Convert between expressions and terms.
@@ -1138,6 +1139,23 @@ struct
         | f ->
            var, <:expr< $f$ $lid:var$ >>
 
+    let checkpoint_resources proc loc rule_name =
+      let label_resource resource =
+         let { resource_name = name } = resource in
+         let name_expr = (<:expr< $lid:name$ >>) in
+         let name_patt = (<:patt< $lid:name$ >>) in
+         let expr = <:expr< $uid:"Mp_resource"$ . $lid:"label"$ $name_expr$ $lid:rule_name_id$>> in
+            name_patt, expr
+      in
+      let { imp_resources = resources } = proc in
+         if resources = [] then
+            []
+         else
+            let rule_name_id_patt = <:patt< $lid:rule_name_id$ >> in
+            let rule_name_expr = <:expr< $str:rule_name$ >> in
+               [<:str_item< value $rec:false$ $list: [rule_name_id_patt, rule_name_expr]$ >>;
+                <:str_item< value $rec:false$ $list: List.map label_resource resources$ >>]
+
    (*
     * An mlterm is a side condition that is checked in ML.
     * The term expands to the code production.
@@ -1273,7 +1291,7 @@ struct
        let name_let =
           <:str_item< value $rec:false$ $list:[ name_patt, rw_body_expr ]$ >>
        in
-          [name_rewrite_let; name_let; refiner_let loc; toploop_rewrite loc name]
+          (checkpoint_resources proc loc name) @ [name_rewrite_let; name_let; refiner_let loc; toploop_rewrite loc name]
 
    let ()  = ()
 
@@ -1373,7 +1391,7 @@ struct
        let name_let =
           <:str_item< value $rec:false$ $list:[ name_patt, rw_fun_expr ]$ >>
        in
-          [name_rewrite_let; name_let; refiner_let loc (* ; refiner_let_name loc name *)]
+          (checkpoint_resources proc loc name) @ [name_rewrite_let; name_let; refiner_let loc (* ; refiner_let_name loc name *)]
 
    let () = ()
 
@@ -1515,7 +1533,7 @@ struct
       let name_let =
          <:str_item< value $rec:false$ $list:[ name_patt, rw_fun_expr ]$ >>
       in
-         [name_rewrite_let; name_let; refiner_let loc (* ; refiner_let_name loc name *)]
+         (checkpoint_resources proc loc name) @ [name_rewrite_let; name_let; refiner_let loc (* ; refiner_let_name loc name *)]
 
    (************************************************************************
     * RULES                                                                *
@@ -1538,7 +1556,7 @@ struct
       in
       let axiom_item = (<:str_item< value $rec:false$ $list:[axiom_patt, wrap_exn loc name axiom_value]$ >>) in
       let thm_item = <:str_item< $exp: wrap_exn loc name thm$ >> in
-         [axiom_item; thm_item; refiner_let loc (* ; refiner_let_name loc name *)]
+         (checkpoint_resources proc loc name) @ [axiom_item; thm_item; refiner_let loc (* ; refiner_let_name loc name *)]
 
    let prim_axiom proc loc ax extract =
       let code = prim_axiom_expr loc in
@@ -1679,7 +1697,7 @@ struct
       in
       let rule_def = <:str_item< value $rec:false$ $list:[ resource_patt, wrap_exn loc name rule_expr ]$ >> in
       let tac_def = <:str_item< value $rec:false$ $list:[ name_patt, name_value ]$ >> in
-         [rule_def; tac_def; refiner_let loc]
+         (checkpoint_resources proc loc name) @ [rule_def; tac_def; refiner_let loc]
 
    let prim_rule proc loc ax extract =
       let code = prim_rule_expr loc in
@@ -1803,7 +1821,7 @@ struct
       let name_let =
          <:str_item< value $rec:false$ $list:[ name_patt, rule_fun_expr ]$ >>
       in
-         [name_rule_let; name_let; refiner_let loc (* ; refiner_let_name loc name *)]
+         (checkpoint_resources proc loc name) @ [name_rule_let; name_let; refiner_let loc (* ; refiner_let_name loc name *)]
 
    (*
     * Define a display form expansion.

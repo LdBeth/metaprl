@@ -477,6 +477,9 @@ let new_module_info () =
 let info_items { info_list = info } =
    List.rev info
 
+let filter pred { info_list = info } =
+   { info_list = List_util.filter pred info }
+
 (*
  * Optional application.
  *)

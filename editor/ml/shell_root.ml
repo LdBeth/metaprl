@@ -153,7 +153,7 @@ let raise_edit_error s =
  * Build the shell interface.
  *)
 let rec edit pack window =
-   let edit_display () =
+   let edit_display _ =
       (* Display the roots of the package *)
       let term = mk_packages_term (List.map (fun root -> mk_package_term (Package.name root)) (Package.roots pack)) in
          display_term window term
@@ -209,11 +209,8 @@ let rec edit pack window =
    let edit_refine _ _ _ =
       raise_edit_error "can't refine the root packages"
    in
-   let edit_unfold () =
-      ()
-   in
-   let edit_kreitz () =
-      raise_edit_error "can't kreitz the root packages"
+   let edit_interpret command =
+      raise_edit_error "this is not a proof"
    in
       { edit_display = edit_display;
         edit_copy = edit_copy;
@@ -233,8 +230,7 @@ let rec edit pack window =
         edit_refine = edit_refine;
         edit_undo = edit_undo;
         edit_redo = edit_redo;
-        edit_unfold = edit_unfold;
-        edit_kreitz = edit_kreitz
+        edit_interpret = edit_interpret
       }
 
 let create pack window =

@@ -117,7 +117,7 @@ struct
     *)
    let default_toploop =
       let rsrc = Mptop.ext_toploop_resource in
-         Mp_resource.extract rsrc
+         Mp_resource.extract_top rsrc
 
    (*
     * Default state.
@@ -416,7 +416,7 @@ struct
       in
       let rsrc = Mp_resource.improve_list rsrc commands in
       let rsrc = Mp_resource.improve_list rsrc ["shell_get_term", IntFunExpr (fun i -> TermExpr (get_term_state state i))] in
-         state.state_toploop <- Mp_resource.extract rsrc
+         state.state_toploop <- Mp_resource.extract_top rsrc
 
    let get_toploop state =
       state.state_toploop

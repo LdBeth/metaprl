@@ -58,6 +58,10 @@ open Shell_p4_sig
 
 module ShellP4 (State : ShellStateSig) =
 struct
+   let _ =
+      if !debug_load then
+         eprintf "Loading Shell_mp%t" eflush
+
    (************************************************************************
     * TYPES                                                                *
     ************************************************************************)

@@ -179,6 +179,27 @@ implements Marshalable
 
 /*
  * $Log$
+ * Revision 1.2  1999/06/25 00:18:25  jyh
+ * These are some minor changes to make things work better.  Changed
+ * meaning of ThinOption in elim_resource: it now means to thin the hyp
+ * by default, unless overridden by thinningT false.
+ *
+ * Fixed some proof operations.  Added "move_to_assum" command to take
+ * the current subgoal and make it an extra assumption of the entire
+ * proof (it may not work at the moment).
+ *
+ * ls now takes a _string_ argument.  Use ls "u";; to display only the
+ * unproved rules in the current module.
+ *
+ * Proved many membership variants of the standard type constructors,
+ * but there are a few more to go.  When you are defining theories, I
+ * believe you should use membership, not equality.  After all, equality
+ * is derivable from membership, and membership is a lot easier.
+ *
+ * Still to go: ASCII format proof files; save proofs _without_ extracts
+ * by default.  The expand () function does not reexpand proofs correctly.
+ * A few problems with proof navigation.
+ *
  * Revision 1.1  1999/06/23 04:47:59  jyh
  * This is a major release; I bumped the release number to 0.6.
  * WARNING: There are major changes here, and there may be problems

@@ -178,7 +178,7 @@ let rec edit pack parse_arg sentinal arg name window obj =
       let item = item_of_obj pack name obj in
          Package.set pack parse_arg item
    in
-   let edit_display () =
+   let edit_display _ =
       (* Convert to a term *)
       let { rw_assums = assums;
             rw_redex = redex;
@@ -270,12 +270,6 @@ let rec edit pack parse_arg sentinal arg name window obj =
    let edit_nop () =
       Proof_edit.nop_ped (get_ped obj)
    in
-   let edit_unfold () =
-      Proof_edit.unfold_ped (get_ped obj)
-   in
-   let edit_kreitz () =
-      Proof_edit.kreitz_ped (get_ped obj)
-   in
    let get_ped () =
       match obj.rw_ped with
          Primitive _
@@ -309,6 +303,9 @@ let rec edit pack parse_arg sentinal arg name window obj =
    let edit_refine text ast tac =
       Proof_edit.refine_ped (get_ped ()) text ast tac
    in
+   let edit_interpret command =
+      Proof_edit.interpret (get_ped ()) command
+   in
       { edit_display = edit_display;
         edit_copy = edit_copy;
         edit_set_goal = edit_set_goal;
@@ -327,8 +324,7 @@ let rec edit pack parse_arg sentinal arg name window obj =
         edit_refine = edit_refine;
         edit_undo = edit_undo;
         edit_redo = edit_redo;
-        edit_unfold = edit_unfold;
-        edit_kreitz = edit_kreitz
+        edit_interpret = edit_interpret
       }
 
 let create_window = function
@@ -359,7 +355,7 @@ let create pack parse_arg window name =
       }
    in
    let sentinal = Package.sentinal pack in
-   let arg = Package.argument pack parse_arg in
+   let arg = Package.argument pack parse_arg name in
       Package.set pack parse_arg (Filter_type.Rewrite rw);
       edit pack parse_arg sentinal arg name (create_window window) obj
 
@@ -392,7 +388,7 @@ let view_rw pack parse_arg window
       }
    in
    let sentinal = Package.sentinal_object pack name in
-   let arg = Package.argument pack parse_arg in
+   let arg = Package.argument pack parse_arg name in
       edit pack parse_arg sentinal arg name (create_window window) obj
 
 let view_crw pack parse_arg window
@@ -416,7 +412,7 @@ let view_crw pack parse_arg window
       }
    in
    let sentinal = Package.sentinal_object pack name in
-   let arg = Package.argument pack parse_arg in
+   let arg = Package.argument pack parse_arg name in
       edit pack parse_arg sentinal arg name (create_window window) obj
 
 (*

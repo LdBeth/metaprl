@@ -38,6 +38,7 @@ open Printf
 
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermMan
 open Refiner.Refiner.RefineError
 
 open Dform_print
@@ -223,16 +224,83 @@ let convert_impl =
 (*
  * Display the entire package.
  *)
-let term_of_interface pack parse_arg =
-   let tl = term_list convert_intf (Package.sig_info pack parse_arg) in
+let term_of_interface pack filter parse_arg =
+   let tl = term_list convert_intf (Filter_summary.filter filter (Package.sig_info pack parse_arg)) in
       mk_interface_term tl
 
 (*
  * Display the entire package.
  *)
-let term_of_implementation pack parse_arg =
-   let tl = term_list convert_impl (Package.info pack parse_arg) in
+let term_of_implementation pack filter parse_arg =
+   let tl = term_list convert_impl (Filter_summary.filter filter (Package.info pack parse_arg)) in
       mk_implementation_term tl
+
+(*
+ * Filter the entries for ls.
+ *)
+let is_rewrite_item = function
+   Rewrite _
+ | CondRewrite _
+ | MLRewrite _ ->
+      true
+ | _ ->
+      false
+
+let is_rule_item = function
+   Axiom _
+ | Rule _
+ | MLAxiom  _ ->
+      true
+ | _ ->
+      false
+
+let is_unjustified_item item =
+   let proof =
+      match item with
+         Rewrite { rw_proof = proof } ->
+            proof
+       | CondRewrite { crw_proof = proof } ->
+            proof
+       | Axiom { axiom_proof = proof } ->
+            proof
+       | Rule { rule_proof = proof } ->
+            proof
+       | _ ->
+            Primitive xnil_term
+   in
+      match proof with
+         Primitive _
+       | Derived _ ->
+            false
+       | Incomplete ->
+            true
+       | Interactive proof ->
+            match Package.status_of_proof proof with
+               Proof.StatusComplete ->
+                  false
+             | _ ->
+                  true
+
+(*
+ * Conjoin all the predicates.
+ *)
+let compile_ls_predicate = function
+   [] ->
+      (fun _ -> true)
+ | predicate ->
+      (fun (item, _) -> List_util.allp (fun pred -> pred item) predicate)
+
+let rec mk_ls_filter predicate = function
+   LsAll :: tl ->
+      mk_ls_filter predicate tl
+ | LsRewrites :: tl ->
+      mk_ls_filter (is_rewrite_item :: predicate) tl
+ | LsRules :: tl ->
+      mk_ls_filter (is_rule_item :: predicate) tl
+ | LsUnjustified :: tl ->
+      mk_ls_filter (is_unjustified_item :: predicate) tl
+ | [] ->
+      compile_ls_predicate predicate
 
 (************************************************************************
  * SHELL INTERFACE                                                      *
@@ -248,8 +316,8 @@ let raise_edit_error s =
  * Build the shell interface.
  *)
 let rec edit pack_info parse_arg window =
-   let edit_display () =
-      display_term pack_info window (term_of_implementation pack_info parse_arg)
+   let edit_display options =
+      display_term pack_info window (term_of_implementation pack_info (mk_ls_filter [] options) parse_arg)
    in
    let edit_copy () =
       edit pack_info parse_arg (new_window window)
@@ -302,11 +370,8 @@ let rec edit pack_info parse_arg window =
    let edit_refine _ _ _ =
       raise_edit_error "can't refine the package"
    in
-   let edit_unfold () =
-      ()
-   in
-   let edit_kreitz () =
-      raise_edit_error "can't kreitz the package"
+   let edit_interpret command =
+      raise_edit_error "this is not a proof"
    in
       { edit_display = edit_display;
         edit_copy = edit_copy;
@@ -326,8 +391,7 @@ let rec edit pack_info parse_arg window =
         edit_refine = edit_refine;
         edit_undo = edit_undo;
         edit_redo = edit_redo;
-        edit_unfold = edit_unfold;
-        edit_kreitz = edit_kreitz
+        edit_interpret = edit_interpret
       }
 
 let create pack parse_arg window =

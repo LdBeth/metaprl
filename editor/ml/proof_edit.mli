@@ -105,6 +105,14 @@ val addr_ped : ped -> int list -> unit
 val rotate_ped : ped -> int -> unit
 
 (*
+ * Editing.
+ *)
+val copy_ped : ped -> string -> unit
+val paste_ped : ped -> string -> unit
+val cp_ped : ped -> int list -> int list -> unit
+val make_assum_ped : ped -> unit
+
+(*
  * Check the proof and return its extract.
  * Two versions for handling refinement errors:
  *    check_proof: expand until first error, exceptions propagate
@@ -114,6 +122,29 @@ val rotate_ped : ped -> int -> unit
  *)
 val check_ped : ped -> term
 val expand_ped : dform_base -> ped -> unit
+
+(*
+ * Put all the commands into a single argument for interpretation.
+ *)
+type proof_command =
+   ProofRefine of string * MLast.expr * tactic
+ | ProofUnfold
+ | ProofUndo
+ | ProofRedo
+ | ProofNop
+ | ProofKreitz
+ | ProofUp of int
+ | ProofDown of int
+ | ProofRoot
+ | ProofAddr of int list
+ | ProofRotate of int
+ | ProofCopy of string
+ | ProofPaste of string
+ | ProofCp of int list * int list
+ | ProofExpand of dform_base
+ | ProofMakeAssum
+
+val interpret : ped -> proof_command -> unit
 
 (*
  * Display.

@@ -81,7 +81,7 @@ let create_ml = create_ml (get_current_shell ())
  * An object is not installed until it is checked.
  *)
 let view = view (get_current_shell ())
-let ls () = ls (get_current_shell ())
+let ls s = ls (get_current_shell ()) s
 
 (*
  * Editing commands.
@@ -103,6 +103,12 @@ let down = down (get_current_shell ())
 let goal () = goal (get_current_shell ())
 let refine = refine (get_current_shell ())
 let undo () = undo (get_current_shell ())
+let redo () = redo (get_current_shell ())
+let nop () = nop (get_current_shell ())
+let unfold () = unfold (get_current_shell ())
+let copy s = copy (get_current_shell ()) s
+let paste s = paste (get_current_shell ()) s
+let make_assum () = make_assum (get_current_shell ())
 
 (*
  * Nuprl5 interface.

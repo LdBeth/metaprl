@@ -226,7 +226,6 @@ struct
     *)
    and pack_str_info =
       { pack_str_info : Cache.StrFilterCache.info;
-        pack_arg : tactic_argument;
         pack_parse : parse_arg
       }
 
@@ -505,49 +504,49 @@ struct
    (*
     * Get a tactic_arg for a module.
     *)
-   let lazy_reduce modname () =
+   let lazy_reduce modname itemname () =
       let rsrc = Mp_resource.find Top_conversionals.ext_reduce_resource modname in
-         Mp_resource.extract rsrc
+         Mp_resource.extract rsrc itemname
 
-   let lazy_intro_tactic modname () =
+   let lazy_intro_tactic modname itemname () =
       let rsrc = Mp_resource.find Base_dtactic.ext_intro_resource modname in
-         Mp_resource.extract rsrc
+         Mp_resource.extract rsrc itemname
 
-   let lazy_elim_tactic modname () =
+   let lazy_elim_tactic modname itemname () =
       let rsrc = Mp_resource.find Base_dtactic.ext_elim_resource modname in
-         Mp_resource.extract rsrc
+         Mp_resource.extract rsrc itemname
 
-   let lazy_trivial modname () =
+   let lazy_trivial modname itemname () =
       let rsrc = Mp_resource.find Base_auto_tactic.ext_trivial_resource modname in
-         Mp_resource.extract rsrc
+         Mp_resource.extract rsrc itemname
 
-   let lazy_auto modname () =
+   let lazy_auto modname itemname () =
       let rsrc = Mp_resource.find Base_auto_tactic.ext_auto_resource modname in
-         Mp_resource.extract rsrc
+         Mp_resource.extract rsrc itemname
 
-   let lazy_eqcd modname () =
+   let lazy_eqcd modname itemname () =
       let rsrc = Mp_resource.find Itt_equal.ext_eqcd_resource modname in
-         Mp_resource.extract rsrc
+         Mp_resource.extract rsrc itemname
 
-   let lazy_tsubst modname () =
+   let lazy_tsubst modname itemname () =
       let rsrc = Mp_resource.find Typeinf.ext_typeinf_subst_resource modname in
-         Mp_resource.extract rsrc
+         Mp_resource.extract rsrc itemname
 
-   let lazy_typeinf modname () =
+   let lazy_typeinf modname itemname () =
       let rsrc = Mp_resource.find Typeinf.ext_typeinf_resource modname in
-         Mp_resource.extract rsrc
+         Mp_resource.extract rsrc itemname
 
-   let lazy_squash modname () =
+   let lazy_squash modname itemname () =
       let rsrc = Mp_resource.find Itt_squash.ext_squash_resource modname in
-         Mp_resource.extract rsrc
+         Mp_resource.extract rsrc itemname
 
-   let lazy_subtype modname () =
+   let lazy_subtype modname itemname () =
       let rsrc = Mp_resource.find Itt_subtype.ext_sub_resource modname in
-         Mp_resource.extract rsrc
+         Mp_resource.extract rsrc itemname
 
-   let get_tactic_arg modname =
+   let get_tactic_arg modname itemname =
       let add_attribute name con xlazy attributes =
-         try con name (xlazy modname) :: attributes with
+         try con name (xlazy modname itemname) :: attributes with
             Not_found ->
                attributes
       in
@@ -604,7 +603,6 @@ struct
             in
             let pack_str =
                { pack_str_info = info;
-                 pack_arg = get_tactic_arg name;
                  pack_parse = arg
                }
             in
@@ -818,7 +816,6 @@ struct
                  pack_str = Some { pack_str_info =
                                       Cache.StrFilterCache.create_cache pack.pack_cache (**)
                                       name ImplementationType InterfaceType;
-                                   pack_arg = null_tactic_argument;
                                    pack_parse = arg
                             };
                  pack_infixes = [];
@@ -831,29 +828,24 @@ struct
    (*
     * tactic_argument for the package.
     *)
-   let argument pack_info arg =
+   let argument pack_info arg name =
       auto_loading_str arg pack_info (function
-         { pack_str = Some { pack_arg = arg } } ->
-            arg
-       | { pack_name = name; pack_str = None } ->
-            raise (NotLoaded name))
+         { pack_name = modname } ->
+            get_tactic_arg modname name)
 
    (*
     * A new proof cannot be saved.
     *)
    let new_proof pack_info arg name hyps goal =
       auto_loading_str arg pack_info (function
-         { pack_name = mod_name;
-           pack_str = Some { pack_arg = { ref_label = label; ref_args = args } };
-         } ->
+         { pack_name = mod_name } ->
             let loc = 0, 0 in
+            let { ref_label = label; ref_args = args } = get_tactic_arg mod_name name in
             let sentinal = Tactic_type.Tactic.sentinal_of_refiner_object mod_name name in
             let seq = Tactic_type.Tactic.create sentinal label (mk_msequent goal hyps) args in
             let proof = Proof.create seq in
             let ped = Proof_edit.ped_of_proof [] proof in
-               ref (ProofEdit (arg, ped))
-       | { pack_name = mod_name; pack_str = None } ->
-            raise (NotLoaded mod_name))
+               ref (ProofEdit (arg, ped)))
 
    (*
     * Get the status of the proof.
@@ -877,24 +869,21 @@ struct
     *)
    let ped_of_proof pack_info arg proof goal =
       auto_loading_str arg pack_info (function
-         { pack_name = name;
-           pack_str = Some { pack_arg = { ref_label = label; ref_args = args } }
-         } ->
+         { pack_name = name } ->
             begin
                match !proof with
                   ProofEdit (_, ped) ->
                      ped
                 | ProofRaw (name', proof') ->
                      let parse, eval = arg in
+                     let { ref_args = args } = get_tactic_arg name name' in
                      let sentinal = Tactic_type.Tactic.sentinal_of_refiner_object name name' in
                      let proof' = Proof.proof_of_io_proof args sentinal parse eval proof' in
                      let ped = Proof_edit.ped_of_proof [] proof' in
                         Proof_edit.set_goal ped goal;
                         proof := ProofEdit (arg, ped);
                         ped
-            end
-       | { pack_name = name; pack_str = None } ->
-            raise (NotLoaded name))
+            end)
 
    let proof_of_ped proof arg ped =
       proof := ProofEdit (arg, ped);

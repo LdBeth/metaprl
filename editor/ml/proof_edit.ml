@@ -98,6 +98,27 @@ type edit_info =
      edit_extras : tactic_arg list
    }
 
+(*
+ * Possible commands.
+ *)
+type proof_command =
+   ProofRefine of string * MLast.expr * tactic
+ | ProofUnfold
+ | ProofUndo
+ | ProofRedo
+ | ProofNop
+ | ProofKreitz
+ | ProofUp of int
+ | ProofDown of int
+ | ProofRoot
+ | ProofAddr of int list
+ | ProofRotate of int
+ | ProofCopy of string
+ | ProofPaste of string
+ | ProofCp of int list * int list
+ | ProofExpand of dform_base
+ | ProofMakeAssum
+
 (************************************************************************
  * OPERATIONS                                                           *
  ************************************************************************)
@@ -294,6 +315,77 @@ let check_ped ped =
  *)
 let expand_ped dforms ped =
    push_proof ped (Proof.expand (update_fun ped) dforms (proof_of_ped ped))
+
+(*
+ * We keep a global copy/paste buffer.
+ *)
+let copy_buffer = ref []
+let copy_lock = Mutex.create ()
+
+let copy_ped ped s =
+   Mutex.lock copy_lock;
+   let proof = proof_of_ped ped in
+      begin
+         try copy_buffer := List_util.assoc_replace !copy_buffer s proof with
+            Not_found ->
+               copy_buffer := (s, proof) :: !copy_buffer
+      end;
+      Mutex.unlock copy_lock
+
+let paste_ped ped s =
+   let proof2 =
+      try List.assoc s !copy_buffer with
+         Not_found ->
+            raise (RefineError ("paste", StringStringError ("no proof in buffer", s)))
+   in
+   let proof1 = proof_of_ped ped in
+   let proof = Proof.paste (update_fun ped) proof1 proof2 in
+      push_proof ped proof
+
+let cp_ped ped from_addr to_addr =
+   let proof = proof_of_ped ped in
+   let proof = Proof.copy (update_fun ped) proof from_addr to_addr in
+      push_proof ped proof
+
+let make_assum_ped ped =
+   push_proof ped (Proof.make_assum (update_fun ped) (proof_of_ped ped))
+
+(*
+ * Command interpretation.
+ *)
+let interpret ped = function
+   ProofRefine (text, expr, tac) ->
+      refine_ped ped text expr tac
+ | ProofUnfold ->
+      unfold_ped ped
+ | ProofUndo ->
+      undo_ped ped
+ | ProofRedo ->
+      redo_ped ped
+ | ProofNop ->
+      nop_ped ped
+ | ProofKreitz ->
+      kreitz_ped ped
+ | ProofUp i ->
+      up_ped ped i
+ | ProofDown i ->
+      down_ped ped i
+ | ProofRoot ->
+      root_ped ped
+ | ProofAddr addr ->
+      addr_ped ped addr
+ | ProofRotate i ->
+      rotate_ped ped i
+ | ProofCopy s ->
+      copy_ped ped s
+ | ProofPaste s ->
+      paste_ped ped s
+ | ProofCp (from_addr, to_addr) ->
+      cp_ped ped from_addr to_addr
+ | ProofExpand dforms ->
+      expand_ped dforms ped
+ | ProofMakeAssum ->
+      make_assum_ped ped
 
 (************************************************************************
  * HTML DISPLAY                                                         *

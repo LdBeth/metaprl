@@ -696,8 +696,7 @@ and search_tzone buf lmargin rmargin col maxx breaks search =
 
                   else if breaks.(index) then
                      (* Break has been chosen, and we are not searching *)
-                     let col = col + take_len in
-                        collect lmargin (max col maxx) search t
+                     collect (lmargin + take_len) maxx search t
 
                   else
                      (* Not searching, and break hasn't been tried yet *)
@@ -707,8 +706,7 @@ and search_tzone buf lmargin rmargin col maxx breaks search =
                       with
                          MarginError ->
                             breaks.(index) <- true;
-                            let col = col + take_len in
-                               collect col (max col maxx) false t)
+                            collect (lmargin + take_len) maxx false t)
 
              | HBreak ->
                   (* Hard breaks are always taken *)
@@ -892,8 +890,8 @@ and print_tzone buf rmargin col printer =
              | Break (index, take_len, notake_len, take, notake) ->
                   if breaks.(index) then
                      begin
-                        printer.print_string take;
                         printer.print_tab lmargin;
+                        printer.print_string take;
                         print lmargin t
                      end
                   else
