@@ -147,7 +147,7 @@ struct
           | [] ->
                raise Not_found
       in
-         try search header with
+         try max default_width (search header) with
             Not_found ->
                (* Some default width *)
                default_width
@@ -277,10 +277,7 @@ struct
                   print_page outx width state dirname;
                   state
             else
-               begin
-                  eprintf "Invalid request@.";
-                  print_login_page outx state
-               end
+               print_login_page outx state
 
    (*
     * Handle a post command.  This means to submit the text to MetaPRL.

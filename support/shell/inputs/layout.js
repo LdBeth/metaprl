@@ -22,12 +22,17 @@ function GetWindowSize() {
         window_width = document.body.clientWidth;
         window_height = document.body.clientHeight;
     }
+    else {
+        alert('Cant figure out window size');
+        window_width = 800;
+        window_height = 800;
+    }
 }
 
 /*
  * The styles depend on the window size.
  */
-function WriteWindowStyle(rulebox_height) {
+function ResizeBoxes(rulebox_height) {
     var horizontal_border_size = 2;
     var vertical_border_size = 2;
     var box_width = window_width - 2 * horizontal_border_size;
@@ -35,41 +40,24 @@ function WriteWindowStyle(rulebox_height) {
     var content_height = window_height - message_height - rulebox_height;
     var rulebox_top = content_height + message_height;
 
-    document.write('<style type="text/css" media="screen"><!-- ');
-    document.write('#contentbox {'
-                   + ' position: absolute'
-		   + '; top: 0'
-                   + '; left: ' + horizontal_border_size
-		   + '; width: ' + box_width
-		   + '; height: ' + (content_height - vertical_border_size)
-		   + '; display: block'
-		   + '; border: none'
-		   + '; padding: none'
-		   + '; overflow: auto'
-		   + '} ');
-    document.write('#messagebox {'
-                   + ' position: absolute'
-		   + '; top: ' + content_height
-                   + '; left: ' + horizontal_border_size
-		   + '; width: ' + box_width
-		   + '; height: ' + (message_height - vertical_border_size)
-		   + '; display: block'
-		   + '; border: none'
-		   + '; padding: none'
-		   + '; overflow: auto'
-		   + '} ');
-    document.write('#rulebox {'
-                   + ' position: absolute'
-		   + '; top:' + rulebox_top
-                   + '; left: ' + horizontal_border_size
-		   + '; width: ' + box_width
-		   + '; height: ' + rulebox_height
-		   + '; display: block'
-		   + '; border: none'
-		   + '; padding: none'
-		   + '; overflow: auto'
-		   + '} ');
-    document.write(' --></style>');
+    var content = document.getElementById('contentbox');
+    var message = document.getElementById('messagebox');
+    var rule = document.getElementById('rulebox');
+
+    content.style.top = 0;
+    content.style.left = horizontal_border_size;
+    content.style.width = box_width;
+    content.style.height = content_height - vertical_border_size;
+
+    message.style.top = content_height;
+    message.style.left = horizontal_border_size;
+    message.style.width = box_width;
+    message.style.height = message_height - vertical_border_size;
+
+    rule.style.top = rulebox_top;
+    rule.style.left = horizontal_border_size;
+    rule.style.width = box_width;
+    rule.style.height = rulebox_height;
 }
 
 /*
@@ -80,4 +68,20 @@ var window_width_name = 'MetaPRL.width';
 function SetWindowCookie() {
    SetCookie(window_width_name, '' + window_width, null, "/", null, false);
 }
+
+/*
+ * Resize event.
+ */
+function Resize(rulebox_height) {
+   GetWindowSize();
+   ResizeBoxes(rulebox_height);
+   SetWindowCookie();
+}
+
+function Load(rulebox_height) {
+    Resize(rulebox_height);
+    document.commandform.command.focus();
+    document.getElementById('messagebox').scrollTop += 10000;
+}
+
 

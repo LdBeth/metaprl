@@ -1,7 +1,7 @@
 BODY {
     background-color: white;
     color: black;
-    font-family: Lucida Sans Unicode, Sans-Serif;
+    font-family: Sans-Serif;
     font-size: 10pt
 }
 B {
@@ -54,4 +54,38 @@ DIV.message {
 }
 DIV.rule {
     background-color: white
+}
+
+#contentbox {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 800;
+    height: 600;
+    display: block;
+    border: none;
+    padding: none;
+    overflow: auto
+}
+#messagebox {
+    position: absolute;
+    top: 600;
+    left: 0;
+    width: 800;
+    height: 100;
+    display: block;
+    border: none;
+    padding: none;
+    overflow: auto
+}
+#rulebox {
+    position: absolute;
+    top: 700;
+    left: 0;
+    width: 800;
+    height: 150;
+    display: block;
+    border: none;
+    padding: none;
+    overflow: auto
 }

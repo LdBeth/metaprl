@@ -3,18 +3,11 @@
         <title>%%TITLE%%: %%LOCATION%%</title>
 	<script type="text/javascript" src="/inputs/cookie.js"></script>
 	<script type="text/javascript" src="/inputs/layout.js"></script>
-        <script type="text/javascript">
-<!-- Hide this text from old browsers
-GetWindowSize();
-WriteWindowStyle(180);
-SetWindowCookie();
--->
-        </script>
-        <style type="text/css" src="/inputs/style.css"></style>
+	<link rel="stylesheet" type="text/css" href="/inputs/style.css">
         %%STYLE%%
     </head>
 
-    <body>
+    <body onLoad="Load(150)" onResize="Resize(150)">
     <div name="content" id="contentbox" class="content">%%BODY%%</div>
     <div name="message" id="messagebox" class="message">%%MESSAGE%%</div>
     <div name="rule" id="rulebox" class="rule">
@@ -26,12 +19,6 @@ SetWindowCookie();
         <p>
         # <textarea name="command" rows="4" cols="80" border="0" align="top">%%RULEBOX%%</textarea>
         </form>
-        <script type="text/javascript">
-        <!-- Hide this text from old browsers --
-        document.commandform.command.focus();
-	document.getElementById('messagebox').scrollTop += 10000;
-        -->
-        </script>
     </div>
     </body>
 </html>
