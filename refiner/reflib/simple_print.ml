@@ -436,7 +436,7 @@ struct
    let print_simple_level_exp_fp out p =
       let buf = new_buffer () in
          format_level_exp buf p;
-         print_to_channel default_width buf out
+         print_text_channel default_width buf out
 
    let print_simple_level_exp = print_simple_level_exp_fp stdout
 
@@ -445,7 +445,7 @@ struct
    let string_of_level_exp p =
       let buf = new_buffer () in
          format_level_exp buf p;
-         print_to_string default_width buf
+         print_text_string default_width buf
 
    (* Params *)
    let format_simple_param = format_param
@@ -453,7 +453,7 @@ struct
    let print_simple_param_fp out p =
       let buf = new_buffer () in
          format_param buf p;
-         print_to_channel default_width buf out
+         print_text_channel default_width buf out
 
    let print_simple_param = print_simple_param_fp stdout
 
@@ -462,7 +462,7 @@ struct
    let string_of_param p =
       let buf = new_buffer () in
          format_param buf p;
-         print_to_string default_width buf
+         print_text_string default_width buf
 
    (* Terms *)
    let format_simple_term = format_term
@@ -470,7 +470,7 @@ struct
    let print_simple_term_fp out term =
       let buf = new_buffer () in
          format_term buf term;
-         print_to_channel default_width buf out
+         print_text_channel default_width buf out
 
    let print_simple_term = print_simple_term_fp stdout
 
@@ -479,7 +479,7 @@ struct
    let string_of_term term =
       let buf = new_buffer () in
          format_term buf term;
-         print_to_string default_width buf
+         print_text_string default_width buf
 
    let short_string_of_term term =
       line_format default_width ( fun buf -> format_term buf term)
@@ -490,7 +490,7 @@ struct
    let print_simple_bterm_fp out term =
       let buf = new_buffer () in
          format_bterm buf term;
-         print_to_channel default_width buf out
+         print_text_channel default_width buf out
 
    let print_simple_bterm = print_simple_bterm_fp stdout
 
@@ -499,7 +499,7 @@ struct
    let string_of_bterm term =
       let buf = new_buffer () in
          format_bterm buf term;
-         print_to_string default_width buf
+         print_text_string default_width buf
 
    (*
     * MetaTerms.
@@ -509,7 +509,7 @@ struct
    let print_simple_mterm_fp out mterm =
       let buf = new_buffer () in
          format_mterm buf mterm;
-         print_to_channel default_width buf out
+         print_text_channel default_width buf out
 
    let print_simple_mterm = print_simple_mterm_fp stdout
 
@@ -518,7 +518,7 @@ struct
    let string_of_mterm mterm =
       let buf = new_buffer () in
          format_mterm buf mterm;
-         print_to_string default_width buf
+         print_text_string default_width buf
 
    (*
     * Addresses.

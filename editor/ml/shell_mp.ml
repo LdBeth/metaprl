@@ -29,7 +29,6 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-
 extends Shell
 
 open Printf
@@ -107,7 +106,7 @@ struct
       Shell_state.synchronize state (function str ->
          let instream = Stream.of_string str in
          let expr = Grammar.Entry.parse Pcaml.expr instream in
-            ignore(evaluate_ocaml_expr (Shell_state.get_toploop state) expr))
+            ignore (evaluate_ocaml_expr (Shell_state.get_toploop state) expr))
 
    (************************************************************************
     * TOPLOOP                                                              *
@@ -154,7 +153,7 @@ struct
          format_ezone buf;
          format_string buf ": ";
          format_string buf (str_typ typ);
-         print_to_channel default_width buf out;
+         print_text_channel default_width buf out;
          eflush out
 
    (*
@@ -167,6 +166,15 @@ struct
                print_expr state stdout expr;
                flush stdout
             end
+
+   let eval_top state =
+      Shell_state.synchronize state (function str ->
+         let instream = Shell_state.stream_of_string state str in
+            match Grammar.Entry.parse Pcaml.top_phrase instream with
+               Some phrase ->
+                  eval_str_item state phrase
+             | None ->
+                  ())
 
    let eval_opens _ _ =
       ()
@@ -196,11 +204,12 @@ struct
          let buf = new_buffer () in
             begin
                match exn with
-                  Stdpp.Exc_located _ | Pcaml.Qerror _ -> inflush ()
+                  Stdpp.Exc_located _
+                | Pcaml.Qerror _ -> inflush ()
                 | _ -> format_string buf "Uncaught exception: ";
             end;
             Filter_exn.format_exn df buf exn;
-            print_to_channel default_width buf stderr;
+            print_text_channel default_width buf stderr;
             eflush stderr
       in
       let catch =

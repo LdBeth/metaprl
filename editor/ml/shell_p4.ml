@@ -29,7 +29,6 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-
 open Printf
 
 open Longident
@@ -38,7 +37,6 @@ open Parsetree
 open Lm_debug
 
 open Pcaml
-
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.RefineError
@@ -183,6 +181,13 @@ struct
             let loc = 0, 0 in
                eval_str_item loc <:str_item< $exp: expr$ >>)
 
+   let eval_top state =
+      Shell_state.synchronize state (function str ->
+            let instream = Stream.of_string str in
+            let expr = Grammar.Entry.parse Pcaml.expr instream in
+            let loc = 0, 0 in
+               eval_str_item loc <:str_item< $exp: expr$ >>)
+
    let eval_opens state =
       Shell_state.synchronize state (function opens ->
             let eval_open path =
@@ -196,14 +201,14 @@ struct
     *)
    let create_tactic state expr =
       let cell = ref (Delay expr) in
-      funT (fun _ ->
-         match !cell with
-            Tactic tac ->
-               tac
-          | Delay expr ->
-               let tac = eval_tactic state expr in
-                  cell := Tactic tac;
-                  tac)
+         funT (fun _ ->
+               match !cell with
+                  Tactic tac ->
+                     tac
+                | Delay expr ->
+                     let tac = eval_tactic state expr in
+                        cell := Tactic tac;
+                        tac)
 
    (************************************************************************
     * SHELL GRAMMAR                                                        *
@@ -245,11 +250,13 @@ struct
          if not
             (Toploop.execute_phrase false Format.std_formatter
                (Ptop_dir ("install_printer", Pdir_ident (Ldot (Lident "Shell_state", "term_printer")))))
-         then invalid_arg "Shell_p4.main: installing term printer failed";
+         then
+            invalid_arg "Shell_p4.main: installing term printer failed";
          if not
             (Toploop.execute_phrase false Format.std_formatter
                (Ptop_def [{ pstr_desc = Pstr_open (Lident "Mp"); pstr_loc = Location.none }]))
-         then invalid_arg "Shell_p4.main: opening Mp module failed";
+         then
+            invalid_arg "Shell_p4.main: opening Mp module failed";
          Tactic.main_loop ()
 end
 

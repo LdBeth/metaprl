@@ -322,7 +322,7 @@ let print db f x =
          let buf = new_buffer () in
             format_exn db buf exn;
             format_newline buf;
-            print_to_channel default_width buf stderr;
+            print_text_channel default_width buf stderr;
             flush stderr;
             raise exn
 
@@ -336,7 +336,7 @@ let stderr_exn s exn =
       format_popm buf;
       format_ezone buf;
       format_newline buf;
-      print_to_channel default_width buf stderr;
+      print_text_channel default_width buf stderr;
       flush stderr;
       raise exn
 

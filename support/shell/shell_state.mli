@@ -102,6 +102,7 @@ val synchronize : t -> ('a -> 'b) -> 'a -> 'b
  ****************************************)
 
 val stream_of_channel : t -> in_channel -> char Stream.t
+val stream_of_string : t -> string -> char Stream.t
 val set_prompt : t -> string -> unit
 val set_prompt2 : t -> string -> unit
 val stdin_stream : t -> char Stream.t * (unit -> unit)

@@ -58,7 +58,7 @@ open Tactic_type.Tacticals
 
 open Summary
 
-open Display_term
+open Java_display_term
 
 (*
  * Show that the file is loading.
@@ -462,23 +462,24 @@ let interpret ped = function
 (*
  * A window is either a text window or an HTML window.
  *)
-type proof_window =
-   { pw_port : Mux_channel.session;
-     pw_base : dform_mode_base;
-     pw_goal : Display_term.t;
-     pw_rule : Display_term.t;
-     pw_subgoals : Display_term.t;
-     pw_menu : Display_term.t
+type java_window =
+   { pw_port     : Java_mux_channel.session;
+     pw_base     : dform_mode_base;
+     pw_goal     : Java_display_term.t;
+     pw_rule     : Java_display_term.t;
+     pw_subgoals : Java_display_term.t;
+     pw_menu     : Java_display_term.t
    }
 
 type text_window =
-   { df_base : dform_mode_base;
-     df_mode : string;
+   { df_base  : dform_mode_base;
+     df_mode  : string;
      df_width : int
    }
 
 type window =
-   ProofWindow of proof_window
+   JavaWindow of java_window
+ | BrowserWindow of text_window
  | TextWindow of text_window
  | TexWindow of text_window
 
@@ -502,13 +503,19 @@ let create_tex_window base =
                df_width = 80
    }
 
-let create_proof_window port dfbase =
-   let { proof_goal = pw_goal;
-         proof_rule = pw_rule;
-         proof_subgoals = pw_subgoals
-       } = Display_term.create_proof port dfbase
+let create_browser_window base =
+   BrowserWindow { df_base = base;
+                   df_mode = "html";
+                   df_width = 80
+   }
+
+let create_java_window port dfbase =
+   let { java_proof_goal = pw_goal;
+         java_proof_rule = pw_rule;
+         java_proof_subgoals = pw_subgoals
+       } = Java_display_term.create_proof port dfbase
    in
-   let pw_menu = Display_term.create_menu port dfbase in
+   let pw_menu = Java_display_term.create_menu port dfbase in
    let window =
       { pw_port = port;
         pw_base = dfbase;
@@ -518,15 +525,17 @@ let create_proof_window port dfbase =
         pw_menu = pw_menu
       }
    in
-      ProofWindow window
+      JavaWindow window
 
 (*
  * Fork the current window.
  *)
 let new_window = function
-   ProofWindow { pw_port = port; pw_base = base } ->
-      create_proof_window port base
- | (TextWindow _ | TexWindow _) as window ->
+   JavaWindow { pw_port = port; pw_base = base } ->
+      create_java_window port base
+ | BrowserWindow _
+ | TextWindow _
+ | TexWindow _ as window ->
       window
 
 (************************************************************************
@@ -603,8 +612,8 @@ let term_of_proof proof =
    if !debug_edit then begin
       let buf = Rformat.new_buffer () in
       let _ = Proof.format_proof Dform.null_base buf proof in
-      let prf = Rformat.print_to_string 80 buf in
-      eprintf "Proof_edit.term_of_proof: begin:\n%s%t" prf eflush
+      let prf = Rformat.print_text_string 80 buf in
+         eprintf "Proof_edit.term_of_proof: begin:\n%s%t" prf eflush
    end;
    let { Proof.step_goal = goal;
          Proof.step_status = status;
@@ -620,8 +629,13 @@ let term_of_proof proof =
    let subgoals =
       (* HACK!!! *)
       let l = List.length subgoals in
-      if (l < 20) || (!debug_show_all_subgoals) then mk_subgoals_term subgoals extras
-      else mk_xlist_term [ mk_subgoals_term (Lm_list_util.firstn 5 subgoals) []; mk_string_arg_term "\n\n   ...   \n\n<<"; mk_int_arg_term l; mk_string_arg_term " subgoals (output suppressed -- turn the \"show_all_subgoals\" debug variable on to see the full list)>>"]
+         if l < 20 || !debug_show_all_subgoals then
+            mk_subgoals_term subgoals extras
+         else
+            mk_xlist_term [mk_subgoals_term (Lm_list_util.firstn 5 subgoals) [];
+                           mk_string_arg_term "\n\n   ...   \n\n<<";
+                           mk_int_arg_term l;
+                           mk_string_arg_term " subgoals (output suppressed -- turn the \"show_all_subgoals\" debug variable on to see the full list)>>"]
    in
    let x = mk_proof_term main goal (term_of_proof_status status) (rule_term_of_text expr) subgoals in
       if !debug_edit then
@@ -669,29 +683,35 @@ let format_aux window proof =
          let buf = Rformat.new_buffer () in
             Dform.format_term df buf proof;
             Rformat.format_newline buf;
-            Rformat.print_to_channel width buf stdout;
+            Rformat.print_text_channel width buf stdout;
             flush stdout
     | TexWindow { df_width = width; df_base = dfbase; df_mode = mode } ->
          let df = get_mode_base dfbase mode in
          let buf = Rformat.new_buffer () in
             Dform.format_term df buf proof;
             Rformat.format_newline buf;
-            Rformat.print_to_tex width buf stdout;
+            Rformat.print_tex_channel width buf stdout;
             flush stdout
-    | ProofWindow { pw_goal = pw_goal;
-                    pw_rule = pw_rule;
-                    pw_subgoals = pw_subgoals
+    | JavaWindow { pw_goal = pw_goal;
+                   pw_rule = pw_rule;
+                   pw_subgoals = pw_subgoals
       } ->
-         let main, goal, text, subgoals = dest_proof proof in
+         let main, goal, status, text, subgoals = dest_proof proof in
             if !debug_edit then
                eprintf "Proof_edit.format_aux: set_goal%t" eflush;
-            Display_term.set pw_goal main;
+            Java_display_term.set pw_goal main;
             if !debug_edit then
                eprintf "Proof_edit.format_aux: set_rule%t" eflush;
-            Display_term.set pw_rule text;
+            Java_display_term.set pw_rule text;
             if !debug_edit then
                eprintf "Proof_edit.format_aux: set_subgoals%t" eflush;
-            Display_term.set pw_subgoals subgoals
+            Java_display_term.set pw_subgoals subgoals
+    | BrowserWindow { df_width = width; df_base = dfbase; df_mode = mode } ->
+         let df = get_mode_base dfbase mode in
+         let buf = Rformat.new_buffer () in
+            Dform.format_term df buf proof;
+            Rformat.format_newline buf;
+            Browser_display_term.set_main width buf
 
 let format window ped =
    format_aux window (term_of_proof (proof_of_ped ped))

@@ -3,32 +3,19 @@
 #
 OCAMLINCLUDES += -I . -I ../display
 
-# Common files
-MLZFILES =\
-	package_sig\
-	shell_sig\
-	shell_p4_sig\
-
-# Library files
-MPFILES =\
-	mptop\
-	mux_channel\
-	display_term\
-	proof_edit\
-	package_sig\
-	package_info\
-	shell_sig\
-	shell_rule\
-	shell_tex\
-	shell_package\
-	shell_root\
-	recursive_lock\
-	shell_http\
-	shell_state\
-	shell_p4_sig\
-	shell\
+include Files
 
 Theory($(MPFILES))
+
+#
+# Copy the files in inputs
+#
+LIBINPUTS = $(file $(addprefix $(LIB)/, $(INPUTS)))
+
+$(LIBINPUTS): $(LIB)/%: inputs/%
+	$(LN) $(in $(LIB), $(CWD))/$< $@
+
+$(MPINSTALL): $(LIBINPUTS)
 
 #
 # Clean up

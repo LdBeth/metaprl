@@ -1,5 +1,5 @@
 (*
- * This is the standard interface to the window system.
+ * A basic web server.
  *
  * ----------------------------------------------------------------
  *
@@ -29,59 +29,58 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-
-open Refiner.Refiner.TermType
-open Dform
+open Http_server_type
 
 (*
- * A generic term window.
+ * Type of web servers.
  *)
 type t
 
 (*
- * A proof window has three parts.
+ * Info about the local connection.
  *)
-type proof =
-   { proof_goal : t;
-     proof_rule : t;
-     proof_subgoals : t
+type http_info =
+   { http_host     : string;
+     http_port     : int
    }
 
 (*
- * Possible output events.
+ * Helper function for decoding uri's that contain hex chars.
  *)
-type event =
-   TermSelection of term        (* A term has been selected *)
-
-type callback = t -> event -> unit
+val decode_hex : string -> string
+val encode_hex : string -> string
 
 (*
- * Create new windows over the given channel.
- * The dform base used to retrieve display forms.
+ * Decode the filename in the URI.
  *)
-val create_menu : Mux_channel.session -> dform_mode_base -> t
-val create_term : Mux_channel.session -> dform_mode_base -> t
-val create_proof : Mux_channel.session -> dform_mode_base -> proof
+val decode_uri : string -> string list
 
 (*
- * Set the callback for the window.
+ * The body is a list of key/value pairs.
  *)
-val set_callback : t -> callback -> unit
+val parse_post_body : string -> (string * string) list
 
 (*
- * Set the root directory for the window.
- * All "cd" commands are interpreted relative to this.
+ * Start a synchronous web server on the specified port.
+ * The function argument handle client connections.  This
+ * version is synchronous, and not threaded.
  *)
-val set_dir : t -> string -> unit
+type 'a start_handler = t -> 'a -> 'a
+type 'a connect_handler = t -> 'a -> out_channel -> in_channel -> string list -> request_header_entry list -> string -> 'a
+
+val serve_http : 'a start_handler -> 'a connect_handler -> 'a -> int option -> unit
 
 (*
- * Set the term in the window.
- * Substitution is allowed on the displayed term.
- * The first term argument is the term to be replaced,
- * and the second is the replacement.  Substitution
- * is capturing.
+ * Get the info for the server.
  *)
-val set : t -> term -> unit
+val http_info : t -> http_info
+
+(*
+ * Responses.
+ *)
+val print_success_page : out_channel -> response_code -> Buffer.t -> unit
+val print_error_page : out_channel -> response_code -> unit
+val print_redirect_page : out_channel -> response_code -> string -> unit
 
 (*
  * -*-

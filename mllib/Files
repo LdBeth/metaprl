@@ -6,11 +6,13 @@ MLLIB_MLZFILES =\
 	simplehash_sig\
 	hash_with_gc_sig\
 	memo_sig\
-	weak_memo_sig
+	weak_memo_sig\
+	http_server_type
 
 # Library files
 MLLIB_FILES =\
 	$(MLLIB_MLZFILES)\
+	ctime\
 	env_arg\
 	punix\
 	list_neq_append\
@@ -28,5 +30,6 @@ MLLIB_FILES =\
 	weak_memo\
 	permutations\
 	http_server\
+	http_simple\
 	comment_parse\
 	mp_term

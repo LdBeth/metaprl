@@ -189,7 +189,7 @@ let print =
             format_popm buf;
             format_newline buf;
             format_newline buf;
-            print_to_channel default_width buf stderr;
+            print_text_channel default_width buf stderr;
             flush stderr;
             raise exn
 

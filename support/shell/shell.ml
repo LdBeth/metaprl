@@ -79,38 +79,51 @@ let debug_shell =
         debug_value = false
       }
 
-type commands = {
-   mutable cd : string -> string;
-   mutable pwd : unit -> string list;
-   mutable set_dfmode : string -> unit;
-   mutable create_pkg : string -> unit;
-   mutable save : unit -> unit;
-   mutable export : unit -> unit;
-   mutable view : ls_option list -> string -> unit;
-   mutable expand : unit -> unit;
-   mutable expand_all : unit -> unit;
-   mutable apply_all : (edit_object -> dform_base -> unit) -> bool -> bool -> unit;
-   mutable interpret : proof_command -> unit;
-   mutable undo : unit -> unit;
-   mutable redo : unit -> unit;
-   mutable create_ax_statement : term -> string -> unit;
-   mutable refine : tactic -> unit;
-   mutable check : unit -> unit;
-   mutable extract : string list -> unit -> Refine.extract;
-   mutable term_of_extract : term list -> term; (* XXX HACK: temporary interface *)
-   mutable print_theory : string -> unit;
-}
+type commands =
+   { mutable cd : string -> string;
+     mutable pwd : unit -> string list;
+     mutable set_dfmode : string -> unit;
+     mutable create_pkg : string -> unit;
+     mutable save : unit -> unit;
+     mutable export : unit -> unit;
+     mutable view : ls_option list -> string -> unit;
+     mutable expand : unit -> unit;
+     mutable expand_all : unit -> unit;
+     mutable apply_all : (edit_object -> dform_base -> unit) -> bool -> bool -> unit;
+     mutable interpret : proof_command -> unit;
+     mutable undo : unit -> unit;
+     mutable redo : unit -> unit;
+     mutable create_ax_statement : term -> string -> unit;
+     mutable refine : tactic -> unit;
+     mutable check : unit -> unit;
+     mutable extract : string list -> unit -> Refine.extract;
+     mutable term_of_extract : term list -> term; (* XXX HACK: temporary interface *)
+     mutable print_theory : string -> unit;
+   }
 
 let uninitialized _ = raise (Invalid_argument "The Shell module was not instantiated")
 
-let commands = {
-   cd = uninitialized; pwd = uninitialized; set_dfmode = uninitialized; create_pkg = uninitialized;
-   save = uninitialized; export = uninitialized; view = uninitialized;
-   check = uninitialized; apply_all = uninitialized; expand = uninitialized; expand_all = uninitialized;
-   interpret = uninitialized; undo = uninitialized; redo = uninitialized;
-   create_ax_statement = uninitialized; refine = uninitialized;
-   print_theory = uninitialized; extract = (fun _ -> uninitialized); term_of_extract = uninitialized;
-}
+let commands =
+   { cd = uninitialized;
+     pwd = uninitialized;
+     set_dfmode = uninitialized;
+     create_pkg = uninitialized;
+     save = uninitialized;
+     export = uninitialized;
+     view = uninitialized;
+     check = uninitialized;
+     apply_all = uninitialized;
+     expand = uninitialized;
+     expand_all = uninitialized;
+     interpret = uninitialized;
+     undo = uninitialized;
+     redo = uninitialized;
+     create_ax_statement = uninitialized;
+     refine = uninitialized;
+     print_theory = uninitialized;
+     extract = (fun _ -> uninitialized);
+     term_of_extract = uninitialized
+   }
 
 (************************************************************************
  * TYPES                                                                *
@@ -121,11 +134,15 @@ let commands = {
  * The subshells can be threaded; we must make this shell
  * thread-safe.
  *)
+type df_info =
+   DisplayJavaInfo of Java_mux_channel.session
+ | DisplayOtherInfo
+
 type info =
    { (* Display *)
       mutable width : int;
       mutable df_mode : string;
-      mutable port : Mux_channel.session option;
+      mutable df_info : df_info;
 
       (* Current module and path and proof *)
       mutable dir : string list;
@@ -143,8 +160,9 @@ type info =
 (* We should skip the packages that do not have basic shell commands in them *)
 let shell_package pkg =
    let name = Package.name pkg in
-   try Mptop.mem (Mptop.get_toploop_resource (Mp_resource.find (Mp_resource.theory_bookmark name)) []) "cd"
-   with Not_found -> false
+      try Mptop.mem (Mptop.get_toploop_resource (Mp_resource.find (Mp_resource.theory_bookmark name)) []) "cd" with
+         Not_found ->
+            false
 
 (*
  * All loaded modules.
@@ -207,13 +225,15 @@ struct
 
    let get_display_mode info =
       let dfbase = get_dfbase info in
-         match info.port with
-            Some port ->
-               DisplayGraphical (port, dfbase)
-          | None ->
+         match info.df_info with
+            DisplayJavaInfo port ->
+               DisplayJava (port, dfbase)
+          | DisplayOtherInfo ->
                match info.df_mode with
                   "tex" ->
                      DisplayTex dfbase
+                | "html" ->
+                     DisplayBrowser dfbase
                 | mode ->
                      DisplayText (dfbase, mode)
 
@@ -231,11 +251,18 @@ struct
       let dfmode = "prl" in
       let display_mode = DisplayText (default_mode_base, dfmode) in
       let proof = Shell_root.create packages display_mode in
+      let port =
+         match port with
+            Some port ->
+               DisplayJavaInfo port
+          | None ->
+               DisplayOtherInfo
+      in
          { width = 80;
            df_mode = dfmode;
            dir = [];
            package = None;
-           port = port;
+           df_info = port;
            proof = proof;
            shell = shell
          }
@@ -266,7 +293,7 @@ struct
             let buf = Rformat.new_buffer () in
             let db = get_db info in
                Filter_exn.format_exn db buf exn;
-               Rformat.print_to_channel info.width buf stderr;
+               Rformat.print_text_channel info.width buf stderr;
                flush stderr;
                raise exn
 
@@ -488,10 +515,10 @@ struct
     *)
    let format_process_name shell =
       let port =
-         match shell.port with
-            Some port ->
-               Mux_channel.id_of_session port
-          | None ->
+         match shell.df_info with
+            DisplayJavaInfo port ->
+               Java_mux_channel.id_of_session port
+          | DisplayOtherInfo ->
                0
       in
          sprintf "[%d] %s" port (string_of_path shell.dir)
@@ -505,17 +532,17 @@ struct
                df_mode = old_mode;
                dir = old_dir;
                package = old_package;
-               port = old_port;
+               df_info = old_port;
                proof = old_proof;
                shell = old_shell
              } = shell
          in
          let new_port =
             match old_port with
-               Some session ->
-                  Some (Mux_channel.new_session session)
-             | None ->
-                  None
+               DisplayJavaInfo session ->
+                  DisplayJavaInfo (Java_mux_channel.new_session session)
+             | DisplayOtherInfo ->
+                  DisplayOtherInfo
          in
          let new_proof = old_proof.edit_copy () in
          let new_shell = Shell_state.fork old_shell in
@@ -524,7 +551,7 @@ struct
               df_mode = old_mode;
               dir = old_dir;
               package = old_package;
-              port = new_port;
+              df_info = new_port;
               proof = new_proof;
               shell = new_shell
             }
@@ -549,10 +576,10 @@ struct
       let jobs shell =
          let project shell =
             let pid =
-               match shell.port with
-                  Some session ->
-                     Mux_channel.id_of_session session
-                | None ->
+               match shell.df_info with
+                  DisplayJavaInfo session ->
+                     Java_mux_channel.id_of_session session
+                | DisplayOtherInfo ->
                      0
             in
                pid, shell
@@ -574,13 +601,13 @@ struct
          [] ->
             raise Not_found
        | shell :: tl ->
-            match shell.port with
-               Some session ->
-                  if id = Mux_channel.id_of_session session then
+            match shell.df_info with
+               DisplayJavaInfo session ->
+                  if id = Java_mux_channel.id_of_session session then
                      shell
                   else
                      search tl
-             | None ->
+             | DisplayOtherInfo ->
                   search tl
       in
          search !global_shells
@@ -598,36 +625,51 @@ struct
     * Interface to the HTTP shell.
     *)
    let set_port port =
-      global.port <- port;
-      try
-         print_exn global (fun info -> view info [] ".") global
-      with
-         exn ->
-            ()
-
-   (*
-    * Evaluate an expression in some shell.
-    *)
-   let eval id text =
-      let shell =
-         synchronize !current_shell shell_of_id id
+      let port =
+         match port with
+            Some port ->
+               DisplayJavaInfo port
+          | None ->
+               DisplayOtherInfo
       in
+         global.df_info <- port;
          try
-            print_exn shell (fun text ->
-                  begin
-                     match shell.port with
-                        Some port ->
-                           eprintf "Shell [%d]: %s%t" (Mux_channel.id_of_session port) text eflush
-                      | None ->
-                           ()
-                  end;
-                  ShellP4.eval_expr shell.shell text;
-                  view shell [] ".") text
+            print_exn global (fun info -> view info [] ".") global
          with
             exn ->
                ()
 
-   (************************************************************************
+   (*
+    * Evaluate an expression in some shell.
+    *)
+   let eval shell text =
+      try
+         print_exn shell (fun text ->
+               begin
+                  match shell.df_info with
+                     DisplayJavaInfo port ->
+                        eprintf "Shell [%d]: %s%t" (Java_mux_channel.id_of_session port) text eflush
+                   | DisplayOtherInfo ->
+                        ()
+               end;
+               ShellP4.eval_top shell.shell text) text
+      with
+         exn ->
+            ()
+
+   let flush shell =
+      view shell [] "."
+
+   let pwd shell =
+      string_of_path shell.dir
+
+   (*
+    * Evaluate an expression in some shell (for the Java interface).
+    *)
+   let eval_id id text =
+      eval (synchronize !current_shell shell_of_id id) text
+
+  (************************************************************************
     * MODULES                                                              *
     ************************************************************************)
 
@@ -1417,8 +1459,11 @@ struct
    (*
     * Print out an initialization file, and parse it.
     *)
+   let refresh_packages () =
+      Package.refresh packages (Shell_state.get_includes ())
+
    let main () =
-      Package.refresh packages (Shell_state.get_includes ());
+      refresh_packages ();
       let info = global in
          Shell_state.set_module info.shell "shell";
          ShellP4.main info.shell

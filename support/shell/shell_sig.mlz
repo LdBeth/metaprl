@@ -45,7 +45,8 @@ open MLast
 type display_mode =
    DisplayText of dform_mode_base * string
  | DisplayTex of dform_mode_base
- | DisplayGraphical of Mux_channel.session * dform_mode_base
+ | DisplayJava of Java_mux_channel.session * dform_mode_base
+ | DisplayBrowser of dform_mode_base
 
 (*
  * Options to the "ls" command.
@@ -158,6 +159,11 @@ sig
    val main : unit -> unit
 
    (*
+    * Refresh the package list at startup.
+    *)
+   val refresh_packages : unit -> unit
+
+   (*
     * Job control.
     *)
    val get_current_shell : unit -> t
@@ -170,13 +176,16 @@ sig
     * This is the interface to the HTTP shell.
     * Not available from the toploop.
     *)
-   val eval : int -> string -> unit
-   val set_port : Mux_channel.session option -> unit
+   val eval : t -> string -> unit
+   val eval_id : int -> string -> unit
+   val flush : t -> unit
+   val set_port : Java_mux_channel.session option -> unit
 
    (*
     * Navigation and display.
     *)
    val cd : t -> string -> string
+   val pwd : t -> string
    val set_dfmode : t -> string -> unit
    val set_window_width : t -> int -> unit
 
@@ -254,7 +263,7 @@ end
 (*
  * HTTP wrapper redefines main function.
  *)
-module type ShellHTTPSig =
+module type ShellMainSig =
 sig
    val main : unit -> unit
 end

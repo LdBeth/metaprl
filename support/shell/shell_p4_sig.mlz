@@ -49,6 +49,7 @@ sig
    val parse_string : Shell_state.t -> string -> MLast.expr
    val eval_tactic : Shell_state.t -> MLast.expr -> tactic
    val eval_expr : Shell_state.t -> string -> unit
+   val eval_top : Shell_state.t -> string -> unit
 
    (*
     * Open all the obvious modules.

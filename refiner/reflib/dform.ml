@@ -214,22 +214,26 @@ let string_of_param = function
 let tzone = function
    { dform_items = [RewriteString tag]; dform_buffer = buf } ->
       format_tzone buf (string_of_param tag)
- | _ -> raise (Invalid_argument "Dform.sbreak")
+ | _ ->
+      raise (Invalid_argument "Dform.sbreak")
 
 let hbreak = function
    { dform_items = [RewriteString yes; RewriteString no]; dform_buffer = buf } ->
       format_hbreak buf (string_of_param yes) (string_of_param no)
- | _ -> raise (Invalid_argument "Dform.hbreak")
+ | _ ->
+      raise (Invalid_argument "Dform.hbreak")
 
 let sbreak = function
    { dform_items = [RewriteString yes; RewriteString no]; dform_buffer = buf } ->
       format_sbreak buf (string_of_param yes) (string_of_param no)
- | _ -> raise (Invalid_argument "Dform.sbreak")
+ | _ ->
+      raise (Invalid_argument "Dform.sbreak")
 
 let cbreak = function
    { dform_items = [RewriteString yes; RewriteString no]; dform_buffer = buf } ->
       format_cbreak buf (string_of_param yes) (string_of_param no)
- | _ -> raise (Invalid_argument "Dform.sbreak")
+ | _ ->
+      raise (Invalid_argument "Dform.sbreak")
 
 let space df = format_space df.dform_buffer
 let hspace df = format_hspace df.dform_buffer
@@ -655,19 +659,22 @@ let slot { dform_items = items; dform_printer = printer; dform_buffer = buf } =
 
 let slot df =
    if !debug_dform_depth then
-      let depth = zone_depth df.dform_buffer in begin
-         slot df;
-         if depth != zone_depth df.dform_buffer then
-            let str = line_format default_width (
-               fun buf ->
-                  let rec format t =
-                     format_term buf null_shortener format t
-                  in
-                     slot {df with dform_printer = (fun _ _ -> format); dform_buffer = buf }
-            )
-            in eprintf "Unballanced display form: %s%t" str eflush
-      end
-   else slot df
+      let depth = zone_depth df.dform_buffer in
+         begin
+            slot df;
+            if depth != zone_depth df.dform_buffer then
+               let str =
+                  line_format default_width (**)
+                     (fun buf ->
+                           let rec format t =
+                              format_term buf null_shortener format t
+                           in
+                              slot {df with dform_printer = (fun _ _ -> format); dform_buffer = buf })
+               in
+                  eprintf "Unbalanced display form: %s%t" str eflush
+         end
+   else
+      slot df
 
 (*
  * Install initial commands.
@@ -781,10 +788,9 @@ let add_dform df =
 type dform_mode_base = Mp_resource.bookmark
 
 let get_mode_base dfbase dfmode =
-   try
-      dfmode, (find_dftable dfbase)
-   with Not_found ->
-      raise(Failure("Dform.get_mode_base: can not find display forms for " ^ (String.capitalize (fst dfbase)) ^ "." ^ (snd dfbase)))
+   try dfmode, (find_dftable dfbase) with
+      Not_found ->
+         raise(Failure("Dform.get_mode_base: can not find display forms for " ^ (String.capitalize (fst dfbase)) ^ "." ^ (snd dfbase)))
 
 (************************************************************************
  * SIMPLIFIED PRINTERS                                                  *
@@ -801,12 +807,12 @@ let format_term base buf t =
 let print_term_fp base out term =
    let buf = new_buffer () in
       format_term base buf term;
-      print_to_channel default_width buf out
+      print_text_channel default_width buf out
 
 let print_short_term_fp base shortener out term =
    let buf = new_buffer() in
       format_short_term base shortener buf term;
-      print_to_channel default_width buf out
+      print_text_channel default_width buf out
 
 let print_term base = print_term_fp base stdout
 
@@ -815,7 +821,7 @@ let prerr_term base = print_term_fp base stderr
 let string_of_term base term =
    let buf = new_buffer () in
       format_term base buf term;
-      print_to_string default_width buf
+      print_text_string default_width buf
 
 (* Terms *)
 let format_bterm base buf =
@@ -824,7 +830,7 @@ let format_bterm base buf =
 let print_bterm_fp base out term =
    let buf = new_buffer () in
       format_bterm base buf term;
-      print_to_channel default_width buf out
+      print_text_channel default_width buf out
 
 let print_bterm base = print_bterm_fp base stdout
 
@@ -833,7 +839,7 @@ let prerr_bterm base = print_bterm_fp base stderr
 let string_of_bterm base term =
    let buf = new_buffer () in
       format_bterm base buf term;
-      print_to_string default_width buf
+      print_text_string default_width buf
 
 (*
  * MetaTerms.
@@ -882,7 +888,7 @@ let rec format_mterm base buf = function
 let print_mterm_fp base out mterm =
    let buf = new_buffer () in
       format_mterm base buf mterm;
-      print_to_channel default_width buf out
+      print_text_channel default_width buf out
 
 let print_mterm base = print_mterm_fp base stdout
 
@@ -891,7 +897,7 @@ let prerr_mterm base = print_mterm_fp base stderr
 let string_of_mterm base mterm =
    let buf = new_buffer () in
       format_mterm base buf mterm;
-      print_to_string 80 buf
+      print_text_string 80 buf
 
 (*
  * -*-

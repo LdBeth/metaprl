@@ -1,16 +1,10 @@
 (*
- * This is the WWW service.
+ * Translation table for HTML files.
  *
  * ----------------------------------------------------------------
  *
- * This file is part of MetaPRL, a modular, higher order
- * logical framework that provides a logical programming
- * environment for OCaml and other languages.
- *
- * See the file doc/index.html for information on Nuprl,
- * OCaml, and more information about this system.
- *
- * Copyright (C) 1999 Jason Hickey, Cornell University
+ * @begin[license]
+ * Copyright (C) 2004 Mojave Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -27,17 +21,35 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * @email{jyh@cs.caltech.edu}
+ * @end[license]
  *)
+open Lm_symbol
 
-open Shell_sig
+module type BrowserTableSig =
+sig
+   type t
 
-module ShellHTTP (Shell : ShellSig) : ShellHTTPSig
+   (*
+    * Table operations.
+    *)
+   val empty : t
+   val add_string : t -> symbol -> string -> t
+   val add_buffer : t -> symbol -> Buffer.t -> t
+   val add_fun    : t -> symbol -> (Buffer.t -> unit) -> t
 
-(*
+   (*
+    * Append the value to a buffer.  This may raise Not_found.
+    *)
+   val append_to_buffer : Buffer.t -> t -> symbol -> unit
+end
+
+(*!
+ * @docoff
+ *
  * -*-
  * Local Variables:
- * Caml-master: "nl"
+ * Caml-master: "compile"
  * End:
  * -*-
  *)

@@ -36,7 +36,7 @@ open Lm_debug
 open Refiner.Refiner.TermMan
 open Dform
 
-open Mux_channel
+open Java_mux_channel
 
 (************************************************************************
  * TYPES                                                                *
@@ -58,10 +58,10 @@ type t =
 (*
  * A proof window has three parts.
  *)
-and proof =
-   { proof_goal : t;
-     proof_rule : t;
-     proof_subgoals : t
+and java_proof =
+   { java_proof_goal : t;
+     java_proof_rule : t;
+     java_proof_subgoals : t
    }
 
 (*
@@ -127,27 +127,27 @@ let create_window channel dfbase dfmode =
  * Standard menu window.
  *)
 let create_menu port dfbase =
-   create_window (Mux_channel.standard_menu port) dfbase "html"
+   create_window (Java_mux_channel.standard_menu port) dfbase "html"
 
 let create_term port dfbase =
-   create_window (Mux_channel.new_menu port) dfbase "html"
+   create_window (Java_mux_channel.new_menu port) dfbase "html"
 
 let create_proof port dfbase =
    let { goal_channel = goal_channel;
          rule_channel = rule_channel;
          subgoals_channel = subgoals_channel
-       } = Mux_channel.new_proof port
+       } = Java_mux_channel.new_proof port
    in
-      { proof_goal = create_window goal_channel dfbase "html";
-        proof_rule = create_window rule_channel dfbase "src";
-        proof_subgoals = create_window subgoals_channel dfbase "html"
+      { java_proof_goal = create_window goal_channel dfbase "html";
+        java_proof_rule = create_window rule_channel dfbase "src";
+        java_proof_subgoals = create_window subgoals_channel dfbase "html"
       }
 
 (*
  * Set a callback for the window.
  *)
 let set_callback window callback =
-   Mux_channel.set_callback window.win_channel (input_callback window)
+   Java_mux_channel.set_callback window.win_channel (input_callback window)
 
 (*
  * Set the directory.
@@ -187,21 +187,21 @@ let set window term =
       if dfmode = "html" then
          let out = open_out_bin (sprintf "cache/%s%d.html" host port) in
          let _ = fprintf out "<html>%s<body bgcolor=white face=\"Lucida Sans Unicode\"><table face=\"Lucida Sans Unicode\"><tr><td>" head_string in
-         let _ = Rformat.print_to_html width buf out in
+         let _ = Rformat.print_html_channel width buf out in
          let _ = fprintf out "</table></body></html>%t" eflush in
          let _ = close_out out in
          let s =
-            match Mux_channel.url_of_channel chan with
+            match Java_mux_channel.url_of_channel chan with
                Some url ->
                   sprintf "\027]0;%s\007\027]1;%s\007Hello" url dir
              | None ->
                   sprintf "\027]1;%s\007Hello" dir
          in
-            Mux_channel.output_string chan s;
+            Java_mux_channel.output_string chan s;
             window.win_term <- term
       else
-         let s = Rformat.print_to_string width buf in
-            Mux_channel.output_string chan s
+         let s = Rformat.print_text_string width buf in
+            Java_mux_channel.output_string chan s
 
 (*
  * -*-

@@ -1,0 +1,42 @@
+# Common files
+MLZFILES =\
+	package_sig\
+	shell_sig\
+	shell_p4_sig\
+	browser_sig
+
+# Library files
+MPFILES =\
+	java_mux_channel\
+	java_display_term\
+	browser_copy\
+	browser_display_term\
+	proof_edit\
+	package_sig\
+	package_info\
+	shell_sig\
+	shell_rule\
+	shell_tex\
+	shell_package\
+	shell_root\
+	recursive_lock\
+	mptop\
+	shell_java\
+	shell_browser\
+	shell_state\
+	shell_p4_sig\
+	shell
+
+# Files to copy to the lib directory
+INPUTS =\
+	start.html\
+	frameset.html\
+	shortcommand.html\
+	longcommand.html\
+	content.html\
+	login.html\
+	pagelong.html\
+	pageshort.html\
+	verify.js\
+	cookie.js\
+	md5.js

@@ -66,6 +66,8 @@ INCLUDES="\
 	-I ../../theories/mmc/base\
 	-I ../../theories/mmc/core\
 	-I ../../theories/mmc/extensions/direct\
+	-I ../../theories/mmc/extensions/special\
+	-I ../../theories/mmc/extensions/reserve\
 	-I ../../theories/mmc/extensions/arithmetic\
 	-I ../../theories/mmc/extensions/arithmetic_integer\
 	-I ../../theories/mmc/extensions/array\
@@ -77,6 +79,7 @@ INCLUDES="\
 	-I ../../theories/mmc/extensions/fix\
 	-I ../../theories/mmc/extensions/loop\
 	-I ../../theories/mmc/opt/direct/core\
+	-I ../../theories/mmc/opt/direct/extensions/fix\
 	-I ../../theories/mmc/opt/dead/core\
 	-I ../../theories/mmc/arch/ra\
 	-I ../../theories/mmc/arch/util\

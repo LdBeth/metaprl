@@ -52,7 +52,7 @@ let debug_http =
 let http_port = Env_arg.int "port" None "start web service on this port" Env_arg.set_int_option_int
 let http_enabled = Env_arg.bool "http" false "whether to start a web service" Env_arg.set_bool_bool
 
-module ShellHTTP (Shell : ShellSig) =
+module ShellJava (Shell : ShellSig) =
 struct
    (*
     * Serve a client.
@@ -60,12 +60,12 @@ struct
    let serve_client fd port =
       try
          while true do
-            let port, args = Mux_channel.input_line port in
+            let port, args = Java_mux_channel.input_line port in
                match args with
                   command :: _ ->
                      let command = Http_server.decode_hex command in
-                     let port = Mux_channel.id_of_session port in
-                        Shell.eval port command
+                     let port = Java_mux_channel.id_of_session port in
+                        Shell.eval_id port command
                 | [] ->
                      ()
          done;
@@ -91,8 +91,8 @@ struct
          if !debug_http then
             eprintf "ShellHTTP: starting service on port %d%t" (Obj.magic fd) eflush
       in
-      let port = Mux_channel.create fd (Some url) in
-      let session = Mux_channel.create_session port in
+      let port = Java_mux_channel.create fd (Some url) in
+      let session = Java_mux_channel.create_session port in
       let _ = Shell.set_port (Some session) in
          ignore (Thread.create (serve_client fd) port)
 
@@ -100,19 +100,20 @@ struct
     * Start the web server.
     *)
    let main () =
-      if !http_enabled then begin
-         let host = Http_server.start_http http_connect !http_port in
-         match Lm_terminfo.xterm_escape_begin () , Lm_terminfo.xterm_escape_begin () with
-            Some b, Some e ->
-               let { Http_server.http_host = host;
-                     Http_server.http_port = port;
-                     Http_server.http_password = pass
-                   } = Http_server.http_info host
-               in
-                  printf "%sMetaPRL http://%s:%d/%s%s%t" b host port pass e eflush
-          | _ -> ()
-      end;
-      Shell.main ()
+      if !http_enabled then
+         begin
+            let host = Http_server.start_http http_connect !http_port in
+               match Lm_terminfo.xterm_escape_begin (), Lm_terminfo.xterm_escape_begin () with
+                  Some b, Some e ->
+                     let { Http_server.http_host = host;
+                           Http_server.http_port = port;
+                           Http_server.http_password = pass
+                         } = Http_server.http_info host
+                     in
+                        printf "%sMetaPRL http://%s:%d/%s%s%t" b host port pass e eflush
+                | _ ->
+                     ()
+         end
 end
 
 (*

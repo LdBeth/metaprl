@@ -1,16 +1,6 @@
-CFILES =\
-	print_symbols\
-	truncate\
-	putenv\
-	execvp\
-	profile\
-	exit\
-	debug\
-	ml_debug\
-	termsize\
-	locale
+include Files
 
-StaticCLibraryInstall($(MPINSTALL), $(LIB), clib, $(CFILES))
+StaticCLibraryInstall($(MPINSTALL), $(LIB), clib, $(LCFILES))
 
 #
 # Patched OCaml files

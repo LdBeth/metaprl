@@ -110,7 +110,6 @@ let not_found_msg = "
 </head>
 <body>
 <h1>File is not found<h1>
-You may want to reload from <a href=\"/Ejb.html\">Ensemble Jukebox</a>
 </body>
 </html>"
 
@@ -404,6 +403,13 @@ let start_http connect port =
  *)
 let stop_http inet =
    Lm_inet.close_server inet
+
+(*
+ * Server without threads.
+ *)
+let serve_http connect port =
+   let inet = Lm_inet.serve port in
+      serve connect inet
 
 (*
  * Get the actual port number.

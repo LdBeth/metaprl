@@ -1,5 +1,5 @@
 (*
- * Build the toploop version.
+ * This is the standard interface to the window system.
  *
  * ----------------------------------------------------------------
  *
@@ -10,7 +10,7 @@
  * See the file doc/index.html for information on Nuprl,
  * OCaml, and more information about this system.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1999 Jason Hickey, Cornell University
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -29,42 +29,41 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-
 open Printf
 open Lm_debug
 
-let _ =
-   show_loading "Loading Mp_top%t"
-
-module Shell = Shell.Shell (Shell_mp.ShellP4)
-
-let _ =
-   show_loading "Loaded Shell%t"
-
-module ShellBrowser = Shell_browser.ShellBrowser (Shell)
-module ShellJava = Shell_java.ShellJava (Shell)
-
-let _ =
-   show_loading "Starting main loop%t"
+(*
+ * The display buffer is global.
+ *)
+let buffer = Buffer.create 1024
+let message = Buffer.create 1024
 
 (*
- * The first active shell will take everything.
+ * Reset the buffer in case nothing happened.
  *)
-let _ = ShellBrowser.main ()
-let _ = ShellJava.main ()
-let _ = Shell.main ()
+let reset () =
+   Buffer.clear message;
+   Buffer.clear buffer;
+   Buffer.add_string buffer "The editor did not display a term"
 
-external exit : int -> unit = "caml_exit"
+(*
+ * Set the rule text.
+ *)
+let set_message text =
+   Buffer.clear message;
+   Buffer.add_string message text
 
-let _ =
-   eprintf "MetaPRL exiting%t" eflush;
-   flush stdout;
-   exit 0
+(*
+ * Display a term in the window.
+ *)
+let set_main width buf =
+   Buffer.clear buffer;
+   Rformat.print_html_buffer width buf buffer
 
 (*
  * -*-
  * Local Variables:
- * Caml-master: "refiner"
+ * Caml-master: "nl"
  * End:
  * -*-
  *)

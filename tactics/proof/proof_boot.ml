@@ -245,7 +245,7 @@ struct
       let buf = Rformat.new_buffer () in
          format_extract ("prl", find_dftable Mp_resource.top_bookmark) buf ext;
          format_newline buf;
-         print_to_channel default_width buf stderr;
+         print_text_channel default_width buf stderr;
          flush stderr
 
    (************************************************************************
@@ -604,7 +604,7 @@ struct
             format_space buf;
             List.iter (format_arg db buf) leaves;
             format_ezone buf;
-            print_to_channel default_width buf stderr;
+            print_text_channel default_width buf stderr;
             eprintf "%t" eflush
          end;
          remove_duplicates [] leaves
@@ -1874,7 +1874,7 @@ struct
                         let buf = Rformat.new_buffer () in
                         format_arg !debug_base buf arg;
                         eprintf "Warning: Proof_boot.io_proof_of_proof: an attribute list in unjustified node was non-empty before IO:\n%t%t"
-                           (print_to_channel default_width buf) eflush
+                           (print_text_channel default_width buf) eflush
                       *)
                       eprintf "Warning: Proof_boot.io_proof_of_proof: unexpected attribute list. If the .prla file is old, ignore this warning\n"
                      end;

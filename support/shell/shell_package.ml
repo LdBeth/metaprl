@@ -55,10 +55,10 @@ open Package_info
 (*
  * A window is either a text window or an HTML window.
  *)
-type proof_window =
-   { pw_port : Mux_channel.session;
+type java_window =
+   { pw_port : Java_mux_channel.session;
      pw_base : dform_mode_base;
-     pw_menu : Display_term.t
+     pw_menu : Java_display_term.t
    }
 
 type text_window =
@@ -68,38 +68,14 @@ type text_window =
    }
 
 type window =
-   ProofWindow of proof_window
+   JavaWindow of java_window
  | TextWindow of text_window
  | TexWindow of text_window
+ | BrowserWindow of text_window
 
 (************************************************************************
  * WINDOWS                                                              *
  ************************************************************************)
-
-(*
- * Create a new window.
- *)
-let create_text_window base mode =
-   TextWindow { df_base = base;
-                df_mode = mode;
-                df_width = 80
-   }
-
-let create_tex_window base =
-   TexWindow { df_base = base;
-               df_mode = "tex";
-               df_width = 80
-   }
-
-let create_proof_window port dfbase =
-   let menu = Display_term.create_term port dfbase in
-   let window =
-      { pw_port = port;
-        pw_base = dfbase;
-        pw_menu = menu
-      }
-   in
-      ProofWindow window
 
 (*
  * Create a window from the description.
@@ -109,17 +85,21 @@ let create_window = function
       TextWindow { df_base = base; df_mode = mode; df_width = 80 }
  | DisplayTex base ->
       TexWindow { df_base = base; df_mode = "tex"; df_width = 70 }
- | DisplayGraphical (port, base) ->
-      let menu = Display_term.create_term port base in
-         ProofWindow { pw_port = port; pw_base = base; pw_menu = menu }
+ | DisplayJava (port, base) ->
+      let menu = Java_display_term.create_term port base in
+         JavaWindow { pw_port = port; pw_base = base; pw_menu = menu }
+ | DisplayBrowser base ->
+      BrowserWindow { df_base = base; df_mode = "html"; df_width = 70 }
 
 (*
  * Copy the window.
  *)
 let new_window = function
-   ProofWindow { pw_port = port; pw_base = base } ->
-      ProofWindow { pw_port = port; pw_base = base; pw_menu = Display_term.create_term port base }
- | (TextWindow _ | TexWindow _) as window ->
+   JavaWindow { pw_port = port; pw_base = base } ->
+      JavaWindow { pw_port = port; pw_base = base; pw_menu = Java_display_term.create_term port base }
+ | TextWindow _
+ | TexWindow _
+ | BrowserWindow _ as window ->
       window
 
 (*
@@ -131,18 +111,23 @@ let display_term pack window term =
          let df = get_mode_base base mode in
          let buf = Rformat.new_buffer () in
             Dform.format_term df buf term;
-            Rformat.print_to_channel width buf stdout;
+            Rformat.print_text_channel width buf stdout;
             flush stdout
     | TexWindow { df_base = base; df_mode = mode; df_width = width } ->
          let df = get_mode_base base mode in
          let buf = Rformat.new_buffer () in
          let out = Shell_tex.open_file () in
             Dform.format_term df buf term;
-            Rformat.print_to_tex width buf out;
+            Rformat.print_tex_channel width buf out;
             Shell_tex.close_file out
-    | ProofWindow { pw_menu = menu } ->
-         Display_term.set_dir menu ("/" ^ Package.name pack);
-         Display_term.set menu term
+    | JavaWindow { pw_menu = menu } ->
+         Java_display_term.set_dir menu ("/" ^ Package.name pack);
+         Java_display_term.set menu term
+    | BrowserWindow { df_base = base; df_mode = mode; df_width = width } ->
+         let df = get_mode_base base mode in
+         let buf = Rformat.new_buffer () in
+            Dform.format_term df buf term;
+            Browser_display_term.set_main width buf
 
 (************************************************************************
  * FORMATTING                                                           *

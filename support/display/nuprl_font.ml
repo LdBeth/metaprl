@@ -299,8 +299,11 @@ dform pagebreak_df2 : mode[prl] :: pagebreak =
 dform cd_begin_df1 : internal :: except_mode[html] :: cd_begin[name:s] =
    `""
 
-dform cd_begin_df2 : internal :: mode[html] :: cd_begin[name:s] =
-   izone `"<a href=\"http://cd.metaprl.local//" slot[name:s] `"\">" ezone
+dform cd_begin_df2_java : internal :: mode[java] :: cd_begin[name:s] =
+   izone `"<a href=\"http://cd.metaprl.local/" slot[name:s] `"\">" ezone
+
+dform cd_begin_df2_html : internal :: mode[html] :: cd_begin[name:s] =
+   izone `"<a href=\"" slot[name:s] `"\">" ezone
 
 dform cd_end_df1 : internal :: except_mode[html] :: cd_end =
    `""
@@ -448,10 +451,10 @@ dform url_df3 : internal :: mode[prl] :: mode [src] :: url[url:s] =
    `"@url[" slot[url:s] `"]"
 
 dform sub_begin_df : internal :: mode[html] :: sub_begin =
-   izone `"<sub>" ezone
+   izone `"<sub><font size=\"-5\">" ezone
 
 dform sub_end_df : internal :: mode[html] :: sub_end =
-   izone `"</sub>" ezone
+   izone `"</sub></font>" ezone
 
 dform sub_df1 : internal :: sub[text:s] =
    sub_begin slot[text:s] sub_end

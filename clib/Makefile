@@ -5,17 +5,7 @@ CFLAGS := -Wall
 
 include $(ROOT)/mk/preface
 
-LCFILES :=\
-	print_symbols\
-	truncate\
-	putenv\
-	execvp\
-	profile\
-	exit\
-	debug\
-	ml_debug\
-	termsize\
-	locale
+include Files
 
 # Name of library
 MAIN := clib

@@ -199,19 +199,27 @@ and root =
    }
 
 (*
- * A printer contains a tabbing function,
- * a function to print to strings,
- * and a function to print tags.
- *
- * The second argument to print_tab is the list of boxes
- * (inner to outher) that need to closed and restarted.
+ * Raw printer just has two methods.
+ *)
+type raw_printer =
+   { raw_print_char : char -> unit;
+     raw_print_string : string -> unit
+   }
+
+(*
+ * A printer contains:
+ *    print_string s : print string s to the buffer
+ *    print_invis s : print string s in invisible mode
+ *    print_tab lmargin tags : tab to the specified left margin
+ *    print_begin_tag : start tagging a value
+ *    print_end_tag : finish tagging the value
  *)
 type printer =
-   { print_string : string -> unit;
-     print_invis : string -> unit;
-     print_tab : int * string -> string list -> unit;
+   { print_string    : string -> unit;
+     print_invis     : string -> unit;
+     print_tab       : int * string -> string list -> unit;
      print_begin_tag : string -> unit;
-     print_end_tag : string -> unit;
+     print_end_tag   : string -> unit;
    }
 
 (*
@@ -1114,65 +1122,39 @@ let print_buf buf rmargin printer =
  ************************************************************************)
 
 (*
- * Channel printer.
+ * Basic raw printers.
  *)
-let make_channel_printer out =
-   let print_string s =
-      output_string out s
-   in
-   let print_tab (_, str) _ =
-      output_char out '\n';
-      output_string out str
-   in
-      { print_string = print_string;
-        print_invis = print_string;
-        print_tab = print_tab;
-        print_begin_tag = print_arg1_invis;
-        print_end_tag = print_arg1_invis;
-      }
+let raw_channel_printer out =
+   { raw_print_char = output_char out;
+     raw_print_string = output_string out
+   }
+
+let raw_buffer_printer buf =
+   { raw_print_char = Buffer.add_char buf;
+     raw_print_string = Buffer.add_string buf
+   }
 
 (*
- * A string printer.
+ * Channel printer.
  *)
-let make_string_printer () =
-   let strings = ref [] in
+let make_text_printer raw =
+   let { raw_print_char = output_char;
+         raw_print_string = output_string
+       } = raw
+   in
    let print_string s =
-      strings := s :: !strings
+      output_string s
    in
    let print_tab (_, str) _ =
-      strings := ("\n" ^ str) :: !strings
+      output_char '\n';
+      output_string str
    in
-   let printer =
-      { print_string = print_string;
-        print_invis = print_arg1_invis;
-        print_tab = print_tab;
+      { print_string    = print_string;
+        print_invis     = print_string;
+        print_tab       = print_tab;
         print_begin_tag = print_arg1_invis;
-        print_end_tag = print_arg1_invis;
+        print_end_tag   = print_arg1_invis;
       }
-   in
-   let get_string () =
-      let rec total_length i = function
-         h :: t ->
-            total_length (i + String.length h) t
-       | [] ->
-            i
-      in
-      let rec copy buf i = function
-         h :: t ->
-            let len = String.length h in
-               String.blit h 0 buf i len;
-               copy buf (i + len) t
-       | [] ->
-            ()
-      in
-      let strs = List.rev !strings in
-      let len = total_length 0 strs in
-      let buf = String.create len in
-         copy buf 0 strs;
-         strings := [];
-         buf
-   in
-      get_string, printer
 
 (*
  * We hack the indentation in the HTML printer.
@@ -1185,7 +1167,8 @@ let make_string_printer () =
 type html_buffer =
    { mutable html_current_line : (bool * string) list;
      mutable html_prefix : string;
-     html_out : out_channel
+     html_print_string : string -> unit;
+     html_print_char : char -> unit
    }
 
 (*
@@ -1259,7 +1242,7 @@ let html_visible buf =
 
 let html_push_line buf =
    let line = html_line buf in
-      output_string buf.html_out line;
+      buf.html_print_string line;
       buf.html_current_line <- []
 
 (*
@@ -1277,7 +1260,7 @@ let html_tab buf (col, _) _ =
    if col = 0 then
       begin
          html_push_line buf;
-         output_string buf.html_out "<br>\n";
+         buf.html_print_string "<br>\n";
          buf.html_prefix <- ""
       end
    else
@@ -1291,30 +1274,35 @@ let html_tab buf (col, _) _ =
          in
          let spacer = sprintf "<font color=white style=\"visibility:hidden\">%s</font>" prefix in
             buf.html_prefix <- prefix;
-            output_string buf.html_out "<br>\n";
-            output_string buf.html_out spacer
+            buf.html_print_string "<br>\n";
+            buf.html_print_string spacer
 
 let html_tag buf s =
-   output_string buf.html_out ("<" ^ s ^ ">")
+   buf.html_print_string ("<" ^ s ^ ">")
 
 let html_etag buf s =
-   output_string buf.html_out ("</" ^ s ^ ">")
+   buf.html_print_string ("</" ^ s ^ ">")
 
 (*
  * An HTML printer.
  *)
-let make_html_printer out =
+let make_html_printer raw =
+   let { raw_print_string = print_string;
+         raw_print_char = print_char
+       } = raw
+   in
    let buf =
       { html_current_line = [];
-        html_out = out;
-        html_prefix = ""
+        html_prefix = "";
+        html_print_string = print_string;
+        html_print_char = print_char
       }
    in
-      { print_string = html_print_string buf;
-        print_invis = html_print_invis buf;
-        print_tab = html_tab buf;
+      { print_string    = html_print_string buf;
+        print_invis     = html_print_invis buf;
+        print_tab       = html_tab buf;
         print_begin_tag = html_tag buf;
-        print_end_tag = html_etag buf;
+        print_end_tag   = html_etag buf;
       }
 
 (*
@@ -1328,7 +1316,8 @@ let make_html_printer out =
 type tex_buffer =
    { mutable tex_current_line : (bool * string) list;
      mutable tex_prefix : string;
-     tex_out : out_channel
+     tex_print_string : string -> unit;
+     tex_print_char : char -> unit
    }
 
 (*
@@ -1433,13 +1422,14 @@ let make_tag s =
 
 let tex_push_line buf tags =
    let line = tex_line buf in
-      output_string buf.tex_out line;
+      buf.tex_print_string line;
       buf.tex_current_line <- [];
-      if line <> "" && line.[String.length line - 1] != '\n' then begin
-         output_string buf.tex_out (String.make (List.length tags) '}');
-         output_string buf.tex_out "\\\\\n";
-         buf.tex_current_line <- List.map make_tag tags
-      end
+      if line <> "" && line.[String.length line - 1] != '\n' then
+         begin
+            buf.tex_print_string (String.make (List.length tags) '}');
+            buf.tex_print_string "\\\\\n";
+            buf.tex_current_line <- List.map make_tag tags
+         end
 
 (*
  * Set up all pending tabstops.
@@ -1480,18 +1470,23 @@ let tex_etag buf _ =
 (*
  * A TeX printer.
  *)
-let make_tex_printer out =
+let make_tex_printer raw =
+   let { raw_print_string = print_string;
+         raw_print_char = print_char
+       } = raw
+   in
    let buf =
       { tex_current_line = [];
-        tex_out = out;
-        tex_prefix = ""
+        tex_prefix = "";
+        tex_print_string = print_string;
+        tex_print_char = print_char
       }
    in
-      { print_string = tex_print_string buf;
-        print_invis = tex_print_invis buf;
-        print_tab = tex_tab buf;
+      { print_string    = tex_print_string buf;
+        print_invis     = tex_print_invis buf;
+        print_tab       = tex_tab buf;
         print_begin_tag = tex_tag buf;
-        print_end_tag = tex_etag buf;
+        print_end_tag   = tex_etag buf;
       }
 
 (*
@@ -1501,34 +1496,70 @@ let print_to_printer buf rmargin printer =
    ignore (compute_breaks buf rmargin);
    ignore (print_buf buf rmargin printer [])
 
-(*
- * Print to an IO buffer.
+(************************************************************************
+ * Three printers.
+ *    text: normal text-based printer
+ *    html: html output
+ *    tex: LaTeX output
  *)
-let print_to_channel rmargin buf out =
+
+(*
+ * Text printing.
+ *)
+let print_text_raw rmargin buf raw =
+   print_to_printer buf rmargin (make_text_printer raw)
+
+let print_html_raw rmargin buf raw =
+   print_to_printer buf rmargin (make_html_printer raw)
+
+let print_tex_raw rmargin buf raw =
+   raw.raw_print_string "\\iftex\\begin{tabbing}\n";
+   print_to_printer buf rmargin (make_tex_printer raw);
+   raw.raw_print_string "\\end{tabbing}\\fi\n"
+
+(*
+ * The channel and buffer versions.
+ *)
+let print_text_channel rmargin buf out =
+   (*
+    * BUG: this terminal query is a hack.
+    * This code should be lifted to the caller.
+    *)
    let rmargin = Mp_term.term_width out rmargin in
-      print_to_printer buf rmargin (make_channel_printer out)
+      print_text_raw rmargin buf (raw_channel_printer out)
 
-let print_to_string rmargin buf =
-   let get_string, printer = make_string_printer () in
-      print_to_printer buf rmargin printer;
-      get_string ()
+let print_html_channel rmargin buf out =
+   print_html_raw rmargin buf (raw_channel_printer out)
 
-(*
- * Print to HTML.
- *)
-let print_to_html rmargin buf out =
-   print_to_printer buf rmargin (make_html_printer out)
+let print_tex_channel rmargin buf out =
+   print_tex_raw rmargin buf (raw_channel_printer out)
 
-(*
- * TeX formatting.
- *)
-let print_to_tex rmargin buf out =
-   output_string out "\\iftex\\begin{tabbing}\n";
-   print_to_printer buf rmargin (make_tex_printer out);
-   output_string out "\\end{tabbing}\\fi\n"
+let print_text_buffer rmargin buf out =
+   print_text_raw rmargin buf (raw_buffer_printer out)
 
-(*
- * Print to a single line.
+let print_html_buffer rmargin buf out =
+   print_html_raw rmargin buf (raw_buffer_printer out)
+
+let print_tex_buffer rmargin buf out =
+   print_tex_raw rmargin buf (raw_buffer_printer out)
+
+let print_text_string rmargin buf =
+   let out = Buffer.create 100 in
+      print_text_buffer rmargin buf out;
+      Buffer.contents out
+
+let print_html_string rmargin buf  =
+   let out = Buffer.create 100 in
+      print_html_buffer rmargin buf out;
+      Buffer.contents out
+
+let print_tex_string rmargin buf =
+   let out = Buffer.create 100 in
+      print_tex_buffer rmargin buf out;
+      Buffer.contents out
+
+(************************************************************************
+ * Special case: print the first line to a string.
  *)
 let line_format length fmt_fun =
    if length < 3 then
@@ -1541,21 +1572,26 @@ let line_format length fmt_fun =
          try fmt_fun buf; false
          with BufferOverflow -> true
       in
-      format_ezone buf;
-      print_to_string length buf, over
+         format_ezone buf;
+         print_text_string length buf, over
    in
    let len = String.length s in
    let s =
-      if len > length then String.sub s 0 length
-      else if overflow && (len <= (length - 3)) then (s ^ "...")
-      else if overflow && (len < length) then s ^ (String.make (length - len) '.')
-      else s
+      if len > length then
+         String.sub s 0 length
+      else if overflow && (len <= (length - 3)) then
+         s ^ "..."
+      else if overflow && (len < length) then
+         s ^ (String.make (length - len) '.')
+      else
+         s
    in
-      if (overflow && len > (length - 3)) || len > length then begin
-         s.[length - 3] <- '.';
-         s.[length - 2] <- '.';
-         s.[length - 1] <- '.'
-      end;
+      if (overflow && len > (length - 3)) || len > length then
+         begin
+            s.[length - 3] <- '.';
+            s.[length - 2] <- '.';
+            s.[length - 1] <- '.'
+         end;
       s
 
 (*

@@ -128,10 +128,24 @@ val format_num : buffer -> Lm_num.num -> unit
  * Collecting output.
  *)
 val default_width : int (* 80 *)
-val print_to_channel : int -> buffer -> out_channel -> unit
-val print_to_string : int -> buffer -> string
-val print_to_html : int -> buffer -> out_channel -> unit
-val print_to_tex : int -> buffer -> out_channel -> unit
+
+(*
+ * 3 modes:
+ *    text : normal terminal output
+ *    html : HTML output
+ *    tex  : TeX output
+ *)
+val print_text_channel : int -> buffer -> out_channel -> unit
+val print_text_buffer  : int -> buffer -> Buffer.t -> unit
+val print_text_string  : int -> buffer -> string
+
+val print_html_channel : int -> buffer -> out_channel -> unit
+val print_html_buffer  : int -> buffer -> Buffer.t -> unit
+val print_html_string  : int -> buffer -> string
+
+val print_tex_channel  : int -> buffer -> out_channel -> unit
+val print_tex_buffer   : int -> buffer -> Buffer.t -> unit
+val print_tex_string   : int -> buffer -> string
 
 (*
  * Special case: 1-line buffer.

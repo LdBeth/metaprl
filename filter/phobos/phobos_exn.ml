@@ -157,7 +157,7 @@ let format_exn_chan out exn =
    let buf = new_buffer () in
       format_exn buf exn;
       format_newline buf;
-      print_to_channel default_width buf out;
+      print_text_channel default_width buf out;
       flush out
 
 let catch f x =

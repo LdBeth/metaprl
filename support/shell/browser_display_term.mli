@@ -1,5 +1,5 @@
 (*
- * Build the toploop version.
+ * This is the standard interface to the window system.
  *
  * ----------------------------------------------------------------
  *
@@ -10,7 +10,7 @@
  * See the file doc/index.html for information on Nuprl,
  * OCaml, and more information about this system.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1999 Jason Hickey, Cornell University
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -30,41 +30,27 @@
  * jyh@cs.cornell.edu
  *)
 
-open Printf
-open Lm_debug
-
-let _ =
-   show_loading "Loading Mp_top%t"
-
-module Shell = Shell.Shell (Shell_mp.ShellP4)
-
-let _ =
-   show_loading "Loaded Shell%t"
-
-module ShellBrowser = Shell_browser.ShellBrowser (Shell)
-module ShellJava = Shell_java.ShellJava (Shell)
-
-let _ =
-   show_loading "Starting main loop%t"
+(*
+ * The data is placed in a buffer.
+ *)
+val buffer : Buffer.t
+val message : Buffer.t
 
 (*
- * The first active shell will take everything.
+ * Reset the buffer to a default message.
  *)
-let _ = ShellBrowser.main ()
-let _ = ShellJava.main ()
-let _ = Shell.main ()
+val reset : unit -> unit
 
-external exit : int -> unit = "caml_exit"
-
-let _ =
-   eprintf "MetaPRL exiting%t" eflush;
-   flush stdout;
-   exit 0
+(*
+ * Parts of the output.
+ *)
+val set_main : int -> Rformat.buffer -> unit
+val set_message : string -> unit
 
 (*
  * -*-
  * Local Variables:
- * Caml-master: "refiner"
+ * Caml-master: "nl"
  * End:
  * -*-
  *)

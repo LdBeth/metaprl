@@ -231,9 +231,11 @@ struct
          [modname] ->
             (* If only one name left, it should name a term *)
             let rec search = function
-               (((Opname { opname_name = str } | Definition { opdef_opname = str }), _)::tl) when str = modname ->
+               (Opname { opname_name = str }, _) :: tl
+             | (Definition { opdef_opname = str }, _) :: tl
+               when str = modname ->
                   modname :: path
-             | _::tl ->
+             | _ :: tl ->
                   search tl
              | [] ->
                   raise Not_found

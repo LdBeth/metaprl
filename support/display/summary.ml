@@ -516,8 +516,11 @@ dform begin_cd_df : internal :: except_mode[html] :: begin_cd{'path} =
 dform end_cd_df : internal :: except_mode[html] :: end_cd =
    `""
 
-dform begin_cd_df1 : internal :: mode[html] :: begin_cd{'path} =
-   izone `"<a href=\"http://cd.metaprl.local//" cdinternal{'path} `"\">" ezone
+dform begin_cd_df1 : internal :: mode[java] :: begin_cd{'path} =
+   izone `"<a href=\"http://cd.metaprl.local/" cdinternal{'path} `"\">" ezone
+
+dform begin_cd_df2 : internal :: mode[html] :: begin_cd{'path} =
+   izone `"<a href=\"" cdinternal{'path} `"\">" ezone
 
 dform cd_internal_df1 : internal :: cdinternal{cons{."parent"[name:s]; cons{'n2; 'n3}}} =
    slot[name:s] `"/" cdinternal{cons{'n2; 'n3}}
@@ -748,8 +751,11 @@ dform status_df6a : internal :: goal_cd_begin{'cd} =
 dform status_df9a : internal :: goal_cd_end =
    `""
 
-dform status_df6 : internal :: mode[html] :: goal_cd_begin{'cd} =
+dform status_df6_java : internal :: mode[java] :: goal_cd_begin{'cd} =
    izone `"<a href=\"cd.metaprl.local/" goal_cd_middle{'cd}
+
+dform status_df6_html : internal :: mode[html] :: goal_cd_begin{'cd} =
+   izone `"<a href=\"" goal_cd_middle{'cd}
 
 dform status_df7 : internal :: mode[html] :: goal_cd_middle{goal_cd_dot} =
    `".\">" ezone
@@ -887,8 +893,17 @@ let append_rule_box t s =
     | _ ->
          raise(Invalid_argument "Summary.append_rule_box")
 
+let dest_rule_box t =
+   match explode_term t with
+      << "rule_box"[s:s] >> ->
+         s
+    | << "rule_box"[s:s]{'t} >> ->
+         s
+    | _ ->
+         ""
+
 let mk_proof_term main goal status text subgoals = <:con< "proof"{$main$; $goal$; $status$; $text$; $subgoals$} >>
-let dest_proof = four_subterms
+let dest_proof = five_subterms
 
 let mk_int_arg_term i = <:con< int_arg[$int:i$] >>
 let mk_term_arg_term t = <:con< term_arg{$t$} >>

@@ -318,7 +318,7 @@ let print_term state t =
    let db = state.state_df_base in
    let buf = Rformat.new_buffer () in
       Dform.format_term db buf t;
-      Rformat.print_to_channel Rformat.default_width buf stdout;
+      Rformat.print_text_channel Rformat.default_width buf stdout;
       flush stdout
 
 let output_short db out t =
@@ -332,7 +332,7 @@ let output_short db out t =
 let output_long db out t =
    let buf = Rformat.new_buffer () in
       Dform.format_term db buf t;
-      Rformat.print_to_channel Rformat.default_width buf out
+      Rformat.print_text_channel Rformat.default_width buf out
 
 let get_dbase = function
    Some state -> state.state_df_base
@@ -611,6 +611,25 @@ let get_text loc =
  *)
 let create_buffer () =
    { buf_index = 0; buf_buffer = "" }
+
+(*
+ * Wrap the input channel so that we can recover input.
+ * Unblock the state while we are reading so other shells can make progress.
+ *)
+let stream_of_string state str =
+   let buf = { buf_index = 0; buf_buffer = str } in
+   let rec read loc =
+      let { buf_index = index; buf_buffer = buffer } = buf in
+         if index = String.length buffer then
+            None
+         else
+            let c = buffer.[index] in
+               buf.buf_index <- index + 1;
+               Some c
+   in
+      reset_input state;
+      push_buffer state 0 (String.length str) str;
+      Stream.from read
 
 (*
  * Wrap the input channel so that we can recover input.

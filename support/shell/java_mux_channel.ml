@@ -151,7 +151,7 @@ let create_session =
       let len = Weak.length sessions in
       let rec search i =
          if i = len then
-            raise (Failure "Mux_channel.new_session: all sessions have been allocated");
+            raise (Failure "Java_mux_channel.new_session: all sessions have been allocated");
          match Weak.get sessions i,
                Weak.get menus i,
                Weak.get goals i,

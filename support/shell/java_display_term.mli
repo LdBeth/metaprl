@@ -1,5 +1,5 @@
 (*
- * A basic web server.
+ * This is the standard interface to the window system.
  *
  * ----------------------------------------------------------------
  *
@@ -29,50 +29,58 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Refiner.Refiner.TermType
+open Dform
 
 (*
- * Type of web servers.
+ * A generic term window.
  *)
 type t
 
 (*
- * Info about the local connection.
+ * A proof window has three parts.
  *)
-type http_info =
-   { http_host : string;
-     http_port : int;
-     http_password : string
+type java_proof =
+   { java_proof_goal     : t;
+     java_proof_rule     : t;
+     java_proof_subgoals : t
    }
 
 (*
- * Helper function for decoding uri's that contain hex chars.
+ * Possible output events.
  *)
-val decode_hex : string -> string
+type event =
+   TermSelection of term        (* A term has been selected *)
+
+type callback = t -> event -> unit
 
 (*
- * Set the search path.
+ * Create new windows over the given channel.
+ * The dform base used to retrieve display forms.
  *)
-val set_path : string list -> unit
+val create_menu : Java_mux_channel.session -> dform_mode_base -> t
+val create_term : Java_mux_channel.session -> dform_mode_base -> t
+val create_proof : Java_mux_channel.session -> dform_mode_base -> java_proof
 
 (*
- * Start a web server on the specified port.
- * The function argument handle client connections:
- * this function should be thread-safe, since the
- * server runs in a separate thread.
+ * Set the callback for the window.
  *)
-val start_http : (t -> Lm_inet.client -> unit) -> int option -> t
+val set_callback : t -> callback -> unit
 
 (*
- * Start a synchronous web server on the specified port.
- * The function argument handle client connections.  This
- * version is synchronous, and not threaded.
+ * Set the root directory for the window.
+ * All "cd" commands are interpreted relative to this.
  *)
-val serve_http : (t -> Lm_inet.client -> unit) -> int option -> unit
+val set_dir : t -> string -> unit
 
 (*
- * Get the actual port number.
+ * Set the term in the window.
+ * Substitution is allowed on the displayed term.
+ * The first term argument is the term to be replaced,
+ * and the second is the replacement.  Substitution
+ * is capturing.
  *)
-val http_info : t -> http_info
+val set : t -> term -> unit
 
 (*
  * -*-

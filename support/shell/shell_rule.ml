@@ -364,8 +364,10 @@ let create_window = function
       Proof_edit.create_text_window base mode
  | DisplayTex base ->
       Proof_edit.create_tex_window base
- | DisplayGraphical (port, base) ->
-      Proof_edit.create_proof_window port base
+ | DisplayJava (port, base) ->
+      Proof_edit.create_java_window port base
+ | DisplayBrowser base ->
+      Proof_edit.create_browser_window base
 
 let create pack parse_arg window name =
    let obj =

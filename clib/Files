@@ -1,0 +1,12 @@
+LCFILES =\
+	print_symbols\
+	truncate\
+	putenv\
+	execvp\
+	profile\
+	exit\
+	debug\
+	ml_debug\
+	termsize\
+	locale\
+	c_time

@@ -154,7 +154,8 @@ val mk_rule_box_string_term : string -> term
 val mk_rule_box_term : term -> term
 val append_rule_box : term -> string -> term
 val mk_proof_term : term -> term -> term -> term -> term -> term
-val dest_proof : term -> term * term * term * term
+val dest_rule_box : term -> string
+val dest_proof : term -> term * term * term * term * term
 
 (*
  * -*-
