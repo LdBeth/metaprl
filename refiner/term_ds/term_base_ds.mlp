@@ -368,9 +368,11 @@ struct
     * Second order variable.
     *)
    let mk_so_var_term v terms =
-      mk_term
-         { op_name = var_opname; op_params = [Var(v)] }
-         (List.map mk_simple_bterm terms)
+      let bterms = List.map mk_simple_bterm terms in
+      { free_vars = bterms_free_vars bterms;
+        core = Term 
+         { term_op = { op_name = var_opname; op_params = [Var(v)] }; 
+           term_terms = bterms }}
 
    (*
     * Second order context, contains a context term, plus
