@@ -332,7 +332,10 @@ declared,as in the following sequence:</P>
       &nbsp;t1</I> <B>in </B><I>t<br>
       &nbsp;t1</I> = <I>t2</I> &nbsp;<br>
       &nbsp;<I>t1</I> &lt;&gt; <I>t2<br>
-      &nbsp;t1 ~ t2</I> </tt> </TD>
+      &nbsp;t1 </I> <b>subtype </b><i>t2&nbsp;<br>
+      &nbsp;t1 </i><b>subset </b><i>t2&nbsp;<br>
+      &nbsp;t </i><b>in </b><i>t1 </i><b>subset </b><i>t2&nbsp;<br>
+      &nbsp;t1 ~ t2</i> </tt> </TD>
       <TD WIDTH="50%">
       <TT>
       &nbsp;equal{<I>t; t1; t2</I>}<br>
@@ -344,28 +347,49 @@ declared,as in the following sequence:</P>
       &nbsp;equal{<I>t1; t2</I>}<br>
 
       &nbsp;nequal{<I>t1; t2</I>}<br>
+      &nbsp;subtype{<i>t1; t2</i>)<br>
+      &nbsp;subset{<i>t1; t2</i>)<br>
+      &nbsp;member{<i>t; t1; t2</i>)<br>
 
       &nbsp;sqeq{<I>t1; t2</I>}</TT></TD>
     </TR>
     <TR>
       <TD WIDTH="50%">
       <TT>
-      &nbsp;<I>t1</I>  &lt;= <I>t2<br>
+      &nbsp;<I>t1</I>   &lt;= <I>t2<br>
       </I>
-      &nbsp;<I>t1</I>  &lt; <I>t2<br>
+      &nbsp;<I>t1</I>   &lt; <I>t2<br>
       </I>
-      &nbsp;<I>t1</I>  &gt;= <I>t2<br>
+      &nbsp;<I>t1</I>   &gt;= <I>t2<br>
       </I>
-      &nbsp;<I>t1</I>  &gt; <I>t2</I> </TT></TD>
+      &nbsp;<I>t1</I>   &gt; <I>t2<br>
+      &nbsp;t1</I>  =@ <I>t2<br>
+      </I>
+      &nbsp;<I>t1</I>  &lt;&gt;@ <I>t2<br>
+      &nbsp;t1
+      </I>
+  &lt;=@ <I>t2<br>
+      </I>
+      &nbsp;<I>t1</I>  &lt;@ <I>t2<br>
+      </I>
+      &nbsp;<I>t1</I>  &gt;=@ <I>t2<br>
+      </I>
+      &nbsp;<I>t1</I>  &gt;@ <I>t2</I> </TT></TD>
       <TD WIDTH="50%">
       <TT>
-      &nbsp;le{<I>t3; t1; t2</I>}<br>
+      &nbsp;le{t<I>1; t2</I>}<br>
 
-      &nbsp;lt{<I>t3; t1; t2</I>}<br>
+      &nbsp;lt{<I>t1; t2</I>}<br>
 
-      &nbsp;ge{<I>t3; t1; t2</I>}<br>
+      &nbsp;ge{<I>t1; t2</I>}<br>
 
-      &nbsp;gt{<I>t3; t1; t2</I>}</TT></TD>
+      &nbsp;gt{<I>t1; t2</I>}<br>
+      &nbsp;beq_int{<i>t1; t2</i>}<br>
+      &nbsp;bneq_int{<i>t1; t2</i>}<br>
+      &nbsp;le_bool{<i>t1; t2</i>}<br>
+      &nbsp;lt_bool{<i>t1; t2</i>}<br>
+      &nbsp;ge_bool{<i>t1; t2</i>}<br>
+      &nbsp;lt_bool{<i>t1; t2</i>}</TT></TD>
     </TR>
   </TABLE>
 </BLOCKQUOTE>
@@ -431,11 +455,19 @@ declared,as in the following sequence:</P>
       <TT>
       &nbsp;<I>x, y: t1 </I>// <I>t2<br>
       </I>
-      &nbsp;<b>isect </b><I>x: t1.</I> <I>t2</I></TT></TD>
+      &nbsp;<I>t1</I> <b>isect </b> <I>t2</I><br>
+      &nbsp;<I>x: t1</I> <b>isect </b> <I>t2</I><br>
+      &nbsp;<b>Isect </b><I>x: t1.</I> <I>t2</I><br>
+      &nbsp;<I>t1</I> <b>union </b> <I>t2</I><br>&nbsp;<b>Union </b><I>x: t1.</I> <I>t2</I></TT></TD>
       <TD WIDTH="50%">
       <TT>
       &nbsp;quot{<I>t1; x, y. t2</I>}<br>
-      &nbsp;isect{<i>t1; x. t2</i>}</TT></TD>
+      &nbsp;bisect{<i>t1; t2</i>}<br>
+      &nbsp;bisect{<i>t1; x. t2</i>}<br>
+      &nbsp;isect{<i>t1; x. t2</i>}<br>
+      &nbsp;bunion{<i>t1; t2</i>}<br>
+      &nbsp;tunion{<i>t1; x. t2</i>}
+      </TT></TD>
     </TR>
   </TABLE>
 </BLOCKQUOTE>
@@ -469,14 +501,36 @@ declared,as in the following sequence:</P>
       </I>
       &nbsp;<I>t1 </I><B>/@</B> <I>t2<br>
       </I>
-      &nbsp;<I>t1</I> <B>%@</B> <I>t2</I></TT></TD>
+      &nbsp;<I>t1</I> <B>%@</B> <I>t2<br>
+      &nbsp;t1 ^@ t2</I></TT></TD>
       <TD WIDTH="50%">
       <TT>
       &nbsp;mul{<I>t1; t2</I>}<br>
 
       &nbsp;div{<I>t1; t2</I>}<br>
 
-      &nbsp;rem{<I>t1; t2</I>}</TT></TD>
+      &nbsp;rem{<I>t1; t2</I>}<br>
+      &nbsp;power{<I>t1; t2</I>}</TT></TD>
+    </tr>
+  </TABLE></BLOCKQUOTE>
+
+<H4>Algebraic operations</H4>
+
+<BLOCKQUOTE>
+  <TABLE WIDTH="450" BORDER="1" CELLSPACING="2" CELLPADDING="0">
+    <tr>
+      <TD WIDTH="50%">
+      <tt>&nbsp;<I>t1 </I>op[<i>t</i>] <I>t2
+      </I>&nbsp;<br>
+      &nbsp;<I>t1 ^</I>op <I>t2
+      </I>&nbsp;<br>
+      &nbsp;&nbsp; where op is *,+,/,-,^,&nbsp;&nbsp;<br>
+      &nbsp;&nbsp;&nbsp;&nbsp; or &gt;,&lt;,=,&lt;&gt;,&lt;=,&gt;=</tt></TD>
+      <TD WIDTH="50%">
+      <tt>&nbsp;<i>t</i>^&quot;op&quot; <i>t1 t2<br>
+      &nbsp;'self</i>^&quot;op&quot; <i>t1 t2<br>
+      <br>
+      </i>&nbsp;</tt></TD>
     </tr>
   </TABLE></BLOCKQUOTE>
 
@@ -517,9 +571,11 @@ declared,as in the following sequence:</P>
     <TR>
       <TD WIDTH="50%">
       <TT>
-      &nbsp;<i>t1</i><b>^</b>x</TT></TD>
+      &nbsp;<i>t</i><b>^</b>x<br>
+      &nbsp;<i>t</i>^x:=<i>t2</i></TT></TD>
       <TD WIDTH="50%">
-      <TT>&nbsp;field[&quot;x&quot;:t]{<i>t1</i>}</TT></TD>
+      <TT>&nbsp;field[&quot;x&quot;:t]{<i>t1</i>}<br>
+      &nbsp;rxrd[&quot;x&quot;:t]{<i>t2;t1</i>}&nbsp;</TT></TD>
     </TR>
   </TABLE>
 </BLOCKQUOTE>
@@ -539,11 +595,15 @@ declared,as in the following sequence:</P>
     <tr>
       <TD WIDTH="50%">
       <TT>
-      &nbsp;{x<i> </i><b>:</b><i> A</i><b>; ... ; </b>z<b> :</b> <i>C</i>}</TT></TD>
+      &nbsp;{x<i> </i><b>:</b><i> A</i><b>; ... ; </b>z<b> :</b> <i>C</i>}<br>
+      <br>
+      &nbsp;{x<i> </i><b>:</b><i> A</i><b>; ... ; </b>z<b> :</b> <i>C; P </i>}</TT></TD>
       <TD WIDTH="50%">
       <TT>
       record[x:t]{<i>A; self. . . .<br>
-      &nbsp; </i>record[z:t]<i>{C}...</i>}</TT></TD>
+      &nbsp; </i>record[z:t]<i>{C}...</i>}<br>
+      {<i>self</i>:{x<i> </i><b>:</b><i> A</i><b>; ... ; </b>z<b> :</b> <i>C} |
+      P}</i></TT></TD>
     </tr>
     <tr>
       <TD WIDTH="50%">

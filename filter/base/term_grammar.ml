@@ -461,9 +461,15 @@ struct
               t1 = noncommaterm; (op,_) = sl_equal_rel; t2 = NEXT; sl_in; ty = noncommaterm ->
                { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc op) ty.aterm t1.aterm t2.aterm }
             | (* t1 in ty  *)
-              t = noncommaterm; op = sl_in; ty = noncommaterm ->
+              t = noncommaterm; op = sl_in; ty = NEXT ->
                (* HACK - this is to support ad-hoc I/O form "member" - see TODO 2.14 -2.15 *)
                   { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc "equal") ty.aterm t.aterm t.aterm }
+            | (* t1 in t2 subset t3 *)
+              t1 = noncommaterm; sl_in; t2 = NEXT; sl_subset; t3 = noncommaterm ->
+               { aname = None; aterm = mk_dep0_dep0_dep0_term (mk_dep0_dep0_dep0_opname loc "member") t1.aterm t2.aterm t3.aterm }
+            | (* t1 subset t2 *)
+              t1 = noncommaterm; op = sl_subset; t2 = noncommaterm ->
+               mk_arith_term loc op t1 t2
             | (* t1 = t2, t1 <> t2  *)
               t1 = noncommaterm; (op,_) = sl_equal_rel; t2 = NEXT ->
                 mk_arith_term loc op t1 t2
@@ -508,10 +514,15 @@ struct
             [ t1 = noncommaterm; op = sl_left_arrow; t2 = noncommaterm ->
                mk_arith_term loc op t2 t1
             ]
-          | "isect" LEFTA
-            [  op = sl_isect; v = word_or_string; sl_colon; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
+          | "isect" RIGHTA
+            [ (* Isect x: A. B[x], Union x:A. B[x]  - intersection, union of family of types *)
+               op = sl_Isect; v = word_or_string; sl_colon; t1 = noncommaterm; sl_period; t2 = noncommaterm ->
                         { aname = None; aterm = mk_dep0_dep1_term (mk_dep0_dep1_opname loc op) v t1.aterm t2.aterm }
-             | op = sl_quotient; x = word_or_string; sl_comma; y = word_or_string; sl_colon; t1 = noncommaterm; sl_double_slash; t2 = noncommaterm ->
+             | (* A union B, A isect B, x: A isect B[x]  - binary union, intersection and dependent intersection *)
+               t1 = noncommaterm; op = sl_isect; t2 = noncommaterm ->
+               mk_type_term loc op t1 t2
+             |(* quot x,y: t1 // t2  - quotient type *)
+               op = sl_quotient; x = word_or_string; sl_comma; y = word_or_string; sl_colon; t1 = noncommaterm; sl_double_slash; t2 = noncommaterm ->
                { aname = None; aterm = mk_dep0_dep2_term (mk_dep0_dep2_opname loc op) x y t1.aterm t2.aterm }
             ]
           | "plus" RIGHTA
@@ -1032,12 +1043,15 @@ struct
           | "<>" -> "nequal","<>"
           ]];
 
+      sl_subset:
+         [[ "subset" -> "subset" ]];
 
       sl_rel:
          [[ "<" -> "lt","<"
           | ">" -> "gt",">"
           | "<=" -> "le", "<="
           | ">=" -> "ge", ">="
+          | "subtype" -> "subtype","subtype"
           ]];
 
       sl_arith_rel:
@@ -1138,7 +1152,14 @@ struct
           ]];
 
       sl_isect:
-         [[ "isect" -> "isect" ]];
+         [[ "isect" -> "bisect"
+          | "bunion" -> "bunion"
+          ]];
+
+      sl_Isect:
+         [[ "Isect" -> "isect"
+          | "Union" -> "tunion"
+          ]];
 
       sl_quotient:
          [[ "quot" -> "quot" ]];
