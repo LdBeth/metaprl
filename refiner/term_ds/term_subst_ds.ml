@@ -311,10 +311,11 @@ struct
    let rec remove_var v = function
       [] ->
          []
-    | (v1, v2) :: tl when (v1 = v || v2 = v)->
-         remove_var v tl
-    | hd :: tl ->
-         hd :: remove_var v tl
+    | ((v1, v2) :: tl) as l when (v1 = v || v2 = v)->
+         if v1<>v2 then (v,v) :: l else l
+    | (hd :: tl) as l ->
+         let tl' = remove_var v tl in
+            if tl'==tl then l else hd :: tl'
 
    let rec join_vars vars vs1 vs2 =
       match vs1,vs2 with
