@@ -596,7 +596,7 @@ TheoryDocument(docname, theories) =
     # Get MetaPRL to generate the .tex files
     #
     $(docname).tex $(docname)-body.tex: $(MP) $(CMOZFILES) $(docname)_print.ml
-        $(WrapC $(MP)) $(OCAMLINCLUDES) -cli $(docname)_print.ml
+        $(WrapC $(MP)) $(OCAMLINCLUDES) -batch $(docname)_print.ml
 
 #
 # Format the document and copy it to the DOCDIR directory.
