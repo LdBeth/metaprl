@@ -130,7 +130,6 @@ declare alpha
 declare beta
 declare pi
 declare lambda
-declare Lambda
 declare gamma
 declare delta
 declare rho
@@ -180,8 +179,10 @@ declare vartriangleleft
 declare vartriangleright
 declare Gamma
 declare Delta
+declare Lambda
 declare Pi
 declare Sigma
+declare Omega
 declare times
 declare "div"
 declare supplus
