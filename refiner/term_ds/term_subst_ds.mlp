@@ -22,28 +22,28 @@ let debug_subst_ds =
       }
 
 module TermSubst
-   (Term : TermDsSig
-    with type level_exp_var = TermType.level_exp_var
-    with type level_exp = TermType.level_exp
-    with type param = TermType.param
-    with type operator = TermType.operator
-    with type term = TermType.term
-    with type bound_term = TermType.bound_term
+(Term : TermDsSig
+        with type level_exp_var = TermType.level_exp_var
+        with type level_exp = TermType.level_exp
+        with type param = TermType.param
+        with type operator = TermType.operator
+        with type term = TermType.term
+        with type bound_term = TermType.bound_term
 
-    with type level_exp_var' = TermType.level_exp_var'
-    with type level_exp' = TermType.level_exp'
-    with type object_id = TermType.object_id
-    with type param' = TermType.param'
-    with type operator' = TermType.operator'
-    with type term' = TermType.term'
-    with type bound_term' = TermType.bound_term'
+        with type level_exp_var' = TermType.level_exp_var'
+        with type level_exp' = TermType.level_exp'
+        with type object_id = TermType.object_id
+        with type param' = TermType.param'
+        with type operator' = TermType.operator'
+        with type term' = TermType.term'
+        with type bound_term' = TermType.bound_term'
 
-    with type term_subst = TermType.term_subst)
-   (RefineError : RefineErrorSig
-    with type level_exp = TermType.level_exp
-    with type param = TermType.param
-    with type term = TermType.term
-    with type bound_term = TermType.bound_term)
+        with type term_subst = TermType.term_subst)
+(RefineError : RefineErrorSig
+               with type level_exp = TermType.level_exp
+               with type param = TermType.param
+               with type term = TermType.term
+               with type bound_term = TermType.bound_term)
 =
 struct
    open RefineError
@@ -77,13 +77,13 @@ struct
     * Collect all binding vars.
     *)
    let rec binding_vars_term bvars = function t ->
-      binding_vars_bterms bvars (dest_term t).term_terms
+         binding_vars_bterms bvars (dest_term t).term_terms
 
    and binding_vars_bterms bvars = function
       btrm::l ->
          let bt = dest_bterm btrm in
-         binding_vars_bterms (binding_vars_term (List_util.union bt.bvars bvars) bt.bterm) l
-   | [] -> bvars
+            binding_vars_bterms (binding_vars_term (List_util.union bt.bvars bvars) bt.bterm) l
+    | [] -> bvars
 
    let binding_vars = binding_vars_term []
 
@@ -91,22 +91,22 @@ struct
       [] -> []
     | hd::tl ->
          StringSet.elements
-            (List.fold_left
-               (function vars -> function trm -> StringSet.union vars trm.free_vars)
-               hd.free_vars tl)
+         (List.fold_left
+          (function vars -> function trm -> StringSet.union vars trm.free_vars)
+          hd.free_vars tl)
    let rec context_vars_term cvars t = match dest_term t with
-      { term_op = { op_name = opname; op_params = [Var v] };
-        term_terms = bterms
-      } when opname == context_opname ->
-         let cvars' =
-            if List.mem v cvars then
-               cvars
-            else
-               v::cvars
-         in
-            context_vars_bterms cvars' bterms
-    | { term_terms = bterms } ->
-         context_vars_bterms cvars bterms
+                                          { term_op = { op_name = opname; op_params = [Var v] };
+                                            term_terms = bterms
+                                          } when opname == context_opname ->
+                                             let cvars' =
+                                                if List.mem v cvars then
+                                                   cvars
+                                                else
+                                                   v::cvars
+                                             in
+                                                context_vars_bterms cvars' bterms
+                                        | { term_terms = bterms } ->
+                                             context_vars_bterms cvars bterms
 
    and context_vars_bterms cvars = function
       bt::l ->
@@ -130,16 +130,19 @@ struct
             p1 = p2
 
    let rec remove_var v = function
-      [] -> []
-    | (v',_)::tl when v' = v -> remove_var v tl
-    | hd::tl -> hd::(remove_var v tl)
+      [] ->
+         []
+    | (v', _) :: tl when v' = v ->
+         remove_var v tl
+    | hd :: tl ->
+         hd :: remove_var v tl
 
    let rec join_vars vars = function
       ([],[]) -> vars
     | (v1::vt1,v2::vt2) ->
          if (v1=v2)
-            then join_vars (remove_var v1 vars) (vt1,vt2)
-            else (v1,v2)::(join_vars vars (vt1,vt2))
+         then join_vars (remove_var v1 vars) (vt1,vt2)
+         else (v1,v2)::(join_vars vars (vt1,vt2))
     | _ -> raise (Invalid_argument ("join_vars"))
 
    let rec equal_term vars t t' =
@@ -179,26 +182,26 @@ struct
     * is to substitute v for occurrences of the term t' in t.
     *)
    let rec var_subst t t' v =
-      if alpha_equal t t' then mk_var_term v 
-         else match t with
-            {core = Term { term_op = op; term_terms = bterms}} ->
-               let bterms' = var_subst_bterms bterms t' v in
-               if bterms == bterms' then t else mk_term op bterms'
-          | _ -> raise (Failure "Term_ds.var_subst: this is not supposed to happen")
+      if alpha_equal t t' then mk_var_term v
+      else match t with
+              {core = Term { term_op = op; term_terms = bterms}} ->
+                 let bterms' = var_subst_bterms bterms t' v in
+                    if bterms == bterms' then t else mk_term op bterms'
+            | _ -> raise (Failure "Term_ds.var_subst: this is not supposed to happen")
 
    and var_subst_bterms bterms t' v =
       match bterms with
          bt::btrms ->
             let bt' = var_subst_bterm bt t' v in
             let btrms' = var_subst_bterms btrms t' v in
-            if (bt == bt') && (btrms == btrms') then bterms else bt'::btrms'
+               if (bt == bt') && (btrms == btrms') then bterms else bt'::btrms'
        | [] -> bterms
 
    and var_subst_bterm bt t' v =
       let dbt = dest_bterm bt in
-      if List.mem v dbt.bvars then bt
+         if List.mem v dbt.bvars then bt
          else let term' = var_subst dbt.bterm t' v in
-         if dbt.bterm == term' then bt else mk_bterm dbt.bvars term'
+                 if dbt.bterm == term' then bt else mk_bterm dbt.bvars term'
 
    (*
     * Check the following:
@@ -225,9 +228,9 @@ struct
            term_terms = []
          } when opname == var_opname ->
 #ifdef VERBOSE_EXN
-           if !debug_subst_ds then
-              eprintf "Term_subst_ds.equal_comp: check var %s: (%a)%t" (**)
-                 v print_string_pair_list vars eflush;
+            if !debug_subst_ds then
+               eprintf "Term_subst_ds.equal_comp: check var %s: (%a)%t" (**)
+                  v print_string_pair_list vars eflush;
 #endif
             (try equal_term vars' t' (List.assoc v vars) with
                 Not_found ->
@@ -237,7 +240,7 @@ struct
                       } when opname == var_opname ->
 #ifdef VERBOSE_EXN
                          if !debug_subst_ds then
-                             eprintf "\tCheck with %s%t" v' eflush;
+                            eprintf "\tCheck with %s%t" v' eflush;
 #endif
                          not (List_util.assoc_in_range eq_comp_var v' vars) & v = v'
                     | _ ->
@@ -290,85 +293,75 @@ struct
             v1
          else
             rev_assoc v t
-    | [] -> raise Not_found
+    | [] ->
+         raise Not_found
 
-   let rec zip_cons l = function
-      v1::t1, v2::t2 ->
-         if (v1=v2)
-            then zip_cons (remove_var v1 l) (t1,t2)
-            else zip_cons ((v1, v2)::l) (t1, t2)
-    | [], [] -> l
-    | _ -> raise (Invalid_argument "zip_cons")
+   let rec zip_cons l l1 l2 =
+      match l1, l2 with
+         v1::t1, v2::t2 ->
+            zip_cons ((v1, v2) :: l) t1 t2
+       | [], [] ->
+            l
+       | _ ->
+            raise_generic_exn
 
    (*
     * Unify two terms.
     *)
-   let rec unify_terms subst bvars tm1 tm2 = match (dest_term tm1, dest_term tm2) with
-      ({ term_op = { op_name = opname; op_params = [Var v] };
-         term_terms = []
-       } as t1), t2
-      when opname == var_opname ->
-         (* t1 is a variable *)
-         begin
+   let rec unify_terms subst bvars tm1 tm2 =
+      if is_var_term tm1 then
+         let v = dest_var tm1 in
             try
-               if (List.assoc v bvars) = (dest_var_nods t2) then
-                  subst
-               else
-                  raise_generic_exn
+               let v' = List.assoc v bvars in
+                  if v' = dest_var tm2 then
+                     subst
+                  else
+                     raise_generic_exn
             with
                Not_found ->
-                  begin
-                     try unify_terms subst bvars (List.assoc v subst) tm2 with
-                        Not_found ->
-                           (v, tm2)::subst
-                  end
-             | Not_var ->
-                  raise_generic_exn
-         end
-
-    | t1, ({ term_op = { op_name = opname; op_params = [Var v] };
-             term_terms = []
-           } as t2)
-      when opname == var_opname ->
-         (* t2 is a variable *)
-         begin
+                  try unify_terms subst bvars (List.assoc v subst) tm2 with
+                     Not_found ->
+                        (v, tm2) :: subst
+      else if is_var_term tm2 then
+         let v = dest_var tm2 in
             try
-               if (rev_assoc v bvars) = (dest_var_nods t1) then
-                  subst
-               else
-                  raise_generic_exn
+               let v' = rev_assoc v bvars in
+                  if v' = dest_var tm1 then
+                     subst
+                  else
+                     raise_generic_exn
             with
                Not_found ->
-                  begin
-                     try unify_terms subst bvars tm1 (List.assoc v subst) with
-                        Not_found ->
-                           (v, tm1)::subst
-                  end
-             | Not_var ->
-                  raise_generic_exn
-         end
+                  try unify_terms subst bvars tm1 (List.assoc v subst) with
+                     Not_found ->
+                        (v, tm1) :: subst
+      else
+         let { term_op = { op_name = opname1; op_params = params1 };
+               term_terms = bterms1
+             } = dest_term tm1
+         in
+         let { term_op = { op_name = opname2; op_params = params2 };
+               term_terms = bterms2
+             } = dest_term tm2
+         in
+            if opname1 == opname2 & params1 = params2 then
+               unify_bterms subst bvars bterms1 bterms2
+            else
+               raise_generic_exn
 
-    | ({ term_op = { op_name = opname1; op_params = params1 };
-         term_terms = bterms1
-       } as t1),
-      ({ term_op = { op_name = opname2; op_params = params2 };
-         term_terms = bterms2
-       } as t2) ->
-         (* General case *)
-         if opname1 == opname2 & params1 = params2 then
-            try unify_bterms subst bvars (bterms1, bterms2) with
-               Invalid_argument _ -> raise_generic_exn
-         else
+   and unify_bterms subst bvars bterms1 bterms2 =
+      match bterms1, bterms2 with
+         (bterm1 :: tl1), (bterm2 :: tl2) ->
+            let bt1 = dest_bterm bterm1 in
+            let bt2 = dest_bterm bterm2 in
+            let subst' =
+               unify_terms subst (zip_cons bvars bt1.bvars bt2.bvars) bt1.bterm bt2.bterm
+            in
+               unify_bterms subst' bvars tl1 tl2
+       | [], [] ->
+            subst
+       | _ ->
             raise_generic_exn
-
-   and unify_bterms subst bvars = function
-      (btrm1::tl1), (btrm2::tl2) ->
-         let bt1 = dest_bterm btrm1
-         and bt2 = dest_bterm btrm2 in
-         let subst' = unify_terms subst (zip_cons bvars (bt1.bvars, bt2.bvars)) bt1.bterm bt2.bterm in
-            unify_bterms subst' bvars (tl1, tl2)
-    | [], [] -> subst
-    | _ -> raise (Invalid_argument "unify_bterms")
 
    let unify subst t1 t2 =
 #ifdef VERBOSE_EXN
@@ -376,7 +369,68 @@ struct
          RefineError (_, GenericError) ->
             raise (RefineError ("unify", TermPairMatchError (t1, t2)))
 #else
-      List.rev (unify_terms subst [] t1 t2)
+            List.rev (unify_terms subst [] t1 t2)
+#endif
+
+   (*
+    * Matching is like unification, but variable matches
+    * are only allowed on the left.  There is no occurs-check.
+    *)
+   let rec match_terms subst bvars tm1 tm2 =
+      if is_var_term tm1 then
+         let v = dest_var tm1 in
+            try
+               let v' = List.assoc v bvars in
+                  if v' = dest_var tm2 then
+                     subst
+                  else
+                     raise_generic_exn
+            with
+               Not_found ->
+                  try
+                     let tm1 = List.assoc v subst in
+                        if is_var_term tm2 & dest_var tm1 = dest_var tm2 then
+                           subst
+                        else
+                           match_terms subst bvars (List.assoc v subst) tm2
+                  with
+                     Not_found ->
+                        (v, tm2) :: subst
+      else
+         let { term_op = { op_name = opname1; op_params = params1 };
+               term_terms = bterms1
+             } = dest_term tm1
+         in
+         let { term_op = { op_name = opname2; op_params = params2 };
+               term_terms = bterms2
+             } = dest_term tm2
+         in
+            if opname1 == opname2 & params1 = params2 then
+               match_bterms subst bvars bterms1 bterms2
+            else
+               raise_generic_exn
+
+   and match_bterms subst bvars bterms1 bterms2 =
+      match bterms1, bterms2 with
+         (bterm1 :: tl1), (bterm2 :: tl2) ->
+            let bt1 = dest_bterm bterm1 in
+            let bt2 = dest_bterm bterm2 in
+            let subst' =
+               match_terms subst (zip_cons bvars bt1.bvars bt2.bvars) bt1.bterm bt2.bterm
+            in
+               match_bterms subst' bvars tl1 tl2
+       | [], [] ->
+            subst
+       | _ ->
+            raise_generic_exn
+
+   let match_terms subst t1 t2 =
+#ifdef VERBOSE_EXN
+      try List.rev (match_terms subst [] t1 t2) with
+         RefineError (_, GenericError) ->
+            raise (RefineError ("match", TermPairMatchError (t1, t2)))
+#else
+            List.rev (match_terms subst [] t1 t2)
 #endif
 
    (************************************************************************
@@ -388,7 +442,11 @@ struct
     * See if the first term generalizes the second, and
     * compute the alpha conversion.  If the generalization
     * is _not_ true, then raise the exception:
-    * Failurevalid_argument "generalization".
+    * Failure "generalization".
+    *
+    * Generalization is like unification, but it is one-sided:
+    * vars in the first term can match terms in the second,
+    * but not vice-versa.
     *
     * The generalization is with respect to matching:
     *    1. A variable matches anything

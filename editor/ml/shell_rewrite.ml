@@ -81,7 +81,7 @@ let mk_ped arg sentinal params assums redex contractum =
 (*
  * Commenting function.
  *)
-let comment loc t =
+let comment _ _ t =
    t
 
 (*

@@ -39,7 +39,13 @@ sig
    val context_vars : term -> string list
    val binding_vars : term -> string list
 
+   (*
+    * Matching is like unification but variables in
+    * the first term match terms in the second,
+    * but not vice-versa.
+    *)
    val unify : term_subst -> term -> term -> term_subst
+   val match_terms : term_subst -> term -> term -> term_subst
 
    (*
     * generalization: see if the first term generalizes the second term.

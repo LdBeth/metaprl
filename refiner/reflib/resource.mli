@@ -12,7 +12,8 @@ type ('a, 'b, 'c) rsrc =
    { resource_data : 'c;
      resource_join : ('a, 'b, 'c) rsrc -> ('a, 'b, 'c) rsrc -> ('a, 'b, 'c) rsrc;
      resource_extract : ('a, 'b, 'c) rsrc -> 'b;
-     resource_improve : ('a, 'b, 'c) rsrc -> 'a -> ('a, 'b, 'c) rsrc
+     resource_improve : ('a, 'b, 'c) rsrc -> 'a -> ('a, 'b, 'c) rsrc;
+     resource_close : ('a, 'b, 'c) rsrc -> ('a, 'b, 'c) rsrc
    }
 
 val debug_resource : bool ref

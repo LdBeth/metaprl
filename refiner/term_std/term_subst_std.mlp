@@ -470,96 +470,144 @@ struct
    (*
     * Utilities.
     *)
-   let rev_assoc v =
-      let rec aux = function
-         (v1, v2)::t ->
-            if v2 = v then
-               v1
-            else
-               aux t
-       | [] ->
-            raise Not_found
-      in
-         aux
+   let rec rev_assoc v = function
+      (v1, v2)::t ->
+         if v2 = v then
+            v1
+         else
+            rev_assoc v t
+    | [] ->
+         raise Not_found
 
-   let rec zip_cons l = function
-      v1::t1, v2::t2 -> zip_cons ((v1, v2)::l) (t1, t2)
-    | [], [] -> l
-    | _ -> raise (Invalid_argument "zip_cons")
+   let rec zip_cons l l1 l2 =
+      match l1, l2 with
+         v1::t1, v2::t2 ->
+            zip_cons ((v1, v2) :: l) t1 t2
+       | [], [] ->
+            l
+       | _ ->
+            raise_generic_exn
 
    (*
     * Unify two terms.
     *)
-   let rec unify_terms subst bvars = function
-      ({ term_op = { op_name = opname; op_params = [Var v] };
-         term_terms = []
-       } as t1), t2
-      when opname == var_opname ->
-         (* t1 is a variable *)
-         begin
+   let rec unify_terms subst bvars tm1 tm2 =
+      if is_var_term tm1 then
+         let v = dest_var tm1 in
             try
-               if (List.assoc v bvars) = (dest_var t2) then
-                  subst
-               else
-                  raise_generic_exn
+               let v' = List.assoc v bvars in
+                  if v' = dest_var tm2 then
+                     subst
+                  else
+                     raise_generic_exn
             with
                Not_found ->
-                  begin
-                     try unify_terms subst bvars (List.assoc v subst, t2) with
-                        Not_found ->
-                           (v, t2)::subst
-                  end
-         end
-
-    | t1, ({ term_op = { op_name = opname; op_params = [Var v] };
-             term_terms = []
-           } as t2)
-      when opname == var_opname ->
-         (* t2 is a variable *)
-         begin
+                  try unify_terms subst bvars (List.assoc v subst) tm2 with
+                     Not_found ->
+                        (v, tm2) :: subst
+      else if is_var_term tm2 then
+         let v = dest_var tm2 in
             try
-               if (rev_assoc v bvars) = (dest_var t1) then
-                  subst
-               else
-                  raise_generic_exn
+               let v' = rev_assoc v bvars in
+                  if v' = dest_var tm1 then
+                     subst
+                  else
+                     raise_generic_exn
             with
                Not_found ->
-                  begin
-                     try unify_terms subst bvars (t1, List.assoc v subst) with
-                        Not_found ->
-                           (v, t1)::subst
-                  end
-         end
+                  try unify_terms subst bvars tm1 (List.assoc v subst) with
+                     Not_found ->
+                        (v, tm1) :: subst
+      else
+         let { term_op = { op_name = opname1; op_params = params1 };
+               term_terms = bterms1
+             } = dest_term tm1
+         in
+         let { term_op = { op_name = opname2; op_params = params2 };
+               term_terms = bterms2
+             } = dest_term tm2
+         in
+            if opname1 == opname2 & params1 = params2 then
+               unify_bterms subst bvars bterms1 bterms2
+            else
+               raise_generic_exn
 
-    | ({ term_op = { op_name = opname1; op_params = params1 };
-         term_terms = bterms1
-       } as t1),
-      ({ term_op = { op_name = opname2; op_params = params2 };
-         term_terms = bterms2
-       } as t2) ->
-         (* General case *)
-         if opname1 == opname2 & params1 = params2 then
-            try unify_bterms subst bvars (bterms1, bterms2) with
-               Invalid_argument _ ->
-                  raise_generic_exn
-         else
+   and unify_bterms subst bvars bterms1 bterms2 =
+      match bterms1, bterms2 with
+         (bterm1 :: tl1), (bterm2 :: tl2) ->
+            let bt1 = dest_bterm bterm1 in
+            let bt2 = dest_bterm bterm2 in
+            let subst' =
+               unify_terms subst (zip_cons bvars bt1.bvars bt2.bvars) bt1.bterm bt2.bterm
+            in
+               unify_bterms subst' bvars tl1 tl2
+       | [], [] ->
+            subst
+       | _ ->
             raise_generic_exn
-
-   and unify_bterms subst bvars = function
-      ({ bvars = vars1; bterm = term1 }::tl1),
-      ({ bvars = vars2; bterm = term2 }::tl2) ->
-         let subst' = unify_terms subst (zip_cons bvars (vars1, vars2)) (term1, term2) in
-            unify_bterms subst' bvars (tl1, tl2)
-    | [], [] -> subst
-    | _ -> raise_generic_exn
 
    let unify subst t1 t2 =
 #ifdef VERBOSE_EXN
-      try List.rev (unify_terms subst [] (t1, t2)) with
+      try List.rev (unify_terms subst [] t1 t2) with
          RefineError (_, GenericError) ->
             raise (RefineError ("unify", TermPairMatchError (t1, t2)))
 #else
-      List.rev (unify_terms subst [] (t1, t2))
+            List.rev (unify_terms subst [] t1 t2)
+#endif
+
+   (*
+    * Matching is like unification, but variable matches
+    * are only allowed on the left.
+    *)
+   let rec match_terms subst bvars tm1 tm2 =
+      if is_var_term tm1 then
+         let v = dest_var tm1 in
+            try
+               let v' = List.assoc v bvars in
+                  if v' = dest_var tm2 then
+                     subst
+                  else
+                     raise_generic_exn
+            with
+               Not_found ->
+                  try match_terms subst bvars (List.assoc v subst) tm2 with
+                     Not_found ->
+                        (v, tm2) :: subst
+      else
+         let { term_op = { op_name = opname1; op_params = params1 };
+               term_terms = bterms1
+             } = dest_term tm1
+         in
+         let { term_op = { op_name = opname2; op_params = params2 };
+               term_terms = bterms2
+             } = dest_term tm2
+         in
+            if opname1 == opname2 & params1 = params2 then
+               match_bterms subst bvars bterms1 bterms2
+            else
+               raise_generic_exn
+
+   and match_bterms subst bvars bterms1 bterms2 =
+      match bterms1, bterms2 with
+         (bterm1 :: tl1), (bterm2 :: tl2) ->
+            let bt1 = dest_bterm bterm1 in
+            let bt2 = dest_bterm bterm2 in
+            let subst' =
+               match_terms subst (zip_cons bvars bt1.bvars bt2.bvars) bt1.bterm bt2.bterm
+            in
+               match_bterms subst' bvars tl1 tl2
+       | [], [] ->
+            subst
+       | _ ->
+            raise_generic_exn
+
+   let match_terms subst t1 t2 =
+#ifdef VERBOSE_EXN
+      try List.rev (match_terms subst [] t1 t2) with
+         RefineError (_, GenericError) ->
+            raise (RefineError ("match", TermPairMatchError (t1, t2)))
+#else
+            List.rev (match_terms subst [] t1 t2)
 #endif
 
    (************************************************************************

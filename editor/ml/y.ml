@@ -12,8 +12,9 @@ open Refiner.Refiner.Refine
 open Tacticals
 open Conversionals
 
+open Typeinf
 open Base_dtactic
-open Base_rewrite
+open Base_auto_tactic
 open Itt_rfun
 open Itt_fun
 open Itt_int
@@ -23,30 +24,19 @@ open Itt_union
 open Itt_equal
 open Itt_struct
 open Itt_w
+open Itt_derive
 
 open Shell
 open Test
 
-open Czf_itt_small
 open Czf_itt_set
-open Czf_itt_empty
-open Czf_itt_union
+open Czf_itt_eq
+open Czf_itt_member
 open Czf_itt_sep
-open Czf_itt_true
-open Czf_itt_false
-open Czf_itt_or
-open Czf_itt_and
-open Czf_itt_implies
-open Czf_itt_dall
-(*
-open Czf_itt_all
-open Czf_itt_exists
-open Czf_itt_dexists
-open Czf_itt_set_ind
-*)
 
 (*
  * Proof saving.
+ *)
 let zT, z =
    let pf = ref None in
    let zT p =
@@ -61,10 +51,15 @@ let zT, z =
             raise Not_found
    in
       zT, z
- *)
 
-let _ = load "czf_itt_dall"
-let _ = cd "czf_itt_dall.dall_wf"
+(*
+let _ = load "itt_logic_var"
+let _ = cd "itt_logic_var.pairFormation"
+let _ = load "itt_derive"
+let _ = cd "itt_derive.independentApplyIntro2"
+*)
+let _ = load "czf_itt_all"
+let _ = cd "czf_itt_all.dfun_res"
 let _ = set_writeable ()
 
 (*

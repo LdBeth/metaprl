@@ -708,9 +708,7 @@ struct
       (* Also copy the proofs if they exist *)
       if proc.select = ImplementationType then
          let name = proc.name in
-            if file_interactive (name ^ ".cmoz")
-               or file_interactive (name ^ ".cmot")
-            then
+            if file_interactive (name ^ ".prlb") then
                begin
                   FilterCache.set_mode proc.cache InteractiveSummary;
                   FilterCache.copy_proofs proc.cache Info.copy_proof
@@ -865,7 +863,7 @@ EXTEND
           let proc = SigFilter.get_proc loc in
           let id = Hashtbl.hash proc in
              SigFilter.add_command proc (Id id, (0, 0));
-             SigFilter.save proc;
+             SigFilter.save proc None;
              SigFilter.extract proc
        ]];
 
@@ -892,7 +890,7 @@ EXTEND
       [[ implem_opening; st = LIST0 implem_item; EOI ->
           let proc = StrFilter.get_proc loc in
              StrFilter.check proc InterfaceType;
-             StrFilter.save proc;
+             StrFilter.save proc None;
              StrFilter.extract proc
        ]];
 

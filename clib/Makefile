@@ -1,5 +1,6 @@
 # Include directories
 ROOT := ..
+DIR := clib
 INCLUDE :=
 
 # Library files

@@ -177,6 +177,7 @@ struct
       StackVoid
     | StackNumber of Num.num
     | StackString of string
+    | StackMString of string
     | StackLevel of level_exp
     | StackBTerm of term * string list
     | StackITerm of (term * string list * string list * term list) list
@@ -424,6 +425,8 @@ struct
          fprintf out "Number %s" (Num.string_of_num n)
     | StackString s ->
          fprintf out "String %s" s
+    | StackMString s ->
+         fprintf out "MString %s" s
     | StackLevel l ->
          fprintf out "Level"
     | StackBTerm (t, vars) ->
@@ -1297,6 +1300,41 @@ struct
                     i (Array.length stack) eflush;
 #endif
               stack.(i) <- StackLevel l
+         | RWMNumber i, MNumber s ->
+#ifdef VERBOSE_EXN
+              if !debug_rewrite then
+                 eprintf "Rewrite.match_redex_params.RWMNumber: stack(%d)/%d <- %s%t" (**)
+                    i (Array.length stack) s eflush;
+#endif
+              stack.(i) <- StackMString s
+         | RWMString i, MString s ->
+#ifdef VERBOSE_EXN
+              if !debug_rewrite then
+                 eprintf "Rewrite.match_redex_params.RWMString: stack(%d)/%d <- %s%t" (**)
+                    i (Array.length stack) s eflush;
+#endif
+              stack.(i) <- StackMString s
+         | RWMToken i, MToken s ->
+#ifdef VERBOSE_EXN
+              if !debug_rewrite then
+                 eprintf "Rewrite.match_redex_params.RWMToken: stack(%d)/%d <- %s%t" (**)
+                    i (Array.length stack) s eflush;
+#endif
+              stack.(i) <- StackMString s
+         | RWMVar i, MVar v ->
+#ifdef VERBOSE_EXN
+              if !debug_rewrite then
+                 eprintf "Rewrite.match_redex_params.RWMVar: stack(%d)/%d <- %s%t" (**)
+                    i (Array.length stack) v eflush;
+#endif
+              stack.(i) <- StackMString v
+         | RWMLevel i, MLevel s ->
+#ifdef VERBOSE_EXN
+              if !debug_rewrite then
+                 eprintf "Rewrite.match_redex_params.RWMLevel: stack(%d)/%d%t" (**)
+                    i (Array.length stack) eflush;
+#endif
+              stack.(i) <- StackMString s
 
          | _ -> ref_raise(RefineError ("match_redex_params", RewriteBadMatch (ParamMatch p)))
 
@@ -1489,6 +1527,7 @@ struct
              match stack.(i) with
                 StackNumber j -> Number j
               | StackString s -> Number (Num.num_of_string s)
+              | StackMString s -> MNumber s
               | t -> ref_raise(build_con_exn)
          end
     | RWMString i ->
@@ -1496,6 +1535,7 @@ struct
              match stack.(i) with
                 StackString s -> String s
               | StackNumber j -> String (Num.string_of_num j)
+              | StackMString s -> MString s
               | t -> ref_raise(build_con_exn)
          end
     | RWMToken i ->
@@ -1503,12 +1543,14 @@ struct
              match stack.(i) with
                 StackString s -> Token s
               | StackNumber j -> String (Num.string_of_num j)
+              | StackMString s -> MToken s
               | t -> ref_raise(build_con_exn)
          end
     | RWMLevel i ->
          begin
              match stack.(i) with
                 StackLevel l -> Level l
+              | StackMString s -> MLevel s
               | t -> ref_raise(build_con_exn)
          end
     | RWMVar i ->
@@ -1516,6 +1558,7 @@ struct
              match stack.(i) with
                 StackString v -> Var v
               | StackNumber j -> Var (Num.string_of_num j)
+              | StackMString s -> MVar s
               | t -> ref_raise(build_con_exn)
          end
     | RWSum (p1, p2) ->

@@ -176,6 +176,8 @@ and fold_sig_item iter x si =
             List.fold_left (fold_type iter) x tl
        | (<:sig_item< external $s$ : $t$ = $list:sl$ >>) ->
             fold_type iter x t
+       | SgInc (_, mt) ->
+            fold_module_type iter x mt
        | (<:sig_item< module $s$ : $mt$ >>) ->
             fold_module_type iter x mt
        | (<:sig_item< module type $s$ = $mt$ >>) ->
@@ -278,12 +280,12 @@ and fold_class_type_field iter x ctf =
             fold_type iter x t
        | CtInh (loc, t) ->
             fold_type iter x t
-(*       | CtMth (loc, s, t) ->
-            fold_type iter x t   *)
+       | CtMth (loc, s, b, t) ->
+            fold_type iter x t
        | CtVal (loc, s, b1, b2, ot) ->
             fold_type_opt iter x ot
-(*       | CtVir (loc, s, t) ->
-            fold_type iter x t *)
+       | CtVir (loc, s, b, t) ->
+            fold_type iter x t
 
 and fold_class iter x
   ({ cdLoc = loc;
@@ -307,12 +309,12 @@ and fold_class_field iter x cf =
             fold_type iter x t
        | CfInh (loc, t, e, so) ->
             fold_expr iter (fold_type iter x t) e
-(*       | CfMth (loc, s, e) ->
-            fold_expr iter x e  *)
+       | CfMth (loc, s, b, e) ->
+            fold_expr iter x e
        | CfVal (loc, s, b1, b2, eo) ->
             fold_expr_opt iter x eo
-(*       | CfVir (loc, s, t) ->
-            fold_type iter x t *)
+       | CfVir (loc, s, b, t) ->
+            fold_type iter x t
 
 (*
  * Combined forms.

@@ -171,7 +171,7 @@ let denormalize_info info =
  * When a StrFilterCache ot SigFilterCache is
  * saved, comments are not saved.
  *)
-let comment loc t = t
+let comment _ _ t = t
 let term_of_expr = Filter_ocaml.term_of_expr [] comment
 let term_of_type = Filter_ocaml.term_of_type comment
 let term_of_sig_item = Filter_ocaml.term_of_sig_item comment

@@ -1,4 +1,5 @@
 # Flags
+DIR := horus
 ROOT := ..
 INCLUDE = -I .
 

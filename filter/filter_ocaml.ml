@@ -24,10 +24,33 @@ let _ =
       eprintf "Loading Filter_ocaml%t" eflush
 
 
+(************************************************************************
+ * TYPES                                                                *
+ ************************************************************************)
+
 (*
  * Location is a pair of bignums.
  *)
 type loc = Num.num * Num.num
+
+(*
+ * A comment function takes a term,
+ * and it location and type, and returns
+ * another term.
+ *)
+type term_type =
+   ExprTerm
+ | PattTerm
+ | TypeTerm
+ | SigItemTerm
+ | StrItemTerm
+ | ModuleTypeTerm
+ | ModuleExprTerm
+ | ClassTerm
+ | ClassFieldTerm
+ | WithClauseTerm
+
+type comment = term_type -> loc -> term -> term
 
 (*
  * All errors pass through here.
@@ -663,6 +686,11 @@ and dest_external_sig t =
        | _ ->
            raise (FormatError ("external requires a name and a type", t))
 
+and dest_inc_sig t =
+   let loc = dest_loc t in
+   let mt = one_subterm "dest_inc_sig" t in
+      SgInc (loc, dest_mt mt)
+
 and dest_module_sig t =
    let loc, s = dest_loc_string t in
    let mt = one_subterm "dest_module_sig" t in
@@ -1093,6 +1121,7 @@ let sig_class_op		= add_sig "sig_class"           dest_class_sig
 let sig_subsig_op               = add_sig "sig_subsig"          dest_subsig_sig
 let sig_exception_op            = add_sig "sig_exception"       dest_exception_sig
 let sig_external_op             = add_sig "sig_external"        dest_external_sig
+let sig_inc_op                  = add_sig "sig_inc"             dest_inc_sig
 let sig_module_op               = add_sig "sig_module"          dest_module_sig
 let sig_module_type_op          = add_sig "sig_module_type"     dest_module_type_sig
 let sig_open_op                 = add_sig "sig_open"            dest_open_sig
@@ -1349,7 +1378,7 @@ let rec mk_expr vars comment expr =
        | MLast.ExAnt (_, e) ->
             raise_with_loc loc (Failure "Filter_ocaml.mk_expr vars: encountered an ExAnt")
    in
-      comment loc term
+      comment ExprTerm loc term
 
 and mk_patt vars comment patt tailf =
    let loc = loc_of_patt patt in
@@ -1387,7 +1416,7 @@ and mk_patt vars comment patt tailf =
        | MLast.PaAnt (_, p) ->
             raise_with_loc loc (Failure "Filter_ocaml:mk_patt: encountered PaAnt")
    in
-      comment loc term
+      comment PattTerm loc term
 
 and mk_patt_triple vars comment loc op1 op2 op3 p1 p2 tailf =
    let tailf vars = mk_simple_term op3 loc [tailf vars] in
@@ -1459,7 +1488,7 @@ and mk_type comment t =
        | (<:ctyp< $uid:s$ >>) ->
             mk_var type_uid_op [] loc s
    in
-      comment loc term
+      comment TypeTerm loc term
 
 and mk_sig_item comment si =
    let loc = loc_of_sig_item si in
@@ -1473,6 +1502,8 @@ and mk_sig_item comment si =
             mk_simple_named_term sig_exception_op loc s [mk_xlist_term (List.map (mk_type comment) tl)]
        | (<:sig_item< external $s$ : $t$ = $list:sl$ >>) ->
             mk_simple_named_term sig_external_op loc s (mk_type comment t :: List.map mk_simple_string sl)
+       | SgInc (_, mt) ->
+            mk_simple_term sig_inc_op loc [mk_module_type comment mt]
        | (<:sig_item< module $s$ : $mt$ >>) ->
             mk_simple_named_term sig_module_op loc s [mk_module_type comment mt]
        | (<:sig_item< module type $s$ = $mt$ >>) ->
@@ -1484,7 +1515,7 @@ and mk_sig_item comment si =
        | (<:sig_item< value $s$ : $t$ >>) ->
             mk_simple_named_term sig_value_op loc s [mk_type comment t]
    in
-      comment loc term
+      comment SigItemTerm loc term
 
 and mk_str_item comment si =
    let loc = loc_of_str_item si in
@@ -1514,7 +1545,7 @@ and mk_str_item comment si =
             else
                mk_str_let comment loc pel
    in
-      comment loc term
+      comment StrItemTerm loc term
 
 and mk_module_type comment mt =
    let loc = loc_of_module_type mt in
@@ -1536,18 +1567,18 @@ and mk_module_type comment mt =
        | (<:module_type< $mt$ with $list:wcl$ >>) ->
             mk_simple_term mt_type_with_op loc (mk_module_type comment mt :: List.map (mk_wc comment) wcl)
    in
-      comment loc term
+      comment ModuleTypeTerm loc term
 
 and mk_wc comment = function
    WcTyp (loc, sl1, sl2, t) ->
       let loc = num_of_loc loc in
       let sl1' = mk_list_term (List.map mk_simple_string sl1) in
       let sl2' = mk_list_term (List.map mk_simple_string sl2) in
-         comment loc (mk_simple_term wc_type_op loc [sl1'; sl2'; mk_type comment t])
+         comment WithClauseTerm loc (mk_simple_term wc_type_op loc [sl1'; sl2'; mk_type comment t])
  | WcMod ((i, j), sl1, mt) ->
       let loc = (Num.Int i, Num.Int j) in
       let sl1' = mk_list_term (List.map mk_simple_string sl1) in
-         comment loc (mk_simple_term wc_module_op loc [sl1'; mk_module_type comment mt])
+         comment WithClauseTerm loc (mk_simple_term wc_module_op loc [sl1'; mk_module_type comment mt])
 
 and mk_module_expr comment me =
    let loc = loc_of_module_expr me in
@@ -1571,7 +1602,7 @@ and mk_module_expr comment me =
        | (<:module_expr< $uid:i$ >>) ->
             mk_var me_uid_op [] loc i
    in
-      comment loc term
+      comment ModuleExprTerm loc term
 
 and mk_class_type comment
   { ctLoc = loc;
@@ -1595,12 +1626,12 @@ and mk_ctf comment = function
       mk_simple_term ctf_ctr_op (num_of_loc loc) [mk_simple_string s; mk_type comment t]
  | CtInh (loc, t) ->
       mk_simple_term ctf_inh_op (num_of_loc loc) [mk_type comment t]
-(* | CtMth (loc, s, t) ->
-      mk_simple_term ctf_mth_op (num_of_loc loc) [mk_simple_string s; mk_type comment t] *)
+ | CtMth (loc, s, b, t) ->
+      mk_simple_term ctf_mth_op (num_of_loc loc) [mk_simple_string s; mk_bool b; mk_type comment t]
  | CtVal (loc, s, b1, b2, ot) ->
       mk_simple_term ctf_val_op (num_of_loc loc) [mk_simple_string s; mk_bool b1; mk_bool b2; mk_type_opt comment ot]
-(* | CtVir (loc, s, t) ->
-      mk_simple_term ctf_vir_op (num_of_loc loc) [mk_simple_string s; mk_type comment t] *)
+ | CtVir (loc, s, b, t) ->
+      mk_simple_term ctf_vir_op (num_of_loc loc) [mk_simple_string s; mk_bool b; mk_type comment t]
 
 and mk_class comment
   { cdLoc = loc;
@@ -1630,7 +1661,7 @@ and mk_class comment
              mk_bool b1;
              mk_bool b2]
    in
-      comment loc term
+      comment ClassTerm loc term
 
 and mk_cf comment cf =
    let loc, term =
@@ -1641,17 +1672,17 @@ and mk_cf comment cf =
        | CfInh (loc, t, e, so) ->
             let loc = (num_of_loc loc) in
             loc, mk_simple_term cf_inh_op loc [mk_type comment t; mk_expr [] comment e; mk_string_opt expr_string_op so]
-(*       | CfMth (loc, s, e) ->
+       | CfMth (loc, s, b, e) ->
             let loc = (num_of_loc loc) in
-            loc, mk_simple_term cf_mth_op loc [mk_simple_string s; mk_expr [] comment e] *)
+            loc, mk_simple_term cf_mth_op loc [mk_simple_string s; mk_bool b; mk_expr [] comment e]
        | CfVal (loc, s, b1, b2, eo) ->
             let loc = (num_of_loc loc) in
             loc, mk_simple_term cf_val_op loc [mk_simple_string s; mk_bool b1; mk_bool b2; mk_expr_opt [] comment eo]
-(*       | CfVir (loc, s, t) ->
+       | CfVir (loc, s, b, t) ->
             let loc = (num_of_loc loc) in
-            loc, mk_simple_term cf_vir_op loc [mk_simple_string s; mk_type comment t] *)
+            loc, mk_simple_term cf_vir_op loc [mk_simple_string s; mk_bool b; mk_type comment t]
    in
-      comment loc term
+      comment ClassFieldTerm loc term
 
 (*
  * Make a fix expression.

@@ -60,13 +60,13 @@ sig
    val set_path : t -> string list -> unit
 
    (* Loading and saving *)
-   val find : t -> file_name -> select -> info
-   val find_file : t -> file_name -> select -> info
-   val find_match : t -> info -> select -> info
-   val save : t -> info -> unit
+   val find : t -> file_name -> select -> string option -> info
+   val find_file : t -> file_name -> select -> string option -> info
+   val find_match : t -> info -> select -> string option -> info
+   val save : t -> info -> string option -> unit
    val magic : t -> info -> int
    val set_magic : t -> info -> int -> unit
-   val save_as : t -> cooked -> select -> dir_name -> file_name -> info
+   val save_as : t -> cooked -> select -> dir_name -> file_name -> string option -> info
    val create_info : t -> cooked -> select -> dir_name -> file_name -> info
 
    (* Info about the objects *)

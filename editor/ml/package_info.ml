@@ -165,6 +165,9 @@ let tt                 = <:expr< $uid: "Tactic_type"$ >>
 let int_tactic_arg_id name expr default =
    <:expr< [ ($str:name$, $tt$ . $uid: "IntTacticArg"$ $expr$) :: $default$ ] >>
 
+let arg_tactic_arg_id name expr default =
+   <:expr< [ ($str:name$, $tt$ . $uid: "ArgTacticArg"$ $expr$) :: $default$ ] >>
+
 let tactic_arg_id     name expr default =
    <:expr< [ ($str:name$, $tt$ . $uid: "TacticArg"$    $expr$) :: $default$ ] >>
 
@@ -261,6 +264,8 @@ let install_tactic_arg_expr resources =
    let cache_expr = get_resource "cache_resource"  (fun cache _ -> cache) cache_default in
    let args_expr = <:expr< [] >> in
    let args_expr = get_resource "d_resource"       (int_tactic_arg_id "d")       args_expr in
+   let args_expr = get_resource "trivial_resource" (tactic_arg_id     "trivial") args_expr in
+   let args_expr = get_resource "auto_resource"    (tactic_arg_id      "auto")   args_expr in
    let args_expr = get_resource "eqcd_resource"    (tactic_arg_id     "eqcd")    args_expr in
    let args_expr = get_resource "typeinf_resource" (typeinf_arg_id    "typeinf") args_expr in
    let args_expr = get_resource "squash_resource"  (tactic_arg_id     "squash")  args_expr in
@@ -743,7 +748,7 @@ struct
     | { pack_status = Incomplete; pack_name = name } ->
          raise (Failure (sprintf "Package_info.save: package '%s' is incomplete" name))
     | { pack_status = Modified; pack_info = Some info } ->
-         Cache.StrFilterCache.save info
+         Cache.StrFilterCache.save info (Some "prlb")
     | { pack_status = Modified; pack_info = None } ->
          raise (Invalid_argument "Package_info.save")
 

@@ -1,6 +1,7 @@
 #
 # Nuprl-light editor.
 #
+DIR := editor/ml
 ROOT := ../..
 
 INCLUDE = -I .\

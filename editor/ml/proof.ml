@@ -658,7 +658,7 @@ let replace_node_item check node item =
    in
       let { node_children = children; node_extras = extras } = node in
       let children', extras' = join_children subgoals children extras in
-         { node_status = compute_status item children;
+         { node_status = compute_status item children';
            node_item = item;
            node_children = children';
            node_extras = extras'

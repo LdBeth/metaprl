@@ -62,6 +62,7 @@ CC = gcc
 RM = rm
 INSTALL = /bin/cp -pf
 CP = /bin/cp -pf
+LN = ln -sf
 CPP = /lib/cpp -traditional
 
 # For cleaning the directory
@@ -157,19 +158,19 @@ $(MAIN): $(CMXAFILES) $(CMXDEPS) $(PCMXFILES)
 install::
 
 $(RMLIFILES): $(ROOT)/lib/%.mli: %.mli
-	$(INSTALL) $*.mli $(ROOT)/lib
+	$(LN) ../$(DIR)/$*.mli $(ROOT)/lib
 
 $(RCMIFILES): $(ROOT)/lib/%.cmi: %.cmi
-	$(INSTALL) $*.cmi $(ROOT)/lib
+	$(LN) ../$(DIR)/$*.cmi $(ROOT)/lib
 
 $(RCMAFILES): $(ROOT)/lib/%.cma: %.cma
-	$(INSTALL) $*.cma $(ROOT)/lib
+	$(LN) ../$(DIR)/$*.cma $(ROOT)/lib
 
 $(RCMXAFILES): $(ROOT)/lib/%.cmxa: %.cmxa
-	$(INSTALL) $*.cmxa $(ROOT)/lib
+	$(LN) ../$(DIR)/$*.cmxa $(ROOT)/lib
 
 $(RAFILES): $(ROOT)/lib/%.a: %.a
-	$(INSTALL) $*.a $(ROOT)/lib
+	$(LN) ../$(DIR)/$*.a $(ROOT)/lib
 
 $(NL_CMOFILES): %.cmo: %.ml %.cmi
 	$(PRLC) $(OCAMLCFLAGS) -c $*.ml
@@ -198,22 +199,18 @@ $(REG_CMXFILES): %.cmx: %.ml %.cmi
 %.ml: %.mll
 	rm -f $@
 	$(OCAMLLEX) $*.mll
-	chmod 444 $@
 
 %.ml %.mli: %.mly
 	rm -f $*.ml $*.mli
 	$(OCAMLYACC) $*.mly
-	chmod 444 $*.ml $*.mli
 
 %.ml: %.mlz
 	rm -f $@
-	$(CP) $*.mlz $@
-	chmod 444 $@
+	$(LN) $*.mlz $@
 
 %.mli: %.mlz
 	rm -f $@
-	$(CP) $*.mlz $@
-	chmod 444 $@
+	$(LN) $*.mlz $@
 
 %_verb.ml: %.mlp $(ROOT)/refiner/refsig/refine_error.h
 	rm -f $@

@@ -1,6 +1,7 @@
 #
 # Location
 #
+DIR = filter
 ROOT = ..
 
 #
@@ -218,48 +219,48 @@ lib::	$(ROOT)/lib/$(CAMLP4N)$(EXE)\
 	$(ROOT)/bin/$(MAIN)$(EXE)
 
 $(ROOT)/lib/$(CAMLP4N)$(EXE): $(CAMLP4N).run
-	$(INSTALL) $(CAMLP4N).run $@
+	$(LN) ../$(DIR)/$(CAMLP4N).run $@
 
 $(ROOT)/lib/$(CAMLP4O)$(EXE): $(CAMLP4O).run
-	$(INSTALL) $(CAMLP4O).run $@
+	$(LN) ../$(DIR)/$(CAMLP4O).run $@
 
 $(ROOT)/lib/$(PRLCN)$(EXE): $(PRLCN).run
-	$(INSTALL) $(PRLCN).run $@
+	$(LN) ../$(DIR)/$(PRLCN).run $@
 
 $(ROOT)/lib/$(PRLCO)$(EXE): $(PRLCO).run
-	$(INSTALL) $(PRLCO).run $@
+	$(LN) ../$(DIR)/$(PRLCO).run $@
 
 $(ROOT)/bin/$(MAIN)$(EXE): $(MAIN).run
-	$(INSTALL) $(MAIN).run $@
+	$(LN) ../$(DIR)/$(MAIN).run $@
 
 old_opt: $(RMLIFILES) $(RCMIFILES) $(RCMAFILES) $(CAMLP4N).opt $(CAMLP4O).opt $(PRLCN).opt $(PRLCO).opt $(MAIN).opt
-	$(INSTALL) $(CAMLP4N).opt $(ROOT)/lib/$(CAMLP4N)
-	$(INSTALL) $(CAMLP4O).opt $(ROOT)/lib/$(CAMLP4O)
-	$(INSTALL) $(PRLCN).opt $(ROOT)/lib/$(PRLCN)
-	$(INSTALL) $(PRLCO).opt $(ROOT)/lib/$(PRLCO)
-	$(INSTALL) $(MAIN).opt $(ROOT)/bin/$(MAIN)
+	$(LN) ../$(DIR)/$(CAMLP4N).opt $(ROOT)/lib/$(CAMLP4N)
+	$(LN) ../$(DIR)/$(CAMLP4O).opt $(ROOT)/lib/$(CAMLP4O)
+	$(LN) ../$(DIR)/$(PRLCN).opt $(ROOT)/lib/$(PRLCN)
+	$(LN) ../$(DIR)/$(PRLCO).opt $(ROOT)/lib/$(PRLCO)
+	$(LN) ../$(DIR)/$(MAIN).opt $(ROOT)/bin/$(MAIN)
 
 install:: $(MAIN).cma $(LCMIFILES) $(CAMLP4N).run $(CAMLP4O).run $(PRLCN).run $(PRLCO).run $(MAIN).run
 	$(INSTALL) $(MAIN).cma $(LMLIFILES) $(LCMIFILES) $(NLLIB)
 	if [ $(CAMLP4N).opt -nt $(CAMLP4N).run ]; then\
-		$(INSTALL) $(CAMLP4N).opt $(ROOT)/lib/$(CAMLP4N);\
+		$(LN) ../$(DIR)/$(CAMLP4N).opt $(ROOT)/lib/$(CAMLP4N);\
 	else\
-		$(INSTALL) $(CAMLP4N).run $(ROOT)/lib/$(CAMLP4N);\
+		$(LN) ../$(DIR)/$(CAMLP4N).run $(ROOT)/lib/$(CAMLP4N);\
 	fi
 	if [ $(CAMLP4O).opt -nt $(CAMLP4O).run ]; then\
-		$(INSTALL) $(CAMLP4O).opt $(ROOT)/lib/$(CAMLP4O);\
+		$(LN) ../$(DIR)/$(CAMLP4O).opt $(ROOT)/lib/$(CAMLP4O);\
 	else\
-		$(INSTALL) $(CAMLP4O).run $(ROOT)/lib/$(CAMLP4O);\
+		$(LN) ../$(DIR)/$(CAMLP4O).run $(ROOT)/lib/$(CAMLP4O);\
 	fi
 	if [ $(PRLCN).opt -nt $(PRLCN).run ]; then\
-		$(INSTALL) $(PRLCN).opt $(ROOT)/lib/$(PRLCN);\
+		$(LN) ../$(DIR)/$(PRLCN).opt $(ROOT)/lib/$(PRLCN);\
 	else\
-		$(INSTALL) $(PRLCN).run $(ROOT)/lib/$(PRLCN);\
+		$(LN) ../$(DIR)/$(PRLCN).run $(ROOT)/lib/$(PRLCN);\
 	fi
 	if [ $(PRLCO).opt -nt $(PRLCO).run ]; then\
-		$(INSTALL) $(PRLCO).opt $(ROOT)/lib/$(PRLCO);\
+		$(LN) ../$(DIR)/$(PRLCO).opt $(ROOT)/lib/$(PRLCO);\
 	else\
-		$(INSTALL) $(PRLCO).run $(ROOT)/lib/$(PRLCO);\
+		$(LN) ../$(DIR)/$(PRLCO).run $(ROOT)/lib/$(PRLCO);\
 	fi
 	$(INSTALL) $(MAIN).run $(NLBIN)/$(MAIN)
 

@@ -1,4 +1,5 @@
 # Flags
+DIR := refiner/refsig
 ROOT := ../..
 INCLUDE := -I $(ROOT)/mllib -I ../refbase
 

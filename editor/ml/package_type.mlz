@@ -115,6 +115,7 @@ sig
    val argument : package -> tactic_argument
    val new_proof : package -> string -> term list -> term -> proof
    val ped_of_proof : package -> proof -> Proof_edit.t
+   val status_of_proof : proof -> Proof.status
 end
 
 (*

@@ -169,7 +169,7 @@ let dest_string_int_term t =
        | _ ->
             raise (Failure "dest_string_string_term")
 
-let comment _ t = t
+let comment _ _ t = t
 
 (************************************************************************
  * TO TERM                                                              *

@@ -130,7 +130,7 @@ struct
     *)
    let load_specific save_flag base spec name =
       if !debug_file_base then
-         eprintf "File_base.load_specific: %s: begin%t" name eflush;
+         eprintf "File_base.load_specific: %s.%s: begin%t" name spec.info_suffix eflush;
       let rec search = function
          [] ->
             if !debug_file_base then
@@ -148,12 +148,27 @@ struct
    (*
     * Find the specification corresponding to the select.
     *)
-   let find_spec select =
+   let find_spec select suffix =
       let rec search = function
          io::tl ->
             let { info_select = select'; info_disabled = disabled } = io in
                if select' = select & not !disabled then
-                  io
+                  match suffix with
+                     None ->
+                        io
+                   | Some suffix ->
+                        let { info_marshal = marshal;
+                              info_unmarshal = unmarshal;
+                              info_magics = magics
+                            } = io
+                        in
+                           { info_marshal = marshal;
+                             info_unmarshal = unmarshal;
+                             info_disabled = disabled;
+                             info_select = select';
+                             info_suffix = suffix;
+                             info_magics = magics
+                           }
                else
                   search tl
        | [] ->
@@ -165,7 +180,7 @@ struct
     * Find a root module.
     * Check if it exists, otherwise load it.
     *)
-   let find base name select =
+   let find base name select suffix =
       let { io_table = table } = base in
          if !debug_file_base then
             eprintf "File_base.find: %s%t" name eflush;
@@ -190,16 +205,16 @@ struct
             Not_found ->
                if !debug_file_base then
                   eprintf "File_base.find: %s: loading%t" name eflush;
-               load_specific true base (find_spec select) name
+               load_specific true base (find_spec select suffix) name
 
-   let find_file base name select =
-      load_specific false base (find_spec select) name
+   let find_file base name select suffix =
+      load_specific false base (find_spec select suffix) name
 
    (*
     * Find a "matching" module.
     * This means the root with the same name, but different suffix.
     *)
-   let find_match base info select =
+   let find_match base info select suffix =
       let { io_table = table } = base in
       let { info_dir = dir; info_file = file } = info in
       let rec search = function
@@ -214,7 +229,7 @@ struct
       in
          try search !(Hashtbl.find table file) with
             Not_found ->
-               load_file true base (find_spec select) dir file
+               load_file true base (find_spec select suffix) dir file
 
    (*
     * Set the magic number.
@@ -224,7 +239,7 @@ struct
 
    let set_magic _ info magic =
       let { info_type = select } = info in
-      let { info_magics = magics } = find_spec select in
+      let { info_magics = magics } = find_spec select None in
          if magic < List.length magics then
             info.info_magic <- magic
          else
@@ -234,9 +249,9 @@ struct
     * Save a module specification.
     * Try saving in all the valid formats until one of them succeeds.
     *)
-   let save base info =
+   let save base info suffix =
       let { info_dir = dir; info_file = file; info_type = select; info_info = data; info_magic = magic } = info in
-      let { info_magics = magics; info_marshal = marshal; info_suffix = suffix } = find_spec select in
+      let { info_magics = magics; info_marshal = marshal; info_suffix = suffix } = find_spec select suffix in
       let filename = sprintf "%s/%s.%s" dir file suffix in
          marshal magics magic filename data
 
@@ -278,9 +293,9 @@ struct
       in
          info
 
-   let save_as base data select dir file =
+   let save_as base data select dir file suffix =
       let info = create_info base data select dir file in
-         save base info;
+         save base info suffix;
          info
 
    (************************************************************************
@@ -298,7 +313,7 @@ struct
    let file_name base { info_file = file } = file
 
    let full_name base { info_dir = dir; info_file = file; info_type = select } =
-      let { info_suffix = suffix } = find_spec select in
+      let { info_suffix = suffix } = find_spec select None in
          sprintf "%s/%s.%s" dir file suffix
 
    let type_of base { info_type = select } = select

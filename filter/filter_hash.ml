@@ -167,6 +167,8 @@ and hash_sig_item index = function
       List.fold_left hash_type (hash_string (hash index 0x6fd24af2) s) tl
  | (<:sig_item< external $s$ : $t$ = $list:sl$ >>) ->
       List.fold_left hash_string (hash_type (hash_string (hash index 0x06b1c733) s) t) sl
+ | SgInc (_, mt) ->
+      hash_module_type (hash index 0x283bed1) mt
  | (<:sig_item< module $s$ : $mt$ >>) ->
       hash_module_type (hash (hash_string index s) 0x22e62741) mt
  | (<:sig_item< module type $s$ = $mt$ >>) ->
@@ -265,12 +267,12 @@ and hash_class_field index = function
       hash_string (hash_type (hash index 0x6ebb5387) t) s
  | CfInh (_, t, e, s) ->
       hash_type (hash_expr (hash_string_opt (hash index 0x113fee9d) s) e) t
-(* | CfMth (_, s, e) ->
-      hash_string (hash_expr (hash index 0x4ab006da) e) s *)
+ | CfMth (_, s, b, e) ->
+      hash_string (hash_expr (hash_bool (hash index 0x4ab006da) b) e) s
  | CfVal (_, s, b1, b2, eo) ->
       hash_string (hash_bool (hash_bool (hash_expr_opt (hash index 0x6d82d28f) eo) b2) b1) s
-(* | CfVir (_, s, t) ->
-      hash_string (hash_type (hash index 0x60a53407) t) s *)
+ | CfVir (_, s, b, t) ->
+      hash_string (hash_type (hash_bool (hash index 0x60a53407) b) t) s
 
 and hash_class_type index
   { ctNam = name;
@@ -295,12 +297,12 @@ and hash_class_field_type index = function
       hash_string (hash_type (hash index 0x362be7cd) t) s
  | CtInh (_, t) ->
       hash_type (hash index 0x1779e662) t
-(* | CtMth (_, s, t) ->
-      hash_string (hash_type (hash index 0x028b2e41) t) s *)
+ | CtMth (_, s, b, t) ->
+      hash_string (hash_type (hash_bool (hash index 0x028b2e41) b) t) s
  | CtVal (_, s, b1, b2, ot) ->
       hash_string (hash_bool (hash_bool (hash_type_opt (hash index 0x3be81fa) ot) b2) b1) s
-(* | CtVir (_, s, t) ->
-      hash_string (hash_type (hash index 0x2730112a) t) s *)
+ | CtVir (_, s, b, t) ->
+      hash_string (hash_type (hash_bool (hash index 0x2730112a) b) t) s
 
 (*
  * Combined forms.

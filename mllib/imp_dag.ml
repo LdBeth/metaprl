@@ -241,12 +241,13 @@ struct
       let rec loop searched front =
          match front with
             node :: t ->
-               node = node2 or
-               if List.mem node searched then
+               if node = node2 then
+                  true
+               else if List.mem node searched then
                   loop searched t
                else
                   let edges = select entries.(node) in
-                     loop (node :: searched) (Sort.merge (<) front t)
+                     loop (node :: searched) (Sort.merge (<) edges t)
           | [] ->
                false
       in
@@ -307,7 +308,7 @@ struct
             end
          else
             begin
-               entry1.entry_no_relation <- list_insert node1 no_relation;
+               entry1.entry_no_relation <- list_insert node2 no_relation;
                NoRelation
             end
 end

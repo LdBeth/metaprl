@@ -1473,7 +1473,7 @@ struct
       let loc = 0, 0 in
       let bind_of_resource { resource_name = name } =
          let patt = <:patt< $lid: ext_resource_name name$ >> in
-         let expr = <:expr< $lid: name$ >> in
+         let expr = <:expr< $lid: name$ . $uid: "Resource"$ . $lid: "resource_close"$ $lid: name$ >> in
             patt, expr
       in
       let values = List.map bind_of_resource resources in

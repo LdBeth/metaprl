@@ -68,14 +68,14 @@ struct
    (*
     * Find a specific module given a full pathname.
     *)
-   let find_aux find base name select =
+   let find_aux find base name select suffix =
       if !debug_summary then
          eprintf "Filter_summary_io.find: %a%t" print_string_list name eflush;
       match name with
          [] ->
             raise (EmptyModulePath "Filter_summary_io.find")
        | name'::path ->
-            let info = find base (String.uncapitalize name') select in
+            let info = find base (String.uncapitalize name') select suffix in
             let info' = Address.find_sub_module (FileBase.info base info) path in
                { info_root = info;
                  info_path = name;
@@ -89,9 +89,9 @@ struct
    (*
     * Find the matching module info.
     *)
-   let find_match base info select =
+   let find_match base info select suffix =
       let { info_root = root; info_path = path } = info in
-      let root' = FileBase.find_match base root select in
+      let root' = FileBase.find_match base root select suffix in
       let info = Address.find_sub_module (FileBase.info base root') (List.tl info.info_path) in
          { info_root = root';
            info_path = path;
@@ -118,11 +118,11 @@ struct
     * Save a module specification.
     * This can only be called at a root.
     *)
-   let save base info =
+   let save base info suffix =
       match info with
          { info_info = info; info_path = [_]; info_root = root } ->
             FileBase.set_info base root info;
-            FileBase.save base root
+            FileBase.save base root suffix
        | _ ->
             raise (Invalid_argument "Filter_summary_io.save")
 

@@ -1,4 +1,5 @@
 # Flags
+DIR := refiner/term_gen
 ROOT := ../..
 INCLUDE := -I $(ROOT)/mllib -I ../refbase -I ../refsig
 

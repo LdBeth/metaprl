@@ -1,4 +1,5 @@
 # Flags
+DIR := mllib
 ROOT := ..
 
 INCLUDE :=
@@ -19,6 +20,7 @@ LMFILES :=\
 	ref_util\
 	file_util\
 	filename_util\
+	unix_util\
 	ctype\
 	debug_set\
 	bitset\

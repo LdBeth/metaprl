@@ -13,6 +13,25 @@ open Refiner.Refiner.Term
 type loc = Num.num * Num.num
 
 (*
+ * A comment function takes a term,
+ * and it location and type, and returns
+ * another term.
+ *)
+type term_type =
+   ExprTerm
+ | PattTerm
+ | TypeTerm
+ | SigItemTerm
+ | StrItemTerm
+ | ModuleTypeTerm
+ | ModuleExprTerm
+ | ClassTerm
+ | ClassFieldTerm
+ | WithClauseTerm
+
+type comment = term_type -> loc -> term -> term
+
+(*
  * Terms to MLAst.
  * FormatError (reason, term that failed)
  *)
@@ -33,14 +52,14 @@ val class_of_term : term -> class_decl
  * The extra (loc -> term -> term) argument is used to annoate the results.
  * It is mapped over all terms postfix order.
  *)
-val term_of_expr : string list -> (loc -> term -> term) -> expr -> term
-val term_of_patt : string list -> (loc -> term -> term) -> patt -> (string list -> term) -> term
-val term_of_type : (loc -> term -> term) -> ctyp -> term
-val term_of_sig_item : (loc -> term -> term) -> sig_item -> term
-val term_of_str_item : (loc -> term -> term) -> str_item -> term
-val term_of_module_type : (loc -> term -> term) -> module_type -> term
-val term_of_module_expr : (loc -> term -> term) -> module_expr -> term
-val term_of_class : (loc -> term -> term) -> class_decl -> term
+val term_of_expr : string list -> comment -> expr -> term
+val term_of_patt : string list -> comment -> patt -> (string list -> term) -> term
+val term_of_type : comment -> ctyp -> term
+val term_of_sig_item : comment -> sig_item -> term
+val term_of_str_item : comment -> str_item -> term
+val term_of_module_type : comment -> module_type -> term
+val term_of_module_expr : comment -> module_expr -> term
+val term_of_class : comment -> class_decl -> term
 
 (*
  * Specific values useful for writing

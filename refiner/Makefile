@@ -1,6 +1,7 @@
 #
 # Refiner parts are in subdirectories
 #
+DIR := refiner
 ROOT := ..
 
 INCLUDE :=

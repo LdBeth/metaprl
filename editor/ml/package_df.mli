@@ -22,17 +22,11 @@ val tabstop : int
 val min_screen_width : int
 
 (*
- * Default proof used for display.
- *)
-val null_term : term
-val null_proof : 'a proof_type
-
-(*
  * Summaries conversions.
  *)
 val convert_intf : (term, meta_term, unit, MLast.ctyp, MLast.expr, MLast.sig_item,
                     term, term, term, term, term, term) convert
-val convert_impl : (term, meta_term, 'a proof_type, MLast.ctyp, MLast.expr, MLast.str_item,
+val convert_impl : (term, meta_term, Package_info.Package.proof proof_type, MLast.ctyp, MLast.expr, MLast.str_item,
                     term, term, term, term, term, term) convert
 
 (*

@@ -68,7 +68,7 @@ let mk_ped sentinal arg params assums goal =
 (*
  * Commenting function.
  *)
-let comment loc t =
+let comment _ _ t =
    t
 
 (*

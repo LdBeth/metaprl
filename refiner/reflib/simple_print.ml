@@ -48,7 +48,9 @@ let format_level_exp buf l =
 	    end
    in
       match dest_level l with
-	 { le_const = 0; le_vars = [v] } ->
+         { le_const = c; le_vars = [] } ->
+            format_int buf c
+       | { le_const = 0; le_vars = [v] } ->
 	    (match dest_level_var v with
 		{ le_var = v; le_offset = o } ->
 		   if o < 3 then begin

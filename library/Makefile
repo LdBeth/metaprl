@@ -3,6 +3,7 @@
 #
 
 # Libraries
+DIR := library
 ROOT := ..
 INCLUDE := -I .\
 	-I $(ROOT)/mllib\

@@ -500,6 +500,10 @@ let slot { dform_items = items; dform_printer = printer; dform_buffer = buf } =
          if !debug_dform then
             eprintf "Dform.slot: %s%t" s eflush;
          format_string buf s
+    | [RewriteLevel l] ->
+         if !debug_dform then
+            eprintf "Dform.slot: level%t" eflush;
+         format_simple_level_exp buf l
     | _ ->
          raise (Invalid_argument "slot")
 
@@ -547,9 +551,17 @@ let null_base =
         dform_print = DFormPrinter slot
       }
    in
+   let slot_entry4 =
+      { dform_name = "slot_entry4";
+        dform_pattern = mk_term (mk_op slot_opname [make_param (MLevel "l")]) [];
+        dform_options = [];
+        dform_print = DFormPrinter slot
+      }
+   in
    let base = add_dform base slot_entry1 in
    let base = add_dform base slot_entry2 in
    let base = add_dform base slot_entry3 in
+   let base = add_dform base slot_entry4 in
       base
 
 let is_null_dfbase = equal_tables null_base

@@ -39,23 +39,28 @@ let tabstop = 3
 let min_screen_width = 80
 
 (*
- * Unit term used for interfaces.
+ * This comment function removes expressions.
  *)
-let null_term = mk_simple_term nil_opname []
-let null_proof = Primitive null_term
+let comment =
+   let loc = 0, 0 in
+   let null_term = mk_var_term "..." in
+   let comment ttype _ t =
+      match ttype with
+         ExprTerm ->
+            null_term
+       | _ ->
+            t
+   in
+      comment
 
-(*
- * When a StrFilterCache or SigFilterCache is
- * saved, comments are not saved.
- *)
 let identity x = x
-let comment loc t = t
 let term_of_expr = term_of_expr [] comment
 let term_of_type = term_of_type comment
 let term_of_sig_item = term_of_sig_item comment
 let term_of_str_item = term_of_str_item comment
 
 let convert_intf =
+   let null_term = mk_var_term "..." in
       { term_f  = identity;
         meta_term_f = term_of_meta_term;
         proof_f = (fun _ _ -> null_term);
@@ -70,9 +75,18 @@ let convert_impl =
          t
     | Derived expr ->
          term_of_expr expr
-    | Incomplete
-    | Interactive _ ->
-         null_term
+    | Incomplete ->
+         mk_var_term "#"
+    | Interactive proof ->
+         match status_of_proof proof with
+            Proof.Bad ->
+               mk_var_term "-"
+          | Proof.Partial ->
+               mk_var_term "#"
+          | Proof.Asserted ->
+               mk_var_term "!"
+          | Proof.Complete ->
+               mk_var_term "*"
    in
       { term_f  = identity;
         meta_term_f = term_of_meta_term;

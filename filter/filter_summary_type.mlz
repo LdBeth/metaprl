@@ -57,10 +57,10 @@ sig
    val create_info : t -> select -> dir_name -> file_name -> info
 
    (* Loading and saving *)
-   val find : t -> module_path -> select -> info
-   val find_file : t -> module_path -> select -> info
-   val find_match : t -> info -> select -> info
-   val save : t -> info -> unit
+   val find : t -> module_path -> select -> string option -> info
+   val find_file : t -> module_path -> select -> string option -> info
+   val find_match : t -> info -> select -> string option -> info
+   val save : t -> info -> string option -> unit
 
    (* Info about a module *)
    val info : t -> info -> cooked
@@ -156,7 +156,7 @@ sig
    val check : info -> select -> unit
    val copy_proofs : info -> (str_proof -> str_proof -> str_proof) -> unit
    val set_mode : info -> summary_mode -> unit
-   val save : info -> unit
+   val save : info -> string option -> unit
 
    (* Access *)
    val info : info -> str_info
