@@ -2,7 +2,7 @@ module StringBase : sig type t = string val compare : 'a -> 'a -> int end
 module StringSet :
   sig
     type elt = StringBase.t
-    and t = Set.McMake(StringBase).t
+    and t = Mc_set.McMake(StringBase).t
     val empty : t
     val is_empty : t -> bool
     val mem : t -> elt -> bool
@@ -34,7 +34,7 @@ module StringSet :
 module StringTable :
   sig
     type key = StringBase.t
-    and 'a t = 'a Map.McMake(StringBase).t
+    and 'a t = 'a Mc_map.McMake(StringBase).t
     val empty : 'a t
     val is_empty : 'a t -> bool
     val cardinal : 'a t -> int
@@ -61,7 +61,7 @@ module IntBase : sig type t = int val compare : 'a -> 'a -> int end
 module IntSet :
   sig
     type elt = IntBase.t
-    and t = Set.McMake(IntBase).t
+    and t = Mc_set.McMake(IntBase).t
     val empty : t
     val is_empty : t -> bool
     val mem : t -> elt -> bool
@@ -93,7 +93,7 @@ module IntSet :
 module IntTable :
   sig
     type key = IntBase.t
-    and 'a t = 'a Map.McMake(IntBase).t
+    and 'a t = 'a Mc_map.McMake(IntBase).t
     val empty : 'a t
     val is_empty : 'a t -> bool
     val cardinal : 'a t -> int
@@ -119,7 +119,7 @@ module IntTable :
 module IntMTable :
   sig
     type key = IntBase.t
-    and 'a t = 'a Map.McMakeList(IntBase).t
+    and 'a t = 'a Mc_map.McMakeList(IntBase).t
     val empty : 'a t
     val is_empty : 'a t -> bool
     val cardinal : 'a t -> int
@@ -180,7 +180,7 @@ module PSymbolBase :
 module PSymbolSet :
   sig
     type elt = PSymbolBase.t
-    and t = Set.McMake(PSymbolBase).t
+    and t = Mc_set.McMake(PSymbolBase).t
     val empty : t
     val is_empty : t -> bool
     val mem : t -> elt -> bool
@@ -212,7 +212,7 @@ module PSymbolSet :
 module PSymbolTable :
   sig
     type key = PSymbolBase.t
-    and 'a t = 'a Map.McMake(PSymbolBase).t
+    and 'a t = 'a Mc_map.McMake(PSymbolBase).t
     val empty : 'a t
     val is_empty : 'a t -> bool
     val cardinal : 'a t -> int
@@ -238,7 +238,7 @@ module PSymbolTable :
 module PSymbolMTable :
   sig
     type key = PSymbolBase.t
-    and 'a t = 'a Map.McMakeList(PSymbolBase).t
+    and 'a t = 'a Mc_map.McMakeList(PSymbolBase).t
     val empty : 'a t
     val is_empty : 'a t -> bool
     val cardinal : 'a t -> int
@@ -294,7 +294,7 @@ module ProductionIdBase :
 module ProductionTable :
   sig
     type key = ProductionBase.t
-    and 'a t = 'a Map.McMake(ProductionBase).t
+    and 'a t = 'a Mc_map.McMake(ProductionBase).t
     val empty : 'a t
     val is_empty : 'a t -> bool
     val cardinal : 'a t -> int
@@ -320,7 +320,7 @@ module ProductionTable :
 module ProductionIdTable :
   sig
     type key = ProductionIdBase.t
-    and 'a t = 'a Map.McMake(ProductionIdBase).t
+    and 'a t = 'a Mc_map.McMake(ProductionIdBase).t
     val empty : 'a t
     val is_empty : 'a t -> bool
     val cardinal : 'a t -> int
@@ -346,7 +346,7 @@ module ProductionIdTable :
 module ProductionIdMTable :
   sig
     type key = ProductionIdBase.t
-    and 'a t = 'a Map.McMakeList(ProductionIdBase).t
+    and 'a t = 'a Mc_map.McMakeList(ProductionIdBase).t
     val empty : 'a t
     val is_empty : 'a t -> bool
     val cardinal : 'a t -> int
@@ -401,7 +401,7 @@ module IntSetBase :
 module IntSetMap :
   sig
     type key = IntSetBase.t
-    and 'a t = 'a Map.McMake(IntSetBase).t
+    and 'a t = 'a Mc_map.McMake(IntSetBase).t
     val empty : 'a t
     val is_empty : 'a t -> bool
     val cardinal : 'a t -> int
@@ -427,7 +427,7 @@ module IntSetMap :
 module Parser_state :
   sig
     type key = ItemBase.t
-    and 'a t = 'a Map.McMake(ItemBase).t
+    and 'a t = 'a Mc_map.McMake(ItemBase).t
     val empty : 'a t
     val is_empty : 'a t -> bool
     val cardinal : 'a t -> int
@@ -469,7 +469,7 @@ module ActionEdgeBase :
 module Action_edges :
   sig
     type elt = ActionEdgeBase.t
-    and t = Set.McMake(ActionEdgeBase).t
+    and t = Mc_set.McMake(ActionEdgeBase).t
     val empty : t
     val is_empty : t -> bool
     val mem : t -> elt -> bool
@@ -502,7 +502,7 @@ module AcceptBase : sig type t = state_id val compare : 'a -> 'a -> int end
 module Accepts :
   sig
     type elt = AcceptBase.t
-    and t = Set.McMake(AcceptBase).t
+    and t = Mc_set.McMake(AcceptBase).t
     val empty : t
     val is_empty : t -> bool
     val mem : t -> elt -> bool
@@ -572,7 +572,7 @@ module FABase :
 module ParserFA :
   sig
     type key = FABase.t
-    and 'a t = 'a Map.McMakeList(FABase).t
+    and 'a t = 'a Mc_map.McMakeList(FABase).t
     val empty : 'a t
     val is_empty : 'a t -> bool
     val cardinal : 'a t -> int

@@ -32,8 +32,8 @@ struct
    let compare = compare
 end
 
-module StringSet = Set.McMake (StringBase)
-module StringTable = Map.McMake (StringBase)
+module StringSet = Mc_set.McMake (StringBase)
+module StringTable = Mc_map.McMake (StringBase)
 
 module IntBase =
 struct
@@ -41,9 +41,9 @@ struct
    let compare = compare
 end
 
-module IntSet = Set.McMake (IntBase)
-module IntTable = Map.McMake (IntBase)
-module IntMTable = Map.McMakeList (IntBase)
+module IntSet = Mc_set.McMake (IntBase)
+module IntTable = Mc_map.McMake (IntBase)
+module IntMTable = Mc_map.McMakeList (IntBase)
 
 (*************************************************
  * Parsing Phobos files.
@@ -166,9 +166,9 @@ struct
    let compare = psymbol_compare
 end
 
-module PSymbolSet = Set.McMake (PSymbolBase)
-module PSymbolTable = Map.McMake (PSymbolBase)
-module PSymbolMTable = Map.McMakeList (PSymbolBase)
+module PSymbolSet = Mc_set.McMake (PSymbolBase)
+module PSymbolTable = Mc_map.McMake (PSymbolBase)
+module PSymbolMTable = Mc_map.McMakeList (PSymbolBase)
 
 let psymbol_set_compare pss1 pss2 =
    let len1 = PSymbolSet.cardinal pss1 in
@@ -239,9 +239,9 @@ struct
    let compare = production_id_compare
 end
 
-module ProductionTable = Map.McMake (ProductionBase)
-module ProductionIdTable = Map.McMake (ProductionIdBase)
-module ProductionIdMTable = Map.McMakeList (ProductionIdBase)
+module ProductionTable = Mc_map.McMake (ProductionBase)
+module ProductionIdTable = Mc_map.McMake (ProductionIdBase)
+module ProductionIdMTable = Mc_map.McMakeList (ProductionIdBase)
 
 type production_table = production_id ProductionTable.t
 (*
@@ -330,12 +330,12 @@ struct
    let compare = int_set_compare
 end
 
-module IntSetMap = Map.McMake (IntSetBase)
+module IntSetMap = Mc_map.McMake (IntSetBase)
 
 (*
  * A state is a set of items and their symbol sets.
  *)
-module Parser_state = Map.McMake (ItemBase)
+module Parser_state = Mc_map.McMake (ItemBase)
 
 type parser_state = (PSymbolSet.t(* * bool*)) Parser_state.t
 
@@ -389,7 +389,7 @@ end
 (*
  * In the "state-graph", we have a set of action edges.
  *)
-module Action_edges = Set.McMake (ActionEdgeBase)
+module Action_edges = Mc_set.McMake (ActionEdgeBase)
 
 module AcceptBase =
 struct
@@ -400,7 +400,7 @@ end
 (*
  * The set of accepting states.
  *)
-module Accepts = Set.McMake (AcceptBase)
+module Accepts = Mc_set.McMake (AcceptBase)
 
 (*************************************************
  * GRAMMAR/PARSER INTERNALS.
@@ -468,7 +468,7 @@ end
  * Its transition table is likely to be sparse,
  * so we will store it as a map.
  *)
-module ParserFA = Map.McMakeList (FABase)
+module ParserFA = Mc_map.McMakeList (FABase)
 
 (*
  * An entry in the parsing table is an action to

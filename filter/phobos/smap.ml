@@ -24,7 +24,7 @@
  * granicz@cs.caltech.edu
  *)
 
-open Map
+open Mc_map
 
 (*
  * These are the functions provided by the table.
@@ -60,19 +60,19 @@ struct
       let compare = Pervasives.compare
    end
 
-   module SMap = McMake (IntModule)
+   module SMap2 = McMake (IntModule)
    module SMapShadow = McMake (Base)
 
    type key = Base.t
-   type 'elt tt = (key SMap.t * ('elt * int) SMapShadow.t)
+   type 'elt tt = (key SMap2.t * ('elt * int) SMapShadow.t)
 
    let counter = ref 0
 
-   let empty = (SMap.empty, SMapShadow.empty)
+   let empty = (SMap2.empty, SMapShadow.empty)
 
-   let is_empty (table, shadow) = SMap.is_empty table
+   let is_empty (table, shadow) = SMap2.is_empty table
 
-   let cardinal (table, shadow) = SMap.cardinal table
+   let cardinal (table, shadow) = SMap2.cardinal table
 
    let add (table, shadow) key data =
       let index =
@@ -85,38 +85,38 @@ struct
                incr counter;
                !counter
       in
-         SMap.add table index key, SMapShadow.add shadow key (data, index)
+         SMap2.add table index key, SMapShadow.add shadow key (data, index)
 
    let find (table, shadow) key =
       fst (SMapShadow.find shadow key)
 
    let remove (table, shadow) key =
       let data, index = SMapShadow.find shadow key in
-         SMap.remove table index, SMapShadow.remove shadow key
+         SMap2.remove table index, SMapShadow.remove shadow key
 
    let mem (table, shadow) key =
       SMapShadow.mem shadow key
 
    let iter f (table, shadow) =
-      SMap.iter (fun index key ->
+      SMap2.iter (fun index key ->
          let data, index = SMapShadow.find shadow key in
             f key data) table
 
    let fold f accum (table, shadow) =
-      SMap.fold (fun accum index key ->
+      SMap2.fold (fun accum index key ->
          let data, index = SMapShadow.find shadow key in
             f accum key data) accum table
 
    let keys (table, shadow) =
       let keys_rev =
-         SMap.fold (fun keys index key ->
+         SMap2.fold (fun keys index key ->
             key :: keys) [] table
       in
          List.rev keys_rev
 
    let data (table, shadow) =
       let data_list_rev =
-         SMap.fold (fun data_list index key ->
+         SMap2.fold (fun data_list index key ->
             let data, _ = SMapShadow.find shadow key in
                data :: data_list) [] table
       in
