@@ -11,6 +11,11 @@ set ENS_ID=$USER
 set ENS_DOMAIN_PORT=7473
 
 rem
+rem Root directory is two directories up
+rem
+set MP_ROOT=../..
+
+rem
 rem Use the local copy of the library
 rem
 set MPLIB=../../lib
