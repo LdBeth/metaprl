@@ -152,7 +152,12 @@ let strip_root filename =
          None
 
 let add_edit_internal shared name =
-   shared.shared_files <- LineTable.add shared.shared_files name ""
+   let info =
+      { file_point = 0;
+        file_modified = false
+      }
+   in
+      shared.shared_files <- LineTable.add shared.shared_files name info
 
 let add_filename_internal shared name =
    match name with
@@ -179,10 +184,6 @@ let add_file_internal shared file =
 let add_edit name =
    State.write shared_entry (fun shared ->
          add_edit_internal shared name)
-
-let add_filename name =
-   State.write shared_entry (fun shared ->
-         add_filename_internal shared name)
 
 let add_file file =
    State.write shared_entry (fun shared ->

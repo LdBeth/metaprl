@@ -152,6 +152,42 @@ let linetable_of_strings strings =
          in
             LineTable.add table dir subdir) LineTable.empty strings
 
+(*
+ * Save the contents of a (string LineBuffer.t) to a file in the user's
+ * home directory.
+ *)
+let strings_of_file_info queue =
+   let strings =
+      LineTable.fold (fun strings dir info ->
+            let { file_point = point;
+                  file_modified = modified
+                } = info
+            in
+               Printf.sprintf "%s#%d#%b" dir point modified :: strings) [] queue
+   in
+      List.rev strings
+
+(*
+ * Add the contents of a file to a (string LineBuffer.t)
+ *)
+let file_info_of_strings strings =
+   List.fold_left (fun table line ->
+         let dir, point, modified =
+            match Lm_string_util.split "#" line with
+               [dir; point; modified] ->
+                  dir, int_of_string point, bool_of_string modified
+             | dir :: _ ->
+                  dir, 0, false
+             | [] ->
+                  line, 0, false
+         in
+         let info =
+            { file_point = point;
+              file_modified = modified
+            }
+         in
+            LineTable.add table dir info) LineTable.empty strings
+
 (************************************************************************
  * Current shell.
  *)
@@ -207,7 +243,7 @@ let shell_entry = State.private_val "Shell_current.shell_entry" default_shell fo
 let set_current_session session_info =
    State.write shell_entry (fun shell ->
    State.write session_entry (fun session ->
-      let (fs, subdir) = dir_of_path session_info.session_info_dir in
+      let fs, subdir = dir_of_path session_info.session_info_dir in
          shell.shell_fs              <- fs;
          shell.shell_subdir          <- subdir;
          shell.shell_needs_refresh   <- true;
@@ -218,7 +254,7 @@ let set_current_session session_info =
 let set_shared shared_info =
    State.write shared_entry (fun shared ->
          shared.shared_directories <- linetable_of_strings shared_info.shared_info_dirs;
-         shared.shared_files       <- linetable_of_strings shared_info.shared_info_files)
+         shared.shared_files       <- file_info_of_strings shared_info.shared_info_files)
 
 (*
  * Load the shared data.
@@ -251,7 +287,7 @@ let flush () =
    State.read shared_entry (fun shared ->
       let pid = string_of_pid (Lm_thread_shell.get_pid ()) in
       let shared =
-         { shared_info_files    = strings_of_linetable shared.shared_files;
+         { shared_info_files    = strings_of_file_info shared.shared_files;
            shared_info_dirs     = strings_of_linetable shared.shared_directories
          }
       in

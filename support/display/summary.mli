@@ -160,14 +160,6 @@ val dest_rule_box : term -> string
 val dest_proof : term -> term * term * term * term * term
 
 (*
- * BUG JYH: these should move to Shell_fs.
- *)
-val mk_direntry_term : string -> string -> term
-val mk_dirlisting_term : string -> term list -> term
-val mk_fileline_term : Lm_num.num -> string -> term
-val mk_filelisting_term : string -> term list -> term
-
-(*
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

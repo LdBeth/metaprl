@@ -33,12 +33,21 @@ open Line_buffer
 open Shell_util
 
 (*
+ * Files have a current point of the cursor,
+ * and a flag if the file is modified.
+ *)
+type file_info =
+   { file_point : int;
+     file_modified : bool
+   }
+
+(*
  * Session info is separated from the shell
  * to get the dependencies right.
  *)
 type shared =
    { mutable shared_directories     : string LineTable.t;
-     mutable shared_files           : string LineTable.t
+     mutable shared_files           : file_info LineTable.t
    }
 
 type shared_info =
