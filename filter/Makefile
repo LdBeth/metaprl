@@ -108,7 +108,6 @@ CCLIBS =\
 #
 CAMLP4N = camlp4n
 CAMLP4O = camlp4o
-# CAMLP4LIB = /usr/local/lib/camlp4
 
 STANDARD_LIBS =\
 	$(CAMLLIB)/unix.cma\
@@ -317,3 +316,5 @@ test.cmiz: test.mli prlcomp.run
 #
 lib:: $(RMLIFILES) $(RCMIFILES)	$(RCMAFILES)
 
+clean::
+	$(RM) *.opt

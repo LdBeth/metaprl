@@ -31,6 +31,10 @@ ifndef NLLIB
    NLLIB=$(ROOT)/lib
 endif
 
+ifdef INCAMLP4
+   INCLUDE := $(INCLUDE) -I $(CAMLP4LIB)
+endif
+
 #
 # OCAML commands
 #
