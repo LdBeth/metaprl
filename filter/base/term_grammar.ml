@@ -879,7 +879,7 @@ struct
              ST_String w
            | w = word_or_string; (params, bterms) = termsuffix ->
              ST_Term (mk_term (mk_op (mk_bopname loc [w] params bterms) params) bterms, loc)
-           | t = nonwordterm ->
+           | t = noncommaterm ->
              ST_Term (t.aterm, loc)
           ]];
 
