@@ -35,6 +35,7 @@
  *)
 
 open Lm_debug
+open Lm_printf
 
 open Refiner.Refiner
 open Refiner.Refiner.TermAddr

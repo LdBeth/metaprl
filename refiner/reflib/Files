@@ -1,5 +1,4 @@
 REFLIB_FILES =\
-	rformat\
 	simple_print_sig\
 	simple_print\
 	term_copy_weak\

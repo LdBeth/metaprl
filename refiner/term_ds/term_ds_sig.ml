@@ -29,6 +29,7 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Lm_pervasives
 open Lm_symbol
 
 open Opname

@@ -160,8 +160,8 @@ extends Top_tacticals
 extends Auto_tactic
 doc <:doc< @docoff >>
 
-open Printf
 open Lm_debug
+open Lm_printf
 
 open Term_sig
 open Refiner.Refiner

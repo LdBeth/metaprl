@@ -100,8 +100,8 @@ extends Top_tacticals
 extends Top_conversionals
 doc <:doc< @docoff >>
 
-open Printf
 open Lm_debug
+open Lm_printf
 open Lm_dag_sig
 open Lm_imp_dag
 

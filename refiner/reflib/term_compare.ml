@@ -34,6 +34,7 @@
  *)
 
 open Lm_debug
+open Lm_printf
 
 open Termmod_sig
 open Term_compare_sig

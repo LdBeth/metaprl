@@ -30,8 +30,8 @@
  * jyh@cs.cornell.edu
  *)
 
-open Printf
 open Lm_debug
+open Lm_printf
 
 open Refiner_io
 open Refiner.Refiner.TermType

@@ -38,10 +38,9 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-open Format
-
-open Lm_symbol
 open Lm_debug
+open Lm_symbol
+open Lm_printf
 open Opname
 
 open Term_sig

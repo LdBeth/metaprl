@@ -22,7 +22,7 @@
  * Email: granicz@cs.caltech.edu
  *)
 
-open Rformat
+open Lm_rformat
 open Phobos_type
 
 val tabstop : int
@@ -31,7 +31,7 @@ val set_current_position : pos -> unit
 val current_position : unit -> pos
 val current_file : unit -> string
 
-val string_of_pos : pos -> string 
+val string_of_pos : pos -> string
 val print_pos : pos -> unit
 val format_pos : buffer -> pos -> unit
 

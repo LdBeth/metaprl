@@ -24,9 +24,10 @@
  *
  * Authors: Lori Lorigo, Richard Eaton
  *)
+open Lm_debug
 open Lm_symbol
 
-open Lm_debug
+open Lm_printf
 open Lm_num
 
 open Refiner.Refiner.Term

@@ -316,9 +316,9 @@ sig
     *)
 
    (* Formatting functions *)
-   val format_extract : Dform.dform_base -> Rformat.buffer -> extract -> unit
-   val format_arg : Dform.dform_base -> Rformat.buffer -> tactic_arg -> unit
-   val format_attrs : Dform.dform_base -> Rformat.buffer -> attribute_info -> unit
+   val format_extract : Dform.dform_base -> Lm_rformat.buffer -> extract -> unit
+   val format_arg : Dform.dform_base -> Lm_rformat.buffer -> tactic_arg -> unit
+   val format_attrs : Dform.dform_base -> Lm_rformat.buffer -> attribute_info -> unit
 
    (*
     * Two tactic_arguments are equal when they have
@@ -622,7 +622,7 @@ sig
     *)
    val kreitz : update_fun -> proof -> proof
 
-   val format_proof : Dform.dform_base -> Rformat.buffer -> proof -> unit
+   val format_proof : Dform.dform_base -> Lm_rformat.buffer -> proof -> unit
 
    (********************************
     * EXPANSION

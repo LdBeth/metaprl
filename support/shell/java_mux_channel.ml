@@ -34,8 +34,11 @@
  *)
 open Printf
 
-open Lm_debug
 open Lm_threads
+
+let eflush out =
+   output_char out '\n';
+   flush out
 
 (************************************************************************
  * TYPES                                                                *
@@ -45,15 +48,15 @@ open Lm_threads
  * This is the raw channel.
  *)
 type t =
-   { mux_lock : Mutex.t;
-     mux_in    : in_channel;
-     mux_out   : out_channel;
+   { mux_lock     : Mutex.t;
+     mux_in       : in_channel;
+     mux_out      : out_channel;
      mux_sessions : session Weak.t;
-     mux_menus : channel Weak.t;
-     mux_goals : channel Weak.t;
-     mux_rules : channel Weak.t;
+     mux_menus    : channel Weak.t;
+     mux_goals    : channel Weak.t;
+     mux_rules    : channel Weak.t;
      mux_subgoals : channel Weak.t;
-     mux_url : string option
+     mux_url      : string option
    }
 
 (*

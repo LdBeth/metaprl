@@ -82,7 +82,7 @@ let term_name_of (id, pos) =
             [id; mod_name]
    with
       Not_found ->
-         raise (PhobosException (pos, Printf.sprintf "undefined term [%s]" id))
+         raise (PhobosException (pos, Lm_printf.sprintf "undefined term [%s]" id))
 
 type param_type =
    TyString
@@ -185,7 +185,7 @@ let insert_rewrite_if_needed id_list = function
 let process_includes paths includes =
    List.iter (fun s ->
       if !debug_phobos then
-         Format.print_string (Printf.sprintf "Loading %s..." s);
+         Format.print_string (Lm_printf.sprintf "Loading %s..." s);
       let _, (gst, _, _, _) = load_grammar (find_file paths s) in
       if !debug_phobos then
          Format.print_string "done\n";
@@ -207,12 +207,12 @@ let include_built_in (s, pos) =
             new_terms, found) ([], false) built_in_terms
    in
    if not found then
-      raise (PhobosException (pos, Printf.sprintf (**)
+      raise (PhobosException (pos, Lm_printf.sprintf (**)
          "%s: No such module" s))
    else
       List.iter (fun term ->
          if !debug_phobos then
-            print_string (Printf.sprintf "Built-in %s.%s\n" s term);
+            print_string (Lm_printf.sprintf "Built-in %s.%s\n" s term);
          term_names := StringTable.add !term_names term (s, -1)) new_terms
 
 %}

@@ -32,8 +32,7 @@
 
 INCLUDE "refine_error.mlh"
 
-open Printf
-open Lm_debug
+open Lm_printf
 open Lm_string_set
 
 open Refine_error_sig

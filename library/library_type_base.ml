@@ -2,8 +2,8 @@
  * This implements a filesystem interface to the library.
  *)
 
-open Printf
 open Lm_debug
+open Lm_printf
 
 open Refiner.Refiner.Term
 open Basic
@@ -25,8 +25,8 @@ let library_close () =
 	disconnect (oref_val connection))
   else raise (LibraryException "Close: No library open.")
 
-open Printf
-open Lm_debug
+open Lm_printf
+open Lm_printf
 
 let library_open host localport remoteport =
 
@@ -34,8 +34,8 @@ let library_open host localport remoteport =
 
   if oref_p library then
     raise (LibraryException "Open: Library already open.")
-  else 
-    (let _ = oref_set library 
+  else
+    (let _ = oref_set library
 	(join (oref_set connection (connect "metaprl" host remoteport)) ["metaprl"]) in
     at_exit library_close)   (* nogin: something is strange here *)
 

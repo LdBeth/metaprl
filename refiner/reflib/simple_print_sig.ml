@@ -30,6 +30,7 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Lm_pervasives
 
 open Opname
 
@@ -42,7 +43,7 @@ sig
    type meta_term
    type address
 
-   type buffer = Rformat.buffer
+   type buffer = Lm_rformat.buffer
 
    (************************************************************************
     * PRINTERS                                                             *

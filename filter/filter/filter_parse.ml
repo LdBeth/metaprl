@@ -32,12 +32,14 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-open Printf
+open Lm_debug
+open Lm_symbol
+open Lm_printf
+open Lm_string_set
+open Lm_pervasives
+
 open Pcaml
 
-open Lm_symbol
-open Lm_debug
-open Lm_string_set
 open Precedence
 open Simple_print.SimplePrint
 open File_base_type
@@ -171,7 +173,7 @@ let term_exp s =
 let term_patt s =
    let cs = Stream.of_string s in
    let t = Grammar.Entry.parse term_eoi cs in
-      Filter_exn.print Dform.null_base (Some "Can not build a patten out of a term:\n") Filter_patt.build_term_patt t
+      Filter_exn.print_exn Dform.null_base (Some "Can not build a pattern out of a term:\n") Filter_patt.build_term_patt t
 
 let _ = Quotation.add "term" (Quotation.ExAst (term_exp, term_patt))
 let _ = Quotation.default := "term"
@@ -369,8 +371,7 @@ let wrap_code loc v body =
  * we print the terms using the default display forms.
  *)
 let print_exn f s loc =
-   let s = sprintf "While processing %s:\n" s in
-      Filter_exn.print Dform.null_base (Some s) f ()
+   Filter_exn.print_exn Dform.null_base (Some (sprintf "While processing %s:\n" s)) f ()
 
 (*
  * Need some info about types and extraction.

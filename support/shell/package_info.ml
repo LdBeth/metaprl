@@ -32,9 +32,9 @@
  *)
 extends Package_sig
 
-open Printf
-
 open Lm_debug
+
+open Lm_printf
 open Lm_threads
 open Lm_imp_dag
 

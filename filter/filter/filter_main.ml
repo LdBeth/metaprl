@@ -30,9 +30,9 @@
  * jyh@cs.cornell.edu
  *)
 
-open Arg
-open Printf
 open Lm_debug
+open Arg
+open Lm_printf
 
 open Filter_parse
 
@@ -94,7 +94,7 @@ let main () =
    Env_arg.parse spec add_anon_arg "MetaPRL compiler";
    set_include_path !include_path;
    try
-      Filter_exn.print Dform.null_base None !Odyl_main.go ();
+      Filter_exn.print_exn Dform.null_base None !Odyl_main.go ();
       Term_grammar.raise_spelling_error ()
    with
       exn ->

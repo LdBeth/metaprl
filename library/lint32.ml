@@ -24,8 +24,8 @@
  *
  * Authors: Lori Lorigo, Richard Eaton
  *)
-
 open Lm_debug
+open Lm_printf
 
 let _ =
    show_loading "Loading Llint32%t"
@@ -123,4 +123,5 @@ let print_lint32 b =
   print_char '(';
   print_int a;
   print_char ',';
-  print_int c; print_char ')'
+  print_int c;
+  print_char ')'

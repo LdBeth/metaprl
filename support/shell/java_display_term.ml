@@ -29,11 +29,10 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-
 open Printf
-open Lm_debug
 
 open Refiner.Refiner.TermMan
+
 open Dform
 
 open Java_mux_channel
@@ -178,7 +177,7 @@ let set window term =
        } = window
    in
    let df = get_mode_base dfbase dfmode in
-   let buf = Rformat.new_buffer () in
+   let buf = Lm_rformat.new_buffer () in
    let _ =
       (* eprintf "Term: %a%t" SimplePrint.print_simple_term_fp term eflush; *)
       Dform.format_term df buf term
@@ -187,8 +186,8 @@ let set window term =
       if dfmode = "html" then
          let out = open_out_bin (sprintf "cache/%s%d.html" host port) in
          let _ = fprintf out "<html>%s<body bgcolor=white face=\"Lucida Sans Unicode\"><table face=\"Lucida Sans Unicode\"><tr><td>" head_string in
-         let _ = Rformat.print_html_channel width buf out in
-         let _ = fprintf out "</table></body></html>%t" eflush in
+         let _ = Lm_rformat_html.print_html_channel width buf out in
+         let _ = fprintf out "</table></body></html>\n" in
          let _ = close_out out in
          let s =
             match Java_mux_channel.url_of_channel chan with
@@ -200,7 +199,7 @@ let set window term =
             Java_mux_channel.output_string chan s;
             window.win_term <- term
       else
-         let s = Rformat.print_text_string width buf in
+         let s = Lm_rformat_text.print_text_string width buf in
             Java_mux_channel.output_string chan s
 
 (*

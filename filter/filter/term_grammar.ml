@@ -31,10 +31,11 @@
  * Modified By: Alexei Kopylov <kopylov@cs.cornell.edu>
  * Modified By: Adam Granicz <granicz@cs.caltech.edu>
  *)
-open Printf
-
-open Lm_symbol
 open Lm_debug
+open Lm_symbol
+open Lm_printf
+open Lm_pervasives
+
 open Term_sig
 open Term_shape_sig
 open Refiner.Refiner

@@ -30,9 +30,11 @@
  * Author: Stephan Schmitt <schmitts@spmail.slu.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-open Lm_symbol
 open Lm_debug
+open Lm_symbol
+open Lm_printf
 open Lm_string_set
+open Lm_pervasives
 
 open Refiner.Refiner
 open Term
@@ -199,11 +201,11 @@ struct
 
    let print_equations eqlist =
       begin
-         Format.open_box 0;
-         Format.force_newline ();
+         Lm_format.open_box 0;
+         Lm_format.force_newline ();
          print_endline "Equations:";
          print_eqlist eqlist;
-         Format.force_newline ();
+         Lm_format.force_newline ();
       end
 
    let rec print_subst sigma =
@@ -235,93 +237,93 @@ struct
 
    let print_stype st =
       match st with
-         Alpha_1 -> Format.print_string "Alpha_1"
-       | Alpha_2 -> Format.print_string "Alpha_2"
-       | Beta_1  -> Format.print_string "Beta_1"
-       | Beta_2  -> Format.print_string "Beta_2"
-       | Gamma_0 -> Format.print_string "Gamma_0"
-       | Delta_0 -> Format.print_string "Delta_0"
-       | Phi_0   -> Format.print_string "Phi_0"
-       | Psi_0   -> Format.print_string "Psi_0"
-       | PNull_0 -> Format.print_string "PNull_0"
+         Alpha_1 -> Lm_format.print_string "Alpha_1"
+       | Alpha_2 -> Lm_format.print_string "Alpha_2"
+       | Beta_1  -> Lm_format.print_string "Beta_1"
+       | Beta_2  -> Lm_format.print_string "Beta_2"
+       | Gamma_0 -> Lm_format.print_string "Gamma_0"
+       | Delta_0 -> Lm_format.print_string "Delta_0"
+       | Phi_0   -> Lm_format.print_string "Phi_0"
+       | Psi_0   -> Lm_format.print_string "Psi_0"
+       | PNull_0 -> Lm_format.print_string "PNull_0"
 
    let print_pol pol =
       if pol = O then
-         Format.print_string "O"
+         Lm_format.print_string "O"
       else
-         Format.print_string "I"
+         Lm_format.print_string "I"
 
    let rec print_address int_list =
       match int_list with
          [] ->
-            Format.print_string ""
+            Lm_format.print_string ""
        | hd::rest ->
             begin
-               Format.print_int hd;
+               Lm_format.print_int hd;
                print_address rest
             end
 
    let rec print_prefix prefix_list =
       match prefix_list with
-         [] -> Format.print_string ""
+         [] -> Lm_format.print_string ""
        | f::r ->
             begin
-               Format.print_string f;
+               Lm_format.print_string f;
                print_prefix r
             end
 
    let print_atom at tab =
       let ({aname=x; aaddress=y; aprefix=z; apredicate=p; apol=a; ast=b; alabel=label}) = at in
       begin
-         Format.print_string ("{aname="^x^"; address=");
+         Lm_format.print_string ("{aname="^x^"; address=");
          print_address y;
-         Format.print_string "; ";
-         Format.force_newline ();
-         Format.print_break (tab+1) (tab+1);
-         Format.print_string "prefix=";
+         Lm_format.print_string "; ";
+         Lm_format.force_newline ();
+         Lm_format.print_break (tab+1) (tab+1);
+         Lm_format.print_string "prefix=";
          print_prefix z;
-         Format.print_string "; predicate=<abstr>; ";
-         Format.print_break (tab+1) (tab+1);
-         Format.print_break (tab+1) (tab+1);
-         Format.print_string "pol=";
+         Lm_format.print_string "; predicate=<abstr>; ";
+         Lm_format.print_break (tab+1) (tab+1);
+         Lm_format.print_break (tab+1) (tab+1);
+         Lm_format.print_string "pol=";
          print_pol a;
-         Format.print_string "; stype=";
+         Lm_format.print_string "; stype=";
          print_stype b;
-         Format.print_string "; arguments=[<abstr>]";
-         Format.print_string "}"
+         Lm_format.print_string "; arguments=[<abstr>]";
+         Lm_format.print_string "}"
       end
 
    let rec print_atom_list set tab =
       match set with
-         []  -> Format.print_string ""
+         []  -> Lm_format.print_string ""
        | (f::r) ->
             begin
-               Format.force_newline ();
-               Format.print_break (tab) (tab);
+               Lm_format.force_newline ();
+               Lm_format.print_break (tab) (tab);
                print_atom f tab;
                print_atom_list r (tab)
             end
 
    let rec print_atom_info atom_relation =
       match atom_relation with
-         [] -> Format.print_string ""
+         [] -> Lm_format.print_string ""
        | (a,b,c)::r ->
             begin
-               Format.print_string "atom:";
-               Format.force_newline ();
-               Format.print_break 3 3;
+               Lm_format.print_string "atom:";
+               Lm_format.force_newline ();
+               Lm_format.print_break 3 3;
                print_atom a 3;
-               Format.force_newline ();
-               Format.print_break 0 0;
-               Format.print_string "alpha_set:";
+               Lm_format.force_newline ();
+               Lm_format.print_break 0 0;
+               Lm_format.print_string "alpha_set:";
                print_atom_list b 3;
-               Format.force_newline ();
-               Format.print_break 0 0;
-               Format.print_string "beta_set:";
+               Lm_format.force_newline ();
+               Lm_format.print_break 0 0;
+               Lm_format.print_string "beta_set:";
                print_atom_list c 3;
-               Format.force_newline ();
-               Format.force_newline ();
-               Format.print_break 0 0;
+               Lm_format.force_newline ();
+               Lm_format.force_newline ();
+               Lm_format.print_break 0 0;
                print_atom_info r
             end
 
@@ -329,86 +331,86 @@ struct
 
    let print_ptype pt =
       match pt with
-         Alpha -> Format.print_string "Alpha"
-       | Beta  -> Format.print_string "Beta"
-       | Gamma -> Format.print_string "Gamma"
-       | Delta -> Format.print_string "Delta"
-       | Phi   -> Format.print_string "Phi"
-       | Psi   -> Format.print_string "Psi"
-       | PNull -> Format.print_string "PNull"
+         Alpha -> Lm_format.print_string "Alpha"
+       | Beta  -> Lm_format.print_string "Beta"
+       | Gamma -> Lm_format.print_string "Gamma"
+       | Delta -> Lm_format.print_string "Delta"
+       | Phi   -> Lm_format.print_string "Phi"
+       | Psi   -> Lm_format.print_string "Psi"
+       | PNull -> Lm_format.print_string "PNull"
 
    let print_op op =
       match op with
-         At   -> Format.print_string "Atom"
-       | Neg  -> Format.print_string "Neg"
-       | And  -> Format.print_string "And"
-       | Or   -> Format.print_string  "Or"
-       | Imp  -> Format.print_string  "Imp"
-       | Ex   -> Format.print_string "Ex"
-       | All  -> Format.print_string "All"
-       | Null -> Format.print_string "Null"
+         At   -> Lm_format.print_string "Atom"
+       | Neg  -> Lm_format.print_string "Neg"
+       | And  -> Lm_format.print_string "And"
+       | Or   -> Lm_format.print_string  "Or"
+       | Imp  -> Lm_format.print_string  "Imp"
+       | Ex   -> Lm_format.print_string "Ex"
+       | All  -> Lm_format.print_string "All"
+       | Null -> Lm_format.print_string "Null"
 
    let print_position position tab =
       let ({name=x; address=y; op=z; pol=a; pt=b; st=c; label=t}) = position in
       begin
-         Format.print_string ("{name="^x^"; address=");
+         Lm_format.print_string ("{name="^x^"; address=");
          print_address y;
-         Format.print_string "; ";
-         Format.force_newline ();
-         Format.print_break (tab+1) 0;
-(*   Format.print_break 0 3; *)
-         Format.print_string "op=";
+         Lm_format.print_string "; ";
+         Lm_format.force_newline ();
+         Lm_format.print_break (tab+1) 0;
+(*   Lm_format.print_break 0 3; *)
+         Lm_format.print_string "op=";
          print_op z;
-         Format.print_string "; pol=";
+         Lm_format.print_string "; pol=";
          print_pol a;
-         Format.print_string "; ptype=";
+         Lm_format.print_string "; ptype=";
          print_ptype b;
-         Format.print_string "; stype=";
+         Lm_format.print_string "; stype=";
          print_stype c;
-         Format.print_string ";";
-         Format.force_newline ();
-         Format.print_break (tab+1) 0;
-         Format.print_string "label=";
-         Format.print_break 0 0;
-         Format.force_newline ();
-         Format.print_break tab 0;
+         Lm_format.print_string ";";
+         Lm_format.force_newline ();
+         Lm_format.print_break (tab+1) 0;
+         Lm_format.print_string "label=";
+         Lm_format.print_break 0 0;
+         Lm_format.force_newline ();
+         Lm_format.print_break tab 0;
          print_term stdout t;
-         Format.print_string "}"
+         Lm_format.print_string "}"
       end
 
    let rec pp_ftree_list tree_list tab =
       let rec pp_ftree ftree new_tab =
          let dummy = String.make (new_tab-2) ' ' in
          match ftree with
-            Empty -> Format.print_string ""
+            Empty -> Lm_format.print_string ""
           | NodeAt(position) ->
                begin
-                  Format.force_newline ();
-                  Format.print_break new_tab 0;
+                  Lm_format.force_newline ();
+                  Lm_format.print_break new_tab 0;
                   print_string (dummy^"AtomNode: ");
-(*      Format.force_newline ();
-   Format.print_break 0 3;
+(*      Lm_format.force_newline ();
+   Lm_format.print_break 0 3;
 *)
                   print_position position new_tab;
-                  Format.force_newline ();
-                  Format.print_break new_tab 0
+                  Lm_format.force_newline ();
+                  Lm_format.print_break new_tab 0
                end
           | NodeA(position,subtrees) ->
                let tree_list = Array.to_list subtrees in
                begin
-                  Format.force_newline ();
-                  Format.print_break new_tab 0;
-                  Format.print_break 0 0;
+                  Lm_format.force_newline ();
+                  Lm_format.print_break new_tab 0;
+                  Lm_format.print_break 0 0;
                   print_string (dummy^"InnerNode: ");
                   print_position position new_tab;
-                  Format.force_newline ();
-                  Format.print_break 0 0;
+                  Lm_format.force_newline ();
+                  Lm_format.print_break 0 0;
                   pp_ftree_list tree_list (new_tab-3)
                end
       in
       let new_tab = tab+5 in
       match tree_list with
-         [] -> Format.print_string ""
+         [] -> Lm_format.print_string ""
        | first::rest ->
             begin
                pp_ftree first new_tab;
@@ -417,10 +419,10 @@ struct
 
    let print_ftree ftree =
       begin
-         Format.open_box 0;
-         Format.print_break 3 0;
+         Lm_format.open_box 0;
+         Lm_format.print_break 3 0;
          pp_ftree_list [ftree] 0;
-         Format.print_flush ()
+         Lm_format.print_flush ()
       end
 
    let rec stringlist_to_string stringlist =
@@ -433,10 +435,10 @@ struct
    let rec print_stringlist slist =
       match slist with
          [] ->
-            Format.print_string ""
+            Lm_format.print_string ""
        | f::r ->
             begin
-               Format.print_string (f^".");
+               Lm_format.print_string (f^".");
                print_stringlist r
             end
 
@@ -444,78 +446,78 @@ struct
       let rec pp_bproof ftree new_tab =
          let dummy = String.make (new_tab-2) ' ' in
          match ftree with
-            BEmpty -> Format.print_string ""
+            BEmpty -> Lm_format.print_string ""
           | CNode((c1,c2)) ->
                begin
-                  Format.open_box 0;
-                  Format.force_newline ();
-                  Format.print_break (new_tab-10) 0;
-                  Format.open_box 0;
-                  Format.force_newline ();
-                  Format.print_string (dummy^"CloseNode: connection = ("^c1^","^c2^")");
-                  Format.print_flush();
-(*      Format.force_newline ();
-   Format.print_break 0 3;
+                  Lm_format.open_box 0;
+                  Lm_format.force_newline ();
+                  Lm_format.print_break (new_tab-10) 0;
+                  Lm_format.open_box 0;
+                  Lm_format.force_newline ();
+                  Lm_format.print_string (dummy^"CloseNode: connection = ("^c1^","^c2^")");
+                  Lm_format.print_flush();
+(*      Lm_format.force_newline ();
+   Lm_format.print_break 0 3;
 *)
-                  Format.open_box 0;
-                  Format.print_break new_tab 0;
-                  Format.print_flush()
+                  Lm_format.open_box 0;
+                  Lm_format.print_break new_tab 0;
+                  Lm_format.print_flush()
                end
           | AtNode(posname,(c1,c2)) ->
                begin
-                  Format.open_box 0;
-                  Format.force_newline ();
-                  Format.print_break (new_tab-10) 0;
-                  Format.open_box 0;
-                  Format.force_newline ();
-                  Format.print_string (dummy^"AtNode: pos = "^posname^" conneciton = ("^c1^","^c2^")");
-                  Format.print_flush();
-(*      Format.force_newline ();
-   Format.print_break 0 3;
+                  Lm_format.open_box 0;
+                  Lm_format.force_newline ();
+                  Lm_format.print_break (new_tab-10) 0;
+                  Lm_format.open_box 0;
+                  Lm_format.force_newline ();
+                  Lm_format.print_string (dummy^"AtNode: pos = "^posname^" conneciton = ("^c1^","^c2^")");
+                  Lm_format.print_flush();
+(*      Lm_format.force_newline ();
+   Lm_format.print_break 0 3;
 *)
-                  Format.open_box 0;
-                  Format.print_break new_tab 0;
-                  Format.print_flush()
+                  Lm_format.open_box 0;
+                  Lm_format.print_break new_tab 0;
+                  Lm_format.print_flush()
                end
           | RNode(alpha_layer,bproof) ->
                let alpha_string = stringlist_to_string alpha_layer in
                begin
-                  Format.open_box 0;
-                  Format.force_newline ();
-                  Format.print_break new_tab 0;
-                  Format.print_break 0 0;
-                  Format.force_newline ();
-                  Format.print_flush();
-                  Format.open_box 0;
+                  Lm_format.open_box 0;
+                  Lm_format.force_newline ();
+                  Lm_format.print_break new_tab 0;
+                  Lm_format.print_break 0 0;
+                  Lm_format.force_newline ();
+                  Lm_format.print_flush();
+                  Lm_format.open_box 0;
                   print_string (dummy^"RootNode: "^alpha_string);
-                  Format.print_flush();
-                  Format.open_box 0;
-                  Format.print_break 0 0;
-                  Format.print_flush();
+                  Lm_format.print_flush();
+                  Lm_format.open_box 0;
+                  Lm_format.print_break 0 0;
+                  Lm_format.print_flush();
                   pp_bproof_list [bproof] (new_tab-3)
                end
           | BNode(posname,(alph1,bproof1),(alph2,bproof2)) ->
                let alpha_string1 = stringlist_to_string alph1
                and alpha_string2 = stringlist_to_string alph2 in
                begin
-                  Format.open_box 0;
-                  Format.force_newline ();
-                  Format.print_break new_tab 0;
-                  Format.print_break 0 0;
-                  Format.force_newline ();
-                  Format.print_flush();
-                  Format.open_box 0;
+                  Lm_format.open_box 0;
+                  Lm_format.force_newline ();
+                  Lm_format.print_break new_tab 0;
+                  Lm_format.print_break 0 0;
+                  Lm_format.force_newline ();
+                  Lm_format.print_flush();
+                  Lm_format.open_box 0;
                   print_string (dummy^"BetaNode: pos = "^posname^" layer1 = "^alpha_string1^" layer2 = "^alpha_string2);
-                  Format.print_flush();
-                  Format.open_box 0;
-                  Format.print_break 0 0;
-                  Format.print_flush();
+                  Lm_format.print_flush();
+                  Lm_format.open_box 0;
+                  Lm_format.print_break 0 0;
+                  Lm_format.print_flush();
                   pp_bproof_list [bproof1;bproof2] (new_tab-3)
                end
       in
       let new_tab = tab+5 in
       match tree_list with
-         [] -> Format.print_string ""
+         [] -> Lm_format.print_string ""
        | first::rest ->
             begin
                pp_bproof first new_tab;
@@ -524,25 +526,25 @@ struct
 
    let rec print_pairlist pairlist =
       match pairlist with
-         [] -> Format.print_string ""
+         [] -> Lm_format.print_string ""
        | (a,b)::rest ->
             begin
-               Format.print_break 1 1;
-               Format.print_string ("("^a^","^b^")");
+               Lm_format.print_break 1 1;
+               Lm_format.print_string ("("^a^","^b^")");
                print_pairlist rest
             end
 
    let print_beta_proof bproof =
       begin
-         Format.open_box 0;
-         Format.force_newline ();
-         Format.force_newline ();
-         Format.print_break 3 0;
+         Lm_format.open_box 0;
+         Lm_format.force_newline ();
+         Lm_format.force_newline ();
+         Lm_format.print_break 3 0;
          pp_bproof_list [bproof] 0;
-         Format.force_newline ();
-         Format.force_newline ();
-         Format.force_newline ();
-         Format.print_flush ()
+         Lm_format.force_newline ();
+         Lm_format.force_newline ();
+         Lm_format.force_newline ();
+         Lm_format.print_flush ()
       end
 
    let rec print_treelist treelist =
@@ -552,14 +554,14 @@ struct
        | f::r ->
             begin
                print_ftree f;
-               Format.open_box 0;
+               Lm_format.open_box 0;
                print_endline "";
                print_endline "";
                print_endline "NEXT TREE";
                print_endline "";
                print_endline "";
                print_treelist r;
-               Format.print_flush ()
+               Lm_format.print_flush ()
             end
 
    let rec print_set_list set_list =
@@ -580,49 +582,49 @@ struct
 
    let rec print_list_sets list_of_sets =
       match list_of_sets with
-         [] -> Format.print_string ""
+         [] -> Lm_format.print_string ""
        | (pos,fset)::r ->
             begin
-               Format.print_string (pos^": ");   (* first element = node which successors depend on *)
+               Lm_format.print_string (pos^": ");   (* first element = node which successors depend on *)
                print_stringlist (StringSet.elements fset);
-               Format.force_newline ();
+               Lm_format.force_newline ();
                print_list_sets r
             end
 
    let print_ordering list_of_sets =
       begin
-         Format.open_box 0;
+         Lm_format.open_box 0;
          print_list_sets list_of_sets;
-         Format.print_flush ()
+         Lm_format.print_flush ()
       end
 
    let rec print_triplelist triplelist =
       match triplelist with
-         [] -> Format.print_string ""
+         [] -> Lm_format.print_string ""
        | ((a,b),i)::rest ->
             begin
-               Format.print_break 1 1;
-               Format.print_string ("(("^a^","^b^"),"^(string_of_int i)^")");
+               Lm_format.print_break 1 1;
+               Lm_format.print_string ("(("^a^","^b^"),"^(string_of_int i)^")");
                print_triplelist rest
             end
 
    let print_pos_n  pos_n =
-      Format.print_int pos_n
+      Lm_format.print_int pos_n
 
    let print_formula_info ftree ordering pos_n =
       begin
          print_ftree ftree;
-         Format.open_box 0;
-         Format.force_newline ();
+         Lm_format.open_box 0;
+         Lm_format.force_newline ();
          print_ordering ordering;
-         Format.force_newline ();
-         Format.force_newline ();
-         Format.print_string "number of positions: ";
+         Lm_format.force_newline ();
+         Lm_format.force_newline ();
+         Lm_format.print_string "number of positions: ";
          print_pos_n pos_n;
-         Format.force_newline ();
+         Lm_format.force_newline ();
          print_endline "";
          print_endline "";
-         Format.print_flush ()
+         Lm_format.print_flush ()
       end
 
 (* print sequent proof tree *)
@@ -631,40 +633,40 @@ struct
       let rep = ruletable r in
       if List.mem rep ["Alll";"Allr";"Exl";"Exr"] then
          begin
-            Format.open_box 0;
-(*          Format.force_newline (); *)
-            Format.print_break tab 0;
-            Format.print_string (pos^": "^rep^" ");
-            Format.print_flush ();
-(*          Format.print_break tab 0;
-   Format.force_newline ();
-   Format.print_break tab 0;
+            Lm_format.open_box 0;
+(*          Lm_format.force_newline (); *)
+            Lm_format.print_break tab 0;
+            Lm_format.print_string (pos^": "^rep^" ");
+            Lm_format.print_flush ();
+(*          Lm_format.print_break tab 0;
+   Lm_format.force_newline ();
+   Lm_format.print_break tab 0;
 *)
 
-            Format.open_box 0;
+            Lm_format.open_box 0;
             print_term stdout formula;
-            Format.print_flush ();
-            Format.open_box 0;
-            Format.print_string "  ";
-            Format.print_flush ();
-            Format.open_box 0;
+            Lm_format.print_flush ();
+            Lm_format.open_box 0;
+            Lm_format.print_string "  ";
+            Lm_format.print_flush ();
+            Lm_format.open_box 0;
             print_term stdout term;
-            Format.force_newline ();
-            Format.force_newline ();
-            Format.print_flush ()
+            Lm_format.force_newline ();
+            Lm_format.force_newline ();
+            Lm_format.print_flush ()
          end
       else
          begin
-            Format.open_box 0;
-            Format.print_break tab 0;
-            Format.print_string (pos^": "^rep^" ");
-            Format.print_flush ();
-            Format.open_box 0;
-(*          Format.print_break tab 0; *)
-            Format.force_newline ();
-(*          Format.print_break tab 0; *)
+            Lm_format.open_box 0;
+            Lm_format.print_break tab 0;
+            Lm_format.print_string (pos^": "^rep^" ");
+            Lm_format.print_flush ();
+            Lm_format.open_box 0;
+(*          Lm_format.print_break tab 0; *)
+            Lm_format.force_newline ();
+(*          Lm_format.print_break tab 0; *)
             print_term stdout formula;
-            Format.force_newline ()
+            Lm_format.force_newline ()
          end
 
    let last addr =
@@ -697,9 +699,9 @@ struct
             let (pos,r,p,pa) = rule in
             begin
                pp_rule (pos,r,p,pa) tab;
-(*      Format.force_newline (); *)
+(*      Lm_format.force_newline (); *)
 (*      let mult = get_r_chain addr in  *)
-(*        Format.print_break 100 (tab - (3 * mult)) *)
+(*        Lm_format.print_break 100 (tab - (3 * mult)) *)
             end
        | PNodeA(rule,left) ->
             let (pos,r,p,pa) = rule in
@@ -712,19 +714,19 @@ struct
             let newtab = tab + 3 in
             begin
                pp_rule (pos,r,p,pa) tab;
-(*             Format.force_newline (); *)
-(*             Format.print_break 100 newtab; *)
+(*             Lm_format.force_newline (); *)
+(*             Lm_format.print_break 100 newtab; *)
                (tpp left newtab (addr^"l"));
                (tpp right newtab (addr^"r"))
             end
 
    let tt seqtree =
       begin
-         Format.open_box 0;
+         Lm_format.open_box 0;
          tpp seqtree 0 "";
-         Format.force_newline ();
-         Format.close_box ();
-         Format.print_newline ()
+         Lm_format.force_newline ();
+         Lm_format.close_box ();
+         Lm_format.print_newline ()
       end
 
 (************ END printing functions  *********************************)
@@ -754,15 +756,15 @@ struct
       let (l1,l2) = List.split connections in
       let test_list = l1 @ l2 @ beta_expansions in
       begin
-(*       Format.open_box 0;
+(*       Lm_format.open_box 0;
          print_endline "";
          print_stringlist alpha_layer;
-         Format.print_flush();
-         Format.open_box 0;
+         Lm_format.print_flush();
+         Lm_format.open_box 0;
          print_endline "";
          print_stringlist test_list;
          print_endline "";
-         Format.print_flush();
+         Lm_format.print_flush();
 *)
          not (List.exists (fun x -> (List.mem x test_list)) alpha_layer)
       end
@@ -1043,12 +1045,12 @@ struct
 
    let print_context conn bcontext =
       begin
-         Format.open_box 0;
-         Format.print_string conn;
-         Format.print_string ":    ";
-         List.iter (fun x -> let (pos,num) = x in Format.print_string (pos^" "^(string_of_int num)^"")) bcontext;
+         Lm_format.open_box 0;
+         Lm_format.print_string conn;
+         Lm_format.print_string ":    ";
+         List.iter (fun x -> let (pos,num) = x in Lm_format.print_string (pos^" "^(string_of_int num)^"")) bcontext;
          print_endline " ";
-         Format.print_flush ()
+         Lm_format.print_flush ()
       end
 
    let rec build_opt_beta_proof beta_proof ext_proof beta_atoms beta_layer_list act_context =
@@ -2422,11 +2424,11 @@ struct
       let pure_names = get_position_names [deltree] in
       begin
 (*        print_ftree deltree;
-   Format.open_box 0;
+   Lm_format.open_box 0;
    print_endline " ";
    print_stringlist pure_names;
-   Format.force_newline ();
-   Format.print_flush ();
+   Lm_format.force_newline ();
+   Lm_format.print_flush ();
 *)
          let rednew = update_redord (StringSet.of_list pure_names) redord
          and connew = update_connections pure_names connections
@@ -2578,11 +2580,11 @@ struct
 
       let rec purity_reduction pr ftree redord connections unsolved_list =
          begin
-(*        Format.open_box 0;
+(*        Lm_format.open_box 0;
    print_endline " ";
    print_purelist pr;
-   Format.force_newline ();
-   Format.print_flush ();
+   Lm_format.force_newline ();
+   Lm_format.print_flush ();
 *)
             match pr with
                [] -> (ftree,redord,connections,unsolved_list)
@@ -2596,11 +2598,11 @@ struct
                   else
                      let (rednew,connew,unsolnew) = update_relations deltree redord connections unsolved_list in
                      begin
-(*        Format.open_box 0;
+(*        Lm_format.open_box 0;
    print_endline " ";
    print_pairlist connew;
-   Format.force_newline ();
-   Format.print_flush ();
+   Lm_format.force_newline ();
+   Lm_format.print_flush ();
 *)
                         if beta_flag = true then
                            begin
@@ -2653,10 +2655,10 @@ struct
    print_beta_proof opt_bp1;
    print_endline "";
    print_endline ("Beta proof 1 connections: ");
-   Format.open_box 0;
+   Lm_format.open_box 0;
    print_pairlist min_con1;
    print_endline ".";
-   Format.print_flush();
+   Lm_format.print_flush();
    print_endline "";
    print_endline "";
    print_endline "Beta proof 2: ";
@@ -2664,10 +2666,10 @@ struct
    print_beta_proof opt_bp2;
    print_endline "";
    print_endline ("Beta proof 2 connections: ");
-   Format.open_box 0;
+   Lm_format.open_box 0;
    print_pairlist min_con2;
    print_endline ".";
-   Format.print_flush();
+   Lm_format.print_flush();
    print_endline "";
 *)
          let  (zw1ft,zw1red,zw1conn,zw1uslist),(zw2ft,zw2red,zw2conn,zw2uslist) =
@@ -2683,19 +2685,19 @@ struct
 (* print_endline "";
    print_endline "";
    print_endline ("Purity 1 connections: ");
-   Format.open_box 0;
+   Lm_format.open_box 0;
    print_pairlist conn1;
    print_endline ".";
    print_endline "";
-   Format.print_flush();
+   Lm_format.print_flush();
    print_endline "";
    print_endline "";
    print_endline ("Purity 2 connections: ");
-   Format.open_box 0;
+   Lm_format.open_box 0;
    print_pairlist conn2;
    print_endline ".";
    print_endline "";
-   Format.print_flush();
+   Lm_format.print_flush();
    print_endline "";
    print_endline "";
 *)
@@ -3028,10 +3030,10 @@ struct
    print_endline "";
    print_endline "";
    print_endline ("Beta proof connections: ");
-   Format.open_box 0;
+   Lm_format.open_box 0;
    print_pairlist min_connections;
    print_endline ".";
-   Format.print_flush(); *)
+   Lm_format.print_flush(); *)
             print_endline "";
          end;
       let  (newroot_name,unsolved_list) =  build_unsolved ftree in
@@ -3042,11 +3044,11 @@ struct
 (*   print_endline "";
    print_endline "";
    print_endline ("Purity connections: ");
-   Format.open_box 0;
+   Lm_format.open_box 0;
    print_pairlist init_connections;
    print_endline ".";
    print_endline "";
-   Format.print_flush();
+   Lm_format.print_flush();
    print_endline "";
    print_endline "";
 *)
@@ -3141,12 +3143,12 @@ struct
             print_endline "."
        | (v,term)::r ->
             begin
-               Format.open_box 0;
+               Lm_format.open_box 0;
                print_endline " ";
                print_string (v^" = ");
                print_term stdout term;
-               Format.force_newline ();
-               Format.print_flush ();
+               Lm_format.force_newline ();
+               Lm_format.print_flush ();
                print_sigmaQ r
             end
 
@@ -3166,15 +3168,15 @@ struct
        | (v,termlist)::r ->
             let dterms = collect_delta_terms termlist in
             begin
-(*        Format.open_box 0;
+(*        Lm_format.open_box 0;
    print_endline " ";
    print_endline "sigmaQ: ";
    print_string (v^" = ");
    print_term_list termlist;
-   Format.force_newline ();
+   Lm_format.force_newline ();
    print_stringlist dterms;
-   Format.force_newline ();
-   Format.print_flush ();
+   Lm_format.force_newline ();
+   Lm_format.print_flush ();
 *)
                let new_ordering = add_arrowsQ  v dterms ordering in
                let (rest_pairs,rest_ordering) = add_sigmaQ r new_ordering in
@@ -3543,9 +3545,9 @@ struct
             init_sigma,orderingQ
        | f::rest_eq ->
             begin
-(*  Format.open_box 0;
+(*  Lm_format.open_box 0;
    print_equations [f];
-   Format.print_flush ();
+   Lm_format.print_flush ();
 *)
                let (atomnames,(fs,ft)) = f in
                tunify atomnames fs [] ft rest_eq init_sigma orderingQ
@@ -3662,11 +3664,11 @@ let stringunify ext_atom try_one eqlist fo_pairs logic orderingQ atom_rel qprefi
 (* Again, always computed for the whole substitution sigmaQ *)
             let (fo_eqlist,new_max) = make_domain_equations fo_pairs qprefixes qmax in
             begin
-(*    Format.open_box 0;
+(*    Lm_format.open_box 0;
    print_string "domain equations in";
    print_equations fo_eqlist;
    print_string "domain equations out";
-   Format.print_flush ();
+   Lm_format.print_flush ();
 *)
                do_stringunify us ut ns nt equations fo_eqlist orderingQ atom_rel new_max
             end
@@ -4033,26 +4035,26 @@ let rec select_atoms_treelist treelist prefix =
             let (gamma_0_element,delta_0_element) =
                if position.st = Gamma_0 then
                   begin
-(*  Format.open_box 0;
+(*  Lm_format.open_box 0;
    print_endline "gamma_0 prefixes ";
    print_string (position.name^" :");
    print_stringlist prefix;
    print_endline " ";
-   Format.force_newline ();
-   Format.print_flush ();
+   Lm_format.force_newline ();
+   Lm_format.print_flush ();
 *)
                      [(position.name,prefix)],[]
                   end
                else
                   if position.st = Delta_0 then
                      begin
-(* Format.open_box 0;
+(* Lm_format.open_box 0;
    print_endline "delta_0 prefixes ";
    print_string (position.name^" :");
    print_stringlist prefix;
    print_endline " ";
-   Format.force_newline ();
-   Format.print_flush ();
+   Lm_format.force_newline ();
+   Lm_format.print_flush ();
 *)
                         [],[(position.name,prefix)]
                      end
@@ -4300,12 +4302,12 @@ let rec try_multiplicity consts mult_limit ftree ordering pos_n mult logic =
        | _ ->
             let new_mult = mult+1 in
             if !debug_jprover then begin
-               Format.open_box 0;
-               Format.force_newline ();
-               Format.print_string "Multiplicity Fail: ";
-               Format.print_string ("Try new multiplicity "^(string_of_int new_mult));
-               Format.force_newline ();
-               Format.print_flush ();
+               Lm_format.open_box 0;
+               Lm_format.force_newline ();
+               Lm_format.print_string "Multiplicity Fail: ";
+               Lm_format.print_string ("Try new multiplicity "^(string_of_int new_mult));
+               Lm_format.force_newline ();
+               Lm_format.print_flush ();
             end;
             let (new_ftree,new_ordering,new_pos_n) =
                add_multiplicity ftree pos_n new_mult logic in
@@ -4444,74 +4446,74 @@ let do_prove mult_limit termlist logic calculus =
    try begin
       let (input_map,renamed_termlist,consts) = renam_free_vars termlist in
       let (ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof) = prove consts mult_limit renamed_termlist logic in
-      Format.open_box 0;
-      Format.force_newline ();
-      Format.force_newline ();
-      Format.print_string "Extension proof ready";
-      Format.force_newline ();
-      Format.force_newline ();
-      Format.print_string ("Length of Extension proof: "^((string_of_int (List.length ext_proof)))^
+      Lm_format.open_box 0;
+      Lm_format.force_newline ();
+      Lm_format.force_newline ();
+      Lm_format.print_string "Extension proof ready";
+      Lm_format.force_newline ();
+      Lm_format.force_newline ();
+      Lm_format.print_string ("Length of Extension proof: "^((string_of_int (List.length ext_proof)))^
                            " Axioms");
-      Format.force_newline ();
-      Format.force_newline ();
+      Lm_format.force_newline ();
+      Lm_format.force_newline ();
       print_endline "Extension proof:";
-      Format.open_box 0;
+      Lm_format.open_box 0;
       print_pairlist ext_proof;       (* print list of type (string * string) list *)
-      Format.force_newline ();
-      Format.force_newline ();
-      Format.force_newline ();
-      Format.print_flush ();
-      Format.print_flush ();
-      Format.open_box 0;
+      Lm_format.force_newline ();
+      Lm_format.force_newline ();
+      Lm_format.force_newline ();
+      Lm_format.print_flush ();
+      Lm_format.print_flush ();
+      Lm_format.open_box 0;
       print_ordering red_ordering;
-      Format.print_flush ();
-      Format.open_box 0;
-      Format.force_newline ();
+      Lm_format.print_flush ();
+      Lm_format.open_box 0;
+      Lm_format.force_newline ();
 (* ----------------------------------------------- *)
-      Format.open_box 0;
+      Lm_format.open_box 0;
       print_tunify sigmaJ;
-      Format.print_flush ();
+      Lm_format.print_flush ();
       print_endline "";
       print_endline "";
       print_sigmaQ sigmaQ;
       print_endline "";
       print_endline "";
-      Format.open_box 0;
+      Lm_format.open_box 0;
       let (qmax,equations) = eqlist in
       print_endline ("number of quantifier domains :"^(string_of_int (qmax-1)));
       print_endline "";
       print_equations equations;
-      Format.print_flush ();
+      Lm_format.print_flush ();
       print_endline "";
       print_endline "";
       print_endline ("Length of equations : "^((string_of_int (List.length equations))));
       print_endline "";
       print_endline "";
 (* --------------------------------------------------------- *)
-      Format.print_string "Break ... ";
+      Lm_format.print_string "Break ... ";
       print_endline "";
       print_endline "";
-      Format.print_flush ();
+      Lm_format.print_flush ();
       let _ = input_char stdin in
       let reconstr_proof = reconstruct ftree red_ordering sigmaQ ext_proof logic calculus in
       let sequent_proof = make_test_interface consts reconstr_proof input_map in
-      Format.open_box 0;
-      Format.force_newline ();
-      Format.force_newline ();
-      Format.print_string "Sequent proof ready";
-      Format.force_newline ();
-      Format.force_newline ();
-      Format.print_flush ();
+      Lm_format.open_box 0;
+      Lm_format.force_newline ();
+      Lm_format.force_newline ();
+      Lm_format.print_string "Sequent proof ready";
+      Lm_format.force_newline ();
+      Lm_format.force_newline ();
+      Lm_format.print_flush ();
       let (ptree,count_ax) = bproof sequent_proof in
-      Format.open_box 0;
-      Format.print_string ("Length of sequent proof: "^((string_of_int count_ax))^" Axioms");
-      Format.force_newline ();
-      Format.force_newline ();
-      Format.force_newline ();
-      Format.force_newline ();
-      Format.print_flush ();
+      Lm_format.open_box 0;
+      Lm_format.print_string ("Length of sequent proof: "^((string_of_int count_ax))^" Axioms");
+      Lm_format.force_newline ();
+      Lm_format.force_newline ();
+      Lm_format.force_newline ();
+      Lm_format.force_newline ();
+      Lm_format.print_flush ();
       tt ptree;
-      Format.print_flush ();
+      Lm_format.print_flush ();
       print_endline "";
       print_endline ""
    end with exn -> begin

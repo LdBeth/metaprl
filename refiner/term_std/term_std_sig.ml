@@ -30,6 +30,7 @@
  * jyh@cs.cornell.edu
  *)
 open Lm_symbol
+open Lm_pervasives
 
 open Opname
 open Term_sig

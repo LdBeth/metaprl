@@ -31,8 +31,9 @@
  * Author: Yegor Bryukhov @email{ynb@mail.ru}
  * Modified by: Aleksey Nogin @email{nogin@cs.cornell.edu}
  *)
-open Printf
 open Lm_debug
+open Lm_printf
+open Lm_pervasives
 open Lm_num
 
 module type HypsSig = sig
@@ -273,9 +274,9 @@ struct
 
     let print_hyps oc h =
     	let pr (t1,t2,c,tac) =
-    		Printf.fprintf oc "%a>=%a+%s\n" print_term t1 print_term t2 (string_of_num c)
+    		Lm_printf.fprintf oc "%a>=%a+%s\n" print_term t1 print_term t2 (string_of_num c)
     	in
-	    	Printf.fprintf oc "hyps:\n";
+	    	Lm_printf.fprintf oc "hyps:\n";
    	 	Array.iter pr h;
     		flush oc
 

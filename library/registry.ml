@@ -30,6 +30,7 @@
  * information.
  *)
 open Lm_debug
+open Lm_printf
 
 open Lint32
 

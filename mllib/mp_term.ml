@@ -22,9 +22,8 @@
  * Author: Jason Hickey <jyh@cs.caltech.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-
 open Lm_debug
-open Printf
+open Lm_printf
 open Unix
 
 let debug_terminal =

@@ -24,6 +24,7 @@
  *)
 
 open Lm_debug
+open Lm_printf
 
 open Phobos_type
 open Phobos_print
@@ -44,11 +45,11 @@ let debug_phobos =
  *)
 let debug_string s =
    if !debug_phobos then
-      Format.print_string s
+      Lm_format.print_string s
 
 let debug_int i =
    if !debug_phobos then
-      Format.print_int i
+      Lm_format.print_int i
 
 let rec debug_list f sep = function
    [el] ->
@@ -66,135 +67,135 @@ let rec debug_list f sep = function
 let debug_tokens s tokens =
    if !debug_phobos then
       begin
-         Format.print_string s;
+         Lm_format.print_string s;
          List.iter (fun (symbol, matched_string, pos) ->
-            Format.print_string symbol;
-            Format.print_string "=[";
-            Format.print_string matched_string;
-            Format.print_string "]{";
+            Lm_format.print_string symbol;
+            Lm_format.print_string "=[";
+            Lm_format.print_string matched_string;
+            Lm_format.print_string "]{";
             print_pos pos;
-            Format.print_string "}  ") tokens;
-         Format.print_string "\n"
+            Lm_format.print_string "}  ") tokens;
+         Lm_format.print_string "\n"
       end
 
 let debug_token_options options =
    debug_list (fun opt ->
       match opt with
          Token_remove rms ->
-            Format.print_string "-remove ";
+            Lm_format.print_string "-remove ";
             debug_list (fun (s, _) -> debug_string s) ", " rms
        | Token_extend opt ->
             (match opt with
                Some ids ->
-                  Format.print_string "-extend ";
+                  Lm_format.print_string "-extend ";
                   debug_list (fun (s, _) -> debug_string s) ", " ids
              | None ->
-                  Format.print_string "-extend% ")
+                  Lm_format.print_string "-extend% ")
        | Token_override ids ->
-            Format.print_string "-override ";
+            Lm_format.print_string "-override ";
             debug_list (fun (s, _) -> debug_string s) ", " ids) " " options
 
 let debug_token_rules s token_rules =
    if !debug_phobos then
       begin
-         Format.print_string s;
+         Lm_format.print_string s;
          List.iter (fun (_, ((id, _), token_options), _, rewrites) ->
-            Format.print_string id;
-            Format.print_string " ";
+            Lm_format.print_string id;
+            Lm_format.print_string " ";
             debug_token_options token_options;
-            Format.print_string " ==>";
+            Lm_format.print_string " ==>";
             print_pre_rewrites rewrites;
-            Format.print_string "\n") token_rules;
-         Format.print_string "\n"
+            Lm_format.print_string "\n") token_rules;
+         Lm_format.print_string "\n"
       end
 
 let debug_symbols s nonterminals terminals =
    if !debug_phobos then
       begin
-         Format.print_string s;
-         Format.print_string "\nTerminal symbols:\n";
+         Lm_format.print_string s;
+         Lm_format.print_string "\nTerminal symbols:\n";
          print_string_set terminals;
-         Format.print_string "\n\nNonterminal symbols:\n";
+         Lm_format.print_string "\n\nNonterminal symbols:\n";
          print_string_set nonterminals;
-         Format.print_string "\n";
+         Lm_format.print_string "\n";
       end
 
 let debug_regexps regexps =
    if !debug_phobos then
       begin
-         Format.print_string "Recognizing the following tokens:\n";
+         Lm_format.print_string "Recognizing the following tokens:\n";
          List.iter (fun (ignore, s, regexps) ->
             if ignore then
-               Format.print_string "{ignored} ";
-            Format.print_string s;
-            Format.print_string "=";
+               Lm_format.print_string "{ignored} ";
+            Lm_format.print_string s;
+            Lm_format.print_string "=";
             List.iter (fun regexp ->
-               Format.print_string " | ";
-               Format.print_string regexp) regexps;
-            Format.print_string "\n") regexps;
-         Format.print_string "\n"
+               Lm_format.print_string " | ";
+               Lm_format.print_string regexp) regexps;
+            Lm_format.print_string "\n") regexps;
+         Lm_format.print_string "\n"
       end
 
 let debug_pre_grammar pre_grammar =
    if !debug_phobos then
 	begin
-         Format.print_string "Rewrite rules:\n";
+         Lm_format.print_string "Rewrite rules:\n";
          List.iter (fun ((sym, pos), (_, _, rewrites)) ->
-         Format.print_string sym;
-         Format.print_string " ::= ";
+         Lm_format.print_string sym;
+         Lm_format.print_string " ::= ";
          print_pre_rewrites rewrites;
-         Format.print_string "\n") pre_grammar
+         Lm_format.print_string "\n") pre_grammar
 	end
 
 let debug_grammar s grammar =
    if !debug_phobos then
       begin
-         Format.print_string s;
+         Lm_format.print_string s;
          print_grammar grammar
       end
 
 let debug_parser_sets s nullables first_set follow_set =
    if !debug_phobos then
       begin
-         Format.print_string s;
-         Format.print_string "\nNullables:";
+         Lm_format.print_string s;
+         Lm_format.print_string "\nNullables:";
          print_psymbol_set nullables;
-         Format.print_string "\n\nFirst_set:\n";
+         Lm_format.print_string "\n\nFirst_set:\n";
          print_first_set first_set;
-         Format.print_string "\nFollow_set:\n";
+         Lm_format.print_string "\nFollow_set:\n";
          print_follow_set follow_set;
       end
 
 let debug_symbol s symbol =
    if !debug_phobos then
       begin
-         Format.print_string s;
+         Lm_format.print_string s;
          print_psymbol symbol;
-         Format.print_string "\n\n"
+         Lm_format.print_string "\n\n"
       end
 
 let debug_states s penv states accepts =
    if !debug_phobos then
       begin
-         Format.print_string s;
-         Format.print_string "States Length:";
-         Format.print_int (List.length states);
-         Format.print_string "\n\nStates:\n";
+         Lm_format.print_string s;
+         Lm_format.print_string "States Length:";
+         Lm_format.print_int (List.length states);
+         Lm_format.print_string "\n\nStates:\n";
          print_states penv states;
-         Format.print_string "\n\nAccepts Length:";
-         Format.print_int (Accepts.cardinal accepts);
-         Format.print_string "\n"
+         Lm_format.print_string "\n\nAccepts Length:";
+         Lm_format.print_int (Accepts.cardinal accepts);
+         Lm_format.print_string "\n"
       end
 
 let debug_ptable s penv ptable ptable_errors =
    if !debug_phobos then
       begin
-         Format.print_string s;
-         Format.print_string "\nErrors Length:";
-         Format.print_int (List.length ptable_errors);
-         Format.print_string "\nError locations:\n";
+         Lm_format.print_string s;
+         Lm_format.print_string "\nErrors Length:";
+         Lm_format.print_int (List.length ptable_errors);
+         Lm_format.print_string "\nError locations:\n";
          print_ploc_list penv ptable ptable_errors;
-         Format.print_string "\nAll entries:\n";
+         Lm_format.print_string "\nAll entries:\n";
          ParserFA.fold (fun () key _ ->
             print_ploc penv ptable key) () ptable;
       end

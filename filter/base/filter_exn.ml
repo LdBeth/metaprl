@@ -29,8 +29,9 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
+open Lm_rformat
+open Lm_pervasives
 
-open Rformat
 open Dform
 open Simple_print.SimplePrint
 open File_type_base
@@ -68,130 +69,141 @@ let format_version buf i =
 (*
  * Convert an exception to a string.
  *)
-let rec format_exn db buf = function
-   FormatError (name, t) ->
-      format_string buf "FormatError:";
-      format_space buf;
-      format_string buf name;
-      format_space buf;
-      format_short_term db (fun _ -> Opname.nil_opname) buf t
- | BadParamCast (p, s) ->
-      format_string buf "Bad param cast:";
-      format_space buf;
-      format_simple_param buf p;
-      format_space buf;
-      format_string buf "to";
-      format_space buf;
-      format_string buf s
- | ParseError s ->
-      format_string buf "Parse error:";
-      format_space buf;
-      format_string buf s
- | BadCommand s ->
-      format_string buf "Bad command:";
-      format_string buf s
- | EmptyModulePath s ->
-      format_string buf "Empty module path:";
-      format_space buf;
-      format_string buf s
- | Bad_magic s ->
-      format_string buf "! File ";
-      format_string buf s;
-      format_string buf " has a wrong magic number.";
-      format_newline buf;
-      format_string buf "! This means that is is either not a MetaPRL file";
-      format_newline buf;
-      format_string buf "! or is not compatible with the version of the MetaPRL you are trying to use.";
-      format_newline buf;
-      format_string buf "! If you are sure this file does not contain any unsaved data, delete it.";
-      format_newline buf;
-      format_string buf "! If it does contain unsaved data, you might need to get a different version of MetaPRL";
-      format_newline buf;
-      format_string buf "! and possibly export the data to a different format."
- | Bad_version(s,versions,version) ->
-      format_string buf "! File ";
-      format_string buf s;
-      format_string buf " has an unsupported version.";
-      format_newline buf;
-      format_string buf "! MetaPRL currently supports version(s) ";
-      List.iter (fun v -> format_version buf v; format_string buf ", ") versions;
-      format_newline buf;
-      format_string buf "! but the file has version ";
-      format_version buf version;
-      format_newline buf;
-      format_string buf "! If you are sure this file does not contain any unsaved data, delete it.";
-      format_newline buf;
-      format_string buf "! If it does contain unsaved data, you might need to get a different version of MetaPRL";
-      format_newline buf;
-      format_string buf "! and possibly export the data to a different format."
- | Stdpp.Exc_located (loc, exn) ->
-      format_pushm buf 3;
-      if !Pcaml.input_file <> "-" then begin
-         let (line, bp, ep) = Stdpp.line_of_loc !Pcaml.input_file loc in
-            format_string buf "File \"";
-            format_string buf !Pcaml.input_file;
-            format_string buf "\", line ";
-            format_int buf line;
-            format_string buf ", characters ";
-            format_int buf bp;
-            format_string buf "-";
-            format_int buf ep;
-      end else begin
-         format_string buf "Chars ";
-         format_int buf (fst loc);
-         format_string buf "-";
-         format_int buf (snd loc);
-      end;
-      format_string buf ": ";
-      format_newline buf;
-      format_szone buf;
-      format_exn db buf exn;
-      format_ezone buf;
-      format_popm buf;
- | Pcaml.Qerror (name, where, exn) ->
-      let name = if name = "" then !(Quotation.default) else name in
-      format_pushm buf 3;
-      format_string buf ("While " ^
-         (match where with
-            Pcaml.Finding -> "finding quotation"
-          | Pcaml.Expanding -> "expanding quotation"
-          | Pcaml.ParsingResult _ -> "parsing result of quotation"
-          | Pcaml.Locating -> "parsing"
-         ) ^ " \"" ^ name ^ "\":");
-      format_space buf;
-      format_szone buf;
-      format_exn db buf exn;
-      format_ezone buf;
-      format_popm buf
- | exn ->
-      Exn_boot.format_exn db buf exn
+let rec format_exn db buf exn =
+   match exn with
+      FormatError (name, t) ->
+         format_string buf "FormatError:";
+         format_space buf;
+         format_string buf name;
+         format_space buf;
+         format_short_term db (fun _ -> Opname.nil_opname) buf t
+    | BadParamCast (p, s) ->
+         format_string buf "Bad param cast:";
+         format_space buf;
+         format_simple_param buf p;
+         format_space buf;
+         format_string buf "to";
+         format_space buf;
+         format_string buf s
+    | ParseError s ->
+         format_string buf "Parse error:";
+         format_space buf;
+         format_string buf s
+    | BadCommand s ->
+         format_string buf "Bad command:";
+         format_string buf s
+    | EmptyModulePath s ->
+         format_string buf "Empty module path:";
+         format_space buf;
+         format_string buf s
+    | Bad_magic s ->
+         format_string buf "! File ";
+         format_string buf s;
+         format_string buf " has a wrong magic number.";
+         format_newline buf;
+         format_string buf "! This means that is is either not a MetaPRL file";
+         format_newline buf;
+         format_string buf "! or is not compatible with the version of the MetaPRL you are trying to use.";
+         format_newline buf;
+         format_string buf "! If you are sure this file does not contain any unsaved data, delete it.";
+         format_newline buf;
+         format_string buf "! If it does contain unsaved data, you might need to get a different version of MetaPRL";
+         format_newline buf;
+         format_string buf "! and possibly export the data to a different format."
+    | Bad_version(s,versions,version) ->
+         format_string buf "! File ";
+         format_string buf s;
+         format_string buf " has an unsupported version.";
+         format_newline buf;
+         format_string buf "! MetaPRL currently supports version(s) ";
+         List.iter (fun v -> format_version buf v; format_string buf ", ") versions;
+         format_newline buf;
+         format_string buf "! but the file has version ";
+         format_version buf version;
+         format_newline buf;
+         format_string buf "! If you are sure this file does not contain any unsaved data, delete it.";
+         format_newline buf;
+         format_string buf "! If it does contain unsaved data, you might need to get a different version of MetaPRL";
+         format_newline buf;
+         format_string buf "! and possibly export the data to a different format."
+    | Stdpp.Exc_located (loc, exn) ->
+         format_pushm buf 3;
+         if !Pcaml.input_file <> "-" then
+            begin
+               let (line, bp, ep) = Stdpp.line_of_loc !Pcaml.input_file loc in
+                  format_string buf "File \"";
+                  format_string buf !Pcaml.input_file;
+                  format_string buf "\", line ";
+                  format_int buf line;
+                  format_string buf ", characters ";
+                  format_int buf bp;
+                  format_string buf "-";
+                  format_int buf ep;
+            end
+         else
+            begin
+               format_string buf "Chars ";
+               format_int buf (fst loc);
+               format_string buf "-";
+               format_int buf (snd loc);
+            end;
+         format_string buf ": ";
+         format_newline buf;
+         format_szone buf;
+         format_exn db buf exn;
+         format_ezone buf;
+         format_popm buf;
+    | Pcaml.Qerror (name, where, exn) ->
+         let name = if name = "" then !(Quotation.default) else name in
+            format_pushm buf 3;
+            format_string buf ("While " ^
+                                  (match where with
+                                      Pcaml.Finding -> "finding quotation"
+                                    | Pcaml.Expanding -> "expanding quotation"
+                                    | Pcaml.ParsingResult _ -> "parsing result of quotation"
+                                    | Pcaml.Locating -> "parsing"
+                                  ) ^ " \"" ^ name ^ "\":");
+            format_space buf;
+            format_szone buf;
+            format_exn db buf exn;
+            format_ezone buf;
+            format_popm buf
+    | exn ->
+         Exn_boot.format_exn db buf exn
 
 (*
  * Print an exception if it occurs, then reraise it.
  *)
-let print =
-   if Exn_boot.backtrace then
-      fun _ _ f x -> f x
-   else
-      fun db s f x -> try f x with exn ->
+let dont_print_exn _ _ f x =
+   f x
+
+let print_exn db s f x =
+   try f x with
+      exn ->
          let buf = new_buffer () in
-            begin match s with
-               None ->
-                  format_pushm buf 0;
-                  format_szone buf
-             | Some s ->
-                  format_pushm buf 3;
-                  format_string buf s;
-                  format_szone buf
+            begin
+               match s with
+                  None ->
+                     format_pushm buf 0;
+                     format_szone buf
+                | Some s ->
+                     format_pushm buf 3;
+                     format_string buf s;
+                     format_szone buf
             end;
             format_exn db buf exn;
             format_ezone buf;
             format_popm buf;
             format_newline buf;
-            format_newline buf;
-            print_text_channel default_width buf stderr;
+            output_rbuffer stderr buf;
             flush stderr;
             raise exn
+
+let print_exn =
+   if Exn_boot.backtrace then
+      dont_print_exn
+   else
+      print_exn
 
 (*
  * -*-

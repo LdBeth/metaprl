@@ -49,7 +49,7 @@ let bogus_pos = ("<default>", 0, 0, 0, 0)
  *)
 let string_add = String.concat ""
 
-let string_format = Printf.sprintf
+let string_format = Lm_printf.sprintf
 
 let list_mem lst el = List.mem el lst
 
@@ -109,7 +109,7 @@ let breakup_bterm bterm =
       (* Ignore bound variables! *)
       breakup_term term
 
- 
+
 (* File operations *)
 let timestamp_of file =
    let stats = Unix.stat file in

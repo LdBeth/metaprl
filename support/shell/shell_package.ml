@@ -29,7 +29,6 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-
 extends Shell_sig
 extends Package_info
 extends Summary
@@ -64,7 +63,7 @@ type java_window =
 type text_window =
    { df_base : dform_mode_base;
      df_mode : string;
-     df_width : int
+     mutable df_width : int
    }
 
 type window =
@@ -92,6 +91,19 @@ let create_window = function
       BrowserWindow { df_base = base; df_mode = "html"; df_width = 70 }
 
 (*
+ * Update the width based on the terminal.
+ *)
+let update_terminal_width window =
+   match window with
+      TextWindow info ->
+         info.df_width <- Mp_term.term_width Pervasives.stdout info.df_width;
+         window
+    | TexWindow _
+    | JavaWindow _
+    | BrowserWindow _ ->
+         window
+
+(*
  * Copy the window.
  *)
 let new_window = function
@@ -106,26 +118,26 @@ let new_window = function
  * Display a term in the window.
  *)
 let display_term pack window term =
-   match window with
+   match update_terminal_width window with
       TextWindow { df_base = base; df_mode = mode; df_width = width } ->
          let df = get_mode_base base mode in
-         let buf = Rformat.new_buffer () in
+         let buf = Lm_rformat.new_buffer () in
             Dform.format_term df buf term;
-            Rformat.print_text_channel width buf stdout;
+            Lm_rformat_text.print_text_channel width buf stdout;
             flush stdout
     | TexWindow { df_base = base; df_mode = mode; df_width = width } ->
          let df = get_mode_base base mode in
-         let buf = Rformat.new_buffer () in
+         let buf = Lm_rformat.new_buffer () in
          let out = Shell_tex.open_file () in
             Dform.format_term df buf term;
-            Rformat.print_tex_channel width buf out;
+            Lm_rformat_tex.print_tex_channel width buf out;
             Shell_tex.close_file out
     | JavaWindow { pw_menu = menu } ->
          Java_display_term.set_dir menu ("/" ^ Package.name pack);
          Java_display_term.set menu term
     | BrowserWindow { df_base = base; df_mode = mode; df_width = width } ->
          let df = get_mode_base base mode in
-         let buf = Rformat.new_buffer () in
+         let buf = Lm_rformat.new_buffer () in
             Dform.format_term df buf term;
             Browser_display_term.set_main width buf
 
@@ -316,9 +328,6 @@ let rec edit pack_info parse_arg window =
    let edit_check _ =
       raise_edit_error "check the entire package? Use check_all."
    in
-   let edit_expand _ =
-      raise_edit_error "expand all the proofs in the package? Use expand_all."
-   in
    let edit_root () =
       ()
    in
@@ -343,7 +352,7 @@ let rec edit pack_info parse_arg window =
    let edit_refine _ _ _ =
       raise_edit_error "can't refine the package"
    in
-   let edit_interpret command =
+   let edit_interpret _ =
       raise_edit_error "this is not a proof"
    in
    let edit_get_contents () =
@@ -361,7 +370,6 @@ let rec edit pack_info parse_arg window =
         edit_get_extract = not_a_rule;
         edit_save = edit_save;
         edit_check = edit_check;
-        edit_expand = edit_expand;
         edit_root = edit_root;
         edit_up = edit_up;
         edit_down = edit_down;

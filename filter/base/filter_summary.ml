@@ -32,11 +32,11 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-open Lm_symbol
-
-open Printf
-
 open Lm_debug
+open Lm_symbol
+open Lm_printf
+open Lm_pervasives
+
 open Opname
 open Term_sig
 open Refiner_sig

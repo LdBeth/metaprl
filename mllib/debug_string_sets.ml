@@ -1,6 +1,6 @@
-open Lm_debug
+open Lm_pervasives
 open Lm_set_sig
-open Printf
+open Lm_printf
 
 module Make
    (Set1: MinimalSetSig with type elt = string)

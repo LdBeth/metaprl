@@ -27,9 +27,10 @@
 
 (*conversion between nuprl-light terms and mathbus terms*)
 
+open Lm_debug
 open Lm_symbol
 
-open Lm_debug
+open Lm_printf
 
 open Lint32
 open Lm_num

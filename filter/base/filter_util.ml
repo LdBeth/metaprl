@@ -32,6 +32,7 @@
  *)
 
 open Lm_debug
+open Lm_printf
 open Opname
 open Term_sig
 open Refiner.Refiner

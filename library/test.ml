@@ -32,8 +32,8 @@
  *
  *)
 
-open Printf
 open Lm_debug
+open Lm_printf
 
 open Utils
 open Basic

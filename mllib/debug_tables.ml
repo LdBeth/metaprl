@@ -29,8 +29,7 @@
  *
  * Author: Alexey Nogin
  *)
-open Format
-
+open Lm_format
 open Lm_map_sig
 
 module MakeTable

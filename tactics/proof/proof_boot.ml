@@ -58,10 +58,10 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-open Printf
-
 open Lm_debug
+open Lm_printf
 open Lm_threads
+open Lm_pervasives
 
 open Opname
 open Refiner.Refiner
@@ -72,7 +72,7 @@ open Refine
 open Refiner_sig
 open Refiner_io
 
-open Rformat
+open Lm_rformat
 open Dform
 
 open Term_eq_table
@@ -242,10 +242,10 @@ struct
          format_extract db buf proof.pf_node
 
    let print_ext ext =
-      let buf = Rformat.new_buffer () in
+      let buf = Lm_rformat.new_buffer () in
          format_extract ("prl", find_dftable Mp_resource.top_bookmark) buf ext;
          format_newline buf;
-         print_text_channel default_width buf stderr;
+         prerr_rbuffer buf;
          flush stderr
 
    (************************************************************************
@@ -590,7 +590,7 @@ struct
       in
          if !debug_proof then begin
             let db = ("prl", find_dftable Mp_resource.top_bookmark) in
-            let buf = Rformat.new_buffer () in
+            let buf = Lm_rformat.new_buffer () in
             format_hzone buf;
             format_string buf "Leaves of";
             format_space buf;
@@ -604,7 +604,7 @@ struct
             format_space buf;
             List.iter (format_arg db buf) leaves;
             format_ezone buf;
-            print_text_channel default_width buf stderr;
+            prerr_rbuffer buf;
             eprintf "%t" eflush
          end;
          remove_duplicates [] leaves
@@ -1869,15 +1869,8 @@ struct
                let attr =
                   let attrs = squash_attributes attrs in
                   if squash then begin
-                     if attrs <> empty_attribute then begin
-                     (* This is too verbose
-                        let buf = Rformat.new_buffer () in
-                        format_arg !debug_base buf arg;
-                        eprintf "Warning: Proof_boot.io_proof_of_proof: an attribute list in unjustified node was non-empty before IO:\n%t%t"
-                           (print_text_channel default_width buf) eflush
-                      *)
-                      eprintf "Warning: Proof_boot.io_proof_of_proof: unexpected attribute list. If the .prla file is old, ignore this warning\n"
-                     end;
+                     if attrs <> empty_attribute then
+                        eprintf "Warning: Proof_boot.io_proof_of_proof: unexpected attribute list. If the .prla file is old, ignore this warning\n";
                      empty_attribute
                  end else attrs
                in let arg' =

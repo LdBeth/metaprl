@@ -29,13 +29,14 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-open Lm_symbol
-
-open Printf
 open Lm_debug
+open Lm_symbol
+open Lm_printf
+open Lm_rformat
+open Lm_rformat_text
+open Lm_pervasives
 
 open Precedence
-open Rformat
 open Opname
 open Term_sig
 open Refiner.Refiner.Term
@@ -62,7 +63,7 @@ let debug_dform =
 let debug_dform_depth =
    create_debug (**)
       { debug_name = "dform_depth";
-        debug_description = "check zone depth to catch unballanced buffers";
+        debug_description = "check zone depth to catch unbalanced buffers";
         debug_value = false
       }
 
@@ -73,7 +74,7 @@ let debug_dform_depth =
 (*
  * Print to term tagged buffers.
  *)
-type buffer = Rformat.buffer
+type buffer = Lm_rformat.buffer
 
 (*
  * A display form printer knows about this term, and
@@ -807,12 +808,12 @@ let format_term base buf t =
 let print_term_fp base out term =
    let buf = new_buffer () in
       format_term base buf term;
-      print_text_channel default_width buf out
+      output_rbuffer out buf
 
 let print_short_term_fp base shortener out term =
    let buf = new_buffer() in
       format_short_term base shortener buf term;
-      print_text_channel default_width buf out
+      output_rbuffer out buf
 
 let print_term base = print_term_fp base stdout
 
@@ -830,7 +831,7 @@ let format_bterm base buf =
 let print_bterm_fp base out term =
    let buf = new_buffer () in
       format_bterm base buf term;
-      print_text_channel default_width buf out
+      output_rbuffer out buf
 
 let print_bterm base = print_bterm_fp base stdout
 
@@ -888,7 +889,7 @@ let rec format_mterm base buf = function
 let print_mterm_fp base out mterm =
    let buf = new_buffer () in
       format_mterm base buf mterm;
-      print_text_channel default_width buf out
+      output_rbuffer out buf
 
 let print_mterm base = print_mterm_fp base stdout
 

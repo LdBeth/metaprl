@@ -24,7 +24,7 @@
  * @email{jyh@cs.caltech.edu}
  * @end[license]
  *)
-open Printf
+open Lm_printf
 
 (*
  * Output a unicode code in utf8.

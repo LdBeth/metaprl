@@ -29,8 +29,11 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-open Lm_symbol
 open Lm_debug
+open Lm_symbol
+open Lm_printf
+open Lm_rformat
+open Lm_pervasives
 
 open Term_sig
 open Refine_sig
@@ -38,7 +41,6 @@ open Opname
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermAddr
 open Refiner.Refiner.RefineError
-open Rformat
 open Simple_print.SimplePrint
 open Dform
 
@@ -92,7 +94,7 @@ let rec format_strings buf = function
       ()
 
 (*
- * Format a hypothesis.
+ * Lm_format a hypothesis.
  *)
 let format_hypothesis db buf printers = function
    Context (v, conts, subterms) ->
@@ -316,13 +318,13 @@ let format_exn db buf exn =
 (*
  * Print to a channel.
  *)
-let print db f x =
+let print_exn db f x =
    try f x with
       exn ->
          let buf = new_buffer () in
             format_exn db buf exn;
             format_newline buf;
-            print_text_channel default_width buf stderr;
+            output_rbuffer stderr buf;
             flush stderr;
             raise exn
 
@@ -336,7 +338,7 @@ let stderr_exn s exn =
       format_popm buf;
       format_ezone buf;
       format_newline buf;
-      print_text_channel default_width buf stderr;
+      output_rbuffer stderr buf;
       flush stderr;
       raise exn
 

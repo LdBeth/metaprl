@@ -41,7 +41,7 @@ open Ensemble.Util
 open Ensemble.View
 open Ensemble.Appl_intf
 
-open Printf
+open Lm_printf
 
 (*
  * Debug variables.

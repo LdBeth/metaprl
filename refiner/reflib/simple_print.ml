@@ -30,12 +30,13 @@
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *
  *)
-open Lm_symbol
-
-open Printf
 open Lm_debug
+open Lm_symbol
+open Lm_pervasives
+open Lm_printf
+open Lm_rformat
+open Lm_rformat_text
 
-open Rformat
 open Opname
 open Term_sig
 open Refiner_sig
@@ -73,8 +74,7 @@ struct
    type bound_term = TermType.bound_term
    type meta_term = TermMeta.meta_term
    type address = TermAddr.address
-
-   type buffer = Rformat.buffer
+   type buffer = Lm_rformat.buffer
 
    (************************************************************************
     * PRINTERS                                                             *
@@ -85,8 +85,11 @@ struct
       if !debug_simple_print then
          eprintf "Simple_print.format_level_exp%t" eflush;
       let rec format_quotes = function
-         0 -> ()
-       | i -> format_char buf '\''; format_quotes (i - 1)
+         0 ->
+            ()
+       | i ->
+            format_char buf '\'';
+            format_quotes (i - 1)
       in
       let format_var lv =
          match dest_level_var lv with
@@ -107,16 +110,18 @@ struct
           | { le_const = 0; le_vars = [v] } ->
                (match dest_level_var v with
                   { le_var = v; le_offset = o } ->
-                     if o < 3 then begin
-                     format_quoted_var buf v;
-                     format_quotes o
-                  end
-                  else begin
-                     format_string buf "{";
-                     format_quoted_var buf v;
-                     format_int buf o;
-                     format_string buf "}"
-                  end)
+                      if o < 3 then
+                         begin
+                            format_quoted_var buf v;
+                            format_quotes o
+                         end
+                      else
+                         begin
+                            format_string buf "{";
+                            format_quoted_var buf v;
+                            format_int buf o;
+                            format_string buf "}"
+                         end)
 
           | { le_const = c; le_vars = vars } ->
                 let rec maxaux = function
@@ -135,10 +140,11 @@ struct
                        format_vars t
                 in
                    format_string buf "{";
-                   if maxoff < c then begin
-                       format_int buf c;
-                       format_string buf " | "
-                   end;
+                   if maxoff < c then
+                      begin
+                         format_int buf c;
+                         format_string buf " | "
+                      end;
                    format_vars vars;
                    format_string buf "}"
 
@@ -436,7 +442,7 @@ struct
    let print_simple_level_exp_fp out p =
       let buf = new_buffer () in
          format_level_exp buf p;
-         print_text_channel default_width buf out
+         output_rbuffer out buf
 
    let print_simple_level_exp = print_simple_level_exp_fp stdout
 
@@ -453,7 +459,7 @@ struct
    let print_simple_param_fp out p =
       let buf = new_buffer () in
          format_param buf p;
-         print_text_channel default_width buf out
+         output_rbuffer out buf
 
    let print_simple_param = print_simple_param_fp stdout
 
@@ -462,7 +468,8 @@ struct
    let string_of_param p =
       let buf = new_buffer () in
          format_param buf p;
-         print_text_string default_width buf
+         output_rbuffer stdstr buf;
+         flush_stdstr ()
 
    (* Terms *)
    let format_simple_term = format_term
@@ -470,7 +477,7 @@ struct
    let print_simple_term_fp out term =
       let buf = new_buffer () in
          format_term buf term;
-         print_text_channel default_width buf out
+         output_rbuffer out buf
 
    let print_simple_term = print_simple_term_fp stdout
 
@@ -479,7 +486,8 @@ struct
    let string_of_term term =
       let buf = new_buffer () in
          format_term buf term;
-         print_text_string default_width buf
+         output_rbuffer stdstr buf;
+         flush_stdstr ()
 
    let short_string_of_term term =
       line_format default_width ( fun buf -> format_term buf term)
@@ -490,7 +498,7 @@ struct
    let print_simple_bterm_fp out term =
       let buf = new_buffer () in
          format_bterm buf term;
-         print_text_channel default_width buf out
+         output_rbuffer out buf
 
    let print_simple_bterm = print_simple_bterm_fp stdout
 
@@ -499,7 +507,8 @@ struct
    let string_of_bterm term =
       let buf = new_buffer () in
          format_bterm buf term;
-         print_text_string default_width buf
+         output_rbuffer stdstr buf;
+         flush_stdstr ()
 
    (*
     * MetaTerms.
@@ -509,7 +518,7 @@ struct
    let print_simple_mterm_fp out mterm =
       let buf = new_buffer () in
          format_mterm buf mterm;
-         print_text_channel default_width buf out
+         output_rbuffer out buf
 
    let print_simple_mterm = print_simple_mterm_fp stdout
 
@@ -532,8 +541,7 @@ struct
    (*
     * Install simple printer as default printer.
     *)
-   let _ = install_debug_printer print_simple_term_fp
-
+   let () = install_debug_printer print_simple_term_fp
 end
 
 module SimplePrint = MakeSimplePrint (Refiner.Refiner)

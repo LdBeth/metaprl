@@ -35,6 +35,7 @@ DEFAULT_OCAMLFLAGS=-warn-error A -w A
 #
 TERMS_DEFAULT=undefined
 REFINER_DEFAULT=undefined
+FORMAT_DEFAULT=Lm_format
 SEQ_SET_DEFAULT=Lm_array
 ENSROOT_DEFAULT=undefined
 OCAMLSRC_DEFAULT=undefined

@@ -98,7 +98,7 @@ sig
     * These are the functions that are useful.
     *)
    val read_table : in_channel -> io_table
-   val write_term : out_channel -> io_table -> term -> unit
+   val write_term : Pervasives.out_channel -> io_table -> term -> unit
 
    (*
     * INPUT
@@ -109,8 +109,8 @@ sig
    (* you may find Lm_string_util.unquote function useful *)
    val add_line : io_table -> io_item -> unit
    val get_term : io_table -> term
-   
-   (* Just in case we want to read a particulare entry from the .prla file *)
+
+   (* Just in case we want to read a particular entry from the .prla file *)
    val get_named_term : io_table -> string -> term
    val read_from_file : string -> string -> term
 
@@ -146,9 +146,9 @@ sig
    val simple_name_bterm : bound_term -> string * string
    val simple_name_hyp : hypothesis -> string * string
    val simple_name_seq : esequent -> string * string
-   val simple_output_line : out_channel -> io_item -> unit
+   val simple_output_line : Pervasives.out_channel -> io_item -> unit
 
    (* io_control uning simple_* functions *)
-   val make_simple_control : out_channel -> out_control
+   val make_simple_control : Pervasives.out_channel -> out_control
 
 end

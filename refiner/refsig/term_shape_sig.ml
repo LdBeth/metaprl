@@ -31,7 +31,8 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-open Format
+open Lm_pervasives
+open Lm_format
 
 type shape_param =
    ShapeNumber

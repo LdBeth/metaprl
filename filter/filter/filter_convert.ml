@@ -33,6 +33,7 @@
  *)
 
 open Lm_debug
+open Lm_printf
 
 open File_base_type
 

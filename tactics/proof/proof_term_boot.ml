@@ -30,6 +30,7 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
+open Lm_debug
 
 open Opname
 open Weak_memo

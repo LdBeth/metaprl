@@ -30,7 +30,7 @@
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
-open Rformat
+open Lm_rformat
 
 open Proof_boot.Proof
 open Tactic_boot.TacticInternal

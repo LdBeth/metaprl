@@ -37,9 +37,10 @@
 
 INCLUDE "refine_error.mlh"
 
+open Lm_debug
 open Lm_symbol
 
-open Lm_debug
+open Lm_printf
 open Term_sig
 open Term_base_sig
 open Term_man_sig

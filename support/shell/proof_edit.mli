@@ -129,17 +129,19 @@ val clean_ped : ped -> unit
 val squash_ped : ped -> unit
 
 (*
- * Check the proof and return its extract.
- * Two versions for handling refinement errors:
- *    check_proof: expand until first error, exceptions propagate
- *       On failure, the ped is modified to point to the error
- *    expand_proof: check as much of the proof as possible,
- *       no exceptions are raised
+ * Get the status of the proof.
  *)
-val expand_ped : dform_base -> ped -> unit
-val refiner_extract_of_ped : dform_base -> ped -> Refine.extract
-val check_ped : Refine.refiner -> opname -> dform_base -> ped -> ref_status
 val ped_status : ped Filter_summary_type.proof_type -> obj_status
+
+(************************************************************************
+ * Display.
+ *)
+type window
+
+type incomplete_ped =
+   Primitive of tactic_arg
+ | Incomplete of tactic_arg
+ | Derived of tactic_arg * MLast.expr
 
 (*
  * Put all the commands into a single argument for interpretation.
@@ -158,29 +160,31 @@ type proof_command =
  | ProofCopy of string
  | ProofPaste of string
  | ProofCp of int list * int list
- | ProofExpand of dform_base
+ | ProofExpand
  | ProofMakeAssum
  | ProofClean
  | ProofSquash
 
-val interpret : ped -> proof_command -> unit
+val interpret : window -> ped -> proof_command -> unit
 
 (*
- * Display.
+ * Check the proof and return its extract.
+ * Two versions for handling refinement errors:
+ *    check_proof: expand until first error, exceptions propagate
+ *       On failure, the ped is modified to point to the error
+ *    expand_proof: check as much of the proof as possible,
+ *       no exceptions are raised
  *)
-type window
-
-type incomplete_ped =
-   Primitive of tactic_arg
- | Incomplete of tactic_arg
- | Derived of tactic_arg * MLast.expr
+val check_ped              : window -> Refine.refiner -> opname -> ped -> ref_status
+val refiner_extract_of_ped : window -> ped -> Refine.extract
+val print_exn              : window -> ('a -> 'b) -> 'a -> 'b
 
 (*
  * Create text or HTML.
  *)
-val create_text_window : dform_mode_base -> string -> window
-val create_tex_window : dform_mode_base -> window
-val create_java_window : Java_mux_channel.session -> dform_mode_base -> window
+val create_text_window    : dform_mode_base -> string -> window
+val create_tex_window     : dform_mode_base -> window
+val create_java_window    : Java_mux_channel.session -> dform_mode_base -> window
 val create_browser_window : dform_mode_base -> window
 
 (*

@@ -4,9 +4,8 @@
  * or environment variables.
  *
  *)
-
-open Printf
 open Lm_debug
+open Lm_printf
 
 (*
  * Show the file loading.

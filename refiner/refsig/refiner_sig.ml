@@ -29,7 +29,6 @@
  * Authors: Jason Hickey, Alexey Nogin
  * jyh@cs.cornell.edu
  *)
-
 open Term_sig
 open Term_base_sig
 open Term_op_sig

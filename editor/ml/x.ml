@@ -30,7 +30,7 @@
  * jyh@cs.cornell.edu
  *)
 
-open Printf
+open Lm_printf
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermAddr

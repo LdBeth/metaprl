@@ -32,13 +32,12 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Lm_debug
 open Lm_symbol
-
-open Printf
 
 open MLast
 
-open Lm_debug
+open Lm_printf
 
 open Opname
 open Refiner_sig
@@ -208,7 +207,7 @@ struct
                when (Lm_num.is_integer_num start && Lm_num.is_integer_num finish) ->
                (Lm_num.int_of_num start, Lm_num.int_of_num finish), s
           | _ ->
-               raise_format_error (Printf.sprintf "dest_loc_string: %s: needs two numbers and a string" name) t
+               raise_format_error (Lm_printf.sprintf "dest_loc_string: %s: needs two numbers and a string" name) t
 
    let dest_loc_string_term name t =
       let loc, s = dest_loc_string name t in

@@ -31,9 +31,8 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-
-open Printf
 open Lm_debug
+open Lm_printf
 open File_base_type
 
 (*

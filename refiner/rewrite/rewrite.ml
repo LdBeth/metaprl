@@ -35,10 +35,10 @@
 
 INCLUDE "refine_error.mlh"
 
-open Lm_symbol
-
-open Printf
 open Lm_debug
+open Lm_symbol
+open Lm_pervasives
+open Lm_printf
 
 open Term_sig
 open Term_base_sig

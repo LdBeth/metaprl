@@ -33,7 +33,7 @@
 open Lm_debug
 open Lm_thread_util
 
-open Printf
+open Lm_printf
 
 (*
  * Debug variables.

@@ -29,7 +29,7 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-
+open Lm_pervasives
 open Refiner.Refiner.Term
 open Mp_resource
 

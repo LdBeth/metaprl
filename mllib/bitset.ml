@@ -3,6 +3,7 @@
  *)
 
 open Lm_debug
+open Lm_printf
 
 (*
  * Show the file loading.

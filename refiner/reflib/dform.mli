@@ -30,6 +30,7 @@
  * jyh@cs.cornell.edu
  *
  *)
+open Lm_pervasives
 
 open Precedence
 open Opname
@@ -50,7 +51,7 @@ type dform_table
 (*
  * Print to term tagged buffers.
  *)
-type buffer = Rformat.buffer
+type buffer = Lm_rformat.buffer
 
 (*
  * A display form printer knows about this term, and

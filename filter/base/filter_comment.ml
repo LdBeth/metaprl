@@ -38,6 +38,7 @@
  *)
 
 open Lm_debug
+open Lm_printf
 
 open MLast
 open MLast_util

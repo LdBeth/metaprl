@@ -29,9 +29,8 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-open Printf
-
 open Lm_debug
+open Printf
 
 open Http_server_type
 
@@ -41,6 +40,10 @@ let debug_http =
         debug_description = "HTTP server operations";
         debug_value = false
       }
+
+let eflush out =
+   output_char out '\n';
+   flush out
 
 (************************************************************************
  * TYPES                                                                *
@@ -572,7 +575,7 @@ let handle server connect info client =
          eprintf "Httpd_simple.handle: %s%t" line eflush
    in
    let state = connect server info outx inx args header body in
-      flush outx;
+      Pervasives.flush outx;
       state
 
 (*

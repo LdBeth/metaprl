@@ -33,8 +33,7 @@
 module Shell = Shell.Shell (Shell_p4.ShellP4)
 
 open Shell
-open Printf
-open Lm_debug
+open Lm_printf
 
 module Nuprl = Nuprl_eval.Nuprl(Shell)
 module NuprlRun = Nuprl_run.NuprlRun(Nuprl)

@@ -30,8 +30,8 @@
  * jyh@cs.cornell.edu
  *)
 
-open Printf
 open Lm_debug
+open Lm_printf
 
 let _ =
    show_loading "Loading Mp_top%t"

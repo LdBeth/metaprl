@@ -29,12 +29,12 @@ open Arg
 
 let version = ref "<unknown-version>"
 let refiner = ref "<unknown-refiner>"
-let terms = ref "<unknown-terms>"
+let terms   = ref "<unknown-terms>"
 
 let spec =
    ["-version", String (fun s -> version := s), "MetaPRL version";
     "-refiner", String (fun s -> refiner := s), "Refiner name";
-    "-terms", String (fun s -> terms := s), "Terms name"]
+    "-terms",   String (fun s -> terms := s), "Terms name"]
 
 let wday_names =
    [|"Sun"; "Mon"; "Tue"; "Wed"; "Thu"; "Fri"; "Sat"|]

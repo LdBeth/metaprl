@@ -32,7 +32,7 @@
  *
  *)
 
-open Printf
+open Lm_printf
 
 (*
  * This tells the marshaler about the symbols.

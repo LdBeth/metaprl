@@ -31,14 +31,14 @@
  * jyh@cs.cornell.edu
  *)
 
+open Lm_debug
 open Hsys
 open Ensemble
 open Ensemble.Util
 open Ensemble.View
 open Ensemble.Appl_handle
 
-open Printf
-open Lm_debug
+open Lm_printf
 
 open Appl_outboard_common
 

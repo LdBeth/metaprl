@@ -31,7 +31,7 @@
  *
  *)
 
-open Printf
+open Lm_printf
 
 let generate size =
    (* Exclude other pigeons in this hole *)

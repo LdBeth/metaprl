@@ -30,11 +30,11 @@
  * nogin@cs.cornell.edu
  *
  *)
+open Lm_debug
 open Lm_symbol
 open Lm_string_set
 
-open Printf
-open Lm_debug
+open Lm_printf
 
 open Opname
 

@@ -33,6 +33,7 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
+open Lm_pervasives
 
 (*
  * This module is used to provide arguments to the thread module.

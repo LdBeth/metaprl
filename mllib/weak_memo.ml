@@ -258,7 +258,7 @@ ENDIF
          invalid_arg "WeakMemo.retrieve: out of range";
       (IFDEF VERBOSE_EXN THEN (**)
           if index.desc_name <> info.name then
-             invalid_arg (Printf.sprintf "WeakMemo.retrieve: try to retrieve from wrong table: %s from %s" index.desc_name info.name)
+             invalid_arg (Lm_printf.sprintf "WeakMemo.retrieve: try to retrieve from wrong table: %s from %s" index.desc_name info.name)
        ENDIF);
       match Weak.get info.image_array index.descriptor with
          Some item ->

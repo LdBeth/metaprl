@@ -31,7 +31,7 @@
  *
  *)
 
-open Printf
+open Lm_printf
 
 open Instruct
 

@@ -22,7 +22,7 @@
  * Email: granicz@cs.caltech.edu
  *)
 
-open Rformat
+open Lm_rformat
 
 let tabstop = 8
 
@@ -42,10 +42,10 @@ let current_file () =
       name
 
 let string_of_pos (name, i1, i2, i3, i4) =
-   Printf.sprintf "file \"%s\" pos %d:%d-%d:%d" name i1 i2 i3 i4
+   Lm_printf.sprintf "file \"%s\" pos %d:%d-%d:%d" name i1 i2 i3 i4
 
 let print_pos pos =
-   Printf.printf "%s" (string_of_pos pos)
+   Lm_printf.printf "%s" (string_of_pos pos)
 
 let format_pos buf pos =
    format_string buf (string_of_pos pos)
@@ -72,7 +72,7 @@ let union_pos
     (file2, sline2, schar2, eline2, echar2) =
    if file1 <> file2 then
       raise (Invalid_argument (**)
-                (Printf.sprintf "union_pos: file mistmatch: \"%s\":\"%s\"" (**)
+                (Lm_printf.sprintf "union_pos: file mistmatch: \"%s\":\"%s\"" (**)
                     (String.escaped file1) (String.escaped file2)));
    let sline, schar =
       if sline1 < sline2 then

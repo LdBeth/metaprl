@@ -40,9 +40,9 @@
  *)
 extends Summary
 
-open Printf
-
 open Lm_debug
+
+open Lm_printf
 open Lm_threads
 
 open Opname
@@ -79,6 +79,103 @@ let debug_show_all_subgoals =
         debug_description = "show the full suggoals list, even when it is very long";
         debug_value = false
       }
+
+(************************************************************************
+ * DISPLAY
+ ************************************************************************)
+
+(*
+ * A window is either a text window or an HTML window.
+ *)
+type java_window =
+   { pw_port     : Java_mux_channel.session;
+     pw_base     : dform_mode_base;
+     pw_goal     : Java_display_term.t;
+     pw_rule     : Java_display_term.t;
+     pw_subgoals : Java_display_term.t;
+     pw_menu     : Java_display_term.t
+   }
+
+type text_window =
+   { df_base  : dform_mode_base;
+     df_mode  : string;
+     mutable df_width : int
+   }
+
+type window =
+   JavaWindow of java_window
+ | BrowserWindow of text_window
+ | TextWindow of text_window
+ | TexWindow of text_window
+
+type incomplete_ped =
+   Primitive of tactic_arg
+ | Incomplete of tactic_arg
+ | Derived of tactic_arg * MLast.expr
+
+(*
+ * Create a new window.
+ *)
+let create_text_window base mode =
+   TextWindow { df_base = base;
+                df_mode = mode;
+                df_width = 80
+   }
+
+let create_tex_window base =
+   TexWindow { df_base = base;
+               df_mode = "tex";
+               df_width = 80
+   }
+
+let create_browser_window base =
+   BrowserWindow { df_base = base;
+                   df_mode = "html";
+                   df_width = 80
+   }
+
+let create_java_window port dfbase =
+   let { java_proof_goal = pw_goal;
+         java_proof_rule = pw_rule;
+         java_proof_subgoals = pw_subgoals
+       } = Java_display_term.create_proof port dfbase
+   in
+   let pw_menu = Java_display_term.create_menu port dfbase in
+   let window =
+      { pw_port = port;
+        pw_base = dfbase;
+        pw_goal = pw_goal;
+        pw_rule = pw_rule;
+        pw_subgoals = pw_subgoals;
+        pw_menu = pw_menu
+      }
+   in
+      JavaWindow window
+
+(*
+ * Fork the current window.
+ *)
+let new_window window =
+   match window with
+      JavaWindow { pw_port = port; pw_base = base } ->
+         create_java_window port base
+    | BrowserWindow _
+    | TextWindow _
+    | TexWindow _ ->
+         window
+
+(*
+ * Update the width based on the terminal.
+ *)
+let update_terminal_width window =
+   match window with
+      TextWindow info ->
+         info.df_width <- Mp_term.term_width Pervasives.stdout info.df_width;
+         window
+    | TexWindow _
+    | JavaWindow _
+    | BrowserWindow _ ->
+         window
 
 (************************************************************************
  * TYPES                                                                *
@@ -126,7 +223,7 @@ type proof_command =
  | ProofCopy of string
  | ProofPaste of string
  | ProofCp of int list * int list
- | ProofExpand of dform_base
+ | ProofExpand
  | ProofMakeAssum
  | ProofClean
  | ProofSquash
@@ -146,6 +243,198 @@ type ref_status =
  | RefIncomplete of int * int
 
 type obj_contents = string * obj_status * meta_term * term Filter_type.param list
+
+(************************************************************************
+ * CONVERSION TO TERMS                                                  *
+ ************************************************************************)
+
+(*
+ * Turn the status into a char.
+ *)
+let term_of_proof_status = function
+   Proof.StatusBad ->
+      <<status_bad>>
+ | Proof.StatusIncomplete ->
+      <<status_asserted>>
+ | Proof.StatusPartial ->
+      <<status_partial>>
+ | Proof.StatusComplete ->
+      <<status_complete>>
+
+let term_of_proof_status_list status =
+   mk_status_term (List.map term_of_proof_status status)
+
+(*
+ * Label of the goal.
+ *)
+let term_of_tactic_arg status goal =
+   let label = Sequent.label goal in
+   let goal, assums = dest_msequent (Sequent.msequent goal) in
+   let status = term_of_proof_status_list status in
+   let label = mk_goal_label_term label in
+      mk_goal_term status label assums goal
+
+let term_of_proof_arg proof =
+   term_of_tactic_arg (Proof.path_status proof) (Proof.goal proof)
+
+(*
+ * Turn an arglist into a string.
+ *)
+let term_of_arg = function
+   TermArg t ->
+      Summary.mk_term_arg_term t
+ | TypeArg t ->
+      Summary.mk_type_arg_term t
+ | IntArg i ->
+      Summary.mk_int_arg_term i
+ | BoolArg b ->
+      Summary.mk_bool_arg_term b
+ | StringArg s ->
+      Summary.mk_string_arg_term s
+ | TermListArg tl ->
+      Summary.mk_term_list_arg_term tl
+
+let term_of_arglist args =
+   Summary.mk_arglist_term (List.map term_of_arg (Tactic.expand_arglist args))
+
+let rec rule_term_of_text = function
+   Proof.ExprGoal ->
+      mk_rule_box_string_term "<goal>"
+ | Proof.ExprIdentity ->
+      mk_rule_box_string_term "<identity>"
+ | Proof.ExprUnjustified ->
+      mk_rule_box_string_term "<unjustified>"
+ | Proof.ExprExtract args
+ | Proof.ExprWrapped args ->
+      mk_rule_box_term (term_of_arglist args)
+ | Proof.ExprCompose expr ->
+      append_rule_box (rule_term_of_text expr) "<then...>"
+ | Proof.ExprRule (text, _) ->
+      mk_rule_box_string_term text
+(*
+ * Display a proof with an inference.
+ *)
+let term_of_proof proof =
+   if !debug_edit then
+      begin
+         let buf = Lm_rformat.new_buffer () in
+         let () = Proof.format_proof Dform.null_base buf proof in
+         let prf = Lm_rformat_text.print_text_string 80 buf in
+            eprintf "Proof_edit.term_of_proof: begin:\n%s%t" prf eflush
+      end;
+
+   let { Proof.step_goal = goal;
+         Proof.step_status = status;
+         Proof.step_expr = expr;
+         Proof.step_subgoals = subgoals;
+         Proof.step_extras = extras
+       } = Proof.info proof
+   in
+   let main = term_of_proof_arg proof in
+   let goal = mk_goal_list_term (List.map term_of_proof_arg goal) in
+   let subgoals = List.map (fun l -> mk_goal_list_term (List.map term_of_proof_arg l)) subgoals in
+   let extras = List.map term_of_proof_arg extras in
+   let subgoals =
+      (* HACK!!! *)
+      let l = List.length subgoals in
+         if l < 20 || !debug_show_all_subgoals then
+            mk_subgoals_term subgoals extras
+         else
+            mk_xlist_term [mk_subgoals_term (Lm_list_util.firstn 5 subgoals) [];
+                           mk_string_arg_term "\n\n   ...   \n\n<<";
+                           mk_int_arg_term l;
+                           mk_string_arg_term " subgoals (output suppressed -- turn the \"show_all_subgoals\" debug variable on to see the full list)>>"]
+   in
+   let x = mk_proof_term main goal (term_of_proof_status status) (rule_term_of_text expr) subgoals in
+      if !debug_edit then
+         eprintf "Proof_edit.term_of_proof: done%t" eflush;
+      x
+
+(*
+ * Show the incomplete proof.
+ *)
+let term_of_incomplete proof =
+   let goal, status, text =
+      match proof with
+         Primitive goal ->
+            if !debug_edit then
+               eprintf "Proof_edit.term_of_incomplete: Primitive%t" eflush;
+            let goal = term_of_tactic_arg [Proof.StatusComplete] goal in
+            let text = mk_rule_box_string_term "<Primitive>" in
+               goal, Proof.StatusComplete, text
+       | Incomplete goal ->
+            if !debug_edit then
+               eprintf "Proof_edit.term_of_incomplete: Incomplete%t" eflush;
+            let goal = term_of_tactic_arg [Proof.StatusIncomplete] goal in
+            let text = mk_rule_box_string_term "<Incomplete>" in
+               goal, Proof.StatusIncomplete, text
+       | Derived (goal, expr) ->
+            if !debug_edit then
+               eprintf "Proof_edit.term_of_incomplete: Derived%t" eflush;
+            let goal = term_of_tactic_arg [Proof.StatusComplete] goal in
+            let text = mk_rule_box_string_term "<Derived>" in
+               goal, Proof.StatusComplete, text
+   in
+      mk_proof_term goal (mk_goal_list_term [goal]) (term_of_proof_status status) text xnil_term
+
+(*
+ * Display the current proof.
+ *    0. Display the status
+ *    1. Display the goal
+ *    2. Display the rule
+ *    3. Display the subgoals
+ *)
+let format_aux window proof =
+   match update_terminal_width window with
+      TextWindow { df_width = width; df_base = dfbase; df_mode = mode } ->
+         let df = get_mode_base dfbase mode in
+         let buf = Lm_rformat.new_buffer () in
+            Dform.format_term df buf proof;
+            Lm_rformat.format_newline buf;
+            Lm_rformat_text.print_text_channel width buf stdout;
+            flush stdout
+    | TexWindow { df_width = width; df_base = dfbase; df_mode = mode } ->
+         let df = get_mode_base dfbase mode in
+         let buf = Lm_rformat.new_buffer () in
+            Dform.format_term df buf proof;
+            Lm_rformat.format_newline buf;
+            Lm_rformat_tex.print_tex_channel width buf stdout;
+            flush stdout
+    | JavaWindow { pw_goal = pw_goal;
+                   pw_rule = pw_rule;
+                   pw_subgoals = pw_subgoals
+      } ->
+         let main, goal, status, text, subgoals = dest_proof proof in
+            if !debug_edit then
+               eprintf "Proof_edit.format_aux: set_goal%t" eflush;
+            Java_display_term.set pw_goal main;
+            if !debug_edit then
+               eprintf "Proof_edit.format_aux: set_rule%t" eflush;
+            Java_display_term.set pw_rule text;
+            if !debug_edit then
+               eprintf "Proof_edit.format_aux: set_subgoals%t" eflush;
+            Java_display_term.set pw_subgoals subgoals
+    | BrowserWindow { df_width = width; df_base = dfbase; df_mode = mode } ->
+         let df = get_mode_base dfbase mode in
+         let buf = Lm_rformat.new_buffer () in
+            Dform.format_term df buf proof;
+            Lm_rformat.format_newline buf;
+            Browser_display_term.set_main width buf
+
+(*
+ * Display the error.
+ *)
+let print_exn window f x =
+   let df =
+      match window with
+         TextWindow { df_base = base; df_mode = mode }
+       | TexWindow { df_base = base; df_mode = mode }
+       | BrowserWindow { df_base = base; df_mode = mode } ->
+            get_mode_base base mode
+       | JavaWindow _ ->
+            Dform.null_base
+   in
+      Filter_exn.print_exn df None f x
 
 (************************************************************************
  * OPERATIONS                                                           *
@@ -343,40 +632,6 @@ let kreitz_ped ped =
    push_proof ped (Proof.kreitz (update_fun ped) (proof_of_ped ped))
 
 (*
- * When the proof is expanded, we make a dulicate.
- * Expansion never fails, but it may change the status of the proof.
- *)
-let expand_ped dforms ped =
-   push_proof ped (Proof.expand (update_fun ped) (Filter_exn.print dforms None) (proof_of_ped ped))
-
-(*
- * Check a proof.
- *)
-let refiner_extract_of_ped dforms ped =
-   if status_of_ped ped <> Proof.StatusComplete then
-      expand_ped dforms ped;
-   Proof.refiner_extract_of_proof (proof_of_ped ped)
-
-let check_ped refiner opname dforms ped =
-   if status_of_ped ped <> Proof.StatusComplete then
-      expand_ped dforms ped;
-   match status_of_ped ped with
-      Proof.StatusBad
-    | Proof.StatusIncomplete
-    | Proof.StatusPartial ->
-         let (c1,c2)=node_count_of_ped ped in RefIncomplete(c1,c2)
-    | Proof.StatusComplete ->
-         let proof = proof_of_ped ped in
-         let (c1,c2)=node_count_of_ped ped in
-         try
-            RefComplete(c1,c2,Refine.compute_dependencies refiner opname)
-         with
-            Refine_sig.Incomplete opname ->
-               RefUngrounded(c1,c2,opname)
-          | Not_found ->
-               raise(RefineError("Proof_edit.check_ped",StringStringError("could not find",string_of_opname opname)))
-
-(*
  * We keep a global copy/paste buffer.
  *)
 let copy_buffer = ref []
@@ -416,302 +671,88 @@ let clean_ped ped =
 let squash_ped ped =
    push_proof ped (Proof.squash (update_fun ped) (proof_of_ped ped))
 
+(************************************************************************
+ * Windowed operations.
+ *)
+
+(*
+ * When the proof is expanded, we make a dulicate.
+ * Expansion never fails, but it may change the status of the proof.
+ *)
+let expand_ped window ped =
+   push_proof ped (Proof.expand (update_fun ped) (print_exn window) (proof_of_ped ped))
+
+(*
+ * Check a proof.
+ *)
+let refiner_extract_of_ped window ped =
+   if status_of_ped ped <> Proof.StatusComplete then
+      expand_ped window ped;
+   Proof.refiner_extract_of_proof (proof_of_ped ped)
+
+let check_ped window refiner opname ped =
+   if status_of_ped ped <> Proof.StatusComplete then
+      expand_ped window ped;
+   match status_of_ped ped with
+      Proof.StatusBad
+    | Proof.StatusIncomplete
+    | Proof.StatusPartial ->
+         let c1, c2 = node_count_of_ped ped in
+            RefIncomplete (c1, c2)
+    | Proof.StatusComplete ->
+         let proof = proof_of_ped ped in
+         let c1, c2 = node_count_of_ped ped in
+            try
+               RefComplete (c1, c2, Refine.compute_dependencies refiner opname)
+            with
+               Refine_sig.Incomplete opname ->
+                  RefUngrounded (c1, c2, opname)
+             | Not_found ->
+                  raise (RefineError ("Proof_edit.check_ped", StringStringError("could not find", string_of_opname opname)))
+
 (*
  * Command interpretation.
  *)
-let interpret ped = function
-   ProofRefine (text, expr, tac) ->
-      refine_ped ped text expr tac
- | ProofUndo ->
-      undo_ped ped
- | ProofRedo ->
-      redo_ped ped
- | ProofNop ->
-      nop_ped ped
- | ProofKreitz ->
-      kreitz_ped ped
- | ProofUp i ->
-      up_ped ped i
- | ProofDown i ->
-      down_ped ped i
- | ProofRoot ->
-      root_ped ped
- | ProofAddr addr ->
-      addr_ped ped addr
- | ProofRotate i ->
-      rotate_ped ped i
- | ProofCopy s ->
-      copy_ped ped s
- | ProofPaste s ->
-      paste_ped ped s
- | ProofCp (from_addr, to_addr) ->
-      cp_ped ped from_addr to_addr
- | ProofExpand dforms ->
-      expand_ped dforms ped
- | ProofMakeAssum ->
-      make_assum_ped ped
- | ProofClean ->
-      clean_ped ped
- | ProofSquash ->
-      squash_ped ped
+let interpret window ped item =
+   match item with
+      ProofRefine (text, expr, tac) ->
+         refine_ped ped text expr tac
+    | ProofUndo ->
+         undo_ped ped
+    | ProofRedo ->
+         redo_ped ped
+    | ProofNop ->
+         nop_ped ped
+    | ProofKreitz ->
+         kreitz_ped ped
+    | ProofUp i ->
+         up_ped ped i
+    | ProofDown i ->
+         down_ped ped i
+    | ProofRoot ->
+         root_ped ped
+    | ProofAddr addr ->
+         addr_ped ped addr
+    | ProofRotate i ->
+         rotate_ped ped i
+    | ProofCopy s ->
+         copy_ped ped s
+    | ProofPaste s ->
+         paste_ped ped s
+    | ProofCp (from_addr, to_addr) ->
+         cp_ped ped from_addr to_addr
+    | ProofExpand ->
+         expand_ped window ped
+    | ProofMakeAssum ->
+         make_assum_ped ped
+    | ProofClean ->
+         clean_ped ped
+    | ProofSquash ->
+         squash_ped ped
 
 (************************************************************************
- * HTML DISPLAY                                                         *
- ************************************************************************)
-
-(*
- * A window is either a text window or an HTML window.
+ * Display.
  *)
-type java_window =
-   { pw_port     : Java_mux_channel.session;
-     pw_base     : dform_mode_base;
-     pw_goal     : Java_display_term.t;
-     pw_rule     : Java_display_term.t;
-     pw_subgoals : Java_display_term.t;
-     pw_menu     : Java_display_term.t
-   }
-
-type text_window =
-   { df_base  : dform_mode_base;
-     df_mode  : string;
-     df_width : int
-   }
-
-type window =
-   JavaWindow of java_window
- | BrowserWindow of text_window
- | TextWindow of text_window
- | TexWindow of text_window
-
-type incomplete_ped =
-   Primitive of tactic_arg
- | Incomplete of tactic_arg
- | Derived of tactic_arg * MLast.expr
-
-(*
- * Create a new window.
- *)
-let create_text_window base mode =
-   TextWindow { df_base = base;
-                df_mode = mode;
-                df_width = 80
-   }
-
-let create_tex_window base =
-   TexWindow { df_base = base;
-               df_mode = "tex";
-               df_width = 80
-   }
-
-let create_browser_window base =
-   BrowserWindow { df_base = base;
-                   df_mode = "html";
-                   df_width = 80
-   }
-
-let create_java_window port dfbase =
-   let { java_proof_goal = pw_goal;
-         java_proof_rule = pw_rule;
-         java_proof_subgoals = pw_subgoals
-       } = Java_display_term.create_proof port dfbase
-   in
-   let pw_menu = Java_display_term.create_menu port dfbase in
-   let window =
-      { pw_port = port;
-        pw_base = dfbase;
-        pw_goal = pw_goal;
-        pw_rule = pw_rule;
-        pw_subgoals = pw_subgoals;
-        pw_menu = pw_menu
-      }
-   in
-      JavaWindow window
-
-(*
- * Fork the current window.
- *)
-let new_window = function
-   JavaWindow { pw_port = port; pw_base = base } ->
-      create_java_window port base
- | BrowserWindow _
- | TextWindow _
- | TexWindow _ as window ->
-      window
-
-(************************************************************************
- * CONVERSION TO TERMS                                                  *
- ************************************************************************)
-
-(*
- * Turn the status into a char.
- *)
-let term_of_proof_status = function
-   Proof.StatusBad ->
-      <<status_bad>>
- | Proof.StatusIncomplete ->
-      <<status_asserted>>
- | Proof.StatusPartial ->
-      <<status_partial>>
- | Proof.StatusComplete ->
-      <<status_complete>>
-
-let term_of_proof_status_list status =
-   mk_status_term (List.map term_of_proof_status status)
-
-(*
- * Label of the goal.
- *)
-let term_of_tactic_arg status goal =
-   let label = Sequent.label goal in
-   let goal, assums = dest_msequent (Sequent.msequent goal) in
-   let status = term_of_proof_status_list status in
-   let label = mk_goal_label_term label in
-      mk_goal_term status label assums goal
-
-let term_of_proof_arg proof =
-   term_of_tactic_arg (Proof.path_status proof) (Proof.goal proof)
-
-(*
- * Turn an arglist into a string.
- *)
-let term_of_arg = function
-   TermArg t ->
-      Summary.mk_term_arg_term t
- | TypeArg t ->
-      Summary.mk_type_arg_term t
- | IntArg i ->
-      Summary.mk_int_arg_term i
- | BoolArg b ->
-      Summary.mk_bool_arg_term b
- | StringArg s ->
-      Summary.mk_string_arg_term s
- | TermListArg tl ->
-      Summary.mk_term_list_arg_term tl
-
-let term_of_arglist args =
-   Summary.mk_arglist_term (List.map term_of_arg (Tactic.expand_arglist args))
-
-let rec rule_term_of_text = function
-   Proof.ExprGoal ->
-      mk_rule_box_string_term "<goal>"
- | Proof.ExprIdentity ->
-      mk_rule_box_string_term "<identity>"
- | Proof.ExprUnjustified ->
-      mk_rule_box_string_term "<unjustified>"
- | Proof.ExprExtract args
- | Proof.ExprWrapped args ->
-      mk_rule_box_term (term_of_arglist args)
- | Proof.ExprCompose expr ->
-      append_rule_box (rule_term_of_text expr) "<then...>"
- | Proof.ExprRule (text, _) ->
-      mk_rule_box_string_term text
-(*
- * Display a proof with an inference.
- *)
-let term_of_proof proof =
-   if !debug_edit then begin
-      let buf = Rformat.new_buffer () in
-      let _ = Proof.format_proof Dform.null_base buf proof in
-      let prf = Rformat.print_text_string 80 buf in
-         eprintf "Proof_edit.term_of_proof: begin:\n%s%t" prf eflush
-   end;
-   let { Proof.step_goal = goal;
-         Proof.step_status = status;
-         Proof.step_expr = expr;
-         Proof.step_subgoals = subgoals;
-         Proof.step_extras = extras
-       } = Proof.info proof
-   in
-   let main = term_of_proof_arg proof in
-   let goal = mk_goal_list_term (List.map term_of_proof_arg goal) in
-   let subgoals = List.map (fun l -> mk_goal_list_term (List.map term_of_proof_arg l)) subgoals in
-   let extras = List.map term_of_proof_arg extras in
-   let subgoals =
-      (* HACK!!! *)
-      let l = List.length subgoals in
-         if l < 20 || !debug_show_all_subgoals then
-            mk_subgoals_term subgoals extras
-         else
-            mk_xlist_term [mk_subgoals_term (Lm_list_util.firstn 5 subgoals) [];
-                           mk_string_arg_term "\n\n   ...   \n\n<<";
-                           mk_int_arg_term l;
-                           mk_string_arg_term " subgoals (output suppressed -- turn the \"show_all_subgoals\" debug variable on to see the full list)>>"]
-   in
-   let x = mk_proof_term main goal (term_of_proof_status status) (rule_term_of_text expr) subgoals in
-      if !debug_edit then
-         eprintf "Proof_edit.term_of_proof: done%t" eflush;
-      x
-
-(*
- * Show the incomplete proof.
- *)
-let term_of_incomplete proof =
-   let goal, status, text =
-      match proof with
-         Primitive goal ->
-            if !debug_edit then
-               eprintf "Proof_edit.term_of_incomplete: Primitive%t" eflush;
-            let goal = term_of_tactic_arg [Proof.StatusComplete] goal in
-            let text = mk_rule_box_string_term "<Primitive>" in
-               goal, Proof.StatusComplete, text
-       | Incomplete goal ->
-            if !debug_edit then
-               eprintf "Proof_edit.term_of_incomplete: Incomplete%t" eflush;
-            let goal = term_of_tactic_arg [Proof.StatusIncomplete] goal in
-            let text = mk_rule_box_string_term "<Incomplete>" in
-               goal, Proof.StatusIncomplete, text
-       | Derived (goal, expr) ->
-            if !debug_edit then
-               eprintf "Proof_edit.term_of_incomplete: Derived%t" eflush;
-            let goal = term_of_tactic_arg [Proof.StatusComplete] goal in
-            let text = mk_rule_box_string_term "<Derived>" in
-               goal, Proof.StatusComplete, text
-   in
-      mk_proof_term goal (mk_goal_list_term [goal]) (term_of_proof_status status) text xnil_term
-
-(*
- * Display the current proof.
- *    0. Display the status
- *    1. Display the goal
- *    2. Display the rule
- *    3. Display the subgoals
- *)
-let format_aux window proof =
-   match window with
-      TextWindow { df_width = width; df_base = dfbase; df_mode = mode } ->
-         let df = get_mode_base dfbase mode in
-         let buf = Rformat.new_buffer () in
-            Dform.format_term df buf proof;
-            Rformat.format_newline buf;
-            Rformat.print_text_channel width buf stdout;
-            flush stdout
-    | TexWindow { df_width = width; df_base = dfbase; df_mode = mode } ->
-         let df = get_mode_base dfbase mode in
-         let buf = Rformat.new_buffer () in
-            Dform.format_term df buf proof;
-            Rformat.format_newline buf;
-            Rformat.print_tex_channel width buf stdout;
-            flush stdout
-    | JavaWindow { pw_goal = pw_goal;
-                   pw_rule = pw_rule;
-                   pw_subgoals = pw_subgoals
-      } ->
-         let main, goal, status, text, subgoals = dest_proof proof in
-            if !debug_edit then
-               eprintf "Proof_edit.format_aux: set_goal%t" eflush;
-            Java_display_term.set pw_goal main;
-            if !debug_edit then
-               eprintf "Proof_edit.format_aux: set_rule%t" eflush;
-            Java_display_term.set pw_rule text;
-            if !debug_edit then
-               eprintf "Proof_edit.format_aux: set_subgoals%t" eflush;
-            Java_display_term.set pw_subgoals subgoals
-    | BrowserWindow { df_width = width; df_base = dfbase; df_mode = mode } ->
-         let df = get_mode_base dfbase mode in
-         let buf = Rformat.new_buffer () in
-            Dform.format_term df buf proof;
-            Rformat.format_newline buf;
-            Browser_display_term.set_main width buf
 
 let format window ped =
    format_aux window (term_of_proof (proof_of_ped ped))

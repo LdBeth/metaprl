@@ -33,10 +33,10 @@
 (*
  * Parts of the output.
  *)
-val set_main : int -> Rformat.buffer -> unit
+val set_main : int -> Lm_rformat.buffer -> unit
 val format_main : Buffer.t -> unit
 
-val set_message : int -> Rformat.buffer -> unit
+val set_message : int -> Lm_rformat.buffer -> unit
 val set_message_string : string -> unit
 val format_message : Buffer.t -> unit
 

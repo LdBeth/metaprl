@@ -75,6 +75,7 @@ extends Base_dform
 extends Comment
 
 open Lm_debug
+open Lm_printf
 
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan

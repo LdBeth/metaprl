@@ -29,12 +29,10 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-
 open Dform
 
 val format_exn : dform_base -> buffer -> exn -> unit
-
-val print : dform_base -> string option -> ('a -> 'b) -> 'a -> 'b
+val print_exn  : dform_base -> string option -> ('a -> 'b) -> 'a -> 'b
 
 (*
  * -*-

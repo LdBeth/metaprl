@@ -63,11 +63,11 @@ let rec print_eqlist eqlist =
 
 let print_equations eqlist =
    begin
-      Format.open_box 0;
-      Format.force_newline ();
+      Lm_format.open_box 0;
+      Lm_format.force_newline ();
       print_endline "Equations:";
       print_eqlist eqlist;
-      Format.force_newline ();
+      Lm_format.force_newline ();
    end
 
 let rec print_subst sigma =

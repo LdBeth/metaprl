@@ -44,11 +44,10 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-
-open Printf
-open Arg
-
 open Lm_debug
+open Lm_printf
+open Lm_pervasives
+open Arg
 
 open Filter_magic
 

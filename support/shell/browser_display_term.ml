@@ -73,7 +73,7 @@ let buffer = Buffer.create 1024
  *)
 let set_message width buf =
    let buffer = Buffer.create 100 in
-      Rformat.print_html_buffer width buf buffer;
+      Lm_rformat_html.print_html_buffer width buf buffer;
       LineBuffer.add_buffer message buffer
 
 let set_message_string str =
@@ -91,7 +91,7 @@ let format_message buf =
  *)
 let set_main width buf =
    Buffer.clear buffer;
-   Rformat.print_html_buffer width buf buffer
+   Lm_rformat_html.print_html_buffer width buf buffer
 
 let format_main buf =
    Buffer.add_buffer buf buffer

@@ -31,16 +31,16 @@
  *)
 extends Shell
 
-open Format
-
 open Lm_debug
+open Lm_printf
+open Lm_pervasives
 
 open Pcaml
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermAddr
 open Refiner.Refiner.RefineError
-open Rformat
+open Lm_rformat
 
 open Mptop
 
@@ -145,24 +145,16 @@ struct
     | [] ->
          ()
 
-   let print_expr_buf state buf (expr, typ) =
-      format_szone buf;
-      format_expr buf (Shell_state.get_dfbase state) expr;
-      format_space buf;
-      format_ezone buf;
-      format_string buf ": ";
-      format_string buf (str_typ typ)
-
-   let print_expr state out expr_typ =
+   let print_expr state out (expr, typ) =
       let buf = new_buffer () in
-         print_expr_buf state buf expr_typ;
-         print_text_channel default_width buf out;
-         eflush out
-
-   let print_expr_browser state expr_typ =
-      let buf = new_buffer () in
-         print_expr_buf state buf expr_typ;
-         Browser_display_term.set_message default_width buf
+         format_szone buf;
+         format_expr buf (Shell_state.get_dfbase state) expr;
+         format_space buf;
+         format_ezone buf;
+         format_string buf ": ";
+         format_string buf (str_typ typ);
+         format_newline buf;
+         output_rbuffer out buf
 
    (*
     * Evaluate a struct item.
@@ -184,7 +176,8 @@ struct
             match Grammar.Entry.parse Pcaml.top_phrase instream with
                Some item ->
                   let expr = evaluate_ocaml_str_item (Shell_state.get_toploop state) item in
-                     print_expr_browser state expr
+                     print_expr state stdout expr;
+                     flush stdout
              | None ->
                   ())
 
@@ -221,7 +214,7 @@ struct
                 | _ -> format_string buf "Uncaught exception: ";
             end;
             Filter_exn.format_exn df buf exn;
-            print_text_channel default_width buf stderr;
+            output_rbuffer stderr buf;
             eflush stderr
       in
       let catch =

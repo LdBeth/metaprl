@@ -98,7 +98,7 @@ let rec create_symbols terminals nonterminals = function
          else if string_set_mem nonterminals head then
             NonTerminal head, pos
          else
-            raise (PhobosException (pos, (Printf.sprintf "undefined symbol [%s]" head)))
+            raise (PhobosException (pos, (Lm_printf.sprintf "undefined symbol [%s]" head)))
       in
          psym :: create_symbols terminals nonterminals rest
  | [] ->
@@ -254,9 +254,9 @@ let include_grammars paths includes =
             }) dummy_gst includes
       in
          if !debug_phobos then begin
-            Format.print_string "After include_grammars: terminals = \n";
+            Lm_format.print_string "After include_grammars: terminals = \n";
             print_string_set gst.grammar_terminals;
-            Format.print_string "After include_grammars: nonterminals = \n";
+            Lm_format.print_string "After include_grammars: nonterminals = \n";
             print_string_set gst.grammar_nonterminals
          end;
          gst
@@ -312,7 +312,7 @@ let compile paths
                bogus_symbol, false
    in
 
-   debug_symbols "After joining with inherited grammars\n" 
+   debug_symbols "After joining with inherited grammars\n"
       (string_set_union gst.grammar_nonterminals nonterminals)
       (string_set_union gst.grammar_terminals terminals);
 

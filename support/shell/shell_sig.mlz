@@ -29,7 +29,6 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-
 open Refiner.Refiner.Refine
 open Refiner.Refiner
 open Dform
@@ -105,7 +104,14 @@ type top_expr =
  * These are the possible types of the top_expr's.
  *)
 type top_type =
-   UnitType | BoolType | IntType | StringType | TermType | TacticType | ConvType | AddressType
+   UnitType
+ | BoolType
+ | IntType
+ | StringType
+ | TermType
+ | TacticType
+ | ConvType
+ | AddressType
  | ListType of top_type
  | NilType  (* 'a list *)
  | ConsType (* 'a -> 'a list -> 'a list *)
@@ -116,34 +122,33 @@ type top_type =
  *)
 type edit_object =
    { (* Display the object to the screen *)
-     edit_display : ls_option list -> unit;
+     edit_display      : ls_option list -> unit;
      edit_get_contents : unit -> obj_contents;
-     edit_get_terms : unit -> term list;
+     edit_get_terms    : unit -> term list;
 
      (* Copy the object *)
-     edit_copy : unit -> edit_object;
+     edit_copy         : unit -> edit_object;
 
      (* Adjust the contents of the object *)
-     edit_set_goal : term -> unit;
-     edit_set_redex : term -> unit;
-     edit_set_contractum : term -> unit;
+     edit_set_goal        : term -> unit;
+     edit_set_redex       : term -> unit;
+     edit_set_contractum  : term -> unit;
      edit_set_assumptions : term list -> unit;
-     edit_set_params : term Filter_type.param list -> unit;
-     edit_save : unit -> unit;
-     edit_expand : dform_base -> unit;
-     edit_get_extract : dform_base -> Refine.extract;
-     edit_check : dform_base -> ref_status;
+     edit_set_params      : term Filter_type.param list -> unit;
+     edit_save            : unit -> unit;
+     edit_get_extract     : unit -> Refine.extract;
+     edit_check           : unit -> ref_status;
 
      (* Navigation if there is a proof *)
      edit_interpret : proof_command -> unit;
-     edit_root : unit -> unit;
-     edit_up : int -> unit;
-     edit_down : int -> unit;
-     edit_undo : unit -> unit;
-     edit_redo : unit -> unit;
-     edit_addr : int list -> unit;           (* This operation must be atomic: if it fails, the address is not modified *)
-     edit_info : unit -> edit_info;
-     edit_refine : string -> MLast.expr -> tactic -> unit;
+     edit_root      : unit -> unit;
+     edit_up        : int -> unit;
+     edit_down      : int -> unit;
+     edit_undo      : unit -> unit;
+     edit_redo      : unit -> unit;
+     edit_addr      : int list -> unit;  (* This operation must be atomic: if it fails, the address is not modified *)
+     edit_info      : unit -> edit_info;
+     edit_refine    : string -> MLast.expr -> tactic -> unit
    }
 
 (*

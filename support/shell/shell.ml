@@ -30,7 +30,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * Author: Jason Hickey <jyh@cs.cornell.edu>
- * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
+ * Modified by: Aleksey Nogin
+ <nogin@cs.cornell.edu>
  *)
 extends Mptop
 extends Proof_edit
@@ -40,10 +41,10 @@ extends Shell_package
 extends Shell_root
 extends Shell_p4_sig
 
-open Printf
-
 open Lm_debug
+open Lm_printf
 open Lm_threads
+open Lm_pervasives
 
 open Opname
 open Precedence
@@ -140,24 +141,26 @@ type df_info =
 
 type info =
    { (* Display *)
-      mutable width : int;
+      mutable width   : int;
       mutable df_mode : string;
       mutable df_info : df_info;
 
       (* Current module and path and proof *)
-      mutable dir : string list;
+      mutable dir     : string list;
       mutable package : Package.package option;
-      mutable proof : edit_object;
+      mutable proof   : edit_object;
 
       (* Handle to current shell *)
-      shell : Shell_state.t
+      shell           : Shell_state.t
    }
 
 (************************************************************************
  * GLOBAL VALUES                                                        *
  ************************************************************************)
 
-(* We should skip the packages that do not have basic shell commands in them *)
+(*
+ * We should skip the packages that do not have basic shell commands in them.
+ *)
 let shell_package pkg =
    let name = Package.name pkg in
       try Mptop.mem (Mptop.get_toploop_resource (Mp_resource.find (Mp_resource.theory_bookmark name)) []) "cd" with
@@ -175,18 +178,11 @@ let all_packages () =
 let default_mode_base = Mp_resource.theory_bookmark "summary"
 
 (*
- * Display possible exceptions.
- *)
-let print_exn_db db f x =
-   try Filter_exn.print db None f x with
-      RefineError _ ->
-         raise (RefineError ("Shell", ToploopIgnoreError))
-
-(*
  * Turn a path to an absolute string.
  *)
 let rec string_of_path = function
-   [n] -> "/" ^ n
+   [n] ->
+      "/" ^ n
  | h::t ->
       "/" ^ h ^ string_of_path t
  | [] ->
@@ -290,10 +286,10 @@ struct
       with
          exn ->
             Mutex.unlock global_lock;
-            let buf = Rformat.new_buffer () in
+            let buf = Lm_rformat.new_buffer () in
             let db = get_db info in
                Filter_exn.format_exn db buf exn;
-               Rformat.print_text_channel info.width buf stderr;
+               output_rbuffer stderr buf;
                flush stderr;
                raise exn
 
@@ -329,8 +325,13 @@ struct
                   Package.touch pack
                end
 
+   (*
+    * Display possible exceptions.
+    *)
    let print_exn info f x =
-      print_exn_db (get_db info) f x
+      try Filter_exn.print_exn (get_db info) None f x with
+         RefineError _ ->
+            raise (RefineError ("Shell", ToploopIgnoreError))
 
    (************************************************************************
     * VIEWING                                                              *
@@ -510,7 +511,7 @@ struct
     ************************************************************************)
 
    (*
-    * Format the process name.
+    * Lm_format the process name.
     * We include the pid, and the current directory.
     *)
    let format_process_name shell =
@@ -873,7 +874,7 @@ struct
                eprintf "Error: Proof of /%s/%s depends on incomplete proof of %s!%t" mod_name name (mk_dep_name opname) eflush
             end
        | _ ->
-            raise (Invalid_argument "check - must be inside a proof")
+            raise (Failure "check - must be inside a proof")
       in
          print_exn info check info
 
@@ -881,7 +882,7 @@ struct
       let set info =
          let start = Unix.times () in
          let start_time = Unix.gettimeofday () in
-         let _ = info.proof.edit_expand (get_db info) in
+         let () = info.proof.edit_interpret ProofExpand in
          let finish = Unix.times () in
          let finish_time = Unix.gettimeofday () in
             display_proof info info.proof [];
@@ -1041,7 +1042,7 @@ struct
 
    and expand_all info =
       let f item db =
-         item.edit_expand db
+         item.edit_interpret ProofExpand
       in
          apply_all info f true true
 
@@ -1063,12 +1064,13 @@ struct
             Shell_state.set_module shell "shell"
        | (modname :: item) as dir ->
             (* change module only if in another (or at top) *)
-            if info.dir = [] or List.hd info.dir <> modname then
+            if info.dir = [] || List.hd info.dir <> modname then
                begin
                   if modname <> String.uncapitalize modname then
-                     raise(Invalid_argument "Shell.chdir: module name should not be capitalized");
+                     raise (Failure "Shell.chdir: module name should not be capitalized");
+
                   (* See if the theory exists *)
-                  ignore(Theory.get_theory modname);
+                  ignore (Theory.get_theory modname);
                   let pkg = Package.load packages (get_parse_arg info) modname in
                      if need_shell && not (shell_package pkg) then
                         failwith ("Module " ^ modname ^ " does not contain shell commands");
@@ -1077,7 +1079,7 @@ struct
                      Shell_state.set_mk_opname shell (Some (Package.mk_opname pkg));
                      Shell_state.set_infixes shell (Some (Package.get_infixes pkg));
                      Shell_state.set_module shell modname;
-                     if verbose then eprintf "Module: /%s%t" modname eflush;
+                     if verbose then eprintf "Module: /%s%t" modname eflush
                end;
 
             if item = [] then
@@ -1136,18 +1138,20 @@ struct
       let dir = info.dir in
       try
          chdir info false false path;
-         let res = info.proof.edit_get_extract (get_db info) in
-         chdir info false false dir; res
-      with exn ->
-         chdir info false false dir;
-         raise exn
+         let res = info.proof.edit_get_extract () in
+            chdir info false false dir;
+            res
+      with
+         exn ->
+            chdir info false false dir;
+            raise exn
 
    let term_of_extract info terms =
       match info with
          { package = Some pack; dir = mod_name :: name :: _ } ->
             Refine.extract_term (Package.refiner pack) (make_opname [name;mod_name]) terms
        | _ ->
-            raise(Invalid_argument "Shell.term_of_extract only works inside a proof")
+            raise (Failure "Shell.term_of_extract only works inside a proof")
 
    (************************************************************************
     * NUPRL5 INTERFACE                                                     *
@@ -1358,7 +1362,7 @@ struct
       ignore (print_exn info (chdir info false false) [mname; name]; ShellP4.eval_opens info.shell opens)
 
    let edit_create_thm info mname name =
-      ignore(edit_info info mname);
+      ignore (edit_info info mname);
       chdir info false false [mname];
       let create name =
          let package = get_current_package info in
@@ -1370,7 +1374,7 @@ struct
          edit_cd_thm info mname name
 
    let edit_create_rw info mname name =
-      ignore(edit_info info mname);
+      ignore (edit_info info mname);
       chdir info false false [mname];
       let create name =
          let package = get_current_package info in
@@ -1510,7 +1514,11 @@ external stop_gmon : unit -> unit = "stop_gmon"
  *)
 let exit () = raise End_of_file
 let set_debug = set_debug
-let print_gc_stats () = Gc.print_stat stdout
+let print_gc_stats () =
+   flush stdout;
+   Gc.print_stat Pervasives.stdout;
+   Pervasives.flush Pervasives.stdout
+
 let cd s = commands.cd s
 let pwd _ = string_of_path (commands.pwd ())
 let set_dfmode s = commands.set_dfmode s
@@ -1564,17 +1572,17 @@ let ls s =
                '-' ->
                   options
              | 'R' ->
-                  (LsRules :: options)
+                  LsRules :: options
              | 'r' ->
-                  (LsRewrites :: options)
+                  LsRewrites :: options
              | 'u' ->
-                  (LsUnjustified :: options)
+                  LsUnjustified :: options
              | 'f' ->
-                  (LsFormal :: options)
+                  LsFormal :: options
              | 'a' ->
-                  (LsAll :: options)
+                  LsAll :: options
              | 'd' ->
-                  (LsDisplay :: options)
+                  LsDisplay :: options
              | _ ->
                   raise (RefineError ("ls", StringStringError ("unrecognized option", s)))
          in
@@ -1586,17 +1594,17 @@ let view name =
    commands.view [] name
 
 let up i =
-   ignore(cd (String.make (i + 1) '.'));
+   ignore (cd (String.make (i + 1) '.'));
    ls ""
 
 let down i =
-   ignore(cd (string_of_int i));
+   ignore (cd (string_of_int i));
    ls ""
 
 let root () =
    match commands.pwd () with
       modname::item::_ ->
-         ignore(cd ("/" ^ modname ^ "/" ^ item));
+         ignore (cd ("/" ^ modname ^ "/" ^ item));
          ls ""
     | _ ->
          eprintf "Can not go to the proof root: not inside a proof%t" eflush
@@ -1622,7 +1630,7 @@ let status item =
 let status_all () =
    let f item db =
       eprintf "Expanding `%s':%t" (let name, _, _, _ = item.edit_get_contents () in name) eflush;
-      begin try item.edit_expand db with Invalid_argument _ | _ -> () end;
+      begin try item.edit_interpret ProofExpand with Invalid_argument _ | _ -> () end;
       status item;
    in
       apply_all f true true
@@ -1634,10 +1642,10 @@ let check_all () =
          Some b, Some e -> b, e, b, e
        | _ -> "*", "*", "`", "'"
    in
-   let check item db =
+   let check item =
       let name, _, _, _ = item.edit_get_contents () in
       let status =
-         match item.edit_check db with
+         match item.edit_check () with
             RefPrimitive ->
                "is a primitive axiom"
           | RefIncomplete(c1,c2) ->
@@ -1650,7 +1658,7 @@ let check_all () =
          eprintf "Refiner status: %s%s%s %s%t" bfs2 name bfe2 status eflush
    in
    let f item db =
-      print_exn_db db (check item) db
+      check item
    in
       apply_all f true true
 

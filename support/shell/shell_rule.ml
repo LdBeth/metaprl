@@ -33,8 +33,8 @@
 extends Shell_sig
 extends Package_info
 
-open Printf
 open Lm_debug
+open Lm_printf
 
 open Term_sig
 open Refiner.Refiner.Term
@@ -76,13 +76,13 @@ type goal =
  * This is the actual rule/rewrite object.
  *)
 type info =
-   { mutable rule_params : term param list;
-     mutable rule_assums : term list;
-     mutable rule_goal : goal;
-     mutable rule_proof : Package.proof proof_type;
-     mutable rule_ped : Proof_edit.ped proof_type;
+   { mutable rule_params    : term param list;
+     mutable rule_assums    : term list;
+     mutable rule_goal      : goal;
+     mutable rule_proof     : Package.proof proof_type;
+     mutable rule_ped       : Proof_edit.ped proof_type;
      mutable rule_resources : (MLast.expr, term) resource_def;
-     mutable rule_name : string
+     mutable rule_name      : string
    }
 
 (*
@@ -225,17 +225,8 @@ let rec edit pack parse_arg name window obj =
    in
    let edit_save () =
       save_ped ()
-(*
-      match obj.rule_ped with
-         Interactive ped ->
-            save_ped ()
-       | Primitive _
-       | Derived _
-       | Incomplete ->
-            ()
-*)
    in
-   let edit_get_extract df =
+   let edit_get_extract () =
       match obj.rule_ped with
          Primitive _ ->
             raise (RefineError ("Shell_rule.check", StringError "can't check primitive rules"))
@@ -244,16 +235,19 @@ let rec edit pack parse_arg name window obj =
        | Incomplete ->
             raise (RefineError ("Shell_rule.check", StringError "proof is incomplete"))
        | Interactive ped ->
-            try Proof_edit.refiner_extract_of_ped df ped with
+            try Proof_edit.refiner_extract_of_ped window ped with
                RefineError (name', err) ->
                   raise (RefineError (name, StringWrapError (name', err)))
    in
-   let edit_check df =
+   let edit_check () =
       match obj.rule_ped with
-         Primitive _ -> Proof_edit.RefPrimitive
-       | Derived _ | Incomplete -> Proof_edit.RefIncomplete(0,0)
+         Primitive _ ->
+            Proof_edit.RefPrimitive
+       | Derived _
+       | Incomplete ->
+            Proof_edit.RefIncomplete (0, 0)
        | Interactive ped ->
-            Proof_edit.check_ped (Package.refiner pack) (make_opname [obj.rule_name; Package.name pack]) df ped
+            Proof_edit.check_ped window (Package.refiner pack) (make_opname [obj.rule_name; Package.name pack]) ped
    in
    let get_ped obj =
       match obj.rule_ped with
@@ -263,9 +257,6 @@ let rec edit pack parse_arg name window obj =
             raise (RefineError ("Shell_rule.get_ped", StringError "proof is not interactive"))
        | Interactive ped ->
             ped
-   in
-   let edit_expand df =
-      Proof_edit.expand_ped df (get_ped obj)
    in
    let edit_root () =
       Proof_edit.root_ped (get_ped obj)
@@ -333,7 +324,7 @@ let rec edit pack parse_arg name window obj =
          eprintf "Shell_rule.edit_refine: refinement done%t" eflush
    in
    let edit_interpret command =
-      Proof_edit.interpret (get_ped ()) command
+      Proof_edit.interpret window (get_ped ()) command
    in
       { edit_display = edit_display;
         edit_get_contents = edit_get_contents;
@@ -347,7 +338,6 @@ let rec edit pack parse_arg name window obj =
         edit_get_extract = edit_get_extract;
         edit_save = edit_save;
         edit_check = edit_check;
-        edit_expand = edit_expand;
         edit_root = edit_root;
         edit_up = edit_up;
         edit_down = edit_down;

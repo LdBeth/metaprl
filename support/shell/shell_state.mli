@@ -29,9 +29,12 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
+open Lm_pervasives
 
 open Refiner.Refiner.TermType
+
 open Dform
+
 open Filter_type
 
 type t
@@ -48,7 +51,7 @@ val fork : t -> t
  * within a toploop call.  These functions usually fail if the
  * toploop is not active.
  *)
-val term_printer : term -> unit  (* uses Format library *)
+val term_printer : term -> unit  (* uses Lm_format library *)
 val print_term_fp : out_channel -> term -> unit
 val set_tactic : string -> MLast.expr -> unit
 val get_term : int -> term

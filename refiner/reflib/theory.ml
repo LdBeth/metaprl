@@ -32,6 +32,7 @@
  *)
 
 open Lm_debug
+open Lm_printf
 
 open Refiner.Refiner.Refine
 
@@ -77,7 +78,7 @@ let get_theory name =
          else
             search t
     | [] ->
-         invalid_arg ("Theory.get_theory: theory ``" ^ name ^ "'' not found")
+         raise (Failure ("Theory.get_theory: theory ``" ^ name ^ "'' not found"))
    in
       search !base
 

@@ -32,9 +32,9 @@
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
-open Printf
-
 open Lm_debug
+
+open Lm_printf
 open Opname
 open Term_shape_sig
 open Refiner.Refiner

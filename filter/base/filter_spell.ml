@@ -22,9 +22,8 @@
  * Author: Jason Hickey
  * jyh@cs.caltech.edu
  *)
-
-open Lm_debug
-open Printf
+open Lm_pervasives
+open Lm_printf
 
 (*
  * The dictionary is compiled from /usr/dict/words and
@@ -131,10 +130,10 @@ let make_dict () =
       List.iter (add_file table) words_filenames;
       dict := Some table;
 
-      let out = open_out_bin tmp_filename in
-         output_binary_int out tmp_magic;
+      let out = Pervasives.open_out_bin tmp_filename in
+         Pervasives.output_binary_int out tmp_magic;
          Marshal.to_channel out table [];
-         close_out out;
+         Pervasives.close_out out;
          add_file table ispell_filename;
          eprintf "[done]%t" eflush
 

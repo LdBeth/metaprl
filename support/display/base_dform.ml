@@ -50,8 +50,9 @@ extends Perv
 extends Nuprl_font
 (* @docoff *)
 
-open Lm_symbol
 open Lm_debug
+open Lm_symbol
+open Lm_printf
 
 open Term_sig
 open Refiner.Refiner.Term
@@ -61,7 +62,7 @@ open Refiner.Refiner.TermMan
 open Refiner.Refiner.Rewrite
 open Refiner.Refiner.RefineError
 open Dform
-open Rformat
+open Lm_rformat
 
 (*
  * Show that the file is loading.

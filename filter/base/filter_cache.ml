@@ -31,9 +31,10 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-open Printf
-
 open Lm_debug
+open Lm_printf
+open Lm_pervasives
+
 open Opname
 
 open File_type_base
@@ -592,11 +593,11 @@ struct
 
       (* Now write the term *)
       let newname = filename ^ ".new" in
-      let outx = open_out_bin newname in
+      let outx = Pervasives.open_out_bin newname in
       let major, minor, rev = unpack_version (List.hd versions) in
-         fprintf outx "#PRL version %d.%d.%d ASCII term\n" major minor rev;
+         Printf.fprintf outx "#PRL version %d.%d.%d ASCII term\n" major minor rev;
          PreAsciiIO.write_term outx table term;
-         close_out outx;
+         Pervasives.close_out outx;
          Unix.rename newname filename
 end
 

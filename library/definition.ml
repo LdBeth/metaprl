@@ -7,25 +7,26 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Lori Lorigo, Richard Eaton, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
 open Lm_debug
+open Lm_printf
 
 open Basic
 open Refiner.Refiner.Term
@@ -263,7 +264,7 @@ end
 
 class term_dyneval (t: term) =
  object(self)
- 
+
   (*val mutable stamp = None*)
   val term = t
   (*val mutable flags = None
@@ -283,7 +284,7 @@ class ['a] term_definition d da st =
   method set_dyneval s = dyneval <- Some s
   method dyn_p = match dyneval with None -> false | Some s -> true
   method get_dyneval = match dyneval with None -> raise NoDyneval | Some s -> s
-  
+
   method set_substance (s : term_substance) = sub <- Some s
   method get_term = (self#get_substance)#get_term
 
@@ -421,14 +422,14 @@ let term_to_dependency t =
    want polymorphism with definitions and tables
  *)
 let import_term_old idef idesc =
-  print_string " import_term "; Mbterm.print_term idef; 
+  print_string " import_term "; Mbterm.print_term idef;
   match dest_term idef with
     { term_op = op; term_terms = [idep; idata] } when opeq op idefinition_op
       -> (let dep = term_to_dependency (term_of_unbound_term idep) in
 	  let data = term_to_data (term_of_unbound_term idata) in
 
-	  print_string " import_term "; Mbterm.print_term (term_of_unbound_term idata); 
-	  if not (dag_description_p idesc) then print_string " uh oh"; 
+	  print_string " import_term "; Mbterm.print_term (term_of_unbound_term idata);
+	  if not (dag_description_p idesc) then print_string " uh oh";
 
 	  if not (dag_description_p idesc)
 	     then TermDefinition (new term_definition dep data TermSubstance)
@@ -444,21 +445,21 @@ let dest_dyneval_term t =
      -> (match dest_op op with
 	  { op_name = opname; op_params = id :: rest}
 		when nuprl5_opname_p opname & parmeq id idyneval_param
-		-> 
+		->
 	  | _ -> fail
 	)
   |_ -> fail
 *)
 
 let import_term idef idesc =
-  (*print_string " import_term "; Mbterm.print_term idef;*) 
+  (*print_string " import_term "; Mbterm.print_term idef;*)
   match dest_term idef with
     { term_op = op; term_terms = [idep; idata] } when opeq op idefinition_op
       -> (let dep = term_to_dependency (term_of_unbound_term idep) in
 	  let data = term_to_data (term_of_unbound_term idata) in
 
-	  (*print_string " import_term "; Mbterm.print_term (term_of_unbound_term idata);*) 
-	  
+	  (*print_string " import_term "; Mbterm.print_term (term_of_unbound_term idata);*)
+
 	  if not (dag_description_p idesc)
 	     then TermDefinition (new term_definition dep data TermSubstance)
 	     else
@@ -467,12 +468,12 @@ let import_term idef idesc =
 		if idirectory_term_p idir then DirectoryDefinition (new directory_definition dep data Substance) (*LAL fails, subst not a dir term*)
 		else TermDefinition (new term_definition dep data TermSubstance)
 
-		(*if (idyneval_term_p idir) then 
+		(*if (idyneval_term_p idir) then
 		let def = new term_definition dep data TermSubstance in
 		and [stamp, flags, term] = dest_dyneval_term idir in
 		(def#set_dyneval (new term_dyneval idir); TermDefinition def)
 		else error ["import"; "term"; "not"] [] [idir]*)
-		
+
 	)
     |_ -> error ["term"; "!definition"] [] [idef]
 
@@ -511,7 +512,7 @@ let apply_broadcast ttable ibcast idesc stamp commit_stamp =
 		| Some s -> commit ttable s oid seq
 		) in
 
-  
+
   (*print_string "apply broadcast";
   print_newline();
   Mbterm.print_term ibcast;
@@ -522,7 +523,7 @@ let apply_broadcast ttable ibcast idesc stamp commit_stamp =
 	match dest_op op with
 	  { op_name = opn; op_params = pid :: pseq :: rest } when nuprl5_opname_p opn
 	    -> (if parmeq pid idefinition_insert_param
-		    then 
+		    then
                     let entry = (import_term (term_of_unbound_term (hd terms)) idesc) in
 		         let oid = (oid_of_term_entry entry)
 			 and seq = (dest_int_param pseq) in
@@ -542,7 +543,7 @@ let apply_broadcast ttable ibcast idesc stamp commit_stamp =
 					(dest_obid_param (hd rest))
 					(dest_int_param pseq)
 		else error ["term"; "broadcast"; "opid"] [] [ibcast]
-		)		
+		)
 	   |_ -> error ["term"; "broadcast"] [] [ibcast]
 
 let termtable_lookup ttable stamp oid = lookup ttable stamp oid

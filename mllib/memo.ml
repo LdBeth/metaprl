@@ -31,7 +31,7 @@
  *)
 
 open Lm_debug
-open Printf
+open Lm_printf
 
 let debug_memo =
    create_debug (**)

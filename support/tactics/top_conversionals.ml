@@ -76,7 +76,7 @@ extends Mptop
 doc <:doc< @docoff >>
 
 open Lm_debug
-open Printf
+open Lm_printf
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.RefineError

@@ -29,10 +29,9 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-open Printf
-
 open Lm_debug
 open Lm_threads
+open Printf
 
 let debug_http =
    create_debug (**)
@@ -40,6 +39,21 @@ let debug_http =
         debug_description = "HTTP server operations";
         debug_value = false
       }
+
+let eflush out =
+   output_char out '\n';
+   flush out
+
+let rec print_string_list out sl =
+   match sl with
+      [s] ->
+         output_string out s
+    | s :: sl ->
+         output_string out s;
+         output_string out ", ";
+         print_string_list out sl
+    | [] ->
+         ()
 
 (************************************************************************
  * TYPES                                                                *
@@ -232,7 +246,7 @@ let head out uri protocol =
                fprintf out "%s %d %s\r\n" http_protocol code msg
    in
       search !http_path;
-      flush out;
+      Pervasives.flush out;
       close_out out
 
 (*
@@ -295,7 +309,7 @@ let get out uri protocol =
             fprintf out "%s\n" not_found_msg
    in
       search !http_path;
-      flush out;
+      Pervasives.flush out;
       close_out out
 
 (*

@@ -30,10 +30,11 @@
  * Modified by: Aleksey Nogin <nogin@cs.caltech.edu>
  *              Nathaniel Gray <n8gray@caltech.edu>
  *)
-open Printf
 open Lexing
 
 open Lm_debug
+open Lm_pervasives
+open Lm_printf
 open Lm_threads
 
 open Refiner.Refiner.TermMan
@@ -316,37 +317,44 @@ let set_tactic s e =
  *)
 let print_term state t =
    let db = state.state_df_base in
-   let buf = Rformat.new_buffer () in
+   let buf = Lm_rformat.new_buffer () in
       Dform.format_term db buf t;
-      Rformat.print_text_channel Rformat.default_width buf stdout;
+      output_rbuffer stdout buf;
       flush stdout
 
 let output_short db out t =
-    let str = try
-       Rformat.line_format Rformat.default_width (fun bf -> Dform.format_term db bf t)
-    with exn ->
-       "unprintable term (printer raised " ^ (Printexc.to_string exn) ^ ")"
+   let str =
+      try
+         Lm_rformat_text.line_format Lm_rformat.default_width (fun bf -> Dform.format_term db bf t)
+      with
+         exn ->
+            "unprintable term (printer raised " ^ (Printexc.to_string exn) ^ ")"
     in
        output_string out str
 
 let output_long db out t =
-   let buf = Rformat.new_buffer () in
+   let buf = Lm_rformat.new_buffer () in
       Dform.format_term db buf t;
-      Rformat.print_text_channel Rformat.default_width buf out
+      output_rbuffer out buf
 
 let get_dbase = function
    Some state -> state.state_df_base
  | None -> Dform.null_base
 
 let print_term_fp out t =
-   let printer = if !debug_full_terms then output_long else output_short in
+   let printer =
+      if !debug_full_terms then
+         output_long
+      else
+         output_short
+   in
       synchronize_client (fun state -> printer (get_dbase state) out t; flush out)
 
 let term_printer t =
    synchronize_client (fun state ->
-      Format.open_box 0;
-      Format.print_string (Dform.string_of_term (get_dbase state) t);
-      Format.close_box())
+      Lm_format.open_box 0;
+      Lm_format.print_string (Dform.string_of_term (get_dbase state) t);
+      Lm_format.close_box())
 
 (************************************************************************
  * TOPLOOP FUNCTIONS                                                    *

@@ -43,8 +43,9 @@
  * @end[license]
  *)
 
-open Lm_symbol
 open Lm_debug
+open Lm_symbol
+open Lm_printf
 
 open Refiner.Refiner.TermSubst
 open Refiner.Refiner.RefineError

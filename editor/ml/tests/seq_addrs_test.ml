@@ -1,5 +1,4 @@
-open Printf
-open Lm_debug
+open Lm_printf
 
 open Refiner.Refiner
 open Refiner.Refiner.Term
@@ -8,8 +7,8 @@ open Refiner.Refiner.TermMan
 open Refiner.Refiner.Refine
 open Simple_print.SimplePrint
 
-let string_of_exn exn = Rformat.line_format 120 (fun buf ->  Refine_exn.format_exn Dform.null_base buf exn)
-let string_of_term t = Rformat.line_format 120 (fun buf ->  format_simple_term buf t)
+let string_of_exn exn = Lm_rformat.line_format 120 (fun buf ->  Refine_exn.format_exn Dform.null_base buf exn)
+let string_of_term t = Lm_rformat.line_format 120 (fun buf ->  format_simple_term buf t)
 
 let addr_term_str af afa tf t =
    try begin

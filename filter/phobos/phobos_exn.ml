@@ -1,5 +1,6 @@
 (*
  * Phobos exceptions.
+ *
  * ----------------------------------------------------------------
  *
  * Copyright (C) 2002 Adam Granicz, Caltech
@@ -21,8 +22,9 @@
  * Author: Adam Granicz
  * Email: granicz@cs.caltech.edu
  *)
+open Lm_rformat
+open Lm_pervasives
 
-open Rformat
 open Phobos_constants
 open Phobos_parse_state
 open Phobos_type
@@ -61,20 +63,20 @@ let rec format_loc buf = function
    LocString (s, term, loc) ->
       let opname, _, _ = breakup_bterm term in
       let term_string = string_of_opname opname in
-      format_loc buf loc;
-      format_string buf "\\";
-      format_string buf s;
-      format_string buf " (";
-      format_string buf term_string;
-      format_string buf ")\n"
+         format_loc buf loc;
+         format_string buf "\\";
+         format_string buf s;
+         format_string buf " (";
+         format_string buf term_string;
+         format_string buf ")\n"
  | LocStart (s, term) ->
       let opname, _, _ = breakup_bterm term in
       let term_string = string_of_opname opname in
-      format_string buf "\\";
-      format_string buf s;
-      format_string buf " (";
-      format_string buf term_string;
-      format_string buf ")\n"
+         format_string buf "\\";
+         format_string buf s;
+         format_string buf " (";
+         format_string buf term_string;
+         format_string buf ")\n"
 
 let format_loc_last buf = function
    LocString (s, term, loc) ->
@@ -157,7 +159,7 @@ let format_exn_chan out exn =
    let buf = new_buffer () in
       format_exn buf exn;
       format_newline buf;
-      print_text_channel default_width buf out;
+      output_rbuffer out buf;
       flush out
 
 let catch f x =

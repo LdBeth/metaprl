@@ -45,18 +45,18 @@ let set_source_position pos =
  *)
 let print_psymbol = function
    Terminal s ->
-      Format.print_string s
+      Lm_format.print_string s
  | NonTerminal s ->
-      Format.print_string (string_add ["<"; s; ">"])
+      Lm_format.print_string (string_add ["<"; s; ">"])
  | Empty ->
-      Format.print_string "{Epsilon}"
+      Lm_format.print_string "{Epsilon}"
  | Eof ->
-      Format.print_string "$"
+      Lm_format.print_string "$"
 
 let print_psymbol_set set =
    let psymbol_list = PSymbolSet.to_list set in
    List.iter (fun psym ->
-      Format.print_string " ";
+      Lm_format.print_string " ";
       print_psymbol psym) psymbol_list
 
 let psymbol_equal ps1 ps2 =
@@ -216,7 +216,7 @@ let prod_id_find_unsafe pridenv prod_id =
       ProductionIdTable.find pridenv prod_id
    with
       Not_found ->
-         raise (Invalid_argument (Printf.sprintf "production id %d not found" prod_id))
+         raise (Invalid_argument (Lm_printf.sprintf "production id %d not found" prod_id))
 
 let prod_id_add = ProductionIdTable.add
 
@@ -226,19 +226,19 @@ let prod_id_replace table key data =
 
 let print_psym = function
    NonTerminal s ->
-      Format.print_string "<";
-      Format.print_string s;
-      Format.print_string ">"
+      Lm_format.print_string "<";
+      Lm_format.print_string s;
+      Lm_format.print_string ">"
  | Terminal s ->
-      Format.print_string s
+      Lm_format.print_string s
  | Eof ->
-      Format.print_string "EOF"
+      Lm_format.print_string "EOF"
  | Empty ->
-      Format.print_string "{epsilon}"
+      Lm_format.print_string "{epsilon}"
 
 let print_psym_list lst =
    List.iter (fun psym ->
-      Format.print_string " ";
+      Lm_format.print_string " ";
       print_psym psym) lst
 
 let prod_empty = ProductionTable.empty
@@ -248,9 +248,9 @@ let prod_find prenv (head, prods) =
       ProductionTable.find prenv (head, prods)
    with
       Not_found ->
-         Format.print_string "PROD not found :";
+         Lm_format.print_string "PROD not found :";
          print_psym head;
-         Format.print_string " ->";
+         Lm_format.print_string " ->";
          print_psym_list prods;
          exit 1
 
@@ -513,7 +513,7 @@ let parsing_table_add ptable ptable_errors key data =
             ParserFA.add ptable key data, ptable_errors @ [key]
 
 let parsing_table_remove = ParserFA.remove
-   
+
 (*
  * Parsing errors.
  *)
@@ -565,4 +565,4 @@ let rec find_file paths name =
  * Printing warning messages.
  *)
 let print_warning pos s =
-   Printf.eprintf "%s: warning - %s\n" (string_of_pos pos) s
+   Lm_printf.eprintf "%s: warning - %s\n" (string_of_pos pos) s

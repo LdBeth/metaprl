@@ -62,8 +62,9 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-open Lm_symbol
 open Lm_debug
+open Lm_symbol
+open Lm_printf
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermMan

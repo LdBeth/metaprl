@@ -30,7 +30,6 @@
  * jyh@cs.cornell.edu
  *
  *)
-
 open Refiner_sig
 open Simple_print_sig
 

@@ -174,7 +174,7 @@ let create_lenv gst loptions =
         lexer_rewrites = lex_rewrite_table
       }
 
-let create_clenv 
+let create_clenv
    { lexer_regexps = regexps;
      lexer_options = loptions;
      lexer_rewrites = rewrites
@@ -182,7 +182,7 @@ let create_clenv
    let regexps =
       (* Replace special characters in regular expressions *)
       List.map (fun (ignore, id, regexps) ->
-         let regexps = 
+         let regexps =
             List.map (fun regexp ->
                let regexp = replace_substring regexp ["\\n"] (fun _ _ -> "\n") in
                let regexp = replace_substring regexp ["\\t"] (fun _ _ -> "\t") in
@@ -210,7 +210,7 @@ let create_clenv
       List.map (fun (ignore, id, regexps) ->
          try
             let regexp = disjunction_of regexps in
-            debug_string (Printf.sprintf "Creating regexp for %s [%s]\n" id regexp);
+            debug_string (Lm_printf.sprintf "Creating regexp for %s [%s]\n" id regexp);
                ignore, id, Str.regexp regexp
          with
               Failure s ->

@@ -28,9 +28,9 @@
  *
  * Author: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
-open Lm_symbol
 open Lm_debug
-open Printf
+open Lm_symbol
+open Lm_printf
 
 open Lm_string_set
 
