@@ -15,8 +15,8 @@ type file_name = string
  * File type selection info.
  *)
 type ('select, 'cooked) file_info =
-   { info_marshal : out_channel -> 'cooked -> unit;
-     info_unmarshal : in_channel -> 'cooked;
+   { info_marshal : int -> string -> 'cooked -> unit;
+     info_unmarshal : int -> string -> 'cooked;
      info_select : 'select;
      info_suffix : string;
      info_magic : int
@@ -127,6 +127,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/02/12 23:35:17  jyh
+ * Generalized file base to allow the library.
+ *
  * Revision 1.1  1997/08/06 16:17:56  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

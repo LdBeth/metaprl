@@ -399,7 +399,47 @@ let flat_map f l =
       aux l
 
 (*
+ * Map, and discard errors.
+ *)
+let fail_map f l =
+   let rec aux = function
+      h::t ->
+         begin
+            try
+               let h = f h in
+                  h :: aux t
+            with
+               Failure _ ->
+                  aux t
+         end
+    | [] ->
+         []
+   in
+      aux l
+
+(*
+ * Map, and discard None.
+ *)
+let some_map f l =
+   let rec aux = function
+      h::t ->
+         begin
+            match f h with
+               Some h ->
+                  h :: aux t
+             | None ->
+                  aux t
+         end
+    | [] ->
+         []
+   in
+      aux l
+
+(*
  * $Log$
+ * Revision 1.2  1998/02/12 23:35:20  jyh
+ * Generalized file base to allow the library.
+ *
  * Revision 1.1  1997/08/06 16:17:58  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

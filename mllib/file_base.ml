@@ -90,31 +90,17 @@ struct
           } = spec
       in
       let filename = sprintf "%s/%s.%s" dir name suffix in
-      let inx = open_in_bin filename in
-         try
-            let magic' = input_binary_int inx in
-               if magic = magic' then
-                  let info = unmarshal inx in
-                  let info' =
-                     { info_info = info;
-                       info_file = name;
-                       info_type = select;
-                       info_dir = dir
-                     }
-                  in
-                     add_info base info';
-                     close_in inx;
-                     info'
-               else
-                  begin
-                     close_in inx;
-                     raise (Sys_error "load_file")
-                  end
-         with
-            End_of_file ->
-               close_in inx;
-               raise (Sys_error "load_file")
-   
+      let info = unmarshal magic filename in
+      let info' =
+         { info_info = info;
+           info_file = name;
+           info_type = select;
+           info_dir = dir
+         }
+      in
+         add_info base info';
+         info'
+
    (*
     * Find an existing root module.
     * If it doesn't exist in the base, search for it
@@ -212,10 +198,7 @@ struct
       let { info_dir = dir; info_file = file; info_type = select; info_info = data } = info in
       let { info_magic = magic; info_marshal = marshal; info_suffix = suffix } = find_spec select in
       let filename = sprintf "%s/%s.%s" dir file suffix in
-      let outx = open_out_bin filename in
-         output_binary_int outx magic;
-         marshal outx data;
-         close_out outx
+         marshal magic filename data
    
    (*
     * Inject a new module.
@@ -278,6 +261,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/02/12 23:35:15  jyh
+ * Generalized file base to allow the library.
+ *
  * Revision 1.1  1997/08/06 16:17:54  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

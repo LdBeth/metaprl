@@ -32,11 +32,27 @@ struct
    type cooked = Info.cooked
    type info = (select, cooked) common_info
 
-   let marshal out info =
-      output_value out (Info.marshal info)
+   let marshal magic filename info =
+      let outx = open_out_bin filename in
+         output_binary_int outx magic;
+         output_value outx (Info.marshal info);
+         close_out outx
    
-   let unmarshal inx =
-      Info.unmarshal (input_value inx : Info.raw)
+   let unmarshal magic filename =
+      let inx = open_in_bin filename in
+         try
+            let magic' = input_binary_int inx in
+               if magic = magic' then
+                  Info.unmarshal (input_value inx : Info.raw)
+               else
+                  begin
+                     close_in inx;
+                     raise (Sys_error "load_file")
+                  end
+         with
+            End_of_file ->
+               close_in inx;
+               raise (Sys_error "load_file")
    
    let info =
       [{ info_marshal = marshal;
@@ -50,23 +66,25 @@ end
 (*
  * Extend a Combo with new data.
  *)
-module ExtendCombo (Info : FileTypeInfoSig)
+module CombineCombo (Types : FileTypeSummarySig)
+(Info : FileTypeComboSig
+        with type cooked = Types.cooked
+        with type select = Types.select
+        with type info = (Types.select, Types.cooked) common_info)
 (Combo : FileTypeComboSig
-         with type cooked = Info.cooked
-         with type select = Info.select
-         with type info = (Info.select, Info.cooked) common_info) :
+         with type cooked = Types.cooked
+         with type select = Types.select
+         with type info = (Types.select, Types.cooked) common_info) :
    (FileTypeComboSig
-    with type cooked = Info.cooked
-    with type select = Info.select
-    with type info = (Info.select, Info.cooked) common_info) =
+    with type cooked = Types.cooked
+    with type select = Types.select
+    with type info = (Types.select, Types.cooked) common_info) =
 struct
-   type select = Info.select
-   type cooked = Info.cooked
+   type select = Types.select
+   type cooked = Types.cooked
    type info = (select, cooked) common_info
       
-   module SingletonCombo = MakeSingletonCombo (Info)
-                              
-   let info = SingletonCombo.info @ Combo.info
+   let info = Info.info @ Combo.info
 end
 
 (*
@@ -101,6 +119,9 @@ module MakeFileBase (Types : FileTypeSummarySig)
 
 (*
  * $Log$
+ * Revision 1.2  1998/02/12 23:35:18  jyh
+ * Generalized file base to allow the library.
+ *
  * Revision 1.1  1997/08/06 16:17:56  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

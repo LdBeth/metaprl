@@ -1,5 +1,5 @@
 (*
- *
+ * Additional operations on lists.
  *)
 
 (* Filter items out of a list *)
@@ -39,6 +39,8 @@ val unionq : 'a list -> 'a list -> 'a list
 (* Reverse iteration *)
 val rev_iter : ('a -> 'b) -> 'a list -> unit
 val flat_map : ('a -> 'b list) -> 'a list -> 'b list
+val fail_map : ('a -> 'b) -> 'a list -> 'b list
+val some_map : ('a -> 'b option) -> 'a list -> 'b list
 
 (*
  * Association lists.
@@ -58,6 +60,9 @@ val last : 'a list -> 'a
 
 (*
  * $Log$
+ * Revision 1.2  1998/02/12 23:35:22  jyh
+ * Generalized file base to allow the library.
+ *
  * Revision 1.1  1997/08/06 16:18:00  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.
