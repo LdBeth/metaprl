@@ -296,7 +296,7 @@ struct
          begin
             match gstack with
                StackBTerm (t, l) ->
-                  RewriteFun (fun l' -> subst t l' l)
+                  RewriteFun (subst t l)
              | _ -> REF_RAISE(extract_exn)
          end
     | SOVarInstance _ ->
@@ -312,7 +312,7 @@ struct
          begin
             match gstack with
                StackContext (l, t, addr) ->
-                  RewriteContext (fun c l' -> subst (replace_subterm t addr c) l' l)
+                  RewriteContext (fun c l' -> subst (replace_subterm t addr c) l l')
              | _ -> REF_RAISE(extract_exn)
          end
     | PIVar _ ->

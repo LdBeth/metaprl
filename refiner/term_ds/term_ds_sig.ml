@@ -172,7 +172,10 @@ sig
    val bterm_free_vars: bound_term -> StringSet.t
 
    (*
-    * simultaneous delayed substitution
+    * Simultaneous delayed substitution.
+    * These two functions would behave incorrectly if the term_subst mentions
+    * the same variable more than once. Use Term_subst_ds.subst when there is
+    * a possibility of duplicates.
     *)
    val do_term_subst : term_subst -> term -> term
    val do_bterm_subst : term_subst -> bound_term -> bound_term

@@ -99,16 +99,30 @@ struct
 
    type term_subst = TermType.term_subst
 
-   let subst t tl vl =
-      IFDEF VERBOSE_EXN THEN
-         if List.length tl <> List.length vl then
-              eprintf "subst: %a (%a) (%a)%t" (**)
-              debug_print t
-              print_string_list vl
-              (print_any_list debug_print) tl
-              eflush
-      ENDIF;
-      do_term_subst (List.combine vl tl) t
+   let rec combine_fst_flt_nodups fvs vl tl =
+      match vl, tl with
+       | [v],[t] ->
+            if StringSet.mem fvs v then [v,t] else []
+       | v::vl, t::tl ->
+            if StringSet.mem fvs v then
+               (v,t) :: combine_fst_flt_nodups (StringSet.remove v fvs) vl tl
+            else
+               combine_fst_flt_nodups fvs vl tl
+       | _ ->
+            raise (Invalid_argument "Term_subst_ds.combine_fst_flt_nodups")
+
+   let subst t vl tl =
+      if vl=[] then t else
+      match combine_fst_flt_nodups (free_vars_set t) vl tl with
+         [] -> t
+       | sub ->
+            {free_vars = VarsDelayed; core = Subst (t,sub)}
+
+   let subst1 term v t =
+      if StringSet.mem (free_vars_set term) v then
+         {free_vars = VarsDelayed; core = Subst (term,[v,t])} 
+      else
+         term
 
    let is_var_free v t = StringSet.mem (free_vars_set t) v
 

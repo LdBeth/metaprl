@@ -55,8 +55,12 @@ sig
     * Bound variables will be renamed if necessary to prevent capturing
     * When renaming in bound terms with duplicate variables:
     *   x,x.t[x] would become new(x),new(x).t[new(x)]
+    *
+    * If a same variable is mentioned several times in string list,
+    * the first occurence is used.
     *)
-   val subst : term -> term list -> string list -> term
+   val subst : term -> string list -> term list -> term
+   val subst1 : term -> string -> term -> term
 
    (*
     * var_subst: subst of var for a term.

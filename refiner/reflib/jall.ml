@@ -1550,7 +1550,7 @@ let make_new_eigenvariable term =
 
  let replace_subterm term oldt rept  = 
   let v_term = var_subst term oldt "dummy_var" in 
-    subst v_term [rept] ["dummy_var"]
+    subst1 v_term "dummy_var" rept
 
 
 
@@ -2661,7 +2661,7 @@ let selectQ spos_name csigmaQ =
 
 let apply_sigmaQ term sigmaQ = 
  let sigma_vars,sigma_terms = List.split sigmaQ in 
-   (subst term sigma_terms sigma_vars)
+   (subst term sigma_vars sigma_terms)
 
 
 
@@ -3780,7 +3780,7 @@ let rec rec_apply sigmaQ tauQ tau_vars tau_terms =
  match sigmaQ with 
    [] -> [],[]
   | (v,term)::r -> 
-   let app_term = subst term tau_terms tau_vars in 
+   let app_term = subst term tau_vars tau_terms in 
     let old_free = free_vars_list term 
     and new_free = free_vars_list app_term  in 
      let inst_vars = list_diff old_free new_free in 
@@ -3832,7 +3832,7 @@ let make_eq_list term1 term2 =
 
 let apply_2_sigmaQ term1 term2 sigmaQ = 
  let sigma_vars,sigma_terms = List.split sigmaQ in 
-  (subst term1 sigma_terms sigma_vars),(subst term2 sigma_terms sigma_vars)
+  (subst term1 sigma_vars sigma_terms),(subst term2 sigma_vars sigma_terms)
 
 
 
@@ -4560,7 +4560,7 @@ let rec subst_replace subst_list t =
   [] -> t
  |(old_t,new_t)::r -> 
   let inter_term = var_subst t  old_t "dummy"  in 
-   let new_term = subst inter_term  [new_t] ["dummy"]  in 
+   let new_term = subst1 inter_term "dummy" new_t in 
     subst_replace r new_term 
 
 
@@ -5109,7 +5109,7 @@ let check_subst_term (variable,old_term) pos_name stype =
          else
           (mk_string_term (make_opname ["jprover";pos_name]) pos_name)
      in
-      (subst old_term [new_variable] [variable]) (* replace variable (non-empty) in t by pos_name *)
+      (subst1 old_term variable new_variable) (* replace variable (non-empty) in t by pos_name *)
          (* pos_name is either a variable term or a constant, f.i. a string term *)
          (* !!! check unification module how handling eingenvariables as constants !!! *)
     else 
@@ -5361,7 +5361,7 @@ let rec renam_free_vars termlist =
        List.map (fun x -> (mk_string_term (make_opname ["free_variable";x]) x)) var_names
       in 
        let mapping = List.combine var_names string_terms
-       and new_f = subst f string_terms var_names in 
+       and new_f = subst f var_names string_terms in 
         let (rest_mapping,rest_renamed) = renam_free_vars r in 
           let unique_mapping = remove_dups_list (mapping @ rest_mapping) in 
             (unique_mapping,(new_f::rest_renamed))
@@ -5405,8 +5405,8 @@ and frees2 = free_vars_list term2 in
    let unique_list1 = make_equal_list (List.length frees1) unique_object
    and unique_list2 = make_equal_list (List.length frees2) unique_object
    in
-    let next_term1 = subst term1 unique_list1 frees1
-    and next_term2 = subst term2 unique_list2 frees2 in 
+    let next_term1 = subst term1 frees1 unique_list1
+    and next_term2 = subst term2 frees2 unique_list2 in 
            let new_term1 = apply_var_subst next_term1 var_mapping
            and new_term2 = apply_var_subst next_term2 var_mapping
       in 
@@ -5443,8 +5443,8 @@ and frees2 = free_vars_list term2 in
   print_endline "";
   print_endline "";
 *)
-   let next_term1 = subst term1 unique_list1 frees1
-   and next_term2 = subst term2 unique_list2 frees2 in 
+   let next_term1 = subst term1 frees1 unique_list1
+   and next_term2 = subst term2 frees2 unique_list2 in 
            let new_term1 = apply_var_subst next_term1 var_mapping
            and new_term2 = apply_var_subst next_term2 var_mapping
       in 

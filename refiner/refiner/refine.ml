@@ -825,7 +825,7 @@ struct
 
          (* Substitute a placeholder into the sequent to rename other binding vars *)
          let bvars_term = mk_xlist_term (List.map mk_var_term bound_vars) in
-         let seq = subst seq [bvars_term] [v] in
+         let seq = subst1 seq v bvars_term in
 
          (* Now we can replace the goal without fear *)
          let seq = replace_goal seq t' in

@@ -441,62 +441,68 @@ struct
    (*
     * First order simultaneous substitution.
     *)
-   let subst term terms vars =
-      let rec subst_term terms fv vars = function
-         { term_op = { op_name = opname; op_params = [Var(v)] }; term_terms = [] } as t
-         when Opname.eq opname var_opname->
-            (* Var case *)
-            begin
-               try List.nth terms (List_util.find_index v vars) with
-                  Not_found ->
-                     t
-            end
-       | { term_op = op; term_terms = bterms } ->
-            (* Other term *)
-            { term_op = op; term_terms = subst_bterms terms fv vars bterms }
+   let rec subst_term terms fv vars = function
+      { term_op = { op_name = opname; op_params = [Var(v)] }; term_terms = [] } as t
+      when Opname.eq opname var_opname->
+         (* Var case *)
+         begin
+            try List.nth terms (List_util.find_index v vars) with
+               Not_found ->
+                  t
+         end
+    | { term_op = op; term_terms = bterms } ->
+         (* Other term *)
+         { term_op = op; term_terms = subst_bterms terms fv vars bterms }
 
-      and subst_bterms terms fv vars bterms =
-         (* When subst through bterms, catch binding occurrences *)
-         let rec subst_bterm = function
-            { bvars = []; bterm = term } ->
-               (* Optimize the common case *)
-               { bvars = []; bterm = subst_term terms fv vars term }
+   and subst_bterms terms fv vars bterms =
+      (* When subst through bterms, catch binding occurrences *)
+      let rec subst_bterm = function
+         { bvars = []; bterm = term } ->
+            (* Optimize the common case *)
+            { bvars = []; bterm = subst_term terms fv vars term }
 
-          | { bvars = bvars; bterm = term } ->
-               (* First subtract bound instances *)
-               let flags = List.map (function v -> List.mem v bvars) vars in
-               let vars' = List_util.remove_elements flags vars in
-               let fv' = List_util.remove_elements flags fv in
-               let terms' = List_util.remove_elements flags terms in
+       | { bvars = bvars; bterm = term } ->
+            (* First subtract bound instances *)
+            let flags = List.map (function v -> List.mem v bvars) vars in
+            let vars' = List_util.remove_elements flags vars in
+            let fv' = List_util.remove_elements flags fv in
+            let terms' = List_util.remove_elements flags terms in
 
-               (* If any of the binding variables are free, rename them *)
-               let renames = List_util.subtract bvars (fsubtract bvars fv') in
-                  if renames <> [] then
-                     let fv'' = (free_vars_list term)::fv' in
-                     let renames' = new_vars fv'' renames in
-                        { bvars = subst_bvars renames' renames bvars;
-                          bterm = subst_term
-                                  (add_renames_terms renames' terms')
-                                  (add_renames_fv renames' fv')
-                                  (renames @ vars')
-                                  term
-                        }
-                  else
-                     { bvars = bvars;
-                       bterm = subst_term terms' fv' vars' term
+            (* If any of the binding variables are free, rename them *)
+            let renames = List_util.subtract bvars (fsubtract bvars fv') in
+               if renames <> [] then
+                  let fv'' = (free_vars_list term)::fv' in
+                  let renames' = new_vars fv'' renames in
+                     { bvars = subst_bvars renames' renames bvars;
+                       bterm = subst_term
+                               (add_renames_terms renames' terms')
+                               (add_renames_fv renames' fv')
+                               (renames @ vars')
+                               term
                      }
-         in
-            List.map subst_bterm bterms
-
-      and subst_bvars renames' renames bvars =
-         let subst_bvar v =
-            try List.nth renames' (List_util.find_index v renames) with
-               Not_found -> v
-         in
-            List.map subst_bvar bvars
-
+               else
+                  { bvars = bvars;
+                    bterm = subst_term terms' fv' vars' term
+                  }
       in
+         List.map subst_bterm bterms
+
+   and subst_bvars renames' renames bvars =
+      let subst_bvar v =
+         try List.nth renames' (List_util.find_index v renames) with
+            Not_found -> v
+      in
+         List.map subst_bvar bvars
+
+   let subst term vars terms =
          subst_term terms (List.map free_vars_list terms) vars term
+
+   let subst1 t var term =
+      let fv = free_vars_list term in
+      if List.mem var fv then
+         subst_term [term] [fv] [var] t
+      else
+         t
 
    (*
     * Inverse substitution.

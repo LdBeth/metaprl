@@ -289,7 +289,7 @@ struct
             if rstack_mem v stack then
                let fvs = free_vars_set term in
                let v' = String_util.vnewname v (fun v -> (rstack_mem v stack) || (StringSet.mem fvs v)) in
-               v', subst term [mk_var_term v'] [v]
+               v', subst1 term v (mk_var_term v')
             else v,term
          in
          rename_repeated_vars (succ i) (stack @ [FOVar v']) (bnames @ [bname i v']) (bvars @ [new_bvar_item i v']) term' vs

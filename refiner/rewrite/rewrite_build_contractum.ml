@@ -211,9 +211,9 @@ struct
 
    let subst_hyp terms vars = function
       Hypothesis (v, term) ->
-         Hypothesis (v, subst term terms vars)
+         Hypothesis (v, subst term vars terms)
     | Context (v, subterms) ->
-         Context (v, List.map (fun t -> subst t terms vars) subterms)
+         Context (v, List.map (fun t -> subst t vars terms) subterms)
 
    let hyp_subst arg terms vars =
       match vars, terms with
@@ -278,7 +278,7 @@ struct
                             vars terms
                       end
                ENDIF;
-               let term = subst term terms vars in
+               let term = subst term vars terms in
                   IFDEF VERBOSE_EXN THEN
                      if !debug_subst then
                         eprintf "\t%a%t" debug_print term eflush
@@ -317,7 +317,7 @@ struct
                                   vars terms
                             end
                       ENDIF;
-                   subst term terms vars
+                   subst term vars terms
               | _ ->
                    REF_RAISE(RefineError ("build_contractum_term", RewriteStringError "stack entry is not valid"))
          end
