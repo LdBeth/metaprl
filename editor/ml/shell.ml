@@ -891,6 +891,9 @@ struct
             Package.load info.packages name;
             Package.info (Package.get info.packages name)
 
+   let edit_save name =
+      Package.save info.packages (Package.get info.packages name)
+
    let edit_list_module name =
       let info = edit_info name in
       let rec collect = function
