@@ -13,7 +13,7 @@ setenv ENS_DOMAIN_PORT 7473
 #
 setenv TPTP ../../../TPTP
 if(-d $TPTP) then
-   setenv NL_TPTP `echo . $TPTP $TPTP/Problems/* | sed -e 's, ,:,g'`
+   setenv MP_TPTP `echo . $TPTP $TPTP/Problems/* | sed -e 's, ,:,g'`
 endif
 
 #

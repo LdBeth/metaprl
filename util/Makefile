@@ -12,7 +12,7 @@ all: $(ROOT)/bin/ocamldep
 opt: all
 
 install: ocamldep
-	cp -pf ocamldep $(NLBIN)
+	cp -pf ocamldep $(MPBIN)
 
 ocamldep: $(OCAMLDEP)
 	$(OCAMLOPT) -o $@ $(OCAMLDEP)

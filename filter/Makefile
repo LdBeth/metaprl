@@ -254,7 +254,7 @@ install:: $(MAIN).cma $(LCMIFILES) $(CAMLP4N).run $(CAMLP4O).run $(PRLCN).run $(
 	else\
 		$(LN) ../$(DIR)/$(PRLCO).run $(ROOT)/lib/$(PRLCO);\
 	fi
-	$(INSTALL) $(MAIN).run $(NLBIN)/$(MAIN)
+	$(INSTALL) $(MAIN).run $(MPBIN)/$(MAIN)
 
 #
 # Compile a special camlp4 to run Nuprl.
