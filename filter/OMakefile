@@ -66,6 +66,7 @@ CAMLP4N = camlp4n
 CAMLP4O = camlp4o
 
 CAMLP4_FILES =\
+	filter/filter_prog\
 	filter/filter_parse\
 	filter/filter_main
 
@@ -134,6 +135,7 @@ PRLCO = prlco
 
 PRLC_FILES =\
 	$(PRLCOMP_FILES)\
+	filter/filter_prog\
 	filter/filter_bin
 
 PRLCN_LIBS =\
