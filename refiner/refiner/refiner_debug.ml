@@ -1134,6 +1134,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       (* XXX: TODO: we do not use the underlying implementation here, so it is not fully tested *)
       let iter f t = List.iter f (to_list t)
       let map f t = of_list (List.map f (to_list t))
+      let fold f x t = List.fold_left f x (to_list t)
       let lazy_apply = map
       let mapi f t = init (length t) (fun i -> f i (get t i))
       let lazy_sub_map f t i len = of_list (Array.to_list (Lm_array_util.sub_map f (Array.of_list (to_list t)) i len))

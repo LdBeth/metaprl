@@ -51,6 +51,7 @@ open Simple_print
 open File_base_type
 open Term_ty_infer
 open Term_match_table
+open Term_hash_code
 
 open Filter_type
 open Filter_util
@@ -1046,6 +1047,64 @@ struct
       Filter_grammar.set_grammar cache.grammar
 
    (************************************************************************
+    * Hashing.
+    *)
+
+   (*
+    * Note, for these hashing operations, the order of entries is undefined,
+    * so we have to combine the individual hashes using an associative
+    * commutative operation.
+    *)
+   let hash_int code i =
+      code lxor i
+
+   let hash_item code item =
+      hash_int code (Hashtbl.hash_param max_int max_int item)
+
+   let hash_optable code optable =
+      Optable.fold (fun op_shape op code ->
+            hash_item (hash_item code op_shape) op) optable code
+
+   let hash_typeclasses code typeclasses =
+      OpnameTable.fold (fun code opname opnames ->
+            OpnameSet.fold hash_item (hash_item code opname) opnames) code typeclasses
+
+   let hash_typeenv code typeenv =
+      ShapeTable.fold (fun code shape opname ->
+            hash_item (hash_item code shape) opname) code typeenv
+
+   let hash_termenv code termenv =
+      ShapeTable.fold (fun code shape ty ->
+            let code = hash_item code shape in
+            let code = hash_int code (hash_ty ty) in
+               code) code termenv
+
+   let hash_typereductions code typereductions =
+      Shape2Table.fold (fun code shapes (term1, term2) ->
+            let code = hash_item code shapes in
+            let code = hash_int code (hash_term term1) in
+            let code = hash_int code (hash_term term2) in
+               code) code typereductions
+
+   let hash cache =
+      let { optable = optable;
+            typeclasses = typeclasses;
+            typereductions = typereductions;
+            typeenv = typeenv;
+            termenv = termenv;
+            grammar = grammar
+          } = cache
+      in
+      let code = 0x6ace12d4 in
+      let code = hash_optable code optable in
+      let code = hash_typeclasses code typeclasses in
+      let code = hash_typereductions code typereductions in
+      let code = hash_typeenv code typeenv in
+      let code = hash_termenv code termenv in
+      let code = hash_int code (Filter_grammar.hash_grammar grammar) in
+         code
+
+   (************************************************************************
     * UPDATE                                                               *
     ************************************************************************)
 
@@ -1057,16 +1116,6 @@ struct
 
    let add_prefix_commands cache items =
       cache.info <- Filter_summary.add_prefix_commands cache.info items
-
-   let hash cache =
-      let aux ops op i =
-         (*
-          * Note: since the order is undefined, the hashes of the individual entries
-          * have to be combined using an associative commutative operation.
-          *)
-         (Hashtbl.hash_param max_int max_int (ops, op)) lxor i
-      in
-         Optable.fold aux cache.optable (Filter_summary.hash cache.info)
 
    let set_command cache item =
       try cache.info <- Filter_summary.set_command cache.info item with

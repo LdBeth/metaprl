@@ -41,6 +41,8 @@ open Refiner.Refiner.RefineError
 
 open Tactic_type
 
+open Term_hash_code
+
 (*
  * Show that the file is loading.
  *)
@@ -136,11 +138,23 @@ module Parser = Lm_parser.MakeParser (ParserArg) (ParserPrecedence);;
  *)
 type lexer_action = rewrite_rule
 
+type lexer_clause =
+   { lexer_regex      : string;
+     lexer_redex      : term;
+     lexer_contractum : term option
+   }
+
 (*
  * A parser action contains a term list for the variables
  * on the right-hand-size of the production, and a rewrite.
  *)
 type parser_action = rewrite_rule
+
+type parser_clause =
+   { parser_prec       : shape option;
+     parser_redex      : term;
+     parser_contractum : term
+   }
 
 (*
  * An input form.
@@ -164,8 +178,10 @@ type t =
    { gram_name                : string option;
      gram_lexer               : Lexer.t;
      gram_lexer_actions       : lexer_action option ActionTable.t;
+     gram_lexer_clauses       : lexer_clause ActionTable.t;
      gram_parser              : Parser.t;
      gram_parser_actions      : parser_action ActionTable.t;
+     gram_parser_clauses      : parser_clause ActionTable.t;
      gram_iforms              : iform ActionTable.t;
      mutable gram_iform_table : TacticTypes.conv Term_match_table.term_table option
    }
@@ -176,8 +192,10 @@ let empty =
    { gram_name           = None;
      gram_lexer          = Lexer.empty;
      gram_lexer_actions  = ActionTable.empty;
+     gram_lexer_clauses  = ActionTable.empty;
      gram_parser         = Parser.empty;
      gram_parser_actions = ActionTable.empty;
+     gram_parser_clauses = ActionTable.empty;
      gram_iforms         = ActionTable.empty;
      gram_iform_table    = None
    }
@@ -192,6 +210,62 @@ let is_empty gram =
       && ActionTable.is_empty parser_actions
       && ActionTable.is_empty iforms
 
+(*
+ * Hash code for the grammar.
+ * The order of items is undefined, so make sure the
+ * hash is associative and commutative.
+ *)
+let hash_int code i =
+   code lxor i
+
+let hash_item code item =
+   hash_int code (Hashtbl.hash_param max_int max_int item)
+
+let hash_grammar gram =
+   let { gram_lexer_clauses  = lexer_clauses;
+         gram_parser_clauses = parser_clauses;
+         gram_iforms         = iforms
+       } = gram
+   in
+   let code = 0x3192c372 in
+   let code =
+      ActionTable.fold (fun code v clause ->
+            let { lexer_regex = regex;
+                  lexer_redex = redex;
+                  lexer_contractum = contractum
+                } = clause
+            in
+            let code = hash_item code v in
+            let code = hash_item code regex in
+            let code = hash_int code (hash_term redex) in
+               match contractum with
+                  Some contractum ->
+                     hash_int code (hash_term contractum)
+                | None ->
+                     code) code lexer_clauses
+   in
+   let code =
+      ActionTable.fold (fun code v clause ->
+            let { parser_prec = pre;
+                  parser_redex = redex;
+                  parser_contractum = contractum
+                } = clause
+            in
+            let code = hash_item code v in
+            let code = hash_item code pre in
+            let code = hash_int code (hash_term redex) in
+               hash_int code (hash_term contractum)) code parser_clauses
+   in
+   let code =
+      ActionTable.fold (fun code _ iform ->
+            let code = hash_int code (hash_term iform.iform_redex) in
+               hash_int code (hash_term iform.iform_contractum)) code iforms
+   in
+      code
+
+(*
+ * Printing.
+ *)
 let pp_print_string_opt buf s =
    let s =
       match s with
@@ -212,15 +286,19 @@ let union gram1 gram2 =
    else
       let { gram_lexer          = lexer1;
             gram_lexer_actions  = lexer_actions1;
+            gram_lexer_clauses  = lexer_clauses1;
             gram_parser         = parser1;
             gram_parser_actions = parser_actions1;
+            gram_parser_clauses = parser_clauses1;
             gram_iforms         = iforms1
           } = gram1
       in
       let { gram_lexer          = lexer2;
             gram_lexer_actions  = lexer_actions2;
+            gram_lexer_clauses  = lexer_clauses2;
             gram_parser         = parser2;
             gram_parser_actions = parser_actions2;
+            gram_parser_clauses = parser_clauses2;
             gram_iforms         = iforms2
           } = gram2
       in
@@ -231,6 +309,8 @@ let union gram1 gram2 =
            gram_parser         = Parser.union parser1 parser2;
            gram_lexer_actions  = ActionTable.fold ActionTable.add lexer_actions1 lexer_actions2;
            gram_parser_actions = ActionTable.fold ActionTable.add parser_actions1 parser_actions2;
+           gram_lexer_clauses  = ActionTable.fold ActionTable.add lexer_clauses1 lexer_clauses2;
+           gram_parser_clauses = ActionTable.fold ActionTable.add parser_clauses1 parser_clauses2;
            gram_iforms         = ActionTable.fold ActionTable.add iforms1 iforms2;
            gram_iform_table    = None
          }
@@ -261,22 +341,31 @@ let mk_lexer_term lexeme args =
  *)
 let add_token gram id s contractum_opt =
    let { gram_lexer = lexer;
-         gram_lexer_actions = actions
+         gram_lexer_actions = actions;
+         gram_lexer_clauses = clauses
        } = gram
    in
    let arity, lexer = Lexer.add_clause lexer id s in
+   let redex = mk_lexer_redex arity in
    let rw_opt =
       match contractum_opt with
          Some contractum ->
-            let redex = mk_lexer_redex arity in
-               Some (term_rewrite Rewrite_sig.Relaxed empty_args_spec [redex] [contractum])
+            Some (term_rewrite Rewrite_sig.Relaxed empty_args_spec [redex] [contractum])
        | None ->
             None
    in
    let actions = ActionTable.add actions id rw_opt in
+   let clause =
+      { lexer_regex = s;
+        lexer_redex = redex;
+        lexer_contractum = contractum_opt
+      }
+   in
+   let clauses = ActionTable.add clauses id clause in
       { gram with gram_name          = None;
                   gram_lexer         = lexer;
-                  gram_lexer_actions = actions
+                  gram_lexer_actions = actions;
+                  gram_lexer_clauses = clauses
       }
 
 (*
@@ -284,7 +373,8 @@ let add_token gram id s contractum_opt =
  *)
 let add_production gram id args opt_prec contractum =
    let { gram_parser = parse;
-         gram_parser_actions = actions
+         gram_parser_actions = actions;
+         gram_parser_clauses = clauses
        } = gram
    in
    let ops = List.map shape_of_term args in
@@ -293,9 +383,17 @@ let add_production gram id args opt_prec contractum =
    let redex = mk_simple_term parser_arg_opname args in
    let rw = term_rewrite Rewrite_sig.Relaxed empty_args_spec [redex] [contractum] in
    let actions = ActionTable.add actions id rw in
+   let clause =
+      { parser_prec = opt_prec;
+        parser_redex = redex;
+        parser_contractum = contractum
+      }
+   in
+   let clauses = ActionTable.add clauses id clause in
       { gram with gram_name           = None;
                   gram_parser         = parse;
-                  gram_parser_actions = actions
+                  gram_parser_actions = actions;
+                  gram_parser_clauses = clauses
       }
 
 (************************************************************************

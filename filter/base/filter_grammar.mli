@@ -67,6 +67,11 @@ val add_production : t -> id -> term list -> shape option -> term -> t
 val union          : t -> t -> t
 
 (*
+ * Hashing.
+ *)
+val hash_grammar   : t -> int
+
+(*
  * Precedence operations.
  *)
 val prec_min        : precedence
