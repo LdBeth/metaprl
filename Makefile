@@ -171,8 +171,11 @@ check_versions:: mk/config mk/config.local check_omake
 		echo '!!! for instructions on compiling OCaml and setting the CAMLLIB variable'; echo '!!!';\
 		exit 1;\
 	fi
-	@if [ ! -r $(CAMLP4LIB)/camlp4.cma ] || [ ! -r $(CAMLP4LIB)/pa_op.cma ]; then \
-		echo '!!! The file $(CAMLP4LIB)/camlp4.cma does not exist (or is not readable)!'; echo '!!!';\
+	@if [ ! -r $(CAMLP4LIB)/camlp4.cma ] || [ ! -r $(CAMLP4LIB)/pa_op.cmo ]; then \
+		echo '!!! One of the files';\
+		echo '!!!    $(CAMLP4LIB)/camlp4.cma';\
+		echo '!!!    $(CAMLP4LIB)/pa_op.cmo';\
+		echo '!!! does not exist (or is not readable)!'; echo '!!!';\
 		echo '!!! Please consult doc/htmlman/mp-install.html (http://metaprl.org/install.html)';\
 		echo '!!! for instructions on compiling OCaml and setting the CAMLP4LIB variable'; echo '!!!';\
 		exit 1;\
@@ -180,7 +183,10 @@ check_versions:: mk/config mk/config.local check_omake
 
 check_versions_opt:: mk/config mk/config.local check_omake
 	@if [ ! -r $(CAMLP4LIB)/camlp4.cmxa ] || [ ! -r $(CAMLP4LIB)/pa_op.cmx ]; then \
-		echo '!!! The file $(CAMLP4LIB)/camlp4.cmxa does not exist (or is not readable)!'; echo '!!!';\
+		echo '!!! One of the files';\
+		echo '!!!    $(CAMLP4LIB)/camlp4.cmxa';\
+		echo '!!!    $(CAMLP4LIB)/pa_op.cmx';\
+		echo '!!! does not exist (or is not readable)!'; echo '!!!';\
 		echo '!!! Please consult doc/htmlman/mp-install.html (http://metaprl.org/install.html)';\
 		echo '!!! for instructions on compiling OCaml and setting the CAMLP4LIB variable'; echo '!!!';\
 		exit 1;\
