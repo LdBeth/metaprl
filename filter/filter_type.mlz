@@ -1,0 +1,74 @@
+(*
+ * Types used by filter machine.
+ *)
+
+open Term
+open Term_util
+
+(************************************************************************
+ * COMMON ERRORS                                                        *
+ ************************************************************************)
+
+(*
+ * Input exceptions.
+ *)
+exception NotANumber of string         (* Int param is not a number *)   
+exception BadParam of string           (* Bogus parameter format *)
+exception BadLevelExp of level_exp     (* Level expression has wrong type *)
+exception BadParamCast of param * string
+exception BadArgList of (string list * term) list
+exception BadBinder of term
+exception ParseError of string
+
+(*
+ * Generic exception.
+ *)
+exception BadCommand of string
+
+(************************************************************************
+ * COMMON TYPES                                                         *
+ ************************************************************************)
+
+(*
+ * A "quoted" term is given in exploded form.
+ *)
+type quote_term = string * Term.param list * bound_term list
+
+(*
+ * Module paths, but empty paths are not allowed.
+ *)
+exception EmptyModulePath of string
+
+type module_path = string list
+
+(*
+ * Source code location.
+ *)
+type loc = int * int
+
+(*
+ * Annotated terms may have a name.
+ *)
+type aterm = { aname : term option; aterm : term }
+
+(*
+ * $Log$
+ * Revision 1.1  1997/04/28 15:51:01  jyh
+ * This is the initial checkin of Nuprl-Light.
+ * I am porting the editor, so it is not included
+ * in this checkin.
+ *
+ * Directories:
+ *     refiner: logic engine
+ *     filter: front end to the Ocaml compiler
+ *     editor: Emacs proof editor
+ *     util: utilities
+ *     mk: Makefile templates
+ *
+ *
+ * -*-
+ * Local Variables:
+ * Caml-master: "manager"
+ * End:
+ * -*-
+ *)

@@ -1,0 +1,17 @@
+Hello
+world
+
+-<main>-
+Hello
+world
+
+-<beginrule>-
+BY let x = (1 = 1) in
+      2;;
+-<endrule>-
+
+-<subgoal>-
+This is subgoal #1
+
+-<subgoal>-
+This is subgoal #2

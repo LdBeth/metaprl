@@ -1,0 +1,2 @@
+#!/bin/sh
+camllight -I ../../refiner -I ../../theories/base -I ../../theories/itt -I ../ml editor.demo $*

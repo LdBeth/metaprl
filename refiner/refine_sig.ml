@@ -1,0 +1,436 @@
+(*
+ * The refiner works on proof trees, which are trees of sequents.
+ * A basic refinement takes a sequent (a "goal") and produces a
+ * list of sequents (the "subgoals"), and an extract term.  The type
+ * "tactic" packages refinements, and elements of tactics are
+ * always "correct" in the sense that they can be reduced to steps
+ * of primitive inferences.
+ *
+ * The refiner also tracks rewrites, and just as for tactics,
+ * elements of type Rewrite are always "correct".
+ *
+ *)
+
+open Term
+open Term_util
+
+(************************************************************************
+ * ERRORS                                                               *
+ ************************************************************************)
+
+exception FreeContextVars of string list
+
+(*
+ * Unfortunately, we need to declare the general TacticException
+ * type here, because the following combinators need to
+ * collect exceptions of their subtactics.
+ *)
+type refine_err =
+   StringError of string
+ | TermError of term
+ | StringStringError of string * string
+ | StringTermError of string * term
+ | GoalError of string * refine_err
+ | SecondError of string * refine_err
+ | SubgoalError of string * int * refine_err
+ | PairError of string * refine_err * refine_err
+ | RewriteAddressError of string * address * refine_err
+ | NodeError of string * term * refine_err list
+
+exception RefineError of refine_err
+
+(************************************************************************
+ * REFINER MODULE                                                       *
+ ************************************************************************)
+
+module type RefinerSig =
+sig
+   (************************************************************************
+    * PROOFS AND VALIDATIONS                                               *
+    ************************************************************************)
+
+   (*
+    * A proof is an abstract type proofs of statements.
+    * A "validation" is a function on proofs.
+    *)
+   type proof
+
+   (*
+    * An extract is an abstract validation that is generated during
+    * proof refinement using tactics.
+    *)
+   type extract
+
+   (************************************************************************
+    * TACTICS                                                              *
+    ************************************************************************)
+     
+   (*
+    * A tactic is the reverse form of validation.
+    * given a validation A -> B, that tactic would
+    * prove B by asking for a subgoal A.
+    *
+    * safe_tactic is a subtype of (term -> term list)
+    * where the inference is always correct.
+    *)
+   type 'a safe_tactic
+     
+   type 'a tactic_arg = term * 'a
+     
+   type 'a tactic = 'a tactic_arg -> 'a safe_tactic
+
+   (* Tactic application *)
+   val refine : 'a tactic -> 'a tactic_arg -> 'a tactic_arg list * extract
+
+   (*
+    * The basic composition tacticals.
+    * orelse: try the first, if it fails try the second (same args)
+    * andthen: run the first then the second, passing args
+    * andthenL: run the first, then the list of tactics on each subgoal
+    * andthenFL: run the first, pass the subgoal list to the second
+    *)
+   val orelse : 'a tactic -> 'a tactic -> 'a tactic
+   val andthen : 'a tactic -> 'a tactic -> 'a tactic
+   val andthenL : 'a tactic -> 'a tactic list -> 'a tactic
+   val andthenFL : 'a tactic ->
+      ('a tactic_arg list -> 'a safe_tactic list) ->
+      'a tactic
+
+   (************************************************************************
+    * REWRITES                                                             *
+    ************************************************************************)
+
+   (*
+    * A normal rewrite can be applied to a term to rewrite it.
+    *)
+   type 'a safe_rewrite
+     
+   type 'a rewrite_arg = term * 'a
+     
+   type 'a rw = 'a rewrite_arg -> 'a safe_rewrite
+
+   (*
+    * Convert a rewrite that likes to examine its argument.
+    *)
+   val rwaddr : address -> 'a rw -> 'a rw
+
+   (*
+    * Apply a rewrite to a subterm of the goal.
+    *)
+   val rwtactic : 'a rw -> 'a tactic
+
+   (*
+    * Composition of rewrites.
+    *)
+   val andthenrw : 'a rw -> 'a rw -> 'a rw
+
+   (************************************************************************
+    * CONDITIONAL REWRITE                                                  *
+    ************************************************************************)
+
+   (*
+    * A conditional rewrite is a cross between a rewrite and
+    * a tactic.  An application may generate subgoals that must
+    * be proved.  A conditional rewrite is valid only for a sequent
+    * calculus.
+    *)
+   type 'a safe_cond_rewrite
+     
+   type 'a cond_rewrite_arg = term * term * 'a
+     
+   type 'a cond_rewrite = 'a cond_rewrite_arg -> 'a safe_cond_rewrite
+
+   (*
+    * Inject a regular rewrite.
+    *)
+   val mk_cond_rewrite : 'a rw -> 'a cond_rewrite
+
+   (*
+    * Ask for the current sequent, and for the term be rewritten.
+    *)
+   val crwaddr : address -> 'a cond_rewrite -> 'a cond_rewrite
+
+   (*
+    * Application of a conditional rewrite.
+    * In this application, the rewrite must be applied to
+    * a sequent, and it returns the rewritten sequent
+    * as the first subgoal.
+    *)
+   val crwtactic : 'a cond_rewrite -> 'a tactic
+
+   (*
+    * Sequence two conditional rewrites.
+    *)
+   val candthenrw : 'a cond_rewrite -> 'a cond_rewrite -> 'a cond_rewrite
+
+   (************************************************************************
+    * REFINER INTERFACE                                                    *
+    ************************************************************************)
+
+   (*
+    * A refiner is basically just a collection of rules, tactics,
+    * and rewrites.
+    *)
+   type refiner
+
+   val null_refiner : refiner
+
+   (*
+    * These are the forms created at compile time.
+    *)
+   type prim_tactic
+   type prim_rewrite
+   type prim_cond_rewrite
+   type ml_rewrite = (string array * term list) -> term -> term
+   type ml_rule = term -> term list
+   type ml_condition = term -> term list
+
+   (*
+    * An axiom is a term that is true.
+    * This adds the theorem, and returns a tactic to prove a
+    * goal that is the theorem.  This is used in a sequent calculus.
+    *)
+   val create_axiom : refiner ref ->
+      string ->             (* name *)
+      term ->               (* statement *)
+      'a tactic
+   val check_axiom : term -> bool
+
+   (*
+    * A rule is an implication on terms (the conclusion
+    * is true if all the antecedents are).
+    *     Args: refiner, name, addrs, params, rule
+    *)
+   val create_rule : refiner ref ->
+      string ->            (* name *)
+      string array ->      (* addrs *)
+      string array ->      (* vars *)        
+      term list ->         (* params *)
+      meta_term ->         (* rule definition *)
+      prim_tactic
+   val tactic_of_rule : prim_tactic ->
+      address array * string array ->
+      term list ->
+      'a tactic
+   val check_rule :
+      string array ->      (* addrs *)
+      string array ->      (* vars *)               
+      term list ->         (* params *)
+      meta_term ->         (* rule definition *)
+      bool
+   val prim_theorem : refiner ref ->
+      string ->                    (* name *)
+      string array ->              (* vars *)
+      term list ->                 (* params *)
+      term list ->                 (* args (binding vars) *)
+      term ->                      (* extract *)
+      unit
+   val check_theorem : string array ->               (* vars *)
+      term list ->                 (* params *)
+      term list ->                 (* args *)
+      term ->                      (* goal *)
+      bool
+   
+   (*
+    * Rewrites.
+    *)
+   val create_rewrite : refiner ref ->
+      string ->            (* name *)
+      term ->              (* redex *)        
+      term ->              (* contractum *)
+      prim_rewrite
+   val rewrite_of_rewrite : prim_rewrite -> 'a rw
+   val create_cond_rewrite : refiner ref ->
+      string ->            (* name *)
+      string array ->      (* vars *)
+      term list ->         (* params *)
+      term list ->         (* subgoals *)        
+      term ->              (* redex *)
+      term ->              (* contractum *)
+      prim_cond_rewrite
+   val rewrite_of_cond_rewrite : prim_cond_rewrite ->
+      string array * term list ->
+      'a cond_rewrite
+   val prim_rewrite : refiner ref ->
+      string ->            (* name *)
+      term ->              (* redex *)
+      term ->              (* contractum *)
+      unit
+   val prim_cond_rewrite : refiner ref ->
+      string ->            (* name *)
+      string array ->      (* vars *)
+      term list ->         (* params *)
+      term list ->         (* subgoals *)        
+      term ->              (* redex *)
+      term ->              (* contractum *)
+      unit
+   val check_rewrite :
+      string array ->      (* vars *)
+      term list ->         (* params *)
+      term list ->         (* subgoals *)
+      term ->              (* redex *)
+      term ->              (* contractum *)
+      bool
+   
+   (*
+    * Side conditions.
+    *)
+(*
+   val create_ml_rule : refiner ref ->
+      string ->            (* name *)
+      ml_rule ->            (* rule definition *)
+      'a tactic
+   val create_ml_rewrite : refiner ref -> string ->
+      term list ->         (* subgoals *)
+      ml_rewrite ->        (* rewriter *)
+      prim_cond_rewrite
+*)
+   val create_ml_condition : refiner ref ->
+      term ->                    (* term to be expanded *)
+      ml_condition ->            (* the checker *)
+      (term -> term list)        (* returned checker *)
+
+   (*
+    * Merge refiners.
+    *)
+   exception BadTheorem of string * refiner
+
+   val join_refiner : refiner ref -> refiner -> unit
+   val label_refiner : refiner ref -> string -> unit
+
+   (************************************************************************
+    * DESTRUCTION                                                          *
+    ************************************************************************)
+
+   type refiner_item =
+      RIAxiom of axiom_type
+    | RIRule of rule_type
+    | RIRewrite of rewrite_type
+    | RICondRewrite of cond_rewrite_type
+    | RIPrimRewrite of prim_rewrite_type
+    | RIMLRewrite of ml_rewrite_type
+    | RIMLRule of ml_rule_type
+    | RIMLCondition of ml_condition_type
+    | RIPrimTheorem of prim_theorem_type
+    | RIParent of refiner
+    | RILabel of string
+
+   and axiom_type =
+      { ri_axiom_name : string; ri_axiom_term : term }
+   and rule_type =
+      { ri_rule_name : string; ri_rule_rule : meta_term }
+   and rewrite_type =
+      { ri_rw_name : string; ri_rw_redex : term; ri_rw_contractum : term }
+   and cond_rewrite_type =
+      { ri_crw_name : string;
+        ri_crw_conds : term list;
+        ri_crw_redex : term;
+        ri_crw_contractum : term
+      }
+   and prim_rewrite_type =
+      { ri_prw_rewrite : refiner }
+   and ml_rewrite_type =
+      { ri_ml_rw_name : string }
+   and ml_rule_type =
+      { ri_ml_rule_name : string }
+   and ml_condition_type =
+      { ri_ml_cond_arg : term }
+   and prim_theorem_type =
+      { ri_pthm_axiom : refiner }
+
+   (*
+    * Destructors.
+    * dest_refiner raises (Invalid_argument "dest_refiner") if the refiner is empty
+    *)
+   val is_null_refiner : refiner -> bool
+   val dest_refiner : refiner -> refiner_item * refiner
+end
+
+(*
+ * $Log$
+ * Revision 1.1  1997/04/28 15:51:33  jyh
+ * This is the initial checkin of Nuprl-Light.
+ * I am porting the editor, so it is not included
+ * in this checkin.
+ *
+ * Directories:
+ *     refiner: logic engine
+ *     filter: front end to the Ocaml compiler
+ *     editor: Emacs proof editor
+ *     util: utilities
+ *     mk: Makefile templates
+ *
+ * Revision 1.19  1996/11/13 22:58:09  jyh
+ * Initial version of forward/backward chaining cache.
+ *
+ * Revision 1.18  1996/10/23 15:17:57  jyh
+ * First working version of dT tactic.
+ *
+ * Revision 1.17  1996/09/25 22:52:00  jyh
+ * Initial "tactical" commit.
+ *
+ * Revision 1.16  1996/05/21 02:14:05  jyh
+ * This is a semi-working version before Wisconsin vacation.
+ *
+ * Revision 1.15  1996/03/25 20:50:45  jyh
+ * Intermediate commit while modifying grammer.  Restricting
+ * ML hooks to condition terms.
+ *
+ * Revision 1.14  1996/03/11 18:34:25  jyh
+ * The filterModule module is untested, but it seems to work
+ * correctly on most inputs, except for mlbegin ... mlend expressions.
+ * That's the next task.
+ *
+ * Revision 1.13  1996/03/08 15:40:49  jyh
+ * This version works for most constructs except for ML rewrites.
+ * The next step will be to break apart the rewriter so that
+ * redices and contracta can be compiled separately.
+ *
+ * Revision 1.12  1996/03/05 19:48:36  jyh
+ * Preliminary version with logical framework.
+ *
+ * Revision 1.11  1996/02/19 18:46:58  jyh
+ * Updating format.prl
+ *
+ * Revision 1.10  1996/02/18 23:32:32  jyh
+ * Changin Format module to more Nuprl-like format.
+ *
+ * Revision 1.9  1996/02/14 03:51:51  jyh
+ * This is a version common to Caml-Light and Caml-Special-Light.
+ *
+ * Revision 1.8  1996/02/13 21:32:31  jyh
+ * This is an intermediate checkin while matching is being added to the rewriter.
+ *
+ * Revision 1.7  1996/02/10 20:19:56  jyh
+ * Initial checkin of filter (prlcomp).
+ *
+ * Revision 1.6  1996/02/08 16:02:32  jyh
+ * Adding type Theory.
+ *
+ * Revision 1.5  1996/02/07 23:41:17  jyh
+ * First working version in CamlSpecialLight.
+ *
+ * Revision 1.4  1996/02/07 20:24:57  jyh
+ * Partial checkin whil I change filenames to lowercase.
+ *
+ * Revision 1.3  1996/02/07 17:34:09  jyh
+ * This is Version 0 of the refiner in Caml-Light.  At this point,
+ * Caml-Light becomes a branch, and main development will be
+ * in Caml-Special-Light.
+ *
+ * Revision 1.2  1996/02/05 18:14:56  jyh
+ * Merge context rewrites onto the main branch.
+ *
+ * Revision 1.1.4.1  1996/02/05 06:09:53  jyh
+ * This version has the rewriter with contexts, and Rule application
+ * in Sequent.ml, but it is not fully debugged.
+ *
+ * Revision 1.1  1996/01/31 20:02:40  jyh
+ * Generalizing rewriter to work on Sequents.
+ *
+ * -*-
+ * Local Variables:
+ * Caml-master: "refiner.run"
+ * End:
+ * -*-
+ *)
