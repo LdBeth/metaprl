@@ -18,21 +18,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -221,26 +221,26 @@ let fold_class_type locs ct =
    in
       loc :: locs
 
-let fold_class_field_type locs field =
+let fold_class_sig_item locs field =
    let loc =
       match field with
-         CiCtr (loc, _, _) -> loc
-       | CiInh (loc, _) -> loc
-       | CiMth (loc, _, _, _) -> loc
-       | CiVal (loc, _, _, _) -> loc
-       | CiVir (loc, _, _, _) -> loc
+         CgCtr (loc, _, _) -> loc
+       | CgInh (loc, _) -> loc
+       | CgMth (loc, _, _, _) -> loc
+       | CgVal (loc, _, _, _) -> loc
+       | CgVir (loc, _, _, _) -> loc
    in
       loc :: locs
 
-let fold_class_field locs field =
+let fold_class_str_item locs field =
    let loc =
       match field with
-         CfCtr (loc, _, _) -> loc
-       | CfInh (loc, _, _) -> loc
-       | CfIni (loc, _) -> loc
-       | CfMth (loc, _, _, _) -> loc
-       | CfVal (loc, _, _, _) -> loc
-       | CfVir (loc, _, _, _) -> loc
+         CrCtr (loc, _, _) -> loc
+       | CrInh (loc, _, _) -> loc
+       | CrIni (loc, _) -> loc
+       | CrMth (loc, _, _, _) -> loc
+       | CrVal (loc, _, _, _) -> loc
+       | CrVir (loc, _, _, _) -> loc
    in
       loc :: locs
 
@@ -259,9 +259,9 @@ let folder =
      fold_class_type_infos = fold_class_any_infos;
      fold_class_expr_infos = fold_class_any_infos;
      fold_class_expr = fold_class_expr;
-     fold_class_field = fold_class_field;
+     fold_class_str_item = fold_class_str_item;
      fold_class_type = fold_class_type;
-     fold_class_type_field = fold_class_field_type
+     fold_class_sig_item = fold_class_sig_item
    }
 
 (*

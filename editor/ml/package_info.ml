@@ -712,8 +712,8 @@ struct
 
    let get_tactic_arg modname =
       let cache = Tactic_type.make_cache (lazy_cache modname) in
-      let add_attribute name con lazy attributes =
-         try con name (lazy modname) :: attributes with
+      let add_attribute name con xlazy attributes =
+         try con name (xlazy modname) :: attributes with
             Not_found ->
                attributes
       in

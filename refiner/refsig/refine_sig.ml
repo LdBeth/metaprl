@@ -270,7 +270,7 @@ sig
       string ->                 (* name *)
       term ->                   (* statement *)
       prim_tactic
-   val check_axiom : term -> bool
+   val check_axiom : term -> unit
    val prim_axiom : build ->
       string ->                 (* name *)
       term ->                   (* extract *)
@@ -306,7 +306,7 @@ sig
       string array ->      (* vars *)
       term list ->         (* params *)
       meta_term ->         (* rule definition *)
-      bool
+      unit
 
    val prim_rule : build ->
       string ->                    (* name *)
@@ -401,7 +401,7 @@ sig
       term list ->         (* subgoals *)
       term ->              (* redex *)
       term ->              (* contractum *)
-      bool
+      unit
 
    (*
     * Merge refiners.

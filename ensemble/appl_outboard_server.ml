@@ -316,7 +316,7 @@ let main () =
    (*
     * Don't care about SIGPIPE
     *)
-   Sys.signal Sys.sigpipe Sys.Signal_ignore;
+   (let _ = Sys.signal Sys.sigpipe Sys.Signal_ignore in ());
 
    (*
     * Need total ordering of messages.

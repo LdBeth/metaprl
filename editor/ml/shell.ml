@@ -395,7 +395,7 @@ struct
                Not_found ->
                   ()
          in
-            Package.load info.packages name;
+         let _ = Package.load info.packages name in
             ()
       in
          print_exn load name
@@ -409,8 +409,8 @@ struct
          match parse_path name with
             [modname] ->
                (* Top level *)
-               Package.create_package info.packages modname;
-               view name
+               let _ = Package.create_package info.packages modname in
+                  view name
           | [] ->
                raise (Failure "Shell.create_package: can't create root package")
           | _ ->
@@ -588,8 +588,8 @@ struct
 
    let check () =
       let set () =
-         info.proof.edit_check ();
-         display_proof ()
+         let _ = info.proof.edit_check () in
+            display_proof ()
       in
          print_exn set ()
 
@@ -804,23 +804,23 @@ struct
 
    and root () =
       let set () =
-         cd (String.make ((List.length info.dir)-1) '.');
-         display_proof ()
+         let _ = cd (String.make ((List.length info.dir)-1) '.') in
+            display_proof ()
       in
          if (List.length info.dir) >= 2 then
             print_exn set ()
 
    and up i =
       let set () =
-         cd (String.make (i+1) '.');
-         display_proof ()
+         let _ = cd (String.make (i+1) '.') in
+            display_proof ()
       in
          print_exn set ()
 
    and down i =
       let set i =
-         cd (string_of_int i);
-         display_proof ()
+         let _ = cd (string_of_int i) in
+            display_proof ()
       in
          print_exn set i
 
@@ -888,7 +888,7 @@ struct
       try Package.info (Package.get info.packages name) with
          NotLoaded _ ->
             eprintf "Loading package %s%t" name eflush;
-            Package.load info.packages name;
+            (let _ = Package.load info.packages name in ());
             Package.info (Package.get info.packages name)
 
    let edit_save name =
@@ -1031,13 +1031,13 @@ struct
                   collect t
       in
       let opens = collect (info_items (edit_info mname)) in
-         cd ("/" ^ mname ^ "/" ^ name);
+      let _ = cd ("/" ^ mname ^ "/" ^ name) in
          ShellP4.eval_opens opens;
          ()
 
    let edit_create_thm mname name =
-      edit_info mname;
-      cd ("/" ^ mname);
+      let _ = edit_info mname in
+      let _ = cd ("/" ^ mname) in
       let create name =
          let package = get_current_package info in
          let item = Shell_rule.create package name in

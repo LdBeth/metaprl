@@ -42,7 +42,7 @@ let library_open host localport remoteport =
     then raise (LibraryException "Open: Library already open.")
     else ( oref_set library (join (oref_set connection (connect host localport remoteport))
 				["NuprlLight"])
-	 ; at_exit (function () -> library_close()))   (* Something is strage here *)
+	 ; at_exit (function () -> library_close()))   (* nogin: something is strange here *)
  ; ()
 
 let maybe_lib_open () =

@@ -11,21 +11,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -76,8 +76,8 @@ val class_type_infos_of_term : term -> class_type class_infos
 val class_expr_infos_of_term : term -> class_expr class_infos
 val class_type_of_term : term -> class_type
 val class_expr_of_term : term -> class_expr
-val class_field_of_term : term -> class_field
-val class_type_field_of_term : term -> class_type_field
+val class_str_item_of_term : term -> class_str_item
+val class_sig_item_of_term : term -> class_sig_item
 
 (*
  * MLast to term.
@@ -96,8 +96,8 @@ val term_of_class_type_infos : comment -> class_type class_infos -> term
 val term_of_class_expr_infos : string list -> comment -> class_expr class_infos -> term
 val term_of_class_type : comment -> class_type -> term
 val term_of_class_expr : string list -> comment -> class_expr -> term
-val term_of_class_type_field : comment -> class_type_field -> term
-val term_of_class_field : string list -> comment -> class_field -> term
+val term_of_class_sig_item : comment -> class_sig_item -> term
+val term_of_class_str_item : string list -> comment -> class_str_item -> term
 
 (*
  * Specific values useful for writing

@@ -1269,7 +1269,7 @@ struct
    let check_axiom term =
       match TermSubst.context_vars term with
          [] ->
-            true
+            ()
        | l ->
             ref_raise(RefineError ("check_axiom", RewriteFreeContextVars l))
 
@@ -1498,8 +1498,8 @@ struct
    let check_rule name addrs names params mterm =
       let terms = unzip_mimplies mterm in
       let subgoals, goal = List_util.split_last terms in
-      let rw = Rewrite.term_rewrite (addrs, names) (goal::params) subgoals in
-         true
+      let _ = Rewrite.term_rewrite (addrs, names) (goal::params) subgoals in
+         ()
 
    (************************************************************************
     * REWRITE                                                              *
@@ -1509,8 +1509,8 @@ struct
     * See if the rewrite will compile.
     *)
    let check_rewrite name vars params subgoals redex contractum =
-      let rw = Rewrite.term_rewrite ([||], vars) (redex::params) [contractum] in
-         true
+      let _ = Rewrite.term_rewrite ([||], vars) (redex::params) [contractum] in
+         ()
 
    (*
     * Create a simple rewrite from a meta-term.
@@ -1677,7 +1677,7 @@ struct
                      if equal_hyps goal_hyps sub_hyps &
                         List_util.for_all2 alpha_equal (redex :: contractum :: subgoals) (goal :: subgoals)
                      then
-                        let _ = term_of_extract refiner ext [] 
+                        let _ = term_of_extract refiner ext []
                         in ()
                      else
                         ref_raise(RefineError (name, StringError "derivation does not match"))

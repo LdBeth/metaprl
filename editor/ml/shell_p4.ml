@@ -549,18 +549,18 @@ struct
                   raise (Invalid_argument "MPLIB environment variable in undefined")
          in
          let eval_include inc =
-            Toploop.execute_phrase false (Ptop_dir ("directory", Pdir_string inc));
-            ()
+            let _ = Toploop.execute_phrase false (Ptop_dir ("directory", Pdir_string inc)) in
+               ()
          in
             Debug_set.init ();
             eval_include mplib;
             List.iter eval_include !includes;
-            Toploop.execute_phrase false (Ptop_dir ("install_printer", Pdir_ident (Ldot (Lident "Shell_p4", "print_term"))));
-            Toploop.execute_phrase false (Ptop_def [{ pstr_desc = Pstr_open (Lident "Mp");
+            let _ = Toploop.execute_phrase false (Ptop_dir ("install_printer", Pdir_ident (Ldot (Lident "Shell_p4", "print_term")))) in
+            let _ = Toploop.execute_phrase false (Ptop_def [{ pstr_desc = Pstr_open (Lident "Mp");
                                                       pstr_loc = Location.none
-                                                    }]);
-            Tactic_type.main_loop ();
-            ()
+                                                    }]) in
+            let _ = Tactic_type.main_loop () in
+               ()
       in
          install_debug_printer print_term_fp;
          Printexc.catch init ()

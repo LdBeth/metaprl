@@ -186,8 +186,8 @@ let try_send info =
 let rec reader_thread info appl_handlers =
    try_send info;
    try_recv info appl_handlers;
-   Mmap_pipe.block info.ens_pipe;
-   reader_thread info appl_handlers
+   let _ = Mmap_pipe.block info.ens_pipe in
+      reader_thread info appl_handlers
 
 (************************************************************************
  * INTERFACE                                                            *
@@ -218,7 +218,7 @@ let create endpt_name appl_name create_handlers =
                eprintf "Appl_outboard_client: waiting for new view%t" eflush;
                unlock_printer ()
             end;
-         Mmap_pipe.block pipe;
+         (let _ = Mmap_pipe.block pipe in ());
          match Mmap_pipe.read pipe raw_read with
             Some (code, id, view) ->
                if code = start_code then
@@ -259,7 +259,7 @@ let create endpt_name appl_name create_handlers =
    in
    let arg, handlers = create_handlers info in
       info.ens_queue <- install info handlers endpt view;
-      Thread.create (reader_thread info) handlers;
+      (let _ = Thread.create (reader_thread info) handlers in ());
       arg
 
 (*

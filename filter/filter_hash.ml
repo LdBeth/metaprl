@@ -12,21 +12,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -197,7 +197,10 @@ and hash_type index = function
       hash_string (hash index 0x31c4b448) s
  | (<:ctyp< $t1$ == $t2$ >>) ->
       hash_type (hash_type (hash index 0x2e9b1519) t2) t1
+(*
  | (<:ctyp< < $list:stl$ $dd:b$ > >>) ->
+*)
+ | MLast.TyObj (_, stl, b) ->
       List.fold_left hash_st (hash_bool (hash index 0x2a5f4498) b) stl
  | (<:ctyp< { $list:sbtl$ } >>) ->
       List.fold_left hash_sbt (hash index 0x7ec77f08) sbtl
@@ -338,22 +341,22 @@ and hash_class_expr index ce =
        | MLast.CeLet (_, b, pel, ce) ->
             hash_bool (List.fold_left hash_pe (hash_class_expr index ce) pel) b
        | MLast.CeStr (_, p, cfl) ->
-            hash_patt (List.fold_left hash_class_field index cfl) p
+            hash_patt_opt (List.fold_left hash_class_str_item index cfl) p
        | MLast.CeTyc (_, ce, ct) ->
             hash_class_expr (hash_class_type index ct) ce
 
-and hash_class_field index = function
-   CfCtr (_, s, t) ->
+and hash_class_str_item index = function
+   CrCtr (_, s, t) ->
       hash_string (hash_type (hash index 0x6ebb5387) t) s
- | CfInh (_, ce, so) ->
+ | CrInh (_, ce, so) ->
       hash_class_expr (hash_string_opt (hash index 0x113fee9d) so) ce
- | CfIni (_, e) ->
+ | CrIni (_, e) ->
       hash_expr (hash index 0x73413214) e
- | CfMth (_, s, b, e) ->
+ | CrMth (_, s, b, e) ->
       hash_string (hash_expr (hash_bool (hash index 0x4ab006da) b) e) s
- | CfVal (_, s, b, e) ->
+ | CrVal (_, s, b, e) ->
       hash_string (hash_bool (hash_expr (hash index 0x6d82d28f) e) b) s
- | CfVir (_, s, b, t) ->
+ | CrVir (_, s, b, t) ->
       hash_string (hash_type (hash_bool (hash index 0x60a53407) b) t) s
 
 and hash_class_type index ct =
@@ -364,18 +367,18 @@ and hash_class_type index ct =
       | CtFun (_, t, ct) ->
            hash_class_type (hash_type index t) ct
       | CtSig (_, t, ctfl) ->
-           List.fold_left hash_class_type_field (hash_type index t) ctfl
+           List.fold_left hash_class_sig_item (hash_type_opt index t) ctfl
 
-and hash_class_type_field index = function
-   CiCtr (_, s, t) ->
+and hash_class_sig_item index = function
+   CgCtr (_, s, t) ->
       hash_string (hash_type (hash index 0x362be7cd) t) s
- | CiInh (_, ct) ->
+ | CgInh (_, ct) ->
       hash_class_type (hash index 0x1779e662) ct
- | CiMth (_, s, b, t) ->
+ | CgMth (_, s, b, t) ->
       hash_string (hash_type (hash_bool (hash index 0x028b2e41) b) t) s
- | CiVal (_, s, b, t) ->
+ | CgVal (_, s, b, t) ->
       hash_string (hash_bool (hash_type (hash index 0x3be81fa) t) b) s
- | CiVir (_, s, b, t) ->
+ | CgVir (_, s, b, t) ->
       hash_string (hash_type (hash_bool (hash index 0x2730112a) b) t) s
 
 (*
@@ -388,6 +391,10 @@ and hash_expr_opt index = function
 and hash_type_opt index = function
    Some t -> hash_type (hash index 0x3bee38a) t
  | None -> hash index 0x32bbe81a
+
+and hash_patt_opt index = function
+   Some p -> hash_patt (hash index 0x3be538a) p
+ | None -> hash index 0x32ace81a
 
 and hash_pwe index (patt, with_expr, expr) =
    hash_patt (hash_expr_opt (hash_expr (hash index 0x50777efa) expr) with_expr) patt

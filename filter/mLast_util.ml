@@ -14,21 +14,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -61,9 +61,9 @@ type 'a fold =
      fold_class_type_infos : 'a -> MLast.class_type MLast.class_infos -> 'a;
      fold_class_expr_infos : 'a -> MLast.class_expr MLast.class_infos -> 'a;
      fold_class_expr       : 'a -> MLast.class_expr -> 'a;
-     fold_class_field      : 'a -> MLast.class_field -> 'a;
      fold_class_type       : 'a -> MLast.class_type -> 'a;
-     fold_class_type_field : 'a -> MLast.class_type_field -> 'a
+     fold_class_str_item   : 'a -> MLast.class_str_item -> 'a;
+     fold_class_sig_item   : 'a -> MLast.class_sig_item -> 'a
    }
 
 (*
@@ -202,12 +202,15 @@ and fold_type iter x t =
             x
        | (<:ctyp< $lid:s$ >>) ->
             x
-       | (<:ctyp< '$s$ >>) ->
-            x
        | (<:ctyp< $t1$ == $t2$ >>) ->
             fold_type iter (fold_type iter x t1) t2
-       | (<:ctyp< < $list:stl$ $dd:b$ > >>) ->
+(*
+       | (<:ctyp< < $list:stl$ > >>) ->
+*)
+       | MLast.TyObj (_, stl, _) ->
             List.fold_left (fold_st iter) x stl
+       | (<:ctyp< '$s$ >>) ->
+            x
        | (<:ctyp< { $list:sbtl$ } >>) ->
             List.fold_left (fold_sbt iter) x sbtl
        | (<:ctyp< [ $list:stll$ ] >>) ->
@@ -347,20 +350,20 @@ and fold_class_type iter x ct =
        | MLast.CtFun (_, t, ct) ->
             fold_class_type iter (fold_type iter x t) ct
        | MLast.CtSig (_, t, ctfl) ->
-            List.fold_left (fold_class_type_field iter) (fold_type iter x t) ctfl
+            List.fold_left (fold_class_sig_item iter) (fold_type_opt iter x t) ctfl
 
-and fold_class_type_field iter x ctf =
-   let x = iter.fold_class_type_field x ctf in
+and fold_class_sig_item iter x ctf =
+   let x = iter.fold_class_sig_item x ctf in
       match ctf with
-         CiCtr (loc, s, t) ->
+         CgCtr (loc, s, t) ->
             fold_type iter x t
-       | CiInh (loc, ct) ->
+       | CgInh (loc, ct) ->
             fold_class_type iter x ct
-       | CiMth (loc, s, b, t) ->
+       | CgMth (loc, s, b, t) ->
             fold_type iter x t
-       | CiVal (loc, s, b, t) ->
+       | CgVal (loc, s, b, t) ->
             fold_type iter x t
-       | CiVir (loc, s, b, t) ->
+       | CgVir (loc, s, b, t) ->
             fold_type iter x t
 
 and fold_class_expr iter x ce =
@@ -375,24 +378,24 @@ and fold_class_expr iter x ce =
        | MLast.CeLet (_, b, pel, ce) ->
             List.fold_left (fold_pe iter) (fold_class_expr iter x ce) pel
        | MLast.CeStr (_, p, cfl) ->
-            List.fold_left (fold_class_field iter) (fold_patt iter x p) cfl
+            List.fold_left (fold_class_str_item iter) (fold_patt_opt iter x p) cfl
        | MLast.CeTyc (_, ce, ct) ->
             fold_class_type iter (fold_class_expr iter x ce) ct
 
-and fold_class_field iter x cf =
-   let x = iter.fold_class_field x cf in
+and fold_class_str_item iter x cf =
+   let x = iter.fold_class_str_item x cf in
       match cf with
-         CfCtr (loc, s, t) ->
+         CrCtr (loc, s, t) ->
             fold_type iter x t
-       | CfInh (loc, ce, so) ->
+       | CrInh (loc, ce, so) ->
             fold_class_expr iter x ce
-       | CfIni (_, e) ->
+       | CrIni (_, e) ->
             fold_expr iter x e
-       | CfMth (loc, s, b, e) ->
+       | CrMth (loc, s, b, e) ->
             fold_expr iter x e
-       | CfVal (loc, s, b, e) ->
+       | CrVal (loc, s, b, e) ->
             fold_expr iter x e
-       | CfVir (loc, s, b, t) ->
+       | CrVir (loc, s, b, t) ->
             fold_type iter x t
 
 (*
@@ -404,6 +407,10 @@ and fold_expr_opt iter x = function
 
 and fold_type_opt iter x = function
    Some e -> fold_type iter x e
+ | None -> x
+
+and fold_patt_opt iter x = function
+   Some p -> fold_patt iter x p
  | None -> x
 
 and fold_pwe iter x (patt, with_expr, expr) =
