@@ -150,7 +150,6 @@ let strip_root filename =
              else
                 filename
           in
-             (* eprintf "Root: %s Filename: %s Stripped: %s\n%t" root filename file flush; *)
              Some file
     | None ->
          None
@@ -169,7 +168,7 @@ let add_filename_internal shared name =
          ()
 
 let add_file_internal shared file =
-   match file with
+   match strip_root file with
       Some name ->
          let basename =
             try String.sub name 0 (String.rindex name '.') with
