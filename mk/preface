@@ -23,6 +23,12 @@ endif
 ifndef SEQ_SET
    SEQ_SET=undefined
 endif
+ifndef ENSROOT
+   ENSROOT=undefined
+endif
+ifndef OCAMLSRC
+   OCAMLSRC=undefined
+endif
 ifndef CCC
    CCC=gcc
 endif

@@ -16,7 +16,7 @@ MLZFILES :=\
     asttypes\
     parser_aux
 
-ifdef OCAMLSRC
+ifneq ($(OCAMLSRC),undefined)
 # Library files
 PFILES :=\
     $(MLZFILES)\

@@ -4,11 +4,6 @@ ROOT := ..
 
 include $(ROOT)/mk/preface
 
-INCLUDE :=\
-	-I .\
-	-I $(ENSROOT)/lib/$(HOSTTYPE)\
-	-I $(ROOT)/lib
-
 #
 # .mlz files
 #
@@ -20,7 +15,11 @@ MLZFILES :=\
 LMFILES =\
 	thread_refiner_sig
 
-ifdef ENSROOT
+ifeq ($(ENSROOT),undefined)
+   INCLUDE :=\
+	   -I .\
+	   -I $(ROOT)/lib
+else
     ENSFILES =\
 	appl_outboard_common\
 	appl_outboard_client\
@@ -94,6 +93,10 @@ ifdef ENSROOT
         -ccopt -L$(ENSROOT)/lib/$(HOSTTYPE)\
         -cclib -lsock\
         -cclib -lcryptoc
+   INCLUDE :=\
+	   -I .\
+	   -I $(ENSROOT)/lib/$(HOSTTYPE)\
+	   -I $(ROOT)/lib
 endif
 
 LMFILES_null =\
@@ -118,7 +121,7 @@ LIB = trefiner
 #
 # Ensemble library
 #
-ifdef ENSROOT
+ifneq ($(ENSROOT),undefined)
 MPSERVER = mpserver
 
 all: lib $(MPSERVER).run

@@ -63,9 +63,20 @@ You can find more information on CVS at
 <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/RPM/">the provided RPMs</A>, then in order
 to install OCaml and CamlP4 download and 
 unpack the distributions, than apply the <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/patches/">patches</A>. After that proceed as described in the 
-<TT>INSTALL</TT> files in the distributions. </P>
+<TT>INSTALL</TT> files in the distributions.
+After that, go to the OCaml source tree and copy the following files:
+<TT><UL>
+<LI>parsing/location.cmi
+<LI>parsing/location.mli
+<LI>parsing/longident.cmi
+<LI>parsing/longident.mli
+<LI>parsing/parsetree.cmi
+<LI>parsing/parsetree.mli
+<LI>typing/typecore.cmi
+<LI>typing/typecore.mli
+</UL></TT> into the OCaml library directory.</P>
 
-<P>To install Ensemble, unpack the distrubution, and edit the
+<P>To install Ensemble, unpack the distribution, and edit the
 <TT>&lt;ensemble&gt;/mk/config.mk</TT> file. You will want to
 use the Ensemble socket library (not the Unix socket implementation),
 then change directories to <TT>&lt;ensemble&gt;/def</TT>, and
@@ -75,19 +86,8 @@ directory. More information on Ensemble is available at the
 <A HREF="http://www.cs.cornell.edu/Info/Projects/Ensemble/">Ensemble
 Home Page</A>.</P>
 
-<P>You may need to set your environment variables <TT>CAMLLIB</TT> and <TT>CAMLP4LIB</TT> to point to the directories where you have installed OCaml and Camlp4 files. The defaults are <TT>/usr/lib/ocaml</TT> and <TT>/usr/lib/camlp4</TT> respectively. If you are using Ensemble, set <TT>ENSROOT=&lt;root of the ensemble source tree&gt;</TT>
-Also, go to the OCaml source tree and copy the folowing files:
-<UL><TT>
-<LI>parsing/location.cmi
-<LI>parsing/location.mli
-<LI>parsing/longident.cmi
-<LI>parsing/longident.mli
-<LI>parsing/parsetree.cmi
-<LI>parsing/parsetree.mli
-<LI>typing/typecore.cmi
-<LI>typing/typecore.mli</TT>
-</UL> into the <TT>$CAMLLIB</TT> directory
-
+<P>You may need to set your environment variables <TT>CAMLLIB</TT> and <TT>CAMLP4LIB</TT> to point to the directories where you have installed OCaml and Camlp4 files. The defaults are <TT>/usr/lib/ocaml</TT> and <TT>/usr/lib/camlp4</TT> respectively. If you are using Ensemble, either set <TT>ENSROOT=&lt;root of the ensemble source tree&gt;</TT> or edit the <TT>mk/config</TT> file (this file
+will be created when you run <TT>make</TT> for the first time).
 </P>
 
 <P>To install MetaPRL, unpack the distribution into some directory

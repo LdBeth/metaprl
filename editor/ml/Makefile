@@ -87,7 +87,7 @@ TCMXFILES = $(addsuffix .cmx, $(TOPFILES))
 # If Ensemble is configured, used the Ensemble refiner.
 # Otherwise, use the null refiner.
 #
-ifdef ENSROOT
+ifneq ($(ENSROOT),undefined)
     CMALIBS_ens = $(ROOT)/lib/trefiner_ens.cma
     CMXALIBS_ens = $(ROOT)/lib/trefiner_ens.cmxa
 else

@@ -1,13 +1,12 @@
 # Include directories
 ROOT := ..
 DIR := clib
-CINCLUDE := -I$(OCAMLSRC)/byterun
 CFLAGS := -Wall
 
 include $(ROOT)/mk/preface
 
 # Library files
-ifdef ENSROOT
+ifneq ($(ENSROOT),undefined)
 ENSFILES :=\
 	intern\
 	extern
@@ -52,6 +51,9 @@ $(ROOT)/lib/$(MAIN)-native$(EXT_LIB): $(MAIN)-native$(EXT_LIB)
 #
 .PHONY: patches patch
 
+ifneq ($(OCAMLSRC),undefined)
+CINCLUDE := -I$(OCAMLSRC)/byterun
+
 patches: $(OCAMLSRC)/byterun/intern.c $(OCAMLSRC)/byterun/extern.c
 	diff -c $(OCAMLSRC)/byterun/extern.c extern.c > extern.patch
 	diff -c $(OCAMLSRC)/byterun/intern.c intern.c > intern.patch
@@ -59,6 +61,7 @@ patches: $(OCAMLSRC)/byterun/intern.c $(OCAMLSRC)/byterun/extern.c
 patch:
 	patch -o extern.c $(OCAMLSRC)/byterun/extern.c extern.patch
 	patch -o intern.c $(OCAMLSRC)/byterun/intern.c intern.patch
+endif
 
 # Actual makefile
 include ../mk/rules
