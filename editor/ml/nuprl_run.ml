@@ -55,22 +55,22 @@ let oiljgs connection =
   let cookie = ref "" in
   let lib = lib_new connection "testall" in
     (unwind_error
-      (function () ->
+      (fun () ->
 	(* test put *)
 	let _ = (with_transaction lib
-	   (function t ->
+	   (fun t ->
 	     let oid = make_root t "demo" in
 		let _ = insert_leaf t oid "test1" "TERM" (inatural_term 1) in ())) in
 	leave lib)
 
-     (function () -> let _ = lib_close lib in raise (Testfailed 1)));
+     (fun () -> let _ = lib_close lib in raise (Testfailed 1)));
 
   let lib = join connection ["testall"] in
     (unwind_error
-      (function () ->
+      (fun () ->
 	(* test get *)
 	(with_transaction lib
-	   (function t ->
+	   (fun t ->
 		 print_string "oiljgs 1";
 		 print_string (string_of_int (List.length (roots t)));
 		 let oid = root t "demo" in
@@ -82,7 +82,7 @@ let oiljgs connection =
 		        then (print_string "check"; raise (Test "check"))))
 	; cookie := (lib_close lib))
 
-     (function () -> let _ = lib_close lib in raise (Testfailed 2)));
+     (fun () -> let _ = lib_close lib in raise (Testfailed 2)));
 
     print_endline "open insert leave join get successful.";
 
@@ -95,36 +95,35 @@ let oiljgs connection =
 *)
 
 let seri connection cookie =
-  let lib = restore connection cookie (function t -> ()) in
+  let lib = restore connection cookie (fun t -> ()) in
   let ex = ref ""
   and ncookie = ref "" in
 
     (unwind_error
-      (function () ->
+      (fun () ->
 	(* test put *)
 	let oid = with_transaction lib
-	    (function t ->
+	    (fun t ->
 	      child t (root t "demo") "test1") in
-	ncookie := save lib (function t -> ex := oid_export t oid);
+	ncookie := save lib (fun t -> ex := oid_export t oid);
 	let _ = lib_close lib in ())
-       
-       (function () -> let _ = lib_close lib in ()));
-  
+       (fun () -> let _ = lib_close lib in ()));
+
   let oid = null_oref () in
-  let nlib = restore connection !ncookie (function t -> let _ = oref_set oid (oid_import t !ex) in ()) in
+  let nlib = restore connection !ncookie (fun t -> let _ = oref_set oid (oid_import t !ex) in ()) in
   (unwind_error
-     (function () ->
+     (fun () ->
        (with_transaction nlib
-	  (function t ->
+	  (fun t ->
 	    if not (1 = number_of_inatural_term (get_term t (oref_val oid)))
 	    then (print_string "restore check"; raise (Test "check"))));
        ncookie := lib_close nlib)
-     (function () -> let _ = lib_close nlib in ()));
-  
+     (fun () -> let _ = lib_close nlib in ()));
+
   print_endline "save export restore import successful.";
-  
+
   !ncookie
-    
+
 exception Pleasefail
 
 (* join after close, then ... *)
@@ -140,22 +139,22 @@ exception Pleasefail
 let ptest connection =
    let lib = join connection ["testall"] in
    (unwind_error
-   (function () ->
+   (fun () ->
    (with_transaction lib
-   (function t ->
+   (fun t ->
    let oid = root t "demo" in
    if not (1 = number_of_inatural_term (get_term t (child t oid "test1")))
    then (print_string "check"; raise (Test "check"))
    ; ()));
-   
+
 
 	let noid = (with_transaction lib
-		     (function t ->
+		     (fun t ->
  		       create t "TERM" (Some (inatural_term 2)) [("foo", inatural_term 3)] ))
 	in
   	  try
 	  (with_transaction lib
-	    (function t ->
+	    (fun t ->
 	      (* monkey with properties and then fail*)
 	      (let ps = get_properties t noid in
 
@@ -185,14 +184,14 @@ let ptest connection =
 	  with
 	    Pleasefail ->
 	     (with_transaction lib
-	      (function t ->
+	      (fun t ->
 		(if not (3 = number_of_inatural_term (get_property t noid "foo"))
 		   then raise (Testfailed 9)
 		   else ())))
 	   | e -> raise e;
 
 	(with_transaction lib
-	    (function t ->
+	    (fun t ->
 		if not (2 = number_of_inatural_term (get_term t noid))
 		   then raise (Testfailed 10);
 		put_term t noid (inatural_term 3);
@@ -202,20 +201,20 @@ let ptest connection =
 
 	(try
 	  let f = (with_transaction lib
-		    (function t ->
+		    (fun t ->
 
-		      (function () -> roots t))) in
+		      (fun () -> roots t))) in
        	    (f (); raise (Testfailed 115))
 	  with e -> ());
 
 	(with_transaction lib
-	    (function t ->
+	    (fun t ->
 		if not (3 = number_of_inatural_term (get_term t noid))
 		   then raise (Testfailed 12)));
 
      (lib_close lib); ())
 
-     (function () -> (lib_close lib)))
+     (fun () -> (lib_close lib)))
 
   ; print_newline()
   ; print_endline "property test successful, (the failures were part of the test)."
@@ -233,11 +232,11 @@ let ptest connection =
 let dtest connection =
   let lib = join connection ["testall"] in
     (unwind_error
-      (function () ->
+      (fun () ->
 
 	* test get *
 	let doid = (with_transaction lib
-		   (function t ->
+		   (fun t ->
 			 let oid = root t "demo" in
 			   (let toid = make_directory t oid "test"
 	 		    and coid =  create t "TERM" (Some (inatural_term 1)) [] in
@@ -247,43 +246,43 @@ let dtest connection =
 			   ; oid)) in
 
 	(with_local_transaction lib
-	   (function t ->
+	   (fun t ->
              let toid = child t doid "test" in
 		if not (directory_p t toid) then raise (Testfailed 14)));
 
 	(with_transaction lib
-	   (function t ->
+	   (fun t ->
              let toid = child t doid "test"in
 		deactivate t toid;
 		if (directory_p t toid) then raise (Testfailed 15)));
 
 	(with_local_transaction lib
-	   (function t ->
+	   (fun t ->
              let toid = child t doid "test" in
 		if (directory_p t toid) then raise (Testfailed 16)));
 
 	(with_transaction lib
-	   (function t ->
+	   (fun t ->
              let toid = child t doid "test" in
 		activate t toid;
 		if not (directory_p t toid) then raise (Testfailed 17)));
 
 	(with_local_transaction lib
-	   (function t ->
+	   (fun t ->
              let toid = child t doid "test" in
 		if not (directory_p t toid) then raise (Testfailed 18)));
 
 	(with_local_transaction lib
-	   (function t ->
+	   (fun t ->
 		if not (1 = List.length (roots t)) then raise (Testfailed 19)));
 
 	(with_transaction lib
-	   (function t ->
+	   (fun t ->
 		let t2 = descendent t doid ["test"; "TEST2"] in
 		 if not (2 = number_of_inatural_term (get_term t t2)) then raise (Testfailed 20)));
 
 	(with_transaction lib
-	   (function t ->
+	   (fun t ->
 	      let toid = descendent t doid ["test"] in
 		if not (2 = List.length (children t toid)) then raise (Testfailed 21);
 		remove_leaf t toid "TEST2";
@@ -300,7 +299,7 @@ let dtest connection =
 
      (lib_close lib); ())
 
-     (function () -> (lib_close lib)))
+     (fun () -> (lib_close lib)))
 
   ; print_newline()
   ; print_endline "activate test successful."
@@ -313,10 +312,10 @@ let looptest connection =
   let lib = join connection ["MetaPRL"] in
   * let lib = join connection ["mptestl"] in  *
     (unwind_error
-      (function () ->
+      (fun () ->
 
 	(with_transaction lib
-	   (function t ->
+	   (fun t ->
 		(eval t
 		 (null_ap (itext_term "\l. inform_message nil ``MetaPRL Loop Start`` nil")))))
 
@@ -324,7 +323,7 @@ let looptest connection =
 	; leave lib
 	)
 
-     (function () -> leave lib))
+     (fun () -> leave lib))
 
 let toptestloop libhost remote_port local_port =
  print_newline();
@@ -334,10 +333,10 @@ let toptestloop libhost remote_port local_port =
   (let connection = connect libhost remote_port local_port in
 
     (unwind_error
-      (function () ->
+      (fun () ->
 	looptest connection
 	)
-      (function () -> disconnect connection))
+      (fun () -> disconnect connection))
 
     ; disconnect connection)
 
@@ -353,10 +352,10 @@ let testascii libhost remote_port local_port =
   (let connection = connect libhost remote_port local_port in
 
     (unwind_error
-      (function () ->
+      (fun () ->
 	looptest connection
 	)
-      (function () -> disconnect connection))
+      (fun () -> disconnect connection))
 
     ; disconnect connection)
 
@@ -373,14 +372,14 @@ let testall libhost remote_port local_port =
   (let connection = connect libhost remote_port local_port in
 
     (unwind_error
-      (function () ->
+      (fun () ->
 	  cookie := oiljgs connection
         ; dtest connection
 	; cookie := seri connection !cookie
 	; ptest connection
 	; looptest connection
 	)
-      (function () -> disconnect connection))
+      (fun () -> disconnect connection))
 
     ; disconnect connection)
 
@@ -392,32 +391,32 @@ let testall libhost remote_port local_port =
 
 let create_test lib =
    with_transaction lib
-	(function t ->
+	(fun t ->
 	  create t "TERM" None [])
 
 let put_get_test lib oid i =
   (with_transaction lib
-     (function t ->
+     (fun t ->
        put_term t oid (inatural_term i);
        put_property t oid "foo" (inatural_term (i+1))));
   (with_transaction lib
-     (function t ->
+     (fun t ->
        if not ((i = number_of_inatural_term (get_term t oid))
 		 & (i+1) = number_of_inatural_term (get_property t oid "foo"))
        then raise (Test "Failed")));
   oid
-    
+
 let demo lib =
   (with_transaction lib
-     (function t -> let oid = make_root t "demo" in make_directory t oid "test"))
+     (fun t -> let oid = make_root t "demo" in make_directory t oid "test"))
 
 let activate_test lib oid =
   (with_transaction lib
-     (function t ->
+     (fun t ->
        activate t oid));
   (with_transaction lib
-     (function t ->
-       try (eval t (object_id_ap (null_ap (itext_term "\oid. if not (lib_active_p oid) then fail"))
+     (fun t ->
+       try (eval t (object_id_ap (null_ap (itext_term "\\oid. if not (lib_active_p oid) then fail"))
 		      oid))
        with e -> raise (Test "Failed")));
   oid
@@ -430,18 +429,16 @@ let test remote_port local_port =
   (let connection = connect "LOCKE" remote_port local_port in
 
     unwind_error
-      (function () ->
+      (fun () ->
         (let lib = lib_new connection "metaprl" in
 
  	  unwind_error
-	    (function () -> (demo lib))
+	    (fun () -> (demo lib))
 **
-	    (function () -> (demo lib))
- 	    (function () -> (activate_test lib (put_get_test lib (create_test lib) 1)))
+	    (fun () -> (demo lib))
+ 	    (fun () -> (activate_test lib (put_get_test lib (create_test lib) 1)))
 **
-	    (function () -> lib_close lib);
-          lib_close lib))
-       (function () -> disconnect connection);
+	    (fun () -> disconnect connection);
 
     disconnect connection);
 
@@ -449,14 +446,14 @@ let test remote_port local_port =
 
 let demo_put_test lib i =
  (with_transaction lib
-	     (function t ->
+	     (fun t ->
 		let oid = root t "demo" in
 		 insert_leaf t oid "meta_prl_data" "TERM" (inatural_term i)));
  ()
 
 let demo_get_put_test lib =
  (with_transaction lib
-	     (function t ->
+	     (fun t ->
 		let rootoid = root t "demo" in
 		let childoid = (child t rootoid "meta_prl_data") in
 
@@ -476,17 +473,17 @@ let jointest remote_port local_port =
   (let connection = connect "LOCKE" remote_port local_port in
 
     unwind_error
-      (function () ->
+      (fun () ->
         (let lib = join connection ["metaprl"] in
  	  unwind_error
-	    (function () -> (demo_get_put_test lib))
+	    (fun () -> (demo_get_put_test lib))
 **
-	    (function () -> (demo_get_put_test lib))
-	    (function () -> (demo_put_test lib 289))
+	    (fun () -> (demo_get_put_test lib))
+	    (fun () -> (demo_put_test lib 289))
 **
-	    (function () -> leave lib);
+	    (fun () -> leave lib);
           leave lib))
-       (function () -> disconnect connection);
+       (fun () -> disconnect connection);
 
     disconnect connection);
 
@@ -499,37 +496,37 @@ module NuprlRun (Nuprl : NuprlSig) = struct
    open Nuprl
 
   let run_library name =
-    special_error_handler (function () -> 
+    special_error_handler (fun () ->
       (library_open_and_loop_eval name refine_ehook))
       (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
   let run_jprover lport host name dbpath =
     (Orb.current_description_term := Orb.jprover_description_term;
      Orb.db_pathname := dbpath;
-     special_error_handler (function () -> 
+     special_error_handler (fun () ->
        (library_open_and_loop_eval' lport host name Nuprl_jprover.jprover_hook))
        (fun s t -> print_string s; print_newline(); Mbterm.print_term t))
 
   let run_connection lport host name dbpath =
     (Orb.current_description_term := Orb.metaprl_description_term;
      Orb.db_pathname := dbpath;
-     special_error_handler (function () -> 
+     special_error_handler (fun () ->
        (library_open_and_loop_eval' lport host name refine_ehook))
        (fun s t -> print_string s; print_newline(); Mbterm.print_term t))
 
   let run_connection_with_hook port host name dbpath rhook =
     (Orb.db_pathname := dbpath;
-     special_error_handler (function () -> 
+     special_error_handler (fun () ->
        (library_open_and_loop_eval' port host name rhook))
        (fun s t -> print_string s; print_newline(); Mbterm.print_term t))
 
   let run_dummy_connection lport host name =
     special_error_handler
-      (function () -> 
+      (fun () ->
 	(library_open_and_loop_eval' lport host name
 	   (let f x = (Mbterm.print_term x;
 		       (if nuprl_is_all_term x then Mbterm.print_term ivoid_term
 		       else Mbterm.print_term (itoken_term "foo")); x) in f)))
       (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
-      
+
 end

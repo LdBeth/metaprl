@@ -456,7 +456,7 @@ module Nuprl (Shell : ShellSig) = struct
        (function t ->
 	 (Library.eval t
 	    (null_ap
-	       (itext_term "\l. inform_message nil
+	       (itext_term "\\l. inform_message nil
 		  ``MetaPRL Loop Start`` nil")))));
     server_loop lib
 
