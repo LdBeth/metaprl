@@ -166,20 +166,6 @@ struct
          ()
 
    (*
-    * Get the hyp of a sequent.
-    * Should not be a context.
-    *)
-   let get_sequent_hyp hyps i len =
-      if i = len then
-         ref_raise(RefineError ("get_sequent_hyp", StringIntError ("hyp index is out of range", i)))
-      else
-         match SeqHyp.get hyps i with
-            Hypothesis (v, term) ->
-               v, term
-          | Context _ ->
-               ref_raise(RefineError ("get_sequent_hyp", StringIntError ("hyp index refers to a context", i)))
-
-   (*
     * Matching functions.
     *)
    let match_redex_params stack p' p =
@@ -453,10 +439,16 @@ struct
                         eprintf "RWSeqHyp (%a, )%t" print_varname name eflush
                   in
 #endif
-                  let var, term = get_sequent_hyp hyps i len in
-                     set_bvar stack var name;
-                     match_redex_term addrs stack term' term;
-                     match_redex_sequent_hyps addrs stack hyps' hyps (i + 1) len
+                  if i = len then
+                     ref_raise(RefineError ("get_sequent_hyp", StringIntError ("hyp index is out of range", i)))
+                  else begin match SeqHyp.get hyps i with
+                     Hypothesis (var, term) ->
+                        set_bvar stack var name;
+                        match_redex_term addrs stack term' term;
+                        match_redex_sequent_hyps addrs stack hyps' hyps (succ i) len
+                   | Context _ ->
+                        ref_raise(RefineError ("get_sequent_hyp", StringIntError ("hyp index refers to a context", i)))
+                  end
 
              | RWSeqContextSubst _ ->
                   ref_raise(RefineError ("match_redex_seq_hyps", RewriteBadMatch (HypMatch hyps)))
@@ -470,7 +462,7 @@ struct
             if i = len then
                ref_raise(RefineError ("match_redex_sequent_goals", RewriteBadMatch (GoalMatch goals)));
             match_redex_term addrs stack goal' (SeqGoal.get goals i);
-            match_redex_sequent_goals addrs stack goals' goals (i + 1) len
+            match_redex_sequent_goals addrs stack goals' goals (succ i) len
 
    let match_redex addrs stack t tl = function
       [] ->
