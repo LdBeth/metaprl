@@ -1,6 +1,6 @@
 The directions below outline the process for compiling MetaPRL under Mac OS
-X.  They were developed by Brian Emre Aydemir (emre@cs.caltech.edu) when he
-had temporary access to a machine running Mac OS X.  Issues that Brian could
+X.  They were developed by Brian Emre Aydemir (emre@cs.caltech.edu) and 
+Nathan Gray (n8gray@cs.caltech.edu).  Issues that Brian could
 not resolve are listed at the end of this file.
 
 Note: All the commands below need to be run from a command line, such as
@@ -8,7 +8,7 @@ the Terminal program in /Applications/Utilities.
 
 ---------------------------------------------------------------------------
 
-0. If you have not already installed the Apple Developer Tools, you will
+1. If you have not already installed the Apple Developer Tools, you will
    need to download them.  If you have an Apple Developer Connection (ADC)
    membership, this should be a free download.  Otherwise, you will need to
    become a member first.  The 'Online' membership level is free and gives
@@ -19,8 +19,13 @@ the Terminal program in /Applications/Utilities.
    for more information.
 
    Once you have downloaded the tools, install them.
+   
+2. You'll also need the OMake build tool.  You'll either need to get a source
+   tarball or check it out from CVS.  You can find out about both options from
+   
+      http://mojave.caltech.edu/download.html
 
-1. MetaPRL requires a customized version of the OCaml programming language
+3. MetaPRL requires a customized version of the OCaml programming language
    tools.  Follow the directions at
 
       http://caml.inria.fr/caml-macosx-howto/index.html
@@ -53,7 +58,7 @@ the Terminal program in /Applications/Utilities.
    Make sure that location that you chose to put the binaries is in your
    path.
 
-2. The OCaml install in the previous step should look like it completed
+4. The OCaml install in the previous step should look like it completed
    without any significant errors.  Unfortunately, this isn't the case.
    (I'm unsure whose fault this is.)  If the OCaml libraries were installed
    into lib/ocaml, you'll need to run the following two commands:
@@ -61,8 +66,21 @@ the Terminal program in /Applications/Utilities.
       ranlib lib/ocaml/camlp4/camlp4.a
       ranlib lib/ocaml/camlp4/odyl.a
 
-3. Change into the MetaPRL source directory (the directory with this file)
-   and run mk/config.  A new 'config' file should be created in the mk/
+5. You also need to copy some files from your ocaml build directory.  Copy
+   these files into the ocaml library directory (e.g. ./lib/ocaml)
+   using (for example) this command:
+    cp parsing/location.cmi \
+       parsing/location.mli \
+       parsing/longident.cmi \
+       parsing/longident.mli \
+       parsing/parsetree.cmi \
+       parsing/parsetree.mli \
+       typing/typecore.cmi \
+       typing/typecore.mli \
+           ./lib/ocaml  # Or wherever you've installed ocaml
+
+6. Change into the MetaPRL source directory (the directory with this file)
+   and run 'make mk/config'.  A new 'config' file should be created in the mk/
    directory.  Go ahead and edit it (directions are provided in the file
    itself).  If OCaml was not installed into /usr, you will need to create
    a file mk/config.local and define CAMLLIB and CAMLP4LIB to point to where
@@ -72,17 +90,21 @@ the Terminal program in /Applications/Utilities.
       CAMLLIB=/Users/emre/Documents/ocaml/install-3.06/lib/ocaml
       CAMLP4LIB=/Users/emre/Documents/ocaml/install-3.06/lib/ocaml/camlp4
 
-4. From the MetaPRl source directory (the directory with this file), run
+7. If you want readline and ncurses support and have Fink installed you might
+   want to add "-I/sw/include -L/sw/lib" to the CCC= line in mk/config and
+   "OCAML_LIB_FLAGS=-ccopt -L/sw/lib" to mk/config.locals
 
-      make
+8. From the MetaPRl source directory (the directory with this file), run
+
+      omake
 
    to build the bytecode version of MetaPRL, or run
 
-      make opt
+      omake opt
 
    to build the native-code version of MetaPRL.
 
-5. To run the bytecode MetaPRL toploop, use
+9. To run the bytecode MetaPRL toploop, use
 
       editor/ml/mptop
 
@@ -94,7 +116,13 @@ the Terminal program in /Applications/Utilities.
 
 Known issues that Brian (emre@cs.caltech.edu) could not resolve:
 
-1. Fonts:  The MetaPRL toploop looks pretty bad unless you use a font that
+1. Fonts:  
+   
+   Note from n8gray:  When I use editor/ml/mpxterm I get good-looking fonts,
+   including all of the mathematical symbols, so this issue might not be 
+   relevant any longer.  Still, here's Brian's text.
+   
+   The MetaPRL toploop looks pretty bad unless you use a font that
    has all the necessary Unicode characters.  Unfortunately, I do not know
    of any that come with Mac OS X or MetaPRL.  The fonts in
 
@@ -116,7 +144,14 @@ Known issues that Brian (emre@cs.caltech.edu) could not resolve:
    Enabling anti-aliasing may also help (in the 'Terminal menu', chose
    'Window Settings...', and then look under 'Display').
 
-2. status_all ():  This issue is a bit more worrisome.  Attempting to run
+
+
+2. status_all ():  
+
+   Note from n8gray:  I don't see this problem.  It might also now be resolved.
+   Still, here's Brian's text.
+
+   This issue is a bit more worrisome.  Attempting to run
 
       status_all ();;
 
