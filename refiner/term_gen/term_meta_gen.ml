@@ -207,10 +207,10 @@ struct
    (*
     * Rename hypothesis bound variables --- use empty names for variables not actually used
     *)
-   let rec rename_hyp_bvars bvars goals seqfvars count sub = function
+   let rec rename_hyp_bvars erase bvars goals seqfvars count sub = function
       [] -> [], Lm_list_util.smap (apply_subst sub) goals
     | (Context(c, conts, terms) as hd :: tl) as hyps ->
-         let tl', goals' = rename_hyp_bvars (SymbolSet.add bvars c) goals seqfvars count sub tl in
+         let tl', goals' = rename_hyp_bvars erase (SymbolSet.add bvars c) goals seqfvars count sub tl in
          let hd' = if sub = [] || terms = [] then hd else Context(c, conts, Lm_list_util.smap (apply_subst sub) terms) in
          (if hd' == hd && tl' == tl then hyps else hd'::tl'), goals'
     | (Hypothesis (v,t) as hd :: tl) as hyps ->
@@ -218,14 +218,14 @@ struct
          let empt = (Lm_symbol.to_string v = "") in
          let v' =
             if mem && empt then Lm_symbol.new_name vv (SymbolSet.mem (SymbolSet.union bvars seqfvars))
-            else if (not mem) && (not empt || SymbolSet.mem bvars v) then begin
+            else if (not mem) && ((erase && not empt) || SymbolSet.mem bvars v) then begin
                incr count;
                Lm_symbol.new_name (Lm_symbol.make "" !count) (SymbolSet.mem (SymbolSet.union bvars seqfvars))
             end else v
          in
          let t' = apply_subst sub t in
          let sub = if v == v' then sub else (v, mk_var_term v') :: sub in
-         let tl', goals' = rename_hyp_bvars (SymbolSet.add bvars v') goals seqfvars count sub tl in
+         let tl', goals' = rename_hyp_bvars erase (SymbolSet.add bvars v') goals seqfvars count sub tl in
          let hd' = if v==v' && t==t' then hd else Hypothesis (v',t') in
          (if hd' == hd && tl' == tl then hyps else hd'::tl'), goals'
 
@@ -233,7 +233,7 @@ struct
     * Go down the term, mapping the context bindings
     * f knows how to map contexts; f' knows what to do with free FO variables; f'' handles sequents.
     *)
-   let convert_contexts f f' =
+   let convert_contexts f f' erase_hypbindings =
       let rec convert_term bvars fvars bconts t =
          if is_var_term t then
             let v = dest_var t in if SymbolSet.mem fvars v then f' t v bconts else t
@@ -257,7 +257,7 @@ struct
             let hyps = SeqHyp.to_list eseq.sequent_hyps in
             let goals = SeqGoal.to_list eseq.sequent_goals in
             let hyps', goals', seqfvars = convert_hyps bvars fvars bconts goals hyps in
-            let hyps', goals' = rename_hyp_bvars (SymbolSet.add_list bvars bconts) goals' seqfvars (ref (-1)) [] hyps' in
+            let hyps', goals' = rename_hyp_bvars erase_hypbindings (SymbolSet.add_list bvars bconts) goals' seqfvars (ref (-1)) [] hyps' in
             if arg' == eseq.sequent_args && hyps' == hyps && goals' == goals then t
             else mk_sequent_term {
                sequent_args = arg'; sequent_hyps = SeqHyp.of_list hyps'; sequent_goals = SeqGoal.of_list goals'
@@ -317,13 +317,13 @@ struct
 
    (* Actual term convertors *)
    let term_of_parsed_term =
-      convert_contexts context_of_parsed_contexts (fun _ v conts -> mk_so_var_term v conts [])
+      convert_contexts context_of_parsed_contexts (fun _ v conts -> mk_so_var_term v conts []) false
 
    let term_of_parsed_term_with_vars =
-      convert_contexts context_of_parsed_contexts (fun t _ _ -> t)
+      convert_contexts context_of_parsed_contexts (fun t _ _ -> t) false
 
    let display_term_of_term =
-      convert_contexts display_context_of_contexts (fun _ v _ -> mk_so_var_term v [] [])
+      convert_contexts display_context_of_contexts (fun _ v _ -> mk_so_var_term v [] []) true
 
    (* create a fresh term convertor with memoization *)
    let create_term_parser () =
@@ -346,7 +346,7 @@ struct
             end
          in mk_so_var_term v conts []
       in
-         convert_contexts context_of_parsed_contexts deal_with_a_var
+         convert_contexts context_of_parsed_contexts deal_with_a_var false
 
    let mterm_of_parsed_mterm mt =
       convert_mterm (create_term_parser ()) mt
