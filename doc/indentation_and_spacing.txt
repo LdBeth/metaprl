@@ -1,0 +1,38 @@
+Here is the list of basic indentation and spacing principles
+that we try to observe in MetaPRL:
+
+- All indentation steps are 3 spaces.
+
+- No tab symbols in the code.
+
+- No spaces at the end of a line.
+
+- More than one consecutive space may only be used at the beginning
+  of a line, but not in the middle.
+
+- No empty lines at the beginning of a file, at the end of a file,
+  or in the middle of a function. 
+
+- Functions are usually separated by an empty line.
+
+- No more than one or two consecutive empty lines.
+
+- Patterns are indented as follows:
+
+match
+   expression
+with
+   Choice1 ->
+      code1
+ | Choice2 ->
+      code2
+ | Choice3 ...
+
+When expression is short, its OK to put
+match expression with
+on a single line.
+
+When code_i is short, it's usually OK to put it on the same
+line with Code_i (but not with Code_i+1).
+
+   
