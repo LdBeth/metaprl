@@ -561,4 +561,4 @@ let rec find_file paths name =
  * Printing warning messages.
  *)
 let print_warning pos s =
-   Printf.printf "%s: warning - %s\n" (string_of_pos pos) s
+   Printf.eprintf "%s: warning - %s\n" (string_of_pos pos) s
