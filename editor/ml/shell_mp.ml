@@ -272,6 +272,9 @@ struct
       Sys.catch_break true;
       Tactic_type.Tactic.main_loop ();
       main_loop_aux ()
+
+   let version = Mp_version.version
+
 end
 
 (*

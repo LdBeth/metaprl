@@ -943,6 +943,7 @@ struct
    let print_welcome_page out state =
       let table = table_of_state state in
       let table = BrowserTable.add_string table title_sym "Welcome to MetaPRL" in
+      let table = BrowserTable.add_string table version_sym Top.version in
          print_translated_file_to_http out table "welcome.html"
 
    (*

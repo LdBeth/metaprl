@@ -57,6 +57,7 @@ let file_sym        = Lm_symbol.add "FILE"
 let content_sym     = Lm_symbol.add "CONTENT"
 let basename_sym    = Lm_symbol.add "BASENAME"
 let command_sym     = Lm_symbol.add "COMMAND"
+let version_sym     = Lm_symbol.add "VERSION"
 
 (*
  * Open the file as a channel.

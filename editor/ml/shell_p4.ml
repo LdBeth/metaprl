@@ -242,6 +242,9 @@ struct
          try Shell.init () with
             _ ->
                ()
+
+   let version = Mp_version.version
+
 end
 
 (*

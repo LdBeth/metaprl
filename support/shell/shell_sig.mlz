@@ -287,6 +287,9 @@ sig
 
    (* Make sure all buffers are flushed *)
    val flush : unit -> unit
+
+   (* MetaPRL version string *)
+   val version : string
 end
 
 (*

@@ -507,6 +507,8 @@ struct
 
    module Top : ShellTopSig =
    struct
+      let version = ShellP4.version
+
       (*
        * Synchronize to the current shell.
        *)

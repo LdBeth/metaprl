@@ -37,6 +37,7 @@ open Tactic_type.Tactic
  *)
 module type ShellP4Sig =
 sig
+   val version : string
    (*
     * Expression evaluation.
     *)

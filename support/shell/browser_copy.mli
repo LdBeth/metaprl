@@ -56,6 +56,7 @@ val file_sym        : symbol
 val content_sym     : symbol
 val basename_sym    : symbol
 val command_sym     : symbol
+val version_sym     : symbol
 
 (*
  * Get files.
