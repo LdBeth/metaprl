@@ -270,11 +270,6 @@ val alpha_equal_match : (term * string list) ->
        bool
 
 (*
- * Rename the binding variables so they are all distinct.
- *)
-val standardize_apart : term -> term
-
-(*
  * Get the list of free variables.
  *)
 val is_free_var : string -> term -> bool
@@ -282,17 +277,6 @@ val free_vars : term -> string list
 val free_vars_terms : term list -> string list
 val context_vars : term -> string list
 val binding_vars : term -> string list
-
-(*
- * Comparisons.
- *)
-exception BadParamMatch of param * param
-
-val compare_level_exps : level_exp -> level_exp -> int
-val compare_params : param -> param -> int
-val compare_pattern_params : param -> param -> int
-val compare_operators : operator -> operator -> int
-val compare_pattern_operators : operator -> operator -> int
 
 type term_subst = (string * term) list
 
@@ -431,6 +415,10 @@ val make_2subst_term : term -> string -> string -> term -> term -> term
 
 (*
  * $Log$
+ * Revision 1.16  1998/05/18 18:28:10  nogin
+ * Removed standardize_apart function, compare_* functions
+ *     and BadParamMatch exception
+ *
  * Revision 1.15  1998/05/01 14:59:39  jyh
  * Updating display forms.
  *

@@ -226,12 +226,6 @@ let format_exn db buf printers error =
          format_address buf a1;
          format_space buf;
          format_address buf a2
-    | BadParamMatch (p1, p2) ->
-         format_string buf "Parameters do not match:";
-         format_space buf;
-         printers.format_param db buf p1;
-         format_space buf;
-         printers.format_param db buf p2
     | Term.BadMatch (t1, t2) ->
          format_string buf "Terms do not match:";
          format_space buf;
@@ -288,6 +282,10 @@ let print_exn db out s exn =
 
 (*
  * $Log$
+ * Revision 1.5  1998/05/18 18:28:10  nogin
+ * Removed standardize_apart function, compare_* functions
+ *     and BadParamMatch exception
+ *
  * Revision 1.4  1998/04/28 18:30:43  jyh
  * ls() works, adding display.
  *
