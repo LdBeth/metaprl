@@ -52,7 +52,7 @@ $env = $env->clone(
 
    # Files compiled with prlc implicitly depend on these files and modules.
    HIDDEPS => "#filter/filter/prlc",
-   HIDMODDEPS => "Printf Mp_debug Refiner Refine_exn Term Term_util Theory Dform Dform_print Tactic Mp_resource Precedence Filter_summary",
+   HIDMODDEPS => "Printf Mp_debug Refiner Refine_exn Term Term_util Theory Dform Dform_print Tactic Mp_resource Precedence Filter_summary Itt_theory Mp_mc_theory",
 );
 
 Command $env 'mp_version.ml', "#mk/config", qq(

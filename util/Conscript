@@ -25,8 +25,6 @@ $env = new cons(
     ARCOM       => "%OCAMLLINK %OCAMLCFLAGS -a -o %> %<", # How to archive objects
     LEXCOM      => "ocamllex %1",                         # How to lex a file
     YACCCOM     => "ocamlyacc %1",                        # How to yacc a file
-    LNCOM       => "ln -sf %1:f %>",                      # How to link a file
-    LNCOM2      => "ln -sf %1:f %>:b.ml; ln -sf %1:f %>:b.mli", # How to link a file
 
     PPFLAGS     => "",
     CAMLP4MACRO => "camlp4o %PPFLAGS",
