@@ -69,7 +69,8 @@ let browser_port_name = "port"
 let browser_port      = Env_arg.int "port" 0 "start browser services on this port" Env_arg.set_int_int
 
 let browser_name     = "browser_command"
-let browser_string   = Env_arg.string "browser_command" None "browser to start on startup" Env_arg.set_string_option_string
+let browser_string   =
+   Env_arg.string "browser_command" (Setup.default_browser_string ()) "browser to start on MetaPRL startup" Env_arg.set_string_option_string
 
 let challenge_name   = "challenge"
 let challenge_string = Env_arg.string challenge_name None "HTTP challenge (internal)" Env_arg.set_string_option_string

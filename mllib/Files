@@ -13,9 +13,9 @@ MLLIB_MLZFILES =\
 MLLIB_FILES =\
 	$(MLLIB_MLZFILES)\
 	ctime\
-   	setup\
-	env_arg\
 	punix\
+   setup\
+	env_arg\
 	list_neq_append\
 	bitset\
 	precedence\

@@ -51,6 +51,10 @@ let socket_name = "socket"
 
 let socket_fd = Env_arg.int socket_name None "socket descriptor (for restart)" Env_arg.set_int_option_int
 
+let (_: unit ref) =
+   let setter _ _ = Setup.sethostname in
+      Env_arg.string Setup.hostname_var () "Hostname to use in browser URLs" setter
+
 (*
  * IO.
  *)
@@ -957,17 +961,10 @@ let serve connect server info =
  * Server without threads.
  *)
 let serve_http start connect info port =
-   let passwd_name, dh_name =
-      let passwd_name = Filename.concat (Setup.lib ()) "server.pem" in
-      let dh_name = Filename.concat (Setup.lib ()) "dh.pem" in
-         if not Lm_ssl.enabled then
-            raise (Invalid_argument "SSL_ENABLED must be set to run the HTTP interface");
-         if not (Sys.file_exists passwd_name) then
-            raise (Invalid_argument (sprintf "Http_simple.serve: SSL certificate file %s does not exist" passwd_name));
-         if not (Sys.file_exists dh_name) then
-            raise (Invalid_argument (sprintf "Http_simple.serve: SSL certificate file %s does not exist" dh_name));
-         passwd_name, dh_name
-   in
+   if not Lm_ssl.enabled then
+       raise (Invalid_argument "SSL_ENABLED must be set to run the HTTP interface");
+   let passwd_name = Setup.server_pem () in
+   let dh_name = Setup.dh_pem () in
    let ssl =
       match !socket_fd with
          Some fd ->
@@ -991,11 +988,9 @@ let serve_http start connect info port =
  *)
 let string_of_inet_addr addr =
    if addr = Unix.inet_addr_any then
-      Unix.gethostname ()
+      Setup.gethostname ()
    else
-      try (Unix.gethostbyaddr addr).Unix.h_name with
-         Not_found ->
-            Unix.string_of_inet_addr addr
+      raise (Failure "Http_simple.string_of_inet_addr: internal error")
 
 (*
  * Get the actual port number.

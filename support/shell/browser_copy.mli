@@ -62,7 +62,7 @@ val editinfo_sym    : symbol
 (*
  * Get files.
  *)
-val string_of_lib_file               : string -> string
+val string_of_abspath_file           : string -> string
 val string_of_root_file              : string -> string
 
 (*

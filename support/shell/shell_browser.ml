@@ -966,7 +966,7 @@ struct
             bprintf buf "port = %d\n" port;
             bprintf buf "name = \"file/%s\"\n" (String.escaped filename);
             bprintf buf "passwd = \"%s\"\n" (String.escaped response);
-            bprintf buf "keyfile = \"%s\"\n" (String.escaped (string_of_lib_file "client.pem"));
+            bprintf buf "keyfile = \"%s\"\n" (String.escaped (string_of_abspath_file (Setup.client_pem())));
             bprintf buf "content = \"%s\"\n" (String.escaped (string_of_root_file filename));
             print_content_page outx OkCode "application/x-metaprl" buf
          with
@@ -1484,16 +1484,19 @@ struct
          Unix.close fd;
 
          (* Start the browser if requested *)
-         (match !browser_string with
-             Some browser ->
-                if browser <> "" then
-                   start_browser server state browser file_url
-           | None ->
-                ());
+         let message1, message2 =
+            match !browser_string with
+               Some browser when browser <> "" ->
+                  start_browser server state browser file_url;
+                  "Browsing service started and your browser should start up momentarily.",
+                  "If the browser fails to start automatically, manually point"
+             | _ ->
+                  "Browsing service started.", "Point"
+         in
 
          (* Tell the user *)
-         eprintf "@[<v 0>@[<v 3>Browsing service started.  Point your browser to the following URL:@ %s@]@ \
-@[<v 3>Or use the following URL:@ %s@]@]@." file_url http_url;
+         eprintf "@[<v 0>@ %s@ @[<v 3>%s your browser to the following URL:@ %s (will log you in automatically)@]@ \
+@[<v 3>Or use the following URL:@ %s (will require you to log in)@]@]@." message1 message2 file_url http_url;
 
          (* Handle commands *)
          Shell_syscall.set_syscall_handler (handle_syscall server state None);

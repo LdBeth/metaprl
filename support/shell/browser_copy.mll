@@ -102,8 +102,9 @@ let string_of_file dir filename =
        | None ->
            ""
 
-let string_of_lib_file filename =
-   string_of_file (Setup.lib ()) filename
+let string_of_abspath_file filename =
+   if Filename.is_relative filename then raise (Invalid_argument "Browser_copy.string_of_abspath_file");
+   string_of_file "" filename
 
 let string_of_root_file filename =
    string_of_file (Setup.root ()) filename

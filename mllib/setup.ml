@@ -34,16 +34,25 @@ let environ_prefix = "MP"
 
 let confname = "metaprl"
 
+let default_browser_string () =
+   if Sys.file_exists "/usr/bin/htmlview" then
+      Some "/usr/bin/htmlview"
+   else if Sys.file_exists "/usr/bin/mozilla" then
+      Some "/usr/bin/mozilla"
+   else
+      None
+
+let shared_state = State.shared_val "Setup" (Hashtbl.create 5)
+
 let delay name f =
-   let handle = State.shared_val name (ref None) in
-   let writer = function
-      { contents = Some name } -> name
-    | ref ->
-         let res = f () in
-            ref := Some res;
-            res
+   let writer tbl =
+      try Hashtbl.find tbl name with
+         Not_found ->
+            let res = f () in
+               Hashtbl.add tbl name res;
+               res
    in
-      fun () -> State.write handle writer
+      fun () -> State.write shared_state writer
 
 (* $(MP_ROOT) *)
 let root =
@@ -74,6 +83,29 @@ let lib =
    in
       delay "Setup.lib" writer
 
+(*
+ * Make sure directory exists and is writable (creating it, if necessary).
+ * Returns true if a new directory was created.
+ *)
+let ensure_dir name mode =
+   let new_dir =
+      (* Does it exist already? *)
+         try access name [F_OK]; false with
+            Unix_error _ ->
+               begin
+                  try mkdir name mode with
+                     Unix_error _ -> ()
+               end;
+               true
+      in
+         begin (* Make sure home is read/write *)
+            try access name [F_OK;R_OK;W_OK]; closedir(opendir name); with
+               Unix_error _ ->
+                  raise (Invalid_argument ("Setup: Please make sure that " ^ name ^ " is a directory for which MetaPRL has read and write access"))
+         end;
+         new_dir
+
+
 (* $(HOME)/.metaprl *)
 let home =
    let writer () =
@@ -89,23 +121,9 @@ let home =
                   eprintf "@[<v 3>@ WARNING!   Please set the HOME environment variable to point@ WARNING!   to your home directory.@ WARNING!   Using %s in place of $HOME/.%s for now.@]@." home confname;
                   home
       in
-      let new_setup =
          (* Does "home" dir exist already? *)
-         try access home [F_OK]; false with
-            Unix_error _ ->
-               begin
-                  eprintf "@[<v 3>@ WARNING!   MetaPRL state directory %s does not exist, creating.@ @]@." home;
-                  try mkdir home 0o700 with
-                     Unix_error _ -> ()
-               end;
-               true
-      in
-         begin (* Make sure home is read/write *)
-            try access home [F_OK;R_OK;W_OK]; closedir(opendir home); with
-               Unix_error _ ->
-                  raise (Invalid_argument ("Setup: Please make sure that " ^ home ^ " is a directory for which MetaPRL has read and write access"))
-         end;
-         if new_setup then begin
+         if ensure_dir home 0o700 then begin
+            printf "@[<v 3>@ WARNING!   MetaPRL state directory %s did not exist, created a new one.@ @]@." home;
             (*
              * XXX TODO (nogin): Here we should add code that would ask all kind of questions
              * about user's preferences.
@@ -138,6 +156,105 @@ let editor =
                      sprintf "xterm -e %s" editor
    in
       delay "Setup.editor" writer
+
+let hostname_var = "browser_hostname"
+
+let gethostname, sethostname =
+   let nm = "Setup.hostname" in
+   let hostname_env = environ_prefix ^ "_" ^ (String.uppercase hostname_var) in
+   let getter tbl =
+      try Hashtbl.find tbl nm with
+         Not_found ->
+            begin
+               let name =
+                  try Sys.getenv hostname_env with
+                     Not_found ->
+                        begin
+                           let name = Unix.gethostname () in
+                              Punix.putenv (hostname_env ^ "=" ^ name);
+                              name
+                        end
+               in
+                  Hashtbl.add tbl nm name;
+                  name
+            end
+   in
+   let setter name tbl =
+      Punix.putenv (hostname_env ^ "=" ^ name);
+      (Hashtbl.add tbl nm name)
+   in
+      (fun () -> State.write shared_state getter),
+      (fun name -> State.write shared_state (setter name))
+
+let wrap_umask077 f () =
+   (* Unix.umask will fail on Windows, but we do not care *)
+   let old_umask =
+      try Unix.umask 0o077
+      with _ -> 0
+   in
+   let res = f () in
+      ignore(try Unix.umask old_umask with _ -> 0);
+      res
+
+let certs_dir =
+   let writer () =
+      let ssl_dir = Filename.concat (home ()) "ssl" in
+         ignore(ensure_dir ssl_dir 0o700);
+         let certs_dir = Filename.concat ssl_dir (gethostname ()) in
+            ignore(ensure_dir certs_dir 0o700);
+            certs_dir
+   in
+      delay "Setup.certs_dir" writer
+
+let execute_openssl args =
+   let pid = Unix.create_process "openssl" args Unix.stdin Unix.stdout Unix.stderr in
+   let _, status = Unix.waitpid [] pid in
+      if status <> Unix.WEXITED 0 then
+         raise (Failure "Setup.create_cert: executing openssl failed")
+
+let create_cert name =
+   if not (Sys.file_exists name) then begin
+      let conf = Filename.concat (lib ()) "metaprl-ssl.config" in
+      let () =
+         try access conf [F_OK;R_OK] with
+            Unix.Unix_error (err, _, _) ->
+               raise (Failure ("Setup.create_cert: config file " ^ conf ^ " is not accessible: " ^ (Unix.error_message err)))
+      in
+      let () = eprintf "Creating certificate file %s%t" name eflush in
+         execute_openssl [|"req"; "-x509"; "-newkey"; "rsa:1024"; "-keyout"; name; "-out"; name; "-days"; "360"; "-config"; conf |]
+   end;
+   try access name [F_OK;R_OK] with
+      Unix.Unix_error (err, _, _) ->
+         raise (Failure ("Setup.create_cert: certificate file " ^ name ^ " is not accessible: " ^ (Unix.error_message err)))
+
+let server_pem =
+   let writer () =
+      let file = Filename.concat (certs_dir ()) "server.pem" in
+         create_cert file;
+         file
+   in
+      delay "Setup.server_pem" (wrap_umask077 writer)
+
+let client_pem =
+   let writer () =
+      let file = Filename.concat (certs_dir ()) "client.pem" in
+         create_cert file;
+         file
+   in
+      delay "Setup.client_pem" (wrap_umask077 writer)
+
+let dh_pem =
+   let writer () =
+      let name = Filename.concat (certs_dir ()) "dh.pem" in
+         if not (Sys.file_exists name) then begin
+            eprintf "Creating certificate file %s%t" name eflush;
+            execute_openssl [| "dhparam"; "-2"; "-out"; name |];
+         end;
+         try access name [F_OK;R_OK]; name with
+            Unix.Unix_error (err, _, _) ->
+               raise (Failure ("Setup.create_cert: certificate file " ^ name ^ " is not accessible: " ^ (Unix.error_message err)))
+   in
+      delay "Setup.dh_pem" (wrap_umask077 writer)
 
 (*
  * -*-

@@ -42,6 +42,27 @@ val home : unit -> string    (* $(HOME)/.metaprl *)
 val editor : unit -> string
 
 (*
+ * Hostname - $(MP_BROWSER_HOSTNAME), or Unix.gethostname ()
+ *)
+val hostname_var : string (* "browser_hostname" *)
+val gethostname : unit -> string
+val sethostname : string -> unit
+
+(*
+ * SSL certivicates. Will use different ones for different hostnames
+ * and will try to create if they do not exist.
+ *)
+val server_pem : unit -> string
+val dh_pem : unit -> string
+val client_pem : unit -> string
+
+(*
+ * Browser command to use by default.
+ * /usr/bin/htmlview, if exists, otherwise /usr/bin/mozilla, if exists, otherwise None
+ *)
+val default_browser_string : unit -> string option
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "compile"
