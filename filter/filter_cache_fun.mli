@@ -33,9 +33,12 @@ module MakeFilterCache
    with type str_expr   = StrMarshal.expr
    with type str_item   = StrMarshal.item
    with type select     = Base.select
-   
+
 (*
  * $Log$
+ * Revision 1.3  1998/06/01 13:52:52  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.2  1998/05/27 15:12:44  jyh
  * Functorized the refiner over the Term module.
  *

@@ -102,7 +102,7 @@ let removeq x l =
          else
             h :: remove t
     | [] ->
-         raise (Invalid_argument "removeq")
+         raise (Failure "removeq")
    in
       remove l
 
@@ -117,7 +117,7 @@ let rec nth_tl i l =
          h::t ->
             nth_tl (i - 1) l
        | [] ->
-            raise (Invalid_argument "nth_tl")
+            raise (Failure "nth_tl")
 
 (*
  * Functional replacement.
@@ -130,7 +130,7 @@ let replacef_nth i f l =
          else
             h :: replace (i - 1) t
     | [] ->
-         raise (Invalid_argument "replacef_nth")
+         raise (Failure "replacef_nth")
    in
       replace i l
 
@@ -145,7 +145,7 @@ let replace_nth i x l =
          else
             h :: replace (i - 1) t
     | [] ->
-         raise (Invalid_argument "replace_nth")
+         raise (Failure "replace_nth")
    in
       replace i l
 
@@ -175,7 +175,7 @@ let rec remove_nth i l =
          else
             h :: remove_nth (i - 1) t
     | [] ->
-         raise (Invalid_argument "remove_nth")
+         raise (Failure "remove_nth")
 
 (*
  * Insert an element into a position.
@@ -189,7 +189,7 @@ let insert_nth i x l =
             h::t ->
                h :: insert (i - 1) t
           | [] ->
-               raise (Invalid_argument "insert_nth")
+               raise (Failure "insert_nth")
    in
       insert i l
 
@@ -339,7 +339,7 @@ let zip_list l l1 l2 =
          (h1, h2)::(aux (t1, t2))
     | [], [] ->
          l
-    | _ -> raise (Invalid_argument "zip")
+    | _ -> raise (Failure "zip")
    in
       aux (l1, l2)
 
@@ -381,7 +381,7 @@ let add_assoc (v1, v2) l =
           if v2 = v2' then
              l
           else
-             raise (Invalid_argument "add_assoc")
+             raise (Failure "add_assoc")
    with
       Not_found -> (v1, v2)::l
 
@@ -421,7 +421,7 @@ let rec last = function
  | h::t ->
       last t
  | [] ->
-      raise (Invalid_argument "last: list is empty")
+      raise (Failure "last")
 
 (*
  * Remove the specified suffix from the list.
@@ -432,18 +432,18 @@ let remove_suffix l suffix =
          if l' = suffix then
             []
          else
-            raise (Invalid_argument "remove_suffix")
+            raise (Failure "remove_suffix")
     | (i, _::t) ->
          aux (i - 1, t)
     | _ ->
          (* This will never happen *)
-         raise (Invalid_argument "remove_suffix")
+         raise (Failure "remove_suffix")
    in
    let i = (List.length l) - (List.length suffix) in
       if i >= 0 then
          aux (i, l)
       else
-         raise (Invalid_argument "remove_suffix")
+         raise (Failure "remove_suffix")
 
 (*
  * Reverse do_list.
@@ -529,6 +529,9 @@ let existsp = List.exists
 
 (*
  * $Log$
+ * Revision 1.10  1998/06/01 13:54:40  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.9  1998/04/29 14:48:12  jyh
  * Added ocaml_sos.
  *

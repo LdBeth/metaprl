@@ -96,6 +96,7 @@ let print_exn db out exn =
    let buf = new_buffer () in
       format_exn db buf exn;
       print_to_channel 80 buf stderr;
+      flush stderr;
       raise exn
 
 let print db f x =
@@ -105,6 +106,9 @@ let print db f x =
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/01 13:52:55  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1998/04/28 18:30:07  jyh
  * ls() works, adding display.
  *

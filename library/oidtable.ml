@@ -71,14 +71,14 @@ let insert ot st oid i v =
 exception Oidtablemap
 
 let oidtable_unit_map ot stamp f =
- iter (fun oid tent -> 
+ iter (fun oid tent ->
 	try (f oid (try tent_lookup tent stamp with _ -> raise Oidtablemap))
 	with Oidtablemap -> ())
       ot
 
 let oidtable_map ot stamp f =
  let acc = ref [] in
-   iter (fun oid tent -> 
+   iter (fun oid tent ->
 	     (* (print_string "oid_table_map "); *)
 	try (match (f oid (try tent_lookup tent stamp with _ -> raise Oidtablemap)) with
 	      None -> ()

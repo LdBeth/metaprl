@@ -45,45 +45,45 @@ end
 module MakeTermGrammar (TermGrammar : TermGrammarSig) =
 struct
    open TermGrammar
-   
+
    (************************************************************************
     * TYPES                                                                *
     ************************************************************************)
-   
+
    (*
     * Also meta-terms.
     *)
    type amterm = { mname : string option; mterm : meta_term }
-   
+
    (*
     * String or term.
     *)
    type string_or_term =
       ST_String of string
     | ST_Term of (term * (int * int))
-   
+
    (************************************************************************
     * UTILITIES                                                            *
     ************************************************************************)
-   
+
    (*
     * For new symbols.
     *)
    let gensym = ref 0
-   
+
    let mk_gensym () =
       incr gensym;
       "$" ^ (string_of_int !gensym)
-   
+
    (* Currying *)
    let mk_bterm' (vars, bterm) = mk_bterm vars bterm
-   
+
    (*
     * Construct an application.
     *)
    let mk_apply_term loc a b =
       mk_dep0_dep0_term (mk_opname loc ["apply"]) a b
-   
+
    let make_application loc terms =
       (* Convert the list to an application *)
       let rec aux x = function
@@ -94,7 +94,7 @@ struct
          match terms with
             [] -> raise (Invalid_argument "make_application")
           | h::t -> aux h t
-   
+
    (*
     * Cast a parameter to a level expression.
     *)
@@ -110,7 +110,7 @@ struct
        | MString v -> mk_var_level_exp v
        | MVar v -> mk_var_level_exp v
        | _ -> raise (BadParamCast (p, "l"))
-   
+
    (*
     * Cast to a number.
     *)
@@ -121,7 +121,7 @@ struct
        | MVar v -> make_param (MNumber v)
        | MString s -> make_param (MNumber s)
        | _ -> raise (BadParamCast (p, "n"))
-   
+
    (*
     * Parameter casting.
     *)
@@ -147,7 +147,7 @@ struct
              | MString(v) -> make_param (MToken v)
              | _ -> raise (BadParamCast (p, x))
          end
-   
+
     | "v" as x ->
          begin
             match dest_param p with
@@ -158,22 +158,22 @@ struct
              | MString(v) -> make_param (MVar v)
              | _ -> raise (BadParamCast (p, x))
          end
-   
+
     | "l" ->
          begin
             match dest_param p with
                MString v -> make_param (MLevel v)
              | _ -> make_param (Level (cast_level p))
          end
-   
+
     | x -> raise (BadParamCast (p, x))
-   
+
    (*
     * Constructors.
     *)
    let mk_pair_term loc a b =
       mk_dep0_dep0_term (mk_opname loc ["pair"]) a b
-   
+
    (*
     * Turn a reversed list of terms into a tuple.
     *)
@@ -182,12 +182,12 @@ struct
          mk_term (mk_op (mk_opname loc [s]) []) []
     | ST_Term (t, _) ->
          t
-   
+
    let rec tupelize loc = function
       [h] -> make_term loc h
     | h::t -> mk_pair_term loc (make_term loc h) (tupelize loc t)
     | [] -> raise (Invalid_argument "tupelize")
-   
+
    (*
     * Construct a binary term, with a possible dependency.
     *)
@@ -197,10 +197,10 @@ struct
             { aname = None; aterm = mk_dep0_dep0_term (mk_opname loc [name]) t t2.aterm }
        | { aname = Some name'; aterm = t } ->
             { aname = None; aterm = mk_dep0_dep1_term (mk_opname loc [name]) (dest_var name') t t2.aterm }
-   
+
    let mk_arith_term loc name t1 t2 =
       { aname = None; aterm = mk_dep0_dep0_term (mk_opname loc [name]) t1.aterm t2.aterm }
-   
+
    (*
     * Check that all are strings.
     *)
@@ -212,14 +212,14 @@ struct
             s
       in
          List.map check l
-   
+
    (************************************************************************
     * GRAMMAR                                                              *
     ************************************************************************)
-   
+
    EXTEND
       GLOBAL: term_eoi term quote_term mterm singleterm bound_term xdform;
-      
+
       (*
        * Meta-terms include meta arrows.
        *)
@@ -227,7 +227,7 @@ struct
          [[ t = amterm ->
              t.mterm
           ]];
-          
+
       amterm:
          [[ t = noncommaterm ->
              match t with
@@ -265,7 +265,7 @@ struct
                t
             ]
          ];
-      
+
       (*
        * Regular terms.
        * term: any possible term
@@ -278,12 +278,12 @@ struct
        * quote_term: a tuple of opname * params * bterms
        *)
       term_eoi: [[ x = term; EOI -> x ]];
-   
+
       term:
          [[ x = aterm ->
              x.aterm
           ]];
-      
+
       aterm:
          ["comma" LEFTA
           [ x = noncommaterm ->
@@ -292,7 +292,7 @@ struct
              { aname = None; aterm = mk_pair_term loc x.aterm y.aterm }
           ]
          ];
-      
+
       noncommaterm:
          [ "equal" LEFTA
             [ t1 = noncommaterm; op = sl_not_equal; t2 = noncommaterm; sl_in; ty = noncommaterm ->
@@ -382,7 +382,7 @@ struct
                         { aname = None; aterm = mk_dep0_dep1_term (mk_opname loc [op]) (dest_var name) t t2.aterm }
                end
              | op = sl_quotient; x = sl_word; sl_comma; y = sl_word; sl_colon; t1 = noncommaterm; sl_double_slash; t2 = noncommaterm ->
-               { aname = None; aterm = mk_dep0_dep2_term (mk_opname loc [op]) x y t1.aterm t2.aterm } 
+               { aname = None; aterm = mk_dep0_dep2_term (mk_opname loc [op]) x y t1.aterm t2.aterm }
             ]
           | "apply" LEFTA
             [ t = applyterm ->
@@ -397,7 +397,7 @@ struct
                { aname = None; aterm = mk_dep0_term (mk_opname loc [op]) x.aterm }
             ]
          ];
-      
+
       (* Term that can be used in application lists *)
       applyterm:
          [ [ op = opname ->
@@ -417,7 +417,7 @@ struct
                t
             ]
          ];
-      
+
       (* Singleterm is a distinct term and no colons *)
       singleterm:
          [ [ op = opname ->
@@ -429,7 +429,7 @@ struct
                t
             ]
          ];
-      
+
       bound_term:
          [ [ sl_open_paren; v = varterm; sl_colon; t = aterm; sl_close_paren ->
                { aname = Some v; aterm = t.aterm }
@@ -438,7 +438,7 @@ struct
               t
            ]
          ];
-   
+
       termsuffix:
          [[ p = params ->
              p, []
@@ -447,14 +447,14 @@ struct
            | sl_open_curly; bterms = btermslist; sl_close_curly ->
              [], bterms
           ]];
-      
+
       nonwordterm:
          [[ (* vars *)
              v = varterm ->
              { aname = None; aterm = v }
            | sl_wild_card ->
              { aname = None; aterm = mk_var_term (mk_gensym ()) }
-            
+
              (* Abbreviations *)
            | i = sl_number ->
              { aname = None; aterm = mk_term (mk_op (mk_opname loc ["natural_number"])
@@ -463,7 +463,7 @@ struct
              }
            | x = sequent ->
              { aname = None; aterm = x }
-            
+
              (* Parenthesized terms *)
            | sl_open_paren; t = aterm; sl_close_paren ->
              t
@@ -486,19 +486,19 @@ struct
              in
                 { aname = None; aterm = t' }
           ]];
-      
+
       varterm:
          [[ sl_single_quote; v = sl_word ->
              mk_var_term v
            | sl_single_quote; v = sl_word; sl_open_brack; terms = opttermlist; sl_close_brack ->
              mk_so_var_term v terms
           ]];
-      
+
       quote_term:
          [[ v = word_or_string; params = optparams; bterms = optbterms ->
              v, params, bterms
           ]];
-      
+
       (* Application lists *)
       applytermlist:
          [[ x = applyterm ->
@@ -506,7 +506,7 @@ struct
            | l = applytermlist; x = applyterm ->
              l @ [x.aterm]
           ]];
-      
+
       (* List of terms *)
       opttermlist:
          [[ l = OPT termlist ->
@@ -514,39 +514,39 @@ struct
                 Some l' -> l'
               | None -> []
           ]];
-      
+
       termlist:
          [[ t = term ->
              [t]
            | l = termlist; sl_semi_colon; t = term ->
              l @ [t]
           ]];
-      
+
       (* Parameters and bterm lists *)
       opname:
          [[ op = rev_opname ->
              List.rev op
           ]];
-      
+
       rev_opname:
          [[ w = word_or_string ->
              [w]
            | l = rev_opname; sl_exclamation; w = word_or_string ->
              w :: l
           ]];
-      
+
       optparams:
          [[ params = OPT params ->
              match params with
                 Some params' -> params'
               | None -> []
           ]];
-   
+
       params:
          [[ sl_open_brack; params = LIST0 param SEP ","; sl_close_brack ->
              params
           ]];
-      
+
       (* Parameters *)
       param:
          [[ sl_at; w = sl_word ->
@@ -582,7 +582,7 @@ struct
                p
             ]
          ];
-      
+
       (* Bound terms *)
       optbterms:
          [[ bterms = OPT bterms ->
@@ -590,12 +590,12 @@ struct
                 Some bterms' -> bterms'
               | None -> []
           ]];
-      
+
       bterms:
          [[ sl_open_curly; bterms = btermslist; sl_close_curly ->
              bterms
           ]];
-   
+
       btermslist:
          [[ l = OPT btermlist ->
              let l' =
@@ -605,14 +605,14 @@ struct
              in
                 List.map mk_bterm' l'
           ]];
-      
+
       btermlist:
          [[ t = bterm ->
              [t]
            | l = btermlist; sl_semi_colon; t = bterm ->
              l @ [t]
           ]];
-      
+
       bterm:
          [[ h = bhead ->
              [], tupelize loc h
@@ -621,14 +621,14 @@ struct
            | sl_period; t = term ->
              [], t
           ]];
-      
+
       bhead:
          [[ t = bsingle ->
              [t]
            | h = bhead; sl_comma; w = bsingle ->
              h @ [w]
           ]];
-      
+
       bsingle:
          [[ w = sl_word ->
              ST_String w
@@ -637,7 +637,7 @@ struct
            | t = nonwordterm ->
              ST_Term (t.aterm, loc)
           ]];
-      
+
       (* Special forms *)
       sequent:
          [[ sl_sequent; args = optseqargs; sl_open_curly;
@@ -673,7 +673,7 @@ struct
                    eprintf "Constructing sequent: %d, %d%t" (List.length hyps) (List.length concl) eflush;
                 mk_sequent_term (proc_hyps hyps :: args)
           ]];
-      
+
       hyp:
          [[ bvar = OPT [ name = sl_word; sl_colon -> name]; t = aterm ->
              let v =
@@ -685,20 +685,20 @@ struct
              in
                 { aname = v; aterm = t.aterm }
           ]];
-      
-      
+
+
       optseqargs:
          [[ args = OPT seqargs ->
              match args with
                 Some l -> l
               | None -> []
           ]];
-      
+
       seqargs:
          [[ sl_open_brack; l = LIST0 term SEP ";"; sl_close_brack ->
              l
           ]];
-      
+
       (*
        * A term describing the display form.
        * We allow a concatenation of terms.
@@ -707,167 +707,167 @@ struct
          [[ l = LIST0 df_item ->
              mk_xlist_term l
           ]];
-   
+
       df_item:
          [[ t = singleterm ->
              t.aterm
            | sl_back_quote; name = STRING ->
              mk_xstring_term name
           ]];
-   
+
       (* Terminals *)
       sl_meta_left_right_arrow:
          [[ "<-->" -> () ]];
-      
+
       sl_meta_right_arrow:
          [[ "-->" -> () ]];
-      
+
       sl_meta_left_arrow:
          [[ "<--" -> () ]];
-      
+
       sl_open_curly:
          [[ "{" -> () ]];
-      
+
       sl_close_curly:
          [[ "}" -> () ]];
-      
+
       sl_open_paren:
          [[ "(" -> () ]];
-      
+
       sl_close_paren:
          [[ ")" -> () ]];
-      
+
       sl_open_brack:
          [[ "[" -> () ]];
-      
+
       sl_close_brack:
          [[ "]" -> () ]];
-      
+
       sl_in:
          [[ "in" -> () ]];
-      
+
       sl_colon:
          [[ ":" -> () ]];
-      
+
       sl_double_colon:
          [[ "::" -> "cons" ]];
-      
+
       sl_semi_colon:
          [[ ";" -> () ]];
-      
+
       sl_slash:
          [[ "/" -> () ]];
-      
+
       sl_double_slash:
          [[ "//" -> () ]];
-      
+
       sl_comma:
          [[ "," -> () ]];
-      
+
       sl_period:
          [[ "." -> () ]];
-      
+
       sl_pipe:
          [[ "|" -> () ]];
-      
+
       sl_at:
          [[ "@" -> () ]];
-      
+
       sl_single_quote:
          [[ "'" -> () ]];
-      
+
       sl_back_quote:
          [[ "`" -> () ]];
-      
+
       sl_wild_card:
          [[ "_" -> () ]];
-      
+
       sl_sequent:
          [[ "sequent" -> () ]];
-      
+
       sl_turnstile:
          [[ ">-" -> () ]];
-      
+
       sl_exclamation:
          [[ "!" -> () ]];
-      
+
       sl_add:
          [[ "+@" -> "add" ]];
-      
+
       sl_sub:
          [[ "-@" -> "sub" ]];
-      
+
       sl_mul:
          [[ "*@" -> "mul" ]];
-      
+
       sl_div:
          [[ "/@" -> "div" ]];
-      
+
       sl_rem:
          [[ "%@" -> "rem" ]];
-      
+
       sl_plus:
          [[ "+" -> "union" ]];
-      
+
       sl_minus:
          [[ "-" -> "sub" ]];
-      
+
       sl_star:
          [[ "*" -> "prod" ]];
-      
+
       sl_percent:
          [[ "%" -> "rem" ]];
-      
+
       sl_arrow:
          [[ "->" -> "fun" ]];
-      
+
       sl_left_arrow:
          [[ "<-" -> "fun" ]];
-      
+
       sl_less_than:
          [[ "<" -> "lt" ]];
-      
+
       sl_less_equal:
          [[ "<=" -> "le" ]];
-      
+
       sl_greater_than:
          [[ ">" -> "gt" ]];
-      
+
       sl_greater_equal:
          [[ ">=" -> "ge" ]];
-      
+
       sl_equal:
          [[ "=" -> "equal" ]];
-      
+
       sl_not_equal:
          [[ "<>" -> "nequal" ]];
-      
+
       sl_not:
          [[ "neg" -> "not" ]];
-      
+
       sl_or:
          [[ "or" -> "or" ]];
-      
+
       sl_and:
          [[ "and" -> "and"
            | "&" -> "and"
           ]];
-      
+
       sl_implies:
          [[ "=>" -> "implies" ]];
-      
+
       sl_all:
          [[ "all" -> "all" ]];
-      
+
       sl_exists:
          [[ "exst" -> "exists" ]];
-      
+
       sl_isect:
          [[ "isect" -> "isect" ]];
-      
+
       sl_quotient:
          [[ "quot" -> "quot" ]];
-      
+
 (*
       sl_bind:
          [[ "bind" -> "bind" ]];
@@ -877,7 +877,7 @@ struct
          [[ n = INT ->
              Num.num_of_string n
           ]];
-      
+
       (* Take a word or a string as an identifier *)
       word_or_string:
          [[ name = UIDENT ->
@@ -893,7 +893,7 @@ struct
            | s = UIDENT -> s
           ]];
    END
-   
+
    (* Implementation *)
    let mterm = mterm
    let quote_term = quote_term
@@ -907,6 +907,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.10  1998/06/01 13:53:24  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.9  1998/05/27 15:13:13  jyh
  * Functorized the refiner over the Term module.
  *

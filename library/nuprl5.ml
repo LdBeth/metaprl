@@ -69,5 +69,5 @@ let itoken_term s = mk_token_term nuprl5_opname s
 let inatural_term i = mk_number_term nuprl5_opname i
 *)
 
- 
+
 

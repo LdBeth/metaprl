@@ -29,7 +29,7 @@ let _ =
 
 
 (*************************************************************************
- * BUFFERS                                                               
+ * BUFFERS
  *************************************************************************)
 
 (*
@@ -166,7 +166,7 @@ let declare_rewrite buf
    let cname = print_term buf contractum in
       bprintf buf "(rewrite %s %s %s)\n" name rname cname;
       name
-   
+
 let declare_cond_rewrite buf
     { crw_name = name;
       crw_params = params;
@@ -440,6 +440,9 @@ let print_str out info =
 
 (*
  * $Log$
+ * Revision 1.5  1998/06/01 13:52:58  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.4  1998/05/27 15:12:45  jyh
  * Functorized the refiner over the Term module.
  *

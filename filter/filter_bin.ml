@@ -27,7 +27,7 @@ let _ =
  * Include directories.
  *)
 let include_path = ref ["."]
-   
+
 let add_include dir =
    include_path := !include_path @ [dir]
 
@@ -101,7 +101,7 @@ end
  * Extractors.
  *)
 module Extract = MakeExtract (Convert)
-                 
+
 (*
  * Caches.
  *)
@@ -138,7 +138,7 @@ end
 
 module SigCompile = MakeCompile (SigCompileInfo) (Cache.SigFilterCache)
 module StrCompile = MakeCompile (StrCompileInfo) (Cache.StrFilterCache)
-                    
+
 (*
  * Compile a file.
  *)
@@ -177,6 +177,9 @@ let _ = Printexc.catch main ()
 
 (*
  * $Log$
+ * Revision 1.9  1998/06/01 13:52:45  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.8  1998/05/28 13:46:09  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

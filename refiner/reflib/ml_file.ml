@@ -47,10 +47,10 @@ struct
          (* Definition *)
          ml_file : out_channel
       }
-   
+
    type name = string
    type out = unit
-   
+
    (* Creation *)
    let create name =
       let ml_name = name ^ ".ml" in
@@ -68,12 +68,12 @@ struct
 
          (* Return pointers *)
          { mli_file = ifile; ml_file = file }
-   
+
    (* Closing *)
    let close { ml_file = file; mli_file = ifile } =
       close_out file;
       close_out ifile
-   
+
    (* Printing *)
    let put { ml_file = file } s = output_string file s
    let puti { mli_file = ifile } s = output_string ifile s
@@ -88,7 +88,7 @@ struct
    type t = out_channel
    type name = string
    type out = unit
-   
+
    let create name = open_out name
    let close file = close_out file
    let puti _ _ = ()
@@ -104,6 +104,9 @@ module IOPrint = MakePrinter (IOFile)
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/01 13:54:54  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1998/05/28 15:00:49  jyh
  * Partitioned refiner into subdirectories.
  *

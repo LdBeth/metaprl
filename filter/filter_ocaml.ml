@@ -1167,14 +1167,14 @@ let mk_op_loc_name opname (start, finish) name =
    let p2 = make_param (Number finish) in
    let p3 = make_param (String name) in
       mk_op opname [p1; p2; p3]
-   
+
 (*
  * Make term with opname and location.
  *   opname[start:int; finish:int]{subterms}
  *)
 let mk_simple_term opname loc subterms =
    mk_any_term (mk_op_loc opname loc) subterms
-                          
+
 (*
  * This term also contains a name.
  *)
@@ -1340,7 +1340,7 @@ let rec mk_expr vars comment expr =
             raise_with_loc loc (Failure "Filter_ocaml.mk_expr vars: encountered an ExAnt")
    in
       comment loc term
-      
+
 and mk_patt vars comment patt tailf =
    let loc = loc_of_patt patt in
    let term =
@@ -1378,7 +1378,7 @@ and mk_patt vars comment patt tailf =
             raise_with_loc loc (Failure "Filter_ocaml:mk_patt: encountered PaAnt")
    in
       comment loc term
-      
+
 and mk_patt_triple vars comment loc op1 op2 op3 p1 p2 tailf =
    let tailf vars = mk_simple_term op3 loc [tailf vars] in
    let tailf vars = mk_simple_term op2 loc [mk_patt vars comment p2 tailf] in
@@ -1414,7 +1414,7 @@ and mk_patt_list vars comment loc op1 op2 op3 pl tailf =
             tailf vars
    in
       mk_simple_term op1 loc [make pl vars]
-      
+
 and mk_type comment t =
    let loc = loc_of_ctyp t in
    let term =
@@ -1450,7 +1450,7 @@ and mk_type comment t =
             mk_var type_uid_op [] loc s
    in
       comment loc term
-      
+
 and mk_sig_item comment si =
    let loc = loc_of_sig_item si in
    let term =
@@ -1475,7 +1475,7 @@ and mk_sig_item comment si =
             mk_simple_named_term sig_value_op loc s [mk_type comment t]
    in
       comment loc term
-      
+
 and mk_str_item comment si =
    let loc = loc_of_str_item si in
    let term =
@@ -1527,7 +1527,7 @@ and mk_module_type comment mt =
             mk_simple_term mt_type_with_op loc (mk_module_type comment mt :: List.map (mk_wc comment) wcl)
    in
       comment loc term
-      
+
 and mk_wc comment = function
    WcTyp (loc, sl1, sl2, t) ->
       let loc = num_of_loc loc in
@@ -1562,7 +1562,7 @@ and mk_module_expr comment me =
             mk_var me_uid_op [] loc i
    in
       comment loc term
-      
+
 and mk_class_type comment
   { ctLoc = loc;
     ctNam = s;
@@ -1642,7 +1642,7 @@ and mk_cf comment cf =
             loc, mk_simple_term cf_vir_op loc [mk_simple_string s; mk_type comment t]
    in
       comment loc term
-      
+
 (*
  * Make a fix expression.
  *)
@@ -1809,6 +1809,9 @@ let term_of_class = mk_class
 
 (*
  * $Log$
+ * Revision 1.15  1998/06/01 13:53:00  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.14  1998/05/27 15:12:48  jyh
  * Functorized the refiner over the Term module.
  *

@@ -2,7 +2,7 @@
  *	
  *	Compile test.ml : should only be called when library.cma is up-to-date
  * 	ocamlc -c test.ml
- * 
+ *
  *	Create test executable
  *	ocamlc -o test -custom -I ../../nuprl5/sys/io/mathbus unix.cma io.cma library.cma test.cmo -cclib -lunix
  *	
@@ -28,19 +28,19 @@ exception Test of string
 
 exception Testfailed of int
 
-(*  insert_leaf 
-    
+(*  insert_leaf
+
 *)
-let oiljgs connection = 
+let oiljgs connection =
 
   let cookie = ref "" in
   let lib = lib_new connection "testall" in
     (unwind_error
-      (function () -> 
+      (function () ->
 	(* test put *)
 	(with_transaction lib
 	   (function t ->
-	     let oid = make_root t "demo" in 
+	     let oid = make_root t "demo" in
 		insert_leaf t oid "test1" "TERM" (inatural_term 1))
 	; (leave lib)))
 
@@ -48,12 +48,12 @@ let oiljgs connection =
 
   let lib = join connection ["testall"] in
     (unwind_error
-      (function () -> 
+      (function () ->
 	(* test get *)
 	(with_transaction lib
 	   (function t ->
 		 (print_string "oiljgs 1"); (print_string (string_of_int (List.length (roots t))));
-		 let oid = root t "demo" in 
+		 let oid = root t "demo" in
 		   (print_string "oiljgs 2");
 		   (child t oid "test1"); (print_string "oiljgs 3");
 		
@@ -66,22 +66,22 @@ let oiljgs connection =
     print_endline "open insert leave join get successful.";
 
     !cookie
-	  
+	
 (* restore
    save
    oid_export
    oid_import
-*)   
-   
+*)
+
 
 let seri connection cookie =
   let lib = restore connection cookie (function t -> ()) in
 
-  let ex = ref "" 
+  let ex = ref ""
   and ncookie = ref "" in
-  
+
     (unwind_error
-      (function () -> 
+      (function () ->
 	(* test put *)
 	let oid = with_transaction lib
 		   (function t ->
@@ -94,7 +94,7 @@ let seri connection cookie =
     let oid = null_oref () in
     let nlib = restore connection !ncookie (function t -> oref_set oid (oid_import t !ex); ()) in
       (unwind_error
-	(function () -> 
+	(function () ->
 	   (with_transaction nlib
 	     (function t ->
 		   if not (1 = number_of_inatural_term (get_term t (oref_val oid)))
@@ -119,11 +119,11 @@ exception Pleasefail
 let ptest connection =
   let lib = join connection ["testall"] in
     (unwind_error
-      (function () -> 
+      (function () ->
 	(* test get *)
 	(with_transaction lib
 	 (function t ->
-	  let oid = root t "demo" in 
+	  let oid = root t "demo" in
 	   if not (1 = number_of_inatural_term (get_term t (child t oid "test1")))
 	        then (print_string "check"; raise (Test "check"))
 	   ; ()));
@@ -156,14 +156,14 @@ let ptest connection =
 		   then raise (Testfailed 7);
 
 		remove_property t noid "goo";
-                (let failp = ref false in 
+                (let failp = ref false in
 		  (try (get_property t noid "goo"); () with e -> failp := true);
 		  if (not !failp) then raise (Testfailed 8));
 
  		raise Pleasefail)))
 		
 	  with
-	    Pleasefail -> 
+	    Pleasefail ->
 	     (with_transaction lib
 	      (function t ->
 		(if not (3 = number_of_inatural_term (get_property t noid "foo"))
@@ -204,19 +204,19 @@ let ptest connection =
 (* make_directory
    insert
    make_leaf
-   directory_p   
+   directory_p
    deactivate activate
    roots root children child descendent
 *)
 let dtest connection =
   let lib = join connection ["testall"] in
     (unwind_error
-      (function () -> 
+      (function () ->
 	
 	(* test get *)
 	let doid = (with_transaction lib
 		   (function t ->
-			 let oid = root t "demo" in 
+			 let oid = root t "demo" in
 			   (let toid = make_directory t oid "test"
 	 		    and coid =  create t "TERM" (Some (inatural_term 1)) [] in
 			     insert t toid "test1" coid
@@ -275,7 +275,7 @@ let dtest connection =
 		delete_strong t toid;
 		try (get_term t toid; raise (Testfailed 23)) with e -> ()
 	    ));
-		  
+		
      (lib_close lib); ())
 
      (function () -> (lib_close lib)))
@@ -286,18 +286,18 @@ let dtest connection =
 
 
 let looptest connection =
-  let lib = join connection ["NuprlLight"] in 
+  let lib = join connection ["NuprlLight"] in
   (* let lib = join connection ["nltestl"] in  *)
     (unwind_error
-      (function () -> 
+      (function () ->
 
 	(with_transaction lib
-	   (function t -> 
+	   (function t ->
 		(eval t
 		 (null_ap (itext_term "\l. inform_message nil ``NuprlLight Loop Start`` nil")))))
 
 	; server_loop lib
-	; leave lib 
+	; leave lib
 	)
 
      (function () -> leave lib))
@@ -305,56 +305,56 @@ let looptest connection =
 
 
 let toptestloop libhost remote_port local_port =
- print_newline(); 
- print_newline(); 
+ print_newline();
+ print_newline();
  print_endline "TestLoop Called ";
 
   (let connection = connect libhost remote_port local_port in
 
     (unwind_error
-      (function () -> 
+      (function () ->
 	looptest connection
 	)
       (function () -> disconnect connection))
 
     ; disconnect connection)
 
- ; print_string "TestLoop DONE" 
+ ; print_string "TestLoop DONE"
  ; print_newline()
  ; print_newline()
 ;;
 
 let testascii libhost remote_port local_port =
- print_newline(); 
- print_newline(); 
+ print_newline();
+ print_newline();
  print_endline "TestAscii Called ";
 
   (let connection = connect libhost remote_port local_port in
 
     (unwind_error
-      (function () -> 
+      (function () ->
 	looptest connection
 	)
       (function () -> disconnect connection))
 
     ; disconnect connection)
 
- ; print_string "TestAscii DONE" 
+ ; print_string "TestAscii DONE"
  ; print_newline()
  ; print_newline()
 ;;
 
 
 let testall libhost remote_port local_port =
- print_newline(); 
- print_newline(); 
+ print_newline();
+ print_newline();
  print_endline "TestAll Called ";
 
   let cookie = ref "" in
   (let connection = connect libhost remote_port local_port in
 
     (unwind_error
-      (function () -> 
+      (function () ->
 	  cookie := oiljgs connection
         ; dtest connection
 	; cookie := seri connection !cookie
@@ -365,7 +365,7 @@ let testall libhost remote_port local_port =
 
     ; disconnect connection)
 
- ; print_string "TestAll DONE" 
+ ; print_string "TestAll DONE"
  ; print_newline()
  ; print_newline()
 ;;
@@ -375,10 +375,10 @@ let testall libhost remote_port local_port =
 
 
 
-let create_test lib = 
+let create_test lib =
    with_transaction lib
 	(function t ->
-	  create t "TERM" None []) 
+	  create t "TERM" None [])
 
 
 let put_get_test lib oid i =
@@ -392,11 +392,11 @@ let put_get_test lib oid i =
 	     & (i+1) = number_of_inatural_term (get_property t oid "foo"))
         then raise (Test "Failed")));
  oid
- 
+
 let demo lib =
  (with_transaction lib
    (function t -> let oid = make_root t "demo" in make_directory t oid "test"))
- 
+
 
 let activate_test lib oid =
  (with_transaction lib
@@ -431,7 +431,7 @@ let test remote_port local_port =
 
     disconnect connection);
 
- raise (Test "DONE") 
+ raise (Test "DONE")
 ;;
 
 
@@ -455,7 +455,7 @@ let demo_get_put_test lib =
 
 		  if not (i = 290)
 		     then raise (Test "Failed")
-		     else ())) 
+		     else ()))
   ; ()
 
 
@@ -480,7 +480,7 @@ let jointest remote_port local_port =
 
     disconnect connection);
 
- raise (Test "Join Test Successful") 
+ raise (Test "Join Test Successful")
 ;;
 
 open List
@@ -498,7 +498,7 @@ let faux_refine g t =
 
 special_error_handler (function () -> (library_open_and_loop_eval "lNuprlLight" faux_refine))
  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
- 
+
 
 (*
 special_error_handler (function () -> testascii "LOCKE" 5289 5289)
@@ -508,7 +508,7 @@ special_error_handler (function () -> testall "LOCKE" 5289 2895)
  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
 
-special_error_handler (function () -> 
+special_error_handler (function () ->
 			( Db.db_init "/usr/u/nuprl/nuprl5/NuPrlDBa" true	
 			; Mbterm.print_term (Db.session_string_to_term "l!l{1:n}ltvoid()t")
 			;()
@@ -516,7 +516,7 @@ special_error_handler (function () ->
  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
 
-special_error_handler (function () -> 
+special_error_handler (function () ->
 			( maybe_lib_open()
 			; Mbterm.print_term (Db.session_string_to_term "l!l{1:n}ltvoid()t")
 			;()))

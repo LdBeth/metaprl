@@ -22,7 +22,7 @@ let strchr s c =
             i
          else
             aux (i + 1)
-      else 
+      else
          raise Not_found
    in
       aux 0
@@ -143,6 +143,9 @@ let concat s l =
 
 (*
  * $Log$
+ * Revision 1.5  1998/06/01 13:54:42  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.4  1998/04/28 18:30:32  jyh
  * ls() works, adding display.
  *

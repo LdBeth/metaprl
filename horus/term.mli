@@ -3,6 +3,9 @@
  * This is the non-abstract definition.
  *
  * $Log$
+ * Revision 1.2  1998/06/01 13:53:32  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1997/08/06 16:17:44  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.
@@ -32,14 +35,14 @@ type param =
  | Token of string
  | Level of levelExp
  | Var of string
-   
+
    (* Meta-terms used for defining rewrites *)
  | MNumber of string
  | MString of string
  | MToken of string
  | MLevel of string
  | MVar of string
-   
+
    (* Num operations *)
  | MSum of param * param
  | MDiff of param * param

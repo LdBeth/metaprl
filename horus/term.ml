@@ -4,6 +4,9 @@
  * Destructors are identiy functions.
  *
  * $Log$
+ * Revision 1.2  1998/06/01 13:53:30  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1997/08/06 16:17:43  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.
@@ -35,14 +38,14 @@ type param =
  | Token of string
  | Level of levelExp
  | Var of string
-   
+
    (* Meta-terms used for defining rewrites *)
  | MNumber of string
  | MString of string
  | MToken of string
  | MLevel of string
  | MVar of string
-   
+
    (* Num operations *)
  | MSum of param * param
  | MDiff of param * param
@@ -128,7 +131,7 @@ let mk_simple_term name terms =
 let dest_simple_term = function
    ({ term_op = { op_name = name; op_params = [] };
       term_terms = bterms
-    } : term) as t -> 
+    } : term) as t ->
       let aux = function
          { bvars = []; bterm = t } -> t
        | _ -> raise (TermMatch t)
@@ -139,7 +142,7 @@ let dest_simple_term = function
 let dest_simple_term_opname name = function
    ({ term_op = { op_name = name'; op_params = [] };
       term_terms = bterms
-    } : term) as t -> 
+    } : term) as t ->
       if name = name' then
          let aux = function
             { bvars = []; bterm = t } -> t
@@ -169,7 +172,7 @@ let dest_dep0_term opname = function
      term_terms = [{ bvars = []; bterm = t }]
    } when opname' = opname -> t
  | t -> raise (TermMatch t);;
-   
+
 let one_subterm = function
    ({ term_terms = [{ bvars = []; bterm = t }]} : term) -> t
  | t -> raise (TermMatch t);;
@@ -196,7 +199,7 @@ let dest_dep0_dep0_term opname = function
                    { bvars = []; bterm = t2 }]
    } when opname' = opname -> t1, t2
  | t -> raise (TermMatch t);;
-   
+
 let two_subterms = function
    ({ term_terms = [{ bvars = []; bterm = a };
                     { bvars = []; bterm = b }]} : term) -> a, b
@@ -226,7 +229,7 @@ let dest_dep0_dep0_dep0_term opname = function
                    { bvars = []; bterm = t3 }]
    } when opname' = opname -> t1, t2, t3
  | t -> raise (TermMatch t);;
-   
+
 let three_subterms = function
    { term_terms = [{ bvars = []; bterm = a };
                    { bvars = []; bterm = b };
@@ -523,7 +526,7 @@ let mk_one_bsubterm opname = fun
 
 (************************************************************************
  * ZIP/UNZIP                                                            *
- ************************************************************************)        
+ ************************************************************************)
 
 (*
  * Unzipping means that we want to recursively destruct a
@@ -593,7 +596,7 @@ let zip_lassoc opname t =
       match t with
          [] -> raise (Invalid_argument "zip_lassoc")
        | hd::tl -> aux hd tl;;
-            
+
 let zip_dep_rassoc opname =
    let rec aux = function
       [] -> raise (Invalid_argument "zip_rassoc")
@@ -1018,7 +1021,7 @@ let remove_addr_prefix addr1 addr2 =
                   in
                      aux i path
          end
-         
+
     | Path path1 ->
          begin
             match addr2 with
@@ -1238,7 +1241,7 @@ let is_free_var v =
             free_vars_bterms bvars t
          else
             (free_vars_term (bvars' @ bvars) term) or (free_vars_bterms bvars t)
-            
+
     | [] -> false
    in
       free_vars_term [];;
@@ -1307,7 +1310,7 @@ let compare_level_exps = fun
             compare_lists compare_var vars1 vars2
       else
          c1 - c2;;
-         
+
 (*
  * This is an arbitrary comparison on parameters.
  *)
@@ -1513,7 +1516,7 @@ let equal_comp vars' =
          for_all2 equal_comp_bterm bterms1 bterms2
    in
        equal_comp_term;;
-   
+
 let alpha_equal_match (t, v) (t', v'', v''', terms) =
    try equal_comp (zip v''' v'') (zip v terms) (t, t') with
       Invalid_argument _ -> false;;
@@ -1654,12 +1657,12 @@ let var_subst t t' v =
             { term_op = { op_name = opname'; op_params = params };
               term_terms = List.map subst_bterm bterms
             }
-            
+
    and subst_bterm { bvars = vars; bterm = term } =
       { bvars = vars; bterm = subst_term term }
    in
       subst_term t;;
-                     
+
 (************************************************************************
  * UNIFICATION                                                          *
  ************************************************************************)
@@ -1712,7 +1715,7 @@ let rec unify_terms subst bvars = function
           | TermMatch _ ->
                raise (BadMatch (t1, t2))
       end
-         
+
  | t1, ({ term_op = { op_name = opname; op_params = [Var v] };
           term_terms = []
         } as t2)
@@ -1734,7 +1737,7 @@ let rec unify_terms subst bvars = function
           | TermMatch _ ->
                raise (BadMatch (t1, t2))
       end
-         
+
  | ({ term_op = { op_name = opname1; op_params = params1 };
       term_terms = bterms1
     } as t1),
@@ -1747,7 +1750,7 @@ let rec unify_terms subst bvars = function
             Invalid_argument _ -> raise (BadMatch (t1, t2))
       else
          raise (BadMatch (t1, t2))
-            
+
 and unify_bterms subst bvars = function
    ({ bvars = vars1; bterm = term1 }::tl1),
    ({ bvars = vars2; bterm = term2 }::tl2) ->
@@ -1823,7 +1826,7 @@ let concl_addr t =
     | _ -> raise (TermMatch t)
    in
       aux 0 (goal_of_sequent t);;
-   
+
 (*
  * Fast access to hyp and concl.
  *)
@@ -1973,7 +1976,7 @@ let rec normalize_term = function
                   };
         term_terms = List.map normalize_bterm bterms
       }
-      
+
 and normalize_bterm = function
    { bvars = vars; bterm = t } ->
       { bvars = vars; bterm = normalize_term t };;

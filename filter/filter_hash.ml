@@ -192,14 +192,14 @@ and hash_str_item index = function
  | (<:str_item< module $s$ = $me$ >>) ->
       hash_module_expr (hash_string (hash index 0x33459068) s) me
  | (<:str_item< module type $s$ = $mt$ >>) ->
-      hash_module_type (hash_string (hash index 0x249c92c6) s) mt 
+      hash_module_type (hash_string (hash index 0x249c92c6) s) mt
  | (<:str_item< open $sl$ >>) ->
       List.fold_left hash_string (hash index 0x048464b8) sl
  | (<:str_item< type $list:ssltl$ >>) ->
       List.fold_left hash_sslt (hash index 0x0c9046df) ssltl
  | (<:str_item< value $rec:b$ $list:pel$ >>) ->
       List.fold_left hash_pe (if b then 0x2715b1cb else 0x383ff901) pel
-    
+
 and hash_module_type index = function
    (<:module_type< $mt1$ . $mt2$ >>) ->
       hash_module_type (hash_module_type (hash index 0x622529ad) mt2) mt1
@@ -342,6 +342,9 @@ and hash_sslt index (s, sl, t) =
 
 (*
  * $Log$
+ * Revision 1.8  1998/06/01 13:52:56  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.7  1998/04/24 19:38:20  jyh
  * Updated debugging.
  *

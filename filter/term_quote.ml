@@ -30,7 +30,7 @@ struct
          Opname.mk_opname op (mk_opname t)
     | [] ->
          Opname.nil_opname
-   
+
    (*
     * Term grammar.
     *)
@@ -62,6 +62,9 @@ let _ = Quotation.default := "term"
 
 (*
  * $Log$
+ * Revision 1.4  1998/06/01 13:53:26  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.3  1998/04/24 19:38:44  jyh
  * Updated debugging.
  *

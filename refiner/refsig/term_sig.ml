@@ -130,15 +130,15 @@ sig
    val dest_var : term -> string
    val mk_var_term : string -> term
    val mk_var_op : string -> operator
-   
+
    val is_so_var_term : term -> bool
    val dest_so_var : term -> string * term list
    val mk_so_var_term : string -> term list -> term
-   
+
    val is_context_term : term -> bool
    val dest_context : term -> string * term * term list
    val mk_context_term : string -> term -> term list -> term
-   
+
    (*
     * Simple terms have no paramaters and
     * all subterms have no binding vars.
@@ -152,6 +152,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/01 13:55:17  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1998/05/28 15:01:51  jyh
  * Partitioned refiner into subdirectories.
  *

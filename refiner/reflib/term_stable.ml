@@ -2,6 +2,9 @@
  * This is a simplified version of termTable.
  *
  * $Log$
+ * Revision 1.2  1998/06/01 13:55:05  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1998/05/28 15:01:20  jyh
  * Partitioned refiner into subdirectories.
  *
@@ -180,7 +183,7 @@ let rec insert_data data1 = function
          match h with
             name, tac ->
                begin
-                  try 
+                  try
                      List.assq name data1;
                      insert_data data1 t
                   with
@@ -188,9 +191,9 @@ let rec insert_data data1 = function
                         insert_data (h :: data1) t
                end
       end
-      
+
  | [] -> data1
-            
+
 (*
  * Join the data from two bases.
  * First check if one is a suffix of the other.

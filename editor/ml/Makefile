@@ -7,10 +7,10 @@ INCLUDE = -I .\
 	-I $(ROOT)/theories/tactic\
 	-I $(ROOT)/theories/ocaml\
 	-I $(ROOT)/theories/base\
+	-I $(ROOT)/theories/itt\
 	-I $(ROOT)/lib\
 	-I $(CAMLP4LIB)
 
-OCAMLFLAGS := -v
 OCAMLDEPFLAGS := -prl
 
 # Common files
@@ -49,7 +49,6 @@ CMXDEPS =\
 	$(ROOT)/lib/util.cmxa\
 	$(ROOT)/lib/refiner.cmxa\
 	$(ROOT)/lib/library.cmxa\
-	$(ROOT)/lib/refiner.cmxa\
 	$(ROOT)/lib/prlc.cmxa\
 	$(ROOT)/theories/tactic/tactics.cmxa\
 	$(ROOT)/theories/ocaml/ocaml_df.cmxa\
@@ -69,11 +68,13 @@ CMADEPS =\
 	$(ROOT)/lib/util.cma\
 	$(ROOT)/lib/refiner.cma\
 	$(ROOT)/lib/library.cma\
-	$(ROOT)/lib/refiner.cma\
 	$(ROOT)/lib/prlc.cma\
 	$(ROOT)/theories/tactic/tactics.cma\
 	$(ROOT)/theories/ocaml/ocaml_df.cma\
 	$(ROOT)/theories/base/base.cma\
+	$(ROOT)/theories/itt/itt.cma\
+	$(CAMLP4LIB)/pa_o.cmo\
+	$(CAMLP4LIB)/pa_op.cmo\
 	$(MAIN).cma
 
 CMALIBS =\
@@ -81,8 +82,6 @@ CMALIBS =\
 
 CMOBJS =\
 	$(CMALIBS)\
-	$(CAMLP4LIB)/pa_o.cmo\
-	$(CAMLP4LIB)/pa_op.cmo\
 	nl.cmo
 
 CCLIBS =\

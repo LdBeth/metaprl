@@ -14,7 +14,7 @@ open Filter_summary_type
 type select_type =
    InterfaceType
  | ImplementationType
-   
+
 (*
  * Proofs are:
  *   1. primitive terms,
@@ -56,7 +56,7 @@ sig
       with type str_expr   = MLast.expr
       with type str_item   = MLast.sig_item
       with type select     = select_type
-      
+
    module StrFilterCache :
       SummaryCacheSig
       with type sig_proof  = unit
@@ -72,6 +72,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.11  1998/06/01 13:52:49  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.10  1998/05/28 13:46:13  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

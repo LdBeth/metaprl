@@ -17,7 +17,7 @@ open Num
 
   val make_scanner	: string (* escape *) -> string (* whitespace *) -> char t -> scanner
 
-  (* 
+  (*
    *	scan_next : advances scanner.
    *	scan_bump : advances scanner to next byte.
    *
@@ -30,8 +30,8 @@ open Num
   val scan_at_eof_p	: scanner -> bool
 
 
-  (* twould be better if scanner were last arg in following funcs to allow for 
-     partial ap without lambdas 
+  (* twould be better if scanner were last arg in following funcs to allow for
+     partial ap without lambdas
      EG: let scan_lparen = scan_char '(
      not let scan_lparen s = scan_char s '('
    *)

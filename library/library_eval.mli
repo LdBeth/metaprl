@@ -11,7 +11,7 @@ open Refiner.Refiner.Term
  *	rhook : (term (*goal*) -> term (*tactic*) -> term list(*subgoals*) )
  *	
  *	Any catchable errors thrown by the rhook will be coerced to a term and returned
- *	to caller. The coercion will result in readable errors being returned to the 
+ *	to caller. The coercion will result in readable errors being returned to the
  *	proof editro if the library Basic.error function is used.
  *	
  *)	

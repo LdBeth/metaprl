@@ -2,23 +2,19 @@
  * Display all the elements in a particular theory.
  *)
 
-include Base_theory
+include Itt_theory
 
-include Package_info
+declare guard{'a}
 
-declare lambda{x. 'b['x]}
-declare apply{'f; 'a}
+primrw fold : 'a <--> guard{'a}
 
-dform lambda_df : lambda{x. 'b} =
-   Nuprl_font!lambda slot{'x} `"." slot{'b}
-
-dform apply_df : apply{'f; 'a} =
-   slot{'f} hspace slot{'a}
-
-primrw beta : apply{lambda{x. 'b['x]}; 'a} <--> 'b['a]
+primrw test : apply{.Itt_rfun!lambda{x. 'x +@ 'x}; 1} <--> 2
 
 (*
  * $Log$
+ * Revision 1.6  1998/06/01 13:52:36  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.5  1998/05/04 23:46:08  jyh
  * Most display forms now work.
  *

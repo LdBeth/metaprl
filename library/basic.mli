@@ -1,4 +1,4 @@
- 
+
 open Refiner.Refiner.Term
 open Opname
 open Num
@@ -42,7 +42,7 @@ val dest_num_param		: param -> num
 (* throws Exception Nuprl5 of Term *)
 val error		: string list -> object_id list -> term list -> 'a
 
-(* catches Exception Nuprl5 of Term *) 
+(* catches Exception Nuprl5 of Term *)
 val error_handler	: (unit -> 'b) -> (term -> 'b) -> 'b
 
 val unconditional_error_handler : (unit -> 'b) -> (term -> 'b) -> 'b
@@ -68,7 +68,7 @@ val dest_stamp		: stamp -> stamp
 val term_to_stamp	: term -> stamp
 val stamp_to_term	: stamp -> term
 val stamp_to_object_id	: stamp -> object_id
- 
+
 val equal_stamps_p	: stamp -> stamp ->  bool
 
 (* (in_transaction_p a b) = true <-> (in_transaction_p b a = true) *)

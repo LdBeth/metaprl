@@ -172,7 +172,7 @@ let squash_default =
 let subtype_default =
    let fail_expr = fail_expr "subtype tactic is not implemented" in
       wild_fun_expr fail_expr
-   
+
 (*
  * After the entire module has been evaluated,
  * build a tactic_argument, and eval the following:
@@ -253,7 +253,7 @@ struct
     * The type of proofs.
     *)
    type t = proof_info ref
-   
+
    (*
     * Get a raw proof from the proof.
     *)
@@ -263,14 +263,14 @@ struct
             proof
        | ProofEdit ped ->
             Proof.io_proof_of_proof (Proof_edit.proof_of_ped ped)
-    
+
    (*
     * Convert the proof to a term.
     * We just save the io representation.
     *)
    let to_term _ proof =
       term_of_proof (raw_proof proof)
-   
+
    (*
     * Convert back to a proof.
     *)
@@ -300,7 +300,7 @@ module Extract = MakeExtract (Convert)
  * Build the cache from the converter.
  *)
 module Cache = MakeCaches (Convert)
-               
+
 (*
  * Now build the package.
  *)
@@ -318,7 +318,7 @@ struct
         pack_tactics : (string * ((string * tactic) array)) list;
         pack_arg : tactic_argument
       }
-   
+
    (*
     * Built from a filter cache.
     *)
@@ -327,12 +327,12 @@ struct
         pack_dag : package ImpDag.t;
         mutable pack_packages : package ImpDag.node list
       }
-   
+
    (*
     * Proof is either in raw form, or it is editable.
     *)
    type proof = proof_info ref
-   
+
    (*
     * Create the cache.
     * Add placeholders for all the theories.
@@ -370,7 +370,7 @@ struct
            pack_dag = dag;
            pack_packages = List.map add_theory (get_theories ())
          }
-   
+
    (*
     * See if a theory is already loaded.
     *)
@@ -385,7 +385,7 @@ struct
             false
       in
          search (get_theories ())
-   
+
    (*
     * Get a theory by name.
     *)
@@ -400,7 +400,7 @@ struct
             raise Not_found
       in
          search (get_theories ())
-   
+
    (*
     * Get the refiner.
     *)
@@ -412,13 +412,13 @@ struct
     *)
    let dforms { pack_name = name } =
       (get_theory name).thy_dformer
-   
+
    (*
     * Get the name of the package.
     *)
    let name { pack_name = name } =
       name
-   
+
    (*
     * Get the filename for the package.
     *)
@@ -427,13 +427,13 @@ struct
          Cache.StrFilterCache.filename pack.pack_cache info
     | { pack_info = None } ->
          raise (Failure "Package_info.filename: package is not loaded")
-   
+
    (*
     * Get the status of the package.
     *)
    let status { pack_status = status } =
       status
-   
+
    (*
     * Set the status of the package.
     *)
@@ -448,7 +448,7 @@ struct
          Cache.StrFilterCache.info info
     | { pack_info = None; pack_name = name } ->
          raise (NotLoaded name)
-   
+
    let sig_info = function
       { pack_sig = Some info } ->
          info
@@ -458,7 +458,7 @@ struct
             info
     | { pack_sig = None; pack_info = None; pack_name = name } ->
          raise (NotLoaded name)
-   
+
    let find info name =
       match info with
          { pack_info = Some info } ->
@@ -484,7 +484,7 @@ struct
 
    let packages { pack_dag = dag; pack_packages = packages } =
       List.map (ImpDag.node_value dag) packages
-   
+
    let roots { pack_dag = dag } =
       List.map (ImpDag.node_value dag) (ImpDag.roots dag)
 
@@ -492,7 +492,7 @@ struct
       let { pack_dag = dag } = pack in
       let node = get_node pack info in
          List.map (ImpDag.node_value dag) (ImpDag.node_out_edges dag node)
-   
+
    let children pack info =
       let { pack_dag = dag } = pack in
       let node = get_node pack info in
@@ -569,7 +569,7 @@ struct
       in
          pack.pack_packages <- node :: (remove packages);
          List.iter (insert_parent pack node) parents
-   
+
    (*
     * Add a signature package.
     * It adds the package, and creates
@@ -638,13 +638,13 @@ struct
             collect resources [] (get_resources info)
       in
          List.iter add_resource nresources';
-         
+
          (* Add all the infix words *)
          List.iter add_infix (get_infixes info);
-         
+
          (* Add this node to the pack *)
          maybe_add_package pack path info;
-         
+
          (* Add the path to the list of parents *)
          path :: paths, nresources
 
@@ -687,13 +687,13 @@ struct
       in
          add_implementation pack info;
          info
-   
+
    (*
     * tactic_argument for the package.
     *)
    let argument { pack_arg = arg } =
       arg
-   
+
    (*
     * Convert a proof on demand.
     *)
@@ -781,6 +781,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.12  1998/06/01 13:52:13  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.11  1998/05/29 14:52:47  jyh
  * Better Makefiles.
  *

@@ -69,7 +69,7 @@ sig
    val to_term : string -> t -> term
    val of_term : string -> term -> t
 end
-   
+
 (************************************************************************
  * CONFIG                                                               *
  ************************************************************************)
@@ -192,7 +192,7 @@ struct
    type select = select_type
    type raw    = term
    type cooked = Convert.t summary_type
-   
+
    let select   = InterfaceType
    let suffix   = "cmit"
    let magic    = 0x73ac6be1
@@ -232,7 +232,7 @@ struct
    type select  = select_type
    type raw     = (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
    type cooked  = Convert.t summary_type
-   
+
    let select   = InterfaceType
    let suffix   = "cmiz"
    let magic    = 0x73ac6be2
@@ -255,12 +255,12 @@ struct
    type select = select_type
    type raw    = term
    type cooked = Convert.t summary_type
-   
+
    let select   = ImplementationType
    let suffix   = "cmot"
    let magic    = 0x73ac6be3
    let disabled = nofile
-   
+
    let marshal = function
       Implementation info ->
          let convert =
@@ -295,7 +295,7 @@ struct
    type select  = select_type
    type raw     = (Convert.t proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
    type cooked  = Convert.t summary_type
-   
+
    let select   = ImplementationType
    let suffix   = "cmoz"
    let magic    = 0x73ac6be4
@@ -318,7 +318,7 @@ struct
    type select  = select_type
    type raw     = term
    type cooked  = Convert.t summary_type
-   
+
    let select   = InterfaceType
    let suffix   = "cmit"
    let magic    = 0x73ac6be5
@@ -357,7 +357,7 @@ struct
    type select  = select_type
    type raw     = term
    type cooked  = Convert.t summary_type
-   
+
    let select   = ImplementationType
    let suffix   = "cmot"
    let magic    = 0x73ac6be6
@@ -488,6 +488,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.22  1998/06/01 13:52:47  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.21  1998/05/28 13:46:11  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

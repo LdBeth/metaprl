@@ -311,7 +311,7 @@ let compute_dtree table =
          Ref_util.push info entries
    in
    let _ = List.iter insert_entry (collect_entries table) in
-   
+
    (* Compile the hastable into a collection of programs *)
    let base' = Hashtbl.create 97 in
    let compile_entries template entries =
@@ -447,6 +447,9 @@ let lookup table t =
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/01 13:55:07  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1998/05/28 15:01:23  jyh
  * Partitioned refiner into subdirectories.
  *

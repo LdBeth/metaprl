@@ -12,7 +12,7 @@ val is_digit : char -> bool
 (* Capital letter *)
 val is_upperchar : char -> bool
 val is_lowerchar : char -> bool
-    
+
 (* String operations *)
 val is_capitalized : string -> bool
 val is_uppercase : string -> bool
@@ -20,6 +20,9 @@ val is_lowercase : string -> bool
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/01 13:54:29  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1997/08/06 16:17:51  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

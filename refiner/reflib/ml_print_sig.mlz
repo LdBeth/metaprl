@@ -12,17 +12,17 @@ module type FileSig =
 sig
    (* File type *)
    type t
-   
+
    (* Input type *)
    type name
-   
+
    (* Output type *)
    type out
-   
+
    (* Creation *)
    val create : name -> t
    val close : t -> unit
-   
+
    (* Output operations *)
    val puti : t -> string -> unit
    val put : t -> string -> unit
@@ -36,7 +36,7 @@ module type PrinterSig =
 sig
    (* File type *)
    type t
-   
+
    (* Printers *)
    val print_term : t -> term -> unit
    val print_named_term : t -> string -> term -> unit
@@ -46,6 +46,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/01 13:54:59  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1998/05/28 15:00:59  jyh
  * Partitioned refiner into subdirectories.
  *

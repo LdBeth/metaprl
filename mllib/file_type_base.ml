@@ -14,7 +14,7 @@ open File_base_type
 let _ =
    if !debug_load then
       eprintf "Loading File_type_base%t" eflush
-         
+
 (************************************************************************
  * TYPES                                                                *
  ************************************************************************)
@@ -44,10 +44,10 @@ struct
 
    let marshal magic filename info =
       IO.write magic filename (Info.marshal info)
-   
+
    let unmarshal magic filename =
       Info.unmarshal (IO.read magic filename)
-   
+
    let info =
       [{ info_marshal = marshal;
          info_unmarshal = unmarshal;
@@ -119,7 +119,7 @@ struct
    type select = Types.select
    type cooked = Types.cooked
    type info = (select, cooked) common_info
-      
+
    let info = Info.info @ Combo.info
 end
 
@@ -155,6 +155,9 @@ module MakeFileBase (Types : FileTypeSummarySig)
 
 (*
  * $Log$
+ * Revision 1.7  1998/06/01 13:54:37  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.6  1998/04/24 19:38:53  jyh
  * Updated debugging.
  *

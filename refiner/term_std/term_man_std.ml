@@ -208,7 +208,8 @@ struct
         term_terms = { bvars = []; bterm = t }::_
       } when name == sequent_opname ->
          t
-    | t -> raise (TermMatch ("goal_of_sequent", t, ""))
+    | t ->
+         raise (TermMatch ("goal_of_sequent", t, ""))
 
    let null_concl = mk_simple_term concl_opname []
 
@@ -354,7 +355,8 @@ struct
                  term_terms = [{ bvars = []; bterm = _ }; { bvars = [_]; bterm = term }]
                } when opname == hyp_opname ->
                   aux (i - 1) term
-             | _ -> raise (Invalid_argument "is_free_seq_var")
+             | _ ->
+                  raise (Invalid_argument "is_free_seq_var")
       in
          aux i (goal_of_sequent t)
 
@@ -367,13 +369,20 @@ struct
            term_terms = [{ bvars = []; bterm = t1 }; { bvars = v1; bterm = t2 }]
          } when opname == hyp_opname ->
             { term_op = { op_name = hyp_opname; op_params = [] };
-              term_terms = [{ bvars = []; bterm = t1 }; { bvars = v1; bterm = replace_concl t2 goal }]
+              term_terms = [{ bvars = []; bterm = t1 };
+                            { bvars = v1; bterm = replace_concl t2 goal }]
+            }
+       | { term_op = { op_name = opname; op_params = params };
+           term_terms = [{ bvars = []; bterm = t1 }]
+         } ->
+            { term_op = { op_name = opname; op_params = params };
+              term_terms = [{ bvars = []; bterm = replace_concl t1 goal }]
             }
        | _ ->
             goal
 
    let replace_goal seq goal =
-      replace_concl (mk_concl_term goal null_concl) seq
+      replace_concl seq (mk_concl_term goal null_concl)
 
    (************************************************************************
     * Rewrite rules                                                        *
@@ -396,6 +405,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.4  1998/06/01 13:55:30  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.3  1998/05/30 19:18:47  nogin
  * Eliminated white space in empty lines.
  *

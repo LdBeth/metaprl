@@ -41,7 +41,7 @@ let create i =
   if (i > 0xFFFF) then raise (IntSize ("create", i))
   else (0, i)
 
-let mk_bint i = 
+let mk_bint i =
   let a = abs i in let b = ((a asr 16) land 0xFFFF) and c = (a land 0xFFFF) in
   if i >= 0 then (b, c) else (-b, c)
 let make_bigint (i, k) =
@@ -60,7 +60,7 @@ let lbsl (x, w) n =
   let a = abs (w lsl n) and b = abs ((x lsl n) land 0xFFFF) in
   if a <= 0xFFFF then (b, a)
   else ((b lor (a lsr 16)), (a land 0xFFFF)) ;;
-	 
+	
 let lbsl (x, w) n =
   let rec aux i y z=
     (if i = n then (y, z)
@@ -96,4 +96,4 @@ let print_bigint b =
   print_int c; print_char ')'
 	
 
- 
+

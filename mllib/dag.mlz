@@ -2,6 +2,9 @@
  * Imperative DAGs.
  *
  * $Log$
+ * Revision 1.3  1998/06/01 13:54:30  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.2  1998/04/17 01:31:14  jyh
  * Editor is almost constructed.
  *
@@ -38,26 +41,26 @@ sig
    (* Abstract types *)
    type 'a t
    type 'a node
-   
+
    (* Constructors *)
    val create : unit -> 'a t
    val insert : 'a t -> 'a -> 'a node
    val delete : 'a t -> 'a node -> unit
    val add_edge : 'a t -> 'a node -> 'a node -> unit
    val equate : 'a t -> 'a node -> 'a node -> unit
-   
+
    (* Graph operations *)
    val roots : 'a t -> 'a node list
    val node_value : 'a t -> 'a node -> 'a
    val node_out_edges : 'a t -> 'a node -> 'a node list
    val node_in_edges : 'a t -> 'a node -> 'a node list
-   
+
    (*
     * Compute relation between two nodes.
     * Roots are smaller.
     *)
    val node_rel : 'a t -> 'a node -> 'a node -> relation
-   
+
    (*
     * Mappers.
     * Sweep_up maps a function up the DAG, calling on the leaves first;

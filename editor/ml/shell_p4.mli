@@ -22,7 +22,15 @@ val set_mk_opname : (string list -> opname) option -> unit
 val print_term : term -> unit
 
 (*
+ * Get the tactic for the last refinement.
+ *)
+val get_tactic : unit -> string * MLast.expr
+
+(*
  * $Log$
+ * Revision 1.4  1998/06/01 13:52:32  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.3  1998/05/28 13:46:01  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

@@ -84,7 +84,8 @@ struct
          Path addr ->
             begin
                let rec aux t = function
-                  [] -> f t
+                  [] ->
+                     f t
                 | i::tl ->
                      match t with
                         { term_op = op; term_terms = bterms } ->
@@ -97,7 +98,9 @@ struct
                            }
                in
                   try aux term addr with
-                     Not_found -> raise (IncorrectAddress (a, term))
+                     Not_found
+                   | Failure "replacef_nth" ->
+                        raise (IncorrectAddress (a, term))
             end
        | NthPath (addr, flag) ->
             begin
@@ -226,6 +229,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.3  1998/06/01 13:55:28  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.2  1998/05/30 19:18:46  nogin
  * Eliminated white space in empty lines.
  *

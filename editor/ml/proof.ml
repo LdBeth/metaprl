@@ -317,7 +317,7 @@ let parent { pf_root = root; pf_address = addr } =
  *)
 let main { pf_root = root } =
    { pf_root = root; pf_address = []; pf_node = root }
-   
+
 (*
  * Address relative to the main goal.
  *)
@@ -522,7 +522,7 @@ let join_ordered_children =
    in
    let join subgoals children = join_common (subgoals, children) in
       join
-   
+
 (*
  * Try permutations, where matching is equality.
  * NOTE: may later upgrade this to alpha-equality, or
@@ -539,7 +539,7 @@ let join_permuted_children subgoals children =
    in
    let indices1 = List.map make_index1 subgoals in
    let indices2 = List.map make_index2 children in
-      
+
    (* Cross reference index1 to index2 *)
    let find_match index subgoal =
       let rec find = function
@@ -924,7 +924,7 @@ and io_node_of_item = function
       Io_proof_type.ProofStep (Proof_step.io_step_of_step step)
  | Node node ->
       Io_proof_type.ProofNode (io_proof_of_node node)
-      
+
 and io_proof_of_node
     { node_status = status;
       node_item = item;
@@ -1002,6 +1002,9 @@ let proof_of_io_proof arg tacs pf =
 
 (*
  * $Log$
+ * Revision 1.10  1998/06/01 13:52:19  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.9  1998/05/28 13:45:46  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

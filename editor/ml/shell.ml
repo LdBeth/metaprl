@@ -55,7 +55,7 @@ type shellInfo =
       mutable dir : string list;
       mutable package : Package.package option;
       mutable proof : edit_object;
-   
+
       (* All loaded modules *)
       packages : Package.t
    }
@@ -68,7 +68,7 @@ type shellInfo =
  * -I <dir>
  *)
 let includes = ref []
-    
+
 let add_include dir =
    includes := !includes @ [dir]
 
@@ -86,7 +86,7 @@ let spec =
 
 let _ =
    Arg.current := 0;
-   Env_arg.parse spec handle_anon_arg "Nuprl-Light toploop" 
+   Env_arg.parse spec handle_anon_arg "Nuprl-Light toploop"
 
 (************************************************************************
  * INITIAL BASE                                                         *
@@ -176,62 +176,18 @@ let rec string_of_path = function
       ""
 
 (*
- * Display the current proof.
+ * Update the current item being edited.
  *)
-let display_proof () =
-   (* Get the package and item *)
-   let mod_info = get_current_package info in
-   let edit = info.proof in
-   let dformer = Package.dforms mod_info in
-   let modname = Package.name mod_info in
-   let buf = new_buffer () in
-   let db = get_mode_base dformer info.df_mode in
-      edit.edit_format db buf;
-      print_to_channel info.width buf stdout;
-      flush stdout
-
-(*
- * Display the "root" directory.
- * This is just a list of the "important" packages.
- *)
-let view_packages () =
-   let buf = new_buffer () in
-      format_packages buf info.packages;
-      format_newline buf;
-      output_string stdout "\n--+--modules--+--\nModule listing dir: modules; path: /\n--\n";
-      print_to_channel info.width buf stdout;
-      output_string stdout "--+--modules--+--\n";
-      flush stdout
-
-(*
- * Display a particular package.
- *)
-let view_package name =
-   let pack = Package.get info.packages name in
-   let buf = new_buffer () in
-      format_implementation info.df_mode buf pack;
-      printf "\n--+--theory--+--\nTheory listing for package: %s; path: /%s\n" name name;
-      print_to_channel info.width buf stdout;
-      output_string stdout "--+--theory--+--\n";
-      flush stdout
-
-(*
- * View an item in a package.
- *)
-let view_item modname name =
-   (* Get the package and item *)
+let set_item modname name =
    let _ = eprintf "View item %s.%s%t" modname name eflush in
    let pack = Package.get info.packages modname in
-   let buf = new_buffer () in
-   let mod_info = get_current_package info in
-   let db = get_mode_base (Package.dforms mod_info) info.df_mode in
    let item =
       try Package.find pack name with
          Not_found ->
             eprintf "Item '%s.%s' not found%t" modname name eflush;
             raise Not_found
    in
-   let info =
+   let item =
       match item with
          Rewrite rw ->
             Shell_rewrite.view_rw pack rw
@@ -284,7 +240,60 @@ let view_item modname name =
             eprintf "Editing magic block '%s.%s' not implemented%t" modname name eflush;
             raise (Failure "view")
    in
-      ()
+      info.proof <- item
+
+(*
+ * Display the current proof.
+ *)
+let display_proof () =
+   (* Get the package and item *)
+   let mod_info = get_current_package info in
+   let edit = info.proof in
+   let dformer = Package.dforms mod_info in
+   let modname = Package.name mod_info in
+   let buf = new_buffer () in
+   let db = get_mode_base dformer info.df_mode in
+      edit.edit_format db buf;
+      print_to_channel info.width buf stdout;
+      flush stdout
+
+(*
+ * Display the "root" directory.
+ * This is just a list of the "important" packages.
+ *)
+let view_packages () =
+   let buf = new_buffer () in
+      format_packages buf info.packages;
+      format_newline buf;
+      output_string stdout "\n--+--modules--+--\nModule listing dir: modules; path: /\n--\n";
+      print_to_channel info.width buf stdout;
+      output_string stdout "--+--modules--+--\n";
+      flush stdout
+
+(*
+ * Display a particular package.
+ *)
+let view_package name =
+   let pack = Package.get info.packages name in
+   let buf = new_buffer () in
+      format_implementation info.df_mode buf pack;
+      printf "\n--+--theory--+--\nTheory listing for package: %s; path: /%s\n" name name;
+      print_to_channel info.width buf stdout;
+      output_string stdout "--+--theory--+--\n";
+      flush stdout
+
+(*
+ * View an item in a package.
+ *)
+let view_item modname name =
+   (* Get the package and item *)
+   let _ = eprintf "View item %s.%s%t" modname name eflush in
+   let buf = new_buffer () in
+   let mod_info = get_current_package info in
+   let db = get_mode_base (Package.dforms mod_info) info.df_mode in
+      info.proof.edit_format db buf;
+      print_to_channel info.width buf stdout;
+      flush stdout
 
 (*
  * General purpose displayer.
@@ -318,7 +327,7 @@ let pwd () =
       [h] ->
          h
     | h::t ->
-         h ^ "/" ^ (aux t)
+         h ^ "." ^ (aux t)
     | [] ->
          ""
    in
@@ -332,11 +341,21 @@ let cd name =
       info.dir <- dir;
       begin
          match dir with
-            modname::_ ->
+            modname :: name ->
                let pkg = Package.get info.packages modname in
                   info.package <- Some pkg;
                   Shell_p4.set_df (Some (get_db null_mode_base));
-                  Shell_p4.set_mk_opname (Some (Package.mk_opname pkg))
+                  Shell_p4.set_mk_opname (Some (Package.mk_opname pkg));
+                  begin
+                     match name with
+                        [name] ->
+                           set_item modname name
+                      | [] ->
+                           info.proof <- Shell_null.null_object
+                      | _ ->
+                           eprintf "Recursive modules not implemented%t" eflush;
+                           raise (Failure "cd")
+                  end
           | [] ->
                info.package <- None;
                Shell_p4.set_df None;
@@ -411,7 +430,7 @@ let save_all () =
          List.iter save (Package.packages info.packages)
    in
       print_exn save_all ()
-         
+
 (************************************************************************
  * OBJECTS                                                              *
  ************************************************************************)
@@ -564,7 +583,8 @@ let down i =
    in
       print_exn set i
 
-let refine str ast tac =
+let refine tac =
+   let str, ast = Shell_p4.get_tactic () in
    let set (str, ast, tac) =
       info.proof.edit_refine str ast tac;
       display_proof ()
@@ -623,6 +643,9 @@ let init () =
 (*
  *
  * $Log$
+ * Revision 1.12  1998/06/01 13:52:26  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.11  1998/05/29 14:52:51  jyh
  * Better Makefiles.
  *

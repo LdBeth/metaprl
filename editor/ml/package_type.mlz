@@ -45,22 +45,22 @@ sig
     * This is the database type.
     *)
    type t
-   
+
    (*
     * This is the type of a package.
     *)
    type package
-   
+
    (*
     * Proofs are abstract.
     *)
    type proof
-   
+
    (*
     * Create a database.  The argument is the search path.
     *)
    val create : string list -> t
-   
+
    (*
     * Filesystem interface.
     * Loaded packages are initially read-only.
@@ -77,7 +77,7 @@ sig
    val dforms   : package -> dform_mode_base
    val name     : package -> string
    val filename : t -> package -> string
-   
+
    (*
     * Navigation.
     *)
@@ -85,34 +85,37 @@ sig
    val roots : t -> package list
    val parents : t -> package -> package list
    val children : t -> package -> package list
-   
+
    (*
     * Access to the status.
     *)
    val status  : package -> status
    val set_status : package -> status -> unit
-   
+
    (*
     * Access to the cache.
     *)
    val mk_opname : package -> string list -> opname
-   
+
    (*
     * Collection of objects in the module.
     *)
    val info : package -> (proof proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
    val sig_info : package -> (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
    val find : package -> string -> (proof proof_type, MLast.ctyp, MLast.expr, MLast.str_item) summary_item
-   
+
    (*
     * This is the starting info for new proofs.
     *)
    val argument : package -> tactic_argument
    val ped_of_proof : package -> proof -> Proof_edit.t
 end
-   
+
 (*
  * $Log$
+ * Revision 1.9  1998/06/01 13:52:18  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.8  1998/05/29 14:52:49  jyh
  * Better Makefiles.
  *

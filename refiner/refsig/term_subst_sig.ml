@@ -6,16 +6,16 @@ module type TermSubstSig =
 sig
    type term
    type param
-   
+
    (*
     * Substitution, matching, unification.
     *)
    type term_subst = (string * term) list
-   
+
    (************************************************************************
     * Operations                                                           *
     ************************************************************************)
-   
+
    (*
     * Term operations.
     * subst: simultaneous subst of terms for vars.
@@ -54,6 +54,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/01 13:55:19  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1998/05/28 15:01:53  jyh
  * Partitioned refiner into subdirectories.
  *

@@ -42,7 +42,7 @@ struct
    type operator = Term.operator
    type bound_term = Term.bound_term
    type address = TermAddr.address
-   
+
    (************************************************************************
     * Rewrites
     ************************************************************************)
@@ -787,7 +787,12 @@ struct
               RWComposite { rw_op = { rw_name = name'; rw_params = params' }; rw_bterms = bterms' } ->
                  let { term_op = op; term_terms = bterms } = dest_term t in
                  let { op_name = name; op_params = params } = dest_op op in
-                    if name = name' then
+                    if !debug_rewrite then
+                       eprintf "Rewrite.match_redex.RWComposite: %s/%s%t" (**)
+                          (flat_opname name')
+                          (flat_opname name)
+                          eflush;
+                    if name == name' then
                        begin
                           List.iter2 match_redex_params params' params;
                           List.iter2 match_redex_bterms bterms' bterms
@@ -797,9 +802,13 @@ struct
 
             | RWCheckVar i ->
                  begin
-                     let v = dest_var t in
+                    let v = dest_var t in
+                       if !debug_rewrite then
+                          eprintf "Rewrite.match_redex.RWCheckVar: %d/%s%t" i v eflush;
                         match stack.(i) with
                            StackString v' ->
+                             if !debug_rewrite then
+                                eprintf "Rewrite.match_redex.RWCheckVar: %s/%s%t" v' v eflush;
                               if v' <> v then
                                  raise (RewriteError (BadMatch (VarMatch v)))
                          | x ->
@@ -810,19 +819,26 @@ struct
                  (* Save the term at i *)
                  begin
                     let vars = extract_bvars stack l in
+                       if !debug_rewrite then
+                          eprintf "Rewrite.match_redex.RWSOVar%t" eflush;
                        match stack.(i) with
-                          StackVoid -> stack.(i) <- StackBTerm (t, vars)
-                        | StackBTerm (t', vars') -> check_simple_match (t, vars) (t', vars)
+                          StackVoid ->
+                             stack.(i) <- StackBTerm (t, vars)
+                        | StackBTerm (t', vars') ->
+                             check_simple_match (t, vars) (t', vars)
                         | StackITerm l ->
                              check_match (t, vars) l;
                              stack.(i) <- StackBTerm (t, vars)
-                        | _ -> raise (RewriteError (StackError stack.(i)))
+                        | _ ->
+                             raise (RewriteError (StackError stack.(i)))
                  end
 
             | RWSOMatch (i, (ivars, vars, subterms)) ->
                  (* See if the term matches *)
                  begin
                     let vars' = extract_bvars stack ivars in
+                       if !debug_rewrite then
+                          eprintf "Rewrite.match_redex.RWSOMatch%t" eflush;
                         match stack.(i) with
                            StackVoid ->
                               stack.(i) <- StackITerm [t, vars', vars, subterms]
@@ -830,17 +846,21 @@ struct
                               check_match (t'', vars'') [t, vars', vars, subterms]
                          | StackITerm l ->
                               stack.(i) <- StackITerm ((t, vars', vars, subterms)::l)
-                         | _ -> raise (RewriteError (StackError stack.(i)))
+                         | _ ->
+                              raise (RewriteError (StackError stack.(i)))
                  end
 
             | RWSOContext (addr, i, term', l) ->
                  (* Pull an address out of the addr argument *)
                  let addr' = addrs.(addr) in
                  let term = term_subterm t addr' in
+                    if !debug_rewrite then
+                       eprintf "Rewrite.match_redex.RWSOContext%t" eflush;
                     stack.(i) <- StackContext (extract_bvars stack l, t, addr');
                     match_redex_term term' term
 
-            | _ -> raise (RewriteError (BadMatch (TermMatch t)))
+            | _ ->
+                 raise (RewriteError (BadMatch (TermMatch t)))
 
        and match_redex_params p' p =
            match p', dest_param p with
@@ -1327,6 +1347,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/01 13:54:46  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1998/05/28 15:00:36  jyh
  * Partitioned refiner into subdirectories.
  *

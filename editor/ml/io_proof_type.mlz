@@ -55,9 +55,12 @@ and proof_node =
 and proof_child =
    ChildGoal of aterm tactic_arg
  | ChildProof of proof
-   
+
 (*
  * $Log$
+ * Revision 1.2  1998/06/01 13:52:10  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1998/05/28 13:45:38  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

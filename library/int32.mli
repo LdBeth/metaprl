@@ -17,7 +17,7 @@ val dest_int32 : int32 -> int * int
 val int_of_int32 : int32 -> int
 val int32_of_int : int -> int32
 
-val print_int32 : int32 -> unit 
+val print_int32 : int32 -> unit
 
 val lband : int32 -> int32 -> int32
 val lbor : int32 -> int32 -> int32

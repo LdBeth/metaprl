@@ -332,7 +332,7 @@ let format_char buf c =
  * Check for newlines in a string.
  *)
 let rec format_string buf s =
-   try 
+   try
        let i = String_util.strchr s '\n' in
           push_command buf (Text (i, String.sub s 0 i));
           format_newline buf;
@@ -492,7 +492,7 @@ let compute_breaks buf rmargin =
                   let maxx' = max maxx curx' in
                      (* eprintf "Text: %s: %d -> %d%t" s curx curx' eflush; *)
                      aux (margins, breaks, refd, cbreaks, curx', maxx', cury, catch, search, nest) t
-   
+
              | HBreak ->
                   (* Always take hard breaks *)
                   let curx' = get_margin margins in
@@ -506,7 +506,7 @@ let compute_breaks buf rmargin =
                            search
                   in
                      aux (margins, breaks, refd, cbreaks, curx', maxx, cury + 1, catch, search, nest) t
-   
+
              | SBreak (i, take, notake, _, _) ->
                   if (notake + (get_nspace t) < rmargin) then
                      (* Don't take the break *)
@@ -606,7 +606,7 @@ let compute_breaks buf rmargin =
                            search
                   in
                      aux (margins, breaks, refd, cbreaks, curx, maxx, cury, catch, search, nest) t
-                           
+
              | PushM i ->
                   (* Push the margin *)
                   let lmargin = curx + i in
@@ -735,7 +735,7 @@ let format_to_handler printer rmargin (BreakNode (breaks, cbreaks)) =
                            let curx' = aux (margins, breaks', cbreaks', curx) b.commands in
                               aux (margins, breaks, cbreaks'', curx') t
                   end
-            
+
              | SZone i ->
                   if !debug_dform then
                      print_text curx "" ("[[" ^ string_of_int i);
@@ -782,6 +782,9 @@ let print_to_string rmargin buf =
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/01 13:55:02  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1998/05/28 15:01:10  jyh
  * Partitioned refiner into subdirectories.
  *

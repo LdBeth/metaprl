@@ -26,7 +26,7 @@ val create :
    MLast.expr ->            (* Parsed ML expression *)
    tactic ->                (* Corresponding tactic *)
    t
-     
+
 (* Destructors *)
 val goal : t -> tactic_arg
 val subgoals : t -> tactic_arg list
@@ -48,6 +48,9 @@ val step_of_io_step : tactic_argument -> (string, tactic) Hashtbl.t -> proof_ste
 
 (*
  * $Log$
+ * Revision 1.10  1998/06/01 13:52:24  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.9  1998/05/28 13:45:55  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

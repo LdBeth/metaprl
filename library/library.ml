@@ -42,14 +42,14 @@ type connection = Orb.connection
 
 let orbr = null_oref ()
 
-let init_orb () = 
+let init_orb () =
   if (not (oref_p orbr))
      then (oref_set orbr (orb_open "foo"); () )
      else ()
 
 let connect remote_host remote_port local_port =
  init_orb();
- Orb.connect (oref_val orbr) remote_host remote_port local_port 
+ Orb.connect (oref_val orbr) remote_host remote_port local_port
 
 let disconnect c = Orb.disconnect (oref_val orbr) c
 
@@ -57,7 +57,7 @@ let disconnect c = Orb.disconnect (oref_val orbr) c
 (*	test_ehook
  *	
  *	  - add : term -> term -> term list
- *	  
+ *	
  *	
  *)
 
@@ -88,7 +88,7 @@ let faux_ascii_quick bterms =
     print_newline();
     data
 
-  
+
 let faux_ascii_file bterms =
  let persist = term_of_unbound_term (hd bterms) in
    let ((s, y) as st) = (Db.stamp_and_type_of_idata_persist_term persist) in
@@ -134,7 +134,7 @@ let refiner_op = mk_nuprl5_op [ make_param (Token "!refine")]
 let faux_ascii_op = mk_nuprl5_op [ make_param (Token "!faux_ascii")]
 let faux_mbs_op = mk_nuprl5_op [ make_param (Token "!faux_mbs")]
 
-let test_ehook t = 
+let test_ehook t =
 
   match dest_term t with
     {term_op = op; term_terms = bterms } when opeq op test_add_op
@@ -148,7 +148,7 @@ let test_ehook t =
     | {term_op = op; term_terms = bterms } when opeq op faux_mbs_op
       ->  faux_mbs bterms
     | _ -> error ["eval"; "op"; "unrecognized"] [] [t]
- 
+
 let error_ehook t = (error ["library"; "LocalEvalNotCurrentlySupported"] [] [t])
 
 let lib_new c s =
@@ -188,7 +188,7 @@ let join_eval c tags ehook =
 let icallback_param =  make_param (Token "!callback")
 let icallback_op =  mk_nuprl5_op [icallback_param]
 
-let cookie_of_icallback_term t = 
+let cookie_of_icallback_term t =
   match dest_term t with
     { term_op = op; term_terms = [s] }
        ->  (match dest_op op with
@@ -200,11 +200,11 @@ let cookie_of_icallback_term t =
     |_ -> error ["icallback"; "not"; "term"] [] [t]
 
 
-let stamp_of_icallback_term t = 
+let stamp_of_icallback_term t =
   match dest_term t with
-    { term_op = op; term_terms = [s] } 
+    { term_op = op; term_terms = [s] }
 	-> (match dest_op op with
-	     { op_name = opn; op_params = (icp :: rest) } 
+	     { op_name = opn; op_params = (icp :: rest) }
 			when (nuprl5_opname_p opn & parmeq icp icallback_param)
 	        ->  (term_of_unbound_term s)
 	     |_ -> error ["icallback"; "not"; "op"] [] [t])
@@ -214,15 +214,15 @@ let stamp_of_icallback_term t =
 
 let restore c cookie f =
   (* restore lib. *)
-  let lib = 
+  let lib =
 	{ transactions = []
-	; environment = 
+	; environment =
 	    restore_library_environment
 		c
 		cookie
-		(function t -> 
+		(function t ->
 		  error ["library"; "restore"; "LocalEvalNotCurrentlySupported"] [] [t])
-	} 
+	}
   and tid = tid() in
 
     (* import *)
@@ -230,8 +230,8 @@ let restore c cookie f =
       false
       lib.environment
       tid
-      (function t -> 
-	let transaction =	 
+      (function t ->
+	let transaction =	
 		{ library = lib
 		; tbegin = term_to_stamp (stamp_of_icallback_term t)
 		; tent_collect = []
@@ -243,13 +243,13 @@ let restore c cookie f =
 	  (f transaction)));
       lib
 
-let with_transaction_aux lib ttype checkp f = 
+let with_transaction_aux lib ttype checkp f =
   let tid = tid() in
 
     with_fail_protect
-      (function g -> 
+      (function g ->
 	eval_callback checkp lib.environment tid
-	   (function t -> 
+	   (function t ->
              g { library = lib
 		; tbegin = term_to_stamp (stamp_of_icallback_term t)
 		; tent_collect = []
@@ -259,7 +259,7 @@ let with_transaction_aux lib ttype checkp f =
  		; liveness = true
 		}))
 
-	(function t -> 
+	(function t ->
 	  (let result = (f t) in t.liveness <- false; result))
 
 let with_transaction lib f =
@@ -276,9 +276,9 @@ let save l f =
   let tid = tid () in
 
     with_fail_protect
-      (function g -> 
+      (function g ->
         eval_callback true l.environment tid
-	  (function t -> 
+	  (function t ->
             g { library = l
 		; tbegin = term_to_stamp (stamp_of_icallback_term t)
 		; tent_collect = []
@@ -292,7 +292,7 @@ let save l f =
 	    f t;
 	    t.cookie)
 *)
-(* TODO: FTTB, this is a callback to lib, however oids should be cached locally, ie oid table 
+(* TODO: FTTB, this is a callback to lib, however oids should be cached locally, ie oid table
  *  or lib-table with oids.
  *)
 
@@ -305,7 +305,7 @@ let leave lib =
 
 
 (*
- transactions active type of thing will prevent transaction from being used outside of 
+ transactions active type of thing will prevent transaction from being used outside of
  with_transaction.
  *)
 
@@ -313,9 +313,9 @@ let leave lib =
   let tid = tid() in
 
     with_fail_protect
-      (function g -> 
+      (function g ->
 	eval_callback false lib.environment tid
-	   (function t -> 
+	   (function t ->
              g { library = lib
 		; tbegin = term_to_stamp (stamp_of_icallback_term t)
 		; tent_collect = []
@@ -351,12 +351,12 @@ let require_remote_transaction t =
  ()
 
 
-(* 
+(*
  todo whoever calls commit needs to add tent to collect queue
 *)
 
 
- 
+
 (* tree notes.
  *
  *  root objects not collectable all others are.
@@ -382,16 +382,16 @@ let require_remote_transaction t =
 
 (* Marshall/Unmarshall *)
 
-(* there are several possible methodologies for calling nuprl5 functions. 
+(* there are several possible methodologies for calling nuprl5 functions.
  *   - One is to code cororallies for each nuprl-light function which unmarshalls
  *     predictable args and then calls appropriate v5 function.
  *   - Another method is to write abstract v5 unmarshall funcs and then in
- *     nuprl-light construct text to call unmarshall funcs. Nl funcs 
+ *     nuprl-light construct text to call unmarshall funcs. Nl funcs
  *	which construct unmarshall call will do marshall as arg as well.
  *	This is less error prone then first method.
  *  - third method is to make abstraction which expands to call. Avoids
  *    marshalling of non-term args and shortens data transmitted.
- *  - fourth is to orthogonal where you send some index to a function 
+ *  - fourth is to orthogonal where you send some index to a function
  *    lookup table. This avoids eval in nuprl5 and would be most efficient.
  *
  * first doesn't have too many pluses. second is nice while developing.
@@ -399,7 +399,7 @@ let require_remote_transaction t =
  *)
 
 (* todo : desire an iml_parens wrap then cons("String_ap"; wrap(f)) *)
- 
+
 let iml_cons_op = (mk_nuprl5_op [make_param (Token "!ml_text_cons")])
 let iml_cons_term = icons_term iml_cons_op
 
@@ -423,7 +423,7 @@ let object_id_ap = oid_ap
 
 let make_ap remote_termto toterm =
  let unmarshall_ap_itext = itext_term remote_termto in
-  (fun m v -> 
+  (fun m v ->
     wrap_parens (iml_cons_term unmarshall_ap_itext (fst m)), (toterm v) :: snd m)
 
 
@@ -432,7 +432,7 @@ let abstract_suffix_itext = (itext_term " l")
 
 let with_abstract f g =
   wrap_parens (iml_cons_term abstract_prefix_itext
-			     (iml_cons_term f 
+			     (iml_cons_term f
 					    (wrap_parens (iml_cons_term g abstract_suffix_itext))))
 
 
@@ -468,7 +468,7 @@ let eval_to_object_id t m = oid_of_ioid_term (eval_m_to_term t (oid_return m))
 let make_eval remote_toterm termto =
   let marshall_result_itext = (itext_term remote_toterm) in
   (fun t m ->
-       termto (eval_to_term t 
+       termto (eval_to_term t
 		(with_abstract marshall_result_itext
 			       (fst m),
 		 (snd m))))
@@ -513,7 +513,7 @@ let disallow_collection t oid = eval t (oid_ap disallow_ap oid)
 let create_ap = null_ap (itext_term "create_with_some_term ")
 let create t ttype init_term init_props =
   eval_to_object_id t
-    (term_ap 
+    (term_ap
       (term_ap
 	(token_ap create_ap ttype)
 	(ioption_term init_term))
@@ -526,35 +526,35 @@ let delete_strong t oid =
 let delete_ap = null_ap (itext_term "allow_collection ")
 let delete t oid =
   eval t (oid_ap delete_ap oid)
-  
+
 let put_term_ap = null_ap (itext_term "put_term ")
 let put_term t oid term =
   eval t (term_ap (oid_ap put_term_ap oid) term)
 
 let get_term_ap = null_ap (itext_term "get_term ")
-let get_term t oid = 
+let get_term t oid =
   eval_to_term t (oid_ap get_term_ap oid)
 
 let put_property_ap = null_ap (itext_term "put_property ")
 let put_property t oid s term =
-  eval t 
+  eval t
     (term_ap (token_ap (oid_ap put_property_ap oid) s) term)
 
 let remove_property_ap = null_ap (itext_term "remove_property ")
 let remove_property t oid s =
-  eval t 
+  eval t
     (token_ap (oid_ap remove_property_ap oid) s)
 
 let get_property_ap = null_ap (itext_term "get_property ")
 let get_property t oid s =
-  eval_to_term t 
+  eval_to_term t
     (token_ap (oid_ap get_property_ap oid) s)
 
 
 let put_properties_ap = null_ap (itext_term "\oid iprops. set_properties oid (term_to_property_list iprops) ")
 let put_properties t oid props =
   eval t
-    (term_ap (oid_ap put_properties_ap oid) 
+    (term_ap (oid_ap put_properties_ap oid)
 	(properties_to_term props))
 
 let get_properties_ap = null_ap (itext_term "\oid . property_list_to_term (get_properties oid) ")
@@ -577,14 +577,14 @@ let remove_root t oid =
 
 let make_directory_ap = null_ap (itext_term "dag_make_directory ")
 let make_directory t oid s =
-  eval_to_object_id t 
+  eval_to_object_id t
     (token_ap
       (oid_ap make_directory_ap oid)
       s)
 
 let remove_directory_ap = null_ap (itext_term "dag_remove_directory ")
 let remove_directory t oid s =
-  eval t 
+  eval t
     (token_ap
       (oid_ap remove_directory_ap oid)
       s)
@@ -592,21 +592,21 @@ let remove_directory t oid s =
 
 let make_leaf_ap = null_ap (itext_term "dag_make_leaf ")
 let make_leaf t oid name ttype =
-  eval_to_object_id t 
+  eval_to_object_id t
     (token_ap (token_ap
       (oid_ap make_leaf_ap oid)
       name) ttype)
 
 let remove_leaf_ap = null_ap (itext_term "dag_remove_leaf ")
 let remove_leaf t oid s =
-  eval t 
+  eval t
     (token_ap
       (oid_ap remove_leaf_ap oid)
       s)
 
 let insert_ap = null_ap (itext_term "dag_insert")
 let insert t parent name oid =
-  eval t 
+  eval t
     (oid_ap
       (token_ap (oid_ap insert_ap parent)
 		name)
@@ -614,7 +614,7 @@ let insert t parent name oid =
 
 let insert_leaf_ap = null_ap (itext_term "dag_insert_leaf")
 let insert_leaf t parent name typ data =
-  eval_to_object_id t 
+  eval_to_object_id t
     (term_ap
       (token_ap
 	(token_ap (oid_ap insert_leaf_ap parent)
@@ -624,7 +624,7 @@ let insert_leaf t parent name typ data =
 
 let ninsert_leaf_ap = null_ap (itext_term "dag_ninsert_leaf")
 let ninsert_leaf t parent name typ data =
-  eval_to_object_id t 
+  eval_to_object_id t
     (term_ap
       (token_ap
 	(token_ap (oid_ap ninsert_leaf_ap parent)
@@ -649,12 +649,12 @@ let root t name =
  try (assoc name (roots t))
  with Not_found -> error ["root";  "Not_found"; name] [][]
 
-let child t oid name = 
+let child t oid name =
   let l = (children t oid) in
-  try assoc name l 
+  try assoc name l
   with Not_found -> error ["child"; "Not_found"; name] [oid][]
 
-let descendent t oid names = 
+let descendent t oid names =
  let rec aux oid names =
   if nullp names
      then oid

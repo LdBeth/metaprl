@@ -124,7 +124,7 @@ let shift_fst = function
       t, (h, b)
  | _ ->
       raise (Invalid_argument "shift_left")
- 
+
 (*
  * Shift hd to snd.
  *)
@@ -162,7 +162,7 @@ let insert_left { table_items = items } l v =
          let entry1 = LREntry (insert_aux [t1] (t2 :: suffix) v) in
          let entry2 = DEntry (insert_aux [t1; t2] suffix v) in
             { table_items = entry1 :: entry2 :: items }
-            
+
     | [] ->
          raise (Invalid_argument "insert_left")
 
@@ -173,7 +173,7 @@ let insert_right { table_items = items } l v =
          let entry1 = RLEntry (insert_aux [t2] (t1 :: suffix) v) in
          let entry2 = DEntry (insert_aux [t1; t2] suffix v) in
             { table_items = entry1 :: entry2 :: items }
-            
+
     | [] ->
          raise (Invalid_argument "insert_left")
 
@@ -183,7 +183,7 @@ let insert { table_items = items } l v =
          let suffix = unzip_list t in
          let entry = DEntry (insert_aux [t1; t2] suffix v) in
             { table_items = entry::items }
-            
+
     | [] ->
          raise (Invalid_argument "insert")
 
@@ -207,7 +207,7 @@ let extract { table_items = entries } =
 
    (* Insert a new entry into the table *)
    let insert_entry base ({ info_pattern = pattern } as info) =
-      let entries = 
+      let entries =
          try Hashtbl.find base pattern with
             Not_found -> []
       in
@@ -302,6 +302,9 @@ let lookup { ext_lrtable = lrbase;
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/01 13:55:04  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1998/05/28 15:01:16  jyh
  * Partitioned refiner into subdirectories.
  *

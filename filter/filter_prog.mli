@@ -22,7 +22,7 @@ sig
       (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info ->
       (module_path * MLast.ctyp resource_info) list ->
       string -> (MLast.sig_item * (int * int)) list
-   
+
    val extract_str :
       (proof proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info ->
       (module_path * MLast.ctyp resource_info) list ->
@@ -61,6 +61,9 @@ module MakeExtract (Convert : ConvertProofSig) :
 
 (*
  * $Log$
+ * Revision 1.11  1998/06/01 13:53:11  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.10  1998/05/28 13:46:23  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

@@ -24,7 +24,7 @@ let _ =
 
 
 (*
- * 	Some simplyfying assumtpions FTTB : 
+ * 	Some simplyfying assumtpions FTTB :
  * 	
  * 	 only one library per Nuprl-Light Process.
  * 	 only connected to a single Library process and a single environment in the process.
@@ -40,7 +40,7 @@ let _ =
  *)
 
 
-(* 	 
+(* 	
  *	environment is local library state's handle to remote environment.
  *	
  *)
@@ -51,14 +51,14 @@ type connection =
 	; ro_address	: string list		(* remote orb *)
 	}
 
-and environment = 
+and environment =
 	{ connection : connection
 
 	(* remote	*)
 	; re_address	: string list		(* to build request wrappers *)
 
 	(* local	*)
-	; le_address 	: string list		(* to allow remote to make requests 
+	; le_address 	: string list		(* to allow remote to make requests
 						   when req received used to find appropriate eval hook  *)
 	; stamp		: stamp			(* local consumer stamp; for start/stop broadcasts *)
 
@@ -94,7 +94,7 @@ let orb_open name =
 	}
 
 
-(* addr is string list 
+(* addr is string list
    term is !expression term
 *)
 
@@ -102,7 +102,7 @@ let orb_open name =
 
 let ireq_parameter = make_param (Token "!req")
 let ireq_op pl = mk_nuprl5_op (ireq_parameter :: pl)
-let ireq_term seq addr t tid = 
+let ireq_term seq addr t tid =
   mk_term (ireq_op (make_param (Number (Num.Int seq))
 			:: (make_param (Token "NUPRL5-type"))
 			:: (map (function s -> make_param (Token s)) addr)))
@@ -117,7 +117,7 @@ let irsp_term seq t =
 let result_of_irsp_term t =
   match dest_term t with
     { term_op = o;
-      term_terms = bterms } 
+      term_terms = bterms }
     -> (match dest_op o with
 	{ op_name = ro;
 	  op_params = irsp :: ps} when (nuprl5_opname_p ro & parmeq irsp irsp_parameter)
@@ -128,7 +128,7 @@ let result_of_irsp_term t =
 let seq_of_irsp_term t =
   match dest_term t with
     { term_op = o;
-      term_terms = bterms } 
+      term_terms = bterms }
     -> (match dest_op o with
 	{ op_name = ro;
 	  op_params = irsp :: iseq :: ps} when (nuprl5_opname_p ro & parmeq irsp irsp_parameter)
@@ -143,7 +143,7 @@ let ibroadcasts_parameter = make_param (Token "!broadcasts")
 let broadcasts_of_ibroadcasts_term t =
   match dest_term t with
     { term_op = o;
-      term_terms = bterms } 
+      term_terms = bterms }
     -> (match dest_op o with
 	{ op_name = ro;
 	  op_params = ib :: tp :: ps} when (nuprl5_opname_p ro & parmeq ib ibroadcasts_parameter)
@@ -151,21 +151,21 @@ let broadcasts_of_ibroadcasts_term t =
 	        then (tl bterms)
 		else (tl (tl bterms))
 	| _ -> error ["orb"; "broadcasts"; "not"] [] [t])
- 
+
 let transaction_stamp_of_ibroadcasts_term t =
   match dest_term t with
     { term_op = o;
-      term_terms = bterms } 
+      term_terms = bterms }
     -> (match dest_op o with
 	{ op_name = ro;
 	  op_params = ib :: tp :: ps} when (nuprl5_opname_p ro & parmeq ib ibroadcasts_parameter)
 	  -> term_to_stamp (term_of_unbound_term (hd bterms))
 	| _ -> error ["orb"; "broadcasts"; "stamp"; "not"] [] [t])
- 
+
 let auto_commit_of_ibroadcasts_term t =
   match dest_term t with
     { term_op = o;
-      term_terms = bterms } 
+      term_terms = bterms }
     -> (match dest_op o with
 	{ op_name = ro;
 	  op_params = ib :: tp :: ps} when (ro = nuprl5_opname & ib = ibroadcasts_parameter)
@@ -195,20 +195,20 @@ let ivalue_term t = mk_term ivalue_op [mk_bterm [] t]
 let iack_parameter = make_param (Token "!ack")
 let iack_op = mk_nuprl5_op [iack_parameter]
 let iack_term = mk_term iack_op []
-let iack_term_p t = 
+let iack_term_p t =
   match dest_term t with
     { term_op = ao; term_terms = bterms } when opeq ao iack_op & nullp bterms -> true
   | _ -> false
 
 let messages_of_iresult_term t =
   match dest_term t with
-    { term_op = _; term_terms = _ :: msgs } 
+    { term_op = _; term_terms = _ :: msgs }
        ->  map term_of_unbound_term msgs
     |_ -> error ["orb"; "result"; "messages"] [] [t]
 
-let result_of_iresult_term t = 
+let result_of_iresult_term t =
   match dest_term t with
-    { term_op = _; term_terms = r :: _ } 
+    { term_op = _; term_terms = r :: _ }
        -> term_of_unbound_term r
     |_ -> error ["orb"; "result"; "messages"] [] [t]
 
@@ -216,18 +216,18 @@ let result_of_iresult_term t =
 (* let ibroadcast_cons_op = mk_nuprl5_op [make_param (Token "!broadcast_cons")] *)
 let ipassport_param = make_param (Token "!passport")
 
-(* 
+(*
  * pull desc and bcast
  * find table from bcast type
  * apply to table
  *)
 let broadcast_eval env tstamp commit_stamp bcasts =
   (* print_string "num bcasts "; print_string (string_of_int (List.length bcasts));  print_newline(); *)
-  map (function bipass -> 
+  map (function bipass ->
 	(* print_string "eval_bcast"; print_newline(); *)
         let ipass = term_of_unbound_term bipass in
 	match dest_term ipass with
-	  { term_op = pop; term_terms = [stamp; desc; bcast] } 
+	  { term_op = pop; term_terms = [stamp; desc; bcast] }
 	    -> (match dest_op pop with
 		{ op_name = opn; op_params = [id; ttype] } when parmeq id ipassport_param
 		  -> (try apply_broadcast
@@ -247,50 +247,50 @@ let broadcast_eval env tstamp commit_stamp bcasts =
 
 
 let orb_broadcast env t =
-  broadcast_eval env 
+  broadcast_eval env
 	(transaction_stamp_of_ibroadcasts_term t)
 	(auto_commit_of_ibroadcasts_term t)
 	(broadcasts_of_ibroadcasts_term t)
 
-    
+
 let icommand_parameter = make_param (Token "!command")
 let icommand_op = mk_nuprl5_op [icommand_parameter]
 let icommand_term t = mk_term icommand_op [mk_bterm [] t]
 
-let cmd_of_icommand_term t = 
+let cmd_of_icommand_term t =
  match dest_term t with { term_op = o; term_terms = [cmd] } when opeq o icommand_op
     -> term_of_unbound_term cmd
  |_ -> error ["orb"; "command"; "not"] [] [t]
 
 let local_eval f t =
-  unconditional_error_handler 
+  unconditional_error_handler
     (function () -> (ivalue_term (f (cmd_of_icommand_term t))))
     (function term -> ifail_term term)
 
 
 let imsg_parameter = make_param (Token "!msg")
 
-let rec bus_wait c tid ehook = 
+let rec bus_wait c tid ehook =
 
   let t = (Link.recv c.link) in
 
  (*
  print_string "recv ";
  print_newline();
-  print_term t; 
+  print_term t;
  print_newline();
  *)
 
    match dest_term t  with
     { term_op = op;
-      term_terms = bterms } 
+      term_terms = bterms }
     ->  (match dest_op op with
           { op_name = opn;
  	    op_params = ib :: ps } when (parmeq ib ibroadcasts_parameter & nuprl5_opname_p opn)
-           -> ((try 
-		(special_error_handler 
+           -> ((try
+		(special_error_handler
 		  (function () -> ((orb_broadcast (hd c.orb.environments) t); ()))
-		  (fun s t -> 
+		  (fun s t ->
 			 print_string "broadcast failed xyz"
 			; print_newline()
 			; print_string s
@@ -317,7 +317,7 @@ let rec bus_wait c tid ehook =
 					(term_of_unbound_term (hd bterms))))
 		  ; ivoid_term)
 			
-      	    | Some ttid -> 
+      	    | Some ttid ->
 		  (Link.send c.link
 	           (if not (tideq ttid (term_of_unbound_term (hd (tl (bterms)))) )
 			then (irsp_term (hd ps)
@@ -332,7 +332,7 @@ let rec bus_wait c tid ehook =
 	     ; bus_wait c tid ehook)
 	| _ -> t)
 
-(* presence of tid has connotation to lib. mainly that 
+(* presence of tid has connotation to lib. mainly that
  the lib eval is non-local. But evals to join lib env are local
   thus it needs to be optional
  another connotation might be that there is a transaction.
@@ -346,7 +346,7 @@ let bus_eval c addr expr tid ehook =
  (*
  print_string "send ";
  print_newline();
-  print_term expr; 
+  print_term expr;
  print_newline();
  *)
      Link.send link (ireq_term seq addr expr tid);
@@ -367,7 +367,7 @@ let iinform_term_p t =
   | _ -> false
 
 let info_of_iinform_term t = one_subterm t
- 
+
 
 let ienvironment_address_parameter = make_param (Token "!environment_address")
 let ienvironment_address_op pl = mk_nuprl5_op (ienvironment_address_parameter :: pl)
@@ -403,7 +403,7 @@ let iconfigure_term term =  mk_term iconfigure_op [mk_bterm [] term]
 
 let command_of_iconfigure_term t =
   match dest_term t with
-    { term_op = co; term_terms = [bterm] } when opeq co iconfigure_op 
+    { term_op = co; term_terms = [bterm] } when opeq co iconfigure_op
       -> (match dest_bterm bterm with
 	   { bvars = []; bterm = term} -> term
          | _ -> error ["orb"; "term"; "configure"; "subterm"] [] [t])
@@ -416,7 +416,7 @@ let default_ehook t = error ["orb"; "RequestNotExpected"] [] []
 (* orb-send-configure orb-send-configure-blink *)
 let config_send c term =
   let rsp = bus_eval c [] (iconfigure_term term) ivoid_term default_ehook in
-    if ifail_term_p rsp 
+    if ifail_term_p rsp
       then error ["orb"; "configure"; "send"; "fail"] [] [term]
       else rsp
 
@@ -427,7 +427,7 @@ let config_send_state c term =
        else ()
 
 (* orb-send-request orb-send-request-blink *)
-let config_send_request c term = 
+let config_send_request c term =
   let cmd = command_of_iconfigure_term (config_send c term) in
     if iinform_term_p cmd
       then cmd
@@ -442,7 +442,7 @@ let idisconnect_op b = mk_nuprl5_op [idisconnect_parameter; make_bool_parameter 
 let idisconnect_term b = mk_term (idisconnect_op b) []
 
 let iconnect_parameter = make_param (Token "!connect")
-let iconnect_op localhost sock = 
+let iconnect_op localhost sock =
   mk_nuprl5_op
     [ iconnect_parameter
     ; make_param (Number (Num.Int sock))
@@ -461,11 +461,11 @@ let connect_aux orb host hsock sock =
 	    ));
 
     try (connect_callback tlink) (* returns link if successful *)
-      with 
+      with
 	_-> ( config_send_state tcon (iinform_term (idisconnect_term true))
 	    ; error ["orb"; "connect"; "callback"; "fail"] [] []
 	    )
-          
+
 
 let connect orb host hsock sock =
 
@@ -477,7 +477,7 @@ let connect orb host hsock sock =
     let address = address_of_ienvironment_address_term
 		    (info_of_iinform_term
 		      (config_send_request tcon (irequest_term (ienvironment_address_term [])))) in
-    
+
     let connection =  { link = link; orb = orb; ro_address = address } in
       orb.connections <- (connection :: orb.connections);
       connection
@@ -508,10 +508,10 @@ let orb_close orb =
  | _ -> error ["orb"; "close"] [] []
 
 
-(* 
+(*
    config_send_state
    config_send_request
-	connection_eval 
+	connection_eval
 *)
 
 let iml_parameter = make_param (Token "!ML")
@@ -520,12 +520,12 @@ let iml_op pl = mk_nuprl5_op (iml_parameter :: pl)
 let iml_woargs_parameter = make_param (Token "!ML_woargs")
 let iml_woargs_op pl = mk_nuprl5_op (iml_woargs_parameter :: pl)
 
-let iml_woargs_term result_p term = 
+let iml_woargs_term result_p term =
       (mk_term (iml_woargs_op [ make_bool_parameter false
 		       ; make_bool_parameter result_p])
 		[mk_bterm [] term])
 
-let iml_term result_p term terms = 
+let iml_term result_p term terms =
  mk_term (iml_op	
 		[ make_bool_parameter false
 		; make_bool_parameter result_p
@@ -549,11 +549,11 @@ let iml_expression_term result_p expr args =
 
 (* evals in remote orb env. *)
 let connection_eval_string c s result_p =
-  let result = bus_eval c c.ro_address 
+  let result = bus_eval c c.ro_address
 			(iexpression_term (iml_woargs_term result_p (itext_term s)))
 			ivoid_term
 			default_ehook in
-    if ifail_term_p result    
+    if ifail_term_p result
       then error ["orb"; "connection"; "eval"; "string"] [] [result]
       else if ivalue_term_p result
 	  then (result_of_iresult_term result)
@@ -561,7 +561,7 @@ let connection_eval_string c s result_p =
 			    else result)
 
 let connection_eval_args c t tl  =
-  let result = bus_eval c c.ro_address 
+  let result = bus_eval c c.ro_address
  			(iml_expression_term true t tl)
 			ivoid_term
 			default_ehook in
@@ -578,33 +578,33 @@ let connection_eval_args c t tl  =
 (* open/close save/restore join/leave *)
 
 (* open *)
-let library_environment_new c tag = 
+let library_environment_new c tag =
   address_of_ienvironment_address_term
     (connection_eval_string c ("ienvironment_address_term (new_library `" ^ tag ^ "`)") true)
-    
+
 (* join *)
-let library_environment_join c tags = 
+let library_environment_join c tags =
   address_of_ienvironment_address_term
-    (connection_eval_args c 
+    (connection_eval_args c
 	(itext_term
 	  "\l. (ienvironment_address_term (library_open (tags_of_ienvironment_address_term (hd l))))")
 	[ienvironment_address_term tags]
 	)
-    
+
 (* restore *)
-let library_environment_restore c stamp_string = 
+let library_environment_restore c stamp_string =
   address_of_ienvironment_address_term
     (connection_eval_string c ("ienvironment_address_term (open_environment \"" ^ stamp_string ^ "\")") true)
 
 
 
-let library_environment_close c addr = 
+let library_environment_close c addr =
   string_of_istring_term
     (connection_eval_args c
 	(itext_term
 	 "\args. istring_term (hd (close_environment (tags_of_ienvironment_address_term (hd args)) false ))")
 	[ienvironment_address_term addr])
-    
+
 
 let nl0_description =
   mk_term (mk_nuprl5_op
@@ -615,13 +615,13 @@ let nl0_description =
 
 let istart_op = mk_nuprl5_op [make_param (Token "!start")]
 
-let istart_term t s e d = 
-  mk_term istart_op 
+let istart_term t s e d =
+  mk_term istart_op
 	[ mk_bterm [] t
 	; mk_bterm [] s
 	; mk_bterm [] e
 	; mk_bterm [] d
-	] 
+	]
 
 let broadcasts_of_istart_term s =
   match dest_term s with
@@ -632,15 +632,15 @@ let broadcasts_of_istart_term s =
 	 (*print_term s;*) error ["orb"; "start"; "broadcasts"; "not"; "start"] [] [s])
 
 let start_broadcasts e =
-  let t = 
+  let t =
     config_send_request
-      e.connection 
+      e.connection
       (irequest_term
         (istart_term (itable_types_term (map fst e.resources) e.re_address)
 		     (stamp_to_term e.stamp)
 		     (ienvironment_address_term ((e.connection).orb).lo_address)	
 			  (* nfg if we allow mulitple envs *)
-		     nl0_description)) 
+		     nl0_description))
 
 	in (* print_string "start_broadcasts : "; *)
 		orb_broadcast e (broadcasts_of_istart_term
@@ -652,17 +652,17 @@ let irevoke_term t = mk_term irevoke_op [mk_bterm [] t]
 
 let stop_broadcasts e =
     config_send_state
-      e.connection 
+      e.connection
       (irevoke_term
         (istart_term (itable_types_term (map fst e.resources) e.re_address)
 		     (stamp_to_term e.stamp)
 		     (ienvironment_address_term ((e.connection).orb).lo_address)	
 			  (* nfg if we allow mulitple envs *)
-		     ivoid_term)) 
+		     ivoid_term))
 
 let open_library_environment connection lib_id ehook =
   let lib_env_address = library_environment_new connection lib_id in
-    let env = 
+    let env =
 	{ connection = connection
 	; re_address = lib_env_address
 	; le_address = []	(* TODO: ?? :: orb_address *)
@@ -675,9 +675,9 @@ let open_library_environment connection lib_id ehook =
     env
 
 
-let join_library_environment connection tags ehook = 
+let join_library_environment connection tags ehook =
   let lib_env_address = library_environment_join connection tags in
-    let env = 
+    let env =
 	{ connection = connection
 	; re_address = lib_env_address
 	; le_address = []	(* TODO: ?? :: orb_address *)
@@ -691,7 +691,7 @@ let join_library_environment connection tags ehook =
 
 let restore_library_environment connection sstamp ehook =
   let lib_env_address = library_environment_restore connection sstamp in
-    let env = 
+    let env =
 	{ connection = connection
 	; re_address = lib_env_address
 	; le_address = []	(* TODO: ?? :: orb_address *)
@@ -709,18 +709,18 @@ let close_library_environment e =
     (let orb = e.connection.orb in
       orb.environments <- remove e orb.environments);
     s)
- 
+
 let leave_library_environment e =
   stop_broadcasts e;
   (* at them moment no-op but when le_address has meaning then should revoke *)
   ()
- 
+
 
 (* orb-eval (<expression>) : <result> *)
 
 
 (* todo *)
-let print_message t = 
+let print_message t =
  prerr_string "There is a term Message.";
  prerr_newline()
 
@@ -728,7 +728,7 @@ let print_message t =
 (* returns !ack of false result_p
  * else fails or returns value.
  *)
-let orb_eval result_p env expr tid ehook= 
+let orb_eval result_p env expr tid ehook=
  let c = env.connection in
   let result = bus_eval c env.re_address expr tid ehook in
     if ifail_term_p result
@@ -743,7 +743,7 @@ let orb_eval result_p env expr tid ehook=
       then result
     else (print_term result; result)
 
-           
+
 
 let eval_string e tid s =
   orb_eval
@@ -758,7 +758,7 @@ let eval e tid t =
   orb_eval false e (iml_expression_term false t []) tid default_ehook;
   ()
 
-let eval_args e tid t tl = 
+let eval_args e tid t tl =
   orb_eval false e (iml_expression_term false t tl) tid default_ehook;
   ()
 
@@ -773,8 +773,8 @@ let eval_args_to_term e tid t tl =
 
 
 
-(* 
- *	Not sure if this shouldn't be 
+(*
+ *	Not sure if this shouldn't be
  *	... -> (term -> term) -> ... instead of
  *	... -> (term -> unit) -> ...
  *	
@@ -789,7 +789,7 @@ let itransaction_term b = mk_term (mk_nuprl5_op [itransaction_parameter; make_bo
 let eval_callback checkpointp e tid f =
  orb_eval false e (icommand_term (itransaction_term checkpointp))
 	tid
-	(function term -> 
+	(function term ->
 		(f term)
 		; iack_term)
  ; ()
@@ -800,7 +800,7 @@ let with_fail_protect g f =
   and err = null_oref() in
 
   try (
-    g (function b -> 
+    g (function b ->
 	oref_set a
 	  (try f b
 	   with e -> oref_set err e; raise e);
@@ -808,32 +808,32 @@ let with_fail_protect g f =
 
     oref_val a)
 
-  with e -> 
+  with e ->
 	if oref_p err
 	   then raise (oref_val err)
 	   else raise e
 
 (*
 let eval_with_callback e tid f t =
- orb_eval false e (iml_expression_term false t []) 
+ orb_eval false e (iml_expression_term false t [])
 	   tid
-	   (function term -> 
+	   (function term ->
 		(f (cmd_of_icommand_term term)); iack_term)
  ; ()	
 
 let eval_to_term_with_callback e tid f t =
- (orb_eval true e (iml_expression_term true t []) 
+ (orb_eval true e (iml_expression_term true t [])
 	  tid
 	  (function term -> (f (cmd_of_icommand_term term)); iack_term))
 
 let eval_args_with_callback e tid f t tl =
-  orb_eval false e (iml_expression_term false t tl) 
+  orb_eval false e (iml_expression_term false t tl)
 	   tid
 	   (function term -> (f (cmd_of_icommand_term term)); iack_term)
  ; ()	
 
 let eval_args_to_term_with_callback e tid f t tl =
- (orb_eval true e (iml_expression_term true t tl) 
+ (orb_eval true e (iml_expression_term true t tl)
 	  tid
 	  (function term -> (f (cmd_of_icommand_term term)); iack_term))
 
@@ -852,18 +852,18 @@ let quit_loop_term_p t =
 
 
 let quit_hook ehook =
- function t -> 
-  if quit_loop_term_p t 
+ function t ->
+  if quit_loop_term_p t
      then (oref_set quit_loop true; ivoid_term)
      else ehook t
-   
 
-let orb_req_loop env = 
-  
+
+let orb_req_loop env =
+
   while (not (oref_val quit_loop))
   do bus_wait env.connection None
       (quit_hook env.ehook)
   done
 
 
-	  
+	

@@ -71,7 +71,7 @@ val expand : unit -> unit
 val root : unit -> unit
 val up : unit -> unit
 val down : int -> unit
-val refine : string -> MLast.expr -> tactic -> unit
+val refine : tactic -> unit
 val undo : unit -> unit
 val fold : unit -> unit
 val fold_all : unit -> unit
@@ -79,9 +79,12 @@ val fold_all : unit -> unit
 (************************************************************************
  * DEBUGGING                                                            *
  ************************************************************************)
-                                  
+
 (*
  * $Log$
+ * Revision 1.7  1998/06/01 13:52:28  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.6  1998/05/28 13:45:57  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

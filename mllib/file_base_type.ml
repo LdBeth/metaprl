@@ -22,7 +22,7 @@ type ('select, 'cooked) file_info =
      info_suffix : string;
      info_magic : int
    }
-   
+
 (*
  * This is the info that is needed to read a file.
  * Modules are classified according to their suffix and magic number.
@@ -33,7 +33,7 @@ module type FileBaseInfoSig =
 sig
    type select
    type cooked
-   
+
    val info : (select, cooked) file_info list
 end
 
@@ -58,14 +58,14 @@ sig
    (* Creation *)
    val create : string list -> t
    val set_path : t -> string list -> unit
-   
+
    (* Loading and saving *)
    val find : t -> file_name -> select -> info
    val find_match : t -> info -> select -> info
    val save : t -> info -> unit
    val save_as : t -> cooked -> select -> dir_name -> file_name -> info
    val create_info : t -> cooked -> select -> dir_name -> file_name -> info
-   
+
    (* Info about the objects *)
    val info : t -> info -> cooked
    val set_info : t -> info -> cooked -> unit
@@ -97,13 +97,13 @@ sig
    type select
    type raw
    type cooked
-   
+
    (* File type selection info *)
    val select : select
    val suffix : string
    val magic : int
    val disabled : bool ref
-   
+
    (* Conversion functions *)
    val marshal : cooked -> raw
    val unmarshal : raw -> cooked
@@ -120,7 +120,7 @@ sig
    type select
    type cooked
    type info
-   
+
    (*
     * Marshallers.
     *)
@@ -140,6 +140,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.3  1998/06/01 13:54:36  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.2  1998/02/19 17:13:21  jyh
  * Splitting filter_parse.
  *

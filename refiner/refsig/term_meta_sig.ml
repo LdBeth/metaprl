@@ -13,7 +13,7 @@ sig
     * Have to import the type of terms.
     *)
    type term
-   
+
    (*
     * The terms in the meta-logical framework include
     * a meta-implication and met-iff.
@@ -43,6 +43,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/01 13:55:15  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1998/05/28 15:01:46  jyh
  * Partitioned refiner into subdirectories.
  *

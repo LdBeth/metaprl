@@ -58,8 +58,8 @@ let refine_args t =
     | _ -> error ["eval"; "op"; "unrecognized"] [] [t]
 
 
-let refine_ehook rhook = 
-  (function t -> 
+let refine_ehook rhook =
+  (function t ->
     let (goal, tac) = refine_args t in
      list_to_ilist (rhook goal tac))
 
@@ -79,9 +79,9 @@ let library_open_eval name rhook =
 let library_loop_eval () =
 
 	let lib = oref_val library in
-       
+
 	(with_transaction lib
-	   (function t -> 
+	   (function t ->
 		(eval t
 		 (null_ap (itext_term "\l. inform_message nil ``NuprlLight Loop Start`` nil")))))
 
@@ -92,9 +92,9 @@ let library_loop_eval () =
 let library_open_and_loop_eval name rhook =
 
   library_open_eval name rhook;
- 
+
   (unwind_error	
-     (function () -> library_loop_eval ();  
+     (function () -> library_loop_eval ();
 	library_close ())
      (function () -> library_close ()))
 

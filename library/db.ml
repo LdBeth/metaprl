@@ -36,7 +36,7 @@ let level_of_byte b = ((b land 0x30) lsr 4)
 
 type catetype =   COpid  | CBinding | CParameter | COperator | CTerm
 
-let catetypes = 
+let catetypes =
   let a = create 5 COpid in
     set a 0 COpid;
     set a 1 CBinding;
@@ -66,7 +66,7 @@ let level_array_initial = (Opid "")
 
 let new_level n = {items = (create n level_array_initial); fill = 0 }
 
-let level_allocate_slot l = 
+let level_allocate_slot l =
   let fill = l.fill in
     (if inteq fill (Array.length l.items)
        then let nitems = create (fill + level_array_growth) level_array_initial in
@@ -86,8 +86,8 @@ let level_add l itemf =
    set l.items index item;
       item
 
-let level_assign l item = 
-  (* 
+let level_assign l item =
+  (*
   (match item with
    Parameter p -> print_string "Parameter"
    | Operator p -> print_string "Operator"
@@ -98,7 +98,7 @@ let level_assign l item =
 
   set l.items (level_allocate_slot l) item
 
-  
+
 let level_get l i = get l.items i
 
 type lscanner = { scanner : scanner
@@ -118,24 +118,24 @@ let rec levels_assign scanner code itemf =
  let index = level_of_byte code in
 
   (* print_string ("Adding to level "); print_string (string_of_int code); *)
-  
-  if (index >= (List.length levels)) 
+
+  if (index >= (List.length levels))
      then ( add_new_level scanner
 	  ; levels_assign scanner code itemf)
      else level_add (nth levels index) itemf
 
 let levels_lookup scanner level index =
  level_get (nth scanner.levels level) index
- 
+
 
 (* scanner includes levels *)
 
 let make_operator opid parameters =
   if stringeq opid "!nuprl_light_implementation"
      then (mk_op (make_opname
-			(map (function p -> 
+			(map (function p ->
 				match dest_param p with
-				 (String s) -> s 
+				 (String s) -> s
 				 |_ -> error ["read_term"; "operator"; "nuprl-light"; "opname"; "string"]
 					     [] [])
 			      (match dest_param (hd parameters) with
@@ -167,7 +167,7 @@ and scan_compressed code scanner =
 	   scan_next scanner.scanner;
 	   r)
 
-and scan_binding scanner = 
+and scan_binding scanner =
  let code = (scan_cur_byte scanner.scanner) in
   if compression_code_p code
     then match (scan_compressed code scanner) with
@@ -181,14 +181,14 @@ and scan_parameter scanner =
   if compression_code_p code
     then match (scan_compressed code scanner) with
 	    Parameter p -> p
-	| item -> 
+	| item ->
 
   ((match item with
    Parameter p -> print_string "Parameter"
    | Operator p -> print_string "Operator"
    | Term p -> print_string "Term"
    | Binding p -> print_string "Binding"
-   | Opid p -> print_string p; print_string "Opid"); 
+   | Opid p -> print_string p; print_string "Opid");
 	error ["read_term"; "parameter"] [] []
    )
 
@@ -196,7 +196,7 @@ and scan_parameter scanner =
 	  scan_byte scanner.scanner icolon;
 	  scanner.stp s (scan_string scanner.scanner)
 
-and scan_parameters scanner = 
+and scan_parameters scanner =
   if scan_at_byte_p scanner.scanner ilcurly
      then scan_delimited_list scanner.scanner
 			      (function () -> (scan_parameter scanner))
@@ -239,7 +239,7 @@ and scan_bound_term scanner =
 		 else error ["read_term"; "bound term"; "opid"] [] [])
 	  | Binding binding ->
 		(if scan_at_byte_p scanner.scanner icomma
-		    then 
+		    then
 			let bindings = (flatten (binding :: (scan_delimited_list
 							scanner.scanner
 							(function () -> (scan_binding scanner))
@@ -265,7 +265,7 @@ and scan_bound_term scanner =
 			 mk_bterm (scanner.stb s) (scan_term scanner))
 	
 	  else if (scan_at_byte_p scanner.scanner ilcurly)
-		then mk_bterm [] 
+		then mk_bterm []
 			(let op = (make_operator s (scan_parameters scanner)) in
 			 let bterms = (scan_bound_terms scanner) in
 			   (mk_term op bterms))
@@ -275,7 +275,7 @@ and scan_bound_term scanner =
 				  (scan_bound_terms scanner))
 	  else error ["read_term"; "bound term"; "lost"] [] []
 
-and scan_bound_terms scanner = 
+and scan_bound_terms scanner =
   (* print_string " sbt "; *)
   if scan_at_byte_p scanner.scanner ilparen
      then scan_delimited_list scanner.scanner
@@ -304,7 +304,7 @@ let read_term_aux scanner stb stp =
 
 let make_term_scanner = make_scanner "\\ \n\r\t()[]{}:;.," "\n\t\r "
 
-let string_to_trivial_term s stp = 
+let string_to_trivial_term s stp =
   read_term_aux
 	(make_term_scanner (Stream.of_string s))
 	(function s -> error ["string_to_term"; "string_to_binding"] [] [])
@@ -328,7 +328,7 @@ let with_open_db_file f name ext =
       [!master_pathname; name; "."; ext] in
   let in_channel = try open_in filename with
     Sys_error e -> error (filename :: ["db_open"; name; ext]) [] [] in
-  
+
     let x = (try (f in_channel) with e -> close_in in_channel; raise e) in
 	close_in in_channel;
 	x
@@ -339,15 +339,15 @@ let with_open_file f stamp otype =
       [!master_pathname; pid; "/"; "data"; "/"; (string_of_int seq); "."; otype] in
   let in_channel = try open_in filename with
     Sys_error e -> error (filename :: ["db_read"; "file"; "not"; "exist"]) [] [] in
-  
+
     let x = (try (f in_channel) with e -> close_in in_channel; raise e) in
 	close_in in_channel;
 	x
 
 let db_read_aux =
-  with_open_file 
+  with_open_file
    (function in_channel -> term_of_mbterm (read_node in_channel))
- 
+
 
 (* start db ascii*)
 
@@ -358,9 +358,9 @@ let is_first_char char string = chareq (String.get string 0) char
 
 let level_expression_escape_string = "[ |']"
 
-let incr_level_exp_n i le = 
+let incr_level_exp_n i le =
    let { le_const = c; le_vars = vars } = dest_level le in
-      let add1 lv = 
+      let add1 lv =
         let { le_var = v; le_offset = o } = dest_level_var lv in
             if (inteq o 0) then mk_level_var v (o + i) else lv
       in
@@ -368,8 +368,8 @@ let incr_level_exp_n i le =
 
 let scan_level_expression scanner =
   let le = ref (mk_const_level_exp 0) in
-  let rec scan_numbers s = 
-    if (scan_whitespace s; scan_at_char_p s '\'') then 
+  let rec scan_numbers s =
+    if (scan_whitespace s; scan_at_char_p s '\'') then
       (scan_next s;
        le := incr_level_exp !le;
        scan_numbers s;
@@ -377,22 +377,22 @@ let scan_level_expression scanner =
     else if (scan_whitespace s; scan_at_digit_p s) then
       (le := incr_level_exp_n (Num.int_of_num (scan_num s)) !le;
        scan_numbers s;
-       s) 
+       s)
     else s in
-  let rec scan_atom s = 
+  let rec scan_atom s =
      let scan_expression_q () = scan_expression s in
      if (scan_whitespace s; scan_at_byte_p s ilsquare) then
       (scan_char_delimited_list s scan_expression_q '[' ']' '|';
        scan_whitespace s; ())
-    else if (scan_whitespace s; scan_at_digit_p s) then 
+    else if (scan_whitespace s; scan_at_digit_p s) then
       (le := max_level_exp (mk_const_level_exp (Num.int_of_num (scan_num s))) !le; ())
     else (let v = scan_string s in
-    scan_whitespace s; 
-    le := max_level_exp (mk_var_level_exp v) !le); s 
-   and scan_expression s2 = 
+    scan_whitespace s;
+    le := max_level_exp (mk_var_level_exp v) !le); s
+   and scan_expression s2 =
     scan_numbers (scan_atom s2);
     s2
-  in scan_expression scanner; 
+  in scan_expression scanner;
   !le
 
 let make_le_scanner = make_scanner level_expression_escape_string "\n\t\r "
@@ -412,11 +412,11 @@ let mk_real_param_from_strings stp value ptype =
   | "v" -> (Var value)
   | "oid" -> let term = string_to_trivial_term value stp in
     (ObId (stamp_to_object_id (term_to_stamp term)))
-  | "l" -> let level = 
-      scan_level_expression (make_le_scanner (Stream.of_string value)) in 
+  | "l" -> let level =
+      scan_level_expression (make_le_scanner (Stream.of_string value)) in
     (ParamList [(make_param (Token "nuprl5_level_expression")); (make_param (Level level)); (make_param (String value))])
   | t -> failwith "unknown special op-param"
- 
+
 let mk_meta_param_from_strings value ptype =
   match ptype with "n" -> (MNumber value)
   | "t" -> (MToken value)
@@ -426,31 +426,31 @@ let mk_meta_param_from_strings value ptype =
   | "v" -> (MVar value)
   | "l" -> (MLevel value)
   |  t -> failwith "unknown special meta op-param"
- 
-let extract_binding3 pl = 
+
+let extract_binding3 pl =
   match pl with
   (Token "extended")::((Token m)::((Token v)::tl)) -> ["extended"; m; v]
  | t  -> failwith "extract binding 3"
 
-let extract_binding2 pl = 
+let extract_binding2 pl =
   match pl with
   (Token "extended")::((Token v)::tl) -> ["extended"; v]
  |(Token "display")::((String v)::tl) -> ["display"; v]
  | t  -> failwith "extract binding 2"
 
-let extract_binding1 pl = 
+let extract_binding1 pl =
   match pl with
   (String v)::tl -> [v]
  | t  -> failwith "extract binding 1"
 
-let string_to_bindings value = 
-  
+let string_to_bindings value =
+
   let l = String.length value in
-  if l > ash_length then 
+  if l > ash_length then
     let v = String.sub value 0 ash_length in
-    (if stringeq v ascii_special_header then 
+    (if stringeq v ascii_special_header then
       let c = String.sub value 1 1 and v' = String.sub value 2 (l - 2) in
-      match c with 
+      match c with
 	"A" -> ["nuprl5_implementation3"; "extended"; "abstraction"; v']
       | "D" -> ["nuprl5_implementation3"; "extended"; "display"; v']
       | "S" -> ["nuprl5_implementation2"; "extended"; v']
@@ -469,7 +469,7 @@ let rec string_to_parameter s ptype =
     if (len < 2 or not (chareq '%' (String.get s 0)))
 	then make_param (mk_real_param_from_strings string_to_parameter s ptype)
 
-    else 
+    else
      let ss = (String.sub s 2 (len -2)) in
       make_param
        (match (String.get s 1) with
@@ -499,7 +499,7 @@ let rec string_to_parameter s ptype =
 	| 'a' ->  (mk_meta_param_from_strings ss ptype)
 
 	| _ -> error ["string_to_parameter"; s; ptype][][])
-	  
+	
 
 
 let make_session_scanner stream =
@@ -514,7 +514,7 @@ let extract_level_string_updates level inparms =
 	while not (nullp !parms )
 	do (match (hd !parms) with
 	    Token s ->
-	     (try 
+	     (try
 		if stringeq s "nuprl5_implementation3"
 		   then (level_assign level (Binding (extract_binding3 (tl !parms)))
 			; parms := tl (tl (tl !parms)))
@@ -537,8 +537,8 @@ let idata_persist_inline_param = make_param (Token "!data_persist_inline")
 
 let idata_persist_term_p t =
  match dest_term t with
-   { term_op = op; term_terms = [istamp] } 
-      -> (match dest_op op with 
+   { term_op = op; term_terms = [istamp] }
+      -> (match dest_op op with
 	   { op_name = opname; op_params = [id; ftype] } when parmeq id idata_persist_param
             -> true
 	 |_ -> false)
@@ -547,8 +547,8 @@ let idata_persist_term_p t =
 let stamp_of_idata_persist_term t =
  (* print_string "soipt "; *)
  match dest_term t with
-   { term_op = op; term_terms = [istamp] } 
-      -> (match dest_op op with 
+   { term_op = op; term_terms = [istamp] }
+      -> (match dest_op op with
 	   { op_name = opname; op_params = [id; ftype] } when parmeq id idata_persist_param
           -> term_to_stamp (term_of_unbound_term istamp)
      |_ -> error ["stamp_of_idata_persist_file"][][t])
@@ -556,8 +556,8 @@ let stamp_of_idata_persist_term t =
 
 let stamp_and_type_of_idata_persist_term t =
  match dest_term t with
-   { term_op = op; term_terms = [istamp] } 
-      -> (match dest_op op with 
+   { term_op = op; term_terms = [istamp] }
+      -> (match dest_op op with
 	   { op_name = opname; op_params = [id; ftype] } when parmeq id idata_persist_param
           -> ((term_to_stamp (term_of_unbound_term istamp)), dest_token_param ftype)
      |_ -> error ["stamp_and_type_of_idata_persist_file"][][t])
@@ -565,15 +565,15 @@ let stamp_and_type_of_idata_persist_term t =
 
 let with_open_persist_file f t =
  match dest_term t with
-   { term_op = op; term_terms = [istamp] } 
-      -> (match dest_op op with 
+   { term_op = op; term_terms = [istamp] }
+      -> (match dest_op op with
 	   { op_name = opname; op_params = [id; ftype] } when parmeq id idata_persist_param
 
-	 -> with_open_file (function in_channel -> 
+	 -> with_open_file (function in_channel ->
 			  f (make_session_scanner (Stream.of_channel in_channel)))
-		(term_to_stamp (term_of_unbound_term istamp)) 
+		(term_to_stamp (term_of_unbound_term istamp))
 		(dest_token_param ftype)
-  
+
      |_ -> error ["open_persist_file"][][t])
    |_ -> error ["open_persist_file"][][t]
 
@@ -583,31 +583,31 @@ let with_open_pid_file f stamp otype =
       [!master_pathname; pid; "/"; (string_of_int seq); "."; otype] in
   let in_channel = try open_in filename with
     Sys_error e -> error (filename :: ["db_read"; "file"; "not"; "exist"]) [] [] in
-  
+
     let x = (try (f in_channel) with e -> close_in in_channel; raise e) in
 	close_in in_channel;
 	x
 
 let with_open_static_file f t =
  match dest_term t with
-   { term_op = op; term_terms = [istamp] } 
-      -> (match dest_op op with 
+   { term_op = op; term_terms = [istamp] }
+      -> (match dest_op op with
 	   { op_name = opname; op_params = [id; ftype] } when parmeq id idata_persist_param
 
-	 -> with_open_pid_file (function in_channel -> 
+	 -> with_open_pid_file (function in_channel ->
 			  f (make_session_scanner (Stream.of_channel in_channel)))
-		(term_to_stamp (term_of_unbound_term istamp)) 
+		(term_to_stamp (term_of_unbound_term istamp))
 		(dest_token_param ftype)
-  
+
      |_ -> error ["open_static_file"][][t])
    |_ -> error ["open_static_file"][][t]
 
 
 let index_of_il_term t =
   match dest_term t with
-   { term_op = op; term_terms = _ } 
+   { term_op = op; term_terms = _ }
    -> (match dest_op op with  { op_name = opname; op_params = [id; index] }
-      -> (match (dest_param index) with 
+      -> (match (dest_param index) with
 	  Number n -> Num.int_of_num n
 	  |_ -> error ["!l_term" ; "not"][][t])
       |_ -> error ["!l_term" ; "not"][][t])
@@ -615,16 +615,16 @@ let index_of_il_term t =
 
 let index_of_ilevel_term t =
   match dest_term t with
-   { term_op = op; term_terms = _ } 
+   { term_op = op; term_terms = _ }
    -> (match dest_op op with  { op_name = opname; op_params = [id; index; size] }
-      -> (match (dest_param index) with 
+      -> (match (dest_param index) with
 	  Number n -> Num.int_of_num n
 	  |_ -> error ["!level_term" ; "not"][][t])
       |_ -> error ["!level_term" ; "not"][][t])
 
 let size_of_ilevel_term t =
  match dest_term t with
-   { term_op = op; term_terms = _ } 
+   { term_op = op; term_terms = _ }
    -> (match dest_op op with { op_name = opname; op_params = [id; index; size] }
    -> (match (dest_param size) with
 	 Number n -> Num.int_of_num n
@@ -632,7 +632,7 @@ let size_of_ilevel_term t =
      |_ -> error ["!level_term" ; "not"][][t])
 
 
-(* 
+(*
  *	have assoc table of indices to levels and persist terms.
  *	
  *	<loaded>	: {stamp; int; levels} list
@@ -651,10 +651,10 @@ let disk_levels_assoc i =
 
 let loaded_level_find_index i =
  snd (assoc i !loaded_levels)
- 
+
 let loaded_level_find_stamp s =
   let found = ref [] in
-    if (exists (function ll -> 
+    if (exists (function ll ->
 	     let (i, (stamp, levels)) = ll in
 		if (equal_stamps_p s stamp)
 		   then (found := levels; true)
@@ -664,19 +664,19 @@ let loaded_level_find_stamp s =
      else raise Not_found
 	
 let loaded_levels_update index stamp levels =
- loaded_levels := (index, (stamp, levels)) :: !loaded_levels 
+ loaded_levels := (index, (stamp, levels)) :: !loaded_levels
 
 
 
 let rec read_levels term index =
  (* print_string "read_levels "; Mbterm.print_term term; *)
- if idata_persist_term_p term 
+ if idata_persist_term_p term
     then  let stamp = (stamp_of_idata_persist_term term) in
 	  try (loaded_level_find_stamp stamp)
           with _ -> let levels = read_static_level term in
 		      (loaded_levels_update index stamp levels
 		      ; levels)
-   else (unconditional_error_handler 
+   else (unconditional_error_handler
 	  (function () -> level_find (index_of_il_term term))
 	  (function t -> error ["read_levels"; "unknown"] [] [t; term]))
 
@@ -686,14 +686,14 @@ and level_find index =
 and read_static_level t = with_open_static_file read_static_level_aux t
 
 and read_static_level_aux scanner =
- 
+
  let ilevel = (session_read_term scanner) in
  let lindex = (index_of_ilevel_term ilevel) in
 
    add_new_level_aux (size_of_ilevel_term ilevel) scanner;
-   
+
    let level = nth scanner.levels lindex in
- 
+
      (* parameters_of_term will include the embedded nuprl5 opid as first parameter
 	since this is a nuprl5_implementation term
      *)
@@ -713,26 +713,26 @@ and read_static_level_aux scanner =
 
 
 and session_read_term scanner =
- 
+
   if (scan_at_char_p scanner.scanner 'l')
-    then (scan_char scanner.scanner 'l'; 
+    then (scan_char scanner.scanner 'l';
 	  scanner.levels <- read_levels (scan_term
 					      (* forget current levels *)
 					      (new_lscanner scanner.scanner scanner.stb scanner.stp))
 					(-1);
-  	  scan_char scanner.scanner 'l';  
+  	  scan_char scanner.scanner 'l';
 	  session_read_term scanner )
   else if (scan_at_char_p scanner.scanner 't')
-    then (scan_char scanner.scanner 't'; 
-	 let t = scan_term scanner in 
-	   scan_char scanner.scanner 't';  
+    then (scan_char scanner.scanner 't';
+	 let t = scan_term scanner in
+	   scan_char scanner.scanner 't';
 	   t)
   else error ["session"; "read_term"; Char.escaped (scan_cur_char scanner.scanner)] [][]
 
 let session_maybe_read_term scanner =
   if (scan_at_eof_p scanner.scanner) then None
   else Some (session_read_term scanner)
- 
+
 let db_read_ascii stamp otype =
  (* Mbterm.print_term (stamp_to_term stamp); print_string otype; *)
  with_open_file
@@ -743,29 +743,29 @@ let db_read_ascii stamp otype =
 
 (* init disk_levels *)
 let read_disk_levels () =
- with_open_db_file 
+ with_open_db_file
   (function in_channel ->
     let scanner = (make_session_scanner (Stream.of_channel in_channel)) in
-     let rec aux () = 
+     let rec aux () =
        let m = session_maybe_read_term scanner in
-        match m with 
+        match m with
  	  None -> []
 	| Some term -> 	(* (Mbterm.print_term term; *)
 			match dest_term term with
 			{ term_op = op; term_terms = [li; dp]}
-			 -> (match dest_op (operator_of_term (term_of_unbound_term li)) with 
+			 -> (match dest_op (operator_of_term (term_of_unbound_term li)) with
 			      { op_name = _; op_params = [id; index]}
 			      -> (dest_int_param index, term_of_unbound_term dp) :: aux()
 			     |_ -> error ["read_disk_levels"][][term])				
 			 |_ -> error ["read_disk_levels"][][term]				
 
 	in disk_levels := aux ())
-  "levels" "lst" 
+  "levels" "lst"
 
 
 (* todo : might not be a bad idea to do both for a while and compare answers. *)
 
-(* 
+(*
 let db_lib_read stamp object_type =
   let sterm = stamp_to_term stamp and oterm = istring_term object_type in
    Orb.eval_args_to_term tid sterm [oterm]
@@ -778,7 +778,7 @@ let db_read_mathbus stamp object_type =
    term
 
 let db_read stamp otype =
- if !asciip 
+ if !asciip
     then db_read_ascii stamp otype
     else db_read_mathbus stamp otype
 
@@ -797,17 +797,17 @@ let db_init master ascp =
 	     else String.concat "" [master; "/"] in
    master_pathname := name;
 
-   if !asciip then read_disk_levels () 
+   if !asciip then read_disk_levels ()
 
  (*let {process_id = pid} = dest_stamp stamp in
  process_pathname := String.concat "" [name ; pid];
  mkdir !process_pathname 999*)
 
 
-let string_to_term s = 
+let string_to_term s =
   scan_term (make_session_scanner (Stream.of_string s))
 
-let session_string_to_term s = 
+let session_string_to_term s =
   session_read_term (make_session_scanner (Stream.of_string s))
 
 

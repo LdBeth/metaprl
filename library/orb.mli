@@ -44,7 +44,7 @@ val restore_library_environment	: connection
 val eval_string		: environment -> term (* tid *) -> string -> unit
 val eval		: environment -> term (* tid *) -> term -> unit
 val eval_args		: environment -> term (* tid *) -> term -> term list -> unit
- 
+
 val eval_string_to_term		: environment -> term (* tid *) -> string -> term
 val eval_to_term		: environment -> term (* tid *) -> term -> term
 val eval_args_to_term		: environment -> term (* tid *) -> term -> term list -> term
@@ -62,7 +62,7 @@ val eval_callback	: bool -> environment
 				-> unit
 
 
-(* 
+(*
    intention is to not allow g to mask exception from f.
    g may handle failure of f but if f and g both fail then the exception is from f.
 

@@ -36,35 +36,35 @@ struct
    (************************************************************************
     * TYPES                                                                *
     ************************************************************************)
-   
+
    (*
     * Save the proof and tag types.
     *)
    type cooked = FileBase.cooked
    type select = FileBase.select
-   
+
    type info =
       { info_root : FileBase.info;
         info_path : module_path;
         mutable info_info : cooked
       }
-   
+
    type t = FileBase.t
-   
+
    (************************************************************************
     * INHERITED OPERATIONS                                                 *
     ************************************************************************)
-   
+
    (*
     * Create a new base from the path.
     *)
    let create = FileBase.create
    let set_path = FileBase.set_path
-   
+
    (************************************************************************
     * LOAD/STORE                                                           *
     ************************************************************************)
-   
+
    (*
     * Find a specific module given a full pathname.
     *)
@@ -81,7 +81,7 @@ struct
                  info_path = name;
                  info_info = info'
                }
-   
+
    (*
     * Find the matching module info.
     *)
@@ -93,7 +93,7 @@ struct
            info_path = path;
            info_info = info
          }
-   
+
    (*
     * Create an empty info.
     *)
@@ -103,7 +103,7 @@ struct
            info_path = [String.capitalize file];
            info_info = data
          }
-   
+
    (*
     * Save a module specification.
     * This can only be called at a root.
@@ -115,17 +115,17 @@ struct
             FileBase.save base root
        | _ ->
             raise (Invalid_argument "Filter_summary_io.save")
-   
+
    (************************************************************************
     * MODULE INFO                                                          *
     ************************************************************************)
-   
+
    (*
     * Projections.
     *)
    let info base { info_info = data } =
       data
-   
+
    let sub_info base { info_info = info; info_path = path; info_root = root } name =
       let path' = path @ [name] in
       let info' = Address.find_sub_module info path' in
@@ -133,31 +133,34 @@ struct
            info_path = path';
            info_root = root
          }
-   
+
    let set_info base info data =
       info.info_info <- data
-   
+
    let name base { info_path = path } =
       List_util.last path
-   
+
    let pathname base { info_path = path } =
       path
-   
+
    let root base { info_root = root; info_path = path } =
       { info_root = root;
         info_path = [List_util.last path];
         info_info = FileBase.info base root
       }
-   
+
    let file_name base { info_root = root } =
       FileBase.full_name base root
-   
+
    let type_of base { info_root = root } =
       FileBase.type_of base root
 end
-   
+
 (*
  * $Log$
+ * Revision 1.8  1998/06/01 13:53:15  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.7  1998/05/27 15:13:04  jyh
  * Functorized the refiner over the Term module.
  *

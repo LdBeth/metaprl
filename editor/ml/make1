@@ -5,4 +5,5 @@ set -e
 (cd ../../theories/tactic; echo tactic; make)
 (cd ../../theories/ocaml; echo ocaml; make)
 (cd ../../theories/base; echo base; make)
+(cd ../../theories/itt; echo itt; make)
 (cd ../../editor/ml; echo editor; make)

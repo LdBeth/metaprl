@@ -98,7 +98,7 @@ let rec fold_expr iter x expr =
             List.fold_left (fold_expr iter) (fold_expr iter x e) el
        | MLast.ExAnt (loc, e) ->
             Stdpp.raise_with_loc loc (Failure "Filter_ocaml.mk_expr: encountered an ExAnt")
-         
+
 and fold_patt iter x patt =
    let x = iter.fold_patt x patt in
       match patt with
@@ -132,7 +132,7 @@ and fold_patt iter x patt =
             x
        | MLast.PaAnt (loc, p) ->
             Stdpp.raise_with_loc loc (Failure "Filter_ocaml:mk_patt: encountered PaAnt")
-      
+
 and fold_type iter x t =
    let x = iter.fold_type x t in
       match t with
@@ -164,7 +164,7 @@ and fold_type iter x t =
             List.fold_left (fold_type iter) x tl
        | (<:ctyp< $uid:s$ >>) ->
             x
-      
+
 and fold_sig_item iter x si =
    let x = iter.fold_sig_item x si in
       match si with
@@ -186,7 +186,7 @@ and fold_sig_item iter x si =
             List.fold_left (fold_sslt iter) x ssltl
        | (<:sig_item< value $s$ : $t$ >>) ->
             fold_type iter x t
-      
+
 and fold_str_item iter x si =
    let x = iter.fold_str_item x si in
       match si with
@@ -210,7 +210,7 @@ and fold_str_item iter x si =
             List.fold_left (fold_sslt iter) x ssltl
        | (<:str_item< value $rec:b$ $list:pel$ >>) ->
             List.fold_left (fold_pe iter) x pel
-          
+
 and fold_module_type iter x mt =
    let x = iter.fold_module_type x mt in
       match mt with
@@ -228,7 +228,7 @@ and fold_module_type iter x mt =
             x
        | (<:module_type< $mt$ with $list:wcl$ >>) ->
             List.fold_left (fold_with_constr iter) (fold_module_type iter x mt) wcl
-      
+
 and fold_with_constr iter x wc =
    let x = iter.fold_with_constr x wc in
       match wc with
@@ -256,7 +256,7 @@ and fold_module_expr iter x me =
             fold_module_type iter (fold_module_expr iter x me) mt
        | (<:module_expr< $uid:i$ >>) ->
             x
-      
+
 and fold_class_type iter x
   ({ ctLoc = loc;
      ctNam = s;
@@ -313,7 +313,7 @@ and fold_class_field iter x cf =
             fold_expr_opt iter x eo
        | CfVir (loc, s, t) ->
             fold_type iter x t
-      
+
 (*
  * Combined forms.
  *)
@@ -354,6 +354,9 @@ and fold_sslt iter x (s, sl, t) =
 
 (*
  * $Log$
+ * Revision 1.5  1998/06/01 13:53:21  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.4  1998/04/24 19:38:40  jyh
  * Updated debugging.
  *

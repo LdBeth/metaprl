@@ -54,7 +54,7 @@ let parse name =
    let store loc s =
       comments := (loc, s) :: !comments
    in
-   
+
    (*
     * Input:
     *    inx: the input file
@@ -125,7 +125,7 @@ let parse name =
        | _ ->
             comment level (getc ())
    in
-   
+
    (* Execution will always produce End_of_file *)
    let _ =
       try read (getc ()) with
@@ -142,7 +142,7 @@ let parse name =
  * Program interators.
  *)
 let fold_expr locs expr =
-   loc_of_expr expr :: locs    
+   loc_of_expr expr :: locs
 
 let fold_patt locs patt =
    loc_of_patt patt :: locs
@@ -181,7 +181,7 @@ let fold_class_field locs field =
        | CfVir (loc, _, _) -> loc
    in
       loc :: locs
-                              
+
 let fold_class_type locs { ctLoc = loc } =
    loc :: locs
 
@@ -195,7 +195,7 @@ let fold_class_type_field locs field =
        | CtVir (loc, _, _) -> loc
    in
       loc :: locs
-                              
+
 (*
  * Fold record.
  *)
@@ -251,7 +251,7 @@ let create comments locs =
     | [] ->
          ()
    in
-   
+
    (* Sort the list by starting position, longest length going first *)
    let compare (start1, len1) (start2, len2) =
       (start1 < start2) || (start1 = start2 && len1 < len2)
@@ -277,6 +277,9 @@ let get = Hashtbl.find
 
 (*
  * $Log$
+ * Revision 1.5  1998/06/01 13:52:53  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.4  1998/04/24 19:38:19  jyh
  * Updated debugging.
  *

@@ -27,20 +27,20 @@ let rec parmeq p q =
  match dest_param p, dest_param q with
 
     Number pn, Number qn	-> eq_num pn qn
-  | ParamList pl, ParamList ql	-> listeq parmeq pl ql 
-  | ObId poid, ObId qoid	-> listeq parmeq poid qoid 
+  | ParamList pl, ParamList ql	-> listeq parmeq pl ql
+  | ObId poid, ObId qoid	-> listeq parmeq poid qoid
 
   |_ -> p = q
 
 
 let oideq = listeq parmeq
 
-let opeq a b = 
+let opeq a b =
  match dest_op a with
-  	{ op_name = aopname; 
+  	{ op_name = aopname;
 	  op_params = aparms }
   -> (match dest_op b with
-  	{ op_name = bopname; 
+  	{ op_name = bopname;
 	  op_params = bparms }
 	-> (aopname = bopname & listeq parmeq aparms bparms))
 
@@ -50,10 +50,10 @@ let nuprl5_opname_p opn = stringeq opn nuprl5_opname
 
 open Hashtbl
 
-(*	TODO PERF 
+(*	TODO PERF
 	these maps are unfortunate as we will be consing at every lookup
  *)
-let rec parmhash p = 
+let rec parmhash p =
 
  match dest_param p with
 
@@ -101,8 +101,8 @@ let iterm_op = mk_nuprl5_op [make_param (Token "!term")]
 let imessage_term sl ol tl =
   mk_term
     (imessage_op
-      ( (map (function s -> make_param (Token s)) sl) 
-      @ (map (function o -> make_param (ObId o)) ol) 
+      ( (map (function s -> make_param (Token s)) sl)
+      @ (map (function o -> make_param (ObId o)) ol)
       ))
     (map (function t -> mk_bterm [] t) tl)
 
@@ -112,11 +112,11 @@ let iterm_bterms bterms = mk_term iterm_op bterms
 let ivoid_op = (mk_nuprl5_op [make_param (Token "!void")])
 let ivoid_term = mk_term ivoid_op []
 
-let ivoid_term_p t = 
+let ivoid_term_p t =
   match dest_term t with
   { term_op = op; term_terms = []} when opeq op ivoid_op
      -> true
-  |_ -> false   
+  |_ -> false
 
 
 
@@ -126,7 +126,7 @@ let ivoid_term_p t =
 
 exception Nuprl5_Exception of (string * term)
 
-let error sl oids tl = 
+let error sl oids tl =
   print_string (String.concat " " sl);
   print_newline();
   map Mbterm.print_term tl;
@@ -135,25 +135,25 @@ let error sl oids tl =
 
 let special_error_handler body handler =
   try body ()
-  with 
+  with
     Nuprl5_Exception (s,t) -> handler s t
 
 let error_handler body handler =
   try body ()
-  with 
+  with
     Nuprl5_Exception (s,t) -> handler t
 
 let unconditional_error_handler body handler =
   try body ()
-  with 
+  with
     Nuprl5_Exception (s,t) -> handler t
-  |_ -> 
+  |_ ->
 	( () (* TODO dump error to stdout *)
 	; handler (itext_term "Unexpected Nuprl Light failure"))
 
-let unwind_error body unwind = 
+let unwind_error body unwind =
   try body ()
-  with 
+  with
     e -> (unwind ()); raise e
 
 
@@ -172,13 +172,13 @@ let bound_terms_of_term t =
   match dest_term t with
    { term_op = _; term_terms = bterms} -> bterms
 
-let term_of_unbound_term bterm = 
+let term_of_unbound_term bterm =
   match dest_bterm bterm with
     { bvars = []; bterm = t }
     -> t
   | _ -> error ["unbound"; "bound"] [] [(mk_term iterm_op [bterm])]
 
-let unbound_bterm_p bterm = 
+let unbound_bterm_p bterm =
   match dest_bterm bterm with
     { bvars = []; bterm = t }
     -> true
@@ -187,7 +187,7 @@ let unbound_bterm_p bterm =
 
 let parameter_of_carrier p t =
   match dest_term t with
-    { term_op = o; term_terms = []} 
+    { term_op = o; term_terms = []}
      -> (match dest_op o with
 	  { op_name = opname; op_params = [p'; c] } when (parmeq p p' & nuprl5_opname_p opname)
 	    -> c
@@ -196,7 +196,7 @@ let parameter_of_carrier p t =
 
 let parameters_of_carrier p t =
   match dest_term t with
-    { term_op = o; term_terms = []} 
+    { term_op = o; term_terms = []}
      -> (match dest_op o with
 	  { op_name = opname; op_params = p':: r } when (parmeq p p' & nuprl5_opname_p opname)
 	    -> r
@@ -296,7 +296,7 @@ let print_stamp s =
   print_int s.seq;
   print_string "}"
 
- 
+
 
 let dest_stamp stamp = stamp
 
@@ -305,17 +305,17 @@ let istamp_op parms = mk_nuprl5_op (istamp_parameter :: parms)
 
 exception InvalidStampTerm of term
 
-let term_to_stamp t = 
+let term_to_stamp t =
   match dest_term t with
    { term_op = op;
-     term_terms = [] } 
+     term_terms = [] }
     -> (match dest_op op with
-	{ op_name = opname; 
+	{ op_name = opname;
 	  op_params = [istamp; pseq; ptime; ptseq; ppid] }
 	    when (nuprl5_opname_p opname & parmeq istamp istamp_parameter)
          ->
 	(match dest_param ppid with Token pid ->
-	(match dest_param ptseq with Number (Num.Int tseq) -> 
+	(match dest_param ptseq with Number (Num.Int tseq) ->
 	(match dest_param pseq with Number (Num.Int seq) ->
 	       (* print_string "tts "; *)
            {term = t;
@@ -346,13 +346,13 @@ let stamp_to_object_id stamp = make_object_id (List.tl (parameters_of_term stamp
 
 let in_transaction_p = fun
   { process_id = pid1; transaction_seq = tseq1 }
-  { process_id = pid2; transaction_seq = tseq2 } -> 
+  { process_id = pid2; transaction_seq = tseq2 } ->
     pid1 = pid2 & tseq1 = tseq2
 
 
 let transaction_less = fun
   { term = term1; process_id = pid1; seq = seq1; time = time1 }
-  { term = term2; process_id = pid2; seq = seq2; time = time2 } -> 
+  { term = term2; process_id = pid2; seq = seq2; time = time2 } ->
 
     if not (stringeq pid1 pid2) then error ["stamp"; "less"; "incomparable"] [] [term1; term2]
     else if (eq_num time1 time2) then seq1 < seq2
@@ -365,7 +365,7 @@ let get_inet_addr =
 type stamp_data = {mutable count : int; pid : string}
 
 (* TODO pid should include inet addr and time as well as process id to insure uniqueness *)
-let stamp_data = 
+let stamp_data =
 	{ count = 0
 	; pid = String.concat "_"
 			[ string_of_inet_addr get_inet_addr
@@ -394,14 +394,14 @@ let equal_stamps_p a b =
  & a.seq = b.seq
  & (eq_num a.time b.time)
 
-let new_stamp () = 
+let new_stamp () =
   stamp_data.count <- stamp_data.count + 1;
   make_stamp stamp_data.pid stamp_data.count stamp_data.count (num_of_int (time()))
 
-let get_stamp () = 
+let get_stamp () =
   make_stamp stamp_data.pid stamp_data.count stamp_data.count (num_of_int (time()))
 
-let sequence () = 
+let sequence () =
   stamp_data.count <- stamp_data.count + 1;
   stamp_data.count
 
@@ -416,20 +416,20 @@ let tid () =
 		])
      [])
 
-let tideq s t = 
+let tideq s t =
  opeq (operator_of_term s) (operator_of_term t)
 
 
 (* expect Fatal error: uncaught exception Incomparable_Stamps
    should try other tests and make outcome more apparent ie print test ok
  *)
-let test () = 
+let test () =
  let s1 = (make_stamp "goo" 2 1 (num_of_int 2))
  and s2 = (make_stamp "moo" 1 2 (num_of_int 2))
  and s3 = (make_stamp "goo" 2 2 (num_of_int 3))
-   in (in_transaction_p s3 s1) & 
+   in (in_transaction_p s3 s1) &
       (transaction_less s1 s3) &
-      (transaction_less s3 s2) 
+      (transaction_less s3 s2)
 ;;
 
 
@@ -450,7 +450,7 @@ let tl_of_icons_term iop t =
 
 
 let list_to_ilist_by_op_map op f l =
- let rec aux ll = 
+ let rec aux ll =
    if nullp ll
       then mk_term op []
       else mk_term op [mk_bterm [] (f (hd ll)); mk_bterm [] (aux (tl ll))] in
@@ -472,7 +472,7 @@ let map_isexpr_to_list_by_op iop f t =
        -> (f t) :: acc
     | { term_op = op; term_terms = [l; r] } when ((opeq op iop) & (unbound_bterm_p l) & (unbound_bterm_p r))
        -> aux (term_of_unbound_term l) (aux (term_of_unbound_term r) acc)
-    |_ -> (f t) :: acc  
+    |_ -> (f t) :: acc
   in
  aux t []
 
@@ -512,17 +512,17 @@ let iproperty_term name_prop =
   mk_term (mk_nuprl5_op [iproperty_parameter; make_param (Token (fst name_prop))])
 	  [mk_bterm [] (snd name_prop)]
 
- 
+
 let string_of_token_parameter p =
   match dest_param p with
     Token s -> s
   |_ -> error ["parameter"; "token"; "not"; ""] [] []
 
 let property_of_iproperty_term pt =
-  match dest_term pt with 
-    { term_op = pto; term_terms = [prop] } 
+  match dest_term pt with
+    { term_op = pto; term_terms = [prop] }
     -> (match dest_op pto with
-	{ op_name = po; op_params = [iprop; name] } when (nuprl5_opname_p po 
+	{ op_name = po; op_params = [iprop; name] } when (nuprl5_opname_p po
 							  & parmeq iprop iproperty_parameter)
 	  -> (string_of_token_parameter name, term_of_unbound_term prop)
 	|_ -> error ["iproperty"; "op"; "not"; ""] [] [pt])

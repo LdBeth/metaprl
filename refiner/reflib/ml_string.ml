@@ -23,13 +23,13 @@ struct
    type t = { mutable buf : string list }
    type name = unit
    type out = string
-   
+
    (*
     * Creation.
     *)
    let create () = { buf = [] }
    let close _ = ()
-   
+
    (*
     * Printing.
     *)
@@ -66,6 +66,9 @@ module StringPrint = MakePrinter (StringFile)
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/01 13:55:00  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1998/05/28 15:01:01  jyh
  * Partitioned refiner into subdirectories.
  *

@@ -10,7 +10,7 @@ val connect_callback 		: link (*not complete*) -> link (*complete*)
 				
 val disconnect		: link -> unit
 
-val send		: link -> term -> unit 
+val send		: link -> term -> unit
 
 (*blocks on read*)
 val recv		: link -> term

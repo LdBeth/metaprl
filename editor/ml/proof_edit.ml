@@ -124,7 +124,7 @@ let ped_goal { ped_proof = pf; ped_select = select } =
  *)
 let ped_arg { ped_goal = goal } =
    goal
-            
+
 (************************************************************************
  * DISPLAY                                                              *
  ************************************************************************)
@@ -446,6 +446,9 @@ let expand_ped df ped =
 
 (*
  * $Log$
+ * Revision 1.7  1998/06/01 13:52:21  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.6  1998/05/28 13:45:50  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

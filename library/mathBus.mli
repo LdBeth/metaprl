@@ -21,7 +21,7 @@ val string_value: mbterm -> string
 (*val mb_integerb: int32 -> mbnode*)
 val mb_integer: int -> mbterm
 val mb_integerq: int (*value*) -> int32 (*label*) -> mbterm
-val integer_value: mbterm -> int 
+val integer_value: mbterm -> int
 
 
 val mb_number: num -> mbterm
@@ -35,7 +35,7 @@ val mbnode_label: mbterm -> int32
 val mbnode_labelq: mbterm -> int32
 
 val write_node: mbterm -> out_channel -> unit
-val initialize_base64:  unit 
+val initialize_base64:  unit
 val read_node: in_channel -> mbterm
 val print_node: mbterm -> unit
 
@@ -54,7 +54,7 @@ val declare_local_stringid: string -> int32 -> int32
 val mbnode_subterm: mbNode -> int -> mbnode
 val global_assign:
 val loop_over_subterms: mbterm -> (int -> string -> unit) -> unit
-    
+
 val  minimum_global_numeric_label:  int32
 val  maximum_global_numeric_label: int32
 val  minimum_local_numeric_label: int32

@@ -19,7 +19,7 @@ open Package_type
 
 module Extract : ExtractSig
 module Package : PackageSig with type proof = Extract.proof
-                 
+
 (*
  * Auxiliary functions for managing resources and proofs.
  *)
@@ -28,6 +28,9 @@ val prove : string -> (string * tactic) array -> unit -> extract
 
 (*
  * $Log$
+ * Revision 1.6  1998/06/01 13:52:15  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.5  1998/05/28 13:45:43  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

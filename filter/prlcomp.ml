@@ -56,7 +56,7 @@ let set_lib s =
  * Collect argument list.
  *)
 let argv = ref []
-    
+
 let add_arg arg =
    argv := !argv @ [arg]
 
@@ -89,7 +89,7 @@ let add_string_argv arg s =
  * Collect include directory specification.
  *)
 let includes = ref []
-    
+
 let add_include dir =
    includes := !includes @ [dir];
    argv := !argv @ ["-I"; dir]
@@ -109,13 +109,34 @@ let set_includes () =
       ()
 
 (*
+ * Executable names.
+ *)
+let exe_name =
+   let ostype =
+      try Sys.getenv "OSTYPE" with
+         Not_found ->
+            ""
+   in
+   let win32 = Sys.os_type = "Win32" or ostype = "win32" or ostype = "cygwin32" in
+      if win32 then
+         (fun name -> name ^ ".exe")
+      else
+         (fun name -> name)
+
+let ocamlc_exe  = exe_name "ocamlc"
+let camlp4o_exe = exe_name "camlp4o"
+let camlp4n_exe = exe_name "camlp4n"
+let prlcn_exe   = exe_name "prlcn"
+let prlco_exe   = exe_name "prlco"
+
+(*
  * Commands are constructed from argument list.
  *)
 let mk_camlp4 argv includes =
-   (Filename.concat !lib "camlp4o") :: argv
+   (Filename.concat !lib camlp4o_exe) :: argv
 
 let mk_ocamlc argv includes =
-   ["ocamlc"; "-I"; !lib; "-pp"; Filename.concat !lib "camlp4n"] @ argv
+   [ocamlc_exe; "-I"; !lib; "-pp"; Filename.concat !lib camlp4n_exe] @ argv
 
 let mk_prlcn argv includes =
    let rec mk_includes = function
@@ -124,11 +145,11 @@ let mk_prlcn argv includes =
     | [] ->
          ""
    in
-   let preproc = (Filename.concat !lib "prlcn") ^ (mk_includes includes) in
-      ["ocamlc"; "-I"; !lib; "-pp"; preproc] @ argv
+   let preproc = (Filename.concat !lib prlcn_exe) ^ (mk_includes includes) in
+      [ocamlc_exe; "-I"; !lib; "-pp"; preproc] @ argv
 
 let mk_prlco argv includes =
-   Filename.concat !lib "prlco" :: argv
+   Filename.concat !lib prlco_exe :: argv
 
 let mk_command () =
    let f =
@@ -165,11 +186,11 @@ let spec =
  * Print the command line.
  *)
 let print_command_line argv =
-   let printer =
+   let printer s =
       if !verbose_mode = 2 then
-         eprintf "'%s' "
+         eprintf "'%s'%t" s eflush
       else
-         eprintf "%s "
+         eprintf "%s " s
    in
    let rec print = function
       h::t ->
@@ -190,20 +211,22 @@ let main () =
    let _ = set_includes () in
    let argv = mk_command () in
    let argv' = Array.of_list argv in
+   let argv' = Array.map String.copy argv' in
    let _ =
-      if true or !verbose_mode <> 0 then
+      if !verbose_mode <> 0 then
          print_command_line argv
    in
 (*
-   let pid = Unix.create_process_env argv'.(0) argv' env' Unix.stdin Unix.stdout Unix.stderr in
+   let env = Unix.environment () in
+   let pid = Unix.create_process_env argv'.(0) argv' env Unix.stdin Unix.stdout Unix.stderr in
       match snd (Unix.waitpid [] pid) with
          Unix.WEXITED code ->
             eprintf "Compiler exited with code %d%t" code eflush;
             exit code
        | Unix.WSIGNALED _
        | Unix.WSTOPPED _ ->
- exit 1
- *)
+            exit 1
+*)
       Unix.execvp argv'.(0) argv';
       eprintf "Execution failed: %s%t" argv'.(0) eflush;
       exit 1
@@ -212,6 +235,9 @@ let _ = Printexc.catch (Unix.handle_unix_error main) ()
 
 (*
  * $Log$
+ * Revision 1.14  1998/06/01 13:53:22  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.13  1998/05/29 21:12:27  jyh
  * Need to update ocamldep.
  *

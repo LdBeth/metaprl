@@ -164,7 +164,7 @@ let goal_of_aterm_tactic_arg resources fcache
 (*
  * Throw away information.
  *)
-let io_step_of_step 
+let io_step_of_step
     { step_goal = goal;
       step_subgoals = subgoals;
       step_text = text;
@@ -194,6 +194,9 @@ let step_of_io_step { ref_fcache = fcache; ref_rsrc = resources } tactics
 
 (*
  * $Log$
+ * Revision 1.12  1998/06/01 13:52:23  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.11  1998/05/28 13:45:53  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

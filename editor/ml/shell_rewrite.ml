@@ -86,8 +86,17 @@ let comment loc t =
 (*
  * Format the tactic text.
  *)
-let format_tac db buf tac =
-   ()
+let format_tac db buf { tac_goal = rw; tac_hyps = hyps } =
+   let format_hyp hyp =
+      format_term db buf hyp;
+      format_newline buf
+   in
+      format_string buf "Hyps:";
+      format_newline buf;
+      List.iter format_hyp hyps;
+      format_string buf "Goal: ";
+      format_term db buf rw;
+      format_newline buf
 
 (*
  * A primtive rewrite.
@@ -96,14 +105,16 @@ let format_prim_rewrite db buf arg params assums redex contractum =
    let tac = mk_rw_goal arg assums redex contractum in
       format_tac db buf tac;
       format_newline buf;
-      format_string buf "Primitive"
+      format_string buf "Primitive";
+      format_newline buf
 
 let format_cond_rewrite db buf arg params assums redex contractum expr =
    let tac = mk_rw_goal arg assums redex contractum in
       format_tac db buf tac;
       format_newline buf;
       format_string buf "Derived> ";
-      format_term db buf (term_of_expr [] comment expr)
+      format_term db buf (term_of_expr [] comment expr);
+      format_newline buf
 
 (*
  * The object has a package in scope.
@@ -288,6 +299,9 @@ let view_crw pack
 
 (*
  * $Log$
+ * Revision 1.10  1998/06/01 13:52:33  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.9  1998/05/29 14:52:53  jyh
  * Better Makefiles.
  *

@@ -4,9 +4,9 @@
  * registries, one for the global information, and one for the local
  * information.
  *)
-open Printf 
+open Printf
 open Debug
- 
+
 open Int32
 
 let _ =
@@ -21,7 +21,7 @@ type tb =
  | Bi of (string, int32) Hashtbl.t * (int32, string) Hashtbl.t
 
 type regtb = (string, tb) Hashtbl.t
-      
+
 let global_registry = (Hashtbl.create 3 : regtb)
 let local_registry = (Hashtbl.create 3 : regtb)
 
@@ -38,7 +38,7 @@ let registry_file =
 (*
  * Define a particular type of registry.
  *)
-let define_registry_type label bidirectional = 
+let define_registry_type label bidirectional =
    if not (List.mem label !registry_types) then
       begin
          registry_types := label::!registry_types;
@@ -46,12 +46,12 @@ let define_registry_type label bidirectional =
          (if bidirectional then
              Bi ((Hashtbl.create 10), (Hashtbl.create 10))
           else Uni (Hashtbl.create 10));
-      
-         Hashtbl.add global_registry label 
+
+         Hashtbl.add global_registry label
          (if bidirectional then
              Bi ((Hashtbl.create 10), (Hashtbl.create 10))
           else Uni (Hashtbl.create 10));
-      
+
       end
 
 (*
@@ -67,7 +67,7 @@ let clear_registry globalp localp =
    begin
       if globalp then
          Hashtbl.clear global_registry;
-      if localp then 
+      if localp then
          Hashtbl.clear local_registry
    end
 
@@ -113,7 +113,7 @@ let registry_store_local id regtype v =
  | Bi (h1, h2) ->
       (Hashtbl.add h1 id v;
        Hashtbl.add h2 v id)
- 
+
 (*
  * Read the next string from the registry.
  *)
@@ -173,7 +173,7 @@ let read_registry =
 
 (*
  read_registry registry_file
-  
+
  Generated the LISP declaration file for label names.
 let generate_registry_declarations ofile file =
   let stream = open_in file and ostream = open_out ofile in
@@ -201,16 +201,19 @@ let generate_registry_declarations ofile file =
 			     char= aref ident 1 #\e
 			     char= aref ident 2 #\m
 			     char= aref ident 3 #\p
-	      format ostream "~%defvar mBS_~A #x~16R~%export 'mathbus::MBS_~A 'mathbus~%" 
+	      format ostream "~%defvar mBS_~A #x~16R~%export 'mathbus::MBS_~A 'mathbus~%"
 		      ident regval string_upcase ident
 	  format ostream "registry_store_local \"~A\" \"~A\" ~D~%"
 		  ident regtype regval
     format ostream "~%~%; End of automatically generated file.~%~%"
-           
+
 *)
 
 (*
  * $Log$
+ * Revision 1.12  1998/06/01 13:54:16  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.11  1998/05/28 13:46:55  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

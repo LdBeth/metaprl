@@ -17,12 +17,12 @@ sig
 
    (* Packaged rewrite rule *)
    type rewrite_rule
-   
+
    (* Separated forms *)
    type rewrite_redex
    type rewrite_contractum
    type rewrite_stack
-   
+
    (*
     * Types for redex matching.
     *)
@@ -33,7 +33,7 @@ sig
     | RewriteStringType of string
     | RewriteIntType of string
     | RewriteLevelType of string
-   
+
    type rewrite_item =
       RewriteTerm of term
     | RewriteFun of (term list -> term)
@@ -41,15 +41,15 @@ sig
     | RewriteString of string
     | RewriteInt of int
     | RewriteLevel of level_exp
-   
+
    type stack
-   
+
    type match_type =
       ParamMatch of param
     | VarMatch of string
     | TermMatch of term
     | BTermMatch of bound_term
-   
+
    (* Detailed exceptions *)
    type rewrite_error =
       BoundSOVar of string
@@ -63,9 +63,9 @@ sig
     | MissingContextArg of string
     | StackError of stack
     | StringError of string
-   
+
    exception RewriteError of rewrite_error
-   
+
    (*
     * Separate analysis.
     *)
@@ -80,22 +80,22 @@ sig
       rewrite_redex -> address array ->
       term list -> rewrite_stack * rewrite_item list
    val make_contractum : rewrite_contractum -> rewrite_stack -> term
-   
+
    (* Rewrite constructor/destructors *)
    val term_rewrite : string array * string array ->
       term list -> term list -> rewrite_rule
    val fun_rewrite : term -> (term -> term) -> rewrite_rule
-   
+
    (* Apply a rewrite to a term *)
    val apply_rewrite : rewrite_rule -> address array * string array ->
       term list -> term list * string array
-   
+
    (*
     * See if a rule may apply to a particular term
     * described by its operator and it arities.
     *)
    val relevant_rule : operator -> int list -> rewrite_rule -> bool
-   
+
    (*
     * Get some info for the evaluator.
     *)
@@ -105,6 +105,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/01 13:55:10  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1998/05/28 15:01:40  jyh
  * Partitioned refiner into subdirectories.
  *

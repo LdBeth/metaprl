@@ -17,4 +17,4 @@
  val oidtable_unit_map	: 'a oidtable -> stamp -> (object_id -> 'a -> unit) -> unit
  val oidtable_map	: 'a oidtable -> stamp -> (object_id -> 'a -> 'b option) -> 'b list
 
- 
+

@@ -60,7 +60,7 @@ type dform_info =
      dform_options : dform_option list;
      dform_print : dform_printer
    }
-   
+
 (*
  * Destruct a base.
  *)
@@ -111,6 +111,9 @@ val string_of_mterm : dform_base -> meta_term -> string
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/01 13:54:51  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1998/05/28 15:00:44  jyh
  * Partitioned refiner into subdirectories.
  *

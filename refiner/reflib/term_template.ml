@@ -171,7 +171,7 @@ let of_term_list tl =
    let tl = List.map template_of_term tl in
       if !debug_dform then
          begin
-            let print_template 
+            let print_template
                 { template_opname = opname;
                   template_params = params;
                   template_arities = arities
@@ -193,6 +193,9 @@ let to_int t = t
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/01 13:55:09  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1998/05/28 15:01:26  jyh
  * Partitioned refiner into subdirectories.
  *

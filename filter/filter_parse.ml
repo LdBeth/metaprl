@@ -3,16 +3,6 @@
  *
  * The grammar of OCaml is extended to include Nuprl-Light commands.
  * This file contains all of the extensions.
- *
- * Bogus note: whenever a Nuprl-Light term is read, a placeholder
- * is returned to the parser for the item that was read.  We keep track
- * of a list of Nuprl commands in Filter-Cache.  After the entire file
- * is read, we postprocess the parse tree, and remove these Nuprl
- * annotations.
- *
- * The reason for this is that we also want to capture all the normal
- * OCaml syntax as Nuprl commands, but Camlp4 does not let us do this
- * easily.
  *)
 open Printf
 open Pcaml
@@ -80,7 +70,7 @@ struct
       try !mk_opname_ref l with
          exn ->
             Stdpp.raise_with_loc loc exn
-   
+
    (*
     * Term grammar.
     *)
@@ -144,7 +134,7 @@ let end_rewrite () =
       cons
 
 let stack_id = "rewrite_stack"
-   
+
 let contractum_exp patt s =
    if !contract_flag then
       let cs = Stream.of_string s in
@@ -180,11 +170,11 @@ let collect_anames args =
 
 (*
  * There should be only one param, of String type.
- * Get it. 
+ * Get it.
  *)
 let get_string_param loc t =
    let { term_op = op } = dest_term t in
-      match dest_op op with 
+      match dest_op op with
          { op_params = [param] } ->
             begin
                match dest_param param with
@@ -267,13 +257,13 @@ struct
             collect resources [] (get_resources info)
       in
          List.iter add_resource nresources';
-         
+
          (* Add all the infix words *)
          List.iter add_infix (get_infixes info);
-         
+
          (* Add the path to the list of parents *)
          path :: paths, nresources
-      
+
    (*
     * Include a parent.
     * This performs the following tasks:
@@ -291,7 +281,7 @@ struct
          }
       in
          FilterCache.add_command proc.cache (Parent info, loc)
-   
+
    (*
     * Declare a term.
     * This defines a new opname,
@@ -308,7 +298,7 @@ struct
          FilterCache.add_opname proc.cache s opname';
          FilterCache.add_command proc.cache (Opname { opname_name = s; opname_term = t }, loc);
          t
-   
+
    (*
     * Define a rewrite in an interface.
     * Rewrites are somewhat redundant, since they can be defined as
@@ -322,14 +312,14 @@ struct
    let simple_rewrite proc name redex contractum pf =
       (* Check that rewrite will succeed *)
       Refine.check_rewrite name [||] [] [] redex contractum;
-   
+
       (* Construct the command *)
       Rewrite { rw_name = name;
                 rw_redex = redex;
                 rw_contractum = contractum;
                 rw_proof = pf
       }
-   
+
    let cond_rewrite proc name params args pf =
       (* Print the type to the .mli file *)
       let cvars = context_vars args in
@@ -342,7 +332,7 @@ struct
             (Array.of_list (collect_vars params'))
             (collect_non_vars params')
             args' redex contractum;
-         
+
          (* Construct the command *)
          CondRewrite { crw_name = name;
                        crw_params = params';
@@ -351,7 +341,7 @@ struct
                        crw_contractum = contractum;
                        crw_proof = pf
          }
-   
+
    (*
     * Compile the rewrite.
     *)
@@ -363,21 +353,21 @@ struct
        | _ ->
             (* Conditional rewrite *)
             cond_rewrite proc name params args pf
-   
+
    (*
     * Add the command and return the declaration.
     *)
    let declare_rewrite proc loc name params args pf =
       let cmd = rewrite_command proc name params args pf in
          FilterCache.add_command proc.cache (cmd, loc)
-   
+
    (*
     * Declare a term, and define a rewrite in one step.
     *)
    let define_term proc loc name redex contractum pf =
       let redex' = declare_term proc loc redex in
          declare_rewrite proc loc name [] (MetaIff (MetaTheorem redex', MetaTheorem contractum)) pf
-   
+
    (*
     * Declare an axiom in an interface.  This has a similar flavor
     * as rewrites, but context args have to be extracted from the args.
@@ -385,17 +375,17 @@ struct
    let simple_axiom proc name arg pf =
       (* Check it *)
       Refine.check_axiom arg;
-   
+
       (* Save it in the transcript *)
       Axiom { axiom_name = name; axiom_stmt = arg; axiom_proof = pf }
-   
+
    let rec print_terms out = function
       h::t ->
          eprintf "\t%s\n" (string_of_term h);
          print_terms out t
     | [] ->
          flush stderr
-   
+
    let rec print_vterms out = function
       (Some v, h)::t ->
          eprintf "\t%s. %s\n" (string_of_term v) (string_of_term h);
@@ -405,10 +395,10 @@ struct
          print_vterms out t
     | [] ->
          flush stderr
-   
+
    let print_non_vars out params =
       print_terms out (collect_non_vars params)
-      
+
    let cond_axiom proc name params args pf =
       (* Extract context names *)
       let cvars = context_vars args in
@@ -430,32 +420,32 @@ struct
             (strip_mfunction args);
          if !debug_grammar then
             eprintf "Checked rule: %s%t" name eflush;
-   
+
          (* If checking completes, add the rule *)
          Rule { rule_name = name;
                 rule_params = params';
                 rule_stmt = args;
                 rule_proof = pf
          }
-   
+
    let axiom_command proc name params args pf =
       match params, args with
          [], MetaTheorem a ->
             simple_axiom proc name a pf
        | _ ->
             cond_axiom proc name params args pf
-         
+
    let declare_axiom proc loc name params args pf =
       let cmd = axiom_command proc name params args pf in
          FilterCache.add_command proc.cache (cmd, loc)
-   
+
    (*
     * Infix directive.
     *)
    let declare_infix proc loc s =
       FilterCache.add_command proc.cache (Infix s, loc);
       add_infix s
-   
+
    (*
     * Declare an ML term rewrite.
     * There is no definition.
@@ -466,7 +456,7 @@ struct
                                                       mlterm_contracta = end_rewrite ();
                                                       mlterm_def = def
                                              }, loc)
-   
+
    (*
     * Declare a condition term for a rule.
     *)
@@ -476,7 +466,7 @@ struct
                                                          mlterm_contracta = end_rewrite ();
                                                          mlterm_def = None
                                              }, loc)
-   
+
    (*
     * Record a resource.
     *
@@ -485,7 +475,7 @@ struct
    let declare_resource proc loc r =
       FilterCache.add_command proc.cache (Resource r, loc);
       FilterCache.add_resource proc.cache [] r
-   
+
    (*
     * Extract the options and return the mode paired with
     * the list of string defining the forms.
@@ -519,7 +509,7 @@ struct
             modes
       in
          modes, List.rev options
-            
+
    (*
     * Dform declaration.
     *)
@@ -534,7 +524,7 @@ struct
          }
       in
          FilterCache.add_command proc.cache (df, loc)
-   
+
    (*
     * Define a display form expansion.
     *
@@ -552,7 +542,7 @@ struct
                                                      dform_redex = t;
                                                      dform_def = TermDForm expansion
                                              }, loc)
-   
+
    (*
     * An ml dterm is a display form that is computed in ML.
     *
@@ -576,7 +566,7 @@ struct
          }
       in
          FilterCache.add_command proc.cache (DForm info, loc)
-   
+
    (*
     * Precedence declaration.
     *)
@@ -607,12 +597,12 @@ struct
       FilterCache.add_command proc.cache (MagicBlock { magic_name = name;
                                                        magic_code = stmts
                                           }, loc)
-   
+
    (*
     * Processor.
     *)
    let proc_ref = ref None
-   
+
    let get_proc loc =
       match !proc_ref with
          Some proc ->
@@ -636,13 +626,13 @@ struct
                mk_opname_ref := FilterCache.mk_opname info;
                proc_ref := Some proc;
                proc
-   
+
    (*
     * Our version of add_command.
     *)
    let add_command proc cmd =
       FilterCache.add_command proc.cache cmd
-   
+
    (*
     * Save the summary.
     *)
@@ -654,7 +644,7 @@ struct
     *)
    let extract proc =
       Info.extract (FilterCache.info proc.cache) (FilterCache.resources proc.cache) proc.name
-   
+
    (*
     * Check the implementation with its interface.
     *)
@@ -681,7 +671,7 @@ end
  * Extractors.
  *)
 module Extract = MakeExtract (Convert)
-                 
+
 (*
  * Caches.
  *)
@@ -712,7 +702,7 @@ end
 
 module SigFilter = MakeFilter (SigFilterInfo) (Cache.SigFilterCache)
 module StrFilter = MakeFilter (StrFilterInfo) (Cache.StrFilterCache)
-                   
+
 (************************************************************************
  * DEFINITION COMMANDS                                                  *
  ************************************************************************)
@@ -730,13 +720,13 @@ let define_rule proc loc name
    let mterm = zip_mfunction assums goal in
    let cmd = StrFilter.axiom_command proc name params mterm extract in
       StrFilter.add_command proc (cmd, loc)
-   
+
 let define_prim proc loc name params args goal extract =
    define_rule proc loc name params args goal (Primitive extract)
-   
+
 let define_thm proc loc name params args goal tac =
    define_rule proc loc name params args goal (Derived tac)
-   
+
 (************************************************************************
  * GRAMMAR EXTENSION                                                    *
  ************************************************************************)
@@ -768,12 +758,12 @@ EXTEND
              SigFilter.save proc;
              SigFilter.extract proc
        ]];
-   
+
    interf_opening:
       [[ OPT "PRL_interface" ->
           SigFilter.get_proc loc
        ]];
-   
+
    interf_item:
       [[ s = sig_item; OPT ";;" ->
           if !debug_filter_parse then
@@ -787,7 +777,7 @@ EXTEND
           end;
           s, loc
        ]];
-   
+
    implem:
       [[ implem_opening; st = LIST0 implem_item; EOI ->
           let proc = StrFilter.get_proc loc in
@@ -795,12 +785,12 @@ EXTEND
              StrFilter.check proc InterfaceType;
              StrFilter.extract proc
        ]];
-   
+
    implem_opening:
       [[ OPT "PRL_implementation" ->
           StrFilter.get_proc loc
        ]];
-   
+
    implem_item:
       [[ s = str_item; OPT ";;" ->
           begin
@@ -854,7 +844,7 @@ EXTEND
           SigFilter.declare_prec (SigFilter.get_proc loc) loc name;
           empty_sig_item loc
        ]];
-   
+
    str_item:
       [[ "include"; path = mod_ident ->
           StrFilter.declare_parent (StrFilter.get_proc loc) loc path;
@@ -916,7 +906,7 @@ EXTEND
           StrFilter.define_magic_block (StrFilter.get_proc loc) loc name st;
           empty_str_item loc
        ]];
-   
+
    mod_ident:
       [ RIGHTA
         [ i = UIDENT ->
@@ -927,13 +917,13 @@ EXTEND
            m :: i
         ]
       ];
-   
+
    (* Arglist is a list of terms *)
    optarglist:
       [[ args = LIST0 singleterm ->
           List.map (function t -> t.aterm) args
        ]];
-   
+
    opt_binding_arglist:
       [[ ":"; goal = singleterm ->
           [], goal
@@ -944,7 +934,7 @@ EXTEND
         | arg = bound_term; args = LIST0 bound_term; ":"; goal = singleterm ->
           arg :: args, goal
        ]];
-   
+
    (*
     * Equality beginning a rewrite block.
     *)
@@ -970,7 +960,7 @@ EXTEND
         | name = LIDENT ->
           name
        ]];
-   
+
    (*
     * Pre-add some infix operators.
     *)
@@ -1017,7 +1007,7 @@ EXTEND
         | t1 = expr; op = "thenPT"; t2 = expr ->
           make_infix loc op t1 t2
        ]];
-   
+
    (*
     * Add the ML parts of the terms.
     *
@@ -1042,6 +1032,9 @@ END
 
 (*
  * $Log$
+ * Revision 1.25  1998/06/01 13:53:03  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.24  1998/05/28 13:46:17  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

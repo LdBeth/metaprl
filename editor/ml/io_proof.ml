@@ -133,7 +133,7 @@ and term_of_aterm_tactic_arg
       tac_hyps = hyps;
       tac_arg = { aterm_label = label;
                   aterm_args = args
-                } 
+                }
     } =
    mk_simple_term proof_aterm_op [goal;
                                   mk_xlist_term hyps;
@@ -267,7 +267,7 @@ let tactics_of_proof proof =
     | ChildProof proof ->
          collect_proof proof
    in
-   
+
    let loc = (0, 0) in
    let entries = ref [] in
    let collect name tac =
@@ -281,6 +281,9 @@ let tactics_of_proof proof =
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/01 13:52:08  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1998/05/28 13:45:34  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

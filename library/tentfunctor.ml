@@ -17,7 +17,7 @@ module type OID_TYPE =
 module type TENTFUNCTOR =
  functor (Id: OID_TYPE) ->
 
- sig 
+ sig
 
  open Basic
 
@@ -44,16 +44,16 @@ module type TENTFUNCTOR =
 end
 
 
-module TentFunctor = 
+module TentFunctor =
  functor (OID : OID_TYPE) ->
   struct
- 
+
   open List
   open Utils
   open Basic
 
   type oid = OID.t
- 
+
   (*type 'a maybe_data = Data of 'a | Null of unit *)
 
   type 'a sent =
@@ -76,17 +76,17 @@ module TentFunctor =
   let new_tent () = {committed = []; pending = []}
 
   let tent_lookup_sent tent stamp =
-   let f sent = 
-       (in_transaction_p sent.stamp stamp) 
+   let f sent =
+       (in_transaction_p sent.stamp stamp)
     in
     match (assoc_if f tent.pending) with
-      None -> (let f sent = 
+      None -> (let f sent =
 		   (*
 		    print_string " tent lookup sent committed";
 		   Mbterm.print_term (stamp_to_term sent.stamp);
 		   Mbterm.print_term (stamp_to_term stamp);
 		   *)
-		(transaction_less sent.stamp stamp) in 
+		(transaction_less sent.stamp stamp) in
 
               match (assoc_if f tent.committed) with
 		None -> error ["Tent"; "LookupSent"; "None"][][]
@@ -102,11 +102,11 @@ module TentFunctor =
 
 
   let tent_lookup_woid tent stamp oid =
-   let f sent = 
+   let f sent =
       (in_transaction_p sent.stamp stamp) & (OID.equal sent.oid oid)  in
     match (assoc_if f tent.pending) with
-      None -> (let f sent = 
-		(transaction_less sent.stamp stamp) & (OID.equal sent.oid oid) in 
+      None -> (let f sent =
+		(transaction_less sent.stamp stamp) & (OID.equal sent.oid oid) in
               match (assoc_if f tent.committed) with
 		None -> error ["Tent"; "LookupWoid"; "None"][][]
               | Some sent -> sent)
@@ -119,7 +119,7 @@ module TentFunctor =
     ()
 
   let tent_delete tent stamp seq oid =
-   let sent = tent_lookup_woid tent stamp oid in 
+   let sent = tent_lookup_woid tent stamp oid in
    let nsent = {stamp = stamp; seq = seq; oid = oid; data = None; deletes = []}
    in
     sent.deletes <- nsent :: sent.deletes;
@@ -136,11 +136,11 @@ module TentFunctor =
      match usent' with
        None -> error ["Tent"; "Undo"; "Missing"][][]
      | Some usent ->
-  
+
       begin
 
         tent.pending <- pending;
-     
+
         (* if undoing delete must remove usent from deleted sent *)
         (if delete_sent_p usent
            then let sent = tent_lookup_woid tent stamp usent.oid in
@@ -149,10 +149,10 @@ module TentFunctor =
         (usent.oid, usent.data)
 
       end
-    
 
-  let tent_commit tent stamp seq = 
-    
+
+  let tent_commit tent stamp seq =
+
     (*
     print_endline "tent_commit "; print_int seq;
     print_stamp stamp; print_newline();
@@ -170,7 +170,7 @@ module TentFunctor =
      match csent' with
        None -> error ["Tent"; "Commit"; "Missing"][][]
      | Some csent ->
-  
+
         begin
          tent.pending <- pending;
      	 csent.stamp <- stamp;
@@ -178,12 +178,12 @@ module TentFunctor =
 	 (* print_endline "Yo commit"; *)
 	 ()
         end
-      	 
- let tent_collect tent stamps = 
-  let committed = tent.committed 
+      	
+ let tent_collect tent stamps =
+  let committed = tent.committed
   and dsents = ref []
   and removes = ref [] in
-  let collect sent = 
+  let collect sent =
         (if (delete_sent_p sent)
            then (if (List.for_all (function s -> in_transaction_p sent.stamp s)
 			    stamps)

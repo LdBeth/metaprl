@@ -26,7 +26,7 @@ let irsquare	= code ']'
 let ilsquare	= code '['
 
 
-type scanner = 
+type scanner =
 	{ stream	: char t
 
 	(* parameters *)
@@ -35,7 +35,7 @@ type scanner =
 
 	(* state *)
 	; mutable cchar		: char
-	; mutable escapep	: bool  
+	; mutable escapep	: bool
 	; mutable eofp		: bool
 	}
 
@@ -43,7 +43,7 @@ type scanner =
 let explode str =
  let l = String.length str in
 
- let rec aux i = 
+ let rec aux i =
     if (inteq i l) then []
     else (get str i) :: aux (1+i)
   in
@@ -92,7 +92,7 @@ let scan_bump s =
    (s.escapep <- false;
     s.cchar <- next s.stream;
     ())
- (* ; print_string (Char.escaped s.cchar); 
+ (* ; print_string (Char.escaped s.cchar);
  print_newline () *)
 
 
@@ -110,10 +110,10 @@ let scan_escape_p s = s.escapep
 let scan_cur_char s = s.cchar
 let scan_at_char_p s c = (not (scan_at_eof_p s)) & (s.cchar = c) & not (scan_escape_p s)
 
-let scan_char s c = 
- if (scan_at_char_p s c) 
+let scan_char s c =
+ if (scan_at_char_p s c)
     then scan_next s
- else if (scan_at_eof_p s) 
+ else if (scan_at_eof_p s)
     then  error ["scanner"; "char"; Char.escaped c; "eof"] [] []
  else error ["scanner"; "char"; (Char.escaped c); (Char.escaped s.cchar)] [] []
  ; ()
@@ -122,11 +122,11 @@ let scan_char s c =
 let scan_cur_byte s = code s.cchar
 let scan_at_byte_p s c = (not (scan_at_eof_p s)) & (code s.cchar) = c  & not (scan_escape_p s)
 
-let scan_byte s c = 
- if (scan_at_byte_p s c) 
+let scan_byte s c =
+ if (scan_at_byte_p s c)
     then scan_next s
 
-   else if (scan_at_eof_p s) 
+   else if (scan_at_eof_p s)
 	    then  error ["scanner"; "char"; Char.escaped (chr c); "eof"] [] []
    else error ["scanner"; "char"; Char.escaped (chr c); Char.escaped s.cchar] [] []
 
@@ -136,7 +136,7 @@ let numeric_digits = ['0'; '1'; '2'; '3'; '4'; '5'; '6'; '7'; '8'; '9']
 let scan_at_digit_p s =
   (not (scan_at_eof_p s))  & (mem s.cchar numeric_digits)	
 
-let rec scan_whitespace s = 
+let rec scan_whitespace s =
  if (not (scan_at_eof_p s)) & (mem s.cchar s.whitespace)
     then (scan_next s; scan_whitespace s)
  ; ()
@@ -150,15 +150,15 @@ let scan_string s =
   done
 
  ; (let ss = implode_rev !acc
-    in 
+    in
     (* print_string ss; print_newline(); *)
 	ss)
 
 
 (* arg digits are in reverse order *)
-let digits_to_num digits = 
+let digits_to_num digits =
   let num10 = num_of_int 10 in
-  let rec aux acc power digits = 
+  let rec aux acc power digits =
     if (nullp digits) then acc
     else aux (add_num (mult_num (power_num num10 power)
 			        (num_of_string (Char.escaped (hd digits))))
@@ -175,7 +175,7 @@ let scan_num s =
  while (not (scan_at_eof_p s)) & (scan_at_digit_p s)
   do acc := s.cchar :: !acc;  scan_next s
   done
- 
+
  ; digits_to_num !acc
 
 
@@ -190,10 +190,10 @@ let scan_char_delimited_list s itemf ld rd sep =
 	  done;
 	
 	if (scan_at_char_p s rd) then (scan_char s rd; rev !acc)
-	else if (scan_at_eof_p s) 
+	else if (scan_at_eof_p s)
 	  then  error ["scanner"; "delimited_list"; "eof"; Char.escaped rd] [] []
 	else error ["scanner"; "delimited_list"; Char.escaped s.cchar; Char.escaped rd] [] []
-    
+
 
 let scan_delimited_list s itemf ld rd sep =
 
@@ -206,10 +206,10 @@ let scan_delimited_list s itemf ld rd sep =
 	  done;
 	
 	if (scan_at_byte_p s rd) then (scan_byte s rd; rev !acc)
-	else if (scan_at_eof_p s) 
+	else if (scan_at_eof_p s)
 	  then  error ["scanner"; "delimited_list"; "eof"; Char.escaped (chr rd)] [] []
 	else error ["scanner"; "delimited_list"; Char.escaped s.cchar; Char.escaped (chr rd)] [] []
-    
+
 
 
 

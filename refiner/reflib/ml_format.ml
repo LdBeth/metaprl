@@ -22,7 +22,7 @@ struct
    (************************************************************************
     * HASHING                                                              *
     ************************************************************************)
-   
+
    (*
     * This code also serves as a common subexpression eliminator.
     * Hash tables for each of the different types.
@@ -33,7 +33,7 @@ struct
    let (operator_tbl : (operator, string) Hashtbl.t) = Hashtbl.create 97
    let (term_tbl : (term, string) Hashtbl.t) = Hashtbl.create 97
    let (bterm_tbl : (bound_term, string) Hashtbl.t) = Hashtbl.create 97
-   
+
    (*
     * Reset tables.
     *)
@@ -44,56 +44,56 @@ struct
       Hashtbl.clear operator_tbl;
       Hashtbl.clear term_tbl;
       Hashtbl.clear bterm_tbl
-   
+
    (*
     * Interfaces.
     *)
    let find_opname opname =
       try Some (Hashtbl.find opname_tbl opname) with
          Not_found -> None
-   
+
    let add_opname opname v =
       Hashtbl.add opname_tbl opname v
-   
+
    let find_level_exp level =
       try Some (Hashtbl.find level_tbl level) with
          Not_found -> None
-   
+
    let add_level_exp level v =
       Hashtbl.add level_tbl level v
-   
+
    let find_param param =
       try Some (Hashtbl.find param_tbl param) with
          Not_found -> None
-   
+
    let add_param param v =
       Hashtbl.add param_tbl param v
-   
+
    let find_operator op =
       try Some (Hashtbl.find operator_tbl op) with
          Not_found -> None
-   
+
    let add_operator op v =
       Hashtbl.add operator_tbl op v
-   
+
    let find_term term =
       try Some (Hashtbl.find term_tbl term) with
          Not_found -> None
-   
+
    let add_term term v =
       Hashtbl.add term_tbl term v
-   
+
    let find_bterm bterm =
       try Some (Hashtbl.find bterm_tbl bterm) with
          Not_found -> None
-   
+
    let add_bterm bterm v =
       Hashtbl.add bterm_tbl bterm v
-   
+
    (************************************************************************
     * GLOBAL VALUES                                                        *
     ************************************************************************)
-   
+
    (*
     * Printer variables.
     *)
@@ -101,7 +101,7 @@ struct
       let vindex = ref 0 in
          (function () -> vindex := 0),
          (function () -> vindex := !vindex + 1; "v" ^ (string_of_int !vindex))
-   
+
    (*
     * Variables.
     *)
@@ -141,7 +141,7 @@ struct
    let make_term_expr = ML_Module_Var (term_name @ ["make_term"])
    let term_op_expr = ML_Module_Var (term_name @ ["term_op"])
    let term_terms_expr = ML_Module_Var (term_name @ ["term_terms"])
-   
+
    let opname_name = "Opname"
    let make_opname_expr = ML_Module_Var [opname_name; "make_opname"]
 
@@ -154,15 +154,15 @@ struct
    (************************************************************************
     * PRINTERS                                                             *
     ************************************************************************)
-   
+
    (* "File" operation *)
    let push ofile pair =
       ofile := pair :: !ofile
-   
+
    (* New file *)
    let create () =
       ref []
-   
+
    (* Extract the file *)
    let get ofile body =
       let rec construct = function
@@ -172,7 +172,7 @@ struct
             body
       in
          construct (List.rev !ofile)
-   
+
    (* Level expression *)
    let print_level_exp' ofile l =
       match dest_level l with
@@ -196,7 +196,7 @@ struct
             in
                push ofile (v, le);
                v
-   
+
    let print_level_exp ofile l =
       match find_level_exp l with
          Some v -> v
@@ -204,7 +204,7 @@ struct
             let v = print_level_exp' ofile l in
                add_level_exp l v;
                v
-   
+
    (* General parameter *)
    let rec print_param' ofile p =
       let print_string_param v name str =
@@ -265,25 +265,25 @@ struct
                let v2 = print_param ofile b in
                let v = newv () in
                   print_pair_param v mrem_expr v1 v2
-   
+
           | MLessThan (a, b) ->
                let v1 = print_param ofile a in
                let v2 = print_param ofile b in
                let v = newv () in
                   print_pair_param v mless_than_expr v1 v2
-   
+
           | MEqual (a, b) ->
                let v1 = print_param ofile a in
                let v2 = print_param ofile b in
                let v = newv () in
                   print_pair_param v mequal_expr v1 v2
-   
+
           | MNotEqual (a, b) ->
                let v1 = print_param ofile a in
                let v2 = print_param ofile b in
                let v = newv () in
                   print_pair_param v mnot_equal_expr v1 v2
-   
+
           | ObId _ ->
                (* We don't allow these fancy terms *)
                raise (Failure "Ml_format.print_param: can't do term with ObId parameter")
@@ -291,7 +291,7 @@ struct
           | ParamList _ ->
                (* We don't allow these fancy terms *)
                raise (Failure "Ml_format.print_param: can't do term with ParamList parameter")
-   
+
    and print_param ofile p =
       match find_param p with
          Some v -> v
@@ -299,7 +299,7 @@ struct
             let v = print_param' ofile p in
                add_param p v;
                v
-   
+
    (*
     * Print an operator.
     *)
@@ -309,7 +309,7 @@ struct
       let opname = ML_Apply [make_opname_expr; ML_List names] in
          push ofile (v, opname);
          v
-   
+
    let print_opname ofile name =
       match find_opname name with
          Some v -> v
@@ -317,7 +317,7 @@ struct
             let v = print_opname' ofile name in
                add_opname name v;
                v
-   
+
    (*
     * Print a general operator.
     *)
@@ -333,7 +333,7 @@ struct
             in
                push ofile (v, operator);
                v
-   
+
    let print_operator ofile op =
       match find_operator op with
          Some v -> v
@@ -341,7 +341,7 @@ struct
             let v = print_operator' ofile op in
                add_operator op v;
                v
-   
+
    (*
     * Print "bterms".
     *)
@@ -357,7 +357,7 @@ struct
             in
                push ofile (v, bterm);
                v
-   
+
    (*
     * Top level print function.
     *)
@@ -381,7 +381,7 @@ struct
                in
                   push ofile (v, term);
                   v
-   
+
    (*
     * Cached.
     *)
@@ -392,7 +392,7 @@ struct
             let v = print_bterm' ofile bterm in
                add_bterm bterm v;
                v
-   
+
    and print_term ofile term =
       match find_term term with
          Some v -> v
@@ -400,7 +400,7 @@ struct
             let v = print_term' ofile term in
                add_term term v;
                v
-   
+
    (*
     * Meta term.
     *)
@@ -432,11 +432,11 @@ struct
          let mterm = ML_Apply [meta_iff_expr; ML_Tuple [ML_Var va; ML_Var vb]] in
             push ofile (v, mterm);
             v
-   
+
    (************************************************************************
     * FILE INTERFACE                                                       *
     ************************************************************************)
-   
+
    (*
     * Interface.
     *)
@@ -447,7 +447,7 @@ struct
       let ofile = create () in
       let v = print_term ofile term in
          get ofile (ML_Var v)
-   
+
    (*
     * Meta terms.
     *)
@@ -455,12 +455,12 @@ struct
       (* Environment *)
       resetv ();
       clear_tbls ();
-   
+
       (* Print output *)
       let ofile = create () in
       let v = print_mterm ofile mterm in
          get ofile (ML_Var v)
-   
+
    (*
     * List of terms.
     *)
@@ -468,15 +468,18 @@ struct
       (* Clear tables *)
       resetv ();
       clear_tbls ();
-      
+
       (* Print them *)
       let ofile = create () in
       let vars = List.map (function t -> ML_Var (print_term ofile t)) l in
          ML_List vars
 end
-   
+
 (*
  * $Log$
+ * Revision 1.2  1998/06/01 13:54:56  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1998/05/28 15:00:52  jyh
  * Partitioned refiner into subdirectories.
  *

@@ -13,7 +13,7 @@ open Refiner.Refiner.TermMeta
 (*
  * Input exceptions.
  *)
-exception NotANumber of string         (* Int param is not a number *)   
+exception NotANumber of string         (* Int param is not a number *)
 exception BadParam of string           (* Bogus parameter format *)
 exception BadLevelExp of level_exp     (* Level expression has wrong type *)
 exception BadParamCast of param * string
@@ -49,6 +49,9 @@ type aterm = { aname : term option; aterm : term }
 
 (*
  * $Log$
+ * Revision 1.4  1998/06/01 13:53:18  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.3  1998/05/27 15:13:09  jyh
  * Functorized the refiner over the Term module.
  *

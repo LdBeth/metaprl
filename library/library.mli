@@ -69,9 +69,9 @@
   *	Transactions : all library functions must be called from within a
   *	  transaction.
   *	
-  *	- A transaction provides a consistent view of object data irrespective  
-  *	  of the acts of concurrent transactions. 
-  *	- Failing out of a transaction leaves the library state unchanged. 
+  *	- A transaction provides a consistent view of object data irrespective
+  *	  of the acts of concurrent transactions.
+  *	- Failing out of a transaction leaves the library state unchanged.
   *	- Modifying an object requires a write lock. Attempting to
   *	  lock an object locked by another transaction results in failure.
   *	
@@ -81,7 +81,7 @@
   *	committed data is persistent and data is committed only at transaction
   *	end.
   *	
-  *	The library supports distribution of object data. 
+  *	The library supports distribution of object data.
   *	A local transaction supplies a consistent view of data distributed
   *	locally but fails if access of non local data is attempted.
   *
@@ -104,7 +104,7 @@
   *	 == dag_make_directory	: object_id -> string -> object_id
   *	
   *	make_directory t oid s =
-  *	 eval_to_object_id t 
+  *	 eval_to_object_id t
   *	   (String_ap (Oid_ap (Null_ap (itext_term "dag_make_directory ")) oid s))
   *)
 
@@ -134,7 +134,7 @@
 
 
  (*
-  *	Generic object manipulation 
+  *	Generic object manipulation
   *)
 
  val create		: transaction
@@ -159,13 +159,13 @@
  val get_properties 	: transaction -> object_id -> (string * term) list
  val put_properties 	: transaction -> object_id -> (string * term) list -> unit
 
- (* activation allows data derived from objects to be distributed. 
+ (* activation allows data derived from objects to be distributed.
     The data distributed depends on object type.
-  *) 
+  *)
  val activate		: transaction -> object_id -> unit
  val deactivate		: transaction -> object_id -> unit
 
- 
+
  (* Objects can be tagged as collectable. If a collectable object is not
   * referenced by a non-collectable object and is not active then it may be
   * removed from the library. By default objects are created as uncollectable.
@@ -179,21 +179,21 @@
 
 
  (*	
-  *	The library supports organizing objects into trees. 
+  *	The library supports organizing objects into trees.
   *	
   *	The tree is a tree of object_ids. Each directory consists of an assoc
   *	list of names and object_ids. A child of a node may be another directory
   *	or some other object. Directories will be identified by a property.
-  *	  - multiple roots with same name not allowed. 
+  *	  - multiple roots with same name not allowed.
   *	  - multiple objects with same name not allowed in a directory.
   *	
-  *	It is possible to build a tree which does not conform to the tree 
+  *	It is possible to build a tree which does not conform to the tree
   *	structure outlined by using the more primitive functions. The results of
   *	using the tree functions on a non-conforming tree are unpredictable,
-  *	however failures will be generated wherever feasible when a 
+  *	however failures will be generated wherever feasible when a
   *	non-conforming tree is detected or when a call may corrupt a tree.
   *	  - Overwriting a directory contents with put_term will result in error.
-  *	  - Removing the directory property (via remove_property or 
+  *	  - Removing the directory property (via remove_property or
   *	    put_properties) will result in error.
   *	
   *	The native nuprl5 library functions will not detect tree corruptions.
@@ -205,7 +205,7 @@
   *	
   *	To force deletion of contents delete_strong would need to be called
   *	on each member.
-  * 
+  *
   *)
 
  val make_root		: transaction -> string -> object_id
@@ -216,7 +216,7 @@
 
 
  (* We allow insertion of objects into the tree. The object inserted may be a dir.
-  * If an insertion would cause a cycle, then an error is thrown. 
+  * If an insertion would cause a cycle, then an error is thrown.
   *)
  (* NB: cycle prevention not yet implemented. *)
 
@@ -226,13 +226,13 @@
  val remove_leaf	: transaction -> object_id -> string -> unit
 
  val insert_leaf	: transaction
-				-> object_id -> string (* name *) 
+				-> object_id -> string (* name *)
 				-> string (* type *) -> term
 				-> object_id
 
  (* overwrites in dir if name exists. *)
  val ninsert_leaf	: transaction
-				-> object_id -> string (* name *) 
+				-> object_id -> string (* name *)
 				-> string (* type *) -> term
 				-> object_id
 
@@ -261,7 +261,7 @@
  val lookup		: transaction (* local *)
 				-> object_id -> string list -> object_id
 
- (* The list of paths from one object to another. 
+ (* The list of paths from one object to another.
   * First object_id arg is start and second is end.
   *)
 

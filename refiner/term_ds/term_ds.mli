@@ -2,9 +2,9 @@
  * This file includes definitions for operators,
  * terms with delayed substitution, and regular terms.
  *
- * Note: many functions in this module (most dest_* and 
+ * Note: many functions in this module (most dest_* and
  * is_* functions, shape, etc) have side-effect:
- * if the term is a Subst, they push substitutions one step down 
+ * if the term is a Subst, they push substitutions one step down
  * and _replace_ the referenced term with the resulting Term term_single.
  * alpha_equal* functions may push down and eliminate all the Substs, not
  * only the top ones.
@@ -75,7 +75,7 @@ sig
 
    (*
     * A term has an operator, and a finite number of subterms
-    * that may be bound. 
+    * that may be bound.
     *
     * free_vars - set of the free variables
     *
@@ -91,7 +91,7 @@ sig
       BTerm of bound_term'
     | BSubst of bound_term * term_subst
    and bound_term = { bfree_vars : StringSet.t; mutable bcore: bound_term_core }
-   and term' = { term_op : operator; term_terms : bound_term list } 
+   and term' = { term_op : operator; term_terms : bound_term list }
    and bound_term' = { bvars : string list; bterm : term }
 
    (************************************************************************
@@ -140,7 +140,7 @@ sig
    val dest_level : level_exp -> level_exp'
    val make_level_var : level_exp_var' -> level_exp_var
    val dest_level_var : level_exp_var -> level_exp_var'
-   val make_object_id : param list -> object_id 
+   val make_object_id : param list -> object_id
    val dest_object_id : object_id  ->  param list
 
    (*

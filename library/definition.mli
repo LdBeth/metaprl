@@ -7,14 +7,14 @@
 
  val make_termtable	: unit -> termtable
 
- val apply_broadcast	: termtable -> 
-				term (* data *) -> 
-				term (* description *) -> 
+ val apply_broadcast	: termtable ->
+				term (* data *) ->
+				term (* description *) ->
 				stamp (* transaction *) ->
 				stamp option (* auto-commit *) ->
 				unit
 
- val termtable_lookup	: termtable -> stamp -> object_id -> term_entry 
+ val termtable_lookup	: termtable -> stamp -> object_id -> term_entry
 
  val termtable_unit_map	: termtable -> stamp -> (object_id -> term_entry -> unit) -> unit
  val termtable_map	: termtable -> stamp -> (object_id -> term_entry -> 'a option) -> 'a list

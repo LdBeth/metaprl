@@ -529,11 +529,11 @@ let opt_apply f = function
 (* Convert a pair definition *)
 let convert_expr_pair convert (rw, ext) =
    convert.expr_f rw, convert.expr_f ext
-   
+
 (*
  * Convert a resource.
  *)
-let convert_resource convert       
+let convert_resource convert
     { resource_name = name;
       resource_extract_type = extract;
       resource_improve_type = improve;
@@ -554,7 +554,7 @@ let summary_map convert =
       TermParam t -> TermParam (convert.term_f t)
     | p -> p
    in
-   
+
    (* Map the terms inside of meta_term's *)
    let rec mterm_map = function
       MetaTheorem t ->
@@ -566,7 +566,7 @@ let summary_map convert =
     | MetaIff (t1, t2) ->
          MetaIff (mterm_map t1, mterm_map t2)
    in
-   
+
    (* Map a summary item *)
    let rec item_map (item, loc) =
       let item =
@@ -612,22 +612,22 @@ let summary_map convert =
                       rule_stmt = mterm_map t;
                       rule_proof = convert.proof_f name pf
                }
-      
+
           | Opname { opname_name = name; opname_term = t } ->
                Opname { opname_name = name; opname_term = convert.term_f t }
-      
+
           | MLTerm { mlterm_term = term; mlterm_contracta = cons; mlterm_def = def }  ->
                MLTerm { mlterm_term = convert.term_f term;
                         mlterm_contracta = List.map convert.term_f cons;
                         mlterm_def = opt_apply (convert_expr_pair convert) def
                }
-      
+
           | Condition { mlterm_term = term; mlterm_contracta = cons; mlterm_def = def } ->
                Condition { mlterm_term = convert.term_f term;
                            mlterm_contracta = List.map convert.term_f cons;
                            mlterm_def = opt_apply (convert_expr_pair convert) def
                }
-      
+
           | Parent { parent_name = path;
                      parent_opens = opens;
                      parent_resources = resources
@@ -636,10 +636,10 @@ let summary_map convert =
                         parent_opens = opens;
                         parent_resources = List.map (convert_resource convert) resources
                }
-      
+
           | Module (name, info) ->
                Module (name, map info)
-      
+
           | DForm { dform_name = name;
                     dform_modes = modes;
                     dform_options = options;
@@ -669,19 +669,19 @@ let summary_map convert =
                           dform_redex = convert.term_f redex;
                           dform_def = def'
                   }
-      
+
           | Prec x ->
                Prec x
 
           | PrecRel rel ->
                PrecRel rel
-      
+
           | Id id ->
                Id id
-      
+
           | Resource resource ->
                Resource (convert_resource convert resource)
-      
+
           | Infix name ->
                Infix name
 
@@ -1032,7 +1032,7 @@ and dest_prec_rel convert t =
             }
     | _ ->
          raise (Failure "dest_prec_rel: bogus format")
-        
+
 (*
  * Identifier.
  *)
@@ -1127,7 +1127,7 @@ and dest_term_aux
             eprintf "Filter_summary.dest_term: incorrect syntax for %s%t" (string_of_opname opname) eflush;
             None
 
-and dest_term_loc 
+and dest_term_loc
     (convert : (term, term, term, term, 'proof, 'ctyp, 'expr, 'item) convert)
     (t : term) =
    let t, loc = dest_loc t in
@@ -1389,7 +1389,7 @@ and term_list_aux (convert : ('proof, 'ctyp, 'expr, 'item, term, term, term, ter
       term_of_infix op
  | MagicBlock magic ->
       term_of_magic_block convert magic
-   
+
 and term_list_loc convert (t, loc) =
    mk_loc loc (term_list_aux convert t)
 
@@ -1810,6 +1810,9 @@ and check_implementation { info_list = implem } { info_list = interf } =
 
 (*
  * $Log$
+ * Revision 1.25  1998/06/01 13:53:13  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.24  1998/05/29 14:53:00  jyh
  * Better Makefiles.
  *

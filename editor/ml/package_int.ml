@@ -32,7 +32,7 @@ let _ =
 type t =
    { mutable pack_name : string option;
      pack_magic : int;
-     
+
      (* Contents *)
      mutable pack_items : item list
    }
@@ -107,7 +107,7 @@ let rename pack name =
  * Add an item to the package.
  *)
 let add pack item =
-   pack.items <- item :: pack.items 
+   pack.items <- item :: pack.items
 
 (*
  * Listing the package.
@@ -294,6 +294,9 @@ let restore inx name magic resources tacs =
 
 (*
  * $Log$
+ * Revision 1.3  1998/06/01 13:52:16  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.2  1998/04/24 02:41:27  jyh
  * Added more extensive debugging capabilities.
  *

@@ -16,7 +16,7 @@ let _ =
 (*
  * Info about variables.
  *)
-type debug_info = 
+type debug_info =
    { info_name : string;
      info_info : string;
      info_flag : bool ref
@@ -120,6 +120,9 @@ let init () = ()
 
 (*
  * $Log$
+ * Revision 1.5  1998/06/01 13:54:31  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.4  1998/05/01 14:59:30  jyh
  * Updating display forms.
  *

@@ -3,6 +3,9 @@
  * they may be hash-consed.
  *
  * $Log$
+ * Revision 1.2  1998/06/01 13:54:44  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1998/05/28 15:00:17  jyh
  * Partitioned refiner into subdirectories.
  *
@@ -58,7 +61,7 @@ let (optable : (opname, opname) Hashtbl.t) = Hashtbl.create 97
  * Constructors.
  *)
 let nil_opname = []
-                 
+
 let _ = Hashtbl.add optable nil_opname nil_opname
 
 let mk_opname s name =

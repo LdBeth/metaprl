@@ -144,7 +144,8 @@ struct
 
    let dest_level l = l
 
-   let make_object_id object_id  = object_id 
+   let make_object_id object_id  = object_id
+
    let dest_object_id object_id  = object_id
 
    (*
@@ -284,7 +285,7 @@ struct
    let dest_simple_term = function
       ({ term_op = { op_name = name; op_params = [] };
          term_terms = bterms
-       } : term) as t -> 
+       } : term) as t ->
          let aux = function
             { bvars = []; bterm = t } -> t
           | _ -> raise (TermMatch ("dest_simple_term", t, "binding vars exist"))
@@ -295,7 +296,7 @@ struct
    let dest_simple_term_opname name = function
       ({ term_op = { op_name = name'; op_params = [] };
          term_terms = bterms
-       } : term) as t -> 
+       } : term) as t ->
          if name = name' then
             let aux = function
                { bvars = []; bterm = t } -> t
@@ -325,6 +326,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.3  1998/06/01 13:55:32  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.2  1998/05/30 19:18:48  nogin
  * Eliminated white space in empty lines.
  *

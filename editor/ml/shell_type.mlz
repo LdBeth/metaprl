@@ -21,7 +21,7 @@ type edit_object =
      edit_set_params : Filter_summary.param list -> unit;
      edit_check : unit -> extract;
      edit_expand : dform_base -> unit;
-     
+
      (* Navigation of there is a proof *)
      edit_root : unit -> unit;
      edit_up : unit -> unit;
@@ -34,6 +34,9 @@ type edit_object =
 
 (*
  * $Log$
+ * Revision 1.5  1998/06/01 13:52:34  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.4  1998/05/28 13:46:05  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

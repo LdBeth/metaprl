@@ -1,5 +1,5 @@
 (*
- * This is the module that implements delayed substitution, 
+ * This is the module that implements delayed substitution,
  * keeps track of free variables and does some sharing.
  *)
 
@@ -86,7 +86,7 @@ struct
 
    (*
     * A term has an operator, and a finite number of subterms
-    * that may be bound. 
+    * that may be bound.
     *
     * free_vars - set of the free variables
     *
@@ -112,14 +112,14 @@ struct
     * Free variables, substitution                                         *
     ************************************************************************)
 
-   let bterms_free_vars = 
-      List.fold_left 
-         (fun s bt -> StringSet.union s bt.bfree_vars) 
+   let bterms_free_vars =
+      List.fold_left
+         (fun s bt -> StringSet.union s bt.bfree_vars)
          StringSet.empty
 
-   let subst_free_vars = 
-      List.fold_left 
-         (fun s (v,t) -> StringSet.union s t.free_vars) 
+   let subst_free_vars =
+      List.fold_left
+         (fun s (v,t) -> StringSet.union s t.free_vars)
          StringSet.empty
 
    let do_term_subst sub t =
@@ -176,15 +176,15 @@ struct
     * De/Constructors                                                 *
     ************************************************************************)
 
-   let rec dest_term t = 
+   let rec dest_term t =
       match t.core with
          Term tt -> tt
        | Subst (tt,sub) -> 
             let ttt = dest_term tt in
-            let t4 = 
+            let t4 =
                try dest_term (List.assoc (dest_var_nods ttt) sub)
-               with _ -> 
-                  {term_op = ttt.term_op; 
+               with _ ->
+                  {term_op = ttt.term_op;
                    term_terms = List.map (do_bterm_subst sub) ttt.term_terms}
             in
                t.core <- Term t4;
@@ -199,13 +199,13 @@ struct
          { term_op = { op_name = var_opname; op_params = [Var v] };
            term_terms = [] }}
 
-   let make_term t = 
+   let make_term t =
       try mk_var_term (dest_var_nods t)
       with _ ->
          {free_vars = bterms_free_vars t.term_terms;
           core = Term t}
 
-   let mk_term op bterms = 
+   let mk_term op bterms =
       {free_vars = bterms_free_vars bterms;
        core = Term { term_op = op; term_terms = bterms }}
 
@@ -237,11 +237,11 @@ struct
       [] -> ([],[])
     | v::vt ->
          match (new_vars av vt) with
-            (vs,ts) -> 
+            (vs,ts) ->
                let v' = new_var av v 0 in
                ((v,v')::vs, (v,mk_var_term v')::ts)
 
-   let rec dest_bterm bt = 
+   let rec dest_bterm bt =
       match bt.bcore with
          BTerm tt -> tt
        | BSubst (tt,sub) -> 
@@ -253,25 +253,25 @@ struct
                      let sub_fvars = subst_free_vars sub in
                      let capt_vars = List_util.filter (function v -> StringSet.mem v sub_fvars) bvrs in
                      match capt_vars with
-               (* 
+               (*
                 * Unefficiency : in [] case do_term_subst will go collecting
                 * free variables of sub to get the
-                * list of free variables of bterm, but it may be more efficient to take 
+                * list of free variables of bterm, but it may be more efficient to take
                 * union of bt.free_vars and (bvrs intersect ttt.bterm.free_vars)
-                * 
+                *
                 * Similar inefficiency in the "captured" case.
                 *)
                         [] -> { bvars = bvrs; bterm = do_term_subst sub ttt.bterm }
                       | captured -> 
                            let avoidvars = StringSet.union sub_fvars ttt.bterm.free_vars in
                            let (vs,ts) = new_vars avoidvars captured in
-                           { bvars = 
-                              List.map 
+                           { bvars =
+                              List.map
                                  (function v ->
                                     try List.assoc v vs
                                     with Not_found -> v)
                                  bvrs;
-                              bterm = 
+                              bterm =
                               do_term_subst sub (do_term_subst ts ttt.bterm)}
             in
                bt.bcore <- BTerm t4;
@@ -289,11 +289,11 @@ struct
          { bvars = []; bterm = tt } -> tt
        | _ -> raise (TermMatch ("dest_simple_bterm", term, "bvars exist"))
 
-   let dest_simple_bterms term = 
+   let dest_simple_bterms term =
       List.map (function bt -> dest_simple_bterm term bt)
 
    let mk_simple_bterm term =
-      { bfree_vars = term.free_vars; 
+      { bfree_vars = term.free_vars;
         bcore = BTerm { bvars = []; bterm = term }}
 
    let mk_level_var v i =
@@ -312,7 +312,7 @@ struct
 
    (* These are trivial identity functions *)
 
-   let make_op o = o 
+   let make_op o = o
    let dest_op o = o
    let make_param p = p
    let dest_param p = p
@@ -358,7 +358,7 @@ struct
     * Second order variable.
     *)
    let mk_so_var_term v terms =
-      make_term 
+      make_term
          { term_op = { op_name = var_opname; op_params = [Var(v)] };
            term_terms = List.map mk_simple_bterm terms }
 
@@ -377,12 +377,12 @@ struct
       { term_op = { op_name = opname; op_params = [Var v] };
          term_terms = bterm :: bterms
        } when opname == context_opname ->
-         v, dest_simple_bterm term bterm, 
+         v, dest_simple_bterm term bterm,
             dest_simple_bterms term bterms
     | _ -> raise (TermMatch ("dest_context", term, "not a context"))
 
    let mk_context_term v term terms =
-      make_term 
+      make_term
          { term_op = { op_name = context_opname; op_params = [Var v] };
            term_terms = (mk_simple_bterm term)::(List.map mk_simple_bterm terms) }
 
@@ -398,7 +398,7 @@ struct
    let rec normalize_term trm =
       let t = dest_term trm in
       let op = t.term_op in
-      mk_term 
+      mk_term
          { op_name = normalize_opname op.op_name; op_params = op.op_params }
          (List.map normalize_bterm t.term_terms)
 

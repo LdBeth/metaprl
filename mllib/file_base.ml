@@ -28,13 +28,13 @@ struct
    (************************************************************************
     * TYPES                                                                *
     ************************************************************************)
-   
+
    (*
     * Save the common types.
     *)
    type cooked = Info.cooked
    type select = Info.select
-   
+
    (*
     * This is the info we keep about modules.
     *)
@@ -44,7 +44,7 @@ struct
         info_dir : string;
         info_file : string
       }
-   
+
    (*
     * The base is a hashtable mapping the root
     * module names to the module info.
@@ -53,11 +53,11 @@ struct
       { io_table : (file_name, info list ref) Hashtbl.t;
         mutable io_path : string list
       }
-   
+
    (************************************************************************
     * BASE OPERATIONS                                                      *
     ************************************************************************)
-   
+
    (*
     * Create a new base from the path.
     *)
@@ -65,14 +65,14 @@ struct
       { io_table = Hashtbl.create 97;
         io_path = path
       }
-   
+
    let set_path base path =
       base.io_path <- path
-   
+
    (************************************************************************
     * LOAD/STORE                                                           *
     ************************************************************************)
-   
+
    (*
     * Save an info in the hashtable.
     *)
@@ -85,7 +85,7 @@ struct
          with
             Not_found ->
                Hashtbl.add table name (ref [info])
-   
+
    (*
     * Load a file given the directory, the filename, and the spec.
     *)
@@ -134,7 +134,7 @@ struct
                   search path'
       in
          search base.io_path
-   
+
    (*
     * Find the specification corresponding to the select.
     *)
@@ -181,7 +181,7 @@ struct
                if !debug_file_base then
                   eprintf "File_base.find: %s: loading%t" name eflush;
                load_specific base (find_spec select) name
-   
+
    (*
     * Find a "matching" module.
     * This means the root with the same name, but different suffix.
@@ -202,7 +202,7 @@ struct
          try search !(Hashtbl.find table file) with
             Not_found ->
                load_file base (find_spec select) dir file
-   
+
    (*
     * Save a module specification.
     * Try saving in all the valid formats until one of them succeeds.
@@ -212,7 +212,7 @@ struct
       let { info_magic = magic; info_marshal = marshal; info_suffix = suffix } = find_spec select in
       let filename = sprintf "%s/%s.%s" dir file suffix in
          marshal magic filename data
-   
+
    (*
     * Inject a new module.
     * First, check that the module does not already exist.
@@ -249,35 +249,38 @@ struct
                Hashtbl.add table file (ref [info])
       in
          info
-   
+
    let save_as base data select dir file =
       let info = create_info base data select dir file in
          save base info;
          info
-   
+
    (************************************************************************
     * MODULE INFO                                                          *
     ************************************************************************)
-   
+
    (*
     * Projections.
     *)
    let info base { info_info = data } = data
-   
+
    let set_info base info data =
       info.info_info <- data
-   
+
    let file_name base { info_file = file } = file
-   
+
    let full_name base { info_dir = dir; info_file = file; info_type = select } =
       let { info_suffix = suffix } = find_spec select in
          sprintf "%s/%s.%s" dir file suffix
-   
+
    let type_of base { info_type = select } = select
 end
 
 (*
  * $Log$
+ * Revision 1.7  1998/06/01 13:54:34  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.6  1998/04/24 19:38:52  jyh
  * Updated debugging.
  *

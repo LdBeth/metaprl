@@ -44,7 +44,7 @@ sig
       (unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info ->
       (module_path * MLast.ctyp resource_info) list ->
       string -> (MLast.sig_item * (int * int)) list
-   
+
    val extract_str :
       (proof proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info ->
       (module_path * MLast.ctyp resource_info) list ->
@@ -201,7 +201,7 @@ let compile_contractum_expr loc =
  * Other expressions.
  *)
 let make_seq_addr_expr loc =
-   <:expr< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"TermMan"$ . $lid:"make_seq_address"$ >>
+   <:expr< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"TermAddr"$ . $lid:"make_seq_address"$ >>
 
 let thy_name_expr loc =
    <:expr< $uid:"Theory"$ . $lid:"thy_name"$ >>
@@ -323,7 +323,7 @@ let add_eq_expr loc =
 let wrap_exn loc name e =
    let unit_patt = <:patt< () >> in
    let unit_expr = <:expr< () >> in
-   
+
    (* Wrap the body to catch exceptions *)
    let exn_patt = <:patt< $lid: "exn"$ >> in
    let exn_expr = <:expr< $lid: "exn"$ >> in
@@ -366,7 +366,7 @@ let param_expr loc = function
  | TermParam t ->
       let t' = build_ml_term loc t in
          <:expr< $uid:"Filter_summary"$ . $uid:"TermParam"$ $t'$ >>
-                                           
+
 (*
  * Create function type.
  *)
@@ -506,7 +506,7 @@ let interf_resources resources loc =
                (<:sig_item< value $name$ : $ctyp$ >>) :: (loop (name :: names) t)
          else
             loop names t
-   
+
     | [] ->
          []
    in
@@ -623,19 +623,19 @@ struct
     * Get the sig extractor.
     *)
    let extract_sig = extract_sig
-   
+
    (*
     * Implementation state.
     *)
    type t =
       { mutable imp_resources : MLast.ctyp resource_info list
       }
-   
+
    (*
     * Proof is from convertor.
     *)
    type proof = Convert.t
-   
+
    (*
     * A primitive rewrite is assumed true by fiat.
     *
@@ -663,7 +663,7 @@ struct
       let con_expr   = <:expr< $lid:"contractum"$ >> in
       let redex_patt = <:patt< $lid:"redex"$ >> in
       let con_patt   = <:patt< $lid:"contractum"$ >> in
-                                                      
+
       (* Expressions *)
       let redex_term = build_ml_term loc redex in
       let con_term = build_ml_term loc contractum in
@@ -677,8 +677,8 @@ struct
       in
       let rw_body_expr = <:expr< $rewrite_of_rewrite_expr loc$ $lid:rw_id$ $lid:"x"$ >> in
       let rw_fun_expr = <:expr< fun [ $list:[ x_patt, None, rw_body_expr ]$ ] >> in
-   
-      (* Let expressions *)            
+
+      (* Let expressions *)
       let body =
          <:expr< let $rec:false$ $list:[ redex_patt, redex_term;
                                          con_patt, con_term ]$
@@ -695,9 +695,9 @@ struct
           <:str_item< value $rec:false$ $list:[ name_patt, rw_fun_expr ]$ >>
        in
           [name_rewrite_let; name_let ]
-   
+
    let ()  = ()
-   
+
    (*
     * Conditional rewrite is a little more complicated.
     * let name_rewrite =
@@ -735,7 +735,7 @@ struct
       let subgoals_patt = <:patt< $lid:"subgoals"$ >> in
       let redex_patt    = <:patt< $lid:"redex"$ >> in
       let con_patt      = <:patt< $lid:"contractum"$ >> in
-                                                      
+
       (* Expressions *)
       let cvars = collect_cvars params in
       let bvars = collect_vars params in
@@ -755,7 +755,7 @@ struct
       in
       let rw_body_expr = <:expr< $rewrite_of_cond_rewrite_expr loc$ $lid:rw_id$ $lid:"x"$ >> in
       let rw_fun_expr = <:expr< fun [ $list:[ x_patt, None, rw_body_expr ]$ ] >> in
-   
+
       (* Let construction *)
       let body =
          <:expr< let $rec:false$ $list:[ vars_patt, vars_val;
@@ -776,9 +776,9 @@ struct
           <:str_item< value $rec:false$ $list:[ name_patt, rw_fun_expr ]$ >>
        in
           [name_rewrite_let; name_let]
-   
+
    let () = ()
-   
+
    (*
     * Justify a rewrite with a tactic.
     *)
@@ -796,7 +796,7 @@ struct
                  >>
       in
          [<:str_item< $exp: wrap_exn loc name expr$ >>]
-   
+
    let derived_cond_rewrite proc loc
        { crw_name = name;
          crw_params = params;
@@ -815,9 +815,9 @@ struct
                          $args_expr$ $redex_expr$ $con_expr$ $expr$ >>
       in
          [<:str_item< $exp: wrap_exn loc name expr$ >>]
-   
+
    let () = ()
-   
+
    (*
     * Interactive forms.
     *)
@@ -836,7 +836,7 @@ struct
                  >>
       in
          [<:str_item< $exp: wrap_exn loc name expr$ >>]
-   
+
    let interactive_cond_rewrite proc loc
        { crw_name = name;
          crw_params = params;
@@ -856,7 +856,7 @@ struct
                          $args_expr$ $redex_expr$ $con_expr$ $expr$ >>
       in
          [<:str_item< $exp: wrap_exn loc name expr$ >>]
-   
+
    (*
     * A primitive rule specifies the extract.
     *)
@@ -875,22 +875,22 @@ struct
       let axiom_item = (<:str_item< value $rec:false$ $list:[axiom_patt, wrap_exn loc name axiom_value]$ >>) in
       let thm_item = <:str_item< $exp: wrap_exn loc name thm$ >> in
          [axiom_item; thm_item]
-   
+
    let prim_axiom proc loc ax extract =
       let code = prim_axiom_expr loc in
       let extract_expr = build_ml_term loc extract in
          define_axiom code proc loc ax extract_expr
-   
+
    let derived_axiom proc loc ax tac =
       let code = derived_axiom_expr loc in
          define_axiom code proc loc ax tac
-   
+
    let interactive_axiom proc loc ax expr =
       let code = delayed_axiom_expr loc in
          define_axiom code proc loc ax (Convert.to_expr ax.axiom_name expr)
-   
+
    let () = ()
-   
+
    (*
     * A rule is an axiom with parameters.
     * Split var params from regular params.
@@ -918,7 +918,7 @@ struct
       let string s   = <:expr< $str:s$ >> in
       let lid_patt s = <:patt< $lid:s$ >> in
       let lid_expr s = <:expr< $lid:s$ >> in
-   
+
       (* Expressions *)
       let name_rule_id = name ^ "_rule" in
       let cvars, tvars, tparams = split_params params in
@@ -973,22 +973,22 @@ struct
       let rule_def = <:str_item< value $rec:false$ $list:[ name_rule_patt, wrap_exn loc name rule_expr ]$ >> in
       let tac_def = <:str_item< value $rec:false$ $list:[ name_patt, name_value ]$ >> in
          [rule_def; tac_def]
-   
+
    let prim_rule proc loc ax extract =
       let code = prim_rule_expr loc in
       let extract_expr = build_ml_term loc extract in
          define_rule code proc loc ax extract_expr
-   
+
    let derived_rule proc loc ax tac =
       let code = derived_rule_expr loc in
          define_rule code proc loc ax tac
-   
+
    let interactive_rule proc loc ax expr =
       let code = delayed_rule_expr loc in
          define_rule code proc loc ax (Convert.to_expr ax.rule_name expr)
-   
+
    let () = ()
-   
+
    (*
     * An mlterm is a side condition that is checked in ML.
     * The term expands to the code production.
@@ -1004,6 +1004,17 @@ struct
     *    let contractum_n_id = compile_contractum redex_id contractum_n_term in
     *       code
     *)
+   let string_of_opname opname =
+      let rec cat = function
+         [h] ->
+            h
+       | h :: t ->
+            h ^ "_" ^ cat t
+       | [] ->
+            ""
+      in
+         cat (Opname.dest_opname opname)
+
    let define_ml_program proc loc term_id redex_id t cons code =
       (* Identifier names *)
       let vars       = free_vars code in
@@ -1012,12 +1023,12 @@ struct
       let term_expr  = <:expr< $lid:term_id$ >> in
       let redex_expr = <:expr< $lid:redex_id$ >> in
       let tname = string_of_opname (opname_of_term t) in
-      
+
       (* Build a contractum *)
       let rec contracta_bind index = function
          t::tl ->
             let term_expr = build_ml_term loc t in
-            let name = sprintf "%s.contractum_%d" tname index in
+            let name = sprintf "contractum_%d" index in
             let let_patt = <:patt< $lid:name$ >> in
             let let_value =
                <:expr< $compile_contractum_expr loc$ $redex_expr$ $term_expr$ >>
@@ -1026,7 +1037,7 @@ struct
        | [] ->
             []
       in
-      
+
       (* Build the program *)
       let contracta_binding = contracta_bind 0 cons in
       let contracta_expr =
@@ -1046,9 +1057,9 @@ struct
          <:expr< let $rec:false$ $list:[term_patt, wrap_exn loc tname t_expr]$ in $redex_value_expr$ >>
       in
          [<:str_item< $exp:code_value_expr$ >>]
-   
+
    let () = ()
-   
+
    (*
     * An mlterm is a side condition that is checked in ML.
     * The term expands to the code production.
@@ -1077,20 +1088,20 @@ struct
       let value_id   = new_var loc "value" vars in
       let arg_id     = new_var loc "arg" vars in
       let names_params_id = new_var loc "names_params" vars in
-      
+
       let term_patt    = <:patt< $lid:term_id$ >> in
       let redex_patt   = <:patt< $lid:redex_id$ >> in
       let rewrite_patt = <:patt< $lid:rewrite_id$ >> in
       let value_patt   = <:patt< $lid:value_id$ >> in
       let arg_patt     = <:patt< $lid:arg_id$ >> in
       let stack_patt   = <:patt< $lid:stack_id$ >> in
-      
+
       let term_expr    = <:expr< $lid:term_id$ >> in
       let redex_expr   = <:expr< $lid:redex_id$ >> in
       let rewrite_expr = <:expr< $lid:rewrite_id$ >> in
       let value_expr   = <:expr< $lid:value_id$ >> in
       let arg_expr     = <:expr< $lid:arg_id$ >> in
-      
+
       (* Build the program *)
       let mlrec_expr =
          <:expr< { $list:[ ml_rule_rewrite_expr loc, rewrite_expr;
@@ -1101,7 +1112,7 @@ struct
          <:expr< $create_ml_rule_expr loc$ $lid:local_refiner_id$ $term_expr$ $mlrec_expr$ >>
       in
       let stack_value_expr =
-         <:expr< $apply_redex_expr loc$ $redex_expr$ $nil_array loc$ $value_expr$ >>
+         <:expr< $apply_redex_expr loc$ $redex_expr$ $nil_array loc$ [ $value_expr$ :: [] ] >>
       in
       let value_value_expr =
          <:expr< $construct_redex_expr loc$ $nil_array loc$ $nil_list loc$ [ $arg_expr$ :: [] ] >>
@@ -1119,9 +1130,9 @@ struct
          >>
       in
          define_ml_program proc loc term_id redex_id t cons let_expr
-   
+
    let () = ()
-   
+
    (*
     * Define a display form expansion.
     *
@@ -1153,7 +1164,7 @@ struct
       let expr = <:expr< $create_dform_expr loc$ $lid:local_dformer_id$ $modes_expr$ $rec_value$ >> in
       let name = string_of_opname (opname_of_term t) in
          [<:str_item< $exp: wrap_exn loc name expr$ >>]
-   
+
    (*
     * Precedence definition relation.
     *)
@@ -1161,7 +1172,7 @@ struct
       let prec_patt = <:patt< $lid:s$ >> in
       let new_prec = <:expr< $new_prec_expr loc$ () >> in
          [<:str_item< value $rec:false$ $list:[ prec_patt, new_prec ]$ >>]
-   
+
    let define_prec_rel proc loc
        { prec_left = s;
          prec_right = s';
@@ -1180,7 +1191,7 @@ struct
       in
       let name = sprintf "%s..%s" s s' in
          [<:str_item< $exp:wrap_exn loc name expr$ >>]
-   
+
    (*
     * Pattern to match rewrite destruction.
     *)
@@ -1197,7 +1208,7 @@ struct
          <:patt< $rewriter_patt loc$ . $uid:"RewriteInt"$ $lid:name$ >>
     | RewriteLevelType name ->
          <:patt< $rewriter_patt loc$ . $uid:"RewriteLevel"$ $lid:name$ >>
-   
+
    (*
     * An ml dterm is a display form that is computed in ML.
     *
@@ -1234,31 +1245,31 @@ struct
       let name_expr = <:expr< $str: name$ >> in
       let modes_expr = list_expr loc string_expr modes in
       let options_expr = list_expr loc (dform_option_expr loc) options in
-   
+
       (* Identifier names *)
       let vars = printer :: buffer :: free_vars code in
       let term_id = new_var loc "term" vars in
       let redex_id = new_var loc "redex" vars in
       let dprinter_id = new_var loc "printer" vars in
-      
+
       let term_patt = <:patt< $lid:term_id$ >> in
       let redex_patt = <:patt< $lid:redex_id$ >> in
       let dprinter_patt = <:patt< $lid:dprinter_id$ >> in
       let printer_patt = <:patt< $lid:printer$ >> in
       let buffer_patt = <:patt< $lid:buffer$ >> in
       let stack_patt = <:patt< $lid:stack_id$ >> in
-      
+
       let term_expr = <:expr< $lid:term_id$ >> in
       let redex_expr = <:expr< $lid:redex_id$ >> in
       let dprinter_expr = <:expr< $lid:dprinter_id$ >> in
       let printer_expr = <:expr< $lid:printer$ >> in
       let buffer_expr = <:expr< $lid:buffer$ >> in
-      
+
       (* Items *)
       let redex = compile_redex [||] t in
       let items = extract_redex_types redex in
       let items_patt = list_patt loc (rewrite_type_patt loc) items in
-      
+
       (* Build the program *)
       let dprinter = <:expr< $dform_printer_expr loc$ $dprinter_expr$ >> in
       let rec_value =
@@ -1285,9 +1296,9 @@ struct
          <:expr< let $rec:false$ $list:[ dprinter_patt, dprinter_fun_expr ]$ in $body_expr$ >>
       in
          define_ml_program proc loc term_id redex_id t cons dprinter_let_expr
-   
+
    let _ = ()
-   
+
    (*
     * Record a resource.
     *
@@ -1303,7 +1314,7 @@ struct
       let rsrc_type = <:ctyp< $resource_rsrc_ctyp loc$ $improve_type$ $extract_type$ $data_type$>> in
          proc.imp_resources <- r :: proc.imp_resources;
          [<:str_item< type $list:[name, [], rsrc_type]$ >>]
-   
+
    (*
     * When a parent is included, we need to open all the ancestors,
     * and we need to patch in all the resources.
@@ -1344,13 +1355,13 @@ struct
       let resources, items = List_util.fold_left print_resource resources nresources in
          proc.imp_resources <- resources;
          joins @ items
-   
+
    (*
     * An regular item.
     *)
    let define_summary_item proc loc item =
       [item]
-   
+
    (*
     * A magic block computes a hash value from the definitions
     * in the block.
@@ -1361,7 +1372,7 @@ struct
       let index_val = <:expr< $int:string_of_int index$ >> in
       let hash_def = <:str_item< value $rec:false$ $list:[ name_patt, index_val ]$ >> in
          hash_def :: stmts
-      
+
    (*
     * Prolog declares the refiner and dformer.
     *
@@ -1374,7 +1385,7 @@ struct
       let refiner_patt = <:patt< $lid:local_refiner_id$ >> in
       let dformer_patt = <:patt< $lid:local_dformer_id$ >> in
          [<:str_item< value $rec:false$ $list:[ refiner_patt, refiner_val; dformer_patt, dformer_val ]$ >>]
-   
+
    (*
     * Trailing declarations.
     *
@@ -1406,9 +1417,9 @@ struct
                               $list:[refiner_patt, refiner_val;
                                      dformer_patt, dformer_val]$ >>);
           (<:str_item< $exp:thy$ >>)]
-   
+
    let _ = ()
-   
+
    (*
     * Now extract the program.
     *)
@@ -1526,7 +1537,7 @@ struct
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: infix%t" eflush;
             raise (Failure "Filter_prog.extract_str_item: nested modules are not implemented")
-   
+
    (*
     * Extract a signature.
     *)
@@ -1537,9 +1548,12 @@ struct
       let postlog = implem_postlog proc (0, 0) name in
          List.map (fun item -> item, (0, 0)) (prolog @ items @ postlog)
 end
-   
+
 (*
  * $Log$
+ * Revision 1.16  1998/06/01 13:53:07  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.15  1998/05/28 13:46:20  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

@@ -31,7 +31,7 @@ let _ =
 (*
  * Make the enhanced base from a normal summary base.
  *)
-module MakeFilterCache 
+module MakeFilterCache
 (SigMarshal : MarshalSig)
 (StrMarshal : MarshalSig
               with type select = SigMarshal.select
@@ -53,16 +53,16 @@ struct
    type sig_item  = SigMarshal.item
    type sig_info  = (sig_proof, sig_ctyp, sig_expr, sig_item) module_info
    type sig_elem  = (sig_proof, sig_ctyp, sig_expr, sig_item) summary_item
-   
+
    type str_proof = StrMarshal.proof
    type str_ctyp  = StrMarshal.ctyp
    type str_expr  = StrMarshal.expr
    type str_item  = StrMarshal.item
    type str_info  = (str_proof, str_ctyp, str_expr, str_item) module_info
    type str_elem  = (str_proof, str_ctyp, str_expr, str_item) summary_item
-   
+
    type select = Base.select
-   
+
    (*
     * The main base keeps the filesystem base,
     * as well as a list of summaries that have been loaded so far.
@@ -108,15 +108,15 @@ struct
 
    (* Hook that is called whenever a module is loaded *)
    type 'a hook = info -> module_path * sig_info -> 'a -> 'a
-   
+
    (************************************************************************
     * BASE OPERATIONS                                                      *
     ************************************************************************)
-   
+
    (*
     * Create the bases.
     *)
-   let create path = 
+   let create path =
       { lib = Base.create path;
         str_summaries = [];
         sig_summaries = []
@@ -279,7 +279,7 @@ struct
    let mk_opname cache = function
       [] ->
          raise (Invalid_argument "mk_opname")
-   
+
     | [str] ->
          (* Name in this module *)
          begin
@@ -287,7 +287,7 @@ struct
                Not_found ->
                   raise (Failure (sprintf "undeclared name: %s" str))
          end
-   
+
     | path ->
          (* The head serves to specify the name more precisely *)
          let path' =
@@ -296,7 +296,7 @@ struct
                   raise (BadCommand ("no object with name: " ^ (string_of_opname_list path)))
          in
             make_opname (List.rev path')
-   
+
    (************************************************************************
     * ACCESS                                                               *
     ************************************************************************)
@@ -356,7 +356,7 @@ struct
     *)
    let add_command cache item =
       cache.info <- Filter_summary.add_command cache.info item
-   
+
    (*
     * Add a precedence.
     *)
@@ -485,7 +485,7 @@ struct
       let vals = ref arg in
       let info = inline_sig_module (cache, inline_hook, vals) path in
          SigMarshal.unmarshal (Base.info cache.base.lib info), !vals
-   
+
    (*
     * To create, need:
     *    1. module_base
@@ -501,7 +501,7 @@ struct
         name = name;
         base = base
       }
-   
+
    (*
     * When a cache is loaded, we follow the steps to inline
     * the file into a new cache.
@@ -535,16 +535,16 @@ struct
             end;
          inline_str_components (cache, hook, vals) path info (info_items info');
          cache, !vals (* hook cache (path, info') !vals *)
-   
+
    (*
     * Get the filename of the info.
     *)
    let filename { lib = base } { self = info } =
       Base.file_name base info
-   
+
    let name { name = name } =
       name
-   
+
    (*
     * Get the signature for the module.
     *)
@@ -558,7 +558,7 @@ struct
                   base.sig_summaries <- info :: summaries;
                   info
       in
-         SigMarshal.unmarshal (Base.info lib info) 
+         SigMarshal.unmarshal (Base.info lib info)
 
    (*
     * Check the implementation with its interface.
@@ -568,7 +568,7 @@ struct
       let id = find_id sig_info in
          add_command cache (Id id, (0, 0));
          check_implementation cache.info sig_info
-   
+
    (*
     * Save the cache.
     *)
@@ -584,9 +584,12 @@ struct
          if !debug_filter_cache then
             eprintf "Filter_cache.save: done%t" eflush
 end
-   
+
 (*
  * $Log$
+ * Revision 1.14  1998/06/01 13:52:51  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.13  1998/05/29 14:52:57  jyh
  * Better Makefiles.
  *

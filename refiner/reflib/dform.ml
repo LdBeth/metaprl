@@ -41,7 +41,7 @@ type dform_printer_info =
    { dform_term : term;
      dform_stack : rewrite_stack;
      dform_items : rewrite_item list;
-     
+
      dform_printer : buffer -> parens -> term -> unit;
      dform_buffer : buffer
    }
@@ -68,7 +68,7 @@ type dform_info =
      dform_options : dform_option list;
      dform_print : dform_printer
    }
-   
+
 (*
  * The display database is just a table matching terms
  * with their precedence and printer.
@@ -169,8 +169,8 @@ let dest_dfbase base =
                   DFExpansion e ->
                      (* BUG: this is not right, but hard to construct the right term *)
                      DFormExpansion t
-                     
-                | DFPrinter p -> 
+
+                | DFPrinter p ->
                      DFormPrinter p
             in
                DFormEntry { dform_name = name;
@@ -365,19 +365,35 @@ let format_short_term base shortener =
       let stack, items, { df_name = name; df_precedence = pr'; df_printer = printer } = lookup base t in
       let pr, parenflag =
          if pr' = inherit_prec then
-            pprec, false
+            begin
+               if !debug_dform then
+                  eprintf "Dform %s: inherit_prec%t" name eflush;
+               pprec, false
+            end
          else
             pr', (if eq = NOParens then
-                     false
+                     begin
+                        if !debug_dform then
+                           eprintf "Dform %s: NOParens%t" name eflush;
+                        false
+                     end
                   else
                      match get_prec pprec pr' with
                         NoRelation ->
+                           if !debug_dform then
+                              eprintf "Dform %s: NoRelation%t" name eflush;
                            true
                       | LTRelation ->
+                           if !debug_dform then
+                              eprintf "Dform %s: LtRelation%t" name eflush;
                            false
                       | EQRelation ->
+                           if !debug_dform then
+                              eprintf "Dform %s: EqRelation%t" name eflush;
                            eq = LEParens
                       | GTRelation ->
+                           if !debug_dform then
+                              eprintf "Dform %s: GTRelation%t" name eflush;
                            true)
       in
          if parenflag then
@@ -448,7 +464,7 @@ let format_short_term base shortener =
    (* Print a list of terms *)
    and print_termlist pprec buf eq l =
       List.iter (print_entry pprec buf eq) l
-               
+
    in
    let print buf = print_term max_prec buf NOParens in
       print
@@ -483,7 +499,7 @@ let slot { dform_items = items; dform_printer = printer; dform_buffer = buf } =
     | [RewriteTerm body] ->
          if !debug_dform then
             eprintf "Dform.slot: %s%t" (string_of_term body) eflush;
-         printer buf NOParens body
+         printer buf LTParens body
     | [RewriteString s] ->
          if !debug_dform then
             eprintf "Dform.slot: %s%t" s eflush;
@@ -644,6 +660,9 @@ let string_of_mterm base mterm =
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/01 13:54:49  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1998/05/28 15:00:42  jyh
  * Partitioned refiner into subdirectories.
  *

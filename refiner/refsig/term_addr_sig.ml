@@ -28,9 +28,12 @@ sig
    val remove_addr_prefix : address -> address -> address
    val subterm_arities : term -> int list
 end
-   
+
 (*
  * $Log$
+ * Revision 1.2  1998/06/01 13:55:12  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1998/05/28 15:01:42  jyh
  * Partitioned refiner into subdirectories.
  *

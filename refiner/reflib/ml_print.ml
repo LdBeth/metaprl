@@ -25,7 +25,7 @@ struct
    (************************************************************************
     * ML PRINTING                                                          *
     ************************************************************************)
-   
+
    (*
     * Print an expression as a string.
     *)
@@ -98,11 +98,11 @@ struct
             ()
       in
          print expr
-         
+
    (************************************************************************
     * TYPES                                                                *
     ************************************************************************)
-   
+
    (* Use the file types *)
    type t = File.t
    type out = File.out
@@ -110,7 +110,7 @@ struct
    (************************************************************************
     * FILE INTERFACE                                                       *
     ************************************************************************)
-   
+
    (*
     * Interface.
     *)
@@ -128,23 +128,26 @@ struct
     *)
    let print_term ofile term =
       print_ml_expr ofile (FormatTerm.format_term term)
-   
+
    (*
     * Meta terms.
     *)
    let print_mterm ofile mterm =
       (* Print output *)
       print_ml_expr ofile (FormatTerm.format_mterm mterm)
-   
+
    (*
     * List of terms.
     *)
    let print_term_list ofile l =
       print_ml_expr ofile (FormatTerm.format_term_list l)
 end
-   
+
 (*
  * $Log$
+ * Revision 1.2  1998/06/01 13:54:57  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1998/05/28 15:00:56  jyh
  * Partitioned refiner into subdirectories.
  *

@@ -6,8 +6,8 @@ open Term_sig
 open Term_subst_sig
 open Term_meta_sig
 
-module TermMeta 
-   (Term : TermSig) 
+module TermMeta
+   (Term : TermSig)
    (TermSubst : TermSubstSig
     with type term = Term.term)
        : TermMetaSig
@@ -15,6 +15,9 @@ module TermMeta
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/01 13:55:26  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1998/05/29 02:29:19  nogin
  * Created refiner/term_gen directory
  * Moved renamed term_std/term_meta_std to term_gen/term_meta_gen

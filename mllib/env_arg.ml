@@ -54,10 +54,10 @@ let general name default info env_set arg_set =
       let com_name = "-" ^ name in
       let com_info = ": " ^ info in
          param_args := (com_name, com_set, com_info) :: !param_args;
-               
+
          (* Return ref to the value *)
          v
-  
+
 (*
  * Special cases, where argument is of type string.
  * Handle string-based args.
@@ -74,8 +74,8 @@ let string name default info set =
  * Handle int-based args.
  *)
 let int name default info set =
-   let env_set name v s = 
-      let i = 
+   let env_set name v s =
+      let i =
          try int_of_string s with
             Failure "int_of_string" ->
                eprintf "CDARG: bad value for %s: '%s' not integer, exiting\n" name s ;
@@ -94,7 +94,7 @@ let int name default info set =
  * Handle boolean args.
  *)
 let bool name default info set =
-   let env_set name v s = 
+   let env_set name v s =
       let flag =
       match s with
          "true" | "TRUE" ->
@@ -128,6 +128,9 @@ let parse spec usage errmsg =
 
 (*
  * $Log$
+ * Revision 1.5  1998/06/01 13:54:33  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.4  1998/04/24 19:38:50  jyh
  * Updated debugging.
  *

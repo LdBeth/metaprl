@@ -24,7 +24,7 @@ struct
    (************************************************************************
     * TYPES                                                                *
     ************************************************************************)
-   
+
    (*
     * An entry in the vector contains some value, and the edges
     * in the graph.  When a query is made.
@@ -46,7 +46,7 @@ struct
         mutable entry_no_relation : int list;
         mutable entry_version : int
       }
-   
+
    (*
     * A DAG is a vector of entries.
     * We add a level of indirection to allow for equating nodes.
@@ -55,13 +55,13 @@ struct
       { mutable entries : ('a entry) array;
         mutable version : int
       }
-   
+
    type 'a node = int
-   
+
    (************************************************************************
     * IMPLEMENTATION                                                       *
     ************************************************************************)
-   
+
    (*
     * Inset a value into a sorted list.
     *)
@@ -76,7 +76,7 @@ struct
                l
        | [] ->
             [i]
-   
+
    (*
     * Remove a particular entry from the list, and
     * decrement all larger indices.
@@ -97,7 +97,7 @@ struct
     *)
    let create () =
       { entries = [||]; version = 0 }
-   
+
    (*
     * Add a new node unrelated to the rest of the DAG.
     *)
@@ -116,7 +116,7 @@ struct
          Array.blit entries 0 newentries 0 length;
          dag.entries <- newentries;
          length
-   
+
    (*
     * Delete a node by updating all indices.
     *)
@@ -132,7 +132,7 @@ struct
          Array.blit entries (node + 1) newentries node (length - node - 1);
          Array.iter delete entries;
          dag.version <- version + 1
-   
+
    (*
     * Add an edge from node1 to node2.
     *)
@@ -143,26 +143,26 @@ struct
          entry1.entry_out_edges <- list_insert node2 entry1.entry_out_edges;
          entry2.entry_in_edges <- list_insert node1 entry2.entry_in_edges;
          dag.version <- version + 1
-   
+
    (*
     * Two nodes are made equal by creating a cycle.
     *)
    let equate dag node1 node2 =
       add_edge dag node1 node2;
       add_edge dag node2 node1
-   
+
    (*
     * Projections.
     *)
    let node_value { entries = entries } i =
       entries.(i).entry_value
-   
+
    let node_out_edges { entries = entries } i =
       entries.(i).entry_out_edges
-   
+
    let node_in_edges { entries = entries } i =
       entries.(i).entry_in_edges
-   
+
    (*
     * Sweep a function up the DAG, calling on the children first.
     * The function is called only once on each node, so we keep a vector
@@ -181,7 +181,7 @@ struct
                let result = f entry.entry_value children in
                   values.(i) <- Some result;
                   result
-   
+
           | Some result ->
                result
       in
@@ -197,25 +197,25 @@ struct
             []
       in
          aux 0
-   
+
    let out_edges_f { entry_out_edges = edges } = edges
-   
+
    let in_edges_f { entry_in_edges = edges } = edges
-   
+
    let some_edges_f { entry_in_edges = _ } = []
-   
+
    let sweep_up { entries = entries } f =
       sweep_aux entries f out_edges_f in_edges_f
-      
+
    let sweep_down { entries = entries } f =
       sweep_aux entries f in_edges_f out_edges_f
-   
+
    let sweep_up_all { entries = entries } f =
       sweep_aux entries f out_edges_f some_edges_f
-      
+
    let sweep_down_all { entries = entries } f =
       sweep_aux entries f in_edges_f some_edges_f
-   
+
    (*
     * Get the roots of the DAG.
     * These nodes have no in_edges.
@@ -233,7 +233,7 @@ struct
                   collect (i + 1)
       in
          collect 0
-   
+
    (*
     * Expand to all the reachable nodes.
     *)
@@ -252,7 +252,7 @@ struct
                false
       in
          loop [] [node1]
-   
+
    (*
     * Find the relation and cache it.
     * If version is out-of-date, delete the no_relation.
@@ -287,7 +287,7 @@ struct
                LessThan
          else if List.mem node2 in_edges then
             GreaterThan
-   
+
          (* If not in cache, then do a search *)
          else if search out_edges_f entries node1 node2 then
             if search in_edges_f entries node1 node2 then
@@ -312,9 +312,12 @@ struct
                NoRelation
             end
 end
-   
+
 (*
  * $Log$
+ * Revision 1.4  1998/06/01 13:54:39  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.3  1998/04/24 19:38:57  jyh
  * Updated debugging.
  *

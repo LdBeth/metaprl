@@ -68,7 +68,7 @@ let equal_mode_bases
       (List_util.subtract labels1 labels2 = []) &
       (List_util.subtract labels2 labels1 = []) &
       List.for_all equal_mode_base labels1
-   
+
 let dest_mode_base { all_base = all; mode_bases = bases } =
    all, bases
 
@@ -140,6 +140,9 @@ let create_dform b modes info =
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/01 13:54:53  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1998/05/28 15:00:45  jyh
  * Partitioned refiner into subdirectories.
  *

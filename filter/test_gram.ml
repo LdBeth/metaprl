@@ -20,19 +20,19 @@ EXTEND
    GLOBAL: term_eoi term;
 
    term_eoi: [[ t = term; EOI -> t ]];
-   
+
    term:
       [[ t = aterm ->
           t
        ]];
-   
+
    aterm:
       [[ t = noncommaterm ->
           t
         | t1 = noncommaterm; sl_comma; t2 = noncommaterm ->
           t1 ^ "," ^ t2
        ]];
-   
+
    noncommaterm:
       [[ t = nonwordterm ->
           t
@@ -41,12 +41,12 @@ EXTEND
         | t = wordterm; (params, bterms) = termsuffix ->
           sprintf "%s[%a][%a]" t print_list params print_list bterms
        ]];
-   
+
    wordterm:
       [[ o = opname ->
           o
        ]];
-   
+
    nonwordterm:
       [[ v = varterm ->
           v
@@ -55,7 +55,7 @@ EXTEND
         | i = sl_number ->
           string_of_int i
        ]];
-   
+
    termsuffix:
       [[ p = params ->
           p, []
@@ -69,86 +69,86 @@ EXTEND
       [[ sl_single_quote; v = sl_word ->
           v
        ]];
-   
+
    opname:
       [[ w = sl_word ->
           w
         | op = opname; sl_exclamation; w = sl_word ->
           op ^ "!" ^ w
        ]];
-   
+
    params:
       [[ sl_open_brack; params = OPT paramlist; sl_close_brack ->
           match params with
              Some params' -> params'
            | None -> []
        ]];
-   
+
    paramlist:
       [[ p = param ->
           [p]
         | p = param; sl_comma; l = paramlist ->
           p :: l
        ]];
-   
+
    param:
       [[ w = sl_word ->
           w
        ]];
-   
+
    btermslist:
       [[ l = OPT btermlist ->
           match l with
              Some l' -> l'
            | None -> []
        ]];
-   
+
    btermlist:
       [[ t = bterm ->
           [t]
         | l = btermlist; sl_semi_colon; t = bterm ->
           l @ [t]
        ]];
-   
+
    bterm:
       [[ w = sl_word ->
          w
        ]];
-   
+
    sl_word:
       [[  s = LIDENT -> s
         | s = UIDENT -> s
        ]];
-   
+
    sl_number:
       [[ n = INT ->
           int_of_string n
        ]];
-   
+
    sl_open_brack:
       [[ "[" -> () ]];
-   
+
    sl_close_brack:
       [[ "]" -> () ]];
-   
+
    sl_open_curly:
       [[ "{" -> () ]];
-   
+
    sl_close_curly:
       [[ "}" -> () ]];
-   
+
    sl_comma:
       [[ "," -> () ]];
-   
+
    sl_semi_colon:
       [[ ";" -> () ]];
-   
+
    sl_exclamation:
       [[ "!" -> () ]];
-   
+
    sl_wild_card:
       [[ "_" -> () ]];
-   
+
    sl_single_quote:
       [[ "'" -> () ]];
 END
@@ -163,6 +163,9 @@ let _ = Quotation.default := "term"
 
 (*
  * $Log$
+ * Revision 1.2  1998/06/01 13:53:27  jyh
+ * Proving twice one is two.
+ *
  * Revision 1.1  1997/04/28 15:51:09  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included
