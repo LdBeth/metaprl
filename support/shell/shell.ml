@@ -692,7 +692,7 @@ let interpret_all command modifies =
    let f item db =
       item.edit_interpret command
    in
-      apply_all f modifies true false
+      apply_all f (interpret_modifies command) true false
 
 let clean_all _ = interpret_all ProofClean false
 let squash_all _ = interpret_all ProofSquash false

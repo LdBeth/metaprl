@@ -94,6 +94,7 @@ val create_ax_statement : parse_arg -> shell -> term -> string -> unit
 val check : shell -> unit
 val expand : shell -> unit
 val expand_all : parse_arg -> shell -> unit
+val interpret_modifies : proof_command -> bool
 val interpret : shell -> proof_command -> unit
 val refine : shell -> tactic -> unit
 

@@ -558,8 +558,30 @@ let redo shell =
    shell.shell_proof.edit_redo ();
    display_proof shell shell.shell_proof LsOptionSet.empty
 
+let interpret_modifies = function
+   ProofRefine _
+ | ProofUndo
+ | ProofRedo
+ | ProofKreitz
+ | ProofRotate _
+ | ProofPaste _
+ | ProofMakeAssum ->
+      true
+ | ProofCp _
+ | ProofExpand
+ | ProofClean
+ | ProofSquash
+ | ProofCopy _
+ | ProofAddr _
+ | ProofUp _
+ | ProofDown _
+ | ProofRoot
+ | ProofNop ->
+      false
+
 let interpret shell command =
-   touch shell;
+   if interpret_modifies command then
+      touch shell;
    shell.shell_proof.edit_interpret command;
    display_proof shell shell.shell_proof LsOptionSet.empty
 
