@@ -814,7 +814,7 @@ and temp_multieq2bterm t_meq b_v_list consts var_hashtbl sub_hashtbl multeq_hash
                   if not (Hashtbl.mem sub_hashtbl v) then begin
                      try
                         Hashtbl.add sub_hashtbl v (Hashtbl_multeq.find multeq_hashtbl vari.m_v)
-                     with _ -> ()     (* !!!!! tut  *)
+                     with Not_found -> ()     (* !!!!! tut  *)
                   end;
                   mk_var_term v
             end

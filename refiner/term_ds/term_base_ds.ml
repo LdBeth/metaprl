@@ -510,7 +510,7 @@ struct
                      core_term (SOVar (v,
                                        List.map dest_var (dest_xlist (dest_simple_bterm conts)),
                                        List.map dest_simple_bterm bterms))
-               with _ ->
+               with RefineError _ | Failure _ ->
                   raise(Invalid_argument "Term.base_ds.make_term with var_opname and subterms, but the term does not look like a SO variable")
                end
           | _ -> raise(Invalid_argument "Term.base_ds.make_term with var_opname, but the term does not look like a variable")

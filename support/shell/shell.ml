@@ -944,6 +944,10 @@ struct
    let rec apply_all info f time clean_res =
       let dir = info.dir in
       let apply_it item mod_name name =
+         (*
+          * Here we indeed want to ignore absolutely any kind of error.
+          * Whatever went wrong, we just want to skip the bad item and continue to the next one.
+          *)
          (try Shell_state.set_so_var_context info.shell (Some (item.edit_get_terms ())) with _ -> ());
          (try f item (get_db info) with _ -> ());
          if clean_res then Mp_resource.clear_results (mod_name, name)

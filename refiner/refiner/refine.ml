@@ -1675,6 +1675,10 @@ struct
       let opname = mk_opname name build.build_opname in
       let refiner = build.build_refiner in
          fun () ->
+            (*
+             * Below we indeed want to catch absolutely everything - we do not care
+             * what exactly went wrong in the proof search.
+             *)
             let ext = try extf () with _ -> raise (Incomplete opname) in
                if ext.ext_sentinal.sent_refiner != refiner then
                   raise(Invalid_argument ("Sentinals mismatch in extractor function"));
