@@ -12,7 +12,7 @@ $merges{"operator"}="merge_op";
 $merges{"operator'"}="merge_op'";
 $merges{"bound_term"}="merge_bterm";
 $merges{"bound_term'"}="merge_bterm'";
-foreach my $ty ("bool", "unit", "param", "term", "var", "int", "level_exp", "level_exp_var", "opname", "string", "address", "match_param", "match_term", "esequent") {
+foreach my $ty ("bool", "unit", "param", "term", "var", "int", "level_exp", "level_exp_var", "opname", "string", "address", "match_param", "match_term", "esequent", "term_subst") {
     $merges{$ty}="merge_$ty";
     $merges{"$ty list"}="merge_" . $ty . "s";
 };
@@ -26,7 +26,7 @@ $merges{"SymbolSet.t"} = "merge_ss";
 $merges{"'a"} = "merge_poly";
 $merges{"'a list"} = "merge_poly";
 
-foreach my $ty ("bool", "int", "var", "opname", "out_channel", "string", "Lm_num.num", "SymbolSet.t") {
+foreach my $ty ("bool", "int", "var", "opname", "out_channel", "string", "Lm_num.num", "SymbolSet.t", "'a") {
     $splits{$ty} = $splits{"$ty list"} = $splits{"$ty array"} = "";
 };
 foreach my $ty ("term", "bound_term", "param", "operator", "level_exp", "level_exp_var", "address") {
@@ -40,18 +40,20 @@ foreach my $ty ("term", "param", "level_exp", "level_exp_var") {
 $splits{"esequent"} = "split_eseq";
 $splits{"bound_term'"} = "split_bterm'";
 $splits{"operator'"} = "split_op'";
+$splits{"term_subst"} = "split_term_subst";
 $splits{"term -> term"} = "split_ttf";
 $splits{"SymbolSet.t -> term"} = "split_atf";
 $splits{"SymbolSet.t -> term -> term"} = "split_attf";
 $splits{"term -> term * 'a"} = "split_ttaf";
 $splits{"SymbolSet.t -> term -> term * 'a"} = "split_attaf";
+$splits{"term -> 'a -> bool"} = "split_taf";
 
 $merges{"object_id"} = $merges{"param list"};
 $splits{"object_id"} = $splits{"param list"};
 
 sub do_split($$) {
     my ($type, $arg) = @_;
-    if ($type =~ /^\([^()]*\)$/) { $type =~ s/[()]//g };
+    if ($type =~ /^\([^()]*\)$/) { $type =~ s/^\([[:space:]]*//; $type =~ s/[[:space:]]*\)$// };
     if (not(defined $splits{$type})) { die "\n\nDo not know how to split $type" };
     my $split = $splits{$type};
     if ($split eq "") {
@@ -100,7 +102,7 @@ sub process ($) {
     if (defined $merges{$tyres}) {
 	print "         ", $merges{$tyres}, " \"$modname.$name\" (" , $modname, "1.$name$args1) (", $modname, "2.$name$args2)\n\n";
     } else {
-	if ($tyres =~ /^\([^()]*\)$/) { $tyres =~ s/[()]//g };
+	if ($tyres =~ /^\([^()]*\)$/) { $tyres =~ s/^\([[:space:]]*//; $tyres =~ s/[[:space:]]*\)$// };
 	if ($tyres =~ /\*/) {
 	    my @tyress = split(/[[:space:]]*\*[[:space:]]*/,$tyres);
 	    my $let1 = $let2 = "         let ";

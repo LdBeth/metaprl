@@ -87,8 +87,8 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    module TermOp2 = Refiner2.TermOp
    module TermMan1 = Refiner1.TermMan
    module TermMan2 = Refiner2.TermMan
-   module Subst1 = Refiner1.TermSubst
-   module Subst2 = Refiner2.TermSubst
+   module TermSubst1 = Refiner1.TermSubst
+   module TermSubst2 = Refiner2.TermSubst
    module SeqHyp1 = Refiner1.Term.SeqHyp
    module SeqHyp2 = Refiner2.Term.SeqHyp
 
@@ -218,6 +218,18 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    let split_hyps hs =
       split (List.map split_hyp hs)
 
+   let split_eseq { sequent_args = a1, a2; sequent_hyps = h1, h2; sequent_concl = c1, c2 } =
+      { Type1.sequent_args = a1; Type1.sequent_hyps = h1; Type1.sequent_concl = c1 },
+      { Type2.sequent_args = a2; Type2.sequent_hyps = h2; Type2.sequent_concl = c2 }
+
+   let split_term_subst sub =
+      let vars, terms = split sub in
+      let ts1, ts2 = split terms in
+         (List.combine vars ts1), (List.combine vars ts2)
+
+   let split_taf f =
+      (fun t1 -> f (term_of_term1 t1)), (fun t2 -> f (term_of_term2 t2))
+
    let split_ttf f =
       (fun t1 -> fst (f (term_of_term1 t1))),
       (fun t2 -> snd (f (term_of_term2 t2)))
@@ -236,10 +248,6 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
    let split_attaf f =
       (fun a t1 -> let t, res = f a (term_of_term1 t1) in fst t, res),
       (fun a t2 -> let t, res = f a (term_of_term2 t2) in snd t, res)
-
-   let split_eseq { sequent_args = a1, a2; sequent_hyps = h1, h2; sequent_concl = c1, c2 } =
-      { Type1.sequent_args = a1; Type1.sequent_hyps = h1; Type1.sequent_concl = c1 },
-      { Type2.sequent_args = a2; Type2.sequent_hyps = h2; Type2.sequent_concl = c2 }
 
    let merge_poly x v1 v2 =
       if v1 <> v2 then
@@ -273,20 +281,14 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    let merge_unit x () () = ()
 
-   let merge_ints x is1 is2 =
-      if not (List.length is1 = List.length is2) then
-         report_error x "integer lists length mismatch";
-      List.map2 (merge_int x) is1 is2
+   let merge_list merge name x l1 l2 =
+      if not (List.length l1 = List.length l2) then
+         report_error x (name ^ " lists length mismatch");
+      List.map2 (merge x) l1 l2
 
-   let merge_vars x is1 is2 =
-      if not (List.length is1 = List.length is2) then
-         report_error x "var lists length mismatch";
-      List.map2 (merge_var x) is1 is2
-
-   let merge_strings x is1 is2 =
-      if not (List.length is1 = List.length is2) then
-         report_error x "string lists length mismatch";
-      List.map2 (merge_string x) is1 is2
+   let merge_ints = merge_list merge_int "integer"
+   let merge_vars = merge_list merge_var "var"
+   let merge_strings = merge_list merge_string "string"
 
    let merge_ss x (s1 : SymbolSet.t) s2 =
       if not (SymbolSet.equal s1 s2) then
@@ -309,15 +311,8 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       (* XXX: TODO: need some consistency checks *)
       a1, a2
 
-   let merge_addresss x as1 as2 =
-      if not (List.length as1 = List.length as2) then
-         report_error x "address list length mismatch";
-      List.map2 (merge_address x) as1 as2
-
-   let merge_params x pl1 pl2 =
-      if not (List.length pl1 = List.length pl2) then
-         report_error x "param list length mismatch";
-      List.map2 (merge_param x) pl1 pl2
+   let merge_addresss = merge_list merge_address "address"
+   let merge_params = merge_list merge_param "param"
 
    let merge_param' x p1 p2 =
       match p1, p2 with
@@ -330,15 +325,8 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
        | ParamList pl1, ParamList pl2 -> ParamList (merge_params x pl1 pl2)
        | _ -> report_error x "incompatible param'"
 
-   let merge_params' x pl1 pl2 =
-      if not (List.length pl1 = List.length pl2) then
-         report_error x "param' list length mismatch";
-      List.map2 (merge_param' x) pl1 pl2
-
-   let merge_level_exp_vars x vs1 vs2 =
-      if not (List.length vs1 = List.length vs2) then
-         report_error x "level_exp_var list length mismatch";
-      List.map2 (merge_level_exp_var x) vs1 vs2
+   let merge_params' = merge_list merge_param' "param'"
+   let merge_level_exp_vars = merge_list merge_level_exp_var "level_exp_var"
 
    let merge_level_exp_var' x { Type1.le_var = v1; Type1.le_offset = i1 } { Type2.le_var = v2; Type2.le_offset = i2 } =
       if not (v1 = v2) then
@@ -347,10 +335,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
          report_error x "le_offset field mismatch";
       { le_var = v1; le_offset = i1 }
 
-   let merge_level_exp_vars' x vs1 vs2 =
-      if not (List.length vs1 = List.length vs2) then
-         report_error x "level_exp_var' list length mismatch";
-      List.map2 (merge_level_exp_var' x) vs1 vs2
+   let merge_level_exp_vars' = merge_list merge_level_exp_var' "level_exp_var'"
 
    let merge_level_exp' x { Type1.le_const = c1; Type1.le_vars = vs1 } { Type2.le_const = c2; Type2.le_vars = vs2 } =
       if not (c1 = c2) then
@@ -377,29 +362,23 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
       else
          (t1, t2)
 
-   let merge_terms x tl1 tl2 =
-      if not (List.length tl1 = List.length tl2) then
-         report_error x "term list length mismatch";
-      List.map2 (merge_term x) tl1 tl2
+   let merge_tsub x (v1, t1) (v2, t2) =
+      (merge_var x v1 v2), (merge_term x t1 t2)
+
+   let merge_terms = merge_list merge_term "term"
+   let merge_term_subst = merge_list merge_tsub "term_subst"
 
    let merge_bterm' x { Type1.bvars = bv1; Type1.bterm = t1 } { Type2.bvars = bv2; Type2.bterm = t2 } =
       if not (List.length bv1 = List.length bv2) then
          report_error x "bvar length mismatch";
-      { bvars = bv1; bterm = merge_term x t1 (Subst2.subst t2 (List.rev bv2) (List.rev_map Term2.mk_var_term bv1)) }
-
-   let merge_bterms' x btl1 btl2 =
-      if not (List.length btl1 = List.length btl2) then
-         report_error x "bound_term' list length mismatch";
-      List.map2 (merge_bterm' x) btl1 btl2
+      { bvars = bv1; bterm = merge_term x t1 (TermSubst2.subst t2 (List.rev bv2) (List.rev_map Term2.mk_var_term bv1)) }
 
    let merge_bterm x bt1 bt2 =
       (* XXX: TODO: need some consistency checks *)
       bt1, bt2
 
-   let merge_bterms x btl1 btl2 =
-      if not (List.length btl1 = List.length btl2) then
-         report_error x "bterm list length mismatch";
-      List.map2 (merge_bterm x) btl1 btl2
+   let merge_bterms' = merge_list merge_bterm' "bound_term'"
+   let merge_bterms = merge_list merge_bterm "bterm"
 
    let merge_term' x { Type1.term_op = op1; Type1.term_terms = btl1 } { Type2.term_op = op2; Type2.term_terms = btl2 } =
       { term_op = merge_op x op1 op2; term_terms = merge_bterms x btl1 btl2 }
@@ -419,10 +398,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
        | _ ->
             report_error x "hypothesis kind mismatch"
 
-   let merge_hyps x hs1 hs2 =
-      if not (List.length hs1 = List.length hs2) then
-         report_error x "hyp list length mismatch";
-      List.map2 (merge_hyp x) hs1 hs2
+   let merge_hyps = merge_list merge_hyp "hyp"
 
    let merge_SeqHyp x hyps1 hyps2 =
       if not (SeqHyp1.length hyps1 = SeqHyp2.length hyps2) then
@@ -443,10 +419,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
        | Type1.MatchUnsupported, Type2.MatchUnsupported -> MatchUnsupported
        | _ -> report_error x "match_param kind mismatch"
 
-   let merge_match_params x pl1 pl2 =
-      if not (List.length pl1 = List.length pl2) then
-         report_error x "match param list length mismatch";
-      List.map2 (merge_match_param x) pl1 pl2
+   let merge_match_params = merge_list merge_match_param "match param"
 
    let rec merge_match_term x mt1 mt2 =
       match mt1, mt2 with
@@ -456,10 +429,7 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
             MatchSequent (merge_strings x sl1 sl2, merge_match_terms x mtl1 mtl2, merge_hyps x hl1 hl2, merge_term x t1 t2)
        | _ -> report_error x "match_term kind mismatch"
 
-   and merge_match_terms x mtl1 mtl2 =
-      if not (List.length mtl1 = List.length mtl2) then
-         report_error x "match term list length mismatch";
-      List.map2 (merge_match_term x) mtl1 mtl2
+   and merge_match_terms x mtl1 mtl2 = merge_list merge_match_term "match term" x mtl1 mtl2
 
    module SeqHyp = struct
       type elt = hypothesis
@@ -1727,6 +1697,96 @@ module MakeRefinerDebug (Refiner1 : RefinerSig) (Refiner2 : RefinerSig) = struct
 
    module TermSubst = struct
       module SubstTypes = TermType
+      type term_subst = (var * term) list
+
+      (* The rest of this module is auto-generated by the util/gen_refiner_debug.pl script *)
+
+      let subst (p0 : term) (p1 : var list) (p2 : term list) =
+         let p0_1, p0_2 = p0 in
+         let p2_1, p2_2 = split p2 in
+         merge_term "TermSubst.subst" (TermSubst1.subst p0_1 p1 p2_1) (TermSubst2.subst p0_2 p1 p2_2)
+
+      let subst1 (p0 : term) (p1 : var) (p2 : term) =
+         let p0_1, p0_2 = p0 in
+         let p2_1, p2_2 = p2 in
+         merge_term "TermSubst.subst1" (TermSubst1.subst1 p0_1 p1 p2_1) (TermSubst2.subst1 p0_2 p1 p2_2)
+
+      let apply_subst (p0 : term_subst) (p1 : term) =
+         let p0_1, p0_2 = split_term_subst p0 in
+         let p1_1, p1_2 = p1 in
+         merge_term "TermSubst.apply_subst" (TermSubst1.apply_subst p0_1 p1_1) (TermSubst2.apply_subst p0_2 p1_2)
+
+      let dest_bterm_and_rename (p0 : bound_term) (p1 : SymbolSet.t) =
+         let p0_1, p0_2 = p0 in
+         merge_bterm' "TermSubst.dest_bterm_and_rename" (TermSubst1.dest_bterm_and_rename p0_1 p1) (TermSubst2.dest_bterm_and_rename p0_2 p1)
+
+      let var_subst (p0 : term) (p1 : term) (p2 : var) =
+         let p0_1, p0_2 = p0 in
+         let p1_1, p1_2 = p1 in
+         merge_term "TermSubst.var_subst" (TermSubst1.var_subst p0_1 p1_1 p2) (TermSubst2.var_subst p0_2 p1_2 p2)
+
+      let equal_params (p0 : param) (p1 : param) =
+         let p0_1, p0_2 = p0 in
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermSubst.equal_params" (TermSubst1.equal_params p0_1 p1_1) (TermSubst2.equal_params p0_2 p1_2)
+
+      let alpha_equal (p0 : term) (p1 : term) =
+         let p0_1, p0_2 = p0 in
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermSubst.alpha_equal" (TermSubst1.alpha_equal p0_1 p1_1) (TermSubst2.alpha_equal p0_2 p1_2)
+
+      let alpha_equal_vars (p0 : term) (p1 : var list) (p2 : term) (p3 : var list) =
+         let p0_1, p0_2 = p0 in
+         let p2_1, p2_2 = p2 in
+         merge_bool "TermSubst.alpha_equal_vars" (TermSubst1.alpha_equal_vars p0_1 p1 p2_1 p3) (TermSubst2.alpha_equal_vars p0_2 p1 p2_2 p3)
+
+      let alpha_equal_fun (p0 : ( term -> 'a -> bool )) (p1 : term) (p2 : var list) (p3 : term) (p4 : 'a list) =
+         let p0_1, p0_2 = split_taf p0 in
+         let p1_1, p1_2 = p1 in
+         let p3_1, p3_2 = p3 in
+         merge_bool "TermSubst.alpha_equal_fun" (TermSubst1.alpha_equal_fun p0_1 p1_1 p2 p3_1 p4) (TermSubst2.alpha_equal_fun p0_2 p1_2 p2 p3_2 p4)
+
+      let standardize (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge_term "TermSubst.standardize" (TermSubst1.standardize p0_1) (TermSubst2.standardize p0_2)
+
+      let is_closed_term (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge_bool "TermSubst.is_closed_term" (TermSubst1.is_closed_term p0_1) (TermSubst2.is_closed_term p0_2)
+
+      let is_var_free (p0 : var) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermSubst.is_var_free" (TermSubst1.is_var_free p0 p1_1) (TermSubst2.is_var_free p0 p1_2)
+
+      let is_some_var_free (p0 : var list) (p1 : term) =
+         let p1_1, p1_2 = p1 in
+         merge_bool "TermSubst.is_some_var_free" (TermSubst1.is_some_var_free p0 p1_1) (TermSubst2.is_some_var_free p0 p1_2)
+
+      let is_some_var_free_list (p0 : var list) (p1 : term list) =
+         let p1_1, p1_2 = split p1 in
+         merge_bool "TermSubst.is_some_var_free_list" (TermSubst1.is_some_var_free_list p0 p1_1) (TermSubst2.is_some_var_free_list p0 p1_2)
+
+      let free_vars_list (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge_vars "TermSubst.free_vars_list" (TermSubst1.free_vars_list p0_1) (TermSubst2.free_vars_list p0_2)
+
+      let free_vars_set (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge_ss "TermSubst.free_vars_set" (TermSubst1.free_vars_set p0_1) (TermSubst2.free_vars_set p0_2)
+
+      let free_vars_terms (p0 : term list) =
+         let p0_1, p0_2 = split p0 in
+         merge_ss "TermSubst.free_vars_terms" (TermSubst1.free_vars_terms p0_1) (TermSubst2.free_vars_terms p0_2)
+
+      let context_vars (p0 : term) =
+         let p0_1, p0_2 = p0 in
+         merge_vars "TermSubst.context_vars" (TermSubst1.context_vars p0_1) (TermSubst2.context_vars p0_2)
+
+      let match_terms (p0 : term_subst) (p1 : term) (p2 : term) =
+         let p0_1, p0_2 = split_term_subst p0 in
+         let p1_1, p1_2 = p1 in
+         let p2_1, p2_2 = p2 in
+         merge_term_subst "TermSubst.match_terms" (TermSubst1.match_terms p0_1 p1_1 p2_1) (TermSubst2.match_terms p0_2 p1_2 p2_2)
    end
 
    module TermShape = struct
