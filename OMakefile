@@ -111,7 +111,7 @@ clean:
     $(CLEAN)
 
 realclean: clean
-    cvs_realclean -f
+    cvs_realclean
 
 #
 # Phony target for installing libraries
