@@ -12,7 +12,7 @@ $merges{"operator"}="merge_op";
 $merges{"operator'"}="merge_op'";
 $merges{"bound_term"}="merge_bterm";
 $merges{"bound_term'"}="merge_bterm'";
-foreach my $ty ("bool", "unit", "param", "term", "var", "int", "level_exp", "level_exp_var", "opname", "string", "address", "match_param", "match_term", "esequent", "term_subst", "shape", "shape_param", "meta_term", "rewrite_item", "msequent", "extract_description", "prim_tactic") {
+foreach my $ty ("bool", "unit", "param", "term", "var", "int", "level_exp", "level_exp_var", "opname", "string", "address", "match_param", "match_term", "esequent", "term_subst", "shape", "shape_param", "meta_term", "rewrite_item", "msequent", "extract_description", "prim_tactic", "prim_rewrite") {
     $merges{$ty}="merge_$ty";
     $merges{"$ty list"}="merge_" . $ty . "s";
     $merges{"$ty array"}="merge_" . $ty . "_arr";
@@ -38,7 +38,7 @@ $merges{"(rewrite_type * var) list"} = "merge_rwtvl";
 $merges{"(dependency * opname) list"} = "merge_dos";
 $merges{"'a"} = "merge_poly";
 $merges{"'a list"} = "merge_poly";
-$merges{"term -> term"} = "merge_ttf";
+$merges{"term -> term"} = $merges{"ml_rewrite"} = "merge_ttf";
 
 # Non-refiner types
 foreach my $ty ("bool", "int", "var", "opname", "out_channel", "formatter", "string", "Lm_num.num", "SymbolSet.t", "'a", "unit", "strict", "rewrite_args", "rewrite_args_spec") {
@@ -54,15 +54,17 @@ foreach my $ty ("term", "param", "level_exp", "level_exp_var") {
     my $ty = $ty . "'";
     $splits{$ty} = "split_$ty";
 }
+foreach my $ty ("term_subst", "meta_term", "ml_rule", "term_extract", "ml_cond_rewrite") {
+    $splits{$ty} = "split_$ty";
+}
 $splits{"esequent"} = "split_eseq";
 $splits{"bound_term'"} = "split_bterm'";
 $splits{"operator'"} = "split_op'";
-$splits{"term_subst"} = "split_term_subst";
-$splits{"meta_term"} = "split_meta_term";
 $splits{"(term option * term) list"} = "split_popl";
-$splits{"term -> term"} = "split_ttf";
+$splits{"term -> term"} = $splits{"ml_rewrite"} = "split_ttf";
 $splits{"SymbolSet.t -> term"} = "split_atf";
 $splits{"SymbolSet.t -> term -> term"} = "split_attf";
+$splits{"unit -> extract"} = "split_utriv";
 $splits{"term -> term * 'a"} = "split_ttaf";
 $splits{"SymbolSet.t -> term -> term * 'a"} = "split_attaf";
 $splits{"term -> 'a -> bool"} = "split_taf";
