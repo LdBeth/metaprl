@@ -60,7 +60,7 @@ $env = new cons(
 #
 if(defined($ENV{'MC_ROOT'})) {
     $env = $env->clone(
-        INCPATH => [@{$env->{INCPATH}}, "$ENV{'MC_ROOT'}/lib/naml/stdlib"]
+        INCPATH => ["$ENV{'MC_ROOT'}/lib/naml/stdlib", @{$env->{INCPATH}}]
     )
 };
 
