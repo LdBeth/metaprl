@@ -6,4 +6,3 @@ TERM_STD_FILES :=\
 	term_man_std\
 	term_shape_std\
 	term_eval_std\
-	term_meta_std

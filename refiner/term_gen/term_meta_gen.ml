@@ -174,6 +174,10 @@ end
 
 (*
  * $Log$
+ * Revision 1.1  1998/05/29 02:29:19  nogin
+ * Created refiner/term_gen directory
+ * Moved renamed term_std/term_meta_std to term_gen/term_meta_gen
+ *
  * Revision 1.1  1998/05/28 15:02:32  jyh
  * Partitioned refiner into subdirectories.
  *

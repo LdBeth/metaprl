@@ -1,10 +1,10 @@
 # Flags
-ROOT = ../..
-INCLUDE := -I ../../mllib -I ../refbase -I ../refsig -I ../term_std -I ../term_gen -I ../term_ds 
+ROOT := ../..
+INCLUDE := -I $(ROOT)/mllib -I ../refbase -I ../refsig
 
 # Library files
 include Files
-LMFILES := $(REFINER_FILES)
+LMFILES := $(TERM_GEN_FILES)
 
 # Name of library
 MAIN := reflib
@@ -28,4 +28,3 @@ opt: $(MAIN).cmxa $(RMLIFILES) $(RCMIFILES)
 
 install:: $(MAIN).cma $(CMIFILES)
 	$(INSTALL) $(MLIFILES) $(CMIFILES) $(NLLIB)
-

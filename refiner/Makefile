@@ -9,6 +9,7 @@ DIRS :=\
 	refbase\
 	refsig\
 	term_std\
+   term_gen\
 	term_ds\
 	refiner\
 	reflib
@@ -35,6 +36,7 @@ include $(ROOT)/mk/config
 include refbase/Files
 include refsig/Files
 include term_std/Files
+include term_gen/Files
 include term_ds/Files
 include refiner/Files
 include reflib/Files
@@ -47,6 +49,9 @@ REFSIG_MLFILES := $(addprefix refsig/, $(addsuffix .ml, $(REFSIG_FILES))\
 
 TERM_STD_MLFILES := $(addprefix term_std/, $(addsuffix .ml, $(TERM_STD_FILES))\
 					   $(addsuffix .mli, $(TERM_STD_FILES)))
+
+TERM_GEN_MLFILES := $(addprefix term_gen/, $(addsuffix .ml, $(TERM_GEN_FILES))\
+					   $(addsuffix .mli, $(TERM_GEN_FILES)))
 
 TERM_DS_MLFILES := $(addprefix term_ds/, $(addsuffix .ml, $(TERM_DS_FILES))\
 					 $(addsuffix .mli, $(TERM_DS_FILES)))
@@ -63,6 +68,7 @@ REFLIB_MLFILES := $(addprefix reflib/,  $(addsuffix .ml, $(REFLIB_FILES))\
 REFBASE_CMXFILES := $(addprefix refbase/, $(addsuffix .cmx, $(REFBASE_FILES)))
 REFSIG_CMXFILES := $(addprefix refsig/, $(addsuffix .cmx, $(REFSIG_FILES)))
 TERM_STD_CMXFILES := $(addprefix term_std/, $(addsuffix .cmx, $(TERM_STD_FILES)))
+TERM_GEN_CMXFILES := $(addprefix term_gen/, $(addsuffix .cmx, $(TERM_GEN_FILES)))
 TERM_DS_CMXFILES := $(addprefix term_ds/, $(addsuffix .cmx, $(TERM_DS_FILES)))
 REFINER_CMXFILES := $(addprefix refiner/, $(addsuffix .cmx, $(REFINER_FILES)))
 REFLIB_CMXFILES := $(addprefix reflib/,  $(addsuffix .cmx, $(REFLIB_FILES)))
@@ -70,6 +76,7 @@ CMXFILES :=\
 	$(REFBASE_CMXFILES)\
 	$(REFSIG_CMXFILES)\
 	$(TERM_STD_CMXFILES)\
+	$(TERM_GEN_CMXFILES)\
 	$(TERM_DS_CMXFILES)\
 	$(REFINER_CMXFILES)\
 	$(REFLIB_CMXFILES)
@@ -81,6 +88,9 @@ refsig/reflib.cma: $(REFSIG_MLFILES)
 	cd refsig; $(MAKE) all
 
 term_std/reflib.cma: $(TERM_STD_MLFILES)
+	cd term_std; $(MAKE) all
+
+term_gen/reflib.cma: $(TERM_GEN_MLFILES)
 	cd term_std; $(MAKE) all
 
 term_ds/reflib.cma: $(TERM_DS_MLFILES)
