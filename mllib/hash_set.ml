@@ -145,7 +145,7 @@ struct
    (*
     * Add an element.
     *)
-   let add x s1 =
+   let add s1 x =
       { table = Add (s1.table, x) }
 
    (*

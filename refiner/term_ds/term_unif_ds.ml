@@ -109,7 +109,7 @@ struct
 
    and binding_vars_bterms bvars = function
       bt::l ->
-         binding_vars_bterms (binding_vars_term bt.bterm (List.fold_right StringSet.add bt.bvars bvars)) l
+         binding_vars_bterms (binding_vars_term bt.bterm (List.fold_left StringSet.add bvars bt.bvars)) l
     | [] -> bvars
 
    let rec binding_vars_set t =
@@ -123,7 +123,7 @@ struct
                if i = len then binding_vars_term seq.sequent_args StringSet.empty else
                   match SeqHyp.get hyps i with
                      Hypothesis (v,t) ->
-                        binding_vars_term t (StringSet.add v (coll_hyps (succ i)))
+                        binding_vars_term t (StringSet.add (coll_hyps (succ i)) v)
                    | Context (v,ts) ->
                         List.fold_right binding_vars_term ts (coll_hyps (succ i))
             in

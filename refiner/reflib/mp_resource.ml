@@ -189,7 +189,7 @@ let rec collect_include_aux incr includes = function
 and collect_include incr name includes =
    let data = Hashtbl.find global_data name in
    let incr, includes = collect_include_aux incr includes data in
-      incr, StringSet.add name includes
+      incr, StringSet.add includes name
 
 let rec compute_aux name = function
    [] ->

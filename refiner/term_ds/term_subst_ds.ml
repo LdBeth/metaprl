@@ -164,7 +164,7 @@ struct
                if i = len then binding_vars_term seq.sequent_args else
                   match SeqHyp.get hyps i with
                      Hypothesis (v,t) ->
-                        binding_vars_union t (StringSet.add v (coll_hyps (succ i)))
+                        binding_vars_union t (StringSet.add (coll_hyps (succ i)) v)
                    | Context (v,[]) ->
                         coll_hyps (succ i)
                    | Context (v,ts) ->
@@ -185,8 +185,8 @@ struct
       let bv = binding_vars_term bt.bterm in
       match bt.bvars with
             [] -> bv
-          | [v] -> StringSet.add v bv
-          | vars -> List.fold_right StringSet.add vars bv
+          | [v] -> StringSet.add bv v
+          | vars -> List.fold_left StringSet.add bv vars
 
    and binding_vars_bterms = function
       [] -> StringSet.empty
@@ -414,7 +414,7 @@ struct
 
    and var_subst_bterm bt t' v =
       if List.mem v bt.bvars then
-         let vars = List.fold_right StringSet.add bt.bvars (free_vars_set bt.bterm) in
+         let vars = List.fold_left StringSet.add (free_vars_set bt.bterm) bt.bvars in
          let v' = String_util.vnewname v (StringSet.mem vars) in
          let rename var = if var = v then v' else var in
          let bt' = subst1 bt.bterm v (mk_var_term v') in

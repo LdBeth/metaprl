@@ -80,7 +80,7 @@ sig
    val empty : t
    val is_empty : t -> bool
    val mem : t -> elt -> bool
-   val add : elt -> t -> t
+   val add : t -> elt -> t
    val make : elt -> t
    val remove : elt -> t -> t
    val union : t -> t -> t
@@ -578,19 +578,20 @@ struct
    (*
     * Add an element to the set.
     *)
-   let add key = function
-      Leaf ->
-         Black (key, Leaf, Leaf, 1)
-    | node ->
-         try
-            match insert key node with
-               Red (key, left, right, size) ->
-                  Black (key, left, right, size)
-             | tree ->
-                  tree
-         with
-            Unchanged ->
-               node
+   let add node key =
+      match node with
+         Leaf ->
+            Black (key, Leaf, Leaf, 1)
+       | _ ->
+            try
+               match insert key node with
+                  Red (key, left, right, size) ->
+                     Black (key, left, right, size)
+                | tree ->
+                     tree
+            with
+               Unchanged ->
+                  node
 
    (************************************************************************
     * REMOVAL                                                              *
@@ -1126,7 +1127,7 @@ struct
    let rec union_aux s1 = function
       Black (key, left, right, _)
     | Red (key, left, right, _) ->
-         union_aux (add key (union_aux s1 left)) right
+         union_aux (add (union_aux s1 left) key) right
     | Leaf ->
          s1
 

@@ -375,32 +375,32 @@ struct
       List.iter (fun ((_,name,_) as item) -> Hashtbl.add data.old_items name item) !inputs;
       Hashtbl.iter
        ( fun name ind ->
-            data.all_names <- StringSet.add name data.all_names;
+            data.all_names <- StringSet.add data.all_names name;
             HashTerm.add data.out_terms ind name;
        ) r.io_terms;
       Hashtbl.iter
        ( fun name op ->
-            data.all_names <- StringSet.add name data.all_names;
+            data.all_names <- StringSet.add data.all_names name;
             Hashtbl.add data.out_ops op name
        ) r.io_ops;
       Hashtbl.iter
        ( fun name opname ->
-            data.all_names <- StringSet.add name data.all_names;
+            data.all_names <- StringSet.add data.all_names name;
             Hashtbl.add data.out_opnames opname name
        ) r.io_opnames;
       Hashtbl.iter
        ( fun name param ->
-            data.all_names <- StringSet.add name data.all_names;
+            data.all_names <- StringSet.add data.all_names name;
             Hashtbl.add data.out_params param name
        ) r.io_params;
       Hashtbl.iter
        ( fun name hyp ->
-            data.all_names <- StringSet.add name data.all_names;
+            data.all_names <- StringSet.add data.all_names name;
             HashHyp.add data.out_hyps hyp name
        ) r.io_hyps;
       Hashtbl.iter
        ( fun name bt ->
-            data.all_names <- StringSet.add name data.all_names;
+            data.all_names <- StringSet.add data.all_names name;
             HashBTerm.add data.out_bterms bt name
        ) r.io_bterms;
       data
@@ -422,21 +422,21 @@ struct
          else
             name
       in
-         data.all_names <- StringSet.add name' names;
-         data.new_names <- StringSet.add name' data.new_names;
+         data.all_names <- StringSet.add names name';
+         data.new_names <- StringSet.add data.new_names name';
          name'
 
    let check_old data name i_data =
       if not (StringSet.mem data.new_names name) then begin
          (* This item existed in the old version of the file *)
-         data.new_names <- StringSet.add name data.new_names;
+         data.new_names <- StringSet.add data.new_names name;
          let (lname,_,io_data) = Hashtbl.find data.old_items name in
          if i_data<> io_data then begin
             if !debug_ascii_io then
                eprintf "ASCII IO: Duplicate entry updated: %s%t" name eflush;
             data.out_items <- New (lname, name, i_data) :: data.out_items
          end else begin
-            data.io_names <- StringSet.add name data.io_names;
+            data.io_names <- StringSet.add data.io_names name;
             data.out_items <- Old name :: data.out_items
          end
       end
@@ -456,11 +456,11 @@ struct
             let name = HashTerm.find data.out_terms ind in
             if not (StringSet.mem data.new_names name) then begin
                (* This item existed in the old version of the file *)
-               data.new_names <- StringSet.add name data.new_names;
+               data.new_names <- StringSet.add data.new_names name;
                match Hashtbl.find_all data.old_items name with
                   (_,_,io_data2)::(_,_,io_data1)::_
                      when io_data1=i_data1 && io_data2=i_data2 ->
-                        data.io_names <- StringSet.add name data.io_names;
+                        data.io_names <- StringSet.add data.io_names name;
                         data.out_items <- Old name :: Old name :: data.out_items
                         (* We need two "Old name" entries becase sequent is printed on two lines *)
                 | (l2,_,io_data2)::(l1,_,io_data1)::_
@@ -627,21 +627,21 @@ struct
             ()
        | (New ((_, name, _) as item) :: rest), _ ->
             out_line item;
-            print_out out_line (StringSet.add name printed) data o rest
+            print_out out_line (StringSet.add printed name) data o rest
        | (Old name :: nrest), _ when StringSet.mem printed name ->
             print_out out_line printed data o nrest
        | (Old _ :: _), ((_, name, _) as item :: ((_, name', _) as item') :: orest)
             when name=name' && StringSet.mem data.io_names name ->
             out_line item;
             out_line item';
-            print_out out_line (StringSet.add name printed) data orest n
+            print_out out_line (StringSet.add printed name) data orest n
        | (Old _ :: _), ((_, name, _) as item :: orest) when StringSet.mem data.io_names name ->
             out_line item;
-            print_out out_line (StringSet.add name printed) data orest n
+            print_out out_line (StringSet.add printed name) data orest n
        | (Old oname :: nrest), ((_, name, _) as item :: orest) when StringSet.mem data.new_names name && not (StringSet.mem printed name) ->
             ignore(List.map out_line (Hashtbl.find_all data.old_items oname));
             data.io_names <- StringSet.remove oname data.io_names;
-            print_out out_line (StringSet.add oname printed) data o nrest
+            print_out out_line (StringSet.add printed oname) data o nrest
        | (Old _ :: _), _ :: orest ->
             print_out out_line printed data orest n
        | (Old _ :: _), [] ->

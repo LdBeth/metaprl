@@ -65,7 +65,7 @@ struct
     *)
    let rec set_of_list_aux set = function
       h :: t ->
-         set_of_list_aux (BigSet.add h set) t
+         set_of_list_aux (BigSet.add set h) t
     | [] ->
          set
 
@@ -92,7 +92,7 @@ struct
        | Set s ->
             BigSet.mem s x
 
-   let add x set =
+   let add set x =
       match set with
          List l ->
             if List.length l = max_size then
@@ -100,7 +100,7 @@ struct
             else
                List (x :: l)
        | Set s ->
-            Set (BigSet.add x s)
+            Set (BigSet.add s x)
 
    let make x =
       List [x]
@@ -122,7 +122,7 @@ struct
 
    let rec union_set_list set = function
       x :: t ->
-         union_set_list (BigSet.add x set) t
+         union_set_list (BigSet.add set x) t
     | [] ->
          Set set
 

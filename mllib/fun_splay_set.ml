@@ -225,7 +225,7 @@ struct
                      new_node key Leaf Leaf
             end
 
-   let add key t =
+   let add t key =
       match splay key [] t.splay_tree with
          SplayFound tree ->
             t.splay_tree <- tree;
@@ -404,7 +404,7 @@ struct
     *)
    let rec of_list_aux set = function
       s :: t ->
-         of_list_aux (add s set) t
+         of_list_aux (add set s) t
     | [] ->
          set
 

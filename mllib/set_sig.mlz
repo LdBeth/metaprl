@@ -53,7 +53,7 @@ sig
    val empty : t
    val is_empty : t -> bool
    val mem : t -> elt -> bool
-   val add : elt -> t -> t
+   val add : t -> elt -> t
    val make : elt -> t
    val remove : elt -> t -> t
    val union : t -> t -> t
@@ -89,7 +89,7 @@ sig
    val empty : t
    val is_empty : t -> bool
    val mem : t -> elt -> bool
-   val add : elt -> t -> t
+   val add : t -> elt -> t
    val make : elt -> t
    val remove : elt -> t -> t
    val union : t -> t -> t
