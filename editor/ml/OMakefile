@@ -7,7 +7,7 @@ OCAMLINCLUDES =\
         -I $(LIB)rary\
         -I $(CAMLP4LIB)\
         -I $(ROOT)/$(ENSEMBLE_DIR)\
-        $(addprefix -I , $(MP_DIRS))
+        $'(addprefix -I , $(MP_DIRS))
 
 # Name of main librariws
 MAIN = metaprl
@@ -60,8 +60,14 @@ OCAML_LINK_FLAGS += -linkall
 
 OCamlLibrary($(MAIN), $(MPFILES))
 
-# JYH: fix this omake parser bug
-TESTFILES = $(if $(equal $(TESTS), yes), tests/test tests/prop-pigeon, $(EMPTY))
+TESTFILES =
+
+if $(TESTS)
+   .SUBDIRS: tests
+   TESTFILES =\
+      tests/test\
+      tests/prop-pigeon
+   export
 
 MP2FILES = $(TESTFILES) $(MP2FILES)
 RUNFILES = $(TESTFILES) $(RUNFILES)

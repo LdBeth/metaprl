@@ -1,0 +1,6 @@
+MPFILES =\
+   test\
+   tests/prop-pigeon
+
+clean:
+   $(CLEAN)
