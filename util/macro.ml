@@ -193,6 +193,12 @@ module Codewalk = struct
    and string_stringlist_ctyp (x, y, z) =
       (x, y, ctyp z)
 
+   and ctyp_ctyp (x, y) =
+      (ctyp x, ctyp y)
+
+   and string_stringlist_ctyp_ctypctyplist (x, y, z, zl) =
+      (x, y, ctyp z, map ctyp_ctyp zl)
+
    and string_expr (x, y) =
       (x, expr y)
 
@@ -330,7 +336,7 @@ module Codewalk = struct
        | SgMod (l, x, y)    -> SgMod (!loc l, x, module_type y)
        | SgMty (l, x, y)    -> SgMty (!loc l, x, module_type y)
        | SgOpn (l, x)       -> SgOpn (!loc l, x)
-       | SgTyp (l, x)       -> SgTyp (!loc l, map string_stringlist_ctyp x)
+       | SgTyp (l, x)       -> SgTyp (!loc l, map string_stringlist_ctyp_ctypctyplist x)
        | SgVal (l, x, y)    -> SgVal (!loc l, x, ctyp y)
 
    and with_constr x =
@@ -360,7 +366,7 @@ module Codewalk = struct
        | StMod (l, x, y)    -> StMod (!loc l, x, module_expr y)
        | StMty (l, x, y)    -> StMty (!loc l, x, module_type y)
        | StOpn (l, x)       -> StOpn (!loc l, x)
-       | StTyp (l, x)       -> StTyp (!loc l, map string_stringlist_ctyp x)
+       | StTyp (l, x)       -> StTyp (!loc l, map string_stringlist_ctyp_ctypctyplist x)
        | StVal (l, x, y)    -> StVal (!loc l, x, map patt_expr y)
 
    and class_type x =

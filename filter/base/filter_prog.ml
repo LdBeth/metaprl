@@ -901,7 +901,7 @@ let declare_resource loc { resource_name = name;
                            resource_arg_type = arg_type
     } =
    let rsrc_type = <:ctyp< $resource_rsrc_ctyp loc$ $improve_type$ $extract_type$ $data_type$ $arg_type$ >> in
-      [<:sig_item< type $list:[name, [], rsrc_type]$ >>]
+      [<:sig_item< type $list:[name, [], rsrc_type, []]$ >>]
 
 (*
  * When a parent is declared, we need to open all the ancestors.
@@ -1998,7 +1998,7 @@ struct
       in
       let rsrc_type = <:ctyp< $resource_rsrc_ctyp loc$ $improve_type$ $extract_type$ $data_type$ $arg_type$ >> in
          proc.imp_resources <- r :: proc.imp_resources;
-         [<:str_item< type $list:[name, [], rsrc_type]$ >>]
+         [<:str_item< type $list:[name, [], rsrc_type, []]$ >>]
 
    (*
     * When a parent is included, we need to open all the ancestors,

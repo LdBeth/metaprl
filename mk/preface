@@ -15,7 +15,7 @@ MP_VERSION=0.6.0
 # Versions of Ocaml/Camlp4 that are compatible with MetaPRL
 # CAML_VERSIONS shoud be a space-separated list of versions
 #
-CAML_VERSIONS=2.02
+CAML_VERSIONS=2.03
 
 ifndef TERMS
    TERMS=undefined

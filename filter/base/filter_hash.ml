@@ -244,8 +244,8 @@ and hash_sig_item index = function
       hash_module_type (hash_string (hash index 0x3ac4a39d) s) mt
  | (<:sig_item< open $sl$ >>) ->
       List.fold_left hash_string (hash index 0x3890da9c) sl
- | (<:sig_item< type $list:ssltl$ >>) ->
-      List.fold_left hash_sslt (hash index 0x3c820480) ssltl
+ | (<:sig_item< type $list:tdl$ >>) ->
+      List.fold_left hash_tdl (hash index 0x3c820480) tdl
  | (<:sig_item< value $s$ : $t$ >>) ->
       hash_type (hash_string (hash index 0x2a8f655f) s) t
 
@@ -271,8 +271,8 @@ and hash_str_item index = function
       hash_module_type (hash_string (hash index 0x249c92c6) s) mt
  | (<:str_item< open $sl$ >>) ->
       List.fold_left hash_string (hash index 0x048464b8) sl
- | (<:str_item< type $list:ssltl$ >>) ->
-      List.fold_left hash_sslt (hash index 0x0c9046df) ssltl
+ | (<:str_item< type $list:tdl$ >>) ->
+      List.fold_left hash_tdl (hash index 0x0c9046df) tdl
  | (<:str_item< value $rec:b$ $list:pel$ >>) ->
       List.fold_left hash_pe (if b then 0x2715b1cb else 0x383ff901) pel
 
@@ -439,8 +439,11 @@ and hash_sbt index (s, b, t) =
 and hash_stl index (s, tl) =
    List.fold_left hash_type (hash_string (hash index 0x7497f04c) s) tl
 
-and hash_sslt index (s, sl, t) =
-   hash_string (List.fold_left hash_string (hash_type (hash index 0x0a10556d) t) sl) s
+and hash_typetype index (t1, t2) =
+   hash_type (hash_type index t1) t2
+
+and hash_tdl index (s, sl, t, tl) =
+   hash_string (List.fold_left hash_string (hash_type (List.fold_left hash_typetype (hash index 0x0a10556d) tl) t) sl) s
 
 (*
  * -*-

@@ -255,8 +255,8 @@ and fold_sig_item iter x si =
             fold_module_type iter x mt
        | (<:sig_item< open $sl$ >>) ->
             x
-       | (<:sig_item< type $list:ssltl$ >>) ->
-            List.fold_left (fold_sslt iter) x ssltl
+       | (<:sig_item< type $list:tdl$ >>) ->
+            List.fold_left (fold_tdl iter) x tdl
        | (<:sig_item< value $s$ : $t$ >>) ->
             fold_type iter x t
 
@@ -284,8 +284,8 @@ and fold_str_item iter x si =
             fold_module_type iter x mt
        | (<:str_item< open $sl$ >>) ->
             x
-       | (<:str_item< type $list:ssltl$ >>) ->
-            List.fold_left (fold_sslt iter) x ssltl
+       | (<:str_item< type $list:tdl$ >>) ->
+            List.fold_left (fold_tdl iter) x tdl
        | (<:str_item< value $rec:b$ $list:pel$ >>) ->
             List.fold_left (fold_pe iter) x pel
 
@@ -456,8 +456,11 @@ and fold_sbt iter x (s, b, t) =
 and fold_stl iter x (s, tl) =
    List.fold_left (fold_type iter) x tl
 
-and fold_sslt iter x (s, sl, t) =
-   fold_type iter x t
+and fold_tt iter x (t1, t2) =
+   fold_type iter (fold_type iter x t1) t2
+
+and fold_tdl iter x (s, sl, t, tl) =
+   List.fold_left (fold_tt iter) (fold_type iter x t) tl
 
 (*
  * -*-

@@ -898,8 +898,8 @@ struct
 
    and dest_type_sig t =
       let loc = dest_loc "dest_type_sig" t in
-      let ssltl = dest_xlist (one_subterm "dest_type_sig" t) in
-         <:sig_item< type $list: List.map dest_sslt ssltl$ >>
+      let tdl = dest_xlist (one_subterm "dest_type_sig" t) in
+         <:sig_item< type $list: List.map dest_tdl tdl$ >>
 
    and dest_value_sig t =
       let loc, s = dest_loc_string "dest_value_sig" t in
@@ -964,8 +964,8 @@ struct
 
    and dest_type_str t =
       let loc = dest_loc "dest_type_str" t in
-      let ssltl = dest_xlist (one_subterm "dest_type_str" t) in
-         <:str_item< type $list: List.map dest_sslt ssltl$ >>
+      let tdl = dest_xlist (one_subterm "dest_type_str" t) in
+         <:str_item< type $list: List.map dest_tdl tdl$ >>
 
    and dest_fix_str t =
       let loc = dest_loc "dest_fix_str" t in
@@ -1257,10 +1257,24 @@ struct
       let s, tl = two_subterms t in
          dest_string s, List.map dest_type (dest_xlist tl)
 
-   and dest_sslt t =
-      let s, sl, t = three_subterms t in
+   and dest_tc t =
+      let t1, t2 = two_subterms t in
+         dest_type t1, dest_type t2
+
+   (* HACK!!! The three_subterms case is for backwards compatibility with 
+    * theories compiled under Caml 2.02 and I do not really know if this
+    * is necessary - nogin
+    *)
+   and dest_tdl t =
+      try
+         let s, sl, t = three_subterms t in
+         let sl = dest_xlist sl in
+            dest_string s, List.map dest_string sl, dest_type t, []
+      with RefineError _ ->
+      let s, sl, t, tl = four_subterms t in
       let sl = dest_xlist sl in
-         dest_string s, List.map dest_string sl, dest_type t
+      let tl = dest_xlist tl in
+         dest_string s, List.map dest_string sl, dest_type t, List.map dest_tc tl
 
    and dest_expr_opt t = dest_opt dest_expr t
 
@@ -1471,7 +1485,8 @@ struct
    let st_op                       = mk_ocaml_op "st"
    let sbt_op                      = mk_ocaml_op "sbt"
    let stl_op                      = mk_ocaml_op "stl"
-   let sslt_op                     = mk_ocaml_op "sslt"
+   let tc_op                       = mk_ocaml_op "tc"
+   let tdl_op                      = mk_ocaml_op "tdl"
 
    let class_type_infos_op         = mk_ocaml_op "class_type_infos"
    let class_expr_infos_op         = mk_ocaml_op "class_expr_infos"
@@ -1854,8 +1869,8 @@ struct
                mk_simple_named_term sig_module_type_op loc s [mk_module_type comment mt]
           | (<:sig_item< open $sl$ >>) ->
                mk_simple_term sig_open_op loc [mk_xlist_term (List.map mk_simple_string sl)]
-          | (<:sig_item< type $list:ssltl$ >>) ->
-               mk_simple_term sig_type_op loc [mk_xlist_term (List.map (mk_sslt comment) ssltl)]
+          | (<:sig_item< type $list:tdl$ >>) ->
+               mk_simple_term sig_type_op loc [mk_xlist_term (List.map (mk_tdl comment) tdl)]
           | (<:sig_item< value $s$ : $t$ >>) ->
                mk_simple_named_term sig_value_op loc s [mk_type comment t]
       in
@@ -1886,8 +1901,8 @@ struct
                mk_simple_named_term str_module_type_op loc s [mk_module_type comment mt]
           | (<:str_item< open $sl$ >>) ->
                mk_simple_term str_open_op loc [mk_xlist_term (List.map mk_simple_string sl)]
-          | (<:str_item< type $list:ssltl$ >>) ->
-               mk_simple_term str_type_op loc [mk_xlist_term (List.map (mk_sslt comment) ssltl)]
+          | (<:str_item< type $list:tdl$ >>) ->
+               mk_simple_term str_type_op loc [mk_xlist_term (List.map (mk_tdl comment) tdl)]
           | (<:str_item< value $rec:b$ $list:pel$ >>) ->
                if b then
                   mk_str_fix comment loc pel
@@ -2213,10 +2228,14 @@ struct
    and mk_stl comment (s, tl) =
       ToTerm.Term.mk_simple_term stl_op [mk_simple_string s; mk_xlist_term (List.map (mk_type comment) tl)]
 
-   and mk_sslt comment (s, sl, t) =
-      ToTerm.Term.mk_simple_term sslt_op [mk_simple_string s;
+   and mk_tc comment (t1, t2) =
+      ToTerm.Term.mk_simple_term tc_op [mk_type comment t1; mk_type comment t2]
+
+   and mk_tdl comment (s, sl, t, tl) =
+      ToTerm.Term.mk_simple_term tdl_op [mk_simple_string s;
                                    mk_xlist_term (List.map mk_simple_string sl);
-                                   mk_type comment t ]
+                                   mk_type comment t;
+                                   mk_xlist_term (List.map (mk_tc comment) tl) ]
 
    and mk_bool flag =
       ToTerm.Term.mk_simple_term (if flag then true_op else false_op) []
