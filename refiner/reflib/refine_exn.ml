@@ -154,6 +154,23 @@ let format_match_type db buf printers = function
             printers.format_term db buf t) goals;
       format_string buf ")"
 
+let format_explanation buf s =
+   format_newline buf;
+   format_szone buf;
+   format_pushm buf 3;
+   format_string buf "Explanation:";
+   format_space buf;
+   format_szone buf;
+   let rec fmt = function
+      [] -> ()
+    | [s] -> format_string buf s
+    | s :: ss -> format_string buf s; format_cbreak buf "" " "; fmt ss
+   in
+      fmt (Lm_string_util.split " " s);
+   format_ezone buf;
+   format_popm buf;
+   format_ezone buf
+
 (*
  * Print a refinement error.
  *)
@@ -225,9 +242,12 @@ let format_refine_error db buf printers name error =
             format_space buf;
             format_string buf (string_of_symbol s)
        | RewriteFreeSOVar s ->
+            format_szone buf;
             format_string buf "FreeSOVar:";
             format_space buf;
-            format_string buf (string_of_symbol s)
+            format_string buf (string_of_symbol s);
+            format_ezone buf;
+            format_explanation buf "Meta-variables (second-order, context, and free first-order ones) that occur in assumptions of a rule, but not in its conclusion need to occur in rule argument(s)."
        | RewriteSOVarArity s ->
             format_string buf "SOVarArity:";
             format_space buf;
