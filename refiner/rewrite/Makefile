@@ -37,9 +37,7 @@ install:: $(MAIN).cma $(CMIFILES)
 Makefile.dep: Files
 
 rewrite_type_sig.mlz: rewrite_types.ml
-	$(LN) rewrite_types.ml tmp.mli
-	if $(CAMLP4MACROPRINT) tmp.mli >$@; then true; else ($(RM) $@ tmp.mli; exit 1); fi
-	$(RM) tmp.mli
+	$(CAMLP4MACROPRINT) -intf rewrite_types.ml -o $@
 
 clean::
 	$(RM) rewrite_type_sig.mlz
