@@ -84,17 +84,18 @@ struct
 
    let rec unzip_mimplies = function
       MetaTheorem t ->
-         [t]
+         [], t
     | MetaImplies (a, t) ->
-         unfold_mlabeled "unzip_mimplies" a :: unzip_mimplies t
+         let hyps, goal = unzip_mimplies t in
+            unfold_mlabeled "unzip_mimplies" a :: hyps, goal
     | MetaLabeled (_, t) ->
          unzip_mimplies t
     | t -> REF_RAISE(RefineError ("unzip_mimplies", MetaTermMatchError t))
 
-   let rec zip_mimplies = function
-      [h] -> MetaTheorem h
-    | h::t -> MetaImplies (MetaTheorem h, zip_mimplies t)
-    | [] -> raise(Invalid_argument "zip_mimplies")
+   let rec zip_mimplies assums goal =
+      match assums with
+         [] -> MetaTheorem goal
+       | h::t -> MetaImplies (MetaTheorem h, zip_mimplies t goal)
 
    (*
     * Implication with bindings.

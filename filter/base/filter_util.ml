@@ -96,8 +96,8 @@ let split_mfunction mterm =
        | labels', None, t ->
             succ i, labels' :: labels, (mk_var_term ("_" ^ (string_of_int i))) :: vars, t :: terms
    in
-   let _, labels, vars, terms = List.fold_right collect subgoals (0, [], [], [goal]) in
-      labels, vars, zip_mimplies terms
+   let _, labels, vars, terms = List.fold_right collect subgoals (0, [], [], []) in
+      labels, vars, zip_mimplies terms goal
 
 (************************************************************************
  * TERMS                                                                *

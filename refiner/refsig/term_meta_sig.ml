@@ -49,8 +49,8 @@ sig
    val binding_vars : meta_term -> string list
    val context_vars : meta_term -> string list
    val meta_alpha_equal : meta_term -> meta_term -> bool
-   val unzip_mimplies : meta_term -> term list
-   val zip_mimplies : term list -> meta_term
+   val unzip_mimplies : meta_term -> term list * term
+   val zip_mimplies : term list -> term -> meta_term
    val unzip_mfunction : meta_term -> (string list * term option * term) list * term
    val zip_mfunction : (term option * term) list -> term -> meta_term
    val strip_mfunction : meta_term -> meta_term

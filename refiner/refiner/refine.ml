@@ -1546,8 +1546,7 @@ struct
             eprintf "Refiner.add_rule: %s%t" name eflush
       ENDIF;
       let { build_opname = opname; build_refiner = refiner } = build in
-      let terms = unzip_mimplies mterm in
-      let subgoals, goal = List_util.split_last terms in
+      let subgoals, goal = unzip_mimplies mterm in
       let seq = mk_msequent goal subgoals in
       let rw = Rewrite.term_rewrite Strict addrs (goal :: params) subgoals in
       let opname = mk_opname name opname in
@@ -1712,9 +1711,8 @@ struct
     * Just do the checking.
     *)
    let check_rule name addrs params mterm =
-      let terms = unzip_mimplies mterm in
-      let subgoals, goal = List_util.split_last terms in
-      let vars = free_vars_terms terms in
+      let subgoals, goal = unzip_mimplies mterm in
+      let vars = free_vars_terms (goal::subgoals) in
          ignore (Rewrite.term_rewrite Strict addrs (goal::params) subgoals);
          List.iter (fun p -> if is_var_term p && not (StringSet.mem vars (dest_var p)) then
             REF_RAISE(RefineError("check_rule", StringStringError("Unused parameter", dest_var p)))) params

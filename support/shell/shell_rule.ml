@@ -111,7 +111,7 @@ let item_of_obj pack name
       Filter_type.Rule (**)
          { Filter_type.rule_name = name;
            Filter_type.rule_params = params;
-           Filter_type.rule_stmt = zip_mimplies (assums @ [goal]);
+           Filter_type.rule_stmt = zip_mimplies assums goal;
            Filter_type.rule_proof = proof;
            Filter_type.rule_resources = res
          }
