@@ -1055,7 +1055,6 @@ EXTEND
                   Not_found ->
                      "", x
             in
-               eprintf "kind=[%s], s=[%s]%t" kind s eflush; 
                match kind with
                   "ext" ->
                      Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s
