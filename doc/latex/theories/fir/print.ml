@@ -34,7 +34,9 @@
 set_tex_file "../../doc/latex/theories/fir/theory.tex";;
 
 print_theory "mfir_theory";;
-print_theory "mfir_comment";;
 print_theory "mfir_basic";;
 print_theory "mfir_ty";;
 print_theory "mfir_exp";;
+print_theory "mfir_sequent";;
+print_theory "mfir_type_rules";;
+print_theory "mfir_test";;
