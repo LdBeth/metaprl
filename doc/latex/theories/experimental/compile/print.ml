@@ -10,3 +10,18 @@ print_theory "m_doc_x86_codegen";;
 print_theory "m_doc_x86_regalloc";;
 print_theory "m_doc_x86_opt";;
 print_theory "m_doc_summary";;
+
+set_tex_file "../../doc/latex/theories/experimental/compile/tr.tex";;
+print_theory "m_doc_intro";;
+print_theory "m_doc_parsing";;
+print_theory "m_ir";;
+print_theory "m_cps";;
+print_theory "m_closure";;
+print_theory "m_prog";;
+print_theory "m_dead";;
+print_theory "m_inline";;
+print_theory "m_reserve";;
+print_theory "m_x86_codegen";;
+print_theory "m_x86_coalesce";;
+print_theory "m_x86_regalloc";;
+print_theory "m_x86_opt";;

@@ -1,0 +1,61 @@
+\documentclass[11pt]{article}
+\usepackage{geometry}
+\geometry{letterpaper}
+\usepackage{hyperref}
+\usepackage{makeidx}
+\makeindex
+
+\input{../inputs/metaprl}
+
+\begin{document}
+
+\title{Formal Compiler Implementation in a Logical Framework}
+
+\author{Jason Hickey, Aleksey Nogin, Adam Granicz, and Brian Aydemir\thanks{This
+  work was supported in part by the DoD Multidisciplinary
+  University Research Initiative (MURI) program administered by the
+  Office of Naval Research (ONR) under Grant N00014-01-1-0765, the
+  Defense Advanced Research Projects Agency (DARPA), the United States
+  Air Force, the Lee Center, and by NSF Grant CCR 0204193.}\\
+   \\
+   California Institute of Technology\\
+   1200 E. California Blvd.\\
+   Pasadena, CA 91125, USA\\
+   \{jyh,nogin,granicz,emre\}@cs.caltech.edu\\
+   \\
+   Caltech Technical Report caltechCSTR:2003.002}
+
+\maketitle
+
+\begin{abstract}
+The task of designing and implementing a compiler can be a
+difficult and error-prone process.  In this paper, we present a new
+approach based on the use of higher-order abstract syntax and term
+rewriting in a logical framework.  All program transformations, from
+parsing to code generation, are cleanly isolated and specified as term
+rewrites.  This has several advantages.  The correctness of the
+compiler depends solely on a small set of rewrite rules that are
+written in the language of formal mathematics.  In addition, the logical
+framework guarantees the preservation of scoping, and it automates
+many frequently-occurring tasks including substitution and rewriting
+strategies.  As we show, compiler development in a logical framework
+can be \emph{easier} than in a general-purpose language like ML, in
+part because of automation, and also because the framework provides
+extensive support for examination, validation, and debugging of the
+compiler transformations.  The paper is organized around a case study,
+using the \MetaPRL{} logical framework to compile an ML-like language to
+Intel x86 assembly.  We also present a scoped formalization of x86
+assembly in which all registers are immutable.
+
+\end{abstract}
+
+\sloppy
+
+\input{experimental/compile/tr-body.tex}
+
+\bibliographystyle{plain}
+\bibliography{../inputs/rc}
+
+\printindex
+
+\end{document}

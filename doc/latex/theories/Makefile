@@ -30,6 +30,9 @@ ocaml:
 compile:
 	+ @ $(MAKE) NAME=m-paper GOAL=m-paper TEXTHEORIES=experimental/compile doc
 
+mtr:
+	+ @ $(MAKE) NAME=m-paper-tr GOAL=m-paper-tr TEXTHEORIES=experimental/compile doc
+
 all: doc
 opt: doc
 
