@@ -169,12 +169,26 @@ struct
     | Context (v, conts, subterms) ->
          Context (v, conts, List.map (fun t -> subst t vars terms) subterms)
 
-   let hyp_subst arg terms vars =
+   let rec subst_filter vv ts vs =
+      match vs, ts with
+         ([], []) as l -> l
+       | v::vs, t::ts when v = vv ->
+            subst_filter vv ts vs
+       | v::vs, t::ts ->
+            let vs, ts = subst_filter vv ts vs in
+               v::vs, t::ts
+       | _ -> raise (Invalid_argument "Rewrite_build_contractum.subst_filter: interal error")
+
+   let rec hyp_subst arg terms vars =
       match vars, terms with
          [], [] ->
             arg
-       | [v], [t] when is_var_term t && dest_var t = v ->
-            arg
+       | v :: vars, t :: terms when is_var_term t && dest_var t = v ->
+             if vars = [] then
+                arg
+             else
+                let vars, terms = subst_filter v terms vars in
+                  hyp_subst arg terms vars
        | _ ->
             let i, len, hyps = arg in
                0, len, SeqHyp.lazy_sub_map (subst_hyp terms vars) hyps i len
