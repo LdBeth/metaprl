@@ -15,22 +15,25 @@
 
 <OL>
   <LI>GNU make. Make 3.77 has a bug and may not work, but make 3.76.1 and 3.78.1 should work fine.
-  <LI>Objective Caml: our version contains a small
-  native code profiler patch and a patch to enable OCaml native-code compiler to compile huge source files
-  on 32-bit machines.
-  <LI>CamlP4: our version contains a small patch to compile the
-  CamlP4 distribution in native code, native code profiler patch
-  and a patch to install interface files needed by MetaPRL to evaluate programs in the toploop
+  <LI>Objective Caml: our version contains a small patch to CamlP4 to compile the
+      CamlP4 distribution in native code, a patch to install interface files
+      needed by MetaPRL to evaluate programs in the toploop, and a patch that
+      gives MetaPRL access to comments in <tt>.ml</tt> files.
   <LI>Ensemble: you need Ensemble only if you want to use the distributed prover.
   <LI>HTMLDOC: you will only need Htmldoc if you want to be able to convert MetaPRL documentation into Postscript or PDF format.
   <LI>MetaPRL sources.
 </OL>
 
-<P>OCaml, Camlp4 and Htmldoc are available as source, and RedHat 5.x, 6.x and 7.x
-<A HREF="http://www.rpm.org">RPM</A> files for Linux x86. You can get the listing of available RPMs and download them from <A HREF="http://www.cs.cornell.edu/nogin/RPM/meta-prl/rh52/ByName.html">http://www.cs.cornell.edu/nogin/RPM/meta-prl/rh52/ByName.html (RedHat 5.x)</A> and <A HREF="http://www.cs.cornell.edu/nogin/RPM/meta-prl/rh61/ByName.html">http://www.cs.cornell.edu/nogin/RPM/meta-prl/rh61/ByName.html (RedHat 6.x)</A>
-or download them directly from <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/RPM/">ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/RPM/</a>.
-If you are going to build OCaml and/or Camlp4 yourself, you can get our
-patches at <A HREF="http://cvs.metaprl.org:12000/cvsweb/meta-prl/patches/">http://cvs.metaprl.org:12000/cvsweb/meta-prl/patches/</A></P>
+<P>OCaml and Htmldoc are available as source, and RedHat 5.x, 6.x and 7.x
+<A HREF="http://www.rpm.org">RPM</A> files for Linux x86. You can get the
+listing of available RPMs and download them from <A
+HREF="http://www.cs.cornell.edu/nogin/RPM/ocaml.html">http://www.cs.cornell.edu/nogin/RPM/ocaml.html</A>
+and <A
+HREF="http://www.cs.cornell.edu/nogin/RPM/htmldoc.html">http://www.cs.cornell.edu/nogin/RPM/htmldoc.html</A>
+respectively or download them directly from <A
+HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/RPM/">ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/RPM/</a>.
+If you are going to build OCaml yourself, you can get our patches at <A
+HREF="http://cvs.metaprl.org:12000/cvsweb/meta-prl/patches/">http://cvs.metaprl.org:12000/cvsweb/meta-prl/patches/</A></P>
 
 <P>You can download Ensemble from <A HREF="ftp://ftp.cs.cornell.edu/pub/ensemble/">ftp://ftp.cs.cornell.edu/pub/ensemble/</A>.</P>
 
