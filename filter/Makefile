@@ -49,7 +49,7 @@ include base/Files
 include boot/Files
 
 BASE_CMXFILES   := $(addprefix base/, $(addsuffix .cmx, $(BASE_FILES)))
-BOOT_CMXFILES   := $(addprefix base/, $(addsuffix .cmx, $(BOOT_FILES)))
+BOOT_CMXFILES   := $(addprefix boot/, $(addsuffix .cmx, $(BOOT_FILES)))
 
 SUB_CMXFILES :=\
 	$(BASE_CMXFILES)\
@@ -227,7 +227,7 @@ CONVERT_CMOBJS =\
 	$(CMOFILES_CONVERT)
 
 CONVERT_CMXOBJS =\
-	$(STANDARD_LIBS)\
+	$(STANDARDX_LIBS)\
 	$(CMXFILES_CONVERT)
 
 CONVERT_BYTE_CCLIBS = $(BYTE_CCLIBS)
@@ -386,7 +386,7 @@ $(PRLCO).opt: $(PRLCO_CMXOBJS) $(OPTTHREADSLIB)
 # Format converter
 #
 $(CONVERT).opt: $(CONVERT_CMXOBJS) $(THREADSLIB)
-	$(OCAMLOPT) $(PROFILE) -o $@ $(CONVERT_CMXOBJS) $(CONVERT_NATIVE_CCLIBS) $(LIBTHREADS)
+	$(OCAMLOPT) $(PROFILE) -o $@ $(CONVERT_CMXOBJS) $(CONVERT_NATIVE_CCLIBS) $(OPTTHREADS)
 
 #
 # Wrapper program
