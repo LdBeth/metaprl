@@ -902,6 +902,9 @@ struct
    let save proc suffix =
       FilterCache.save proc.cache () suffix
 
+   let set_mode proc mode =
+      FilterCache.set_mode proc.cache mode
+
    (*
     * Extract an item list.
     *)
@@ -1076,7 +1079,8 @@ EXTEND
           let f () =
              let proc = StrFilter.get_proc loc in
              let interf = StrFilter.check proc () InterfaceType in
-                StrFilter.save proc AnySuffix;
+                StrFilter.set_mode proc InteractiveSummary;
+                StrFilter.save proc (OnlySuffixes ["cmoz"]);
                 StrFilter.extract interf proc
           in
              print_exn f "implem" loc, false
