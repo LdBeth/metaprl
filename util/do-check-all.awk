@@ -13,7 +13,7 @@ END {
    printf "Ungrounded proofs: %i (%i rule boxes, %i primitive steps)\n",utot,urb,uprim;
    printf "Incomplete proofs: %i (%i rule boxes, %i primitive steps)\n\n",itot,irb,iprim;
    if (utot>0) {
-      print "Ungrounded proofs depend on following incomplete ones:\n";
+      print "Ungrounded proofs depend on the following incomplete ones:\n";
       for (i in num) { ind = sprintf("%8i proofs depend on an incomplete %s",num[i],i); unum[ind]=ind};
       for (i=asort(unum);i>0;i--) print unum[i];
       print ""

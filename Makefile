@@ -140,7 +140,8 @@ check_omake::
 		echo '!!!';\
 		echo '!!! You have several choices:';\
         echo '!!!  - (recommended) continue using omake';\
-        echo '!!!  - run "make realclean" and switch to using make';\
+        echo '!!!  - run "make realclean", remove the .omakedb file,';\
+        echo '!!!    and switch to using make';\
         echo '!!!  - (not recommended) remove the .omakedb file, run "make depend"';\
         echo '!!!    and switch to using make';\
 		echo '!!!';\
