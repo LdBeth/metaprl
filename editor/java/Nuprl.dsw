@@ -15,6 +15,18 @@ Package=<4>
 
 ###############################################################################
 
+Project: "NuprlIcon"=".\NuprlIcon.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
 Project: "NuprlTerm"=".\NuprlTerm.dsp" - Package Owner=<4>
 
 Package=<5>
@@ -23,6 +35,12 @@ Package=<5>
 
 Package=<4>
 {{{
+    Begin Project Dependency
+    Project_Dep_Name Nuprl
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name NuprlIcon
+    End Project Dependency
 }}}
 
 ###############################################################################

@@ -66,6 +66,14 @@ JAVA=jvc.exe
 # Name "NuprlTerm - Java Virtual Machine Debug"
 # Begin Source File
 
+SOURCE=.\ActiveApplet.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\ActiveApplication.java
+# End Source File
+# Begin Source File
+
 SOURCE=.\BoundTerm.java
 # End Source File
 # Begin Source File
@@ -259,6 +267,14 @@ SOURCE=.\QuickSort.java
 # Begin Source File
 
 SOURCE=.\Rewrite.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\Semaphore.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\SmallScrollGroup.java
 # End Source File
 # Begin Source File
 

@@ -14,12 +14,28 @@ extends TextViewBuffer
     protected DisplayTerm display;
 
     /**
+     * Target for mouse enter/exit events.
+     */
+    protected Target target;
+
+    /**
+     * Mouse-enter command that is passed to the target.
+     */
+    protected String mouse_entered;
+
+    /**
+     * Mouse-exit command that is passed to the target.
+     */
+    protected String mouse_exited;
+
+    /**
      * New window.
      */
     public TermView(DisplayTerm display, FontBase base, int x, int y, int w, int h)
     {
         super(base, x, y, w, h);
         this.display = display;
+        setBackgroundColor(new Color(230, 230, 255));
     }
 
     /**
@@ -38,17 +54,68 @@ extends TextViewBuffer
     }
 
     /**
-     * This is not the min size, it is a size we would like.
+     * Set the target.
      */
-    public Size querySize()
+    public void setTarget(Target target)
     {
-        int lines = lineCount();
-        return new Size(max_column, lines * 20);
+        this.target = target;
+    }
+
+    /**
+     * Set the mouse-enter command.
+     */
+    public void setEnteredCommand(String command)
+    {
+        mouse_entered = command;
+    }
+
+    /**
+     * Set the mouse-exit command.
+     */
+    public void setExitedCommand(String command)
+    {
+        mouse_exited = command;
+    }
+
+    /*
+     * Pass up the pseudo-focus events.
+     */
+    public void mouseEntered(MouseEvent e)
+    {
+        if(target != null)
+            target.performCommand(mouse_entered, this);
+        super.mouseEntered(e);
+    }
+
+    public void mouseExited(MouseEvent e)
+    {
+        if(target != null)
+            target.performCommand(mouse_exited, this);
+        super.mouseExited(e);
+    }
+
+    /**
+     * Get the size we want.
+     */
+    public int desiredWidth()
+    {
+        return max_column + 10;
+    }
+
+    /**
+     * Get the height we want.
+     */
+    public int desiredHeight()
+    {
+        return height();
     }
 }
 
 /*
  * $Log$
+ * Revision 1.2  1998/02/09 15:44:13  jyh
+ * Prelimnary semi-working version.
+ *
  * Revision 1.1  1998/02/05 15:48:11  jyh
  * This is a simple term display in an applet.
  *

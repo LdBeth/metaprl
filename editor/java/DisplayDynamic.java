@@ -33,18 +33,62 @@ extends DisplayTerm
     protected Hashtable status;
 
     /**
+     * We keep a lock.  Not allowed to look anything up
+     * until the base has been set.
+     */
+    protected Semaphore lock;
+
+    /**
+     * Create a flag to show when we are finished.
+     */
+    boolean finished;
+
+    /**
+     * Create an unatteched display.
+     */
+    DisplayDynamic()
+    {
+        this.lock = new Semaphore();
+        this.status = new Hashtable();
+        this.finished = false;
+    }
+
+    /**
      * Create the display relative to the URL.
      */
-    DisplayDynamic(URL root, String base)
+    DisplayDynamic(URL root)
     {
+        this();
+        setDisplayBase(root);
+    }
+
+    /**
+     * Set the URL of the display base.
+     */
+    void setDisplayBase(URL root)
+    {
+        this.root = root;
+        this.file = root.getFile();
+        this.lock.Signal(1);
+    }
+
+    /**
+     * Don't call eval() without checking the lock.
+     */
+    public Vector eval(Term term)
+        throws EvalError
+    {
+        Vector vec;
+
+        lock.Wait(1);
         try {
-            this.root = new URL(root, base);
+            vec = super.eval(term);
         }
-        catch(MalformedURLException e) {
-            this.root = root;
+        finally {
+            lock.Signal(1);
         }
-        this.file = this.root.getFile();
-        this.status = new Hashtable();
+        finished = true;
+        return vec;
     }
 
     /**
@@ -101,6 +145,9 @@ extends DisplayTerm
 
 /*
  * $Log$
+ * Revision 1.2  1998/02/09 15:43:42  jyh
+ * Prelimnary semi-working version.
+ *
  * Revision 1.1  1998/02/05 15:46:14  jyh
  * This is a simple term display in an applet.
  *

@@ -66,11 +66,247 @@ JAVA=jvc.exe
 # Name "Nuprl - Java Virtual Machine Debug"
 # Begin Source File
 
+SOURCE=.\BoundTerm.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\Closure.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\DebugFlags.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\DisplayDynamic.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\DisplayEngine.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\DisplayTerm.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\Eval.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\EvalError.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\FreeVar.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\LevelExp.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\LevelVar.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\MatchError.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\Matching.java
+# End Source File
+# Begin Source File
+
 SOURCE=.\NetscapeApplet.java
 # End Source File
 # Begin Source File
 
 SOURCE=.\Nuprl.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\Operator.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\Opname.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\Param.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\ParamLevelExp.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\ParamMatchError.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\ParamMDiff.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\ParamMEqual.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\ParamMeta.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\ParamMLessThan.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\ParamMLevel.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\ParamMNotEqual.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\ParamMNumber.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\ParamMPair.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\ParamMProduct.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\ParamMQuotient.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\ParamMRem.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\ParamMString.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\ParamMSum.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\ParamMToken.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\ParamMVar.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\ParamNumber.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\ParamString.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\ParamToken.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\ParamVar.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\Rewrite.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\Semaphore.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\Subst.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\SubstParam.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\SubstSimul.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\SubstSingle.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\Term.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\TermBreak.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\TermDisplay.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\TermFont.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\TermLexer.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\TermNuprl.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\TermParser.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\TermPop.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\TermPush.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\TermSoApply.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\TermSoVar.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\TermString.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\TermVar.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\TermView.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\TermZone.java
+# End Source File
+# Begin Source File
+
+SOURCE=.\TextBuffer.java
 # End Source File
 # End Target
 # End Project

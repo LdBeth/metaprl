@@ -8,43 +8,26 @@
 
 import java.net.*;
 import java.applet.*;
+import java.util.Enumeration;
 
 import netscape.application.*;
+import netscape.util.*;
 
-public class Nuprl
+public class NuprlIcon
 extends Application
-implements Target, WindowOwner, ApplicationObserver
+implements WindowOwner, ApplicationObserver
 {
     /*
      * Default size of the window
      */
-    private static final int WIDTH = 640;
-    private static final int HEIGHT = 32;
+    private static final int WIDTH = 100;
+    private static final int HEIGHT = 77;
 
     /*
      * Parameter names
      */
     private static final String PARAM_external = "external";
     private static final String PARAM_display_base = "display_base";
-
-    /*
-     * Menu commands.
-     */
-    private static final String NEW_WINDOW_COM = "NewWindow";
-    private static final String SAVE_FILE_COM = "SaveFile";
-    private static final String OPEN_FILE_COM = "OpenFile";
-    private static final String CLOSE_FILE_COM = "CloseFile";
-    private static final String REVERT_FILE_COM = "RevertFile";
-    private static final String EXIT_COM = "ExitApplication";
-
-    private static final String SELECT_ALL_COM = "SelectAll";
-    private static final String COPY_COM = "Copy";
-    private static final String CUT_COM = "Cut";
-    private static final String PASTE_COM = "Paste";
-
-    private static final String CHDIR_COM = "Chdir";
-    private static final String HOME_COM = "Home";
-    private static final String MKDIR_COM = "Mkdir";
 
     /*
      * Flags.
@@ -62,7 +45,12 @@ implements Target, WindowOwner, ApplicationObserver
     /*
      * We keep a common display base.
      */
-    DisplayDynamic display;
+    static DisplayDynamic display;
+
+    /*
+     * We control the gate.
+     */
+    GateSequence image;
 
     /************************************************************************
      * WINDOW OWNER                                                         *
@@ -74,7 +62,6 @@ implements Target, WindowOwner, ApplicationObserver
 
     public void windowDidHide(Window w)
     {
-        applicationDidStop(this);
     }
 
     public void windowDidResignMain(Window w)
@@ -236,17 +223,6 @@ implements Target, WindowOwner, ApplicationObserver
     }
 
     /************************************************************************
-     * MENU COMMANDS                                                        *
-     ************************************************************************/
-
-    /**
-     * Perform the menu command.
-     */
-    public void performCommand(String command, Object data)
-    {
-    }
-
-    /************************************************************************
      * APPLET                                                               *
      ************************************************************************/
 
@@ -257,10 +233,10 @@ implements Target, WindowOwner, ApplicationObserver
      */
     public static void main(String[] args)
     {
-        Nuprl app;
+        NuprlIcon app;
 
         // Create main window and size it
-        app = new Nuprl();
+        app = new NuprlIcon();
         app.argv = args;
         app.init();
 
@@ -272,10 +248,12 @@ implements Target, WindowOwner, ApplicationObserver
     /**
      * Constructor.
      */
-    public Nuprl()
+    public NuprlIcon()
     {
         started = false;
         display = new DisplayDynamic();
+        image = new GateSequence();
+        image.start();
         addObserver(this);
     }
 
@@ -309,31 +287,13 @@ implements Target, WindowOwner, ApplicationObserver
                 mainWindow.setOwner(this);
             }
 
-            // Change background color
+            // Add icon to main root view
             RootView main = mainRootView();
+            ImageView view = new ImageView(image, 0, 0);
+            main.addSubview(view);
 
-            /*
-             * Menu bar.
-             */
-            Menu menu = new Menu();
-            Menu file_menu = menu.addItemWithSubmenu("File").submenu();
-            file_menu.addItem("New window", NEW_WINDOW_COM, this);
-            file_menu.addItem("Open file", OPEN_FILE_COM, this);
-            file_menu.addItem("Close", CLOSE_FILE_COM, this);
-            file_menu.addItem("Revert", REVERT_FILE_COM, this);
-            file_menu.addSeparator();
-            file_menu.addItem("Exit", EXIT_COM, this);
-            Menu edit_menu = menu.addItemWithSubmenu("Edit").submenu();
-            edit_menu.addItem("Select All", SELECT_ALL_COM, this);
-            edit_menu.addItem("Cut", CUT_COM, this);
-            edit_menu.addItem("Copy", COPY_COM, this);
-            edit_menu.addItem("Paste", PASTE_COM, this);
-            MenuView menu_view = new MenuView(2, 2, main.width() - 4, 18, menu);
-            // menu_view.setHorizResizeInstruction(View.WIDTH_CAN_CHANGE);
-            // menu_view.setVertResizeInstruction(View.HEIGHT_CAN_CHANGE);
-            ContainerView container = new ContainerView(0, 0, main.width(), main.height());
-            container.addSubview(menu_view);
-            main.addSubview(container);
+            // Connect to other applets
+            connect();
 
             // Show the window
             if(external)
@@ -342,11 +302,88 @@ implements Target, WindowOwner, ApplicationObserver
             started = true;
         }
     }
+
+    /**
+     * Search for all applets.
+     */
+    protected void connect()
+    {
+        // Get applet
+        Applet applet = AWTCompatibility.awtApplet();
+        AppletContext context = applet.getAppletContext();
+        Enumeration enum = context.getApplets();
+        while(enum.hasMoreElements()) {
+            Applet peer = (Applet) enum.nextElement();
+            if(peer instanceof FoundationApplet) {
+                Application peer_app = ((FoundationApplet) peer).application();
+                if(peer_app instanceof NuprlTerm) {
+                    NuprlTerm term_app = (NuprlTerm) peer_app;
+                    // term_app.register(this);
+                }
+            }
+        }
+    }
+
+    /**
+     * Keep a register of who is working.
+     */
+    private Vector registrees = new Vector();
+
+    /**
+     * Check if a term is registered.
+     */
+    private boolean is_registered(NuprlTerm term)
+    {
+        int length = registrees.size();
+        for(int i = 0; i != length; i++) {
+            NuprlTerm term2 = (NuprlTerm) registrees.elementAt(i);
+            if(term == term2)
+                return true;
+        }
+        return false;
+    }
+
+    /**
+     * Remove a term from the register.
+     */
+    private void rm_register(NuprlTerm term)
+    {
+        int length = registrees.size();
+        for(int i = 0; i != length; i++) {
+            NuprlTerm term2 = (NuprlTerm) registrees.elementAt(i);
+            if(term == term2) {
+                registrees.removeElementAt(i);
+                return;
+            }
+        }
+    }
+
+    /**
+     * Register and start the icon.
+     */
+    public void register(NuprlTerm term)
+    {
+        // Start icon if nobody is registered
+        if(registrees.size() == 0)
+            image.start();
+        if(is_registered(term) == false)
+            registrees.addElement(term);
+    }
+
+    /**
+     * Unregister and stop icon.
+     */
+    public void unregister(NuprlTerm term)
+    {
+        rm_register(term);
+        if(registrees.size() == 0)
+            image.stop();
+    }
 }
 
 /*
  * $Log$
- * Revision 1.2  1998/02/09 15:43:51  jyh
+ * Revision 1.1  1998/02/09 15:43:59  jyh
  * Prelimnary semi-working version.
  *
  * Revision 1.1  1998/02/06 05:20:52  jyh

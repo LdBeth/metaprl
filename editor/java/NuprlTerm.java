@@ -63,7 +63,7 @@ extends Thread
         TermView text = applet.text;
         text.truncate(0);
         text.appendTerm(term);
-        Size size = text.querySize();
+        applet.unregister();
     }
 }
 
@@ -71,8 +71,8 @@ extends Thread
  * The main applet class.
  */
 public class NuprlTerm
-extends Application
-implements WindowOwner, ApplicationObserver
+extends ActiveApplication
+implements WindowOwner, ApplicationObserver, Target
 {
     /*
      * Default size of the window if it is external
@@ -88,12 +88,28 @@ implements WindowOwner, ApplicationObserver
     private static final String PARAM_file = "file";
 
     /*
+     * Commands.
+     */
+    private static final String MOUSE_ENTERED_COM = "mouse entered";
+    private static final String MOUSE_EXITED_COM = "mouse exited";
+
+    /*
      * Parsed aguments.
      */
     private boolean started;
     private boolean external;
     String term_name;
     String file_name;
+
+    /**
+     * Focus color for the border of this applet.
+     */
+    private Color focused_color;
+
+    /**
+     * Color when this term is not focused.
+     */
+    private Color unfocused_color;
 
     /**
      * This is the URL for an applet.
@@ -120,6 +136,16 @@ implements WindowOwner, ApplicationObserver
      */
     DisplayDynamic display;
 
+    /**
+     * Also keep a handle to the icon if it exists.
+     */
+    NuprlIcon icon;
+
+    /**
+     * Flag if the applet is idle.
+     */
+    private boolean completed = false;
+
     /*
      * Arguments are stored locally, because main will not be
      * called for applets.
@@ -131,6 +157,16 @@ implements WindowOwner, ApplicationObserver
      */
     protected TermView text;
 
+    /**
+     * ScrollGroup surrounding text window.
+     */
+    protected ScrollGroup scroll;
+
+    /**
+     * This is the border around the applet.
+     */
+    protected LineBorder border;
+
     /************************************************************************
      * WINDOW OWNER                                                         *
      ************************************************************************/
@@ -141,7 +177,6 @@ implements WindowOwner, ApplicationObserver
 
     public void windowDidHide(Window w)
     {
-        applicationDidStop(this);
     }
 
     public void windowDidResignMain(Window w)
@@ -260,6 +295,48 @@ implements WindowOwner, ApplicationObserver
     }
 
     /************************************************************************
+     * EVENT HANDLING                                                       *
+     ************************************************************************/
+
+    /**
+     * Handle commands.
+     */
+    public void performCommand(String command, Object obj)
+    {
+        if(command.equals(MOUSE_ENTERED_COM))
+            setMouseEntered();
+        else if(command.equals(MOUSE_EXITED_COM))
+            setMouseExited();
+    }
+
+    /**
+     * Mouse entered.
+     */
+    public void setMouseEntered()
+    {
+        setBorderColor(focused_color);
+    }
+
+    /**
+     * Mouse left.
+     */
+    public void setMouseExited()
+    {
+        setBorderColor(unfocused_color);
+    }
+
+    /*
+     * Set the border color, and referesh it.
+     */
+    private void setBorderColor(Color color)
+    {
+        if(border != null && scroll != null && color != null) {
+            border.setColor(color);
+            scroll.setDirty(true);
+        }
+    }
+
+    /************************************************************************
      * APPLET                                                               *
      ************************************************************************/
 
@@ -318,20 +395,25 @@ implements WindowOwner, ApplicationObserver
                 mainWindow.setOwner(this);
             }
 
-            // Change background color
+            /* Main window for this applet */
             RootView main = mainRootView();
             main.setAutoResizeSubviews(true);
 
+            /* Border around this applet */
+            focused_color = Color.white;
+            unfocused_color = Color.white;
+            border = new LineBorder(unfocused_color);
+
             /* Put scrollbars around the text window */
-            ScrollGroup scroll = new ScrollGroup(0, 0, main.width(), main.height());
+            scroll = new SmallScrollGroup(0, 0, main.width(), main.height());
             scroll.setHorizResizeInstruction(View.WIDTH_CAN_CHANGE);
             scroll.setVertResizeInstruction(View.HEIGHT_CAN_CHANGE);
-            scroll.setVertScrollBarDisplay(ScrollGroup.AS_NEEDED_DISPLAY);
+            scroll.setHasVertScrollBar(false);
             scroll.setHasHorizScrollBar(false);
             scroll.setBackgroundColor(Color.white);
-            scroll.setBorder(BezelBorder.groovedBezel());
+            scroll.setBorder(border);
 
-            /* Create the FontBase */
+            /* Each applet has its own FontBase */
             FontBase base = new FontBase();
 
             /* Get the info shared between all the applets */
@@ -344,8 +426,11 @@ implements WindowOwner, ApplicationObserver
             text = new TermView(display, base, 0, 0, main.width(), main.height());
             text.setHorizResizeInstruction(View.WIDTH_CAN_CHANGE);
             text.setVertResizeInstruction(View.HEIGHT_CAN_CHANGE);
+            text.setTarget(this);
+            text.setEnteredCommand(MOUSE_ENTERED_COM);
+            text.setExitedCommand(MOUSE_EXITED_COM);
 
-            /* Applets want to load the argument term froma thread */
+            /* Applets load the argument term from a thread */
             if(isApplet()) {
                 Thread thread = new LoadThread(this);
                 thread.start();
@@ -355,7 +440,7 @@ implements WindowOwner, ApplicationObserver
             scroll.setContentView(text);
             main.addSubview(scroll);
 
-            // Show the window
+            /* Show the window */
             if(external)
                 mainWindow.show();
 
@@ -391,7 +476,7 @@ implements WindowOwner, ApplicationObserver
         catch(MalformedURLException e) {
             // Never happens
         }
-        display = new DisplayDynamic(url, null);
+        display = new DisplayDynamic(url);
         parser = new TermParser(display);
         if(file_name != null) {
             // Load the term named in the argument
@@ -420,11 +505,20 @@ implements WindowOwner, ApplicationObserver
      *      may return a different list for every applet, but at least
      *      one applet will be in all the lists.
      *
-     * The algorithm is performed in rounds.
-     *    1. Check all applets
-     *       a. if their controller is null, set it to this
-     *       b. if their controller is this, continue
-     *       c. if their controller is not this, wait for that controller
+     * The algorithm is performed as follows.  Each applet
+     *    1. makes a list of applets that it knows about,
+     *    2. it sorts them by their names,
+     *    3. it tries to lock all the applets in descending order,
+     *    4. if it locks them all,
+     *       a. if none of them have elected a controller,
+     *          then it elects itself,
+     *       b. if any of them have elected a controller,
+     *          then choose that controller.
+     *
+     * An invariant is that all controllers that are elected
+     * are the same.
+     *
+     * There is no deadlock because the locks are strictly ordered.
      */
     protected void electController()
     {
@@ -446,6 +540,8 @@ implements WindowOwner, ApplicationObserver
                     if(url.equals(term_app.url))
                         control_vec.addElement(term_app);
                 }
+                else if(peer_app instanceof NuprlIcon)
+                    register((NuprlIcon) peer_app);
             }
         }
 
@@ -468,9 +564,10 @@ implements WindowOwner, ApplicationObserver
          * Check if all controllers have been locked.
          */
         if(index == controllers.length) {
-            // All controllers have been locked, so we are elected
+            // We are elected, so create a display base and a parser
             controller = this;
-            display = new DisplayDynamic(url, null);
+            if(display == null)
+                display = new DisplayDynamic(url);
             parser = new TermParser(display);
         }
         else {
@@ -483,10 +580,58 @@ implements WindowOwner, ApplicationObserver
             }
         }
     }
+
+    /**
+     * Register this applet with the icon.
+     */
+    public synchronized void register(NuprlIcon icon)
+    {
+        this.icon = icon;
+        this.completed = false;
+        icon.register(this);
+    }
+
+    /**
+     * Unregister this applet with the icon.
+     */
+    public synchronized void unregister()
+    {
+        if(icon != null) {
+            icon.unregister(this);
+            completed = true;
+        }
+    }
+
+    /**
+     * Ask for the width.
+     * Adjust for the scrollbars.
+     */
+    public int desiredWidth()
+    {
+        if(text == null || display.finished == false)
+            return 0;
+        int width = text.desiredWidth();
+        if(width > 0) {
+            if(scroll.vertScrollBarIsVisible())
+                width += scroll.vertScrollBar().width();
+        }
+        return width;
+    }
+
+    /**
+     * Ask for height.
+     */
+    public int desiredHeight()
+    {
+        return text == null || display.finished == false ? 0 : text.desiredHeight() + 2;
+    }
 }
 
 /*
  * $Log$
+ * Revision 1.2  1998/02/09 15:44:04  jyh
+ * Prelimnary semi-working version.
+ *
  * Revision 1.1  1998/02/05 15:46:52  jyh
  * This is a simple term display in an applet.
  *
