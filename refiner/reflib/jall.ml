@@ -3064,7 +3064,7 @@ struct
       match ordering with
          [] ->
             []
-       | (pos,fset)::r ->
+       | ((pos,fset) as pos_fset)::r ->
             if (pos = const) or (StringSet.mem fset const) then
 (* check reflexsivity during transitive closure wrt. addset ONLY!!! *)
                if StringSet.mem addset pos then
@@ -3072,7 +3072,7 @@ struct
                else
                   (pos,(StringSet.union fset addset))::(transitive_irreflexive_closure addset const r)
             else
-               (pos,fset)::(transitive_irreflexive_closure addset const r)
+               pos_fset::(transitive_irreflexive_closure addset const r)
 
    let rec search_set var ordering =
 (* print_endline var; *)
@@ -3270,11 +3270,8 @@ struct
             else
                (rest_vlist,(f::rest_combine))
 
-   let compose sigma one_subst =
-      let (n,subst)=sigma
-      and (ov,oslist) = one_subst in
-      let (trans_vars,com) = combine subst (ov,oslist)
-      in
+   let compose (n,subst) one_subst =
+      let trans_vars,com = combine subst one_subst in
 (*    begin
    print_endline "!!!!!!!!!test print!!!!!!!!!!";
    print_subst [one_subst];
@@ -3438,12 +3435,13 @@ struct
          in
          let apply_r7 fs ft rt rest_eq sigma =
 (* print_endline "r7"; *)
-            let v = (List.hd fs)
-            and c1 = (List.hd rt)
-            and c2t =(List.tl rt) in
-            let (compose_vars,new_sigma) = (compose sigma (v,(ft @ [c1]))) in
-            let new_rest_eq = apply_subst rest_eq (v,(ft @ [c1])) atomnames in
-            let new_ordering = build_orderingJ (v::compose_vars) (ft @ [c1]) ordering atom_rel in
+            let v = List.hd fs in
+            let c1 = List.hd rt in
+            let c2t =List.tl rt in
+            let ft_c1 = ft @ [c1] in
+            let compose_vars,new_sigma = compose sigma (v,ft_c1) in
+            let new_rest_eq = apply_subst rest_eq (v,ft_c1) atomnames in
+            let new_ordering = build_orderingJ (v::compose_vars) ft_c1 ordering atom_rel in
             tunify atomnames (List.tl fs) []  c2t new_rest_eq new_sigma new_ordering
          in
          let apply_r8 fs ft rt rest_eq sigma =
@@ -3451,14 +3449,14 @@ struct
             tunify atomnames  rt [(List.hd fs)] (List.tl fs) rest_eq sigma ordering
 
          in
-         let apply_r9 fs ft rt rest_eq sigma =
+         let apply_r9 fs ft rt rest_eq (max,subst) =
 (* print_endline "r9"; *)
-            let v = (List.hd fs)
-            and (max,subst) = sigma in
+            let v = List.hd fs in
             let v_new = ("vnew"^(string_of_int max)) in
-            let (compose_vars,new_sigma) = (compose ((max+1),subst) (v,(ft @ [v_new]))) in
-            let new_rest_eq = apply_subst rest_eq (v,(ft @ [v_new])) atomnames in
-            let new_ordering = build_orderingJ (v::compose_vars) (ft @ [v_new]) ordering atom_rel in
+            let ft_vnew = ft @ [v_new] in
+            let compose_vars,new_sigma = compose ((max+1),subst) (v,ft_vnew) in
+            let new_rest_eq = apply_subst rest_eq (v,ft_vnew) atomnames in
+            let new_ordering = build_orderingJ (v::compose_vars) ft_vnew ordering atom_rel in
             tunify atomnames rt [v_new] (List.tl fs) new_rest_eq new_sigma new_ordering
 
          in
@@ -3826,7 +3824,7 @@ let fail_ext_set ext_atom ext_set atom_sets =
    and fail_set = AtomSet.singleton ext_atom in
    check_ext_list ext_list fail_set atom_sets
 
-let rec ext_partners con path ext_atom (reduction_partners,extension_partners) atom_sets =
+let rec ext_partners con path ext_atom reduction_partners extension_partners atom_sets =
    match con with
       [] ->
          (reduction_partners,extension_partners)
@@ -3834,19 +3832,19 @@ let rec ext_partners con path ext_atom (reduction_partners,extension_partners) a
          let a_partner = (ext_atom = a) in
          if a_partner || (ext_atom = b) then
             let ext_partner = if a_partner then b else a in
-            let (new_red_partners,new_ext_partners) =
 (* force reduction steps first *)
-               if (AtomSet.mem path ext_partner) then
-                  ((AtomSet.add reduction_partners ext_partner),extension_partners)
-               else
+            if (AtomSet.mem path ext_partner) then
+               ext_partners r path ext_atom (AtomSet.add reduction_partners ext_partner) extension_partners atom_sets
+            else
+               let new_ext_partners =
                   if (check_alpha_relation ext_partner path atom_sets) then
-                     (reduction_partners,(AtomSet.add extension_partners ext_partner))
+                     (AtomSet.add extension_partners ext_partner)
                   else
-                     (reduction_partners,extension_partners)
-            in
-            ext_partners r path ext_atom (new_red_partners,new_ext_partners) atom_sets
+                     extension_partners
+               in
+               ext_partners r path ext_atom reduction_partners new_ext_partners atom_sets
          else
-            ext_partners r path ext_atom (reduction_partners,extension_partners) atom_sets
+            ext_partners r path ext_atom reduction_partners extension_partners atom_sets
 
 exception Failed_connections
 
@@ -3859,7 +3857,7 @@ let path_checker consts atom_rel atom_sets qprefixes init_ordering logic =
 
    let rec provable path closed (orderingQ,reduction_ordering) eqlist (sigmaQ,sigmaJ) =
 
-      let rec check_connections (reduction_partners,extension_partners) ext_atom =
+      let rec check_connections reduction_partners extension_partners ext_atom =
          let try_one =
             if AtomSet.is_empty reduction_partners then
                if AtomSet.is_empty extension_partners then
@@ -3902,9 +3900,9 @@ let path_checker consts atom_rel atom_sets qprefixes init_ordering logic =
          with Failed ->
 (*          print_endline ("new connection for "^(ext_atom.aname)); *)
 (*            print_endline ("Failed"); *)
-            check_connections ((AtomSet.remove reduction_partners try_one),
-                               (AtomSet.remove extension_partners try_one)
-                              ) ext_atom
+            check_connections (AtomSet.remove reduction_partners try_one)
+                              (AtomSet.remove extension_partners try_one)
+                              ext_atom
          )
 
       in
@@ -3916,9 +3914,9 @@ let path_checker consts atom_rel atom_sets qprefixes init_ordering logic =
 (*        print_endline ("extension literal "^(select_one.aname)); *)
 (*        print_endline ("extension path "^(print_set path));*)
             let (reduction_partners,extension_partners) =
-               ext_partners con path select_one (AtomSet.empty,AtomSet.empty) atom_sets in
+               ext_partners con path select_one AtomSet.empty AtomSet.empty atom_sets in
             (try
-               check_connections (reduction_partners,extension_partners) select_one
+               check_connections reduction_partners extension_partners select_one
             with Failed_connections ->
 (*         print_endline ("no connections for subgoal "^(select_one.aname)); *)
 (*           print_endline ("Failed_connections"); *)
@@ -3947,39 +3945,35 @@ let path_checker consts atom_rel atom_sets qprefixes init_ordering logic =
 
 (*************************** prepare and init prover *******************************************************)
 
-let rec make_atom_sets atom_rel =
-   match atom_rel with
-      [] -> []
-    | f::r ->
-         let (a,alpha,beta) =  f in
-         (a,(AtomSet.of_list alpha),(AtomSet.of_list beta))::(make_atom_sets r)
+let rec make_atom_sets = function
+   [] -> []
+ | (a,alpha,beta)::r ->
+      (a,(AtomSet.of_list alpha),(AtomSet.of_list beta))::(make_atom_sets r)
 
-let rec predecessor address_1 address_2 ftree =
-   match ftree with
-      Empty -> PNull            (* should not occur since every pair of atoms have a common predecessor *)
-    | NodeAt(position) -> PNull (* should not occur as above *)
-    | NodeA(position,suctrees) ->
-         match address_1,address_2 with
-            [],_ -> raise (Invalid_argument "Jprover: predecessors left")
-          | _,[] -> raise (Invalid_argument "Jprover: predecessors right")
-          | (f1::r1),(f2::r2) ->
-               if f1 = f2 then
-                  predecessor r1 r2 (suctrees.(f1-1))
-               else
-                  position.pt
-
-let rec compute_sets element ftree alist =
-   match alist with
-      [] -> [],[]
-    | first::rest ->
-         if first = element then
-            compute_sets element ftree rest    (* element is neithes alpha- nor beta-related to itself*)
-         else
-            let (alpha_rest,beta_rest) = compute_sets element ftree rest in
-            if predecessor (element.aaddress) (first.aaddress) ftree = Beta then
-               (alpha_rest,(first::beta_rest))
+let rec predecessor address_1 address_2 = function
+   Empty -> PNull            (* should not occur since every pair of atoms have a common predecessor *)
+ | NodeAt(position) -> PNull (* should not occur as above *)
+ | NodeA(position,suctrees) ->
+      match address_1,address_2 with
+         [],_ -> raise (Invalid_argument "Jprover: predecessors left")
+       | _,[] -> raise (Invalid_argument "Jprover: predecessors right")
+       | (f1::r1),(f2::r2) ->
+            if f1 = f2 then
+               predecessor r1 r2 (suctrees.(f1-1))
             else
-               ((first::alpha_rest),beta_rest)
+               position.pt
+
+let rec compute_sets element ftree = function
+   [] -> [],[]
+ | first::rest ->
+      if first = element then
+         compute_sets element ftree rest    (* element is neithes alpha- nor beta-related to itself*)
+      else
+         let (alpha_rest,beta_rest) = compute_sets element ftree rest in
+         if predecessor (element.aaddress) (first.aaddress) ftree = Beta then
+            (alpha_rest,(first::beta_rest))
+         else
+            ((first::alpha_rest),beta_rest)
 
 let rec compute_atomlist_relations worklist ftree alist =  (* last version of alist for total comparison *)
    let rec compute_atom_relations element ftree alist =
@@ -4010,7 +4004,7 @@ let rec select_atoms_treelist treelist prefix =
             let new_prefix =
                let prefix_element =
                   if List.mem (position.st) [Psi_0;Phi_0] then
-                     [(position.name)]
+                     [position.name]
                   else
                      []
                in
