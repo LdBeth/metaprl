@@ -40,8 +40,7 @@ type dir_name = string
 type file_name = string
 
 (*
- * Files can loaded with an alternate suffix:
- * never, always, or if the suffixed file is newer.
+ * Files can loaded with an alternate suffix.
  *)
 type alt_suffix =
    AnySuffix
@@ -51,13 +50,13 @@ type alt_suffix =
  * File type selection info.
  *)
 type ('arg, 'select, 'cooked) file_info =
-   { info_marshal : int list -> int -> int list -> 'arg -> string -> 'cooked -> unit;
+   { info_marshal   : int list -> int -> int list -> 'arg -> string -> 'cooked -> unit;
      info_unmarshal : int list -> int list -> 'arg -> string -> 'cooked * int;
-     info_disabled : bool ref;
-     info_select : 'select;
-     info_suffix : string;
-     info_magics : int list;
-     info_versions : int list;
+     info_disabled  : bool ref;
+     info_select    : 'select;
+     info_suffix    : string;
+     info_magics    : int list;
+     info_versions  : int list;
    }
 
 (*
@@ -99,24 +98,24 @@ sig
    val set_path : t -> string list -> unit
 
    (* Loading and saving *)
-   val find : t -> arg -> file_name -> select -> alt_suffix -> info
-   val find_file : t -> arg -> file_name -> select -> alt_suffix -> info
-   val find_match : t -> arg -> info -> select -> alt_suffix -> info
-   val save : t -> arg -> info -> alt_suffix -> unit
-   val save_if_newer : t -> arg -> info -> alt_suffix -> unit
+   val find            : t -> arg -> file_name -> select -> alt_suffix -> info
+   val find_file       : t -> arg -> file_name -> select -> alt_suffix -> info
+   val find_match      : t -> arg -> info -> select -> alt_suffix -> info
+   val save            : t -> arg -> info -> alt_suffix -> unit
+   val save_if_newer   : t -> arg -> info -> alt_suffix -> unit
    val save_if_missing : t -> arg -> info -> alt_suffix -> unit
-   val magic : t -> info -> int
-   val set_magic : t -> info -> int -> unit
-   val save_as : t -> arg -> cooked -> select -> dir_name -> file_name -> alt_suffix -> info
-   val create_info : t -> cooked -> select -> dir_name -> file_name -> info
-   val remove_info : t -> info -> unit
+   val magic           : t -> info -> int
+   val set_magic       : t -> info -> int -> unit
+   val save_as         : t -> arg -> cooked -> select -> dir_name -> file_name -> alt_suffix -> info
+   val create_info     : t -> cooked -> select -> dir_name -> file_name -> info
+   val remove_info     : t -> info -> unit
 
    (* Info about the objects *)
-   val info : t -> info -> cooked
-   val set_info : t -> info -> cooked -> unit
-   val file_name : t -> info -> file_name
-   val full_name : t -> info -> file_name
-   val type_of : t -> info -> select
+   val info            : t -> info -> cooked
+   val set_info        : t -> info -> cooked -> unit
+   val file_name       : t -> info -> file_name
+   val full_name       : t -> info -> file_name
+   val type_of         : t -> info -> select
 end
 
 (************************************************************************
@@ -146,14 +145,14 @@ sig
    type arg
 
    (* File type selection info *)
-   val select : select
-   val suffix : string
-   val magics : int list
-   val versions : int list
-   val disabled : bool ref
+   val select    : select
+   val suffix    : string
+   val magics    : int list
+   val versions  : int list
+   val disabled  : bool ref
 
    (* Conversion functions *)
-   val marshal : arg -> cooked -> raw
+   val marshal   : arg -> cooked -> raw
    val unmarshal : arg-> raw -> cooked
 end
 
@@ -184,7 +183,7 @@ sig
    type t
 
    val write : int list -> int -> int list -> string -> t -> unit
-   val read : int list -> int list -> string -> t * int
+   val read  : int list -> int list -> string -> t * int
 end
 
 (*
