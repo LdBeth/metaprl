@@ -136,11 +136,11 @@ depend: check_config
 		if (echo Making $$i...; $(MAKE) -C $$i $@); then true; else exit 1; fi;\
 	fi; done
 
-mk/config: check_omake mk/make_config.sh
+mk/config: mk/make_config.sh
 	@echo Making mk/config...
 	@ROOT="$(ROOT)" TERMS="$(TERMS)" REFINER="$(REFINER)" MAKE_OPTS="$(MAKE_OPTS)" SEQ_SET="$(SEQ_SET)" CCC="$(CCC)" ENSROOT="$(ENSROOT)" OCAMLSRC="$(OCAMLSRC)" THEORIES="$(THEORIES)" TESTS="$(TESTS)" READLINE="$(READLINE)" NCURSES="$(NCURSES)" SLOPPY_DEPENDENCIES="$(SLOPPY_DEPENDENCIES)" mk/make_config.sh
 
-mk/config.local: check_omake
+mk/config.local:
 	@touch mk/config.local
 
 check_omake::
