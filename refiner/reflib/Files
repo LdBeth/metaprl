@@ -7,6 +7,7 @@ REFLIB_FILES :=\
 	ml_print\
 	ml_file\
 	ml_string\
+	ml_term\
 	term_table\
 	term_stable\
 	term_dtable\
