@@ -58,6 +58,7 @@ let content_sym     = Lm_symbol.add "CONTENT"
 let basename_sym    = Lm_symbol.add "BASENAME"
 let command_sym     = Lm_symbol.add "COMMAND"
 let version_sym     = Lm_symbol.add "VERSION"
+let editinfo_sym    = Lm_symbol.add "EDITINFO"
 
 (*
  * Open the file as a channel.
@@ -102,48 +103,10 @@ let string_of_file dir filename =
            ""
 
 let string_of_lib_file filename =
-   string_of_file (Setup.lib()) filename
+   string_of_file (Setup.lib ()) filename
 
 let string_of_root_file filename =
-   string_of_file (Setup.root()) filename
-
-(*
- * Strip DOS-style line-endings.
- *)
-let unix_of_dos s =
-   let len = String.length s in
-   let buf = Buffer.create len in
-   let rec copy i =
-      if i = len then
-         Buffer.contents buf
-      else
-         let c = s.[i] in
-            if c = '\r' && i + 1 < len && s.[i + 1] = '\n' then
-               begin
-                  Buffer.add_char buf '\n';
-                  copy (i + 2)
-               end
-            else
-               begin
-                  Buffer.add_char buf c;
-                  copy (i + 1)
-               end
-   in
-      copy 0
-
-(*
- * Replace the file with the string.
- *)
-let save_root_file filename contents =
-   let contents = unix_of_dos contents in
-      match out_channel_of_file (Setup.root()) filename with
-         Some out ->
-            eprintf "save_root_file: saving file %s@." filename;
-            output_string out contents;
-            close_out out;
-            true
-       | None ->
-            false
+   string_of_file (Setup.root ()) filename
 
 (*
  * Output functions.
@@ -228,7 +191,7 @@ struct
 
    let add_file table v filename =
       SymbolTable.add table v (fun info ->
-         match in_channel_of_file (Setup.root()) filename with
+         match in_channel_of_file (Setup.root ()) filename with
             Some inx ->
                let rec copy () =
                   info.info_add_char (input_char inx);
@@ -331,7 +294,7 @@ let parse table buf inx =
  * Print the contents of a file, with replacement.
  *)
 let print_raw_file_to_http out name =
-   match in_channel_of_file (Setup.lib()) name with
+   match in_channel_of_file (Setup.lib ()) name with
       Some inx ->
          print_success_channel out OkCode inx;
          close_in inx
@@ -339,7 +302,7 @@ let print_raw_file_to_http out name =
          print_error_page out NotFoundCode
 
 let print_metaprl_file_to_http out name =
-   match in_channel_of_file (Setup.root()) name with
+   match in_channel_of_file (Setup.root ()) name with
       Some inx ->
          print_success_channel out OkCode inx;
          close_in inx
@@ -350,7 +313,7 @@ let print_metaprl_file_to_http out name =
  * Print the contents of a file, with replacement.
  *)
 let print_translated_file print_success_page print_error_page out table name =
-   match in_channel_of_file (Setup.lib()) name with
+   match in_channel_of_file (Setup.lib ()) name with
       Some inx ->
          let buf = Buffer.create 1024 in
          let info = buffer_info buf in

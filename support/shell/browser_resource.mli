@@ -74,11 +74,6 @@ type browser_state =
    }
 
 (*
- * Utilities.
- *)
-val filename_of_proxyedit : string -> string
-
-(*
  * Menubar has a default.
  *)
 val default_menubar_info : browser_state -> browser_info

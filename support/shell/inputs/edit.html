@@ -12,16 +12,19 @@
         <script type="text/javascript">
         <!-- Hide this text from old browsers --
 	%%SESSION%%
+	%%EDITINFO%%
 	-->
 	</script>
     </head>
 
     <body id="editbody" onload="OnLoad()">
-    <form id="editform" name="commandform" method="post" action="./info.prl">
+    <form name="editform" id="editform" method="post" action="./info.prl">
 
     <div id="editheading">Editing %%FILE%%
-    <input type="submit" name="submit" id="savebutton" value="Save">
-    <input type="hidden" name="backup" value="save">
+    <input type="button" name="save"   id="savebutton"  value="Save" onclick="EditSave()">
+    <input type="hidden" name="cancel" id="cancelbutton" value="Cancel" onclick="EditCancel()">
+    <input type="hidden" name="point"  id="pointbutton" value="0">
+    <input type="hidden" name="type"   id="typebutton"  value="save">
     <span class="edithelp"><a href="/inputs/edit-help.html">Help</a></span>
     </div>
 

@@ -1,5 +1,5 @@
 (*
- * Bounded buffers for the shell.
+ * Editing commands.
  *
  * ----------------------------------------------------------------
  *
@@ -26,42 +26,29 @@
  *)
 
 (*
- * A simple bounded buffer.
+ * Complete edit info.
  *)
-module type LineBufferSig =
-sig
-   type 'a t
-
-   val create      : unit -> 'a t
-   val clone       : 'a t -> ('a -> 'b) -> 'b t
-   val add         : 'a t -> 'a -> unit
-   val iter        : ('a -> unit) -> 'a t -> unit
-   val fold        : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
-   val last        : 'a t -> 'a option
-   val remove_last : 'a t -> unit
-   val length      : 'a t -> int
-end
+type edit_info =
+   { edit_point    : int;
+     edit_modified : bool;
+     edit_new      : bool;
+     edit_rootname : string
+   }
 
 (*
- * A bounded table.
+ * Get the edit info.
  *)
-module type LineTableSig =
-sig
-   type 'a t
-
-   val empty  : 'a t
-   val mem    : 'a t -> string -> bool
-   val add    : 'a t -> string -> 'a -> 'a t
-   val find   : 'a t -> string -> 'a
-   val iter   : (string -> 'a -> unit) -> 'a t -> unit
-   val fold   : ('a -> string -> 'b -> 'a) -> 'a -> 'b t -> 'a
-end
+val get_edit_info : string -> edit_info
 
 (*
- * The implementation.
+ * Filename translation.
  *)
-module LineBuffer : LineBufferSig
-module LineTable : LineTableSig
+val proxyedit_of_filename : string -> string
+val filename_of_proxyedit : string -> string
+
+val save_file : string -> int -> string -> bool
+val backup_file : string -> int -> string -> bool
+val cancel_file : string -> int -> string -> bool
 
 (*!
  * @docoff

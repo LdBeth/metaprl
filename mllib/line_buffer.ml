@@ -151,6 +151,7 @@ sig
    val empty  : 'a t
    val mem    : 'a t -> string -> bool
    val add    : 'a t -> string -> 'a -> 'a t
+   val find   : 'a t -> string -> 'a
    val iter   : (string -> 'a -> unit) -> 'a t -> unit
    val fold   : ('a -> string -> 'b -> 'a) -> 'a -> 'b t -> 'a
 end
@@ -208,6 +209,12 @@ struct
             remove_oldest table
          else
             table
+
+   (*
+    * Get an element from the table.
+    *)
+   let find table key =
+      snd (StringTable.find table key)
 
    (*
     * Iterate over the queue.

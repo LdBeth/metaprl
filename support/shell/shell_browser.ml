@@ -42,7 +42,9 @@ open Format
 open Http_simple
 open Http_server_type
 
+open Session_sig
 open Browser_copy
+open Browser_edit
 open Browser_state
 open Browser_resource
 open Shell_sig
@@ -747,6 +749,20 @@ struct
          table
 
    (*
+    * Print the edit info.
+    *)
+   let print_edit_info info buf =
+      let { edit_new = isnew;
+            edit_modified = ismodified;
+            edit_point = point
+          } = info
+      in
+         Printf.bprintf buf "\tvar editinfo = new Object();\n";
+         Printf.bprintf buf "\teditinfo.isnew = %b;\n" isnew;
+         Printf.bprintf buf "\teditinfo.ismodified = %b;\n" ismodified;
+         Printf.bprintf buf "\teditinfo.point = %d;\n" point
+
+   (*
     * Print the session state.
     *)
    let print_session server state session buf =
@@ -772,19 +788,19 @@ struct
       let js_cwd = Lm_string_util.js_escaped cwd in
       let js_edit = Lm_string_util.js_escaped edit in
          Printf.bprintf buf "\tvar session = new Array();\n";
-         Printf.bprintf buf "\tsession['cwd']      = '%s';\n" js_cwd;
-         Printf.bprintf buf "\tsession['location'] = 'https://%s:%d/session/%d/content%s/';\n" host port id js_cwd;
-         Printf.bprintf buf "\tsession['menu']     = %d;\n" menu_version;
-         Printf.bprintf buf "\tsession['content']  = %d;\n" content_version;
-         Printf.bprintf buf "\tsession['message']  = %d;\n" message_version;
-         Printf.bprintf buf "\tsession['buttons']  = %d;\n" buttons_version;
-         Printf.bprintf buf "\tsession['rule']     = %d;\n" rule_version;
-         Printf.bprintf buf "\tsession['io']       = %d;\n" io_version;
-         Printf.bprintf buf "\tsession['file']     = '%s';\n" js_edit;
-         Printf.bprintf buf "\tsession['editflag'] = %b;\n" edit_flag;
-         Printf.bprintf buf "\tsession['edit']     = %d;\n" edit_version;
-         Printf.bprintf buf "\tsession['external'] = %b;\n" edit_external;
-         Printf.bprintf buf "\tsession['id']       = %d;\n" id
+         Printf.bprintf buf "\tsession['cwd']          = '%s';\n" js_cwd;
+         Printf.bprintf buf "\tsession['location']     = 'https://%s:%d/session/%d/content%s/';\n" host port id js_cwd;
+         Printf.bprintf buf "\tsession['menu']         = %d;\n" menu_version;
+         Printf.bprintf buf "\tsession['content']      = %d;\n" content_version;
+         Printf.bprintf buf "\tsession['message']      = %d;\n" message_version;
+         Printf.bprintf buf "\tsession['buttons']      = %d;\n" buttons_version;
+         Printf.bprintf buf "\tsession['rule']         = %d;\n" rule_version;
+         Printf.bprintf buf "\tsession['io']           = %d;\n" io_version;
+         Printf.bprintf buf "\tsession['file']         = '%s';\n" js_edit;
+         Printf.bprintf buf "\tsession['editflag']     = %b;\n" edit_flag;
+         Printf.bprintf buf "\tsession['edit']         = %d;\n" edit_version;
+         Printf.bprintf buf "\tsession['external']     = %b;\n" edit_external;
+         Printf.bprintf buf "\tsession['id']           = %d;\n" id
 
    (*
     * Print the history.
@@ -923,13 +939,16 @@ struct
     *)
    let print_internal_edit_page server state session filename outx =
       let filename = filename_of_proxyedit filename in
+      let info = get_edit_info filename in
+      eprintf "Editing file: %s: %s@." filename info.edit_rootname;
       let table = table_of_state state in
       let table = BrowserTable.add_string table title_sym "Edit File" in
       let table = BrowserTable.add_string table file_sym filename in
       let table = BrowserTable.add_string table basename_sym (Filename.basename filename) in
-      let table = BrowserTable.add_file   table content_sym filename in
+      let table = BrowserTable.add_file   table content_sym info.edit_rootname in
       let table = BrowserTable.add_string table response_sym state.state_response in
       let table = BrowserTable.add_fun    table session_sym (print_session server state session) in
+      let table = BrowserTable.add_fun    table editinfo_sym (print_edit_info info) in
          print_translated_file_to_http outx table "edit.html"
 
    let print_external_edit_page server state session filename outx =
@@ -1236,7 +1255,7 @@ struct
          eprintf "Put: %s@." uri;
       match decode_uri state uri with
          FileURI filename ->
-            if save_root_file filename body then
+            if save_file filename 0 body then
                print_edit_done_page outx state
             else
                print_error_page outx NotFoundCode
@@ -1304,8 +1323,28 @@ struct
                   synchronize_pid pid (fun session ->
                         match content with
                            Some content ->
+                              let point =
+                                 try int_of_string (List.assoc "point" body) with
+                                    Failure _
+                                  | Not_found ->
+                                    0
+                              in
+                              let action =
+                                 let code =
+                                    try List.assoc "type" body with
+                                       Not_found ->
+                                          "save"
+                                 in
+                                    match code with
+                                       "save" ->
+                                          save_file
+                                     | "cancel" ->
+                                          cancel_file
+                                     | _ ->
+                                          backup_file
+                              in
                               let filename = filename_of_proxyedit filename in
-                                 if save_root_file filename content then
+                                 if action filename point content then
                                     print_redisplay_page edit_uri server state session outx
                                  else
                                     print_error_page outx NotFoundCode

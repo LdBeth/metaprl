@@ -35,6 +35,7 @@ open Lm_rformat_html
 open Refiner.Refiner.Term
 
 open Shell_util
+open Session_sig
 
 (*
  * The output goes into the "current" buffer.
@@ -81,6 +82,12 @@ val synchronize : ('a -> 'b) -> 'a -> 'b
  * window.
  *)
 val add_command : Browser_syscall.t -> unit
+
+(*
+ * Complete edit operations.
+ *)
+val add_edit_point  : string -> int -> unit
+val get_edit_point  : string -> int
 
 (*
  * -*-

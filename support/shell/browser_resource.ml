@@ -34,6 +34,7 @@ open Refiner.Refiner.RefineError
 open Mp_resource
 
 open Browser_state
+open Browser_edit
 
 open Shell_sig
 
@@ -131,19 +132,6 @@ let int_of_pid debug pid =
 
 let always_enabled () =
    true
-
-(************************************************************************
- * Proxyedit names.
- *)
-
-let proxyedit_of_filename name =
-   name ^ "/" ^ "info.prl"
-
-let filename_of_proxyedit name =
-   if Filename.basename name = "info.prl" then
-      Filename.dirname name
-   else
-      name
 
 (************************************************************************
  * Implementation.
@@ -334,7 +322,7 @@ let add_history info lines =
                List.fold_left (fun items s ->
                      let item =
                         { command_label   = s;
-                          command_value   = sprintf "Prompt('%s')" (Lm_string_util.js_escaped s);
+                          command_value   = sprintf "Prompt('%s')" s;
                           command_enabled = always_enabled
                         }
                      in

@@ -57,13 +57,13 @@ val content_sym     : symbol
 val basename_sym    : symbol
 val command_sym     : symbol
 val version_sym     : symbol
+val editinfo_sym    : symbol
 
 (*
  * Get files.
  *)
 val string_of_lib_file               : string -> string
 val string_of_root_file              : string -> string
-val save_root_file                   : string -> string -> bool
 
 (*
  * Translate a file.

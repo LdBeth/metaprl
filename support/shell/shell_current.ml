@@ -158,12 +158,8 @@ let linetable_of_strings strings =
  *)
 let strings_of_file_info queue =
    let strings =
-      LineTable.fold (fun strings dir info ->
-            let { file_point = point;
-                  file_modified = modified
-                } = info
-            in
-               Printf.sprintf "%s#%d#%b" dir point modified :: strings) [] queue
+      LineTable.fold (fun strings dir point ->
+            Printf.sprintf "%s#%d" dir point :: strings) [] queue
    in
       List.rev strings
 
@@ -172,21 +168,21 @@ let strings_of_file_info queue =
  *)
 let file_info_of_strings strings =
    List.fold_left (fun table line ->
-         let dir, point, modified =
+         let dir, point =
             match Lm_string_util.split "#" line with
-               [dir; point; modified] ->
-                  dir, int_of_string point, bool_of_string modified
-             | dir :: _ ->
-                  dir, 0, false
+               dir :: point :: _ ->
+                  let point =
+                     try int_of_string point with
+                        Failure _ ->
+                           0
+                  in
+                     dir, point
+             | [dir] ->
+                  dir, 0
              | [] ->
-                  line, 0, false
+                  line, 0
          in
-         let info =
-            { file_point = point;
-              file_modified = modified
-            }
-         in
-            LineTable.add table dir info) LineTable.empty strings
+            LineTable.add table dir point) LineTable.empty strings
 
 (************************************************************************
  * Current shell.

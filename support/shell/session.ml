@@ -107,12 +107,16 @@ let add_prompt str =
 (*
  * Add a file.
  *)
-let rec resolve_symlink filename =
-   let stat = Unix.lstat filename in
+let absname name =
+   Filename.concat (Setup.root ()) name
+
+let rec resolve_symlink name =
+   let absname = absname name in
+   let stat = Unix.lstat absname in
       if stat.Unix.st_kind = Unix.S_LNK then
-         resolve_symlink (Unix.readlink filename)
+         resolve_symlink (Unix.readlink absname)
       else if stat.Unix.st_kind = Unix.S_REG then
-         filename
+         absname
       else
          raise Not_found
 
@@ -125,7 +129,7 @@ let resolve_symlink filename =
 let strip_root filename =
    match filename with
       Some filename ->
-          let root = (Setup.root()) ^ "/" in
+          let root = Setup.root () ^ "/" in
           let root_len = String.length root in
           let file_len = String.length filename in
           let convert c =
@@ -151,13 +155,11 @@ let strip_root filename =
     | None ->
          None
 
+let add_edit_point_internal shared name point =
+   shared.shared_files <- LineTable.add shared.shared_files name point
+
 let add_edit_internal shared name =
-   let info =
-      { file_point = 0;
-        file_modified = false
-      }
-   in
-      shared.shared_files <- LineTable.add shared.shared_files name info
+   add_edit_point_internal shared name 0
 
 let add_filename_internal shared name =
    match name with
@@ -180,6 +182,10 @@ let add_file_internal shared file =
             add_filename_internal shared mli_name
     | None ->
          ()
+
+let add_edit_point name point =
+   State.write shared_entry (fun shared ->
+         add_edit_point_internal shared name point)
 
 let add_edit name =
    State.write shared_entry (fun shared ->
@@ -259,6 +265,15 @@ let get_files () =
                   file :: files) [] shared.shared_files
          in
             List.rev files)
+
+(*
+ * Get the info.
+ *)
+let get_edit_point name =
+   State.read shared_entry (fun shared ->
+         try LineTable.find shared.shared_files name with
+            Not_found ->
+               0)
 
 (*
  * Get the directories.
