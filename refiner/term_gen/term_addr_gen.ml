@@ -219,7 +219,7 @@ struct
                   let v, term, conts, subterms = dest_context t in
                   let slot = mk_var_term v in
                   let t = mk_context_term v slot conts subterms in
-                  let t, arg = replace_term FAIL f addr bvars term in
+                  let t, arg = replace_term FAIL f addr bvars t in
                   let v1, term1, conts, subterms = dest_context t in
                      if v1 = v && is_var_term term1 && dest_var term1 = v then
                         mk_context_term v term conts subterms, arg

@@ -585,7 +585,7 @@ struct
          else if i <= List.length hyps then
             List.nth hyps (pred i)
          else
-            REF_RAISE(RefineError ("rwtactic", StringIntError ("hyp number is out of range", i)))
+            REF_RAISE(RefineError ("rwtactic", StringIntError ("assum number is out of range", i)))
       in
       let t', just = rw sent t in
       let subgoal =
