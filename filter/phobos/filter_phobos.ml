@@ -30,10 +30,10 @@
  *
  * Author: Adam Granicz <granicz@cs.caltech.edu>
  *)
+
 open Mp_debug
-
+open Phobos_debug
 open Filter_prog
-
 open Phobos_compile
 
 (*
@@ -78,18 +78,6 @@ let exts_exp _ s =
       Simple_print.SimplePrint.string_of_term t
 
 let _ = Quotation.add "exts" (Quotation.ExStr exts_exp)
-
-let _ =
-   try
-      let s = Sys.getenv "DEBUG_PHOBOS" in
-         match s with
-            "off" | "no" | "0" | "-" ->
-               Phobos_state.debug_phobos := false
-          | _ ->
-               Phobos_state.debug_phobos := true
-   with
-      Not_found ->
-         ()
 
 (*
  * -*-

@@ -23,19 +23,31 @@
  *
  *)
 
+open Mp_debug
+
 open Phobos_type
 open Phobos_print
 open Phobos_parse_state
 
 (*
- * Basic debugging.
+ * Basic MetaPRL debugging.
+ *)
+let debug_phobos =
+   create_debug (**)
+      { debug_name = "phobos";
+        debug_description = "print Phobos debugging information";
+        debug_value = false
+      }
+
+(*
+ * Debugging shorthands.
  *)
 let debug_string s =
-   if !Phobos_state.debug_phobos then
+   if !debug_phobos then
       Format.print_string s
 
 let debug_int i =
-   if !Phobos_state.debug_phobos then
+   if !debug_phobos then
       Format.print_int i
 
 let rec debug_list f sep = function
@@ -52,7 +64,7 @@ let rec debug_list f sep = function
  * Miscellaneous.
  *)
 let debug_tokens s tokens =
-   if !Phobos_state.debug_phobos then
+   if !debug_phobos then
       begin
          Format.print_string s;
          List.iter (fun (symbol, matched_string, pos) ->
@@ -83,7 +95,7 @@ let debug_token_options options =
             debug_list (fun (s, _) -> debug_string s) ", " ids) " " options
 
 let debug_token_rules s token_rules =
-   if !Phobos_state.debug_phobos then
+   if !debug_phobos then
       begin
          Format.print_string s;
          List.iter (fun (_, ((id, _), token_options), _, rewrites) ->
@@ -97,7 +109,7 @@ let debug_token_rules s token_rules =
       end
 
 let debug_symbols s nonterminals terminals =
-   if !Phobos_state.debug_phobos then
+   if !debug_phobos then
       begin
          Format.print_string s;
          Format.print_string "\nTerminal symbols:\n";
@@ -108,7 +120,7 @@ let debug_symbols s nonterminals terminals =
       end
 
 let debug_regexps regexps =
-   if !Phobos_state.debug_phobos then
+   if !debug_phobos then
       begin
          Format.print_string "Recognizing the following tokens:\n";
          List.iter (fun (ignore, s, regexps) ->
@@ -124,7 +136,7 @@ let debug_regexps regexps =
       end
 
 let debug_pre_grammar pre_grammar =
-   if !Phobos_state.debug_phobos then
+   if !debug_phobos then
 	begin
          Format.print_string "Rewrite rules:\n";
          List.iter (fun ((sym, pos), (_, _, rewrites)) ->
@@ -135,14 +147,14 @@ let debug_pre_grammar pre_grammar =
 	end
 
 let debug_grammar s grammar =
-   if !Phobos_state.debug_phobos then
+   if !debug_phobos then
       begin
          Format.print_string s;
          print_grammar grammar
       end
 
 let debug_parser_sets s nullables first_set follow_set =
-   if !Phobos_state.debug_phobos then
+   if !debug_phobos then
       begin
          Format.print_string s;
          Format.print_string "\nNullables:";
@@ -154,7 +166,7 @@ let debug_parser_sets s nullables first_set follow_set =
       end
 
 let debug_symbol s symbol =
-   if !Phobos_state.debug_phobos then
+   if !debug_phobos then
       begin
          Format.print_string s;
          print_psymbol symbol;
@@ -162,7 +174,7 @@ let debug_symbol s symbol =
       end
 
 let debug_states s penv states accepts =
-   if !Phobos_state.debug_phobos then
+   if !debug_phobos then
       begin
          Format.print_string s;
          Format.print_string "States Length:";
@@ -175,7 +187,7 @@ let debug_states s penv states accepts =
       end
 
 let debug_ptable s penv ptable ptable_errors =
-   if !Phobos_state.debug_phobos then
+   if !debug_phobos then
       begin
          Format.print_string s;
          Format.print_string "\nErrors Length:";
@@ -188,6 +200,6 @@ let debug_ptable s penv ptable ptable_errors =
       end
 
 let debug_ploc_list penv ptable ptable_errors =
-   if !Phobos_state.debug_phobos then
+   if !debug_phobos then
       print_ploc_list penv ptable ptable_errors
 

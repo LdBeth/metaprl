@@ -22,12 +22,13 @@
  * Email: granicz@cs.caltech.edu
  *)
 
+open Phobos_debug
+
 open Phobos_type
 open Phobos_constants
 open Phobos_parse_state
 open Phobos_exn
 open Phobos_print
-open Phobos_debug
 open Phobos_util
 open Phobos_rewrite
 open Phobos_marshal
@@ -260,7 +261,7 @@ let include_grammars paths includes =
               grammar_inline_forms     = gst'.grammar_inline_forms @ gst.grammar_inline_forms
             }) dummy_gst includes
       in
-         if !Phobos_state.debug_phobos then begin
+         if !debug_phobos then begin
             Format.print_string "After include_grammars: terminals = \n";
             print_string_set gst.grammar_terminals;
             Format.print_string "After include_grammars: nonterminals = \n";

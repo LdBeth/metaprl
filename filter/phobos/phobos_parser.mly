@@ -23,7 +23,7 @@
  */
 
 %{
-(*open Sym*)
+open Phobos_debug
 open Opname
 open Mp_num
 open Refiner.Refiner.TermType
@@ -36,7 +36,6 @@ open Phobos_exn
 open Phobos_util
 open Phobos_rewrite
 open Phobos_builtin
-open Phobos_debug
 
 (*
  * This is the name of the module.
@@ -172,10 +171,10 @@ let insert_rewrite_if_needed id_list = function
 
 let process_includes paths includes =
    List.iter (fun s ->
-      if !Phobos_state.debug_phobos then
+      if !debug_phobos then
          Format.print_string (Printf.sprintf "Loading %s..." s);
       let gst, _, _, _ = load_grammar (find_file paths s) in
-      if !Phobos_state.debug_phobos then
+      if !debug_phobos then
          Format.print_string "done\n";
       let termsets = gst.grammar_termsets in
          List.iter (fun term_option_list ->
@@ -183,7 +182,7 @@ let process_includes paths includes =
                match term_option with
                   Term_extend (mdl, decls) ->
                      new_terms mdl decls) term_option_list) termsets) includes;
-      if !Phobos_state.debug_phobos then
+      if !debug_phobos then
          Format.print_string "\nDone processing includes\n"
 
 let include_built_in (s, pos) =
@@ -199,7 +198,7 @@ let include_built_in (s, pos) =
          "%s: No such module" s))
    else
       List.iter (fun term ->
-         if !Phobos_state.debug_phobos then
+         if !debug_phobos then
             print_string (Printf.sprintf "Built-in %s.%s\n" s term);
          term_names := StringTable.add !term_names term (s, -1)) new_terms
 

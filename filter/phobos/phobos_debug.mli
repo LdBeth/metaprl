@@ -1,3 +1,4 @@
+val debug_phobos : bool ref
 val debug_string : string -> unit
 val debug_int : int -> unit
 val debug_list : ('a -> unit) -> string -> 'a list -> unit

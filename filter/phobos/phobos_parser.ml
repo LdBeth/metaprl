@@ -46,7 +46,7 @@ type token =
 
 open Parsing
 # 26 "phobos_parser.mly"
-(*open Sym*)
+open Phobos_debug
 open Opname
 open Mp_num
 open Refiner.Refiner.TermType
@@ -59,7 +59,6 @@ open Phobos_exn
 open Phobos_util
 open Phobos_rewrite
 open Phobos_builtin
-open Phobos_debug
 
 (*
  * This is the name of the module.
@@ -195,10 +194,10 @@ let insert_rewrite_if_needed id_list = function
 
 let process_includes paths includes =
    List.iter (fun s ->
-      if !Phobos_state.debug_phobos then
+      if !debug_phobos then
          Format.print_string (Printf.sprintf "Loading %s..." s);
       let gst, _, _, _ = load_grammar (find_file paths s) in
-      if !Phobos_state.debug_phobos then
+      if !debug_phobos then
          Format.print_string "done\n";
       let termsets = gst.grammar_termsets in
          List.iter (fun term_option_list ->
@@ -206,7 +205,7 @@ let process_includes paths includes =
                match term_option with
                   Term_extend (mdl, decls) ->
                      new_terms mdl decls) term_option_list) termsets) includes;
-      if !Phobos_state.debug_phobos then
+      if !debug_phobos then
          Format.print_string "\nDone processing includes\n"
 
 let include_built_in (s, pos) =
@@ -222,11 +221,11 @@ let include_built_in (s, pos) =
          "%s: No such module" s))
    else
       List.iter (fun term ->
-         if !Phobos_state.debug_phobos then
+         if !debug_phobos then
             print_string (Printf.sprintf "Built-in %s.%s\n" s term);
          term_names := StringTable.add !term_names term (s, -1)) new_terms
 
-(* Line 184, file phobos_parser.ml *)
+(* Line 183, file phobos_parser.ml *)
 let yytransl_const = [|
   257 (* TokEof *);
     0|]
@@ -625,7 +624,7 @@ let yyact = [|
     let _8 = (peek_val parser_env 2 : 'opt_rewrites_section) in
     let _9 = (peek_val parser_env 1 : 'opt_inline_forms) in
     Obj.repr((
-# 272 "phobos_parser.mly"
+# 271 "phobos_parser.mly"
                                 { phobos_module_name = _1;
                                   phobos_includes = _2;
                                   phobos_termsets = _3;
@@ -641,16 +640,16 @@ let yyact = [|
     let _1 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _2 = (peek_val parser_env 0 : 'identifier) in
     Obj.repr((
-# 285 "phobos_parser.mly"
+# 284 "phobos_parser.mly"
                                 module_name := fst _2; fst _2 ) : 'module_name))
 ; (fun parser_env ->
     Obj.repr((
-# 291 "phobos_parser.mly"
+# 290 "phobos_parser.mly"
                                 [] ) : 'includes))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'include_list_rev) in
     Obj.repr((
-# 292 "phobos_parser.mly"
+# 291 "phobos_parser.mly"
                                 let mdl_names = List.flatten (List.rev _1) in
                                    process_includes !Phobos_state.phobos_paths mdl_names;
                                    mdl_names
@@ -659,82 +658,82 @@ let yyact = [|
     let _1 = (peek_val parser_env 1 : 'include_list_rev) in
     let _2 = (peek_val parser_env 0 : 'include_item) in
     Obj.repr((
-# 299 "phobos_parser.mly"
+# 298 "phobos_parser.mly"
                                 _2 :: _1 ) : 'include_list_rev))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'include_item) in
     Obj.repr((
-# 300 "phobos_parser.mly"
+# 299 "phobos_parser.mly"
                                 [_1] ) : 'include_list_rev))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _2 = (peek_val parser_env 0 : 'string_list) in
     Obj.repr((
-# 303 "phobos_parser.mly"
+# 302 "phobos_parser.mly"
                                 _2 ) : 'include_item))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _2 = (peek_val parser_env 0 : 'identifier) in
     Obj.repr((
-# 304 "phobos_parser.mly"
+# 303 "phobos_parser.mly"
                                 include_built_in _2; [] ) : 'include_item))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'string_list_rev) in
     Obj.repr((
-# 307 "phobos_parser.mly"
+# 306 "phobos_parser.mly"
                                 List.rev _1 ) : 'string_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : 'string_list) in
     let _2 = (peek_val parser_env 0 : string * Phobos_type.pos) in
     Obj.repr((
-# 310 "phobos_parser.mly"
+# 309 "phobos_parser.mly"
                                 (fst _2) :: _1 ) : 'string_list_rev))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : string * Phobos_type.pos) in
     Obj.repr((
-# 311 "phobos_parser.mly"
+# 310 "phobos_parser.mly"
                                 [fst _1] ) : 'string_list_rev))
 ; (fun parser_env ->
     Obj.repr((
-# 317 "phobos_parser.mly"
+# 316 "phobos_parser.mly"
                                 [] ) : 'term_sections))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'term_section_list) in
     Obj.repr((
-# 318 "phobos_parser.mly"
+# 317 "phobos_parser.mly"
                                 List.rev _1 ) : 'term_sections))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'term_section) in
     Obj.repr((
-# 321 "phobos_parser.mly"
+# 320 "phobos_parser.mly"
                                 [_1] ) : 'term_section_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : 'term_section_list) in
     let _2 = (peek_val parser_env 0 : 'term_section) in
     Obj.repr((
-# 323 "phobos_parser.mly"
+# 322 "phobos_parser.mly"
                                 _2 :: _1 ) : 'term_section_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _2 = (peek_val parser_env 0 : 'term_options) in
     Obj.repr((
-# 326 "phobos_parser.mly"
+# 325 "phobos_parser.mly"
                                 _2 ) : 'term_section))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'term_option_list) in
     Obj.repr((
-# 329 "phobos_parser.mly"
+# 328 "phobos_parser.mly"
                                 List.rev _1 ) : 'term_options))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'term_option) in
     Obj.repr((
-# 332 "phobos_parser.mly"
+# 331 "phobos_parser.mly"
                                 [_1] ) : 'term_option_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : 'term_option_list) in
     let _2 = (peek_val parser_env 0 : 'term_option) in
     Obj.repr((
-# 334 "phobos_parser.mly"
+# 333 "phobos_parser.mly"
                                 _2 :: _1 ) : 'term_option_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 4 : Phobos_type.pos) in
@@ -743,34 +742,34 @@ let yyact = [|
     let _4 = (peek_val parser_env 1 : 'opt_term_declarations) in
     let _5 = (peek_val parser_env 0 : Phobos_type.pos) in
     Obj.repr((
-# 338 "phobos_parser.mly"
+# 337 "phobos_parser.mly"
                                 new_terms (fst _2) _4;
                                 Term_extend (fst _2, _4)
                               ) : 'term_option))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : string * Phobos_type.pos) in
     Obj.repr((
-# 341 "phobos_parser.mly"
+# 340 "phobos_parser.mly"
                                 raise (ParseError (snd _1, string_add ["Invalid option \""; fst _1; "\""])) ) : 'term_option))
 ; (fun parser_env ->
     Obj.repr((
-# 347 "phobos_parser.mly"
+# 346 "phobos_parser.mly"
                                 [] ) : 'opt_preamble))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'preamble) in
     Obj.repr((
-# 348 "phobos_parser.mly"
+# 347 "phobos_parser.mly"
                                 _1 ) : 'opt_preamble))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 2 : Phobos_type.pos) in
     let _2 = (peek_val parser_env 1 : 'new_rewrites) in
     let _3 = (peek_val parser_env 0 : Phobos_type.pos) in
     Obj.repr((
-# 352 "phobos_parser.mly"
+# 351 "phobos_parser.mly"
                                 _2 ) : 'preamble))
 ; (fun parser_env ->
     Obj.repr((
-# 358 "phobos_parser.mly"
+# 357 "phobos_parser.mly"
                                 [], [] ) : 'lexer))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 4 : Phobos_type.pos) in
@@ -779,58 +778,58 @@ let yyact = [|
     let _4 = (peek_val parser_env 1 : 'tokens) in
     let _5 = (peek_val parser_env 0 : Phobos_type.pos) in
     Obj.repr((
-# 360 "phobos_parser.mly"
+# 359 "phobos_parser.mly"
                                 _4, _2 ) : 'lexer))
 ; (fun parser_env ->
     Obj.repr((
-# 363 "phobos_parser.mly"
+# 362 "phobos_parser.mly"
                                 [] ) : 'opt_lexer_options))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'lexer_option_list) in
     Obj.repr((
-# 364 "phobos_parser.mly"
+# 363 "phobos_parser.mly"
                                 List.rev _1 ) : 'opt_lexer_options))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : 'lexer_option_list) in
     let _2 = (peek_val parser_env 0 : 'lexer_option) in
     Obj.repr((
-# 368 "phobos_parser.mly"
+# 367 "phobos_parser.mly"
                                 _2 :: _1 ) : 'lexer_option_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'lexer_option) in
     Obj.repr((
-# 369 "phobos_parser.mly"
+# 368 "phobos_parser.mly"
                                 [_1] ) : 'lexer_option_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : Phobos_type.pos) in
     Obj.repr((
-# 372 "phobos_parser.mly"
+# 371 "phobos_parser.mly"
                                 Lo_longest ) : 'lexer_option))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : Phobos_type.pos) in
     Obj.repr((
-# 373 "phobos_parser.mly"
+# 372 "phobos_parser.mly"
                                 Lo_first ) : 'lexer_option))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : string * Phobos_type.pos) in
     Obj.repr((
-# 374 "phobos_parser.mly"
+# 373 "phobos_parser.mly"
                                 raise (ParseError (snd _1, string_add ["Invalid option \""; fst _1; "\""])) ) : 'lexer_option))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'token_list) in
     Obj.repr((
-# 377 "phobos_parser.mly"
+# 376 "phobos_parser.mly"
                                 List.rev _1 ) : 'tokens))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : 'token_list) in
     let _2 = (peek_val parser_env 0 : 'token) in
     Obj.repr((
-# 380 "phobos_parser.mly"
+# 379 "phobos_parser.mly"
                                 _2 :: _1 ) : 'token_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'token) in
     Obj.repr((
-# 381 "phobos_parser.mly"
+# 380 "phobos_parser.mly"
                                 [_1] ) : 'token_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 3 : 'token_decl) in
@@ -838,7 +837,7 @@ let yyact = [|
     let _3 = (peek_val parser_env 1 : string * Phobos_type.pos) in
     let _4 = (peek_val parser_env 0 : 'token_body) in
     Obj.repr((
-# 385 "phobos_parser.mly"
+# 384 "phobos_parser.mly"
                                 false, _1, fst _3, fst _4 ) : 'token))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 4 : Phobos_type.pos) in
@@ -847,158 +846,158 @@ let yyact = [|
     let _4 = (peek_val parser_env 1 : string * Phobos_type.pos) in
     let _5 = (peek_val parser_env 0 : 'token_body) in
     Obj.repr((
-# 387 "phobos_parser.mly"
+# 386 "phobos_parser.mly"
                                 true, _2, fst _4, fst _5 ) : 'token))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : string * Phobos_type.pos) in
     let _2 = (peek_val parser_env 0 : 'opt_token_options) in
     Obj.repr((
-# 390 "phobos_parser.mly"
+# 389 "phobos_parser.mly"
                                 _1, _2 ) : 'token_decl))
 ; (fun parser_env ->
     Obj.repr((
-# 393 "phobos_parser.mly"
+# 392 "phobos_parser.mly"
                                 [] ) : 'opt_token_options))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'token_option_list) in
     Obj.repr((
-# 394 "phobos_parser.mly"
+# 393 "phobos_parser.mly"
                                 _1 ) : 'opt_token_options))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'token_options_rev) in
     Obj.repr((
-# 397 "phobos_parser.mly"
+# 396 "phobos_parser.mly"
                                 List.rev _1 ) : 'token_option_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'token_option) in
     Obj.repr((
-# 400 "phobos_parser.mly"
+# 399 "phobos_parser.mly"
                                 [_1] ) : 'token_options_rev))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : 'token_options_rev) in
     let _2 = (peek_val parser_env 0 : 'token_option) in
     Obj.repr((
-# 402 "phobos_parser.mly"
+# 401 "phobos_parser.mly"
                                 _2 :: _1 ) : 'token_options_rev))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _2 = (peek_val parser_env 0 : 'identifiers_with_comma) in
     Obj.repr((
-# 406 "phobos_parser.mly"
+# 405 "phobos_parser.mly"
                                 Token_extend (Some _2) ) : 'token_option))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : Phobos_type.pos) in
     Obj.repr((
-# 407 "phobos_parser.mly"
+# 406 "phobos_parser.mly"
                                 Token_extend None ) : 'token_option))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _2 = (peek_val parser_env 0 : 'strings_with_comma) in
     Obj.repr((
-# 409 "phobos_parser.mly"
+# 408 "phobos_parser.mly"
                                 Token_remove _2 ) : 'token_option))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _2 = (peek_val parser_env 0 : 'identifiers_with_comma) in
     Obj.repr((
-# 411 "phobos_parser.mly"
+# 410 "phobos_parser.mly"
                                 Token_override _2 ) : 'token_option))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'strings_rev_with_comma) in
     Obj.repr((
-# 414 "phobos_parser.mly"
+# 413 "phobos_parser.mly"
                                 List.rev _1 ) : 'strings_with_comma))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : string * Phobos_type.pos) in
     Obj.repr((
-# 417 "phobos_parser.mly"
+# 416 "phobos_parser.mly"
                                 [_1] ) : 'strings_rev_with_comma))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 2 : 'strings_rev_with_comma) in
     let _2 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _3 = (peek_val parser_env 0 : string * Phobos_type.pos) in
     Obj.repr((
-# 419 "phobos_parser.mly"
+# 418 "phobos_parser.mly"
                                 _3 :: _1 ) : 'strings_rev_with_comma))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'rev_identifier_list) in
     Obj.repr((
-# 422 "phobos_parser.mly"
+# 421 "phobos_parser.mly"
                                 List.rev _1 ) : 'identifiers))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'identifier) in
     Obj.repr((
-# 425 "phobos_parser.mly"
+# 424 "phobos_parser.mly"
                                 [_1] ) : 'rev_identifier_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : 'rev_identifier_list) in
     let _2 = (peek_val parser_env 0 : 'identifier) in
     Obj.repr((
-# 427 "phobos_parser.mly"
+# 426 "phobos_parser.mly"
                                 _2 :: _1 ) : 'rev_identifier_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'rev_identifier_list_with_comma) in
     Obj.repr((
-# 431 "phobos_parser.mly"
+# 430 "phobos_parser.mly"
                                 List.rev _1 ) : 'identifiers_with_comma))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'identifier) in
     Obj.repr((
-# 434 "phobos_parser.mly"
+# 433 "phobos_parser.mly"
                                 [_1] ) : 'rev_identifier_list_with_comma))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 2 : 'rev_identifier_list_with_comma) in
     let _2 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _3 = (peek_val parser_env 0 : 'identifier) in
     Obj.repr((
-# 436 "phobos_parser.mly"
+# 435 "phobos_parser.mly"
                                 _3 :: _1 ) : 'rev_identifier_list_with_comma))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : string * Phobos_type.pos) in
     Obj.repr((
-# 439 "phobos_parser.mly"
+# 438 "phobos_parser.mly"
                                 _1 ) : 'identifier))
 ; (fun parser_env ->
     Obj.repr((
-# 445 "phobos_parser.mly"
+# 444 "phobos_parser.mly"
                                 [] ) : 'opt_assocs))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'assoc_list) in
     Obj.repr((
-# 446 "phobos_parser.mly"
+# 445 "phobos_parser.mly"
                                 List.rev _1 ) : 'opt_assocs))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : 'assoc_list) in
     let _2 = (peek_val parser_env 0 : 'assoc) in
     Obj.repr((
-# 449 "phobos_parser.mly"
+# 448 "phobos_parser.mly"
                                 _2 :: _1 ) : 'assoc_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'assoc) in
     Obj.repr((
-# 450 "phobos_parser.mly"
+# 449 "phobos_parser.mly"
                                 [_1] ) : 'assoc_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _2 = (peek_val parser_env 0 : 'identifiers) in
     Obj.repr((
-# 453 "phobos_parser.mly"
+# 452 "phobos_parser.mly"
                                 Dir_nonassoc _2 ) : 'assoc))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _2 = (peek_val parser_env 0 : 'identifiers) in
     Obj.repr((
-# 454 "phobos_parser.mly"
+# 453 "phobos_parser.mly"
                                 Dir_leftassoc _2 ) : 'assoc))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _2 = (peek_val parser_env 0 : 'identifiers) in
     Obj.repr((
-# 455 "phobos_parser.mly"
+# 454 "phobos_parser.mly"
                                 Dir_rightassoc _2 ) : 'assoc))
 ; (fun parser_env ->
     Obj.repr((
-# 461 "phobos_parser.mly"
+# 460 "phobos_parser.mly"
                                 [], [] ) : Phobos_type.pre_rule list * Phobos_type.goption list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 4 : Phobos_type.pos) in
@@ -1007,106 +1006,106 @@ let yyact = [|
     let _4 = (peek_val parser_env 1 : Phobos_type.pre_rule list) in
     let _5 = (peek_val parser_env 0 : Phobos_type.pos) in
     Obj.repr((
-# 463 "phobos_parser.mly"
+# 462 "phobos_parser.mly"
                                 _4, _2 ) : Phobos_type.pre_rule list * Phobos_type.goption list))
 ; (fun parser_env ->
     Obj.repr((
-# 466 "phobos_parser.mly"
+# 465 "phobos_parser.mly"
                                 [] ) : 'opt_grammar_options))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'grammar_option_list) in
     Obj.repr((
-# 467 "phobos_parser.mly"
+# 466 "phobos_parser.mly"
                                 List.rev _1 ) : 'opt_grammar_options))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : 'grammar_option_list) in
     let _2 = (peek_val parser_env 0 : 'grammar_option) in
     Obj.repr((
-# 471 "phobos_parser.mly"
+# 470 "phobos_parser.mly"
                                 _2 :: _1 ) : 'grammar_option_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'grammar_option) in
     Obj.repr((
-# 472 "phobos_parser.mly"
+# 471 "phobos_parser.mly"
                                 [_1] ) : 'grammar_option_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _2 = (peek_val parser_env 0 : 'identifier) in
     Obj.repr((
-# 475 "phobos_parser.mly"
+# 474 "phobos_parser.mly"
                                 Go_start (fst _2) ) : 'grammar_option))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : Phobos_type.pre_rule list) in
     Obj.repr((
-# 478 "phobos_parser.mly"
+# 477 "phobos_parser.mly"
                                 _1 ) : Phobos_type.pre_rule list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : Phobos_type.pre_rule list) in
     let _2 = (peek_val parser_env 0 : Phobos_type.pre_rule list) in
     Obj.repr((
-# 481 "phobos_parser.mly"
+# 480 "phobos_parser.mly"
                                 _1 @ _2 ) : Phobos_type.pre_rule list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : Phobos_type.pre_rule list) in
     Obj.repr((
-# 482 "phobos_parser.mly"
+# 481 "phobos_parser.mly"
                                 _1 ) : Phobos_type.pre_rule list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 2 : string * Phobos_type.pos) in
     let _2 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _3 = (peek_val parser_env 0 : 'productions) in
     Obj.repr((
-# 486 "phobos_parser.mly"
+# 485 "phobos_parser.mly"
                                 make_rules _1 _3 ) : Phobos_type.pre_rule list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : 'prod_body) in
     let _2 = (peek_val parser_env 0 : 'prods) in
     Obj.repr((
-# 489 "phobos_parser.mly"
+# 488 "phobos_parser.mly"
                                 _1 :: _2 ) : 'productions))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'prod_body) in
     Obj.repr((
-# 490 "phobos_parser.mly"
+# 489 "phobos_parser.mly"
                                 [_1] ) : 'productions))
 ; (fun parser_env ->
     Obj.repr((
-# 493 "phobos_parser.mly"
+# 492 "phobos_parser.mly"
                                 None ) : 'opt_prec))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _2 = (peek_val parser_env 0 : string * Phobos_type.pos) in
     Obj.repr((
-# 494 "phobos_parser.mly"
+# 493 "phobos_parser.mly"
                                 Some _2 ) : 'opt_prec))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'prod_list) in
     Obj.repr((
-# 497 "phobos_parser.mly"
+# 496 "phobos_parser.mly"
                                 List.rev _1 ) : 'prods))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : 'prod_list) in
     let _2 = (peek_val parser_env 0 : 'prod_list_prim) in
     Obj.repr((
-# 500 "phobos_parser.mly"
+# 499 "phobos_parser.mly"
                                 _2 :: _1 ) : 'prod_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'prod_list_prim) in
     Obj.repr((
-# 501 "phobos_parser.mly"
+# 500 "phobos_parser.mly"
                                 [_1] ) : 'prod_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _2 = (peek_val parser_env 0 : 'prod_body) in
     Obj.repr((
-# 504 "phobos_parser.mly"
+# 503 "phobos_parser.mly"
                                 _2 ) : 'prod_list_prim))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 2 : 'alt_prod_elements) in
     let _2 = (peek_val parser_env 1 : 'opt_prec) in
     let _3 = (peek_val parser_env 0 : Phobos_type.mp_pre_rewrite list * Phobos_type.pos) in
     Obj.repr((
-# 508 "phobos_parser.mly"
+# 507 "phobos_parser.mly"
                                 let ids = List.map fst _1 in
                                    ids, _2, insert_rewrite_if_needed ids (fst _3)
                               ) : 'prod_body))
@@ -1116,23 +1115,23 @@ let yyact = [|
     let _3 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _4 = (peek_val parser_env 0 : Phobos_type.mp_pre_term) in
     Obj.repr((
-# 512 "phobos_parser.mly"
+# 511 "phobos_parser.mly"
                                 production_of_alt_syntax _1 _2 _4 ) : 'prod_body))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'alt_prod_element_list) in
     Obj.repr((
-# 515 "phobos_parser.mly"
+# 514 "phobos_parser.mly"
                                 List.rev _1 ) : 'alt_prod_elements))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'alt_prod_element) in
     Obj.repr((
-# 518 "phobos_parser.mly"
+# 517 "phobos_parser.mly"
                                 [_1] ) : 'alt_prod_element_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : 'alt_prod_element_list) in
     let _2 = (peek_val parser_env 0 : 'alt_prod_element) in
     Obj.repr((
-# 520 "phobos_parser.mly"
+# 519 "phobos_parser.mly"
                                 _2 :: _1 ) : 'alt_prod_element_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 3 : 'identifier) in
@@ -1140,162 +1139,162 @@ let yyact = [|
     let _3 = (peek_val parser_env 1 : Phobos_type.mp_pre_term) in
     let _4 = (peek_val parser_env 0 : Phobos_type.pos) in
     Obj.repr((
-# 524 "phobos_parser.mly"
+# 523 "phobos_parser.mly"
                                 _1, Some _3 ) : 'alt_prod_element))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'identifier) in
     Obj.repr((
-# 525 "phobos_parser.mly"
+# 524 "phobos_parser.mly"
                                 _1, None ) : 'alt_prod_element))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 2 : Phobos_type.pos) in
     let _2 = (peek_val parser_env 1 : 'token_term_matches) in
     let _3 = (peek_val parser_env 0 : Phobos_type.pos) in
     Obj.repr((
-# 529 "phobos_parser.mly"
+# 528 "phobos_parser.mly"
                                 _2, union_pos _1 _3 ) : 'token_body))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 2 : Phobos_type.pos) in
     let _2 = (peek_val parser_env 1 : 'opt_term_matches) in
     let _3 = (peek_val parser_env 0 : Phobos_type.pos) in
     Obj.repr((
-# 533 "phobos_parser.mly"
+# 532 "phobos_parser.mly"
                                 _2, union_pos _1 _3 ) : Phobos_type.mp_pre_rewrite list * Phobos_type.pos))
 ; (fun parser_env ->
     Obj.repr((
-# 536 "phobos_parser.mly"
+# 535 "phobos_parser.mly"
                                 [] ) : 'new_rewrites))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'new_rewrite_list) in
     Obj.repr((
-# 537 "phobos_parser.mly"
+# 536 "phobos_parser.mly"
                                 List.rev _1 ) : 'new_rewrites))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : 'new_rewrite_list) in
     let _2 = (peek_val parser_env 0 : 'new_rewrite) in
     Obj.repr((
-# 541 "phobos_parser.mly"
+# 540 "phobos_parser.mly"
                                 _2 :: _1 ) : 'new_rewrite_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'new_rewrite) in
     Obj.repr((
-# 542 "phobos_parser.mly"
+# 541 "phobos_parser.mly"
                                 [_1] ) : 'new_rewrite_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 2 : 'from) in
     let _2 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _3 = (peek_val parser_env 0 : Phobos_type.mp_pre_term) in
     Obj.repr((
-# 545 "phobos_parser.mly"
+# 544 "phobos_parser.mly"
                                 _1, _3 ) : 'new_rewrite))
 ; (fun parser_env ->
     Obj.repr((
-# 548 "phobos_parser.mly"
+# 547 "phobos_parser.mly"
                                 let term = pho_make_token_term () in
                                    [([(term, bogus_pos)], (term, bogus_pos))]
                               ) : 'token_term_matches))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : Phobos_type.mp_pre_rewrite list) in
     Obj.repr((
-# 551 "phobos_parser.mly"
+# 550 "phobos_parser.mly"
                                 List.rev _1 ) : 'token_term_matches))
 ; (fun parser_env ->
     Obj.repr((
-# 554 "phobos_parser.mly"
+# 553 "phobos_parser.mly"
                                 [] ) : 'opt_term_matches))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : Phobos_type.mp_pre_rewrite list) in
     Obj.repr((
-# 555 "phobos_parser.mly"
+# 554 "phobos_parser.mly"
                                 List.rev _1 ) : 'opt_term_matches))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 2 : Phobos_type.mp_pre_rewrite list) in
     let _2 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _3 = (peek_val parser_env 0 : 'term_match) in
     Obj.repr((
-# 559 "phobos_parser.mly"
+# 558 "phobos_parser.mly"
                                 _3 :: _1 ) : Phobos_type.mp_pre_rewrite list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'term_match) in
     Obj.repr((
-# 560 "phobos_parser.mly"
+# 559 "phobos_parser.mly"
                                 [_1] ) : Phobos_type.mp_pre_rewrite list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 2 : 'froms) in
     let _2 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _3 = (peek_val parser_env 0 : Phobos_type.mp_pre_term) in
     Obj.repr((
-# 563 "phobos_parser.mly"
+# 562 "phobos_parser.mly"
                                 _1, _3 ) : 'term_match))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'from_list) in
     Obj.repr((
-# 566 "phobos_parser.mly"
+# 565 "phobos_parser.mly"
                                 List.rev _1 ) : 'froms))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : 'from_list) in
     let _2 = (peek_val parser_env 0 : 'from) in
     Obj.repr((
-# 569 "phobos_parser.mly"
+# 568 "phobos_parser.mly"
                                 _2 :: _1 ) : 'from_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'from) in
     Obj.repr((
-# 570 "phobos_parser.mly"
+# 569 "phobos_parser.mly"
                                 [_1] ) : 'from_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : Phobos_type.mp_pre_term) in
     Obj.repr((
-# 573 "phobos_parser.mly"
+# 572 "phobos_parser.mly"
                                 _1 ) : 'from))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'identifier) in
     Obj.repr((
-# 574 "phobos_parser.mly"
+# 573 "phobos_parser.mly"
                                 pho_make_token_term (), snd _1 ) : 'from))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : string * Phobos_type.pos) in
     Obj.repr((
-# 577 "phobos_parser.mly"
+# 576 "phobos_parser.mly"
                                 _1 ) : 'quoted_identifier))
 ; (fun parser_env ->
     Obj.repr((
-# 580 "phobos_parser.mly"
+# 579 "phobos_parser.mly"
                                 [] ) : 'opt_simple_terms))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'simple_term_list_rev) in
     Obj.repr((
-# 581 "phobos_parser.mly"
+# 580 "phobos_parser.mly"
                                 List.rev _1 ) : 'opt_simple_terms))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : Phobos_type.mp_pre_term) in
     Obj.repr((
-# 584 "phobos_parser.mly"
+# 583 "phobos_parser.mly"
                                 [_1] ) : 'simple_term_list_rev))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 2 : 'simple_term_list_rev) in
     let _2 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _3 = (peek_val parser_env 0 : Phobos_type.mp_pre_term) in
     Obj.repr((
-# 586 "phobos_parser.mly"
+# 585 "phobos_parser.mly"
                                 _3 :: _1 ) : 'simple_term_list_rev))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 2 : 'module_identifier) in
     let _2 = (peek_val parser_env 1 : 'opt_term_params) in
     let _3 = (peek_val parser_env 0 : 'subterms) in
     Obj.repr((
-# 590 "phobos_parser.mly"
+# 589 "phobos_parser.mly"
                                 pho_make_term (fst _1) _2 (fst _3), union_pos (snd _1) (snd _3) ) : Phobos_type.mp_pre_term))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : 'module_identifier) in
     let _2 = (peek_val parser_env 0 : 'term_params) in
     Obj.repr((
-# 592 "phobos_parser.mly"
+# 591 "phobos_parser.mly"
                                 pho_make_term (fst _1) (fst _2) [], union_pos (snd _1) (snd _2) ) : Phobos_type.mp_pre_term))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'quoted_identifier) in
     Obj.repr((
-# 593 "phobos_parser.mly"
+# 592 "phobos_parser.mly"
                                 pho_make_var_term _1, snd _1 ) : Phobos_type.mp_pre_term))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 3 : 'quoted_identifier) in
@@ -1303,119 +1302,119 @@ let yyact = [|
     let _3 = (peek_val parser_env 1 : 'opt_simple_terms) in
     let _4 = (peek_val parser_env 0 : Phobos_type.pos) in
     Obj.repr((
-# 595 "phobos_parser.mly"
+# 594 "phobos_parser.mly"
                                 print_string "so_var["; print_string (fst _1); print_string "]\n"; pho_make_so_var_term _1 _3, union_pos (snd _1) _4 ) : Phobos_type.mp_pre_term))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : int * Phobos_type.pos) in
     Obj.repr((
-# 596 "phobos_parser.mly"
+# 595 "phobos_parser.mly"
                                 pho_make_number_term _1, snd _1 ) : Phobos_type.mp_pre_term))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : Phobos_type.pos) in
     Obj.repr((
-# 597 "phobos_parser.mly"
+# 596 "phobos_parser.mly"
                                 pho_make_unique_var_term ("?", _1), _1 ) : Phobos_type.mp_pre_term))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'modules_rev) in
     Obj.repr((
-# 602 "phobos_parser.mly"
+# 601 "phobos_parser.mly"
                                 _1 ) : 'module_identifier))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'identifier) in
     Obj.repr((
-# 605 "phobos_parser.mly"
+# 604 "phobos_parser.mly"
                                 [_1], snd _1 ) : 'modules_rev))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 2 : 'modules_rev) in
     let _2 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _3 = (peek_val parser_env 0 : 'identifier) in
     Obj.repr((
-# 607 "phobos_parser.mly"
+# 606 "phobos_parser.mly"
                                 _3 :: fst _1, union_pos (snd _1) (snd _3) ) : 'modules_rev))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 2 : Phobos_type.pos) in
     let _2 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _3 = (peek_val parser_env 0 : 'identifier) in
     Obj.repr((
-# 608 "phobos_parser.mly"
+# 607 "phobos_parser.mly"
                                 _3 :: [("", _1)], union_pos _1 (snd _3) ) : 'modules_rev))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 2 : Phobos_type.pos) in
     let _2 = (peek_val parser_env 1 : 'opt_subterm_list_semi) in
     let _3 = (peek_val parser_env 0 : Phobos_type.pos) in
     Obj.repr((
-# 615 "phobos_parser.mly"
+# 614 "phobos_parser.mly"
                                 _2, union_pos _1 _3 ) : 'subterms))
 ; (fun parser_env ->
     Obj.repr((
-# 618 "phobos_parser.mly"
+# 617 "phobos_parser.mly"
                                 [] ) : 'opt_subterm_list_semi))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'subterms_with_semi) in
     Obj.repr((
-# 619 "phobos_parser.mly"
+# 618 "phobos_parser.mly"
                                 _1 ) : 'opt_subterm_list_semi))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'subterm_list_with_semi) in
     Obj.repr((
-# 622 "phobos_parser.mly"
+# 621 "phobos_parser.mly"
                                 List.rev _1 ) : 'subterms_with_semi))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 2 : 'subterm_list_with_semi) in
     let _2 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _3 = (peek_val parser_env 0 : 'sub_term) in
     Obj.repr((
-# 626 "phobos_parser.mly"
+# 625 "phobos_parser.mly"
                                 _3 :: _1 ) : 'subterm_list_with_semi))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'sub_term) in
     Obj.repr((
-# 627 "phobos_parser.mly"
+# 626 "phobos_parser.mly"
                                 [_1] ) : 'subterm_list_with_semi))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : Phobos_type.mp_pre_term) in
     Obj.repr((
-# 630 "phobos_parser.mly"
+# 629 "phobos_parser.mly"
                                 pho_make_bterm [] _1 ) : 'sub_term))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 2 : 'identifiers_with_comma) in
     let _2 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _3 = (peek_val parser_env 0 : Phobos_type.mp_pre_term) in
     Obj.repr((
-# 632 "phobos_parser.mly"
+# 631 "phobos_parser.mly"
                                 pho_make_bterm _1 _3 ) : 'sub_term))
 ; (fun parser_env ->
     Obj.repr((
-# 636 "phobos_parser.mly"
+# 635 "phobos_parser.mly"
                                 [] ) : 'opt_term_params))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'term_params) in
     Obj.repr((
-# 637 "phobos_parser.mly"
+# 636 "phobos_parser.mly"
                                 List.rev (fst _1) ) : 'opt_term_params))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 2 : Phobos_type.pos) in
     let _2 = (peek_val parser_env 1 : 'term_param_list) in
     let _3 = (peek_val parser_env 0 : Phobos_type.pos) in
     Obj.repr((
-# 641 "phobos_parser.mly"
+# 640 "phobos_parser.mly"
                                 List.rev _2, union_pos _1 _3 ) : 'term_params))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 2 : 'term_param_list) in
     let _2 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _3 = (peek_val parser_env 0 : 'term_param) in
     Obj.repr((
-# 645 "phobos_parser.mly"
+# 644 "phobos_parser.mly"
                                 _3 :: _1 ) : 'term_param_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'term_param) in
     Obj.repr((
-# 646 "phobos_parser.mly"
+# 645 "phobos_parser.mly"
                                 [_1] ) : 'term_param_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : string * Phobos_type.pos) in
     Obj.repr((
-# 649 "phobos_parser.mly"
+# 648 "phobos_parser.mly"
                                 match fst _1 with
                                    "s" -> TyString, snd _1
                                  | "n" -> TyNum, snd _1
@@ -1430,7 +1429,7 @@ let yyact = [|
     let _2 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _3 = (peek_val parser_env 0 : string * Phobos_type.pos) in
     Obj.repr((
-# 662 "phobos_parser.mly"
+# 661 "phobos_parser.mly"
                                 match fst _3 with
                                    "s" ->
                                        make_param (MString (fst _1))
@@ -1448,7 +1447,7 @@ let yyact = [|
     let _2 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _3 = (peek_val parser_env 0 : 'param_type_id) in
     Obj.repr((
-# 676 "phobos_parser.mly"
+# 675 "phobos_parser.mly"
                                 match fst _3 with
                                    TyNum ->
                                        make_param (Number (num_of_int (fst _1)))
@@ -1460,7 +1459,7 @@ let yyact = [|
     let _2 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _3 = (peek_val parser_env 0 : 'param_type_id) in
     Obj.repr((
-# 683 "phobos_parser.mly"
+# 682 "phobos_parser.mly"
                                 match fst _3 with
                                    TyString ->
                                        make_param (String (fst _1))
@@ -1474,65 +1473,65 @@ let yyact = [|
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : string * Phobos_type.pos) in
     Obj.repr((
-# 693 "phobos_parser.mly"
+# 692 "phobos_parser.mly"
                                 make_param (String (fst _1)) ) : 'term_param))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : int * Phobos_type.pos) in
     Obj.repr((
-# 694 "phobos_parser.mly"
+# 693 "phobos_parser.mly"
                                 make_param (Number (num_of_int (fst _1))) ) : 'term_param))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : string * Phobos_type.pos) in
     Obj.repr((
-# 696 "phobos_parser.mly"
+# 695 "phobos_parser.mly"
                                 make_param (MString (fst _1)) ) : 'term_param))
 ; (fun parser_env ->
     Obj.repr((
-# 702 "phobos_parser.mly"
+# 701 "phobos_parser.mly"
                                 [] ) : 'opt_term_declarations))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'term_declaration_list) in
     Obj.repr((
-# 703 "phobos_parser.mly"
+# 702 "phobos_parser.mly"
                                 _1 ) : 'opt_term_declarations))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'term_declaration) in
     Obj.repr((
-# 706 "phobos_parser.mly"
+# 705 "phobos_parser.mly"
                                 _1 ) : 'term_declaration_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : 'term_declaration_list) in
     let _2 = (peek_val parser_env 0 : 'term_declaration) in
     Obj.repr((
-# 708 "phobos_parser.mly"
+# 707 "phobos_parser.mly"
                                 _2 @ _1 ) : 'term_declaration_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _2 = (peek_val parser_env 0 : 'syntax_terms) in
     Obj.repr((
-# 711 "phobos_parser.mly"
+# 710 "phobos_parser.mly"
                                 _2 ) : 'term_declaration))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'syntax_term_list_rev) in
     Obj.repr((
-# 714 "phobos_parser.mly"
+# 713 "phobos_parser.mly"
                                 List.rev _1 ) : 'syntax_terms))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'syntax_term) in
     Obj.repr((
-# 717 "phobos_parser.mly"
+# 716 "phobos_parser.mly"
                                 [_1] ) : 'syntax_term_list_rev))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 2 : 'syntax_term_list_rev) in
     let _2 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _3 = (peek_val parser_env 0 : 'syntax_term) in
     Obj.repr((
-# 719 "phobos_parser.mly"
+# 718 "phobos_parser.mly"
                                 _3 :: _1 ) : 'syntax_term_list_rev))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'st_identifier) in
     Obj.repr((
-# 722 "phobos_parser.mly"
+# 721 "phobos_parser.mly"
                                 _1, 0 ) : 'syntax_term))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 3 : 'st_identifier) in
@@ -1540,12 +1539,12 @@ let yyact = [|
     let _3 = (peek_val parser_env 1 : 'opt_syntax_subterms) in
     let _4 = (peek_val parser_env 0 : Phobos_type.pos) in
     Obj.repr((
-# 724 "phobos_parser.mly"
+# 723 "phobos_parser.mly"
                                 _1, List.length _3 ) : 'syntax_term))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'identifier) in
     Obj.repr((
-# 728 "phobos_parser.mly"
+# 727 "phobos_parser.mly"
                                 _1 ) : 'st_identifier))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 3 : 'identifier) in
@@ -1553,50 +1552,50 @@ let yyact = [|
     let _3 = (peek_val parser_env 1 : 'param_type_id) in
     let _4 = (peek_val parser_env 0 : Phobos_type.pos) in
     Obj.repr((
-# 730 "phobos_parser.mly"
+# 729 "phobos_parser.mly"
                                 _1 ) : 'st_identifier))
 ; (fun parser_env ->
     Obj.repr((
-# 733 "phobos_parser.mly"
+# 732 "phobos_parser.mly"
                                 [] ) : 'opt_syntax_subterms))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'syntax_subterms) in
     Obj.repr((
-# 734 "phobos_parser.mly"
+# 733 "phobos_parser.mly"
                                 _1 ) : 'opt_syntax_subterms))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'syntax_subterm_list) in
     Obj.repr((
-# 737 "phobos_parser.mly"
+# 736 "phobos_parser.mly"
                                 List.rev _1 ) : 'syntax_subterms))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'syntax_subterm) in
     Obj.repr((
-# 740 "phobos_parser.mly"
+# 739 "phobos_parser.mly"
                                 [_1] ) : 'syntax_subterm_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 2 : 'syntax_subterm_list) in
     let _2 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _3 = (peek_val parser_env 0 : 'syntax_subterm) in
     Obj.repr((
-# 742 "phobos_parser.mly"
+# 741 "phobos_parser.mly"
                                 _3 :: _1 ) : 'syntax_subterm_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'syntax_subterm_base) in
     Obj.repr((
-# 745 "phobos_parser.mly"
+# 744 "phobos_parser.mly"
                                 _1 ) : 'syntax_subterm))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 2 : 'identifier) in
     let _2 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _3 = (peek_val parser_env 0 : 'syntax_subterm_base) in
     Obj.repr((
-# 747 "phobos_parser.mly"
+# 746 "phobos_parser.mly"
                                 _3 ) : 'syntax_subterm))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'quoted_identifier) in
     Obj.repr((
-# 750 "phobos_parser.mly"
+# 749 "phobos_parser.mly"
                                 _1 ) : 'syntax_subterm_base))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 3 : 'quoted_identifier) in
@@ -1604,27 +1603,27 @@ let yyact = [|
     let _3 = (peek_val parser_env 1 : 'quoted_identifier) in
     let _4 = (peek_val parser_env 0 : Phobos_type.pos) in
     Obj.repr((
-# 752 "phobos_parser.mly"
+# 751 "phobos_parser.mly"
                                 _1 ) : 'syntax_subterm_base))
 ; (fun parser_env ->
     Obj.repr((
-# 758 "phobos_parser.mly"
+# 757 "phobos_parser.mly"
                                 [] ) : 'opt_rewrites_section))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'rev_rewrites_section_list) in
     Obj.repr((
-# 759 "phobos_parser.mly"
+# 758 "phobos_parser.mly"
                                 List.rev _1 ) : 'opt_rewrites_section))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'rewrites_section) in
     Obj.repr((
-# 762 "phobos_parser.mly"
+# 761 "phobos_parser.mly"
                                 [_1] ) : 'rev_rewrites_section_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : 'rev_rewrites_section_list) in
     let _2 = (peek_val parser_env 0 : 'rewrites_section) in
     Obj.repr((
-# 764 "phobos_parser.mly"
+# 763 "phobos_parser.mly"
                                 _2 :: _1 ) : 'rev_rewrites_section_list))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 3 : Phobos_type.pos) in
@@ -1632,33 +1631,33 @@ let yyact = [|
     let _3 = (peek_val parser_env 1 : 'new_rewrites) in
     let _4 = (peek_val parser_env 0 : Phobos_type.pos) in
     Obj.repr((
-# 768 "phobos_parser.mly"
+# 767 "phobos_parser.mly"
                                 _3 ) : 'rewrites_section))
 ; (fun parser_env ->
     Obj.repr((
-# 774 "phobos_parser.mly"
+# 773 "phobos_parser.mly"
                                 [] ) : 'opt_inline_forms))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'inline_form_list_rev) in
     Obj.repr((
-# 775 "phobos_parser.mly"
+# 774 "phobos_parser.mly"
                                 List.rev _1 ) : 'opt_inline_forms))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 0 : 'inline_form) in
     Obj.repr((
-# 778 "phobos_parser.mly"
+# 777 "phobos_parser.mly"
                                 [_1] ) : 'inline_form_list_rev))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : 'inline_form_list_rev) in
     let _2 = (peek_val parser_env 0 : 'inline_form) in
     Obj.repr((
-# 780 "phobos_parser.mly"
+# 779 "phobos_parser.mly"
                                 _2 :: _1 ) : 'inline_form_list_rev))
 ; (fun parser_env ->
     let _1 = (peek_val parser_env 1 : Phobos_type.pos) in
     let _2 = (peek_val parser_env 0 : Phobos_type.mp_pre_term) in
     Obj.repr((
-# 783 "phobos_parser.mly"
+# 782 "phobos_parser.mly"
                                 _2 ) : 'inline_form))
 (* Entry main *)
 ; (fun parser_env -> raise (YYexit (peek_val parser_env 0)))

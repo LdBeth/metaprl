@@ -24,6 +24,7 @@
  * @email{granicz@cs.caltech.edu}
  * @end[license]
  *)
+
 open Mp_debug
 
 (*
@@ -43,7 +44,6 @@ let phobos_paths = ref [""]
 (*
  * Phobos debugging.
  *)
-let debug_phobos = ref false
 
 let debug_phobos =
    create_debug (**)
