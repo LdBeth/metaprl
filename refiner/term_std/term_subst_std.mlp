@@ -38,12 +38,28 @@ open Refine_error_sig
 open Term_std_sig
 open Term_std
 
+#ifdef VERBOSE_EXN
+(* 
+ * Show that the file is loading.
+ *) 
+let _ =
+   if !debug_load then 
+      eprintf "Loading Term_subst_std%t" eflush
+
 let debug_alpha_equal =
    create_debug (**)
       { debug_name = "alpha_equal";
         debug_description = "display alpha equality operations";
         debug_value = false
       }
+
+let debug_unify =
+   create_debug (**) 
+      { debug_name = "unify";
+        debug_description = "display unification operations";
+        debug_value = false
+      }
+#endif
 
 module TermSubst
 (Term : TermStdSig
@@ -622,10 +638,10 @@ struct
     * The unification works over the subst.
     *)
    let rec unify_terms subst constants bvars term1 term2 =
-/* #ifdef VERBOSE_EXN
+#ifdef VERBOSE_EXN
       if !debug_unify then
          eprintf "Unify: %a/%a%t" print_term term1 print_term term2 eflush;
-#endif */
+#endif
       if (is_var_term term1) then
          let v = dest_var term1 in
          if (is_var_term term2) then

@@ -35,12 +35,13 @@ open Refine_error_sig
 open Term_ds_sig
 open Term_ds
 
+#ifdef VERBOSE_EXN
 (*
  * Show that the file is loading.
  *)
 let _ =
    if !debug_load then
-      eprintf "Loading Term_ds_subst%t" eflush
+      eprintf "Loading Term_subst_ds%t" eflush
 
 let debug_subst_ds =
    create_debug (**)
@@ -55,6 +56,7 @@ let debug_unify =
         debug_description = "display unification operations";
         debug_value = false
       }
+#endif
 
 module TermSubst
 (Term : TermDsSig
