@@ -476,9 +476,10 @@ sig
     *)
    type step_info =
       { step_goal : proof list;
+        step_status : status;
         step_expr : step_expr;
         step_subgoals : proof list list;
-        step_extras : proof list
+        step_extras : proof list;
       }
 
    (*

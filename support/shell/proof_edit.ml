@@ -608,6 +608,7 @@ let term_of_proof proof =
       eprintf "Proof_edit.term_of_proof: begin:\n%s%t" prf eflush
    end;
    let { Proof.step_goal = goal;
+         Proof.step_status = status;
          Proof.step_expr = expr;
          Proof.step_subgoals = subgoals;
          Proof.step_extras = extras
@@ -623,7 +624,7 @@ let term_of_proof proof =
       if (l < 20) || (!debug_show_all_subgoals) then mk_subgoals_term subgoals extras
       else mk_xlist_term [ mk_subgoals_term (Lm_list_util.firstn 5 subgoals) []; mk_string_arg_term "\n\n   ...   \n\n<<"; mk_int_arg_term l; mk_string_arg_term " subgoals (output suppressed -- turn the \"show_all_subgoals\" debug variable on to see the full list)>>"]
    in
-   let x = mk_proof_term main goal (rule_term_of_text expr) subgoals in
+   let x = mk_proof_term main goal (term_of_proof_status status) (rule_term_of_text expr) subgoals in
       if !debug_edit then
          eprintf "Proof_edit.term_of_proof: done%t" eflush;
       x
@@ -632,28 +633,28 @@ let term_of_proof proof =
  * Show the incomplete proof.
  *)
 let term_of_incomplete proof =
-   let goal, text =
+   let goal, status, text =
       match proof with
          Primitive goal ->
             if !debug_edit then
                eprintf "Proof_edit.term_of_incomplete: Primitive%t" eflush;
             let goal = term_of_tactic_arg [Proof.StatusComplete] goal in
             let text = mk_rule_box_string_term "<Primitive>" in
-               goal, text
+               goal, Proof.StatusComplete, text
        | Incomplete goal ->
             if !debug_edit then
                eprintf "Proof_edit.term_of_incomplete: Incomplete%t" eflush;
             let goal = term_of_tactic_arg [Proof.StatusIncomplete] goal in
             let text = mk_rule_box_string_term "<Incomplete>" in
-               goal, text
+               goal, Proof.StatusIncomplete, text
        | Derived (goal, expr) ->
             if !debug_edit then
                eprintf "Proof_edit.term_of_incomplete: Derived%t" eflush;
             let goal = term_of_tactic_arg [Proof.StatusComplete] goal in
             let text = mk_rule_box_string_term "<Derived>" in
-               goal, text
+               goal, Proof.StatusComplete, text
    in
-      mk_proof_term goal (mk_goal_list_term [goal]) text xnil_term
+      mk_proof_term goal (mk_goal_list_term [goal]) (term_of_proof_status status) text xnil_term
 
 (*
  * Display the current proof.

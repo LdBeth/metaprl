@@ -168,6 +168,7 @@ struct
     *)
    type step_info =
       { step_goal : proof list;
+        step_status : status;
         step_expr : step_expr;
         step_subgoals : proof list list;
         step_extras : proof list;
@@ -1457,6 +1458,7 @@ struct
       match node with
          Goal goal ->
             { step_goal = proof :: get_cache proof;
+              step_status = StatusPartial;
               step_expr = ExprGoal;
               step_subgoals = [];
               step_extras = []
@@ -1464,48 +1466,46 @@ struct
        | Identity goal ->
             let proofs = proof_goal false proof (Goal goal) in
                { step_goal = proofs;
+                 step_status = StatusComplete;
                  step_expr = ExprIdentity;
                  step_subgoals = [proofs];
                  step_extras = []
                }
        | Unjustified (goal, subgoals) ->
             { step_goal = proof_goal false proof (Goal goal);
+              step_status = StatusIncomplete;
               step_expr = ExprUnjustified;
               step_subgoals = proof_subgoals proof subgoals;
               step_extras = []
             }
        | Extract (goal, subgoals, ext) ->
             { step_goal = proof_goal false proof (Goal goal);
+              step_status = StatusComplete;
               step_expr = make_extract_expr ext;
               step_subgoals = proof_subgoals proof subgoals;
               step_extras = []
             }
        | Compose { comp_goal = goal; comp_subgoals = subgoals; comp_extras = extras } ->
             let new_subgoals, extras = proof_subgoals_extras false proof subgoals extras in
+            let status = translate_status (status_ext goal) in
             if compose_flag then
                let goal = info_ext false proof goal in
                   { step_goal = goal.step_goal;
+                    step_status = status;
                     step_expr = ExprCompose goal.step_expr;
                     step_subgoals = new_subgoals;
                     step_extras = extras
                   }
             else
                { step_goal = proof_goal false proof goal;
+                 step_status = status;
                  step_expr = ExprCompose ExprIdentity;
                  step_subgoals = List.flatten (List.map (fun goal -> (info_ext false proof goal).step_subgoals) subgoals);
                  step_extras = extras
                }
        | Wrapped (label, ext) ->
-            let { step_goal = goal;
-                  step_subgoals = subgoals;
-                  step_extras = extras
-                } = info_ext false proof ext
-            in
-               { step_goal = goal;
-                 step_expr = ExprWrapped label;
-                 step_subgoals = subgoals;
-                 step_extras = extras
-               }
+            let info = info_ext false proof ext in
+               { info with step_expr = ExprWrapped label }
        | RuleBox { rule_extract_normalized = false } ->
             info_ext compose_flag proof (normalize node)
        | RuleBox { rule_expr = expr;
@@ -1517,6 +1517,7 @@ struct
          } ->
             let subgoals, extras = proof_subgoals_extras true proof subgoals extras in
                { step_goal = proof_goal true proof goal;
+                 step_status = translate_status (status_ext goal);
                  step_expr = ExprRule (text, expr ());
                  step_subgoals = subgoals;
                  step_extras = extras

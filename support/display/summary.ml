@@ -299,7 +299,7 @@ declare "subgoals"{'number; 'subgoals; 'extras}
 declare "rule_box"[text:s]
 declare "rule_box"{'text}
 declare "rule_box"[text:s]{'text}
-declare "proof"{'main; 'goal; 'text; 'subgoals}
+declare "proof"{'main; 'goal; 'status; 'text; 'subgoals}
 declare "tactic_arg"[label:s]{'goal; 'attrs; 'parents}
 
 (* Packages *)
@@ -672,22 +672,22 @@ dform arglist_df1 : internal :: arglist{'args} =
  * Proofs.
  *)
 declare msequent{'goal; 'assums}
-declare goals_df{'main; 'goal}
+declare goals_df{'main; 'goal; 'status}
+declare status_df{'path_status; 'node_status; 'cache_status}
 declare goal_list_status{'cache}
-declare cache_status{'status}
 
-dform proof_df : internal :: proof{'main; goal_list{'goal}; 'text; 'subgoals} =
-   szone pushm pagebreak goals_df{'main; 'goal} 'text 'subgoals popm ezone
+dform proof_df : internal :: proof{'main; goal_list{'goal}; 'status; 'text; 'subgoals} =
+   szone pushm pagebreak goals_df{'main; 'goal; 'status} 'text 'subgoals popm ezone
 
-dform goals_df : internal :: goals_df{goal{'status; 'label; 'assums; 'goal}; 'cache} =
-   'status cache_status{goal_list_status{'cache}} newline 'label msequent{'goal; 'assums}
+dform goals_df : internal :: goals_df{goal{'path_status; 'label; 'assums; 'goal}; 'cache; 'node_status} =
+   status_df{'path_status;'node_status;goal_list_status{'cache}} newline 'label msequent{'goal; 'assums}
 
 dform goal_df : internal :: goal{'status; 'label; 'assums; 'goal} =
-   'status cache_status{nil} newline 'label msequent{'goal; 'assums}
+   status_df{'status; status_partial; nil} newline 'label msequent{'goal; 'assums}
 
 (* XXX display of the cache status is turned off since there is no way to access the cache anyway *)
-dform cache_status_df : internal :: cache_status{'status} =
-   (* `"[" 'status `"]" *) `""
+dform cache_status_df : internal :: status_df{'path_status; 'node_status; 'cache_status} =
+   'path_status `"<" 'node_status `">" (* space `"[" 'cache_status `"]" *)
 
 dform goal_list_status_df1 : internal :: goal_list_status{cons{goal{goal_status{'status}; 'label; 'assums; 'goal}; cons{'hd; 'tl}}} =
    df_last{'status} `" " goal_list_status{cons{'hd; 'tl}}
@@ -885,7 +885,7 @@ let append_rule_box t s =
     | _ ->
          raise(Invalid_argument "Summary.append_rule_box")
 
-let mk_proof_term main goal text subgoals = <:con< "proof"{$main$; $goal$; $text$; $subgoals$} >>
+let mk_proof_term main goal status text subgoals = <:con< "proof"{$main$; $goal$; $status$; $text$; $subgoals$} >>
 let dest_proof = four_subterms
 
 let mk_int_arg_term i = <:con< int_arg[$int:i$] >>
