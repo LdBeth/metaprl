@@ -330,11 +330,11 @@ struct
 
    let rec replace_list gs = function
       [] -> gs, []
-    | (sg :: sgs) as all ->
+    | (sg :: sgs) as allx ->
          begin match gs with
             sg':: gs ->
                let gs,sgs' = replace_list gs sgs in
-               if sg == sg' && sgs == sgs' then gs, all else gs, sg'::sgs'
+               if sg == sg' && sgs == sgs' then gs, allx else gs, sg'::sgs'
           | _ -> raise (Invalid_argument "Proof_boot.replace_list")
          end
 
@@ -394,10 +394,10 @@ struct
 
    and replace_subg_list gs = function
       [] -> gs, []
-    | (sg :: sgs) as all ->
+    | (sg :: sgs) as allx ->
          let gs,sg' = replace_subg_aux gs sg in
          let gs,sgs' = replace_subg_list gs sgs in
-         if sg == sg' && sgs == sgs' then gs, all else gs, sg'::sgs'
+         if sg == sg' && sgs == sgs' then gs, allx else gs, sg'::sgs'
 
    let rec dest_ids = function
       [] -> []
@@ -885,8 +885,66 @@ struct
       in
       let rec find_leaf leaf = function
          (goal, subgoal) as h :: subgoals ->
-            if Sequent.tactic_arg_alpha_equal goal leaf then
+            if tactic_arg_alpha_equal goal leaf then
                subgoal, subgoals
+            else
+               let subgoal, subgoals = find_leaf leaf subgoals in
+                  subgoal, h :: subgoals
+       | [] ->
+            Goal leaf, []
+      in
+      let rec collect leaves subgoals =
+         match leaves with
+            leaf :: leaves ->
+               let subgoal, subgoals = find_leaf leaf subgoals in
+               let subgoals, extras = collect leaves subgoals in
+                  subgoal :: subgoals, extras
+          | [] ->
+               [], List_util.some_map filter_extra subgoals
+      in
+         (fun leaves subgoals extras ->
+               collect leaves (filter_subgoals [] (subgoals @ extras)))
+
+   (*
+    * Replace the subgoal nodes.
+    *)
+   let update_subgoals =
+      let rec filter_subgoals tail = function
+         subgoal :: subgoals ->
+            begin
+               match subgoal with
+                  Goal arg ->
+                     filter_subgoals (subgoal :: tail) subgoals
+                | _ ->
+                     (goal_ext subgoal, subgoal) :: filter_subgoals tail subgoals
+            end
+       | [] ->
+            let spread ext =
+               match ext with
+                  Goal arg ->
+                     (arg, ext)
+                | _ ->
+                     raise (Invalid_argument "Proof_boot.match_subgoals.search")
+            in
+               List.map spread tail
+      in
+      let filter_extra = function
+         (_, Goal _) ->
+            None
+       | (_, arg) ->
+            Some arg
+      in
+      let set_goal subgoal mseq =
+         match subgoal with
+            RuleBox rb ->
+               RuleBox { rb with rule_extract = Goal mseq }
+          | _ ->
+               subgoal
+      in
+      let rec find_leaf leaf = function
+         (goal, subgoal) as h :: subgoals ->
+            if tactic_arg_alpha_equal_concl goal leaf then
+               set_goal subgoal leaf, subgoals
             else
                let subgoal, subgoals = find_leaf leaf subgoals in
                   subgoal, h :: subgoals
@@ -2352,6 +2410,7 @@ struct
                   RefineError _ ->
                      goal
             in
+            let subgoals, extras = update_subgoals (leaves_ext new_goal) subgoals extras in
             let subgoals = List.map (expand_ext dforms proof) subgoals in
             let extras = List.map (expand_ext dforms proof) extras in
             let subgoals, extras = match_subgoals (leaves_ext new_goal) subgoals extras in

@@ -394,6 +394,7 @@ sig
     * not compared.
     *)
    val tactic_arg_alpha_equal : tactic_arg -> tactic_arg -> bool
+   val tactic_arg_alpha_equal_concl : tactic_arg -> tactic_arg -> bool
 
    (*
     * Apply a tactic.
@@ -803,6 +804,7 @@ sig
     * not compared.
     *)
    val tactic_arg_alpha_equal : tactic_arg -> tactic_arg -> bool
+   val tactic_arg_alpha_equal_concl : tactic_arg -> tactic_arg -> bool
 
    (*
     * Get the address of a part of the sequent.

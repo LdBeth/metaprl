@@ -64,6 +64,7 @@ struct
     * not compared.
     *)
    let tactic_arg_alpha_equal = TacticInternal.tactic_arg_alpha_equal
+   let tactic_arg_alpha_equal_concl = TacticInternal.tactic_arg_alpha_equal_concl
 
    (*
     * Addressing.

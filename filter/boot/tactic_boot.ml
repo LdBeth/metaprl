@@ -318,7 +318,7 @@ struct
     * Server is created at file execution time.
     *)
    let print_tactic_arg out arg =
-      let goal = TermMan.nth_concl (msequent_goal arg.ref_goal) 0 in
+      let goal = TermMan.nth_concl (msequent_goal arg.ref_goal) 1 in
          debug_print out goal
 
    (*
@@ -936,6 +936,26 @@ struct
     *)
    let tactic_arg_alpha_equal { ref_goal = goal1 } { ref_goal = goal2 } =
       msequent_alpha_equal goal1 goal2
+
+   (*
+    * Match only the goals.
+    *)
+   let tactic_arg_alpha_equal_concl { ref_goal = goal1 } { ref_goal = goal2 } =
+      let goal1 = msequent_goal goal1 in
+      let goal2 = msequent_goal goal2 in
+      let goal1 =
+         if TermMan.is_sequent_term goal1 then
+            TermMan.nth_concl goal1 1
+         else
+            goal1
+      in
+      let goal2 =
+         if TermMan.is_sequent_term goal2 then
+            TermMan.nth_concl goal2 1
+         else
+            goal2
+      in
+         alpha_equal goal1 goal2
 
    (************************************************************************
     * REFINEMENT                                                           *
