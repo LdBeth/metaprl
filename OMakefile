@@ -161,6 +161,7 @@ if true
 # Support directories
 #
 SUPPORT_DIRS = $(dir $(addprefix support/, display shell tactics))
+SUPPORT_INCLUDE = $'(addprefix -I , $(SUPPORT_DIRS))
 
 #
 # Theories also have special options
@@ -168,11 +169,11 @@ SUPPORT_DIRS = $(dir $(addprefix support/, display shell tactics))
 DEFAULT_THEORIES = base itt
 
 MC_THEORIES =\
-        experimental/mcc/fir/util
+        mojave/core
 
 LM_THEORIES = $(if $(equal $(LIBMOJAVE), undefined), $(EMPTY), $(MC_THEORIES))
 
-ALL_THEORIES = base ocaml_doc itt ocaml_sos fol czf phobos sil
+ALL_THEORIES = base itt fol czf phobos sil
 
 #
 # Commands to compile theory files
