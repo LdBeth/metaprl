@@ -39,7 +39,7 @@ open Shell_internal_sig
 val get_resource : shell -> Mp_resource.global_resource
 
 val packages : Package_info.t
-val loaded_packages : unit -> Package_info.package list
+val modified_packages : unit -> Package_info.package list
 val all_theories : unit -> string list
 val shell_package : Package_info.package -> bool
 val get_current_package : shell -> Package_info.package
@@ -71,11 +71,19 @@ val clear_view_options : shell -> string -> unit
 
 val view : parse_arg -> shell -> LsOptionSet.t -> unit
 val chdir : parse_arg -> shell -> bool -> bool -> shell_dir -> unit
-val apply_all : parse_arg -> shell -> (edit_object -> dform_base -> was_modified) -> bool -> bool -> unit
 val cd : parse_arg -> shell -> string -> string
 val root : parse_arg -> shell -> string
 val refresh : parse_arg -> shell -> unit
 
+(*
+ * Apply_all maps a function over the items in a module
+ * or over items in the root theory.
+ *)
+val apply_all : parse_arg -> shell -> item_fun -> bool -> clean_item_fun -> clean_module_fun -> unit
+
+(*
+ * Proof modifications.
+ *)
 val set_goal : shell -> term -> unit
 val set_redex : shell -> term -> unit
 val set_contractum : shell -> term -> unit
@@ -84,14 +92,16 @@ val set_params : shell -> term Filter_type.param list -> unit
 
 val filename : parse_arg -> shell -> string option
 
-val backup     : parse_arg -> shell -> unit
-val backup_all : parse_arg -> shell -> unit
-val save       : parse_arg -> shell -> unit
-val save_all   : parse_arg -> shell -> unit
-val export     : parse_arg -> shell -> unit
-val export_all : parse_arg -> shell -> unit
-val revert     : parse_arg -> shell -> unit
-val revert_all : parse_arg -> shell -> unit
+val backup      : parse_arg -> shell -> unit
+val backup_all  : parse_arg -> shell -> unit
+val save        : parse_arg -> shell -> unit
+val save_all    : parse_arg -> shell -> unit
+val export      : parse_arg -> shell -> unit
+val export_all  : parse_arg -> shell -> unit
+val revert      : parse_arg -> shell -> unit
+val revert_all  : parse_arg -> shell -> unit
+val abandon     : parse_arg -> shell -> unit
+val abandon_all : parse_arg -> shell -> unit
 
 val create_pkg : parse_arg -> shell -> string -> unit
 val create_ax_statement : parse_arg -> shell -> term -> string -> unit

@@ -477,6 +477,11 @@ sig
     ************************************************************************)
 
    (*
+    * Clear all entries in the cache.
+    *)
+   val clear_cache : unit -> unit
+
+   (*
     * Make sure all the compositions are left-assotiatoive.
     * Remove unnecessary identities.
     *)

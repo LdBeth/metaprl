@@ -62,6 +62,8 @@ let commands =
      export_all = uninitialized;
      revert = uninitialized;
      revert_all = uninitialized;
+     abandon = uninitialized;
+     abandon_all = uninitialized;
      view = uninitialized;
      check = uninitialized;
      apply_all = uninitialized;
@@ -82,6 +84,18 @@ let commands =
      is_enabled = uninitialized;
      edit = uninitialized
    }
+
+(*
+ * Arguments to apply_all.
+ *)
+let dont_clean_item mod_name name =
+   ()
+
+let dont_clean_module mod_name =
+   ()
+
+let clean_resources mod_name name =
+   Mp_resource.clear_results (mod_name, name)
 
 (*
  * Set the commands.
@@ -122,10 +136,12 @@ let export _ = commands.export ()
 let export_all _ = commands.export_all ()
 let revert _ = commands.revert ()
 let revert_all _ = commands.revert_all ()
+let abandon _ = commands.abandon ()
+let abandon_all _ = commands.abandon_all ()
 let check _ = commands.check ()
 let expand _ = commands.expand ()
 let expand_all _ = commands.expand_all ()
-let apply_all f t c = commands.apply_all f t c
+let apply_all f t c1 c2 = commands.apply_all f t c1 c2
 let undo _ = commands.undo ()
 let redo _ = commands.redo ()
 let create_ax_statement t s = commands.create_ax_statement t s
@@ -148,7 +164,7 @@ let interpret_all command modifies =
    let f item db =
       item.edit_interpret [] command
    in
-      apply_all f true false
+      apply_all f true dont_clean_item dont_clean_module
 
 let clean_all _ = interpret_all ProofClean false
 let squash_all _ = interpret_all ProofSquash false
@@ -176,7 +192,10 @@ let print_gc_stats () =
    Gc.print_stat Pervasives.stdout;
    Pervasives.flush Pervasives.stdout
 
-let gc_compact = Gc.compact
+let gc_compact () =
+   Gc.compact ();
+   Gc.print_stat Pervasives.stdout;
+   Pervasives.flush Pervasives.stdout
 
 let set_tex_file = Shell_tex.set_file
 
@@ -190,32 +209,63 @@ let ls s =
    in
       commands.view options
 
+(*
+ * Check status.
+ *)
+let clean_and_abandon mod_name =
+   abandon_all ()
+
 let status item =
    let name, status, _, _ = item.edit_get_contents [] in
-   let str_status = match status with
-      ObjPrimitive ->
-         "is a primitive axiom"
-    | ObjDerived ->
-         "is an internally derived object"
-    | ObjComplete (c1, c2) ->
-         sprintf "is a derived object with a complete proof (%i rule boxes, %i primitive steps)" c1 c2
-    | ObjIncomplete (c1, c2) ->
-         sprintf "is a derived object with an incomplete proof (%i rule boxes, %i primitive steps)" c1 c2
-    | ObjBad ->
-         "is a derived object with a broken proof"
-    | ObjUnknown ->
-         "is an object with unknown status"
+   let str_status =
+      match status with
+         ObjPrimitive ->
+            "is a primitive axiom"
+       | ObjDerived ->
+            "is an internally derived object"
+       | ObjComplete (c1, c2) ->
+            sprintf "is a derived object with a complete proof (%i rule boxes, %i primitive steps)" c1 c2
+       | ObjIncomplete (c1, c2) ->
+            sprintf "is a derived object with an incomplete proof (%i rule boxes, %i primitive steps)" c1 c2
+       | ObjBad ->
+            "is a derived object with a broken proof"
+       | ObjUnknown ->
+            "is an object with unknown status"
    in
       eprintf "Status: `%s' %s%t" name str_status eflush
 
-let status_all () =
+let status_all_aux clean_item clean_module =
    let f item db =
       eprintf "Expanding `%s':%t" (let name, _, _, _ = item.edit_get_contents [] in name) eflush;
-      let modified = try item.edit_interpret [] ProofExpand with Invalid_argument _ | _ -> false in
+      let modified =
+         try item.edit_interpret [] ProofExpand with
+            Invalid_argument _
+          | _ ->
+               false
+      in
          status item;
          modified
    in
-      apply_all f true true
+      apply_all f true clean_item clean_module
+
+let status_all () =
+   status_all_aux dont_clean_item dont_clean_module
+
+let status_and_abandon_all () =
+   status_all_aux clean_resources clean_and_abandon
+
+(* For debugging memory usage *)
+let debug_status_all () =
+   let f item db =
+      let modified =
+         try item.edit_interpret [] ProofExpand with
+            Invalid_argument _
+          | _ ->
+               false
+      in
+         modified
+   in
+      apply_all f true clean_resources clean_and_abandon
 
 declare refiner_status[name:s]
 
@@ -249,7 +299,7 @@ let check_all () =
          print_rbuffer buf;
          mofidied
    in
-      apply_all check true true
+      apply_all check true dont_clean_item dont_clean_module
 
 let up i =
    ignore (cd (String.make (i + 1) '.'));

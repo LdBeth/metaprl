@@ -154,8 +154,17 @@ type info =
    { pack_cache    : Cache.StrFilterCache.t;
      pack_groups   : (string, (string * StringSet.t)) Hashtbl.t;
 
-     (* NOTE: this is only the list of loaded packages *)
-     pack_packages : (string, package) Hashtbl.t
+     (*
+      * For GC purposes, we keep handles to modified packages.
+      * The loaded packages are kept in the weak array.
+      *
+      * Invariants:
+      *    1. All packages in pack_modified have status PackModified.
+      *    2. Any unmodified package can be garbage collected
+      *       once all references to it are dropped.
+      *)
+     mutable pack_modified : package list;
+     mutable pack_packages : package Weak.t
    }
 
 and t = info State.entry
@@ -218,13 +227,19 @@ let refresh pack_entry path =
 let create path =
    let pack =
       { pack_cache = Cache.StrFilterCache.create path;
-        pack_packages = Hashtbl.create 17;
-        pack_groups = Hashtbl.create 17
+        pack_groups = Hashtbl.create 17;
+        pack_modified = [];
+        pack_packages = Weak.create 32
       }
    in
    let pack = State.shared_val "Package_info.pack" pack in
       refresh pack path;
       pack
+
+let clear pack =
+   State.write pack (fun pack ->
+         Cache.StrFilterCache.clear pack.pack_cache;
+         pack.pack_modified <- [])
 
 (*
  * Lock the pack.
@@ -247,38 +262,113 @@ let get_refiner pack =
    (get_theory pack.pack_name).thy_refiner
 
 (************************************************************************
- * LOADING                                                              *
+ * GARBAGE COLLECTION
  ************************************************************************)
+
+(*
+ * Set the status of the package.
+ *)
+let rec remove_pack pack1 l2 =
+   match l2 with
+      pack2 :: l2 ->
+         if pack2.pack_name = pack1.pack_name then
+            l2
+         else
+            pack2 :: remove_pack pack1 l2
+    | [] ->
+         raise (Invalid_argument "remove_pack")
+
+let set_status pack status =
+   State.write pack.pack_info (fun info ->
+         match pack.pack_status, status with
+            PackModified, PackUnmodified ->
+               info.pack_modified <- remove_pack pack info.pack_modified;
+               pack.pack_status <- status
+          | PackUnmodified, PackModified ->
+               info.pack_modified <- pack :: info.pack_modified;
+               pack.pack_status <- status
+          | PackUnmodified, PackUnmodified
+          | PackModified, PackModified ->
+               ())
+
+(*
+ * "Touch" the package, meaning update its writable status.
+ *)
+let touch pack =
+   set_status pack PackModified
 
 (*
  * Load a package if not already loaded.
  *)
+
+(* Find a package in a weak array *)
+let find_package weak name =
+   let len = Weak.length weak in
+   let rec find i =
+      if i = len then
+         raise (NotLoaded name)
+      else
+         match Weak.get weak i with
+            Some pack ->
+               if pack.pack_name = name then
+                  pack
+               else
+                  find (succ i)
+          | None ->
+               find (succ i)
+   in
+      find 0
+
+(* Remove a package if it exists *)
+let remove_package weak name =
+   let len = Weak.length weak in
+   let rec remove i =
+      if i <> len then
+         match Weak.get weak i with
+            Some pack when pack.pack_name = name ->
+               Weak.set weak i None
+          | _ ->
+               remove (i + 1)
+   in
+      remove 0
+
+(* Add a package to the weak array, but raise an exception if the array is full *)
+let add_package info pack =
+   let weak = info.pack_packages in
+   let len = Weak.length weak in
+   let rec add i =
+      if i = len then
+         raise (Failure "add_package")
+      else
+         match Weak.get weak i with
+            Some pack' ->
+               if pack'.pack_name = pack.pack_name then begin
+                  if pack' != pack then
+                     eprintf "Duplicate package %s@." pack'.pack_name
+               end
+               else
+                  add (succ i)
+          | None ->
+               (* eprintf "Adding package at index %d (%d total modified packages)@." i (List.length info.pack_modified); *)
+               Weak.set weak i (Some pack)
+   in
+      add 0
+
+(* Add the package, and increase the array size if it is full *)
+let add_package info pack =
+   try add_package info pack with
+      Failure _ ->
+         let weak1 = info.pack_packages in
+         let len = Weak.length weak1 in
+         let weak2 = Weak.create (len * 2) in
+            Weak.blit weak1 0 weak2 0 len;
+            Weak.set weak2 len (Some pack);
+            info.pack_packages <- weak2
+
+(* Find or create the package *)
 let get_package pack_entry name =
    State.write pack_entry (fun pack ->
-         let mk_package name =
-            { pack_info = pack_entry;
-              pack_name = name;
-              pack_status = PackIncomplete;
-              pack_sig_info = None;
-              pack_str = None;
-              pack_infixes = Infix.Set.empty;
-            }
-         in
-            try Hashtbl.find pack.pack_packages name with
-               Not_found ->
-                  let node = mk_package name in
-                     Hashtbl.add pack.pack_packages name node;
-                     node)
-
-(*
- * Add an implementation package.
- * This replaces any current version of the package,
- * and adds the edges to the parents.
- *)
-let add_implementation pack_info =
-   let { pack_info = pack_entry; pack_name = name; pack_str = info } = pack_info in
-      State.write pack_entry (fun { pack_packages = packages } ->
-         Hashtbl.replace packages name pack_info)
+         find_package pack.pack_packages name)
 
 (*
  * Load a package.
@@ -297,9 +387,8 @@ let load_aux arg pack_info =
                      }
                   in
                      pack_info.pack_str <- Some pack_str;
-                     pack_info.pack_status <- PackUnmodified;
                      pack_info.pack_infixes <- Cache.StrFilterCache.all_infixes info;
-                     add_implementation pack_info;
+                     add_package pack pack_info;
                      Cache.StrFilterCache.set_mode info InteractiveSummary
                with
                   Not_found
@@ -327,7 +416,7 @@ let load pack_entry arg name =
    synchronize_pack pack_entry (fun pack ->
          let pack_info =
             try get_package pack_entry name with
-               Not_found ->
+               NotLoaded _ ->
                   { pack_info = pack_entry;
                     pack_status = PackUnmodified;
                     pack_name = name;
@@ -338,6 +427,8 @@ let load pack_entry arg name =
          in
             auto_load_str arg pack_info;
             pack_info)
+
+let get = get_package
 
 (************************************************************************
  * DESTRUCTION                                                          *
@@ -359,22 +450,6 @@ let filename pack_info arg =
                Cache.StrFilterCache.filename cache info)
     | { pack_name = name; pack_str = None } ->
          raise (NotLoaded name))
-
-(*
- * Set the status of the package.
- *)
-let set_status pack status =
-   pack.pack_status <- status
-
-(*
- * "Touch" the package, meaning update its writable status.
- *)
-let touch pack_info =
-   synchronize_node pack_info (fun pack ->
-      if pack.pack_status = PackIncomplete then
-         raise (Failure "Package_info.touch: package is incomplete")
-      else
-         pack.pack_status <- PackModified)
 
 (*
  * Get the items in the module.
@@ -418,9 +493,9 @@ let set pack_info arg item =
 let compare pack1 pack2 =
    pack1.pack_name < pack2.pack_name
 
-let packages pack =
-   synchronize_pack pack (fun { pack_packages = tbl } ->
-      Sort.list compare (Hashtbl.fold (fun _ pack packs -> pack :: packs) tbl []))
+let modified_packages pack =
+   synchronize_pack pack (fun { pack_modified = modified } ->
+      Sort.list compare modified)
 
 (*
  * Access to cache.
@@ -512,11 +587,6 @@ let get_grammar pack_info =
 (*
  * Get a loaded theory.
  *)
-let get pack name =
-   try get_package pack name with
-      Not_found ->
-         raise (Invalid_argument("Package_info.get: package " ^ name ^ " is not loaded"))
-
 let groups pack =
    let res = ref [] in
       synchronize_pack pack (fun pack -> Hashtbl.iter (fun gr (dsc, _) -> res := (gr, dsc) :: !res) pack.pack_groups);
@@ -543,14 +613,12 @@ let group_of_module pack name =
  *)
 let save_aux code arg pack_info =
    auto_loading_str arg pack_info (function
-         { pack_status = PackIncomplete; pack_name = name } ->
-            raise (Failure (sprintf "Package_info.save: package '%s' is incomplete" name))
-       | { pack_str = Some { pack_str_info = info } } as package ->
-            Cache.StrFilterCache.set_mode info InteractiveSummary;
-            Cache.StrFilterCache.save info arg (OnlySuffixes [code]);
-            package.pack_status <- PackUnmodified
-       | { pack_str = None; pack_name = name } ->
-            raise (NotLoaded name))
+      { pack_str = Some { pack_str_info = info } } as package ->
+         Cache.StrFilterCache.set_mode info InteractiveSummary;
+         Cache.StrFilterCache.save info arg (OnlySuffixes [code]);
+         set_status pack_info PackUnmodified
+    | { pack_str = None; pack_name = name } ->
+         raise (NotLoaded name))
 
 let export = save_aux "prla"
 let save   = save_aux "prlb"
@@ -564,9 +632,20 @@ let revert pack_info =
          { pack_info = pack_entry; pack_str = Some str_info } as package ->
             let { pack_str_info = info; pack_parse = parse_arg } = str_info in
                Cache.StrFilterCache.revert_proofs info parse_arg;
-               package.pack_status <- PackUnmodified
+               set_status pack_info PackUnmodified
        | { pack_str = None } ->
             eprintf "File is already reverted@.")
+
+(*
+ * Compeletly abandon changes.  You will lost all your work when
+ * you do this.
+ *)
+let abandon pack_info =
+   synchronize_node pack_info (fun pack ->
+         pack.pack_sig_info <- None;
+         pack.pack_str <- None;
+         pack.pack_infixes <- Infix.Set.empty;
+         set_status pack_info PackUnmodified)
 
 (*
  * Create an empty package.
@@ -575,7 +654,7 @@ let create_package pack_entry arg name =
    synchronize_pack pack_entry (fun pack ->
          let info =
             { pack_info = pack_entry;
-              pack_status = PackModified;
+              pack_status = PackUnmodified;
               pack_sig_info = None;
               pack_str =
                  Some { pack_str_info = Cache.StrFilterCache.create_cache pack.pack_cache name ImplementationType;
@@ -585,21 +664,21 @@ let create_package pack_entry arg name =
               pack_name = name
             }
          in
-            add_implementation info;
+            add_package pack info;
+            set_status info PackModified;
             info)
 
 (*
  * Look for a global_resource for an item
  *)
 let find_bookmark mod_name item_name =
-   try Mp_resource.find (mod_name, item_name)
-   with Not_found -> begin
-      eprintf "Warning: resources for %s.%s not found,\n\ttrying to use default resources for %s%t" (String.capitalize mod_name) item_name mod_name eflush;
-      try
-         Mp_resource.find (Mp_resource.theory_bookmark mod_name)
-      with Not_found ->
-         raise (RefineError("Package_info/new_proof", StringError("can not find any resources")))
-   end
+   try Mp_resource.find (mod_name, item_name) with
+      Not_found ->
+         eprintf "Warning: resources for %s.%s not found,\n\ttrying to use default resources for %s%t" (**)
+            (String.capitalize mod_name) item_name mod_name eflush;
+         try Mp_resource.find (Mp_resource.theory_bookmark mod_name) with
+            Not_found ->
+               raise (RefineError("Package_info/new_proof", StringError("can not find any resources")))
 
 let arg_resource pack_info arg name =
    auto_loading_str arg pack_info (fun pack -> find_bookmark pack.pack_name name)

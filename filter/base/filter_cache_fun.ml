@@ -382,6 +382,14 @@ struct
         sig_summaries = []
       }
 
+   (*
+    * Clear out all the cached summaries.
+    *)
+   let clear cache =
+      Base.clear cache.lib;
+      cache.str_summaries <- [];
+      cache.sig_summaries <- []
+
    let set_path { lib = base } path =
       Base.set_path base path
 

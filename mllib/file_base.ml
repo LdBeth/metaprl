@@ -84,7 +84,7 @@ struct
     * module names to the module info.
     *)
    type t =
-      { io_table : (file_name, info list ref) Hashtbl.t;
+      { mutable io_table : (file_name, info list ref) Hashtbl.t;
         mutable io_path : string list
       }
 
@@ -99,6 +99,9 @@ struct
       { io_table = Hashtbl.create 97;
         io_path = path
       }
+
+   let clear base =
+      base.io_table <- Hashtbl.create 97
 
    let set_path base path =
       base.io_path <- path

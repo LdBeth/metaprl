@@ -214,6 +214,13 @@ type edit_object =
    }
 
 (*
+ * Functions on items.
+ *)
+type item_fun = edit_object -> dform_base -> was_modified
+type clean_item_fun = string -> string -> unit
+type clean_module_fun = string -> unit
+
+(*
  * Shell commands for callbacks.
  * This is imperative because these are recursive calls
  * that are not available until the shell is initialized.
@@ -238,10 +245,12 @@ type shell_commands =
      mutable export_all : unit -> unit;
      mutable revert : unit -> unit;
      mutable revert_all : unit -> unit;
+     mutable abandon : unit -> unit;
+     mutable abandon_all : unit -> unit;
      mutable view : LsOptionSet.t -> unit;
      mutable expand : unit -> unit;
      mutable expand_all : unit -> unit;
-     mutable apply_all : (edit_object -> dform_base -> was_modified) -> bool -> bool -> unit;
+     mutable apply_all : item_fun -> bool -> clean_item_fun -> clean_module_fun -> unit;
      mutable interpret : proof_command -> unit;
      mutable undo : unit -> unit;
      mutable redo : unit -> unit;
@@ -265,7 +274,6 @@ type shell_commands =
 type package_status =
    PackUnmodified
  | PackModified
- | PackIncomplete
 
 (*
  * Values needed for parsing.

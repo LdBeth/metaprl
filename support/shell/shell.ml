@@ -114,15 +114,18 @@ struct
        *)
       let list_modules = all_theories
 
-      let get_info shell name =
-         try Package_info.info (Package_info.get packages name) parse_arg with
+      let get_pack shell name =
+         try Package_info.get packages name with
             NotLoaded _ ->
                eprintf "Loading package %s%t" name eflush;
-               ignore (Package_info.load packages parse_arg name);
-               Package_info.info (Package_info.get packages name) parse_arg
+               Package_info.load packages parse_arg name
+
+      let get_info shell name =
+         Package_info.info (get_pack shell name) parse_arg
 
       let save name =
-         Package_info.save parse_arg (Package_info.get packages name)
+         synchronize (fun shell ->
+               Package_info.save parse_arg (get_pack shell name))
 
       let list_module_all name =
          synchronize (fun shell ->
@@ -293,7 +296,7 @@ struct
                   false
                in
                   chdir parse_arg shell false false (module_dir mname);
-                  apply_all parse_arg shell f false false;
+                  apply_all parse_arg shell f false Shell_command.dont_clean_item Shell_command.dont_clean_module;
                   List.rev !objs)
 
       (*
@@ -477,20 +480,20 @@ struct
       let wrap_unit_arg cmd () =
          synchronize (cmd parse_arg)
 
-      let debug              = wrap_unit (fun shell -> shell.shell_debug)
+      let debug              = wrap_unit     (fun shell -> shell.shell_debug)
       let refresh            = wrap_unit_arg refresh
-      let pwd                = wrap_unit pwd
+      let pwd                = wrap_unit     pwd
       let filename           = wrap_unit_arg filename
-      let get_ls_options     = wrap_unit get_ls_options
-      let get_view_options   = wrap_unit get_view_options
-      let set_view_options   = wrap      set_view_options
-      let clear_view_options = wrap      clear_view_options
-      let get_shortener      = wrap_unit get_shortener
-      let get_dforms         = wrap      get_display_mode
-      let set_dfmode         = wrap      set_dfmode
-      let set_dftype         = wrap      set_dftype
-      let set_window_width   = wrap      set_window_width
-      let flush              = wrap_unit flush
+      let get_ls_options     = wrap_unit     get_ls_options
+      let get_view_options   = wrap_unit     get_view_options
+      let set_view_options   = wrap          set_view_options
+      let clear_view_options = wrap          clear_view_options
+      let get_shortener      = wrap_unit     get_shortener
+      let get_dforms         = wrap          get_display_mode
+      let set_dfmode         = wrap          set_dfmode
+      let set_dftype         = wrap          set_dftype
+      let set_window_width   = wrap          set_window_width
+      let flush              = wrap_unit     flush
 
       let backup             = wrap_unit_arg backup
       let backup_all         = wrap_unit_arg backup_all
@@ -498,6 +501,10 @@ struct
       let save_all           = wrap_unit_arg save_all
       let export             = wrap_unit_arg export
       let export_all         = wrap_unit_arg export_all
+      let revert             = wrap_unit_arg revert
+      let revert_all         = wrap_unit_arg revert_all
+      let abandon            = wrap_unit_arg abandon
+      let abandon_all        = wrap_unit_arg abandon_all
 
       let extract shell path =
          extract parse_arg shell (dir_of_path path)
@@ -535,8 +542,10 @@ struct
                commands.save_all            <- save_all;
                commands.export              <- export;
                commands.export_all          <- export_all;
-               commands.revert              <- wrap_unit_arg revert;
-               commands.revert_all          <- wrap_unit_arg revert_all;
+               commands.revert              <- revert;
+               commands.revert_all          <- revert_all;
+               commands.abandon             <- abandon;
+               commands.abandon_all         <- abandon_all;
                commands.view                <- wrap_arg view;
                commands.check               <- wrap_unit check;
                commands.expand              <- wrap_unit expand;

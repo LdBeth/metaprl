@@ -66,7 +66,8 @@ type proof
 (*
  * Create a database.  The argument is the search path.
  *)
-val create : string list -> t
+val create  : string list -> t
+val clear   : t -> unit
 val refresh : t -> string list -> unit
 
 (*
@@ -74,12 +75,13 @@ val refresh : t -> string list -> unit
  * Loaded packages are initially read-only.
  *)
 val create_package : t -> parse_arg -> string -> package
-val load   : t -> parse_arg -> string -> package
-val get    : t -> string -> package
-val backup : parse_arg -> package -> unit
-val save   : parse_arg -> package -> unit
-val export : parse_arg -> package -> unit
-val revert : package -> unit
+val load    : t -> parse_arg -> string -> package
+val get     : t -> string -> package   (* May raise NotLoaded *)
+val backup  : parse_arg -> package -> unit
+val save    : parse_arg -> package -> unit
+val export  : parse_arg -> package -> unit
+val revert  : package -> unit
+val abandon : package -> unit
 
 (*
  * Access.
@@ -95,7 +97,7 @@ val get_refiner  : package -> Refine.refiner
 (*
  * Navigation.
  *)
-val packages : t -> package list
+val modified_packages : t -> package list
 val groups : t -> (string * string) list
 val group_exists : t -> string -> bool
 val group_packages : t -> string -> string * string list (* May raise Not_found *)

@@ -33,6 +33,13 @@ open Tactic_type.Tactic
 open Shell_sig
 
 (*
+ * Arguments to apply_all.
+ *)
+val dont_clean_item   : clean_item_fun
+val dont_clean_module : clean_module_fun
+val clean_resources   : clean_item_fun
+
+(*
  * Update the commands.
  *)
 val synchronize : (shell_commands -> unit) -> unit
@@ -73,6 +80,9 @@ topval make_assum : unit -> unit
 topval check : unit -> unit
 topval check_all : unit -> unit
 topval status_all : unit -> unit
+topval status_and_abandon_all : unit -> unit
+topval debug_status_all : unit -> unit
+
 topval find_subgoal : int -> string
 
 (* Module commands. *)
@@ -85,6 +95,8 @@ topval export : unit -> unit
 topval export_all : unit -> unit
 topval revert : unit -> unit
 topval revert_all : unit -> unit
+topval abandon : unit -> unit
+topval abandon_all : unit -> unit
 
 (* Display *)
 topval ls : string -> unit

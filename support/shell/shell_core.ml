@@ -72,8 +72,8 @@ let shell_package pkg =
  *)
 let packages = Package_info.create (Shell_state.get_includes ())
 
-let loaded_packages () =
-   List.filter shell_package (Package_info.packages packages)
+let modified_packages () =
+   List.filter shell_package (Package_info.modified_packages packages)
 
 let all_theories () =
    let names = StringSet.empty in
@@ -83,7 +83,7 @@ let all_theories () =
                if shell_package_name name then
                   StringSet.add names name
                else
-                  names) names (Package_info.packages packages)
+                  names) names (Package_info.modified_packages packages)
    in
    let names =
       List.fold_left (fun names thy ->
@@ -218,7 +218,7 @@ let fg shell pid =
  * Update the current item being edited.
  *)
 let set_package parse_arg info modname =
-   let pack = Package_info.get packages modname in
+   let pack = Package_info.load packages parse_arg modname in
       info.shell_proof <- Shell_package.view pack parse_arg (get_display_mode info)
 
 let get_item parse_arg info modname name =
@@ -673,7 +673,7 @@ let mount_module modname parse_arg shell force_flag need_shell verbose =
    set_package parse_arg shell modname;
 
    (* Set the proof *)
-   let pack = Package_info.get packages modname in
+   let pack = Package_info.load packages parse_arg modname in
    let display_mode = get_display_mode shell in
    let proof = Shell_package.view pack parse_arg display_mode in
       (* Set the proof *)
@@ -847,7 +847,7 @@ let view parse_arg shell options =
 (*
  * Apply a function to all elements.
  *)
-let rec apply_all parse_arg shell f (time : bool) (clean_res : bool) =
+let rec apply_all parse_arg shell (f : item_fun) (time : bool) (clean_item : clean_item_fun) (clean_module : clean_module_fun) =
    let dir = shell.shell_fs, shell.shell_subdir in
    let apply_it item mod_name name =
       (*
@@ -857,11 +857,15 @@ let rec apply_all parse_arg shell f (time : bool) (clean_res : bool) =
       (try Shell_state.set_so_var_context (Some (item.edit_get_terms ())) with
           _ ->
              ());
-      if try f item (get_db shell) with _ -> false then
+
+      if
+         try f item (get_db shell) with
+            _ ->
+               false
+      then
          touch shell;
 
-      if clean_res then
-         Mp_resource.clear_results (mod_name, name)
+      clean_item mod_name name
    in
    let rec apply_all_exn time =
       let display_mode = get_display_mode shell in
@@ -894,32 +898,35 @@ let rec apply_all parse_arg shell f (time : bool) (clean_res : bool) =
                             -. (start.Unix.tms_stime +. finish.Unix.tms_cstime))
                            (finish_time -. start_time)
                            eflush
-                  else
-                     List.iter apply_item items
+                  else begin
+                     List.iter apply_item items;
+                     clean_module mod_name
+                  end
 
           | DirModule _, _, _ ->
                raise (Invalid_argument "Shell_core.apply_all: internal error")
 
           | DirRoot, subdir, _ ->
-               let expand name =
-                  eprintf "Entering %s%t" name eflush;
-                  chdir parse_arg shell false true (module_dir name);
-                  apply_all_exn false
-               in
-                  begin match subdir with
-                     [] ->
-                        List.iter expand (all_theories ())
-                   | [group] ->
-                        List.iter expand (List.filter shell_package_name (snd (Package_info.group_packages packages group)))
-                   | _ ->
-                        raise (Invalid_argument "Shell_core.apply_all: internal error")
-                  end
+               (match subdir with
+                   [] ->
+                      apply_all_packages_exn (all_theories ())
+                 | [group] ->
+                      apply_all_packages_exn (List.filter shell_package_name (snd (Package_info.group_packages packages group)))
+                 | _ ->
+                      raise (Invalid_argument "Shell_core.apply_all: internal error"))
 
           | DirFS, _, _ ->
                raise (Failure "Shell_core.apply_all: not applicable in a filesystem")
 
           | DirProof _, _, _ ->
                raise (Failure "Shell_core.apply_all: not applicable inside an individual proof")
+   and apply_all_packages_exn names =
+      let expand name =
+         eprintf "Entering %s%t" name eflush;
+         chdir parse_arg shell false true (module_dir name);
+         apply_all_exn false
+      in
+         List.iter expand names
    in
       apply_all_exn time;
       chdir_full parse_arg shell true false false dir
@@ -928,7 +935,7 @@ let expand_all parse_arg shell =
    let f item db =
       item.edit_interpret [] ProofExpand
    in
-      apply_all parse_arg shell f true true
+      apply_all parse_arg shell f true clean_resources dont_clean_module
 
 (*
  * TeX functions.
@@ -1034,6 +1041,15 @@ let revert parse_arg shell =
     | None ->
          ()
 
+let abandon parse_arg shell =
+   match shell.shell_package with
+      Some pack ->
+         eprintf "Abandoning %s@." (Package_info.name pack);
+         Package_info.abandon pack;
+         refresh parse_arg shell
+    | None ->
+         ()
+
 (*
  * Walk over all packages.
  *)
@@ -1045,7 +1061,7 @@ let backup_all parse_arg _ =
             Package_info.backup parse_arg pack
          end
    in
-      List.iter backup (loaded_packages ())
+      List.iter backup (modified_packages ())
 
 let save_all parse_arg _ =
    let save pack =
@@ -1055,7 +1071,7 @@ let save_all parse_arg _ =
             Package_info.save parse_arg pack
          end
    in
-      List.iter save (loaded_packages ())
+      List.iter save (modified_packages ())
 
 let export_all parse_arg _ =
    let save pack =
@@ -1065,9 +1081,9 @@ let export_all parse_arg _ =
             Package_info.export parse_arg pack
          end
    in
-      List.iter save (loaded_packages ())
+      List.iter save (modified_packages ())
 
-let revert_all shell =
+let revert_all parse_arg shell =
    let revert pack =
       if Package_info.status pack = PackModified then
          begin
@@ -1075,8 +1091,21 @@ let revert_all shell =
             Package_info.revert pack
          end
    in
-      List.iter revert (loaded_packages ());
-      refresh shell
+      List.iter revert (modified_packages ());
+      refresh parse_arg shell
+
+(*
+ * This performs a massive cleanup of the cached state.
+ *)
+let abandon_all parse_arg shell =
+   let abandon pack =
+      eprintf "Abandoning %s@." (Package_info.name pack);
+      Package_info.abandon pack
+   in
+      List.iter abandon (modified_packages ());
+      Proof_boot.Proof.clear_cache ();
+      Package_info.clear packages;
+      refresh parse_arg shell
 
 (*!
  * @docoff

@@ -81,7 +81,8 @@ struct
    (*
     * Create a new base from the path.
     *)
-   let create = FileBase.create
+   let create   = FileBase.create
+   let clear    = FileBase.clear
    let set_path = FileBase.set_path
 
    (************************************************************************

@@ -94,7 +94,8 @@ sig
    type t
 
    (* Creation *)
-   val create : string list -> t
+   val create   : string list -> t
+   val clear    : t -> unit
    val set_path : t -> string list -> unit
 
    (* Loading and saving *)

@@ -158,6 +158,7 @@ let rec rule_term_of_text = function
       append_rule_box (rule_term_of_text expr) "<then...>"
  | Proof.ExprRule (text, _) ->
       mk_rule_box_string_term text
+
 (*
  * Display a proof with an inference.
  *)

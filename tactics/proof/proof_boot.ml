@@ -29,7 +29,6 @@
  * These are functional structures, and they are singly linked from the
  * parents toward the leaves.  Navigation up the tree takes log time.
  *
- *
  * ----------------------------------------------------------------
  *
  * This file is part of MetaPRL, a modular, higher order
@@ -205,8 +204,12 @@ struct
     * caches (use State.private_val).
     *)
    let cache_entry =
-      let default = ref (Cache.empty) in
+      let default = ref Cache.empty in
          State.shared_val "Proof_boot.cache" default
+
+   let clear_cache () =
+      State.write cache_entry (fun entry ->
+            entry := Cache.empty)
 
    (************************************************************************
     * PROOF PRINTING                                                       *
@@ -237,7 +240,8 @@ struct
     ************************************************************************)
 
    let rec count_leaves = function
-      Goal _ | Identity _ -> 1
+      Goal _
+    | Identity _ -> 1
     | Unjustified (_, leaves)
     | Extract (_, leaves, _) -> List.length leaves
     | Wrapped (_, goal) -> count_leaves goal
