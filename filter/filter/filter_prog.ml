@@ -501,8 +501,6 @@ let toploop_item_expr loc name ctyp =
 let declare_rewrite loc rw =
    [<:sig_item< value $rw.rw_name$ : $rewrite_ctyp loc$ >>]
 
-let declare_input_form loc form = []
-
 let declare_define_term loc _ def =
    [<:sig_item< value $def.term_def_name$ : $rewrite_ctyp loc$ >>]
 
@@ -584,7 +582,7 @@ let extract_sig_item (item, loc) =
     | InputForm ({ iform_name = name } as rw) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: input form: %s%t" name eflush;
-         declare_input_form loc rw
+         []
     | CondRewrite ({ crw_name = name } as crw) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: cond rewrite: %s%t" name eflush;
@@ -619,6 +617,9 @@ let extract_sig_item (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: magic block%t" eflush;
          declare_magic_block loc block
+    | DefineTerm (ShapeNormal, class_term, term_def) ->
+         declare_define_term loc class_term term_def
+    | DefineTerm (ShapeIForm, _, _)
     | DeclareTypeClass _
     | DeclareType _
     | DeclareTerm _
@@ -640,8 +641,6 @@ let extract_sig_item (item, loc) =
          declare_ml_axiom loc item
     | Module (name, _) ->
          Stdpp.raise_with_loc loc (Failure "Filter_sig.extract_sig_item: nested modules are not implemented")
-    | DefineTerm (_, class_term, term_def) ->
-         declare_define_term loc class_term term_def
 
 (*
  * Extract a signature.
@@ -916,11 +915,6 @@ let define_rewrite_resources proc loc name redex contractum assums addrs params 
          >>
    in
       bindings_let proc loc resources <:expr< do { $list:List.map define_resource resources.item_item$ } >>
-
-(*
- * Input forms will be added to the grammar; no code is necessary for them.
- *)
-let define_input_form proc loc form = []
 
 (*
  * A primitive rewrite is assumed true by fiat.
@@ -1570,7 +1564,7 @@ let extract_str_item proc (item, loc) =
     | InputForm ({ iform_name = name } as rw) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: primrw: %s%t" name eflush;
-         define_input_form proc loc rw
+         []
     | CondRewrite ({ crw_name = name; crw_proof = Primitive _ } as crw) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: prim condrw: %s%t" name eflush;
@@ -1658,6 +1652,9 @@ let extract_str_item proc (item, loc) =
     | MLGramUpd (Infix s)
     | MLGramUpd (Suffix s) ->
          define_prefix loc s
+    | DefineTerm (ShapeNormal, class_term, def) ->
+         define_term proc loc class_term def
+    | DefineTerm (ShapeIForm, _, _)
     | DeclareTypeClass _
     | DeclareType _
     | DeclareTerm _
@@ -1670,8 +1667,6 @@ let extract_str_item proc (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_str_item: infix%t" eflush;
          raise (Failure "Filter_prog.extract_str_item: nested modules are not implemented")
-    | DefineTerm (_, class_term, def) ->
-         define_term proc loc class_term def
 
 (*
  * Extract a signature.

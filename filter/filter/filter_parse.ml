@@ -594,16 +594,6 @@ struct
    let declare_define_term proc shapeclass ty_term =
       FilterCache.declare_term proc.cache shapeclass ty_term
 
-   let define_term proc loc shapeclass name ty_term contractum res =
-      let redex = term_of_ty ty_term in
-      let term_def =
-         { term_def_name = name;
-           term_def_value = contractum;
-           term_def_resources = res
-         }
-      in
-         add_command proc (DefineTerm (shapeclass, ty_term, term_def), loc)
-
    let declare_type_rewrite proc loc redex contractum =
       FilterCache.declare_type_rewrite proc.cache redex contractum;
       add_command proc (DeclareTypeRewrite (redex, contractum), loc)
@@ -1054,6 +1044,20 @@ struct
 
    let compile_parser proc loc =
       FilterCache.compile_parser proc.cache
+
+   let define_term proc loc shapeclass name ty_term contractum res =
+      let redex = term_of_ty ty_term in
+      let term_def =
+         { term_def_name = name;
+           term_def_value = contractum;
+           term_def_resources = res
+         }
+      in
+         begin match shapeclass with
+            ShapeNormal -> ()
+          | ShapeIForm -> add_iform proc loc redex contractum
+         end;
+         add_command proc (DefineTerm (shapeclass, ty_term, term_def), loc)
 end
 
 (*
@@ -1367,10 +1371,17 @@ let parse_define_quote loc quote =
 let parse_define_redex loc quote =
    { quote with ty_term = quoted_term_of_parsed_term loc quote.ty_term }
 
-let parse_define_term loc name quote contractum =
-   let redex, contractum = parse_define loc name quote.ty_term contractum in
-   let quote = { quote with ty_term = redex } in
-      quote, contractum
+let parse_define_term loc name shape_class quote contractum =
+   let redex, contractum =
+      match shape_class with
+         ShapeNormal ->
+            parse_define loc name quote.ty_term contractum
+       | ShapeIForm ->
+            let mt = parse_iform loc name (MetaIff (MetaTheorem quote.ty_term, MetaTheorem contractum)) in
+            let _, redex, contractum = unzip_rewrite name mt in
+               redex, contractum
+   in
+      { quote with ty_term = redex }, contractum
 
 (* Parse and check a rewrite definition *)
 let parse_rewrite loc name mt tl rs =
@@ -1591,7 +1602,7 @@ EXTEND
              let proc = SigFilter.get_proc loc in
              let quote = parse_define_quote loc quote in
              let () = SigFilter.declare_define_term proc sc (parse_define_redex loc quote) in
-             let quote, def = parse_define_term loc name quote def in
+             let quote, def = parse_define_term loc name sc quote def in
                 SigFilter.define_term proc loc sc name quote def res
            in
               handle_exn f ("define " ^ name) loc;
@@ -1817,7 +1828,7 @@ EXTEND
              let proc = StrFilter.get_proc loc in
              let quote = parse_define_quote loc quote in
              let () = StrFilter.declare_define_term proc sc (parse_define_redex loc quote) in
-             let quote, def = parse_define_term loc name quote def in
+             let quote, def = parse_define_term loc name sc quote def in
                 StrFilter.define_term proc loc sc name quote def res
            in
               handle_exn f ("define " ^ name) loc;

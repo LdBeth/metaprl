@@ -118,7 +118,7 @@ let is_rewrite_item = function
    Rewrite _
  | CondRewrite _
  | MLRewrite _
- | DefineTerm _ ->
+ | DefineTerm(ShapeNormal, _, _) ->
       true
  | _ ->
       false

@@ -1873,7 +1873,7 @@ struct
             implem_error (sprintf "Rewrite %s: not implemented" name)
        | Rewrite { rw_name = name'; rw_redex = redex'; rw_contractum = con' } :: _ when name = name' ->
             redex', con'
-       | DefineTerm (_, ty_term, { term_def_name = name'; term_def_value = con' }) :: _ when name = name' ->
+       | DefineTerm (ShapeNormal, ty_term, { term_def_name = name'; term_def_value = con' }) :: _ when name = name' ->
             (term_of_ty ty_term), con'
        | _ :: t ->
             search t
@@ -1894,21 +1894,27 @@ struct
       let { iform_name = name; iform_redex = redex; iform_contractum = con } = info in
       let rec search = function
          [] ->
-            (InputForm info, loc) :: items
+            None
        | InputForm { iform_name = name'; iform_redex = redex'; iform_contractum = con' } :: _ when name = name' ->
-            if alpha_equal redex' redex then
-               if alpha_equal con' con then
-                  items
-               else
-                  implem_error (sprintf "InputForm %s: contractum mismatch:\n%s\nshould be\n%s\n" (**)
-                                   name (string_of_term con') (string_of_term con))
-            else
-               implem_error (sprintf "InputForm %s: redex mismatch:\n%s\nshould be\n%s\n" (**)
-                                name (string_of_term redex') (string_of_term redex))
+            Some((redex', con'))
+       | DefineTerm (ShapeIForm, ty_term, { term_def_name = name'; term_def_value = con' }) :: _ when name = name' ->
+            Some(((term_of_ty ty_term), con'))
        | _ :: t ->
             search t
       in
-         search implem
+         match search implem with
+            Some((redex', con')) ->
+               if alpha_equal redex' redex then
+                  if alpha_equal con' con then
+                     items
+                  else
+                     implem_error (sprintf "InputForm %s: contractum mismatch:\n%s\nshould be\n%s\n" (**)
+                                      name (string_of_term con') (string_of_term con))
+               else
+                  implem_error (sprintf "InputForm %s: redex mismatch:\n%s\nshould be\n%s\n" (**)
+                                   name (string_of_term redex') (string_of_term redex))
+          | None ->
+               (InputForm info, loc) :: items
 
    (*
     * Conditions in implementation must be weaker than in the interface.
