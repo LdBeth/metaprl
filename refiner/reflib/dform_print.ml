@@ -85,17 +85,20 @@ let equal_mode_bases
    { all_base = all1; mode_bases = bases1 }
    { all_base = all2; mode_bases = bases2 }
    =
-   let labels1 = List.map fst bases1 in
-   let labels2 = List.map fst bases2 in
-   let equal_mode_base name =
-      let base1 = List.assoc name bases1 in
-      let base2 = List.assoc name bases2 in
-         equal_dfbases base1 base2
-   in
-      equal_dfbases all1 all2 &
-      (List_util.subtract labels1 labels2 = []) &
-      (List_util.subtract labels2 labels1 = []) &
-      List.for_all equal_mode_base labels1
+   try
+      let labels1 = List.map fst bases1 in
+      let labels2 = List.map fst bases2 in
+      let equal_mode_base name =
+         let base1 = List.assoc name bases1 in
+         let base2 = List.assoc name bases2 in
+            equal_dfbases base1 base2
+      in
+         equal_dfbases all1 all2 &
+         (List_util.subtract labels1 labels2 = []) &
+         (List_util.subtract labels2 labels1 = []) &
+         List.for_all equal_mode_base labels1
+   with
+      Not_found -> raise (Invalid_argument "Dform_print.equal_mode_bases")
 
 let dest_mode_base { all_base = all; mode_bases = bases } =
    all, bases

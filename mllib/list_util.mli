@@ -108,6 +108,7 @@ val add_assoc : 'a * 'b -> ('a * 'b) list -> ('a * 'b) list
 val assoc_in_dom : ('b -> 'a -> bool) -> 'b -> ('a * 'c) list -> bool
 val assoc_in_range : ('b -> 'c -> bool) -> 'b -> ('a * 'c) list -> bool
 val check_assoc : 'a -> 'a -> ('a *'a) list -> bool
+val try_assoc: 'a -> ('a * 'a) list -> 'a
 
 (*
  * List splitting.

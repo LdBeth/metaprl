@@ -33,6 +33,7 @@
 
 open Mp_debug
 open Printf
+open String_set
 
 open Refine_error_sig
 open Term_std_sig
@@ -651,12 +652,12 @@ struct
                Not_found ->
                   if List_util.assoc_in_range (=) v' bvars then raise unify_exn else
                   if v=v' then subst else
-                  if String_set.StringSet.mem constants v then
-                     if String_set.StringSet.mem constants v' then raise unify_exn else
+                  if StringSet.mem constants v then
+                     if StringSet.mem constants v' then raise unify_exn else
                      try unify_terms subst constants bvars (subst_assoc subst v') term1 with
                         Not_found ->
                            subst_add subst v' term1
-                  else if String_set.StringSet.mem constants v' then
+                  else if StringSet.mem constants v' then
                      try unify_terms subst constants bvars (subst_assoc subst v) term2 with
                         Not_found ->
                            subst_add subst v term2
@@ -681,7 +682,7 @@ struct
                raise unify_exn
 
    and unify_var_term subst constants bvars v term1 term2 =
-      if String_set.StringSet.mem constants v then
+      if StringSet.mem constants v then
          raise unify_exn
       else 
          try unify_terms subst constants bvars (subst_assoc subst v) term2 with
@@ -708,6 +709,12 @@ struct
     * Matching is like unification, but variable matches
     * are only allowed on the left.  There is no occurs-check.
     *)
+   let rec check_bvars tvs = function
+      [] -> ()
+    | (_,v)::tl ->
+         if List.mem v tvs then raise_generic_exn else
+         check_bvars tvs tl
+    
    let rec match_terms subst bvars tm1 tm2 =
       if is_var_term tm1 then
          let v = dest_var tm1 in
@@ -727,6 +734,7 @@ struct
                            match_terms subst bvars (List.assoc v subst) tm2
                   with
                      Not_found ->
+                        check_bvars (free_vars tm2) bvars;
                         (v, tm2) :: subst
       else
          let { term_op = { op_name = opname1; op_params = params1 };
@@ -758,7 +766,7 @@ struct
 #ifdef VERBOSE_EXN
       try List.rev (match_terms subst [] t1 t2) with
          RefineError (_, GenericError) ->
-            raise (RefineError ("match", TermPairMatchError (t1, t2)))
+            raise (RefineError ("Term_subst_std.match_terms", TermPairMatchError (t1, t2)))
 #else
             List.rev (match_terms subst [] t1 t2)
 #endif

@@ -443,6 +443,11 @@ let rec check_assoc v v' = function
        | _ -> false
       end
 
+let rec try_assoc v = function
+   [] -> v
+ | (v1,v2)::tl ->
+      if v1=v then v2 else try_assoc v tl
+
 (*
  * Split a list.
  *)

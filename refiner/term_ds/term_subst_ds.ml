@@ -108,17 +108,14 @@ struct
    type term_subst = TermType.term_subst
 
    let subst t tl vl =
-      assert (if List.length tl = List.length vl then
-                 true
-              else
-                 begin
-                    eprintf "subst: %a (%a) (%a)%t" (**)
-                       debug_print t
-                       print_string_list vl
-                       (print_any_list debug_print) tl
-                       eflush;
-                    true
-                 end);
+#ifdef VERBOSE_EXN
+      if List.length tl <> List.length vl then
+           eprintf "subst: %a (%a) (%a)%t" (**)
+           debug_print t
+           print_string_list vl
+           (print_any_list debug_print) tl
+           eflush;
+#endif
       do_term_subst (List.combine vl tl) t
 
    let is_free_var v t = StringSet.mem (term_free_vars t) v
@@ -590,6 +587,12 @@ struct
     * Matching is like unification, but variable matches
     * are only allowed on the left.  There is no occurs-check.
     *)
+   let rec check_bvars tvs = function
+      [] -> ()
+    | (_,v)::tl ->
+         if StringSet.mem tvs v then raise_generic_exn else
+         check_bvars tvs tl
+   
    let rec match_terms subst bvars tm1 tm2 =
       if is_var_term tm1 then
          let v = dest_var tm1 in
@@ -606,9 +609,10 @@ struct
                         if is_var_term tm2 & dest_var tm1 = dest_var tm2 then
                            subst
                         else
-                           match_terms subst bvars (List.assoc v subst) tm2
+                           match_terms subst bvars tm1 tm2
                   with
                      Not_found ->
+                        check_bvars (term_free_vars tm2) bvars;
                         (v, tm2) :: subst
       else
          let { term_op = { op_name = opname1; op_params = params1 };
@@ -640,7 +644,7 @@ struct
 #ifdef VERBOSE_EXN
       try List.rev (match_terms subst [] t1 t2) with
          RefineError (_, GenericError) ->
-            raise (RefineError ("match", TermPairMatchError (t1, t2)))
+            raise (RefineError ("Term_subst_ds.match_terms", TermPairMatchError (t1, t2)))
 #else
             List.rev (match_terms subst [] t1 t2)
 #endif

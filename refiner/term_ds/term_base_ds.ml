@@ -256,15 +256,69 @@ struct
             let ftail = filter_sub_vars bvars tail in
             if ftail == tail then l else sb::ftail
 
+   (*
+    * Make a variable.
+    *)
+   let mk_var_term v =
+      { free_vars = VarsDelayed;
+        core = FOVar v }
+
+   (*
+    * New variable production.
+    * renames are the variables to be renamed,
+    * and av is a list list of variables to avoid.
+    * Our algorithm is slow and simple: just append an
+    * index and increment until no more collisions.
+    *)
+
+   let rec new_var av v i =
+      let v' = v ^ "_" ^ (string_of_int i) in
+      if (StringSet.mem av v')
+         then new_var av v (succ i)
+         else v'
+
+   and new_vars av = function
+      [] -> ([],[])
+    | v::vt ->
+         let (vs,ts) = (new_vars av vt) in
+         let v' = new_var av v 1 in
+            ((v,v')::vs, (v,mk_var_term v')::ts)
+
+   let rec rename_bvars vs = function
+      [] -> []
+    | v::tl ->
+         List_util.try_assoc v vs :: rename_bvars vs tl
+
    let do_bterm_subst sub bt =
-      if (bt.bvars==[]) then
-         { bvars = []; bterm = do_term_subst sub bt.bterm }
-      else
-         { bvars = bt.bvars; bterm = 
-           do_term_subst (filter_sub_vars bt.bvars sub) bt.bterm }
+      let btrm = bt.bterm in
+      match bt.bvars with
+         [] -> 
+            begin match StringSet.fst_mem_filt (term_free_vars btrm) sub with
+               [] -> bt
+             | sub ->
+                  { bvars = []; bterm = {free_vars = VarsDelayed; core = Subst (btrm,sub)}}
+            end
+       | bvrs ->
+            begin match StringSet.fst_mem_filt (term_free_vars btrm) 
+                                               (filter_sub_vars bt.bvars sub) with
+               [] -> bt
+             | sub ->
+                  let sub_fvars = subst_free_vars sub in
+                  begin match StringSet.mem_filt sub_fvars bvrs with
+                     [] ->
+                        { bvars = bvrs;
+                          bterm = { free_vars = VarsDelayed; core = Subst (btrm,sub) }}
+                   | capt_vars ->
+                        let avoidvars = StringSet.union sub_fvars (term_free_vars btrm) in
+                        let (vs,ts) = new_vars avoidvars capt_vars in
+                        let new_t = do_term_subst ts btrm in
+                        { bvars = rename_bvars vs bvrs;
+                          bterm = { free_vars = VarsDelayed; core = Subst (new_t,sub) }}
+                  end
+            end
 
    (************************************************************************
-    * De/Constructors                                                 *
+    * De/Constructors                                                      *
     ************************************************************************)
 
    let var_opname = make_opname ["var"]
@@ -319,13 +373,6 @@ struct
     | Context (v,ts) ->
          Context (v, List.map (do_term_subst sub) ts)
 
-   (*
-    * Make a variable.
-    *)
-   let mk_var_term v =
-      { free_vars = VarsDelayed;
-        core = FOVar v }
-
    let mk_op name params = { op_name = name; op_params = params }
 
    let mk_simple_bterm term =
@@ -344,27 +391,6 @@ struct
        | FOVar v -> 
              { term_op = { op_name = var_opname; op_params = [Var v] }; term_terms = [] }
        | Subst _ -> let _ = get_core t in dest_term t
-
-   (*
-    * New variable production.
-    * renames are the variables to be renamed,
-    * and av is a list list of variables to avoid.
-    * Our algorithm is slow and simple: just append an
-    * index and increment until no more collisions.
-    *)
-
-   let rec new_var av v i =
-      let v' = v ^ "_" ^ (string_of_int i) in
-      if (StringSet.mem av v')
-         then new_var av v (succ i)
-         else v'
-
-   and new_vars av = function
-      [] -> ([],[])
-    | v::vt ->
-         let (vs,ts) = (new_vars av vt) in
-         let v' = new_var av v 0 in
-            ((v,v')::vs, (v,mk_var_term v')::ts)
 
    let dest_bterm x = x (* external dest_bterm : bound_term -> bound_term = "%identity" *)
 
