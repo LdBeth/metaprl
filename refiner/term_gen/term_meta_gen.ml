@@ -10,7 +10,7 @@
  * See the file doc/index.html for information on Nuprl,
  * OCaml, and more information about this system.
  *
- * Copyright (C) 1998 Jason Hickey, Cornell University
+ * Copyright (C) 1998-2004 MetaPRL Group
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,8 +26,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
 INCLUDE "refine_error.mlh"
@@ -181,39 +181,21 @@ struct
          context_vars t
 
    (*
-    * Induction forms.
+    * Alpha equality.
     *)
-   let rec meta_for_all f = function
-      MetaTheorem t ->
-         f t
-    | MetaImplies (a, b)
-    | MetaFunction (_, a, b)
-    | MetaIff (a, b) ->
-         meta_for_all f a & meta_for_all f b
-    | MetaLabeled (_, t) ->
-         meta_for_all f t
-
-   let rec meta_for_all2 f t1 t2 =
+   let rec meta_alpha_equal t1 t2 =
       match t1, t2 with
          MetaTheorem a1, MetaTheorem a2 ->
-            f a1 a2
+            TermSubst.alpha_equal a1 a2
        | MetaImplies (a1, b1), MetaImplies (a2, b2)
        | MetaFunction (_, a1, b1), MetaFunction (_, a2, b2)
        | MetaIff (a1, b1), MetaIff (a2, b2) ->
-            meta_for_all2 f a1 a2 & meta_for_all2 f b1 b2
+            meta_alpha_equal a1 a2 & meta_alpha_equal b1 b2
        | MetaLabeled (_, t), _ ->
-            meta_for_all2 f t t2
+            meta_alpha_equal t t2
        | _, MetaLabeled (_, t) ->
-            meta_for_all2 f t1 t
+            meta_alpha_equal t1 t
        | _ ->
-         raise(Failure "meta_for_all2")
-
-   (*
-    * Alpha equality.
-    *)
-   let meta_alpha_equal t1 t2 =
-      try meta_for_all2 TermSubst.alpha_equal t1 t2 with
-         Failure "meta_for_all2" ->
             false
 
    (************************************************************************
