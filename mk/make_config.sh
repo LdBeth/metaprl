@@ -1,9 +1,9 @@
 #/bin/sh
 
-if [ ! -d $ENSROOT ]; then
+if [ "$ENSROOT"x = x -o ! -d "$ENSROOT" ]; then
    ENSROOT=undefined
 fi
-if [ ! -d $OCAMLSRC ]; then
+if [ "$OCAMLSRC"x = x -o ! -d "$OCAMLSRC" ]; then
    OCAMLSRC=undefined
 fi
 
@@ -52,7 +52,7 @@ ENSROOT=$ENSROOT
 # to the root of the OCaml source tree
 # In this case Jason's marshaller debugging code
 # would be compiled into Meta-PRL
-# Do not enable this unless you know what you are doing\!
+# Do not enable this unless you know what you are doing!
 #
-OCAMLSRC=$OCAMLSRC\
+OCAMLSRC=$OCAMLSRC
 end_of_cat
