@@ -18,9 +18,9 @@ LCFILES :=\
 # Name of library
 MAIN := clib
 
-all: $(ROOT)/lib/$(MAIN)$(EXT_LIB) pthread
+all: $(ROOT)/lib/$(MAIN)$(EXT_LIB)
 
-opt: $(ROOT)/lib/$(MAIN)$(EXT_LIB) pthread
+opt: $(ROOT)/lib/$(MAIN)$(EXT_LIB)
 
 install:: $(MAIN)$(EXT_LIB)
 	$(INSTALL) $(MAIN)$(EXT_LIB) $(MPLIB)
