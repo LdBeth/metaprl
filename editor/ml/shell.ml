@@ -811,16 +811,12 @@ struct
       cd ("/" ^ mname ^ "/" ^ name);
       ()
 
-   let edit_create_thm mname name seq =
+   let edit_create_thm mname name =
       edit_info mname;
       cd ("/" ^ mname);
       let create name =
          let package = get_current_package info in
-         let item = Shell_rule.create package name in
-         let goal, assums = dest_msequent seq in
-            item.edit_set_assumptions assums;
-            item.edit_set_goal goal;
-            item.edit_save ();
+            Shell_rule.create package name;
             touch ()
       in
          print_exn create name;
