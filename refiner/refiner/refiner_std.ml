@@ -42,7 +42,6 @@ struct
    module TermMan = Term_man_gen.TermMan (TermType) (Term) (TermOp) (TermSubst) (RefineError)
    module TermAddr = Term_addr_gen.TermAddr (TermType) (Term) (TermSubst) (TermOp) (TermMan) (RefineError)
    module TermShape = Term_shape_gen.TermShape (TermType) (Term) (TermMan)
-   module TermEval = Term_eval_std.TermEval (Term) (RefineError)
    module TermMeta = Term_meta_gen.TermMeta (TermType) (Term) (TermSubst) (TermMan) (RefineError)
    module Rewrite = Rewrite.Rewrite (TermType) (Term) (TermMan) (TermAddr) (TermSubst) (RefineError)
    module Refine = Refine.Refine (TermType) (Term) (TermMan) (TermSubst) (TermAddr) (TermMeta) (TermShape) (Rewrite) (RefineError)

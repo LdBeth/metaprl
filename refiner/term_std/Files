@@ -4,4 +4,3 @@ TERM_STD_FILES =\
 	term_base_std\
 	term_op_std\
 	term_subst_std\
-	term_eval_std

@@ -36,7 +36,6 @@ open Term_man_sig
 open Term_addr_sig
 open Term_subst_sig
 open Term_shape_sig
-open Term_eval_sig
 open Term_meta_sig
 open Term_hash_sig
 open Term_norm_sig
@@ -60,7 +59,6 @@ sig
                       with type term = TermType.term
                       with type param = TermType.param
    module TermMeta : TermMetaSig with module MetaTypes = TermType
-   module TermEval : TermEvalSig with type term = TermType.term
 
    (*
     * Rewriting and refinement.
