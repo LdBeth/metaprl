@@ -858,7 +858,7 @@ let read_node stream =
   let (a, b) = dest_int32 (read_32bit stream) in (* print_int a; print_int b;*)
   if not (bequal (make_int32 (a, b)) header_num) then
     failwith "Bad header word for MathBus stream" else
-     (*;; This implementation doesn't need to kow the depth or width of the
+     (*;; This implementation doesn't need to know the depth or width of the
        ;; node being constructed a priori.*)
 
 

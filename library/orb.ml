@@ -325,14 +325,7 @@ let rec bus_wait c tid ehook =
 
   let t = (Link.recv c.link) in
 
- (*
- print_string "recv ";
- print_newline();
-  print_term t;
- print_newline();
- *)
-
-   match dest_term t  with
+  match dest_term t  with
     { term_op = op;
       term_terms = bterms }
     ->  (match dest_op op with
@@ -346,7 +339,7 @@ let rec bus_wait c tid ehook =
 			; print_newline()
 			; print_string s
 			; print_newline()
-			; print_term t
+			; Mbterm.print_term t
 			; print_newline()))
 		with Not_found -> (print_string "broadcast failed notfound"; print_newline())
 		     | _-> (print_string "broadcast failed abc"; print_newline()))
@@ -370,8 +363,8 @@ let rec bus_wait c tid ehook =
 
       	    | Some ttid ->
 		  (Link.send c.link
-	           (if not (tideq ttid (term_of_unbound_term (hd (tl (bterms)))) )
-			then (irsp_term (hd ps)
+	           (if not (tideq ttid (term_of_unbound_term (hd (tl (bterms)))))
+			then (print_string "not tideq"; irsp_term (hd ps)
 				   (ifail_term (imessage_term ["orb"; "req"; "recursive"; "tid"] [] [])))
 			else irsp_term (hd ps)
 				   (local_eval ehook
@@ -379,7 +372,7 @@ let rec bus_wait c tid ehook =
 	           ; bus_wait c tid ehook))
 	| { op_name = opn;
 	    op_params = imsg :: ps } when (nuprl5_opname_p opn & parmeq imsg imsg_parameter)
-	  -> ( print_term t
+	  -> ( Mbterm.print_term t
 	     ; bus_wait c tid ehook)
 	| _ -> t)
 
@@ -397,14 +390,14 @@ let bus_eval c addr expr tid ehook =
  (*
  print_string "send ";
  print_newline();
-  print_term expr;
+ Mbterm.print_term expr;
  print_newline();
  *)
-     Link.send link (ireq_term seq addr expr tid);
+    Link.send link (ireq_term seq addr expr tid);
 
     let t = bus_wait c (Some tid) ehook in
      if not (inteq seq (seq_of_irsp_term t))
-	then (print_term t; print_term expr; error ["bus"; "eval"; "sequence"] [] [t])
+	then (Mbterm.print_term t; Mbterm.print_term expr; error ["bus"; "eval"; "sequence"] [] [t])
 	else result_of_irsp_term t
 
 
@@ -520,7 +513,7 @@ let connect_aux orb host hsock sock =
 
 let connect orb host hsock sock =
 
-  db_init "/usr/u/nuprl/nuprl5/NuPrlDB" true;
+  db_init "/home/nuprl/nuprl5/NuPrlDB" true;
   let link = connect_aux orb host hsock sock in
   let tcon = { link = link; orb = orb; ro_address = [] } in
     config_send_state tcon (iinform_term (ienvironment_address_term orb.lo_address));
@@ -620,8 +613,8 @@ let connection_eval_args c t tl  =
       then error ["orb"; "connection"; "eval"; "args"] [] [result]
       else if ivalue_term_p result
 	  then (result_of_iresult_term result)
-	  else (print_term result
-		; print_term t
+	  else (Mbterm.print_term result
+		; Mbterm.print_term t
 	  	; error ["orb"; "connection"; "eval"; "args"; "value"; "not"] [] [result])
 
 
@@ -795,7 +788,7 @@ let orb_eval result_p env expr tid ehook=
 	  else error ["orb"; "eval"; "value"; "not"] [] [result])
     else if (iack_term_p result)
       then result
-    else (print_term result; result)
+    else (Mbterm.print_term result; result)
 
 
 

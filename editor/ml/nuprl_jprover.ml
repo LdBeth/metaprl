@@ -55,7 +55,8 @@ end
 module Nuprl_JProver = Jall.JProver(Nuprl_JLogic)
 
 let jprover (tlist,concl) =
-  Nuprl_JProver.prover None tlist concl
+  print_string "calling jprover";
+  Nuprl_JProver.prover (* None *) (Some 2) tlist concl
 
 (* jprover fun returns string*term*term list, convert to term *)
 
@@ -64,13 +65,44 @@ let ijprover_op = Nuprl5.mk_nuprl5_op [(make_param (Token "jprover"))]
 let ijprover_term (s, t1, t2) =
   mk_term ijprover_op [mk_bterm [] (Basic.istring_term s); mk_bterm [] t1; mk_bterm [] t2]
 
+let print_jlist l =
+  List.iter (fun (s, t1, t2) ->
+		 (print_newline();
+		  print_string s;
+                  Mbterm.print_term t1;
+		  Mbterm.print_term t2))
+             l
+
 let jprover_result_to_term l =
+  print_string "Calling jprover result ";
+  print_jlist l;
   Basic.list_to_ilist_map ijprover_term l
 
 let replace_nuprl_var_terms term = term
 
+let debug_term = ref Basic.ivoid_term
+
+let jprover_hook t =
+  print_string "calling jprover hook ";
+  let result =
+  try (jprover_result_to_term
+       (jprover ((Basic.map_isexpr_to_list (function a -> a)
+		    (Basic.hd_of_icons_term Basic.icons_op t)),
+	         (replace_nuprl_var_terms (Basic.tl_of_icons_term Basic.icons_op t)))))
+  with e -> mk_term ijprover_op [] in
+  debug_term := result;
+  (*print_newline(); print_string "Result is:  "; Mbterm.print_term result; *)
+  let mbterm =
+       try Mbterm.mbterm_of_term result with
+       e -> (print_string "mbterm failed";
+	     Mbterm.mbterm_of_term (mk_term ijprover_op [])) in
+  result
+
+(* old *)
+(*
 let jprover_hook t =
   jprover_result_to_term
     (jprover ((Basic.map_isexpr_to_list (function a -> a)
 		 (Basic.hd_of_icons_term Basic.icons_op t)),
 	      (replace_nuprl_var_terms (Basic.tl_of_icons_term Basic.icons_op t))))
+*)

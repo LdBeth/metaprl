@@ -71,6 +71,12 @@ let recv ((in_channel, out_channel), socket) =
   let term = (term_of_mbterm (read_node in_channel))
   in
   Unix.set_nonblock (Unix.descr_of_in_channel in_channel);
+
+  (* for debugging *)
+  print_newline();
+  print_string "recv ";
+  print_newline();
+
   term
 
 (* LAL set nonblocking before/after nohang instead*)
@@ -101,6 +107,13 @@ let connect_callback link =
 
 let send ((in_channel, out_channel), socket) term =
   Basic.debug_term := term;
+
+  (* for debugging *)
+  print_newline();
+  print_string "send ";
+  print_newline();
+  Mbterm.print_term term;
+
   write_node (mbterm_of_term term) out_channel;
   let rec tf () =
    try flush out_channel with

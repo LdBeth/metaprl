@@ -532,7 +532,7 @@ special_error_handler (function () -> testall "ALFHEIM" 3448 4688)
 
 
 special_error_handler (function () ->
-			( Db.db_init "/usr/u/nuprl/nuprl5/NuPrlDB" true
+			( Db.db_init "/home/nuprl/nuprl5/NuPrlDB" true
 			; Mbterm.print_term (Db.session_string_to_term "l!l{1:n}ltvoid()t")
 			;()
 			))

@@ -141,7 +141,7 @@ For Connection to Nuprl5 using Jprover:
      The first 2 are determined by your running nuprl session, and the third 
      is an arbitrary open port number that you will set.
   2) Start editor/ml/mp
-  3) Execute   #use "nuprl.txt";;
-  4) Execute   run_jprover "libenv";;
+  3) open "Nuprl_run";;
+  4) Execute   NuprlRun.run_jprover "libenv";;
 
   To use jprover from nuprl, simply call the tactic, Jprover, on your proof.

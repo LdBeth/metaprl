@@ -7,21 +7,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Lori Lorigo, Richard Eaton, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Authors: Lori Lorigo, Richard Eaton
  *)
 
@@ -30,19 +30,19 @@ open Refiner.Refiner.Refine
 
 
 (*
- *	uses NUPRLLIB_PORT & NUPRLLIB_HOST environment variables.
- *	
+ *	uses NUPRL_PORT & NUPRL_HOST environment variables.
+ *
  *	lib mnemonic should be "NuprlLight";
- *	
+ *
  *	Then just use following functions to connect to lib and loop:
- *	
+ *
  *	rhook : (term (*goal*) -> term (*tactic*) -> term list(*subgoals*) )
- *	
+ *
  *	Any catchable errors thrown by the rhook will be coerced to a term and returned
  *	to caller. The coercion will result in readable errors being returned to the
  *	proof editro if the library Basic.error function is used.
- *	
- *)	
+ *
+ *)
 
 module type NuprlSig =
 sig
@@ -51,6 +51,6 @@ sig
   val library_open_and_loop_eval	: string -> (term -> term) -> unit
   val refine_ehook : term -> term
   val itt_bug : bool ref
-  val msequent_to_term : msequent -> term 
+  val msequent_to_term : msequent -> term
   val term_to_msequent : term -> term list * term
 end
