@@ -28,12 +28,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
 open Refiner.Refiner.Term
 
+open Filter_type
 open Filter_summary_type
 
 (*
@@ -43,11 +44,13 @@ open Filter_summary_type
  * library is summary_type.
  *)
 module MakeFilterCache
-   (SigMarshal : MarshalSig)
+   (SigMarshal : MarshalSig
+      with type ctyp = MLast.ctyp
+      with type resource = MLast.ctyp resource_sig)
    (StrMarshal : MarshalSig
-                 with type ctyp = SigMarshal.ctyp
-                 with type select = SigMarshal.select
-                 with type cooked = SigMarshal.cooked)
+      with type ctyp = SigMarshal.ctyp
+      with type select = SigMarshal.select
+      with type cooked = SigMarshal.cooked)
    (Base : SummaryBaseSig
            with type select = SigMarshal.select
            with type cooked = SigMarshal.cooked) :
@@ -60,6 +63,7 @@ module MakeFilterCache
    with type str_ctyp   = StrMarshal.ctyp
    with type str_expr   = StrMarshal.expr
    with type str_item   = StrMarshal.item
+   with type str_resource = StrMarshal.resource
    with type select     = Base.select
    with type arg        = Base.arg
 

@@ -29,8 +29,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
 open Printf
@@ -79,21 +79,21 @@ let debug_match =
  * A MagicBlock is a block of code that we use to compute
  * a magic number.  The magic number changes whenever the code changes.
  *)
-type ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item =
-   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
-      ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info) summary_item_type
+type ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) summary_item =
+   ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item,
+      ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info) summary_item_type
 
 (*
  * The info about a specific module is just a list of items.
  *)
-and ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info =
-   { info_list : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item_loc list }
+and ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info =
+   { info_list : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) summary_item_loc list }
 
 (*
  * Pair it with a location.
  *)
-and ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item_loc =
-   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item * (int * int)
+and ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) summary_item_loc =
+   ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) summary_item * (int * int)
 
 (************************************************************************
  * PRINTING                                                             *
@@ -151,7 +151,7 @@ let eprint_entry print_info = function
           | GTRelation -> ">"
       in
          eprintf "Precedence: %s %s %s\n" left rels right
- | Resource { resource_name = name } ->
+ | Resource (name, _) ->
       eprintf "Resource: %s\n" name
  | Improve { improve_name = name } ->
       eprintf "Improve %s with ..." name
@@ -361,8 +361,8 @@ let find_id { info_list = summary } =
  *)
 let get_resources { info_list = summary } =
    let rec search = function
-      (Resource x, _)::t ->
-         x::search t
+      (Resource (name, r), _)::t ->
+         (name,r)::search t
     | _::t ->
          search t
     | [] -> []
@@ -492,28 +492,23 @@ let opt_apply f = function
  | None ->
       None
 
-(*
- * Convert a resource.
- *)
 let convert_resource convert
-    { resource_name = name;
-      resource_extract_type = extract;
-      resource_improve_type = improve;
-      resource_data_type = data;
-      resource_arg_type = arg
-    } =
-   { resource_name = name;
-     resource_extract_type = convert.ctyp_f extract;
-     resource_improve_type = convert.ctyp_f improve;
-     resource_data_type = convert.ctyp_f data;
-     resource_arg_type = convert.ctyp_f arg
-   }
+    (name, { resource_extract_type = extract;
+            resource_improve_type = improve;
+            resource_data_type = data;
+            resource_arg_type = arg
+          }) =
+   name, { resource_extract_type = convert.ctyp_f extract;
+           resource_improve_type = convert.ctyp_f improve;
+           resource_data_type = convert.ctyp_f data;
+           resource_arg_type = convert.ctyp_f arg
+         }
 
 (*
  * Normalize all terms in the info.
  *)
-let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'ctyp1, 'expr1, 'item1,
-                            'term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) convert)
+let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'expr1, 'item1,
+                            'term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) convert)
 =
    (* Map the terms inside of params *)
    let param_map = function
@@ -698,8 +693,8 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'ctyp1, 'expr1, 'item1
           | Id id ->
                Id id
 
-          | Resource resource ->
-               Resource (convert_resource convert resource)
+          | Resource (name, r) ->
+               Resource (name, convert.resource_f r)
 
           | Improve { improve_name = name; improve_expr = expr } ->
                Improve { improve_name = name; improve_expr = convert.expr_f expr }
@@ -734,6 +729,44 @@ let add_command { info_list = info } item =
  * TERMS                                                                *
  ************************************************************************)
 
+(*
+ * These are the possible opnames.
+ *)
+let mk_opname =
+   let op = Opname.mk_opname "Summary" Opname.nil_opname in
+      fun s -> Opname.mk_opname s op
+
+let rewrite_op                 = mk_opname "rewrite"
+let cond_rewrite_op            = mk_opname "cond_rewrite"
+let axiom_op                   = mk_opname "axiom"
+let rule_op                    = mk_opname "rule"
+let res_op                     = mk_opname "resource_defs"
+let opname_op                  = mk_opname "opname"
+let mlrewrite_op               = mk_opname "mlrewrite"
+let mlaxiom_op                 = mk_opname "mlaxiom"
+let parent_op                  = mk_opname "parent"
+let module_op                  = mk_opname "module"
+let dform_op                   = mk_opname "dform"
+let prec_op                    = mk_opname "prec"
+let prec_rel_op                = mk_opname "prec_rel"
+let id_op                      = mk_opname "id"
+let comment_op                 = mk_opname "comment"
+let resource_op                = mk_opname "resource"
+let infix_op                   = mk_opname "infix"
+let magic_block_op             = mk_opname "magic_block"
+let summary_item_op            = mk_opname "summary_item"
+let toploop_item_op            = mk_opname "toploop_item"
+let improve_op                 = mk_opname "improve"
+
+(*
+ * Meta term conversions.
+ *)
+let meta_theorem_op     = mk_opname "meta_theorem"
+let meta_implies_op     = mk_opname "meta_implies"
+let meta_function_op    = mk_opname "meta_function"
+let meta_iff_op         = mk_opname "meta_iff"
+let meta_labeled_op     = mk_opname "meta_labeled"
+
 module FilterSummaryTerm (ToTerm : RefinerSig) =
 struct
    open ToTerm.Term
@@ -746,44 +779,6 @@ struct
 
    module SimplePrint = Simple_print.MakeSimplePrint (ToTerm);;
    open SimplePrint
-
-   (*
-    * These are the possible opnames.
-    *)
-   let mk_opname =
-      let op = Opname.mk_opname "Summary" Opname.nil_opname in
-         fun s -> Opname.mk_opname s op
-
-   let rewrite_op                 = mk_opname "rewrite"
-   let cond_rewrite_op            = mk_opname "cond_rewrite"
-   let axiom_op                   = mk_opname "axiom"
-   let rule_op                    = mk_opname "rule"
-   let res_op                     = mk_opname "resource_defs"
-   let opname_op                  = mk_opname "opname"
-   let mlrewrite_op               = mk_opname "mlrewrite"
-   let mlaxiom_op                 = mk_opname "mlaxiom"
-   let parent_op                  = mk_opname "parent"
-   let module_op                  = mk_opname "module"
-   let dform_op                   = mk_opname "dform"
-   let prec_op                    = mk_opname "prec"
-   let prec_rel_op                = mk_opname "prec_rel"
-   let id_op                      = mk_opname "id"
-   let comment_op                 = mk_opname "comment"
-   let resource_op                = mk_opname "resource"
-   let infix_op                   = mk_opname "infix"
-   let magic_block_op             = mk_opname "magic_block"
-   let summary_item_op            = mk_opname "summary_item"
-   let toploop_item_op            = mk_opname "toploop_item"
-   let improve_op                 = mk_opname "improve"
-
-   (*
-    * Meta term conversions.
-    *)
-   let meta_theorem_op     = mk_opname "meta_theorem"
-   let meta_implies_op     = mk_opname "meta_implies"
-   let meta_function_op    = mk_opname "meta_function"
-   let meta_iff_op         = mk_opname "meta_iff"
-   let meta_labeled_op     = mk_opname "meta_labeled"
 
    let rec meta_term_of_term t =
       let opname = opname_of_term t in
@@ -1078,7 +1073,7 @@ struct
       let path, opens, resources = three_subterms t in
          Parent { parent_name = dest_string_param_list path;
                   parent_opens = List.map dest_string_param_list (dest_xlist opens);
-                  parent_resources = List.map (dest_resource_aux convert) (dest_xlist resources)
+                  parent_resources = List.map (dest_resource_sig convert) (dest_xlist resources)
          }
 
    (*
@@ -1148,20 +1143,20 @@ struct
       Comment (convert.term_f (one_subterm t))
 
    (*
-    * Resource.
+    * Resources.
     *)
-   and dest_resource_aux convert t =
+   and dest_resource_sig convert t =
       let name = dest_string_param t in
       let extract, improve, data, arg = four_subterms t in
-         { resource_name = name;
-           resource_extract_type = convert.ctyp_f extract;
-           resource_improve_type = convert.ctyp_f improve;
-           resource_data_type = convert.ctyp_f data;
-           resource_arg_type = convert.ctyp_f arg
-         }
+      name, {
+         resource_extract_type = convert.ctyp_f extract;
+         resource_improve_type = convert.ctyp_f improve;
+         resource_data_type = convert.ctyp_f data;
+         resource_arg_type = convert.ctyp_f arg
+      }
 
    and dest_resource convert t =
-      Resource (dest_resource_aux convert t)
+      Resource (dest_string_param t, convert.resource_f (one_subterm t))
 
    and dest_improve convert t =
       Improve {
@@ -1193,8 +1188,8 @@ struct
       ToploopItem (convert.item_f (one_subterm t))
 
    and dest_term_aux
-       (convert : (term, term, term, term, term, term,
-                   'term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) convert)
+       (convert : (term, term, term, term, term, term, term,
+                   'term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) convert)
        (t : term) =
       let opname = opname_of_term t in
          try
@@ -1250,8 +1245,8 @@ struct
                None
 
    and dest_term_loc
-       (convert : (term, term, term, term, term, term,
-                   'term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) convert)
+       (convert : (term, term, term, term, term, term, term,
+                   'term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) convert)
        (t : term) =
       let t, loc = dest_loc t in
          match dest_term_aux convert t with
@@ -1264,11 +1259,11 @@ struct
     * Make a module from the term list.
     *)
    and of_term_list
-       (convert : (term, term, term, term, term, term,
-                   'term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) convert)
+       (convert : (term, term, term, term, term, term, term,
+                   'term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) convert)
        (terms : term list) =
       let items = List_util.some_map (dest_term_loc convert) terms in
-         ({ info_list = List.rev items } : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info)
+         ({ info_list = List.rev items } : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info)
 
    (**************
     * CONSTRUCTION
@@ -1480,7 +1475,7 @@ struct
       mk_simple_term parent_op (**)
          [mk_strings_term parent_op path;
           mk_xlist_term (List.map (mk_strings_term parent_op) opens);
-          mk_xlist_term (List.map (term_of_resource convert) resources)]
+          mk_xlist_term (List.map (term_of_resource_sig convert) resources)]
 
    and term_of_module convert name info =
       mk_string_param_term module_op name [mk_xlist_term (term_list convert info)]
@@ -1513,17 +1508,20 @@ struct
    and term_of_comment convert t =
       mk_simple_term comment_op [convert.term_f t]
 
-   and term_of_resource convert
-       { resource_name = name;
-         resource_extract_type = extract;
-         resource_improve_type = improve;
-         resource_data_type = data;
-         resource_arg_type = arg
-       } =
+   and term_of_resource_sig convert
+       (name, {
+          resource_extract_type = extract;
+          resource_improve_type = improve;
+          resource_data_type = data;
+          resource_arg_type = arg
+       }) =
       mk_string_param_term resource_op name [convert.ctyp_f extract;
                                              convert.ctyp_f improve;
                                              convert.ctyp_f data;
                                              convert.ctyp_f arg]
+
+   and term_of_resource convert name r =
+      mk_string_param_term resource_op name [convert.resource_f r]
 
    and term_of_improve convert { improve_name = name; improve_expr = expr } =
       mk_string_param_term improve_op name [convert.expr_f expr]
@@ -1537,8 +1535,8 @@ struct
    (*
     * Convert the items to a term.
     *)
-   and term_list_aux (convert : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item, term,
-                                 term, term, term, term, term) convert) = function
+   and term_list_aux (convert : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, term,
+                                 term, term, term, term, term, term) convert) = function
       SummaryItem t ->
          term_of_summary_item convert t
     | ToploopItem t ->
@@ -1569,8 +1567,8 @@ struct
          term_of_prec_rel rel
     | Id id ->
          term_of_id id
-    | Resource rsrc ->
-         term_of_resource convert rsrc
+    | Resource (name, r) ->
+         term_of_resource convert name r
     | Improve i ->
          term_of_improve convert i
     | Infix op ->
@@ -1583,9 +1581,9 @@ struct
    and term_list_loc convert (t, loc) =
       mk_loc loc (term_list_aux convert t)
 
-   and term_list (convert : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item,
-                             term, term, term, term, term, term) convert)
-       ({ info_list = info } : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info) =
+   and term_list (convert : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item,
+                             term, term, term, term, term, term, term) convert)
+       ({ info_list = info } : ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item) module_info) =
       (List.map (term_list_loc convert) (List.rev info) : term list)
 
    (************************************************************************
@@ -1624,7 +1622,7 @@ struct
     *)
    let check_rewrite
        (info : ('term1, 'proof1, 'expr1) rewrite_info)
-       (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
       let { rw_name = name; rw_redex = redex; rw_contractum = con } = info in
       let rec search = function
          [] ->
@@ -1654,7 +1652,7 @@ struct
     *)
    let check_cond_rewrite
        (info : ('term, 'proof1, 'expr1) cond_rewrite_info)
-       (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
       let { crw_name = name;
             crw_params = params;
             crw_args = args;
@@ -1694,7 +1692,7 @@ struct
     *)
    let check_axiom
        (info : ('term1, 'proof1, 'expr1) axiom_info)
-       (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
       let { axiom_name = name; axiom_stmt = stmt } = info in
       let rec search = function
          [] ->
@@ -1719,7 +1717,7 @@ struct
     *)
    let check_rule
        (info : ('term1, 'meta_term1, 'proof1, 'expr1) rule_info)
-       (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
       let { rule_name = name; rule_params = params; rule_stmt = stmt } = info in
       let rec search = function
          [] ->
@@ -1750,7 +1748,7 @@ struct
     *)
    let check_opname
        (info : 'term1 opname_info)
-       (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
       let { opname_name = name; opname_term = term } = info in
       let rec search mismatch = function
          [] ->
@@ -1777,7 +1775,7 @@ struct
     *)
    let check_mlrewrite
        ({ mlterm_name = name; mlterm_term = term } : ('term1, 'expr1) mlterm_info)
-       (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
       let rec search = function
          [] ->
             implem_error (sprintf "MLRewrite %s: not implemented" name)
@@ -1793,7 +1791,7 @@ struct
 
    let check_mlaxiom
        ({ mlterm_name = name; mlterm_term = term } : ('term1, 'expr1) mlterm_info)
-       (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
       let rec search = function
          [] ->
             implem_error (sprintf "MLAxiom %s: not implemented" name)
@@ -1812,7 +1810,7 @@ struct
     *)
    let check_parent
        (path : module_path)
-       (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
       let rec search = function
          [] ->
             implem_error (sprintf "Include %s: not implemented" (string_of_path path))
@@ -1832,7 +1830,7 @@ struct
    let check_dform
        (tags : dform_option list)
        (term : term)
-       (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
       let rec search = function
          [] ->
             implem_error (sprintf "DForm %s: not implemented" (string_of_term term))
@@ -1855,7 +1853,7 @@ struct
     * Precedence declaration.
     *)
    let check_prec (name : string)
-       (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
       let rec search = function
          [] ->
             implem_error (sprintf "Prec %s: not implemented" name)
@@ -1872,18 +1870,15 @@ struct
    (*
     * Resource checking.
     *)
-   let check_resource
-       (info : 'ctyp1 resource_info)
-       (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
-      let { resource_name = name } = info in
+   let check_resource name
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
       let rec search = function
          [] ->
             implem_error (sprintf "Resource %s: not implemented" name)
        | h::t ->
             match h with
-               Resource { resource_name = name' } ->
-                  if name' <> name then
-                     search t
+               Resource ( name', _ )  when name = name' ->
+                  ()
              | _ ->
                   search t
       in
@@ -1893,7 +1888,7 @@ struct
     * Infix declarations.
     *)
    let check_infix (name : string)
-       (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
       let rec search = function
          [] ->
             implem_error (sprintf "Infix %s: not implemented" name)
@@ -1911,7 +1906,7 @@ struct
     * Match the ids.
     *)
    let check_id (id : int)
-       (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
       let rec search = function
          [] ->
             implem_error "Id: not implemented"
@@ -1930,8 +1925,8 @@ struct
     *)
    let rec check_module
        (name : string)
-       (info : ('term1, 'meta_term1, 'proof1, 'ctyp1, 'expr1, 'item1) module_info)
-       (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list) =
+       (info : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'expr1, 'item1) module_info)
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
       let rec search = function
          [] ->
             implem_error (sprintf "Module %s: not implemented" name)
@@ -1951,8 +1946,8 @@ struct
     * Check that an item is implemented.
     *)
    and check_implemented
-       (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list)
-       ((interf : ('term1, 'meta_term1, 'proof1, 'ctyp1, 'expr1, 'item1) summary_item), _) =
+       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list)
+       ((interf : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'expr1, 'item1) summary_item), _) =
       match interf with
          SummaryItem _
        | ToploopItem _ ->
@@ -1981,8 +1976,8 @@ struct
             check_prec name implem
        | PrecRel _ ->
             ()
-       | Resource info ->
-            check_resource info implem
+       | Resource (name, _) ->
+            check_resource name implem
        | Improve _ ->
             raise (Invalid_argument "Filter_summary.check_implemented")
        | Infix name ->

@@ -141,7 +141,7 @@ and ('term, 'expr) mlterm_info =
 and 'ctyp parent_info =
    { parent_name : module_path;
      parent_opens : module_path list;
-     parent_resources : 'ctyp resource_info list
+     parent_resources : (string * 'ctyp resource_sig) list
    }
 
 and 'term opname_info =
@@ -196,13 +196,14 @@ and prec_rel_info =
 (*
  * Resource descriptions.
  *)
-and 'ctyp resource_info =
-   { resource_name : string;
-     resource_extract_type : 'ctyp;
+and 'ctyp resource_sig =
+   { resource_extract_type : 'ctyp;
      resource_improve_type : 'ctyp;
      resource_data_type : 'ctyp;
      resource_arg_type : 'ctyp
    }
+
+and 'expr resource_expr = 'expr
 
 (*
  * Reource improvement.
@@ -228,11 +229,12 @@ and 'term param =
 (*
  * Conversion functions.
  *)
-type ('term1, 'meta_term1, 'proof1, 'ctyp1, 'expr1, 'item1,
-      'term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) convert =
+type ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'expr1, 'item1,
+      'term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) convert =
    { term_f       : 'term1 -> 'term2;
      meta_term_f  : 'meta_term1 -> 'meta_term2;
      proof_f      : string -> 'proof1 -> 'proof2;
+     resource_f   : 'resource1 -> 'resource2;
      ctyp_f       : 'ctyp1  -> 'ctyp2;
      expr_f       : 'expr1  -> 'expr2;
      item_f       : 'item1  -> 'item2
@@ -249,7 +251,7 @@ type ('term1, 'meta_term1, 'proof1, 'ctyp1, 'expr1, 'item1,
  * a magic number.  The magic number changes whenever the code changes.
  *)
 
-type ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item, 'module_info) summary_item_type =
+type ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, 'module_info) summary_item_type =
    Rewrite of ('term, 'proof, 'expr) rewrite_info
  | CondRewrite of ('term, 'proof, 'expr) cond_rewrite_info
  | Axiom of ('term, 'proof, 'expr) axiom_info
@@ -263,7 +265,7 @@ type ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item, 'module_info) summary_item
  | Prec of string
  | PrecRel of prec_rel_info
  | Id of int
- | Resource of 'ctyp resource_info
+ | Resource of string * 'resource
  | Improve of 'expr improve_info
  | Infix of string
  | SummaryItem of 'item

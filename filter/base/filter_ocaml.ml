@@ -38,6 +38,7 @@ open Mp_debug
 
 open Opname
 open Refiner_sig
+open Filter_type
 
 (*
  * Show the file loading.
@@ -2290,6 +2291,29 @@ struct
    let term_of_class_expr = mk_ce
    let term_of_class_sig_item = mk_ctf
    let term_of_class_str_item = mk_cf
+
+   (*
+    * Extra functions for resource_sig
+    *)
+   let comment _ _ t = t
+   let mk_type = mk_type comment
+
+   let term_of_resource_sig resource_op {
+      resource_extract_type = extract;
+      resource_improve_type = improve;
+      resource_data_type = data;
+      resource_arg_type = arg
+   } =
+      ToTerm.Term.mk_simple_term resource_op
+         [ mk_type extract; mk_type improve; mk_type data; mk_type arg ]
+
+   let resource_sig_of_term t =
+      let extract, improve, data, arg = four_subterms t in {
+         resource_extract_type = dest_type extract;
+         resource_improve_type = dest_type improve;
+         resource_data_type = dest_type data;
+         resource_arg_type = dest_type arg
+      }
 end
 
 (*

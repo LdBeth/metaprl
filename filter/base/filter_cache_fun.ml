@@ -111,7 +111,9 @@ open FilterSummaryTerm
  * Make the enhanced base from a normal summary base.
  *)
 module MakeFilterCache (**)
-   (SigMarshal : MarshalSig)
+   (SigMarshal : MarshalSig
+    with type ctyp = MLast.ctyp
+    with type resource = MLast.ctyp resource_sig)
    (StrMarshal : MarshalSig
     with type ctyp = SigMarshal.ctyp
     with type select = SigMarshal.select
@@ -131,15 +133,16 @@ struct
    type sig_ctyp  = SigMarshal.ctyp
    type sig_expr  = SigMarshal.expr
    type sig_item  = SigMarshal.item
-   type sig_info  = (term, meta_term, sig_proof, sig_ctyp, sig_expr, sig_item) module_info
-   type sig_elem  = (term, meta_term, sig_proof, sig_ctyp, sig_expr, sig_item) summary_item
+   type sig_info  = (term, meta_term, sig_proof, sig_ctyp resource_sig, sig_ctyp, sig_expr, sig_item) module_info
+   type sig_elem  = (term, meta_term, sig_proof, sig_ctyp resource_sig, sig_ctyp, sig_expr, sig_item) summary_item
 
    type str_proof = StrMarshal.proof
    type str_ctyp  = StrMarshal.ctyp
    type str_expr  = StrMarshal.expr
    type str_item  = StrMarshal.item
-   type str_info  = (term, meta_term, str_proof, str_ctyp, str_expr, str_item) module_info
-   type str_elem  = (term, meta_term, str_proof, str_ctyp, str_expr, str_item) summary_item
+   type str_resource = StrMarshal.resource
+   type str_info  = (term, meta_term, str_proof, str_resource, str_ctyp, str_expr, str_item) module_info
+   type str_elem  = (term, meta_term, str_proof, str_resource, str_ctyp, str_expr, str_item) summary_item
 
    type select = Base.select
    type arg = Base.arg
@@ -156,7 +159,7 @@ struct
     *)
    type sig_summary =
       { sig_summary : Base.info;
-        sig_resources : sig_ctyp resource_info list;
+        sig_resources : (string * sig_ctyp resource_sig) list;
         sig_opnames : (op_shape * opname) list;
         sig_includes : sig_summary list
       }
@@ -189,7 +192,7 @@ struct
         mutable precs : string list;
 
         (* List of resources, and where they come from *)
-        mutable resources : (module_path * str_ctyp resource_info) list;
+        mutable resources : (module_path * string * str_ctyp resource_sig ) list;
 
         (*
          * Info about self.
@@ -517,8 +520,8 @@ struct
    (*
     * Add a resource.
     *)
-   let add_resource cache rsrc =
-      cache.resources <- ([], rsrc) :: cache.resources
+   let add_resource cache name r =
+      cache.resources <- ([], name, r) :: cache.resources
 
    (*
     * Add a precedence.
@@ -529,41 +532,34 @@ struct
    (*
     * See if a resource is in a list.
     *)
-   let resource_member { resource_name = name } resources =
+   let resource_member name resources =
       let rec search = function
-         (_, { resource_name = name' }) :: t ->
+         (_, name', _) :: t ->
             name = name' or search t
        | [] ->
             false
       in
          search resources
 
-   (*
-    * Resources are compared by name.
-    *)
-   let compare_resources { resource_name = name } { resource_name = name' } =
-      name <= name'
+   let compare_resources (name1, _) (name2, _) =
+      name1 <= name2
 
    (*
     * Merge two lists, removing duplicates.
     *)
-   let merge_resources rsrc1 rsrc2 =
-      let rec merge = function
-         ((h1 :: t1) as l1), ((h2 :: t2) as l2) ->
-            let { resource_name = name1 } = h1 in
-            let { resource_name = name2 } = h2 in
-               if name1 = name2 then
-                  h1 :: merge (t1, t2)
-               else if name1 < name2 then
-                  h1 :: merge (t1, l2)
+   let rec merge_resources rsrc1 rsrc2 =
+      match rsrc1, rsrc2 with
+         ((n1,r1) :: t1) as l1, (((n2,r2) :: t2) as l2) ->
+               if n1 = n2 then
+                  (n1,r1) :: merge_resources t1 t2
+               else if n1 < n2 then
+                  (n1,r1) :: merge_resources t1 l2
                else
-                  h2 :: merge (l1, t2)
+                  (n2,r2) :: merge_resources l1 t2
        | [], l2 ->
             l2
        | l1, [] ->
             l1
-      in
-         merge (rsrc1, rsrc2)
 
    (*
     * Inline a module into the current one.
@@ -617,12 +613,12 @@ struct
                   (this_resources, merge_resources info'.sig_resources par_resources),
                   opnames, includes
 
-          | Resource rsrc ->
+          | Resource (name, r) ->
                let resources, opnames, includes = resources_opnames_includes in
                let this_resources, par_resources = resources in
-                  if not (resource_member rsrc cache.resources) then
-                     cache.resources <- (path, rsrc) :: cache.resources;
-                  (rsrc :: this_resources, par_resources), opnames, includes
+                  if not (resource_member name cache.resources) then
+                     cache.resources <- (path, name, r) :: cache.resources;
+                  ((name, r) :: this_resources, par_resources), opnames, includes
 
           | Prec p ->
                let precs = cache.precs in
@@ -641,7 +637,7 @@ struct
            sig_includes = includes
          }
 
-   and inline_str_components barg arg path self (items : (term, meta_term, str_proof, str_ctyp, str_expr, str_item) summary_item_loc list) =
+   and inline_str_components barg arg path self (items : (term, meta_term, str_proof, str_resource, str_ctyp, str_expr, str_item) summary_item_loc list) =
       let cache, _, _ = arg in
 
       (* Get the opname for this path *)

@@ -26,8 +26,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
 open Printf
@@ -78,15 +78,15 @@ sig
 
    val extract_sig :
       arg ->
-      (term, meta_term, unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info ->
-      (module_path * MLast.ctyp resource_info) list ->
+      (term, meta_term, unit, MLast.ctyp resource_sig, MLast.ctyp, MLast.expr, MLast.sig_item) module_info ->
+      (module_path * string * MLast.ctyp resource_sig) list ->
       string -> (MLast.sig_item * (int * int)) list
 
    val extract_str :
       arg ->
-      (term, meta_term, unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info ->
-      (term, meta_term, proof proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info ->
-      (module_path * MLast.ctyp resource_info) list ->
+      (term, meta_term, unit, MLast.ctyp resource_sig, MLast.ctyp, MLast.expr, MLast.sig_item) module_info ->
+      (term, meta_term, proof proof_type, MLast.expr, MLast.ctyp, MLast.expr, MLast.str_item) module_info ->
+      (module_path * string * MLast.ctyp resource_sig) list ->
       string -> (MLast.str_item * (int * int)) list
 
    (*
@@ -109,7 +109,7 @@ sig
    val define_dform : t -> loc -> (term, MLast.expr) dform_info -> term -> MLast.str_item list
    val define_prec : t -> loc -> string -> MLast.str_item list
    val define_prec_rel : t -> loc -> prec_rel_info -> MLast.str_item list
-   val define_resource : t -> loc -> MLast.ctyp resource_info -> MLast.str_item list
+   val define_resource : t -> loc -> string -> MLast.expr -> MLast.str_item list
    val improve_resource : t -> loc -> MLast.expr improve_info -> MLast.str_item list
    val define_parent : t -> loc -> MLast.ctyp parent_info -> MLast.str_item list
    val define_magic_block : t -> loc -> MLast.str_item magic_info -> MLast.str_item list
@@ -312,6 +312,9 @@ let resource_rsrc_ctyp loc =
 let resource_join_expr loc =
    <:expr< $uid:"Mp_resource"$ . $lid:"join"$ >>
 
+let resource_create_expr loc =
+   <:expr< $uid:"Mp_resource"$ . $lid:"create"$ >>
+
 let resource_improve_expr loc =
    <:expr< $uid:"Mp_resource"$ . $lid:"improve"$ >>
 
@@ -321,24 +324,19 @@ let resource_list_improve_expr loc =
 let resource_improve_arg_expr loc =
    <:expr< $uid:"Mp_resource"$ . $lid:"improve_arg"$ >>
 
+let _resource name =
+   let l = String.length name in
+   if l>9 && String.sub name (l-9) 9 = "_resource" then name
+   else name ^ "_resource"
+
 let ext_resource_name name =
-   "ext_" ^ name
+   "ext_" ^ (_resource name)
 
 let resource_name_expr loc name =
-   let name =
-      let l = String.length name in
-      if l>9 && String.sub name (l-9) 9 = "_resource" then name
-      else name ^ "_resource"
-   in
-      <:expr< $lid: name$ >>
+   <:expr< $lid: _resource name$ >>
 
 let resource_name_patt loc name =
-   let name =
-      let l = String.length name in
-      if l>9 && String.sub name (l-9) 9 = "_resource" then name
-      else name ^ "_resource"
-   in
-      <:patt< $lid: name$ >>
+   <:patt< $lid: _resource name$ >>
 
 let dform_name_expr loc =
    <:expr< $uid:"Dform"$ . $lid:"dform_name"$ >>
@@ -929,14 +927,14 @@ let declare_prec loc name =
 (*
  * Resource.
  *)
-let declare_resource loc { resource_name = name;
-                           resource_extract_type = extract_type;
-                           resource_improve_type = improve_type;
-                           resource_data_type = data_type;
-                           resource_arg_type = arg_type
-    } =
+let declare_resource loc name {
+   resource_extract_type = extract_type;
+   resource_improve_type = improve_type;
+   resource_data_type = data_type;
+   resource_arg_type = arg_type
+} =
    let rsrc_type = <:ctyp< $resource_rsrc_ctyp loc$ $improve_type$ $extract_type$ $data_type$ $arg_type$ >> in
-      [<:sig_item< type $list:[name, [], rsrc_type, []]$ >>]
+      [<:sig_item< type $list:[_resource name, [], rsrc_type, []]$ >>]
 
 (*
  * When a parent is declared, we need to open all the ancestors.
@@ -972,12 +970,7 @@ let declare_magic_block loc { magic_code = items } =
  *)
 let interf_resources resources loc =
    let rec loop names = function
-      (mname, { resource_name = name;
-                resource_extract_type = extract_type;
-                resource_improve_type = improve_type;
-                resource_data_type = data_type;
-                resource_arg_type = arg_type
-       } as rsrc)::t ->
+      (mname, name, rsrc) ::t ->
          if !debug_resource then
             if mname = [] then
                eprintf "Mp_resource: %s%t" name eflush
@@ -986,10 +979,10 @@ let interf_resources resources loc =
          if not (List.mem name names) then
             let ctyp =
                if mname = [] then
-                  (<:ctyp< $lid: name$ >>)
+                  (<:ctyp< $lid: _resource name$ >>)
                else
                   let ctyp = parent_path_ctyp loc mname in
-                     (<:ctyp< $ctyp$ . $lid: name$ >>)
+                     (<:ctyp< $ctyp$ . $lid: _resource name$ >>)
             in
                (<:sig_item< value $ext_resource_name name$ : $ctyp$ >>) :: (loop (name :: names) t)
          else
@@ -1034,10 +1027,10 @@ let extract_sig_item (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: prec: %s%t" name eflush;
          declare_prec loc name
-    | Resource ({ resource_name = name } as rsrc) ->
+    | Resource (name, rsrc) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: resource: %s%t" name eflush;
-         declare_resource loc rsrc
+         declare_resource loc name rsrc
     | Improve _ ->
          raise(Invalid_argument "Filter_prog.extract_sig_item")
     | Parent ({ parent_name = name } as parent) ->
@@ -1130,8 +1123,8 @@ struct
     * Implementation state.
     *)
    type t =
-      { mutable imp_resources : MLast.ctyp resource_info list;
-        imp_sig_info : (term, meta_term, unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info;
+      { mutable imp_resources : string list;
+        imp_sig_info : (term, meta_term, unit, MLast.ctyp resource_sig, MLast.ctyp, MLast.expr, MLast.sig_item) module_info;
         imp_toploop : (string * (MLast.ctyp * loc)) list;
         imp_arg : Convert.t
       }
@@ -1178,14 +1171,13 @@ struct
            var, <:expr< $f$ $lid:var$ >>
 
     let checkpoint_resources proc loc rule_name =
-      let label_resource resource =
-         let { resource_name = name } = resource in
+      let label_resource name =
          let name_expr = resource_name_expr loc name in
          let name_patt = resource_name_patt loc name in
          let expr = <:expr< $uid:"Mp_resource"$ . $lid:"label"$ $name_expr$ $lid:rule_name_id$>> in
             name_patt, expr
       in
-      let { imp_resources = resources } = proc in
+      let resources = proc.imp_resources in
          if resources = [] then
             []
          else
@@ -2036,17 +2028,18 @@ struct
     *
     * type resource_name
     *)
-   let define_resource proc loc r =
-      let { resource_name = name;
-            resource_extract_type = extract_type;
+   let define_resource proc loc name expr =
+      let { resource_extract_type = extract_type;
             resource_improve_type = improve_type;
             resource_data_type = data_type;
             resource_arg_type = arg_type
-          } = r
+          } = List.assoc name (get_resources proc.imp_sig_info)
       in
       let rsrc_type = <:ctyp< $resource_rsrc_ctyp loc$ $improve_type$ $extract_type$ $data_type$ $arg_type$ >> in
-         proc.imp_resources <- r :: proc.imp_resources;
-         [<:str_item< type $list:[name, [], rsrc_type, []]$ >>]
+      let create_expr = <:expr< $resource_create_expr loc$ $expr$ >> in
+         proc.imp_resources <- name :: proc.imp_resources;
+         [<:str_item< type $list:[_resource name, [], rsrc_type, []]$ >>;
+          <:str_item< value $rec:false$ $list:[resource_name_patt loc name, create_expr]$ >>]
 
    let rec is_list_expr = function
       MLast.ExUid(_,"[]") -> true
@@ -2075,7 +2068,7 @@ struct
        } =
       if !debug_resource then begin
          let print_resources out resources =
-            let print { resource_name = name } =
+            let print (name, _) =
                fprintf out " %s" name
             in
                List.iter print resources
@@ -2093,13 +2086,12 @@ struct
          let dformer_item = (<:str_item< $exp: dformer_expr$ >>) in
             [refiner_item; refiner_let; dformer_item]
       in
-      let print_resource resources resource =
-         let { resource_name = name } = resource in
-         let name_expr = (<:expr< $lid:name$ >>) in
+      let print_resource resources name =
+         let name_expr = resource_name_expr loc name in
          let ext_name_expr = (<:expr< $lid:ext_resource_name name$ >>) in
-         let name_patt = (<:patt< $lid:name$ >>) in
+         let name_patt = resource_name_patt loc name in
          let parent_value = (<:expr< $parent_path$ . $ext_name_expr$ >>) in
-         if mem_resource resource resources then begin
+         if List.mem name resources then begin
             (*
              * let name = name.resource_join name Parent.name
              *)
@@ -2115,10 +2107,13 @@ struct
                if !debug_resource then
                   eprintf "Filter_prog.define_parent: new resource %s.%s%t" (string_of_path path) name eflush
             in
-               (resource :: resources, <:str_item< value $rec:false$ $list:[ name_patt, parent_value ]$ >>)
+               (name :: resources, <:str_item< value $rec:false$ $list:[ name_patt, parent_value ]$ >>)
       in
-      let { imp_resources = resources } = proc in
-      let resources, items = List_util.fold_left print_resource resources nresources in
+      let resources = proc.imp_resources in
+      let nresources = List.map fst nresources in
+      let resources, items =
+         List_util.fold_left print_resource resources nresources
+      in
          proc.imp_resources <- resources;
          joins @ items
 
@@ -2201,9 +2196,9 @@ struct
     *)
    let implem_resources resources name =
       let loc = 0, 0 in
-      let bind_of_resource { resource_name = name' } =
+      let bind_of_resource name' =
          let patt = <:patt< $lid: ext_resource_name name'$ >> in
-         let expr = <:expr< $uid: "Mp_resource"$ . $lid: "close"$ $lid: name'$ $str:name$ >> in
+         let expr = <:expr< $uid: "Mp_resource"$ . $lid: "close"$ $lid:_resource name'$ $str:name$ >> in
             patt, expr
       in
       let values = List.map bind_of_resource resources in
@@ -2347,10 +2342,10 @@ struct
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: prec_rel%t" eflush;
             define_prec_rel proc loc rel
-       | Resource ({ resource_name = name } as rsrc) ->
+       | Resource (name, expr) ->
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: resource: %s%t" name eflush;
-            define_resource proc loc rsrc
+            define_resource proc loc name expr
        | Improve ({ improve_name = name } as impr) ->
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: improve %s with ... %t" name eflush;

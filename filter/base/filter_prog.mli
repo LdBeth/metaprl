@@ -54,15 +54,15 @@ sig
 
    val extract_sig :
       arg ->
-      (term, meta_term, unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info ->
-      (module_path * MLast.ctyp resource_info) list ->
+      (term, meta_term, unit, MLast.ctyp resource_sig, MLast.ctyp, MLast.expr, MLast.sig_item) module_info ->
+      (module_path * string * MLast.ctyp resource_sig) list ->
       string -> (MLast.sig_item * (int * int)) list
 
    val extract_str :
       arg ->
-      (term, meta_term, unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info ->
-      (term, meta_term, proof proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info ->
-      (module_path * MLast.ctyp resource_info) list ->
+      (term, meta_term, unit, MLast.ctyp resource_sig, MLast.ctyp, MLast.expr, MLast.sig_item) module_info ->
+      (term, meta_term, proof proof_type, MLast.expr, MLast.ctyp, MLast.expr, MLast.str_item) module_info ->
+      (module_path * string * MLast.ctyp resource_sig) list ->
       string -> (MLast.str_item * (int * int)) list
 
    (*
@@ -85,7 +85,7 @@ sig
    val define_dform : t -> loc -> (term, MLast.expr) dform_info -> term -> MLast.str_item list
    val define_prec : t -> loc -> string -> MLast.str_item list
    val define_prec_rel : t -> loc -> prec_rel_info -> MLast.str_item list
-   val define_resource : t -> loc -> MLast.ctyp resource_info -> MLast.str_item list
+   val define_resource : t -> loc -> string -> MLast.expr -> MLast.str_item list
    val improve_resource : t -> loc -> MLast.expr improve_info -> MLast.str_item list
    val define_parent : t -> loc -> MLast.ctyp parent_info -> MLast.str_item list
    val define_magic_block : t -> loc -> MLast.str_item magic_info -> MLast.str_item list

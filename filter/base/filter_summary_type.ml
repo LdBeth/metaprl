@@ -116,6 +116,7 @@ sig
    type ctyp
    type expr
    type item
+   type resource
 
    (* Type and id for this module *)
    type select
@@ -123,8 +124,8 @@ sig
 
    (* Marshaling *)
    type cooked
-   val marshal : (term, meta_term, proof, ctyp, expr, item) module_info -> cooked
-   val unmarshal : cooked -> (term, meta_term, proof, ctyp, expr, item) module_info
+   val marshal : (term, meta_term, proof, resource, ctyp, expr, item) module_info -> cooked
+   val unmarshal : cooked -> (term, meta_term, proof, resource, ctyp, expr, item) module_info
 end
 
 (*
@@ -161,15 +162,16 @@ sig
    type sig_ctyp
    type sig_expr
    type sig_item
-   type sig_elem = (term, meta_term, sig_proof, sig_ctyp, sig_expr, sig_item) summary_item
-   type sig_info = (term, meta_term, sig_proof, sig_ctyp, sig_expr, sig_item) module_info
+   type sig_elem = (term, meta_term, sig_proof, sig_ctyp resource_sig, sig_ctyp, sig_expr, sig_item) summary_item
+   type sig_info = (term, meta_term, sig_proof, sig_ctyp resource_sig, sig_ctyp, sig_expr, sig_item) module_info
 
    type str_proof
    type str_ctyp
    type str_expr
    type str_item
-   type str_elem = (term, meta_term, str_proof, str_ctyp, str_expr, str_item) summary_item
-   type str_info = (term, meta_term, str_proof, str_ctyp, str_expr, str_item) module_info
+   type str_resource
+   type str_elem = (term, meta_term, str_proof, str_resource, str_ctyp, str_expr, str_item) summary_item
+   type str_info = (term, meta_term, str_proof, str_resource, str_ctyp, str_expr, str_item) module_info
 
    type arg
    type select
@@ -215,19 +217,19 @@ sig
    val find_mlaxiom : info -> string -> (str_elem * loc) option
    val find_dform : info -> string -> (str_elem * loc) option
    val find_prec : info -> string -> bool
-   val resources : info -> (module_path * str_ctyp resource_info) list
+   val resources : info -> (module_path * string * str_ctyp resource_sig) list
    val parents : info -> module_path list
    val proofs : info -> (string * str_proof) list
 
    (* These are the resources for an included parent *)
-   val sig_resources : info -> module_path -> str_ctyp resource_info list
+   val sig_resources : info -> module_path -> (string * sig_ctyp resource_sig) list
 
    (*
     * Update.
     *)
    val add_command : info -> (str_elem * loc) -> unit
    val set_command : info -> (str_elem * loc) -> unit
-   val add_resource : info -> str_ctyp resource_info -> unit
+   val add_resource : info -> string -> str_ctyp resource_sig -> unit
    val add_prec : info -> string -> unit
 
    (*

@@ -34,6 +34,7 @@
 open Refiner_io
 open Refiner.Refiner.TermType
 
+open Filter_type
 open Filter_summary_type
 
 (*
@@ -91,6 +92,7 @@ sig
       with type str_ctyp   = MLast.ctyp
       with type str_expr   = MLast.expr
       with type str_item   = MLast.sig_item
+      with type str_resource = MLast.ctyp resource_sig
       with type select     = select_type
       with type arg        = Convert.t
 
@@ -104,6 +106,7 @@ sig
       with type str_ctyp   = MLast.ctyp
       with type str_expr   = MLast.expr
       with type str_item   = MLast.str_item
+      with type str_resource = MLast.expr
       with type select     = select_type
       with type arg        = Convert.t
 end

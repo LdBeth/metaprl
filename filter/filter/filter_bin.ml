@@ -73,11 +73,12 @@ sig
    type ctyp
    type sig_item
    type str_item
+   type str_resource
 
    val extract :
-      (unit -> (term, meta_term, unit, ctyp, expr, sig_item) module_info) ->
-      (term, meta_term, proof, ctyp, expr, str_item) module_info ->
-      (module_path * ctyp resource_info) list ->
+      (unit -> (term, meta_term, unit, ctyp resource_sig, ctyp, expr, sig_item) module_info) ->
+      (term, meta_term, proof, str_resource, ctyp, expr, str_item) module_info ->
+      (module_path * string * ctyp resource_sig) list ->
       string -> (str_item * (int * int)) list
    val compile : (str_item * (int * int)) list -> unit
 end
@@ -96,6 +97,7 @@ module MakeCompile (**)
     with type str_expr  = Info.expr
     with type str_ctyp  = Info.ctyp
     with type str_item  = Info.str_item
+    with type str_resource = Info.str_resource
     with type select    = select_type
     with type arg       = unit) =
 struct
@@ -150,6 +152,7 @@ struct
    type ctyp  = MLast.ctyp
    type sig_item = MLast.sig_item
    type str_item = MLast.sig_item
+   type str_resource = MLast.ctyp resource_sig
 
    let extract check = Extract.extract_sig ()
    let compile items =
@@ -163,6 +166,7 @@ struct
    type ctyp  = MLast.ctyp
    type sig_item = MLast.sig_item
    type str_item = MLast.str_item
+   type str_resource = MLast.expr
 
    let extract check = Extract.extract_str () (check ())
    let compile items =

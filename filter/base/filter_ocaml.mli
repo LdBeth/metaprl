@@ -34,6 +34,7 @@ open MLast
 
 open Opname
 open Refiner_sig
+open Filter_type
 
 (*
  * Location is a pair of bignums.
@@ -133,6 +134,12 @@ sig
    val dest_string : term -> string
    val dest_string_opt : term -> string option
    val dest_var : term -> string
+
+   (*
+    * Special functions for resources
+    *)
+   val resource_sig_of_term : term -> ctyp resource_sig
+   val term_of_resource_sig : opname -> ctyp resource_sig -> term
 end
 
 (*

@@ -80,22 +80,23 @@ type ('info, 'result, 'data, 'arg) t =
 (*
  * these are the methods for modifying a resource.
  *)
-and ('info, 'result, 'data, 'arg) info =
-   { resource_join : 'data -> 'data -> 'data;
-     resource_extract : 'data -> 'result;
-     resource_improve : 'data -> 'info -> 'data;
-     resource_improve_arg :
-        'data ->
-        string ->               (* Name of the new resource *)
-        string array ->         (* Names of the context vars *)
-        string array ->         (* Names of the new variables *)
-        term list ->            (* Arguments *)
-        term list ->            (* Parameters *)
-        meta_term ->            (* Rule statement *)
-        'arg ->                 (* Extra arguments *)
-        'data;
-     resource_close : 'data -> string -> 'data
-   }
+and ('info, 'result, 'data, 'arg) info = {
+   resource_empty : 'data;
+   resource_join : 'data -> 'data -> 'data;
+   resource_extract : 'data -> 'result;
+   resource_improve : 'data -> 'info -> 'data;
+   resource_improve_arg :
+      'data ->
+      string ->               (* Name of the new resource *)
+      string array ->         (* Names of the context vars *)
+      string array ->         (* Names of the new variables *)
+      term list ->            (* Arguments *)
+      term list ->            (* Parameters *)
+      meta_term ->            (* Rule statement *)
+      'arg ->                 (* Extra arguments *)
+      'data;
+   resource_close : 'data -> string -> 'data
+}
 
 (************************************************************************
  * IMPLEMENTATION                                                       *
@@ -130,9 +131,9 @@ let find_data name data =
 (*
  * Create an initial resource.
  *)
-let create info data =
+let create info =
    { resource_info = info;
-     resource_data = DataBase data;
+     resource_data = DataBase info.resource_empty;
      resource_list = ref []
    }
 

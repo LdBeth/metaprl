@@ -11,21 +11,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
@@ -131,23 +131,6 @@ let extract_params cvars bvars =
          TermParam h
    in
       List.map aux
-
-(*
- * Membership in a resource list.
- *)
-let mem_resource { resource_name = name } resources =
-   let rec search = function
-      { resource_name = name' } :: t ->
-         if !debug_resource then
-            eprintf "Resource: %s%t" name' eflush;
-         if name = name' then
-            true
-         else
-            search t
-    | [] ->
-         false
-   in
-      search resources
 
 (*
  * -*-

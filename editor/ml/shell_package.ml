@@ -157,8 +157,9 @@ let display_term pack window term =
 (*
  * Standard FilterOCaml module.
  *)
+open Filter_summary
 module FilterOCaml = Filter_ocaml.FilterOCaml (Refiner.Refiner)
-module FilterSummaryTerm = Filter_summary.FilterSummaryTerm (Refiner.Refiner)
+module FilterSummaryTerm = FilterSummaryTerm (Refiner.Refiner)
 
 open FilterOCaml
 open FilterSummaryTerm
@@ -174,12 +175,14 @@ let term_of_expr     = term_of_expr [] comment
 let term_of_type     = term_of_type comment
 let term_of_sig_item = term_of_sig_item comment
 let term_of_str_item = term_of_str_item [] comment
+let term_of_resource = FilterOCaml.term_of_resource_sig resource_op
 
 let convert_intf =
    let null_term    = mk_var_term "..." in
       { term_f      = identity;
         meta_term_f = term_of_meta_term;
         proof_f     = (fun _ _ -> null_term);
+        resource_f  = term_of_resource;
         ctyp_f      = term_of_type;
         expr_f      = term_of_expr;
         item_f      = term_of_sig_item
@@ -211,6 +214,7 @@ let convert_impl =
       { term_f      = identity;
         meta_term_f = term_of_meta_term;
         proof_f     = convert_proof;
+        resource_f  = term_of_expr;
         ctyp_f      = term_of_type;
         expr_f      = term_of_expr;
         item_f      = term_of_str_item
@@ -234,7 +238,7 @@ let term_of_implementation pack filter parse_arg =
  * Filter the entries for ls.
  *)
 let is_not_summary_item = function
-   SummaryItem _ | Improve _ ->
+   SummaryItem _ | Improve _ | Resource _ ->
       false
  | _ ->
       true

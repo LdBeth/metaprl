@@ -87,8 +87,8 @@ type 'a proof_type =
  * and marshalers.
  *)
 type 'a summary_type =
-   Interface of (term, meta_term, unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
- | Implementation of (term, meta_term, 'a proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
+   Interface of (term, meta_term, unit, MLast.ctyp resource_sig, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
+ | Implementation of (term, meta_term, 'a proof_type, MLast.expr, MLast.ctyp, MLast.expr, MLast.str_item) module_info
 
 type term_io = Refiner_io.TermType.term
 type meta_term_io = Refiner_io.TermType.meta_term
@@ -206,7 +206,7 @@ let identity x = x
 module MakeRawSigInfo (Convert : ConvertInternalSig) =
 struct
    type select  = select_type
-   type raw     = (term_io, meta_term_io, unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
+   type raw     = (term_io, meta_term_io, unit, MLast.ctyp resource_sig, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
    type cooked  = Convert.cooked summary_type
    type arg     = Convert.t
 
@@ -221,6 +221,7 @@ struct
             { term_f  = FTermCopy.convert;
               meta_term_f = FTermCopy.convert_meta;
               proof_f = (fun _ pf -> pf);
+              resource_f = identity;
               ctyp_f  = identity;
               expr_f  = identity;
               item_f  = identity
@@ -235,6 +236,7 @@ struct
          { term_f  = FTermCopy.revert;
            meta_term_f = FTermCopy.revert_meta;
            proof_f = (fun _ pf -> pf);
+           resource_f = identity;
            ctyp_f  = identity;
            expr_f  = identity;
            item_f  = identity
@@ -247,7 +249,7 @@ module MakeRawStrInfo (Convert : ConvertInternalSig) =
 struct
    type select  = select_type
    type raw     = (term_io, meta_term_io,
-                   Convert.term proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
+                   Convert.term proof_type, MLast.expr, MLast.ctyp, MLast.expr, MLast.str_item) module_info
    type cooked  = Convert.cooked summary_type
    type arg    = Convert.t
 
@@ -273,6 +275,7 @@ struct
             { term_f  = FTermCopy.convert;
               meta_term_f = FTermCopy.convert_meta;
               proof_f = (fun name proof -> interactive_proof (Convert.to_term arg) name proof);
+              resource_f = identity;
               ctyp_f  = identity;
               expr_f  = identity;
               item_f  = identity
@@ -287,6 +290,7 @@ struct
          { term_f  = FTermCopy.revert;
            meta_term_f = FTermCopy.revert_meta;
            proof_f = (fun name proof -> interactive_proof (Convert.of_term arg) name proof);
+           resource_f = identity;
            ctyp_f  = identity;
            expr_f  = identity;
            item_f  = identity
@@ -389,6 +393,7 @@ struct
                { term_f = TTermCopy.convert;
                  meta_term_f = (fun t -> TTermCopy.convert (FSummary.term_of_meta_term t));
                  proof_f = (fun _ t -> unit_term);
+                 resource_f = TOCaml.term_of_resource_sig resource_op;
                  ctyp_f = term_of_type;
                  expr_f = term_of_expr;
                  item_f = term_of_sig_item
@@ -403,6 +408,7 @@ struct
             { term_f = TTermCopy.revert;
               meta_term_f = (fun t -> TTermCopy.revert_meta (TSummary.meta_term_of_term t));
               proof_f = (fun _ t -> ());
+              resource_f = TOCaml.resource_sig_of_term;
               ctyp_f = type_of_term;
               expr_f = expr_of_term;
               item_f = sig_item_of_term
@@ -432,6 +438,7 @@ struct
                { term_f = TTermCopy.convert;
                  meta_term_f = (fun t -> TTermCopy.convert (FSummary.term_of_meta_term t));
                  proof_f = (fun name pf -> marshal_proof name (Convert.to_term arg) pf);
+                 resource_f = term_of_expr;
                  ctyp_f = term_of_type;
                  expr_f = term_of_expr;
                  item_f = term_of_str_item
@@ -446,6 +453,7 @@ struct
             { term_f = TTermCopy.revert;
               meta_term_f = (fun t -> TTermCopy.revert_meta (TSummary.meta_term_of_term t));
               proof_f = (fun name pf -> unmarshal_proof name (Convert.of_term arg) pf);
+              resource_f = expr_of_term;
               ctyp_f = type_of_term;
               expr_f = expr_of_term;
               item_f = str_item_of_term
@@ -492,6 +500,7 @@ struct
    type ctyp  = MLast.ctyp
    type expr  = MLast.expr
    type item  = MLast.sig_item
+   type resource = MLast.ctyp resource_sig
    type arg   = Convert.t
 
    type select = select_type
@@ -532,6 +541,7 @@ struct
    type expr  = MLast.expr
    type item  = MLast.str_item
    type arg   = Convert.t
+   type resource = MLast.expr
 
    type select = select_type
    let select = ImplementationType

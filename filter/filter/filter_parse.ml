@@ -438,6 +438,7 @@ sig
    type ctyp
    type item
    type sig_info
+   type resource
 
    (*
     * This is only really used for interactive proofs.
@@ -449,8 +450,8 @@ sig
     *)
    val extract :
       sig_info ->
-      (term, meta_term, proof, ctyp, expr, item) module_info ->
-      (module_path * ctyp resource_info) list ->
+      (term, meta_term, proof, resource, ctyp, expr, item) module_info ->
+      (module_path * string * ctyp resource_sig) list ->
       string -> (item * (int * int)) list
 end
 
@@ -465,6 +466,7 @@ module MakeFilter (**)
     with type str_expr  = Info.expr
     with type str_ctyp  = Info.ctyp
     with type str_item  = Info.item
+    with type str_resource = Info.resource
     with type select    = select_type
     with type arg       = unit) =
 struct
@@ -498,16 +500,12 @@ struct
       (* Lots of errors can occur here *)
       let _, opens = FilterCache.inline_module proc.cache () path (inline_hook path) [] in
       let resources = FilterCache.sig_resources proc.cache path in
-      let _ =
-         if !debug_resource then
-            let print_resources out resources =
-               let print { resource_name = name } =
-                  fprintf out " %s" name
-               in
-                  List.iter print resources
-            in
-               eprintf "Filter_parse.declare_parent: %s:%a%t" (string_of_path path) print_resources resources eflush
-      in
+      begin if !debug_resource then
+         let print_resources out resources =
+            List.iter (fprintf out " %s") (List.map fst resources)
+         in
+            eprintf "Filter_parse.declare_parent: %s:%a%t" (string_of_path path) print_resources resources eflush
+      end;
       let info =
          { parent_name = path;
            parent_opens = opens;
@@ -726,9 +724,11 @@ struct
     *
     * type resource_name
     *)
-   let declare_resource proc loc r =
-      FilterCache.add_command proc.cache (Resource r, loc);
-      FilterCache.add_resource proc.cache r
+   let declare_resource proc loc name r =
+      FilterCache.add_resource proc.cache name r
+
+   let define_resource proc loc name r =
+      FilterCache.add_command proc.cache (Resource (name, r), loc)
 
    let improve_resource proc loc i =
       FilterCache.add_command proc.cache (Improve i, loc)
@@ -975,6 +975,7 @@ struct
    type expr  = MLast.expr
    type ctyp  = MLast.ctyp
    type item  = MLast.sig_item
+   type resource = MLast.ctyp resource_sig
    type sig_info = unit
 
    let copy_proof proof1 proof2 = proof1
@@ -987,7 +988,8 @@ struct
    type expr  = MLast.expr
    type ctyp  = MLast.ctyp
    type item  = MLast.str_item
-   type sig_info = (term, meta_term, unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
+   type resource = MLast.expr
+   type sig_info = (term, meta_term, unit, MLast.ctyp resource_sig, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
    (*
     * Proof copying.
     *)
@@ -1187,13 +1189,14 @@ EXTEND
              empty_sig_item loc
         | "resource"; "("; improve = ctyp; ","; extract = ctyp; ","; data = ctyp; ","; arg = ctyp; ")"; name = LIDENT ->
            let f () =
-              SigFilter.declare_resource (SigFilter.get_proc loc) loc (**)
-                 { resource_name = name;
-                   resource_extract_type = extract;
-                   resource_improve_type = improve;
-                   resource_data_type = data;
-                   resource_arg_type = arg
-                 }
+              let r = {
+                 resource_extract_type = extract;
+                 resource_improve_type = improve;
+                 resource_data_type = data;
+                 resource_arg_type = arg
+              } in let proc = SigFilter.get_proc loc in
+                 SigFilter.declare_resource proc loc name r;
+                 SigFilter.define_resource proc loc name r
            in
               print_exn f "resource" loc;
               empty_sig_item loc
@@ -1321,15 +1324,9 @@ EXTEND
            in
               print_exn f "mlrule" loc;
               empty_str_item loc
-        | "resource"; "("; improve = ctyp; ","; extract = ctyp; ","; data = ctyp; ","; arg = ctyp; ")"; name = LIDENT ->
+        |  "let"; "resource"; name = LIDENT; "="; code = expr ->
            let f () =
-              StrFilter.declare_resource (StrFilter.get_proc loc) loc (**)
-                 { resource_name = name;
-                   resource_extract_type = extract;
-                   resource_improve_type = improve;
-                   resource_data_type = data;
-                   resource_arg_type = arg
-                 }
+              StrFilter.define_resource (StrFilter.get_proc loc) loc name code
            in
               print_exn f "resource" loc;
               empty_str_item loc
