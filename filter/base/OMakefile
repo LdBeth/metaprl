@@ -47,7 +47,7 @@ ExtractMagic(in, out) =
 #
 # The actual program to compute the MD5 digest
 #
-GENMAGIC = $(BIN)/genmagic
+GENMAGIC = $(BIN)/genmagic$(EXE)
 
 #
 # Magic text for the grammars.
