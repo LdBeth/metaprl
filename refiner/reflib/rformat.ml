@@ -970,43 +970,23 @@ let rec print_lzone buf rmargin col printer =
          begin
             match h with
                Text (len, s) ->
-                  if col + len <= rmargin then
-                     begin
-                        printer.print_string s;
-                        print (col + len) t
-                     end
-                  else
-                     col
+                  printer.print_string s;
+                  print (col + len) t
 
              | Break (_, _, notake_len, _, notake) ->
-                  if col + notake_len <= rmargin then
-                     begin
-                        printer.print_string notake;
-                        print (col + notake_len) t
-                     end
-                  else
-                     col
+                  printer.print_string notake;
+                  print (col + notake_len) t
 
              | CBreak (_, _, notake_len, _, notake) ->
-                  if col + notake_len <= rmargin then
-                     begin
-                        printer.print_string notake;
-                        print (col + notake_len) t
-                     end
-                  else
-                     col
+                  printer.print_string notake;
+                  print (col + notake_len) t
 
              | HBreak ->
-                  if succ col <= rmargin then
-                     begin
-                        printer.print_string " ";
-                        print (succ col) t
-                     end
-                  else
-                     col
+                  printer.print_string " ";
+                  print (succ col) t
 
              | Inline buf' ->
-                  print (print_lzone buf' rmargin col printer) t
+                  print (print_zone buf' rmargin col printer true) t
          end
 
     | [] ->
@@ -1075,6 +1055,9 @@ and print_tzone buf rmargin col printer =
 (*
  * Generic formatter.
  *)
+and print_ltzone linear =
+   if linear then print_lzone else print_tzone
+
 and print_zone buf rmargin col printer linear =
    if !debug_rformat then
       eprintf "Rformat.print_zone%t" eflush;
@@ -1084,10 +1067,7 @@ and print_zone buf rmargin col printer linear =
 
     | HZoneTag
     | SZoneTag ->
-         if linear then
-            print_lzone buf rmargin col printer
-         else
-            print_tzone buf rmargin col printer
+         print_ltzone linear buf rmargin col printer
 
     | IZoneTag ->
          let { print_invis = print_invis } = printer in
@@ -1099,14 +1079,11 @@ and print_zone buf rmargin col printer linear =
               print_end_block = print_arg2_invis;
             }
          in
-            if linear then
-               print_lzone buf rmargin col printer
-            else
-               print_tzone buf rmargin col printer
+            print_ltzone linear buf rmargin col printer
 
     | MZoneTag (off, str) ->
          printer.print_begin_block buf (col + off);
-         let col = print_tzone buf rmargin col printer in
+         let col = print_ltzone linear buf rmargin col printer in
             printer.print_end_block buf (col + off);
             col
 
