@@ -23,7 +23,7 @@ MAINLIB := refiner
 
 INSTALL_LIBS := $(MAINLIB)
 
-.PHONY: optlib
+.PHONY: lib optlib
 
 all: lib $(ROOT)/lib/$(MAINLIB).cma
 
@@ -72,6 +72,8 @@ $(MAINLIB).cma: $(CMALIBS)
 
 $(MAINLIB).cmxa: $(CMXFILES)
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -a -o $(MAINLIB).cmxa $(CMXFILES)
+
+$(CMALIBS): lib
 
 #
 # Standard build rules
