@@ -1,0 +1,65 @@
+#
+# This function computes the result of the prlc command.
+# This duplicates the funcationality in filter/filter/prlcomp.ml
+#
+
+#
+# Add an environment variable to the command line
+#
+if $(equal $(OSTYPE), Win32)
+   SetEnv(v, x) =
+      return( set $(v)=$(x)&& )
+   export
+else
+   SetEnv(v, x) =
+      return( $(v)=$(x) )
+   export
+
+#
+# Command without a preprocessor
+#
+WrapC(command) =
+   #
+   # Default environment
+   #
+   ENV = $(SetEnv MP_ROOT, $(ROOT)) $(SetEnv MPLIB, $(LIB))
+
+   #
+   # Add the theory description
+   #
+   ENV += $(SetEnv MP_GROUP, $(THEORYNAME)) $(SetEnv MP_DESCR, $(THEORYDESCR))
+
+   #
+   # Put together the command
+   #
+   COMMAND = $(command) -I $(LIB)
+
+   return($(ENV) $(COMMAND))
+
+#
+# Command with a preprocessor
+#
+PrlC(command) =
+   #
+   # Default environment
+   #
+   ENV = $(SetEnv MP_ROOT, $(ROOT)) $(SetEnv MPLIB, $(LIB))
+
+   #
+   # Add the include files
+   # JYH: do we still need this?
+   #
+   ENV += $(SetEnv MP_INCLUDE, $(concat :, $(filter-out -I%, $(OCAMLINCLUDES))))
+
+   #
+   # Add the theory description
+   #
+   ENV += $(SetEnv MP_GROUP, $(THEORYNAME)) $(SetEnv MP_DESCR, $(THEORYDESCR))
+
+   #
+   # Put together the command
+   # JYH: not sure if this should be hardcoded as CAMLP4N.
+   #
+   COMMAND = $(command) -I $(LIB) -pp "$(CAMLP4N) $(OCAMLINCLUDES)"
+
+   return($(ENV) $(COMMAND))
