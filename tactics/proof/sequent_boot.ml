@@ -33,6 +33,7 @@
 open Lm_debug
 open Lm_symbol
 
+open Term_sig
 open Refiner.Refiner
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Refine
@@ -97,7 +98,7 @@ struct
          i
 
    let assum_hyp_count arg i =
-      TermMan.num_hyps (nth_assum arg i)      
+      TermMan.num_hyps (nth_assum arg i)
 
    let nth_hyp p i = TacticInternal.nth_hyp p (get_pos_hyp_num p i)
    let nth_binding p i = TacticInternal.nth_binding p (get_pos_hyp_num p i)
@@ -118,6 +119,19 @@ struct
 
    let explode_sequent arg =
       TermMan.explode_sequent (goal arg)
+
+   let rec all_hyps_aux hyps l i =
+      if i = 0 then l else
+      let i = pred i in
+         match Term.SeqHyp.get hyps i with
+            Hypothesis t | HypBinding (_, t) ->
+               all_hyps_aux hyps (t::l) i
+          | Context _ ->
+               all_hyps_aux hyps l i
+
+   let all_hyps arg =
+      let hyps = (explode_sequent arg).sequent_hyps in
+         all_hyps_aux hyps [] (Term.SeqHyp.length hyps)
 
    (*
     * Argument functions.

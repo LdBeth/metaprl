@@ -773,6 +773,7 @@ sig
    val concl : tactic_arg -> term
    val num_assums : tactic_arg -> int
    val nth_hyp : tactic_arg -> int -> term
+   val all_hyps : tactic_arg -> term list
    val nth_binding : tactic_arg -> int -> var
    val nth_assum : tactic_arg -> int -> term
    val label : tactic_arg -> string
