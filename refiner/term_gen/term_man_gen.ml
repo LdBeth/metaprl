@@ -824,7 +824,7 @@ struct
          in
          let pvars = param_vars_term pvars args in
          let pvars =
-            SeqHyp.fold (fun pvars hyp ->
+            SeqHyp.fold (fun pvars _ hyp ->
                match hyp with
                   Hypothesis (_, h) ->
                      param_vars_term pvars h

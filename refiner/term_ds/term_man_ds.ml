@@ -706,7 +706,7 @@ struct
          Sequent seq ->
             let hyps = seq.sequent_hyps in
             let vars =
-               SeqHyp.fold (fun vars hyp ->
+               SeqHyp.fold (fun vars _ hyp ->
                      match hyp with
                         Hypothesis (_, h) ->
                            param_vars_term vars h

@@ -132,7 +132,7 @@ and hash_sequent_term venv code e =
    in
    let code = hash_term venv code arg in
    let venv, code =
-      SeqHyp.fold (fun (venv, code) hyp ->
+      SeqHyp.fold (fun (venv, code) _ hyp ->
             match hyp with
                Hypothesis (v, e) ->
                   let code = hash_term venv code e in
