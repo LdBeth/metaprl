@@ -21,17 +21,6 @@ type 'a arg_set = string -> 'a ref -> Arg.spec
 type ('a, 'b) var_set = string -> 'a ref -> 'b -> unit
 
 (*
- * Environment variables are prefixed with this string.
- *)
-let environ_prefix = "MP"
-
-let lib =
-   let name = environ_prefix ^ "LIB" in
-   try Sys.getenv name with
-      Not_found ->
-         raise (Invalid_argument ("Env_arg: " ^ name ^ " environment variable must be defined"))
-
-(*
  * Master list of args.
  *)
 let param_args = ref []
@@ -41,7 +30,7 @@ let param_args = ref []
  *)
 let if_getenv key f =
    let key = String.uppercase key in
-   let key = environ_prefix ^ "_" ^ key in
+   let key = Setup.environ_prefix ^ "_" ^ key in
       try f (Sys.getenv key) with
          Not_found -> ()
 
@@ -168,6 +157,7 @@ let set_debug_flags _ _ =
       in
          Arg.String set
 
+(* $(MP_DEBUG) *)
 let _ = general "debug" () "set debugging flags" set_possible_debug_flags set_debug_flags
 
 (*

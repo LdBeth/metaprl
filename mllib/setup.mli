@@ -3,8 +3,7 @@
  *
  * ----------------------------------------------------------------
  *
- * @begin[license]
- * Copyright (C) 2004 Mojave Group, Caltech
+ * Copyright (C) 2004 MetaPRL Group, Caltech
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,21 +19,29 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * @email{jyh@cs.caltech.edu}
- * @end[license]
+ * Authors: Jason Hickey <jyh@cs.caltech.edu>
+ *          Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-open Lm_printf
 
-let mproot =
-   try Some (Sys.getenv "MP_ROOT") with
-      Not_found ->
-         eprintf "Mp_env_boot.print_file: the MP_ROOT environment variable is not defined@.";
-         None
+val environ_prefix : string  (* MP *)
+val root : string            (* $(MP_ROOT); must be defined *)
+val lib : string             (* $(MPLIB) - when defined, or $(MP_ROOT)/lib - when directory exists *)
 
-(*!
- * @docoff
+(*
+ * $(HOME)/.metaprl directory (uses C:\metaprl or /tmp/metaprl-<uid>, when
+ * $(HOME) is not defined)
  *
+ * The first time this function is called, it will make sure that
+ * the directory exists and is readable and writable
+ *)
+val home : unit -> string    (* $(HOME)/.metaprl *)
+
+(*
+ * Read the editor from the $HOME/.metaprl/editor file.
+ *)
+val editor : unit -> string
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "compile"

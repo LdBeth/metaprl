@@ -61,11 +61,11 @@ let registry_types = ref []
  * The registry file should be stored in the lib directory.
  *)
 let get_registry_file () =
-   Filename.concat Env_arg.lib "registry.txt"
+   Filename.concat Setup.lib "registry.txt"
 
 let token_table = (Hashtbl.create 3)
 let index_table = (Hashtbl.create 3)
-let token_file = Filename.concat Env_arg.lib "mbs-mpl.txt"
+let token_file = Filename.concat Setup.lib "mbs-mpl.txt"
 
 (*
  * Define a particular type of registry.

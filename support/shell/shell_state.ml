@@ -65,19 +65,16 @@ let debug_lock =
  *)
 let rl_history_file =
    try
-      Some (Sys.getenv "MP_HISTORY_FILE")
+      (* $(MP_HISTORY_FILE *)
+      Sys.getenv (Setup.environ_prefix ^ "_HISTORY_FILE")
    with
       Not_found ->
-         try
-            let home = Sys.getenv "HOME" in
-               Some (Filename.concat home ".metaprl_history")
-         with
-            Not_found ->
-               None
+         Filename.concat (Setup.home ()) "history"
 
 let rl_history_length =
    try
-      int_of_string (Sys.getenv "MP_HISTORY_LENGTH")
+      (* $(MP_HISTORY_LENGTH *)
+      int_of_string (Sys.getenv (Setup.environ_prefix ^ "_HISTORY_LENGTH"))
    with
       _ ->
          100
@@ -85,18 +82,14 @@ let rl_history_length =
 let () = Lm_readline.initialize_readline ()
 
 let () =
-   match rl_history_file with
-      None ->
+   try
+      Lm_readline.read_history rl_history_file
+   with
+      Not_found ->
          ()
-    | Some name ->
-         try
-            Lm_readline.read_history name
-         with
-            Not_found ->
-               ()
-          | Sys_error err ->
-               eprintf "Couldn't load readline history file: \"%s\"\n%s\n" name err;
-               flush_all ()
+    | Sys_error err ->
+         eprintf "Couldn't load readline history file: \"%s\"\n%s\n" rl_history_file err;
+         flush_all ()
 
 (*
  * Save the text in the input_buffers during each toplevel read.
@@ -681,15 +674,12 @@ let set_prompt2 handle prompt =
    synchronize_write (fun state -> state.state_prompt2 <- prompt)
 
 let save_readline_history () =
-   match rl_history_file with
-      None -> ()
-    | Some name ->
-         try
-            Lm_readline.write_history name;
-            Lm_readline.history_truncate_file name rl_history_length
-         with
-            Sys_error err ->
-               eprintf "Couldn't save readline history file \"%s\"\n%s\n" name err
+   try
+      Lm_readline.write_history rl_history_file;
+      Lm_readline.history_truncate_file rl_history_file rl_history_length
+   with
+      Sys_error err ->
+         eprintf "Couldn't save readline history file \"%s\"\n%s\n" rl_history_file err
 
 
 let stdin_stream handle =

@@ -56,37 +56,6 @@ let catch_sigpipe () =
          Sys.set_signal Sys.sigpipe (Sys.Signal_handle handle_sigpipe)
 
 (*
- * Read the editor from the $HOME/.metaprl/editor file.
- *)
-let editor =
-   let home =
-      try Sys.getenv "HOME" with
-         Not_found ->
-            if Sys.os_type = "Win32" then
-               "C:\\"
-            else
-               "/"
-   in
-   let filename = Filename.concat home ".metaprl/editor" in
-      try
-         let inx = open_in filename in
-         let editor = input_line inx in
-            close_in inx;
-            editor
-      with
-         Sys_error _
-       | End_of_file ->
-            if Sys.os_type = "Win32" then
-               "notepad.exe"
-            else
-               let editor =
-                  try Sys.getenv "EDITOR" with
-                     Not_found ->
-                        "vi"
-               in
-                  sprintf "xterm -e %s" editor
-
-(*
  * Info about the file being edited.
  *)
 type info =
@@ -229,6 +198,7 @@ let edit_file info =
    let digest = Digest.file filename in
 
    (* Edit it until we can save it *)
+   let editor = Setup.editor ()
    let command = sprintf "%s %s" editor filename in
    let exit_ok =
       match Unix.system command with
@@ -282,14 +252,7 @@ let () =
          in
          let filename =
             try
-               let home = Sys.getenv "HOME" in
-               let home = Filename.concat home ".metaprl" in
-               let () =
-                  try Unix.mkdir home 0o700 with
-                     Unix.Unix_error _ ->
-                        ()
-               in
-               let tmp = Filename.concat home "tmp" in
+               let tmp = Filename.concat Setup.home "tmp" in
                let () =
                   try Unix.mkdir tmp 0o777 with
                      Unix.Unix_error _ ->

@@ -29,8 +29,6 @@ extends Mptop
 open Lm_config
 open Lm_format
 
-open Env_boot
-
 open Shell_syscall_sig
 
 (*
@@ -57,37 +55,6 @@ let target =
       if target1 <> target2 then
          eprintf "@[<v 3>Current command targets differ:@ Command line: %s@ Expected: %s@]@." target1 target2;
       target1
-
-(*
- * Read the editor from the $HOME/.metaprl/editor file.
- *)
-let editor =
-   let home =
-      try Sys.getenv "HOME" with
-         Not_found ->
-            if Sys.os_type = "Win32" then
-               "C:\\"
-            else
-               "/"
-   in
-   let filename = Filename.concat home ".metaprl/editor" in
-      try
-         let inx = open_in filename in
-         let editor = input_line inx in
-            close_in inx;
-            editor
-      with
-         Sys_error _
-       | End_of_file ->
-            if Sys.os_type = "Win32" then
-               "notepad.exe"
-            else
-               let editor =
-                  try Sys.getenv "EDITOR" with
-                     Not_found ->
-                        "vi"
-               in
-                  sprintf "xterm -e %s" editor
 
 (*
  * Default system call handler.
@@ -120,22 +87,15 @@ let handle_syscall command =
        | SyscallCVS (cwd, command) ->
             perform_command (sprintf "cd %s && cvs %s" cwd command)
        | SyscallEdit (root, target) ->
-            perform_command (sprintf "%s %s" editor (Filename.concat root target))
+            perform_command (sprintf "%s %s" (Setup.editor ()) (Filename.concat root target))
        | SyscallShell s ->
             perform_command s
 
 let state =
-   let root =
-      match mproot with
-         Some root ->
-            root
-       | None ->
-            "."
-   in
-      { shell_handler = handle_syscall;
-        shell_root = root;
-        shell_dir = "."
-      }
+   { shell_handler = handle_syscall;
+     shell_root = Setup.root;
+     shell_dir = "."
+   }
 
 let set_syscall_handler f =
    state.shell_handler <- f

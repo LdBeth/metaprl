@@ -937,8 +937,8 @@ let serve connect server info =
  *)
 let serve_http start connect info port =
    let passwd_name, dh_name =
-      let passwd_name = Filename.concat Env_arg.lib "server.pem" in
-      let dh_name = Filename.concat Env_arg.lib "dh.pem" in
+      let passwd_name = Filename.concat Setup.lib "server.pem" in
+      let dh_name = Filename.concat Setup.lib "dh.pem" in
          if not Lm_ssl.enabled then
             raise (Invalid_argument "SSL_ENABLED must be set to run the HTTP interface");
          if not (Sys.file_exists passwd_name) then

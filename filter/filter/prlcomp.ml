@@ -74,7 +74,7 @@ let file_interactive name =
 (*
  * Environment.
  *)
-let lib = ref Env_arg.lib
+let lib = ref Setup.lib
 
 let set_lib s =
    let var = sprintf "MPLIB=%s" s in

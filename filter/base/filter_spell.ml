@@ -26,26 +26,16 @@ open Lm_printf
 
 (*
  * The dictionary is compiled from /usr/dict/words and
- * $HOME/.ispell_english.  Both file just contain words
+ * $(MPLIB)/words.  Both file just contain words
  * that are correctly spelled.  The dictionary is saved
  * as a hashtable in /tmp/metaprl-spell.dat.
  *)
 let tmp_magic = 0x2557f3ed
 
-let tmp_filename = Env_arg.lib ^ "/english_dictionary.dat"
-let local_words = Env_arg.lib ^ "/words"
-let ispell_filename = ".ispell_english"
-
-let home_filename =
-   let home =
-      try Sys.getenv "HOME" with
-         Not_found ->
-            "/etc"
-   in
-      home ^ "/" ^ ispell_filename
+let tmp_filename = Setup.lib ^ "/english_dictionary.dat"
+let local_words = Setup.lib ^ "/words"
 
 let words_filenames = [
-   home_filename;
    "/usr/dict/words";
    "/usr/dict/webster";
    "/usr/share/dict/words";
@@ -126,7 +116,6 @@ let make_dict () =
          Pervasives.output_binary_int out tmp_magic;
          Marshal.to_channel out table [];
          Pervasives.close_out out;
-         add_file table ispell_filename;
          eprintf "[done]%t" eflush
 
 (*
@@ -141,7 +130,6 @@ let load_dict () =
                   raise Not_found;
                let table = Marshal.from_channel inx in
                   close_in inx;
-                  add_file table ispell_filename;
                   dict := Some table
          with
             _ ->

@@ -472,16 +472,16 @@ MPTIME =
 # Commands for running MetaPRL
 #
 if $(equal $(OSTYPE), Win32)
-    SET_MPLIB = set MPLIB=$(LIB)&&
+    SET_ENV = set MP_ROOT=$(ROOT) && set MPLIB=$(LIB) &&
     export
 else
-    SET_MPLIB = MPLIB=$(LIB) LC_ALL=C $(MPTIME)
+    SET_ENV = MP_ROOT=$(ROOT) MPLIB=$(LIB) LC_ALL=C $(MPTIME)
     export
 
-PRLCC     = $(SET_MPLIB) $(PRLC)
-CAMLP4NC  = $(SET_MPLIB) $(CAMLP4N)
-CAMLP4OC  = $(SET_MPLIB) $(CAMLP4O)
-CONVERTC  = $(SET_MPLIB) $(CONVERT)
+PRLCC     = $(SET_ENV) $(PRLC)
+CAMLP4NC  = $(SET_ENV) $(CAMLP4N)
+CAMLP4OC  = $(SET_ENV) $(CAMLP4O)
+CONVERTC  = $(SET_ENV) $(CONVERT)
 
 #
 # Add dependency scanning for .ppo files
@@ -601,7 +601,7 @@ TheoryDocument(docname, theories) =
     # Get MetaPRL to generate the .tex files
     #
     $(docname).tex $(docname)-body.tex: $(MP) $(CMOZFILES) $(docname)_print.ml
-        $(SET_MPLIB) $(MP) $(OCAMLINCLUDES) $(docname)_print.ml
+        $(SET_ENV) $(MP) $(OCAMLINCLUDES) $(docname)_print.ml
 
 #
 # Format the document and copy it to the DOCDIR directory.

@@ -37,8 +37,6 @@ open Lm_thread
 
 open Refiner.Refiner.Term
 
-open Env_boot
-
 open Shell_util
 
 (************************************************************************
@@ -152,16 +150,13 @@ end
  *)
 let save_stringbuffer_to_home queue name =
    try
-      let home = Sys.getenv "HOME" in
-      let filename = Filename.concat home name in
+      let filename = Filename.concat (Setup.home ()) name in
       let out = Pervasives.open_out filename in
          LineBuffer.iter (fun s ->
                Printf.fprintf out "%s\n" (String.escaped s)) queue;
          close_out out
    with
-      Not_found ->
-         eprintf "Home directory not defined@."
-    | Sys_error s ->
+      Sys_error s ->
          eprintf "Can't write %s@." s
 
 (*
@@ -169,8 +164,7 @@ let save_stringbuffer_to_home queue name =
  *)
 let add_stringbuffer_from_home queue name =
    try
-      let home = Sys.getenv "HOME" in
-      let filename = Filename.concat home name in
+      let filename = Filename.concat (Setup.home ()) name in
       let inx = Pervasives.open_in filename in
       let rec read () =
          let line =
@@ -188,9 +182,7 @@ let add_stringbuffer_from_home queue name =
          read ();
          close_in inx
    with
-      Not_found ->
-         eprintf "Home directory not defined@."
-    | Sys_error s ->
+      Sys_error s ->
          ()
 
 (*
@@ -290,16 +282,13 @@ end
  *)
 let save_stringtable_to_home queue name =
    try
-      let home = Sys.getenv "HOME" in
-      let filename = Filename.concat home name in
+      let filename = Filename.concat (Setup.home ()) name in
       let out = Pervasives.open_out filename in
          LineTable.iter (fun dir subdir ->
                Printf.fprintf out "%s#%s\n" dir subdir) queue;
          close_out out
    with
-      Not_found ->
-         eprintf "Home directory not defined@."
-    | Sys_error s ->
+      Sys_error s ->
          eprintf "Can't write %s@." s
 
 (*
@@ -307,8 +296,7 @@ let save_stringtable_to_home queue name =
  *)
 let read_stringtable_from_home name =
    try
-      let home = Sys.getenv "HOME" in
-      let filename = Filename.concat home name in
+      let filename = Filename.concat (Setup.home ()) name in
       let inx = Pervasives.open_in filename in
       let rec read table =
          let line =
@@ -336,10 +324,7 @@ let read_stringtable_from_home name =
          close_in inx;
          table
    with
-      Not_found ->
-         eprintf "Home directory not defined@.";
-         LineTable.empty
-    | Sys_error s ->
+      Sys_error s ->
          LineTable.empty
 
 (*
@@ -348,15 +333,12 @@ let read_stringtable_from_home name =
  *)
 let save_options_to_home options name =
    try
-      let home = Sys.getenv "HOME" in
-      let filename = Filename.concat home name in
+      let filename = Filename.concat (Setup.home ()) name in
       let out = Pervasives.open_out filename in
          output_string out (string_of_ls_options options);
          close_out out
    with
-      Not_found ->
-         eprintf "Home directory not defined@."
-    | Sys_error s ->
+      Sys_error s ->
          eprintf "Can't write %s@." s
 
 (*
@@ -365,8 +347,7 @@ let save_options_to_home options name =
  *)
 let read_options_from_home name =
    try
-      let home = Sys.getenv "HOME" in
-      let filename = Filename.concat home name in
+      let filename = Filename.concat (Setup.home ()) name in
       let inx = Pervasives.open_in filename in
       let options =
          try ls_options_of_string (input_line inx) with
@@ -376,10 +357,7 @@ let read_options_from_home name =
          close_in inx;
          options
    with
-      Not_found ->
-         eprintf "Home directory not defined@.";
-         ls_options_default
-    | Sys_error s ->
+      Sys_error s ->
          ls_options_default
 
 (************************************************************************
@@ -404,10 +382,10 @@ type t = info State.entry
 (*
  * Names of the history files.
  *)
-let history_filename     = ".metaprl/history"
-let files_filename       = ".metaprl/files"
-let directories_filename = ".metaprl/directories"
-let options_filename     = ".metaprl/options"
+let history_filename     = "history"
+let files_filename       = "files"
+let directories_filename = "directories"
+let options_filename     = "options"
 
 (*
  * Term output is directed to the "current" buffer.
@@ -505,33 +483,29 @@ let resolve_symlink filename =
 let strip_root filename =
    match filename with
       Some filename ->
-         (match mproot with
-             Some root ->
-                let root = root ^ "/" in
-                let root_len = String.length root in
-                let file_len = String.length filename in
-                let convert c =
-                   if c = '\\' then
-                      '/'
-                   else
-                      c
-                in
-                let rec matches i =
-                   if i = root_len then
-                      true
-                   else
-                      convert root.[i] = convert filename.[i] && matches (succ i)
-                in
-                let file =
-                   if root_len < file_len && matches 0 then
-                      String.sub filename root_len (file_len - root_len)
-                   else
-                      filename
-                in
-                   (* eprintf "Root: %s Filename: %s Stripped: %s\n%t" root filename file flush; *)
-                   Some file
-           | None ->
-                Some filename)
+          let root = Setup.root ^ "/" in
+          let root_len = String.length root in
+          let file_len = String.length filename in
+          let convert c =
+             if c = '\\' then
+                '/'
+             else
+                c
+          in
+          let rec matches i =
+             if i = root_len then
+                true
+             else
+                convert root.[i] = convert filename.[i] && matches (succ i)
+          in
+          let file =
+             if root_len < file_len && matches 0 then
+                String.sub filename root_len (file_len - root_len)
+             else
+                filename
+          in
+             (* eprintf "Root: %s Filename: %s Stripped: %s\n%t" root filename file flush; *)
+             Some file
     | None ->
          None
 

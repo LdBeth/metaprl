@@ -1394,30 +1394,9 @@ struct
     * Setup the browser.
     *)
    let init_password () =
-      (* Create the startup file *)
-      let home =
-         try Sys.getenv "HOME" with
-            Not_found ->
-               let home =
-                  if Sys.os_type = "Win32" then
-                     "C:"
-                  else
-                     "/tmp"
-               in
-                  eprintf "@[<v 3>Please set the HOME environment variable to point to your home directory.@ Using %s for now.@]@." home;
-                  home
-      in
-      let metaprl_dir = Filename.concat home ".metaprl" in
-      let () =
-         try Unix.mkdir metaprl_dir 0o777 with
-            Unix.Unix_error _ ->
-               ()
-      in
-
       (* Get, or create the password *)
-      let passwd = Filename.concat metaprl_dir "passwd" in
-      let password =
-         if Sys.file_exists passwd then
+      let passwd = Filename.concat (Setup.home ()) "passwd" in
+         if Sys.file_exists passwd then begin
             let inx =
                try open_in passwd with
                   Sys_error _ ->
@@ -1432,7 +1411,7 @@ struct
                close_in inx;
                Lm_string_util.trim password
 
-         else
+         end else begin
                (* Create a new password *)
             let fd = Unix.openfile passwd [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_TRUNC] 0o600 in
             let () =
@@ -1454,15 +1433,14 @@ struct
 *** You may change this password to something you can remember if you like.@ @]@." passwd;
 
                password
-      in
-         metaprl_dir, password
+         end
 
    (*
     * Start the web server.
     *)
    let main () =
       if !browser_flag then
-         let mp_dir, password = init_password () in
+         let password = init_password () in
          let shared =
             { shared_challenge = "unknown";
               shared_response  = "unknown";
@@ -1472,7 +1450,7 @@ struct
          let shared = State.shared_val "Shell_browser.shared" shared in
          let state =
             { state_table     = BrowserTable.empty;
-              state_mp_dir    = mp_dir;
+              state_mp_dir    = Setup.home ();
               state_password  = password;
               state_shared    = shared;
               state_challenge = "unknown";

@@ -13,6 +13,7 @@ MLLIB_MLZFILES =\
 MLLIB_FILES =\
 	$(MLLIB_MLZFILES)\
 	ctime\
+   setup\
 	env_arg\
 	punix\
 	list_neq_append\

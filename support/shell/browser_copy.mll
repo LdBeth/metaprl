@@ -32,8 +32,6 @@ open Lm_thread
 open Http_server_type
 open Http_simple
 
-open Env_boot
-
 open Browser_sig
 
 (*
@@ -63,38 +61,30 @@ let command_sym     = Lm_symbol.add "COMMAND"
 (*
  * Open the file as a channel.
  *)
-let in_channel_of_file mplib name =
-   match mplib with
-      None ->
-         None
-    | Some mplib ->
-         let name = Filename.concat mplib name in
-            try
-               if (Unix.stat name).Unix.st_kind = Unix.S_REG then
-                  Some (open_in name)
-               else
-                  None
-            with
-               Sys_error _
-             | Unix.Unix_error _ ->
-                  None
+let in_channel_of_file dir name =
+   let name = Filename.concat dir name in
+      try
+         if (Unix.stat name).Unix.st_kind = Unix.S_REG then
+            Some (open_in name)
+         else
+            None
+      with
+         Sys_error _
+       | Unix.Unix_error _ ->
+            None
 
-let out_channel_of_file mplib name =
-   match mplib with
-      None ->
-         None
-    | Some mplib ->
-         let name = Filename.concat mplib name in
-            try Some (open_out name) with
-               Sys_error _ ->
-                  None
+let out_channel_of_file dir name =
+   let name = Filename.concat dir name in
+      try Some (open_out name) with
+         Sys_error _ ->
+            None
 
 (*
  * Get an escaped string from a file.
  *)
-let string_of_file mplib filename =
+let string_of_file dir filename =
    let buf = Buffer.create 1024 in
-      match in_channel_of_file mplib filename with
+      match in_channel_of_file dir filename with
          Some inx ->
             let rec copy () =
                Buffer.add_char buf (input_char inx);
@@ -110,9 +100,8 @@ let string_of_file mplib filename =
        | None ->
            ""
 
-let mplib = Some Env_arg.lib
-let string_of_lib_file = string_of_file mplib
-let string_of_root_file = string_of_file mproot
+let string_of_lib_file = string_of_file Setup.lib
+let string_of_root_file = string_of_file Setup.root
 
 (*
  * Strip DOS-style line-endings.
@@ -143,7 +132,7 @@ let unix_of_dos s =
  *)
 let save_root_file filename contents =
    let contents = unix_of_dos contents in
-      match out_channel_of_file mproot filename with
+      match out_channel_of_file Setup.root filename with
          Some out ->
             eprintf "save_root_file: saving file %s@." filename;
             output_string out contents;
@@ -235,7 +224,7 @@ struct
 
    let add_file table v filename =
       SymbolTable.add table v (fun info ->
-         match in_channel_of_file mproot filename with
+         match in_channel_of_file Setup.root filename with
             Some inx ->
                let rec copy () =
                   info.info_add_char (input_char inx);
@@ -338,7 +327,7 @@ let parse table buf inx =
  * Print the contents of a file, with replacement.
  *)
 let print_raw_file_to_http out name =
-   match in_channel_of_file mplib name with
+   match in_channel_of_file Setup.lib name with
       Some inx ->
          print_success_channel out OkCode inx;
          close_in inx
@@ -346,7 +335,7 @@ let print_raw_file_to_http out name =
          print_error_page out NotFoundCode
 
 let print_metaprl_file_to_http out name =
-   match in_channel_of_file mproot name with
+   match in_channel_of_file Setup.root name with
       Some inx ->
          print_success_channel out OkCode inx;
          close_in inx
@@ -357,7 +346,7 @@ let print_metaprl_file_to_http out name =
  * Print the contents of a file, with replacement.
  *)
 let print_translated_file print_success_page print_error_page out table name =
-   match in_channel_of_file mplib name with
+   match in_channel_of_file Setup.lib name with
       Some inx ->
          let buf = Buffer.create 1024 in
          let info = buffer_info buf in
@@ -423,7 +412,7 @@ let html_escape_char info col c =
 	succ col
 
 let print_translated_io_buffer_to_http out table name io =
-   match in_channel_of_file mplib name with
+   match in_channel_of_file Setup.lib name with
       Some inx ->
          let info = http_info out in
          let inp = Browser_syscall.open_in io in
