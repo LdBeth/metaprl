@@ -245,7 +245,7 @@ ENDIF
                               let length = Weak.length info.image_array in
                                  info.gc_on <- false;
                                  Hash.insert info.index_table hash weak_header length;
-                                 info.image_array <- expand_weak_array info.image_array info.id (2 * (length + 1) - 1);
+                                 info.image_array <- expand_weak_array info.image_array info.id ((length * 2) + 1);
                                  info.count <- succ length;
                                  set info length result;
                                  subscribe info length

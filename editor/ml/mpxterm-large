@@ -1,0 +1,4 @@
+#!/bin/sh
+cd "`dirname $0`"
+. ./mpconfig
+xterm -fn -misc-fixed-medium-r-normal--18-120-100-100-c-90-iso10646-1 -e ./mpopt

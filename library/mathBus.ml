@@ -184,7 +184,7 @@ let loop_over_subterms node f =
   let rec alternate first second =
     for i = 1  to (len+1) do
       f i first;
-      if (i + 1) >= (len+1) then
+      if i >= len then
 	f (i+ 1) second; done in
 
    let c = (subterm_types b) in

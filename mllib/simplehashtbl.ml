@@ -63,7 +63,7 @@ let rehash table =
          entries := table.(i) :: !entries
       done
    in
-   let len = (len + 1) * 2 - 1 in
+   let len = (len * 2) + 1 in
    let table = Array.create len [] in
    let insert bucket =
       let insert ((x, _) as entry) =

@@ -80,7 +80,7 @@ struct
    let rehash info =
       let table = info.table in
       let entries = Array.to_list table in
-      let len = (Array.length table + 1) * 2 - 1 in
+      let len = (Array.length table * 2) + 1 in
       let table = Array.create len [] in
       let insert bucket =
          let insert ((x, _) as entry) =
