@@ -1,6 +1,9 @@
-(*
- * Load the symbol file, and pass the result to the
- * marshaler.
+/*
+ * This is a registry for global values that we don't want the
+ * marshaler to see.  Each value is registered and retreived with
+ * a number.  This is done in C because we don't want the registered
+ * values to appear in the closures of any of the registration
+ * functions.
  *
  * ----------------------------------------------------------------
  *
@@ -30,36 +33,16 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *
- *)
+ */
 
-open Printf
+#ifndef _PRINT_SYMBOLS_H
+#define _PRINT_SYMBOLS_H
 
-(*
- * This tells the marshaler about the symbols.
- *)
-external extern_symbols : (int * string * int) array -> unit = "ml_extern_symbols"
+#ifdef __GNUC__
+#pragma interface
+#endif __GNUC__
 
-let print_symbol (pos, modname, cpos) =
-   eprintf "0x%08x %s/%d\n" pos modname cpos
+value ml_extern_symbols(value symbols);
+void print_symbol(int pc);
 
-(*
- * Load the symbol file.
- *)
-let debug_symbols file =
-   let file = file ^ ".symbols" in
-      try
-         let inx = open_in_bin file in
-         let symbols = (input_value inx : (int * string * int) array) in
-            close_in inx;
-            extern_symbols symbols
-      with
-         Sys_error _ ->
-            ()
-
-(*
- * -*-
- * Local Variables:
- * Caml-master: "mp.run"
- * End:
- * -*-
- *)
+#endif _PRINT_SYMBOLS_H

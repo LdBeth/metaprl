@@ -1,13 +1,21 @@
 # Include directories
 ROOT := ..
 DIR := clib
-CINCLUDE := -I/usr/src/redhat/SOURCES/ocaml-2.00/byterun
+CINCLUDE := -I$(OCAMLSRC)/byterun
 CFLAGS := -Wall
 
 include $(ROOT)/mk/preface
 
 # Library files
+ifdef ENSROOT
+ENSFILES :=\
+	intern.c\
+	extern.c
+endif
+
 LCFILES :=\
+	$(ENSFILES)\
+	print_symbols\
 	truncate\
 	putenv\
 	execvp\
@@ -15,8 +23,6 @@ LCFILES :=\
 	debug\
 	ml_debug\
 	getrusage\
-	intern\
-	extern\
 	register
 
 # Name of library

@@ -26,55 +26,7 @@
 #include "reverse.h"
 #include "str.h"
 
-/* To print out the function symbols */
-static value function_symbols;
-
-/* Store the symbol array */
-value ml_extern_symbols(value symbols)
-{
-    register_global_root(&function_symbols);
-    function_symbols = symbols;
-    return Val_unit;
-}
-
-/*
- * Print the function symbol at a location.
- * Binary search.
- */
-static void print_symbol(int pc)
-{
-    int i, j, k, pos, cpos, length;
-    char *modname;
-    value symbol;
-
-    if(function_symbols) {
-        length = Wosize_val(function_symbols);
-        i = -1;
-        j = length;
-        symbol = 0;
-        while(i < j - 1) {
-            k = (i + j) >> 1;
-            symbol = Field(function_symbols, k);
-            pos = Int_val(Field(symbol, 0));
-            if(pos == pc)
-                break;
-            else if(pos > pc)
-                j = k;
-            else
-                i = k;
-        }
-        if(symbol) {
-            modname = String_val(Field(symbol, 1));
-            cpos = Int_val(Field(symbol, 2));
-            if(pos == pc)
-                fprintf(stderr, "marshaling function (0x%08x): %s/%d\n", pc, modname, cpos);
-            else
-                fprintf(stderr, "marshaling function (0x%08x:0x%08x): %s/%d\n", pc, pos, modname, cpos);
-        }
-        else
-            fprintf(stderr, "marshaling function (0x%08x)\n", pc);
-    }
-}
+#include "print_symbols.h"
 
 /* To keep track of sharing in externed objects */
 
