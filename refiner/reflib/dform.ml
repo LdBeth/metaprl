@@ -351,10 +351,10 @@ and format_sequent buf format_term term =
    let rec format_goal goals i len =
       if i <> len then
          begin
-            format_string buf (if i = 0 then ">-" else ";");
+            format_string buf (if i = 0 then " >-" else ";");
             format_space buf;
             format_term (SeqGoal.get goals i);
-            format_goal goals (i + 1) len
+            format_goal goals (succ i) len
          end
    in
    let rec format_hyp hyps i len =
@@ -369,30 +369,32 @@ and format_sequent buf format_term term =
                   format_space buf;
                   if Lm_symbol.to_string v <> "" then begin
                      format_string buf (string_of_symbol v);
-                     format_string buf ". ";
+                     format_string buf ": ";
                   end;
                   format_term a
              | Context (v, conts, values) ->
-                  format_string buf "<";
                   format_space buf;
+                  format_string buf "<";
                   format_term (mk_so_var_term v conts values);
                   format_string buf ">"
          in
-            format_hyp hyps (i + 1) len
+            format_hyp hyps (succ i) len
    in
-      let { sequent_args = args;
-            sequent_hyps = hyps;
-            sequent_goals = goals
-          } = explode_sequent term
-      in
-         format_szone buf;
-         format_pushm buf 0;
-         format_string buf "sequent {";
-         format_hyp hyps 0 (SeqHyp.length hyps);
-         format_goal goals 0 (SeqGoal.length goals);
-         format_string buf " }";
-         format_popm buf;
-         format_ezone buf
+   let { sequent_args = arg;
+         sequent_hyps = hyps;
+         sequent_goals = goals
+       } = explode_sequent term
+   in
+      format_szone buf;
+      format_pushm buf 0;
+      format_string buf "sequent ";
+      format_term arg;
+      format_string buf " {";
+      format_hyp hyps 0 (SeqHyp.length hyps);
+      format_goal goals 0 (SeqGoal.length goals);
+      format_string buf " }";
+      format_popm buf;
+      format_ezone buf
 
 (*
  * This is the default top level print function.
