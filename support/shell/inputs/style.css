@@ -66,6 +66,9 @@ SPAN.edithelp {
     font-size: 10pt;
     font-style: italic
 }
+SPAN.monospaced {
+    font-family: monospace
+}
 
 /*
  * Slots are selectable.

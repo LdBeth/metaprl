@@ -505,13 +505,13 @@ let resource (menu_item, browser_state -> browser_info) commandbar =
  * Default menubar resource.
  *)
 let refine_is_enabled () =
-   Shell.is_enabled MethodRefine
+   Shell_command.is_enabled MethodRefine
 
 let paste_is_enabled () =
-   Shell.is_enabled (MethodPaste "clipboard")
+   Shell_command.is_enabled (MethodPaste "clipboard")
 
 let undo_is_enabled () =
-   Shell.is_enabled MethodUndo
+   Shell_command.is_enabled MethodUndo
 
 let menubar_init =
    [<< menu["file", "File"] >>,                                            always_enabled;

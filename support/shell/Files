@@ -24,18 +24,19 @@ MPFILES =\
 	proof_edit\
 	package_info\
    	shell_syscall_sig\
+	mptop\
+	shell_command\
 	shell_rule\
 	shell_package\
 	shell_root\
 	shell_fs\
-	mptop\
-	shell_state\
 	shell_internal_sig\
-	shell_p4_sig\
+	shell_state\
 	shell_core\
 	shell_current\
-	shell\
 	shell_syscall\
+	shell_p4_sig\
+	shell\
 	browser_resource\
 	shell_browser\
 	shell_theory

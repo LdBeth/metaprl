@@ -398,7 +398,7 @@ let html_escape_char info col c =
         info.info_add_string "&";
         succ col
     | ' ' ->
-        info.info_add_string " ";
+        info.info_add_string "&nbsp;";
         succ col
     | '\r'
     | '\n' ->

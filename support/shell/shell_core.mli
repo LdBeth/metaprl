@@ -57,7 +57,6 @@ val set_dftype : shell -> display_type -> unit
 val set_window_width : shell -> int -> unit
 
 val touch : shell -> unit
-val mk_dep_name : opname -> string
 
 val parse_path : shell -> string -> shell_dir
 val string_of_dir : shell_dir -> string
@@ -74,7 +73,7 @@ val clear_view_options : shell -> string -> unit
 
 val view : parse_arg -> shell -> LsOptionSet.t -> unit
 val chdir : parse_arg -> shell -> bool -> bool -> shell_dir -> unit
-val apply_all : parse_arg -> shell -> (edit_object -> dform_base -> unit) -> bool -> bool -> bool -> unit
+val apply_all : parse_arg -> shell -> (edit_object -> dform_base -> unit) -> bool -> bool -> unit
 val cd : parse_arg -> shell -> string -> string
 val root : parse_arg -> shell -> string
 val refresh : parse_arg -> shell -> unit

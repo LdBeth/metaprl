@@ -36,11 +36,19 @@ open Shell_util
  * Session info is separated from the shell
  * to get the dependencies right.
  *)
+type shared =
+   { mutable shared_directories     : string LineTable.t;
+     mutable shared_files           : string LineTable.t
+   }
+
+type shared_info =
+   { shared_info_files    : string list;
+     shared_info_dirs     : string list
+   }
+
 type session =
    { session_history                 : string LineBuffer.t;
      mutable session_options         : LsOptionSet.t;
-     mutable session_directories     : string LineTable.t;
-     mutable session_files           : string LineTable.t;
      session_messages                : Lm_rformat.buffer LineBuffer.t;
      mutable session_content_buffer  : Lm_rformat.buffer;
      mutable session_content_table   : term StringTable.t
@@ -54,8 +62,6 @@ type session_info =
      session_info_options  : string;
      session_info_dir      : string list;
      session_info_history  : string list;
-     session_info_edit     : string list;
-     session_info_dirs     : string list;
      session_info_messages : string list
    }
 

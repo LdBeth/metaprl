@@ -491,7 +491,7 @@ MPTIME =
 # Theory name and description
 #
 THEORYNAME = other
-THEORYDESCR = Miscelaneous Theories
+THEORYDESCR = Miscellaneous Theories
 
 #
 # Commands for running MetaPRL

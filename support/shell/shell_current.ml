@@ -213,9 +213,18 @@ let set_current_session session_info =
          shell.shell_needs_refresh   <- true;
          add_linebuffer_strings session.session_history session_info.session_info_history;
          add_linebuffer_buffers session.session_messages session_info.session_info_messages;
-         session.session_directories <- linetable_of_strings session_info.session_info_dirs;
-         session.session_files       <- linetable_of_strings session_info.session_info_edit;
          session.session_options     <- ls_options_of_string session_info.session_info_options))
+
+let set_shared shared_info =
+   State.write shared_entry (fun shared ->
+         shared.shared_directories <- linetable_of_strings shared_info.shared_info_dirs;
+         shared.shared_files       <- linetable_of_strings shared_info.shared_info_files)
+
+(*
+ * Load the shared data.
+ *)
+let () =
+   set_shared (read_shared ())
 
 (*
  * Load all the shells.
@@ -239,18 +248,23 @@ let () =
 let flush () =
    State.read shell_entry (fun shell ->
    State.read session_entry (fun session ->
+   State.read shared_entry (fun shared ->
       let pid = string_of_pid (Lm_thread_shell.get_pid ()) in
+      let shared =
+         { shared_info_files    = strings_of_linetable shared.shared_files;
+           shared_info_dirs     = strings_of_linetable shared.shared_directories
+         }
+      in
       let session =
          { session_info_id       = pid;
            session_info_dir      = path_of_dir (shell.shell_fs, shell.shell_subdir);
            session_info_options  = string_of_ls_options session.session_options;
            session_info_history  = strings_of_linebuffer session.session_history;
-           session_info_edit     = strings_of_linetable session.session_files;
-           session_info_dirs     = strings_of_linetable session.session_directories;
            session_info_messages = strings_of_linebuffer_buffers session.session_messages;
          }
       in
-         write_session session))
+         write_shared shared;
+         write_session session)))
 
 (*!
  * @docoff

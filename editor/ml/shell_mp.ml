@@ -233,7 +233,7 @@ struct
       in
       let () =
          (* Ignore initialization errors *)
-         try Shell.init () with
+         try Shell_command.init () with
             _ ->
                ()
       in

@@ -75,7 +75,7 @@ let handle_syscall command =
       match command with
          SyscallRestart ->
             Shell_current.flush ();
-            Shell.backup_all ();
+            Shell_command.backup_all ();
             (try Unix.execv Sys.argv.(0) Sys.argv; -1 with
                 Unix.Unix_error (errno, funinfo, arginfo) ->
                    eprintf "Execv failed: %s %s(%s)@." (Unix.error_message errno) funinfo arginfo;
@@ -123,7 +123,7 @@ let rootname s =
       else if String.length s <> 0 && s.[0] = '/' then
          s
       else
-         Filename.concat (Shell.fs_pwd ()) s
+         Filename.concat (Shell_command.fs_pwd ()) s
    in
    let s = Lm_filename_util.split_path s in
    let s = Lm_filename_util.simplify_path s in

@@ -89,6 +89,10 @@ declare bf[name:s]
 declare bf{'t}
 declare bf_begin
 declare bf_end
+declare monospaced[name:s]
+declare monospaced{'t}
+declare monospaced_begin
+declare monospaced_end
 declare i[name:s]
 declare i{'t}
 declare it[name:s]
@@ -396,6 +400,24 @@ dform bf_df1 : bf[text:s] =
 
 dform bf_df2 : bf{'t} =
    bf_begin 't bf_end
+
+dform monospaced_begin_df : mode[html] :: monospaced_begin =
+   html["<span class=\"monospaced\">"]
+
+dform monospaced_end_df : mode[html] :: monospaced_end =
+   html["</span>"]
+
+dform monospaced_begin_df : mode[prl] :: monospaced_begin =
+   pushfont["monospaced"]
+
+dform monospaced_end_df : mode[prl] :: monospaced_end =
+   popfont["monospaced"]
+
+dform monospaced_df1 : monospaced[text:s] =
+   monospaced_begin slot[text:s] monospaced_end
+
+dform monospaced_df2 : monospaced{'t} =
+   monospaced_begin 't monospaced_end
 
 dform it_begin_df : mode[html] :: it_begin =
    html["<i>"]

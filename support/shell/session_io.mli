@@ -26,6 +26,9 @@
  *)
 open Session_sig
 
+val read_shared    : unit -> shared_info
+val write_shared   : shared_info -> unit
+
 val read_session   : string -> session_info
 val read_sessions  : unit -> session_info list
 val write_session  : session_info -> unit

@@ -71,6 +71,10 @@ declare small[name:s]
 declare small{'t}
 declare esquash{'t}
 declare atomic[text:s]
+declare monospaced[name:s]
+declare monospaced{'t}
+declare monospaced_begin
+declare monospaced_end
 
 (*
  * HTML control.

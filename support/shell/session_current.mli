@@ -27,6 +27,7 @@
 open Lm_thread
 open Session_sig
 
+val shared_entry  : shared State.entry
 val session_entry : session State.entry
 
 (*!

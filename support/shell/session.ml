@@ -151,17 +151,17 @@ let strip_root filename =
     | None ->
          None
 
-let add_edit_internal session name =
-   session.session_files <- LineTable.add session.session_files name ""
+let add_edit_internal shared name =
+   shared.shared_files <- LineTable.add shared.shared_files name ""
 
-let add_filename_internal session name =
+let add_filename_internal shared name =
    match name with
       Some name ->
-         add_edit_internal session name
+         add_edit_internal shared name
     | None ->
          ()
 
-let add_file_internal session file =
+let add_file_internal shared file =
    match file with
       Some name ->
          let basename =
@@ -171,30 +171,30 @@ let add_file_internal session file =
          in
          let ml_name = strip_root (resolve_symlink (basename ^ ".ml")) in
          let mli_name = strip_root (resolve_symlink (basename ^ ".mli")) in
-            add_filename_internal session ml_name;
-            add_filename_internal session mli_name
+            add_filename_internal shared ml_name;
+            add_filename_internal shared mli_name
     | None ->
          ()
 
 let add_edit name =
-   State.write session_entry (fun session ->
-         add_edit_internal session name)
+   State.write shared_entry (fun shared ->
+         add_edit_internal shared name)
 
 let add_filename name =
-   State.write session_entry (fun session ->
-         add_filename_internal session name)
+   State.write shared_entry (fun shared ->
+         add_filename_internal shared name)
 
 let add_file file =
-   State.write session_entry (fun session ->
-         add_file_internal session file)
+   State.write shared_entry (fun shared ->
+         add_file_internal shared file)
 
 (*
  * Add a directory.  For the buffer, remember the main part of the directory
  * as well as the current location.
  *)
 let add_directory str =
-   State.write session_entry (fun session ->
-         let dirs = session.session_directories in
+   State.write shared_entry (fun shared ->
+         let dirs = shared.shared_directories in
 
          (* Parse the filename *)
          let path =
@@ -210,10 +210,10 @@ let add_directory str =
                [] ->
                   ()
              | [dir] ->
-                  if not (LineTable.mem session.session_directories dir) then
-                     session.session_directories <- LineTable.add session.session_directories dir ""
+                  if not (LineTable.mem shared.shared_directories dir) then
+                     shared.shared_directories <- LineTable.add shared.shared_directories dir ""
              | dir :: subdir ->
-                  session.session_directories <- LineTable.add session.session_directories dir (String.concat "/" subdir))
+                  shared.shared_directories <- LineTable.add shared.shared_directories dir (String.concat "/" subdir))
 
 (*
  * Capture output channels.
@@ -252,10 +252,10 @@ let get_history () =
  * Get the files.
  *)
 let get_files () =
-   State.read session_entry (fun session ->
+   State.read shared_entry (fun shared ->
          let files =
             LineTable.fold (fun files file _ ->
-                  file :: files) [] session.session_files
+                  file :: files) [] shared.shared_files
          in
             List.rev files)
 
@@ -263,13 +263,13 @@ let get_files () =
  * Get the directories.
  *)
 let get_directories () =
-   State.read session_entry (fun session ->
+   State.read shared_entry (fun shared ->
          let dirs =
             LineTable.fold (fun lines dir subdir ->
                   if subdir = "" then
                      ("/" ^ dir) :: lines
                   else
-                     (sprintf "/%s/%s" dir subdir) :: ("/" ^ dir) :: lines) [".."; "~"; "/"] session.session_directories
+                     (sprintf "/%s/%s" dir subdir) :: ("/" ^ dir) :: lines) [".."; "~"; "/"] shared.shared_directories
          in
             List.rev dirs)
 

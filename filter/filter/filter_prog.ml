@@ -875,7 +875,7 @@ let define_ml_program proc loc strict_expr args tname redex bnd_expr code =
  ************************************************************************)
 
 let extract_expr loc modname name =
-   <:expr< Shell.extract [ $str:modname$; $str:name$ ] >>
+   <:expr< Shell_command.extract [ $str:modname$; $str:name$ ] >>
 
 (*
  * Define the resources for a rewrite.

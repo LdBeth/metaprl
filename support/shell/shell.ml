@@ -77,86 +77,6 @@ let _ =
 
 let debug_shell  = load_debug "shell"
 
-type commands =
-   { mutable init : unit -> unit;
-     mutable cd : string -> string;
-     mutable root : unit -> string;
-     mutable refresh : unit -> unit;
-     mutable pwd : unit -> string;
-     mutable relative_pwd : unit -> string;
-     mutable fs_pwd : unit -> string;
-     mutable set_dfmode : string -> unit;
-     mutable set_dftype : display_type -> unit;
-     mutable create_pkg : string -> unit;
-     mutable backup : unit -> unit;
-     mutable backup_all : unit -> unit;
-     mutable save : unit -> unit;
-     mutable save_all : unit -> unit;
-     mutable export : unit -> unit;
-     mutable export_all : unit -> unit;
-     mutable revert : unit -> unit;
-     mutable revert_all : unit -> unit;
-     mutable view : LsOptionSet.t -> unit;
-     mutable expand : unit -> unit;
-     mutable expand_all : unit -> unit;
-     mutable apply_all : (edit_object -> dform_base -> unit) -> bool -> bool -> bool -> unit;
-     mutable interpret : proof_command -> unit;
-     mutable undo : unit -> unit;
-     mutable redo : unit -> unit;
-     mutable create_ax_statement : term -> string -> unit;
-     mutable refine : tactic -> unit;
-     mutable check : unit -> unit;
-     mutable extract : string list -> unit -> Refine.extract;
-     mutable term_of_extract : term list -> term; (* XXX HACK: temporary interface *)
-     mutable print_theory : string -> unit;
-     mutable get_view_options : unit -> string;
-     mutable set_view_options : string -> unit;
-     mutable clear_view_options : string -> unit;
-     mutable find_subgoal : int -> string;
-     mutable is_enabled : method_name -> bool
-   }
-
-let uninitialized _ = raise (Invalid_argument "The Shell module has not been instantiated")
-
-let commands =
-   { init = uninitialized;
-     cd = uninitialized;
-     root = uninitialized;
-     refresh = uninitialized;
-     pwd = uninitialized;
-     relative_pwd = uninitialized;
-     fs_pwd = uninitialized;
-     set_dfmode = uninitialized;
-     set_dftype = uninitialized;
-     create_pkg = uninitialized;
-     backup = uninitialized;
-     backup_all = uninitialized;
-     save = uninitialized;
-     save_all = uninitialized;
-     export = uninitialized;
-     export_all = uninitialized;
-     revert = uninitialized;
-     revert_all = uninitialized;
-     view = uninitialized;
-     check = uninitialized;
-     apply_all = uninitialized;
-     expand = uninitialized;
-     expand_all = uninitialized;
-     interpret = uninitialized;
-     undo = uninitialized;
-     redo = uninitialized;
-     create_ax_statement = uninitialized;
-     refine = uninitialized;
-     print_theory = uninitialized;
-     extract = (fun _ -> uninitialized);
-     term_of_extract = uninitialized;
-     get_view_options = uninitialized;
-     set_view_options = uninitialized;
-     clear_view_options = uninitialized;
-     find_subgoal = uninitialized;
-     is_enabled = uninitialized
-   }
-
 (*
  * Shell takes input parser as an argument.
  *)
@@ -383,7 +303,7 @@ struct
                   objs := obj.edit_get_contents shell.shell_subdir:: !objs
                in
                   chdir parse_arg shell false false (DirModule mname, []);
-                  apply_all parse_arg shell f false false false;
+                  apply_all parse_arg shell f false false;
                   List.rev !objs)
 
       (*
@@ -607,44 +527,44 @@ struct
        * External toploop.
        *)
       let () =
-         if commands.cd != uninitialized then
-            raise (Invalid_argument "The Shell module was initialized twice");
-         commands.init                <- init;
-         commands.cd                  <- wrap_arg cd;
-         commands.root                <- wrap_unit_arg root;
-         commands.refresh             <- refresh;
-         commands.pwd                 <- pwd;
-         commands.relative_pwd        <- wrap_unit relative_pwd;
-         commands.fs_pwd              <- wrap_unit fs_pwd;
-         commands.set_dfmode          <- set_dfmode;
-         commands.create_pkg          <- wrap_arg create_pkg;
-         commands.backup              <- backup;
-         commands.backup_all          <- backup_all;
-         commands.save                <- save;
-         commands.save_all            <- save_all;
-         commands.export              <- export;
-         commands.export_all          <- export_all;
-         commands.revert              <- wrap_unit_arg revert;
-         commands.revert_all          <- wrap_unit_arg revert_all;
-         commands.view                <- wrap_arg view;
-         commands.check               <- wrap_unit check;
-         commands.expand              <- wrap_unit expand;
-         commands.expand_all          <- wrap_unit_arg expand_all;
-         commands.apply_all           <- wrap_arg apply_all;
-         commands.interpret           <- wrap interpret;
-         commands.undo                <- wrap_unit undo;
-         commands.redo                <- wrap_unit redo;
-         commands.create_ax_statement <- wrap_arg create_ax_statement;
-         commands.refine              <- wrap refine;
-         commands.print_theory        <- wrap_arg print_theory;
-         commands.extract             <- wrap extract;
-         commands.term_of_extract     <- wrap term_of_extract;
-         commands.get_view_options    <- get_view_options;
-         commands.set_view_options    <- set_view_options;
-         commands.clear_view_options  <- clear_view_options;
-         commands.find_subgoal        <- wrap edit_find;
-         commands.is_enabled          <- wrap edit_is_enabled;
-         ()
+         Shell_command.synchronize (fun commands ->
+               commands.initialized         <- true;
+               commands.init                <- init;
+               commands.cd                  <- wrap_arg cd;
+               commands.root                <- wrap_unit_arg root;
+               commands.refresh             <- refresh;
+               commands.pwd                 <- pwd;
+               commands.relative_pwd        <- wrap_unit relative_pwd;
+               commands.fs_pwd              <- wrap_unit fs_pwd;
+               commands.set_dfmode          <- set_dfmode;
+               commands.create_pkg          <- wrap_arg create_pkg;
+               commands.backup              <- backup;
+               commands.backup_all          <- backup_all;
+               commands.save                <- save;
+               commands.save_all            <- save_all;
+               commands.export              <- export;
+               commands.export_all          <- export_all;
+               commands.revert              <- wrap_unit_arg revert;
+               commands.revert_all          <- wrap_unit_arg revert_all;
+               commands.view                <- wrap_arg view;
+               commands.check               <- wrap_unit check;
+               commands.expand              <- wrap_unit expand;
+               commands.expand_all          <- wrap_unit_arg expand_all;
+               commands.apply_all           <- wrap_arg apply_all;
+               commands.interpret           <- wrap interpret;
+               commands.undo                <- wrap_unit undo;
+               commands.redo                <- wrap_unit redo;
+               commands.create_ax_statement <- wrap_arg create_ax_statement;
+               commands.refine              <- wrap refine;
+               commands.print_theory        <- wrap_arg print_theory;
+               commands.extract             <- wrap extract;
+               commands.term_of_extract     <- wrap term_of_extract;
+               commands.get_view_options    <- get_view_options;
+               commands.set_view_options    <- set_view_options;
+               commands.clear_view_options  <- clear_view_options;
+               commands.find_subgoal        <- wrap edit_find;
+               commands.is_enabled          <- wrap edit_is_enabled;
+               commands.edit                <- Shell_syscall.deref_edit ())
    end
 
    (************************************************************************
@@ -664,150 +584,6 @@ struct
             Top.backup_all ()
    end
 end
-
-let extract path () = commands.extract path ()
-let term_of_extract ts = commands.term_of_extract ts
-
-(*
- * Control profiling.
- *)
-external restart_gmon : unit -> unit = "restart_gmon"
-external stop_gmon : unit -> unit = "stop_gmon"
-
-(*
- * Toploop functions
- *)
-let exit () = raise End_of_file
-let abort () =
-   Pervasives.exit 126
-
-let set_debug = set_debug
-let print_gc_stats () =
-   Lm_rprintf.flush stdout;
-   Gc.print_stat Pervasives.stdout;
-   Pervasives.flush Pervasives.stdout
-
-let init () = commands.init ()
-let cd s = commands.cd s
-let refresh () = commands.refresh ()
-let pwd () = commands.pwd ()
-let relative_pwd () = commands.relative_pwd ()
-let fs_pwd () = commands.fs_pwd ()
-let set_dfmode s = commands.set_dfmode s
-let create_pkg s = commands.create_pkg s
-let backup _ = commands.backup ()
-let backup_all _ = commands.backup_all ()
-let save _ = commands.save ()
-let save_all _ = commands.save_all ()
-let export _ = commands.export ()
-let export_all _ = commands.export_all ()
-let revert _ = commands.revert ()
-let revert_all _ = commands.revert_all ()
-let check _ = commands.check ()
-let expand _ = commands.expand ()
-let expand_all _ = commands.expand_all ()
-let apply_all f t c = commands.apply_all f t c
-let undo _ = commands.undo ()
-let redo _ = commands.redo ()
-let create_ax_statement t s = commands.create_ax_statement t s
-let refine t = commands.refine t
-let print_theory s = commands.print_theory s
-let get_view_options _ = commands.get_view_options ()
-let set_view_options s = commands.set_view_options s
-let clear_view_options s = commands.clear_view_options s
-let find_subgoal i = commands.find_subgoal i
-let is_enabled name = commands.is_enabled name
-
-let kreitz _ = commands.interpret ProofKreitz
-let clean _ = commands.interpret ProofClean
-let squash _ = commands.interpret ProofSquash
-let copy s = commands.interpret (ProofCopy s)
-let paste s = commands.interpret (ProofPaste s)
-let make_assum _ = commands.interpret ProofMakeAssum
-
-let interpret_all command modifies =
-   let f item db =
-      item.edit_interpret [] command
-   in
-      apply_all f (interpret_modifies command) true false
-
-let clean_all _ = interpret_all ProofClean false
-let squash_all _ = interpret_all ProofSquash false
-
-let set_tex_file = Shell_tex.set_file
-
-let ls s =
-   let options = ls_options_of_string s in
-   let options =
-      if LsOptionSet.is_empty options then
-         ls_options_default
-      else
-         options
-   in
-      commands.view options
-
-let up i =
-   ignore (cd (String.make (i + 1) '.'));
-   ls ""
-
-let down i =
-   ignore (cd (string_of_int i));
-   ls ""
-
-let root () = commands.root ()
-
-let status item =
-   let name, status, _, _ = item.edit_get_contents [] in
-   let str_status = match status with
-      ObjPrimitive ->
-         "is a primitive axiom"
-    | ObjDerived ->
-         "is an internally derived object"
-    | ObjComplete (c1, c2) ->
-         sprintf "is a derived object with a complete proof (%i rule boxes, %i primitive steps)" c1 c2
-    | ObjIncomplete (c1, c2) ->
-         sprintf "is a derived object with an incomplete proof (%i rule boxes, %i primitive steps)" c1 c2
-    | ObjBad ->
-         "is a derived object with a broken proof"
-    | ObjUnknown ->
-         "is an object with unknown status"
-   in
-      eprintf "Status: `%s' %s%t" name str_status eflush
-
-let status_all () =
-   let f item db =
-      eprintf "Expanding `%s':%t" (let name, _, _, _ = item.edit_get_contents [] in name) eflush;
-      begin try item.edit_interpret [] ProofExpand with Invalid_argument _ | _ -> () end;
-      status item;
-   in
-      apply_all f false true true
-
-let check_all () =
-   (* Make a few things bols, or highlight with `...' and *...* *)
-   let bfs, bfe, bfs2, bfe2 =
-      match Lm_terminfo.tgetstr Lm_terminfo.enter_bold_mode, Lm_terminfo.tgetstr Lm_terminfo.exit_attribute_mode with
-         Some b, Some e -> b, e, b, e
-       | _ -> "*", "*", "`", "'"
-   in
-   let check item =
-      let name, _, _, _ = item.edit_get_contents [] in
-      let status =
-         match item.edit_check () with
-            RefPrimitive ->
-               "is a primitive axiom"
-          | RefIncomplete (c1, c2) ->
-               sprintf "is a derived object with an %sincomplete%s proof (%i rule boxes, %i primitive steps)" bfs bfe c1 c2
-          | RefComplete (c1, c2, l) ->
-               sprintf "is a derived object with a complete grounded proof (%i rule boxes, %i primitive steps, %i dependencies)" c1 c2 (List.length l)
-          | RefUngrounded (c1, c2, op) ->
-               sprintf "is a derived object with a complete %sungrounded%s proof (%i rule boxes, %i primitive steps) that depends on an incomplete %s%s%s" bfs bfe c1 c2 bfs2 (mk_dep_name op) bfe2
-      in
-         eprintf "Refiner status: %s%s%s %s%t" bfs2 name bfe2 status eflush
-   in
-   let f item db =
-      check item
-   in
-      apply_all f false true true
 
 (*
  * -*-

@@ -35,10 +35,18 @@ open Shell_util
 (*
  * Current session.
  *)
+let default_shared =
+   { shared_directories    = LineTable.empty;
+     shared_files          = LineTable.empty
+   }
+
+let shared_entry = State.shared_val "Session_current.shared_entry" default_shared
+
+(*
+ * Current session.
+ *)
 let default_session =
    { session_history        = LineBuffer.create ();
-     session_directories    = LineTable.empty;
-     session_files          = LineTable.empty;
      session_messages       = LineBuffer.create ();
      session_content_buffer = new_buffer ();
      session_content_table  = StringTable.empty;

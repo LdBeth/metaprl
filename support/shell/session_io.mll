@@ -152,7 +152,7 @@ let mkdir name =
 (*
  * Session directory name.
  *)
-let session_dir =
+let shared_filename, session_dir =
    let home =
        try Sys.getenv "HOME" with
           Not_found ->
@@ -161,9 +161,10 @@ let session_dir =
    in
    let metaprl_dir = Filename.concat home ".metaprl" in
    let session_dir = Filename.concat metaprl_dir "sessions" in
+   let shared_name = Filename.concat metaprl_dir "shared" in
       mkdir metaprl_dir;
       mkdir session_dir;
-      session_dir
+      shared_name, session_dir
 
 (*
  * Filename for a session.
@@ -195,6 +196,58 @@ let session_ids () =
 (*
  * Read the session info.
  *)
+let read_shared () =
+   let table =
+	try Some (parse shared_filename) with
+	   Sys_error _ ->
+              None
+   in
+      match table with
+         Some table ->
+            let edit =
+               try List.rev (StringMTable.find_all table edit_sym) with
+                  Not_found ->
+                     []
+            in
+            let directories =
+               try List.rev (StringMTable.find_all table directories_sym) with
+                  Not_found ->
+                     []
+            in
+               { shared_info_files    = edit;
+                 shared_info_dirs     = directories
+               }
+       | None ->
+            { shared_info_files = [];
+              shared_info_dirs  = []
+            }
+
+(*
+ * Write the session info to a file.
+ *)
+let write_shared session =
+   let { shared_info_files    = edit;
+         shared_info_dirs     = dirs
+       } = session
+   in
+   let outx = open_out_bin shared_filename in
+      fprintf outx "# Session version 1.0\r\n";
+
+      (* Edit *)
+      fprintf outx "[%s]\r\n" edit_sym;
+      List.iter (fun s -> fprintf outx "%s\r\n" s) edit;
+      fprintf outx "\r\n";
+
+      (* Directories *)
+      fprintf outx "[%s]\r\n" directories_sym;
+      List.iter (fun s -> fprintf outx "%s\r\n" s) dirs;
+      fprintf outx "\r\n";
+
+      close_out outx
+
+(*
+ * Read the session info.
+ *)
 let read_session id =
    let table = parse (filename_of_id id) in
    let dir =
@@ -212,16 +265,6 @@ let read_session id =
          Not_found ->
             []
    in
-   let edit =
-      try List.rev (StringMTable.find_all table edit_sym) with
-         Not_found ->
-            []
-   in
-   let directories =
-      try List.rev (StringMTable.find_all table directories_sym) with
-         Not_found ->
-            []
-   in
    let messages =
       try List.rev (StringMTable.find_all table messages_sym) with
          Not_found ->
@@ -231,8 +274,6 @@ let read_session id =
         session_info_dir      = dir;
         session_info_options  = options;
         session_info_history  = history;
-        session_info_edit     = edit;
-        session_info_dirs     = directories;
         session_info_messages = messages
       }
 
@@ -264,8 +305,6 @@ let write_session session =
          session_info_dir      = dir;
          session_info_options  = options;
          session_info_history  = history;
-         session_info_edit     = edit;
-         session_info_dirs     = dirs;
          session_info_messages = messages
        } = session
    in
@@ -279,16 +318,6 @@ let write_session session =
       (* Directory *)
       fprintf outx "[%s]\r\n" directory_sym;
       List.iter (fun s -> fprintf outx "%s\r\n" s) dir;
-      fprintf outx "\r\n";
-
-      (* Edit *)
-      fprintf outx "[%s]\r\n" edit_sym;
-      List.iter (fun s -> fprintf outx "%s\r\n" s) edit;
-      fprintf outx "\r\n";
-
-      (* Directories *)
-      fprintf outx "[%s]\r\n" directories_sym;
-      List.iter (fun s -> fprintf outx "%s\r\n" s) dirs;
       fprintf outx "\r\n";
 
       (* History *)

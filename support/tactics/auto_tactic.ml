@@ -399,7 +399,7 @@ let resource auto += {
  * Add autoT to the browser.
  *)
 let refine_is_enabled () =
-   Shell.is_enabled MethodRefine
+   Shell_command.is_enabled MethodRefine
 
 let resource commandbar +=
     [<< button["autoT", "Command('refine autoT')"] >>, refine_is_enabled]

@@ -41,6 +41,7 @@ open Filter_summary
 
 open Shell_sig
 open Shell_util
+open Shell_command
 open Shell_internal_sig
 
 let debug_refine = load_debug "refine"
@@ -51,9 +52,6 @@ let debug_shell =
         debug_description = "Display shell operations";
         debug_value = false
       }
-
-let mk_dep_name opname =
-   "/" ^ String.concat "/" (List.rev (dest_opname opname))
 
 (*
  * We should skip the packages that do not have basic shell commands in them.
@@ -807,7 +805,7 @@ let view parse_arg shell options =
 (*
  * Apply a function to all elements.
  *)
-let rec apply_all parse_arg shell f (modifies : bool) (time : bool) (clean_res : bool) =
+let rec apply_all parse_arg shell f (time : bool) (clean_res : bool) =
    let dir = shell.shell_fs, shell.shell_subdir in
    let apply_it item mod_name name =
       (*
@@ -827,8 +825,6 @@ let rec apply_all parse_arg shell f (modifies : bool) (time : bool) (clean_res :
       let display_mode = get_display_mode shell in
          match shell.shell_package with
             Some pack ->
-               if modifies then
-                  touch shell;
                let mod_name = Package_info.name pack in
                let apply_item = function
                   Rewrite rw, _ ->
@@ -876,7 +872,7 @@ let expand_all parse_arg shell =
    let f item db =
       item.edit_interpret [] ProofExpand
    in
-      apply_all parse_arg shell f true true true
+      apply_all parse_arg shell f true true
 
 (*
  * TeX functions.

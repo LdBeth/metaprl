@@ -255,6 +255,7 @@ let load_dir_entries_exn info subdir =
             in
                Directory dir_info
        | Unix.S_REG ->
+            (* Shell_command.edit ("/" ^ subdir); *)
             File (lines_of_file filename)
        | _ ->
             raise Not_found
