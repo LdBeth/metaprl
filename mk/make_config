@@ -148,6 +148,8 @@ SLOPPY_DEPENDENCIES = $(SLOPPY_DEPENDENCIES)
 
     # Save the text in the output file
     exists = $(file-exists $(name))
+    if $(exists)
+        eprintln(Updating the $(name) file.)
     fp = $(fopen $(name), w)
     fprint($(fp), $(CONFIG))
     close($(fp))
