@@ -97,7 +97,7 @@ $splits{"SymbolSet.t -> term -> term"} = "split_attf";
 $splits{"unit -> extract"} = "split_utriv";
 $splits{"term -> term * 'a"} = "split_ttaf";
 $splits{"SymbolSet.t -> term -> term * 'a"} = "split_attaf";
-$splits{"term -> 'a -> bool"} = $splits{"term -> SymbolSet.t -> bool"} = "split_taf";
+$splits{"term -> unit"} = $splits{"term -> 'a -> bool"} = $splits{"term -> SymbolSet.t -> bool"} = "split_taf";
 
 $splits{"object_id"} = $splits{"param list"};
 
