@@ -11,7 +11,7 @@ Resources and resource annotations are not documented
 The dT tactic section (doc/htmlman/system/mp-d-tactic.html) is not written.
 
 1.4) (Created on 1999.11.11 by nogin)
-MetaPRL Tutorial is quite outdated.
+MetaPRL Tutorial is very outdated.
 
 EDITOR
 
@@ -41,7 +41,7 @@ For example,
 # ls "";;
 [...]
 # <<'a->'b>>;;
-a но b- : Refiner.Refiner.Term.term =
+- : Refiner.Refiner.Term.term = a -> b
 # cd "/itt_list";;
 - : string = "/itt_list"
 # ls "";;
@@ -125,14 +125,15 @@ by a hidden hypothesis may not appear in the extract. In MetaPRL we want to be
 able to use derived rules before we have proven them which means that we want to
 be able to use them before we know their extracts.
 
+See also TODO #6.02
+
 4.2) Repeated bound variables (when the same variable is bound more than once) is
 handled incorrectly. For example, thinning rule does not check if the variable
 is bound only once (which may be used to prove incorrect results). This is probably the
 same bug as 3.3
 
 4.3) rwh does not do matching correctly - for example, it allows to use reduceEta
-on <<lambda{x.('x 'x)}>>. This may be fixed by using rewriter in "strict" mode, when
-implemented (see bug 3.5).
+on <<lambda{x.('x 'x)}>>. This may be already fixed by the "strict" rewriter mode.
 
 4.4) "Understanding" extracts seems broken. When refiner passes extracts to rewriter,
 it "forgets to mention" that they are in the scope of hypothesis variables.
@@ -140,6 +141,8 @@ it "forgets to mention" that they are in the scope of hypothesis variables.
 One of the side-effects of this problem is that we have to pass unnecessary arguments
 to some of the rules (such as Itt_struct.hypothesis and srecElimination;
 note: Itt_struct.hypothesis is mentioned in doc/htmlman/user-guide/mp-axiom.html).
+
+We may try to fix it using meta-variables - see TODO #1.05.1
 
 4.5) Since unification is only used in proof search, but not proof checking, it should be OK
 that we do not have any unification in term_std, but this may create problems,
@@ -149,7 +152,7 @@ so we may need to create some unification for term_std.
 Until by-context free variable restriction is implemented and its usage is enforced
 when necessary (see doc/sequents.tex for more information), the rule chaining is not
 necessarily valid (e.g. even when S1 --> S2 and S2 --> S3 are valid rules, S1 --> S3 is not
-necessarily valid).
+necessarily valid). See also TODO #6.01
 
 4.7) (nogin)
 In Ocaml, string is a mutable data structure. In MetaPRL, we use strings everywhere (variable
