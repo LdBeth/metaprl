@@ -35,6 +35,7 @@ open Opname
 
 open Shell_sig
 open Shell_util
+open Shell_internal_sig
 
 (*
  * Default command set.
@@ -212,8 +213,8 @@ let ls s =
 (*
  * Check status.
  *)
-let clean_and_abandon mod_name =
-   abandon_all ()
+let clean_and_abandon pack =
+   Package_info.abandon pack
 
 let status item =
    let name, status, _, _ = item.edit_get_contents [] in

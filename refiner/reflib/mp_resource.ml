@@ -64,7 +64,7 @@ type 'input data_cell =
 type 'input data =
    'input data_cell list (* last added first *)
 
-type 'input global_data = (string, 'input data) Hashtbl.t
+type 'input raw_data = (string, 'input data) Hashtbl.t
 
 type bookmark = string * string
 
@@ -120,69 +120,72 @@ type ('annotation, 'input) rw_annotation_processor =
    'annotation ->       (* Extra arguments, will include Refine.prim_rewrite *)
    'input list
 
+(*
+ * The global state of all the resources in the system.
+ *)
+type global_state =
+   {
+     (* Theory name  ->  theory resources (local + includes names) *)
+     mutable raw_data : (string * Obj.t) raw_data;
+     (* A list of DatInclude for all the theories we've seen *)
+     mutable top_data    : (string * Obj.t) data;
+     (* Theory name -> theory parents *)
+     mutable theory_includes : (string, StringSet.t) Hashtbl.t;
+     (* Bookmark -> bookmark increment *)
+     mutable bookmarker : (bookmark, Obj.t increment) Hashtbl.t;
+     (* Resource name -> (bookmark -> processed resource) *)
+     mutable processed_data : (string, (bookmark, (Obj.t, Obj.t) proc_result) Hashtbl.t) Hashtbl.t
+   }
+
+(*
+ * State that we keep while processing data from an individual theory
+ *)
+type local_state = {
+     mutable data  : (string * Obj.t) data;
+     mutable names : StringSet.t;
+}
+
 (************************************************************************
  * IMPLEMENTATION                                                       *
  ************************************************************************)
 
-type 'input state =
-   { mutable global_data : (Table.key * Obj.t) global_data;
-     mutable local_data  : (string * 'input) data;
-     mutable local_names : StringSet.t;
-     mutable top_data    : (Table.key * Obj.t) data;
-     mutable theory_includes : (string, StringSet.t) Hashtbl.t;
-     mutable global_bookmarker : (bookmark, Obj.t increment) Hashtbl.t;
-     mutable global_processed_data : (string, (bookmark, (Obj.t, Obj.t) proc_result) Hashtbl.t) Hashtbl.t
-   }
-
 let state =
-   { global_data = Hashtbl.create 19;
-     local_data  = [];
-     local_names = StringSet.empty;
+   { raw_data = Hashtbl.create 19;
      top_data    = [];
      theory_includes = Hashtbl.create 19;
-     global_bookmarker = Hashtbl.create 19;
-     global_processed_data = Hashtbl.create 19
+     bookmarker = Hashtbl.create 19;
+     processed_data = Hashtbl.create 19
+   }
+
+let local_state =
+   { data = [];
+     names = StringSet.empty;
    }
 
 let clear () =
-   let { global_data = global_data;
-         local_data = local_data;
-         local_names = local_names;
-         top_data = top_data;
-         theory_includes = theory_includes;
-         global_bookmarker = global_bookmarker;
-         global_processed_data = global_processed_data
-       } = state
-   in
-      eprintf "@[<hv 3>Mp_resource:@ global_data = %d@ local_data = %d@ local_names = %d@ top_data = %d@ theory_include = %d@ global_bookmarker = %d@ global_processed_data = %d@]@." (**)
-         (Hashtbl.length global_data)
-         (List.length local_data)
-         (StringSet.cardinal local_names)
-         (List.length top_data)
-         (Hashtbl.length theory_includes)
-         (Hashtbl.length global_bookmarker)
-         (Hashtbl.fold (fun _ table i -> i + Hashtbl.length table) global_processed_data 0)
+   state.theory_includes <- Hashtbl.create 19;
+   state.bookmarker <- Hashtbl.create 19;
+   state.processed_data <- Hashtbl.create 19
 
-(* Theory name  ->  theory resources (local + includes names) *)
 let improve name (data:'input) =
-   match state.local_data with
+   match local_state.data with
       (DatData l_data) :: l_tail ->
-         state.local_data <- DatData ((name,data) :: l_data) :: l_tail
+         local_state.data <- DatData ((name,data) :: l_data) :: l_tail
     | l_data ->
-         state.local_data <- DatData [name, data] :: l_data
+         local_state.data <- DatData [name, data] :: l_data
 
 let improve_list name data =
    List.iter (improve name) data
 
 let bookmark name =
-   if StringSet.mem state.local_names name then
+   if StringSet.mem local_state.names name then
       raise(Invalid_argument("Mp_resource.bookmark: bookmark "^name^" aready exists in this theory"));
-   state.local_data <- DatBookmark name :: state.local_data;
-   state.local_names <- StringSet.add state.local_names name
+   local_state.data <- DatBookmark name :: local_state.data;
+   local_state.names <- StringSet.add local_state.names name
 
 let extends_theory name =
-   if Hashtbl.mem state.global_data name then
-      state.local_data <- DatInclude name :: state.local_data
+   if Hashtbl.mem state.raw_data name then
+      local_state.data <- DatInclude name :: local_state.data
    else
       eprintf "Mp_resource: warning: included theory %s does not have resources%t" name eflush
 
@@ -193,12 +196,12 @@ let top_name = "_$top_resource$_"
 let top_bookmark = theory_bookmark top_name
 
 let close_theory name =
-   if Hashtbl.mem state.global_data name then
+   if Hashtbl.mem state.raw_data name then
       raise(Invalid_argument("Mp_resource.close_theory: theory "^name^" aready exists"));
-   Hashtbl.add state.global_data name state.local_data;
+   Hashtbl.add state.raw_data name local_state.data;
    state.top_data <- DatInclude name :: state.top_data;
-   state.local_data <- [];
-   state.local_names <- StringSet.empty
+   local_state.data <- [];
+   local_state.names <- StringSet.empty
 
 let add_data (name, data) incr =
    Table.add incr name data
@@ -217,7 +220,7 @@ let rec collect_include_aux incr includes = function
          else collect_include incr name includes
 
 and collect_include incr name includes =
-   let data = Hashtbl.find state.global_data name in
+   let data = Hashtbl.find state.raw_data name in
    let incr, includes = collect_include_aux incr includes data in
       incr, StringSet.add includes name
 
@@ -244,9 +247,9 @@ let rec compute_aux name top_includes = function
  | DatBookmark bk :: tail ->
       let bookmark, incr, includes = compute_aux name top_includes tail in
       let bkmrk = (name, bk) in
-      if Hashtbl.mem state.global_bookmarker bkmrk then
+      if Hashtbl.mem state.bookmarker bkmrk then
          raise (Invalid_argument ("Mp_resource: duplicate bookmark " ^ name ^ "." ^ bk));
-      Hashtbl.add state.global_bookmarker bkmrk {
+      Hashtbl.add state.bookmarker bkmrk {
          inc_bookmark = bookmark;
          inc_increment = incr
       };
@@ -258,10 +261,10 @@ let rec compute_aux name top_includes = function
 
 and compute_data name =
    let bookmark, incr, includes =
-      compute_aux name StringSet.empty (Hashtbl.find state.global_data name)
+      compute_aux name StringSet.empty (Hashtbl.find state.raw_data name)
    in
       Hashtbl.add state.theory_includes name includes;
-      Hashtbl.add state.global_bookmarker (theory_bookmark name) {
+      Hashtbl.add state.bookmarker (theory_bookmark name) {
          inc_bookmark = bookmark;
          inc_increment = incr
       }
@@ -294,19 +297,18 @@ let make_processor = function
    Functional fp -> make_fun_proc fp
  | Imperative imp -> make_fun_proc (make_proc_functional imp)
 
-(* Resource name -> (bookmark -> processed resource) *)
 let obj_processor (proc : ('input, 'output) processor) =
    (Obj.magic proc : (Obj.t, Obj.t) processor)
 
 let make_resource name proc =
-   if Hashtbl.mem state.global_processed_data name then
+   if Hashtbl.mem state.processed_data name then
       raise (Invalid_argument ("Mp_resource.create_resource: resource with name " ^ name ^ "already exists!"));
    let proc_data = Hashtbl.create 19 in
       Hashtbl.add proc_data empty_bookmark {
          res_proc = obj_processor (make_processor proc);
          res_result = None
       };
-      Hashtbl.add state.global_processed_data name proc_data
+      Hashtbl.add state.processed_data name proc_data
 
 let get_result = function
    { res_result = Some res } -> res
@@ -318,14 +320,14 @@ let get_result = function
 let find ((name, _) as bookmark) =
    if not (Hashtbl.mem state.theory_includes name) then
       compute_data name;
-   ignore(Hashtbl.find state.global_bookmarker bookmark);
+   ignore(Hashtbl.find state.bookmarker bookmark);
    bookmark
 
 let get_resource bookmark resource_name =
-   let data = Hashtbl.find state.global_processed_data resource_name in
+   let data = Hashtbl.find state.processed_data resource_name in
    let rec extract_bookmark bookmark =
       if Hashtbl.mem data bookmark then Hashtbl.find data bookmark else begin
-      let incr = Hashtbl.find state.global_bookmarker bookmark in
+      let incr = Hashtbl.find state.bookmarker bookmark in
       let proc = extract_bookmark incr.inc_bookmark in
       let incr = Table.find_all incr.inc_increment resource_name in
       let proc =
@@ -347,13 +349,13 @@ let create_resource name proc =
    (fun bookmark -> Obj.obj (get_resource bookmark name))
 
 let recompute_top () =
-   if Hashtbl.mem state.global_data top_name then begin
-      Hashtbl.remove state.global_data top_name;
-      Hashtbl.remove state.global_bookmarker top_bookmark;
+   if Hashtbl.mem state.raw_data top_name then begin
+      Hashtbl.remove state.raw_data top_name;
+      Hashtbl.remove state.bookmarker top_bookmark;
       Hashtbl.remove state.theory_includes top_name;
-      Hashtbl.iter (fun _ t -> Hashtbl.remove t top_bookmark) state.global_processed_data
+      Hashtbl.iter (fun _ t -> Hashtbl.remove t top_bookmark) state.processed_data
    end;
-   Hashtbl.add state.global_data top_name state.top_data;
+   Hashtbl.add state.raw_data top_name state.top_data;
    ignore(find(top_bookmark))
 
 let rec get_parents_aux prnts = function
@@ -368,9 +370,9 @@ let clear_results bookmark =
       if Hashtbl.mem data bookmark then
          (Hashtbl.find data bookmark).res_result <- None
    in
-      Hashtbl.iter clear_results_aux state.global_processed_data
+      Hashtbl.iter clear_results_aux state.processed_data
 
 let get_parents name =
-   try get_parents_aux [] (Hashtbl.find state.global_data name) with
+   try get_parents_aux [] (Hashtbl.find state.raw_data name) with
       Not_found ->
          raise (Invalid_argument("Mp_resource.get_parents: unknown theory " ^ name))

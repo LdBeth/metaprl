@@ -31,6 +31,7 @@ open Refiner.Refiner.TermType
 open Tactic_type.Tactic
 
 open Shell_sig
+open Shell_internal_sig
 
 (*
  * Arguments to apply_all.

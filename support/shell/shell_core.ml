@@ -899,7 +899,7 @@ let rec apply_all parse_arg shell (f : item_fun) (time : bool) (clean_item : cle
                            eflush
                   else begin
                      List.iter apply_item items;
-                     clean_module mod_name
+                     clean_module pack
                   end
 
           | DirModule _, _, _ ->

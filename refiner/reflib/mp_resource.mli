@@ -117,5 +117,5 @@ val get_parents : string -> string list
 (* Forgets the results of calling fp_retr and imp_retr for all resources under specific bookmark *)
 val clear_results : bookmark -> unit
 
-(* Clear, in general *)
+(* Clear all the cached data *)
 val clear : unit -> unit

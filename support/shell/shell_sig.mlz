@@ -214,61 +214,6 @@ type edit_object =
    }
 
 (*
- * Functions on items.
- *)
-type item_fun = edit_object -> dform_base -> was_modified
-type clean_item_fun = string -> string -> unit
-type clean_module_fun = string -> unit
-
-(*
- * Shell commands for callbacks.
- * This is imperative because these are recursive calls
- * that are not available until the shell is initialized.
- *)
-type shell_commands =
-   { mutable initialized : bool;
-     mutable init : unit -> unit;
-     mutable cd : string -> string;
-     mutable root : unit -> string;
-     mutable refresh : unit -> unit;
-     mutable pwd : unit -> string;
-     mutable relative_pwd : unit -> string;
-     mutable fs_pwd : unit -> string;
-     mutable set_dfmode : string -> unit;
-     mutable set_dftype : display_type -> unit;
-     mutable create_pkg : string -> unit;
-     mutable backup : unit -> unit;
-     mutable backup_all : unit -> unit;
-     mutable save : unit -> unit;
-     mutable save_all : unit -> unit;
-     mutable export : unit -> unit;
-     mutable export_all : unit -> unit;
-     mutable revert : unit -> unit;
-     mutable revert_all : unit -> unit;
-     mutable abandon : unit -> unit;
-     mutable abandon_all : unit -> unit;
-     mutable view : LsOptionSet.t -> unit;
-     mutable expand : unit -> unit;
-     mutable expand_all : unit -> unit;
-     mutable apply_all : item_fun -> bool -> clean_item_fun -> clean_module_fun -> unit;
-     mutable interpret : proof_command -> unit;
-     mutable undo : unit -> unit;
-     mutable redo : unit -> unit;
-     mutable create_ax_statement : term -> string -> unit;
-     mutable refine : tactic -> unit;
-     mutable check : unit -> unit;
-     mutable extract : string list -> unit -> Refine.extract;
-     mutable term_of_extract : term list -> term; (* XXX HACK: temporary interface *)
-     mutable print_theory : string -> unit;
-     mutable get_view_options : unit -> string;
-     mutable set_view_options : string -> unit;
-     mutable clear_view_options : string -> unit;
-     mutable find_subgoal : int -> string;
-     mutable is_enabled : method_name -> bool;
-     mutable edit : string -> int
-   }
-
-(*
  * Save status of a module.
  *)
 type package_status =
