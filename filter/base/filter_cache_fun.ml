@@ -1068,12 +1068,7 @@ struct
                   let info =
                      try snd (ShapeTable.find shapes (unquote_shape (shape_of_term t))) with
                         Not_found ->
-                           (* XXX: JYH: we should probably try to make sure *all* terms are declared *)
-                           match opname_root (opname_of_term t) with
-                              "$unknown" ->
-                                 ShapeNormal
-                            | _ ->
-                                 check_input_term_error "undeclared term" t_root t
+                           check_input_term_error "undeclared term" t_root t
                   in
                      match info with
                         ShapeNormal ->
