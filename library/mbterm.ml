@@ -65,45 +65,39 @@ let append l p =
   let rec aux l1 l2 =
     match l1 with
       h1::t1 -> aux t1 (h1::l2)
-    | [] -> l2
-  in
+    | [] -> l2 in
   aux (List.rev l) p
 
 let mbbindings_of_bvars bvars =
   let rec loop l1 l2 =
     match l1 with
-      "nuprl5_implementation"::(h2::t1) -> (match t1 with
-      | h3::t2 -> (match t2 with
-	  h4::x -> loop x ((mbnode mbs_ParmList (List.map mb_string [h2; h3; h4]))::l2)
- 	| [] -> ((mbnode mbs_ParmList (List.map mb_string [h2; h3]))::l2))
-      | [] -> ((mb_stringq h2 mbs_MVariable)::l2))
-    | h1::t1 -> loop t1 ((mb_stringq h1 mbs_Variable)::l2)
+      "nuprl5_implementation1"::(h1::t1) -> loop t1 ((mb_stringq h1 mbs_MVariable)::l2)
+    | "nuprl5_implementation2"::(h1::(h2::t1)) -> 
+	loop t1 ((mbnode mbs_ParmList (List.map mb_string [h1; h2]))::l2)
+    |  "nuprl5_implementation3"::(h1::(h2::(h3::t1))) -> 
+	loop t1 ((mbnode mbs_ParmList (List.map mb_string [h1; h2; h3]))::l2)
+    |  h1::t1 -> loop t1 ((mb_stringq h1 mbs_Variable)::l2)
     | [] -> l2
-  in
-  loop bvars []
+  in loop bvars []
       
 let rec mbterm_of_term term =
-  let { term_op = operator; term_terms = bterms} = dest_term term
-  in
-  let { op_name = opname; op_params = params } = dest_op operator
-  in
-  let temp =  if (dest_opname opname) = ["!nuprl5_implementation!"] then params
-  else ((param_of_opname opname)::params) 
-  in
+  let { term_op = operator; term_terms = bterms} = dest_term term in    
+  let { op_name = opname; op_params = params } = dest_op operator in 
+  let temp = 
+    if (dest_opname opname) = ["!nuprl5_implementation!"] then params
+    else ((param_of_opname opname)::params) in 
   let mbparams = List.map mbparameter_of_param temp
   and mbsubterms_of_bterm = function
       { bvars = bvars; bterm = t } ->
-	match bvars with
+       	match bvars with
 	  []-> [(mbterm_of_term t)]
-	| h::tl -> [(mbnode mbs_Bindings (mbbindings_of_bvars bvars));
+       	| h::tl -> [(mbnode mbs_Bindings (mbbindings_of_bvars bvars));
 			    (* (List.map mbbinding_of_binding bvars)*)
-		     (mbterm_of_term t)]
-  in
+		     (mbterm_of_term t)] in
   let rec loop l blist =
     (match blist with
       []-> l
-    | h::t -> loop (append (mbsubterms_of_bterm (dest_bterm h)) l) t)
-  in
+    | h::t -> loop (append (mbsubterms_of_bterm (dest_bterm h)) l) t) in
   mbnode mbs_Term (append mbparams (loop [] bterms)) (*LAL*)
 
 (* mathbus -> nuprl-light*)
@@ -134,19 +128,26 @@ let rec param_of_mbparameter mbparameter =
   else if bequal b mbs_Level then
     let nsubterms = (mbnode_nSubtermsq mbparameter) in
     match (mbnode_subtermq mbparameter 1) with
-      Mnode n -> let constant = integer_value n and
-	  le_vars = let rec loop i l =
-	    if i <= 1 then l
-	    else (match (mbnode_subtermq mbparameter i) with
-	      Mnode n -> let s = (string_value n) in
-	      (match (mbnode_subtermq mbparameter (i-1)) with
-	      	Mnode n2-> loop (i-2) ((mk_level_var s (integer_value n2))::l)
-	      |	Mbint b2 -> failwith "subterm should be a node")
-	    | Mbint b -> failwith "subterm should be a node")
-	  in loop nsubterms []
-      in make_param (Level (mk_level constant le_vars))
-    | Mbint b -> failwith "subterm should be a node"
-	  
+      Mnode n1 -> let l1 = (match (mbnode_subtermq n1 1) with
+        Mnode n -> let constant = integer_value n and
+	    le_vars = let rec loop i l =
+	      if i <= 1 then l
+	      else (match (mbnode_subtermq mbparameter i) with
+	      	Mnode n -> let s = (string_value n) in
+	      	(match (mbnode_subtermq mbparameter (i-1)) with
+	      	  Mnode n2-> loop (i-2) ((mk_level_var s (integer_value n2))::l)
+	      	| Mbint b -> failwith "subterm should be a node")
+	      | Mbint b -> failwith "subterm should be a node")
+		  
+	    in loop nsubterms []
+	      
+      	in make_param (Level (mk_level constant le_vars)) 
+      | Mbint b -> failwith "subterm should be a node") in
+      if nsubterms = 1 then l1 
+      else make_param (ParmList [l1; make_param (String (match (mbnode_subtermq mbparameter 2) with
+        Mnode n ->  (string_value n)
+      | Mbint b -> failwith "subterm should be a node"))])
+    | Mbint b -> failwith "subterm should be a node" 
 
   else if bequal b mbs_MString then make_param (MString (string_value mbparameter))
   else if bequal b mbs_MVariable then make_param (MVar (string_value mbparameter))
@@ -185,20 +186,20 @@ let bvars_of_mbbindings mbterm =
       Mnode n -> let b2 = (mbnode_label n) in
       if (bequal b2 mbs_Variable) then loop (index - 1) ((string_value n)::bvars)
       else if (bequal b2 mbs_MVariable) then
-      	loop (index - 1) ("nuprl5_implementation"::((string_value n)::bvars))
-      else
+      	loop (index - 1) ("nuprl5_implementation1"::((string_value n)::bvars))
+      else (*parmlist node*)
  	let s1 = (match n.(1) with
 	  Mnode n1 -> (string_value n1)
 	| Mbint b -> failwith "bvars_of_mbindings") and s2 =
 	  (match n.(2) with
 	    Mnode n2 -> (string_value n2)
 	  | Mbint b -> failwith "bvars_of_mbindings") in
-	if 2 = (mbnode_nSubtermsq n) then
-	  loop (index - 1) ("nuprl5_implementation"::(s1::(s2::bvars)))
+	if (mbnode_nSubtermsq n) = 2 then
+	  loop (index - 1) ("nuprl5_implementation2"::(s1::(s2::bvars)))
 	else let s3 = (match n.(3) with
 	  Mnode n3 -> (string_value n3)
 	| Mbint b -> failwith "bvars_of_mbindings") in
-	loop (index - 1) ("nuprl5_implementation"::(s1::(s2::(s3::bvars))))
+	loop (index - 1) ("nuprl5_implementation3"::(s1::(s2::(s3::bvars))))
 	  
     | Mbint b -> failwith "bvars_of_mbindings"
   in loop (mbnode_nSubtermsq mbterm) []

@@ -449,7 +449,9 @@ let jointest remote_port local_port =
  raise (Test "Join Test Successful") 
 ;;
 
-special_error_handler (function () -> toptestloop "LOCKE" 7289 2897)
+(*
+special_error_handler (function () -> testall "DENEB" 3444 4444)
+*)
  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
 
