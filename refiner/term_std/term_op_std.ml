@@ -26,13 +26,14 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
 INCLUDE "refine_error.mlh"
 
 open Refine_error_sig
+open Opname
 open Term_std_sig
 open Term_std
 
@@ -967,14 +968,27 @@ struct
       let apply { bvars = vars; bterm = t } =
          { bvars = vars; bterm = map_down f t }
       in
-         { term_op = op; term_terms = List.map apply bterms }
+      let bterms =
+         if (Opname.eq op.op_name var_opname or Opname.eq op.op_name context_opname) && bterms != [] then
+            let bterms, last = Lm_list_util.split_last bterms in
+               (List.map apply bterms) @ [last]
+         else
+            List.map apply bterms
+      in
+         { term_op = op; term_terms = bterms }
 
    let rec map_up f { term_op = op; term_terms = bterms } =
       let apply { bvars = vars; bterm = t } =
          { bvars = vars; bterm = map_up f t }
       in
-      let t = { term_op = op; term_terms = List.map apply bterms } in
-         f t
+      let bterms =
+         if (Opname.eq op.op_name var_opname or Opname.eq op.op_name context_opname) && bterms != [] then
+            let bterms, last = Lm_list_util.split_last bterms in
+               (List.map apply bterms) @ [last]
+         else
+            List.map apply bterms
+      in
+         f { term_op = op; term_terms = bterms }
 end
 
 (*

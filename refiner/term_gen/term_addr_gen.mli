@@ -54,7 +54,8 @@ module TermAddr (**)
     with type term = TermType.term)
    (TermMan: TermManGenSig
     with type term = TermType.term
-    with type bound_term = TermType.bound_term)
+    with type bound_term = TermType.bound_term
+    with type operator = TermType.operator)
    (RefineError : RefineErrorSig
     with type term = TermType.term
     with type address = addr)

@@ -71,7 +71,8 @@ module TermAddr (**)
     with type term = TermType.term)
    (TermMan: TermManGenSig
     with type term = TermType.term
-    with type bound_term = TermType.bound_term)
+    with type bound_term = TermType.bound_term
+    with type operator = TermType.operator)
    (RefineError : RefineErrorSig
     with type term = TermType.term
     with type address = addr) =
@@ -484,7 +485,7 @@ struct
                   else
                      skip_hyps (i - 1) term
             else if Opname.eq opname context_opname then
-               let term = match_context nth_hyp_addr_name t bterms in
+               let term = match_context op nth_hyp_addr_name t bterms in
                   if i = 0 then
                      addr
                   else
@@ -527,7 +528,7 @@ struct
                let term = match_hyp nth_concl_addr_name t bterms in
                   skip_hyps (i + 1) term
             else if Opname.eq opname context_opname then
-               let term = match_context nth_concl_addr_name t bterms in
+               let term = match_context op nth_concl_addr_name t bterms in
                   skip_hyps (i + 1) term
             else if Opname.eq opname concl_opname then
                let term = match_concl nth_concl_addr_name t bterms in
@@ -550,7 +551,7 @@ struct
                let term = match_hyp nth_clause_addr_name t bterms in
                   aux (i + 1) term
             else if Opname.eq opname context_opname then
-               let term = match_context nth_clause_addr_name t bterms in
+               let term = match_context op nth_clause_addr_name t bterms in
                   aux (i + 1) term
             else if Opname.eq opname concl_opname then
                make_address i

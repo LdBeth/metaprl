@@ -200,7 +200,7 @@ struct
     * See if a term is a variable.
     *)
    let is_var_term = function
-      { term_op = { op_name = opname; op_params = [Var v] };
+      { term_op = { op_name = opname; op_params = [Var _] };
         term_terms = []
       } when Opname.eq opname var_opname -> true
     | _ ->
@@ -214,7 +214,7 @@ struct
         term_terms = []
       } when Opname.eq opname var_opname -> v
     | t ->
-         REF_RAISE(RefineError ("dest_var", TermMatchError (t, "not a variable")))
+         REF_RAISE(RefineError ("Term_base_std.dest_var", TermMatchError (t, "not a variable")))
 
    (*
     * Make a variable.

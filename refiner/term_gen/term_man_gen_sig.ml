@@ -41,7 +41,7 @@ sig
    val concl_opname : opname
 
    val match_hyp : string -> term -> bound_term list -> term
-   val match_context : string -> term -> bound_term list -> term
+   val match_context : operator -> string -> term -> bound_term list -> term
    val match_concl : string -> term -> bound_term list -> term
    val goal_of_sequent : term -> term
 end

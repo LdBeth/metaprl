@@ -299,7 +299,9 @@ struct
             { op_name = opname; op_params = [p] }, ((_ :: _) as bterms)
                when Opname.eq opname var_opname ->
                   (match dest_param p with Var _ -> true | _ -> false) &&
-                  List.for_all is_simple_bterm bterms && is_xlist_term (dest_bterm (Lm_list_util.last bterms)).bterm
+                  List.for_all is_simple_bterm bterms && 
+                  let t = (dest_bterm (Lm_list_util.last bterms)).bterm in
+                     is_xlist_term t && List.for_all is_var_term (dest_xlist t)
           | _ -> false
 
    let dest_so_var t =
@@ -311,10 +313,10 @@ struct
                      Var v -> 
                         let bterms, conts = Lm_list_util.split_last bterms in
                            v, List.map dest_var (dest_xlist (dest_simple_bterm conts)), List.map dest_simple_bterm bterms
-                   | _ -> REF_RAISE(RefineError ("dest_so_var", TermMatchError (t, "non-var param")))
+                   | _ -> REF_RAISE(RefineError ("Term_man_gen.dest_so_var", TermMatchError (t, "non-var param")))
                   end
           | _ ->
-            REF_RAISE(RefineError ("dest_so_var", TermMatchError (t, "not a so_var")))
+            REF_RAISE(RefineError ("Term_man_gen.dest_so_var", TermMatchError (t, "not a so_var")))
 
    let is_fso_var_term t =
       let t = dest_term t in
@@ -549,15 +551,30 @@ struct
     | _ ->
          REF_RAISE(RefineError (name, TermMatchError (t, "malformed hypothesis")))
 
-   let match_context name t = function
-      [] ->
-         REF_RAISE(RefineError (name, TermMatchError (t, "malformed context")))
-    | bterms ->
-         match dest_bterm (Lm_list_util.last bterms) with
-            { bvars = []; bterm = term } ->
-               term
-          | _ ->
-               REF_RAISE(RefineError (name, TermMatchError (t, "malformed context")))
+   let match_context op name t bterms =
+      let v = 
+         match (dest_op op).op_params with
+            [p] ->
+               begin match dest_param p with
+                  Var v -> v
+                | _ -> REF_RAISE(RefineError (name, TermMatchError (t, "malformed context")))
+               end
+          | _ -> REF_RAISE(RefineError (name, TermMatchError (t, "malformed context")))
+      in
+      let rec aux = function
+         [] | [_] ->
+            REF_RAISE(RefineError (name, TermMatchError (t, "malformed context")))
+       | [bt; _] ->
+            begin match dest_bterm bt with
+               { bvars = [v']; bterm = term } ->
+                  if v = v' then term else subst1 term v' (mk_var_term v)
+             | _ ->
+                  REF_RAISE(RefineError (name, TermMatchError (t, "malformed context")))
+            end
+       | _ :: bterms ->
+            aux bterms
+      in 
+         aux bterms
 
    let match_concl name t = function
       [bterm1; bterm2] ->
@@ -637,7 +654,7 @@ struct
                let term = match_hyp num_hyps_name t bterms in
                   aux (i + 1) term
             else if Opname.eq opname context_opname then
-               let term = match_context num_hyps_name t bterms in
+               let term = match_context op num_hyps_name t bterms in
                   aux (i + 1) term
             else if Opname.eq opname concl_opname then
                i
@@ -661,7 +678,7 @@ struct
                   else
                      aux (i - 1) term
             else if Opname.eq opname context_opname then
-               let term = match_context nth_hyp_name t bterms in
+               let term = match_context op nth_hyp_name t bterms in
                   if i = 0 then
                      REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "nth hyp is a context var")))
                   else
@@ -684,7 +701,7 @@ struct
                   else
                      aux (i - 1) term
             else if Opname.eq opname context_opname then
-               let term = match_context nth_hyp_name t bterms in
+               let term = match_context op nth_hyp_name t bterms in
                   if i = 0 then
                      REF_RAISE(RefineError (nth_hyp_name, TermMatchError (t, "nth hyp is a context var")))
                   else
@@ -705,7 +722,7 @@ struct
                let term = match_hyp nth_concl_name t bterms in
                   aux i term
             else if Opname.eq opname context_opname then
-               let term = match_context nth_concl_name t bterms in
+               let term = match_context op nth_concl_name t bterms in
                   aux i term
             else if Opname.eq opname concl_opname then
                let t, term = match_concl_all nth_concl_name t bterms in
@@ -721,7 +738,7 @@ struct
    (*
     * Collect the vars.
     *)
-   let declared_vars_name = "declared_vars"
+   let declared_vars_name = "Term_man_gen.declared_vars"
    let declared_vars t =
       let rec aux vars term =
          let { term_op = op; term_terms = bterms } = dest_term term in
@@ -730,7 +747,7 @@ struct
                let _, x, term = match_hyp_all declared_vars_name t bterms in
                   aux (x :: vars) term
             else if Opname.eq opname context_opname then
-               let term = match_context declared_vars_name t bterms in
+               let term = match_context op declared_vars_name t bterms in
                   aux vars term
             else if Opname.eq opname concl_opname then
                vars
@@ -755,7 +772,7 @@ struct
                   else
                      aux (i + 1) term
             else if Opname.eq opname context_opname then
-               let term = match_context get_decl_number_name t bterms in
+               let term = match_context op get_decl_number_name t bterms in
                   aux (i + 1) term
             else if Opname.eq opname concl_opname then
                REF_RAISE(RefineError (get_decl_number_name, TermMatchError (t, "declaration not found")))
