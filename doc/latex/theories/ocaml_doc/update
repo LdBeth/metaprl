@@ -1,0 +1,10 @@
+#!/bin/csh -fe
+
+(cd $home/meta-prl; make)
+(cd $home/meta-prl/editor/ml; ./mptop tex/print_book)
+
+cd $home/meta-prl/editor/ml/tex
+latex book2
+latex book2
+dvips -o junk.ps book2.dvi
+mv junk.ps book2.ps
