@@ -9,7 +9,8 @@ EDITOR
 
 2.1) Shell.cd function tries to expand proofs, it should not
 
-2.2) Currently there is no way to change the statement of a theorem once
+2.2) (1999.10.16, nogin - I believe this problem is already fixed, but I am not sure)
+Currently there is no way to change the statement of a theorem once
 you started proving it. We need to be able to do it without 
 erasing the proof. 
 
@@ -64,15 +65,15 @@ Example:
 test{x.test{y.'C['x; 'y]}} <--> 'C[1; 2] 
 rewrites <<test{x.test{x.'x}}>> to 1 instead of 2.
 
-3.4) Binding x,x.x is currently understood as x,y.x . We should understand it as y,x.x
-if we want to be compatible with Nuprl
-
-3.5) Rewriter should support "strict" matching - in a redex, when a abound variable
+3.5) (Confirmed on 1999.10.16 by nogin)
+Rewriter should support "strict" matching - in a redex, when a bound variable
 is not explicity mentioned as an argument of a SO variable, the matching term should
 not have free occurences of the correspondent variable. 
 
-The "strict" mode would also eliminate the problem rhw bug mentioned below in the REFINER
-section.
+The "strict" mode would also eliminate the bug no 4.3
+
+(1999.10.16, nogin) Currently the "strict" mode is implemented in rewriter,
+but not yet enambled in the refiner.
 
 3.6) Rewriter does not prevent capturing. It should, at least in the "strict" mode.
 
@@ -90,13 +91,19 @@ There is no clear semantics for the hidden hypothesis. As a result,
 many rules deal with hidden hypothesis incorrectly. Currently, one
 can prove 0=1 using those unsound rules.
 
+In Nuprl the semantics of hudden hypothesis is that the variable introduced
+by a hidden hypothesis may not appear in the extract. In MetaPRL we want to be
+able to use derived rules before we have proven them which means that we want to
+be able to use them before we know their extracts.
+
 4.2) Repeated bound variables (when the same variable is bound more than once) is
 handled incorrectly. For example, thinning rule does not check if the variable
-is bound only once (which may be used to prove incorrect results).
+is bound only once (which may be used to prove incorrect results). This is probably the
+same bug as 3.3
 
 4.3) rwh does not do matching correctly - for example, it allows to use reduceEta
 on <<lambda{x.('x 'x)}>>. This may be fixed by using rewriter in "strict" mode, when
-implemented (see REWRITER section above).
+implemented (see bug 3.5).
 
 4.4) "Understanding" extracts seems broken. When refiner passes extracts to rewriter,
 it "forgets to mention" that they are in the scope of hypothesis variables.
