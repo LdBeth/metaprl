@@ -52,13 +52,6 @@ val create :
    string ->
    edit_object
 
-val view_axiom :
-   Package.package ->
-   parse_arg ->
-   display_mode ->
-   (term, Package.proof proof_type, MLast.expr) axiom_info ->
-   edit_object
-
 val view_rule :
    Package.package ->
    parse_arg ->

@@ -252,8 +252,7 @@ let is_rewrite_item = function
       false
 
 let is_rule_item = function
-   Axiom _
- | Rule _
+   Rule _
  | MLAxiom  _ ->
       true
  | _ ->
@@ -264,7 +263,6 @@ let is_unjustified_item item =
       match item with
          Rewrite { rw_proof = proof }
        | CondRewrite { crw_proof = proof }
-       | Axiom { axiom_proof = proof }
        | Rule { rule_proof = proof } ->
             proof
        | _ ->

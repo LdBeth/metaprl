@@ -100,13 +100,6 @@ type ('term, 'proof, 'expr) rewrite_info =
      rw_resources : 'expr resource_def
    }
 
-type ('term, 'proof, 'expr) axiom_info =
-   { axiom_name : string;
-     axiom_stmt : 'term;
-     axiom_proof : 'proof;
-     axiom_resources : 'expr resource_def
-   }
-
 type ('term, 'proof, 'expr) cond_rewrite_info =
    { crw_name : string;
      crw_params : 'term param list;
@@ -252,7 +245,6 @@ type ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'expr1, 'item1,
 type ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item, 'module_info) summary_item_type =
    Rewrite of ('term, 'proof, 'expr) rewrite_info
  | CondRewrite of ('term, 'proof, 'expr) cond_rewrite_info
- | Axiom of ('term, 'proof, 'expr) axiom_info
  | Rule of ('term, 'meta_term, 'proof, 'expr) rule_info
  | Opname of 'term opname_info
  | MLRewrite of ('term, 'expr) mlterm_info

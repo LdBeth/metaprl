@@ -111,14 +111,6 @@ let item_of_obj pack name
       rule_goal = goal;
       rule_resources = res
     } =
-   if params = [] & assums = [] then
-      Filter_type.Axiom (**)
-         { Filter_type.axiom_name = name;
-           Filter_type.axiom_stmt = goal;
-           Filter_type.axiom_proof = proof;
-           Filter_type.axiom_resources = res
-         }
-   else
       Filter_type.Rule (**)
          { Filter_type.rule_name = name;
            Filter_type.rule_params = params;
@@ -330,13 +322,6 @@ let create_window = function
       Proof_edit.create_proof_window port base
 
 let create pack parse_arg window name =
-   let rl =
-      { Filter_type.axiom_name = name;
-        Filter_type.axiom_stmt = unit_term;
-        Filter_type.axiom_proof = Incomplete;
-        Filter_type.axiom_resources = []
-      }
-   in
    let obj =
       { rule_assums = [];
         rule_params = [];
@@ -360,26 +345,6 @@ let ped_of_proof pack parse_arg goal = function
       Incomplete
  | Interactive proof ->
       Interactive (Package.ped_of_proof pack parse_arg proof goal)
-
-let view_axiom pack parse_arg window
-    { Filter_type.axiom_name = name;
-      Filter_type.axiom_stmt = goal;
-      Filter_type.axiom_proof = proof;
-      Filter_type.axiom_resources = res
-    } =
-   let obj =
-      { rule_assums = [];
-        rule_params = [];
-        rule_goal = goal;
-        rule_proof = proof;
-        rule_ped = ped_of_proof pack parse_arg (mk_msequent goal []) proof;
-        rule_resources = res;
-        rule_name = name
-      }
-   in
-   let sentinal = Package.sentinal_object pack name in
-   let arg = Package.arg_resource pack parse_arg name in
-      edit pack parse_arg sentinal arg name (create_window window) obj
 
 let view_rule pack parse_arg window
     { Filter_type.rule_name = name;

@@ -315,9 +315,6 @@ struct
    and refiner =
       NullRefiner
 
-    | AxiomRefiner of axiom_refiner
-    | PrimAxiomRefiner of prim_axiom_refiner
-
     | RuleRefiner of rule_refiner
     | PrimRuleRefiner of prim_rule_refiner
     | MLRuleRefiner of ml_rule_refiner
@@ -333,17 +330,6 @@ struct
     | PairRefiner of refiner * refiner
     | ListRefiner of refiner list
     | LabelRefiner of string * refiner
-
-   and axiom_refiner =
-      { axiom_name : opname;
-        axiom_term : term;
-        axiom_refiner : refiner
-      }
-   and prim_axiom_refiner =
-      { mutable pax_proof : term proof;
-        pax_axiom : axiom_refiner;
-        pax_refiner : refiner
-      }
 
    and rule_refiner =
       { rule_name : opname;
@@ -410,7 +396,6 @@ struct
    type hash =
       { hash_rewrite : (opname, prim_rewrite_refiner) Hashtbl.t;
         hash_cond_rewrite : (opname, prim_cond_rewrite_refiner) Hashtbl.t;
-        hash_axiom : (opname, prim_axiom_refiner) Hashtbl.t;
         hash_rule : (opname, prim_rule_refiner) Hashtbl.t;
         hash_refiner : (opname, refiner) Hashtbl.t
       }
@@ -418,7 +403,6 @@ struct
    type find =
       { find_rewrite : opname -> prim_rewrite_refiner;
         find_cond_rewrite : opname -> prim_cond_rewrite_refiner;
-        find_axiom : opname -> prim_axiom_refiner;
         find_rule : opname -> prim_rule_refiner;
         find_refiner : opname -> refiner
       }
@@ -426,7 +410,6 @@ struct
    type check =
       { check_rewrite : rewrite_refiner -> prim_rewrite_refiner;
         check_cond_rewrite : cond_rewrite_refiner -> prim_cond_rewrite_refiner;
-        check_axiom : axiom_refiner -> prim_axiom_refiner;
         check_rule : rule_refiner -> prim_rule_refiner
       }
 
@@ -440,7 +423,6 @@ struct
         sent_ml_rewrite : ml_rewrite_refiner -> unit;
         sent_cond_rewrite : cond_rewrite_refiner -> unit;
         sent_ml_cond_rewrite : ml_cond_rewrite_refiner -> unit;
-        sent_axiom : axiom_refiner -> unit;
         sent_rule : rule_refiner -> unit;
         sent_ml_rule : ml_rule_refiner -> unit
       }
@@ -481,8 +463,7 @@ struct
     * For destruction.
     *)
    type refiner_item =
-      RIAxiom of ri_axiom
-    | RIRule of ri_rule
+      RIRule of ri_rule
     | RIPrimTheorem of ri_prim_theorem
     | RIMLRule of ri_ml_rule
 
@@ -495,10 +476,6 @@ struct
     | RIParent of refiner
     | RILabel of string
 
-   and ri_axiom =
-      { ri_axiom_name : opname;
-        ri_axiom_term : term
-      }
    and ri_rule =
       { ri_rule_name : opname;
         ri_rule_rule : msequent
@@ -1055,7 +1032,6 @@ struct
          match refiner with
             NullRefiner ->
                refiners, None
-          | AxiomRefiner { axiom_name = n; axiom_refiner = next }
           | RuleRefiner { rule_name = n; rule_refiner = next }
           | RewriteRefiner { rw_name = n; rw_refiner = next }
           | CondRewriteRefiner { crw_name = n; crw_refiner = next } as r ->
@@ -1063,7 +1039,6 @@ struct
                   refiners, Some r
                else
                   search refiners next
-          | PrimAxiomRefiner { pax_refiner = next }
           | PrimRuleRefiner { prule_refiner = next }
           | MLRuleRefiner { ml_rule_refiner = next }
           | PrimRewriteRefiner { prw_refiner = next }
@@ -1366,12 +1341,7 @@ struct
       in
       let rec insert refiners' refiner =
          match refiner with
-            PrimAxiomRefiner pax ->
-               let { pax_axiom = { axiom_name = name }; pax_refiner = next } = pax in
-                  maybe_add axioms name pax;
-                  maybe_add refiners name refiner;
-                  insert refiners' next
-          | PrimRuleRefiner prule ->
+            PrimRuleRefiner prule ->
                let { prule_rule = { rule_name = name }; prule_refiner = next } = prule in
                   maybe_add rules name prule;
                   maybe_add refiners name refiner;
@@ -1386,7 +1356,6 @@ struct
                   maybe_add cond_rewrites name pcrw;
                   maybe_add refiners name refiner;
                   insert refiners' next
-          | AxiomRefiner { axiom_refiner = next }
           | RuleRefiner { rule_refiner = next }
           | RewriteRefiner { rw_refiner = next }
           | CondRewriteRefiner { crw_refiner = next }
@@ -1407,8 +1376,7 @@ struct
                refiners'
       in
       let _ = insert [] refiner in
-         { hash_axiom = axioms;
-           hash_rule = rules;
+         { hash_rule = rules;
            hash_rewrite = rewrites;
            hash_cond_rewrite = cond_rewrites;
            hash_refiner = refiners
@@ -1417,17 +1385,11 @@ struct
    (*
     * Lookup values in the hashtable, or print error messages.
     *)
-   let find_of_hash { hash_axiom = axioms;
-                      hash_rule = rules;
+   let find_of_hash { hash_rule = rules;
                       hash_rewrite = rewrites;
                       hash_cond_rewrite = cond_rewrites;
                       hash_refiner = refiners
        } =
-      let find_axiom name =
-         try Hashtbl.find axioms name with
-            Not_found ->
-               REF_RAISE(RefineError (string_of_opname name, StringError "axiom is not justified"))
-      in
       let find_rule name =
          try Hashtbl.find rules name with
             Not_found ->
@@ -1448,8 +1410,7 @@ struct
             Not_found ->
                REF_RAISE(RefineError (string_of_opname name, StringError "refiner is not justified"))
       in
-         { find_axiom = find_axiom;
-           find_rule = find_rule;
+         { find_rule = find_rule;
            find_rewrite = find_rewrite;
            find_cond_rewrite = find_cond_rewrite;
            find_refiner = find_refiner
@@ -1458,19 +1419,10 @@ struct
    (*
     * Also sent the matching.
     *)
-   let check_of_find { find_axiom = find_axiom;
-                       find_rule = find_rule;
+   let check_of_find { find_rule = find_rule;
                        find_rewrite = find_rewrite;
                        find_cond_rewrite = find_cond_rewrite
        } =
-      let check_axiom ax =
-         let { axiom_name = name } = ax in
-         let pax = find_axiom name in
-            if pax.pax_axiom == ax then
-               pax
-            else
-               REF_RAISE(RefineError (string_of_opname name, StringError "axiom proof does not match"))
-      in
       let check_rule rl =
          let { rule_name = name } = rl in
          let prule = find_rule name in
@@ -1495,24 +1447,14 @@ struct
             else
                REF_RAISE(RefineError (string_of_opname name, StringError "cond_rewrite proof does not match"))
       in
-         { check_axiom = check_axiom;
-           check_rule = check_rule;
+         { check_rule = check_rule;
            check_rewrite = check_rewrite;
            check_cond_rewrite = check_cond_rewrite
          }
 
    (*
-    * Get the extract term for an axiom.
+    * Get the extract term for an item.
     *)
-   let axiom_proof pax =
-      match pax.pax_proof with
-         Extracted t ->
-            t
-       | Delayed f ->
-            let t = f () in
-               pax.pax_proof <- Extracted t;
-               t
-
    let rule_proof prule =
       match prule.prule_proof with
          Extracted t ->
@@ -1540,9 +1482,7 @@ struct
     * Expand the extracts of the components.
     *)
    let check = function
-      PrimAxiomRefiner pax ->
-         ignore (axiom_proof pax)
-    | PrimRuleRefiner prule ->
+      PrimRuleRefiner prule ->
          let _ = rule_proof prule in ()
     | PrimRewriteRefiner prw ->
          rewrite_proof prw
@@ -1603,8 +1543,7 @@ struct
    let term_of_extract refiner { ext_just = just } (args : term list) =
       let find = find_of_hash (hash_refiner refiner) in
       let { find_refiner = find_refiner } = find in
-      let { check_axiom = find_axiom;
-            check_rule = find_rule;
+      let { check_rule = find_rule;
             check_rewrite = find_rewrite;
             check_cond_rewrite = find_cond_rewrite
           } = check_of_find find
@@ -1623,10 +1562,7 @@ struct
          SingleJust { just_names = names; just_params = params; just_refiner = name } ->
             begin
                match find_refiner name with
-                  AxiomRefiner ax ->
-                     zero_args rest;
-                     axiom_proof (find_axiom ax)
-                | RuleRefiner r ->
+                  RuleRefiner r ->
                      let { rule_count = count } = r in
                      let extracts = count_args args rest count in
                         rule_proof (find_rule r) names params extracts
@@ -1710,7 +1646,6 @@ struct
            sent_ml_rewrite = null;
            sent_cond_rewrite = null;
            sent_ml_cond_rewrite = null;
-           sent_axiom = null;
            sent_rule = null;
            sent_ml_rule = null
          }
@@ -1724,7 +1659,6 @@ struct
            sent_ml_rewrite = null;
            sent_cond_rewrite = null;
            sent_ml_cond_rewrite = null;
-           sent_axiom = null;
            sent_rule = null;
            sent_ml_rule = null
          }
@@ -1737,23 +1671,13 @@ struct
       let ml_rewrites = Hashtbl.create 19 in
       let cond_rewrites = Hashtbl.create 19 in
       let ml_cond_rewrites = Hashtbl.create 19 in
-      let axioms = Hashtbl.create 19 in
       let rules = Hashtbl.create 19 in
       let ml_rules = Hashtbl.create 19 in
       let rec insert refiners = function
-         PrimAxiomRefiner { pax_refiner = next }
-       | PrimRuleRefiner { prule_refiner = next }
+         PrimRuleRefiner { prule_refiner = next }
        | PrimRewriteRefiner { prw_refiner = next }
        | PrimCondRewriteRefiner { pcrw_refiner = next } ->
             insert refiners next
-       | AxiomRefiner ax ->
-            let { axiom_name = name; axiom_refiner = next } = ax in
-               IFDEF VERBOSE_EXN THEN
-                  if !debug_sentinal then
-                     eprintf "sentinal_of_refiner: add axiom %s%t" (string_of_opname name) eflush
-               ENDIF;
-               Hashtbl.add axioms name ax;
-               insert refiners next
        | RuleRefiner r ->
             let { rule_name = name; rule_refiner = next } = r in
                IFDEF VERBOSE_EXN THEN
@@ -1826,10 +1750,9 @@ struct
                eprintf "check_sentinal: failed %s%t" (string_of_opname name) eflush;
                REF_RAISE(RefineError
                             ("check_sentinal",
-                             StringStringError ("axiom is not valid in this context", (string_of_opname name))))
+                             StringStringError ("rule is not valid in this context", (string_of_opname name))))
             end
       in
-      let check_axiom ax = check_sentinal axioms ax.axiom_name ax in
       let check_rule rule = check_sentinal rules rule.rule_name rule in
       let check_ml_rule ml_rule =
          let opname = ml_rule.ml_rule_name in
@@ -1858,97 +1781,9 @@ struct
            sent_ml_rewrite = check_ml_rewrite;
            sent_cond_rewrite = check_cond_rewrite;
            sent_ml_cond_rewrite = check_ml_cond_rewrite;
-           sent_axiom = check_axiom;
            sent_rule = check_rule;
            sent_ml_rule = check_ml_rule
          }
-
-   (************************************************************************
-    * AXIOM                                                                *
-    ************************************************************************)
-
-   (*
-    * An theorem is a special case of a rule, where to
-    * arity is 1, and there are no addrs or params.
-    * Still get a tactic by this name (the equivalent
-    * of BackThruLemma `name`).
-    *)
-   let check_axiom term =
-      match TermSubst.context_vars term with
-         [] ->
-            ()
-       | l ->
-            REF_RAISE(RefineError ("check_axiom", RewriteFreeContextVars l))
-
-   let add_axiom build name term =
-      IFDEF VERBOSE_EXN THEN
-         if !debug_refiner then
-            eprintf "Refiner.add_axiom: %s%t" name eflush
-      ENDIF;
-      let { build_opname = opname; build_refiner = refiner } = build in
-      let opname = mk_opname name opname in
-      let ref_axiom =
-         { axiom_name = opname;
-           axiom_term = term;
-           axiom_refiner = refiner
-         }
-      in
-      let refiner' = AxiomRefiner ref_axiom in
-      let tac _ _ (sent : sentinal) ({ mseq_goal = goal } as goal') =
-         if alpha_equal (nth_concl goal 1) term then
-            begin
-               sent.sent_axiom ref_axiom;
-               [], SingleJust { just_goal = goal';
-                                just_addrs = [||];
-                                just_names = [||];
-                                just_params = [];
-                                just_refiner = opname;
-                                just_subgoals = []
-               }
-            end
-         else
-            REF_RAISE(RefineError ("refine_axiom", TermMatchError (goal, name)))
-      in
-      let _ = check_axiom term in
-         refiner', (tac : prim_tactic)
-
-   let add_prim_axiom build name term =
-      IFDEF VERBOSE_EXN THEN
-         if !debug_refiner then
-            eprintf "Refiner.prim_axiom: %s%t" name eflush
-      ENDIF;
-      let { build_opname = opname; build_refiner = refiner } = build in
-         match find_refiner refiner (mk_opname name opname) with
-            AxiomRefiner ax ->
-               PrimAxiomRefiner { pax_proof = Extracted term;
-                                  pax_axiom = ax;
-                                  pax_refiner = refiner
-               }
-          | _ ->
-               REF_RAISE(RefineError (name, StringError "not an axiom"))
-
-   let add_delayed_axiom build name extf =
-      IFDEF VERBOSE_EXN THEN
-         if !debug_refiner then
-            eprintf "Refiner.delayed_axiom: %s%t" name eflush
-      ENDIF;
-      let { build_opname = opname; build_refiner = refiner } = build in
-         match find_refiner refiner (mk_opname name opname) with
-            AxiomRefiner ax ->
-               let compute () =
-                  let { axiom_term = goal } = ax in
-                  let ext = extf () in
-                  let { ext_goal = { mseq_goal = goal' }; ext_subgoals = subgoals } = ext in
-                     if not (alpha_equal (nth_concl goal' 0) goal) or subgoals != [] then
-                        REF_RAISE(RefineError (name, StringError "not justified"));
-                     term_of_extract refiner ext []
-               in
-                  PrimAxiomRefiner { pax_proof = Delayed compute;
-                                     pax_axiom = ax;
-                                     pax_refiner = refiner
-                  }
-          | _ ->
-               REF_RAISE(RefineError (name, StringError "not an axiom"))
 
    (************************************************************************
     * RULE                                                                 *
@@ -2416,26 +2251,6 @@ struct
     ************************************************************************)
 
    (*
-    * Axiom creation.
-    *)
-   let create_axiom build name term =
-      let refiner, tac = add_axiom build name term in
-         build.build_refiner <- refiner;
-         (tac : prim_tactic)
-
-   let prim_axiom build name term =
-      build.build_refiner <- add_prim_axiom build name term
-
-   let delayed_axiom build name extf =
-      build.build_refiner <- add_delayed_axiom build name extf
-
-   let derived_axiom build name ext =
-      let extf () = ext in
-      let refiner = add_delayed_axiom build name extf in
-         check refiner;
-         build.build_refiner <- refiner
-
-   (*
     * Rules.
     *)
    let create_rule build name addrs names params mterm =
@@ -2531,11 +2346,6 @@ struct
     | ListRefiner _ ->
          (* List are never constructed by the user *)
          raise (Invalid_argument "dest_refiner")
-
-    | AxiomRefiner { axiom_name = n; axiom_term = t; axiom_refiner = r } ->
-         RIAxiom { ri_axiom_name = n; ri_axiom_term = t }, r
-    | PrimAxiomRefiner { pax_axiom = ax; pax_refiner = r } ->
-         RIPrimTheorem { ri_pthm_axiom = AxiomRefiner ax }, r
 
     | RuleRefiner { rule_name = n; rule_rule = t; rule_refiner = r } ->
          RIRule { ri_rule_name = n; ri_rule_rule = t }, r

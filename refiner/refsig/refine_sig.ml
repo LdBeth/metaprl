@@ -301,37 +301,14 @@ sig
    val sentinal_of_refiner : refiner -> sentinal
 
    (*
-    * An axiom is a term that is true.
-    * This adds the theorem, and returns a tactic to prove a
-    * goal that is the theorem.  This is used only in a sequent calculus.
-    *
-    * Once an axiom is defined, it can be justified as
-    *    1. primitive (an term extract is given)
-    *    2. derived (an extract from a proof is given)
-    *    3. delayed (an extract can be computed on request)
-    *)
-   val create_axiom : build ->
-      string ->                 (* name *)
-      term ->                   (* statement *)
-      prim_tactic
-   val check_axiom : term -> unit
-   val prim_axiom : build ->
-      string ->                 (* name *)
-      term ->                   (* extract *)
-      unit
-   val derived_axiom : build ->
-      string ->                 (* name *)
-      extract ->                (* derivation *)
-      unit
-   val delayed_axiom : build ->
-      string ->                 (* name *)
-      (unit -> extract) ->      (* derivation *)
-      unit
-
-   (*
     * A rule is an implication on terms (the conclusion
     * is true if all the antecedents are).
     *     Args: refiner, name, addrs, params, rule
+    *
+    * Once a rule is defined, it can be justified as
+    *    1. primitive (an term extract is given)
+    *    2. derived (an extract from a proof is given)
+    *    3. delayed (an extract can be computed on request)
     *)
    val create_rule : build ->
       string ->            (* name *)
@@ -533,8 +510,7 @@ sig
     * Describe the contents of the refiner.
     *)
    type refiner_item =
-      RIAxiom of ri_axiom
-    | RIRule of ri_rule
+      RIRule of ri_rule
     | RIPrimTheorem of ri_prim_theorem
     | RIMLRule of ri_ml_rule
 
@@ -547,10 +523,6 @@ sig
     | RIParent of refiner
     | RILabel of string
 
-   and ri_axiom =
-      { ri_axiom_name : opname;
-        ri_axiom_term : term
-      }
    and ri_rule =
       { ri_rule_name : opname;
         ri_rule_rule : msequent

@@ -10,7 +10,7 @@
 include $(ROOT)/mk/config
 include $(ROOT)/mk/config.local
 
-MP_VERSION=0.7.1
+MP_VERSION=0.7.2
 
 #
 # Versions of Ocaml/Camlp4 that are compatible with MetaPRL

@@ -125,8 +125,6 @@ let eprint_entry print_info = function
       eprintf "IForm: %s\n" name
  | CondRewrite { crw_name = name } ->
       eprintf "CondRewrite: %s\n" name
- | Axiom { axiom_name = name } ->
-      eprintf "Axiom: %s\n" name
  | Rule { rule_name = name } ->
       eprintf "Rule: %s\n" name
  | Opname { opname_name = name } ->
@@ -242,13 +240,9 @@ let parents { info_list = summary } =
 (*
  * Test for an axiom.
  *)
-let test_axiom name (item, _) =
-   match item with
-      Axiom { axiom_name = n }
-    | Rule { rule_name = n } ->
-         n = name
-    | _ ->
-         false
+let test_axiom name = function 
+   (Rule { rule_name = n }, _) -> n = name
+ | _ -> false
 
 let find_axiom { info_list = summary } name =
    try Some (List_util.find (test_axiom name) summary) with
@@ -408,8 +402,7 @@ let get_proofs { info_list = summary } =
       (h, _)::t ->
          let proofs =
             match h with
-               Axiom { axiom_name = name; axiom_proof = pf }
-             | Rule { rule_name = name; rule_proof = pf }
+               Rule { rule_name = name; rule_proof = pf }
              | Rewrite { rw_name = name; rw_proof = pf }
              | CondRewrite { crw_name = name; crw_proof = pf } ->
                   (name, pf) :: proofs
@@ -428,8 +421,7 @@ let get_proofs { info_list = summary } =
 let find { info_list = summary } name =
    let test (item, _) =
       match item with
-         Axiom { axiom_name = n }
-       | Rule { rule_name = n }
+         Rule { rule_name = n }
        | Rewrite { rw_name = n }
        | CondRewrite { crw_name = n }
        | MLRewrite { mlterm_name = n }
@@ -449,8 +441,7 @@ let find { info_list = summary } name =
 let set_command info item =
    let test =
       match fst item with
-         Axiom { axiom_name = name }
-       | Rule { rule_name = name } ->
+         Rule { rule_name = name } ->
             test_axiom name
        | Rewrite { rw_name = name }
        | CondRewrite { crw_name = name } ->
@@ -567,13 +558,6 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'resource1, 'ctyp1, 'e
                              crw_contractum = convert.term_f con;
                              crw_proof = convert.proof_f name pf;
                              crw_resources = res_map res
-               }
-
-          | Axiom { axiom_name = name; axiom_stmt = t; axiom_proof = pf; axiom_resources = res } ->
-               Axiom { axiom_name = name;
-                       axiom_stmt = convert.term_f t;
-                       axiom_proof = convert.proof_f name pf;
-                       axiom_resources = res_map res
                }
 
           | Rule { rule_name = name;
@@ -723,7 +707,6 @@ let mk_opname =
 let rewrite_op                 = mk_opname "rewrite"
 let input_form_op              = mk_opname "input_form"
 let cond_rewrite_op            = mk_opname "cond_rewrite"
-let axiom_op                   = mk_opname "axiom"
 let rule_op                    = mk_opname "rule"
 let res_op                     = mk_opname "resource_defs"
 let opname_op                  = mk_opname "opname"
@@ -1002,18 +985,6 @@ struct
          }
 
    (*
-    * Axiom.
-    *)
-   and dest_axiom convert t =
-      let name = dest_string_param t in
-      let stmt, proof, res = three_subterms t in
-         Axiom { axiom_name = name;
-                 axiom_stmt = convert.term_f stmt;
-                 axiom_proof = convert.proof_f name proof;
-                 axiom_resources = dest_res convert res
-         }
-
-   (*
     * Rule.
     *)
    and dest_rule convert t =
@@ -1190,8 +1161,6 @@ struct
                   dest_rewrite convert t
                else if Opname.eq opname cond_rewrite_op then
                   dest_cond_rewrite convert t
-               else if Opname.eq opname axiom_op then
-                  dest_axiom convert t
                else if Opname.eq opname rule_op then
                   dest_rule convert t
                else if Opname.eq opname opname_op then
@@ -1416,15 +1385,6 @@ struct
                                                  convert.proof_f name pf;
                                                  term_of_resources convert res]
 
-   and term_of_axiom convert { axiom_name = name;
-                               axiom_stmt = t;
-                               axiom_proof = pf;
-                               axiom_resources = res
-       } =
-      mk_string_param_term axiom_op name [convert.term_f t;
-                                          convert.proof_f name pf;
-                                          term_of_resources convert res]
-
    and term_of_rule convert { rule_name = name;
                               rule_params = params;
                               rule_stmt = t;
@@ -1544,8 +1504,6 @@ struct
          term_of_input_form convert rw
     | CondRewrite crw ->
          term_of_cond_rewrite convert crw
-    | Axiom ax ->
-         term_of_axiom convert ax
     | Rule rw ->
          term_of_rule convert rw
     | Opname opname ->
@@ -1706,31 +1664,6 @@ struct
                         implem_error (sprintf "Cond_rewrite %s: specification mismatch" name)
                      else
                         ()
-                  else
-                     search t
-             | _ ->
-                  search t
-      in
-         search implem
-
-   (*
-    * Axiom must be more general.
-    *)
-   let check_axiom
-       (info : ('term1, 'proof1, 'expr1) axiom_info)
-       (implem : ('term2, 'meta_term2, 'proof2, 'resource2, 'ctyp2, 'expr2, 'item2) summary_item list) =
-      let { axiom_name = name; axiom_stmt = stmt } = info in
-      let rec search = function
-         [] ->
-            implem_error (sprintf "Axiom %s: not implemented" name)
-       | h::t ->
-            match h with
-               Axiom { axiom_name = name'; axiom_stmt = stmt' } ->
-                  if name' = name then
-                     if generalizes stmt' stmt then
-                        ()
-                     else
-                        implem_error (sprintf "Axiom %s: type mismatch" name)
                   else
                      search t
              | _ ->
@@ -1981,8 +1914,6 @@ struct
             check_iform info implem
        | CondRewrite info ->
             check_cond_rewrite info implem
-       | Axiom info ->
-            check_axiom info implem
        | Rule info ->
             check_rule info implem
        | Opname info ->
@@ -2113,22 +2044,6 @@ struct
       )
 
    (*
-    * Copy the axioms.
-    *)
-   let copy_axiom_proof copy_proof ax info2 =
-      Axiom (
-         match find_axiom info2 ax.axiom_name with
-            Some (Axiom { axiom_stmt = stmt;
-                          axiom_proof = proof
-                  }, _) ->
-               if not (alpha_equal ax.axiom_stmt stmt) then
-                  eprintf "copy_proof: warning: axioms %s do not match%t" ax.axiom_name eflush;
-               { ax with axiom_proof = copy_proof ax.axiom_proof proof }
-          | _ ->
-               ax
-      )
-
-   (*
     * Copy the proof in a rule.
     *)
    let copy_rule_proof copy_proof rule info2 =
@@ -2166,8 +2081,6 @@ struct
                   copy_rw_proof copy_proof rw info2
              | CondRewrite crw ->
                   copy_crw_proof copy_proof crw info2
-             | Axiom ax ->
-                  copy_axiom_proof copy_proof ax info2
              | Rule rule ->
                   copy_rule_proof copy_proof rule info2
              | Module (name, info) ->

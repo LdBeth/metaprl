@@ -163,11 +163,6 @@ sig
        term, term, term, term, term, term, term) convert ->
       ('term, 'proof, 'expr) cond_rewrite_info ->
       term
-   val term_of_axiom :
-      ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item,
-       term, term, term, term, term, term, term) convert ->
-      ('term, 'proof, 'expr) axiom_info ->
-      term
    val term_of_rule :
       ('term, 'meta_term, 'proof, 'resource, 'ctyp, 'expr, 'item,
        term, term, term, term, term, term, term) convert ->

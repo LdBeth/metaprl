@@ -127,18 +127,6 @@ let rewrite_type_ctyp loc =
 let dest_msequent_expr loc =
    <:expr< $refiner_expr loc$ . dest_msequent >>
 
-let create_axiom_expr loc =
-   <:expr< $refiner_expr loc$ . create_axiom >>
-
-let prim_axiom_expr loc =
-   <:expr< $refiner_expr loc$ . prim_axiom >>
-
-let derived_axiom_expr loc =
-   <:expr< $refiner_expr loc$ . derived_axiom >>
-
-let delayed_axiom_expr loc =
-   <:expr< $refiner_expr loc$ . delayed_axiom >>
-
 (*
  * Rule.
  *)
@@ -361,7 +349,7 @@ let add_eq_expr loc =
    <:expr< Precedence.add_eq >>
 
 (*
- * Each axiom gets a refiner associated with it, with the following name.
+ * Each rule gets a refiner associated with it, with the following name.
  *)
 let refiner_value loc =
    <:expr< Refiner.Refiner.Refine.refiner_of_build $lid: local_refiner_id$ >>
@@ -642,11 +630,6 @@ let declare_ml_rewrite loc { mlterm_name = name; mlterm_params = params } =
 (*
  * Rules.
  *)
-let declare_axiom loc { axiom_name = name } =
-   let ctyp = params_ctyp loc (tactic_ctyp loc) [] in
-      [<:sig_item< value $name$ : $ctyp$ >>]
-      (* <:sig_item< value $refiner_name name$ : $refiner_ctyp loc$ >>] *)
-
 let declare_rule loc { rule_name = name; rule_params = params } =
    let ctyp = params_ctyp loc (tactic_ctyp loc) params in
       [<:sig_item< value $name$ : $ctyp$ >>]
@@ -727,10 +710,6 @@ let extract_sig_item (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: cond rewrite: %s%t" name eflush;
          declare_cond_rewrite loc crw
-    | Axiom ({ axiom_name = name } as ax) ->
-         if !debug_filter_prog then
-            eprintf "Filter_prog.extract_sig_item: axiom: %s%t" name eflush;
-         declare_axiom loc ax
     | Rule ({ rule_name = name } as rule) ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: rule: %s%t" name eflush;
@@ -1536,47 +1515,11 @@ struct
     ************************************************************************)
 
    (*
-    * A primitive rule specifies the extract.
-    *)
-   let define_axiom code proc loc { axiom_name = name; axiom_stmt = stmt } extract =
-      let goal_expr = expr_of_term loc stmt in
-      let goals = list_expr loc (function x -> x) [goal_expr] in
-      let axiom_value =
-         <:expr< $create_axiom_expr loc$ $lid:local_refiner_id$ $str:name$ $goal_expr$ >>
-      in
-      let axiom_patt = <:patt< $lid:name$ >> in
-      let thm =
-         <:expr< $code$ $lid:local_refiner_id$ $str:name$ (**)
-                 (* $nil_array loc$ $nil_list loc$ $goals$ *) $extract$
-         >>
-      in
-      let axiom_item = (<:str_item< value $rec:false$ $list:[axiom_patt, wrap_exn loc name axiom_value ]$ >>) in
-      let thm_item = <:str_item< $exp: wrap_exn loc name thm$ >> in
-         [checkpoint_resources loc name; axiom_item; thm_item; refiner_let loc ]
-
-   let prim_axiom proc loc ax extract =
-      let code = prim_axiom_expr loc in
-      let extract_expr = expr_of_term loc extract in
-         define_axiom code proc loc ax extract_expr
-
-   let derived_axiom proc loc ax tac =
-      let code = derived_axiom_expr loc in
-         define_axiom code proc loc ax tac
-
-   let interactive_axiom proc loc ax expr =
-      let code = delayed_axiom_expr loc in
-         define_axiom code proc loc ax (Convert.to_expr proc.imp_arg ax.axiom_name expr)
-
-   let incomplete_axiom proc loc ax =
-      let code = delayed_axiom_expr loc in
-         define_axiom code proc loc ax (interactive_exn loc "axiom")
-
-   (*
     * Define the resources for a rule.
     * The Tactic_type.pre_tactic is passed as an argument,
     * along with the params, so that we can figure out its type.
     *)
-   let define_rule_resources proc loc name params cvars_id tvars_id avars_id params_id assums_id resources name_rule_expr =
+   let define_rule_resources proc loc name cvars_id tvars_id avars_id params_id assums_id resources name_rule_expr =
       let define_resource (loc, name', args) =
          let input = res_type proc loc name' in
          let arg_expr =
@@ -1598,7 +1541,6 @@ struct
          List.map define_resource resources
 
    (*
-    * A rule is an axiom with parameters.
     * Split var params from regular params.
     * let name_rule =
     *    let cvars = cvars_expr
@@ -1668,7 +1610,7 @@ struct
       in
       let rule_expr = <:expr< $compile_rule_expr loc$ $lid:local_refiner_id$ $lid:labels_id$ $lid:rule_id$ >> in
       let resource_exprs =
-         define_rule_resources proc loc name params (**)
+         define_rule_resources proc loc name (**)
             cvars_id tvars_id params_id avars_id assums_id
             resources name_rule_expr
       in
@@ -2210,22 +2152,6 @@ struct
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: ML rewrite (unimplemented): %s%t" name eflush;
             raise (Failure "Filter_prog.extract_str_item: ML rewrite is not defined")
-       | Axiom ({ axiom_name = name; axiom_proof = Primitive t } as ax) ->
-            if !debug_filter_prog then
-               eprintf "Filter_prog.extract_str_item: prim axiom: %s%t" name eflush;
-            prim_axiom proc loc ax t
-       | Axiom ({ axiom_name = name; axiom_proof = Derived tac } as ax) ->
-            if !debug_filter_prog then
-               eprintf "Filter_prog.extract_str_item: thm axiom: %s%t" name eflush;
-            derived_axiom proc loc ax tac
-       | Axiom ({ axiom_name = name; axiom_proof = Incomplete } as ax) ->
-            if !debug_filter_prog then
-               eprintf "Filter_prog.extract_str_item: incomplete axiom: %s%t" name eflush;
-            incomplete_axiom proc loc ax
-       | Axiom ({ axiom_name = name; axiom_proof = Interactive pf } as ax) ->
-            if !debug_filter_prog then
-               eprintf "Filter_prog.extract_str_item: interactive axiom: %s%t" name eflush;
-            interactive_axiom proc loc ax pf
        | Rule ({ rule_name = name; rule_proof = Primitive t } as rule) ->
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: prim rule: %s%t" name eflush;

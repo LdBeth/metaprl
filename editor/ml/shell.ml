@@ -338,8 +338,6 @@ struct
                Shell_rewrite.view_rw pack parse_arg display_mode rw
           | CondRewrite crw ->
                Shell_rewrite.view_crw pack parse_arg display_mode crw
-          | Axiom ax ->
-               Shell_rule.view_axiom pack parse_arg display_mode ax
           | Rule rl ->
                Shell_rule.view_rule pack parse_arg display_mode rl
           | Opname _ ->
@@ -987,7 +985,6 @@ struct
                   match item with
                      Rewrite { rw_proof = proof }
                    | CondRewrite { crw_proof = proof }
-                   | Axiom { axiom_proof = proof }
                    | Rule { rule_proof = proof } ->
                         ped_of_proof proof
                    | _ ->
@@ -1019,9 +1016,6 @@ struct
                    | CondRewrite crw ->
                         if !debug_shell then eprintf "CondRewrite %s%t" crw.crw_name eflush;
                         apply_it (Shell_rewrite.view_crw pack parse_arg display_mode crw)
-                   | Axiom ax ->
-                        if !debug_shell then eprintf "Axiom %s%t" ax.axiom_name eflush;
-                        apply_it (Shell_rule.view_axiom pack parse_arg display_mode ax)
                    | Rule rl ->
                         if !debug_shell then eprintf "Rule %s%t" rl.rule_name eflush;
                         apply_it (Shell_rule.view_rule pack parse_arg display_mode rl)
@@ -1309,7 +1303,6 @@ struct
                match h with
                   Rewrite { rw_name = name }
                 | CondRewrite { crw_name = name }
-                | Axiom { axiom_name = name }
                 | Rule { rule_name = name } ->
                      name :: names
                 | _ -> names
@@ -1329,7 +1322,6 @@ struct
                match h with
                   Rewrite { rw_name = name } -> wnames := name :: !wnames; collect t
                 | CondRewrite { crw_name = name } -> cnames := name :: !cnames; collect t
-                | Axiom { axiom_name = name } -> anames := name :: !anames; collect t
                 | Rule { rule_name = name } -> rnames := name :: !rnames; collect t
                 | _ -> collect t
       in

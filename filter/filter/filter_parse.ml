@@ -631,17 +631,6 @@ struct
       let redex' = declare_term proc loc redex in
          declare_rewrite proc loc name [] (MetaIff (MetaTheorem redex', MetaTheorem contractum)) pf res
 
-   (*
-    * Declare an axiom in an interface.  This has a similar flavor
-    * as rewrites, but context args have to be extracted from the args.
-    *)
-   let simple_axiom proc name arg pf res =
-      (* Check it *)
-      Refine.check_axiom arg;
-
-      (* Save it in the transcript *)
-      Axiom { axiom_name = name; axiom_stmt = arg; axiom_proof = pf; axiom_resources = res }
-
    let rec print_terms out = function
       h::t ->
          eprintf "\t%s\n" (string_of_term h);
@@ -662,7 +651,7 @@ struct
    let print_non_vars out params =
       print_terms out (collect_non_vars params)
 
-   let cond_axiom proc name params t pf res =
+   let rule_command proc name params t pf res =
       (* Extract context names *)
       let _ =
          if !debug_grammar then
@@ -696,16 +685,9 @@ struct
                 rule_resources = res
          }
 
-   let axiom_command proc name params t pf res =
-      match params, t with
-         [], MetaTheorem a ->
-            simple_axiom proc name a pf res
-       | _ ->
-            cond_axiom proc name params t pf res
-
-   let declare_axiom proc loc name args t pf res =
+   let declare_rule proc loc name args t pf res =
       try
-         let cmd = axiom_command proc name args t pf res in
+         let cmd = rule_command proc name args t pf res in
             FilterCache.add_command proc.cache (cmd, loc)
       with exn ->
          Stdpp.raise_with_loc loc exn
@@ -1045,7 +1027,7 @@ let define_rule proc loc name
     (extract : Convert.cooked proof_type)
     (res : MLast.expr resource_def) =
    try
-      let cmd = StrFilter.axiom_command proc name params mterm extract res in
+      let cmd = StrFilter.rule_command proc name params mterm extract res in
       StrFilter.add_command proc (cmd, loc)
    with exn ->
       Stdpp.raise_with_loc loc exn
@@ -1203,7 +1185,7 @@ EXTEND
              empty_sig_item loc
         | rule_keyword; name = LIDENT; args = optarglist; ":"; t = mterm ->
            let f () =
-             SigFilter.declare_axiom (SigFilter.get_proc loc) loc name args t () []
+             SigFilter.declare_rule (SigFilter.get_proc loc) loc name args t () []
            in
               print_exn f "rule" loc;
               empty_sig_item loc
@@ -1475,9 +1457,7 @@ EXTEND
       ]];
 
    rule_keyword:
-      [[ "rule" -> ()
-       | "axiom" -> ()
-      ]];
+      [[ "rule" -> () ]];
 
    mlrule_keyword:
       [[ "ml_rule" ->
