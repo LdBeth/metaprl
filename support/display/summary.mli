@@ -113,6 +113,10 @@ declare "proof"{'main; 'goal; 'text; 'subgoals}
 declare "package"[name:s]
 declare "packages"{'pl}
 
+(* PRL Bindings *)
+declare term_binding{'t;v.'t2['v]}
+declare opname_binding{'t;v.'t2['v]}
+
 (************************************************************************
  * ML ACCESS                                                            *
  ************************************************************************)

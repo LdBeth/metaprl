@@ -383,7 +383,7 @@ dform fun_df2 : internal :: "fun"[start:n, finish:n]{'pwel} =
    "fun"{'pwel}
 
 dform match_df1 : parens :: "prec"[prec_fun] :: "match"{'pwel; 'e} =
-   szone push_indent "_match" hspace slot{'e} hspace "_with" hspace
+   szone push_indent "_match" hspace 'e hspace "_with" hspace
    patt_format{'pwel; nil}
    popm ezone
 
@@ -412,16 +412,6 @@ dform fix_df1 : parens :: "prec"[prec_let] :: "fix"{'p} =
 
 dform fix_df2 : internal :: "fix"[start:n, finish:n]{'p} =
    "fix"{'p}
-
-(*
- * Finally, a special form for terms.
- *)
-ml_dform term_df : "apply"[start1:n, finish1:n]{
-                     ."proj"[start2:n, finish2:n]{
-                        ."uid"[start3:n, finish3:n]{."uid"["Ml_term":s]};
-                        ."lid"[start4:n, finish4:n]{."lid"["term_of_string":s]}};
-                     .Ocaml!"string"[start5:n, finish5:n, s:s]} format_term buf =
-   fun goal -> format_term buf Dform.LEParens (Ml_term.term_of_string (Token.eval_string s))
 
 (*
  * -*-

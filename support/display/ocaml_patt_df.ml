@@ -85,7 +85,7 @@ let _ =
  *)
 declare "as"{'a;'b}
 declare wildcard
-declare rcons{'a;'b}
+declare choice{'a;'b}
 declare range{'a;'b}
 declare patt_let
 declare patt_fix
@@ -238,7 +238,7 @@ dform patt_choice_arg_df1 : internal :: patt_format{patt_choice_arg{'p1}; cons{'
    patt_format{'p1; cons{'p2; 'p3}}
 
 dform patt_choice_end_df1 : internal :: patt_format{patt_choice_end{'p1}; cons{'p2; cons{'p3; 'p4}}} =
-   patt_format{'p1; cons{rcons{'p2; 'p3}; 'p4}}
+   patt_format{'p1; cons{choice{'p3; 'p2}; 'p4}}
 
 dform patt_choice_df2 :internal ::  patt_format{patt_choice[start:n, finish:n]{'p1}; 'p2} =
    patt_format{patt_choice{'p1}; 'p2}
@@ -280,7 +280,7 @@ dform patt_list_arg_df1 : internal :: patt_format{patt_list_arg{'p1}; cons{'p2; 
    patt_format{'p1; cons{'p2; 'p3}}
 
 dform patt_list_end_df1 : internal :: patt_format{patt_list_end{'p1}; cons{'p2; cons{'p3; 'p4}}} =
-   patt_format{'p1; cons{rcons{'p2; 'p3}; 'p4}}
+   patt_format{'p1; cons{choice{'p3; 'p2}; 'p4}}
 
 dform patt_list_df2 : internal :: patt_format{patt_list[start:n, finish:n]{'p1}; 'p2} =
    patt_format{patt_list{'p1}; 'p2}
@@ -363,7 +363,7 @@ dform patt_done_df2 : internal :: patt_format{patt_done[start:n, finish:n]; 'e1}
    patt_format{patt_done; 'e1}
 
 dform patt_in_df1 : internal :: patt_format{patt_in{'e1}; cons{'p; cons{'e2; 'el}}} =
-   pushm[0] szone{'p} `" " "=" hspace szone{'e2} popm hspace "_in"
+   pushm[0] szone{'p} `" " "=" hspace 'e2 popm hspace "_in"
    szone hspace slot{'e1} ezone
 
 dform patt_in_df2 : internal :: patt_format{patt_in[start:n, finish:n]{'e1}; 'e2} =

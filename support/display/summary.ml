@@ -821,6 +821,27 @@ dform comment_df1 : mode[tex] :: comment{'t} =
 dform comment_df2 : mode["prl"] :: comment{'t} =
    prl_comment{'t}
 
+(*
+ * PRL Bindings
+ *)
+declare term_binding{'t;v.'t2['v]}
+declare opname_binding{'t;v.'t2['v]}
+declare bound_term{'t}
+declare bound_opname{'t}
+
+dform term_binding : internal :: term_binding{'t;v.'t2['v]} = 't2[bound_term{'t}]
+dform opname_binding : internal :: opname_binding{'t;v.'t2['v]} = 't2[bound_opname{'t}]
+
+dform bound_term : internal :: bound_term{'t} =
+   szone pushm[3] `"<<" hspace slot{'t} popm hspace `">>" ezone
+
+(*
+ * XXX TODO: the opname bindings are not used yet; once we start using them,
+ * we should have a better idea of how to display them.
+ *)
+dform bound_opname : internal :: bound_opname{'t} = 
+   `"opname_of_term" space bound_term{'t}
+
 (************************************************************************
  * ML INTERFACE                                                         *
  ************************************************************************)
