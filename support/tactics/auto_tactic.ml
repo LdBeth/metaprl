@@ -175,15 +175,6 @@ declare pair{'hyp;'concl}
 let mk_pair_term =
    mk_dep0_dep0_term (opname_of_term <<pair{'hyp;'concl}>>)
 
-let process_nth_hyp_resource_annotation name context_args term_args statement pre_tactic =
-   let assums, goal = unzip_mfunction statement in
-   let goal = TermMan.explode_sequent goal in
-      match context_args, term_args, assums, SeqHyp.to_list goal.sequent_hyps with
-         [| _ |], [], [], [ Context _; Hypothesis(_,t); Context _ ] ->
-            (t, SeqGoal.get goal.sequent_goals 0, fun i -> Tactic_type.Tactic.tactic_of_rule pre_tactic [| i |] [])
-       | _ ->
-            raise (Invalid_argument (sprintf "Auto_tactic.improve_nth_hyp: %s: is not an appropriate rule" name))
-
 let extract_nth_hyp_data =
    let err = RefineError ("extract_nth_hyp_data", StringError "nthHypT tactic doesn't have an entry for this hypothesis/conclusion combination") in
    let rec iterate i (c: (int -> tactic) lazy_lookup) _ =
@@ -209,6 +200,20 @@ let resource (term * term * (int -> tactic), int -> tactic) nth_hyp =
    }
 
 let nthHypT = argfunT (fun i p -> get_resource_arg p get_nth_hyp_resource i)
+
+let explode t =
+   let t = TermMan.explode_sequent t in
+      SeqHyp.to_list t.sequent_hyps, SeqGoal.to_list t.sequent_goals
+
+let process_nth_hyp_resource_annotation name context_args term_args statement pre_tactic =
+   let assums, goal = unzip_mfunction statement in
+      match context_args, term_args, List.map (fun (_, _, t) -> explode t) assums, explode goal with
+         [| _ |], [], [], ([ Context _; Hypothesis(_,t1); Context _ ], [t2]) ->
+            (t1, t2, fun i -> Tactic_type.Tactic.tactic_of_rule pre_tactic [| i |] [])
+       | [||], [], [ [Context _], [t1] ], ( [Context _], [t2]) ->
+            (t1, t2, fun i -> Tactic_type.Tactic.tactic_of_rule pre_tactic [||] [] thenT nthHypT i)
+       | _ ->
+            raise (Invalid_argument (sprintf "Auto_tactic.improve_nth_hyp: %s: is not an appropriate rule" name))
 
 (************************************************************************
  * IMPLEMENTATION - autoT                                               *
