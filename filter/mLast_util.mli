@@ -17,7 +17,9 @@ type 'a fold =
      fold_module_expr      : 'a -> MLast.module_expr -> 'a;
      fold_module_type      : 'a -> MLast.module_type -> 'a;
      fold_with_constr      : 'a -> MLast.with_constr -> 'a;
-     fold_class            : 'a -> MLast.class_decl -> 'a;
+     fold_class_type_infos : 'a -> MLast.class_type MLast.class_infos -> 'a;
+     fold_class_expr_infos : 'a -> MLast.class_expr MLast.class_infos -> 'a;
+     fold_class_expr       : 'a -> MLast.class_expr -> 'a;
      fold_class_field      : 'a -> MLast.class_field -> 'a;
      fold_class_type       : 'a -> MLast.class_type -> 'a;
      fold_class_type_field : 'a -> MLast.class_type_field -> 'a
@@ -34,8 +36,6 @@ val fold_str_item : 'a fold -> 'a -> MLast.str_item -> 'a
 val fold_module_expr : 'a fold -> 'a -> MLast.module_expr -> 'a
 val fold_module_type : 'a fold -> 'a -> MLast.module_type -> 'a
 val fold_with_constr : 'a fold -> 'a -> MLast.with_constr -> 'a
-val fold_class : 'a fold -> 'a -> MLast.class_decl -> 'a
-val fold_class_field : 'a fold -> 'a -> MLast.class_field -> 'a
 
 (*
  * -*-

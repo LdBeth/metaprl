@@ -109,7 +109,7 @@ struct
       op1 == op2 & list_mem_eq bterms1 bterms2
 
    let rec compare_hyps hyp1 hyp2 i =
-      (i<0) ||
+      (i < 0) ||
       ((match (ToRefiner.Term.SeqHyp.get hyp1 i), (ToRefiner.Term.SeqHyp.get hyp2 i) with
            ToRefiner.TermType.Hypothesis (v1,t1),  ToRefiner.TermType.Hypothesis (v2,t2)   -> v1 = v2 && t1 == t2
          | ToRefiner.TermType.Context    (v1,ts1), ToRefiner.TermType.Context    (v2, ts2) -> v1 = v2 && list_mem_eq ts1 ts2

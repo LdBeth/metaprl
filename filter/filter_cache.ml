@@ -175,7 +175,7 @@ let comment _ _ t = t
 let term_of_expr = Filter_ocaml.term_of_expr [] comment
 let term_of_type = Filter_ocaml.term_of_type comment
 let term_of_sig_item = Filter_ocaml.term_of_sig_item comment
-let term_of_str_item = Filter_ocaml.term_of_str_item comment
+let term_of_str_item = Filter_ocaml.term_of_str_item [] comment
 
 (*
  * Marshaling proofs.

@@ -23,7 +23,6 @@ let _ =
    if !debug_load then
       eprintf "Loading Filter_ocaml%t" eflush
 
-
 (************************************************************************
  * TYPES                                                                *
  ************************************************************************)
@@ -211,6 +210,8 @@ let patt_record_proj_op         = mk_ocaml_op "patt_record_proj"
 let patt_record_end_op          = mk_ocaml_op "patt_record_end"
 let patt_tuple_arg_op 		= mk_ocaml_op "patt_tuple_arg"
 let patt_tuple_end_op 		= mk_ocaml_op "patt_tuple_end"
+let patt_array_arg_op 		= mk_ocaml_op "patt_array_arg"
+let patt_array_end_op 		= mk_ocaml_op "patt_array_end"
 let patt_as_arg_op 		= mk_ocaml_op "patt_as_arg"
 let patt_as_end_op 		= mk_ocaml_op "patt_as_end"
 let patt_choice_arg_op 		= mk_ocaml_op "patt_choice_arg"
@@ -293,8 +294,10 @@ let str_table  = Hashtbl.create 17
 let mt_able    = Hashtbl.create 17
 let me_table   = Hashtbl.create 17
 let wc_table   = Hashtbl.create 5
-let ctf_table  = Hashtbl.create 17
+let ct_table   = Hashtbl.create 5
+let ce_table   = Hashtbl.create 5
 let cf_table   = Hashtbl.create 17
+let ctf_table  = Hashtbl.create 17
 
 (*
  * Expressions.
@@ -303,6 +306,11 @@ let rec dest_proj_expr t =
    let loc = dest_loc t in
    let e1, e2 = two_subterms t in
       <:expr< $dest_expr e1$ . $dest_expr e2$ >>
+
+and dest_anti_expr t =
+   let loc = dest_loc t in
+   let e = one_subterm "dest_anti_expr" t in
+      <:expr< $anti: dest_expr e$ >>
 
 and dest_apply_expr t =
    let loc = dest_loc t in
@@ -333,7 +341,10 @@ and dest_char_expr t =
 and dest_coerce_class_expr t =
    let loc = dest_loc t in
    let e, t = two_subterms t in
+(*
       <:expr< ( $dest_expr e$ :> $dest_type t$ ) >>
+*)
+      ExCoe (loc, dest_expr e, dest_type t)
 
 and dest_float_expr t =
    let loc = dest_loc t in
@@ -365,8 +376,7 @@ and dest_int_expr t =
    let loc, i = dest_loc_int t in
       <:expr< $int:i$ >>
 
-and dest_let_expr t =
-   let loc = dest_loc t in
+and dest_let t =
    let rec dest t =
       if Opname.eq (opname_of_term t) patt_in_op then
          [], one_subterm "dest_let_expr" t
@@ -381,25 +391,41 @@ and dest_let_expr t =
       if List.length pl <> List.length el then
          raise (Failure "Filter_ocaml.dest_let_expr: pattern count mismatch")
       else
-         <:expr< let $rec:false$ $list: List.combine pl el$ in $dest_expr e$ >>
+         List.combine pl el, e
 
-and dest_fix_expr t =
+and dest_let_expr t =
    let loc = dest_loc t in
+   let pel, e = dest_let t in
+      <:expr< let $rec:false$ $list: pel$ in $dest_expr e$ >>
+
+and dest_fix t =
    let rec dest t =
       if Opname.eq (opname_of_term t) patt_in_op then
-         [], dest_expr (one_subterm "dest_fix_expr" t)
+         [], one_subterm "dest_fix_expr" t
       else
          let p, t = dest_patt t in
          let e, t = two_subterms t in
          let pel, e' = dest t in
             (p, dest_expr e) :: pel, e'
    in
-   let pel, e = dest (one_subterm "dest_fix_expr" t) in
-      <:expr< let $rec:true$ $list: pel$ in $e$ >>
+      dest (one_subterm "dest_fix_expr" t)
+
+and dest_fix_expr t =
+   let loc = dest_loc t in
+   let pel, e = dest_fix t in
+      <:expr< let $rec:true$ $list: pel$ in $dest_expr e$ >>
 
 and dest_lid_expr t =
    let loc = dest_loc t in
       <:expr< $lid:dest_var t$ >>
+
+and dest_local_module_expr t =
+   let loc = dest_loc t in
+   let s, me, e = three_subterms t in
+      ExLmd (loc,
+             dest_string s,
+             dest_me me,
+             dest_expr e)
 
 and dest_match_expr t =
    let loc = dest_loc t in
@@ -414,7 +440,10 @@ and dest_new_expr t =
 and dest_stream_expr t =
    let loc = dest_loc t in
    let sel = subterms_of_term t in
+(*
       <:expr< {< $list: List.map dest_se sel$ >} >>
+*)
+      ExOvr (loc, List.map dest_se sel)
 
 and dest_record_expr t =
    let loc = dest_loc t in
@@ -430,7 +459,10 @@ and dest_seq_expr t =
 and dest_select_expr t =
    let loc = dest_loc t in
    let e, s = two_subterms t in
+(*
       <:expr< $dest_expr e$ # $dest_string s$ >>
+*)
+      ExSnd (loc, dest_expr e, dest_string s)
 
 and dest_string_subscript_expr t =
    let loc = dest_loc t in
@@ -566,6 +598,19 @@ and dest_tuple_patt t =
    let pl, t = dest_tuple (one_subterm "dest_tuple_patt" t) in
       <:patt< ( $list: pl$ ) >>, t
 
+and dest_array_patt t =
+   let loc = dest_loc t in
+   let rec dest_array t =
+      if Opname.eq (opname_of_term t) patt_array_end_op then
+         [], one_subterm "dest_array_patt" t
+      else
+         let p, t = dest_patt (one_subterm "dest_array_patt" t) in
+         let l, t = dest_array t in
+            p :: l, t
+   in
+   let pl, t = dest_array (one_subterm "dest_array_patt" t) in
+      <:patt< ( $list: pl$ ) >>, t
+
 and dest_cast_patt t =
    let loc = dest_loc t in
    let p, t = two_subterms t in
@@ -616,7 +661,10 @@ and dest_fun_type t =
 
 and dest_class_id_type t =
    let loc = dest_loc t in
+(*
       <:ctyp< # $dest_type t$ >>
+*)
+      TyCls (loc, List.map dest_string (dest_xlist t))
 
 and dest_lid_type t =
    let loc = dest_loc t in
@@ -663,10 +711,21 @@ and dest_uid_type t =
 (*
  * Signatures.
  *)
-and dest_class_sig t =
+and dest_class_sig_sig t =
    let loc = dest_loc t in
    let ctl = subterms_of_term t in
+(*
       <:sig_item< class $list: List.map dest_class_type ctl$ >>
+*)
+      SgCls (loc, List.map dest_class_type_infos ctl)
+
+and dest_class_sig_type t =
+   let loc = dest_loc t in
+   let ctl = subterms_of_term t in
+(*
+      <:sig_item< class $list: List.map dest_class_type ctl$ >>
+*)
+      SgClt (loc, List.map dest_class_type_infos ctl)
 
 and dest_subsig_sig t =
    let loc = dest_loc t in
@@ -719,10 +778,21 @@ and dest_value_sig t =
 (*
  * Structure items.
  *)
-and dest_class_str t =
+and dest_class_str_str t =
    let loc = dest_loc t in
    let cdl = subterms_of_term t in
+(*
       <:str_item< class $list: List.map dest_class cdl$ >>
+*)
+      StCls (loc, List.map dest_class_expr_infos cdl)
+
+and dest_class_str_type t =
+   let loc = dest_loc t in
+   let cdl = subterms_of_term t in
+(*
+      <:str_item< class $list: List.map dest_class cdl$ >>
+*)
+      StClt (loc, List.map dest_class_type_infos cdl)
 
 and dest_substruct_str t =
    let loc = dest_loc t in
@@ -890,99 +960,142 @@ and dest_uid_me t =
 (*
  * Class type.
  *)
-and dest_class_type t =
+and dest_class_type_infos t =
    let loc = dest_loc t in
       match subterms_of_term t with
-         [s; sl; tl1; so; ctfl; b1; b2] ->
-             { ctLoc = loc;
-               ctNam = dest_string s;
-               ctPrm = List.map dest_string (subterms_of_term sl);
-               ctArg = List.map dest_type (subterms_of_term tl1);
-               ctTyc = dest_string_opt so;
-               ctFld = List.map dest_ctf (subterms_of_term ctfl);
-               ctVir = dest_bool b1;
-               ctCls = dest_bool b2
-             }
+         [s; sl; b; t] ->
+            { ciLoc = loc;
+              ciNam = dest_string s;
+              ciPrm = loc, List.map dest_string (dest_xlist sl);
+              ciVir = dest_bool b;
+              ciExp = dest_ct t
+            }
        | _ ->
-             raise (FormatError ("class type format not recognized", t))
+            raise (FormatError ("class type format not recognized", t))
+
+and dest_class_expr_infos t =
+   let loc = dest_loc t in
+      match subterms_of_term t with
+         [s; sl; b; t] ->
+            { ciLoc = loc;
+              ciNam = dest_string s;
+              ciPrm = loc, List.map dest_string (dest_xlist sl);
+              ciVir = dest_bool b;
+              ciExp = dest_ce t
+            }
+       | _ ->
+            raise (FormatError ("class type format not recognized", t))
+
+and dest_con_ct t =
+   let loc = dest_loc t in
+   let sl, tl = two_subterms t in
+      CtCon (loc,
+             List.map dest_string (dest_xlist sl),
+             List.map dest_type (dest_xlist tl))
+
+and dest_fun_ct t =
+   let loc = dest_loc t in
+   let t, ct = two_subterms t in
+      CtFun (loc, dest_type t, dest_ct ct)
+
+and dest_sig_ct t =
+   let loc = dest_loc t in
+   let t, ctfl = two_subterms t in
+      CtSig (loc, dest_type t, List.map dest_ctf (dest_xlist ctfl))
+
+and dest_app_ce t =
+   let loc = dest_loc t in
+   let ce, el = two_subterms t in
+      CeApp (loc, dest_ce ce, List.map dest_expr (dest_xlist el))
+
+and dest_con_ce t =
+   let loc = dest_loc t in
+   let sl, tl = two_subterms t in
+      CeCon (loc,
+             List.map dest_string (dest_xlist sl),
+             List.map dest_type (dest_xlist tl))
+
+and dest_fun_ce t =
+   let loc = dest_loc t in
+   let p, ce = dest_patt (one_subterm "dest_fun_ce" t) in
+      CeFun (loc, p, dest_ce ce)
+
+and dest_let_ce t =
+   let loc = dest_loc t in
+   let b, t = two_subterms t in
+   let b = dest_bool b in
+   let pel, ce =
+      if b then
+         dest_fix t
+      else
+         dest_let t
+   in
+      CeLet (loc, b, pel, dest_ce ce)
+
+and dest_str_ce t =
+   let loc = dest_loc t in
+   let p, cfl = dest_patt (one_subterm "dest_str_ce" t) in
+      CeStr (loc, p, List.map dest_cf (dest_xlist cfl))
+
+and dest_tyc_ce t =
+   let loc = dest_loc t in
+   let ce, ct = two_subterms t in
+      CeTyc (loc, dest_ce ce, dest_ct ct)
 
 and dest_ctr_ctf t =
    let loc = dest_loc t in
    let s, t = two_subterms t in
-      CtCtr (loc, dest_string s, dest_type t)
+      CiCtr (loc, dest_type s, dest_type t)
 
 and dest_inh_ctf t =
    let loc = dest_loc t in
    let t = one_subterm "dest_inh_ctf" t in
-      CtInh (loc, dest_type t)
+      CiInh (loc, dest_ct t)
 
 and dest_mth_ctf t =
-   raise (Failure "dest_mth_ctf: not implemented")
-(* BUG: fix this function.  CtMth takes four arguments.
    let loc = dest_loc t in
-   let s, t = two_subterms t in
-      CtMth (loc, dest_string s, dest_type t) *)
+   let s, b, t = three_subterms t in
+      CiMth (loc, dest_string s, dest_bool b, dest_type t)
 
 and dest_val_ctf t =
    let loc = dest_loc t in
-   let s, b1, b2, ot = four_subterms t in
-      CtVal (loc, dest_string s, dest_bool b1, dest_bool b2, dest_type_opt ot)
+   let s, b, t = three_subterms t in
+      CiVal (loc, dest_string s, dest_bool b, dest_type t)
 
 and dest_vir_ctf t =
-   raise (Failure "dest_vir_ctf: not implemented")
-(* BUG: fix this function.  CtVir takes four arguments.
    let loc = dest_loc t in
-   let s, t = two_subterms t in
-      CtVir (loc, dest_string s, dest_type t) *)
-
-(*
- * Classes.
- *)
-and dest_class t =
-   let loc = dest_loc t in
-      match subterms_of_term t with
-         [s; sl1; pl1; so1; so2; cfl; b1; b2] ->
-             { cdLoc = loc;
-               cdNam = dest_string s;
-               cdPrm = List.map dest_string (dest_xlist sl1);
-               cdArg = dest_patt_list pl1;
-               cdSlf = dest_string_opt so1;
-               cdTyc = dest_string_opt so2;
-               cdFld = List.map dest_cf (dest_xlist cfl);
-               cdVir = dest_bool b1;
-               cdCls = dest_bool b2
-             }
-       | _ ->
-             raise (FormatError ("class format not recognized", t))
+   let s, b, t = three_subterms t in
+      CiVir (loc, dest_string s, dest_bool b, dest_type t)
 
 and dest_ctr_cf t =
    let loc = dest_loc t in
    let s, t = two_subterms t in
-      CfCtr (loc, dest_string s, dest_type t)
+      CfCtr (loc, dest_type s, dest_type t)
 
 and dest_inh_cf t =
    let loc = dest_loc t in
-   let t, e, so = three_subterms t in
-      CfInh (loc, dest_type t, dest_expr e, dest_string_opt so)
+   let ce, so = two_subterms t in
+      CfInh (loc, dest_ce ce, dest_string_opt so)
+
+and dest_ini_cf t =
+   let loc = dest_loc t in
+   let e = one_subterm "dest_ini_cf" t in
+      CfIni (loc, dest_expr e)
 
 and dest_mth_cf t =
-   raise (Failure "dest_mth_cf: not implemented")
-(* BUG: fix this function.  CtMth takes four arguments.
    let loc = dest_loc t in
-   let s, e = two_subterms t in
-      CfMth (loc, dest_string s, dest_expr e) *)
+   let s, b, e = three_subterms t in
+      CfMth (loc, dest_string s, dest_bool b, dest_expr e)
 
 and dest_val_cf t =
    let loc = dest_loc t in
-   let s, b1, b2, eo = four_subterms t in
-      CfVal (loc, dest_string s, dest_bool b1, dest_bool b2, dest_expr_opt eo)
+   let s, b, e = three_subterms t in
+      CfVal (loc, dest_string s, dest_bool b, dest_expr e)
 
 and dest_vir_cf t =
-   raise (Failure "dest_vir_cf: not implemented")
-(* BUG: fix this function.  CtVir takes four arguments.
    let loc = dest_loc t in
-   let s, t = two_subterms t in
-      CfVir (loc, dest_string s, dest_type t)  *)
+   let s, b, t = three_subterms t in
+      CfVir (loc, dest_string s, dest_bool b, dest_type t)
 
 (*
  * Utilities.
@@ -1037,8 +1150,10 @@ and dest_str  t = dest_tbl "str"  str_table  t
 and dest_mt   t = dest_tbl "mt"   mt_able    t
 and dest_me   t = dest_tbl "me"   me_table   t
 and dest_wc   t = dest_tbl "wc"   wc_table   t
-and dest_ctf  t = dest_tbl "ctf"  ctf_table  t
+and dest_ct   t = dest_tbl "ct"   ct_table   t
+and dest_ce   t = dest_tbl "ce"   ce_table   t
 and dest_cf   t = dest_tbl "cf"   cf_table   t
+and dest_ctf  t = dest_tbl "ctf"  ctf_table  t
 
 and add_expr name f = add_tbl expr_table name f
 and add_patt name f = add_tbl patt_table name f
@@ -1048,8 +1163,10 @@ and add_str  name f = add_tbl str_table  name f
 and add_mt   name f = add_tbl mt_able    name f
 and add_me   name f = add_tbl me_table   name f
 and add_wc   name f = add_tbl wc_table   name f
-and add_ctf  name f = add_tbl ctf_table  name f
+and add_ct   name f = add_tbl ct_table   name f
+and add_ce   name f = add_tbl ce_table   name f
 and add_cf   name f = add_tbl cf_table   name f
+and add_ctf  name f = add_tbl ctf_table  name f
 
 (************************************************************************
  * OPERATOR NAMES                                                       *
@@ -1060,9 +1177,11 @@ let expr_float_op               = add_expr "float"              dest_float_expr
 let expr_int_op                 = add_expr "int"                dest_int_expr
 let expr_string_op              = add_expr "string"             dest_string_expr
 let expr_lid_op                 = add_expr "lid"                dest_lid_expr
+let expr_local_module_op        = add_expr "local_module"       dest_local_module_expr
 let expr_uid_op                 = add_expr "uid"                dest_uid_expr
 
 let expr_proj_op                = add_expr "proj"               dest_proj_expr
+let expr_anti_op                = add_expr "anti"               dest_anti_expr
 let expr_apply_op               = add_expr "apply"              dest_apply_expr
 let expr_array_subscript_op     = add_expr "array_subscript"    dest_array_subscript_expr
 let expr_array_op               = add_expr "array"              dest_array_expr
@@ -1099,6 +1218,7 @@ let patt_choice_op              = add_patt "patt_choice"        dest_choice_patt
 let patt_range_op               = add_patt "patt_range"         dest_range_patt
 let patt_record_op              = add_patt "patt_record"        dest_record_patt
 let patt_tuple_op               = add_patt "patt_tuple"         dest_tuple_patt
+let patt_array_op               = add_patt "patt_array"         dest_array_patt
 let patt_cast_op                = add_patt "patt_cast"          dest_cast_patt
 
 let type_lid_op                 = add_type "type_lid"           dest_lid_type
@@ -1117,7 +1237,8 @@ let type_record_op              = add_type "type_record"        dest_record_type
 let type_list_op                = add_type "type_list"          dest_list_type
 let type_prod_op                = add_type "type_prod"          dest_prod_type
 
-let sig_class_op		= add_sig "sig_class"           dest_class_sig
+let sig_class_sig_op		= add_sig "sig_class_sig"       dest_class_sig_sig
+let sig_class_type_op		= add_sig "sig_class_type"      dest_class_sig_type
 let sig_subsig_op               = add_sig "sig_subsig"          dest_subsig_sig
 let sig_exception_op            = add_sig "sig_exception"       dest_exception_sig
 let sig_external_op             = add_sig "sig_external"        dest_external_sig
@@ -1128,7 +1249,8 @@ let sig_open_op                 = add_sig "sig_open"            dest_open_sig
 let sig_type_op                 = add_sig "sig_type"            dest_type_sig
 let sig_value_op                = add_sig "sig_value"           dest_value_sig
 
-let str_class_op                = add_str "str_class"           dest_class_str
+let str_class_str_op            = add_str "str_class_str"       dest_class_str_str
+let str_class_type_op           = add_str "str_class_type"      dest_class_str_type
 let str_substruct_op            = add_str "str_substruct"       dest_substruct_str
 let str_exception_op            = add_str "str_exception"       dest_exception_str
 let str_expr_op                 = add_str "str_expr"            dest_expr_str
@@ -1159,7 +1281,16 @@ let me_functor_op               = add_me "me_functor"           dest_functor_me
 let me_struct_op                = add_me "me_struct"            dest_struct_me
 let me_cast_op                  = add_me "me_cast"              dest_cast_me
 
-let class_type_op		= mk_ocaml_op "class_type"
+let ct_con_op                   = add_ct "class_type_con"       dest_con_ct
+let ct_fun_op                   = add_ct "class_type_fun"       dest_fun_ct
+let ct_sig_op                   = add_ct "class_type_sig"       dest_sig_ct
+
+let ce_app_op                   = add_ce "class_expr_app"       dest_app_ce
+let ce_con_op                   = add_ce "class_expr_con"       dest_con_ce
+let ce_fun_op                   = add_ce "class_expr_fun"       dest_fun_ce
+let ce_let_op                   = add_ce "class_expr_let"       dest_let_ce
+let ce_str_op                   = add_ce "class_expr_str"       dest_str_ce
+let ce_tyc_op                   = add_ce "class_expr_tyc"       dest_tyc_ce
 
 let ctf_ctr_op                  = add_ctf "class_type_ctr"      dest_ctr_ctf
 let ctf_inh_op                  = add_ctf "class_type_inh"      dest_inh_ctf
@@ -1171,6 +1302,7 @@ let class_op			= mk_ocaml_op "class"
 
 let cf_ctr_op                   = add_cf "class_ctr"            dest_ctr_cf
 let cf_inh_op                   = add_cf "class_inh"            dest_inh_cf
+let cf_ini_op                   = add_cf "class_ini"            dest_ini_cf
 let cf_mth_op                   = add_cf "class_mth"            dest_mth_cf
 let cf_val_op                   = add_cf "class_val"            dest_val_cf
 let cf_vir_op                   = add_cf "class_vir"            dest_vir_cf
@@ -1184,6 +1316,9 @@ let st_op                       = mk_ocaml_op "st"
 let sbt_op                      = mk_ocaml_op "sbt"
 let stl_op                      = mk_ocaml_op "stl"
 let sslt_op                     = mk_ocaml_op "sslt"
+
+let class_type_infos_op         = mk_ocaml_op "class_type_infos"
+let class_expr_infos_op         = mk_ocaml_op "class_expr_infos"
 
 (************************************************************************
  * MLAST -> TERM                                                        *
@@ -1315,6 +1450,8 @@ let rec mk_expr vars comment expr =
       match expr with
          (<:expr< $e1$ . $e2$ >>) ->
             mk_simple_term expr_proj_op loc [mk_expr vars comment e1; mk_expr vars comment e2]
+       | (<:expr< $anti: e$ >>) ->
+            mk_simple_term expr_anti_op loc [mk_expr vars comment e]
        | (<:expr< $e1$ $e2$ >>) ->
             mk_simple_term expr_apply_op loc [mk_expr vars comment e1; mk_expr vars comment e2]
        | (<:expr< $e1$ .( $e2$ ) >>) ->
@@ -1325,7 +1462,10 @@ let rec mk_expr vars comment expr =
             mk_simple_term expr_assign_op loc [mk_expr vars comment e1; mk_expr vars comment e2]
        | (<:expr< $chr:c$ >>) ->
             mk_loc_string expr_char_op loc (String.make 1 c)
+(*
        | (<:expr< ( $e$ :> $t$ ) >>) ->
+ *)
+       | ExCoe (_, e, t) ->
             mk_simple_term expr_coerce_class_op loc [mk_expr vars comment e; mk_type comment t]
        | (<:expr< $flo:s$ >>) ->
             mk_loc_string expr_float_op loc s
@@ -1349,17 +1489,34 @@ let rec mk_expr vars comment expr =
                mk_let vars comment loc pel e
        | (<:expr< $lid:s$ >>) ->
             mk_var expr_lid_op vars loc s
+       | ExLmd (_, s, me, e) ->
+            mk_simple_term expr_local_module_op loc [mk_string_term expr_local_module_op s;
+                                                     mk_module_expr vars comment me;
+                                                     mk_expr vars comment e]
        | (<:expr< match $e$ with [ $list:pwel$ ] >>) ->
             mk_match vars comment loc pwel e
+(*
        | (<:expr< new $e$ >>) ->
-            mk_simple_term expr_new_op loc [mk_expr vars comment e]
+*)
+       | ExNew (_, sl) ->
+            mk_simple_term expr_new_op loc [mk_xlist_term (List.map (mk_string expr_new_op) sl)]
+(*
        | (<:expr< {< $list:sel$ >} >>) ->
+*)
+       | ExOvr (_, sel) ->
             mk_simple_term expr_stream_op loc (List.map (mk_se vars comment) sel)
+(*
        | (<:expr< { $list:eel$ } >>) ->
-            mk_simple_term expr_record_op loc [mk_xlist_term (List.map (mk_ee vars comment) eel)]
+*)
+       | ExRec (_, eel, eo) ->
+            mk_simple_term expr_record_op loc [mk_xlist_term (List.map (mk_ee vars comment) eel);
+                                               mk_expr_opt vars comment eo]
        | (<:expr< do $list:el$ return $e$ >>) ->
             mk_simple_term expr_seq_op loc [mk_xlist_term (List.map (mk_expr vars comment) el @ [mk_expr vars comment e])]
+(*
        | (<:expr< $e$ # $i$ >>) ->
+*)
+       | ExSnd (_, e, i) ->
             mk_simple_term expr_select_op loc [mk_expr vars comment e; mk_string expr_string_op i]
        | (<:expr< $e1$ .[ $e2$ ] >>) ->
             mk_simple_term expr_string_subscript_op loc [mk_expr vars comment e1; mk_expr vars comment e2]
@@ -1375,8 +1532,6 @@ let rec mk_expr vars comment expr =
             mk_var expr_uid_op vars loc s
        | (<:expr< while $e$ do $list:el$ done >>) ->
             mk_simple_term expr_while_op loc [mk_expr vars comment e; mk_list_term (List.map (mk_expr vars comment) el)]
-       | MLast.ExAnt (_, e) ->
-            raise_with_loc loc (Failure "Filter_ocaml.mk_expr vars: encountered an ExAnt")
    in
       comment ExprTerm loc term
 
@@ -1392,6 +1547,8 @@ and mk_patt vars comment patt tailf =
             mk_simple_term patt_wildcard_op loc [tailf vars]
        | (<:patt< $p1$ $p2$ >>) ->
             mk_patt_triple vars comment loc patt_apply_op patt_apply_arg_op patt_apply_end_op p1 p2 tailf
+       | (<:patt< [| $list:pl$ |] >>) ->
+            mk_patt_list vars comment loc patt_array_op patt_array_arg_op patt_array_end_op pl tailf
        | (<:patt< $chr:c$ >>) ->
             mk_loc_string_term patt_char_op loc (String.make 1 c) (tailf vars)
        | (<:patt< $int:s$ >>) ->
@@ -1413,7 +1570,7 @@ and mk_patt vars comment patt tailf =
             mk_simple_term patt_cast_op loc [mk_patt vars comment p tailf; mk_type comment t']
        | (<:patt< $uid:s$ >>) ->
             mk_var_term patt_uid_op vars loc s (tailf vars)
-       | MLast.PaAnt (_, p) ->
+       | (<:patt< $anti: p$ >>) ->
             raise_with_loc loc (Failure "Filter_ocaml:mk_patt: encountered PaAnt")
    in
       comment PattTerm loc term
@@ -1468,8 +1625,11 @@ and mk_type comment t =
             mk_simple_term type_apply_op loc [mk_type comment t1; mk_type comment t2]
        | (<:ctyp< $t1$ -> $t2$ >>) ->
             mk_simple_term type_fun_op loc [mk_type comment t1; mk_type comment t2]
+(*
        | (<:ctyp< # $i$ >>) ->
-            mk_simple_term type_class_id_op loc [mk_type comment i]
+*)
+       | TyCls (_, i) ->
+            mk_simple_term type_class_id_op loc [mk_xlist_term (List.map (mk_string type_class_id_op) i)]
        | (<:ctyp< $lid:s$ >>) ->
             mk_var type_lid_op [] loc s
        | (<:ctyp< '$s$ >>) ->
@@ -1494,8 +1654,13 @@ and mk_sig_item comment si =
    let loc = loc_of_sig_item si in
    let term =
       match si with
+(*
          (<:sig_item< class $list:ctl$ >>) ->
-            mk_simple_term sig_class_op loc (List.map (mk_class_type comment) ctl)
+*)
+         SgCls (_, ctl) ->
+            mk_simple_term sig_class_sig_op loc (List.map (mk_class_type_infos comment) ctl)
+       | SgClt (_, ctl) ->
+            mk_simple_term sig_class_type_op loc (List.map (mk_class_type_infos comment) ctl)
        | (<:sig_item< declare $list:sil$ end >>) ->
             mk_simple_term sig_subsig_op loc (List.map (mk_sig_item comment) sil)
        | (<:sig_item< exception $s$ of $list:tl$ >>) ->
@@ -1517,14 +1682,19 @@ and mk_sig_item comment si =
    in
       comment SigItemTerm loc term
 
-and mk_str_item comment si =
+and mk_str_item vars comment si =
    let loc = loc_of_str_item si in
    let term =
       match si with
+(*
          (<:str_item< class $list:cdl$ >>) ->
-            mk_simple_term str_class_op loc (List.map (mk_class comment) cdl)
+*)
+         StCls (_, cdl) ->
+            mk_simple_term str_class_str_op loc (List.map (mk_class_expr_infos vars comment) cdl)
+       | StClt (_, cdl) ->
+            mk_simple_term str_class_type_op loc (List.map (mk_class_type_infos comment) cdl)
        | (<:str_item< declare $list:stl$ end >>) ->
-            mk_simple_term str_substruct_op loc (List.map (mk_str_item comment) stl)
+            mk_simple_term str_substruct_op loc (List.map (mk_str_item vars comment) stl)
        | (<:str_item< exception $s$ of $list:tl$ >>) ->
             mk_simple_named_term str_exception_op loc s [mk_xlist_term (List.map (mk_type comment) tl)]
        | (<:str_item< $exp:e$ >>) ->
@@ -1532,7 +1702,7 @@ and mk_str_item comment si =
        | (<:str_item< external $s$ : $t$ = $list:sl$ >>) ->
             mk_simple_named_term str_external_op loc s (mk_type comment t :: List.map mk_simple_string sl)
        | (<:str_item< module $s$ = $me$ >>) ->
-            mk_simple_named_term str_module_op loc s [mk_module_expr comment me]
+            mk_simple_named_term str_module_op loc s [mk_module_expr vars comment me]
        | (<:str_item< module type $s$ = $mt$ >>) ->
             mk_simple_named_term str_module_type_op loc s [mk_module_type comment mt]
        | (<:str_item< open $sl$ >>) ->
@@ -1580,107 +1750,146 @@ and mk_wc comment = function
       let sl1' = mk_list_term (List.map mk_simple_string sl1) in
          comment WithClauseTerm loc (mk_simple_term wc_module_op loc [sl1'; mk_module_type comment mt])
 
-and mk_module_expr comment me =
+and mk_module_expr vars comment me =
    let loc = loc_of_module_expr me in
    let term =
       match me with
          (<:module_expr< $me1$ . $me2$ >>) ->
-            mk_simple_term me_proj_op loc [mk_module_expr comment me1; mk_module_expr comment me2]
+            mk_simple_term me_proj_op loc [mk_module_expr vars comment me1;
+                                           mk_module_expr vars comment me2]
        | (<:module_expr< $me1$ $me2$ >>) ->
-            mk_simple_term me_apply_op loc [mk_module_expr comment me1; mk_module_expr comment me2]
+            mk_simple_term me_apply_op loc [mk_module_expr vars comment me1;
+                                            mk_module_expr vars comment me2]
        | (<:module_expr< functor ( $s$ : $mt$ ) -> $me$ >>) ->
             let op_loc = mk_op_loc me_functor_op loc in
-               mk_dep0_dep1_any_term op_loc s (mk_module_type comment mt) (mk_module_expr comment me)
+               mk_dep0_dep1_any_term op_loc s (mk_module_type comment mt) (mk_module_expr vars comment me)
 (*
        | (<:module_expr< $lid:i$ >>) ->
             mk_var me_lid_op loc i
 *)
        | (<:module_expr< struct $list:sil$ end >>) ->
-            mk_simple_term me_struct_op loc (List.map (mk_str_item comment) sil)
+            mk_simple_term me_struct_op loc (List.map (mk_str_item vars comment) sil)
        | (<:module_expr< ( $me$ : $mt$) >>) ->
-            mk_simple_term me_cast_op loc [mk_module_expr comment me; mk_module_type comment mt]
+            mk_simple_term me_cast_op loc [mk_module_expr vars comment me;
+                                           mk_module_type comment mt]
        | (<:module_expr< $uid:i$ >>) ->
             mk_var me_uid_op [] loc i
    in
       comment ModuleExprTerm loc term
 
-and mk_class_type comment
-  { ctLoc = loc;
-    ctNam = s;
-    ctPrm = sl;
-    ctArg = tl;
-    ctTyc = so;
-    ctFld = ctfl;
-    ctVir = b1;
-    ctCls = b2 } =
-   mk_simple_named_term class_type_op (num_of_loc loc) s
-	[ mk_list_term (List.map mk_simple_string sl);
-	  mk_list_term (List.map (mk_type comment) tl);
-          mk_string_opt expr_string_op so;
- 	  mk_list_term (List.map (mk_ctf comment) ctfl);
-	  mk_bool b1;
-	  mk_bool b2]
+and mk_class_type_infos comment
+  { ciLoc = loc;
+    ciNam = s;
+    ciPrm = _, sl;
+    ciVir = b;
+    ciExp = t
+  } =
+   mk_simple_named_term class_type_infos_op (num_of_loc loc) s
+      [ mk_list_term (List.map mk_simple_string sl);
+        mk_bool b;
+        mk_ct comment t
+      ]
+
+and mk_class_expr_infos vars comment
+  { ciLoc = loc;
+    ciNam = s;
+    ciPrm = _, sl;
+    ciVir = b;
+    ciExp = t
+  } =
+   mk_simple_named_term class_type_infos_op (num_of_loc loc) s
+      [ mk_list_term (List.map mk_simple_string sl);
+        mk_bool b;
+        mk_ce vars comment t
+      ]
+
+and mk_ce vars comment = function
+   MLast.CeApp (loc, ce, el) ->
+      mk_simple_term ce_app_op (num_of_loc loc) (**)
+         [mk_ce vars comment ce;
+          mk_xlist_term (List.map (mk_expr vars comment) el)]
+ | MLast.CeCon (loc, sl, tl) ->
+      mk_simple_term ce_con_op (num_of_loc loc) (**)
+         [mk_xlist_term (List.map (mk_string ce_con_op) sl);
+          mk_xlist_term (List.map (mk_type comment) tl)]
+ | MLast.CeFun (loc, p, ce) ->
+      mk_simple_term ce_fun_op (num_of_loc loc) (**)
+         [mk_patt vars comment p (fun vars -> mk_ce vars comment ce)]
+ | MLast.CeLet (loc, b, pel, ce) ->
+      mk_simple_term ce_let_op (num_of_loc loc) (**)
+         [(if b then
+             mk_fix_tail
+          else
+             mk_let_tail) vars comment (num_of_loc loc) pel (fun vars -> mk_ce vars comment ce)]
+ | MLast.CeStr (loc, p, cfl) ->
+      mk_simple_term ce_str_op (num_of_loc loc) (**)
+         [mk_patt vars comment p (fun vars ->
+             mk_xlist_term (List.map (mk_cf vars comment) cfl))]
+ | MLast.CeTyc (loc, ce, ct) ->
+      mk_simple_term ce_tyc_op (num_of_loc loc) (**)
+         [mk_ce vars comment ce;
+          mk_ct comment ct]
+
+and mk_ct comment = function
+   CtCon (loc, sl, tl) ->
+      mk_simple_term ct_con_op (num_of_loc loc) (**)
+         [mk_xlist_term (List.map (mk_string ct_con_op) sl);
+          mk_xlist_term (List.map (mk_type comment) tl)]
+ | CtFun (loc, t, ct) ->
+      mk_simple_term ct_fun_op (num_of_loc loc) (**)
+         [mk_type comment t;
+          mk_ct comment ct]
+ | CtSig (loc, t, ctfl) ->
+      mk_simple_term ct_sig_op (num_of_loc loc) (**)
+         [mk_type comment t;
+          mk_xlist_term (List.map (mk_ctf comment) ctfl)]
 
 and mk_ctf comment = function
-   CtCtr (loc, s, t) ->
-      mk_simple_term ctf_ctr_op (num_of_loc loc) [mk_simple_string s; mk_type comment t]
- | CtInh (loc, t) ->
-      mk_simple_term ctf_inh_op (num_of_loc loc) [mk_type comment t]
- | CtMth (loc, s, b, t) ->
+   CiCtr (loc, s, t) ->
+      mk_simple_term ctf_ctr_op (num_of_loc loc) [mk_type comment s; mk_type comment t]
+ | CiInh (loc, ct) ->
+      mk_simple_term ctf_inh_op (num_of_loc loc) [mk_ct comment ct]
+ | CiMth (loc, s, b, t) ->
       mk_simple_term ctf_mth_op (num_of_loc loc) [mk_simple_string s; mk_bool b; mk_type comment t]
- | CtVal (loc, s, b1, b2, ot) ->
-      mk_simple_term ctf_val_op (num_of_loc loc) [mk_simple_string s; mk_bool b1; mk_bool b2; mk_type_opt comment ot]
- | CtVir (loc, s, b, t) ->
+ | CiVal (loc, s, b, t) ->
+      mk_simple_term ctf_val_op (num_of_loc loc) [mk_simple_string s; mk_bool b; mk_type comment t]
+ | CiVir (loc, s, b, t) ->
       mk_simple_term ctf_vir_op (num_of_loc loc) [mk_simple_string s; mk_bool b; mk_type comment t]
 
-and mk_class comment
-  { cdLoc = loc;
-    cdNam = s;
-    cdPrm = sl1;
-    cdArg = pl1;
-    cdSlf = so1;
-    cdTyc = so2;
-    cdFld = cfl;
-    cdVir = b1;
-    cdCls = b2 } =
-   let loc = num_of_loc loc in
-   let rec make pl vars =
-      match pl with
-         p::pl ->
-            mk_patt vars comment p (make pl)
-       | [] ->
-            mk_simple_term patt_done_op loc []
-   in
-   let term =
-      mk_simple_named_term class_op loc s
-           [ mk_list_term (List.map mk_simple_string sl1);
-             make pl1 [];
-             mk_string_opt expr_string_op so1;
-             mk_string_opt expr_string_op so2;
-             mk_list_term (List.map (mk_cf comment) cfl);
-             mk_bool b1;
-             mk_bool b2]
-   in
-      comment ClassTerm loc term
-
-and mk_cf comment cf =
+and mk_cf vars comment cf =
    let loc, term =
       match cf with
          CfCtr (loc, s, t) ->
-            let loc = (num_of_loc loc) in
-            loc, mk_simple_term cf_ctr_op loc [mk_simple_string s; mk_type comment t]
-       | CfInh (loc, t, e, so) ->
-            let loc = (num_of_loc loc) in
-            loc, mk_simple_term cf_inh_op loc [mk_type comment t; mk_expr [] comment e; mk_string_opt expr_string_op so]
+            let loc = num_of_loc loc in
+               loc, mk_simple_term cf_ctr_op loc (**)
+                      [mk_type comment s; mk_type comment t]
+       | CfInh (loc, ce, so) ->
+            let loc = num_of_loc loc in
+               loc, mk_simple_term cf_inh_op loc (**)
+                       [mk_ce vars comment ce;
+                        mk_string_opt expr_string_op so]
+       | CfIni (loc, e) ->
+            let loc = num_of_loc loc in
+               loc, mk_simple_term cf_ini_op loc (**)
+                       [mk_expr vars comment e]
        | CfMth (loc, s, b, e) ->
-            let loc = (num_of_loc loc) in
-            loc, mk_simple_term cf_mth_op loc [mk_simple_string s; mk_bool b; mk_expr [] comment e]
-       | CfVal (loc, s, b1, b2, eo) ->
-            let loc = (num_of_loc loc) in
-            loc, mk_simple_term cf_val_op loc [mk_simple_string s; mk_bool b1; mk_bool b2; mk_expr_opt [] comment eo]
+            let loc = num_of_loc loc in
+               loc, mk_simple_term cf_mth_op loc (**)
+                       [mk_simple_string s;
+                        mk_bool b;
+                        mk_expr vars comment e]
+       | CfVal (loc, s, b, e) ->
+            let loc = num_of_loc loc in
+               loc, mk_simple_term cf_val_op loc (**)
+                       [mk_simple_string s;
+                        mk_bool b;
+                        mk_expr vars comment e]
        | CfVir (loc, s, b, t) ->
-            let loc = (num_of_loc loc) in
-            loc, mk_simple_term cf_vir_op loc [mk_simple_string s; mk_bool b; mk_type comment t]
+            let loc = num_of_loc loc in
+               loc, mk_simple_term cf_vir_op loc (**)
+                       [mk_simple_string s;
+                        mk_bool b;
+                        mk_type comment t]
    in
       comment ClassFieldTerm loc term
 
@@ -1713,17 +1922,20 @@ and mk_fix_aux vars comment loc pel tailf =
    in
       make pl vars
 
-and mk_fix vars comment loc pel e =
+and mk_fix_tail vars comment loc pel tailf =
    let tailf vars =
-      mk_simple_term patt_in_op loc [mk_expr vars comment e]
+      mk_simple_term patt_in_op loc [tailf vars]
    in
       mk_simple_term expr_fix_op loc [mk_fix_aux vars comment loc pel tailf]
 
-and mk_let vars comment loc pel e =
+and mk_fix vars comment loc pel e =
+   mk_fix_tail vars comment loc pel (fun vars -> mk_expr vars comment e)
+
+and mk_let_tail vars comment loc pel tailf =
    let pl, el = List.split pel in
    let el = List.map (mk_expr vars comment) el in
    let tailf vars =
-      mk_simple_term patt_in_op loc [mk_expr vars comment e]
+      mk_simple_term patt_in_op loc [tailf vars]
    in
    let rec make pl vars =
       match pl with
@@ -1739,6 +1951,9 @@ and mk_let vars comment loc pel e =
          tailf vars
    in
       mk_simple_term expr_let_op loc [make pl vars; mk_xlist_term el]
+
+and mk_let vars comment loc pel e =
+   mk_let_tail vars comment loc pel (fun vars -> mk_expr vars comment e)
 
 and mk_str_fix comment loc pel =
    let tailf vars =
@@ -1834,7 +2049,12 @@ let sig_item_of_term = dest_sig
 let str_item_of_term = dest_str
 let module_type_of_term = dest_mt
 let module_expr_of_term = dest_me
-let class_of_term = dest_class
+let class_type_infos_of_term = dest_class_type_infos
+let class_expr_infos_of_term = dest_class_expr_infos
+let class_type_of_term = dest_ct
+let class_expr_of_term = dest_ce
+let class_field_of_term = dest_cf
+let class_type_field_of_term = dest_ctf
 
 (*
  * MLast to term.
@@ -1846,7 +2066,12 @@ let term_of_sig_item = mk_sig_item
 let term_of_str_item = mk_str_item
 let term_of_module_type = mk_module_type
 let term_of_module_expr = mk_module_expr
-let term_of_class = mk_class
+let term_of_class_type_infos = mk_class_type_infos
+let term_of_class_expr_infos = mk_class_expr_infos
+let term_of_class_type = mk_ct
+let term_of_class_expr = mk_ce
+let term_of_class_type_field = mk_ctf
+let term_of_class_field = mk_cf
 
 (*
  * -*-

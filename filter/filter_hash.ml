@@ -51,7 +51,10 @@ let rec hash_expr index = function
       hash_expr (hash_expr (hash index 0x0171ab0d) e1) e2
  | (<:expr< $chr:c$ >>) ->
       hash_char (hash index 0x776fd938) c
+(*
  | (<:expr< ( $e$ :> $t$ ) >>) ->
+*)
+ | MLast.ExCoe (_, e, t) ->
       hash_type (hash_expr (hash index 0x6a8d593f) e) t
  | (<:expr< $flo:s$ >>) ->
       hash_string (hash index 0x1b11445f) s
@@ -67,17 +70,31 @@ let rec hash_expr index = function
       List.fold_left hash_pe (hash_bool (hash_expr (hash index 0x328a80d8) e) b) pel
  | (<:expr< $lid:s$ >>) ->
       hash_string (hash index 0x089a8dc1) s
+ | MLast.ExLmd (_, s, me, e) ->
+      hash_string (hash_module_expr (hash_expr (hash index 0x3881be91) e) me) s
  | (<:expr< match $e$ with [ $list:pwel$ ] >>) ->
       List.fold_left hash_pwe (hash_expr (hash index 0x565460ab) e) pwel
+(*
  | (<:expr< new $e$ >>) ->
-      hash_expr (hash index 0x24e41e2d) e
+*)
+ | MLast.ExNew (_, sl) ->
+      List.fold_left hash_string (hash index 0x24e41e2d) sl
+(*
  | (<:expr< {< $list:sel$ >} >>) ->
+*)
+ | MLast.ExOvr (_, sel) ->
       List.fold_left hash_se (hash index 0x5e034524) sel
+(*
  | (<:expr< { $list:eel$ } >>) ->
-      List.fold_left hash_ee (hash index 0x3f143e45) eel
+*)
+ | MLast.ExRec (_, eel, eo) ->
+      List.fold_left hash_ee (hash_expr_opt (hash index 0x3f143e45) eo) eel
  | (<:expr< do $list:el$ return $e$ >>) ->
       List.fold_left hash_expr (hash_expr (hash index 0x1f9b5a49) e) el
+(*
  | (<:expr< $e$ # $i$ >>) ->
+*)
+ | MLast.ExSnd (_, e, i) ->
       hash_expr (hash_string (hash index 0x012df1d2) i) e
  | (<:expr< $e1$ .[ $e2$ ] >>) ->
       hash_expr (hash_expr (hash index 0x4d02cac0) e2) e1
@@ -99,12 +116,16 @@ let rec hash_expr index = function
 and hash_patt index = function
    (<:patt< $p1$ . $p2$ >>) ->
       hash_patt (hash_patt (hash index 0x3abd1a6d) p2) p1
+ | (<:patt< $anti: p$ >>) ->
+      hash_patt (hash index 0x734a34be) p
  | (<:patt< ( $p1$ as $p2$ ) >>) ->
       hash_patt (hash_patt (hash index 0x5ac10896) p2) p1
  | (<:patt< _ >>) ->
       hash index 0x7880eccb
  | (<:patt< $p1$ $p2$ >>) ->
       hash_patt (hash_patt (hash index 0x7a0d2d66) p2) p1
+ | (<:patt< [| $list:pl$ |] >>) ->
+      List.fold_left hash_patt (hash index 0x053ba831) pl
  | (<:patt< $chr:c$ >>) ->
       hash_char (hash index 0x00b259e4) c
  | (<:patt< $int:s$ >>) ->
@@ -125,8 +146,6 @@ and hash_patt index = function
       hash_patt (hash_type (hash index 0x08034ff2) t) p
  | (<:patt< $uid:s$ >>) ->
       hash_string (hash index 0x37911bc9) s
- | MLast.PaAnt (loc, p) ->
-      Stdpp.raise_with_loc loc (Failure "Filter_hash:hash_patt: encountered PaAnt")
 
 and hash_type index = function
    (<:ctyp< $t1$ . $t2$ >>) ->
@@ -139,7 +158,10 @@ and hash_type index = function
       hash_type (hash_type (hash index 0x4b2e0da1) t2) t1
  | (<:ctyp< $t1$ -> $t2$ >>) ->
       hash_type (hash_type (hash index 0x72b07603) t2) t1
+(*
  | (<:ctyp< # $i$ >>) ->
+*)
+ | MLast.TyCls (_, i) ->
       hash_string (hash index 0x0effbacf) i
  | (<:ctyp< $lid:s$ >>) ->
       hash_string (hash index 0x293152c5) s
@@ -159,15 +181,20 @@ and hash_type index = function
       hash_string (hash index 0x48872c13) s
 
 and hash_sig_item index = function
+(*
    (<:sig_item< class $list:cdl$ >>) ->
-      List.fold_left hash_class_type (hash index 0x0629e079) cdl
+*)
+   MLast.SgCls (_, ctl) ->
+      List.fold_left hash_class_type_infos (hash index 0x0629e079) ctl
+ | MLast.SgClt (_, ctl) ->
+      List.fold_left hash_class_type_infos (hash index 0x0627e079) ctl
  | (<:sig_item< declare $list:sil$ end >>) ->
       List.fold_left hash_sig_item index sil
  | (<:sig_item< exception $s$ of $list:tl$ >>) ->
       List.fold_left hash_type (hash_string (hash index 0x6fd24af2) s) tl
  | (<:sig_item< external $s$ : $t$ = $list:sl$ >>) ->
       List.fold_left hash_string (hash_type (hash_string (hash index 0x06b1c733) s) t) sl
- | SgInc (_, mt) ->
+ | MLast.SgInc (_, mt) ->
       hash_module_type (hash index 0x283bed1) mt
  | (<:sig_item< module $s$ : $mt$ >>) ->
       hash_module_type (hash (hash_string index s) 0x22e62741) mt
@@ -181,8 +208,13 @@ and hash_sig_item index = function
       hash_type (hash_string (hash index 0x2a8f655f) s) t
 
 and hash_str_item index = function
+(*
    (<:str_item< class $list:cdl$ >>) ->
-      List.fold_left hash_class (hash index 0x0629e079) cdl
+*)
+   MLast.StCls (_, cdl) ->
+      List.fold_left hash_class_expr_infos (hash index 0x0629e079) cdl
+ | MLast.StClt (_, cdl) ->
+      List.fold_left hash_class_type_infos (hash index 0x0627e079) cdl
  | (<:str_item< declare $list:stl$ end >>) ->
       List.fold_left hash_str_item index stl
  | (<:str_item< exception $s$ of $list:tl$ >>) ->
@@ -242,66 +274,80 @@ and hash_module_expr index = function
  | (<:module_expr< $uid:i$ >>) ->
       hash_string (hash index 0x62a4d984) i
 
-and hash_class index
-  { cdNam = s;
-    cdPrm = sl1;
-    cdArg = pl1;
-    cdSlf = so1;
-    cdTyc = so2;
-    cdFld = cfl;
-    cdVir = b1;
-    cdCls = b2 } =
-   let index = hash index 0x2050c242 in
-   let index = hash_string index s in
-   let index = List.fold_left hash_string index sl1 in
-   let index = List.fold_left hash_patt index pl1 in
-   let index = hash_string_opt index so1 in
-   let index = hash_string_opt index so2 in
-   let index = List.fold_left hash_class_field index cfl in
-   let index = hash_bool index b1 in
-   let index = hash_bool index b2 in
-      index
+and hash_class_type_infos index
+  { ciNam = s;
+    ciPrm = _, sl;
+    ciVir = b;
+    ciExp = t
+  } =
+  let index = hash index 0x721a73be in
+  let index = hash_string index s in
+  let index = List.fold_left hash_string index sl in
+  let index = hash_class_type index t in
+     index
+
+and hash_class_expr_infos index
+  { ciNam = s;
+    ciPrm = _, sl;
+    ciVir = b;
+    ciExp = e
+  } =
+  let index = hash index 0x721a73bf in
+  let index = hash_string index s in
+  let index = List.fold_left hash_string index sl in
+  let index = hash_class_expr index e in
+     index
+
+and hash_class_expr index ce =
+  let index = hash index 0x034be1c1 in
+     match ce with
+         MLast.CeApp (_, ce, el) ->
+            List.fold_left hash_expr (hash_class_expr index ce) el
+       | MLast.CeCon (_, sl, tl) ->
+            List.fold_left hash_string (List.fold_left hash_type index tl) sl
+       | MLast.CeFun (_, p, ce) ->
+            hash_patt (hash_class_expr index ce) p
+       | MLast.CeLet (_, b, pel, ce) ->
+            hash_bool (List.fold_left hash_pe (hash_class_expr index ce) pel) b
+       | MLast.CeStr (_, p, cfl) ->
+            hash_patt (List.fold_left hash_class_field index cfl) p
+       | MLast.CeTyc (_, ce, ct) ->
+            hash_class_expr (hash_class_type index ct) ce
 
 and hash_class_field index = function
    CfCtr (_, s, t) ->
       hash_string (hash_type (hash index 0x6ebb5387) t) s
- | CfInh (_, t, e, s) ->
-      hash_type (hash_expr (hash_string_opt (hash index 0x113fee9d) s) e) t
+ | CfInh (_, ce, so) ->
+      hash_class_expr (hash_string_opt (hash index 0x113fee9d) so) ce
+ | CfIni (_, e) ->
+      hash_expr (hash index 0x73413214) e
  | CfMth (_, s, b, e) ->
       hash_string (hash_expr (hash_bool (hash index 0x4ab006da) b) e) s
- | CfVal (_, s, b1, b2, eo) ->
-      hash_string (hash_bool (hash_bool (hash_expr_opt (hash index 0x6d82d28f) eo) b2) b1) s
+ | CfVal (_, s, b, e) ->
+      hash_string (hash_bool (hash_expr (hash index 0x6d82d28f) e) b) s
  | CfVir (_, s, b, t) ->
       hash_string (hash_type (hash_bool (hash index 0x60a53407) b) t) s
 
-and hash_class_type index
-  { ctNam = name;
-    ctPrm = sl1;
-    ctArg = pl1;
-    ctTyc = so1;
-    ctFld = cfl;
-    ctVir = b1;
-    ctCls = b2
-  } =
-   let index = hash index 0x7de2ab2c in
-   let index = List.fold_left hash_string index sl1 in
-   let index = List.fold_left hash_type index pl1 in
-   let index = hash_string_opt index so1 in
-   let index = List.fold_left hash_class_field_type index cfl in
-   let index = hash_bool index b1 in
-   let index = hash_bool index b2 in
-      index
+and hash_class_type index ct =
+  let index = hash index 0x7de2ab2c in
+     match ct with
+        CtCon (_, sl, tl) ->
+           List.fold_left hash_string (List.fold_left hash_type index tl) sl
+      | CtFun (_, t, ct) ->
+           hash_class_type (hash_type index t) ct
+      | CtSig (_, t, ctfl) ->
+           List.fold_left hash_class_type_field (hash_type index t) ctfl
 
-and hash_class_field_type index = function
-   CtCtr (_, s, t) ->
+and hash_class_type_field index = function
+   CiCtr (_, s, t) ->
       hash_string (hash_type (hash index 0x362be7cd) t) s
- | CtInh (_, t) ->
-      hash_type (hash index 0x1779e662) t
- | CtMth (_, s, b, t) ->
+ | CiInh (_, ct) ->
+      hash_class_type (hash index 0x1779e662) ct
+ | CiMth (_, s, b, t) ->
       hash_string (hash_type (hash_bool (hash index 0x028b2e41) b) t) s
- | CtVal (_, s, b1, b2, ot) ->
-      hash_string (hash_bool (hash_bool (hash_type_opt (hash index 0x3be81fa) ot) b2) b1) s
- | CtVir (_, s, b, t) ->
+ | CiVal (_, s, b, t) ->
+      hash_string (hash_bool (hash_type (hash index 0x3be81fa) t) b) s
+ | CiVir (_, s, b, t) ->
       hash_string (hash_type (hash_bool (hash index 0x2730112a) b) t) s
 
 (*

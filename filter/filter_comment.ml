@@ -169,31 +169,50 @@ let fold_with_constr locs = function
  | WcMod (loc, _, _) ->
       loc :: locs
 
-let fold_class_decl locs { cdLoc = loc } =
+let fold_class_any_infos locs { ciLoc = loc } =
    loc :: locs
+
+let fold_class_expr locs ce =
+   let loc =
+      match ce with
+         MLast.CeApp (loc, ce, el) -> loc
+       | MLast.CeCon (loc, sl, tl) -> loc
+       | MLast.CeFun (loc, p, ce) -> loc
+       | MLast.CeLet (loc, b, pel, ce) -> loc
+       | MLast.CeStr (loc, p, cfl) -> loc
+       | MLast.CeTyc (loc, ce, ct) -> loc
+   in
+      loc :: locs
+
+let fold_class_type locs ct =
+   let loc =
+      match ct with
+         MLast.CtCon (loc, sl, tl) -> loc
+       | MLast.CtFun (loc, t, ct) -> loc
+       | MLast.CtSig (loc, t, ctfl) -> loc
+   in
+      loc :: locs
+
+let fold_class_field_type locs field =
+   let loc =
+      match field with
+         CiCtr (loc, _, _) -> loc
+       | CiInh (loc, _) -> loc
+       | CiMth (loc, _, _, _) -> loc
+       | CiVal (loc, _, _, _) -> loc
+       | CiVir (loc, _, _, _) -> loc
+   in
+      loc :: locs
 
 let fold_class_field locs field =
    let loc =
       match field with
          CfCtr (loc, _, _) -> loc
-       | CfInh (loc, _, _, _) -> loc
-(*       | CfMth (loc, _, _) -> loc  *)
-       | CfVal (loc, _, _, _, _) -> loc
-(*       | CfVir (loc, _, _) -> loc  *)
-   in
-      loc :: locs
-
-let fold_class_type locs { ctLoc = loc } =
-   loc :: locs
-
-let fold_class_type_field locs field =
-   let loc =
-      match field with
-         CtCtr (loc, _, _) -> loc
-       | CtInh (loc, _) -> loc
-(*       | CtMth (loc, _, _) -> loc *)
-       | CtVal (loc, _, _, _, _) -> loc
-(*       | CtVir (loc, _, _) -> loc *)
+       | CfInh (loc, _, _) -> loc
+       | CfIni (loc, _) -> loc
+       | CfMth (loc, _, _, _) -> loc
+       | CfVal (loc, _, _, _) -> loc
+       | CfVir (loc, _, _, _) -> loc
    in
       loc :: locs
 
@@ -209,10 +228,12 @@ let folder =
      fold_module_expr = fold_module_expr;
      fold_module_type = fold_module_type;
      fold_with_constr = fold_with_constr;
-     fold_class = fold_class_decl;
+     fold_class_type_infos = fold_class_any_infos;
+     fold_class_expr_infos = fold_class_any_infos;
+     fold_class_expr = fold_class_expr;
      fold_class_field = fold_class_field;
      fold_class_type = fold_class_type;
-     fold_class_type_field = fold_class_type_field
+     fold_class_type_field = fold_class_field_type
    }
 
 (*

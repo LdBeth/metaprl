@@ -30,7 +30,9 @@ type 'a fold =
      fold_module_expr      : 'a -> MLast.module_expr -> 'a;
      fold_module_type      : 'a -> MLast.module_type -> 'a;
      fold_with_constr      : 'a -> MLast.with_constr -> 'a;
-     fold_class            : 'a -> MLast.class_decl -> 'a;
+     fold_class_type_infos : 'a -> MLast.class_type MLast.class_infos -> 'a;
+     fold_class_expr_infos : 'a -> MLast.class_expr MLast.class_infos -> 'a;
+     fold_class_expr       : 'a -> MLast.class_expr -> 'a;
      fold_class_field      : 'a -> MLast.class_field -> 'a;
      fold_class_type       : 'a -> MLast.class_type -> 'a;
      fold_class_type_field : 'a -> MLast.class_type_field -> 'a
@@ -44,6 +46,8 @@ let rec fold_expr iter x expr =
       match expr with
          (<:expr< $e1$ . $e2$ >>) ->
             fold_expr iter (fold_expr iter x e1) e2
+       | (<:expr< $anti: e$ >>) ->
+            fold_expr iter x e
        | (<:expr< $e1$ $e2$ >>) ->
             fold_expr iter (fold_expr iter x e1) e2
        | (<:expr< $e1$ .( $e2$ ) >>) ->
@@ -54,7 +58,10 @@ let rec fold_expr iter x expr =
             fold_expr iter (fold_expr iter x e1) e2
        | (<:expr< $chr:c$ >>) ->
             x
+(*
        | (<:expr< ( $e$ :> $t$ ) >>) ->
+*)
+       | MLast.ExCoe (_, e, t) ->
             fold_type iter (fold_expr iter x e) t
        | (<:expr< $flo:s$ >>) ->
             x
@@ -70,17 +77,31 @@ let rec fold_expr iter x expr =
             fold_expr iter (List.fold_left (fold_pe iter) x pel) e
        | (<:expr< $lid:s$ >>) ->
             x
+       | MLast.ExLmd (_, s, me, e) ->
+            fold_module_expr iter (fold_expr iter x e) me
        | (<:expr< match $e$ with [ $list:pwel$ ] >>) ->
             List.fold_left (fold_pwe iter) (fold_expr iter x e) pwel
+(*
        | (<:expr< new $e$ >>) ->
-            fold_expr iter x e
+*)
+       | MLast.ExNew (_, _) ->
+            x
+(*
        | (<:expr< {< $list:sel$ >} >>) ->
+*)
+       | MLast.ExOvr (_, sel) ->
             List.fold_left (fold_se iter) x sel
+(*
        | (<:expr< { $list:eel$ } >>) ->
-            List.fold_left (fold_ee iter) x eel
+*)
+       | MLast.ExRec (_, eel, eo) ->
+            List.fold_left (fold_ee iter) (fold_expr_opt iter x eo) eel
        | (<:expr< do $list:el$ return $e$ >>) ->
             fold_expr iter (List.fold_left (fold_expr iter) x el) e
+(*
        | (<:expr< $e$ # $i$ >>) ->
+*)
+       | MLast.ExSnd (_, e, i) ->
             fold_expr iter x e
        | (<:expr< $e1$ .[ $e2$ ] >>) ->
             fold_expr iter (fold_expr iter x e1) e2
@@ -96,20 +117,22 @@ let rec fold_expr iter x expr =
             x
        | (<:expr< while $e$ do $list:el$ done >>) ->
             List.fold_left (fold_expr iter) (fold_expr iter x e) el
-       | MLast.ExAnt (loc, e) ->
-            Stdpp.raise_with_loc loc (Failure "Filter_ocaml.mk_expr: encountered an ExAnt")
 
 and fold_patt iter x patt =
    let x = iter.fold_patt x patt in
       match patt with
          (<:patt< $p1$ . $p2$ >>) ->
             fold_patt iter (fold_patt iter x p1) p2
+       | (<:patt< $anti: p$ >>) ->
+            fold_patt iter x p
        | (<:patt< ( $p1$ as $p2$ ) >>) ->
             fold_patt iter (fold_patt iter x p1) p2
        | (<:patt< _ >>) ->
             x
        | (<:patt< $p1$ $p2$ >>) ->
             fold_patt iter (fold_patt iter x p1) p2
+       | (<:patt< [| $list: pl$ |] >>) ->
+            List.fold_left (fold_patt iter) x pl
        | (<:patt< $chr:c$ >>) ->
             x
        | (<:patt< $int:s$ >>) ->
@@ -130,8 +153,6 @@ and fold_patt iter x patt =
             fold_type iter (fold_patt iter x p) t
        | (<:patt< $uid:s$ >>) ->
             x
-       | MLast.PaAnt (loc, p) ->
-            Stdpp.raise_with_loc loc (Failure "Filter_ocaml:mk_patt: encountered PaAnt")
 
 and fold_type iter x t =
    let x = iter.fold_type x t in
@@ -146,7 +167,10 @@ and fold_type iter x t =
             fold_type iter (fold_type iter x t1) t2
        | (<:ctyp< $t1$ -> $t2$ >>) ->
             fold_type iter (fold_type iter x t1) t2
+(*
        | (<:ctyp< # $i$ >>) ->
+*)
+       | MLast.TyCls (_, i) ->
             x
        | (<:ctyp< $lid:s$ >>) ->
             x
@@ -168,15 +192,20 @@ and fold_type iter x t =
 and fold_sig_item iter x si =
    let x = iter.fold_sig_item x si in
       match si with
+(*
          (<:sig_item< class $list:ctl$ >>) ->
-            List.fold_left (fold_class_type iter) x ctl
+*)
+         MLast.SgCls (_, ctl) ->
+            List.fold_left (fold_class_type_infos iter) x ctl
+       | MLast.SgClt (_, ctl) ->
+            List.fold_left (fold_class_type_infos iter) x ctl
        | (<:sig_item< declare $list:sil$ end >>) ->
             List.fold_left (fold_sig_item iter) x sil
        | (<:sig_item< exception $s$ of $list:tl$ >>) ->
             List.fold_left (fold_type iter) x tl
        | (<:sig_item< external $s$ : $t$ = $list:sl$ >>) ->
             fold_type iter x t
-       | SgInc (_, mt) ->
+       | MLast.SgInc (_, mt) ->
             fold_module_type iter x mt
        | (<:sig_item< module $s$ : $mt$ >>) ->
             fold_module_type iter x mt
@@ -192,8 +221,13 @@ and fold_sig_item iter x si =
 and fold_str_item iter x si =
    let x = iter.fold_str_item x si in
       match si with
+(*
          (<:str_item< class $list:cdl$ >>) ->
-            List.fold_left (fold_class iter) x cdl
+*)
+         MLast.StCls (_, cdl) ->
+            List.fold_left (fold_class_expr_infos iter) x cdl
+       | MLast.StClt (_, cdl) ->
+            List.fold_left (fold_class_type_infos iter) x cdl
        | (<:str_item< declare $list:stl$ end >>) ->
             List.fold_left (fold_str_item iter) x stl
        | (<:str_item< exception $s$ of $list:tl$ >>) ->
@@ -259,60 +293,77 @@ and fold_module_expr iter x me =
        | (<:module_expr< $uid:i$ >>) ->
             x
 
-and fold_class_type iter x
-  ({ ctLoc = loc;
-     ctNam = s;
-     ctPrm = sl;
-     ctArg = tl;
-     ctTyc = so;
-     ctFld = ctfl;
-     ctVir = b1;
-     ctCls = b2 } as ct) =
+and fold_class_type_infos iter x
+  ({ ciLoc = loc;
+     ciNam = s;
+     ciPrm = sl;
+     ciVir = b1;
+     ciExp = t } as ct) =
+   let x = iter.fold_class_type_infos x ct in
+      fold_class_type iter x t
+
+and fold_class_expr_infos iter x
+  ({ ciLoc = loc;
+     ciNam = s;
+     ciPrm = sl;
+     ciVir = b1;
+     ciExp = e } as ct) =
+   let x = iter.fold_class_expr_infos x ct in
+      fold_class_expr iter x e
+
+and fold_class_type iter x ct =
    let x = iter.fold_class_type x ct in
-   let x = List.fold_left (fold_type iter) x tl in
-   let x = List.fold_left (fold_class_type_field iter) x ctfl in
-      x
+      match ct with
+         MLast.CtCon (_, sl, tl) ->
+            List.fold_left (fold_type iter) x tl
+       | MLast.CtFun (_, t, ct) ->
+            fold_class_type iter (fold_type iter x t) ct
+       | MLast.CtSig (_, t, ctfl) ->
+            List.fold_left (fold_class_type_field iter) (fold_type iter x t) ctfl
 
 and fold_class_type_field iter x ctf =
    let x = iter.fold_class_type_field x ctf in
       match ctf with
-         CtCtr (loc, s, t) ->
+         CiCtr (loc, s, t) ->
             fold_type iter x t
-       | CtInh (loc, t) ->
+       | CiInh (loc, ct) ->
+            fold_class_type iter x ct
+       | CiMth (loc, s, b, t) ->
             fold_type iter x t
-       | CtMth (loc, s, b, t) ->
+       | CiVal (loc, s, b, t) ->
             fold_type iter x t
-       | CtVal (loc, s, b1, b2, ot) ->
-            fold_type_opt iter x ot
-       | CtVir (loc, s, b, t) ->
+       | CiVir (loc, s, b, t) ->
             fold_type iter x t
 
-and fold_class iter x
-  ({ cdLoc = loc;
-     cdNam = s;
-     cdPrm = sl1;
-     cdArg = pl1;
-     cdSlf = so1;
-     cdTyc = so2;
-     cdFld = cfl;
-     cdVir = b1;
-     cdCls = b2 } as cl) =
-   let x = iter.fold_class x cl in
-   let x = List.fold_left (fold_patt iter) x pl1 in
-   let x = List.fold_left (fold_class_field iter) x cfl in
-      x
+and fold_class_expr iter x ce =
+   let x = iter.fold_class_expr x ce in
+      match ce with
+         MLast.CeApp (_, ce, el) ->
+            List.fold_left (fold_expr iter) (fold_class_expr iter x ce) el
+       | MLast.CeCon (_, sl, tl) ->
+            List.fold_left (fold_type iter) x tl
+       | MLast.CeFun (_, p, ce) ->
+            fold_class_expr iter (fold_patt iter x p) ce
+       | MLast.CeLet (_, b, pel, ce) ->
+            List.fold_left (fold_pe iter) (fold_class_expr iter x ce) pel
+       | MLast.CeStr (_, p, cfl) ->
+            List.fold_left (fold_class_field iter) (fold_patt iter x p) cfl
+       | MLast.CeTyc (_, ce, ct) ->
+            fold_class_type iter (fold_class_expr iter x ce) ct
 
 and fold_class_field iter x cf =
    let x = iter.fold_class_field x cf in
       match cf with
          CfCtr (loc, s, t) ->
             fold_type iter x t
-       | CfInh (loc, t, e, so) ->
-            fold_expr iter (fold_type iter x t) e
+       | CfInh (loc, ce, so) ->
+            fold_class_expr iter x ce
+       | CfIni (_, e) ->
+            fold_expr iter x e
        | CfMth (loc, s, b, e) ->
             fold_expr iter x e
-       | CfVal (loc, s, b1, b2, eo) ->
-            fold_expr_opt iter x eo
+       | CfVal (loc, s, b, e) ->
+            fold_expr iter x e
        | CfVir (loc, s, b, t) ->
             fold_type iter x t
 

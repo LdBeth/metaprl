@@ -77,8 +77,11 @@ let free_vars expr =
          free bvars (free bvars l e1) e2
     | <:expr< $chr:c$ >> ->
          l
+(*
     | <:expr< ( $e1$ :> $_$ ) >> ->
-         free bvars l e1
+*)
+    | MLast.ExCoe (_, e, _) ->
+         free bvars l e
     | <:expr< $flo:s$ >> ->
          l
     | <:expr< for $v$ = $e1$ $to:_$ $e2$ do $list:el$ done >> ->
@@ -93,15 +96,26 @@ let free_vars expr =
          free_pel bvars l e pel
     | <:expr< match $e$ with [ $list:pwel$ ] >> ->
          free_pwel bvars (free bvars l e) pwel
+(*
     | <:expr< new $e$ >> ->
+*)
+    | MLast.ExNew _ ->
+         bvars
+    | MLast.ExLmd (_, _, _, e) ->
          free bvars l e
+(*
     | <:expr< {< $list:sel$ >} >> ->
+*)
+    | MLast.ExOvr (_, sel) ->
          List.fold_left (fun l (_, el) -> free bvars l el) l sel
     | <:expr< { $list:eel$ } >> ->
          List.fold_left (fun l (_, el) -> free bvars l el) l eel
     | <:expr< do $list:el$ return $e$ >> ->
          List.fold_left (free bvars) (free bvars l e) el
+(*
     | <:expr< $e$ # $_$ >> ->
+*)
+    | MLast.ExSnd (_, e, _) ->
          free bvars l e
     | <:expr< $e1$ .[ $e2$ ] >> ->
          free bvars (free bvars l e1) e2

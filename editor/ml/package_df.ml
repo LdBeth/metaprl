@@ -57,7 +57,7 @@ let identity x = x
 let term_of_expr = term_of_expr [] comment
 let term_of_type = term_of_type comment
 let term_of_sig_item = term_of_sig_item comment
-let term_of_str_item = term_of_str_item comment
+let term_of_str_item = term_of_str_item [] comment
 
 let convert_intf =
    let null_term = mk_var_term "..." in
