@@ -166,6 +166,9 @@ let abort () =
 
 let set_debug = set_debug
 
+let println s =
+   printf "%s%t" s eflush
+
 let print_gc_stats () =
    Lm_rprintf.flush stdout;
    Gc.print_stat Pervasives.stdout;

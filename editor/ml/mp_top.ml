@@ -54,7 +54,8 @@ let () = Shell.Main.main ()
 external exit : int -> unit = "caml_exit"
 
 let _ =
-   eprintf "MetaPRL exiting%t" eflush;
+   if not !Shell_state.batch_flag then eprintf "MetaPRL exiting\n";
+   flush stderr;
    flush stdout;
    exit 0
 
