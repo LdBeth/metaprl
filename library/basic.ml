@@ -388,17 +388,28 @@ let get_inet_addr =
 	let {h_addr_list=l} = gethostbyname (gethostname ())
 	in l.(0)
 
-type stamp_data = {mutable count : int; pid : string}
-
 (* TODO pid should include inet addr and time as well as process id to insure uniqueness *)
-let stamp_data =
-	{ count = 0
-	; pid = String.concat "_"
-			[ string_of_inet_addr get_inet_addr
-			; string_of_int (getpid())
-			; string_of_int (Pervasives.truncate (time()))
-			]
-	}
+let get_pid =
+   let pidref = ref None in fun () ->
+      match !pidref with
+         Some pid -> pid
+       | None -> begin
+            let inet_addr =
+               try (gethostbyname (gethostname ())).h_addr_list.(0)
+               with Not_found -> raise (Invalid_argument "Basic FDL: can not resolve local hostname!")
+            in
+            let pid =
+               String.concat "_"
+			      [ string_of_inet_addr get_inet_addr
+			      ; string_of_int (getpid())
+			      ; string_of_int (Pervasives.truncate (time()))
+			      ]
+            in
+               pidref := Some pid;
+               pid
+         end
+
+let stamp_count = ref 0
 
 let make_stamp pid tseq seq time =
 	{ term = (mk_term (istamp_op
@@ -420,16 +431,14 @@ let equal_stamps_p a b =
  & a.seq = b.seq
  & (eq_num a.time b.time)
 
-let new_stamp () =
-  stamp_data.count <- stamp_data.count + 1;
-  make_stamp stamp_data.pid stamp_data.count stamp_data.count (num_of_int (Pervasives.truncate (time())))
-
 let get_stamp () =
-  make_stamp stamp_data.pid stamp_data.count stamp_data.count (num_of_int (Pervasives.truncate (time())))
+   make_stamp (get_pid ()) !stamp_count !stamp_count (num_of_int (Pervasives.truncate (time())))
+
+let new_stamp () =
+   incr stamp_count; get_stamp ()
 
 let sequence () =
-  stamp_data.count <- stamp_data.count + 1;
-  stamp_data.count
+   incr stamp_count; !stamp_count
 
 let itransaction_id_parameter = make_param (Token "!transaction_id")
 let itransaction_id_op pl = mk_nuprl5_op (itransaction_id_parameter :: pl)
@@ -438,7 +447,7 @@ let tid () =
     (mk_term
       (itransaction_id_op
 		[ make_param (Number (Mp_num.num_of_int (sequence())))
-		; make_param (Token  stamp_data.pid)
+		; make_param (Token  (get_pid ()))
 		])
      [])
 
