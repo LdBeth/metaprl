@@ -34,6 +34,7 @@
 include Tactic_type
 
 include Io_proof_type
+include Proof_type
 include Proof_step
 
 open Printf
@@ -45,6 +46,7 @@ open Refiner.Refiner.TermSubst
 open Refiner.Refiner.Refine
 open Refine_exn
 open Tactic_type
+open Proof_type
 
 (*
  * Show that the file is loading.
@@ -837,7 +839,7 @@ let check { pf_root = root; pf_address = addr; pf_node = node } =
             []
       in
       let extl = fold_child 1 children in
-         try Refine.compose ext extl with
+         try Tactic_type.compose ext extl with
             RefineError err ->
                raise (ProofRefineError (mk_pf addr' node, err))
 
@@ -907,14 +909,12 @@ let io_status_of_status = function
 
 let rec io_child_of_child = function
    ChildGoal goal ->
-      let ({ mseq_goal = t; mseq_hyps = hyps }, { ref_label = label; ref_args = args }) =
-         dest_arg goal
-      in
+      let { mseq_goal = t; mseq_hyps = hyps } = Tactic_type.msequent goal in
          Io_proof_type.ChildGoal (**)
             { Io_proof_type.aterm_goal = t;
               Io_proof_type.aterm_hyps = hyps;
-              Io_proof_type.aterm_label = label;
-              Io_proof_type.aterm_args = args
+              Io_proof_type.aterm_label = Tactic_type.label goal;
+              Io_proof_type.aterm_args = Tactic_type.attributes goal
             }
  | ChildNode node ->
       Io_proof_type.ChildProof (io_proof_of_node node)
@@ -954,7 +954,7 @@ let status_of_io_status = function
       Complete
 
 let proof_of_io_proof arg tacs pf =
-   let { ref_rsrc = resources; ref_fcache = fcache } = arg in
+   let { ref_fcache = fcache; ref_rsrc = resources } = arg in
    let hash = Hashtbl.create (Array.length tacs) in
    let _ = Array.iter (function (name, tac) -> Hashtbl.add hash name tac) tacs in
    let rec child_of_io_child = function
@@ -964,12 +964,7 @@ let proof_of_io_proof arg tacs pf =
            Io_proof_type.aterm_label = label;
            Io_proof_type.aterm_args = args
          } ->
-         ChildGoal (create_arg { mseq_goal = goal; mseq_hyps = hyps } (**)
-                       { ref_label = label;
-                         ref_args = args;
-                         ref_fcache = fcache;
-                         ref_rsrc = resources
-                       })
+         ChildGoal (Tactic_type.create label { mseq_goal = goal; mseq_hyps = hyps } fcache args resources)
     | Io_proof_type.ChildProof pf ->
          ChildNode (node_of_io_proof pf)
 
@@ -999,6 +994,10 @@ let proof_of_io_proof arg tacs pf =
 
 (*
  * $Log$
+ * Revision 1.12  1998/06/09 20:51:15  jyh
+ * Propagated refinement changes.
+ * New tacticals module.
+ *
  * Revision 1.11  1998/06/03 22:19:09  jyh
  * Nonpolymorphic refiner.
  *

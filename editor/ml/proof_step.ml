@@ -7,6 +7,7 @@
 
 include Io_proof_type
 include Tactic_type
+include Proof_type
 
 open Printf
 open Debug
@@ -20,8 +21,8 @@ open Refine_exn
 open Refine
 
 open Io_proof_type
-
 open Tactic_type
+open Proof_type
 
 (*
  * Show that the file is loading.
@@ -75,11 +76,10 @@ let tactic { step_tactic = tac } = tac
  * Just a string.
  *)
 let mk_error_subgoal db arg err =
-   let { mseq_hyps = hyps }, arg = dest_arg arg in
    let buf = new_buffer () in
    let _ = format_refine_error db buf err in
    let t = mk_string_term nil_opname (print_to_string 80 buf) in
-      create_arg { mseq_goal = t; mseq_hyps = hyps } arg
+      set_concl arg t
 
 (*
  * Apply the tactic and compute the extract.
@@ -136,14 +136,11 @@ let check step =
  * Throw away extra information from the goal.
  *)
 let aterm_tactic_arg_of_goal arg =
-   let { mseq_goal = goal; mseq_hyps = hyps },
-       { ref_label = label; ref_args = args; ref_fcache = fcache } =
-      dest_arg arg
-   in
+   let { mseq_goal = goal; mseq_hyps = hyps } = Tactic_type.msequent arg in
       { aterm_goal = goal;
         aterm_hyps = hyps;
-        aterm_label = label;
-        aterm_args = args
+        aterm_label = Tactic_type.label arg;
+        aterm_args = Tactic_type.attributes arg
       }
 
 let goal_of_aterm_tactic_arg resources fcache
@@ -152,12 +149,7 @@ let goal_of_aterm_tactic_arg resources fcache
       aterm_label = label;
       aterm_args = args
     } =
-   create_arg { mseq_goal = goal; mseq_hyps = hyps} (**)
-      { ref_label = label;
-        ref_args = args;
-        ref_fcache = fcache;
-        ref_rsrc = resources
-      }
+   Tactic_type.create label { mseq_goal = goal; mseq_hyps = hyps} fcache args resources
 
 (*
  * Throw away information.
@@ -192,6 +184,10 @@ let step_of_io_step { ref_fcache = fcache; ref_rsrc = resources } tactics
 
 (*
  * $Log$
+ * Revision 1.14  1998/06/09 20:51:17  jyh
+ * Propagated refinement changes.
+ * New tacticals module.
+ *
  * Revision 1.13  1998/06/03 22:19:12  jyh
  * Nonpolymorphic refiner.
  *

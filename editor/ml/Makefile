@@ -16,6 +16,7 @@ OCAMLDEPFLAGS := -prl
 # Common files
 MLZFILES :=\
 	io_proof_type\
+	proof_type\
 	package_type\
 	shell_type
 
@@ -23,6 +24,7 @@ MLZFILES :=\
 NLFILES :=\
 	io_proof_type\
 	io_proof\
+	proof_type\
 	proof_step\
 	proof\
 	proof_edit\

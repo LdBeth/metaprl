@@ -5,6 +5,7 @@
 include Shell_type
 include Package_info
 include Package_df
+include Proof_type
 
 open Printf
 open Debug
@@ -24,6 +25,7 @@ open Tactic_type
 open Tactic_cache
 open Shell_type
 open Package_info
+open Proof_type
 
 (*
  * Show that the file is loading.
@@ -51,12 +53,14 @@ let seq = << sequent { 'H >- 'rw } >>
 
 let mk_goal arg redex contractum =
    let rw = replace_goal seq (mk_xrewrite_term redex contractum) in
-      create_arg { mseq_goal = rw; mseq_hyps = [] } arg
+   let { ref_label = label; ref_fcache = cache; ref_args = args; ref_rsrc = resources } = arg in
+      Tactic_type.create label { mseq_goal = rw; mseq_hyps = [] } cache args resources
 
 let mk_cond_goal arg assums redex contractum =
    let rw = replace_goal seq (mk_xrewrite_term redex contractum) in
    let assums = List.map (replace_goal seq) assums in
-      create_arg { mseq_goal = rw; mseq_hyps = assums } arg
+   let { ref_label = label; ref_fcache = cache; ref_args = args; ref_rsrc = resources } = arg in
+      Tactic_type.create label { mseq_goal = rw; mseq_hyps = assums } cache args resources
 
 let mk_rw_goal arg assums redex contractum =
    if assums = [] then
@@ -81,7 +85,7 @@ let comment loc t =
  * Format the tactic text.
  *)
 let format_tac db buf arg =
-   let { mseq_goal = rw; mseq_hyps = hyps } = tactic_seq arg in
+   let { mseq_goal = rw; mseq_hyps = hyps } = Tactic_type.msequent arg in
    let format_hyp hyp =
       format_term db buf hyp;
       format_newline buf
@@ -294,6 +298,10 @@ let view_crw pack
 
 (*
  * $Log$
+ * Revision 1.12  1998/06/09 20:51:20  jyh
+ * Propagated refinement changes.
+ * New tacticals module.
+ *
  * Revision 1.11  1998/06/03 22:19:13  jyh
  * Nonpolymorphic refiner.
  *

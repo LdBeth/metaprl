@@ -8,6 +8,7 @@ include Tactic_type
 
 include Io_proof
 include Package_type
+include Proof_type
 
 open Parsetree
 
@@ -32,6 +33,7 @@ open Tactic_type
 open Io_proof_type
 open Io_proof
 open Package_type
+open Proof_type
 
 (*
  * Show that the file is loading.
@@ -111,11 +113,11 @@ let clear_tactics () =
  * This dereferences the tactic_argument to get at the resources.
  *)
 let prove name tactics' =
-   let argument = !tactic_argument in
+   let arg = !tactic_argument in
    let proof = Hashtbl.find io_proofs name in
    let _ = Hashtbl.add tactics name tactics' in
    let prove () =
-      Proof.check (Proof.proof_of_io_proof (!argument) tactics' proof)
+      Proof.check (Proof.proof_of_io_proof !arg tactics' proof)
    in
       prove
 
@@ -781,6 +783,10 @@ end
 
 (*
  * $Log$
+ * Revision 1.13  1998/06/09 20:51:12  jyh
+ * Propagated refinement changes.
+ * New tacticals module.
+ *
  * Revision 1.12  1998/06/01 13:52:13  jyh
  * Proving twice one is two.
  *

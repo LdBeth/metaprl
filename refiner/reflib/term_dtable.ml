@@ -23,6 +23,7 @@ open Debug
 open Opname
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMeta
+open Refiner.Refiner.TermShape
 open Refiner.Refiner.Rewrite
 
 (*
@@ -48,7 +49,7 @@ type 'a pair_fun = (term * term * 'a) list -> term * term -> 'a
  * subgoals.
  *)
 type 'a info_entry =
-   { info_pattern : Term_template.t list;
+   { info_pattern : shape list;
      info_rw : rewrite_rule;
      info_value : 'a pair_fun
    }
@@ -72,7 +73,7 @@ type 'a table_entry =
 type 'a term_dtable =
    { table_items : 'a table_entry list }
 
-type 'a lookup_table = (Term_template.t list, 'a info_entry list) Hashtbl.t
+type 'a lookup_table = (shape list, 'a info_entry list) Hashtbl.t
 
 type 'a term_dextract =
    { ext_lrtable : 'a lookup_table;
@@ -149,7 +150,7 @@ let new_dtable () =
  *)
 let insert_aux t1 t2 v =
    let rw = term_rewrite ([||], [||]) t1 t2 in
-   let template = List.map Term_template.of_term t1 in
+   let template = List.map shape_of_term t1 in
       { info_pattern = template;
         info_rw = rw;
         info_value = v
@@ -283,8 +284,8 @@ let lookup { ext_lrtable = lrbase;
     } t1 t2 =
    let rec aux (t1, t2) =
       let arg = [t1; t2] in
-      let temp1 = Term_template.of_term t1 in
-      let temp2 = Term_template.of_term t2 in
+      let temp1 = shape_of_term t1 in
+      let temp2 = shape_of_term t2 in
       let template = [temp1; temp2] in
          try
             find_entry aux shift_pair (Hashtbl.find dbase template) arg
@@ -302,6 +303,10 @@ let lookup { ext_lrtable = lrbase;
 
 (*
  * $Log$
+ * Revision 1.3  1998/06/09 20:52:19  jyh
+ * Propagated refinement changes.
+ * New tacticals module.
+ *
  * Revision 1.2  1998/06/01 13:55:04  jyh
  * Proving twice one is two.
  *

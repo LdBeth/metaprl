@@ -1,0 +1,31 @@
+(*
+ * Common types for proofs.
+ *)
+
+open Tactic_type
+
+(*
+ * This is the info needed to construct a tactic_arg.
+ * Should be similar to Tactic_type.tactic_argument (which
+ * is hidden.
+ *)
+type tactic_argument =
+   { ref_label : string;
+     ref_args : attributes;
+     ref_fcache : cache;
+     ref_rsrc : tactic_resources
+   }
+
+(*
+ * $Log$
+ * Revision 1.1  1998/06/09 20:51:19  jyh
+ * Propagated refinement changes.
+ * New tacticals module.
+ *
+ *
+ * -*-
+ * Local Variables:
+ * Caml-master: "refiner"
+ * End:
+ * -*-
+ *)

@@ -7,6 +7,7 @@
 
 include Tactic_type
 include Io_proof_type
+include Proof_type
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.Refine
@@ -14,6 +15,7 @@ open Dform
 
 open Io_proof_type
 open Tactic_type
+open Proof_type
 
 (* Abstract type for steps *)
 type t
@@ -48,6 +50,10 @@ val step_of_io_step : tactic_argument -> (string, tactic) Hashtbl.t -> proof_ste
 
 (*
  * $Log$
+ * Revision 1.11  1998/06/09 20:51:18  jyh
+ * Propagated refinement changes.
+ * New tacticals module.
+ *
  * Revision 1.10  1998/06/01 13:52:24  jyh
  * Proving twice one is two.
  *

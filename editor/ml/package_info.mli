@@ -9,6 +9,7 @@
 
 include Tactic_type
 include Package_type
+include Proof_type
 
 open Refiner.Refiner.Refine
 
@@ -16,9 +17,11 @@ open Filter_prog
 
 open Tactic_type
 open Package_type
+open Proof_type
 
 module Extract : ExtractSig
-module Package : PackageSig with type proof = Extract.proof
+module Package : PackageSig
+                 with type proof = Extract.proof
 
 (*
  * Auxiliary functions for managing resources and proofs.
@@ -28,6 +31,10 @@ val prove : string -> (string * tactic) array -> unit -> extract
 
 (*
  * $Log$
+ * Revision 1.7  1998/06/09 20:51:13  jyh
+ * Propagated refinement changes.
+ * New tacticals module.
+ *
  * Revision 1.6  1998/06/01 13:52:15  jyh
  * Proving twice one is two.
  *

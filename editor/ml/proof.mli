@@ -29,6 +29,7 @@
  *)
 
 include Io_proof_type
+include Proof_type
 include Tactic_type
 
 include Proof_step
@@ -39,6 +40,7 @@ open Dform
 
 open Io_proof_type
 open Tactic_type
+open Proof_type
 
 (* Abstract type *)
 type t
@@ -162,6 +164,10 @@ val proof_of_io_proof : tactic_argument -> (string * tactic) array -> proof -> t
 
 (*
  * $Log$
+ * Revision 1.10  1998/06/09 20:51:16  jyh
+ * Propagated refinement changes.
+ * New tacticals module.
+ *
  * Revision 1.9  1998/05/28 13:45:49  jyh
  * Updated the editor to use new Refiner structure.
  * ITT needs dform names.

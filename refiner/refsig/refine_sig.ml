@@ -75,7 +75,7 @@ sig
       { mseq_goal : term;
         mseq_hyps : term list
       }
-   
+
    (************************************************************************
     * PROOFS AND VALIDATIONS                                               *
     ************************************************************************)
@@ -133,7 +133,7 @@ sig
     * Convert a rewrite that likes to examine its argument.
     *)
    val rwtactic : rw -> tactic
-   
+
    (*
     * Composition is supplied for efficiency.
     *)
@@ -169,7 +169,7 @@ sig
     * as the first subgoal.
     *)
    val crwtactic : cond_rewrite -> tactic
-   
+
    (*
     * Composition is supplied for efficiency.
     *)
@@ -428,6 +428,10 @@ end
 
 (*
  * $Log$
+ * Revision 1.4  1998/06/09 20:52:24  jyh
+ * Propagated refinement changes.
+ * New tacticals module.
+ *
  * Revision 1.3  1998/06/03 15:23:23  jyh
  * Generalized many the term_addr, term_man, and term_shape modules.
  *

@@ -10,6 +10,7 @@
 include Tactic_type
 include Summary
 include Proof_edit
+include Proof_type
 
 open Opname
 open Refiner.Refiner
@@ -19,6 +20,7 @@ open Filter_summary
 open Filter_cache
 
 open Tactic_type
+open Proof_type
 
 (*
  * Save status of a module.
@@ -113,6 +115,10 @@ end
 
 (*
  * $Log$
+ * Revision 1.10  1998/06/09 20:51:14  jyh
+ * Propagated refinement changes.
+ * New tacticals module.
+ *
  * Revision 1.9  1998/06/01 13:52:18  jyh
  * Proving twice one is two.
  *

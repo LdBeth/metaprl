@@ -145,6 +145,9 @@ let ml_rule_rewrite_expr loc =
 let ml_rule_extract_expr loc =
    <:expr< $refiner_expr loc$ . $lid:"ml_rule_extract"$ >>
 
+let compile_rule_expr loc =
+   <:expr< $tactic_type_expr loc$ . $lid:"compile_rule"$ >>
+
 let tactic_of_rule_expr loc =
    <:expr< $tactic_type_expr loc$ . $lid:"tactic_of_rule"$ >>
 
@@ -212,9 +215,6 @@ let compile_contractum_expr loc =
 (*
  * Other expressions.
  *)
-let nth_addr_expr loc =
-   <:expr< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"TermAddr"$ . $lid:"nth_address"$ >>
-
 let thy_name_expr loc =
    <:expr< $uid:"Theory"$ . $lid:"thy_name"$ >>
 
@@ -917,7 +917,7 @@ struct
     *    let rule = create_rule refiner "name" cvars tvars params assums
     *    and _ = prim_rule refiner "name" tvars params avars extract
     *    in
-    *       rule
+    *       compile_rule !refiner rule
     * let name params x = tactic_of_rule name_rule ([| cvars |], [| vars |]) [non_vars] x
     *)
    let define_rule code proc loc
@@ -952,7 +952,7 @@ struct
             $lid:"tvars"$ $lid:"params"$ $lid:"avars"$ $lid:"extract"$ >>
       in
       let name_value =
-         let addr_expr id = <:expr< $nth_addr_expr loc$ $lid:id$ $uid:"true"$ >> in
+         let addr_expr id = <:expr< $lid:id$ >> in
          let cvars_id_expr = <:expr< [| $list:List.map addr_expr cvar_ids$ |] >> in
          let tvars_id_expr = <:expr< [| $list:List.map lid_expr tvar_ids$ |] >> in
          let tparams_ids_expr = list_expr loc lid_expr tparam_ids in
@@ -980,7 +980,7 @@ struct
                   let $rec:false$ $list:[ rule_patt, axiom_value;
                                           wild_patt, thm_value ]$
                   in
-                      $lid:"rule"$ >>)
+                      $compile_rule_expr loc$ ( $lid:local_refiner_id$ . $lid:"val"$ ) $lid:"rule"$ >>)
       in
       let rule_def = <:str_item< value $rec:false$ $list:[ name_rule_patt, wrap_exn loc name rule_expr ]$ >> in
       let tac_def = <:str_item< value $rec:false$ $list:[ name_patt, name_value ]$ >> in
@@ -1563,6 +1563,10 @@ end
 
 (*
  * $Log$
+ * Revision 1.18  1998/06/09 20:52:14  jyh
+ * Propagated refinement changes.
+ * New tacticals module.
+ *
  * Revision 1.17  1998/06/03 22:19:16  jyh
  * Nonpolymorphic refiner.
  *

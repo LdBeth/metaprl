@@ -13,6 +13,15 @@ sig
    type operator
    type level_exp
    type address
+   
+   type hypothesis =
+      Hypothesis of string * term
+    | Context of string * term list
+   
+   type esequent =
+      { sequent_hyps : hypothesis list;
+        sequent_goals : term list
+      }
 
    (************************************************************************
     * Simplified operations on manifest terms                              *
@@ -41,18 +50,20 @@ sig
 
    val is_sequent_term : term -> bool
    val dest_sequent : term -> term list
+   val explode_sequent : term -> esequent
    val mk_sequent_term : term list -> term
 
    val nth_hyp : term -> int -> string * term
    val nth_concl : term -> int -> term
    val num_hyps : term -> int
    val declared_vars : term -> string list
-   val declarations : term -> (string * term) list
    val get_decl_number : term -> string -> int
    val is_free_seq_var : int -> string -> term -> bool
 
    val nth_hyp_addr : term -> int -> address
    val nth_concl_addr : term -> int -> address
+   val nth_clause_addr : term -> int -> address
+   val nth_clause_addrs : term -> int array -> address array
    val replace_concl : term -> term -> term
    val replace_goal : term -> term -> term          (* One concl *)
 
@@ -94,6 +105,10 @@ end
 
 (*
  * $Log$
+ * Revision 1.5  1998/06/09 20:52:26  jyh
+ * Propagated refinement changes.
+ * New tacticals module.
+ *
  * Revision 1.4  1998/06/03 22:19:28  jyh
  * Nonpolymorphic refiner.
  *
