@@ -358,7 +358,7 @@ struct
          info.proof.edit_addr [];
          info.proof <- Shell_package.view pack (get_parse_arg info) (get_display_mode info)
 
-   let set_item info modname name =
+   let get_item info modname name =
       let parse_arg = get_parse_arg info in
       let display_mode = get_display_mode info in
       let pack = Package.get packages modname in
@@ -368,7 +368,6 @@ struct
                eprintf "Item '/%s/%s' not found%t" modname name eflush;
                raise Not_found
       in
-      let proof =
          match item with
             Rewrite rw ->
                Shell_rewrite.view_rw pack parse_arg display_mode rw
@@ -428,10 +427,6 @@ struct
           | Definition _ ->
                eprintf "Editing definition '/%s/%s' not implemented%t" modname name eflush;
                raise (Failure "view")
-      in
-         (* Leave the current proof at the root *)
-         info.proof.edit_addr [];
-         proof
 
    (*
     * Display the current proof.
@@ -818,9 +813,28 @@ struct
          print_exn info set pl
 
    let check info =
-      let check info =
-         ignore(info.proof.edit_check (get_db info));
-         display_proof info info.proof []
+      let mk_name opname = String.concat "/" (List.rev (dest_opname opname)) in
+      let check = function
+         { package = Some pack; dir = mod_name :: name :: _ } ->
+            begin try
+               let deps = Refine.compute_dependencies (Package.refiner pack) (make_opname [name;mod_name]) in
+                  printf "The proof of /%s/%s depends on the following definitions and axioms:\n" mod_name name;
+                  let print_dep (dep, opname) =
+                     let kind =
+                        match dep with
+                           Refine_sig.DepDefinition -> "Definition"
+                         | Refine_sig.DepRule -> "Rule"
+                         | Refine_sig.DepRewrite -> "Rewrite"
+                         | Refine_sig.DepCondRewrite -> "Conditional Rewrite"
+                     in
+                        printf "\t%s /%s\n" kind (mk_name opname)
+                  in
+                     List.iter print_dep deps
+            with Refine_sig.Incomplete opname ->
+               eprintf "Error: Proof of /%s/%s depends on incomplete proof of /%s!%t" mod_name name (mk_name opname) eflush
+            end
+       | _ ->
+            raise (Invalid_argument "check - must be inside a proof")
       in
          print_exn info check info
 
@@ -973,14 +987,14 @@ struct
                let expand pack =
                   let name = Package.name pack in
                      eprintf "Entering %s%t" name eflush;
-                     chdir info false [name];
+                     chdir info false true [name];
                      apply_all_exn false
                in
                   List.iter expand (all_packages());
       in
          print_exn info apply_all_exn time;
-         chdir info false [];
-         chdir info false dir
+         chdir info false false [];
+         chdir info false false dir
 
    and expand_all info =
       let f item db =
@@ -991,7 +1005,7 @@ struct
    (*
     * Change directory.
     *)
-   and chdir info need_shell path =
+   and chdir info need_shell verbose path =
       let shell = info.shell in
       match path with
          [] ->
@@ -1016,8 +1030,8 @@ struct
                      Shell_state.set_dfbase shell (Some (get_db info));
                      Shell_state.set_mk_opname shell (Some (Package.mk_opname pkg));
                      Shell_state.set_module shell modname;
-                     eprintf "Module: /%s%t" modname eflush;
-                     (* HACK!!! I do not know a better way to initialize a package - AN *)
+                     if verbose then eprintf "Module: /%s%t" modname eflush;
+                     (* XXX HACK!!! I do not know a better way to initialize a package - AN *)
                      ignore (Package.info pkg (get_parse_arg info))
                end;
 
@@ -1036,11 +1050,13 @@ struct
                         old_modname::old_item::_ when old_modname = modname && old_item = List.hd item ->
                            info.proof
                       | _ ->
-                           let proof = set_item info modname (List.hd item) in
+                           let proof = get_item info modname (List.hd item) in
                               Shell_state.set_so_var_context shell (Some (proof.edit_get_terms ()));
                               proof
                   in
 
+                  (* Leave the old proof at the root *)
+                  info.proof.edit_addr [];
                   (* go down the proof with pf_path *)
                   proof.edit_addr (List.map int_of_string (List.tl item));
                   info.proof <- proof;
@@ -1048,7 +1064,7 @@ struct
                end
 
    and cd info name =
-      print_exn info (chdir info true) (parse_path info name);
+      print_exn info (chdir info true true) (parse_path info name);
       string_of_path info.dir
 
    (*
@@ -1059,11 +1075,11 @@ struct
          let mode = info.df_mode in
          let dir = info.dir in
             info.df_mode <- "tex";
-            chdir info false [name];
+            chdir info false true [name];
             expand_all info;
             view info [] ".";
             info.df_mode <- mode;
-            chdir info false dir
+            chdir info false false dir
       in
          print_exn info f ()
 
@@ -1071,12 +1087,12 @@ struct
       let dir = info.dir in
       let extract info =
          try
-            chdir info false path;
+            chdir info false false path;
             let res = info.proof.edit_check (get_db info) in
-            chdir info false dir; res
+            chdir info false false dir; res
          with exn ->
             eprintf "Extracting from /%s failed%t" (String.concat "/" path) eflush;
-            chdir info false dir;
+            chdir info false false dir;
             raise exn
       in
          print_exn info extract info
@@ -1278,7 +1294,7 @@ struct
    let edit_cd_list_contents info mname =
       let objs = ref [] in
       let f obj _ = objs := (obj.edit_get_contents ())::(!objs) in begin
-         print_exn info (chdir info false) [mname];
+         print_exn info (chdir info false false) [mname];
          apply_all info f false false
       end;
       List.rev !objs
@@ -1298,11 +1314,11 @@ struct
                   collect t
       in
       let opens = collect (info_items (edit_info info mname)) in
-      ignore (print_exn info (chdir info false) [mname; name]; ShellP4.eval_opens info.shell opens)
+      ignore (print_exn info (chdir info false false) [mname; name]; ShellP4.eval_opens info.shell opens)
 
    let edit_create_thm info mname name =
       ignore(edit_info info mname);
-      chdir info false [mname];
+      chdir info false false [mname];
       let create name =
          let package = get_current_package info in
          let item = Shell_rule.create package (get_parse_arg info) (get_display_mode info) name in
@@ -1314,7 +1330,7 @@ struct
 
    let edit_create_rw info mname name =
       ignore(edit_info info mname);
-      chdir info false [mname];
+      chdir info false false [mname];
       let create name =
          let package = get_current_package info in
          let item = Shell_rewrite.create package (get_parse_arg info) (get_display_mode info) name in

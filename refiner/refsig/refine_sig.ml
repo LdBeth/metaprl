@@ -42,15 +42,20 @@ open Lm_symbol
 
 open Opname
 
+(*
+ * Raised when an incomplete proof is manupulated as if it was complete.
+ *)
+exception Incomplete of opname
+
  (*
   * A semantical correctness of a proof may depend on
   * a number of axioms refered to in a proof
   *)
 type dependency =
-   DepDefinition of opname
- | DepCondRewrite of opname
- | DepRewrite of opname
- | DepRule of opname
+   DepDefinition
+ | DepCondRewrite
+ | DepRewrite
+ | DepRule
 
 (************************************************************************
  * REFINER MODULE                                                       *
@@ -286,7 +291,7 @@ sig
     *)
    val extract_term : refiner -> opname -> term list -> term
    val make_wildcard_ext_arg : int -> term -> term
-   val compute_dependencies : refiner -> opname -> dependency list
+   val compute_dependencies : refiner -> opname -> (dependency * opname) list
 
    (*
     * Get a checker from the refiner.

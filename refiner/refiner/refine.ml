@@ -193,24 +193,27 @@ struct
 
    type pre_rule = msequent
 
-   type pre_rewrite = { 
+   type pre_rewrite = {
       pre_rw_redex : term;
       pre_rw_contractum : term;
    }
-   
+
    type pre_cond_rewrite = {
       pre_crw_redex : term;
       pre_crw_contractum : term;
       pre_crw_assums : term list;
    }
-   
+
    (************************************************************************
     * TYPES                                                                *
     ************************************************************************)
 
    module Deps = struct
-      type t = dependency
-      let compare = Pervasives.compare
+      type t = dependency * opname
+      let compare (d1, o1) (d2, o2) =
+         match Pervasives.compare d1 d2 with
+            0 -> Pervasives.compare (List.rev (dest_opname o1)) (List.rev (dest_opname o2))
+          | c -> c
    end
    module DepSet = Lm_set.LmMake (Deps)
 
@@ -958,7 +961,7 @@ struct
       let find tbl name =
          try Hashtbl.find tbl name with
             Not_found ->
-               raise(Invalid_argument "Refiner.find_of_refiner")
+               raise(Invalid_argument("Refiner.find_of_refiner - " ^ (string_of_opname name) ^ " not found"))
       in
          { find_rule = find rules;
            find_rewrite = find rewrites;
@@ -975,11 +978,11 @@ struct
             let e = dp.pf_get_extract () in
                dp.pf_extract <- Some e;
                e
-   
+
    let get_proof = function
       PPrim p -> p
     | PDerived dp ->
-         begin match dp.pf_proof with 
+         begin match dp.pf_proof with
              Some p -> p
            | None ->
                let p = dp.pf_create_proof (get_derivation dp) in
@@ -1026,8 +1029,6 @@ struct
     * This will fail if some of the rules are not justified.
     *)
    let term_of_extract_nocheck refiner ext (args : term list) =
-      if ext.ext_subgoals <> [] then
-         raise (Invalid_argument "Refine.term_of_extract: called on an unfinished proof");
       let find = find_of_refiner refiner in
       (* XXX HACK: this approach of building a closure on-the-fly is probably too inefficient *)
       let rec construct (rest : (term list -> term) list) = function
@@ -1037,13 +1038,13 @@ struct
             construct (partition_rest find rest justl) just
        | MLJust (just, f, _) ->
             fun args -> f just.just_addrs just.just_params just.just_goal.mseq_goal (all_args args rest)
-       | RewriteJust (_, just, _) ->
+       | RewriteJust _ ->
             List.hd rest
        | Identity ->
             List.hd rest
        | NthHypJust (_, i) ->
             fun args -> List.nth args i
-       | CondRewriteJust (_, just, _) ->
+       | CondRewriteJust _ ->
             List.hd rest
        | CutJust _ ->
             match rest with
@@ -1321,16 +1322,97 @@ struct
 
    let extract_term refiner opname args =
       match find_refiner refiner opname with
-         RuleRefiner { rule_proof = PDerived dp } ->
+         RuleRefiner { rule_refiner = refiner; rule_proof = PDerived dp } ->
             term_of_extract refiner (get_derivation dp) args
-       | RewriteRefiner { rw_proof = PDerived dp }
-       | CondRewriteRefiner { crw_proof = PDerived dp } ->
+       | RewriteRefiner { rw_refiner = refiner; rw_proof = PDerived dp }
+       | CondRewriteRefiner { crw_refiner = refiner; crw_proof = PDerived dp } ->
             term_of_extract refiner (get_derivation dp) args
        | _ ->
             raise (Invalid_argument("Refine.extract_term - " ^ (string_of_opname opname) ^ "is not a derived rule/rewrite"))
 
-   let rec compute_dependencies refiner opname =
-      raise(Invalid_argument "Refine.compute_dependencies - not implemented")
+   let rec compute_deps_ext refiner ext =
+      let find = find_of_refiner refiner in
+      let rec deps = function
+         RuleJust just | MLJust (just, _, _) ->
+            compute_deps_rule (find.find_rule just.just_refiner)
+       | RewriteJust (_, just, _) ->
+            compute_deps_rwjust find.find_rewrite just
+       | CondRewriteJust (_, just, _) ->
+            compute_deps_crwjust find.find_cond_rewrite just
+       | ComposeJust (just, justl) ->
+            List.fold_left (fun ds j -> DepSet.union ds (deps j)) (deps just) justl
+       | Identity | CutJust _ | NthHypJust _ ->
+            DepSet.empty
+      in
+         deps ext.ext_just
+
+   and compute_deps_rule = function
+      { rule_name = name; rule_proof = PPrim _ } ->
+         DepSet.singleton (DepRule, name)
+    | { rule_refiner = refiner; rule_proof = PDerived dp } ->
+         compute_deps_ext refiner (get_derivation dp)
+    | { rule_proof = PDefined } ->
+         raise (Invalid_argument "Refine.compute_deps_rule")
+
+   and compute_deps_rw = function
+      { rw_name = name; rw_proof = PPrim _ } ->
+         DepSet.singleton (DepRewrite, name)
+    | { rw_name = name; rw_proof = PDefined } ->
+         DepSet.singleton (DepDefinition, name)
+    | { rw_refiner = refiner; rw_proof = PDerived dp } ->
+         compute_deps_ext refiner (get_derivation dp)
+
+   and compute_deps_rwjust find = function
+      RewriteHere (_, name, _) ->
+         compute_deps_rw (find name)
+    | RewriteML (_, name, _) ->
+         DepSet.singleton (DepRewrite, name)
+    | RewriteCompose (just1, just2) ->
+         DepSet.union (compute_deps_rwjust find just1) (compute_deps_rwjust find just2)
+    | RewriteAddress (_, _, just, _) ->
+         compute_deps_rwjust find just
+    | RewriteHigher(_, justs, _) ->
+         List.fold_left (fun ds j -> DepSet.union ds (compute_deps_rwjust find j)) DepSet.empty justs
+
+   and compute_deps_crw = function
+      { crw_name = name; crw_proof = PPrim _ } ->
+         DepSet.singleton (DepCondRewrite, name)
+    | { crw_refiner = refiner; crw_proof = PDerived dp } ->
+         compute_deps_ext refiner (get_derivation dp)
+    | { crw_name = name; crw_proof = PDefined } ->
+         raise (Invalid_argument "Refine.compute_deps_crw")
+
+   and compute_deps_crwjust find = function
+      CondRewriteHere chere ->
+         compute_deps_crw (find chere.cjust_refiner)
+    | CondRewriteML (chere, _, _) ->
+         DepSet.singleton (DepCondRewrite, chere.cjust_refiner)
+    | CondRewriteCompose (just1, just2) ->
+         DepSet.union (compute_deps_crwjust find just1) (compute_deps_crwjust find just2)
+    | CondRewriteAddress (_, _, just, _) ->
+         compute_deps_crwjust find just
+    | CondRewriteHigher(_, justs, _) ->
+         List.fold_left (fun ds j -> DepSet.union ds (compute_deps_crwjust find j)) DepSet.empty justs
+
+   let compute_deps_set refiner opname =
+      match find_refiner refiner opname with
+         RuleRefiner r ->
+            compute_deps_rule r
+       | RewriteRefiner rw ->
+            compute_deps_rw rw
+       | CondRewriteRefiner crw ->
+            compute_deps_crw crw
+       | MLRuleRefiner mlr ->
+            DepSet.singleton (DepRule, mlr.ml_rule_name)
+       | MLRewriteRefiner mlrw ->
+            DepSet.singleton (DepRewrite, mlrw.ml_rw_name)
+       | MLCondRewriteRefiner mlcrw ->
+            DepSet.singleton (DepCondRewrite, mlcrw.ml_crw_name)
+       | LabelRefiner _ | ListRefiner _ | PairRefiner _ | NullRefiner ->
+            raise (Invalid_argument "compute_dependencies")
+
+   let compute_dependencies refiner opname =
+      DepSet.elements (compute_deps_set refiner opname)
 
    (*
     * Theorem for a previous theorem or rule.
@@ -1373,7 +1455,7 @@ struct
                }
          else
             REF_RAISE(RefineError (name, StringError "rule mismatch"))
-   
+
    let prim_rule build name addrs params mterm args result =
       IFDEF VERBOSE_EXN THEN
          if !debug_refiner then
@@ -1389,12 +1471,17 @@ struct
          let compute_ext = compute_rule_ext name addrs params goal args result in
             justify_rule build name addrs params goal subgoals (PPrim compute_ext)
 
-   let wrap_extf build extf () =
-      let ext = extf () in
-         if ext.ext_sentinal.sent_refiner != build.build_refiner then
-            raise(Invalid_argument ("Sentinals mismatch in extractor function"));
-         ext
-   
+   let wrap_extf build name extf =
+      let opname = mk_opname name build.build_opname in
+      let refiner = build.build_refiner in
+         fun () ->
+            let ext = try extf () with _ -> raise (Incomplete opname) in
+               if ext.ext_sentinal.sent_refiner != refiner then
+                  raise(Invalid_argument ("Sentinals mismatch in extractor function"));
+               if ext.ext_subgoals <> [] then
+                  raise (Incomplete opname);
+               ext
+
    let delayed_rule build name addrs params mterm _ extf =
       IFDEF VERBOSE_EXN THEN
          if !debug_refiner then
@@ -1411,7 +1498,7 @@ struct
             compute_rule_ext name addrs params goal args (term_of_extract_nocheck build.build_refiner ext args)
       in
       let dp = {
-         pf_get_extract = wrap_extf build extf;
+         pf_get_extract = wrap_extf build name extf;
          pf_create_proof = compute_ext;
          pf_extract = None;
          pf_proof = None;
@@ -1532,21 +1619,20 @@ struct
 
    let justify_rewrite build name redex contractum proof =
       let opname = mk_opname name build.build_opname in
-      let rw = 
+      let rw =
          try Hashtbl.find build.build_rewrites opname
          with Not_found -> REF_RAISE(RefineError (name, StringError "rewrite was not created"))
       in
          if alpha_equal rw.pre_rw_redex redex && alpha_equal rw.pre_rw_contractum contractum then
-            build.build_refiner <- 
+            build.build_refiner <-
                RewriteRefiner {
                   rw_name = opname;
                   rw_info = rw;
-                  rw_proof = proof; 
+                  rw_proof = proof;
                   rw_refiner = build.build_refiner;
               }
          else
             REF_RAISE(RefineError (name, StringError "rewrite mismatch"))
-      
 
    let prim_rewrite build name redex contractum =
       IFDEF VERBOSE_EXN THEN
@@ -1594,7 +1680,7 @@ struct
             REF_RAISE(RefineError (name, StringError "bogus proof"))
       in
       let dp = {
-         pf_get_extract = wrap_extf build extf;
+         pf_get_extract = wrap_extf build name extf;
          pf_create_proof = compute_ext;
          pf_extract = None;
          pf_proof = None;
@@ -1672,7 +1758,7 @@ struct
          try Hashtbl.find build.build_cond_rewrites opname
          with Not_found -> REF_RAISE(RefineError (name, StringError "conditional rewrite was not created"))
       in
-         if alpha_equal crw.pre_crw_redex redex && alpha_equal crw.pre_crw_contractum contractum 
+         if alpha_equal crw.pre_crw_redex redex && alpha_equal crw.pre_crw_contractum contractum
             && alpha_equal (mk_xlist_term crw.pre_crw_assums) (mk_xlist_term subgoals)
          then
             build.build_refiner <-
@@ -1712,7 +1798,7 @@ struct
                REF_RAISE(RefineError (name, StringError "derivation does not match"))
       in
       let dp = {
-         pf_get_extract = wrap_extf build extf;
+         pf_get_extract = wrap_extf build name extf;
          pf_create_proof = compute_ext;
          pf_extract = None;
          pf_proof = None;
@@ -1721,7 +1807,7 @@ struct
          justify_cond_rewrite build name params subgoals redex contractum (PDerived dp)
 
    let derived_cond_rewrite build name params args redex contractum ext =
-      delayed_cond_rewrite build name params args redex contractum (fun _ -> ext) 
+      delayed_cond_rewrite build name params args redex contractum (fun _ -> ext)
 
    (*
     * An ML rewrite.
