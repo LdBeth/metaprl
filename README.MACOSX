@@ -1,5 +1,5 @@
 The directions below outline the process for compiling MetaPRL under Mac OS
-X.  They were developed by Brian Emre Aydemir (emre@cs.caltech.edu) and 
+X.  They were developed by Brian Emre Aydemir (emre@cs.caltech.edu) and
 Nathan Gray (n8gray@cs.caltech.edu).  Issues that Brian could
 not resolve are listed at the end of this file.
 
@@ -19,10 +19,10 @@ the Terminal program in /Applications/Utilities.
    for more information.
 
    Once you have downloaded the tools, install them.
-   
+
 2. You'll also need the OMake build tool.  You'll either need to get a source
    tarball or check it out from CVS.  You can find out about both options from
-   
+
       http://mojave.caltech.edu/download.html
 
 3. MetaPRL requires a customized version of the OCaml programming language
@@ -79,22 +79,24 @@ the Terminal program in /Applications/Utilities.
        typing/typecore.mli \
            ./lib/ocaml  # Or wherever you've installed ocaml
 
-6. Change into the MetaPRL source directory (the directory with this file)
-   and run 'make mk/config'.  A new 'config' file should be created in the mk/
-   directory.  Go ahead and edit it (directions are provided in the file
-   itself).  If OCaml was not installed into /usr, you will need to create
-   a file mk/config.local and define CAMLLIB and CAMLP4LIB to point to where
+6. If you have not already done so, compile and install OMake now.
+
+7. Change into the MetaPRL source directory (the directory with this file)
+   and run 'omake mk/config'.  A new 'config' file should be created in the
+   mk/ directory.  Go ahead and edit it (directions are provided in the file
+   itself).  If OCaml was not installed into /usr, you will need to create a
+   file mk/config.local and define CAMLLIB and CAMLP4LIB to point to where
    the ocaml and ocaml/camlp4 library directories are located.  For example,
    config.local may contain the following lines:
 
       CAMLLIB=/Users/emre/Documents/ocaml/install-3.06/lib/ocaml
       CAMLP4LIB=/Users/emre/Documents/ocaml/install-3.06/lib/ocaml/camlp4
 
-7. If you want readline and ncurses support and have Fink installed you might
+8. If you want readline and ncurses support and have Fink installed you might
    want to add "-I/sw/include -L/sw/lib" to the CCC= line in mk/config and
-   "OCAML_LIB_FLAGS=-ccopt -L/sw/lib" to mk/config.locals
+   "OCAML_LIB_FLAGS=-ccopt -L/sw/lib" to mk/config.local.
 
-8. From the MetaPRl source directory (the directory with this file), run
+9. From the MetaPRl source directory (the directory with this file), run
 
       omake
 
@@ -104,7 +106,7 @@ the Terminal program in /Applications/Utilities.
 
    to build the native-code version of MetaPRL.
 
-9. To run the bytecode MetaPRL toploop, use
+10. To run the bytecode MetaPRL toploop, use
 
       editor/ml/mptop
 
@@ -112,16 +114,22 @@ the Terminal program in /Applications/Utilities.
 
       editor/ml/mpopt
 
+   It may be more convenient to run
+
+      editor/ml/mpxterm
+
+   as this opens an xterm with an appropriate font.
+
 ---------------------------------------------------------------------------
 
 Known issues that Brian (emre@cs.caltech.edu) could not resolve:
 
-1. Fonts:  
-   
+1. Fonts:
+
    Note from n8gray:  When I use editor/ml/mpxterm I get good-looking fonts,
-   including all of the mathematical symbols, so this issue might not be 
+   including all of the mathematical symbols, so this issue might not be
    relevant any longer.  Still, here's Brian's text.
-   
+
    The MetaPRL toploop looks pretty bad unless you use a font that
    has all the necessary Unicode characters.  Unfortunately, I do not know
    of any that come with Mac OS X or MetaPRL.  The fonts in
@@ -144,9 +152,7 @@ Known issues that Brian (emre@cs.caltech.edu) could not resolve:
    Enabling anti-aliasing may also help (in the 'Terminal menu', chose
    'Window Settings...', and then look under 'Display').
 
-
-
-2. status_all ():  
+2. status_all ():
 
    Note from n8gray:  I don't see this problem.  It might also now be resolved.
    Still, here's Brian's text.
