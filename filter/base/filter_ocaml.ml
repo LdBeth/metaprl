@@ -2300,16 +2300,14 @@ struct
 
    let term_of_resource_sig resource_op {
       resource_input = input;
-      resource_intermediate = intermediate;
       resource_output = output
    } =
       ToTerm.Term.mk_simple_term resource_op
-         [ mk_type input; mk_type intermediate; mk_type output ]
+         [ mk_type input; mk_type output ]
 
    let resource_sig_of_term t =
-      let input, intermediate, output = three_subterms t in {
+      let input, output = two_subterms t in {
          resource_input = dest_type input;
-         resource_intermediate = dest_type intermediate;
          resource_output = dest_type output
       }
 end

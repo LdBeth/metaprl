@@ -682,7 +682,6 @@ let declare_prec loc name =
  *)
 let declare_resource loc name {
    resource_input = input;
-   resource_intermediate = intermediate;
    resource_output = output
 } =
    let get_resource_type = <:ctyp< Mp_resource.global_resource -> $output$ >> in
@@ -1947,7 +1946,6 @@ struct
     *)
    let define_resource proc loc name expr =
       let { resource_input = input;
-            resource_intermediate = intermediate;
             resource_output = output
           } =
          try
@@ -1957,7 +1955,8 @@ struct
                Stdpp.raise_with_loc loc (Failure("Tries to implement undeclared resource " ^ name))
       in
       let get_patt = <:patt< $lid:get_resource_name name$ >> in
-      let create_type = <:ctyp< Mp_resource.resource_info $input$ $intermediate$ $output$ >> in
+      let intermediate = "_$" ^ name ^ "_resource_intermediate" in
+      let create_type = <:ctyp< Mp_resource.resource_info $input$ '$intermediate$ $output$ >> in
       let create_expr = <:expr< Mp_resource.create_resource $str:name$ ( $expr$ : $create_type$ ) >> in
       let input_name = input_type name in
          proc.imp_resources

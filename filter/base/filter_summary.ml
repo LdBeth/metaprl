@@ -495,12 +495,10 @@ let opt_apply f = function
 let convert_resource convert
    (name, {
       resource_input = input;
-      resource_intermediate = intermediate;
       resource_output = output
    }) =
    name, {
       resource_input = convert.ctyp_f input;
-      resource_intermediate = convert.ctyp_f intermediate;
       resource_output = convert.ctyp_f output
    }
 
@@ -1147,10 +1145,9 @@ struct
     *)
    and dest_resource_sig convert t =
       let name = dest_string_param t in
-      let input, output, intermediate = three_subterms t in
+      let input, output = two_subterms t in
       name, {
          resource_input = convert.ctyp_f input;
-         resource_intermediate = convert.ctyp_f intermediate;
          resource_output = convert.ctyp_f output
       }
 
@@ -1510,12 +1507,10 @@ struct
    and term_of_resource_sig convert
       (name, {
          resource_input = input;
-         resource_intermediate = intermediate;
          resource_output = output
       }) =
       mk_string_param_term resource_op name [
          convert.ctyp_f input;
-         convert.ctyp_f intermediate;
          convert.ctyp_f output
       ]
 

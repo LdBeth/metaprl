@@ -1187,11 +1187,10 @@ EXTEND
            in
               print_exn f "mlrule_keyword" loc;
              empty_sig_item loc
-        | "resource"; "("; input = ctyp; ","; intermediate = ctyp; ","; output = ctyp; ")"; name = LIDENT ->
+        | "resource"; "("; input = ctyp; ","; output = ctyp; ")"; name = LIDENT ->
            let f () =
               let r = {
                  resource_input = input;
-                 resource_intermediate = intermediate;
                  resource_output = output
               } in let proc = SigFilter.get_proc loc in
                  SigFilter.declare_resource proc loc name r;
