@@ -51,7 +51,6 @@ NLFILES =\
 	shell
 
 NL2FILES =\
-	nl_version\
 	shell_p4\
 	shell_nl\
 	test\
@@ -247,8 +246,16 @@ $(NL).opt: $(CMXOBJS) $(TCMXFILES)
 clean::
 	$(RM) -f *.p4* *.pp*
 
-nl_version.ml: $(CMOBJS) $(filter-out nl_version.%, $(RCMOFILES)) $(CMADEPS) $(TCMOBJS) $(filter-out nl_version.%, $(TCMOFILES)) $(TCMADEPS)
+nl_version.cmo: $(CMOBJS) $(filter-out nl_version.%, $(RCMOFILES)) $(CMADEPS) $(TCMOBJS) $(filter-out nl_version.%, $(TCMOFILES)) $(TCMADEPS) nl_version.cmi
 	echo -n "let version = \"Nuprl-Light 2.00.1:\\n\\t\\tbuild [`date`]\\n\\t\\ton `hostname`\"" > nl_version.ml
+	$(OCAMLC) -c $(OCAMLCFLAGS) nl_version.ml
+
+nl_version.cmx: $(CMXOBJS) nl_version.cmi
+	echo -n "let version = \"Nuprl-Light 2.00.1:\\n\\t\\tbuild [`date`]\\n\\t\\ton `hostname`\"" > nl_version.ml
+	$(OCAMLOPT) -c $(OCAMLOPTFLAGS) nl_version.ml
+
+nl_version.cmi: nl_version.mli
+	$(OCAMLC) $(OCAMLCFLAGS) nl_version.mli
 
 # Real makefile
 include $(ROOT)/mk/config
