@@ -163,8 +163,8 @@ struct
             let t4 =
                try dest_term (List.assoc (dest_var_nods ttt) sub)
                with _ ->
-                  {term_op = ttt.term_op;
-                   term_terms = List.map (do_bterm_subst sub) ttt.term_terms}
+                  { term_op = ttt.term_op;
+                    term_terms = List.map (do_bterm_subst sub) ttt.term_terms }
             in
                t.core <- Term t4;
                t4
@@ -178,15 +178,21 @@ struct
          { term_op = { op_name = var_opname; op_params = [Var v] };
            term_terms = [] }}
 
-   let make_term t =
-      try mk_var_term (dest_var_nods t)
-      with _ ->
+   let make_term = function
+      { term_op = { op_name = opname; op_params = [Var v] };
+        term_terms = []
+      } when opname == var_opname -> 
+         mk_var_term v
+    | t ->
          {free_vars = bterms_free_vars t.term_terms;
           core = Term t}
 
    let mk_term op bterms =
-      {free_vars = bterms_free_vars bterms;
-       core = Term { term_op = op; term_terms = bterms }}
+      if op.op_name == var_opname
+         then raise (Failure "Term_ds.mk_term : variables should not be created with mk_term")
+      else 
+         { free_vars = bterms_free_vars bterms;
+           core = Term { term_op = op; term_terms = bterms }}
 
    let mk_op name params = { op_name = name; op_params = params }
 
