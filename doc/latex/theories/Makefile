@@ -56,7 +56,7 @@ $(NAME).ind: $(INPUTS) $(TEXFILES)
 
 $(NAME).pdf: $(INPUTS) $(TEXFILES) $(NAME).ind
 	TEXINPUTS=$(TEXINPUTS) pdflatex $(NAME)
-	echo $(NAME).pdf : `grep '/Type /Page$$' $(NAME).pdf | wc -l` pages 1>&2
+	echo $(NAME).pdf : `grep -a '/Type /Page$$' $(NAME).pdf | wc -l` pages 1>&2
 
 $(NAME).dvi: $(INPUTS) $(TEXFILES) $(NAME).ind
 	TEXINPUTS=$(TEXINPUTS) latex $(NAME)
