@@ -45,19 +45,9 @@ val set : string -> string -> int -> char -> unit
 val get : string -> string -> int -> char
 
 (*
- * Find a char in a string.
- *)
-val strchr : string -> char -> int
-
-(*
  * Mapping.
  *)
 val for_all : (char -> bool) -> string -> bool
-
-(*
- * Membership.
- *)
-val mem : char -> string -> bool
 
 (*
  * Get the index of any char in the set.
@@ -95,12 +85,15 @@ val vnewname : string -> (string -> bool) -> string
 
 (*
  * Locale queries.
- * See man pages for isdigit, isprint, isalnum and isgraph for more information.
+ * See man pages for isdigit, isprint, isalnum, isupper and isgraph for more information.
  *)
 val is_digit : char -> bool
 val is_print : char -> bool
 val is_alnum : char -> bool
+val is_upper : char -> bool
 val is_graph : char -> bool
+
+val is_capitalized: string -> bool
 
 (*
  * -*-

@@ -51,6 +51,11 @@ value is_alnum(value chr) {
 	return Val_bool(isalnum(c));
 }
 
+value is_upper(value chr) {
+	int c = Int_val(chr);
+	return Val_bool(isupper(c));
+}
+
 value is_digit(value chr) {
 	int c = Int_val(chr);
 	return Val_bool(isdigit(c));

@@ -584,7 +584,7 @@ and format_raw_string buf s =
 
 and format_string buf s =
    try
-       let i = String_util.strchr s '\n' in
+       let i = String.index s '\n' in
           format_string buf (String_util.sub "Rformat.format_string" s 0 i);
           format_newline buf;
           let l = (String.length s) - i - 1 in

@@ -117,22 +117,6 @@ let get name s i =
          end
 
 (*
- * Find a char in a string.
- *)
-let strchr s c =
-   let l = String.length s in
-   let rec aux i =
-      if i < l then
-         if s.[i] = c then
-            i
-         else
-            aux (succ i)
-      else
-         raise Not_found
-   in
-      aux 0
-
-(*
  * Check all chars in the string.
  *)
 let for_all f s =
@@ -141,16 +125,6 @@ let for_all f s =
       (i = len) or (f s.[i] & check (succ i))
    in
       check 0
-
-(*
- * Check if a char is in a string.
- *)
-let mem c s =
-   let len = String.length s in
-   let rec loop i =
-      (i != len) & (c = s.[i] or loop (succ i))
-   in
-      loop 0
 
 (*
  * Index of first char in a set.
@@ -162,7 +136,7 @@ let index_set s set =
          raise Not_found
       else
          let c = s.[i] in
-            if mem c set then
+            if String.contains set c then
                i
             else
                loop (succ i)
@@ -175,7 +149,7 @@ let rindex_set s set =
          raise Not_found
       else
          let c = s.[i] in
-            if mem c set then
+            if String.contains set c then
                i
             else
                loop (i - 1)
@@ -214,7 +188,7 @@ let split_set c s =
             []
          else
             [String.sub s i (j - i)]
-      else if mem s.[j] c then
+      else if String.contains c s.[j] then
          if i = j then
             loop (succ j) (succ j)
          else
@@ -358,9 +332,12 @@ external set_locale: unit -> unit = "set_locale"
 external is_print: char -> bool = "is_print"
 external is_digit: char -> bool = "is_digit"
 external is_alnum: char -> bool = "is_alnum"
+external is_upper: char -> bool = "is_upper"
 external is_graph: char -> bool = "is_graph"
 
 let _ = set_locale ()
+
+let is_capitalized s = is_upper s.[0]
 
 (*
  * Functions to quote and unquote strings.

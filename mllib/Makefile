@@ -52,7 +52,6 @@ LMFILES :=\
 	marshal_shared\
 	mp_big_int\
 	mp_num\
-	mp_ctype\
 	bitset\
 	imp_dag\
 	precedence\
