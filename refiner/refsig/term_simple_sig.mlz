@@ -6,20 +6,6 @@
 open Opname
 open Refine_error_sig
 
-module type ROArraySig =
-sig
-   type elt
-   type t
-   val length : t -> int
-   val get : t -> int -> elt
-   val make : int -> elt -> t
-   val create : int -> elt -> t
-   val init : int -> (int -> elt) -> t
-   val mapi : (int -> elt -> elt) -> t -> t
-   val to_list : t -> elt list
-   val of_list : elt list -> t
-end
-
 module type TermSimpleSig =
 sig
    (************************************************************************
@@ -120,13 +106,13 @@ sig
        Hypothesis of string * term
      | Context of string * term list
 
-    module SeqHyp : ROArraySig with type elt = hypothesis
-    module SeqGoal : ROArraySig with type elt = term
+    type seq_hyps
+    type seq_goals
 
     type esequent =
        { sequent_args : term;
-         sequent_hyps : SeqHyp.t;
-         sequent_goals : SeqGoal.t
+         sequent_hyps : seq_hyps;
+         sequent_goals : seq_goals
        }
 
 end

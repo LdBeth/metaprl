@@ -2,6 +2,21 @@
  * Basic term operations.
  *)
 open Opname
+module type ROArraySig =
+sig
+   type elt
+   type t
+   val length : t -> int
+   val get : t -> int -> elt
+   val make : int -> elt -> t
+   val create : int -> elt -> t
+   val init : int -> (int -> elt) -> t
+   val mapi : (int -> elt -> elt) -> t -> t
+   val append_array : t -> elt array -> t
+   val append_list : t -> elt list -> t
+   val to_list : t -> elt list
+   val of_list : elt list -> t
+end
 
 module type TermBaseSig =
 sig
@@ -15,7 +30,10 @@ sig
    type operator
    type term
    type bound_term
+   type seq_hyps
+   type seq_goals
 
+   type hypothesis
    type level_exp_var'
    type level_exp'
    type object_id
@@ -23,6 +41,9 @@ sig
    type operator'
    type term'
    type bound_term'
+
+   module SeqHyp : ROArraySig with type elt = hypothesis with type t = seq_hyps
+   module SeqGoal : ROArraySig with type elt = term with type t = seq_goals
 
    (************************************************************************
     * De/Constructors                                                      *

@@ -145,7 +145,7 @@ struct
 
    let rec compare_hyps hyp1 hyp2 i =
       (i<0) ||
-      ((match (ToRefiner.TermType.SeqHyp.get hyp1 i), (ToRefiner.TermType.SeqHyp.get hyp2 i) with
+      ((match (ToRefiner.Term.SeqHyp.get hyp1 i), (ToRefiner.Term.SeqHyp.get hyp2 i) with
             ToRefiner.TermType.Hypothesis (v1,t1), ToRefiner.TermType.Hypothesis (v2,t2) ->
                v1 = v2 && t1 == t2
           | ToRefiner.TermType.Context (v1,ts1), ToRefiner.TermType.Context (v2, ts2) ->
@@ -155,7 +155,7 @@ struct
 
    let rec compare_goals goal1 goal2 i =
       (i<0) ||
-      (((ToRefiner.TermType.SeqGoal.get goal1 i) == (ToRefiner.TermType.SeqGoal.get goal2 i)) &&
+      (((ToRefiner.Term.SeqGoal.get goal1 i) == (ToRefiner.Term.SeqGoal.get goal2 i)) &&
        (compare_goals goal1 goal2 (pred i)))
    
    let compare_tterm t1 t2 =
@@ -165,10 +165,10 @@ struct
        | TSeq { ToRefiner.TermType.sequent_args = arg1; ToRefiner.TermType.sequent_hyps = hyp1; ToRefiner.TermType.sequent_goals = goal1},
          TSeq { ToRefiner.TermType.sequent_args = arg2; ToRefiner.TermType.sequent_hyps = hyp2; ToRefiner.TermType.sequent_goals = goal2} ->
             (arg1 == arg2) && 
-            (ToRefiner.TermType.SeqHyp.length hyp1 = ToRefiner.TermType.SeqHyp.length hyp2) &&
-            (compare_hyps hyp1 hyp2 (ToRefiner.TermType.SeqHyp.length hyp1 - 1)) &&
-            (ToRefiner.TermType.SeqGoal.length goal1 = ToRefiner.TermType.SeqGoal.length goal2) &&
-            (compare_goals goal1 goal2 (ToRefiner.TermType.SeqGoal.length goal1 - 1))
+            (ToRefiner.Term.SeqHyp.length hyp1 = ToRefiner.Term.SeqHyp.length hyp2) &&
+            (compare_hyps hyp1 hyp2 (ToRefiner.Term.SeqHyp.length hyp1 - 1)) &&
+            (ToRefiner.Term.SeqGoal.length goal1 = ToRefiner.Term.SeqGoal.length goal2) &&
+            (compare_goals goal1 goal2 (ToRefiner.Term.SeqGoal.length goal1 - 1))
        | _ -> false
             
    let compare_bterm { ToRefiner.TermType.bvars = bvars1; ToRefiner.TermType.bterm = bterm1 }
@@ -179,14 +179,14 @@ struct
     * Copy functions.
     *)
    let make_hyp info hyps i =
-      match FromRefiner.TermType.SeqHyp.get hyps i with
+      match FromRefiner.Term.SeqHyp.get hyps i with
          FromRefiner.TermType.Hypothesis (v,t) ->
             ToRefiner.TermType.Hypothesis (v,Memo.apply info.copy_term info t)
        | FromRefiner.TermType.Context (v,trms) ->
             ToRefiner.TermType.Context (v,List.map (Memo.apply info.copy_term info) trms)
 
    let make_goal info goals i =
-      Memo.apply info.copy_term info (FromRefiner.TermType.SeqGoal.get goals i)
+      Memo.apply info.copy_term info (FromRefiner.Term.SeqGoal.get goals i)
    
    let make_term info t =
       if FromRefiner.TermMan.is_sequent_term t then 
@@ -198,9 +198,9 @@ struct
                { ToRefiner.TermType.sequent_args = 
                   Memo.apply info.copy_term info args;
                  ToRefiner.TermType.sequent_hyps = 
-                  ToRefiner.TermType.SeqHyp.init (FromRefiner.TermType.SeqHyp.length hyps) (make_hyp info hyps);
+                  ToRefiner.Term.SeqHyp.init (FromRefiner.Term.SeqHyp.length hyps) (make_hyp info hyps);
                  ToRefiner.TermType.sequent_goals = 
-                  ToRefiner.TermType.SeqGoal.init (FromRefiner.TermType.SeqGoal.length goals) (make_goal info goals)
+                  ToRefiner.Term.SeqGoal.init (FromRefiner.Term.SeqGoal.length goals) (make_goal info goals)
             }
       else let { FromRefiner.TermType.term_op = op; FromRefiner.TermType.term_terms = bterms } = FromRefiner.Term.dest_term t in
          TTerm 

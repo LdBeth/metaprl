@@ -48,7 +48,10 @@ struct
    type term_core = TermType.term_core
    type bound_term = TermType.bound_term
    type esequent = TermType.esequent
+   type seq_hyps = TermType.seq_hyps
+   type seq_goals = TermType.seq_goals
 
+   type hypothesis = TermType.hypothesis
    type level_exp_var' = TermType.level_exp_var'
    type level_exp' = TermType.level_exp'
    type object_id = TermType.object_id
@@ -62,6 +65,38 @@ struct
     *)
    type term_subst = (string * term) list
 
+   module SeqHyp =
+   struct
+      type elt = hypothesis
+      type t = seq_hyps
+      let length = Array.length
+      let get = Array.get
+      let create = Array.create
+      let make = Array.make
+      let init = Array.init
+      let mapi = Array.mapi
+      let append_array = Array.append
+      let append_list = Array_util.append_list
+      let to_list = Array.to_list
+      let of_list = Array.of_list
+   end
+
+   module SeqGoal =
+   struct
+      type elt = term
+      type t = seq_goals
+      let length = Array.length
+      let create = Array.create
+      let get = Array.get
+      let make = Array.make
+      let init = Array.init
+      let mapi = Array.mapi
+      let append_array = Array.append
+      let append_list = Array_util.append_list
+      let to_list = Array.to_list
+      let of_list = Array.of_list
+   end
+   
    (************************************************************************
     * DEBUGGING                                                            *
     ************************************************************************)

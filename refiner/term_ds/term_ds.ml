@@ -125,32 +125,4 @@ struct
     | MetaFunction of term * meta_term * meta_term
     | MetaIff of meta_term * meta_term
 
-   module SeqHyp =
-   struct
-      type elt = hypothesis
-      type t = seq_hyps
-      let length = Array.length
-      let get = Array.get
-      let create = Array.create
-      let make = Array.make
-      let init = Array.init
-      let mapi = Array.mapi
-      let to_list = Array.to_list
-      let of_list = Array.of_list
-   end
-
-   module SeqGoal =
-   struct
-      type elt = term
-      type t = seq_goals
-      let length = Array.length
-      let create = Array.create
-      let get = Array.get
-      let make = Array.make
-      let init = Array.init
-      let mapi = Array.mapi
-      let to_list = Array.to_list
-      let of_list = Array.of_list
-   end
-
 end

@@ -4,7 +4,7 @@
 
 open Opname
 open Refine_error_sig
-open Term_simple_sig
+open Term_base_sig
 
 (*
  * The types for the standard refiner.
@@ -92,13 +92,13 @@ sig
       Hypothesis of string * term
     | Context of string * term list
 
-   module SeqHyp : ROArraySig with type elt = hypothesis
-   module SeqGoal : ROArraySig with type elt = term
+   type seq_hyps = hypothesis array
+   type seq_goals = term array
 
    type esequent =
       { sequent_args : term;
-        sequent_hyps : SeqHyp.t;
-        sequent_goals : SeqGoal.t
+        sequent_hyps : seq_hyps;
+        sequent_goals : seq_goals
       }
 
 end
@@ -118,7 +118,10 @@ sig
    type operator
    type term
    type bound_term
+   type seq_hyps
+   type seq_goals
 
+   type hypothesis
    type level_exp_var'
    type level_exp'
    type object_id
@@ -126,6 +129,9 @@ sig
    type operator'
    type term'
    type bound_term'
+
+   module SeqHyp : ROArraySig with type elt = hypothesis with type t = seq_hyps
+   module SeqGoal : ROArraySig with type elt = term with type t = seq_goals
 
    (************************************************************************
     * De/Constructors                                                      *

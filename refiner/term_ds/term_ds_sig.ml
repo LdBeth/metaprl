@@ -3,7 +3,7 @@
  *)
 open Opname
 open Refine_error_sig
-open Term_simple_sig
+open Term_base_sig
 
 module type TermDsTypeSig =
 sig
@@ -105,13 +105,6 @@ sig
     | MetaFunction of term * meta_term * meta_term
     | MetaIff of meta_term * meta_term
 
-   module SeqHyp : ROArraySig 
-                   with type elt = hypothesis
-                   with type t = seq_hyps
-   module SeqGoal : ROArraySig 
-                    with type elt = term
-                    with type t = seq_goals
-
 end
 
 module type TermDsSig =
@@ -128,7 +121,10 @@ sig
    type term_core
    type bound_term
    type esequent
+   type seq_hyps
+   type seq_goals
 
+   type hypothesis
    type level_exp_var'
    type level_exp'
    type object_id
@@ -138,6 +134,13 @@ sig
    type bound_term'
 
    type term_subst
+
+   module SeqHyp : ROArraySig 
+                   with type elt = hypothesis
+                   with type t = seq_hyps
+   module SeqGoal : ROArraySig 
+                    with type elt = term
+                    with type t = seq_goals
 
    (************************************************************************
     * De/Constructors                                                      *
