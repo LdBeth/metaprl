@@ -173,7 +173,7 @@ let find_dependency_cmo_cmx modname (cmo_deps,cmx_deps) =
    in
    let cmx_file =
       try
-         Some ((find_file name [".ml"; ".cmx"; ".cmo"])^".cmx")
+         Some ((find_file name [".ml"; ".cmx"; ".mlz"; ".cmo"])^".cmx")
       with Not_found ->
          None
    in
