@@ -7,6 +7,7 @@ module type HypsSig = sig
     val get_v1 : hyps -> addr -> var
     val get_v2 : hyps -> addr -> var
     val get_const : hyps -> addr -> int
+    val compare : var -> var -> bool
     val iter : hyps -> (addr -> cmp -> unit) -> unit
 end
 
@@ -20,36 +21,36 @@ module SimpleHyps = struct
     let get_v1 h a = let (v,_,_)=get_cmp h a in v
     let get_v2 h a = let (_,v,_)=get_cmp h a in v
     let get_const h a = let (_,_,c)=get_cmp h a in c
+    let compare = (=)
     let iter h f = Array.iteri f h
 end
 
-module ArrayTools = struct
-    let d2_1 (n,x,y) = n*x+y
-    let d1_2 n i =let x=i/n in (n,x,i-n*x)
-    let get a coord = Array.get a (d2_1 coord)
-    let set a coord e = Array.set a (d2_1 coord) e
-    let init n m f = Array.init (n*m) (fun x -> (f (d1_2 n x)))
+module ArrayTools (Hyps: HypsSig) =
+struct
+   open Hyps
+
+   let d2_1 (n,x,y) = n*x+y
+   let d1_2 n i =let x=i/n in (n,x,i-n*x)
+   let get a coord = Array.get a (d2_1 coord)
+   let set a coord e = Array.set a (d2_1 coord) e
+   let init n m f = Array.init (n*m) (fun x -> (f (d1_2 n x)))
 
 (*    exception NotFound of (SimpleHyps.var * (SimpleHyps.var array))
 *)
-    let find a e =
-       let i=ref 0 in
-       let n=Array.length a in
-       begin
-           while ((!i)<n) && not (Array.get a !i = e) do
-               i:=(!i)+1
-           done;
-           let r=(!i) in
-           if r>=n then raise Not_found
-           else
-               r
-       end
+
+   let find a (e: var) =
+      let len = Array.length a in
+      let rec aux i =
+         if i==len then raise Not_found;
+         if compare (Array.get a i) e then i else aux (i+1)
+      in aux 0
 end
 
 module Graph =
 functor (Hyps : HypsSig) -> struct
+   module ArrayTool = ArrayTools(Hyps)
    open Hyps
-   open ArrayTools
+   open ArrayTool
 
    type result = Example of (var*int) list | Cycle of addr list
    type dist = Disconnected | Int of int * (addr list)
@@ -134,20 +135,14 @@ functor (Hyps : HypsSig) -> struct
 end
 
 open Refiner.Refiner
+open TermType
+open Term
+open TermOp
+open TermSubst
+open TermMan
 
 module TermHyps =
-(*
-functor (TermType : Refiner) ->
-functor (Term : Term_base_sig.TermBaseSig with type term=TermType.term
-                                         and type term'=TermType.term') ->
-functor (TermMan : Term_man_sig.TermManSig with type term=TermType.term) ->
-*)
 struct
-
-    open TermType
-    open Term
-    open TermOp
-
     type var = term
     type cmp = var * var * int
     type hyps = term * (int array)
@@ -172,21 +167,23 @@ struct
        let f1 i v = f i (get_cmp h i) in
        Array.iteri f1 ar
 
-    let collect f gl =
-    let {sequent_hyps = sh} = TermMan.explode_sequent gl in
-    let aux' h = match h with HypBinding (_,t) | Hypothesis t -> t
-       | Context (s,l) -> (mk_simple_term xperv []) in
-    let shl = List.map aux' (SeqHyp.to_list sh) in
-    let rec aux src i l =
-       match src with
-       [] -> l
-       | h::tl -> if f h then
-                    aux tl (i+1) (i::l)
-                  else
-                    aux tl (i+1) l
-    in
-       aux shl 1 []
+    let compare = alpha_equal
 end
+
+let collect f gl =
+   let sh = (explode_sequent gl).sequent_hyps in
+   let aux' h = match h with HypBinding (_,t) | Hypothesis t -> t
+    | Context (s,l) -> (mk_simple_term xperv []) in
+   let shl = List.map aux' (SeqHyp.to_list sh) in
+   let rec aux src i l =
+      match src with
+         [] -> l
+       | h::tl -> if f h then
+                     aux tl (i+1) (i::l)
+                  else
+                     aux tl (i+1) l
+   in
+      aux shl 1 []
 
 module Test = struct
     module SG = Graph(SimpleHyps)
