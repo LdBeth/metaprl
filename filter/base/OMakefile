@@ -11,26 +11,9 @@ include Files
 OCamlLibraryInstall($(MPINSTALL), $(LIB), filterbase, $(BASE_FILES))
 
 #
-# Infix file is preprocessed.
-# Windows doesn't have sed, so be content with the existing file.
-#
-if $(equal $(OSTYPE), Win32)
-   infix.ml: infix.win32.ml
-       $(RM) $@
-       $(LN) $< $@
-
-else
-   infix.ml: infix.pre.ml
-	$(RM) $@
-	camlp4$(EXE) pa_o.cmo pa_op.cmo pr_o.cmo pa_extend.cmo q_MLast.cmo ./infix.pre.ml |\
-		sed -e 's,"KEYWORD",keyword,' > $@
-	chmod 444 $@
-	$(CP) $@ infix.win32.ml
-
-#
 # Clean up
 #
 clean:
-    $(CLEAN) infix.ml
+    $(CLEAN)
 
 all: filterbase$(LIB_SUFFIX)

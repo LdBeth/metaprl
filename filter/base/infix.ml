@@ -27,8 +27,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 open Pcaml
@@ -49,7 +49,7 @@ let add_infix (keyword : string) =
       GLOBAL: expr;
 
       expr: BEFORE "top" (**)
-         [[ e1 = expr; op = "KEYWORD"; e2 = expr ->
+         [[ e1 = expr; op = STRING $keyword$; e2 = expr ->
              make_infix loc op e1 e2
           ]];
    END
@@ -60,7 +60,7 @@ let add_infix (keyword : string) =
 let remove_infix (keyword : string) =
    DELETE_RULE
       expr:
-         expr; "KEYWORD"; expr
+         expr; STRING $keyword$; expr
    END
 
 (*

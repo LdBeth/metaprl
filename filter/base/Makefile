@@ -42,15 +42,6 @@ include $(ROOT)/mk/rules
 include Makefile.dep
 
 #
-# Infix file is preprocessed.
-#
-infix.ml: infix.pre.ml
-	$(RM) $@
-	camlp4$(EXE) pa_o.cmo pa_op.cmo pr_o.cmo pa_extend.cmo q_MLast.cmo ./infix.pre.ml |\
-		sed -e 's,"KEYWORD",keyword,' > infix.ml
-	chmod 444 $@
-
-#
 # More rules
 #
 lib: $(MAIN).cma $(RMLIFLES) $(RCMIFILES) Files
@@ -59,7 +50,4 @@ opt: $(MAIN).cmxa $(RMLIFILES) $(RCMIFILES) Files
 install:: $(MAIN).cma $(CMIFILES)
 	$(INSTALL) $(MLIFILES) $(CMIFILES) $(MPLIB)
 
-Makefile.dep: Files infix.ml
-
-clean::
-	$(RM) infix.ml
+Makefile.dep: Files
