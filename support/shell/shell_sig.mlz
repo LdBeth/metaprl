@@ -188,6 +188,9 @@ type edit_object =
      edit_info      : unit -> edit_info;
      edit_refine    : string -> MLast.expr -> tactic -> unit;
      edit_find      : int -> int list; (* find a subgoal; edit_addr is a side-effect *)
+
+     (* Filesystem directory *)
+     edit_fs_cwd    : unit -> string
    }
 
 (*

@@ -29,7 +29,6 @@
  * Author: Jason Hickey <jyh@cs.cornell.edu>
  * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
-
 open Lm_rformat
 
 open Proof_boot.Proof
@@ -64,8 +63,22 @@ let format_exn db buf = function
       format_proof db buf proof;
       format_popm buf;
       format_ezone buf
+ | Unix.Unix_error (errno, funinfo, arginfo) ->
+      format_string buf "UnixError:";
+      format_hspace buf;
+      format_string buf (Unix.error_message errno);
+      format_hspace buf;
+      format_string buf ": ";
+      format_string buf funinfo;
+      if arginfo <> "" then
+         begin
+            format_hspace buf;
+            format_string buf "(";
+            format_string buf arginfo;
+            format_string buf ")"
+         end
  | exn ->
-         Refine_exn.format_exn db buf exn
+      Refine_exn.format_exn db buf exn
 
 (*
  * -*-

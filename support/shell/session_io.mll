@@ -44,7 +44,6 @@ let eflush out =
  * Names of the fields.
  *)
 let junk_sym        = "_junk"
-let label_sym       = "label"
 let options_sym     = "options"
 let directory_sym   = "directory"
 let history_sym     = "history"
@@ -170,10 +169,10 @@ let session_dir =
  * Filename for a session.
  *)
 let filename_of_id id =
-   Filename.concat session_dir (string_of_int id)
+   Filename.concat session_dir id
 
 (*
- * Integer filenames in a directory.
+ * Session filenames in a directory.
  *)
 let session_ids () =
    let dir = Unix.opendir session_dir in
@@ -185,12 +184,7 @@ let session_ids () =
       in
          match name with
             Some name ->
-               let ids =
-                  try int_of_string name :: ids with
-                     Failure _ ->
-                        ids
-               in
-                  collect ids
+              collect (name :: ids)
           | None ->
               ids
     in
@@ -203,11 +197,6 @@ let session_ids () =
  *)
 let read_session id =
    let table = parse (filename_of_id id) in
-   let label =
-      try StringMTable.find table label_sym with
-         Not_found ->
-            "subsession"
-   in
    let dir =
       try List.rev (StringMTable.find_all table directory_sym) with
          Not_found ->
@@ -239,7 +228,6 @@ let read_session id =
             []
    in
       { session_info_id       = id;
-        session_info_label    = label;
         session_info_dir      = dir;
         session_info_options  = options;
         session_info_history  = history;
@@ -249,27 +237,12 @@ let read_session id =
       }
 
 (*
- * Number of next session.
- *)
-let id_entry = State.shared_val "Session_io.id_entry" (ref 0)
-
-(*
- * Get a new session id.
- *)
-let new_session_id () =
-   State.write id_entry (fun id ->
-      let i = !id in
-         id := succ i;
-         i)
-
-(*
  * Read all the sessions in the directory.
  *)
 let read_sessions () =
-   let rec collect max_id sessions ids =
+   let rec collect sessions ids =
       match ids with
          id :: ids ->
-            let max_id = max id max_id in
             let sessions =
                try read_session id :: sessions with
                   Unix.Unix_error _
@@ -277,20 +250,17 @@ let read_sessions () =
                 | ParseError ->
                       sessions
             in
-               collect max_id sessions ids
+               collect sessions ids
        | [] ->
-             max_id, sessions
+             sessions
    in
-   let max_id, sessions = collect 0 [] (session_ids ()) in
-      State.write id_entry (fun id -> id := succ max_id);
-      sessions
+        collect [] (session_ids ())
 
 (*
  * Write the session info to a file.
  *)
 let write_session session =
    let { session_info_id       = id;
-         session_info_label    = label;
          session_info_dir      = dir;
          session_info_options  = options;
          session_info_history  = history;
@@ -301,10 +271,7 @@ let write_session session =
    in
    let outx = open_out_bin (filename_of_id id) in
       fprintf outx "# Session version 1.0\r\n";
-      fprintf outx "# Session %d\r\n\r\n" id;
-
-      (* Label *)
-      fprintf outx "[%s]\r\n%s\r\n\r\n" label_sym label;
+      fprintf outx "# Session %s\r\n\r\n" id;
 
       (* Options *)
       fprintf outx "[%s]\r\n%s\r\n\r\n" options_sym options;

@@ -42,6 +42,12 @@ type ls_option =
  | LsDocumentation
 
    (*
+    * File listings.
+    *)
+ | LsFileAll
+ | LsFileModifiers
+
+   (*
     * Browser-only modes:
     *   LsHandles: display handles to allow selection of arbitrary subterms.
     *)
@@ -99,6 +105,10 @@ let option_of_char c =
          LsHandles
     | 'E' ->
          LsExternalEditor
+    | 'A' ->
+         LsFileAll
+    | 'F' ->
+         LsFileModifiers
     | _ ->
          raise (RefineError ("ls", StringError (sprintf "unrecognized option '%s'" (Char.escaped c))))
 
@@ -118,6 +128,8 @@ let char_of_option option =
     | LsDocumentation -> 'D'
     | LsHandles -> 'H'
     | LsExternalEditor -> 'E'
+    | LsFileAll -> 'A'
+    | LsFileModifiers -> 'F'
 
 (*
  * Translate string options to LS options.
@@ -126,19 +138,19 @@ let ls_options_of_string s =
    string_fold (fun options c ->
          LsOptionSet.add options (option_of_char c)) LsOptionSet.empty s
 
-(*
- * Default options.
- *)
-let ls_default_list = [LsFormal; LsParent; LsRules; LsRewrites; LsDocumentation]
-
-let ls_options_default =
-   LsOptionSet.of_list ls_default_list
-
 let string_of_ls_options options =
    let buf = Buffer.create 10 in
       LsOptionSet.iter (fun option ->
             Buffer.add_char buf (char_of_option option)) options;
       Buffer.contents buf
+
+(*
+ * Default options.
+ *)
+let ls_default_list = [LsFormal; LsParent; LsRules; LsRewrites; LsDocumentation; LsFileModifiers]
+
+let ls_options_default =
+   LsOptionSet.of_list ls_default_list
 
 (*
  * Set some additional options.
@@ -169,10 +181,11 @@ let ls_options_add options s =
                   let options = LsOptionSet.remove options LsUnjustified in
                      LsOptionSet.add options option
              | LsHandles
-             | LsExternalEditor ->
-                  LsOptionSet.add options option
+             | LsExternalEditor
+             | LsFileModifiers
+             | LsFileAll
              | LsAll ->
-                  raise (RefineError ("ls", StringError (sprintf "can't set option '%s'" (Char.escaped c))))) options s
+                  LsOptionSet.add options option) options s
 
 (*
  * Clear some additional options.
@@ -202,10 +215,11 @@ let ls_options_clear options s =
                   let options = LsOptionSet.add_list options ls_default_list in
                      LsOptionSet.remove options option
              | LsHandles
-             | LsExternalEditor ->
-                  LsOptionSet.remove options option
+             | LsExternalEditor
+             | LsFileModifiers
+             | LsFileAll
              | LsAll ->
-                  options) options s
+                  LsOptionSet.remove options option) options s
 
 (*!
  * @docoff

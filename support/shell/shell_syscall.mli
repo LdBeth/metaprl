@@ -36,9 +36,6 @@ val set_syscall_handler : (syscall -> int) -> unit
 (*
  * Shell commands.
  *)
-topval deref_ls      : unit -> int
-topval deref_cd      : unit -> string -> int
-topval deref_pwd     : unit -> string
 topval deref_mkdir   : unit -> string -> int
 topval deref_rm      : unit -> string -> int
 topval deref_edit    : unit -> string -> int

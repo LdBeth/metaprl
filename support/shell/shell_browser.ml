@@ -189,13 +189,18 @@ struct
     | CloneURI    of pid
 
    (*
+    * Find the root job.
+    *)
+   let main_pid = Lm_thread_shell.create_or_find "1" Lm_thread_shell.VisibleJob
+
+   (*
     * Decode the URI.
     * This first part should be a session #.
     *)
    let decode_uri state uri =
       match decode_uri uri with
          [] ->
-            RedirectURI (1, "frameset")
+            RedirectURI (main_pid, "frameset")
        | ["session"; id]
        | ["session"; id; "frameset"] ->
             (try FrameURI (Lm_thread_shell.pid_of_string id, "frameset") with
@@ -474,10 +479,12 @@ struct
     *)
    let synchronize_pid pid f =
       if !debug_lock then
-         eprintf "Locking session %d from thread %d@." pid (Thread.id (Thread.self ()));
+         eprintf "Locking session %s from thread %d@." (**)
+            (Lm_thread_shell.string_of_pid pid)
+            (Thread.id (Thread.self ()));
       Lm_thread_shell.with_pid pid (fun () ->
             if !debug_lock then
-               eprintf "Now process %d@." (Lm_thread_shell.get_pid ());
+               eprintf "Now process %s@." (Lm_thread_shell.string_of_pid (Lm_thread_shell.get_pid ()));
             let x =
                State.write session_entry (fun session ->
                      f session)
@@ -733,7 +740,8 @@ struct
           } = session
       in
          Printf.bprintf buf "\tvar session = new Array();\n";
-         Printf.bprintf buf "\tsession['location'] = 'https://%s:%d/session/%d/content%s/';\n" host port id cwd;
+         Printf.bprintf buf "\tsession['location'] = 'https://%s:%d/session/%s/content%s/';\n" (**)
+            host port (Lm_thread_shell.string_of_pid id) cwd;
          Printf.bprintf buf "\tsession['menu']     = %d;\n" menu_version;
          Printf.bprintf buf "\tsession['content']  = %d;\n" content_version;
          Printf.bprintf buf "\tsession['message']  = %d;\n" message_version;
@@ -743,7 +751,7 @@ struct
          Printf.bprintf buf "\tsession['file']     = '%s';\n" edit;
          Printf.bprintf buf "\tsession['edit']     = %d;\n" edit_version;
          Printf.bprintf buf "\tsession['external'] = %b;\n" edit_flag;
-         Printf.bprintf buf "\tsession['id']       = %d;\n" id
+         Printf.bprintf buf "\tsession['id']       = '%s';\n" (Lm_thread_shell.string_of_pid id)
 
    (*
     * This is the default printer for each non-content pane.
@@ -810,9 +818,9 @@ struct
                Some { session_id = id } ->
                   id
              | None ->
-                  1
+                  main_pid
          in
-            BrowserTable.add_string table session_sym (string_of_int id)
+            BrowserTable.add_string table session_sym (Lm_thread_shell.string_of_pid id)
       in
          match session with
             Some session ->
@@ -853,7 +861,10 @@ struct
             session_cwd = cwd
           } = session
       in
-      let uri = sprintf "https://%s:%d/session/%d/%s" host port id (which_uri cwd) in
+      let uri =
+         sprintf "https://%s:%d/session/%s/%s" (**)
+            host port (Lm_thread_shell.string_of_pid id) (which_uri cwd)
+      in
          if !debug_http then
             eprintf "Redirecting to %s@." uri;
          unsynchronize_session session (fun () ->
@@ -1114,7 +1125,7 @@ struct
        | CloneURI pid ->
             synchronize_pid pid (fun session ->
                   if is_valid_response state header then
-                     let pid = Lm_thread_shell.create false in
+                     let pid = Lm_thread_shell.create "job" Lm_thread_shell.VisibleJob in
                         synchronize_pid pid (fun session ->
                               print_redisplay_page frameset_uri server state session outx)
                   else

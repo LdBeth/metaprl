@@ -40,6 +40,12 @@ type ls_option =
  | LsDocumentation
 
    (*
+    * File listings.
+    *)
+ | LsFileAll
+ | LsFileModifiers
+
+   (*
     * Browser-only modes:
     *   LsHandles: display handles to allow selection of arbitrary subterms.
     *)

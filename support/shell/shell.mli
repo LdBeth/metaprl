@@ -54,6 +54,7 @@ topval abort : unit -> unit
 topval cd : string -> string
 topval refresh : unit -> unit
 topval pwd : unit -> string
+topval fs_cwd : unit -> string
 topval root : unit -> string
 topval up : int -> unit
 topval down : int -> unit
@@ -88,7 +89,6 @@ topval revert_all : unit -> unit
 topval save_all : unit -> unit
 
 (* Display *)
-topval view : string -> unit
 topval ls : string -> unit
 topval set_dfmode : string -> unit
 topval set_tex_file : string -> unit

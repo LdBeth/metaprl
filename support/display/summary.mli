@@ -133,6 +133,10 @@ val mk_implementation_term : term list -> term
 val mk_package_term : string -> term
 val mk_packages_term : term list -> term
 
+val mk_unreadable_term : term
+val mk_file_term : string -> string -> term
+val mk_listing_term : string -> term list -> term
+
 (*
  * Proofs.
  *)

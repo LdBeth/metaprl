@@ -50,8 +50,7 @@ type session =
  * IO format for a session.
  *)
 type session_info =
-   { session_info_id       : int;
-     session_info_label    : string;
+   { session_info_id       : string;
      session_info_options  : string;
      session_info_dir      : string list;
      session_info_history  : string list;

@@ -91,7 +91,7 @@ type commands =
      mutable backup_all : unit -> unit;
      mutable revert_all : unit -> unit;
      mutable save_all : unit -> unit;
-     mutable view : LsOptionSet.t -> string -> unit;
+     mutable view : LsOptionSet.t -> unit;
      mutable expand : unit -> unit;
      mutable expand_all : unit -> unit;
      mutable apply_all : (edit_object -> dform_base -> unit) -> bool -> bool -> bool -> unit;
@@ -108,6 +108,7 @@ type commands =
      mutable set_view_options : string -> unit;
      mutable clear_view_options : string -> unit;
      mutable find_subgoal : int -> string;
+     mutable fs_cwd : unit -> string
    }
 
 let uninitialized _ = raise (Invalid_argument "The Shell module has not been instantiated")
@@ -143,6 +144,7 @@ let commands =
      set_view_options = uninitialized;
      clear_view_options = uninitialized;
      find_subgoal = uninitialized;
+     fs_cwd = uninitialized
    }
 
 (*
@@ -169,7 +171,7 @@ struct
    let flush shell =
       let options = Session.get_view_options () in
          Shell_current.flush ();
-         view parse_arg shell options "."
+         view parse_arg shell options
 
    (************************************************************************
     * NUPRL5 INTERFACE                                                     *
@@ -180,7 +182,7 @@ struct
       (*
        * Assign the editor its own shell.
        *)
-      let edit_pid = Lm_thread_shell.create true
+      let edit_pid = Lm_thread_shell.create "edit" Lm_thread_shell.HiddenJob
 
       let synchronize f =
          Lm_thread_shell.with_pid edit_pid (fun () ->
@@ -579,7 +581,7 @@ struct
        *)
       let init () =
          refresh_packages ();
-         Shell_state.set_module "shell";
+         Shell_state.set_module "shell_theory";
          synchronize (fun _ -> ())
 
       (*
@@ -618,6 +620,7 @@ struct
          commands.set_view_options    <- set_view_options;
          commands.clear_view_options  <- clear_view_options;
          commands.find_subgoal        <- wrap edit_find;
+         commands.fs_cwd              <- wrap_unit fs_cwd;
          ()
    end
 
@@ -631,7 +634,7 @@ struct
           * Note! the main function will call Top.init.
           *)
          refresh_packages ();
-         Shell_state.set_module "shell";
+         Shell_state.set_module "shell_theory";
          ShellP4.main ();
          Shell_current.flush ();
          Top.backup_all ()
@@ -664,6 +667,7 @@ let init () = commands.init ()
 let cd s = commands.cd s
 let refresh () = commands.refresh ()
 let pwd () = commands.pwd ()
+let fs_cwd () = commands.fs_cwd ()
 let set_dfmode s = commands.set_dfmode s
 let create_pkg s = commands.create_pkg s
 let backup _ = commands.backup ()
@@ -713,10 +717,7 @@ let ls s =
       else
          options
    in
-      commands.view options "."
-
-let view name =
-   commands.view LsOptionSet.empty name
+      commands.view options
 
 let up i =
    ignore (cd (String.make (i + 1) '.'));

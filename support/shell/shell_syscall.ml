@@ -36,7 +36,6 @@ open Shell_syscall_sig
  *)
 type state =
    { mutable shell_handler : syscall -> int;
-     mutable shell_dir : string;
      shell_root : string
    }
 
@@ -75,6 +74,7 @@ let handle_syscall command =
    in
       match command with
          SyscallRestart ->
+            Shell_current.flush ();
             Shell.backup_all ();
             (try Unix.execv Sys.argv.(0) Sys.argv; -1 with
                 Unix.Unix_error (errno, funinfo, arginfo) ->
@@ -91,8 +91,7 @@ let handle_syscall command =
 
 let state =
    { shell_handler = handle_syscall;
-     shell_root = Setup.root ();
-     shell_dir = "."
+     shell_root = Setup.root ()
    }
 
 let set_syscall_handler f =
@@ -105,13 +104,7 @@ let exec command =
    state.shell_handler command
 
 (*
- * Get the current path.
- *)
-let cwd () =
-   Filename.concat state.shell_root state.shell_dir
-
-(*
- * Filname simplification.
+ * Get the filename relative to the root.
  *)
 let rec prune_relname path =
    match path with
@@ -120,57 +113,25 @@ let rec prune_relname path =
     | _ ->
          path
 
-let relname s =
-   let s = Filename.concat state.shell_dir s in
+let absname s =
+   let cwd = Shell.fs_cwd () in
+   let s = Filename.concat cwd s in
    let s = Lm_filename_util.split_path s in
    let s = Lm_filename_util.simplify_path s in
    let s = prune_relname s in
       Lm_filename_util.concat_path s
 
-let filenames s =
-   let relname = relname s in
-   let absname = Filename.concat state.shell_root relname in
-      absname, relname
-
 (*
- * List the current directory.
+ * Get the filename relative to the working directory.
  *)
-let deref_ls () =
-   exec (SyscallShell (sprintf "ls -ACF %s" (cwd ())))
-
-(*
- * Change the current directory.
- *)
-let deref_cd () s =
-   let dirname, s = filenames s in
-      try
-         let stat = Unix.stat dirname in
-            if stat.Unix.st_kind = Unix.S_DIR then
-               begin
-                  state.shell_dir <- s;
-                  0
-               end
-            else
-               begin
-                  eprintf "Directory %s does not exist@." s;
-                  -1
-               end
-      with
-         Unix.Unix_error _ ->
-            eprintf "Directory %s does not exist@." s;
-            -1
-
-(*
- * Get the current directory.
- *)
-let deref_pwd () =
-   state.shell_dir
+let relname s =
+   Filename.concat state.shell_root s
 
 (*
  * Make a directory.
  *)
 let deref_mkdir () s =
-   let filename, _ = filenames s in
+   let filename = relname s in
       try Unix.mkdir filename 0o777; 0 with
          Unix.Unix_error (error, msg, code) ->
             if code = "" then
@@ -183,7 +144,7 @@ let deref_mkdir () s =
  * Remove a file.
  *)
 let deref_rm () s =
-   let filename, _ = filenames s in
+   let filename = relname s in
       try Unix.unlink filename; 0 with
          Unix.Unix_error (error, msg, code) ->
             if code = "" then
@@ -196,13 +157,12 @@ let deref_rm () s =
  * Edit a file.
  *)
 let deref_edit () s =
-   let filename = relname s in
+   let filename = absname s in
       exec (SyscallEdit (state.shell_root, filename))
 
 (*
  * Rebuild MetaPRL.
  * The target is either mp.top or mp.opt.
- * We may have to detect native code here...
  *)
 let deref_omake () =
    exec (SyscallOMake target)
@@ -223,7 +183,7 @@ let deref_cvs () command =
     | "update"
     | "co"
     | "commit" ->
-         exec (SyscallCVS (cwd (), command))
+         exec (SyscallCVS (absname ".", command))
     | _ ->
          eprintf "CVS command '%s' not allowed@." command;
          -1

@@ -94,14 +94,18 @@ type browser_info =
 (*
  * The current state of the browser.
  *)
+type pid = Lm_thread_shell.pid
+
 type browser_state =
    { browser_directories : string list;
      browser_files       : string list;
      browser_history     : string list;
      browser_options     : string;
-     browser_id          : int;
-     browser_sessions    : (int * string) list
+     browser_id          : pid;
+     browser_sessions    : (pid * string) list
    }
+
+let string_of_pid = Lm_thread_shell.string_of_pid
 
 (************************************************************************
  * Proxyedit names.
@@ -299,7 +303,7 @@ let add_sessions state info ids =
          menu_replace info "file" (fun menu ->
                let items =
                   List.fold_left (fun items (pid, cwd) ->
-                        let label = sprintf "Session %d (%s)" pid cwd in
+                        let label = sprintf "Session %s (%s)" (string_of_pid pid) cwd in
                         let label =
                            if pid = id then
                               "&#8227;" ^ label
@@ -308,7 +312,7 @@ let add_sessions state info ids =
                         in
                         let item =
                            { command_label = label;
-                             command_value = sprintf "Session(%d)" pid
+                             command_value = sprintf "Session(%s)" (string_of_pid pid)
                            }
                         in
                            item :: items) menu.menu_items ids
@@ -346,7 +350,8 @@ let add_edit state info =
                         let item =
                            { command_label = "Open " ^ Filename.basename file;
                              command_value =
-                                sprintf "Edit(%b, '/session/%d/edit/%s')" flag id (proxyedit_of_filename file)
+                                sprintf "Edit(%b, '/session/%s/edit/%s')" (**)
+                                   flag (string_of_pid id) (proxyedit_of_filename file)
                            }
                         in
                            item :: items) items files
@@ -361,14 +366,16 @@ let add_edit state info =
  *)
 let view_table =
    ['H', "",  "Show Term Handles",              "Hide Term Handles";
-    'u', "",  "Show Only Unjustified Content",  "Show Default Set of Items";
+    'u', "",  "Show Only Unjustified Content",  "Show Default Items";
     'f', "",  "Show All Formal Content",        "Hide All Formal Content";
     'R', "-", "Show Rules",                     "Hide Rules";
     'r', "-", "Show Rewrites",                  "Hide Rewrites";
     'i', "",  "Show All Informal Content",      "Hide All Informal Content";
     'D', "-", "Show Documentation",             "Hide Documentation";
     'p', "-", "Show Parents",                   "Hide Parents";
-    'd', "-", "Show Display Forms",             "Hide Display Forms"]
+    'd', "-", "Show Display Forms",             "Hide Display Forms";
+    'A', "",  "Show All Files",                 "Show Standard Files";
+    'F', "-", "Show File Attributes",           "Hide File Attributes"]
 
 let add_view info view =
    try

@@ -318,6 +318,9 @@ let rec edit pack parse_arg name window obj =
          Proof_edit.addr_ped ped addr;
          addr
    in
+   let edit_fs_cwd () =
+      "."
+   in
       { edit_display = edit_display;
         edit_get_contents = edit_get_contents;
         edit_get_terms = edit_get_terms;
@@ -338,6 +341,7 @@ let rec edit pack parse_arg name window obj =
         edit_redo = edit_redo;
         edit_interpret = edit_interpret;
         edit_find = edit_find;
+        edit_fs_cwd = edit_fs_cwd
       }
 
 let create_window = function

@@ -171,6 +171,9 @@ let rec edit pack window =
    let edit_get_contents () =
       raise_edit_error "can only retrieve contents of an individual item, not of a root package"
    in
+   let edit_fs_cwd () =
+      "."
+   in
       { edit_display = edit_display;
         edit_get_contents = edit_get_contents;
         edit_get_terms = not_a_rule;
@@ -191,10 +194,19 @@ let rec edit pack window =
         edit_redo = edit_redo;
         edit_interpret = edit_interpret;
         edit_find = not_a_rule;
+        edit_fs_cwd = edit_fs_cwd
       }
 
 let create pack window =
    edit pack (create_window window)
+
+(*
+ * Note: in this particular case, view is the same as create.
+ * However, in general, view is for viewing existing objects,
+ * and create is used for creating new objects.  So we keep them
+ * separate here.
+ *)
+let view = create
 
 (*
  * -*-

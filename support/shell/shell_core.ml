@@ -154,10 +154,10 @@ let pid shell =
 let jobs shell =
    let pids = Lm_thread_shell.get_pids () in
    let buf = Buffer.create 32 in
-      ignore (List.fold_left (fun first i ->
+      ignore (List.fold_left (fun first pid ->
                     if not first then
                        Buffer.add_string buf " ";
-                    Buffer.add_string buf (string_of_int i);
+                    Buffer.add_string buf (Lm_thread_shell.string_of_pid pid);
                     false) true pids);
       Buffer.contents buf
 
@@ -174,10 +174,6 @@ let fg shell pid =
 (*
  * Update the current item being edited.
  *)
-let set_packages info =
-   info.shell_proof.edit_addr [];
-   info.shell_proof <- Shell_root.create packages (get_display_mode info)
-
 let set_package parse_arg info modname =
    let pack = Package_info.get packages modname in
       info.shell_proof.edit_addr [];
@@ -578,25 +574,27 @@ let parse_path shell name =
  * Mount the root directory.
  *)
 let mount_root parse_arg shell need_shell verbose =
-   shell.shell_package <- None;
-   set_packages shell;
-   Shell_state.set_dfbase None;
-   Shell_state.set_mk_opname None;
-   Shell_state.set_so_var_context None;
-   Shell_state.set_infixes None;
-   Shell_state.set_module "shell"
+   let proof = Shell_root.view packages (get_display_mode shell) in
+      shell.shell_package <- None;
+      shell.shell_proof <- proof;
+      Shell_state.set_dfbase None;
+      Shell_state.set_mk_opname None;
+      Shell_state.set_so_var_context None;
+      Shell_state.set_infixes None;
+      Shell_state.set_module "shell_theory"
 
 (*
  * Mount the FS directory.
  *)
 let mount_fs parse_arg shell need_shell verbose =
-   shell.shell_package <- None;
-   set_packages shell;
-   Shell_state.set_dfbase None;
-   Shell_state.set_mk_opname None;
-   Shell_state.set_so_var_context None;
-   Shell_state.set_infixes None;
-   Shell_state.set_module "shell"
+   let proof = Shell_fs.view (get_display_mode shell) in
+      shell.shell_package <- None;
+      shell.shell_proof <- proof;
+      Shell_state.set_dfbase None;
+      Shell_state.set_mk_opname None;
+      Shell_state.set_so_var_context None;
+      Shell_state.set_infixes None;
+      Shell_state.set_module "shell_theory"
 
 (*
  * Helper for mounting a module.
@@ -619,13 +617,13 @@ let mount_current_module modname parse_arg shell need_shell verbose =
 
             (* See if the theory exists *)
             let _ = Theory.get_theory modname in
-            let pkg = Package_info.load packages parse_arg modname in
-               if need_shell && not (shell_package pkg) then
+            let pack = Package_info.load packages parse_arg modname in
+               if need_shell && not (shell_package pack) then
                   failwith ("Module " ^ modname ^ " does not contain shell commands");
-               shell.shell_package <- Some pkg;
+               shell.shell_package <- Some pack;
                Shell_state.set_dfbase (Some (get_db shell));
-               Shell_state.set_mk_opname (Some (Package_info.mk_opname pkg));
-               Shell_state.set_infixes (Some (Package_info.get_infixes pkg));
+               Shell_state.set_mk_opname (Some (Package_info.mk_opname pack));
+               Shell_state.set_infixes (Some (Package_info.get_infixes pack));
                Shell_state.set_module modname;
                if verbose then
                   eprintf "Module: /%s%t" modname eflush
@@ -640,7 +638,14 @@ let mount_module modname parse_arg shell need_shell verbose =
 
    (* Set the state *)
    Shell_state.set_so_var_context None;
-   set_package parse_arg shell modname
+   set_package parse_arg shell modname;
+
+   (* Set the proof *)
+   let pack = Package_info.get packages modname in
+   let display_mode = get_display_mode shell in
+   let proof = Shell_package.view pack parse_arg display_mode in
+      (* Set the proof *)
+      shell.shell_proof <- proof
 
 (*
  * Mount a specific proof.
@@ -708,11 +713,11 @@ let rec chdir parse_arg shell need_shell verbose path =
                mount parse_arg shell need_shell verbose
             end;
 
-         (* Change to the subdirectory *)
-         shell.shell_proof.edit_addr subdir;
-
          (* Save the directory *)
          shell.shell_dir <- path;
+
+         (* Change to the subdirectory *)
+         shell.shell_proof.edit_addr subdir
       with
          exn ->
             (* Some kind of failure happened, so change back to where we came from *)
@@ -741,6 +746,9 @@ let root parse_arg shell =
 let pwd shell =
    string_of_dir shell.shell_dir
 
+let fs_cwd shell =
+   shell.shell_proof.edit_fs_cwd ()
+
 (************************************************************************
  * Viewing.
  *)
@@ -748,8 +756,7 @@ let pwd shell =
 (*
  * Window width.
  *)
-let set_window_width shell i =
-   shell.shell_width <- max !Mp_term.min_screen_width i
+let set_window_width shell i =   shell.shell_width <- max !Mp_term.min_screen_width i
 
 (*
  * Interface to the HTTP shell.
@@ -768,8 +775,8 @@ let clear_view_options shell s =
 
 let get_shortener shell =
    match shell.shell_package with
-      Some pkg ->
-         let mk_opname = Package_info.mk_opname pkg in
+      Some pack ->
+         let mk_opname = Package_info.mk_opname pack in
          let shortener opname params bterms =
             match Opname.dest_opname opname with
                h :: _ ->
@@ -791,49 +798,10 @@ let get_shortener shell =
             shortener
 
 (*
- * Display the "root" directory.
- * This is just a list of the "important" packages.
- *)
-let view_packages info options =
-   let proof = Shell_root.create packages (get_display_mode info) in
-      display_proof info proof options
-
-(*
- * Display a filesystem directory.
- *)
-let view_fs info options =
-   let proof = Shell_fs.view (get_display_mode info) in
-      display_proof info proof options
-
-(*
- * Display a particular package.
- *)
-let view_package parse_arg info name options =
-   let pack = Package_info.get packages name in
-   let display_mode = get_display_mode info in
-   let proof = Shell_package.view pack parse_arg display_mode in
-      display_proof info proof options
-
-(*
- * View an item in a package.
- *)
-let view_item info modname name options =
-   display_proof info info.shell_proof options
-
-(*
  * General purpose displayer.
  *)
-let view parse_arg shell options name =
-   let dir = parse_path shell name in
-      match dir with
-         DirRoot ->
-            view_packages shell options
-       | DirFS _ ->
-            view_fs shell options
-       | DirModule modname ->
-            view_package parse_arg shell modname options
-       | DirProof (modname, item, _) ->
-            view_item shell modname item options
+let view parse_arg shell options =
+   display_proof shell shell.shell_proof options
 
 (************************************************************************
  * Proof operations.
@@ -922,7 +890,7 @@ let print_theory parse_arg shell name =
       shell.shell_df_mode <- "tex";
       chdir parse_arg shell false true (DirModule name);
       expand_all parse_arg shell;
-      view parse_arg shell (LsOptionSet.singleton LsAll) ".";
+      view parse_arg shell (LsOptionSet.singleton LsAll);
       shell.shell_df_mode <- mode;
       chdir parse_arg shell false false dir
 
@@ -967,7 +935,7 @@ let create_pkg parse_arg shell name =
       DirModule modname ->
          (* Top level *)
          let _ = Package_info.create_package packages parse_arg modname in
-            view parse_arg shell LsOptionSet.empty name
+            view parse_arg shell LsOptionSet.empty
     | DirRoot ->
          raise (Failure "Shell.create_package: can't create root package")
     | DirFS _ ->

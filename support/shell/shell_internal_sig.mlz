@@ -46,10 +46,7 @@ type shell_dir =
  * thread-safe.
  *)
 type shell =
-   { shell_label                 : string;
-     mutable shell_id            : int;
-
-     (* Set if the shell directory is out of date *)
+   { (* Set if the shell directory is out of date *)
      mutable shell_needs_refresh : bool;
 
      (* Display *)

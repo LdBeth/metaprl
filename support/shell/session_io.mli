@@ -26,8 +26,7 @@
  *)
 open Session_sig
 
-val new_session_id : unit -> int
-val read_session   : int -> session_info
+val read_session   : string -> session_info
 val read_sessions  : unit -> session_info list
 val write_session  : session_info -> unit
 

@@ -141,9 +141,7 @@ let default_shell =
    let dfmode = "prl" in
    let display_mode = DisplayText (default_mode_base, dfmode) in
    let proof = Shell_root.create packages display_mode in
-      { shell_id             = 1;
-        shell_label          = "current";
-        shell_width          = 80;
+      { shell_width          = 80;
         shell_df_mode        = dfmode;
         shell_dir            = DirRoot;
         shell_package        = None;
@@ -153,10 +151,8 @@ let default_shell =
 
 let fork_shell shell =
    let { shell_proof = old_proof } = shell in
-      { shell with shell_label = "subsession";
-                   shell_proof = old_proof.edit_copy ();
-                   shell_needs_refresh = true;
-                   shell_id = new_session_id ()
+      { shell with shell_proof = old_proof.edit_copy ();
+                   shell_needs_refresh = true
       }
 
 let shell_entry = State.private_val "Shell_current.shell_entry" default_shell fork_shell
@@ -167,8 +163,7 @@ let shell_entry = State.private_val "Shell_current.shell_entry" default_shell fo
 let set_current_session session_info =
    State.write shell_entry (fun shell ->
    State.write session_entry (fun session ->
-         let { session_info_id       = id;
-               session_info_dir      = dir;
+         let { session_info_dir      = dir;
                session_info_options  = options;
                session_info_history  = history;
                session_info_edit     = edit;
@@ -176,7 +171,6 @@ let set_current_session session_info =
                session_info_messages = messages
              } = session_info
          in
-            shell.shell_id              <- id;
             shell.shell_dir             <- dir_of_path dir;
             shell.shell_needs_refresh   <- true;
             add_linebuffer_strings session.session_history history;
@@ -191,40 +185,8 @@ let set_current_session session_info =
 let () =
    (* Load all the previous sessions *)
    let sessions = read_sessions () in
-
-   (* Find the session to assign to the current state *)
-   let rec search_current rest sessions =
-      match sessions with
-         session :: sessions ->
-            if session.session_info_label = "current" then
-               session, List.rev_append rest sessions
-            else
-               search_current (session :: rest) sessions
-       | [] ->
-            match rest with
-               session :: sessions ->
-                  session, sessions
-             | [] ->
-                  let session =
-                     { session_info_id       = Lm_thread_shell.get_pid ();
-                       session_info_label    = "current";
-                       session_info_dir      = [];
-                       session_info_options  = string_of_ls_options ls_options_default;
-                       session_info_history  = [];
-                       session_info_edit     = [];
-                       session_info_dirs     = [];
-                       session_info_messages = []
-                     }
-                  in
-                     session, rest
-   in
-   let session, sessions = search_current [] sessions in
-      (* Assign the current session *)
-      set_current_session session;
-
-      (* For the rest, create new states *)
       List.iter (fun session ->
-            let pid = Lm_thread_shell.create false in
+            let pid = Lm_thread_shell.create_or_find session.session_info_id Lm_thread_shell.VisibleJob in
                Lm_thread_shell.with_pid pid (fun () ->
                      set_current_session session) ()) sessions
 
@@ -234,11 +196,7 @@ let () =
 let flush () =
    State.read shell_entry (fun shell ->
    State.read session_entry (fun session ->
-         let { shell_id          = id;
-               shell_label       = label;
-               shell_dir         = dir
-             } = shell
-         in
+         let { shell_dir = dir } = shell in
          let { session_history     = history;
                session_directories = dirs;
                session_files       = files;
@@ -246,10 +204,10 @@ let flush () =
                session_messages    = messages
              } = session
          in
+         let pid = Lm_thread_shell.string_of_pid (Lm_thread_shell.get_pid ()) in
          let session =
-            { session_info_id       = id;
+            { session_info_id       = pid;
               session_info_dir      = path_of_dir dir;
-              session_info_label    = label;
               session_info_options  = string_of_ls_options options;
               session_info_history  = strings_of_linebuffer history;
               session_info_edit     = strings_of_linetable files;
@@ -257,6 +215,7 @@ let flush () =
               session_info_messages = strings_of_linebuffer_buffers messages
             }
          in
+            eprintf "Shell_current.flush: %s@." (Lm_string_util.prepend "/" session.session_info_dir);
             write_session session))
 
 (*!

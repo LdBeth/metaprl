@@ -51,7 +51,7 @@ let root =
       let name = environ_prefix ^ "_ROOT" in
          try Sys.getenv name with
             Not_found ->
-               raise(Invalid_argument ("Setup: the environment variable " ^ name ^ " is not defined"))
+               raise (Invalid_argument ("Setup: the environment variable " ^ name ^ " is not defined"))
    in
       delay "Setup.root" writer
 

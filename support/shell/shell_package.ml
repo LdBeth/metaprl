@@ -321,6 +321,8 @@ let mk_ls_filter options =
                   is_informal_item :: predicate
              | LsDocumentation ->
                   is_documentation :: predicate
+             | LsFileAll
+             | LsFileModifiers
              | LsHandles
              | LsExternalEditor ->
                   predicate) [] options
@@ -356,7 +358,12 @@ let rec edit pack_info parse_arg window =
    let edit_save () =
       Package_info.save parse_arg pack_info
    in
-   let not_a_rule _ = raise_edit_error "this is not a rule or rewrite" in
+   let edit_fs_cwd () =
+      "."
+   in
+   let not_a_rule _ =
+      raise_edit_error "this is not a rule or rewrite"
+   in
       { edit_display = edit_display;
         edit_get_contents = raise_edit_error_fun "can only retrieve contents of an individual item, not of a package";
         edit_get_terms = not_a_rule;
@@ -377,6 +384,7 @@ let rec edit pack_info parse_arg window =
         edit_redo = not_a_rule;
         edit_interpret = raise_edit_error_fun "this is not a proof";
         edit_find = not_a_rule;
+        edit_fs_cwd = edit_fs_cwd
       }
 
 let create pack parse_arg window =

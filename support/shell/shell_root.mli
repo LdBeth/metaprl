@@ -40,6 +40,14 @@ val create :
    edit_object
 
 (*
+ * View a root object.
+ *)
+val view :
+   Package_info.t ->
+   display_mode ->
+   edit_object
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "refiner"
