@@ -228,7 +228,7 @@ $(REG_CMXFILES): %.cmx: %.ml %.cmi
 #
 clean::
 	$(RM) *.run *.cma *.cmxa *.cmx *.cmi* *.cmo* *.z* *.o *.a *~ *.bak *.output $(CLEAN_MAIN)
-	$(RM) gmon.out $(ZMLFILES) $(ZMLIFILES) $(PMLFILES) $(PMLIFILES)
+	$(RM) gmon.out $(ZMLFILES) $(ZMLIFILES) $(PMLFILES) $(PMLIFILES) Makefile.dep
 
 Makefile.dep:
 	@if [ -f $(OCAMLDEP) ]; then touch Makefile.dep; make depend; fi
