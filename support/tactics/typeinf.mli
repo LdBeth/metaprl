@@ -37,17 +37,38 @@ open Refiner.Refiner.Term
 
 open Unify_mm
 
-open Tactic_boot_sig
-
 open Tactic_type
 open Tactic_type.Sequent
 open Tactic_type.Tacticals
 
 (*
- * The types of the main type inference functions,
- * typeinf_subst_fun and typeinf_func
- * are described in filter/boot/tactic_boot_sig.mlz
+ * A function that analyzes the sequent to gather type info.
+ * It gets a clause from the current sequent or its assumptions.
  *)
+type typeinf_subst_fun = term_subst -> (string option * term) -> term_subst
+
+(*
+ * A type inference is performed in a type context,
+ * which maps variables to type.
+ *
+ * An inference function takes as arguments :
+ * 1) consts - a set of variables that should be treated as
+ * constants when we use unification to figure things out.
+ * 2) decls - an associative list of variable names and
+ * the types these variables were declared with.
+ * 3) eqs - a list of equations we have on our type variables
+ * 4) opt_eqs - a list of equations we can use to figure the variables out,
+ * but these equations do not have to be satisfied.
+ * 5) defs -  list of the defaults that we should use instead of variables
+ * in case there is no other information we can use to figure them out
+ * 6) t - a term whoose type we want to infer
+ *
+ * An inference function returns:
+ * Updated eqs, updated opt_eqs, updated defs and a type
+ * (that can contain variables)
+ *)
+type opt_eqs_type = (term * term) list
+type typeinf_func = StringSet.t -> term_subst -> eqnlist -> opt_eqs_type -> term_subst -> term -> eqnlist * opt_eqs_type * term_subst * term
 
 (*
  * This resource is used to analyze the sequent to gather type info.

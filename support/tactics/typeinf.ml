@@ -78,6 +78,19 @@ let _ =
  ************************************************************************)
 
 (*
+ * A function that analyzes the sequent to gather type info.
+ * It gets a clause from the current sequent or its assumptions.
+ *)
+type typeinf_subst_fun = term_subst -> (string option * term) -> term_subst
+
+(*
+ * A type inference is performed in a type context,
+ * which maps variables to type.
+ *)
+type opt_eqs_type = (term * term) list
+type typeinf_func = StringSet.t -> term_subst -> eqnlist -> opt_eqs_type -> term_subst -> term -> eqnlist * opt_eqs_type * term_subst * term
+
+(*
  * This resource is used to analyze the sequent to gather type info.
  * The subst_fun gets a clause from the current sequent or its
  * assumptions.
