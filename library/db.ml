@@ -302,7 +302,7 @@ let incr_level_exp_n i le =
         let { le_var = v; le_offset = o } = dest_level_var lv in
             if o = 0 then mk_level_var v (o + i) else lv
       in
-         if i > c then (mk_level i (List.map add1 vars)) else le
+         mk_level (max i c) (List.map add1 vars)
 
 let scan_level_expression scanner =
   let le = ref (mk_const_level_exp 0) in
