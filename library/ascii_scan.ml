@@ -31,6 +31,7 @@ type scanner =
 	(* state *)
 	; mutable cchar		: char
 	; mutable escapep	: bool  
+	; mutable eofp		: bool
 	}
 
 
@@ -63,20 +64,27 @@ let implode_rev chars =
 
 
 let make_scanner escape white stream =
+ let emptyp = try (empty stream; true) with _ -> false in
  { stream = stream
 
  ; escape = explode escape
  ; whitespace = explode white
 
- ; cchar = (next stream)
+ ; cchar = if emptyp then ' ' else next stream
  ; escapep = false
+ ; eofp = emptyp
  }
 
 
+let scan_stream_eof_p s = try (empty s.stream; true) with _ -> false
+
 let scan_bump s =
- s.escapep <- false;
- s.cchar <- next s.stream;
- ()
+ if s.eofp then error ["scanner"; "bump"; "eof"] [] []
+ else if (scan_stream_eof_p s) then s.eofp <- true
+ else
+   (s.escapep <- false;
+    s.cchar <- next s.stream;
+    ())
 
 
 let scan_next s =
@@ -85,11 +93,12 @@ let scan_next s =
  ()
 
 
-let scan_at_eof_p s = try (empty s.stream; true) with _ -> false
+let scan_at_eof_p s = s.eofp (*or scan_stream_eof_p s *)
+
 let scan_escape_p s = s.escapep
 
 let scan_cur_char s = s.cchar
-let scan_at_char_p s c = s.cchar = c
+let scan_at_char_p s c = (not (scan_at_eof_p s)) & (s.cchar = c)
 
 let scan_char s c = 
  if (scan_at_char_p s c) 
@@ -99,7 +108,7 @@ let scan_char s c =
 
 
 let scan_cur_byte s = code s.cchar
-let scan_at_byte_p s c = (code s.cchar) = c
+let scan_at_byte_p s c = (not (scan_at_eof_p s)) & (code s.cchar) = c
 
 let scan_byte s c = 
  if (scan_at_byte_p s c) 
@@ -110,17 +119,17 @@ let scan_byte s c =
 let numeric_digits = ['0'; '1'; '2'; '3'; '4'; '5'; '6'; '7'; '8'; '9']
 
 let scan_at_digit_p s =
-  (mem s.cchar numeric_digits)	
+  (not (scan_at_eof_p s))  & (mem s.cchar numeric_digits)	
 
 let rec scan_whitespace s = 
- if (mem s.cchar s.whitespace)
+ if (not (scan_at_eof_p s)) & (mem s.cchar s.whitespace)
     then (scan_next s; scan_whitespace s)
  ; ()
 
 
 let scan_string s =
  let acc = ref [] in
- while not ((mem s.cchar s.escape) & (not s.escapep))
+ while (not (scan_at_eof_p s)) & ((mem s.cchar s.escape) & (not s.escapep))
   do acc := s.cchar :: !acc; scan_next s
   done
 
@@ -131,21 +140,23 @@ let scan_string s =
 let digits_to_num digits = 
   let num10 = num_of_int 10 in
   let rec aux acc power digits = 
-    aux (add_num (mult_num (power_num num10 power)
-			   (num_of_string (Char.escaped (hd digits))))
-		 acc)
-	(succ_num power)
-	(tl digits)
+    if digits = [] then acc
+    else aux (add_num (mult_num (power_num num10 power)
+			        (num_of_string (Char.escaped (hd digits))))
+		       acc)
+ 	     (succ_num power)
+	     (tl digits)
 
     in aux (num_of_int 0) (num_of_int 0) digits
 
 
 let scan_num s =
  let acc = ref [] in
- while (scan_at_digit_p s)
+
+ while (not (scan_at_eof_p s)) & (scan_at_digit_p s)
   do acc := s.cchar :: !acc;  scan_next s
   done
-
+ 
  ; digits_to_num !acc
 
 
