@@ -76,6 +76,7 @@ INCLUDES="\
 	-I ../../theories/mmc/extensions/string\
 	-I ../../theories/mmc/extensions/fix\
 	-I ../../theories/mmc/extensions/loop\
+	-I ../../theories/mmc/opt/direct/core\
 	-I ../../theories/mmc/arch/ra\
 	-I ../../theories/mmc/arch/util\
 	-I ../../theories/mmc/arch/x86\
