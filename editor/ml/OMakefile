@@ -98,15 +98,32 @@ if $(defined MCC)
     TLMADEPS += $(MCC)/lib/firtype.cma
     export
 
+#
+# Profiling
+#
+if $(NATIVE_PROFILING_ENABLED)
+   gmon.out: mp.opt mpopt mpconfig
+      echo 'restart_gmon();; status_all();;' | ./mpopt >& /dev/null
+
+   native_profile.txt: mp.opt gmon.out
+      gprof $< > $@
+
+   PROF_EXT = .p
+   export
+
+else
+   PROF_EXT=
+   export
+
 CMXADEPS =\
         $(CAMLLIB)/unix.cmxa\
         $(CAMLLIB)/str.cmxa\
         $(OPTTHREADSLIB)\
-        $(CAMLP4LIB)/odyl.cmxa\
-        $(CAMLP4LIB)/camlp4.cmxa\
+        $(CAMLP4LIB)/odyl$(PROF_EXT).cmxa\
+        $(CAMLP4LIB)/camlp4$(PROF_EXT).cmxa\
         $(BASE_CMXAS)\
-        $(CAMLP4LIB)/pa_o.cmx\
-        $(CAMLP4LIB)/pa_op.cmx\
+        $(CAMLP4LIB)/pa_o$(PROF_EXT).cmx\
+        $(CAMLP4LIB)/pa_op$(PROF_EXT).cmx\
         $(LIB)/prlc.cmxa\
         $(addsuffix /theory.cmxa, $(MP_DIRS))\
 
@@ -218,16 +235,6 @@ if $(NATIVE_ENABLED)
 
 if $(BYTE_ENABLED)
         .DEFAULT: $(MP).top $(MP).run
-
-#
-# Profiling
-#
-if $(NATIVE_PROFILING_ENABLED)
-   gmon.out: mp.opt mpopt mpconfig
-      echo 'restart_gmon();; status_all();;' | ./mpopt >& /dev/null
-
-   native_profile.txt: mp.opt gmon.out
-      gprof $< > $@
 
 #
 # Clean up

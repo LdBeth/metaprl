@@ -4,3 +4,7 @@ You need the following patch:
 
 1) camlp4-%{version}-opt.patch
      (only if you want to be able to compile MetaPRL to native code).
+
+2) ocaml-%{version}-camlp4-prof.patch
+     (only if you want to be able to compile MetaPRL to native code
+      with gprof profiling support).

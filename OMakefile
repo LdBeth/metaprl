@@ -206,7 +206,7 @@ if $(THREADS_ENABLED)
 if $(NATIVE_PROFILING_ENABLED)
    NATIVE_ENABLED = true
    BYTE_ENABLED = true
-   OCAMLOPTFLAGS += -p
+   OCAMLOPTFLAGS += -p -inline 0
    CFLAGS += -p -DPROF
    if $(equal $(NATIVE_PROFILING_ENABLED), compact)
       OCAMLOPTFLAGS += -compact

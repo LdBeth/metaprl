@@ -1,0 +1,179 @@
+--- camlp4/lib/Makefile.orig	2002-07-19 07:53:47.000000000 -0700
++++ camlp4/lib/Makefile	2004-05-24 17:58:08.000000000 -0700
+@@ -9,7 +9,7 @@
+ TARGET=gramlib.cma
+ 
+ all: $(TARGET)
+-opt: $(TARGET:.cma=.cmxa)
++opt: $(TARGET:.cma=.cmxa) $(TARGET:.cma=.p.cmxa)
+ 
+ $(TARGET): $(OBJS)
+ 	$(OCAMLC) $(OBJS) -a -o $(TARGET)
+@@ -17,6 +17,9 @@
+ $(TARGET:.cma=.cmxa): $(OBJS:.cmo=.cmx)
+ 	$(OCAMLOPT) $(OBJS:.cmo=.cmx) -a -o $(TARGET:.cma=.cmxa)
+ 
++$(TARGET:.cma=.p.cmxa): $(OBJS:.cmo=.p.cmx)
++	$(OCAMLOPT) -p $(OBJS:.cmo=.p.cmx) -a -o $(TARGET:.cma=.p.cmxa)
++
+ clean::
+ 	rm -f *.cm[ioax] *.cmxa *.pp[io] *.o *.a *.bak .*.bak $(TARGET)
+ 
+@@ -40,6 +43,7 @@
+ 	cp $(TARGET) *.mli $(LIBDIR)/camlp4/.
+ 	cp *.cmi $(LIBDIR)/camlp4/.
+ 	if test -f $(TARGET:.cma=.cmxa); then $(MAKE) installopt LIBDIR=$(LIBDIR); fi
++	if test -f $(TARGET:.cma=.p.cmxa); then $(MAKE) installopt-prof LIBDIR=$(LIBDIR); fi
+ 
+ installopt:
+ 	cp $(TARGET:.cma=.cmxa) *.cmx $(LIBDIR)/camlp4/.
+@@ -49,4 +53,12 @@
+ 	  tar cf - $(TARGET:.cma=.a) | (cd $(LIBDIR)/camlp4/.; tar xf -); \
+ 	fi
+ 
++installopt-prof:
++	cp $(TARGET:.cma=.p.cmxa) *.cmx $(LIBDIR)/camlp4/.
++	if test -f $(TARGET:.cma=.p.lib); then \
++	  cp $(TARGET:.cma=.p.lib) $(LIBDIR)/camlp4/.; \
++	else \
++	  tar cf - $(TARGET:.cma=.p.a) | (cd $(LIBDIR)/camlp4/.; tar xf -); \
++	fi
++
+ include .depend
+--- camlp4/config/Makefile.tpl.prof	2001-09-09 01:22:46.000000000 -0700
++++ camlp4/config/Makefile.tpl	2004-05-24 18:22:16.000000000 -0700
+@@ -6,7 +6,7 @@
+ OCAMLCFLAGS=
+ MKDIR=mkdir -p
+ 
+-.SUFFIXES: .cmx .cmo .cmi .ml .mli
++.SUFFIXES: .cmx .p.cmx .cmo .cmi .ml .mli
+ 
+ .mli.cmi:
+ 	@if test `basename $<` != $<; then echo "Bad directory"; exit 1; fi
+@@ -26,3 +26,15 @@
+ 	$(OCAMLOPT) $(OCAMLCFLAGS) -c -impl $*.ppo
+ 	rm -f $*.ppo
+ 
++.ml.p.cmx:
++	@if test -f $*.cmx; then mv $*.cmx $*.n.cmx; else :; fi
++	@if test -f $*.o; then mv $*.o $*.n.o; else :; fi
++	@if test `basename $<` != $<; then echo "Bad directory"; exit 1; fi
++	@$(CAMLP4_COMM) $< -o $*.ppo
++	$(OCAMLOPT) $(OCAMLCFLAGS) -p -c -impl $*.ppo
++	rm -f $*.ppo
++	mv $*.cmx $*.p.cmx
++	mv $*.o $*.p.o
++	@if test -f $*.n.cmx; then mv $*.n.cmx $*.cmx; else :; fi
++	@if test -f $*.n.o; then mv $*.n.o $*.o; else :; fi
++
+--- camlp4/odyl/Makefile.prof	2004-05-26 17:43:56.000000000 -0700
++++ camlp4/odyl/Makefile	2004-05-26 17:44:53.000000000 -0700
+@@ -12,7 +12,7 @@
+ 
+ all: odyl$(EXE)
+ 
+-opt: odyl.cmxa odyl.cmx
++opt: odyl.cmxa odyl.cmx odyl.p.cmxa odyl.p.cmx
+ 
+ odyl$(EXE): odyl.cma odyl.cmo
+ 	$(OCAMLC) odyl.cma odyl.cmo -o odyl$(EXE)
+@@ -21,13 +21,27 @@
+ 	$(OCAMLC) $(LINKFLAGS) dynlink.cma $(OBJS) -a -o odyl.cma
+ 
+ odyl.cmxa: $(OBJS:.cmo=.cmx)
+-	$(OCAMLOPT) $(LINKFLAGS) $(OBJS:.cmo=.cmx) -a -o odyl.cmxa
++	$(OCAMLOPT) $(LINKFLAGS) $(OBJS:.cmo=.cmx) -a -o $@
++
++odyl.p.cmxa: $(OBJS:.cmo=.p.cmx)
++	$(OCAMLOPT) -p $(LINKFLAGS) $(OBJS:.cmo=.p.cmx) -a -o $@
+ 
+ odyl_main.cmx: odyl_main.ml
+ 	$(CAMLP4_COMM) -nolib -DOPT -o odyl_main.ppo odyl_main.ml
+ 	$(OCAMLOPT) -c -impl odyl_main.ppo
+ 	rm -f odyl_main.ppo
+ 
++odyl_main.p.cmx: odyl_main.ml
++	@if test -f odyl_main.cmx; then mv odyl_main.cmx odyl_main.n.cmx; else :; fi
++	@if test -f odyl_main.o; then mv odyl_main.o odyl_main.n.o; else :; fi
++	$(CAMLP4_COMM) -nolib -DOPT -o odyl_main.ppo odyl_main.ml
++	$(OCAMLOPT) -p -c -impl odyl_main.ppo
++	rm -f odyl_main.ppo
++	mv odyl_main.cmx odyl_main.p.cmx
++	mv odyl_main.o odyl_main.p.o
++	@if test -f odyl_main.n.cmx; then mv odyl_main.n.cmx odyl_main.cmx; else :; fi
++	@if test -f odyl_main.n.o; then mv odyl_main.n.o odyl_main.o; else :; fi
++
+ odyl_config.ml:
+ 	echo "let standard_library =" > odyl_config.ml
+ 	echo "  try Sys.getenv \"CAMLP4LIB\" with" >> odyl_config.ml
+@@ -53,6 +67,7 @@
+ install:
+ 	-$(MKDIR) $(LIBDIR)/camlp4 $(BINDIR)
+ 	cp odyl.cmo odyl.cma odyl_main.cmi $(LIBDIR)/camlp4/.
+-	if test -f odyl.cmxa; then cp odyl.cmxa odyl.a $(LIBDIR)/camlp4/.; fi
++	if test -f odyl.cmxa; then cp odyl.cmxa odyl.a odyl.cmx $(LIBDIR)/camlp4/.; fi
++	if test -f odyl.p.cmxa; then cp odyl.p.cmxa odyl.p.a odyl.p.cmx $(LIBDIR)/camlp4/.; fi
+ 
+ include .depend
+--- camlp4/camlp4/Makefile.prof	2004-05-26 18:02:05.000000000 -0700
++++ camlp4/camlp4/Makefile	2004-05-26 18:25:14.000000000 -0700
+@@ -10,7 +10,7 @@
+ INTERFACES=-I $(OLIBDIR) Arg Array ArrayLabels Buffer Callback CamlinternalOO Char Complex Digest Filename Format Gc Genlex Hashtbl Int32 Int64 Lazy Lexing List ListLabels Map Marshal MoreLabels Nativeint Obj Oo Parsing Pervasives Printexc Printf Queue Random Scanf Set Sort Stack StdLabels Stream String StringLabels Sys Weak -I ../boot Extfold Extfun Fstream Gramext Grammar Plexer Stdpp Token -I $(OTOP)/utils Config Warnings -I $(OTOP)/parsing Asttypes Location Longident Parsetree -I . Ast2pt MLast Pcaml Quotation Spretty
+ CAMLP4_INTF=$(OTOP)/utils/config.cmi $(OTOP)/utils/warnings.cmi $(OTOP)/parsing/asttypes.cmi $(OTOP)/parsing/location.cmi $(OTOP)/parsing/longident.cmi $(OTOP)/parsing/parsetree.cmi ast2pt.cmi mLast.cmi pcaml.cmi spretty.cmi quotation.cmi
+ CAMLP4_OBJS=../boot/stdpp.cmo ../boot/token.cmo ../boot/plexer.cmo ../boot/gramext.cmo ../boot/grammar.cmo ../boot/extfold.cmo ../boot/extfun.cmo ../boot/fstream.cmo $(OTOP)/utils/config.cmo quotation.cmo ast2pt.cmo spretty.cmo reloc.cmo pcaml.cmo argl.cmo crc.cmo
+-CAMLP4_XOBJS=../lib/stdpp.cmx ../lib/token.cmx ../lib/plexer.cmx ../lib/gramext.cmx ../lib/grammar.cmx ../lib/extfold.cmx ../lib/extfun.cmx ../lib/fstream.cmx $(OTOP)/utils/config.cmx quotation.cmx ast2pt.cmx spretty.cmx reloc.cmx pcaml.cmx argl.cmx
++CAMLP4_XOBJS=../lib/stdpp.cmx ../lib/token.cmx ../lib/plexer.cmx ../lib/gramext.cmx ../lib/grammar.cmx ../lib/extfold.cmx ../lib/extfun.cmx ../lib/fstream.cmx quotation.cmx ast2pt.cmx spretty.cmx reloc.cmx pcaml.cmx argl.cmx
+ OBJS=../odyl/odyl.cma camlp4.cma
+ CAMLP4M=
+ 
+@@ -18,7 +18,7 @@
+ CAMLP4OPT=phony
+ 
+ all: $(CAMLP4)
+-opt: $(OBJS:.cma=.cmxa)
++opt: $(OBJS:.cma=.cmxa) $(OBJS:.cma=.p.cmxa)
+ optp4: $(CAMLP4OPT)
+ 
+ $(CAMLP4): $(OBJS) ../odyl/odyl.cmo
+@@ -33,8 +33,11 @@
+ camlp4.cma: $(CAMLP4_OBJS)
+ 	$(OCAMLC) $(LINKFLAGS) $(CAMLP4_OBJS) -a -o camlp4.cma
+ 
+-camlp4.cmxa: $(CAMLP4_XOBJS)
+-	$(OCAMLOPT) $(LINKFLAGS) $(CAMLP4_XOBJS) -a -o camlp4.cmxa
++camlp4.cmxa: $(CAMLP4_XOBJS) $(OTOP)/utils/config.cmx
++	$(OCAMLOPT) $(LINKFLAGS) $(OTOP)/utils/config.cmx $(CAMLP4_XOBJS) -a -o camlp4.cmxa
++
++camlp4.p.cmxa: $(CAMLP4_XOBJS:.cmx=.p.cmx) $(OTOP)/utils/config.cmx
++	$(OCAMLOPT) -p $(LINKFLAGS) $(OTOP)/utils/config.cmx $(CAMLP4_XOBJS:.cmx=.p.cmx) -a -o $@
+ 
+ crc.cmo: $(CAMLP4_INTF)
+ 	@OTOP=$(OTOP) EXE=$(EXE) ../tools/extract_crc.sh $(INTERFACES) > crc.ml
+@@ -69,5 +72,6 @@
+ 	cp mLast.cmi quotation.cmi ast2pt.cmi pcaml.cmi spretty.cmi $(LIBDIR)/camlp4/.
+ 	cp camlp4.cma $(LIBDIR)/camlp4/.
+ 	if test -f camlp4.cmxa; then cp camlp4.cmxa camlp4.a $(LIBDIR)/camlp4/.; fi
++	if test -f camlp4.p.cmxa; then cp camlp4.p.cmxa camlp4.p.a $(LIBDIR)/camlp4/.; fi
+ 
+ include .depend
+--- camlp4/etc/Makefile.orig	2004-05-28 20:09:11.367024000 -0700
++++ camlp4/etc/Makefile	2004-05-28 21:36:24.806385478 -0700
+@@ -11,7 +11,7 @@
+ CAMLP4OMX=$(CAMLP4OM:.cmo=.cmx)
+ SHELL=/bin/sh
+ COUT=$(OBJS) camlp4o$(EXE)
+-COPT=$(OBJSX) camlp4o.opt
++COPT=$(OBJSX) $(OBJSX:.cmx=.p.cmx) camlp4o.opt
+ 
+ all: $(COUT) mkcamlp4.sh
+ opt: $(COPT)
+@@ -58,7 +58,7 @@
+ 	cp $(INTF) $(LIBDIR)/camlp4/.
+ 	cp lib.sml $(LIBDIR)/camlp4/.
+ 	cp camlp4o$(EXE) $(BINDIR)/.
+-	if test -f camlp4o.opt; then cp camlp4o.opt $(BINDIR)/.; cp $(OBJSX) $(OBJSX:.cmx=.o) $(LIBDIR)/camlp4/.; fi
++	if test -f camlp4o.opt; then cp camlp4o.opt $(BINDIR)/.; cp $(OBJSX) $(OBJSX:.cmx=.o) $(OBJSX:.cmx=.p.cmx) $(OBJSX:.cmx=.p.o) $(LIBDIR)/camlp4/.; fi
+ 	cp mkcamlp4.sh $(BINDIR)/mkcamlp4
+ 	chmod a+x $(BINDIR)/mkcamlp4
+ 
