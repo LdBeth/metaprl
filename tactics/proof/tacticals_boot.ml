@@ -383,8 +383,7 @@ struct
    let isEmptyOrMainLabel l =
       (l=emptyLabel) or (List.mem l main_labels)
 
-   let isAuxLabel l =
-      not (List.mem l main_labels)
+   let isAuxLabel l = not (isEmptyOrMainLabel l)
 
    let isWFLabel l =
       (l=wfLabel)
