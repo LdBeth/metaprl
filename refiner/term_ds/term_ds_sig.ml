@@ -135,10 +135,10 @@ sig
 
    type term_subst
 
-   module SeqHyp : ROArraySig 
+   module SeqHyp : ROArraySig
                    with type elt = hypothesis
                    with type t = seq_hyps
-   module SeqGoal : ROArraySig 
+   module SeqGoal : ROArraySig
                     with type elt = term
                     with type t = seq_goals
 
@@ -227,6 +227,8 @@ sig
     * We allow a term printer to be injected.
     *)
    val debug_print : out_channel -> term -> unit
+   val print_term : out_channel -> term -> unit
+   val print_term_list : out_channel -> term list -> unit
    val install_debug_printer : (out_channel -> term -> unit) -> unit
 end
 

@@ -106,13 +106,25 @@ struct
    (*
     * Printer is installed by client.
     *)
-   let print_term = ref (fun _ _ -> raise (Failure "Term_ds.print_term: printer not installed"))
+   let print_term_ref = ref (fun _ _ -> raise (Failure "Term_ds.print_term: printer not installed"))
 
    let debug_print out t =
-      !print_term out t
+      !print_term_ref out t
+
+   let print_term = debug_print
+
+   let rec print_term_list out = function
+      [t] ->
+         debug_print out t
+    | h::t ->
+         debug_print out h;
+         output_string out ", ";
+         print_term_list out t
+    | [] ->
+         ()
 
    let install_debug_printer f =
-      print_term := f
+      print_term_ref := f
 
    (************************************************************************
     * Term de/constructors                                                 *

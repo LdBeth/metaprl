@@ -206,6 +206,8 @@ sig
     * We allow a term printer to be injected.
     *)
    val debug_print : out_channel -> term -> unit
+   val print_term : out_channel -> term -> unit
+   val print_term_list : out_channel -> term list -> unit
    val install_debug_printer : (out_channel -> term -> unit) -> unit
 end
 

@@ -179,10 +179,10 @@ struct
          let left, right = rotate_right_right left right grandparent in
             lift key data left right ancestors
     | Left parent :: Right grandparent :: ancestors ->
-         let left, right = rotate_left_right left right grandparent in
+         let left, right = rotate_right_left left right grandparent in
             lift key data left right ancestors
     | Right parent :: Left grandparent :: ancestors ->
-         let left, right = rotate_right_left left right grandparent in
+         let left, right = rotate_left_right left right grandparent in
             lift key data left right ancestors
 
    (*
