@@ -74,6 +74,13 @@ let debug_edit =
         debug_value = false
       }
 
+let debug_show_all_subgoals =
+   create_debug (**)
+      { debug_name = "show_all_subgoals";
+        debug_description = "show the full suggoals list, even when it is very long";
+        debug_value = false
+      }
+
 (************************************************************************
  * TYPES                                                                *
  ************************************************************************)
@@ -613,8 +620,8 @@ let term_of_proof proof =
    let subgoals =
       (* HACK!!! *)
       let l = List.length subgoals in
-      if l < 20 then mk_subgoals_term subgoals extras
-      else mk_xlist_term [ mk_string_arg_term "\n\n<<"; mk_int_arg_term l; mk_string_arg_term " subgoals (output suppressed)>>"]
+      if (l < 20) || (!debug_show_all_subgoals) then mk_subgoals_term subgoals extras
+      else mk_xlist_term [ mk_subgoals_term (Lm_list_util.firstn 5 subgoals) []; mk_string_arg_term "\n\n   ...   \n\n<<"; mk_int_arg_term l; mk_string_arg_term " subgoals (output suppressed -- turn the \"show_all_subgoals\" debug variable on to see the full list)>>"]
    in
    let x = mk_proof_term main goal (rule_term_of_text expr) subgoals in
       if !debug_edit then
