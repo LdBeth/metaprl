@@ -257,7 +257,7 @@ implements NuprlBusClient
      * IAC DONT EOR: dont bother me with this crap
      */
     final static byte TELNET_OPT_EOR                    = (byte) 25;
-    
+
     /**
      * Window size.
      *
@@ -579,7 +579,7 @@ implements NuprlBusClient
     {
         if(NuprlDebug.debug_input)
             System.err.println("NuprlClient.OptionRequest");
-            
+
         boolean flag = token.flag;
         byte sent = sentOptionFlags[token.option];
         byte recv = receivedOptionFlags[token.option];
@@ -1093,6 +1093,8 @@ implements NuprlBusClient
                     System.err.println("NuprlClient.InputThread: starting");
                 while(true) {
                     // Read some characters
+                    if(NuprlDebug.debug_input)
+                       System.err.println("NuprlClient.InputThread: reading");
                     int count = stdout.read(buffer, 0, BUFFER_SIZE);
                     if(count <= 0)
                         break;

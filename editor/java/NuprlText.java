@@ -270,7 +270,7 @@ implements KeyListener, ComponentListener
             }
         }
     }
-    
+
     /************************************************************************
      * I/O                                                                  *
      ************************************************************************/
@@ -389,11 +389,11 @@ implements KeyListener, ComponentListener
             super("Stuff");
             setEnabled(false);
         }
-          
+
         public void actionPerformed(ActionEvent e) {
             StuffLine();
         }
-    }    
+    }
 
     /**
      * Handle the key typed event from the text area.
@@ -456,8 +456,8 @@ implements KeyListener, ComponentListener
         FontMetrics metrics = textPane.getFontMetrics(font);
         int width = metrics.charWidth('M');
         int height = metrics.getHeight();
-        if(width < 4)
-            width = 4;
+        if(width < 5)
+            width = 5;
         if(height < 6)
             height = 6;
         terminal_width = dim.width / width - 4;
@@ -498,7 +498,7 @@ implements KeyListener, ComponentListener
     {
         document.insertString(pos, blankString(terminal_width), terminal_style);
     }
-        
+
     /**
      * Validate a line by making sure it has at least as many characters
      * to give a valid cursor.  The element should be valid.
@@ -513,7 +513,7 @@ implements KeyListener, ComponentListener
         else if(start > end)
             document.insertString(end, blankString(start - end), terminal_style);
         if(terminal_cursor >= start)
-            terminal_cursor = start - 1; 
+            terminal_cursor = start - 1;
     }
 
     /**
@@ -581,7 +581,7 @@ implements KeyListener, ComponentListener
         CursorDown(row);
         CursorRight(col);
     }
-    
+
     /**
      * Move the cursor left.
      * Do not move past the left margin.
@@ -668,7 +668,7 @@ implements KeyListener, ComponentListener
             terminal_cursor += terminal_width + 1;
         }
     }
-            
+
     /**
      * Insert some blank chars.
      */

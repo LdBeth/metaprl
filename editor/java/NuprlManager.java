@@ -168,7 +168,7 @@ class NuprlManager
         if (bus == null) {
             if(NuprlDebug.debug_manager)
                System.err.println("NuprlManager.autoLayout: bus is null");
-            start();
+            return;
         }
         switch(state) {
         case STATE_LOGIN:
