@@ -150,6 +150,13 @@ when necessary (see doc/sequents.tex for more information), the rule chaining is
 necessarily valid (e.g. even when S1 --> S2 and S2 --> S3 are valid rules, S1 --> S3 is not
 necessarily valid).
 
+4.7) (nogin)
+In Ocaml, string is a mutable data structure. In MetaPRL, we use strings everywhere (variable
+names, opnames, etc) as if they were immutable. We need to
+a) Make sure that nobody can cheat the system by starting to mute strings.
+b) Let the compiler and GC know that we are not going to mute strings (which should allow
+them to be more efficient).
+
 PARSER & FILTER
 
 5.1) Rules and rewrites should be added to toploop. 
