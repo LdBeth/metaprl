@@ -1867,7 +1867,6 @@ struct
                            dform_print_expr loc, expansion_expr ]$ } >>
       in
       let expr = <:expr< $create_dform_expr loc modes$ $lid:local_dformer_id$ $rec_value$ >> in
-      let name = string_of_opname (opname_of_term t) in
          [<:str_item< $exp: wrap_exn loc name expr$ >>]
 
    (*

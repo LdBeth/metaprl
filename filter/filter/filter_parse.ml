@@ -43,13 +43,13 @@ open File_base_type
 
 open Refiner_io
 open Refiner.Refiner
-open Refiner.Refiner.Term
-open Refiner.Refiner.TermOp
-open Refiner.Refiner.TermType
-open Refiner.Refiner.TermMan
-open Refiner.Refiner.TermMeta
-open Refiner.Refiner.Rewrite
-open Refiner.Refiner.RefineError
+open Term
+open TermOp
+open TermType
+open TermMan
+open TermMeta
+open Rewrite
+open RefineError
 
 open Infix
 open Free_vars
@@ -778,6 +778,12 @@ struct
    let define_dform proc loc name options t expansion =
       let modes, options' = get_dform_options proc loc options in
          if (!debug_dform) && (modes=AllModes) then eprintf "Warning: display form %s - no modes specified%t" name eflush;
+         try
+            let redex, _ = compile_redex Relaxed [||] t in
+            ignore (compile_contractum redex expansion)
+         with
+            exn ->
+               Stdpp.raise_with_loc loc exn;
          FilterCache.add_command proc.cache (DForm { dform_name = name;
                                                      dform_modes = modes;
                                                      dform_options = options';
