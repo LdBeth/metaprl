@@ -84,6 +84,12 @@ should enforce it.
 3.8) SO contexts that are not a part of a sequent are currently never used and as a result
 the corresponding rewriter code is undebugged.
 
+3.9) (Added in 1999.11.05 by nogin, unverified)
+If we have a redex where all the arguments of some SO variable are bound variables
+and some variable appears more than once, rewriter may handle it incorrectly.
+Example: <<lambda{x.lambda{y.'S['x;'x] +@ 'S['x;'y]}}>> should match
+<<lambda{x.lambda{y.'x *@ 'x +@ 'x *@ 'y}}>>
+
 REFINER
 
 4.1) (Confirmed 1999.10.08 by nogin)
