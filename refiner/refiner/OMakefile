@@ -21,6 +21,8 @@ OCAMLINCLUDES =\
 refiner.ml:
 	echo module Refiner = Refiner_$(TERMS).Refiner > refiner.ml
 
+OCamlGeneratedFiles(refiner.ml)
+
 OCamlLibraryInstall($(MPINSTALL), $(LIB), refine, $(REFINER_FILES))
 
 #
