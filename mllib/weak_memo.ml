@@ -74,7 +74,7 @@ open Weak_memo_sig
 (*
  * Data used for garbage collection
  *)
-type gc_info = Weak_memo.gc_info
+type gc_info = Weak_memo_sig.gc_info
 
 (*
  * Empty instance of gc_info
