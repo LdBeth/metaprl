@@ -148,6 +148,7 @@ struct
          *)
         mutable session_edit            : string;
         mutable session_edit_flag       : bool;
+        mutable session_edit_external   : bool;
         mutable session_edit_version    : int
       }
 
@@ -446,6 +447,7 @@ struct
               session_io_version      = 0;
               session_edit            = "No File";
               session_edit_flag       = false;
+              session_edit_external   = false;
               session_edit_version    = 0
             }
       in
@@ -453,7 +455,7 @@ struct
          let id = Lm_thread_shell.get_pid () in
          let cwd = Top.pwd () in
          let clone =
-            { session_id              = Lm_thread_shell.get_pid ();
+            { session_id              = id;
               session_cwd             = cwd;
               session_menu_version    = 1;
               session_content_version = 1;
@@ -471,6 +473,7 @@ struct
               session_io_version      = 0;
               session_edit            = "No File";
               session_edit_flag       = false;
+              session_edit_external   = false;
               session_edit_version    = 0
             }
          in
@@ -736,6 +739,7 @@ struct
             session_io_version      = io_version;
             session_edit            = edit;
             session_edit_flag       = edit_flag;
+            session_edit_external   = edit_external;
             session_edit_version    = edit_version
           } = session
       in
@@ -749,8 +753,9 @@ struct
          Printf.bprintf buf "\tsession['rule']     = %d;\n" rule_version;
          Printf.bprintf buf "\tsession['io']       = %d;\n" io_version;
          Printf.bprintf buf "\tsession['file']     = '%s';\n" edit;
+         Printf.bprintf buf "\tsession['editflag'] = %b;\n" edit_flag;
          Printf.bprintf buf "\tsession['edit']     = %d;\n" edit_version;
-         Printf.bprintf buf "\tsession['external'] = %b;\n" edit_flag;
+         Printf.bprintf buf "\tsession['external'] = %b;\n" edit_external;
          Printf.bprintf buf "\tsession['id']       = %d;\n" id
 
    (*
@@ -911,6 +916,7 @@ struct
          else
             print_internal_edit_page
       in
+         session.session_edit_flag <- false;
          unsynchronize_session session (fun () ->
                edit server state filename outx)
 
@@ -1005,7 +1011,8 @@ struct
       let flag = LsOptionSet.mem (Top.get_ls_options ()) LsExternalEditor in
          Session.add_edit target;
          session.session_edit <- target;
-         session.session_edit_flag <- flag;
+         session.session_edit_flag <- true;
+         session.session_edit_external <- flag;
          session.session_edit_version <- succ edit_version
 
    (*
@@ -1134,7 +1141,7 @@ struct
        | CloneURI pid ->
             synchronize_pid pid (fun session ->
                   if is_valid_response state header then
-                     let pid = Lm_thread_shell.create "job" Lm_thread_shell.VisibleJob in
+                     let pid = Lm_thread_shell.create browser_id Lm_thread_shell.VisibleJob in
                         synchronize_pid pid (fun session ->
                               print_redisplay_page frameset_uri server state session outx)
                   else

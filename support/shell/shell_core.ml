@@ -593,7 +593,7 @@ let parse_path shell name =
 (*
  * Mount the root directory.
  *)
-let mount_root parse_arg shell need_shell verbose =
+let mount_root parse_arg shell force_flag need_shell verbose =
    let proof = Shell_root.view packages (get_display_mode shell) in
       shell.shell_package <- None;
       update_dfbase shell;
@@ -606,7 +606,7 @@ let mount_root parse_arg shell need_shell verbose =
 (*
  * Mount the FS directory.
  *)
-let mount_fs parse_arg shell need_shell verbose =
+let mount_fs parse_arg shell force_flag need_shell verbose =
    let proof = Shell_fs.view (get_display_mode shell) in
       shell.shell_package <- None;
       update_dfbase shell;
@@ -619,7 +619,7 @@ let mount_fs parse_arg shell need_shell verbose =
 (*
  * Helper for mounting a module.
  *)
-let mount_current_module modname parse_arg shell need_shell verbose =
+let mount_current_module modname parse_arg shell force_flag need_shell verbose =
    let update =
       match shell.shell_dir with
          DirRoot
@@ -629,7 +629,7 @@ let mount_current_module modname parse_arg shell need_shell verbose =
        | DirProof (modname', _, _) ->
             modname' <> modname
    in
-      if update then
+      if force_flag || update then
          begin
             (* Make sure the module name is well-formed *)
             if modname <> String.uncapitalize modname then
@@ -652,9 +652,9 @@ let mount_current_module modname parse_arg shell need_shell verbose =
 (*
  * Actually mount the module.
  *)
-let mount_module modname parse_arg shell need_shell verbose =
+let mount_module modname parse_arg shell force_flag need_shell verbose =
    (* Make sure the module is mounted *)
-   mount_current_module modname parse_arg shell need_shell verbose;
+   mount_current_module modname parse_arg shell force_flag need_shell verbose;
 
    (* Set the state *)
    Shell_state.set_so_var_context None;
@@ -670,9 +670,9 @@ let mount_module modname parse_arg shell need_shell verbose =
 (*
  * Mount a specific proof.
  *)
-let mount_proof modname itemname parse_arg shell need_shell verbose =
+let mount_proof modname itemname parse_arg shell force_flag need_shell verbose =
    (* Make sure the module is mounted *)
-   mount_current_module modname parse_arg shell need_shell verbose;
+   mount_current_module modname parse_arg shell force_flag need_shell verbose;
 
    (* Install the proof *)
    let proof = get_item parse_arg shell modname itemname in
@@ -721,16 +721,16 @@ let umount shell mount =
 (*
  * Change directory.
  *)
-let rec chdir parse_arg shell need_shell verbose path =
+let rec chdir_full parse_arg shell force_flag need_shell verbose path =
    let dir = shell.shell_dir in
    let old_mount_name, _, _ = mount_of_dir dir in
    let new_mount_name, mount, subdir = mount_of_dir path in
       try
          (* Change the mount point if needed *)
-         if new_mount_name <> old_mount_name then
+         if force_flag || new_mount_name <> old_mount_name then
             begin
                umount shell old_mount_name;
-               mount parse_arg shell need_shell verbose
+               mount parse_arg shell force_flag need_shell verbose
             end;
 
          (* Save the directory *)
@@ -741,18 +741,23 @@ let rec chdir parse_arg shell need_shell verbose path =
       with
          exn ->
             (* Some kind of failure happened, so change back to where we came from *)
+            shell.shell_dir <- DirRoot;
             eprintf "Chdir to \"%s\" failed@." (string_of_dir path);
             eprintf "Going back to \"%s\"@." (string_of_dir dir);
-            chdir parse_arg shell false verbose dir;
+            chdir_full parse_arg shell false false verbose dir;
             raise exn
+
+(*
+ * Default chdir does not force the remount.
+ *)
+let chdir parse_arg shell need_shell verbose path =
+   chdir_full parse_arg shell false need_shell verbose path
 
 (*
  * Refresh the current directory.
  *)
 let refresh parse_arg shell =
-   let dir = shell.shell_dir in
-      chdir parse_arg shell false false DirRoot;
-      chdir parse_arg shell true true dir
+   chdir_full parse_arg shell true true true shell.shell_dir
 
 let cd parse_arg shell name =
    chdir parse_arg shell true true (parse_path shell name);
@@ -930,7 +935,7 @@ let extract parse_arg shell path () =
 let term_of_extract shell terms =
    match shell with
       { shell_package = Some pack; shell_dir = DirProof (mod_name, name, _) } ->
-         Refine.extract_term (Package_info.get_refiner pack) (make_opname [name;mod_name]) terms
+         Refine.extract_term (Package_info.get_refiner pack) (make_opname [name; mod_name]) terms
     | _ ->
          raise (Failure "Shell.term_of_extract only works inside a proof")
 

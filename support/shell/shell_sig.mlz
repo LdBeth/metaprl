@@ -149,12 +149,12 @@ type display_type =
 (*
  * Full display information
  *)
-type display_method = {
-   df_type : display_type;
-   df_base : dform_mode_base;
-   df_mode : string;
-   df_width : int;
-}
+type display_method =
+   { df_type  : display_type;
+     df_base  : dform_mode_base;
+     df_mode  : string;
+     df_width : int;
+   }
 
 type display_fun = unit -> display_method
 
@@ -266,6 +266,9 @@ module type ShellTopSig =
 sig
    (* Intialize the shell and the display mode *)
    val init : unit -> unit
+
+   (* Get the debug string for the current shell *)
+   val debug : unit -> string
 
    (* Navigation *)
    val chdir        : string -> bool

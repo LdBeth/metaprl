@@ -46,7 +46,10 @@ type shell_dir =
  * thread-safe.
  *)
 type shell =
-   { (* Set if the shell directory is out of date *)
+   { (* Name of this shell for debugging *)
+     shell_debug                 : string;
+
+     (* Set if the shell directory is out of date *)
      mutable shell_needs_refresh : bool;
 
      (* Display *)

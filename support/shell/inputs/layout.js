@@ -162,8 +162,10 @@ function Update(session)
     }
     if(session['edit'] && version['edit'] != session['edit']) {
         version['edit'] = session['edit'];
-        var filename = '/session/' + session['id'] + '/edit/' + session['file'] + '/info.prl';
-        Edit(session['external'], filename);
+        if(session['editflag']) {
+            var filename = '/session/' + session['id'] + '/edit/' + session['file'] + '/info.prl';
+            Edit(session['external'], filename);
+        }
     }
 }
 

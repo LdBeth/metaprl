@@ -563,6 +563,7 @@ struct
       let wrap_unit_arg cmd () =
          synchronize (cmd parse_arg)
 
+      let debug              = wrap_unit (fun shell -> shell.shell_debug)
       let refresh            = wrap_unit_arg refresh
       let pwd                = wrap_unit pwd
       let filename           = wrap_unit_arg filename

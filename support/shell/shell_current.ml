@@ -163,12 +163,13 @@ let default_shell =
    let info_ref = ref None in
    let get_dfm () =
       match !info_ref with
-         None -> raise (Invalid_argument "Shell_current: internal error")
+         None -> raise (Invalid_argument "Shell_current.default_shell: internal error")
        | Some { shell_df_method = dfm } -> dfm
    in
    let proof = Shell_root.create packages get_dfm in
-   let info =
-      { shell_dir            = DirRoot;
+   let rec info =
+      { shell_debug          = "root";
+        shell_dir            = DirRoot;
         shell_package        = None;
         shell_proof          = proof;
         shell_needs_refresh  = false;
@@ -177,16 +178,25 @@ let default_shell =
              df_base  = default_mode_base;
              df_width = 80;
              df_type  = DisplayText;
-           };
+           }
       }
    in
       info_ref := Some info;
       info
 
+let index_entry = State.shared_val "Shell_current.shell_debug" (ref 0)
+
 let fork_shell shell =
-   { shell with shell_proof = shell.shell_proof.edit_copy ();
-                shell_needs_refresh = true
-   }
+   let index =
+      State.write index_entry (fun indexp ->
+            let index = !indexp in
+               indexp := succ index;
+               index)
+   in
+      { shell with shell_debug = Printf.sprintf "%s.%d" shell.shell_debug index;
+                   shell_proof = shell.shell_proof.edit_copy ();
+                   shell_needs_refresh = true
+      }
 
 let shell_entry = State.private_val "Shell_current.shell_entry" default_shell fork_shell
 
