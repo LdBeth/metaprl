@@ -33,6 +33,5 @@ val remove	: 'a -> 'a list -> 'a list
 (* removes all occurences *)
 val filter	: ('a -> bool) -> 'a list -> 'a list
 
-
-
-
+(* print user & system time used by a function, Unix only *)
+val time_it: ('a -> 'b) -> 'a -> 'b
