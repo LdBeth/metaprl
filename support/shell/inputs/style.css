@@ -162,7 +162,7 @@ A:hover {
 }
 
 #messagebody {
-    background-color: #f8f8ff
+    background-color: #ddddee
 }
 
 #buttonsframe {
@@ -172,8 +172,7 @@ A:hover {
     width: 100%;
     height: 50px;
     margin: 0px;
-    border: 0px;
-    background-color: #f8f8ff
+    border: 0px
 }
 
 #buttonsbody {
@@ -344,7 +343,7 @@ DIV.menuitemhover {
 }
 
 #editbody {
-    background: #f8f8f8
+    background: #ddddee
 }
 
 #editheading {

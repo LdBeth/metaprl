@@ -543,8 +543,6 @@ let menubar_init =
     << menuitem["proof", "Expand", "Command('expand ()')"] >>,             expand_is_enabled;
     << menuitem["proof", "Check", "Command('check ()')"] >>,               refine_is_enabled;
     << menu["refine", "Refine"] >>,                                        always_enabled;
-    << menuitem["refine", "autoT", "Command('autoT')"] >>,                 refine_is_enabled;
-    << menuitem["refine", "dT 0", "Command('dT 0')"] >>,                   refine_is_enabled;
     << menu["help", "Help"] >>,                                            always_enabled;
     << menuitem["help", "MetaPRL Home", "URL('http://www.metaprl.org/')"] >>, always_enabled]
 

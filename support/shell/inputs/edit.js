@@ -114,10 +114,11 @@ function EditSave()
     var typebutton = parent.GetObject(self, 'typebutton');
     pointbutton.value = GetPoint();
     typebutton.value = 'save';
+    editinfo.ischanged = false;
     document.editform.submit();
 }
 
-function EditBackup()
+function EditBackupDelayed()
 {
     if(editinfo.ischanged) {
         var editarea = parent.GetObject(self, 'editarea');
@@ -125,9 +126,14 @@ function EditBackup()
         var typebutton = parent.GetObject(self, 'typebutton');
         pointbutton.value = GetPoint();
         typebutton.value = 'backup';
-        document.editform.submit();
         editinfo.ischanged = false;
+        document.editform.submit();
     }
+}
+
+function EditBackup()
+{
+    setTimeout('EditBackupDelayed()', 1000);
 }
 
 function EditCancel()

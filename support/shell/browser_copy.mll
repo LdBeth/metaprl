@@ -59,6 +59,7 @@ let basename_sym    = Lm_symbol.add "BASENAME"
 let command_sym     = Lm_symbol.add "COMMAND"
 let version_sym     = Lm_symbol.add "VERSION"
 let editinfo_sym    = Lm_symbol.add "EDITINFO"
+let protocol_sym    = Lm_symbol.add "PROTOCOL"
 
 (*
  * Open the file as a channel.

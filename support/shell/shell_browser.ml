@@ -792,7 +792,7 @@ struct
       let js_edit = Lm_string_util.js_escaped edit in
          Printf.bprintf buf "\tvar session = new Array();\n";
          Printf.bprintf buf "\tsession['cwd']          = '%s';\n" js_cwd;
-         Printf.bprintf buf "\tsession['location']     = 'https://%s:%d/session/%d/content%s/';\n" host port id js_cwd;
+         Printf.bprintf buf "\tsession['location']     = '%s://%s:%d/session/%d/content%s/';\n" Shell_state.protocol_name host port id js_cwd;
          Printf.bprintf buf "\tsession['menu']         = %d;\n" menu_version;
          Printf.bprintf buf "\tsession['content']      = %d;\n" content_version;
          Printf.bprintf buf "\tsession['message']      = %d;\n" message_version;
@@ -930,7 +930,7 @@ struct
           } = session
       in
       let uri =
-         sprintf "https://%s:%d/session/%d/%s" host port (dest_pid id) (which_uri cwd)
+         sprintf "%s://%s:%d/session/%d/%s" Shell_state.protocol_name host port (dest_pid id) (which_uri cwd)
       in
          if !debug_http then
             eprintf "Redirecting to %s@." uri;
@@ -1465,6 +1465,7 @@ struct
       let table = state.state_table in
       let table = BrowserTable.add_string table host_sym host in
       let table = BrowserTable.add_string table port_sym (string_of_int port) in
+      let table = BrowserTable.add_string table protocol_sym Shell_state.protocol_name in
       let state = { state with state_table = table } in
       let metaprl_dir = state.state_mp_dir in
 
@@ -1479,7 +1480,7 @@ struct
       in
       let out = Unix.out_channel_of_descr fd in
       let file_url = sprintf "file://%s" filename in
-      let http_url = sprintf "https://%s:%d/" host port in
+      let http_url = sprintf "%s://%s:%d/" Shell_state.protocol_name host port in
          (* Start page *)
          print_start_page out state;
          Pervasives.flush out;

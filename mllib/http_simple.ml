@@ -62,6 +62,12 @@ let eflush out =
    output_char out '\n';
    flush out
 
+(*
+ * Localhost has this common address.
+ *)
+let localhost_addr =
+   Unix.inet_addr_of_string "127.0.0.1"
+
 (************************************************************************
  * TYPES                                                                *
  ************************************************************************)
@@ -961,10 +967,14 @@ let serve connect server info =
  * Server without threads.
  *)
 let serve_http start connect info port =
-   if not Lm_ssl.enabled then
-       raise (Invalid_argument "SSL_ENABLED must be set to run the HTTP interface");
    let passwd_name = Setup.server_pem () in
    let dh_name = Setup.dh_pem () in
+   let inet_addr =
+      if Lm_ssl.enabled then
+         Unix.inet_addr_any
+      else
+         localhost_addr
+   in
    let ssl =
       match !socket_fd with
          Some fd ->
@@ -989,6 +999,8 @@ let serve_http start connect info port =
 let string_of_inet_addr addr =
    if addr = Unix.inet_addr_any then
       Setup.gethostname ()
+   else if addr = localhost_addr then
+      "localhost"
    else
       raise (Failure "Http_simple.string_of_inet_addr: internal error")
 

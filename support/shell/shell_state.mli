@@ -120,6 +120,8 @@ val get_input_files : unit -> string list
  *)
 val cli_flag : bool ref
 
+val protocol_name     : string
+
 val browser_port_name : string
 val browser_port      : int ref
 

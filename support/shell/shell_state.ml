@@ -63,7 +63,12 @@ let debug_lock =
 (*
  * We may start this as a web service.
  *)
-(* let browser_flag     = Env_arg.bool "browser" false "start a browser service" Env_arg.set_bool_bool *)
+let protocol_name =
+   if Lm_ssl.enabled then
+      "https"
+   else
+      "http"
+
 let cli_flag = Env_arg.bool "cli" false "use command-line interface instead of the browser one" Env_arg.set_bool_bool
 
 let browser_port_name = "port"

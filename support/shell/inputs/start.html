@@ -2,14 +2,14 @@
 <head>
    <title>%%TITLE%%</title>
    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-   <meta http-equiv="Refresh" content="0; URL=https://%%HOST%%:%%PORT%%/login/%%RESPONSE%%">
-        <link rel="shortcut icon" href="/manual/images/metaprl.ico" type="image/x-icon">
-        <link rel="icon" href="/manual/images/metaprl.png" type="image/png">
+   <meta http-equiv="Refresh" content="0; URL=%%PROTOCOL%%://%%HOST%%:%%PORT%%/login/%%RESPONSE%%">
+   <link rel="shortcut icon" href="/manual/images/metaprl.ico" type="image/x-icon">
+   <link rel="icon" href="/manual/images/metaprl.png" type="image/png">
    <script type="text/javascript">
    <!--
    function OnLoad()
    {
-       location.href = 'https://%%HOST%%:%%PORT%%/login/%%RESPONSE%%';
+       location.href = '%%PROTOCOL%%://%%HOST%%:%%PORT%%/login/%%RESPONSE%%';
    }
    -->
    </script>
@@ -20,7 +20,7 @@
    you have started.
    </p>
    <p>
-   <a href="https://%%HOST%%:%%PORT%%/login/%%RESPONSE%%">MetaPRL start</a>
+   <a href="%%PROTOCOL%%://%%HOST%%:%%PORT%%/login/%%RESPONSE%%">MetaPRL start</a>
    </p>
 </body>
 </html>
