@@ -7,7 +7,7 @@
 
 open Printf
 
-open Debug
+open Nl_debug
 open File_util
 open Opname
 open Refiner.Refiner.Term
@@ -69,6 +69,7 @@ type ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item =
  | Resource of 'ctyp resource_info
  | Infix of string
  | SummaryItem of 'item
+ | ToploopItem of 'item
  | MagicBlock of 'item magic_info
 
 (*
@@ -236,6 +237,8 @@ let rec tab i =
 let eprint_entry print_info = function
    SummaryItem _ ->
       eprintf "SummaryItem\n"
+ | ToploopItem _ ->
+      eprintf "ToploopItem\n"
  | Rewrite { rw_name = name } ->
       eprintf "Rewrite: %s\n" name
  | CondRewrite { crw_name = name } ->
@@ -651,6 +654,8 @@ let summary_map (convert : ('term1, 'meta_term1, 'proof1, 'ctyp1, 'expr1, 'item1
          match item with
             SummaryItem t ->
                SummaryItem (convert.item_f t)
+          | ToploopItem t ->
+               ToploopItem (convert.item_f t)
 
           | Rewrite { rw_name = name; rw_redex = redex; rw_contractum = con; rw_proof = pf } ->
                Rewrite { rw_name = name;
@@ -811,6 +816,7 @@ let resource_op                 = mk_opname "resource"
 let infix_op                    = mk_opname "infix"
 let magic_block_op              = mk_opname "magic_block"
 let summary_item_op             = mk_opname "summary_item"
+let toploop_item_op             = mk_opname "toploop_item"
 
 (*
  * Meta term conversions.
@@ -1162,6 +1168,9 @@ and dest_magic_block convert t =
 and dest_summary_item convert t =
    SummaryItem (convert.item_f (one_subterm t))
 
+and dest_toploop_item convert t =
+   ToploopItem (convert.item_f (one_subterm t))
+
 and dest_term_aux
     (convert : (term, term, term, term, term, term,
                 'term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) convert)
@@ -1343,6 +1352,9 @@ let mk_prec_rel_term rel left right =
 let rec term_of_summary_item convert t =
    mk_simple_term summary_item_op [convert.item_f t]
 
+and term_of_toploop_item convert t =
+   mk_simple_term toploop_item_op [convert.item_f t]
+
 and term_of_rewrite convert { rw_name = name;
                               rw_redex = redex;
                               rw_contractum = con;
@@ -1452,6 +1464,8 @@ and term_list_aux (convert : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item, te
                               term, term, term, term, term) convert) = function
    SummaryItem t ->
       term_of_summary_item convert t
+ | ToploopItem t ->
+      term_of_toploop_item convert t
  | Rewrite rw ->
       term_of_rewrite convert rw
  | CondRewrite crw ->
@@ -1863,7 +1877,8 @@ and check_implemented
     (implem : ('term2, 'meta_term2, 'proof2, 'ctyp2, 'expr2, 'item2) summary_item list)
     ((interf : ('term1, 'meta_term1, 'proof1, 'ctyp1, 'expr1, 'item1) summary_item), _) =
    match interf with
-      SummaryItem _ ->
+      SummaryItem _
+    | ToploopItem _ ->
          ()
     | Rewrite info ->
          check_rewrite info implem
@@ -2067,6 +2082,8 @@ let rec copy_proofs copy_proof { info_list = info1 } info2 =
                Infix s
           | SummaryItem item ->
                SummaryItem item
+          | ToploopItem item ->
+               ToploopItem item
           | MagicBlock info ->
                MagicBlock info
       in

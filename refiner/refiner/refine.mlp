@@ -35,7 +35,7 @@
 #include "refine_error.h"
 
 open Printf
-open Debug
+open Nl_debug
 
 open Opname
 open Term_sig

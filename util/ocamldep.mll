@@ -192,6 +192,7 @@ let file_dependencies source_file =
       let (byt_deps, opt_deps) =
         StringSet.fold find_dependency !free_structure_names init_deps in
       print_dependencies (basename ^ ".cmo") byt_deps;
+      print_dependencies (basename ^ ".ppo") byt_deps;
       print_dependencies (basename ^ ".cmx") opt_deps
     end else
     if Filename.check_suffix source_file ".mli" then begin

@@ -4,11 +4,12 @@
 
 open Printf
 
-open Debug
+open Nl_debug
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermMeta
 open Refiner.Refiner.Rewrite
+open Refiner.Refiner.RefineError
 open Precedence
 open Simple_print
 open Resource
@@ -53,6 +54,7 @@ sig
       string -> (MLast.sig_item * (int * int)) list
 
    val extract_str :
+      (term, meta_term, unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info ->
       (term, meta_term, proof proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info ->
       (module_path * MLast.ctyp resource_info) list ->
       string -> (MLast.str_item * (int * int)) list
@@ -390,9 +392,9 @@ let wrap_exn loc name e =
    let wrapped = <:expr< try $e$ with [ $list: [exn_patt, None, printer]$ ] >> in
 
    (* Print a message before the execution *)
-   let debug_load_ref = <:expr< $uid: "Debug"$ . $lid: "debug_load"$ >> in
+   let debug_load_ref = <:expr< $uid: "Nl_debug"$ . $lid: "debug_load"$ >> in
    let debug_load = <:expr< $debug_load_ref$ . $lid: "val"$ >> in
-   let eflush = <:expr< $uid: "Debug"$ . $lid: "eflush"$ >> in
+   let eflush = <:expr< $uid: "Nl_debug"$ . $lid: "eflush"$ >> in
    let msg = <:expr< $str: "Loading " ^ name ^ "%t"$ >> in
    let eprintf = <:expr< $uid: "Printf"$ . $lid: "eprintf"$ >> in
    let print_msg = <:expr< $eprintf$ $msg$ $eflush$ >> in
@@ -489,9 +491,96 @@ let interactive_exn loc name =
    let body = <:expr< raise ($uid:"Failure"$ $str: "interactive proof"$) >> in
       <:expr< fun [ $list: [ patt, None, body ]$ ] >>
 
+(*
+ * This is a little bogus, but we add rewrites automatically to the
+ * toploop resource.
+ *)
+let toploop_rewrite loc name =
+   let patt = <:patt< $lid: "toploop_resource"$ >> in
+   let expr = <:expr< $lid: "toploop_resource"$ . $uid: "Resource"$ . $lid: "resource_improve"$
+                      $lid: "toploop_resource"$
+                      ($str: name$, $uid: "Nltop"$ . $uid: "ConvExpr"$ $lid: name$) >>
+   in
+      <:str_item< value $rec: false$ $list: [ patt, expr ]$ >>
+
+(*
+ * Add a toploop item.
+ *)
+let raise_toploop_exn loc =
+   Stdpp.raise_with_loc loc (RefineError ("topval", StringError
+                                          "The types allowed in toploop expressions are limited.\n\
+Your type is not understood.  See the module Nltop for allowed types."))
+
+let add_toploop_item loc name ctyp =
+   let rec collect index expr = function
+      <:ctyp< $lid: "unit"$ >> ->
+         nltop "UnitExpr" expr
+    | <:ctyp< $lid: "bool"$ >> ->
+         nltop "BoolExpr" expr
+    | <:ctyp< $lid: "int"$ >> ->
+         nltop "IntExpr" expr
+    | <:ctyp< $lid: "string"$ >> ->
+         nltop "StringExpr" expr
+    | <:ctyp< $lid: "term"$ >> ->
+         nltop "TermExpr" expr
+    | <:ctyp< $lid: "tactic"$ >> ->
+         nltop "TacticExpr" expr
+    | <:ctyp< $lid: "conv"$ >> ->
+         nltop "ConvExpr" expr
+    | <:ctyp< $t1$ -> $t2$ >> ->
+         collect_fun index expr t1 t2
+    | _ ->
+         raise_toploop_exn loc
+   and collect_fun index expr t1 t2 =
+      match t1 with
+         <:ctyp< $lid: "unit"$ >> ->
+            nlfun index "UnitFunExpr" expr t1
+       | <:ctyp< $lid: "bool"$ >> ->
+            nlfun index "BoolFunExpr" expr t2
+       | <:ctyp< $lid: "int"$ >> ->
+            nlfun index "IntFunExpr" expr t2
+       | <:ctyp< $lid: "string"$ >> ->
+            nlfun index "StringFunExpr" expr t2
+       | <:ctyp< $lid: "term"$ >> ->
+            nlfun index "TermFunExpr" expr t2
+       | <:ctyp< $lid: "tactic"$ >> ->
+            nlfun index "TacticFunExpr" expr t2
+       | <:ctyp< $lid: "conv"$ >> ->
+            nlfun index "ConvFunExpr" expr t2
+       | <:ctyp< $lid: "address"$ >>
+       | <:ctyp< $lid: "list"$ $lid: "int"$ >> ->
+            nlfun index "AddrFunExpr" expr t2
+       | <:ctyp< $lid: "list"$ $lid: "string"$ >> ->
+            nlfun index "StringListFunExpr" expr t2
+       | <:ctyp< $lid: "list"$ $lid: "term"$ >> ->
+            nlfun index "TermListFunExpr" expr t2
+       | <:ctyp< $lid: "list"$ $lid: "tactic"$ >> ->
+            nlfun index "TacticListFunExpr" expr t2
+       | <:ctyp< $lid: "list"$ $lid: "conv"$ >> ->
+            nlfun index "ConvListFunExpr" expr t2
+       | <:ctyp< $lid: "int"$ -> $lid: "tactic"$ >> ->
+            nlfun index "IntTacticFunExpr" expr t2
+       | _ ->
+            raise_toploop_exn loc
+   and nltop name expr =
+      <:expr< $uid: "Nltop"$ . $uid: name$ $expr$ >>
+   and nlfun index name expr t2 =
+      let v = sprintf "v%d" index in
+      let patt = <:patt< $lid: v$ >> in
+      let expr = collect (index + 1) <:expr< $expr$ $lid: v$ >> t2 in
+         <:expr< $uid: "Nltop"$ . $uid: name$ (fun [ $list: [ patt, None, expr ]$ ]) >>
+   in
+   let expr = collect 0 <:expr< $lid: name$ >> ctyp in
+   let patt = <:patt< $lid: "toploop_resource"$ >> in
+   let expr = <:expr< $lid: "toploop_resource"$ . $uid: "Resource"$ . $lid: "resource_improve"$
+                      $lid: "toploop_resource"$ ($str: name$, $expr$)
+              >>
+   in
+      <:str_item< value $rec:false$ $list: [ patt, expr ]$ >>
+
 (************************************************************************
  * SIGNATURES                                                           *
-************************************************************************)
+ ************************************************************************)
 
 (*
  * Rewrites.
@@ -547,6 +636,17 @@ let declare_parent loc _ =
  *)
 let declare_summary_item loc item =
    [item]
+
+let declare_toploop_item loc item =
+   let _ =
+      match item with
+         <:sig_item< value $s$ : $t$ >> ->
+            (* Check that the type is understood *)
+            add_toploop_item (MLast.loc_of_ctyp t) s t
+       | _ ->
+            Stdpp.raise_with_loc loc (RefineError ("declare_toploop_item", StringError "illegal topval"))
+   in
+      declare_summary_item loc item
 
 (*
  * Magic block is a block of items.
@@ -632,6 +732,10 @@ let extract_sig_item (item, loc) =
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: summary_item%t" eflush;
          declare_summary_item loc item
+    | ToploopItem item ->
+         if !debug_filter_prog then
+            eprintf "Filter_prog.extract_sig_item: toploop_item%t" eflush;
+         declare_toploop_item loc item
     | MagicBlock block ->
          if !debug_filter_prog then
             eprintf "Filter_prog.extract_sig_item: magic block%t" eflush;
@@ -702,7 +806,8 @@ struct
     * Implementation state.
     *)
    type t =
-      { mutable imp_resources : MLast.ctyp resource_info list
+      { mutable imp_resources : MLast.ctyp resource_info list;
+        imp_sig_info : (term, meta_term, unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
       }
 
    (*
@@ -772,7 +877,7 @@ struct
        let name_let =
           <:str_item< value $rec:false$ $list:[ name_patt, rw_body_expr ]$ >>
        in
-          [name_rewrite_let; name_let; refiner_let loc (* ; refiner_let_name loc name *)]
+          [name_rewrite_let; name_let; refiner_let loc; toploop_rewrite loc name]
 
    let ()  = ()
 
@@ -1467,13 +1572,27 @@ struct
          [<:str_item< value $rec:false$ $list:[ refiner_patt, refiner_val; dformer_patt, dformer_val ]$ >>]
 
    (*
+    * Collect the toploop values in this module.
+    *)
+   let implem_toploop { imp_sig_info = info } =
+      let rec collect = function
+         (ToploopItem <:sig_item< value $s$ : $t$ >>, loc) :: tl ->
+            add_toploop_item loc s t :: collect tl
+       | _ :: tl ->
+            collect tl
+       | [] ->
+            []
+      in
+         collect (info_items info)
+
+   (*
     * Collect the resources in this module.
     *)
-   let implem_resources resources =
+   let implem_resources resources name =
       let loc = 0, 0 in
-      let bind_of_resource { resource_name = name } =
-         let patt = <:patt< $lid: ext_resource_name name$ >> in
-         let expr = <:expr< $lid: name$ . $uid: "Resource"$ . $lid: "resource_close"$ $lid: name$ >> in
+      let bind_of_resource { resource_name = name' } =
+         let patt = <:patt< $lid: ext_resource_name name'$ >> in
+         let expr = <:expr< $lid: name'$ . $uid: "Resource"$ . $lid: "resource_close"$ $lid: name'$ $str:name$ >> in
             patt, expr
       in
       let values = List.map bind_of_resource resources in
@@ -1505,7 +1624,8 @@ struct
       let refiner_val = <:expr< $lid:local_refiner_id$ . $lid:"val"$ >> in
       let dformer_val = <:expr< $lid:local_dformer_id$ . $lid:"val"$ >> in
       let label_expr = <:expr< $label_refiner_expr loc$ $lid:local_refiner_id$ $str:name$ >> in
-         [implem_resources proc.imp_resources;
+          (implem_toploop proc) @
+          [implem_resources proc.imp_resources name;
           (<:str_item< $exp:label_expr$ >>);
           (<:str_item< value $rec:false$
                               $list:[refiner_patt, refiner_val;
@@ -1627,6 +1747,10 @@ struct
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: summary item%t" eflush;
             define_summary_item proc loc item
+       | ToploopItem item ->
+            if !debug_filter_prog then
+               eprintf "Filter_prog.extract_str_item: toploop item%t" eflush;
+            define_summary_item proc loc item
        | MagicBlock block ->
             if !debug_filter_prog then
                eprintf "Filter_prog.extract_str_item: magic block%t" eflush;
@@ -1651,8 +1775,8 @@ struct
    (*
     * Extract a signature.
     *)
-   let extract_str info resources name =
-      let proc = { imp_resources = [] } in
+   let extract_str sig_info info resources name =
+      let proc = { imp_resources = []; imp_sig_info = sig_info } in
       let prolog = implem_prolog proc (0, 0) in
       let items = List_util.flat_map (extract_str_item proc) (info_items info) in
       let postlog = implem_postlog proc (0, 0) name in

@@ -3,7 +3,7 @@
  *)
 
 open Printf
-open Debug
+open Nl_debug
 
 open Ml_string
 open Term_grammar

@@ -1,7 +1,7 @@
 (*conversion between nuprl-light terms and mathbus terms*)
 
 open Printf
-open Debug
+open Nl_debug
 
 open Int32
 open Num

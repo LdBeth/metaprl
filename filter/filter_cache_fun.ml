@@ -6,7 +6,7 @@
 
 open Printf
 
-open Debug
+open Nl_debug
 open Opname
 open Refiner.Refiner.TermType
 open Resource
@@ -687,7 +687,8 @@ struct
       let sig_info = sig_info cache alt_select in
       let id = find_id sig_info in
          add_command cache (Id id, (0, 0));
-         check_implementation cache.info sig_info
+         check_implementation cache.info sig_info;
+         sig_info
 
    (*
     * Copy the proofs from the summary.

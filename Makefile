@@ -34,7 +34,7 @@ all:
 	done
 
 opt:
-	@for i in $(REFINER_DIRS) $(NL_DIRS) editor/ml; do\
+	@for i in $(DIRS) editor/ml; do\
 		if (echo Making $$i...; cd $$i; $(MAKE) $@); then true; else exit 1; fi;\
 	done
 

@@ -7,7 +7,7 @@
 open Printf
 open Pcaml
 
-open Debug
+open Nl_debug
 open Refiner.Refiner
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
@@ -222,6 +222,7 @@ sig
    type expr
    type ctyp
    type item
+   type sig_info
 
    (*
     * This is only really used for interactive proofs.
@@ -231,7 +232,9 @@ sig
    (*
     * Extract the str_items.
     *)
-   val extract : (term, meta_term, proof, ctyp, expr, item) module_info ->
+   val extract :
+      sig_info ->
+      (term, meta_term, proof, ctyp, expr, item) module_info ->
       (module_path * ctyp resource_info) list ->
       string -> (item * (int * int)) list
 end
@@ -644,6 +647,12 @@ struct
                                           }, loc)
 
    (*
+    * A toplevel declaration.
+    *)
+   let declare_topval proc loc item =
+      FilterCache.add_command proc.cache (ToploopItem item, loc)
+
+   (*
     * A magic block computes a hash value from the definitions
     * in the block.
     *)
@@ -692,29 +701,35 @@ struct
     * Save the summary.
     *)
    let save proc =
-      FilterCache.save proc.cache
+      print_exn FilterCache.save proc.cache
 
    (*
     * Extract an item list.
     *)
-   let extract proc =
-      Info.extract (FilterCache.info proc.cache) (FilterCache.resources proc.cache) proc.name
+   let extract sig_info proc =
+      print_exn (Info.extract sig_info (FilterCache.info proc.cache) (**)
+                    (FilterCache.resources proc.cache)) proc.name
 
    (*
     * Check the implementation with its interface.
     *)
-   let check proc alt_select =
+   let check_aux proc alt_select =
       (* Check that implementation matches interface *)
-      FilterCache.check proc.cache alt_select;
+      let sig_info = FilterCache.check proc.cache alt_select in
+      let _ =
+         (* Also copy the proofs if they exist *)
+         if proc.select = ImplementationType then
+            let name = proc.name in
+               if file_interactive (name ^ ".prlb") then
+                  begin
+                     FilterCache.set_mode proc.cache InteractiveSummary;
+                     FilterCache.copy_proofs proc.cache Info.copy_proof
+                  end
+      in
+         sig_info
 
-      (* Also copy the proofs if they exist *)
-      if proc.select = ImplementationType then
-         let name = proc.name in
-            if file_interactive (name ^ ".prlb") then
-               begin
-                  FilterCache.set_mode proc.cache InteractiveSummary;
-                  FilterCache.copy_proofs proc.cache Info.copy_proof
-               end
+   let check proc alt_select =
+      print_exn (check_aux proc) alt_select
 end
 
 (*
@@ -773,9 +788,10 @@ struct
    type expr  = MLast.expr
    type ctyp  = MLast.ctyp
    type item  = MLast.sig_item
+   type sig_info = unit
 
    let copy_proof proof1 proof2 = proof1
-   let extract = Extract.extract_sig
+   let extract () = Extract.extract_sig
 end
 
 module StrFilterInfo =
@@ -784,7 +800,7 @@ struct
    type expr  = MLast.expr
    type ctyp  = MLast.ctyp
    type item  = MLast.str_item
-
+   type sig_info = (term, meta_term, unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info
    (*
     * Proof copying.
     *)
@@ -857,6 +873,8 @@ let _ =
    Grammar.Unsafe.clear_entry interf;
    Grammar.Unsafe.clear_entry implem
 
+let operator = Pa_o.operator
+
 EXTEND
    GLOBAL: interf implem sig_item str_item expr;
 
@@ -866,7 +884,7 @@ EXTEND
           let id = Hashtbl.hash proc in
              SigFilter.add_command proc (Id id, (0, 0));
              SigFilter.save proc NeverSuffix;
-             SigFilter.extract proc
+             SigFilter.extract () proc
        ]];
 
    interf_opening:
@@ -891,9 +909,9 @@ EXTEND
    implem:
       [[ implem_opening; st = LIST0 implem_item; EOI ->
           let proc = StrFilter.get_proc loc in
-             StrFilter.check proc InterfaceType;
+          let interf = StrFilter.check proc InterfaceType in
              StrFilter.save proc NeverSuffix;
-             StrFilter.extract proc
+             StrFilter.extract interf proc
        ]];
 
    implem_opening:
@@ -952,6 +970,12 @@ EXTEND
           empty_sig_item loc
         | "prec"; name = LIDENT ->
           SigFilter.declare_prec (SigFilter.get_proc loc) loc name;
+          empty_sig_item loc
+        | "topval"; name = LIDENT; ":"; t = ctyp ->
+          SigFilter.declare_topval (SigFilter.get_proc loc) loc <:sig_item< value $name$ : $t$ >>;
+          empty_sig_item loc
+        | "topval"; "("; name = operator; ")"; ":"; t = ctyp ->
+          SigFilter.declare_topval (SigFilter.get_proc loc) loc <:sig_item< value $name$ : $t$ >>;
           empty_sig_item loc
        ]];
 

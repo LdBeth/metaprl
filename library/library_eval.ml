@@ -10,7 +10,7 @@ open Utils
 open Library
 
 open Printf
-open Debug
+open Nl_debug
 
 let _ =
    if !debug_load then

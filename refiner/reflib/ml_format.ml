@@ -4,7 +4,7 @@
  *)
 
 open Printf
-open Debug
+open Nl_debug
 open Opname
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermType

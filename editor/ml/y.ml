@@ -3,7 +3,7 @@
  *)
 
 open Printf
-open Debug
+open Nl_debug
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.TermAddr
@@ -26,7 +26,7 @@ open Itt_struct
 open Itt_w
 open Itt_derive
 
-open Shell
+open Nl
 open Test
 
 open Czf_itt_set

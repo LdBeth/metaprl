@@ -2,42 +2,51 @@
  * Define the additional grammar for the shell.
  *)
 
+include Nltop
+
 open Printf
 open Lexing
-
-open Longident
-open Parsetree
 
 open Nl_debug
 
 open Pcaml
-
-open Toploop
+open MLast
 
 open Refiner.Refiner.Term
 open Refiner.Refiner.RefineError
+open Resource
+open Rformat
 
 open Filter_ast
 open Term_grammar
 open Filter_grammar
 
 open Tacticals
+open Nltop
+
+(************************************************************************
+ * CONSTANTS                                                            *
+ ************************************************************************)
 
 (*
  * Version number.
  *)
 let version = "1.07.0.1"
 
-(*
- * Ref cell for returning the tactic value.
- *)
-let inline_tactic = ref None
-
-let install_tactic tac =
-   inline_tactic := Some tac
-
 module ShellP4 =
 struct
+   (************************************************************************
+    * TYPES                                                                *
+    ************************************************************************)
+
+   (*
+    * Type of buffered input.
+    *)
+   type input_buf =
+      { mutable buf_index : int;
+        mutable buf_buffer : string
+      }
+
    (************************************************************************
     * PRINTERS                                                             *
     ************************************************************************)
@@ -56,6 +65,13 @@ struct
             found df
        | None ->
             notfound
+
+   let get_dfbase () =
+      match !df with
+         Some df ->
+            df
+       | None ->
+            Dform.null_base
 
    (*
     * Printers.
@@ -118,16 +134,43 @@ struct
    (*
     * String -> string translator.
     *)
-   let term_exp s =
-      let cs = Stream.of_string s in
-      let t = Grammar.Entry.parse TermGrammar.term_eoi cs in
-         build_ml_term (0, 0) t
+                        let term_exp s =
+                           let cs = Stream.of_string s in
+                           let t = Grammar.Entry.parse TermGrammar.term_eoi cs in
+                              build_ml_term (0, 0) t
 
-   let term_patt s =
-      raise (Failure "Shell_p4.term_patt: not implemented yet")
+                        let term_patt s =
+                           raise (Failure "Shell_p4.term_patt: not implemented yet")
 
-   let _ = Quotation.add "term" (Quotation.ExAst (term_exp, term_patt))
-   let _ = Quotation.default := "term"
+                        let _ = Quotation.add "term" (Quotation.ExAst (term_exp, term_patt))
+                        let _ = Quotation.default := "term"
+
+   (************************************************************************
+    * MODULE                                                               *
+    ************************************************************************)
+
+   (*
+    * Reference to current command set.
+    *)
+                        let toploop =
+                           let rsrc = Nltop.ext_toploop_resource in
+                              ref (rsrc.resource_extract rsrc)
+
+   (*
+    * Set the module.
+    * Collect the toplevel commands to use.
+    * Shell commands are always added in.
+    *)
+                        let set_module name commands =
+      let name = String.capitalize name in
+      let rsrc =
+         try Nltop.get_resource name with
+            Not_found ->
+               eprintf "Module %s: commands not found%t" name eflush;
+               Nltop.ext_toploop_resource
+      in
+      let rsrc = toploop_add rsrc commands in
+         toploop := rsrc.resource_extract rsrc
 
    (************************************************************************
     * ARGUMENT COLLECTION                                                  *
@@ -165,12 +208,6 @@ struct
     ************************************************************************)
 
    (*
-    * Don't need to do anything when module is set.
-    *)
-   let set_module _ _ =
-      ()
-
-   (*
     * Save the text in the input_buffers during each toplevel read.
     *)
    type info =
@@ -191,7 +228,8 @@ struct
             raise (Failure "Shell_p4.push_buffer")
 
    (*
-    * Reset the input to the buffered state.
+    * Reset the input to the buffered state
+    * with an empty buffer.
     *)
    let reset_input () =
       let _ =
@@ -283,85 +321,38 @@ struct
             get_file_text loc input
 
    (*
-    * Wrap the toplevel input function.
-    * Replace the buffer filler so that we record all the input.
+    * Create an empty buffer.
     *)
-   let rec wrap f lb =
-      let { refill_buff = refill;
-            lex_buffer = buffer;
-            lex_buffer_len = len;
-            lex_abs_pos = abs_pos;
-            lex_start_pos = start_pos;
-            lex_curr_pos = curr_pos;
-            lex_last_pos = last_pos;
-            lex_last_action = last_action;
-            lex_eof_reached = eof_reached
-          } = lb
+   let create_buffer () =
+      { buf_index = 0; buf_buffer = "" }
+
+   (*
+    * Wrap the input channel so that we can recover input.
+    *)
+   let stream_of_channel inx =
+      let buf = create_buffer () in
+      let refill loc =
+         let str = input_line inx ^ "\n" in
+            buf.buf_index <- 0;
+            buf.buf_buffer <- str;
+            push_buffer loc (String.length str) str
       in
-      let refill' lb =
-         lb.lex_buffer <- String.copy lb.lex_buffer;
-         refill lb;
-         let { lex_buffer = buffer;
-               lex_buffer_len = len;
-               lex_abs_pos = abs_pos;
-               lex_start_pos = start_pos;
-               lex_curr_pos = curr_pos
-             } = lb
-         in
-            push_buffer abs_pos len buffer;
-      in
-      let lb =
-         { refill_buff = refill';
-           lex_buffer = buffer;
-           lex_buffer_len = len;
-           lex_abs_pos = abs_pos;
-           lex_start_pos = start_pos;
-           lex_curr_pos = curr_pos;
-           lex_last_pos = last_pos;
-           lex_last_action = last_action;
-           lex_eof_reached = eof_reached
-         }
+      let rec read loc =
+         let { buf_index = index; buf_buffer = buffer } = buf in
+            if index = String.length buffer then
+               try
+                  refill loc;
+                  read loc
+               with
+                  End_of_file ->
+                     None
+            else
+               let c = buffer.[index] in
+                  buf.buf_index <- index + 1;
+                  Some c
       in
          reset_input ();
-         push_buffer abs_pos len buffer;
-         let x = f lb in
-            reset_input ();
-            x
-
-   let wrap_once f lb =
-      let x = wrap f lb in
-         Toploop.parse_toplevel_phrase := wrap !Toploop.parse_toplevel_phrase;
-         x
-
-   (*
-    * Wrap a file.
-    * We don't need to modify the lexbuf.
-    * Instead, we'll get the chars from the file.
-    * Unfortunately, we don't close the file once we're done, because the
-    * input hasn't been evaluated yet.
-    *)
-   let wrap_file f lb =
-      set_file !Toploop.input_name;
-      f lb
-
-   (*
-    * Wrap the toplevel.
-    *)
-   let _ =
-      let wrapped = !Toploop.parse_toplevel_phrase in
-      let motd lb =
-         eprintf "\tNuprl-Light version %s\n%t" version eflush;
-         Toploop.parse_toplevel_phrase := wrap_once wrapped;
-         !Toploop.parse_toplevel_phrase lb
-      in
-         Toploop.parse_toplevel_phrase := motd
-
-   (*
-    * Wrap file usage.
-    *)
-   let _ =
-      let wrapped = !Toploop.parse_use_file in
-         Toploop.parse_use_file := wrap_file wrapped
+         Stream.from read
 
    (************************************************************************
     * TACTIC SAVING                                                        *
@@ -385,54 +376,14 @@ struct
     ************************************************************************)
 
    (*
-    * We create tactics through the toploop,
-    * but it is delayed until the tactic is first evaluated.
+    * Evaluate a tactic through the toploop resource.
     *)
-   type delayed_tactic =
-      Delay of MLast.expr
-    | Tactic of tactic
-
-   (*
-    * Evaluate a tactic through the toploop.
-    *)
-   let eval_tactic_exn = RefineError ("eval_tactic", StringError "evaluation failed")
-
    let eval_tactic expr =
-      let loc = 0, 0 in
-      let expr = (<:expr< $uid: "Shell_p4"$ . $lid: "install_tactic"$ $expr$ >>) in
-      let item = (<:str_item< $exp: expr$ >>) in
-      let pt_item = Ast2pt.str_item item [] in
-          inline_tactic := None;
-          try
-             if Toploop.execute_phrase false (Parsetree.Ptop_def pt_item) then
-                match !inline_tactic with
-                   Some tac ->
-                      tac
-                 | None ->
-                      raise eval_tactic_exn
-             else
-                raise eval_tactic_exn
-          with
-             Typecore.Error (_, err) ->
-                Typecore.report_error err;
-                eflush stdout;
-                raise eval_tactic_exn
-
-   (*
-    * Build a delayed-evaluation tactic.
-    *)
-   let create_tactic expr =
-      let cell = ref (Delay expr) in
-      let tac p =
-         match !cell with
-            Tactic tac ->
-               tac p
-          | Delay expr ->
-               let tac = eval_tactic expr in
-                  cell := Tactic tac;
-                  tac p
-      in
-         tac
+      match expr_of_ocaml_expr !toploop expr with
+         TacticExpr tac ->
+            tac
+       | _ ->
+            raise (RefineError ("eval_tactic", StringError "expression is not a tactic"))
 
    (************************************************************************
     * SHELL GRAMMAR                                                        *
@@ -449,7 +400,7 @@ struct
 
       str_item:
          [[ "refine"; e = refine_item ->
-             let e = <:expr< $uid:"Shell"$ . $lid:"refine"$ $e$ >> in
+             let e = <:expr< $lid:"refine"$ $e$ >> in
                 <:str_item< $exp: e$ >>
           ]];
 
@@ -460,31 +411,133 @@ struct
           ]];
    END
 
+   (************************************************************************
+    * TOPLOOP                                                              *
+    ************************************************************************)
+
+   let rec print_expr out = function
+      UnitExpr () ->
+         fprintf out "() : unit\n"
+    | BoolExpr b ->
+         fprintf out "%b : bool\n" b
+    | IntExpr i ->
+         fprintf out "%d : int\n" i
+    | StringExpr s ->
+         fprintf out "%s : string\n" s
+    | TermExpr t ->
+         print_term t
+    | TacticExpr _ ->
+         fprintf out "- : tactic\n"
+    | ConvExpr _ ->
+         fprintf out "-: conv\n"
+    | ListExpr l ->
+         fprintf out "[%a] : list\n" print_expr_list l
+    | TupleExpr l ->
+         fprintf out "(%a) : tuple\n" print_expr_list l
+    | FunExpr _ ->
+         fprintf out "- : expr -> expr\n"
+    | UnitFunExpr _ ->
+         fprintf out "- : unit -> expr\n"
+    | BoolFunExpr _ ->
+         fprintf out "- : bool -> expr\n"
+    | IntFunExpr _ ->
+         fprintf out "- : int -> expr\n"
+    | StringFunExpr _ ->
+         fprintf out "- : string -> expr\n"
+    | TermFunExpr _ ->
+         fprintf out "- : term -> expr\n"
+    | TacticFunExpr _ ->
+         fprintf out "- : tactic -> expr\n"
+    | IntTacticFunExpr _ ->
+         fprintf out "- : (int -> tactic) -> tactic\n"
+    | ConvFunExpr _ ->
+         fprintf out "- : conv -> expr\n"
+    | AddrFunExpr _ ->
+         fprintf out "- : address -> expr\n"
+    | StringListFunExpr _ ->
+         fprintf out "- : string list -> expr\n"
+    | TermListFunExpr _ ->
+         fprintf out "- : term list -> expr\n"
+    | TacticListFunExpr _ ->
+         fprintf out "- : tactic list -> expr\n"
+    | ConvListFunExpr _ ->
+         fprintf out "- : conv list -> expr\n"
+
+   and print_expr_list out = function
+      [expr] ->
+         print_expr out expr
+    | expr :: exprs ->
+         fprintf out "%a; %a" print_expr expr print_expr_list exprs
+    | [] ->
+         ()
+
    (*
-    * Main function installs printers and include directories.
-    * Then exits to pass control to the toploop.
+    * Evaluate a struct item.
+    *)
+   let eval_str_item loc item =
+      print_expr stdout (expr_of_ocaml_str_item !toploop item);
+      flush stdout
+
+   (*
+    * Evaluate a directive.
+    *)
+   let eval_directive loc str = function
+      DpNon ->
+         eprintf "Directive DpNon: %s%t" str eflush
+    | DpStr str' ->
+         eprintf "Directive DpStr: %s/%s%t" str str' eflush
+    | DpInt str' ->
+         eprintf "Directive DpInt: %s/%s%t" str str' eflush
+    | DpIde strs ->
+         eprintf "Directive DpIde: %s" str;
+         List.iter (fun s -> eprintf "/%s" s) strs;
+         eflush stderr
+
+   (*
+    * Evaluate a toplevel phrase.
+    *)
+   let eval_phrase = function
+      PhStr (loc, item) ->
+         eval_str_item loc item
+    | PhDir (loc, str, param) ->
+         eval_directive loc str param
+
+   (*
+    * We just loop on the input.  Evaluation is performed by
+    * the toploop resource.
     *)
    let main () =
-      let init () =
-         let nllib =
-            try Sys.getenv "NLLIB" with
-               Not_found ->
-                  "/usr/local/lib/nuprl-light"
-         in
-         let eval_include inc =
-            Toploop.execute_phrase false (Ptop_dir ("directory", Pdir_string inc));
-            ()
-         in
-            Debug_set.init ();
-            eval_include nllib;
-            List.iter eval_include !includes;
-            Toploop.execute_phrase false (Ptop_dir ("install_printer", Pdir_ident (Ldot (Lident "Shell_p4", "print_term"))));
-            Toploop.execute_phrase false (Ptop_def [{ pstr_desc = Pstr_open (Lident "Shell");
-                                                      pstr_loc = Location.none
-                                                    }]);
-            ()
-      in
-         Printexc.catch init ()
+      let instream = stream_of_channel stdin in
+         printf "Nuprl-Light %s\n%t" version eflush;
+         while true do
+            output_string stdout "# ";
+            flush stdout;
+            try
+               match Grammar.Entry.parse Pcaml.top_phrase instream with
+                  Some phrase ->
+                     eval_phrase phrase
+                | None ->
+                     exit 0
+            with
+               Stdpp.Exc_located ((start, finish), exn) ->
+                  let df = get_dfbase () in
+                  let buf = new_buffer () in
+                     format_string buf "chars ";
+                     format_int buf start;
+                     format_string buf "-";
+                     format_int buf finish;
+                     format_string buf ": ";
+                     Filter_exn.format_exn df buf exn;
+                     print_to_channel 80 buf stderr;
+                     eflush stderr
+             | exn ->
+                  let df = get_dfbase () in
+                  let buf = new_buffer () in
+                     format_string buf "uncaught exception: ";
+                     Filter_exn.format_exn df buf exn;
+                     print_to_channel 80 buf stderr;
+                     eflush stderr
+         done
 end
 
 (*

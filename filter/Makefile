@@ -87,7 +87,7 @@ CMXADEPS =\
 
 CMXLIBS =\
 	unix.cmxa\
-	$(CMXDEPS)
+	$(CMXADEPS)
 
 CMADEPS =\
 	$(ROOT)/mllib/util.cma
@@ -133,8 +133,7 @@ CAMLP4N_CMOBJS =\
 	$(CAMLP4LIB)/pr_dump.cmo\
 	$(CAMLP4LIB)/pa_extend.cmo\
 	$(CAMLP4LIB)/q_MLast.cmo\
-	$(CMOFILES_CAMLP4)\
-	$(CAMLP4LIB)/odyl.cmo
+	$(CMOFILES_CAMLP4)
 
 CAMLP4N_CMXOBJS =\
 	$(CAMLP4LIB)/odyl.cmxa\
@@ -143,8 +142,7 @@ CAMLP4N_CMXOBJS =\
 	$(CAMLP4LIB)/pr_dump.cmx\
 	$(CAMLP4LIB)/pa_extend.cmx\
 	$(CAMLP4LIB)/q_MLast.cmx\
-	$(CMXFILES_CAMLP4)\
-	$(CAMLP4LIB)/odyl.cmx
+	$(CMXFILES_CAMLP4)
 
 CAMLP4O_CMOBJS =\
 	$(CAMLP4LIB)/odyl.cma\
@@ -153,8 +151,7 @@ CAMLP4O_CMOBJS =\
 	$(CAMLP4LIB)/pr_o.cmo\
 	$(CAMLP4LIB)/pa_extend.cmo\
 	$(CAMLP4LIB)/q_MLast.cmo\
-	$(CMOFILES_CAMLP4)\
-	$(CAMLP4LIB)/odyl.cmo
+	$(CMOFILES_CAMLP4)
 
 CAMLP4O_CMXOBJS =\
 	$(CAMLP4LIB)/odyl.cmxa\
@@ -163,8 +160,7 @@ CAMLP4O_CMXOBJS =\
 	$(CAMLP4LIB)/pr_o.cmx\
 	$(CAMLP4LIB)/pa_extend.cmx\
 	$(CAMLP4LIB)/q_MLast.cmx\
-	$(CMXFILES_CAMLP4)\
-	$(CAMLP4LIB)/odyl.cmx
+	$(CMXFILES_CAMLP4)
 
 CAMLP4X_CCLIBS = $(CCLIBS)
 
@@ -177,31 +173,26 @@ PRLCO = prlco
 PRLCN_CMOBJS =\
 	$(STANDARD_LIBS)\
 	$(CAMLP4LIB)/pr_dump.cmo\
-	$(CMOFILES_PRLC)\
-	filter_bin.cmo
+	$(CMOFILES_PRLC)
 
 PRLCN_CMXOBJS =\
 	$(STANDARDX_LIBS)\
 	$(CAMLP4LIB)/pr_dump.cmx\
-	$(CMXFILES_PRLC)\
-	filter_bin.cmx
+	$(CMXFILES_PRLC)
 
 PRLCO_CMOBJS =\
 	$(STANDARD_LIBS)\
 	$(CAMLP4LIB)/pr_o.cmo\
-	$(CMOFILES_PRLC)\
-	filter_bin.cmo
+	$(CMOFILES_PRLC)
 
 PRLCO_CMXOBJS =\
 	$(STANDARDX_LIBS)\
 	$(CAMLP4LIB)/pr_o.cmx\
-	$(CMXFILES_PRLC)\
-	filter_bin.cmx
+	$(CMXFILES_PRLC)
 
 PRLCX_CCLIBS = $(CCLIBS)
 
 all: lib
-opt: all
 
 #
 # Included files
@@ -233,7 +224,7 @@ $(ROOT)/lib/$(PRLCO)$(EXE): $(PRLCO).run
 $(ROOT)/bin/$(MAIN)$(EXE): $(MAIN).run
 	$(LN) ../$(DIR)/$(MAIN).run $@
 
-old_opt: $(RMLIFILES) $(RCMIFILES) $(RCMAFILES) $(CAMLP4N).opt $(CAMLP4O).opt $(PRLCN).opt $(PRLCO).opt $(MAIN).opt
+opt: $(RMLIFILES) $(RCMIFILES) $(RCMXAFILES) $(CAMLP4N).opt $(CAMLP4O).opt $(PRLCN).opt $(PRLCO).opt $(MAIN).opt
 	$(LN) ../$(DIR)/$(CAMLP4N).opt $(ROOT)/lib/$(CAMLP4N)
 	$(LN) ../$(DIR)/$(CAMLP4O).opt $(ROOT)/lib/$(CAMLP4O)
 	$(LN) ../$(DIR)/$(PRLCN).opt $(ROOT)/lib/$(PRLCN)
@@ -289,16 +280,16 @@ $(CAMLP4N).opt: $(CAMLP4N_CMXOBJS)
 	$(OCAMLOPT) $(PROFILE) -o $@ -linkall $(CAMLP4N_CMXOBJS) $(CAMLP4X_CCLIBS)
 
 $(CAMLP4O).opt: $(CAMLP4O_CMXOBJS)
-	$(OCAMLOPT) $(PROFILE) -o $@ -linkall -custom $(CAMLP4O_CMXOBJS) $(CAMLP4X_CCLIBS)
+	$(OCAMLOPT) $(PROFILE) -o $@ -linkall $(CAMLP4O_CMXOBJS) $(CAMLP4X_CCLIBS)
 
 #
 # Binary compiler
 #
 $(PRLCN).opt: $(PRLCN_CMXOBJS)
-	$(OCAMLOPT) $(PROFILE) -o $@ -custom $(PRLCN_CMXOBJS) $(PRLCX_CCLIBS)
+	$(OCAMLOPT) $(PROFILE) -o $@ $(PRLCN_CMXOBJS) $(PRLCX_CCLIBS)
 
 $(PRLCO).opt: $(PRLCO_CMXOBJS)
-	$(OCAMLOPT) $(PROFILE) -o $@ -custom $(PRLCO_CMXOBJS) $(PRLCX_CCLIBS)
+	$(OCAMLOPT) $(PROFILE) -o $@ $(PRLCO_CMXOBJS) $(PRLCX_CCLIBS)
 
 #
 # Infix file is preprocessed.

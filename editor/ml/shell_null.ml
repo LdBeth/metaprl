@@ -5,7 +5,7 @@
 include Shell_type
 
 open Printf
-open Debug
+open Nl_debug
 
 open Rformat
 open Refiner.Refiner.RefineError

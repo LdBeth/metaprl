@@ -6,7 +6,7 @@ open Printf
 
 open MLast
 
-open Debug
+open Nl_debug
 
 open Opname
 open Refiner.Refiner

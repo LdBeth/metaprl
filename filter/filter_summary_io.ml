@@ -6,7 +6,7 @@
 
 open Printf
 
-open Debug
+open Nl_debug
 
 open Refiner.Refiner.Term
 

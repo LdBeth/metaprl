@@ -5,7 +5,7 @@
  *)
 
 open Printf
-open Debug
+open Nl_debug
 open File_base_type
 
 (*

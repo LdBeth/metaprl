@@ -8,7 +8,7 @@ include Io_proof
 include Package_info
 
 open Printf
-open Debug
+open Nl_debug
 
 open Opname
 open Refiner.Refiner.Term

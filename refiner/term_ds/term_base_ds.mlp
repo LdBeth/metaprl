@@ -6,7 +6,7 @@
 #include "refine_error.h"
 
 open Printf
-open Debug
+open Nl_debug
 open Opname
 open Refine_error_sig
 open Term_ds

@@ -11,7 +11,7 @@ MLZFILES :=\
 
 # Library files
 LMFILES :=\
-	debug\
+	nl_debug\
 	env_arg\
 	punix\
 	array_util\

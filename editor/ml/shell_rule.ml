@@ -8,7 +8,7 @@ include Package_df
 include Proof_type
 
 open Printf
-open Debug
+open Nl_debug
 
 open Rformat
 open Dform

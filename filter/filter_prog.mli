@@ -23,6 +23,7 @@ sig
       string -> (MLast.sig_item * (int * int)) list
 
    val extract_str :
+      (term, meta_term, unit, MLast.ctyp, MLast.expr, MLast.sig_item) module_info ->
       (term, meta_term, proof proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info ->
       (module_path * MLast.ctyp resource_info) list ->
       string -> (MLast.str_item * (int * int)) list

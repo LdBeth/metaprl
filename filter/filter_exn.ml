@@ -4,7 +4,7 @@
 
 open Printf
 
-open Debug
+open Nl_debug
 
 open Rformat
 open Dform
@@ -36,7 +36,7 @@ let rec format_arg_list db buf = function
 (*
  * Convert an exception to a string.
  *)
-let format_exn db buf exn =
+let rec format_exn db buf exn =
    let format = function
       FormatError (name, t) ->
          format_string buf "FormatError:";
@@ -84,6 +84,13 @@ let format_exn db buf exn =
          format_string buf "Empty module path:";
          format_space buf;
          format_string buf s
+    | Stdpp.Exc_located ((start, finish), exn) ->
+         format_string buf "Chars ";
+         format_int buf start;
+         format_string buf "-";
+         format_int buf finish;
+         format_string buf ": ";
+         format_exn db buf exn
     | exn ->
          Refine_exn.format_exn db buf exn
    in

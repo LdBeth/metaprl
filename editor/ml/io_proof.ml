@@ -5,7 +5,7 @@
 include Io_proof_type
 
 open Printf
-open Debug
+open Nl_debug
 
 open Opname
 open Refiner.Refiner.TermType
@@ -488,6 +488,7 @@ let term_of_attributes _ attributes =
                   (mk_simple_string_term proof_subst_arg_op name [t]) :: tl
              | Tactic_type.TacticArg _
              | Tactic_type.IntTacticArg _
+             | Tactic_type.ArgTacticArg _
              | Tactic_type.TypeinfArg _ ->
                   tl
    in

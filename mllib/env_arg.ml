@@ -6,7 +6,7 @@
  *)
 
 open Printf
-open Debug
+open Nl_debug
 
 (*
  * Show the file loading.

@@ -2,19 +2,14 @@
  * Define the additional grammar for the shell.
  *)
 
-open Tacticals
+include Nltop
+
 open Shell_p4_type
 
 (*
  * Toploop implementation.
  *)
 module ShellP4 : ShellP4Sig
-
-(*
- * The toploop uses this function to return
- * the tactic that was compiled during eval_tactic.
- *)
-val install_tactic : tactic -> unit
 
 (*
  * -*-

@@ -53,17 +53,29 @@ ifndef INLINE
    INLINE=5
 endif
 
+#
+# Use this when compiling with threads.
+# This is tested only on Linux i386.
+#
+THREADS = -thread
+LIBTHREADS = -cclib -lthreadsnat -cclib -lunix -cclib -lpthread
+
+#
+# Configuration
+#
 OCAMLDEP = $(ROOT)/bin/ocamldep
-OCAMLCFLAGS = $(INCLUDE) $(OCAMLFLAGS) $(NOASSERT)
-OCAMLOPTFLAGS = $(INCLUDE) $(OCAMLFLAGS) $(PROFILE) -inline $(INLINE) -noassert
+OCAMLCFLAGS = $(INCLUDE) $(OCAMLFLAGS) $(NOASSERT) $(THREADS)
+OCAMLOPTFLAGS = $(INCLUDE) $(OCAMLFLAGS) $(PROFILE) -inline $(INLINE) -noassert $(THREADS)
+CAMLP4NFLAGS = $(INCLUDE) $(OCAMLFLAGS)
 CAMLP4OFLAGS = $(INCLUDE)
-CFLAGS = -g -I$(CAMLLIB)
+CFLAGS = -g -I$(CAMLLIB) -D_REENTRANT
 CC = gcc
 RM = rm
 INSTALL = /bin/cp -pf
 CP = /bin/cp -pf
 CPP = /lib/cpp -traditional
 LN = ln -sf
+CAMLP4N = $(ROOT)/lib/camlp4n$(EXE)
 
 # For cleaning the directory
 ifdef MAIN
@@ -71,14 +83,22 @@ ifdef MAIN
 endif
 
 # Library file names
-MLFILES      = $(sort $(addsuffix .ml,   $(NLFILES) $(LMFILES) $(MFILES) $(PFILES)))
-MLIFILES     = $(sort $(addsuffix .mli,  $(NLFILES) $(LMFILES) $(MFILES) $(PFILES)))
+MLFILES      = $(sort $(addsuffix .ml,   $(NLFILES) $(NL2FILES) $(LMFILES) $(MFILES) $(PFILES)))
+MLIFILES     = $(sort $(addsuffix .mli,  $(NLFILES) $(NL2FILES) $(LMFILES) $(MFILES) $(PFILES)))
 
 NL_CMIFILES  = $(addsuffix .cmi,  $(NLFILES))
 NL_CMOFILES  = $(addsuffix .cmo,  $(NLFILES))
 NL_CMIZFILES = $(addsuffix .cmiz, $(NLFILES))
 NL_CMOZFILES = $(addsuffix .cmoz, $(NLFILES))
 NL_CMXFILES  = $(addsuffix .cmx,  $(NLFILES))
+NL_PPOFILES  = $(addsuffix .ppo,  $(NLFILES))
+
+NL2_CMIFILES  = $(addsuffix .cmi,  $(NL2FILES))
+NL2_CMOFILES  = $(addsuffix .cmo,  $(NL2FILES))
+NL2_CMIZFILES = $(addsuffix .cmiz, $(NL2FILES))
+NL2_CMOZFILES = $(addsuffix .cmoz, $(NL2FILES))
+NL2_CMXFILES  = $(addsuffix .cmx,  $(NL2FILES))
+NL2_PPOFILES  = $(addsuffix .ppo,  $(NL2FILES))
 
 LCMOFILES    = $(addsuffix .cmo,  $(LMFILES))
 LCMIFILES    = $(addsuffix .cmi,  $(LMFILES))
@@ -101,9 +121,9 @@ REG_CMIFILES = $(sort $(LCMIFILES) $(MCMIFILES) $(PCMIFILES))
 REG_CMOFILES = $(sort $(LCMOFILES) $(MCMOFILES) $(PCMOFILES))
 REG_CMXFILES = $(sort $(LCMXFILES) $(MCMXFILES) $(PCMXFILES))
 
-CMIFILES     = $(sort $(NL_CMIFILES) $(LCMIFILES) $(MCMIFILES))
-CMOFILES     = $(sort $(NL_CMOFILES) $(LCMOFILES) $(MCMOFILES))
-CMXFILES     = $(sort $(NL_CMXFILES) $(LCMXFILES) $(MCMXFILES))
+CMIFILES     = $(sort $(NL_CMIFILES) $(NL2_CMIFILES) $(LCMIFILES) $(MCMIFILES))
+CMOFILES     = $(sort $(NL_CMOFILES) $(NL2_CMOFILES) $(LCMOFILES) $(MCMOFILES))
+CMXFILES     = $(sort $(NL_CMXFILES) $(NL2_CMXFILES) $(LCMXFILES) $(MCMXFILES))
 
 CMAFILES     = $(addsuffix .cma,  $(MLLIBS))
 CMXAFILES    = $(addsuffix .cmxa, $(MLLIBS))
@@ -139,14 +159,14 @@ $(MAIN).cmxa: $(LCMXFILES) $(NL_CMXFILES)
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -a -o $@ $(LCMXFILES) $(NL_CMXFILES)
 
 $(MAIN).run: $(CMAFILES) $(CMADEPS) $(PCMOFILES)
-	$(OCAMLCP) -custom $(OCAMLCFLAGS) -o $@ $(OCAMLCPOPT) $(CMALIBS) $(CMAFILES) $(PCMOFILES) $(CCLIBS)
+	$(OCAMLCP) -custom $(OCAMLCFLAGS) -o $@ $(OCAMLCPOPT) $(CMALIBS) $(CMAFILES) $(PCMOFILES) $(CCLIBS) $(LIBTHREADS)
 	if [ -f $(MAIN).run.exe ]; then\
 		mv $(MAIN).run.exe $(MAIN).run.bak;\
 		mv $(MAIN).run.bak $(MAIN).run;\
 	fi
 
-$(MAIN): $(CMXAFILES) $(CMXDEPS) $(PCMXFILES)
-	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ $(CMXAFILES) $(CMXLIBS) $(PCMXFILES) $(CCLIBS)
+$(MAIN).opt: $(CMXAFILES) $(CMXDEPS) $(PCMXFILES)
+	$(OCAMLOPT) $(OCAMLOPTFLAGS) -o $@ $(CMXAFILES) $(CMXLIBS) $(PCMXFILES) $(CCLIBS) $(LIBTHREADS)
 	if [ -f $(MAIN).exe ]; then\
 		mv $(MAIN).exe $(MAIN).bak;\
 		mv $(MAIN).bak $(MAIN);\
@@ -168,18 +188,22 @@ $(RCMAFILES): $(ROOT)/lib/%.cma: %.cma
 
 $(RCMXAFILES): $(ROOT)/lib/%.cmxa: %.cmxa
 	$(LN) ../$(DIR)/$*.cmxa $(ROOT)/lib
+	$(LN) ../$(DIR)/$*.a $(ROOT)/lib
 
 $(RAFILES): $(ROOT)/lib/%.a: %.a
 	$(LN) ../$(DIR)/$*.a $(ROOT)/lib
 
-$(NL_CMOFILES): %.cmo: %.ml %.cmi
-	$(PRLC) $(OCAMLCFLAGS) -c $*.ml
-
-$(NL_CMIFILES): %.cmi: %.mli
+$(NL_CMIFILES) $(NL2_CMIFILES): %.cmi: %.mli
 	$(PRLC) $(OCAMLCFLAGS) -c $*.mli
 
-$(NL_CMXFILES): %.cmx: %.ml %.cmi
-	$(PRLC) $(OCAMLOPTFLAGS) -opt -c $*.ml
+$(NL_PPOFILES) $(NL2_PPOFILES): %.ppo: %.cmi %.ml
+	NLLIB=$(ROOT)/lib $(CAMLP4N) $(CAMLP4NFLAGS) $*.ml -o $*.ppo
+
+$(NL_CMOFILES) $(NL2_CMOFILES): %.cmo: %.ppo %.cmi
+	$(OCAMLC) $(OCAMLCFLAGS) -c -impl $*.ppo
+
+$(NL_CMXFILES) $(NL2_CMXFILES): %.cmx: %.ppo %.cmi
+	$(OCAMLOPT) $(OCAMLOPTFLAGS) -c -impl $*.ppo
 
 $(REG_CMOFILES): %.cmo: %.ml %.cmi
 	$(OCAMLCP) $(OCAMLCFLAGS) -c $(OCAMLCPOPT) $*.ml

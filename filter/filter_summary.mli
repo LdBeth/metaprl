@@ -51,6 +51,7 @@ type ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item =
  | Resource of 'ctyp resource_info
  | Infix of string
  | SummaryItem of 'item
+ | ToploopItem of 'item
  | MagicBlock of 'item magic_info
 
 (*

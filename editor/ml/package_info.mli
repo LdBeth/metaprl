@@ -23,17 +23,6 @@ module Package : PackageSig
                  with type proof = Extract.proof
 
 (*
- * Auxiliary functions for managing resources and proofs.
- *)
-val install_tactic_argument : tactic_argument -> unit
-val prove : string -> refiner -> unit -> extract
-
-(*
- * For debugging purposes.
- *)
-val debug_item : MLast.str_item ref
-
-(*
  * -*-
  * Local Variables:
  * Caml-master: "editor.top"

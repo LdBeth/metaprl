@@ -20,7 +20,7 @@
 open Printf
 open Arg
 
-open Debug
+open Nl_debug
 
 open Filter_magic
 
@@ -220,6 +220,7 @@ let spec =
     "-cclib", String (add_string_argv "-cclib"), "C library";
     "-inline", String (add_string_argv "-inline"), "Inline level";
     "-linkall", Unit (add_argv "-linkall"), "specify link";
+    "-thread", Unit (add_argv "-thread"), "compile with support for threads";
     "-lib", String set_lib, "set the library directory";
     "-noassert",Unit (add_argv "-noassert"), "Don't compile assertion checks"]
 

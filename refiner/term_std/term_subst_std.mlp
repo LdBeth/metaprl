@@ -3,7 +3,7 @@
  *)
 #include "refine_error.h"
 
-open Debug
+open Nl_debug
 open Printf
 
 open Refine_error_sig

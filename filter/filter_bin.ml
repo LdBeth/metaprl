@@ -7,7 +7,7 @@
 open Arg
 open Printf
 
-open Debug
+open Nl_debug
 
 open File_base_type
 
@@ -43,12 +43,15 @@ sig
    type proof
    type expr
    type ctyp
-   type item
+   type sig_item
+   type str_item
 
-   val extract : (term, meta_term, proof, ctyp, expr, item) module_info ->
+   val extract :
+      (unit -> (term, meta_term, unit, ctyp, expr, sig_item) module_info) ->
+      (term, meta_term, proof, ctyp, expr, str_item) module_info ->
       (module_path * ctyp resource_info) list ->
-      string -> (item * (int * int)) list
-   val compile : (item * (int * int)) list -> unit
+      string -> (str_item * (int * int)) list
+   val compile : (str_item * (int * int)) list -> unit
 end
 
 (*
@@ -57,11 +60,14 @@ end
 module MakeCompile (**)
    (Info : CompileInfoSig)
    (FilterCache : SummaryCacheSig
+    with type sig_expr  = Info.expr
     with type sig_ctyp  = Info.ctyp
+    with type sig_item  = Info.sig_item
+    with type sig_proof = unit
     with type str_proof = Info.proof
     with type str_expr  = Info.expr
     with type str_ctyp  = Info.ctyp
-    with type str_item  = Info.item
+    with type str_item  = Info.str_item
     with type select    = select_type) =
 struct
    let compile name =
@@ -82,7 +88,12 @@ struct
       in
       let cache = FilterCache.create !include_path in
       let info, _ = FilterCache.load cache path kind InterfaceType inline_hook () NeverSuffix in
-      let items = Info.extract (FilterCache.info info) (FilterCache.resources info) path in
+      let check () =
+         FilterCache.check info InterfaceType
+      in
+      let items = Info.extract check (FilterCache.info info) (**)
+                     (FilterCache.resources info) path
+      in
          Info.compile items
 end
 
@@ -142,9 +153,10 @@ struct
    type proof = unit
    type expr  = MLast.expr
    type ctyp  = MLast.ctyp
-   type item  = MLast.sig_item
+   type sig_item = MLast.sig_item
+   type str_item = MLast.sig_item
 
-   let extract = Extract.extract_sig
+   let extract _ = Extract.extract_sig
    let compile items =
       (!Pcaml.print_interf) items
 end
@@ -154,9 +166,10 @@ struct
    type proof = Convert.t proof_type
    type expr  = MLast.expr
    type ctyp  = MLast.ctyp
-   type item  = MLast.str_item
+   type sig_item = MLast.sig_item
+   type str_item = MLast.str_item
 
-   let extract = Extract.extract_str
+   let extract check = Extract.extract_str (check ())
    let compile items =
       (!Pcaml.print_implem) items;
       eprintf "Writing output file%t" eflush;

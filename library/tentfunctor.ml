@@ -1,7 +1,7 @@
 (*34567890123456789012345678901234567890123456789012345 *)
 
 open Printf
-open Debug
+open Nl_debug
 
 let _ =
    if !debug_load then

@@ -1,0 +1,61 @@
+(*
+ * The shell_p4 module configures camlp4 for NL.
+ *)
+
+open Opname
+open Refiner.Refiner.TermType
+open Dform
+
+open Tacticals
+
+module type ShellP4Sig =
+sig
+   (*
+    * Set the current display form base.
+    *)
+   val set_df : dform_base option -> unit
+
+   (*
+    * This is the opname function used when terms are built.
+    *)
+   val set_mk_opname : (string list -> opname) option -> unit
+
+   (*
+    * Set the current module.
+    *)
+   val set_module : string -> (string * Nltop.expr) list -> unit
+
+   (*
+    * Printers.
+    *)
+   val print_term : term -> unit
+
+   (*
+    * Get the tactic for the last refinement.
+    *)
+   val get_tactic : unit -> string * MLast.expr
+
+   (*
+    * Compile a tactic.
+    *)
+   val eval_tactic : MLast.expr -> tactic
+
+   (*
+    * Include directory list.
+    *)
+   val get_includes : unit -> string list
+
+   (*
+    * Main loop.
+    * If the toploop is used, this function will exit.
+    *)
+   val main : unit -> unit
+end
+
+(*
+ * -*-
+ * Local Variables:
+ * Caml-master: "refiner"
+ * End:
+ * -*-
+ *)

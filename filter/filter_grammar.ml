@@ -2,7 +2,7 @@
  * Just add the infixes to the current grammar.
  *)
 
-open Debug
+open Nl_debug
 open Printf
 
 open MLast

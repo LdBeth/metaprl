@@ -62,7 +62,7 @@ sig
    (*
     * Create a database.  The argument is the search path.
     *)
-   val create : string list -> t
+   val create : (MLast.expr -> tactic) -> string list -> t
 
    (*
     * Filesystem interface.

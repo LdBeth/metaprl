@@ -1,6 +1,6 @@
 (*ocaml mathbus implementation*)
 open Printf
-open Debug
+open Nl_debug
 
 open Num
 open Registry

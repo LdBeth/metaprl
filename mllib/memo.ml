@@ -2,7 +2,7 @@
  * Generic memoize function.
  *)
 
-open Debug
+open Nl_debug
 open Printf
 
 let debug_memo =
