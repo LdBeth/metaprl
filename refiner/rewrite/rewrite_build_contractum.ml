@@ -385,54 +385,50 @@ struct
    and build_contractum_bterms names bnames stack bvars =
       List.map (build_contractum_bterm names bnames stack bvars)
 
-   and build_contractum_sequent_hyps names bnames stack bvars parts hyps =
-      match hyps with
-         [] ->
-            bnames, bvars, SeqHyp.collect (List.rev parts)
-       | hyp :: hyps ->
-            match hyp with
-               RWSeqContextInstance (j, terms) ->
-                  begin
+   and build_contractum_sequent_hyps names bnames stack bvars parts = function
+      [] ->
+         bnames, bvars, SeqHyp.collect (List.rev parts)
+    | RWSeqContextInstance (j, terms) :: hyps ->
+         begin
+            IFDEF VERBOSE_EXN THEN
+               if !debug_rewrite then
+                  eprintf "-RWSeqContextInstance (%d)%t" j eflush
+            ENDIF;
+            match stack.(j) with
+               StackSeqContext(vars, hyps') ->
+                  let terms =
+                     List.map (build_contractum_term names bnames stack bvars) terms
+                  in
                      IFDEF VERBOSE_EXN THEN
                         if !debug_rewrite then
-                           eprintf "-RWSeqContextInstance (%d)%t" j eflush
+                           eprintf "+RWSeqContextInstance (%d%a)%t" j print_term_list terms eflush
                      ENDIF;
-                     match stack.(j) with
-                        StackSeqContext(vars, hyps') ->
-                           let terms =
-                              List.map (build_contractum_term names bnames stack bvars) terms
-                           in
-                              IFDEF VERBOSE_EXN THEN
-                                 if !debug_rewrite then
-                                    eprintf "+RWSeqContextInstance (%d%a)%t" j print_term_list terms eflush
-                              ENDIF;
-                              let i, len, hyps' = hyp_subst hyps' terms vars in
-                              let part = Lm_array_util.ArrayArray (hyps', i, len) in
-                                 build_contractum_sequent_hyps names bnames stack bvars (part :: parts) hyps
-                      | _ ->
-                           raise(Invalid_argument("Rewrite_build_contractum.build_contractum_sequent_hyps: stack entry is not valid"))
-                  end
-             | RWSeqHyp (v, hyp) ->
-                  IFDEF VERBOSE_EXN THEN
-                     if !debug_rewrite then
-                        eprintf "RWSeqHyp: (%a)%t" print_varname v eflush
-                  ENDIF;
-                  let v = build_bname names bnames stack v in
-                  let bnames = SymbolSet.add bnames v in
-                  (*
-                   * Strictly speaking, the build_contractum_term below should
-                   * use the old bvars, not the new bvars. But since the
-                   * the bvars arg only used to cause alpha-renaming of
-                   * bterms, it does not hurt to pass the v in there
-                   * as well and, possibly, avoid some potential name
-                   * clashes.
-                   *)
-                  let hyp = build_contractum_term names bnames stack bvars hyp in
-                  let bvars = append_vars bvars [v] in
-                  let part = Lm_array_util.ArrayElement (Hypothesis (v, hyp)) in
-                     build_contractum_sequent_hyps names bnames stack bvars (part :: parts) hyps
-             | RWSeqContext _ | RWSeqFreeVarsContext _ ->
-                  raise(Invalid_argument "Rewrite_build_contractum.build_contractum_sequent_hyps: found an invalid context")
+                     let i, len, hyps' = hyp_subst hyps' terms vars in
+                     let part = Lm_array_util.ArrayArray (hyps', i, len) in
+                        build_contractum_sequent_hyps names bnames stack bvars (part :: parts) hyps
+             | _ ->
+                  raise(Invalid_argument("Rewrite_build_contractum.build_contractum_sequent_hyps: stack entry is not valid"))
+         end
+    | RWSeqHyp (v, hyp) :: hyps ->
+         IFDEF VERBOSE_EXN THEN
+            if !debug_rewrite then
+               eprintf "RWSeqHyp: (%a)%t" print_varname v eflush
+         ENDIF;
+         let v = build_bname names bnames stack v in
+         let bnames = SymbolSet.add bnames v in
+         (*
+          * Strictly speaking, the build_contractum_term below should use the
+          * old bnames, not the new bnames. But since the the bnames are only
+          * used to cause alpha-renaming of bterms, it does not hurt to pass the
+          * v in there as well and avoid some potential name clashes.
+          *)
+         let hyp = build_contractum_term names bnames stack bvars hyp in
+         let bvars = append_vars bvars [v] in
+         let part = Lm_array_util.ArrayElement (Hypothesis (v, hyp)) in
+            build_contractum_sequent_hyps names bnames stack bvars (part :: parts) hyps
+    | RWSeqContext _ :: _
+    | RWSeqFreeVarsContext _ :: _ ->
+         raise(Invalid_argument "Rewrite_build_contractum.build_contractum_sequent_hyps: found an invalid context")
 
    let build_contractum names bnames stack prog =
       IFDEF VERBOSE_EXN THEN
@@ -441,27 +437,6 @@ struct
                end
          ENDIF;
       build_contractum_term names bnames stack [||] prog
-
-   let rec check_bnames v = function
-      bnames :: tl ->
-         if List.mem v bnames then
-            true
-         else
-            check_bnames v tl
-    | [] ->
-         false
-
-   let check vars bnames v =
-      List.mem v vars or check_bnames v bnames
-
-   let var_name vars bnames v =
-      if check vars bnames v then
-         new_name v (check vars bnames)
-      else
-         v
-
-   let contracta_enames vars bnames enames =
-      Array.map (var_name vars bnames) enames
 
 end
 

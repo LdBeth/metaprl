@@ -281,6 +281,14 @@ struct
        | _ ->
             REF_RAISE(RefineError ("Term_man_ds.explode_sequent", TermMatchError (t, "not a sequent")))
 
+   let rec need_renaming hyps len vars i =
+      (i < len) &&
+      (match SeqHyp.get hyps i with
+         Context _ ->
+            need_renaming hyps len vars (succ i)
+       | Hypothesis (v, _) ->
+            SymbolSet.mem vars v || need_renaming hyps len (SymbolSet.add vars v) (succ i))
+
    let rec rename_hyps vars sub = function
       [] -> [], sub
     | Context(c, _,_) :: _ when SymbolSet.mem vars c ->
@@ -299,12 +307,15 @@ struct
 
    let explode_sequent_and_rename t vars =
       let s = explode_sequent t in
-         let hyps, subst = rename_hyps vars [] (SeqHyp.to_list s.sequent_hyps) in
-            if subst == [] then s else {
-               s with
-               sequent_hyps = SeqHyp.of_list hyps;
-               sequent_concl = apply_subst subst s.sequent_concl
-            }
+         if need_renaming s.sequent_hyps (SeqHyp.length s.sequent_hyps) vars 0 then
+            let hyps, subst = rename_hyps vars [] (SeqHyp.to_list s.sequent_hyps) in
+               {
+                  sequent_args = s.sequent_args;
+                  sequent_hyps = SeqHyp.of_list hyps;
+                  sequent_concl = apply_subst subst s.sequent_concl
+               }
+         else
+            s
 
    (*
     * Count the hyps.
