@@ -317,8 +317,8 @@ struct
                   match SeqHyp.get s.sequent_hyps i with
                      Hypothesis (v,t) ->
                         let term, arg = f HYP_BVARS t in
-                        let aux i1 t1 =
-                          if i1 = i then Hypothesis (v,term) else t1
+                        let aux i' t' =
+                          if i' = i then Hypothesis (v,term) else t'
                         in
                            mk_sequent_term (**)
                               { sequent_args = s.sequent_args;
@@ -331,11 +331,11 @@ struct
                         let t, arg = f BVARS t in
                         let v1, term1, subterms = dest_context t in
                            if v1 = v && is_var_term term1 && dest_var term1 = v then
-                              let aux i1 t1 =
-                                 if i1 = i then
+                              let aux i' t' =
+                                 if i' = i then
                                     Context (v, subterms)
                                  else
-                                    t1
+                                    t'
                               in
                                  mk_sequent_term (**)
                                     { sequent_args = s.sequent_args;
@@ -347,8 +347,8 @@ struct
           | (Sequent s, GoalAddr i) ->
                if i>=0 && i < SeqGoal.length s.sequent_goals then
                   let term, arg = f GOAL_BVARS (SeqGoal.get s.sequent_goals i) in
-                  let aux i1 t1 =
-                    if i1 = i then term else t1
+                  let aux i' t' =
+                    if i' = i then term else t'
                   in mk_sequent_term (**)
                         { sequent_args = s.sequent_args;
                           sequent_hyps = s.sequent_hyps;
