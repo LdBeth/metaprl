@@ -25,7 +25,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * Author: Yegor Bryukhov
+ * Author: Yegor Bryukhov, Alexey Nogin
  *)
 
 open Term_hash
@@ -35,14 +35,14 @@ open Term_copy_weak
 module TermCopy2Weak =
   functor(Source : Termmod_sig.TermModuleSig) ->
   functor(Target   : Termmod_sig.TermModuleSig) ->
+  functor(SourceHash : TermHashSig with module ToTermPar = Source) ->
+  functor(TargetHash : TermHashSig with module ToTermPar = Target) ->
 struct
 
-   module SourceHash = TermHash(Source)
-   module TargetHash = TermHash(Target)
-   module SourceNorm = TermNorm(Source)
-   module TargetNorm = TermNorm(Target)
-   module Forward = TermCopyWeak(Source)(Target)
-   module Backward = TermCopyWeak(Target)(Source)
+   module SourceNorm = TermNorm(Source)(SourceHash)
+   module TargetNorm = TermNorm(Target)(TargetHash)
+   module Forward = TermCopyWeak(Source)(Target)(TargetHash)
+   module Backward = TermCopyWeak(Target)(Source)(SourceHash)
 
    type t = { source_hash : SourceHash.t; 
               target_hash : TargetHash.t
@@ -69,7 +69,7 @@ struct
    let revert_meta = p_revert_meta global_hash
 
 end
-
+(*
 module NormalizeTerm =
    TermCopy2Weak (Refiner_std.Refiner) (Refiner.Refiner)
 
@@ -77,7 +77,7 @@ let normalize_term = NormalizeTerm.convert
 let normalize_meta_term = NormalizeTerm.convert_meta
 let denormalize_term = NormalizeTerm.revert
 let denormalize_meta_term = NormalizeTerm.revert_meta
-
+*)
 (*
  * -*-
  * Local Variables:

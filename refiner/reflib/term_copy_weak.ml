@@ -25,7 +25,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * Author: Yegor Bryukhov
+ * Author: Yegor Bryukhov, Alexey Nogin
  *)
 
 open Term_hash
@@ -34,10 +34,10 @@ open Term_header_constr
 module TermCopyWeak =
   functor(FromTerm : Termmod_sig.TermModuleSig) ->
   functor(ToTerm   : Termmod_sig.TermModuleSig) ->
+  functor(TermHash : TermHashSig with module ToTermPar = ToTerm) ->
 struct
 
-   module TermHash = Term_hash.TermHash(ToTerm)
-   module THC = TermHeaderConstr(FromTerm)(ToTerm)
+   module THC = TermHeaderConstr(FromTerm)(ToTerm)(TermHash)
 
    let p_add info t = TermHash.p_lookup info (THC.make_term_header info t)
    let p_convert info t = TermHash.p_retrieve info (p_add info t)
@@ -60,7 +60,7 @@ struct
    let retrieve_meta = TermHash.retrieve_meta
 
 end
-
+(*
 module NormalizeTerm =
    TermCopyWeak (Refiner_std.Refiner) (Refiner.Refiner)
 
@@ -71,6 +71,7 @@ let normalize_term = NormalizeTerm.convert
 let normalize_meta_term = NormalizeTerm.convert_meta
 let denormalize_term = DenormalizeTerm.convert
 let denormalize_meta_term = DenormalizeTerm.convert_meta
+*)
 
 (*
  * -*-

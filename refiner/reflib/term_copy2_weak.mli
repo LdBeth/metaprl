@@ -25,12 +25,14 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * Author: Yegor Bryukhov
+ * Author: Yegor Bryukhov, Alexey Nogin
  *)
 
 module TermCopy2Weak :
   functor(FromTerm : Termmod_sig.TermModuleSig) ->
   functor(ToTerm : Termmod_sig.TermModuleSig) ->
+  functor(SourceHash : Term_hash.TermHashSig with module ToTermPar = FromTerm) ->
+  functor(TargetHash : Term_hash.TermHashSig with module ToTermPar = ToTerm) ->
 sig
 
 (*
@@ -63,7 +65,7 @@ sig
    val revert_meta :
       ToTerm.TermType.meta_term -> FromTerm.TermType.meta_term
 end
-
+(*
 (*
  * Distinguished conversions
  *)
@@ -77,7 +79,7 @@ val denormalize_term :
 val denormalize_meta_term :
   Refiner.Refiner.TermType.meta_term ->
   Refiner_std.Refiner.TermType.meta_term
-
+*)
 (*
  * -*-
  * Local Variables:

@@ -25,16 +25,17 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * Author: Yegor Bryukhov
+ * Author: Yegor Bryukhov, Alexey Nogin
  *)
 
 open Weak_memo
 open Term_header
 open Infinite_weak_array
 
-module TermHash :
-  functor(ToTerm : Termmod_sig.TermModuleSig) ->
+module type TermHashSig =
 sig
+
+   module ToTermPar : Termmod_sig.TermModuleSig
 
 (*
  * Objects of this types refers to terms and meta_terms and prevents objects them
@@ -47,30 +48,30 @@ sig
  * term's hashing structure
  *)
    type t =
-      { param_hash     : (t, TermHeader(ToTerm).param_header,
-                             TermHeader(ToTerm).param_weak_header,
-                             ToTerm.TermType.param
+      { param_hash     : (t, TermHeader(ToTermPar).param_header,
+                             TermHeader(ToTermPar).param_weak_header,
+                             ToTermPar.TermType.param
                          ) WeakMemo(Simplehashtbl.Simplehashtbl)(InfiniteWeakArray).t;
         opname_hash    : (t, Opname.opname,
                              Opname.opname,
                              Opname.opname
                          ) WeakMemo(Simplehashtbl.Simplehashtbl)(InfiniteWeakArray).t;
-        term_hash      : (t, TermHeader(ToTerm).term_header,
-                             TermHeader(ToTerm).term_weak_header,
-                             ToTerm.TermType.term
+        term_hash      : (t, TermHeader(ToTermPar).term_header,
+                             TermHeader(ToTermPar).term_weak_header,
+                             ToTermPar.TermType.term
                          ) WeakMemo(Simplehashtbl.Simplehashtbl)(InfiniteWeakArray).t;
-        meta_term_hash : (t, TermHeader(ToTerm).meta_term_header,
-                             TermHeader(ToTerm).meta_term_weak_header,
-                             ToTerm.TermType.meta_term
+        meta_term_hash : (t, TermHeader(ToTermPar).meta_term_header,
+                             TermHeader(ToTermPar).meta_term_weak_header,
+                             ToTermPar.TermType.meta_term
                          ) WeakMemo(Simplehashtbl.Simplehashtbl)(InfiniteWeakArray).t
       }
 
 (*
  * Construct term-objects from headers
  *)    
-   val p_constr_param : t -> TermHeader(ToTerm).param_header -> ToTerm.TermType.param
-   val p_constr_term : t -> TermHeader(ToTerm).term_header -> ToTerm.TermType.term
-   val p_constr_meta_term : t -> TermHeader(ToTerm).meta_term_header -> ToTerm.TermType.meta_term
+   val p_constr_param : t -> TermHeader(ToTermPar).param_header -> ToTermPar.TermType.param
+   val p_constr_term : t -> TermHeader(ToTermPar).term_header -> ToTermPar.TermType.term
+   val p_constr_meta_term : t -> TermHeader(ToTermPar).meta_term_header -> ToTermPar.TermType.meta_term
 
 (*
  * Creates new hashing structure
@@ -80,13 +81,13 @@ sig
 (*
  * Functions for storing and accessing objects to hashing structure
  *)
-   val p_lookup : t -> TermHeader(ToTerm).term_header -> term_index
-   val p_unsafe_lookup : t -> TermHeader(ToTerm).term_header -> term_index
-   val p_retrieve : t -> term_index -> ToTerm.TermType.term
+   val p_lookup : t -> TermHeader(ToTermPar).term_header -> term_index
+   val p_unsafe_lookup : t -> TermHeader(ToTermPar).term_header -> term_index
+   val p_retrieve : t -> term_index -> ToTermPar.TermType.term
 
-   val p_lookup_meta : t -> TermHeader(ToTerm).meta_term_header -> meta_term_index
-   val p_unsafe_lookup_meta : t -> TermHeader(ToTerm).meta_term_header -> meta_term_index
-   val p_retrieve_meta : t -> meta_term_index -> ToTerm.TermType.meta_term
+   val p_lookup_meta : t -> TermHeader(ToTermPar).meta_term_header -> meta_term_index
+   val p_unsafe_lookup_meta : t -> TermHeader(ToTermPar).meta_term_header -> meta_term_index
+   val p_retrieve_meta : t -> meta_term_index -> ToTermPar.TermType.meta_term
 
 (*
  * Globally accessible copy
@@ -96,14 +97,17 @@ sig
 (*
  * As previous but operate with global copy of data
  *)
-   val lookup : TermHeader(ToTerm).term_header -> term_index
-   val unsafe_lookup : TermHeader(ToTerm).term_header -> term_index
-   val retrieve : term_index -> ToTerm.TermType.term
+   val lookup : TermHeader(ToTermPar).term_header -> term_index
+   val unsafe_lookup : TermHeader(ToTermPar).term_header -> term_index
+   val retrieve : term_index -> ToTermPar.TermType.term
 
-   val lookup_meta : TermHeader(ToTerm).meta_term_header -> meta_term_index
-   val unsafe_lookup_meta : TermHeader(ToTerm).meta_term_header -> meta_term_index
-   val retrieve_meta : meta_term_index -> ToTerm.TermType.meta_term
+   val lookup_meta : TermHeader(ToTermPar).meta_term_header -> meta_term_index
+   val unsafe_lookup_meta : TermHeader(ToTermPar).meta_term_header -> meta_term_index
+   val retrieve_meta : meta_term_index -> ToTermPar.TermType.meta_term
 end
+
+module TermHash :
+  functor(ToTerm : Termmod_sig.TermModuleSig) -> (TermHashSig with module ToTermPar = ToTerm)
 
 (*
  * -*-

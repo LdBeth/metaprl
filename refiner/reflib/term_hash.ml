@@ -25,24 +25,102 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * Author: Yegor Bryukhov
+ * Author: Yegor Bryukhov, Alexey Nogin
  *)
 
 open Term_sig
 open Termmod_sig
+open Infinite_weak_array
 open Weak_memo
 open Opname
 open Term_header
 
+module type TermHashSig =
+sig
+
+   module ToTermPar : Termmod_sig.TermModuleSig
+
+(*
+ * Objects of this types refers to terms and meta_terms and prevents objects them
+ * refered to from GC
+ *)
+   type term_index
+   type meta_term_index
+
+(*
+ * term's hashing structure
+ *)
+   type t =
+      { param_hash     : (t, TermHeader(ToTermPar).param_header,
+                             TermHeader(ToTermPar).param_weak_header,
+                             ToTermPar.TermType.param
+                         ) WeakMemo(Simplehashtbl.Simplehashtbl)(InfiniteWeakArray).t;
+        opname_hash    : (t, Opname.opname,
+                             Opname.opname,
+                             Opname.opname
+                         ) WeakMemo(Simplehashtbl.Simplehashtbl)(InfiniteWeakArray).t;
+        term_hash      : (t, TermHeader(ToTermPar).term_header,
+                             TermHeader(ToTermPar).term_weak_header,
+                             ToTermPar.TermType.term
+                         ) WeakMemo(Simplehashtbl.Simplehashtbl)(InfiniteWeakArray).t;
+        meta_term_hash : (t, TermHeader(ToTermPar).meta_term_header,
+                             TermHeader(ToTermPar).meta_term_weak_header,
+                             ToTermPar.TermType.meta_term
+                         ) WeakMemo(Simplehashtbl.Simplehashtbl)(InfiniteWeakArray).t
+      }
+
+(*
+ * Construct term-objects from headers
+ *)    
+   val p_constr_param : t -> TermHeader(ToTermPar).param_header -> ToTermPar.TermType.param
+   val p_constr_term : t -> TermHeader(ToTermPar).term_header -> ToTermPar.TermType.term
+   val p_constr_meta_term : t -> TermHeader(ToTermPar).meta_term_header -> ToTermPar.TermType.meta_term
+
+(*
+ * Creates new hashing structure
+ *)
+   val p_create : int -> int -> t
+
+(*
+ * Functions for storing and accessing objects to hashing structure
+ *)
+   val p_lookup : t -> TermHeader(ToTermPar).term_header -> term_index
+   val p_unsafe_lookup : t -> TermHeader(ToTermPar).term_header -> term_index
+   val p_retrieve : t -> term_index -> ToTermPar.TermType.term
+
+   val p_lookup_meta : t -> TermHeader(ToTermPar).meta_term_header -> meta_term_index
+   val p_unsafe_lookup_meta : t -> TermHeader(ToTermPar).meta_term_header -> meta_term_index
+   val p_retrieve_meta : t -> meta_term_index -> ToTermPar.TermType.meta_term
+
+(*
+ * Globally accessible copy
+ *)
+   val global_hash : t
+
+(*
+ * As previous but operate with global copy of data
+ *)
+   val lookup : TermHeader(ToTermPar).term_header -> term_index
+   val unsafe_lookup : TermHeader(ToTermPar).term_header -> term_index
+   val retrieve : term_index -> ToTermPar.TermType.term
+
+   val lookup_meta : TermHeader(ToTermPar).meta_term_header -> meta_term_index
+   val unsafe_lookup_meta : TermHeader(ToTermPar).meta_term_header -> meta_term_index
+   val retrieve_meta : meta_term_index -> ToTermPar.TermType.meta_term
+end
+
 module TermHash =
   functor(ToTerm : Termmod_sig.TermModuleSig) ->
 struct
-   module TTerm = ToTerm.Term
-   module TType = ToTerm.TermType
+
+   module ToTermPar = ToTerm
+
+   module TTerm = ToTermPar.Term
+   module TType = ToTermPar.TermType
 
    module WMemo = WeakMemo(Simplehashtbl.Simplehashtbl)(Infinite_weak_array.InfiniteWeakArray)
 
-   module TermHeader = TermHeader(ToTerm)
+   module TermHeader = TermHeader(ToTermPar)
 
    (************************************************************************
     * TYPES                                                                *
@@ -139,7 +217,7 @@ struct
    let p_constr_term info th =
       match th with
          TermHeader.Seq { TermHeader.seq_arg = arg; TermHeader.seq_hyps = hyps; TermHeader.seq_goals = goals } ->
-               ToTerm.TermMan.mk_sequent_term
+               ToTermPar.TermMan.mk_sequent_term
                { TType.sequent_args = WMemo.retrieve info.term_hash info arg;
                  TType.sequent_hyps  = TTerm.SeqHyp.of_list  (List.map (p_constr_hyp info) hyps);
                  TType.sequent_goals = TTerm.SeqGoal.of_list (List.map (WMemo.retrieve info.term_hash info) goals)

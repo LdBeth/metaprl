@@ -25,7 +25,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * Author: Yegor Bryukhov
+ * Author: Yegor Bryukhov, Alexey Nogin
  *)
 
 open Term_hash
@@ -33,15 +33,16 @@ open Term_hash
 module TermCopyWeak :
   functor(FromTerm : Termmod_sig.TermModuleSig) ->
   functor(ToTerm : Termmod_sig.TermModuleSig) ->
+  functor(TermHash : TermHashSig with module ToTermPar = ToTerm) ->
 sig
 
 (*
  * Convert terms and meta_terms from FromTerm-module to ToTerm-module
  *)
    val p_convert :
-      TermHash(ToTerm).t -> FromTerm.TermType.term -> ToTerm.TermType.term
+      TermHash.t -> FromTerm.TermType.term -> ToTerm.TermType.term
    val p_convert_meta :
-      TermHash(ToTerm).t -> FromTerm.TermType.meta_term -> ToTerm.TermType.meta_term
+      TermHash.t -> FromTerm.TermType.meta_term -> ToTerm.TermType.meta_term
 
 (*
  * Same functions operating with global hashing structure
@@ -50,7 +51,7 @@ sig
    val convert_meta :
       FromTerm.TermType.meta_term -> ToTerm.TermType.meta_term
 end
-
+(*
 (*
  * Distinguished conversions
  *)
@@ -64,7 +65,7 @@ val denormalize_term :
 val denormalize_meta_term :
   Refiner.Refiner.TermType.meta_term ->
   Refiner_std.Refiner.TermType.meta_term
-
+*)
 (*
  * -*-
  * Local Variables:

@@ -24,7 +24,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * Author: Yegor Bryukhov
+ * Author: Yegor Bryukhov, Alexey Nogin
  *)
 
 open List
@@ -37,16 +37,16 @@ open Term_hash
 module TermHeaderConstr =
   functor(FromTerm : Termmod_sig.TermModuleSig) ->
   functor(ToTerm : Termmod_sig.TermModuleSig) ->
+  functor(TermHash : TermHashSig with module ToTermPar = ToTerm) ->
 struct
-   module TTerm = ToTerm.Term
-   module TType = ToTerm.TermType
+   module TTerm = TermHash.ToTermPar.Term
+   module TType = TermHash.ToTermPar.TermType
    module FTerm = FromTerm.Term
    module FType = FromTerm.TermType
 
    module IAr = Infinite_weak_array.InfiniteWeakArray
    module WMemo = WeakMemo(Simplehashtbl.Simplehashtbl)(Infinite_weak_array.InfiniteWeakArray)
-   module TermHeader = Term_header.TermHeader(ToTerm)
-   module TermHash = TermHash(ToTerm)
+   module TermHeader = Term_header.TermHeader(TermHash.ToTermPar)
 
    let make_level_var_header lvar =
       let { FType.le_var = var; FType.le_offset = offset } = FTerm.dest_level_var lvar in

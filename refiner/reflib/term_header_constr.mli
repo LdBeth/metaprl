@@ -24,7 +24,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * Author: Yegor Bryukhov
+ * Author: Yegor Bryukhov, Alexey Nogin
  *)
 
 open Term_header
@@ -33,11 +33,12 @@ open Term_hash
 module TermHeaderConstr :
   functor(FromTerm : Termmod_sig.TermModuleSig) ->
   functor(ToTerm : Termmod_sig.TermModuleSig) ->
+  functor(TermHash : TermHashSig with module ToTermPar = ToTerm) ->
 sig
    val make_param_header :
-      TermHash(ToTerm).t -> FromTerm.TermType.param -> TermHeader(ToTerm).param_header
+      TermHash.t -> FromTerm.TermType.param -> TermHeader(TermHash.ToTermPar).param_header
    val make_term_header :
-      TermHash(ToTerm).t -> FromTerm.TermType.term -> TermHeader(ToTerm).term_header
+      TermHash.t -> FromTerm.TermType.term -> TermHeader(TermHash.ToTermPar).term_header
    val make_meta_term_header :
-      TermHash(ToTerm).t -> FromTerm.TermType.meta_term -> TermHeader(ToTerm).meta_term_header
+      TermHash.t -> FromTerm.TermType.meta_term -> TermHeader(TermHash.ToTermPar).meta_term_header
 end

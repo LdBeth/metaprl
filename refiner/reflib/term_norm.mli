@@ -26,58 +26,59 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * Author: Yegor Bryukhov
+ * Author: Yegor Bryukhov, Alexey Nogin
  *)
 
 open Term_hash
 
 module TermNorm :
   functor(ToTerm : Termmod_sig.TermModuleSig) ->
+  functor(TermHash : TermHashSig with module ToTermPar = ToTerm) ->
 sig
 
 (*
  * Adds term to Term_hash's structure and returns term's index in this structure
  *)
-   val p_add : TermHash(ToTerm).t -> ToTerm.TermType.term -> TermHash(ToTerm).term_index
+   val p_add : TermHash.t -> TermHash.ToTermPar.TermType.term -> TermHash.term_index
 (*
  * Normalize term by means of Term_hash structure's data
  * It removes all duplications of term's fragments
  *)
    val p_normalize :
-     TermHash(ToTerm).t -> ToTerm.TermType.term -> ToTerm.TermType.term
+     TermHash.t -> TermHash.ToTermPar.TermType.term -> TermHash.ToTermPar.TermType.term
 (*
  * Restore term from its index
  *)
    val p_retrieve :
-     TermHash(ToTerm).t -> TermHash(ToTerm).term_index -> ToTerm.TermType.term
+     TermHash.t -> TermHash.term_index -> TermHash.ToTermPar.TermType.term
 
 (*
  * Same functions for meta_terms
  *)
    val p_add_meta :
-     TermHash(ToTerm).t -> ToTerm.TermType.meta_term -> TermHash(ToTerm).meta_term_index
+     TermHash.t -> TermHash.ToTermPar.TermType.meta_term -> TermHash.meta_term_index
    val p_normalize_meta :
-     TermHash(ToTerm).t -> ToTerm.TermType.meta_term -> ToTerm.TermType.meta_term
+     TermHash.t -> TermHash.ToTermPar.TermType.meta_term -> TermHash.ToTermPar.TermType.meta_term
    val p_retrieve_meta :
-     TermHash(ToTerm).t -> TermHash(ToTerm).meta_term_index -> ToTerm.TermType.meta_term
+     TermHash.t -> TermHash.meta_term_index -> TermHash.ToTermPar.TermType.meta_term
 
 (*
  * Synonym to Term_hash's global copy
  *)
-   val global_hash : TermHash(ToTerm).t
+   val global_hash : TermHash.t
 
 (*
  * Versions of previous functions operating with global copy of hashing structure
  *)
-   val add : ToTerm.TermType.term -> TermHash(ToTerm).term_index
-   val normalize : ToTerm.TermType.term -> ToTerm.TermType.term
-   val retrieve : TermHash(ToTerm).term_index -> ToTerm.TermType.term
+   val add : TermHash.ToTermPar.TermType.term -> TermHash.term_index
+   val normalize : TermHash.ToTermPar.TermType.term -> TermHash.ToTermPar.TermType.term
+   val retrieve : TermHash.term_index -> TermHash.ToTermPar.TermType.term
 
-   val add_meta : ToTerm.TermType.meta_term -> TermHash(ToTerm).meta_term_index
+   val add_meta : TermHash.ToTermPar.TermType.meta_term -> TermHash.meta_term_index
    val normalize_meta :
-     ToTerm.TermType.meta_term -> ToTerm.TermType.meta_term
+     TermHash.ToTermPar.TermType.meta_term -> TermHash.ToTermPar.TermType.meta_term
    val retrieve_meta :
-     TermHash(ToTerm).meta_term_index -> ToTerm.TermType.meta_term
+     TermHash.meta_term_index -> TermHash.ToTermPar.TermType.meta_term
 end
 
 (*

@@ -25,7 +25,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * Author: Yegor Bryukhov
+ * Author: Yegor Bryukhov, Alexey Nogin
  *)
 
 open Term_hash
@@ -33,10 +33,10 @@ open Term_header_constr
 
 module TermNorm =
   functor(ToTerm : Termmod_sig.TermModuleSig) ->
+  functor(TermHash : TermHashSig with module ToTermPar = ToTerm) ->
 struct
 
-   module TermHash = Term_hash.TermHash(ToTerm)
-   module THC = TermHeaderConstr(ToTerm)(ToTerm)
+   module THC = TermHeaderConstr(TermHash.ToTermPar)(TermHash.ToTermPar)(TermHash)
 
    let p_add info t = TermHash.p_lookup info (THC.make_term_header info t)
    let p_normalize info t = TermHash.p_retrieve info (p_add info t)
