@@ -361,9 +361,10 @@ struct
                   REF_RAISE(RefineError ("match_redex_term", RewriteBadMatch (TermMatch t)))
 
        | RWSequent (arg, hyps, goals) ->
-            let s = if SymbolSet.is_empty all_bvars then explode_sequent t else explode_sequent_and_rename t all_bvars in
+            let s = explode_sequent_and_rename t all_bvars in
                match_redex_term addrs stack all_bvars arg s.sequent_args;
-               match_redex_sequent_hyps addrs stack goals s.sequent_goals all_bvars hyps s.sequent_hyps 0 (SeqHyp.length s.sequent_hyps)
+               let hyps' = s.sequent_hyps in
+                  match_redex_sequent_hyps addrs stack goals s.sequent_goals all_bvars hyps hyps' 0 (SeqHyp.length hyps')
 
        | RWCheckVar i ->
             begin
