@@ -291,6 +291,9 @@ withT t = withTermsT [t]
 * thinningT : bool -> tactic -> tactic
 = withBoolT "thin"
 
+* doNotThinT :  tactic -> tactic
+= thinningT false
+
 ----------------------------------------
 conversionals:
 
@@ -757,6 +760,10 @@ If the n'th hypothesis is of the form << x: subtype{'A; 'B} >>,
 (withT t (dT n)) creates two subgoals.
 The first has a conclusion of << t IN 'A >>.  The
 second has an extra hypothesis, << y: t IN 'B >>.
+
+* bySubtypeT : int -> tactic
+proves that x:A .. >- x in B form A subtype B
+
 
 ----------------------------------------
 itt_void:
