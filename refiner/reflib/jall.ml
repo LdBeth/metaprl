@@ -61,6 +61,20 @@ type atom_relations = atom * atom list * atom list
 
 
 
+(* beta proofs *) 
+
+
+type bproof = BEmpty 
+             |RNode of string list * bproof 
+             |CNode of (string * string)
+             |BNode of string * (string list * bproof) * (string list * bproof)
+             |AtNode of string * (string * string)
+
+
+
+
+
+
 (* definition: rules, inferences for LJ, LJmc, and LK *)
 
 type rule = Ax | Andr | Andl | Orr | Orr1 | Orr2 | Orl | Impr | Impl | Negr | Negl |
@@ -412,8 +426,6 @@ in
 
 
 
-
-
 let print_ftree ftree = 
  begin
   Format.open_box 0;
@@ -421,6 +433,144 @@ let print_ftree ftree =
   pp_ftree_list [ftree] 0;
   Format.print_flush ()
  end;;
+
+
+
+let rec stringlist_to_string stringlist = 
+  match stringlist with 
+   [] -> "."
+  |f::r -> 
+   let  rest_s = stringlist_to_string r in 
+     (f^"."^rest_s)
+
+
+
+let rec print_stringlist slist = 
+  match slist with 
+    [] -> 
+     Format.print_string ""
+   |f::r -> 
+     begin
+      Format.print_string (f^".");
+      print_stringlist r
+     end 
+
+
+
+let rec pp_bproof_list tree_list tab = 
+
+let rec pp_bproof ftree new_tab = 
+ let dummy = String.make (new_tab-2) ' ' in 
+  match ftree with 
+   BEmpty -> Format.print_string ""
+  |CNode((c1,c2)) ->
+     begin 
+      Format.open_box 0;
+      Format.force_newline ();
+      Format.print_break (new_tab-10) 0;
+      Format.open_box 0;
+      Format.force_newline ();
+      Format.print_string (dummy^"CloseNode: connection = ("^c1^","^c2^")"); 
+      Format.print_flush();
+(*      Format.force_newline (); 
+      Format.print_break 0 3;
+*)
+      Format.open_box 0;
+      Format.print_break new_tab 0;
+      Format.print_flush()
+       end
+  |AtNode(posname,(c1,c2)) ->
+     begin 
+      Format.open_box 0;
+      Format.force_newline ();
+      Format.print_break (new_tab-10) 0;
+      Format.open_box 0;
+      Format.force_newline ();
+      Format.print_string (dummy^"AtNode: pos = "^posname^" conneciton = ("^c1^","^c2^")"); 
+      Format.print_flush();
+(*      Format.force_newline (); 
+      Format.print_break 0 3;
+*)
+      Format.open_box 0;
+      Format.print_break new_tab 0;
+      Format.print_flush()
+       end
+  |RNode(alpha_layer,bproof) -> 
+    let alpha_string = stringlist_to_string alpha_layer in 
+     begin
+      Format.open_box 0;
+      Format.force_newline (); 
+      Format.print_break new_tab 0;
+      Format.print_break 0 0;
+      Format.force_newline ();
+      Format.print_flush();
+      Format.open_box 0;
+      print_string (dummy^"RootNode: "^alpha_string); 
+      Format.print_flush();
+      Format.open_box 0;
+      Format.print_break 0 0;
+      Format.print_flush();
+      pp_bproof_list [bproof] (new_tab-3)
+     end
+  |BNode(posname,(alph1,bproof1),(alph2,bproof2)) -> 
+    let alpha_string1 = stringlist_to_string alph1 
+    and alpha_string2 = stringlist_to_string alph2 in
+     begin
+      Format.open_box 0;
+      Format.force_newline ();
+      Format.print_break new_tab 0;
+      Format.print_break 0 0;
+      Format.force_newline ();
+      Format.print_flush();
+      Format.open_box 0;
+      print_string (dummy^"BetaNode: pos = "^posname^" layer1 = "^alpha_string1^" layer2 = "^alpha_string2); 
+      Format.print_flush();
+      Format.open_box 0;
+      Format.print_break 0 0;
+      Format.print_flush();
+      pp_bproof_list [bproof1;bproof2] (new_tab-3)
+     end
+
+
+in
+ let new_tab = tab+5 in 
+  match tree_list with 
+   [] -> Format.print_string ""
+  |first::rest ->  
+    begin
+     pp_bproof first new_tab;
+     pp_bproof_list rest tab
+    end
+
+
+
+
+let rec print_pairlist pairlist = 
+ match pairlist with 
+  [] -> Format.print_string ""
+ |(a,b)::rest -> 
+   begin
+    Format.print_break 1 1;
+    Format.print_string ("("^a^","^b^")");
+    print_pairlist rest
+   end
+
+
+
+
+let print_beta_proof bproof = 
+ begin
+  Format.open_box 0;
+  Format.force_newline ();
+  Format.force_newline ();
+  Format.print_break 3 0;
+  pp_bproof_list [bproof] 0;
+  Format.force_newline ();
+  Format.force_newline ();
+  Format.force_newline ();
+  Format.print_flush ()
+ end;;
+
 
 
 let rec print_treelist treelist = 
@@ -462,15 +612,6 @@ let print_set  set =
 
 
 
-let rec print_stringlist slist = 
-  match slist with 
-    [] -> 
-     Format.print_string ""
-   |f::r -> 
-     begin
-      Format.print_string (f^".");
-      print_stringlist r
-     end 
 
 
 
@@ -506,15 +647,6 @@ let print_ordering list_of_sets =
 
 
 
-let rec print_pairlist pairlist = 
- match pairlist with 
-  [] -> Format.print_string ""
- |(a,b)::rest -> 
-   begin
-    Format.print_break 1 1;
-    Format.print_string ("("^a^","^b^")");
-    print_pairlist rest
-   end
 
 
 
@@ -705,7 +837,977 @@ let tt seqtree =
 (************ END printing functions  *********************************)
 
 
+
+(************ Beta proofs and redundancy deletion **********************)
+
+
+let rec remove_dups_connections connection_list = 
+ match connection_list with 
+  [] -> [] 
+ |(c1,c2)::r -> 
+   if (List.mem (c1,c2) r) or (List.mem (c2,c1) r) then 
+  (* only one direction variant of a connection stays *)
+    remove_dups_connections r
+   else 
+    (c1,c2)::(remove_dups_connections r)
+
+
+
+let rec remove_dups_list list = 
+ match list with 
+  [] -> [] 
+ |f::r -> 
+   if List.mem f  r then 
+    remove_dups_list r
+   else 
+    f::(remove_dups_list r)
+
+
+
+let beta_pure alpha_layer connections beta_expansions = 
+  let (l1,l2) = List.split connections in 
+   let test_list = l1 @ l2 @ beta_expansions in 
+  begin
+(*    Format.open_box 0;
+    print_endline "";
+    print_stringlist alpha_layer;
+    Format.print_flush();
+    Format.open_box 0;
+    print_endline "";
+    print_stringlist test_list;
+    print_endline "";
+    Format.print_flush();
+*)
+     not (List.exists (fun x -> (List.mem x test_list)) alpha_layer)
+  end
+
+
+let rec apply_bproof_purity  bproof =  
+  match bproof with 
+   BEmpty -> raise (Failure "invalid argument")
+  |CNode((c1,c2)) -> 
+     bproof,[(c1,c2)],[]
+  |AtNode(_,(c1,c2)) -> 
+     bproof,[(c1,c2)],[]
+  |RNode(alpha_layer,subproof) -> 
+    let (opt_subproof,min_connections,beta_expansions) = 
+                                         apply_bproof_purity  subproof in 
+      (RNode(alpha_layer,opt_subproof),min_connections,beta_expansions)
+  |BNode(pos,(alph1,subp1),(alph2,subp2)) -> 
+    let (opt_subp1,min_conn1,beta_exp1) = apply_bproof_purity subp1 in 
+     if beta_pure alph1 min_conn1 beta_exp1 then 
+      begin
+(*       print_endline ("Left layer of "^pos); *)
+         (opt_subp1,min_conn1,beta_exp1)
+       end
+     else
+       let (opt_subp2,min_conn2,beta_exp2) = apply_bproof_purity subp2 in 
+         if beta_pure alph2 min_conn2 beta_exp2 then 
+      begin
+(*       print_endline ("Right layer of "^pos); *)
+           (opt_subp2,min_conn2,beta_exp2) 
+      end
+         else
+          let min_conn = remove_dups_connections (min_conn1 @ min_conn2)
+          and beta_exp = remove_dups_list ([pos] @ beta_exp1 @ beta_exp2) in 
+            (BNode(pos,(alph1,opt_subp1),(alph2,opt_subp2)),min_conn,beta_exp)
+
+
+
+let bproof_purity bproof = 
+  let (opt_bproof,min_connections,_) = apply_bproof_purity bproof in 
+     opt_bproof,min_connections
+
+
+
+(*********** split permutation *****************)
+
+
+
+
+
+let rec apply_permutation bproof rep_name direction act_blayer =
+   match bproof with 
+    BEmpty | RNode(_,_) ->  raise (Failure "invalid argument") 
+   |AtNode(cx,(c1,c2)) -> 
+     bproof,act_blayer
+   |CNode((c1,c2)) ->  
+     bproof,act_blayer
+   |BNode(pos,(alph1,subp1),(alph2,subp2)) -> 
+     if rep_name = pos then 
+      let (new_blayer,replace_branch) =
+       if direction = "left" then 
+         (alph1,subp1)
+       else (* direciton = "right" *)
+         (alph2,subp2)
+      in
+      (match replace_branch with 
+        CNode((c1,c2)) -> 
+          (AtNode(c1,(c1,c2))),new_blayer (* perform atom expansion at c1 *)
+       |_ -> 
+         replace_branch,new_blayer
+      )
+     else
+       let pproof1,new_blayer1 = apply_permutation subp1 rep_name direction act_blayer in 
+       let pproof2,new_blayer2 = apply_permutation subp2 rep_name direction new_blayer1 in 
+         (BNode(pos,(alph1,pproof1),(alph2,pproof2))),new_blayer2
+
+
+
+
+
+let split_permutation pname opt_bproof = 
+  match opt_bproof with 
+    RNode(alayer,BNode(pos,(alph1,opt_subp1),(alph2,opt_subp2))) -> 
+      if pos = pname then 
+(* if topmost beta expansion agrees with pname, then *)
+(* only split the beta proof and give back the two subproofs *)
+        let (osubp1,min_con1) = bproof_purity opt_subp1
+        and (osubp2,min_con2) = bproof_purity opt_subp2 in 
+(* there will be no purity reductions in the beta subproofs. We use this *)
+(* predicate to collect the set of used leaf-connections in each subproof*)
+          ((RNode((alayer @ alph1),osubp1),min_con1),
+           (RNode((alayer @ alph2),osubp2),min_con2)
+          )
+(* we combine the branch after topmost beta expansion at pos into one root alpha layer *)
+(* -- the beta expansion node pos will not be needed in this root layer *)
+      else
+        let perm_bproof1,balph1 = apply_permutation 
+          (BNode(pos,(alph1,opt_subp1),(alph2,opt_subp2))) pname "left" []
+        and perm_bproof2,balph2 = apply_permutation     
+          (BNode(pos,(alph1,opt_subp1),(alph2,opt_subp2))) pname "right" [] in 
+
+begin 
+(*  print_endline " ";
+  print_beta_proof perm_bproof1;
+  print_endline" " ;
+  print_beta_proof perm_bproof2;
+  print_endline" ";
+*)
+               let (osubp1,min_con1) = bproof_purity perm_bproof1
+               and (osubp2,min_con2) = bproof_purity perm_bproof2 in 
+                 ((RNode((alayer @ balph1),osubp1),min_con1),
+                  (RNode((alayer @ balph2),osubp2),min_con2)
+                 )
+end
+(* we combine the branch after the NEW topmost beta expansion at bpos *)
+(* into one root alpha layer -- the beta expansion node bpos will not be *)
+(* needed in this root layer *)
+   |_ -> 
+     raise (Failure "invalid argument") 
+
+
+
+
+
+
+
+(*********** END split permutation *****************)
+
+
+
+
+
+
+
+
+
+
+let rec compute_alpha_layer ftree_list = 
+  match ftree_list with 
+  [] -> [],[],[]
+ |f::r -> 
+   (match f with 
+       Empty -> raise (Failure "invalid argument") 
+      |NodeAt(pos) -> 
+        let pn = pos.name 
+        and (rnode,ratom,borderings) = compute_alpha_layer r in 
+         ((pn::rnode),(pn::ratom),borderings)
+      |NodeA(pos,suctrees) -> 
+        let pn = pos.name in 
+         if pos.pt = Beta then 
+           let (rnode,ratom,borderings) = compute_alpha_layer r in 
+             ((pn::rnode),(ratom),(f::borderings))
+         else
+          let suclist = Array.to_list suctrees in 
+            compute_alpha_layer (suclist @ r) 
+   )
+
+
+let rec compute_connection alpha_layer union_atoms connections = 
+  match connections with 
+   [] -> ("none","none")
+  |(c,d)::r -> 
+    if (List.mem c union_atoms) & (List.mem d union_atoms) then 
+      let (c1,c2) = 
+       if List.mem c alpha_layer then 
+         (c,d)
+       else
+         if List.mem d alpha_layer then 
+          (d,c) (* then, d is supposed to occur in alpha_layer *)
+         else 
+          raise (Failure "connection match failure")
+      in 
+       (c1,c2)
+    else 
+     compute_connection alpha_layer union_atoms r 
+
+
+
+
+
+
+let get_beta_suctrees btree = 
+  match btree with 
+   Empty | NodeAt(_) -> raise (Failure "invalid argument") 
+ |NodeA(pos,suctrees) -> 
+   let b1tree = suctrees.(0)
+   and b2tree = suctrees.(1) in 
+     (pos.name,b1tree,b2tree)
+   
+
+
+let rec build_beta_proof alpha_layer union_atoms beta_orderings connections =
+     let (c1,c2) = compute_connection alpha_layer union_atoms connections in 
+(* c1 is supposed to occur in the lowmost alpha layer of the branch, *)
+(* i.e. aplha_layer *)
+    if (c1,c2) = ("none","none") then 
+      (match beta_orderings with 
+         [] -> raise (Failure "invalid argumnet")
+        |btree::r -> 
+         let (beta_pos,suctree1,suctree2) = get_beta_suctrees btree in 
+          let (alpha_layer1, atoms1, bordering1) = compute_alpha_layer [suctree1]
+          and (alpha_layer2, atoms2, bordering2) = compute_alpha_layer [suctree2] in 
+           let bproof1,beta1,closure1 = 
+             build_beta_proof alpha_layer1 (atoms1 @ union_atoms) 
+                              (bordering1 @ r) connections 
+           in 
+           let bproof2,beta2,closure2 =  
+             build_beta_proof alpha_layer2 (atoms2 @ union_atoms) 
+                              (bordering2 @ r) connections in 
+    (BNode(beta_pos,(alpha_layer1,bproof1),(alpha_layer2,bproof2))),(1+beta1+beta2),(closure1+closure2)
+       )
+   else
+     CNode((c1,c2)),0,1
+
+
+
+
+
+
+let construct_beta_proof ftree connections = 
+  let (root_node,root_atoms,beta_orderings) = compute_alpha_layer [ftree]
+   in 
+   let beta_proof,beta_exp,closures = 
+     build_beta_proof root_node root_atoms beta_orderings connections in       
+        (RNode(root_node,beta_proof)),beta_exp,closures
+
+
+
+
+
+
+
 (************* permutation ljmc -> lj *********************************)
+
+(* REAL PERMUTATION STAFF *)
+
+let subf1 n m  subrel = List.mem ((n,m),1) subrel;;
+let subf2 n m  subrel = List.mem ((n,m),2) subrel;;
+let tsubf n m  tsubrel = List.mem (n,m) tsubrel;;
+
+
+
+
+(* Transforms all normal form layers in an LJ proof *)
+
+let rec modify prooftree (subrel,tsubrel) = 
+  match prooftree with 
+    PEmpty -> raise (Failure "invalid argument")   
+  | PNodeAx((pos,inf,form,term)) ->                                     
+      prooftree,pos
+  | PNodeA((pos,inf,form,term),left)  -> 
+      let t,qpos = modify left (subrel,tsubrel) in 
+        if List.mem inf [Impr;Negr;Allr] then 
+            PNodeA((pos,inf,form,term),t),pos    (*layer bound *)
+        else if qpos = "Orl-True" then 
+            PNodeA((pos,inf,form,term),t),qpos
+        else if List.mem inf [Andl;Alll;Exl] then 
+            PNodeA((pos,inf,form,term),t),qpos  (*simply propagation*)
+        else if inf = Exr then 
+            if (subf1 pos qpos subrel) then 
+               PNodeA((pos,inf,form,term),t),pos
+            else t,qpos
+        else if inf = Negl then 
+            if (subf1 pos qpos subrel) then 
+              PNodeA((pos,inf,form,term),t),""  (* empty string *)
+            else t,qpos
+        else                     (* x = Orr *)
+            if (subf1 pos qpos subrel) then 
+              PNodeA((pos,Orr1,form,term),t),pos    (* make Orr for LJ *)
+            else if (subf2 pos qpos subrel) then 
+             PNodeA((pos,Orr2,form,term),t),pos     (* make Orr for LJ *)
+            else t,qpos
+  | PNodeB((pos,inf,form,term),left,right) -> 
+     let t,qpos = modify left (subrel,tsubrel) in 
+       if inf = Andr then 
+            if (or) (qpos = "Orl-True") (subf1 pos qpos subrel) then 
+              let s,rpos = modify right (subrel,tsubrel) in  (* Orl-True -> subf *)
+               if (or) (rpos = "Orl-True") (subf2 pos rpos subrel) then 
+                  PNodeB((pos,inf,form,term),t,s),pos
+               else s,rpos
+            else t,qpos                (* not subf -> not Orl-True *)
+       else if inf = Impl then 
+              if  (subf1 pos qpos subrel) then 
+               let s,rpos = modify right (subrel,tsubrel) in 
+                 PNodeB((pos,inf,form,term),t,s),"" (* empty string *) 
+              else t,qpos         
+       else                           (* x= Orl *)
+        let s,rpos = modify right (subrel,tsubrel) in 
+          PNodeB((pos,inf,form,term),t,s),"Orl-True";;                    
+
+
+
+(* transforms the subproof into an LJ proof between 
+   the beta-inference rule (excluded) and 
+   layer boundary in the branch ptree *)
+
+
+let rec rec_modify ptree (subrel,tsubrel) =  
+  match ptree with 
+    PEmpty -> raise (Failure "invalid argument")   
+  | PNodeAx((pos,inf,form,term)) ->  
+      ptree,pos
+  | PNodeA((pos,inf,form,term),left)  -> 
+     if List.mem inf [Impr;Negr;Allr] then 
+       ptree,pos    (*layer bound, stop transforming! *)
+     else 
+      let t,qpos = rec_modify left (subrel,tsubrel) in 
+         if List.mem inf [Andl;Alll;Exl] then 
+            PNodeA((pos,inf,form,term),t),qpos   (*simply propagation*)   
+         else if inf = Exr then 
+            if (subf1 pos qpos subrel) then 
+               PNodeA((pos,inf,form,term),t),pos
+            else t,qpos
+        else if inf = Negl then 
+            if (subf1 pos qpos subrel) then 
+              PNodeA((pos,inf,form,term),t),""  (* empty string *)
+            else t,qpos
+        else                     (* x = Orr *)
+            if (subf1 pos qpos subrel) then 
+              PNodeA((pos,Orr1,form,term),t),pos    (* make Orr for LJ *)
+            else if (subf2 pos qpos subrel) then 
+             PNodeA((pos,Orr2,form,term),t),pos     (* make Orr for LJ *)
+            else t,qpos
+  | PNodeB((pos,inf,form,term),left,right) -> 
+     let t,qpos = rec_modify left (subrel,tsubrel) in 
+       if inf = Andr then 
+            if (subf1 pos qpos subrel) then 
+              let s,rpos = rec_modify right (subrel,tsubrel) in  
+               if (subf2 pos rpos subrel) then 
+                  PNodeB((pos,inf,form,term),t,s),pos
+               else s,rpos
+            else t,qpos 
+       else (* x = Impl since x= Orl cannot occur in the partial layer ptree *)
+
+              if  (subf1 pos qpos subrel) then 
+               let s,rpos = rec_modify right (subrel,tsubrel) in 
+                 PNodeB((pos,inf,form,term),t,s),"" (* empty string *) 
+              else t,qpos;;
+
+
+let weak_modify rule ptree (subrel,tsubrel) =   (* recall rule = or_l  *)
+ let (pos,inf,formlua,term) =  rule in                    
+  if inf = Orl then 
+   ptree,true 
+  else 
+   let ptreem,qpos = rec_modify ptree (subrel,tsubrel) in 
+    if (subf1 pos qpos subrel) then  (* weak_modify will always be applied on left branches *)
+      ptreem,true
+    else 
+      ptreem,false;;
+
+
+
+
+
+(* Now, the permutation stuff .... *)
+
+
+
+
+(* Permutation schemes *) 
+
+(* corresponds to local permutation lemma -- Lemma 3 in the paper -- *) 
+(* with eigenvariablen renaming and branch modification *)
+
+(* eigenvariablen renaming and branch modification over *) 
+(* the whole proofs, i.e. over layer boundaries, too *)
+
+
+(* global variable vor eigenvariable renaming during permutations *)
+
+let eigen_counter = ref 1
+
+
+
+(* append renamed paramater "r" to non-quantifier subformulae 
+   of renamed quantifier formulae *)
+
+
+
+let make_new_eigenvariable term = 
+ let op = (dest_term term).term_op in 
+  let opn = (dest_op op).op_name in
+   let opnam = dest_opname opn in 
+     match opnam with 
+      [] -> raise (Failure "invalid argument")
+     |ofirst::orest -> 
+       let ofname = List.hd orest in
+        let new_eigen_var = (ofname^"_r"^(string_of_int (!eigen_counter))) in 
+           eigen_counter := !eigen_counter + 1; 
+(*        print_endline ("New Counter :"^(string_of_int (!eigen_counter))); *)
+         mk_string_term (make_opname ["jprover";new_eigen_var]) new_eigen_var
+
+   
+
+
+
+
+
+
+ let replace_subterm term oldt rept  = 
+  let v_term = var_subst term oldt "dummy_var" in 
+    subst v_term [rept] ["dummy_var"]
+
+
+
+let rec eigen_rename old_parameter new_parameter ptree = 
+    match ptree with 
+      PEmpty -> raise (Failure "invalid argument")   
+    | PNodeAx((pos,inf,form,term)) -> 
+       let new_form = replace_subterm form old_parameter new_parameter in 
+          PNodeAx((pos,inf,new_form,term))
+    | PNodeA((pos,inf,form,term), left) ->  
+       let new_form = replace_subterm form old_parameter new_parameter 
+       and new_term = replace_subterm term old_parameter new_parameter in 
+      let ren_left = eigen_rename old_parameter new_parameter left in 
+          PNodeA((pos,inf,new_form,new_term), ren_left)
+    | PNodeB((pos,inf,form,term),left, right) -> 
+       let new_form = replace_subterm form old_parameter new_parameter in 
+        let ren_left  = eigen_rename old_parameter new_parameter left  in 
+         let ren_right  = eigen_rename old_parameter new_parameter right  in 
+          PNodeB((pos,inf,new_form,term), ren_left, ren_right);;
+
+
+
+let rec update_ptree rule subtree direction tsubrel =  
+    match subtree with 
+       PEmpty -> raise (Failure "invalid argument")   
+     | PNodeAx(r) -> 
+        subtree
+     | PNodeA((pos,inf,formula,term), left) -> 
+        if (pos,inf,formula,term) = rule then 
+         left
+          (* don't delete rule if subformula belongs to renamed instance of quantifiers; *)
+          (* but this can never occur now since (renamed) formula is part of rule *)
+        else
+           let (posn,infn,formn,termn) = rule in    
+            if (&) (List.mem infn [Exl;Allr] ) (term = termn) then 
+    (* this can only occur if eigenvariable rule with same term as termn has been permuted; *) 
+    (* the application of the same eigenvariable introduction on the same subformula with *)
+    (* different instantiated variables might occur! *)
+    (* termn cannot occur in terms of permuted quantifier rules due to substitution split *)
+    (* during reconstruciton of the ljmc proof *)
+             let new_term =  make_new_eigenvariable term in 
+(*              print_endline "Eigenvariable renaming!!!"; *)
+               eigen_rename termn new_term subtree 
+            else 
+             let left_del = 
+               update_ptree rule left direction tsubrel
+             in
+              PNodeA((pos,inf,formula,term), left_del) 
+    | PNodeB((pos,inf,formula,term), left, right) -> 
+         if (pos,inf,formula,term) = rule then 
+          if direction = "l" then 
+              left 
+            else 
+              right   (* direction = "r" *)
+         else 
+           let left_del = update_ptree rule left direction tsubrel in 
+             let right_del = update_ptree rule right direction tsubrel in 
+               PNodeB((pos,inf,formula,term),left_del,right_del);;           
+
+
+
+
+
+
+let permute r1 r2 ptree  la tsubrel = 
+(*  print_endline "permute in"; *)
+  match ptree,la with 
+    PNodeA(r1, PNodeA(r2,left)),la -> 
+(*        print_endline "1-o-1";   *)
+        PNodeA(r2, PNodeA(r1,left))
+                                     (* one-over-one *)
+  | PNodeA(r1, PNodeB(r2,left,right)),la ->
+(*        print_endline "1-o-2";   *)
+        PNodeB(r2, PNodeA(r1,left), PNodeA(r1,right))
+                                     (* one-over-two *)
+  | PNodeB(r1, PNodeA(r2,left), right),"l" ->   
+(*        print_endline "2-o-1 left";   *)
+        let right_u = update_ptree r2 right "l" tsubrel in  
+          PNodeA(r2, PNodeB(r1, left, right_u))
+                                     (* two-over-one left *)
+  | PNodeB(r1, left, PNodeA(r2,right)),"r" -> 
+(*        print_endline "2-o-1 right";   *)
+        let left_u = update_ptree r2 left "l" tsubrel in  
+          PNodeA(r2, PNodeB(r1, left_u, right))
+                                     (* two-over-one right *)
+  | PNodeB(r1, PNodeB(r2,left2,right2), right),"l" -> 
+(*        print_endline "2-o-2 left"; *)
+        let right_ul = update_ptree r2 right "l" tsubrel in
+         let right_ur  = update_ptree  r2 right "r" tsubrel in  
+         PNodeB(r2,PNodeB(r1,left2,right_ul),PNodeB(r1,right2,right_ur))
+                                     (* two-over-two left *)
+  | PNodeB(r1, left, PNodeB(r2,left2,right2)),"r" -> 
+(*        print_endline "2-o-2 right"; *)
+        let left_ul = update_ptree r2 left "l" tsubrel in
+         let left_ur  = update_ptree  r2 left "r"  tsubrel in   
+          PNodeB(r2,PNodeB(r1,left_ul,left2),PNodeB(r1,left_ur, right2))
+                                     (* two-over-two right *)
+  | _ -> raise (Failure "invalid argument")
+
+
+
+(* permute layers, isolate addmissible branches *)
+
+
+(* computes if an Andr is d-generatives *)
+
+
+
+let layer_bound rule =  
+  let (pos,inf,formula,term) = rule in 
+   if List.mem inf [Impr;Negr;Allr] then 
+    true 
+   else 
+    false;;
+   
+
+
+let rec orl_free ptree  =
+  match ptree with 
+   PEmpty -> raise (Failure "invalid argument")
+ | PNodeAx(rule) -> 
+    true
+ | PNodeA(rule,left) ->    
+   if layer_bound rule then 
+    true
+   else
+    orl_free left
+ | PNodeB(rule,left,right) -> 
+    let (pos,inf,formula,term) =  rule in            
+     if inf = Orl then  
+      false 
+     else 
+      (&) (orl_free left) (orl_free right);;
+
+
+
+
+let rec dgenerative rule dglist ptree tsubrel = 
+ let (pos,inf,formula,term) = rule in 
+  if List.mem inf [Exr;Orr;Negl] then 
+   true
+  else if inf = Andr then 
+    if dglist = [] then 
+     false
+    else 
+      let first,rest = (List.hd dglist),(List.tl dglist) in 
+       let (pos1,inf1,formula1,term1) = first in 
+        if tsubf pos1 pos tsubrel then 
+         true 
+        else 
+          dgenerative rule rest ptree tsubrel
+  else if inf = Impl then 
+    not (orl_free ptree) 
+  else
+   false;;
+  
+
+
+
+(* to compute a topmost addmissible pair r,o  with 
+   the address addr of r in the proof tree 
+*)
+
+let rec top_addmissible_pair ptree dglist act_r act_o act_addr tsubrel dummyt =   
+ let rec search_pair ptree dglist act_r act_o act_addr tsubrel = 
+  match ptree with 
+    PEmpty -> raise (Failure "invalid argument") 
+  | PNodeAx(_) -> raise (Failure "invalid argument") 
+  | PNodeA(rule, left) -> 
+(*      print_endline "alpha"; *)
+      if (dgenerative rule dglist left tsubrel) then  (* r = Exr,Orr,Negl *)
+       let newdg = (@) [rule] dglist   in         
+        search_pair left newdg act_r rule act_addr tsubrel
+      else                   (* Impr, Allr, Notr only for test *)
+       search_pair left dglist act_r act_o act_addr tsubrel
+  | PNodeB(rule,left,right) ->
+(*      print_endline "beta";  *)
+        let (pos,inf,formula,term) = rule in 
+          if List.mem inf [Andr;Impl] then        
+           let bool = dgenerative rule dglist left tsubrel in 
+            let newdg,newrule =  
+             if bool then 
+              ((@) [rule] dglist),rule
+             else
+              dglist,act_o
+            in
+             if orl_free left then 
+               search_pair right newdg act_r newrule (act_addr^"r") tsubrel
+             else  (* not orl_free *) 
+              let left_r,left_o,left_addr = 
+                search_pair left newdg act_r newrule (act_addr^"l") tsubrel in 
+                  if left_o =  ("",Orr,dummyt,dummyt) then 
+                    top_addmissible_pair right dglist act_r act_o (act_addr^"r") tsubrel dummyt
+                  else  left_r,left_o,left_addr               
+          else  (* r = Orl *)
+            if orl_free left then
+	      top_addmissible_pair right dglist rule act_o (act_addr^"r") tsubrel dummyt
+            else
+             let left_r,left_o,left_addr 
+               = search_pair left dglist rule act_o (act_addr^"l") tsubrel in 
+               if left_o =  ("",Orr,dummyt,dummyt) then 
+                 top_addmissible_pair right dglist rule act_o (act_addr^"r") tsubrel dummyt
+               else  
+                 left_r,left_o,left_addr
+
+ in 
+(*  print_endline "top_addmissible_pair in"; *)
+  if orl_free ptree then                  (* there must be a orl BELOW an layer bound *)
+    begin
+(*    print_endline "orl_free"; *)
+    act_r,act_o,act_addr
+    end
+  else 
+    begin 
+(*    print_endline "orl_full"; *)
+    search_pair ptree dglist act_r act_o act_addr tsubrel
+    end;;
+
+
+
+
+
+let next_direction addr act_addr =  
+  String.make 1 (String.get addr (String.length act_addr));;  
+        (* get starts with count 0*)
+
+let change_last addr d =  
+  let split = (String.length addr) - 1 in 
+   let prec,last = 
+    (String.sub addr 0 split),(String.sub addr split 1) in 
+     prec^d^last;;
+   
+let last addr = 
+ if addr = ""
+  then "" 
+ else
+  String.make 1 (String.get addr (String.length addr-1));;
+
+
+let rest addr = 
+ if addr = ""
+  then "" 
+ else
+  String.sub addr 0 ((String.length addr) - 1);;
+
+
+
+
+ 
+
+
+let rec permute_layer ptree dglist (subrel,tsubrel) = 
+
+ let rec permute_branch r addr act_addr ptree dglist (subrel,tsubrel) =  
+(*   print_endline "pbranch in"; *)
+   let la = last act_addr in  (* no ensure uniqueness at 2-over-x *)
+   match ptree,la with 
+    PNodeA(o,PNodeA(rule,left)),la ->   (* one-over-one *)
+(*       print_endline " one-over-one ";                  *)
+     let permute_result = permute o rule ptree la tsubrel in 
+      (match permute_result with 
+        PNodeA(r2,left2) -> 
+          let pbleft = permute_branch r addr act_addr left2 dglist (subrel,tsubrel) in 
+             PNodeA(r2,pbleft)
+       | _ -> raise (Failure "invalid argument")
+      )	
+  | PNodeA(o,PNodeB(rule,left,right)),la ->                (* one-over-two *)
+(*     print_endline " one-over-two ";                  *)
+     if rule = r then  (* left,right are or_l free *)
+       permute o rule ptree  la tsubrel (* first termination case *)
+     else
+      let d = next_direction addr act_addr in 
+       if d = "l" then 
+        let permute_result = permute o rule ptree la tsubrel in 
+         (match permute_result with 
+            PNodeB(r2,left2,right2) -> 
+                let pbleft = permute_branch r addr (act_addr^d) left2 dglist (subrel,tsubrel) in 
+                 let plright = permute_layer right2 dglist (subrel,tsubrel) in 
+                   PNodeB(r2,pbleft,plright) 
+           | _ -> raise (Failure "invalid argument")
+         )
+       else  (* d = "r", that is left of rule is or_l free *)
+         let left1,bool = weak_modify rule left (subrel,tsubrel) in 
+          if bool then  (* rule is relevant *) 
+            let permute_result = permute o rule (PNodeA(o,PNodeB(rule,left1,right))) la tsubrel in
+             (match permute_result with 
+               PNodeB(r2,left2,right2) -> 
+                  let pbright = permute_branch r addr (act_addr^d) right2 dglist (subrel,tsubrel) in 
+                    PNodeB(r2,left2,pbright) 
+              | _ -> raise (Failure "invalid argument")
+             )
+          else          (* rule is not relevant *) 
+           PNodeA(o,left1)  (* optimized termination case (1) *)
+  | PNodeB(o,PNodeA(rule,left),right1),"l" ->               (* two-over-one, left *)
+(*       print_endline " two-over-one, left "; *)
+       let permute_result = permute o rule ptree la tsubrel in 
+        (match permute_result with 
+          PNodeA(r2,left2) -> 
+            let pbleft = permute_branch r addr act_addr left2 dglist (subrel,tsubrel) in 
+              PNodeA(r2,pbleft)
+         | _ -> raise (Failure "invalid argument")
+        ) 
+  | PNodeB(o,left1,PNodeA(rule,left)),"r" ->                (* two-over-one, right *)
+                                                (* left of o is or_l free *)
+(*      print_endline " two-over-one, right"; *)
+          let leftm,bool = weak_modify o left1 (subrel,tsubrel) in 
+           if bool then  (* rule is relevant *) 
+            let permute_result = permute o rule (PNodeB(o,leftm,PNodeA(rule,left))) la tsubrel in 
+             (match permute_result with 
+               PNodeA(r2,left2) -> 
+                let pbleft = permute_branch r addr act_addr left2 dglist (subrel,tsubrel) in 
+                 PNodeA(r2,pbleft) 
+              | _ -> raise (Failure "invalid argument")
+             )
+           else          (* rule is not relevant *) 
+            leftm  (* optimized termination case (2) *)
+  | PNodeB(o,PNodeB(rule,left,right),right1),"l" ->             (* two-over-two, left *)
+(*     print_endline " two-over-two, left"; *)
+     if rule = r then   (* left,right are or_l free *)
+      let permute_result = permute o rule ptree  la tsubrel in 
+       (match permute_result with 
+         PNodeB(r2,PNodeB(r3,left3,right3),PNodeB(r4,left4,right4)) -> 
+(*        print_endline "permute 2-o-2, left ok"; *)
+          let leftm3,bool3 = weak_modify r3 left3 (subrel,tsubrel) in
+          let leftm4,bool4 = weak_modify r4 left4 (subrel,tsubrel) in
+           let plleft,plright =  
+             if (&) bool3 bool4 then   (* r3 and r4 are relevant *)
+               (permute_layer (PNodeB(r3,leftm3,right3)) dglist (subrel,tsubrel)),
+               (permute_layer (PNodeB(r4,leftm4,right4)) dglist (subrel,tsubrel))
+             else if (&) bool3 (not bool4) then   (* only r3 is relevant *)
+               begin
+(*               print_endline "two-over-two left: bool3 and not bool4"; *)
+               (permute_layer (PNodeB(r3,leftm3,right3)) dglist (subrel,tsubrel)),
+                leftm4
+               end
+             else if (&) (not bool3) bool4 then   (* only r4 is relevant *)
+                leftm3,
+               (permute_layer (PNodeB(r4,leftm4,right4)) dglist (subrel,tsubrel))
+             else    (* neither r3 nor r4 are relevant *)
+                leftm3,leftm4
+            in
+              PNodeB(r2,plleft,plright)
+        | _ -> raise (Failure "invalid argument")
+       )
+     else 
+       let d = next_direction addr act_addr in 
+        let newadd = change_last act_addr d in 
+         if d = "l" then 
+          let permute_result = permute o rule ptree la tsubrel in 
+           (match permute_result with 
+             PNodeB(r2,left2,right2) -> 
+              let pbleft = permute_branch r addr newadd left2 dglist (subrel,tsubrel) in 
+                let plright = permute_layer right2 dglist (subrel,tsubrel) in 
+                 PNodeB(r2,pbleft,plright) 
+            | _ -> raise (Failure "invalid argument")
+           )
+         else  (* d = "r", that is left is or_l free *)
+          let left1,bool = weak_modify rule left (subrel,tsubrel) in 
+            if bool then  (* rule is relevant *) 
+             let permute_result = 		 
+                    permute o rule (PNodeB(o,PNodeB(rule,left1,right),right1)) la tsubrel in
+              (match permute_result with 
+                PNodeB(r2,PNodeB(r3,left3,right3),right2) -> 
+                 let pbright = permute_branch r addr newadd right2 dglist (subrel,tsubrel) in 
+                   let leftm3,bool3 = weak_modify r3 left3 (subrel,tsubrel) in 
+                    let plleft = 
+                     if bool3 (* r3 relevant *) then 
+                       permute_layer (PNodeB(r3,leftm3,right3)) dglist (subrel,tsubrel) 
+                     else  (* r3 redundant *) 
+                       leftm3 
+                    in 
+                      PNodeB(r2,plleft,pbright)  (* further opt. NOT possible *)
+               | _ -> raise (Failure "invalid argument")
+              )
+            else          (* rule is not relevant *) 
+              permute_layer (PNodeB(o,left1,right1)) dglist (subrel,tsubrel) (* further opt. possible *)
+		                                           (* combine with orl_free *)
+  | PNodeB(o,left1,PNodeB(rule,left,right)),"r" ->             (* two-over-two, right *)
+(*      print_endline " two-over-two, right"; *)
+      let leftm1,bool = weak_modify o left1 (subrel,tsubrel) in  (* left1 is or_l free *)
+       if bool then  (* o is relevant, even after permutations *) 
+        if rule = r then  (* left, right or_l free *) 
+           permute o rule (PNodeB(o,leftm1,PNodeB(rule,left,right))) la tsubrel
+        else 
+           let d = next_direction addr act_addr in 
+             let newadd = change_last act_addr d in 
+                if d = "l" then 
+                 let permute_result  = 
+                          permute o rule (PNodeB(o,leftm1,PNodeB(rule,left,right))) la tsubrel in 
+                  (match permute_result with 
+      		    PNodeB(r2,left2,right2) -> 
+                     let pbleft = permute_branch r addr newadd left2 dglist (subrel,tsubrel) in 
+		      let plright = permute_layer right2 dglist (subrel,tsubrel) in 
+		        PNodeB(r2,pbleft,plright) 
+                   | _ -> raise (Failure "invalid argument")
+                  )
+                else  (* d = "r", that is left is or_l free *)
+                 let leftm,bool = weak_modify rule left (subrel,tsubrel) in 
+                  if bool then  (* rule is relevant *) 
+                   let permute_result = 
+                          permute o rule (PNodeB(o,leftm1,PNodeB(rule,left,right))) la tsubrel in 
+                     (match permute_result with 
+  		       PNodeB(r2,left2,right2) -> 
+                        let pbright = permute_branch r addr newadd right2 dglist (subrel,tsubrel) in 
+                          PNodeB(r2,left2,pbright)  (* left2 or_l free *)
+                      | _ -> raise (Failure "invalid argument")
+                     )
+                  else (* rule is not relevant *) 
+                    PNodeB(o,leftm1,leftm)
+        
+       else 
+        leftm1
+  | _ -> raise (Failure "Invalid argument")  
+
+     
+    
+ in 
+ let rec trans_add_branch r o addr act_addr ptree dglist (subrel,tsubrel) = 
+  match ptree with 
+    (PEmpty|PNodeAx(_)) -> raise (Failure "Invalid argument")  
+  | PNodeA(rule,left) -> 
+        if (dgenerative rule dglist left tsubrel) then 
+          let newdg = (@) [rule] dglist in      
+	   if rule = o then 
+             begin 
+(*             print_endline "one-rule is o"; *)
+	     permute_branch r addr act_addr ptree dglist (subrel,tsubrel) 
+             end
+           else 
+             begin
+(*             print_endline "alpha - but not o"; *)
+             let tptree = trans_add_branch r o addr act_addr left newdg (subrel,tsubrel) in 
+              permute_layer (PNodeA(rule,tptree)) dglist (subrel,tsubrel)
+	        (* r may not longer be valid for rule *)
+             end
+	else 
+          let tptree =  trans_add_branch r o addr act_addr left dglist (subrel,tsubrel) in 
+	     PNodeA(rule,tptree) 
+  | PNodeB(rule,left,right) -> 
+     let d = next_direction addr act_addr in 
+       let bool = (dgenerative rule dglist left tsubrel) in       
+        if rule = o then 
+          begin
+(*          print_endline "two-rule is o"; *)
+          permute_branch r addr (act_addr^d) ptree dglist (subrel,tsubrel) 
+          end
+        else 
+         begin
+(*         print_endline ("beta - but not o: address "^d); *)
+         let dbranch = 
+          if d = "l" then 
+            left 
+          else   (* d = "r" *)
+            right  
+          in 
+          let tptree = 
+           if bool then 
+            let newdg = (@) [rule] dglist in 
+             (trans_add_branch r o addr (act_addr^d) dbranch newdg (subrel,tsubrel))
+           else 
+             (trans_add_branch r o addr (act_addr^d) dbranch dglist (subrel,tsubrel))
+           in 
+           if d = "l" then 
+            permute_layer (PNodeB(rule,tptree,right)) dglist (subrel,tsubrel) 
+           else  (* d = "r" *) 
+            begin 
+(*            print_endline "prob. a redundant call";  *)
+            let back  = permute_layer (PNodeB(rule,left,tptree)) dglist  (subrel,tsubrel) in 
+(*             print_endline "SURELY a redundant call"; *)
+             back
+            end       
+         end
+in 
+(*  print_endline "permute_layer in"; *)
+ let dummyt = mk_var_term "dummy" in 
+ let r,o,addr = 
+  top_addmissible_pair ptree dglist ("",Orl,dummyt,dummyt) ("",Orr,dummyt,dummyt) "" tsubrel dummyt in 
+  if r = ("",Orl,dummyt,dummyt) then 
+   ptree
+  else  if o = ("",Orr,dummyt,dummyt) then  (* Orr is a dummy for no d-gen. rule *)
+   ptree 
+  else 
+   let (x1,x2,x3,x4) = r 
+   and (y1,y2,y3,y4) = o in 
+(*   print_endline ("top or_l: "^x1); 
+   print_endline ("or_l address: "^addr);
+   print_endline ("top dgen-rule: "^y1); *)
+   trans_add_branch r o addr "" ptree dglist (subrel,tsubrel);;  
+
+
+
+
+
+(* Isolate layer and outer recursion structure *) 
+(* uses weaker layer boundaries: ONLY critical inferences *)
+
+
+let rec trans_layer ptree (subrel,tsubrel) = 
+let rec isol_layer ptree (subrel,tsubrel) = 
+  match ptree with 
+    PEmpty -> raise (Failure "Invalid Argument") 
+  | PNodeAx(inf) -> 
+      ptree 
+  | PNodeA((pos,rule,formula,term),left) ->    
+     if List.mem  rule [Allr;Impr;Negr] then  
+      let tptree = trans_layer left (subrel,tsubrel) in 
+       PNodeA((pos,rule,formula,term),tptree) 
+     else 
+      let tptree = isol_layer  left (subrel,tsubrel) in  
+       PNodeA((pos,rule,formula,term),tptree) 
+  | PNodeB(rule,left,right) -> 
+      let tptree_l = isol_layer  left (subrel,tsubrel) 
+      and tptree_r = isol_layer  right (subrel,tsubrel) in 
+        PNodeB(rule,tptree_l,tptree_r)
+ in 
+  begin
+(*   print_endline "trans_layer in"; *)
+   let top_tree = isol_layer  ptree (subrel,tsubrel) in 
+    let back = permute_layer  top_tree [] (subrel,tsubrel) in 
+(*     print_endline "translauer out"; *)
+     back
+ end;;
+
+
+
+
+
+
+(* REAL PERMUTATION STAFF  --- End *)
 
 
 
@@ -937,9 +2039,75 @@ let rec rename_gamma ljmc_proof rename_list =
     
 
 
+
+
+
+let rec compare_pair (s,sf) list =  
+  if list = [] then 
+    list
+  else
+   let (s_1,sf_1),restlist = (List.hd list),(List.tl list) in 
+    if sf = s_1 then 
+     (@) [(s,sf_1)] (compare_pair (s,sf) restlist) 
+    else 
+     compare_pair (s,sf) restlist;;
+
+
+let rec compare_pairlist list1 list2 =  
+ if list1 = [] then 
+  list1 
+ else
+  let (s1,sf1),restlist1  =  (List.hd list1),(List.tl list1) in 
+   (@) (compare_pair (s1,sf1) list2) (compare_pairlist restlist1 list2);;
+
+
+
+let rec trans_rec pairlist translist =  
+   let tlist = compare_pairlist pairlist translist in 
+    if tlist = [] then 
+     translist
+   else
+    (@) (trans_rec pairlist tlist) translist;;
+
+    
+let transitive_closure subrel = 
+ let pairlist,nlist = List.split subrel in 
+   trans_rec pairlist pairlist;;
+
+
+
+let pt ptree subrel =
+   let tsubrel = transitive_closure subrel in 
+    let transptree = trans_layer ptree (subrel,tsubrel) in 
+    print_endline "";
+   fst (modify transptree (subrel,tsubrel))
+(*     let mtree = fst (modify transptree (subrel,tsubrel)) in *)
+(*       pretty_print mtree ax;; *)
+
+
+
+
+let rec make_node_list ljproof = 
+  match ljproof with 
+    PEmpty -> 
+     raise (Failure "invalid argument")
+   |PNodeAx((pos,inf,form,term)) -> 
+        [(("",pos),(inf,form,term))]
+   |PNodeA((pos,inf,form,term),left) -> 
+     let left_list =  make_node_list left in 
+        (("",pos),(inf,form,term))::left_list
+   |PNodeB((pos,inf,form,term),left,right) -> 
+      let left_list =  make_node_list left 
+      and right_list =  make_node_list right in  
+        (("",pos),(inf,form,term))::(left_list @ right_list)
+
+
+
+
+
 let  permute_ljmc ftree po slist ljmc_proof = 
  (* ftree/po are the formula tree / open positions of the sequent that caused deadlock and permutation *) 
-  print_endline "!!!!!!!!!!!!!Permutation TO DO!!!!!!!!!"; 
+(*  print_endline "!!!!!!!!!!!!!Permutation TO DO!!!!!!!!!"; *)
  (* the open positions in po are either phi_0, psi_0, or gamma_0 positions *)
  (* since proof reconstruction was a deadlock in LJ *)    
    let po_treelist = get_formula_treelist ftree po in 
@@ -947,19 +2115,23 @@ let  permute_ljmc ftree po slist ljmc_proof =
      let (formula_rel,rename_list) = build_formula_rel dir_treelist slist "dummy" in 
       let renamed_ljmc_proof = rename_gamma ljmc_proof rename_list in 
        let (ptree,ax) =  bproof renamed_ljmc_proof in 
+         let ljproof = pt ptree formula_rel in 
            (* this is a direct formula relation, comprising left/right subformula *)
 begin
-   print_treelist po_treelist;
+(*   print_treelist po_treelist; *)
+(*   print_endline "";
    print_endline "";
+*)
+(*   print_triplelist formula_rel; *)
+(*   print_endline "";
    print_endline "";
-   print_triplelist formula_rel;
+   tt ljproof; 
+*)
+(*   print_pairlist rename_list; *)
+(*   print_endline "";
    print_endline "";
-   print_endline "";
-   print_pairlist rename_list;
-   print_endline "";
-   print_endline "";
-   tt ptree;
-   renamed_ljmc_proof
+*)
+   make_node_list ljproof 
 end
 
 
@@ -1684,15 +2856,64 @@ let rec betasplit addr ftree redord connections unsolved_list =
 
 
 
-let split addr ftree redord connections unsolved_list =  
+let split addr pname ftree redord connections unsolved_list opt_bproof =  
+  let (opt_bp1,min_con1),(opt_bp2,min_con2) = split_permutation pname opt_bproof in 
+ begin
+(*
+   print_endline "Beta proof 1: "; 
+   print_endline "";
+   print_beta_proof opt_bp1;
+   print_endline "";
+   print_endline ("Beta proof 1 connections: ");
+   Format.open_box 0;
+   print_pairlist min_con1;
+   print_endline ".";
+   Format.print_flush();
+   print_endline "";
+   print_endline "";
+   print_endline "Beta proof 2: ";
+   print_endline "";
+   print_beta_proof opt_bp2;
+   print_endline "";
+   print_endline ("Beta proof 2 connections: ");
+   Format.open_box 0;
+   print_pairlist min_con2;
+   print_endline ".";
+   Format.print_flush();
+   print_endline ""; 
+*)
   let  (zw1ft,zw1red,zw1conn,zw1uslist),(zw2ft,zw2red,zw2conn,zw2uslist) = 
      betasplit addr ftree redord connections unsolved_list in 
+(* zw1conn and zw2conn are not longer needed when using beta proofs *)
 (*   print_endline "betasp_out"; *)
-  let ft1,red1,conn1,uslist1 =  purity zw1ft zw1red zw1conn zw1uslist in 
+  let ft1,red1,conn1,uslist1 =  purity zw1ft zw1red min_con1 zw1uslist in 
 (*   print_endline "purity_one_out"; *)
-  let ft2,red2,conn2,uslist2 =  purity zw2ft zw2red zw2conn zw2uslist in 
+  let ft2,red2,conn2,uslist2 =  purity zw2ft zw2red min_con2 zw2uslist in 
 (*        print_endline "purity_two_out"; *)
-        (ft1,red1,conn1,uslist1),(ft2,red2,conn2,uslist2);;
+(* again, min_con1 = conn1 and min_con2 = conn2 should hold *)
+ begin 
+(* print_endline "";
+   print_endline "";
+   print_endline ("Purity 1 connections: ");
+   Format.open_box 0;
+   print_pairlist conn1;
+   print_endline ".";
+   print_endline "";
+   Format.print_flush();
+   print_endline "";
+   print_endline "";
+   print_endline ("Purity 2 connections: ");
+   Format.open_box 0;
+   print_pairlist conn2;
+   print_endline ".";
+   print_endline "";
+   Format.print_flush();
+   print_endline "";
+   print_endline "";
+*)
+     (ft1,red1,conn1,uslist1,opt_bp1),(ft2,red2,conn2,uslist2,opt_bp2)
+end
+end
 
   
 (* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Splitting end %%%%%%%%%%%%%%%%  *) 
@@ -1767,7 +2988,7 @@ let rec check_wait_succ_LJ faddress ftree =
 
 
 
-let blocked f po redord ftree connections slist logic calculus = 
+let blocked f po redord ftree connections slist logic calculus opt_bproof = 
 (* print_endline ("Blocking check "^(f.name)); *)
  if (red_ord_block (f.name) redord) then 
     begin
@@ -1810,10 +3031,11 @@ let blocked f po redord ftree connections slist logic calculus =
                  Otherwise, in case of A-dependent succedent formulae, the 
                  wait_label must be set.
                *)
+          let ((_,min_con1),_) = split_permutation f.name opt_bproof in 
               let slist_fake = delete f.name slist in 
-              let  ((zw1ft,zw1red,zw1conn,zw1uslist),_) = 
+              let  ((zw1ft,zw1red,_,zw1uslist),_) = 
                betasplit (f.address) ftree redord connections slist_fake in  
-                let ft1,_,_,uslist1 =  purity zw1ft zw1red zw1conn zw1uslist in 
+                let ft1,_,_,uslist1 =  purity zw1ft zw1red min_con1 zw1uslist in 
 (*                   print_endline "wait label purity_one_out"; *)
                  let ft1_root = (List.hd (List.tl (tpredsucc f ft1))) in 
 (*                 print_endline ("wait-root "^(ft1_root.name)); *)
@@ -1837,7 +3059,24 @@ let blocked f po redord ftree connections slist logic calculus =
         raise (Failure "Invalid argument: calculus should be LJmc or LJ")
 
 
-let rec select_pos search_po po redord ftree connections slist logic calculus candidates = 
+
+
+let rec get_beta_preference list actual = 
+ match list with 
+  [] -> actual
+ |(f,int)::r -> 
+   if f.op = Imp then 
+     (f,int)
+    else 
+(*     if f.op = Or then 
+        get_beta_preference r (f,int)
+     else 
+*)
+        get_beta_preference r actual 
+
+
+let rec select_pos search_po po redord ftree connections slist logic calculus candidates 
+                         opt_bproof = 
  match search_po with 
    [] -> 
     (match candidates with 
@@ -1847,12 +3086,14 @@ let rec select_pos search_po po redord ftree connections slist logic calculus ca
       else 
        failwith "overall deadlock" (* this case should not occur *)
     |c::rest -> 
-      c
+       get_beta_preference (c::rest) c
     )
   |f::r ->  (* there exist an open position *)
-    let (bool,orr_flag) = (blocked f po redord ftree connections slist logic calculus) in 
+    let (bool,orr_flag) = (blocked f po redord ftree connections slist logic calculus 
+                             opt_bproof) 
+    in 
     if (bool = true) then 
-     select_pos r po redord  ftree connections slist logic calculus candidates 
+     select_pos r po redord  ftree connections slist logic calculus candidates opt_bproof
     else
       if f.pt = Beta then 
      (* search for non-splitting rules first *)
@@ -1861,12 +3102,13 @@ let rec select_pos search_po po redord ftree connections slist logic calculus ca
         then 
           [(f,orr_flag)]
         else 
-     (* but preserve first found candidate *) 
+  !!!!  but preserve first found candidate !!!!!!!
          candidates
        in 
   !!!!!!! this strategy is not sure the best -- back to old !!!!!!!!!
 *)
-        select_pos r po redord  ftree connections slist logic calculus [(f,orr_flag)]
+        select_pos r po redord  ftree connections slist logic calculus 
+                 ((f,orr_flag)::candidates) opt_bproof
      else 
        (f,orr_flag)
 
@@ -1877,7 +3119,7 @@ let rec select_pos search_po po redord ftree connections slist logic calculus ca
    tot simulates the while-loop, solve is the rest *)
 
 
-let rec total  ftree redord connections csigmaQ slist logic calculus = 
+let rec total  ftree redord connections csigmaQ slist logic calculus opt_bproof = 
 
 let rec tot  ftree redord connections po slist = 
 
@@ -1939,18 +3181,19 @@ let rec solve  ftree redord connections p po slist (pred,succs) orr_flag =
               rback @ ((("",p.name),(build_rule p sp csigmaQ orr_flag calculus))::(tot ftree redord connections pnew newslist))
          | Beta  ->  
 (*             print_endline "split_in"; *)
-            let (ft1,red1,conn1,uslist1),(ft2,red2,conn2,uslist2) = 
-                split (p.address) ftree redord connections newslist in  
+            let (ft1,red1,conn1,uslist1,opt_bproof1),(ft2,red2,conn2,uslist2,opt_bproof2) = 
+                split (p.address) (p.name) ftree redord connections newslist opt_bproof in  
                  let (sigmaQ1,sigmaQ2) = subst_split ft1 ft2 ftree uslist1 uslist2 newslist csigmaQ in 
 (*           print_endline "split_out"; *)
-	     let p1 = total  ft1 red1 conn1 sigmaQ1 uslist1 logic calculus in 
+	     let p1 = total  ft1 red1 conn1 sigmaQ1 uslist1 logic calculus opt_bproof1 in 
 (*           print_endline "compute p1 out";	      *)
-              let p2 = total  ft2 red2 conn2 sigmaQ2 uslist2 logic calculus in 
+              let p2 = total  ft2 red2 conn2 sigmaQ2 uslist2 logic calculus opt_bproof2 in 
 (*           print_endline "compute p2 out";	      *)
 		 rback @ [(("",p.name),(build_rule p p csigmaQ orr_flag calculus))] @ p1 @ p2  (* second possibility of recursion end *)
 in       
  (try 
-  let (p,orr_flag) = select_pos po po redord ftree connections slist logic calculus [] 
+  let (p,orr_flag) = select_pos po po redord ftree connections slist logic 
+                                     calculus [] opt_bproof
     (* last argument for guiding selection strategy *)
    in 
 (*    print_endline ((p.name)^" "^(string_of_int orr_flag)); *)
@@ -1972,7 +3215,9 @@ in
      solve ftree rednew connections p po slist (pred,succs) orr_flag
    with
      Failure("gamma deadlock") -> 
-       let ljmc_subproof =  total ftree redord connections csigmaQ slist "J" "LJmc" in 
+       let ljmc_subproof =  total ftree redord connections csigmaQ slist "J" "LJmc" opt_bproof
+       in 
+          eigen_counter := 1;
           permute_ljmc ftree po slist ljmc_subproof
            (* the permuaiton result will be appended to the lj proof constructed so far *)
     |Failure("overall deadlock") ->
@@ -1986,19 +3231,56 @@ let po  = compute_open [ftree] slist in
 
 
 let reconstruct ftree redord sigmaQ connections logic calculus =  
- (* let complete_sigmaQ = build_sigmaQ sigmaQ ftree in  --- is done dynamically during build_rule *)
+  let bproof,beta_exp,closures = construct_beta_proof ftree connections in 
+   let (opt_bproof,min_connections) = bproof_purity bproof in 
+begin
+(*   print_endline "";
+   print_endline ("Beta proof with number of closures = "^(string_of_int closures)^" and number of beta expansions = "^(string_of_int beta_exp));
+*)
+(*   print_endline "";
+   print_endline "";
+   print_beta_proof bproof;
+   print_endline "";
+   print_endline "";
+   print_endline "Optimal beta proof: ";
+   print_endline "";
+   print_endline "";
+   print_beta_proof opt_bproof;
+   print_endline "";
+   print_endline "";
+   print_endline ("Beta proof connections: ");
+   Format.open_box 0;
+   print_pairlist min_connections;
+   print_endline ".";
+   Format.print_flush();
+   print_endline "";
+*)
    let  (newroot_name,unsolved_list) =  build_unsolved ftree in 
     let redord2 = (update newroot_name redord) in   (* otherwise we would have a deadlock *)
       let (init_tree,init_redord,init_connections,init_unsolved_list) = 
-         purity ftree redord2 connections unsolved_list in 
+         purity ftree redord2 min_connections unsolved_list in 
+ begin 
+(*   print_endline "";
+   print_endline "";
+   print_endline ("Purity connections: ");
+   Format.open_box 0;
+   print_pairlist init_connections;
+   print_endline ".";
+   print_endline "";
+   Format.print_flush();
+   print_endline "";
+   print_endline "";
+*)
         (try 
+(* it should hold: min_connections = init_connections *)
             total init_tree init_redord init_connections sigmaQ 
-                  init_unsolved_list logic calculus
+                  init_unsolved_list logic calculus opt_bproof
          with 
-          Failure("redundancy") ->     (* should not occur *)
+          Failure("redundancy") ->     (* this case should not occur with beta-proofs *)
              failwith "not_reconstructible"
          )
-
+ end
+end
 
 
 
@@ -2275,15 +3557,22 @@ let apply_2_sigmaQ term1 term2 sigmaQ =
 
 let jqunify term1 term2 sigmaQ = 
  let app_term1,app_term2 = apply_2_sigmaQ term1 term2 sigmaQ in 
+ begin
+(*  print_term stdout app_term1;
+  print_term stdout app_term2;
+*)
   let eqnlist = make_eq_list app_term1 app_term2 in 
   (try
    let tauQ = unify_mm_eqnl eqnlist [] in 
-     multiply sigmaQ tauQ
+    let (mult,oel) = multiply sigmaQ tauQ in 
+  (*   print_sigmaQ mult; *)
+     (mult,oel)
    with 
     _  ->  (* any unification failure, exceptions Cycle or Clash in unification module *)
+    print_endline "fo-unification fail";
      failwith "fail1"   (* new connection, please *)
   )
-
+ end
 
 
 
@@ -3765,7 +5054,7 @@ let rec try_multiplicity ftree ordering pos_n mult logic =
 
 let prove termlist logic = 
  let (ftree,ordering,pos_n) = construct_ftree termlist [] [] 0 (mk_var_term "dummy") in 
-  (* pos_n = number of positions without new root "w" *) 
+(* pos_n = number of positions without new root "w" *) 
 (*   print_formula_info ftree ordering pos_n;    *)
    (try 
      try_multiplicity ftree ordering pos_n 1 logic 
@@ -3776,40 +5065,100 @@ let prove termlist logic =
 
 
 
-let rec remove_dups list = 
- match list with 
-  [] -> [] 
- |f::r -> 
-   if List.mem f r then 
-    remove_dups r
-   else 
-    f::remove_dups r
    
+(********** first-order nuprl interface *******************)
 
 
 
 
-(********** propositional nuprl interface *******************)
-
-
-
-let rec make_nuprl_interface rule_list = 
- match rule_list with 
-   [] -> []
+let rec renam_free_vars termlist = 
+  match termlist 
+   with [] -> [],[]
   |f::r -> 
-    let (pos,(rule,term1,term2)) = f in (* kick away the first argument, the position *)
-     ((ruletable rule),term1,term2)::(make_nuprl_interface r)
+    let var_names = free_vars f in  
+      let string_terms = 
+       List.map (fun x -> (mk_string_term (make_opname ["free_variable";x]) x)) var_names
+      in 
+       let mapping = List.combine var_names string_terms
+       and new_f = subst f string_terms var_names in 
+        let (rest_mapping,rest_renamed) = renam_free_vars r in 
+          let unique_mapping = remove_dups_list (mapping @ rest_mapping) in 
+            (unique_mapping,(new_f::rest_renamed))
+
+
+
+
+let rec apply_var_subst term var_subst_list = 
+  match var_subst_list with 
+   [] -> term
+  |(v,t)::r -> 
+    let next_term = var_subst term t v in 
+     apply_var_subst next_term r
+ 
+
+
+
+let rec make_nuprl_interface rule_list nuprl_map =
+  match rule_list with 
+   [] -> []
+   |f::r -> 
+    let (pos,(rule,term1,term2)) = f in 
+      let delta1_names = collect_delta_terms [term1] 
+      and delta2_names = collect_delta_terms [term2] in 
+       let unique_deltas = remove_dups_list (delta1_names @ delta2_names) in 
+        let delta_terms = 
+         List.map (fun x -> (mk_string_term (make_opname ["jprover";x]) x)) unique_deltas in 
+          let delta_vars = List.map (fun x -> (x^"_jprover")) unique_deltas in 
+          let delta_map = List.combine delta_vars delta_terms in 
+          let var_mapping = (nuprl_map @ delta_map) in 
+           let new_term1 = apply_var_subst term1 var_mapping
+           and new_term2 = apply_var_subst term2 var_mapping
+      in 
+(* kick away the first argument, the position *)
+     ((ruletable rule),new_term1,new_term2)::(make_nuprl_interface r nuprl_map)
+
+
+
+let rec make_test_interface rule_list nuprl_map =
+  match rule_list with 
+   [] -> []
+   |f::r -> 
+    let (pos,(rule,term1,term2)) = f in 
+      let delta1_names = collect_delta_terms [term1] 
+      and delta2_names = collect_delta_terms [term2] in 
+       let unique_deltas = remove_dups_list (delta1_names @ delta2_names) in 
+        let delta_terms = 
+         List.map (fun x -> (mk_string_term (make_opname ["jprover";x]) x)) unique_deltas in 
+          let delta_vars = List.map (fun x -> (x^"_jprover")) unique_deltas in 
+          let delta_map = List.combine delta_vars delta_terms in 
+          let var_mapping = (nuprl_map @ delta_map) in 
+           let new_term1 = apply_var_subst term1 var_mapping
+           and new_term2 = apply_var_subst term2 var_mapping
+      in 
+     (pos,(rule,new_term1,new_term2))::(make_test_interface r nuprl_map)
+
+
+
+
+(**************************************************************) 
+
 
 
 let prover (hyps,concl) =    (* has to be modified for NuPRL interface *)
- let (ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof) = prove (hyps @ [concl]) "J" in
+ let (nuprl_map,renamed_termlist) = renam_free_vars (hyps @ [concl]) in 
+ let (ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof) = prove renamed_termlist "J" in
    if ftree = Empty then 
     raise (Failure "Formula invalid")
    else
-    let connections = remove_dups ext_proof in 
+    let connections = remove_dups_connections ext_proof 
+    in
      (try 
        let sequent_proof = reconstruct ftree red_ordering sigmaQ connections "J" "LJ" in 
-         make_nuprl_interface sequent_proof  (* transform types *)
+            (* transform types and rename constants *)
+        (* we can transform the eigenvariables AFTER proof reconstruction since *) 
+        (* new delta_0 constants may have been constructed during rule permutation *) 
+        (* from the LJmc to the LJ proof *)
+         make_nuprl_interface sequent_proof nuprl_map
       with 
         Failure("not_reconstructible") -> (* this possibility should of course be eliminated *)
           raise (Failure "deadlock unsolvable") 
@@ -3850,7 +5199,8 @@ let rec count_axioms seq_list =
 
 
 let do_prove termlist logic calculus =
-  let (ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof) = prove termlist logic in 
+ let (nuprl_map,renamed_termlist) = renam_free_vars termlist in 
+  let (ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof) = prove renamed_termlist logic in 
    if ftree = Empty then 
     begin
      Format.open_box 0;
@@ -3874,6 +5224,13 @@ let do_prove termlist logic calculus =
                        " Axioms");
      Format.force_newline ();
      Format.force_newline ();
+        print_endline "Extension proof:";
+	Format.open_box 0;
+        print_pairlist ext_proof;       (* print list of type (string * string) list *)
+        Format.force_newline ();
+        Format.force_newline ();
+        Format.force_newline ();
+	Format.print_flush ();
      Format.print_flush ();
         Format.open_box 0;
         print_ordering red_ordering;
@@ -3902,11 +5259,14 @@ let do_prove termlist logic calculus =
         print_endline "";
 (* --------------------------------------------------------- *)
      Format.print_string "Break ... ";
+     print_endline "";
+     print_endline "";
      Format.print_flush ();
       let _ = input_char stdin in
-    let connections = remove_dups ext_proof in 
+    let connections = remove_dups_connections ext_proof in 
     (try 
-      let sequent_proof = reconstruct ftree red_ordering sigmaQ connections logic calculus in 
+      let reconstr_proof = reconstruct ftree red_ordering sigmaQ connections logic calculus in 
+       let sequent_proof = make_test_interface reconstr_proof nuprl_map in 
     begin
      Format.open_box 0;
      Format.force_newline ();
@@ -3917,11 +5277,6 @@ let do_prove termlist logic calculus =
      Format.print_flush ();
        let (ptree,count_ax) = bproof sequent_proof in 
       begin
-(*        print_endline "Extension proof:";
-	Format.open_box 0;
-        print_pairlist connections;       (* print list of type (string * string) list *) 
-	Format.print_flush ();
-*)
         Format.open_box 0;
        Format.print_string ("Length of sequent proof: "^((string_of_int count_ax))^" Axioms");
        Format.force_newline ();
