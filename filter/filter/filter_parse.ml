@@ -1675,19 +1675,8 @@ EXTEND
           SigFilter.add_token_pair (SigFilter.get_proc loc) loc (opname_of_term (parse_term loc id.aterm)) regex1 regex2 t;
           empty_sig_item loc
 
-        | "production"; args = LIST0 term SEP ";"; opt_prec = OPT prec_term; "-->"; t = term ->
-          let args, t = parse_production loc args t in
-             SigFilter.add_production (SigFilter.get_proc loc) loc args opt_prec t;
-             empty_sig_item loc
-
-        | "production"; t = LIST0 term SEP ";"; opt_prec = OPT prec_term; "<--"; args = LIST0 term SEP ";" ->
+        | "production"; t = term; opt_prec = OPT prec_term; "<--"; args = LIST0 term SEP ";" ->
           let f () =
-             let t =
-                match t with
-                   [t] -> t
-                 | [] -> raise (Failure "null production")
-                 | _ :: _ :: _ -> raise (Failure "too many terms on the left-hand-side of the production")
-             in
              let args, t = parse_production loc args t in
                 SigFilter.add_production (SigFilter.get_proc loc) loc args opt_prec t
           in
@@ -1971,19 +1960,8 @@ EXTEND
           StrFilter.add_token_pair (StrFilter.get_proc loc) loc (opname_of_term (parse_term loc id.aterm)) regex1 regex2 t;
           empty_str_item loc
 
-        | "production"; args = LIST0 term SEP ";"; opt_prec = OPT prec_term; "-->"; t = term ->
-          let args, t = parse_production loc args t in
-             StrFilter.add_production (StrFilter.get_proc loc) loc args opt_prec t;
-             empty_str_item loc
-
-        | "production"; t = LIST0 term SEP ";"; opt_prec = OPT prec_term; "<--"; args = LIST0 term SEP ";" ->
+        | "production"; t = term; opt_prec = OPT prec_term; "<--"; args = LIST0 term SEP ";" ->
           let f () =
-             let t =
-                match t with
-                   [t] -> t
-                 | [] -> raise (Failure "null production")
-                 | _ :: _ :: _ -> raise (Failure "too many terms on the left-hand-side of the production")
-             in
              let args, t = parse_production loc args t in
                 StrFilter.add_production (StrFilter.get_proc loc) loc args opt_prec t
           in
@@ -2143,7 +2121,7 @@ EXTEND
       [[ "-->"; t = parsed_term -> t ]];
 
    prec_term:
-      [[ "%"; t = parsed_term -> t ]];
+      [[ "%"; "prec"; t = parsed_term -> t ]];
 
    prec_declare:
       [[ LIDENT "left" -> Filter_grammar.LeftAssoc

@@ -653,7 +653,9 @@ struct
                try
                   Filter_grammar.term_of_string parse_quotation nm (fst (q_shift_loc loc nm)) s
                with
-                  exn ->
+                  Not_found ->
+                     Stdpp.raise_with_loc loc (Failure ("parse_quotation: grammar is not defined: " ^ nm))
+                | exn ->
                      Stdpp.raise_with_loc loc exn
 
    and parse_comment loc math spell space s =
