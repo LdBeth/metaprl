@@ -97,6 +97,10 @@ struct
       let args, ext = tac arg in
          args, Wrap (wrap_arg, ext)
 
+	let wrap_terms f tac arg =
+		let args, ext = tac arg in
+			(List.map f args), ext
+
    let compose1 tac1 tac2 arg =
       let args, ext = tac1 arg in
       let argsl, extl = apply1 tac2 args in

@@ -1052,6 +1052,23 @@ struct
       if tac1 == idT then tac2 else if tac2 == idT then tac1 else
             ThreadRefinerTacticals.compose1 tac1 tac2
 
+   let emptyLabel=""
+
+   let prefix_thenLocalLabelT tac1 tac2 p =
+      let prefer l1 l2 =
+         if l2=emptyLabel then l1
+         else l2 in
+      let label = p.ref_label in
+      ThreadRefinerTacticals.wrap_terms
+      	(fun p' -> { p' with ref_label = prefer label p'.ref_label })
+			(fun p' -> prefix_thenT tac1 tac2 { p' with ref_label = emptyLabel })
+			p
+(*      prefix_thenT
+	      (fun p' -> prefix_thenT tac1 tac2 { p' with ref_label = emptyLabel })
+      	(fun p' -> idT { p' with ref_label = prefer label p'.ref_label })
+      	p
+*)
+
    let prefix_thenLT tac1 tacl =
       if tac1 == idT then
          match tacl with

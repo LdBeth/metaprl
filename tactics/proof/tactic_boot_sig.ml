@@ -397,6 +397,7 @@ sig
     * Basic tacticals.
     *)
    val prefix_thenT : tactic -> tactic -> tactic
+   val prefix_thenLocalLabelT : tactic -> tactic -> tactic
    val prefix_thenLT : tactic -> tactic list -> tactic
    val prefix_thenFLT : tactic -> (tactic_arg list -> tactic list) -> tactic
    val prefix_orelseT : tactic -> tactic -> tactic
@@ -846,6 +847,7 @@ sig
    val tryT : tactic -> tactic
 
    val prefix_thenT : tactic -> tactic -> tactic
+   val prefix_thenLocalLabelT : tactic -> tactic -> tactic
    val prefix_thenLT : tactic -> tactic list -> tactic
    val prefix_thenFLT : tactic -> (tactic_arg list -> tactic list) -> tactic
    val prefix_then_OnFirstT : tactic -> tactic -> tactic

@@ -90,6 +90,7 @@ struct
    let prefix_orelseT = TacticInternal.prefix_orelseT
    let prefix_andalsoT = TacticInternal.prefix_thenT
    let prefix_thenT = TacticInternal.prefix_thenT
+   let prefix_thenLocalLabelT = TacticInternal.prefix_thenLocalLabelT
    let prefix_thenLT = TacticInternal.prefix_thenLT
    let prefix_thenFLT = TacticInternal.prefix_thenFLT
 
@@ -379,21 +380,6 @@ struct
       else
          tac2')
 
-   let thenIfLabelPredT pred tac1 tac2 tac3 = funT (fun p ->
-      let prefer l1 l2 =
-         if l2=emptyLabel then l1
-         else l2 in
-      let restoreHiddenLabelT = argfunT (fun l p ->
-         addHiddenLabelT (prefer l (Sequent.label p)))
-      in
-      let label = Sequent.label p in
-      prefix_thenT
-      	(prefix_thenT
-      		(prefix_thenT (addHiddenLabelT emptyLabel)
-      				  		  tac1)
-      		(ifLabelPredT pred tac2 tac3))
-			(restoreHiddenLabelT label))
-
    let isEmptyOrMainLabel l =
       (l=emptyLabel) or (List.mem l main_labels)
 
@@ -410,22 +396,22 @@ struct
       (List.mem l predicate_labels)
 
    let prefix_thenMT tac1 tac2 =
-      thenIfLabelPredT isEmptyOrMainLabel tac1 tac2 idT
+      prefix_thenLocalLabelT tac1 (ifLabelPredT isEmptyOrMainLabel tac2 idT)
 
    let prefix_thenMElseT tac1 tac2 tac3 =
-      thenIfLabelPredT isEmptyOrMainLabel tac1 tac2 tac3
+      prefix_thenLocalLabelT tac1 (ifLabelPredT isEmptyOrMainLabel tac2 tac3)
 
    let prefix_thenAT tac1 tac2 =
-      thenIfLabelPredT isEmptyOrAuxLabel tac1 tac2 idT
+      prefix_thenLocalLabelT tac1 (ifLabelPredT isEmptyOrAuxLabel tac2 idT)
 
    let prefix_thenWT tac1 tac2 =
-      thenIfLabelPredT isWFLabel tac1 tac2 idT
+      prefix_thenLocalLabelT tac1 (ifWT tac2)
 
    let prefix_thenET tac1 tac2 =
-      thenIfLabelPredT isEqualityLabel tac1 tac2 idT
+      prefix_thenLocalLabelT tac1 (ifET tac2)
 
    let prefix_thenPT tac1 tac2 =
-      thenIfLabelPredT isPredicateLabel tac1 tac2 idT
+      prefix_thenLocalLabelT tac1 (ifPT tac2)
 
    let prefix_thenLabLT tac1 tacs = funT (fun p ->
       let prefer l1 l2 =

@@ -48,6 +48,9 @@ sig
    (* Postprocess the tactic *)
    val wrap : 'arg -> ('term, 'arg, 'extract) tactic -> ('term, 'arg, 'extract) tactic
 
+   (* Postprocess the tactic *)
+   val wrap_terms : ('term -> 'term) -> ('term, 'arg, 'extract) tactic -> ('term, 'arg, 'extract) tactic
+
    (* First operation that succeeds *)
    val first : ('term, 'arg, 'extract) tactic list -> ('term, 'arg, 'extract) tactic
 
