@@ -298,6 +298,7 @@ struct
          let rec format_hyps i =
             if i = len then () else
             begin
+               format_char buf '\n';
                format_int buf (i+1);
                format_char buf '.';
                format_pushm buf 1;
@@ -326,7 +327,6 @@ struct
                         end
                end;
                format_popm buf;
-               format_char buf '\n';
                format_hyps (succ i)
             end in
          let goals = seq.sequent_goals in
@@ -334,21 +334,25 @@ struct
          let rec format_goals i =
             if i = len then () else
             begin
+               format_char buf '\n';
                format_int buf (i+1);
                format_char buf '.';
-               format_pushm buf 1;
+               format_pushm buf 0;
                format_term buf (SeqGoal.get goals i);
                format_popm buf;
-               format_char buf '\n';
                format_goals (succ i)
             end
          in
-            format_string buf "Hyps:\n";
-            format_pushm buf 5;
+            format_string buf "Arg: ";
+            format_pushm buf 2;
+            format_term buf seq.sequent_args;
+            format_popm buf;
+            format_string buf "\nHyps:";
+            format_pushm buf 1;
             format_hyps 0;
             format_popm buf;
-            format_string buf "Goals:\n";
-            format_pushm buf 5;
+            format_string buf "\nGoals:";
+            format_pushm buf 0;
             format_goals 0;
             format_popm buf
       end else begin
