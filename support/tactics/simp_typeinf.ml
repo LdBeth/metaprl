@@ -141,15 +141,15 @@ type simp_typeinf_resource_info = term * simp_typeinf_comp
 let identity x = x
 
 let infer tbl =
-   let rec aux consts tenv eqs t =
+   let rec infer_term consts tenv eqs t =
       let inf =
          try snd (lookup tbl t) with
             Not_found ->
                raise (Invalid_argument "Simp_typeinf.infer: missing a default case")
       in
-         inf aux consts tenv eqs t
+         inf infer_term consts tenv eqs t
    in
-      aux
+      infer_term
 
 (*
  * The resource itself.
