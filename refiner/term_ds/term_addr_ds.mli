@@ -36,13 +36,7 @@ open Term_op_sig
 open Term_addr_sig
 open Term_man_sig
 
-type addr =
-   Subterm of int
- | ArgAddr
- | HypAddr of int
- | GoalAddr of int
- | Compose of addr * addr
- | Null
+type addr
 
 module TermAddr (**)
    (Term : TermDsSig with module TermTypes = TermType)
