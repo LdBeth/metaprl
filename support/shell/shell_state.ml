@@ -43,6 +43,7 @@ open Refiner.Refiner.TermMeta
 
 open Dform
 open Filter_type
+open Filter_util
 open Term_grammar
 
 open Shell_sig
@@ -163,7 +164,7 @@ let mk_var_contexts_null v i =
       raise (Failure "No context known for SO variables (need to specify contexts explicitly when not inside a rule")
 
 let default_saved_tactic =
-   let loc = 0, 0 in
+   let loc = dummy_loc in
       ("\"no saved tactic\"", <:expr< $str: "no saved tactic"$ >>)
 
 (*
