@@ -113,13 +113,13 @@ type dform_modes =
 (*
  * This is the info needed for each display form.
  *)
-type dform_info = {
-   dform_modes : dform_modes;
-   dform_pattern : term;
-   dform_options : dform_option list;
-   dform_print : dform_printer;
-   dform_name : string;
-}
+type dform_info =
+   { dform_modes : dform_modes;
+     dform_pattern : term;
+     dform_options : dform_option list;
+     dform_print : dform_printer;
+     dform_name : string;
+   }
 
 (*
  * The display database is just a table matching terms
@@ -131,6 +131,7 @@ type df_printer =
 
 type dform_item =
    { df_modes : dform_modes;
+     df_parens : bool;
      df_precedence : precedence;
      df_printer : df_printer;
      df_name : string;
@@ -158,28 +159,30 @@ let inherit_prec = new_prec ()
 (*
  * Display form installation.
  *)
-let rec process_options precedence parens = function
-   [] ->
-      if parens then
-         precedence
-      else
-         max_prec
- | h::t ->
-      match h with
-         DFormInheritPrec ->
-            process_options inherit_prec true t
-       | DFormPrec p ->
-            process_options p true t
-       | DFormParens ->
-            process_options precedence true t
+let rec process_options precedence parens options =
+   match options with
+      [] ->
+         parens, precedence
+    | h :: t ->
+         match h with
+            DFormInheritPrec ->
+               process_options inherit_prec true t
+          | DFormPrec p ->
+               process_options p parens t
+          | DFormParens ->
+               process_options precedence true t
 
 let add_dform tbl df =
-   begin match df.dform_modes with
-      AllModes -> ()
-    | ExceptModes l | Modes l ->
-         if List.mem "raw" l then raise (Invalid_argument("Dform.add_dform: raw mode is built-in and can not be mentioned"))
-   end;
-   let precedence = process_options min_prec false df.dform_options in
+   let () =
+      match df.dform_modes with
+         AllModes ->
+            ()
+       | ExceptModes l
+       | Modes l ->
+            if List.mem "raw" l then
+               raise (Invalid_argument("Dform.add_dform: raw mode is built-in and can not be mentioned"))
+   in
+   let parens, precedence = process_options min_prec false df.dform_options in
    let printer' =
       match df.dform_print with
          DFormExpansion e ->
@@ -187,12 +190,13 @@ let add_dform tbl df =
        | DFormPrinter f ->
             DFPrinter f
    in
-      add_item tbl df.dform_pattern {
-         df_modes = df.dform_modes;
-         df_name = df.dform_name;
-         df_precedence = precedence;
-         df_printer = printer';
-      }
+      add_item tbl df.dform_pattern (**)
+         { df_modes = df.dform_modes;
+           df_name = df.dform_name;
+           df_parens = parens;
+           df_precedence = precedence;
+           df_printer = printer';
+         }
 
 (*
  * Commands in initial base.
@@ -451,7 +455,7 @@ let mode_selector mode = function
 (*
  * Print a term to a buffer.
  *)
-let format_short_term (mode,table) shortener =
+let format_short_term (mode, table) shortener =
    (* Print a single term, ignoring lookup errors *)
    let rec print_term' pprec buf eq t =
       (* Convert a variable into a display_var *)
@@ -464,47 +468,60 @@ let format_short_term (mode,table) shortener =
                mk_term (mk_op dvar_opname [make_param (Var v)]) []
          else if is_so_var_term t then
             let v, conts, terms = dest_so_var t in
-               mk_term (mk_op dsovar_opname [make_param (Var v)])
-               [mk_simple_bterm (mk_xlist_term (List.map make_cont conts)); mk_simple_bterm (mk_xlist_term terms)]
+               mk_term (mk_op dsovar_opname [make_param (Var v)]) (**)
+                  [mk_simple_bterm (mk_xlist_term (List.map make_cont conts)); mk_simple_bterm (mk_xlist_term terms)]
          else
             t
       in
+
       (* Check for a display form entry *)
-      if mode = "raw" then raise Not_found;
+      let _ =
+         if mode = "raw" then
+            raise Not_found
+      in
+
+      (* Get the display form *)
       let items, df = lookup_rwi table (mode_selector mode) t in
       let name = df.df_name in
-      let pr, parenflag =
-         if df.df_precedence = inherit_prec then
+
+      (* Get precedence of this display form, and whether it should be parenthesized *)
+      let cprec = df.df_precedence in
+      let cprec, parenflag =
+         if cprec = inherit_prec then
             begin
                if !debug_dform then
                   eprintf "Dform %s: inherit_prec%t" df.df_name eflush;
                pprec, false
             end
+         else if eq = NOParens then
+            begin
+               if !debug_dform then
+                  eprintf "Dform %s: NOParens%t" name eflush;
+               cprec, false
+            end
+         else if df.df_parens then
+            let parens =
+               match get_prec pprec df.df_precedence with
+                  NoRelation ->
+                     if !debug_dform then
+                        eprintf "Dform %s: NoRelation%t" name eflush;
+                     true
+                | LTRelation ->
+                     if !debug_dform then
+                        eprintf "Dform %s: LtRelation%t" name eflush;
+                     false
+                | EQRelation ->
+                     if !debug_dform then
+                        eprintf "Dform %s: EqRelation%t" name eflush;
+                     eq = LEParens
+                | GTRelation ->
+                     if !debug_dform then
+                        eprintf "Dform %s: GTRelation%t" name eflush;
+                     true
+            in
+               cprec, parens
          else
-            df.df_precedence, (if eq = NOParens or get_prec df.df_precedence max_prec = EQRelation then
-                     begin
-                        if !debug_dform then
-                           eprintf "Dform %s: NOParens%t" name eflush;
-                        false
-                     end
-                  else
-                     match get_prec pprec df.df_precedence with
-                        NoRelation ->
-                           if !debug_dform then
-                              eprintf "Dform %s: NoRelation%t" name eflush;
-                           true
-                      | LTRelation ->
-                           if !debug_dform then
-                              eprintf "Dform %s: LtRelation%t" name eflush;
-                           false
-                      | EQRelation ->
-                           if !debug_dform then
-                              eprintf "Dform %s: EqRelation%t" name eflush;
-                           eq = LEParens
-                      | GTRelation ->
-                           if !debug_dform then
-                              eprintf "Dform %s: GTRelation%t" name eflush;
-                           true)
+            cprec, false
       in
          if parenflag then
             format_string buf "(";
@@ -516,28 +533,27 @@ let format_short_term (mode,table) shortener =
                      let entry =
                         { dform_term = t;
                           dform_items = items;
-                          dform_printer = print_term pr;
+                          dform_printer = print_term cprec;
                           dform_buffer = buf
                         }
                      in
                         if !debug_dform then
                            eprintf "Dform fun %s: %s%t" name (short_string_of_term t) eflush;
                         f entry
-                | DFExpansion (r) ->
+                | DFExpansion r ->
                      begin
                         match apply_rewrite r empty_args t [] with
                            [t] ->
                               if !debug_dform then
                                  eprintf "Dform %s%t" name eflush;
-                              print_entry pr buf eq t
+                              print_entry cprec buf eq t
                          | _ ->
                               raise (Invalid_argument ("Dform.format_short_term"))
                      end
             with
-               exn when (match exn with
-                            Invalid_argument _ -> false
-                          | _ -> true) ->
-                  raise (Invalid_argument ("Dform " ^ name ^ " raised an exception when trying to print " ^ short_string_of_term t ^ ": " ^ Printexc.to_string exn))
+               exn when (match exn with Invalid_argument _ -> false | _ -> true) ->
+                  raise (Invalid_argument ("Dform " ^ name ^ " raised an exception when trying to print "
+                                           ^ short_string_of_term t ^ ": " ^ Printexc.to_string exn))
          end;
 
          if parenflag then

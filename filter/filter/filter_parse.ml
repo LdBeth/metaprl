@@ -449,7 +449,7 @@ struct
        | MLAxiom { mlterm_name = name }
        | GramUpd (Infix name | Suffix name)
        | Definition { opdef_name = name } ->
-       (* | DForm { dform_name = name } *)
+       (* | DForm{ dform_name = name } *)
             if StringSet.mem proc.names name then
                raise(Invalid_argument ("Filter_parse.add_command: duplicate name " ^ name));
             proc.names <- StringSet.add proc.names name
@@ -719,19 +719,18 @@ struct
 
    let get_dform_options proc loc options =
       let rec compile_options = function
-         hd::tl ->
+         hd :: tl ->
             begin
                let modes, except_modes, options = compile_options tl in
                   match Opname.dest_opname (opname_of_term hd) with
-                     "parens" :: _
-                   | "inherit" :: _ ->
+                     "parens" :: _ ->
                         modes, except_modes, DFormParens :: options
                    | "prec" :: _ ->
                         modes, except_modes, (DFormPrec (get_string_param loc hd)) :: options
                    | "mode" :: _ ->
-                        (get_dfmode loc hd)::modes, except_modes, options
+                        get_dfmode loc hd :: modes, except_modes, options
                    | "except_mode" :: _ ->
-                        modes, (get_dfmode loc hd)::except_modes, options
+                        modes, get_dfmode loc hd :: except_modes, options
                    | "internal" :: _ ->
                         (*
                          * XXX: TODO: Currently the "internal" annotations are simply silently ignored.
