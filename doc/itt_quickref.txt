@@ -662,6 +662,10 @@ then (nthHypT i) succeeds with no subgoals.
 If the i'th hypothesis is << x: 'A >>, and x does not appear free in
 the rest of the sequent, then (thinT i) deletes the hypothesis.
 
+* nthAssumT : int -> tactic
+A tactic that succeeds if the goal sequent matches the given
+hypothesis sequent (after possible thinning).
+
 * thinAllT : int -> int -> tactic
 (thinAllT i j) deletes the hypotheses numbered i through j
 (inclusive).
@@ -708,6 +712,7 @@ from << x: 'A >> to << x: t >>, and adds an extra subgoal
 This file adds to the trivialT tactic.
 trivialT can solve goals with a hypothesis << x: 'A >> and a goal
 << 'A >>.
+trivialT can now do thinning when matching agains an assumption.
 
 ----------------------------------------
 itt_rfun:

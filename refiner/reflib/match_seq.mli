@@ -1,5 +1,5 @@
 (*
- * Tried to match a pair of hypothesis lists 
+ * Tries to match hypothesys lists in a pair of sequents
  *
  * ----------------------------------------------------------------
  *
@@ -11,26 +11,32 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Alexey Nogin, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * Author: Alexey Nogin
+ *
+ * Author: Alexey Nogin <nogin@cs.cornell.edu>
  *
  *)
 
 open Refiner.Refiner
 open TermType
 
-val match_hyps: term array -> term array -> int option array
+(* match_hyps big small
+     will try to match all the hypotheses in the small sequent
+     agains hypotheses of the big one. If succeeds, will return
+     an option array telling which hyp of small matches each hyp of
+     large (numbering starts with 0).
+   If fails, raises RefineError *)
+val match_hyps: esequent -> esequent -> int option array
