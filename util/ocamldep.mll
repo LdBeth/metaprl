@@ -17,12 +17,16 @@ module StringSet =
 
 let free_structures = ref StringSet.empty
 let prl_structures = ref StringSet.empty
+let includes = ref StringSet.empty
 
 let add_structure name =
   free_structures := StringSet.add name !free_structures
 
 let add_prl_structure name =
    prl_structures := StringSet.add name !prl_structures
+
+let add_include name =
+   includes := StringSet.add name !includes
 
 (* For nested comments *)
 
@@ -79,6 +83,7 @@ let modname = ['A'-'Z' '\192'-'\214' '\216'-'\222' ]
                 '\'' '0'-'9' ]) *
 let source_quote = "<:ext<"
 let quotestart = '<' ':' (['a'-'z'])+ '<'
+let filename = (['A'-'Z' 'a'-'z' '_' '-' '.' '0'-'9' '/'])*
 
 rule main = parse
     "open" white+ | "include" white+
@@ -90,6 +95,8 @@ rule main = parse
       { contains_topval := true; main lexbuf }
   | white "prim" white+ | white "prim_rw" white+ | white "interactive" white+ | white "interactive_rw" white+ | white "derived" white+
       { contains_topval := true; contains_rules := true ; main lexbuf }
+  | "INCLUDE" white+
+      { include_name lexbuf; main lexbuf }
   | modname '.'
       { let s = Lexing.lexeme lexbuf in
         add_structure(String.sub s 0 (String.length s - 1));
@@ -104,6 +111,7 @@ rule main = parse
   | "'" '\\' ['\\' '\'' 'n' 't' 'b' 'r'] "'"
   | "'" '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
     { main lexbuf }
+
   | eof
       { () }
   | _
@@ -118,6 +126,14 @@ and struct_name = parse
 and prl_struct_name = parse
     modname
       { add_prl_structure(Lexing.lexeme lexbuf) }
+  | ""
+      { () }
+
+and include_name = parse
+    '"' filename '"'
+      { let s = Lexing.lexeme lexbuf in
+        add_include (String.sub s 1 (String.length s - 2))
+      }
   | ""
       { () }
 
@@ -225,6 +241,12 @@ let find_dependency_cmo_cmx modname (cmo_deps,cmx_deps) =
     | None, None ->
          cmo_deps, cmx_deps
 
+let find_include name deps =
+   try
+      (find_file name [""; ".mlh"]) :: deps
+   with Not_found ->
+      deps
+
 let (depends_on, escaped_eol) =
   match Sys.os_type with
   | "Unix" | "Win32" | "Cygwin" -> (": ", "\\\n    ")
@@ -267,6 +289,7 @@ let file_dependencies source_file =
     contains_source_quot := false;
     free_structures := StringSet.empty;
     prl_structures := StringSet.empty;
+    includes := StringSet.empty;
     let ic =
        if source_file != "-" then
           open_in source_file
@@ -288,6 +311,7 @@ let file_dependencies source_file =
       List.iter add_structure topval_names;
     if !prl_flag && !contains_rules then
       List.iter add_structure rule_names;
+    let includes = StringSet.fold find_include !includes [] in
     if Filename.check_suffix source_file ".ml" then begin
       let basename = Filename.chop_suffix source_file ".ml" in
       let init_deps,init_ppo_dep =
@@ -314,13 +338,19 @@ let file_dependencies source_file =
                (extra_deps @ cmo_deps), (extra_deps @ cmx_deps)
          else cmo_deps, cmx_deps
       in
+      let ppo_deps, cmo_deps, cmx_deps =
+         if !prl_flag then
+            (includes @ ppo_deps), cmo_deps, cmx_deps
+         else
+            ppo_deps, (includes @ cmo_deps), (includes @ cmx_deps)
+      in
       print_dependencies (basename ^ ".cmo") cmo_deps;
       if !prl_flag then print_dependencies (basename ^ ".ppo") ppo_deps;
       print_dependencies (basename ^ ".cmx") cmx_deps
     end else
     if Filename.check_suffix source_file ".mli" then begin
       let basename = Filename.chop_suffix source_file ".mli" in
-      print_dependencies (basename ^ ".cmi") (StringSet.fold find_dependency_cmi !free_structures []);
+      print_dependencies (basename ^ ".cmi") (StringSet.fold find_dependency_cmi !free_structures includes);
       if !omake_flag && !prl_flag then
          print_dependencies (basename ^ ".cmiz") (StringSet.fold find_dependency_cmiz !prl_structures [])
     end else
