@@ -689,7 +689,7 @@ let rec chdir_full parse_arg shell force_flag need_shell verbose (new_fs, new_su
          exn ->
             if need_mount then
                begin
-                  eprintf "Warning: chdir partially successful%t" eflush;
+                  if verbose then eprintf "Warning: chdir partially successful%t" eflush;
                   shell.shell_subdir <- []
                end;
             raise exn
@@ -704,7 +704,14 @@ let chdir parse_arg shell need_shell verbose path =
  * Refresh the current directory.
  *)
 let refresh parse_arg shell =
-   chdir_full parse_arg shell true true true (shell.shell_fs, shell.shell_subdir)
+   try
+      chdir_full parse_arg shell true true true (shell.shell_fs, shell.shell_subdir)
+   with _ -> begin
+      try
+         chdir_full parse_arg shell true true true (shell.shell_fs, [])
+      with _ ->
+         chdir_full parse_arg shell true true true (DirRoot, [])
+   end
 
 let pwd shell =
    string_of_dir (shell.shell_fs, shell.shell_subdir)
