@@ -47,7 +47,7 @@ endif
 #
 # Options for simp and verb variations
 #
-CPPFLAGS=-D$(REFINER)_EXN -DSEQ_SET=$(SEQ_SET)_linear_set
+PPFLAGS=-D$(REFINER)_EXN -DSEQ_SET=$(SEQ_SET)_linear_set
 
 #
 # Parameters

@@ -65,9 +65,12 @@ ifndef CAMLP4N
 	CAMLP4N = $(ROOT)/lib/camlp4n$(EXE)
 endif
 
+CAMLP4MACRO = camlp4o $(ROOT)/util/macro.cmo $(PPFLAGS)
+
 #
 # This works for some C compiler, edit if it does not work for yours
 #
+CPPFLAGS := $(PPFLAGS)
 ifeq ($(CC),gcc)
    CCDEPEND=-MM
    CPPFLAGS := -traditional -nostdinc -nostdinc++ $(CPPFLAGS) -xc
