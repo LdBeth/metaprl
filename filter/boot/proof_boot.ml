@@ -2377,192 +2377,6 @@ struct
       fold_proof postf proof (expand_ext dforms proof.pf_node proof.pf_node)
 
    (************************************************************************
-    * IO_PROOFS                                                            *
-    ************************************************************************)
-
-   (*
-    * An IO step does not save the tactic,
-    * and saves only part of the goal.
-    *)
-   type old_attribute =
-      OldTermArg of term_io
-    | OldTypeArg of term_io
-    | OldIntArg of int
-    | OldBoolArg of bool
-    | OldSubstArg of term_io
-
-   type old_attributes = (string * old_attribute) list
-
-   type old_aterm =
-      { old_aterm_goal  : term_io;                       (* Goal of this step *)
-        old_aterm_hyps  : term_io list;                  (* Assumptions in this proof *)
-        old_aterm_label : string;                        (* Label describes the step in the proof *)
-        old_aterm_args  : old_attributes                 (* Proof annotations *)
-      }
-
-   type old_proof_step =
-      { old_step_goal : old_aterm;
-        old_step_subgoals : old_aterm list;
-        old_step_ast : MLast.expr;                       (* Parsed expression *)
-        old_step_text : string                           (* String representation of text *)
-      }
-
-   (*
-    * A proof is a recursive tree of steps.
-    * The status is redundant, except for "asserted" proofs.
-    * Asserted proofs are incomplete, but they are marked as complete.
-    *)
-   type old_proof =
-      { old_proof_status : old_proof_status;
-        old_proof_step : old_proof_node;
-        old_proof_children : old_proof_child list;
-        old_proof_extras : old_proof list
-      }
-
-   and old_proof_status =
-      OldStatusBad
-    | OldStatusPartial
-    | OldStatusAsserted
-    | OldStatusComplete
-
-   and old_proof_node =
-      OldProofStep of old_proof_step
-    | OldProofNode of old_proof
-
-   and old_proof_child =
-      OldChildGoal of old_aterm
-    | OldChildProof of old_proof
-
-   (*
-    * Identity needed for empty steps.
-    *)
-   let id_text = "idT"
-   let id_expr =
-      let loc = 0, 0 in
-      let expr =
-         (<:expr< $lid:id_text$ >>)
-      in
-         (fun () -> expr)
-   let id_tac () = idT
-
-   (*
-    * Build a proof from an IO proof.
-    *)
-   let status_of_io_status = function
-      OldStatusBad ->
-         StatusBad
-    | OldStatusPartial
-    | OldStatusAsserted ->
-         StatusPartial
-    | OldStatusComplete ->
-         StatusComplete
-
-   let proof_of_old_io_proof raw_attributes sentinal parse eval proof =
-      let rec make_proof
-          { old_proof_status = status;
-            old_proof_step = step;
-            old_proof_children = children;
-            old_proof_extras = extras
-          } =
-         let status = status_of_io_status status in
-         let children = List.map make_child_node children in
-         let extras = List.map make_proof extras in
-            match make_node_item step with
-               RuleBox { rule_expr = expr;
-                         rule_string = text;
-                         rule_tactic = tac;
-                         rule_extract = ext
-               } ->
-                  RuleBox { rule_status = LazyStatusDelayed;
-                            rule_expr = expr;
-                            rule_string = text;
-                            rule_tactic = tac;
-                            rule_extract_normalized = false;
-                            rule_extract = ext;
-                            rule_subgoals = children;
-                            rule_leaves = LazyLeavesDelayed;
-                            rule_extras = extras
-                  }
-             | node ->
-                  RuleBox { rule_status = LazyStatusDelayed;
-                            rule_expr = id_expr;
-                            rule_string = id_text;
-                            rule_tactic = id_tac;
-                            rule_extract_normalized = false;
-                            rule_extract = node;
-                            rule_subgoals = children;
-                            rule_leaves = LazyLeavesDelayed;
-                            rule_extras = extras
-                  }
-
-      and make_node_item = function
-         OldProofStep step ->
-            make_proof_step step
-       | OldProofNode proof ->
-            make_proof proof
-
-      and make_child_node = function
-         OldChildGoal goal ->
-            Goal (make_tactic_arg goal)
-       | OldChildProof proof ->
-            make_proof proof
-
-      and make_proof_step
-          { old_step_goal = goal;
-            old_step_subgoals = subgoals;
-            old_step_ast = ast;
-            old_step_text = text
-          } =
-         let goal = make_tactic_arg goal in
-         let subgoals = List.map make_tactic_arg subgoals in
-            RuleBox { rule_status = LazyStatusDelayed;
-                      rule_expr = (fun () -> ast);
-                      rule_string = text;
-                      rule_tactic = (fun () -> eval ast);
-                      rule_extract_normalized = true;
-                      rule_extract = Unjustified (goal, subgoals);
-                      rule_subgoals = List.map (fun t -> Goal t) subgoals;
-                      rule_leaves = LazyLeavesDelayed;
-                      rule_extras = []
-            }
-
-      and make_tactic_arg
-          { old_aterm_goal = goal;
-            old_aterm_hyps = hyps;
-            old_aterm_label = label;
-            old_aterm_args = args
-          } =
-         let goal = Term_io.normalize_term goal in
-         let hyps = List.map Term_io.normalize_term hyps in
-         let args = make_raw_attributes args in
-            Tactic.create sentinal label (mk_msequent goal hyps) args
-
-      and make_raw_attributes = function
-         [] ->
-            raw_attributes
-       | (name, arg) :: tl ->
-            let arg =
-               match arg with
-                  OldTermArg t ->
-                     Tactic.term_attribute name (Term_io.normalize_term t)
-                | OldTypeArg t ->
-                     Tactic.type_attribute name (Term_io.normalize_term t)
-                | OldIntArg i ->
-                     Tactic.int_attribute name i
-                | OldBoolArg b ->
-                     Tactic.bool_attribute name b
-                | OldSubstArg t ->
-                     Tactic.subst_attribute name (Term_io.normalize_term t)
-            in
-               arg :: make_raw_attributes tl
-      in
-      let node = make_proof proof in
-         { pf_root = node;
-           pf_address = [];
-           pf_node = node
-         }
-
-   (************************************************************************
     * CONVERSIONS                                                          *
     ************************************************************************)
 
@@ -2901,20 +2715,8 @@ struct
    (*
     * HACK!
     * We hack the recognition of io_proof type for now.
-    * An old io_proof (as defined in io_proof_type) always
-    * has 4 fields, and an integer in the first field.  A term_io
-    * proof has two fields, and the tag is always zero.
+    * A term_io proof has two fields, and the tag is always zero.
     *)
-   let old_io_proof_hack proof =
-      let t = Obj.repr proof in
-         if Obj.size t = 4 && Obj.is_block (Obj.field t 0) = false then
-            begin
-               eprintf "Proof_boot: converting old style proof%t" eflush;
-               true
-            end
-         else
-            false
-
    let term_io_proof_hack proof =
       let t = Obj.repr proof in
          if Obj.size t = 2 && Obj.tag t = 0 then
@@ -2932,10 +2734,7 @@ struct
       let eval expr =
          raise (Invalid_argument "Proof_boot.proof_hack.eval")
       in
-         if old_io_proof_hack proof then
-            let proof = proof_of_old_io_proof [] Tactic.null_sentinal parse eval ((Obj.magic proof) : old_proof) in
-               io_proof_of_proof true parse eval proof
-         else if term_io_proof_hack proof then
+         if term_io_proof_hack proof then
             let proof = ProofTerm_io.of_term [] Tactic.null_sentinal parse eval ((Obj.magic proof) : term_io) in
                io_proof_of_proof true parse eval proof
          else
