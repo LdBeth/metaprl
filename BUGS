@@ -232,12 +232,9 @@ assumptions) are currently silently ignored.
 
 RULES & REWRITES
 
-6.1) reduceEta is too strong
-     should be moved to a new module not included in Itt_theory.
+6.1) Fixed
 
-6.2) (Confirmed on 1999.09.27 by kopylov and nogin)
-The rule interactive bunionElimination in the theory itt_bunion is not correct.
-(This is a result of non-understanding hidden hypothesis)
+6.2) Fixed
 
 6.3) (Formulated by krupski and confirmed by nogin - 2000.05.12)
 After the membership rule is postulated, the corresponding ext rule can often
@@ -255,11 +252,9 @@ for rules with assumptions. May be it would be a good idea to create one.
 Unfortunatelly, we were not (yet) able to prove productElimination. We should
 think whether it's true and if not, then define dprod differently.
 
-6.5) Itt_equal.equality_squashElimination and Itt_equal.type_squashElimination
-can be made "interactive" instead of "prim". However for that we may need to
-rearrange rules between the itt_equal and itt_struct theories since currently
-itt_struct depends on itt_equal and we may need the Itt_struct.introduction
-rule to be able to prove *_squashElimination.
+6.5) Fixed
+
+6.6) See Itt_bugs.bug1
 
 BUILD SYSTEM
 
