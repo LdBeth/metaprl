@@ -351,11 +351,13 @@ OCAML_LIB_FLAGS += -linkall
 if $(SSL_ENABLED)
     if $(equal $(OSTYPE), Win32)
         OCAML_LINK_FLAGS += -cclib c:/OpenSSL/lib/VC/ssleay32.lib -cclib c:/OpenSSL/lib/VC/libeay32.lib
-        CFLAGS += /DSSL_ENABLED c:/OpenSSL/include
+        CFLAGS += /DSSL_ENABLED
+	INCLUDES += c:/OpenSSL/include
         export
     else
         OCAML_LINK_FLAGS += -cclib -lcrypto -cclib -lssl
-        CFLAGS += -DSSL_ENABLED /usr/kerberos/include
+        CFLAGS += -DSSL_ENABLED
+	INCLUDES += /usr/kerberos/include
         export
 
     export
