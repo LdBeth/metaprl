@@ -25,13 +25,18 @@ cd "test.test";;
 refine rw (higherC reduceFact) 0;;
 down 0;;
 
+(*
 refine rw (repeatC (higherC redexC)) 0;;
 down 0;;
 
 refine dT 0;;
+*)
 
 (*
  * $Log$
+ * Revision 1.4  1998/06/12 20:46:02  jyh
+ * Switched to term_ds.
+ *
  * Revision 1.3  1998/06/12 18:36:18  jyh
  * Working factorial proof.
  *
