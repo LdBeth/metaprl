@@ -231,7 +231,7 @@ let is_ty_sequent_term =
 (*
  * Type constraints.
  *)
-let constrain_opname = mk_perv_opname "constrain"
+let constrain_opname = mk_perv_opname "ty_constrain"
 
 let is_ty_constrain_term =
    is_dep0_dep0_term constrain_opname
@@ -561,7 +561,8 @@ let rec wrap_unify_error subst info err =
     | UnifyType ty ->
          TermErrorError (subst_type_term subst ty, err)
     | UnifyTerm t ->
-         TermErrorError (t, err)
+         StringErrorError ("while typechecking",
+         TermErrorError (subst_term subst t, err))
     | UnifyTermType2 (t, ty1, ty2) ->
          TermErrorError (t,
          StringErrorError ("has type",
@@ -585,31 +586,28 @@ let rec wrap_unify_error subst info err =
 let raise_type2_error subst info ty1 ty2 =
    let err =
       StringErrorError ("type",
-      TermErrorError (term_of_ty ty1,
+      TermErrorError (subst_type_term subst ty1,
       StringErrorError ("is not compatible with",
-      TermError (term_of_ty ty2))))
+      TermError (subst_type_term subst ty2))))
    in
       raise (RefineError ("type error", wrap_unify_error subst info err))
 
 let raise_term2_error debug subst info t1 t2 =
-   let t1 = subst_term subst t1 in
-   let t2 = subst_term subst t2 in
    let err =
       StringErrorError (debug,
       StringErrorError ("term type",
-      TermErrorError (t1,
+      TermErrorError (subst_term subst t1,
       StringErrorError ("is not compatible with",
-      TermError t2))))
+      TermError (subst_term subst t2)))))
    in
       raise (RefineError ("type error", wrap_unify_error subst info err))
 
 let raise_term_type_error subst info t ty =
-   let t = subst_term subst t in
    let err =
       StringErrorError ("has term type",
-      TermErrorError (t,
+      TermErrorError (subst_term subst t,
       StringErrorError ("but is used with type",
-      TermError (term_of_ty ty))))
+      TermError (subst_type_term subst ty))))
    in
       raise (RefineError ("type error", wrap_unify_error subst info err))
 
@@ -733,14 +731,22 @@ let rec free_vars_type fv ty =
 and free_vars_type_list fv tyl =
    List.fold_left free_vars_type fv tyl
 
-let free_vars_subst senv =
+let free_vars_subst venv senv =
    let subst = senv.senv_subst in
+   let fv = SymbolSet.empty in
    let fv =
       SymbolTable.fold (fun fv _ ty ->
-            free_vars_type fv ty) SymbolSet.empty subst
+            free_vars_type fv ty) fv venv
    in
+   let fv =
+      SymbolTable.fold (fun fv _ ty ->
+            free_vars_type fv ty) fv subst
+   in
+   let fv =
       SymbolTable.fold (fun fv v _ ->
             SymbolSet.remove fv v) fv subst
+   in
+      fv
 
 (*
  * Substitute for a variable in the subst.
@@ -796,7 +802,7 @@ let instantiate_subst venv subst =
          in
          let subst = subst_add_var subst v1 (TypeTerm t2) in
          let subst = subst_add_type subst v2 ty_kind in
-            subst) subst (free_vars_subst subst)
+            subst) subst (free_vars_subst venv subst)
 
 (************************************************
  * Standardize.
@@ -1510,10 +1516,13 @@ let infer_term_type tenv venv subst t ty =
 (*
  * Check that each term in the list has a type.
  *)
-let check_term_list tenv venv subst tl =
-   List.fold_left (fun subst t ->
-         let subst, _ = infer_term tenv venv subst t in
-            subst) subst tl
+let check_arg_list tenv venv subst args =
+   List.fold_left (fun subst arg ->
+         if is_ty_constrain_term arg then
+            let e, ty = dest_ty_constrain_term arg in
+               infer_term_type tenv venv subst e (TypeTerm ty)
+         else
+            fst (infer_term tenv venv subst arg)) subst args
 
 (************************************************
  * Infering rewrites and rules.
@@ -1527,18 +1536,6 @@ let rec new_ty_list tyl i =
       tyl
    else
       new_ty_list (TypeVar (new_symbol_string "arg") :: tyl) (pred i)
-
-(*
- * BUG: jyh: we currently have a problem with context arguments.
- * Just drop all variables from the arguments.  We don't really care
- * about them.
- *)
-let filter_args args =
-   List.fold_left (fun args arg ->
-         if is_var_term arg || is_so_var_term arg || is_context_term arg then
-            args
-         else
-            arg :: args) [] args
 
 (*
  * Construct the environment from the terms.
@@ -1572,19 +1569,32 @@ let venv_of_terms tl =
                venv_add_var venv v ty) venv (context_vars_info_list SymbolTable.empty tl)
    in
       venv
+
 (*
  * Get the initial env from the mterm.
  *)
 let venv_of_mterm mt args =
    let venv = venv_empty in
 
-   let fv = SymbolSet.union (free_vars_terms args) (free_vars_mterm mt) in
+   (* Filter out arguments that are context vars *)
+   let cvars = TermMeta.context_vars_info SymbolTable.empty mt in
+   let args =
+      List.fold_left (fun args arg ->
+            if is_fso_var_term arg && SymbolTable.mem cvars (dest_fso_var arg) then
+               args
+            else
+               arg :: args) [] args
+   in
+
+   (* Get additional info about the vars *)
+   let fv = SymbolSet.union (free_vars_mterm mt) (free_vars_terms args) in
+   let so_vars = TermMeta.so_vars_info (so_vars_info_list SymbolTable.empty args) mt in
+
+   (* Add type for all the vars *)
    let venv =
       SymbolSet.fold (fun venv v ->
             venv_add_var venv v (TypeVar (new_symbol v))) venv fv
    in
-
-   let so_vars = TermMeta.so_vars_info (so_vars_info_list SymbolTable.empty args) mt in
    let venv =
       SymbolTable.fold (fun venv v (carity, arity) ->
             let ty =
@@ -1592,8 +1602,6 @@ let venv_of_mterm mt args =
             in
                venv_add_var venv v ty) venv so_vars
    in
-
-   let cvars = TermMeta.context_vars_info (context_vars_info_list SymbolTable.empty args) mt in
    let venv =
       SymbolTable.fold (fun venv v (seq_context, carity, arity) ->
             let ty_cvars = new_ty_list [] carity in
@@ -1609,17 +1617,16 @@ let venv_of_mterm mt args =
             in
                venv_add_var venv v ty) venv cvars
    in
-      venv
+      args, venv
 
 (*
  * Check a rule.
  *)
 let check_rule tenv mt args =
-   let args = filter_args args in
-   let venv = venv_of_mterm mt args in
+   let args, venv = venv_of_mterm mt args in
    let subst = new_subst Strict in
-   let subst = check_term_list tenv venv subst args in
    let subgoals, goal = unzip_mfunction mt in
+   let subst = check_arg_list tenv venv subst args in
 
    (* The goal must be a judgment *)
    let subst = infer_term_type tenv venv subst goal ty_judgment in
@@ -1630,11 +1637,15 @@ let check_rule tenv mt args =
    let subst =
       List.fold_left (fun subst (_, ext, subgoal) ->
             let subst = infer_term_type tenv venv subst subgoal ty_judgment in
+               (*
+                * BUG: jyh: ignore extracts for now.
                match ext with
                   Some t ->
                      infer_term_type tenv venv subst t ty_judgment
                 | None ->
-                     subst) subst subgoals
+                     subst
+                *)
+               subst) subst subgoals
    in
    let _ = solve_constraints tenv venv subst in
       ()
@@ -1643,10 +1654,9 @@ let check_rule tenv mt args =
  * Get the type of a rewrite.
  *)
 let infer_rewrite tenv mt args =
-   let args = filter_args args in
-   let venv = venv_of_mterm mt args in
+   let args, venv = venv_of_mterm mt args in
    let subst = new_subst Strict in
-   let subst = check_term_list tenv venv subst args in
+   let subst = check_arg_list tenv venv subst args in
    let subgoals, redex, contractum = unzip_mrewrite mt in
 
    (* Verify the rewrite in the reverse direction *)
@@ -1661,6 +1671,12 @@ let infer_rewrite tenv mt args =
    let subst, ty1 = infer_term tenv venv subst redex in
    let venv, subst = solve_constraints tenv venv subst in
    let subst = instantiate_subst venv subst in
+   let () =
+      if !debug_infer then
+         eprintf "@[<v 3>infer_rewrite2:@ %s@ %s@]@." (**)
+            (string_of_term redex)
+            (string_of_term (subst_type_term subst ty1))
+   in
 
    (* The contractum must be a subtype of the redex *)
    let subst, ty2 = infer_term tenv venv subst contractum in
@@ -1706,10 +1722,9 @@ let check_dform tenv t form =
  * There is no effort to match the types.
  *)
 let check_iform tenv mt args =
-   let args = filter_args args in
-   let venv = venv_of_mterm mt args in
+   let args, venv = venv_of_mterm mt args in
    let subst = new_subst Relaxed in
-   let subst = check_term_list tenv venv subst args in
+   let subst = check_arg_list tenv venv subst args in
    let subgoals, redex, contractum = unzip_mrewrite mt in
 
    (* It is ok if the types change *)
@@ -1763,6 +1778,8 @@ let erase_top_term t =
       fst (dest_ty_constrain_term t)
    else
       t
+
+let erase_arg_term = erase_top_term
 
 let erase_term t =
    map_up erase_top_term t

@@ -211,13 +211,13 @@ struct
       let mt, args = Filter_grammar.apply_iforms_mterm mt args in
       let mt, args, f = mterms_of_parsed_mterms mt args in
          check_rule loc mt args;
-         mt, args, f
+         mt, List.map erase_arg_term args, f
 
    let parse_rewrite loc mt args =
       let mt, args = Filter_grammar.apply_iforms_mterm mt args in
       let mt, args, f = mterms_of_parsed_mterms mt args in
       let _ = infer_rewrite loc mt args in
-         mt, args, f
+         mt, List.map erase_arg_term args, f
 
    let parse_type_rewrite loc redex contractum =
       let redex = Filter_grammar.apply_iforms redex in
@@ -283,6 +283,9 @@ struct
       let t = Filter_grammar.apply_iforms t in
       let t = term_of_parsed_term t in
          erase_term t
+
+   let quoted_term_of_parsed_term _ t =
+      term_of_parsed_term t
 
    (*
     * Parameterize declares over default types.

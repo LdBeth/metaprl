@@ -1314,7 +1314,7 @@ let parse_quote loc quote token_type bvar_type subterm_type term_type =
 
 (* Convert the term in the quotation *)
 let parse_quote_term loc quote =
-   { quote with ty_term = unchecked_term_of_parsed_term quote.ty_term }
+   { quote with ty_term = quoted_term_of_parsed_term loc quote.ty_term }
 
 (* For type definitions, the default type is Ty *)
 let parse_declare_term loc quote =

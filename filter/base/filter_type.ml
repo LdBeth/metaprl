@@ -441,6 +441,9 @@ sig
    (* Bypass the type checker, but do parsing *)
    val unchecked_term_of_parsed_term : parsed_term -> term
 
+   (* Bypass the type checker, the iforms, but do parsing *)
+   val quoted_term_of_parsed_term : MLast.loc -> parsed_term -> term
+
    (* Bypass the parser, but do typechecking *)
    val quote_term_of_parsed_term : MLast.loc ->
       term ->           (* token type *)

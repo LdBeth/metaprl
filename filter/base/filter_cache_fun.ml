@@ -394,7 +394,9 @@ struct
          [modname] ->
             (* If only one name left, it should name a term *)
             let rec search = function
-               (DeclareTerm { ty_opname = opname }, _) :: tl
+               (DeclareTypeClass (opname, _, _), _) :: tl
+             | (DeclareType ({ ty_opname = opname }, _), _) :: tl
+             | (DeclareTerm { ty_opname = opname }, _) :: tl
              | (DefineTerm ({ ty_opname = opname }, _), _) :: tl
                when fst (dst_opname opname) = modname ->
                   modname :: path
@@ -442,6 +444,9 @@ struct
     * Expand the summary across all the opened modules.
     * Search for the head module in the list of modules, and
     * if that fails, search for the module in all submodules.
+    *
+    * XXX: jyh: isn't this incredibly expensive?
+    * We re-unmarshal the signature every time we expand the path!?
     *)
    let expand_path cache path =
       if !debug_filter_cache || !debug_filter_path then
@@ -524,7 +529,7 @@ struct
                   let path =
                      try expand_path cache names with
                         Not_found ->
-                           raise (Failure ("no object with name: " ^ (string_of_opname_list names)))
+                           raise (Failure ("Filter_cache_fun.mk_opname: no object with name: " ^ (string_of_opname_list names)))
                   in
                   let opname = make_opname (List.rev path) in
                   let () =
@@ -600,9 +605,9 @@ struct
    (*
     * Check that the shape is never seen before.
     *)
-   let check_redeclaration watch cache shape =
+   let check_redeclaration watch cache shape t =
       if ShapeSet.mem cache.shapes shape then
-         raise (Failure ("Filter_cache_fun.check_redeclaration: redefining shape " ^ string_of_shape shape));
+         raise (Failure ("Filter_cache_fun.check_redeclaration: redefining term " ^ SimplePrint.string_of_term t));
       if watch then
          cache.shapes <- ShapeSet.add cache.shapes shape
 
@@ -698,7 +703,7 @@ struct
          }
       in
          (* Make sure never seen before *)
-         check_redeclaration watch cache current_shape;
+         check_redeclaration watch cache current_shape current_term;
 
          (* Make sure the type is a typeclass *)
          check_is_typeclass cache current_type;
@@ -737,7 +742,7 @@ struct
       let current_name = fst (dst_opname current_opname) in
       let current_op_shape = op_shape_of_term current_name current_term in
          (* Check that the term has never been defined before *)
-         check_redeclaration watch cache current_shape;
+         check_redeclaration watch cache current_shape current_term;
 
          (* Check that the term is a typeclass *)
          check_is_typeclass_term cache current_class.ty_type;
@@ -812,7 +817,7 @@ struct
       let current_name = fst (dst_opname current_opname) in
       let current_op_shape = op_shape_of_term_kind current_name current_kind current_term in
          (* Check the the term has nver been seen before *)
-         check_redeclaration watch cache current_shape;
+         check_redeclaration watch cache current_shape current_term;
 
          (* Add the type *)
          if !debug_opname then

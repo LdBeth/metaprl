@@ -85,6 +85,7 @@ val check_production   : tenv -> term list -> term -> unit
 (*
  * Erase any terms left over for typing.
  *)
+val erase_arg_term  : term -> term
 val erase_term      : term -> term
 val erase_meta_term : meta_term -> meta_term
 
