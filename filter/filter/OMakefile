@@ -1,8 +1,7 @@
 #
 # No special includes
 #
-OCAMLINCLUDES =\
-	$(OCAMLINCLUDES)\
+OCAMLINCLUDES +=\
 	-I ../base\
 	-I ../phobos
 

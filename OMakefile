@@ -112,6 +112,12 @@ else
    export
 
 #
+# Do not compile MetaPRL with threads.
+#
+THREADS_ENABLED = false
+THREADSLIB =
+
+#
 # Check the configuration
 #
 if $(not $(file-exists $(CAMLLIB)/parsetree.cmi))
@@ -268,26 +274,22 @@ if $(not $(equal $(OSTYPE), Win32))
 .SUBDIRS: clib util
 
 ########################################################################
-# Generic directories with no special options
-
-#
 # For the rest of MetaPRL, use our custom scanner.
-#
+
 OCAMLDEP = $(file bin/ocamldep$(EXE))
 
 .SCANNER: %.cmi: %.mli $(OCAMLDEP)
 .SCANNER: %.cmo %.cmx: %.ml $(OCAMLDEP) :exists: %.mli
 
 #
-# Do not compile MetaPRL with threads.
+# Libmojave is using our custom scanner, but otherwise config is normal
 #
-THREADS_ENABLED = false
-THREADSLIB =
+.SUBDIRS: libmojave
 
-#
-# Directories using our custom scanner, but otherwise config is normal
-#
-.SUBDIRS: libmojave library debug $(ENSEMBLE_DIR) tactics/proof filter
+OCAMLINCLUDES +=\
+   -I $(dir libmojave/stdlib)\
+   -I $(dir libmojave/util)\
+   -I $(dir libmojave/unix)\
 
 ########################################################################
 # Refiner building
@@ -308,7 +310,37 @@ section
     %.cmx: $(MACROPP)
 
     # These directories use the macro preprocessor
-    .SUBDIRS: mllib refiner
+    .SUBDIRS: mllib
+
+    OCAMLINCLUDES +=\
+        -I $(dir mllib)\
+
+    .SUBDIRS: refiner
+
+OCAMLINCLUDES +=\
+    -I $(dir mllib)\
+    -I $(dir refiner/refsig)\
+    -I $(dir refiner/refbase)\
+    -I $(dir refiner/refiner)\
+    -I $(dir refiner/reflib)\
+
+########################################################################
+# Generic directories with no special options
+#
+
+.SUBDIRS: library debug $(ENSEMBLE_DIR) tactics/proof
+
+# Add camlp4 library to include path
+OCAMLINCLUDES +=\
+    -I $(CAMLP4LIB)\
+    -I $(dir library)\
+    -I $(dir tactics/proof)\
+
+.SUBDIRS: filter
+
+OCAMLINCLUDES +=\
+    -I $(dir filter/base)\
+    -I $(dir filter/filter)\
 
 ########################################################################
 # Theory building
@@ -347,6 +379,15 @@ CONVERTC  = $(SET_MPLIB) $(CONVERT)
     $(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLINCLUDES) $(replacesuffixes .ppo, .ml, $^)
 
 #
+# OCamlGeneratedFiles need to be redefined to include .ppo
+#
+OCamlGeneratedFiles(files) =
+   .SCANNER: %.cmi: $(files)
+   .SCANNER: %.ppo: $(files)
+   .SCANNER: %.cmo %.cmx: $(files)
+   export
+
+#
 # For theory files, generate intermediate .ppo files
 #
 %.ppo %.cmoz: %.ml $(CAMLP4N) :optional: %.prla :effects: %.prlb
@@ -381,9 +422,6 @@ SUPPORT_INCLUDE = $'(addprefix -I , $(SUPPORT_DIRS))
 
 # Dependency analysis uses -prl flag by default
 OCAMLDEPFLAGS = -prl
-
-# Add library to include path
-OCAMLINCLUDES += -I $(CAMLP4LIB) -I $(LIB)
 
 # These directories use prlc
 THEORIES = $(if $(equal $(THEORIES), all), $(THEORIES_ALL), $(THEORIES))

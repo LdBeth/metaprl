@@ -1,8 +1,7 @@
 #
 # Standard includes
 #
-OCAMLINCLUDES =\
-	$(OCAMLINCLUDES)\
+OCAMLINCLUDES +=\
 	-I ../base\
 
 #

@@ -175,17 +175,14 @@ let rec find_file name = function
 
 let find_dependency_cmi modname deps =
    try
-      ((find_file modname [".mli"; ".cmi"; ".mlz"])^".cmi")::deps
-   with Not_found -> begin try
-      ((find_file modname [".ml"; ".cmo"; ".cmx"])^".cmo")::deps
+      ((find_file modname [".mli"; ".cmi"; ".mlz"; ".ml"; ".cmo"; ".cmx"])^".cmi")::deps
    with Not_found ->
       deps
-   end
 
 let find_dependency_cmo_cmx modname (cmo_deps,cmx_deps) =
    let cmi_file =
       try
-         Some ((find_file modname [".mli"; ".cmi"; ".mlz"])^".cmi")
+         Some ((find_file modname [".mli"; ".cmi"; ".mlz"; ".ml"; ".cmo"; ".cmx"])^".cmi")
       with Not_found ->
          None
    in
@@ -201,7 +198,7 @@ let find_dependency_cmo_cmx modname (cmo_deps,cmx_deps) =
     | Some cmi, None ->
          cmi :: cmo_deps, cmi :: cmx_deps
     | None, Some cmx ->
-         ((Filename.chop_suffix cmx "cmx")^"cmo") :: cmo_deps, cmx :: cmx_deps
+         raise(Invalid_argument "Ocamldep.find_dependency_cmo_cmx: bug!")
     | None, None ->
          cmo_deps, cmx_deps
 

@@ -1,11 +1,6 @@
 # C preprocessing
 OCAMLFLAGS = $(OCAMLFLAGS) -pp $(MACROPP)
 
-OCAMLINCLUDES +=\
-	-I $(ROOT)/libmojave/stdlib\
-	-I $(ROOT)/libmojave/util\
-	-I $(ROOT)/libmojave/unix
-
 include Files
 
 FILES = $(MLLIB_FILES)

@@ -1,8 +1,4 @@
-OCAMLINCLUDES =\
-	$(OCAMLINCLUDES)\
-	-I $(ROOT)/libmojave/stdlib\
-	-I $(ROOT)/libmojave/util\
-	-I ../../mllib\
+OCAMLINCLUDES +=\
 	-I ../refbase\
 	-I ../refsig\
 	-I ../refiner\

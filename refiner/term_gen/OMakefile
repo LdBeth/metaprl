@@ -1,10 +1,6 @@
 CAMLP4INCLUDES = -I../refsig
 
-OCAMLINCLUDES =\
-	$(OCAMLINCLUDES)\
-	-I $(ROOT)/libmojave/stdlib\
-	-I $(ROOT)/libmojave/util\
-	-I $(ROOT)/mllib\
+OCAMLINCLUDES +=\
 	-I ../refbase\
 	-I ../refsig
 

@@ -1,11 +1,4 @@
 #
-# Include MLLIB
-#
-OCAMLINCLUDES =\
-	$(OCAMLINCLUDES)\
-	-I $(ROOT)/mllib
-
-#
 # Add the preprocessor command line argument
 #
 CAMLP4MACRO = $(MACROPP) -D $(REFINER)_EXN -D SEQ_SET_$(SEQ_SET)_linear_set -D TERMS_$(TERMS)

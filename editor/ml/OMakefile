@@ -225,6 +225,8 @@ make_mp_version$(EXE): make_mp_version.ml
 mp_version.ml: make_mp_version$(EXE) $(ALL_DEPS)
 	$(CURRENT_EXEC_DIR)make_mp_version -version $(MP_VERSION) -refiner $(REFINER) -terms $(TERMS) > $@
 
+OCamlGeneratedFiles(mp_version.ml)
+
 #
 # Phony targets
 #

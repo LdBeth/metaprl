@@ -1,14 +1,3 @@
-OCAMLINCLUDES =\
-	-I .\
-	-I $(ROOT)/mllib\
-	-I $(ROOT)/libmojave/stdlib\
-	-I $(ROOT)/libmojave/util\
-	-I $(ROOT)/refiner/refbase\
-	-I $(ROOT)/refiner/refsig\
-	-I $(ROOT)/refiner/refiner\
-	-I $(ROOT)/refiner/term_gen\
-	-I $(ROOT)/refiner/reflib
-
 # Libraries
 OCAMLOTHERLIBS = unix
 

@@ -2,10 +2,6 @@
 # JYH: this file is all wrong.  Will have to fix it when we actually
 # want to include ensemble again.
 #
-OCAMLINCLUDES =\
-	$(OCAMLINCLUDES)\
-	-I $(ROOT)/refiner/refsig\
-	-I $(ROOT)/refiner/refiner
 
 #
 # Name of this library
@@ -74,10 +70,8 @@ NATIVE_CCLIBS_serv =\
     -cclib -lsock\
     -cclib -lcryptoc
 
-OCAMLINCLUDES =\
-       -I .\
+OCAMLINCLUDES +=\
        -I $(ENSROOT)/lib/$(HOSTTYPE)\
-       -I $(LIB)
 
 #
 # Name of the server
