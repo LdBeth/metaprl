@@ -316,16 +316,16 @@ ml_dform sequent_src_df : mode["src"] :: "sequent"{'ext; 'seq} format_term buf =
             format_hyp hyps (succ i) len
    in
    let format term =
-      let { sequent_args = args;
+      let { sequent_args = arg;
             sequent_hyps = hyps;
             sequent_goals = goals
           } = explode_sequent term
       in
          format_szone buf;
          format_pushm buf 0;
-         format_string buf "sequent [";
-         format_term buf NOParens args;
-         format_string buf "] {";
+         format_string buf "sequent ";
+         format_term buf NOParens arg;
+         format_string buf " {";
          format_hyp hyps 0 (SeqHyp.length hyps);
          format_goal goals 0 (SeqGoal.length goals);
          format_string buf " }";
@@ -353,16 +353,16 @@ ml_dform sequent_prl_df : mode["prl"] :: "sequent"{'ext; 'seq} format_term buf =
          let _ =
             format_term buf NOParens <<pushfont["bf"]>>;
             if i = 0 then
-               format_hbreak buf lead " "
+               format_hbreak buf lead ""
             else
                format_hbreak buf lead "; ";
             format_term buf NOParens <<popfont>>;
             match SeqHyp.get hyps i with
                Context (v, values) ->
                   (* This is a context hypothesis *)
-                  format_string buf "⟨"; (* note: this is U27E8, not "<" *)
+                  format_string buf "<"; (* note: U27E8 is much nicer, but not all fonts have it *)
                   format_context format_term buf v values;
-                  format_string buf "⟩"; (* note: this is U27E9, not ">" *)
+                  format_string buf ">"; (* note: U27E9 is much nicer, but not all fonts have it *)
              | HypBinding (v, a) ->
                   format_szone buf;
                   format_pushm buf 0;
@@ -382,24 +382,10 @@ ml_dform sequent_prl_df : mode["prl"] :: "sequent"{'ext; 'seq} format_term buf =
             format_hyp hyps (succ i) len
    in
    let rec format_goal goals i len =
-      if i <> len then
+      if i < len then
          let a = SeqGoal.get goals i in
-            if i = 0 then
-               begin
-                  format_hbreak buf "" " ";
-                  format_pushm buf 2;
-                  format_term buf NOParens <<pushfont["bf"]>>;
-                  format_term buf NOParens <<Nuprl_font!vdash>>;
-                  format_term buf NOParens <<popfont>>;
-                  format_string buf " ";
-               end
-            else
-               begin
-                  format_hbreak buf "; " "";
-                  format_pushm buf 2
-               end;
+            if i > 0 then format_hbreak buf "; " "";
             format_term buf NOParens a;
-            format_popm buf;
             format_goal goals (succ i) len
    in
    let format term =
@@ -410,10 +396,17 @@ ml_dform sequent_prl_df : mode["prl"] :: "sequent"{'ext; 'seq} format_term buf =
       in
          format_szone buf;
          format_pushm buf 0;
-         format_term_list format_term buf (dest_xlist args);
          let hlen = SeqHyp.length hyps in
-         if (hlen>0) then format_hyp hyps 0 hlen;
+         if (hlen>0) then begin
+            format_hyp hyps 0 hlen;
+            format_hbreak buf "" " ";
+         end;
+         format_term buf NOParens <<bf{vdash}>>;
+         format_term buf NOParens args;
+         format_string buf " ";
+         format_pushm buf 0;
          format_goal goals 0 (SeqGoal.length goals);
+         format_popm buf;
          format_popm buf;
          format_ezone buf
    in
@@ -425,7 +418,7 @@ ml_dform sequent_html_df : mode["html"] :: "sequent"{'ext; 'seq} format_term buf
          let lead = (string_of_int (succ i)) ^ ". " in
          let _ =
             if i = 0 then
-               format_hbreak buf lead " "
+               format_hbreak buf lead ""
             else
                format_hbreak buf lead "; ";
             match SeqHyp.get hyps i with
@@ -451,26 +444,30 @@ ml_dform sequent_html_df : mode["html"] :: "sequent"{'ext; 'seq} format_term buf
    let rec format_goal goals i len =
       if i <> len then
          let a = SeqGoal.get goals i in
-            if i = 0 then begin
-               format_hspace buf;
-               format_term buf NOParens <<Nuprl_font!vdash>>
-            end else
+            if i > 0 then
                format_hbreak buf "; " "  ";
             format_term buf NOParens a;
             format_goal goals (succ i) len
    in
    let format term =
-      let { sequent_args = args;
+      let { sequent_args = arg;
             sequent_hyps = hyps;
             sequent_goals = goals
           } = explode_sequent term
       in
          format_szone buf;
          format_pushm buf 0;
-         format_term_list format_term buf (dest_xlist args);
          let hlen = SeqHyp.length hyps in
-         if (hlen>0) then format_hyp hyps 0 hlen;
+         if (hlen>0) then begin
+            format_hyp hyps 0 hlen;
+            format_hspace buf
+         end;
+         format_term buf NOParens <<Nuprl_font!vdash>>;
+         format_term buf NOParens arg;
+         format_string buf " ";
+         format_pushm buf 0;
          format_goal goals 0 (SeqGoal.length goals);
+         format_popm buf;
          format_popm buf;
          format_ezone buf
    in
@@ -482,7 +479,7 @@ ml_dform sequent_tex_df : mode["tex"] :: "sequent"{'ext; 'seq} format_term buf =
          let lead = (string_of_int (succ i)) ^ ". " in
          let _ =
             if i = 0 then
-               format_hbreak buf lead " "
+               format_hbreak buf lead ""
             else
                format_hbreak buf lead "; ";
             match SeqHyp.get hyps i with
@@ -513,24 +510,27 @@ ml_dform sequent_tex_df : mode["tex"] :: "sequent"{'ext; 'seq} format_term buf =
             format_goal goals (succ i) len
    in
    let format term =
-      let { sequent_args = args;
+      let { sequent_args = arg;
             sequent_hyps = hyps;
             sequent_goals = goals
           } = explode_sequent term
       in
          format_szone buf;
          format_pushm buf 0;
-         format_term_list format_term buf (dest_xlist args);
          let hlen = SeqHyp.length hyps in
-         if (hlen>0) then format_hyp hyps 0 hlen;
-         format_hspace buf;
+         if (hlen>0) then begin
+            format_hyp hyps 0 hlen;
+            format_hspace buf;
+         end;
          format_term buf NOParens <<mathmacro["vdash"]>>;
-         format_szone buf;
+         format_term buf NOParens arg;
+         format_izone buf;
+         format_string buf "\\,";
+         format_ezone buf;
          format_pushm buf 0;
          format_space buf;
          format_goal goals 0 (SeqGoal.length goals);
          format_popm buf;
-         format_ezone buf;
          format_popm buf;
          format_ezone buf
    in

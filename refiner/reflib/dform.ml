@@ -635,7 +635,13 @@ let slot df =
       let depth = zone_depth df.dform_buffer in begin
          slot df;
          if depth != zone_depth df.dform_buffer then
-            let str = line_format default_width ( fun buf -> slot {df with dform_buffer = buf } )
+            let str = line_format default_width ( 
+               fun buf -> 
+                  let rec format t = 
+                     format_term buf null_shortener format t
+                  in
+                     slot {df with dform_printer = (fun _ _ -> format); dform_buffer = buf }
+            )
             in eprintf "Unballanced display form: %s%t" str eflush
       end
    else slot df

@@ -88,12 +88,12 @@ type rw =
 (*
  * Make a rewrite goal from the assumptions,
  * and the rewrite.
- * HACK!!! This is here only because we do not do rewrites (esp.
- * the conditional ones) properly. Once that is fixed,
- * this code should go away (and, for that matter, shell_rule
- * and shell_rewrite should probably be eventually merged).
+ * XXX HACK!!! Rewrite sequents should not have hyps (or should not be sequents
+ * at all) once the conditional rewrites are removed from Base_rewrite semantics.
+ * Once that is fixed, this code should probably go away (and, for that matter,
+ * shell_rule and shell_rewrite should probably be eventually merged).
  *)
-let hack_arg = mk_xlist_term [mk_simple_term (make_opname ["squash";"Base_trivial"]) []]
+let hack_arg = mk_simple_term (make_opname ["sequent_arg";"Base_rewrite"]) []
 let hack_hyps = SeqHyp.of_list [Context("H",[])]
 let mk_rewrite_hack term =
    mk_sequent_term { sequent_args = hack_arg; sequent_hyps = hack_hyps; sequent_goals = SeqGoal.of_list [term] }

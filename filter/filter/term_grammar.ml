@@ -991,11 +991,7 @@ struct
           ]];
 
       termlist:
-         [[ t = term ->
-             [t]
-           | l = termlist; sl_semi_colon; t = term ->
-             l @ [t]
-          ]];
+         [[ l = LIST1 term SEP ";" -> l ]];
 
       (* Parameters and bterm lists *)
       opname:
@@ -1097,22 +1093,35 @@ struct
 
       (* Special forms *)
       sequent:
-         [[ sl_sequent; args = optseqargs; sl_open_curly;
+         [[ sl_sequent; sl_open_curly;
             hyps = LIST0 hyp SEP ";"; sl_turnstile;
             concl = LIST1 term SEP ";"; sl_close_curly ->
-             let esequent =
-                { sequent_args = mk_xlist_term args;
+               mk_sequent_term {
+                  sequent_args = mk_term (mk_op (mk_opname loc ["sequent_arg"] [] []) []) [];
                   sequent_hyps = SeqHyp.of_list hyps;
                   sequent_goals = SeqGoal.of_list concl
-                }
-             in
-                if !debug_grammar then
-                   eprintf "Constructing sequent: %d, %d%t" (List.length hyps) (List.length concl) eflush;
-                mk_sequent_term esequent
+               }
+          | sl_sequent; sl_open_brack; args = termlist; sl_close_brack; sl_open_curly;
+            hyps = LIST0 hyp SEP ";"; sl_turnstile;
+            concl = LIST1 term SEP ";"; sl_close_curly ->
+               let args_bt = List.map mk_simple_bterm args in
+               mk_sequent_term {
+                  sequent_args = mk_term (mk_op (mk_bopname loc ["sequent_arg"] [] args_bt) []) args_bt;
+                  sequent_hyps = SeqHyp.of_list hyps;
+                  sequent_goals = SeqGoal.of_list concl
+               }
+          | sl_sequent; arg = term; sl_open_curly;
+            hyps = LIST0 hyp SEP ";"; sl_turnstile;
+            concl = LIST1 term SEP ";"; sl_close_curly ->
+               mk_sequent_term {
+                  sequent_args = arg;
+                  sequent_hyps = SeqHyp.of_list hyps;
+                  sequent_goals = SeqGoal.of_list concl
+               }
           ]];
 
       hyp:
-         [[ "<"; name = word_or_string; args=optseqargs; ">" ->
+         [[ "<"; name = word_or_string; args=optbrtermlist; ">" ->
              Context(name,args)
           | v = word_or_string; rest = hyp_suffix ->
               rest(v)
@@ -1129,17 +1138,15 @@ struct
                fun op -> Hypothesis (mk_term (mk_op (mk_opname loc [op] [] []) []) [])
           ]];
 
-      optseqargs:
-         [[ args = OPT seqargs ->
-             match args with
+      optbrtermlist:
+         [[ tl = OPT brtermlist ->
+             match tl with
                 Some l -> l
               | None -> []
           ]];
 
-      seqargs:
-         [[ sl_open_brack; l = LIST0 term SEP ";"; sl_close_brack ->
-             l
-          ]];
+      brtermlist:
+         [[ sl_open_brack; l = termlist; sl_close_brack -> l ]];
 
       (*
        * A term describing the display form.

@@ -402,8 +402,7 @@ let format_ezone buf =
                buf'.buf_info <- Unformatted info;
                stack.formatting_stack <- tail
        | _ ->
-            (* Ignore excessive pops *)
-            ()
+            raise (Invalid_argument "Rformat.format_ezone (AKA format_popm): unballanced buffer (use debug_dform_depth to debug)")
 
 let format_popm = format_ezone
 

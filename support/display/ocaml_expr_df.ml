@@ -131,7 +131,7 @@ dform apply_df2 : "apply"[start:n, finish:n]{'e1; 'e2} =
    "apply"{'e1; 'e2}
 
 dform apply_df3 : "apply"{."apply"{.lid{lid[name:s]}; 'e1}; 'e2} =
-   "apply"[name:s]{'e1; 'e2}
+   szone{"apply"[name:s]{'e1; 'e2}}
 
 dform apply_df4 : internal :: "apply"{."apply"[start1:n, finish1:n]{.lid[start2:n, finish2:n]{lid[name:s]}; 'e1}; 'e2} =
    "apply"{."apply"{lid{lid[name:s]}; 'e1}; 'e2}
@@ -302,7 +302,7 @@ dform ee_list2_nil_df2 : internal :: ee_list'{cons{ee{'e1; 'e2}; 'e3}} =
  * Assignment.
  *)
 dform assign_df1 : parens :: "prec"[prec_assign] :: assign{'e1; 'e2} =
-   push_indent slot{'e1} hspace `"= " slot{'e2} popm
+   szone push_indent slot{'e1} hspace `"= " slot{'e2} popm ezone
 
 dform assign_df2 : internal :: assign[start:n, finish:n]{'e1; 'e2} =
    assign{'e1; 'e2}
@@ -313,7 +313,7 @@ dform assign_df2 : internal :: assign[start:n, finish:n]{'e1; 'e2} =
 dform ifthenelse_df : parens :: "prec"[prec_if] :: ifthenelse{'e1; 'e2; 'e3} =
    pushm[0] szone push_indent "_if" `" " szone{'e1} `" " "_then" hspace
    szone{'e2} popm hspace
-   push_indent "_else" hspace szone{'e3} popm popm
+   push_indent "_else" hspace szone{'e3} popm ezone popm
 
 dform ifthenelse_df2 : internal :: ifthenelse[start:n, finish:n]{'e1; 'e2; 'e3} =
    ifthenelse{'e1; 'e2; 'e3}
