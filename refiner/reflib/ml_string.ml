@@ -45,12 +45,12 @@ struct
             i
       in
       let length = count 0 buf in
-      let out = String.create length in
+      let out = String_util.create "Ml_string.get" length in
       let rec squash i = function
          h::t ->
             let len = String.length h in
             let off = i - len in
-               String.blit h 0 out off len;
+               String_util.blit "Ml_string.get" h 0 out off len;
                squash off t
        | [] ->
             ()
@@ -66,6 +66,9 @@ module StringPrint = MakePrinter (StringFile)
 
 (*
  * $Log$
+ * Revision 1.3  1998/06/16 16:25:52  jyh
+ * Added itt_test.
+ *
  * Revision 1.2  1998/06/01 13:55:00  jyh
  * Proving twice one is two.
  *

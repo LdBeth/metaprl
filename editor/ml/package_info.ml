@@ -236,7 +236,8 @@ let install_tactic_arg_expr resources =
             if !debug_package_info then
                eprintf "Package_info.install_tactic_arg: %s = %s%t" name name' eflush;
             if name = name' then
-               (<:expr< $lid: name$ . $uid: "Resource"$ . $lid: "resource_extract"$ $lid: name$ >>)
+               let name = "ext_" ^ name in
+                  (<:expr< $lid: name$ . $uid: "Resource"$ . $lid: "resource_extract"$ $lid: name$ >>)
             else
                search t
        | [] ->
@@ -934,6 +935,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.16  1998/06/16 16:25:21  jyh
+ * Added itt_test.
+ *
  * Revision 1.15  1998/06/15 22:31:42  jyh
  * Added CZF.
  *

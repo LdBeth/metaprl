@@ -22,6 +22,7 @@ open Filter_summary
 open Filter_summary_type
 open Filter_summary_io
 open Filter_cache_fun
+open Filter_magic
 
 (*
  * Show the file loading.
@@ -207,7 +208,7 @@ struct
 
    let select   = InterfaceType
    let suffix   = "cmit"
-   let magics   = [0x73ac6be1; 0x63ac6be1]
+   let magics   = [0x73ac6be1; int_term_sig_magic]
    let disabled = nofile
 
    let marshal = function
@@ -247,7 +248,7 @@ struct
 
    let select   = InterfaceType
    let suffix   = "cmiz"
-   let magics   = [0x73ac6be2; 0x63ac6be2]
+   let magics   = [0x73ac6be2; int_raw_sig_magic]
    let disabled = noraw
 
    let marshal = function
@@ -270,7 +271,7 @@ struct
 
    let select   = ImplementationType
    let suffix   = "cmot"
-   let magics   = [0x73ac6be3; 0x63ac6be3]
+   let magics   = [0x73ac6be3; int_term_str_magic]
    let disabled = nofile
 
    let marshal = function
@@ -310,7 +311,7 @@ struct
 
    let select   = ImplementationType
    let suffix   = "cmoz"
-   let magics   = [0x73ac6be4; 0x63ac6be4]
+   let magics   = [0x73ac6be4; int_raw_str_magic]
    let disabled = noraw
 
    let marshal = function
@@ -349,7 +350,7 @@ struct
 
    let select   = InterfaceType
    let suffix   = "cmit"
-   let magics   = [0x73ac6be5; 0x63ac6be5]
+   let magics   = [0x73ac6be5; int_lib_sig_magic]
    let disabled = nolib
 
    let marshal = function
@@ -388,7 +389,7 @@ struct
 
    let select   = ImplementationType
    let suffix   = "cmot"
-   let magics   = [0x73ac6be6; 0x63ac6be6]
+   let magics   = [0x73ac6be6; int_lib_str_magic]
    let disabled = nolib
 
    let marshal = function
@@ -516,6 +517,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.24  1998/06/16 16:25:29  jyh
+ * Added itt_test.
+ *
  * Revision 1.23  1998/06/15 22:32:03  jyh
  * Added CZF.
  *

@@ -31,7 +31,15 @@ val equal_tables : 'a term_table -> 'a term_table -> bool
 val dest_table : 'a term_table -> 'a table_entry * 'a term_table
 
 (*
+ * Debugging.
+ *)
+val print_table : 'a term_table -> unit
+
+(*
  * $Log$
+ * Revision 1.3  1998/06/16 16:25:56  jyh
+ * Added itt_test.
+ *
  * Revision 1.2  1998/06/15 22:32:35  jyh
  * Added CZF.
  *

@@ -40,7 +40,7 @@ let putc buf c =
    let { buf_str = str; buf_index = i } = buf in
       if i = String.length str then
          (* Grow the buffer *)
-         buf.buf_str <- str ^ (String.create i);
+         buf.buf_str <- str ^ (String_util.create "Buffer.putc" i);
 
       (* Insert the char *)
       str.[i] <- c;
@@ -53,7 +53,7 @@ let puts buf s =
    let { buf_str = str; buf_index = i } = buf in
    let len = String.length s in
       if i + len > String.length str then
-         buf.buf_str <- str ^ (String.create (i + len));
+         buf.buf_str <- str ^ (String_util.create "Buffer.puts" (i + len));
 
       (* Add the string *)
       String.blit s 0 str i len;
@@ -67,6 +67,9 @@ let gets { buf_str = str; buf_index = i } =
 
 (*
  * $Log$
+ * Revision 1.5  1998/06/16 16:25:28  jyh
+ * Added itt_test.
+ *
  * Revision 1.4  1998/06/01 13:52:43  jyh
  * Proving twice one is two.
  *

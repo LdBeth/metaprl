@@ -12,6 +12,68 @@ let _ =
       eprintf "Loading String_util%t" eflush
 
 (*
+ * Catch errors.
+ *)
+let create name i =
+   if i < 0 or i > 65536 then
+      begin
+         eprintf "String_util.create: %s: %d < 0%t" name i eflush;
+         raise (Failure "String_util.create")
+      end;
+   String.create i
+
+let make name i c =
+   if i < 0 then
+      begin
+         eprintf "String_util.make: %s: %d < 0%t" name i eflush;
+         raise (Failure "String_util.make")
+      end;
+   String.make i c
+
+let sub name s i len =
+   let len' = String.length s in
+      if i >= 0 & len >= 0 & i + len < len' then
+         String.sub s i len
+      else
+         begin
+            eprintf "String_util.sub error: %s: %s.[%d]%t" name s i eflush;
+            raise (Failure "String_util.sub")
+         end
+
+let blit name froms i tos j len =
+   let from_len = String.length froms in
+   let to_len = String.length tos in
+      if i >= 0 & j >= 0 & len >= 0 & i + len < from_len & j + len < to_len then
+         String.blit froms i tos j len
+      else
+         begin
+            eprintf "String_util.blit_error: %s: %s %d %s %d %d%t" name froms i tos j len eflush;
+            raise (Failure "String_util.blit")
+         end
+
+let set name s i c =
+   let len = String.length s in
+      if i >= 0 & i < len then
+         String.set s i c
+      else
+         begin
+            eprintf "String_util.set error: %s: %s.[%d] <- %c%t" name s i c eflush;
+            raise (Failure "String_util.set")
+         end
+
+let get name s i =
+   let len = String.length s in
+      if i >= 0 & i < len then
+         String.get s i
+      else
+         begin
+            eprintf "String_util.get error: %s: %s[%d]%t" name s i eflush;
+            raise (Failure "String_util.get")
+         end
+
+let rindex = String.rindex
+
+(*
  * Find a char in a string.
  *)
 let strchr s c =
@@ -32,7 +94,7 @@ let strchr s c =
  *)
 let for_all f s =
    let len = String.length s in
-   let rec check i = 
+   let rec check i =
       (i = len) or (f s.[i] & check (i + 1))
    in
       check 0
@@ -127,6 +189,9 @@ let rec concat s = function
 
 (*
  * $Log$
+ * Revision 1.7  1998/06/16 16:25:48  jyh
+ * Added itt_test.
+ *
  * Revision 1.6  1998/06/14 22:58:52  nogin
  * Make it faster
  *

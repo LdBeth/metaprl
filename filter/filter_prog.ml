@@ -255,6 +255,9 @@ let resource_rsrc_ctyp loc =
 let resource_join_expr loc =
    <:expr< $uid:"Resource"$ . $lid:"resource_join"$ >>
 
+let ext_resource_name name =
+   "ext_" ^ name
+
 let dform_name_expr loc =
    <:expr< $uid:"Dform"$ . $lid:"dform_name"$ >>
 
@@ -522,7 +525,7 @@ let interf_resources resources loc =
                   let ctyp = parent_path_ctyp loc mname in
                      (<:ctyp< $ctyp$ . $lid: name$ >>)
             in
-               (<:sig_item< value $name$ : $ctyp$ >>) :: (loop (name :: names) t)
+               (<:sig_item< value $ext_resource_name name$ : $ctyp$ >>) :: (loop (name :: names) t)
          else
             loop names t
 
@@ -1366,8 +1369,9 @@ struct
       let print_resource resources resource =
          let { resource_name = name } = resource in
          let name_expr = (<:expr< $lid:name$ >>) in
+         let ext_name_expr = (<:expr< $lid:ext_resource_name name$ >>) in
          let name_patt = (<:patt< $lid:name$ >>) in
-         let parent_value = (<:expr< $parent_path$ . $name_expr$ >>) in
+         let parent_value = (<:expr< $parent_path$ . $ext_name_expr$ >>) in
          if mem_resource resource resources then
             (*
              * let name = name.resource_join name Parent.name
@@ -1424,6 +1428,19 @@ struct
          [<:str_item< value $rec:false$ $list:[ refiner_patt, refiner_val; dformer_patt, dformer_val ]$ >>]
 
    (*
+    * Collect the resources in this module.
+    *)
+   let implem_resources resources =
+      let loc = 0, 0 in
+      let bind_of_resource { resource_name = name } =
+         let patt = <:patt< $lid: ext_resource_name name$ >> in
+         let expr = <:expr< $lid: name$ >> in
+            patt, expr
+      in
+      let values = List.map bind_of_resource resources in
+         <:str_item< value $rec:false$ $list: values$ >>
+
+   (*
     * Trailing declarations.
     *
     * let _ = Refiner.label_refiner refiner_name "module_name"
@@ -1449,7 +1466,8 @@ struct
       let refiner_val = <:expr< $lid:local_refiner_id$ . $lid:"val"$ >> in
       let dformer_val = <:expr< $lid:local_dformer_id$ . $lid:"val"$ >> in
       let label_expr = <:expr< $label_refiner_expr loc$ $lid:local_refiner_id$ $str:name$ >> in
-         [(<:str_item< $exp:label_expr$ >>);
+         [implem_resources proc.imp_resources;
+          (<:str_item< $exp:label_expr$ >>);
           (<:str_item< value $rec:false$
                               $list:[refiner_patt, refiner_val;
                                      dformer_patt, dformer_val]$ >>);
@@ -1588,6 +1606,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.20  1998/06/16 16:25:32  jyh
+ * Added itt_test.
+ *
  * Revision 1.19  1998/06/12 13:46:34  jyh
  * D tactic works, added itt_bool.
  *

@@ -75,7 +75,7 @@ let declare_local_stringId symlabel subtypes =
 	  if (bgt subtypes (create  (-7))) then
 	    failwith "Invalid SubTypes field"
 	  else registry_store_local symlabel "SubTypes" subtypes
-	
+
 	end;
 
       numlabel ;;
@@ -83,7 +83,7 @@ let declare_local_stringId symlabel subtypes =
 let mbnode_labelq node =match node.(0) with
   Mbint i ->  i
 | Mnode n -> failwith "first element of node not integer"
-			
+
 let mbnode_label node =
   let i = mbnode_labelq node in
   if bequal i mBS_Attributes then
@@ -92,7 +92,7 @@ let mbnode_label node =
     | Mnode n -> mbnode_labelq n)
   else i
 
-	
+
 let mbnode_nSubtermsq node = Array.length node - 1
 let mbnode_nSubterms node =
   mbnode_nSubtermsq
@@ -298,7 +298,7 @@ let mb_integerq int label =
 let integer_value node=
   let base = integer_valueb node in
 	 let neg = (blt base (create 0)) in
-	
+
 	let rec loop b i =
 	 if i >= (1+ (mbnode_nSubterms node)) then b
 	   else loop ((b* 1000000000)+ (mbnode_subtermq node i)) (i + 1) in
@@ -351,9 +351,9 @@ let mb_string s =
   then match node.(j) with
     Mbint b -> Array.set node j
 	(Mbint (if (1+ (i * 2)) < len then
-	  lbor (lbsl (create (Char.code (String.get s (2 * i)))) 16)
-	    (create (Char.code (String.get s (1+ (2 * i)))))
-	else lbsl (create (Char.code (String.get s (2 * i)))) 16))
+	  lbor (lbsl (create (Char.code (String_util.get "MathBus.mb_string" s (2 * i)))) 16)
+	    (create (Char.code (String_util.get "MathBus.mb_string" s (1+ (2 * i)))))
+	else lbsl (create (Char.code (String_util.get "MathBus.mb_string" s (2 * i)))) 16))
   | Mnode n -> failwith "mb_string";
   done;
   node
@@ -369,25 +369,25 @@ let mb_stringq s num_id =
   then match node.(j) with
     Mbint b -> Array.set node j
 	(Mbint (if (1+ (i * 2))< len then
-	  lbor (lbsl (create (Char.code (String.get s (2 * i)))) 16)
-	    (create (Char.code  (String.get s (1+ (2 * i)))))
-	else lbsl (create (Char.code (String.get s (2 * i)))) 16))
+	  lbor (lbsl (create (Char.code (String_util.get "MathBus.mb_stringq" s (2 * i)))) 16)
+	    (create (Char.code  (String_util.get "MathBus.mb_stringq" s (1+ (2 * i)))))
+	else lbsl (create (Char.code (String_util.get "MathBus.mb_stringq" s (2 * i)))) 16))
   | Mnode n -> failwith "mb_string";
   done;
   node
-	
+
 
 let string_value node =
   match (mbnode_subtermq node 1) with
     Mbint b -> let (x, y) = dest_int32 b in
-    let str = String.create y in
+    let str = if y < 0 then failwith "string_value" else String_util.create "MathBus.string_value" y in
     let rec loop i j =
       if  (i >= y) or (j > (mbnode_nSubterms node)) then str else
       (match node.(j) with
 	Mbint c -> let (a, b) = dest_int32 c in
-	(String.set str i (Char.chr a);
+	(String_util.set "MathBus.string_value" str i (Char.chr a);
 	 if  (i + 1) < y then
-	   String.set str (i + 1) (Char.chr b);
+	   String_util.set "MathBus.string_value" str (i + 1) (Char.chr b);
 	 loop (i + 2) (j + 1))
       | Mnode n -> failwith "string_value") in
     loop 0 2
@@ -412,7 +412,7 @@ let rec print_node node =
       	match stype with
 	  None -> (match (mbnode_subtermq node i) with
 	    Mnode n ->(print_char '('; print_node n; print_char ')')
-	  | Mbint b -> failwith "print node bint")				
+	  | Mbint b -> failwith "print node bint")
       	| Some s ->
 	    if s = "32bit" then
 	      (match (mbnode_subtermq node i) with
@@ -424,7 +424,7 @@ let rec print_node node =
       loop_over_subterms node loop
     end
 
-	
+
 
 (*;;; To avoid problems with operating system differences, the byte
 ;;; stream generated can be restricted to consist solely of ASCII
@@ -610,14 +610,14 @@ let write_32bit num stream =
 	     write_byte64 (0xFF land a) stream;
 	     write_byte64 (b asr 8) stream;
 	     write_byte64 (0xFF land b) stream)
-	
+
   | "debug_byte" -> failwith "debug"
 	  (*format stream "[~16R ~16R ~16R ~16R]"
 	    logand ash num _24 0XFF logand ash num _16 0XFF
 	    logand ash num _8 0XFF logand num 0XFF
 	    incf  byte_count  4*)
   |_-> failwith "Don't know how to write streams in mode"
-		
+
 let print_32bit  num =
   let (a, b) = dest_int32 num in
   match stream_mode  with
@@ -644,14 +644,14 @@ let print_32bit  num =
 	     print_byte64 (0xFF land a) ;
 	     print_byte64 (b asr 8) ;
 	     print_byte64 (0xFF land b) )
-	
+
   | "debug_byte" -> failwith "debug"
 	  (*format stream "[~16R ~16R ~16R ~16R]"
 	    logand ash num _24 0XFF logand ash num _16 0XFF
 	    logand ash num _8 0XFF logand num 0XFF
 	    incf  byte_count  4*)
   |_-> failwith "Don't know how to write streams in mode"
-		
+
 
 let base64_ibuffer = ref 0
 let base64_icount =ref 0
@@ -686,7 +686,7 @@ let read_32bit stream=
   | "base64" ->
 
       let char = base64_read_8bit stream in
-	
+
       (match char with
 	0xFF ->  ((*print_string "0xff";*)
 	  let a1 =(base64_read_8bit stream) in
@@ -704,7 +704,7 @@ let read_32bit stream=
 		   a2))
       | _->  create char)
   |_-> failwith "Don't know how to read streams in mode"
-		
+
 
  (*
 ;; Compute the maximum depth and width of a tree.
@@ -745,9 +745,9 @@ let rec rwrite_node node stream =
       | Mnode n2 -> failwith "rwrite2"))
   in
   loop_over_subterms node lp)
-	
 
- 	
+
+
 
 let write_node node stream =
   (byte_count := 0;

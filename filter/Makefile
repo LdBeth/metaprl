@@ -52,6 +52,7 @@ LMFILES =\
 	filter_summary_io\
 	filter_summary_util\
 	filter_cache_fun\
+	filter_magic\
 	filter_cache\
 	filter_prog\
 	term_grammar\
@@ -74,7 +75,9 @@ CMXFILES_CAMLP4 = $(addsuffix .cmx, $(MFILES_CAMLP4))
 CMOFILES_PRLC = $(addsuffix .cmo, $(MFILES_PRLC))
 CMXFILES_PRLC = $(addsuffix .cmx, $(MFILES_PRLC))
 
-PFILES = prlcomp
+PFILES =\
+	filter_magic\
+	prlcomp
 
 #
 # Libraries for prlc
@@ -200,6 +203,7 @@ PRLCO_CMXOBJS =\
 PRLCX_CCLIBS = $(CCLIBS)
 
 all: lib
+opt: all
 
 #
 # Included files
@@ -231,7 +235,7 @@ $(ROOT)/lib/$(PRLCO)$(EXE): $(PRLCO).run
 $(ROOT)/bin/$(MAIN)$(EXE): $(MAIN).run
 	$(INSTALL) $(MAIN).run $@
 
-opt: $(RMLIFILES) $(RCMIFILES) $(RCMAFILES) $(CAMLP4N).opt $(CAMLP4O).opt $(PRLCN).opt $(PRLCO).opt $(MAIN).opt
+old_opt: $(RMLIFILES) $(RCMIFILES) $(RCMAFILES) $(CAMLP4N).opt $(CAMLP4O).opt $(PRLCN).opt $(PRLCO).opt $(MAIN).opt
 	$(INSTALL) $(CAMLP4N).opt $(ROOT)/lib/$(CAMLP4N)
 	$(INSTALL) $(CAMLP4O).opt $(ROOT)/lib/$(CAMLP4O)
 	$(INSTALL) $(PRLCN).opt $(ROOT)/lib/$(PRLCN)

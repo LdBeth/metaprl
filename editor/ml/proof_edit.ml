@@ -185,7 +185,7 @@ let display_status buffer status =
 	 let l = String.length s' in
 	 let code = proof_status s in
 	    format_char buffer code;
-	    format_string buffer (String.make l ' ');
+	    format_string buffer (String_util.make "Proof_edit.display_status" l ' ');
 	    format_status (st, at)
     | _ -> ()
    in
@@ -206,31 +206,43 @@ let display_status buffer status =
  * and no tactic.
  *)
 let display_goal db buffer goal status =
-   (* Display the current address *)
-   format_string buffer hline;
-   display_status buffer status;
-   format_string buffer "....";
-   format_string buffer (Sequent.label goal);
-   format_string buffer "....";
-   format_newline buffer;
+   let { mseq_goal = goal'; mseq_hyps = hyps } = Sequent.msequent goal in
+      (* Display the current address *)
+      format_string buffer hline;
+      display_status buffer status;
+      format_string buffer "....";
+      format_string buffer (Sequent.label goal);
+      format_string buffer "....";
+      format_newline buffer;
 
-   (* Goal *)
-   (* format_string buffer "\n-<main>-\n"; *)
-   format_term db buffer (Sequent.goal goal);
+      (* Print hyps *)
+      if hyps <> [] then
+         begin
+            let print_hyp hyp =
+               format_term db buffer hyp;
+               format_newline buffer
+            in
+               List.iter print_hyp hyps;
+               format_string buffer "====\n"
+         end;
 
-   (* Rule *)
-   format_string buffer "\n\n";
-   (* format_string buffer "\n\n-<beginrule>-\n"; *)
-   format_string buffer "BY \n";
-   (* format_string buffer "-<endrule>-\n" *)
-   format_string buffer bline
+      (* Goal *)
+      (* format_string buffer "\n-<main>-\n"; *)
+      format_term db buffer goal';
+
+      (* Rule *)
+      format_string buffer "\n\n";
+      (* format_string buffer "\n\n-<beginrule>-\n"; *)
+      format_string buffer "BY \n";
+      (* format_string buffer "-<endrule>-\n" *)
+      format_string buffer bline
 
 (*
  * Display a proof with an inference.
  *)
 let display_proof db buffer pf =
    let pf_goal = Proof.goal pf in
-   let goal = Sequent.goal pf_goal in
+   let { mseq_goal = goal; mseq_hyps = hyps } = Sequent.msequent pf_goal in
    let item = Proof.item pf in
    let children = Proof.children pf in
    let status = Proof.status pf in
@@ -241,6 +253,17 @@ let display_proof db buffer pf =
       format_string buffer (Sequent.label pf_goal);
       format_string buffer "....";
       format_newline buffer;
+
+      (* Print hyps *)
+      if hyps <> [] then
+         begin
+            let print_hyp hyp =
+               format_term db buffer hyp;
+               format_newline buffer
+            in
+               List.iter print_hyp hyps;
+               format_string buffer "====\n"
+         end;
 
       (* Goal *)
       (* format_string buffer "\n-<main>-\n"; *)
@@ -493,6 +516,9 @@ let expand_ped df ped =
 
 (*
  * $Log$
+ * Revision 1.12  1998/06/16 16:25:24  jyh
+ * Added itt_test.
+ *
  * Revision 1.11  1998/06/15 22:31:47  jyh
  * Added CZF.
  *

@@ -25,7 +25,7 @@ let parse_path dir name =
    let rec aux path i j =
       if i < len then
          if j = len or name.[j] = '/' then
-            let word = String.sub name i (j - i) in
+            let word = String_util.sub "File_util.parse_path" name i (j - i) in
             let path' =
                match word with
                   "" -> path
@@ -109,6 +109,9 @@ let with_output_file name f =
 
 (*
  * $Log$
+ * Revision 1.4  1998/06/16 16:25:45  jyh
+ * Added itt_test.
+ *
  * Revision 1.3  1998/04/24 19:38:54  jyh
  * Updated debugging.
  *

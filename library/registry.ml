@@ -125,21 +125,21 @@ let read_string stream =
                if skip then
                   read buf len skip
                else
-                  String.sub buf 0 len
+                  String_util.sub "MathBus.read_string" buf 0 len
           | c ->
                let buf =
                   if String.length buf = len then
-                     let buf' = String.create (len * 2) in
-                        String.blit buf 0 buf' 0 len;
+                     let buf' = String_util.create "MathBus.read_string" (len * 2) in
+                        String_util.blit "MathBus.read_string" buf 0 buf' 0 len;
                         buf'
                   else
                      buf
                in
-                  String.set buf len c;
+                  String_util.set "MathBus.read_string" buf len c;
                   read buf (len + 1) false
       with
          End_of_file ->
-            String.sub buf 0 len
+            String_util.sub "MathBus.read_string" buf 0 len
    in
       read (String.create 100) 0 true
 
@@ -211,6 +211,9 @@ let generate_registry_declarations ofile file =
 
 (*
  * $Log$
+ * Revision 1.13  1998/06/16 16:25:42  jyh
+ * Added itt_test.
+ *
  * Revision 1.12  1998/06/01 13:54:16  jyh
  * Proving twice one is two.
  *

@@ -3,6 +3,9 @@
  * There is no particular order.
  *
  * $Log$
+ * Revision 1.2  1998/06/16 16:25:36  jyh
+ * Added itt_test.
+ *
  * Revision 1.1  1997/08/06 16:17:45  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.
@@ -550,16 +553,16 @@ let strchr s c =
  *)
 let uppercase s =
    let l = String.length s in
-   let s' = String.create l in
+   let s' = String_util.create "Util.uppercase" l in
       s'.[0] <- toupper s.[0];
-      String.blit s 1 s' 1 (l - 1);
+      String_util.blit "Util.uppercase" s 1 s' 1 (l - 1);
       s';;
 
 let lowercase s =
    let l = String.length s in
-   let s' = String.create l in
+   let s' = String_util.create "Util.lowercase" l in
       s'.[0] <- tolower s.[0];
-      String.blit s 1 s' 1 (l - 1);
+      String_util.blit "Util.lowercase" s 1 s' 1 (l - 1);
       s';;
 
 (************************************************************************

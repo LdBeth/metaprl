@@ -4,9 +4,10 @@ OCAMLLEX = ocamllex
 
 OCAMLDEP = misc.cmo ocamldep.cmo
 
-.PHONY: all install clean depend
+.PHONY: all opt install clean depend
 
 all: $(ROOT)/bin/ocamldep
+opt: all
 
 install: ocamldep
 	install ocamldep $(NLBIN)

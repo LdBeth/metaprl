@@ -27,9 +27,14 @@ NL_DIRS :=\
 
 DIRS := $(REFINER_DIRS) $(NL_DIRS) editor/ml
 
-.PHONY: all install depend clean profile
+.PHONY: all opt install depend clean profile
 
 all:
+	@for i in $(DIRS); do\
+		if (echo Making $$i...; cd $$i; $(MAKE) $@); then true; else exit 1; fi;\
+	done
+
+opt:
 	@for i in $(DIRS); do\
 		if (echo Making $$i...; cd $$i; $(MAKE) $@); then true; else exit 1; fi;\
 	done

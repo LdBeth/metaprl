@@ -83,7 +83,7 @@ lib:
 
 optlib:
 	@for i in $(DIRS); do\
-		if (echo Making $$i...; cd $$i; $(MAKE) $@); then true; else exit 1; fi;\
+		if (echo Making $$i...; cd $$i; $(MAKE) opt); then true; else exit 1; fi;\
 	done
 
 install::

@@ -447,16 +447,16 @@ let string_to_bindings value =
 
   let l = String.length value in
   if l > ash_length then
-    let v = String.sub value 0 ash_length in
+    let v = String_util.sub "Db.string_to_bindings" value 0 ash_length in
     (if stringeq v ascii_special_header then
-      let c = String.sub value 1 1 and v' = String.sub value 2 (l - 2) in
+      let c = String_util.sub "Db.string_to_bindings" value 1 1 and v' = String_util.sub "Db.string_to_bindings" value 2 (l - 2) in
       match c with
 	"A" -> ["nuprl5_implementation3"; "extended"; "abstraction"; v']
       | "D" -> ["nuprl5_implementation3"; "extended"; "display"; v']
       | "S" -> ["nuprl5_implementation2"; "extended"; v']
       | "d" -> ["nuprl5_implementation2"; "display"; v']
       | "a" -> ["nuprl5_implementation1"; v']
-      | "%" -> [(String.sub value 1 (l - 1)) ]
+      | "%" -> [(String_util.sub "Db.string_to_bindings" value 1 (l - 1)) ]
       | t -> failwith "unknown special binding"
     else [value])
   else [value]
@@ -466,14 +466,14 @@ let rec string_to_parameter s ptype =
 
   let len = String.length s in
 
-    if (len < 2 or not (chareq '%' (String.get s 0)))
+    if (len < 2 or not (chareq '%' (String_util.get "Db.string_to_parameter" s 0)))
 	then make_param (mk_real_param_from_strings string_to_parameter s ptype)
 
     else
-     let ss = (String.sub s 2 (len -2)) in
+     let ss = (String_util.sub "Db.string_to_parameter" s 2 (len -2)) in
       make_param
-       (match (String.get s 1) with
-	  '%' -> (mk_real_param_from_strings string_to_parameter (String.sub s 1 (len - 1)) ptype)
+       (match (String_util.get "Db.string_to_parameter" s 1) with
+	  '%' -> (mk_real_param_from_strings string_to_parameter (String_util.sub "Db.string_to_parameter" s 1 (len - 1)) ptype)
 
 	| 'A' -> (ParamList	[ make_param (Token "extended")
 				; make_param (Token "abstraction")

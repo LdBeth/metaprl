@@ -166,21 +166,21 @@ let set_file name =
  *)
 let get_buffered_text (start, finish) bufs =
    let count = finish - start in
-   let s = String.create count in
+   let s = String_util.create "Shell_p4.get_buffered_text" count in
    let rec collect count = function
       (pos, len, buf) :: t ->
          if start > pos then
             if start + count - pos > len then
                raise (Failure "collect")
             else
-               String.blit buf (start - pos) s 0 count
+               String_util.blit "Shell_p4.get_buffered_text" buf (start - pos) s 0 count
          else if start + count > pos then
             let amount = start + count - pos in
                if amount > len then
                   raise (Failure "collect")
                else
                   begin
-                     String.blit buf 0 s (pos - start) amount;
+                     String_util.blit "Shell_p4.get_buffered_text" buf 0 s (pos - start) amount;
                      collect (count - amount) t
                   end
          else
@@ -201,7 +201,7 @@ let get_buffered_text (start, finish) bufs =
  * Get the text from the file.
  *)
 let get_file_text (start, finish) input =
-   let buf = String.create (finish - start) in
+   let buf = String_util.create "Shell_p4.get_file_text" (finish - start) in
       try
          seek_in input start;
          really_input input buf 0 (finish - start);
@@ -359,6 +359,9 @@ END
 
 (*
  * $Log$
+ * Revision 1.7  1998/06/16 16:25:25  jyh
+ * Added itt_test.
+ *
  * Revision 1.6  1998/06/12 13:45:16  jyh
  * D tactic works, added itt_bool.
  *

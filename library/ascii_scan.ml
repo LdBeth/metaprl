@@ -3,7 +3,6 @@ open Debug
 
 open Num
 open Char
-open String
 open List
 open Stream
 
@@ -45,7 +44,7 @@ let explode str =
 
  let rec aux i =
     if (inteq i l) then []
-    else (get str i) :: aux (1+i)
+    else (String_util.get "Ascii_scan.explode" str i) :: aux (1+i)
   in
 
  aux 0
@@ -54,12 +53,12 @@ let explode str =
 (* chars are reversed *)
 let implode_rev chars =
  let l = (List.length chars) in
- let s = String.create l in
+ let s = String_util.create "Ascii_scan.implode" l in
   let rest = ref chars in
   let i = ref (l - 1) in
 
   while not (nullp !rest)
-  do String.set s !i (hd !rest);
+  do String_util.set "Ascii_scan.implode" s !i (hd !rest);
      i := !i - 1;
      rest := tl !rest
   done
@@ -134,7 +133,7 @@ let scan_byte s c =
 let numeric_digits = ['0'; '1'; '2'; '3'; '4'; '5'; '6'; '7'; '8'; '9']
 
 let scan_at_digit_p s =
-  (not (scan_at_eof_p s))  & (mem s.cchar numeric_digits)	
+  (not (scan_at_eof_p s))  & (mem s.cchar numeric_digits)
 
 let rec scan_whitespace s =
  if (not (scan_at_eof_p s)) & (mem s.cchar s.whitespace)
@@ -188,7 +187,7 @@ let scan_char_delimited_list s itemf ld rd sep =
 	while (scan_at_char_p s sep)
 	  do (scan_char s sep); acc := (itemf ()) :: !acc
 	  done;
-	
+
 	if (scan_at_char_p s rd) then (scan_char s rd; rev !acc)
 	else if (scan_at_eof_p s)
 	  then  error ["scanner"; "delimited_list"; "eof"; Char.escaped rd] [] []
@@ -204,7 +203,7 @@ let scan_delimited_list s itemf ld rd sep =
 	while (scan_at_byte_p s sep)
 	  do (scan_byte s sep); acc := (itemf ()) :: !acc
 	  done;
-	
+
 	if (scan_at_byte_p s rd) then (scan_byte s rd; rev !acc)
 	else if (scan_at_eof_p s)
 	  then  error ["scanner"; "delimited_list"; "eof"; Char.escaped (chr rd)] [] []

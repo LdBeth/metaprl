@@ -176,7 +176,7 @@ let insert { tbl_items = items } t v =
  * Join another table.
  *)
 let join_tables { tbl_items = entries } { tbl_items = items } =
-   { tbl_items = Table items :: entries; tbl_base = None }
+   { tbl_items = [Table entries; Table items]; tbl_base = None }
 
 (************************************************************************
  * DTREE COMPILATION                                                    *
@@ -247,22 +247,24 @@ let collect_entries { tbl_items = items } =
 (*
  * Go through and print the entries.
  *)
-let print_entries { tbl_items = items } =
+let print_table { tbl_items = items } =
    let rec print_item tables = function
-      [] ->
-         tables
-    | h::t ->
-         match h with
-            Entry info ->
-               eprintf "Term_table.print_entries: %s%t" (Simple_print.string_of_term info.info_term) eflush;
-               print_item tables t
-          | Table table ->
-               eprintf "Term_table.print_entries: Table%t" eflush;
-               if List.memq table tables then
+      h::t ->
+         begin
+            match h with
+               Entry info ->
+                  eprintf "Term_table.print_entries: %s%t" (Simple_print.string_of_term info.info_term) eflush;
                   print_item tables t
-               else
-                  let tables = print_item tables table in
-                     print_item (table :: tables) t
+             | Table table ->
+                  eprintf "Term_table.print_entries: Table%t" eflush;
+                  if false & List.memq table tables then
+                     print_item tables t
+                  else
+                     let tables = print_item tables table in
+                        print_item (table :: tables) t
+         end
+    | [] ->
+         tables
    in
       print_item [] items;
       ()
@@ -502,6 +504,9 @@ let lookup name table t =
 
 (*
  * $Log$
+ * Revision 1.5  1998/06/16 16:25:54  jyh
+ * Added itt_test.
+ *
  * Revision 1.4  1998/06/15 22:32:34  jyh
  * Added CZF.
  *

@@ -123,7 +123,7 @@ $(MAIN).a: $(OFILES)
 $(MAIN).cma: $(LCMOFILES) $(NL_CMOFILES)
 	$(OCAMLC) $(OCAMLCFLAGS) -a -o $@ $(LCMOFILES) $(NL_CMOFILES)
 
-$(MAIN).cmxa: $(LCMXFILES) $(ML_CMXFILES)
+$(MAIN).cmxa: $(LCMXFILES) $(NL_CMXFILES)
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -a -o $@ $(LCMXFILES) $(NL_CMXFILES)
 
 $(MAIN).run: $(CMAFILES) $(CMADEPS) $(PCMOFILES)
@@ -164,7 +164,7 @@ $(NL_CMIFILES): %.cmi: %.mli
 	$(PRLC) $(OCAMLCFLAGS) -c $*.mli
 
 $(NL_CMXFILES): %.cmx: %.ml %.cmi
-	$(PRLC) $(OCAMLOPTFLAGS) -c $*.ml
+	$(PRLC) $(OCAMLOPTFLAGS) -opt -c $*.ml
 
 $(REG_CMOFILES): %.cmo: %.ml %.cmi
 	$(OCAMLCP) $(OCAMLCFLAGS) -c $*.ml

@@ -22,6 +22,8 @@ open Arg
 
 open Debug
 
+open Filter_magic
+
 (*
  * Show the file loading.
  *)
@@ -35,6 +37,7 @@ let _ =
  *)
 let preprocess_flag = ref false
 let binary_flag = ref false
+let optimize_flag = ref false
 let verbose_mode = ref 0
 
 (*
@@ -53,19 +56,21 @@ let set_lib s =
       lib := s
 
 (*
- * See if the first file is newer than the second.
+ * See if the file is interactive by checking the magic number.
  *)
-let file_newer file1 file2 =
+let file_interactive file =
    try
-      let { Unix.st_mtime = mtime1 } = Unix.stat file1 in
+      let inx = open_in_bin file in
          try
-            let { Unix.st_mtime = mtime2 } = Unix.stat file2 in
-               mtime1 > mtime2
+            let magic = input_binary_int inx in
+               close_in inx;
+               List.mem magic interactive_magics
          with
-            Unix.Unix_error _ ->
-               true
+            _ ->
+               close_in inx;
+               false
    with
-      Unix.Unix_error _ ->
+      Sys_error _ ->
          false
 
 (*
@@ -81,16 +86,14 @@ let add_binary_arg code name =
    argv := !argv @ [code; name]
 
 let add_binary_if_newer code arg o_file raw_file term_file =
-   if file_newer arg o_file then
-      add_arg arg
-   else if file_newer raw_file o_file then
+   if file_interactive raw_file then
       begin
-         eprintf "File %s is newer than %s, compiling raw file%t" raw_file o_file eflush;
+         eprintf "File %s is interactive, compiling raw file%t" raw_file eflush;
          add_binary_arg code raw_file
       end
-   else if file_newer term_file o_file then
+   else if file_interactive term_file then
       begin
-         eprintf "File %s is newer than %s, compiling term file%t" term_file o_file eflush;
+         eprintf "File %s is interactive, compiling term file%t" term_file eflush;
          add_binary_arg code raw_file
       end
    else
@@ -158,11 +161,12 @@ let exe_name =
       else
          (fun name -> name)
 
-let ocamlc_exe  = exe_name "ocamlc"
-let camlp4o_exe = exe_name "camlp4o"
-let camlp4n_exe = exe_name "camlp4n"
-let prlcn_exe   = exe_name "prlcn"
-let prlco_exe   = exe_name "prlco"
+let ocamlc_exe   = exe_name "ocamlc"
+let ocamlopt_exe = exe_name "ocamlopt"
+let camlp4o_exe  = exe_name "camlp4o"
+let camlp4n_exe  = exe_name "camlp4n"
+let prlcn_exe    = exe_name "prlcn"
+let prlco_exe    = exe_name "prlco"
 
 (*
  * Commands are constructed from argument list.
@@ -171,7 +175,13 @@ let mk_camlp4 argv includes =
    (Filename.concat !lib camlp4o_exe) :: argv
 
 let mk_ocamlc argv includes =
-   [ocamlc_exe; "-I"; !lib; "-pp"; Filename.concat !lib camlp4n_exe] @ argv
+   let ocamlc =
+      if !optimize_flag then
+         ocamlopt_exe
+      else
+         ocamlc_exe
+   in
+      [ocamlc; "-I"; !lib; "-pp"; Filename.concat !lib camlp4n_exe] @ argv
 
 let mk_prlcn argv includes =
    let rec mk_includes = function
@@ -206,13 +216,16 @@ let mk_command () =
 let spec =
    ["-I", String add_include, "add an directory to the path for include files";
     "-E", Set preprocess_flag, "preprocess only";
+    "-opt", Set optimize_flag, "use the optimizing compiler";
     "-v", Unit (fun () -> verbose_mode := 1), "set verbose mode";
     "-V", Unit (fun () -> verbose_mode := 2), "set verbose mode";
     "-g", Unit (add_argv "-g"), "include debugging information";
+    "-p", Unit (add_argv "-p"), "include profiling information";
     "-c", Unit (add_argv "-c"), "produce object file";
     "-o", String (add_string_argv "-o"), "specify output file";
     "-a", Unit (add_argv "-a"), "produce archive file";
     "-custom", Unit (add_argv "-custom"), "generate custom executable";
+    "-ccopt", String (add_string_argv "-ccopt"), "C option";
     "-cclib", String (add_string_argv "-cclib"), "C library";
     "-linkall", Unit (add_argv "-linkall"), "specify link";
     "-lib", String set_lib, "set the library directory"]
@@ -270,6 +283,9 @@ let _ = Printexc.catch (Unix.handle_unix_error main) ()
 
 (*
  * $Log$
+ * Revision 1.17  1998/06/16 16:25:35  jyh
+ * Added itt_test.
+ *
  * Revision 1.16  1998/06/15 22:32:15  jyh
  * Added CZF.
  *

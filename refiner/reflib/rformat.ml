@@ -348,11 +348,11 @@ let format_char buf c =
 let rec format_string buf s =
    try
        let i = String_util.strchr s '\n' in
-          push_command buf (Text (i, String.sub s 0 i));
+          push_command buf (Text (i, String_util.sub "Rformat.format_string" s 0 i));
           format_newline buf;
           let l = (String.length s) - i - 1 in
              if l > 0 then
-                format_string buf (String.sub s (i + 1) l)
+                format_string buf (String_util.sub "Rformat.format_string" s (i + 1) l)
    with
       Not_found ->
          push_command buf (Text (String.length s, s))
@@ -654,7 +654,7 @@ let compute_breaks buf rmargin =
  * "tab" to a position on the next line.
  *)
 let tab printer pos =
-   printer ("\n" ^ (String.make pos ' '))
+   printer ("\n" ^ (String_util.make "Rformat.tab" pos ' '))
 
 (*
  * Given a break vector, print out the data.
@@ -668,7 +668,7 @@ let format_to_handler printer rmargin (BreakNode (breaks, cbreaks)) =
          if curx + i > rmargin then
             let amount = rmargin - curx - 1 in
                if amount > 0 then
-                  printer (String.sub s 0 amount);
+                  printer (String_util.sub "Rformat.format_to_handler" s 0 amount);
                printer "$"
          else *)
             printer s
@@ -796,6 +796,9 @@ let print_to_string rmargin buf =
 
 (*
  * $Log$
+ * Revision 1.4  1998/06/16 16:25:53  jyh
+ * Added itt_test.
+ *
  * Revision 1.3  1998/06/12 13:47:00  jyh
  * D tactic works, added itt_bool.
  *

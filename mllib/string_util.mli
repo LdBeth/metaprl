@@ -7,6 +7,16 @@
  ************************************************************************)
 
 (*
+ * Functions for cacthing errors.
+ *)
+val create : string -> int -> string
+val make : string -> int -> char -> string
+val sub : string -> string -> int -> int -> string
+val blit : string -> string -> int -> string -> int -> int -> unit
+val set : string -> string -> int -> char -> unit
+val get : string -> string -> int -> char
+
+(*
  * Find a char in a string.
  *)
 val strchr : string -> char -> int
@@ -40,6 +50,9 @@ val concat : string -> string list -> string
 
 (*
  * $Log$
+ * Revision 1.3  1998/06/16 16:25:49  jyh
+ * Added itt_test.
+ *
  * Revision 1.2  1998/02/23 14:46:39  jyh
  * First implementation of binary file compilation.
  *
