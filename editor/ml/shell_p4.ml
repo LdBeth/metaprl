@@ -125,12 +125,12 @@ struct
    let eval_str_item loc item =
       let pt_item = Ast2pt.str_item item [] in
           try
-             if not (Toploop.execute_phrase false Lm_format.std_formatter (Parsetree.Ptop_def pt_item)) then
+             if not (Toploop.execute_phrase false Format.std_formatter (Parsetree.Ptop_def pt_item)) then
                 raise (RefineError ("eval_expr", StringError "evaluation failed"))
           with
              Typecore.Error (_, err) ->
-                Typecore.report_error Lm_format.std_formatter err;
-                eflush stdout;
+                Typecore.report_error Format.std_formatter err;
+                flush stdout;
                 raise (RefineError ("eval_expr", StringError "evaluation failed"))
 
    type ('a, 'b) once =
@@ -144,7 +144,7 @@ struct
        | OnceInitial pt_item ->
             inline_tactic := None;
             try
-               if Toploop.execute_phrase false Lm_format.std_formatter (Parsetree.Ptop_def pt_item) then
+               if Toploop.execute_phrase false Format.std_formatter (Parsetree.Ptop_def pt_item) then
                   match !inline_tactic with
                      Some tac ->
                         tacv := OnceFinal tac;
@@ -155,8 +155,8 @@ struct
                   raise (RefineError ("eval_tactic", StringError "evaluation failed"))
             with
                Typecore.Error (_, err) ->
-                  Typecore.report_error Lm_format.std_formatter err;
-                  eflush stdout;
+                  Typecore.report_error Format.std_formatter err;
+                  flush stdout;
                   raise (RefineError ("eval_tactic", StringError "evaluation failed"))
 
    let eval_tactic state =
@@ -240,18 +240,18 @@ struct
                raise (Invalid_argument "MPLIB environment variable in undefined")
       in
       let eval_include inc =
-         let _ = Toploop.execute_phrase false Lm_format.std_formatter (Ptop_dir ("directory", Pdir_string inc)) in
+         let _ = Toploop.execute_phrase false Format.std_formatter (Ptop_dir ("directory", Pdir_string inc)) in
             ()
       in
          eval_include mplib;
          List.iter eval_include (Shell_state.get_includes ());
          if not
-            (Toploop.execute_phrase false Lm_format.std_formatter
+            (Toploop.execute_phrase false Format.std_formatter
                (Ptop_dir ("install_printer", Pdir_ident (Ldot (Lident "Shell_state", "term_printer")))))
          then
             invalid_arg "Shell_p4.main: installing term printer failed";
          if not
-            (Toploop.execute_phrase false Lm_format.std_formatter
+            (Toploop.execute_phrase false Format.std_formatter
                (Ptop_def [{ pstr_desc = Pstr_open (Lident "Mp"); pstr_loc = Location.none }]))
          then
             invalid_arg "Shell_p4.main: opening Mp module failed";
