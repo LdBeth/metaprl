@@ -133,6 +133,9 @@ endif
 ifeq ($(OSTYPE),cygwin32)
    EXE = .exe
 endif
+ifeq ($(OSTYPE),cygwin)
+   EXE = .exe
+endif
 
 EXT_LIB=.a
 EXT_OBJ=.o
