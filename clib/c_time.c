@@ -5,7 +5,10 @@
 #include <time.h>
 #include <string.h>
 #include <memory.h>
+
+#ifndef WIN32
 #include <unistd.h>
+#endif
 
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
