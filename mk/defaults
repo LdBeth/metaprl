@@ -59,3 +59,11 @@ LATEX = latex
 # Default -inline argument to ocamlopt
 #
 OCAMLOPT_INLINE = 3
+
+#
+# Location of OpenSSL on Windows. If your OpenSSL is installed in a different place,
+# please use mk/config.local to override.
+#
+SSL_WIN32 = c:\OpenSSL
+SSL_LIB_WIN32 = $(SSL_WIN32)/lib
+SSL_INC_WIN32 = $(SSL_WIN32)/include

@@ -344,11 +344,6 @@ LMINSTALL = $(MPINSTALL)
 #
 OCAML_LIB_FLAGS += -linkall
 
-# Bah, someone did something wrong here.
-SSL_WIN32 = c:\OpenSSL
-SSL_LIB_WIN32 = $(SSL_WIN32)/lib
-SSL_INC_WIN32 = $(SSL_WIN32)/include
-
 if $(SSL_ENABLED)
     if $(equal $(OSTYPE), Win32)
         OCAML_LINK_FLAGS += -cclib $(SSL_LIB_WIN32)/ssleay32.lib -cclib $(SSL_LIB_WIN32)/libeay32.lib
