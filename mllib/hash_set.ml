@@ -160,7 +160,7 @@ struct
    (*
     * Remove an element.
     *)
-   let remove x { table = table } =
+   let remove { table = table } x =
       { table = Remove (table, x) }
 
    (*

@@ -645,7 +645,7 @@ struct
             print_out out_line (StringSet.add printed name) data orest n
        | (Old oname :: nrest), ((_, name, _) as item :: orest) when StringSet.mem data.new_names name && not (StringSet.mem printed name) ->
             ignore(List.map out_line (Hashtbl.find_all data.old_items oname));
-            data.io_names <- StringSet.remove oname data.io_names;
+            data.io_names <- StringSet.remove data.io_names oname;
             print_out out_line (StringSet.add printed oname) data o nrest
        | (Old _ :: _), _ :: orest ->
             print_out out_line printed data orest n

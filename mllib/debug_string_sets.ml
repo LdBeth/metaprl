@@ -47,9 +47,9 @@ struct
        | _ ->
             eprintf "(make %s) cardinality is wrong:\n" v; error_sets s1 s2
 
-   let remove v (s1,s2) =
-      let s1' = Set1.remove v s1 in
-      let s2' = Set2.remove v s2 in
+   let remove (s1,s2) v =
+      let s1' = Set1.remove s1 v in
+      let s2' = Set2.remove s2 v in
       if Set1.cardinal s1' = Set2.cardinal s2' then (s1',s2') else
       begin
          eprintf "(remove %s) cardinality is wrong:\nWas:\n" v;

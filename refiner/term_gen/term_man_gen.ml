@@ -339,7 +339,7 @@ struct
     | HypBinding (v, t) as hyp :: hyps ->
          let hyps, vars = remove_redundant_hbs vars hyps in
             if StringSet.mem vars v then
-               (hyp :: hyps), StringSet.union (free_vars_set t) (StringSet.remove v vars)
+               (hyp :: hyps), StringSet.union (free_vars_set t) (StringSet.remove vars v)
             else
                Hypothesis t :: hyps, StringSet.union (free_vars_set t) vars
 

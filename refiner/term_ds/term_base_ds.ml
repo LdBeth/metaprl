@@ -176,10 +176,10 @@ struct
                 | Subst (t,sub) ->
                      LETMACRO BODY =
                         StringSet.union
-                           (List.fold_right
+                           (List.fold_left
                               StringSet.remove
-                              (List_util.fst_split sub)
-                              (free_vars_set t))
+                              (free_vars_set t)
+                              (List_util.fst_split sub))
                            (subst_free_vars sub)
                      IN
                      IFDEF VERBOSE_EXN THEN
@@ -205,7 +205,7 @@ struct
             in t.free_vars <- Vars vars; vars
 
    and bterm_free_vars bt =
-      List.fold_right StringSet.remove bt.bvars (free_vars_set bt.bterm)
+      List.fold_left StringSet.remove (free_vars_set bt.bterm) bt.bvars
 
    and bterms_free_vars = function
       [] -> StringSet.empty
@@ -226,7 +226,7 @@ struct
       hyp_fv hyps (pred i) (
       match SeqHyp.get hyps i with
          HypBinding (v,t) ->
-            StringSet.union (free_vars_set t) (StringSet.remove v fvs)
+            StringSet.union (free_vars_set t) (StringSet.remove fvs v)
        | Hypothesis t ->
             StringSet.union (free_vars_set t) fvs
        | Context (v,subterms) ->

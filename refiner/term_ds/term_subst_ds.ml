@@ -107,7 +107,7 @@ struct
             if StringSet.mem fvs v then [v,t] else []
        | v::vl, t::tl ->
             if StringSet.mem fvs v then
-               (v,t) :: combine_fst_flt_nodups (StringSet.remove v fvs) vl tl
+               (v,t) :: combine_fst_flt_nodups (StringSet.remove fvs v) vl tl
             else
                combine_fst_flt_nodups fvs vl tl
        | _ ->
@@ -125,7 +125,7 @@ struct
          if StringSet.mem fvs v then l else []
     | ((v,t) :: tl) as l ->
          if StringSet.mem fvs v then
-            let res = fst_flt_nodups (StringSet.remove v fvs) tl in
+            let res = fst_flt_nodups (StringSet.remove fvs v) tl in
             if res == tl then l else (v,t) :: res
          else
             fst_flt_nodups fvs tl

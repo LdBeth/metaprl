@@ -114,11 +114,11 @@ struct
     | [] ->
          []
 
-   let remove x = function
+   let remove s x = match s with
       List l ->
          List (remove_list x l)
     | Set s ->
-         Set (BigSet.remove x s)
+         Set (BigSet.remove s x)
 
    let rec union_set_list set = function
       x :: t ->

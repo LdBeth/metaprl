@@ -82,7 +82,7 @@ sig
    val mem : t -> elt -> bool
    val add : t -> elt -> t
    val make : elt -> t
-   val remove : elt -> t -> t
+   val remove : t -> elt -> t
    val union : t -> t -> t
    val elements : t -> elt list
    val iter : (elt -> unit) -> t -> unit
@@ -1038,7 +1038,7 @@ struct
    (*
     * Remove the item.
     *)
-   let remove key tree =
+   let remove tree key =
       try delete key [] tree with
          Not_found ->
             tree

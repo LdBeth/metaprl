@@ -249,7 +249,7 @@ struct
     * If the value list becomes empty, remove the
     * entire entry from the tree.
     *)
-   let remove key t =
+   let remove t key =
       match splay key [] t.splay_tree with
          SplayFound tree ->
             begin
