@@ -673,25 +673,27 @@ let mount_of_fs = function
  * Change directory.
  *)
 let rec chdir_full parse_arg shell force_flag need_shell verbose (new_fs, new_subdir) =
-   let need_mount = force_flag || (new_fs <> shell.shell_fs) in
-      if need_mount then begin
-         try
-            mount_of_fs new_fs parse_arg shell force_flag need_shell verbose;
-            shell.shell_fs <- new_fs
-         with
-            exn ->
-               mount_of_fs shell.shell_fs parse_arg shell false false false;
-               raise exn
-      end;
+   let need_mount = force_flag || new_fs <> shell.shell_fs in
+      if need_mount then
+         begin
+            try
+               mount_of_fs new_fs parse_arg shell force_flag need_shell verbose;
+               shell.shell_fs <- new_fs
+            with
+               exn ->
+                  mount_of_fs shell.shell_fs parse_arg shell false false false;
+                  raise exn
+         end;
       try
          shell.shell_proof.edit_check_addr new_subdir;
          shell.shell_subdir <- new_subdir
       with
          exn ->
-            if need_mount then begin
-               eprintf "Warning: chdir partially successful%t" eflush;
-               shell.shell_subdir <- []
-            end;
+            if need_mount then
+               begin
+                  eprintf "Warning: chdir partially successful%t" eflush;
+                  shell.shell_subdir <- []
+               end;
             raise exn
 
 (*
@@ -720,10 +722,11 @@ let root parse_arg shell =
 let unredo unredo_fun shell =
    touch shell;
    let dir = unredo_fun shell.shell_subdir in
-      if dir <> shell.shell_subdir then begin
-         shell.shell_subdir <- dir;
-         eprintf "CWD now: %s%t" (pwd shell) eflush
-      end;
+      if dir <> shell.shell_subdir then
+         begin
+            shell.shell_subdir <- dir;
+            eprintf "CWD now: %s%t" (pwd shell) eflush
+         end;
       display_proof shell LsOptionSet.empty
 
 let undo shell =
@@ -731,6 +734,13 @@ let undo shell =
 
 let redo shell =
    unredo shell.shell_proof.edit_redo shell
+
+let fs_pwd shell =
+   match shell.shell_fs, shell.shell_subdir with
+      DirFS, rest when rest <> [] ->
+         String.concat "/" rest
+    | _ ->
+         "."
 
 let relative_pwd shell =
    String.concat "/" shell.shell_subdir

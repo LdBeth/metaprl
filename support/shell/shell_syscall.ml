@@ -113,9 +113,18 @@ let rec prune_relname path =
     | _ ->
          path
 
-let absname s =
-   let cwd = Shell.relative_pwd () in
-   let s = Filename.concat cwd s in
+(*
+ * Get the filename relative to the current FS directory.
+ *)
+let rootname s =
+   let s =
+      if String.length s >= 3 && String.sub s 0 3 = "/fs" then
+         String.sub s 3 (String.length s - 3)
+      else if String.length s <> 0 && s.[0] = '/' then
+         s
+      else
+         Filename.concat (Shell.fs_pwd ()) s
+   in
    let s = Lm_filename_util.split_path s in
    let s = Lm_filename_util.simplify_path s in
    let s = prune_relname s in
@@ -124,14 +133,17 @@ let absname s =
 (*
  * Get the filename relative to the working directory.
  *)
-let relname s =
+let edit_of_root s =
    Filename.concat state.shell_root s
+
+let editname s =
+   edit_of_root (rootname s)
 
 (*
  * Make a directory.
  *)
 let deref_mkdir () s =
-   let filename = relname s in
+   let filename = editname s in
       try Unix.mkdir filename 0o777; 0 with
          Unix.Unix_error (error, msg, code) ->
             if code = "" then
@@ -144,7 +156,7 @@ let deref_mkdir () s =
  * Remove a file.
  *)
 let deref_rm () s =
-   let filename = relname s in
+   let filename = editname s in
       try Unix.unlink filename; 0 with
          Unix.Unix_error (error, msg, code) ->
             if code = "" then
@@ -157,7 +169,7 @@ let deref_rm () s =
  * Edit a file.
  *)
 let deref_edit () s =
-   let filename = absname s in
+   let filename = rootname s in
       exec (SyscallEdit (state.shell_root, filename))
 
 (*
@@ -183,7 +195,7 @@ let deref_cvs () command =
     | "update"
     | "co"
     | "commit" ->
-         exec (SyscallCVS (relname ".", command))
+         exec (SyscallCVS (editname ".", command))
     | _ ->
          eprintf "CVS command '%s' not allowed@." command;
          -1

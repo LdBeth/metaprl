@@ -55,6 +55,7 @@ topval cd : string -> string
 topval refresh : unit -> unit
 topval pwd : unit -> string
 topval relative_pwd : unit -> string
+topval fs_pwd : unit -> string
 topval root : unit -> string
 topval up : int -> unit
 topval down : int -> unit

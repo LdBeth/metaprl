@@ -84,6 +84,7 @@ type commands =
      mutable refresh : unit -> unit;
      mutable pwd : unit -> string;
      mutable relative_pwd : unit -> string;
+     mutable fs_pwd : unit -> string;
      mutable set_dfmode : string -> unit;
      mutable set_dftype : display_type -> unit;
      mutable create_pkg : string -> unit;
@@ -124,6 +125,7 @@ let commands =
      refresh = uninitialized;
      pwd = uninitialized;
      relative_pwd = uninitialized;
+     fs_pwd = uninitialized;
      set_dfmode = uninitialized;
      set_dftype = uninitialized;
      create_pkg = uninitialized;
@@ -613,6 +615,7 @@ struct
          commands.refresh             <- refresh;
          commands.pwd                 <- pwd;
          commands.relative_pwd        <- wrap_unit relative_pwd;
+         commands.fs_pwd              <- wrap_unit fs_pwd;
          commands.set_dfmode          <- set_dfmode;
          commands.create_pkg          <- wrap_arg create_pkg;
          commands.backup              <- backup;
@@ -689,6 +692,7 @@ let cd s = commands.cd s
 let refresh () = commands.refresh ()
 let pwd () = commands.pwd ()
 let relative_pwd () = commands.relative_pwd ()
+let fs_pwd () = commands.fs_pwd ()
 let set_dfmode s = commands.set_dfmode s
 let create_pkg s = commands.create_pkg s
 let backup _ = commands.backup ()
