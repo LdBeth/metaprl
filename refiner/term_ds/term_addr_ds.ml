@@ -252,60 +252,31 @@ struct
        | _ -> REF_RAISE(RefineError (term_subterm_name, AddressError (a, term)))
 
    (*
-    * Just get the subterm count.
+    * Just get the subterm addresses.
     *)
-   let term_subterm_count_name = "Term_addr_ds.term_subterm_count"
-   let rec term_subterm_path_count ATERM t = function
-      [] ->
-         subterm_count t
-    | i::tl ->
-         begin match get_core t with
-            Term t ->
-               term_subterm_path_count ATERM (dest_bterm (getnth ATERM t.term_terms i)).bterm tl
-          | SOVar(_, _, ts) ->
-               term_subterm_path_count ATERM (getnth ATERM ts i) tl
-          | FOVar _ | Sequent _ ->
-               REF_RAISE(RefineError (term_subterm_count_name, AddressError (a, term)))
-          | Subst _ | Hashed _ ->
-               fail_core term_subterm_count_name
-         end
-
-   let rec term_subterm_count term a =
-      match (get_core term), a with
-         _, Path addr ->
-            term_subterm_path_count ATERM term addr
-       | (Sequent s, ArgAddr) ->
-            subterm_count s.sequent_args
-       | (Sequent s, HypAddr i) ->
-            if i >= 0 && i < SeqHyp.length s.sequent_hyps then
-               match SeqHyp.get s.sequent_hyps i with
-                  HypBinding (_, t) | Hypothesis t ->
-                     subterm_count t
-                | Context (_, _, subterms) ->
-                     List.length subterms
-            else
-               REF_RAISE(RefineError (term_subterm_count_name, AddressError (a, term)))
-       | (Sequent s, GoalAddr i) ->
-            if i >= 0 && i < SeqGoal.length s.sequent_goals then
-               subterm_count (SeqGoal.get s.sequent_goals i)
-            else
-               REF_RAISE(RefineError (term_subterm_count_name, AddressError (a, term)))
-       | (Sequent s, Compose (HypAddr i, ((Path (j :: path)) as addr2))) ->
-            (*
-             * Special case to address through contexts.
-             *)
-            if i >= 0 && i < SeqHyp.length s.sequent_hyps then
-               match SeqHyp.get s.sequent_hyps i with
-                  HypBinding (_, t) | Hypothesis t ->
-                     term_subterm_count t addr2
-                | Context (_, _, subterms) ->
-                     term_subterm_path_count ATERM (getnth ATERM subterms j) path
-            else
-               REF_RAISE(RefineError (term_subterm_count_name, AddressError (a, term)))
-       | (_, Compose (addr1, addr2)) ->
-            term_subterm_count (term_subterm term addr1) addr2
-       | _ ->
-            REF_RAISE(RefineError (term_subterm_count_name, AddressError (a, term)))
+   let subterm_addresses =
+      let rec make_path_list i =
+         if i = 0 then [] else let i = pred i in (Path [i]) :: (make_path_list i)
+      in let rec make_goal_list i goals addrs =
+         if i = 0 then addrs else let i = pred i in make_goal_list i goals (GoalAddr i :: addrs)
+      in let rec make_hyppath_list i addr addrs =
+         if i = 0 then addrs else let i = pred i in make_hyppath_list i addr (Compose(addr, Path [i]) :: addrs)
+      in let rec make_hyp_list i hyps addrs =
+         if i = 0 then addrs else let i = pred i in
+            make_hyp_list i hyps (
+               match SeqHyp.get hyps i with 
+                  Hypothesis _ | HypBinding _ -> HypAddr i :: addrs
+                | Context(_,_,ts) -> make_hyppath_list (List.length ts) (HypAddr i) addrs
+            )
+      in fun t -> match get_core t with
+         Term t ->
+            make_path_list (List.length t.term_terms)
+       | FOVar _ -> []
+       | SOVar (_, _, ts) -> make_path_list (List.length ts)
+       | Sequent s ->
+            let goal_addrs = make_goal_list (SeqGoal.length s.sequent_goals) s.sequent_goals [ArgAddr] in
+               make_hyp_list (SeqHyp.length s.sequent_hyps) s.sequent_hyps goal_addrs
+       | Hashed _ | Subst _ -> fail_core "subterm_addresses"
 
    (*
     * Replace a subterm at the specified address.

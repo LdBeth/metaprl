@@ -96,7 +96,6 @@ sig
    (* Projections *)
    val opname_of_term : term -> opname
    val subterms_of_term : term -> term list
-   val subterm_count : term -> int
    val subterm_arities : term -> int list
 
    (* A few "special" opnames *)

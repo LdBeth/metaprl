@@ -191,9 +191,6 @@ struct
    let subterms_of_term t =
       List.map (fun { bterm = t } -> t) t.term_terms
 
-   let subterm_count { term_terms = terms } =
-      List.length terms
-
    let subterm_arities { term_terms = terms } =
       List.map (fun { bvars = vars } -> List.length vars) terms
 

@@ -1044,6 +1044,9 @@ sig
     *)
    val makeFoldC : term -> conv -> conv
 
+   (* Subterm application. *)
+   val allSubC : conv -> conv
+
    (*
     * Informal rewriting.
     * Create an input form.  This is a rewrite with

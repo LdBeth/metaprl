@@ -73,9 +73,6 @@ struct
    let env_term (arg, i, addr) =
       term_subterm (Sequent.nth_assum arg i) addr
 
-   let env_term_subterm_count (arg, i, addr) =
-      term_subterm_count (Sequent.nth_assum arg i) addr
-
    let env_arg (arg, i, addr) =
       arg
 
@@ -188,41 +185,12 @@ struct
     | conv ->
          HigherConv conv
 
-   let allSubC conv =
+   let allSubC =
       let allSubCE conv env =
-         let t = env_term env in
-            if is_sequent_term t then
-               (* For sequents, apply to all the hyps, goals, and arg *)
-               let { sequent_hyps = hyps;
-                     sequent_goals = goals
-                   } = explode_sequent t
-               in
-               let hyp_count = SeqHyp.length hyps in
-               let goal_count = SeqGoal.length goals in
-               let rec subGoalC conv i =
-                  if i > goal_count then
-                     addrLiteralC arg_addr conv
-                  else
-                     prefix_thenC (addrLiteralC (nth_concl_addr t i) conv) (subGoalC conv (i + 1))
-               in
-               let rec subHypC conv i =
-                  if i > hyp_count then
-                     subGoalC conv 1
-                  else
-                     prefix_thenC (addrLiteralC (nth_hyp_addr t i) conv) (subHypC conv (i + 1))
-               in
-                  subHypC conv 1
-            else
-               let count = subterm_count t in
-               let rec subC conv count i =
-                  if i = count then
-                     idC
-                  else
-                     prefix_thenC (addrC [i] conv) (subC conv count (i + 1))
-               in
-                  subC conv count 0
+         let addrs = subterm_addresses (env_term env) in
+            List.fold_left (fun conv' addr -> prefix_thenC (addrLiteralC addr conv) conv') idC addrs
       in
-         funC (allSubCE conv)
+         fun conv -> funC (allSubCE conv)
 
    let higherLC rw =
       let rec higherCE rw env =

@@ -516,14 +516,6 @@ struct
    let subterms_of_term t =
       List.map (fun bt -> bt.bterm) (dest_term t).term_terms
 
-   let subterm_count t =
-      match get_core t with
-         Term t -> List.length t.term_terms
-       | SOVar (_, _, ts) -> List.length ts
-       | FOVar _ -> 0
-       | Sequent _ -> raise (Invalid_argument "Term_base_ds.subterm_count: got a sequent")
-       | Subst _ | Hashed _ -> fail_core "subterm_count"
-
    let subterm_arities_aux bterm = List.length bterm.bvars
 
    let subterm_arities term =

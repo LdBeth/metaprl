@@ -203,8 +203,11 @@ struct
        | Compose (addr1, addr2) ->
             term_subterm (term_subterm term addr1) addr2
 
-   let term_subterm_count term a =
-      subterm_count (term_subterm term a)
+   let rec make_path_list i =
+      if i = 0 then [] else let i = pred i in (Path [i]) :: (make_path_list i)
+
+   let subterm_addresses t =
+      make_path_list (List.length (dest_term t).term_terms)
 
    (*
     * Replace a subterm at the specified address.

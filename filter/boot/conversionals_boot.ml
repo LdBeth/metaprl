@@ -30,8 +30,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
 open Lm_debug
@@ -92,6 +92,7 @@ struct
    let cutC = RewriteInternal.cutC
    let funC = RewriteInternal.funC
    let termC = RewriteInternal.termC
+   let allSubC = RewriteInternal.allSubC
 
    (************************************************************************
     * SEARCH                                                               *
@@ -113,84 +114,15 @@ struct
       prefix_orelseC rw idC
 
    (*
-    * First subterm that works.
+    * First subterm that works. This is similar to Rewrite_boot's allSubC.
     *)
-   let someSubC conv =
-      let someSubCE env =
-         let t = env_term env in
-            if is_sequent_term t then
-               (* For sequents, apply to all the hyps, goals, and arg *)
-               let { sequent_hyps = hyps;
-                     sequent_goals = goals
-                   } = explode_sequent t
-               in
-               let hyp_count = SeqHyp.length hyps in
-               let goal_count = SeqGoal.length goals in
-               let rec subGoalC conv i =
-                  if i > goal_count then
-                     addrLiteralC arg_addr conv
-                  else
-                     prefix_orelseC (addrLiteralC (nth_concl_addr t i) conv) (subGoalC conv (i + 1))
-               in
-               let rec subHypC conv i =
-                  if i > hyp_count then
-                     subGoalC conv 1
-                  else
-                     prefix_orelseC (addrLiteralC (nth_hyp_addr t i) conv) (subHypC conv (i + 1))
-               in
-                  subHypC conv 1
-            else
-               (* A normal term *)
-               let count = subterm_count t in
-               let rec subC i =
-                  if i = count then
-                     funC (fun _ -> raise (RefineError ("subC", StringError "all subterms failed")))
-                  else
-                     prefix_orelseC (addrC [i] conv) (subC (i + 1))
-               in
-                  subC 0
+   let someSubC =
+      let failC = funC (fun _ -> raise (RefineError ("subC", StringError "all subterms failed"))) in
+      let someSubCE conv env =
+         let addrs = subterm_addresses (env_term env) in
+            List.fold_left (fun conv' addr -> prefix_orelseC (addrLiteralC addr conv) conv') failC addrs
       in
-         funC someSubCE
-
-   (*
-    * Apply to all subterms.
-    *)
-   let allSubC conv =
-      let allSubCE conv env =
-         let t = env_term env in
-            if is_sequent_term t then
-               (* For sequents, apply to all the hyps, goals, and arg *)
-               let { sequent_hyps = hyps;
-                     sequent_goals = goals
-                   } = explode_sequent t
-               in
-               let hyp_count = SeqHyp.length hyps in
-               let goal_count = SeqGoal.length goals in
-               let rec subGoalC conv i =
-                  if i > goal_count then
-                     addrLiteralC arg_addr conv
-                  else
-                     prefix_thenC (addrLiteralC (nth_concl_addr t i) conv) (subGoalC conv (i + 1))
-               in
-               let rec subHypC conv i =
-                  if i > hyp_count then
-                     subGoalC conv 1
-                  else
-                     prefix_thenC (addrLiteralC (nth_hyp_addr t i) conv) (subHypC conv (i + 1))
-               in
-                  subHypC conv 1
-            else
-               (* A normal term *)
-               let count = subterm_count t in
-               let rec subC conv count i =
-                  if i = count then
-                     idC
-                  else
-                     prefix_thenC (addrC [i] conv) (subC conv count (i + 1))
-               in
-                  subC conv count 0
-      in
-         funC (allSubCE conv)
+         fun conv -> funC (someSubCE conv)
 
    (*
     * Outermost terms.
