@@ -84,7 +84,7 @@ let debug_shell =
 
 type commands = {
    mutable cd : string -> string;
-   mutable pwd : unit -> string;
+   mutable pwd : unit -> string list;
    mutable set_dfmode : string -> unit;
    mutable create_pkg : string -> unit;
    mutable set_writeable : unit -> unit;
@@ -173,6 +173,16 @@ let print_exn_db db f x =
          raise (RefineError ("Shell", ToploopIgnoreError))
     | exn ->
          raise exn
+
+(*
+ * Turn a path to an absolute string.
+ *)
+let rec string_of_path = function
+   [n] -> "/" ^ n
+ | h::t ->
+      "/" ^ h ^ string_of_path t
+ | [] ->
+      "/"
 
 (*
  * Shell takes input parser as an argument.
@@ -341,16 +351,6 @@ struct
              (Lm_string_util.split "/" name)
 
    (*
-    * Turn a path to an absolute string.
-    *)
-   let rec string_of_path = function
-      [n] -> "/" ^ n
-    | h::t ->
-         "/" ^ h ^ string_of_path t
-    | [] ->
-         "/"
-
-   (*
     * Update the current item being edited.
     *)
    let set_packages info =
@@ -488,9 +488,6 @@ struct
     *)
    let set_window_width info i =
       info.width <- max !Mp_term.min_screen_width i
-
-   let pwd info =
-      string_of_path info.dir
 
    (************************************************************************
     * PROCESS CONTROL                                                      *
@@ -1056,7 +1053,7 @@ struct
 
    and cd info name =
       print_exn info (chdir info true) (parse_path info name);
-      pwd info
+      string_of_path info.dir
 
    (*
     * TeX functions.
@@ -1422,7 +1419,7 @@ struct
       if commands.cd != uninitialized then
          raise (Invalid_argument "The Shell module was initialized twice");
       commands.cd <- wrap cd;
-      commands.pwd <- (fun () -> pwd !current_shell);
+      commands.pwd <- (fun () -> !current_shell.dir);
       commands.set_dfmode <- wrap set_dfmode;
       commands.create_pkg <- wrap create_pkg;
       commands.save <- wrap_unit save;
@@ -1458,7 +1455,7 @@ external stop_gmon : unit -> unit = "stop_gmon"
 let set_debug = set_debug
 let print_gc_stats () = Gc.print_stat stdout
 let cd s = commands.cd s
-let pwd _ = commands.pwd ()
+let pwd _ = string_of_path (commands.pwd ())
 let set_dfmode s = commands.set_dfmode s
 let create_pkg s = commands.create_pkg s
 let set_writeable _ = commands.set_writeable ()
@@ -1539,12 +1536,12 @@ let down i =
    ls ""
 
 let root () =
-   begin try
-      let pwd = pwd () in
-      let ind = String.index_from pwd (String.index_from pwd 1 '/' + 1) '/' in
-         ignore(cd (String.sub pwd 0 (ind - 1)))
-   with Not_found -> () end;
-   ls ""
+   match commands.pwd () with
+      modname::item::_ ->
+         ignore(cd ("/" ^ modname ^ "/" ^ item));
+         ls ""
+    | _ ->
+         eprintf "Can not go to the proof root: not inside a proof%t" eflush
 
 let status item =
    let name, status, _, _ = item.edit_get_contents () in
