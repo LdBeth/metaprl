@@ -66,11 +66,20 @@ REWRITER
 *) When redex has repeated meta-parameter, rewriter does not check the parameter
 equality when matching agaings that redex
 
+Example: redex <<add{number[n:n];number[n:n]}>> matches <<add{1;2}>>
+
 *) If a variable is bound in a context, rewriter may handle it incorrectly.
 
-*) If the same variable is bound several times in redex or contractum, rewriter
+*) If the same variable is bound several times in redex or contractum specification, rewriter
 may handle it incorrectly. We should prohibit repeated bound variables in rewrite
 specification - that would eliminate this bug and also help prevent typos in rewrites.
+
+*) If the same variabe is bound several times in the matched term, rewriter may handle
+it incorrectly.
+
+Example:
+test{x.test{y.'C['x; 'y]}} <--> 'C[1; 2] 
+rewrites <<test{x.test{x.'x}}>> to 1 instead of 2.
 
 *) Rewriter should support "strict" matching - in a redex, when a abound variable
 is not explicity mentioned as an argument of a SO variable, the matching term should
