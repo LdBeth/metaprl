@@ -37,11 +37,8 @@ open Lm_thread
 
 open Pcaml
 
-open Refiner.Refiner.Term
 open Refiner.Refiner.RefineError
-
-open Tactic_type
-open Tactic_type.Tacticals
+open Basic_tactics
 
 (*
  * Ref cell for returning the tactic value.
@@ -236,7 +233,7 @@ struct
                (Ptop_def [{ pstr_desc = Pstr_open (Lident "Mp"); pstr_loc = Location.none }]))
          then
             invalid_arg "Shell_p4.main: opening Mp module failed";
-         Tactic.main_loop ();
+         Tactic_type.Tactic.main_loop ();
 
          (* Ignore initialization errors *)
          try Shell_command.init () with
