@@ -92,4 +92,4 @@ rm -rf $RPM_BUILD_ROOT
 
 * Tue Sep  7 1999 Daniel de Rauglaudre <daniel.de_rauglaudre@inria.fr>
 Version 2.01.1 Release 1
-- Created from Alexey Nogin's Camlp4 spec file
+- Created from Aleksey Nogin's Camlp4 spec file

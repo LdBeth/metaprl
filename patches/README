@@ -1,0 +1,11 @@
+This directory contains the patches necessary to be able to compile MetaPRL.
+
+You need to apply patches in the following order:
+
+1) camlp4-%{version}-opt.patch
+     (only if you want to be able to compile MetaPRL to native code).
+2) camlp4-%{verison}-plexer.patch
+     (it is necessary to give MetaPRL access do "documentation" comments,
+      MetaPRL will not compile w/o this patch).
+3) camlp4-%{verison}-version.patch
+     (or you may override the version in MetaPRL's mk/preface instead).
