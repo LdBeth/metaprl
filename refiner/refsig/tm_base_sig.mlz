@@ -37,6 +37,8 @@ module type MinLinSet = sig
    val length : t -> int
    val init : int -> (index -> elt) -> t
    val get : t -> index -> elt
+   val of_list : elt list -> t
+   val to_list : t -> elt list
 end
 
 (*

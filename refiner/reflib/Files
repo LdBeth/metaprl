@@ -22,4 +22,10 @@ REFLIB_FILES :=\
 	term_compare\
 	term_transfer\
 	term_copy2\
+	term_header\
+	term_hash\
+	term_header_constr\
+	term_copy_weak\
+	term_norm\
+	term_copy2_weak\
 	match_seq

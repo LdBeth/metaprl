@@ -68,15 +68,15 @@ end
  * Distinguished conversions
  *)
 val normalize_term :
-  Refiner_std_verb.Refiner.TermType.term -> Refiner.Refiner.TermType.term
+  Refiner_std.Refiner.TermType.term -> Refiner.Refiner.TermType.term
 val normalize_meta_term :
-  Refiner_std_verb.Refiner.TermType.meta_term ->
+  Refiner_std.Refiner.TermType.meta_term ->
   Refiner.Refiner.TermType.meta_term
 val denormalize_term :
-  Refiner.Refiner.TermType.term -> Refiner_std_verb.Refiner.TermType.term
+  Refiner.Refiner.TermType.term -> Refiner_std.Refiner.TermType.term
 val denormalize_meta_term :
   Refiner.Refiner.TermType.meta_term ->
-  Refiner_std_verb.Refiner.TermType.meta_term
+  Refiner_std.Refiner.TermType.meta_term
 
 (*
  * -*-

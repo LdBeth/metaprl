@@ -58,6 +58,9 @@ LMFILES :=\
 	linear_set\
 	splay_linear_set\
 	array_linear_set\
+	infinite_weak_array_sig\
+	infinite_weak_array\
+	weak_memo\
 	simplehashtbl
 
 # Name of library

@@ -71,7 +71,7 @@ struct
 end
 
 module NormalizeTerm =
-   TermCopy2Weak (Refiner_std_verb.Refiner) (Refiner.Refiner)
+   TermCopy2Weak (Refiner_std.Refiner) (Refiner.Refiner)
 
 let normalize_term = NormalizeTerm.convert
 let normalize_meta_term = NormalizeTerm.convert_meta
