@@ -43,127 +43,6 @@ open Refiner.Refiner.TermMan
 open Refiner.Refiner.RefineError
 
 (***********************
- * COMPATIBILTY
- ***********************)
-
-(*
- * For compatibilty, we convert sequents to the "old" style.
- *
- * sequent ::= sequent{'arg; 'hyps}
- * hyps ::= sequent_hyp{'t1; v. 'hyps}
- *       |  sequent_hyp{'t1; 'hyps}
- *       |  sequent_context{'contexts; 'args; H. 'hyps}
- *       |  concl
- * concl ::= sequent_concls{term list}
- *)
-
-let sequent_opname      = make_opname [".sequent"]
-let sequent_hyp_binding = make_opname [".seq_hyp_binding"]
-let sequent_hypothesis  = make_opname [".seq_hypothesis"]
-let sequent_context     = make_opname [".seq_context"]
-let sequent_concl       = make_opname [".seq_concl"]
-
-(*
- * Build the term representation of a sequent.
- *)
-let term_of_sequent t =
-   let  { sequent_hyps = hyps;
-          sequent_goals = goals;
-          sequent_args = arg
-        } = explode_sequent t
-   in
-
-   (* Place goals in a list *)
-   let t = mk_simple_term sequent_concl (SeqGoal.to_list goals) in
-
-   (* Add all the hyps *)
-   let rec collect t i =
-      let i = pred i in
-         if i < 0 then
-            t
-         else
-            let t =
-               match SeqHyp.get hyps i with
-                  HypBinding (v, hyp) ->
-                     mk_dep0_dep1_term sequent_hyp_binding v hyp t
-                | Hypothesis hyp ->
-                     mk_simple_term sequent_hypothesis [hyp; t]
-                | Context (v, vars, args) ->
-                     let contexts = mk_xlist_term (List.map mk_var_term vars) in
-                     let args = mk_xlist_term args in
-                        mk_dep0_dep0_dep1_term sequent_context contexts args v t
-            in
-               collect t i
-   in
-   let t = collect t (SeqHyp.length hyps) in
-
-      (* Add the arg *)
-      mk_simple_term sequent_opname [arg; t]
-
-(*
- * Convert an expanded sequent back to original form.
- *)
-let sequent_of_term t =
-   (* Collect sequent *)
-   let rec collect t =
-      let op = opname_of_term t in
-         if Opname.eq op sequent_hyp_binding then
-            let v, hyp, t = dest_dep0_dep1_any_term t in
-            let hyps, goals = collect t in
-               HypBinding (v, hyp) :: hyps, goals
-         else if Opname.eq op sequent_hypothesis then
-            let hyp, t = two_subterms t in
-            let hyps, goals = collect t in
-               Hypothesis hyp :: hyps, goals
-         else if Opname.eq op sequent_context then
-            let contexts, args, v, t = dest_dep0_dep0_dep1_any_term t in
-            let contexts = List.map dest_var (dest_xlist contexts) in
-            let args = dest_xlist args in
-            let hyps, goals = collect t in
-               Context (v, contexts, args) :: hyps, goals
-         else if Opname.eq op sequent_concl then
-            let _, goals = dest_simple_term t in
-               [], goals
-         else
-            raise (RefineError ("sequent_of_term", StringTermError ("malformed sequent", t)))
-   in
-
-   (* Collect parts of the sequent *)
-   let arg, t = two_subterms t in
-   let hyps, goals = collect t in
-   let hyps = SeqHyp.of_list hyps in
-   let goals = SeqGoal.of_list goals in
-   let seq =
-      { sequent_args = arg;
-        sequent_hyps = hyps;
-        sequent_goals = goals
-      }
-   in
-      mk_sequent_term seq
-
-(*
- * Override dest_term to expand sequents.
- *)
-let dest_term t =
-   let t =
-      if is_sequent_term t then
-         term_of_sequent t
-      else
-         t
-   in
-      dest_term t
-
-(*
- * Convert all the sequents.
- *)
-let make_term t =
-   let t = make_term t in
-      if Opname.eq (opname_of_term t) sequent_opname then
-         sequent_of_term t
-      else
-         t
-
-(***********************
  * BASIC SUBSTITUTIONS *
  ***********************)
 
@@ -192,10 +71,42 @@ let new_eqns_var eqs v = new_name v (SymbolSet.mem (collect_vars eqs))
 let is_free_var v t = SymbolSet.mem (free_vars_set t) v
 
 (******************
+ * Special terms  *
+ ******************)
+
+type fun_name = 
+   FunOp of operator
+ | FunSOVar of var * var list
+ | FunSequent
+
+let my_dest_term t =
+   if is_so_var_term t then
+      let v, conts, ts = dest_so_var t in
+         FunSOVar(v,conts), List.map mk_simple_bterm ts
+   else if is_sequent_term t then
+      FunSequent, [mk_simple_bterm (Lib_term.ugly_term_of_sequent_term t)]
+   else
+      let t = dest_term t in
+         FunOp t.term_op, t.term_terms
+
+let my_mk_term op bterms =
+   match op with
+      FunSOVar(v,conts) ->
+         mk_so_var_term v conts (List.map dest_simple_bterm bterms)
+    | FunSequent -> begin
+         match bterms with
+            [bt] ->
+               Lib_term.sequent_term_of_ugly_term (dest_simple_bterm bt)
+          | _ ->
+               raise(Invalid_argument "Unify_mm.my_mk_term")
+      end
+    | FunOp op ->
+         mk_term op bterms
+         
+(******************
  * MM UNIFICATION *
  ******************)
 
-type fun_name= operator
 type var_name = Vinit | V of var
 
 type system = { mutable t: multeq list; mutable u: upart }
@@ -237,8 +148,17 @@ and mm_operator = Op of op_with_binding
                 | Bvar of bound_variable
                 | Cnst of var_name
 
+type clash_info =
+   ClashBvar of bound_variable
+ | ClashOps of op_with_binding * op_with_binding
+ | ClashMterms of multiterm * multiterm
+ | ClashBvars of bound_variable * bound_variable
+ | ClashConsts of var_name * var_name
+ | ClashTerms of term * term
+
 exception Cycle
-exception Clash
+exception Clash of clash_info
+
 (*
 exception Field_m_in_multeq_must_be_single_element_or_empty_list
 exception Field_m_t_in_temp_multeq_must_be_single_element_or_empty_list
@@ -271,28 +191,34 @@ let new_ts () = incr init_timestamp_ref;
                 (!init_timestamp_ref)
 
 let opsymb_equal op1 op2 =
-   let op1 = dest_op op1 in
-   let op2 = dest_op op2 in
-      Opname.eq op1.op_name op2.op_name && op1.op_params = op2.op_params
+   match op1, op2 with
+      FunOp op1, FunOp op2 -> 
+         let op1 = dest_op op1 in
+         let op2 = dest_op op2 in
+            Opname.eq op1.op_name op2.op_name && op1.op_params = op2.op_params
+    | FunSOVar(v1,conts1), FunSOVar(v2,conts2) ->
+         v1 = v2 && conts1 = conts2
+    | FunSequent, FunSequent -> true
+    | _ -> false
 
-        (* val header_equal : multiterm -> multiterm -> bool *)
-           (* all the job of merging the bindings we try to implement
-            * as a side effect of header_equal when it returnes TRUE
-            * in the case multit0.fsymb is (Op of op_with_binding).
-            * The updated binding we write into multit0.
-            *)
-
-let header_equal multit0 multit1 current_ts =
+(*
+ * val check_header_equality : multiterm -> multiterm -> unit
+ *
+ * We try to implement all the job of merging the bindings
+ * as a side effect of check_header_equality
+ * in the case multit0.fsymb is (Op of op_with_binding).
+ * We write the updated binding into multit0.
+ *)
+let check_header_equality multit0 multit1 current_ts =
    (if (multit0.fsymb != multit1.fsymb) then
     begin
-        match multit0.fsymb , multit1.fsymb with
+       match multit0.fsymb , multit1.fsymb with
           Op op0, Op op1 ->
-           if not (
+            if not (
                    (opsymb_equal op0.opsymb op1.opsymb) &&
                    (op0.oparity_n = op1.oparity_n ) &&
                    (op0.oparity_a = op1.oparity_a )
-                  ) then false
-           else
+                  ) then raise(Clash(ClashOps(op0, op1)));
             begin
               if op0.b_length < op1.b_length then
                     begin
@@ -312,52 +238,46 @@ let header_equal multit0 multit1 current_ts =
                  ((op1.opbinding).(i)).(j) ;
                done
               done;
-              op0.b_length<-op0.b_length + op1.b_length ;
-              true
+              op0.b_length<-op0.b_length + op1.b_length
             end
         | Bvar bv0 , Bvar bv1 ->
-            (
+            if not (
              (
               ((bv0.fsymb_bv.opbinding).(bv0.arg_numb)).(bv0.binding_numb) =
               ((bv1.fsymb_bv.opbinding).(bv1.arg_numb)).(bv1.binding_numb)
              )
              && (bv0.fsymb_bv.timestamp = current_ts )
              && (bv1.fsymb_bv.timestamp = current_ts )
-            )
-        | Cnst c0, Cnst c1 -> c0 = c1
-        | _ , _ -> false
+            ) then raise(Clash(ClashBvars(bv0, bv1)))
+        | Cnst c0, Cnst c1 -> if c0 <> c1 then raise(Clash(ClashConsts(c0,c1)))
+        | _ , _ -> raise(Clash(ClashMterms(multit0, multit1)))
     end
     else ( match multit0.fsymb with
 
-              (Op op) -> (op.timestamp <- current_ts ; true)
-            | (Bvar bv) -> (bv.fsymb_bv.timestamp = current_ts )
-            | _ -> true
+              (Op op) -> op.timestamp <- current_ts
+            | (Bvar bv) -> if bv.fsymb_bv.timestamp <> current_ts then raise(Clash(ClashBvar bv))
+            | _ -> ()
          )
-   ) &&
-   List.length multit0.args = List.length multit1.args
+   );
+   if List.length multit0.args <> List.length multit1.args then
+      raise(Clash(ClashMterms(multit0, multit1)))
 
-(* val test_timestamps multiterm list -> int -> bool *)
+(* val test_timestamps: multiterm list -> int -> unit *)
 let rec test_timestamps m ts =
       match m with
-        [multit] ->if ( match multit.fsymb with
-                          (Op op) -> (op.timestamp <- ts ; true)
-                        | (Bvar bv) -> (bv.fsymb_bv.timestamp = ts )
-                        | _ -> true
-                      ) then
-                            List.for_all
-                            (function tmeq ->
-                             (test_timestamps_in_temp_multeq tmeq ts)
-                            )
-                            multit.args
-                        else false
-      | _ -> true
+        [multit] -> begin
+            match multit.fsymb with
+               (Op op) -> op.timestamp <- ts
+             | (Bvar bv) -> if bv.fsymb_bv.timestamp <> ts then raise(Clash(ClashBvar bv))
+             | _ -> ()
+            end;
+            List.iter (fun tmeq -> test_timestamps_in_temp_multeq tmeq ts) multit.args
+      | _ -> ()
 
 and test_timestamps_in_temp_multeq tmeq ts =
-    if ( (Queue.length tmeq.s_t) = 0 ) then (test_timestamps tmeq.m_t ts)
-                                       else true
+    if (Queue.length tmeq.s_t) = 0 then test_timestamps tmeq.m_t ts
 
-        (* val select_multeq : upart -> multeq *)
-
+(* val select_multeq : upart -> multeq *)
 let select_multeq u = match u.zero_counter_multeq with
                         [] -> raise Cycle
                       | hd::tl -> (u.zero_counter_multeq <- tl;
@@ -452,21 +372,18 @@ and merge_multeq meq0ref meq1ref u =
 
 and merge_multiterms m0 m1 current_ts =
       match m0 with
-        [] ->if (not (test_timestamps m1 current_ts) ) then raise Clash;
-             m1
+        [] -> test_timestamps m1 current_ts; m1
       | [multit0] -> (match m1 with
-                       [] ->if (not (test_timestamps m0 current_ts) ) then raise Clash;
-                            m0
-                     | [multit1] -> (
-           if not (header_equal multit0 multit1 current_ts ) then raise Clash
-           (* all the job of merging the bindings we try to implement
-            * as a side effect of header_equal when it returnes TRUE
-            * in the case multit0.fsymb is (Op of op_with_binding).
-            * the updated binding we write into multiterm0.
-            *)
-           else
+                       [] -> test_timestamps m0 current_ts; m0
+                     | [multit1] ->
            begin
-               let append_to aa bb =Queue.iter (function x -> (Queue.add x bb )
+            check_header_equality multit0 multit1 current_ts;
+            (* We try to implement all the job of merging the bindings
+             * as a side effect of check_header_equality
+             * in the case multit0.fsymb is (Op of op_with_binding).
+             * We write the updated binding into multiterm0.
+             *)
+             let append_to aa bb =Queue.iter (function x -> (Queue.add x bb )
                                                ) aa
                    (* given <aa< , <bb<   makes   <bbaa< , returnes () *)
              in
@@ -476,7 +393,7 @@ and merge_multiterms m0 m1 current_ts =
              in
                List.iter2 ggg multit0.args multit1.args;
                m0
-           end)
+           end
                      | _ -> raise Mm_unif_error
                   (* Field_m_t_in_temp_multeq_must_be_single_element_or_empty_list *)
                      )
@@ -559,13 +476,13 @@ let rec get_bterms = function
 let null_var = Lm_symbol.add ""
 
 let rec cterm2multiterm t consts u var_hashtbl b_assoclist =
-   let t = dest_term t in
-   let tbvs_list = get_bvars t.term_terms in
-   let tbcore_list = get_bterms t.term_terms in
+   let op, terms = my_dest_term t in
+   let tbvs_list = get_bvars terms in
+   let tbcore_list = get_bterms terms in
    let op_n = List.length tbvs_list in
    let op_a = Array.of_list (List.map List.length tbvs_list) in
    let fs =
-      { opsymb    = t.term_op;
+      { opsymb    = op;
         oparity_n = op_n;
         oparity_a = op_a ;
         b_length  = 1;
@@ -650,14 +567,13 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
                                 args=[]
                                }
                     in
-                  if (header_equal multit0 multit1 (-1)) then
+                     check_header_equality multit0 multit1 (-1);
                      { m_t = [multit0];
                        s_t = Queue.create () }
-                  else (raise Clash)
                  )
-                with Not_found -> (raise Clash)
+                with Not_found -> raise(Clash(ClashTerms(t0,t1)))
             with Not_found ->
-               ((if (List.mem_assoc y b_asslist1) then raise Clash);
+               ((if (List.mem_assoc y b_asslist1) then raise(Clash(ClashTerms(t0,t1))));
                   match SymbolSet.mem consts x, SymbolSet.mem consts y with
                   true,true ->
                      if x=y then
@@ -665,7 +581,7 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
                            [{ fsymb = (Cnst (V x));
                               args = [] }];
                         s_t = Queue.create () }
-                     else raise Clash
+                     else raise(Clash(ClashTerms(t0,t1)))
                 | true,false ->
                      let q = Queue.create () in
                      Queue.add (get_variable y u var_hashtbl) q;
@@ -688,7 +604,7 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
             )
       else begin
          if (List.mem_assoc x b_asslist0)||(SymbolSet.mem consts x)
-            then raise Clash;
+            then raise(Clash(ClashTerms(t0,t1)));
            (* try let vx=(List.assoc x b_asslist0) in (raise Clash )
               with Not_found -> *)
          let q = Queue.create () in
@@ -700,7 +616,7 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
       if is_var_term t1 then
          let y = dest_var t1 in
             if (List.mem_assoc y b_asslist1)||(SymbolSet.mem consts y)
-               then raise Clash;
+               then raise(Clash(ClashTerms(t0,t1)));
             (* try let vy=(List.assoc y b_asslist1) in (raise Clash)
                with Not_found -> *)
             let q = Queue.create () in
@@ -708,20 +624,20 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
                { m_t = [cterm2multiterm t0 consts u var_hashtbl b_asslist0];
                  s_t = q }
       else begin
-         let t_0 = dest_term t0 in
-         let t_1 = dest_term t1 in
-         if not (opsymb_equal t_0.term_op t_1.term_op) then raise Clash;
-         let tbvs_list0 = get_bvars t_0.term_terms
-         and tbvs_list1 = get_bvars t_1.term_terms
-         and tbcore_list0 = get_bterms t_0.term_terms
-         and tbcore_list1 = get_bterms t_1.term_terms in
+         let op0, terms0 = my_dest_term t0 in
+         let op1, terms1 = my_dest_term t1 in
+         if not (opsymb_equal op0 op1) then raise(Clash(ClashTerms(t0,t1)));
+         let tbvs_list0 = get_bvars terms0
+         and tbvs_list1 = get_bvars terms1
+         and tbcore_list0 = get_bterms terms0
+         and tbcore_list1 = get_bterms terms1 in
          let op_n0 =List.length tbvs_list0
          and op_n1 =List.length tbvs_list1 in
-         if not (op_n0=op_n1) then raise Clash;
+         if not (op_n0=op_n1) then raise(Clash(ClashTerms(t0,t1)));
          let op_a0 = Array.of_list (List.map List.length tbvs_list0)
          and op_a1 = Array.of_list (List.map List.length tbvs_list1) in
-         if not (op_a0=op_a1) then raise Clash;
-         let fs = { opsymb = t_0.term_op;
+         if not (op_a0=op_a1) then raise(Clash(ClashTerms(t0,t1)));
+         let fs = { opsymb = op0;
                     oparity_n = op_n0;
                     oparity_a = op_a0 ;
                     b_length = 2;
@@ -839,7 +755,7 @@ let unifiable t0 t1 consts=
            try
              ignore(mm_unify (cterms2system t_0 t_1 consts var_hashtbl));
              true
-           with Clash -> false
+           with Clash _ -> false
               | Cycle -> false
 
 let fofeqnlist =
@@ -905,14 +821,12 @@ let rec multiterm_list2term m consts var_hashtbl sub_hashtbl multeq_hashtbl =
  ( match m with
        [multit] ->
       ( match multit.fsymb with
-          Op op_w_b ->( make_term {term_op = op_w_b.opsymb ;
-                                  term_terms = List.map2
-                                               (function x -> function y ->
-                                                (temp_multieq2bterm x y consts var_hashtbl sub_hashtbl multeq_hashtbl )
-                                               )
-                                               multit.args
-                                               (List.map Array.to_list (Array.to_list op_w_b.opbinding))
-                                 }
+          Op op_w_b ->( my_mk_term op_w_b.opsymb
+                                  (List.map2
+                                   (function x -> function y ->
+                                      (temp_multieq2bterm x y consts var_hashtbl sub_hashtbl multeq_hashtbl ))
+                                   multit.args
+                                   (List.map Array.to_list (Array.to_list op_w_b.opbinding)))
                       )
        | Bvar bv -> (match (pick_name bv consts var_hashtbl) with
                        (V v) -> mk_var_term v
@@ -1062,13 +976,13 @@ let unify t0 t1 consts=
             let y = dest_var t1 in
                if SymbolSet.mem consts x then
                   if SymbolSet.mem consts y then
-                     if(x=y) then [] else raise Clash
+                     if(x=y) then [] else raise(Clash(ClashTerms(t0,t1)))
                   else
                      [y,t0]
                else
                   [x,t1]
          else if SymbolSet.mem consts x then
-            raise Clash
+            raise(Clash(ClashTerms(t0,t1)))
          else if (is_free_var x t1) then
             raise Cycle
          else
@@ -1076,7 +990,7 @@ let unify t0 t1 consts=
    else if is_var_term t1 then
       let y = dest_var t1 in
          if SymbolSet.mem consts y then
-            raise Clash
+            raise(Clash(ClashTerms(t0,t1)))
          else if (is_free_var y t0) then
             raise Cycle
          else
@@ -1112,14 +1026,11 @@ let rec multiterm_list2term m consts var_hashtbl=
  ( match m with
        [multit] ->
       ( match multit.fsymb with
-          Op op_w_b ->( make_term {term_op = op_w_b.opsymb ;
-                                  term_terms = List.map2
-                                               (function x -> function y ->
-                                                (temp_multieq2bterm x y consts var_hashtbl)
-                                               )
-                                               multit.args
-                                               (List.map Array.to_list (Array.to_list op_w_b.opbinding))
-                                 }
+          Op op_w_b ->( my_mk_term op_w_b.opsymb
+                           (List.map2
+                            (function x -> function y -> (temp_multieq2bterm x y consts var_hashtbl))
+                            multit.args
+                            (List.map Array.to_list (Array.to_list op_w_b.opbinding)))
                       )
        | Bvar bv -> (match (pick_name bv consts var_hashtbl) with
                        (V v) -> mk_var_term v
@@ -1237,8 +1148,41 @@ let unify_eqnl_eqnl l1 consts =
 
 let re_bug = Invalid_argument "Bug: Uncaught RefineError exception in unify_mm"
 let unif_error = RefineError("unify_mm", StringError "Mm_unif_error")
-let clash_error = RefineError("unify_mm", StringError "Unification failed - clash")
-let cycle_error = RefineError("unify_mm", StringError "Unification failed - cycle")
+let cycle_error = RefineError("unify_mm", StringError "Unification failed - equations form a cycle")
+
+let clash_error_aux =
+   let var_name = function
+      Vinit -> Lm_symbol.add "_"
+    | V v -> v
+   in
+   let slot_bterm = mk_simple_bterm (mk_xstring_term ".") in
+   let rec slot_bterms i =
+      if i<=0 then [] else slot_bterm :: slot_bterms (i - 1)
+   in
+   let term_of_op = function
+      { opsymb = FunSequent } -> mk_xstring_term "sequent..."  
+    | op -> my_mk_term op.opsymb (slot_bterms op.oparity_n)
+   in
+   let term_of_multi = function
+      { fsymb = Op op } -> term_of_op op 
+    | { fsymb = Bvar bv } -> mk_var_term (var_name bv.name_bv)
+    | { fsymb = Cnst c } -> mk_var_term (var_name c)
+   in function
+      ClashBvar bv ->
+         StringVarError("bound variable mismatch", var_name bv.name_bv)
+    | ClashOps(op1,op2) ->
+         StringWrapError("operator mismatch", TermPairMatchError(term_of_op op1, term_of_op op2))
+    | ClashMterms(mt1,mt2) ->
+         StringWrapError("internal terms mismatch", TermPairMatchError(term_of_multi mt1, term_of_multi mt2))
+    | ClashTerms(t1,t2) ->
+         TermPairMatchError(t1,t2)
+    | ClashConsts(c1,c2) ->
+         StringWrapError("constants mismatch", TermPairMatchError(mk_var_term (var_name c1), mk_var_term (var_name c2)))
+    | ClashBvars(bv1,bv2) ->
+         StringWrapError("bound variables mismatch", TermPairMatchError(mk_var_term (var_name bv1.name_bv),mk_var_term (var_name bv2.name_bv)))
+
+let clash_error ce =
+   RefineError("unify_mm", clash_error_aux ce)
 
 let unifiable term0 term1 const =
    try unifiable term0 term1 const with
@@ -1252,21 +1196,21 @@ let unifiable_eqnl l consts =
 
 let unify term0 term1 consts =
    try unify term0 term1 consts with
-      Clash -> raise clash_error
+      Clash ce -> raise (clash_error ce)
     | Cycle -> raise cycle_error
     | RefineError _ -> raise re_bug
     | Mm_unif_error -> raise unif_error
 
 let unify_eqnl l consts =
    try unify_eqnl l consts with
-      Clash -> raise clash_error
+      Clash ce -> raise (clash_error ce)
     | Cycle -> raise cycle_error
     | RefineError _ -> raise re_bug
     | Mm_unif_error -> raise unif_error
 
 let unify_eqnl_eqnl l consts =
    try unify_eqnl_eqnl l consts with
-      Clash -> raise clash_error
+      Clash ce -> raise (clash_error ce)
     | Cycle -> raise cycle_error
     | RefineError _ -> raise re_bug
     | Mm_unif_error -> raise unif_error

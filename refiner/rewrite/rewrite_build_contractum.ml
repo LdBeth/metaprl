@@ -146,7 +146,7 @@ struct
          begin
             IFDEF VERBOSE_EXN THEN
                if !debug_rewrite then
-                  eprintf "StackName %d (avoid [%a])%t" i print_symbol_list (SymbolSet.to_list bnames) eflush
+                  eprintf "StackName %d (avoid [%a])%t" i print_symbol_set bnames eflush
             ENDIF;
             let v =
                match stack.(i) with
@@ -166,7 +166,7 @@ struct
     | SaveName i ->
          IFDEF VERBOSE_EXN THEN
             if !debug_rewrite then
-               eprintf "SaveName %d (%a, avoid [%a])%t" i print_symbol names.(i) print_symbol_list (SymbolSet.to_list bnames) eflush
+               eprintf "SaveName %d (%a, avoid [%a])%t" i print_symbol names.(i) print_symbol_set bnames eflush
          ENDIF;
          let v = names.(i) in
             if SymbolSet.mem bnames v then

@@ -216,7 +216,7 @@ let rec edit pack parse_arg name window obj =
        | Interactive ped ->
             try Proof_edit.check_ped df ped with
                RefineError (name', err) ->
-                  raise (RefineError (name, GoalError (name', err)))
+                  raise (RefineError (name, StringWrapError (name', err)))
    in
    let get_ped obj =
       match obj.rule_ped with

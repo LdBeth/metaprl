@@ -36,7 +36,6 @@ CCLIBS =\
 
 # Library files
 LMFILES :=\
-	lib_term\
 	utils\
 	lint32\
 	nuprl5\

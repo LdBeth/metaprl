@@ -102,21 +102,6 @@ struct
       print_any_list print_varname
 
    (*
-    * Print a list of variables.
-    *)
-   let print_var_list = print_symbol_list
-
-   (*
-    * Print a set of variables.
-    *)
-   let print_var_set out s =
-      ignore (SymbolSet.fold (fun first v ->
-                    if not first then
-                       output_string out ", ";
-                    print_symbol out v;
-                    false) true s)
-
-   (*
     * Print a stack item.
     * We can't print terms.
     *)
@@ -132,17 +117,17 @@ struct
     | StackLevel l ->
          fprintf out "Level"
     | StackBTerm (t, vars) ->
-         fprintf out "BTerm %a[%a]" print_term t print_var_list vars
+         fprintf out "BTerm %a[%a]" print_term t print_symbol_list vars
     | StackITerm ts ->
          fprintf out "ITerm %a" (print_any_list (fun out (t, subterms) -> fprintf out "%a[%d] " print_term t (List.length subterms))) ts
     | StackContext (vars, t, addr) ->
          fprintf out "Context (%a/%a/%s)" (**)
-            print_var_list vars
+            print_symbol_list vars
             print_term t
             (string_of_address addr)
     | StackSeqContext (vars, (i, len, hyps)) ->
          fprintf out "SeqContext (%a/(%d,%d))" (**)
-            print_var_list vars i len
+            print_symbol_list vars i len
 
    (*
     * Stack is printed on lines.

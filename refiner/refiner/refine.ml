@@ -705,22 +705,10 @@ struct
     *)
    let andthenrw rw1 rw2 sent t =
       let t', just =
-         IFDEF VERBOSE_EXN THEN
-            try rw1 sent t with
-               RefineError (name, x) ->
-                  raise (RefineError ("andthenrw", GoalError (name, x)))
-         ELSE
-            rw1 sent t
-         ENDIF
+         rw1 sent t
       in
       let t'', just' =
-         IFDEF VERBOSE_EXN THEN
-            try rw2 sent t' with
-               RefineError (name, x) ->
-                  raise (RefineError ("andthenrw", SecondError (name, x)))
-         ELSE
-            rw2 sent t'
-         ENDIF
+         rw2 sent t'
       in
          t'', RewriteCompose (just, just')
 
@@ -764,7 +752,7 @@ struct
                eprintf "Refine.replace_subgoal %a@%s with %a\n\tTest term: %a%t" print_term seq (TermAddr.string_of_address addr) print_term t' print_term ttst eflush;
          ENDIF;
          if SymbolSet.cardinal (free_vars_set ttst) < SymbolSet.cardinal (free_vars_set t') then
-            REF_RAISE(RefineError ("Refine.replace_subgoals", GoalError("Invalid context for conditional rewrite application",AddressError(addr,seq))));
+            REF_RAISE(RefineError ("Refine.replace_subgoals", StringWrapError("Invalid context for conditional rewrite application",AddressError(addr,seq))));
 
          (* Now we can replace the goal without fear *)
          let seq = replace_goal seq t' in
@@ -941,22 +929,10 @@ struct
     *)
    let candthenrw crw1 crw2 sent bvars t =
       let t', subgoals, just =
-         IFDEF VERBOSE_EXN THEN
-            try crw1 sent bvars t with
-               RefineError (name, x) ->
-                  raise (RefineError ("candthenrw", GoalError (name, x)))
-         ELSE
-            crw1 sent bvars t
-         ENDIF
+         crw1 sent bvars t
       in
       let t'', subgoals', just' =
-         IFDEF VERBOSE_EXN THEN
-            try crw2 sent bvars t' with
-               RefineError (name, x) ->
-                  raise (RefineError ("candthenrw", SecondError (name, x)))
-         ELSE
-            crw2 sent bvars t'
-         ENDIF
+         crw2 sent bvars t'
       in
          t'', CondRewriteSubgoalsList [subgoals; subgoals'], CondRewriteCompose (just, just')
 
@@ -1953,7 +1929,7 @@ struct
       let rw' params (sent : sentinal) (bvars : SymbolSet.t) t =
          IFDEF VERBOSE_EXN THEN
             if !debug_rewrites then
-               eprintf "Refiner: applying conditional rewrite %s to %a with bvars = [%a] %t" name print_term t print_symbol_list (SymbolSet.to_list bvars) eflush;
+               eprintf "Refiner: applying conditional rewrite %s to %a with bvars = [%a] %t" name print_term t print_symbol_set bvars eflush;
          ENDIF;
          match apply_rewrite rw ([||], bvars) t params with
             (t' :: subgoals) ->

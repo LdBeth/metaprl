@@ -572,7 +572,5 @@ struct
 
    let nth_clause_addr t i =
       nth_clause_addr_aux (fun count -> make_nth_clause_addr nth_hd_address count i) t
-
-   let arg_addr = Path [0]
 end
 

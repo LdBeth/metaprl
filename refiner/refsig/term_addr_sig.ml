@@ -85,7 +85,6 @@ sig
    val nth_hyp_addr : term -> int -> address
    val nth_concl_addr : term -> int -> address
    val nth_clause_addr : term -> int -> address
-   val arg_addr : address
 end
 
 (*

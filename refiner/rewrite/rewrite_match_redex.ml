@@ -329,10 +329,9 @@ struct
                HypBinding (v, _) ->
                   if SymbolSet.mem all_bvars v then
                      begin
-                        eprintf "Sequent vars: %a in { %a }%t" print_symbol v print_var_set all_bvars eflush
-(*
+                        eprintf "Sequent vars: %a in { %a }%t" print_symbol v print_symbol_set all_bvars eflush;
+                        (* XXX TODO: Error message should be better *)
                         raise(Invalid_argument("Rewrite_match_redex.check_sequent_hyps: binding clash in a sequent. Please let Aleksey Nogin know if this happens to you."))
-*)
                      end;
                   SymbolSet.add all_bvars v
              | Context (v, _, _) ->

@@ -105,8 +105,7 @@ sig
     | StringStringError of string * string
     | StringVarError of string * var
     | StringTermError of string * term
-    | GoalError of string * refine_error
-    | SecondError of string * refine_error
+    | StringWrapError of string * refine_error
     | SubgoalError of int * string * refine_error
     | PairError of string * refine_error * string * refine_error
 

@@ -650,10 +650,5 @@ struct
                   REF_RAISE(RefineError (nth_clause_addr_name, TermMatchError (t, "not enough hyps for a negative addressing")))
        | _ ->
             REF_RAISE(RefineError (nth_clause_addr_name, TermMatchError (t, "not a sequent")))
-
-   (*
-    * Argument address.
-    *)
-   let arg_addr = ArgAddr
 end
 

@@ -450,11 +450,6 @@ and format_term buf shortener printer term =
  * Sequents and variables are handled specially.
  *)
 let base_opname = mk_opname "Base_dform" nil_opname
-
-let sequent_term =
-   let opname = mk_opname "sequent" base_opname in
-      mk_simple_term opname [mk_so_var_term (Lm_symbol.add "ext") [] []; mk_so_var_term (Lm_symbol.add "hyps") [] []]
-
 let dsovar_opname = mk_opname "df_so_var" base_opname
 let dvar_opname = mk_opname "df_var" base_opname
 let dcont_opname = mk_opname "df_context_var" base_opname

@@ -199,9 +199,7 @@ let format_refine_error db buf printers name error =
             format_string buf s;
             format_space buf;
             printers.format_term db buf t
-       | GoalError (name, e) ->
-            format (indent + 3) name e
-       | SecondError (name, e) ->
+       | StringWrapError (name, e) ->
             format (indent + 3) name e
        | SubgoalError (i, name, e) ->
             format_int buf i;

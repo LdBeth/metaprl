@@ -10,6 +10,10 @@ val mk_term : operator -> bound_term list -> term
 val make_term : term' -> term
 val dest_term : term -> term'
 
+(* Represents sequents using "ugly" generic terms *)
+val ugly_term_of_sequent_term : term -> term
+val sequent_term_of_ugly_term : term -> term
+
 (*
  * -*-
  * Local Variables:
