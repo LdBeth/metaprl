@@ -409,7 +409,6 @@ struct
 
    type cooked = summary_type
    let marshal info =
-      eprintf "Filter_cache.StrMarshal.marshal%t" eflush;
       Implementation info
    let unmarshal = function
       Implementation info ->
@@ -441,6 +440,9 @@ module StrFilterCache = MakeFilterCache (SigMarshal) (StrMarshal) (SummaryBase)
 
 (*
  * $Log$
+ * Revision 1.10  1998/04/08 14:57:06  jyh
+ * ImpDag is in mllib.
+ *
  * Revision 1.9  1998/03/12 00:27:02  jyh
  * Added filter_html, but its not finished yet.
  *

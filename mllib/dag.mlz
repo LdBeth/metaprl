@@ -1,0 +1,78 @@
+(*
+ * Imperative DAGs.
+ *
+ * $Log$
+ * Revision 1.1  1998/04/08 14:57:17  jyh
+ * ImpDag is in mllib.
+ *
+ * Revision 1.1  1997/08/06 16:17:13  jyh
+ * This is an ocaml version with subtyping, type inference,
+ * d and eqcd tactics.  It is a basic system, but not debugged.
+ *
+ * Revision 1.2  1996/05/21 02:25:19  jyh
+ * This is a semi-working version before Wisconsin vacation.
+ *
+ * Revision 1.1  1996/05/01 15:04:12  jyh
+ * This is the initial checkin of the NuprlLight editor.  This editor provides
+ * an emacs interface, a library navigator, and a proof editor.
+ *
+ *)
+
+(*
+ * This describes a relation between two nodes in a DAG.
+ *)
+type relation =
+   NoRelation
+ | LessThan
+ | Equal
+ | GreaterThan
+
+(*
+ * This signature is an imperative DAG.
+ *)
+module type ImpDagSig =
+sig
+   (* Abstract types *)
+   type 'a t
+   type 'a node
+   
+   (* Constructors *)
+   val create : unit -> 'a t
+   val insert : 'a t -> 'a -> 'a node
+   val delete : 'a t -> 'a node -> unit
+   val add_edge : 'a t -> 'a node -> 'a node -> unit
+   val equate : 'a t -> 'a node -> 'a node -> unit
+   
+   (* Graph operations *)
+   val node_value : 'a t -> 'a node -> 'a
+   val node_out_edges : 'a t -> 'a node -> 'a node list
+   val node_in_edges : 'a t -> 'a node -> 'a node list
+   
+   (*
+    * Compute relation between two nodes.
+    * Roots are smaller.
+    *)
+   val node_rel : 'a t -> 'a node -> 'a node -> relation
+   
+   (*
+    * Mappers.
+    * Sweep_up maps a function up the DAG, calling on the leaves first;
+    *    it returns a list of the roots in the DAG
+    * Sweep_down maps a function down the DAG, calling on the roots first;
+    *    it returns a list of the leaves in the DAG.
+    * The _all versions are the same, except they return a list of all the nodes
+    *    that were swept.
+    *)
+   val sweep_up : 'a t -> ('a -> 'b list -> 'b) -> 'b list
+   val sweep_down : 'a t -> ('a -> 'b list -> 'b) -> 'b list
+   val sweep_up_all : 'a t -> ('a -> 'b list -> 'b) -> 'b list
+   val sweep_down_all : 'a t -> ('a -> 'b list -> 'b) -> 'b list
+end
+
+(*
+ * -*-
+ * Local Variables:
+ * Caml-master: "editor.top"
+ * End:
+ * -*-
+ *)

@@ -5,7 +5,7 @@
 (*
  * Debug the term grammar.
  *)
-let debug_grammar = false
+let debug_grammar = true
 
 (*
  * Resource and inheritance debugging.
@@ -39,6 +39,9 @@ let debug_filter_cache = false
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/08 14:57:08  jyh
+ * ImpDag is in mllib.
+ *
  * Revision 1.3  1998/02/23 14:46:05  jyh
  * First implementation of binary file compilation.
  *

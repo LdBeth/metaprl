@@ -1,19 +1,13 @@
 # Libraries
-REF_ROOT := ../..
-INCLUDE := -I . -I $(REF_ROOT)/refiner -I $(REF_ROOT)/theories/tactic -I $(REF_ROOT)/theories/base -I $(REF_ROOT)/theories/itt -I /usr/local/lib/camlp4
-OCAMLFLAGS := -g -root $(REF_ROOT)
-OCAMLC := $(REF_ROOT)/filter/prlcomp.run
-CAMLP4 := $(REF_ROOT)/filter/prlcomp.run -E -root $(REF_ROOT)
+INCLUDE := -I .
 
 # Common files
 MLZFILES :=\
 	edit_type
 
 # Library files
-LMFILES :=\
-	file_util\
+NLFILES :=\
 	edit_type\
-	imp_dag\
 	proof_step\
 	proof\
 	proof_edit\
@@ -34,17 +28,13 @@ PFILES :=\
 	main
 
 # Name of main libraris
-MAIN = tactics
+MAIN = nuprl-light
 
 all: $(MAIN).cma $(MAIN).run editor_init.cmo
 opt: $(MAIN).cmxa $(MAIN) editor_init.cmx
 
 clean::
-	del -f *.p4* *.pp*
-
-# Add dependency for parser
-$(addsuffix .cmiz, $(MFILES)) $(addsuffix .cmoz, $(MFILES)): $(REF_ROOT)/filter/prlcomp.cma
-$(addsuffix .p4i, $(MFILES)) $(addsuffix .p4, $(MFILES)): $(REF_ROOT)/filter/prlcomp.cma
+	$(RM) -f *.p4* *.pp*
 
 # Real makefile
 include ../../mk/config

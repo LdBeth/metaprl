@@ -8,17 +8,20 @@ MLZFILES :=\
 # Library files
 LMFILES :=\
 	debug\
+	env_arg\
 	array_util\
 	string_util\
 	list_util\
 	ref_util\
 	file_util\
 	filename_util\
-	env_arg\
 	ctype\
+	bitset\
+	dag\
+	imp_dag\
 	file_base_type\
 	file_base\
-	file_type_base
+	file_type_base\
 
 # Name of library
 MAIN := util
