@@ -753,9 +753,12 @@ struct
     *
     * BUG JYH: this works with Mozilla/Linux, but I'm not at all sure
     * how well it will work on other systems.
+    *      n8: It doesn't work so well on Safari/OS X, where you want
+    * to use "open -a safari" as your browser command.
     *)
    let start_browser browser url =
-      let argv = [|browser; url|] in
+      let browser_list = Str.split (Str.regexp "[ \t]+") browser in
+      let argv = Array.of_list (browser_list @ [url]) in
          try ignore (Unix.waitpid [] (Unix.create_process browser argv Unix.stdin Unix.stdout Unix.stderr)) with
             Unix.Unix_error _ ->
                eprintf "Shell_browser: could not start browser %s@." browser
