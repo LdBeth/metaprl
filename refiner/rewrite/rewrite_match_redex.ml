@@ -104,18 +104,27 @@ struct
          end
 
    let rec extract_cont_bvars_aux hyps vars i count =
-      if count = 0 then vars else
-      extract_cont_bvars_aux hyps (**)
-         (match SeqHyp.get hyps i with Context(v,_,_) | Hypothesis (v, _) -> (v::vars))
-         (i+1) (count-1)
+      if count = 0 then
+         vars
+      else
+         extract_cont_bvars_aux hyps (**)
+            (match SeqHyp.get hyps i with Context(v,_,_) | Hypothesis (v, _) -> (v::vars))
+            (i + 1) (count - 1)
 
    let rec extract_cont_bvars stack vars = function
       [] -> vars
     | v::tl ->
-         begin match stack.(v) with
-            StackSeqContext(_, (ind, count, hyps)) -> extract_cont_bvars_aux hyps (extract_cont_bvars stack vars tl) ind count
-          | StackContext _ -> raise(Invalid_argument "Rewrite_match_redex.extract_cont_bvars: non-sequent contexts not supported")
-          | _ -> raise(Invalid_argument("Rewrite_match_redex.extract_cont_bvars: invalid stack entry"))
+         begin
+            match stack.(v) with
+               StackSeqContext (_, (ind, count, hyps)) -> extract_cont_bvars_aux hyps (extract_cont_bvars stack vars tl) ind count
+             | StackContext _ -> raise (Invalid_argument "Rewrite_match_redex.extract_cont_bvars: non-sequent contexts not supported")
+             | StackITerm _ -> raise (Invalid_argument ("Rewrite_match_redex.extract_cont_bvars: invalid stack entry: StackITerm"))
+             | StackBTerm _ -> raise (Invalid_argument ("Rewrite_match_redex.extract_cont_bvars: invalid stack entry: StackBTerm"))
+             | StackLevel _ -> raise (Invalid_argument ("Rewrite_match_redex.extract_cont_bvars: invalid stack entry: StackLevel"))
+             | StackVar _ -> raise (Invalid_argument ("Rewrite_match_redex.extract_cont_bvars: invalid stack entry: StackVar"))
+             | StackString _ -> raise (Invalid_argument ("Rewrite_match_redex.extract_cont_bvars: invalid stack entry: StackString"))
+             | StackNumber _ -> raise (Invalid_argument ("Rewrite_match_redex.extract_cont_bvars: invalid stack entry: StackNumber"))
+             | StackVoid -> raise (Invalid_argument ("Rewrite_match_redex.extract_cont_bvars: invalid stack entry: StackVoid"))
          end
 
    let extract_stack_bvars stack conts vars =

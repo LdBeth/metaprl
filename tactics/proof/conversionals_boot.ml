@@ -110,16 +110,23 @@ struct
       prefix_orelseC rw idC
 
    let ifEqualC term conv1 conv2 =
-      let if_alpha_eq t = if alpha_equal t term then conv1 else conv2
-      in termC if_alpha_eq
+      let if_alpha_eq t =
+         if alpha_equal t term then
+            conv1
+         else
+            conv2
+      in
+         termC if_alpha_eq
 
    let replaceUsingC term conv =
       ifEqualC term (*then*) conv (*else*) failC
 
    let progressC conv =
       let prgC term =
-         prefix_thenC conv  (ifEqualC term (*then*) failC (*else*) idC)
-      in termC prgC
+         prefix_thenC conv (ifEqualC term (*then*) failC (*else*) idC)
+      in
+         termC prgC
+
    (*
     * First subterm that works. This is similar to Rewrite_boot's allSubC.
     *)
@@ -179,6 +186,19 @@ struct
          prefix_thenC rw (allSubC (sweepDnFailC rw))
       in
          funC sweepDnCE
+
+   (*
+    * Search for the term, then apply conversion.
+    *)
+   let rec findThenC test rw =
+      let findThenCE e =
+         let t = env_term e in
+            if test t then
+               rw
+            else
+               allSubC (findThenC test rw)
+      in
+         funC findThenCE
 
    (*
     * Use the first conversion that works.

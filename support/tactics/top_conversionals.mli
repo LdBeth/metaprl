@@ -76,6 +76,7 @@ topval higherC : conv -> conv
 topval lowerC : conv -> conv
 topval sweepUpC : conv -> conv
 topval sweepDnC : conv -> conv
+val findThenC : (term -> bool) -> conv -> conv
 topval firstC : conv list -> conv
 topval applyAllC : conv list -> conv
 topval untilFailC : conv -> conv

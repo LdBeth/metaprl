@@ -285,6 +285,10 @@ doc <:doc<
    Note that these conversions never fail@; however they may fail to
    make progress if the conversion $c$ never succeeds.}
 
+   @item{@conv[findThenC];
+   The @tt[findThenC] conversion find the outermost term that matches a predicate
+   and applies a conversion at that point.}
+
    @item{@conv[applyAllC];
    The @tt[applyAllC] conversion takes a list of conversions
    and applies them to all subterms possible from outermost to
@@ -318,6 +322,7 @@ let lowerC = Tactic_type.Conversionals.lowerC
 let sweepUpC = Tactic_type.Conversionals.sweepUpC
 let sweepDnC = Tactic_type.Conversionals.sweepDnC
 let applyAllC = Tactic_type.Conversionals.applyAllC
+let findThenC = Tactic_type.Conversionals.findThenC
 
 doc <:doc<
    @begin[doc]

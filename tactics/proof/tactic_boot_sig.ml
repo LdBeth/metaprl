@@ -1129,6 +1129,12 @@ sig
    val sweepDnFailC : conv -> conv
 
    (*
+    * Find the outermost terms that match the predicate,
+    * and apply the rewrite at those positions.
+    *)
+   val findThenC : (term -> bool) -> conv -> conv
+
+   (*
     * Use the first conversion that works.
     *)
    val firstC : conv list -> conv
