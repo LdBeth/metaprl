@@ -401,6 +401,7 @@ doc <:doc<
 declare paragraph{'t}
 declare subparagraph{'t}
 
+doc docoff
 
 dform paragraph_df1 : mode[tex] :: paragraph{'t} =
    izone `"\\paragraph{"  ezone 't izone `"}" ezone
@@ -419,8 +420,6 @@ dform subparagraph_df2 : mode[html] :: subparagraph{'t} =
 
 dform subparagraph_df3 : except_mode[tex] :: except_mode[html] :: subparagraph{'t} =
    com_hbreak it{'t}
-
-
 
 doc <:doc<
    @begin[doc]

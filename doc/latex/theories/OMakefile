@@ -18,6 +18,7 @@ all-bodies.tex: $(ALL_BODIES)
 #
 # Format the document
 #
+LATEX = latex -interaction=errorstopmode -file-line-error-style
 LaTeXDocumentInstall(tex doc, $(DOCDIR), theories, all-theories, all-bodies)
 
 #
