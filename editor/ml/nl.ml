@@ -100,13 +100,17 @@ let fold_all = fold_all
 (*
  * Nuprl5 interface.
  *)
-let edit_list_modules = edit_list_modules 
-let edit_list_module = edit_list_module 
-let edit_create_thm = edit_create_thm 
-let edit_cd_thm = edit_cd_thm 
-let edit_refine = edit_refine 
-let edit_node = edit_node 
-let edit_undo = edit_undo 
+let edit_list_modules = edit_list_modules
+let edit_list_module = edit_list_module
+let edit_list_parents = edit_list_parents
+let edit_list_dforms = edit_list_dforms
+let edit_list_precs = edit_list_precs
+let edit_list_prec_rels = edit_list_prec_rels
+let edit_create_thm = edit_create_thm
+let edit_cd_thm = edit_cd_thm
+let edit_refine = edit_refine
+let edit_node = edit_node
+let edit_undo = edit_undo
 
 let _ = Shell.main ()
 

@@ -118,6 +118,10 @@ sig
     *)
    val edit_list_modules : unit -> string list
    val edit_list_module : string -> string list
+   val edit_list_parents : string -> string list
+   val edit_list_dforms : string -> (string * string list * term list * term * term) list
+   val edit_list_precs : string -> term list
+   val edit_list_prec_rels : string -> (string * term * term) list
    val edit_create_thm : string -> string -> unit
    val edit_cd_thm : string -> string -> unit
    val edit_refine : int list -> string -> msequent * msequent list * msequent list

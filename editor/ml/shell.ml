@@ -45,6 +45,8 @@ include Shell_rule
 open Printf
 open Nl_debug
 
+open Opname
+open Precedence
 open Refiner.Refiner.Term
 open Refiner.Refiner.Refine
 open Refiner.Refiner.RefineError
@@ -802,6 +804,112 @@ struct
                 | _ -> names
       in
          collect (info_items info)
+
+   (*
+    * Navigating the hierarchy.
+    *)
+   let edit_list_parents name =
+      let rec collect = function
+         [] ->
+            []
+       | (h, _) :: t ->
+            let parents = collect t in
+               match h with
+                  Parent { parent_name = [name] } ->
+                     name :: parents
+                | _ ->
+                     parents
+      in
+         collect (info_items (edit_info name))
+
+   (*
+    * Display forms and precedences.
+    *)
+   let summary_opname = make_opname ["Summary"]
+   let prec_op =
+      mk_opname "prec" summary_opname
+   let inherit_term =
+      mk_simple_term (mk_opname "inherit" summary_opname) []
+   let parens_term =
+      mk_simple_term (mk_opname "parens" summary_opname) []
+
+   let edit_list_dforms name =
+      let opname = make_opname [name] in
+      let mk_dform_option = function
+         DFormInheritPrec ->
+            inherit_term
+       | DFormPrec name' ->
+            mk_simple_term prec_op [mk_simple_term (make_opname [name'; name]) []]
+       | DFormParens ->
+            parens_term
+      in
+      let rec collect = function
+         [] ->
+            []
+       | (h, _) :: t ->
+            let dforms = collect t in
+               match h with
+                  DForm { dform_name = name;
+                          dform_modes = modes;
+                          dform_options = options;
+                          dform_redex = redex;
+                          dform_def = def
+                  } ->
+                     begin
+                        match def with
+                         | TermDForm contractum ->
+                              (name, modes, List.map mk_dform_option options, redex, contractum) :: dforms
+                         | NoDForm
+                         | MLDForm _ ->
+                              dforms
+                     end
+                | _ ->
+                     dforms
+      in
+         collect (info_items (edit_info name))
+
+   let edit_list_precs name =
+      let rec collect = function
+         [] ->
+            []
+       | (h, _) :: t ->
+            let precs = collect t in
+               match h with
+                  Prec name' ->
+                     mk_simple_term (make_opname [name'; name]) [] :: precs
+                | _ ->
+                     precs
+      in
+         collect (info_items (edit_info name))
+
+   let edit_list_prec_rels name =
+      let rec collect = function
+         [] ->
+            []
+       | (h, _) :: t ->
+            let rels = collect t in
+               match h with
+                  PrecRel { prec_rel = rel;
+                            prec_left = left;
+                            prec_right = right
+                  } ->
+                     begin
+                        let left = mk_simple_term (make_opname [left; name]) [] in
+                        let right = mk_simple_term (make_opname [right; name]) [] in
+                           match rel with
+                              LTRelation ->
+                                 ("lt", left, right) :: rels
+                            | EQRelation ->
+                                 ("eq", left, right) :: rels
+                            | GTRelation ->
+                                 ("lt", right, left) :: rels
+                            | NoRelation ->
+                                 rels
+                     end
+                | _ ->
+                     rels
+      in
+         collect (info_items (edit_info name))
 
    (*
     * Create a new thm.
