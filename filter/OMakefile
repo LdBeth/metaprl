@@ -85,14 +85,14 @@ CAMLP4N_FILES =\
 	$(CAMLP4LIB)/pr_dump\
 	$(CAMLP4LIB)/pa_extend\
 	$(CAMLP4LIB)/q_MLast\
-	$(CAMLP4_FILES)
+	$`(CAMLP4_FILES)
 
 CAMLP4O_FILES =\
 	$(CAMLP4LIB)/pa_o\
 	$(CAMLP4LIB)/pr_o\
 	$(CAMLP4LIB)/pa_extend\
 	$(CAMLP4LIB)/q_MLast\
-	$(CAMLP4_FILES)
+	$`(CAMLP4_FILES)
 
 #
 # File format conversion
@@ -146,7 +146,14 @@ PRLCO_FILES =\
 #
 section
     OCAML_LIBS += $(CAMLP4_LIBS)
-    OCAML_LINK_FLAGS += -linkall # XXX: http://caml.inria.fr/bin/caml-bugs?selectid=3439 workaround
+
+    # XXX: http://caml.inria.fr/bin/caml-bugs?selectid=3439 workaround
+    if $(and $(file-exists $(CAMLP4LIB)/argl.cmx), $(file-exists $(CAMLP4LIB)/argl.o), $(file-exists $(CAMLP4LIB)/argl.cmo))
+        CAMLP4_FILES = $(CAMLP4LIB)/argl $(CAMLP4_FILES)
+        export
+    else
+        OCAML_LINK_FLAGS += -linkall
+        export
 
     OCamlProgramInstall($(MPINSTALL), $(LIB), $(CAMLP4N), $(CAMLP4N_FILES))
     OCamlProgramInstall($(MPINSTALL), $(LIB), $(CAMLP4O), $(CAMLP4O_FILES))
