@@ -247,25 +247,25 @@ let is_imp_imp_term term =
    is_implies_term term & is_implies_term (term_subterm term (make_address [0]))
 
 interactive imp_and_rule 'H :
-   sequent [squash] { 'H; x: "and"{'C; 'D} => 'B; 'J['x] >- "type"{'C} } -->
-   sequent [squash] { 'H; x: "and"{'C; 'D} => 'B; 'J['x] >- "type"{'D} } -->
-   sequent ['ext] { 'H; x: "and"{'C; 'D} => 'B; 'J['x];
+   sequent [squash] { <H>; x: "and"{'C; 'D} => 'B; <J['x]> >- "type"{'C} } -->
+   sequent [squash] { <H>; x: "and"{'C; 'D} => 'B; <J['x]> >- "type"{'D} } -->
+   sequent ['ext] { <H>; x: "and"{'C; 'D} => 'B; <J['x]>;
                      u: 'C => 'D => 'B >- 'T['x] } -->
-   sequent ['ext] { 'H; x: "and"{'C; 'D} => 'B; 'J['x] >- 'T['x] }
+   sequent ['ext] { <H>; x: "and"{'C; 'D} => 'B; <J['x]> >- 'T['x] }
 
 interactive imp_or_rule 'H :
-   sequent [squash] { 'H; x: "or"{'C; 'D} => 'B; 'J['x] >- "type"{'C} } -->
-   sequent [squash] { 'H; x: "or"{'C; 'D} => 'B; 'J['x] >- "type"{'D} } -->
-   sequent ['ext] { 'H; x: "or"{'C; 'D} => 'B; 'J['x];
+   sequent [squash] { <H>; x: "or"{'C; 'D} => 'B; <J['x]> >- "type"{'C} } -->
+   sequent [squash] { <H>; x: "or"{'C; 'D} => 'B; <J['x]> >- "type"{'D} } -->
+   sequent ['ext] { <H>; x: "or"{'C; 'D} => 'B; <J['x]>;
                      u: 'C => 'B; v: 'D => 'B >- 'T['x] } -->
-   sequent ['ext] { 'H; x: "or"{'C; 'D} => 'B; 'J['x] >- 'T['x] }
+   sequent ['ext] { <H>; x: "or"{'C; 'D} => 'B; <J['x]> >- 'T['x] }
 
 interactive imp_imp_rule 'H :
-   sequent [squash] { 'H; x: "implies"{'C; 'D} => 'B; 'J['x] >- "type"{'C} } -->
-   sequent [squash] { 'H; x: "implies"{'C; 'D} => 'B; 'J['x] >- "type"{'D} } -->
-   sequent ['ext] { 'H; x: "implies"{'C; 'D} => 'B; 'J['x];
+   sequent [squash] { <H>; x: "implies"{'C; 'D} => 'B; <J['x]> >- "type"{'C} } -->
+   sequent [squash] { <H>; x: "implies"{'C; 'D} => 'B; <J['x]> >- "type"{'D} } -->
+   sequent ['ext] { <H>; x: "implies"{'C; 'D} => 'B; <J['x]>;
                      u: 'D => 'B >- 'T['x] } -->
-   sequent ['ext] { 'H; x: "implies"{'C; 'D} => 'B; 'J['x] >- 'T['x] }
+   sequent ['ext] { <H>; x: "implies"{'C; 'D} => 'B; <J['x]> >- 'T['x] }
 
 (* Create a tactic for the X-implication-elimination. *)
 let d_and_impT i p =
@@ -386,7 +386,7 @@ let propDecideT =
  ************************************************************************)
 
 interactive pigeon2 'H :
-   sequent ['ext] { 'H;
+   sequent ['ext] { <H>;
 	x0_1: univ[1:l];
 	x0_2: univ[1:l];
 	x1_1: univ[1:l];
@@ -406,7 +406,7 @@ interactive pigeon2 'H :
 }
 
 interactive pigeon3 'H :
-   sequent ['ext] { 'H;
+   sequent ['ext] { <H>;
 	x0_1: univ[1:l];
 	x0_2: univ[1:l];
 	x0_3: univ[1:l];
@@ -439,7 +439,7 @@ interactive pigeon3 'H :
 }
 
 interactive pigeon4 'H :
-   sequent ['ext] { 'H;
+   sequent ['ext] { <H>;
 	x0_1: univ[1:l];
 	x0_2: univ[1:l];
 	x0_3: univ[1:l];
@@ -490,7 +490,7 @@ interactive pigeon4 'H :
 
 (*
 interactive pigeon5 'H :
-   sequent ['ext] { 'H;
+   sequent ['ext] { <H>;
 	x0_1: univ[1:l];
 	x0_2: univ[1:l];
 	x0_3: univ[1:l];
@@ -561,7 +561,7 @@ interactive pigeon5 'H :
 }
 
 interactive pigeon6 'H :
-   sequent ['ext] { 'H;
+   sequent ['ext] { <H>;
 	x0_1: univ[1:l];
 	x0_2: univ[1:l];
 	x0_3: univ[1:l];
@@ -657,7 +657,7 @@ interactive pigeon6 'H :
 }
 
 interactive pigeon7 'H :
-   sequent ['ext] { 'H;
+   sequent ['ext] { <H>;
 	x0_1: univ[1:l];
 	x0_2: univ[1:l];
 	x0_3: univ[1:l];
@@ -782,7 +782,7 @@ interactive pigeon7 'H :
 }
 
 interactive pigeon8 'H :
-   sequent ['ext] { 'H;
+   sequent ['ext] { <H>;
 	x0_1: univ[1:l];
 	x0_2: univ[1:l];
 	x0_3: univ[1:l];
@@ -940,7 +940,7 @@ interactive pigeon8 'H :
 }
 
 interactive pigeon9 'H :
-   sequent ['ext] { 'H;
+   sequent ['ext] { <H>;
 	x0_1: univ[1:l];
 	x0_2: univ[1:l];
 	x0_3: univ[1:l];

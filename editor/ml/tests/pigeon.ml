@@ -55,7 +55,7 @@ let generate size =
    in
 
       (* Header *)
-      printf "interactive pigeon%d 'H : :\n   sequent ['ext] { 'H" size;
+      printf "interactive pigeon%d 'H : :\n   sequent ['ext] { <H" size>;
 
       (* Pigeon positions *)
       for i = 0 to size do

@@ -23,7 +23,7 @@ let addr_term_str af afa tf t =
       exn -> "addr exception: " ^ (string_of_exn exn)
 
 try
-   let t = <<sequent['arg]{'H; x: 1 + 2; 'J['x]; y: 3 + 4 >- 'C['x;'y]}>> in
+   let t = <<sequent['arg]{ <H>; x: 1 + 2; <J['x]>; y: 3 + 4 >- in
    eprintf "t = %s%tnum_hyps t = %i%t" (string_of_term t) eflush (num_hyps t) eflush;
    eprintf "2nd hyp = %s; 2nd binding = %s%t" (string_of_term (TermMan.nth_hyp t 2)) (nth_binding t 2) eflush;
    eprintf "t@hyp_count_addr: %s%t" (addr_term_str (nth_hyp_addr t) (num_hyps t) term_subterm t) eflush;
