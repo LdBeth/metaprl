@@ -591,7 +591,7 @@ struct
       IFDEF VERBOSE_EXN THEN
          try BODY with
             RefineError (_, GenericError) ->
-               raise (RefineError ("Term_subst_ds.match_terms", TermPairMatchError (t1, t2)))
+               raise (RefineError ("Term_subst_ds.match_terms", TermPairError (t1, t2)))
       ELSE
          BODY
       ENDIF

@@ -115,7 +115,7 @@ sig
 
       (* Term module errors *)
     | TermMatchError of term * string
-    | TermPairMatchError of term * term
+    | TermPairError of term * term
     | MetaTermMatchError of meta_term
 
       (* Rewriter errors *)

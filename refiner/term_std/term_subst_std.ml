@@ -587,7 +587,7 @@ struct
       IFDEF VERBOSE_EXN THEN
          try List.rev (match_terms subst [] t1 t2) with
             RefineError (_, GenericError) ->
-               raise (RefineError ("Term_subst_std.match_terms", TermPairMatchError (t1, t2)))
+               raise (RefineError ("Term_subst_std.match_terms", TermPairError (t1, t2)))
       ELSE
          List.rev (match_terms subst [] t1 t2)
       ENDIF

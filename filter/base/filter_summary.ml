@@ -1189,7 +1189,7 @@ struct
                eprintf "Filter_summary.dest_term: incorrect syntax for %s%t" (string_of_opname opname) eflush;
                None
           | RefineError (x, TermMatchError (t', _)) ->
-               raise (RefineError (x, TermPairMatchError (t, t')))
+               raise (RefineError (x, TermPairError (t, t')))
 
    and dest_term_loc
        (convert : (term, term, term, term, term, term, term,

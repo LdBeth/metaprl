@@ -220,9 +220,12 @@ let format_refine_error db buf printers name error =
             format_string buf s2;
             format_newline buf;
             printers.format_term db buf t
-       | TermPairMatchError (t1, t2) ->
+       | TermPairError (t1, t2) ->
+            format_newline buf;
+            format_string buf "Term 1: ";
             printers.format_term db buf t1;
             format_newline buf;
+            format_string buf "Term 2: ";
             printers.format_term db buf t2
        | MetaTermMatchError mt ->
             printers.format_mterm db buf mt

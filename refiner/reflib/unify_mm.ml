@@ -691,12 +691,15 @@ let rec terms2temp_multieq t0 t1 consts u var_hashtbl b_asslist0 b_asslist1 =
                         ) l0 l1;
                      (!b_aslist_ref0),(!b_aslist_ref1)
                   in
-                     targs2args_for2 tbcore_list0 tbcore_list1 consts u var_hashtbl
-                        (List.map2 conv_lists tbvs_list0 tbvs_list1);
-                     (* this List.map2... makes
-                      * the correct multit.fsymb
-                      * as a side effect
-                      *)
+                     try
+                        targs2args_for2 tbcore_list0 tbcore_list1 consts u var_hashtbl
+                           (List.map2 conv_lists tbvs_list0 tbvs_list1);
+                        (* this List.map2... makes
+                         * the correct multit.fsymb
+                         * as a side effect
+                         *)
+                     with Clash _ ->
+                        raise(Clash(ClashTerms(t0,t1)))
             }
          in
             { m_t = [multit]; s_t = Queue.create () }
@@ -1171,15 +1174,15 @@ let clash_error_aux =
       ClashBvar bv ->
          StringVarError("bound variable mismatch", var_name bv.name_bv)
     | ClashOps(op1,op2) ->
-         StringWrapError("operator mismatch", TermPairMatchError(term_of_op op1, term_of_op op2))
+         StringWrapError("operator mismatch", TermPairError(term_of_op op1, term_of_op op2))
     | ClashMterms(mt1,mt2) ->
-         StringWrapError("internal terms mismatch", TermPairMatchError(term_of_multi mt1, term_of_multi mt2))
+         StringWrapError("internal terms mismatch", TermPairError(term_of_multi mt1, term_of_multi mt2))
     | ClashTerms(t1,t2) ->
-         TermPairMatchError(t1,t2)
+         StringWrapError("terms do not match", TermPairError(t1,t2))
     | ClashConsts(c1,c2) ->
-         StringWrapError("constants mismatch", TermPairMatchError(mk_var_term (var_name c1), mk_var_term (var_name c2)))
+         StringWrapError("constants mismatch", TermPairError(mk_var_term (var_name c1), mk_var_term (var_name c2)))
     | ClashBvars(bv1,bv2) ->
-         StringWrapError("bound variables mismatch", TermPairMatchError(mk_var_term (var_name bv1.name_bv),mk_var_term (var_name bv2.name_bv)))
+         StringWrapError("bound variables mismatch", TermPairError(mk_var_term (var_name bv1.name_bv),mk_var_term (var_name bv2.name_bv)))
 
 let clash_error ce =
    RefineError("unify_mm", clash_error_aux ce)
