@@ -25,6 +25,7 @@ USER-GUIDE =\
 	mp-user-guide\
 	mp-terms\
 	mp-dform\
+	mp-font\
 	mp-rewrite\
 	mp-axiom\
 	mp-modules\
