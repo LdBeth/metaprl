@@ -367,7 +367,7 @@ struct
    UNDEF VARS_BVARS
 
    DEFMACRO BVARS = bvars
-   DEFMACRO VARS_BVARS = List.fold_left SymbolSet.add bvars vars
+   DEFMACRO VARS_BVARS = SymbolSet.add_list bvars vars
    DEFMACRO HYP_BVARS = (collect_hyp_bvars (pred i) s.sequent_hyps BVARS)
    DEFMACRO GOAL_BVARS = (collect_goal_bvars s.sequent_hyps BVARS)
    DEFMACRO PATH_REPLACE_TERM = path_var_replace_term
@@ -494,7 +494,7 @@ struct
          [], coll
     | ({ bvars = bvars'; bterm = term } :: bterms) as bterms' ->
          let bterms_new, args = apply_var_fun_higher_bterms f bvars coll bterms in
-         let bterm_new, args = apply_var_fun_higher_term f (List.fold_left SymbolSet.add bvars bvars') args term in
+         let bterm_new, args = apply_var_fun_higher_term f (SymbolSet.add_list bvars bvars') args term in
             if args == coll then
                bterms', coll
             else

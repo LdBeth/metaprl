@@ -207,7 +207,7 @@ struct
             in t.free_vars <- Vars vars; vars
 
    and bterm_free_vars bt =
-      List.fold_left SymbolSet.remove (free_vars_set bt.bterm) bt.bvars
+      SymbolSet.subtract_list (free_vars_set bt.bterm) bt.bvars
 
    and bterms_free_vars = function
       [] -> SymbolSet.empty

@@ -409,7 +409,7 @@ struct
             mk_bterm [] (build_contractum_term names bnames stack bvars term)
     | { rw_bvars = vcount; rw_bnames = vars; rw_bterm = term } ->
          let vars' = List.map (build_bname names bnames stack) vars in
-         let bnames' = List.fold_left SymbolSet.add bnames vars' in
+         let bnames' = SymbolSet.add_list bnames vars' in
          let bvars' = append_vars bvars vars' in
             mk_bterm vars' (build_contractum_term names bnames' stack bvars' term)
 

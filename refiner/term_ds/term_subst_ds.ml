@@ -181,11 +181,7 @@ struct
 
    let dest_bterm_and_rename bt avoid =
       if need_to_rename avoid bt.bvars then
-         let avoid' =
-            List.fold_left SymbolSet.add (**)
-               (SymbolSet.union avoid (free_vars_set bt.bterm))
-               bt.bvars
-         in
+         let avoid' = SymbolSet.add_list (SymbolSet.union avoid (free_vars_set bt.bterm)) bt.bvars in
          let bvars, ts = compute_renames avoid avoid' bt.bvars in
          {
             bvars = bvars;
@@ -231,7 +227,7 @@ struct
       match bt.bvars with
             [] -> bv
           | [v] -> SymbolSet.add bv v
-          | vars -> List.fold_left SymbolSet.add bv vars
+          | vars -> SymbolSet.add_list bv vars
 
    and binding_vars_bterms = function
       [] -> SymbolSet.empty
@@ -459,7 +455,7 @@ struct
 
    and var_subst_bterm bt t' v =
       if List.mem v bt.bvars then
-         let vars = List.fold_left SymbolSet.add (free_vars_set bt.bterm) bt.bvars in
+         let vars = SymbolSet.add_list (free_vars_set bt.bterm) bt.bvars in
          let v' = new_name v (SymbolSet.mem vars) in
          let rename var = if var = v then v' else var in
          let bt' = subst1 bt.bterm v (mk_var_term v') in

@@ -493,7 +493,7 @@ struct
             if bt'.rw_bvars = List.length dbt.bvars then begin
                set_bvars stack bt'.rw_bnames dbt.bvars;
                match_redex_term addrs stack (**)
-                 (List.fold_left SymbolSet.add all_bvars dbt.bvars)
+                 (SymbolSet.add_list all_bvars dbt.bvars)
                  bt'.rw_bterm dbt.bterm
             end else
                REF_RAISE(RefineError ("match_redex_bterms", RewriteBadMatch (BTermMatch bt)))

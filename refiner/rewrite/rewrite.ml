@@ -218,7 +218,7 @@ struct
          StackSeqContext (_, (i', len', hyps)) ->
             collect_bnames stack (collect_hyp_bnames hyps bnames len' i') len (i+1)
        | StackBTerm (hyp, vars) ->
-            collect_bnames stack (SymbolSet.union bnames (List.fold_left SymbolSet.remove (free_vars_set hyp) vars)) len (i+1)
+            collect_bnames stack (SymbolSet.union bnames (SymbolSet.subtract_list (free_vars_set hyp) vars)) len (i+1)
        | _ -> collect_bnames stack bnames len (i+1)
 
    (*

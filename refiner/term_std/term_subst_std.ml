@@ -132,7 +132,7 @@ struct
    let free_vars_terms =
       let rec aux gvars = function
          [] -> gvars
-       | t::r -> aux (List.fold_left SymbolSet.add gvars (free_vars_list t)) r
+       | t::r -> aux (SymbolSet.add_list gvars (free_vars_list t)) r
       in
          aux SymbolSet.empty
 
