@@ -138,6 +138,18 @@ struct
             rotate_left grandparent;
             lift ancestors
          end
+   
+   let rec lift_right = function
+      [] ->
+         ()
+    | [parent] ->
+         rotate_right parent
+    | parent :: grandparent :: ancestors ->
+         begin
+            rotate_right grandparent;
+            rotate_right grandparent;  (* parent has moved into grandparent's position *)
+            lift_right ancestors
+         end
 
    (*
     * Find an entry in the tree.
@@ -146,9 +158,9 @@ struct
     * entry becomes the root, or an adjacent entry
     * becomes the root if the entry is not found.
     *)
-   let rec splay_aux reln path = function
+   let rec splay key0 path = function
       Node ({ contents = key, _, left, right } as node), _ ->
-         let comp = reln key in
+         let comp = Ord.compare key0 key in
             if comp = 0 then
                begin
                   lift path;
@@ -156,10 +168,10 @@ struct
                end
             else if comp < 0 then
                (* node is down the left branch *)
-               splay_aux reln (Left node :: path) left
+               splay key0 (Left node :: path) left
             else
                (* node is down the right branch *)
-               splay_aux reln (Right node :: path) right
+               splay key0 (Right node :: path) right
 
     | (Leaf, _) ->
          match path with
@@ -169,11 +181,16 @@ struct
                lift path';
                false
 
-   (*
-    * Find an entry in the splay tree.
-    *)
-   let splay reln t =
-      splay_aux reln [] t
+   let rec splay_right path = function
+      Node ({ contents = key, _, left, right } as node), _ ->
+         splay_right (node :: path) right
+
+    | (Leaf, _) ->
+         match path with
+            [] ->
+               ()
+          | _ :: path' ->
+               lift_right path'
 
    (*
     * An empty tree is just a list.
@@ -188,10 +205,10 @@ struct
     * Check if a key is listed in the table.
     *)
    let mem t key =
-      splay (Ord.compare key) t
+      splay key [] t
 
    let find t key =
-      if splay (Ord.compare key) t then
+      if splay key [] t then
          match t with
             Node { contents = _, data :: _, _, _ }, _ ->
                data
@@ -201,7 +218,7 @@ struct
          raise Not_found
 
    let find_all t key =
-      if splay (Ord.compare key) t then
+      if splay key [] t then
          match t with
             Node { contents = _, data, _, _ }, _ ->
                data
@@ -216,7 +233,7 @@ struct
     * the new value is added to the data.
     *)
    let add_list t key data =
-      if splay (Ord.compare key) t then
+      if splay key [] t then
          match t with
             Node { contents = key, data', left, right }, size ->
                Node (ref (key, data @ data', left, right)), size
@@ -252,7 +269,7 @@ struct
     * entire entry from the tree.
     *)
    let remove t key =
-      if splay (Ord.compare key) t then
+      if splay key [] t then
          match t with
             Node { contents = key, _ :: data, left, right }, size ->
                Node (ref (key, data, left, right)), size
@@ -262,7 +279,7 @@ struct
                left
           | Node { contents = _, [], left, ((_, sr) as right) }, _ ->
                begin
-                  splay (fun _ -> 1) left;
+                  splay_right [] left;
                   match left with
                      Node { contents = left_key, left_data, ((_, sll) as left_left), (Leaf, _) }, _ ->
                         Node (ref (left_key, left_data, left_left, right)), 1 + sll + sr
@@ -291,7 +308,7 @@ struct
                      add_list s1 key2 data2
                else
                   let key1, data1, left1, right1 = !n1 in
-                     if splay (Ord.compare key1) s2 then
+                     if splay key1 [] s2 then
                         let _, data2, left2, right2 = !n2 in
                         let (_, sll) as ll = union append left1 left2 in
                         let (_, srr) as rr = union append right1 right2 in
@@ -315,7 +332,7 @@ struct
                   add_list s2 key1 data1
             else
                let key2, data2, left2, right2 = !n2 in
-                  if splay (Ord.compare key2) s1 then
+                  if splay key2 [] s1 then
                      let _, data1, left1, right1 = !n1 in
                      let (_, sll) as ll = union append left2 left1 in
                      let (_, srr) as rr = union append right2 right1 in

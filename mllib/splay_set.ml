@@ -79,9 +79,20 @@ struct
             lift ancestors
          )
 
-   let rec splay_aux reln path = function
+   let rec lift_right = function
+      [] -> ()
+    | [parent] ->
+         rotate_right parent
+    | parent :: grandparent :: ancestors ->
+         (
+            rotate_right grandparent;
+            rotate_right grandparent;  (* parent has moved into grandparent's position *)
+            lift_right ancestors
+         )
+
+   let rec splay key0 path = function
       ((NODE ({ contents = (key, left, right) } as node)),_) ->
-         let comp = reln key
+         let comp = Ord.compare key0 key
          in
             if comp = 0 then
                (
@@ -90,10 +101,10 @@ struct
                )
             else if comp < 0 then
             (* left *)
-               splay_aux reln (LEFT node :: path) left
+               splay key0 (LEFT node :: path) left
             else
             (* right *)
-               splay_aux reln (RIGHT node :: path) right
+               splay key0 (RIGHT node :: path) right
     | (LEAF,_) ->
          (match path with
              [] -> false
@@ -103,7 +114,14 @@ struct
                    false
                 ))
 
-   let splay reln t = splay_aux reln [] t
+   let rec splay_right path = function
+      ((NODE ({ contents = (_, _, right) } as node)),_) ->
+         splay_right (node :: path) right
+    | (LEAF,_) ->
+         (match path with
+             [] -> ()
+           | _ :: path' ->
+                lift_right path')
 
    let empty = (LEAF,0)
    let is_empty = function
@@ -111,10 +129,10 @@ struct
     | _ -> false
 
    let mem t key =
-      splay (Ord.compare key) t
+      splay key [] t
 
    let add key t =
-      if splay (Ord.compare key) t then
+      if splay key [] t then
          t
       else
          match t with
@@ -129,12 +147,12 @@ struct
    let make key = (NODE (ref (key, empty, empty)),1)
 
    let remove key t =
-      if splay (Ord.compare key) t then
+      if splay key [] t then
          match t with
             (NODE { contents = (_, (LEAF,_), right)}, _) -> right
           | (NODE { contents = (_, left, (LEAF,_))}, _) -> left
           | (NODE { contents = (_, left, ((_,sr) as right))}, _) ->
-               (splay (fun _ -> 1) left;
+               (splay_right [] left;
                 match left with
                    (NODE {contents = (left_key, ((_,sll) as left_left), (LEAF,_)) },_) ->
                       (NODE (ref (left_key, left_left, right)), 1+sll+sr)
@@ -153,7 +171,7 @@ struct
                   let (x2,_,_)=(!n2) in add x2 s1
                else
                   let (x,l,r)=(!n1) in
-                     if (splay (Ord.compare x) s2)
+                     if (splay x [] s2)
                      then
                         let (_,l2,r2) = (!n2) in
                         let ((_,sll) as ll) = union l l2 in
@@ -174,7 +192,7 @@ struct
                let (x1,_,_)=(!n1) in add x1 s2
             else
                let (x,l,r)=(!n2) in
-                  if (splay (Ord.compare x) s1)
+                  if (splay x [] s1)
                   then
                      let (_,l1,r1) = (!n1) in
                      let ((_,sll) as ll) = union l l1 in
