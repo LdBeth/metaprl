@@ -1,0 +1,74 @@
+(* This file is an interface for infinite array of weak pointers
+ * to objects.
+ *
+ * -----------------------------------------------------------------
+ * This file is part of Nuprl-Light, a modular, higher order
+ * logical framework that provides a logical programming
+ * environment for OCaml and other languages.
+ *
+ * See the file doc/index.html for information on Nuprl,
+ * OCaml, and more information about this system.
+ *
+ * Copyright (C) 1998 Yegor Bryukhov, Moscow State University
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * 
+ * Author: Yegor Bryukhov
+ *)
+
+module type InfiniteWeakArraySig =
+sig
+
+(*
+ * You can think weak_descriptor as an array-index
+ *)
+    type 'a weak_descriptor
+    val describe_weak : 'a weak_descriptor -> int
+    val subscribe_weak : int -> 'a weak_descriptor
+
+(*
+ * Aray type
+ *)
+    type 'a t
+
+ (*
+  * As weak_descriptor but existing the one prevent GC from erasing the object it refer to.
+  *)
+    type 'a descriptor
+    val describe : 'a descriptor -> int
+    val subscribe : 'a t -> 'a weak_descriptor -> 'a descriptor
+    val weaking : 'a descriptor -> 'a weak_descriptor
+
+(*    exception EmptySlot
+*)
+
+(* this exceptions means internal inconsistency: *)
+exception Cell_is_full
+exception Inconsistency
+
+    val create : int -> ('a t -> int * 'a weak_descriptor list) -> 'a t
+    val store : 'a t -> 'a -> 'a descriptor
+    val weak_get : 'a t -> 'a weak_descriptor -> 'a option
+    val get : 'a t -> 'a descriptor -> 'a
+    val set : 'a t -> 'a weak_descriptor -> 'a -> 'a descriptor
+end
+
+(*
+ * -*-
+ * Local Variables:
+ * Caml-master: "infinite_weak_array, weak_memo"
+ * End:
+ * -*-
+ *)
