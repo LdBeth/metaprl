@@ -118,7 +118,7 @@ val opname_prefix      : package -> opname
 val mk_opname_kind     : package -> opname_kind_fun
 val infer_term         : package -> infer_term_fun
 val check_rule         : package -> check_rule_fun
-val infer_rewrite      : package -> infer_rewrite_fun
+val check_rewrite      : package -> check_rewrite_fun
 val check_type_rewrite : package -> check_type_rewrite_fun
 val check_iform        : package -> check_iform_fun
 val check_dform        : package -> check_dform_fun

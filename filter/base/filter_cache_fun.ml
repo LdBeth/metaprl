@@ -897,8 +897,8 @@ struct
    let check_rule cache mt args =
       Term_ty_infer.check_rule (tenv_of_cache cache) mt args
 
-   let infer_rewrite cache mt args =
-      Term_ty_infer.infer_rewrite (tenv_of_cache cache) mt args
+   let check_rewrite cache mt args =
+      Term_ty_infer.check_rewrite (tenv_of_cache cache) mt args
 
    let check_type_rewrite cache redex contractum =
       Term_ty_infer.check_type_rewrite (tenv_of_cache cache) redex contractum

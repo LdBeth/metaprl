@@ -654,7 +654,7 @@ let mount_current_module modname parse_arg shell force_flag need_shell verbose =
                Shell_state.set_mk_opname (Some (Package_info.opname_prefix pack, Package_info.mk_opname_kind pack));
                Shell_state.set_infer_term (Some (Package_info.infer_term pack,
                                                  Package_info.check_rule pack,
-                                                 Package_info.infer_rewrite pack,
+                                                 Package_info.check_rewrite pack,
                                                  Package_info.check_type_rewrite pack,
                                                  Package_info.check_iform pack,
                                                  Package_info.check_dform pack,

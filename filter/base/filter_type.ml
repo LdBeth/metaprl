@@ -349,7 +349,7 @@ type opname_kind_fun        = op_kind -> string list -> shape_param list -> int 
 type context_fun            = var -> int -> var list option
 type infer_term_fun         = term -> term
 type check_rule_fun         = meta_term -> term list -> unit
-type infer_rewrite_fun      = meta_term -> term list -> term
+type check_rewrite_fun      = meta_term -> term list -> unit
 type check_type_rewrite_fun = term -> term -> unit
 type check_dform_fun        = term -> term -> unit
 type check_iform_fun        = meta_term -> term list -> unit
@@ -366,7 +366,7 @@ sig
    val mk_var_contexts    : MLast.loc -> context_fun
    val infer_term         : MLast.loc -> infer_term_fun
    val check_rule         : MLast.loc -> check_rule_fun
-   val infer_rewrite      : MLast.loc -> infer_rewrite_fun
+   val check_rewrite      : MLast.loc -> check_rewrite_fun
    val check_type_rewrite : MLast.loc -> check_type_rewrite_fun
    val check_dform        : MLast.loc -> check_dform_fun
    val check_iform        : MLast.loc -> check_iform_fun

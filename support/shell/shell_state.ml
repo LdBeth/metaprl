@@ -143,7 +143,7 @@ type state =
      mutable state_mk_var_contexts    : context_fun;
      mutable state_infer_term         : infer_term_fun;
      mutable state_check_rule         : check_rule_fun;
-     mutable state_infer_rewrite      : infer_rewrite_fun;
+     mutable state_check_rewrite      : check_rewrite_fun;
      mutable state_check_type_rewrite : check_type_rewrite_fun;
      mutable state_check_iform        : check_iform_fun;
      mutable state_check_dform        : check_dform_fun;
@@ -180,8 +180,8 @@ let infer_term_null t =
 let check_rule_null mt args =
    raise (Failure "Shell_mp.check_rule: no current package")
 
-let infer_rewrite_null mt args =
-   raise (Failure "Shell_mp.infer_rewrite: no current package")
+let check_rewrite_null mt args =
+   raise (Failure "Shell_mp.check_rewrite: no current package")
 
 let check_type_rewrite_null redex contractum =
    raise (Failure "Shell_mp.check_type_rewrite: no current package")
@@ -210,7 +210,7 @@ let state_entry =
         state_mk_var_contexts    = mk_var_contexts_null;
         state_infer_term         = infer_term_null;
         state_check_rule         = check_rule_null;
-        state_infer_rewrite      = infer_rewrite_null;
+        state_check_rewrite      = check_rewrite_null;
         state_check_type_rewrite = check_type_rewrite_null;
         state_check_iform        = check_iform_null;
         state_check_dform        = check_dform_null;
@@ -317,9 +317,9 @@ module TermGrammar = MakeTermGrammar
                exn ->
                   Stdpp.raise_with_loc loc exn)
 
-   let infer_rewrite loc mt args =
+   let check_rewrite loc mt args =
       synchronize_state (function state ->
-            try state.state_infer_rewrite mt args with
+            try state.state_check_rewrite mt args with
                exn ->
                   Stdpp.raise_with_loc loc exn)
 
@@ -514,10 +514,10 @@ let set_mk_opname op =
 let set_infer_term infer =
    synchronize_write (fun state ->
          match infer with
-            Some (infer_term, check_rule, infer_rewrite, check_type_rewrite, check_iform, check_dform, check_production) ->
+            Some (infer_term, check_rule, check_rewrite, check_type_rewrite, check_iform, check_dform, check_production) ->
                state.state_infer_term         <- infer_term;
                state.state_check_rule         <- check_rule;
-               state.state_infer_rewrite      <- infer_rewrite;
+               state.state_check_rewrite      <- check_rewrite;
                state.state_check_type_rewrite <- check_type_rewrite;
                state.state_check_iform        <- check_iform;
                state.state_check_dform        <- check_dform;
@@ -525,11 +525,11 @@ let set_infer_term infer =
           | None ->
                state.state_infer_term         <- infer_term_null;
                state.state_check_rule         <- check_rule_null;
-               state.state_infer_rewrite      <- infer_rewrite_null;
+               state.state_check_rewrite      <- check_rewrite_null;
                state.state_check_type_rewrite <- check_type_rewrite_null;
                state.state_check_iform        <- check_iform_null;
                state.state_check_dform        <- check_dform_null;
-               state.state_check_production  <- check_production_null)
+               state.state_check_production   <- check_production_null)
 
 let set_infixes infixes =
    synchronize_write (fun state ->

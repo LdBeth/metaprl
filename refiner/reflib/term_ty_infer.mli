@@ -76,7 +76,7 @@ type tenv =
  *)
 val infer_term         : tenv -> term -> term
 val check_rule         : tenv -> meta_term -> term list -> unit
-val infer_rewrite      : tenv -> meta_term -> term list -> term
+val check_rewrite      : tenv -> meta_term -> term list -> unit
 val check_type_rewrite : tenv -> term -> term -> unit
 val check_dform        : tenv -> term -> term -> unit
 val check_iform        : tenv -> meta_term -> term list -> unit

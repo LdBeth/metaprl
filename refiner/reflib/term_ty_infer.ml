@@ -1766,18 +1766,9 @@ let venv_of_terms tl =
 let venv_of_redices args redices =
    let venv = venv_empty in
 
-   (* Filter out arguments that are context vars *)
-   let cvars = context_vars_info_list SymbolTable.empty redices in
-   let args =
-      List.fold_left (fun args arg ->
-            if is_fso_var_term arg && SymbolTable.mem cvars (dest_fso_var arg) then
-               args
-            else
-               arg :: args) [] args
-   in
-
    (* Get additional info about the vars *)
    let terms = args @ redices in
+   let cvars = context_vars_info_list SymbolTable.empty terms in
    let fv = param_vars_info_list (free_vars_terms terms) terms in
    let so_vars = so_vars_info_list SymbolTable.empty terms in
 
@@ -1838,13 +1829,12 @@ let check_rule tenv mt args =
                 *)
                subst) subst subgoals
    in
-   let _ = solve_constraints tenv venv subst in
-      ()
+      ignore (solve_constraints tenv venv subst)
 
 (*
  * Get the type of a rewrite.
  *)
-let infer_rewrite tenv mt args =
+let check_rewrite tenv mt args =
    let subst = new_subst Strict in
    let subgoals, redex, contractum = unzip_mrewrite mt in
    let args, venv = venv_of_redices args [redex] in
@@ -1864,7 +1854,7 @@ let infer_rewrite tenv mt args =
    let subst = instantiate_subst venv subst in
    let () =
       if !debug_infer then
-         eprintf "@[<v 3>infer_rewrite2:@ %s@ %s@]@." (**)
+         eprintf "@[<v 3>check_rewrite2:@ %s@ %s@]@." (**)
             (string_of_term redex)
             (string_of_term (subst_type_term subst ty1))
    in
@@ -1878,8 +1868,7 @@ let infer_rewrite tenv mt args =
       List.fold_left (fun subst cond ->
             infer_term_type tenv venv subst cond ty_term) subst subgoals
    in
-   let _, subst = solve_constraints tenv venv subst in
-      subst_type_term subst ty1
+      ignore(solve_constraints tenv venv subst)
 
 (*
  * Check a type rewrite.
@@ -1890,8 +1879,7 @@ let check_type_rewrite tenv redex contractum =
    let subst = new_subst Strict in
    let subst = infer_term_type tenv venv subst redex ty_type in
    let subst = infer_term_type tenv venv subst contractum ty_type in
-   let _ = solve_constraints tenv venv subst in
-      ()
+      ignore(solve_constraints tenv venv subst)
 
 (*
  * Check a display form.
@@ -1901,8 +1889,7 @@ let check_dform tenv redex contractum =
    let subst = new_subst Relaxed in
    let subst = infer_term_type tenv venv subst redex ty_dform in
    let subst = infer_term_type tenv venv subst contractum ty_dform in
-   let _ = solve_constraints tenv venv subst in
-      ()
+      ignore (solve_constraints tenv venv subst)
 
 (*
  * Check an iform.
@@ -1924,8 +1911,7 @@ let check_iform tenv mt args =
       List.fold_left (fun subst e ->
             infer_term_type tenv venv subst e ty_term) subst subgoals
    in
-   let _ = solve_constraints tenv venv subst in
-      ()
+      ignore (solve_constraints tenv venv subst)
 
 (*
  * Check a production.
@@ -1940,8 +1926,7 @@ let check_production tenv redices contractum =
             infer_term_type tenv venv subst e ty_nonterminal) subst redices
    in
    let subst = infer_term_type tenv venv subst contractum ty_nonterminal in
-   let _ = solve_constraints tenv venv subst in
-      ()
+      ignore (solve_constraints tenv venv subst)
 
 (*
  * Infer the type of a term.

@@ -551,11 +551,11 @@ let check_rule pack_info mt args =
           | None ->
                raise (NotLoaded pack_info.pack_name))
 
-let infer_rewrite pack_info mt args =
+let check_rewrite pack_info mt args =
    synchronize_node pack_info (fun pack_info ->
          match pack_info.pack_str with
             Some { pack_str_info = info } ->
-               Cache.StrFilterCache.infer_rewrite info mt args
+               Cache.StrFilterCache.check_rewrite info mt args
           | None ->
                raise (NotLoaded pack_info.pack_name))
 

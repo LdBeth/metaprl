@@ -220,7 +220,7 @@ sig
    val infer_term           : info -> term -> term   (* Returns the type of the term *)
    val check_term           : info -> term -> term   (* This is the identity *)
    val check_rule           : info -> meta_term -> term list -> unit
-   val infer_rewrite        : info -> meta_term -> term list -> term
+   val check_rewrite        : info -> meta_term -> term list -> unit
    val check_type_rewrite   : info -> term -> term -> unit
    val check_dform          : info -> term -> term -> unit
    val check_iform          : info -> meta_term -> term list -> unit

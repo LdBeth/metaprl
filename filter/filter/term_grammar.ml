@@ -820,10 +820,10 @@ struct
       (* Check with the refiner first for rewrite errors *)
       let cvars = context_vars mt in
       let params = extract_params cvars args in
-         Refine.check_rule name (collect_cvars params) (collect_terms params) (strip_mfunction mt);
-
+      let terms = collect_terms params in
+         Refine.check_rule name (collect_cvars params) terms (strip_mfunction mt);
          (* Then check for type errors *)
-         check_rule loc mt args;
+         check_rule loc mt terms;
          mt, List.map erase_arg_term args, f
 
    let parse_rewrite loc name mt args =
@@ -834,22 +834,20 @@ struct
       let cvars = context_vars mt in
       let params = extract_params cvars args in
       let args', redex, contractum = unzip_rewrite name mt in
-      let () = Refine.check_rewrite name (collect_cvars params) (collect_terms params) args' redex contractum in
-
-      (* Then check for type errors *)
-      let _ = infer_rewrite loc mt args in
+      let terms = collect_terms params in
+         Refine.check_rewrite name (collect_cvars params) terms args' redex contractum;
+         (* Then check for type errors *)
+         check_rewrite loc mt terms;
          mt, List.map erase_arg_term args, f
 
    let parse_define loc name redex contractum =
       let redex = apply_iforms loc redex in
       let contractum = apply_iforms loc contractum in
       let redex, contractum = rewrite_of_parsed_rewrite redex contractum in
-
-      (* Check with the rewriter first *)
-      let () = Refine.check_definition name redex contractum in
-
-      (* Check the types of both parts *)
-      let _ = infer_rewrite loc (MetaIff (MetaTheorem redex, MetaTheorem contractum)) [] in
+         (* Check with the rewriter first *)
+         Refine.check_definition name redex contractum;
+         (* Check the types of both parts *)
+         check_rewrite loc (MetaIff (MetaTheorem redex, MetaTheorem contractum)) [];
          redex, contractum
 
    let parse_type_rewrite loc redex contractum =
@@ -872,13 +870,11 @@ struct
       let cvars = context_vars mt in
       let params = extract_params cvars args in
       let args', redex, contractum = unzip_rewrite name mt in
-      let () = Refine.check_iform name (collect_cvars params) (collect_terms params) args' redex contractum in
-
-      (* Check for type errors *)
-      let () = check_iform loc mt args in
-      let mt = erase_meta_term mt in
-      let args = List.map erase_term args in
-         mt, args, f
+      let terms = collect_terms params in
+         Refine.check_iform name (collect_cvars params) terms args' redex contractum;
+         (* Check for type errors *)
+         check_iform loc mt terms;
+         (erase_meta_term mt), (List.map erase_term args), f
 
    let parse_dform loc redex contractum =
       let redex = apply_iforms loc redex in

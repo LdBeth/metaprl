@@ -57,7 +57,7 @@ val set_mk_opname : (opname * opname_kind_fun) option -> unit
 (* This is the term checker to be used when terms are parsed. *)
 val set_infer_term : (infer_term_fun
                       * check_rule_fun
-                      * infer_rewrite_fun
+                      * check_rewrite_fun
                       * check_type_rewrite_fun
                       * check_iform_fun
                       * check_dform_fun

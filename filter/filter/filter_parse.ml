@@ -195,7 +195,7 @@ type cache_funs =
      mk_var_contexts    : context_fun;
      infer_term         : infer_term_fun;
      check_rule         : check_rule_fun;
-     infer_rewrite      : infer_rewrite_fun;
+     check_rewrite      : check_rewrite_fun;
      check_type_rewrite : check_type_rewrite_fun;
      check_dform        : check_dform_fun;
      check_iform        : check_iform_fun;
@@ -242,9 +242,9 @@ struct
       with_cache_funs loc (fun funs ->
             funs.check_rule mt args)
 
-   let infer_rewrite loc mt args =
+   let check_rewrite loc mt args =
       with_cache_funs loc (fun funs ->
-            funs.infer_rewrite mt args)
+            funs.check_rewrite mt args)
 
    let check_type_rewrite loc redex contractum =
       with_cache_funs loc (fun funs ->
@@ -907,7 +907,7 @@ struct
                  mk_opname_kind     = FilterCache.mk_opname_kind info;
                  infer_term         = FilterCache.infer_term info;
                  check_rule         = FilterCache.check_rule info;
-                 infer_rewrite      = FilterCache.infer_rewrite info;
+                 check_rewrite      = FilterCache.check_rewrite info;
                  check_type_rewrite = FilterCache.check_type_rewrite info;
                  mk_var_contexts    = (fun _ _ -> None);
                  check_iform        = FilterCache.check_iform info;
