@@ -1,0 +1,13 @@
+-f *.cmo
+-f *.cmi
+-f *.cmx
+-f *.cma
+-f *.run
+-f *.zo
+-f *.zi
+-f *.zix
+-f *.zx
+-f *.zsi
+-f *.top
+-f *#*
+-f *~
