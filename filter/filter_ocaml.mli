@@ -19,7 +19,7 @@ type loc = Num.num * Num.num
 exception FormatError of string * term
 
 val expr_of_term : term -> expr
-val patt_of_term : term -> patt
+val patt_of_term : term -> patt * term
 val type_of_term : term -> ctyp
 val sig_item_of_term : term -> sig_item
 val str_item_of_term : term -> str_item
@@ -33,8 +33,8 @@ val class_of_term : term -> class_decl
  * The extra (loc -> term -> term) argument is used to annoate the results.
  * It is mapped over all terms postfix order.
  *)
-val term_of_expr : (loc -> term -> term) -> expr -> term
-val term_of_patt : (loc -> term -> term) -> patt -> term
+val term_of_expr : string list -> (loc -> term -> term) -> expr -> term
+val term_of_patt : string list -> (loc -> term -> term) -> patt -> (string list -> term) -> term
 val term_of_type : (loc -> term -> term) -> ctyp -> term
 val term_of_sig_item : (loc -> term -> term) -> sig_item -> term
 val term_of_str_item : (loc -> term -> term) -> str_item -> term
@@ -50,9 +50,6 @@ val some_op : opname
 val none_op : opname
 val true_op : opname
 val false_op : opname
-val list_op : opname
-val cons_op : opname
-val nil_op : opname
 
 (*
  * Common destructors.
@@ -67,6 +64,9 @@ val dest_var : term -> string
 
 (*
  * $Log$
+ * Revision 1.6  1998/05/04 13:01:12  jyh
+ * Ocaml display without let rec.
+ *
  * Revision 1.5  1998/03/20 22:15:43  eli
  * Eli: Changed integer parameters to Num.num's.
  *

@@ -148,7 +148,7 @@ let normalize info =
  * saved, comments are not saved.
  *)
 let comment loc t = t
-let term_of_expr = Filter_ocaml.term_of_expr comment
+let term_of_expr = Filter_ocaml.term_of_expr [] comment
 let term_of_type = Filter_ocaml.term_of_type comment
 let term_of_sig_item = Filter_ocaml.term_of_sig_item comment
 let term_of_str_item = Filter_ocaml.term_of_str_item comment
@@ -471,6 +471,9 @@ module StrFilterCache = MakeFilterCache (SigMarshal) (StrMarshal) (SummaryBase)
 
 (*
  * $Log$
+ * Revision 1.18  1998/05/04 13:01:07  jyh
+ * Ocaml display without let rec.
+ *
  * Revision 1.17  1998/04/28 21:37:56  jyh
  * Adjusted uppercasing.
  *

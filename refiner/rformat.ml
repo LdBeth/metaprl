@@ -123,7 +123,7 @@ let new_buffer () =
    { commands = [];
      commands' = [];
      zone_numbers = [];
-     szone_number = 0;
+     szone_number = 1;
      parents = [];
      children = []
    }
@@ -158,12 +158,71 @@ let clear_buffer buf =
    buf.children <- []
 
 (*
+ * Compute the minimum horizontal space used by the list of items.
+ *)
+let get_nspace =
+   let rec aux nspace = function
+      [] -> nspace
+    | h::t ->
+         begin
+            match h with
+               Text (i, _) -> aux (nspace + i) t
+             | HBreak -> nspace
+             | SBreak (_, take, _, _, _) -> nspace + take
+             | Break (_, take, _, _, _) -> nspace + take
+             | IBreak (_, take, _, _, _) -> nspace + take
+             | _ -> aux nspace t
+         end
+   in
+      aux 0
+
+(*
+ * Collect the zones that are referenced.
+ *)
+let referenced_zones zones prog =
+   let collect = function
+      Break (i, _, _, _, _) ->
+         zones.(i) <- true
+    | _ ->
+         ()
+   in
+      List.iter collect prog;
+      zones
+
+(*
+ * Remove the zones that never are referenced.
+ *)
+let remove_extra_zones zones prog =
+   let rec strip = function
+      h::t ->
+         begin
+            match h with
+               SZone i ->
+                  if zones.(i) then
+                     h :: strip t
+                  else
+                     strip t
+             | _ ->
+                  h :: strip t
+         end
+    | [] ->
+         []
+   in
+      strip prog
+
+(*
+ * Optimize the prog.
+ *)
+let optimize_prog zones prog =
+   remove_extra_zones (referenced_zones zones prog) prog
+
+(*
  * Normalize the commands.
  *)
 let normalize_buffer buf =
    if buf.commands' <> [] then
       begin
-         buf.commands <- buf.commands @ (List.rev buf.commands');
+         buf.commands <- (buf.commands @ (List.rev buf.commands'));
          buf.commands' <- []
       end
 
@@ -351,25 +410,6 @@ let format_buffer buf buf' =
  ************************************************************************)
 
 (*
- * Compute the minimum horizontal space used by the list of items.
- *)
-let get_nspace =
-   let rec aux nspace = function
-      [] -> nspace
-    | h::t ->
-         begin
-            match h with
-               Text (i, _) -> aux (nspace + i) t
-             | HBreak -> nspace
-             | SBreak (_, take, _, _, _) -> nspace + take
-             | Break (_, take, _, _, _) -> nspace + take
-             | IBreak (_, take, _, _, _) -> nspace + take
-             | _ -> aux nspace t
-         end
-   in
-      aux 0
-
-(*
  * Make a first pass at formatting.
  * Arguments:
  *    margins: left margin stack
@@ -411,6 +451,8 @@ let get_nspace =
  *    curx: the current column
  *    maxx: the maximum column
  *    cury:  the current row
+ *    search: perform search on the current szone
+ *    scol: the column of the last szone
  *)
 exception MarginError of int
 
@@ -423,134 +465,175 @@ let softcdr = function
  | _::t -> t
 
 let compute_breaks buf rmargin =
-   let rec aux ((margins, breaks, cbreaks, lzone, curx, maxx, cury, catch) as args) = function
+   let rec aux ((margins, breaks, refd, cbreaks, curx, maxx, cury, catch, search, nest) as args) = function
       [] ->
          BreakNode (breaks, List.rev cbreaks), curx, maxx, cury
     | info::t ->
          (* Check that we haven't reached the margin *)
          if catch & curx > rmargin then
-            raise (MarginError curx);
+            begin
+               let _ =
+                  if !debug_dform then
+                     match search with
+                     None ->
+                        eprintf "raise MarginError with None %d > %d%t" curx rmargin eflush
+                   | Some (i, col) ->
+                        eprintf "raise MarginError with Some(%d, %d) %d > %d%t" i col curx rmargin eflush
+               in
+                  raise (MarginError curx)
+            end;
 
          (* Set this item *)
          begin
             match info with
-               Text (i, _) ->
+               Text (i, s) ->
                   (* Text *)
                   let curx' = curx + i in
                   let maxx' = max maxx curx' in
-                     aux (margins, breaks, cbreaks, lzone, curx', maxx', cury, catch) t
+                     (* eprintf "Text: %s: %d -> %d%t" s curx curx' eflush; *)
+                     aux (margins, breaks, refd, cbreaks, curx', maxx', cury, catch, search, nest) t
    
              | HBreak ->
                   (* Always take hard breaks *)
                   let curx' = get_margin margins in
-                     aux (margins, breaks, cbreaks, lzone, curx', maxx, cury + 1, catch) t
+                  let search =
+                     match search with
+                        Some (0, col) when curx' <= col ->
+                           if !debug_dform then
+                              eprintf "Restarting search: hard%t" eflush;
+                           None
+                      | _ ->
+                           search
+                  in
+                     aux (margins, breaks, refd, cbreaks, curx', maxx, cury + 1, catch, search, nest) t
    
              | SBreak (i, take, notake, _, _) ->
-                  if lzone or (notake + (get_nspace t) < rmargin) then
+                  if (notake + (get_nspace t) < rmargin) then
                      (* Don't take the break *)
                      let curx' = curx + notake in
                      let maxx' = max curx' maxx in
                         breaks.(i) = false;
-                        aux (margins, breaks, cbreaks, lzone, curx', maxx', cury, catch) t
+                        aux (margins, breaks, refd, cbreaks, curx', maxx', cury, catch, search, nest) t
                   else
                      (* Take the break *)
                      let curx' = (get_margin margins) + take in
                      let maxx' = max maxx curx in
                         breaks.(i) <- true;
-                        aux (margins, breaks, cbreaks, lzone, curx', maxx', cury + 1, catch) t
+                        aux (margins, breaks, refd, cbreaks, curx', maxx', cury + 1, catch, search, nest) t
 
              | Break (i, take, notake, _, _) ->
-                  if lzone or (breaks.(i) = false) then
+                  if breaks.(i) = false then
                      (* Don't take the break *)
                      let curx' = curx + notake in
                      let maxx' = max curx' maxx in
-                        breaks.(i) = false;
-                        aux (margins, breaks, cbreaks, lzone, curx', maxx', cury, catch) t
+                        breaks.(i) <- false;
+                        aux (margins, breaks, refd, cbreaks, curx', maxx', cury, catch, search, nest) t
 
                   else
                      (* Take the break *)
                      let curx' = (get_margin margins) + take in
                      let maxx' = max maxx curx in
+                     let search =
+                        match search with
+                           Some (0, col) when curx' <= col ->
+                              if !debug_dform then
+                                 eprintf "Restarting search: %d%t" i eflush;
+                              None
+                         | _ ->
+                              search
+                     in
                         breaks.(i) <- true;
-                        aux (margins, breaks, cbreaks, lzone, curx', maxx', cury + 1, catch) t
+                        aux (margins, breaks, refd, cbreaks, curx', maxx', cury + 1, catch, search, nest) t
 
              | IBreak (i, take, notake, _, _) ->
-                  if lzone or (breaks.(i) = false) then
+                  if breaks.(i) = false then
                      (* Don't take the break *)
                      let curx' = curx + notake in
                      let maxx' = max curx' maxx in
                         breaks.(i) = false;
-                        aux (margins, breaks, cbreaks, lzone, curx', maxx', cury, catch) t
+                        aux (margins, breaks, refd, cbreaks, curx', maxx', cury, catch, search, nest) t
 
                   else
                      (* Take the break *)
                      let curx' = curx + take in
                      let maxx' = max maxx curx in
                         breaks.(i) <- true;
-                        aux (margins, breaks, cbreaks, lzone, curx', maxx', cury + 1, catch) t
+                        aux (margins, breaks, refd, cbreaks, curx', maxx', cury + 1, catch, search, nest) t
 
              | LZone ->
-                  (* Linear zone *)
-                  if lzone then
-                     (* Already linear, just continue *)
-                     aux args t 
-                  else
-                     (* Try linear mode, an error signals end of format *)
-                     begin
-                        try aux (margins, breaks, cbreaks, true, curx, maxx, cury, true) t with
-                           MarginError curx' ->
-                              BreakNode (breaks, List.rev cbreaks), curx', maxx, cury
-                     end
+                  (* Try linear mode, an error signals end of format *)
+                  begin
+                     try aux (margins, breaks, refd, cbreaks, curx, maxx, cury, true, search, nest) t with
+                        MarginError curx' ->
+                           BreakNode (breaks, List.rev cbreaks), curx', maxx, cury
+                  end
 
              | HZone i ->
                   (* Initiate a breaking zone *)
-                  if lzone then
-                     aux args t
-                  else
-                     begin
-                        breaks.(i) <- true;
-                        aux (margins, breaks, cbreaks, false, curx, maxx, cury, catch) t
-                     end
+                  begin
+                     breaks.(i) <- true;
+                     aux (margins, breaks, refd, cbreaks, curx, maxx, cury, catch, search, nest) t
+                  end
 
              | SZone i ->
                   (* Try out both cases *)
-                  if lzone then
-                     aux args t
+                  if search = None & refd.(i) then
+                     begin
+                        breaks.(i) <- false;
+                        if !debug_dform then
+                           eprintf "Try %d linear: %d, %d%t" i curx nest eflush;
+                        try aux (margins, breaks, refd, cbreaks, curx, maxx, cury, true, Some (i, curx), nest + 1) t with
+                           MarginError _ ->
+                              breaks.(i) <- true;
+                              if !debug_dform then
+                                 eprintf "Fail %d break: %b%t" i catch eflush;
+                              aux (margins, breaks, refd, cbreaks, curx, maxx, cury, false, None, nest) t
+                     end
                   else
                      begin
                         breaks.(i) <- false;
-                        try aux (margins, breaks, cbreaks, true, curx, maxx, cury, true) t with
-                           MarginError _ ->
-                              breaks.(i) <- true;
-                              aux (margins, breaks, cbreaks, false, curx, maxx, cury, catch) t
+                        aux (margins, breaks, refd, cbreaks, curx, maxx, cury, catch, search, nest) t
                      end
 
-             | EZone _ ->
-                  (* Don't do anything *)
-                  aux args t
+             | EZone i ->
+                  let search =
+                     match search with
+                        Some (i', col) when i' = i ->
+                           if !debug_dform then
+                              eprintf "Closing zone %d%t" i eflush;
+                           Some (0, col)
+                      | _ ->
+                           search
+                  in
+                     aux (margins, breaks, refd, cbreaks, curx, maxx, cury, catch, search, nest) t
                            
              | PushM i ->
                   (* Push the margin *)
                   let lmargin = curx + i in
-                     aux (lmargin::margins, breaks, cbreaks, lzone, curx, maxx, cury, catch) t
+                     aux (lmargin::margins, breaks, refd, cbreaks, curx, maxx, cury, catch, search, nest) t
 
              | PopM ->
                   (* Pop the margin *)
-                  aux (softcdr margins, breaks, cbreaks, lzone, curx, maxx, cury, catch) t
+                  aux (softcdr margins, breaks, refd, cbreaks, curx, maxx, cury, catch, search, nest) t
 
              | Inline b ->
                   (* Recursive buffer *)
                   let breaks' = Array.create (b.szone_number + 1) false in
+                  let refd' = Array.create (b.szone_number + 1) false in
                   let _ = normalize_buffer b in
                   let coms = b.commands in
+                  let _ = referenced_zones refd' coms in
                   let breaks'', curx', maxx', cury' =
-                     aux (margins, breaks', [], lzone, curx, maxx, cury, catch) coms
+                     aux (margins, breaks', refd', [], curx, maxx, cury, catch, search, nest) coms
                   in
-                     aux (margins, breaks, breaks''::cbreaks, lzone, curx', maxx', cury', catch) t
+                     aux (margins, breaks, refd, breaks''::cbreaks, curx', maxx', cury', catch, search, nest) t
          end
    in
    let breaks = Array.create (buf.szone_number + 1) false in
-   let breaks', _, _, _ = aux ([], breaks, [], false, 0, 0, 1, false) buf.commands in
+   let refd = Array.create (buf.szone_number + 1) false in
+   let prog = buf.commands in
+   let _ = referenced_zones refd prog in
+   let breaks', _, _, _ = aux ([], breaks, refd, [], 0, 0, 1, false, None, 0) prog in
       breaks'
 
 (*
@@ -597,10 +680,14 @@ let format_to_handler printer rmargin (BreakNode (breaks, cbreaks)) =
                   if breaks.(i) then
                      let lmargin = get_margin margins in
                         tab printer lmargin;
+                        if !debug_dform then
+                           print_text lmargin take ("<" ^ string_of_int i ^ ">");
                         print_text lmargin take str;
                         aux (margins, breaks, cbreaks, lmargin + take) t
                   else
                      begin
+                        if !debug_dform then
+                           print_text curx notake ("<" ^ string_of_int i ^ ">");
                         print_text curx notake str';
                         aux (margins, breaks, cbreaks, curx + notake) t
                      end
@@ -609,10 +696,14 @@ let format_to_handler printer rmargin (BreakNode (breaks, cbreaks)) =
                   if breaks.(i) then
                      let lmargin = get_margin margins in
                         tab printer lmargin;
+                        if !debug_dform then
+                           print_text lmargin take ("<!" ^ string_of_int i ^ ">");
                         print_text lmargin take str;
                         aux (margins, breaks, cbreaks, lmargin + take) t
                   else
                      begin
+                        if !debug_dform then
+                           print_text curx notake ("<!" ^ string_of_int i ^ ">");
                         print_text curx notake str';
                         aux (margins, breaks, cbreaks, curx + notake) t
                      end
@@ -644,9 +735,17 @@ let format_to_handler printer rmargin (BreakNode (breaks, cbreaks)) =
                            let curx' = aux (margins, breaks', cbreaks', curx) b.commands in
                               aux (margins, breaks, cbreaks'', curx') t
                   end
+            
+             | SZone i ->
+                  if !debug_dform then
+                     print_text curx "" ("[[" ^ string_of_int i);
+                  aux args t
+             | EZone i ->
+                  if !debug_dform then
+                     print_text curx "" (string_of_int i ^ "]]");
+                  aux args t
 
              | _ ->
-                  (* Do nothing *)
                   aux args t
          end
    in
@@ -683,6 +782,9 @@ let print_to_string rmargin buf =
 
 (*
  * $Log$
+ * Revision 1.6  1998/05/04 13:01:19  jyh
+ * Ocaml display without let rec.
+ *
  * Revision 1.5  1998/04/28 18:30:47  jyh
  * ls() works, adding display.
  *

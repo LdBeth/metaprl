@@ -111,7 +111,7 @@ and term_of_proof_step = function
    } ->
       mk_simple_term proof_step_op [term_of_aterm_tactic_arg goal;
                                     mk_xlist_term (List.map term_of_aterm_tactic_arg subgoals);
-                                    term_of_expr comment ast;
+                                    term_of_expr [] comment ast;
                                     mk_simple_string_term proof_step_op text []]
  | ProofNode proof ->
       mk_simple_term proof_node_op [term_of_proof proof]
@@ -271,6 +271,9 @@ let tactics_of_proof proof =
 
 (*
  * $Log$
+ * Revision 1.7  1998/05/04 13:01:13  jyh
+ * Ocaml display without let rec.
+ *
  * Revision 1.6  1998/04/28 21:37:59  jyh
  * Adjusted uppercasing.
  *

@@ -270,10 +270,10 @@ and compile_stacks stacks =
     | [], [], skip, [] ->
          DtreePop (compile_stacks skip)
     | complete, now, skip, select ->
-         DtreeChoice (DtreeAccept complete
-                      :: (DtreeTerm (compile_stacks now))
-                      :: (DtreePop (compile_stacks skip))
-                      :: (List.map compile_select select))
+         DtreeChoice ((DtreeAccept complete
+                       :: (DtreeTerm (compile_stacks now))
+                       :: (List.map compile_select select))
+                      @ [DtreePop (compile_stacks skip)])
 
 (*
  * The raw interface assumes the term has already been falttened.
@@ -313,7 +313,7 @@ let compute_dtree table =
    (* Compile the hastable into a collection of programs *)
    let base' = Hashtbl.create 97 in
    let compile_entries template entries =
-      Hashtbl.add base' template (compile_prog !entries)
+      Hashtbl.add base' template (compile_prog (List.rev !entries))
    in
       Hashtbl.iter compile_entries base;
       base'
@@ -445,6 +445,9 @@ let lookup table t =
 
 (*
  * $Log$
+ * Revision 1.9  1998/05/04 13:01:21  jyh
+ * Ocaml display without let rec.
+ *
  * Revision 1.8  1998/05/01 14:59:42  jyh
  * Updating display forms.
  *

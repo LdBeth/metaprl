@@ -34,7 +34,7 @@ let _ =
  * Our display parameters.
  *)
 let tabstop = 3
-let min_screen_width = 40
+let min_screen_width = 80
 
 (*
  * Unit term used for interfaces.
@@ -48,7 +48,7 @@ let null_proof = Primitive null_term
  *)
 let identity x = x
 let comment loc t = t
-let term_of_expr = term_of_expr comment
+let term_of_expr = term_of_expr [] comment
 let term_of_type = term_of_type comment
 let term_of_sig_item = term_of_sig_item comment
 let term_of_str_item = term_of_str_item comment
@@ -124,6 +124,9 @@ let format_packages buf pack =
 
 (*
  * $Log$
+ * Revision 1.5  1998/05/04 13:00:58  jyh
+ * Ocaml display without let rec.
+ *
  * Revision 1.4  1998/04/29 20:53:09  jyh
  * Initial working display forms.
  *

@@ -7,6 +7,8 @@
  * and may contain interactivly generated proofs.
  *)
 
+include Summary
+
 open Opname
 open Refine
 open Dform_print
@@ -95,6 +97,9 @@ end
    
 (*
  * $Log$
+ * Revision 1.6  1998/05/04 13:01:00  jyh
+ * Ocaml display without let rec.
+ *
  * Revision 1.5  1998/04/28 18:29:42  jyh
  * ls() works, adding display.
  *

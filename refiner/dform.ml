@@ -265,7 +265,7 @@ let rec format_paramlist buf = function
  | h::t ->
       format_simple_param buf h;
       format_char buf ',';
-      format_space buf;
+      format_hspace buf;
       format_paramlist buf t
 
 (* Optional empty params *)
@@ -300,24 +300,26 @@ let rec format_bterm' buf printer bterm =
 
 (* Nonempty list *)
 and format_btermlist buf printer = function
-   [] -> ()
+   [] ->
+      ()
  | [h] ->
       format_bterm' buf printer h
  | h::t ->
       format_bterm' buf printer h;
       format_char buf ';';
-      format_space buf;
+      format_hspace buf;
       format_btermlist buf printer t
 
 (* Optional empty bterm list *)
 and format_bterms buf printer = function
-   [] -> ()
- | _::_ as bterms ->
+   [] ->
+      ()
+ | bterms ->
       format_break buf "" "";
       format_char buf '{';
-                        format_pushm buf 0;
-                        format_btermlist buf printer bterms;
-                        format_char buf '}';
+      format_pushm buf 0;
+      format_btermlist buf printer bterms;
+      format_char buf '}';
       format_popm buf
 
 (*
@@ -396,7 +398,7 @@ let format_short_term base shortener =
              | DFExpansion c ->
                   let t = make_contractum c stack in
                      if !debug_dform then
-                        eprintf "Dform %s: %s%t" name (string_of_term t) eflush;
+                        eprintf "Dform %s%t" name eflush;
                      print_entry pr buf eq t
          end;
          if parenflag then
@@ -641,6 +643,9 @@ let string_of_mterm base mterm =
 
 (*
  * $Log$
+ * Revision 1.11  1998/05/04 13:01:16  jyh
+ * Ocaml display without let rec.
+ *
  * Revision 1.10  1998/05/01 18:43:31  jyh
  * Added raw display.
  *

@@ -58,14 +58,10 @@ let one_subterm s t =
 (*
  * Standard term ops.
  *)
-let some_op = mk_ocaml_op "some"
-let none_op = mk_ocaml_op "none"
-let true_op = mk_ocaml_op "true"
+let some_op  = mk_ocaml_op "some"
+let none_op  = mk_ocaml_op "none"
+let true_op  = mk_ocaml_op "true"
 let false_op = mk_ocaml_op "false"
-let list_op  = mk_ocaml_op "list"
-
-let cons_op = mk_ocaml_op "cons"
-let nil_op = mk_ocaml_op "nil"
 
 (*
  * Loc has two integer describing character offsets.
@@ -85,6 +81,9 @@ let dest_loc t =
        | _ ->
             raise (FormatError ("dest_loc: need at least two parameters", t))
 
+let dest_loc_term t =
+   dest_loc t, one_subterm "dest_loc_term" t
+
 (*
  * Location and string take exactly three params.
  *)
@@ -96,6 +95,10 @@ let dest_loc_string t =
             (start, finish), s
        | _ ->
             raise (FormatError ("dest_loc_string: needs two numbers and a string", t))
+
+let dest_loc_string_term t =
+   let loc, s = dest_loc_string t in
+      loc, s, one_subterm "dest_loc_string_term" t
 
 (*
  * Optional argument.
@@ -123,7 +126,7 @@ let dest_string_opt =
  * Variables are wrapped.
  *)
 let dest_var t =
-   Term.dest_var t (* (one_subterm "dest_var" t) *)
+   Term.dest_var t
 
 (*
  * Integers are also wrapped.
@@ -137,6 +140,10 @@ let dest_loc_int t =
        | _ ->
             raise (FormatError ("dest_loc_int: needs three numbers", t))
 
+let dest_loc_int_term t =
+   let loc, i = dest_loc_int t in
+      loc, i, one_subterm "dest_loc_int" t
+
 (*
  * Redefine some functions to tag results.
  *)
@@ -147,51 +154,87 @@ let loc_of_expr,
     loc_of_str_item,
     loc_of_module_type,
     loc_of_module_expr =
-  let loc_of_aux f x =
-    (let i, j = f x
-     in Num.Int i, Num.Int j)
-    in
-    loc_of_aux loc_of_expr,
-    loc_of_aux loc_of_patt,
-    loc_of_aux loc_of_ctyp,
-    loc_of_aux loc_of_sig_item,
-    loc_of_aux loc_of_str_item,
-    loc_of_aux loc_of_module_type,
-    loc_of_aux loc_of_module_expr
+   let loc_of_aux f x =
+      let i, j = f x in
+         Num.Int i, Num.Int j
+   in
+      loc_of_aux loc_of_expr,
+      loc_of_aux loc_of_patt,
+      loc_of_aux loc_of_ctyp,
+      loc_of_aux loc_of_sig_item,
+      loc_of_aux loc_of_str_item,
+      loc_of_aux loc_of_module_type,
+      loc_of_aux loc_of_module_expr
 
 let num_of_loc (i, j) =
   Num.Int i, Num.Int j
 
 let raise_with_loc loc exn =
   match loc with
-      (Num.Int i, Num.Int j) -> Stdpp.raise_with_loc (i, j) exn
-    | _ -> raise (Failure "Filter_ocaml.raise_with_loc: got a big number")
+     (Num.Int i, Num.Int j) ->
+        Stdpp.raise_with_loc (i, j) exn
+   | _ ->
+        raise (Failure "Filter_ocaml.raise_with_loc: got a big number")
 
 (*
- * Make a list of expressions.
+ * Opnames for record and tuple end markers.
  *)
-let cons_op = mk_ocaml_op "cons"
-let nil_op = mk_ocaml_op  "nil"
-let nil_term = mk_simple_term nil_op []
+let patt_record_proj_op         = mk_ocaml_op "patt_record_proj"
+let patt_record_end_op          = mk_ocaml_op "patt_record_end"
+let patt_tuple_arg_op 		= mk_ocaml_op "patt_tuple_arg"
+let patt_tuple_end_op 		= mk_ocaml_op "patt_tuple_end"
+let patt_as_arg_op 		= mk_ocaml_op "patt_as_arg"
+let patt_as_end_op 		= mk_ocaml_op "patt_as_end"
+let patt_choice_arg_op 		= mk_ocaml_op "patt_choice_arg"
+let patt_choice_end_op 		= mk_ocaml_op "patt_choice_end"
+let patt_range_arg_op 		= mk_ocaml_op "patt_range_arg"
+let patt_range_end_op 		= mk_ocaml_op "patt_range_end"
+let patt_proj_arg_op 		= mk_ocaml_op "patt_proj_arg"
+let patt_proj_end_op 		= mk_ocaml_op "patt_proj_end"
+let patt_apply_arg_op 		= mk_ocaml_op "patt_apply_arg"
+let patt_apply_end_op 		= mk_ocaml_op "patt_apply_end"
+let patt_in_op 			= mk_ocaml_op "patt_in"
+let patt_with_op 		= mk_ocaml_op "patt_with"
+let patt_body_op 		= mk_ocaml_op "patt_body"
+let patt_done_op 		= mk_ocaml_op "patt_done"
+let patt_fail_op 		= mk_ocaml_op "patt_fail"
+let patt_if_op 			= mk_ocaml_op "patt_if"
+let patt_ifelse_op 		= mk_ocaml_op "patt_ifelse"
+let patt_and_op 		= mk_ocaml_op "patt_and"
+let patt_arg_op 		= mk_ocaml_op "patt_arg"
+let patt_end_op 		= mk_ocaml_op "patt_end"
+let patt_var_op 		= mk_ocaml_op "patt_var"
 
-let rec mk_list = function
-   h::t ->
-      mk_simple_term cons_op [h; mk_list t]
- | [] ->
-      nil_term
+(*
+ * Conversion between pattern and expression identifiers.
+ *)
+let rec expr_of_patt_ident p =
+   let loc = MLast.loc_of_patt p in
+      match p with
+         <:patt< $uid: uid$ . $p$ >> ->
+           <:expr< $uid: uid$ . $expr_of_patt_ident p$ >>
+       | <:patt< $lid: lid$ . $p$ >> ->
+           <:expr< $lid: lid$ . $expr_of_patt_ident p$ >>
+       | <:patt< $uid: uid$ >> ->
+           <:expr< $uid: uid$ >>
+       | <:patt< $lid: lid$ >> ->
+           <:expr< $lid: lid$ >>
+       | _ ->
+           Stdpp.raise_with_loc loc (Failure "Filter_ocaml.expr_of_patt_ident: not an identifier")
 
-let rec dest_list t =
-   let opname, subterms = dest_simple_term t in
-      if opname == nil_op then
-         []
-      else if opname == cons_op then
-         match subterms with
-            [e1; e2] ->
-               e1 :: dest_list e2
-          | _ ->
-               raise (TermMatch ("Filter_ocaml.dest_list", t, "wrong number of subterms"))
-      else
-         raise (TermMatch ("Filter_ocaml.dest_list", t, "illegal opname"))
+let rec patt_of_expr_ident e =
+   let loc = MLast.loc_of_expr e in
+      match e with
+         <:expr< $uid: uid$ . $e$ >> ->
+            <:patt< $uid: uid$ . $patt_of_expr_ident e$ >>
+       | <:expr< $lid: lid$ . $e$ >> ->
+            <:patt< $lid: lid$ . $patt_of_expr_ident e$ >>
+       | <:expr< $uid: uid$ >> ->
+            <:patt< $uid: uid$ >>
+       | <:expr< $lid: lid$ >> ->
+            <:patt< $lid: lid$ >>
+       | _ ->
+            Stdpp.raise_with_loc loc (Failure "Filter_ocaml.patt_of_expr_ident: not an identifier")
 
 (*
  * For looking up destructors in a hashtable.
@@ -243,7 +286,7 @@ and dest_array_subscript_expr t =
 
 and dest_array_expr t =
    let loc = dest_loc t in
-   let el = List.map dest_expr (dest_list (one_subterm "dest_array_expr" t)) in
+   let el = List.map dest_expr (dest_xlist (one_subterm "dest_array_expr" t)) in
       <:expr< [| $list:el$ |] >>
 
 and dest_assign_expr t =
@@ -280,8 +323,8 @@ and dest_downto_expr t =
 
 and dest_fun_expr t =
    let loc = dest_loc t in
-   let pwel = subterms_of_term t in
-      <:expr< fun [ $list: List.map dest_pwe pwel$ ] >>
+   let pwel = dest_fun_aux (one_subterm "dest_fun_expr" t) in
+      <:expr< fun [ $list: pwel$ ] >>
 
 and dest_if_expr t =
    let loc = dest_loc t in
@@ -294,15 +337,35 @@ and dest_int_expr t =
 
 and dest_let_expr t =
    let loc = dest_loc t in
-   let sub = subterms_of_term t in
-   let pe, e = List_util.split_last sub in
-      <:expr< let $rec:false$ $list: List.map dest_pe pe$ in $dest_expr e$ >>
+   let rec dest t =
+      if opname_of_term t == patt_in_op then
+         [], one_subterm "dest_let_expr" t
+      else
+         let p, t = dest_patt t in
+         let pl, e = dest t in
+            p :: pl, e
+   in
+   let pe, el = two_subterms t in
+   let pl, e = dest pe in
+   let el = List.map dest_expr (dest_xlist el) in
+      if List.length pl <> List.length el then
+         raise (Failure "Filter_ocaml.dest_let_expr: pattern count mismatch")
+      else
+         <:expr< let $rec:false$ $list: List.combine pl el$ in $dest_expr e$ >>
 
-and dest_letrec_expr t =
+and dest_fix_expr t =
    let loc = dest_loc t in
-   let sub = subterms_of_term t in
-   let pe, e = List_util.split_last sub in
-      <:expr< let $rec:true$ $list: List.map dest_pe pe$ in $dest_expr e$ >>
+   let rec dest t =
+      if opname_of_term t == patt_in_op then
+         [], dest_expr (one_subterm "dest_fix_expr" t)
+      else
+         let p, t = dest_patt t in
+         let e, t = two_subterms t in
+         let pel, e' = dest t in
+            (p, dest_expr e) :: pel, e'
+   in
+   let pel, e = dest (one_subterm "dest_fix_expr" t) in
+      <:expr< let $rec:true$ $list: pel$ in $e$ >>
 
 and dest_lid_expr t =
    let loc = dest_loc t in
@@ -310,11 +373,9 @@ and dest_lid_expr t =
 
 and dest_match_expr t =
    let loc = dest_loc t in
-      match subterms_of_term t with
-         e :: pwel ->
-            <:expr< match $dest_expr e$ with [ $list: List.map dest_pwe pwel$ ] >>
-       | [] ->
-           raise (FormatError ("match needs an argument", t))
+   let pwel, e = two_subterms t in
+   let pwel = dest_fun_aux pwel in
+      <:expr< match $dest_expr e$ with [ $list: pwel$ ] >>
 
 and dest_new_expr t =
    let loc = dest_loc t in
@@ -352,11 +413,9 @@ and dest_string_expr t =
 
 and dest_try_expr t =
    let loc = dest_loc t in
-      match subterms_of_term t with
-         e :: pwel ->
-            <:expr< try $dest_expr e$ with [ $list: List.map dest_pwe pwel$ ] >>
-       | [] ->
-            raise (FormatError ("try needs an argument", t))
+   let pwel, e = two_subterms t in
+   let pwel = dest_fun_aux pwel in
+      <:expr< try $dest_expr e$ with [ $list: pwel$ ] >>
 
 and dest_tuple_expr t =
    let loc = dest_loc t in
@@ -377,74 +436,126 @@ and dest_while_expr t =
    let e, el = two_subterms t in
       <:expr< while $dest_expr e$ do $list: List.map dest_expr (subterms_of_term el)$ done >>
 
+and dest_fun_aux t =
+   let dest_pwe t =
+      let p, e = dest_patt t in
+         if opname_of_term e == patt_with_op then
+            let w, e = two_subterms e in
+               p, Some (dest_expr w), dest_expr e
+         else
+            p, None, dest_expr (one_subterm "dest_fun_aux" e)
+   in
+   let rec dest t =
+      let op = opname_of_term t in
+         if op == patt_fail_op then
+            []
+         else if op == patt_if_op then
+            [dest_pwe (one_subterm "dest_fun_aux" t)]
+         else if op == patt_ifelse_op then
+            let pe, pel = two_subterms t in
+               dest_pwe pe :: dest pel
+         else
+            raise (Failure "Filter_ocaml.dest_fun_aux")
+   in
+      dest t
+
 (*
  * Patterns.
  *)
 and dest_proj_patt t =
    let loc = dest_loc t in
-   let p1, p2 = two_subterms t in
-      <:patt< $dest_patt p1$ . $dest_patt p2$ >>
+   let p1, p2, t = dest_patt_triple t in
+      <:patt< $p1$ . $p2$ >>, t
 
 and dest_as_patt t =
    let loc = dest_loc t in
-   let p1, p2 = two_subterms t in
-      <:patt< ( $dest_patt p1$ as $dest_patt p2$ ) >>
+   let p1, p2, t = dest_patt_triple t in
+      <:patt< ( $p1$ as $p2$ ) >>, t
 
 and dest_wildcard_patt t =
-   let loc = dest_loc t in
-      <:patt< _ >>
+   let loc, t = dest_loc_term t in
+      <:patt< _ >>, t
 
 and dest_apply_patt t =
    let loc = dest_loc t in
-   let p1, p2 = two_subterms t in
-      <:patt< $dest_patt p1$ $dest_patt p2$ >>
+   let p1, p2, t = dest_patt_triple t in
+      <:patt< $p1$ $p2$ >>, t
 
 and dest_char_patt t =
-   let loc, s = dest_loc_string t in
+   let loc, s, t = dest_loc_string_term t in
       if String.length s = 0 then
          raise (FormatError ("dest_char_patt: string needs at least one char", t));
-      <:patt< $chr:s.[0]$ >>
+      <:patt< $chr:s.[0]$ >>, t
 
 and dest_int_patt t =
-   let loc, i = dest_loc_int t in
-      <:patt< $int:i$ >>
+   let loc, i, t = dest_loc_int_term t in
+      <:patt< $int:i$ >>, t
 
 and dest_lid_patt t =
-   let loc = dest_loc t in
-      <:patt< $lid:dest_var t$ >>
+   let loc, t = dest_loc_term t in
+      <:patt< $lid:dest_var t$ >>, t
 
 and dest_choice_patt t =
    let loc = dest_loc t in
-   let p1, p2 = two_subterms t in
-      <:patt< $dest_patt p1$ | $dest_patt p2$ >>
+   let p1, p2, t = dest_patt_triple t in
+      <:patt< $p1$ | $p2$ >>, t
 
 and dest_range_patt t =
    let loc = dest_loc t in
-   let p1, p2 = two_subterms t in
-      <:patt< $dest_patt p1$ .. $dest_patt p2$ >>
+   let p1, p2, t = dest_patt_triple t in
+      <:patt< $p1$ .. $p2$ >>, t
 
 and dest_record_patt t =
    let loc = dest_loc t in
-   let ppl = subterms_of_term t in
-      <:patt< { $list: List.map dest_pp ppl$ } >>
+   let rec dest_record t =
+      if opname_of_term t == patt_record_end_op then
+         [], one_subterm "dest_record_patt" t
+      else
+         let n, p = two_subterms t in
+         let p, t = dest_patt p in
+         let l, t = dest_record t in
+            (patt_of_expr_ident (dest_expr n), p) :: l, t
+   in
+   let ppl, t = dest_record (one_subterm "dest_record_patt" t) in
+      <:patt< { $list: ppl$ } >>, t
 
 and dest_string_patt t =
-   let loc, s = dest_loc_string t in
-      <:patt< $str:s$ >>
+   let loc, s, t = dest_loc_string_term t in
+      <:patt< $str:s$ >>, t
 
 and dest_tuple_patt t =
    let loc = dest_loc t in
-   let pl = subterms_of_term t in
-      <:patt< ( $list: List.map dest_patt pl$ ) >>
+   let rec dest_tuple t =
+      if opname_of_term t == patt_tuple_end_op then
+         [], one_subterm "dest_tuple_patt" t
+      else
+         let p, t = dest_patt (one_subterm "dest_tuple_patt" t) in
+         let l, t = dest_tuple t in
+            p :: l, t
+   in
+   let pl, t = dest_tuple (one_subterm "dest_tuple_patt" t) in
+      <:patt< ( $list: pl$ ) >>, t
 
 and dest_cast_patt t =
    let loc = dest_loc t in
    let p, t = two_subterms t in
-      <:patt< ( $dest_patt p$ : $dest_type t$ ) >>
+   let p, t' = dest_patt p in
+      <:patt< ( $p$ : $dest_type t$ ) >>, t'
 
 and dest_uid_patt t =
-   let loc = dest_loc t in
-      <:patt< $uid:dest_var t$ >>
+   let loc, t = dest_loc_term t in
+      <:patt< $uid:dest_var t$ >>, t
+
+and dest_patt_triple t =
+   let p1, t = dest_patt (one_subterm "dest_patt_triple" t) in
+   let p2, t = dest_patt (one_subterm "dest_patt_triple" t) in
+      p1, p2, one_subterm "dest_patt_triple" t
+
+and dest_patt_fail t =
+   raise (Failure "Filter_ocaml.dest_patt_fail")
+
+and dest_patt_list tl =
+   raise (Failure "Filter_ocaml.dest_patt_list: not implemented")
 
 (*
  * Types.
@@ -620,15 +731,37 @@ and dest_type_str t =
    let ssltl = subterms_of_term t in
       <:str_item< type $list: List.map dest_sslt ssltl$ >>
 
-and dest_letrec_str t =
+and dest_fix_str t =
    let loc = dest_loc t in
-   let pel = subterms_of_term t in
-      <:str_item< value $rec:true$ $list: List.map dest_pe pel$ >>
+   let rec dest t =
+      if opname_of_term t == patt_done_op then
+         []
+      else
+         let p, t = dest_patt t in
+         let e, t = two_subterms t in
+         let pel = dest t in
+            (p, dest_expr e) :: pel
+   in
+   let pel = dest (one_subterm "dest_fix_str" t) in
+      <:str_item< value $rec:true$ $list: pel$ >>
 
 and dest_let_str t =
    let loc = dest_loc t in
-   let pel = subterms_of_term t in
-      <:str_item< value $rec:false$ $list: List.map dest_pe pel$ >>
+   let rec dest t =
+      if opname_of_term t == patt_done_op then
+         []
+      else
+         let p, t = dest_patt t in
+         let pl = dest t in
+            p :: pl
+   in
+   let pe, el = two_subterms t in
+   let pl = dest pe in
+   let el = List.map dest_expr (dest_xlist el) in
+      if List.length pl <> List.length el then
+         raise (Failure "Filter_ocaml.dest_let_str: pattern count mismatch")
+      else
+         <:str_item< value $rec:false$ $list: List.combine pl el$ >>
 
 (*
  * Module types.
@@ -772,11 +905,11 @@ and dest_class t =
          [s; sl1; pl1; so1; so2; cfl; b1; b2] ->
              { cdLoc = loc;
                cdNam = dest_string s;
-               cdPrm = List.map dest_string (subterms_of_term sl1);
-               cdArg = List.map dest_patt (subterms_of_term pl1);
+               cdPrm = List.map dest_string (dest_xlist sl1);
+               cdArg = dest_patt_list pl1;
                cdSlf = dest_string_opt so1;
                cdTyc = dest_string_opt so2;
-               cdFld = List.map dest_cf (subterms_of_term cfl);
+               cdFld = List.map dest_cf (dest_xlist cfl);
                cdVir = dest_bool b1;
                cdCls = dest_bool b2
              }
@@ -811,14 +944,6 @@ and dest_vir_cf t =
 (*
  * Utilities.
  *)
-and dest_pwe t =
-   let p, wo, e = three_subterms t in
-      dest_patt p, dest_expr_opt wo, dest_expr e
-
-and dest_pe t =
-   let p, e = two_subterms t in
-      dest_patt p, dest_expr e
-
 and dest_se t =
    let s, e = two_subterms t in
       dest_string s, dest_expr e
@@ -826,10 +951,6 @@ and dest_se t =
 and dest_ee t =
    let e1, e2 = two_subterms t in
       dest_expr e1, dest_expr e2
-
-and dest_pp t =
-   let p1, p2 = two_subterms t in
-      dest_patt p1, dest_patt p2
 
 and dest_st t =
    let s, t = two_subterms t in
@@ -906,9 +1027,9 @@ let expr_assign_op              = add_expr "assign"             dest_assign_expr
 let expr_coerce_class_op        = add_expr "coerce_class"       dest_coerce_class_expr
 let expr_upto_op                = add_expr "for_upto"           dest_upto_expr
 let expr_downto_op              = add_expr "for_downto"         dest_downto_expr
-let expr_fun_op                 = add_expr "lambda_pattern"     dest_fun_expr
+let expr_fun_op                 = add_expr "fun"                dest_fun_expr
 let expr_if_op                  = add_expr "ifthenelse"         dest_if_expr
-let expr_letrec_op              = add_expr "letrec"             dest_letrec_expr
+let expr_letrec_op              = add_expr "letrec"             dest_fix_expr
 let expr_let_op                 = add_expr "let"                dest_let_expr
 let expr_match_op               = add_expr "match"              dest_match_expr
 let expr_new_op                 = add_expr "new"                dest_new_expr
@@ -942,8 +1063,8 @@ let type_uid_op                 = add_type "type_uid"           dest_uid_type
 let type_proj_op                = add_type "type_proj"          dest_proj_type
 let type_as_op                  = add_type "type_as"            dest_as_type
 let type_wildcard_op            = add_type "type_wildcard"      dest_wildcard_type
-let type_apply_op               = add_type "type_apply_op"      dest_apply_type
-let type_fun_op                 = add_type "type_fun_op"        dest_fun_type
+let type_apply_op               = add_type "type_apply"         dest_apply_type
+let type_fun_op                 = add_type "type_fun"           dest_fun_type
 let type_class_id_op            = add_type "type_class_id"      dest_class_id_type
 let type_param_op               = add_type "type_param"         dest_param_type
 let type_equal_op               = add_type "type_equal"         dest_equal_type
@@ -972,7 +1093,7 @@ let str_module_op               = add_str "str_module"          dest_module_str
 let str_module_type_op          = add_str "str_module_type"     dest_module_type_str
 let str_open_op                 = add_str "str_open"            dest_open_str
 let str_type_op                 = add_str "str_type"            dest_type_str
-let str_letrec_op               = add_str "str_letrec"          dest_letrec_str
+let str_letrec_op               = add_str "str_letrec"          dest_fix_str
 let str_let_op                  = add_str "str_let"             dest_let_str
 
 let mt_lid_op                   = add_mt "mt_lid"               dest_lid_mt
@@ -1067,12 +1188,18 @@ let mk_opt f = function
 (*
  * String without location.
  *)
-let mk_loc_string opname (start, finish) s =
+let mk_loc_string_aux opname (start, finish) s tl =
    let p1 = make_param (Number start) in
    let p2 = make_param (Number finish) in
    let p3 = make_param (String s) in
    let op = mk_op opname [p1; p2; p3] in
-      mk_term op []
+      mk_term op (List.map (mk_bterm []) tl)
+
+let mk_loc_string opname loc s =
+   mk_loc_string_aux opname loc s []
+
+let mk_loc_string_term opname loc s t =
+   mk_loc_string_aux opname loc s [t]
 
 let mk_string opname s =
    let p1 = make_param (String s) in
@@ -1088,12 +1215,18 @@ let mk_simple_string =
 (*
  * Number with location.
  *)
-let mk_loc_int opname (start, finish) i =
+let mk_loc_int_aux opname (start, finish) i tl =
    let p1 = make_param (Number start) in
    let p2 = make_param (Number finish) in
    let p3 = make_param (Number (Num.num_of_string i)) in
    let op = mk_op opname [p1; p2; p3] in
-      mk_term op []
+      mk_term op (List.map (mk_bterm []) tl)
+
+let mk_loc_int opname loc i =
+   mk_loc_int_aux opname loc i []
+
+let mk_loc_int_term opname loc i t =
+   mk_loc_int_aux opname loc i [t]
 
 (*
  * List of terms.
@@ -1104,116 +1237,170 @@ let mk_list_term terms =
 (*
  * Variables are enclosed in terms that mark
  * the variable type.
+ *
+ * If the var is bound, then we produce a real var,
+ * Otherwise, we produce a string to lookup from the environment.
  *)
-let mk_var opname loc s =
-   mk_any_term (mk_op_loc opname loc) [mk_var_term s]
+let mk_var_aux opname vars loc s l =
+   let v =
+      if List.mem s vars then
+         mk_var_term s
+      else
+         mk_string_term opname s
+   in
+      mk_any_term (mk_op_loc opname loc) (v :: l)
+
+let mk_var opname vars loc s =
+   mk_var_aux opname vars loc s []
+
+let mk_var_term opname vars loc s t =
+   mk_var_aux opname vars loc s [t]
+
+let mk_patt_var opname loc s t =
+   let op = mk_op_loc opname loc in
+   let bterm = mk_bterm [s] t in
+      mk_term op [bterm]
 
 (*
  * Compute a hash value from the struct.
+ * vars is a list of the bound variables.
  *)
-let rec mk_expr comment expr =
+let rec mk_expr vars comment expr =
    let loc = loc_of_expr expr in
    let term =
       match expr with
          (<:expr< $e1$ . $e2$ >>) ->
-            mk_simple_term expr_proj_op loc [mk_expr comment e1; mk_expr comment e2]
+            mk_simple_term expr_proj_op loc [mk_expr vars comment e1; mk_expr vars comment e2]
        | (<:expr< $e1$ $e2$ >>) ->
-            mk_simple_term expr_apply_op loc [mk_expr comment e1; mk_expr comment e2]
+            mk_simple_term expr_apply_op loc [mk_expr vars comment e1; mk_expr vars comment e2]
        | (<:expr< $e1$ .( $e2$ ) >>) ->
-            mk_simple_term expr_array_subscript_op loc [mk_expr comment e1; mk_expr comment e2]
+            mk_simple_term expr_array_subscript_op loc [mk_expr vars comment e1; mk_expr vars comment e2]
        | (<:expr< [| $list:el$ |] >>) ->
-            mk_simple_term expr_array_op loc [mk_list (List.map (mk_expr comment) el)]
+            mk_simple_term expr_array_op loc [mk_xlist_term (List.map (mk_expr vars comment) el)]
        | (<:expr< $e1$ := $e2$ >>) ->
-            mk_simple_term expr_assign_op loc [mk_expr comment e1; mk_expr comment e2]
+            mk_simple_term expr_assign_op loc [mk_expr vars comment e1; mk_expr vars comment e2]
        | (<:expr< $chr:c$ >>) ->
             mk_loc_string expr_char_op loc (String.make 1 c)
        | (<:expr< ( $e$ :> $t$ ) >>) ->
-            mk_simple_term expr_coerce_class_op loc [mk_expr comment e; mk_type comment t]
+            mk_simple_term expr_coerce_class_op loc [mk_expr vars comment e; mk_type comment t]
        | (<:expr< $flo:s$ >>) ->
             mk_loc_string expr_float_op loc s
        | (<:expr< for $s$ = $e1$ $to:b$ $e2$ do $list:el$ done >>) ->
             let op = if b then expr_upto_op else expr_downto_op in
             let op_loc = mk_op_loc op loc in
-            let el' = mk_list_term (List.map (mk_expr comment) el) in
-                mk_dep0_dep0_dep1_any_term op_loc (mk_expr comment e1) (mk_expr comment e2) s el'
+            let el' = mk_list_term (List.map (mk_expr (s :: vars) comment) el) in
+                mk_dep0_dep0_dep1_any_term op_loc (mk_expr vars comment e1) (mk_expr vars comment e2) s el'
        | (<:expr< fun [ $list:pwel$ ] >>) ->
-            mk_simple_term expr_fun_op loc (List.map (mk_pwe comment) pwel)
+            mk_fun vars comment loc pwel
        | (<:expr< if $e1$ then $e2$ else $e3$ >>) ->
-            mk_simple_term expr_if_op loc [mk_expr comment e1; mk_expr comment e1; mk_expr comment e3]
+            mk_simple_term expr_if_op loc [mk_expr vars comment e1;
+                                           mk_expr vars comment e2;
+                                           mk_expr vars comment e3]
        | (<:expr< $int:s$ >>) ->
             mk_loc_int expr_int_op loc s
        | (<:expr< let $rec:b$ $list:pel$ in $e$ >>) ->
-            let op = if b then expr_letrec_op else expr_let_op in
-               mk_simple_term op loc ((List.map (mk_pe comment) pel) @ [mk_expr comment e])
+            if b then
+               mk_fix vars comment loc pel e
+            else
+               mk_let vars comment loc pel e
        | (<:expr< $lid:s$ >>) ->
-            mk_var expr_lid_op loc s
+            mk_var expr_lid_op vars loc s
        | (<:expr< match $e$ with [ $list:pwel$ ] >>) ->
-            mk_simple_term expr_match_op loc (mk_expr comment e :: List.map (mk_pwe comment) pwel)
+            mk_match vars comment loc pwel e
        | (<:expr< new $e$ >>) ->
-            mk_simple_term expr_new_op loc [mk_expr comment e]
+            mk_simple_term expr_new_op loc [mk_expr vars comment e]
        | (<:expr< {< $list:sel$ >} >>) ->
-            mk_simple_term expr_stream_op loc (List.map (mk_se comment) sel)
+            mk_simple_term expr_stream_op loc (List.map (mk_se vars comment) sel)
        | (<:expr< { $list:eel$ } >>) ->
-            mk_simple_term expr_record_op loc (List.map (mk_ee comment) eel)
+            mk_simple_term expr_record_op loc [mk_xlist_term (List.map (mk_ee vars comment) eel)]
        | (<:expr< do $list:el$ return $e$ >>) ->
-            mk_simple_term expr_seq_op loc (List.map (mk_expr comment) el @ [mk_expr comment e])
+            mk_simple_term expr_seq_op loc [mk_xlist_term (List.map (mk_expr vars comment) el @ [mk_expr vars comment e])]
        | (<:expr< $e$ # $i$ >>) ->
-            mk_simple_term expr_select_op loc [mk_expr comment e; mk_string expr_string_op i]
+            mk_simple_term expr_select_op loc [mk_expr vars comment e; mk_string expr_string_op i]
        | (<:expr< $e1$ .[ $e2$ ] >>) ->
-            mk_simple_term expr_string_subscript_op loc [mk_expr comment e1; mk_expr comment e2]
+            mk_simple_term expr_string_subscript_op loc [mk_expr vars comment e1; mk_expr vars comment e2]
        | (<:expr< $str:s$ >>) ->
             mk_loc_string expr_string_op loc s
        | (<:expr< try $e$ with [ $list:pwel$ ] >>) ->
-            mk_simple_term expr_try_op loc (mk_expr comment e :: List.map (mk_pwe comment) pwel)
+            mk_try vars comment loc pwel e
        | (<:expr< ( $list:el$ ) >>) ->
-            mk_simple_term expr_tuple_op loc (List.map (mk_expr comment) el)
+            mk_simple_term expr_tuple_op loc [mk_xlist_term (List.map (mk_expr vars comment) el)]
        | (<:expr< ( $e$ : $t$ ) >>) ->
-            mk_simple_term expr_cast_op loc [mk_expr comment e; mk_type comment t]
+            mk_simple_term expr_cast_op loc [mk_expr vars comment e; mk_type comment t]
        | (<:expr< $uid:s$ >>) ->
-            mk_var expr_uid_op loc s
+            mk_var expr_uid_op vars loc s
        | (<:expr< while $e$ do $list:el$ done >>) ->
-            mk_simple_term expr_while_op loc [mk_expr comment e; mk_list_term (List.map (mk_expr comment) el)]
+            mk_simple_term expr_while_op loc [mk_expr vars comment e; mk_list_term (List.map (mk_expr vars comment) el)]
        | MLast.ExAnt (_, e) ->
-            raise_with_loc loc (Failure "Filter_ocaml.mk_expr: encountered an ExAnt")
+            raise_with_loc loc (Failure "Filter_ocaml.mk_expr vars: encountered an ExAnt")
    in
       comment loc term
       
-and mk_patt comment patt =
+and mk_patt vars comment patt tailf =
    let loc = loc_of_patt patt in
    let term =
       match patt with
          (<:patt< $p1$ . $p2$ >>) ->
-            mk_simple_term patt_proj_op loc [mk_patt comment p1; mk_patt comment p2]
+            mk_patt_triple vars comment loc patt_proj_op patt_proj_arg_op patt_proj_end_op p1 p2 tailf
        | (<:patt< ( $p1$ as $p2$ ) >>) ->
-            mk_simple_term patt_as_op loc [mk_patt comment p1; mk_patt comment p2]
+            mk_patt_triple vars comment loc patt_as_op patt_as_arg_op patt_as_end_op p1 p2 tailf
        | (<:patt< _ >>) ->
-            mk_simple_term patt_wildcard_op loc []
+            mk_simple_term patt_wildcard_op loc [tailf vars]
        | (<:patt< $p1$ $p2$ >>) ->
-            mk_simple_term patt_apply_op loc [mk_patt comment p1; mk_patt comment p2]
+            mk_patt_triple vars comment loc patt_apply_op patt_apply_arg_op patt_apply_end_op p1 p2 tailf
        | (<:patt< $chr:c$ >>) ->
-            mk_loc_string patt_char_op loc (String.make 1 c)
+            mk_loc_string_term patt_char_op loc (String.make 1 c) (tailf vars)
        | (<:patt< $int:s$ >>) ->
-            mk_loc_int patt_int_op loc s
-       | (<:patt< $lid:i$ >>) ->
-            mk_var patt_lid_op loc i
+            mk_loc_int_term patt_int_op loc s (tailf vars)
+       | (<:patt< $lid:v$ >>) ->
+            (* This is a binding occurrence *)
+            mk_patt_var patt_var_op loc v (tailf (v :: vars))
        | (<:patt< $p1$ | $p2$ >>) ->
-            mk_simple_term patt_choice_op loc [mk_patt comment p1; mk_patt comment p2]
+            mk_patt_triple vars comment loc patt_choice_op patt_choice_arg_op patt_choice_end_op p1 p2 tailf
        | (<:patt< $p1$ .. $p2$ >>) ->
-            mk_simple_term patt_range_op loc [mk_patt comment p1; mk_patt comment p2]
+            mk_patt_triple vars comment loc patt_range_op patt_range_arg_op patt_range_end_op p1 p2 tailf
        | (<:patt< { $list:ppl$ } >>) ->
-            mk_simple_term patt_record_op loc (List.map (mk_pp comment) ppl)
+            mk_patt_record vars comment loc ppl tailf
        | (<:patt< $str:s$ >>) ->
-            mk_loc_string patt_string_op loc s
+            mk_loc_string_term patt_string_op loc s (tailf vars)
        | (<:patt< ( $list:pl$ ) >>) ->
-            mk_simple_term patt_tuple_op loc (List.map (mk_patt comment) pl)
-       | (<:patt< ( $p$ : $t$ ) >>) ->
-            mk_simple_term patt_cast_op loc [mk_patt comment p; mk_type comment t]
+            mk_patt_list vars comment loc patt_tuple_op patt_tuple_arg_op patt_tuple_end_op pl tailf
+       | (<:patt< ( $p$ : $t'$ ) >>) ->
+            mk_simple_term patt_cast_op loc [mk_patt vars comment p tailf; mk_type comment t']
        | (<:patt< $uid:s$ >>) ->
-            mk_var patt_uid_op loc s
+            mk_var_term patt_uid_op vars loc s (tailf vars)
        | MLast.PaAnt (_, p) ->
             raise_with_loc loc (Failure "Filter_ocaml:mk_patt: encountered PaAnt")
    in
       comment loc term
+      
+and mk_patt_triple vars comment loc op1 op2 op3 p1 p2 tailf =
+   let tailf vars = mk_simple_term op3 loc [tailf vars] in
+   let tailf vars = mk_simple_term op2 loc [mk_patt vars comment p2 tailf] in
+      mk_simple_term op1 loc [mk_patt vars comment p1 tailf]
+
+and mk_patt_record vars comment loc ppl tailf =
+   let tailf vars = mk_simple_term patt_record_end_op loc [tailf vars] in
+   let rec make ppl vars =
+      match ppl with
+         (p1, p2)::ppl ->
+            mk_simple_term patt_record_proj_op loc [mk_expr vars comment (expr_of_patt_ident p1);
+                                                    mk_patt vars comment p2 (make ppl)]
+       | [] ->
+            tailf vars
+   in
+      mk_simple_term patt_record_op loc [make ppl vars]
+
+and mk_patt_list vars comment loc op1 op2 op3 pl tailf =
+   let tailf vars = mk_simple_term op3 loc [tailf vars] in
+   let rec make pl vars =
+      match pl with
+         p::pl ->
+            mk_simple_term op2 loc [mk_patt vars comment p (make pl)]
+       | [] ->
+            tailf vars
+   in
+      make pl vars
       
 and mk_type comment t =
    let loc = loc_of_ctyp t in
@@ -1232,7 +1419,7 @@ and mk_type comment t =
        | (<:ctyp< # $i$ >>) ->
             mk_simple_term type_class_id_op loc [mk_type comment i]
        | (<:ctyp< $lid:s$ >>) ->
-            mk_var type_lid_op loc s
+            mk_var type_lid_op [] loc s
        | (<:ctyp< '$s$ >>) ->
             mk_loc_string type_param_op loc s
        | (<:ctyp< $t1$ == $t2$ >>) ->
@@ -1241,13 +1428,13 @@ and mk_type comment t =
             let op = if b then type_object_tt_op else type_object_ff_op in
                mk_simple_term op loc (List.map (mk_st comment) stl)
        | (<:ctyp< { $list:sbtl$ } >>) ->
-            mk_simple_term type_record_op loc (List.map (mk_sbt comment) sbtl)
+            mk_simple_term type_record_op loc [mk_xlist_term (List.map (mk_sbt comment) sbtl)]
        | (<:ctyp< [ $list:stll$ ] >>) ->
-            mk_simple_term type_list_op loc (List.map (mk_stl comment) stll)
+            mk_simple_term type_list_op loc [mk_xlist_term (List.map (mk_stl comment) stll)]
        | (<:ctyp< ( $list:tl$ ) >>) ->
-            mk_simple_term type_prod_op loc (List.map (mk_type comment) tl)
+            mk_simple_term type_prod_op loc [mk_xlist_term (List.map (mk_type comment) tl)]
        | (<:ctyp< $uid:s$ >>) ->
-            mk_var type_uid_op loc s
+            mk_var type_uid_op [] loc s
    in
       comment loc term
       
@@ -1260,7 +1447,7 @@ and mk_sig_item comment si =
        | (<:sig_item< declare $list:sil$ end >>) ->
             mk_simple_term sig_subsig_op loc (List.map (mk_sig_item comment) sil)
        | (<:sig_item< exception $s$ of $list:tl$ >>) ->
-            mk_simple_named_term sig_exception_op loc s (List.map (mk_type comment) tl)
+            mk_simple_named_term sig_exception_op loc s [mk_xlist_term (List.map (mk_type comment) tl)]
        | (<:sig_item< external $s$ : $t$ = $list:sl$ >>) ->
             mk_simple_named_term sig_external_op loc s (mk_type comment t :: List.map mk_simple_string sl)
        | (<:sig_item< module $s$ : $mt$ >>) ->
@@ -1270,7 +1457,7 @@ and mk_sig_item comment si =
        | (<:sig_item< open $sl$ >>) ->
             mk_simple_term sig_open_op loc [mk_xlist_term (List.map mk_simple_string sl)]
        | (<:sig_item< type $list:ssltl$ >>) ->
-            mk_simple_term sig_type_op loc (List.map (mk_sslt comment) ssltl)
+            mk_simple_term sig_type_op loc [mk_xlist_term (List.map (mk_sslt comment) ssltl)]
        | (<:sig_item< value $s$ : $t$ >>) ->
             mk_simple_named_term sig_value_op loc s [mk_type comment t]
    in
@@ -1285,9 +1472,9 @@ and mk_str_item comment si =
        | (<:str_item< declare $list:stl$ end >>) ->
             mk_simple_term str_substruct_op loc (List.map (mk_str_item comment) stl)
        | (<:str_item< exception $s$ of $list:tl$ >>) ->
-            mk_simple_named_term str_exception_op loc s (List.map (mk_type comment) tl)
+            mk_simple_named_term str_exception_op loc s [mk_xlist_term (List.map (mk_type comment) tl)]
        | (<:str_item< $exp:e$ >>) ->
-            mk_simple_term str_expr_op loc [mk_expr comment e]
+            mk_simple_term str_expr_op loc [mk_expr [] comment e]
        | (<:str_item< external $s$ : $t$ = $list:sl$ >>) ->
             mk_simple_named_term str_external_op loc s (mk_type comment t :: List.map mk_simple_string sl)
        | (<:str_item< module $s$ = $me$ >>) ->
@@ -1297,10 +1484,12 @@ and mk_str_item comment si =
        | (<:str_item< open $sl$ >>) ->
             mk_simple_term str_open_op loc [mk_xlist_term (List.map mk_simple_string sl)]
        | (<:str_item< type $list:ssltl$ >>) ->
-            mk_simple_term str_type_op loc (List.map (mk_sslt comment) ssltl)
+            mk_simple_term str_type_op loc [mk_xlist_term (List.map (mk_sslt comment) ssltl)]
        | (<:str_item< value $rec:b$ $list:pel$ >>) ->
-            let op = if b then str_letrec_op else str_let_op in
-               mk_simple_term op loc (List.map (mk_pe comment) pel)
+            if b then
+               mk_str_fix comment loc pel
+            else
+               mk_str_let comment loc pel
    in
       comment loc term
 
@@ -1316,11 +1505,11 @@ and mk_module_type comment mt =
             let op_loc = mk_op_loc mt_functor_op loc in
                mk_dep0_dep1_any_term op_loc s (mk_module_type comment mt1) (mk_module_type comment mt2)
        | (<:module_type< $lid:i$ >>) ->
-            mk_var mt_lid_op loc i
+            mk_var mt_lid_op [] loc i
        | (<:module_type< sig $list:sil$ end >>) ->
-            mk_simple_term mt_sig_op loc (List.map (mk_sig_item comment) sil)
+            mk_simple_term mt_sig_op loc [mk_xlist_term (List.map (mk_sig_item comment) sil)]
        | (<:module_type< $uid:i$ >>) ->
-            mk_var mt_uid_op loc i
+            mk_var mt_uid_op [] loc i
        | (<:module_type< $mt$ with $list:wcl$ >>) ->
             mk_simple_term mt_type_with_op loc (mk_module_type comment mt :: List.map (mk_wc comment) wcl)
    in
@@ -1357,7 +1546,7 @@ and mk_module_expr comment me =
        | (<:module_expr< ( $me$ : $mt$) >>) ->
             mk_simple_term me_cast_op loc [mk_module_expr comment me; mk_module_type comment mt]
        | (<:module_expr< $uid:i$ >>) ->
-            mk_var me_uid_op loc i
+            mk_var me_uid_op [] loc i
    in
       comment loc term
       
@@ -1401,10 +1590,17 @@ and mk_class comment
     cdVir = b1;
     cdCls = b2 } =
    let loc = num_of_loc loc in
+   let rec make pl vars =
+      match pl with
+         p::pl ->
+            mk_patt vars comment p (make pl)
+       | [] ->
+            mk_simple_term patt_done_op loc []
+   in
    let term =
       mk_simple_named_term class_op loc s
            [ mk_list_term (List.map mk_simple_string sl1);
-             mk_list_term (List.map (mk_patt comment) pl1);
+             make pl1 [];
              mk_string_opt expr_string_op so1;
              mk_string_opt expr_string_op so2;
              mk_list_term (List.map (mk_cf comment) cfl);
@@ -1421,13 +1617,13 @@ and mk_cf comment cf =
             loc, mk_simple_term cf_ctr_op loc [mk_simple_string s; mk_type comment t]
        | CfInh (loc, t, e, so) ->
             let loc = (num_of_loc loc) in
-            loc, mk_simple_term cf_inh_op loc [mk_type comment t; mk_expr comment e; mk_string_opt expr_string_op so]
+            loc, mk_simple_term cf_inh_op loc [mk_type comment t; mk_expr [] comment e; mk_string_opt expr_string_op so]
        | CfMth (loc, s, e) ->
             let loc = (num_of_loc loc) in
-            loc, mk_simple_term cf_mth_op loc [mk_simple_string s; mk_expr comment e]
+            loc, mk_simple_term cf_mth_op loc [mk_simple_string s; mk_expr [] comment e]
        | CfVal (loc, s, b1, b2, eo) ->
             let loc = (num_of_loc loc) in
-            loc, mk_simple_term cf_val_op loc [mk_simple_string s; mk_bool b1; mk_bool b2; mk_expr_opt comment eo]
+            loc, mk_simple_term cf_val_op loc [mk_simple_string s; mk_bool b1; mk_bool b2; mk_expr_opt [] comment eo]
        | CfVir (loc, s, t) ->
             let loc = (num_of_loc loc) in
             loc, mk_simple_term cf_vir_op loc [mk_simple_string s; mk_type comment t]
@@ -1435,28 +1631,90 @@ and mk_cf comment cf =
       comment loc term
       
 (*
+ * Make a fix expression.
+ *)
+and mk_fix vars comment loc pel e =
+   raise (Failure "Filter_ocaml.mk_fix: not implemented")
+   
+and mk_let vars comment loc pel e =
+   let pl, el = List.split pel in
+   let el = List.map (mk_expr vars comment) el in
+   let tailf vars =
+      mk_simple_term patt_in_op loc [mk_expr vars comment e]
+   in
+   let rec make pl vars =
+      match pl with
+         p::pl ->
+            let tailf' vars =
+               if pl = [] then
+                  tailf vars
+               else
+                  mk_simple_term patt_and_op loc [make pl vars]
+            in
+               mk_patt vars comment p tailf'
+      | [] ->
+         tailf vars
+   in
+      mk_simple_term expr_let_op loc [make pl vars; mk_xlist_term el]
+
+and mk_str_fix comment loc pel =
+   raise (Failure "Filter_ocaml.mk_str_fix: not implemented")
+
+and mk_str_let comment loc pel =
+   let make (p, e) =
+      let tailf vars =
+         mk_simple_term patt_done_op loc []
+      in
+      let p = mk_patt [] comment p tailf in
+      let e = mk_expr [] comment e in
+         mk_simple_term str_let_op loc [p; e]
+   in
+   let tl = List.map make pel in
+   let t = mk_xlist_term tl in
+      mk_simple_term str_let_op loc [t]
+
+and mk_fun_aux vars comment loc pwel =
+   let make_pwe (p, w, e) =
+      let tailf vars =
+         match w with
+            Some w ->
+               mk_simple_term patt_with_op loc [mk_expr vars comment w; mk_expr vars comment e]
+          | None ->
+               mk_simple_term patt_body_op loc [mk_expr vars comment e]
+      in
+         mk_patt vars comment p tailf
+   in
+   let rec make = function
+      [pwe] ->
+         mk_simple_term patt_if_op loc [make_pwe pwe]
+    | pwe :: t ->
+         mk_simple_term patt_ifelse_op loc [make_pwe pwe; make t]
+    | [] ->
+         mk_simple_term patt_fail_op loc []
+   in
+      make pwel
+
+and mk_fun vars comment loc pwel =
+   mk_simple_term expr_fun_op loc [mk_fun_aux vars comment loc pwel]
+
+and mk_match vars comment loc pwel e =
+   mk_simple_term expr_match_op loc [mk_fun_aux vars comment loc pwel; mk_expr vars comment e]
+
+and mk_try vars comment loc pwel e =
+   mk_simple_term expr_try_op loc [mk_fun_aux vars comment loc pwel; mk_expr vars comment e]
+
+(*
  * Combined forms.
  *)
-and mk_expr_opt comment x = mk_opt (mk_expr comment) x
+and mk_expr_opt vars comment x = mk_opt (mk_expr vars comment) x
 
 and mk_type_opt comment x = mk_opt (mk_type comment) x
 
-and mk_pwe comment (patt, with_expr, expr) =
-   Term.mk_simple_term pwe_op [mk_patt comment patt;
-                               mk_expr_opt comment with_expr;
-                               mk_expr comment expr]
+and mk_se vars comment (s, e) =
+   Term.mk_simple_term se_op [mk_simple_string s; mk_expr vars comment e]
 
-and mk_pe comment (patt, expr) =
-   Term.mk_simple_term pe_op [mk_patt comment patt; mk_expr comment expr]
-
-and mk_se comment (s, e) =
-   Term.mk_simple_term se_op [mk_simple_string s; mk_expr comment e]
-
-and mk_ee comment (e1, e2) =
-   Term.mk_simple_term ee_op [mk_expr comment e1; mk_expr comment e2]
-
-and mk_pp comment (p1, p2) =
-   Term.mk_simple_term pp_op [mk_patt comment p1; mk_patt comment p2]
+and mk_ee vars comment (e1, e2) =
+   Term.mk_simple_term ee_op [mk_expr vars comment e1; mk_expr vars comment e2]
 
 and mk_st comment (s, t) =
    Term.mk_simple_term st_op [mk_simple_string s; mk_type comment t]
@@ -1465,10 +1723,12 @@ and mk_sbt comment (s, b, t) =
    Term.mk_simple_term sbt_op [mk_simple_string s; mk_bool b; mk_type comment t]
 
 and mk_stl comment (s, tl) =
-   Term.mk_simple_term stl_op (mk_simple_string s :: List.map (mk_type comment) tl)
+   Term.mk_simple_term stl_op [mk_simple_string s; mk_xlist_term (List.map (mk_type comment) tl)]
 
 and mk_sslt comment (s, sl, t) =
-   Term.mk_simple_term sslt_op (mk_simple_string s :: (List.map mk_simple_string sl @ [ mk_type comment t ]))
+   Term.mk_simple_term sslt_op [mk_simple_string s;
+                                mk_xlist_term (List.map mk_simple_string sl);
+                                mk_type comment t ]
 
 and mk_bool flag =
    Term.mk_simple_term (if flag then true_op else false_op) []
@@ -1504,6 +1764,9 @@ let term_of_class = mk_class
 
 (*
  * $Log$
+ * Revision 1.12  1998/05/04 13:01:10  jyh
+ * Ocaml display without let rec.
+ *
  * Revision 1.11  1998/05/01 14:59:20  jyh
  * Updating display forms.
  *
