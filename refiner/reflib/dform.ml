@@ -343,12 +343,60 @@ and format_bterms buf printer = function
       format_popm buf
 
 (*
+ * A special format for sequents.
+ *)
+and format_sequent buf format_term term =
+   let rec format_goal goals i len =
+      if i <> len then
+         begin
+            format_string buf (if i = 0 then ">-" else ";");
+            format_space buf;
+            format_term (SeqGoal.get goals i);
+            format_goal goals (i + 1) len
+         end
+   in
+   let rec format_hyp hyps i len =
+      if i <> len then
+         let _ =
+            if i <> 0 then
+               format_string buf ";"
+         in
+         let _ =
+            match SeqHyp.get hyps i with
+               Hypothesis (v, a) ->
+                  format_space buf;
+                  format_string buf v;
+                  format_string buf ". ";
+                  format_term a
+             | Context (v, values) ->
+                  format_space buf;
+                  format_term (mk_so_var_term v values)
+         in
+            format_hyp hyps (i + 1) len
+   in
+      let { sequent_args = args;
+            sequent_hyps = hyps;
+            sequent_goals = goals
+          } = explode_sequent term
+      in
+         format_szone buf;
+         format_pushm buf 0;
+         format_string buf "sequent {";
+         format_hyp hyps 0 (SeqHyp.length hyps);
+         format_goal goals 0 (SeqGoal.length goals);
+         format_string buf " }";
+         format_popm buf;
+         format_ezone buf
+
+(*
  * This is the default top level print function.
  * Check for variables.
  *)
 and format_term buf shortener printer term =
    if is_so_var_term term then
       format_simple_term buf term
+   else if is_sequent_term term then
+      format_sequent buf printer term
    else
       (* Standard term *)
       let { term_op = op; term_terms = bterms } = dest_term term in
@@ -390,9 +438,9 @@ let format_short_term base shortener =
    let rec print_term' pprec buf eq t =
       (* Check for a display form entry *)
       let items, { df_name = name;
-                          df_precedence = pr';
-                          df_printer = printer;
-                          df_external = is_external
+                   df_precedence = pr';
+                   df_printer = printer;
+                   df_external = is_external
           } =
          let t =
             if is_sequent_term t then

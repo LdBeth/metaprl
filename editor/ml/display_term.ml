@@ -38,6 +38,7 @@ open Refiner.Refiner.Term
 open Refiner.Refiner.TermOp
 open Refiner.Refiner.TermMan
 open Dform_print
+open Simple_print
 
 open Mux_channel
 
@@ -182,7 +183,10 @@ let set window term =
    in
    let df = get_mode_base dfbase dfmode in
    let buf = Rformat.new_buffer () in
-   let _ = Dform.format_term df buf term in
+   let _ =
+      (* eprintf "Term: %a%t" SimplePrint.print_simple_term_fp term eflush; *)
+      Dform.format_term df buf term
+   in
    let host, port = host_of_channel chan in
       if dfmode = "html" then
          let out = open_out_bin (sprintf "cache/%s%d.html" host port) in

@@ -137,6 +137,16 @@ type ('a, 'b) table_entry =
  *)
 let end_marker = mk_xstring_term "end_marker"
 
+(*
+ * Sequents are handled specially.
+ *)
+let sequent_term =
+   let opname = mk_opname "sequent" nil_opname in
+      mk_simple_term opname [mk_var_term "ext"; mk_var_term "hyps"]
+
+let shape_of_term t =
+   shape_of_term (if is_sequent_term t then sequent_term else t)
+
 (************************************************************************
  * IMPLEMENTATION                                                       *
  ************************************************************************)

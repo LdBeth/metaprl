@@ -69,6 +69,13 @@ let _ =
    if !debug_load then
       eprintf "Loading Proof_edit%t" eflush
 
+let debug_edit =
+   create_debug (**)
+      { debug_name = "edit";
+        debug_description = "show editing commands";
+        debug_value = false
+      }
+
 (************************************************************************
  * TYPES                                                                *
  ************************************************************************)
@@ -532,6 +539,8 @@ let term_of_arglist args =
  * Display a proof with an inference.
  *)
 let term_of_proof proof =
+   if !debug_edit then
+      eprintf "Proof_edit.term_of_proof: begin%t" eflush;
    let { Proof.step_goal = goal;
          Proof.step_expr = expr;
          Proof.step_subgoals = subgoals;
@@ -560,7 +569,10 @@ let term_of_proof proof =
             mk_rule_box_string_term text
    in
    let subgoals = mk_subgoals_term subgoals extras in
-      mk_proof_term main goal text subgoals
+   let x = mk_proof_term main goal text subgoals in
+      if !debug_edit then
+         eprintf "Proof_edit.term_of_proof: done%t" eflush;
+      x
 
 (*
  * Show the incomplete proof.
@@ -569,14 +581,20 @@ let term_of_incomplete proof =
    let goal, text =
       match proof with
          Primitive goal ->
+            if !debug_edit then
+               eprintf "Proof_edit.term_of_incomplete: Primitive%t" eflush;
             let goal = term_of_tactic_arg [Proof.StatusComplete] goal in
             let text = mk_rule_box_string_term "<Primitive>" in
                goal, text
        | Incomplete goal ->
+            if !debug_edit then
+               eprintf "Proof_edit.term_of_incomplete: Incomplete%t" eflush;
             let goal = term_of_tactic_arg [Proof.StatusIncomplete] goal in
             let text = mk_rule_box_string_term "<Incomplete>" in
                goal, text
        | Derived (goal, expr) ->
+            if !debug_edit then
+               eprintf "Proof_edit.term_of_incomplete: Derived%t" eflush;
             let goal = term_of_tactic_arg [Proof.StatusComplete] goal in
             let text = mk_rule_box_string_term "<Derived>" in
                goal, text
@@ -611,8 +629,14 @@ let format_aux window proof =
                     pw_subgoals = pw_subgoals
       } ->
          let main, goal, text, subgoals = dest_proof proof in
+            if !debug_edit then
+               eprintf "Proof_edit.format_aux: set_goal%t" eflush;
             Display_term.set pw_goal main;
+            if !debug_edit then
+               eprintf "Proof_edit.format_aux: set_rule%t" eflush;
             Display_term.set pw_rule text;
+            if !debug_edit then
+               eprintf "Proof_edit.format_aux: set_subgoals%t" eflush;
             Display_term.set pw_subgoals subgoals
 
 let format window ped =
