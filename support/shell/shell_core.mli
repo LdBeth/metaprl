@@ -31,6 +31,9 @@ open Refiner.Refiner.Term
 open Refiner.Refiner.TermType
 open Refiner.Refiner.TermShape
 
+open Tactic_type
+open Tactic_type.Tacticals
+
 open Shell_sig
 open Shell_util
 open Shell_internal_sig
@@ -63,6 +66,46 @@ val get_ls_options : shell -> LsOptionSet.t
 val get_view_options : shell -> string
 val set_view_options : shell -> string -> unit
 val clear_view_options : shell -> string -> unit
+
+val view : parse_arg -> shell -> LsOptionSet.t -> string -> unit
+val chdir : parse_arg -> shell -> bool -> bool -> string list -> unit
+val apply_all : parse_arg -> shell -> (edit_object -> dform_base -> unit) -> bool -> bool -> bool -> unit
+val cd : parse_arg -> shell -> string -> string
+val refresh : parse_arg -> shell -> unit
+
+val set_goal : shell -> term -> unit
+val set_redex : shell -> term -> unit
+val set_contractum : shell -> term -> unit
+val set_assumptions : shell -> term list -> unit
+val set_params : shell -> term Filter_type.param list -> unit
+
+val filename : parse_arg -> shell -> string option
+
+val backup : shell -> unit
+val backup_all : shell -> unit
+val revert : parse_arg -> shell -> unit
+val revert_all : parse_arg -> shell -> unit
+val save : parse_arg -> shell -> unit
+val save_all : parse_arg -> shell -> unit
+
+val create_pkg : parse_arg -> shell -> string -> unit
+val create_ax_statement : parse_arg -> shell -> term -> string -> unit
+
+val check : shell -> unit
+val expand : shell -> unit
+val expand_all : parse_arg -> shell -> unit
+val interpret : shell -> proof_command -> unit
+val refine : shell -> tactic -> unit
+
+val print_theory : parse_arg -> shell -> string -> unit
+
+val extract : parse_arg -> shell -> string list -> unit -> Refiner.Refiner.Refine.extract
+val term_of_extract : shell -> term list -> term
+
+val edit_find : shell -> int -> string
+
+val undo : shell -> unit
+val redo : shell -> unit
 
 (*!
  * @docoff
