@@ -65,11 +65,18 @@ print_theory "itt_subset";;
 print_theory "itt_subset2";;
 print_theory "itt_record";;
 print_theory "itt_record_exm";;
+print_theory "itt_relation_str";;
+print_theory "itt_set_str";;
+print_theory "itt_bintree";;
+print_theory "itt_datatree";;
+print_theory "itt_sortedtree";;
+print_theory "itt_rbtree";;
 print_theory "itt_grouplikeobj";;
 print_theory "itt_group";;
 print_theory "itt_cyclic_group";;
 print_theory "itt_collection";;
 print_theory "itt_pointwise";;
+print_theory "itt_pointwise2";;
 
 (*
  * -*-
