@@ -192,22 +192,18 @@ struct
    let rec equal_term vars t t' =
       let vars = StringSet.fst_mem_filt (term_free_vars t) vars in
       (vars == [] && t==t') || (
-      match (dest_term t, dest_term t') with
-         { term_op = { op_name = opname1; op_params = [Var v] };
-           term_terms = []
-         },
-         { term_op = { op_name = opname2; op_params = [Var v'] };
-           term_terms = []
-         } when Opname.eq opname1 var_opname & Opname.eq opname2 var_opname ->
+      match (get_core t, get_core t') with
+         FOVar v, FOVar v' ->
             begin
                try List.assoc v vars = v' with
                   Not_found -> v = v'
             end
-       | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
-         { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
+       | Term { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
+         Term { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
             Opname.eq name1 name2
                     & List_util.for_all2 equal_params params1 params2
-                    & equal_bterms vars bterms1 bterms2 )
+                    & equal_bterms vars bterms1 bterms2 
+       | _ -> false )
 
    and equal_bterms vars btrms1 btrms2 =
       match (btrms1,btrms2) with
@@ -304,43 +300,27 @@ struct
       print_any_list print_string_pair
 
    let eq_comp_var v t =
-      match dest_term t with
-         { term_op = { op_name = opname; op_params = [Var v'] };
-           term_terms = []
-         } when Opname.eq opname var_opname ->
+      match get_core t with
+         FOVar v' ->
             v' = v
        | _ ->
             false
 
    let rec equal_comp vars' vars t t' =
-      match dest_term t with
-         { term_op = { op_name = opname; op_params = [Var v] };
-           term_terms = []
-         } when Opname.eq opname var_opname ->
-#ifdef VERBOSE_EXN
-            if !debug_subst_ds then
-               eprintf "Term_subst_ds.equal_comp: check var %s: (%a)%t" (**)
-                  v print_string_pair_list vars eflush;
-#endif
+      match get_core t, get_core t' with
+         FOVar v,_ ->
             (try equal_term vars' t' (List.assoc v vars) with
                 Not_found ->
-                   match dest_term t' with
-                      { term_op = { op_name = opname; op_params = [Var v'] };
-                        term_terms = []
-                      } when Opname.eq opname var_opname ->
-#ifdef VERBOSE_EXN
-                         if !debug_subst_ds then
-                            eprintf "\tCheck with %s%t" v' eflush;
-#endif
+                   match get_core t' with
+                      FOVar v' ->
                          not (List_util.assoc_in_range eq_comp_var v' vars) & v = v'
                     | _ ->
                          false)
-       | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 } ->
-            let { term_op = { op_name = name2; op_params = params2 };
-                  term_terms = bterms2
-                } = dest_term t'
-            in
-               Opname.eq name1 name2 & params1 = params2 & equal_comp_bterms vars' vars bterms1 bterms2
+       | Term t1, Term t2 ->
+            Opname.eq t1.term_op.op_name t2.term_op.op_name &&
+            List_util.for_all2 equal_params t1.term_op.op_params t2.term_op.op_params && 
+            equal_comp_bterms vars' vars t1.term_terms t2.term_terms
+       | _ -> false
 
    and equal_comp_bterms vars' vars bterms1 bterms2 =
       let equal_comp_bterm btrm1 btrm2 =

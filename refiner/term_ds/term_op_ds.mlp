@@ -829,20 +829,28 @@ struct
    (*
     * Sweep a function down through the term.
     *)
-   let rec map_down f t =
-      let { term_op = op; term_terms = bterms } = dest_term (f t) in
-      let apply bterm =
-         let { bvars = vars; bterm = t } = dest_bterm bterm in
-            make_bterm { bvars = vars; bterm = map_down f t }
-      in
-         make_term { term_op = op; term_terms = List.map apply bterms }
+   let rec bterm_down f btrm =
+      let bterm = dest_bterm btrm in
+      make_bterm { bvars = bterm.bvars; bterm = map_down f bterm.bterm }
+   
+   and map_down f t =
+      let t = f t in
+      match get_core t with
+         Term trm ->
+            make_term { term_op = trm.term_op; term_terms = List.map (bterm_down f) trm.term_terms }
+       | FOVar _ -> t
+       | Sequent _ -> raise (Invalid_argument "Term_op_ds.map_down: sequent code is not implemented")
+       | Subst _ -> fail_core "Term_op_ds.map_down"
 
-   let rec map_up f t =
-      let apply bterm =
-         let { bvars = vars; bterm = t } = dest_bterm bterm in
-            make_bterm { bvars = vars; bterm = map_up f t }
-      in
-      let { term_op = op; term_terms = bterms } = dest_term t in
-      let t = make_term { term_op = op; term_terms = List.map apply bterms } in
-         f t
+   let rec bterm_up f btrm =
+      let bterm = dest_bterm btrm in
+      make_bterm { bvars = bterm.bvars; bterm = map_up f bterm.bterm }
+   
+   and map_up f t =
+      match get_core t with
+         Term trm ->
+            f (make_term { term_op = trm.term_op; term_terms = List.map (bterm_up f) trm.term_terms })
+       | FOVar _ -> f t
+       | Sequent _ -> raise (Invalid_argument "Term_op_ds.map_up: sequent code is not implemented")
+       | Subst _ -> fail_core "Term_op_ds.map_up"
 end
