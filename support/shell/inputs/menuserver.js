@@ -22,7 +22,7 @@ var menucommands;
 /*
  * Maximum height of the menu.
  */
-var max_menu_items  = 20;
+var max_menu_items  = 30;
 var max_menu_height = 300;
 var menu_slop_y     = 25;
 var menuscroll      = false;

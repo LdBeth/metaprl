@@ -208,10 +208,12 @@ struct
     * Decode the URI.
     * This first part should be a session #.
     *)
-   let decode_uri state uri =
-      match decode_uri uri with
+   let rec decode_path state path uri =
+      match path with
          [] ->
             WelcomeURI
+       | "nocache" :: _ :: path ->
+            decode_path state path uri
        | ["session"; id; "frameset"] ->
             (try FrameURI (make_pid id, "frameset") with
                 Failure _
@@ -275,6 +277,9 @@ struct
             ManualURI "/images/metaprl.ico"
        | uri ->
             UnknownURI (Lm_string_util.prepend "/" uri)
+
+   let decode_uri state uri =
+      decode_path state (decode_uri uri) uri
 
    (*
     * Make up a challenge.

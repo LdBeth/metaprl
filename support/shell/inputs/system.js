@@ -3,6 +3,19 @@
  */
 
 /*
+ * Random numbers.
+ */
+var rnd = new Object();
+rnd.today = new Date();
+rnd.seed = rnd.today.getTime();
+
+function rand()
+{
+        rnd.seed = (rnd.seed * 9301 + 49297) % 233280;
+        return rnd.seed;
+}
+
+/*
  * Height of the frame.
  */
 function FrameHeight()
@@ -38,7 +51,7 @@ function Abort()
 function LoadOutput()
 {
     var outputframe = parent.GetObject(self, 'outputframe');
-    outputframe.src = '/output';
+    outputframe.src = '/nocache/' + rand() + '/output';
 }
 
 /*

@@ -529,6 +529,8 @@ let menubar_init =
     << menuitem["view", "-", ""] >>,                                       always_enabled;
     << menu["dir", "Directory"] >>,                                        always_enabled;
     << menuitem["dir", "Refresh", "Command('ls \"\"')"] >>,                always_enabled;
+    << menu["proof", "Proof"] >>,                                          always_enabled;
+    << menu["refine", "Refine"] >>,                                        always_enabled;
     << menu["help", "Help"] >>,                                            always_enabled;
     << menuitem["help", "MetaPRL Home", "URL('http://www.metaprl.org/')"] >>, always_enabled]
 
