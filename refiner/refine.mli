@@ -11,12 +11,38 @@
  *
  *)
 
+open Term_sig
+open Term_man_sig
+open Term_subst_sig
+open Term_addr_sig
+open Term_meta_sig
+open Rewrite_sig
 open Refine_sig
 
-module Refiner : RefinerSig
+module Refine (**)
+   (Term : TermSig)
+   (TermMan : TermManSig
+    with type term = Term.term)
+   (TermSubst : TermSubstSig
+    with type term = Term.term)
+   (TermAddr : TermAddrSig
+    with type term = Term.term)
+   (TermMeta : TermMetaSig
+    with type term = Term.term)
+   (Rewrite : RewriteSig
+    with type term = Term.term
+    with type address = TermAddr.address)
+: RefineSig
+with type term = Term.term
+with type address = TermAddr.address
+with type meta_term = TermMeta.meta_term
+with type rewrite_error = Rewrite.rewrite_error
 
 (*
  * $Log$
+ * Revision 1.2  1998/05/27 15:13:53  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.1  1997/04/28 15:51:32  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

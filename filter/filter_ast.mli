@@ -2,8 +2,8 @@
  * Grammar utilities.
  *)
 
-open Term
-open Term_util
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermMeta
 open Filter_type
 
 val build_ml_term : MLast.loc -> term -> MLast.expr
@@ -15,6 +15,9 @@ val fun_expr : MLast.loc -> string list -> MLast.expr -> MLast.expr
 
 (*
  * $Log$
+ * Revision 1.4  1998/05/27 15:12:38  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.3  1997/08/06 16:17:27  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

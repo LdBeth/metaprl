@@ -3,7 +3,7 @@
  * Link module: provides nuprl/nuprl-light link functionality
  *)
 
-open Term
+open Refiner.Refiner.Term
 open MathBus
 open SocketIo
 open Mbterm
@@ -39,7 +39,7 @@ let iconnect_term port host =
 let idisconnect_term error_p =
 	mk_term (mk_op nuprl5_opname
 		       [(make_param (Token "!disconnect"));
-			(make_param (ParmList [(make_param (Token "bool"));
+			(make_param (ParamList [(make_param (Token "bool"));
 					       (make_param (Number (Num.Int (if error_p then 1 else 0))))]))]) []
 
 let cautious_in = ref Unix.stderr

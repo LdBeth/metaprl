@@ -2,8 +2,8 @@
  * Shared types for printing ML terms.
  *)
 
-open Term
-open Term_util
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermMeta
 
 (*
  * Generic file.
@@ -46,6 +46,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/05/27 15:13:50  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.1  1997/04/28 15:51:26  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

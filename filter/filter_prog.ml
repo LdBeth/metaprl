@@ -6,8 +6,9 @@ open Printf
 
 open Debug
 
-open Term
-open Term_util
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermMeta
+open Refiner.Refiner.Rewrite
 open Precedence
 open Rewrite
 open Simple_print
@@ -31,105 +32,114 @@ let _ =
 (*
  * Axiom.
  *)
+let refiner_expr loc =
+   <:expr< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"Refine"$ >>
+
+let refiner_ctyp loc =
+   <:ctyp< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"Refine"$ >>
+
+let rewriter_expr loc =
+   <:expr< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"Rewrite"$ >>
+
 let create_axiom_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"create_axiom"$ >>
+   <:expr< $refiner_expr loc$ . $lid:"create_axiom"$ >>
 
 let prim_axiom_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"prim_axiom"$ >>
+   <:expr< $refiner_expr loc$ . $lid:"prim_axiom"$ >>
 
 let derived_axiom_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"derived_axiom"$ >>
+   <:expr< $refiner_expr loc$ . $lid:"derived_axiom"$ >>
 
 let delayed_axiom_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"delayed_axiom"$ >>
+   <:expr< $refiner_expr loc$ . $lid:"delayed_axiom"$ >>
 
 (*
  * Rule.
  *)
 let create_rule_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"create_rule"$ >>
+   <:expr< $refiner_expr loc$ . $lid:"create_rule"$ >>
 
 let prim_rule_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"prim_rule"$ >>
+   <:expr< $refiner_expr loc$ . $lid:"prim_rule"$ >>
 
 let derived_rule_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"derived_rule"$ >>
+   <:expr< $refiner_expr loc$ . $lid:"derived_rule"$ >>
 
 let delayed_rule_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"delayed_rule"$ >>
+   <:expr< $refiner_expr loc$ . $lid:"delayed_rule"$ >>
 
 let create_ml_rule_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"create_ml_rule"$ >>
+   <:expr< $refiner_expr loc$ . $lid:"create_ml_rule"$ >>
 
 let ml_rule_rewrite_expr loc =
-   <:expr< $uid:"Refine_sig"$ . $lid:"ml_rule_rewrite"$ >>
+   <:expr< $refiner_expr loc$ . $lid:"ml_rule_rewrite"$ >>
 
 let ml_rule_extract_expr loc =
-   <:expr< $uid:"Refine_sig"$ . $lid:"ml_rule_extract"$ >>
+   <:expr< $refiner_expr loc$ . $lid:"ml_rule_extract"$ >>
 
 let tactic_of_rule_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"tactic_of_rule"$ >>
+   <:expr< $refiner_expr loc$ . $lid:"tactic_of_rule"$ >>
 
 let tactic_ctyp loc =
-   <:ctyp< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"tactic"$ '$"a"$ >>
+   <:ctyp< $refiner_ctyp loc$ . $lid:"tactic"$ '$"a"$ >>
 
 (*
  * Rewrite.
  *)
 let rewrite_ctyp loc =
-   <:ctyp< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"rw"$ '$"a"$ >>
+   <:ctyp< $refiner_ctyp loc$ . $lid:"rw"$ '$"a"$ >>
 
 let create_rewrite_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"create_rewrite"$ >>
+   <:expr< $refiner_expr loc$ . $lid:"create_rewrite"$ >>
 
 let prim_rewrite_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"prim_rewrite"$ >>
+   <:expr< $refiner_expr loc$ . $lid:"prim_rewrite"$ >>
 
 let derived_rewrite_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"derived_rewrite"$ >>
+   <:expr< $refiner_expr loc$ . $lid:"derived_rewrite"$ >>
 
 let delayed_rewrite_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"delayed_rewrite"$ >>
+   <:expr< $refiner_expr loc$ . $lid:"delayed_rewrite"$ >>
 
 let rewrite_of_rewrite_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"rewrite_of_rewrite"$ >>
+   <:expr< $refiner_expr loc$ . $lid:"rewrite_of_rewrite"$ >>
 
 (*
  * Conditional rewrite.
  *)
 let cond_rewrite_ctyp loc =
-   let result = <:ctyp< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"cond_rewrite"$ '$"a"$ >> in
+   let result = <:ctyp< $refiner_ctyp loc$ . $lid:"cond_rewrite"$ '$"a"$ >> in
    let sarray = <:ctyp< $lid:"array"$ $lid:"string"$ >> in
    let term = <:ctyp< $lid:"list"$ ($uid:"Term"$ . $lid:"term"$) >> in
    let arg = <:ctyp< ($sarray$ * $term$) >> in
       <:ctyp< $arg$ -> $result$ >>
 
 let create_cond_rewrite_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"create_cond_rewrite"$ >>
+   <:expr< $refiner_expr loc$ . $lid:"create_cond_rewrite"$ >>
 
 let prim_cond_rewrite_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"prim_cond_rewrite"$ >>
+   <:expr< $refiner_expr loc$ . $lid:"prim_cond_rewrite"$ >>
 
 let derived_cond_rewrite_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"derived_cond_rewrite"$ >>
+   <:expr< $refiner_expr loc$ . $lid:"derived_cond_rewrite"$ >>
 
 let delayed_cond_rewrite_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"delayed_cond_rewrite"$ >>
+   <:expr< $refiner_expr loc$ . $lid:"delayed_cond_rewrite"$ >>
 
 let rewrite_of_cond_rewrite_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"rewrite_of_cond_rewrite"$ >>
+   <:expr< $refiner_expr loc$ . $lid:"rewrite_of_cond_rewrite"$ >>
 
 let apply_redex_expr loc =
-   <:expr< $uid:"Rewrite"$ . $lid:"apply_redex"$ >>
+   <:expr< $rewriter_expr loc$ . $lid:"apply_redex"$ >>
 
 let construct_redex_expr loc =
-   <:expr< $uid:"Term_util"$ . $lid:"construct_redex"$ >>
+   <:expr< $uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"TermMan"$ . $lid:"construct_redex"$ >>
 
 let compile_redex_expr loc =
-   <:expr< $uid:"Rewrite"$ . $lid:"compile_redex"$ >>
+   <:expr< $rewriter_expr loc$ . $lid:"compile_redex"$ >>
 
 let compile_contractum_expr loc =
-   <:expr< $uid:"Rewrite"$ . $lid:"compile_contractum"$ >>
+   <:expr< $rewriter_expr loc$ . $lid:"compile_contractum"$ >>
 
 (*
  * Other expressions.
@@ -150,13 +160,13 @@ let record_theory_expr loc =
    <:expr< $uid:"Theory"$ . $lid:"record_theory"$ >>
 
 let label_refiner_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"label_refiner"$ >>
+   <:expr< $refiner_expr loc$ . $lid:"label_refiner"$ >>
 
 let refiner_ctyp loc =
-   <:ctyp< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"refiner"$ >>
+   <:ctyp< $refiner_ctyp loc$ . $lid:"refiner"$ >>
 
 let join_refiner_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"join_refiner"$ >>
+   <:expr< $refiner_expr loc$ . $lid:"join_refiner"$ >>
 
 let join_mode_base_expr loc =
    <:expr< $uid:"Dform_print"$ . $lid:"join_mode_base"$ >>
@@ -223,7 +233,7 @@ let local_dformer_id = "dont_use_this_dformer_name"
 let stack_id = "rewrite_stack"
 
 let null_refiner_expr loc =
-   <:expr< $uid:"Refine"$ . $uid:"Refiner"$ . $lid:"null_refiner"$ >>
+   <:expr< $refiner_expr loc$ . $lid:"null_refiner"$ >>
 
 let null_mode_base_expr loc =
    <:expr< $uid:"Dform_print"$ . $lid:"null_mode_base"$ >>
@@ -1469,6 +1479,9 @@ end
    
 (*
  * $Log$
+ * Revision 1.14  1998/05/27 15:12:55  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.13  1998/05/07 16:02:42  jyh
  * Adding interactive proofs.
  *

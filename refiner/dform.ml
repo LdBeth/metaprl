@@ -9,10 +9,11 @@ open Debug
 open Precedence
 open Rformat
 open Opname
-open Term
-open Term_util
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermMan
+open Refiner.Refiner.TermMeta
+open Refiner.Refiner.Rewrite
 open Term_table
-open Rewrite
 open Simple_print
 
 (*
@@ -643,6 +644,9 @@ let string_of_mterm base mterm =
 
 (*
  * $Log$
+ * Revision 1.12  1998/05/27 15:13:42  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.11  1998/05/04 13:01:16  jyh
  * Ocaml display without let rec.
  *

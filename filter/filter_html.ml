@@ -6,8 +6,8 @@ open Printf
 
 open Debug
 
-open Term
-open Term_util
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermMeta
 open Opname
 open Precedence
 open Rewrite
@@ -440,6 +440,9 @@ let print_str out info =
 
 (*
  * $Log$
+ * Revision 1.4  1998/05/27 15:12:45  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.3  1998/04/24 19:38:21  jyh
  * Updated debugging.
  *

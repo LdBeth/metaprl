@@ -3,7 +3,7 @@
  *
  *)
 
-open Refine
+open Refiner.Refiner.Refine
 open Dform_print
 
 (*
@@ -11,7 +11,7 @@ open Dform_print
  *)
 type theory =
    { thy_name : string;
-     thy_refiner : Refiner.refiner;
+     thy_refiner : refiner;
      thy_dformer : dform_mode_base
    }
 
@@ -29,6 +29,9 @@ val get_parents : theory -> theory list
 
 (*
  * $Log$
+ * Revision 1.4  1998/05/27 15:15:13  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.3  1998/04/28 18:30:53  jyh
  * ls() works, adding display.
  *

@@ -2,8 +2,8 @@
  * Shared types for printing ML terms.
  *)
 
-open Term
-open Term_util
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermMeta
 
 (*
  * OCAML expression syntax.
@@ -32,6 +32,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.3  1998/05/27 15:13:47  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.2  1998/03/20 22:16:18  eli
  * Eli: Changed integer parameters to Num.num's.
  *

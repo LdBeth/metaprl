@@ -7,8 +7,8 @@ open Printf
 
 open Debug
 open Opname
-open Term
-open Term_util
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermMeta
 open Ml_format_sig
 open Ml_format
 open Ml_print_sig
@@ -145,6 +145,9 @@ end
    
 (*
  * $Log$
+ * Revision 1.4  1998/05/27 15:13:48  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.3  1998/04/24 02:42:41  jyh
  * Added more extensive debugging capabilities.
  *

@@ -9,7 +9,10 @@ open MLast
 open Debug
 
 open Opname
-open Term
+open Refiner.Refiner
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermOp
+open Refiner.Refiner.TermMan
 
 (*
  * Show the file loading.
@@ -1806,6 +1809,9 @@ let term_of_class = mk_class
 
 (*
  * $Log$
+ * Revision 1.14  1998/05/27 15:12:48  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.13  1998/05/04 23:46:12  jyh
  * Most display forms now work.
  *

@@ -1,5 +1,5 @@
 
-open Term
+open Refiner.Refiner.Term
 
 (*
  *	uses NUPRLLIB_PORT & NUPRLLIB_HOST environment variables.

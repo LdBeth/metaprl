@@ -4,7 +4,7 @@
 
 open File_base_type
 
-open Term
+open Refiner.Refiner.Term
 open Basic
 
 open Utils
@@ -112,6 +112,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.7  1998/05/27 15:13:26  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.6  1998/05/05 20:05:53  eaton
  * .
  *

@@ -2,8 +2,9 @@
  * Types used by filter machine.
  *)
 
-open Term
-open Term_util
+open Refiner.Refiner
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermMeta
 
 (************************************************************************
  * COMMON ERRORS                                                        *
@@ -48,6 +49,9 @@ type aterm = { aname : term option; aterm : term }
 
 (*
  * $Log$
+ * Revision 1.3  1998/05/27 15:13:09  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.2  1997/08/06 16:17:36  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

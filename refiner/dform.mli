@@ -6,9 +6,9 @@
 open Precedence
 open Rformat
 open Opname
-open Term
-open Term_util
-open Rewrite
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermMeta
+open Refiner.Refiner.Rewrite
 
 (************************************************************************
  * DFORM INTERFACE                                                      *
@@ -111,6 +111,9 @@ val string_of_mterm : dform_base -> meta_term -> string
 
 (*
  * $Log$
+ * Revision 1.3  1998/05/27 15:13:43  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.2  1998/04/29 20:53:34  jyh
  * Initial working display forms.
  *

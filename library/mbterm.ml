@@ -3,7 +3,7 @@
 open Int32
 open Num
 open MathBus
-open Term
+open Refiner.Refiner.Term
 open Opname
 
 exception InvalidMathBusLabel of (int32 * int32)
@@ -14,7 +14,7 @@ let mbs_Token = numeric_label "Token"
 let mbs_Bindings = numeric_label "Bindings"
 let mbs_Level = numeric_label "Level"
 let mbs_ObjectId = numeric_label "ObjectId"
-let mbs_ParmList = numeric_label "ParmList"
+let mbs_ParamList = numeric_label "ParamList"
 let mbs_TermIndex = numeric_label "TermIndex"
 let mbs_MString = numeric_label "MString"
 let mbs_MLongInteger = numeric_label "MLongInteger"
@@ -30,7 +30,7 @@ let param_of_opname opname =
     match l with
       [] -> nodes
     | h::t -> loop t ((make_param (String h))::nodes)
-  in make_param (ParmList (loop (dest_opname opname) []))
+  in make_param (ParamList (loop (dest_opname opname) []))
 
 let rec mbparameter_of_param param =
   match (dest_param param) with
@@ -56,7 +56,7 @@ let rec mbparameter_of_param param =
   | MToken p -> mb_stringq p mbs_MToken
   | MLevel p -> mb_stringq p mbs_MLevel
   | MVar p -> mb_stringq p mbs_MVariable
-  | ParmList p -> mbnode mbs_ParmList (List.map mbparameter_of_param p)
+  | ParamList p -> mbnode mbs_ParamList (List.map mbparameter_of_param p)
   | _ -> failwith "unauthorized parameter type"
 
 let mbbinding_of_binding binding = mb_stringq binding mbs_Variable (* term in the future?*)
@@ -73,9 +73,9 @@ let mbbindings_of_bvars bvars =
     match l1 with
       "nuprl5_implementation1"::(h1::t1) -> loop t1 ((mbbinding_of_binding h1)::l2)
     | "nuprl5_implementation2"::(h1::(h2::t1)) -> 
-	loop t1 ((mbnode mbs_ParmList (List.map mbbinding_of_binding [h1; h2]))::l2)
+	loop t1 ((mbnode mbs_ParamList (List.map mbbinding_of_binding [h1; h2]))::l2)
     |  "nuprl5_implementation3"::(h1::(h2::(h3::t1))) -> 
-	loop t1 ((mbnode mbs_ParmList (List.map mbbinding_of_binding [h1; h2; h3]))::l2)
+	loop t1 ((mbnode mbs_ParamList (List.map mbbinding_of_binding [h1; h2; h3]))::l2)
     |  h1::t1 -> loop t1 ((mbbinding_of_binding h1)::l2)
     | [] -> List.rev l2
   in loop bvars []
@@ -109,13 +109,13 @@ let rec param_of_mbparameter mbparameter =
   else if bequal b mbs_Token then make_param (Token (string_value mbparameter))
   else if bequal b mbs_LongInteger then 
     let n = number_value mbparameter in make_param (Number n)
-  else if bequal b mbs_ParmList then
+  else if bequal b mbs_ParamList then
     let rec loop i l =
       if i = 0 then l
       else match (mbnode_subtermq mbparameter i) with
 	Mnode n -> loop (i-1) ((param_of_mbparameter n)::l)
       |	Mbint b -> failwith "subterm should be a node" 
-    in make_param (ParmList (loop (mbnode_nSubtermsq mbparameter) []))
+    in make_param (ParamList (loop (mbnode_nSubtermsq mbparameter) []))
 
   else if bequal b mbs_ObjectId then
     let rec loop i l =
@@ -154,7 +154,7 @@ let rec param_of_mbparameter mbparameter =
 
 let opname_of_param p =
   match (dest_param p) with
-    ParmList p ->
+    ParamList p ->
       let rec loop l opname =
 	(match l with
 	  [] -> opname
@@ -168,7 +168,7 @@ let op_of_params params =
   match params with
     [] -> mk_op (mk_opname "!nuprl5_implementation!" nil_opname) []
   | h::t -> (match (dest_param h) with
-      ParmList p ->
+      ParamList p ->
 	mk_op (opname_of_param h) t
     | _ -> mk_op (mk_opname "!nuprl5_implementation!" nil_opname) (h::t))
 
@@ -282,7 +282,7 @@ let rec print_param param =
   | MToken p -> (print_string p; print_string ":mt ")
   | MLevel p -> (print_string p; print_string ":ml ")
   | MVar p ->  (print_string p; print_string ":mv ")
-  | ParmList p -> (print_string "["; List.map print_param p; print_string "]";
+  | ParamList p -> (print_string "["; List.map print_param p; print_string "]";
 		   print_string ":pl ")
   | _ -> failwith "unauthorized parameter type"
     

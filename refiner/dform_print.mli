@@ -5,8 +5,8 @@
  *)
 
 open Rformat
-open Term
-open Term_util
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermMeta
 open Dform
 
 (*
@@ -42,6 +42,9 @@ val dest_mode_base : dform_mode_base -> dform_base * ((string * dform_base) list
 
 (*
  * $Log$
+ * Revision 1.3  1998/05/27 15:13:44  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.2  1998/04/28 18:30:38  jyh
  * ls() works, adding display.
  *

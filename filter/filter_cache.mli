@@ -4,7 +4,7 @@
  *
  *)
 
-open Term
+open Refiner.Refiner.Term
 
 open Filter_summary_type
 open Filter_proof_type
@@ -70,6 +70,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.9  1998/05/27 15:12:42  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.8  1998/05/07 16:02:36  jyh
  * Adding interactive proofs.
  *

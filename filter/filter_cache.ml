@@ -8,7 +8,9 @@ open Printf
 
 open Debug
 open Opname
-open Term
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermOp
+open Refiner.Refiner.TermMan
 
 open File_base_type
 open File_type_base
@@ -490,6 +492,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.20  1998/05/27 15:12:40  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.19  1998/05/07 16:02:34  jyh
  * Adding interactive proofs.
  *

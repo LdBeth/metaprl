@@ -5,7 +5,7 @@
  *
  *)
 
-open Term
+open Refiner.Refiner.Term
 
 open File_base_type
 
@@ -24,6 +24,9 @@ module MakeSummaryBase
 
 (*
  * $Log$
+ * Revision 1.4  1998/05/27 15:13:05  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.3  1998/02/19 17:14:01  jyh
  * Splitting filter_parse.
  *

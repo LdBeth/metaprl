@@ -6,8 +6,8 @@
 open Printf
 open Debug
 
-open Refine
-open Refiner
+open Refiner.Refiner
+open Refiner.Refiner.Refine
 open Dform_print
 
 (*
@@ -22,7 +22,7 @@ let _ =
  *)
 type theory =
    { thy_name : string;
-     thy_refiner : Refiner.refiner;
+     thy_refiner : refiner;
      thy_dformer : dform_mode_base
    }
 
@@ -77,6 +77,9 @@ let get_parents thy =
 
 (*
  * $Log$
+ * Revision 1.5  1998/05/27 15:15:12  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.4  1998/04/28 18:30:52  jyh
  * ls() works, adding display.
  *

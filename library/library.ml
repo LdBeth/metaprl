@@ -1,7 +1,8 @@
 
 open Utils
 open List
-open Term
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermSubst
 open Basic
 (*open Tent *)
 open Orb

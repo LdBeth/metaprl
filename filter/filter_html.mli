@@ -2,7 +2,7 @@
  * Conversion form filter_summary to HTML text.
  *)
 
-open Term
+open Refiner.Refiner.Term
 
 open Filter_summary
 open Filter_cache
@@ -18,6 +18,9 @@ val print_str : out_channel ->
 
 (*
  * $Log$
+ * Revision 1.2  1998/05/27 15:12:46  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.1  1998/03/12 00:27:06  jyh
  * Added filter_html, but its not finished yet.
  *

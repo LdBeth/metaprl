@@ -11,76 +11,77 @@
  *
  *)
 
-open Term
-open Term_util
-open Rewrite
-
-(************************************************************************
- * ERRORS                                                               *
- ************************************************************************)
-
-exception FreeContextVars of string list
-
-(*
- * Unfortunately, we need to declare the general TacticException
- * type here, because the following combinators need to
- * collect exceptions of their subtactics.
- *)
-type refine_error =
-   StringError of string
- | TermError of term
- | StringIntError of string * int
- | StringStringError of string * string
- | StringTermError of string * term
- | GoalError of string * refine_error
- | SecondError of string * refine_error
- | SubgoalError of string * int * refine_error
- | PairError of string * refine_error * refine_error
- | RewriteAddressError of string * address * refine_error
- | RewriteError of string * rewrite_error
- | NodeError of string * term * refine_error list
-
-exception RefineError of refine_error
-
-(*
- * A ML rewrite replaces a term with another,
- * no extract.
- *)
-type ml_rewrite = (string array * term list) -> term -> term
-
-(*
- * A condition relaces an goal with a list of subgoals,
- * and it provides a function to compute the extract.
- *)
-type ml_rule =
-   { ml_rule_rewrite : (string array * term list) -> term -> term list;
-     ml_rule_extract : (string array * term list) -> term list -> term * term list
-   }
-
-(*
- * Refinements are on meta-sequents,
- * which are a restricted form of meta terms,
- * having only dependent functions format.
- *
- * Each hyp is labelled by its first argument.
- *)
-type msequent =
-   { mseq_goal : term;
-     mseq_hyps : term list
-   }
-
-type 'a tactic_arg =
-   { tac_goal : term;
-     tac_hyps : term list;
-     tac_arg : 'a
-   }
-
 (************************************************************************
  * REFINER MODULE                                                       *
  ************************************************************************)
 
-module type RefinerSig =
+module type RefineSig =
 sig
+   type term
+   type address
+   type meta_term
+   type rewrite_error
+
+   (************************************************************************
+    * ERRORS                                                               *
+    ************************************************************************)
+
+   exception FreeContextVars of string list
+
+   (*
+    * Unfortunately, we need to declare the general TacticException
+    * type here, because the following combinators need to
+    * collect exceptions of their subtactics.
+    *)
+   type refine_error =
+      StringError of string
+    | TermError of term
+    | StringIntError of string * int
+    | StringStringError of string * string
+    | StringTermError of string * term
+    | GoalError of string * refine_error
+    | SecondError of string * refine_error
+    | SubgoalError of string * int * refine_error
+    | PairError of string * refine_error * refine_error
+    | RewriteAddressError of string * address * refine_error
+    | RewriteError of string * rewrite_error
+    | NodeError of string * term * refine_error list
+
+   exception RefineError of refine_error
+
+   (*
+    * A ML rewrite replaces a term with another,
+    * no extract.
+    *)
+   type ml_rewrite = (string array * term list) -> term -> term
+
+   (*
+    * A condition relaces an goal with a list of subgoals,
+    * and it provides a function to compute the extract.
+    *)
+   type ml_rule =
+      { ml_rule_rewrite : (string array * term list) -> term -> term list;
+        ml_rule_extract : (string array * term list) -> term list -> term * term list
+      }
+
+   (*
+    * Refinements are on meta-sequents,
+    * which are a restricted form of meta terms,
+    * having only dependent functions format.
+    *
+    * Each hyp is labelled by its first argument.
+    *)
+   type msequent =
+      { mseq_goal : term;
+        mseq_hyps : term list
+      }
+
+   type 'a tactic_arg =
+      { tac_goal : term;
+        tac_hyps : term list;
+        tac_arg : 'a
+      }
+
    (************************************************************************
     * PROOFS AND VALIDATIONS                                               *
     ************************************************************************)
@@ -90,11 +91,11 @@ sig
     * proof refinement using tactics.
     *)
    type extract
-   
+
    (************************************************************************
     * TACTICS                                                              *
     ************************************************************************)
-     
+
    (*
     * A tactic is the reverse form of validation.
     * given a validation A -> B, that tactic would
@@ -108,15 +109,15 @@ sig
     * where the inference is always correct.
     *)
    type 'a safe_tactic
-     
+
    type 'a tactic = 'a tactic_arg -> 'a safe_tactic
 
    (* Tactic application *)
    val refine : 'a tactic -> 'a tactic_arg -> 'a tactic_arg list * extract
-   
+
    (* Compose extract tree *)
    val compose : extract -> extract list -> extract
-   
+
    (*
     * The base case tactic proves a goal by assumption.
     *)
@@ -144,9 +145,9 @@ sig
     * A normal rewrite can be applied to a term to rewrite it.
     *)
    type 'a safe_rewrite
-     
+
    type 'a rewrite_arg = term * 'a
-     
+
    type 'a rw = 'a rewrite_arg -> 'a safe_rewrite
 
    (*
@@ -175,9 +176,9 @@ sig
     * calculus.
     *)
    type 'a safe_cond_rewrite
-     
+
    type 'a cond_rewrite_arg = term * term * 'a
-     
+
    type 'a cond_rewrite = 'a cond_rewrite_arg -> 'a safe_cond_rewrite
 
    (*
@@ -204,6 +205,22 @@ sig
    val candthenrw : 'a cond_rewrite -> 'a cond_rewrite -> 'a cond_rewrite
 
    (************************************************************************
+    * UTILITIES                                                            *
+    ************************************************************************)
+   (*
+    * Alpha equality on sequent objects.
+    * Tactic argument is ignored
+    *)
+   val msequent_alpha_equal : msequent -> msequent -> bool
+   val tactic_arg_alpha_equal : 'a tactic_arg -> 'b tactic_arg -> bool
+
+   (*
+    * Utils.
+    *)
+   val msequent_of_tactic_arg : 'a tactic_arg -> msequent
+   val split_sequent_list : msequent list -> term list * term list list
+
+   (************************************************************************
     * REFINER INTERFACE                                                    *
     ************************************************************************)
 
@@ -221,7 +238,7 @@ sig
    type prim_tactic
    type prim_rewrite
    type prim_cond_rewrite
-   
+
    (*
     * Get the term corresponding to an extract.
     * This will fail if some of the rules are not justified
@@ -229,7 +246,7 @@ sig
     * for the arguments are included.
     *)
    val term_of_extract : refiner -> extract -> term list -> term
-   
+
    (*
     * An axiom is a term that is true.
     * This adds the theorem, and returns a tactic to prove a
@@ -266,7 +283,7 @@ sig
    val create_rule : refiner ref ->
       string ->            (* name *)
       string array ->      (* addrs *)
-      string array ->      (* vars *)        
+      string array ->      (* vars *)
       term list ->         (* params *)
       meta_term ->         (* rule definition *)
       prim_tactic
@@ -281,11 +298,11 @@ sig
    val check_rule :
       string ->            (* name *)
       string array ->      (* addrs *)
-      string array ->      (* vars *)               
+      string array ->      (* vars *)
       term list ->         (* params *)
       meta_term ->         (* rule definition *)
       bool
-   
+
    val prim_rule : refiner ref ->
       string ->                    (* name *)
       string array ->              (* vars *)
@@ -307,13 +324,13 @@ sig
       term list ->                 (* args (binding vars) *)
       (unit -> extract) ->         (* derived justification *)
       unit
-   
+
    (*
     * Rewrites.
     *)
    val create_rewrite : refiner ref ->
       string ->            (* name *)
-      term ->              (* redex *)        
+      term ->              (* redex *)
       term ->              (* contractum *)
       prim_rewrite
    val rewrite_of_rewrite : prim_rewrite -> 'a rw
@@ -339,7 +356,7 @@ sig
       string ->            (* name *)
       string array ->      (* vars *)
       term list ->         (* params *)
-      term list ->         (* subgoals *)        
+      term list ->         (* subgoals *)
       term ->              (* redex *)
       term ->              (* contractum *)
       prim_cond_rewrite
@@ -354,7 +371,7 @@ sig
       string ->            (* name *)
       string array ->      (* vars *)
       term list ->         (* params *)
-      term list ->         (* subgoals *)        
+      term list ->         (* subgoals *)
       term ->              (* redex *)
       term ->              (* contractum *)
       unit
@@ -362,7 +379,7 @@ sig
       string ->            (* name *)
       string array ->      (* vars *)
       term list ->         (* params *)
-      term list ->         (* subgoals *)        
+      term list ->         (* subgoals *)
       term ->              (* redex *)
       term ->              (* contractum *)
       extract ->           (* proof *)
@@ -371,7 +388,7 @@ sig
       string ->            (* name *)
       string array ->      (* vars *)
       term list ->         (* params *)
-      term list ->         (* subgoals *)        
+      term list ->         (* subgoals *)
       term ->              (* redex *)
       term ->              (* contractum *)
       (unit -> extract) -> (* proof *)
@@ -384,7 +401,7 @@ sig
       term ->              (* redex *)
       term ->              (* contractum *)
       bool
-   
+
    (*
     * Merge refiners.
     *)
@@ -448,6 +465,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.6  1998/05/27 15:13:56  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.5  1998/04/28 18:30:45  jyh
  * ls() works, adding display.
  *

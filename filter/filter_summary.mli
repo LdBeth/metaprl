@@ -5,8 +5,8 @@
  *
  *)
 
-open Term
-open Term_util
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermMeta
 open Filter_type
 
 (************************************************************************
@@ -335,6 +335,9 @@ val eprint_info : ('proof, 'ctyp, 'expr, 'item) module_info -> unit
 
 (*
  * $Log$
+ * Revision 1.13  1998/05/27 15:13:03  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.12  1998/05/07 16:02:49  jyh
  * Adding interactive proofs.
  *

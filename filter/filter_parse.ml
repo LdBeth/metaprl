@@ -18,10 +18,12 @@ open Printf
 open Pcaml
 
 open Debug
-open Term
-open Term_util
-open Rewrite
-open Refine
+open Refiner.Refiner
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermMan
+open Refiner.Refiner.TermMeta
+open Refiner.Refiner.Rewrite
+open Refiner.Refiner.Refine
 open Precedence
 open Simple_print
 
@@ -319,7 +321,7 @@ struct
     *)
    let simple_rewrite proc name redex contractum pf =
       (* Check that rewrite will succeed *)
-      Refiner.check_rewrite name [||] [] [] redex contractum;
+      Refine.check_rewrite name [||] [] [] redex contractum;
    
       (* Construct the command *)
       Rewrite { rw_name = name;
@@ -335,7 +337,7 @@ struct
       let params' = extract_params cvars bvars params in
       let args', redex, contractum = unzip_rewrite name args in
          (* Check the rewrite *)
-         Refiner.check_rewrite (**)
+         Refine.check_rewrite (**)
             name
             (Array.of_list (collect_vars params'))
             (collect_non_vars params')
@@ -382,7 +384,7 @@ struct
     *)
    let simple_axiom proc name arg pf =
       (* Check it *)
-      Refiner.check_axiom arg;
+      Refine.check_axiom arg;
    
       (* Save it in the transcript *)
       Axiom { axiom_name = name; axiom_stmt = arg; axiom_proof = pf }
@@ -420,7 +422,7 @@ struct
                   eprintf "Non vars:\n%a" print_non_vars params';
                   eprintf "Args:\n%a --> %s\n" print_vterms args (string_of_term result)
             end;
-         Refiner.check_rule (**)
+         Refine.check_rule (**)
             name
             (Array.of_list (collect_cvars params'))
             (Array.of_list (collect_vars params'))
@@ -1040,6 +1042,9 @@ END
 
 (*
  * $Log$
+ * Revision 1.23  1998/05/27 15:12:51  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.22  1998/05/07 16:02:38  jyh
  * Adding interactive proofs.
  *

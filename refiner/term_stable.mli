@@ -2,6 +2,9 @@
  * Simplified version of termTable.
  *
  * $Log$
+ * Revision 1.2  1998/05/27 15:14:53  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.1  1997/04/28 15:51:46  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included
@@ -19,7 +22,7 @@
  *
  *)
 
-open Term
+open Refiner.Refiner.Term
 
 type 'a term_stable
 type 'a term_sextract

@@ -4,7 +4,7 @@ open List
 open Utils
 open Opname
 open Num
-open Term
+open Refiner.Refiner.Term
 open Nuprl5
 
 let inteq i j = (i = j)
@@ -21,7 +21,7 @@ let rec parmeq p q =
  match dest_param p, dest_param q with
 
     Number pn, Number qn	-> eq_num pn qn
-  | ParmList pl, ParmList ql	-> listeq parmeq pl ql 
+  | ParamList pl, ParamList ql	-> listeq parmeq pl ql 
   | ObId poid, ObId qoid	-> listeq parmeq poid qoid 
 
   |_ -> p = q
@@ -52,7 +52,7 @@ let rec parmhash p =
  match dest_param p with
 
     Number pn	-> hash (string_of_num pn)
-  | ParmList pl	-> hash (map parmhash pl)
+  | ParamList pl	-> hash (map parmhash pl)
   | ObId poid	-> hash (map parmhash poid)
 
   | _ -> hash p

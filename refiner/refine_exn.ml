@@ -6,14 +6,16 @@ open Printf
 
 open Debug
 
-open Term
-open Term_util
+open Refiner.Refiner
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermAddr
+open Refiner.Refiner.TermMeta
+open Refiner.Refiner.Rewrite
+open Refiner.Refiner.Refine
 open Rformat
 open Simple_print
 open Dform
 open Dform_print
-open Rewrite
-open Refine_sig
 
 (*
  * Show the file loading.
@@ -282,6 +284,9 @@ let print_exn db out s exn =
 
 (*
  * $Log$
+ * Revision 1.6  1998/05/27 15:13:54  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.5  1998/05/18 18:28:10  nogin
  * Removed standardize_apart function, compare_* functions
  *     and BadParamMatch exception

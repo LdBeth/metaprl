@@ -14,9 +14,11 @@
 open Printf
 open Debug
 open Opname
-open Term
-open Term_util
-open Rewrite
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermMan
+open Refiner.Refiner.TermMeta
+open Refiner.Refiner.TermShape
+open Refiner.Refiner.Rewrite
 
 open Simple_print
 
@@ -445,6 +447,9 @@ let lookup table t =
 
 (*
  * $Log$
+ * Revision 1.10  1998/05/27 15:15:02  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.9  1998/05/04 13:01:21  jyh
  * Ocaml display without let rec.
  *

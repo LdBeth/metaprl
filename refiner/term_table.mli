@@ -9,8 +9,8 @@
  *
  *)
 
-open Term
-open Rewrite
+open Refiner.Refiner.Term
+open Refiner.Refiner.Rewrite
 
 type 'a term_table
 
@@ -32,6 +32,9 @@ val dest_table : 'a term_table -> 'a table_entry * 'a term_table
 
 (*
  * $Log$
+ * Revision 1.4  1998/05/27 15:15:03  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.3  1998/05/01 14:59:44  jyh
  * Updating display forms.
  *

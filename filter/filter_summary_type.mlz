@@ -7,7 +7,7 @@
  *
  *)
 
-open Term
+open Refiner.Refiner.Term
 open Opname
 
 open File_base_type
@@ -194,6 +194,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.10  1998/05/27 15:13:06  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.9  1998/04/17 20:48:32  jyh
  * Updating refiner for extraction.
  *

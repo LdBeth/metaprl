@@ -5,7 +5,7 @@
 open MLast
 
 open Opname
-open Term
+open Refiner.Refiner.Term
 
 (*
  * Location is a pair of bignums.
@@ -64,6 +64,9 @@ val dest_var : term -> string
 
 (*
  * $Log$
+ * Revision 1.7  1998/05/27 15:12:50  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.6  1998/05/04 13:01:12  jyh
  * Ocaml display without let rec.
  *

@@ -1,6 +1,6 @@
 (*conversion between nuprl-light terms and mathbus terms*)
 
-open Term
+open Refiner.Refiner.Term
 open Opname
 open MathBus
 

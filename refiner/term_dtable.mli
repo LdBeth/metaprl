@@ -2,7 +2,7 @@
  * Simplified version of termTable.
  *)
 
-open Term
+open Refiner.Refiner.Term
 
 type 'a term_dtable
 type 'a term_dextract
@@ -20,6 +20,9 @@ val lookup : 'a term_dextract -> term -> term -> 'a
 
 (*
  * $Log$
+ * Revision 1.3  1998/05/27 15:14:23  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.2  1998/04/29 14:48:29  jyh
  * Added ocaml_sos.
  *

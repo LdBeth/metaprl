@@ -1,5 +1,5 @@
 open Opname
-open Term
+open Refiner.Refiner.Term
 open Num
 
 val nuprl5_opname	: opname

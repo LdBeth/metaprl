@@ -4,7 +4,7 @@
  *
  *)
 
-open Term
+open Refiner.Refiner.Term
 
 open Filter_summary_type
 open Filter_summary
@@ -36,6 +36,9 @@ module MakeFilterCache
    
 (*
  * $Log$
+ * Revision 1.2  1998/05/27 15:12:44  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.1  1998/02/19 17:13:56  jyh
  * Splitting filter_parse.
  *

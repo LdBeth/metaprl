@@ -21,9 +21,9 @@
 open Printf
 open Debug
 open Opname
-open Term
-open Term_util
-open Rewrite
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermMeta
+open Refiner.Refiner.Rewrite
 
 (*
  * Show the file loading.
@@ -302,6 +302,9 @@ let lookup { ext_lrtable = lrbase;
 
 (*
  * $Log$
+ * Revision 1.4  1998/05/27 15:14:22  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.3  1998/04/29 14:48:27  jyh
  * Added ocaml_sos.
  *

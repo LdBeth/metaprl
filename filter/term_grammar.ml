@@ -6,8 +6,10 @@ open Printf
 
 open Debug
 open Opname
-open Term
-open Term_util
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermOp
+open Refiner.Refiner.TermMan
+open Refiner.Refiner.TermMeta
 open Ml_string
 open Simple_print
 
@@ -905,6 +907,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.9  1998/05/27 15:13:13  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.8  1998/04/24 19:38:43  jyh
  * Updated debugging.
  *

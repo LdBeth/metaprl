@@ -4,8 +4,8 @@
  *)
 
 open Opname
-open Term
-open Term_util
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermMeta
 open Filter_type
 
 (************************************************************************
@@ -33,6 +33,9 @@ val translate_opname : opname -> string
 
 (*
  * $Log$
+ * Revision 1.3  1998/05/27 15:13:12  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.2  1998/02/21 20:58:03  jyh
  * Two phase parse/extract.
  *

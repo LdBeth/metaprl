@@ -6,7 +6,7 @@ open Printf
 
 open Debug
 
-open Term
+open Refiner.Refiner.Term
 
 open Filter_summary
 
@@ -123,6 +123,9 @@ let mem_resource { resource_name = name } resources =
 
 (*
  * $Log$
+ * Revision 1.9  1998/05/27 15:13:07  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.8  1998/04/24 19:38:36  jyh
  * Updated debugging.
  *

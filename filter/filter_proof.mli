@@ -3,7 +3,7 @@
  *)
 
 open Opname
-open Term
+open Refiner.Refiner.Term
 
 open Filter_proof_type
 
@@ -21,6 +21,9 @@ val tactics_of_proof : proof -> (string * MLast.expr) array
 
 (*
  * $Log$
+ * Revision 1.3  1998/05/27 15:12:58  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.2  1998/04/22 22:44:28  jyh
  * *** empty log message ***
  *

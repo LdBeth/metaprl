@@ -10,8 +10,11 @@ open Printf
 open Debug
 open File_util
 open Opname
-open Term
-open Term_util
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermOp
+open Refiner.Refiner.TermMan
+open Refiner.Refiner.TermSubst
+open Refiner.Refiner.TermMeta
 open Simple_print
 open Precedence
 
@@ -1807,6 +1810,9 @@ and check_implementation { info_list = implem } { info_list = interf } =
 
 (*
  * $Log$
+ * Revision 1.22  1998/05/27 15:13:01  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.21  1998/05/07 16:02:46  jyh
  * Adding interactive proofs.
  *

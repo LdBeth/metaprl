@@ -3,6 +3,7 @@ INCLUDE :=
 
 # Library files
 LCFILES :=\
+	truncate\
 	putenv\
 	debug\
 	ml_debug

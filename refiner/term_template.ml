@@ -6,7 +6,8 @@ open Printf
 open Debug
 
 open Opname
-open Term
+open Refiner.Refiner
+open Refiner.Refiner.Term
 
 open Simple_print
 
@@ -134,7 +135,7 @@ let template_of_term t =
           | Term.ObId _ ->
                compute_param (ObId :: l) t
 
-          | Term.ParmList l' ->
+          | Term.ParamList l' ->
                compute_param (compute_param l l') t
    in
       { template_opname = opname;
@@ -192,6 +193,9 @@ let to_int t = t
 
 (*
  * $Log$
+ * Revision 1.9  1998/05/27 15:15:04  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.8  1998/05/01 18:43:34  jyh
  * Added raw display.
  *

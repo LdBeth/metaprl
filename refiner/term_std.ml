@@ -1,0 +1,337 @@
+(*
+ * This is the simple term module, where the
+ * implementation of the term mirrors the interface.
+ * Destructors are identity functions.
+ *)
+
+open Printf
+
+open Debug
+open Opname
+
+(*
+ * Show the file loading.
+ *)
+let _ =
+   if !debug_load then
+      eprintf "Loading Term%t" eflush
+
+(*
+ * Simple term module.
+ *)
+module Term =
+struct
+   (************************************************************************
+    * Type definitions                                                     *
+    ************************************************************************)
+   
+   (*
+    * The type are just the naive types.
+    *)
+   type level_exp_var = level_exp_var'
+   and level_exp = level_exp'
+   and param = param'
+   and operator = operator'
+   
+   and term = term'
+   and bound_term = bound_term'
+
+   (*
+    * Level expression have offsets from level expression
+    * vars, plus a constant offset.
+    *)
+   and level_exp_var' = { le_var : string; le_offset : int }
+   
+   and level_exp' = { le_const : int; le_vars : level_exp_var list }
+   
+   (*
+    * Parameters have a number of simple types.
+    *)
+   and param' =
+      Number of Num.num
+    | String of string
+    | Token of string
+    | Level of level_exp
+    | Var of string
+    | MNumber of string
+    | MString of string
+    | MToken of string
+    | MLevel of string
+    | MVar of string
+    | ObId of object_id
+    | ParamList of param list
+      
+      (* Num operations *)
+    | MSum of param * param
+    | MDiff of param * param
+    | MProduct of param * param
+    | MQuotient of param * param
+    | MRem of param * param
+    | MLessThan of param * param
+      
+      (* Comparisons *)
+    | MEqual of param * param
+    | MNotEqual of param * param
+   
+   (*
+    * An operator combines a name with a list of parameters.
+    * The order of params is significant.
+    *)
+   and object_id = param list
+   
+   and operator' = { op_name : opname; op_params : param list }
+   
+   (*
+    * A term has an operator, and a finite number of subterms
+    * that may be bound.
+    *)
+   and term' = { term_op : operator; term_terms : bound_term list }
+   and bound_term' = { bvars : string list; bterm : term }
+   
+   (*
+    * Level expression have offsets from level expression
+    * vars, plus a constant offset.
+    *)
+   
+   type term_subst = (string * term) list
+   
+   (*
+    * General exception for term destruction.
+    *)
+   exception TermMatch of string * term * string
+   exception BadMatch of term * term
+   
+   (************************************************************************
+    * Term de/constructors                                                 *
+    ************************************************************************)
+   
+   (*
+    * These are basically identity functions for this implementation.
+    *)
+   let mk_term op bterms = { term_op = op; term_terms = bterms }
+   
+   let make_term term = term
+   
+   let dest_term term = term
+   
+   let mk_op name params = { op_name = name; op_params = params }
+   
+   let make_op op = op
+   
+   let dest_op op = op
+   
+   let mk_bterm bvars term = { bvars = bvars; bterm = term }
+   
+   let make_bterm bterm = bterm
+   
+   let dest_bterm bterm = bterm
+   
+   let make_param param = param
+   
+   let dest_param param = param
+   
+   let mk_level_var v i =
+      { le_var = v; le_offset = i }
+   
+   let make_level_var v = v
+   
+   let dest_level_var v = v
+   
+   let mk_level i l =
+      { le_const = i; le_vars = l }
+   
+   let make_level l = l
+   
+   let dest_level l = l
+   
+   let make_object_id object_id  = object_id 
+   let dest_object_id object_id  = object_id
+    
+   (*
+    * Operator names.
+    *)
+   let opname_of_term = function
+      { term_op = { op_name = name } } -> name
+   
+   (*
+    * Get the subterms.
+    * None of the subterms should be bound.
+    *)
+   let subterms_of_term t =
+      List.map (fun { bterm = t } -> t) t.term_terms
+   
+   (************************************************************************
+    * Variables                                                            *
+    ************************************************************************)
+   
+   let var_opname = make_opname ["var"]
+   
+   (*
+    * See if a term is a variable.
+    *)
+   let is_var_term = function
+      { term_op = { op_name = opname; op_params = [Var v] };
+        term_terms = []
+      } when opname == var_opname -> true
+    | _ -> false
+   
+   (*
+    * Destructor for a variable.
+    *)
+   let dest_var = function
+      { term_op = { op_name = opname; op_params = [Var v] };
+        term_terms = []
+      } when opname == var_opname -> v
+     | t -> raise (TermMatch ("dest_var", t, ""))
+   
+   (*
+    * Make a variable.
+    *)
+   let mk_var_term v =
+      { term_op = { op_name = var_opname; op_params = [Var v] };
+        term_terms = []
+      }
+   
+   let mk_var_op v = { op_name = var_opname; op_params = [Var v] }
+   
+   (*
+    * Second order variables have subterms.
+    *)
+   let is_so_var_term = function
+      ({ term_op = { op_name = opname; op_params = [Var(_)] }; term_terms = bterms } : term)
+      when opname == var_opname ->
+         List.for_all (function { bvars = [] } -> true | _ -> false) bterms
+    | _ -> false
+   
+   let dest_so_var = function
+      ({ term_op = { op_name = opname; op_params = [Var(v)] };
+         term_terms = bterms
+       } : term) as term when opname == var_opname ->
+         v, List.map (function { bvars = []; bterm = t } -> t | _ ->
+               raise (TermMatch ("dest_so_var", term, "bvars exist")))
+         bterms
+    | term -> raise (TermMatch ("dest_so_var", term, "not a so_var"))
+   
+   (*
+    * Second order variable.
+    *)
+   let mk_so_var_term v terms =
+      let mk_bterm term =
+         { bvars = []; bterm = term }
+      in
+         { term_op = { op_name = var_opname; op_params = [Var(v)] };
+           term_terms = List.map mk_bterm terms
+         }
+   
+   (*
+    * Second order context, contains a context term, plus
+    * binding variables like so vars.
+    *)
+   let context_opname = make_opname ["context"]
+   
+   let is_context_term = function
+      ({ term_op = { op_name = opname; op_params = [Var _] }; term_terms = bterms } : term)
+      when opname == context_opname ->
+         List.for_all (function { bvars = [] } -> true | _ -> false) bterms
+    | term -> false
+   
+   let dest_context = function
+      ({ term_op = { op_name = opname; op_params = [Var v] };
+         term_terms = { bvars = []; bterm = term' }::bterms
+       } : term) as term when opname == context_opname ->
+         v, term', List.map (function { bvars = []; bterm = t } -> t
+          | _ ->
+               raise (TermMatch ("dest_context", term, "bvars exist")))
+         bterms
+    | term -> raise (TermMatch ("dest_context", term, "not a context"))
+   
+   let mk_context_term v term terms =
+      let mk_bterm term =
+         { bvars = []; bterm = term }
+      in
+         { term_op = { op_name = context_opname; op_params = [Var v] };
+           term_terms = (mk_bterm term)::(List.map mk_bterm terms)
+         }
+   
+   (************************************************************************
+    * Simple terms                                                         *
+    ************************************************************************)
+
+   (*
+    * "Simple" terms have no parameters and no binding variables.
+    *)
+   let is_simple_term_opname name = function
+      { term_op = { op_name = name'; op_params = [] };
+        term_terms = bterms
+      } when name' = name ->
+         let rec aux = function
+            { bvars = []; bterm = _ }::t -> aux t
+          | _::t -> false
+          | [] -> true
+         in
+            aux bterms
+    | _ -> false
+   
+   let mk_any_term op terms =
+      let aux t =
+         { bvars = []; bterm = t }
+      in
+         { term_op = op; term_terms = List.map aux terms }
+      
+   let mk_simple_term name terms =
+      mk_any_term { op_name = name; op_params = [] } terms
+   
+   let dest_simple_term = function
+      ({ term_op = { op_name = name; op_params = [] };
+         term_terms = bterms
+       } : term) as t -> 
+         let aux = function
+            { bvars = []; bterm = t } -> t
+          | _ -> raise (TermMatch ("dest_simple_term", t, "binding vars exist"))
+         in
+            name, List.map aux bterms
+    | t -> raise (TermMatch ("dest_simple_term", t, "params exist"))
+   
+   let dest_simple_term_opname name = function
+      ({ term_op = { op_name = name'; op_params = [] };
+         term_terms = bterms
+       } : term) as t -> 
+         if name = name' then
+            let aux = function
+               { bvars = []; bterm = t } -> t
+             | _ -> raise (TermMatch ("dest_simple_term_opname", t, "binding vars exist"))
+            in
+               List.map aux bterms
+         else
+            raise (TermMatch ("dest_simple_term_opname", t, "opname mismatch"))
+    | t -> raise (TermMatch ("dest_simple_term_opname", t, "params exist"))
+
+   (*
+    * "Normalization" means producing a canonical version of the term,
+    * not reduction.  Right now, this just means rehashing the opname.
+    *)
+   let rec normalize_term = function
+      { term_op = { op_name = name; op_params = params }; term_terms = bterms } ->
+         { term_op = { op_name = normalize_opname name;
+                       op_params = params
+                     };
+           term_terms = List.map normalize_bterm bterms
+         }
+         
+   and normalize_bterm = function
+      { bvars = vars; bterm = t } ->
+         { bvars = vars; bterm = normalize_term t }
+end
+   
+(*
+ * $Log$
+ * Revision 1.1  1998/05/27 15:14:54  jyh
+ * Functorized the refiner over the Term module.
+ *
+ *
+ * -*-
+ * Local Variables:
+ * Caml-master: "refiner.run"
+ * End:
+ * -*-
+ *)

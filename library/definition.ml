@@ -1,6 +1,6 @@
 
 open Basic 
-open Term
+open Refiner.Refiner.Term
 open Nuprl5
 open List
 open Db

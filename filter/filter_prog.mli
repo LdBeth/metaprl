@@ -2,7 +2,7 @@
  * Conversion form filter_summary to program text.
  *)
 
-open Term
+open Refiner.Refiner.Term
 open Refine
 open Refiner
 
@@ -54,6 +54,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.9  1998/05/27 15:12:56  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.8  1998/05/07 16:02:44  jyh
  * Adding interactive proofs.
  *

@@ -6,8 +6,10 @@ open Printf
 open Debug
 
 open Opname
-open Term
-open Refine_sig
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermOp
+open Refiner.Refiner.TermMan
+open Refiner.Refiner.Refine
 
 open Filter_proof_type
 open Filter_ocaml
@@ -271,6 +273,9 @@ let tactics_of_proof proof =
 
 (*
  * $Log$
+ * Revision 1.8  1998/05/27 15:12:57  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.7  1998/05/04 13:01:13  jyh
  * Ocaml display without let rec.
  *

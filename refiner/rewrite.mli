@@ -5,97 +5,33 @@
  *
  *)
 
-open Term
+open Term_sig
+open Term_man_sig
+open Term_addr_sig
+open Term_subst_sig
+open Rewrite_sig
 
-(* Packaged rewrite rule *)
-type rewrite_rule
-
-(* Separated forms *)
-type rewrite_redex
-type rewrite_contractum
-type rewrite_stack
-
-(*
- * Types for redex matching.
- *)
-type rewrite_type =
-   RewriteTermType of string
- | RewriteFunType of string
- | RewriteContextType of string
- | RewriteStringType of string
- | RewriteIntType of string
- | RewriteLevelType of string
-
-type rewrite_item =
-   RewriteTerm of term
- | RewriteFun of (term list -> term)
- | RewriteContext of (term -> term list -> term)
- | RewriteString of string
- | RewriteInt of int
- | RewriteLevel of level_exp
-
-type stack
-
-type match_type =
-   ParamMatch of param
- | VarMatch of string
- | TermMatch of term
- | BTermMatch of bound_term
-
-(* Detailed exceptions *)
-type rewrite_error =
-   BoundSOVar of string
- | FreeSOVar of string
- | BoundParamVar of string
- | FreeParamVar of string
- | BadRedexParam of param
- | NoRuleOperator
- | BadMatch of match_type
- | AllSOInstances of string
- | MissingContextArg of string
- | StackError of stack
- | StringError of string
-
-exception RewriteError of rewrite_error
-
-(*
- * Separate analysis.
- *)
-val compile_redex : string array -> term -> rewrite_redex
-val compile_redices : string array -> term list -> rewrite_redex
-val compile_contractum : rewrite_redex -> term -> rewrite_contractum
-val extract_redex_types : rewrite_redex -> rewrite_type list
-val apply_redex :
-   rewrite_redex -> address array ->
-   term list -> rewrite_stack
-val apply_redex' :
-   rewrite_redex -> address array ->
-   term list -> rewrite_stack * rewrite_item list
-val make_contractum : rewrite_contractum -> rewrite_stack -> term
-
-(* Rewrite constructor/destructors *)
-val term_rewrite : string array * string array ->
-   term list -> term list -> rewrite_rule
-val fun_rewrite : term -> (term -> term) -> rewrite_rule
-
-(* Apply a rewrite to a term *)
-val apply_rewrite : rewrite_rule -> address array * string array ->
-   term list -> term list * string array
-
-(*
- * See if a rule may apply to a particular term
- * described by its operator and it arities.
- *)
-val relevant_rule : operator -> int list -> rewrite_rule -> bool
-
-(*
- * Get some info for the evaluator.
- *)
-val rewrite_operator : rewrite_rule -> operator
-val rewrite_eval_flags : rewrite_rule -> (int * bool) list
+module Rewrite (**)
+   (Term : TermSig)
+   (TermMan : TermManSig
+    with type term = Term.term)
+   (TermAddr : TermAddrSig
+    with type term = Term.term)
+   (TermSubst : TermSubstSig
+    with type term = Term.term) :
+   RewriteSig
+   with type term = Term.term
+   with type level_exp = Term.level_exp
+   with type param = Term.param
+   with type operator = Term.operator
+   with type bound_term = Term.bound_term
+   with type address = TermAddr.address
 
 (*
  * $Log$
+ * Revision 1.4  1998/05/27 15:14:09  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.3  1998/04/29 14:48:21  jyh
  * Added ocaml_sos.
  *

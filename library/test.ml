@@ -477,7 +477,7 @@ let jointest remote_port local_port =
 ;;
 
 open List
-open Term
+open Refiner.Refiner.Term
 open Library_eval
 
 let faux_refine g t =

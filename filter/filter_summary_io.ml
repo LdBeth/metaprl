@@ -8,7 +8,7 @@ open Printf
 
 open Debug
 
-open Term
+open Refiner.Refiner.Term
 
 open File_base_type
 
@@ -158,6 +158,9 @@ end
    
 (*
  * $Log$
+ * Revision 1.7  1998/05/27 15:13:04  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.6  1998/04/24 19:38:35  jyh
  * Updated debugging.
  *

@@ -5,7 +5,8 @@ open List
 open Utils
 open Nuprl5
 open Link
-open Term
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermOp
 open Basic
 
 open Mbterm

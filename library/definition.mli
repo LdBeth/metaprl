@@ -1,6 +1,6 @@
 
  open Basic
- open Term
+ open Refiner.Refiner.Term
 
  type term_entry
  type termtable

@@ -2,6 +2,9 @@
  * This module computes term templates for use by hashtables.
  *
  * $Log$
+ * Revision 1.4  1998/05/27 15:15:07  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.3  1998/04/29 20:53:41  jyh
  * Initial working display forms.
  *
@@ -26,7 +29,7 @@
  *)
 
 open Opname
-open Term
+open Refiner.Refiner.Term
 
 type t
 

@@ -3,8 +3,8 @@
  *)
 
 open Opname
-open Term
-open Term_util
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermMeta
 open Filter_type
 
 (*
@@ -26,6 +26,9 @@ module MakeTermGrammar (TermGrammar : TermGrammarSig) : TermGrammarSig
 
 (*
  * $Log$
+ * Revision 1.3  1998/05/27 15:13:14  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.2  1997/08/06 16:17:41  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

@@ -2,8 +2,8 @@
  * Define a printer for all escaping refiner exceptions.
  *)
 
-open Rewrite
-open Refine_sig
+open Refiner.Refiner.Rewrite
+open Refiner.Refiner.Refine
 open Rformat
 open Dform
 open Dform_print
@@ -17,6 +17,9 @@ val print_exn : dform_mode_base -> out_channel -> string -> exn -> 'a
 
 (*
  * $Log$
+ * Revision 1.4  1998/05/27 15:13:55  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.3  1998/04/28 18:30:44  jyh
  * ls() works, adding display.
  *

@@ -4,12 +4,13 @@
  *)
 
 open Printf
-
 open Debug
+
 open Rformat
 open Opname
-open Term
-open Term_util
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermAddr
+open Refiner.Refiner.TermMeta
 
 (*
  * Show the file loading.
@@ -59,7 +60,7 @@ let format_level_exp buf l =
 		      format_int buf o;
 		      format_string buf "}"
 		   end)
-		  
+
        | { le_const = c; le_vars = vars } ->
 	    let rec maxaux = function
 	       [] -> 0
@@ -127,7 +128,7 @@ let rec format_param buf p =
     | MEqual (a, b) -> format_param buf a; format_string buf " = "; format_param buf b; format_string buf ":n"
     | MNotEqual (a, b) -> format_param buf a; format_string buf " <> "; format_param buf b; format_string buf ":n"
     | ObId a -> format_string buf "<object-id>"
-    | ParmList l ->
+    | ParamList l ->
          let rec format = function
             [h] ->
                format_param buf h
@@ -244,7 +245,7 @@ and format_term buf term =
          if !debug_simple_print then
             eprintf "Simple_print.format_terms%t" eflush;
          format_terms subterms
-   
+
    else
       (* Standard term *)
       let _ =
@@ -421,6 +422,9 @@ let prerr_simple_address = print_simple_address_fp stderr
 
 (*
  * $Log$
+ * Revision 1.7  1998/05/27 15:14:12  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.6  1998/04/24 02:42:56  jyh
  * Added more extensive debugging capabilities.
  *

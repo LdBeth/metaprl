@@ -2,13 +2,16 @@
  * Parser for PRL files.
  *)
 
-open Term
+open Refiner.Refiner.Term
 
 (* Add an include directory *)
 val set_include_path : string list -> unit
 
 (*
  * $Log$
+ * Revision 1.5  1998/05/27 15:12:53  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.4  1998/04/28 18:30:14  jyh
  * ls() works, adding display.
  *

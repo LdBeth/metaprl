@@ -2,7 +2,7 @@
  * This implements a filesystem interface to the library.
  *)
 
-open Term
+open Refiner.Refiner.Term
 open Basic
 
 open Utils

@@ -1,5 +1,5 @@
 
-open Term
+open Refiner.Refiner.Term
 open Basic
 open Definition
 

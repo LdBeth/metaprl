@@ -3,19 +3,49 @@ INCLUDE := -I ../mllib
 
 # Types files
 MLZFILES :=\
+	term_sig\
+	term_op_sig\
+	term_man_sig\
+	term_addr_sig\
+	term_subst_sig\
+	term_shape_sig\
+	term_eval_sig\
+	term_meta_sig\
+	simple_print_sig\
+	refine_sig\
+	refiner_sig\
 	ml_format_sig\
 	mk_print_sig\
-	refine_sig\
 	resource
 
 # Library files
 LMFILES :=\
 	rformat\
 	opname\
-	term\
-   term_ds\
-	term_ds_simple\
-	term_util\
+	term_sig\
+	term_op_sig\
+	term_man_sig\
+	term_addr_sig\
+	term_subst_sig\
+	term_shape_sig\
+	term_eval_sig\
+	term_meta_sig\
+	simple_print_sig\
+	rewrite_sig\
+	refine_sig\
+	refiner_sig\
+	term_std\
+	term_op_std\
+	term_addr_std\
+	term_subst_std\
+	term_man_std\
+	term_shape_std\
+	term_eval_std\
+	term_meta_std\
+	rewrite\
+	refine\
+	refiner_std\
+	refiner\
 	simple_print\
 	ml_format_sig\
 	ml_format\
@@ -23,14 +53,10 @@ LMFILES :=\
 	ml_print\
 	ml_file\
 	ml_string\
-	rewrite\
 	term_template\
 	term_table\
 	term_stable\
 	term_dtable\
-	refine_sig\
-	refine_util\
-	refine\
 	dform\
 	dform_print\
 	refine_exn\

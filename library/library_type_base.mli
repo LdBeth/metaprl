@@ -2,7 +2,7 @@
  * Make a combo to read from the library.
  *)
 
-open Term
+open Refiner.Refiner.Term
 
 open File_base_type
 
@@ -12,6 +12,9 @@ module IO : IOSig with type t = term
 
 (*
  * $Log$
+ * Revision 1.4  1998/05/27 15:13:27  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.3  1998/04/03 18:07:34  eaton
  * .
  *

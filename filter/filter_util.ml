@@ -6,8 +6,9 @@
 open Printf
 open Debug
 open Opname
-open Term
-open Term_util
+open Refiner.Refiner
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermMeta
 open Ml_file
 open Simple_print
 open Filter_ast
@@ -30,13 +31,13 @@ let _ =
  *)
 let rec context_vars_list = function
    h::t ->
-      List_util.union (Term.context_vars h) (context_vars_list t)
+      List_util.union (TermSubst.context_vars h) (context_vars_list t)
  | [] ->
       []
 
 let rec binding_vars_list = function
    h::t ->
-      List_util.union (Term.binding_vars h) (binding_vars_list t)
+      List_util.union (TermSubst.binding_vars h) (binding_vars_list t)
  | [] ->
       []
 
@@ -130,6 +131,9 @@ let output_path oport =
 
 (*
  * $Log$
+ * Revision 1.5  1998/05/27 15:13:11  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.4  1998/04/24 19:38:38  jyh
  * Updated debugging.
  *

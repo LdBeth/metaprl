@@ -1,5 +1,6 @@
 
-open Term
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermMan
 open Basic
 open Filename
 open MathBus
@@ -131,7 +132,7 @@ let make_operator opid parameters =
 				 |_ -> error ["read_term"; "operator"; "nuprl-light"; "opname"; "string"]
 					     [] [])
 			      (match dest_param (hd parameters) with
-				ParmList pl -> pl
+				ParamList pl -> pl
 				 | _ -> error ["read_term"; "operator"; "nuprl-light"; "opname"] [] [])))
 		(tl parameters))
      else mk_nuprl5_op ((make_param (Token opid)) :: parameters)
@@ -391,12 +392,12 @@ let make_le_scanner = make_scanner level_expression_escape_string "\n\t\r "
 
 let mk_real_param_from_strings stp value ptype =
   match ptype with "n" -> (Number (Num.num_of_string value))
-  | "time" -> (ParmList [(make_param (Token "time"));
+  | "time" -> (ParamList [(make_param (Token "time"));
 			  (make_param (Number (Num.num_of_string value)))])
   | "t" -> (Token value)
   | "s" -> (String value)
-  | "q" -> (ParmList [(make_param (Token "quote")); (make_param (Token value))])
-  | "b" -> ( ParmList [ ( make_param (Token "bool"))
+  | "q" -> (ParamList [(make_param (Token "quote")); (make_param (Token value))])
+  | "b" -> ( ParamList [ ( make_param (Token "bool"))
 			; if stringeq value "false"	then make_param (Number (Num.num_of_int 0))
 			  else if stringeq value "true"	then make_param (Number (Num.num_of_int 1))
 			  else error ["real_parameter_from_string"; value][][]
@@ -406,15 +407,15 @@ let mk_real_param_from_strings stp value ptype =
     (ObId (stamp_to_object_id (term_to_stamp term)))
   | "l" -> let level = 
       scan_level_expression (make_le_scanner (Stream.of_string value)) in 
-    (ParmList [(make_param (Token "nuprl5_level_expression")); (make_param (Level level)); (make_param (String value))])
+    (ParamList [(make_param (Token "nuprl5_level_expression")); (make_param (Level level)); (make_param (String value))])
   | t -> failwith "unknown special op-param"
  
 let mk_meta_param_from_strings value ptype =
   match ptype with "n" -> (MNumber value)
   | "t" -> (MToken value)
   | "s" -> (MString value)
-  | "q" -> (ParmList [(make_param (Token "quote")); (make_param (Token value))])
-  | "b" -> (ParmList [(make_param (Token "bool")); (make_param (Number (Num.num_of_string value)))])
+  | "q" -> (ParamList [(make_param (Token "quote")); (make_param (Token value))])
+  | "b" -> (ParamList [(make_param (Token "bool")); (make_param (Number (Num.num_of_string value)))])
   | "v" -> (MVar value)
   | "l" -> (MLevel value)
   |  t -> failwith "unknown special meta op-param"
@@ -467,24 +468,24 @@ let rec string_to_parameter s ptype =
        (match (String.get s 1) with
 	  '%' -> (mk_real_param_from_strings string_to_parameter (String.sub s 1 (len - 1)) ptype)
 
-	| 'A' -> (ParmList	[ make_param (Token "extended")
+	| 'A' -> (ParamList	[ make_param (Token "extended")
 				; make_param (Token "abstraction")
 				; make_param (Token ptype)
 				; make_param (Token ss)
 				])
 
-	| 'D' ->  (ParmList	[ make_param (Token "extended")
+	| 'D' ->  (ParamList	[ make_param (Token "extended")
 				; make_param (Token "display")
 				; make_param (Token ptype)
 				; make_param (Token ss)
 				])
 
-	| 'S' ->  (ParmList	[ make_param (Token "extended")
+	| 'S' ->  (ParamList	[ make_param (Token "extended")
 				; make_param (Token "slot")
 				; make_param (Token ptype)
 				])
 
-	| 'd' ->  (ParmList	[ make_param (Token "display")
+	| 'd' ->  (ParamList	[ make_param (Token "display")
 				; (make_param (mk_meta_param_from_strings ss ptype))
                                 ])
 

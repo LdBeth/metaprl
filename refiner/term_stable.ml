@@ -2,6 +2,9 @@
  * This is a simplified version of termTable.
  *
  * $Log$
+ * Revision 1.4  1998/05/27 15:14:52  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.3  1998/04/24 02:43:02  jyh
  * Added more extensive debugging capabilities.
  *
@@ -32,8 +35,8 @@ open Printf
 open Debug
 
 open Opname
-open Term
-open Hashtbl
+open Refiner.Refiner
+open Refiner.Refiner.Term
 
 (*
  * Show the file loading.
@@ -131,7 +134,7 @@ let compute_template t =
           | Term.ObId _ ->
                compute_param (ObId :: l) t
 
-          | Term.ParmList l' ->
+          | Term.ParamList l' ->
                compute_param (compute_param l l') t
    in
       { template_opname = opname;

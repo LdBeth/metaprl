@@ -7,8 +7,8 @@ open Printf
 
 open Debug
 open Opname
-open Term
-open Term_util
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermMeta
 open Ml_print_sig
 open Ml_print
 
@@ -104,6 +104,9 @@ module IOPrint = MakePrinter (IOFile)
 
 (*
  * $Log$
+ * Revision 1.3  1998/05/27 15:13:45  jyh
+ * Functorized the refiner over the Term module.
+ *
  * Revision 1.2  1998/04/24 02:42:38  jyh
  * Added more extensive debugging capabilities.
  *
