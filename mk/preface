@@ -122,13 +122,6 @@ endif
 #
 PPFLAGS=-D $(REFINER)_EXN -D SEQ_SET_$(SEQ_SET)_linear_set -D TERMS_$(TERMS)
 
-#
-# Parameters
-#
-ifndef INLINE
-   INLINE=5
-endif
-
 MAKE:=$(MAKE) $(MAKE_OPTS)
 
 #

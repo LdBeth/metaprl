@@ -41,3 +41,8 @@ TESTS_ENABLED_DEFAULT=false
 CCC_DEFAULT=gcc -O2 -Wall -Wno-unused-variable
 NATIVE_ENABLED_DEFAULT=true
 BYTE_ENABLED_DEFAULT=false
+
+#
+# Default -inline argument to ocamlopt
+#
+OCAMLOPT_INLINE=3

@@ -112,6 +112,11 @@ else
    export
 
 #
+# Inline more aggressively
+#
+OCAMLOPTFLAGS += -inline 3
+
+#
 # Do not compile MetaPRL with threads.
 #
 THREADS_ENABLED = false
