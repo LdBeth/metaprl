@@ -61,8 +61,10 @@ This error also raised when we cd <theory>, and then load <theory>:
 > /dec_eq : string
 > # <<it>>;;
 
-*) Display forms do not work (they raise Invalid_argument ("List.combine") ) if they 
-are specified using SO variables. This may be a rewriter bug.
+*) There is no way to override display forms right now.
+   Could be that term_match_table listing needs to be reversed.
+
+*) Display form mode generality is not working.
 
 REWRITER
 
@@ -132,13 +134,27 @@ PARSER & FILTER
 *) When rule is added, the appropriate tactic should be added automatically
 (assuming sequent calculus).
 
+  --jyh: the tactic _is_ defined, but not (yet) added to Mptop toploop.
+
 *) Some times parser requires too many brackets.
 
-*) The rules without parameters should not require : :, a single colon
-should be sufficient (it means that we should remove an alternative rule
-syntax of
-interactive name: A1 A2 ... : An)
+*) Parsing or printing bug that can be seen using ASCII files:
+   sometimes string arguments in params gets unquoted too many times.
+   Reproduce this bug by loading an old ASCII file, then saving it
+   and seeing that some parameters have been unquoted.
 
 RULES & REWRITES
 
 *) reduceEta is too strong
+   should be moved to a new module not included in Itt_theory.
+
+BUILD SYSTEM
+
+*) Dependencies between .prla, .prlb, .cmiz, .cmoz, etc., are all messed up
+   Solution: have MetaPRL maintain a file in each directory
+     with the list of valid files.  Have only one of .prla, .prlb, or .cmoz file
+     present at any time.  These files should not be in CVS.
+   Better solution: keep only one .prl file, can contain either binary or
+     ASCII.  Make CVS check that file is in ASCII before a commit.
+
+*) Make sure saving .prl* files is done safely (not in place).
