@@ -8,7 +8,7 @@ MLZFILES :=\
 	rewrite_build_contractum_sig\
 	rewrite_meta_sig
 
-REFINER_PFILES :=\
+REWRITE_PFILES :=\
 	rewrite_type\
 	rewrite_util\
 	rewrite_debug\
@@ -19,7 +19,7 @@ REFINER_PFILES :=\
 	rewrite_meta\
 	rewrite
 
-REFINER_FILES :=\
+REWRITE_FILES :=\
 	rewrite_type_sig\
 	rewrite_util_sig\
 	rewrite_debug_sig\
@@ -28,5 +28,5 @@ REFINER_FILES :=\
 	rewrite_match_redex_sig\
 	rewrite_build_contractum_sig\
 	rewrite_meta_sig\
-	$(addsuffix _verb, $(REFINER_PFILES))\
-	$(addsuffix _simp, $(REFINER_PFILES))
+	$(addsuffix _verb, $(REWRITE_PFILES))\
+	$(addsuffix _simp, $(REWRITE_PFILES))

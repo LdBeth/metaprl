@@ -5,8 +5,8 @@ INCLUDE := -I ../../mllib -I ../refbase -I ../refsig -I ../term_std -I ../term_g
 
 # Library files
 include Files
-MLPFILES := $(REFINER_PFILES)
-LMFILES := $(REFINER_FILES)
+MLPFILES := $(REWRITE_PFILES)
+LMFILES := $(REWRITE_FILES)
 
 # Name of library
 MAIN := reflib

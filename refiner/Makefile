@@ -47,6 +47,7 @@ include refsig/Files
 include term_std/Files
 include term_gen/Files
 include term_ds/Files
+include rewrite/Files
 include refiner/Files
 include reflib/Files
 
@@ -58,6 +59,7 @@ REFSIG_CMXFILES    := $(addprefix refsig/,   $(addsuffix .cmx, $(REFSIG_FILES)))
 TERM_STD_CMXFILES  := $(addprefix term_std/, $(addsuffix .cmx, $(TERM_STD_FILES)))
 TERM_GEN_CMXFILES  := $(addprefix term_gen/, $(addsuffix .cmx, $(TERM_GEN_FILES)))
 TERM_DS_CMXFILES   := $(addprefix term_ds/,  $(addsuffix .cmx, $(TERM_DS_FILES)))
+REWRITE_CMXFILES   := $(addprefix rewrite/,  $(addsuffix .cmx, $(REWRITE_FILES)))
 REFINER_CMXFILES   := $(addprefix refiner/,  $(addsuffix .cmx, $(REFINER_FILES)))
 REFLIB_CMXFILES    := $(addprefix reflib/,   $(addsuffix .cmx, $(REFLIB_FILES)))
 CMXFILES :=\
@@ -66,6 +68,7 @@ CMXFILES :=\
 	$(TERM_GEN_CMXFILES)\
 	$(TERM_STD_CMXFILES)\
 	$(TERM_DS_CMXFILES)\
+	$(REWRITE_CMXFILES)\
 	$(REFINER_CMXFILES)\
 	$(REFLIB_CMXFILES)
 
