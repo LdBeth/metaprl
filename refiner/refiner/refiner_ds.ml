@@ -30,7 +30,7 @@
  * jyh@cs.cornell.edu
  *)
 
-open Term_meta_sig
+open Termmod_sig
 open Refiner_sig
 
 module Refiner =

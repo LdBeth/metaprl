@@ -45,44 +45,7 @@ open Refine_error_sig
 open Rewrite_sig
 open Refine_sig
 open Weak_memo
-
-module type TermModuleSig =
-sig
-   (*
-    * Terms and operations on terms.
-    *)
-   module TermType : TermSig
-   module Term : TermBaseSig
-      with type level_exp_var = TermType.level_exp_var
-      with type level_exp = TermType.level_exp
-      with type param = TermType.param
-      with type operator = TermType.operator
-      with type term = TermType.term
-      with type bound_term = TermType.bound_term
-      with type seq_hyps = TermType.seq_hyps
-      with type seq_goals = TermType.seq_goals
-
-      with type hypothesis = TermType.hypothesis
-      with type level_exp_var' = TermType.level_exp_var'
-      with type level_exp' = TermType.level_exp'
-      with type object_id = TermType.object_id
-      with type param' = TermType.param'
-      with type operator' = TermType.operator'
-      with type term' = TermType.term'
-      with type bound_term' = TermType.bound_term'
-
-   module TermMan : TermManSig
-                    with type term = TermType.term
-                    with type operator = TermType.operator
-                    with type level_exp = TermType.level_exp
-                    with type esequent = TermType.esequent
-   module TermSubst : TermSubstSig
-                      with type term = TermType.term
-                      with type param = TermType.param
-
-   module Refine : RefineSig
-                   with type term = TermType.term
-end
+open Termmod_sig
 
 module type RefinerSig =
 sig

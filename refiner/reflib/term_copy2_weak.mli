@@ -27,11 +27,11 @@
  *
  * Author: Yegor Bryukhov, Alexey Nogin
  *)
-open Refiner_sig
+open Termmod_hash_sig
 
 module TermCopy2Weak (**)
-   (FromTerm : RefinerSig)
-   (ToTerm : RefinerSig) :
+   (FromTerm : TermModuleHashSig)
+   (ToTerm : TermModuleHashSig) :
 sig
    (*
     * Pair of Term_hash's structures

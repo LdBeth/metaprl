@@ -27,12 +27,13 @@
  *
  * Author: Yegor Bryukhov, Alexey Nogin
  *)
-
-open Refiner_sig
+open Termmod_sig
+open Termmod_hash_sig
+open Term_header_constr
 
 module TermCopyWeak
-   (FromTerm : RefinerSig)
-   (ToTerm : RefinerSig) =
+   (FromTerm : TermModuleSig)
+   (ToTerm : TermModuleHashSig) =
 struct
    module TermHash = ToTerm.TermHash
    module THC = ToTerm.TermHeaderConstr (FromTerm)

@@ -27,14 +27,14 @@
  *
  * Author: Yegor Bryukhov, Alexey Nogin
  *)
-open Refiner_sig
+open Termmod_hash_sig
 
 open Term_norm
 open Term_copy_weak
 
 module TermCopy2Weak
-   (SourceTerm : RefinerSig)
-   (TargetTerm : RefinerSig) =
+   (SourceTerm : TermModuleHashSig)
+   (TargetTerm : TermModuleHashSig) =
 struct
 
    module SourceHash = SourceTerm.TermHash

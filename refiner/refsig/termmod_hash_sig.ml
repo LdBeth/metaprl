@@ -39,6 +39,7 @@ open Refine_minimal_sig
 open Term_hash_sig
 open Term_norm_sig
 open Weak_memo
+open Termmod_sig
 
 module type TermModuleHashSig =
 sig
@@ -89,5 +90,12 @@ sig
       with type meta_term_index = TermHash.meta_term_index
       with type msequent = Refine .msequent
       with type msequent_index = TermHash.msequent_index
+
+   module TermHeaderConstr (FromTerm : TermModuleSig) :
+   sig
+      val make_term_header : TermHash.t -> FromTerm.TermType.term -> TermHash.term_header
+      val make_meta_term_header : TermHash.t -> FromTerm.TermType.meta_term -> TermHash.meta_term_header
+      val make_msequent_header : TermHash.t -> FromTerm.Refine .msequent -> TermHash.msequent_header
+   end
 end
 

@@ -27,11 +27,12 @@
  *
  * Author: Yegor Bryukhov, Alexey Nogin
  *)
-open Refiner_sig
+open Termmod_sig
+open Termmod_hash_sig
 
 module TermCopyWeak
-   (FromTerm : RefinerSig)
-   (ToTerm : RefinerSig) :
+   (FromTerm : TermModuleSig)
+   (ToTerm : TermModuleHashSig) :
 sig
    (*
     * Convert terms and meta_terms from FromTerm-module to ToTerm-module
