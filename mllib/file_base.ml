@@ -219,7 +219,8 @@ struct
    let load_specific save_flag base specs arg name =
       let rec search = function
          [] ->
-            raise(Failure("Failed to find the specified format of " ^ name))
+            raise(Failure("Failed to find the specified format of " ^ name ^
+               "\nSearch path:" ^ (Lm_string_util.prepend "\n\t" base.io_path)))
        | dir::path' ->
             if !debug_file_base then
                eprintf "File_base.load_specific: try %s/%s%t" dir name eflush;

@@ -51,7 +51,6 @@ INCLUDES="\
 	-I $MP_ROOT/support/shell\
 	-I $MP_ROOT/support/tactics\
 	-I $MP_ROOT/theories/sil\
-	-I $MP_ROOT/theories/reflect_itt\
 	-I $MP_ROOT/theories/tutorial\
 	-I $MP_ROOT/theories/tptp\
 	-I $MP_ROOT/theories/fol\
@@ -89,15 +88,16 @@ INCLUDES="\
 	-I $MP_ROOT/theories/mmc/arch/ra\
 	-I $MP_ROOT/theories/mmc/arch/util\
 	-I $MP_ROOT/theories/mmc/arch/x86\
-        -I $MP_ROOT/theories/mmc/arch/ppc\
+	-I $MP_ROOT/theories/mmc/arch/ppc\
 	-I $MP_ROOT/theories/mmc/util\
 	-I $MP_ROOT/theories/mmc/main\
 	-I $MP_ROOT/theories/mmc/test\
 	-I $MP_ROOT/theories/cic\
 	-I tests\
-	-I $CAMLP4LIB"
+"
 
 DEBUGINCLUDES="$INCLUDES\
+	-I $CAMLP4LIB\
 	-I $MP_ROOT/libmojave/stdlib\
 	-I $MP_ROOT/libmojave/util\
 	-I $MP_ROOT/mllib\
@@ -111,6 +111,7 @@ DEBUGINCLUDES="$INCLUDES\
 	-I $MP_ROOT/refiner/reflib\
 	-I $MP_ROOT/tactics/proof\
 	-I $MP_ROOT/filter/base\
-	-I $MP_ROOT/filter/filter"
+	-I $MP_ROOT/filter/filter\
+"
 
 export INCLUDES DEBUGINCLUDES
