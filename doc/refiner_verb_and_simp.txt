@@ -1,12 +1,18 @@
 The "Simple" and "Verbose" versions of the refiner
 
-Most files in the refiner directory have a verbose (_verb) and a
-simple (_simp) versions.  The verbose version tries to keep track and
-raise verbose exceptions while simple version usually raises a
-"generic" exception (take a look at the REF_RAISE macro an
-refiner/refsig/refine_error.mlh).  The verbose version is great for
-debugging (and we place all debugging in the verbose version only),
-but sometimes it is much slower.  Since _verb and _simp files are
-usually very similar, we usually use a preprocessor.  If REFINER is
-defined to be VERBOSE (in mk/config) you get the verbose version and
-if it is defined to be SIMPLE, then you get the simple version.
+For each version of the term module (see term_modules.txt) two
+versions of the refiner can be built - a "simple" and a "verbose" one.
+The verbose version tries to keep track and raise verbose exceptions
+while simple version usually raises a "generic" exception (take a look
+at the REF_RAISE macro in refiner/refsig/refine_error.mlh).
+
+The verbose version is great for debugging (and we place all debugging
+in the verbose version only), but sometimes it is much slower.
+To get the verbose version, set REFINER to be VERBOSE in mk/config
+and to get the simple version, set REFINER to be SIMPLE.
+
+Since the simple and verbose versions of the refiner files are
+very similar, we use a preprocessor to generate them.
+For the verbose version, the refiner files are preprocessed
+with the VERBOSE_EXN macro defined and for the simple version -
+with the SIMPLE_EXN macro defined.
