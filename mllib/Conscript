@@ -8,7 +8,7 @@ $env = $env->clone(
 	PPFLAGS => "$env->{MP}/util/macro.cmo",
 
 	# Because of PPFLAGS, all these files must be built with macro.cmo
-	HIDDEPS => "$env->{MP}/util/macro.cmo",
+	HIDDEPS => "$env->{MP_HASH}/util/macro.cmo",
 );
 
 ## Declare the module sources in this directory that will be built
@@ -87,7 +87,7 @@ OCamlSources $env
 # These files use external symbols in $env->{MP}/clib/clib.a
 for my $mod ('getrusage', 'marshal_shared', 'mmap', 'mp_debug', 'mp_term',
              'punix', 'readline', 'string_util') {
-    Depends $env $mod.$env->{SUFOBJ}, "$env->{MP}/clib/clib.a";
+    Depends $env "$mod$env->{SUFOBJ}", "$env->{MP_HASH}/clib/clib.a";
 }
 
 OCamlLibrary $env 'mllib',

@@ -1,27 +1,31 @@
 Import qw( env );
 
-Command $env 'camlp4n', "$env->{MP}/filter/filter/camlp4n", qq(
-	%LNCOM3
+# WARNING: These must be copy commands, NOT link commands.
+# With cons, the symbolic links generated will be bogus in
+# certain circumstances.
+
+Command $env 'camlp4n', "$env->{MP_HASH}/filter/filter/camlp4n", qq(
+	%CPCOM
 );
 
-Command $env 'camlp4o', "$env->{MP}/filter/filter/camlp4o", qq(
-	%LNCOM3
+Command $env 'camlp4o', "$env->{MP_HASH}/filter/filter/camlp4o", qq(
+	%CPCOM
 );
 
-Command $env 'prlcn', "$env->{MP}/filter/filter/prlcn", qq(
-	%LNCOM3
+Command $env 'prlcn', "$env->{MP_HASH}/filter/filter/prlcn", qq(
+	%CPCOM
 );
 
-Command $env 'prlco', "$env->{MP}/filter/filter/prlco", qq(
-	%LNCOM3
+Command $env 'prlco', "$env->{MP_HASH}/filter/filter/prlco", qq(
+	%CPCOM
 );
 
-Command $env 'registry.txt', "$env->{MP}/library/registry.txt", qq(
-	%LNCOM3
+Command $env 'registry.txt', "$env->{MP_HASH}/library/registry.txt", qq(
+	%CPCOM
 );
 
-Command $env 'mbs-mpl.txt', "$env->{MP}/library/mbs-mpl.txt", qq(
-	%LNCOM3
+Command $env 'mbs-mpl.txt', "$env->{MP_HASH}/library/mbs-mpl.txt", qq(
+	%CPCOM
 );
 
 ## Add the library to the default target list

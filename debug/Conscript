@@ -1,7 +1,7 @@
 Import qw( env );
 
 $env = $env->clone(
-    INCPATH	=> [@{$env->{INCPATH}}, "#lib"]
+    INCPATH	=> [@{$env->{INCPATH}}, "$env->{MP_HASH}/lib"]
 );
 
 OCamlSources $env
@@ -13,7 +13,7 @@ OCamlLibrary $env 'debug',
 	'debug';
 
 # debug_symbols.ml uses external symbols from clib.a
-Depends $env "debug_symbols".$env->{SUFOBJ}, "#clib/clib.a";
+Depends $env "debug_symbols$env->{SUFOBJ}", "$env->{MP_HASH}/clib/clib.a";
 
 ## Add the library to the default target list
 Default qw( debug.cmxa );

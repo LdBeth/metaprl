@@ -2,8 +2,8 @@ Import qw( env );
 
 $env = $env->clone(
    INCPATH     => [@{$env->{INCPATH}},
-                   "$env->{MP}/filter/base",
-                   "$env->{MP}/filter/boot"],
+                   "$env->{MP_HASH}/filter/base",
+                   "$env->{MP_HASH}/filter/boot"],
    OCAMLC      => "$env->{OCAMLC} -I $env->{CAMLP4STDLIB}",
    OCAMLLINK   => "$env->{OCAMLLINK} -I $env->{CAMLP4STDLIB}",
    OCAMLCFLAGS => "$env->{OCAMLCFLAGS} -linkall -pp '%CAMLP4MACRO'",
@@ -41,7 +41,7 @@ OCamlSources $env
 	'prlcomp.ml';
 
 # filter_main.ml uses external symbols from clib.a
-Depends $env "filter_main$env->{SUFOBJ}", "$env->{MP}/clib/clib.a";
+Depends $env "filter_main$env->{SUFOBJ}", "$env->{MP_HASH}/clib/clib.a";
 
 OCamlLibrary $env 'filter',
 	'filter_parse',

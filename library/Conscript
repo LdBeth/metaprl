@@ -2,10 +2,10 @@ Import qw( env );
 
 $env = $env->clone(
     INCPATH => [@{$env->{INCPATH}},
-                "$env->{MP}/mllib",
-                "$env->{MP}/refiner/refbase",
-                "$env->{MP}/refiner/refsig",
-                "$env->{MP}/refiner/refiner"]
+                "$env->{MP_HASH}/mllib",
+                "$env->{MP_HASH}/refiner/refbase",
+                "$env->{MP_HASH}/refiner/refsig",
+                "$env->{MP_HASH}/refiner/refiner"]
 );
 
 OCamlSources $env

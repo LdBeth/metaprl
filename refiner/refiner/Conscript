@@ -8,7 +8,7 @@ $env = $env->clone(
     PPFLAGS => "$env->{PPFLAGS} -I$env->{MP}/refiner/refsig"
 );
 
-Command $env "refiner.ml", "$env->{MP}/mk/config", qq(
+Command $env "refiner.ml", "$env->{MP_HASH}/mk/config", qq(
    echo "module Refiner = Refiner_%TERMS.Refiner" > %>
 );
 

@@ -4,25 +4,25 @@ $env = $env->clone(
    INCPATH  => [@{$env->{INCPATH}},
 
                # MetaPRL paths.
-               "$env->{MP}/mllib",
-               "$env->{MP}/refiner/refbase",
-               "$env->{MP}/refiner/refsig",
-               "$env->{MP}/refiner/term_gen",
-               "$env->{MP}/refiner/term_ds",
-               "$env->{MP}/refiner/term_std",
-               "$env->{MP}/refiner/rewrite",
-               "$env->{MP}/refiner/refiner",
-               "$env->{MP}/refiner/reflib",
-               "$env->{MP}/library",
-               "$env->{MP}/ensemble",
-               "$env->{MP}/filter/boot",
-               "$env->{MP}/filter/base",
-               "$env->{MP}/filter/filter",
-               "$env->{MP}/theories/tactic",
-               "$env->{MP}/theories/ocaml",
-               "$env->{MP}/theories/base",
-               "$env->{MP}/theories/itt",
-               "$env->{MP}/theories/mc",
+               "$env->{MP_HASH}/mllib",
+               "$env->{MP_HASH}/refiner/refbase",
+               "$env->{MP_HASH}/refiner/refsig",
+               "$env->{MP_HASH}/refiner/term_gen",
+               "$env->{MP_HASH}/refiner/term_ds",
+               "$env->{MP_HASH}/refiner/term_std",
+               "$env->{MP_HASH}/refiner/rewrite",
+               "$env->{MP_HASH}/refiner/refiner",
+               "$env->{MP_HASH}/refiner/reflib",
+               "$env->{MP_HASH}/library",
+               "$env->{MP_HASH}/ensemble",
+               "$env->{MP_HASH}/filter/boot",
+               "$env->{MP_HASH}/filter/base",
+               "$env->{MP_HASH}/filter/filter",
+               "$env->{MP_HASH}/theories/tactic",
+               "$env->{MP_HASH}/theories/ocaml",
+               "$env->{MP_HASH}/theories/base",
+               "$env->{MP_HASH}/theories/itt",
+               "$env->{MP_HASH}/theories/mc",
 
                # MC paths.
                "$env->{MC}/lib/naml/stdlib",
@@ -68,11 +68,11 @@ $env = $env->clone(
    CCLIBS => "-cclib $env->{MP}/clib/clib.a",
 
    # Files compiled with prlc implicitly depend on these files and modules.
-   HIDDEPS => "$env->{MP}/filter/filter/prlc",
+   HIDDEPS => "$env->{MP_HASH}/filter/filter/prlc",
    HIDMODDEPS => "Printf Mp_debug Refiner Refine_exn Term Term_util Theory Dform Dform_print Tactic Mp_resource Precedence Filter_summary",
 );
 
-Command $env 'mp_version.ml', "$env->{MP}/mk/config", qq(
+Command $env 'mp_version.ml', "$env->{MP_HASH}/mk/config", qq(
    echo -n 'let version = "'"MetaPRL %MP_VERSION:\\n\\t\\tbuild [`LC_ALL=C LANG=C date`]\\n\\t\\ton `hostname`\\n\\t\\tUses %REFINER Refiner_%TERMS"'"' > %>
 );
 
@@ -103,7 +103,7 @@ OCamlSources $env
 
 # These files use external symbols in $env->{MP}/clib/clib.a.
 for my $mod ('mp_top', 'shell', 'shell_mp') {
-    Depends $env $mod.$env->{SUFOBJ}, "$env->{MP}/clib/clib.a";
+    Depends $env "$mod$env->{SUFOBJ}", "$env->{MP_HASH}/clib/clib.a";
 }
 
 OCamlProgram $env 'mp.opt', 'Itt_theory', 'Itt_record_exm', 'Mp_mc_theory', 'mp_top';
