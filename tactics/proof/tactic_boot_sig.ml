@@ -914,13 +914,17 @@ sig
    val onMHypsT : int list -> (int -> tactic) -> tactic
 
    val onAllHypsT : (int -> tactic) -> tactic
+   val onAllCumulativeHypsT : (int -> tactic) -> tactic
    val onAllClausesT : (int -> tactic) -> tactic
    val tryOnAllHypsT : (int -> tactic) -> tactic
+   val tryOnAllCumulativeHypsT : (int -> tactic) -> tactic
    val tryOnAllClausesT : (int -> tactic) -> tactic
 
    val onAllMHypsT : (int -> tactic) -> tactic
+   val onAllMCumulativeHypsT : (int -> tactic) -> tactic
    val onAllMClausesOfAssumT : (int -> int -> tactic) -> int -> tactic
    val tryOnAllMHypsT : (int -> tactic) -> tactic
+   val tryOnAllMCumulativeHypsT : (int -> tactic) -> tactic
    val tryOnAllMClausesT : (int -> tactic) -> tactic
    val onAllAssumT : (int -> tactic) -> tactic
    val onAllMAssumT : (int -> tactic) -> tactic

@@ -46,6 +46,13 @@ open Sequent_boot
 let _ =
    show_loading "Loading Tacticals_boot%t"
 
+let debug_subgoals =
+   create_debug (**)
+      { debug_name = "subgoals";
+        debug_description = "Report subgoals observed with may be some additional info";
+        debug_value = false
+      }
+
 module Tacticals =
 struct
    (************************************************************************
@@ -69,7 +76,7 @@ struct
    let cutT = TacticInternal.cutT
    let funT = TacticInternal.funT
    let argfunT = TacticInternal.argfunT
-   
+
    let failT =
       funT (fun _ -> raise (RefineError ("failT", StringError "Fail")))
 
@@ -345,11 +352,15 @@ struct
    let ifMT tac =
       funT (fun p -> if List.mem (Sequent.label p) main_labels then tac else idT)
 
+	let wfLabel="wf"
+
    let ifWT tac =
-      ifLabT "wf" tac idT
+      ifLabT wfLabel tac idT
+
+   let eqLabel="equality"
 
    let ifET tac =
-      ifLabT "equality" tac idT
+      ifLabT eqLabel tac idT
 
    let ifAT tac =
       funT (fun p -> if List.mem (Sequent.label p) main_labels then idT else tac)
@@ -360,23 +371,76 @@ struct
    (*
     * Label tacticals.
     *)
-   let prefix_thenLabLT tac1 tacs =
-      prefix_thenT tac1 (ifLabLT tacs)
+   let emptyLabel=""
+
+   let ifLabelPredT pred tac1' tac2' = funT (fun p ->
+      if pred (Sequent.label p) then
+         tac1'
+      else
+         tac2')
+
+   let thenIfLabelPredT pred tac1 tac2 tac3 = funT (fun p ->
+      let prefer l1 l2 =
+         if l2=emptyLabel then l1
+         else l2 in
+      let restoreHiddenLabelT = argfunT (fun l p ->
+         addHiddenLabelT (prefer l (Sequent.label p)))
+      in
+      let label = Sequent.label p in
+      prefix_thenT
+      	(prefix_thenT
+      		(prefix_thenT (addHiddenLabelT emptyLabel)
+      				  		  tac1)
+      		(ifLabelPredT pred tac2 tac3))
+			(restoreHiddenLabelT label))
+
+   let isEmptyOrMainLabel l =
+      (l=emptyLabel) or (List.mem l main_labels)
+
+   let isEmptyOrAuxLabel l =
+      (l=emptyLabel) or not (List.mem l main_labels)
+
+   let isWFLabel l =
+      (l=wfLabel)
+
+   let isEqualityLabel l =
+      (l=eqLabel)
+
+   let isPredicateLabel l =
+      (List.mem l predicate_labels)
 
    let prefix_thenMT tac1 tac2 =
-      prefix_thenT tac1 (ifMT tac2)
+      thenIfLabelPredT isEmptyOrMainLabel tac1 tac2 idT
+
+   let prefix_thenMElseT tac1 tac2 tac3 =
+      thenIfLabelPredT isEmptyOrMainLabel tac1 tac2 tac3
 
    let prefix_thenAT tac1 tac2 =
-      prefix_thenT tac1 (ifAT tac2)
+      thenIfLabelPredT isEmptyOrAuxLabel tac1 tac2 idT
 
    let prefix_thenWT tac1 tac2 =
-      prefix_thenT tac1 (ifWT tac2)
+      thenIfLabelPredT isWFLabel tac1 tac2 idT
 
    let prefix_thenET tac1 tac2 =
-      prefix_thenT tac1 (ifET tac2)
+      thenIfLabelPredT isEqualityLabel tac1 tac2 idT
 
    let prefix_thenPT tac1 tac2 =
-      prefix_thenT tac1 (ifPT tac2)
+      thenIfLabelPredT isPredicateLabel tac1 tac2 idT
+
+   let prefix_thenLabLT tac1 tacs = funT (fun p ->
+      let prefer l1 l2 =
+         if l2=emptyLabel then l1
+         else l2 in
+      let restoreHiddenLabelT = argfunT (fun l p ->
+         addHiddenLabelT (prefer l (Sequent.label p)))
+      in
+      let label = Sequent.label p in
+      prefix_thenT
+      	(prefix_thenT
+      		(prefix_thenT (addHiddenLabelT emptyLabel)
+      				  		  tac1)
+      		(ifLabLT tacs))
+			(restoreHiddenLabelT label))
 
    (*
     * Apply the tactic list only to the specified subgoals.
@@ -401,10 +465,10 @@ struct
          prefix_thenFLT tac1 (aux tacs)
 
    let prefix_thenMLT =
-      thenLLT (function l -> List.mem l main_labels)
+      thenLLT (function l -> isEmptyOrMainLabel l)
 
    let prefix_thenALT =
-      thenLLT (function l -> not (List.mem l main_labels))
+      thenLLT (function l -> isEmptyOrAuxLabel l)
 
    (************************************************************************
     * LABEL PROGRESS                                                       *
@@ -543,11 +607,23 @@ struct
       else
          idT
 
+   let onAllCumulativeT thenT tac =
+   	let rec aux i p =
+         if i <= (Sequent.hyp_count p) then
+            thenT (tac i) (funT (aux (succ i)))
+         else
+            idT
+      in
+         funT (aux 1)
+
    (*
     * Work on all hyps.
     *)
    let onAllHypsT tac =
       funT (fun p -> onAllT prefix_thenT tac (Sequent.hyp_count p))
+
+	let onAllCumulativeHypsT tac =
+		funT (fun p -> onAllCumulativeT prefix_thenT tac)
 
    (*
     * Include conclusion.
@@ -566,6 +642,9 @@ struct
    let tryOnAllHypsT tac =
       onAllHypsT (function i -> tryT (tac i))
 
+   let tryOnAllCumulativeHypsT tac =
+      onAllCumulativeHypsT (function i -> tryT (tac i))
+
    let tryOnAllClausesT tac =
       onAllClausesT (function i -> tryT (tac i))
 
@@ -575,13 +654,19 @@ struct
    let onAllMHypsT tac =
       funT (fun p -> onAllT prefix_thenMT tac (Sequent.hyp_count p))
 
+	let onAllMCumulativeHypsT tac =
+		funT (fun p -> onAllCumulativeT prefix_thenMT tac)
+
+   let tryOnAllMCumulativeHypsT tac =
+      onAllMHypsT (function i -> tryT (tac i))
+
    let tryOnAllMHypsT tac =
       onAllMHypsT (function i -> tryT (tac i))
 
    let tryOnAllMClausesT tac =
       funT (fun p ->
-         prefix_thenMT 
-            (onAllT prefix_thenMT (function i -> tryT (tac i)) (Sequent.hyp_count p)) 
+         prefix_thenMT
+            (onAllT prefix_thenMT (function i -> tryT (tac i)) (Sequent.hyp_count p))
             (tryT (onConclT tac))
       )
 
@@ -590,7 +675,7 @@ struct
     *)
    let onAllAssumT tac =
       let rec all i assums =
-         funT (fun p -> 
+         funT (fun p ->
             match assums with
                _ :: assums ->
                   prefix_thenT (tac i) (all (succ i) assums)
@@ -602,8 +687,8 @@ struct
 
    let onAllMClausesOfAssumT tac assum =
       funT (fun p ->
-         prefix_thenMT 
-            (onAllT prefix_thenMT (tac assum) (Sequent.assum_hyp_count p assum)) 
+         prefix_thenMT
+            (onAllT prefix_thenMT (tac assum) (Sequent.assum_hyp_count p assum))
             (onConclT (tac assum))
       )
 
