@@ -12,21 +12,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *
@@ -57,9 +57,11 @@ val get_mode_base : dform_mode_base -> string -> dform_base
 val join_mode_base : dform_mode_base ref -> dform_mode_base -> unit
 
 (*
- * Add a dform to the mode base, with a given mode.
+ * Add a dform to the mode base, with a given modes.
  *)
-val create_dform : dform_mode_base ref -> string list -> dform_info -> unit
+val create_dform_modes : string list -> dform_mode_base ref -> dform_info -> unit
+val create_dform_except_modes : string list -> dform_mode_base ref -> dform_info -> unit
+val create_dform_all : dform_mode_base ref -> dform_info -> unit
 
 (*
  * Destruction.

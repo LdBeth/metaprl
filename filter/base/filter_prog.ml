@@ -359,8 +359,14 @@ let dform_inherit_prec_expr loc =
 let dform_inherit_prec_expr loc =
    <:expr< $uid:"Dform"$ . $uid:"DFormInheritPrec"$ >>
 
-let create_dform_expr loc =
-   <:expr< $uid:"Dform_print"$ . $lid:"create_dform"$ >>
+let create_dform_modes_expr loc =
+   <:expr< $uid:"Dform_print"$ . $lid:"create_dform_modes"$ >>
+
+let create_dform_except_modes_expr loc =
+   <:expr< $uid:"Dform_print"$ . $lid:"create_dform_except_modes"$ >>
+
+let create_dform_all_expr loc =
+   <:expr< $uid:"Dform_print"$ . $lid:"create_dform_all"$ >>
 
 let refiner_id = "refiner"
 let dformer_id = "dformer"
@@ -1823,10 +1829,17 @@ struct
       in
          (checkpoint_resources proc loc name) @ [name_rule_let; name_let; refiner_let loc (* ; refiner_let_name loc name *)]
 
+   let create_dform_expr loc modes =
+      let string_expr s = <:expr< $str:s$ >> in
+      match modes with
+         Modes modes -> <:expr< $create_dform_modes_expr loc$ $list_expr loc string_expr modes$ >>
+       | ExceptModes modes -> <:expr< $create_dform_except_modes_expr loc$ $list_expr loc string_expr modes$ >>
+       | AllModes -> create_dform_all_expr loc
+
    (*
     * Define a display form expansion.
     *
-    * create_dform dformer [modes]
+    * create_dform{_modes,_except_modes,_all} [modes] dformer
     *    { dform_pattern = t;
     *      dform_options = [options];
     *      dform_print = DFormExpansion expansion
@@ -1839,9 +1852,7 @@ struct
          dform_redex = t
        }
        expansion =
-      let string_expr s = <:expr< $str:s$ >> in
       let name_expr = <:expr< $str: name$ >> in
-      let modes_expr = list_expr loc string_expr modes in
       let options_expr = list_expr loc (dform_option_expr loc) options in
       let expansion_expr = <:expr< $dform_expansion_expr loc$ $expr_of_term loc expansion$ >> in
       let t_expr = expr_of_term loc t in
@@ -1851,7 +1862,7 @@ struct
                            dform_options_expr loc, options_expr;
                            dform_print_expr loc, expansion_expr ]$ } >>
       in
-      let expr = <:expr< $create_dform_expr loc$ $lid:local_dformer_id$ $modes_expr$ $rec_value$ >> in
+      let expr = <:expr< $create_dform_expr loc modes$ $lid:local_dformer_id$ $rec_value$ >> in
       let name = string_of_opname (opname_of_term t) in
          [<:str_item< $exp: wrap_exn loc name expr$ >>]
 
@@ -1914,10 +1925,11 @@ struct
     *                } =
     *       code
     *    in
-    *       create_dform name [modes] { dform_pattern = t;
-    *                                   dform_options = [options];
-    *                                   dform_print = DFormPrinter printer
-    *                                 }
+    *       create_dform{_modes,_except_modes,_all} [modes] name
+    *          { dform_pattern = t;
+    *            dform_options = [options];
+    *            dform_print = DFormPrinter printer
+    *          }
     *)
    let define_ml_dform proc loc
        { dform_name = name;
@@ -1933,7 +1945,6 @@ struct
       (* Dform info *)
       let string_expr s = <:expr< $str:s$ >> in
       let name_expr = <:expr< $str: name$ >> in
-      let modes_expr = list_expr loc string_expr modes in
       let options_expr = list_expr loc (dform_option_expr loc) options in
 
       (* Identifier names *)
@@ -1964,7 +1975,7 @@ struct
                            dform_print_expr loc, dprinter ]$ } >>
       in
       let body_expr =
-         <:expr< $create_dform_expr loc$ $lid:local_dformer_id$ $modes_expr$ $rec_value$ >>
+         <:expr< $create_dform_expr loc modes$ $lid:local_dformer_id$ $rec_value$ >>
       in
       let dprinter_rec_patt =
          <:patt< { $list:[ dform_term_patt loc, term_patt;

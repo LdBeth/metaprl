@@ -114,7 +114,7 @@ val edit_list_module_all : string -> string list
 val edit_list_module : string -> string list * string list * string list * string list
 val edit_list_module_rw : string -> string list
 val edit_list_parents : string -> string list
-val edit_list_dforms : string -> (string * string list * term list * term * term) list
+val edit_list_dforms : string -> (string * Filter_type.dform_modes * term list * term * term) list
 val edit_list_precs : string -> term list
 val edit_list_prec_rels : string -> (string * term * term) list
 val edit_create_thm : string -> string -> unit

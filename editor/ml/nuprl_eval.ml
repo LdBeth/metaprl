@@ -60,15 +60,15 @@ module Nuprl = struct
   let connection = null_oref()
 
   let library_close () =
-    if oref_p library then 
+    if oref_p library then
       (leave (oref_val library);
        disconnect (oref_val connection);
        oref_nullify library)
     else raise (LibraryException "Close: No library open.")
 
   let lib_open_eval env ehook host localport remoteport =
- (* eprintf "%s %d %d %t" host localport remoteport eflush; *)  
-    if oref_p library then 
+ (* eprintf "%s %d %d %t" host localport remoteport eflush; *)
+    if oref_p library then
       raise (LibraryException "Open: Library already open.")
     else let _ = oref_set library (join_eval (oref_set connection (connect host localport remoteport))
 				     [env]
@@ -239,7 +239,7 @@ module Nuprl = struct
     unconditional_error_handler
       (function () ->
 	(function t ->
-    (* used in undo and lookup cmds *) 
+    (* used in undo and lookup cmds *)
 	  let current_shell = ref (get_current_shell ()) in
 	  let rec visit_proof root_il =
 	    let (tac, goal, subgoals, extras) = edit_node !current_shell root_il in
@@ -268,7 +268,7 @@ module Nuprl = struct
   (* node not needed at command call level*)
   (*| {term_op = op; term_terms = addr :: tac :: r } when (opeq op mp_node_op) ->
      let (goal, subgoals, extras) =
-     edit_refine !current_shell 
+     edit_refine !current_shell
      (int_list_of_term (term_of_unbound_term addr))
      (string_of_itext_term tac)
      in
@@ -288,10 +288,10 @@ module Nuprl = struct
 		   (*(Hashtbl.add Toploop.directive_table "natp1" (Toploop.Directive_int (let natp1 d = returnval := inatural_term (1 + d) in natp1)) [])*)
 		   (* could have library write to file since coding for pretty printing
                       already exists *)
-		   (*  (output_to_file mp_compile_ml_file text; 
+		   (*  (output_to_file mp_compile_ml_file text;
 		      output_to_file mp_compile_ml_file mli_text;
-		      Unix.system "sh -c make"; 
-		   *)   
+		      Unix.system "sh -c make";
+		   *)
 	      ivoid_term
 	  | {term_op = op; term_terms = symaddr :: r } when (opeq op mp_save_op) ->
 	      ((*let (b, c) = term_to_symaddr (term_of_unbound_term symaddr) in
@@ -339,7 +339,8 @@ module Nuprl = struct
 	      let f = function (n, modes, attr, model, formats) ->
 		(ipair_term (itoken_term n)
 		   (idform_term (list_to_ilist_by_op idform_attr_op
-				   ((list_to_ilist_by_op imode_cons_op (map itoken_term modes)) :: attr))
+				(* ((list_to_ilist_by_op imode_cons_op (map itoken_term modes)) :: attr)) *)
+				   ((list_to_ilist_by_op imode_cons_op []) :: attr))
 		      formats
 		      model))
 	      in
@@ -360,8 +361,8 @@ module Nuprl = struct
 	     let (assums, goal) = term_to_msequent (term_of_unbound_term mseq) in
 	     (eprintf "setting goal %s %s %t" (hd (tl l)) (hd (tl (tl l))) eflush;
 	      eprintf "TO: %a/%t" print_term goal eflush;
-	      edit_set_goal !current_shell (hd (tl l)) (hd (tl (tl l))) goal; 
-	      set_assumptions !current_shell assums; 
+	      edit_set_goal !current_shell (hd (tl l)) (hd (tl (tl l))) goal;
+	      set_assumptions !current_shell assums;
 	      current_shell := get_current_shell ();
 	      save !current_shell;
 	      current_shell := get_current_shell ();
@@ -411,18 +412,18 @@ module Nuprl = struct
     (function term -> (function t -> (ifail_term term)))
 
   let library_open_eval name rhook =
-    if not (oref_p library) then 
+    if not (oref_p library) then
       let host = Sys.getenv "NUPRLLIB_HOST"
       and port = int_of_string (Sys.getenv "NUPRLLIB_PORT")
       and mport = int_of_string (Sys.getenv "MPLIB_PORT") in
       print_string "before lib_open_eval";
       try (lib_open_eval name rhook host port mport); ()
-      with e -> (lib_open_eval name rhook host port (mport+2)); 
+      with e -> (lib_open_eval name rhook host port (mport+2));
 	()
-   
+
   let library_open_eval' port mport host name rhook =
-    if not (oref_p library) then 
-      lib_open_eval name rhook host port mport; 
+    if not (oref_p library) then
+      lib_open_eval name rhook host port mport;
     ()
 
   let library_loop_eval () =

@@ -199,7 +199,7 @@ sig
    val edit_list_module : t -> string -> string list * string list * string list * string list
    val edit_list_module_rw : t -> string -> string list
    val edit_list_parents : t -> string -> string list
-   val edit_list_dforms : t -> string -> (string * string list * term list * term * term) list
+   val edit_list_dforms : t -> string -> (string * Filter_type.dform_modes * term list * term * term) list
    val edit_list_precs : t -> string -> term list
    val edit_list_prec_rels : t -> string -> (string * term * term) list
    val edit_create_thm : t -> string -> string -> unit

@@ -301,7 +301,7 @@ struct
       ["lzone"; "hzone"; "szone"; "izone"; "tzone"; "ezone";
        "hbreak"; "sbreak"; "space"; "hspace"; "newline";
        "pushm"; "popm"; "pushfont"; "popfont";
-       "parens"; "prec"; "internal"; "mode"; "slot";
+       "parens"; "prec"; "internal"; "mode"; "except_mode"; "slot";
        "sequent"; "hyp"; "concl"; "var"; "context"]
 
    (*

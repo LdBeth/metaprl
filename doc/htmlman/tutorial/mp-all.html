@@ -54,7 +54,7 @@ and display forms.</P>
 
 <B><TT>declare</TT></B><TT> univ</TT>
 
-<B><TT>dform</TT></B><TT> univ_df : univ = `&quot;Univ&quot;</TT></PRE>
+<B><TT>dform</TT></B><TT> univ_df : except_mode[src] :: univ = `&quot;Univ&quot;</TT></PRE>
   </BLOCKQUOTE>
 </BLOCKQUOTE>
 
@@ -152,7 +152,7 @@ the standard form.</P>
 
 <B>prec</B> prec_all
 
-<B>dform</B> all_df : parens :: &quot;prec&quot;[&quot;prec_all&quot;] :: &quot;all&quot;{x. 'B} =
+<B>dform</B> all_df : except_mode[src] :: parens :: &quot;prec&quot;[&quot;prec_all&quot;] :: &quot;all&quot;{x. 'B} =
    szone pushm[3] forall slot{'x} `&quot;.&quot; hspace slot{'B} popm ezone</PRE>
   </BLOCKQUOTE>
 </BLOCKQUOTE>

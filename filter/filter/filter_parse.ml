@@ -77,6 +77,13 @@ let debug_filter_parse =
         debug_value = false
       }
 
+let debug_dform =
+   create_debug (**)
+      { debug_name = "dform";
+        debug_description = "show display form formatting";
+        debug_value = false
+      }
+
 (************************************************************************
  * PATHS                                                                *
  ************************************************************************)
@@ -560,33 +567,32 @@ struct
       let rec compile_options = function
          hd::tl ->
             begin
-               let modes, options = compile_options tl in
+               let modes, except_modes, options = compile_options tl in
                   match Opname.dest_opname (opname_of_term hd) with
                      "parens" :: _ ->
-                        modes, DFormParens :: options
+                        modes, except_modes, DFormParens :: options
                    | "prec" :: _ ->
-                        modes, (DFormPrec (get_string_param loc hd)) :: options
+                        modes, except_modes, (DFormPrec (get_string_param loc hd)) :: options
                    | "inherit" :: _ ->
-                        modes, DFormParens :: options
+                        modes, except_modes, DFormParens :: options
                    | "internal" :: _ ->
-                        modes, DFormInternal :: options
+                        modes, except_modes, DFormInternal :: options
                    | "mode" :: _ ->
-                        (get_string_param loc hd)::modes, options
+                        (get_string_param loc hd)::modes, except_modes, options
+                   | "except_mode" :: _ ->
+                        modes, (get_string_param loc hd)::except_modes, options
                    | _ ->
-                        eprintf "warning: unknown option %s%t" (string_of_term hd) eflush;
-                        modes, options
+                        eprintf "warning: unknown display form option %s%t" (string_of_term hd) eflush;
+                        modes, except_modes, options
             end
        | [] ->
-            [], []
+            [], [], []
       in
-      let modes, options = compile_options options in
-      let modes' =
-         if modes = [] then
-            ["all"]
-         else
-            modes
-      in
-         modes, List.rev options
+      match compile_options options with
+         [], [], options -> AllModes, List.rev options
+       | modes, [], options -> Modes modes, List.rev options
+       | [], except_modes, options -> ExceptModes except_modes, List.rev options
+       | _ -> Stdpp.raise_with_loc loc (Failure "Both \"mode\" and \"except_mode\" flags on the same display form")
 
    (*
     * Dform declaration.
@@ -614,6 +620,7 @@ struct
     *)
    let define_dform proc loc name options t expansion =
       let modes, options' = get_dform_options proc loc options in
+         if (!debug_dform) && (modes=AllModes) then eprintf "Warning: display form %s - no modes specified%t" name eflush;
          FilterCache.add_command proc.cache (DForm { dform_name = name;
                                                      dform_modes = modes;
                                                      dform_options = options';
@@ -628,6 +635,7 @@ struct
     *)
    let define_ml_dform proc loc name options t printer buffer code =
       let modes, options' = get_dform_options proc loc options in
+      if (!debug_dform) && (modes=AllModes) then eprintf "Warning: ML display form %s - no modes specified%t" name eflush;
       let ml_def =
          { dform_ml_printer = printer;
            dform_ml_buffer = buffer;

@@ -91,11 +91,11 @@ on the order for the precedences <TT>prec_lambda &lt; prec_implies
 <BLOCKQUOTE>
   <P>4. <I>Add display forms for each of the terms in </I><TT>Fol_implies</TT><I>:</I></P>
   <BLOCKQUOTE>
-    <PRE><B>dform</B> implies_df : parens :: &quot;prec&quot;[&quot;prec_implies&quot;] :: implies{'A; 'B} =
+    <PRE><B>dform</B> implies_df : except_mode[src] :: parens :: &quot;prec&quot;[&quot;prec_implies&quot;] :: implies{'A; 'B} =
    szone pushm[0] slot{'A} hspace Rightarrow `&quot; &quot; slot{'B} popm ezone
-<B>dform</B> lambda_df : parens :: &quot;prec&quot;[&quot;prec_lambda&quot;] :: lambda{x. 'b} =
+<B>dform</B> lambda_df : except_mode[src] :: parens :: &quot;prec&quot;[&quot;prec_lambda&quot;] :: lambda{x. 'b} =
    szone pushm[3] Nuprl_font!lambda slot{'x} `&quot;.&quot; slot{'b} popm ezone
-<B>dform</B> apply_df : parens :: &quot;prec&quot;[&quot;prec_apply&quot;] :: apply{'f; 'a} =
+<B>dform</B> apply_df : except_mode[src] :: parens :: &quot;prec&quot;[&quot;prec_apply&quot;] :: apply{'f; 'a} =
    slot{'f} hspace slot{'a}</PRE>
   </BLOCKQUOTE>
 </BLOCKQUOTE>

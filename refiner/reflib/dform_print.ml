@@ -12,21 +12,21 @@
  * OCaml, and more information about this system.
  *
  * Copyright (C) 1998 Jason Hickey, Cornell University
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *
@@ -129,7 +129,7 @@ let join_mode_base base1 base2 =
 (*
  * A new form is added to a specific collection of modes.
  *)
-let create_dform b modes info =
+let create_dform all include_mode mode_names b info =
    (* See if any new modes are created *)
    let { all_base = all_base; mode_bases = mode_bases } = !b in
    let rec compute_new_mode_bases mode_bases' = function
@@ -142,31 +142,29 @@ let create_dform b modes info =
     | [] ->
          mode_bases'
    in
-   let mode_bases' = compute_new_mode_bases mode_bases modes in
+   let mode_bases' = compute_new_mode_bases mode_bases mode_names in
 
-   (* Base addition *)
-   let add_base (name, base) =
-      name, add_dform base info
-   in
+   (* Conditional addition *)
    let cond_add_base ((name, base) as entry) =
-      if List.mem name modes then
+      if include_mode name then
          name, add_dform base info
       else
          entry
    in
-   let newbase =
-      if modes = [] then
-         (* Just add to all the modes *)
-         { all_base = add_dform all_base info;
-           mode_bases = List.map add_base mode_bases'
-         }
-      else
-         (* Conditionalluy add to modes *)
-         { all_base = all_base;
-           mode_bases = List.map cond_add_base mode_bases'
-         }
-   in
-      b := newbase
+   b:=
+      (* Conditionally add to all the modes *)
+      { all_base = if all then add_dform all_base info else all_base;
+        mode_bases = List.map cond_add_base mode_bases'
+      }
+
+let create_dform_modes l =
+   create_dform false (fun n -> List.mem n l) l
+
+let create_dform_except_modes l =
+   create_dform true (fun n -> not (List.mem n l)) l
+
+let create_dform_all =
+   create_dform true (fun _ -> true) []
 
 (*
  * -*-

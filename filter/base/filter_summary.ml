@@ -836,14 +836,16 @@ struct
    (*
     * Dform options.
     *)
-   let dform_inherit_op  = mk_opname "inherit_df"
-   let dform_prec_op     = mk_opname "prec_df"
-   let dform_parens_op   = mk_opname "parens_df"
-   let dform_internal_op = mk_opname "internal_df"
-   let dform_mode_op     = mk_opname "mode_df"
+   let dform_inherit_op     = mk_opname "inherit_df"
+   let dform_prec_op        = mk_opname "prec_df"
+   let dform_parens_op      = mk_opname "parens_df"
+   let dform_internal_op    = mk_opname "internal_df"
+   let dform_mode_op        = mk_opname "mode_df"
+   let dform_except_mode_op = mk_opname "except_mode_df"
 
    let dest_dform_opt tl =
       let modes = ref [] in
+      let except = ref [] in
       let options = ref [] in
       let push l x = l := x :: !l in
       let dest_opt t =
@@ -856,13 +858,20 @@ struct
                push options DFormParens
             else if Opname.eq opname dform_internal_op then
                push options DFormInternal
-            else if Opname.eq opname dform_mode_op then
+            else if Opname.eq opname dform_mode_op && (!except)=[] then
                push modes (dest_string_param t)
+            else if Opname.eq opname dform_except_mode_op && (!modes)=[] then
+               push except (dest_string_param t)
             else
-               raise (Failure "Dform option is not valid")
+               raise (Invalid_argument "Dform option is not valid")
       in
          List.iter dest_opt tl;
-         List.rev !modes, List.rev !options
+         begin match !modes, !except with
+            [], [] -> AllModes
+          | [], except -> ExceptModes except
+          | modes, [] -> Modes modes
+          | _ -> raise (Invalid_argument "dest_dform_opt")
+         end, List.rev !options
 
    (*
     * Dform definitions.
@@ -1299,6 +1308,9 @@ struct
    let mk_dform_mode mode =
       mk_string_param_term dform_mode_op mode []
 
+   let mk_dform_except_mode mode =
+      mk_string_param_term dform_except_mode_op mode []
+
    let mk_dform_opt = function
       DFormInheritPrec ->
          mk_simple_term dform_prec_op []
@@ -1453,7 +1465,11 @@ struct
                                dform_redex = redex;
                                dform_def = def
        } =
-      let modes = List.map mk_dform_mode modes in
+      let modes = match modes with
+         Modes modes -> List.map mk_dform_mode modes
+       | ExceptModes modes -> List.map mk_dform_except_mode modes
+       | AllModes -> []
+      in
       let options = List.map mk_dform_opt options in
          mk_string_param_term dform_op name [mk_xlist_term (modes @ options);
                                              convert.term_f redex;

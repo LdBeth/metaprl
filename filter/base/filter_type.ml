@@ -148,13 +148,18 @@ and 'term opname_info =
      opname_term : 'term
    }
 
+and dform_modes =
+   Modes of string list       (* include these modes *)
+ | ExceptModes of string list (* exclude these modes *)
+ | AllModes
+
 (*
  * Dform descriptions.
  * The definition is not required in the interface.
  *)
 and ('term, 'expr) dform_info =
    { dform_name : string;
-     dform_modes : string list;
+     dform_modes : dform_modes;
      dform_options : dform_option list;
      dform_redex : 'term;
      dform_def : ('term, 'expr) dform_def
