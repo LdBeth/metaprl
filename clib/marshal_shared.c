@@ -32,7 +32,7 @@
 
 #ifdef __GNUC__
 #pragma implementation
-#endif __GNUC__
+#endif /* __GNUC__ */
 
 #include <caml/memory.h>
 #include <caml/mlvalues.h>
@@ -84,6 +84,9 @@ value ml_pointer_hash_lookup(value table, value weak_array, value obj)
  *
  *
  * $Log$
+ * Revision 1.2  2001/05/14 20:53:50  nogin
+ * Cosmetic changes to avoid warnings with newer versions of GCC.
+ *
  * Revision 1.1  1999/05/03 12:11:20  jyh
  * Added an initial incomplete version of the distributed marshaler.
  *

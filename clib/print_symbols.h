@@ -40,10 +40,10 @@
 
 #ifdef __GNUC__
 #pragma interface
-#endif __GNUC__
+#endif /* __GNUC__ */
 
 value function_symbols;
 value ml_extern_symbols(value symbols);
 void print_symbol(int pc);
 
-#endif _PRINT_SYMBOLS_H
+#endif /* _PRINT_SYMBOLS_H */

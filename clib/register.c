@@ -37,7 +37,7 @@
 
 #ifdef __GNUC__
 #pragma implementation
-#endif __GNUC__
+#endif /* __GNUC__ */
 
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>

@@ -10,16 +10,16 @@
  * Copyright (C) 1997 Cornell University
  *
  * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License 
+ * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful, 
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
+ * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
@@ -30,7 +30,7 @@
 
 #ifdef __GNUC__
 #pragma implementation
-#endif __GNUC__
+#endif /* __GNUC__ */
 
 /* Standard includes */
 #include <stdio.h>
@@ -41,7 +41,7 @@
 /* Windows include files */
 #  include <windows.h>
 
-#else _WIN32
+#else /* _WIN32 */
 
 /* Unix include files */
 #  include <unistd.h>
@@ -50,7 +50,7 @@
 #  include <sys/stat.h>
 #  include <sys/mman.h>
 #  include <fcntl.h>
-#endif _WIN32
+#endif /* _WIN32 */
 
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
@@ -73,9 +73,9 @@ extern void failwith(const char *s);
 typedef struct mmap {
 #ifdef _WIN32
     HANDLE fd, map;
-#else _WIN32
+#else /* _WIN32 */
     int fd;
-#endif _WIN32
+#endif /* _WIN32 */
     int size;
     char *data;
 } Mmap;
@@ -159,7 +159,7 @@ static Mmap *mmap_open(const char *name, int perm, int mode,
     infop->size = mapped;
     infop->data = data;
 
-#else _WIN32             
+#else /* _WIN32 */
     struct stat buf;
 
     /* Open the file and get the existing size */
@@ -198,7 +198,7 @@ static Mmap *mmap_open(const char *name, int perm, int mode,
         free(infop);
         failwith("mmap");
     }
-#endif _WIN32
+#endif /* _WIN32 */
 
     return infop;
 }
@@ -216,13 +216,13 @@ static void mmap_close(Mmap *mmap)
     CloseHandle(mmap->map);
     CloseHandle(mmap->fd);
 
-#else _WIN32
+#else /* _WIN32 */
     munmap(mmap->data, MAX_SIZE);
     ftruncate(mmap->fd, mmap->size);
     fprintf(stderr, "mmap_close: %d\n", mmap->fd);
     close(mmap->fd);
 
-#endif _WIN32
+#endif /* _WIN32 */
     free(mmap);
 }
 
@@ -239,9 +239,9 @@ value ml_mmap_open(value name, value perms, value mode)
     append = 0;
 #ifdef _WIN32
     flags = OPEN_EXISTING;
-#else
+#else /* _WIN32 */
     flags = 0;
-#endif
+#endif /* _WIN32 */
     while(perms != Val_int(0)) {
         switch(Int_val(Field(perms, 0))) {
         case 0:
@@ -298,7 +298,7 @@ value ml_mmap_open(value name, value perms, value mode)
         }
         perms = Field(perms, 1);
     }
-            
+
     /* Return the C struct */
     return (value) mmap_open(String_val(name), perm, Int_val(mode), append, 0, flags);
 }

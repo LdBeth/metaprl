@@ -7,6 +7,6 @@
 
 #ifdef __GNUC__
 #pragma interface
-#endif __GNUC__
+#endif /* __GNUC__ */
 
-#endif _DEBUG_H
+#endif /* _DEBUG_H */
