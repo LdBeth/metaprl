@@ -101,20 +101,24 @@ depend: check_config
 		if (echo Making $$i...; cd $$i && touch Makefile.dep && $(MAKE) $@); then true; else exit 1; fi;\
 	done
 
-mk/config: mk/config.init
-	cat mk/config.init >> mk/config
+mk/config: mk/make_config.sh
+	TERMS=$(TERMS) REFINER=$(REFINER) MAKE_JOBS=$(MAKE_JOBS) SEQ_SET=$(SEQ_SET) mk/make_config.sh > mk/config
 
 check_config::
 	@if [ $(TERMS) != ds -a $(TERMS) != std ]; then\
-		echo "ERROR: Invalid TERMS variable, check mk/config file"; \
+		echo "ERROR: Invalid TERMS variable, edit mk/config file"; \
 		exit 1; \
 	fi
 	@if [ $(REFINER) != SIMPLE -a $(REFINER) != VERBOSE ]; then\
-		echo "ERROR: Invalid REFINER variable, check mk/config file"; \
+		echo "ERROR: Invalid REFINER variable, edit mk/config file"; \
 		exit 1; \
 	fi
 	@if [ $(MAKE_JOBS) = undefined ]; then\
-		echo "ERROR: Undefined MAKE_JOBS variable, check mk/config file"; \
+		echo "ERROR: Undefined MAKE_JOBS variable, edit mk/config file"; \
+		exit 1; \
+	fi
+	@if [ $(SEQ_SET) != Array -a $(SEQ_SET) != Splay ]; then\
+		echo "ERROR: Invalid SEQ_SET variable, edit mk/config file"; \
 		exit 1; \
 	fi
 

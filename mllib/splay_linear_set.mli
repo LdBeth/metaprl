@@ -30,37 +30,8 @@
  * Author: Alexey Nogin
  *)
 
+open Linear_set
+
 type 'a linear_set
-
-module type LinearSetSig =
-sig
-   type elt
-   type t
-   type index = int
-
-   val empty : t
-   val singleton : elt -> t
-   val length : t -> int
-   val get : t -> index -> elt
-   val make : int -> elt -> t
-   val create : int -> elt -> t
-   val to_list : t -> elt list
-   val of_list : elt list -> t
-   val iter : (elt -> unit) -> t -> unit
-   val split : t -> index -> t * elt * t
-   val append : t -> elt -> t -> t
-   val append_list : t -> elt list -> t -> t
-   val lazy_apply : (elt -> elt) -> t -> t
-   val lazy_sub_map : (elt -> elt) -> t -> index -> index -> t
-
-   val mapi : (index -> elt -> elt) -> t -> t
-   val init : int -> (index -> elt) -> t
-   val collect : (elt, t) Array_util.array_part list -> t
-end
-
-module type TypeSig =
-sig
-   type t
-end
 
 module Make (Type : TypeSig) : LinearSetSig with type elt = Type.t and type t = Type.t linear_set

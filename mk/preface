@@ -18,11 +18,14 @@ endif
 ifndef MAKE_JOBS
    MAKE_JOBS=undefined
 endif
+ifndef SEQ_SET
+   SEQ_SET=undefined
+endif
 
 #
 # Options for simp and verb variations
 #
-CPPFLAGS=-D$(REFINER)_EXN
+CPPFLAGS=-D$(REFINER)_EXN -DSEQ_SET=$(SEQ_SET)_linear_set
 
 #
 # Parameters

@@ -158,19 +158,19 @@ struct
             s.sequent_args
        | (Sequent s, HypAddr i) ->
             if i >= 0 && i < SeqHyp.length s.sequent_hyps then
-               match s.sequent_hyps.(i) with
+               match SeqHyp.get s.sequent_hyps i with
                   Hypothesis (_,t) -> t
                 | Context _ -> ref_raise(RefineError (term_subterm_name, AddressError (a, term)))
             else ref_raise(RefineError (term_subterm_name, AddressError (a, term)))
        | (Sequent s, GoalAddr i) ->
-            if i >= 0 && i < SeqGoal.length s.sequent_goals then s.sequent_goals.(i)
+            if i >= 0 && i < SeqGoal.length s.sequent_goals then SeqGoal.get s.sequent_goals i
             else ref_raise(RefineError (term_subterm_name, AddressError (a, term)))
        | (Sequent s, Compose (HypAddr i, ((Path (j :: path)) as addr2))) ->
             (*
              * Special case to address through contexts.
              *)
             if i >= 0 && i < SeqHyp.length s.sequent_hyps then
-               match s.sequent_hyps.(i) with
+               match SeqHyp.get s.sequent_hyps i with
                   Hypothesis (_, t) ->
                      term_subterm t addr2
                 | Context (_, subterms) ->
@@ -204,7 +204,7 @@ struct
             subterm_count s.sequent_args
        | (Sequent s, HypAddr i) ->
             if i >= 0 && i < SeqHyp.length s.sequent_hyps then
-               match s.sequent_hyps.(i) with
+               match SeqHyp.get s.sequent_hyps i with
                   Hypothesis (_,t) ->
                      subterm_count t
                 | Context (_, subterms) ->
@@ -213,7 +213,7 @@ struct
                ref_raise(RefineError (term_subterm_count_name, AddressError (a, term)))
        | (Sequent s, GoalAddr i) ->
             if i >= 0 && i < SeqGoal.length s.sequent_goals then
-               subterm_count s.sequent_goals.(i)
+               subterm_count (SeqGoal.get s.sequent_goals i)
             else
                ref_raise(RefineError (term_subterm_count_name, AddressError (a, term)))
        | (Sequent s, Compose (HypAddr i, ((Path (j :: path)) as addr2))) ->
@@ -221,7 +221,7 @@ struct
              * Special case to address through contexts.
              *)
             if i >= 0 && i < SeqHyp.length s.sequent_hyps then
-               match s.sequent_hyps.(i) with
+               match SeqHyp.get s.sequent_hyps i with
                   Hypothesis (_, t) ->
                      term_subterm_count t addr2
                 | Context (_, subterms) ->
@@ -253,7 +253,7 @@ struct
 
    let rec collect_hyp_bvars i hyps bvars =
       if i < 0 then bvars
-      else match hyps.(i) with
+      else match SeqHyp.get hyps i with
          Hypothesis (v,_) -> [v] :: collect_hyp_bvars (pred i) hyps bvars
        | Context _ -> [] :: collect_hyp_bvars (pred i) hyps bvars
 
@@ -296,7 +296,7 @@ struct
                   }, arg                                                                  \
        | (Sequent s, HypAddr i) ->                                                        \
             if i>=0 && i < SeqHyp.length s.sequent_hyps then                              \
-               match s.sequent_hyps.(i) with 										\
+               match SeqHyp.get s.sequent_hyps i with 										\
                   Hypothesis (v,t) -> 											\
                      let term, arg = f HYP_BVARS t in 									\
                      let aux i1 t1 = 											\
@@ -328,7 +328,7 @@ struct
             else DO_FAIL                                                                                                \
        | (Sequent s, GoalAddr i) -> 											\
             if i>=0 && i < SeqGoal.length s.sequent_goals then 								\
-               let term, arg = f GOAL_BVARS s.sequent_goals.(i) in 							\
+               let term, arg = f GOAL_BVARS (SeqGoal.get s.sequent_goals i) in 							\
                let aux i' t' = 												\
                  if i' = i then term else t' 										\
                in mk_sequent_term (**)                                                    \

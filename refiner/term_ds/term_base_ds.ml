@@ -99,43 +99,18 @@ struct
     *)
    type term_subst = (string * term) list
 
-   module SeqHyp =
+   module SeqHypType =
    struct
-      type elt = hypothesis
-      type t = seq_hyps
-      let length = Array.length
-      let get = Array.get
-      let create = Array.create
-      let make = Array.make
-      let init = Array.init
-      let mapi = Array.mapi
-      let append_array = Array.append
-      let append_list = Array_util.append_list
-      let to_list = Array.to_list
-      let of_list = Array.of_list
-      let sub_map = Array_util.sub_map
-      let collect = Array_util.collect
-      let iter = Array.iter
+      type t = hypothesis
    end
 
-   module SeqGoal =
+   module SeqGoalType =
    struct
-      type elt = term
-      type t = seq_goals
-      let length = Array.length
-      let create = Array.create
-      let get = Array.get
-      let make = Array.make
-      let init = Array.init
-      let mapi = Array.mapi
-      let append_array = Array.append
-      let append_list = Array_util.append_list
-      let to_list = Array.to_list
-      let of_list = Array.of_list
-      let sub_map = Array_util.sub_map
-      let collect = Array_util.collect
-      let iter = Array.iter
+      type t = term
    end
+
+   module SeqHyp = SEQ_SET.Make (SeqHypType)
+   module SeqGoal = SEQ_SET.Make (SeqGoalType)
 
    (************************************************************************
     * DEBUGGING                                                            *
@@ -329,36 +304,20 @@ struct
                 | Sequent { sequent_args = args;
                             sequent_hyps = hyps;
                             sequent_goals = goals } ->
-                     let new_args = do_term_subst sub args in
-                     let new_hyps = Array.copy hyps in
-                     let new_goals = Array.copy goals in
-                     let hlen = Array.length hyps in
-                     let rec do_hyps_subst sub i =
-                        if i = hlen then
-                           let glen = Array.length goals in
-                           let rec do_goals_subst i =
-                              if i = glen then
-                                 Sequent { sequent_args = new_args;
-                                           sequent_hyps = new_hyps;
-                                           sequent_goals = new_goals }
-                              else begin
-                                 new_goals.(i) <- do_term_subst sub goals.(i);
-                                 do_goals_subst (succ i)
-                              end
-                           in do_goals_subst 0
-                        else (match hyps.(i) with
-                           Hypothesis (v,t) ->
-                              new_hyps.(i) <- Hypothesis (v,do_term_subst sub t);
-                              do_hyps_subst (subst_remove v sub) (succ i)
-                         | Context (v,ts) ->
-                              new_hyps.(i) <- Context (v, List.map (do_term_subst sub) ts);
-                              do_hyps_subst sub (succ i)) in
-                     do_hyps_subst sub 0
+                     Sequent { sequent_args = do_term_subst sub args;
+                               sequent_hyps = SeqHyp.lazy_apply (hyps_subst sub) hyps;
+                               sequent_goals = SeqGoal.lazy_apply (do_term_subst sub) goals }
                 | Subst _ -> fail_core "get_core"
             in
                t.core <- core;
                core
        | core -> core
+
+   and hyps_subst sub = function
+      Hypothesis (v,t) ->
+         Hypothesis (v,do_term_subst sub t)
+    | Context (v,ts) ->
+         Context (v, List.map (do_term_subst sub) ts)
 
    (*
     * Make a variable.

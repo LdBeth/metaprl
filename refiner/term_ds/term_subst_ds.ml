@@ -78,6 +78,7 @@ module TermSubst
         with type seq_hyps = TermType.seq_hyps
         with type seq_goals = TermType.seq_goals
         with type string_set = TermType.StringSet.t
+        with type hypothesis = TermType.hypothesis
 
         with type level_exp_var' = TermType.level_exp_var'
         with type level_exp' = TermType.level_exp'
@@ -145,7 +146,7 @@ struct
                let len = SeqHyp.length hyps in
                let rec coll_hyps i =
                   if i = len then binding_vars_term seq.sequent_args StringSet.empty else
-                  match hyps.(i) with
+                  match SeqHyp.get hyps i with
                      Hypothesis (v,t) ->
                         binding_vars_term t (StringSet.add v (coll_hyps (succ i)))
                    | Context (v,ts) ->
@@ -155,7 +156,7 @@ struct
                let len = SeqGoal.length goals in
                let rec coll_goals i =
                   if i = len then coll_hyps 0 else
-                  binding_vars_term goals.(i) (coll_goals (succ i))
+                  binding_vars_term (SeqGoal.get goals i) (coll_goals (succ i))
                in coll_goals 0
           | FOVar _ -> StringSet.empty
           | Subst _ -> fail_core "binding_vars")
@@ -189,7 +190,7 @@ struct
             let len = SeqHyp.length hyps in
             let rec context_vars i =
                if i = len then [] else
-               match hyps.(i) with
+               match SeqHyp.get hyps i with
                   Hypothesis _ -> context_vars (succ i)
                 | Context (v,_) -> v::context_vars (succ i)
             in context_vars 0
@@ -262,7 +263,7 @@ struct
 
    let rec equal_hyps hyps1 hyps2 vars i =
       if i = SeqHyp.length hyps1 then Some vars else
-         match hyps1.(i), hyps2.(i) with
+         match SeqHyp.get hyps1 i, SeqHyp.get hyps2 i with
             Hypothesis (v1,t1), Hypothesis (v2,t2) ->
                if equal_term vars t1 t2 then
                   equal_hyps
@@ -278,7 +279,7 @@ struct
 
    let rec equal_goals goals1 goals2 vars i =
       i < 0 ||
-      ( equal_term vars goals1.(i) goals2.(i) &&
+      ( equal_term vars (SeqGoal.get goals1 i) (SeqGoal.get goals2 i) &&
         equal_goals goals1 goals2 vars (pred i) )
 
    let alpha_equal t1 t2 =

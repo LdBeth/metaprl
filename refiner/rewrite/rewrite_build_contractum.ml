@@ -221,7 +221,7 @@ struct
        | _ ->
             let i, len, hyps = arg in
                avoid_capture hyps i len terms;
-               0, len, SeqHyp.sub_map (subst_hyp terms vars) hyps i len
+               0, len, SeqHyp.lazy_sub_map (subst_hyp terms vars) hyps i len
 
    (*
     * Build the terms.

@@ -56,6 +56,8 @@ LMFILES :=\
 	remote_lazy_queue\
 	bi_memo\
 	linear_set\
+	splay_linear_set\
+	array_linear_set\
 	simplehashtbl
 
 # Name of library

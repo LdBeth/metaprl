@@ -27,6 +27,7 @@ val exists : ('a -> bool) -> 'a array -> bool
 val replace : 'a array -> int -> int -> 'a list -> 'a array
 
 val append_list : 'a array -> 'a list -> 'a array
+val append_list_array : 'a array -> 'a list -> 'a array -> 'a array
 
 (*
  * Map over a sub-array.

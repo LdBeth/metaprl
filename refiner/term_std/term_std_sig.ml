@@ -120,8 +120,8 @@ sig
       Hypothesis of string * term
     | Context of string * term list
 
-   type seq_hyps = hypothesis array
-   type seq_goals = term array
+   type seq_hyps = hypothesis SEQ_SET.linear_set
+   type seq_goals = term SEQ_SET.linear_set
 
    type esequent =
       { sequent_args : term;
@@ -158,8 +158,8 @@ sig
    type term'
    type bound_term'
 
-   module SeqHyp : ROArraySig with type elt = hypothesis with type t = seq_hyps
-   module SeqGoal : ROArraySig with type elt = term with type t = seq_goals
+   module SeqHyp : Linear_set.LinearSetSig with type elt = hypothesis with type t = seq_hyps
+   module SeqGoal : Linear_set.LinearSetSig with type elt = term with type t = seq_goals
 
    (************************************************************************
     * De/Constructors                                                      *

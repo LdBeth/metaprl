@@ -72,6 +72,7 @@ module TermMan (**)
     with type esequent = TermType.esequent
     with type seq_hyps = TermType.seq_hyps
     with type seq_goals = TermType.seq_goals
+    with type hypothesis = TermType.hypothesis
 
     with type level_exp_var' = TermType.level_exp_var'
     with type level_exp' = TermType.level_exp'
@@ -386,7 +387,7 @@ struct
             else
                let i = pred i in
                   if i < SeqHyp.length s.sequent_hyps then
-                     match s.sequent_hyps.(i) with
+                     match SeqHyp.get s.sequent_hyps i with
                         Hypothesis (v, t) ->
                            (v, t)
                       | Context _ ->
@@ -408,7 +409,7 @@ struct
             match get_core t with
                Sequent s ->
                   if i < SeqGoal.length s.sequent_goals then
-                     s.sequent_goals.(i)
+                     SeqGoal.get s.sequent_goals i
                   else
                      ref_raise(RefineError (nth_concl_name, TermMatchError (t, "not enough hyps")))
              | _ ->
@@ -420,7 +421,7 @@ struct
    let rec declared_vars_aux hyps i =
       if i < 0 then [] else
          let rem = declared_vars_aux hyps (pred i) in
-            match hyps.(i) with
+            match SeqHyp.get hyps i with
                Hypothesis (v,_) -> v::rem
              | Context _ -> rem
 
@@ -446,7 +447,7 @@ struct
                if i = hlen then
                   ref_raise(RefineError (get_decl_number_name, TermMatchError (t, "declaration not found")))
                else
-                  match hyps.(i) with
+                  match SeqHyp.get hyps i with
                      Hypothesis (v',_) when v' = v ->
                         succ i
                    | _ ->
@@ -472,11 +473,11 @@ struct
                      if i < 0 then
                         false
                      else
-                        is_free_var v goals.(i) || is_free_concl_var (pred i)
+                        is_free_var v (SeqGoal.get goals i) || is_free_concl_var (pred i)
                   in
                      is_free_concl_var (SeqGoal.length goals - 1)
                else
-                  (match hyps.(i) with
+                  (match SeqHyp.get hyps i with
                      Hypothesis (v',t) ->
                         is_free_var v t
                    | Context (v,ts) ->
@@ -491,7 +492,7 @@ struct
    let replace_goal t goal =
       match get_core t with
          Sequent s ->
-            mk_sequent_term {sequent_args = s.sequent_args; sequent_hyps = s.sequent_hyps; sequent_goals = [|goal|]}
+            mk_sequent_term {sequent_args = s.sequent_args; sequent_hyps = s.sequent_hyps; sequent_goals = SeqGoal.singleton goal}
        | _ ->
             ref_raise(RefineError (replace_goal_name, TermMatchError (t, "not a sequent")))
 

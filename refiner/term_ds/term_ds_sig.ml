@@ -118,8 +118,8 @@ sig
         sequent_hyps : seq_hyps;
         sequent_goals : seq_goals
       }
-   and seq_hyps = hypothesis array
-   and seq_goals = term array
+   and seq_hyps = hypothesis SEQ_SET.linear_set
+   and seq_goals = term SEQ_SET.linear_set
    and lazy_vars =
       Vars of StringSet.t
     | VarsDelayed
@@ -165,10 +165,10 @@ sig
 
    type term_subst
 
-   module SeqHyp : ROArraySig
+   module SeqHyp : Linear_set.LinearSetSig
                    with type elt = hypothesis
                    with type t = seq_hyps
-   module SeqGoal : ROArraySig
+   module SeqGoal : Linear_set.LinearSetSig
                     with type elt = term
                     with type t = seq_goals
 

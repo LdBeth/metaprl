@@ -48,6 +48,7 @@ module TermMan (**)
         with type esequent = TermType.esequent
         with type seq_hyps = TermType.seq_hyps
         with type seq_goals = TermType.seq_goals
+        with type hypothesis = TermType.hypothesis
 
         with type level_exp_var' = TermType.level_exp_var'
         with type level_exp' = TermType.level_exp'

@@ -30,30 +30,11 @@
  * jyh@cs.cornell.edu
  *)
 open Opname
+open Linear_set
 
 (*
  * We use read-only arrays for sequents.
  *)
-module type ROArraySig =
-sig
-   type elt
-   type t
-   val length : t -> int
-   val get : t -> int -> elt
-   val make : int -> elt -> t
-   val create : int -> elt -> t
-   val init : int -> (int -> elt) -> t
-   val mapi : (int -> elt -> elt) -> t -> t
-   val append_array : t -> elt array -> t
-   val append_list : t -> elt list -> t
-   val to_list : t -> elt list
-   val of_list : elt list -> t
-   val iter : (elt -> unit) -> t -> unit
-
-   val sub_map : (elt -> elt) -> t -> int -> int -> t
-   val collect : (elt, t) Array_util.array_part list -> t
-end
-
 module type TermBaseSig =
 sig
    (************************************************************************
@@ -78,8 +59,8 @@ sig
    type term'
    type bound_term'
 
-   module SeqHyp : ROArraySig with type elt = hypothesis with type t = seq_hyps
-   module SeqGoal : ROArraySig with type elt = term with type t = seq_goals
+   module SeqHyp : LinearSetSig with type elt = hypothesis with type t = seq_hyps
+   module SeqGoal : LinearSetSig with type elt = term with type t = seq_goals
 
    (************************************************************************
     * De/Constructors                                                      *

@@ -89,43 +89,18 @@ struct
     *)
    type term_subst = (string * term) list
 
-   module SeqHyp =
+   module SeqHypType =
    struct
-      type elt = hypothesis
-      type t = hypothesis array
-      let length = Array.length
-      let get = Array.get
-      let create = Array.create
-      let make = Array.make
-      let init = Array.init
-      let mapi = Array.mapi
-      let append_array = Array.append
-      let append_list = Array_util.append_list
-      let to_list = Array.to_list
-      let of_list = Array.of_list
-      let sub_map = Array_util.sub_map
-      let collect = Array_util.collect
-      let iter = Array.iter
+      type t = hypothesis
    end
 
-   module SeqGoal =
+   module SeqGoalType =
    struct
-      type elt = term
-      type t = term array
-      let length = Array.length
-      let create = Array.create
-      let get = Array.get
-      let make = Array.make
-      let init = Array.init
-      let mapi = Array.mapi
-      let append_array = Array.append
-      let append_list = Array_util.append_list
-      let to_list = Array.to_list
-      let of_list = Array.of_list
-      let sub_map = Array_util.sub_map
-      let collect = Array_util.collect
-      let iter = Array.iter
+      type t = term
    end
+
+   module SeqHyp = SEQ_SET.Make (SeqHypType)
+   module SeqGoal = SEQ_SET.Make (SeqGoalType)
 
    (************************************************************************
     * DEBUGGING                                                            *

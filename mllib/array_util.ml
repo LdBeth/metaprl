@@ -127,6 +127,23 @@ let append_list a = function
             aux (succ i) tl
       in aux (succ l) tl
 
+let append_list_array a1 l a2 = 
+   match l with 
+      [] -> Array.append a1 a2
+    | hd::tl ->
+         let l1 = Array.length a1 and l2 = Array.length a2 in
+         let offs = succ l1 + List.length tl in
+         let res = Array.create (offs + l2) hd in
+         for i = 0 to pred l1 do Array.unsafe_set res i (Array.unsafe_get a1 i) done;
+         let rec aux i = function
+            [] -> ()
+          | hd :: tl ->
+               Array.unsafe_set res i hd;
+               aux (succ i) tl
+         in aux (succ l1) tl;
+         for i = 0 to pred l2 do Array.unsafe_set res (i+offs) (Array.unsafe_get a2 i) done;
+         res
+
 let replace a i j = function
    [] ->
       if j>0 then Array.append (Array.sub a 0 i) (Array.sub a (i+j) (Array.length a-i-j))

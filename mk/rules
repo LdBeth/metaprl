@@ -229,9 +229,6 @@ $(REG_CMXFILES): %.cmx: %.ml %.cmi $(ROOT)/mk/config
 %-native.p.o: %.c $(ROOT)/mk/config
 	$(CC) -p $(NATIVE_CFLAGS) $(CFLAGS) -c $*.c -o $@
 
-$(ROOT)/mk/config: $(ROOT)/mk/config.init
-	cat $(ROOT)/mk/config.init >> $(ROOT)/mk/config
-
 #
 clean::
 	$(RM) *.run *.top *.opt *.cma *.cmxa *.cmx *.cmi* *.cmo* *.z* *.o *.a *~ *.bak *.output $(CLEAN_MAIN)
