@@ -1,3 +1,6 @@
+exception Not_unifiable
+exception Failed
+
 (* Utilities *)
 
 val is_const : string -> bool
@@ -27,7 +30,6 @@ val do_stringunify : string list ->
                      string ->
                      string ->
                      (string list * (string list * string list)) list ->
-                     int ->
                      (int * (string * string list) list) *                 (* unifier *)
                      (int * ((string list * (string list * string list)) list))    (* applied new eqlist *)
 
