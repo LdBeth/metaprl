@@ -595,6 +595,9 @@ trivialT can solve goals with a conclusion of the form
 or goals with a conclusion of the form << "type"{'x} >>
 if there is a hypothesis << x: univ[i:l] >>.
 
+trivialT can use equalRefT and equalSymT to match an
+equality conclusion against an equality hypothesis.
+
 ----------------------------------------
 itt_subtype:
 

@@ -163,15 +163,18 @@ struct
    (*
     * Cast a parameter to a level expression.
     *)
+   let rec level_var s =
+      if s.[pred (String.length s)] = '\'' then
+         incr_level_exp (level_var (String.sub s 0 (pred (String.length s))))
+      else
+         mk_var_level_exp s
+
    let cast_level p =
       match dest_param p with
          Number (Mp_num.Int n) ->
            mk_const_level_exp n
-       | Var v -> mk_var_level_exp v
        | MLevel l -> l
-       | MNumber v -> mk_var_level_exp v
-       | MString v -> mk_var_level_exp v
-       | MVar v -> mk_var_level_exp v
+       | MString v -> level_var v
        | _ -> raise (BadParamCast (p, "l"))
 
    (*
@@ -181,7 +184,6 @@ struct
       match dest_param p with
          Number _ -> p
        | MNumber _ -> p
-       | MVar v -> make_param (MNumber v)
        | MString s -> make_param (MNumber s)
        | _ -> raise (BadParamCast (p, "n"))
 
@@ -190,44 +192,34 @@ struct
     *)
    let cast_param p = function
       "n" -> cast_number p
-    | "s" as x ->
+    | "s" ->
          begin
             match dest_param p with
                Number(n) -> make_param (String (Mp_num.string_of_num n))
              | String(s) -> p
-             | Token(t) -> make_param (String t)
-             | Var(v) -> make_param (String v)
              | MString(v) -> p
-             | _ -> raise (BadParamCast (p, x))
+             | _ -> raise (BadParamCast (p, "s"))
          end
-    | "t" as x ->
+    | "t" ->
          begin
             match dest_param p with
                Number(n) -> make_param (Token (Mp_num.string_of_num n))
              | String(s) -> make_param (Token s)
-             | Token(t) -> p
-             | Var(v) -> make_param (Token v)
              | MString(v) -> make_param (MToken v)
-             | _ -> raise (BadParamCast (p, x))
+             | _ -> raise (BadParamCast (p, "t"))
          end
 
-    | "v" as x ->
+    | "v" ->
          begin
             match dest_param p with
                Number(n) -> make_param (Var (Mp_num.string_of_num n))
              | String(s) -> make_param (Var s)
-             | Token(t) -> make_param (Var t)
-             | Var(v) -> p
              | MString(v) -> make_param (MVar v)
-             | _ -> raise (BadParamCast (p, x))
+             | _ -> raise (BadParamCast (p, "v"))
          end
 
     | "l" ->
-         begin
-            match dest_param p with
-               MString v -> make_param (MLevel (mk_var_level_exp v))
-             | _ -> make_param (MLevel (cast_level p))
-         end
+         make_param (MLevel (cast_level p))
 
     | x -> raise (BadParamCast (p, x))
 
