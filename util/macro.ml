@@ -74,9 +74,13 @@
  *
  * DEFTOPMACRO MAC ARG... = <top>... END
  *   Defines a toplevel (str_item or sig_item) macro, this is used as shown
- *   below, not using application.
+ *   below, not using application.  Note: the current context determines if a
+ *   str_item or a sig_item macro will be created, a macro with an empty body
+ *   for the other will be created to allow compilation of interface an
+ *   implementation from the same source.
  *
  * USETOPMACRO MAC <expr>... END
+ *   Use a toplevel macro.  
  *
  * IFIMPLEMENTATION THEN <str_item>... ELSE <sig_item>... END
  *   This is useful for files that are compiled from the same source, and one
