@@ -1040,16 +1040,15 @@ struct
             set_packages info;
             Shell_state.set_dfbase shell None;
             Shell_state.set_mk_opname shell None;
-            Shell_state.set_module shell "Shell";
-            eprintf "Module: /%t" eflush
+            Shell_state.set_module shell "Shell"
        | (modname :: item) as dir ->
             (* change module only if in another (or at top) *)
             if info.dir = [] or List.hd info.dir <> modname then
                begin
-                  if need_shell && (modname <> String.uncapitalize modname) then
+                  if modname <> String.uncapitalize modname then
                      raise(Invalid_argument "Shell.chdir: module name should not be capitalized");
                   let pkg = Package.get packages modname in
-                     if not (shell_package pkg) then
+                     if need_shell && not (shell_package pkg) then
                         failwith ("Module " ^ modname ^ " does not contain shell commands");
                      info.package <- Some pkg;
                      Shell_state.set_dfbase shell (Some (get_db info));
@@ -1095,11 +1094,13 @@ struct
    and print_theory info name =
       let f () =
          let mode = info.df_mode in
+         let dir = info.dir in
             info.df_mode <- "tex";
             chdir info false [name];
             expand_all info;
             view info [] ".";
-            info.df_mode <- mode
+            info.df_mode <- mode;
+            chdir info false dir
       in
          print_exn info f ()
 
