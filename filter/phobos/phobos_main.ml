@@ -557,7 +557,7 @@ let create_parsing_table name gst penv =
    debug_ploc_list penv ptable ptable_errors;
    debug_string "\n";
    if List.length ptable_errors > 0 then
-      print_string "There were errors.\n";
+      print_string "Phobos_main.create_parsing_table: There were errors.\n";
    if !Phobos_state.debug_grammar then
       save_parser_report gst penv states ptable ptable_errors (**)
          (Phobos_util.filename_of_grammar_output name);
