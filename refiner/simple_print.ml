@@ -99,16 +99,16 @@ let rec format_param buf p =
    if debug_simple_print then
       eprintf "Simple_print.format_param%t" eflush;
    match dest_param p with
-      Number i -> format_int buf i; format_string buf ":n"
+      Number n -> format_num buf n; format_string buf ":n"
     | String s -> format_quoted_string buf s; format_string buf ":s"
     | Token t -> format_quoted_string buf t; format_string buf ":t"
     | Level l -> format_level_exp buf l; format_string buf ":l"
     | Var v -> format_quoted_string buf v; format_string buf ":v"
-    | MNumber v -> format_char buf '$'; format_quoted_string buf v; format_string buf ":n"
-    | MString v -> format_char buf '$'; format_quoted_string buf v; format_string buf ":s"
-    | MToken v -> format_char buf '$'; format_quoted_string buf v; format_string buf ":t"
-    | MLevel v -> format_char buf '$'; format_quoted_string buf v; format_string buf ":l"
-    | MVar v -> format_char buf '$'; format_quoted_string buf v; format_string buf ":v"
+    | MNumber v -> format_char buf '@'; format_quoted_string buf v; format_string buf ":n"
+    | MString v -> format_char buf '@'; format_quoted_string buf v; format_string buf ":s"
+    | MToken v -> format_char buf '@'; format_quoted_string buf v; format_string buf ":t"
+    | MLevel v -> format_char buf '@'; format_quoted_string buf v; format_string buf ":l"
+    | MVar v -> format_char buf '@'; format_quoted_string buf v; format_string buf ":v"
     | MSum (a, b) -> format_param buf a; format_string buf " + "; format_param buf b; format_string buf ":n"
     | MDiff (a, b) -> format_param buf a; format_string buf " - "; format_param buf b; format_string buf ":n"
     | MProduct (a, b) -> format_param buf a; format_string buf " * "; format_param buf b; format_string buf ":n"
@@ -412,6 +412,9 @@ let prerr_simple_address = print_simple_address_fp stderr
 
 (*
  * $Log$
+ * Revision 1.4  1998/03/20 22:16:20  eli
+ * Eli: Changed integer parameters to Num.num's.
+ *
  * Revision 1.3  1998/02/21 20:58:19  jyh
  * Two phase parse/extract.
  *

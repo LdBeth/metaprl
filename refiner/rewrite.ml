@@ -21,7 +21,7 @@ open Simple_print
  * order variables.
  *)
 type rwparam =
-   RWNumber of int
+   RWNumber of Num.num
  | RWString of string
  | RWToken of string
  | RWLevel of level_exp
@@ -102,7 +102,7 @@ type rstack =
  *)
 type stack =
    StackVoid
- | StackNumber of int
+ | StackNumber of Num.num
  | StackString of string
  | StackLevel of level_exp
  | StackBTerm of term * string list
@@ -211,16 +211,16 @@ let rec format_ints buf = function
  * Print a param.
  *)
 let rec format_param buf = function
-   RWNumber i -> format_int buf i; format_string buf ":n"
+   RWNumber i -> format_num buf i; format_string buf ":n"
  | RWString s -> format_quoted_string buf s; format_string buf ":s"
  | RWToken t -> format_quoted_string buf t; format_string buf ":t"
  | RWLevel l -> format_simple_level_exp buf l; format_string buf ":l"
  | RWVar v -> format_quoted_string buf v; format_string buf ":v"
- | RWMNumber i -> format_char buf '$'; format_int buf i; format_string buf ":n"
- | RWMString i -> format_char buf '$'; format_int buf i; format_string buf ":s"
- | RWMToken i -> format_char buf '$'; format_int buf i; format_string buf ":t"
- | RWMLevel i -> format_char buf '$'; format_int buf i; format_string buf ":l"
- | RWMVar i -> format_char buf '$'; format_int buf i; format_string buf ":v"
+ | RWMNumber i -> format_char buf '@'; format_int buf i; format_string buf ":n"
+ | RWMString i -> format_char buf '@'; format_int buf i; format_string buf ":s"
+ | RWMToken i -> format_char buf '@'; format_int buf i; format_string buf ":t"
+ | RWMLevel i -> format_char buf '@'; format_int buf i; format_string buf ":l"
+ | RWMVar i -> format_char buf '@'; format_int buf i; format_string buf ":v"
  | RWSum (a, b) ->
       format_char buf '(';
       format_param buf a;
@@ -1259,21 +1259,21 @@ let build_contractum names stack =
             begin
                 match stack.(i) with
                    StackNumber j -> Number j
-                 | StackString s -> Number (int_of_string s)
+                 | StackString s -> Number (Num.num_of_string s)
                  | t -> raise (RewriteError (StackError t))
             end
        | RWMString i ->
             begin
                 match stack.(i) with
                    StackString s -> String s
-                 | StackNumber j -> String (string_of_int j)
+                 | StackNumber j -> String (Num.string_of_num j)
                  | t -> raise (RewriteError (StackError t))
             end
        | RWMToken i ->
             begin
                 match stack.(i) with
                    StackString s -> Token s
-                 | StackNumber j -> String (string_of_int j)
+                 | StackNumber j -> String (Num.string_of_num j)
                  | t -> raise (RewriteError (StackError t))
             end
        | RWMLevel i ->
@@ -1286,41 +1286,41 @@ let build_contractum names stack =
             begin
                 match stack.(i) with
                    StackString v -> Var v
-                 | StackNumber j -> Var (string_of_int j)
+                 | StackNumber j -> Var (Num.string_of_num j)
                  | t -> raise (RewriteError (StackError t))
             end
        | RWSum (p1, p2) ->
             begin
                 match (build_contractum_param p1, build_contractum_param p2) with
-                   (Number i, Number j) -> Number (i + j)
+                   (Number i, Number j) -> Number (Num.add_num i j)
                  | (Number i, p) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
                  | (p, _) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
             end
        | RWDiff (p1, p2) ->
             begin
                 match (build_contractum_param p1, build_contractum_param p2) with
-                   (Number i, Number j) -> Number (i - j)
+                   (Number i, Number j) -> Number (Num.sub_num i j)
                  | (Number i, p) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
                  | (p, _) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
             end
        | RWProduct (p1, p2) ->
             begin
                 match (build_contractum_param p1, build_contractum_param p2) with
-                   (Number i, Number j) -> Number (i * j)
+                   (Number i, Number j) -> Number (Num.mult_num i j)
                  | (Number i, p) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
                  | (p, _) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
             end
        | RWQuotient (p1, p2) ->
             begin
                 match (build_contractum_param p1, build_contractum_param p2) with
-                   (Number i, Number j) -> Number (i / j)
+                   (Number i, Number j) -> Number (Num.quo_num i j)
                  | (Number i, p) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
                  | (p, _) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
             end
        | RWRem (p1, p2) ->
             begin
                 match (build_contractum_param p1, build_contractum_param p2) with
-                   (Number i, Number j) -> Number (i mod j)
+                   (Number i, Number j) -> Number (Num.mod_num i j)
                  | (Number i, p) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
                  | (p, _) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
             end
@@ -1466,7 +1466,7 @@ let extract_redex_values gstack stack=
     | PIVar _ ->
          begin
             match gstack with
-               StackNumber i -> RewriteInt i
+               StackNumber i -> RewriteInt (Num.int_of_num i)
              | _ -> raise (RewriteError (StackError gstack))
          end
     | PSVar _ ->
@@ -1629,6 +1629,9 @@ let rewrite_eval_flags = function
 
 (*
  * $Log$
+ * Revision 1.4  1998/03/20 22:16:19  eli
+ * Eli: Changed integer parameters to Num.num's.
+ *
  * Revision 1.3  1997/09/12 17:21:44  jyh
  * Added MLast <-> term conversion.
  * Splitting filter_parse into two phases:

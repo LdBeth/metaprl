@@ -38,6 +38,9 @@ struct
             File.put ofile (sprintf " %s" v)
        | ML_Int i ->
             File.put ofile (sprintf " %d" i)
+       | ML_Num n ->
+            File.put ofile
+                     ("(Num.num_of_string \"" ^ (Num.string_of_num n) ^ "\")")
        | ML_String s ->
             File.put ofile (sprintf " \"%s\"" (String.escaped s))
        | ML_List l ->
@@ -135,6 +138,9 @@ end
    
 (*
  * $Log$
+ * Revision 1.2  1998/03/20 22:16:18  eli
+ * Eli: Changed integer parameters to Num.num's.
+ *
  * Revision 1.1  1997/04/28 15:51:25  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

@@ -37,6 +37,9 @@ LMFILES :=\
 # Name of library
 MAIN := refiner
 
+# Flags
+CCLIBS := -cclib -lnums
+
 all: $(MAIN).cma
 opt: $(MAIN).cmxa
 

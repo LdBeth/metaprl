@@ -677,8 +677,9 @@ let summary_item_op             = mk_opname "summary_item"
 let loc_op = mk_opname "location"
 
 let dest_loc t =
-   let i, j, t = dest_number_number_dep0_any_term t in
-      t, (i, j)
+   match (dest_number_number_dep0_any_term t) with
+       (Num.Int i, Num.Int j, t) -> t, (i, j)
+     | _ -> raise (Failure "dest_loc: location is not an integer")
 
 (*
  * Dform options.
@@ -963,7 +964,10 @@ and dest_prec_rel convert t =
  * Identifier.
  *)
 and dest_id convert t =
-   Id (dest_number_any_term t)
+  let n = (dest_number_any_term t) in
+    match n with
+        Num.Int i -> Id i
+      | _ -> raise (Failure "dest_id: can't handle things other than Num.Int")
 
 (*
  * Resource.
@@ -1077,7 +1081,7 @@ and of_term_list
  * Make a location.
  *)
 let mk_loc (i, j) t =
-   mk_number_number_dep0_term loc_op i j t
+   mk_number_number_dep0_term loc_op (Num.Int i) (Num.Int j) t
 
 (*
  * Make a optional arg.
@@ -1255,7 +1259,7 @@ let rec term_list_aux
  | PrecRel { prec_rel = rel; prec_left = left; prec_right = right } ->
       mk_prec_rel_term rel left right
  | Id id ->
-      mk_number_term id_op id
+      mk_number_term id_op (Num.Int id)
  | Resource rsrc ->
       mk_resource_term convert rsrc
  | Infix op ->
@@ -1682,6 +1686,9 @@ and check_implementation { info_list = implem } { info_list = interf } =
 
 (*
  * $Log$
+ * Revision 1.8  1998/03/20 22:15:44  eli
+ * Eli: Changed integer parameters to Num.num's.
+ *
  * Revision 1.7  1998/02/23 14:46:18  jyh
  * First implementation of binary file compilation.
  *

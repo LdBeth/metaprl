@@ -11,6 +11,7 @@ open Term_util
 type ml_expr =
    ML_Var of string
  | ML_Int of int
+ | ML_Num of Num.num
  | ML_String of string
  | ML_List of ml_expr list
  | ML_Let of string * ml_expr * ml_expr
@@ -31,6 +32,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.2  1998/03/20 22:16:18  eli
+ * Eli: Changed integer parameters to Num.num's.
+ *
  * Revision 1.1  1997/04/28 15:51:24  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

@@ -9,11 +9,11 @@ let nuprl5_opname = mk_opname "!nuprl5_implementation!" nil_opname
 
 let make_bool_parameter b =
   make_param (ParmList
-		[(make_param (Token "bool")); (make_param (Number (if b then 1 else 0)))])
+		[(make_param (Token "bool")); (make_param (Number (Num.Int (if b then 1 else 0))))])
 let make_time_parameter time =
   let (a, b) = dest_bigint time in
   make_param (ParmList
-		[(make_param (Token "time")); (make_param (Number a)); (make_param (Number b))])
+		[(make_param (Token "time")); (make_param (Number (Num.Int a))); (make_param (Number (Num.Int b)))])
 
 let time_parameter_p p =
   match (dest_param p) with
@@ -30,7 +30,7 @@ let bool_parameter_p p =
   match (dest_param p) with
     ParmList [h; v] -> (match (dest_param h) with
       Token s -> if s = "bool" then (match (dest_param v) with
-	Number i -> (i = 1) or (i = 0)
+	Number (Num.Int i) -> (i = 1) or (i = 0)
       | _ -> false) else false
     | _ -> false)
   | _ -> false
@@ -39,8 +39,8 @@ let destruct_time_parameter p =
   match (dest_param p) with
     ParmList [h; a; b] -> (match (dest_param h) with
       Token s -> if s = "time" then (match (dest_param a) with
-	Number i -> (match (dest_param b) with
-	  Number k -> make_bigint (i, k)
+	Number (Num.Int i) -> (match (dest_param b) with
+	  Number (Num.Int k) -> make_bigint (i, k)
       	| _ -> raise (Invalid_argument "destruct_time_parameter"))
       | _ -> raise (Invalid_argument "destruct_time_parameter"))
       else raise (Invalid_argument "destruct_time_parameter")
@@ -51,7 +51,7 @@ let destruct_bool_parameter p =
   match (dest_param p) with
     ParmList [h; v] -> (match (dest_param h) with
       Token s -> if s = "bool" then (match (dest_param v) with
-	Number i -> i = 1
+	Number (Num.Int i) -> i = 1
       | _ -> raise (Invalid_argument "destruct_bool_parameter"))
       else raise (Invalid_argument "destruct_bool_parameter")
     | _ -> raise (Invalid_argument "destruct_bool_parameter"))

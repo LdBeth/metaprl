@@ -8,6 +8,11 @@ open Opname
 open Term
 
 (*
+ * Location is a pair of bignums.
+ *)
+type loc = Num.num * Num.num
+
+(*
  * Terms to MLAst.
  * FormatError (reason, term that failed)
  *)
@@ -25,17 +30,17 @@ val class_of_term : term -> class_decl
 (*
  * MLast to term.
  *
- * The extra (MLast.loc -> term -> term) argument is used to annoate the results.
+ * The extra (loc -> term -> term) argument is used to annoate the results.
  * It is mapped over all terms postfix order.
  *)
-val term_of_expr : (MLast.loc -> term -> term) -> expr -> term
-val term_of_patt : (MLast.loc -> term -> term) -> patt -> term
-val term_of_type : (MLast.loc -> term -> term) -> ctyp -> term
-val term_of_sig_item : (MLast.loc -> term -> term) -> sig_item -> term
-val term_of_str_item : (MLast.loc -> term -> term) -> str_item -> term
-val term_of_module_type : (MLast.loc -> term -> term) -> module_type -> term
-val term_of_module_expr : (MLast.loc -> term -> term) -> module_expr -> term
-val term_of_class : (MLast.loc -> term -> term) -> class_decl -> term
+val term_of_expr : (loc -> term -> term) -> expr -> term
+val term_of_patt : (loc -> term -> term) -> patt -> term
+val term_of_type : (loc -> term -> term) -> ctyp -> term
+val term_of_sig_item : (loc -> term -> term) -> sig_item -> term
+val term_of_str_item : (loc -> term -> term) -> str_item -> term
+val term_of_module_type : (loc -> term -> term) -> module_type -> term
+val term_of_module_expr : (loc -> term -> term) -> module_expr -> term
+val term_of_class : (loc -> term -> term) -> class_decl -> term
 
 (*
  * Specific values useful for writing
@@ -62,6 +67,9 @@ val dest_var : term -> string
 
 (*
  * $Log$
+ * Revision 1.5  1998/03/20 22:15:43  eli
+ * Eli: Changed integer parameters to Num.num's.
+ *
  * Revision 1.4  1998/02/19 17:13:58  jyh
  * Splitting filter_parse.
  *

@@ -26,7 +26,7 @@ and level_exp' = { le_const : int; le_vars : level_exp_var list }
  * Parameters have a number of simple types.
  *)
 and param' =
-   Number of int
+   Number of Num.num
  | String of string
  | Token of string
  | Level of level_exp
@@ -1617,7 +1617,7 @@ let param_index = function
  | ParmList _ -> 19
 
 let rec compare_param_values = function
-   Number i, Number j -> i - j
+   Number n, Number m -> Num.compare_num n m
  | String s, String t -> compare s t
  | Token s, Token t -> compare s t
  | Var s, Var t -> compare s t
@@ -1727,7 +1727,7 @@ let param_pattern_index = function
  | ParmList _ -> 0
 
 let rec compare_pattern_param_values = function
-   Number i, Number j ->     i - j
+   Number n, Number m ->     Num.compare_num n m
  | String s, String t ->     compare s t
  | Token s, Token t ->       compare s t
  | Var s, Var t ->           compare s t
@@ -2499,6 +2499,9 @@ let make_2subst_term main_term v1 v2 t1 t2 =
 
 (*
  * $Log$
+ * Revision 1.10  1998/03/20 22:16:21  eli
+ * Eli: Changed integer parameters to Num.num's.
+ *
  * Revision 1.9  1998/02/21 20:58:21  jyh
  * Two phase parse/extract.
  *

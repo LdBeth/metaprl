@@ -12,6 +12,11 @@ open Opname
 open Term
 
 (*
+ * Location is a pair of bignums.
+ *)
+type loc = Num.num * Num.num
+
+(*
  * All errors pass through here.
  *)
 exception FormatError of string * term
@@ -62,8 +67,8 @@ let dest_loc t =
          { op_params = p1 :: p2 :: _ } ->
             begin
                match dest_param p1, dest_param p2 with
-                  Number start, Number finish ->
-                     start, finish
+                  Number (Num.Int start), Number (Num.Int finish) ->
+                    start, finish
                 | _ ->
                      raise (FormatError ("dest_loc: needs two numbers", t))
             end
@@ -77,7 +82,7 @@ let dest_loc_string t =
    let { term_op = op } = dest_term t in
    let { op_params = params } = dest_op op in
       match List.map dest_param params with
-         [Number start; Number finish; String s] ->
+         [Number (Num.Int start); Number (Num.Int finish); String s] ->
             (start, finish), s
        | _ ->
             raise (FormatError ("dest_loc_string: needs two numbers and a string", t))
@@ -117,10 +122,40 @@ let dest_loc_int t =
    let { term_op = op } = dest_term t in
    let { op_params = params } = dest_op op in
       match List.map dest_param params with
-         [Number start; Number finish; Number i] ->
-            (start, finish), string_of_int i
+         [Number (Num.Int start); Number (Num.Int finish); Number i] ->
+            (start, finish), Num.string_of_num i
        | _ ->
             raise (FormatError ("dest_loc_int: needs three numbers", t))
+
+(*
+ * Redefine some functions to tag results.
+ *)
+let loc_of_expr,
+    loc_of_patt,
+    loc_of_ctyp,
+    loc_of_sig_item,
+    loc_of_str_item,
+    loc_of_module_type,
+    loc_of_module_expr =
+  let loc_of_aux f x =
+    (let i, j = f x
+     in Num.Int i, Num.Int j)
+    in
+    loc_of_aux loc_of_expr,
+    loc_of_aux loc_of_patt,
+    loc_of_aux loc_of_ctyp,
+    loc_of_aux loc_of_sig_item,
+    loc_of_aux loc_of_str_item,
+    loc_of_aux loc_of_module_type,
+    loc_of_aux loc_of_module_expr
+
+let num_of_loc (i, j) =
+  Num.Int i, Num.Int j
+
+let raise_with_loc loc exn =
+  match loc with
+      (Num.Int i, Num.Int j) -> Stdpp.raise_with_loc (i, j) exn
+    | _ -> raise (Failure "Filter_ocaml.raise_with_loc: got a big number")
 
 (*
  * Make a list of expressions.
@@ -1046,7 +1081,7 @@ let mk_simple_string =
 let mk_loc_int opname (start, finish) i =
    let p1 = make_param (Number start) in
    let p2 = make_param (Number finish) in
-   let p3 = make_param (Number (int_of_string i)) in
+   let p3 = make_param (Number (Num.num_of_string i)) in
    let op = mk_op opname [p1; p2; p3] in
       mk_term op []
 
@@ -1129,7 +1164,7 @@ let rec mk_expr comment expr =
        | (<:expr< while $e$ do $list:el$ done >>) ->
             mk_simple_term expr_while_op loc [mk_expr comment e; mk_list_term (List.map (mk_expr comment) el)]
        | MLast.ExAnt (_, e) ->
-            Stdpp.raise_with_loc loc (Failure "Filter_ocaml.mk_expr: encountered an ExAnt")
+            raise_with_loc loc (Failure "Filter_ocaml.mk_expr: encountered an ExAnt")
    in
       comment loc term
       
@@ -1166,7 +1201,7 @@ and mk_patt comment patt =
        | (<:patt< $uid:s$ >>) ->
             mk_var patt_uid_op loc s
        | MLast.PaAnt (_, p) ->
-            Stdpp.raise_with_loc loc (Failure "Filter_ocaml:mk_patt: encountered PaAnt")
+            raise_with_loc loc (Failure "Filter_ocaml:mk_patt: encountered PaAnt")
    in
       comment loc term
       
@@ -1283,10 +1318,12 @@ and mk_module_type comment mt =
       
 and mk_wc comment = function
    WcTyp (loc, sl1, sl2, t) ->
+      let loc = num_of_loc loc in
       let sl1' = mk_list_term (List.map mk_simple_string sl1) in
       let sl2' = mk_list_term (List.map mk_simple_string sl2) in
          comment loc (mk_simple_term wc_type_op loc [sl1'; sl2'; mk_type comment t])
- | WcMod (loc, sl1, mt) ->
+ | WcMod ((i, j), sl1, mt) ->
+      let loc = (Num.Int i, Num.Int j) in
       let sl1' = mk_list_term (List.map mk_simple_string sl1) in
          comment loc (mk_simple_term wc_module_op loc [sl1'; mk_module_type comment mt])
 
@@ -1323,7 +1360,7 @@ and mk_class_type comment
     ctFld = ctfl;
     ctVir = b1;
     ctCls = b2 } =
-   mk_simple_named_term class_type_op loc s
+   mk_simple_named_term class_type_op (num_of_loc loc) s
 	[ mk_list_term (List.map mk_simple_string sl);
 	  mk_list_term (List.map (mk_type comment) tl);
           mk_string_opt expr_string_op so;
@@ -1333,15 +1370,15 @@ and mk_class_type comment
 
 and mk_ctf comment = function
    CtCtr (loc, s, t) ->
-      mk_simple_term ctf_ctr_op loc [mk_simple_string s; mk_type comment t]
+      mk_simple_term ctf_ctr_op (num_of_loc loc) [mk_simple_string s; mk_type comment t]
  | CtInh (loc, t) ->
-      mk_simple_term ctf_inh_op loc [mk_type comment t]
+      mk_simple_term ctf_inh_op (num_of_loc loc) [mk_type comment t]
  | CtMth (loc, s, t) ->
-      mk_simple_term ctf_mth_op loc [mk_simple_string s; mk_type comment t]
+      mk_simple_term ctf_mth_op (num_of_loc loc) [mk_simple_string s; mk_type comment t]
  | CtVal (loc, s, b1, b2, ot) ->
-      mk_simple_term ctf_val_op loc [mk_simple_string s; mk_bool b1; mk_bool b2; mk_type_opt comment ot]
+      mk_simple_term ctf_val_op (num_of_loc loc) [mk_simple_string s; mk_bool b1; mk_bool b2; mk_type_opt comment ot]
  | CtVir (loc, s, t) ->
-      mk_simple_term ctf_vir_op loc [mk_simple_string s; mk_type comment t]
+      mk_simple_term ctf_vir_op (num_of_loc loc) [mk_simple_string s; mk_type comment t]
 
 and mk_class comment
   { cdLoc = loc;
@@ -1353,6 +1390,7 @@ and mk_class comment
     cdFld = cfl;
     cdVir = b1;
     cdCls = b2 } =
+   let loc = num_of_loc loc in
    let term =
       mk_simple_named_term class_op loc s
            [ mk_list_term (List.map mk_simple_string sl1);
@@ -1369,14 +1407,19 @@ and mk_cf comment cf =
    let loc, term =
       match cf with
          CfCtr (loc, s, t) ->
+            let loc = (num_of_loc loc) in
             loc, mk_simple_term cf_ctr_op loc [mk_simple_string s; mk_type comment t]
        | CfInh (loc, t, e, so) ->
+            let loc = (num_of_loc loc) in
             loc, mk_simple_term cf_inh_op loc [mk_type comment t; mk_expr comment e; mk_string_opt expr_string_op so]
        | CfMth (loc, s, e) ->
+            let loc = (num_of_loc loc) in
             loc, mk_simple_term cf_mth_op loc [mk_simple_string s; mk_expr comment e]
        | CfVal (loc, s, b1, b2, eo) ->
+            let loc = (num_of_loc loc) in
             loc, mk_simple_term cf_val_op loc [mk_simple_string s; mk_bool b1; mk_bool b2; mk_expr_opt comment eo]
        | CfVir (loc, s, t) ->
+            let loc = (num_of_loc loc) in
             loc, mk_simple_term cf_vir_op loc [mk_simple_string s; mk_type comment t]
    in
       comment loc term
@@ -1451,6 +1494,9 @@ let term_of_class = mk_class
 
 (*
  * $Log$
+ * Revision 1.6  1998/03/20 22:15:43  eli
+ * Eli: Changed integer parameters to Num.num's.
+ *
  * Revision 1.5  1998/02/19 17:13:57  jyh
  * Splitting filter_parse.
  *

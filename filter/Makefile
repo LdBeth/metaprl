@@ -78,6 +78,7 @@ CMALIBS :=\
 
 CCLIBS :=\
 	-cclib -lunix\
+        -cclib -lnums\
 	-cclib ../clib/clib.a
 
 #
@@ -89,6 +90,7 @@ CAMLP4LIB := /usr/local/lib/camlp4
 
 STANDARD_LIBS =\
 	$(CAMLLIB)/unix.cma\
+        $(CAMLLIB)/nums.cma\
 	$(CAMLP4LIB)/camlp4.cma\
 	$(CMADEPS)\
 	../refiner/refiner.cma\

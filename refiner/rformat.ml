@@ -326,6 +326,13 @@ let format_int buf i =
       push_command buf (Text (String.length s, s))
 
 (*
+ * Num.num numbers.
+ *)
+let format_num buf n =
+   let s = Num.string_of_num n in
+      push_command buf (Text (String.length s, s))
+
+(*
  * Print a buffer.
  *)
 let format_buffer buf buf' =
@@ -662,6 +669,9 @@ let print_to_string rmargin buf =
 
 (*
  * $Log$
+ * Revision 1.2  1998/03/20 22:16:20  eli
+ * Eli: Changed integer parameters to Num.num's.
+ *
  * Revision 1.1  1997/04/28 15:51:37  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

@@ -36,7 +36,7 @@ let param_of_opname opname =
 
 let rec mbparameter_of_param param =
   match (dest_param param) with
-    Number p -> mb_integer p
+    Number (Num.Int p) -> mb_integer p
   | String p -> mb_string p
   | Token p -> mb_stringq p mbs_Token
   | Level p ->
@@ -64,7 +64,7 @@ let rec mbparameter_of_param param =
 
 let rec print_param param =
   match (dest_param param) with
-    Number p ->  (print_int p  ; print_string " ")
+    Number (Num.Int p) -> (print_int p  ; print_string " ")
   | String p ->   (print_string p ; print_string " ")
   | Token p -> (print_string p ; print_string " ")
   | Level p ->  print_string "level" (* let aux = function
@@ -160,7 +160,7 @@ let rec param_of_mbparameter mbparameter =
   else if bequal b mbs_Variable then make_param (Var (string_value mbparameter))
   else if bequal b mbs_Token then make_param (Token (string_value mbparameter))
   else if bequal b mbs_LongInteger then 
-    let b = integer_value mbparameter in make_param (Number b)
+    let b = integer_value mbparameter in make_param (Number (Num.Int b))
   else if bequal b mbs_ParmList then
     let rec loop i l =
       if i = 0 then l

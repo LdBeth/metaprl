@@ -71,6 +71,7 @@ val format_char : buffer -> char -> unit
 val format_string : buffer -> string -> unit
 val format_quoted_string : buffer -> string -> unit
 val format_int : buffer -> int -> unit
+val format_num : buffer -> Num.num -> unit
 val format_buffer : buffer -> buffer -> unit
 
 (*
@@ -81,6 +82,9 @@ val print_to_string : int -> buffer -> string
 
 (*
  * $Log$
+ * Revision 1.3  1998/03/20 22:16:20  eli
+ * Eli: Changed integer parameters to Num.num's.
+ *
  * Revision 1.2  1997/08/06 16:18:13  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.

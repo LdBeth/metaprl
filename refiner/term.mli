@@ -42,7 +42,7 @@ type level_exp' = { le_const : int; le_vars : level_exp_var list }
  * Parameters have a number of simple types.
  *)
 type param' =
-   Number of int
+   Number of Num.num
  | String of string
  | Token of string
  | Level of level_exp
@@ -217,9 +217,9 @@ val dest_string_string_dep0_term : opname -> term -> string * string * term
 val dest_string_string_dep0_any_term : term -> string * string * term
 
 val is_number_number_dep0_term : opname -> term -> bool
-val mk_number_number_dep0_term : opname -> int -> int -> term -> term
-val dest_number_number_dep0_term : opname -> term -> int * int * term
-val dest_number_number_dep0_any_term : term -> int * int * term
+val mk_number_number_dep0_term : opname -> Num.num -> Num.num -> term -> term
+val dest_number_number_dep0_term : opname -> term -> Num.num * Num.num * term
+val dest_number_number_dep0_any_term : term -> Num.num * Num.num * term
 
 val is_string_string_dep0_dep0_term : opname -> term -> bool
 val mk_string_string_dep0_dep0_term : opname -> string -> string -> term -> term -> term
@@ -227,9 +227,9 @@ val dest_string_string_dep0_dep0_term : opname -> term -> string * string * term
 val dest_string_string_dep0_dep0_any_term : term -> string * string * term * term
 
 val is_number_term : opname -> term -> bool
-val mk_number_term : opname -> int -> term
-val dest_number_term : opname -> term -> int
-val dest_number_any_term : term -> int
+val mk_number_term : opname -> Num.num -> term
+val dest_number_term : opname -> term -> Num.num
+val dest_number_any_term : term -> Num.num
 
 val is_univ_term : opname -> term -> bool
 val mk_univ_term : opname -> level_exp -> term
@@ -425,6 +425,9 @@ val make_2subst_term : term -> string -> string -> term -> term -> term
 
 (*
  * $Log$
+ * Revision 1.11  1998/03/20 22:16:22  eli
+ * Eli: Changed integer parameters to Num.num's.
+ *
  * Revision 1.10  1998/02/21 20:58:23  jyh
  * Two phase parse/extract.
  *

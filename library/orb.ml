@@ -95,7 +95,7 @@ let orb_open name =
 let ireq_parameter = make_param (Token "!req")
 let ireq_op pl = mk_nuprl5_op (ireq_parameter :: pl)
 let ireq_term seq addr t tid = 
-  mk_term (ireq_op (make_param (Number seq)
+  mk_term (ireq_op (make_param (Number (Num.Int seq))
 			:: (make_param (Token "NUPRL5-type"))
 			:: (map (function s -> make_param (Token s)) addr)))
 	  [mk_bterm [] t; mk_bterm [] tid]
@@ -417,7 +417,7 @@ let iconnect_parameter = make_param (Token "!connect")
 let iconnect_op localhost sock = 
   mk_nuprl5_op
     [ iconnect_parameter
-    ; make_param (Number sock)
+    ; make_param (Number (Num.Int sock))
     ; make_param (String localhost)
     ]
 let iconnect_term localhost sock = mk_term (iconnect_op localhost sock) []

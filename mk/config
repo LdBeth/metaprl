@@ -158,7 +158,7 @@ $(REG_CMXFILES): %.cmx: %.ml $.mli
 	$(CC) $(CFLAGS) -c $*.c
 
 clean::
-	del -f *.cm* *.z* *.o *~ *.bak *.output $(MAIN) $(MAIN).run
+	rm -f *.cm* *.z* *.o *~ *.bak *.output $(MAIN) $(MAIN).run
 
 depend:: $(MLFILES) $(MLIFILES)
 	rm -f Makefile.tmp

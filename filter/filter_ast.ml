@@ -43,6 +43,9 @@ let build_printed_term loc t =
     | ML_Int i ->
          let i' = string_of_int i in
             <:expr< $int:i'$ >>
+    | ML_Num n ->
+         let i' = Num.string_of_num n in
+            <:expr< $int:i'$ >>
     | ML_String s ->
          <:expr< $str:s$ >>
     | ML_List l ->
@@ -131,6 +134,9 @@ let () = ()
 
 (*
  * $Log$
+ * Revision 1.2  1998/03/20 22:15:42  eli
+ * Eli: Changed integer parameters to Num.num's.
+ *
  * Revision 1.1  1997/04/28 15:50:50  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included
