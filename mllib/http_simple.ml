@@ -595,10 +595,9 @@ let serve connect fd info =
       let info =
          (* Ignore errors when the connection is handled *)
          try handle fd connect info client with
-            Unix.Unix_error _
-          | Sys_error _ ->
+            Unix.Unix_error _ | Sys_error _ as exn ->
                if !debug_http then
-                  eprintf "Httpd_simple: stopping web services%t" eflush;
+                  eprintf "Httpd_simple: %s: stopping web services%t" (Printexc.to_string exn) eflush;
                info
       in
          Unix.close fd';

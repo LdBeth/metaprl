@@ -262,7 +262,7 @@ struct
        *)
       match decode_uri uri with
          "inputs" :: uri ->
-            let filename = Lm_string_util.concat "/" uri in
+            let filename = String.concat "/" uri in
                print_raw_file_to_http outx filename;
                state
        | ["login"; key] when key = state.state_response ->
@@ -270,7 +270,7 @@ struct
        | _ ->
             if is_valid_response state header then
                let uri = "" :: decode_uri uri in
-               let dirname = Lm_string_util.concat "/" uri in
+               let dirname = String.concat "/" uri in
                let width = get_window_width header in
                   chdir state dirname;
                   flush state;
@@ -290,7 +290,7 @@ struct
                   eprintf "Post: %s, \"%s\"@." name (String.escaped text)) body
       in
       let uri = decode_uri uri in
-      let dirname = Lm_string_util.concat "/" uri in
+      let dirname = String.concat "/" uri in
 
       (* Precedence *)
       let command =
