@@ -20,7 +20,7 @@ ifeq ($(OSTYPE),cygwin32)
 endif
 
 ifndef CAMLP4LIB
-   CAMLP4LIB = /usr/local/lib/camlp4
+   CAMLP4LIB = /usr/lib/camlp4
 endif
 
 ifndef TERM
