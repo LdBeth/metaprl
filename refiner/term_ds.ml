@@ -730,11 +730,16 @@ let equal_params p1 p2 =
     | _ ->
          p1 = p2
 
+let rec remove_var v = function
+   [] -> []
+ | (v',_)::tl when v' = v -> remove_var v tl
+ | hd::tl -> hd::(remove_var v tl)
+
 let rec join_vars vars = function
-   ([],[]) -> vars |
-   (v1::vt1,v2::vt2) -> 
+   ([],[]) -> vars
+ | (v1::vt1,v2::vt2) -> 
       if (v1=v2) 
-         then join_vars vars (vt1,vt2)
+         then join_vars (remove_var v1 vars) (vt1,vt2)
          else (v1,v2)::(join_vars vars (vt1,vt2)) |
    _ -> raise (Invalid_argument ("join_vars"))
 
@@ -843,7 +848,7 @@ let rev_assoc v =
 let rec zip_cons l = function
    v1::t1, v2::t2 -> 
       if (v1=v2) 
-         then zip_cons l (t1,t2)
+         then zip_cons (remove_var v1 l) (t1,t2)
          else zip_cons ((v1, v2)::l) (t1, t2)
  | [], [] -> l
  | _ -> raise (Invalid_argument "zip_cons")
