@@ -618,16 +618,16 @@ struct
    (*
     * Make sure one of the hyps works.
     *)
+   let rec onSomeHypAux tac i p =
+      if i = 1 then
+         tac 1 p
+      else if i > 1 then
+         prefix_orelseT (tac i) (onSomeHypAux tac (pred i)) p
+      else
+         idT p
+
    let onSomeHypT tac p =
-      let rec aux i =
-         if i = 1 then
-            tac i
-         else if i > 1 then
-            prefix_orelseT (tac i) (aux (i - 1))
-         else
-            idT
-      in
-         aux (Sequent.hyp_count p) p
+      onSomeHypAux tac (Sequent.hyp_count p) p
 
    (*
     * Variable name addressing.

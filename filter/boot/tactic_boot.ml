@@ -886,8 +886,8 @@ struct
    (*
     * Construct polymorphic tactic.
     *)
-   let tactic_of_rule (make_subgoals, rl) (addrs, names) params arg =
-      let rl = rl (addrs, names) params in
+   let tactic_of_rule (make_subgoals, rl) addrs_names params arg =
+      let rl = rl addrs_names params in
       let subgoals, ext = Refine.refine (get_sentinal arg.ref_sentinal) rl arg.ref_goal in
       let subgoals = make_subgoals arg subgoals in
          ThreadRefinerTacticals.create_value subgoals (Extract (arg, subgoals, ext))
