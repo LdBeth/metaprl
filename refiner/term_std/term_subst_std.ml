@@ -550,13 +550,7 @@ struct
    let rec standardize_bterm index { bvars = bvars; bterm = t } =
       let bvars, subst, index =
          List.fold_left (fun (bvars, subst, index) v ->
-            let v_str = string_of_symbol v in
-            let v' =
-               try String.sub v_str 0 (String.rindex v_str '_') with
-                  Not_found ->
-                     v_str
-            in
-            let v' = Lm_symbol.make v' index in
+            let v' = Lm_symbol.make (Lm_symbol.to_string v) index in
             let t = mk_var_term v' in
             let bvars = v' :: bvars in
             let subst = (v, t) :: subst in
