@@ -8,3 +8,6 @@ latex book2
 latex book2
 dvips -o junk.ps book2.dvi
 mv junk.ps book2.ps
+
+pdflatex book2
+pdflatex book2

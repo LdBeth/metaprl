@@ -236,7 +236,7 @@ let parse_error s buf =
 
 let white = [' ' '\t']+
 let optwhite = [' ' '\t']*
-let newline = ['\r' '\n']+
+let newline = ['\r' '\n']
 let name = ['a'-'z''A'-'Z']+
 let number = ['0'-'9']+
 let special = ['[' ']' ';' ',' '_' '^' '!']
