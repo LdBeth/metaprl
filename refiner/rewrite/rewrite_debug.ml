@@ -29,7 +29,8 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-#include "refine_error.h"
+
+INCLUDE "refine_error.mlh"
 
 open Printf
 open Mp_debug

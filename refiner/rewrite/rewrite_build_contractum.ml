@@ -31,7 +31,7 @@
  * jyh@cs.cornell.edu
  *)
 
-#include "refine_error.h"
+INCLUDE "refine_error.mlh"
 
 open Printf
 open Mp_debug
@@ -140,15 +140,15 @@ struct
     *)
    let build_bname names bnames stack = function
       ArgName i ->
-#ifdef VERBOSE_EXN
-         if !debug_rewrite then
-            eprintf "ArgName %d%t" i eflush;
-#endif
+         IFDEF VERBOSE_EXN THEN
+            if !debug_rewrite then
+               eprintf "ArgName %d%t" i eflush
+         ENDIF;
          let v = names.(i) in
          let rec check v = function
             vars :: tl ->
                if List.mem v vars then
-                  ref_raise(RefineError ("build_bname", RewriteBoundSOVar v))
+                  REF_RAISE(RefineError ("build_bname", RewriteBoundSOVar v))
                else
                   check v tl
           | [] ->
@@ -158,21 +158,21 @@ struct
             v
     | StackName i ->
          begin
-#ifdef VERBOSE_EXN
-            if !debug_rewrite then
-               eprintf "StackName %d%t" i eflush;
-#endif
+            IFDEF VERBOSE_EXN THEN
+               if !debug_rewrite then
+                  eprintf "StackName %d%t" i eflush
+            ENDIF;
             match stack.(i) with
                StackString s ->
                   s
              | x ->
-                  ref_raise(RefineError ("build_bname", RewriteStringError "stack entry is not a string"))
+                  REF_RAISE(RefineError ("build_bname", RewriteStringError "stack entry is not a string"))
          end
     | SaveName i ->
-#ifdef VERBOSE_EXN
-         if !debug_rewrite then
-            eprintf "SaveName %d%t" i eflush;
-#endif
+         IFDEF VERBOSE_EXN THEN
+            if !debug_rewrite then
+               eprintf "SaveName %d%t" i eflush
+         ENDIF;
          names.(i)
 
    (*
@@ -199,14 +199,14 @@ struct
       let hyp_vars = collect_hyp_vars [] hyps i len in
          if is_free_var_list hyp_vars terms then
             begin
-#ifdef VERBOSE_EXN
-               if !debug_rewrite then
-                  eprintf "avoid_capture: capture occurred: %a/%a%t" (**)
-                     print_string_list hyp_vars
-                     print_string_list (free_vars_terms terms)
-                     eflush;
-#endif
-               ref_raise(RefineError ("avoid_capture", StringError "invalid substituion"))
+               IFDEF VERBOSE_EXN THEN
+                  if !debug_rewrite then
+                     eprintf "avoid_capture: capture occurred: %a/%a%t" (**)
+                        print_string_list hyp_vars
+                        print_string_list (free_vars_terms terms)
+                        eflush
+               ENDIF;
+               REF_RAISE(RefineError ("avoid_capture", StringError "invalid substituion"))
             end
 
    let subst_hyp terms vars = function
@@ -256,7 +256,7 @@ struct
          begin
             match stack.(i) with
                StackBTerm(term, []) -> term
-             | _ -> ref_raise(RefineError ("build_contractum_term", RewriteStringError "stack entry is not valid"))
+             | _ -> REF_RAISE(RefineError ("build_contractum_term", RewriteStringError "stack entry is not valid"))
          end
     | RWSOSubst(i, terms) ->
          begin
@@ -267,31 +267,31 @@ struct
               *)
             let subst term vars =
                let terms = List.map (build_contractum_term names bnames stack bvars) terms in
-#ifdef VERBOSE_EXN
-               if !debug_subst then
-                   begin
-                      eprintf "RWSOSubst2: %a%t" debug_print term eflush;
-                      iter2 (fun name term ->
-                            eprintf "\t%s: %a%t" name debug_print term eflush) (**)
-                         vars terms
-                   end;
-#endif
-               let term = subst term terms vars in
-#ifdef VERBOSE_EXN
+               IFDEF VERBOSE_EXN THEN
                   if !debug_subst then
-                     eprintf "\t%a%t" debug_print term eflush;
-#endif
+                      begin
+                         eprintf "RWSOSubst2: %a%t" debug_print term eflush;
+                         iter2 (fun name term ->
+                               eprintf "\t%s: %a%t" name debug_print term eflush) (**)
+                            vars terms
+                      end
+               ENDIF;
+               let term = subst term terms vars in
+                  IFDEF VERBOSE_EXN THEN
+                     if !debug_subst then
+                        eprintf "\t%a%t" debug_print term eflush
+                  ENDIF;
                   term
             in
                match stack.(i) with
                   StackBTerm(term, vars) ->
-#ifdef VERBOSE_EXN
-                     if !debug_subst then
-                        eprintf "RWSOSubst: BTerm: %a: %a%t" debug_print term print_string_list vars eflush;
-#endif
+                     IFDEF VERBOSE_EXN THEN
+                        if !debug_subst then
+                           eprintf "RWSOSubst: BTerm: %a: %a%t" debug_print term print_string_list vars eflush
+                     ENDIF;
                      subst term vars
                 | _ ->
-                     ref_raise(RefineError ("build_contractum_term", RewriteStringError "stack entry is not valid"))
+                     REF_RAISE(RefineError ("build_contractum_term", RewriteStringError "stack entry is not valid"))
          end
 
     | RWSOContextSubst(i, t, terms) ->
@@ -306,28 +306,28 @@ struct
                          (build_contractum_term names bnames stack bvars t)
                    in
                    let terms = List.map (build_contractum_term names bnames stack bvars) terms in
-#ifdef VERBOSE_EXN
-                      if !debug_subst then
-                         begin
-                            eprintf "RWSOContextSubst: %a%t" debug_print term eflush;
-                            iter2 (fun name term ->
-                                  eprintf "\t%s: %a%t" name debug_print term eflush) (**)
-                               vars terms
-                         end;
-#endif
+                      IFDEF VERBOSE_EXN THEN
+                         if !debug_subst then
+                            begin
+                               eprintf "RWSOContextSubst: %a%t" debug_print term eflush;
+                               iter2 (fun name term ->
+                                     eprintf "\t%s: %a%t" name debug_print term eflush) (**)
+                                  vars terms
+                            end
+                      ENDIF;
                    subst term terms vars
               | _ ->
-                   ref_raise(RefineError ("build_contractum_term", RewriteStringError "stack entry is not valid"))
+                   REF_RAISE(RefineError ("build_contractum_term", RewriteStringError "stack entry is not valid"))
          end
 
     | RWCheckVar i ->
          (*
           * This is a bound occurrence.
           *)
-#ifdef VERBOSE_EXN
-         if !debug_rewrite then
-            eprintf "RWCheckVar: %d/%d%t" i (Array.length bvars) eflush;
-#endif
+         IFDEF VERBOSE_EXN THEN
+            if !debug_rewrite then
+               eprintf "RWCheckVar: %d/%d%t" i (Array.length bvars) eflush
+         ENDIF;
          mk_var_term bvars.(i)
 
     | RWStackVar i ->
@@ -335,24 +335,24 @@ struct
           * This is a bound occurrence.
           *)
          begin
-#ifdef VERBOSE_EXN
-            if !debug_rewrite then
-               eprintf "RWStackVar: %d%t" i eflush;
-#endif
+            IFDEF VERBOSE_EXN THEN
+               if !debug_rewrite then
+                  eprintf "RWStackVar: %d%t" i eflush
+            ENDIF;
             match stack.(i) with
                StackString s ->
                   mk_var_term s
              | x ->
-                  ref_raise(RefineError ("build_contractum_term", RewriteStringError "stack entry is not valid"))
+                  REF_RAISE(RefineError ("build_contractum_term", RewriteStringError "stack entry is not valid"))
          end
 
     | t ->
-         ref_raise(RefineError ("build_contractum_term", RewriteStringError "bad contractum"))
+         REF_RAISE(RefineError ("build_contractum_term", RewriteStringError "bad contractum"))
 
    and build_con_exn = RefineError ("build_contractum_param", RewriteStringError "stack entry is not valid")
 
    and raise_param p =
-      ref_raise(RefineError ("build_contractum_param", RewriteBadMatch (ParamMatch (make_param p))))
+      REF_RAISE(RefineError ("build_contractum_param", RewriteBadMatch (ParamMatch (make_param p))))
 
    and build_contractum_level stack l = function
       { rw_le_var = v; rw_le_offset = o } :: t ->
@@ -360,7 +360,7 @@ struct
             match stack.(v) with
                StackLevel l' -> l'
              | StackMString s -> mk_var_level_exp s
-             | _ -> ref_raise(build_con_exn)
+             | _ -> REF_RAISE(build_con_exn)
          in
             build_contractum_level stack (max_level_exp l l' o) t
     | [] ->
@@ -381,7 +381,7 @@ struct
                 StackNumber j -> Number j
               | StackString s -> Number (Mp_num.num_of_string s)
               | StackMString s -> MNumber s
-              | t -> ref_raise(build_con_exn)
+              | t -> REF_RAISE(build_con_exn)
          end
     | RWMString i ->
          begin
@@ -389,7 +389,7 @@ struct
                 StackString s -> String s
               | StackNumber j -> String (Mp_num.string_of_num j)
               | StackMString s -> MString s
-              | t -> ref_raise(build_con_exn)
+              | t -> REF_RAISE(build_con_exn)
          end
     | RWMToken i ->
          begin
@@ -397,14 +397,14 @@ struct
                 StackString s -> Token s
               | StackNumber j -> String (Mp_num.string_of_num j)
               | StackMString s -> MToken s
-              | t -> ref_raise(build_con_exn)
+              | t -> REF_RAISE(build_con_exn)
          end
     | RWMLevel1 i ->
          begin
              match stack.(i) with
                 StackLevel l -> MLevel l
               | StackMString s -> MLevel (mk_var_level_exp s)
-              | t -> ref_raise(build_con_exn)
+              | t -> REF_RAISE(build_con_exn)
          end
     | RWMLevel2 { rw_le_const = c; rw_le_vars = vars } ->
          MLevel (build_contractum_level stack (mk_const_level_exp c) vars)
@@ -414,7 +414,7 @@ struct
                 StackString v -> Var v
               | StackNumber j -> Var (Mp_num.string_of_num j)
               | StackMString s -> MVar s
-              | t -> ref_raise(build_con_exn)
+              | t -> REF_RAISE(build_con_exn)
          end
     | RWObId id ->
          ObId id
@@ -443,34 +443,32 @@ struct
             match hyp with
                RWSeqContextSubst (j, terms) ->
                   begin
-#ifdef VERBOSE_EXN
-                     if !debug_rewrite then
-                        eprintf "-RWSeqContextSubst (%d)%t" j eflush;
-#endif
+                     IFDEF VERBOSE_EXN THEN
+                        if !debug_rewrite then
+                           eprintf "-RWSeqContextSubst (%d)%t" j eflush
+                     ENDIF;
                      match stack.(j) with
                         StackSeqContext(vars, hyps') ->
                            let terms =
                               List.map (build_contractum_term names bnames stack bvars) terms
                            in
-#ifdef VERBOSE_EXN
-                           let _ =
-                              if !debug_rewrite then
-                                 eprintf "+RWSeqContextSubst (%d%a)%t" j print_term_list terms eflush
-                           in
-#endif
-                           let i, len, hyps' = hyp_subst hyps' terms vars in
-                           let part = Array_util.ArrayArray (hyps', i, len) in
-                              build_contractum_sequent_hyps names bnames stack bvars (part :: parts) hyps
+                              IFDEF VERBOSE_EXN THEN
+                                 if !debug_rewrite then
+                                    eprintf "+RWSeqContextSubst (%d%a)%t" j print_term_list terms eflush
+                              ENDIF;
+                              let i, len, hyps' = hyp_subst hyps' terms vars in
+                              let part = Array_util.ArrayArray (hyps', i, len) in
+                                 build_contractum_sequent_hyps names bnames stack bvars (part :: parts) hyps
                       | _ ->
-                           ref_raise(RefineError
+                           REF_RAISE(RefineError
                                      ("build_contractum_sequent_hyps",
                                       RewriteStringError "stack entry is not valid"))
                   end
              | RWSeqHyp (v, hyp) ->
-#ifdef VERBOSE_EXN
-                  if !debug_rewrite then
-                     eprintf "RWSeqHyp: (%a)%t" print_varname v eflush;
-#endif
+                  IFDEF VERBOSE_EXN THEN
+                     if !debug_rewrite then
+                        eprintf "RWSeqHyp: (%a)%t" print_varname v eflush
+                  ENDIF;
                   let hyp = build_contractum_term names bnames stack bvars hyp in
                   let v = build_bname names bnames stack v in
                   let bnames = [v] :: bnames in

@@ -33,7 +33,7 @@
  *
  *)
 
-#include "refine_error.h"
+INCLUDE "refine_error.mlh"
 
 open Printf
 open Mp_debug
@@ -205,20 +205,20 @@ struct
          match redex with
             RWComposite { rw_op = { rw_name = opname1 } } :: _ ->
                if not (Opname.eq opname1 (opname_of_term goal)) then
-                  ref_raise(opname_exn)
+                  REF_RAISE(opname_exn)
           | _ ->
                ()
       in
       let gstack = Array.create gstacksize StackVoid in
-#ifdef VERBOSE_EXN
-         if !debug_rewrite then
-            eprintf "Rewrite.apply_rewrite: match_redex%t" eflush;
-#endif
+         IFDEF VERBOSE_EXN THEN
+            if !debug_rewrite then
+               eprintf "Rewrite.apply_rewrite: match_redex%t" eflush
+         ENDIF;
          match_redex addrs gstack goal params redex;
-#ifdef VERBOSE_EXN
-         if !debug_rewrite then
-            eprintf "Rewrite.apply_rewrite: namer%t" eflush;
-#endif
+         (IFDEF VERBOSE_EXN THEN
+            if !debug_rewrite then
+               eprintf "Rewrite.apply_rewrite: namer%t" eflush
+         ENDIF);
          let names' = namer gstack names in
          let result =
             match contractum with
@@ -231,21 +231,21 @@ struct
                         let enames = contracta_enames vars bnames enames in
                            Array.append names enames
                   in
-#ifdef VERBOSE_EXN
-                     if !debug_rewrite then
-                        eprintf "Rewrite.apply_rewrite: build_contractum%t" eflush;
-#endif
+                     IFDEF VERBOSE_EXN THEN
+                        if !debug_rewrite then
+                           eprintf "Rewrite.apply_rewrite: build_contractum%t" eflush
+                     ENDIF;
                      List.map (build_contractum names bnames gstack) con, names'
              | RWCFunction f ->
                   if params == [] then
                      [f goal], names'
                   else
-                     ref_raise(RefineError ("apply_rewrite", RewriteBadMatch (TermMatch xnil_term)))
+                     REF_RAISE(RefineError ("apply_rewrite", RewriteBadMatch (TermMatch xnil_term)))
          in
-#ifdef VERBOSE_EXN
-            if !debug_rewrite then
-               eprintf "Rewrite.apply_rewrite: done%t" eflush;
-#endif
+            IFDEF VERBOSE_EXN THEN
+               if !debug_rewrite then
+                  eprintf "Rewrite.apply_rewrite: done%t" eflush
+            ENDIF;
             result
 
    (*
@@ -289,14 +289,14 @@ struct
          begin
             match gstack with
                StackBTerm (t, []) -> RewriteTerm t
-             | _ -> ref_raise(extract_exn)
+             | _ -> REF_RAISE(extract_exn)
          end
     | SOVarPattern _ ->
          begin
             match gstack with
                StackBTerm (t, l) ->
                   RewriteFun (fun l' -> subst t l' l)
-             | _ -> ref_raise(extract_exn)
+             | _ -> REF_RAISE(extract_exn)
          end
     | SOVarInstance _ ->
          failwith "extract_redex_values: SOVarInstance"
@@ -305,35 +305,35 @@ struct
             match gstack with
                StackString s -> RewriteString s
              | StackMString s -> RewriteString s
-             | _ -> ref_raise(extract_exn)
+             | _ -> REF_RAISE(extract_exn)
          end
     | CVar _ ->
          begin
             match gstack with
                StackContext (l, t, addr) ->
                   RewriteContext (fun c l' -> subst (replace_subterm t addr c) l' l)
-             | _ -> ref_raise(extract_exn)
+             | _ -> REF_RAISE(extract_exn)
          end
     | PIVar _ ->
          begin
             match gstack with
                StackNumber i -> RewriteInt (Mp_num.int_of_num i)
              | StackMString s -> RewriteString s
-             | _ -> ref_raise(extract_exn)
+             | _ -> REF_RAISE(extract_exn)
          end
     | PSVar _ ->
          begin
             match gstack with
                StackString s -> RewriteString s
              | StackMString s -> RewriteString s
-             | _ -> ref_raise(extract_exn)
+             | _ -> REF_RAISE(extract_exn)
          end
     | PLVar _ ->
          begin
             match gstack with
                StackLevel l -> RewriteLevel l
              | StackMString s -> RewriteString s
-             | _ -> ref_raise(extract_exn)
+             | _ -> REF_RAISE(extract_exn)
          end
 
    let extract_redex_values gstack stack=
@@ -380,33 +380,33 @@ struct
       let namer stack' names' =
          (* Compute an array of names to change *)
          let names' = Array.copy names' in
-#ifdef VERBOSE_EXN
-            if !debug_rewrite then
-               begin
-                  print_rstack stderr stack;
-                  print_stack stderr stack';
-                  eprintf "Indices: %d:" length;
-                  Array_util.iter2 (fun name index ->
-                        match index with
-                           Some i -> eprintf " %s=%d" name i
-                         | None -> eprintf " %s=*" name) names indices;
-                  eflush stderr
-               end;
-#endif
+            IFDEF VERBOSE_EXN THEN
+               if !debug_rewrite then
+                  begin
+                     print_rstack stderr stack;
+                     print_stack stderr stack';
+                     eprintf "Indices: %d:" length;
+                     Array_util.iter2 (fun name index ->
+                           match index with
+                              Some i -> eprintf " %s=%d" name i
+                            | None -> eprintf " %s=*" name) names indices;
+                     eflush stderr
+                  end
+            ENDIF;
             for i = 0 to length - 1 do
                match indices.(i) with
                   Some j ->
                      begin
                         match stack'.(j) with
                            StackString s ->
-#ifdef VERBOSE_EXN
-                              if !debug_rewrite then
-                                 eprintf "Rewrite.compute_namer: names(%d)/%d <- %s%t" (**)
-                                    i (Array.length names') s eflush;
-#endif
+                              IFDEF VERBOSE_EXN THEN
+                                 if !debug_rewrite then
+                                    eprintf "Rewrite.compute_namer: names(%d)/%d <- %s%t" (**)
+                                       i (Array.length names') s eflush
+                              ENDIF;
                               names'.(i) <- s
                          | x ->
-                              ref_raise(RefineError ("compute_namer", RewriteStringError "stack entry is not a string"))
+                              REF_RAISE(RefineError ("compute_namer", RewriteStringError "stack entry is not a string"))
                      end
                 | None ->
                      ()

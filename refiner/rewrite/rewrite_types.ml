@@ -32,28 +32,13 @@
  *)
 
 open Opname
-#ifndef MLZ
+IFIMPLEMENTATION THEN
 open Term_sig
 open Term_addr_sig
+ELSE
+ENDIF
 
-module MakeRewriteTypes (TermType : TermSig)
-   (TermAddr : TermAddrSig
-    with type term = TermType.term) =
-struct
-   type level_exp = TermType.level_exp
-   type object_id = TermType.object_id
-   type term = TermType.term
-   type address = TermAddr.address
-   type seq_hyps = TermType.seq_hyps
-#else
-module type RewriteTypesSig =
-sig
-   type level_exp
-   type object_id
-   type term
-   type address
-   type seq_hyps
-#endif
+DEFTOPMACRO BODY =
 
    (*
     * For matching level expressions.
@@ -207,7 +192,37 @@ sig
         con_new_vars : string array
       }
 
+END
+
+IFIMPLEMENTATION THEN
+
+module MakeRewriteTypes (TermType : TermSig)
+   (TermAddr : TermAddrSig
+    with type term = TermType.term) =
+struct
+   type level_exp = TermType.level_exp
+   type object_id = TermType.object_id
+   type term = TermType.term
+   type address = TermAddr.address
+   type seq_hyps = TermType.seq_hyps
+
+   USETOPMACRO BODY END
 end
+
+ELSE
+
+module type RewriteTypesSig =
+sig
+   type level_exp
+   type object_id
+   type term
+   type address
+   type seq_hyps
+
+   USETOPMACRO BODY END
+end
+
+ENDIF
 
 (*
  * -*-

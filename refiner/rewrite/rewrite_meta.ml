@@ -29,7 +29,8 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-#include "refine_error.h"
+
+INCLUDE "refine_error.mlh"
 
 open Printf
 open Mp_debug
@@ -181,7 +182,7 @@ struct
       { rr_redex = (RWComposite { rw_op = { rw_name = name; rw_params = params } })::_ } ->
            mk_op name (List.map convert_param params)
     | _ ->
-         ref_raise(RefineError ("rewrite_operator", RewriteNoRuleOperator))
+         REF_RAISE(RefineError ("rewrite_operator", RewriteNoRuleOperator))
 
    (*
     * Get the arities of the subterms.
@@ -201,7 +202,7 @@ struct
       { rr_redex = (RWComposite { rw_bterms = bterms })::_ } ->
          List.map bterm_eval_flags bterms
     | _ ->
-         ref_raise(RefineError ("rewrite_eval_flags", RewriteNoRuleOperator))
+         REF_RAISE(RefineError ("rewrite_eval_flags", RewriteNoRuleOperator))
 end
 
 (*

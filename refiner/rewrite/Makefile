@@ -15,7 +15,7 @@ MAIN := reflib
 CCLIBS := -cclib -lnums
 
 # C preprocessor
-OCAMLFLAGS = -pp "$(CPP) -I../refsig"
+OCAMLFLAGS = -pp "$(CAMLP4MACRO) -I../refsig"
 
 all: lib
 
@@ -37,7 +37,9 @@ install:: $(MAIN).cma $(CMIFILES)
 Makefile.dep: Files
 
 rewrite_type_sig.mlz: rewrite_types.ml
-	$(CPP) -DMLZ rewrite_types.ml >$@
+	$(LN) rewrite_types.ml tmp.mli
+	if $(CAMLP4MACROPRINT) -DMLZ tmp.mli >$@; then true; else ($(RM) $@ tmp.mli; exit 1); fi
+	$(RM) tmp.mli
 
 clean::
 	$(RM) rewrite_type_sig.mlz

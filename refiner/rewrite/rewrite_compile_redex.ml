@@ -35,7 +35,7 @@
  * jyh@cs.cornell.edu
  *)
 
-#include "refine_error.h"
+INCLUDE "refine_error.mlh"
 
 open Printf
 open Mp_debug
@@ -139,7 +139,7 @@ struct
             if List.mem_assoc v bvars then
                (* This is a first order variable instance *)
                if subterms <> [] then
-                  ref_raise(RefineError ("compile_so_redex_term strict", RewriteBoundSOVar v))
+                  REF_RAISE(RefineError ("compile_so_redex_term strict", RewriteBoundSOVar v))
                else
                   stack, RWCheckVar(svar_index bvars v)
 
@@ -178,7 +178,7 @@ struct
          let v, term, vars = dest_context term in
             if rstack_mem v stack then
                (* The context should have a unique name *)
-               ref_raise(RefineError ("is_context_term", RewriteBoundSOVar v))
+               REF_RAISE(RefineError ("is_context_term", RewriteBoundSOVar v))
 
             else if Array_util.mem v addrs then
                (* All the vars should be free variables *)
@@ -194,7 +194,7 @@ struct
                      raise (Invalid_argument "compile_so_redex_term: free variable restrictions on SO contexts are not implemented")
             else
                (* No argument for this context *)
-               ref_raise(RefineError ("is_context_term", RewriteMissingContextArg v))
+               REF_RAISE(RefineError ("is_context_term", RewriteMissingContextArg v))
 
       else if is_sequent_term term then
          (* Sequents are handled specially *)
@@ -263,7 +263,7 @@ struct
        | String s -> stack, RWString s
        | Token t -> stack, RWToken t
        | Var v -> stack, RWVar v
-       | _ -> ref_raise(RefineError ("compile_so_redex_param", RewriteBadMatch (ParamMatch param)))
+       | _ -> REF_RAISE(RefineError ("compile_so_redex_param", RewriteBadMatch (ParamMatch param)))
 
    (*
     * In bterms, have to add these vars to the binding stack.
@@ -323,7 +323,7 @@ struct
             Context (v, vars) ->
                if rstack_mem v stack then
                   (* The context should have a unique name *)
-                  ref_raise(RefineError ("is_context_term", RewriteBoundSOVar v))
+                  REF_RAISE(RefineError ("is_context_term", RewriteBoundSOVar v))
 
                else if Array_util.mem v addrs then
                   (* All the vars should be free variables *)
@@ -347,11 +347,11 @@ struct
                      stack, term :: hyps, goals
                else
                   (* No argument for this context *)
-                  ref_raise(RefineError ("compile_so_redex_sequent_inner strict", RewriteMissingContextArg v))
+                  REF_RAISE(RefineError ("compile_so_redex_sequent_inner strict", RewriteMissingContextArg v))
 
           | Hypothesis (v, term) ->
                if rstack_mem v stack then
-                  ref_raise(RefineError ("compile_so_redex_sequent_inner strict", StringStringError ("repeated variable", v)));
+                  REF_RAISE(RefineError ("compile_so_redex_sequent_inner strict", StringStringError ("repeated variable", v)));
                let stack, term = compile_so_redex_term true strict addrs stack bvars term in
                let l = List.length stack in
                let stack = stack @ [FOVar v] in
@@ -379,7 +379,7 @@ struct
 
    let check_stack = function
       SOVarInstance (n, _) ->
-         ref_raise(RefineError ("check_stack", RewriteAllSOInstances n))
+         REF_RAISE(RefineError ("check_stack", RewriteAllSOInstances n))
     | _ ->
          ()
 

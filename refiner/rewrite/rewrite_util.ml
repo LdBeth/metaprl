@@ -30,7 +30,7 @@
  * jyh@cs.cornell.edu
  *)
 
-#include "refine_error.h"
+INCLUDE "refine_error.mlh"
 
 open Printf
 open Mp_debug
@@ -104,12 +104,12 @@ struct
        | [], [] ->
             ()
        | _ ->
-            ref_raise(iter2_exn)
+            REF_RAISE(iter2_exn)
 
    let rec rev_iter2 f a b =   match (a,b) with
          ([], []) -> ()
        | (ha::ta, hb::tb) -> rev_iter2 f ta tb; f ha hb
-       | _ -> ref_raise (rev_iter2_exn)
+       | _ -> REF_RAISE (rev_iter2_exn)
 
    (*
     * Upgrade a second-order instance to a pattern
@@ -139,7 +139,7 @@ struct
                   if arity = 0 then
                      ()
                   else
-                     ref_raise(RefineError ("rstack_check_arity", RewriteSOVarArity v))
+                     REF_RAISE(RefineError ("rstack_check_arity", RewriteSOVarArity v))
                else
                   rstack_check_arity v arity t
           | SOVarPattern (v', i) ->
@@ -147,7 +147,7 @@ struct
                   if i = arity then
                      ()
                   else
-                     ref_raise(RefineError ("rstack_check_arity", RewriteSOVarArity v))
+                     REF_RAISE(RefineError ("rstack_check_arity", RewriteSOVarArity v))
                else
                   rstack_check_arity v arity t
           | SOVarInstance (v', i) ->
@@ -155,7 +155,7 @@ struct
                   if i = arity then
                      ()
                   else
-                     ref_raise(RefineError ("rstack_check_arity", RewriteSOVarArity v))
+                     REF_RAISE(RefineError ("rstack_check_arity", RewriteSOVarArity v))
                else
                   rstack_check_arity v arity t
           | _ ->
@@ -234,11 +234,11 @@ struct
    let var_index bvars t =
       let s = dest_var t in
          try List.assoc s bvars with
-            Not_found -> ref_raise(RefineError ("var_index", RewriteFreeSOVar s))
+            Not_found -> REF_RAISE(RefineError ("var_index", RewriteFreeSOVar s))
 
    let svar_index bvars s =
       try List.assoc s bvars with
-         Not_found -> ref_raise(RefineError ("var_index", RewriteFreeSOVar s))
+         Not_found -> REF_RAISE(RefineError ("var_index", RewriteFreeSOVar s))
 end
 
 (*

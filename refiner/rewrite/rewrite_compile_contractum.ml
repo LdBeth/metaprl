@@ -34,7 +34,7 @@
  * jyh@cs.cornell.edu
  *)
 
-#include "refine_error.h"
+INCLUDE "refine_error.mlh"
 
 open Printf
 open Mp_debug
@@ -141,7 +141,7 @@ struct
             if List.mem v bvars then
                (* This is a first order variable instance *)
                if subterms <> [] then
-                  ref_raise(RefineError ("Rewrite_compile_contractum.compile_so_contractum_term", RewriteBoundSOVar v))
+                  REF_RAISE(RefineError ("Rewrite_compile_contractum.compile_so_contractum_term", RewriteBoundSOVar v))
                else
                   enames, RWCheckVar(List_util.find_index v bvars)
 
@@ -163,7 +163,7 @@ struct
 
             else
                (* This is a second order variable that is free *)
-               ref_raise(RefineError ("Rewrite_compile_contractum.compile_so_contractum_term", RewriteFreeSOVar v))
+               REF_RAISE(RefineError ("Rewrite_compile_contractum.compile_so_contractum_term", RewriteFreeSOVar v))
 
       else if is_context_term term then
          (* This is a second order context *)
@@ -179,7 +179,7 @@ struct
 
             else
                (* Free second order context *)
-               ref_raise(RefineError ("Rewrite_compile_contractum.is_context_term", RewriteFreeSOVar v))
+               REF_RAISE(RefineError ("Rewrite_compile_contractum.is_context_term", RewriteFreeSOVar v))
 
       else if is_sequent_term term then
          (* Sequents are handled specially *)
@@ -214,7 +214,7 @@ struct
                RWMNumber (array_rstack_p_index v stack)
             else
                (* Free param *)
-               ref_raise(RefineError (param_error, RewriteFreeParamVar v))
+               REF_RAISE(RefineError (param_error, RewriteFreeParamVar v))
 
        | MString v ->
             if array_rstack_p_mem v stack then
@@ -222,7 +222,7 @@ struct
                RWMString (array_rstack_p_index v stack)
             else
                (* Free param *)
-               ref_raise(RefineError (param_error, RewriteFreeParamVar v))
+               REF_RAISE(RefineError (param_error, RewriteFreeParamVar v))
 
        | MToken v ->
             if array_rstack_p_mem v stack then
@@ -230,7 +230,7 @@ struct
                RWMToken (array_rstack_p_index v stack)
             else
                (* Free param *)
-               ref_raise(RefineError (param_error, RewriteFreeParamVar v))
+               REF_RAISE(RefineError (param_error, RewriteFreeParamVar v))
 
        | MLevel l ->
             let { le_const = c; le_vars = vars } = dest_level l in
@@ -240,13 +240,13 @@ struct
                       if array_rstack_p_mem v stack then
                          RWMLevel1 (array_rstack_p_index v stack)
                       else
-                         ref_raise(RefineError (param_error, RewriteFreeParamVar v))
+                         REF_RAISE(RefineError (param_error, RewriteFreeParamVar v))
                  | _ ->
                       let collect { le_var = v; le_offset = off } =
                          if array_rstack_p_mem v stack then
                             { rw_le_var = array_rstack_p_index v stack; rw_le_offset = off }
                          else
-                            ref_raise(RefineError (param_error, RewriteFreeParamVar v))
+                            REF_RAISE(RefineError (param_error, RewriteFreeParamVar v))
                       in
                          RWMLevel2 { rw_le_const = c;
                                      rw_le_vars = List.map collect vars
@@ -258,7 +258,7 @@ struct
                RWMVar(array_rstack_p_index v stack)
             else
                (* Free param *)
-               ref_raise(RefineError (param_error, RewriteFreeParamVar v))
+               REF_RAISE(RefineError (param_error, RewriteFreeParamVar v))
 
        | Number i -> RWNumber i
        | String s -> RWString s
@@ -272,7 +272,7 @@ struct
             RWParamList (List.map (compile_so_contractum_param stack) l)
 
        | BackwardsCompatibleLevel _ ->
-            ref_raise(RefineError (param_error, StringError "BackwardsCompatibleLevel"))
+            REF_RAISE(RefineError (param_error, StringError "BackwardsCompatibleLevel"))
 
    (*
     * In bterms, have to add these vars to the binding stack.
@@ -331,7 +331,7 @@ struct
                      enames, term :: hyps, goals
                else
                   (* Free second order context *)
-                  ref_raise(RefineError ("Rewrite_compile_contractum.compile_so_contractum_hyp", RewriteFreeSOVar v))
+                  REF_RAISE(RefineError ("Rewrite_compile_contractum.compile_so_contractum_hyp", RewriteFreeSOVar v))
 
           | Hypothesis (v, term) ->
                let enames, term = compile_so_contractum_term names enames stack bvars term in
