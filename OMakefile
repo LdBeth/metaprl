@@ -143,7 +143,9 @@ if $(not $(equal $(OSTYPE), Win32))
 #
 # Directories needing only the standard config
 #
-.SUBDIRS: util clib
+.SUBDIRS: util 
+if $(equal $(PREBUILT_CLIBS), undefined)
+    .SUBDIRS: clib
 
 ########################################################################
 # Generic directories with no special options
