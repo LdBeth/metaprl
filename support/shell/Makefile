@@ -20,7 +20,7 @@ opt: $(MAIN).cmxa
 install:: all
 
 clean::
-	$(RM) -f *.p4* *.pp*
+	$(RM) -f *.p4* *.pp* browser_copy.ml
 
 # Real makefile
 include $(ROOT)/mk/rules

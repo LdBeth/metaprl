@@ -184,11 +184,13 @@ ZMLIFILES    = $(addsuffix .mli, $(MLZFILES))
 .SUFFIXES: .cma .cmx .cmo .cmi .ml .mli .mll .mly
 
 $(MAIN)-byte$(EXT_LIB): $(BOFILES)
-	$(MPTIME) ar r $@ $?
+   $(RM) $@
+	$(MPTIME) ar cq $@ $?
 	$(MPTIME) ranlib $@
 
 $(MAIN)-native$(EXT_LIB): $(NOFILES)
-	$(MPTIME) ar r $@ $?
+   $(RM) $@
+	$(MPTIME) ar cq $@ $?
 	$(MPTIME) ranlib $@
 
 $(MAIN).cma: $(LCMOFILES) $(MP_CMOFILES) $(ROOT)/mk/config
