@@ -1521,7 +1521,11 @@ struct
                let count = if (count > 0 ) then count - 1 else glen - goal_ind + count in
                   rename goal_ind t arg_ind rest count
           | ECRenameLast i :: rest ->
-               rename goal_ind t arg_ind rest (glen - goal_ind -i )
+               let count = glen - goal_ind - i in
+                  if count >= 0 then
+                     rename goal_ind t arg_ind rest count
+                  else
+                     REF_RAISE(RefineError("compute_rule_ext", StringError("not enough hyps")))
           | ECRestart :: rest ->
                aux 0 t arg_ind rest
          and rename goal_ind t arg_ind prog count =
