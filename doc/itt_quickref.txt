@@ -1,0 +1,2110 @@
+This file documents the tactics, tacticals, conversions,
+conversionals, etc. that are available at the MetaPRL command line
+(basically everything that is declared with "topval" in a .mli file).
+
+Notes and caveats: This is basically a first draft.  There are
+definite style problems.  I probably didn't use the correct MetaPRL
+terminology.  I didn't document the last half of itt_fset.ml.  The
+tactics are documented somewhat unevenly; for some, I specify exactly
+what the subgoals are.  For others, I just give a brief description of
+the effect.  I ignored "squash"ing and "squash"-related tactics (I
+need somebody to explain the semantics to me).  I wrote this by
+reading the source, with basically no experimentation; it's possible
+that some of what I wrote is wrong because I didn't understand what
+the source was doing.  Parts of the document read like new-user
+documentation, but I doubt that the document as a whole would be
+useful to users who didn't have epxerience with tactic-based theorem
+provers.  The document won't help much if you don't already understand
+the ITT logic.  I should probably describe the type inference process
+(and its extensions) in the same way I discuss other resources.
+
+However, I did set goals for myself that I believe I have met.
+1) Every "topval" in Itt_theory is at least mentioned.
+2) Every extension to dT, autoT, eqcdT, subtypeT, and reduceTopC is
+at least mentioned.
+3) Everywhere that withT, atT, altT, selT, thinningT, or withTypeT
+makes a difference is documented.
+
+----------------------------------------
+tacticals:
+
+Tactics apply to the current goal and return a (possibly empty) list
+of subgoals.  If the subgoal list is empty, the goal has been proved.
+Each goal has a goal sequent and a (possibly empty) list of assumption
+sequents; the assumptions do not change throughout a proof.  The goal
+sequent is composed of a conclusion and a list of hypotheses; the
+conclusion and the hypotheses are collectively called the clauses of
+the goal.  Each hypothesis declares a variable.
+
+The goal has a label (a string); this has no semantic meaning, but it
+lets tactics communicate with each other about where the goal came
+from (which can affect the kind of strategy you would want to use to
+prove it).
+
+A goal/subgoal is called "main" if its label is main, upcase,
+downcase, basecase, truecase, falsecase, or subterm; "non-main" otherwise.
+
+* refine : tactic -> unit
+refine takes a tactic and applies it to the current goal.  (Note that
+refine is actually a parser keyword; it does not use the normal
+function-call syntax.
+  refine rwh foo 0;;
+means
+  refine (rwh foo 0);;
+and not
+  ((refine rwh) foo) 0;;
+)
+
+* idT : tactic
+The identity tactic; has one subgoal which is the same as the goal.
+
+* failT : tactic
+A tactic that always fails.
+
+* failWithT : string -> tactic
+A tactic that always fails with the given string as its error message.
+
+* nthAssumT : int -> tactic
+A tactic that succeeds if the goal sequent matches the given
+hypothesis sequent.
+
+* timingT : tactic -> tactic
+  refine timingT (...)
+prints out the time taken for the given tactic application.  (timingT
+should always be the top-level tactical, as shown above; something
+like
+  refine timingT (...) THEN (...)
+will probably not do what you expect.)
+
+* completeT : tactic -> tactic
+Runs the argument tactic.  If the argument tactic succeeds and
+produces subgoals, then completeT fails.
+
+* progressT : tactic -> tactic
+Runs the argument tactic.  If the argument tactic succeeds and
+produces a single subgoal which is the same as the original goal, then
+progressT fails.
+
+* repeatT : tactic -> tactic
+Repeatedly execute the given tactic on all subgoals until no more
+progress is made.
+
+* repeatForT : int -> tactic -> tactic
+Repeatedly execute the given tactic on all subgoals until the given
+maximum depth is reached.
+
+* seqOnSameConclT : tactic list -> tactic
+Apply the tactics in the input list in turn on all subgoals until the
+conclusion changes.
+
+* orelseT (infix) : tactic -> tactic -> tactic
+Apply the first tactic.  If it fails, apply the second instead.
+
+* andalsoT, thenT (infix) : tactic -> tactic -> tactic
+Apply the first tactic and then the second.
+
+* orthenT (infix) : tactic -> tactic -> tactic
+Apply the first tactic and then the second.  If one of the tactics
+fails, it is ignored; if both fail, the composite tactic fails.
+
+* firstT : tactic list -> tactic
+Apply the first non-failing tactic in the list.  If they all fail,
+fail.
+
+* tryT : tactic -> tactic
+Apply the tactic.  If it fails, succeed and do nothing.
+
+* thenLT (infix) : tactic -> tactic list -> tactic
+Applies the first tactic, which must succeed with a list of subgoals
+equal in length to the second argument.  It then applies each of the
+second argument tactics to the subgoals in turn.
+
+* then_OnFirstT (infix) : tactic -> tactic -> tactic
+Apply the first tactic, then apply the second tactic to its first subgoal.
+
+* then_OnLastT (infix) : tactic -> tactic -> tactic
+Apply the first tactic, then apply the second tactic on its last subgoal.
+
+* then_OnSameConclT (infix) : tactic -> tactic -> tactic
+Apply the first tactic, then apply the second tactic on any subgoals
+with the same conclusion.
+
+* addHiddenLabelT : string -> tactic
+Create a single subgoal, which is the same as the current goal except
+that its label is set to the given string.
+
+* removeHiddenLabelT : string -> tactic
+= addHiddenLabelT "main"
+
+* keepingLabelT : tactic -> tactic
+Apply the tactic, then set the label of any subgoals to be the same as
+the label of the original goal.
+
+* ifLabT : string -> tactic -> tactic -> tactic
+If the current goal has the given string as its label, then apply the
+first argument tactic; otherwise apply the second argument tactic.
+
+* thenMT (infix) : tactic -> tactic -> tactic
+Applies the first tactic, then applies the second tactic to any "main"
+subgoals.
+
+* thenMLT (infix) : tactic -> tactic list -> tactic
+Applies the first tactic, then pairs up the members of the tactic list
+with the "main" subgoals (it is an error if the number of "main"
+subgoals is not the same as the length of the tactic list).
+
+* thenAT (infix) : tactic -> tactic -> tactic
+Applies the first tactic, then applies the second tactic to non-main
+subgoals.
+
+* thenALT (infix) : tactic -> tactic list -> tactic
+Applies the first tactic, then pairs up the members of the tactic list
+with the "non-main" subgoals (it is an error if the number of "non-main"
+subgoals is not the same as the length of the tactic list).
+
+* thenWT (infix) : tactic -> tactic -> tactic
+Applies the first tactic, then applies the second tactic to any
+subgoals labeled "wf".
+
+* thenET (infix) : tactic -> tactic -> tactic
+Applies the first tactic, then applies the second tactic to any
+subgoals labeled "equality".
+
+* thenPT (infix) : tactic -> tactic -> tactic
+Applies the first tactic, then applies the second tactic to any
+subgoals labeled "set predicate", "rewrite subgoal", "assertion", or
+"antecedent".
+
+* repeatMT : tactic -> tactic
+Apply the tactic, then apply it recursively to "main" subgoals
+(stopping on each branch whenever no more progress is made).
+
+* repeatMForT : int -> tactic -> tactic
+Apply the tactic, then apply it recursively to "main" subgoals, to the
+given depth.
+
+* seqOnMT : tactic list -> tactic
+Apply the first listed tactic, then apply the rest of the tactics in
+sequence to "main" subgoals.
+
+* seqT : tactic list -> tactic
+Apply the tactics listed in sequence.
+
+* completeMT : tactic -> tactic
+Apply the tactic, then fail if any "main" subgoals remain.
+
+* labProgressT : tactic -> tactic
+Apply the tactic, then fail if it produces a single subgoal which is
+the same as the current goal (and the label is the same).
+
+* onClauseT : int -> (int -> tactic) -> tactic
+onClause i tac p = tac i p
+
+* onHypT : int -> (int -> tactic) -> tactic
+onHypT = onClauseT
+
+* onConclT : (int -> tactic) -> tactic
+onConclT tac = tac 0
+
+* onClausesT : int list -> (int -> tactic) -> tactic
+onClausesT lst tac = seqT (List.map tac lst)
+
+* onHypsT = onClausesT
+
+* onMClausesT : int list -> (int -> tactic) -> tactic
+as onClausesT, except seqOnMT instead of seqT
+
+* onMHypsT = onMClausesT
+
+* onAllHypsT : (int -> tactic) -> tactic
+onAllHypsT = onHypsT [1..n]
+where n is the number of hypotheses in the initial goal
+
+* onAllClausesT : (int -> tactic) -> tactic
+= onAllHypsT tac thenT onConclT tac
+
+* tryOnAllHypsT : (int -> tactic) -> tactic
+= onAllHypsT (function i -> tryT (tac i))
+
+* tryOnAllClausesT : (int -> tactic) -> tactic
+= onAllClausesT (function i -> tryT (tac i))
+
+* onAllMHypsT, onAllMClausesT, tryOnAllMHypsT, tryOnAllMClausesT:
+as the above four functions, but using onMHypsT
+
+* onSomeAssumT : (int -> tactic) -> tactic
+Tries to apply the argument to [1..n] (where n is the number of
+assumptions), taking the first success.
+
+* onSomeHypT : (int -> tactic) -> tactic
+Tries to apply the argument to [n..1] (where n is the number of
+hypotheses), taking the first success.
+
+* onVarT : string -> (int -> tactic) -> tactic
+Apply the tactic on the hypothesis which binds the given variable.
+Fails if the variable is not found.
+
+* withTermT : string -> term -> tactic -> tactic
+* withTypeT : string -> term -> tactic -> tactic
+* withBoolT : string -> bool -> tactic -> tactic
+* withIntT : string -> int -> tactic -> tactic
+* withTacticT : string -> tactic -> tactic -> tactic
+Some tactics take optional arguments.  Optional arguments are annoying
+to express in ML; these functions are one way of doing so.  Optional
+arguments are passed to a tactic in an environment mapping strings to
+a discriminated union of term, term (treated as type), int, bool, or
+term (treated as subst) (plus some options that are internal
+implementation details).  Each of the above functions adds to this
+environment.  Note that withTacticT
+is not actually implemented.
+
+* withT : term -> tactic -> tactic
+= withTermT "with"
+
+* atT : term -> tactic -> tactic
+= withTypeT "univ"
+
+* selT : int -> tactic -> tactic
+= withIntT "sel"
+
+* altT : tactic -> tactic
+= withBoolT "alt" true
+
+* thinningT : bool -> tactic -> tactic
+= withBoolT "thin"
+
+----------------------------------------
+conversionals:
+
+A conversion is applied at some particular address within a sequent.
+It tries to rewrite the term at that point.
+
+* rw : conv -> int -> tactic
+Applies the given conversion to the sequent clause named by the int
+argument.
+
+* rwh : conv -> int -> tactic
+= rw (higherC conv) i
+
+* andthenC (infix) : conv -> conv -> conv
+Apply the first conversion and then the second.
+
+* orelseC (infix) : conv -> conv -> conv
+Apply the first conversion.  If it fails, apply the second instead.
+
+* addrC : int list -> conv -> conv
+Apply the conversion at the specified address.  An address is a list
+of ints; the address [0; 1; 2] refers to the third subterm of the
+second subterm of the first subterm of the current term.
+
+* idC : conv
+Does nothing.
+
+* foldC : term -> conv -> conv
+foldC t c replaces the current subterm by t, if c can convert t to the
+current subterm.  Otherwise, it fails.
+
+* makeFoldC : term -> conv -> conv
+As makeFoldC, but doesn't work on all conversions.  However, when it
+does work, it's more efficient than foldC.
+
+* cutC : term -> conv
+Replaces the current subterm with the argument term.  Creates a
+"rewrite" subgoal.
+
+* failC : string -> conv
+Fails with the given string as an error message.
+
+* tryC : conv -> conv
+Tries to apply the given conversion.  If it fails, succeed and do
+nothing.
+
+* someSubC : conv -> conv
+Applies the conversion to the first subterm of the current term on
+which it succeeds.  Fails if the conversion fails on all subterms.
+(Here I mean "exact subterm" rather than "recursive subterm".)
+
+* allSubC : conv -> conv
+Applies the conversion to every subterm of the current term; fails if
+any of them fail.  (Again, this is "exact subterm".)
+
+* higherC : conv -> conv
+Apply the conversion to outermost terms.
+
+* lowerC : conv -> conv
+Apply the conversion to the leftmost, innermost term to which it
+applies.  If the conversion applies nowhere, fail.
+
+* sweepUpC : conv -> conv
+Apply the conversion to all terms possible from innermost to
+outermost.
+
+* sweepDnC : conv -> conv
+Apply the conversion to all terms possible from outermost to
+innermost.
+
+* firstC : conv list -> conv
+Apply the first conversion from the list that succeeds.
+
+* repeatC : conv -> conv
+Apply the conversion at least once.  Keep applying it until it either
+fails or makes no change (returns a term alpha-equivalent to the term
+it was applied to).
+
+* repeatForC : int -> conv -> conv
+repeatForC n c applies c n times.
+
+* reduceTopC : conv
+Tries to "reduce" the current term.  This is a resource-based
+conversion.  It looks up the current term to determine the correct
+conversion to apply.
+
+* reduceC : conv
+= repeatC (higherC reduceTopC)
+
+----------------------------------------
+base_dtactic:
+
+* dT : int -> tactic
+Tries to "destruct" the given sequent clause.  This is a
+resource-based tactic.  It looks at the form of the clause to
+determine the correct tactic to apply.
+
+(dT 0) is part of the autoT tactic.
+
+* dForT : int -> tactic
+Applies (dT 0) the given number of times on "main" subgoals.
+
+----------------------------------------
+base_rewrite:
+
+* d_rewriteT : int -> tactic
+If the argument is 0, this solves a goal with a conclusion of the form
+<< "rewrite"{'x; 'x} >>.  It is part of the dT tactic.
+
+----------------------------------------
+base_auto_tactic:
+
+* trivialT : tactic
+Performs "trivial" reasoning steps.  This is a resource-based tactic.
+It applies all the available tactics in turn, stopping if one succeeds.
+In its initial configuration, it checks whether the goal sequent is
+the same as some assumption sequent.
+
+* autoT : tactic
+Performs automatic reasoning.  This is a resource-based tactic.  It
+applies all the available tactics in turn, until none of the tactics
+succeed.
+
+In its initial configuration, it applies trivialT.
+
+----------------------------------------
+itt_equal:
+
+new terms:
+"type"{'a}
+univ[i:l]
+equal{'T; 'a; 'b}
+member{'T; 'x} <--> ('x = 'x in 'T)
+it
+"true"
+"false"
+cumulativity[i:l, j:l]
+
+* unfold_member : conv
+Rewrites << member{'T; 'x} >> to << 'x = 'x in 'T >>.
+
+* reduce_cumulativity: conv
+Rewrites a term of the form << cumulativity[i:l, j:l] >> to "true" (if
+i<j) or "false" (otherwise).
+
+* fold_member : conv
+The opposite of unfold_member; rewrites << 'x = 'x in 'T >> to
+<< member{'T; 'x} >>.
+
+* eqcdT : tactic
+Tries to solve goals with conclusions of the form 
+<< 'a = 'b in 'T >>.  This is a resource-based tactic.  It looks at
+the form of 'a to determine the correct tactic to apply.
+
+In its initial state, it can handle 
+<< univ[j:l] = univ[j:l] in univ[i:l] >> and
+<< it = it in ('a = 'b in 'T) >>
+
+* squash_equalT : tactic
+
+* squash_memberT : tactic
+
+* squash_typeT : tactic
+
+* typeAssertT : tactic
+Deduces << "type"{'T} >> from << 'T >>.
+
+* memberAssumT : int -> tactic
+(memberAssumT i) deduces << member{'T; 'x} >> if << x: 'T >> is the i'th
+hypothesis.
+
+* unsquashT : term -> tactic
+
+* equalAssumT : int -> tactic
+(equalAssumT i) deduces << 'x = 'x in 'T >> if << 'x: 'T >> is the i'th
+hypothesis.
+
+* equalRefT : term -> tactic
+(equalRefT t) changes the goal from << 'x = 'x in 'T >> to
+<< 'x = t in 'T >>.
+
+* equalSymT : tactic
+equalSymT changes the goal from << 'x = 'y in 'T >> to
+<< 'y = 'x in 'T >>.
+
+* equalTransT : term -> tactic
+(equalTransT t) splits a goal << 'x = 'y in 'T >> into two subgoals,
+<< 'x = t in 'T >> and << t = 'y in 'T >>.
+
+* equalTypeT : term -> term -> tactic
+(equalTypeT a b) changes the goal from << "type"{'T} >> to
+<< 'a = 'b in 'T >>.
+
+* univTypeT : term -> tactic
+(univTypeT t) changes the goal from << "type"{'x} >> to
+<< 'x = 'x in t >> (t must be of the form << univ[i:l] >>).
+
+* univAssumT : int -> tactic
+(univAssumT i) deduces << "type"{'x} >> if the i'th hypothesis is
+<< x: univ[i:l] >>.
+
+This file adds to the dT tactic:
+(dT 0) calls eqcdT if the conclusion is of the form << 'a = 'b in 'T >>. 
+If the n'th hypothesis is of the form << x: 'a = 'b in 'T >>, then
+(dT n) replaces << x >> with << it >> in the rest of the sequent.
+
+If the conclusion is of the form << "type"{ 'a = 'a in 'T } >>, 
+(dT 0) replaces it with << 'a = 'a in 'T >>.
+If the conclusion is of the form << "type"{ 'a = 'b in 'T } >>,
+(dT 0) creates two subgoals, with conclusions
+<< 'a = 'a in 'T >> and << 'b = 'b in 'T >>.
+
+If the conclusion is of the form << "type"{member{'T; 'x}} >>,
+(dT 0) replaces it with << member{'T; 'x} >>.
+
+If the conclusion is of the form << "type"{univ[i:l]} >>,
+(dT 0) succeeds with no subgoals.
+
+If the conclusion is of the form << it = it in ('a = 'b in 'T) >>,
+(dT 0) replaces it with << 'a = 'b in 'T >> and marks the resulting
+subgoal as a "wf" subgoal.
+
+This file adds to the trivalT tactic:
+trivialT can solve goals with a conclusion of the form
+<< 'x = 'x in 'T >> or << member{'T; 'x} >> if there is a hypothesis
+<< x: 'T >>, or goals with a conclusion of the form 
+<< "type"{'x} >> if there is a hypothesis << x: univ[i:l] >>.
+
+----------------------------------------
+itt_subtype:
+
+new terms:
+subtype{'A; 'B}
+
+* subtypeT : tactic
+This tactic proves subtype goals.  This is a resource-based tactic.
+It looks at the form of the conclusion to plan a proof, using its
+database of subtype information to direct its search.  This database
+only contains subtype information; basically, it ignores rule
+antecedents that do not have subtype conclusions.  This means that
+subtypeT will generate subgoals for all non-subtype rule antecedents.
+
+* d_subtypeT : int -> tactic
+(d_subtypeT 0) takes a conclusion of the form << subtype{'A; 'B} >>
+and creates two subgoals.  One (marked "wf") has a conclusion of
+<< "type"{'A} >>; the other (marked "aux") is of the form
+<< x: 'A >- 'x = 'x in 'B >>.
+
+(d_subtypeT n) is really two tactics in one; both apply to hypotheses of
+the form << x: subtype{'A; 'B} >>.  In the first form, (d_subtypeT n)
+replaces << x >> with << it >> in the rest of the sequent.  However,
+if you call (withT t (d_subtypeT n)) (i.e., provide a term argument),
+the tactic creates two subgoals.  The first (marked "wf") has a
+conclusion of << member{'A; t} >>.  The second has an extra
+hypothesis, << y: member{'B; t} >>.
+
+* eqcd_subtype : tactic
+This tactic can handle conclusions of the form
+<< subtype{'A1; 'B1} = subtype{'A2; 'B2} in univ[i:l] >>.
+
+* squash_subtypeT : tactic
+
+* type_subtype_leftT: term -> tactic
+* type_subtype_rightT : term -> tactic
+type_subtype_leftT t will replace a conclusion of the form
+<< "type"{'B} >> with the conclusion << subtype{t, 'B} >>.
+Similarly, type_subtype_rightT t replaces << "type"{'A} >>
+with << subtype{'A; t} >>.
+
+This file adds to the dT tactic.
+If dT is invoked on a clause of the form << subtype{'A; 'B} >>, it
+applies d_subtypeT.
+
+If the conclusion is of the form << "type"{subtype{'A; 'B}} >>,
+(dT 0) creates two subgoals, with conclusions << "type"{'A} >>
+and << "type"{'B} >>.
+
+If the conclusion is of the form << it = it in subtype{'A; 'B} >>,
+(dT 0) replaces it with << subtype{'A; 'B} >>.
+
+This file adds to the eqcdT tactic.
+eqcdT will call eqcd_subtype when appropriate.
+
+----------------------------------------
+itt_void:
+
+new terms:
+void
+
+* squash_voidT : tactic
+
+This file adds to the dT tactic:
+If the n'th hypothesis is of the form << x: void >>, then
+(dT n) succeeds with no subgoals.
+
+If the conclusion is of the form << "type"{void} >>, then
+(dT 0) succeeds with no subgoals.
+
+This file adds to the eqcdT tactic:
+eqcdT can handle conclusions of the form << void = void in univ[i:l] >>.
+
+This file adds to the subtypeT tactic.
+subtypeT proves << void >> is a subtype of every type directly.
+
+----------------------------------------
+itt_struct:
+
+new terms:
+bind{x. 'T['x]} (Note that this is only used for syntactic purposes;
+		it has no semantic meaning.)
+
+* nthHypT : int -> tactic
+If the i'th hypothesis is << x: 'A >>, and the conclusion is << 'A >>,
+then (nthHypT i) succeeds with no subgoals.
+
+* thinT : int -> tactic
+If the i'th hypothesis is << x: 'A >>, and x does not appear free in
+the rest of the sequent, then (thinT i) deletes the hypothesis.
+
+* thinAllT : int -> int -> tactic
+(thinAllT i j) deletes the hypotheses numbered i through j
+(inclusive).
+
+* assertT : term -> tactic
+(assertT t) creates two subgoals; one where << t >> is the conclusion,
+and one which adds << x: t >> as a new hypothesis (at the end of the
+hypothesis list).
+
+* assertAtT : int -> term -> tactic
+As assertT, but lets you specify where the new hypothesis is to be
+added.
+
+* dupT : tactic
+Creates two subgoals, both the same as the current goal.
+
+* useWitnessT : term -> tactic
+(useWitnessT t) changes a conclusion << 'T >> into 
+<< t = t in 'T >>.
+
+* substT : term -> int -> tactic
+(substT << a = b in T >> n) substitutes b for a in the n'th clause of
+the sequent, creating several subgoals.  If you want to substitute for
+some but not all occurrences of a, you can wrap the tactic in
+(withT << bind{x. 'B['x]} >> ...), where the n'th clause must be 
+<< 'B[a] >>.
+
+* hypSubstT : int -> int -> tactic
+(hypSubsT j n) is like (substT ... n) where the equality comes from
+the j'th hypothesis (so you don't need to prove the equality as one of
+the subgoals).  (You can still use withT to specify which occurrences
+to substitute.)
+
+* revHypSubstT : int -> int -> tactic
+Like hypSubstT, but substitutes in the other direction.
+
+* replaceHypT : term -> int -> tactic
+(atT << univ[i:l] >> (replaceHypT t i)) changes the i'th hypothesis
+from << x: 'A >> to << x: t >>, and adds an extra subgoal
+<< 'A = t in univ[i:l] >>.
+
+This file adds to the trivialT tactic.
+trivialT can solve goals with a hypothesis << x: 'A >> and a goal 
+<< 'A >>.
+
+----------------------------------------
+itt_rfun:
+
+new terms:
+"fun"{'A; x. 'B['x]}
+rfun{'A; f, x. 'B['f; 'x]}
+
+lambda{x. 'b['x]}
+apply{'f; 'a}
+
+well_founded{'A; x, y. 'R['x; 'y]}
+fix{f. 'b['f]}
+
+* reduce_beta : conv
+Rewrites << lambda{v. 'b['v]} 'a >> to << 'b['a] >>.
+
+* reduce_fix : conv
+Rewrites << fix{f. 'b['f]} >> to << 'b[fix{f. 'b['f]}] >>.
+
+This file adds to the dT tactic.
+dT can handle clauses of the form << rfun{'A; f, x. 'B['f; 'x]} >>.
+(although it must be wrapped in a withT giving a well-order relation).
+
+This file adds to the eqcdT tactic.
+eqcdT can handle conclusions of the form
+<< rfun{'A; f, x. 'B['f; 'x]} = rfun{'A2; f2, x2. 'B2['f2; 'x2]} in univ[i:l] >>
+(although it must be wrapped in a withT giving a well-order relation).
+
+This file adds to the reduceTopC conversion.  
+It adds the reduce_beta and reduce_fix conversions.
+
+----------------------------------------
+itt_dfun:
+
+* reduceEta : term -> conv
+Rewrites << lambda{x. 'f 'x} >> to << 'f >>, under the conditions
+<< x: 'A -> 'B['x] >> and << 'f = 'f in (x: 'A -> 'B['x]) >>.
+
+This file adds to the dT tactic.
+If the conclusion is of the form << x: 'A -> 'B['x] >>,
+(dT 0) creates a subgoal with a new hypothesis, << x: 'A >- 'B['x] >>,
+and adds another subgoal with conclusion << "type"{'A} >>.
+If the i'th hypothesis is of the form << f: (x: 'A -> 'B['x]) >>,
+(withT t (dT i)) adds new hypotheses << y: 'B[t]; v: 'y = ('f t) >>,
+and adds an extra subgoal with conclusion << t = t in 'A >>.
+
+If the conclusion is of the form << "type"{(x:'A -> 'B['x])} >>,
+(dT 0) creates subgoals (one with an extra hypothesis)
+<< "type"{'A} >> and << x: 'A >- "type"{'B['x]} >>.
+
+This file adds to the eqcdT tactic.
+eqcdT can handle conclusions of the form
+<< (x1:'A1 -> 'B1['x1]) = (x2:'A2 -> 'B2['x2]) in univ[i:l] >>,
+<< lambda{x1. 'b1['x1]} = lambda{x2. 'b2['x2]} in x3:'A -> 'B['x3] >>,
+and << ('f1 'x1) = ('f2 'x2) in 'B >>.  (In the last case, it must be
+wrapped with (withT << x:'A -> 'B['x] >> ...), where the supplied term
+is the type of << 'f1 >> and << 'f2 >>.)
+
+This file adds to the subtypeT tactic.
+subtypeT proves that << a1:'A1 -> 'B1['a1] >> is a subtype of 
+<< a2:'A2 -> 'B2['a2] >> by proving << 'B1['a] >> is a subtype of 
+<< 'B2['a] >> and << 'A2 >> is a subtype of << 'A1 >>.
+
+----------------------------------------
+itt_fun:
+
+* reduceIndependentEta : term -> conv
+Rewrites << lambda{x. 'f 'x} >> to << 'f >>, under the conditions
+<< 'A -> 'B >> and << 'f = 'f in ('A -> 'B) >>.
+
+This file adds to the dT tactic.
+If the conclusion is of the form << 'A -> 'B >>,
+(dT 0) creates a subgoal with a new hypothesis, << x: 'A >- 'B >>,
+and adds another subgoal with conclusion << "type"{'A} >>.
+If the i'th subgoal is of the form << f: ('A -> 'B) >>,
+(dT i) creates two subgoals, one with conclusion << 'A >> and one with
+a new hypothesis << y: 'B >>, and (withT t (dT i)) creaets two
+subgoals, one with conclusion << t = t in 'A >> and one with
+new hypotheses << y: 'B; z: 'y = ('f t) in 'B >>.
+
+If the conclusion is of the form << "type"{('A -> 'B)} >>,
+(dT 0) creates subgoals (one with an extra hypothesis)
+<< "type"{'A} >> and << x: 'A >- "type"{'B} >>.
+
+If the conclusion is of the form << "type"{('f 'a)} >>,
+(dT 0) will try to infer a type for << 'f  >>, and infer which
+universe the type of << 'f >> is in.  If this fails, you will need to
+use withT to give it the type of << 'f >>.
+
+This file adds to the eqcdT tactic.
+eqcdT can handle conclusions of the form 
+<< ('A1 -> 'B1) = ('A2 -> 'B2) in univ[i:l] >>.
+
+eqcdT can also handle conclusions of the form
+<< ('f1 'a1) = ('f2 'a2) in 'T >>.  To do this, it needs to know the
+type of << 'f1 >>.  You can pass this type with a withT.  If you don't,
+it will try to infer the type of << 'f1 >>.  If that fails, it will
+try to infer the type of << 'a1 >>.  If neither of these works, the
+tactic will fail.
+
+eqcdT can also handle conclusions of the form
+<< lambda{x1. 'b1['x1]} = lambda{x2. 'b2['x2]} in ('A -> 'B) >>.
+
+This file adds to the subtypeT tactic.
+subtypeT proves that << 'A1 -> 'B1 >> is a subtype of
+<< 'A2 -> 'B2 >>  by proving << 'B1 >> is a subtype of << 'B2 >>
+and << 'A2 >> is a subtype of << 'A1 >>.
+
+----------------------------------------
+itt_dprod:
+
+new terms:
+prod{'A; x. 'B['x]}
+pair{'a; 'b}
+spread{'e; u, v. 'b['u; 'v]}
+fst{'e}
+snd{'e}
+
+* reduceSpread : conv
+Rewrites << spread{'u, 'v; a, b. 'c['a; 'b]} >> to << 'c['u; 'v] >>.
+
+* unfoldFst : conv
+Rewrites << fst{'e} >> to << spread{'e; u, v. 'u} >>.
+
+* unfoldSnd : conv
+Rewrites << snd{'e} >> to << spread{'e; u, v. 'v} >>.
+
+* reduceFst : conv
+Rewrites << fst{pair{'a; 'b}} >> to << 'a >>.
+
+* reduceSnd : conv
+Rewrites << snd{pair{'a; 'b}} >> to << 'b >>.
+
+This file adds to the reduceTopC conversion.
+It adds the reduceSpread, reduceFst, and reduceSnd conversions.
+
+This file adds to the dT tactic.
+If the conclusion is of the form << x: 'A * 'B['x] >>, 
+(withT t (dT 0)) changes it to << 'B[t] >> (and adds two more
+subgoals).
+If the i'th hypothesis is of the form << z: (x: 'A * 'B['x]) >>,
+(dT i) adds new hypotheses << u: 'A; v: 'B['u] >>, changes << 'z >>
+to << ('u,'v) >> in the rest of the sequent, and deletes the
+original hypothesis (if you don't want to delete the hypothesis, use
+(thinningT false (dT i)) ).
+
+If the conclusion is of the form << "type"{(x: 'A * 'B['x])} >>,
+(dT 0) creates subgoals (one with an extra hypothesis)
+<< "type"{'A} >> and << x: 'A >- "type"{'B['x]} >>.
+
+This file adds to the eqcdT tactic.
+eqcdT can handle conclusions of the forms
+<< (x1 : 'A1 * 'B1['x1]) = (x2: 'A2 * 'B2['x2]) in univ[i:l] >> and
+<< ('a1, 'b1) = ('a2, 'b2) in (x: 'A * 'B['x]) >>.
+
+It looks like somebody got halfway through writing the eqcdT support
+for spread terms, but didn't finish.
+
+This file adds to the subtypeT tactic.
+subtypeT would prove (except for a copy-and-paste bug) that 
+<< x1:'A1 * 'B1['x1] >> is a subtype of << x2:'A2 * 'B2['x2] >> 
+by proving << 'A1 >> is a subtype of << 'A2 >> and << 'B1['x] >> is a
+subtype of << 'B2['x] >>.
+
+----------------------------------------
+itt_prod:
+
+* unfoldProd : conv
+Rewrites << ('A * 'B) >> to << (x:'A * 'B) >>.
+
+This file adds to the dT tactic.
+If the conclusion is of the form << 'A * 'B >>,
+(dT 0) creates two subgoals with conclusions << 'A >> and << 'B >>.
+If the i'th hypothesis is of the form << z: 'A * 'B >>,
+(dT i) adds new hypotheses << 'u: 'A; 'v: 'B >>, changes << 'z >> to
+<< ('u,'v) >> in the rest of the sequent, and deletes the
+original hypothesis (if you don't want to delete the hypothesis, use
+(thinningT false (dT i)) ).
+
+If the conclusion is of the form << "type"{('A * 'B)} >>,
+(dT 0) creates subgoals with conclusions << "type"{'A} >>
+and << "type"{'B} >>.
+
+This file adds to the eqcdT tactic.
+eqcdT can handle conclusions of the forms
+<< ('A1 * 'B1) = ('A2 * 'B2) in univ[i:l] >> and
+<< ('a1, 'b1) = ('a2, 'b2) in ('A * 'B) >>.
+
+This file adds to the subtypeT tactic.
+subtypeT proves that << 'A1 * 'B1 >> is a subtype of << 'A2 * 'B2 >>
+by proving << 'A1 >> is a subtype of << 'A2 >> and << 'B1 >> is a
+subtype of << 'B2 >>.
+
+----------------------------------------
+itt_union:
+
+new terms:
+union{'A; 'B}
+inl{'x}
+inr{'x}
+decide{'x; y. 'a['y]; z. 'b['z]}
+
+* reduceDecideInl : conv
+Rewrites << decide{inl{'x}; u. 'l['u]; v. 'r['v]} >> to << 'l['x] >>.
+
+* reduceDecideInr : conv
+Rewrites << decide{inr{'x}; u. 'l['u]; v. 'r['v]} >> to << 'r['x] >>.
+
+This file adds to the reduceTopC conversion.
+It adds the reduceDecideInl and reduceDecideInr conversions.
+
+This file adds to the dT tactic.
+If the conclusion is of the form << 'A + 'B >>,
+(selT 1 (dT 0)) changes it to << 'A >> (and adds an extra subgoal).
+Similarly, (selT 2 (dT 0)) changes the conclusion to << 'B >>.
+If the i'th hypothesis is of the form << x: ('A + 'B) >>,
+(dT i) does a case analysis.
+
+If the conclusion is of the form << "type"{('A + 'B)} >>,
+(dT 0) creates subgoals with conclusions << "type"{'A} >>
+and << "type"{'B} >>.
+
+If the i'th hypothesis is of the form 
+<< inl{'x} = inr{'y} in 'T >> or
+<< inr{'x} = inl{'y} in 'T >>, (dT i) succeeds with no subgoals.
+
+This file adds to the eqcdT tactic.
+eqcdT can handle conclusions of the forms
+<< ('A1 + 'B1) = ('A2 + 'B2) in univ[i:l] >>,
+<< inl{'x1} = inl{'x2} in ('A + 'B) >>, and
+<< inr{'x1} = inr{'x2} in ('A + 'B) >>.
+
+The eqcdT support for decide terms is partially written but not
+complete.
+
+This file adds to the subtypeT tactic.
+subtypeT proves that << 'A1 + 'B1 >> is a subtype of << 'A2 + 'B2 >>
+by proving << 'A1 >> is a subtype of << 'A2 >> and << 'B1 >> is a
+subtype of << 'B2 >>.
+
+----------------------------------------
+itt_unit:
+
+new terms:
+unit
+
+This file adds to the dT tactic.
+If the conclusion is of the form << unit >>, then
+(dT 0) succeeds with no subgoals.
+If the i'th hypothesis is of the form << x: unit >>, then
+(dT i) replaces << x >> with << it >> in the rest of the sequent.
+
+If the conclusion is of the form << "type"{unit} >>, then
+(dT 0) succeeds with no subgoals.
+
+If the conclusion is of the form << "rewrite"{'x; it} >>, then
+(dT 0) changes the conclusion to << 'x = it in unit >>.
+
+This file adds to the eqcdT tactic.
+eqcdT can handle conclusions of the form
+<< unit = unit in univ[i:l] >> and << it = it in unit >>.
+
+----------------------------------------
+itt_logic:
+
+new terms, conversions:
+unfold_prop:	"prop"[i:l]		--> "univ"[i:l]
+unfold_true:    "true"			--> unit
+unfold_false:	"false"			--> void
+unfold_not:	"not"{'a}		--> 'a -> void
+unfold_and:	"and"{'a; 'b}		--> 'a * 'b
+unfold_or:	"or"{'a; 'b}		--> 'a + 'b
+unfold_implies: "implies"{'a; 'b}	--> 'a -> 'b
+unfold_iff:	"iff"{'a; 'b}		--> (('a -> 'b) & ('b -> 'a))
+unfold_cand:	"cand"{'a; 'b}		--> "and"{'a; 'b}
+unfold_cor:	"cor"{'a; 'b}		--> "or"{'a; ("cand"{("not"{'a}); 'b})}
+unfold_all:	"all"{'A; x. 'B['x]}	--> x: 'A -> 'B['x]
+unfold_exists:	"exists{'A; x. 'B['x]}	--> x: 'A * 'B['x]
+
+* fold_true, fold_false, fold_not, fold_implies, fold_iff, fold_and,
+fold_or, fold_cand, fold_cor, fold_all, fold_exists : conv
+These are the inverses of the above conversions.
+
+* univCDT : tactic
+Applies (dT 0) if the conclusion is a "all", "dfun", "implies", or
+"fun" term; then recurse (on "main" subgoals).
+
+* genUnivCDT : tactic
+As univCDT, but also applies on "and", "prod", and "iff" conclusions.
+
+* instHypT : term list -> int -> tactic
+(instHypT tl i) instantiates the i'th hypothesis (which must be a
+"all", "dfun", or "implies" term) with the terms in the term list.
+
+* backThruHypT : int -> tactic
+(backThruHypT i) works if the i'th hypothesis is a universally
+quantified formula, with a body that matches the sequent conclusion.
+It unifies the conclusion against the formula body to discover
+variable instantiations; it then instantiates the formula.
+
+* assumT : int -> tactic
+(assumT i) turns the i'th assumption sequent into a universally
+quantified formula and adds it as a new hypothesis to the current
+sequent.
+
+* backThruAssumT : int -> tactic
+(backTrhuAssumT i) uses (assumT i) to pull in the i'th assumption
+sequent, and then backchains through it (using backThruHypT).
+
+* moveToConclVarsT : string list -> tactic
+Takes all the hypotheses which either declare a variable in the list
+or which have a variable in the list occur free in the hypothesis, and
+move them into the conclusion (as implications or as universal
+quantification, depending on whether that hypothesis's variable occurs
+free in the conclusion).
+
+* moveToConclT : int -> tactic
+(moveToConclT i) calls moveToConclVarsT with the single variable
+declared by the i'th hypothesis.
+
+* squash_falseT : tactic
+
+This file adds to the dT tactic.
+If the conclusion is of the form << "true" >>,
+(dT 0) succeeds with no subgoals.
+
+If the conclusion is of the form << "type"{("true")} >>,
+(dT 0) succeeds with no subgoals.
+
+If the i'th hypothesis is of the form << x: "false" >>,
+(dT i) succeeds with no subgoals.
+
+If the conclusion is of the form << "type"{("false")} >>,
+(dT 0) succeeds with no subgoals.
+
+If the conclusion is of the form << "not"{'a} >>,
+(dT 0) creates subgoals (one with an extra hypothesis)
+<< x: 'a >- "false" >> and << "type"{'a} >>.
+If the i'th hypothesis is of the form << x: "not"{'a} >>,
+(dT i) changes the conclusion to << 'a >>.
+
+If the conclusion is of the form << "type"{("not"{'a})} >>,
+(dT 0) changes it to << "type"{'a} >>.
+
+If the conclusion is of the form << "and"{'a; 'b} >>,
+(dT 0) creates subgoals with conclusions << 'a >> and << 'b >>.
+If the i'th hypothesis is of the form << z: "and"{'a; 'b} >>,
+(dT i) adds new hypotheses << 'u: 'A; 'v: 'B >>, changes << 'z >> to
+<< ('u,'v) >> in the rest of the sequent, and deletes the
+original hypothesis.
+
+If the conclusion is of the form << "type"{("and"{'A; 'B})} >>,
+(dT 0) creates subgoals with conclusions << "type"{'A} >>
+and << "type"{'B} >>.
+
+If the conclusion is of the form << "or"{'A; 'B} >>,
+(selT 1 (dT 0)) changes it to << 'A >> (and adds an extra subgoal).
+Similarly, (selT 2 (dT 0)) changes the conclusion to << 'B >>.
+If the i'th hypothesis is of the form << x: ("or"{'A; 'B}) >>,
+(dT i) does a case analysis.
+
+If the conclusion is of the form << "type"{("or"{'A; 'B})} >>,
+(dT 0) creates subgoals with conclusions << "type"{'A} >>
+and << "type"{'B} >>.
+
+If the conclusion is of the form << "cand"{'a; 'b} >>,
+(dT 0) creates subgoals (one with a new hypothesis) << 'a >> and 
+<< x: 'a >- 'b >>.
+If the i'th hypothesis is of the form << z: "cand"{'a; 'b} >>,
+(dT i) adds new hypotheses << 'u: 'A; 'v: 'B >>, changes << 'z >> to
+<< ('u,'v) >> in the rest of the sequent, and deletes the
+original hypothesis.
+
+If the conclusion is of the form << "type"{("cand"{'A; 'B})} >>,
+(dT 0) creates subgoals (one with a new hypothesis)
+<< "type"{'A} >> and << x: 'A >- "type"{'B} >>.
+
+If the conclusion is of the form << 'A => 'B >>,
+(dT 0) creates subgoals (one with a new hypothesis) << "type"{'A} >>
+and << x: 'A >- 'B >>.
+If the i'th hypothesis is of the form << z: 'A => 'B >>,
+(dT i) creates new subgoals, one with conclusion << 'A >> and one with
+a new hypothesis << y: 'B >>.
+
+If the conclusion is of the form << "type"{("implies"{'A; 'B})} >>,
+(dT 0) creates subgoals with conclusions << "type"{'A} >>
+and << "type"{'B} >>.
+
+If the conclusion is of the form << "iff"{'A; 'B} >>,
+(dT 0) creates subgoals with conclusions << 'A => 'B >> and
+<< 'B => 'A >>.
+If the i'th hypothesis is of the form << z: "iff"{'A; 'B} >>,
+(dT i) replaces it with the hypotheses << x: 'A => 'B >>
+and << y: 'B => 'A >>, and replaces << 'z >> with << ('x, 'y) >>
+in the rest of the sequent.
+
+If the conclusion is of the form << "type"{("iff"{'A; 'B})} >>,
+(dT 0) creates subgoals with conclusions << "type"{'A} >>
+and << "type"{'B} >>.
+
+If the conclusion is of the form << all a: 'A. 'B['a] >>,
+(dT 0) creates subgoals (one with a new hypothesis) 
+<< "type"{'A} >> and << a: 'A >- 'B['a] >>.
+If the i'th hypothesis is of the form << z: (all a: 'A. 'B['a] >>,
+(withT t (dT i)) creates two subgoals, one with conclusion 
+<< member{'A; t} >> and one with a new hypothesis << y: 'B[t] >>.
+
+If the conclusion is of the form << "type"{(all a: 'A. 'B['a])} >>,
+(dT 0) creates subgoals (one with a new hypothesis)
+<< "type"{'A} >> and << a: 'A >- "type"{'B['a]} >>.
+
+If the conclusion is of the form << exst a: 'A. 'B['a] >>,
+(withT t (dT 0)) changes it to << 'B[t] >> (and adds some more
+subgoals).
+If the i'th hypothesis is of the form << z: (exst a: 'A. 'B['a]) >>,
+(dT i) replaces it with the hypotheses 
+<< x: 'A; y: 'B['x] >>, and replaces << 'z >> with << ('x,'y) >>
+in the rest of the sequent.
+
+If the conclusion is of the form << "type"{(exst a: 'A. 'B['a])} >>,
+(dT 0) creates subgoals (one with a new hypothesis)
+<< "type"{'A} >> and << a: 'A >- "type"{'B['a]} >>.
+
+This file adds to the eqcdT tactic.
+The eqcdT tactic can handle conclusions of the forms
+<< "true" = "true" in univ[i:l] >>,
+<< "false" = "false" in univ[i:l] >>,
+<< "not"{'a} = "not"{'b} in univ[i:l] >>,
+<< "and"{'a1; 'b1} = "and"{'a2; 'b2} in univ[i:l] >>,
+<< "or"{'a1; 'b1} = "or"{'a2; 'b2} in univ[i:l] >>,
+<< "cand"{'a1; 'b1} = "cand"{'a2; 'b2} in univ[i:l] >>,
+<< "implies"{'a1; 'b1} = "implies"{'a2; 'b2} in univ[i:l] >>,
+<< "iff"{'a1; 'b1} = "iff"{'a2; 'b2} in univ[i:l] >>,
+<< (all x1: 't1. 'b1['x1]) = (all x2: 't2. 'b2['t2]) in univ[i:l] >>,
+<< (exst x1: 't1. 'b1['x1]) = (exst x2: 't2. 'b2['t2]) in univ[i:l] >>
+
+This file adds to the trivialT tactic.
+If any of the hypotheses are of the form << x: "false" >> or
+<< x: void >>, then trivialT will succeed with no subgoals.
+
+This file adds to the autoT tactic.
+If any of the hypotheses are "prod", "dprod", or "exists" terms, autoT
+will decompose them (with dT).
+
+autoT will attempt backThruHypT on all hypotheses.
+
+autoT will attempt backThruAssumT on all assumptions whose goal
+matches the current sequent's goal.
+
+----------------------------------------
+itt_bool:
+
+new terms:
+"bool"
+"btrue"
+"bfalse"
+bor{'a; 'b}
+band{'a; 'b}
+bimplies{'a; 'b}
+bnot{'a}
+"assert"{'t}
+ifthenelse{'e1; 'e2; 'e3}
+
+* unfold_bool : conv
+Rewrites << bool >> to << unit + unit >>.
+
+* unfold_btrue : conv
+Rewrites << btrue >> to << inl{it} >>.
+
+* unfold_bfalse : conv
+Rewrites << bfalse >> to << inr{it} >>.
+
+* reduce_ifthenelse_true : conv
+Rewrites << ifthenelse{btrue; 'x; 'y} >> to << 'x >>.
+
+* reduce_ifthenelse_false : conv
+Rewrites << ifthenelse{bfalse; 'x; 'y} >> to << 'y >>.
+
+* unfold_bor : conv
+Rewrites << bor{'a; 'b} >> to << ifthenelse{'a; btrue; 'b} >>.
+
+* unfold_band : conv
+Rewrites << band{'a; 'b} >> to << ifthenelse{'a; 'b; bfalse} >>.
+
+* unfold_bimplies : conv
+Rewrites << bimplies{'a; 'b} >> to << ifthenelse{'a; 'b; btrue} >>.
+
+* unfold_bnot : conv
+Rewrites << bnot{'a} >> to << ifthenelse{'a; bfalse; btrue} >>.
+
+* unfold_assert : conv
+Rewrites << "assert"{'a} >> to << 'a = btrue in bool >>.
+
+* fold_bool, fold_btrue, fold_bfalse, fold_bor, fold_band,
+fold_bimplies, fold_bnot, fold_assert : conv
+These are the inverses of the above conversions.
+
+* extBoolT : tactic
+Destructs conclusions of the form << 'x = 'y in bool >>.
+
+* magicT : tactic
+Lets you prove conclusions of the form << "assert"{'t} >> by
+contradiction.
+
+* splitBoolT : term -> int -> tactic
+(splitBoolT t i) lets you do case analysis on a term << t >> of type 
+<< "bool" >> in the i'th clause.  If you want to affect some but not
+all instances of the term in the clause, you can wrap the call in
+(withT << bind{x. 'B['x]} >> ...) in the standard way (where the
+i'th clause must be << 'B[t] >>).
+
+* splitITE : int -> tactic
+Split the first free ifthenelse in the i'th clause.  You can specify a
+particular ifthenelse to split by wrapping the call in
+(withT << t >> ...), where << t >> is the test if the ifthenelse you
+want to split (every ifthenelse with this test will be split).
+
+* squash_assertT : tactic
+
+This file adds to the reduceTopC conversion.
+It adds the reduce_ifthenelse_true and reduce_ifthenelse_false
+conversions; in addition, the following terms:
+<< bnot{btrue} >>,
+<< bnot{bfalse} >>,
+<< bor{btrue; 'x} >>,
+<< bor{bfalse; 'x} >>,
+<< band{btrue; 'x} >>,
+<< band{bfalse; 'x} >>,
+<< bimplies{btrue; 'x} >>,
+<< bimplies{bfalse; 'x} >>
+are reduced in the obvious way.
+
+This file adds to the dT tactic.
+
+If the conclusion is of the form << "bool" >>,
+(dT 0) succeeds with no subgoals.
+If the i'th hypothesis is of the form << z: "bool" >>,
+(dT i) eliminates the hypothesis, and creates two subgoals: one in
+which << 'z >> is replaced by << btrue >>, and one in which it is
+replaced by << bfalse >>.
+
+*** hidden bool (d_bool_hideT)
+
+If the conclusion is of the form << "type"{bool} >>,
+(dT 0) succeeds with no subgoals.
+
+If the conclusion is of one of the forms << member{bool; btrue} >>,
+<< member{bool; bfalse} >>, << member{bool; bor{'a; 'b}} >>,
+<< member{bool; band{'a; 'b}} >>, << member{bool; bimplies{'a; 'b}} >>,
+or << member{bool; bnot{'a}} >>, (dT 0) reduces it to boolean
+membership of the subterms.
+
+If the conclusion is of the form << member{'T; ifthenelse{'x; 'y; 'z}} >>,
+(dT 0) creates three subgoals for the parts of the ifthenelse.
+
+If the conclusion is of the form << "assert"{btrue} >>,
+(dT 0) succeeds with no subgoals.
+
+If the i'th hypothesis is of the form << z: "assert"{bfalse} >>,
+(dT i) succeeds with no subgoals.
+
+If the conclusion is of the form << "assert"{bnot{'a}} >>,
+(dT 0) adds a hypothesis << z: "assert"{'a} >> (and changes other
+things).
+If the i'th hypothesis is of the form << z: "assert"{bnot{'a}} >>,
+(dT i) changes the conclusion to << "assert"{'a} >> (and changes other
+things).
+
+If the conclusion is of the form << "assert"{bor{'a; 'b}} >>,
+(selT 1 (dT 0)) changes it to << "assert"{'a} >> (and changes other
+things).  Similarly for (selT 2 (dT 0)).
+If the i'th hypothesis is of the form << z: "assert"{bor{'a; 'b}} >>,
+(dT i) does a case analysis on it.
+
+If the conclusion is of the form << "assert"{band{'a; 'b}} >>,
+(dT 0) creates subgoals << "assert{'a} >> and << "assert"{'b} >>.
+If the i'th hypothesis is of the form << z: "assert"{band{'a; 'b}} >>,
+(dT i) splits it into two hypotheses 
+<< x: "assert"{'a}; y: "assert"{'b} >> (and makes other changes).
+
+If the conclusion is of the form << "assert"{bimplies{'a; 'b}} >>,
+(dT 0) moves << "assert"{'a} >> into a hypothesis (and makes other
+changes).
+If the i'th hypothesis is of the form << z: "assert"{bimplies{'a; 'b}} >>,
+(dT i) makes a subgoal with conclusion << "assert"{'a} >> and one with
+a new hypothesis << x: "assert"{'b} >> (and makes other changes).
+
+If the conclusion is of the form << "type"{ifthenelse{'x; 'y; 'z}} >>,
+(dT 0) splits it into three subgoals.
+
+If the i'th hypothesis is of the form << btrue = bfalse in bool >>
+or << bfalse = btrue in bool >>, (dT i) succeeds with no subgoals.
+
+If the conclusion is of the form << "type"{(assert{'x})} >>,
+(dT 0) changes it to << member{bool; 'x} >>.
+
+If the conclusion is of one of the forms << "rewrite"{'x; btrue} >>,
+<< "rewrite"{'x; bfalse} >>, << "rewrite"{btrue, 'x} >>, or
+<< "rewrite"{bfalse; 'x} >>, (dT 0) changes it to a << bool >>
+equality.
+
+This file adds to the eqcdT tactic.
+eqcdT can handle conclusions of the forms
+<< bool = bool in univ[i:l] >>,
+<< btrue = btrue in bool >>,
+<< bfalse = bfalse in bool >>,
+<< ifthenelse{'x1; 'y1; 'z1} = ifthenelse{'x2; 'y2; 'z2} in 'T >>,
+
+This file adds to the autoT tactic.
+The autoT tactic will call squash_assertT.
+
+----------------------------------------
+itt_atom:
+
+new terms:
+atom
+token[t:t]
+
+* atomSqequalT : tactic
+This tactic changes conclusions of the form << "rewrite"{'x; 'y} >>
+to << 'x = 'y in atom >>.
+
+This file adds to the dT tactic.
+If the conclusion is of the form << atom >>,
+(dT 0) succeeds with no subgoals.
+
+If the conclusion is of the form << "type"{atom} >>,
+(dT 0) succeeds with no subgoals.
+
+This file adds to the eqcdT tactic.
+eqcdT can handle conclusions of the form 
+<< atom = atom in univ[i:l] >> and
+<< token[t:t] = token[t:t] in atom >>.
+
+----------------------------------------
+itt_atom_bool:
+
+new terms:
+eq_atom{'x; 'y}
+
+* reduce_eq_atom : conv
+Reduces a term of the form << eq_atom{token[x:t]; token[y:t]} >>
+to << btrue >> or << bfalse >>.
+
+This file adds to the dT tactic.
+
+If the conclusion is of the form << member{bool; eq_atom{'x; 'y}} >>,
+(dT 0) creates subgoals << member{atom; 'x} >> and
+<< member{atom; 'y} >>.
+
+If the conclusion is of the form << "assert"{eq_atom{'x; 'y}} >>,
+(dT 0) changes it to << 'x = 'y in atom >>.
+If the i'th hypothesis is of the form << z: "assert"{eq_atom{'x; 'y}} >>, 
+(dT i) changes it to << z: 'x = 'y in atom >>, and replaces << 'z >>
+with << it >> in the rest of the sequent.
+
+----------------------------------------
+itt_int:
+
+new terms:
+int
+number[n:n]
+ind{'i; m, z. 'down['m; 'z]; 'base; m, z. 'up['m; 'z]}
+"add"{'a; 'b}
+"sub"{'a; 'b}
+"mul"{'a; 'b}
+"div"{'a; 'b}
+"rem"{'a; 'b}
+"lt"{'a; 'b}
+"le"{'a; 'b}
+"ge"{'a; 'b}
+"gt"{'a; 'b}
+
+* unfold_le : conv
+Rewrites << le{'a; 'b} >> to << ('a < 'b or 'a = 'b in int) >>.
+
+* unfold_gt : conv
+Rewrites << gt{'a; 'b} >> to << ('b < 'a) >>.
+
+* unfold_ge : conv
+Rewrites << ge{'a; 'b} >> to << ('b < 'a or 'a = 'b in int) >>.
+
+* reduce_add, reduce_sub, reduce_mul, reduce_div, reduce_rem,
+reduce_lt, reduce_eq : conv
+These are probably not useful to the average user.
+
+* reduce_ind_down : conv
+Reduces ind terms under the condition that the argument is less than
+0.
+
+* reduce_ind_up : conv
+Reduces ind terms under the condition that the argument is greater
+than 0.
+
+* reduce_ind_base : conv
+Reduces ind terms under the condition that the argument is equal to 0.
+
+* reduce_ind : conv
+Reduces ind terms under the condition that the argument is a number
+literal.
+
+* intSqequalT : tactic
+This tactic changes conclusions of the form << "rewrite"{'x; 'y} >>
+to << 'x = 'y in int >>.
+
+This file adds to the reduceTopC conversion.
+It adds the reduce_ind conversion.  Also, "add", "sub", "mul", "div",
+and "rem" applied to number literals are reduced.
+
+This file adds to the dT tactic.
+
+If the conclusion is of the form << int >>, (dT 0) succeeds with no
+subgoals.
+If the i'th hypothesis is of the form << z: int >>, (dT i) performs
+induction on << 'z >>.
+
+This file adds to the eqcdT tactic.
+eqcdT can handle conclusions of the forms 
+<< int = int in univ[i:l] >> and
+<< number[n:n] = number[n:n] in int >>.
+
+----------------------------------------
+itt_int_bool:
+
+new terms:
+eq_int{'i; 'j}
+lt_int{'i; 'j}
+le_int{'i; 'j}
+gt_int{'i; 'j}
+ge_int{'i; 'j}
+
+* reduce_eq_int, reduce_lt_int, reduce_gt_int : conv
+These conversions reduce comparisons of numeric literals to << btrue >>
+or << bfalse >>.
+
+* reduce_le_int : conv
+Rewrites << le_int{'i; 'j} >> to << bor{eq_int{'i; 'j}; lt_int{'i; 'j}} >>.
+
+* reduce_ge_int : conv
+Rewrites << ge_int{'i; 'j} >> to << bor{eq_int{'i; 'j}; gt_int{'i; 'j}} >>.
+
+This file adds to the reduceTopC conversion.
+It adds the above conversions.
+
+This file adds to the dT tactic.
+If the conclusion is of the form << member{bool; eq_int{'i; 'j}} >>,
+(dT 0) creates subgoals with conclusions << member{int; 'i} >>
+and << member{int; 'j} >>.
+
+If the conclusion is of the form << "assert"{eq_int{'i; 'j}} >>,
+(dT 0) changes it to << 'i = 'j in int >>.
+If the i'th hypothesis is of the form << z: "assert"{eq_int{'i; 'j}} >>,
+(dT i) changes it to << z: ('i = 'j in int) >>, and replaces << 'z >>
+with << it >> in the rest of the sequent.
+
+----------------------------------------
+itt_arith:
+
+This file is not finished; it doesn't do anything that affects the
+prover.
+
+----------------------------------------
+itt_set:
+
+new terms:
+set{'A; x. 'B['x]}
+hide{'A}
+
+This file adds to the dT tactic.
+
+If the conclusion is of the form << { x: 'A | 'B['x] } >>,
+(withT t (dT 0)) creates a subgoal << 'B[t] >> (and some other
+subgoals).
+If the i'th hypothesis is of the form << z: {x: 'A | 'B['x]} >>,
+(dT i) replaces it with the hypotheses << z: 'A; y: hide{'B['z]} >>.
+
+If the conclusion is of the form << "type"{({ x: 'A | 'B['x]})} >>,
+(dT 0) breaks it into two subgoals.
+
+If the i'th hypothesis is of the form << z: hide{('x = 'y in 'A)} >>,
+(dT i) changes it to << z: ('x = 'y in 'A) >>.
+
+If the conclusion is of the form << 'x = 'y in { z: 'A | 'B['z] } >>,
+(dT 0) creates subgoals << 'x = 'y in 'A >> and << 'B['x] >> (and one
+extra subgoal).
+
+This file adds to the eqcdT tactic.
+eqcdT can handle conclusions of the form 
+<< { a1:'A1 | 'B1['a1] } = { a2:'A2 | 'B2['a2] } in univ[i:l] >>.
+
+This file adds to the subtypeT tactic.
+subtypeT proves that << 'A >> is a subtype of << { x: 'A | 'B['x] } >>
+directly.
+
+----------------------------------------
+itt_isect:
+
+new terms:
+"isect"{'A; x. 'B['x]}
+
+This file adds to the dT tactic.
+If the i'th hypothesis is of the form << z: (isect x: 'A. 'B['x]) >>,
+(withT t (dT i)) creates a subgoal with conclusion << t = t in 'A >>
+and one with new hypotheses << y: 'B[t]; v: 'y = 'z in 'B[t] >>.
+
+If the conclusion is of the form << "type'{(isect x: 'A. 'B['x])} >>,
+(dT 0) breaks it down into subgoals.
+
+If the conclusion is of the form << 'x = 'y in (isect z: 'A. 'B['z]) >>, 
+(dT 0) breaks it down into subgoals.
+
+If the conclusion is of the form << subtype{(isect x: 'A. 'B['x]); 'T} >>,
+(withT t (dT 0)) creates subgoals (one with a new hypothesis) 
+<< subtype{'B[t]; 'T} >>, << t = t in 'A >>, and 
+<< x: 'A >- "type"{'B['x]} >>.
+
+This file adds to the eqcdT tactic.
+eqcdT can handle conclusions of the form
+<< isect x1: 'A1. 'B1['x1] = isect x2: 'A2. 'B2['x2] in univ[i:l] >>.
+
+This file adds to the subtypeT tactic.
+subtypeT proves that << isect a1:'A1. 'B1['a1] >> is a subtype of
+<< isect a2:'A2. 'B2['a2] >> by proving << 'A2 >> is a subtype of << 'A1 >>
+and << 'B1['x] >> is a subtype of << 'B2['x] >>.
+
+----------------------------------------
+itt_tunion:
+
+new terms:
+tunion{'A; x. 'B['x]}
+
+This file adds to the dT tactic.
+If the conclusion is of the form << tunion{'A; x. 'B['x]} >>,
+(withT t (dT 0)) creates subgoals (one with a new hypothesis)
+<< 'B[t] >>, << t = t in 'A >>, and << x: 'A >- "type"{'B['x]} >>.
+If the i'th hypothesis is of the form << z: tunion{'A; x. 'B['x]} >>,
+(dT i) adds new hypotheses
+<< w: hide{'A}; y: 'B['w]; w2: 'y = 'z in tunion{'A; x. 'B['x]} >>.
+
+If the conclusion is of the form << "type"{tunion{'A; x. 'B['x]}} >>,
+(dT 0) breaks it down into subgoals.
+
+If the conclusion is of the form << 'x = 'y in tunion{'A; z. 'B['z]} >>,
+(withT t (dT 0)) creates subgoals (one with a new hypothesis)
+<< 'x = 'y in 'B[t] >>, << t = t in 'A >>, and 
+<< z: 'A >- "type"{'B['z]} >>.
+
+This file adds to the eqcdT tactic.
+eqcdT can handle conclusions of the form
+<< tunion{'A1; x1. 'B1['x1]} = tunion{'A2; x2. 'B2['x2] } in univ[i:l] >>.
+
+----------------------------------------
+itt_bisect:
+
+new terms:
+bisect{'A; 'B}
+
+* unfold_bisect : conv
+Rewrites << bisect{'A; 'B} >> to
+<< "isect"{bool; x. ifthenelse{'x; 'A; 'B}} >>.
+
+This file adds to the dT tactic.
+If the i'th hypothesis is of the form << x: bisect{'A; 'B} >>, then
+(selT 1 (dT i)) adds new hypotheses << y: 'A; z: 'y = 'x in 'A >>;
+similarly for (selT 2 (dT i)).
+
+If the conclusion is of the form << "type"{bisect{'A; 'B}} >>, then
+(dT 0) creates subgoals << "type"{'A} >> and << "type"{'B} >>.
+
+If the conclusion is of the form << 'x = 'y in bisect{'A; 'B} >>,
+(dT 0) creates subgoals << 'x = 'y in 'A >> and
+<< 'x = 'y in 'B >>.
+
+If the conclusion is of the form << subtype{bisect{'A; 'B}; 'C} >>,
+(selT 1 (dT 0)) creates subgoals << subtype{'A; 'C} >> and
+<< "type"{'B} >>.  Similarly for (selT 2 (dT 0)).
+
+If the conclusion is of the form << subtype{'C; bisect{'A; 'B}} >>,
+(dT 0) creates subgoals << subtype{'C; 'A} >> and << subtype{'C; 'B} >>.
+
+This file adds to the eqcdT tactic.
+eqcdT can handle conclusions of the form
+<< bisect{'A1; 'B1} = bisect{'A2; 'B2} in univ[i:l] >>.
+
+----------------------------------------
+itt_bunion:
+
+new terms:
+bunion{'A; 'B}
+
+* unfold_bunion : conv
+Rewrites << bunion{'A; 'B} >> to 
+<< tunion{bool; x. ifthenelse{'x; 'A; 'B}} >>.
+
+This file adds to the dT tactic.
+
+If the i'th hypothesis is of the form << x: bunion{'A; 'B} >>,
+(dT i) creates subgoals, one with extra hypotheses
+<< y: 'A; z: 'y = 'x in bunion{'A; 'B} >> and one with hypotheses
+<< y: 'B; z: 'y = 'x in bunion{'A; 'B} >>.
+
+(The following is a lie; d_bunion_typeT is never added to d_resource.)
+If the conclusion is of the form << "type"{bunion{'A; 'B}} >>,
+(dT 0) creates subgoals << "type"{'A} >> and << "type"{'B} >>.
+
+If the conclusion is of the form << 'x = 'y in bunion{'A; 'B} >>,
+(selT 1 (dT 0)) creates subgoals << 'x = 'y in 'A >> and
+<< "type"{'B} >>.  Similarly for (selT 2 (dT 0)).
+
+This file adds to the eqcdT tactic.
+eqcdT can handle conclusions of the form
+<< bunion{'A1; 'B1} = bunion{'A2; 'B2} in univ[i:l] >>.
+
+----------------------------------------
+itt_w:
+
+new terms:
+w{'A; x. 'B['x]}
+tree{'a; 'f}
+tree_ind{'z; a, f, g. 'body['a; 'f; 'g]}
+
+* reduce_tree_ind : conv
+Reduces terms of the form 
+<< tree_ind{tree{'a1; 'f1}; a2, f2, g2. 'body['a2; 'f2; 'g2]} >>.
+
+This file adds to the dT tactic.
+
+If the conclusion is of the form << w{'A; x. 'B['x]} >>,
+(withT t (dT 0)) creates subgoals (one with an extra hypothesis)
+<< t = t in 'A >>, << 'B[t] -> w{'A; x. 'B['x]} >>, and
+<< y: 'A >- "type"{'B['y]} >>.
+If the i'th hypothesis is of the form << z: w{'A; x. 'B['x]} >> and
+the conclusion is of the form << 'T['z] >>, (dT i) adds new hypotheses
+<< a: 'A; f: 'B['a] -> w{'A; x. 'B['x]}; g: (b: 'B['a] -> 'T['f 'b]);
+   v: 'z = tree{'a; 'f} in w{'A; x. 'B['x]} >>.
+
+If the conclusion is of the form << "type"{(w{'A; x. 'B['x]})} >>,
+(dT 0) breaks it down into subgoals.
+
+This file adds to the eqcdT tactic.
+eqcdT can handle conclusions of the forms
+<< w{'A1; x1. 'B1['x1]} = w{'A2; x2. 'B2['x2]} in univ[i:l] >>,
+<< tree{'a1; 'b1} = tree{'a2; 'b2} in w{'A; x. 'B['x]} >>, and
+<< tree_ind{'z1; a1, f1, g1. 'body1['a1; 'f1; 'g1]}
+   = tree_ind{'z2; a2, f2, g2. 'body2['a2; 'f2; 'g2]}
+   in 'T >>.
+In the latter case, you need to wrap the tactic in
+(withTypeT "type" << ... >> ...), where the term you pass is the
+(literal) w type of << 'z1 >> and << 'z2 >>.
+
+----------------------------------------
+itt_prec:
+
+new terms:
+"prec"{T, x. 'B['T; 'x]; 'a}
+precind{'a; p, h. 'g['p; 'h]}
+
+* reducePrecInd : conv
+Rewrites << precind{'a; p, h. 'g['p; 'h]} >> to
+<< 'g[lambda{a. precind{'a; p, h. 'g['p; 'h]}}; 'a] >>.
+
+This file does not add to any tactics.
+
+----------------------------------------
+itt_srec:
+
+new terms:
+srec{T. 'B['T]}
+srecind{'a; p, h. 'g['p; 'h]}
+
+* unfold_srecind : conv
+Rewrites << srecind{'a; p, h. 'g['p; 'h]} >> to
+<< 'g[lambda{a. srecind{'a; p, h. 'g['p; 'h]}}; 'a] >>.
+
+This file adds to the dT tactic.
+
+If the conclusion is of the form << srec{T. 'B['T]} >>,
+(dT 0) creates subgoals << 'B[srec{T. 'B['T]}] >> and
+<< "type'{(srec{T. 'B['T]})} >>.
+If the i'th hypothesis is of the form << x: srec{T. 'B['T]} >> and the
+conclusion is of the form << 'C['x] >>, (dT i) adds new hypotheses
+<< T1: univ[i:l]; 
+   u: subtype{'T1; srec{T. 'B['T]}};
+   w: (v: 'T1 -> 'C['v]);
+   z: 'B['T1] >>
+and changes the conclusion to << 'C['z] >>.  (You can say 
+(atT << univ[j:l] >> (dT i)) to select which universe << 'T1 >> is
+in.)
+
+If the conclusion is of the form << "type"{srec{T. 'B['T]}} >>,
+(atT << univ[i:l] >> (dT 0)) changes to the conclusion (with new
+hypotheses) 
+<< S1: univ[i:l]; 
+   S2: univ[i:l]; 
+   z: subtype{'S1; 'S2}
+   >- subtype{'B['S1]; 'B['S2]} >>.
+
+If the conclusion is of the form << 'x = 'y in srec{T. 'B['T]} >>,
+(dT 0) creates subgoals << 'x = 'y in 'B[rec{T. 'B['T]}] >> and
+<< "type"{(srec{T. 'B['T]})} >>.
+
+This file adds to the eqcdT tactic.
+eqcdT tries to handle conclusions of the form
+<< srec{T1. 'B1['T1]} = srec{T2. 'B2['T2]} in univ[i:l] >>, but due to
+a bug, it fails.
+
+----------------------------------------
+itt_quotient:
+
+new terms:
+"quot"{'A; x, y. 'E['x; 'y]}
+
+This file adds to the dT tactic.
+If the conclusion is of the form << quot x, y: 'A // 'E['x; 'y] >>
+(dT 0) creates subgoals << "type"{(quot x, y: 'A // 'E['x; 'y])} >>
+and << 'A >>.
+If the i'th hypothesis is of the form << a: (quot x, y: 'A // 'E['x; 'y]) >>
+and the conclusion is the equality << 's['a] = 't['a] in 'T['a] >>, 
+then (dT i) adds the hypotheses << v: 'A; w: 'A; z: 'E['v; 'w] >>,
+changes the conclusion to << 's['v] = 't['w] in 'T['v] >>, and
+replaces << 'a >> with << 'v >> in the rest of the sequent (and adds
+an extra subgoal).
+If the i'th hypothesis and conclusion are as above, then 
+(altT (dT i)) is as above except that it does not replace << 'a >>
+with << 'v >>.
+If the i'th hypothesis is as above and the conclusion is of the form
+<< member{'T['a]; 's['a]} >>, (dT i) adds hypotheses as above, changes
+the conclusion to << 's['v] = 's['w] in 'T['v] >>, and replaces << 'a >>
+with << 'v >> in the rest of the sequent (and adds the extra subgoal).
+
+If the conclusion is of the form << "type"{(quot x, y: 'A // 'E['x; 'y])} >>,
+(dT 0) breaks it down into 5 subgoals (which specify that 
+<< 'E['x; 'y] >> is an equivalence relation).
+
+If the conclusion is of the form << 'x = 'y in quot u, v: 'A // 'E['u; 'v] >>,
+(dT 0) creates subgoals << member{'A; 'x} >>, << member{'A; 'y} >>,
+<< 'E['x; 'y] >>, and << "type"{(quot u, v: 'A // 'E['u; 'v])} >>.
+
+If the conclusion is of the form 
+<< member{(quot u, v: 'A // 'E['u; 'v]); 'x} >>,
+(dT 0) creates subgoals << "type"(quot u, v: 'A // 'E['u; 'v]) >>
+and << member{'A; 'x} >>.
+
+This file adds to the eqcdT tactic.
+eqcdT can handle conclusions of the form
+<< quot x1, y1: 'A1 // 'E1['x1; 'y1] = quot x2, y2: 'A2 // 'E2['x2; 'y2] in univ[i:l] >>
+(generating five subgoals).
+
+This file adds to the subtypeT tactic.
+subtypeT proves that << quot x1, y1: 'A1 // 'E1['x1; 'y1] >> is a
+subtype of << quot x2, y2: 'A2 // 'E2['x2; 'y2] >> by proving << 'A1 >>
+is a subtype of << 'A2 >>.
+
+----------------------------------------
+itt_list:
+
+new terms:
+nil
+cons{'a; 'b}
+list{'a}
+list_ind{'e; 'base; h, t, f. 'step['h; 't; 'f]}
+
+* reduce_listindNil : conv
+Rewrites << list_ind{nil; 'base; h, t, f. 'step['h; 't; 'f]} >> to 
+<< 'base >>.
+
+* reduce_listindCons : conv
+Rewrites << list_ind{('u :: 'v); 'base; h, t, f. 'step['h; 't; 'f]} >>
+to << 'step['u; 'v; list_ind{'v; 'base; h, t, f. 'step['h; 't; 'f]}] >>.
+
+This file adds to the reduceTopC conversion.
+It adds the reduce_listindNil and reduce_listindCons conversions.
+
+This file adds to the dT tactic.
+If the conclusion is of the form << list{'A} >>,
+(dT 0) changes it to << "type"{'A} >>.
+If the i'th hypothesis is of the form << l: list{'A} >>,
+(dT i) performs list induction over << 'l >>.
+
+If the conclusion is of the form << "type"{list{'A}} >>,
+(dT 0) changes it to << "type"{'A} >>.
+
+If the conclusion is of the form << subtype{list{'A}; list{'B}} >>,
+(dT 0) changes it to << subtype{'A; 'B} >>.
+
+If the conclusion is of the form << "rewrite"{'u; nil} >>,
+(atT t (dT 0)) changes it to << 'u = nil in list{t} >>.  If the type
+is not given with atT, dT tries to infer it.
+
+If the i'th hypothesis is of the form 
+<< z: (cons{'h; 't} = nil in list{'T}) >> or
+<< z: (nil = cons{'h; 't} in list{'T}) >>, (dT i) succeeds with no
+subgoals.
+
+If the conclusion is of the form << member{list{'T}; nil} >>,
+(dT 0) changes it to << "type"{'T} >>.
+
+If the conclusion is of the form << member{list{'T}; cons{'h; 't}} >>,
+(dT 0) creates subgoals << member{'T; 'h} >> and 
+<< member{list{'T}; 't} >>.
+
+This file adds to the eqcdT tactic.
+eqcdT can handle conclusions of the forms
+<< list{'A} = list{'B} in univ[i:l] >>,
+<< nil = nil in list{'A} >>, and
+<< cons{'u1; 'v1} = cons{'u2; 'v2} in list{'A} >>.
+(The support for listind terms is not yet implemented.)
+
+This file adds to the subtypeT tactic.
+subtypeT proves that << list{'A} >> is a subtype of << list{'B} >> by
+proving that << 'A >> is a subtype of << 'B >>.
+
+----------------------------------------
+itt_list2:
+
+new terms:
+is_nil{'l}
+append{'l1; 'l2}
+ball2{'l1; 'l2; x, y. 'b['x; 'y]}
+assoc{'eq; 'x; 'l; 'y. 'b['y]; 'z}
+rev_assoc{'eq; 'x; 'l; y. 'b['y]; 'z}
+map{'f; 'l}
+fold_left{'f; 'v; 'l}
+
+* unfold_is_nil : conv
+Rewrites << is_nil{'l} >> to << list_ind{'l; btrue; h, t, g. bfalse} >>.
+
+* unfold_append : conv
+Rewrites << append{'l1; 'l2} >> to << list_ind{'l1; 'l2; h, t, g. 'h :: 'g} >>.
+
+* unfold_ball2 : conv
+Rewrites << ball2{'l1; 'l2; x, y. 'b['x; 'y]} >> to
+<< (list_ind{'l1; lambda{z. list_ind{'z; btrue; h, t, g. bfalse}};
+                  h1, t1, g1. lambda{z. list_ind{'z; bfalse;
+                  h2, t2, g2. band{'b['h1; 'h2]; .'g1 't2}}}} 'l2) >>.
+
+* unfold_assoc : conv
+Rewrites << assoc{'eq; 'x; 'l; y. 'b['y]; 'z} >> to
+<< list_ind{'l; 'z; h, t, g.
+      spread{'h; u, v.
+         ifthenelse{.'eq 'u 'x; 'b['v]; 'g}}} >>.
+
+* unfold_rev_assoc : conv
+Rewrites << rev_assoc{'eq; 'x; 'l; y. 'b['y]; 'z} >> to
+<< list_ind{'l; 'z; h, t, g.
+      spread{'h; u, v.
+         ifthenelse{.'eq 'v 'x; 'b['u]; 'g}}} >>.
+
+* unfold_map : conv
+Rewrites << map{'f; 'l} >> to 
+<< list_ind{'l; nil; h, t, g. cons{.'f 'h; 'g}} >>.
+
+* unfold_fold_left : conv
+Rewrites << fold_left{'f; 'v; 'l} >> to
+<< list_ind{'l; lambda{v. 'v}; h, t, g. lambda{v. 'g ('f 'h 'v)}} 'v >>.
+
+* fold_is_nil, fold_append, fold_ball2, fold_assoc, fold_rev_assoc,
+fold_map, fold_fold_left : conv
+The opposites of the above conversions.
+
+This file adds to the reduceTopC conversion.
+It reduces terms of the following forms in the obvious way:
+<< is_nil{nil} >>,
+<< is_nil{cons{'h; 't}} >>,
+<< append{cons{'h; 't}; 'l} >>,
+<< append{nil; 'l} >>,
+<< ball2{nil; nil; x, y. 'b['x; 'y]} >>,
+<< ball2{nil; cons{'h; 't}; x, y. 'b['x; 'y]} >>,
+<< ball2{cons{'h; 't}; nil; x, y. 'b['x; 'y]} >>,
+<< ball2{cons{'h1; 't1}; cons{'h2; 't2}; x, y. 'b['x; 'y]} >>,
+<< assoc{'eq; 'x; nil; v. 'b['v]; 'z} >>,
+<< assoc{'eq; 'x; cons{pair{'u; 'v}; 'l}; y. 'b['y]; 'z} >>,
+<< rev_assoc{'eq; 'x; nil; v. 'b['v]; 'z} >>,
+<< rev_assoc{'eq; 'x; cons{pair{'u; 'v}; 'l}; y. 'b['y]; 'z} >>,
+<< map{'f; nil} >>,
+<< map{'f; cons{'h; 't}} >>,
+<< fold_left{'f; 'v; nil} >>, and
+<< fold_left{'f; 'v; cons{'h; 't}} >>.
+
+This file adds to the dT tactic.
+If the conclusion is of the form << member{bool; is_nil{'l}} >>,
+(atT t (dT 0)) changes it to << member{t; 'l} >> (t must be of the
+form << list{'T} >>).  (If you don't specify a type with atT, dT will
+try to infer the type of << 'l >>.)
+
+If the conclusion is of the form << member{list{'T}; append{'l1; 'l2}} >>,
+(dT 0) creates subgoals << member{list{'T}; 'l1} >> and
+<< member{list{'T}; 'l2} >>.
+
+If the conclusion is of the form 
+<< member{bool; ball2{'l1; 'l2; x, y. 'b['x; 'y]}} >>,
+(dT 0) will try to infer the types of the members of << 'l1 >> and 
+<< 'l2 >>, coming up with << T1 >> and << T2 >>.  (If it can infer
+types for only one of << 'l1 >> and << 'l2 >>, it will assume that
+they both have the same type.)  It will then create subgoals (one with
+extra hypotheses) << "type"{T1} >>, << "type"{T2} >>, 
+<< member{list{T1}; 'l1} >>, << member{list{T2}; 'l2} >>, and
+<< u: T1; v: T2 >- member{bool; 'b['u; 'v]} >>.  You can use 
+(atT t (dT 0)) to use << t >> as the type for both << T1 >> and 
+<< T2 >> (but there's no way to specify two different types).
+
+If the conclusion is of the form 
+<< member{'T; assoc{'eq; 'x; 'l; v. 'b['v]; 'z}} >>,
+(dT 0) will try to infer the type of 'l (which must be of the form 
+<< T1 * T2 >>).  It will then create subgoals (one with an extra
+hypothesis) << "type"{T2} >>, << member{(T1 -> T1 -> bool; 'eq)} >>,
+<< member{T1; 'x} >>, << member{list{(T1 * T2)}; 'l} >>,
+<< member{'T; 'z} >>, and << z: T2 >- member{'T; 'b['z]} >>.  You can
+specify the type of << 'l >> with atT.  Conclusions of the form
+<< member{'T; rev_assoc{'eq; 'x; 'l; v. 'b['v]; 'z}} >> are handled
+similarly.
+
+----------------------------------------
+itt_derive:
+
+* applyT : term -> int -> tactic
+(applyT << f a >> 0) tries to infer the type of << f >> to get << T >>, 
+which must be a "dfun", "fun", "all", or "implies" term; say 
+<< x: A -> B['x] >>.  The conclusion is of the form << 'C[f a] >>.
+The tactic adds a hypothesis and changes the conclusion to get
+<< y: 'B[a] >- 'C['y] >> (and adds several other subgoals).
+
+* anyApplyT : term list -> int -> tactic
+(anyApplyT tl 0) applies (applyT t 0) on the first member << t >> of
+tl for which it succeeds.
+
+* autoApplyT : int -> tactic
+(autoApplyT 0) finds every application in the conclusion for which the
+function is a declared variable of a hypothesis (except that it does
+not descend into the types of equality terms).  It then calls
+anyApplyT with this list.
+
+----------------------------------------
+itt_prop_decide:
+
+* propDecideT : tactic
+This is a decision procedure for propositional logic.
+
+----------------------------------------
+itt_fset:
+
+new terms:
+fset{'eq; 'T}
+feset{'eq; 'T}
+fempty
+fsingleton{'x}
+funion{'eq; 't1; 't2}
+fisect{'eq; 't1; 't2}
+fsub{'eq; 't1; 't2}
+fisempty{'t1}
+fmember{'eq; 'x; 't1}
+fsubseteq{'eq; 's1; 's2}
+fequal{'eq; 't1; 't2}
+fequalp{'eq; 'T}
+fsquash{'eq; 's}
+fball{'s; x. 'b['x]}
+fbexists{'s; x. 'b['x]}
+fall{'eq; 'T; 's; x. 'b['x]}
+fexists{'eq; 'T; 's; x. 'b['x]}
+foflist{'l}
+
+* unfold_fcompare : conv
+Rewrites << fcompare{'eq; 'x; 'y} >> to <<  ('eq 'x 'y) >>.
+
+* unfold_fequalp : conv
+Rewrites << fequalp{'eq; 'T} >> to
+<< (member{.'T -> 'T -> bool; 'eq}
+      & (all x: 'T. "assert"{.fcompare{'eq; 'x; 'x}})
+      & (all x: 'T. all y: 'T. ("assert"{fcompare{'eq; 'x; 'y}} => "assert"{fcompare{'eq; 'y; 'x}}))
+      & (all x: 'T. all y: 'T. all z: 'T. 
+            ("assert"{fcompare{'eq; 'x; 'y}} => 
+             "assert"{fcompare{'eq; 'y; 'z}} => 
+             "assert"{fcompare{'eq; 'x; 'z}}))) >>.
+
+* unfold_fset : conv
+Rewrites << fset{'eq; 'T} >> to
+<<  (quot x, y : list{'T} // "assert"{fequal{'eq; 'x; 'y}}) >>.
+
+* unfold_fempty : conv
+Rewrites << fempty >> to << nil >>.
+
+* unfold_fsingleton : conv
+Rewrites << fsingleton{'x} >> to <<  cons{'x; nil} >>.
+
+* unfold_funion : conv
+Rewrites << funion{'eq; 's1; 's2} >> to <<  append{'s1; 's2} >>.
+
+* unfold_fisect : conv
+Rewrites << fisect{'eq; 's1; 's2} >> to
+<< list_ind{'s1; nil; h, t, g. ifthenelse{fmember{'eq; 'h; 's2};
+                                          cons{'h; 'g}; 
+                                          'g}} >>.
+
+* unfold_fsub : conv
+Rewrites << fsub{'eq; 's1; 's2} >> to
+<< list_ind{'s1; nil; h, t, g. ifthenelse{fmember{'eq; 'h; 's2}; 
+                                          'g;
+                                          cons{'h; 'g}}} >>.
+
+* unfold_fmember : conv
+Rewrites << fmember{'eq; 'x; 's1} >> to
+<< list_ind{'s1; bfalse; h, t, g. bor{.fcompare{'eq; 'x; 'h}; 'g}} >>.
+
+* unfold_fisempty : conv
+Rewrites << fisempty{'s1} >> to
+<< list_ind{'s1; btrue; h, t, g. bfalse} >>.
+
+* unfold_fsubseteq : conv
+Rewrites << fsubseteq{'eq; 's1; 's2} >> to
+<< list_ind{'s1; btrue; h, t, g. band{fmember{'eq; 'h; 's2}; 'g}} >>.
+
+* unfold_fequal : conv
+Rewrites << fequal{'eq; 's1; 's2} >> to
+<< band{fsubseteq{'eq; 's1; 's2}; fsubseteq{'eq; 's2; 's1}} >>.
+
+* unfold_fsquash : conv
+Rewrites << fsquash{'eq; 's1} >> to
+<< list_ind{'s1; nil; h, t, g. ifthenelse{fmember{'eq; 'h; 't}; 
+                                          'g;
+                                          cons{it; 'g}}} >>.
+
+* unfold_fball : conv
+Rewrites << fball{'s; x. 'b['x]} >> to
+<< list_ind{'s; btrue; x, t, g. band{'b['x]; 'g}} >>.
+
+* unfold_fbexists : conv
+Rewrites << fbexists{'s; x. 'b['x]} >> to
+<< list_ind{'s; bfalse; x, t, g. bor{'b['x]; 'g}} >>.
+
+* unfold_fall : conv
+Rewrites << fall{'eq; 'T; 's; x. 'b['x]} >> to
+<< all x: { y: 'T | "assert"{fmember{'eq; 'y; 's}} }. 'b['x] >>.
+
+* unfold_fexists : conv
+Rewrites << fexists{'eq; 'T; 's; x. 'b['x]} >> to
+<< exst x: { y: 'T | "assert"{fmember{'eq; 'y; 's}} }. 'b['x] >>.
+
+* unfold_feset : conv
+Rewrites << feset{'eq; 'T} >> to
+<<  (quot x, y: 'T // "assert"{fcompare{'eq; 'x; 'y}}) >>.
+
+* unfold_foflist : conv
+Rewrites << foflist{'l} >> to << 'l >>.
+
+* fold_fequalp, fold_fset, fold_fempty, fold_fsingleton, fold_fisect,
+fold_fsub, fold_fmember, fold_fisempty, fold_fsubseteq, fold_fequal,
+fold_fsquash, fold_fball, fold_fbexists, fold_feset, fold_fall,
+fold_fexists, fold_foflist : conv
+The opposites of the above conversions.
+
+
+* d_fsubseteq_consT : tactic
+(withT t (d_fsubseteq_consT)) reduces a conclusion of the form
+<< "assert"{fsubseteq{'eq; 'l1; cons{'u; 'l2}}} >> to
+<< "assert"{fsubseteq{'eq; 'l1; 'l2}} >> (plus some other subgoals).
+Here t must be the type of elements of << 'l1 >> and << 'l2 >>, and
+the type of << 'u >>.
+
+* fmember_subst_elementT : term -> tactic
+(fmember_subst_elementT y) reduces a conclusion of the form 
+<< "assert"{fmember{'eq; 'x; 'l}} >> to subgoals
+<< "assert"{fmember{'eq; y; 'l}} >> and
+<< "assert"{fcompare{'eq; 'x; y}} >> (and some other subgoals).  The
+tactic tries to infer the list element type by inferring the type of
+<< 'x >>; you can specify the type explicitly with atT.
+
+* fsub_nonmemberT : tactic
+fsub_nonmemberT reduces a conclusion of the form
+<< 's = fsub{'eq; 's; fsingleton{'u}} in list{'T} >> to
+<< "assert"{bnot{fmember{'eq; 'u; 's}}} >> (and some other subgoals).
+The tactic tries to infer the list element type by inferring the type
+of << 's >>; you can specify the type explicitly with atT.
+
+* fsquash_memberT : tactic
+fsquash_memberT reduces a conclusion of the form
+<< fsquash{'eq; 's} = 
+   cons{it; fsquash{'eq; fsub{'eq; 's; fsingleton{'u}}}} 
+   in list{unit} >> to
+<< "assert"{fmember{'eq; 'u; 's}} >> (and some other subgoals).
+The tactic tries to infer the list element type by inferring the type
+of << 's >>; you can specify the type explicitly with atT.
+
+* fcompareRefT : tactic
+fcompareRefT breaks down a conclusion of the form
+<< "assert"{fcompare{'eq; 'x; 'x}} >>.  The tactic tries to infer the
+type of << 'x >>; you can specify the type explicitly with atT.
+
+* fcompareSymT : tactic
+fcompareSymT reduces a conclusion of the form
+<< "assert"{fcompare{'eq; 'x; 'y}} >> to
+<< "assert"{fcompare{'eq; 'y; 'x}} >> (and some other subgoals).  The
+tactic tries to infer the type of << 'x >> and << 'y >>; you can
+specify the type explicitly with atT.
+
+* fcompareTransT : term -> tactic
+(fcompareTransT t) reduces a conclusion of the form
+<< "assert"{fcompare{'eq; 'x; 'y}} >> to
+<< "assert"{fcompare{'eq; 'x; t}} >> and
+<< "assert"{fcompare{'eq; t; 'y}} >> (and some other subgoals).  The
+tactic tries to infer the type of << 'x >> and << 'y >>; you can
+specify the type explicitly with atT.
+
+* testT : tactic
+Internal testing only.
+
+* dupRT : tactic -> int -> tactic
+(dupRT tac i) creates i+1 copies of the current goal, then applies tac
+to each.
+
+This file adds to the reduceTopC conversion.
+It reduces terms of the following forms in the obvious way:
+<< fmember{'eq; 'x; nil} >>,
+<< fmember{'eq; 'x; cons{'h; 't}} >>,
+<< fmember{'eq; 'x; fsingleton{'y}} >>,
+<< fsubseteq{'eq; nil; 'l} >>,
+<< fsubseteq{'eq; cons{'h; 't}; 'l} >>,
+<< funion{'eq; nil; 's} >>,
+<< funion{'eq; cons{'h; 't}; 's} >>,
+<< fisect{'eq; nil; 's} >>,
+<< fisect{'eq; cons{'h; 't}; 's} >>,
+<< fsub{'eq; nil; 's} >>,
+<< fsub{'eq; cons{'h; 't}; 's} >>,
+<< fsquash{'eq; nil} >>,
+<< fsquash{'eq; cons{'h; 't}} >>,
+<< fball{nil; x. 'b['x]} >>,
+<< fball{cons{'h; 't}; x. 'b['x]} >>,
+<< fbexists{nil; x. 'b['x]} >>, and
+<< fbexists{cons{'h; 't}; x. 'b['x]} >>.
+
+This file adds to the dT tactic.
+If the conclusion is of the form << member{bool; fcompare{'eq; 'x; 'y}} >>,
+(dT 0) breaks it down into subgoals.  It tries to infer the type of 
+<< 'y >> and << 'x >>, but you can specify the type explicitly with atT.
+
+If the conclusion is of the form
+<< member{bool; fmember{'eq; 's1; 's2}} >>,
+<< member{bool; fsubseteq{'eq; 's1; 's2}} >>, or
+<< member{bool; fequal{'eq; 's1; 's2}} >>,
+(dT 0) breaks it down into subgoals.  It tries to infer the type of 
+<< 's2 >> and << 's1 >>, but you can specify the type explicitly with
+atT.  You can specify either a "fset" or a "list" type.
+
+If the conclusion is of the form
+<< member{bool; fball{'s; x.'b['x]}} >> or
+<< member{bool; fbexists{'s; x.'b['x]}} >>,
+(dT 0) breaks it down into subgoals.  It tries to infer the type of 
+<< 'b['x] >>, but you can specify the type explicitly with
+atT.  You can specify either a "fset" or a "list" type.
+
+If the conclusion is of the form
+<< member{list{unit}; fsquash{'eq; 's}} >>,
+(dT 0) breaks it down into subgoals.  It tries to infer the type of 
+<< 's >>, but you can specify the type explicitly with
+atT.  You can specify either a "fset" or a "list" type.
+
+If the conclusion is of one of the forms
+<< member{list{'T}; funion{'eq; 's1; 's2}} >>,
+<< member{list{'T}; fisect{'eq; 's1; 's2}} >>,
+<< member{list{'T}; fsub{'eq; 's1; 's2}} >>,
+<< member{list{'T}; fsingleton{'x}} >>,
+<< member{list{'T}; fempty} >>,
+<< member{fset{'eq; 'T}; funion{'eq; 's1; 's2}} >>,
+<< member{fset{'eq; 'T}; fisect{'eq; 's1; 's2}} >>,
+<< member{fset{'eq; 'T}; fsub{'eq; 's1; 's2}} >>,
+<< member{fset{'eq; 'T}; fsingleton{'x}} >>,
+<< member{fset{'eq; 'T}; fempty} >>, or
+<< member{fset{'eq; 'T}; foflist{'l}} >>,
+(dT 0) breaks it down into subgoals.
+
+I left off documenting at the definition of d_fsubseteq_assertT...
+
