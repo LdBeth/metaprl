@@ -379,6 +379,13 @@ sig
    val empty_attribute : attribute_info (* No attribites *)
    val squash_attributes : attribute_info -> attribute_info (* Squash away raw attributes, but keep the rest *)
 
+   (********************************
+    * PRINTING
+    *)
+
+   (* Formatting functions *)
+   val format_extract : Dform.dform_base -> term Rformat.buffer -> extract -> unit
+   val format_arg : Dform.dform_base -> term Rformat.buffer -> tactic_arg -> unit
    val format_attrs : Dform.dform_base -> term Rformat.buffer -> attribute_info -> unit
 
    (*
@@ -551,15 +558,6 @@ sig
    val create : tactic_arg -> proof
 
    (********************************
-    * PRINTING
-    *)
-
-   (* Formatting functions *)
-   val format_proof : Dform.dform_base -> term Rformat.buffer -> proof -> unit
-   val format_extract : Dform.dform_base -> term Rformat.buffer -> extract -> unit
-   val format_arg : Dform.dform_base -> term Rformat.buffer -> tactic_arg -> unit
-
-   (********************************
     * DESTRUCTION
     *)
 
@@ -688,6 +686,8 @@ sig
     * a sequence of tactics composed with thenLT.
     *)
    val kreitz : update_fun -> proof -> proof
+
+   val format_proof : Dform.dform_base -> term Rformat.buffer -> proof -> unit
 
    (********************************
     * EXPANSION

@@ -222,149 +222,6 @@ struct
     * PROOF PRINTING                                                       *
     ************************************************************************)
 
-   (*
-    * format an extract.
-    *)
-   let rec format_ext db buf = function
-      Goal arg ->
-         format_pushm buf 2;
-         format_string buf "Goal:";
-         format_hspace buf;
-         format_arg db buf arg;
-         format_popm buf
-
-    | Identity arg ->
-         format_pushm buf 2;
-         format_string buf "Identity:";
-         format_hspace buf;
-         format_arg db buf arg;
-         format_popm buf
-
-    | Unjustified (goal, subgoals) ->
-         format_step buf db "Unjustified" goal subgoals
-    | Extract (goal, subgoals, _) ->
-         format_step buf db "Extract" goal subgoals
-    | ExtractRewrite _ ->
-         format_string buf "ExtractRewrite"
-    | ExtractCondRewrite _ ->
-         format_string buf "ExtractCondRewrite"
-    | ExtractNthHyp _ ->
-         format_string buf "ExtractNthHyp"
-    | ExtractCut _ ->
-         format_string buf "ExtractCut"
-
-    | Wrapped (label, ext) ->
-         format_pushm buf 2;
-         format_string buf "Wrapped";
-         begin match Tactic_boot.Tactic.expand_arglist label with
-            StringArg s :: _ ->
-               format_hspace buf;
-               format_string buf ("["^s^"...]");
-               format_hspace buf;
-          | _ -> ()
-         end;
-         format_string buf ":";
-         format_hspace buf;
-         format_ext db buf ext;
-         format_popm buf
-
-    | Compose { comp_status = status;
-                comp_goal = goal;
-                comp_subgoals = subgoals;
-                comp_leaves = leaves;
-                comp_extras = extras
-      } ->
-         format_pushm buf 2;
-         format_string buf "Compose:";
-         format_hspace buf;
-         format_goal_subgoals db buf goal subgoals extras;
-         format_popm buf
-
-    | RuleBox { rule_status = status;
-                rule_string = text;
-                rule_extract = goal;
-                rule_subgoals = subgoals;
-                rule_extras = extras
-      } ->
-         format_pushm buf 2;
-         format_string buf "Rule: ";
-         format_string buf text;
-         format_hspace buf;
-         format_goal_subgoals db buf goal subgoals extras;
-         format_popm buf
-
-    | Pending _ ->
-         format_string buf "Pending"
-
-    | Locked ext ->
-         format_pushm buf 2;
-         format_string buf "Locked:";
-         format_hspace buf;
-         format_ext db buf ext;
-         format_popm buf
-
-   and format_step buf db name goal subgoals =
-         format_pushm buf 2;
-         format_string buf (name ^":");
-         format_hspace buf;
-         format_arg db buf goal;
-         format_hspace buf;
-         format_string buf "->";
-         if subgoals==[] then
-            format_string buf " []"
-         else begin
-            format_pushm buf 3;
-            let f_sg sg =
-               format_hspace buf;
-               format_arg db buf sg;
-               format_string buf ";";
-           in List.iter f_sg subgoals;
-               format_popm buf
-         end;
-         format_popm buf
-
-   and format_goal_subgoals db buf goal subgoals extras =
-      format_pushm buf 3;
-      format_string buf "0. ";
-      format_ext db buf goal;
-      format_popm buf;
-      let count =
-         if subgoals = [] then
-            1
-         else
-            format_subgoals db buf 1 subgoals
-      in
-         format_subgoals db buf count extras
-
-   and format_subgoals db buf index = function
-      subgoal :: subgoals ->
-         format_hspace buf;
-         format_pushm buf 3;
-         format_int buf index;
-         format_string buf ". ";
-         format_ext db buf subgoal;
-         format_popm buf;
-         format_subgoals db buf (succ index) subgoals
-
-    | [] ->
-         index
-
-   and format_arg db buf { ref_goal = goal; ref_attributes = attrs } =
-      let goal, _ = Refine.dest_msequent goal in
-         format_pushm buf 2;
-         format_term db buf goal;
-         format_space buf;
-         format_string buf "with attrs";
-         format_space buf;
-         format_attrs db buf attrs;
-         format_popm buf
-
-   (*
-    * Format a proof.
-    *)
-   let format_extract =
-      format_ext
-
    let format_proof db buf { pf_root = root; pf_address = addr; pf_node = node } =
       let rec format_addr buf = function
          [i] ->
@@ -380,15 +237,15 @@ struct
          format_addr buf addr;
          format_string buf "]";
          format_hspace buf;
-         format_ext db buf root;
+         format_extract db buf root;
          format_hspace buf;
          format_string buf "Node:";
          format_hspace buf;
-         format_ext db buf node
+         format_extract db buf node
 
    let print_ext ext =
       let buf = Rformat.new_buffer () in
-         format_ext !debug_base buf ext;
+         format_extract !debug_base buf ext;
          format_newline buf;
          print_to_channel 80 buf stderr;
          flush stderr
@@ -789,7 +646,7 @@ struct
             format_string buf "Leaves of";
             format_space buf;
             format_szone buf;
-            format_ext !debug_base buf goal;
+            format_extract !debug_base buf goal;
             format_ezone buf;
             format_space buf;
             print_ext goal;

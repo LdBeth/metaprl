@@ -32,7 +32,8 @@
 
 open Rformat
 
-open Proof_boot
+open Proof_boot.Proof
+open Tactic_boot.TacticInternal
 
 module TacticExn =
 struct
@@ -41,25 +42,25 @@ struct
     *)
    let rec format_exn db buf exn =
       let format = function
-         Proof.ExtRefineError (name, proof, ref_error) ->
+         ExtRefineError (name, proof, ref_error) ->
             format_szone buf;
             format_pushm buf 4;
             format_string buf "ProofError:";
             format_hspace buf;
             Refine_exn.format_refine_error db buf name ref_error;
             format_newline buf;
-            Proof.format_extract db buf proof;
+            format_extract db buf proof;
             format_popm buf;
             format_ezone buf
 
-       | Proof.ProofRefineError (name, proof, ref_error) ->
+       | ProofRefineError (name, proof, ref_error) ->
             format_szone buf;
             format_pushm buf 4;
             format_string buf "ProofError:";
             format_hspace buf;
             Refine_exn.format_refine_error db buf name ref_error;
             format_newline buf;
-            Proof.format_proof db buf proof;
+            format_proof db buf proof;
             format_popm buf;
             format_ezone buf
        | exn ->

@@ -342,76 +342,7 @@ struct
    let get_remote_server () =
       (* Register.get *) remote_server
 
-   let format_alist1 buf ffunc (s,data) =
-      format_string buf ";";
-      format_space buf;
-      format_string buf (s ^ "->");
-      ffunc buf data
-
-   let format_alist name buf ffunc = function
-      [] -> ()
-    | [s,data] ->
-         format_space buf;
-         format_pushm buf 2;
-         format_string buf (name ^ " =");
-         format_space buf;
-         format_string buf ("[ " ^ s ^"->");
-         ffunc buf data;
-         format_string buf " ];";
-         format_popm buf
-    | (s,data)::rest -> 
-         format_space buf;
-         format_pushm buf 2;
-         format_string buf (name ^ " =");
-         format_space buf;
-         format_pushm buf 2;
-         format_string buf ("[ " ^ s ^"->");
-         ffunc buf data;
-         List.iter (format_alist1 buf ffunc) rest;
-         format_popm buf;
-         format_space buf;
-         format_string buf "];";
-         format_popm buf
-
-   let format_term1 db buf t =
-      format_string buf ";";
-      format_space buf;
-      format_term db buf t
-
-   let format_tlist db buf = function
-      [] -> format_string buf "[]"
-    | [t] ->
-         format_string buf "[ ";
-         format_term db buf t;
-         format_string buf " ]"
-    | t::rest -> 
-         format_pushm buf 2;
-         format_string buf "[ ";
-         format_term db buf t;
-         List.iter (format_term1 db buf) rest;
-         format_popm buf;
-         format_space buf;
-         format_string buf "]"
-
-   let format_bool buf b =
-      let s = if b then "tt" else "ff" in
-      format_string buf s
-
-   let format_attrs db buf attrs =
-      format_pushm buf 2;
-      format_string buf "<";
-      format_alist "terms" buf (format_term db) attrs.attr_terms;
-      format_alist "term_lists" buf (format_tlist db) attrs.attr_term_lists;
-      format_alist "types" buf (format_term db) attrs.attr_types;
-      format_alist "ints" buf format_int attrs.attr_ints;
-      format_alist "bools" buf format_bool attrs.attr_bools;
-      format_alist "strings" buf format_string attrs.attr_strings;
-      format_alist "substs" buf (format_term db) attrs.attr_subst;
-      format_popm buf;
-      format_space buf;
-      format_string buf ">"
-
-   let empty_attribute = 
+   let empty_attribute =
       { attr_terms      = [];
         attr_term_lists = [];
         attr_types      = [];
@@ -671,6 +602,216 @@ struct
       @ (List.map (fun (name, b) -> name, RawBool b) bools)
       @ (List.map (fun (name, t) -> name, RawSubst t) subst)
       @ (List.map (fun (name, t) -> name, RawObject t) keys)
+
+   (************************************************************************
+    * PROOF PRINTING                                                       *
+    ************************************************************************)
+
+   let format_alist1 buf ffunc (s,data) =
+      format_string buf ";";
+      format_space buf;
+      format_string buf (s ^ "->");
+      ffunc buf data
+
+   let format_alist name buf ffunc = function
+      [] -> ()
+    | [s,data] ->
+         format_space buf;
+         format_pushm buf 2;
+         format_string buf (name ^ " =");
+         format_space buf;
+         format_string buf ("[ " ^ s ^"->");
+         ffunc buf data;
+         format_string buf " ];";
+         format_popm buf
+    | (s,data)::rest ->
+         format_space buf;
+         format_pushm buf 2;
+         format_string buf (name ^ " =");
+         format_space buf;
+         format_pushm buf 2;
+         format_string buf ("[ " ^ s ^"->");
+         ffunc buf data;
+         List.iter (format_alist1 buf ffunc) rest;
+         format_popm buf;
+         format_space buf;
+         format_string buf "];";
+         format_popm buf
+
+   let format_term1 db buf t =
+      format_string buf ";";
+      format_space buf;
+      format_term db buf t
+
+   let format_tlist db buf = function
+      [] -> format_string buf "[]"
+    | [t] ->
+         format_string buf "[ ";
+         format_term db buf t;
+         format_string buf " ]"
+    | t::rest ->
+         format_pushm buf 2;
+         format_string buf "[ ";
+         format_term db buf t;
+         List.iter (format_term1 db buf) rest;
+         format_popm buf;
+         format_space buf;
+         format_string buf "]"
+
+   let format_bool buf b =
+      let s = if b then "tt" else "ff" in
+      format_string buf s
+
+   let format_attrs db buf attrs =
+      format_pushm buf 2;
+      format_string buf "<";
+      format_alist "terms" buf (format_term db) attrs.attr_terms;
+      format_alist "term_lists" buf (format_tlist db) attrs.attr_term_lists;
+      format_alist "types" buf (format_term db) attrs.attr_types;
+      format_alist "ints" buf format_int attrs.attr_ints;
+      format_alist "bools" buf format_bool attrs.attr_bools;
+      format_alist "strings" buf format_string attrs.attr_strings;
+      format_alist "substs" buf (format_term db) attrs.attr_subst;
+      format_popm buf;
+      format_space buf;
+      format_string buf ">"
+
+   (*
+    * format an extract.
+    *)
+   let rec format_extract db buf = function
+      Goal arg ->
+         format_pushm buf 2;
+         format_string buf "Goal:";
+         format_hspace buf;
+         format_arg db buf arg;
+         format_popm buf
+
+    | Identity arg ->
+         format_pushm buf 2;
+         format_string buf "Identity:";
+         format_hspace buf;
+         format_arg db buf arg;
+         format_popm buf
+
+    | Unjustified (goal, subgoals) ->
+         format_step buf db "Unjustified" goal subgoals
+    | Extract (goal, subgoals, _) ->
+         format_step buf db "Extract" goal subgoals
+    | ExtractRewrite _ ->
+         format_string buf "ExtractRewrite"
+    | ExtractCondRewrite _ ->
+         format_string buf "ExtractCondRewrite"
+    | ExtractNthHyp _ ->
+         format_string buf "ExtractNthHyp"
+    | ExtractCut _ ->
+         format_string buf "ExtractCut"
+
+    | Wrapped (label, ext) ->
+         format_pushm buf 2;
+         format_string buf "Wrapped";
+         begin match expand_arglist label with
+            StringArg s :: _ ->
+               format_hspace buf;
+               format_string buf ("["^s^"...]");
+               format_hspace buf;
+          | _ -> ()
+         end;
+         format_string buf ":";
+         format_hspace buf;
+         format_extract db buf ext;
+         format_popm buf
+
+    | Compose { comp_status = status;
+                comp_goal = goal;
+                comp_subgoals = subgoals;
+                comp_leaves = leaves;
+                comp_extras = extras
+      } ->
+         format_pushm buf 2;
+         format_string buf "Compose:";
+         format_hspace buf;
+         format_goal_subgoals db buf goal subgoals extras;
+         format_popm buf
+
+    | RuleBox { rule_status = status;
+                rule_string = text;
+                rule_extract = goal;
+                rule_subgoals = subgoals;
+                rule_extras = extras
+      } ->
+         format_pushm buf 2;
+         format_string buf "Rule: ";
+         format_string buf text;
+         format_hspace buf;
+         format_goal_subgoals db buf goal subgoals extras;
+         format_popm buf
+
+    | Pending _ ->
+         format_string buf "Pending"
+
+    | Locked ext ->
+         format_pushm buf 2;
+         format_string buf "Locked:";
+         format_hspace buf;
+         format_extract db buf ext;
+         format_popm buf
+
+   and format_step buf db name goal subgoals =
+         format_pushm buf 2;
+         format_string buf (name ^":");
+         format_hspace buf;
+         format_arg db buf goal;
+         format_hspace buf;
+         format_string buf "->";
+         if subgoals==[] then
+            format_string buf " []"
+         else begin
+            format_pushm buf 3;
+            let f_sg sg =
+               format_hspace buf;
+               format_arg db buf sg;
+               format_string buf ";";
+           in List.iter f_sg subgoals;
+               format_popm buf
+         end;
+         format_popm buf
+
+   and format_goal_subgoals db buf goal subgoals extras =
+      format_pushm buf 3;
+      format_string buf "0. ";
+      format_extract db buf goal;
+      format_popm buf;
+      let count =
+         if subgoals = [] then
+            1
+         else
+            format_subgoals db buf 1 subgoals
+      in
+         format_subgoals db buf count extras
+
+   and format_subgoals db buf index = function
+      subgoal :: subgoals ->
+         format_hspace buf;
+         format_pushm buf 3;
+         format_int buf index;
+         format_string buf ". ";
+         format_extract db buf subgoal;
+         format_popm buf;
+         format_subgoals db buf (succ index) subgoals
+
+    | [] ->
+         index
+
+   and format_arg db buf { ref_goal = goal; ref_attributes = attrs } =
+      let goal, _ = Refine.dest_msequent goal in
+         format_pushm buf 2;
+         format_term db buf goal;
+         format_space buf;
+         format_string buf "with attrs";
+         format_space buf;
+         format_attrs db buf attrs;
+         format_popm buf
 
    (*
     * Lazy attribute generation for keys.
