@@ -516,7 +516,7 @@ struct
    let dest_so_var t = match get_core t with
       FOVar v -> v,[],[]
     | SOVar(v,cs,ts) -> v,cs,ts
-    | _ -> REF_RAISE(RefineError ("dest_so_var", TermMatchError (t, "not a so_var")))
+    | _ -> REF_RAISE(RefineError ("Term_man_ds.dest_so_var", TermMatchError (t, "not a so_var")))
 
    let mk_so_var_term v cs ts = core_term (SOVar (v,cs,ts))
 
@@ -526,7 +526,7 @@ struct
 
    let dest_fso_var t = match get_core t with
       FOVar v | SOVar(v,_,[]) -> v
-    | _ -> REF_RAISE(RefineError ("dest_so_var", TermMatchError (t, "not a so_var")))
+    | _ -> REF_RAISE(RefineError ("Term_man_ds.dest_fso_var", TermMatchError (t, "not a FO or 0-ary SO variable")))
 
    (*
     * Second order context, contains a context term, plus

@@ -57,8 +57,8 @@ open Filter_util
 (*
  * Utilities.
  *)
-let dest_so_var_string t =
-   let v, _, _ = dest_so_var t in string_of_symbol v
+let dest_fso_var_string t =
+   string_of_symbol (dest_fso_var t)
 
 (*
  * Turn a term into a pattern expression.
@@ -123,10 +123,10 @@ let build_term_patt loc t =
       List.map (fun bterm ->
          let { bvars = bvars; bterm = t } = dest_bterm bterm in
          let _ =
-            if not (is_so_var_term t) then
+            if not (is_fso_var_term t) then
                raise (Invalid_argument "term_patt: subterms must be variables")
          in
-         let v, _, _ = dest_so_var t in
+         let v = dest_fso_var t in
          let bvars_rhs = List.fold_right (fun v l -> <:patt< [$lid: string_of_symbol v$ :: $l$] >>) bvars <:patt< [] >> in
             <:patt< { Refiner.Refiner.TermType.bvars = $bvars_rhs$;
                       Refiner.Refiner.TermType.bterm = $lid: string_of_symbol v$
@@ -152,7 +152,7 @@ let build_sequent_patt loc t =
    let goals = SeqGoal.to_list goals in
 
    (* For now, the arg must be a var *)
-   let arg = dest_so_var_string args in
+   let arg = dest_fso_var_string args in
 
    (* Collect the hyps: if there is a context, it should be final *)
    let rec build_hyps hyps =
@@ -161,10 +161,10 @@ let build_sequent_patt loc t =
             <:patt< [] >>
        | HypBinding (v, t) :: hyps ->
             let v = string_of_symbol v in
-            let t = dest_so_var_string t in
+            let t = dest_fso_var_string t in
                <:patt< [Refiner.Refiner.TermType.HypBinding ($lid:v$, $lid:t$) :: $build_hyps hyps$] >>
        | Hypothesis t :: hyps ->
-            let t = dest_so_var_string t in
+            let t = dest_fso_var_string t in
                <:patt< [Refiner.Refiner.TermType.Hypothesis $lid:t$ :: $build_hyps hyps$] >>
        | [Context (v, _, _)] ->
             let v = string_of_symbol v in
@@ -177,7 +177,7 @@ let build_sequent_patt loc t =
    (* Collect the goals *)
    let goals =
       List.map (fun t ->
-         let v = dest_so_var_string t in
+         let v = dest_fso_var_string t in
             <:patt< $lid:v$ >>) goals
    in
    let goals = List.fold_right (fun x l -> <:patt< [$x$ :: $l$] >>) goals <:patt< [] >> in

@@ -176,7 +176,11 @@ let term_exp s =
 let term_patt s =
    let cs = Stream.of_string s in
    let t = Grammar.Entry.parse term_eoi cs in
-      Filter_patt.build_term_patt t
+      try
+         Filter_patt.build_term_patt t
+      with exn ->
+         eprintf "Can not build a patten out of a term:\n\t%a%t" (Filter_exn.print_exn Dform.null_base) exn eflush;
+         raise exn
 
 let _ = Quotation.add "term" (Quotation.ExAst (term_exp, term_patt))
 let _ = Quotation.default := "term"
@@ -280,15 +284,15 @@ and expr_of_hyps_con loc hyps =
                ConContext (v, args) ->
                   let args = mk_list_expr loc (List.map (expr_of_term_con loc) args) in
                   let e = <:expr< Refiner.Refiner.TermType.Context (Lm_symbol.add $v$, $args$) >> in
-                     <:expr< [$e$ :: $hyps$] >>
+                     <:expr< [ $e$ :: $hyps$ ] >>
              | ConHypList l ->
                   <:expr< $l$ @ $hyps$ >>
              | ConHypothesis t ->
                   let e = <:expr< Refiner.Refiner.TermType.Hypothesis $expr_of_term_con loc t$ >> in
-                     <:expr< [$e$ :: $hyps$] >>
+                     <:expr< [ $e$ :: $hyps$ ] >>
              | ConHypBinding (v, t) ->
                   let e = <:expr< Refiner.Refiner.TermType.HypBinding (Lm_symbol.add $v$, $expr_of_term_con loc t$) >> in
-                     <:expr< [$e$ :: $hyps$] >>
+                     <:expr< [ $e$ :: $hyps$ ] >>
 
 let con_exp s =
    let cs = Stream.of_string s in
