@@ -1165,17 +1165,17 @@ EXTEND
        ]];
 
    sig_item:
-      [[ "include"; path = mod_ident ->
+      [[ "extends"; path = mod_ident ->
           let f () =
              SigFilter.declare_parent (SigFilter.get_proc loc) loc path
           in
-             print_exn f "include" loc;
+             print_exn f "extends" loc;
              empty_sig_item loc
         | "derive"; path = mod_ident ->
           let f () =
              SigFilter.declare_parent (SigFilter.get_proc loc) loc path
           in
-             print_exn f "include" loc;
+             print_exn f "derive" loc;
              empty_sig_item loc
         | "declare"; t = quote_term ->
           let f () =
@@ -1264,11 +1264,11 @@ EXTEND
        ]];
 
    str_item:
-      [[ "include"; path = mod_ident ->
+      [[ "extends"; path = mod_ident ->
           let f () =
              StrFilter.declare_parent (StrFilter.get_proc loc) loc path
           in
-             print_exn f "include" loc;
+             print_exn f "extends" loc;
              empty_str_item loc
         | "derive"; path = mod_ident ->
           let f () =

@@ -33,13 +33,13 @@
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
-include Proof_edit
-include Package_info
-include Shell_rewrite
-include Shell_rule
-include Shell_package
-include Shell_root
-include Shell_p4_sig
+extends Proof_edit
+extends Package_info
+extends Shell_rewrite
+extends Shell_rule
+extends Shell_package
+extends Shell_root
+extends Shell_p4_sig
 
 open Printf
 open Mp_debug

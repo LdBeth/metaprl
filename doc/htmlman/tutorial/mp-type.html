@@ -52,7 +52,7 @@ and a display form to produce pretty output.</P>
   <P>3. <I>Create the file </I><TT>fol_type.ml</TT>,<I> containing
   the following lines:</I></P>
   <BLOCKQUOTE>
-    <PRE><B>include</B> Base_theory
+    <PRE><B>extends</B> Base_theory
 <B>declare </B>&quot;type&quot;{'A}
 <B>declare</B> trivial
 <B>dform</B> type_df : except_mode[src] :: &quot;type&quot;{'A} = slot{'A} `&quot; type&quot;

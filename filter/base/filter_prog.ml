@@ -2053,7 +2053,7 @@ struct
          proc.imp_resources <- proc.imp_resources @ (List.map make_ctyp nresources);
          match path with
             [name] ->
-               <:str_item< Mp_resource.include_theory $str:name$ >> :: joins
+               <:str_item< Mp_resource.extends_theory $str:name$ >> :: joins
           | _ ->
                Stdpp.raise_with_loc loc (Invalid_argument "Including sub-theories not implemented")
 

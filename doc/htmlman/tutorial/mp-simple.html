@@ -18,9 +18,9 @@ files may be found in the distribution.</P>
 
 <H3><TT>Implies</TT> interface</H3>
 
-<P>The interface for implies follows the standard format. We <TT>include</TT>
-the <TT>Fol_type</TT> module to define well-formedness of the
-term, and we declare a new binary operator for implies. We also
+<P>The interface for implies follows the standard format. It <TT>extends</TT>
+the <TT>Fol_type</TT> module that defines well-formedness of the
+term, with a new binary operator for implies. We also
 define proof terms <TT>lambda</TT> and <TT>apply</TT>, and display
 form precedences for each of the new terms.</P>
 
@@ -28,7 +28,7 @@ form precedences for each of the new terms.</P>
   <P>1. <I>Define the </I><TT>implies</TT> <I>interface by adding
   the following lines to the file </I><TT>fol_implies.mli</TT>:</P>
   <BLOCKQUOTE>
-    <PRE><B>include</B> Fol_type
+    <PRE><B>extends</B> Fol_type
 
 <B>prec</B> prec_implies
 <B>prec</B> prec_lambda
@@ -52,7 +52,7 @@ and the introduction and elimination rules for implication.</P>
   <P>2. <I>Declare the syntax for the </I><TT>implies</TT><I> operator
   by adding the following lines to the file </I><TT>fol_implies.ml</TT>:</P>
   <BLOCKQUOTE>
-    <PRE><B>include</B> Fol_type
+    <PRE><B>extends</B> Fol_type
 
 <B>declare</B> implies
 <B>declare</B> lambda{x. 'b['x]}

@@ -30,8 +30,8 @@
  * jyh@cs.cornell.edu
  *)
 
-include Shell_sig
-include Package_info
+extends Shell_sig
+extends Package_info
 
 open Refiner.Refiner.TermType
 

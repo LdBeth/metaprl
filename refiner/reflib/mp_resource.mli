@@ -80,7 +80,7 @@ type ('annotation, 'input) annotation_processor =
 val improve : string -> Obj.t -> unit
 val improve_list : string -> Obj.t list -> unit
 val bookmark : string -> unit
-val include_theory : string -> unit
+val extends_theory : string -> unit
 val close_theory : string -> unit
 
 (*

@@ -35,7 +35,7 @@
  * jyh@cs.cornell.edu
  *)
 
-include Package_sig
+extends Package_sig
 
 open Filter_prog
 

@@ -26,7 +26,7 @@ and included tactics for automating their application.</P>
 
 <P>At this point, we can put together a complete constructive
 first order logic. The process is pretty simple: we simple define
-a new module that <I>includes</I> each of the operators.</P>
+a new module that <I>extends</I> each of the individual theories.</P>
 
 <H3>The <TT>Fol_ctheory</TT> interface</H3>
 
@@ -36,16 +36,16 @@ operators.</P>
 <BLOCKQUOTE>
   <P>1.<I> Create the constructive interface in the file</I> <TT>Fol_ctheory:</TT></P>
   <BLOCKQUOTE>
-    <PRE><B>include</B> Fol_type
-<B>include</B> Fol_true
-<B>include</B> Fol_false
-<B>include</B> Fol_implies
-<B>include</B> Fol_and
-<B>include</B> Fol_or
-<B>include</B> Fol_not
-<B>include</B> Fol_univ
-<B>include</B> Fol_all
-<B>include</B> Fol_exists</PRE>
+    <PRE><B>extends</B> Fol_type
+<B>extends</B> Fol_true
+<B>extends</B> Fol_false
+<B>extends</B> Fol_implies
+<B>extends</B> Fol_and
+<B>extends</B> Fol_or
+<B>extends</B> Fol_not
+<B>extends</B> Fol_univ
+<B>extends</B> Fol_all
+<B>extends</B> Fol_exists</PRE>
   </BLOCKQUOTE>
 </BLOCKQUOTE>
 
@@ -56,7 +56,7 @@ In addition, we establish display precedence relations that cross
 the module boundaries.</P>
 
 <BLOCKQUOTE>
-  <P>2.<I> Create the implementation with the <TT>include</TT>
+  <P>2.<I> Create the implementation with the <TT>extends</TT>
   statements of the interface, and the following relations between
   the precedences in the file</I> <TT>fol_ctheory.ml:</TT></P>
   <BLOCKQUOTE>

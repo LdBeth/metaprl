@@ -27,8 +27,8 @@ it declares the negation definition.</P>
   <P>1. <I>Declare the interface for negation by adding these lines
   to the file </I><TT>fol_not.mli:</TT></P>
   <BLOCKQUOTE>
-    <PRE><B><TT>include</TT></B><TT> Fol_false</TT>
-<B><TT>include</TT></B><TT> Fol_implies</TT>
+    <PRE><B><TT>extends</TT></B><TT> Fol_false</TT>
+<B><TT>extends</TT></B><TT> Fol_implies</TT>
 
 <B><TT>declare</TT></B><TT> &quot;not&quot;{'A}</TT>
 
@@ -38,7 +38,7 @@ it declares the negation definition.</P>
   </BLOCKQUOTE>
 </BLOCKQUOTE>
 
-<P>The <TT>include</TT> directives establish the logical module
+<P>The <TT>extends</TT> directives establish the logical module
 dependencies. The <TT>declare</TT> directive produces the new
 syntax, and the <TT>rewrite</TT> term establishes the definition
 of <TT>not</TT> using computational rewriting.</P>
@@ -53,8 +53,8 @@ of <TT>not</TT> using computational rewriting.</P>
   <P>2.<I> Define the logical dependencies and syntax for negation
   in the </I><TT>fol_not.ml</TT><I> file:</I></P>
   <BLOCKQUOTE>
-    <PRE><B>include</B> Fol_false
-<B>include</B> Fol_implies
+    <PRE><B>extends</B> Fol_false
+<B>extends</B> Fol_implies
 
 <B>declare</B> &quot;not&quot;{'A}</PRE>
   </BLOCKQUOTE>

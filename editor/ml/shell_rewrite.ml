@@ -30,8 +30,8 @@
  * jyh@cs.cornell.edu
  *)
 
-include Shell_sig
-include Package_info
+extends Shell_sig
+extends Package_info
 
 open Printf
 open Mp_debug
@@ -93,7 +93,7 @@ type rw =
  * this code should go away (and, for that matter, shell_rule
  * and shell_rewrite should probably be eventually merged).
  *)
-include Base_trivial
+extends Base_trivial
 let seq = << sequent [squash] { 'H >- 'rw } >>
 
 let mk_rw_goal assums redex contractum =

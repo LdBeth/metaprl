@@ -30,9 +30,9 @@
  * jyh@cs.cornell.edu
  *)
 
-include Shell_sig
-include Package_info
-include Summary
+extends Shell_sig
+extends Package_info
+extends Summary
 
 open Printf
 

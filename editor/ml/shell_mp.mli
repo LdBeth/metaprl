@@ -30,7 +30,7 @@
  * jyh@cs.cornell.edu
  *)
 
-include Mptop
+extends Mptop
 
 open Shell_p4_sig
 

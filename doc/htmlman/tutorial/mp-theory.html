@@ -20,8 +20,8 @@ for classical reasoning <TT>Fol_class</TT>.</P>
   <P>1.<I> Define the classical theory interface in the files</I><TT>
   fol_theory.mli:</TT></P>
   <BLOCKQUOTE>
-    <PRE><B><TT>include</TT></B><TT> Fol_ctheory
-<B>include</B> Fol_class</TT></PRE>
+    <PRE><B><TT>extends</TT></B><TT> Fol_ctheory
+<B>extends</B> Fol_class</TT></PRE>
   </BLOCKQUOTE>
 </BLOCKQUOTE>
 
@@ -31,8 +31,8 @@ law, which we will prove as an example.</P>
 <BLOCKQUOTE>
   <P>2. <I>Define the classical theory in the file</I> <TT>fol_theory.ml:</TT></P>
   <BLOCKQUOTE>
-    <PRE><B>include</B> Fol_ctheory
-<B>include</B> Fol_class
+    <PRE><B>extends</B> Fol_ctheory
+<B>extends</B> Fol_class
 
 <B>interactive</B> pierce 'H : :
    sequent ['ext] { 'H &gt;- &quot;all&quot;{P. &quot;all&quot;{Q. ((('P =&gt; 'Q) =&gt; 'P) =&gt; 'P)}} }</PRE>

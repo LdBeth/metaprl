@@ -51,7 +51,7 @@ falsehood.</P>
   <P>3. <I>Create the file </I><TT>fol_false.ml</TT>, <I>containing
   the following lines:</I></P>
   <BLOCKQUOTE>
-    <PRE><B>include </B>Fol_type
+    <PRE><B>extends </B>Fol_type
 
 <B>declare </B>&quot;false&quot;
 <B>dform</B> false_df : &quot;false&quot; = `&quot;false&quot;
@@ -64,7 +64,7 @@ falsehood.</P>
   </BLOCKQUOTE>
 </BLOCKQUOTE>
 
-<P>The <TT>include</TT> directive establishes the dependency of
+<P>The <TT>extends</TT> directive establishes the dependency of
 the <TT>Fol_false</TT> module on the <TT>Fol_type</TT> module,
 which is used in the well-formedness rule <TT>false_type</TT>.
 The display form for <TT>false</TT> is the string literal &quot;false.&quot;

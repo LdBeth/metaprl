@@ -10,12 +10,12 @@ MODEL 1.
 We have a collection of "modules" each being a list with "directives" of one
 of the following kinds:
 - "add <data>" (corresponds to "improve_resource" or a resource annotation)
-- "include <theory-name>"
+- "extends <theory-name>"
 - "bookmark <name>"
 
 Goal: we want to have a _preprocessor_ that would create some code for each of
 the theories such that when the code is executes (in some order that agrees
-with "include" directives) it would produce a data structure that would allow
+with "extends" directives) it would produce a data structure that would allow
 us to have a function of the type "string -> data list" that would take a
 bookmark name and return all the data that was added "above" that bookmark in
 an "appropriate order".
@@ -33,9 +33,9 @@ PROBLEM 1.1:
 
 If we have
 A: add a
-B: include A; add b
-C: include A; add c
-D: include B; include C; add d; bookmark "d"
+B: extends A; add b
+C: extends A; add c
+D: extends B; extends C; add d; bookmark "d"
 
 we want "d" to point to ``a; b; c; d''. A naive code would return ``a; b; a;
 c; d'' which is not only inefficient, but is also incorrect since it allows a
@@ -104,7 +104,7 @@ better if bookmarks would only be retrieved as needed.
 
 MODEL 3:
 Same as Model 2, but now each theory can also declare a new resource and then
-it (and others that include it) can use it.
+it (and others that extend it) can use it.
 
 PROBLEM 3.1
 We do not know the complete list of resources in advance. More importantly,
@@ -164,14 +164,14 @@ string is a theory name, we'll have a single entry for each theory *)
 val create: unit -> 'data global_data
 val improve: 'data data -> 'data -> 'data data (* same as "add_data" *)
 val bookmark: 'data data -> string -> 'data data
-val include_theory: 'data data -> string -> 'data data
+val extends_theory: 'data data -> string -> 'data data
 
 (* Since theories are processed one-by-one, we can do it imperatively for a
 particular resource. See also Modules 4&5 for an expected value of x_data *)
 val x_theory_data : x_data data ref (* initially empty *)
 val x_improve : x_data -> unit (* adds to x_theory_data *)
 val x_bookmark: string -> unit
-val x_include_theory: string -> unit
+val x_extends_theory: string -> unit
 val x_global_data = x_data global_data
 val x_close_theory: string -> unit (* adds x_theory_data to x_global_data and
    flushes it *)
@@ -353,7 +353,7 @@ Module 6: the actual exposed interface:
 (* From Module1 *)
 val improve : string -> Obj.t -> unit (* takes a resource name and a data *)
 val bookmark: string -> unit (* takes local name *)
-val include_theory: string -> unit (* takes theory name *)
+val extends_theory: string -> unit (* takes theory name *)
 val close_theory: string -> unit
 
 (* From Module2 *)

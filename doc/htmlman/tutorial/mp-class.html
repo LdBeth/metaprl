@@ -24,7 +24,7 @@ reasoning. The classical rule we use is based on the reasoning
   <P>1.<I> Define the proof term, and reasoning tactic in the file
   </I><TT>fol_class.mli:</TT></P>
   <BLOCKQUOTE>
-    <PRE><B>include</B> Fol_not
+    <PRE><B>extends</B> Fol_not
 <B>open</B> Tacticals
 <B>declare</B> magic{x. 't['x]}
 <B>val</B> magicT : tactic</PRE>
@@ -40,7 +40,7 @@ just define the rule and tactic for classical reasoning.</P>
   <P>2.<I> Define the syntax, rule, a tactic for classical reasoning
   in the</I> <TT>fol_class.ml</TT><I> file:</I></P>
   <BLOCKQUOTE>
-    <PRE><B>include</B> Fol_not
+    <PRE><B>extends</B> Fol_not
 
 <B>declare</B> magic{x. 't['x]}
 

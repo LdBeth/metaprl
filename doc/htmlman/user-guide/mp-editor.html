@@ -7,7 +7,7 @@
 
 <H1>MetaPRL Module Editor</H1>
 
-<H2><A NAME="intro">Introductioni</A></H2>
+<H2><A NAME="intro">Introduction</A></H2>
 
 <P>The <I>module editor</I> is used to navigate the module hierarchy,
 and to fulfill <TT>interactive</TT> proof obligations. The modules
@@ -287,13 +287,13 @@ ALIGN="BOTTOM"><BR>
 ALIGN="BOTTOM"><IMG ALT="" SRC="../chars/CHAR32.gif"
 WIDTH="8" HEIGHT="12" BORDER="0" ALIGN="BOTTOM"><IMG ALT="" SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0"
 ALIGN="BOTTOM"><IMG ALT="" SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12"
-BORDER="0" ALIGN="BOTTOM"><IMG ALT="" SRC="../chars/CHAR105.gif"
-WIDTH="8" HEIGHT="12" BORDER="0" ALIGN="BOTTOM"><IMG ALT="" SRC="../chars/CHAR110.gif" WIDTH="8" HEIGHT="12" BORDER="0"
-ALIGN="BOTTOM"><IMG ALT="" SRC="../chars/CHAR99.gif" WIDTH="8" HEIGHT="12"
-BORDER="0" ALIGN="BOTTOM"><IMG ALT="" SRC="../chars/CHAR108.gif"
-WIDTH="8" HEIGHT="12" BORDER="0" ALIGN="BOTTOM"><IMG ALT="" SRC="../chars/CHAR117.gif" WIDTH="8" HEIGHT="12" BORDER="0"
-ALIGN="BOTTOM"><IMG ALT="" SRC="../chars/CHAR100.gif" WIDTH="8" HEIGHT="12"
 BORDER="0" ALIGN="BOTTOM"><IMG ALT="" SRC="../chars/CHAR101.gif"
+WIDTH="8" HEIGHT="12" BORDER="0" ALIGN="BOTTOM"><IMG ALT="" SRC="../chars/CHAR120.gif" WIDTH="8" HEIGHT="12" BORDER="0"
+ALIGN="BOTTOM"><IMG ALT="" SRC="../chars/CHAR116.gif" WIDTH="8" HEIGHT="12"
+BORDER="0" ALIGN="BOTTOM"><IMG ALT="" SRC="../chars/CHAR101.gif"
+WIDTH="8" HEIGHT="12" BORDER="0" ALIGN="BOTTOM"><IMG ALT="" SRC="../chars/CHAR110.gif" WIDTH="8" HEIGHT="12" BORDER="0"
+ALIGN="BOTTOM"><IMG ALT="" SRC="../chars/CHAR100.gif" WIDTH="8" HEIGHT="12"
+BORDER="0" ALIGN="BOTTOM"><IMG ALT="" SRC="../chars/CHAR115.gif"
 WIDTH="8" HEIGHT="12" BORDER="0" ALIGN="BOTTOM"><IMG ALT="" SRC="../chars/CHAR32.gif" WIDTH="8" HEIGHT="12" BORDER="0"
 ALIGN="BOTTOM"><IMG ALT="" SRC="../chars/CHAR73.gif" WIDTH="8" HEIGHT="12"
 BORDER="0" ALIGN="BOTTOM"><IMG ALT="" SRC="../chars/CHAR116.gif"
@@ -838,7 +838,7 @@ WIDTH="8" HEIGHT="12" BORDER="0" ALIGN="BOTTOM"></P>
 </BLOCKQUOTE>
 
 <P>The module listing contains an entry for each of the items
-in the module, including the <TT>include</TT> directives, <TT>open</TT>
+in the module, including the <TT>extends</TT> directives, <TT>open</TT>
 directives, ML values, and logical constructs for the <TT>axiom</TT>
 and <TT>rewrite</TT> directives. Each logical item is listed with
 its status:</P>
@@ -1714,7 +1714,7 @@ only if all the logical rules it uses are valid rules of its logic,
 and if all proof obligations for <TT>interactive</TT> proofs have
 been met. The valid logical rules include rules <I>defined previously
 </I>in the same module as the checked rule, and all the rules
-in <TT>include</TT>'d modules.</P>
+in <TT>extends</TT>'d modules.</P>
 
 <BLOCKQUOTE>
   <PRE><B>val</B> check : unit -&gt; unit

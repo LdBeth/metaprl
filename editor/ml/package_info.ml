@@ -31,9 +31,9 @@
  * Modified by: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 
-include Tactic_cache
+extends Tactic_cache
 
-include Package_sig
+extends Package_sig
 
 open Parsetree
 

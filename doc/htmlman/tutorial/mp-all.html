@@ -37,7 +37,7 @@ formula <I>universe</I> term.</P>
   <P>1.<I> Define the universe of formulas in the file</I> <TT>fol_univ.mli</TT><I>
   as follows:</I></P>
   <BLOCKQUOTE>
-    <PRE><B>include</B> Fol_type
+    <PRE><B>extends</B> Fol_type
 <B>declare</B> univ</PRE>
   </BLOCKQUOTE>
 </BLOCKQUOTE>
@@ -50,7 +50,7 @@ and display forms.</P>
 <BLOCKQUOTE>
   <P>2.<I> Define the universe syntax in the file </I><TT>fol_univ.ml:</TT></P>
   <BLOCKQUOTE>
-    <PRE><B><TT>include</TT></B><TT> Fol_type</TT>
+    <PRE><B><TT>extends</TT></B><TT> Fol_type</TT>
 
 <B><TT>declare</TT></B><TT> univ</TT>
 
@@ -127,8 +127,8 @@ establishes a dependency between the theories, as well as the
   <P>6. <I>Declare the logical dependencies and syntax of the universal
   quantifier in the file </I><TT>fol_all.mli:</TT></P>
   <BLOCKQUOTE>
-    <PRE><B>include</B> Fol_implies
-<B>include</B> Fol_univ
+    <PRE><B>extends</B> Fol_implies
+<B>extends</B> Fol_univ
 
 <B>declare</B> &quot;all&quot;{x. 'B['x]}
 
@@ -145,8 +145,8 @@ the standard form.</P>
   <P>7. <I>Declare the syntax and display for the </I><TT>all</TT><I>
   term in the </I><TT>fol_all.ml</TT><I> file:</I></P>
   <BLOCKQUOTE>
-    <PRE><B>include</B> Fol_implies
-<B>include</B> Fol_univ
+    <PRE><B>extends</B> Fol_implies
+<B>extends</B> Fol_univ
 
 <B>declare</B> &quot;all&quot;{x. 'B['x]}
 

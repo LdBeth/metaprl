@@ -147,7 +147,7 @@ let improve_list name data =
 let bookmark name =
    local_data := DatBookmark name :: !local_data
 
-let include_theory name =
+let extends_theory name =
    if Hashtbl.mem global_data name then
       local_data := DatInclude name :: !local_data
    else

@@ -35,8 +35,8 @@
  * jyh@cs.cornell.edu
  *)
 
-include Summary
-include Proof_edit
+extends Summary
+extends Proof_edit
 
 open Opname
 open Term_shape_sig

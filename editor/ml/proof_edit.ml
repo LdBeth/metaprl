@@ -38,7 +38,7 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-include Summary
+extends Summary
 
 open Printf
 open Mp_debug

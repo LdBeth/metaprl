@@ -30,7 +30,7 @@
  * jyh@cs.cornell.edu
  *)
 
-include Itt_theory
+extends Itt_theory
 
 open Printf
 

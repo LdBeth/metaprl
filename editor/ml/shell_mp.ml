@@ -30,7 +30,7 @@
  * jyh@cs.cornell.edu
  *)
 
-include Mptop
+extends Mptop
 
 open Printf
 open Lexing

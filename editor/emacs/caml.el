@@ -276,7 +276,7 @@ point is outside the region."
     (8  t   if & then & (opt else &if))
     (1  t   for & (alt to downto) & do & done)
     (1  t   while & do & done)
-    (5  t   (opt &+) (alt val value open include exception external) &)
+    (5  t   (opt &+) (alt val value open extends include exception external) &)
     (4  t   (opt &+) module (opt type) word (* \( & : & \)) (opt : &) (opt = &))
     (5  t   (opt &+) magic_block word = &)
     (1  nil sig & end)
@@ -305,7 +305,7 @@ point is outside the region."
   "This list is a description of the syntax of the program")
 
 (defconst caml-initial-terminals
-  '(let type val value open include exception module
+  '(let type val value open extends include exception module
 	dform condition prec declare define rewrite axiom primrw prim
 	infix external magic_block mlterm)
   "Tokens that may start a top level production")

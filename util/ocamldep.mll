@@ -55,12 +55,7 @@ let modname = ['A'-'Z' '\192'-'\214' '\216'-'\222' ]
               (['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255'
                 '\'' '0'-'9' ]) *
 rule main = parse
-    "open" white+
-      { struct_name lexbuf; main lexbuf }
-  | "include" white+
-      { struct_name lexbuf; main lexbuf }
-  | "derive" white+
-      { struct_name lexbuf; main lexbuf }
+    "open" white+ | "include" white+ | "derive" white+ | "extends" white+
   | "module" white+ modname white+ '=' white+
       { struct_name lexbuf; main lexbuf }
   | modname '.'
@@ -72,9 +67,7 @@ rule main = parse
   | "(*"
       { comment_depth := 1; comment lexbuf; main lexbuf }
   | "'" [^ '\\'] "'"
-    { main lexbuf }
   | "'" '\\' ['\\' '\'' 'n' 't' 'b' 'r'] "'"
-    { main lexbuf }
   | "'" '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
     { main lexbuf }
   | eof
@@ -97,11 +90,8 @@ and comment = parse
   | "\""
       { string lexbuf; comment lexbuf }
   | "''"
-      { comment lexbuf }
   | "'" [^ '\\' '\''] "'"
-      { comment lexbuf }
   | "'\\" ['\\' '\'' 'n' 't' 'b' 'r'] "'"
-      { comment lexbuf }
   | "'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
       { comment lexbuf }
   | eof
@@ -113,9 +103,7 @@ and string = parse
     '"'
       { () }
   | '\\' ("\010" | "\013" | "\010\013") [' ' '\009'] *
-      { string lexbuf }
   | '\\' ['\\' '"' 'n' 't' 'b' 'r']
-      { string lexbuf }
   | '\\' ['0'-'9'] ['0'-'9'] ['0'-'9']
       { string lexbuf }
   | eof
