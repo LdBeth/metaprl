@@ -66,6 +66,7 @@ print_theory "itt_subset";;
 print_theory "itt_subset2";;
 print_theory "itt_record";;
 print_theory "itt_record_exm";;
+print_theory "itt_record_renaming";;
 print_theory "itt_relation_str";;
 print_theory "itt_set_str";;
 print_theory "itt_bintree";;

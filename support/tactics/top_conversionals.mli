@@ -82,6 +82,11 @@ topval whileProgressC : conv -> conv
 topval untilFailC : conv -> conv
 topval repeatC : conv -> conv
 topval repeatForC : int -> conv -> conv
+topval ifEqualC : term -> conv -> conv -> conv
+topval replaceUsingC : term -> conv -> conv
+topval progressC : conv -> conv
+topval allSubThenC : conv -> conv -> conv
+
 
 (************************************************************************
  * REDUCTION RESOURCE                                                   *

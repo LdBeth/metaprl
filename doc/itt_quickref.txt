@@ -309,13 +309,13 @@ argument.
 the given assumption.
 
 * rwAll : conv -> tactic
-Applies the convertion to all clauses of the goal sequent.
+Applies the conversion to all clauses of the goal sequent.
 
 * rwcAll : conv -> int -> tactic
-Applies the convertion to all clauses of the givem assumptiom.
+Applies the conversion to all clauses of the givem assumptiom.
 
 * rwAllAll : conv -> tactic
-Applies the convertion to all clauses of all assumption and to the goal
+Applies the conversion to all clauses of all assumption and to the goal
 sequent.
 
 * rwh, rwch, rwhAll, rwchAll, rwhAllAll are the same as
@@ -364,6 +364,9 @@ Fails with the given string as an error message.
 Tries to apply the given conversion.  If it fails, succeed and do
 nothing.
 
+* progressC : conv -> conv
+Runs the argument conv.  Fails if it does not make yny progress.
+
 * someSubC : conv -> conv
 Applies the conversion to the first subterm of the current term on
 which it succeeds.  Fails if the conversion fails on all subterms.
@@ -372,6 +375,10 @@ which it succeeds.  Fails if the conversion fails on all subterms.
 * allSubC : conv -> conv
 Applies the conversion to every subterm of the current term; fails if
 any of them fail.  (Again, this is "exact subterm".)
+
+* allSubThenC : conv -> conv -> conv
+(allSubThenC c1 c2) tries to apply c1 to every exact subterm. If it succeed in
+at least one case then applies c2.
 
 * higherC : conv -> conv
 Apply the conversion to outermost terms.
@@ -409,6 +416,13 @@ Apply the conversion until it either fails or makes no change.
 
 * repeatForC : int -> conv -> conv
 repeatForC n c applies c n times.
+
+* ifEqualC : term -> conv -> conv -> conv
+Apply the first conversion if the term its applied to is alpha equal to term and
+the other conversion otherwise.
+
+* replaceUsingC : term  -> conv -> conv
+replaceUsingC t c = ifEqualC t c failC -- replace a term t using conv c.
 
 * reduceTopC : conv
 Tries to "reduce" the current term.  This is a resource-based
@@ -1310,7 +1324,7 @@ a single variable also work. The first membership assumption would be
 converted to a hypothesis binding, and the rest - to universal quantifiers.
 Assumptions which do not have membership conclusions are converted
 into non-binding hypothesis up until the first time the universal quantifier
-is used and the rest are converted into implications. 
+is used and the rest are converted into implications.
 
 Here is a larger
 (meaningless) example.  (genAssumT [3; 1; 2]) would convert
@@ -2505,6 +2519,64 @@ itt_prop_decide:
 * propDecideT : tactic
 This is a decision procedure for propositional logic.
 
+
+----------------------------------------
+itt_record_renaming
+
+new terms:
+
+rename[a:t, b:t]{'r}
+rename_add_mul{'add}
+rename_mul_add{'mul}
+as_additive{'r}
+
+Added to reduceC:
+
+rename[a:t, b:t]{rcrd[a:t]{'x;'r}} <--> rcrd[b:t]{'x;rename[a:t, b:t]{'r}}
+rename[a:t, b:t]{rcrd[b:t]{'x;'r}} <--> rcrd[a:t]{'x;rename[a:t, b:t]{'r}}
+rename[a:t, b:t]{rcrd[c:t]{'x;'r}} <--> rcrd[c:t]{'x;rename[a:t, b:t]{'r}} if c<>a,b
+rename[a:t, b:t]{ rcrd } <--> rcrd
+
+field[a:t]{rename[a:t, b:t]{'r}} <--> field[b:t]{'r}
+field[b:t]{rename[a:t, b:t]{'r}} <--> field[a:t]{'r}
+field[c:t]{rename[a:t, b:t]{'r}} <--> field[c:t]{'r} if c<>a,b
+
+rename[a:t, a:t]{'r} <--> 'r
+rename[a:t, b:t]{rename[b:t, a:t]{'r}} <-->   'r
+
+field[c:t]{rename_mul_add{'r}} <--> ...
+field[c:t]{rename_add_MIL{'r}} <--> ...
+
+rename_mul_add{ rename_add_mul{'add} } <--> 'add
+rename_add_mul{ rename_mul_add{ 'mul }} <--> 'mul
+
+* renameFieldC <<r>>
+   replaces r by <<rename[b:t,a:t]{ rename[a:t,b:t]{'r} }>> in the immediate subterms of the term and then do @em{exactly one} reduction on the term.
+  (It fails if it can not do the reduction).
+For example:
+    <<field[a:t]{'r}>> -->  <<field[b:t]{rename[a:t,b:t]{'r}}>>
+    <<field[b:t]{'r}>> -->  <<field[a:t]{rename[a:t,b:t]{'r}}>>
+    <<field[c:t]{'r}>> --> <<field[c:t]{rename[a:t,b:t]{'r}}>> if c<> a,b
+
+* renameFieldT term = rwhAll  (renameFieldC term)
+
+
+* foldAdditiveC term = allSubThenC (use_as_additive term) (reduceTopC)
+ replaces $r$ by rename_mul_add{ as_additive{'r} } in the immediate subterms
+ and then do @em{exactly one} reduction.
+ For example foldAdditiveC <<'r>> replaces <<'r^"+">> by  <<as_additive{'r}^"*">> and <<'r^car>> by  <<as_additive{'r}^car>>
+
+* unfoldAdditiveC term =allSubThenC unfold_as_additive (reduceTopC)
+ oposite to  foldAdditiveC
+
+* foldAdditiveT term  = rwhAll (foldAdditiveC term)
+* unfoldAdditiveT term  = rwhAll (unfoldAdditiveC term)
+
+* useAdditiveWithT term tac  = foldAdditiveT term thenT tac thenT unfoldAdditiveT term
+
+* useAdditiveWithAutoT term  = useAdditiveWithT term autoT thenT autoT
+
+
 ----------------------------------------
 itt_fset:
 
@@ -2755,11 +2827,11 @@ beq_int - boolean equality over integers
 lt_bool - boolean less-relation
 < - propositional less-relation, defined as assert(lt_bool)
 
-Integers are defined to be canonical, i.e. equality is computational 
+Integers are defined to be canonical, i.e. equality is computational
 meaning that any integer may be replaced with equal in any context.
 That's why we use rewrites for most of axioms.
 
-In this module we define group properties of addition; 
+In this module we define group properties of addition;
 irreflexivity, transitivity, descreteness of <-rel., etc.
 
 No high-level tactics defiend here, see itt_int_arith for them.
@@ -2780,13 +2852,13 @@ No high-level tactics defiend here, see itt_int_arith for them.
 ----------------------------------------
 itt_int_arith
 
-normalizeC - converts any polynomial (it may actually contain any functional 
+normalizeC - converts any polynomial (it may actually contain any functional
 symbols, they will be treated as variables) to its canonical form
 
 arithT - proves simple systems of inequalities (linear fragment without
 monotonicity, i.e. does not use a<b & c<d => a+c<b+d ).
 
-The following tactics are also defined but they actually should be moved 
+The following tactics are also defined but they actually should be moved
 somewhere outside:
 
 thenLocalMT
@@ -2795,5 +2867,5 @@ thenLocalAT
 onAllLocalMHypsT
 onAllLocalMCumulativeHypsT
 
-They may sure that local assigments of subgoal labels are visible 
+They may sure that local assigments of subgoal labels are visible
 instead of labels inheritted from the upper levels of proof tree.

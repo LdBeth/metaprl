@@ -1121,11 +1121,17 @@ sig
    val tryC : conv -> conv
 
    (*
+    * Progress
+    *)
+   val progressC : conv -> conv
+
+   (*
     * Subterm application.
     *)
    val someSubC : conv -> conv
    val allSubC : conv -> conv
 
+   val allSubThenC : conv -> conv -> conv
    (*
     * First term, leftmost, outermost.
     *)
@@ -1167,6 +1173,12 @@ sig
    val untilFailC : conv -> conv
    val repeatC : conv -> conv
    val repeatForC : int -> conv -> conv
+
+   (*
+    * alpha-equal
+    *)
+   val ifEqualC : term -> conv -> conv -> conv
+   val replaceUsingC : term -> conv -> conv
 
    (*
     * Informal rewriting.

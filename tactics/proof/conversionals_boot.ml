@@ -108,6 +108,17 @@ struct
    let tryC rw =
       prefix_orelseC rw idC
 
+   let ifEqualC term conv1 conv2 =
+      let if_alpha_eq t = if alpha_equal t term then conv1 else conv2
+      in termC if_alpha_eq
+
+   let replaceUsingC term conv =
+      ifEqualC term (*then*) conv (*else*) failC
+
+   let progressC conv =
+      let prgC term =
+         prefix_thenC conv  (ifEqualC term (*then*) failC (*else*) idC)
+      in termC prgC
    (*
     * First subterm that works. This is similar to Rewrite_boot's allSubC.
     *)
@@ -118,6 +129,9 @@ struct
             List.fold_left (fun conv' addr -> prefix_orelseC (addrLiteralC addr conv) conv') failC addrs
       in
          fun conv -> funC (someSubCE conv)
+
+   let allSubThenC conv1  conv2 =
+      progressC (prefix_thenC (allSubC (tryC conv1)) conv2)
 
    (*
     * Outermost terms.
@@ -224,6 +238,8 @@ struct
                prefix_thenC conv (repeatForC (i - 1) conv)
          in
             funC repeatForCE
+
+
 
    let rwc conv assum clause =
       Tacticals.funT
