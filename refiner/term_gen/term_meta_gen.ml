@@ -37,6 +37,7 @@ open Term_sig
 open Term_base_sig
 open Term_man_sig
 open Term_subst_sig
+open Opname
 
 open Lm_symbol
 
@@ -189,6 +190,7 @@ struct
 
    let vv = Lm_symbol.make "v" 0
    let bang = [Lm_symbol.make "!" 0]
+   let df_context_op = make_opname ["df_context"; "Base_dform"]
 
    let encode_free_var v = mk_so_var_term v bang []
 
@@ -287,7 +289,14 @@ struct
             let conts' = f bconts c conts in
             let terms' = Lm_list_util.smap (convert_term bvars fvars bconts) terms in
             let tl', goals', seqfvars = convert_hyps bvars fvars (c::bconts) goals tl in
-            let hd' = if conts' == conts && terms == terms' then hd else Context (c, conts', terms') in
+            let hd' =
+               if conts' == conts && terms == terms' && parsing then
+                  hd
+               else if parsing then
+                  Context (c, conts', terms')
+               else
+                  Hypothesis(Lm_symbol.new_symbol_string "", mk_simple_term df_context_op [mk_so_var_term c conts' terms'])
+            in
             (if hd' == hd && tl' == tl then hyps else hd'::tl'), goals', SymbolSet.union seqfvars (free_vars_terms terms')
 
       in

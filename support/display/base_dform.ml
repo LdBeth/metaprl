@@ -77,6 +77,7 @@ declare df_var[var:v]
 declare df_free_fo_var[var:v]
 declare df_so_var[var:v]{'conts;'termlist}
 declare df_context_var[name:v]
+declare df_context{'t}
 declare "sequent"{'arg; 'seq}
 declare bvar{'v}
 declare " "
@@ -308,6 +309,9 @@ let format_bconts format_term buf v = function
    [v'] when Lm_symbol.eq v v' -> ()
  | conts -> format_term buf NOParens <:con< df_bconts{$mk_xlist_term (List.map make_cont conts)$} >>
 
+dform context_src : mode[src] :: df_context{'t} =
+   `"<" 't `">"
+
 (*
  * The refiner uses a special representation for sequents that requires the
  * display form to be implemented in ML.
@@ -344,11 +348,7 @@ let format_seq_src format_term buf =
                   end;
                   format_term buf NOParens a
              | Context (v, conts, values) ->
-                  format_space buf;
-                  format_string buf ("<" ^ string_of_symbol v);
-                  format_bconts format_term buf v conts;
-                  format_term_list format_term buf values;
-                  format_string buf ">"
+                  raise (Invalid_argument "Base_dform.format_seq_src: internal error")
          in
             format_hyp hyps (succ i) len
    in
@@ -377,10 +377,16 @@ ml_dform sequent_src_df : mode["src"] :: sequent ('ext) { <H> >- 'concl } format
 ml_dform sequent_src_df : mode["src"] :: sequent ('ext) { <H> >- } format_term buf =
    format_seq_src format_term buf
 
-let format_context format_term buf v conts values =
-   format_term buf NOParens <:con< df_context_var[$v$:v] >>;
-   format_bconts format_term buf v conts;
-   format_term_list format_term buf values
+declare inner_df_context{'t}
+ml_dform inner_df_context_df : inner_df_context{'t} format_term buf =
+   fun _ ->
+      let v, conts, values = dest_so_var t in
+         format_term buf NOParens <:con< df_context_var[$v$:v] >>;
+         format_bconts format_term buf v conts;
+         format_term_list format_term buf values
+
+dform df_context_prl : mode[prl] :: mode[html] :: df_context{'t} =
+   `"<" inner_df_context{'t} `">" (* note: U27E8/U27E9 are much nicer, but not all fonts have it *)
 
 let format_seq_prl format_term buf =
    let rec format_hyp hyps i len =
@@ -395,10 +401,7 @@ let format_seq_prl format_term buf =
             format_term buf NOParens <<popfont["bf"]>>;
             match SeqHyp.get hyps i with
                Context (v, conts, values) ->
-                  (* This is a context hypothesis *)
-                  format_string buf "<"; (* note: U27E8 is much nicer, but not all fonts have it *)
-                  format_context format_term buf v conts values;
-                  format_string buf ">"; (* note: U27E9 is much nicer, but not all fonts have it *)
+                  raise (Invalid_argument "Base_dform.format_seq_prl: internal error")
              | Hypothesis (v, a) ->
                   format_szone buf;
                   format_pushm buf 0;
@@ -461,10 +464,7 @@ let format_seq_html format_term buf =
                format_hbreak buf lead "; ";
             match SeqHyp.get hyps i with
                Context (v, conts, values) ->
-                  (* This is a context hypothesis *)
-                  format_string buf "<";
-                  format_context format_term buf v conts values;
-                  format_string buf ">"
+                  raise (Invalid_argument "Base_dform.format_seq_html: internal error")
              | Hypothesis (v, a) ->
                   format_szone buf;
                   if Lm_symbol.to_string v <> "" then begin
@@ -515,6 +515,9 @@ ml_dform sequent_html_df : mode["html"] :: sequent ('ext) { <H> >- 'concl } form
 ml_dform sequent_html_df : mode["html"] :: sequent ('ext) { <H> >- } format_term buf =
    format_seq_html format_term buf
 
+dform df_context_tex : mode["tex"] :: df_context{'t} =
+   mathmacro["left<"] inner_df_context{'t} mathmacro["right>"]
+
 let format_seq_tex format_term buf =
    let rec format_hyp hyps i len =
       if i <> len then
@@ -526,9 +529,7 @@ let format_seq_tex format_term buf =
                format_hbreak buf lead "; ";
             match SeqHyp.get hyps i with
                Context (v, conts, values) ->
-                  format_term buf NOParens <<mathmacro["left<"]>>;
-                  format_context format_term buf v conts values;
-                  format_term buf NOParens <<mathmacro["right>"]>>
+                  raise (Invalid_argument "Base_dform.format_seq_tex: internal error")
              | Hypothesis (v, a) ->
                   format_szone buf;
                   if Lm_symbol.to_string v <> "" then begin

@@ -57,6 +57,11 @@ declare df_last{'l}            (* Prints l's last element *)
 declare df_concat{'sep;'l}     (* Prints l's elements separated by sep *)
 declare df_rev_concat{'sep;'l} (* Same as df_concat, but prints l in reverse order *)
 declare df_context_var[name:v]
+(*
+ * Before a term is passed to the display form mechanism, each sequen context <H...>
+ * is turned into a hypothesys df_context{'H...} (where 'H is now a SO variable)
+ *)
+declare df_context{'t}
 
 declare szone{'e}
 
