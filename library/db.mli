@@ -17,3 +17,4 @@ val string_to_bindings	: string (*value*) -> string list
 val read_term 		: (char t) -> term
 
 val scan_level_expression	: scanner -> level_exp
+val level_expression_escape_string :string ref

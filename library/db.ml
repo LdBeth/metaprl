@@ -294,62 +294,35 @@ let ash_length = String.length (ascii_special_header)
 let is_first_char char string =
   (String.get string 0) = char
 
-let level_expression_escape_string = "\\ \n\t\'[]"
+let level_expression_escape_string = ref "[ |']"
 
 let incr_level_exp_n i le = 
    let { le_const = c; le_vars = vars } = dest_level le in
       let add1 lv = 
         let { le_var = v; le_offset = o } = dest_level_var lv in
-            mk_level_var v (o + i)
+            if o = 0 then mk_level_var v (o + i) else lv
       in
-         mk_level (c + i) (List.map add1 vars)
+         if i > c then (mk_level i (List.map add1 vars)) else le
 
-(*
-let scan_level_expression s =
-  let le = ref (mk_const_level_exp 0) in
-  let rec scan_numbers () = 
-  if (scan_at_char_p s '\'') then 
-  (scan_next s;
-	     le := incr_level_exp !le;
-	     scan_numbers ())
-  else if scan_at_digit_p s then
-  (le := incr_level_exp_n (Num.int_of_num (scan_num s)) !le;
-      scan_numbers ()) in
-      let rec scan_atom () = 
-      if (scan_at_byte_p s ilsquare) then
-      (scan_char_delimited_list s scan_expression '[' ']' '|';
-       scan_whitespace s)
-    else if scan_at_digit_p s then 
-      (le := max_level_exp (mk_const_level_exp (Num.int_of_num (scan_num s))) !le; ())
-    else (let v = scan_string s in
-    scan_whitespace s; 
-    le := max_level_exp (mk_var_level_exp v) !le); () 
-  and scan_expression () = 
-  scan_atom ();
-  scan_numbers ();
-  scan_expression ()
-  in scan_expression (); 
-  !le
-*)
 let scan_level_expression scanner =
   let le = ref (mk_const_level_exp 0) in
   let rec scan_numbers s = 
-    if (scan_at_char_p s '\'') then 
+    if (scan_whitespace s; scan_at_char_p s '\'') then 
       (scan_next s;
        le := incr_level_exp !le;
        scan_numbers s;
        s)
-    else if scan_at_digit_p s then
+    else if (scan_whitespace s; scan_at_digit_p s) then
       (le := incr_level_exp_n (Num.int_of_num (scan_num s)) !le;
        scan_numbers s;
        s) 
     else s in
   let rec scan_atom s = 
      let scan_expression_q () = scan_expression s in
-     if (scan_at_byte_p s ilsquare) then
+     if (scan_whitespace s; scan_at_byte_p s ilsquare) then
       (scan_char_delimited_list s scan_expression_q '[' ']' '|';
        scan_whitespace s; ())
-    else if scan_at_digit_p s then 
+    else if (scan_whitespace s; scan_at_digit_p s) then 
       (le := max_level_exp (mk_const_level_exp (Num.int_of_num (scan_num s))) !le; ())
     else (let v = scan_string s in
     scan_whitespace s; 
@@ -360,7 +333,7 @@ let scan_level_expression scanner =
   in scan_expression scanner; 
   !le
 
-let make_le_scanner = make_scanner level_expression_escape_string "\n\t\r "
+let make_le_scanner = make_scanner !level_expression_escape_string "\n\t\r "
 
 let mk_real_param_from_strings stp value ptype =
   match ptype with "n" -> (Number (Num.num_of_string value))

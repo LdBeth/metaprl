@@ -270,7 +270,7 @@ let rec print_param param =
       | hd::tl -> let 
 	    { le_var = v; le_offset = i2 } = (dest_level_var hd) in
  	print_string "(";
-	print_string v; print_int i2; 
+	print_string v; print_string ", ";print_int i2; 
 	print_string ")"; 
 	loop tl)
   in let aux = function
