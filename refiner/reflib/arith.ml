@@ -45,6 +45,7 @@ module type HypsSig = sig
     val iter : hyps -> (addr -> cmp -> unit) -> unit
     val print_hyps : out_channel -> hyps -> unit
     val print_addr : out_channel -> addr -> unit
+    val print_var : out_channel -> var -> unit
 end
 
 module SimpleHyps = struct
@@ -61,6 +62,7 @@ module SimpleHyps = struct
     let iter h f = Array.iteri f h
     let print_hyps _ _ = ()
     let print_addr _ _ = ()
+    let print_var _ _ = ()
 end
 
 module ArrayTools (Hyps: HypsSig) =
@@ -98,6 +100,12 @@ let debug_graph_arith2 =
         debug_description = "Report output of solve function";
         debug_value = false
       }
+let debug_graph_arith3 =
+   create_debug (**)
+      { debug_name = "debug_graph_arith3";
+        debug_description = "Report input converted to internal representation";
+        debug_value = false
+      }
 
 module Graph =
 functor (Hyps : HypsSig) -> struct
@@ -127,22 +135,35 @@ functor (Hyps : HypsSig) -> struct
        | (Int _, Disconnected) -> d2
        | (Int (i1,a1), Int (i2,a2)) -> Int (i1 + i2, a1 @ a2)
 
+  	let print_dist dst =
+	   match dst with
+	   	Disconnected -> eprintf "Disconnected\n%t" eflush
+	    | Int(d, al) ->
+	    		begin
+		    		eprintf "Int %i|" d;
+		    		List.iter (eprintf "%a:" print_addr) al;
+		    		eprintf "\n%t" eflush;
+		    	end;
+		()
+
    let init_c h va =
-       let n=Array.length va in
-(*     let ini (_,i,j) = if i=j then Int (0,[]) else Disconnected in
-       let cij=init n n ini in
+		let n=Array.length va in
+(*    let ini (_,i,j) = if i=j then Int (0,[]) else Disconnected in
+      let cij=init n n ini in
 *)
-       let cij = Array.create (n*n) Disconnected in
-       let f a (v1,v2,const) =
-           let i=find va v1 in
-           let j=find va v2 in
-           let coord=(n,i,j) in
-           set cij coord (maxd (Int(const,[a])) (get cij coord))
-       in
-       begin
-           iter h f;
-           cij
-       end
+		let cij = Array.create (n*n) Disconnected in
+		let f a (v1,v2,const) =
+			let i=find va v1 in
+			let j=find va v2 in
+			let coord=(n,i,j) in
+			set cij coord (maxd (Int(const,[a])) (get cij coord))
+		in
+		begin
+			iter h f;
+			if !debug_graph_arith3 then
+				Array.iter print_dist cij;
+			cij
+		end
 
    let compute h va =
        let cij=init_c h va in
@@ -172,29 +193,22 @@ functor (Hyps : HypsSig) -> struct
        end
 
    let vars_of_hyps h =
-       let putv v l =
-           if List.mem v l then l
-           else v::l
-       in
-       let putc (v1,v2,_) l = putv v1 (putv v2 l) in
-       let l = ref [] in
-       let put a c = l:=(putc c !l) in
-       begin
-           iter h put;
-           Array.of_list !l
-       end
+   	let putv v l =
+      	if List.exists (compare v) l then l
+         else v::l
+		in
+		let putc (v1,v2,_) l = putv v1 (putv v2 l) in
+		let l = ref [] in
+		let put a c = l:=(putc c !l) in
+		begin
+			iter h put;
+			let result= Array.of_list !l in
+			if !debug_graph_arith3 then
+           	Array.iter (print_var stderr) result;
+         result
+		end
 
    let solve h =
-   	let print_dist dst =
-		   match dst with
-		   	Disconnected -> eprintf "Disconnected\n%t" eflush
-		    | Int(d, al) ->
-		    		begin
-			    		eprintf "Int %i|" d;
-			    		List.iter (eprintf "%a:" print_addr) al;
-			    		eprintf "\n%t" eflush
-			    	end
-		in
 		begin
 	   	if !debug_graph_arith1 then
 		   	print_hyps stderr h;
@@ -251,13 +265,15 @@ struct
     let print_hyps oc (h,ar) =
     	let pr i =
     		let t=TermMan.nth_hyp h i in
-    		Printf.fprintf oc "%a\n" print_term t
+    		Printf.fprintf oc "%a\n" debug_print t
     	in
 	    	Printf.fprintf oc "hyps:\n";
    	 	Array.iter pr ar;
     		flush oc
 
     let print_addr oc a = fprintf oc "%i" a
+
+    let print_var oc t = fprintf oc "%a" print_term t
 end
 
 let collect f gl =
