@@ -54,6 +54,8 @@ NCURSES_ENABLED = $(not $(equal $(OSTYPE), Win32))
 SLOPPY_DEPENDENCIES = false
 NATIVE_PROFILING_ENABLED = false
 LATEX = latex
+MMC_EXTENSIONS = all
+MMC_BACKENDS = all
 
 #
 # Default -inline argument to ocamlopt

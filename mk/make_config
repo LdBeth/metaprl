@@ -59,11 +59,26 @@ REFINER = $(REFINER)
 # use THEORIES=all to get all theories.  To include your special
 # theory, you would use the following if you want the usual
 # directories and your own, use the following.
-#    THEORIES=all mytheory
+#    THEORIES = all mytheory
 # Or, if you just want your own, use the following.
-#    THEORIES=base mytheory
+#    THEORIES = base mytheory
 #
 THEORIES = $(THEORIES)
+
+#
+# If you included mmc in the theories list, you should define
+# the extensions and backends you want to compile.
+#
+# You may define
+#     MMC_EXTENSIONS = all
+#     MMC_BACKENDS = all
+# if you want to include everything.
+#
+# If you did not specify mmc in the THEORIES, these
+# values are ignored.
+#
+MMC_EXTENSIONS = $(MMC_EXTENSIONS)
+MMC_BACKENDS = $(MMC_BACKENDS)
 
 #
 # The OpenSSL package (available in Linux at least) (true/false)

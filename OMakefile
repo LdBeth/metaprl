@@ -532,7 +532,7 @@ OCamlGeneratedFiles(files) =
    .SCANNER: %.cmo %.cmx: $(files)
    export
 
-PRLFiles(files) =
+PRLEnv() =
    # Dependency analysis uses -prl flag by default
    OCAMLDEPFLAGS += -prl
 
@@ -573,6 +573,11 @@ PRLFiles(files) =
 
    %.p4: %.ml $(CAMLP4O)
       $(WrapC $(CAMLP4O)) $(PREFIXED_OCAMLINCLUDES) $*.ml > $@
+
+   export
+
+PRLFiles(files) =
+   PRLEnv()
 
    $(addsuffixes .ppo .cmoz .cmiz .cmi .cmo .cmx $(EXT_OBJ) .p4i .p4, $(files)):
 
@@ -699,10 +704,9 @@ if $(NATIVE_ENABLED)
 ########################################################################
 # Close the directory listing files
 #
-
 if $(not $(equal $(OSTYPE), Win32))
-	$(THEORIES_CONF) ::
-		echo $'\"'>> $@
+    $(THEORIES_CONF) ::
+        echo $'\"'>> $@
 
-	$(MLDEBUG_CONF) ::
-		echo $'\"'>> $@
+    $(MLDEBUG_CONF) ::
+        echo $'\"'>> $@
