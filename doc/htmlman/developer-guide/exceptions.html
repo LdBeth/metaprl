@@ -1,0 +1,88 @@
+<HTML>
+<HEAD>
+  <TITLE>Conventions on Using Exceptions in MetaPRL</TITLE>
+</HEAD>
+<BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#000099" VLINK="#009900" ALINK="#ff0000">
+<H2>Conventions on Using Exceptions in MetaPRL</H2>
+<P>When it comes to raising and catching exceptions,
+MetaPRL expects its modules to observe certain rules. This section describes the rules
+you'll need to follow to make sure your code does not change the system behavior
+in any unwanted way.
+
+<H3><TT>Invalid_argument</TT> exceptions</H3>
+<P><B>Raising.</B> In MetaPRL, <TT>Invalid_argument</TT> exceptions is a canonical way
+to notify user about potential bugs in the system.
+And more generally, when something happens that prohibits your code from returning a sensible answer
+and you believe that user has to be notified, raise <TT>Invalid_argument</TT>.
+To be more precise, you should raise an <TT>Invalid_argument</TT>
+in following cases:<OL>
+<LI><I>A bug in a function you've called.</I> A function that you called returned something it
+was not supposed to return
+<LI><I>A bug in your code.</I>You found out that your data structure is in some inconsistent state that it was not supposed to enter, or,
+in general, your code did something that it was not supposed to do.
+<LI><I>A bug in a code that called your code.</I> Your interface function was called with some
+arguments it was not supposed to be called with. In particular, if you haven't yet implemented
+some functionality you should raise and <TT>Invalid_argument</TT> exception
+to notify the user when some code attempts to use that functionality.<P>However if it makes
+sense to call your functions with some class of inputs even if the function will not
+necessarily be successful on these inputs (for example, it may make sense to call the <TT>unify</TT> function even if you are not sure whether the terms are unifiable), then it may be
+reasonable to not consider such calls to be a bug and raise <TT>RefineError</TT> exception
+instead of <TT>Invalid_argument</TT>.
+</OL>
+<P><B>Catching.</B>
+We need to make sure that whenever an <TT>Invalid_argument</TT> is raised, it will
+go all the way up to the user.
+Because of that, you are not supposed to catch <TT>Invalid_argument</TT> exceptions. In particular, it means that you are not supposed to use "catch all" <TT> try ... with _ -&gt; ...</TT>
+expression.
+<H3><TT>RefineError</TT> exceptions.</H3>
+<TT>RefineError</TT> exceptions are used to notify the caller that a certain proof search
+step is not applicable to the current goal and/or failed. More generally, it is used to
+notify the caller function that whatever it tried to do was unsuccessful and it should
+try something else or give up.
+
+<P><B>Examples</B>: <TT>dest_var_term</TT> would raise <TT>RefineError</TT> if its input term 
+is not a variable. <TT>unify</TT> would raise <TT>RefineError</TT> if input terms are not
+unifiable. A primitive tactic would raise <TT>RefineError</TT> if a rule is not applicable
+to the current goal.
+
+<P>The <TT>orelseT</TT> and similar tacticals only "know" about <TT>RefineError</TT> 
+exceptions. <TT>(t1 orelseT t2)</TT> would run <TT>t2</TT> if and only if <TT>t1</TT>
+raises <TT>RefineError</TT> exception.
+<P><B>Raising.</B> When a certain proof search or proof refinement procedure can not be applied
+to the given input, raise <TT>RefineError</TT>. On the other hand, if you believe that
+the procedure shouldn't have even been attempted on such an input,
+raise <TT>Invalid_argument</TT> to notify the user of a problem. Note that if you are doing
+a lot of raising and catching of <TT>RefineError</TT>s, you may want to consider raising <TT>generic_refiner_exn</TT> to avoid unnecessary allocation overhead. 
+<P><B>Catching.</B>
+Whenever you are calling something that may raise <TT>RefineError</TT>, feel free to catch it.
+Of course, if you procedure has no way of recovering from that error, it would make
+sense to just let this exception to propagate back up. But there is one restriction - if
+you catch some <TT>RefineError</TT>s, you have to catch them all, not matter what the parameters
+are. And your code's behavior should not in any way depend on the parameters of the
+<TT>RefineError</TT> exception it caught. In short, you have to always use
+<TT> try ... with RefineError _ -&gt; ...</TT> for catching <TT>RefineError</TT> exceptions.
+This limitation makes it possible to increase efficiency by replacing some common
+<TT>RefineError</TT> exceptions with with <TT>generic_refiner_exn</TT>.
+<H3>Other exceptions</H3>
+You are welcome to use any exceptions you want in your code - both preexisting ones and
+the new ones you've defined. However, you should make sure that none of those exceptions
+can escape through the interface functions. And interface functions should not raise any
+exceptions other than <TT>RefineError</TT> and <TT>Invalid_argument</TT>.
+<H3>Exception Exceptions</H3>
+There are a few exceptions from the rules outlined above. One of them is the user I/O code.
+The user I/O code is supposed to catch all the exceptions (including <TT>Invalid_argument</TT>)
+and print all the information about the caught exception (including the parameters of the
+<TT>RefineError exception</TT>). After the exception is printed, the system should abort
+the task that rose the exception and wait for further instructions from the user.
+
+<P> Another exception is the low-level code that implements some basic operations or basic
+data structures and is located below the Refiner in the module hierarchy (for example - all
+the code in the <TT>mllib/</TT> directory). For such code, it's normal to raise one of the
+standard exceptions, such as <TT>Failure</TT> or <TT>Not_found</TT>.
+<P><B>P.S.</B> If your interface function may raise some exception, it may be a good
+idea to document that in the <TT>.mli</TT> file and tell in which situations what
+exceptions would be raised. Of course, you do not have to document obvious things like
+"<I>this function will raise <TT>Invalid_argument</TT> if there is a bug or when called with
+invalid argument</I>" or "<I>This tactic will raise <TT>RefineError</TT> if proof search fails</I>".
+</BODY>
+</HTML>
