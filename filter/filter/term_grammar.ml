@@ -438,6 +438,11 @@ struct
                    | ["math_misspelled"]
                    | ["license"]
                    | ["url"]
+                   | ["tt"]
+                   | ["math_tt"]
+                   | ["code"]
+                   | ["math_rulebox"]
+                   | ["math_defrule"]
                    | ["comment"] ->
                         SpellOff
                    | _ ->

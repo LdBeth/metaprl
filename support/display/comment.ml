@@ -1,9 +1,5 @@
 doc <:doc<
-   @begin[spelling]
-   args centermath defrule hyps mathop
-   rulebox tac verbatim typeset
-   @end[spelling]
-
+   @spelling{typeset verbatim}
    @begin[doc]
    @module[Comment]
 
@@ -1783,18 +1779,18 @@ doc <:doc<
    @begin[doc]
    The following macros define higher-level macros.
    The @tt[defrule] term is used to format the output as a rule
-   definition.  The @i{name} argument is the name of the rule; the
-   @i{args} term represents the arguments; the @i{hyps} are the subgoals
-   of the rule; and the @i{goal} is the goal.  The @code{@cr} term
-   is allowed in the @i{hyps} and the @i{goal} to produce
+   definition.  The @i[name] argument is the name of the rule; the
+   @i[args] term represents the arguments; the @i[hyps] are the subgoals
+   of the rule; and the @i[goal] is the goal.  The @code{@cr} term
+   is allowed in the @i[hyps] and the @i[goal] to produce
    multi-line definitions.
 
    $$
    @defrule[name]{args; hyps; goal}
    $$
 
-   The @tt{rulebox} macro represents the contents of a rule box.
-   The @code{@cr} form is allowed in the @i{hyps} and @i{goal}
+   The @tt[rulebox] macro represents the contents of a rule box.
+   The @code{@cr} form is allowed in the @i[hyps] and @i[goal]
    arguments.
    $$
    @rulebox{tac; args; hyps; goal}

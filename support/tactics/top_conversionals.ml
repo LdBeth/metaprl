@@ -1,8 +1,5 @@
 doc <:doc<
-   @begin[spelling]
-   addrC applyAllC conv convs higherC idC orelseC rw rwa rwh thenC thenTC th
-   @end[spelling]
-
+   @spelling{th}
    @begin[doc]
    @module[Top_conversionals]
 
@@ -190,7 +187,7 @@ doc <:doc<
 
    @item{@conv[tryC], @conv[firstC];
    There are several variations on @tt[orelseC].  The (@tt[tryC] $c$) conversion
-   is equivalent to ($c$ orelseC idC).  The @tt[firstC] conversion takes a list of
+   is equivalent to (@tt{$c$ orelseC idC}).  The @tt[firstC] conversion takes a list of
    conversions to try in order until the first one succeeds.  The conversion (@tt[firstC]
    $[c_1; @cdots; c_n]$) is equivalent to @tt{$c_1$ orelseC $@cdots$ orelseC $c_n$}.}
 

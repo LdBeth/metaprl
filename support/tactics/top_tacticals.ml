@@ -1,8 +1,4 @@
 doc <:doc<
-   @begin[spelling]
-   timingT idT nthAssumT OnFirstT orelseT thenT tryT selT seqT whileProgressT
-   @end[spelling]
-
    @begin[doc]
    @module[Top_tacticals]
 

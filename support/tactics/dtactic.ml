@@ -1,9 +1,4 @@
 doc <:doc<
-   @begin[spelling]
-   ElimArgsOption IntroArgsOption SelectOption ThinOption
-   selT dT ext intro
-   @end[spelling]
-
    @begin[doc]
    @module[Dtactic]
 
