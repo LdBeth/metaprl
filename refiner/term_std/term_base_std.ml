@@ -32,7 +32,7 @@
  * jyh@cs.cornell.edu
  *)
 
-#include "refine_error.h"
+INCLUDE "refine_error.mlh"
 
 open Printf
 
@@ -66,23 +66,23 @@ struct
    open TermType
    open RefineError
 
-   type level_exp_var = TermType.level_exp_var
-   type level_exp = TermType.level_exp
-   type param = TermType.param
-   type operator = TermType.operator
-   type term = TermType.term
-   type bound_term = TermType.bound_term
-   type seq_hyps = TermType.seq_hyps
-   type seq_goals = TermType.seq_goals
+   type level_exp_var  = TermType.level_exp_var
+   type level_exp      = TermType.level_exp
+   type param          = TermType.param
+   type operator       = TermType.operator
+   type term           = TermType.term
+   type bound_term     = TermType.bound_term
+   type seq_hyps       = TermType.seq_hyps
+   type seq_goals      = TermType.seq_goals
 
-   type hypothesis = TermType.hypothesis
+   type hypothesis     = TermType.hypothesis
    type level_exp_var' = TermType.level_exp_var'
-   type level_exp' = TermType.level_exp'
-   type object_id = TermType.object_id
-   type param' = TermType.param'
-   type operator' = TermType.operator'
-   type term' = TermType.term'
-   type bound_term' = TermType.bound_term'
+   type level_exp'     = TermType.level_exp'
+   type object_id      = TermType.object_id
+   type param'         = TermType.param'
+   type operator'      = TermType.operator'
+   type term'          = TermType.term'
+   type bound_term'    = TermType.bound_term'
 
    (*
     * Simple substitution.
@@ -227,7 +227,7 @@ struct
         term_terms = []
       } when Opname.eq opname var_opname -> v
     | t ->
-         ref_raise(RefineError ("dest_var", TermMatchError (t, "not a variable")))
+         REF_RAISE(RefineError ("dest_var", TermMatchError (t, "not a variable")))
 
    (*
     * Make a variable.
@@ -254,10 +254,10 @@ struct
             { bvars = []; bterm = t } ->
                t
           | _ ->
-               ref_raise(RefineError ("dest_so_var", TermMatchError (term, "bvars exist"))))
+               REF_RAISE(RefineError ("dest_so_var", TermMatchError (term, "bvars exist"))))
          bterms
     | term ->
-         ref_raise(RefineError ("dest_so_var", TermMatchError (term, "not a so_var")))
+         REF_RAISE(RefineError ("dest_so_var", TermMatchError (term, "not a so_var")))
 
    (*
     * Second order variable.
@@ -294,12 +294,12 @@ struct
                let args, term = collect tl in
                   t :: args, term
           | _ ->
-               ref_raise(RefineError ("dest_context", TermMatchError (term, "bvars exist")))
+               REF_RAISE(RefineError ("dest_context", TermMatchError (term, "bvars exist")))
          in
          let args, term = collect bterms in
             v, term, args
     | term ->
-         ref_raise(RefineError ("dest_context", TermMatchError (term, "not a context")))
+         REF_RAISE(RefineError ("dest_context", TermMatchError (term, "not a context")))
 
    let mk_context_term v term terms =
       let rec collect term = function
@@ -348,11 +348,11 @@ struct
             { bvars = []; bterm = t } ->
                t
           | _ ->
-               ref_raise(RefineError ("dest_simple_term", TermMatchError (t, "binding vars exist")))
+               REF_RAISE(RefineError ("dest_simple_term", TermMatchError (t, "binding vars exist")))
          in
             name, List.map aux bterms
     | t ->
-         ref_raise(RefineError ("dest_simple_term", TermMatchError (t, "params exist")))
+         REF_RAISE(RefineError ("dest_simple_term", TermMatchError (t, "params exist")))
 
    let dest_simple_term_opname name = function
       ({ term_op = { op_name = name'; op_params = [] };
@@ -361,13 +361,13 @@ struct
          if Opname.eq name name' then
             let aux = function
                { bvars = []; bterm = t } -> t
-             | _ -> ref_raise(RefineError ("dest_simple_term_opname", TermMatchError (t, "binding vars exist")))
+             | _ -> REF_RAISE(RefineError ("dest_simple_term_opname", TermMatchError (t, "binding vars exist")))
             in
                List.map aux bterms
          else
-            ref_raise(RefineError ("dest_simple_term_opname", TermMatchError (t, "opname mismatch")))
+            REF_RAISE(RefineError ("dest_simple_term_opname", TermMatchError (t, "opname mismatch")))
     | t ->
-         ref_raise(RefineError ("dest_simple_term_opname", TermMatchError (t, "params exist")))
+         REF_RAISE(RefineError ("dest_simple_term_opname", TermMatchError (t, "params exist")))
 
    (*
     * Bound terms.
@@ -379,7 +379,7 @@ struct
       { bvars = []; bterm = bterm } ->
          bterm
     | _ ->
-         ref_raise(RefineError ("dest_simple_bterm", StringError ("bterm is not simple")))
+         REF_RAISE(RefineError ("dest_simple_bterm", StringError ("bterm is not simple")))
 end
 
 (*

@@ -29,7 +29,8 @@
  * Author: Jason Hickey
  * jyh@cs.cornell.edu
  *)
-#include "refine_error.h"
+
+INCLUDE "refine_error.mlh"
 
 open Mp_debug
 open Printf
@@ -39,7 +40,8 @@ open Refine_error_sig
 open Term_std_sig
 open Term_std
 
-#ifdef VERBOSE_EXN
+IFDEF VERBOSE_EXN THEN
+
 (* 
  * Show that the file is loading.
  *) 
@@ -60,7 +62,8 @@ let debug_unify =
         debug_description = "display unification operations";
         debug_value = false
       }
-#endif
+
+ENDIF
 
 module TermSubst
 (Term : TermStdSig
@@ -313,34 +316,63 @@ struct
          List_util.for_all2 equal_bterm bterms1 bterms2
 
    let alpha_equal t1 t2 =
-#ifdef VERBOSE_EXN
-      if !debug_alpha_equal then
-         try 
-            let result = equal_term /*_debug*/ [] t1 t2 in
-            eprintf "alpha_equal: %b:\n%a\n%a%t" result debug_print t1 debug_print t2 eflush;
-            result
-         with Failure _ ->
-            eprintf "alpha_equal: false:\n%a\n%a%t" debug_print t1 debug_print t2 eflush;
-            false
-      else
-#endif
-      try equal_term [] t1 t2 with
-         Failure _ -> false
+      LETMACRO BODY = try equal_term [] t1 t2 with Failure _ -> false
+      IN
+      IFDEF VERBOSE_EXN THEN
+         if !debug_alpha_equal then
+            try 
+               let result = equal_term (*_debug*) [] t1 t2 in
+               eprintf "alpha_equal: %b:\n%a\n%a%t" result debug_print t1 debug_print t2 eflush;
+               result
+            with Failure _ ->
+               eprintf "alpha_equal: false:\n%a\n%a%t" debug_print t1 debug_print t2 eflush;
+               false
+         else BODY
+      ELSE
+         BODY
+      ENDIF
+
+   let alpha_equal_vars (t, v) (t', v') =
+      LETMACRO BODY = try equal_term (List_util.zip v v') t t' with Failure _ -> false
+      IN
+      IFDEF VERBOSE_EXN THEN
+         if !debug_alpha_equal then
+            try 
+               let _ = equal_term (List_util.zip v v') t t' in
+               eprintf "alpha_equal_vars: true%t" eflush;
+               true
+            with Failure _ ->
+               eprintf "alpha_equal_vars: false%t" eflush;
+               false
+         else BODY
+      ELSE
+         BODY
+      ENDIF
+
+   let eq_comp_var v = function
+      { term_op = { op_name = opname; op_params = [Var v'] };
+        term_terms = []
+      } when Opname.eq opname var_opname ->
+         v' = v
+    | _ ->
+         false
 
    let alpha_equal_vars t v t' v' =
-#ifdef VERBOSE_EXN
-      if !debug_alpha_equal then
-         try 
-            let _ = equal_term (List_util.zip v v') t t' in
-            eprintf "alpha_equal_vars: true%t" eflush;
-            true
-         with Failure _ ->
-            eprintf "alpha_equal_vars: false%t" eflush;
-            false
-      else
-#endif
-         try equal_term (List_util.zip v v') t t' with
-            Failure _ -> false
+      LETMACRO BODY = try equal_term (List_util.zip v v') t t' with Failure _ -> false
+      IN
+      IFDEF VERBOSE_EXN THEN
+         if !debug_alpha_equal then
+            try 
+               let _ = equal_term (List_util.zip v v') t t' in
+               eprintf "alpha_equal_vars: true%t" eflush;
+               true
+            with Failure _ ->
+               eprintf "alpha_equal_vars: false%t" eflush;
+               false
+         else BODY
+      ELSE
+         BODY
+      ENDIF
 
    let rev_mem a b = List.mem b a
 
@@ -623,10 +655,10 @@ struct
     * The unification works over the subst.
     *)
    let rec unify_terms subst constants bvars term1 term2 =
-#ifdef VERBOSE_EXN
-      if !debug_unify then
-         eprintf "Unify: %a/%a%t" print_term term1 print_term term2 eflush;
-#endif
+      IFDEF VERBOSE_EXN THEN
+         if !debug_unify then
+            eprintf "Unify: %a/%a%t" print_term term1 print_term term2 eflush
+      ENDIF;
       if (is_var_term term1) then
          let v = dest_var term1 in
          if (is_var_term term2) then
@@ -697,7 +729,7 @@ struct
    let rec check_bvars tvs = function
       [] -> ()
     | (_,v)::tl ->
-         if List.mem v tvs then raise_generic_exn else
+         if List.mem v tvs then RAISE_GENERIC_EXN else
          check_bvars tvs tl
     
    let rec match_terms subst bvars tm1 tm2 =
@@ -708,7 +740,7 @@ struct
                   if v' = dest_var tm2 then
                      subst
                   else
-                     raise_generic_exn
+                     RAISE_GENERIC_EXN
             with
                Not_found ->
                   try
@@ -733,7 +765,7 @@ struct
             if Opname.eq opname1 opname2 & params1 = params2 then
                match_bterms subst bvars bterms1 bterms2
             else
-               raise_generic_exn
+               RAISE_GENERIC_EXN
 
    and match_bterms subst bvars bterms1 bterms2 =
       match bterms1, bterms2 with
@@ -745,16 +777,16 @@ struct
        | [], [] ->
             subst
        | _ ->
-            raise_generic_exn
+            RAISE_GENERIC_EXN
 
    let match_terms subst t1 t2 =
-#ifdef VERBOSE_EXN
-      try List.rev (match_terms subst [] t1 t2) with
-         RefineError (_, GenericError) ->
-            raise (RefineError ("Term_subst_std.match_terms", TermPairMatchError (t1, t2)))
-#else
-            List.rev (match_terms subst [] t1 t2)
-#endif
+      IFDEF VERBOSE_EXN THEN
+         try List.rev (match_terms subst [] t1 t2) with
+            RefineError (_, GenericError) ->
+               raise (RefineError ("Term_subst_std.match_terms", TermPairMatchError (t1, t2)))
+      ELSE
+         List.rev (match_terms subst [] t1 t2)
+      ENDIF
 
    (************************************************************************
     * Term generalization                                                  *
