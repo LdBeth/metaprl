@@ -25,7 +25,7 @@ You will need four packages:</P>
 RPM packages files for Linux x86 at <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/RPM/">ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/RPM/</A>. There is also a Win32 distribution
 that we'll be placing online soon (if you don't see it contact
 <A HREF="mailto:jyh@cs.cornell.edu">Jason Hickey</A>). You will
-need the Cygnus Systems GNU-Win32 distribution.</P> If your are going to build OCaml and/or Camlp4 yourself, you can get our patches at <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/patches/">ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/patches/</A>
+need the Cygnus Systems GNU-Win32 distribution.</P> If you are going to build OCaml and/or Camlp4 yourself, you can get our patches at <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/patches/">ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/patches/</A>
 
 <H4>CVS sources</H4>
 
@@ -68,8 +68,9 @@ use the Ensemble socket library (not the Unix socket implementation),
 then change directories to <TT>&lt;ensemble&gt;/def</TT>, and
 run <TT>make</TT>. You can also build the native-code libraries
 by running <TT>make</TT> in the <TT>&lt;ensemble&gt;/opt</TT>
-directory. More information on Ensemble is available at the Ensemble
-Home Page.</P>
+directory. More information on Ensemble is available at the
+<A HREF="http://www.cs.cornell.edu/Info/Projects/Ensemble/">Ensemble
+Home Page</A>.</P>
 
 <P>To install MetaPRL, unpack the distribution into some directory
 <TT>&lt;meta-prl&gt;</TT>. You need to set the environment
@@ -78,18 +79,18 @@ variables <TT>CAMLLIB=&lt;your ocaml lib directory&gt;</TT>, and
 you can build the distribution with these steps:</P>
 
 <BLOCKQUOTE>
-  <PRE>% cd &lt;meta-prl&gt;
-% make all
-or
-% make opt</PRE>
+<TT>% cd &lt;meta-prl&gt;<BR>
+% make all</TT> &nbsp; (builds bytecode)<BR>
+or<BR>
+<TT>% make opt</TT> &nbsp; (builds native code)
 </BLOCKQUOTE>
 
-<P>The MetaPRL program is <TT>&lt;meta-prl&gt;/editor/ml/mp</TT>.
-You will need to install the &quot;Nuprl font&quot; to be able
-to interact with some sense. The Nuprl font is in <TT>&lt;meta-prl&gt;/editor/fonts/mp12.bdf</TT>.
+<P>The MetaPRL programs are <TT>&lt;meta-prl&gt;/editor/ml/mptop</TT> (bytecode) and  <TT>&lt;meta-prl&gt;/editor/ml/mpopt</TT> (native code).
+You will need to install the &quot;MetaPRL font&quot; to be able
+to interact with some sense. The MetaPRL font is in <TT>&lt;meta-prl&gt;/editor/fonts/mp12.bdf</TT>.
 You'll get the best success if you use MetaPRL from a shell
-window within Emacs. You can start Emacs with the Nuprl font by
-running <TT>emacs -fn nl12</TT>.</P>
+window within Emacs. You can start Emacs with the MetaPRL font by
+running <TT>emacs -fn mp12</TT>.</P>
 
 <P>That's it. To navigate the MetaPRL logics and programs,
 you will need to read the <A TARGET="_top" HREF="user-guide/default.html">User Guide</A>.
