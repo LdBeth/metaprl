@@ -20,7 +20,7 @@ way I discuss other resources.
 
 However, I did set goals for myself that I believe I have met.
 1) Every "topval" in Itt_theory is at least mentioned.
-2) Every extension to dT, autoT, eqcdT, subtypeT, and reduceTopC is
+2) Every extension to dT, autoT, eqcdT, subtype, and reduceC is
 at least mentioned.
 3) Everywhere that withT, withTermsT, atT, altT, selT, thinningT, or
 withTypeT makes a difference is documented.
@@ -728,17 +728,10 @@ itt_subtype:
 new terms:
 subtype{'A; 'B}
 
-* subtypeT : tactic
-This tactic proves subtype goals.  This is a resource-based tactic.
-It looks at the form of the conclusion to plan a proof, using its
-database of subtype information to direct its search.  This database
-only contains subtype information; basically, it ignores rule
-antecedents that do not have subtype conclusions.  This means that
-subtypeT will generate subgoals for all non-subtype rule antecedents.
-
-* squash_subtypeT : tactic
-Changes the goal to be a "squash" sequent if the conclusion is of the
-form << subtype{'A; 'B} >>.
+* subtypeT : term -> tactic
+subtypeT <<A>> replaces a conclusion of the form <<t1 = t2 in B>> with
+<<t1 = t2 in A>> and conclusion of any other form <<B>> with just
+<<A>> and generates an "aux" subgoal of the form <<subtype{A;B}>>.
 
 * type_subtype_leftT: term -> tactic
 * type_subtype_rightT : term -> tactic
@@ -757,7 +750,9 @@ If the conclusion is of the form << "type"{subtype{'A; 'B}} >>,
 and << "type"{'B} >>.
 
 If the conclusion is of the form << subtype{'A; 'B} >>,
-(dT 0) creates two subgoals.  One (marked "wf") has a conclusion of
+(dT 0) tries to prove it using the sub_resource (note: as of
+2001.07.22 sub_resource is never really used). If that fails,
+it creates two subgoals.  One (marked "wf") has a conclusion of
 << "type"{'A} >>; the other (marked "main") is of the form
 << x: 'A >- 'x IN 'B >>.
 
