@@ -158,35 +158,42 @@ let modules_flag = ref false
 
 let syntaxdef_prereq = "syntax.pho"
 
+let find_in_path path name name' =
+   let rec try_dir = function
+      [] -> raise Not_found
+    | dir::rem ->
+        let fullname = Filename.concat dir name in
+        if Sys.file_exists fullname then fullname else
+        let fullname = Filename.concat dir name' in
+        if Sys.file_exists fullname then fullname else try_dir rem
+    in try_dir path
+
 let rec find_file name = function
    [] ->
       raise Not_found
  | ext::exts ->
-      try
-         Filename.chop_suffix (Misc.find_in_path !load_path (name ^ ext)) ext
-      with Not_found ->
-         find_file name exts
+      try Filename.chop_suffix (find_in_path !load_path ((String.uncapitalize name) ^ ext) (name ^ ext)) ext
+      with Not_found -> find_file name exts
 
 let find_dependency_cmi modname deps =
    try
-      ((find_file (String.uncapitalize modname) [".mli"; ".cmi"; ".mlz"])^".cmi")::deps
+      ((find_file modname [".mli"; ".cmi"; ".mlz"])^".cmi")::deps
    with Not_found -> begin try
-      ((find_file (String.uncapitalize modname) [".ml"; ".cmo"; ".cmx"])^".cmo")::deps
+      ((find_file modname [".ml"; ".cmo"; ".cmx"])^".cmo")::deps
    with Not_found ->
       deps
    end
 
 let find_dependency_cmo_cmx modname (cmo_deps,cmx_deps) =
-   let name = String.uncapitalize modname in
    let cmi_file =
       try
-         Some ((find_file name [".mli"; ".cmi"; ".mlz"])^".cmi")
+         Some ((find_file modname [".mli"; ".cmi"; ".mlz"])^".cmi")
       with Not_found ->
          None
    in
    let cmx_file =
       try
-         Some ((find_file name [".ml"; ".cmx"; ".mlz"; ".cmo"])^".cmx")
+         Some ((find_file modname [".ml"; ".cmx"; ".mlz"; ".cmo"])^".cmx")
       with Not_found ->
          None
    in
@@ -204,7 +211,7 @@ let (depends_on, escaped_eol) =
   match Sys.os_type with
   | "Unix" | "Win32" | "Cygwin" -> (": ", "\\\n    ")
   | "MacOS" -> ("\196 ", "\182\n    ")
-  | x -> Misc.fatal_error ("Ocamldep: unknown system type: " ^ x)
+  | x -> invalid_arg ("Ocamldep: unknown system type: " ^ x)
 ;;
 
 let print_dependencies target_file deps =
@@ -247,7 +254,7 @@ let file_dependencies source_file =
     end else begin
     if !prl_flag then
       List.iter add_structure prl_names;
-    if !prl_flag && !contains_topval then 
+    if !prl_flag && !contains_topval then
       List.iter add_structure topval_names;
     if Filename.check_suffix source_file ".ml" then begin
       let basename = Filename.chop_suffix source_file ".ml" in

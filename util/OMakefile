@@ -5,11 +5,6 @@
 .SCANNER: %.cmx %.cmo %.cmi
 	echo ""
 
-misc.cmo: misc.cmi
-misc.cmx: misc.cmi
-ocamldep.cmo: misc.cmi
-ocamldep.cmx: misc.cmi misc.cmx
-
 OCAMLDEP = $(file ocamldep$(EXE))
 BINDEP   = $(file $(BIN)/ocamldep$(EXE))
 
@@ -28,7 +23,7 @@ $(LIBMACRO): $(MACROCMO)
 #
 # We also use our own version of ocamldep
 #
-OCamlProgramInstall($(MPINSTALL), $(BIN), ocamldep, misc ocamldep)
+OCamlProgramInstall($(MPINSTALL), $(BIN), ocamldep, ocamldep)
 
 #
 # Phony targets

@@ -4,8 +4,6 @@ OCAMLC = ocamlc -warn-error A
 OCAMLOPT = ocamlopt
 OCAMLLEX = ocamllex
 
-OCAMLDEP = misc.cmx ocamldep.cmx
-
 .PHONY: all opt install clean depend
 
 all: macro.cmo $(ROOT)/bin/ocamldep
@@ -17,8 +15,8 @@ install: ocamldep
 macro.cmo: macro.ml
 	$(OCAMLC) -pp "camlp4o pa_extend.cmo pa_ifdef.cmo q_MLast.cmo" -I `camlp4 -where` -c macro.ml
 
-ocamldep: $(OCAMLDEP)
-	$(OCAMLOPT) -o $@ $(OCAMLDEP)
+ocamldep: ocamldep.cmx
+	$(OCAMLOPT) -o $@ $<
 
 $(ROOT)/bin/ocamldep: ocamldep
 	ln -sf $(ROOT)/$(DIR)/ocamldep $@
@@ -36,6 +34,3 @@ clean:
 	$(RM) *.cm* *~ ocamldep.ml *.o Makefile.dep ocamldep
 
 depend:
-
-ocamldep.cmx: misc.cmi
-misc.cmx: misc.cmi
