@@ -83,6 +83,7 @@ sig
     | MatchToken of string
     | MatchVar of string
     | MatchLevel of level_exp
+    | MatchUnsupported
 
    (*
     * An operator combines a name with a list of parameters.

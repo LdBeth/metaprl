@@ -111,6 +111,7 @@ struct
     | MatchToken of string
     | MatchVar of string
     | MatchLevel of level_exp
+    | MatchUnsupported
 
    (*
     * The terms in the framework include

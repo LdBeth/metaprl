@@ -185,7 +185,7 @@ struct
        | MVar _
        | ObId _
        | ParamList _ ->
-            raise (Invalid_argument "Term_base_std.dest_match_param")
+            MatchUnsupported
 
    let explode_term t =
       let op = dest_opname t.term_op.op_name in
