@@ -162,14 +162,16 @@ struct
 
    let rec compile_so_redex_term allow_so_patterns restrict addrs stack svars bconts bvars term =
       (* Check for variables and contexts *)
-      if is_so_var_term term then
-         let v, conts, subterms = dest_so_var term in
-            (* This is a first or second order variable *)
+      if is_var_term term then
+         let v = dest_var term in
             if List.mem_assoc v bvars then
-               if is_var_term term then
-                  stack, RWCheckVar(svar_index bvars v)
-               else
-                  REF_RAISE(RefineError ("compile_so_redex_term", RewriteBoundSOVar v))
+               stack, RWCheckVar(svar_index bvars v)
+            else
+               REF_RAISE(RefineError ("compile_so_redex_term", StringVarError("First order variables must be bound", v)))
+      else if is_so_var_term term then
+         let v, conts, subterms = dest_so_var term in
+            if List.mem_assoc v bvars then
+               REF_RAISE(RefineError ("compile_so_redex_term", RewriteBoundSOVar v))
             else if allow_so_patterns && are_bound_vars bvars subterms && not (rstack_pattern_mem v stack) then
                (* This is a second order variable, all subterms are vars *
                 * and we do not have a pattern yet                       *)

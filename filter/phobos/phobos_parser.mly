@@ -106,12 +106,12 @@ let pho_make_term id_pos_list params bterms =
       mk_term (mk_op (make_opname opname) params) bterms
 
 let pho_make_var_term (id, pos) =
-   mk_var_term (Lm_symbol.add id)
+   mk_so_var_term (Lm_symbol.add id) [] []
 
 let pho_make_so_var_term (id, pos) terms =
    let terms = List.map fst terms in
    let id = Lm_symbol.add id in
-      mk_so_var_term id [id] terms
+      mk_so_var_term id [] terms
 
 let pho_make_bterm id_pos_list pterm =
    let vars = List.map (fun (id, _) -> Lm_symbol.add id) id_pos_list in

@@ -140,16 +140,16 @@ struct
           (bconts : var list)
           (bvars : var list)
           (term : term) =
-      if is_so_var_term term then
-         let v, conts, subterms = dest_so_var term in
-            (* This is a first or second order variable *)
+      if is_var_term term then
+         let v = dest_var term in
             if List.mem v bvars then
-               (* This is a first order variable instance *)
-               if is_var_term term then
-                  enames, RWCheckVar(Lm_list_util.find_rindex v bvars)
-               else
-                  REF_RAISE(RefineError ("Rewrite_compile_contractum.compile_so_contractum_term", RewriteBoundSOVar v))
-
+               enames, RWCheckVar(Lm_list_util.find_rindex v bvars)
+            else
+               REF_RAISE(RefineError ("compile_so_redex_term", StringVarError("First order variables must be bound", v)))
+      else if is_so_var_term term then
+         let v, conts, subterms = dest_so_var term in
+            if List.mem v bvars then
+               REF_RAISE(RefineError ("Rewrite_compile_contractum.compile_so_contractum_term", RewriteBoundSOVar v))
             else if array_rstack_so_mem v stack then begin
                (*
                 * This is a second order variable.

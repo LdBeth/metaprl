@@ -31,6 +31,7 @@ open Phobos_util
 open Phobos_exn
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermMan
 open Refiner.Refiner.Rewrite
 open Opname
 open Lm_num
@@ -51,7 +52,7 @@ let empty_term = mk_any_term empty_term_operator []
 let unique_var_number = ref 0
 let unique_var_term (id, _) =
    incr(unique_var_number);
-   mk_var_term (Lm_symbol.make id !unique_var_number)
+   mk_so_var_term (Lm_symbol.make id !unique_var_number) [] []
 
 (* Position terms *)
 let pos_opname = "__pos__"

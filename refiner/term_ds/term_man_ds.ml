@@ -509,12 +509,11 @@ struct
     * SO variables and contexts             *
     *****************************************)
    let is_so_var_term t = match get_core t with
-      FOVar _ | SOVar _ -> true
+    | SOVar _ -> true
     | _ -> false
 
    let dest_so_var t = match get_core t with
-      FOVar v -> v,[],[]
-    | SOVar(v,cs,ts) -> v,cs,ts
+      SOVar(v,cs,ts) -> v,cs,ts
     | _ -> REF_RAISE(RefineError ("Term_man_ds.dest_so_var", TermMatchError (t, "not a so_var")))
 
    let mk_so_var_term v cs ts = core_term (SOVar (v,cs,ts))

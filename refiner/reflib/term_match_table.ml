@@ -35,20 +35,22 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Author: Jason Hickey
- * jyh@cs.cornell.edu
+ * Author: Jason Hickey <jyh@cs.cornell.edu>
+ * Modified By: Aleksey Nogin <nogin@cs.cornell.edu>
  *)
 open Format
 
+open Lm_symbol
 open Lm_debug
 open Opname
 
 open Refiner.Refiner
-open TermType
-open Term
-open TermOp
-open TermMan
-open Rewrite
+open Refiner.Refiner.TermType
+open Refiner.Refiner.Term
+open Refiner.Refiner.TermOp
+open Refiner.Refiner.TermMan
+open Refiner.Refiner.TermSubst
+open Refiner.Refiner.Rewrite
 
 open Simple_print.SimplePrint
 open Mp_resource
@@ -325,18 +327,28 @@ let flatten_term shape t =
  *)
 
 (*
- * When a term is inserted, we have to simplify it so that the rewriter does
- * not complain.
+ * XXX HACK (nogin 10/13/2003): When a term is inserted, we have to simplify
+ * it to erase the distinction between different kinds of external variables.
+ * We especially want to make sure that terms that differ only by contexts
+ * they are in end up placed in the same cell of the table.
+ *
+ * We should probably be able to get rid of this once a proper fall-back mechanism
+ * (beyond the current single-cell one) is implemented.
+ *
+ * XXX HACK (nogin 10/13/2003): In addition, we remove all arguments from SO
+ * variables to avoid getting an "AllSOInstances" error from the rewriter.
  *)
 let simplify_term t =
-   let simplify_var t =
-      if is_so_var_term t then
-         let v, _, _ = dest_so_var t in
-            mk_var_term v
+   let simplify_var vars t =
+      if is_var_term t then
+         let v = dest_var t in
+            if SymbolSet.mem vars v then mk_so_var_term v [] [] else t
+      else if is_so_var_term t then
+         let v, _, _ = dest_so_var t in mk_so_var_term v [] []
       else
          t
    in
-      map_up simplify_var t
+      map_up (simplify_var (free_vars_set t)) t
 
 (*
  * Add an entry.
@@ -422,7 +434,7 @@ let collect_stacks compact stacks =
        | (term :: terms, info) :: t ->
             if term == end_marker then
                collect complete ((terms, info) :: now) skip select t
-            else if is_var_term term then
+            else if is_so_var_term term then
                collect complete now ((terms, info) :: skip) select t
             else
                let shape = shape_of_pattern term in
