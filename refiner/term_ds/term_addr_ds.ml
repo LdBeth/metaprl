@@ -565,7 +565,16 @@ struct
           | SOVar(v, conts, ts) ->
                let ts, args = apply_var_fun_higher_terms f bvars coll ts in
                   if args == coll then (term,coll) else core_term(SOVar(v, conts, ts)), args
-          | Sequent _ -> raise(Invalid_argument "Term_addr_ds.apply_var_fun_higher called on a sequent")
+          | Sequent s -> (*raise(Invalid_argument "Term_addr_ds.apply_var_fun_higher called on a sequent")*)
+               let arg, args = apply_var_fun_higher_term f bvars coll s.sequent_args in
+               let bvars', hyps, args = apply_var_fun_higher_hyps f bvars args (SeqHyp.to_list s.sequent_hyps) in
+               let goals, args = apply_var_fun_higher_terms f bvars' args (SeqGoal.to_list s.sequent_goals) in
+                  if args == coll then (term, coll) else
+                  core_term (Sequent {
+                     sequent_args = arg;
+                     sequent_hyps = SeqHyp.of_list hyps;
+                     sequent_goals = SeqGoal.of_list goals;
+                  }), args
           | Hashed _ | Subst _ -> fail_core "apply_var_fun_higher_term"
          end
 
@@ -588,6 +597,17 @@ struct
                bterms', coll
             else
                (mk_bterm bvars' bterm_new) :: bterms_new, args
+
+   and apply_var_fun_higher_hyps f bvars coll = function
+      [] -> bvars, [], coll
+    | Hypothesis (v, t) :: hyps ->
+         let t, args = apply_var_fun_higher_term f bvars coll t in
+         let bvars', hyps, args = apply_var_fun_higher_hyps f (SymbolSet.add bvars v) args hyps in
+            (bvars', Hypothesis (v, t) :: hyps, args)
+    | Context (c, conts, ts) :: hyps ->
+         let ts, args = apply_var_fun_higher_terms f bvars coll ts in
+         let bvars', hyps, args = apply_var_fun_higher_hyps f (SymbolSet.add bvars c) args hyps in
+            (bvars', Context (c, conts, ts) :: hyps, args)
 
    let apply_var_fun_higher f bvars term =
       apply_var_fun_higher_term f bvars [] term
