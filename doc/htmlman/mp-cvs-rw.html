@@ -8,7 +8,7 @@
 
 <OL>
    <LI>Make sure you have ssh version 1 installed on your computer.
-   <LI>If you do not have a CVS account set up for you on ensemble01.cs.cornell.edu:
+   <LI>If you do not have a CVS account set up for you on cvs.metaprl.org:
    <OL>
       <LI>If you don't have a ssh public key, then run <TT>ssh-keygen</TT>. If you do not
       want your key to be protected by a passfrase, then press enter when asked for one.
@@ -20,11 +20,11 @@
    <LI>Put the following into your <TT>~/.ssh/config</TT> file (if you do not have <TT>~/.ssh/config</TT> file, then create one):
 
 <PRE>Host metaprl-cvs
-HostName ensemble01.cs.cornell.edu
+HostName cvs.metaprl.org
 Port 80
 FallBackToRsh no
 ForwardX11 no
-User &lt;your login on ensemble01&gt;</PRE>
+User &lt;your login on cvs.metaprl.org&gt;</PRE>
 
    <LI>Set environment variable <TT>CVS_RSH</TT> to <TT>ssh</TT>.
    You may want to add this to your <TT>~/.profile</TT> or <TT>~/.cshrc</TT> file.

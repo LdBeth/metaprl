@@ -1,10 +1,10 @@
 To run MetaPRL for the first time:
 
-   0. Make sure that you have ocaml and camlp4 installed. 
-      If you are using RedHat Linux, you can download 
-      ocaml and camlp4 RPMs from 
+   0. Make sure that you have ocaml and camlp4 installed.
+      If you are using RedHat Linux, you can download
+      ocaml and camlp4 RPMs from
       ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/RPM/
-      Otherwise you need to apply patches from 
+      Otherwise you need to apply patches from
       ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/patches/
 
    1. If you did not use our RPMs and installed ocaml and/or camlp4 yourself,
@@ -30,9 +30,9 @@ To run MetaPRL for the first time:
       % cd editor/ml; ./mpopt  (native code)
 
 Refer to doc/htmlman/install.html or to
-http://ensemble01.cs.cornell.edu:12000/cvsweb/~checkout~/meta-prl/doc/htmlman/install.html
+http://cvs.metaprl.org:12000/cvsweb/~checkout~/meta-prl/doc/htmlman/install.html
 for more information.
 
 If you plan to write some code, take a look the Developer Guide before you start.
 Go to either doc/htmlman/developer-guide/default.html or to
-http://ensemble01.cs.cornell.edu:12000/cvsweb/~checkout~/meta-prl/doc/htmlman/developer-guide/default.html
+http://cvs.metaprl.org:12000/cvsweb/~checkout~/meta-prl/doc/htmlman/developer-guide/default.html

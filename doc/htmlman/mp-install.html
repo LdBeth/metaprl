@@ -16,7 +16,7 @@
 <OL>
   <LI>GNU make. Make 3.77 has a bug and may not work, but make 3.76.1 and 3.78.1 should work fine.
   <LI>Objective Caml: our version contains a small
-  native code profiler patch and a patch to enable OCaml native-code compiler to compile huge source files 
+  native code profiler patch and a patch to enable OCaml native-code compiler to compile huge source files
   on 32-bit machines.
   <LI>CamlP4: our version contains a small patch to compile the
   CamlP4 distribution in native code, native code profiler patch
@@ -43,41 +43,41 @@ need the Cygnus Systems GNU-Win32 distribution.</P>
 
 <H3><A NAME="cvs">CVS Access to MetaPRL Sources</A></H3>
 
-<p> You can <A TARGET="_top" HREF="http://ensemble01.cs.cornell.edu:12000/cvsweb/meta-prl/">browse the MetaPRL CVS repository</a>.
+<p> You can <A TARGET="_top" HREF="http://cvs.metaprl.org:12000/cvsweb/meta-prl/">browse the MetaPRL CVS repository</a>.
 
 <P>If you plan any development in MetaPRL or if you want to download the latest
 version of MetaPRL, you may consider
-using the public CVS repository. This will allow you to have access 
+using the public CVS repository. This will allow you to have access
 to the latest changes in the distribution. The normal
 service is read-only, but if you would like to become a contributor
 with write access, read the <A HREF="mp-cvs-rw.html">read-write CVS instructions</A>.
 
-<P>The CVS server is on the machine <TT>ensemble01.cs.cornell.edu</TT>. 
+<P>The CVS server is on the machine <TT>cvs.metaprl.org</TT>.
 First log into the server by running
 
 <BLOCKQUOTE>
-  <PRE>% cvs -d :pserver:anoncvs@ensemble01.cs.cornell.edu:/cvsroot login</PRE>
+  <PRE>% cvs -d :pserver:anoncvs@cvs.metaprl.org:/cvsroot login</PRE>
 </BLOCKQUOTE>
 
-The password is <TT>anoncvs</TT>. It will be stored on your computer, 
+The password is <TT>anoncvs</TT>. It will be stored on your computer,
 so you only have to run the login command once.
 
 <P>Now you can checkout the distribution by running:</P>
 
 <BLOCKQUOTE>
-  <PRE>% cvs -d :pserver:anoncvs@ensemble01.cs.cornell.edu:/cvsroot checkout MetaPRL</PRE>
+  <PRE>% cvs -d :pserver:anoncvs@cvs.metaprl.org:/cvsroot checkout MetaPRL</PRE>
 </BLOCKQUOTE>
 
 <P>You can find more information on CVS from
 the <A HREF="http://www.sourcegear.com/CVS/Docs">CVS Documentation Pages</A>
-and from <A HREF="http://cvsbook.red-bean.com/">The CVS Book</A>. 
+and from <A HREF="http://cvsbook.red-bean.com/">The CVS Book</A>.
 
 <H2>Installation and configuration</H2>
 
-<P>If your are not using 
+<P>If your are not using
 <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/RPM/">the provided RPMs</A>, then in order
-to install OCaml and CamlP4 download and 
-unpack the distributions, than apply the <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/patches/">patches</A>. After that, proceed as described in the 
+to install OCaml and CamlP4 download and
+unpack the distributions, than apply the <A HREF="ftp://ftp.cs.cornell.edu/pub/nuprl/MetaPRL/patches/">patches</A>. After that, proceed as described in the
 <TT>INSTALL</TT> files in the distributions. If your OS supports pthreads, run OCaml configure
 script with <TT>-with-pthread</TT> option in order to get pthreads support in OCaml.
 After you have compiled and installed OCaml and Camlp4, go to the OCaml source tree and copy the following files:
