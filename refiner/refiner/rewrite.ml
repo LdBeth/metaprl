@@ -802,7 +802,7 @@ struct
                     if name == name' then
                        begin
                           List.iter2 match_redex_params params' params;
-                          List.iter2 match_redex_bterms bterms' bterms
+                          List_util.rev_iter2 match_redex_bterms bterms' bterms
                        end
                     else
                        raise (RewriteError (BadMatch (TermMatch t)))
@@ -1356,6 +1356,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.5  1998/06/13 22:48:35  nogin
+ * Make it faster
+ *
  * Revision 1.4  1998/06/12 13:46:56  jyh
  * D tactic works, added itt_bool.
  *
