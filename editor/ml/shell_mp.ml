@@ -46,6 +46,7 @@ open Rformat
 open Filter_grammar
 
 open Mptop
+open Mp_version
 
 open Exn_boot
 open Shell_sig
