@@ -62,7 +62,15 @@ The string should contain %s which will be replaced by the current-path.")
 (defvar metaprl-start-alias "MP"
   "*The shell `alias' that will be used to start MetaPRL.")
 
-(defvar metaprl-start-shell-command "cd ~/meta-prl/editor/ml ; ./mp\n"
+(defvar metaprl-home-directory (expand-file-name "~/meta-prl")
+  "*The MetaPRL root directory.")
+
+(defvar metaprl-editor-directory 
+  (expand-file-name "editor/ml" metaprl-home-directory)
+  "*The directory containing the 'mp' program.")
+
+(defvar metaprl-start-shell-command
+  (format "cd %s ; ./mp\n" metaprl-editor-directory)
   "*The shell command used to start MetaPRL.
 Change the cd command to wherever you have mp.")
 
@@ -311,7 +319,8 @@ special prompt will be displayed, and alias convertion will be performed."
         (setq comint-input-filter-functions 'metaprl-input-filter)
         (setq metaprl-cur-prompt (format metaprl-prompt "?"))
         ;; Just for convenience
-        (setq default-directory "~/meta-prl/editor/ml/")))))
+        (setq default-directory (file-name-as-directory
+				 metaprl-editor-directory))))))
 
 (provide 'prl-hack)
 
