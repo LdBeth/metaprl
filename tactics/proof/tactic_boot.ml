@@ -262,19 +262,6 @@ struct
     | ThenTC of conv * tactic
     | IdentityConv
 
-   (*
-    * Parent table.
-    *)
-   module ParentBase =
-   struct
-      type data = tactic_arg
-
-      let append data1 data2 =
-         data1 @ data2
-   end
-
-   module ParentTable = Term_eq_table.MakeMsequentTable (ParentBase)
-
    (************************************************************************
     * IMPLEMENTATION                                                       *
     ************************************************************************)
