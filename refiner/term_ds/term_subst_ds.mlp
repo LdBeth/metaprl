@@ -142,7 +142,8 @@ struct
             else (v1,v2)::(join_vars vars (vt1,vt2))
     | _ -> raise (Invalid_argument ("join_vars"))
 
-   let rec equal_term_main vars t t' =
+   let rec equal_term vars t t' =
+      (vars == [] && t==t') || (
       match (dest_term t, dest_term t') with
          { term_op = { op_name = opname1; op_params = [Var v] };
            term_terms = []
@@ -158,30 +159,15 @@ struct
          { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
             name1 == name2
                     & List_util.for_all2 equal_params params1 params2
-                    & List_util.for_all2 (equal_bterm vars) bterms1 bterms2
+                    & List_util.for_all2 (equal_bterm vars) bterms1 bterms2 )
 
-   and equal_term = function
-      [] ->
-         (function t1  ->
-            function t2 ->
-               (t1 == t2) || equal_term_main [] t1 t2)
-    | vars -> equal_term_main vars
-
-   and equal_bterm_main vars btrm1 btrm2 =
+   and equal_bterm vars btrm1 btrm2 =
+      (vars == [] && btrm1 == btrm2) || (
       let bt1 = dest_bterm btrm1 in
       let bt2 = dest_bterm btrm2 in
-      equal_term (join_vars vars (bt1.bvars,bt2.bvars)) bt1.bterm bt2.bterm
+      equal_term (join_vars vars (bt1.bvars,bt2.bvars)) bt1.bterm bt2.bterm)
 
-   and equal_bterm = function
-      [] ->
-         (function bt1 ->
-            function bt2 ->
-               (bt1 == bt2) || equal_bterm_main [] bt1 bt2)
-    | vars -> equal_bterm_main vars
-
-   let alpha_equal t1 t2 =
-      try equal_term [] t1 t2 with
-         Invalid_argument _ -> false
+   let alpha_equal = equal_term []
 
    let alpha_equal_vars (t, v) (t', v') =
       try equal_term (List_util.zip v v') t t' with
