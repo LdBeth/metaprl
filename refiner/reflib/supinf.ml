@@ -624,8 +624,8 @@ struct
 	let transitiveLeftSource (s,f) (s0,f0) v =
 		StransitiveLeft(s,s0,v), f
 
-	let transitiveRightSource v (s,f) (s0,f0) =
-		StransitiveRight(v,s,s0), f
+	let transitiveRightSource v (s0,f0) (s,f) =
+		StransitiveRight(v,s0,s), f
 
 	let addVarSource coef v (s,f) = SaddVar(coef,v,s),f
 
