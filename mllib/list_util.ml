@@ -434,6 +434,15 @@ let rec assoc_in_range eq y = function
  | [] ->
       false
 
+let rec check_assoc v v' = function
+   [] -> v=v'
+ | (v1,v2)::tl ->
+      begin match v=v1, v'=v2 with
+         true, true -> true
+       | false, false -> check_assoc v v' tl
+       | _ -> false
+      end
+
 (*
  * Split a list.
  *)

@@ -225,15 +225,25 @@ struct
          else (v1,v2)::(join_vars vars (vt1,vt2))
     | _ -> raise (Failure ("join_vars"))
 
+   let rec eq_filt_vars set1 set2 = function
+      [] -> []
+    | [(v1,v2)] as l ->
+         if v1=v2 then []
+            else if (StringSet.mem set1 v1) || (StringSet.mem set2 v2) 
+            then l else []
+    | (((v1,v2) as p) :: tl) as l ->
+         let res = eq_filt_vars set1 set2 tl in
+         if (res==[]) && (v1=v2) then []
+            else if (StringSet.mem set1 v1) || (StringSet.mem set2 v2) then
+               if (res==tl) then l else p::res
+            else res
+   
    let rec equal_term vars t t' =
-      let vars = StringSet.fst_mem_filt (term_free_vars t) vars in
+      let vars = eq_filt_vars (term_free_vars t) (term_free_vars t') vars in
       (vars == [] && t==t') || (
       match (get_core t, get_core t') with
          FOVar v, FOVar v' ->
-            begin
-               try List.assoc v vars = v' with
-                  Not_found -> v = v'
-            end
+            List_util.check_assoc v v' vars
        | Term { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
          Term { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
             Opname.eq name1 name2

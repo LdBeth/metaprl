@@ -244,16 +244,7 @@ struct
          { term_op = { op_name = opname2; op_params = [Var v'] };
            term_terms = []
          } when Opname.eq opname1 var_opname & Opname.eq opname2 var_opname ->
-            let flag =
-               try
-                  let flag = List.assoc v vars = v' in
-                     if flag = false then
-                        eprintf "alpha_equal_term: failed var %s/%s <> %s%t" v (List.assoc v vars) v' eflush;
-                     flag
-               with
-                  Not_found ->
-                     v = v'
-            in
+            let flag = List_util.check_assoc v v' vars in
                if flag = false then
                   eprintf "alpha_equal_term: failed var %s <> %s%t" v v' eflush;
                flag
@@ -303,11 +294,7 @@ struct
          { term_op = { op_name = opname2; op_params = [Var v'] };
            term_terms = []
          } when Opname.eq opname1 var_opname & Opname.eq opname2 var_opname ->
-            begin
-               try List.assoc v vars = v' with
-                  Not_found ->
-                     v = v'
-            end
+            List_util.check_assoc v v' vars
        | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
          { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
             (Opname.eq name1 name2)
