@@ -77,9 +77,11 @@ sig
       (unit -> (term, meta_term, unit, ctyp resource_sig, ctyp, expr, sig_item) module_info) ->
       (term, meta_term, proof, str_resource, ctyp, expr, str_item) module_info ->
       (module_path * string * ctyp resource_sig) list ->
-      string -> (str_item * MLast.loc) list
+      string -> string -> string -> (str_item * MLast.loc) list
    val compile : (str_item * MLast.loc) list -> unit
 end
+
+let theory_group, theory_groupdsc = Filter_util.make_groupdsc_opts ()
 
 (*
  * Compile from a pre-parsed file.
@@ -117,7 +119,7 @@ struct
       let check () =
          FilterCache.check info () InterfaceType
       in
-      let items = Info.extract check (FilterCache.info info) (FilterCache.resources info) (Filename.basename path)
+      let items = Info.extract check (FilterCache.info info) (FilterCache.resources info) (Filename.basename path) (theory_group ()) (theory_groupdsc ())
       in
          Info.compile items
 end
