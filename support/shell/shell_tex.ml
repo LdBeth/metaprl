@@ -39,7 +39,7 @@ let tex_prologue = "% -*- Mode: fundamental -*-
 %
 % Hyperlinks
 %
-\usepackage{hyperref}
+\\usepackage{hyperref}
 
 %
 % Definitions.

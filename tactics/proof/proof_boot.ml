@@ -1959,7 +1959,7 @@ struct
                IOIdentity (make_tactic_arg arg)
          in
             if !debug_proof then
-               eprintf "\__ IO convertion done.\n%t" eflush;
+               eprintf "\\__ IO convertion done.\n%t" eflush;
             res
       in
          update proof;

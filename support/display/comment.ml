@@ -1,50 +1,50 @@
-doc <:doc< 
+doc <:doc<
    @begin[spelling]
    args centermath defrule hyps mathop
    rulebox tac verbatim typeset
    @end[spelling]
-   
+
    @begin[doc]
    @module[Comment]
-   
+
    The @tt{Comment} module defines @emph{structured} comments.
    Structured comments are typed in after a keyword @keyword[doc] followed by
    a quoted term expression. They are usually used to provide documentation,
    although special forms can be defined for other purposes.
-   
+
    The term following the @keyword[doc] keyword can be either the standard
    @tt["<< ... >>"] with the usual syntax for terms inside the quotation
    or a special @tt["<:doc< ... >>"] with a specialized syntax inside.
    The text inside the @tt["<:doc< ... >>"] is parsed
    into a sequence of strings in a list.  The text can also
    contain terms, which begin with the @tt{@@} character.
-   
+
    @begin[verbatim]
    @opname[s1, ..., sm]{t1; ...; tn}
    @end[verbatim]
-   
+
    The @tt[opname] is an operator name.  The usual quantification can be
    used; the term @code{@Itt_dprod!prod} refers to the @hrefterm[prod] term
    defined in the @hrefmodule[Itt_dprod] module.  The strings $s_1, @ldots, s_m$
    are the @emph{parameters} of the term, and the $t_1; @cdots; t_n$ expressions
    are the subterms.  The parameters must be strings, possibly enclosed in
    double-quotes.  The subterms are normal comment text.
-   
+
    Terms can also be constructed using a @tt{begin/end} construction.  For example,
    the @tt[doc] term encloses a comment that uses a @LaTeX formatting-style.
-   
+
    @begin[verbatim]
    @doc{Hello world}
    @end[verbatim]
-   
+
    The following definition is equivalent.
-   
+
    @begin[verbatim]
    @begin[doc]
    Hello world.
    @end[doc]
    @end[verbatim]
-   
+
    There is also a @emph{math} mode, which is entered for terms between
    @tt["$"] or @tt["$$"] forms.  The contents of math mode is
    parsed in a similar manner to normal mode, but the `_' and `^' characters
@@ -55,31 +55,31 @@ doc <:doc<
    The @tt["<:doc< ... >>"] quotation can also contain the standard
    @tt["<< ... >>"] inside (which would imply math mode), and @emph{vice versa}.
    @end[doc]
-   
+
    ----------------------------------------------------------------
-   
+
    @begin[license]
    Copyright (C) 2000 Jason Hickey, Caltech
-   
+
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
    as published by the Free Software Foundation; either version 2
    of the License, or (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-   
+
    Author: Jason Hickey @email{jyh@cs.caltech.edu}
    @end[license]
 >>
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    @parents
    @end[doc]
@@ -90,10 +90,10 @@ extends Base_dform
  * STRUCTURED COMMENTS                                                  *
  ************************************************************************)
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    @terms
-   
+
    The @tt[comment_white] term represents white space.
    The @tt[comment_string] term is a literal string.
    The @tt[comment_block] term encloses a nested comment
@@ -105,20 +105,20 @@ declare comment_string[s:s]
 declare comment_block{'t}
 declare comment_term{'t}
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    The @tt[doc] term is used to enclose documentation blocks,
    usually with the following type of definition.
-   
+
    @begin[verbatim]
    @begin[doc]
    text
    @end[doc]
    @end[verbatim]
-   
+
    The @tt[license] term is used to enclose the license agreement
    text for a module.
-   
+
    All the words in the @tt[spelling] term are added to the
    spelling dictionary as correctly-spelled words.
    @end[doc]
@@ -156,7 +156,7 @@ dform comment_block_df1 : comment_block{'t} =
 dform comment_term_df1 : comment_term{'t} =
    slot["noparens"]{'t}
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    The @code{@docoff} term disables display for text that
    follows the structured comment.  The @code{@begin[doc]} command
@@ -249,7 +249,7 @@ dform prl_comment_df1 : except_mode[tex] :: except_mode[src] :: prl_comment{'t} 
  * COMMENT ITEMS                                                        *
  ************************************************************************)
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    The @code{@theory} term produces a chapter header for a theory (e.g.
    a collection of modules) and the @code{@module[name:s]} produces a section
@@ -279,7 +279,7 @@ dform module_df3 : mode[tex] :: "module"{'name} =
 dform module_df4 : except_mode[tex] :: "module"{'name} =
    com_hbreak bf{'name} com_hbreak com_hbreak
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    Bookmarking commands.
    @end[doc]
@@ -314,7 +314,7 @@ dform subsubsection_df1 : mode[tex] :: "subsubsection"[name:s]{'t} =
 dform subsubsection_df2 : except_mode[tex] :: "subsubsection"[name:s]{'t} =
    com_hbreak bf{'t} com_hbreak com_hbreak
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    The @code{@modsection} term produces a subsection header.
    @end[doc]
@@ -328,7 +328,7 @@ dform modsection_df1 : mode[tex] :: modsection{'t} =
 dform modsection_df2 : except_mode[tex] :: modsection{'t} =
    com_hbreak bf{'t} com_hbreak com_hbreak
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    The @code{@modsubsection} term produces a sub-subsection header.
    @end[doc]
@@ -342,7 +342,7 @@ dform modsubsection_df1 : mode[tex] :: modsubsection{'t} =
 dform modsubsection_df2 : except_mode[tex] :: modsubsection{'t} =
    com_hbreak bf{'t} com_hbreak
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    Generic targets.
    @end[doc]
@@ -363,7 +363,7 @@ dform hreftarget_df1 : mode[tex] :: "hreftarget"[name:s] =
 dform hreftarget_df2 : except_mode[tex] :: "hreftarget"[name:s] =
    bf[name:s]
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    The following terms generate the @emph{standard} @code{@modsection}
    headings for the commonly-defined parts of a module.
@@ -399,7 +399,7 @@ dform resources_df1 : resources =
 dform terms_df1 : terms =
    modsection{comment_string["Terms"]}
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    Structured comments are @emph{hypertext enabled}.  The following
    terms establish hypertext @emph{targets}.
@@ -446,7 +446,7 @@ dform rule_df1 : mode[tex] :: "rewrite"[name:s] =
 dform rule_df2 : except_mode[tex] :: "rule"[name:s] =
    bf[name:s]
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    The hypertext links are specified with the following terms.
    @end[doc]
@@ -507,7 +507,7 @@ dform hrefrule_df1 : mode[tex] :: hrefrule[name:s] =
 dform hrefrule_df2 : except_mode[tex] :: hrefrule[name:s] =
    bf[name:s]
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    The @emph{references} print section number of the target in
    a hypertext link.
@@ -618,7 +618,7 @@ dform end_df1 : mode[tex] :: "end"[name:s] =
 dform end_df2 : except_mode[tex] :: "end"[name:s] =
    `""
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    The @code{@noindent} term specifies that the following paragraph
    should not include the usual indentation for the first line.
@@ -633,7 +633,7 @@ dform noindent_df1 : mode[tex] :: noindent =
 dform noindent_df2 : except_mode[tex] :: noindent =
    `""
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    The @code{@cite} term represents a @emph{citation}.  The citation
    only has effect on @LaTeX display mode.
@@ -648,7 +648,7 @@ dform cite_df1 : mode[tex] :: cite[text:s] =
 dform cite_df2 : except_mode[tex] :: cite[text:s] =
    `"cite{" slot[text:s] `"}"
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    The @code{phantom} term produces white space, equivalent in width
    to the term being typeset.
@@ -663,7 +663,7 @@ dform phantom_df1 : mode[tex] :: phantom{'t} =
 dform phantom_df2 : except_mode[tex] :: phantom{'t} =
    `" "
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    @emph{Math mode} is entered with the @code{$text$} and @code{$$text$$}
    forms.  The @code{$text$} form produces a @tt{math} term, and the
@@ -692,7 +692,7 @@ dform centermath_df2 : mode[tex] :: centermath{'t} =
 dform centermath_df3 : except_mode[tex] :: centermath{'t} =
    com_hbreak `"$$" it{'t} `"$$" com_hbreak
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    The @code{@code} form produces literal text.
    The literal text is enclosed in curly brackets.
@@ -710,7 +710,7 @@ dform code_df2 : mode[html] :: code[s:s] =
 dform code_df3 : except_mode[tex] :: except_mode[html] :: code[s:s] =
    tt[s:s]
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    The @tt[verbatim] term encloses a block of verbatim text.
    @end[doc]
@@ -724,7 +724,7 @@ dform verbatim_df1 : mode[tex] :: verbatim[s:s] =
 dform verbatim_df2 : except_mode[tex] :: verbatim[s:s] =
    tt[s:s]
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    The @code{@email} form is similar to the @code{@code} form,
    but it is normally used to represent an E-mail address.
@@ -739,17 +739,17 @@ dform email_df1 : mode[tex] :: email[s:s] =
 dform email_df2 : except_mode[tex] :: email[s:s] =
    tt[s:s]
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    Text can be centered with the @code{@center} form.
    The usual usage is as a begin/end pair.
-   
+
    @begin[verbatim]
    @begin[center]
    text
    @end[center]
    @end[verbatim]
-   
+
    Each line of the text in the @tt{center} block is centered.
    @end[doc]
 >>
@@ -765,10 +765,10 @@ dform center_df2 : mode[html] :: center{'t} =
 dform center_df3 : except_mode[tex] :: except_mode[html] :: center{'t} =
    hspace 't hspace
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    A block of text can be placed in a figure.
-   
+
    @begin[verbatim]
    @begin[figure,label]
    text
@@ -797,17 +797,17 @@ dform caption_df1 : mode[tex] :: caption{'caption} =
 dform caption_df2 : except_mode[tex] :: caption{'caption} =
    `"caption: " slot{'caption}
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    Quotations can be centered with the @code{@quote} form.
    The usual usage is as a begin/end pair.
-   
+
    @begin[verbatim]
    @begin[quote]
    text
    @end[quote]
    @end[verbatim]
-   
+
    Each line of the text in the @tt{quote} block is centered.
    @end[doc]
 >>
@@ -827,7 +827,7 @@ dform quotation_df1 : mode[tex] :: quotation{'t} =
 dform quotation_df2 : except_mode[tex] :: quotation{'t} =
    hspace 't hspace
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    Footnotes use the @code{@footnote} form.
    @end[doc]
@@ -841,7 +841,7 @@ dform footnote_df1 : mode[tex] :: footnote{'t} =
 dform footnote_df2 : except_mode[tex] :: footnote{'t} =
    hspace 't hspace
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    Lists can be declared in three forms.  The @tt{enumerate} form
    numbers the elements of the list; the @tt{itemize} form places a
@@ -850,7 +850,7 @@ doc <:doc<
    is used to enclose each item in the list.  For example, the
    following code produces the first four letters of the alphabet
    preceded by the first four natural numbers (respectively).
-   
+
    @begin[verbatim]
    @begin[enumerate]
    @item{A}
@@ -859,7 +859,7 @@ doc <:doc<
    @item{D}
    @end[enumerate]
    @end[verbatim]
-   
+
    For the @tt{description} lists, the @code{@item} term
    takes two arguments; the first is the @emph{label} of the
    entry, and the second is the @emph{body}.
@@ -970,24 +970,24 @@ declare math_slot[tag:s]{'t}
 dform math_slot_df1 : math_slot[tag:s]{'t} =
    slot[tag:s]{'t}
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    @modsubsection{Math mode}
-   
+
    Terms are formatted in @emph{math mode} if they are
    placed between matching @tt["$"] symbols (for inline
    math expressions), or matching @tt["$$"] symbols (for
    centered math expressions).  All terms in math mode
    have an @tt[opname] that begins with the prefix @tt{math_}.
-   
+
    The following terms define standard forms in math mode.
-   
+
    The @tt{math_mathop} and @tt[math_mathrel] terms give their
    contents the status of an ``operator'' or a ``relation.''  The
    significance has to do with spacing in math mode.  An operator is
    always followed by extra white space, and a relation is surrounded
    by extra white space.
-   
+
    The @tt[tt] term displays its contents in a @tt{fixed-width} font;
    the @tt[bf] term displays the contents in a @bf{bold font}; the
    @tt[i] and @tt[it] terms display their contents in an
@@ -1102,7 +1102,7 @@ dform math_emph_df2 : except_mode[tex] :: math_emph{'t} =
  *)
 declare math_Type
 
-doc <:doc< 
+doc <:doc<
    @doc{The following terms define some common math symbols.}
 >>
 declare math_colon
@@ -1462,7 +1462,7 @@ dform math_underbrace_df3 : mode[tex] :: math_underbrace{'e1; 'e2} =
 dform math_underbrace_df4 : except_mode[tex] :: math_underbrace{'e1; 'e2} =
    `"underbrace[" 'e1 `"," 'e2 `"]"
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    The `_' and `^' characters are @emph{significant} in math mode
    (they are plain text in normal mode).  The expression @code{s_t}
@@ -1494,27 +1494,27 @@ dform normal_math_subscript_df1 : except_mode[tex] :: math_subscript{'t1; 't2} =
 dform normal_math_superscript_df1 : except_mode[tex] :: math_superscript{'t1; 't2} =
    slot{'t1} `"^" slot{'t2}
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    The @tt{array} and tabular forms produce formatted tables.
    All @emph{rows} in the table are labeled with the @tt{line}
    term, and all column elements are labeled with the @tt{item}
    term.  A typical definition looks as follows:
-   
+
    @begin[verbatim]
    @begin[array, rcl]
    @line{@item{x} @item{y} @item{z}}
    ...
    @end[array]
    @end[verbatim]
-   
+
    The @code{@hline} term can be used in place of a @code{@line}
    term to produce a horizontal rule spanning the width of the
    table.  The @code{@cr} term represents the line terminator;
    it is not necessary in normal usage.
-   
+
    As usual, the @code{@line} form can have a @tt{block} definition.
-   
+
    @begin[verbatim]
    @begin[array, lcl]
    @begin[line]
@@ -1525,17 +1525,17 @@ doc <:doc<
    ...
    @end[array]
    @end[verbatim]
-   
+
    The @tt{line} and @tt{item} forms are not strictly necessary;
    arbitrary block definitions are sufficient.
-   
+
    @begin[verbatim]
    @begin[array, rrl]
    {{x} {y} {z}}
    ...
    @end[array]
    @end[verbatim]
-   
+
    However, the use of the @tt{line} and @tt{item} terms
    is encouraged.
    @end[doc]
@@ -1771,7 +1771,7 @@ dform normal_math_cr_df1 : except_mode[tex] :: cr =
 dform normal_math_hline_df1 : except_mode[tex] :: hline =
    `"===="
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    The following macros define higher-level macros.
    The @tt[defrule] term is used to format the output as a rule
@@ -1780,18 +1780,18 @@ doc <:doc<
    of the rule; and the @i{goal} is the goal.  The @code{@cr} term
    is allowed in the @i{hyps} and the @i{goal} to produce
    multi-line definitions.
-   
+
    $$
    @defrule[name]{args; hyps; goal}
    $$
-   
+
    The @tt{rulebox} macro represents the contents of a rule box.
    The @code{@cr} form is allowed in the @i{hyps} and @i{goal}
    arguments.
    $$
    @rulebox{tac; args; hyps; goal}
    $$
-   
+
    @end[doc]
 >>
 declare math_defrule[name]{'args; 'hyps; 'goal}
@@ -1837,7 +1837,7 @@ dform normal_math_rulebox_df1 : except_mode[tex] :: math_rulebox{'name; 'args; '
    slot{'goal}
    ezone popm
 
-doc <:doc< 
+doc <:doc<
    @begin[doc]
    The following terms display standard representations
    of the usual names.
@@ -1875,7 +1875,7 @@ dform ocaml_df1 : "OCaml" =
    math_mbox{slot["OCaml"]}
 
 dform latex_df1 : mode[tex] :: "LaTeX" =
-   izone `"\mbox{\\LaTeX{}}" ezone
+   izone `"\\mbox{\\LaTeX{}}" ezone
 
 dform latex_df2 : except_mode[tex] :: "LaTeX" =
    `"LaTeX"
