@@ -309,6 +309,16 @@ let four_subterms = function
  | t ->
       raise (TermMatch ("four_subterms", t, ""))
 
+let five_subterms = function
+   { term_terms = [{ bvars = []; bterm = a };
+                   { bvars = []; bterm = b };
+                   { bvars = []; bterm = c };
+                   { bvars = []; bterm = d };
+                   { bvars = []; bterm = e }]} ->
+      a, b, c, d, e
+ | t ->
+      raise (TermMatch ("four_subterms", t, ""))
+
 (************************************************************************
  * Nonsimple but useful forms                                           *
  ************************************************************************)
@@ -2390,6 +2400,9 @@ let make_2subst_term main_term v1 v2 t1 t2 =
 
 (*
  * $Log$
+ * Revision 1.7  1998/02/12 23:34:50  jyh
+ * Modifed term module.
+ *
  * Revision 1.6  1997/09/12 17:21:45  jyh
  * Added MLast <-> term conversion.
  * Splitting filter_parse into two phases:

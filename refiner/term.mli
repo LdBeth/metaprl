@@ -157,6 +157,7 @@ val mk_dep0_dep0_dep0_term : opname -> term -> term -> term -> term
 val dest_dep0_dep0_dep0_term : opname -> term -> term * term * term
 val three_subterms : term -> term * term * term
 val four_subterms : term -> term * term * term * term
+val five_subterms : term -> term * term * term * term * term
 
 val is_dep1_term : opname -> term -> bool
 val mk_dep1_term : opname -> string -> term -> term
@@ -409,6 +410,9 @@ val make_2subst_term : term -> string -> string -> term -> term -> term
 
 (*
  * $Log$
+ * Revision 1.8  1998/02/12 23:34:53  jyh
+ * Modifed term module.
+ *
  * Revision 1.7  1998/01/27 23:04:26  jyh
  * Adding OCaml1.07 syntax.
  *
