@@ -86,6 +86,12 @@ struct
       Format.print_string (string_of_term t);
       flush stdout
 
+   let print_term_fp out t =
+      let db = get_df (fun x -> x) Dform.null_base in
+      let buf = Rformat.new_buffer () in
+         Dform.format_term db buf t;
+         Rformat.print_to_channel 80 buf out
+
    (************************************************************************
     * QUOTATIONS                                                           *
     ************************************************************************)
@@ -212,10 +218,19 @@ struct
       includes := !includes @ [dir]
 
    (*
+    * File arguments.
+    *)
+   let input_files = ref []
+   let interactive_flag = ref true
+
+   let is_interactive () =
+      !interactive_flag
+
+   (*
     * Anonymous arguments are rejected.
     *)
    let handle_anon_arg arg =
-      raise (Failure ("illegal argument: " ^ arg))
+      input_files := !input_files @ [arg]
 
    (*
     * Argument specifications.
@@ -499,20 +514,35 @@ struct
     * Evaluate a struct item.
     *)
    let eval_str_item loc item =
-      print_expr stdout (expr_of_ocaml_str_item !toploop item);
-      flush stdout
+      let expr = expr_of_ocaml_str_item !toploop item in
+         if !interactive_flag then
+            begin
+               print_expr stdout expr;
+               flush stdout
+            end
 
    (*
     * Evaluate a directive.
     *)
+   external exit : int -> unit = "caml_exit"
+
    let rec use name =
       let inx = open_in name in
+      let int_flag = !interactive_flag in
+         interactive_flag := false;
          toploop false (stream_of_channel inx);
+         interactive_flag := int_flag;
          close_in inx
 
    and eval_directive loc str = function
       DpNon ->
-         eprintf "Directive DpNon: %s%t" str eflush
+         begin
+            match str with
+              "quit" ->
+                 exit 0
+             | _ ->
+                 raise (Failure (sprintf "Unknown command %s" str))
+         end
     | DpStr str' ->
          begin
             match str with
@@ -567,6 +597,8 @@ struct
                      Filter_exn.format_exn df buf exn;
                      print_to_channel 80 buf stderr;
                      eflush stderr
+             | End_of_file ->
+                  loop := false
              | exn ->
                   let df = get_dfbase () in
                   let buf = new_buffer () in
@@ -574,16 +606,27 @@ struct
                      Filter_exn.format_exn df buf exn;
                      print_to_channel 80 buf stderr;
                      eflush stderr
-             done
+          done
+
+   (*
+    * Process some input files.
+    *)
+   let use_files files =
+      List.iter use files
 
    (*
     * We just loop on the input.  Evaluation is performed by
     * the toploop resource.
     *)
    let main () =
-      let instream = stream_of_channel stdin in
-         printf "Nuprl-Light %s\n%t" version eflush;
-         toploop true instream
+      install_debug_printer print_term_fp;
+      match !input_files with
+         [] ->
+            let instream = stream_of_channel stdin in
+               printf "Nuprl-Light %s\n%t" version eflush;
+               toploop true instream
+        | files ->
+            use_files files
 end
 
 (*

@@ -11,6 +11,11 @@ open Tacticals
 module type ShellP4Sig =
 sig
    (*
+    * Flag for whether currently in interactive mode.
+    *)
+   val is_interactive : unit -> bool
+
+   (*
     * Set the current display form base.
     *)
    val set_df : dform_base option -> unit

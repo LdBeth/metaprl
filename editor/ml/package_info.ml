@@ -349,7 +349,6 @@ struct
             raise (NotLoaded name)
 
    let set info item =
-      eprintf "Package_info.set%t" eflush;
       match info with
          { pack_info = Some info } ->
             Cache.StrFilterCache.set_command info (item, (0, 0))

@@ -151,6 +151,14 @@ struct
       includes := !includes @ [dir]
 
    (*
+    * Interactive flag.
+    *)
+   let interactive_flag = ref true
+
+   let is_interactive () =
+      !interactive_flag
+
+   (*
     * Anonymous arguments are rejected.
     *)
    let handle_anon_arg arg =

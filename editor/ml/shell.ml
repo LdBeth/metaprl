@@ -44,6 +44,13 @@ let _ =
 
 let debug_refine = load_debug "refine"
 
+let debug_shell =
+   create_debug (**)
+      { debug_name = "shell";
+        debug_description = "Display shell operations";
+        debug_value = false
+      }
+
 module Shell (ShellP4 : ShellP4Sig) =
 struct
    (************************************************************************
@@ -94,10 +101,12 @@ struct
       let dbase' =
          match info.package with
             Some mod_info ->
-               eprintf "Selecting display forms from %s%t" (Package.name mod_info) eflush;
+               if !debug_shell then
+                  eprintf "Selecting display forms from %s%t" (Package.name mod_info) eflush;
                Package.dforms mod_info
           | None ->
-               eprintf "Restoring default display forms%t" eflush;
+               if !debug_shell then
+                  eprintf "Restoring default display forms%t" eflush;
                dbase
       in
          get_mode_base dbase' info.df_mode
@@ -586,7 +595,8 @@ struct
             info.proof.edit_refine str ast tac;
             if !debug_refine then
                eprintf "Displaying proof%t" eflush;
-            display_proof ();
+            if ShellP4.is_interactive () then
+               display_proof ();
             if !debug_refine then
                eprintf "Proof displayed%t" eflush
       in

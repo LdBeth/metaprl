@@ -6,6 +6,7 @@ load "tptp_prove";;
 cd "tptp_prove";;
 create_tptp "GEN";;
 cd "GEN";;
+refine testT;;
 
 (*
  * -*-
