@@ -166,6 +166,13 @@ let ptest connection =
 		   then raise (Testfailed 11)
 	    ));
 
+	(try
+	  let f = (with_transaction lib
+		    (function t ->
+		      (* cause failure by using dead transaction *)
+		      (function () -> roots t))) in
+       	    (f (); raise (Testfailed 115))
+	  with e -> ());
 
 	(with_transaction lib
 	    (function t ->
@@ -295,7 +302,7 @@ let create_test lib =
 	  create t "TERM" None []) 
 
 
-let pu_tget_test lib oid i =
+let put_get_test lib oid i =
  (with_transaction lib
 	     (function t ->
                  put_term t oid (inatural_term i);
@@ -397,13 +404,10 @@ let jointest remote_port local_port =
  raise (Test "Join Test Successful") 
 ;;
 
-
-special_error_handler (function () -> testall 3289 2892)
+special_error_handler (function () -> testall 5289 2895)
  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
 (*
-special_error_handler (function () -> testall 5289 2895)
- (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
 special_error_handler (function () -> jointest 5289 2895)
  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)

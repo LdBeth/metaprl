@@ -99,7 +99,7 @@ let ireq_term seq addr t tid =
   mk_term (ireq_op (make_param (Number seq)
 			:: (make_param (Token "NUPRL5-type"))
 			:: (map (function s -> make_param (Token s)) addr)))
-	  [mk_bterm [] t; tid]
+	  [mk_bterm [] t; mk_bterm [] tid]
 
 let irsp_parameter = make_param (Token "!rsp")
 let irsp_op p = mk_nuprl5_op [irsp_parameter; p]
@@ -291,7 +291,7 @@ let rec bus_wait c tid ehook =
 	| { op_name = opn;
 	    op_params = ireq :: ps } when (opn = nuprl5_opname & ireq = ireq_parameter)
 	  -> (Link.send c.link
-	      (if not (tid = (hd (tl (bterms)))) 
+	      (if not (tid = (term_of_unbound_term (hd (tl (bterms)))) )
 		then (irsp_term (hd ps)
 			   (ifail_term (imessage_term ["orb"; "req"; "recursive"; "tid"] [] [])))
 		else irsp_term (hd ps)
@@ -304,7 +304,10 @@ let rec bus_wait c tid ehook =
 	     ; bus_wait c tid ehook)
 	| _ -> t)
 
-
+(* presence of tid has connatation to lib. mainly that 
+ the lib eval is non-local. But evals to join lib env are lo
+  thus it needs to be optional
+ *)
 let bus_eval c addr expr tid ehook =
   let link = c.link in
 
@@ -383,7 +386,7 @@ let default_ehook t = error ["orb"; "RequestNotExpected"] [] []
 	
 (* orb-send-configure orb-send-configure-blink *)
 let config_send c term =
-  let rsp = bus_eval c [] (iconfigure_term term) (tid()) default_ehook in
+  let rsp = bus_eval c [] (iconfigure_term term) ivoid_term default_ehook in
     if ifail_term_p rsp 
       then error ["orb"; "configure"; "send"; "fail"] [] [term]
       else rsp
@@ -514,6 +517,7 @@ let iml_expression_term result_p expr args =
 
 let icommand_parameter = make_param (Token "!command")
 let icommand_op = mk_nuprl5_op [icommand_parameter]
+let icommand_term t = mk_term icommand_op [mk_bterm [] t]
 
 let cmd_of_icommand_term t = 
  match dest_term t with { term_op = o; term_terms = [cmd] } when o = icommand_op
@@ -526,7 +530,7 @@ let cmd_of_icommand_term t =
 let connection_eval_string c s result_p =
   let result = bus_eval c c.ro_address 
 			(iexpression_term (iml_woargs_term result_p (itext_term s)))
-			(tid())
+			ivoid_term
 			default_ehook in
     if ifail_term_p result    
       then error ["orb"; "connection"; "eval"; "string"] [] [result]
@@ -538,7 +542,7 @@ let connection_eval_string c s result_p =
 let connection_eval_args c t tl  =
   let result = bus_eval c c.ro_address 
  			(iml_expression_term true t tl)
-			(tid ())
+			ivoid_term
 			default_ehook in
     if (ifail_term_p result)
       then error ["orb"; "connection"; "eval"; "args"] [] [result]
@@ -755,10 +759,43 @@ let eval_args_to_term e tid t tl =
  *	This keeps result wrappers (eg !ack) in orb.
  *)
 
+
+let itransaction_parameter = make_param (Token "!transaction")
+let itransaction_term b = mk_term (mk_nuprl5_op [itransaction_parameter; make_bool_parameter b]) []
+
+let eval_callback checkpointp e tid f =
+ orb_eval false e (icommand_term (itransaction_term checkpointp))
+	tid
+	(function term -> 
+		(f (cmd_of_icommand_term term))
+		; iack_term)
+ ; ()
+
+
+let with_fail_protect g f =
+  let a = null_oref ()
+  and err = null_oref() in
+
+  try (
+    g (function b -> 
+	oref_set a
+	  (try f b
+	   with e -> oref_set err e; raise e);
+      ());
+
+    oref_val a)
+
+  with e -> 
+	if oref_p err
+	   then raise (oref_val err)
+	   else raise e
+
+(*
 let eval_with_callback e tid f t =
  orb_eval false e (iml_expression_term false t []) 
 	   tid
-	   (function term -> (f (cmd_of_icommand_term term)); iack_term)
+	   (function term -> 
+		(f (cmd_of_icommand_term term)); iack_term)
  ; ()	
 
 let eval_to_term_with_callback e tid f t =
@@ -777,7 +814,7 @@ let eval_args_to_term_with_callback e tid f t tl =
 	  tid
 	  (function term -> (f (cmd_of_icommand_term term)); iack_term))
 
-
+*)
 
 
 

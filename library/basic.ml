@@ -154,7 +154,12 @@ let string_of_istring_term t =
 let string_of_itoken_term t =
   match dest_param (parameter_of_carrier itoken_parameter t) with
     Token s -> s
-  |_ -> error ["term"; "!string"; "parameter type"] [] [t]
+  |_ -> (
+  print_endline "string_of_itoken_term";
+  Mbterm.print_term t;
+
+	 error ["term"; "!string"; "parameter type"] [] [t]
+	 )
 
 
 let oid_of_ioid_term t =
@@ -293,8 +298,6 @@ let itransaction_id_parameter = make_param (Token "!transaction_id")
 let itransaction_id_op pl = mk_nuprl5_op (itransaction_id_parameter :: pl)
 
 let tid () =
-  mk_bterm 
-    []
     (mk_term
       (itransaction_id_op
 		[ make_param (Number (sequence()))

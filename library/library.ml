@@ -23,8 +23,9 @@ and transaction =
 	; tbegin	: stamp
 	; tent_collect	: unit (* tent *) list
 	; ttype		: transaction_type
-	; tid		: bound_term
+	; tid		: term
 	; mutable cookie	: string
+        ; mutable liveness	: bool
 	}
 
 
@@ -67,6 +68,34 @@ let join c tags =
  *  to import oids. Later either do in one step or as for export second step is local.
  *)
 
+
+let icallback_param =  make_param (Token "!callback")
+let icallback_op =  mk_nuprl5_op [icallback_param]
+
+let cookie_of_icallback_term t = 
+  match dest_term t with
+    { term_op = op; term_terms = [s] }
+       ->  (match dest_op op with
+	     { op_name = opn; op_params = [icp; ckp] } when (opn = Nuprl5.nuprl5_opname & icp = icallback_param)
+		-> (match dest_param ckp with
+		    String s -> s
+		    |_ -> error ["icallback"; "not"; "param"] [] [t])
+	     |_ -> error ["icallback"; "not"; "op"] [] [t])
+    |_ -> error ["icallback"; "not"; "term"] [] [t]
+
+
+let stamp_of_icallback_term t = 
+  match dest_term t with
+    { term_op = op; term_terms = [s] } 
+	-> (match dest_op op with
+	     { op_name = opn; op_params = (icp :: rest) } 
+			when (opn = Nuprl5.nuprl5_opname & icp = icallback_param)
+	        ->  (term_of_unbound_term s)
+	     |_ -> error ["icallback"; "not"; "op"] [] [t])
+    |_ -> error ["icallback"; "not"; "term"] [] [t]
+
+
+
 let restore c cookie f =
   (* restore lib. *)
   let lib = 
@@ -81,51 +110,72 @@ let restore c cookie f =
   and tid = tid() in
 
     (* import *)
-    (eval_with_callback
+    (eval_callback
+      false
       lib.environment
       tid
-      (function term -> 
-	(let transaction =	 
+      (function t -> 
+	let transaction =	 
 		{ library = lib
-		; tbegin = term_to_stamp term
+		; tbegin = term_to_stamp (stamp_of_icallback_term t)
 		; tent_collect = []
 		; ttype = RESTORE
 		; tid = tid
 		; cookie = cookie
+ 		; liveness = true
 		} in
-	  (f transaction)))
-      (itext_term "NL0_transaction ()"));
+	  (f transaction)));
       lib
 
+let with_transaction_aux lib ttype checkp f = 
+  let tid = tid() in
+
+    with_fail_protect
+      (function g -> 
+	eval_callback checkp lib.environment tid
+	   (function t -> 
+             g { library = lib
+		; tbegin = term_to_stamp (stamp_of_icallback_term t)
+		; tent_collect = []
+		; ttype = ttype
+		; tid = tid
+		; cookie = cookie_of_icallback_term t
+ 		; liveness = true
+		}))
+
+	(function t -> 
+	  (let result = (f t) in t.liveness <- false; result))
+
+let with_transaction lib f =
+  with_transaction_aux lib REMOTE false f
+
 let save l f =
-  let s = null_oref ()
-  and e = l.environment
-  and tid = tid () in 
-      (eval_with_callback
-	e 
-	tid
-	(function term -> 
-          (let transaction = 
-		{ library = l
-		; tbegin = term_to_stamp term
+  with_transaction_aux l SAVE true
+    (function t ->
+	    f t;
+	    t.cookie)
+
+
+(*
+  let tid = tid () in
+
+    with_fail_protect
+      (function g -> 
+        eval_callback true l.environment tid
+	  (function t -> 
+            g { library = l
+		; tbegin = term_to_stamp (stamp_of_icallback_term t)
 		; tent_collect = []
 		; ttype = SAVE
 		; tid = tid
-		; cookie = ""
-		} in
- 	   (transaction.cookie <-
-	      (oref_set s
-	   	(string_of_istring_term
-		    (eval_string_to_term
-		      transaction.library.environment
-		      transaction.tid
-		      "istring_term (checkpoint ())")))
-	    ; (f transaction)
-	    ; ())))
-	(itext_term "NL0_transaction ()"))
-	; oref_val s    
+		; cookie = cookie_of_icallback_term t
+ 		; liveness = true
+		}))
 
-
+	(function t ->
+	    f t;
+	    t.cookie)
+*)
 (* TODO: FTTB, this is a callback to lib, however oids should be cached locally, ie oid table 
  *  or lib-table with oids.
  *)
@@ -138,60 +188,49 @@ let leave lib =
  leave_library_environment lib.environment
 
 
-let with_transaction lib f =
-  let result = null_oref ()
-  and tid = tid() 
-  and maybefailed = null_oref() in
+(*
+ transactions active type of thing will prevent transaction from being used outside of 
+ with_transaction.
+ *)
 
-  (* failures in callback are caught, saved, and rethown. orb will catch and pass back to v5
-     which will then fail original call, which will then throw a different failure.
-     The second throw is caught and the saved failure is throw in its place.
-  *)
-  try
-  ((eval_with_callback
-    lib.environment
-    tid
-    (function t -> 
-      ( ( oref_set result 
-	(try
-	  (f	{ library = lib
-		; tbegin = term_to_stamp t
+(*
+  let tid = tid() in
+
+    with_fail_protect
+      (function g -> 
+	eval_callback false lib.environment tid
+	   (function t -> 
+             g { library = lib
+		; tbegin = term_to_stamp (stamp_of_icallback_term t)
 		; tent_collect = []
 		; ttype = REMOTE
 		; tid = tid
 		; cookie = ""
-		})
-	with e -> oref_set maybefailed e; raise e)
-	)
-	)
-      ; ())
-    (itext_term "NL0_transaction ()"));
+ 		; liveness = true
+		}))
+	(function t -> f t)
 
-
-  if oref_p maybefailed
-	then raise (oref_val maybefailed)
-	else oref_val result)
-
-  with e -> 
-	if oref_p maybefailed
-	   then raise (oref_val maybefailed)
-	   else raise e
-
+*)
 
 let with_local_transaction lib f = with_transaction lib f
 
-(* needs fixin!
+(* needs fixin! stamps at lookup incomparable.
   f	{ library = lib
 	; tbegin = new_stamp()
 	; tent_collect = []
 	; ttype = LOCAL
 	; tid = tid ()
 	; cookie = ""
+	; liveness = true
 	}
 *)
 
 
+let require_live_transaction t =
+ if (not t.liveness) then  error ["library"; "transaction"; "dead"] [] []; ()
+
 let require_remote_transaction t =
+  require_live_transaction t;
  if (t.ttype = LOCAL) then error ["library"; "transaction"; "local"] [] [];
  ()
 
@@ -466,14 +505,18 @@ let insert_leaf t parent name typ data =
 	typ)
       data)
 
+let resource t s =
+ require_live_transaction t;
+ Orb.resource t.library.environment s
+
 let roots t =
-  Definition.roots (resource t.library.environment "TERMS") t.tbegin
+  Definition.roots (resource t "TERMS") t.tbegin
 
 let directory_p t oid =
-  Definition.directory_p (resource t.library.environment "TERMS") t.tbegin oid
+  Definition.directory_p (resource t "TERMS") t.tbegin oid
 
 let children t oid =
-  Definition.directory_children (resource t.library.environment "TERMS") t.tbegin oid
+  Definition.directory_children (resource t "TERMS") t.tbegin oid
 
 let root t name = (assoc name (roots t))
 

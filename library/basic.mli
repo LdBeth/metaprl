@@ -77,7 +77,7 @@ val new_stamp 		: unit ->  stamp
 val get_stamp 		: unit ->  stamp
 
 val sequence		: unit -> int
-val tid			: unit -> bound_term
+val tid			: unit -> term
 
 val term_of_unbound_term	: bound_term -> term
 val unbound_bterm_p		: bound_term -> bool
