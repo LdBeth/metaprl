@@ -2,6 +2,12 @@
  * This file includes definitions for operators,
  * terms with delayed substitution, and regular terms.
  *
+ * Note: many functions in this module (most dest_* and 
+ * is_* functions, shape, etc) have side-effect:
+ * if the term is a Subst, they push substitutions one step down 
+ * and _replace_ the referenced term with the resulting Term term_single.
+ * alpha_equal* functions may push down and eliminate all the Substs, not
+ * only the top ones.
  *)
 
 open Opname
@@ -66,19 +72,20 @@ type operator = { op_name : opname; op_params : param list }
  *
  * free_vars - set of the free variables
  *
- * Subst - delayed substitution
+ * Subst (BSubst) - delayed simultanious substitution
  *)
 
-type term_simple = { term_op : operator; term_terms : bound_term list } 
+type term_subst = (string * term) list
 and term_core = 
-     Term of term_simple
-   | Subst of term * string list * term list
-and term_ds = { free_vars : StringSet.t; term_term : term_core }
-and term = term_ds ref
-and bound_term = { free_vars : StringSet.t; bvars : string list; bterm : term }
-
-type term_nods = { term_op : operator; term_terms : bound_term list } 
-type bound_term_nods = { bvars : string list; bterm : term }
+   Term of term_nods |
+   Subst of term * term_subst
+and term = { free_vars : StringSet.t; mutable core : term_core }
+and bound_term_core = 
+   BTerm of bound_term_nods |
+   BSubst of bound_term * term_subst
+and bound_term = { bfree_vars : StringSet.t; mutable bcore: bound_term_core }
+and term_nods = { term_op : operator; term_terms : bound_term list } 
+and bound_term_nods = { bvars : string list; bterm : term }
 
 (*
  * Address of a subterm.
@@ -98,16 +105,17 @@ exception TermMatch of string * term * string
  * General interface.
  *)
 
-(* perform_ds and dest_ds_term use side-effects:
- * if the term is a Subst, they push substitutions one step down 
- * and _replace_ the referenced term with the resulting Term term_single
- *
- * Many other functions in this module have the same effect 
- * (most dest_* functions, shape, etc)
+(*
+ * subst: simultaneous subst of terms for vars.
+ * var_subst: subst of var for a term.
  *)
-val perform_ds : term -> unit
-val dest_ds_term : term -> term_nods
+val do_subst : term_subst -> term -> term
+val subst : term -> term list -> string list -> term
+val do_bsubst : term_subst -> bound_term -> bound_term
+val var_subst : term -> term -> string -> term
 
+
+val dest_ds_term : term -> term_nods
 val make_ds_term : term_nods -> term
 val mk_op : opname -> param list -> operator
 val mk_term : operator -> bound_term list -> term
@@ -132,112 +140,6 @@ val nth_cdr_addr : int -> address
 val opname_of_term : term -> opname
 val subterms_of_term : term -> term list
 
-(*
- * Simple terms have no paramaters and
- * all subterms have no binding vars.
- *)
-val mk_any_term : operator -> term list -> term
-val mk_simple_term : opname -> term list -> term
-val dest_simple_term : term -> (opname * term list)
-
-(* Special cases *)
-val is_dep0_term : opname -> term -> bool
-val mk_dep0_term : opname -> term -> term
-val dest_dep0_term : opname -> term -> term
-val one_subterm : term -> term
-
-val is_dep0_dep0_term : opname -> term -> bool
-val mk_dep0_dep0_term : opname -> term -> term -> term
-val dest_dep0_dep0_term : opname -> term -> term * term
-val two_subterms : term -> term * term
-
-val is_dep0_dep0_dep0_term : opname -> term -> bool
-val mk_dep0_dep0_dep0_term : opname -> term -> term -> term -> term
-val dest_dep0_dep0_dep0_term : opname -> term -> term * term * term
-val three_subterms : term -> term * term * term
-val four_subterms : term -> term * term * term * term
-val five_subterms : term -> term * term * term * term * term
-
-val is_dep1_term : opname -> term -> bool
-val mk_dep1_term : opname -> string -> term -> term
-val dest_dep1_term : opname -> term -> string * term
-
-val is_dep0_dep1_term : opname -> term -> bool
-val is_dep0_dep1_any_term : term -> bool
-val mk_dep0_dep1_term : opname -> string -> term -> term -> term
-val mk_dep0_dep1_any_term : operator -> string -> term -> term -> term
-val dest_dep0_dep1_term : opname -> term -> string * term * term
-val dest_dep0_dep1_any_term : term -> string * term * term
-
-val is_dep0_dep2_term : opname -> term -> bool
-val mk_dep0_dep2_term : opname -> string -> string -> term -> term -> term
-val dest_dep0_dep2_term : opname -> term -> string * string * term * term
-
-val is_dep2_dep0_term : opname -> term -> bool
-val mk_dep2_dep0_term : opname -> string -> string -> term -> term -> term
-val dest_dep2_dep0_term : opname -> term -> string * string * term * term
-
-val is_dep0_dep0_dep1_term : opname -> term -> bool
-val mk_dep0_dep0_dep1_term : opname -> term -> term -> string -> term -> term
-val dest_dep0_dep0_dep1_term : opname -> term -> term * term * string * term
-
-val is_dep0_dep0_dep1_any_term : term -> bool
-val mk_dep0_dep0_dep1_any_term : operator -> term -> term -> string -> term -> term
-val dest_dep0_dep0_dep1_any_term : term -> term * term * string * term
-
-val is_dep0_dep1_dep1_term : opname -> term -> bool
-val mk_dep0_dep1_dep1_term : opname -> term -> string -> term -> string -> term -> term
-val dest_dep0_dep1_dep1_term : opname -> term -> term * string * term * string * term
-
-val is_dep0_dep2_dep2_term : opname -> term -> bool
-val mk_dep0_dep2_dep2_term : opname -> term -> string -> string -> term -> string -> string -> term -> term
-val dest_dep0_dep2_dep2_term : opname -> term -> term * string * string * term * string * string * term
-
-val is_dep0_dep2_dep0_dep2_term : opname -> term -> bool
-val mk_dep0_dep2_dep0_dep2_term : opname -> term -> string -> string -> term -> term -> string -> string -> term -> term
-val dest_dep0_dep2_dep0_dep2_term : opname -> term -> term * string * string * term * term * string * string * term
-
-val is_dep0_dep0_dep3_term : opname -> term -> bool
-val mk_dep0_dep0_dep3_term : opname -> term -> term -> string -> string -> string -> term -> term
-val dest_dep0_dep0_dep3_term : opname -> term -> term * term * string * string * string * term
-
-val is_string_term : opname -> term -> bool
-val mk_string_term : opname -> string -> term
-val dest_string_term : opname -> term -> string
-val dest_string_param : term -> string
-
-val is_string_dep0_term : opname -> term -> bool
-val mk_string_dep0_term : opname -> string -> term -> term
-val dest_string_dep0_term : opname -> term -> string * term
-
-val is_string_string_dep0_term : opname -> term -> bool
-val mk_string_string_dep0_term : opname -> string -> string -> term -> term
-val dest_string_string_dep0_term : opname -> term -> string * string * term
-val dest_string_string_dep0_any_term : term -> string * string * term
-
-val is_number_number_dep0_term : opname -> term -> bool
-val mk_number_number_dep0_term : opname -> Num.num -> Num.num -> term -> term
-val dest_number_number_dep0_term : opname -> term -> Num.num * Num.num * term
-val dest_number_number_dep0_any_term : term -> Num.num * Num.num * term
-
-val is_string_string_dep0_dep0_term : opname -> term -> bool
-val mk_string_string_dep0_dep0_term : opname -> string -> string -> term -> term -> term
-val dest_string_string_dep0_dep0_term : opname -> term -> string * string * term * term
-val dest_string_string_dep0_dep0_any_term : term -> string * string * term * term
-
-val is_number_term : opname -> term -> bool
-val mk_number_term : opname -> Num.num -> term
-val dest_number_term : opname -> term -> Num.num
-val dest_number_any_term : term -> Num.num
-
-val is_univ_term : opname -> term -> bool
-val mk_univ_term : opname -> level_exp -> term
-val dest_univ_term : opname -> term -> level_exp
-
-val is_token_term : opname -> term -> bool
-val mk_token_term : opname -> string -> term
-val dest_token_term : opname -> term -> string
-
 (************************************************************************
  * Operations                                                           *
  ************************************************************************)
@@ -255,12 +157,8 @@ val remove_addr_prefix : address -> address -> address
 val subterm_arities : term -> int list
 
 (*
- * Term operations.
- * subst: simultaneous subst of terms for vars.
- * var_subst: subst of var for a term.
+ * Term equality
  *)
-val subst : term -> term list -> string list -> term
-val var_subst : term -> term -> string -> term
 val equal_params : param -> param -> bool
 val alpha_equal : term -> term -> bool
 val alpha_equal_vars : (term * string list) -> (term * string list) -> bool
@@ -276,8 +174,6 @@ val free_vars : term -> string list
 val free_vars_terms : term list -> string list
 val context_vars : term -> string list
 val binding_vars : term -> string list
-
-type term_subst = (string * term) list
 
 exception BadMatch of term * term
 
@@ -299,7 +195,9 @@ val level_cumulativity : level_exp -> level_exp -> bool
  * A variable is a term with opname "var", and a single
  * var parameter that is the name of the variable.
  *)
+val is_var_term_nods : term_nods -> bool
 val is_var_term : term -> bool
+val dest_var_nods : term_nods -> string
 val dest_var : term -> string
 val mk_var_term : string -> term
 val mk_var_op : string -> operator
