@@ -88,99 +88,11 @@ let _ =
 
 
 (*****************************************************************************)
-(* DEFMACRO extensions *)
-
-(*
- * The DEFMACRO facility works in two stages:
- * 1. The syntax is extended with DEFMACRO and its relatives.  The result of
- *    this is impossible syntactic structures that are kept as place holders
- *    for the macro name and body.
- * 2. Then, the printer function is modified so it walks over the generated
- *    code and handles these macro strutures.
- * The reason for this is that the syntax extension thing provided by camlp4 is
- * insufficient for these things.
-*)
-
-let make_macro_str_item mactype name args expr patt loc =
-   let args = List.map (fun arg -> <:patt< $lid:arg$ >>) args in
-   let name_and_args = <:patt< ($lid:name$, $list:args$) >> in
-      <:str_item<
-         value $lid:("!"^mactype^"MAC")$ $name_and_args$ =
-            let $patt$ = $expr$ in ()
-      >>
-
-(* This function turns simple patterns to expressions for exprpatt macros. *)
-let rec patt2expr patt =
-   let loc = loc_of_patt patt in
-      match patt with
-       | <:patt< $chr:c$ >> -> <:expr< $chr:c$ >>
-       | <:patt< $str:s$ >> -> <:expr< $str:s$ >>
-       | <:patt< $int:s$ >> -> <:expr< $int:s$ >>
-       | <:patt< $lid:i$ >> -> <:expr< $lid:i$ >>
-       | <:patt< $uid:s$ >> -> <:expr< $uid:s$ >>
-       | <:patt< $p1$ . $p2$ >> ->
-            let e1 = patt2expr p1 and e2 = patt2expr p2
-            in <:expr< $e1$ . $e2$ >>
-       | <:patt< $p1$ $p2$ >> ->
-            let e1 = patt2expr p1 and e2 = patt2expr p2
-            in <:expr< $e1$ $e2$ >>
-       | <:patt< ( $list:pl$ ) >> ->
-            let el = List.map patt2expr pl in
-               <:expr< ( $list:el$ ) >>
-       | <:patt< { $list:ppl$ } >> ->
-            let eel =
-               List.map
-                  (fun (p1, p2) -> ((patt2expr p1), (patt2expr p2)))
-                  ppl
-            in <:expr< { $list:eel$ } >>
-       | patt -> let (b, e) = loc in
-            eprintf "could not convert pattern to expression at %d-%d.\n" b e;
-            exit 1
-
-EXTEND
-   GLOBAL: str_item expr;
-   (*
-    * Transform:
-    *   "DEF...MACRO name arg... = body"
-    *   -->
-    *   "let mactype (name, arg...) = let patt_body = expr_body in ()"
-    * Notes:
-    * - mactype is a string that makes it impossible for user code to generate
-    *   such str_items: one of "!EXPRMAC", "!PATTMAC" or "!EXPRPATTMAC".
-    * - the name & arguments are uids, but the expression formed uses lids
-    *   since str_item won't parse them otherwise.
-    * - The forms are
-    *     DEFMACRO/DEFEXPRMACRO for expression macros;
-    *     DEFPATTMACRO for pattern macros;
-    *     DEFEXPRPATTMACRO for both (the body should be parsable as both)
-    * - both patt_body and expr_body are there for the different macro types,
-    *   only the last uses both.
-    *)
-   str_item: FIRST
-      [[ "DEFEXPRMACRO";
-         name = UIDENT; args = LIST0 UIDENT; "="; body = expr ->
-            make_macro_str_item "EXPR" name args body <:patt<()>> loc
-       | "DEFMACRO";
-         name = UIDENT; args = LIST0 UIDENT; "="; body = expr ->
-            make_macro_str_item "EXPR" name args body <:patt<()>> loc
-       | "DEFPATTMACRO";
-         name = UIDENT; args = LIST0 UIDENT; "="; body = patt ->
-            make_macro_str_item "PATT" name args <:expr<()>> body loc
-       | "DEFEXPRPATTMACRO";
-         name = UIDENT; args = LIST0 UIDENT; "="; body = patt ->
-         (* The above only forces body to be parsed as a pattern, then it is
-          * parsed as an expr as well and an error is raised if this fails. *)
-            make_macro_str_item "EXPRPATT" name args (patt2expr body) body loc
-       ]];
-END
-
-
-(*****************************************************************************)
 (* Macro postprocessing *)
 
 (*
  * A macro is a function that takes a list of exprs and returns an expr.
- * There are several useful utilities:
+ * There are several useful utilities here:
  *   make_simple_expr_macro arg-list body
  *   make_simple_patt_macro arg-list body
  *     takes a list of variable names (strings) and an expr/patt and returns
@@ -515,30 +427,6 @@ and process_module_expr x =
 
 and process_str_item x =
    match x with
-    | <:str_item<
-         value $lid:mactype$ ($lid:mac$, $list:args$) = let $patt$ = $expr$ in ()
-      >>
-      when String.get mactype 0 = '!' ->
-         let loc = loc_of_str_item x in
-         let args = List.map
-                       (fun arg ->
-                           match arg with
-                            | <:patt< $lid:arg$ >> -> arg
-                            | _ -> failwith "Something bad happened")
-                       args
-         in
-            (match mactype with
-             | "!EXPRMAC" ->
-                  add_expr_macro mac (make_simple_expr_macro args expr)
-             | "!PATTMAC" ->
-                  add_patt_macro mac (make_simple_patt_macro args patt)
-             | "!EXPRPATTMAC" ->
-                  add_expr_macro mac (make_simple_expr_macro args expr);
-                  add_patt_macro mac (make_simple_patt_macro args patt)
-             | _ -> failwith "Something bad happened"
-            );
-            <:str_item< declare end >>
-    | StVal (loc, x, y) -> StVal (loc, x, List.map process_patt_expr y)
     | StCls (loc, x)       -> StCls (loc, List.map process_class_expr_infos x)
     | StClt (loc, x)       -> StClt (loc, List.map process_class_type_infos x)
     | StDcl (loc, x)       -> StDcl (loc, List.map process_str_item x)
@@ -549,6 +437,7 @@ and process_str_item x =
     | StMty (loc, x, y)    -> StMty (loc, x, process_module_type y)
     | StOpn (loc, x)       -> StOpn (loc, x)
     | StTyp (loc, x)       -> StTyp (loc, List.map process_string_stringlist_ctyp x)
+    | StVal (loc, x, y)    -> StVal (loc, x, List.map process_patt_expr y)
 
 and process_class_type x =
    match x with
@@ -587,16 +476,79 @@ and process_class_str_item x =
 and process_ast_list f ast_list =
    List.map (fun (ast, loc) -> (f ast, loc)) ast_list
 
-(* Install preprocessor before the current printer. *)
-let old_print_interf =
-   !print_interf
-let old_print_implem =
-   !print_implem
-let interf ast_list =
-   old_print_interf (process_ast_list process_sig_item ast_list)
-let implem ast_list =
-   old_print_implem (process_ast_list process_str_item ast_list)
-let _ =
-   print_interf := interf ;
-   print_implem := implem
+
+(*****************************************************************************)
+(* DEFMACRO/INCLUDE extensions *)
+
+(* This function turns simple patterns to expressions for exprpatt macros. *)
+let rec patt2expr patt =
+   let loc = loc_of_patt patt in
+      match patt with
+       | <:patt< $chr:c$ >> -> <:expr< $chr:c$ >>
+       | <:patt< $str:s$ >> -> <:expr< $str:s$ >>
+       | <:patt< $int:s$ >> -> <:expr< $int:s$ >>
+       | <:patt< $lid:i$ >> -> <:expr< $lid:i$ >>
+       | <:patt< $uid:s$ >> -> <:expr< $uid:s$ >>
+       | <:patt< $p1$ . $p2$ >> ->
+            let e1 = patt2expr p1 and e2 = patt2expr p2
+            in <:expr< $e1$ . $e2$ >>
+       | <:patt< $p1$ $p2$ >> ->
+            let e1 = patt2expr p1 and e2 = patt2expr p2
+            in <:expr< $e1$ $e2$ >>
+       | <:patt< ( $list:pl$ ) >> ->
+            let el = List.map patt2expr pl in
+               <:expr< ( $list:el$ ) >>
+       | <:patt< { $list:ppl$ } >> ->
+            let eel =
+               List.map
+                  (fun (p1, p2) -> ((patt2expr p1), (patt2expr p2)))
+                  ppl
+            in <:expr< { $list:eel$ } >>
+       | patt -> let (b, e) = loc in
+            eprintf "could not convert pattern to expression at %d-%d.\n" b e;
+            exit 1
+
+EXTEND
+   (*
+    * Macro definitions come first.
+    * The forms are:
+    *   DEFMACRO/DEFEXPRMACRO for expression macros;
+    *   DEFPATTMACRO for pattern macros;
+    *   DEFEXPRPATTMACRO for both (the body should be parsable as both)
+    *)
+   str_item: FIRST
+      [[ "DEFEXPRMACRO";
+         name = UIDENT; args = LIST0 UIDENT; "="; body = expr ->
+            add_expr_macro name (make_simple_expr_macro args body);
+            <:str_item< declare end >>
+       | "DEFMACRO";
+         name = UIDENT; args = LIST0 UIDENT; "="; body = expr ->
+            add_expr_macro name (make_simple_expr_macro args body);
+            <:str_item< declare end >>
+       | "DEFPATTMACRO";
+         name = UIDENT; args = LIST0 UIDENT; "="; body = patt ->
+            add_patt_macro name (make_simple_patt_macro args body);
+            <:str_item< declare end >>
+       | "DEFEXPRPATTMACRO";
+         name = UIDENT; args = LIST0 UIDENT; "="; body = patt ->
+         (* The above only forces body to be parsed as a pattern, then it is
+          * parsed as an expr as well and an error is raised if this fails. *)
+            add_expr_macro name (make_simple_expr_macro args (patt2expr body));
+            add_patt_macro name (make_simple_patt_macro args body);
+            <:str_item< declare end >>
+       | "INCLUDE"; file = STRING ->
+            (* INCLUDE "file" will parse this file and insert the results in
+             * the current AST using the StDcl that was added for such things
+             * exactly *)
+            let ic = open_in_bin file in
+            let cs = Stream.of_channel ic in
+            let phr = try Grammar.Entry.parse Pcaml.implem cs
+                      with x -> close_in ic; raise x
+            in
+               close_in ic;
+               StDcl (loc, List.map fst phr)
+       | (* This is where macros are expanded *)
+         si = NEXT -> process_str_item si
+       ]];
+END
 
