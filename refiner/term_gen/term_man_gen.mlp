@@ -416,7 +416,7 @@ struct
       let addr = nth_hd_address n in
       let rec skip_hyps i term =
          let { term_op = { op_name = opname }; term_terms = bterms } = dest_term term in
-            if opname = hyp_opname then
+            if Opname.eq opname hyp_opname then
                let term = match_hyp nth_hyp_addr_name t bterms in
                   if i = 0 then
                      addr
