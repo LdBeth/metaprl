@@ -35,6 +35,7 @@ LMFILES :=\
 	small_set\
 	string_set\
 	flist\
+	debug_string_sets\
 	memo
 
 # Name of library
