@@ -6,13 +6,6 @@ module type TENT =
  type oid
  type 'a tent
 
- exception TentLookupWoidNone
- exception TentLookupNone
- exception TentUndoBadSeq
- exception TentUndoMissing
- exception TentCommitBadSeq
- exception TentCommitMissing
-
  val new_tent	: unit -> 'a tent
 
  val tent_lookup 	: 'a tent -> stamp -> 'a

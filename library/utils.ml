@@ -42,6 +42,20 @@ let remove_if f l =
 			   else head :: (aux tail) in
     ((oref_option item), (aux l))
     
+let remove_from_end_if f l =
+   let item = null_oref ()
+   and foundp = ref false in
+    let rec aux l = 
+      match l with
+       [] -> []
+      | head :: tail ->
+	  let ntail = aux tail in
+	    if !foundp then head :: ntail
+	    else if (f head) then (foundp := true; (oref_set item head); ntail) 
+ 	    else l 
+	in
+    ((oref_option item), (aux l))
+    
 let remove_if' f l =
     let rec aux l = 
       match l with

@@ -40,10 +40,6 @@
   *	cookie returned by close is acceptable as input to restore.	
   *	OTOH, save may be called any number of times while a lib is open or joined.
   *
-  *	Beware, At the moment there is no checking by import that the string being
-  *	imported was produced in a save producing the cookie passed to restore.
-  *	But, not that the issue has been raised it'd be a simple matter to implement
-  *	such a check.
   *)
 
  val restore	: connection -> string (* cookie *) -> (transaction -> unit) -> library
@@ -220,7 +216,7 @@
 
  val children		: transaction (* local *) -> object_id -> (string * object_id) list
  val child		: transaction (* local *) -> object_id -> string -> object_id
-
+ val descendent		: transaction (* local *) -> object_id -> string list -> object_id
 
 (*
 

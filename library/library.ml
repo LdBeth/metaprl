@@ -24,6 +24,7 @@ and transaction =
 	; tent_collect	: unit (* tent *) list
 	; ttype		: transaction_type
 	; tid		: bound_term
+	; mutable cookie	: string
 	}
 
 
@@ -66,14 +67,14 @@ let join c tags =
  *  to import oids. Later either do in one step or as for export second step is local.
  *)
 
-let restore c checkpoint f =
+let restore c cookie f =
   (* restore lib. *)
   let lib = 
 	{ transactions = []
 	; environment = 
 	    restore_library_environment
 		c
-		checkpoint
+		cookie
 		(function t -> 
 		  error ["library"; "restore"; "LocalEvalNotCurrentlySupported"] [] [t])
 	} 
@@ -90,26 +91,16 @@ let restore c checkpoint f =
 		; tent_collect = []
 		; ttype = RESTORE
 		; tid = tid
+		; cookie = cookie
 		} in
 	  (f transaction)))
       (itext_term "NL0_transaction ()"));
       lib
 
-
-let oid_import transaction s =
-  (if not (transaction.ttype = RESTORE)
-     then error ["library"; "OidImport"; "restore"] [] [itext_term s]);
-
-  oid_of_ioid_term
-    (eval_args_to_term
-      transaction.library.environment
-      transaction.tid
-      (itext_term "\args. ioid_term (string_to_object_id (TtoS (hd args)))") [(itext_term s)])
-
 let save l f =
   let s = null_oref ()
   and e = l.environment
-  and tid = tid () in
+  and tid = tid () in 
       (eval_with_callback
 	e 
 	tid
@@ -120,15 +111,17 @@ let save l f =
 		; tent_collect = []
 		; ttype = SAVE
 		; tid = tid
+		; cookie = ""
 		} in
- 	   ((f transaction)
-	    ; (oref_set s
-	   	(string_of_itext_term
+ 	   (transaction.cookie <-
+	      (oref_set s
+	   	(string_of_istring_term
 		    (eval_string_to_term
 		      transaction.library.environment
 		      transaction.tid
 		      "istring_term (checkpoint ())")))
-	     ; ())))
+	    ; (f transaction)
+	    ; ())))
 	(itext_term "NL0_transaction ()"))
 	; oref_val s    
 
@@ -136,16 +129,6 @@ let save l f =
 (* TODO: FTTB, this is a callback to lib, however oids should be cached locally, ie oid table 
  *  or lib-table with oids.
  *)
-
-let oid_export transaction oid =
-  (if not (transaction.ttype = SAVE)
-     then error ["library"; "OidExport"] [oid] []);
-
-  string_of_itext_term
-    (eval_args_to_term
-      transaction.library.environment
-      transaction.tid
-      (itext_term "\args. istring_term (object_id_to_string (TtoO (hd args)))") [(ioid_term oid)])
 
 
 let lib_close lib =
@@ -169,6 +152,7 @@ let with_transaction lib f =
 		; tent_collect = []
 		; ttype = REMOTE
 		; tid = tid
+		; cookie = ""
 		}))
 	)
       ; ())
@@ -183,12 +167,13 @@ let with_local_transaction lib f =
 	; tent_collect = []
 	; ttype = LOCAL
 	; tid = tid ()
+	; cookie = ""
 	}
 
 
 
 let require_remote_transaction t =
- if not (t.ttype = REMOTE) then error ["library"; "transaction"; "local"] [] [];
+ if (t.ttype = LOCAL) then error ["library"; "transaction"; "local"] [] [];
  ()
 
 
@@ -313,6 +298,25 @@ let make_eval remote_toterm termto =
 		(with_abstract marshall_result_itext
 			       (fst m),
 		 (snd m))))
+
+
+
+let oid_export_ap = null_ap (itext_term "oid_export ")
+let oid_import_ap = null_ap (itext_term "oid_import ")
+
+let oid_export transaction oid =
+  (if not (transaction.ttype = SAVE)
+     then error ["library"; "OidExport"] [oid] []);
+  eval_to_string transaction
+    (oid_ap (token_ap oid_export_ap transaction.cookie) oid)
+    (* (itext_term "\args. istring_term (object_id_to_string (TtoO (hd args)))") [(ioid_term oid)] *)
+
+let oid_import transaction s =
+  (if not (transaction.ttype = RESTORE)
+     then error ["library"; "OidImport"; "restore"] [] [itext_term s]);
+  eval_to_object_id transaction
+    (string_ap (token_ap oid_import_ap transaction.cookie) s)
+
 
 let term_to_properties t = map_isexpr_to_list property_of_iproperty_term t
 let properties_to_term props = list_to_ilist_map iproperty_term props
@@ -453,5 +457,17 @@ let children t oid =
   Definition.directory_children (resource t.library.environment "TERMS") t.tbegin oid
 
 let root t name = (assoc name (roots t))
-let child t oid name =  assoc name (children t oid)
+
+let child t oid name = 
+  let l = (children t oid) in
+  try assoc name l 
+  with Not_found -> error ["child"; "Not_found"; name] [oid][]
+
+let descendent t oid names = 
+ let rec aux oid names =
+  if names = [] 
+     then oid
+     else try aux (assoc (hd names) (children t oid)) (tl names)
+	  with Not_found -> error ("child" :: "Not_found" :: names) [oid] []
+  in aux oid names	
 

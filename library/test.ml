@@ -11,8 +11,102 @@
 exception NoTest
 exception Test of string
 
+open Utils
 open Basic
 open Library
+
+
+exception Testfailed
+
+let oiljgs connection = 
+
+  let cookie = ref "" in
+  let lib = lib_open connection "testall" in
+    (unwind_error
+      (function () -> 
+	(* test put *)
+	(with_transaction lib
+	   (function t ->
+	     let oid = make_root t "demo" in 
+		insert_leaf t oid "test1" "TERM" (inatural_term 1))
+	; (leave lib)))
+
+     (function () -> (lib_close lib); (raise Testfailed)));
+
+  let lib = join connection ["testall"] in
+    (unwind_error
+      (function () -> 
+	(* test get *)
+	(with_transaction lib
+	   (function t ->
+		 let oid = root t "demo" in 
+		   if not (1 = number_of_inatural_term (get_term t (child t oid "test1")))
+		        then (print_string "check"; raise (Test "check"))))
+	; cookie := (lib_close lib))
+
+     (function () -> (lib_close lib); (raise Testfailed)));
+
+    print_endline "open insert leave join get successful.";
+
+    !cookie
+	  
+let seri connection cookie =
+  let lib = restore connection cookie (function t -> ()) in
+
+  let ex = ref "" 
+  and ncookie = ref "" in
+  
+    (unwind_error
+      (function () -> 
+	(* test put *)
+	let oid = with_transaction lib
+		   (function t ->
+		     child t (root t "demo") "test1") in
+	   ncookie := save lib (function t -> ex := oid_export t oid);
+	   lib_close lib)
+	
+      (function () -> lib_close lib));
+
+    let oid = null_oref () in
+    let nlib = restore connection !ncookie (function t -> oref_set oid (oid_import t !ex); ()) in
+      (unwind_error
+	(function () -> 
+	   (with_transaction nlib
+	     (function t ->
+		   if not (1 = number_of_inatural_term (get_term t (oref_val oid)))
+		        then (print_string "restore check"; raise (Test "check"))));
+	   ncookie := lib_close nlib)
+        (function () -> lib_close nlib));
+
+      print_endline "save export restore import successful.";
+
+      !ncookie
+
+  
+let testall remote_port local_port =
+ print_newline(); 
+ print_newline(); 
+ print_endline "TestAll Called ";
+
+  let cookie = ref "" in
+  (let connection = connect "ALFHEIM" remote_port local_port in
+
+    (unwind_error
+      (function () -> 
+	  cookie := oiljgs connection
+	; cookie := seri connection !cookie
+	)
+      (function () -> disconnect connection; (raise Testfailed)))
+
+    ; disconnect connection)
+
+ ; print_string "TestAll DONE" 
+ ; print_newline()
+ ; print_newline()
+;;
+
+
+
 
 let create_test lib = 
    with_transaction lib
@@ -73,52 +167,6 @@ let test remote_port local_port =
  raise (Test "DONE") 
 ;;
 
-exception Testfailed
-
-let testall remote_port local_port =
- print_string "Testall called ";
- print_newline();
-
-  (let connection = connect "ALFHEIM" remote_port local_port in
-
-    (unwind_error
-      (function () ->
-        (let lib = lib_open connection "testall" in
- 	  (unwind_error
-	     (function () -> 
-		(* test put *)
-		(with_transaction lib
-		   (function t ->
-		     let oid = make_root t "demo" in 
-			insert_leaf t oid "test1" "TERM" (inatural_term 1))
-		; (leave lib)))
-
-
-          (function () -> (lib_close lib); (raise Testfailed))))
-
-	; (let lib = join connection ["testall"] in
- 	  (unwind_error
-	     (function () -> 
-		(* test get *)
-		(with_transaction lib
-		   (function t ->
-			 let oid = root t "demo" in 
-			   if not (1 = number_of_inatural_term (get_term t (child t oid "test1")))
-			        then (print_string "check"; raise (Test "check"))))
-		; (lib_close lib))
-
-	       (function () -> (lib_close lib); (raise Testfailed)))
-	  ))
-       (function () -> disconnect connection; (raise Testfailed)))
-
-    ; print_string "open insert leave join get successful" 
-    ; print_newline()
-    ; disconnect connection)
-
- ; print_string "TestAll DONE" 
- ; print_newline()
-;;
-
 
 let demo_put_test lib i =
  (with_transaction lib
@@ -169,7 +217,7 @@ let jointest remote_port local_port =
 ;;
 
 
-special_error_handler (function () -> testall 5289 2895)
+special_error_handler (function () -> testall 3289 2892)
  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
 (*

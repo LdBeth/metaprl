@@ -268,9 +268,24 @@ let rec bus_wait c tid ehook =
     ->  (match dest_op op with
           { op_name = opn;
  	    op_params = ib :: ps } when (ib = ibroadcasts_parameter & opn = nuprl5_opname)
-           -> ( (try ((orb_broadcast (hd c.orb.environments) t); ())
+           -> ((try 
+		(special_error_handler 
+		  (function () -> ((orb_broadcast (hd c.orb.environments) t); ()))
+		  (fun s t -> 
+			print_string "broadcast failed"
+			; print_newline()
+			; print_string s
+			; print_newline()
+			; print_term t
+			; print_newline()))
+		with Not_found -> (print_string "broadcast failed notfound"; print_newline())
+		     | _-> (print_string "broadcast failed"; print_newline()))
+
+		(*
+		(try ((orb_broadcast (hd c.orb.environments) t); ())
 		 with Not_found -> (print_string "broadcast failed notfound"; print_newline())
 			| _-> (print_string "broadcast failed"; print_newline()))
+		*)
 		(* above assumes single environment is present, nfg if more than one env. *)
              ; bus_wait c tid ehook)
 	| { op_name = opn;
@@ -555,7 +570,7 @@ let library_environment_join c tags =
 (* restore *)
 let library_environment_restore c stamp_string = 
   address_of_ienvironment_address_term
-    (connection_eval_string c ("open_environment \"" ^ stamp_string ^ "\"") true)
+    (connection_eval_string c ("ienvironment_address_term (open_environment \"" ^ stamp_string ^ "\")") true)
 
 
 

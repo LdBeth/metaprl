@@ -23,6 +23,9 @@ val assoc_if	: ('a -> bool) -> 'a list -> 'a option
 val remove_if	: ('a -> bool) -> 'a list
 			 -> ('a option (* value removed, if any *) 
 			      * 'a list)
+val remove_from_end_if	: ('a -> bool) -> 'a list
+			 -> ('a option (* value removed, if any *) 
+			      * 'a list)
 val remove_if'	: ('a -> bool) -> 'a list -> 'a list
 val remove	: 'a -> 'a list -> 'a list
 

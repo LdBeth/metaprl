@@ -16,13 +16,6 @@ module type TENTFUNCTOR =
 
  type 'a tent
 
- exception TentLookupWoidNone
- exception TentLookupNone
- exception TentUndoBadSeq
- exception TentUndoMissing
- exception TentCommitBadSeq
- exception TentCommitMissing
-
  val new_tent	: unit -> 'a tent
 
  val tent_lookup 	: 'a tent -> stamp -> 'a
@@ -75,9 +68,6 @@ module TentFunctor =
 
   let new_tent () = {committed = []; pending = []}
 
-  exception TentLookupWoidNone
-  exception TentLookupNone
- 
   let tent_lookup_sent tent stamp =
    let f sent = 
       (in_transaction_p sent.stamp stamp) in
@@ -85,13 +75,13 @@ module TentFunctor =
       None -> (let f sent = 
 		(transaction_less sent.stamp stamp) in 
               match (assoc_if f tent.committed) with
-		None -> raise TentLookupNone
+		None -> error ["Tent"; "LookupSent"; "None"][][]
               | Some sent -> sent)
     | Some sent -> sent
 
   let tent_lookup tent stamp =
      match (tent_lookup_sent tent stamp).data with
-       None -> raise TentLookupNone
+       None -> error ["Tent"; "Lookup"; "None"][][]
      | Some data -> data
 
 
@@ -102,13 +92,14 @@ module TentFunctor =
       None -> (let f sent = 
 		(transaction_less sent.stamp stamp) & (OID.eq sent.oid oid) in 
               match (assoc_if f tent.committed) with
-		None -> raise TentLookupWoidNone
+		None -> error ["Tent"; "LookupWoid"; "None"][][]
               | Some sent -> sent)
     | Some sent -> sent
 
   let tent_insert tent stamp seq oid data =
     tent.pending <- {stamp = stamp; seq = seq; oid = oid; data = Some data; deletes = []}
 	            :: tent.pending;
+    (*print_int seq; print_endline " Yo insert "; *)
     ()
 
   let tent_delete tent stamp seq oid =
@@ -119,20 +110,15 @@ module TentFunctor =
     tent.pending <- nsent :: tent.pending;
     ()
 
-  exception TentUndoBadSeq
-  exception TentUndoMissing
-  exception TentCommitBadSeq
-  exception TentCommitMissing
-
   let tent_undo tent stamp seq =
    let f sent = (if (in_transaction_p sent.stamp stamp)
 		   then if (seq = sent.seq)
 			     then true
-			     else raise TentUndoBadSeq
+			     else error ["Tent"; "Undo"; "BadSeq"][][]
 		   else false) in
     let (usent', pending) = (remove_if f tent.pending) in
      match usent' with
-       None -> raise TentUndoMissing
+       None -> error ["Tent"; "Undo"; "Missing"][][]
      | Some usent ->
   
       begin
@@ -150,24 +136,28 @@ module TentFunctor =
     
 
   let tent_commit tent stamp seq = 
-    (* print_string "tent_commit"; print_newline();
-       print_stamp stamp; print_newline(); *)
+    (*
+    print_endline "tent_commit "; print_int seq;
+    print_stamp stamp; print_newline(); 
+    *)
+    (* need to look in reverse order *)
     let f sent = (* print_stamp sent.stamp; print_newline(); *)
     		(if (in_transaction_p sent.stamp stamp)
 		     then if (seq = sent.seq)
 			     then true
-			     else raise TentCommitBadSeq
+			     else error ["Tent"; "Commit"; "BadSeq"] [][]
 	  	     else false) in
 
-    let (csent', pending) = (remove_if f tent.pending) in
+    let (csent', pending) = (remove_from_end_if f tent.pending) in
      match csent' with
-       None -> raise TentCommitMissing
+       None -> error ["Tent"; "Commit"; "Missing"][][]
      | Some csent ->
   
         begin
          tent.pending <- pending;
      	 csent.stamp <- stamp;
          tent.committed <- csent :: tent.committed;
+	 (* print_endline "Yo commit"; *)
 	 ()
         end
       	 
@@ -202,13 +192,6 @@ module type TENT =
 
  type oid
  type 'a tent
-
- exception TentLookupWoidNone
- exception TentLookupNone
- exception TentUndoBadSeq
- exception TentUndoMissing
- exception TentCommitBadSeq
- exception TentCommitMissing
 
  val new_tent	: unit -> 'a tent
 
