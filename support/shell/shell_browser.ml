@@ -179,6 +179,7 @@ struct
     *)
    type uri =
       InputURI    of string
+    | HtmlmanURI  of string
     | LoginURI    of string
     | UnknownURI  of string
     | FileURI     of string
@@ -274,6 +275,10 @@ struct
             LoginURI key
        | "file" :: name ->
             FileURI (String.concat "/" name)
+       | "manual" :: rest ->
+            HtmlmanURI (Lm_string_util.prepend "/" rest)
+       | ["favicon.ico"] ->
+            HtmlmanURI "/images/metaprl.png"
        | uri ->
             UnknownURI (Lm_string_util.prepend "/" uri)
 
@@ -1124,6 +1129,8 @@ struct
       match decode_uri state uri with
          InputURI filename ->
             print_raw_file_to_http outx filename
+       | HtmlmanURI filename ->
+            print_metaprl_file_to_http outx ( "/doc/htmlman/" ^ filename )
        | WelcomeURI ->
             print_welcome_page outx state
        | LoginURI key ->
@@ -1203,6 +1210,7 @@ struct
             else
                print_error_page outx NotFoundCode
        | InputURI _
+       | HtmlmanURI _
        | LoginURI _
        | UnknownURI _
        | ContentURI _
@@ -1272,6 +1280,7 @@ struct
                     | None ->
                          print_error_page outx BadRequestCode)
           | InputURI _
+          | HtmlmanURI _
           | LoginURI _
           | UnknownURI _
           | ContentURI _
