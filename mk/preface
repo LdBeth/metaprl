@@ -26,7 +26,7 @@ ifndef REFINER
    REFINER=$(REFINER_DEFAULT)
 endif
 ifndef MAKE_OPTS
-   MAKE_OPTS=-s
+   MAKE_OPTS=$(MAKE_OPTS_DEFAULT)
 endif
 ifndef SEQ_SET
    SEQ_SET=$(SEQ_SET_DEFAULT)
@@ -134,15 +134,9 @@ ifeq ($(OSTYPE),cygwin32)
    EXE = .exe
 endif
 
-ifdef PROFILE
-   EXT_LIB=.p.a
-   EXT_OBJ=.p.o
-   EXT_PROF=.p
-else
-   EXT_LIB=.a
-   EXT_OBJ=.o
-   EXT_PROF=
-endif
+EXT_LIB=.a
+EXT_OBJ=.o
+EXT_PROF=
 
 ifndef CAMLLIB
    ifdef OCAMLLIB

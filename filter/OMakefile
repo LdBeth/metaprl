@@ -37,6 +37,13 @@ if true
 ########################################################################
 
 #
+# When native code is profiled, filter binaries need to be bytecode
+#
+if $(NATIVE_PROFILING_ENABLED)
+   NATIVE_ENABLED = false
+   export
+
+#
 # Other libraries that we always want to include
 #
 OCAML_CLIBS = $(ROOT)/clib/clib $(ROOT)/libmojave/cutil/liblmcutil

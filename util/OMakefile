@@ -5,6 +5,14 @@
 .SCANNER: %.cmx %.cmo %.cmi
 	@
 
+if $(NATIVE_PROFILING_ENABLED)
+   NATIVE_ENABLED = false
+   export
+
+if $(NATIVE_ENABLED)
+   BYTE_ENABLED = false
+   export
+
 OCAMLDEP = $(file ocamldep$(EXE))
 BINDEP   = $(file $(BIN)/ocamldep$(EXE))
 
