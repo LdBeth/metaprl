@@ -520,7 +520,7 @@ OCamlGeneratedFiles(files) =
 # Support directories
 #
 SUPPORT = $(dir support)
-SUPPORT_DIRS = $(dir $(addprefix $(SUPPORT)/, display shell tactics))
+SUPPORT_DIRS = $(dir $(addprefix $(SUPPORT)/, $(array display, shell, tactics)))
 
 #
 # Add the extra dependencies.  If sloppy dependencies
@@ -546,9 +546,13 @@ else
 OCAMLDEPFLAGS += -prl
 
 # These directories use prlc
+THEORIES = $(split ' ', $(THEORIES))
 THEORIES = $(if $(mem all, $(THEORIES)), $(THEORIES_ALL) $(filter-out all%, $(THEORIES)), $(THEORIES))
 THEORY_DIRS = $(dir $(addprefix theories/, $(THEORIES)))
-MP_DIRS  = $(SUPPORT_DIRS) $(THEORY_DIRS)
+
+MP_DIRS[] =
+   $(SUPPORT_DIRS)
+   $(THEORY_DIRS)
 
 Theory(files) =
     .DEFAULT: $(addsuffix .cmoz, $(files))
