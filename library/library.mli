@@ -31,19 +31,16 @@
  type library
  and transaction
 
- type connection
-
 
  (*
   *	Library
   *)
 
- val connect	: string (* remote hostname *)
-			-> int (* local socket *)
+ val connect	: string (*servername*) -> string (* remote hostname *)
 			-> int (* remote socket *)
-			-> connection
+			-> Orb.connection
 
- val disconnect	: connection -> unit
+ val disconnect	: Orb.connection -> unit
 
 
  (*	
@@ -77,15 +74,15 @@
   *)
 
 
- val lib_new	: connection -> string (* mnemonic *) -> library
+ val lib_new	: Orb.connection -> string (* mnemonic *) -> library
  val lib_close	: library -> string (* cookie *)
 
- val join	: connection -> string (* mnemonic *) list -> library
+ val join	: Orb.connection -> string list -> library
  val leave	: library -> unit
 
- val join_eval	: connection -> string (* mnemonic *) list -> (term -> term) -> library
+ val join_eval	: Orb.connection -> string list -> (term -> term) -> library
 
- val restore	: connection -> string (* cookie *) -> (transaction -> unit) -> library
+ val restore	: Orb.connection -> string (* cookie *) -> (transaction -> unit) -> library
  val save	: library -> (transaction -> unit) -> string (* cookie *)
 
  val oid_export	: transaction -> object_id -> string
@@ -297,4 +294,3 @@
  val find_paths		: transaction (* local *)
 				-> object_id -> object_id -> (string list) list
 *)
-

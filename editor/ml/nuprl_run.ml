@@ -100,10 +100,8 @@ let oiljgs connection =
    oid_import
 *)
 
-
 let seri connection cookie =
   let lib = restore connection cookie (function t -> ()) in
-
   let ex = ref ""
   and ncookie = ref "" in
 
@@ -111,28 +109,28 @@ let seri connection cookie =
       (function () ->
 	(* test put *)
 	let oid = with_transaction lib
-		   (function t ->
-		     child t (root t "demo") "test1") in
-	   ncookie := save lib (function t -> ex := oid_export t oid);
-	   let _ = lib_close lib in ())
-
-      (function () -> let _ = lib_close lib in ()));
-
-    let oid = null_oref () in
-    let nlib = restore connection !ncookie (function t -> let _ = oref_set oid (oid_import t !ex) in ()) in
-      (unwind_error
-	(function () ->
-	   (with_transaction nlib
-	     (function t ->
-		   if not (1 = number_of_inatural_term (get_term t (oref_val oid)))
-		        then (print_string "restore check"; raise (Test "check"))));
-	   ncookie := lib_close nlib)
-        (function () -> let _ = lib_close nlib in ()));
-
-      print_endline "save export restore import successful.";
-
-      !ncookie
-
+	    (function t ->
+	      child t (root t "demo") "test1") in
+	ncookie := save lib (function t -> ex := oid_export t oid);
+	let _ = lib_close lib in ())
+       
+       (function () -> let _ = lib_close lib in ()));
+  
+  let oid = null_oref () in
+  let nlib = restore connection !ncookie (function t -> let _ = oref_set oid (oid_import t !ex) in ()) in
+  (unwind_error
+     (function () ->
+       (with_transaction nlib
+	  (function t ->
+	    if not (1 = number_of_inatural_term (get_term t (oref_val oid)))
+	    then (print_string "restore check"; raise (Test "check"))));
+       ncookie := lib_close nlib)
+     (function () -> let _ = lib_close nlib in ()));
+  
+  print_endline "save export restore import successful.";
+  
+  !ncookie
+    
 exception Pleasefail
 
 (* join after close, then ... *)
@@ -146,17 +144,16 @@ exception Pleasefail
 (* old test purposes *)
 (*
 let ptest connection =
-  let lib = join connection ["testall"] in
-    (unwind_error
-      (function () ->
-
-	(with_transaction lib
-	 (function t ->
-	  let oid = root t "demo" in
-	   if not (1 = number_of_inatural_term (get_term t (child t oid "test1")))
-	        then (print_string "check"; raise (Test "check"))
-	   ; ()));
-
+   let lib = join connection ["testall"] in
+   (unwind_error
+   (function () ->
+   (with_transaction lib
+   (function t ->
+   let oid = root t "demo" in
+   if not (1 = number_of_inatural_term (get_term t (child t oid "test1")))
+   then (print_string "check"; raise (Test "check"))
+   ; ()));
+   
 
 	let noid = (with_transaction lib
 		     (function t ->
@@ -336,8 +333,6 @@ let looptest connection =
 
      (function () -> leave lib))
 
-
-
 let toptestloop libhost remote_port local_port =
  print_newline();
  print_newline();
@@ -357,7 +352,6 @@ let toptestloop libhost remote_port local_port =
  ; print_newline()
  ; print_newline()
 
-
 let testascii libhost remote_port local_port =
  print_newline();
  print_newline();
@@ -376,7 +370,6 @@ let testascii libhost remote_port local_port =
  ; print_string "TestAscii DONE"
  ; print_newline()
  ; print_newline()
-
 
 let testall libhost remote_port local_port =
  print_newline();
@@ -404,43 +397,38 @@ let testall libhost remote_port local_port =
 
 *)
 
-
-
-
-
 let create_test lib =
    with_transaction lib
 	(function t ->
 	  create t "TERM" None [])
 
-
 let put_get_test lib oid i =
- (with_transaction lib
-	     (function t ->
-                 put_term t oid (inatural_term i);
-		 put_property t oid "foo" (inatural_term (i+1))));
- (with_transaction lib
-   (function t ->
-     if not ((i = number_of_inatural_term (get_term t oid))
-	     & (i+1) = number_of_inatural_term (get_property t oid "foo"))
-        then raise (Test "Failed")));
- oid
-
+  (with_transaction lib
+     (function t ->
+       put_term t oid (inatural_term i);
+       put_property t oid "foo" (inatural_term (i+1))));
+  (with_transaction lib
+     (function t ->
+       if not ((i = number_of_inatural_term (get_term t oid))
+		 & (i+1) = number_of_inatural_term (get_property t oid "foo"))
+       then raise (Test "Failed")));
+  oid
+    
 let demo lib =
- (with_transaction lib
-   (function t -> let oid = make_root t "demo" in make_directory t oid "test"))
-
+  (with_transaction lib
+     (function t -> let oid = make_root t "demo" in make_directory t oid "test"))
 
 let activate_test lib oid =
- (with_transaction lib
-	     (function t ->
-                 activate t oid));
- (with_transaction lib
-   (function t ->
-	try (eval t (object_id_ap (null_ap (itext_term "\oid. if not (lib_active_p oid) then fail"))
-					  oid))
-	with e -> raise (Test "Failed")));
- oid
+  (with_transaction lib
+     (function t ->
+       activate t oid));
+  (with_transaction lib
+     (function t ->
+       try (eval t (object_id_ap (null_ap (itext_term "\oid. if not (lib_active_p oid) then fail"))
+		      oid))
+       with e -> raise (Test "Failed")));
+  oid
+
 (*
 let test remote_port local_port =
  print_string "Test called ";
@@ -466,15 +454,12 @@ let test remote_port local_port =
 
  raise (Test "DONE")
 
-
-
 let demo_put_test lib i =
  (with_transaction lib
 	     (function t ->
 		let oid = root t "demo" in
 		 insert_leaf t oid "meta_prl_data" "TERM" (inatural_term i)));
  ()
-
 
 let demo_get_put_test lib =
  (with_transaction lib
@@ -522,42 +507,40 @@ open Refiner.Refiner.TermType
 open Nuprl_eval
 open Nuprl_sig
 
-
 module Nuprl = (Nuprl_eval.Nuprl : NuprlSig)
-
 open Nuprl
-
 
 module NuprlRun = struct
 
-  let run_nuprl (():unit) =
-    special_error_handler (function () -> (library_open_and_loop_eval "MetaPRL" refine_ehook))
-      (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
-
   let run_library name =
-    special_error_handler (function () -> (library_open_and_loop_eval name refine_ehook))
+    special_error_handler (function () -> 
+      (library_open_and_loop_eval name refine_ehook))
       (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
   let run_jprover name =
-    special_error_handler (function () -> (library_open_and_loop_eval name Nuprl_jprover.jprover_hook))
+    special_error_handler (function () -> 
+      (library_open_and_loop_eval name Nuprl_jprover.jprover_hook))
       (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
-  let run_connection lport mport host name dbpath =
+  let run_connection lport (* mport *) host name dbpath =
     (Orb.db_pathname := dbpath;
-    special_error_handler (function () -> (library_open_and_loop_eval' lport mport host name refine_ehook))
-      (fun s t -> print_string s; print_newline(); Mbterm.print_term t))
+     special_error_handler (function () -> 
+       (library_open_and_loop_eval' lport host name refine_ehook))
+       (fun s t -> print_string s; print_newline(); Mbterm.print_term t))
 
-  let run_connection_with_hook lport mport host name dbpath rhook =
+  let run_connection_with_hook port host name dbpath rhook =
     (Orb.db_pathname := dbpath;
-    special_error_handler (function () -> (library_open_and_loop_eval' lport mport host name rhook))
-      (fun s t -> print_string s; print_newline(); Mbterm.print_term t))
+     special_error_handler (function () -> 
+       (library_open_and_loop_eval' port host name rhook))
+       (fun s t -> print_string s; print_newline(); Mbterm.print_term t))
 
-  let run_dummy_connection lport mport host name =
+  let run_dummy_connection lport host name =
     special_error_handler
-      (function () -> (library_open_and_loop_eval' lport mport host name
-			 (let f x = (Mbterm.print_term x;
-				     (if nuprl_is_all_term x then Mbterm.print_term ivoid_term
-				     else Mbterm.print_term (itoken_term "foo")); x) in f)))
+      (function () -> 
+	(library_open_and_loop_eval' lport host name
+	   (let f x = (Mbterm.print_term x;
+		       (if nuprl_is_all_term x then Mbterm.print_term ivoid_term
+		       else Mbterm.print_term (itoken_term "foo")); x) in f)))
       (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
-
+      
 end

@@ -14,21 +14,15 @@ open Mbterm
 open Nuprl5
 
 let _ =
-   show_loading "Loading Link%t"
+   show_loading "Loading LinkMini%t"
 
-(* old mapping method
- * type hook = (term -> term -> bool) ref * (term -> term) ref
- * type link = (in_channel * out_channel) * Unix.file_descr * hook
- *)
+type sockopt = Fd of Unix.file_descr | Null of unit
 
-type link = (in_channel * out_channel) * Unix.file_descr
+type link = (in_channel * out_channel) * sockopt
 
-(* old mapping
- * let init_match term1 term2 ref = false
- * let init_map term ref = term
- *)
-
-let dest_link ((in_channel, out_channel), socket) = ((in_channel, out_channel), socket)
+let dest_link ((in_channel, out_channel), socket) = 
+  match socket with Fd fd -> ((in_channel, out_channel), (Fd fd))
+  | Null _ -> ((in_channel, out_channel), (Null ()))
 
 let local_host =
   let {Unix.h_name = name; Unix.h_aliases = a;
@@ -38,16 +32,16 @@ let local_host =
 
 
 let iconnect_term port host =
- mk_term (mk_op nuprl5_opname
+  mk_term (mk_op nuprl5_opname
 	     [(make_param (Token "!connect")); (make_param (Number (Mp_num.num_of_int port)));
 	       (make_param (String host))])
-      []
+    []
 
 let idisconnect_term error_p =
-	mk_term (mk_op nuprl5_opname
-		       [(make_param (Token "!disconnect"));
-			(make_param (ParamList [(make_param (Token "bool"));
-					       (make_param (Number (Mp_num.num_of_int (if error_p then 1 else 0))))]))]) []
+  mk_term (mk_op nuprl5_opname
+	     [(make_param (Token "!disconnect"));
+	       (make_param (ParamList [(make_param (Token "bool"));
+					(make_param (Number (Mp_num.num_of_int (if error_p then 1 else 0))))]))]) []
 
 let cautious_in = ref Unix.stderr
 let cautious_out = ref Unix.stderr
@@ -55,9 +49,10 @@ let cautious_socket = ref Unix.stderr
 
 let disconnect link =
  (*send link disconnect_term at orb level*)
- let ((in_channel, out_channel), socket) = dest_link link in
+  let ((in_channel, out_channel), socket) = dest_link link in
   close_client (in_channel, out_channel);
-  destroy_socket socket
+  match socket with Fd fd -> destroy_socket fd
+  | Null _ -> ()
 
 (*
 let rec recv ((in_channel, out_channel), socket) =
@@ -82,28 +77,24 @@ let recv ((in_channel, out_channel), socket) =
 (* LAL set nonblocking before/after nohang instead*)
 
 (* opens local_socket, connects to remote, returns Unidirectional link*)
-let connect_with_callback remote_host remote_port local_port =
-  let socket = make_socket local_port
+let connect_with_callback host port =
+  let (in_channel, out_channel) = open_client port host
   in
-  cautious_socket := socket;
-  Unix.set_nonblock socket;
-  let (in_channel, out_channel) = open_client remote_port remote_host
-  in
-  cautious_in := (Unix.descr_of_in_channel in_channel);
-  cautious_out := (Unix.descr_of_out_channel out_channel);
-  Unix.set_nonblock (Unix.descr_of_in_channel in_channel);
-  ((in_channel, out_channel), socket)
+  (* cautious_in := Unix.descr_of_in_channel in_channel;
+  cautious_out := Unix.descr_of_out_channel out_channel;*)
+  (*Unix.set_nonblock (Unix.descr_of_in_channel in_channel);*)
+  ((in_channel, out_channel), (Null ()))
 
 (* called after port-term sent and returned successful*)
-let connect_callback link =
+(* let connect_callback link =
   let ((in_channel, out_channel), socket) = dest_link link
   in
-  let descr = (accept_client socket)
+  let descr = accept_client socket
   in
   cautious_in := descr;
   Unix.set_nonblock descr;
   (((Unix.in_channel_of_descr descr), out_channel), socket)
-
+*)
 
 let send ((in_channel, out_channel), socket) term =
   Basic.debug_term := term;
@@ -133,8 +124,3 @@ let recv_nohang ((in_channel, out_channel), socket) =
     Unix.fstat (Unix.descr_of_in_channel in_channel)
   in
   if size = 0 then None else (Some (term_of_mbterm (read_node in_channel)))
-
-
-
-
-

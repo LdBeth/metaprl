@@ -37,9 +37,10 @@ let library_open host localport remoteport =
 
   if oref_p library then
     raise (LibraryException "Open: Library already open.")
-  else (let _ = oref_set library (join (oref_set connection (connect host localport remoteport))
-			    ["metaprl"]) in
-	at_exit library_close)   (* nogin: something is strange here *)
+  else 
+    (let _ = oref_set library 
+	(join (oref_set connection (connect "metaprl" host remoteport)) ["metaprl"]) in
+    at_exit library_close)   (* nogin: something is strange here *)
 
 let maybe_lib_open () =
   if not (oref_p library) then
@@ -62,22 +63,21 @@ let lib_get () =
  *)
 
 let library_set magics magic filename term =
-  print_string "hello";
   let _ =
     (with_transaction (lib_get())
 
-      (function t ->
-        let root = (root t "Files") in
+       (function t ->
+         let root = (root t "Files") in
 
 	  (* make filename dir if none *)
-	  let dir = try (descendent t root [filename])
-	  	    with _ -> (let ndir = make_directory t root filename in
-	  			put_property t ndir "NAME" (itoken_term filename);
-	  			ndir)
-	    in
+	 let dir = try (descendent t root [filename])
+	 with _ -> (let ndir = make_directory t root filename in
+	 put_property t ndir "NAME" (itoken_term filename);
+	 ndir)
+	 in
 
 	    (* store term in filename at magic *)
-	    ninsert_leaf t dir (string_of_int (List.nth magics magic)) "TERM" term))
+	 ninsert_leaf t dir (string_of_int (List.nth magics magic)) "TERM" term))
 
   in ()
 
@@ -89,16 +89,14 @@ let library_set magics magic filename term =
  *)
 
 let library_get magics filename =
-(*
-  print_string "hello g";
-*)
+
   with_transaction (lib_get())
 
-   (function t ->
-         let root = (root t "Files") in
-         let magic = List.hd magics in
-         let obid = (descendent t root [filename; (string_of_int magic)]) in
-            get_term t obid, magic)
+    (function t ->
+      let root = (root t "Files") in
+      let magic = List.hd magics in
+      let obid = (descendent t root [filename; (string_of_int magic)]) in
+      get_term t obid, magic)
 
 (*
  * This "combo" is the module that defines how to fetch

@@ -47,7 +47,7 @@ open Refiner.Refiner.Refine
 module type NuprlSig =
 sig
   val library_close	: unit -> unit
-  val library_open_and_loop_eval'	: int -> int -> string -> string -> (term -> term) -> unit
+  val library_open_and_loop_eval'	: int -> string -> string -> (term -> term) -> unit
   val library_open_and_loop_eval	: string -> (term -> term) -> unit
   val refine_ehook : term -> term
   val itt_bug : bool ref

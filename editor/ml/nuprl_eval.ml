@@ -49,29 +49,26 @@ open Shell
 module Nuprl = struct
 
   exception LibraryException of string
-
   let itt_bug = ref true
-
-  let _ = show_loading "Loading Library_eval%t"
-
-  let library = null_oref()
+  let _ = show_loading "Loading Nuprl_eval%t"
+  let library = null_oref ()
   let connection = null_oref ()
-
+      
   let library_close () =
     if oref_p library then
       (leave (oref_val library);
-       disconnect (oref_val connection);
-       oref_nullify library)
+       Library.disconnect (oref_val connection);
+       oref_nullify library) 
     else raise (LibraryException "Close: No library open.")
 
-  let lib_open_eval env ehook host localport remoteport =
+  let library_open_eval servername hook host remoteport =
     if oref_p library then
       raise (LibraryException "Open: Library already open.")
+    
     else
-      let _ = oref_set library (join_eval (oref_set connection (connect host localport remoteport))
-				     [env]
-				     ehook) in
-    at_exit library_close (* jyh: something is strange here *)
+      let _ = oref_set connection (connect servername host remoteport) in
+      let _ = oref_set library (join_eval (oref_val connection) ["JPROVER"] hook) in
+      at_exit library_close (* jyh: something is strange here *)
 
 (*
    *
@@ -398,49 +395,34 @@ module Nuprl = struct
 
     (function term -> (function t -> (ifail_term term)))
 
-  let library_open_eval name rhook =
-    if not (oref_p library) then
-      let host = Sys.getenv "NUPRL_HOST"
-      and port = int_of_string (Sys.getenv "NUPRL_PORT")
-      and mport = int_of_string (Sys.getenv "MP_PORT") in
-      print_string "before lib_open_eval";
-      try (lib_open_eval name rhook host port mport); ()
-      with e -> (lib_open_eval name rhook host port (mport+2));
-	()
-
-  let library_open_eval' port mport host name rhook =
-    if not (oref_p library) then
-      lib_open_eval name rhook host port mport;
-    ()
+  let library_mini_loop_eval () =
+    let lib = oref_val library in
+    server_loop lib
 
   let library_loop_eval () =
     let lib = oref_val library in
     (with_transaction lib
        (function t ->
 	 (Library.eval t
-	    (null_ap (itext_term "\l. inform_message nil ``MetaPRL Loop Start`` nil")))));
+	    (null_ap 
+	       (itext_term "\l. inform_message nil 
+		  ``MetaPRL Loop Start`` nil")))));
     server_loop lib
 
   let library_open_and_loop_eval name rhook =
-    library_open_eval name rhook;
-    print_string "after open_eval";
+    let host = Sys.getenv "NUPRL_HOST"
+    and port = int_of_string (Sys.getenv "NUPRL_PORT") in
+    library_open_eval name rhook host port;
     (unwind_error
        (function () -> library_loop_eval ();
 	 library_close ())
        (function () -> library_close ()))
 
-  let library_open_and_loop_eval' port mport host name rhook =
-    library_open_eval' port mport host name rhook;
+  let library_open_and_loop_eval' port host name rhook =
+    library_open_eval name rhook host port;
     (unwind_error
-       (function () -> library_loop_eval ();
+       (function () -> library_mini_loop_eval ();
 	 library_close ())
        (function () -> library_close ()))
-
-  let faux_refine g t =
-    print_newline();
-    Mbterm.print_term g;
-    Mbterm.print_term t;
-    print_newline();
-    [g; g]
 
 end

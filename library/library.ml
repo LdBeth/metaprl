@@ -28,7 +28,6 @@
 open Printf
 open Mp_debug
 
-
 open Utils
 open List
 open Refiner.Refiner.Term
@@ -64,19 +63,16 @@ and transaction =
         (* dependencies *)
 	}
 
-
-type connection = Orb.connection
-
 let orbr = null_oref ()
 
 let init_orb () =
-  if (not (oref_p orbr))
-     then (let _ = oref_set orbr (orb_open "foo") in () )
-     else ()
+  if (not (oref_p orbr)) then
+    (let _ = oref_set orbr (orb_open "foo") in () )
+  else ()
 
-let connect remote_host remote_port local_port =
+let connect servername remote_host remote_port =
  init_orb();
- Orb.connect (oref_val orbr) remote_host remote_port local_port
+ Orb.connect (oref_val orbr) servername remote_host remote_port 
 
 let disconnect c = Orb.disconnect (oref_val orbr) c
 
@@ -89,71 +85,62 @@ let disconnect c = Orb.disconnect (oref_val orbr) c
  *)
 
 let faux_mbs bterms =
- let term = term_of_unbound_term (hd bterms) in
-   print_newline();
-    print_string "mbs" ;
-    print_newline();
-    term
-
+  let term = term_of_unbound_term (hd bterms) in
+  print_newline();
+  print_string "mbs";
+  print_newline();
+  term
 
 let faux_ascii bterms =
- let persist = term_of_unbound_term (hd bterms) and
-     data = term_of_unbound_term (hd (tl bterms)) in
-   let ((s, y) as st) = (Db.stamp_and_type_of_idata_persist_term persist) in
-   let data' = Db.db_read s y in
-    print_newline();
-    if alpha_equal data data' then print_string "+" else print_string "-" ;
-    print_newline();
-    data'
+  let persist = term_of_unbound_term (hd bterms) and
+      data = term_of_unbound_term (hd (tl bterms)) in
+  let ((s, y) as st) = (Db.stamp_and_type_of_idata_persist_term persist) in
+  let data' = Db.db_read s y in
+  print_newline();
+  if alpha_equal data data' then print_string "+" else print_string "-" ;
+  print_newline();
+  data'
 
 let faux_ascii_quick bterms =
- let persist = term_of_unbound_term (hd bterms) in
-   let ((s, y) as st) = (Db.stamp_and_type_of_idata_persist_term persist) in
-   let data = Db.db_read s y in
-    print_newline();
-    print_string "faq";
-    print_newline();
-    data
-
+  let persist = term_of_unbound_term (hd bterms) in
+  let ((s, y) as st) = (Db.stamp_and_type_of_idata_persist_term persist) in
+  let data = Db.db_read s y in
+  print_newline();
+  print_string "faq";
+  print_newline();
+  data
 
 let faux_ascii_file bterms =
- let persist = term_of_unbound_term (hd bterms) in
-   let ((s, y) as st) = (Db.stamp_and_type_of_idata_persist_term persist) in
-   let data = Db.db_read s y in
-    print_newline();
-    print_string "faf";
-    print_newline();
-    let filename = "/amd/noon/y/nuprl/nuprll/nuprl-light/library/mbnode.txt" in
-    let rterm = Mbterm.write_node_to_file (Mbterm.mbterm_of_term data) filename in
-    print_newline();
-    print_string "aw";
-    print_newline();
-    itoken_term filename
-
+  let persist = term_of_unbound_term (hd bterms) in
+  let ((s, y) as st) = (Db.stamp_and_type_of_idata_persist_term persist) in
+  let data = Db.db_read s y in
+  print_newline();
+  print_string "faf";
+  print_newline();
+  let filename = "/amd/noon/y/nuprl/nuprll/nuprl-light/library/mbnode.txt" in
+  let rterm = Mbterm.write_node_to_file (Mbterm.mbterm_of_term data) filename in
+  print_newline();
+  print_string "aw";
+  print_newline();
+  itoken_term filename
 
 let faux_refine bterms =
- let seq = term_of_unbound_term (hd bterms) in
-
-    print_newline();
-    Mbterm.print_term seq;
-    print_newline();
-
-   list_to_ilist [seq; seq]
-
-
+  let seq = term_of_unbound_term (hd bterms) in
+  print_newline();
+  Mbterm.print_term seq;
+  print_newline();
+  list_to_ilist [seq; seq]
 
 let test_do_add bterms =
- let r =
-  inatural_term
-   (fold_left (fun i j -> i + j)
+  let r =
+    inatural_term
+      (fold_left (fun i j -> i + j)
 	 0
-	 (map (function bt -> number_of_inatural_term (term_of_unbound_term bt)) bterms))
-  in
-
-    print_newline();
-    Mbterm.print_term r;
-    print_newline();
-    r
+	 (map (function bt -> number_of_inatural_term (term_of_unbound_term bt)) bterms)) in
+  print_newline();
+  Mbterm.print_term r;
+  print_newline();
+  r
 
 let test_add_op = mk_nuprl5_op [ make_param (Token "!test_add")]
 let faux_refiner_op = mk_nuprl5_op [ make_param (Token "!faux_refine")]
@@ -162,55 +149,40 @@ let faux_ascii_op = mk_nuprl5_op [ make_param (Token "!faux_ascii")]
 let faux_mbs_op = mk_nuprl5_op [ make_param (Token "!faux_mbs")]
 
 let test_ehook t =
-
   match dest_term t with
     {term_op = op; term_terms = bterms } when opeq op test_add_op
-      -> test_do_add bterms
-    | {term_op = op; term_terms = bterms } when opeq op faux_refiner_op
-      ->  faux_refine bterms
-    | {term_op = op; term_terms = bterms } when opeq op refiner_op
-      ->  faux_refine bterms
-    | {term_op = op; term_terms = bterms } when opeq op faux_ascii_op
-      ->  faux_ascii_quick bterms
-    | {term_op = op; term_terms = bterms } when opeq op faux_mbs_op
-      ->  faux_mbs bterms
-    | _ -> error ["eval"; "op"; "unrecognized"] [] [t]
+    -> test_do_add bterms
+  | {term_op = op; term_terms = bterms } when opeq op faux_refiner_op
+    ->  faux_refine bterms
+  | {term_op = op; term_terms = bterms } when opeq op refiner_op
+    ->  faux_refine bterms
+  | {term_op = op; term_terms = bterms } when opeq op faux_ascii_op
+    ->  faux_ascii_quick bterms
+  | {term_op = op; term_terms = bterms } when opeq op faux_mbs_op
+    ->  faux_mbs bterms
+  | _ -> error ["eval"; "op"; "unrecognized"] [] [t]
 
 let error_ehook t = (error ["library"; "LocalEvalNotCurrentlySupported"] [] [t])
 
 let lib_new c s =
-	{ transactions = []
-	; environment =
-	     open_library_environment
-		c
-		s
-		test_ehook
-	}
-
+  { transactions = []; 
+    environment = open_library_environment c s test_ehook
+  }
 
 let join c tags =
-	{ transactions = []
-	; environment =
-	     join_library_environment
-		c
-		tags
-		test_ehook
-	}
-
-let join_eval c tags ehook =
-	{ transactions = []
-	; environment =
-	     join_library_environment
-		c
-		tags
-		ehook
-	}
-
+  { transactions = [];
+    environment =
+    join_library_environment c tags test_ehook
+  }
+    
+let join_eval c tags ehook = 
+  { transactions = [];
+    environment = join_library_environment c tags ehook
+  }
 
 (* TODO: FTTB this is done in two steps : 1st restore lib, second start a transaction
  *  to import oids. Later either do in one step or as for export second step is local.
  *)
-
 
 let icallback_param =  make_param (Token "!callback")
 let icallback_op =  mk_nuprl5_op [icallback_param]
@@ -218,76 +190,73 @@ let icallback_op =  mk_nuprl5_op [icallback_param]
 let cookie_of_icallback_term t =
   match dest_term t with
     { term_op = op; term_terms = [s] }
-       ->  (match dest_op op with
-	     { op_name = opn; op_params = [icp; ckp] } when (nuprl5_opname_p opn & parmeq icp icallback_param)
-		-> (match dest_param ckp with
-		    String s -> s
-		    |_ -> error ["icallback"; "not"; "param"] [] [t])
-	     |_ -> error ["icallback"; "not"; "op"] [] [t])
-    |_ -> error ["icallback"; "not"; "term"] [] [t]
-
+    ->  (match dest_op op with
+      { op_name = opn; op_params = [icp; ckp] } when (nuprl5_opname_p opn & parmeq icp icallback_param)
+      -> (match dest_param ckp with
+	String s -> s
+      |_ -> error ["icallback"; "not"; "param"] [] [t])
+    |_ -> error ["icallback"; "not"; "op"] [] [t])
+  |_ -> error ["icallback"; "not"; "term"] [] [t]
 
 let stamp_of_icallback_term t =
   match dest_term t with
     { term_op = op; term_terms = [s] }
-	-> (match dest_op op with
-	     { op_name = opn; op_params = (icp :: rest) }
-			when (nuprl5_opname_p opn & parmeq icp icallback_param)
-	        ->  (term_of_unbound_term s)
-	     |_ -> error ["icallback"; "not"; "op"] [] [t])
-    |_ -> error ["icallback"; "not"; "term"] [] [t]
-
-
+    -> (match dest_op op with
+      { op_name = opn; op_params = (icp :: rest) }
+      when (nuprl5_opname_p opn & parmeq icp icallback_param)
+      ->  (term_of_unbound_term s)
+    |_ -> error ["icallback"; "not"; "op"] [] [t])
+  |_ -> error ["icallback"; "not"; "term"] [] [t]
 
 let restore c cookie f =
   (* restore lib. *)
   let lib =
-	{ transactions = []
-	; environment =
-	    restore_library_environment
-		c
-		cookie
-		(function t ->
-		  error ["library"; "restore"; "LocalEvalNotCurrentlySupported"] [] [t])
-	}
+    { transactions = [];
+      environment =
+      restore_library_environment
+	c
+	cookie
+	(function t ->
+	  error ["library"; "restore"; "LocalEvalNotCurrentlySupported"] [] [t])
+    }
   and tid = tid() in
 
     (* import *)
-    (eval_callback
-      false
-      lib.environment
-      tid
-      (function t ->
-	let transaction =
-		{ library = lib
-		; tbegin = term_to_stamp (stamp_of_icallback_term t)
-		; tent_collect = []
-		; ttype = RESTORE
-		; tid = tid
-		; cookie = cookie
- 		; liveness = true
-		} in
-	  (f transaction)));
-      lib
+  (eval_callback
+     false
+     lib.environment
+     tid
+     (function t ->
+       let transaction =
+	 { library = lib
+	     ; tbegin = term_to_stamp (stamp_of_icallback_term t)
+	     ; tent_collect = []
+	     ; ttype = RESTORE
+	     ; tid = tid
+	     ; cookie = cookie
+ 	     ; liveness = true
+	 } in
+       (f transaction)));
+  lib
 
 let with_transaction_aux lib ttype checkp f =
   let tid = tid() in
 
-    with_fail_protect
-      (function g ->
-	eval_callback checkp lib.environment tid
-	   (function t ->
-             g { library = lib
+  with_fail_protect
+    (function g ->
+      eval_callback checkp lib.environment tid
+	(function t ->
+          g { library = lib
 		; tbegin = term_to_stamp (stamp_of_icallback_term t)
 		; tent_collect = []
 		; ttype = ttype
 		; tid = tid
 		; cookie = cookie_of_icallback_term t
  		; liveness = true
-		}))
+	    }))
 
-	(function t ->
-	  (let result = (f t) in t.liveness <- false; result))
+    (function t ->
+      (let result = (f t) in t.liveness <- false; result))
 
 let with_transaction lib f =
   with_transaction_aux lib REMOTE false f
@@ -295,8 +264,8 @@ let with_transaction lib f =
 let save l f =
   with_transaction_aux l SAVE true
     (function t ->
-	    f t;
-	    t.cookie)
+      f t;
+      t.cookie)
 
 
 (*
@@ -324,12 +293,8 @@ let save l f =
  *)
 
 
-let lib_close lib =
- close_library_environment lib.environment
-
-let leave lib =
- leave_library_environment lib.environment
-
+let lib_close lib = close_library_environment lib.environment
+let leave lib = leave_library_environment lib.environment
 
 (*
  transactions active type of thing will prevent transaction from being used outside of
@@ -368,14 +333,13 @@ let with_local_transaction lib f = with_transaction lib f
 	}
 *)
 
-
 let require_live_transaction t =
  if (not t.liveness) then  error ["library"; "transaction"; "dead"] [] []; ()
 
 let require_remote_transaction t =
   require_live_transaction t;
- if (t.ttype = LOCAL) then error ["library"; "transaction"; "local"] [] [];
- ()
+  if (t.ttype = LOCAL) then error ["library"; "transaction"; "local"] [] [];
+  ()
 
 
 (*
@@ -495,10 +459,10 @@ let eval_to_object_id t m = oid_of_ioid_term (eval_m_to_term t (oid_return m))
 let make_eval remote_toterm termto =
   let marshall_result_itext = (itext_term remote_toterm) in
   (fun t m ->
-       termto (eval_to_term t
-		(with_abstract marshall_result_itext
-			       (fst m),
-		 (snd m))))
+    termto (eval_to_term t
+	      (with_abstract marshall_result_itext
+		 (fst m),
+	       (snd m))))
 
 let server_loop lib = orb_req_loop lib.environment
 
@@ -507,18 +471,17 @@ let oid_export_ap = null_ap (itext_term "oid_export ")
 let oid_import_ap = null_ap (itext_term "oid_import ")
 
 let oid_export transaction oid =
-  (if not (transaction.ttype = SAVE)
-     then error ["library"; "OidExport"] [oid] []);
+  (if not (transaction.ttype = SAVE) then
+    error ["library"; "OidExport"] [oid] []);
   eval_to_string transaction
     (oid_ap (token_ap oid_export_ap transaction.cookie) oid)
     (* (itext_term "\args. istring_term (object_id_to_string (TtoO (hd args)))") [(ioid_term oid)] *)
 
 let oid_import transaction s =
-  (if not (transaction.ttype = RESTORE)
-     then error ["library"; "OidImport"; "restore"] [] [itext_term s]);
+  (if not (transaction.ttype = RESTORE) then
+    error ["library"; "OidImport"; "restore"] [] [itext_term s]);
   eval_to_object_id transaction
     (string_ap (token_ap oid_import_ap transaction.cookie) s)
-
 
 let term_to_properties t = map_isexpr_to_list property_of_iproperty_term t
 let properties_to_term props = list_to_ilist_map iproperty_term props
@@ -536,15 +499,14 @@ let disallow_ap = null_ap (itext_term "disallow_collection ")
 let disallow_collection t oid = eval t (oid_ap disallow_ap oid)
 
 
-
 let create_ap = null_ap (itext_term "create_with_some_term ")
 let create t ttype init_term init_props =
   eval_to_object_id t
     (term_ap
-      (term_ap
-	(token_ap create_ap ttype)
-	(ioption_term init_term))
-      (properties_to_term init_props))
+       (term_ap
+	  (token_ap create_ap ttype)
+	  (ioption_term init_term))
+       (properties_to_term init_props))
 
 let delete_strong_ap = null_ap (itext_term "delete_strong ")
 let delete_strong t oid =
@@ -582,7 +544,7 @@ let put_properties_ap = null_ap (itext_term "\oid iprops. set_properties oid (te
 let put_properties t oid props =
   eval t
     (term_ap (oid_ap put_properties_ap oid)
-	(properties_to_term props))
+       (properties_to_term props))
 
 let get_properties_ap = null_ap (itext_term "\oid . property_list_to_term (get_properties oid) ")
 let get_properties t oid =
@@ -682,10 +644,9 @@ let child t oid name =
   with Not_found -> error ["child"; "Not_found"; name] [oid][]
 
 let descendent t oid names =
- let rec aux oid names =
-  if nullp names
-     then oid
-     else try aux (assoc (hd names) (children t oid)) (tl names)
-	  with Not_found -> error ("child" :: "Not_found" :: names) [oid] []
+  let rec aux oid names =
+    if nullp names then
+      oid
+    else try aux (assoc (hd names) (children t oid)) (tl names)
+    with Not_found -> error ("child" :: "Not_found" :: names) [oid] []
   in aux oid names
-

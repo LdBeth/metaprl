@@ -58,16 +58,16 @@ let make_socket port =
 
 (*
 let make_socket port host =
-	let fd = Unix.socket Unix.PF_INET Unix.SOCK_STREAM 0
-	in  let address = Unix.ADDR_INET (Unix.inet_addr_of_string "128.84.254.214",  port)
-	in Unix.bind fd address ;
-	Unix.listen fd 1;
-	fd;;
+   let fd = Unix.socket Unix.PF_INET Unix.SOCK_STREAM 0
+   in  
+   let address = Unix.ADDR_INET (Unix.inet_addr_of_string "128.84.254.214", port)
+   in Unix.bind fd address ;
+   Unix.listen fd 1;
+   fd;;
 *)
 
 let destroy_socket fd = Unix.shutdown fd Unix.SHUTDOWN_ALL ;;
 
 let accept_client fd =
-  let (fd2, addr) = Unix.accept fd
-  in
+  let (fd2, addr) = Unix.accept fd in
   fd2
