@@ -698,15 +698,14 @@ struct
            | sl_open_paren; t = aterm; sl_close_paren ->
              t
              (* records {x1=a1;x2=a2;...} *)
-           | sl_open_curly; lab = word_or_string; sl_equal; t = aterm; r = LIST0 rcrdterm; sl_close_curly ->
-                let r0 =   mk_term (mk_op (mk_opname loc ["rcrd"] [ShapeToken] [0])
-                               [make_param (Token lab )])  [mk_simple_bterm t.aterm] in
+           | sl_open_curly; lab = word_or_string; sl_equal; t = aterm; rest = LIST0 rcrdterm; sl_close_curly ->
+                let r0 =   mk_term (mk_op (mk_opname loc ["rcrd"] [] []) []) [] in
                 let aux = fun r -> function (lab,t) ->
                            mk_term (mk_op (mk_opname loc ["rcrd"] [ShapeToken] [0;0])
                                [make_param (Token lab )])  [mk_simple_bterm t.aterm; mk_simple_bterm  r]
                 in
                    { aname = None;
-                     aterm = List.fold_left aux r0 r
+                     aterm = List.fold_left aux r0 ((lab,t)::rest)
                    }
              (* record typess {x1:A1;x2:a2;...} *)
            | sl_open_curly; lab = word_or_string; sl_colon; t = aterm; ";"; r = LIST0 recordterm SEP ";"; sl_close_curly ->
