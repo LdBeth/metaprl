@@ -114,20 +114,14 @@ let free_vars expr =
          free_pwel bvars l pwel
     | <:expr< if $e1$ then $e2$ else $e3$ >> ->
          free bvars (free bvars (free bvars l e1) e2) e3
-    | <:expr< let $rec:_$ $list:pel$ in $e$ >> ->
+    | <:expr< let $opt:_$ $list:pel$ in $e$ >> ->
          free_pel bvars l e pel
     | <:expr< match $e$ with [ $list:pwel$ ] >>
     | <:expr< try $e$ with [ $list:pwel$ ] >> ->
          free_pwel bvars (free bvars l e) pwel
-(*
-    | <:expr< new $e$ >> ->
-*)
-    | MLast.ExNew _ ->
+    | <:expr< new $list:_$ >> ->
          bvars
-(*
     | <:expr< {< $list:sel$ >} >> ->
-*)
-    | MLast.ExOvr (_, sel) ->
          List.fold_left (fun l (_, el) -> free bvars l el) l sel
     | <:expr< { $list:eel$ } >> ->
          List.fold_left (fun l (_, el) -> free bvars l el) l eel

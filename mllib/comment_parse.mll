@@ -75,6 +75,8 @@
  *)
 
 {
+type loc = Lexing.position * Lexing.position
+
 (*
  * A program is a sequence of strings and terms.
  *)
@@ -89,8 +91,6 @@ and item =
  | Block of t
 
 and opname = string list * loc
-
-and loc = int * int
 
 (*
  * Tokens.
@@ -257,7 +257,7 @@ type token_buffer =
 exception Parse_error of string * loc
 
 let loc_of_lexbuf lexbuf =
-   Lexing.lexeme_start lexbuf, Lexing.lexeme_end lexbuf
+   Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf
 
 let loc_of_buf buf =
    loc_of_lexbuf buf.lexbuf

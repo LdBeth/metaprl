@@ -45,7 +45,9 @@ open TermMan
 open TermMeta
 open TermShape
 
+open Lexing
 open Filter_type
+open Filter_util
 
 (*
  * Show the file loading.
@@ -89,16 +91,15 @@ let dict_inited = ref false
 let raise_spelling_error () =
    if !misspelled <> [] then begin
       let rec print word = function
-         (h, loc) :: t ->
+         (h, (bp, ep)) :: t ->
             if word = h then
                eprintf "; "
             else
                eprintf "\n\t%s: " h;
-            if !Pcaml.input_file <> "-" then
-               let (line, bp, _) = Stdpp.line_of_loc !Pcaml.input_file loc in
-                  eprintf "line %i, char %i" line bp
+            if bp.pos_lnum >= 0 then
+               eprintf "line %i, char %i" bp.pos_lnum bp.pos_bol
             else
-               eprintf "char %i" (fst loc);
+               eprintf "char %i" bp.pos_cnum;
             print h t
        | [] ->
             ()
@@ -371,9 +372,10 @@ struct
    let expr_of_anti (loc, _) name s =
       try Grammar.Entry.parse Pcaml.expr_eoi (Stream.of_string s) with
          Stdpp.Exc_located ((l1, l2), exn) ->
-            let offset = loc + String.length "$" in
+            let offset = String.length "$" in
             let offset = if name = "" then offset else offset + 1 + (String.length name) in
-               Stdpp.raise_with_loc (offset + l1, offset + l2) exn
+            let loc = shift_pos loc offset in
+               Stdpp.raise_with_loc (adjust_pos loc l1, adjust_pos loc l2) exn
 
    let rec parse_quotation loc curr = function
       nm, _ when nm = curr ->
@@ -382,15 +384,17 @@ struct
          Phobos_exn.catch (Phobos_compile.term_of_string [] pho_grammar_filename) s
     | "desc", s ->
          Phobos_exn.catch (Phobos_compile.term_of_string [] pho_desc_grammar_filename) s
-    | "term", s
-    | "", s ->
+    | ("term"|"") as nm, s ->
          (try
              let cs = Stream.of_string s in
                 term_of_parsed_term (Grammar.Entry.parse TermGrammar.term_eoi cs)
           with
              Stdpp.Exc_located ((l1, l2), exn) ->
-                let offset = fst(loc) in
-                   Stdpp.raise_with_loc (offset + l1, offset + l2) exn)
+                let offset =
+                  if nm = "" then String.length "<<" else (String.length "<:") + (String.length nm) + (String.length "<")
+                in
+                let pos = shift_pos (fst loc) offset in
+                   Stdpp.raise_with_loc (adjust_pos pos l1, adjust_pos pos l2) exn)
     | "doc", s ->
          parse_comment loc true  SpellOn  true s
     | "topdoc", s ->
@@ -400,7 +404,8 @@ struct
     | nm, _ ->
          Stdpp.raise_with_loc loc (Invalid_argument ("Camlp4 term grammar: unknown " ^ nm ^ " quotation"))
 
-   and parse_comment (loc, _) math spell space s =
+   and parse_comment loc math spell space s =
+      let pos = fst loc in
       if !debug_spell && not !dict_inited then
          begin
             Filter_spell.init ();
@@ -423,7 +428,7 @@ struct
                         Filter_spell.add s
                    | SpellOn ->
                         if not (Filter_spell.check s) then
-                           misspelled := (s, (loc, 0)) :: !misspelled
+                           misspelled := (s, loc) :: !misspelled
                end;
             mk_string_term comment_string_op s
        | Comment_parse.Variable s ->
@@ -458,7 +463,7 @@ struct
                      space
             in
             let opname =
-               mk_opname (loc + l1, loc + l2) opname (string_params params) (fake_arities args)
+               mk_opname (adjust_pos pos l1, adjust_pos pos l2) opname (string_params params) (fake_arities args)
             in
             let params = List.map (fun s -> make_param (String s)) params in
             let args = List.map (fun t -> mk_simple_bterm (build_term spelling space t)) args in
@@ -468,7 +473,7 @@ struct
        | Comment_parse.Block items ->
             mk_simple_term comment_block_op [build_term spelling space items]
        | Comment_parse.Quote ((l1, l2), tag, s) ->
-            mk_simple_term comment_term_op [parse_quotation (loc + l1, loc + l2) "doc" (tag, s)]
+            mk_simple_term comment_term_op [parse_quotation (adjust_pos pos l1, adjust_pos pos l2) "doc" (tag, s)]
 
       (*
        * If spacing is ignored, ignore spaces.
@@ -492,7 +497,7 @@ struct
       let items =
          try Comment_parse.parse math s with
             Comment_parse.Parse_error (s, (l1, l2)) ->
-               Stdpp.raise_with_loc (loc + l1, loc + l2) (ParseError s)
+               Stdpp.raise_with_loc (adjust_pos pos l1, adjust_pos pos l2) (ParseError s)
       in
          mk_simple_term comment_term_op [build_term spell space items]
 
@@ -1066,7 +1071,7 @@ struct
          [[  w = sl_word ->
              make_param (MString (Lm_symbol.add w))
            | w = STRING ->
-             make_param (String (Token.eval_string w))
+             make_param (String (Token.eval_string loc w))
            | n = sl_number ->
              make_param (Number n)
            | "-"; n = sl_number ->
@@ -1211,7 +1216,7 @@ struct
          [[ t = singleterm ->
              term_of_parsed_term t.aterm
            | sl_back_quote; name = STRING ->
-             mk_xstring_term (Token.eval_string name)
+             mk_xstring_term (Token.eval_string loc name)
           ]];
 
       (* Term constructor "programs" *)
@@ -1574,7 +1579,7 @@ struct
            | name = LIDENT ->
              name
            | name = STRING ->
-             Token.eval_string name
+             Token.eval_string loc name
           ]];
 
       sl_word:

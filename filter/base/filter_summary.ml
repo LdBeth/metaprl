@@ -41,6 +41,7 @@ open Term_sig
 open Refiner_sig
 open Precedence
 open Dform
+open Lexing
 
 open Filter_util
 open Filter_type
@@ -771,21 +772,23 @@ struct
 
    (*
     * Destruct a location.
+    * XXX: TODO: This converts the old-style location data into the modern one.
+    * Ideally, we should be able to embed location data as comments (bug 256).
     *)
    let loc_op = mk_opname "location"
 
    let dest_loc t =
-      match (dest_number_number_dep0_any_term t) with
-         (i, j, t) when Lm_num.is_integer_num i && Lm_num.is_integer_num j ->
-            t, (Lm_num.int_of_num i, Lm_num.int_of_num j)
-       | _ ->
+      let i, j, t = dest_number_number_dep0_any_term t in
+         if Lm_num.is_integer_num i && Lm_num.is_integer_num j then
+            t, (mk_proper_loc i j)
+         else
             raise (Failure "dest_loc: location is not an integer")
 
    let dest_loc_string t =
-      match dest_number_number_string_dep0_any_term t with
-         (i, j, s, t) when Lm_num.is_integer_num i && Lm_num.is_integer_num j ->
-            t, (Lm_num.int_of_num i, Lm_num.int_of_num j), s
-       | _ ->
+      let i, j, s, t = dest_number_number_string_dep0_any_term t in
+         if Lm_num.is_integer_num i && Lm_num.is_integer_num j then
+            t, (mk_proper_loc i j), s
+         else
             raise (Failure "dest_loc_string: location is not an integer")
 
    (*
@@ -1230,9 +1233,14 @@ struct
 
    (*
     * Make a location.
+    * XXX: TODO: This converts the modern location data into the old-style one.
+    * Ideally, we should be able to embed location data as comments (bug 256).
     *)
    let mk_loc (i, j) t =
-      mk_number_number_dep0_term loc_op (Lm_num.num_of_int i) (Lm_num.num_of_int j) t
+      mk_number_number_dep0_term loc_op (Lm_num.num_of_int i.pos_cnum) (Lm_num.num_of_int j.pos_cnum) t
+
+   let mk_loc_string_term op (start, finish) name t =
+      mk_number_number_string_dep0_term op (Lm_num.num_of_int start.pos_cnum) (Lm_num.num_of_int finish.pos_cnum) name t
 
    (*
     * Make a optional arg.
@@ -1258,9 +1266,6 @@ struct
       let op = mk_op opname [param] in
       let bterms = List.map (fun t -> mk_bterm [] t) terms in
          mk_term op bterms
-
-   let mk_loc_string_term op (start, finish) name t =
-      mk_number_number_string_dep0_term op (Lm_num.num_of_int start) (Lm_num.num_of_int finish) name t
 
    (*
     * Make a term with only strings parameters.

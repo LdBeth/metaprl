@@ -38,6 +38,7 @@ open Term_sig
 open Refiner.Refiner
 open Refiner.Refiner.TermMeta
 open Filter_type
+open Lexing
 
 (*
  * Show the file loading.
@@ -52,7 +53,33 @@ let _ =
 (*
  * Dummy MLast.loc value
  *)
-let dummy_loc = (0, 0)
+let dummy_loc =
+   Lexing.dummy_pos, Lexing.dummy_pos
+
+(*
+ * Construct a location.
+ * XXX: TODO: This converts the old-style location data into modern one.
+ * Ideally, we should be able to embed location data as comments (bug 256).
+ *)
+let mk_proper_loc =
+   let mk_pos i = {
+      pos_cnum = Lm_num.int_of_num i;
+      pos_lnum = 1;
+      pos_bol = 0;
+      pos_fname = "";
+   } in
+      fun i j -> (mk_pos i, mk_pos j)
+
+let shift_pos loc offset =
+   {loc with pos_cnum = loc.pos_cnum + offset}
+
+let adjust_pos globpos local_pos =
+   {
+      globpos with
+      pos_lnum = if local_pos.pos_lnum > 0 then globpos.pos_lnum + local_pos.pos_lnum - 1 else globpos.pos_lnum;
+      pos_bol = if local_pos.pos_lnum <= 1 then globpos.pos_bol else local_pos.pos_bol + globpos.pos_cnum;
+      pos_cnum = globpos.pos_cnum + local_pos.pos_cnum;
+   }
 
 (*
  * Get the context vars from a list.

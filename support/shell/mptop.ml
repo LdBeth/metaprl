@@ -194,6 +194,9 @@ and mk_expr top_expr =
             not_supported loc "array"
        | (<:expr< $e1$ := $e2$ >>) ->
             not_supported loc "assignment"
+       | <:expr< assert $_$ >>
+       | <:expr< assert False >> ->
+            not_supported loc "assert"
        | (<:expr< $chr:c$ >>) ->
             not_supported loc "char"
        | (<:expr< ( $e$ :> $t$ ) >>) ->
@@ -206,11 +209,14 @@ and mk_expr top_expr =
             not_supported loc "fun"
        | (<:expr< if $e1$ then $e2$ else $e3$ >>) ->
             not_supported loc "ifthenelse"
-       | (<:expr< $int:s$ >>) ->
+       | <:expr< $int:s$ >>
+       | ExNativeInt (_, s)
+       | ExInt64 (_, s)
+       | ExInt32 (_, s) ->
             IntExpr (int_of_string s)
        | (<:expr< lazy $_$ >>) ->
             not_supported loc "lazy"
-       | (<:expr< let $rec:b$ $list:pel$ in $e$ >>) ->
+       | (<:expr< let $opt:b$ $list:pel$ in $e$ >>) ->
             not_supported loc "let"
        | (<:expr< $lid:s$ >>)
        | (<:expr< $uid:s$ >>) ->
@@ -223,6 +229,8 @@ and mk_expr top_expr =
             not_supported loc "new"
        | (<:expr< {< $list:_$ >} >>) ->
             not_supported loc "stream"
+       | MLast.ExObj _ ->
+            not_supported loc "object"
        | MLast.ExRec _ ->
             not_supported loc "record"
        | (<:expr< do { $list:el$ } >>) ->
@@ -466,7 +474,7 @@ let rec mk_str_item si =
             not_supported loc "str module open"
        | (<:str_item< type $list:tdl$ >>) ->
             not_supported loc "str type"
-       | (<:str_item< value $rec:b$ $list:pel$ >>) ->
+       | (<:str_item< value $opt:b$ $list:pel$ >>) ->
             not_supported loc "str let"
        | StDir _ ->
             not_supported loc "str dir"
@@ -474,6 +482,10 @@ let rec mk_str_item si =
             not_supported loc "str include"
        | StExc _ ->
             not_supported loc "StExc"
+       | StUse _ ->
+            not_supported loc "str module use"
+       | StRecMod _ ->
+            not_supported loc "str rec modules"
 
 (************************************************************************
  * RESOURCES                                                            *

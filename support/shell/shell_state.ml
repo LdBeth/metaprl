@@ -517,7 +517,7 @@ let push_buffer state abs len buf =
       Buffered l ->
          state.state_input_info <- Buffered ((abs, len, buf) :: l)
     | _ ->
-         raise (Failure "Shell_p4.push_buffer")
+         raise (Failure "Shell_state.push_buffer")
 
 (*
  * Reset the input to the buffered state
@@ -544,23 +544,23 @@ let set_file name =
 (*
  * Get the text associated with a location.
  *)
-let get_buffered_text (start, finish) bufs =
+let get_buffered_text start finish bufs =
    let count = finish - start in
-   let s = Lm_string_util.create "Shell_p4.get_buffered_text" count in
+   let s = Lm_string_util.create "Shell_state.get_buffered_text" count in
    let rec collect count = function
       (pos, len, buf) :: t ->
          if start > pos then
             if start + count - pos > len then
                raise (Failure "collect")
             else
-               Lm_string_util.blit "Shell_p4.get_buffered_text" buf (start - pos) s 0 count
+               Lm_string_util.blit "Shell_state.get_buffered_text" buf (start - pos) s 0 count
          else if start + count > pos then
             let amount = start + count - pos in
                if amount > len then
                   raise (Failure "collect")
                else
                   begin
-                     Lm_string_util.blit "Shell_p4.get_buffered_text" buf 0 s (pos - start) amount;
+                     Lm_string_util.blit "Shell_state.get_buffered_text" buf 0 s (pos - start) amount;
                      collect (count - amount) t
                   end
          else
@@ -580,8 +580,8 @@ let get_buffered_text (start, finish) bufs =
 (*
  * Get the text from the file.
  *)
-let get_file_text (start, finish) input =
-   let buf = Lm_string_util.create "Shell_p4.get_file_text" (finish - start) in
+let get_file_text start finish input =
+   let buf = Lm_string_util.create "Shell_state.get_file_text" (finish - start) in
       try
          seek_in input start;
          really_input input buf 0 (finish - start);
@@ -594,24 +594,23 @@ let get_file_text (start, finish) input =
 (*
  * Get the text from the input.
  *)
-let get_text_aux state loc =
+let get_text_aux state (bp, ep) =
    match state.state_input_info with
       Buffered bufs ->
-         get_buffered_text loc bufs
+         get_buffered_text bp.pos_cnum ep.pos_cnum bufs
     | Filename name ->
          begin
             try
                let input = open_in name in
                   state.state_input_info <- File input;
-                  get_file_text loc input
+                  get_file_text bp.pos_cnum ep.pos_cnum input
             with
                Sys_error _ ->
-                  let start, finish = loc in
-                     eprintf "Can't recover input, file %s, characters (%d, %d)%t" name start finish eflush;
+                     eprintf "Can't recover input, file %s, characters (%d, %d)%t" name bp.pos_cnum ep.pos_cnum eflush;
                      raise (Failure "get_text")
          end
     | File input ->
-         get_file_text loc input
+         get_file_text bp.pos_cnum ep.pos_cnum input
 
 let get_text loc =
    synchronize_state (function

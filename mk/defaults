@@ -1,14 +1,14 @@
 #
 # The version of the MetaPRL program.
 #
-MP_VERSION=0.9.6.1
+MP_VERSION=0.9.6.1+
 
 #
 # Versions of Ocaml/Camlp4 that are compatible with MetaPRL
 # CAML_VERSIONS shoud be a space-separated list of versions
 #
-CAML_VERSIONS=3.06
-CAMLP4_VERSIONS=3.06
+CAML_VERSIONS=3.08.0
+CAMLP4_VERSIONS=$(CAML_VERSIONS)
 
 #
 # Theories to compile - default and all
@@ -22,9 +22,15 @@ THEORIES_ALL = base ocaml_doc itt ocaml_sos fol czf phobos sil tptp fir experime
 #
 # Location of OCAML libraries
 #
-CAMLLIB_DEFAULT=/usr/lib/ocaml
+if $(equal $(OSTYPE), Win32)
+   CAMLLIB_DEFAULT=C:\ocaml\lib
+   export
 
-DEFAULT_OCAMLFLAGS=-warn-error A -w A
+else
+   CAMLLIB_DEFAULT=/usr/lib/ocaml
+   export
+
+DEFAULT_OCAMLFLAGS=-warn-error Ae -w Ae
 
 #
 # Defaults for the mk/config variables

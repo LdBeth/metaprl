@@ -23,6 +23,8 @@
  * Modifed By: Aleksey Nogin <nogin@cs.caltech.edu>
  *)
 
+type loc = Lexing.position * Lexing.position
+
 (*
  * A program is a sequence of strings and terms.
  *)
@@ -37,8 +39,6 @@ and item =
  | Block of t
 
 and opname = string list * loc
-
-and loc = int * int
 
 exception Parse_error of string * loc
 

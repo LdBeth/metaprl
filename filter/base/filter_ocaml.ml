@@ -35,6 +35,7 @@
 open Lm_debug
 open Lm_symbol
 
+open Lexing
 open MLast
 
 open Lm_printf
@@ -100,8 +101,12 @@ struct
     * OCaml operators.
     *)
    let mk_ocaml_op =
+      let tbl = Hashtbl.create 19 in
       let ocaml_op = mk_opname "Ocaml" nil_opname in
-         fun s -> mk_opname s ocaml_op
+         (fun s ->
+            if Hashtbl.mem tbl s then invalid_arg ("Filter_ocaml.mk_ocaml_op: " ^ s ^ " already exists");
+            Hashtbl.add tbl s ();
+            mk_opname s ocaml_op)
 
    let one_subterm s t =
       if false then
@@ -155,17 +160,22 @@ struct
    (*
     * Loc has two integer describing character offsets.
     * Ignore remaining params.
+    * XXX: TODO: This converts the modern location data into the old-style one.
+    * Ideally, we should be able to embed location data as comments (bug 256).
     *)
-   let dest_loc name t =
+   let dest_loc_params name t =
       if !debug_ocaml then
          eprintf "Filter_ocaml.%s: %a%t" name SimplePrint.print_simple_term_fp t eflush;
       let { term_op = op } = dest_term t in
          match dest_params (dest_op op).op_params with
-            (Number start) :: (Number finish) :: _
+            (Number start) :: (Number finish) :: params
                when (Lm_num.is_integer_num start && Lm_num.is_integer_num finish) ->
-                       Lm_num.int_of_num start, Lm_num.int_of_num finish
+               (mk_proper_loc start finish), params
           | _ ->
                raise_format_error "dest_loc: needs two numbers" t
+
+   let dest_loc name t =
+      fst (dest_loc_params name t)
 
    let dest_loc_term name t =
       dest_loc name t, one_subterm "dest_loc_term" t
@@ -176,10 +186,9 @@ struct
    let dest_loc_string name t =
       if !debug_ocaml then
          eprintf "Filter_ocaml.%s: %a%t" name SimplePrint.print_simple_term_fp t eflush;
-         match dest_params (dest_op (dest_term t).term_op).op_params with
-            [ Number start; Number finish; String s ]
-               when (Lm_num.is_integer_num start && Lm_num.is_integer_num finish) ->
-               (Lm_num.int_of_num start, Lm_num.int_of_num finish), s
+         match dest_loc_params name t with
+            loc, [String s] ->
+               loc, s
           | _ ->
                raise_format_error (Lm_printf.sprintf "dest_loc_string: %s: needs two numbers and a string" name) t
 
@@ -223,18 +232,19 @@ struct
    let dest_loc_int name t =
       if !debug_ocaml then
          eprintf "Filter_ocaml.%s: %a%t" name SimplePrint.print_simple_term_fp t eflush;
-         match dest_params (dest_op (dest_term t).term_op).op_params with
-            [ Number start; Number finish; Number i ]
-               when (Lm_num.is_integer_num start && Lm_num.is_integer_num finish) ->
-               (Lm_num.int_of_num start, Lm_num.int_of_num finish), Lm_num.string_of_num i
+         match dest_loc_params name t with
+            loc, [ Number i ] ->
+               loc, Lm_num.string_of_num i
           | _ ->
                raise_format_error "dest_loc_int: needs three numbers" t
 
    (*
     * Redefine some functions to tag results.
+    * XXX: TODO: This converts the modern location data into the old-style one.
+    * Ideally, we should be able to embed location data as comments (bug 256).
     *)
    let num_of_loc (i, j) =
-     Lm_num.num_of_int i, Lm_num.num_of_int j
+     Lm_num.num_of_int i.pos_cnum, Lm_num.num_of_int j.pos_cnum
 
    let loc_of_expr,
        loc_of_patt,
@@ -252,12 +262,6 @@ struct
          loc_of_aux loc_of_str_item,
          loc_of_aux loc_of_module_type,
          loc_of_aux loc_of_module_expr
-
-   let raise_with_loc (i, j) exn =
-      if Lm_num.is_integer_num i && Lm_num.is_integer_num j then
-         Stdpp.raise_with_loc (Lm_num.int_of_num i, Lm_num.int_of_num j) exn
-      else
-         raise (Failure "Filter_ocaml.raise_with_loc: got a big number")
 
    (*
     * Conversion between pattern and expression identifiers.
@@ -364,6 +368,14 @@ struct
    let dest_st t =
       let s, t = two_subterms t in
          dest_string s, dest_type t
+
+   let dest_smt t =
+      let s, mt = two_subterms t in
+         dest_string s, dest_mt mt
+
+   let dest_smtme t =
+      let s, mt, me = three_subterms t in
+         dest_string s, dest_mt mt, dest_me me
 
    let dest_sl t =
       let sl = one_subterm "dest_sl" t in
@@ -487,6 +499,12 @@ struct
          let el = dest_xlist (one_subterm "dest_seq_expr" t) in
             <:expr< do { $list:List.map dest_expr el$ } >>
       in add_expr "sequence" dest_seq_expr
+
+   let dest_sigloc t =
+      dest_sig (one_subterm "dest_sigloc" t), dest_loc "dest_sigloc" t
+
+   let dest_strloc t =
+      dest_str (one_subterm "dest_strloc" t), dest_loc "dest_strloc" t
 
    (************************************************************************
     * MLAST -> TERM                                                        *
@@ -635,6 +653,32 @@ struct
             let loc, i = dest_loc_int "dest_int_expr" t in
                <:expr< $int:i$ >>
          in add_expr "int" dest_int_expr
+      and expr_native_int_op =
+         let dest_native_int_expr t =
+            let loc, i = dest_loc_int "dest_native_int_expr" t in
+               ExNativeInt(loc, i)
+         in add_expr "native_int" dest_native_int_expr
+      and expr_int32_op =
+         let dest_int32_expr t =
+            let loc, i = dest_loc_int "dest_int32_expr" t in
+               ExInt32(loc, i)
+         in add_expr "int32" dest_int32_expr
+      and expr_int64_op =
+         let dest_int64_expr t =
+            let loc, i = dest_loc_int "dest_int64_expr" t in
+               ExInt64(loc, i)
+         in add_expr "int64" dest_int64_expr
+      and expr_asf_op =
+         let dest_asf_expr t =
+            let loc = dest_loc "dest_asf_expr" t in
+               <:expr< assert False >>
+         in add_expr "assert_false" dest_asf_expr
+      and expr_asr_op =
+         let dest_asr_expr t =
+            let loc = dest_loc "dest_asr_expr" t in
+            let e = one_subterm "dest_asr_expr" t in
+               <:expr< assert $dest_expr e$ >>
+         in add_expr "assert" dest_asr_expr
       and expr_lid_op =
          let dest_lid_expr t =
             let loc = dest_loc "dest_lid_expr" t in
@@ -725,11 +769,15 @@ struct
       and expr_new_op =
          let dest_new_expr t =
             let loc = dest_loc "dest_new_expr" t in
-         (*
-               <:expr< new $List.map dest_string (dest_xlist t)$ >>
-         *)
-               ExNew (loc, List.map dest_string (dest_xlist t))
+               <:expr< new $list:List.map dest_string (dest_xlist t)$ >>
          in add_expr "new" dest_new_expr
+      and expr_obj_op =
+         let dest_obj_expr t =
+            let loc = dest_loc "dest_obj_expr" t in
+            let po, t = dest_patt_opt t in
+            let cfl = List.map dest_cf (dest_xlist t) in
+               ExObj(loc, po, cfl)
+         in add_expr "obj" dest_obj_expr
       and expr_stream_op =
          let dest_se t =
             let s, e = two_subterms t in
@@ -737,10 +785,7 @@ struct
          in let dest_stream_expr t =
             let loc = dest_loc "dest_stream_expr" t in
             let sel = dest_xlist (one_subterm "dest_stream_expr" t) in
-         (*
                <:expr< {< $list: List.map dest_se sel$ >} >>
-         *)
-               ExOvr (loc, List.map dest_se sel)
          in add_expr "stream" dest_stream_expr
       and expr_record_op =
          let dest_record_expr t =
@@ -789,14 +834,14 @@ struct
       and expr_lab_op =
          let dest_lab_expr t =
             let loc, s = dest_loc_string "dest_lab_expr" t in
-            let e = one_subterm "dest_lab_expr" t in
-               MLast.ExLab (loc, s, dest_expr e)
+            let eo = one_subterm "dest_lab_expr" t in
+               MLast.ExLab (loc, s, dest_expr_opt eo)
          in add_expr "lab" dest_lab_expr
       and expr_olb_op =
          let dest_olb_expr t =
             let loc, s = dest_loc_string "dest_olb_expr" t in
             let e = one_subterm "dest_olb_expr" t in
-               MLast.ExOlb (loc, s, dest_expr e)
+               MLast.ExOlb (loc, s, dest_expr_opt e)
          in add_expr "olb" dest_olb_expr
       (*
        * Compute a hash value from the struct.
@@ -811,6 +856,10 @@ struct
                   mk_simple_term expr_anti_op loc [mk_expr vars e]
              | (<:expr< $e1$ $e2$ >>) ->
                   mk_simple_term expr_apply_op loc [mk_expr vars e1; mk_expr vars e2]
+             | (<:expr< assert $e$ >>) ->
+                  mk_simple_term expr_asr_op loc [mk_expr vars e]
+             | (<:expr< assert False >>) ->
+                  mk_simple_term expr_asf_op loc []
              | (<:expr< $e1$ .( $e2$ ) >>) ->
                   mk_simple_term expr_array_subscript_op loc [mk_expr vars e1; mk_expr vars e2]
              | (<:expr< [| $list:el$ |] >>) ->
@@ -834,13 +883,18 @@ struct
                                                  mk_expr vars e3]
              | (<:expr< $int:s$ >>) ->
                   mk_loc_int expr_int_op loc s
+             | ExNativeInt (_, s) ->
+                  mk_loc_int expr_native_int_op loc s
+             | ExInt32 (_, s) ->
+                  mk_loc_int expr_int32_op loc s
+             | ExInt64 (_, s) ->
+                  mk_loc_int expr_int64_op loc s
              | (<:expr< lazy $e$ >>) ->
                   mk_simple_term expr_laz_op loc [mk_expr vars e]
-             | (<:expr< let $rec:b$ $list:pel$ in $e$ >>) ->
-                  if b then
-                     mk_fix vars loc pel e
-                  else
-                     mk_let vars loc pel e
+             | (<:expr< let rec $list:pel$ in $e$ >>) ->
+                  mk_fix vars loc pel e
+             | (<:expr< let $list:pel$ in $e$ >>) ->
+                  mk_let vars loc pel e
              | (<:expr< $lid:s$ >>) ->
                   mk_var expr_lid_op vars loc s
              | ExLmd (_, s, me, e) ->
@@ -851,12 +905,11 @@ struct
                   mk_match vars loc pwel e
              | (<:expr< new $list: sl$ >>) ->
                   mk_simple_term expr_new_op loc [mk_xlist_term (List.map (mk_string expr_new_op) sl)]
+             | ExObj (loc', po, cfl) ->
+                  mk_simple_term expr_obj_op loc [mk_patt_opt loc' [] po (mk_cf_list cfl)]
              | (<:expr< {< $list:sel$ >} >>) ->
                   mk_simple_term expr_stream_op loc (List.map (mk_se vars) sel)
-      (*
-             | (<:expr< { $list:eel$ } >>) ->
-      *)
-             | ExRec (_, pel, eo) ->
+             | ExRec (_, pel, eo) (* <:expr< { $list:eel$ } >> *) ->
                   mk_simple_term expr_record_op loc [mk_xlist_term (List.map (mk_ident_pe vars) pel);
                                                      mk_expr_opt vars eo]
              | (<:expr< do { $list:el$ } >>) ->
@@ -880,9 +933,9 @@ struct
              | MLast.ExVrn (_, s) ->
                   mk_simple_named_term expr_vrn_op loc s []
              | MLast.ExLab (_, s, e) ->
-                  mk_simple_named_term expr_lab_op loc s [mk_expr vars e]
+                  mk_simple_named_term expr_lab_op loc s [mk_expr_opt vars e]
              | MLast.ExOlb (_, s, e) ->
-                  mk_simple_named_term expr_olb_op loc s [mk_expr vars e]
+                  mk_simple_named_term expr_olb_op loc s [mk_expr_opt vars e]
              | MLast.ExCoe (l, e, ot, t) ->
                   mk_simple_term expr_coerce_class_op loc [mk_expr vars e; mk_opt mk_type ot; mk_type t]
 
@@ -909,6 +962,21 @@ struct
             let loc, i = dest_loc_int "dest_int_patt" t in
                <:patt< $int:i$ >>, one_subterm "dest_int_patt" t
          in add_patt "patt_int" dest_int_patt
+      and patt_native_int_op =
+         let dest_native_int_patt t =
+            let loc, i = dest_loc_int "dest_native_int_patt" t in
+               PaNativeInt(loc, i), one_subterm "dest_native_int_patt" t
+         in add_patt "patt_native_int" dest_native_int_patt
+      and patt_int32_op =
+         let dest_int32_patt t =
+            let loc, i = dest_loc_int "dest_int32_patt" t in
+               PaInt32(loc, i), one_subterm "dest_int32_patt" t
+         in add_patt "patt_int32" dest_int32_patt
+      and patt_int64_op =
+         let dest_int64_patt t =
+            let loc, i = dest_loc_int "dest_int64_patt" t in
+               PaInt64(loc, i), one_subterm "dest_int64_patt" t
+         in add_patt "patt_int64" dest_int64_patt
       and patt_float_op =
          let dest_float_patt t =
             let loc, s, t = dest_loc_string_term "dest_float_patt" t in
@@ -1031,9 +1099,8 @@ struct
       and patt_lab_op =
          let dest_lab_patt t =
             let loc, s = dest_loc_string "dest_lab_patt" t in
-            let p = one_subterm "dest_lab_patt" t in
-            let p, t = dest_patt p in
-               MLast.PaLab (loc, s, p), t
+            let po, t = dest_patt_opt (one_subterm "dest_lab_patt" t) in
+               MLast.PaLab (loc, s, po), t
          in add_patt "patt_lab" dest_lab_patt
       and patt_olb_op =
          let dest_olb_patt t =
@@ -1041,14 +1108,19 @@ struct
             let p, oe = two_subterms t in
             let p, t = dest_patt p in
             let oe = dest_expr_opt oe in
-               MLast.PaOlb (loc, s, p, oe), t
+               <:patt< ? $s$ : ($p$ $opt:oe$) >>, t
          in add_patt "patt_olb" dest_olb_patt
+      and patt_olb_none_op =
+         let dest_olb_none_patt t =
+            let loc, s = dest_loc_string "dest_olb_none_patt" t in
+               <:patt< ? $s$ >>, one_subterm "dest_olb_none_patt" t
+         in add_patt "patt_olb_none" dest_olb_none_patt
       and patt_typ_op =
          let dest_typ_patt t =
             let loc = dest_loc "dest_typ_patt" t in
             let sl, t = two_subterms t in
             let sl = dest_sl sl in
-               MLast.PaTyp (loc, sl), t
+               <:patt< # $sl$ >>, t
          in add_patt "patt_typ" dest_typ_patt
       in fun vars patt tailf ->
          let loc = loc_of_patt patt in
@@ -1067,6 +1139,12 @@ struct
                   mk_loc_string_term patt_char_op loc c (tailf vars)
              | (<:patt< $int:s$ >>) ->
                   mk_loc_int_term patt_int_op loc s (tailf vars)
+             | PaNativeInt(_, s) ->
+                  mk_loc_int_term patt_native_int_op loc s (tailf vars)
+             | PaInt32(_, s) ->
+                  mk_loc_int_term patt_int32_op loc s (tailf vars)
+             | PaInt64(_, s) ->
+                  mk_loc_int_term patt_int64_op loc s (tailf vars)
              | (<:patt< $flo:s$ >>) ->
                   mk_loc_string_term patt_float_op loc s (tailf vars)
              | (<:patt< $lid:v$ >>) ->
@@ -1087,15 +1165,16 @@ struct
              | (<:patt< $uid:s$ >>) ->
                   mk_var_term patt_uid_op vars loc s (tailf vars)
              | (<:patt< $anti: p$ >>) ->
-                  raise_with_loc loc (Failure "Filter_ocaml:mk_patt: encountered PaAnt")
+                  Stdpp.raise_with_loc (MLast.loc_of_patt patt) (Failure "Filter_ocaml.mk_patt: encountered PaAnt")
              | MLast.PaVrn (_, s) ->
-                  mk_simple_named_term patt_vrn_op loc s []
-             | MLast.PaLab (_, s, p) ->
-                  mk_simple_named_term patt_lab_op loc s [mk_patt vars p tailf]
-             | MLast.PaOlb (_, s, p, oe) ->
-                  mk_simple_named_term patt_olb_op loc s [mk_patt vars p tailf;
-                                                          mk_expr_opt vars oe]
-             | MLast.PaTyp (_, sl) ->
+                  mk_simple_named_term patt_vrn_op loc s [tailf vars]
+             | MLast.PaLab (loc', s, po) ->
+                  mk_simple_named_term patt_lab_op loc s [mk_patt_opt loc' vars po tailf]
+             | <:patt< ? $s$ : ($p$ $opt:oe$) >> ->
+                  mk_simple_named_term patt_olb_op loc s [mk_patt vars p tailf; mk_expr_opt vars oe]
+             | <:patt< ? $s$ >> ->
+                  mk_simple_named_term patt_olb_none_op loc s [tailf vars]
+             | <:patt< # $sl$ >> ->
                   mk_simple_term patt_typ_op loc [mk_string_list sl]
 
    and mk_patt_opt loc vars patt tailf =
@@ -1206,10 +1285,7 @@ struct
       and type_class_id_op =
          let dest_class_id_type t =
             let loc = dest_loc "dest_class_id_type" t in
-         (*
-               <:ctyp< # $dest_type t$ >>
-         *)
-               TyCls (loc, List.map dest_string (dest_xlist (one_subterm "dest_class_id_type" t)))
+               <:ctyp< # $list:List.map dest_string (dest_xlist (one_subterm "dest_class_id_type" t))$ >>
          in add_type "type_class_id" dest_class_id_type
       and type_param_op =
          let dest_param_type t =
@@ -1226,21 +1302,15 @@ struct
          let dest_object_tt_type t =
             let loc = dest_loc "dest_object_tt_type" t in
             let stl = dest_xlist (one_subterm "dest_object_tt_type" t) in
-         (*
-               <:ctyp< < $list: List.map dest_st stl$ $dd:true$ > >>
-         *)
-               TyObj (loc, List.map dest_st stl, true)
+               <:ctyp< < $list: List.map dest_st stl$ .. > >>
          in add_type "type_object_tt" dest_object_tt_type
       and type_object_ff_op =
          let dest_object_ff_type t =
             let loc = dest_loc "dest_object_ff_type" t in
             let stl = dest_xlist (one_subterm "dest_object_ff_type" t) in
-         (*
-               <:ctyp< < $list: List.map dest_st stl$ $dd:false$ > >>
-         *)
-               TyObj (loc, List.map dest_st stl, false)
+               <:ctyp< < $list: List.map dest_st stl$ > >>
          in add_type "type_object_ff" dest_object_ff_type
-      and type_record_op =
+      and type_record_op, type_pvt_record_op =
          let dest_sbt t =
             let l, s, t = dest_loc_string_term "dest_sbt" t in
             let b, t = two_subterms t in
@@ -1249,8 +1319,12 @@ struct
             let loc = dest_loc "dest_record_type" t in
             let sbtl = dest_xlist (one_subterm "dest_record_type" t) in
                <:ctyp< { $list: List.map dest_sbt sbtl$ } >>
-         in add_type "type_record" dest_record_type
-      and type_list_op =
+         in let dest_pvt_record_type t =
+            let loc = dest_loc "dest_pvt_record_type" t in
+            let sbtl = dest_xlist (one_subterm "dest_pvt_record_type" t) in
+               <:ctyp< private { $list: List.map dest_sbt sbtl$ } >>
+         in add_type "type_record" dest_record_type, add_type "type_pvt_record" dest_pvt_record_type
+      and type_list_op, type_pvt_list_op =
          let dest_stl t =
             let l, s, t = dest_loc_string_term "dest_stl" t in
                l, s, List.map dest_type (dest_xlist t)
@@ -1258,7 +1332,11 @@ struct
             let loc = dest_loc "dest_list_type" t in
             let stll = dest_xlist (one_subterm "dest_list_type" t) in
                <:ctyp< [ $list: List.map dest_stl stll$ ] >>
-         in add_type "type_list" dest_list_type
+         in let dest_pvt_list_type t =
+            let loc = dest_loc "dest_pvt_list_type" t in
+            let stll = dest_xlist (one_subterm "dest_pvt_list_type" t) in
+               <:ctyp< private [ $list: List.map dest_stl stll$ ] >>
+         in add_type "type_list" dest_list_type, add_type "type_pvt_list" dest_pvt_list_type
       and type_prod_op =
          let dest_prod_type t =
             let loc = dest_loc "dest_prod_type" t in
@@ -1328,11 +1406,15 @@ struct
                   mk_loc_string type_param_op loc s
              | (<:ctyp< $t1$ == $t2$ >>) ->
                   mk_simple_term type_equal_op loc [mk_type t1; mk_type t2]
-             | (<:ctyp< < $list:stl$ $b$ > >>) ->
+             | (<:ctyp< < $list:stl$ $opt:b$ > >>) ->
                   let op = if b then type_object_tt_op else type_object_ff_op in
                      mk_simple_term op loc (List.map mk_st stl)
+             | (<:ctyp< private { $list:sbtl$ } >>) ->
+                  mk_simple_term type_pvt_record_op loc [mk_xlist_term (List.map mk_sbt sbtl)]
              | (<:ctyp< { $list:sbtl$ } >>) ->
                   mk_simple_term type_record_op loc [mk_xlist_term (List.map mk_sbt sbtl)]
+             | (<:ctyp< private [ $list:stll$ ] >>) ->
+                  mk_simple_term type_pvt_list_op loc [mk_xlist_term (List.map mk_stl stll)]
              | (<:ctyp< [ $list:stll$ ] >>) ->
                   mk_simple_term type_list_op loc [mk_xlist_term (List.map mk_stl stll)]
              | (<:ctyp< ( $list:tl$ ) >>) ->
@@ -1435,6 +1517,18 @@ struct
             let eo = dest_expr_opt eo in
                MLast.SgDir (loc, s, eo)
          in add_sig "sig_dir" dest_dir_sig
+      and sig_recmod_op =
+         let dest_recmod_sig t =
+            let loc = dest_loc "dest_recmod_sig" t in
+            let smtl = dest_xlist (one_subterm "sig_recmod_op" t) in
+               SgRecMod (loc, List.map dest_smt smtl)
+         in add_sig "sig_recmod" dest_recmod_sig
+      and sig_use_op =
+         let dest_use_sig t =
+            let loc, s = dest_loc_string "dest_use_sig" t in
+            let sigll = dest_xlist (one_subterm "dest_use_sig" t) in
+               SgUse (loc, s, List.map dest_sigloc sigll)
+         in add_sig "sig_use" dest_use_sig
    in fun si ->
          let loc = loc_of_sig_item si in
             match si with
@@ -1463,6 +1557,10 @@ struct
                   mk_simple_named_term sig_value_op loc s [mk_type t]
              | SgDir (_, s, eo) ->
                   mk_simple_named_term sig_dir_op loc s [mk_expr_opt [] eo]
+             | SgRecMod (_, smtl) ->
+                  mk_simple_term sig_recmod_op loc [mk_xlist_term (List.map mk_smt smtl)]
+             | SgUse (_, s, sigll) ->
+                  mk_simple_named_term sig_use_op loc s [mk_xlist_term (List.map mk_sigloc sigll)]
 
    (*
     * Structure items.
@@ -1567,6 +1665,18 @@ struct
             let sl = List.map dest_string (dest_xlist sl) in
                MLast.StExc (loc, s, tl, sl)
          in add_str "str_exc" dest_exc_str
+      and str_recmod_op =
+         let dest_recmod_str t =
+            let loc = dest_loc "dest_recmod_str" t in
+            let smtmel = dest_xlist (one_subterm "str_recmod_op" t) in
+               StRecMod (loc, List.map dest_smtme smtmel)
+         in add_str "str_recmod" dest_recmod_str
+      and str_use_op =
+         let dest_use_str t =
+            let loc, s = dest_loc_string "dest_use_str" t in
+            let strll = dest_xlist (one_subterm "dest_use_str" t) in
+               StUse (loc, s, List.map dest_strloc strll)
+         in add_str "str_use" dest_use_str
       in fun vars si ->
          let loc = loc_of_str_item si in
             match si with
@@ -1591,14 +1701,18 @@ struct
                   mk_simple_term str_open_op loc [mk_xlist_term (List.map mk_simple_string sl)]
              | (<:str_item< type $list:tdl$ >>) ->
                   mk_simple_term str_type_op loc [mk_xlist_term (List.map mk_tdl tdl)]
-             | (<:str_item< value $rec:b$ $list:pel$ >>) -> mk_str_fix loc b pel
+             | (<:str_item< value $opt:b$ $list:pel$ >>) -> mk_str_fix loc b pel
              | StInc (_, me) ->
                   mk_simple_term str_inc_op loc [mk_module_expr vars me]
              | StDir (_, s, eo) ->
-                  mk_simple_named_term str_dir_op loc s [mk_expr_opt [] eo]
+                  mk_simple_named_term str_dir_op loc s [mk_expr_opt vars eo]
              | StExc (_, s, tl, sl) ->
                   mk_simple_named_term str_exc_op loc s [mk_xlist_term (List.map mk_type tl);
                                                          mk_string_list sl]
+             | StRecMod (_, smtmel) ->
+                  mk_simple_term str_recmod_op loc [mk_xlist_term (List.map (mk_smtme vars) smtmel)]
+             | StUse (_, s, strll) ->
+                  mk_simple_named_term str_use_op loc s [mk_xlist_term (List.map (mk_strloc vars) strll)]
 
    (*
     * Module types.
@@ -1852,8 +1966,7 @@ struct
                    mk_let_tail) vars (num_of_loc loc) pel (fun vars -> mk_ce vars ce)]
        | MLast.CeStr (loc, p, cfl) ->
             mk_simple_term ce_str_op (num_of_loc loc) (**)
-               [mk_patt_opt loc vars p (fun vars ->
-                   mk_xlist_term (List.map (mk_cf vars) cfl))]
+               [mk_patt_opt loc vars p (mk_cf_list cfl)]
        | MLast.CeTyc (loc, ce, ct) ->
             mk_simple_term ce_tyc_op (num_of_loc loc) (**)
                [mk_ce vars ce;
@@ -1996,7 +2109,7 @@ struct
                mk_simple_term cf_ctr_op loc [mk_type s; mk_type t]
        | CrDcl (loc, t) ->
             let loc = num_of_loc loc in
-               mk_simple_term cf_dcl_op loc [mk_xlist_term (List.map (mk_cf vars) t)]
+               mk_simple_term cf_dcl_op loc [mk_cf_list t vars]
        | CrInh (loc, ce, so) ->
             let loc = num_of_loc loc in
                mk_simple_term cf_inh_op loc [mk_ce vars ce; mk_string_opt expr_string_op so]
@@ -2013,6 +2126,9 @@ struct
        | CrVir (loc, s, b, t) ->
             let loc = num_of_loc loc in
                mk_simple_term cf_vir_op loc [mk_simple_string s; mk_bool b; mk_type t]
+
+   and mk_cf_list cfl vars =
+      mk_xlist_term (List.map (mk_cf vars) cfl)
 
    (*
     * Make a fix expression.
@@ -2048,7 +2164,7 @@ struct
          let dest_fix_expr t =
             let loc = dest_loc "dest_fix_expr" t in
             let pel, e = dest_fix t in
-               <:expr< let $rec:true$ $list: pel$ in $dest_expr e$ >>
+               <:expr< let rec $list: pel$ in $dest_expr e$ >>
          in add_expr "fix" dest_fix_expr
       in fun vars loc pel tailf ->
          let tailf vars =
@@ -2065,7 +2181,7 @@ struct
          let dest_let_expr t =
             let loc = dest_loc "dest_let_expr" t in
             let pel, e = dest_let t in
-               <:expr< let $rec:false$ $list: pel$ in $dest_expr e$ >>
+               <:expr< let $list: pel$ in $dest_expr e$ >>
          in add_expr "let" dest_let_expr
       in fun vars loc pel tailf ->
          let pl, el = List.split pel in
@@ -2112,7 +2228,7 @@ struct
                   p :: ps, es
             in
             let ps, es = dest_patts (one_subterm "dest_fix_str" t) in
-               <:str_item< value $rec:true$ $list: List.combine ps es$ >>
+               <:str_item< value rec $list: List.combine ps es$ >>
          in add_str "str_fix" dest_fix_str
       and str_let_op =
          let dest_let_str t =
@@ -2125,7 +2241,7 @@ struct
             in
             let lets = dest_xlist (one_subterm "dest_let_str" t) in
             let pel = List.map dest lets in
-               <:str_item< value $rec:false$ $list: pel$ >>
+               <:str_item< value $list: pel$ >>
          in add_str "str_let" dest_let_str
       in fun loc b pel ->
          if b then
@@ -2223,6 +2339,16 @@ struct
       in fun (s, t) ->
          ToTerm.Term.mk_simple_term st_op [mk_simple_string s; mk_type t]
 
+   and mk_smt =
+      let smt_op = mk_ocaml_op "smt"
+      in fun (s, mt) ->
+         ToTerm.Term.mk_simple_term smt_op [mk_simple_string s; mk_module_type mt]
+
+   and mk_smtme =
+      let smtme_op = mk_ocaml_op "smtme"
+      in fun vars (s, mt, me) ->
+         ToTerm.Term.mk_simple_term smtme_op [mk_simple_string s; mk_module_type mt; mk_module_expr vars me]
+
    and mk_sbt =
       let sbt_op = mk_ocaml_op "sbt"
       in fun (l, s, b, t) ->
@@ -2264,6 +2390,16 @@ struct
       in fun (b, sl) ->
          let sl = mk_xlist_term (List.map mk_simple_string sl) in
             ToTerm.Term.mk_simple_term bsl_op [mk_bool b; sl]
+
+   and mk_sigloc =
+      let sigloc_op = mk_ocaml_op "sigloc"
+      in fun (sg, loc) ->
+         mk_simple_term sigloc_op (num_of_loc loc) [mk_sig_item sg]
+
+   and mk_strloc =
+      let strloc_op = mk_ocaml_op "strloc"
+      in fun vars (str, loc) ->
+         mk_simple_term strloc_op (num_of_loc loc) [mk_str_item vars str]
 
    (************************************************************************
     * EXPORTS                                                              *

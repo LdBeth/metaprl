@@ -1,17 +1,7 @@
 #
 # Make sure omake is up-to-date
 #
-# The upper limit is there because old versions of omake did not do the comparison correctly.
-# Remove when we require omake >= 0.8
-#
-OMakeVersion(0.7.17, 0.7.30)
-
-########################################################################
-# This section is for compatibility with old version of omake, so
-# we don't have to force users to upgrade *every* time the OMakeroot
-# changes.  Each section should state what version of omake it
-# needs.
-#
+OMakeVersion(0.8)
 
 ########################################################################
 # Begin real makefile.
@@ -93,12 +83,10 @@ OCAMLFLAGS = $(DEFAULT_OCAMLFLAGS)
        MakeConfig(mk/config)
 
 .INCLUDE: mk/config.local
-    $(CP) mk/config.local.empty mk/config.local
+    $(CP) $(file mk/config.local.empty) $(file mk/config.local)
 
 #
 # Win32-specific config.
-# Read the config file.
-# If the config file does not exist, then create one.
 #
 if $(equal $(OSTYPE), Win32)
    #
@@ -112,7 +100,7 @@ if $(equal $(OSTYPE), Win32)
    SLASH = \\
 
    #
-   # Things not enabled on Win32.
+   # Things that can not be enabled on Win32.
    #
    READLINE_ENABLED = false
    NCURSES_ENABLED = false
@@ -126,7 +114,7 @@ if $(equal $(OSTYPE), Win32)
    #
    # CAMLLIB should be set in the environment
    #
-   CAMLLIB = $(dir $(getenv OCAMLLIB, C:\ocaml\lib))
+   CAMLLIB = $(dir $(getenv OCAMLLIB, $(CAMLLIB_DEFAULT)))
    CAMLP4LIB = $(dir $(CAMLLIB)/camlp4)
    export
 
@@ -159,6 +147,11 @@ else
    CC = $(CCC)
    CFLAGS =
    export
+
+#
+# In ocaml >- 3.07, a -q option was added to ocamllex
+#
+OCAMLLEX += -q
 
 #
 # Inline more aggressively

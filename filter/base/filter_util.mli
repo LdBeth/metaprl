@@ -67,6 +67,9 @@ val get_unparsed_bindings : unit -> (string * term prl_binding) list
 val no_resources : (MLast.expr, term) resource_def
 
 val dummy_loc : MLast.loc
+val mk_proper_loc : Lm_num.num -> Lm_num.num -> MLast.loc (* XXX: temporary OCaml 3.06 -> 3.08 conversion HACK *)
+val shift_pos : Lexing.position -> int -> Lexing.position
+val adjust_pos : Lexing.position -> Lexing.position -> Lexing.position
 
 (************************************************************************
  * OPNAMES								*

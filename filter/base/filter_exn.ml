@@ -31,6 +31,7 @@
  *)
 open Lm_rformat
 open Lm_rprintf
+open Lexing
 
 open Dform
 open Simple_print.SimplePrint
@@ -132,27 +133,28 @@ let rec format_exn db buf exn =
          format_string buf "! If it does contain unsaved data, you might need to get a different version of MetaPRL";
          format_newline buf;
          format_string buf "! and possibly export the data to a different format."
-    | Stdpp.Exc_located (loc, exn) ->
+    | Stdpp.Exc_located ((bp, ep), exn) ->
          format_pushm buf 3;
-         if !Pcaml.input_file <> "-" then
-            begin
-               let (line, bp, ep) = Stdpp.line_of_loc !Pcaml.input_file loc in
-                  format_string buf "File \"";
-                  format_string buf !Pcaml.input_file;
-                  format_string buf "\", line ";
-                  format_int buf line;
-                  format_string buf ", characters ";
-                  format_int buf bp;
-                  format_string buf "-";
-                  format_int buf ep;
-            end
-         else
-            begin
-               format_string buf "Chars ";
-               format_int buf (fst loc);
-               format_string buf "-";
-               format_int buf (snd loc);
-            end;
+         if (bp.pos_fname <> "") && (bp.pos_fname <> "-") && (bp.pos_fname = ep.pos_fname) then begin
+            format_string buf "File \"";
+            format_string buf bp.pos_fname;
+            format_string buf "\", line ";
+         end else
+            format_string buf "Line ";
+         format_int buf bp.pos_lnum;
+         format_string buf ", ";
+         if bp.pos_lnum = ep.pos_lnum then begin
+            format_string buf "characters ";
+            format_int buf (bp.pos_cnum - bp.pos_bol + 1);
+            format_string buf "-";
+         end else begin
+            format_string buf "char ";
+            format_int buf (bp.pos_cnum - bp.pos_bol + 1);
+            format_string buf " -- line ";
+            format_int buf ep.pos_lnum;
+            format_string buf ", char ";
+         end;
+         format_int buf (ep.pos_cnum - ep.pos_bol);
          format_string buf ": ";
          format_newline buf;
          format_szone buf;

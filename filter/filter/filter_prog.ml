@@ -870,7 +870,7 @@ let define_rewrite_resources proc loc name redex contractum assums addrs params 
                <:expr< ( $list:name_id_expr :: args$ ) >>
       in
       let process_name = "process_" ^ name' ^ "_resource_rw_annotation" in
-      let anno_name = "_$" ^ name' ^ "_resource_annotation" in
+      let anno_name = "$" ^ name' ^ "_resource_annotation" in
          impr_resource proc loc name' <:expr<
             ($lid:process_name$ : Mp_resource.rw_annotation_processor '$anno_name$ $input$)
                $str:name$ $redex$ $contractum$ $assums$ $addrs$ $params$ $arg_expr$
@@ -1106,7 +1106,7 @@ let define_rule_resources proc loc name cvars_id params_id assums_id resources n
                <:expr< ( $list:name_rule_expr :: args$ ) >>
       in
       let process_name = "process_" ^ name' ^ "_resource_annotation" in
-      let anno_name = "_$" ^ name' ^ "_resource_annotation" in
+      let anno_name = "$" ^ name' ^ "_resource_annotation" in
          impr_resource proc loc name' <:expr<
             ($lid:process_name$ : Mp_resource.annotation_processor '$anno_name$ $input$)
                $str:name$ $lid:cvars_id$ $lid:params_id$ $lid:assums_id$ $arg_expr$
@@ -1345,7 +1345,7 @@ let define_ml_dform proc loc
  * type resource_name
  *)
 let define_resource proc loc name res =
-   let intermediate = "_$" ^ name ^ "_resource_intermediate" in
+   let intermediate = "$" ^ name ^ "_resource_intermediate" in
    let inp_name = input_type name in
    let outp_name = output_type name in
    let fqn = res_fqn [proc.imp_name] name in
@@ -1460,7 +1460,7 @@ let rec wrap_summary_items proc = function
       begin match item with
          MLast.StVal (loc, rec_flag, pel) ->
             let pel, toploop = wrap_toploop_items proc loc pel in
-               <:str_item< value $rec:rec_flag$ $list:pel$ >> :: (toploop @ items)
+               <:str_item< value $opt:rec_flag$ $list:pel$ >> :: (toploop @ items)
        | MLast.StExt (loc, name, ctyp, _ ) when List.mem_assoc name proc.imp_toploop ->
             item :: add_toploop_item proc loc name (get_top_ctyp proc name) :: items
        | _ ->
