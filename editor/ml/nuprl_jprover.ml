@@ -67,5 +67,5 @@ let ijprover_term (s, t1, t2) =
 let jprover_result_to_term l = 
   Basic.list_to_ilist_map ijprover_term l
 
-let jprover_run t = 
+let jprover_hook t = 
  jprover_result_to_term (jprover ((Basic.map_isexpr_to_list (function y -> y) (Basic.hd_of_icons_term Basic.icons_op t)), (Basic.tl_of_icons_term Basic.icons_op t))) 

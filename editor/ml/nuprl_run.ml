@@ -538,6 +538,10 @@ let run_nuprl (():unit) =
   special_error_handler (function () -> (library_open_and_loop_eval name refine_ehook))
   (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
 
+  let run_jprover name =
+  special_error_handler (function () -> (library_open_and_loop_eval name Nuprl_jprover.jprover_hook))
+  (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
+
   let run_connection lport mport host name =
   special_error_handler (function () -> (library_open_and_loop_eval' lport mport host name refine_ehook))
   (fun s t -> print_string s; print_newline(); Mbterm.print_term t)
