@@ -13,14 +13,6 @@ EDITOR
 you started proving it. We need to be able to do it without 
 erasing the proof. 
 
-*) 
-# load "itt_int";;
-() : unit
-# cd "itt_int";;
-/itt_int : string
-# ls ();;
-uncaught exception: Invalid_argument("Term.shape_of_term")
-
 *) Loading two theories that both include the same theory produces unexpected results.
 For example,
 
