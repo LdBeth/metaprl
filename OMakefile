@@ -250,6 +250,22 @@ if $(not $(mem $(SEQ_SET), Lm_array Lm_splay))
    eprintln(ERROR: the SEQ_SET variable is currently set to an invalid value "$(SEQ_SET)"\, please fix it in the mk/config file)
    exit(1)
 
+if $(equal $(OSTYPE), Win32)
+    if $(SSL_ENABLED)
+        if $(not $(and $(file-exists $(SSL_LIB_WIN32)/ssleay32.lib), $(file-exists $(SSL_LIB_WIN32)/libeay32.lib), $(file-exists $(SSL_INC_WIN32)/openssl/ssl.h)))
+            eprintln(!!! One of the files)
+            eprintln(!!!    $(SSL_LIB_WIN32)/ssleay32.lib)
+            eprintln(!!!    $(SSL_LIB_WIN32)/libeay32.lib)
+            eprintln(!!!    $(SSL_INC_WIN32)/openssl/ssl.h)
+            eprintln(!!! does not exist \(or is not readable\))
+            eprintln(!!!)
+            eprintln(!!! Please either:)
+            eprintln(!!!  - Make sure your OpenSSL installation is complete and)
+            eprintln(!!!    the SSL_LIB_WIN32 and SSL_INC_WIN32 variables in mk/config.local)
+            eprintln(!!!    point to the correct locations)
+            eprintln(!!!  - Set SSL_ENABLED to false in mk/config)
+            eprintln(!!!    Note that SSL is currently required for the browser interface to work)
+
 #
 # Different version files
 #
@@ -337,12 +353,12 @@ if $(SSL_ENABLED)
     if $(equal $(OSTYPE), Win32)
         OCAML_LINK_FLAGS += -cclib $(SSL_LIB_WIN32)/ssleay32.lib -cclib $(SSL_LIB_WIN32)/libeay32.lib
         CFLAGS += /DSSL_ENABLED
-	INCLUDES += $(SSL_INC_WIN32)
+        INCLUDES += $(SSL_INC_WIN32)
         export
     else
         OCAML_LINK_FLAGS += -cclib -lcrypto -cclib -lssl
         CFLAGS += -DSSL_ENABLED
-	INCLUDES += /usr/kerberos/include
+        INCLUDES += /usr/kerberos/include
         export
     export
 
