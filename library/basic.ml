@@ -200,16 +200,20 @@ let transaction_less = fun
     if not (pid1 = pid2) then error ["stamp"; "less"; "incomparable"] [] [term1; term2]
     else if (bequal time1 time2) then seq1 < seq2
          else (blt time1 time2)
- 
+
+let get_inet_addr =
+	let {h_addr_list=l} = gethostbyname (gethostname ())
+	in l.(0)
+
 type stamp_data = {mutable count : int; pid : string}
 
 (* TODO pid should include inet addr and time as well as process id to insure uniqueness *)
 let stamp_data = 
 	{ count = 0
 	; pid = String.concat "_"
-			[ string_of_inet_addr inet_addr_any
+			[ string_of_inet_addr (get_inet_addr())
 			; string_of_int (getpid())
-			; string_of_int (time ())
+			; string_of_int (time())
 			]
 	}
 

@@ -66,17 +66,17 @@ let subterm_types num =
   ;; needed, filling in the sub_types information, if provided, in the
   ;; registry.
   *)
-let declare_local_stringId symlabel  subtypes =
-  match  (registry_lookup_value symlabel "StringId") with
+let declare_local_stringId symlabel subtypes =
+  match (registry_lookup_value symlabel "StringId") with
     Some b -> b
   | None ->
-      let numlabel =  !next_local_label in 
-      if blt numlabel  minimum_local_numeric_label then 
+      let numlabel = !next_local_label in 
+      if blt numlabel minimum_local_numeric_label then 
 	failwith "Ran out of local_labels"
       else
 	begin
 	  registry_store_local symlabel "StringId" numlabel;
-	  bdecr  next_local_label; 
+	  bdecr next_local_label; 
 	  if (bgt subtypes (create  (-7))) then
 	    failwith "Invalid SubTypes field"
 	  else registry_store_local symlabel "SubTypes" subtypes
