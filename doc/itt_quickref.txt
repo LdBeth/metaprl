@@ -1,3 +1,5 @@
+This file was contributed by Carl R. Witty <cwitty@newtonlabs.com>
+
 This file documents the tactics, tacticals, conversions,
 conversionals, etc. that are available at the MetaPRL command line
 (basically everything that is declared with "topval" in a .mli file).
