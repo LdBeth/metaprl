@@ -65,6 +65,7 @@ TOPFILES = $(TESTFILES) $(TOPFILES)
 RCMOFILES = $(addsuffix .cmo, $(RUNFILES))
 TCMOFILES = $(addsuffix .cmo, $(TOPFILES))
 TCMXFILES = $(addsuffix .cmx, $(TOPFILES))
+TOBJFILES = $(addsuffix $(EXT_OBJ), $(TOPFILES))
 
 BASE_LIBS = \
    $(LIB)/lm\
@@ -210,7 +211,7 @@ $(MP).top: $(TOP_DEPS) $(TCMOFILES)
         $(RM) $@
         $(OCAMLLINK) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(TCMOBJS) $(TCMOFILES) $(BYTE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
 
-$(MP).opt: $(OPT_DEPS) $(TCMXFILES)
+$(MP).opt: $(OPT_DEPS) $(TCMXFILES) $(TOBJFILES)
         $(RM) $@
         $(OCAMLOPTLINK) $(OCAMLOPTFLAGS) -o $@ -linkall $(THREADS) $(CMXOBJS) $(TCMXFILES) $(NATIVE_CCLIBS) $(LIBS) $(OCAML_LINK_FLAGS)
 
