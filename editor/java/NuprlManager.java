@@ -247,6 +247,7 @@ class NuprlManager
             context.getDesktop().add(login);
         }
         login.setLocation(MARGIN_WIDTH, MARGIN_WIDTH);
+        login.moveToFront();
     }
 
     /**

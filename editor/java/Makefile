@@ -39,11 +39,12 @@ FILES :=\
 	NuprlManager\
 	Nuprl
 
-JFILES := $(addsuffix .java, $(FILES))
-CFILES := $(addsuffix .class, $(FILES))
-
 MAIN := Nuprl
 PACKAGE := edu/cornell/cs/jyh/nuprl
+
+JFILES := $(addsuffix .java, $(FILES))
+CFILES := $(addsuffix .class, $(FILES))
+PJFILES := $(addprefix $(PACKAGE)/, $(JFILES))
 
 .PHONY: all opt clean main
 
@@ -73,6 +74,7 @@ ifeq ($(Solaris),Linux)
    TYPE=Unix
 endif
 
+# JAVAC = javac -g -verbose
 JAVAC = javac -g
 
 #
@@ -86,23 +88,12 @@ main: $(MAIN).java clean
 #
 ifeq ($(TYPE),Unix)
 
-$(PACKAGE)/Nuprl.java:
+$(PACKAGE)/$(MAIN).java:
 	mkdir -p `dirname $(PACKAGE)`
 	ln -s `pwd` $(PACKAGE)
 
-$(MAIN).jar: $(CFILES) Nuprl.man $(PACKAGE)/Nuprl.java
-	jar cmf $(PACKAGE)/Nuprl.man $(PACKAGE)/$(MAIN).jar $(PACKAGE)/*.class
-
-#
-# Rule for compiling Java
-#
-%.class: %.java $(PACKAGE)/Nuprl.java
-	$(JAVAC) $*.java
-
-else
-
-$(MAIN).jar: $(CFILES) Nuprl.man
-	(cd ../../../../..; jar cmf $(PACKAGE)/Nuprl.man $(PACKAGE)/$(MAIN).jar $(PACKAGE)/*.class)
+$(MAIN).jar: $(CFILES) $(MAIN).man $(PACKAGE)/$(MAIN).java
+	jar cmf $(PACKAGE)/$(MAIN).man $(PACKAGE)/$(MAIN).jar $(PACKAGE)/*.class
 
 #
 # Rule for compiling Java
@@ -110,10 +101,31 @@ $(MAIN).jar: $(CFILES) Nuprl.man
 %.class: %.java
 	$(JAVAC) $*.java
 
-endif
+#$(CFILES): $(JFILES) $(PACKAGE)/$(MAIN).java
+#	$(JAVAC) $(PJFILES)
 
 #
 # Clean everything
 #
 clean:
 	rm -f *.jar *.class *~
+	rm -rf edu
+
+else
+
+$(MAIN).jar: $(CFILES) $(MAIN).man
+	(cd ../../../../..; jar cmf $(PACKAGE)/$(MAIN).man $(PACKAGE)/$(MAIN).jar $(PACKAGE)/*.class)
+
+#
+# Rule for compiling Java
+#
+%.class: %.java
+	$(JAVAC) $*.java
+
+#
+# Clean everything
+#
+clean:
+	rm -f *.jar *.class *~
+
+endif
