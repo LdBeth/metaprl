@@ -1,13 +1,9 @@
 #
 # MetaPRL editor.
 #
-OCAMLINCLUDES =\
-        -I .\
-        -I $(LIB)\
-        -I $(LIB)rary\
-        -I $(CAMLP4LIB)\
+OCAMLINCLUDES +=\
         -I $(ROOT)/$(ENSEMBLE_DIR)\
-        $'(addprefix -I , $(MP_DIRS))
+        $(addprefix -I , $(MP_DIRS))
 
 # Name of main librariws
 MAIN = metaprl
@@ -141,9 +137,9 @@ CMXADEPS =\
 
 ARDEPS =\
         $(BASE_ARS)\
-        $(LIB)/prlc.a\
-        $(addsuffix /theory.a, $(MP_DIRS))\
-        $(MAIN).a
+        $(LIB)/prlc$(EXT_LIB)\
+        $(addsuffix /theory$(EXT_LIB), $(MP_DIRS))\
+        $(MAIN)$(EXT_LIB)
 
 CMXALIBS =\
         $(CMXADEPS)
@@ -203,15 +199,31 @@ NATIVE_CCLIBS =\
         $(addprefix -cclib , $(NATIVE_CLIBS))\
         $(OTHER_CCLIBS)
 
-$(MP).run: $(CMOBJS) $(RCMOFILES) $(CMADEPS) $(THREADSLIB) $(BYTE_CLIBS) $(LIBS)
+#
+# Dependencies for the 3 versions of MetaPRL
+#
+BYTE_DEPS = $(CMOBJS) $(CMADEPS) $(THREADSLIB) $(BYTE_CLIBS) $(LIBS)
+TOP_DEPS  = $(TCMOBJS) $(TCMADEPS) $(THREADSLIB) $(BYTE_CLIBS) $(LIBS)
+OPT_DEPS  = $(CMXOBJS) $(OPTTHREADSLIB) $(NATIVE_CLIBS) $(ARDEPS) $(LIBS)
+
+ALL_DEPS =
+if $(BYTE_ENABLED)
+    ALL_DEPS += $(BYTE_DEPS) $(TOP_DEPS)
+    export
+
+if $(NATIVE_ENABLED)
+    ALL_DEPS += $(OPT_DEPS)
+    export
+
+$(MP).run: $(BYTE_DEPS) $(RCMOFILES)
         $(RM) $@
         $(OCAMLMKTOP) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(CMOBJS) $(RCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS) $(LIBS) $(OCAML_LINK_FLAGS)
 
-$(MP).top: $(TCMOBJS) $(TCMOFILES) $(TCMADEPS) $(THREADSLIB) $(BYTE_CLIBS) $(LIBS)
+$(MP).top: $(TOP_DEPS) $(TCMOFILES)
         $(RM) $@
         $(OCAMLLINK) $(OCAMLCFLAGS) -o $@ -custom -linkall $(THREADS) $(TCMOBJS) $(TCMOFILES) $(BYTE_CCLIBS) $(LIBTHREADS) $(LIBS) $(OCAML_LINK_FLAGS)
 
-$(MP).opt: $(CMXOBJS) $(TCMXFILES) $(OPTTHREADSLIB) $(NATIVE_CLIBS) $(ARDEPS) $(LIBS)
+$(MP).opt: $(OPT_DEPS) $(TCMXFILES)
         $(RM) $@
         $(OCAMLOPTLINK) $(OCAMLOPTFLAGS) -o $@ -linkall $(THREADS) $(CMXOBJS) $(TCMXFILES) $(NATIVE_CCLIBS) $(OPTTHREADS) $(LIBS) $(OCAML_LINK_FLAGS)
 
@@ -221,7 +233,7 @@ $(MP).opt: $(CMXOBJS) $(TCMXFILES) $(OPTTHREADSLIB) $(NATIVE_CLIBS) $(ARDEPS) $(
 make_mp_version$(EXE): make_mp_version.ml
 	$(OCAMLC) -o $@ unix.cma $<
 
-mp_version.ml: make_mp_version$(EXE) $(CMOBJS) $(filter-out mp_version.%, $(RCMOFILES)) $(CMADEPS) $(TCMOBJS) $(filter-out mp_version.%, $(TCMOFILES)) $(TCMADEPS) mp_version.cmi $(ROOT)/mk/defaults $(OCAMLMACROS)
+mp_version.ml: make_mp_version$(EXE) $(ALL_DEPS)
 	make_mp_version -version $(MP_VERSION) -refiner $(REFINER) -terms $(TERMS) > $@
 
 #
@@ -229,12 +241,9 @@ mp_version.ml: make_mp_version$(EXE) $(CMOBJS) $(filter-out mp_version.%, $(RCMO
 #
 if $(NATIVE_ENABLED)
         .DEFAULT: $(MAIN).cmxa $(MP).opt
-else
-        .DEFAULT: $(MAIN).cma $(MP).top $(MP).run
 
-clean::
-        $(RM) -f *.p4* *.pp*
-        cd tests && $(RM) -f *.p4* *.pp* *.cmx *.cmi* *.cmo* *.o
+if $(BYTE_ENABLED)
+        .DEFAULT: $(MAIN).cma $(MP).top $(MP).run
 
 #
 # TeX
@@ -259,7 +268,8 @@ $(TEXDIR)/%/theory.tex: $(TEXBIN) $(TEXDIR)/%/print.ml $(ROOT)/theories/%/$(THEL
 # Clean up
 #
 clean:
-    $(CLEAN)
+    $(CLEAN) mp_version.ml make_mp_version
+    cd tests && $(RM) -f *.p4* *.pp* *.cmx *.cmi* *.cmo* *.o
 
 #
 # All defaults

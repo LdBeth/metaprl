@@ -214,6 +214,7 @@ THREADSLIB =
 OCAMLMACROS = $(file lib/macro.cmo)
 CAMLP4MACRO = camlp4o $(OCAMLMACROS)
 CAMLP4MACROPRINT = camlp4o -I $(CAMLP4LIB) pr_o.cmo $(OCAMLMACROS)
+LINEARSET = $(file libmojave/stdlib/$(uncapitalize $(SEQ_SET)_linear_set.cmi))
 
 #
 # For the refiner and mllib directories,
@@ -221,8 +222,9 @@ CAMLP4MACROPRINT = camlp4o -I $(CAMLP4LIB) pr_o.cmo $(OCAMLMACROS)
 #
 if true
     # Add the extra dependency
-    %.mli: $(OCAMLMACROS)
-    %.ml: $(OCAMLMACROS)
+    %.cmi: $(OCAMLMACROS) $(LINEARSET)
+    %.cmo: $(OCAMLMACROS) $(LINEARSET)
+    %.cmx: $(OCAMLMACROS) $(LINEARSET)
 
     # These directories use the macro preprocessor
     .SUBDIRS: mllib refiner
