@@ -110,8 +110,10 @@ struct
       0 ->
          if flag then
             match dest_term t with
-               { term_op = op; term_terms = bterm :: _ }
-               when not (Opname.eq (dest_op op).op_name context_opname) ->
+               { term_op = op } when Opname.eq (dest_op op).op_name context_opname ->
+                  let v, _, subterms = dest_context t in
+                     mk_so_var_term v subterms
+             | { term_op = op; term_terms = bterm :: _ } ->
                   (dest_bterm bterm).bterm
              | _ ->
                   REF_RAISE(RefineError ("term_subterm_nthpath", AddressError (a, term)))
@@ -189,8 +191,17 @@ struct
          if i = 0 then
             if flag then
                match dest_term t with
-                  { term_op = op; term_terms = bterm :: bterms }
-                  when not (Opname.eq (dest_op op).op_name context_opname) ->
+                  { term_op = op } when Opname.eq (dest_op op).op_name context_opname ->
+                     let v, term, subterms = dest_context t in
+                     let slot = mk_var_term v in
+                     let t = mk_context_term v slot subterms in
+                     let t, arg = f BVARS t in
+                     let v1, term1, subterms = dest_context t in
+                        if v1 = v && is_var_term term1 && dest_var term1 = v then
+                           mk_context_term v term subterms, arg
+                        else
+                           DO_FAIL
+                | { term_op = op; term_terms = bterm :: bterms } ->
                      let { bvars = vars; bterm = term } = dest_bterm bterm in
                      let term, arg = f VARS_BVARS term in
                      let bterm = mk_bterm vars term in
@@ -306,14 +317,6 @@ struct
    (*
     * Print address as a string.
     *)
-   let rec collect_string_of_path_address = function
-      [] ->
-         ""
-    | [h] ->
-         string_of_int h
-    | h::t ->
-         (string_of_int h) ^ "; " ^ (collect_string_of_path_address t)
-
    let rec collect_string_of_nthpath_address_true = function
       0 ->
          "0"
@@ -330,21 +333,13 @@ struct
 
    let rec collect_string_of_address = function
       Path addr ->
-         collect_string_of_path_address addr
+         String.concat "; " (List.map string_of_int addr)
     | NthClause (addr, flag) ->
-         (if flag then
-             collect_string_of_nthpath_address_true
-          else
-             collect_string_of_nthpath_address_false) addr
+         (if flag then "hd" else "tl") ^ "@" ^ (string_of_int addr)
+    | Compose (addr1, Path [] ) ->
+         collect_string_of_address addr1
     | Compose (addr1, addr2) ->
-         let addr1 = collect_string_of_address addr1 in
-         let addr2 = collect_string_of_address addr2 in
-            if addr1 = "" then
-               addr2
-            else if addr2 = "" then
-               addr2
-            else
-               addr1 ^ "; " ^ addr2
+         (collect_string_of_address addr1) ^ "; " ^ (collect_string_of_address addr2)
 
    let string_of_address addr =
       "[" ^ collect_string_of_address addr ^ "]"

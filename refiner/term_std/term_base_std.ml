@@ -292,9 +292,9 @@ struct
          false
 
    let dest_context = function
-      ({ term_op = { op_name = opname; op_params = [Var v] };
+      { term_op = { op_name = opname; op_params = [Var v] };
          term_terms = bterms
-       } : term) as term when Opname.eq opname context_opname ->
+       } as term when Opname.eq opname context_opname ->
          let rec collect = function
             [{ bvars = []; bterm = t }] ->
                [], t
