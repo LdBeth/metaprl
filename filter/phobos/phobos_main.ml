@@ -556,11 +556,17 @@ let create_parsing_table name gst penv =
    debug_string "\n\nError locations:\n";
    debug_ploc_list penv ptable ptable_errors;
    debug_string "\n";
-   if List.length ptable_errors > 0 then
-      print_string "Phobos_main.create_parsing_table: There were errors.\n";
+   let output_file = Phobos_util.filename_of_grammar_output name in
+   if List.length ptable_errors > 0 then begin
+      print_string "Phobos: Warning: ";
+      print_string name; print_string " contains "; print_int total;
+      print_string " conflicts.\n";
+      print_string "See "; print_string output_file;
+      print_string " for details\n"
+   end;
    if !Phobos_state.debug_grammar then
       save_parser_report gst penv states ptable ptable_errors (**)
-         (Phobos_util.filename_of_grammar_output name);
+         output_file;
       ptable
 
 (***********************************************************

@@ -120,6 +120,9 @@ let save_parser_report gst penv (states: state_list_struct) ptable ptable_errors
          (Lm_printf.sprintf "\n%d terminals, %d nonterminals\n%d grammar rules, %d states\n%d shift-reduce, %d reduce-reduce conflicts\n%d entries in parsing table\n" (**)
             (StringSet.cardinal gst.grammar_terminals) (StringSet.cardinal gst.grammar_nonterminals) (**)
             (total_productions-1) (List.length states.states_list) sr rr (ParserFA.cardinal ptable));
+      print_string "Conflicts are marked with **\n";
+      print_string "\nError locations:\n";
+      print_ploc_list penv ptable ptable_errors;
       set_formatter_out_channel Pervasives.stdout;
       close_out outx
 
