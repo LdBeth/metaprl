@@ -8,11 +8,14 @@ OCAMLDEP = misc.cmx ocamldep.cmx
 
 .PHONY: all opt install clean depend
 
-all: $(ROOT)/bin/ocamldep
+all: macro.cmo $(ROOT)/bin/ocamldep
 opt: all
 
 install: ocamldep
 	cp -pf ocamldep $(MPBIN)
+
+macro.cmo: $(OCAMLDEP)
+	ocamlc -pp 'camlp4o pa_extend.cmo q_MLast.cmo' -I `camlp4 -where` -c macro.ml
 
 ocamldep: $(OCAMLDEP)
 	$(OCAMLOPT) -o $@ $(OCAMLDEP)
