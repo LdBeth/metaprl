@@ -21,7 +21,7 @@ endif
 ifndef OCAMLOPT
    OCAMLOPT := ocamlopt
 endif
-OCAMLDEP := ocamldep
+OCAMLDEP := /usr/local/bin/ocamldep
 OCAMLCFLAGS := $(OCAMLFLAGS) $(INCLUDE) -g
 OCAMLOPTFLAGS := $(OCAMLFLAGS) $(INCLUDE)
 CAMLP4OFLAGS := $(INCLUDE)

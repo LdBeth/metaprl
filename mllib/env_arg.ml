@@ -17,7 +17,7 @@ type 'a var_set = string -> 'a ref -> 'a -> unit
 (*
  * Environment variables are prefixed with this string.
  *)
-let environ_prefix = "REF_"
+let environ_prefix = "NL_"
 
 (*
  * Master list of args.
@@ -117,6 +117,9 @@ let parse spec usage errmsg =
 
 (*
  * $Log$
+ * Revision 1.2  1997/11/12 22:28:17  jyh
+ * Small changes for NT.
+ *
  * Revision 1.1  1997/08/06 16:17:53  jyh
  * This is an ocaml version with subtyping, type inference,
  * d and eqcd tactics.  It is a basic system, but not debugged.
