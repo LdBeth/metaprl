@@ -36,6 +36,7 @@ open Lm_printf
 open Lm_thread
 
 open Pcaml
+open Filter_util
 
 open Basic_tactics
 
@@ -143,7 +144,7 @@ struct
 
    let eval_tactic e =
       Shell_state.synchronize (fun expr ->
-            let loc = 0, 0 in
+            let loc = dummy_loc in
             let expr = (<:expr< Shell_p4.install_tactic $expr$ >>) in
             let item = (<:str_item< $exp: expr$ >>) in
             let pt_item = Ast2pt.str_item item [] in
@@ -158,20 +159,20 @@ struct
       Shell_state.synchronize (fun str ->
             let instream = Stream.of_string str in
             let expr = Grammar.Entry.parse Pcaml.expr instream in
-            let loc = 0, 0 in
+            let loc = dummy_loc in
                eval_str_item loc <:str_item< $exp: expr$ >>) s
 
    let eval_top s =
       Shell_state.synchronize (fun str ->
             let instream = Stream.of_string str in
             let expr = Grammar.Entry.parse Pcaml.expr instream in
-            let loc = 0, 0 in
+            let loc = dummy_loc in
                eval_str_item loc <:str_item< $exp: expr$ >>) s
 
    let eval_opens s =
       Shell_state.synchronize (fun opens ->
             let eval_open path =
-               let loc = 0, 0 in
+               let loc = dummy_loc in
                   eval_str_item loc (<:str_item< open $path$ >>)
             in
                List.iter eval_open opens) s
