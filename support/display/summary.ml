@@ -755,10 +755,10 @@ dform status_df6_java : internal :: mode[java] :: goal_cd_begin{'cd} =
    izone `"<a href=\"cd.metaprl.local/" goal_cd_middle{'cd}
 
 dform status_df6_html : internal :: mode[html] :: goal_cd_begin{'cd} =
-   izone `"<a href=\"" goal_cd_middle{'cd}
+   izone `"<a href=\"." goal_cd_middle{'cd}
 
 dform status_df7 : internal :: mode[html] :: goal_cd_middle{goal_cd_dot} =
-   `".\">" ezone
+   `"/.\">" ezone
 
 dform status_df8 : internal :: mode[html] :: goal_cd_middle{cons{goal_cd_up; 'cd}} =
    `"/.." goal_cd_middle{'cd}
@@ -825,7 +825,7 @@ dform subgoals_df5 : internal :: subgoals{'number; nil; nil} =
    `""
 
 dform child_df1 : internal :: child_df{'number; goal_list{'child}} =
-   szone info_begin df_length{'number} `". " pushm `"[" goal_list_status{'child} `"]" info_end newline child_df{'child} popm ezone
+   szone info_begin df_down{'number} `". " pushm `"[" goal_list_status{'child} `"]" info_end newline child_df{'child} popm ezone
 
 dform child_df2 : internal :: child_df{cons{goal{'status; 'label; 'assums; 'goal}; 'tl}} =
    'label 'goal

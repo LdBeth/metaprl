@@ -52,6 +52,7 @@ declare "\\"
  * List utilities.
  *)
 declare df_length{'l}          (* Prints l's length *)
+declare df_down{'l}            (* Prints l's length, cd to the directory in HTML mode *)
 declare df_last{'l}            (* Prints l's last element *)
 declare df_concat{'sep;'l}     (* Prints l's elements separated by sep *)
 declare df_rev_concat{'sep;'l} (* Same as df_concat, but prints l in reverse order *)

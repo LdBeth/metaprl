@@ -97,6 +97,7 @@ declare df_length{'l}
 declare df_last{'l}
 declare df_concat{'sep;'l}
 declare df_rev_concat{'sep;'l}
+declare df_down{'l}
 
 (* same as "szone 'e ezone" *)
 declare szone{'e}
@@ -558,6 +559,34 @@ ml_dform sequent_tex_df : mode["tex"] :: sequent ('ext) { <H> >- 'concl } format
 ml_dform df_length_df : internal :: df_length{'l} format_term buf = fun term ->
    try
       format_int buf (List.length (dest_xlist (one_subterm term)))
+   with
+      RefineError _ ->
+         format_string buf "???"
+
+(*
+ * This is a convenient way to print a number.
+ * This changes to the numbered directory.
+ *)
+ml_dform df_down_df : internal :: mode[html] :: df_down{'l} format_term buf = fun term ->
+   try
+      let length = List.length (dest_xlist (one_subterm term)) in
+         format_izone buf;
+         format_string buf "<a href=\"";
+         format_int buf length;
+         format_string buf "/\">";
+         format_ezone buf;
+         format_int buf length;
+         format_izone buf;
+         format_string buf "</a>";
+         format_ezone buf
+   with
+      RefineError _ ->
+         format_string buf "???"
+
+ml_dform df_down_df : internal :: except_mode[html] :: df_down{'l} format_term buf = fun term ->
+   try
+      let length = List.length (dest_xlist (one_subterm term)) in
+         format_int buf length
    with
       RefineError _ ->
          format_string buf "???"
