@@ -1,4 +1,4 @@
-(*
+(*x
  * Camlp4 implementation of term patterns.
  * For now, we only allow patterns that are
  * one level deep: the patterns can not be

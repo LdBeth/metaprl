@@ -40,7 +40,8 @@ SUB_FILES =\
 	$(addprefix base/, $(BASE_FILES))\
 	$(addprefix boot/, $(BOOT_FILES))\
 	$(addprefix phobos/, $(PHOBOS_FILES))\
-	filter/term_grammar
+	filter/term_grammar\
+	filter/filter_patt
 
 if true
     OCAML_LINK_FLAGS = -linkall
