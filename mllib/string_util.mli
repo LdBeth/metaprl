@@ -72,11 +72,6 @@ val split : char -> string -> string list
 val split_set : string -> string -> string list
 
 (*
- * Cat strings together.
- *)
-val concat : string -> string list -> string
-
-(*
  * Convert a string to hex notation.
  * Quote strings that contains unprintable characters, spaces or qoutes.
  * unquote(quote (s)) = s

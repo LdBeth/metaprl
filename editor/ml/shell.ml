@@ -563,7 +563,7 @@ struct
          in
          let shells = List.map project !global_shells in
          let shells = Sort.list compare shells in
-            String_util.concat "\n" (List.map (fun (_, shell) -> format_process_name shell) shells)
+            String.concat "\n" (List.map (fun (_, shell) -> format_process_name shell) shells)
       in
          synchronize shell jobs shell
 

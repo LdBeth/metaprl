@@ -179,7 +179,7 @@ struct
                REF_RAISE(
                   RefineError ("Rewrite_compile_contractum.compile_so_contractum_term",
                      if (!debug_rewrite) && (array_rstack_mem v stack) then
-                        StringStringError("SO Var has stack item " ^ rstack_item_str stack.(array_rstack_index v stack) ^ " and bvars are [" ^ (String_util.concat "; " bvars) ^ "]", v)
+                        StringStringError("SO Var has stack item " ^ rstack_item_str stack.(array_rstack_index v stack) ^ " and bvars are [" ^ (String.concat "; " bvars) ^ "]", v)
                      else
                         RewriteFreeSOVar v
                   )

@@ -734,7 +734,7 @@ struct
             SigMarshal.unmarshal (Base.info cache.base.lib info.sig_summary), !vals
       with
          Not_found ->
-            raise (BadCommand (sprintf "Theory is not found: %s" (String_util.concat "." path)))
+            raise (BadCommand (sprintf "Theory is not found: %s" (String.concat "." path)))
 
    (*
     * To create, need:

@@ -302,16 +302,6 @@ let parse_args line =
       args
 
 (*
- * Concatenate strings.
- *)
-let rec concat s = function
-   [h] -> h
- | h::t ->
-      h ^ s ^ (concat s t)
- | [] ->
-      ""
-
-(*
  * Use hex notation.
  *)
 let hexify s =

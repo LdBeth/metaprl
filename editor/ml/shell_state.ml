@@ -107,7 +107,7 @@ struct
     * Default values.
     *)
    let default_mk_opname name =
-      raise (RefineError ("mk_opname", StringStringError (String_util.concat "." name, "no current package")))
+      raise (RefineError ("mk_opname", StringStringError (String.concat "." name, "no current package")))
 
    let default_saved_tactic =
       let loc = 0, 0 in

@@ -201,7 +201,7 @@ let decode_uri uri =
        | simplified ->
             simplified
    in
-      String_util.concat "/" simplified
+      String.concat "/" simplified
 
 (*
  * Print the content size of the file, and close the connection.
