@@ -776,6 +776,7 @@ struct
       in
       let id = dest_pid id in
          Printf.bprintf buf "\tvar session = new Array();\n";
+         Printf.bprintf buf "\tsession['cwd']      = '%s';\n" cwd;
          Printf.bprintf buf "\tsession['location'] = 'https://%s:%d/session/%d/content%s/';\n" host port id cwd;
          Printf.bprintf buf "\tsession['menu']     = %d;\n" menu_version;
          Printf.bprintf buf "\tsession['content']  = %d;\n" content_version;

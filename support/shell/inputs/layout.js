@@ -172,6 +172,9 @@ function Update(session)
             Edit(session['external'], filename);
         }
     }
+
+    /* Set the title bar */
+    parent.document.title = 'MetaPRL Session ' + session['id'] + ': ' + session['cwd'];
 }
 
 /*
