@@ -405,7 +405,10 @@ CONVERTC  = $(SET_MPLIB) $(CONVERT)
 #
 # Add dependency scanning for .ppo files
 #
-.SCANNER: %.ppo: %.ml $(OCAMLDEP)
+.SCANNER: %.ppo %.cmoz: %.ml $(OCAMLDEP)
+    $(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLINCLUDES) $<
+
+.SCANNER: %.cmi %.cmiz: %.mli $(OCAMLDEP)
     $(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLINCLUDES) $<
 
 #
