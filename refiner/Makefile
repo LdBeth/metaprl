@@ -1,86 +1,42 @@
-# Flags
-INCLUDE := -I ../mllib
+#
+# Refiner parts are in subdirectories
+#
+INCLUDE :=
 
-# Types files
-MLZFILES :=\
-	term_sig\
-	term_op_sig\
-	term_man_sig\
-	term_addr_sig\
-	term_subst_sig\
-	term_shape_sig\
-	term_eval_sig\
-	term_meta_sig\
-	refine_sig\
-	refiner_sig\
-	ml_format_sig\
-	mk_print_sig\
-	resource
-
-# Library files
-LMFILES :=\
-	rformat\
-	opname\
-	term_sig\
-	term_op_sig\
-	term_man_sig\
-	term_addr_sig\
-	term_subst_sig\
-	term_shape_sig\
-	term_eval_sig\
-	term_meta_sig\
-	rewrite_sig\
-	refine_sig\
-	refiner_sig\
+DIRS :=\
+	refbase\
+	refsig\
 	term_std\
-	term_op_std\
-	term_addr_std\
-	term_subst_std\
-	term_man_std\
-	term_shape_std\
-	term_eval_std\
-	term_meta_std\
-	rewrite\
-	refine\
-	refiner_std\
-	refiner\
 	term_ds\
-	term_op_ds\
-	term_addr_ds\
-	term_subst_ds\
-	term_man_ds\
-	term_shape_ds\
-	term_eval_ds\
-	refiner_ds\
-	simple_print\
-	ml_format_sig\
-	ml_format\
-	ml_print_sig\
-	ml_print\
-	ml_file\
-	ml_string\
-	term_template\
-	term_table\
-	term_stable\
-	term_dtable\
-	dform\
-	dform_print\
-	refine_exn\
-	theory\
-	resource
+	refiner\
+	reflib
 
-# Name of library
+LIBS := $(addsuffix /lib.cma, $(DIRS))
+
 MAIN := refiner
 
-# Flags
-CCLIBS := -cclib -lnums
+.PHONY: all install depend clean
 
-all: $(MAIN).cma
-opt: $(MAIN).cmxa
+all:
+	@for i in $(DIRS); do\
+		if (echo Making $$i...; cd $$i; $(MAKE) $@); then true; else exit 1; fi;\
+	done
+	$(OCAMLC) $(OCAMLCFLAGS) -a -o $(MAIN).cma $(LIBS)
 
-install:: $(MAIN).cma $(CMIFILES)
-	$(INSTALL) $(MAIN).cma $(MLIFILES) $(CMIFILES) $(NLLIB)
+install::
+	@for i in $(DIRS); do\
+		if (echo Making $$i...; cd $$i; $(MAKE) $@); then true; else exit 1; fi;\
+	done
+	$(INSTALL) $(MAIN).cma $(NLLIB)
 
-# Actual makefile
+clean::
+	@for i in $(DIRS); do\
+		if (echo Making $$i...; cd $$i; $(MAKE) $@); then true; else exit 1; fi;\
+	done
+
+depend::
+	@for i in $(DIRS); do\
+		if (echo Making $$i...; cd $$i; touch Makefile.dep; $(MAKE) $@); then true; else exit 1; fi;\
+	done
+
 include ../mk/config
-include Makefile.dep

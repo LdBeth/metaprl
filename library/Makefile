@@ -4,7 +4,12 @@
 
 # Libraries
 REF_ROOT := ..
-INCLUDE := -I . -I $(REF_ROOT)/mllib -I $(REF_ROOT)/refiner
+INCLUDE := -I .\
+	-I $(REF_ROOT)/mllib\
+	-I $(REF_ROOT)/refiner/refbase\
+	-I $(REF_ROOT)/refiner/refsig\
+	-I $(REF_ROOT)/refiner/refiner
+
 OCAMLFLAGS :=
 OCAMLC := ocamlc
 

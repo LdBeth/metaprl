@@ -12,7 +12,15 @@ MAIN := prlc
 # Flags
 #
 REF_ROOT := ../
-INCLUDE := -I ../clib -I ../mllib -I ../refiner -I ../library -I $(CAMLP4LIB)
+INCLUDE :=\
+	-I ../clib\
+	-I ../mllib\
+	-I ../refiner/refbase\
+	-I ../refiner/refsig\
+	-I ../refiner/refiner\
+	-I ../refiner/reflib\
+	-I ../library\
+	-I $(CAMLP4LIB)
 OCAMLFLAGS := -pp "camlp4o q_MLast.cmo pa_extend.cmo"
 
 # Type files
