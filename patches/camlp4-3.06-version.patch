@@ -5,7 +5,7 @@
  value print_version () =
    do {
 -    Printf.eprintf "Camlp4 version %s\n" Pcaml.version; flush stderr; exit 0
-+    Printf.eprintf "Camlp4 version %s for MetaPRL-0.7.1\n" Pcaml.version; flush stderr; exit 0
++    Printf.eprintf "Camlp4 version %s for MetaPRL-0.7.3\n" Pcaml.version; flush stderr; exit 0
    }
  ;
  
