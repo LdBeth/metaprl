@@ -388,6 +388,12 @@ struct
    let nth_concl arg i =
       TermMan.nth_concl (msequent_goal arg.ref_goal) i
 
+   let num_assums arg =
+      msequent_num_assums arg.ref_goal
+
+   let nth_assum arg i =
+      msequent_nth_assum arg.ref_goal i
+
    let label arg = arg.ref_label
 
    (*

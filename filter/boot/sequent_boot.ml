@@ -115,6 +115,9 @@ struct
    let nth_hyp p i =
       TacticInternal.nth_hyp p (get_pos_hyp_num p i)
 
+   let num_assums = TacticInternal.num_assums
+   let nth_assum = TacticInternal.nth_assum
+
    let clause_addr p i =
       TermMan.nth_clause_addr (goal p) (get_pos_hyp_num p i)
 

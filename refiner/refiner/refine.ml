@@ -541,6 +541,10 @@ struct
 
    let msequent_goal mseq = mseq.mseq_goal
 
+   let msequent_nth_assum mseq i = List.nth mseq.mseq_hyps (pred i)
+
+   let msequent_num_assums mseq = List.length mseq.mseq_hyps
+
    let msequent_free_vars mseq =
       match mseq.mseq_vars with
          FreeVars vars ->

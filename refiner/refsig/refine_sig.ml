@@ -251,6 +251,8 @@ sig
    val mk_msequent : term -> term list -> msequent
    val dest_msequent : msequent -> term * term list
    val msequent_goal : msequent -> term
+   val msequent_num_assums : msequent -> int
+   val msequent_nth_assum :  msequent -> int -> term
    val msequent_free_vars : msequent -> string list
 
    (*

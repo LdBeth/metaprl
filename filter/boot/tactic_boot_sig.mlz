@@ -404,6 +404,8 @@ sig
    val goal        : tactic_arg -> term
    val msequent    : tactic_arg -> msequent
    val nth_hyp     : tactic_arg -> int -> string * term
+   val num_assums  : tactic_arg -> int
+   val nth_assum   : tactic_arg -> int -> term
    val nth_concl   : tactic_arg -> int -> term
    val label       : tactic_arg -> string
 
@@ -816,7 +818,9 @@ sig
    val msequent : tactic_arg -> msequent
    val args : tactic_arg -> term list
    val concl : tactic_arg -> term
+   val num_assums : tactic_arg -> int
    val nth_hyp : tactic_arg -> int -> string * term
+   val nth_assum : tactic_arg -> int -> term
    val label : tactic_arg -> string
 
    (*

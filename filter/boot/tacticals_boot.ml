@@ -660,17 +660,14 @@ struct
     * These tactics are useful for trivial search.
     *)
    let onSomeAssumT tac p =
-      let rec some i assums p =
-         match assums with
-            [_] ->
-               tac i p
-          | _ :: assums ->
-               prefix_orelseT (tac i) (some (i + 1) assums) p
-          | [] ->
-               raise (RefineError ("onSomeAssumT", StringError "no assumptions"))
+      let num = Sequent.num_assums p in
+      if (num<1) then
+         raise (RefineError ("onSomeAssumT", StringError "no assumptions"));
+      let rec some i p =
+         if i = num then tac i p
+         else prefix_orelseT (tac i) (some (succ i)) p
       in
-      let _, assums = dest_msequent (Sequent.msequent p) in
-         some 1 assums p
+         some 1 p
 
    (*
     * Make sure one of the hyps works.
