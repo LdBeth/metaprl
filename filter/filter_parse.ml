@@ -37,6 +37,9 @@ open Filter_summary_util
 open Filter_cache
 open Filter_prog
 
+(* Force Argl to link *)
+let init = Dynlink.init
+
 (************************************************************************
  * PATHS                                                                *
  ************************************************************************)
@@ -1000,6 +1003,9 @@ END
 
 (*
  * $Log$
+ * Revision 1.20  1998/04/28 18:30:12  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.19  1998/04/24 19:38:26  jyh
  * Updated debugging.
  *

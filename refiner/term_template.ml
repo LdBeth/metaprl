@@ -2,6 +2,9 @@
  * This module computes term templates for use by hashtables.
  *
  * $Log$
+ * Revision 1.4  1998/04/28 18:30:50  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.3  1998/04/24 02:43:05  jyh
  * Added more extensive debugging capabilities.
  *
@@ -33,6 +36,8 @@ open Debug
 
 open Opname
 open Term
+
+open Simple_print
 
 (*
  * Show the file loading.
@@ -70,6 +75,47 @@ type term_template = int
 (************************************************************************
  * IMPLEMENTATION                                                       *
  ************************************************************************)
+
+(*
+ * Printing.
+ *)
+let string_of_param = function
+    Number ->
+       ":n"
+  | String ->
+       ":s"
+  | Token ->
+       ":t"
+  | Level ->
+       ":l"
+  | Var ->
+       ":v"
+  | ObId ->
+       ":o"
+
+let print_params out params =
+   let print param =
+      output_string out (string_of_param param)
+   in
+      Array.iter print params
+
+let print_arities out arities =
+   let print_arity (arity, op) =
+      fprintf out "(%d, %s)" arity (string_of_opname op)
+   in
+   let length = Array.length arities in
+   let rec print i =
+      if i <> length then
+         begin
+            print_arity arities.(i);
+            if i <> length - 1 then
+               begin
+                  output_string out ", ";
+                  print (i + 1)
+               end
+         end
+   in
+      print 0
 
 (*
  * Compute the template for a particular term.
@@ -128,11 +174,26 @@ let local_compute_template t =
               Array.of_list (compute_param [] params);
         template_arities = Array.of_list (List.map compute_arity bterms)
       }
+
 (*
  * Integer index from template.
  *)
 let compute_template t =
-   Hashtbl.hash (local_compute_template t)
+   let t = local_compute_template t in
+      if !debug_dform then
+         begin
+            let { template_opname = opname;
+                  template_params = params;
+                  template_arities = arities
+                } = t
+            in
+               eprintf "Term_template.compute_template: %s[%a]{%a}%t" (**)
+                  (string_of_opname opname)
+                  print_params params
+                  print_arities arities
+                  eflush
+         end;
+      Hashtbl.hash t
 
 (*
  * -*-

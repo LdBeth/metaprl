@@ -524,7 +524,16 @@ let fold_left f x l =
       aux x [] l
 
 (*
+ * Inherited.
+ *)
+let allp = List.for_all
+let existsp = List.exists
+
+(*
  * $Log$
+ * Revision 1.8  1998/04/28 18:30:29  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.7  1998/04/24 19:38:58  jyh
  * Updated debugging.
  *

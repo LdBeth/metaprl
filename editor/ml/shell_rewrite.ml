@@ -135,8 +135,8 @@ let create pack prog resources name =
       update_ped ()
    in
    let edit_check = extractf in
-   let edit_expand () =
-      Proof_edit.expand_ped obj.rw_ped
+   let edit_expand df =
+      Proof_edit.expand_ped df obj.rw_ped
    in
    let edit_root () =
       Proof_edit.root_ped obj.rw_ped
@@ -181,6 +181,9 @@ let create pack prog resources name =
 
 (*
  * $Log$
+ * Revision 1.6  1998/04/28 18:29:58  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.5  1998/04/24 02:41:38  jyh
  * Added more extensive debugging capabilities.
  *

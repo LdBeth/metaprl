@@ -136,7 +136,7 @@ exception Match
  * We overload the refinement error to give the location of
  * the error.
  *)
-exception ProofRefineError of t * refine_err
+exception ProofRefineError of t * refine_error
 
 (************************************************************************
  * CONSTRUCTORS                                                         *
@@ -860,13 +860,13 @@ let check { pf_root = root; pf_address = addr; pf_node = node } =
  *
  * This function never fails.
  *)
-let expand pf =
+let expand df pf =
    let { pf_node = node } = pf in
    let rec expand_node node =
       let item =
          match node.node_item with
             Step step ->
-               Step (Proof_step.expand step)
+               Step (Proof_step.expand df step)
           | Node node' ->
                Node (expand_node node')
       in
@@ -1000,6 +1000,9 @@ let proof_of_io_proof resources fcache tacs pf =
 
 (*
  * $Log$
+ * Revision 1.8  1998/04/28 18:29:44  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.7  1998/04/24 02:41:29  jyh
  * Added more extensive debugging capabilities.
  *

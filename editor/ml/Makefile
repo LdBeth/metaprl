@@ -1,5 +1,8 @@
-# Libraries
+#
+# Nuprl-light editor.
+#
 INCLUDE := -I . -I ../../theories/tactic -I ../../theories/base -I $(NLLIB) -I /usr/local/lib/camlp4
+OCAMLDEPFLAGS := -prl
 
 # Common files
 MLZFILES :=\
@@ -17,12 +20,13 @@ NLFILES :=\
 	shell_type\
 	shell_null\
 	shell_rewrite\
+	shell_p4\
 	shell
 
 MFILES :=
 
 PFILES :=\
-	shell_p4
+	nl
 
 CMXDEPS =\
 	$(CAMLLIB)/unix.cmxa\
@@ -42,9 +46,11 @@ CMXLIBS =\
 	$(CMXDEPS)
 
 CMADEPS =\
+	$(CAMLP4LIB)/odyl.cma\
 	$(CAMLLIB)/unix.cma\
         $(CAMLLIB)/nums.cma\
 	$(CAMLP4LIB)/camlp4.cma\
+	$(CAMLP4LIB)/camlp4_top.cma\
 	$(NLLIB)/clib.cma\
 	$(NLLIB)/util.cma\
 	$(NLLIB)/refiner.cma\
@@ -58,18 +64,11 @@ CMADEPS =\
 CMALIBS =\
 	$(CMADEPS)
 
-xCMOBJS =\
-	$(CAMLP4LIB)/odyl.cma\
+CMOBJS =\
 	$(CMALIBS)\
 	$(CAMLP4LIB)/pa_o.cmo\
-	$(CAMLP4LIB)/pa_extend.cmo\
-	$(CAMLP4LIB)/q_MLast.cmo\
-	$(CMOFILES)\
-	$(CAMLP4LIB)/odyl.cmo
-CMOBJS =\
-	$(CAMLP4LIB)/odyl.cma\
-	$(CMALIBS)\
-	$(CMOFILES)
+	$(CAMLP4LIB)/pa_op.cmo\
+	nl.cmo
 
 CCLIBS =\
 	-cclib -lunix\
@@ -85,7 +84,7 @@ all: $(MAIN).cma $(NL).run
 opt: $(MAIN).cmxa $(NL)
 
 $(NL).run: $(CMOBJS)
-	$(OCAMLC) -g -o $@ -custom -linkall $(CMOBJS) $(CCLIBS)
+	$(OCAMLMKTOP) -g -o $@ -custom -linkall $(CMOBJS) $(CCLIBS)
 
 clean::
 	$(RM) -f *.p4* *.pp*

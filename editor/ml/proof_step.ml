@@ -12,6 +12,8 @@ open Debug
 
 open Term
 open Opname
+open Dform
+open Rformat
 open Refine_sig
 open Refine_util
 open Refine_exn
@@ -72,9 +74,10 @@ let tactic { step_tactic = tac } = tac
  * Make an error term.
  * Just a string.
  *)
-let mk_error_subgoal { tac_hyps = hyps; tac_arg = arg } err =
-   let s = string_of_refine_error err in
-   let t = mk_string_term nil_opname s in
+let mk_error_subgoal db { tac_hyps = hyps; tac_arg = arg } err =
+   let buf = new_buffer () in
+   let _ = format_refine_error db buf err in
+   let t = mk_string_term nil_opname (print_to_string 80 buf) in
       { tac_goal = t;
         tac_hyps = hyps;
         tac_arg = arg
@@ -87,7 +90,7 @@ let mk_error_subgoal { tac_hyps = hyps; tac_arg = arg } err =
  *
  * This function never fails.
  *)
-let expand step =
+let expand db step =
    let { step_goal = goal;
          step_text = text;
          step_ast = ast;
@@ -112,7 +115,7 @@ let expand step =
               step_text = text;
               step_ast = ast;
               step_tactic = tac;
-              step_subgoals = [mk_error_subgoal goal err]
+              step_subgoals = [mk_error_subgoal db goal err]
             }
 
 let check step =
@@ -191,6 +194,9 @@ let step_of_io_step resources fcache tactics
 
 (*
  * $Log$
+ * Revision 1.10  1998/04/28 18:29:50  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.9  1998/04/24 02:41:33  jyh
  * Added more extensive debugging capabilities.
  *

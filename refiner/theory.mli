@@ -22,7 +22,16 @@ val record_theory : theory -> unit
 val get_theories : unit -> theory list
 
 (*
+ * Get all the parent theories for a theory.
+ * This is not guaranteed to be accurate.
+ *)
+val get_parents : theory -> theory list
+
+(*
  * $Log$
+ * Revision 1.3  1998/04/28 18:30:53  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.2  1998/02/23 14:46:44  jyh
  * First implementation of binary file compilation.
  *

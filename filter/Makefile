@@ -32,6 +32,7 @@ LMFILES :=\
 	filter_util\
 	filter_comment\
 	filter_ocaml\
+	filter_exn\
 	filter_proof_type\
 	filter_proof\
 	filter_summary\
@@ -40,10 +41,10 @@ LMFILES :=\
 	filter_summary_util\
 	filter_cache_fun\
 	filter_cache\
-	filter_prog
+	filter_prog\
+	term_grammar
 
 MFILES_CAMLP4 :=\
-	term_grammar\
 	filter_parse\
 	filter_main
 
@@ -51,7 +52,6 @@ MFILES_PRLC :=\
 	filter_bin
 
 MFILES :=\
-	term_grammar\
 	filter_parse\
 	filter_main\
 	filter_bin
@@ -157,10 +157,10 @@ install:: $(MAIN).cma $(LCMIFILES) $(CAMLP4N).run $(CAMLP4O).run $(PRLCN).run $(
 # Compile a special camlp4 to run Nuprl.
 #
 $(CAMLP4N).run: $(CAMLP4N_CMOBJS)
-	$(OCAMLC) -g -o $@ -custom -linkall $(CAMLP4N_CMOBJS) $(CAMLP4X_CCLIBS)
+	$(OCAMLC) -g -o $@ -linkall -custom $(CAMLP4N_CMOBJS) $(CAMLP4X_CCLIBS)
 
 $(CAMLP4O).run: $(CAMLP4O_CMOBJS)
-	$(OCAMLC) -g -o $@ -custom -linkall $(CAMLP4O_CMOBJS) $(CAMLP4X_CCLIBS)
+	$(OCAMLC) -g -o $@ -linkall -custom $(CAMLP4O_CMOBJS) $(CAMLP4X_CCLIBS)
 
 #
 # Binary compiler

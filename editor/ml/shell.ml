@@ -13,6 +13,9 @@ include Package_df
 include Shell_null
 include Shell_rewrite
 
+open Longident
+open Parsetree
+
 open Printf
 open Debug
 
@@ -80,10 +83,8 @@ let spec =
    ["-I", Arg.String add_include, "add an directory to the path for include files"]
 
 let _ =
-   let args =
-      spec @ Env_arg.args ()
-   in
-      Env_arg.parse args handle_anon_arg "Nuprl-Light toploop" 
+   Arg.current := 0;
+   Env_arg.parse spec handle_anon_arg "Nuprl-Light toploop" 
 
 (************************************************************************
  * INITIAL BASE                                                         *
@@ -112,8 +113,10 @@ let get_db dbase =
    let dbase' =
       match info.package with
          Some mod_info ->
+            eprintf "Selecting display forms from %s%t" (Package.name mod_info) eflush;
             Package.dforms mod_info
        | None ->
+            eprintf "Restoring default display forms%t" eflush;
             dbase
    in
       get_mode_base dbase' info.df_mode
@@ -143,6 +146,10 @@ let print_error_term ofile t =
       Dform.format_term db buf t;
       output_string ofile (print_to_string info.width buf)
 
+let print_exn f x =
+   let db = get_db null_mode_base in
+      Filter_exn.print db f x
+
 (************************************************************************
  * VIEWING                                                              *
  ************************************************************************)
@@ -151,7 +158,12 @@ let print_error_term ofile t =
  * Turn a string into a path.
  *)
 let parse_path dir name =
-   dir @ String_util.split '.' name
+   if name = "." then
+      dir
+   else if String.length name <> 0 & name.[0] = '.' then
+      String_util.split '.' name
+   else
+      dir @ String_util.split '.' name
 
 let rec string_of_path = function
    [h] ->
@@ -227,6 +239,8 @@ let view name =
        | modname :: item1 :: item2 :: _ ->
             raise (Failure ("Shell.view: illegal module name " ^ string_of_path dir))
 
+let ls () = view "."
+
 (*
  * Window width.
  *)
@@ -253,9 +267,14 @@ let cd name =
       begin
          match dir with
             modname::_ ->
-               info.package <- Some (Package.get info.packages modname)
+               let pkg = Package.get info.packages modname in
+                  info.package <- Some pkg;
+                  Shell_p4.set_df (Some (get_db null_mode_base));
+                  Shell_p4.set_mk_opname (Some (Package.mk_opname pkg))
           | [] ->
-               info.package <- None
+               info.package <- None;
+               Shell_p4.set_df None;
+               Shell_p4.set_mk_opname None;
       end;
       view ".";
       pwd ()
@@ -265,36 +284,67 @@ let cd name =
  ************************************************************************)
 
 (*
+ * Load a package if it is not already loaded.
+ *)
+let load name =
+   let load name =
+      let _ =
+         try
+            let pack = Package.get info.packages name in
+               match Package.status pack with
+                  Modified ->
+                     raise (Failure (sprintf "Shell.load: package '%s' is modified" name))
+                | _ ->
+                     ()
+         with
+            Not_found ->
+               ()
+      in
+         Package.load info.packages name;
+         ()
+   in
+      print_exn load name
+
+(*
  * Make a new package.
  * Right now we only allow packages at the top level.
  *)
 let create_pkg name =
-   match parse_path info.dir name with
-      [modname] ->
-         (* Top level *)
-         Package.create_package info.packages modname;
-         view name
-    | [] ->
-         raise (Failure "Shell.create_package: can't create root package")
-    | _ ->
-         raise (Failure "Shell.create_package: packages can't be nested right now")
+   let create name =
+      match parse_path info.dir name with
+         [modname] ->
+            (* Top level *)
+            Package.create_package info.packages modname;
+            view name
+       | [] ->
+            raise (Failure "Shell.create_package: can't create root package")
+       | _ ->
+            raise (Failure "Shell.create_package: packages can't be nested right now")
+   in
+      print_exn create name
 
 (*
  * Save the current package.
  *)
 let save () =
-   match info.package with
-      Some pack ->
-         Package.save info.packages pack
-    | None ->
-         ()
+   let save () =
+      match info.package with
+         Some pack ->
+            Package.save info.packages pack
+       | None ->
+            ()
+   in
+      print_exn save ()
 
 let save_all () =
-   let save pack =
-      if Package.status pack = Modified then
-         Package.save info.packages pack
+   let save_all () =
+      let save pack =
+         if Package.status pack = Modified then
+            Package.save info.packages pack
+      in
+         List.iter save (Package.packages info.packages)
    in
-      List.iter save (Package.packages info.packages)
+      print_exn save_all ()
          
 (************************************************************************
  * OBJECTS                                                              *
@@ -304,103 +354,212 @@ let save_all () =
  * Creation functions.
  *)
 let create_rw name =
-   raise (RefineError (StringError "not implemented"))
+   let create name =
+      raise (RefineError (StringError "not implemented"))
+   in
+      print_exn create name
 
 let create_axiom name =
-   raise (RefineError (StringError "not implemented"))
+   let create name =
+      raise (RefineError (StringError "not implemented"))
+   in
+      print_exn create name
 
 let create_thm name =
-   raise (RefineError (StringError "not implemented"))
+   let create name =
+      raise (RefineError (StringError "not implemented"))
+   in
+      print_exn create name
 
 let create_opname name =
-   raise (RefineError (StringError "not implemented"))
+   let create name =
+      raise (RefineError (StringError "not implemented"))
+   in
+      print_exn create name
 
 let create_condition name =
-   raise (RefineError (StringError "not implemented"))
+   let create name =
+      raise (RefineError (StringError "not implemented"))
+   in
+      print_exn create name
 
 let create_parent name =
-   raise (RefineError (StringError "not implemented"))
+   let create name =
+      raise (RefineError (StringError "not implemented"))
+   in
+      print_exn create name
 
 let create_dform name =
-   raise (RefineError (StringError "not implemented"))
+   let create name =
+      raise (RefineError (StringError "not implemented"))
+   in
+      print_exn create name
 
 let create_prec name =
-   raise (RefineError (StringError "not implemented"))
+   let create name =
+      raise (RefineError (StringError "not implemented"))
+   in
+      print_exn create name
 
 let create_prec_rul name =
-   raise (RefineError (StringError "not implemented"))
+   let create name =
+      raise (RefineError (StringError "not implemented"))
+   in
+      print_exn create name
 
 let create_resource name =
-   raise (RefineError (StringError "not implemented"))
+   let create name =
+      raise (RefineError (StringError "not implemented"))
+   in
+      print_exn create name
 
 let create_infix name =
-   raise (RefineError (StringError "not implemented"))
+   let create name =
+      raise (RefineError (StringError "not implemented"))
+   in
+      print_exn create name
 
 let create_ml name =
-   raise (RefineError (StringError "not implemented"))
+   let create name =
+      raise (RefineError (StringError "not implemented"))
+   in
+      print_exn create name
 
 (*
  * Proof operations.
  *)
 let set_goal t =
-   info.proof.edit_set_goal t;
-   display_proof ()
+   let set t =
+      info.proof.edit_set_goal t;
+      display_proof ()
+   in
+      print_exn set t
 
 let set_redex t =
-   info.proof.edit_set_redex t;
-   display_proof ()
+   let set t =
+      info.proof.edit_set_redex t;
+      display_proof ()
+   in
+      print_exn set t
 
 let set_contractum t =
-   info.proof.edit_set_contractum t;
-   display_proof ()
+   let set t =
+      info.proof.edit_set_contractum t;
+      display_proof ()
+   in
+      print_exn set t
 
 let set_assumptions tl =
-   info.proof.edit_set_assumptions tl;
-   display_proof ()
+   let set t =
+      info.proof.edit_set_assumptions tl;
+      display_proof ()
+   in
+      print_exn set tl
 
 let set_params pl =
-   info.proof.edit_set_params pl;
-   display_proof ()
+   let set t =
+      info.proof.edit_set_params pl;
+      display_proof ()
+   in
+      print_exn set pl
 
 let check () =
-   info.proof.edit_check ();
-   display_proof ()
+   let set () =
+      info.proof.edit_check ();
+      display_proof ()
+   in
+      print_exn set ()
 
 let expand () =
-   info.proof.edit_expand ();
-   display_proof ()
+   let set () =
+      info.proof.edit_expand (get_db null_mode_base);
+      display_proof ()
+   in
+      print_exn set ()
 
 let root () =
-   info.proof.edit_root ();
-   display_proof ()
+   let set () =
+      info.proof.edit_root ();
+      display_proof ()
+   in
+      print_exn set ()
 
 let up () =
-   info.proof.edit_up ();
-   display_proof ()
+   let set () =
+      info.proof.edit_up ();
+      display_proof ()
+   in
+      print_exn set ()
 
 let down i =
-   info.proof.edit_down i;
-   display_proof ()
+   let set i =
+      info.proof.edit_down i;
+      display_proof ()
+   in
+      print_exn set i
 
 let refine str ast tac =
-   info.proof.edit_refine str ast tac;
-   display_proof ()
+   let set (str, ast, tac) =
+      info.proof.edit_refine str ast tac;
+      display_proof ()
+   in
+      print_exn set (str, ast, tac)
 
 let undo () =
-   info.proof.edit_undo ();
-   display_proof ()
+   let set () =
+      info.proof.edit_undo ();
+      display_proof ()
+   in
+      print_exn set ()
 
 let fold () =
-   info.proof.edit_fold ();
-   display_proof ()
+   let set () =
+      info.proof.edit_fold ();
+      display_proof ()
+   in
+      print_exn set ()
 
 let fold_all () =
-   info.proof.edit_fold_all ();
-   display_proof ()
+   let set () =
+      info.proof.edit_fold_all ();
+      display_proof ()
+   in
+      print_exn set ()
+
+(************************************************************************
+ * INITIALIZATION                                                       *
+ ************************************************************************)
+
+(*
+ * Print out an initialization file, and parse it.
+ *)
+let init () =
+   let init () =
+      let nllib =
+         try Sys.getenv "NLLIB" with
+            Not_found ->
+               "/usr/local/lib/nuprl-light"
+      in
+      let eval_include inc =
+         Toploop.execute_phrase false (Ptop_dir ("directory", Pdir_string inc));
+         ()
+      in
+         eval_include nllib;
+         List.iter eval_include !includes;
+         Toploop.execute_phrase false (Ptop_dir ("install_printer", Pdir_ident (Ldot (Lident "Shell_p4", "print_term"))));
+         Toploop.execute_phrase false (Ptop_def [{ pstr_desc = Pstr_open (Lident "Shell");
+                                                   pstr_loc = Location.none
+                                                 }]);
+         ()
+   in
+      Printexc.catch init ()
 
 (*
  *
  * $Log$
+ * Revision 1.7  1998/04/28 18:29:52  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.6  1998/04/24 19:38:07  jyh
  * Updated debugging.
  *

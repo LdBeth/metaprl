@@ -12,6 +12,11 @@ open Term
 open Tactic_type
 
 (*
+ * Some initialization function.
+ *)
+val init : unit -> unit
+
+(*
  * Navigation and display.
  *)
 val cd : string -> string
@@ -21,6 +26,7 @@ val set_window_width : int -> unit
 (*
  * Module commands.
  *)
+val load : string -> unit
 val create_pkg : string -> unit
 val save : unit -> unit
 val save_all : unit -> unit
@@ -46,6 +52,7 @@ val create_ml : string -> unit
  * An object is not installed until it is checked.
  *)
 val view : string -> unit
+val ls : unit -> unit
 
 (*
  * Editing commands.
@@ -69,8 +76,15 @@ val undo : unit -> unit
 val fold : unit -> unit
 val fold_all : unit -> unit
 
+(************************************************************************
+ * DEBUGGING                                                            *
+ ************************************************************************)
+                                  
 (*
  * $Log$
+ * Revision 1.5  1998/04/28 18:29:54  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.4  1998/04/23 20:04:04  jyh
  * Initial rebuilt editor.
  *

@@ -424,7 +424,8 @@ let softcdr = function
 
 let compute_breaks buf rmargin =
    let rec aux ((margins, breaks, cbreaks, lzone, curx, maxx, cury, catch) as args) = function
-      [] -> BreakNode (breaks, List.rev cbreaks), curx, maxx, cury
+      [] ->
+         BreakNode (breaks, List.rev cbreaks), curx, maxx, cury
     | info::t ->
          (* Check that we haven't reached the margin *)
          if catch & curx > rmargin then
@@ -565,20 +566,21 @@ let tab printer pos =
 let format_to_handler printer rmargin (BreakNode (breaks, cbreaks)) =
    (* This printer watches the right margin *)
    let print_text curx i s =
-      (* Watch the right margin *)
+      (* Watch the right margin
       if curx < rmargin then
          if curx + i > rmargin then
             let amount = rmargin - curx - 1 in
                if amount > 0 then
                   printer (String.sub s 0 amount);
                printer "$"
-         else
+         else *)
             printer s
    in
 
    (* Print the entire box *)
    let rec aux ((margins, breaks, cbreaks, curx) as args) = function
-      [] -> curx
+      [] ->
+         curx
     | h::t ->
          begin
             match h with
@@ -636,7 +638,8 @@ let format_to_handler printer rmargin (BreakNode (breaks, cbreaks)) =
              | Inline b ->
                   begin
                      match cbreaks with
-                        [] -> raise (Invalid_argument "format_to_handler")
+                        [] ->
+                           raise (Invalid_argument "format_to_handler")
                       | (BreakNode (breaks', cbreaks'))::cbreaks'' ->
                            let curx' = aux (margins, breaks', cbreaks', curx) b.commands in
                               aux (margins, breaks, cbreaks'', curx') t
@@ -664,10 +667,14 @@ let print_to_channel rmargin buf ch =
  *)
 let print_to_string rmargin buf =
    let buffer = ref ([] : string list) in
-   let handle s = buffer := s :: !buffer in
+   let handle s =
+      buffer := s :: !buffer
+   in
    let rec smash s = function
-      [] -> s
-    | s'::t' -> smash (s' ^ s) t'
+      [] ->
+         s
+    | s'::t' ->
+         smash (s' ^ s) t'
    in
    let _ = normalize_buffer buf in
    let breaks = compute_breaks buf rmargin in
@@ -676,6 +683,9 @@ let print_to_string rmargin buf =
 
 (*
  * $Log$
+ * Revision 1.5  1998/04/28 18:30:47  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.4  1998/04/24 02:42:54  jyh
  * Added more extensive debugging capabilities.
  *

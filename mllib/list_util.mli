@@ -11,6 +11,8 @@ val compare_lists : ('a -> 'b -> int) -> 'a list -> 'b list -> int
 (*
  * These function raise Failure, not Invalid_argument.
  *)
+val allp : ('a -> bool) -> 'a list -> bool
+val existsp : ('a -> bool) -> 'a list -> bool
 val for_all2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 val exists2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 val map2 : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
@@ -69,6 +71,9 @@ val last : 'a list -> 'a
 
 (*
  * $Log$
+ * Revision 1.7  1998/04/28 18:30:31  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.6  1998/04/23 20:04:36  jyh
  * Initial rebuilt editor.
  *

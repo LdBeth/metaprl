@@ -2,6 +2,9 @@
  * Debugging utilities.
  *
  * $Log$
+ * Revision 1.4  1998/04/28 18:30:24  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.3  1998/04/24 02:42:26  jyh
  * Added more extensive debugging capabilities.
  *
@@ -50,6 +53,11 @@ open Printf
  * Debug during loading.
  *)
 let debug_load = ref false
+
+(*
+ * Debug display forms.
+ *)
+let debug_dform = ref false
 
 (*
  * Debug the rewriter.

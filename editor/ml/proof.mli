@@ -33,6 +33,7 @@ include Tactic_type
 include Proof_step
 
 open Term
+open Dform
 open Refine_sig
 open Refine
 
@@ -90,7 +91,7 @@ exception Match
  * We overload the refinement error to give the location of
  * the error.
  *)
-exception ProofRefineError of t * refine_err
+exception ProofRefineError of t * refine_error
 
 (*
  * Constructors
@@ -151,7 +152,7 @@ val remove_children : t -> t
  *       no exceptions are raised
  *)
 val check : t -> Refiner.extract
-val expand : t -> t
+val expand : dform_base -> t -> t
 
 (*
  * IO
@@ -161,6 +162,9 @@ val proof_of_io_proof : tactic_resources -> cache -> (string * tactic) array -> 
 
 (*
  * $Log$
+ * Revision 1.8  1998/04/28 18:29:45  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.7  1998/04/23 20:03:49  jyh
  * Initial rebuilt editor.
  *

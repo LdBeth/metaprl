@@ -9,6 +9,11 @@
 val debug_load : bool ref
 
 (*
+ * Debug display forms.
+ *)
+val debug_dform : bool ref
+
+(*
  * Debug the rewriter.
  *)
 val debug_rewrite : bool ref
@@ -75,6 +80,9 @@ val eflush : out_channel -> unit
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/28 18:30:25  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.3  1998/04/24 02:42:27  jyh
  * Added more extensive debugging capabilities.
  *

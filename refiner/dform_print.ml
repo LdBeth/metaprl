@@ -40,16 +40,12 @@ type dform_mode_base =
 let null_mode_base = { all_base = null_base; mode_bases = [] }
 
 (*
- * The default base is stored here.
- *)
-let base = ref null_base
-
-(*
  * Get a particular mode base.
  *)
 let get_mode_base { all_base = all; mode_bases = bases } name =
    try List.assoc name bases with
-      Not_found -> all
+      Not_found ->
+         all
 
 (*
  * Destruct the base.
@@ -98,8 +94,7 @@ let join_mode_base base1 base2 =
       try List.assoc "prl" b.mode_bases with
          Not_found -> b.all_base
    in
-      base1 := b;
-      base := b'
+      base1 := b
 
 (*
  * A new form is added to a specific collection of modes.
@@ -141,34 +136,13 @@ let create_dform b modes info =
            mode_bases = List.map cond_add_base mode_bases'
          }
    in
-      b := newbase;
-      if modes = [] or List.mem "prl" modes then
-         base := try List.assoc "prl" newbase.mode_bases with
-            Not_found -> newbase.all_base
-
-(*
- * Printers.
- *)
-let format_term buf t = Dform.format_term !base buf t
-let print_term_fp buf t = Dform.print_term_fp !base buf t
-let print_term = print_term_fp stdout
-let prerr_term = print_term_fp stderr
-let string_of_term t = Dform.string_of_term !base t
-
-let format_bterm buf t = Dform.format_bterm !base buf t
-let print_bterm_fp buf t = Dform.print_bterm_fp !base buf t
-let print_bterm = print_bterm_fp stdout
-let prerr_bterm = print_bterm_fp stderr
-let string_of_bterm t = Dform.string_of_bterm !base t
-
-let format_mterm buf t = Dform.format_mterm !base buf t
-let print_mterm_fp buf t = Dform.print_mterm_fp !base buf t
-let print_mterm = print_mterm_fp stdout
-let prerr_mterm = print_mterm_fp stderr
-let string_of_mterm t = Dform.string_of_mterm !base t
+      b := newbase
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/28 18:30:37  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.2  1998/04/24 02:42:36  jyh
  * Added more extensive debugging capabilities.
  *

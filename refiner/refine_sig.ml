@@ -26,21 +26,21 @@ exception FreeContextVars of string list
  * type here, because the following combinators need to
  * collect exceptions of their subtactics.
  *)
-type refine_err =
+type refine_error =
    StringError of string
  | TermError of term
  | StringIntError of string * int
  | StringStringError of string * string
  | StringTermError of string * term
- | GoalError of string * refine_err
- | SecondError of string * refine_err
- | SubgoalError of string * int * refine_err
- | PairError of string * refine_err * refine_err
- | RewriteAddressError of string * address * refine_err
+ | GoalError of string * refine_error
+ | SecondError of string * refine_error
+ | SubgoalError of string * int * refine_error
+ | PairError of string * refine_error * refine_error
+ | RewriteAddressError of string * address * refine_error
  | RewriteError of string * rewrite_error
- | NodeError of string * term * refine_err list
+ | NodeError of string * term * refine_error list
 
-exception RefineError of refine_err
+exception RefineError of refine_error
 
 (*
  * A ML rewrite replaces a term with another,
@@ -448,6 +448,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.5  1998/04/28 18:30:45  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.4  1998/04/21 19:54:00  jyh
  * Upgraded refiner for program extraction.
  *

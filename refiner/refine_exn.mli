@@ -2,13 +2,24 @@
  * Define a printer for all escaping refiner exceptions.
  *)
 
+open Rewrite
 open Refine_sig
+open Rformat
+open Dform
+open Dform_print
 
-val string_of_refine_error : refine_err -> string
-val print_exn : ('a -> 'b) -> 'a -> 'b
+val format_rewrite_error : dform_base -> buffer -> rewrite_error -> unit
+val format_refine_error : dform_base -> buffer -> refine_error -> unit
+val format_exn : dform_base -> buffer -> exn -> unit
+
+val print : dform_base -> ('a -> 'b) -> 'a -> 'b
+val print_exn : dform_mode_base -> out_channel -> string -> exn -> 'a
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/28 18:30:44  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.2  1998/04/23 20:04:39  jyh
  * Initial rebuilt editor.
  *

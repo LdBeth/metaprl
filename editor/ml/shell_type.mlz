@@ -20,7 +20,7 @@ type edit_object =
      edit_set_assumptions : term list -> unit;
      edit_set_params : Filter_summary.param list -> unit;
      edit_check : unit -> Refiner.extract;
-     edit_expand : unit -> unit;
+     edit_expand : dform_base -> unit;
      
      (* Navigation of there is a proof *)
      edit_root : unit -> unit;
@@ -34,6 +34,9 @@ type edit_object =
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/28 18:30:00  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.2  1998/04/23 20:04:24  jyh
  * Initial rebuilt editor.
  *

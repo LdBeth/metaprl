@@ -5,6 +5,8 @@
 
 include Package_type
 
+open Parsetree
+
 open Printf
 
 open Debug
@@ -53,12 +55,42 @@ struct
    
    (*
     * Create the cache.
+    * Add placeholders for all the theories.
     *)
    let create path =
-      { pack_cache = StrFilterCache.create path;
-        pack_dag = ImpDag.create ();
-        pack_packages = []
-      }
+      let _ =
+         List.iter (fun s -> eprintf "Include: %s%t" s eflush) path
+      in
+      let dag = ImpDag.create () in
+      let hash = Hashtbl.create 17 in
+      let mk_package name =
+         { pack_status = Incomplete;
+           pack_name = name;
+           pack_sig = None;
+           pack_info = None
+         }
+      in
+      let find_or_create name =
+         try Hashtbl.find hash name with
+            Not_found ->
+               let pack = mk_package name in
+               let node = ImpDag.insert dag pack in
+                  Hashtbl.add hash name node;
+                  node
+      in
+      let add_theory thy =
+         let { thy_name = name } = thy in
+         let node = find_or_create name in
+         let add_parent { thy_name = name } =
+            ImpDag.add_edge dag (find_or_create name) node
+         in
+            List.iter add_parent (Theory.get_parents thy);
+            node
+      in
+         { pack_cache = StrFilterCache.create path;
+           pack_dag = dag;
+           pack_packages = List.map add_theory (get_theories ())
+         }
    
    (*
     * See if a theory is already loaded.
@@ -115,7 +147,7 @@ struct
       { pack_info = Some info } ->
          StrFilterCache.filename pack.pack_cache info
     | { pack_info = None } ->
-         raise (Failure "Package_info.filename: package is not implemented")
+         raise (Failure "Package_info.filename: package is not loaded")
    
    (*
     * Get the status of the package.
@@ -135,8 +167,8 @@ struct
    let info = function
       { pack_info = Some info } ->
          StrFilterCache.info info
-    | { pack_info = None } ->
-         raise (Failure "Package_info.info: package is not implemented")
+    | { pack_info = None; pack_name = name } ->
+         raise (NotLoaded name)
    
    let sig_info = function
       { pack_sig = Some info } ->
@@ -145,8 +177,8 @@ struct
          let info = StrFilterCache.sig_info info InterfaceType in
             pack.pack_sig <- Some info;
             info
-    | { pack_sig = None; pack_info = None } ->
-         raise (Failure "Package_info.sig_info: package not implemented")
+    | { pack_sig = None; pack_info = None; pack_name = name } ->
+         raise (NotLoaded name)
    
    (*
     * DAG access.
@@ -188,11 +220,21 @@ struct
          name' = name
 
    let is_loaded { pack_dag = dag; pack_packages = packages } name =
-      List.exists (load_check dag name) packages
+      List_util.existsp (load_check dag name) packages
 
    let get_package { pack_dag = dag; pack_packages = packages } name =
       List_util.find (load_check dag name) packages
-   
+
+   (*
+    * Access to cache.
+    *)
+   let mk_opname pack opname =
+      match pack.pack_info with
+         Some info ->
+            StrFilterCache.mk_opname info opname
+       | None ->
+            raise (Failure (sprintf "Package_info.mk_opname: %s not initialized" pack.pack_name))
+
    (*
     * Add a parent edge.
     * We only allow parents with toplevel names.
@@ -202,7 +244,7 @@ struct
          begin
             try
                let pnode = get_package pack parent in
-                  ImpDag.add_edge pack.pack_dag node pnode
+                  ImpDag.add_edge pack.pack_dag pnode node
             with
                Not_found ->
                   raise (Failure "Package_info.maybe_add_package: parent is not defined")
@@ -244,26 +286,36 @@ struct
    
    (*
     * Add a signature package.
-    * This does nothing if the package already exists,
-    * otherwise it adds the package, and creates
+    * It adds the package, and creates
     * the edges to the parents.
     *)
    let maybe_add_package pack path sig_info =
       match path with
          [name] ->
-            if not (is_loaded pack name) then
-               let { pack_dag = dag; pack_packages = packages } = pack in
-               let parents = Filter_summary.parents sig_info in
-               let pinfo =
-                  { pack_status = ReadOnly;
-                    pack_sig = Some sig_info;
-                    pack_info = None;
-                    pack_name = name
-                  }
-               in
-               let node = ImpDag.insert dag pinfo in
-                  pack.pack_packages <- node :: packages;
-                  List.iter (insert_parent pack node) parents
+            let { pack_dag = dag; pack_packages = packages } = pack in
+            let node =
+               try
+                  let node = get_package pack name in
+                  let pinfo = ImpDag.node_value dag node in
+                     pinfo.pack_sig <- Some sig_info;
+                     if pinfo.pack_status = Incomplete then
+                        pinfo.pack_status <- ReadOnly;
+                     node
+               with
+                  Not_found ->
+                     let pinfo =
+                        { pack_status = ReadOnly;
+                          pack_sig = Some sig_info;
+                          pack_info = None;
+                          pack_name = name
+                        }
+                     in
+                     let node = ImpDag.insert dag pinfo in
+                        pack.pack_packages <- node :: packages;
+                        node
+            in
+            let parents = Filter_summary.parents sig_info in
+               List.iter (insert_parent pack node) parents
        | _ ->
             raise (Failure "Package_info.maybe_add_package: nested modules are not implemented")
 
@@ -320,10 +372,12 @@ struct
     * This happens only if it is modified.
     *)
    let save pack = function
-      { pack_status = ReadOnly } ->
-         raise (Failure "Package is read-only")
+      { pack_status = ReadOnly; pack_name = name } ->
+         raise (Failure (sprintf "Package_info.save: package '%s' is read-only" name))
     | { pack_status = Unmodified } ->
          ()
+    | { pack_status = Incomplete; pack_name = name } ->
+         raise (Failure (sprintf "Package_info.save: package '%s' is incomplete" name))
     | { pack_status = Modified; pack_info = Some info } ->
          StrFilterCache.save info
     | { pack_status = Modified; pack_info = None } ->
@@ -373,21 +427,30 @@ struct
          in
             add_implementation pack info';
             if is_theory_loaded name then
-               let unit = <:expr< () >> in
-                  (<:str_item< $exp: unit$ >>)
+               info'
             else
-               (* Wrap the theory up in a module and evaluate it *)
-               let items = extract_str (StrFilterCache.info info) (StrFilterCache.resources info) name in
-               let mn = String.capitalize name in
-               let me = (<:module_expr< struct $list:List.map fst items$ end >>) in
-                  (<:str_item< module $mn$ = $me$ >>)
+               let item =
+                  let items = extract_str (StrFilterCache.info info) (StrFilterCache.resources info) name in
+                  let mn = String.capitalize name in
+                  let me = (<:module_expr< struct $list:List.map fst items$ end >>) in
+                     (<:str_item< module $mn$ = $me$ >>)
+               in
+               let pt_item = Ast2pt.str_item item [] in
+                  if Toploop.execute_phrase false (Ptop_def pt_item) then
+                     info'
+                  else
+                     raise (Failure "Package_info.load: evaluation failed")
       with
-         Sys_error _ ->
-             raise (Failure ("Package_info.load: " ^ name ^ " not found"))
+         Not_found
+       | Sys_error _ ->
+             raise (Failure (sprintf "Package_info.load: '%s' not found" name))
 end
 
 (*
  * $Log$
+ * Revision 1.9  1998/04/28 18:29:41  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.8  1998/04/24 02:41:26  jyh
  * Added more extensive debugging capabilities.
  *

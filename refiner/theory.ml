@@ -7,6 +7,7 @@ open Printf
 open Debug
 
 open Refine
+open Refiner
 open Dform_print
 
 (*
@@ -39,10 +40,46 @@ let record_theory thy =
 (*
  * Get all the theories.
  *)
-let get_theories () = !base
+let get_theories () =
+   !base
+
+(*
+ * Get the parents of a theory.
+ *)
+let get_parents thy =
+   let rec find_parent parent = function
+      thy :: tl ->
+         let { thy_refiner = refiner } = thy in
+            if refiner == parent then
+               thy
+            else
+               find_parent parent tl
+    | [] ->
+         raise Not_found
+   in
+   let rec search refiner =
+      if is_null_refiner refiner then
+         []
+      else
+         let item, refiner' = dest_refiner refiner in
+            match item with
+               RIParent parent ->
+                  begin
+                     try find_parent parent !base :: search refiner' with
+                        Not_found ->
+                           search refiner'
+                  end
+             | _ ->
+                  search refiner'
+   in
+   let { thy_refiner = refiner } = thy in
+      search refiner
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/28 18:30:52  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.3  1998/04/24 02:43:08  jyh
  * Added more extensive debugging capabilities.
  *

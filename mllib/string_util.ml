@@ -97,14 +97,15 @@ let split c s =
    let len = String.length s in
    let rec loop i j =
       if j = len then
-         if i = 0 then
-            [s]
-         else if i = j then
+         if i = j then
             []
          else
             [String.sub s i (j - i)]
       else if s.[j] = c then
-         (String.sub s i (j - i)) :: (loop (j + 1) (j + 1))
+         if i = j then
+            loop (j + 1) (j + 1)
+         else
+            (String.sub s i (j - i)) :: (loop (j + 1) (j + 1))
       else
          loop i (j + 1)
    in
@@ -142,6 +143,9 @@ let concat s l =
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/28 18:30:32  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.3  1998/04/24 19:39:01  jyh
  * Updated debugging.
  *

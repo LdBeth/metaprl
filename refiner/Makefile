@@ -29,9 +29,9 @@ LMFILES :=\
 	refine_sig\
 	refine_util\
 	refine\
-	refine_exn\
 	dform\
 	dform_print\
+	refine_exn\
 	theory\
 	resource
 

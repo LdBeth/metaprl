@@ -41,29 +41,10 @@ val equal_mode_bases : dform_mode_base -> dform_mode_base -> bool
 val dest_mode_base : dform_mode_base -> dform_base * ((string * dform_base) list)
 
 (*
- * Printers.
- *)
-val format_term : buffer -> term -> unit
-val print_term_fp : out_channel -> term -> unit
-val print_term : term -> unit
-val prerr_term : term -> unit
-val string_of_term : term -> string
-
-val format_bterm : buffer -> bound_term -> unit
-val print_bterm_fp : out_channel -> bound_term -> unit
-val print_bterm : bound_term -> unit
-val prerr_bterm : bound_term -> unit
-val string_of_bterm : bound_term -> string
-
-val format_mterm : buffer -> meta_term -> unit
-val print_mterm_fp : out_channel -> meta_term -> unit
-val print_mterm : meta_term -> unit
-val prerr_mterm : meta_term -> unit
-val string_of_mterm : meta_term -> string
-
-
-(*
  * $Log$
+ * Revision 1.2  1998/04/28 18:30:38  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.1  1997/04/28 15:51:18  jyh
  * This is the initial checkin of Nuprl-Light.
  * I am porting the editor, so it is not included

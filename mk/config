@@ -28,6 +28,9 @@ endif
 ifndef OCAMLC
    OCAMLC := ocamlc
 endif
+ifndef OCAMLMKTOP
+   OCAMLMKTOP := ocamlmktop
+endif
 ifndef OCAMLOPT
    OCAMLOPT := ocamlopt
 endif
@@ -174,7 +177,7 @@ depend:: $(MLFILES) $(MLIFILES)
 	rm -f Makefile.tmp
 	touch Makefile.tmp
 ifneq ($(MLFILES),)
-	$(OCAMLDEP) $(INCLUDE) $(MLFILES) $(MLIFILES) >> Makefile.tmp
+	$(OCAMLDEP) $(OCAMLDEPFLAGS) $(INCLUDE) $(MLFILES) $(MLIFILES) >> Makefile.tmp
 endif
 ifneq ($(CFILES),)
 	$(CC) $(CFLAGS) -MM $(CFILES) >> Makefile.tmp

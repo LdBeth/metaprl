@@ -6,9 +6,12 @@ open Term
 
 (* Add an include directory *)
 val set_include_path : string list -> unit
- 
+
 (*
  * $Log$
+ * Revision 1.4  1998/04/28 18:30:14  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.3  1998/02/19 17:13:59  jyh
  * Splitting filter_parse.
  *

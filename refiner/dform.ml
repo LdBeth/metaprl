@@ -260,7 +260,8 @@ let slot = function
      dform_buffer = buf
    } ->
       printer buf NOParens body
- | _ -> raise (Invalid_argument "slot")
+ | _ ->
+      raise (Invalid_argument "slot")
 
 (*
  * Install initial commands.
@@ -578,6 +579,9 @@ let string_of_mterm base mterm =
 
 (*
  * $Log$
+ * Revision 1.5  1998/04/28 18:30:35  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.4  1998/04/24 02:42:35  jyh
  * Added more extensive debugging capabilities.
  *

@@ -606,8 +606,6 @@ struct
    
    (*
     * Combine the refiners into a single refiner.
-    * We will eventually have to worry about joining common
-    * ancestors.
     *)
    let join_refiner ref1 ref2 =
       ref1 := PairRefiner (ref2, !ref1)
@@ -1550,6 +1548,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.8  1998/04/28 18:30:40  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.7  1998/04/24 02:42:45  jyh
  * Added more extensive debugging capabilities.
  *

@@ -8,7 +8,10 @@ open Debug
 
 open Term
 open Term_util
+open Rformat
 open Simple_print
+open Dform
+open Dform_print
 open Rewrite
 open Refine_sig
 
@@ -20,123 +23,274 @@ let _ =
       eprintf "Loading Refine_exn%t" eflush
 
 (*
+ * Default printer uses the Simple_print.
+ *)
+type printers =
+   { format_term : dform_base -> buffer -> term -> unit;
+     format_bterm : dform_base -> buffer -> bound_term -> unit;
+     format_param : dform_base -> buffer -> param -> unit;
+     format_mterm : dform_base -> buffer -> meta_term -> unit
+   }
+
+let simple_printers =
+   { format_term = (fun _ t -> format_simple_term t);
+     format_bterm = (fun _ t -> format_simple_bterm t);
+     format_param = (fun _ t -> format_simple_param t);
+     format_mterm = (fun _ t -> format_simple_mterm t);
+   }
+
+let dform_printers =
+   { format_term = format_term;
+     format_bterm = format_bterm;
+     format_param = (fun _ p -> format_simple_param p);
+     format_mterm = format_mterm
+   }
+
+(*
+ * Print an address as a list of ints.
+ *)
+let format_address buf addr =
+   format_string buf (string_of_address addr)
+
+(*
  * Just print out a bunch of strings.
  *)
-let rec print_string_list out = function
+let rec format_strings buf = function
    [h] ->
-      output_string out h
+      format_string buf h
  | h::t ->
-      fprintf out "%s " h;
-      print_string_list out t
+      format_string buf h;
+      format_space buf;
+      format_strings buf t
  | [] ->
       ()
 
 (*
  * Match type in the rewriter.
  *)
-let string_of_match_type = function
+let format_match_type db buf printers = function
    ParamMatch p ->
-      sprintf "ParamMatch: %s" (string_of_param p)
+      format_string buf "ParamMatch:";
+      format_space buf;
+      printers.format_param db buf p
  | VarMatch s ->
-      sprintf "VarMatch: %s" s
+      format_string buf "VarMatch:";
+      format_space buf;
+      format_string buf s
  | TermMatch t ->
-      sprintf "TermMatch: %s" (string_of_term t)
+      format_string buf "TermMatch:";
+      format_space buf;
+      printers.format_term db buf t
  | BTermMatch bt ->
-      sprintf "BTermMatch: %s" (string_of_bterm bt)
+      format_string buf "BTermMatch:";
+      format_space buf;
+      printers.format_bterm db buf bt
 
 (*
  * Rewrite error.
  *)
-let string_of_rewrite_error = function
+let format_rewrite_error db buf printers = function
    BoundSOVar s ->
-      sprintf "BoundSoVar: %s" s
+      format_string buf "BoundSoVar:";
+      format_space buf;
+      format_string buf s
  | FreeSOVar s ->
-      sprintf "FreeSOVar: %s" s
+      format_string buf "FreeSOVar:";
+      format_space buf;
+      format_string buf s
  | BoundParamVar s ->
-      sprintf "BoundParamVar: %s" s
+      format_string buf "BoundParamVar:";
+      format_space buf;
+      format_string buf s
  | FreeParamVar s ->
-      sprintf "FreeParamVar: %s" s
+      format_string buf "FreeParamVar:";
+      format_space buf;
+      format_string buf s
  | BadRedexParam p ->
-      sprintf "BadRedexParam: %s" (string_of_param p)
+      format_string buf "BadRedexParam:";
+      format_space buf;
+      printers.format_param db buf p
  | NoRuleOperator ->
-      "NoRuleOperator"
+      format_string buf "NoRuleOperator"
  | BadMatch t ->
-      sprintf "BadMatch: %s" (string_of_match_type t)
+      format_string buf "BadMatch:";
+      format_space buf;
+      format_match_type db buf printers t
  | AllSOInstances s ->
-      sprintf "AllSoInstances: %s" s
+      format_string buf "AllSOInstances:";
+      format_space buf;
+      format_string buf s
  | MissingContextArg s ->
-      sprintf "MissingContextArg: %s" s
+      format_string buf "MissingContextArg:";
+      format_space buf;
+      format_string buf s
  | StackError _ ->
-      "StackError"
+      format_string buf "StackError"
  | Rewrite.StringError s ->
-      sprintf "StringError: %s" s
+      format_string buf "StringError:";
+      format_space buf;
+      format_string buf s
 
 (*
  * Print a refinement error.
  *)
-let string_of_refine_error error =
-   let rec to_string = function
-         StringError s ->
-            s
-       | TermError t ->
-            string_of_term t
-       | StringIntError (s, i) ->
-            sprintf "%s %d" s i
-       | StringStringError (s1, s2) ->
-            sprintf "%s %s" s1 s2
-       | StringTermError (s, t) ->
-            sprintf "%s %s" s (string_of_term t)
-       | GoalError (s, e) ->
-            sprintf "%s %s" s (to_string e)
-       | SecondError (s, e) ->
-            sprintf "%s %s" s (to_string e)
-       | SubgoalError (s, i, e) ->
-            sprintf "%s %d %s" s i (to_string e)
-       | PairError (s, e1, e2) ->
-            sprintf "%s %s %s" s (to_string e1) (to_string e2)
-       | RewriteAddressError (s, a, e) ->
-            sprintf "%s %s %s" s (string_of_address a) (to_string e)
-       | RewriteError (s, e) ->
-            sprintf "%s %s" s (string_of_rewrite_error e)
-       | NodeError (s, t, el) ->
-            sprintf "%s %s" s (string_of_term t)
+let format_refine_error db buf printers error =
+   let rec format = function
+      StringError s ->
+         format_string buf s
+    | TermError t ->
+         printers.format_term db buf t
+    | StringIntError (s, i) ->
+         format_string buf s;
+         format_space buf;
+         format_int buf i
+    | StringStringError (s1, s2) ->
+         format_string buf s1;
+         format_space buf;
+         format_string buf s2
+    | StringTermError (s, t) ->
+         format_string buf s;
+         format_space buf;
+         printers.format_term db buf t
+    | GoalError (s, e) ->
+         format_string buf s;
+         format_space buf;
+         format e
+    | SecondError (s, e) ->
+         format_string buf s;
+         format_space buf;
+         format e
+    | SubgoalError (s, i, e) ->
+         format_string buf s;
+         format_space buf;
+         format_int buf i;
+         format_space buf;
+         format e
+    | PairError (s, e1, e2) ->
+         format_string buf s;
+         format_space buf;
+         format e1;
+         format_space buf;
+         format e2
+    | RewriteAddressError (s, a, e) ->
+         format_string buf s;
+         format_space buf;
+         format_address buf a;
+         format_space buf;
+         format e
+    | RewriteError (s, e) ->
+         format_string buf s;
+         format_space buf;
+         format_rewrite_error db buf printers e
+    | NodeError (s, t, el) ->
+         format_string buf s;
+         format_space buf;
+         printers.format_term db buf t
    in
-      to_string error
+      format error
 
 (*
- * Call a function on its argument,
- * handling exceptions.
+ * Convert an exception to a string.
  *)
-let print_exn f x =
+let format_exn db buf printers error =
+   let format = function
+      RefineError msg ->
+         format_string buf "Refine error:";
+         format_space buf;
+         format_refine_error db buf printers msg
+    | FreeContextVars vars ->
+         format_string buf "FreeContextVars:";
+         format_space buf;
+         format_strings buf vars
+    | Rewrite.RewriteError msg ->
+         format_string buf "Rewrite error:";
+         format_space buf;
+         format_rewrite_error db buf printers msg
+    | Term.TermMatch (s1, t, s2) ->
+         format_string buf "TermMatch:";
+         format_space buf;
+         format_string buf s1;
+         format_space buf;
+         printers.format_term db buf t;
+         format_space buf;
+         format_string buf s2
+    | IncorrectAddress (a, t) ->
+         format_string buf "Incorrect address:";
+         format_space buf;
+         format_address buf a;
+         format_space buf;
+         printers.format_term db buf t
+    | BadAddressPrefix (a1, a2) ->
+         format_string buf "Bad address prefix:";
+         format_space buf;
+         format_address buf a1;
+         format_space buf;
+         format_address buf a2
+    | BadParamMatch (p1, p2) ->
+         format_string buf "Parameters do not match:";
+         format_space buf;
+         printers.format_param db buf p1;
+         format_space buf;
+         printers.format_param db buf p2
+    | Term.BadMatch (t1, t2) ->
+         format_string buf "Terms do not match:";
+         format_space buf;
+         printers.format_term db buf t1;
+         format_space buf;
+         printers.format_term db buf t2
+    | MetaTermMatch t ->
+         format_string buf "Meta term does not match:";
+         format_space buf;
+         printers.format_mterm db buf t
+    | exn ->
+         format_string buf (Printexc.to_string exn)
+   in
+      format_pushm buf 4;
+      format error;
+      format_popm buf
+
+(*
+ * Formatting.
+ *)
+let format_rewrite_error db buf error =
+   format_rewrite_error db buf dform_printers error
+
+let format_refine_error db buf error =
+   format_refine_error db buf dform_printers error
+
+let format_exn db buf exn =
+   format_exn db buf dform_printers exn
+
+(*
+ * Print to a channel.
+ *)
+let print db f x =
    try f x with
       exn ->
-         let _ =
-            match exn with
-               RefineError msg ->
-                  eprintf "Refine error: %s%t" (string_of_refine_error msg) eflush
-             | FreeContextVars vars ->
-                  eprintf "FreeContextVars: %a%t" print_string_list vars eflush
-             | Rewrite.RewriteError msg ->
-                  eprintf "Rewrite error: %s%t" (string_of_rewrite_error msg) eflush
-             | Term.TermMatch (s1, t, s2) ->
-                  eprintf "TermMatch: %s %s %s%t" s1 (string_of_term t) s2 eflush
-             | IncorrectAddress (a, t) ->
-                  eprintf "Incorrect address: %s: %s%t" (string_of_address a) (string_of_term t) eflush
-             | BadAddressPrefix (a1, a2) ->
-                  eprintf "Bad address prefix: %s %s%t" (string_of_address a1) (string_of_address a2) eflush
-             | BadParamMatch (p1, p2) ->
-                  eprintf "Parameters do not match: %s %s%t" (string_of_param p1) (string_of_param p2) eflush
-             | Term.BadMatch (t1, t2) ->
-                  eprintf "Terms do not match: %s %s%t" (string_of_term t1) (string_of_term t2) eflush
-             | MetaTermMatch t ->
-                  eprintf "Meta term does not match: %s%t" (string_of_mterm t) eflush
-             | _ ->
-                  ()
-         in
+         let buf = new_buffer () in
+            format_exn db buf exn;
+            print_to_channel 80 buf stderr;
             raise exn
+
+let print_exn db out s exn =
+   let db = get_mode_base db "prl" in
+   let buf = new_buffer () in
+      format_szone buf;
+      format_pushm buf 4;
+      format_string buf s;
+      format_space buf;
+      format_exn db buf exn;
+      format_popm buf;
+      format_ezone buf;
+      print_to_channel 80 buf out;
+      flush out;
+      raise exn
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/28 18:30:43  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.3  1998/04/24 02:42:48  jyh
  * Added more extensive debugging capabilities.
  *

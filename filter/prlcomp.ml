@@ -28,8 +28,8 @@ open Debug
  *)
 let _ =
    if !debug_load then
-      eprintf "Loading Prlcomp%t" eflush
-
+      eprintf "Loading Prlcomp%t" eflush;
+   Debug_set.init ()
 
 (*
  * Environment.
@@ -178,6 +178,7 @@ let print_command_line argv =
  * Main function parses arguments, then issues command.
  *)
 let main () =
+   let spec = spec @ Env_arg.args () in
    let _ = Env_arg.parse spec add_anon_arg "Nuprl-Light compiler" in
    let _ = set_includes () in
    let argv = mk_command () in
@@ -204,6 +205,9 @@ let _ = Printexc.catch (Unix.handle_unix_error main) ()
 
 (*
  * $Log$
+ * Revision 1.11  1998/04/28 18:30:20  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.10  1998/04/24 19:38:41  jyh
  * Updated debugging.
  *

@@ -7,6 +7,7 @@
  * and may contain interactivly generated proofs.
  *)
 
+open Opname
 open Refine
 open Dform_print
 
@@ -20,6 +21,13 @@ type status =
    Unmodified
  | Modified
  | ReadOnly
+ | Incomplete
+
+(*
+ * This exception is raised when a package is requested,
+ * and it has not been loaded.
+ *)
+exception NotLoaded of string
 
 (*
  * A package is a lot like a FilterCache, but
@@ -47,7 +55,7 @@ sig
     * Loaded packages are initially read-only.
     *)
    val create_package : t -> string -> package
-   val load : t -> string -> MLast.str_item
+   val load : t -> string -> package
    val get : t -> string -> package
    val save : t -> package -> unit
 
@@ -74,6 +82,11 @@ sig
    val set_status : package -> status -> unit
    
    (*
+    * Access to the cache.
+    *)
+   val mk_opname : package -> string list -> opname
+   
+   (*
     * Collection of objects in the module.
     *)
    val info : package -> (proof_type, MLast.ctyp, MLast.expr, MLast.str_item) module_info
@@ -82,6 +95,9 @@ end
    
 (*
  * $Log$
+ * Revision 1.5  1998/04/28 18:29:42  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.4  1998/04/17 02:25:31  jyh
  * Implementing shell.
  *

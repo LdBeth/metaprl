@@ -8,6 +8,7 @@
 include Tactic_type
 
 open Term
+open Dform
 open Refine_sig
 open Refine
 
@@ -40,7 +41,7 @@ val tactic : t -> tactic
  *   expand: allow arbitrary changes in the refinement
  *)
 val check : t -> Refiner.extract
-val expand : t -> t
+val expand : dform_base -> t -> t
 
 (* IO *)
 val io_step_of_step : t -> proof_step
@@ -48,6 +49,9 @@ val step_of_io_step : tactic_resources -> cache -> (string, tactic) Hashtbl.t ->
 
 (*
  * $Log$
+ * Revision 1.8  1998/04/28 18:29:51  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.7  1998/04/23 20:04:00  jyh
  * Initial rebuilt editor.
  *

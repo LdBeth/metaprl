@@ -241,15 +241,23 @@ let add_eq_expr loc =
 
 (*
  * Print a message on loading, and catch errors.
+ *    if !Debug.debug_load then
+ *       Printf.eprintf "Loading name%t" eflush;
+ *    try e with
+ *       exn ->
+ *          Refine_exn.print_exn name exn
  *)
 let wrap_exn loc name e =
    let unit_patt = <:patt< () >> in
    let unit_expr = <:expr< () >> in
    
    (* Wrap the body to catch exceptions *)
-   let fun_expr = <:expr< fun [ $list: [unit_patt, None, e ]$ ] >> in
-   let printer = <:expr< $uid: "Refine_exn"$ . $lid: "print_exn"$ $fun_expr$ >> in
-   let wrapped = <:expr< $printer$ $unit_expr$ >> in
+   let exn_patt = <:patt< $lid: "exn"$ >> in
+   let exn_expr = <:expr< $lid: "exn"$ >> in
+   let stderr = <:expr< $uid: "Pervasives"$ . $lid: "stderr"$ >> in
+   let dform = <:expr< $lid: local_dformer_id$ . $lid: "val"$ >> in
+   let printer = <:expr< $uid: "Refine_exn"$ . $lid: "print_exn"$ $dform$ $stderr$ $str: name$ $exn_expr$ >> in
+   let wrapped = <:expr< try $e$ with [ $list: [exn_patt, None, printer]$ ] >> in
 
    (* Print a message before the execution *)
    let debug_load_ref = <:expr< $uid: "Debug"$ . $lid: "debug_load"$ >> in
@@ -593,7 +601,7 @@ let prim_rewrite proc loc
        <:str_item< value $rec:false$ $list:[ rw_patt, wrap_exn loc rw_id body ]$ >>
     in
     let name_let =
-       <:str_item< value $rec:false$ $list:[ name_patt, wrap_exn loc name rw_fun_expr ]$ >>
+       <:str_item< value $rec:false$ $list:[ name_patt, rw_fun_expr ]$ >>
     in
        [name_rewrite_let; name_let ]
 
@@ -671,7 +679,7 @@ let prim_cond_rewrite proc loc
                  $lid:name$ >>
     in
     let name_rewrite_let =
-       <:str_item< value $rec:false$ $list:[ rw_patt, body ]$ >>
+       <:str_item< value $rec:false$ $list:[ rw_patt, wrap_exn loc name body ]$ >>
     in
     let name_let =
        <:str_item< value $rec:false$ $list:[ name_patt, rw_fun_expr ]$ >>
@@ -696,7 +704,7 @@ let derived_rewrite proc loc
                       $str:name$ $redex_expr$ $con_expr$ $expr$
               >>
    in
-      [<:str_item< $exp:expr$ >>]
+      [<:str_item< $exp: wrap_exn loc name expr$ >>]
 
 let derived_cond_rewrite proc loc
     { crw_name = name;
@@ -715,7 +723,7 @@ let derived_cond_rewrite proc loc
                       $str:name$ $params_expr'$
                       $args_expr$ $redex_expr$ $con_expr$ $expr$ >>
    in
-      [<:str_item< $exp:expr$ >>]
+      [<:str_item< $exp: wrap_exn loc name expr$ >>]
 
 let () = ()
 
@@ -734,8 +742,8 @@ let define_axiom code proc loc { axiom_name = name; axiom_stmt = stmt } extract 
               $nil_array loc$ $nil_list loc$ $goals$ $extract$
       >>
    in
-   let axiom_item = (<:str_item< value $rec:false$ $list:[axiom_patt, axiom_value]$ >>) in
-   let thm_item = <:str_item< $exp:thm$ >> in
+   let axiom_item = (<:str_item< value $rec:false$ $list:[axiom_patt, wrap_exn loc name axiom_value]$ >>) in
+   let thm_item = <:str_item< $exp: wrap_exn loc name thm$ >> in
       [axiom_item; thm_item]
 
 let prim_axiom proc loc ax extract =
@@ -828,7 +836,7 @@ let define_rule code proc loc
                in
                    $lid:"rule"$ >>)
    in
-   let rule_def = <:str_item< value $rec:false$ $list:[ name_rule_patt, rule_expr ]$ >> in
+   let rule_def = <:str_item< value $rec:false$ $list:[ name_rule_patt, wrap_exn loc name rule_expr ]$ >> in
    let tac_def = <:str_item< value $rec:false$ $list:[ name_patt, name_value ]$ >> in
       [rule_def; tac_def]
 
@@ -865,16 +873,18 @@ let define_ml_program proc loc term_id redex_id t cons code =
    let redex_patt = <:patt< $lid:redex_id$ >> in
    let term_expr  = <:expr< $lid:term_id$ >> in
    let redex_expr = <:expr< $lid:redex_id$ >> in
+   let tname = string_of_opname (opname_of_term t) in
    
    (* Build a contractum *)
    let rec contracta_bind index = function
       t::tl ->
          let term_expr = build_ml_term loc t in
-         let let_patt = <:patt< $lid: sprintf "contractum_%d" index$ >> in
+         let name = sprintf "%s.contractum_%d" tname index in
+         let let_patt = <:patt< $lid:name$ >> in
          let let_value =
             <:expr< $compile_contractum_expr loc$ $redex_expr$ $term_expr$ >>
          in
-            (let_patt, let_value) :: (contracta_bind (index + 1) tl)
+            (let_patt, wrap_exn loc name let_value) :: (contracta_bind (index + 1) tl)
     | [] ->
          []
    in
@@ -891,11 +901,11 @@ let define_ml_program proc loc term_id redex_id t cons code =
       <:expr< $compile_redex_expr loc$ $nil_array loc$ $term_expr$ >>
    in
    let redex_value_expr =
-      <:expr< let $rec:false$ $list:[redex_patt, redex_let_expr]$ in $contracta_expr$ >>
+      <:expr< let $rec:false$ $list:[redex_patt, wrap_exn loc tname redex_let_expr]$ in $contracta_expr$ >>
    in
    let t_expr = build_ml_term loc t in
    let code_value_expr =
-      <:expr< let $rec:false$ $list:[term_patt, t_expr]$ in $redex_value_expr$ >>
+      <:expr< let $rec:false$ $list:[term_patt, wrap_exn loc tname t_expr]$ in $redex_value_expr$ >>
    in
       [<:str_item< $exp:code_value_expr$ >>]
 
@@ -1027,7 +1037,8 @@ let define_prec_rel proc loc
        | GTRelation ->
             <:expr< $add_lt_expr loc$ $lid:s'$ $lid:s$ >>
    in
-      [<:str_item< $exp:expr$ >>]
+   let name = sprintf "%s..%s" s s' in
+      [<:str_item< $exp:wrap_exn loc name expr$ >>]
 
 (*
  * Pattern to match rewrite destruction.
@@ -1158,11 +1169,21 @@ let define_parent proc loc
       parent_opens = opens;
       parent_resources = nresources
     } =
+   let parent_path = parent_path_expr loc path in
+   let joins =
+      let parent_refiner = (<:expr< $parent_path$ . $lid: refiner_id$ >>) in
+      let parent_dformer = (<:expr< $parent_path$ . $lid: dformer_id$ >>) in
+      let refiner_expr = (<:expr< $join_refiner_expr loc$ $lid: local_refiner_id$ $parent_refiner$ >>) in
+      let dformer_expr = (<:expr< $join_mode_base_expr loc$ $lid: local_dformer_id$ $parent_dformer$ >>) in
+      let refiner_item = (<:str_item< $exp: refiner_expr$ >>) in
+      let dformer_item = (<:str_item< $exp: dformer_expr$ >>) in
+         [refiner_item; dformer_item]
+   in
    let print_resource resources resource =
       let { resource_name = name } = resource in
       let name_expr = (<:expr< $lid:name$ >>) in
       let name_patt = (<:patt< $lid:name$ >>) in
-      let parent_value = (<:expr< $parent_path_expr loc path$ . $name_expr$ >>) in
+      let parent_value = (<:expr< $parent_path$ . $name_expr$ >>) in
       if mem_resource resource resources then
          (*
           * let name = name.resource_join name Parent.name
@@ -1178,7 +1199,7 @@ let define_parent proc loc
    let { imp_resources = resources } = proc in
    let resources, items = List_util.fold_left print_resource resources nresources in
       proc.imp_resources <- resources;
-      items
+      joins @ items
 
 (*
  * An regular item.
@@ -1374,6 +1395,9 @@ let extract_str info resources name =
    
 (*
  * $Log$
+ * Revision 1.11  1998/04/28 18:30:17  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.10  1998/04/24 19:38:29  jyh
  * Updated debugging.
  *

@@ -14,7 +14,7 @@
  *
  * The interface is functional, so to make this a little
  * less expensive, we compile a regular table on the first access,
- * and just keep around a list of entreis normally.
+ * and just keep around a list of entries normally.
  *
  *)
 
@@ -179,7 +179,8 @@ let compute_base entries =
  * Lookup the base.
  *)
 let get_base = function
-   { tbl_base = Some base } -> base
+   { tbl_base = Some base } ->
+      base
  | { tbl_items = items } as tbl ->
       let base = compute_base items in
          tbl.tbl_base <- Some base;
@@ -217,6 +218,9 @@ let lookup tbl t =
 
 (*
  * $Log$
+ * Revision 1.3  1998/04/28 18:30:49  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.2  1998/04/24 02:43:03  jyh
  * Added more extensive debugging capabilities.
  *

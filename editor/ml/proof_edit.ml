@@ -426,20 +426,23 @@ let check_ped ped =
  * When the proof is expanded, we make a dulicate.
  * Expansion never fails, but it may change the status of the proof.
  *)
-let expand_ped ped =
+let expand_ped df ped =
    let { ped_undo =undo; ped_stack = stack } = ped in
       match undo with
          [] ->
             raise (RefineError (StringError "expand_ped: no goal"))
        | ped' :: _ ->
             let { ped_proof = pf; ped_select = select } = ped' in
-            let ped' = { ped_proof = Proof.expand pf; ped_select = select } in
+            let ped' = { ped_proof = Proof.expand df pf; ped_select = select } in
             let stack = ped' :: stack in
                ped.ped_undo <- stack;
                ped.ped_stack <- stack
 
 (*
  * $Log$
+ * Revision 1.5  1998/04/28 18:29:47  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.4  1998/04/24 02:41:31  jyh
  * Added more extensive debugging capabilities.
  *

@@ -72,10 +72,13 @@ val root_ped : t -> unit
  *       no exceptions are raised
  *)
 val check_ped : t -> Refiner.extract
-val expand_ped : t -> unit
+val expand_ped : dform_base -> t -> unit
 
 (*
  * $Log$
+ * Revision 1.4  1998/04/28 18:29:48  jyh
+ * ls() works, adding display.
+ *
  * Revision 1.3  1998/04/23 20:03:55  jyh
  * Initial rebuilt editor.
  *
