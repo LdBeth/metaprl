@@ -699,7 +699,10 @@ doc <:doc< @docoff >>
 dform code_df1 : mode[tex] :: code[s:s] =
    izone `"\\verb}" slot[s:s] `"}" ezone
 
-dform code_df2 : except_mode[tex] :: code[s:s] =
+dform code_df2 : mode[html] :: code[s:s] =
+   izone `"<pre>" slot[s:s] `"</pre>" ezone
+
+dform code_df3 : except_mode[tex] :: except_mode[html] :: code[s:s] =
    tt[s:s]
 
 doc <:doc< 

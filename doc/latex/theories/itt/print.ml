@@ -59,6 +59,7 @@ print_theory "itt_list2";;
 print_theory "itt_esquash";;
 print_theory "itt_quotient";;
 print_theory "itt_struct2";;
+print_theory "itt_int_arith";;
 print_theory "itt_well_founded";;
 print_theory "itt_singleton";;
 print_theory "itt_subset";;
