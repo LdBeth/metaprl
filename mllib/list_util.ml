@@ -389,14 +389,20 @@ let add_assoc (v1, v2) l =
       Not_found -> (v1, v2)::l
 
 (*
+ * See if a value is in domain.
+ *)
+let rec assoc_in_dom eq y = function
+   (y',_)::tl ->
+      (eq y y') || (assoc_in_dom eq y tl)
+ | [] ->
+      false
+
+(*
  * See if a value is in range.
  *)
 let rec assoc_in_range eq y = function
    (_, y')::tl ->
-      if eq y y' then
-         true
-      else
-         assoc_in_range eq y tl
+      (eq y y') || (assoc_in_range eq y tl)
  | [] ->
       false
 

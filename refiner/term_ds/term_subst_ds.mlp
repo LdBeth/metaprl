@@ -461,66 +461,51 @@ struct
       if !debug_unify then
          eprintf "Unify: %a/%a%t" print_term term1 print_term term2 eflush;
 #endif
-      if is_var_term term1 then
-         let v = dest_var term1 in
-            try
-               let v' = List.assoc v bvars in
-                  if v' = dest_var term2 then
-                     subst
-                  else
-                     raise unify_exn
+      match get_core term1, get_core term2 with
+         FOVar v, FOVar v' ->
+            begin try
+               if List.assoc v bvars = v' then subst else raise unify_exn
             with
                Not_found ->
-                  unify_var_term subst constants bvars v term1 term2
-
-      else if is_var_term term2 then
-         let v = dest_var term2 in
-            try
-               let v' = rev_assoc v bvars in
-                  if v' = dest_var term1 then
-                     subst
+                  if List_util.assoc_in_range (=) v' bvars then raise unify_exn else
+                  if v=v' then subst else
+                  if String_set.StringSet.mem constants v then
+                     if String_set.StringSet.mem constants v' then raise unify_exn else
+                     try unify_terms subst constants bvars (subst_assoc subst v') term1 with
+                        Not_found ->
+                           subst_add subst v' term1
+                  else if String_set.StringSet.mem constants v' then
+                     try unify_terms subst constants bvars (subst_assoc subst v) term2 with
+                        Not_found ->
+                           subst_add subst v term2
                   else
-                     raise unify_exn
-            with
-               Not_found ->
-                  unify_var_term subst constants bvars v term2 term1
-      else
-         let trm1 = dest_term term1 in
-         let trm2 = dest_term term2 in
-         let { op_name = opname1; op_params = params1 } = trm1.term_op in
-         let { op_name = opname2; op_params = params2 } = trm2.term_op in
-            if Opname.eq opname1 opname2 & params1 = params2 then
-               unify_bterms subst constants bvars trm1.term_terms trm2.term_terms
-            else
-               raise unify_exn
+                     equate_vars subst v v'
+            end
+       | FOVar v, Term _ ->
+            if List_util.assoc_in_dom (=) v bvars then raise unify_exn else
+            unify_var_term subst constants bvars v term1 term2
+       | Term _, FOVar v ->
+            if List_util.assoc_in_range (=) v bvars then raise unify_exn else
+            unify_var_term subst constants bvars v term2 term1
+       | Term trm1, Term trm2 ->
+            let op1 = trm1.term_op in
+            let op2 = trm2.term_op in
+               if Opname.eq op1.op_name op2.op_name && 
+                  List_util.for_all2 equal_params op1.op_params op2.op_params 
+               then
+                  unify_bterms subst constants bvars trm1.term_terms trm2.term_terms
+               else
+                  raise unify_exn
+       | _ ->
+            raise (Invalid_argument "Term_subst_ds.unify_term is not implemented for some `special' terms")
 
    and unify_var_term subst constants bvars v term1 term2 =
       if String_set.StringSet.mem constants v then
-         if is_var_term term2 then
-            let v' = dest_var term2 in
-               if v = v' then
-                  subst
-               else if String_set.StringSet.mem constants v' then
-                  raise unify_exn
-               else
-                  try unify_terms subst constants bvars (subst_assoc subst v') term1 with
-                     Not_found ->
-                        subst_add subst v' term1
-         else
-            raise unify_exn
-      else if is_var_term term2 then
-         let v' = dest_var term2 in
-            if v' = v then
-               subst
-            else if String_set.StringSet.mem constants v' then
-               try unify_terms subst constants bvars (subst_assoc subst v) term2 with
-                  Not_found ->
-                     subst_add subst v term2
-            else
-               equate_vars subst v v'
-      else
+         raise unify_exn
+      else 
          try unify_terms subst constants bvars (subst_assoc subst v) term2 with
             Not_found ->
+               (* Bound vars occurs check goes here *)
                subst_add subst v term2
 
    and unify_bterms subst constants bvars bterms1 bterms2 =

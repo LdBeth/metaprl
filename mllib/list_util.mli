@@ -77,6 +77,7 @@ val zip : 'a list -> 'b list -> ('a * 'b) list
 val assoc_index : ('a * 'b) list -> 'a -> int
 val assoc_replace : ('a * 'b) list -> 'a -> 'b -> ('a * 'b) list
 val add_assoc : 'a * 'b -> ('a * 'b) list -> ('a * 'b) list
+val assoc_in_dom : ('b -> 'a -> bool) -> 'b -> ('a * 'c) list -> bool
 val assoc_in_range : ('b -> 'c -> bool) -> 'b -> ('a * 'c) list -> bool
 
 (*
