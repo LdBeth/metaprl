@@ -15,7 +15,7 @@ macro.cmo: macro.ml
 	$(OCAMLC) -pp "camlp4o pa_extend.cmo q_MLast.cmo" -I `camlp4 -where` -c macro.ml
 
 $(LIB)/macro.cmo: macro.cmo
-	$(LN) $,(in $(LIB), $(file macro.cmo)) $(LIB)/macro.cmo
+	$(LN) -f $,(in $(LIB), $(file macro.cmo)) $(LIB)/macro.cmo
 
 #
 # We also use our own version of ocamldep

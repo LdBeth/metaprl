@@ -97,8 +97,8 @@ if true
     CAMLP4MACROPRINT = camlp4o pr_o.cmo $(OCAMLMACROS)
 
     # Add the extra dependency
-    %.cmo: $(OCAMLMACROS)
-    %.cmx: $(OCAMLMACROS)
+    %.mli: $(OCAMLMACROS)
+    %.ml: $(OCAMLMACROS)
 
     # These directories use the macro preprocessor
     .SUBDIRS: mllib refiner

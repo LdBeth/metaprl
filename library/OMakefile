@@ -57,10 +57,10 @@ TEXT_FILE = $(file mbs-mpl.txt)
 $(MPINSTALL): $(LIB)/mbs-mpl.txt $(LIB)/registry.txt
 
 $(LIB)/mbs-mpl.txt: $(TEXT_FILE)
-	$(LN) $(in $(LIB), $(TEXT_FILE)) $@
+	$(LN) -f $(in $(LIB), $(TEXT_FILE)) $@
 
 $(LIB)/registry.txt: $(REGISTRY_FILE)
-	$(LN) $(in $(LIB), $(REGISTRY_FILE)) $@
+	$(LN) -f $(in $(LIB), $(REGISTRY_FILE)) $@
 
 #
 # Clean up
