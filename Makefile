@@ -50,7 +50,9 @@ profile_all:
 
 profile_byte: clean all profile_clean profile_all
 
-profile: all profile_opt
+profile: 
+	@$(MAKE) all 
+	@$(MAKE) profile_opt
 
 profile_opt:
 	@for i in $(REFINER_DIRS); do\
