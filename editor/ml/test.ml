@@ -32,20 +32,32 @@
 
 include Itt_theory
 
+open Printf
+
+open Mp_debug
+
 open Splay_table
 open String_set
 
 open Refiner.Refiner.TermType
 open Refiner.Refiner.Term
+open Refiner.Refiner.TermOp
+open Refiner.Refiner.TermAddr
 open Refiner.Refiner.RefineError
 
 open Tacticals
+open Conversionals
+open Var
 open Base_dtactic
 open Base_auto_tactic
 
 open Itt_equal
 open Itt_logic
 open Itt_struct
+
+(************************************************************************
+ * SPECIALIZED DECISION PROCEDURE                                       *
+ ************************************************************************)
 
 (*
  * Table for associating pigeon locations with hyp numbers.
@@ -137,6 +149,171 @@ let prove2T p =
 let proveT p =
    let length = Sequent.hyp_count p in
       (decompose_disjuncts length thenT prove2T) p
+
+(************************************************************************
+ * GENERAL CONSTRUCTIVE PROCEDURE                                       *
+ ************************************************************************)
+
+(*
+ * Dyckoff's decision procedure for intuitionistic propositional
+ * logic.  This is only a little different from the procedure
+ * in itt_prop_decide.  We apply autoT to well-formedness subgoals
+ * to knock them off as soon as possible.
+ *)
+let debug_prop_decide =
+  create_debug (**)
+     { debug_name = "prop_decide";
+       debug_description = "show propDecide operations";
+       debug_value = false
+     }
+
+(* Like onSomeHyp, but works backwards. *)
+let revOnSomeHypT tac p =
+   let rec aux i =
+      if i = 1 then
+         tac i
+      else if i > 1 then
+         tac i orelseT (aux (pred i))
+      else
+         idT
+   in
+      aux (Sequent.hyp_count p) p
+
+(* Operate on all non-wf subgoals *)
+let ifNotWT tac p =
+   (if (Sequent.label p) = "wf" then
+       idT
+    else
+       tac) p
+
+(* Term classes *)
+let is_imp_and_term term =
+   is_implies_term term & is_and_term (term_subterm term (make_address [0]))
+
+let is_imp_or_term term =
+   is_implies_term term & is_or_term (term_subterm term (make_address [0]))
+
+let is_imp_imp_term term =
+   is_implies_term term & is_implies_term (term_subterm term (make_address [0]))
+
+interactive imp_and_rule 'H 'J 'u :
+   sequent [squash] { 'H; x: "and"{'C; 'D} => 'B; 'J['x] >- "type"{'C} } -->
+   sequent [squash] { 'H; x: "and"{'C; 'D} => 'B; 'J['x] >- "type"{'D} } -->
+   sequent ['ext] { 'H; x: "and"{'C; 'D} => 'B; 'J['x];
+                     u: 'C => 'D => 'B >- 'T['x] } -->
+   sequent ['ext] { 'H; x: "and"{'C; 'D} => 'B; 'J['x] >- 'T['x] }
+
+interactive imp_or_rule 'H 'J 'u 'v :
+   sequent [squash] { 'H; x: "or"{'C; 'D} => 'B; 'J['x] >- "type"{'C} } -->
+   sequent [squash] { 'H; x: "or"{'C; 'D} => 'B; 'J['x] >- "type"{'D} } -->
+   sequent ['ext] { 'H; x: "or"{'C; 'D} => 'B; 'J['x];
+                     u: 'C => 'B; v: 'D => 'B >- 'T['x] } -->
+   sequent ['ext] { 'H; x: "or"{'C; 'D} => 'B; 'J['x] >- 'T['x] }
+
+interactive imp_imp_rule 'H 'J 'u :
+   sequent [squash] { 'H; x: "implies"{'C; 'D} => 'B; 'J['x] >- "type"{'C} } -->
+   sequent [squash] { 'H; x: "implies"{'C; 'D} => 'B; 'J['x] >- "type"{'D} } -->
+   sequent ['ext] { 'H; x: "implies"{'C; 'D} => 'B; 'J['x];
+                     u: 'D => 'B >- 'T['x] } -->
+   sequent ['ext] { 'H; x: "implies"{'C; 'D} => 'B; 'J['x] >- 'T['x] }
+
+(* Create a tactic for the X-implication-elimination. *)
+let d_and_impT i p =
+   if i = 0 then
+      raise (RefineError ("d_and_impT", StringError "no introduction form"))
+   else
+      let u = maybe_new_vars1 p "u" in
+      let j, k = Sequent.hyp_indices p i in
+         (imp_and_rule j k u
+          thenLT [autoT (* addHiddenLabelT "wf" *);
+                  autoT (* addHiddenLabelT "wf" *);
+                  thinT i]) p
+
+let d_or_impT i p =
+   if i = 0 then
+      raise (RefineError ("d_or_impT", StringError "no introduction form"))
+   else
+      let u, v = maybe_new_vars2 p "u" "v" in
+      let j, k = Sequent.hyp_indices p i in
+         (imp_or_rule j k u v
+          thenLT [autoT (* addHiddenLabelT "wf" *);
+                  autoT (* addHiddenLabelT "wf" *);
+                  thinT i]) p
+
+let d_imp_impT i p =
+   if i = 0 then
+      raise (RefineError ("d_and_impT", StringError "no introduction form"))
+   else
+      let u = maybe_new_vars1 p "u" in
+      let j, k = Sequent.hyp_indices p i in
+         (imp_and_rule j k u
+          thenLT [autoT (* addHiddenLabelT "wf" *);
+                  autoT (* addHiddenLabelT "wf" *);
+                  thinT i]) p
+
+(* Try to decompose a hypothesis *)
+let rec decompPropDecideHypT count i p =
+   (let term = snd (Sequent.nth_hyp p i) in
+       if is_false_term term then
+          dT i
+       else if is_and_term term or is_or_term term then
+          dT i thenT ifNotWT (internalPropDecideT count)
+       else if is_imp_and_term term then
+          (* {C & D => B} => {C => D => B} *)
+          d_and_impT i thenT ifNotWT (internalPropDecideT count)
+       else if is_imp_or_term term then
+          (* {C or D => B} => {(C => B) & (D => B)} *)
+          d_or_impT i thenT ifNotWT (internalPropDecideT count)
+       else if is_imp_imp_term term then
+          (* {(C => D) => B} => {D => B} *)
+          d_imp_impT i thenT ifNotWT (internalPropDecideT count)
+       else if is_implies_term term then
+          dT i thenT thinT i thenT ifNotWT (internalPropDecideT count)
+       else
+          (* Nothing recognized, try to see if we're done. *)
+          nthHypT i) p
+
+(* Decompose the goal *)
+and decompPropDecideConclT count p =
+   if !debug_prop_decide then
+      begin
+         eprintf "decompPropDecideConclT: %a%t" Refiner.Refiner.Term.debug_print (Sequent.concl p) eflush
+      end;
+   (let goal = Sequent.concl p in
+       if is_or_term goal then
+          (selT 1 (dT 0) thenT ifNotWT (internalPropDecideT count))
+          orelseT (selT 2 (dT 0) thenT ifNotWT (internalPropDecideT count))
+       else if is_and_term goal or is_implies_term goal then
+          dT 0 thenT ifNotWT (internalPropDecideT count)
+       else
+          trivialT) p
+
+(* Prove the proposition - internal version that does not handle negation *)
+and internalPropDecideT count p =
+   if !debug_prop_decide then
+      eprintf "propDecideT: %d: %a%t" count debug_print (Sequent.goal p) eflush;
+   let count = succ count in
+      (revOnSomeHypT (decompPropDecideHypT count) orelseT decompPropDecideConclT count) p
+
+(* Convert all "not X" terms to "X => False" *)
+let notToImpliesFalseC =
+   sweepUpC (unfoldNot andthenC foldImplies andthenC (addrC [1] foldFalse))
+
+(*
+ * Toplevel tactic:
+ * Unfold all negations, then run Dyckoff's algorithm.
+ *)
+let propDecideT =
+   onAllClausesT (fun i -> tryT (rw notToImpliesFalseC i))
+   thenT internalPropDecideT 0
+
+(*
+ * -*-
+ * Local Variables:
+ * Caml-master: "prlcomp.run"
+ * End:
+ * -*-
+ *)
 
 (************************************************************************
  * PROBLEMS                                                             *
@@ -245,6 +422,7 @@ interactive pigeon4 'H : :
 	>- void
 }
 
+(*
 interactive pigeon5 'H : :
    sequent ['ext] { 'H;
 	x0_1: univ[1:l];
@@ -889,6 +1067,7 @@ interactive pigeon9 'H : :
 	h9: 'x9_1 or 'x9_2 or 'x9_3 or 'x9_4 or 'x9_5 or 'x9_6 or 'x9_7 or 'x9_8 or 'x9_9
 	>- void
 }
+*)
 
 
 (*

@@ -35,6 +35,7 @@ include Itt_theory
 open Tacticals
 
 topval proveT : tactic
+topval propDecideT : tactic
 
 (*
  * -*-
