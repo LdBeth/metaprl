@@ -10,6 +10,8 @@ open Opname
 
 open Jlogic_sig
 
+open Jtunify
+
 let ruletable = function
    Fail -> "Fail"
  | Ax ->     "Ax"
@@ -3549,135 +3551,6 @@ let jqunify term1 term2 sigmaQ =
      failwith "fail1"   (* new connection, please *)
 
 (* ************ T-STRING UNIFICATION ******************************** *)
-
-let is_const name  =
-  (String.get name 0) = 'c'
-
-let is_var name  =
-  (String.get name 0) = 'v'
-
-let r_1 s ft rt =
-  (s = []) & (ft = []) & (rt = [])
-
-let r_2 s ft rt =
-  (s = []) & (ft = []) & (List.length rt >= 1)
-
-let r_3 s ft rt =
-  if ft=[] then
-    if (List.length s >= 1) &  (List.length rt >= 1) then
-     let x = List.hd s
-     and y = List.hd rt in
-       x=y
-    else
-     false
-  else
-   false
-
-
-
-
-let r_4 s ft rt =
-  if ft=[] then
-    if (List.length s >= 1) &  (List.length rt >= 1) then
-     let c = List.hd s
-     and v = List.hd rt in
-       (is_const c) & (is_var v)
-    else
-     false
-  else
-   false
-
-
-
- let r_5 s ft rt =
-  if rt=[] then
-    if (List.length s >= 1) then
-     let v = List.hd s in
-       (is_var v)
-    else
-     false
-  else
-   false
-
-
-
-
-let r_6 s ft rt =
-  if ft=[] then
-    if (List.length s >= 1) &  (List.length rt >= 1) then
-     let v = List.hd s
-     and c1 = List.hd rt in
-       (is_var v) & (is_const c1)
-    else
-     false
-  else
-   false
-
-
-
-
-let r_7 s ft rt =
-    if (List.length s >= 1) &  (List.length rt >= 2) then
-     let v = List.hd s
-     and c1 = List.hd rt
-     and c2 = (List.hd (List.tl rt)) in
-       (is_var v) & (is_const c1) & (is_const c2)
-    else
-     false
-
-
-
-
-
-
-let r_8 s ft rt =
-  if ft=[] then
-    if (List.length s >= 2) &  (List.length rt >= 1) then
-     let v = List.hd s
-     and v1 = List.hd rt in
-       (is_var v) & (is_var v1) & (v <> v1)
-    else
-     false
-  else
-   false
-
-
-
-
-
-let r_9 s ft rt =
-    if (List.length s >= 2) & (List.length ft >= 1) & (List.length rt >= 1) then
-     let v = (List.hd s)
-     and v1 = (List.hd rt) in
-       (is_var v) & (is_var v1) & (v <> v1)
-    else
-      false
-
-
-
-let r_10 s ft rt =
-    if (List.length s >= 1) &  (List.length rt >= 1) then
-     let v = List.hd s
-     and x = List.hd rt in
-       (is_var v) & (v <> x) &
-        (((List.tl s) =[]) or (is_const x) or ((List.tl rt) <> []))
-    else
-     false
-
-
-
-
-
-
-let rec com_subst slist (ov,ovlist) =
- match slist with
-  [] -> raise (Failure "Invalid argument")
-  |f::r ->
-   if f = ov then
-    (ovlist @ r)
-   else
-    f::(com_subst r (ov,ovlist))
-
 
 let rec combine subst (ov,oslist)  =
  match subst with
