@@ -43,22 +43,6 @@ let set_source_position pos =
 (*
  * Utilities for symbols.
  *)
-let print_psymbol = function
-   Terminal s ->
-      print_string s
- | NonTerminal s ->
-      print_string (string_add ["<"; s; ">"])
- | Empty ->
-      print_string "{Epsilon}"
- | Eof ->
-      print_string "$"
-
-let print_psymbol_set set =
-   let psymbol_list = PSymbolSet.to_list set in
-   List.iter (fun psym ->
-      print_string " ";
-      print_psymbol psym) psymbol_list
-
 let psymbol_equal ps1 ps2 =
    if psymbol_compare ps1 ps2 = 0 then
       true

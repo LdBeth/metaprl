@@ -4,145 +4,118 @@ val bogus_pos : string * int * int * int * int
 val source_pos : pos ref
 val source_position : unit -> pos
 val set_source_position : pos -> unit
-val print_psymbol : psymbol -> unit
-val print_psymbol_set : PSymbolSet.t -> unit
 val psymbol_equal : psymbol -> psymbol -> bool
 val psymbol_set_empty : PSymbolSet.t
-val psymbol_set_mem :
-  PSymbolSet.t -> PSymbolSet.elt -> bool
-val psymbol_set_add :
-  PSymbolSet.t ->
-  PSymbolSet.elt -> PSymbolSet.t
-val psymbol_set_of_list :
-  PSymbolSet.elt list -> PSymbolSet.t
-val psymbol_set_to_list :
-  PSymbolSet.t -> PSymbolSet.elt list
-val psymbol_set_union :
-  PSymbolSet.t ->
-  PSymbolSet.t -> PSymbolSet.t
-val psymbol_set_equal :
-  PSymbolSet.t -> PSymbolSet.t -> bool
-val psymbol_set_diff :
-  PSymbolSet.t ->
-  PSymbolSet.t -> PSymbolSet.t
+val psymbol_set_mem : PSymbolSet.t -> psymbol -> bool
+val psymbol_set_add : PSymbolSet.t -> psymbol -> PSymbolSet.t
+val psymbol_set_of_list : psymbol list -> PSymbolSet.t
+val psymbol_set_to_list : PSymbolSet.t -> psymbol list
+val psymbol_set_union : PSymbolSet.t -> PSymbolSet.t -> PSymbolSet.t
+val psymbol_set_equal : PSymbolSet.t -> PSymbolSet.t -> bool
+val psymbol_set_diff : PSymbolSet.t -> PSymbolSet.t -> PSymbolSet.t
 val psymbol_set_size : PSymbolSet.t -> int
-val psymbol_set_subset :
-  PSymbolSet.t -> PSymbolSet.t -> bool
-val psymbol_list_equal :
-  PSymbolSet.elt list -> PSymbolSet.elt list -> bool
-val psymbol_list_union :
-  PSymbolSet.elt list ->
-  PSymbolSet.elt list -> PSymbolSet.elt list
-val string_set_add :
-  StringSet.t -> StringSet.elt -> StringSet.t
-val string_set_empty :
-  StringSet.t
-val string_set_mem :
-  StringSet.t -> StringSet.elt -> bool
-val string_set_union :
-  StringSet.t -> StringSet.t -> StringSet.t
-val string_set_of_list :
-  StringSet.elt list -> StringSet.t
-val find_productions :
-  'a PSymbolMTable.t -> PSymbolMTable.key -> 'a list
+val psymbol_set_subset : PSymbolSet.t -> PSymbolSet.t -> bool
+val psymbol_list_equal : psymbol list -> psymbol list -> bool
+val psymbol_list_union : psymbol list -> psymbol list -> psymbol list
+val string_set_add : StringSet.t -> string -> StringSet.t
+val string_set_empty : StringSet.t
+val string_set_mem : StringSet.t -> string -> bool
+val string_set_union : StringSet.t -> StringSet.t -> StringSet.t
+val string_set_of_list : string list -> StringSet.t
+val find_productions : 'a PSymbolMTable.t -> psymbol -> 'a list
 val nullables_add :
   PSymbolSet.t ->
-  PSymbolSet.elt -> PSymbolSet.t
+  psymbol -> PSymbolSet.t
 val is_nullable :
-  PSymbolSet.t -> PSymbolSet.elt -> bool
+  PSymbolSet.t -> psymbol -> bool
 val is_nullable_list :
-  PSymbolSet.t -> PSymbolSet.elt list -> bool
+  PSymbolSet.t -> psymbol list -> bool
 val first_set_find_as_set :
   PSymbolSet.t PSymbolTable.t ->
-  PSymbolTable.key -> PSymbolSet.t
+  psymbol -> PSymbolSet.t
 val first_set_find :
   PSymbolSet.t PSymbolTable.t ->
-  PSymbolTable.key -> PSymbolSet.elt list
+  psymbol -> psymbol list
 val first_set_add :
   PSymbolSet.t PSymbolTable.t ->
-  PSymbolTable.key ->
-  PSymbolSet.elt ->
+  psymbol ->
+  psymbol ->
   PSymbolSet.t PSymbolTable.t
 val first_set_add_list :
   PSymbolSet.t PSymbolTable.t ->
-  PSymbolTable.key ->
-  PSymbolSet.elt list ->
+  psymbol ->
+  psymbol list ->
   PSymbolSet.t PSymbolTable.t
 val follow_set_find_as_set :
   PSymbolSet.t PSymbolTable.t ->
-  PSymbolTable.key -> PSymbolSet.t
+  psymbol -> PSymbolSet.t
 val follow_set_find :
   PSymbolSet.t PSymbolTable.t ->
-  PSymbolTable.key -> PSymbolSet.elt list
+  psymbol -> psymbol list
 val follow_set_add :
   PSymbolSet.t PSymbolTable.t ->
-  PSymbolTable.key ->
-  PSymbolSet.elt ->
+  psymbol ->
+  psymbol ->
   PSymbolSet.t PSymbolTable.t
 val follow_set_add_list :
   PSymbolSet.t PSymbolTable.t ->
-  PSymbolTable.key ->
-  PSymbolSet.elt list ->
+  psymbol ->
+  psymbol list ->
   PSymbolSet.t PSymbolTable.t
 val grammar_table_add :
   'a PSymbolMTable.t ->
-  PSymbolMTable.key -> 'a -> 'a PSymbolMTable.t
+  psymbol -> 'a -> 'a PSymbolMTable.t
 val grammar_table_find :
-  'a PSymbolMTable.t -> PSymbolMTable.key -> 'a list
+  'a PSymbolMTable.t -> psymbol -> 'a list
 val grammar_table_add_once :
   'a PSymbolMTable.t ->
-  PSymbolMTable.key -> 'a -> 'a PSymbolMTable.t
+  psymbol -> 'a -> 'a PSymbolMTable.t
 val prod_id_empty : 'a ProductionIdTable.t
 val prod_id_find_unsafe :
   'a ProductionIdTable.t ->
-  ProductionIdTable.key -> 'a
+  production_id -> 'a
 val prod_id_add :
   'a ProductionIdTable.t ->
-  ProductionIdTable.key ->
+  production_id ->
   'a -> 'a ProductionIdTable.t
 val prod_id_replace :
   'a ProductionIdTable.t ->
-  ProductionIdTable.key ->
+  production_id ->
   'a -> 'a ProductionIdTable.t
 val print_psym : psymbol -> unit
 val print_psym_list : psymbol list -> unit
 val prod_empty : 'a ProductionTable.t
-val prod_find_unsafe :
-  'a ProductionTable.t -> ProductionTable.key -> 'a
-val prod_find :
-  'a ProductionTable.t ->
-  psymbol * psymbol list -> 'a
-val prod_add :
-  'a ProductionTable.t ->
-  ProductionTable.key -> 'a -> 'a ProductionTable.t
+val prod_find_unsafe : 'a ProductionTable.t -> production -> 'a
+val prod_find : 'a ProductionTable.t -> psymbol * psymbol list -> 'a
+val prod_add : 'a ProductionTable.t -> production -> 'a -> 'a ProductionTable.t
 val rewrite_empty : 'a ProductionIdMTable.t
 val rewrite_find_unsafe :
   'a ProductionIdMTable.t ->
-  ProductionIdMTable.key -> 'a list
+  production_id -> 'a list
 val rewrite_add :
   'a ProductionIdMTable.t ->
-  ProductionIdMTable.key ->
+  production_id ->
   'a -> 'a ProductionIdMTable.t
 val rewrite_add_list :
   'a ProductionIdMTable.t ->
-  ProductionIdMTable.key ->
+  production_id ->
   'a list -> 'a ProductionIdMTable.t
 val rewrite_replace_list :
   'a ProductionIdMTable.t ->
-  ProductionIdMTable.key ->
+  production_id ->
   'a list -> 'a ProductionIdMTable.t
 val lex_rewrite_empty : 'a PSymbolMTable.t
 val lex_rewrite_find_unsafe :
-  'a PSymbolMTable.t -> PSymbolMTable.key -> 'a list
+  'a PSymbolMTable.t -> psymbol -> 'a list
 val lex_rewrite_add :
   'a PSymbolMTable.t ->
-  PSymbolMTable.key -> 'a -> 'a PSymbolMTable.t
+  psymbol -> 'a -> 'a PSymbolMTable.t
 val lex_rewrite_add_list :
   'a PSymbolMTable.t ->
-  PSymbolMTable.key -> 'a list -> 'a PSymbolMTable.t
+  psymbol -> 'a list -> 'a PSymbolMTable.t
 val lex_rewrite_add_or_replace_list :
   'a PSymbolMTable.t ->
-  PSymbolMTable.key -> 'a list -> 'a PSymbolMTable.t
+  psymbol -> 'a list -> 'a PSymbolMTable.t
 val state_empty : state_struct
 val state_find_unsafe :
   state_struct ->
@@ -153,7 +126,7 @@ val state_find_safe :
 val state_add :
   state_struct ->
   Parser_state.key ->
-  PSymbolSet.elt -> state_struct * bool
+  psymbol -> state_struct * bool
 val state_add_set :
   state_struct ->
   Parser_state.key ->

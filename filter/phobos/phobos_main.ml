@@ -560,7 +560,7 @@ let create_parsing_table name gst penv =
       print_string "There were errors.\n";
    if !Phobos_state.debug_grammar then
       save_parser_report gst penv states ptable ptable_errors (**)
-         (string_add [chop_extension name; ".output"]);
+         (Phobos_util.filename_of_grammar_output name);
       ptable
 
 (***********************************************************

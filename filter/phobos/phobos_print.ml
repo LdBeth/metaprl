@@ -22,6 +22,8 @@
  * Email: granicz@cs.caltech.edu
  *)
 
+open Lm_printf
+
 open Phobos_type
 open Phobos_constants
 open Phobos_util
