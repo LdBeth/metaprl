@@ -27,7 +27,8 @@ TEXTHEORIES=\
 	fol\
 	itt\
 	czf\
-	mc
+	mc\
+	fir
 
 TEXFILES = $(addsuffix /theory.tex, $(TEXTHEORIES))\
 	$(addsuffix /theory-body.tex, $(TEXTHEORIES))\
