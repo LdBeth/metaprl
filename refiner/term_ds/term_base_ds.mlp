@@ -45,6 +45,7 @@ struct
    type param = TermType.param
    type operator = TermType.operator
    type term = TermType.term
+   type term_core = TermType.term_core
    type bound_term = TermType.bound_term
 
    type level_exp_var' = TermType.level_exp_var'
@@ -126,48 +127,36 @@ struct
              bcore = BSubst (bt,sub')}
 
    (************************************************************************
-    * Variables in pure terms                                              *
-    ************************************************************************)
-
-   exception Not_var
-
-   let var_opname = make_opname ["var"]
-
-   (*
-    * See if a term is a variable.
-    *)
-   let is_var_term_nods = function
-      { term_op = { op_name = opname; op_params = [Var v] };
-        term_terms = []
-      } when Opname.eq opname var_opname -> true
-    | _ -> false
-
-   (*
-    * Destructor for a variable.
-    *)
-   let dest_var_nods = function
-      { term_op = { op_name = opname; op_params = [Var v] };
-        term_terms = []
-      } when Opname.eq opname var_opname -> v
-     | _ -> raise Not_var
-
-   (************************************************************************
     * De/Constructors                                                 *
     ************************************************************************)
 
-   let rec dest_term t =
+   let var_opname = make_opname ["var"]
+
+   let fail_core s =
+      raise (Invalid_argument ("Term_ds." ^ s ^ ": get_core returned a Subst"))
+
+   let rec get_core t =
       match t.core with
-         Term tt -> tt
-       | Subst (tt,sub) ->
-            let ttt = dest_term tt in
-            let t4 =
-               try dest_term (List.assoc (dest_var_nods ttt) sub)
-               with _ ->
-                  { term_op = ttt.term_op;
-                    term_terms = List.map (do_bterm_subst sub) ttt.term_terms }
+         Subst (tt,sub) ->
+            let core =
+               match get_core tt with
+                  Term { term_op = { op_name = opname; op_params = [Var v] };
+                         term_terms = [] } when Opname.eq opname var_opname ->
+                     (* since sub was not eliminated, v should be in sub *)
+                     get_core (List.assoc v sub)
+                | Term ttt ->
+                     Term { term_op = ttt.term_op;
+                            term_terms = List.map (do_bterm_subst sub) ttt.term_terms }
+                | Subst _ -> fail_core "get_core"
             in
-               t.core <- Term t4;
-               t4
+               t.core <- core;
+               core
+       | core -> core
+
+   let dest_term t = 
+      match get_core t with
+         Term t -> t
+       | Subst _ -> fail_core "dest_term"
 
    (*
     * Make a variable.
@@ -309,15 +298,16 @@ struct
    let subterm_count t =
       List.length (dest_term t).term_terms
 
+   let subterm_arities_aux bterm = List.length (dest_bterm bterm).bvars
+
    let subterm_arities term =
-      let aux bterm = List.length (dest_bterm bterm).bvars in
-         List.map aux (dest_term term).term_terms
+         List.map subterm_arities_aux (dest_term term).term_terms
    (*
     * Operator names.
     *)
-   let opname_of_term = function 
-      { core = Term t } -> t.term_op.op_name
-    | t -> (dest_term t).term_op.op_name
+   let opname_of_term t = match get_core t with
+      Term t -> t.term_op.op_name
+    | Subst _ -> fail_core "opname_of_term"
 
    (* These are trivial identity functions *)
 
@@ -339,24 +329,30 @@ struct
    (*
     * See if a term is a variable.
     *)
-   let is_var_term t = is_var_term_nods (dest_term t)
+   let is_var_term t = 
+      match get_core t with
+         Term { term_op = { op_name = opname; op_params = [Var _] };
+                term_terms = [] } when Opname.eq opname var_opname ->
+            true
+       | _ -> false
 
    (*
     * Destructor for a variable.
     *)
    let dest_var t =
-      try
-         dest_var_nods (dest_term t)
-      with
-         Not_var -> ref_raise(RefineError ("dest_var_nods", TermMatchError (t, "not a var")))
+      match dest_term t with
+         { term_op = { op_name = opname; op_params = [Var v] };
+           term_terms = [] } when Opname.eq opname var_opname ->
+            v
+       | _ -> ref_raise(RefineError ("dest_var", TermMatchError (t, "not a var")))
 
    let mk_var_op v = { op_name = var_opname; op_params = [Var v] }
 
    (*
     * Second order variables have subterms.
     *)
-   let is_so_var_term t = match dest_term t with
-      { term_op = { op_name = opname; op_params = [Var(_)] }; term_terms = bterms }
+   let is_so_var_term t = match get_core t with
+      Term { term_op = { op_name = opname; op_params = [Var(_)] }; term_terms = bterms }
       when Opname.eq opname var_opname -> no_bvars bterms
     | _ -> false
 
@@ -384,10 +380,10 @@ struct
    let context_opname = make_opname ["context"]
 
    let is_context_term t =
-      match dest_term t with
-         { term_op = { op_name = opname; op_params = [Var _] };
-           term_terms = bterms
-         } when Opname.eq opname context_opname ->
+      match get_core t with
+         Term { term_op = { op_name = opname; op_params = [Var _] };
+                term_terms = bterms
+              } when Opname.eq opname context_opname ->
             bterms <> [] & no_bvars bterms
        | _ ->
             false
@@ -428,10 +424,10 @@ struct
    (*
     * "Simple" terms have no parameters and no binding variables.
     *)
-   let is_simple_term_opname name t = match dest_term t with
-      { term_op = { op_name = name'; op_params = [] };
-        term_terms = bterms
-      } when Opname.eq name' name -> no_bvars bterms
+   let is_simple_term_opname name t = match get_core t with
+      Term { term_op = { op_name = name'; op_params = [] };
+             term_terms = bterms
+           } when Opname.eq name' name -> no_bvars bterms
     | _ -> false
 
    let mk_any_term op terms = mk_term op (List.map mk_simple_bterm terms)

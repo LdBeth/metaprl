@@ -20,6 +20,7 @@ module Term (**)
   with type param = TermType.param
   with type operator = TermType.operator
   with type term = TermType.term
+  with type term_core = TermType.term_core
   with type bound_term = TermType.bound_term
 
   with type level_exp_var' = TermType.level_exp_var'

@@ -15,6 +15,7 @@ module TermOp
     with type param = TermType.param
     with type operator = TermType.operator
     with type term = TermType.term
+    with type term_core = TermType.term_core
     with type bound_term = TermType.bound_term
 
     with type level_exp_var' = TermType.level_exp_var'
@@ -42,19 +43,19 @@ struct
    (*
     * Terms with no subterms.
     *)
-   let is_no_subterms_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = []
-      } when Opname.eq opname' opname -> true
+   let is_no_subterms_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = []
+           } when Opname.eq opname' opname -> true
     | _ -> false
 
    (*
     * Terms with one subterm
     *)
-   let is_dep0_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [bt]
-      } when Opname.eq opname' opname -> (dest_bterm bt).bvars = []
+   let is_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [bt]
+           } when Opname.eq opname' opname -> (dest_bterm bt).bvars = []
     | _ -> false
 
    let mk_dep0_term opname t =
@@ -76,10 +77,10 @@ struct
    (*
     * Terms with two subterms.
     *)
-   let is_dep0_dep0_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [bt1; bt2]
-      } when Opname.eq opname' opname ->
+   let is_dep0_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [bt1; bt2]
+           } when Opname.eq opname' opname ->
          (dest_bterm bt1).bvars = [] && (dest_bterm bt2).bvars = []
     | _ -> false
 
@@ -106,10 +107,10 @@ struct
    (*
     * Terms with three subterms.
     *)
-   let is_dep0_dep0_dep0_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = ([b1; b2; b3] as bterms)
-      } when Opname.eq opname' opname -> no_bvars bterms
+   let is_dep0_dep0_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = ([b1; b2; b3] as bterms)
+           } when Opname.eq opname' opname -> no_bvars bterms
     | _ -> false
 
    let mk_dep0_dep0_dep0_term opname t1 t2 t3 =
@@ -158,10 +159,10 @@ struct
    (*
     * One string param.
     *)
-   let is_string_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [String _] };
-        term_terms = []
-      } when Opname.eq opname opname' ->
+   let is_string_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [String _] };
+             term_terms = []
+           } when Opname.eq opname opname' ->
          true
     | _ ->
          false
@@ -188,10 +189,10 @@ struct
    (*
     * One string parameter, and one simple subterm.
     *)
-   let is_string_dep0_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [String _] };
-        term_terms = [bt]
-      } when Opname.eq opname opname' -> (dest_bterm bt).bvars = []
+   let is_string_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [String _] };
+             term_terms = [bt]
+           } when Opname.eq opname opname' -> (dest_bterm bt).bvars = []
     | _ -> false
 
    let dest_string_dep0_term opname t = match dest_term t with
@@ -209,10 +210,10 @@ struct
    (*
     * Two string parameters, and one simple subterm.
     *)
-   let is_string_string_dep0_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [String _; String _] };
-        term_terms = [bt]
-      } when Opname.eq opname opname' -> (dest_bterm bt).bvars = []
+   let is_string_string_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [String _; String _] };
+             term_terms = [bt]
+           } when Opname.eq opname opname' -> (dest_bterm bt).bvars = []
     | _ ->
          false
 
@@ -241,10 +242,10 @@ struct
    (*
     * Two number parameters and one subterm.
     *)
-   let is_number_number_dep0_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [Number _; Number _] };
-        term_terms = [ bt ]
-      } when Opname.eq opname opname' -> (dest_bterm bt).bvars = []
+   let is_number_number_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [Number _; Number _] };
+             term_terms = [ bt ]
+           } when Opname.eq opname opname' -> (dest_bterm bt).bvars = []
     | _ ->
          false
 
@@ -273,10 +274,10 @@ struct
    (*
     * Two string parameters, two subterms.
     *)
-   let is_string_string_dep0_dep0_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [String _; String _] };
-        term_terms = [bt1;bt2]
-      } when Opname.eq opname opname' ->
+   let is_string_string_dep0_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [String _; String _] };
+             term_terms = [bt1;bt2]
+           } when Opname.eq opname opname' ->
          (dest_bterm bt1).bvars = [] && (dest_bterm bt2).bvars = []
     | _ ->
          false
@@ -308,10 +309,10 @@ struct
    (*
     * One number param.
     *)
-   let is_number_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [Number _] };
-        term_terms = []
-      } when Opname.eq opname opname' -> true
+   let is_number_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [Number _] };
+             term_terms = []
+           } when Opname.eq opname opname' -> true
     | _ -> false
 
    let dest_number_term opname t = match dest_term t with
@@ -337,10 +338,10 @@ struct
    (*
     * One universe param.
     *)
-   let is_univ_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [Level _] };
-        term_terms = []
-      } when Opname.eq opname opname' -> true
+   let is_univ_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [Level _] };
+             term_terms = []
+           } when Opname.eq opname opname' -> true
     | _ -> false
 
    let dest_univ_term opname t = match dest_term t with
@@ -358,10 +359,10 @@ struct
    (*
     * One token param.
     *)
-   let is_token_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [Token _] };
-        term_terms = []
-      } when Opname.eq opname opname' -> true
+   let is_token_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [Token _] };
+             term_terms = []
+           } when Opname.eq opname opname' -> true
     | _ -> false
 
    let dest_token_term opname t = match dest_term t with
@@ -379,10 +380,10 @@ struct
    (*
     * Bound term.
     *)
-   let is_dep1_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [bt]
-      } when Opname.eq opname' opname ->
+   let is_dep1_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [bt]
+           } when Opname.eq opname' opname ->
          begin
             match (dest_bterm bt).bvars with
                [_] -> true
@@ -410,10 +411,10 @@ struct
          end
     | _ -> ref_raise(RefineError ("dest_dep1_term", TermMatchError (t, "bad arity")))
 
-   let is_dep0_dep1_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [bt1;bt2]
-      } when Opname.eq opname' opname ->
+   let is_dep0_dep1_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [bt1;bt2]
+           } when Opname.eq opname' opname ->
          if (dest_bterm bt1).bvars = []
             then match (dest_bterm bt2).bvars with
                [_] -> true
@@ -421,9 +422,9 @@ struct
             else false
     | _ -> false
 
-   let is_dep0_dep1_any_term t = match dest_term t with
-      { term_op = { op_params = [] };
-        term_terms = [bt1;bt2] } ->
+   let is_dep0_dep1_any_term t = match get_core t with
+      Term { term_op = { op_params = [] };
+             term_terms = [bt1;bt2] } ->
           if (dest_bterm bt1).bvars = []
             then match (dest_bterm bt2).bvars with
                [_] -> true
@@ -475,10 +476,10 @@ struct
    (*
     * First subterm of arity 2.
     *)
-   let is_dep2_dep0_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [bt1;bt2]
-      } when Opname.eq opname' opname ->
+   let is_dep2_dep0_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [bt1;bt2]
+           } when Opname.eq opname' opname ->
          if (dest_bterm bt2).bvars = []
             then match (dest_bterm bt1).bvars with
                [_;_] -> true
@@ -510,10 +511,10 @@ struct
    (*
     * Second subterm of arity 2.
     *)
-   let is_dep0_dep2_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [bt1; bt2]
-      } when Opname.eq opname' opname ->
+   let is_dep0_dep2_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [bt1; bt2]
+           } when Opname.eq opname' opname ->
          if (dest_bterm bt1).bvars = []
             then match (dest_bterm bt2).bvars with
                [_;_] -> true
@@ -546,10 +547,10 @@ struct
     * Second subterm of arity 2.
     *)
    let is_dep0_dep3_term opname t =
-      match dest_term t with
-         { term_op = { op_name = opname'; op_params = [] };
-           term_terms = [bt1; bt2]
-         } when Opname.eq opname' opname ->
+      match get_core t with
+         Term { term_op = { op_name = opname'; op_params = [] };
+                term_terms = [bt1; bt2]
+              } when Opname.eq opname' opname ->
             if (dest_bterm bt1).bvars = [] then
                match (dest_bterm bt2).bvars with
                     [_; _; _] ->
@@ -590,10 +591,10 @@ struct
    (*
     * Three subterms.
     *)
-   let is_dep0_dep2_dep2_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [bt1;bt2;bt3]
-      } when Opname.eq opname' opname ->
+   let is_dep0_dep2_dep2_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [bt1;bt2;bt3]
+           } when Opname.eq opname' opname ->
          if (dest_bterm bt1).bvars = []
             then match ((dest_bterm bt2).bvars, (dest_bterm bt3).bvars) with
                ([_;_], [_;_]) -> true
@@ -625,10 +626,10 @@ struct
    (*
     * Four subterms.
     *)
-   let is_dep0_dep2_dep0_dep2_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [bt1; bt2; bt3; bt4]
-      } when Opname.eq opname' opname ->
+   let is_dep0_dep2_dep0_dep2_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [bt1; bt2; bt3; bt4]
+           } when Opname.eq opname' opname ->
          begin match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3, dest_bterm bt4) with
             ({ bvars = [] }, { bvars = [_; _] }, { bvars = [] }, { bvars = [_; _] }) -> true
           | _ -> false
@@ -660,10 +661,10 @@ struct
    (*
     * Three subterms.
     *)
-   let is_dep0_dep0_dep1_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [bt1; bt2; bt3]
-      } when Opname.eq opname' opname ->
+   let is_dep0_dep0_dep1_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [bt1; bt2; bt3]
+           } when Opname.eq opname' opname ->
          begin match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3) with
             ({ bvars = [] }, { bvars = [] }, { bvars = [_] }) -> true
           | _ -> false
@@ -695,8 +696,8 @@ struct
     | _ ->
          ref_raise(RefineError ("dest_dep0_dep0_dep1_term", TermMatchError (t, "bad arity")))
 
-   let is_dep0_dep0_dep1_any_term t = match dest_term t with
-      { term_terms = [bt1; bt2; bt3] } ->
+   let is_dep0_dep0_dep1_any_term t = match get_core t with
+      Term { term_terms = [bt1; bt2; bt3] } ->
          begin match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3) with
             ({ bvars = [] }, { bvars = [] }, { bvars = [_] }) -> true
           | _ -> false
@@ -726,10 +727,10 @@ struct
     | _ ->
          ref_raise(RefineError ("dest_dep0_dep0_dep1_any_term", TermMatchError (t, "bad arity")))
 
-   let is_dep0_dep1_dep1_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [bt1; bt2; bt3]
-      } when Opname.eq opname' opname ->
+   let is_dep0_dep1_dep1_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [bt1; bt2; bt3]
+           } when Opname.eq opname' opname ->
          begin match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3) with
             ({ bvars = [] }, { bvars = [_] }, { bvars = [_] }) -> true
           | _ -> false
@@ -758,10 +759,10 @@ struct
    (*
     * Three subterms.
     *)
-   let is_dep0_dep0_dep3_term opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [bt1; bt2; bt3]
-      } when Opname.eq opname' opname ->
+   let is_dep0_dep0_dep3_term opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [bt1; bt2; bt3]
+           } when Opname.eq opname' opname ->
          begin match (dest_bterm bt1, dest_bterm bt2, dest_bterm bt3) with
             ({ bvars = [] }, { bvars = [] }, { bvars = [_; _; _] }) -> true
           | _ -> false
@@ -791,10 +792,10 @@ struct
    (*
     * One subterm with opname.
     *)
-   let is_one_bsubterm opname t = match dest_term t with
-      { term_op = { op_name = opname'; op_params = [] };
-        term_terms = [_]
-      } when Opname.eq opname' opname -> true
+   let is_one_bsubterm opname t = match get_core t with
+      Term { term_op = { op_name = opname'; op_params = [] };
+             term_terms = [_]
+           } when Opname.eq opname' opname -> true
     | _ -> false
 
    let dest_one_bsubterm opname t = match dest_term t with

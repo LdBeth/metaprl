@@ -120,6 +120,7 @@ sig
    type param
    type operator
    type term
+   type term_core
    type bound_term
 
    type level_exp_var'
@@ -132,8 +133,6 @@ sig
 
    type term_subst
 
-   exception Not_var
-
    (************************************************************************
     * De/Constructors                                                      *
     ************************************************************************)
@@ -144,6 +143,8 @@ sig
    val do_term_subst : term_subst -> term -> term
    val do_bterm_subst : term_subst -> bound_term -> bound_term
 
+   val get_core : term -> term_core
+   val fail_core : string -> 'a
    val dest_term : term -> term'
    val make_term : term' -> term
    val mk_op : opname -> param list -> operator
@@ -187,9 +188,7 @@ sig
    val var_opname : opname
    val context_opname : opname
 
-   val is_var_term_nods : term' -> bool
    val is_var_term : term -> bool
-   val dest_var_nods : term' -> string
    val dest_var : term -> string
    val mk_var_term : string -> term
    val mk_var_op : string -> operator
