@@ -455,7 +455,7 @@ struct
                in
                let space =
                   match opname with
-                     ["space"] ->
+                     ["text"] ->
                         true
                    | _ ->
                         space

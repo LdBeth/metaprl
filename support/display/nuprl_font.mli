@@ -81,6 +81,7 @@ declare cd_end
 (*
  * TeX control.
  *)
+declare text{'t}
 declare mathBB[name:s]
 declare ensuremath[name:s]
 declare ensuremath{'t}

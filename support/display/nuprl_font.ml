@@ -121,6 +121,7 @@ declare small{'t}
 declare small_begin
 declare small_end
 declare esquash{'t}
+declare text{'t}
 
 (*
  * HTML control.
@@ -324,6 +325,9 @@ dform cd_end_df2 : internal :: mode[html] :: cd_end =
 (************************************************************************
  * DISPLAY FORMS                                                        *
  ************************************************************************)
+
+dform text_df : internal :: text{'e} =
+   'e
 
 dform info_begin_df : internal :: mode[html] :: info_begin =
    html["<font color=\"#115599\"><b>"]
