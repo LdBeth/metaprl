@@ -104,7 +104,6 @@ sig
     * Loaded packages are initially read-only.
     *)
    val create_package : t -> parse_arg -> string -> package
-   val is_loaded : t -> string -> bool
    val load : t -> parse_arg -> string -> package
    val get : t -> string -> package
    val save : package -> unit

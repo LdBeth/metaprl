@@ -1021,12 +1021,7 @@ struct
                      raise(Invalid_argument "Shell.chdir: module name should not be capitalized");
                   (* See if the theory exists *)
                   ignore(Theory.get_theory modname);
-                  let pkg = 
-                     if Package.is_loaded packages modname then
-                        Package.get packages modname
-                     else
-                        Package.load packages (get_parse_arg info) modname
-                  in
+                  let pkg = Package.load packages (get_parse_arg info) modname in
                      if need_shell && not (shell_package pkg) then
                         failwith ("Module " ^ modname ^ " does not contain shell commands");
                      info.package <- Some pkg;

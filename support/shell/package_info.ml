@@ -305,9 +305,6 @@ struct
    (*
     * Get a node by its name.
     *)
-   let is_loaded pack name =
-      Hashtbl.mem pack.pack_packages name
-
    let get_package pack name =
       Hashtbl.find pack.pack_packages name
 
@@ -588,7 +585,7 @@ struct
                Some { pack_str_info = info } ->
                   Cache.StrFilterCache.mk_opname info opname params bterms
              | None ->
-                  raise (Failure (sprintf "Package_info/mk_opname: %s not initialized" pack_info.pack_name)))
+                  raise (NotLoaded pack_info.pack_name))
 
    (*
     * Get a loaded theory.
@@ -614,7 +611,7 @@ struct
        | { pack_status = Modified; pack_str = Some { pack_str_info = info; pack_parse = arg } } ->
             Cache.StrFilterCache.save info arg (OnlySuffixes ["prlb"])
        | { pack_status = Modified; pack_str = None } ->
-            raise (Invalid_argument "Package_info/save"))
+            raise (Invalid_argument "Package_info.save"))
 
    let export arg pack_info =
       auto_loading_str arg pack_info (function
