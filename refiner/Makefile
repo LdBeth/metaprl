@@ -118,7 +118,3 @@ depend::
 		if (echo Making $$i...; cd $$i && touch Makefile.dep && $(MAKE) $@); then true; else exit 1; fi;\
 	done
 
-#
-# Dependencies
-#
-include Makefile.dep
