@@ -221,6 +221,10 @@ val find_condition : (term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info
    term ->
    (term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item_loc option
 
+val find_module : ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info ->
+   string ->
+   ('term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item_loc option
+
 val find_dform : (term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) module_info ->
    term ->
    (term, 'meta_term, 'proof, 'ctyp, 'expr, 'item) summary_item_loc option
@@ -349,6 +353,12 @@ val check_implementation :
    (term, meta_term, 'proof1, 'ctyp1, 'expr1, 'item1) module_info ->
    (term, meta_term, 'proof2, 'ctyp2, 'expr2, 'item2) module_info ->
    unit
+
+val copy_proofs :
+   ('proof1 -> 'proof2 -> 'proof1) ->
+   (term, meta_term, 'proof1, 'ctyp1, 'expr1, 'item1) module_info ->
+   (term, meta_term, 'proof2, 'ctyp2, 'expr2, 'item2) module_info ->
+   (term, meta_term, 'proof1, 'ctyp1, 'expr1, 'item1) module_info
 
 (*
  * Debugging.

@@ -127,7 +127,8 @@ struct
         (*
          * Keep a link to the summary base.
          *)
-        base : t
+        base : t;
+        select : select
       }
 
    (* Hook that is called whenever a module is loaded *)
@@ -615,7 +616,8 @@ struct
         info = new_module_info ();
         self = Base.create_info base.lib self_select "." name;
         name = name;
-        base = base
+        base = base;
+        select = self_select
       }
 
    (*
@@ -641,7 +643,8 @@ struct
            info = info';
            self = info;
            name = name;
-           base = base
+           base = base;
+           select = my_select
          }
       in
          if !debug_filter_cache then
@@ -685,6 +688,21 @@ struct
       let id = find_id sig_info in
          add_command cache (Id id, (0, 0));
          check_implementation cache.info sig_info
+
+   (*
+    * Copy the proofs from the summary.
+    *)
+   let copy_proofs cache copy_proof =
+      let { name = name;
+            base = base;
+            info = info;
+            select = my_select
+          } = cache
+      in
+      let path = [name] in
+      let info' = Base.find_file base.lib path my_select in
+      let info' = StrMarshal.unmarshal (Base.info base.lib info') in
+         cache.info <- Filter_summary.copy_proofs copy_proof info info'
 
    (*
     * Upgrade the file mode.

@@ -68,19 +68,23 @@ struct
    (*
     * Find a specific module given a full pathname.
     *)
-   let find base name select =
+   let find_aux find base name select =
       if !debug_summary then
          eprintf "Filter_summary_io.find: %a%t" print_string_list name eflush;
       match name with
          [] ->
             raise (EmptyModulePath "Filter_summary_io.find")
        | name'::path ->
-            let info = FileBase.find base (String.uncapitalize name') select in
+            let info = find base (String.uncapitalize name') select in
             let info' = Address.find_sub_module (FileBase.info base info) path in
                { info_root = info;
                  info_path = name;
                  info_info = info'
                }
+
+   let find = find_aux FileBase.find
+
+   let find_file = find_aux FileBase.find_file
 
    (*
     * Find the matching module info.

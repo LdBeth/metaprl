@@ -58,6 +58,7 @@ sig
 
    (* Loading and saving *)
    val find : t -> module_path -> select -> info
+   val find_file : t -> module_path -> select -> info
    val find_match : t -> info -> select -> info
    val save : t -> info -> unit
 
@@ -153,6 +154,7 @@ sig
    val create_cache : t -> module_name -> select -> select -> info
    val load : t -> module_name -> select -> select -> 'a hook -> 'a -> info * 'a
    val check : info -> select -> unit
+   val copy_proofs : info -> (str_proof -> str_proof -> str_proof) -> unit
    val set_mode : info -> summary_mode -> unit
    val save : info -> unit
 

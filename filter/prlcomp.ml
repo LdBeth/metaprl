@@ -39,6 +39,13 @@ let preprocess_flag = ref false
 let binary_flag = ref false
 let optimize_flag = ref false
 let verbose_mode = ref 0
+let permit_interactive = ref false
+
+let file_interactive name =
+   if !permit_interactive then
+      file_interactive name
+   else
+      false
 
 (*
  * Environment.
@@ -54,24 +61,6 @@ let set_lib s =
          eprintf "Setting %s%t" var eflush;
       Punix.putenv var;
       lib := s
-
-(*
- * See if the file is interactive by checking the magic number.
- *)
-let file_interactive file =
-   try
-      let inx = open_in_bin file in
-         try
-            let magic = input_binary_int inx in
-               close_in inx;
-               List.mem magic interactive_magics
-         with
-            _ ->
-               close_in inx;
-               false
-   with
-      Sys_error _ ->
-         false
 
 (*
  * Collect argument list.

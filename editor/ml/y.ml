@@ -15,6 +15,7 @@ open Conversionals
 open Base_dtactic
 open Base_rewrite
 open Itt_rfun
+open Itt_fun
 open Itt_int
 open Itt_union
 open Itt_equal
@@ -24,6 +25,7 @@ open Itt_w
 open Shell
 open Test
 
+open Czf_itt_small
 open Czf_itt_set
 (*
 open Czf_itt_true
@@ -57,7 +59,7 @@ let zT, z =
       zT, z
 
 let _ = load "czf_itt_set"
-let _ = cd "czf_itt_set.isset_member"
+let _ = cd "czf_itt_set.set_elim"
 let _ = set_writeable ()
 
 (*

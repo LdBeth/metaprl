@@ -1045,6 +1045,8 @@ struct
        | _ ->
             ()
       in
+         if !debug_rewrite then
+            eprintf "Rewrite.set_bvars %d/%d%t" (List.length vars) (List.length names) eflush;
          List.iter2 aux vars names
 
    (*
@@ -1075,14 +1077,16 @@ struct
               let { term_op = op; term_terms = bterms } = dest_term t in
               let { op_name = name; op_params = params } = dest_op op in
                  if !debug_rewrite then
-                    eprintf "Rewrite.match_redex.RWComposite: %s/%s%t" (**)
-                       (flat_opname name')
-                       (flat_opname name)
+                    eprintf "Rewrite.match_redex.RWComposite: %s[%d](%d)/%a[%d](%d)%t" (**)
+                       (flat_opname name') (List.length params') (List.length bterms')
+                       debug_print t (List.length params) (List.length bterms)
                        eflush;
                  if name == name' then
                     begin
                        List.iter2 (match_redex_params stack) params' params;
-                       List_util.rev_iter2 (match_redex_bterms addrs stack) bterms' bterms
+                       List_util.rev_iter2 (match_redex_bterms addrs stack) bterms' bterms;
+                       if !debug_rewrite then
+                          eprintf "Rewrite.match_redex.RWComposite done%t" eflush;
                     end
                  else
                     ref_raise(RefineError ("match_redex_term", RewriteBadMatch (TermMatch t)))
@@ -1288,26 +1292,31 @@ struct
               * Find its free variables, and rename the binding stack
               * if necessary.
               *)
-             match stack.(i) with
-                StackBTerm(term, vars) ->
-                   let terms = List.map (build_contractum_term names bnames stack bvars) terms in
-                   let _ =
-                      assert (if !debug_subst then
-                                 begin
-                                    eprintf "RWSOSubst: %a%t" debug_print term eflush;
-                                    List.iter2 (fun name term ->
-                                          eprintf "\t%s: %a%t" name debug_print term eflush) (**)
-                                       vars terms
-                                 end;
-                              true)
-                   in
-                   let term = subst term terms vars in
-                      assert (if !debug_subst then
-                                 eprintf "\t%a%t" debug_print term eflush;
-                              true);
-                      term
-              | _ ->
-                   ref_raise(RefineError ("build_contractum_term", RewriteStringError "stack entry is not valid"))
+            let subst term vars =
+               let terms = List.map (build_contractum_term names bnames stack bvars) terms in
+               let _ =
+                  assert (if !debug_subst then
+                             begin
+                                eprintf "RWSOSubst: %a%t" debug_print term eflush;
+                                List.iter2 (fun name term ->
+                                      eprintf "\t%s: %a%t" name debug_print term eflush) (**)
+                                   vars terms
+                             end;
+                          true)
+               in
+               let term = subst term terms vars in
+                  assert (if !debug_subst then
+                             eprintf "\t%a%t" debug_print term eflush;
+                          true);
+                  term
+            in
+               match stack.(i) with
+                  StackBTerm(term, vars) ->
+                     subst term vars
+                | StackITerm ((term, vars, _, _) :: _) ->
+                     subst term vars
+                | _ ->
+                     ref_raise(RefineError ("build_contractum_term", RewriteStringError "stack entry is not valid"))
          end
 
     | RWSOContextSubst(i, t, terms) ->

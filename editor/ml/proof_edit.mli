@@ -37,6 +37,7 @@ val ped_arg : t -> tactic_arg
  * Destructors.
  *)
 val proof_of_ped : t -> Proof.t
+val status_of_ped : t -> Proof.status
 
 (*
  * Display operation.

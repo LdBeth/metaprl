@@ -37,6 +37,8 @@ let debug_term_table =
         debug_value = false
       }
 
+let debug_rewrite = load_debug "rewrite"
+
 (************************************************************************
  * TYPES                                                                *
  ************************************************************************)
@@ -486,7 +488,13 @@ let lookup name table t =
             if !debug_term_table then
                eprintf "Term_table.lookup: try %s%t" (string_of_term t') eflush;
             try
-               let stack, items = apply_redex' redex [||] [t] in
+               let stack, items =
+                  let debug = !debug_rewrite in
+                  let _ = debug_rewrite := false in
+                  let x = apply_redex' redex [||] [t] in
+                     debug_rewrite := debug;
+                     x
+               in
                   stack, items, v
             with
                _ ->

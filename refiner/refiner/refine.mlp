@@ -531,7 +531,7 @@ struct
          try rw2 sent t' with
             RefineError (name, x) ->
                raise (RefineError ("andthenrw", SecondError (name, x)))
-#else 
+#else
          rw2 sent t'
 #endif
       in
@@ -1065,37 +1065,24 @@ struct
             refiners
       in
       let _ = insert [] refiner in
-      let check_axiom ax =
-         let name = ax.axiom_name in
-            if Hashtbl.find axioms name == ax then
-               begin
-                  if !debug_sentinal then
-                     eprintf "check_axiom: found rewrite %s%t" name eflush
-               end
-            else
-               begin
-                  eprintf "check_axiom: sentinal failed %s%t" name eflush;
-                  ref_raise (RefineError ("check_axiom",
-                                      StringStringError ("axiom is not valid in this context", name)))
-               end
+      let check_sentinal table name v =
+         if try Hashtbl.find table name == v with Not_found -> false then
+            begin
+               if !debug_sentinal then
+                  eprintf "check_sentinal: found %s%t" name eflush
+            end
+         else
+            begin
+               eprintf "check_sentinal: failed %s%t" name eflush;
+               ref_raise (RefineError ("check_sentinal",
+                                   StringStringError ("axiom is not valid in this context", name)))
+            end
       in
-      let check_rule rule =
-         let name = rule.rule_name in
-            if Hashtbl.find rules name == rule then
-               begin
-                  if !debug_sentinal then
-                     eprintf "check_rule: found rule %s%t" name eflush
-               end
-            else
-               begin
-                  eprintf "check_rule: sentinal failed %s%t" name eflush;
-                  ref_raise (RefineError ("check_rule",
-                                      StringStringError ("rule is not valid in this context", name)))
-               end
-      in
+      let check_axiom ax = check_sentinal axioms ax.axiom_name ax in
+      let check_rule rule = check_sentinal rules rule.rule_name rule in
       let check_ml_rule ml_rule =
          let opname = opname_of_term ml_rule.ml_rule_arg in
-            if Hashtbl.find ml_rules opname == ml_rule then
+            if try Hashtbl.find ml_rules opname == ml_rule with Not_found -> false then
                begin
                   if !debug_sentinal then
                      eprintf "check_ml_rule: found rule %s%t" (string_of_opname opname) eflush
@@ -1108,48 +1095,9 @@ struct
                                                        ml_rule.ml_rule_arg)))
                end
       in
-      let check_rewrite rw =
-         let name = rw.rw_name in
-            if Hashtbl.find rewrites name == rw then
-               begin
-                  if !debug_sentinal then
-                     eprintf "check_rewrite: found rewrite %s%t" name eflush
-               end
-            else
-               begin
-                  eprintf "check_rewrite: sentinal failed %s%t" name eflush;
-                  ref_raise (RefineError ("check_rewrite",
-                                      StringStringError ("rewrite is not valid in this context", name)))
-               end
-      in
-      let check_cond_rewrite crw =
-         let name = crw.crw_name in
-            if Hashtbl.find cond_rewrites name == crw then
-               begin
-                  if !debug_sentinal then
-                     eprintf "check_rule: found cond_rewrite %s%t" name eflush
-               end
-            else
-               begin
-                  eprintf "check_cond_rewrite: sentinal failed %s%t" name eflush;
-                  ref_raise (RefineError ("check_cond_rewrite",
-                                      StringStringError ("conditional rewrite is not valid in this context", name)))
-            end
-      in
-      let check_ml_rewrite mlrw =
-         let name = mlrw.ml_rw_name in
-            if Hashtbl.find ml_rewrites name == mlrw then
-               begin
-                  if !debug_sentinal then
-                     eprintf "check_ml_rewrite: found rewrite %s%t" name eflush
-               end
-            else
-               begin
-                  eprintf "check_ml_rewrite: sentinal failed %s%t" name eflush;
-                  ref_raise (RefineError ("check_ml_rewrite",
-                                      StringStringError ("ML rewrite is not valid in this context", name)))
-               end
-      in
+      let check_rewrite rw = check_sentinal rewrites rw.rw_name rw in
+      let check_cond_rewrite crw = check_sentinal cond_rewrites crw.crw_name crw in
+      let check_ml_rewrite mlrw = check_sentinal ml_rewrites mlrw.ml_rw_name mlrw in
          { sent_rewrite = check_rewrite;
            sent_cond_rewrite = check_cond_rewrite;
            sent_ml_rewrite = check_ml_rewrite;
@@ -1470,7 +1418,7 @@ struct
    let add_cond_rewrite refiner name vars params subgoals redex contractum =
       if !debug_refiner then
          eprintf "Refiner.add_cond_rewrite: %s%t" name eflush;
-      let rw = Rewrite.term_rewrite ([||], vars) (redex::params) [contractum] in
+      let rw = Rewrite.term_rewrite ([||], vars) (redex::params) (contractum :: subgoals) in
       let ref_crw =
          { crw_name = name;
            crw_count = List.length subgoals;
@@ -1481,9 +1429,9 @@ struct
       let refiner' = CondRewriteRefiner ref_crw in
       let rw' (vars, params) (sent : sentinal) (bvars : string list list) seq t =
          (* BUG: is alpha variance compute correctly by replace_goal? *)
-         let subgoals' = List.map (replace_goal seq) subgoals in
-            match apply_rewrite rw ([||], vars, bvars) (t :: params) with
-               [t'], names ->
+         match apply_rewrite rw ([||], vars, bvars) (t :: params) with
+            (t' :: subgoals), names ->
+               let subgoals' = List.map (replace_goal seq) subgoals in
                   sent.sent_cond_rewrite ref_crw;
                   t',
                   subgoals',
@@ -1493,8 +1441,6 @@ struct
                   }
              | [], _ ->
                   raise (Failure "Refine.add_cond_rewrite: no contracta")
-             | _ ->
-                  raise (Failure "Refine.add_cond_rewrite: multiple contracta")
       in
          refiner', (rw' : prim_cond_rewrite)
 

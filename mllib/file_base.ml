@@ -97,7 +97,7 @@ struct
    (*
     * Load a file given the directory, the filename, and the spec.
     *)
-   let load_file base spec dir name =
+   let load_file save_flag base spec dir name =
       let { info_unmarshal = unmarshal;
             info_suffix = suffix;
             info_magics = magics;
@@ -118,7 +118,8 @@ struct
            info_magic = magic
          }
       in
-         add_info base info';
+         if save_flag then
+            add_info base info';
          info'
 
    (*
@@ -127,7 +128,7 @@ struct
     * in the filesystem and load it.  The type preference is
     * given by the ordering of Combo info items.
     *)
-   let load_specific base spec name =
+   let load_specific save_flag base spec name =
       if !debug_file_base then
          eprintf "File_base.load_specific: %s: begin%t" name eflush;
       let rec search = function
@@ -138,7 +139,7 @@ struct
        | dir::path' ->
             if !debug_file_base then
                eprintf "File_base.load_specific: try %s/%s%t" dir name eflush;
-            try load_file base spec dir name with
+            try load_file save_flag base spec dir name with
                Sys_error _ ->
                   search path'
       in
@@ -183,13 +184,16 @@ struct
             in
             let info = search !(Hashtbl.find table name) in
                if !debug_file_base then
-                  eprintf "File_base.find: %s: found%t" name eflush;
+                  eprintf "File_base.find: %s: found %s%t" name info.info_file eflush;
                info
          with
             Not_found ->
                if !debug_file_base then
                   eprintf "File_base.find: %s: loading%t" name eflush;
-               load_specific base (find_spec select) name
+               load_specific true base (find_spec select) name
+
+   let find_file base name select =
+      load_specific false base (find_spec select) name
 
    (*
     * Find a "matching" module.
@@ -210,7 +214,7 @@ struct
       in
          try search !(Hashtbl.find table file) with
             Not_found ->
-               load_file base (find_spec select) dir file
+               load_file true base (find_spec select) dir file
 
    (*
     * Set the magic number.

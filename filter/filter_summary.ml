@@ -419,6 +419,21 @@ let find_condition { info_list = summary } t =
          None
 
 (*
+ * Find a module.
+ *)
+let test_module name (item, _) =
+   match item with
+      Module (name', _) ->
+         name' = name
+    | _ ->
+         false
+
+let find_module { info_list = summary } name =
+   try Some (List_util.find (test_module name) summary) with
+      Not_found ->
+         None
+
+(*
  * Find a display form.
  *)
 let test_dform t =
@@ -1889,6 +1904,182 @@ and check_implemented
  *)
 and check_implementation { info_list = implem } { info_list = interf } =
    List.iter (check_implemented (List.map fst implem)) interf
+
+(************************************************************************
+ * PROOF COPYING                                                        *
+ ************************************************************************)
+
+(*
+ * Copy a rewrite proof if it exists.
+ *)
+let copy_rw_proof copy_proof rw info2 =
+   let { rw_name = name;
+         rw_redex = redex1;
+         rw_contractum = contractum1;
+         rw_proof = proof1
+       } = rw
+   in
+   let rw =
+      match find_rewrite info2 name with
+         Some (Rewrite { rw_redex = redex2;
+                         rw_contractum = contractum2;
+                         rw_proof = proof2
+               }, _) ->
+            if not (alpha_equal redex1 redex2 & alpha_equal contractum1 contractum2) then
+               eprintf "copy_proof: warning: rewrites %s do not match%t" name eflush;
+            { rw_name = name;
+              rw_redex = redex1;
+              rw_contractum = contractum1;
+              rw_proof = copy_proof proof1 proof2
+            }
+       | _ ->
+            rw
+   in
+      Rewrite rw
+
+(*
+ * Copy the cond_rewrite proof.
+ *)
+let copy_crw_proof copy_proof crw info2 =
+   let { crw_name = name;
+         crw_params = params1;
+         crw_args = args1;
+         crw_redex = redex1;
+         crw_contractum = contractum1;
+         crw_proof = proof1
+       } = crw
+   in
+   let crw =
+      match find_rewrite info2 name with
+         Some (CondRewrite { crw_params = params2;
+                             crw_args = args2;
+                             crw_redex = redex2;
+                             crw_contractum = contractum2;
+                             crw_proof = proof2
+               }, _) ->
+            if not (check_params params1 params2)
+               or not (generalizes_list args2 args1)
+               or not (alpha_equal redex1 redex2)
+               or not (alpha_equal contractum1 contractum2)
+            then
+               eprintf "copy_proof: warning: cond_rewrites %s do not match%t" name eflush;
+            { crw_name = name;
+              crw_params = params1;
+              crw_args = args1;
+              crw_redex = redex1;
+              crw_contractum = contractum1;
+              crw_proof = copy_proof proof1 proof2
+            }
+       | _ ->
+            crw
+   in
+      CondRewrite crw
+
+(*
+ * Copy the axioms.
+ *)
+let copy_axiom_proof copy_proof ax info2 =
+   let { axiom_name = name;
+         axiom_stmt = stmt1;
+         axiom_proof = proof1
+       } = ax
+   in
+   let ax =
+      match find_axiom info2 name with
+         Some (Axiom { axiom_stmt = stmt2;
+                       axiom_proof = proof2
+               }, _) ->
+            if not (alpha_equal stmt1 stmt2) then
+               eprintf "copy_proof: warning: axioms %s do not match%t" name eflush;
+            { axiom_name = name;
+              axiom_stmt = stmt1;
+              axiom_proof = copy_proof proof1 proof2
+            }
+       | _ ->
+            ax
+   in
+      Axiom ax
+
+(*
+ * Copy the proof in a rule.
+ *)
+let copy_rule_proof copy_proof rule info2 =
+   let { rule_name = name;
+         rule_params = params1;
+         rule_stmt = stmt1;
+         rule_proof = proof1
+       } = rule
+   in
+   let rule =
+      match find_axiom info2 name with
+         Some (Rule { rule_params = params2;
+                      rule_stmt = stmt2;
+                      rule_proof = proof2
+               }, _) ->
+            if not (meta_alpha_equal stmt1 stmt2) then
+               eprintf "copy_proof: warning: rules %s do not match%t" name eflush;
+            { rule_name = name;
+              rule_params = params1;
+              rule_stmt = stmt1;
+              rule_proof = copy_proof proof1 proof2
+            }
+       | _ ->
+            rule
+   in
+      Rule rule
+
+(*
+ * Copy the proofs from the second implementation into the first.
+ *)
+let rec copy_proofs copy_proof { info_list = info1 } info2 =
+   let copy copy_proof (item, loc) =
+      let item =
+         match item with
+            Rewrite rw ->
+               copy_rw_proof copy_proof rw info2
+          | CondRewrite crw ->
+               copy_crw_proof copy_proof crw info2
+          | Axiom ax ->
+               copy_axiom_proof copy_proof ax info2
+          | Rule rule ->
+               copy_rule_proof copy_proof rule info2
+          | Opname info ->
+               Opname info
+          | MLTerm t ->
+               MLTerm t
+          | Condition t ->
+               Condition t
+          | Parent p ->
+               Parent p
+          | Module (name, info) ->
+               copy_module_proof copy_proof name info info2
+          | DForm df ->
+               DForm df
+          | Prec s ->
+               Prec s
+          | PrecRel r ->
+               PrecRel r
+          | Id i ->
+               Id i
+          | Resource r ->
+               Resource r
+          | Infix s ->
+               Infix s
+          | SummaryItem item ->
+               SummaryItem item
+          | MagicBlock info ->
+               MagicBlock info
+      in
+         item, loc
+   in
+      { info_list = List.map (copy copy_proof) info1 }
+
+and copy_module_proof copy_proof name info info2 =
+   match find_module info2 name with
+      Some (Module (_, info2), _) ->
+         Module (name, copy_proofs copy_proof info info2)
+    | _ ->
+         Module (name, info)
 
 (*
  * -*-

@@ -16,6 +16,24 @@ let interactive_magics =
     int_lib_str_magic]
 
 (*
+ * See if the file is interactive by checking the magic number.
+ *)
+let file_interactive file =
+   try
+      let inx = open_in_bin file in
+         try
+            let magic = input_binary_int inx in
+               close_in inx;
+               List.mem magic interactive_magics
+         with
+            _ ->
+               close_in inx;
+               false
+   with
+      Sys_error _ ->
+         false
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

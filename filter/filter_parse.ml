@@ -31,6 +31,7 @@ open Filter_summary_type
 open Filter_summary_util
 open Filter_cache
 open Filter_prog
+open Filter_magic
 
 (*
  * Show loading of the file.
@@ -220,6 +221,14 @@ sig
    type ctyp
    type item
 
+   (*
+    * This is only really used for interactive proofs.
+    *)
+   val copy_proof : proof -> proof -> proof
+
+   (*
+    * Extract the str_items.
+    *)
    val extract : (term, meta_term, proof, ctyp, expr, item) module_info ->
       (module_path * ctyp resource_info) list ->
       string -> (item * (int * int)) list
@@ -243,6 +252,7 @@ struct
     *)
    type t =
       { cache : FilterCache.info;
+        select : FilterCache.select;
         name : string
       }
 
@@ -662,6 +672,7 @@ struct
             let cache = FilterCache.create !include_path in
             let info = FilterCache.create_cache cache module_name select InterfaceType in
             let proc = { cache = info;
+                         select = select;
                          name = module_name
                        }
             in
@@ -691,27 +702,56 @@ struct
     * Check the implementation with its interface.
     *)
    let check proc alt_select =
-      FilterCache.check proc.cache alt_select
+      (* Check that implementation matches interface *)
+      FilterCache.check proc.cache alt_select;
+
+      (* Also copy the proofs if they exist *)
+      if proc.select = ImplementationType then
+         let name = proc.name in
+            if file_interactive (name ^ ".cmoz")
+               or file_interactive (name ^ ".cmot")
+            then
+               begin
+                  FilterCache.set_mode proc.cache InteractiveSummary;
+                  FilterCache.copy_proofs proc.cache Info.copy_proof
+               end
 end
 
 (*
- * Proof conversions are always void, since
- * we don't have any interactive proofs.
+ * Interactive proofs are handled as raw objects.
  *)
 module Convert : ConvertProofSig =
 struct
-   type t = unit
-   type raw = unit
-   let to_raw pf =
-      raise (Failure "Filter_parse.Convert.to_raw: interactive proofs can't be compiled")
-   let of_raw pf =
-      raise (Failure "Filter_parse.Convert.of_raw: interactive proofs can't be compiled")
-   let to_expr expr =
-      raise (Failure "Filter_parse.Convert.to_expr: interactive proofs can't be compiled")
-   let to_term expr =
-      raise (Failure "Filter_parse.Convert.to_term: interactive proofs can't be compiled")
-   let of_term term =
-      raise (Failure "Filter_parse.Convert.of_term: interactive proofs can't be compiled")
+   type raw = Obj.t
+   type t =
+      Term of term
+    | Raw of Obj.t
+
+   let to_raw _ = function
+      Raw t ->
+         t
+    | Term t ->
+         raise (Failure "Filter_bin.Convert.to_raw: interactive term proof can't be converted to raw")
+
+   let of_raw _ t =
+      Raw t
+
+   let to_expr _ t =
+      let loc = 0, 0 in
+      let body =
+         <:expr< raise ( $uid: "Failure"$ $str: "Filter_bin.Convert.to_expr: not implemented"$ ) >>
+      in
+      let patt = <:patt< _ >> in
+         <:expr< fun [ $list: [ patt, None, body ]$ ] >>
+
+   let to_term _ = function
+      Term t ->
+         t
+    | Raw t ->
+         raise (Failure "Filter_bin.Convert.to_raw: interactive raw proof can't be converted to term")
+
+   let of_term _ t =
+      Term t
 end
 
 (*
@@ -734,6 +774,7 @@ struct
    type ctyp  = MLast.ctyp
    type item  = MLast.sig_item
 
+   let copy_proof proof1 proof2 = proof1
    let extract = Extract.extract_sig
 end
 
@@ -743,6 +784,16 @@ struct
    type expr  = MLast.expr
    type ctyp  = MLast.ctyp
    type item  = MLast.str_item
+
+   (*
+    * Proof copying.
+    *)
+   let copy_proof proof1 proof2 =
+      match proof1, proof2 with
+         (Incomplete | Interactive _), Interactive _ ->
+            proof2
+       | _ ->
+            proof1
 
    let extract = Extract.extract_str
 end
@@ -840,8 +891,8 @@ EXTEND
    implem:
       [[ implem_opening; st = LIST0 implem_item; EOI ->
           let proc = StrFilter.get_proc loc in
-             StrFilter.save proc;
              StrFilter.check proc InterfaceType;
+             StrFilter.save proc;
              StrFilter.extract proc
        ]];
 

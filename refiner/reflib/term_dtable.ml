@@ -33,6 +33,8 @@ let _ =
    if !debug_load then
       eprintf "Loading Term_dtable%t" eflush
 
+let debug_rewrite = load_debug "rewrite"
+
 (************************************************************************
  * TYPES                                                                *
  ************************************************************************)
@@ -255,7 +257,13 @@ let find_entry
     (entries : 'a info_entry list)
     (t : term list) =
    let match_entry { info_rw = rw; info_value = v } =
-      let t2, _ = apply_rewrite rw ([||], [||], []) t in
+      let t2, _ =
+         let debug = !debug_rewrite in
+         let _ = debug_rewrite := false in
+         let x = apply_rewrite rw ([||], [||], []) t in
+            debug_rewrite := debug;
+            x
+      in
       let t2', arg = f' (t2, t) in
          v (map_pair f t2') arg
    in

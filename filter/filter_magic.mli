@@ -11,6 +11,12 @@ val int_lib_str_magic  : int
 val interactive_magics : int list
 
 (*
+ * This is a test.
+ * The name is the filename without the suffix.
+ *)
+val file_interactive : string -> bool
+
+(*
  * -*-
  * Local Variables:
  * Caml-master: "refiner"

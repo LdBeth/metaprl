@@ -61,6 +61,7 @@ sig
 
    (* Loading and saving *)
    val find : t -> file_name -> select -> info
+   val find_file : t -> file_name -> select -> info
    val find_match : t -> info -> select -> info
    val save : t -> info -> unit
    val magic : t -> info -> int

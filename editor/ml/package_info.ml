@@ -799,6 +799,24 @@ struct
          ref (ProofRaw (name, proof))
 
    (*
+    * Get the status of the proof.
+    *)
+   let status_of_proof proof =
+      match !proof with
+         ProofEdit ped ->
+            Proof_edit.status_of_ped ped
+       | ProofRaw (_, { proof_status = status }) ->
+            match status with
+               Io_proof_type.StatusBad ->
+                  Proof.Bad
+             | Io_proof_type.StatusPartial ->
+                  Proof.Partial
+             | Io_proof_type.StatusAsserted ->
+                  Proof.Asserted
+             | Io_proof_type.StatusComplete ->
+                  Proof.Complete
+
+   (*
     * Convert a proof on demand.
     *)
    let ped_of_proof { pack_name = name; pack_tactics = tactics; pack_arg = arg } proof =

@@ -110,6 +110,12 @@ let proof_of_ped { ped_undo = undo } =
     | [] ->
          raise (Failure "proof_of_ped")
 
+let status_of_ped { ped_undo = undo } =
+   match undo with
+      { ped_proof = pf } :: _ ->
+         Proof.node_status pf
+    | [] ->
+         raise (Failure "status_of_ped")
 (*
  * Get the goal of a proof.
  *)

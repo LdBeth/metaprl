@@ -186,10 +186,14 @@ let rewrite_of_rewrite_expr loc =
  * Conditional rewrite.
  *)
 let cond_rewrite_ctyp loc =
+   <:ctyp< $rewrite_type_ctyp loc$ . $lid:"conv"$ >>
+
+(*
    let sarray = <:ctyp< $lid:"array"$ $lid:"string"$ >> in
    let term = <:ctyp< $lid:"list"$ ($uid:"Refiner"$ . $uid:"Refiner"$ . $uid:"Term"$ . $lid:"term"$) >> in
    let arg = <:ctyp< ($sarray$ * $term$) >> in
       <:ctyp< $arg$ -> $rewrite_ctyp loc$ >>
+ *)
 
 let create_cond_rewrite_expr loc =
    <:expr< $refiner_expr loc$ . $lid:"create_cond_rewrite"$ >>
@@ -476,14 +480,14 @@ let rec parent_path_ctyp loc = function
  * Interactive exception.
  *)
 let interactive_exn loc name =
-      let patt = <:patt< _ >> in
-      let ename = <:expr< $uid:"Refiner"$ . $uid: "Refiner"$ . $uid: "RefineError"$ . $uid: "RefineError"$ >> in
-      let err = <:expr< $uid:"Refiner"$ . $uid: "Refiner"$ . $uid: "RefineError"$ . $uid: "StringError"$ $str: "proof is incomplete"$ >> in
-      let name = <:expr< $str:name$ >> in
-      let err = <:expr< ( $list: [ name; err ]$ ) >> in
-      let exn = <:expr< $ename$ $err$ >> in
-      let body = <:expr< raise $exn$ >> in
-         <:expr< fun [ $list: [ patt, None, body ]$ ] >>
+   let patt = <:patt< _ >> in
+(*
+   let ename = <:expr< $uid:"Refiner"$ . $uid: "Refiner"$ . $uid: "RefineError"$ . $uid: "RefineError"$ >> in
+   let err = <:expr< $uid:"Refiner"$ . $uid: "Refiner"$ . $uid: "RefineError"$ . $uid: "StringError"$ $str: "proof is incomplete"$ >> in
+   let body = <:expr< raise ($ename$ ($str: name$, $err$)) >> in
+ *)
+   let body = <:expr< raise ($uid:"Failure"$ $str: "interactive proof"$) >> in
+      <:expr< fun [ $list: [ patt, None, body ]$ ] >>
 
 (************************************************************************
  * SIGNATURES                                                           *
@@ -497,8 +501,8 @@ let declare_rewrite loc { rw_name = name } =
       [<:sig_item< value $name$ : $ctyp$ >>]
       (* <:sig_item< value $refiner_name name$ : $refiner_ctyp loc$ >> *)
 
-let declare_cond_rewrite loc { crw_name = name } =
-   let ctyp = cond_rewrite_ctyp loc in
+let declare_cond_rewrite loc { crw_name = name; crw_params = params } =
+   let ctyp = params_ctyp loc (cond_rewrite_ctyp loc) params in
       [<:sig_item< value $name$ : $ctyp$ >>]
       (* <:sig_item< value $refiner_name name$ : $refiner_ctyp loc$ >>] *)
 
@@ -791,47 +795,61 @@ struct
       let rw_id         = name ^ "_rewrite" in
       let rw_expr       = <:expr< $lid:rw_id$ >> in
       let rw_patt       = <:patt< $lid:rw_id$ >> in
-      let x_patt        = <:patt< $lid:"x"$ >> in
       let name_patt     = <:patt< $lid:name$ >> in
       let wild_patt     = <:patt< _ >> in
-      let vars_expr     = <:expr< $lid:"vars"$ >> in
       let params_expr   = <:expr< $lid:"params"$ >> in
       let subgoals_expr = <:expr< $lid:"subgoals"$ >> in
       let redex_expr    = <:expr< $lid:"redex"$ >> in
       let con_expr      = <:expr< $lid:"contractum"$ >> in
-      let vars_patt     = <:patt< $lid:"vars"$ >> in
+      let cvars_patt    = <:patt< $lid:"cvars"$ >> in
+      let bvars_patt    = <:patt< $lid:"bvars"$ >> in
       let params_patt   = <:patt< $lid:"params"$ >> in
       let subgoals_patt = <:patt< $lid:"subgoals"$ >> in
       let redex_patt    = <:patt< $lid:"redex"$ >> in
       let con_patt      = <:patt< $lid:"contractum"$ >> in
 
-      (* Expressions *)
-      let cvars = collect_cvars params in
-      let bvars = collect_vars params in
       let string_expr s = <:expr< $str:s$ >> in
-      let vars_val = <:expr< [| $list:List.map string_expr (cvars @ bvars)$ |] >> in
-      let params_val = list_expr loc (param_expr loc) params in
-      let subgoals_val = list_expr loc (expr_of_term loc) args in
-      let redex_val = expr_of_term loc redex in
-      let con_val = expr_of_term loc contractum in
+      let lid_patt s = <:patt< $lid:s$ >> in
+      let lid_expr s = <:expr< $lid:s$ >> in
+
+      (* Expressions *)
+      let cvars, bvars, tparams = split_params params in
+      let all_ids, cvar_ids, bvar_ids, tparam_ids = name_params params in
+      let cvars_expr = List.map string_expr cvars in
+      let cvars_expr' = <:expr< [| $list:cvars_expr$ |] >> in
+      let bvars_expr = List.map string_expr bvars in
+      let bvars_expr' = <:expr< [| $list:bvars_expr$ |] >> in
+      let params_expr = list_expr loc (expr_of_term loc) tparams in
+      let subgoals_expr = list_expr loc (expr_of_term loc) args in
+      let redex_expr = expr_of_term loc redex in
+      let con_expr = expr_of_term loc contractum in
       let create_expr =
          <:expr< $create_cond_rewrite_expr loc$ $lid:local_refiner_id$ $str:name$ (**)
-            $vars_expr$ $params_expr$ $subgoals_expr$ $redex_expr$ $con_expr$ >>
+            $lid:"bvars"$ $lid:"params"$ $lid:"subgoals"$ $lid:"redex"$ $lid:"contractum"$ >>
       in
       let prim_expr =
          <:expr< $prim_cond_rewrite_expr loc$ $lid:local_refiner_id$ $str:name$ (**)
-            $vars_expr$ $params_expr$ $subgoals_expr$ $redex_expr$ $con_expr$ >>
+            $lid:"bvars"$ $lid:"params"$ $lid:"subgoals"$ $lid:"redex"$ $lid:"contractum"$ >>
       in
-      let rw_body_expr = <:expr< $rewrite_of_cond_rewrite_expr loc$ $lid:rw_id$ $lid:"x"$ >> in
-      let rw_fun_expr = <:expr< fun [ $list:[ x_patt, None, rw_body_expr ]$ ] >> in
+      let rw_fun_expr =
+         let addr_expr id = <:expr< $lid:id$ >> in
+         let cvars_id_expr = <:expr< [| $list:List.map addr_expr cvar_ids$ |] >> in
+         let bvars_id_expr = <:expr< [| $list:List.map lid_expr bvar_ids$ |] >> in
+         let tparams_ids_expr = list_expr loc lid_expr tparam_ids in
+         let body = <:expr< $rewrite_of_cond_rewrite_expr loc$ $lid:rw_id$
+                                ( $list:[ bvars_id_expr; tparams_ids_expr ]$ ) >>
+         in
+            fun_expr loc all_ids body
+      in
 
       (* Let construction *)
       let body =
-         <:expr< let $rec:false$ $list:[ vars_patt, vars_val;
-                                         params_patt, params_val;
-                                         subgoals_patt, subgoals_val;
-                                         redex_patt, redex_val;
-                                         con_patt, con_val ]$
+         <:expr< let $rec:false$ $list:[ cvars_patt, cvars_expr';
+                                         bvars_patt, bvars_expr';
+                                         params_patt, params_expr;
+                                         subgoals_patt, subgoals_expr;
+                                         redex_patt, redex_expr;
+                                         con_patt, con_expr ]$
                  in
                  let $rec:false$ $list:[ name_patt, create_expr;
                                          wild_patt, prim_expr ]$

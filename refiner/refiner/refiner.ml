@@ -2,7 +2,7 @@
  * Abstract refiner.
  *)
 
-module Refiner = Refiner_ds.Refiner
+module Refiner = Refiner_std.Refiner
 
 (*
  * -*-

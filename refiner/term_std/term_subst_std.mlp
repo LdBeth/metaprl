@@ -3,9 +3,19 @@
  *)
 #include "refine_error.h"
 
+open Debug
+open Printf
+
 open Refine_error_sig
 open Term_std_sig
 open Term_std
+
+let debug_alpha_equal =
+   create_debug (**)
+      { debug_name = "alpha_equal";
+        debug_description = "display alpha equality operations";
+        debug_value = false
+      }
 
 module TermSubst
    (Term : TermStdSig
@@ -157,6 +167,65 @@ struct
        | _ ->
             p1 = p2
 
+   let rec equal_term_debug vars t t' =
+      match t, t' with
+         { term_op = { op_name = opname1; op_params = [Var v] };
+           term_terms = []
+         },
+         { term_op = { op_name = opname2; op_params = [Var v'] };
+           term_terms = []
+         } when opname1 == var_opname & opname2 == var_opname ->
+            let flag =
+               try
+                  let flag = List.assoc v vars = v' in
+                     if flag = false then
+                        eprintf "alpha_equal_term: failed var %s/%s <> %s%t" v (List.assoc v vars) v' eflush;
+                     flag
+               with
+                  Not_found ->
+                     v = v'
+            in
+               if flag = false then
+                  eprintf "alpha_equal_term: failed var %s <> %s%t" v v' eflush;
+               flag
+       | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
+         { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
+            let flag =
+               (name1 == name2)
+               & (List.length params1 = List.length params2)
+               & (List_util.for_all2 equal_params params1 params2)
+               & (equal_bterms_debug vars bterms1 bterms2)
+            in
+               if flag = false then
+                  eprintf "alpha_equal_term: failed terms\n\t%a\n\t%a%t" (**)
+                     debug_print t
+                     debug_print t'
+                     eflush;
+               flag
+
+   and equal_bterms_debug vars bterms1 bterms2 =
+      let equal_bterm = fun
+         { bvars = bvars1; bterm = term1 }
+         { bvars = bvars2; bterm = term2 } ->
+            let flag =
+               (List.length bvars1 = List.length bvars2)
+               & (equal_term_debug (List_util.zip_list vars bvars1 bvars2) term1 term2)
+            in
+               if flag = false then
+                  eprintf "alpha_equal_bterm: failed\n\t%a.%a\n\t%a.%a%t" (**)
+                     print_string_list bvars1 debug_print term1
+                     print_string_list bvars2 debug_print term2
+                     eflush;
+               flag
+      in
+      let flag =
+         (List.length bterms1 = List.length bterms2)
+         & (List_util.for_all2 equal_bterm bterms1 bterms2)
+      in
+         if flag = false then
+            eprintf "alpha_equal_bterm: failed bterms:\n";
+         flag
+
    let rec equal_term vars t t' =
       match t, t' with
          { term_op = { op_name = opname1; op_params = [Var v] };
@@ -167,13 +236,14 @@ struct
          } when opname1 == var_opname & opname2 == var_opname ->
             begin
                try List.assoc v vars = v' with
-                  Not_found -> v = v'
+                  Not_found ->
+                     v = v'
             end
        | { term_op = { op_name = name1; op_params = params1 }; term_terms = bterms1 },
          { term_op = { op_name = name2; op_params = params2 }; term_terms = bterms2 } ->
-            name1 == name2
-                     & List_util.for_all2 equal_params params1 params2
-                     & equal_bterms vars bterms1 bterms2
+            (name1 == name2)
+            & (List_util.for_all2 equal_params params1 params2)
+            & (equal_bterms vars bterms1 bterms2)
 
    and equal_bterms vars bterms1 bterms2 =
       let equal_bterm = fun
@@ -184,12 +254,20 @@ struct
          List_util.for_all2 equal_bterm bterms1 bterms2
 
    let alpha_equal t1 t2 =
-      try equal_term [] t1 t2 with
-         Invalid_argument _ -> false
+      let equal_term =
+         if !debug_alpha_equal then
+            equal_term_debug
+         else
+            equal_term
+      in
+         try equal_term [] t1 t2 with
+            Failure _ ->
+               false
 
    let alpha_equal_vars (t, v) (t', v') =
       try equal_term (List_util.zip v v') t t' with
-         Invalid_argument _ -> false
+         Failure _ ->
+            false
 
    (*
     * Check the following:
