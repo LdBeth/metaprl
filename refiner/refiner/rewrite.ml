@@ -236,20 +236,17 @@ struct
    (*
     * Upgrade a second-order instance to a pattern
     *)
-   let rstack_upgrade v =
-      let rec aux = function
-         (SOVarInstance v')::t when v' = v ->
-            (SOVarPattern v)::t
-       | ((SOVarPattern v')::t as stack) when v' = v ->
-            stack
-       | (FOVarPattern v')::t when v' = v ->
-            (SOVarPattern v)::t
-       | h::t ->
-            h::(aux t)
-       | [] ->
-            raise (Invalid_argument "rstack_upgrade")
-      in
-         aux
+   let rec rstack_upgrade v = function
+      (SOVarInstance v')::t when v' = v ->
+         (SOVarPattern v)::t
+    | ((SOVarPattern v')::t as stack) when v' = v ->
+         stack
+    | (FOVarPattern v')::t when v' = v ->
+         (SOVarPattern v)::t
+    | h::t ->
+         h::(rstack_upgrade v t)
+    | [] ->
+         raise (Invalid_argument "rstack_upgrade")
 
    (*
     * Membership functions.
@@ -342,350 +339,338 @@ struct
     *
     * Return the stack and the compiled term.
     *)
-   let compile_so_redex addrs =
-      let rec compile_so_redex_term stack bvars term =
-         (* Check for variables and contexts *)
-         if is_so_var_term term then
-            let is_bound_var v =
-               (* Determine if a term is a bound variable *)
-               if is_var_term v then
-                  List.mem_assoc (dest_var v) bvars
-               else
-                  false
-            in
-            let gen_subterms subterms =
-               (* Find the free variables and their indices *)
-               let fv = List_util.intersect (free_vars_terms subterms) (List.map fst bvars) in
-                  List.map (svar_index bvars) fv, fv, subterms
-            in
-            let v, subterms = dest_so_var term in
-               (* This is a first or second order variable *)
-               if List.mem_assoc v bvars then
-                  (* This is a first order variable instance *)
-                  if subterms <> [] then
-                     raise (RewriteError (BoundSOVar v))
-                  else
-                     stack, RWCheckVar(svar_index bvars v)
 
-               else if List.for_all is_bound_var subterms then
-                  (* This is a second order variable, and all subterms are vars *)
-                  if rstack_so_mem v stack then
-                     (* Treat this as an instance, but record that a pattern was found *)
-                     rstack_upgrade v stack, RWSOMatch(rstack_so_index v stack, gen_subterms subterms)
-                  else if subterms = [] then
-                     stack @ [FOVarPattern v], RWSOVar(List.length stack, List.map (var_index bvars) subterms)
-                  else
-                     stack @ [SOVarPattern v], RWSOVar(List.length stack, List.map (var_index bvars) subterms)
+   let rec bnames i = function
+      h::t -> (StackName i)::(bnames (i + 1) t)
+    | [] -> []
 
-               else
-                  (* This is a second order variable instance *)
-                  if rstack_so_mem v stack then
-                     stack, RWSOMatch(rstack_so_index v stack, gen_subterms subterms)
-                  else
-                     stack @ [SOVarInstance v], RWSOMatch(List.length stack, gen_subterms subterms)
+   (* Add new bvars *)
+   let rec new_bvar_items i = function
+      h::t -> (h, i)::(new_bvar_items (i + 1) t)
+    | [] -> []
 
-         else if is_context_term term then
-            let v, term, vars = dest_context term in
-               if rstack_mem v stack then
-                  (* The context should have a unique name *)
+   (* Determine if a term is a bound variable *)
+   let is_bound_var bvars v = 
+      is_var_term v & List.mem_assoc (dest_var v) bvars
+
+   (* Find the free variables and their indices *)
+   let gen_subterms bvars subterms =
+      let fv = List_util.intersect (free_vars_terms subterms) (List_util.fst_split bvars) in
+         List.map (svar_index bvars) fv, fv, subterms
+         
+   let rec compile_so_redex_term addrs stack bvars term =
+      (* Check for variables and contexts *)
+      if is_so_var_term term then
+         let v, subterms = dest_so_var term in
+            (* This is a first or second order variable *)
+            if List.mem_assoc v bvars then
+               (* This is a first order variable instance *)
+               if subterms <> [] then
                   raise (RewriteError (BoundSOVar v))
-
-               else if Array_util.mem v addrs then
-                  (* All the vars should be free variables *)
-                  let stack' = stack @ [CVar v] in
-                  let stack'', term' = compile_so_redex_term stack' bvars term in
-                     stack'', RWSOContext(Array_util.index v addrs,
-                                          List.length stack,
-                                          term',
-                                          List.map (var_index bvars) vars)
                else
-                  (* No argument for this context *)
-                  raise (RewriteError (MissingContextArg v))
+                  stack, RWCheckVar(svar_index bvars v)
 
-         else
-            (* This is normal term--not a var *)
-            let { term_op = op; term_terms = bterms } = dest_term term in
-            let { op_name = name; op_params = params } = dest_op op in
-               let stack2, params2 = compile_so_redex_params stack params in
-               let stack3, bterms3 = compile_so_redex_bterms stack2 bvars bterms in
-                  stack3, RWComposite { rw_op = { rw_name = name; rw_params = params2 };
-                                        rw_bterms = bterms3
-                                      }
+            else if List.for_all (is_bound_var bvars) subterms then
+               (* This is a second order variable, and all subterms are vars *)
+               if rstack_so_mem v stack then
+                  (* Treat this as an instance, but record that a pattern was found *)
+                  rstack_upgrade v stack, RWSOMatch(rstack_so_index v stack, gen_subterms bvars subterms)
+               else if subterms = [] then
+                  stack @ [FOVarPattern v], RWSOVar(List.length stack, List.map (var_index bvars) subterms)
+               else
+                  stack @ [SOVarPattern v], RWSOVar(List.length stack, List.map (var_index bvars) subterms)
 
-      (*
-       * We also compile parameters, and bind meta-variables.
-       *)
-      and compile_so_redex_params stack = function
-         [] -> stack, []
-       | param::params ->
-            (* Do this param *)
-            let stack', param' = compile_so_redex_param stack param in
-            let stack'', params' = compile_so_redex_params stack' params in
-               stack'', param'::params'
-
-      and compile_so_redex_param stack param =
-         let meta_param const pvar v =
-            if rstack_p_mem v stack then
-               (* This param is not free, do a match *)
-               stack, const (rstack_p_index v stack)
             else
-               (* Add it *)
-               stack @ [pvar v], const (List.length stack)
-         in
-            match dest_param param with
-               MNumber v -> meta_param (fun i -> RWMNumber i) (fun v -> PIVar v) v
-             | MString(v) -> meta_param (fun s -> RWMString s) (fun s -> PSVar s) v
-             | MToken(v) -> meta_param (fun t -> RWMToken t) (fun s -> PSVar s) v
-             | MLevel(v) -> meta_param (fun l -> RWMLevel l) (fun l -> PLVar l) v
-             | MVar(v) -> meta_param (fun v -> RWMVar v) (fun v -> PSVar v) v
-             | Number(i) -> stack, RWNumber(i)
-             | String(s) -> stack, RWString(s)
-             | Token(t) -> stack, RWToken(t)
-             | Level(i) -> stack, RWLevel(i)
-             | Var(v) -> stack, RWVar(v)
-             | _ -> raise (RewriteError (BadMatch (ParamMatch param)))
+               (* This is a second order variable instance *)
+               if rstack_so_mem v stack then
+                  stack, RWSOMatch(rstack_so_index v stack, gen_subterms bvars subterms)
+               else
+                  stack @ [SOVarInstance v], RWSOMatch(List.length stack, gen_subterms bvars subterms)
 
-      (*
-       * In bterms, have to add these vars to the binding stack.
-       *)
-      and compile_so_redex_bterms stack bvars = function
-         [] -> stack, []
-       | bterm::bterms ->
-            let stack', bterm' = compile_so_redex_bterm stack bvars bterm in
-            let stack'', bterms' = compile_so_redex_bterms stack' bvars bterms in
-               stack'', bterm'::bterms'
+      else if is_context_term term then
+         let v, term, vars = dest_context term in
+            if rstack_mem v stack then
+               (* The context should have a unique name *)
+               raise (RewriteError (BoundSOVar v))
 
-      and compile_so_redex_bterm stack bvars bterm =
-         match dest_bterm bterm with
-            { bvars = vars; bterm = term } ->
-               (* Add vars to the stack *)
-               let stack' = stack @ (List.map (fun v -> FOVar v) vars) in
-               let rec bnames i = function
-                  h::t -> (StackName i)::(bnames (i + 1) t)
-                | [] -> []
-               in
+            else if Array_util.mem v addrs then
+               (* All the vars should be free variables *)
+               let stack' = stack @ [CVar v] in
+               let stack'', term' = compile_so_redex_term addrs stack' bvars term in
+                  stack'', RWSOContext(Array_util.index v addrs,
+                                       List.length stack,
+                                       term',
+                                       List.map (var_index bvars) vars)
+            else
+               (* No argument for this context *)
+               raise (RewriteError (MissingContextArg v))
 
-               (* Add new bvars *)
-               let rec new_bvar_items i = function
-                  h::t -> (h, i)::(new_bvar_items (i + 1) t)
-                | [] -> []
-               in
-               let l = List.length stack in
-               let bvars' = bvars @ (new_bvar_items l vars) in
+      else
+         (* This is normal term--not a var *)
+         let { term_op = op; term_terms = bterms } = dest_term term in
+         let { op_name = name; op_params = params } = dest_op op in
+         let stack2, params2 = compile_so_redex_params stack params in
+         let stack3, bterms3 = compile_so_redex_bterms addrs stack2 bvars bterms in
+            stack3, RWComposite { rw_op = { rw_name = name; rw_params = params2 };
+                                  rw_bterms = bterms3 }
 
-               (* Compile the term *)
-               let stack'', term' = compile_so_redex_term stack' bvars' term in
-                  stack'', { rw_bvars = List.length vars; rw_bnames = bnames l vars; rw_bterm = term' }
-      in
+   (*
+    * We also compile parameters, and bind meta-variables.
+    *)
+   and compile_so_redex_params stack = function
+      [] -> stack, []
+    | param::params ->
+         (* Do this param *)
+         let stack', param' = compile_so_redex_param stack param in
+         let stack'', params' = compile_so_redex_params stack' params in
+            stack'', param'::params'
 
-      (*
-       * This is the final version.
-       *)
-      let compile t =
-         let rec aux stack = function
-            [] -> stack, []
-          | term::t ->
-               let stack', term' = compile_so_redex_term stack [] term in
-               let stack'', terms' = aux stack' t in
-                  stack'', term'::terms'
-         in
-         let stack, terms = aux [] t in
-         let check_stack = function
-            SOVarInstance n ->
-               raise (RewriteError (AllSOInstances n))
-          | _ -> ()
-         in
-            List.iter check_stack stack;
-            Array.of_list stack, terms
-      in
-         compile
+   and meta_param stack const pvar v =
+      if rstack_p_mem v stack then
+         (* This param is not free, do a match *)
+         stack, const (rstack_p_index v stack)
+      else
+         (* Add it *)
+         stack @ [pvar v], const (List.length stack)
+
+   and compile_so_redex_param stack param =
+      match dest_param param with
+         MNumber v -> meta_param stack (fun i -> RWMNumber i) (fun v -> PIVar v) v
+       | MString(v) -> meta_param stack (fun s -> RWMString s) (fun s -> PSVar s) v
+       | MToken(v) -> meta_param stack (fun t -> RWMToken t) (fun s -> PSVar s) v
+       | MLevel(v) -> meta_param stack (fun l -> RWMLevel l) (fun l -> PLVar l) v
+       | MVar(v) -> meta_param stack (fun v -> RWMVar v) (fun v -> PSVar v) v
+       | Number(i) -> stack, RWNumber(i)
+       | String(s) -> stack, RWString(s)
+       | Token(t) -> stack, RWToken(t)
+       | Level(i) -> stack, RWLevel(i)
+       | Var(v) -> stack, RWVar(v)
+       | _ -> raise (RewriteError (BadMatch (ParamMatch param)))
+
+   (*
+    * In bterms, have to add these vars to the binding stack.
+    *)
+   and compile_so_redex_bterms addrs stack bvars = function
+      [] -> stack, []
+    | bterm::bterms ->
+         let stack', bterm' = compile_so_redex_bterm addrs stack bvars bterm in
+         let stack'', bterms' = compile_so_redex_bterms addrs stack' bvars bterms in
+            stack'', bterm'::bterms'
+
+   and compile_so_redex_bterm addrs stack bvars bterm =
+      match dest_bterm bterm with
+         { bvars = vars; bterm = term } ->
+            (* Add vars to the stack *)
+            let stack' = stack @ (List.map (fun v -> FOVar v) vars) in
+            let l = List.length stack in
+            let bvars' = bvars @ (new_bvar_items l vars) in
+
+            (* Compile the term *)
+            let stack'', term' = compile_so_redex_term addrs stack' bvars' term in
+               stack'', { rw_bvars = List.length vars; rw_bnames = bnames l vars; rw_bterm = term' }
+
+   (*
+    * This is the final version.
+    *)
+   let rec compile_so_redex_aux addrs stack = function
+      [] -> stack, []
+    | term::t ->
+         let stack', term' = compile_so_redex_term addrs stack [] term in
+         let stack'', terms' = compile_so_redex_aux addrs stack' t in
+            stack'', term'::terms'
+
+   let check_stack = function
+      SOVarInstance n ->
+         raise (RewriteError (AllSOInstances n))
+    | _ -> ()
+
+   let compile_so_redex addrs t =
+      let stack, terms = compile_so_redex_aux addrs [] t in
+      List.iter check_stack stack;
+      Array.of_list stack, terms
 
    (*
     * When the contractum is compiled, the redex has already been
     * compiled, and the stack contains a list of the special variables.
     *)
-   let compile_so_contractum names stack =
-      let bname n =
-         if Array_util.mem n names then
-            ArgName (Array_util.index n names)
-         else if array_rstack_fo_mem n stack then
-            StackName (array_rstack_fo_index n stack)
-         else
-            SaveName n
-      in
-      let rec compile_so_contractum_term bvars term =
-         if is_so_var_term term then
-            let v, subterms = dest_so_var term in
-               (* This is a first or second order variable *)
-               if List.mem v bvars then
-                  (* This is a first order variable instance *)
-                  if subterms <> [] then
-                     raise (RewriteError (BoundSOVar v))
-                  else
-                     RWCheckVar(List_util.find_index v bvars)
+   let compile_bname names stack n =
+      if Array_util.mem n names then
+         ArgName (Array_util.index n names)
+      else if array_rstack_fo_mem n stack then
+         StackName (array_rstack_fo_index n stack)
+      else
+         SaveName n
 
-               else if array_rstack_so_mem v stack then
-                  (*
-                   * This is a second order variable.
-                   * The variable v should be bound, and we generate a
-                   * a substitution instance.
-                   *)
-                  RWSOSubst(array_rstack_so_index v stack,
-                            List.map (compile_so_contractum_term bvars) subterms)
-
-               else if array_rstack_fo_mem v stack & subterms = [] then
-                  (* This variable represents a binding occurrence *)
-                  RWStackVar (array_rstack_fo_index v stack)
-
+   let rec compile_so_contractum_term names stack bvars term =
+      if is_so_var_term term then
+         let v, subterms = dest_so_var term in
+            (* This is a first or second order variable *)
+            if List.mem v bvars then
+               (* This is a first order variable instance *)
+               if subterms <> [] then
+                  raise (RewriteError (BoundSOVar v))
                else
-                  (* This is a second order variable that is free *)
-                  raise (RewriteError (FreeSOVar v))
+                  RWCheckVar(List_util.find_index v bvars)
 
-         else if is_context_term term then
-            (* This is a second order context *)
-            let v, term', subterms = dest_context term in
-               if array_rstack_c_mem v stack then
-                  (*
-                   * Second order context and the v is bound.
-                   * We generate a substitution instance.
-                   *)
-                  RWSOContextSubst(
-                     array_rstack_c_index v stack,
-                     compile_so_contractum_term bvars term',
-                     List.map (compile_so_contractum_term bvars) subterms)
+            else if array_rstack_so_mem v stack then
+               (*
+                * This is a second order variable.
+                * The variable v should be bound, and we generate a
+                * a substitution instance.
+                *)
+               RWSOSubst(array_rstack_so_index v stack,
+                         List.map (compile_so_contractum_term names stack bvars) subterms)
 
-               else
-                  (* Free second order context *)
-                  raise (RewriteError (FreeSOVar v))
+            else if array_rstack_fo_mem v stack & subterms = [] then
+               (* This variable represents a binding occurrence *)
+               RWStackVar (array_rstack_fo_index v stack)
 
-         else
-            (* This is a normal term--not a var *)
-            let { term_op = op; term_terms = bterms } = dest_term term in
-            let { op_name = name; op_params = params } = dest_op op in
-               (* This is a normal term *)
-            let params' = List.map compile_so_contractum_param params in
-            let bterms' = List.map (compile_so_contractum_bterm bvars) bterms in
-               RWComposite { rw_op = { rw_name = name; rw_params = params' };
-                             rw_bterms = bterms'
-               }
+            else
+               (* This is a second order variable that is free *)
+               raise (RewriteError (FreeSOVar v))
 
-      (*
-       * We also compile parameters, and bind meta-variables.
-       *)
-      and compile_so_contractum_param param =
-         match dest_param param with
-            MNumber v ->
-               if array_rstack_p_mem v stack then
-                  (* New param *)
-                  RWMNumber (array_rstack_p_index v stack)
-               else
-                  (* Free param *)
-                  raise (RewriteError (FreeParamVar v))
+      else if is_context_term term then
+         (* This is a second order context *)
+         let v, term', subterms = dest_context term in
+            if array_rstack_c_mem v stack then
+               (*
+                * Second order context and the v is bound.
+                * We generate a substitution instance.
+                *)
+               RWSOContextSubst(
+                  array_rstack_c_index v stack,
+                  compile_so_contractum_term names stack bvars term',
+                  List.map (compile_so_contractum_term names stack bvars) subterms)
 
-          | MString v ->
-               if array_rstack_p_mem v stack then
-                  (* New param *)
-                  RWMString (array_rstack_p_index v stack)
-               else
-                  (* Free param *)
-                  raise (RewriteError (FreeParamVar v))
+            else
+               (* Free second order context *)
+               raise (RewriteError (FreeSOVar v))
 
-          | MToken v ->
-               if array_rstack_p_mem v stack then
-                  (* New param *)
-                  RWMToken (array_rstack_p_index v stack)
-               else
-                  (* Free param *)
-                  raise (RewriteError (FreeParamVar v))
+      else
+         (* This is a normal term--not a var *)
+         let { term_op = op; term_terms = bterms } = dest_term term in
+         let { op_name = name; op_params = params } = dest_op op in
+            (* This is a normal term *)
+         let params' = List.map (compile_so_contractum_param stack) params in
+         let bterms' = List.map (compile_so_contractum_bterm names stack bvars) bterms in
+            RWComposite { rw_op = { rw_name = name; rw_params = params' };
+                          rw_bterms = bterms'
+            }
 
-          | MLevel v ->
-               if array_rstack_p_mem v stack then
-                  (* New param *)
-                  RWMLevel (array_rstack_p_index v stack)
-               else
-                  (* Free param *)
-                  raise (RewriteError (FreeParamVar v))
+   (*
+    * We also compile parameters, and bind meta-variables.
+    *)
+   and compile_so_contractum_param stack param =
+      match dest_param param with
+         MNumber v ->
+            if array_rstack_p_mem v stack then
+               (* New param *)
+               RWMNumber (array_rstack_p_index v stack)
+            else
+               (* Free param *)
+               raise (RewriteError (FreeParamVar v))
 
-          | MVar v ->
-               if array_rstack_p_mem v stack then
-                  (* New param *)
-                  RWMVar(array_rstack_p_index v stack)
-               else
-                  (* Free param *)
-                  raise (RewriteError (FreeParamVar v))
+       | MString v ->
+            if array_rstack_p_mem v stack then
+               (* New param *)
+               RWMString (array_rstack_p_index v stack)
+            else
+               (* Free param *)
+               raise (RewriteError (FreeParamVar v))
 
-          | Number i -> RWNumber i
-          | String s -> RWString s
-          | Token t -> RWToken t
-          | Level i -> RWLevel i
-          | Var v -> RWVar v
+       | MToken v ->
+            if array_rstack_p_mem v stack then
+               (* New param *)
+               RWMToken (array_rstack_p_index v stack)
+            else
+               (* Free param *)
+               raise (RewriteError (FreeParamVar v))
 
-          | MSum (a, b) -> RWSum (compile_so_contractum_param a,
-                                  compile_so_contractum_param b)
-          | MDiff (a, b) -> RWDiff (compile_so_contractum_param a,
-                                    compile_so_contractum_param b)
-          | MProduct (a, b) -> RWProduct (compile_so_contractum_param a,
-                                          compile_so_contractum_param b)
-          | MQuotient (a, b) -> RWQuotient (compile_so_contractum_param a,
-                                            compile_so_contractum_param b)
-          | MRem (a, b) -> RWRem (compile_so_contractum_param a,
-                                  compile_so_contractum_param b)
-          | MLessThan (a, b) -> RWLessThan (compile_so_contractum_param a,
-                                            compile_so_contractum_param b)
-          | MEqual (a, b) -> RWEqual (compile_so_contractum_param a,
-                                      compile_so_contractum_param b)
-          | MNotEqual (a, b) -> RWNotEqual (compile_so_contractum_param a,
-                                            compile_so_contractum_param b)
+       | MLevel v ->
+            if array_rstack_p_mem v stack then
+               (* New param *)
+               RWMLevel (array_rstack_p_index v stack)
+            else
+               (* Free param *)
+               raise (RewriteError (FreeParamVar v))
 
-          | ObId id ->
-               RWObId id
+       | MVar v ->
+            if array_rstack_p_mem v stack then
+               (* New param *)
+               RWMVar(array_rstack_p_index v stack)
+            else
+               (* Free param *)
+               raise (RewriteError (FreeParamVar v))
 
-          | ParamList l ->
-               RWParamList (List.map compile_so_contractum_param l)
+       | Number i -> RWNumber i
+       | String s -> RWString s
+       | Token t -> RWToken t
+       | Level i -> RWLevel i
+       | Var v -> RWVar v
 
-      (*
-       * In bterms, have to add these vars to the binding stack.
-       *)
-      and compile_so_contractum_bterm bvars bterm =
-         match dest_bterm bterm with
-            { bvars = vars; bterm = term } ->
-               let term' = compile_so_contractum_term (bvars @ vars) term in
-               let vars' = List.map bname vars in
-                  { rw_bvars = List.length vars; rw_bnames = vars'; rw_bterm = term' }
-      in
-         compile_so_contractum_term []
+       | MSum (a, b) -> RWSum (compile_so_contractum_param stack a,
+                               compile_so_contractum_param stack b)
+       | MDiff (a, b) -> RWDiff (compile_so_contractum_param stack a,
+                                 compile_so_contractum_param stack b)
+       | MProduct (a, b) -> RWProduct (compile_so_contractum_param stack a,
+                                       compile_so_contractum_param stack b)
+       | MQuotient (a, b) -> RWQuotient (compile_so_contractum_param stack a,
+                                         compile_so_contractum_param stack b)
+       | MRem (a, b) -> RWRem (compile_so_contractum_param stack a,
+                               compile_so_contractum_param stack b)
+       | MLessThan (a, b) -> RWLessThan (compile_so_contractum_param stack a,
+                                         compile_so_contractum_param stack b)
+       | MEqual (a, b) -> RWEqual (compile_so_contractum_param stack a,
+                                   compile_so_contractum_param stack b)
+       | MNotEqual (a, b) -> RWNotEqual (compile_so_contractum_param stack a,
+                                         compile_so_contractum_param stack b)
+
+       | ObId id ->
+            RWObId id
+
+       | ParamList l ->
+            RWParamList (List.map (compile_so_contractum_param stack) l)
+
+   (*
+    * In bterms, have to add these vars to the binding stack.
+    *)
+   and compile_so_contractum_bterm names stack bvars bterm =
+      let { bvars = vars; bterm = term } = dest_bterm bterm in
+      let term' = compile_so_contractum_term names stack (bvars @ vars) term in
+      let vars' = List.map (compile_bname names stack) vars in
+         { rw_bvars = List.length vars; rw_bnames = vars'; rw_bterm = term' }
+
+   let compile_so_contractum names stack = compile_so_contractum_term names stack []
 
    (*
     * Naming function.
     *)
-   let compute_namer stack names =
+
+   let compute_index stack v =
+      if array_rstack_fo_mem v stack then
+         Some (array_rstack_fo_index v stack)
+      else
+         None
+
+   let compute_namer stack names stack' names' =
       (* Compute an array of names to change *)
-      let compute_index v =
-         if array_rstack_fo_mem v stack then
-            Some (array_rstack_fo_index v stack)
-         else
-            None
-      in
-      let indices = Array.map compute_index names in
+      let indices = Array.map (compute_index stack) names in
       let length = Array.length names in
-      let namer stack' names' =
-         let names'' = Array.copy names' in
-            for i = 0 to length - 1 do
-               match indices.(i) with
-                  Some j ->
-                     begin
-                        match stack'.(j) with
-                           StackString s ->
-                              names''.(j) <- s
-                         | x ->
-                              raise (RewriteError (StackError x))
-                     end
-                | None ->
-                     ()
-            done;
-            names''
-      in
-         namer
+      let names'' = Array.copy names' in
+         for i = 0 to length - 1 do
+            match indices.(i) with
+               Some j ->
+                  begin
+                     match stack'.(j) with
+                        StackString s ->
+                           names''.(j) <- s
+                      | x ->
+                           raise (RewriteError (StackError x))
+                  end
+             | None ->
+                  ()
+         done;
+         names''
 
    (*
     * Compile redex and contractum, and form a rewrite rule.
@@ -740,13 +725,12 @@ struct
    (*
     * Get the vars from their indices.
     *)
-   let extract_bvars stack l =
-      let extract_bvar v =
-         match stack.(v) with
-            StackString s -> s
-          | x -> raise (RewriteError (StackError x))
-      in
-         List.map extract_bvar l
+   let extract_bvar stack v =
+      match stack.(v) with
+         StackString s -> s
+       | x -> raise (RewriteError (StackError x))
+
+   let extract_bvars stack l = List.map (extract_bvar stack) l
 
    (*
     * Add the assignment to the list.
@@ -774,147 +758,143 @@ struct
    (*
     * Check that the terms are all equivalent under the given instantiations
     *)
-   let check_match ((t, vars) as tv) =
-      let rec aux = function
-         h::tl ->
-            if alpha_equal_match tv h then
-               aux tl
-            else
-               raise (RewriteError (BadMatch (TermMatch t)))
-       | [] -> ()
-      in
-         aux
+   let rec check_match ((t, vars) as tv) = function
+      h::tl ->
+         if alpha_equal_match tv h then
+            check_match tv tl
+         else
+            raise (RewriteError (BadMatch (TermMatch t)))
+    | [] -> ()
 
    (*
     * Match a term against the redex.
     *)
-   let match_redex addrs stack =
-       let rec match_redex_term t' t =
-           match t' with
-              RWComposite { rw_op = { rw_name = name'; rw_params = params' }; rw_bterms = bterms' } ->
-                 let { term_op = op; term_terms = bterms } = dest_term t in
-                 let { op_name = name; op_params = params } = dest_op op in
-                    if !debug_rewrite then
-                       eprintf "Rewrite.match_redex.RWComposite: %s/%s%t" (**)
-                          (flat_opname name')
-                          (flat_opname name)
-                          eflush;
-                    if name == name' then
-                       begin
-                          List.iter2 match_redex_params params' params;
-                          List_util.rev_iter2 match_redex_bterms bterms' bterms
-                       end
-                    else
-                       raise (RewriteError (BadMatch (TermMatch t)))
-
-            | RWCheckVar i ->
-                 begin
-                    let v = dest_var t in
-                       if !debug_rewrite then
-                          eprintf "Rewrite.match_redex.RWCheckVar: %d/%s%t" i v eflush;
-                        match stack.(i) with
-                           StackString v' ->
-                             if !debug_rewrite then
-                                eprintf "Rewrite.match_redex.RWCheckVar: %s/%s%t" v' v eflush;
-                              if v' <> v then
-                                 raise (RewriteError (BadMatch (VarMatch v)))
-                         | x ->
-                            raise (RewriteError (StackError x))
-                 end
-
-            | RWSOVar (i, l) ->
-                 (* Save the term at i *)
-                 begin
-                    let vars = extract_bvars stack l in
-                       if !debug_rewrite then
-                          eprintf "Rewrite.match_redex.RWSOVar%t" eflush;
-                       match stack.(i) with
-                          StackVoid ->
-                             stack.(i) <- StackBTerm (t, vars)
-                        | StackBTerm (t', vars') ->
-                             check_simple_match (t, vars) (t', vars)
-                        | StackITerm l ->
-                             check_match (t, vars) l;
-                             stack.(i) <- StackBTerm (t, vars)
-                        | _ ->
-                             raise (RewriteError (StackError stack.(i)))
-                 end
-
-            | RWSOMatch (i, (ivars, vars, subterms)) ->
-                 (* See if the term matches *)
-                 begin
-                    let vars' = extract_bvars stack ivars in
-                       if !debug_rewrite then
-                          eprintf "Rewrite.match_redex.RWSOMatch%t" eflush;
-                        match stack.(i) with
-                           StackVoid ->
-                              stack.(i) <- StackITerm [t, vars', vars, subterms]
-                         | StackBTerm (t'', vars'') ->
-                              check_match (t'', vars'') [t, vars', vars, subterms]
-                         | StackITerm l ->
-                              stack.(i) <- StackITerm ((t, vars', vars, subterms)::l)
-                         | _ ->
-                              raise (RewriteError (StackError stack.(i)))
-                 end
-
-            | RWSOContext (addr, i, term', l) ->
-                 (* Pull an address out of the addr argument *)
+    let rec match_redex_term addrs stack t' t =
+        match t' with
+           RWComposite { rw_op = { rw_name = name'; rw_params = params' }; rw_bterms = bterms' } ->
+              let { term_op = op; term_terms = bterms } = dest_term t in
+              let { op_name = name; op_params = params } = dest_op op in
                  if !debug_rewrite then
-                    eprintf "Rewrite.match_redex.RWSOContext: begin%t" eflush;
-                 let addr' = addrs.(addr) in
-                 let term = term_subterm t addr' in
+                    eprintf "Rewrite.match_redex.RWComposite: %s/%s%t" (**)
+                       (flat_opname name')
+                       (flat_opname name)
+                       eflush;
+                 if name == name' then
+                    begin
+                       List.iter2 (match_redex_params stack) params' params;
+                       List_util.rev_iter2 (match_redex_bterms addrs stack) bterms' bterms
+                    end
+                 else
+                    raise (RewriteError (BadMatch (TermMatch t)))
+
+         | RWCheckVar i ->
+              begin
+                 let v = dest_var t in
                     if !debug_rewrite then
-                       eprintf "Rewrite.match_redex.RWSOContext%t" eflush;
-                    stack.(i) <- StackContext (extract_bvars stack l, t, addr');
-                    match_redex_term term' term
+                       eprintf "Rewrite.match_redex.RWCheckVar: %d/%s%t" i v eflush;
+                     match stack.(i) with
+                        StackString v' ->
+                          if !debug_rewrite then
+                             eprintf "Rewrite.match_redex.RWCheckVar: %s/%s%t" v' v eflush;
+                           if v' <> v then
+                              raise (RewriteError (BadMatch (VarMatch v)))
+                      | x ->
+                         raise (RewriteError (StackError x))
+              end
 
-            | _ ->
-                 raise (RewriteError (BadMatch (TermMatch t)))
+         | RWSOVar (i, l) ->
+              (* Save the term at i *)
+              begin
+                 let vars = extract_bvars stack l in
+                    if !debug_rewrite then
+                       eprintf "Rewrite.match_redex.RWSOVar%t" eflush;
+                    match stack.(i) with
+                       StackVoid ->
+                          stack.(i) <- StackBTerm (t, vars)
+                     | StackBTerm (t', vars') ->
+                          check_simple_match (t, vars) (t', vars)
+                     | StackITerm l ->
+                          check_match (t, vars) l;
+                          stack.(i) <- StackBTerm (t, vars)
+                     | _ ->
+                          raise (RewriteError (StackError stack.(i)))
+              end
 
-       and match_redex_params p' p =
-           match p', dest_param p with
-              (* Literal matches *)
-              RWNumber i, Number j ->
-                 if not (i = j) then
-                    raise (RewriteError (BadMatch (ParamMatch p)))
-            | RWString s', String s ->
-                 if not (s' = s) then
-                    raise (RewriteError (BadMatch (ParamMatch p)))
-            | RWToken t', Token t ->
-                 if not (t' = t) then
-                    raise (RewriteError (BadMatch (ParamMatch p)))
-            | RWLevel i', Level i ->
-                 if not (i' = i) then
-                    raise (RewriteError (BadMatch (ParamMatch p)))
-            | RWVar v', Var v ->
-                 if not (v' = v) then
-                    raise (RewriteError (BadMatch (ParamMatch p)))
+         | RWSOMatch (i, (ivars, vars, subterms)) ->
+              (* See if the term matches *)
+              begin
+                 let vars' = extract_bvars stack ivars in
+                    if !debug_rewrite then
+                       eprintf "Rewrite.match_redex.RWSOMatch%t" eflush;
+                     match stack.(i) with
+                        StackVoid ->
+                           stack.(i) <- StackITerm [t, vars', vars, subterms]
+                      | StackBTerm (t'', vars'') ->
+                           check_match (t'', vars'') [t, vars', vars, subterms]
+                      | StackITerm l ->
+                           stack.(i) <- StackITerm ((t, vars', vars, subterms)::l)
+                      | _ ->
+                           raise (RewriteError (StackError stack.(i)))
+              end
 
-              (* Variable matches *)
-            | RWMNumber i, Number j ->
-                 stack.(i) <- StackNumber j
-            | RWMString i, String s ->
-                 stack.(i) <- StackString s
-            | RWMToken i, Token t ->
-                 stack.(i) <- StackString t
-            | RWMVar i, Var v ->
-                 stack.(i) <- StackString v
-            | RWMLevel i, Level l ->
-                 stack.(i) <- StackLevel l
+         | RWSOContext (addr, i, term', l) ->
+              (* Pull an address out of the addr argument *)
+              if !debug_rewrite then
+                 eprintf "Rewrite.match_redex.RWSOContext: begin%t" eflush;
+              let addr' = addrs.(addr) in
+              let term = term_subterm t addr' in
+                 if !debug_rewrite then
+                    eprintf "Rewrite.match_redex.RWSOContext%t" eflush;
+                 stack.(i) <- StackContext (extract_bvars stack l, t, addr');
+                 match_redex_term addrs stack term' term
 
-            | _ -> raise (RewriteError (BadMatch (ParamMatch p)))
+         | _ ->
+              raise (RewriteError (BadMatch (TermMatch t)))
 
-       and match_redex_bterms bt' bt =
-           match bt', dest_bterm bt with
-               { rw_bvars = vars'; rw_bnames = names; rw_bterm = bterm' },
-               { bvars = vars; bterm = bterm } ->
-                  set_bvars stack names vars;
-                  if vars' = List.length vars then
-                     match_redex_term bterm' bterm
-                  else
-                     raise (RewriteError (BadMatch (BTermMatch bt)))
-       in
-           List.iter2 match_redex_term
+    and match_redex_params stack p' p =
+        match p', dest_param p with
+           (* Literal matches *)
+           RWNumber i, Number j ->
+              if not (i = j) then
+                 raise (RewriteError (BadMatch (ParamMatch p)))
+         | RWString s', String s ->
+              if not (s' = s) then
+                 raise (RewriteError (BadMatch (ParamMatch p)))
+         | RWToken t', Token t ->
+              if not (t' = t) then
+                 raise (RewriteError (BadMatch (ParamMatch p)))
+         | RWLevel i', Level i ->
+              if not (i' = i) then
+                 raise (RewriteError (BadMatch (ParamMatch p)))
+         | RWVar v', Var v ->
+              if not (v' = v) then
+                 raise (RewriteError (BadMatch (ParamMatch p)))
+
+           (* Variable matches *)
+         | RWMNumber i, Number j ->
+              stack.(i) <- StackNumber j
+         | RWMString i, String s ->
+              stack.(i) <- StackString s
+         | RWMToken i, Token t ->
+              stack.(i) <- StackString t
+         | RWMVar i, Var v ->
+              stack.(i) <- StackString v
+         | RWMLevel i, Level l ->
+              stack.(i) <- StackLevel l
+
+         | _ -> raise (RewriteError (BadMatch (ParamMatch p)))
+
+    and match_redex_bterms addrs stack bt' bt =
+        match bt', dest_bterm bt with
+            { rw_bvars = vars'; rw_bnames = names; rw_bterm = bterm' },
+            { bvars = vars; bterm = bterm } ->
+               set_bvars stack names vars;
+               if vars' = List.length vars then
+                  match_redex_term addrs stack bterm' bterm
+               else
+                  raise (RewriteError (BadMatch (BTermMatch bt)))
+
+   let match_redex addrs stack = List.iter2 (match_redex_term addrs stack)
 
    (*
     * The contractum is built as a second order substitution.
@@ -923,186 +903,185 @@ struct
     * order term is instantiated, we do a calculation of
     * the variables to be renamed, and send it back up.
     *)
-   let build_contractum names stack =
-      (* Map name specifications to names *)
-      let bname = function
-         ArgName i -> names.(i)
-       | StackName i ->
-            begin
-               match stack.(i) with
-                  StackString s -> s
-                | x -> raise (RewriteError (StackError x))
-            end
-       | SaveName n -> n
+
+   (* Map name specifications to names *)
+   let build_bname names stack = function
+      ArgName i -> names.(i)
+    | StackName i ->
+         begin
+            match stack.(i) with
+               StackString s -> s
+             | x -> raise (RewriteError (StackError x))
+         end
+    | SaveName n -> n
+
+   (* Build the terms *)
+   let rec build_contractum_term names stack bvars = function
+      RWComposite { rw_op = { rw_name = name; rw_params = params }; rw_bterms = bterms } ->
+         (* Build a regular term from the parts *)
+         mk_term (mk_op name (build_contractum_params stack params))
+             (build_contractum_bterms names stack bvars bterms)
+
+    | RWSOSubst(i, terms) ->
+         begin
+             (*
+              * Instantiate a second order term.
+              * Find its free variables, and rename the binding stack
+              * if necessary.
+              *)
+             match stack.(i) with
+                StackBTerm(term, vars) -> subst term (List.map (build_contractum_term names stack bvars) terms) vars
+              | _ -> raise (RewriteError (StackError stack.(i)))
+         end
+
+    | RWSOContextSubst(i, t, terms) ->
+         begin
+             (*
+              * Instantiate a context.
+              *)
+             match stack.(i) with
+                StackContext(vars, term, addr) ->
+                   subst (replace_subterm term addr (build_contractum_term names stack bvars t))
+                         (List.map (build_contractum_term names stack bvars) terms)
+                         vars
+              | _ -> raise (RewriteError (StackError stack.(i)))
+         end
+
+    | RWCheckVar i ->
+         (*
+          * This is a bound occurrence.
+          *)
+         mk_var_term bvars.(i)
+
+    | RWStackVar i ->
+         (*
+          * This is a bound occurrence.
+          *)
+         begin
+            match stack.(i) with
+               StackString s ->
+                  mk_var_term s
+             | x -> raise (RewriteError (StackError x))
+         end
+
+    | t -> raise (RewriteError (StringError "bad contractum"))
+
+   and build_contractum_param stack = function
+      RWNumber i -> Number i
+    | RWString s -> String s
+    | RWToken s -> Token s
+    | RWLevel l -> Level l
+    | RWVar v -> Var v
+    | RWMNumber i ->
+         begin
+             match stack.(i) with
+                StackNumber j -> Number j
+              | StackString s -> Number (Num.num_of_string s)
+              | t -> raise (RewriteError (StackError t))
+         end
+    | RWMString i ->
+         begin
+             match stack.(i) with
+                StackString s -> String s
+              | StackNumber j -> String (Num.string_of_num j)
+              | t -> raise (RewriteError (StackError t))
+         end
+    | RWMToken i ->
+         begin
+             match stack.(i) with
+                StackString s -> Token s
+              | StackNumber j -> String (Num.string_of_num j)
+              | t -> raise (RewriteError (StackError t))
+         end
+    | RWMLevel i ->
+         begin
+             match stack.(i) with
+                StackLevel l -> Level l
+              | t -> raise (RewriteError (StackError t))
+         end
+    | RWMVar i ->
+         begin
+             match stack.(i) with
+                StackString v -> Var v
+              | StackNumber j -> Var (Num.string_of_num j)
+              | t -> raise (RewriteError (StackError t))
+         end
+    | RWSum (p1, p2) ->
+         begin
+             match (build_contractum_param stack p1, build_contractum_param stack p2) with
+                (Number i, Number j) -> Number (Num.add_num i j)
+              | (Number i, p) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
+              | (p, _) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
+         end
+    | RWDiff (p1, p2) ->
+         begin
+             match (build_contractum_param stack p1, build_contractum_param stack p2) with
+                (Number i, Number j) -> Number (Num.sub_num i j)
+              | (Number i, p) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
+              | (p, _) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
+         end
+    | RWProduct (p1, p2) ->
+         begin
+             match (build_contractum_param stack p1, build_contractum_param stack p2) with
+                (Number i, Number j) -> Number (Num.mult_num i j)
+              | (Number i, p) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
+              | (p, _) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
+         end
+    | RWQuotient (p1, p2) ->
+         begin
+             match (build_contractum_param stack p1, build_contractum_param stack p2) with
+                (Number i, Number j) -> Number (Num.quo_num i j)
+              | (Number i, p) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
+              | (p, _) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
+         end
+    | RWRem (p1, p2) ->
+         begin
+             match (build_contractum_param stack p1, build_contractum_param stack p2) with
+                (Number i, Number j) -> Number (Num.mod_num i j)
+              | (Number i, p) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
+              | (p, _) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
+         end
+    | RWLessThan (p1, p2) ->
+         begin
+             match (build_contractum_param stack p1, build_contractum_param stack p2) with
+                (Number i, Number j) -> Token (if i < j then "true" else "false")
+              | (Number i, p) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
+              | (p, _) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
+         end
+    | RWEqual (p1, p2) ->
+         begin
+             match (build_contractum_param stack p1, build_contractum_param stack p2) with
+                (Number i, Number j) -> Token (if i = j then "true" else "false")
+              | (Number i, p) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
+              | (p, _) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
+         end
+    | RWNotEqual (p1, p2) ->
+         begin
+             match (build_contractum_param stack p1, build_contractum_param stack p2) with
+                (Number i, Number j) -> Token (if i = j then "false" else "true")
+              | (Number i, p) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
+              | (p, _) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
+         end
+    | RWObId id ->
+         ObId id
+    | RWParamList l ->
+         ParamList (build_contractum_params stack l)
+
+   and build_contractum_params stack params =
+      let build_contractum_param' p =
+         make_param (build_contractum_param stack p)
       in
+         List.map build_contractum_param' params
 
-      (* Build the terms *)
-      let rec build_contractum_term bvars = function
-         RWComposite { rw_op = { rw_name = name; rw_params = params }; rw_bterms = bterms } ->
-            (* Build a regular term from the parts *)
-            mk_term (mk_op name (build_contractum_params params))
-                (build_contractum_bterms bvars bterms)
+   and build_contractum_bterm names stack bvars = function
+      { rw_bvars = vcount; rw_bnames = vars; rw_bterm = term } ->
+         let vars' = List.map (build_bname names stack) vars in
+            mk_bterm vars' (build_contractum_term names stack (insert_bvars bvars vars') term)
 
-       | RWSOSubst(i, terms) ->
-            begin
-                (*
-                 * Instantiate a second order term.
-                 * Find its free variables, and rename the binding stack
-                 * if necessary.
-                 *)
-                match stack.(i) with
-                   StackBTerm(term, vars) -> subst term (List.map (build_contractum_term bvars) terms) vars
-                 | _ -> raise (RewriteError (StackError stack.(i)))
-            end
+   and build_contractum_bterms names stack bvars =
+      List.map (build_contractum_bterm names stack bvars)
 
-       | RWSOContextSubst(i, t, terms) ->
-            begin
-                (*
-                 * Instantiate a context.
-                 *)
-                match stack.(i) with
-                   StackContext(vars, term, addr) ->
-                      subst (replace_subterm term addr (build_contractum_term bvars t))
-                            (List.map (build_contractum_term bvars) terms)
-                            vars
-                 | _ -> raise (RewriteError (StackError stack.(i)))
-            end
-
-       | RWCheckVar i ->
-            (*
-             * This is a bound occurrence.
-             *)
-            mk_var_term bvars.(i)
-
-       | RWStackVar i ->
-            (*
-             * This is a bound occurrence.
-             *)
-            begin
-               match stack.(i) with
-                  StackString s ->
-                     mk_var_term s
-                | x -> raise (RewriteError (StackError x))
-            end
-
-       | t -> raise (RewriteError (StringError "bad contractum"))
-
-      and build_contractum_params params =
-         let rec build_contractum_param = function
-            RWNumber i -> Number i
-          | RWString s -> String s
-          | RWToken s -> Token s
-          | RWLevel l -> Level l
-          | RWVar v -> Var v
-          | RWMNumber i ->
-               begin
-                   match stack.(i) with
-                      StackNumber j -> Number j
-                    | StackString s -> Number (Num.num_of_string s)
-                    | t -> raise (RewriteError (StackError t))
-               end
-          | RWMString i ->
-               begin
-                   match stack.(i) with
-                      StackString s -> String s
-                    | StackNumber j -> String (Num.string_of_num j)
-                    | t -> raise (RewriteError (StackError t))
-               end
-          | RWMToken i ->
-               begin
-                   match stack.(i) with
-                      StackString s -> Token s
-                    | StackNumber j -> String (Num.string_of_num j)
-                    | t -> raise (RewriteError (StackError t))
-               end
-          | RWMLevel i ->
-               begin
-                   match stack.(i) with
-                      StackLevel l -> Level l
-                    | t -> raise (RewriteError (StackError t))
-               end
-          | RWMVar i ->
-               begin
-                   match stack.(i) with
-                      StackString v -> Var v
-                    | StackNumber j -> Var (Num.string_of_num j)
-                    | t -> raise (RewriteError (StackError t))
-               end
-          | RWSum (p1, p2) ->
-               begin
-                   match (build_contractum_param p1, build_contractum_param p2) with
-                      (Number i, Number j) -> Number (Num.add_num i j)
-                    | (Number i, p) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
-                    | (p, _) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
-               end
-          | RWDiff (p1, p2) ->
-               begin
-                   match (build_contractum_param p1, build_contractum_param p2) with
-                      (Number i, Number j) -> Number (Num.sub_num i j)
-                    | (Number i, p) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
-                    | (p, _) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
-               end
-          | RWProduct (p1, p2) ->
-               begin
-                   match (build_contractum_param p1, build_contractum_param p2) with
-                      (Number i, Number j) -> Number (Num.mult_num i j)
-                    | (Number i, p) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
-                    | (p, _) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
-               end
-          | RWQuotient (p1, p2) ->
-               begin
-                   match (build_contractum_param p1, build_contractum_param p2) with
-                      (Number i, Number j) -> Number (Num.quo_num i j)
-                    | (Number i, p) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
-                    | (p, _) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
-               end
-          | RWRem (p1, p2) ->
-               begin
-                   match (build_contractum_param p1, build_contractum_param p2) with
-                      (Number i, Number j) -> Number (Num.mod_num i j)
-                    | (Number i, p) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
-                    | (p, _) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
-               end
-          | RWLessThan (p1, p2) ->
-               begin
-                   match (build_contractum_param p1, build_contractum_param p2) with
-                      (Number i, Number j) -> Token (if i < j then "true" else "false")
-                    | (Number i, p) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
-                    | (p, _) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
-               end
-          | RWEqual (p1, p2) ->
-               begin
-                   match (build_contractum_param p1, build_contractum_param p2) with
-                      (Number i, Number j) -> Token (if i = j then "true" else "false")
-                    | (Number i, p) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
-                    | (p, _) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
-               end
-          | RWNotEqual (p1, p2) ->
-               begin
-                   match (build_contractum_param p1, build_contractum_param p2) with
-                      (Number i, Number j) -> Token (if i = j then "false" else "true")
-                    | (Number i, p) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
-                    | (p, _) -> raise (RewriteError (BadMatch (ParamMatch (make_param p))))
-               end
-          | RWObId id ->
-               ObId id
-          | RWParamList l ->
-               ParamList (build_contractum_params l)
-         in
-         let build_contractum_param' p =
-            make_param (build_contractum_param p)
-         in
-            List.map build_contractum_param' params
-
-      and build_contractum_bterms bvars bterms =
-         let build_contractum_bterm = function
-            { rw_bvars = vcount; rw_bnames = vars; rw_bterm = term } ->
-               let vars' = List.map bname vars in
-                  mk_bterm vars' (build_contractum_term (insert_bvars bvars vars') term)
-         in
-            List.map build_contractum_bterm bterms
-      in
-         build_contractum_term [||]
+   let build_contractum names stack = build_contractum_term names stack [||]
 
    (*
     * To do the rewrite. match agaist the redex, then
@@ -1128,17 +1107,17 @@ struct
    (*
     * Compute the redex types.
     *)
+   let extract_redex_type = function
+      FOVarPattern s -> RewriteTermType s
+    | SOVarPattern s -> RewriteFunType s
+    | SOVarInstance s -> RewriteFunType s
+    | FOVar s -> RewriteStringType s
+    | CVar s -> RewriteContextType s
+    | PIVar s -> RewriteIntType s
+    | PSVar s -> RewriteStringType s
+    | PLVar s -> RewriteLevelType s
+
    let extract_redex_types { redex_stack = stack } =
-      let extract_redex_type = function
-         FOVarPattern s -> RewriteTermType s
-       | SOVarPattern s -> RewriteFunType s
-       | SOVarInstance s -> RewriteFunType s
-       | FOVar s -> RewriteStringType s
-       | CVar s -> RewriteContextType s
-       | PIVar s -> RewriteIntType s
-       | PSVar s -> RewriteStringType s
-       | PLVar s -> RewriteLevelType s
-      in
       let l = Array.length stack in
       let rec aux j =
          if j < l then
@@ -1159,59 +1138,60 @@ struct
     *       performs the substitution
     *    4. A param variable becaome the param that was matched.
     *)
+
+   let extract_redex_values_aux gstack = function
+      FOVarPattern _ ->
+         begin
+            match gstack with
+               StackBTerm (t, []) -> RewriteTerm t
+             | _ -> raise (RewriteError (StackError gstack))
+         end
+    | SOVarPattern _ ->
+         begin
+            match gstack with
+               StackBTerm (t, l) ->
+                  RewriteFun (fun l' -> subst t l' l)
+             | _ -> raise (RewriteError (StackError gstack))
+         end
+    | SOVarInstance _ ->
+         failwith "extract_redex_values: SOVarInstance"
+    | FOVar _ ->
+         begin
+            match gstack with
+               StackString s -> RewriteString s
+             | _ -> raise (RewriteError (StackError gstack))
+         end
+    | CVar _ ->
+         begin
+            match gstack with
+               StackContext (l, t, addr) ->
+                  RewriteContext (fun c l' -> subst (replace_subterm t addr c) l' l)
+             | _ -> raise (RewriteError (StackError gstack))
+         end
+    | PIVar _ ->
+         begin
+            match gstack with
+               StackNumber i -> RewriteInt (Num.int_of_num i)
+             | _ -> raise (RewriteError (StackError gstack))
+         end
+    | PSVar _ ->
+         begin
+            match gstack with
+               StackString s -> RewriteString s
+             | _ -> raise (RewriteError (StackError gstack))
+         end
+    | PLVar _ ->
+         begin
+            match gstack with
+               StackLevel l -> RewriteLevel l
+             | _ -> raise (RewriteError (StackError gstack))
+         end
+
    let extract_redex_values gstack stack=
-      let aux gstack = function
-         FOVarPattern _ ->
-            begin
-               match gstack with
-                  StackBTerm (t, []) -> RewriteTerm t
-                | _ -> raise (RewriteError (StackError gstack))
-            end
-       | SOVarPattern _ ->
-            begin
-               match gstack with
-                  StackBTerm (t, l) ->
-                     RewriteFun (fun l' -> subst t l' l)
-                | _ -> raise (RewriteError (StackError gstack))
-            end
-       | SOVarInstance _ ->
-            failwith "extract_redex_values: SOVarInstance"
-       | FOVar _ ->
-            begin
-               match gstack with
-                  StackString s -> RewriteString s
-                | _ -> raise (RewriteError (StackError gstack))
-            end
-       | CVar _ ->
-            begin
-               match gstack with
-                  StackContext (l, t, addr) ->
-                     RewriteContext (fun c l' -> subst (replace_subterm t addr c) l' l)
-                | _ -> raise (RewriteError (StackError gstack))
-            end
-       | PIVar _ ->
-            begin
-               match gstack with
-                  StackNumber i -> RewriteInt (Num.int_of_num i)
-                | _ -> raise (RewriteError (StackError gstack))
-            end
-       | PSVar _ ->
-            begin
-               match gstack with
-                  StackString s -> RewriteString s
-                | _ -> raise (RewriteError (StackError gstack))
-            end
-       | PLVar _ ->
-            begin
-               match gstack with
-                  StackLevel l -> RewriteLevel l
-                | _ -> raise (RewriteError (StackError gstack))
-            end
-      in
       let l = Array.length gstack in
       let rec aux' i =
          if i < l then
-            (aux gstack.(i) stack.(i))::(aux' (i + 1))
+            (extract_redex_values_aux gstack.(i) stack.(i))::(aux' (i + 1))
          else
             []
       in
@@ -1243,43 +1223,33 @@ struct
    (*
     * See if an operator generalizes another.
     *)
+
+   let compare_params p rwp =
+      match dest_param p, rwp with
+         Number a, RWNumber b -> a = b
+       | String a, RWString b -> a = b
+       | Token a, RWToken b -> a = b
+       | Var a, RWVar b -> a = b
+       | Level a, RWLevel b -> a = b
+       | MNumber a, RWNumber b -> true
+       | MNumber a, RWMNumber b -> true
+       | MString a, RWString b -> true
+       | MString a, RWMString b -> true
+       | MToken a, RWToken b -> true
+       | MToken a, RWMToken b -> true
+       | MLevel a, RWLevel b -> true
+       | MLevel a, RWMLevel b -> true
+       | MVar a, RWVar b -> true
+       | MVar a, RWMVar b -> true
+       | _ -> false
+
+   let compare_param_lists = List_util.for_all2 compare_params
+
    let relevant_operator op rw =
       match dest_op op, rw with
          { op_name = name1; op_params = params1 },
          { rw_name = name2; rw_params = params2 } ->
-               let compare_params p rwp =
-                  match dest_param p, rwp with
-                     Number a, RWNumber b -> a = b
-                   | String a, RWString b -> a = b
-                   | Token a, RWToken b -> a = b
-                   | Var a, RWVar b -> a = b
-                   | Level a, RWLevel b -> a = b
-                   | MNumber a, RWNumber b -> true
-                   | MNumber a, RWMNumber b -> true
-                   | MString a, RWString b -> true
-                   | MString a, RWMString b -> true
-                   | MToken a, RWToken b -> true
-                   | MToken a, RWMToken b -> true
-                   | MLevel a, RWLevel b -> true
-                   | MLevel a, RWMLevel b -> true
-                   | MVar a, RWVar b -> true
-                   | MVar a, RWMVar b -> true
-                   | _ -> false
-               in
-               let rec compare_param_lists = function
-                  p1::t1, p2::t2 ->
-                     (* Short circuit and *)
-                     if compare_params p1 p2 then
-                        compare_param_lists (t1, t2)
-                     else
-                        false
-                | [], [] -> true
-                | _ -> false
-               in
-                  if name1 = name2 then
-                     compare_param_lists (params1, params2)
-                  else
-                     false
+            name1 = name2 & compare_param_lists params1 params2
 
    (*
     * See if the bterms can be described by these arities.
@@ -1356,6 +1326,9 @@ end
 
 (*
  * $Log$
+ * Revision 1.6  1998/06/14 21:55:54  nogin
+ * Speed improvements - do not create functions inside other functions
+ *
  * Revision 1.5  1998/06/13 22:48:35  nogin
  * Make it faster
  *
