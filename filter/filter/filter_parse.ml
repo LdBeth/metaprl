@@ -351,19 +351,13 @@ let parse_mtlre mt tl rs extract =
  * Get it.
  *)
 let get_string_param loc t =
-   let { term_op = op } = dest_term t in
-      match dest_op op with
-         { op_params = [param] } ->
-            begin
-               match dest_param param with
-                  String s -> s
-                | MString s -> string_of_symbol s
-                | _ -> Stdpp.raise_with_loc loc (RefineError ("Filter_parse.get_string_param", TermMatchError (t, "param type")))
-            end
-       | { op_params = [] } ->
-            Stdpp.raise_with_loc loc (RefineError ("Filter_parse.get_string_param", TermMatchError (t, "no params")))
-       | _ ->
-            Stdpp.raise_with_loc loc (RefineError ("Filter_parse.get_string_param", TermMatchError (t, "too many params")))
+   match dest_params (dest_op (dest_term t).term_op).op_params with
+      [ String s ] ->
+         s
+    | [ MString s ] ->
+         string_of_symbol s
+    | _ ->
+         Stdpp.raise_with_loc loc (RefineError ("Filter_parse.get_string_param", StringTermError ("not a string param", t)))
 
 (*
  * Wrap a code block with a binding variable.

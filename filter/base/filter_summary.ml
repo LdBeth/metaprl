@@ -913,16 +913,12 @@ struct
    let context_param_op    = mk_opname "context_param"
    let term_param_op       = mk_opname "term_param"
 
-   let dest_param convert t =
-      let var_param = function
-         [param] ->
-            begin match dest_param param with
-               Var v -> v
-             | _ -> raise (Failure "Parameter is not a variable")
-            end
-       | _ ->
-            raise (Failure "Wrong number of parameters")
-      in
+   let dest_rule_param =
+      let var_param pl =
+         match dest_params pl with
+            [Var v] -> v
+          | _ -> raise (Failure "Invalid parameters")
+      in fun convert t ->
       let { term_op = op } = dest_term t in
       let { op_name = opname; op_params = params } = dest_op op in
          if Opname.eq opname context_param_op then
@@ -937,9 +933,9 @@ struct
     * XXX HACK: the try wrapper is only there for backwards compativility with
     * old files (ASCII formats v. 1.0.0 and 1.0.1)
     *)
-   let dest_params convert t =
+   let dest_rule_params convert t =
       try
-         List.map (dest_param convert) (dest_xlist t)
+         List.map (dest_rule_param convert) (dest_xlist t)
       with
          Failure _ ->
             []
@@ -977,7 +973,7 @@ struct
       let name = dest_string_param t in
       let params, args, redex, contractum, proof, res = six_subterms t in
          CondRewrite { crw_name = name;
-                       crw_params = dest_params convert params;
+                       crw_params = dest_rule_params convert params;
                        crw_args = List.map convert.term_f (dest_xlist args);
                        crw_redex = convert.term_f redex;
                        crw_contractum = convert.term_f contractum;
@@ -992,7 +988,7 @@ struct
       let name = dest_string_param t in
       let params, stmt, proof, res = four_subterms t in
          Rule { rule_name = name;
-                rule_params = dest_params convert params;
+                rule_params = dest_rule_params convert params;
                 rule_stmt = convert.meta_term_f stmt;
                 rule_proof = convert.proof_f name proof;
                 rule_resources = dest_res convert res
@@ -1015,7 +1011,7 @@ struct
       let name = dest_string_param t in
       let params, term, expr, resources = four_subterms t in
          MLRewrite { mlterm_name = name;
-                     mlterm_params = dest_params convert params;
+                     mlterm_params = dest_rule_params convert params;
                      mlterm_term = convert.term_f term;
                      mlterm_def = dest_opt (dest_bnd_expr convert) expr;
                      mlterm_resources = dest_res convert resources
@@ -1025,7 +1021,7 @@ struct
       let name = dest_string_param t in
       let params, term, expr, resources = four_subterms t in
          MLAxiom { mlterm_name = name;
-                   mlterm_params = dest_params convert params;
+                   mlterm_params = dest_rule_params convert params;
                    mlterm_term = convert.term_f term;
                    mlterm_def = dest_opt (dest_bnd_expr convert) expr;
                    mlterm_resources = dest_res convert resources
@@ -1080,7 +1076,7 @@ struct
       Prec (dest_string_param t)
 
    and dest_prec_rel convert t =
-      match List.map ToTerm.Term.dest_param (dest_op (dest_term t).term_op).op_params with
+      match dest_params (dest_op (dest_term t).term_op).op_params with
          [String rel; String left; String right] ->
             let rel =
                match rel with

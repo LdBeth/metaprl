@@ -86,6 +86,7 @@ sig
    val dest_bterm : bound_term -> bound_term'
    val make_param : param' -> param
    val dest_param : param -> param'
+   val dest_params : param list -> param' list
    val make_level : level_exp' -> level_exp
    val dest_level : level_exp -> level_exp'
    val make_level_var : level_exp_var' -> level_exp_var
@@ -94,7 +95,7 @@ sig
    val is_var_term : term -> bool
    val mk_var_term : var -> term
    val dest_var : term -> var
-   
+
 end
 
 (*

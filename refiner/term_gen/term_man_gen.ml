@@ -531,12 +531,8 @@ struct
 
    let match_context op name t bterms =
       let v =
-         match (dest_op op).op_params with
-            [p] ->
-               begin match dest_param p with
-                  Var v -> v
-                | _ -> REF_RAISE(RefineError (name, TermMatchError (t, "malformed context")))
-               end
+         match dest_params (dest_op op).op_params with
+            [Var v] -> v
           | _ -> REF_RAISE(RefineError (name, TermMatchError (t, "malformed context")))
       in
       let rec aux = function

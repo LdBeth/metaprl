@@ -112,17 +112,13 @@ struct
          let t =
             if op = var_opname && btrms <> [] then (* XXX HACK: Version <= 1.0.7 compatiility *)
                let t = retrieve (lookup (Term { op_name = op; op_params = params; term_terms = [] })) in
-               match (dest_op (dest_term t).term_op).TM.TermType.op_params with
-                  [p] ->
-                     begin match dest_param p with
-                        Var v ->
-                           let dest bt =
-                              if bt.bvars = [] then bt.bterm else
-                              raise(Invalid_argument "Ascii_io: invalid old-style variable term")
-                           in
-                              lookup (SOVar(v, [v], List.map dest btrms))
-                      | _ -> raise(Invalid_argument "Ascii_io: invalid old-style variable term")
-                     end
+               match dest_params (dest_op (dest_term t).term_op).TM.TermType.op_params with
+                  [Var v] ->
+                     let dest bt =
+                        if bt.bvars = [] then bt.bterm else
+                        raise(Invalid_argument "Ascii_io: invalid old-style variable term")
+                     in
+                        lookup (SOVar(v, [v], List.map dest btrms))
                 | _ -> raise(Invalid_argument "Ascii_io: invalid old-style variable term")
             else
                lookup (Term { op_name = op; op_params = params; term_terms = btrms })

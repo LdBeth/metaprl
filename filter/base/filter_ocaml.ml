@@ -159,18 +159,12 @@ struct
       if !debug_ocaml then
          eprintf "Filter_ocaml.%s: %a%t" name SimplePrint.print_simple_term_fp t eflush;
       let { term_op = op } = dest_term t in
-         match dest_op op with
-            { op_params = p1 :: p2 :: _ } ->
-               begin
-                  match dest_param p1, dest_param p2 with
-                     Number start, Number finish
-                        when (Lm_num.is_integer_num start && Lm_num.is_integer_num finish) ->
+         match dest_params (dest_op op).op_params with
+            (Number start) :: (Number finish) :: _
+               when (Lm_num.is_integer_num start && Lm_num.is_integer_num finish) ->
                        Lm_num.int_of_num start, Lm_num.int_of_num finish
-                   | _ ->
-                        raise_format_error "dest_loc: needs two numbers" t
-               end
           | _ ->
-               raise_format_error "dest_loc: need at least two parameters" t
+               raise_format_error "dest_loc: needs two numbers" t
 
    let dest_loc_term name t =
       dest_loc name t, one_subterm "dest_loc_term" t
