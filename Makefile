@@ -135,11 +135,9 @@ ifdef PDIRS
 endif
 
 depend: check_config
-ifdef PDIRS
 	+@for i in $(PDIRS) $(DIRS); do\
 		if (echo Making $$i...; cd $$i && $(RM) Makefile.dep); then true; else exit 1; fi;\
 	done
-endif
 	+@$(MAKE) -C refiner depend
 	+@$(MAKE) -C filter depend
 

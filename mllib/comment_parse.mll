@@ -243,8 +243,7 @@ let special = ['[' ']' ';' ',' '_' '^' '!']
 
 rule main = parse
    (* White space *)
-   newline optwhite '*'
- | newline
+   newline
    { TokWhite true }
  | white
    { TokWhite false }

@@ -1,4 +1,5 @@
 #!/bin/sh
 cd "`dirname $0`"
 . ./mpconfig
-xterm -fn -misc-fixed-medium-r-normal--15-140-75-75-c-90-iso10646-1 +bdc -e ./mpopt
+FONT="-misc-fixed-medium-r-normal--15-140-75-75-c-90-iso10646-1"
+xterm -fn $FONT -fb $FONT +bdc -xrm '*VT100.colorBD: brown' -e ./mpopt
