@@ -96,7 +96,7 @@ struct
       r
 
    let fail s =
-      raise (Failure ("ASCII IO: invalid entry encountered by " ^ s ))
+      raise (Invalid_argument ("ASCII IO: invalid entry encountered by " ^ s ))
 
    let hash_add_new tbl key data =
       if Hashtbl.mem tbl key then fail "hash_add_new" else Hashtbl.add tbl key data
@@ -255,7 +255,7 @@ struct
                 | _ -> fail ("get_term: " ^ long)
             )
        | [] -> fail "get_term1"
-          end with Not_found -> fail "get_term2"
+          end with Not_found -> fail "get_term - not found"
 
    let read_table inx =
       let table = initialize () in
@@ -305,6 +305,7 @@ struct
       mutable new_names : StringSet.t; (* names of items included in a new version *)
       mutable all_names : StringSet.t; (* names of all the available items (old and new) *)
       mutable name_index : int;        (* index for the next name to be allocated *)
+      old_items : (string, io_item) Hashtbl.t; (* a hash table with all the old items *)
       mutable out_items : out_item list;
       out_terms : string HashTerm.t;
       out_ops : (opname * hashed_param list, string) Hashtbl.t;
@@ -319,6 +320,7 @@ struct
       new_names = StringSet.empty;
       all_names = StringSet.empty;
       name_index = 1;
+      old_items = Hashtbl.create init_size;
       out_items = [];
       out_terms = HashTerm.create init_size;
       out_ops = Hashtbl.create init_size;
@@ -328,12 +330,15 @@ struct
       out_bterms = HashBTerm.create init_size;
     }
 
-   let init_data r =
+   let init_data inputs =
+      let r = new_record () in
+      add_items r inputs;
       let data = new_out_data () in
+      List.iter (fun ((_,name,_) as item) -> Hashtbl.add data.old_items name item) inputs;
       Hashtbl.iter
        ( fun name ind ->
             data.all_names <- StringSet.add name data.all_names;
-            HashTerm.add data.out_terms ind name
+            HashTerm.add data.out_terms ind name;
        ) r.io_terms;
       Hashtbl.iter
        ( fun name op ->
@@ -383,12 +388,19 @@ struct
          data.new_names <- StringSet.add name' data.new_names;
          name'
 
-   let check_old data name =
+   let check_old data name i_data =
       if not (StringSet.mem data.new_names name) then begin
          (* This item existed in the old version of the file *)
          data.new_names <- StringSet.add name data.new_names;
-         data.io_names <- StringSet.add name data.io_names;
-         data.out_items <- Old name :: data.out_items
+         let (lname,_,io_data) = Hashtbl.find data.old_items name in
+         if i_data<> io_data then begin
+            if !debug_ascii_io then
+               eprintf "ASCII IO: Duplicate entry updated: %s%t" name eflush;
+            data.out_items <- New (lname, name, i_data) :: data.out_items 
+         end else begin
+            data.io_names <- StringSet.add name data.io_names;
+            data.out_items <- Old name :: data.out_items
+         end
       end
 
    let rec out_term ctrl data t =
@@ -400,14 +412,26 @@ struct
          let ind = lookup ( Seq { seq_arg = arg_ind;
                                   seq_hyps = List.map snd hyps;
                                   seq_goals = List.map snd goals } ) in
+         let i_data1 = List.map fst goals in
+         let i_data2 = arg_name :: List.map fst hyps in
          try
             let name = HashTerm.find data.out_terms ind in
             if not (StringSet.mem data.new_names name) then begin
                (* This item existed in the old version of the file *)
                data.new_names <- StringSet.add name data.new_names;
-               data.io_names <- StringSet.add name data.io_names;
-               data.out_items <- Old name :: Old name :: data.out_items
-               (* We need two "Old name" entries becase sequent is printed on two lines *)
+               match Hashtbl.find_all data.old_items name with
+                  (_,_,io_data2)::(_,_,io_data1)::_
+                     when io_data1=i_data1 && io_data2=i_data2 -> 
+                        data.io_names <- StringSet.add name data.io_names;
+                        data.out_items <- Old name :: Old name :: data.out_items
+                        (* We need two "Old name" entries becase sequent is printed on two lines *)
+                | (l2,_,io_data2)::(l1,_,io_data1)::_
+                     when (l1.[0]='G' || l1.[0]='g') && (l2.[0]='S' || l2.[0]='s') ->
+                        if !debug_ascii_io then
+                           eprintf "ASCII IO: Duplicate sequent entry updated: %s%t" name eflush;
+                        data.out_items <- New (l1, name, i_data1) :: New (l2, name, i_data2) :: data.out_items
+                | _ ->
+                     fail ("out_term - sequent entry " ^ name ^ " was invalid")
             end;
             (name, ind)
          with Not_found ->
@@ -415,8 +439,8 @@ struct
             let name = rename name data in
             HashTerm.add data.out_terms ind name;
             data.out_items <-
-               New ("G" ^ goals_lname, name, List.map fst goals) ::
-               New ("S" ^ hyps_lname, name, arg_name :: List.map fst hyps) ::
+               New ("G" ^ goals_lname, name, i_data1) ::
+               New ("S" ^ hyps_lname, name, i_data2) ::
                data.out_items;
             (name, ind)
       else
@@ -426,47 +450,50 @@ struct
          let ind = lookup ( Term { op_name = op;
                                    op_params = params;
                                    term_terms = List.map snd btrms } ) in
+         let i_data = oper_name :: List.map fst btrms in
          try
             let name = HashTerm.find data.out_terms ind in
-            check_old data name;
+            check_old data name i_data;
             (name, ind)
          with Not_found ->
             let (lname, name) = ctrl.out_name_term t in
             let name = rename name data in
             HashTerm.add data.out_terms ind name;
             data.out_items <-
-               New ("T" ^ lname, name, oper_name :: List.map fst btrms) :: data.out_items;
+               New ("T" ^ lname, name, i_data) :: data.out_items;
             (name, ind)
 
    and out_hyp ctrl data = function
       TermType.Hypothesis (v,t) as h -> begin
          let (t_name, t_ind) = out_term ctrl data t in
          let hyp = Hypothesis (v,t_ind) in
+         let i_data = [v; t_name] in
          try
             let name = HashHyp.find data.out_hyps hyp in
-            check_old data name;
+            check_old data name i_data;
             (name, hyp)
          with Not_found ->
             let (lname, name) = ctrl.out_name_hyp h in
             let name = rename name data in
             HashHyp.add data.out_hyps hyp name;
             data.out_items <-
-               New ("H" ^ lname, name, [v; t_name]) :: data.out_items;
+               New ("H" ^ lname, name, i_data) :: data.out_items;
             (name, hyp)
       end
     | TermType.Context (v,ts) as h -> begin
          let terms = List.map (out_term ctrl data) ts in
          let hyp = Context (v, List.map snd terms) in
+         let i_data = v :: (List.map fst terms) in
          try
             let name = HashHyp.find data.out_hyps hyp in
-            check_old data name;
+            check_old data name i_data;
             (name, hyp)
          with Not_found ->
             let (lname, name) = ctrl.out_name_hyp h in
             let name = rename name data in
             HashHyp.add data.out_hyps hyp name;
             data.out_items <-
-               New ("C" ^ lname, name, v :: (List.map fst terms) ) :: data.out_items;
+               New ("C" ^ lname, name, i_data ) :: data.out_items;
             (name, hyp)
       end
 
@@ -475,32 +502,34 @@ struct
       let (name_name, opname) = out_name ctrl data op'.TermType.op_name in
       let params = List.map (out_param ctrl data) op'.TermType.op_params in
       let op'' = (opname,List.map snd params) in
+      let i_data = name_name :: List.map fst params in
       try
          let name = Hashtbl.find data.out_ops op'' in
-         check_old data name;
+         check_old data name i_data;
          (name, op'')
       with Not_found ->
          let (lname, name) = ctrl.out_name_op opname op'.TermType.op_params in
          let name = rename name data in
          Hashtbl.add data.out_ops op'' name;
          data.out_items <-
-            New ("O" ^ lname, name, name_name :: List.map fst params) :: data.out_items;
+            New ("O" ^ lname, name, i_data) :: data.out_items;
          (name, op'')
 
    and out_bterm ctrl data bt =
       let bt' = dest_bterm bt in
       let (term_name, term_ind) = out_term ctrl data bt'.TermType.bterm in
       let bt'' = { bvars = bt'.TermType.bvars; bterm = term_ind } in
+      let i_data = term_name :: bt'.TermType.bvars in
       try
          let name = HashBTerm.find data.out_bterms bt'' in
-         check_old data name;
+         check_old data name i_data;
          (name, bt'')
       with Not_found ->
          let (lname, name) = ctrl.out_name_bterm bt in
          let name = rename name data in
          HashBTerm.add data.out_bterms bt'' name;
          data.out_items <-
-            New ("B" ^ lname, name, term_name :: bt'.TermType.bvars) :: data.out_items;
+            New ("B" ^ lname, name, i_data) :: data.out_items;
          (name, bt'')
 
    and out_name ctrl data opname =
@@ -508,15 +537,16 @@ struct
       let (name', op') = dst_opname opname in
       let (inner_name, inner_op) = out_name ctrl data op' in
       let op = mk_opname name' inner_op in
+      let i_data = [name';inner_name] in
       try
          let name = Hashtbl.find data.out_opnames op in
-         check_old data name;
+         check_old data name i_data;
          name, op
       with Not_found ->
          let name = rename name' data in
          Hashtbl.add data.out_opnames op name;
          data.out_items <-
-            New ("N" ^ (string_of_opname opname), name, [name';inner_name]) :: data.out_items;
+            New ("N" ^ (string_of_opname opname), name, i_data) :: data.out_items;
          name, op
 
    and map_level_vars = function
@@ -527,31 +557,30 @@ struct
 
    and out_param ctrl data param =
       let param' = constr_param (dest_param param) in
-      try
+      let i_data =
+         match dest_param param with
+            Number n -> ["Number"; Mp_num.string_of_num n]
+          | String s -> ["String"; s]
+          | Token s -> ["Token"; s]
+          | Var s -> ["Var"; s]
+          | MNumber s -> ["MNumber"; s]
+          | MString s -> ["MString"; s]
+          | MToken s -> ["MToken"; s]
+          | MVar s -> ["Mvar"; s]
+          | MLevel le ->
+               let le' = dest_level le in
+               "MLevel" :: (string_of_int le'.le_const) :: (map_level_vars le'.le_vars)
+          | _ -> fail "out_param"
+      in try
          let name = Hashtbl.find data.out_params param' in
-         check_old data name;
+         check_old data name i_data;
          name, param'
       with Not_found ->
-         let new_rec =
-            match dest_param param with
-               Number n -> ["Number"; Mp_num.string_of_num n]
-             | String s -> ["String"; s]
-             | Token s -> ["Token"; s]
-             | Var s -> ["Var"; s]
-             | MNumber s -> ["MNumber"; s]
-             | MString s -> ["MString"; s]
-             | MToken s -> ["MToken"; s]
-             | MVar s -> ["Mvar"; s]
-             | MLevel le ->
-                  let le' = dest_level le in
-                  "MLevel" :: (string_of_int le'.le_const) :: (map_level_vars le'.le_vars)
-             | _ -> fail "out_param"
-         in
          let (lname, name) = ctrl.out_name_param param in
          let name = rename name data in
          Hashtbl.add data.out_params param' name;
          data.out_items <-
-            New ("P"^lname, name, new_rec) :: data.out_items;
+            New ("P"^lname, name, i_data) :: data.out_items;
          name, param'
 
    let rec print_out out_line printed names o n =
@@ -572,9 +601,7 @@ struct
             raise (Invalid_argument "Ascii_io.print_out")
 
    let output_term inputs ctrl t =
-      let r = new_record () in
-      add_items r !inputs;
-      let data = init_data r in
+      let data = init_data !inputs in
       ignore (out_term ctrl data t);
       print_out ctrl.out_line StringSet.empty data.io_names (List.rev !inputs) (List.rev data.out_items)
 

@@ -114,11 +114,11 @@ sig
     *)
 
    (*
-    * io_control specifies how to generate names and what to do with produced entries.
-    * io_name_* function should produce a long name and a base short name
-    * io_output_line function should take care of quoting strings (String_util.quote)
+    * out_control specifies how to generate names and what to do with produced entries.
+    * out_name_* function should produce a long name and a base short name
+    * out_line function should take care of quoting strings (String_util.quote)
     *
-    * input functions should work correctly no matter what io_name_* were used for output
+    * input functions should work correctly no matter what out_name_* were used for output
     *)
 
    type out_control =
