@@ -1288,20 +1288,23 @@ or
 In MetaPRL, it is easier to apply rules of the third form, so that's
 what you would typically write.  However, it is more straightforward
 to prove rules given in the first or second forms.  This tactic
-converts from the third form to the first form; in this case, the
-tactic application (genAssumT [1; 2]) would exactly convert from the
-third to the first form.
+converts from the third form to the mix of the first and second form.
 
+Assumptions which have membership conclusions where the member is not
+a single variable also work. The first membership assumption would be
+converted to a hypothesis binding, and the rest - to universal quantifiers.
 Assumptions which do not have membership conclusions are converted
-into implications.  Assumptions which have membership conclusions
-where the member is not a single variable also work.  Here is a larger
+into non-binding hypothesis up until the first time the universal quantifier
+is used and the rest are converted into implications. 
+
+Here is a larger
 (meaningless) example.  (genAssumT [3; 1; 2]) would convert
   sequent ['ext] { 'H >- 'b +@ 'c IN int } -->
   sequent ['ext] { 'H >- interesting{'a; 'b; 'b +@ 'c} } -->
   sequent ['ext] { 'H >- 'a IN int } -->
   sequent ['ext] { 'H >- happy{'b +@ 'c; 'c; 'a} }
 to
-  sequent ['ext] { 'H >- all a: int.
+  sequent ['ext] { 'H; a: int >-
                          all v: int.
                          interesting{'a; 'b; 'v} -> happy{'v; 'c; 'a} }
 The tactic is not always able to prove that this transformation is
