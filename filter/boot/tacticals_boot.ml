@@ -163,23 +163,23 @@ struct
     * Apply the tactic and fail if there is only
     * one subgoal and it is the same.
     *)
+
    let progressT tac =
       let aux p =
          let t = Sequent.goal p in
-         let tac' p =
-            match p with
-               [p] ->
-                  if alpha_equal (Sequent.goal p) t then
+         let tac' pp =
+            match pp with
+               [p'] ->
+                  if Sequent.tactic_arg_alpha_equal p' p then
                      raise (RefineError ("progressT", StringError "no progress"))
                   else
-                     [idT p]
+                     [idT p']
              | _ ->
-                  List.map idT p
+                  List.map idT pp
          in
             prefix_thenFLT tac tac' p
       in
          aux
-
    (*
     * Repeat, spreading out over subgoals.
     * Stop if there is no progress.

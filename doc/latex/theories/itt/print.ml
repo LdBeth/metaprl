@@ -58,6 +58,9 @@ print_theory "itt_list2";;
 print_theory "itt_quotient";;
 print_theory "itt_esquash";;
 print_theory "itt_struct2";;
+print_theory "itt_record_label";;
+print_theory "itt_record";;
+print_theory "itt_record_exm";;
 print_theory "itt_theory";;
 
 (*
